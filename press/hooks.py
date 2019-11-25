@@ -10,6 +10,7 @@ app_icon = "octicon octicon-rocket"
 app_color = "grey"
 app_email = "aditya@erpnext.com"
 app_license = "Proprietary"
+version = app_version
 
 # Includes in <head>
 # ------------------
@@ -39,7 +40,7 @@ app_license = "Proprietary"
 
 # website user home page (by Role)
 # role_home_page = {
-#	"Role": "home_page"
+# 	"Role": "home_page"
 # }
 
 # Website user home page (by function)
@@ -84,7 +85,7 @@ app_license = "Proprietary"
 # 		"on_update": "method",
 # 		"on_cancel": "method",
 # 		"on_trash": "method"
-#	}
+# 	}
 # }
 
 # Scheduled Tasks
@@ -126,4 +127,3 @@ app_license = "Proprietary"
 # override_doctype_dashboards = {
 # 	"Task": "press.task.get_dashboard_data"
 # }
-
