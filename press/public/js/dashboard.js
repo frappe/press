@@ -5,6 +5,7 @@ import DashboardRoot from "./DashboardRoot.vue";
 import PaymentList from "./PaymentList.vue";
 import SiteDetail from "./SiteDetail.vue";
 import SiteList from "./SiteList.vue";
+import SiteNewForm from "./SiteNewForm.vue";
 
 Vue.use(VueRouter);
 const routes = [
@@ -12,6 +13,11 @@ const routes = [
 		name: "site-list",
 		path: '/sites',
 		component: SiteList,
+	},
+	{
+		name: "site-new",
+		path: '/sites/new',
+		component: SiteNewForm,
 	},
 	{
 		name: "site-detail",
