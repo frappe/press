@@ -44,7 +44,7 @@ class TestSignUp(unittest.TestCase):
 		# Redirect to dashboard page when a logged in user visits signup page
 		frappe.session.user = "Administrator"
 		self.assertRaises(frappe.Redirect, get_context, {})
-		self.assertEqual(frappe.local.flags.redirect_location, "dashboard")
+		self.assertEqual(frappe.local.flags.redirect_location, "dashboard/")
 
 	def test_signup_page_redirect_when_guest(self):
 		# Don't redirect

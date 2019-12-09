@@ -10,7 +10,7 @@ Vue.use(VueRouter);
 const routes = [
 	{
 		name: "site-list",
-		path: '/',
+		path: '/sites',
 		component: SiteList,
 	},
 	{
