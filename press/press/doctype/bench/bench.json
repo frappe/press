@@ -17,17 +17,20 @@
    "in_standard_filter": 1,
    "label": "Server",
    "options": "Server",
+   "read_only": 1,
    "reqd": 1
   },
   {
    "fieldname": "apps",
    "fieldtype": "Table",
    "label": "Apps",
-   "options": "Installed App"
+   "options": "Installed App",
+   "read_only": 1,
+   "reqd": 1
   }
  ],
  "links": [],
- "modified": "2019-12-09 15:17:26.364949",
+ "modified": "2019-12-09 18:55:45.043580",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",
