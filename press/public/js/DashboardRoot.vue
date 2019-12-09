@@ -3,6 +3,7 @@
 		<div>
 			<router-link to="/">Sites</router-link>
 			<router-link to="/site">Site</router-link>
+			<router-link to="/payments">Payments</router-link>
 		</div>
 		<router-view></router-view>
 	</div>

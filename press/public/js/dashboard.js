@@ -2,6 +2,7 @@ import Vue from 'vue/dist/vue.js';
 import VueRouter from 'vue-router/dist/vue-router.js';
 
 import DashboardRoot from "./DashboardRoot.vue";
+import PaymentList from "./PaymentList.vue";
 import SiteDetail from "./SiteDetail.vue";
 import SiteList from "./SiteList.vue";
 
@@ -16,6 +17,11 @@ const routes = [
 		name: "site-detail",
 		path: '/site',
 		component: SiteDetail,
+	},
+	{
+		name: "payment-list",
+		path: '/payments',
+		component: PaymentList,
 	},
 ];
 
