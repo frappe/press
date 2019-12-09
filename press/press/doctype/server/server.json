@@ -14,11 +14,12 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "IP",
-   "reqd": 1
+   "reqd": 1,
+   "set_only_once": 1
   }
  ],
  "links": [],
- "modified": "2019-12-09 14:29:30.151415",
+ "modified": "2019-12-09 18:57:07.583432",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

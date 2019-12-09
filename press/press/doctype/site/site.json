@@ -34,7 +34,9 @@
    "fieldname": "apps",
    "fieldtype": "Table",
    "label": "Apps",
-   "options": "Installed App"
+   "options": "Installed App",
+   "read_only": 1,
+   "reqd": 1
   },
   {
    "fieldname": "password",
@@ -45,7 +47,7 @@
   }
  ],
  "links": [],
- "modified": "2019-12-09 18:41:09.545199",
+ "modified": "2019-12-09 18:55:32.161559",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
