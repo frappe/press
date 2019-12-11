@@ -1,0 +1,95 @@
+{
+ "actions": [],
+ "autoname": "PLE-.YYYY.-.#####",
+ "creation": "2019-12-09 16:16:56.672803",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "credit",
+  "debit",
+  "user",
+  "date",
+  "site",
+  "usage_report",
+  "payment"
+ ],
+ "fields": [
+  {
+   "fieldname": "credit",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Credit",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "debit",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Debit",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "User",
+   "options": "User",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "site",
+   "fieldtype": "Link",
+   "label": "Site",
+   "options": "Site",
+   "read_only": 1
+  },
+  {
+   "fieldname": "usage_report",
+   "fieldtype": "Link",
+   "label": "Usage Report",
+   "options": "Usage Report",
+   "read_only": 1
+  },
+  {
+   "fieldname": "payment",
+   "fieldtype": "Link",
+   "label": "Payment",
+   "options": "Payment",
+   "read_only": 1
+  }
+ ],
+ "links": [],
+ "modified": "2019-12-11 15:12:44.523107",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Credit Ledger Entry",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

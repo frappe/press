@@ -7,8 +7,8 @@
 		<div v-for="payment in payments" v-bind:key="payment.name">
 			<div>{{ payment.name }}</div>
 			<div>{{ payment.amount }}</div>
-			<div>{{ payment.balance }}</div>
 			<div>{{ payment.date }}</div>
+			<div><a :href="'/api/method/frappe.utils.print_format.download_pdf?doctype=Payment&name=' + payment.name">Invoice</a></div>
 		</div>
 	</div>
 </template>
@@ -18,21 +18,24 @@ export default {
 	name: "SiteList",
 	data() {
 		return {
-			payments: [
-				{
-					name: "PAYMENT-002",
-					amount: "10 USD",
-					balance: "110 USD",
-					date: "2019-11-27T03:24:00"
-				},
-				{
-					name: "PAYMENT-001",
-					amount: "100 USD",
-					balance: "100 USD",
-					date: "2019-11-26T03:24:00"
-				}
-			]
+			payments: [],
 		};
+	},
+	mounted() {
+		this.get();
+	},
+	methods: {
+		get: async function() {
+			let response = await fetch("/api/method/press.api.payment.all");
+			if (response.ok) {
+				const payments = await response.json();
+				console.log("Nothing Went Wrong");
+				console.log(payments);
+				this.payments = payments.message;
+			} else {
+				console.log("Something Went Wrong");
+			}
+		}
 	}
 };
 </script>
