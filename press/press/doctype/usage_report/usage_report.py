@@ -14,7 +14,7 @@ class UsageReport(Document):
 
 	def create_ledger_entry(self):
 		user = frappe.db.get_value("Site", self.site, "owner")
-		entry = frappe.get_doc(
+		frappe.get_doc(
 			{
 				"doctype": "Credit Ledger Entry",
 				"date": nowdate(),
