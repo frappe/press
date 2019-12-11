@@ -9,18 +9,20 @@ from frappe.utils.password import get_decrypted_password
 
 @frappe.whitelist()
 def new(site):
-	bench_name = frappe.get_all("Bench")[0].name
-	bench = frappe.get_doc("Bench", bench_name)
-	site_name = bench.new_site(site["name"]).name
+	site = frappe.get_doc(
+		{"doctype": "Site", "name": f"{site['name']}.frappe.cloud",}
+	).insert(ignore_permissions=True)
 	return {
-		"name": site_name,
-		"password": get_decrypted_password("Site", site_name, "password"),
+		"name": site.name,
+		"password": get_decrypted_password("Site", site.name, "password"),
 	}
 
 
 @frappe.whitelist()
 def all():
-	sites = frappe.get_all("Site", fields=["name", "status"])
+	sites = frappe.get_all(
+		"Site", fields=["name", "status"], filters={"owner": frappe.session.user}
+	)
 	return sites
 
 
