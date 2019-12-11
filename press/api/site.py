@@ -17,3 +17,19 @@ def new(site):
 		"password": get_decrypted_password("Site", site_name, "password"),
 	}
 
+
+@frappe.whitelist()
+def all():
+	sites = frappe.get_all("Site", fields=["name", "status"])
+	return sites
+
+
+@frappe.whitelist()
+def get(name):
+	site = frappe.get_doc("Site", name)
+	apps = [{"name": app.app, "version": app.version} for app in site.apps]
+	return {
+		"name": site.name,
+		"status": site.status,
+		"apps": apps,
+	}

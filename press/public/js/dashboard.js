@@ -21,7 +21,7 @@ const routes = [
 	},
 	{
 		name: "site-detail",
-		path: '/site',
+		path: '/sites/:name',
 		component: SiteDetail,
 	},
 	{
