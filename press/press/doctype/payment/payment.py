@@ -13,7 +13,7 @@ class Payment(Document):
 		self.create_ledger_entry()
 
 	def create_ledger_entry(self):
-		entry = frappe.get_doc(
+		frappe.get_doc(
 			{
 				"doctype": "Credit Ledger Entry",
 				"date": nowdate(),

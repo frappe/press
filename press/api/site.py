@@ -10,7 +10,7 @@ from frappe.utils.password import get_decrypted_password
 @frappe.whitelist()
 def new(site):
 	site = frappe.get_doc(
-		{"doctype": "Site", "name": f"{site['name']}.frappe.cloud",}
+		{"doctype": "Site", "name": f"{site['name']}.frappe.cloud"}
 	).insert(ignore_permissions=True)
 	return {
 		"name": site.name,
