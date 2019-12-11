@@ -9,7 +9,8 @@
   "server",
   "bench",
   "apps",
-  "password"
+  "password",
+  "status"
  ],
  "fields": [
   {
@@ -44,10 +45,17 @@
    "label": "Administrator Password",
    "read_only": 1,
    "reqd": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Active",
+   "reqd": 1
   }
  ],
  "links": [],
- "modified": "2019-12-09 18:55:32.161559",
+ "modified": "2019-12-09 18:59:21.416796",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
