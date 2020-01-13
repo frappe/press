@@ -16,8 +16,11 @@ class FrappeApp(Document):
 		client = Github()
 		repo = client.get_repo(f"{self.repo_owner}/{self.scrubbed}")
 		branch = repo.get_branch(self.branch)
-		frappe.get_doc({
-			"doctype": "App Release",
-			"app": self.name,
-			"hash": branch.commit.sha
-		}).insert()
+		hash = branch.commit.sha
+		if not frappe.db.exists("App Release", {"hash": hash}):
+			frappe.get_doc({
+				"doctype": "App Release",
+				"app": self.name,
+				"hash": hash
+			}).insert()
+			
