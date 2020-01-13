@@ -8,6 +8,7 @@ import frappe
 from frappe.model.document import Document
 from github import Github
 
+
 class FrappeApp(Document):
 	def validate(self):
 		self.create_app_release()
@@ -18,9 +19,4 @@ class FrappeApp(Document):
 		branch = repo.get_branch(self.branch)
 		hash = branch.commit.sha
 		if not frappe.db.exists("App Release", {"hash": hash}):
-			frappe.get_doc({
-				"doctype": "App Release",
-				"app": self.name,
-				"hash": hash
-			}).insert()
-			
+			frappe.get_doc({"doctype": "App Release", "app": self.name, "hash": hash}).insert()
