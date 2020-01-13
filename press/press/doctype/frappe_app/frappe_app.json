@@ -8,7 +8,8 @@
  "field_order": [
   "scrubbed",
   "url",
-  "branch"
+  "branch",
+  "repo_owner"
  ],
  "fields": [
   {
@@ -33,10 +34,16 @@
    "label": "Repository URL",
    "reqd": 1,
    "set_only_once": 1
+  },
+  {
+   "fieldname": "repo_owner",
+   "fieldtype": "Data",
+   "label": "Repo Owner",
+   "reqd": 1
   }
  ],
  "links": [],
- "modified": "2019-12-09 18:39:19.791810",
+ "modified": "2020-01-13 15:53:02.605668",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Frappe App",
