@@ -4,9 +4,20 @@
 
 from __future__ import unicode_literals
 
-# import frappe
+import frappe
 from frappe.model.document import Document
-
+from github import Github
 
 class FrappeApp(Document):
-	pass
+	def validate(self):
+		self.create_app_release()
+
+	def create_app_release(self):
+		client = Github()
+		repo = client.get_repo(f"{self.repo_owner}/{self.scrubbed}")
+		branch = repo.get_branch(self.branch)
+		frappe.get_doc({
+			"doctype": "App Release",
+			"app": self.name,
+			"hash": branch.commit.sha
+		}).insert()
