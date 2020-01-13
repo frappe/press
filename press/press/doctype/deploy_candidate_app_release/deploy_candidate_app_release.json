@@ -1,0 +1,49 @@
+{
+ "actions": [],
+ "creation": "2020-01-13 16:20:49.495751",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "app",
+  "release",
+  "hash"
+ ],
+ "fields": [
+  {
+   "fieldname": "app",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "App",
+   "options": "Frappe App",
+   "reqd": 1
+  },
+  {
+   "fieldname": "release",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Release",
+   "options": "App Release",
+   "reqd": 1
+  },
+  {
+   "fieldname": "hash",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Hash",
+   "reqd": 1
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2020-01-13 16:20:49.495751",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Deploy Candidate App Release",
+ "owner": "Administrator",
+ "permissions": [],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}
