@@ -1,0 +1,43 @@
+{
+ "actions": [],
+ "autoname": "Prompt",
+ "creation": "2020-01-13 16:04:45.363835",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "apps"
+ ],
+ "fields": [
+  {
+   "fieldname": "apps",
+   "fieldtype": "Table",
+   "label": "Apps",
+   "options": "Release Group Frappe App",
+   "reqd": 1
+  }
+ ],
+ "links": [],
+ "modified": "2020-01-13 16:04:45.363835",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Release Group",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}
