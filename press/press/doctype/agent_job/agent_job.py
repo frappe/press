@@ -7,6 +7,7 @@ import frappe
 from frappe.model.document import Document
 from press.press.doctype.bench.bench import Agent
 from frappe.core.utils import find
+import json
 
 
 class AgentJob(Document):
@@ -29,27 +30,52 @@ class AgentJob(Document):
 
 def poll_pending_jobs():
 	jobs = frappe.get_all(
-		"Agent Job", fields=["name", "server", "job_id"], filters={"status": ("in", ["Pending", "Running"])}
+		"Agent Job",
+		fields=["name", "server", "job_id"],
+		filters={"status": ("in", ["Pending", "Running"])},
 	)
 	for job in jobs:
 		agent = Agent(job.server)
 		polled = agent.get_job_status(job.job_id)
 
-		# Update Job Status 
+		# Update Job Status
 		# If it is worthy of an update
 		if job.status != polled["status"]:
-			frappe.set_value("Agent Job", job.name, "status", polled["status"])
+			frappe.db.set_value("Agent Job", job.name, "status", polled["status"])
+			frappe.db.set_value(
+				"Agent Job", job.name, "data", json.dumps(polled["data"], indent=4, sort_keys=True)
+			)
+			frappe.db.set_value("Agent Job", job.name, "output", polled["data"].get("output"))
+			frappe.db.set_value(
+				"Agent Job", job.name, "traceback", polled["data"].get("traceback")
+			)
 
 		# Update Steps' Status
 		for step in polled["steps"]:
 			agent_job_step = frappe.db.get_all(
 				"Agent Job Step",
 				fields=["name", "status"],
-				filters={"agent_job": job.name, "status": ("in", ["Pending", "Running"]), "step_name": step["name"]},
+				filters={
+					"agent_job": job.name,
+					"status": ("in", ["Pending", "Running"]),
+					"step_name": step["name"],
+				},
 			)
 			if agent_job_step:
 				agent_job_step = agent_job_step[0]
 				if agent_job_step.status != step["status"]:
-						frappe.db.set_value(
-							"Agent Job Step", agent_job_step.name, "status", step["status"]
-						)
+					frappe.db.set_value(
+						"Agent Job Step", agent_job_step.name, "status", step["status"]
+					)
+					frappe.db.set_value(
+						"Agent Job Step",
+						agent_job_step.name,
+						"data",
+						json.dumps(step["data"], indent=4, sort_keys=True),
+					)
+					frappe.db.set_value(
+						"Agent Job Step", agent_job_step.name, "output", step["data"].get("output")
+					)
+					frappe.db.set_value(
+						"Agent Job Step", agent_job_step.name, "traceback", step["data"].get("traceback")
+					)

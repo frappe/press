@@ -8,6 +8,7 @@ import frappe
 from frappe.model.document import Document
 import json
 import requests
+from frappe.utils.password import get_decrypted_password
 
 
 class Bench(Document):
@@ -60,11 +61,28 @@ class Agent:
 		for app in bench.apps:
 			repo, branch = frappe.db.get_value("Frappe App", app.app, ["url", "branch"])
 			data["apps"].append(
-				{"name": app.scrubbed, "repo": repo, "branch": branch, "hash": app.hash,}
+				{"name": app.scrubbed, "repo": repo, "branch": branch, "hash": app.hash}
 			)
 
-		job = self.create_agent_job("benches", data)
+		job = self.create_agent_job("New Bench", "benches", data)
 		job_id = self.post("benches", data)["job"]
+		job.job_id = job_id
+		job.save()
+
+	def new_site(self, site):
+		apps = [frappe.db.get_value("Frappe App", app.app, "scrubbed") for app in site.apps]
+		data = {
+			"config": {"monitor": True, "developer_mode": True},
+			"apps": apps,
+			"name": site.name,
+			"mariadb_root_password": get_decrypted_password(
+				"Server", site.server, "mariadb_root_password"
+			),
+			"admin_password": site.password,
+		}
+
+		job = self.create_agent_job("New Site", f"benches/{site.bench}/sites", data)
+		job_id = self.post(f"benches/{site.bench}/sites", data)["job"]
 		job.job_id = job_id
 		job.save()
 
@@ -78,7 +96,7 @@ class Agent:
 		result = requests.get(url)
 		return result.json()
 
-	def create_agent_job(self, path, data):
+	def create_agent_job(self, job_type, path, data):
 		job = frappe.get_doc(
 			{
 				"doctype": "Agent Job",
@@ -87,7 +105,7 @@ class Agent:
 				"request_method": "POST",
 				"request_path": path,
 				"request_data": json.dumps(data, indent=4, sort_keys=True),
-				"job_type": "New Bench",
+				"job_type": job_type,
 			}
 		).insert()
 		return job

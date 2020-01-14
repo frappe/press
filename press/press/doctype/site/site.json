@@ -19,7 +19,6 @@
    "in_list_view": 1,
    "label": "Server",
    "options": "Server",
-   "read_only": 1,
    "reqd": 1
   },
   {
@@ -28,23 +27,19 @@
    "in_list_view": 1,
    "label": "Bench",
    "options": "Bench",
-   "read_only": 1,
    "reqd": 1
   },
   {
    "fieldname": "apps",
    "fieldtype": "Table",
    "label": "Apps",
-   "options": "Installed App",
-   "read_only": 1,
+   "options": "Site App",
    "reqd": 1
   },
   {
    "fieldname": "password",
    "fieldtype": "Password",
-   "label": "Administrator Password",
-   "read_only": 1,
-   "reqd": 1
+   "label": "Administrator Password"
   },
   {
    "fieldname": "status",
@@ -55,7 +50,7 @@
   }
  ],
  "links": [],
- "modified": "2019-12-09 18:59:21.416796",
+ "modified": "2020-01-14 14:16:23.170859",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

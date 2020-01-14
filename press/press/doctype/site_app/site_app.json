@@ -1,0 +1,32 @@
+{
+ "actions": [],
+ "creation": "2020-01-14 14:14:41.801519",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "app"
+ ],
+ "fields": [
+  {
+   "fieldname": "app",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "App",
+   "options": "Frappe App",
+   "reqd": 1
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2020-01-14 14:14:41.801519",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Site App",
+ "owner": "Administrator",
+ "permissions": [],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}
