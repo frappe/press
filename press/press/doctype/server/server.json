@@ -6,7 +6,8 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "ip"
+  "ip",
+  "mariadb_root_password"
  ],
  "fields": [
   {
@@ -16,10 +17,15 @@
    "label": "IP",
    "reqd": 1,
    "set_only_once": 1
+  },
+  {
+   "fieldname": "mariadb_root_password",
+   "fieldtype": "Password",
+   "label": "MariaDB Root Password"
   }
  ],
  "links": [],
- "modified": "2019-12-09 18:57:07.583432",
+ "modified": "2020-01-14 14:28:10.566621",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

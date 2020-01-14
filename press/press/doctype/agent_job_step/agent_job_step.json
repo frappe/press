@@ -7,7 +7,10 @@
  "field_order": [
   "agent_job",
   "step_name",
-  "status"
+  "status",
+  "output",
+  "traceback",
+  "data"
  ],
  "fields": [
   {
@@ -32,10 +35,25 @@
    "label": "Status",
    "options": "Pending\nRunning\nSuccess\nFailure",
    "reqd": 1
+  },
+  {
+   "fieldname": "output",
+   "fieldtype": "Code",
+   "label": "Output"
+  },
+  {
+   "fieldname": "traceback",
+   "fieldtype": "Code",
+   "label": "Traceback"
+  },
+  {
+   "fieldname": "data",
+   "fieldtype": "Code",
+   "label": "Data"
   }
  ],
  "links": [],
- "modified": "2020-01-14 11:52:07.347050",
+ "modified": "2020-01-14 14:43:52.939748",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Job Step",

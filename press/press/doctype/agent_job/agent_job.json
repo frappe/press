@@ -11,7 +11,10 @@
   "request_method",
   "request_data",
   "request_path",
-  "job_id"
+  "job_id",
+  "output",
+  "traceback",
+  "data"
  ],
  "fields": [
   {
@@ -59,10 +62,25 @@
    "label": "Job Type",
    "options": "Agent Job Type",
    "reqd": 1
+  },
+  {
+   "fieldname": "output",
+   "fieldtype": "Code",
+   "label": "Output"
+  },
+  {
+   "fieldname": "traceback",
+   "fieldtype": "Code",
+   "label": "Traceback"
+  },
+  {
+   "fieldname": "data",
+   "fieldtype": "Code",
+   "label": "Data"
   }
  ],
  "links": [],
- "modified": "2020-01-14 11:52:31.102727",
+ "modified": "2020-01-14 14:38:48.159283",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Job",
