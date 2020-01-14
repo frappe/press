@@ -93,7 +93,7 @@ home_page = "index"
 # ---------------
 
 scheduler_events = {
-	"all": ["press.press.doctype.agent_job.agent_job.poll_pending_jobs"],
+	"fast": ["press.press.doctype.agent_job.agent_job.poll_pending_jobs"],
 }
 
 # Testing
