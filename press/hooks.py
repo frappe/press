@@ -92,23 +92,9 @@ home_page = "index"
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
-# 	"all": [
-# 		"press.tasks.all"
-# 	],
-# 	"daily": [
-# 		"press.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"press.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"press.tasks.weekly"
-# 	]
-# 	"monthly": [
-# 		"press.tasks.monthly"
-# 	]
-# }
+scheduler_events = {
+	"all": ["press.press.doctype.agent_job.agent_job.poll_pending_jobs"],
+}
 
 # Testing
 # -------

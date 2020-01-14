@@ -1,0 +1,62 @@
+{
+ "actions": [],
+ "creation": "2020-01-14 10:47:46.916471",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "agent_job",
+  "step_name",
+  "status"
+ ],
+ "fields": [
+  {
+   "fieldname": "agent_job",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Agent Job",
+   "options": "Agent Job",
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Step Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Pending\nRunning\nSuccess\nFailure",
+   "reqd": 1
+  }
+ ],
+ "links": [],
+ "modified": "2020-01-14 11:52:07.347050",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Agent Job Step",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "title_field": "step_name",
+ "track_changes": 1
+}

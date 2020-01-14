@@ -1,0 +1,89 @@
+{
+ "actions": [],
+ "creation": "2020-01-13 17:59:25.842963",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "server",
+  "job_type",
+  "status",
+  "request_method",
+  "request_data",
+  "request_path",
+  "job_id"
+ ],
+ "fields": [
+  {
+   "fieldname": "server",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Server",
+   "options": "Server",
+   "reqd": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Pending\nRunning\nSuccess\nFailure",
+   "reqd": 1
+  },
+  {
+   "fieldname": "request_method",
+   "fieldtype": "Data",
+   "label": "Request Method",
+   "reqd": 1
+  },
+  {
+   "fieldname": "request_data",
+   "fieldtype": "Code",
+   "label": "Request Data",
+   "reqd": 1
+  },
+  {
+   "fieldname": "job_id",
+   "fieldtype": "Data",
+   "label": "Job ID"
+  },
+  {
+   "fieldname": "request_path",
+   "fieldtype": "Data",
+   "label": "Request Path",
+   "reqd": 1
+  },
+  {
+   "fieldname": "job_type",
+   "fieldtype": "Link",
+   "label": "Job Type",
+   "options": "Agent Job Type",
+   "reqd": 1
+  }
+ ],
+ "links": [],
+ "modified": "2020-01-14 11:52:31.102727",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Agent Job",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "title_field": "job_type",
+ "track_changes": 1
+}
