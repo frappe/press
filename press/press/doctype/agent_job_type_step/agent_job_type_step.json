@@ -1,0 +1,31 @@
+{
+ "actions": [],
+ "creation": "2020-01-14 10:43:26.284328",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "step_name"
+ ],
+ "fields": [
+  {
+   "fieldname": "step_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Step Name",
+   "reqd": 1
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2020-01-14 10:43:26.284328",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Agent Job Type Step",
+ "owner": "Administrator",
+ "permissions": [],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

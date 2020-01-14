@@ -6,6 +6,8 @@ from __future__ import unicode_literals
 
 import frappe
 from frappe.model.document import Document
+import json
+import requests
 
 
 class Bench(Document):
@@ -14,6 +16,82 @@ class Bench(Document):
 			candidate = frappe.get_all("Deploy Candidate", filters={"group": self.group})[0]
 			self.candidate = candidate.name
 		candidate = frappe.get_doc("Deploy Candidate", self.candidate)
-		for release in candidate.apps:
-			scrubbed = frappe.get_value("Frappe App", release.app, "scrubbed")
-			self.append("apps", {"app": release.app, "scrubbed": scrubbed, "hash": release.hash})
+		if not self.apps:
+			for release in candidate.apps:
+				scrubbed = frappe.get_value("Frappe App", release.app, "scrubbed")
+				self.append(
+					"apps", {"app": release.app, "scrubbed": scrubbed, "hash": release.hash}
+				)
+
+		agent = Agent(self.server)
+		agent.new_bench(self)
+
+
+class Agent:
+	def __init__(self, server):
+		self.server = server
+		self.port = 25052
+
+	def new_bench(self, bench):
+		config = {
+			"background_workers": 4,
+			"frappe_user": "frappe",
+			"mail_login": "test@example.com",
+			"mail_password": "test",
+			"mail_server": "smtp.example.com",
+			"monitor": True,
+			"redis_cache": "redis://localhost:13000",
+			"redis_queue": "redis://localhost:11000",
+			"redis_socketio": "redis://localhost:12000",
+			"server_script_enabled": True,
+			"socketio_port": 9000,
+			"webserver_port": 8000,
+			"admin_password": "admin",
+			"root_password": "root",
+			"developer_mode": True,
+		}
+
+		data = {
+			"config": config,
+			"apps": [],
+			"name": bench.name,
+			"python": "/usr/bin/python3.6",
+		}
+		for app in bench.apps:
+			repo, branch = frappe.db.get_value("Frappe App", app.app, ["url", "branch"])
+			data["apps"].append(
+				{"name": app.scrubbed, "repo": repo, "branch": branch, "hash": app.hash,}
+			)
+
+		job = self.create_agent_job("benches", data)
+		job_id = self.post("benches", data)["job"]
+		job.job_id = job_id
+		job.save()
+
+	def post(self, path, data):
+		url = f"http://localhost:{self.port}/{path}"
+		result = requests.post(url, json=data)
+		return result.json()
+
+	def get(self, path):
+		url = f"http://localhost:{self.port}/{path}"
+		result = requests.get(url)
+		return result.json()
+
+	def create_agent_job(self, path, data):
+		job = frappe.get_doc(
+			{
+				"doctype": "Agent Job",
+				"server": self.server,
+				"status": "Pending",
+				"request_method": "POST",
+				"request_path": path,
+				"request_data": json.dumps(data, indent=4, sort_keys=True),
+				"job_type": "New Bench",
+			}
+		).insert()
+		return job
+
+	def get_job_status(self, id):
+		status = self.get(f"jobs/{id}")
+		return status
