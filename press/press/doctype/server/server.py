@@ -6,7 +6,10 @@ from __future__ import unicode_literals
 
 # import frappe
 from frappe.model.document import Document
+from press.press.doctype.bench.bench import Agent
 
 
 class Server(Document):
-	pass
+	def validate(self):
+		agent = Agent(self.proxy_server, server_type="Proxy Server")
+		agent.new_server(self.ip)
