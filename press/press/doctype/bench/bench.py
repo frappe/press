@@ -87,6 +87,27 @@ class Agent:
 		job.job_id = job_id
 		job.save()
 
+	def new_domain(self, domain):
+		data = {"name": domain}
+		job = self.create_agent_job("Add Host to Proxy", "proxy/hosts", data)
+		job_id = self.post(f"proxy/hosts", data)["job"]
+		job.job_id = job_id
+		job.save()
+
+	def new_server(self, server):
+		data = {"name": server}
+		job = self.create_agent_job("Add Upstream to Proxy", "proxy/upstreams", data)
+		job_id = self.post(f"proxy/upstreams", data)["job"]
+		job.job_id = job_id
+		job.save()
+
+	def new_upstream_site(self, server, site):
+		data = {"name": site}
+		job = self.create_agent_job("Add Site to Upstream", f"proxy/upstreams/{server}/sites", data)
+		job_id = self.post(f"proxy/upstreams/{server}/sites", data)["job"]
+		job.job_id = job_id
+		job.save()
+
 	def post(self, path, data):
 		url = f"http://localhost:{self.port}/{path}"
 		result = requests.post(url, json=data)
