@@ -10,3 +10,5 @@ def get_context(context):
 	if not frappe.request.path.endswith("/"):
 		frappe.local.flags.redirect_location = "dashboard/"
 		raise frappe.Redirect
+
+	return {"base_template_path": "press/templates/pages/base.html"}
