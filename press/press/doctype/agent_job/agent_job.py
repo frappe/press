@@ -31,11 +31,11 @@ class AgentJob(Document):
 def poll_pending_jobs():
 	jobs = frappe.get_all(
 		"Agent Job",
-		fields=["name", "server", "job_id"],
+		fields=["name", "server", "server_type", "job_id"],
 		filters={"status": ("in", ["Pending", "Running"])},
 	)
 	for job in jobs:
-		agent = Agent(job.server)
+		agent = Agent(job.server, server_type=job.server_type)
 		polled = agent.get_job_status(job.job_id)
 
 		# Update Job Status

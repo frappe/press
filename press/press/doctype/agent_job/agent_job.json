@@ -5,6 +5,7 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "server_type",
   "server",
   "job_type",
   "status",
@@ -19,10 +20,10 @@
  "fields": [
   {
    "fieldname": "server",
-   "fieldtype": "Link",
+   "fieldtype": "Dynamic Link",
    "in_list_view": 1,
    "label": "Server",
-   "options": "Server",
+   "options": "server_type",
    "reqd": 1
   },
   {
@@ -77,10 +78,17 @@
    "fieldname": "data",
    "fieldtype": "Code",
    "label": "Data"
+  },
+  {
+   "fieldname": "server_type",
+   "fieldtype": "Link",
+   "label": "Server Type",
+   "options": "DocType",
+   "reqd": 1
   }
  ],
  "links": [],
- "modified": "2020-01-14 14:38:48.159283",
+ "modified": "2020-01-15 17:59:17.678895",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Job",

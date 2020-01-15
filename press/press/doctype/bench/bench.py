@@ -29,7 +29,8 @@ class Bench(Document):
 
 
 class Agent:
-	def __init__(self, server):
+	def __init__(self, server, server_type="Server"):
+		self.server_type = server_type
 		self.server = server
 		self.port = 25052
 
@@ -100,6 +101,7 @@ class Agent:
 		job = frappe.get_doc(
 			{
 				"doctype": "Agent Job",
+				"server_type": self.server_type,
 				"server": self.server,
 				"status": "Pending",
 				"request_method": "POST",
