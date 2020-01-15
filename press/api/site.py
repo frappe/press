@@ -29,7 +29,7 @@ def all():
 @frappe.whitelist()
 def get(name):
 	site = frappe.get_doc("Site", name)
-	apps = [{"name": app.app, "version": app.version} for app in site.apps]
+	apps = [{"name": app.app} for app in site.apps]
 	return {
 		"name": site.name,
 		"status": site.status,
