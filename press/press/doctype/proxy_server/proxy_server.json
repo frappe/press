@@ -1,14 +1,12 @@
 {
  "actions": [],
  "autoname": "Prompt",
- "creation": "2019-12-09 12:34:13.844800",
+ "creation": "2020-01-14 17:55:10.884750",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "ip",
-  "mariadb_root_password",
-  "proxy_server"
+  "ip"
  ],
  "fields": [
   {
@@ -16,27 +14,14 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "IP",
-   "reqd": 1,
-   "set_only_once": 1
-  },
-  {
-   "fieldname": "mariadb_root_password",
-   "fieldtype": "Password",
-   "label": "MariaDB Root Password"
-  },
-  {
-   "fieldname": "proxy_server",
-   "fieldtype": "Link",
-   "label": "Proxy Server",
-   "options": "Proxy Server",
    "reqd": 1
   }
  ],
  "links": [],
- "modified": "2020-01-14 17:57:32.286814",
+ "modified": "2020-01-14 17:55:38.107464",
  "modified_by": "Administrator",
  "module": "Press",
- "name": "Server",
+ "name": "Proxy Server",
  "owner": "Administrator",
  "permissions": [
   {
