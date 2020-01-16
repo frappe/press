@@ -22,6 +22,7 @@
 	</div>
 	<div class="w-5/6">
 	  <div class="h-12 flex justify-between" id="navigation">
+		<div></div>
 		<div class="self-center mx-4 flex flex-row">
 		  <i data-feather="activity" class="mr-3 h-5 w-5 self-center text-gray-500 hover:text-gray-700 cursor-pointer"></i>
 		  <i data-feather="bell" class="mr-3 h-5 w-5 self-center text-gray-500 hover:text-gray-700 cursor-pointer"></i>
