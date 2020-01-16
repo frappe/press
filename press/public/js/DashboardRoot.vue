@@ -25,7 +25,7 @@
 		<div class="self-center mx-4 flex flex-row">
 		  <i data-feather="activity" class="mr-3 h-5 w-5 self-center text-gray-500 hover:text-gray-700 cursor-pointer"></i>
 		  <i data-feather="bell" class="mr-3 h-5 w-5 self-center text-gray-500 hover:text-gray-700 cursor-pointer"></i>
-		  <img class="h-8 w-8 rounded-full ml-2 hover:shadow-md" src="https://www.journalpost.co.uk/wp-content/uploads/2018/05/26993814_1557482061001106_2954167055747999925_n.jpg"></img>
+		  <img class="h-8 w-8 rounded-full ml-2 hover:shadow-md" src="/assets/press/images/user.png">
 		</div>
 	  </div>
 	  <div id="body" class="mx-12">
