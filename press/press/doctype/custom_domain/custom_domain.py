@@ -9,7 +9,6 @@ from press.press.doctype.bench.bench import Agent
 
 
 class CustomDomain(Document):
-	pass
 	def validate(self):
 		agent = Agent(self.proxy_server, server_type="Proxy Server")
 		agent.new_domain(self.name)
