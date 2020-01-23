@@ -1,0 +1,183 @@
+[
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2020-01-14 15:08:11.839256",
+  "name": "New Site",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "steps": [
+   {
+    "parent": "New Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "New Site"
+   },
+   {
+    "parent": "New Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Install Apps"
+   },
+   {
+    "parent": "New Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Site Update Configuration"
+   },
+   {
+    "parent": "New Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Setup NGINX"
+   },
+   {
+    "parent": "New Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2020-01-15 17:37:17.392776",
+  "name": "Add Host to Proxy",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "steps": [
+   {
+    "parent": "Add Host to Proxy",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Add Host File"
+   },
+   {
+    "parent": "Add Host to Proxy",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Generate Hosts Configuration"
+   },
+   {
+    "parent": "Add Host to Proxy",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2020-01-15 17:38:03.549871",
+  "name": "Add Site to Upstream",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "steps": [
+   {
+    "parent": "Add Site to Upstream",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Add Site File to Upstream Directory"
+   },
+   {
+    "parent": "Add Site to Upstream",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Generate Upstream Map Configuration"
+   },
+   {
+    "parent": "Add Site to Upstream",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2020-01-15 17:39:01.766866",
+  "name": "Add Upstream to Proxy",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "steps": [
+   {
+    "parent": "Add Upstream to Proxy",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Add Upstream Directory"
+   },
+   {
+    "parent": "Add Upstream to Proxy",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Generate Upstream List Configuration"
+   },
+   {
+    "parent": "Add Upstream to Proxy",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2020-01-14 11:51:03.734390",
+  "name": "New Bench",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "steps": [
+   {
+    "parent": "New Bench",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Initialize"
+   },
+   {
+    "parent": "New Bench",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Set Configuration"
+   },
+   {
+    "parent": "New Bench",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Setup Redis"
+   },
+   {
+    "parent": "New Bench",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Reset Apps"
+   },
+   {
+    "parent": "New Bench",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Setup Requirements"
+   },
+   {
+    "parent": "New Bench",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Build"
+   },
+   {
+    "parent": "New Bench",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Setup Production"
+   }
+  ]
+ }
+]
