@@ -1,0 +1,69 @@
+---
+- name: Clone agent
+  become: yes
+  become_user: frappe
+  git:
+    repo: 'https://adityahase:uqknfFYBrziJ4kohumR8YhcKjyhYRmJe@github.com:/frappe/agent'
+    dest: /home/frappe/agent/repo
+
+- name: Install agent
+  become: yes
+  become_user: frappe
+  pip: 
+    name: file:///home/frappe/agent/repo
+    virtualenv: /home/frappe/agent/env
+    virtualenv_python: python3
+    editable: yes
+
+- name: Symlink nginx configuration
+  file:
+    src: /home/frappe/agent/nginx.conf
+    dest: /etc/nginx/conf.d/agent.conf
+    state: link
+    force: yes
+    follow: no
+
+- name: Symlink supervisor configuration
+  file:
+    src: /home/frappe/agent/supervisor.conf
+    dest: /etc/supervisor/conf.d/agent.conf
+    state: link
+    force: yes
+    follow: no
+
+- name: Create logs directory for supervisor
+  become: yes
+  become_user: frappe
+  file:
+    dest: /home/frappe/agent/logs
+    state: directory
+
+- name: Generate agent configuration 
+  become: yes
+  become_user: frappe
+  command: "/home/frappe/agent/env/bin/agent setup config --name {{ server }} --workers {{ workers }}"
+  args:
+    chdir: /home/frappe/agent
+
+- name: Setup agent authentication 
+  become: yes
+  become_user: frappe
+  command: "/home/frappe/agent/env/bin/agent setup authentication --password {{ password }}"
+  args:
+    chdir: /home/frappe/agent
+
+- name: Setup agent supervisor
+  become: yes
+  become_user: frappe
+  command: /home/frappe/agent/env/bin/agent setup supervisor
+  args:
+    chdir: /home/frappe/agent
+
+- name: Setup agent nginx 
+  become: yes
+  become_user: frappe
+  command: /home/frappe/agent/env/bin/agent setup nginx 
+  args:
+    chdir: /home/frappe/agent
+
+...

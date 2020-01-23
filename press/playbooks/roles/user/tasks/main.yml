@@ -1,0 +1,15 @@
+---
+- name: Create frappe user
+  user:
+    name: frappe
+    groups: sudo
+    shell: /bin/bash
+    append: yes
+    uid: 1000
+
+- name: Allow passwordless sudo access to frappe
+  copy:
+    src: files/sudoers
+    dest: /etc/sudoers.d/frappe
+
+...
