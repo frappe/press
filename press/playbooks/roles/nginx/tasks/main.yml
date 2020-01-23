@@ -1,0 +1,31 @@
+---
+- name: Install nginx
+  apt:
+    pkg: nginx
+    state: present
+
+- name: Copy nginx configuration.
+  template:
+    src: files/nginx.conf
+    dest: /etc/nginx/nginx.conf
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Remove default enabled nginx vhost
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+
+- name: Remove default available nginx vhost
+  file:
+    path: /etc/nginx/sites-available/default
+    state: absent
+
+- name: Restart nginx and enable at boot
+  service: 
+    name: nginx 
+    state: restarted
+    enabled: yes
+
+...
