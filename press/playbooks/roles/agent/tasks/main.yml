@@ -45,6 +45,13 @@
   args:
     chdir: /home/frappe/agent
 
+- name: Setup agent database
+  become: yes
+  become_user: frappe
+  command: /home/frappe/agent/env/bin/agent setup database
+  args:
+    chdir: /home/frappe/agent
+
 - name: Setup agent authentication 
   become: yes
   become_user: frappe
