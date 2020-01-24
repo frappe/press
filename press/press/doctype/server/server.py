@@ -11,5 +11,6 @@ from press.press.doctype.bench.bench import Agent
 
 class Server(Document):
 	def validate(self):
-		agent = Agent(self.proxy_server, server_type="Proxy Server")
-		agent.new_server(self.ip)
+	def ping(self):
+		agent = Agent(self)
+		return agent.ping()
