@@ -113,16 +113,23 @@ class Agent:
 
 	def post(self, path, data):
 		url = f"http://localhost:{self.port}/{path}"
-		result = requests.post(url, json=data)
+		password = get_decrypted_password(self.server_type, self.server.name, "agent_password")
+		headers = {"Authorization": f"bearer {password}"}
+		result = requests.post(url, headers=headers, json=data)
 		try:
-		return result.json()
+			return result.json()
 		except:
 			frappe.log_error(result.text, title="Agent Request Exception")
 
 	def get(self, path):
 		url = f"http://localhost:{self.port}/{path}"
-		result = requests.get(url)
-		return result.json()
+		password = get_decrypted_password(self.server_type, self.server.name, "agent_password")
+		headers = {"Authorization": f"bearer {password}"}
+		result = requests.get(url, headers=headers)
+		try:
+			return result.json()
+		except:
+			frappe.log_error(result.text, title="Agent Request Exception")
 
 	def create_agent_job(self, job_type, path, data):
 		job = frappe.get_doc(
