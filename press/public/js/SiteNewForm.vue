@@ -116,8 +116,6 @@ export default {
 			});
 			if (response.ok) {
 				const site = await response.json();
-				console.log("Nothing Went Wrong");
-				console.log(site);
 			} else {
 				console.log("Something Went Wrong");
 			}

@@ -29,8 +29,6 @@ export default {
 			let response = await fetch("/api/method/press.api.site.all");
 			if (response.ok) {
 				const sites = await response.json();
-				console.log("Nothing Went Wrong");
-				console.log(sites);
 				this.sites = sites.message;
 			} else {
 				console.log("Something Went Wrong");

@@ -79,8 +79,6 @@ export default {
 			let response = await fetch(`/api/method/press.api.site.get?name=${this.$route.params.name}`);
 			if (response.ok) {
 				const site = await response.json();
-				console.log("Nothing Went Wrong");
-				console.log(site);
 				this.site = site.message;
 			} else {
 				console.log("Something Went Wrong");

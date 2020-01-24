@@ -29,8 +29,6 @@ export default {
 			let response = await fetch("/api/method/press.api.payment.all");
 			if (response.ok) {
 				const payments = await response.json();
-				console.log("Nothing Went Wrong");
-				console.log(payments);
 				this.payments = payments.message;
 			} else {
 				console.log("Something Went Wrong");
