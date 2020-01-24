@@ -23,9 +23,9 @@
 						<div v-for="app in bench.apps" :key="app" class="w-1/6 p-3">
 							<input type="checkbox" v-model="site.apps" :value="app" class="px-4 py-4 bg-gray-400 rounded hover:shadow">{{ app }}</div>
 						</div>
-						</div>
-						</div>
-						</div>
+					</div>
+				</div>
+		  	</div>
 		  	<div class="-mx-3 mb-8 flex flex-row">
 		  		<div class="w-1/2 pr-12">
 					<div class="px-3">
@@ -120,7 +120,8 @@ export default {
 			});
 			if (response.ok) {
 				const site = await response.json();
-			} else {
+					this.$router.push({name: "site-detail", params: {name: site.message.name}});
+				} else {
 				console.log("Something Went Wrong");
 			}
 		}
