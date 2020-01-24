@@ -24,6 +24,7 @@
    "in_list_view": 1,
    "label": "Server",
    "options": "server_type",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -32,29 +33,35 @@
    "in_list_view": 1,
    "label": "Status",
    "options": "Pending\nRunning\nSuccess\nFailure",
+   "read_only": 1,
    "reqd": 1
   },
   {
    "fieldname": "request_method",
-   "fieldtype": "Data",
+   "fieldtype": "Select",
    "label": "Request Method",
+   "options": "GET\nPOST\nDELETE",
+   "read_only": 1,
    "reqd": 1
   },
   {
    "fieldname": "request_data",
    "fieldtype": "Code",
    "label": "Request Data",
+   "read_only": 1,
    "reqd": 1
   },
   {
    "fieldname": "job_id",
    "fieldtype": "Data",
-   "label": "Job ID"
+   "label": "Job ID",
+   "read_only": 1
   },
   {
    "fieldname": "request_path",
    "fieldtype": "Data",
    "label": "Request Path",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -62,33 +69,39 @@
    "fieldtype": "Link",
    "label": "Job Type",
    "options": "Agent Job Type",
+   "read_only": 1,
    "reqd": 1
   },
   {
    "fieldname": "output",
    "fieldtype": "Code",
-   "label": "Output"
+   "label": "Output",
+   "read_only": 1
   },
   {
    "fieldname": "traceback",
    "fieldtype": "Code",
-   "label": "Traceback"
+   "label": "Traceback",
+   "read_only": 1
   },
   {
    "fieldname": "data",
    "fieldtype": "Code",
-   "label": "Data"
+   "label": "Data",
+   "read_only": 1
   },
   {
    "fieldname": "server_type",
    "fieldtype": "Link",
    "label": "Server Type",
    "options": "DocType",
+   "read_only": 1,
    "reqd": 1
   }
  ],
+ "in_create": 1,
  "links": [],
- "modified": "2020-01-15 17:59:17.678895",
+ "modified": "2020-01-16 18:47:54.139539",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Job",
