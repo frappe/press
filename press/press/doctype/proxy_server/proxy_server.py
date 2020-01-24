@@ -5,6 +5,10 @@
 from __future__ import unicode_literals
 # import frappe
 from frappe.model.document import Document
+from press.press.doctype.agent_job.agent_job import Agent
+
 
 class ProxyServer(Document):
-	pass
+	def ping(self):
+		agent = Agent(self, server_type="Proxy Server")
+		return agent.ping()
