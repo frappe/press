@@ -96,6 +96,7 @@ scheduler_events = {
 	"fast": ["press.press.doctype.agent_job.agent_job.poll_pending_jobs"],
 }
 
+fixtures = ["Agent Job Type"]
 # Testing
 # -------
 
