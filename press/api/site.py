@@ -17,6 +17,11 @@ def new(site):
 		"password": get_decrypted_password("Site", site.name, "password"),
 	}
 
+@frappe.whitelist()
+def available():
+	bench = frappe.get_all("Bench", limit=1)[0].name
+	apps = frappe.get_all("Installed App", fields=["app"], filters={"parent": bench}, order_by="idx")
+	return {"name": bench, "apps": [app.app for app in apps]}
 
 @frappe.whitelist()
 def all():
