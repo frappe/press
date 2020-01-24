@@ -4,6 +4,9 @@
 			<div>Sites</div>
 			<div>{{ sites.length }}</div>
 		</div>
+		<div>
+			<router-link :to="{ name: 'site-new'}">New Site</router-link>
+		</div>
 		<div v-for="site in sites" v-bind:key="site.name">
 			<router-link :to="{ name: 'site-detail', params: { name: site.name }}">
 				<div>{{ site.name }}</div>
