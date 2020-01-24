@@ -7,8 +7,10 @@
  "engine": "InnoDB",
  "field_order": [
   "ip",
+  "private_ip",
   "mariadb_root_password",
-  "proxy_server"
+  "proxy_server",
+  "agent_password"
  ],
  "fields": [
   {
@@ -30,10 +32,21 @@
    "label": "Proxy Server",
    "options": "Proxy Server",
    "reqd": 1
+  },
+  {
+   "fieldname": "private_ip",
+   "fieldtype": "Data",
+   "label": "Private IP",
+   "reqd": 1
+  },
+  {
+   "fieldname": "agent_password",
+   "fieldtype": "Password",
+   "label": "Agent Password"
   }
  ],
  "links": [],
- "modified": "2020-01-14 17:57:32.286814",
+ "modified": "2020-01-23 18:31:57.187090",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
