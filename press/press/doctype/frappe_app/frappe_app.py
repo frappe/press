@@ -10,7 +10,7 @@ from github import Github
 
 
 class FrappeApp(Document):
-	def validate(self):
+	def after_insert(self):
 		self.create_app_release()
 
 	def create_app_release(self):
