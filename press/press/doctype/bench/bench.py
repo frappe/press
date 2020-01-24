@@ -114,7 +114,10 @@ class Agent:
 	def post(self, path, data):
 		url = f"http://localhost:{self.port}/{path}"
 		result = requests.post(url, json=data)
+		try:
 		return result.json()
+		except:
+			frappe.log_error(result.text, title="Agent Request Exception")
 
 	def get(self, path):
 		url = f"http://localhost:{self.port}/{path}"
