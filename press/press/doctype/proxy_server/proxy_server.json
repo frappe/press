@@ -6,7 +6,9 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "ip"
+  "ip",
+  "private_ip",
+  "agent_password"
  ],
  "fields": [
   {
@@ -15,10 +17,21 @@
    "in_list_view": 1,
    "label": "IP",
    "reqd": 1
+  },
+  {
+   "fieldname": "private_ip",
+   "fieldtype": "Data",
+   "label": "Private IP",
+   "reqd": 1
+  },
+  {
+   "fieldname": "agent_password",
+   "fieldtype": "Password",
+   "label": "Agent Password"
   }
  ],
  "links": [],
- "modified": "2020-01-14 17:55:38.107464",
+ "modified": "2020-01-23 18:32:15.349012",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",
