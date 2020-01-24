@@ -108,6 +108,9 @@ class Agent:
 		job.job_id = job_id
 		job.save()
 
+	def ping(self):
+		return self.get(f"ping")["message"]
+
 	def post(self, path, data):
 		url = f"http://localhost:{self.port}/{path}"
 		result = requests.post(url, json=data)
