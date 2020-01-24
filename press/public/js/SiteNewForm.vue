@@ -20,24 +20,12 @@
 					Select Apps to Install
 					</label>
 					<div class="flex flex-wrap -mx-3">
-						<div class="w-1/6 p-3">
-							<div class="h-32 bg-gray-400 rounded hover:shadow"></div>
+						<div v-for="app in bench.apps" :key="app" class="w-1/6 p-3">
+							<input type="checkbox" v-model="site.apps" :value="app" class="px-4 py-4 bg-gray-400 rounded hover:shadow">{{ app }}</div>
 						</div>
-						<div class="w-1/6 p-3">
-							<div class="h-32 bg-gray-400 rounded hover:shadow"></div>
 						</div>
-						<div class="w-1/6 p-3">
-							<div class="h-32 bg-gray-400 rounded hover:shadow"></div>
 						</div>
-						<div class="w-1/6 p-3">
-							<div class="h-32 bg-gray-400 rounded hover:shadow"></div>
 						</div>
-						<div class="w-1/6 p-3">
-							<div class="h-32 bg-gray-400 rounded hover:shadow"></div>
-						</div>
-					</div>
-				</div>
-		  	</div>
 		  	<div class="-mx-3 mb-8 flex flex-row">
 		  		<div class="w-1/2 pr-12">
 					<div class="px-3">
@@ -102,13 +90,29 @@ export default {
 		return {
 			site: {
 				name: null,
+				apps: [],
 			},
+			bench: {
+				name: null,
+				apps: [],
+			}
 		};
 	},
+	mounted() {
+		this.get();
+	},
 	methods: {
+		get: async function() {
+			let response = await fetch("/api/method/press.api.site.available");
+			if (response.ok) {
+				const bench = await response.json();
+				this.bench = bench.message;
+			} else {
+				console.log("Something Went Wrong");
+			}
+		},
 		create: async function() {
 			let data = {site: this.site};
-			// data["csrf_token"] = frappe.csrf_token;
 			let response = await fetch("/api/method/press.api.site.new", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
