@@ -36,7 +36,7 @@ class Team(Document):
 
 		# set billing name
 		if not self.billing_name:
-			self.billing_name = frappe.utils.get_fullname(self.team)
+			self.billing_name = frappe.utils.get_fullname(self.name)
 
 		self.validate_onboarding()
 
