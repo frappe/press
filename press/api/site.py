@@ -12,18 +12,28 @@ def new(site):
 	server = frappe.get_all("Server", limit=1)[0].name
 	bench = frappe.get_all("Bench", filters={"server": server}, limit=1)[0].name
 	site = frappe.get_doc(
-		{"doctype": "Site", "name": site["name"], "server": server, "bench": bench, "apps": [{"app": app} for app in site["apps"]]},
+		{
+			"doctype": "Site",
+			"name": site["name"],
+			"server": server,
+			"bench": bench,
+			"apps": [{"app": app} for app in site["apps"]],
+		},
 	).insert(ignore_permissions=True)
 	return {
 		"name": site.name,
 		"password": get_decrypted_password("Site", site.name, "password"),
 	}
 
+
 @frappe.whitelist()
 def available():
 	bench = frappe.get_all("Bench", limit=1)[0].name
-	apps = frappe.get_all("Installed App", fields=["app"], filters={"parent": bench}, order_by="idx")
+	apps = frappe.get_all(
+		"Installed App", fields=["app"], filters={"parent": bench}, order_by="idx"
+	)
 	return {"name": bench, "apps": [app.app for app in apps]}
+
 
 @frappe.whitelist()
 def all():
