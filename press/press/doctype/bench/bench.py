@@ -61,7 +61,7 @@ class Agent:
 			"config": config,
 			"apps": [],
 			"name": bench.name,
-			"python": "/usr/bin/python3.6",
+			"python": "python3",
 		}
 		for app in bench.apps:
 			repo, branch = frappe.db.get_value("Frappe App", app.app, ["url", "branch"])
