@@ -36,7 +36,7 @@ class Agent:
 	def __init__(self, server, server_type="Server"):
 		self.server_type = server_type
 		self.server = server
-		self.port = 25052
+		self.port = 80
 
 	def new_bench(self, bench):
 		config = {
@@ -126,8 +126,8 @@ class Agent:
 		return self.get(f"ping")["message"]
 
 	def post(self, path, data):
-		url = f"http://localhost:{self.port}/{path}"
-		password = get_decrypted_password(self.server_type, self.server.name, "agent_password")
+		url = f"http://{self.server}:{self.port}/agent/{path}"
+		password = get_decrypted_password(self.server_type, self.server, "agent_password")
 		headers = {"Authorization": f"bearer {password}"}
 		result = requests.post(url, headers=headers, json=data)
 		try:
@@ -136,8 +136,8 @@ class Agent:
 			frappe.log_error(result.text, title="Agent Request Exception")
 
 	def get(self, path):
-		url = f"http://localhost:{self.port}/{path}"
-		password = get_decrypted_password(self.server_type, self.server.name, "agent_password")
+		url = f"http://{self.server}:{self.port}/agent/{path}"
+		password = get_decrypted_password(self.server_type, self.server, "agent_password")
 		headers = {"Authorization": f"bearer {password}"}
 		result = requests.get(url, headers=headers)
 		try:
