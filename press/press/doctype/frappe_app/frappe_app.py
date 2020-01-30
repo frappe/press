@@ -10,6 +10,9 @@ from github import Github
 
 
 class FrappeApp(Document):
+	def validate(self):
+		*_, self.repo_owner, self.scrubbed = self.url.split("/")
+
 	def after_insert(self):
 		self.create_app_release()
 
