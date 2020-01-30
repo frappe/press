@@ -31,7 +31,7 @@
   }
  ],
  "links": [],
- "modified": "2020-01-23 18:32:15.349012",
+ "modified": "2020-01-24 14:04:17.708753",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",
@@ -50,7 +50,6 @@
    "write": 1
   }
  ],
- "quick_entry": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
  "track_changes": 1

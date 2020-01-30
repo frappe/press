@@ -30,8 +30,7 @@
    "fieldname": "proxy_server",
    "fieldtype": "Link",
    "label": "Proxy Server",
-   "options": "Proxy Server",
-   "reqd": 1
+   "options": "Proxy Server"
   },
   {
    "fieldname": "private_ip",
@@ -46,7 +45,7 @@
   }
  ],
  "links": [],
- "modified": "2020-01-23 18:31:57.187090",
+ "modified": "2020-01-24 14:05:52.077956",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
@@ -65,7 +64,6 @@
    "write": 1
   }
  ],
- "quick_entry": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
  "track_changes": 1
