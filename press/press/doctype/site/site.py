@@ -12,8 +12,8 @@ from press.press.doctype.agent_job.agent_job import Agent
 
 class Site(Document):
 	def validate(self):
-		if not self.password:
-			self.password = frappe.generate_hash(length=16)
+		if not self.admin_password:
+			self.admin_password = frappe.generate_hash(length=16)
 
 	def after_insert(self):
 		self.create_agent_request()
