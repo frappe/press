@@ -8,4 +8,6 @@
     - role: user
     - role: nginx
     - role: agent
+    - role: proxy
+    
 ...

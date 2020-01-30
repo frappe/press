@@ -31,3 +31,12 @@
 
 - name: Setup Fonts
   command: "bench setup fonts"
+
+- name: Create benches directory
+  become: yes
+  become_user: frappe
+  file:
+    dest: /home/frappe/benches
+    state: directory
+
+...
