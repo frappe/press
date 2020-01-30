@@ -10,5 +10,8 @@ frappe.ui.form.on('Proxy Server', {
 			const filters = {server: frm.doc.name};
 			frappe.set_route("List", "Agent Job", filters);
 		});
+		frm.add_custom_button(__('Update Agent'), () => {
+			frm.call({method: "update_agent", doc: frm.doc, callback: result => frappe.msgprint(result.message)});
+		});
 	}
 });

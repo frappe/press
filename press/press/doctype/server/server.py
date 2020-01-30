@@ -10,10 +10,14 @@ from press.press.doctype.bench.bench import Agent
 
 
 class Server(Document):
-	def add_upstream_to_proxy(self):		
+	def add_upstream_to_proxy(self):
 		agent = Agent(self.proxy_server, server_type="Proxy Server")
 		agent.new_server(self.ip)
 
 	def ping(self):
-		agent = Agent(self)
+		agent = Agent(self.name)
 		return agent.ping()
+
+	def update_agent(self):
+		agent = Agent(self.name)
+		return agent.update()
