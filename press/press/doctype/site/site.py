@@ -21,8 +21,10 @@ class Site(Document):
 	def create_agent_request(self):
 		agent = Agent(self.server)
 		agent.new_site(self)
+
 		server = frappe.get_all(
-			"Server", filters={"name": self.server}, fields=["proxy_server", "ip"], limit=1
+			"Server", filters={"name": self.server}, fields=["proxy_server"], limit=1
 		)[0]
+
 		agent = Agent(server.proxy_server, server_type="Proxy Server")
-		agent.new_upstream_site(server.ip, self.name)
+		agent.new_upstream_site(self.server, self.name)

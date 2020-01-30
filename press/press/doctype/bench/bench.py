@@ -101,7 +101,8 @@ class Agent:
 		job.save()
 
 	def new_server(self, server):
-		data = {"name": server}
+		ip = frappe.db.get_value("Server", server, "ip")
+		data = {"name": ip}
 		job = self.create_agent_job(
 			"Add Upstream to Proxy", "proxy/upstreams", data, upstream=server
 		)
@@ -110,15 +111,16 @@ class Agent:
 		job.save()
 
 	def new_upstream_site(self, server, site):
+		ip = frappe.db.get_value("Server", server, "ip")
 		data = {"name": site}
 		job = self.create_agent_job(
 			"Add Site to Upstream",
-			f"proxy/upstreams/{server}/sites",
+			f"proxy/upstreams/{ip}/sites",
 			data,
 			site=site,
 			upstream=server,
 		)
-		job_id = self.post(f"proxy/upstreams/{server}/sites", data)["job"]
+		job_id = self.post(f"proxy/upstreams/{ip}/sites", data)["job"]
 		job.job_id = job_id
 		job.save()
 
