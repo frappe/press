@@ -1,0 +1,52 @@
+---
+- name: Create nginx directory
+  become: yes
+  become_user: frappe
+  file:
+    dest: /home/frappe/nginx
+    state: directory
+
+- name: Create nginx hosts configuration file (empty)
+  file:
+    path: /home/frappe/nginx/hosts.conf
+    state: touch
+
+- name: Symlink nginx hosts configuration
+  file:
+    src: /home/frappe/nginx/hosts.conf
+    dest: /etc/nginx/conf.d/hosts.conf
+    state: link
+    force: yes
+    follow: no
+
+- name: Create nginx upstream list configuration file (empty)
+  become: yes
+  become_user: frappe
+  file:
+    path: /home/frappe/nginx/upstreams.list
+    state: touch
+
+- name: Symlink nginx upstream list configuration
+  file:
+    src: /home/frappe/nginx/upstreams.list
+    dest: /etc/nginx/conf.d/upstreams.list
+    state: link
+    force: yes
+    follow: no
+
+- name: Create nginx upstream map configuration file (empty)
+  become: yes
+  become_user: frappe
+  file:
+    path: /home/frappe/nginx/upstreams.map
+    state: touch
+
+- name: Symlink nginx upstream map configuration
+  file:
+    src: /home/frappe/nginx/upstreams.map
+    dest: /etc/nginx/conf.d/upstreams.map
+    state: link
+    force: yes
+    follow: no
+    
+...
