@@ -41,6 +41,10 @@ def poll_pending_jobs():
 		# Update Job Status
 		# If it is worthy of an update
 		if job.status != polled["status"]:
+			frappe.db.set_value("Agent Job", job.name, "start", polled["start"])
+			frappe.db.set_value("Agent Job", job.name, "end", polled["end"])
+			frappe.db.set_value("Agent Job", job.name, "duration", polled["duration"])
+
 			frappe.db.set_value("Agent Job", job.name, "status", polled["status"])
 			frappe.db.set_value(
 				"Agent Job", job.name, "data", json.dumps(polled["data"], indent=4, sort_keys=True)
@@ -64,6 +68,10 @@ def poll_pending_jobs():
 			if agent_job_step:
 				agent_job_step = agent_job_step[0]
 				if agent_job_step.status != step["status"]:
+					frappe.db.set_value("Agent Job Step", agent_job_step.name, "start", step["start"])
+					frappe.db.set_value("Agent Job Step", agent_job_step.name, "end", step["end"])
+					frappe.db.set_value("Agent Job Step", agent_job_step.name, "duration", step["duration"])
+
 					frappe.db.set_value(
 						"Agent Job Step", agent_job_step.name, "status", step["status"]
 					)

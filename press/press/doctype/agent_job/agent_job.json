@@ -18,7 +18,10 @@
   "job_id",
   "output",
   "traceback",
-  "data"
+  "data",
+  "start",
+  "end",
+  "duration"
  ],
  "fields": [
   {
@@ -124,12 +127,31 @@
    "fieldname": "upstream",
    "fieldtype": "Link",
    "label": "Upstream",
-   "options": "Server"
+   "options": "Server",
+   "read_only": 1
+  },
+  {
+   "fieldname": "start",
+   "fieldtype": "Datetime",
+   "label": "Start",
+   "read_only": 1
+  },
+  {
+   "fieldname": "end",
+   "fieldtype": "Datetime",
+   "label": "End",
+   "read_only": 1
+  },
+  {
+   "fieldname": "duration",
+   "fieldtype": "Time",
+   "label": "Duration",
+   "read_only": 1
   }
  ],
  "in_create": 1,
  "links": [],
- "modified": "2020-01-30 16:40:45.397824",
+ "modified": "2020-01-30 17:37:05.584538",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Job",

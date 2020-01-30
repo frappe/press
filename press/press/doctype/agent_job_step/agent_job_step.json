@@ -10,7 +10,10 @@
   "status",
   "output",
   "traceback",
-  "data"
+  "data",
+  "start",
+  "end",
+  "duration"
  ],
  "fields": [
   {
@@ -56,11 +59,29 @@
    "fieldtype": "Code",
    "label": "Data",
    "read_only": 1
+  },
+  {
+   "fieldname": "start",
+   "fieldtype": "Datetime",
+   "label": "Start",
+   "read_only": 1
+  },
+  {
+   "fieldname": "end",
+   "fieldtype": "Datetime",
+   "label": "End",
+   "read_only": 1
+  },
+  {
+   "fieldname": "duration",
+   "fieldtype": "Time",
+   "label": "Duration",
+   "read_only": 1
   }
  ],
  "in_create": 1,
  "links": [],
- "modified": "2020-01-16 18:47:43.835717",
+ "modified": "2020-01-30 17:20:30.443656",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Job Step",
