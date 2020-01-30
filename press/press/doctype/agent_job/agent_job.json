@@ -5,10 +5,13 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "status",
   "server_type",
   "server",
+  "upstream",
+  "bench",
+  "site",
   "job_type",
-  "status",
   "request_method",
   "request_data",
   "request_path",
@@ -22,6 +25,7 @@
    "fieldname": "server",
    "fieldtype": "Dynamic Link",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Server",
    "options": "server_type",
    "read_only": 1,
@@ -97,11 +101,35 @@
    "options": "DocType",
    "read_only": 1,
    "reqd": 1
+  },
+  {
+   "fieldname": "bench",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Bench",
+   "options": "Bench",
+   "read_only": 1
+  },
+  {
+   "fieldname": "site",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Site",
+   "options": "Site",
+   "read_only": 1
+  },
+  {
+   "fieldname": "upstream",
+   "fieldtype": "Link",
+   "label": "Upstream",
+   "options": "Server"
   }
  ],
  "in_create": 1,
  "links": [],
- "modified": "2020-01-16 18:47:54.139539",
+ "modified": "2020-01-30 16:40:45.397824",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Job",

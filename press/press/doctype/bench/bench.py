@@ -65,7 +65,7 @@ class Agent:
 				{"name": app.scrubbed, "repo": repo, "branch": branch, "hash": app.hash}
 			)
 
-		job = self.create_agent_job("New Bench", "benches", data)
+		job = self.create_agent_job("New Bench", "benches", data, bench=bench.name)
 		job_id = self.post("benches", data)["job"]
 		job.job_id = job_id
 		job.save()
@@ -82,7 +82,9 @@ class Agent:
 			"admin_password": site.password,
 		}
 
-		job = self.create_agent_job("New Site", f"benches/{site.bench}/sites", data)
+		job = self.create_agent_job(
+			"New Site", f"benches/{site.bench}/sites", data, bench=site.bench, site=site.name
+		)
 		job_id = self.post(f"benches/{site.bench}/sites", data)["job"]
 		job.job_id = job_id
 		job.save()
@@ -96,14 +98,22 @@ class Agent:
 
 	def new_server(self, server):
 		data = {"name": server}
-		job = self.create_agent_job("Add Upstream to Proxy", "proxy/upstreams", data)
+		job = self.create_agent_job(
+			"Add Upstream to Proxy", "proxy/upstreams", data, upstream=server
+		)
 		job_id = self.post(f"proxy/upstreams", data)["job"]
 		job.job_id = job_id
 		job.save()
 
 	def new_upstream_site(self, server, site):
 		data = {"name": site}
-		job = self.create_agent_job("Add Site to Upstream", f"proxy/upstreams/{server}/sites", data)
+		job = self.create_agent_job(
+			"Add Site to Upstream",
+			f"proxy/upstreams/{server}/sites",
+			data,
+			site=site,
+			upstream=server,
+		)
 		job_id = self.post(f"proxy/upstreams/{server}/sites", data)["job"]
 		job.job_id = job_id
 		job.save()
@@ -131,12 +141,15 @@ class Agent:
 		except:
 			frappe.log_error(result.text, title="Agent Request Exception")
 
-	def create_agent_job(self, job_type, path, data):
+	def create_agent_job(self, job_type, path, data, bench=None, site=None, upstream=None):
 		job = frappe.get_doc(
 			{
 				"doctype": "Agent Job",
 				"server_type": self.server_type,
 				"server": self.server,
+				"bench": bench,
+				"site": site,
+				"upstream": upstream,
 				"status": "Pending",
 				"request_method": "POST",
 				"request_path": path,

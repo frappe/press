@@ -6,5 +6,9 @@ frappe.ui.form.on('Proxy Server', {
 		frm.add_custom_button(__('Ping'), () => {
 			frm.call({method: "ping", doc: frm.doc, callback: result => frappe.msgprint(result.message)});
 		});
+		frm.add_custom_button(__('Jobs'), () => {
+			const filters = {server: frm.doc.name};
+			frappe.set_route("List", "Agent Job", filters);
+		});
 	}
 });
