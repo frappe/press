@@ -24,6 +24,10 @@ class Bench(Document):
 					"apps", {"app": release.app, "scrubbed": scrubbed, "hash": release.hash}
 				)
 
+	def after_insert(self):
+		self.create_agent_request()
+
+	def create_agent_request(self):
 		agent = Agent(self.server)
 		agent.new_bench(self)
 
@@ -79,7 +83,7 @@ class Agent:
 			"mariadb_root_password": get_decrypted_password(
 				"Server", site.server, "mariadb_root_password"
 			),
-			"admin_password": site.password,
+			"admin_password": get_decrypted_password("Site", site.name, "admin_password"),
 		}
 
 		job = self.create_agent_job(

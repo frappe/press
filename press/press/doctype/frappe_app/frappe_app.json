@@ -6,8 +6,8 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "scrubbed",
   "url",
+  "scrubbed",
   "branch",
   "repo_owner"
  ],
@@ -25,7 +25,6 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Scrubbed Name",
-   "reqd": 1,
    "set_only_once": 1
   },
   {
@@ -38,12 +37,11 @@
   {
    "fieldname": "repo_owner",
    "fieldtype": "Data",
-   "label": "Repo Owner",
-   "reqd": 1
+   "label": "Repo Owner"
   }
  ],
  "links": [],
- "modified": "2020-01-13 15:53:02.605668",
+ "modified": "2020-01-24 14:14:02.538327",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Frappe App",
