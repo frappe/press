@@ -6,6 +6,7 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "status",
   "server",
   "apps",
   "group",
@@ -39,10 +40,20 @@
    "fieldtype": "Link",
    "label": "Deploy Candidate",
    "options": "Deploy Candidate"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Pending\nInstalling\nActive\nBroken",
+   "reqd": 1
   }
  ],
  "links": [],
- "modified": "2020-01-13 17:05:46.144515",
+ "modified": "2020-01-24 15:33:51.026483",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",
