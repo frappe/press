@@ -134,7 +134,7 @@ class Agent:
 		result = requests.post(url, headers=headers, json=data)
 		try:
 			return result.json()
-		except:
+		except Exception:
 			frappe.log_error(result.text, title="Agent Request Exception")
 
 	def get(self, path):
@@ -144,7 +144,7 @@ class Agent:
 		result = requests.get(url, headers=headers)
 		try:
 			return result.json()
-		except:
+		except Exception:
 			frappe.log_error(result.text, title="Agent Request Exception")
 
 	def create_agent_job(self, job_type, path, data, bench=None, site=None, upstream=None):
