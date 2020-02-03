@@ -69,7 +69,9 @@ def poll_pending_jobs():
 				if agent_job_step.status != step["status"]:
 					frappe.db.set_value("Agent Job Step", agent_job_step.name, "start", step["start"])
 					frappe.db.set_value("Agent Job Step", agent_job_step.name, "end", step["end"])
-					frappe.db.set_value("Agent Job Step", agent_job_step.name, "duration", step["duration"])
+					frappe.db.set_value(
+						"Agent Job Step", agent_job_step.name, "duration", step["duration"]
+					)
 
 					frappe.db.set_value(
 						"Agent Job Step", agent_job_step.name, "status", step["status"]
@@ -86,3 +88,18 @@ def poll_pending_jobs():
 					frappe.db.set_value(
 						"Agent Job Step", agent_job_step.name, "traceback", step["data"].get("traceback")
 					)
+
+		job = frappe.get_doc("Agent Job", job.name)
+		process_job_updates(job)
+
+
+def process_job_updates(job):
+	from press.press.doctype.bench.bench import process_new_bench_job_update
+	from press.press.doctype.site.site import process_new_site_job_update
+
+	if job.job_type == "New Bench":
+		process_new_bench_job_update(job)
+	if job.job_type == "New Site":
+		process_new_site_job_update(job)
+	if job.job_type == "Add Site to Upstream":
+		process_new_site_job_update(job)
