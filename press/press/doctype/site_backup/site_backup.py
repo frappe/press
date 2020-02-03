@@ -7,6 +7,7 @@ import frappe
 from frappe.model.document import Document
 from press.press.doctype.bench.bench import Agent
 
+
 class SiteBackup(Document):
 	def after_insert(self):
 		site = frappe.get_doc("Site", self.site)
@@ -14,7 +15,10 @@ class SiteBackup(Document):
 		job = agent.backup_site(site)
 		frappe.db.set_value("Site Backup", self.name, "job", job.name)
 
+
 def process_backup_site_job_update(job):
-	backup = frappe.get_all("Site Backup", fields=["name", "status"], filters={"job": job.name})[0]
+	backup = frappe.get_all(
+		"Site Backup", fields=["name", "status"], filters={"job": job.name}
+	)[0]
 	if job.status != backup.status:
 		frappe.db.set_value("Site Backup", backup.name, "status", job.status)

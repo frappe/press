@@ -33,7 +33,8 @@ class Bench(Document):
 			else:
 				self.port_offset = 0
 
-		config = json.loads(frappe.db.get_single_value("Press Settings", "bench_configuration"))
+		config = frappe.db.get_single_value("Press Settings", "bench_configuration")
+		config = json.loads(config)
 		config.update(
 			{
 				"background_workers": self.workers,
@@ -113,14 +114,17 @@ class Agent:
 
 	def backup_site(self, site):
 		job = self.create_agent_job(
-			"Backup Site", f"benches/{site.bench}/sites/{site.name}/backup", {}, bench=site.bench, site=site.name
+			"Backup Site",
+			f"benches/{site.bench}/sites/{site.name}/backup",
+			{},
+			bench=site.bench,
+			site=site.name,
 		)
 		job_id = self.post(f"benches/{site.bench}/sites/{site.name}/backup", {})["job"]
 		job.job_id = job_id
 		job.save()
 		return job
 
-		
 	def new_domain(self, domain):
 		data = {"name": domain}
 		job = self.create_agent_job("Add Host to Proxy", "proxy/hosts", data)
