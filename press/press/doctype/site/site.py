@@ -5,7 +5,6 @@
 from __future__ import unicode_literals
 
 import frappe
-from frappe.core.utils import find
 from frappe.model.document import Document
 from press.press.doctype.agent_job.agent_job import Agent
 
