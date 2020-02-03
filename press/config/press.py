@@ -28,10 +28,10 @@ def get_data():
 				{"type": "doctype", "name": "Frappe App"},
 				{"type": "doctype", "name": "Release Group"},
 				{"type": "doctype", "name": "App Release"},
-				{"type": "doctype", "name": "Deploy Candidate",},
+				{"type": "doctype", "name": "Deploy Candidate"},
 			],
 		},
-		{"label": _("Domains"), "items": [{"type": "doctype", "name": "Custom Domain"},]},
+		{"label": _("Domains"), "items": [{"type": "doctype", "name": "Custom Domain"}]},
 		{
 			"label": _("Payments"),
 			"items": [
