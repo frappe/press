@@ -3,11 +3,10 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
+import json
 import frappe
 from frappe.model.document import Document
 from press.press.doctype.bench.bench import Agent
-from frappe.core.utils import find
-import json
 
 
 class AgentJob(Document):
