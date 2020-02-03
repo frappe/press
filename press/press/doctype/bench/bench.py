@@ -111,6 +111,16 @@ class Agent:
 		job.job_id = job_id
 		job.save()
 
+	def backup_site(self, site):
+		job = self.create_agent_job(
+			"Backup Site", f"benches/{site.bench}/sites/{site.name}/backup", {}, bench=site.bench, site=site.name
+		)
+		job_id = self.post(f"benches/{site.bench}/sites/{site.name}/backup", {})["job"]
+		job.job_id = job_id
+		job.save()
+		return job
+
+		
 	def new_domain(self, domain):
 		data = {"name": domain}
 		job = self.create_agent_job("Add Host to Proxy", "proxy/hosts", data)
