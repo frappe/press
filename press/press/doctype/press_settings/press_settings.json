@@ -1,0 +1,44 @@
+{
+ "actions": [],
+ "creation": "2020-02-03 18:45:44.169074",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "bench_configuration"
+ ],
+ "fields": [
+  {
+   "default": "{}",
+   "fieldname": "bench_configuration",
+   "fieldtype": "Code",
+   "in_list_view": 1,
+   "label": "Bench Confguration",
+   "options": "JSON",
+   "reqd": 1
+  }
+ ],
+ "issingle": 1,
+ "links": [],
+ "modified": "2020-02-03 19:15:04.689046",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Press Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

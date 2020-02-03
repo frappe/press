@@ -24,6 +24,28 @@ class Bench(Document):
 					"apps", {"app": release.app, "scrubbed": scrubbed, "hash": release.hash}
 				)
 
+		if not self.port_offset:
+			benches = frappe.get_all(
+				"Bench", fields=["port_offset"], filters={"server": self.server}
+			)
+			if benches:
+				self.port_offset = max(map(lambda x: x.port_offset, benches)) + 1
+			else:
+				self.port_offset = 0
+
+		config = json.loads(frappe.db.get_single_value("Press Settings", "bench_configuration"))
+		config.update(
+			{
+				"background_workers": self.workers,
+				"redis_cache": f"redis://localhost:{13000 + self.port_offset}",
+				"redis_queue": f"redis://localhost:{11000 + self.port_offset}",
+				"redis_socketio": f"redis://localhost:{12000 + self.port_offset}",
+				"socketio_port": 9000 + self.port_offset,
+				"webserver_port": 8000 + self.port_offset,
+			}
+		)
+		self.config = json.dumps(config, indent=4)
+
 	def after_insert(self):
 		self.create_agent_request()
 
@@ -53,27 +75,8 @@ class Agent:
 		self.port = 80
 
 	def new_bench(self, bench):
-		config = {
-			"background_workers": 4,
-			"dns_multitenant": True,
-			"frappe_user": "frappe",
-			"mail_login": "test@example.com",
-			"mail_password": "test",
-			"mail_server": "smtp.example.com",
-			"monitor": True,
-			"redis_cache": "redis://localhost:13000",
-			"redis_queue": "redis://localhost:11000",
-			"redis_socketio": "redis://localhost:12000",
-			"server_script_enabled": True,
-			"socketio_port": 9000,
-			"webserver_port": 8000,
-			"admin_password": "admin",
-			"root_password": "root",
-			"developer_mode": True,
-		}
-
 		data = {
-			"config": config,
+			"config": json.loads(bench.config),
 			"apps": [],
 			"name": bench.name,
 			"python": "python3",
