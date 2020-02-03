@@ -29,10 +29,8 @@ class Site(Document):
 		agent.new_upstream_site(self.server, self.name)
 
 	def perform_backup(self):
-		frappe.get_doc({
-			"doctype": "Site Backup",
-			"site": self.name
-		}).insert()
+		frappe.get_doc({"doctype": "Site Backup", "site": self.name}).insert()
+
 
 def process_new_site_job_update(job):
 	other_job_type = {
