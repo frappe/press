@@ -5,15 +5,17 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "agent_job",
   "step_name",
   "status",
-  "output",
-  "traceback",
-  "data",
+  "agent_job",
+  "column_break_4",
   "start",
   "end",
-  "duration"
+  "duration",
+  "section_break_8",
+  "data",
+  "output",
+  "traceback"
  ],
  "fields": [
   {
@@ -77,11 +79,19 @@
    "fieldtype": "Time",
    "label": "Duration",
    "read_only": 1
+  },
+  {
+   "fieldname": "section_break_8",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
   }
  ],
  "in_create": 1,
  "links": [],
- "modified": "2020-01-30 17:20:30.443656",
+ "modified": "2020-02-03 20:40:50.399461",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Job Step",

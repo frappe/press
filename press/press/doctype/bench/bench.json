@@ -8,13 +8,15 @@
  "field_order": [
   "status",
   "server",
-  "apps",
+  "column_break_3",
   "group",
   "candidate",
+  "section_break_6",
+  "apps",
   "common_site_configuration",
-  "config",
   "workers",
-  "port_offset"
+  "port_offset",
+  "config"
  ],
  "fields": [
   {
@@ -24,26 +26,30 @@
    "in_standard_filter": 1,
    "label": "Server",
    "options": "Server",
-   "reqd": 1
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "apps",
    "fieldtype": "Table",
    "label": "Apps",
-   "options": "Installed App"
+   "options": "Installed App",
+   "read_only": 1
   },
   {
    "fieldname": "group",
    "fieldtype": "Link",
    "label": "Release Group",
    "options": "Release Group",
-   "reqd": 1
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "candidate",
    "fieldtype": "Link",
    "label": "Deploy Candidate",
-   "options": "Deploy Candidate"
+   "options": "Deploy Candidate",
+   "set_only_once": 1
   },
   {
    "default": "Pending",
@@ -53,12 +59,14 @@
    "in_standard_filter": 1,
    "label": "Status",
    "options": "Pending\nInstalling\nActive\nBroken",
+   "read_only": 1,
    "reqd": 1
   },
   {
    "fieldname": "config",
    "fieldtype": "Code",
-   "label": "Configuration"
+   "label": "Configuration",
+   "options": "JSON"
   },
   {
    "collapsible": 1,
@@ -79,10 +87,18 @@
    "fieldtype": "Int",
    "label": "Port Offset",
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_6",
+   "fieldtype": "Section Break"
   }
  ],
  "links": [],
- "modified": "2020-02-03 19:11:04.433096",
+ "modified": "2020-02-03 20:48:38.460334",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",

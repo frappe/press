@@ -8,9 +8,11 @@
  "field_order": [
   "server",
   "bench",
-  "apps",
+  "column_break_3",
   "admin_password",
-  "status"
+  "status",
+  "section_break_6",
+  "apps"
  ],
  "fields": [
   {
@@ -19,7 +21,8 @@
    "in_list_view": 1,
    "label": "Server",
    "options": "Server",
-   "reqd": 1
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "bench",
@@ -27,7 +30,8 @@
    "in_list_view": 1,
    "label": "Bench",
    "options": "Bench",
-   "reqd": 1
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "apps",
@@ -42,16 +46,25 @@
    "fieldtype": "Select",
    "label": "Status",
    "options": "Pending\nInstalling\nActive\nBroken",
+   "read_only": 1,
    "reqd": 1
   },
   {
    "fieldname": "admin_password",
    "fieldtype": "Password",
    "label": "Administrator Password"
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_6",
+   "fieldtype": "Section Break"
   }
  ],
  "links": [],
- "modified": "2020-02-03 15:02:18.712677",
+ "modified": "2020-02-03 20:50:29.233400",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
