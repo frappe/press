@@ -100,6 +100,7 @@ def poll_pending_jobs():
 def process_job_updates(job):
 	from press.press.doctype.bench.bench import process_new_bench_job_update
 	from press.press.doctype.site.site import process_new_site_job_update
+	from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
 
 	if job.job_type == "New Bench":
 		process_new_bench_job_update(job)
@@ -107,3 +108,5 @@ def process_job_updates(job):
 		process_new_site_job_update(job)
 	if job.job_type == "Add Site to Upstream":
 		process_new_site_job_update(job)
+	if job.job_type == "Backup Site":
+		process_backup_site_job_update(job)
