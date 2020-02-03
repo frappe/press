@@ -5,8 +5,8 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "site",
   "status",
+  "site",
   "job"
  ],
  "fields": [
@@ -16,6 +16,7 @@
    "in_list_view": 1,
    "label": "Site",
    "options": "Site",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -25,17 +26,19 @@
    "in_list_view": 1,
    "label": "Status",
    "options": "Pending\nRunning\nSuccess\nFailure",
+   "read_only": 1,
    "reqd": 1
   },
   {
    "fieldname": "job",
    "fieldtype": "Link",
    "label": "Job",
-   "options": "Agent Job"
+   "options": "Agent Job",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2020-02-03 20:26:25.660753",
+ "modified": "2020-02-03 20:51:41.266569",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Backup",
