@@ -55,6 +55,7 @@ class Agent:
 	def new_bench(self, bench):
 		config = {
 			"background_workers": 4,
+			"dns_multitenant": True,
 			"frappe_user": "frappe",
 			"mail_login": "test@example.com",
 			"mail_password": "test",
