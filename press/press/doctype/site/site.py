@@ -27,3 +27,28 @@ class Site(Document):
 
 		agent = Agent(server.proxy_server, server_type="Proxy Server")
 		agent.new_upstream_site(self.server, self.name)
+
+
+def process_new_site_job_update(job):
+	other_job_type = {
+		"Add Site to Upstream": "New Site",
+		"New Site": "Add Site to Upstream",
+	}[job.job_type]
+
+	first = job.status
+	second = frappe.get_all(
+		"Agent Job", fields=["status"], filters={"job_type": other_job_type, "site": job.site}
+	)[0].status
+
+	if "Success" == first == second:
+		updated_status = "Active"
+	elif "Failure" in (first, second):
+		updated_status = "Broken"
+	elif "Running" in (first, second):
+		updated_status = "Installing"
+	else:
+		updated_status = "Pending"
+
+	site_status = frappe.get_value("Site", job.site, "status")
+	if updated_status != site_status:
+		frappe.db.set_value("Site", job.site, "status", updated_status)

@@ -32,6 +32,20 @@ class Bench(Document):
 		agent.new_bench(self)
 
 
+def process_new_bench_job_update(job):
+	bench_status = frappe.get_value("Bench", job.bench, "status")
+
+	updated_status = {
+		"Pending": "Pending",
+		"Running": "Installing",
+		"Success": "Active",
+		"Failure": "Broken",
+	}[job.status]
+
+	if updated_status != bench_status:
+		frappe.db.set_value("Bench", job.bench, "status", updated_status)
+
+
 class Agent:
 	def __init__(self, server, server_type="Server"):
 		self.server_type = server_type

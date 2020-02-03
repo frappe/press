@@ -37,10 +37,11 @@
    "reqd": 1
   },
   {
+   "default": "Pending",
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "Active",
+   "options": "Pending\nInstalling\nActive\nBroken",
    "reqd": 1
   },
   {
@@ -50,7 +51,7 @@
   }
  ],
  "links": [],
- "modified": "2020-01-30 18:41:14.416949",
+ "modified": "2020-02-03 15:02:18.712677",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
