@@ -34,6 +34,10 @@ def poll_pending_jobs():
 		filters={"status": ("in", ["Pending", "Running"])},
 	)
 	for job in jobs:
+
+		if not job.job_id:
+			continue
+
 		agent = Agent(job.server, server_type=job.server_type)
 		polled = agent.get_job_status(job.job_id)
 
