@@ -10,7 +10,11 @@
   "server",
   "apps",
   "group",
-  "candidate"
+  "candidate",
+  "common_site_configuration",
+  "config",
+  "workers",
+  "port_offset"
  ],
  "fields": [
   {
@@ -50,10 +54,35 @@
    "label": "Status",
    "options": "Pending\nInstalling\nActive\nBroken",
    "reqd": 1
+  },
+  {
+   "fieldname": "config",
+   "fieldtype": "Code",
+   "label": "Configuration"
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "true",
+   "fieldname": "common_site_configuration",
+   "fieldtype": "Section Break",
+   "label": "Common Site Configuration"
+  },
+  {
+   "default": "4",
+   "fieldname": "workers",
+   "fieldtype": "Int",
+   "label": "Workers",
+   "reqd": 1
+  },
+  {
+   "fieldname": "port_offset",
+   "fieldtype": "Int",
+   "label": "Port Offset",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2020-01-24 15:33:51.026483",
+ "modified": "2020-02-03 19:11:04.433096",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",
@@ -72,7 +101,6 @@
    "write": 1
   }
  ],
- "quick_entry": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
  "track_changes": 1
