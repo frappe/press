@@ -10,8 +10,18 @@ import SiteNewForm from "./SiteNewForm.vue";
 Vue.use(VueRouter);
 const routes = [
 	{
+		name: "home",
+		path: '/',
+		component: SiteList,
+	},
+	{
 		name: "site-list",
 		path: '/sites',
+		component: SiteList,
+	},
+	{
+		name: "billing-list",
+		path: '/billing',
 		component: SiteList,
 	},
 	{
