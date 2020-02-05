@@ -15,7 +15,8 @@
    "in_list_view": 1,
    "label": "Release Group",
    "options": "Release Group",
-   "reqd": 1
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "apps",
@@ -26,7 +27,7 @@
   }
  ],
  "links": [],
- "modified": "2020-01-13 16:21:04.051415",
+ "modified": "2020-02-04 09:50:08.585542",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",
@@ -48,5 +49,6 @@
  "quick_entry": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
+ "title_field": "group",
  "track_changes": 1
 }
