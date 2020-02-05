@@ -7,5 +7,8 @@ frappe.ui.form.on('Agent Job', {
 			const filters = {agent_job: frm.doc.name};
 			frappe.set_route("List", "Agent Job Step", filters);
 		});
+		frm.add_custom_button(__('Retry'), () => {
+			frm.call({method: "retry", doc: frm.doc, callback: result => frappe.msgprint(result.message)});
+		});
 	}
 });

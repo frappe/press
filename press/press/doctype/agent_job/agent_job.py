@@ -26,6 +26,25 @@ class AgentJob(Document):
 			)
 			doc.insert()
 
+	def retry(self):
+		job = frappe.get_doc({
+			"doctype": "Agent Job",
+			"status": "Pending",
+			"job_type": self.job_type,
+			"server_type": self.server_type,
+			"server": self.server,
+			"bench": self.bench,
+			"site": self.site,
+			"upstream": self.upstream,
+			"request_path": self.request_path,
+			"request_data": self.request_data,
+			"request_method": self.request_method
+		}).insert()
+		agent = Agent(self.server, server_type=self.server_type)
+		job_id = agent.post(self.request_path, self.request_data)["job"]
+		job.job_id = job_id
+		job.save()
+		return job.name
 
 def poll_pending_jobs():
 	jobs = frappe.get_all(
