@@ -37,11 +37,12 @@
   {
    "fieldname": "repo_owner",
    "fieldtype": "Data",
-   "label": "Repo Owner"
+   "label": "Repo Owner",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2020-01-24 14:14:02.538327",
+ "modified": "2020-02-04 09:43:55.215860",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Frappe App",

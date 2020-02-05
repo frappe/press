@@ -59,6 +59,7 @@
   {
    "fieldname": "data",
    "fieldtype": "Code",
+   "hidden": 1,
    "label": "Data",
    "read_only": 1
   },
@@ -91,7 +92,7 @@
  ],
  "in_create": 1,
  "links": [],
- "modified": "2020-02-03 20:40:50.399461",
+ "modified": "2020-02-04 10:06:46.749117",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Job Step",
