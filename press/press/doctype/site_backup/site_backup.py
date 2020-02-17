@@ -5,7 +5,7 @@
 from __future__ import unicode_literals
 import frappe
 from frappe.model.document import Document
-from press.press.doctype.bench.bench import Agent
+from press.agent import Agent
 
 
 class SiteBackup(Document):
