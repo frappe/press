@@ -39,6 +39,9 @@
 
 <script>
 export default {
-	name: "DashboardRoot"
+	name: "DashboardRoot",
+	updated() {
+		feather.replace();
+	}
 };
 </script>
