@@ -17,7 +17,9 @@ class FrappeApp(Document):
 		self.create_app_release()
 
 	def create_app_release(self):
-		github_access_token = frappe.db.get_single_value("Press Settings", "github_access_token")
+		github_access_token = frappe.db.get_single_value(
+			"Press Settings", "github_access_token"
+		)
 		if github_access_token:
 			client = Github(github_access_token)
 		else:
