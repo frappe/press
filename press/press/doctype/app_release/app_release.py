@@ -4,9 +4,17 @@
 
 from __future__ import unicode_literals
 
-# import frappe
+import frappe
 from frappe.model.document import Document
 
 
 class AppRelease(Document):
-	pass
+	def after_insert(self):
+		self.create_deploy_candidates()
+		
+	def create_deploy_candidates(self):
+		for group_app in frappe.get_all(
+			"Release Group Frappe App", fields=["parent"], filters={"app": self.app}
+		):
+			group = frappe.get_doc("Release Group", group_app.parent)
+			group.create_deploy_candidate()

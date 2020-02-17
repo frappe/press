@@ -28,3 +28,9 @@ class FrappeApp(Document):
 		hash = branch.commit.sha
 		if not frappe.db.exists("App Release", {"hash": hash}):
 			frappe.get_doc({"doctype": "App Release", "app": self.name, "hash": hash}).insert()
+
+
+def poll_new_releases():
+	for app in frappe.get_all("Frappe App"):
+		app = frappe.get_doc("Frappe App", app.name)
+		app.create_app_release()
