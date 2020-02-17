@@ -5,7 +5,8 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "bench_configuration"
+  "bench_configuration",
+  "github_access_token"
  ],
  "fields": [
   {
@@ -16,11 +17,16 @@
    "label": "Bench Confguration",
    "options": "JSON",
    "reqd": 1
+  },
+  {
+   "fieldname": "github_access_token",
+   "fieldtype": "Data",
+   "label": "GitHub Access Token"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2020-02-03 19:15:04.689046",
+ "modified": "2020-02-17 19:39:26.970642",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
