@@ -17,12 +17,13 @@ class Agent:
 		self.server = server
 		self.port = 80
 
-	def new_bench(self, bench):
+	def new_bench(self, bench, clone=None):
 		data = {
 			"config": json.loads(bench.config),
 			"apps": [],
 			"name": bench.name,
 			"python": "python3",
+			"clone": clone,
 		}
 		for app in bench.apps:
 			repo, branch = frappe.db.get_value("Frappe App", app.app, ["url", "branch"])
