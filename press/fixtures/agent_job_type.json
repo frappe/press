@@ -2,6 +2,23 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
+  "modified": "2020-02-03 19:23:54.452866",
+  "name": "Backup Site",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "steps": [
+   {
+    "parent": "Backup Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Backup Site"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
   "modified": "2020-01-14 15:08:11.839256",
   "name": "New Site",
   "parent": null,
@@ -130,7 +147,7 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-01-14 11:51:03.734390",
+  "modified": "2020-02-18 12:42:34.683677",
   "name": "New Bench",
   "parent": null,
   "parentfield": null,
@@ -153,6 +170,12 @@
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Bench Setup Redis"
+   },
+   {
+    "parent": "New Bench",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Get Apps"
    },
    {
     "parent": "New Bench",
