@@ -1,7 +1,16 @@
 // Copyright (c) 2019, Frappe and contributors
 // For license information, please see license.txt
 
-frappe.ui.form.on('Site', {
+frappe.ui.form.on('Site', {	
+	onload: function(frm) {
+		frm.set_query("bench", function() {
+			return {
+				"filters": {
+					"server": frm.doc.server,
+				}
+			};
+		});
+	},
 	refresh: function(frm) {
 		frm.add_custom_button(__('Jobs'), () => {
 			const filters = {site: frm.doc.name};

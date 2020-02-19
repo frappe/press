@@ -2,6 +2,16 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on('Bench', {
+	onload: function(frm) {
+		frm.set_query("candidate", function() {
+			return {
+				"filters": {
+					"group": frm.doc.group,
+				}
+			};
+		});
+	},
+
 	refresh: function(frm) {
 		frm.add_custom_button(__('Sites'), () => {
 			const filters = {bench: frm.doc.name};
