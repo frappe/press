@@ -37,6 +37,8 @@
    "read_only": 1
   },
   {
+   "fetch_from": "candidate.group",
+   "fetch_if_empty": 1,
    "fieldname": "group",
    "fieldtype": "Link",
    "label": "Release Group",
@@ -58,7 +60,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Pending\nInstalling\nActive\nBroken",
+   "options": "Pending\nInstalling\nActive\nBroken\nArchived",
    "read_only": 1,
    "reqd": 1
   },
@@ -98,7 +100,7 @@
   }
  ],
  "links": [],
- "modified": "2020-02-03 20:48:38.460334",
+ "modified": "2020-02-18 21:24:12.663443",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",
