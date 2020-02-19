@@ -22,6 +22,7 @@ class AgentJob(Document):
 					"agent_job": self.name,
 					"status": "Pending",
 					"step_name": step.step_name,
+					"duration": "00:00:00"
 				}
 			)
 			doc.insert()
