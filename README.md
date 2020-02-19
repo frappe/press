@@ -16,6 +16,13 @@ e.g.
 ansible-playbook ./apps/press/press/playbooks/server.yml -i n1.frappe.dev, -u root -vv -e "server=n1.frappe.dev workers=1 password=magical"
 ```
 
+Frappe Server will also require `mariadb_root_password` variable to be set
+
+e.g.
+```
+ansible-playbook ./apps/press/press/playbooks/server.yml -i f1.frappe.dev, -u root -vv -e "server=f1.frappe.dev workers=1 password=magical mariadb_root_password=tada"
+```
+
 #### License
 
 MIT
