@@ -1,0 +1,113 @@
+{
+ "actions": [],
+ "creation": "2020-02-17 15:39:40.930546",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "status",
+  "bench",
+  "server",
+  "column_break_5",
+  "candidate",
+  "group",
+  "target_bench_name",
+  "target_bench",
+  "section_break_9",
+  "job"
+ ],
+ "fields": [
+  {
+   "fieldname": "bench",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Bench",
+   "options": "Bench",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "bench.server",
+   "fieldname": "server",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Server",
+   "options": "Server",
+   "reqd": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Pending\nRunning\nSuccess\nFailure"
+  },
+  {
+   "fieldname": "target_bench",
+   "fieldtype": "Link",
+   "label": "Target Bench",
+   "options": "Bench"
+  },
+  {
+   "fieldname": "target_bench_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Target Bench Name"
+  },
+  {
+   "fieldname": "column_break_5",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "bench.group",
+   "fieldname": "group",
+   "fieldtype": "Link",
+   "label": "Release Group",
+   "options": "Release Group",
+   "reqd": 1
+  },
+  {
+   "fieldname": "candidate",
+   "fieldtype": "Link",
+   "label": "Deploy Candidate",
+   "options": "Deploy Candidate",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_9",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "job",
+   "fieldtype": "Link",
+   "label": "Agent Job",
+   "options": "Agent Job"
+  }
+ ],
+ "links": [],
+ "modified": "2020-02-18 12:37:16.696738",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Bench Deploy",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "title_field": "bench",
+ "track_changes": 1
+}
