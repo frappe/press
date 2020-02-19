@@ -40,7 +40,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Pending\nRunning\nSuccess\nFailure",
+   "options": "Pending\nRunning\nSuccess\nFailure\nSkipped",
    "read_only": 1,
    "reqd": 1
   },
@@ -78,6 +78,7 @@
   {
    "fieldname": "duration",
    "fieldtype": "Time",
+   "in_list_view": 1,
    "label": "Duration",
    "read_only": 1
   },
@@ -92,7 +93,7 @@
  ],
  "in_create": 1,
  "links": [],
- "modified": "2020-02-04 10:06:46.749117",
+ "modified": "2020-02-18 21:10:58.179204",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Job Step",
@@ -111,7 +112,6 @@
    "write": 1
   }
  ],
- "quick_entry": 1,
  "sort_field": "creation",
  "sort_order": "DESC",
  "title_field": "step_name",

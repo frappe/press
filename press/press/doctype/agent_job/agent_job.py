@@ -115,6 +115,9 @@ def poll_pending_jobs():
 						"Agent Job Step", agent_job_step.name, "traceback", step["data"].get("traceback")
 					)
 
+		if step["status"] == "Failure":
+			frappe.db.sql("UPDATE `tabAgent Job Step` SET status = 'Skipped' WHERE status = 'Pending' AND agent_job = %s", job.name)
+			
 		job = frappe.get_doc("Agent Job", job.name)
 		process_job_updates(job)
 
