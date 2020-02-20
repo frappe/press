@@ -50,6 +50,43 @@ class AgentJob(Document):
 		return job.name
 
 
+def publish_update(job):
+	job = frappe.get_doc("Agent Job", job)
+	steps = []
+	for index, job_step in enumerate(
+		frappe.get_all(
+			"Agent Job Step",
+			filters={"agent_job": job.name},
+			fields=["step_name", "status"],
+			order_by="creation",
+		)
+	):
+		step = {"name": job_step.step_name, "status": job_step.status, "index": index}
+		if job_step.status == "Running":
+			current = step
+		steps.append(step)
+
+	if job.status == "Pending":
+		current = {"name": job.job_type, "status": "Waiting", "index": -1}
+	elif job.status in ("Success", "Failure"):
+		current = {"name": job.job_type, "status": job.status, "index": len(steps) + 1}
+
+	current["total"] = len(steps)
+
+	message = {
+		"id": job.name,
+		"name": job.job_type,
+		"server": job.server,
+		"bench": job.bench,
+		"site": job.site,
+		"status": job.status,
+		"steps": steps,
+		"current": current,
+	}
+
+	frappe.publish_realtime(event="agent_job_update", message=message, user=job.owner)
+
+
 def poll_pending_jobs():
 	jobs = frappe.get_all(
 		"Agent Job",
@@ -115,6 +152,7 @@ def poll_pending_jobs():
 					frappe.db.set_value(
 						"Agent Job Step", agent_job_step.name, "traceback", step["data"].get("traceback")
 					)
+		publish_update(job.name)
 
 		if step["status"] == "Failure":
 			frappe.db.sql(
