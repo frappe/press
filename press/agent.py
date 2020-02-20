@@ -55,6 +55,21 @@ class Agent:
 		job.job_id = job_id
 		job.save()
 
+	def archive_site(self, site):
+		password = get_decrypted_password("Server", site.server, "mariadb_root_password")
+		data = {"mariadb_root_password": password}
+
+		job = self.create_agent_job(
+			"Archive Site",
+			f"benches/{site.bench}/sites/{site.name}/archive",
+			data,
+			bench=site.bench,
+			site=site.name,
+		)
+		job_id = self.post(f"benches/{site.bench}/sites/{site.name}/archive", data)["job"]
+		job.job_id = job_id
+		job.save()
+
 	def backup_site(self, site):
 		job = self.create_agent_job(
 			"Backup Site",
@@ -99,6 +114,19 @@ class Agent:
 		job.job_id = job_id
 		job.save()
 
+	def remove_upstream_site(self, server, site):
+		ip = frappe.db.get_value("Server", server, "ip")
+		job = self.create_agent_job(
+			"Remove Site from Upstream",
+			f"proxy/upstreams/{ip}/sites/{site}",
+			{},
+			site=site,
+			upstream=server,
+		)
+		job_id = self.delete(f"proxy/upstreams/{ip}/sites/{site}")["job"]
+		job.job_id = job_id
+		job.save()
+
 	def ping(self):
 		return self.get(f"ping")["message"]
 
@@ -107,6 +135,16 @@ class Agent:
 		password = get_decrypted_password(self.server_type, self.server, "agent_password")
 		headers = {"Authorization": f"bearer {password}"}
 		result = requests.post(url, headers=headers, json=data)
+		try:
+			return result.json()
+		except Exception:
+			frappe.log_error(result.text, title="Agent Request Exception")
+
+	def delete(self, path):
+		url = f"http://{self.server}:{self.port}/agent/{path}"
+		password = get_decrypted_password(self.server_type, self.server, "agent_password")
+		headers = {"Authorization": f"bearer {password}"}
+		result = requests.delete(url, headers=headers)
 		try:
 			return result.json()
 		except Exception:
