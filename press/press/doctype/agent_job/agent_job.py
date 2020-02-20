@@ -22,7 +22,7 @@ class AgentJob(Document):
 					"agent_job": self.name,
 					"status": "Pending",
 					"step_name": step.step_name,
-					"duration": "00:00:00"
+					"duration": "00:00:00",
 				}
 			)
 			doc.insert()
@@ -117,8 +117,11 @@ def poll_pending_jobs():
 					)
 
 		if step["status"] == "Failure":
-			frappe.db.sql("UPDATE `tabAgent Job Step` SET status = 'Skipped' WHERE status = 'Pending' AND agent_job = %s", job.name)
-			
+			frappe.db.sql(
+				"UPDATE `tabAgent Job Step` SET status = 'Skipped' WHERE status = 'Pending' AND agent_job = %s",
+				job.name,
+			)
+
 		job = frappe.get_doc("Agent Job", job.name)
 		process_job_updates(job)
 
