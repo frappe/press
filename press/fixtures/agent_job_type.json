@@ -202,5 +202,63 @@
     "step_name": "Bench Setup Production"
    }
   ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2020-02-20 10:10:15.793715",
+  "name": "Remove Site from Upstream",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "steps": [
+   {
+    "parent": "Remove Site from Upstream",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Remove Site File from Upstream Directory"
+   },
+   {
+    "parent": "Remove Site from Upstream",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Generate Upstream Map Configuration"
+   },
+   {
+    "parent": "Remove Site from Upstream",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2020-02-20 10:19:17.561733",
+  "name": "Archive Site",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "steps": [
+   {
+    "parent": "Archive Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Archive Site"
+   },
+   {
+    "parent": "Archive Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Setup NGINX"
+   },
+   {
+    "parent": "Archive Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
+   }
+  ]
  }
 ]
