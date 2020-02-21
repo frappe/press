@@ -15,6 +15,7 @@
    "in_list_view": 1,
    "label": "App",
    "options": "Frappe App",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -22,12 +23,14 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Hash",
+   "read_only": 1,
    "reqd": 1,
    "unique": 1
   }
  ],
+ "in_create": 1,
  "links": [],
- "modified": "2020-01-13 15:58:46.065932",
+ "modified": "2020-02-20 15:42:08.373055",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Release",
@@ -46,7 +49,6 @@
    "write": 1
   }
  ],
- "quick_entry": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
  "track_changes": 1

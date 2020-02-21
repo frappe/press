@@ -7,6 +7,8 @@
     state: directory
 
 - name: Create nginx hosts configuration file (empty)
+  become: yes
+  become_user: frappe
   file:
     path: /home/frappe/nginx/hosts.conf
     state: touch

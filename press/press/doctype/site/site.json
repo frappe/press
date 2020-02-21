@@ -6,16 +6,18 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "status",
   "server",
   "bench",
   "column_break_3",
   "admin_password",
-  "status",
   "section_break_6",
   "apps"
  ],
  "fields": [
   {
+   "fetch_from": "bench.server",
+   "fetch_if_empty": 1,
    "fieldname": "server",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -44,8 +46,10 @@
    "default": "Pending",
    "fieldname": "status",
    "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Status",
-   "options": "Pending\nInstalling\nActive\nBroken",
+   "options": "Pending\nInstalling\nActive\nBroken\nArchived",
    "read_only": 1,
    "reqd": 1
   },
@@ -64,7 +68,7 @@
   }
  ],
  "links": [],
- "modified": "2020-02-03 20:50:29.233400",
+ "modified": "2020-02-20 12:46:04.508605",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
@@ -83,7 +87,6 @@
    "write": 1
   }
  ],
- "quick_entry": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
  "track_changes": 1
