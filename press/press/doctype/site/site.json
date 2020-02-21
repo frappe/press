@@ -6,11 +6,11 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "status",
   "server",
   "bench",
   "column_break_3",
   "admin_password",
-  "status",
   "section_break_6",
   "apps"
  ],
@@ -46,6 +46,8 @@
    "default": "Pending",
    "fieldname": "status",
    "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Status",
    "options": "Pending\nInstalling\nActive\nBroken\nArchived",
    "read_only": 1,
@@ -66,7 +68,7 @@
   }
  ],
  "links": [],
- "modified": "2020-02-19 16:34:30.012271",
+ "modified": "2020-02-20 12:46:04.508605",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
