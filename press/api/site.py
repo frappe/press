@@ -52,3 +52,19 @@ def get(name):
 		"status": site.status,
 		"apps": apps,
 	}
+
+
+@frappe.whitelist()
+def analytics(name):
+	requests_per_minute = frappe.db.sql("""SELECT COUNT(*) AS value, timestamp FROM `tabSite Request Log` WHERE site = %s GROUP BY EXTRACT(DAY_MINUTE FROM timestamp)""", name, as_dict=True)
+	request_cpu_time_per_minute = frappe.db.sql("""SELECT SUM(duration) AS value, timestamp FROM `tabSite Request Log` WHERE site = %s GROUP BY EXTRACT(DAY_MINUTE FROM timestamp)""", name, as_dict=True)
+	
+	jobs_per_minute = frappe.db.sql("""SELECT COUNT(*) AS value, timestamp FROM `tabSite Job Log` WHERE site = %s GROUP BY EXTRACT(DAY_MINUTE FROM timestamp)""", name, as_dict=True)
+	job_cpu_time_per_minute = frappe.db.sql("""SELECT SUM(duration) AS value, timestamp FROM `tabSite Job Log` WHERE site = %s GROUP BY EXTRACT(DAY_MINUTE FROM timestamp)""", name, as_dict=True)
+
+	return {
+		"requests_per_minute": requests_per_minute,
+		"request_cpu_time_per_minute": request_cpu_time_per_minute,
+		"jobs_per_minute": jobs_per_minute,
+		"job_cpu_time_per_minute": job_cpu_time_per_minute,
+	}

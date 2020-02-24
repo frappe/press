@@ -94,6 +94,7 @@ home_page = "index"
 
 scheduler_events = {
 	"fast": ["press.press.doctype.agent_job.agent_job.poll_pending_jobs"],
+	"all": ["press.press.doctype.agent_job.agent_job.collect_site_analytics"],
 	"hourly": ["press.press.doctype.frappe_app.frappe_app.poll_new_releases"],
 }
 
