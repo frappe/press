@@ -1,0 +1,141 @@
+{
+ "actions": [],
+ "autoname": "Prompt",
+ "creation": "2020-02-24 11:59:29.986957",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "site",
+  "timestamp",
+  "column_break_4",
+  "ip",
+  "duration",
+  "status_code",
+  "url",
+  "column_break_9",
+  "http_method",
+  "length",
+  "http_referer",
+  "http_user_agent",
+  "http_forwarded_for",
+  "http_headers"
+ ],
+ "fields": [
+  {
+   "fieldname": "site",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Site",
+   "options": "Site",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "timestamp",
+   "fieldtype": "Datetime",
+   "label": "Timestamp",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ip",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "IP",
+   "read_only": 1
+  },
+  {
+   "fieldname": "duration",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Duration",
+   "read_only": 1
+  },
+  {
+   "fieldname": "status_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status Code",
+   "read_only": 1
+  },
+  {
+   "fieldname": "url",
+   "fieldtype": "Data",
+   "in_standard_filter": 1,
+   "label": "URL",
+   "read_only": 1
+  },
+  {
+   "fieldname": "http_method",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "HTTP Method",
+   "read_only": 1
+  },
+  {
+   "fieldname": "http_user_agent",
+   "fieldtype": "Data",
+   "label": "HTTP User Agent",
+   "read_only": 1
+  },
+  {
+   "fieldname": "http_forwarded_for",
+   "fieldtype": "Data",
+   "label": "HTTP Forwarded For",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_9",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "http_headers",
+   "fieldtype": "Long Text",
+   "label": "HTTP Headers",
+   "read_only": 1
+  },
+  {
+   "fieldname": "length",
+   "fieldtype": "Int",
+   "label": "Response Length",
+   "read_only": 1
+  },
+  {
+   "fieldname": "http_referer",
+   "fieldtype": "Data",
+   "label": "HTTP Referer",
+   "read_only": 1
+  }
+ ],
+ "links": [],
+ "modified": "2020-02-24 19:12:15.013286",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Site Request Log",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

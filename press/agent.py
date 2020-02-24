@@ -83,6 +83,10 @@ class Agent:
 		job.save()
 		return job
 
+	def fetch_monitor_data(self, bench):
+		data = self.post(f"benches/{bench}/monitor", {})["data"]
+		return data
+
 	def new_domain(self, domain):
 		data = {"name": domain}
 		job = self.create_agent_job("Add Host to Proxy", "proxy/hosts", data)
