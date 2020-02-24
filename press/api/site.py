@@ -46,11 +46,14 @@ def all():
 @frappe.whitelist()
 def get(name):
 	site = frappe.get_doc("Site", name)
-	apps = [{"name": app.app} for app in site.apps]
+	apps = [app.app for app in site.apps]
+	apps = frappe.get_all("Frappe App", fields=["name", "repo_owner as owner", "scrubbed as repo", "url", "branch"], filters={"name": ("in", apps)})
 	return {
 		"name": site.name,
 		"status": site.status,
-		"apps": apps,
+		"installed_apps": apps,
+		"creation": site.creation,
+		"last_updated": site.modified,
 	}
 
 
