@@ -42,10 +42,10 @@ export default {
 	data() {
 		return {
 			items: [
-				{
-					label: 'Dashboard',
-					route: '/'
-				},
+				// {
+				// 	label: 'Dashboard',
+				// 	route: '/'
+				// },
 				{
 					label: 'Sites',
 					route: '/sites'

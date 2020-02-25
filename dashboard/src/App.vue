@@ -2,7 +2,7 @@
     <div>
         <div class="flex h-screen overflow-hidden font-sans text-gray-900 antialiased">
             <Sidebar class="w-56 flex-shrink-0" v-if="$store.auth.isLoggedIn" />
-            <div class="flex-1">
+            <div class="flex-1 overflow-y-auto">
                 <router-view />
             </div>
         </div>

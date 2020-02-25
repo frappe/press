@@ -6,17 +6,23 @@
 			</div>
 			<div class="mt-6 mx-auto w-112 py-12 px-12 rounded-md bg-white shadow-lg">
 				<div class="mb-8">
-					<span class="text-lg">Login to your account</span>
+					<span class="text-lg">Signup to your account</span>
 				</div>
 				<form class="flex flex-col" @submit.prevent="login">
 					<label class="block">
+						<span class="text-gray-800">Full Name</span>
+						<input
+							class="mt-2 form-input block w-full shadow"
+							type="text"
+							placeholder="John Doe"
+						/>
+					</label>
+					<label class="mt-4 block">
 						<span class="text-gray-800">Email</span>
 						<input
 							class="mt-2 form-input block w-full shadow"
 							type="email"
 							placeholder="johndoe@mail.com"
-							v-model="email"
-							autofocus
 						/>
 					</label>
 					<label class="mt-4 block">
@@ -25,7 +31,14 @@
 							class="mt-2 form-input block w-full shadow"
 							type="password"
 							placeholder="******"
-							v-model="password"
+						/>
+					</label>
+					<label class="mt-4 block">
+						<span class="text-gray-800">Confirm Password</span>
+						<input
+							class="mt-2 form-input block w-full shadow"
+							type="password"
+							placeholder="******"
 						/>
 					</label>
 					<span
@@ -42,7 +55,7 @@
 						}"
 						@click="login"
 					>
-						Login
+						Signup
 					</Button>
 					<div class="mt-8 text-center border-t">
 						<div class="transform -translate-y-1/2">
@@ -51,35 +64,11 @@
 							</span>
 						</div>
 					</div>
-					<router-link class="text-center text-sm" to="/signup">
-						Signup for a new account
+					<router-link class="text-center text-sm" to="/login">
+						Already have an account? Login
 					</router-link>
 				</form>
 			</div>
 		</div>
 	</div>
 </template>
-<script>
-export default {
-	name: 'Login',
-	data() {
-		return {
-			state: 'Idle', // Idle, Logging In, Login Error
-			email: null,
-			password: null
-		};
-	},
-	methods: {
-		async login() {
-			this.state = 'Logging In';
-			let loggedIn = await this.$store.auth.login(this.email, this.password);
-			if (loggedIn) {
-				this.$router.push('/');
-				this.state = 'Idle';
-			} else {
-				this.state = 'Login Error';
-			}
-		}
-	}
-};
-</script>
