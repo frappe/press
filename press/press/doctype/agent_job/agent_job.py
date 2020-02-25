@@ -141,6 +141,12 @@ def collect_site_uptime():
 			pass
 
 
+def schedule_backups():
+	sites = frappe.get_all("Site", fields=["name", "server", "bench"], filters={"status": "Active", "enable_scheduled_backups": True})
+	for site in sites:
+		frappe.get_doc("Site", site.name).perform_backup()
+
+
 def poll_pending_jobs():
 	jobs = frappe.get_all(
 		"Agent Job",
