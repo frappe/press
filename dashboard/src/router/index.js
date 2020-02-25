@@ -21,6 +21,15 @@ const routes = [
 		}
 	},
 	{
+		path: '/signup',
+		name: 'Signup',
+		component: () =>
+			import(/* webpackChunkName: "signup" */ '../views/Signup.vue'),
+		meta: {
+			isLoginPage: true
+		}
+	},
+	{
 		path: '/sites',
 		name: 'Sites',
 		component: () =>
@@ -41,32 +50,44 @@ const routes = [
 		children: [
 			{
 				path: 'general',
-				component: () => import(/* webpackChunkName: "site" */ '../views/SiteGeneral.vue'),
+				component: () =>
+					import(/* webpackChunkName: "site" */ '../views/SiteGeneral.vue')
 			},
 			{
 				path: 'analytics',
-				component: () => import(/* webpackChunkName: "site" */ '../views/SiteAnalytics.vue'),
+				component: () =>
+					import(/* webpackChunkName: "site" */ '../views/SiteAnalytics.vue')
 			},
 			{
 				path: 'backups',
-				component: () => import(/* webpackChunkName: "site" */ '../views/SiteBackups.vue'),
+				component: () =>
+					import(/* webpackChunkName: "site" */ '../views/SiteBackups.vue')
 			},
 			{
 				path: 'site-config',
-				component: () => import(/* webpackChunkName: "site" */ '../views/SiteConfig.vue'),
+				component: () =>
+					import(/* webpackChunkName: "site" */ '../views/SiteConfig.vue')
 			},
 			{
 				path: 'console',
-				component: () => import(/* webpackChunkName: "site" */ '../views/SiteConsole.vue'),
+				component: () =>
+					import(/* webpackChunkName: "site" */ '../views/SiteConsole.vue')
 			},
 			{
 				path: 'drop-site',
-				component: () => import(/* webpackChunkName: "site" */ '../views/SiteDrop.vue'),
+				component: () =>
+					import(/* webpackChunkName: "site" */ '../views/SiteDrop.vue')
+			},
+			{
+				path: 'access-control',
+				component: () =>
+					import(/* webpackChunkName: "site" */ '../views/SiteAccessControl.vue')
 			},
 			{
 				path: '*',
-				component: () => import(/* webpackChunkName: "site" */ '../views/ComingSoon.vue'),
-			},
+				component: () =>
+					import(/* webpackChunkName: "site" */ '../views/ComingSoon.vue')
+			}
 		]
 	}
 ];
