@@ -122,6 +122,25 @@ def collect_site_analytics():
 			except frappe.exceptions.DuplicateEntryError:
 				pass
 
+
+def collect_site_uptime():
+	sites = frappe.get_all("Site", fields=["name", "server", "bench"], filters={"status": "Active", "enable_uptime_monitoring": True})
+	for site in sites:
+		try:
+			agent = Agent(site.server)
+			status = agent.fetch_site_status(site)
+			frappe.get_doc({
+				"doctype": "Site Uptime Log",
+				"site": site.name,
+				"web": status["web"],
+				"scheduler": status["scheduler"],
+				"timestamp": status["timestamp"],
+			}).insert()
+			frappe.db.commit()
+		except Exception:
+			pass
+
+
 def poll_pending_jobs():
 	jobs = frappe.get_all(
 		"Agent Job",

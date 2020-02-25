@@ -12,7 +12,8 @@
   "column_break_3",
   "admin_password",
   "section_break_6",
-  "apps"
+  "apps",
+  "enable_uptime_monitoring"
  ],
  "fields": [
   {
@@ -65,10 +66,16 @@
   {
    "fieldname": "section_break_6",
    "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_uptime_monitoring",
+   "fieldtype": "Check",
+   "label": "Enable Uptime Monitoring"
   }
  ],
  "links": [],
- "modified": "2020-02-20 12:46:04.508605",
+ "modified": "2020-02-25 15:16:17.685294",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
