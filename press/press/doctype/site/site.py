@@ -5,8 +5,10 @@
 from __future__ import unicode_literals
 
 import frappe
+import requests
 from frappe.model.document import Document
 from press.press.doctype.agent_job.agent_job import Agent
+from frappe.utils.password import get_decrypted_password
 
 
 class Site(Document):
@@ -41,6 +43,11 @@ class Site(Document):
 
 		agent = Agent(server.proxy_server, server_type="Proxy Server")
 		agent.remove_upstream_site(self.server, self.name)
+
+	def login(self):
+		password = get_decrypted_password("Site", self.name, "admin_password")
+		response = requests.post(f'https://{self.name}/api/method/login', data={'usr': 'Administrator', 'pwd': password})
+		return response.cookies.get('sid')
 
 
 def process_new_site_job_update(job):
