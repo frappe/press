@@ -225,26 +225,29 @@ def poll_pending_jobs():
 
 
 def process_job_updates(job):
-	from press.press.doctype.bench.bench import process_new_bench_job_update
-	from press.press.doctype.bench_deploy.bench_deploy import (
-		process_bench_deploy_job_update,
-	)
-	from press.press.doctype.site.site import (
-		process_new_site_job_update,
-		process_archive_site_job_update,
-	)
-	from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
+	try:
+		from press.press.doctype.bench.bench import process_new_bench_job_update
+		from press.press.doctype.bench_deploy.bench_deploy import (
+			process_bench_deploy_job_update,
+		)
+		from press.press.doctype.site.site import (
+			process_new_site_job_update,
+			process_archive_site_job_update,
+		)
+		from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
 
-	if job.job_type == "New Bench":
-		process_new_bench_job_update(job)
-		process_bench_deploy_job_update(job)
-	if job.job_type == "New Site":
-		process_new_site_job_update(job)
-	if job.job_type == "Add Site to Upstream":
-		process_new_site_job_update(job)
-	if job.job_type == "Backup Site":
-		process_backup_site_job_update(job)
-	if job.job_type == "Archive Site":
-		process_archive_site_job_update(job)
-	if job.job_type == "Remove Site from Upstream":
-		process_archive_site_job_update(job)
+		if job.job_type == "New Bench":
+			process_new_bench_job_update(job)
+			process_bench_deploy_job_update(job)
+		if job.job_type == "New Site":
+			process_new_site_job_update(job)
+		if job.job_type == "Add Site to Upstream":
+			process_new_site_job_update(job)
+		if job.job_type == "Backup Site":
+			process_backup_site_job_update(job)
+		if job.job_type == "Archive Site":
+			process_archive_site_job_update(job)
+		if job.job_type == "Remove Site from Upstream":
+			process_archive_site_job_update(job)
+	except Exception:
+		frappe.log_error(title="Agent Job Callback Exception")
