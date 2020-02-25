@@ -13,7 +13,8 @@
   "admin_password",
   "section_break_6",
   "apps",
-  "enable_uptime_monitoring"
+  "enable_uptime_monitoring",
+  "enable_scheduled_backups"
  ],
  "fields": [
   {
@@ -72,10 +73,16 @@
    "fieldname": "enable_uptime_monitoring",
    "fieldtype": "Check",
    "label": "Enable Uptime Monitoring"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_scheduled_backups",
+   "fieldtype": "Check",
+   "label": "Enable Scheduled Backups"
   }
  ],
  "links": [],
- "modified": "2020-02-25 15:16:17.685294",
+ "modified": "2020-02-25 15:34:26.731664",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

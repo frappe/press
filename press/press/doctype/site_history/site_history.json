@@ -1,68 +1,40 @@
 {
  "actions": [],
- "creation": "2020-02-03 19:31:01.120166",
+ "creation": "2020-02-25 15:49:11.312692",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "status",
   "site",
-  "job",
-  "database",
-  "size",
-  "url"
+  "action"
  ],
  "fields": [
   {
    "fieldname": "site",
    "fieldtype": "Link",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Site",
    "options": "Site",
    "read_only": 1,
    "reqd": 1
   },
   {
-   "default": "Pending",
-   "fieldname": "status",
+   "fieldname": "action",
    "fieldtype": "Select",
    "in_list_view": 1,
-   "label": "Status",
-   "options": "Pending\nRunning\nSuccess\nFailure",
+   "in_standard_filter": 1,
+   "label": "Action",
+   "options": "Create\nBackup\nLogin as Administrator\nUpdate\nArchive",
    "read_only": 1,
    "reqd": 1
-  },
-  {
-   "fieldname": "job",
-   "fieldtype": "Link",
-   "label": "Job",
-   "options": "Agent Job",
-   "read_only": 1
-  },
-  {
-   "fieldname": "database",
-   "fieldtype": "Data",
-   "label": "database",
-   "read_only": 1
-  },
-  {
-   "fieldname": "size",
-   "fieldtype": "Data",
-   "label": "size",
-   "read_only": 1
-  },
-  {
-   "fieldname": "url",
-   "fieldtype": "Data",
-   "label": "url",
-   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2020-02-25 16:29:59.608089",
+ "modified": "2020-02-25 15:50:48.510528",
  "modified_by": "Administrator",
  "module": "Press",
- "name": "Site Backup",
+ "name": "Site History",
  "owner": "Administrator",
  "permissions": [
   {
