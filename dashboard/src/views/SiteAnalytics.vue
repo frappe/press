@@ -1,40 +1,58 @@
 <template>
-	<div>
+	<div class="pb-16">
 		<section>
-			<h2 class="font-medium text-lg">Analytics</h2>
-			<p class="text-gray-600">Realtime usage analytics of your site</p>
-			<div class="grid grid-cols-2 gap-4">
+			<div class="flex justify-between">
+				<div>
+					<h2 class="font-medium text-lg">Analytics</h2>
+					<p class="text-gray-600">Realtime usage analytics of your site</p>
+				</div>
+				<div>
+					<select class="form-select">
+						<option
+							v-for="o in periodOptions"
+							:value="o"
+							:selected="period === o"
+						>
+							{{ o }}
+						</option>
+					</select>
+				</div>
+			</div>
+			<div class="grid grid-cols-2 gap-4" v-if="analytics">
 				<div class="mt-6 shadow rounded border border-gray-100 px-6 py-4">
-					<div>Requests per second</div>
-					<div ref="req-per-second"></div>
+					<div>Requests per minute</div>
+					<div ref="requests-per-minute"></div>
+				</div>
+				<div class="mt-6 shadow rounded border border-gray-100 px-6 py-4">
+					<div>CPU usage per minute</div>
+					<div ref="requests-cpu-usage"></div>
+				</div>
+				<div class="mt-6 shadow rounded border border-gray-100 px-6 py-4">
+					<div>Background Jobs per minute</div>
+					<div ref="jobs-per-minute"></div>
+				</div>
+				<div class="mt-6 shadow rounded border border-gray-100 px-6 py-4">
+					<div>Background Jobs CPU usage per minute</div>
+					<div ref="jobs-cpu-usage"></div>
 				</div>
 				<div class="mt-6 shadow rounded border border-gray-100 px-6 py-4">
 					<div>Uptime</div>
 					<div>
-						<div class="mt-8" v-for="d in uptime">
+						<div class="mt-8" v-for="type in uptimeTypes">
 							<div class="flex justify-between h-4">
 								<div
-									v-for="tick in d.ticks"
+									v-for="d in analytics.uptime"
 									style="width: 2px;"
-									:class="[tick ? 'bg-green-500' : 'bg-red-500']"
+									:class="[d[type.key] ? 'bg-green-500' : 'bg-red-500']"
 								></div>
 							</div>
 							<div class="mt-2 text-sm flex justify-between">
 								<span>
-									{{ d.name }}
+									{{ type.label }}
 								</span>
-								<span class="text-gray-600">90 days</span>
 							</div>
 						</div>
 					</div>
-				</div>
-				<div class="mt-6 shadow rounded border border-gray-100 px-6 py-4">
-					<div>Scheduler Health</div>
-					<div ref="scheduler-health"></div>
-				</div>
-				<div class="mt-6 shadow rounded border border-gray-100 px-6 py-4">
-					<div>CPU usage per minute</div>
-					<div ref="cpu-usage"></div>
 				</div>
 			</div>
 		</section>
@@ -42,6 +60,7 @@
 </template>
 
 <script>
+import { DateTime } from 'luxon';
 import { Chart } from 'frappe-charts/dist/frappe-charts.esm.js';
 
 export default {
@@ -49,68 +68,176 @@ export default {
 	props: ['site'],
 	data() {
 		return {
-			uptime: [
-				{
-					name: 'Web Requests',
-					ticks: Array.from(new Array(90)).map(d => {
-						return Math.random() < 0.8;
-					})
-				},
-				{
-					name: 'Scheduler',
-					ticks: Array.from(new Array(90)).map(d => {
-						return Math.random() < 0.8;
-					})
-				},
-				{
-					name: 'Socket.io',
-					ticks: Array.from(new Array(90)).map(d => {
-						return Math.random() < 0.8;
-					})
-				}
+			analytics: null,
+			period: '6 hours',
+			periodOptions: ['6 hours', '24 hours', '7 days', '30 days'],
+			uptimeTypes: [
+				{ key: 'web', label: 'Web' },
+				{ key: 'scheduler', label: 'Scheduler' },
+				{ key: 'socketio', label: 'SocketIO' }
 			]
 		};
 	},
-	mounted() {
+	async mounted() {
+		await this.fetchAnalytics();
 		this.makeRequestsPerSecondChart();
-		this.makeSchedulerHealthChart();
+		this.makeJobsPerSecondChart();
 		this.makeCPUUsageChart();
+		this.makeJobCPUUsageChart();
 	},
 	methods: {
+		async fetchAnalytics() {
+			this.analytics = await this.$call('press.api.site.analytics', {
+				name: this.site.name,
+				period: this.period
+			});
+		},
 		makeRequestsPerSecondChart() {
-			new Chart(this.$refs['req-per-second'], {
+			new Chart(this.$refs['requests-per-minute'], {
 				data: {
-					labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-					datasets: [{ values: [18, 40, 30, 35, 8, 52, 17, -4] }]
-				},
-				type: 'line',
-				colors: ['red']
-			});
-		},
-		makeCPUUsageChart() {
-			new Chart(this.$refs['cpu-usage'], {
-				data: {
-					labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-					datasets: [{ values: [340, 140, 230, 135, 118, 152, 417, 70] }]
-				},
-				type: 'line',
-				colors: ['blue']
-			});
-		},
-		makeSchedulerHealthChart() {
-			new Chart(this.$refs['scheduler-health'], {
-				data: {
-					labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+					labels: this.analytics.requests_per_minute.map(d => {
+						return {
+							timestamp: d.timestamp,
+							toString() {
+								return DateTime.fromSQL(d.timestamp).toFormat('hh:mm a');
+							}
+						};
+					}),
 					datasets: [
-						{ name: 'Worker 1', values: [18, 40, 30, 35, 8, 52, 17, -4] },
-						{ name: 'Worker 2', values: [20, 30, 15, 40, 16, 3, 24, 27] },
-						{ name: 'Worker 3', values: [29, 12, 30, 24, 45, 32, 20, 28] }
+						{ values: this.analytics.requests_per_minute.map(d => d.value) }
 					]
 				},
 				type: 'line',
-				colors: ['red']
+				colors: ['red'],
+				axisOptions: {
+					xIsSeries: true,
+					shortenYAxisNumbers: 1
+				},
+				lineOptions: {
+					hideDots: true
+				},
+				tooltipOptions: {
+					formatTooltipX: d => {
+						return DateTime.fromSQL(d.timestamp).toFormat('dd-mm-yyyy hh:mm a');
+					},
+					formatTooltipY: d => d + ' requests'
+				}
+			});
+		},
+		makeJobsPerSecondChart() {
+			new Chart(this.$refs['jobs-per-minute'], {
+				data: {
+					labels: this.analytics.jobs_per_minute.map(d => {
+						return {
+							timestamp: d.timestamp,
+							toString() {
+								return DateTime.fromSQL(d.timestamp).toFormat('hh:mm a');
+							}
+						};
+					}),
+					datasets: [
+						{ values: this.analytics.jobs_per_minute.map(d => d.value) }
+					]
+				},
+				type: 'line',
+				colors: ['red'],
+				axisOptions: {
+					xIsSeries: true,
+					shortenYAxisNumbers: 1
+				},
+				lineOptions: {
+					hideDots: true
+				},
+				tooltipOptions: {
+					formatTooltipX: d => {
+						return DateTime.fromSQL(d.timestamp).toFormat('dd-mm-yyyy hh:mm a');
+					},
+					formatTooltipY: d => d + ' jobs'
+				}
+			});
+		},
+		makeCPUUsageChart() {
+			new Chart(this.$refs['requests-cpu-usage'], {
+				data: {
+					labels: this.analytics.request_cpu_time_per_minute.map(d => {
+						return {
+							timestamp: d.timestamp,
+							toString() {
+								return DateTime.fromSQL(d.timestamp).toFormat('hh:mm a');
+							}
+						};
+					}),
+					datasets: [
+						{
+							values: this.analytics.request_cpu_time_per_minute.map(
+								d => d.value / 1000
+							)
+						}
+					]
+				},
+				type: 'line',
+				colors: ['blue'],
+				axisOptions: {
+					xIsSeries: true,
+					shortenYAxisNumbers: 1
+				},
+				lineOptions: {
+					hideDots: true
+				},
+				tooltipOptions: {
+					formatTooltipX: d => {
+						return DateTime.fromSQL(d.timestamp).toFormat('dd-mm-yyyy hh:mm a');
+					},
+					formatTooltipY: d => {
+						return d + 's';
+					}
+				}
+			});
+		},
+		makeJobCPUUsageChart() {
+			new Chart(this.$refs['jobs-cpu-usage'], {
+				data: {
+					labels: this.analytics.job_cpu_time_per_minute.map(d => {
+						return {
+							timestamp: d.timestamp,
+							toString() {
+								return DateTime.fromSQL(d.timestamp).toFormat('hh:mm a');
+							}
+						};
+					}),
+					datasets: [
+						{
+							values: this.analytics.job_cpu_time_per_minute.map(
+								d => d.value / 1000
+							)
+						}
+					]
+				},
+				type: 'line',
+				colors: ['blue'],
+				axisOptions: {
+					xIsSeries: true,
+					shortenYAxisNumbers: 1
+				},
+				lineOptions: {
+					hideDots: true
+				},
+				tooltipOptions: {
+					formatTooltipX: d => {
+						return DateTime.fromSQL(d.timestamp).toFormat('dd-mm-yyyy hh:mm a');
+					},
+					formatTooltipY: d => {
+						return d + 's';
+					}
+				}
 			});
 		}
 	}
 };
 </script>
+
+<style>
+.frappe-chart .line-vertical {
+	display: none;
+}
+</style>

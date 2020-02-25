@@ -26,18 +26,6 @@
 					<FeatherIcon name="external-link" class="ml-1 w-3 h-3" />
 				</a>
 			</div>
-			<!-- <table class="w-1/4 border-collapse text-sm">
-				<tbody>
-					<tr v-for="d in siteDetails" :key="d.label">
-						<td class="border py-2 px-4">
-							{{ d.label }}
-						</td>
-						<td class="border py-2 px-4">
-							{{ d.value }}
-						</td>
-					</tr>
-				</tbody>
-			</table> -->
 			<div class="mt-6" v-if="siteInstalling">
 				<h2>{{ progress.runningStep }}</h2>
 				<div class="rounded-md overflow-auto h-4 bg-blue-100">
@@ -48,32 +36,34 @@
 				</div>
 			</div>
 		</div>
-		<div class="px-8 mt-4">
+		<div class="px-8">
 			<div class="flex items-start">
-				<ul class="w-56 border rounded overflow-hidden text-sm mr-6">
-					<router-link
-						v-for="tab in tabs"
-						:key="tab.label"
-						:to="tab.route"
-						v-slot="{ href, route, navigate, isActive, isExactActive }"
-					>
-						<li class="-mt-px border-t">
-							<a
-								class="px-4 py-3 leading-none block focus:outline-none focus:bg-gray-100 focus:text-gray-900"
-								:class="[
-									isExactActive
-										? 'font-bold border-brand border-l-2'
-										: 'text-gray-800 hover:text-gray-900 hover:bg-gray-100'
-								]"
-								:href="href"
-								@click="navigate"
-							>
-								{{ tab.label }}
-							</a>
-						</li>
-					</router-link>
-				</ul>
-				<div class="w-full" v-if="site">
+				<div class="sticky top-0 pt-4">
+					<ul class="w-56 border rounded overflow-hidden text-sm mr-6">
+						<router-link
+							v-for="tab in tabs"
+							:key="tab.label"
+							:to="tab.route"
+							v-slot="{ href, route, navigate, isActive, isExactActive }"
+						>
+							<li class="-mt-px border-t">
+								<a
+									class="px-4 py-3 leading-none block focus:outline-none focus:bg-gray-100 focus:text-gray-900"
+									:class="[
+										isExactActive
+											? 'font-bold border-brand border-l-2'
+											: 'text-gray-800 hover:text-gray-900 hover:bg-gray-100'
+									]"
+									:href="href"
+									@click="navigate"
+								>
+									{{ tab.label }}
+								</a>
+							</li>
+						</router-link>
+					</ul>
+				</div>
+				<div class="w-full pt-4" v-if="site">
 					<router-view v-bind="{ site }"></router-view>
 				</div>
 			</div>
@@ -112,6 +102,7 @@ export default {
 			{ label: 'Site Config', route: 'site-config' },
 			{ label: 'Console', route: 'console' },
 			{ label: 'Drop Site', route: 'drop-site' },
+			{ label: 'Access Control', route: 'access-control' },
 			{ label: 'Settings', route: 'settings' }
 		]
 	}),
@@ -171,8 +162,7 @@ export default {
 			}
 		},
 		async fetchSite() {
-			this.site = await this.$call('frappe.client.get', {
-				doctype: 'Site',
+			this.site = await this.$call('press.api.site.get', {
 				name: this.siteName
 			});
 		},
