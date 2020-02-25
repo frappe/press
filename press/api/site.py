@@ -71,3 +71,7 @@ def analytics(name):
 		"jobs_per_minute": jobs_per_minute,
 		"job_cpu_time_per_minute": job_cpu_time_per_minute,
 	}
+
+@frappe.whitelist()
+def login(name):
+	return frappe.get_doc("Site", name).login()
