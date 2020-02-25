@@ -4,6 +4,7 @@
 
 from __future__ import unicode_literals
 import frappe
+import json
 from frappe.model.document import Document
 from press.agent import Agent
 
@@ -22,3 +23,8 @@ def process_backup_site_job_update(job):
 	)[0]
 	if job.status != backup.status:
 		frappe.db.set_value("Site Backup", backup.name, "status", job.status)
+		if job.status == "Success":
+			data = json.loads(job.data)
+			frappe.db.set_value("Site Backup", backup.name, "size", data["size"])
+			frappe.db.set_value("Site Backup", backup.name, "url", data["url"])
+			frappe.db.set_value("Site Backup", backup.name, "database", data["database"])
