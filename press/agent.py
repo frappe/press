@@ -87,6 +87,10 @@ class Agent:
 		data = self.post(f"benches/{bench}/monitor", {})["data"]
 		return data
 
+	def fetch_site_status(self, site):
+		data = self.get(f"benches/{site.bench}/sites/{site.name}/status")["data"]
+		return data
+
 	def new_domain(self, domain):
 		data = {"name": domain}
 		job = self.create_agent_job("Add Host to Proxy", "proxy/hosts", data)
