@@ -30,13 +30,15 @@
    "label": "Site",
    "options": "Site",
    "read_only": 1,
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "timestamp",
    "fieldtype": "Datetime",
    "label": "Timestamp",
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "ip",
@@ -116,7 +118,7 @@
   }
  ],
  "links": [],
- "modified": "2020-02-24 19:12:15.013286",
+ "modified": "2020-02-27 13:24:36.287048",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Request Log",

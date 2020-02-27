@@ -20,7 +20,8 @@
    "label": "Site",
    "options": "Site",
    "read_only": 1,
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "default": "0",
@@ -56,11 +57,13 @@
    "fieldname": "timestamp",
    "fieldtype": "Datetime",
    "label": "Timestamp",
-   "reqd": 1
+   "read_only": 1,
+   "reqd": 1,
+   "search_index": 1
   }
  ],
  "links": [],
- "modified": "2020-02-25 15:13:47.900413",
+ "modified": "2020-02-27 13:24:39.155088",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Uptime Log",
