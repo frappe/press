@@ -50,10 +50,7 @@ export default {
 		sites: []
 	}),
 	async mounted() {
-		this.sites = await this.$call('frappe.client.get_list', {
-			doctype: 'Site',
-			fields: ['name, status, modified']
-		});
+		this.sites = await this.$call('press.api.site.all');
 	},
 	methods: {
 		relativeDate(dateString) {
