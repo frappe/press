@@ -88,7 +88,8 @@ def job_detail(job):
 
 def publish_update(job):
 	message = job_detail(job)
-	frappe.publish_realtime(event="agent_job_update", message=message, user=job.owner)
+	job_owner = frappe.db.get_value("Agent Job", job, "owner")
+	frappe.publish_realtime(event="agent_job_update", message=message, user=job_owner)
 
 
 def collect_site_analytics():
