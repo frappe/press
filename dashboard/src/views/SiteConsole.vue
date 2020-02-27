@@ -5,12 +5,14 @@
 			<p class="text-gray-600">
 				Access your site's Python and Database Console
 			</p>
-			<Button class="mt-6 hover:bg-gray-100 border">
-				Launch Python Console
-			</Button>
-			<Button class="ml-4 hover:bg-gray-100 border">
-				Launch Database Console
-			</Button>
+            <div class="flex">
+                <Button class="mt-6 hover:bg-gray-100 border">
+                    Launch Python Console
+                </Button>
+                <Button class="mt-6 ml-4 hover:bg-gray-100 border">
+                    Launch Database Console
+                </Button>
+            </div>
 		</section>
 	</div>
 </template>

@@ -5,32 +5,35 @@
 			<p class="text-gray-600">
 				Backups are enabled and are scheduled every week at 12:00 AM
 			</p>
-			<div class="mt-6 w-1/2 shadow rounded border border-gray-100 px-6 py-4">
+			<div
+				class="mt-6 w-full sm:w-1/2 shadow rounded border border-gray-100 py-4"
+			>
 				<div v-if="backups.length">
-					<div class="py-4" v-for="backup in backups">
-						<div>
-							<a
-								:href="backup.url"
-								target="_blank"
-								class="flex font-semibold justify-between items-baseline"
-							>
+					<a
+						:href="backup.url"
+						target="_blank"
+						class="px-6 py-4 hover:bg-gray-50 block"
+						v-for="backup in backups"
+					>
+						<div class="w-full">
+							<a class="w-full flex font-semibold justify-between items-baseline">
 								<span>
-									{{ backup.database }}
+									{{ backup.database || 'Performing backup..' }}
 								</span>
-								<span class="text-gray-700 font-normal">
-									{{ formattedSize(backup.size) }}
+								<span class="text-gray-700 font-normal" v-if="backup.size">
+									{{ formatBytes(backup.size) }}
 								</span>
 							</a>
-							<div class="text-gray-600 text-sm">
+							<div class="text-gray-600 text-sm" v-if="backup.database">
 								<FormatDate>{{ backup.creation }}</FormatDate>
 							</div>
 						</div>
-					</div>
+					</a>
 				</div>
-				<div class="text-gray-600" v-else>
+				<div class="px-6 text-gray-600" v-else>
 					No backups found
 				</div>
-				<div class="mt-4">
+				<div class="px-6 mt-4">
 					<Button
 						class="bg-brand hover:bg-blue-600 text-white"
 						@click="scheduleBackup"
@@ -57,12 +60,19 @@ export default {
 	},
 	mounted() {
 		this.fetchBackups();
+		this.$store.socket.on('agent_job_update', data => {
+			if (data.site === this.site.name && data.name === 'Backup Site') {
+				if (data.status === 'Success') {
+					this.fetchBackups();
+				}
+			}
+		});
 	},
 	methods: {
 		async fetchBackups() {
 			this.backups = await this.$call('frappe.client.get_list', {
 				doctype: 'Site Backup',
-				fields: '`name`, `database`, `size`, `creation`, `url`',
+				fields: '`name`, `database`, `size`, `creation`, `url`, `status`',
 				filters: {
 					site: this.site.name
 				}
@@ -74,8 +84,16 @@ export default {
 			});
 			this.fetchBackups();
 		},
-		formattedSize(size) {
-			return Math.floor(size / 1024) + 'MB';
+		formatBytes(bytes, decimals = 2) {
+			if (bytes === 0) return '0 Bytes';
+
+			const k = 1024;
+			const dm = decimals < 0 ? 0 : decimals;
+			const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+
+			const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+			return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 		}
 	}
 };
