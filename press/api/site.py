@@ -47,7 +47,13 @@ def activities(name):
 
 @frappe.whitelist()
 def available():
-	bench = frappe.get_all("Bench", limit=1)[0].name
+	public = [group.name for group in frappe.get_all("Release Group", filters={"public": True})]
+	available = frappe.get_all("Bench", fields=["name", "`group`", "candidate"], filters={"status": "Active", "group": ("in", public)})
+	from pprint import pprint
+	pprint(available)
+
+
+
 	apps = frappe.get_all(
 		"Installed App", fields=["app"], filters={"parent": bench}, order_by="idx"
 	)
@@ -57,7 +63,7 @@ def available():
 @frappe.whitelist()
 def all():
 	sites = frappe.get_all(
-		"Site", fields=["name", "status"], filters={"owner": frappe.session.user}
+		"Site", fields=["name", "status", "modified"], filters={"owner": frappe.session.user}, order_by="creation desc"
 	)
 	return sites
 
@@ -138,5 +144,10 @@ def login(name):
 
 
 @frappe.whitelist()
-def schedule_backup(name):
-	frappe.get_doc("Site", name).perform_backup()
+def backup(name):
+	frappe.get_doc("Site", name).backup()
+
+
+@frappe.whitelist()
+def archive(name):
+	frappe.get_doc("Site", name).archive()
