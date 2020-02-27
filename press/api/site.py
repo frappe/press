@@ -5,6 +5,7 @@
 from __future__ import unicode_literals
 import frappe
 from frappe.utils.password import get_decrypted_password
+from press.press.doctype.agent_job.agent_job import job_detail
 
 
 @frappe.whitelist()
@@ -24,6 +25,14 @@ def new(site):
 		"name": site.name,
 		"password": get_decrypted_password("Site", site.name, "password"),
 	}
+
+
+@frappe.whitelist()
+def jobs(site):
+	jobs = frappe.get_all(
+		"Agent Job", filters={"status": ("in", ("Pending", "Running")), "site": site}
+	)
+	return [job_detail(job.name) for job in jobs]
 
 
 @frappe.whitelist()
