@@ -50,7 +50,7 @@ class AgentJob(Document):
 		return job.name
 
 
-def publish_update(job):
+def job_detail(job):
 	job = frappe.get_doc("Agent Job", job)
 	steps = []
 	for index, job_step in enumerate(
@@ -69,7 +69,7 @@ def publish_update(job):
 	if job.status == "Pending":
 		current = {"name": job.job_type, "status": "Waiting", "index": -1}
 	elif job.status in ("Success", "Failure"):
-		current = {"name": job.job_type, "status": job.status, "index": len(steps) + 1}
+		current = {"name": job.job_type, "status": job.status, "index": len(steps)}
 
 	current["total"] = len(steps)
 
@@ -83,7 +83,11 @@ def publish_update(job):
 		"steps": steps,
 		"current": current,
 	}
+	return message
 
+
+def publish_update(job):
+	message = job_detail(job)
 	frappe.publish_realtime(event="agent_job_update", message=message, user=job.owner)
 
 
