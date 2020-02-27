@@ -7,7 +7,7 @@
 					<p class="text-gray-600">Realtime usage analytics of your site</p>
 				</div>
 				<div>
-					<select class="form-select">
+					<select class="form-select" v-model="period">
 						<option
 							v-for="o in periodOptions"
 							:value="o"
@@ -43,7 +43,7 @@
 								<div
 									v-for="d in analytics.uptime"
 									style="width: 2px;"
-									:class="[d[type.key] ? 'bg-green-500' : 'bg-red-500']"
+									:class="[d[type.key] === 1 ? 'bg-green-500' : (d[type.key] === 0 ? 'bg-red-500' : 'bg-orange-500')]"
 								></div>
 							</div>
 							<div class="mt-2 text-sm flex justify-between">
@@ -69,8 +69,8 @@ export default {
 	data() {
 		return {
 			analytics: null,
-			period: '6 hours',
-			periodOptions: ['6 hours', '24 hours', '7 days', '30 days'],
+			period: '1 hour',
+			periodOptions: ['1 hour', '6 hours', '24 hours', '7 days', '30 days'],
 			uptimeTypes: [
 				{ key: 'web', label: 'Web' },
 				{ key: 'scheduler', label: 'Scheduler' },
@@ -78,12 +78,13 @@ export default {
 			]
 		};
 	},
-	async mounted() {
-		await this.fetchAnalytics();
-		this.makeRequestsPerSecondChart();
-		this.makeJobsPerSecondChart();
-		this.makeCPUUsageChart();
-		this.makeJobCPUUsageChart();
+	watch: {
+		period() {
+			this.refreshCharts();
+		}
+	},
+	mounted() {
+		this.refreshCharts();
 	},
 	methods: {
 		async fetchAnalytics() {
@@ -92,10 +93,17 @@ export default {
 				period: this.period
 			});
 		},
+		async refreshCharts() {
+			await this.fetchAnalytics();
+			this.makeRequestsPerSecondChart();
+			this.makeJobsPerSecondChart();
+			this.makeCPUUsageChart();
+			this.makeJobCPUUsageChart();
+		},
 		makeRequestsPerSecondChart() {
 			new Chart(this.$refs['requests-per-minute'], {
 				data: {
-					labels: this.analytics.requests_per_minute.map(d => {
+					labels: this.analytics.request_count.map(d => {
 						return {
 							timestamp: d.timestamp,
 							toString() {
@@ -104,7 +112,7 @@ export default {
 						};
 					}),
 					datasets: [
-						{ values: this.analytics.requests_per_minute.map(d => d.value) }
+						{ values: this.analytics.request_count.map(d => d.value) }
 					]
 				},
 				type: 'line',
@@ -114,11 +122,12 @@ export default {
 					shortenYAxisNumbers: 1
 				},
 				lineOptions: {
-					hideDots: true
+					hideDots: true,
+					spline: true
 				},
 				tooltipOptions: {
 					formatTooltipX: d => {
-						return DateTime.fromSQL(d.timestamp).toFormat('dd-mm-yyyy hh:mm a');
+						return DateTime.fromSQL(d.timestamp).toFormat('dd-MM-yyyy hh:mm a');
 					},
 					formatTooltipY: d => d + ' requests'
 				}
@@ -127,7 +136,7 @@ export default {
 		makeJobsPerSecondChart() {
 			new Chart(this.$refs['jobs-per-minute'], {
 				data: {
-					labels: this.analytics.jobs_per_minute.map(d => {
+					labels: this.analytics.job_count.map(d => {
 						return {
 							timestamp: d.timestamp,
 							toString() {
@@ -136,7 +145,7 @@ export default {
 						};
 					}),
 					datasets: [
-						{ values: this.analytics.jobs_per_minute.map(d => d.value) }
+						{ values: this.analytics.job_count.map(d => d.value) }
 					]
 				},
 				type: 'line',
@@ -146,11 +155,12 @@ export default {
 					shortenYAxisNumbers: 1
 				},
 				lineOptions: {
-					hideDots: true
+					hideDots: true,
+					spline: true
 				},
 				tooltipOptions: {
 					formatTooltipX: d => {
-						return DateTime.fromSQL(d.timestamp).toFormat('dd-mm-yyyy hh:mm a');
+						return DateTime.fromSQL(d.timestamp).toFormat('dd-MM-yyyy hh:mm a');
 					},
 					formatTooltipY: d => d + ' jobs'
 				}
@@ -159,7 +169,7 @@ export default {
 		makeCPUUsageChart() {
 			new Chart(this.$refs['requests-cpu-usage'], {
 				data: {
-					labels: this.analytics.request_cpu_time_per_minute.map(d => {
+					labels: this.analytics.request_cpu_time.map(d => {
 						return {
 							timestamp: d.timestamp,
 							toString() {
@@ -169,7 +179,7 @@ export default {
 					}),
 					datasets: [
 						{
-							values: this.analytics.request_cpu_time_per_minute.map(
+							values: this.analytics.request_cpu_time.map(
 								d => d.value / 1000
 							)
 						}
@@ -182,11 +192,12 @@ export default {
 					shortenYAxisNumbers: 1
 				},
 				lineOptions: {
-					hideDots: true
+					hideDots: true,
+					spline: true
 				},
 				tooltipOptions: {
 					formatTooltipX: d => {
-						return DateTime.fromSQL(d.timestamp).toFormat('dd-mm-yyyy hh:mm a');
+						return DateTime.fromSQL(d.timestamp).toFormat('dd-MM-yyyy hh:mm a');
 					},
 					formatTooltipY: d => {
 						return d + 's';
@@ -197,7 +208,7 @@ export default {
 		makeJobCPUUsageChart() {
 			new Chart(this.$refs['jobs-cpu-usage'], {
 				data: {
-					labels: this.analytics.job_cpu_time_per_minute.map(d => {
+					labels: this.analytics.job_cpu_time.map(d => {
 						return {
 							timestamp: d.timestamp,
 							toString() {
@@ -207,7 +218,7 @@ export default {
 					}),
 					datasets: [
 						{
-							values: this.analytics.job_cpu_time_per_minute.map(
+							values: this.analytics.job_cpu_time.map(
 								d => d.value / 1000
 							)
 						}
@@ -220,11 +231,12 @@ export default {
 					shortenYAxisNumbers: 1
 				},
 				lineOptions: {
-					hideDots: true
+					hideDots: true,
+					spline: true
 				},
 				tooltipOptions: {
 					formatTooltipX: d => {
-						return DateTime.fromSQL(d.timestamp).toFormat('dd-mm-yyyy hh:mm a');
+						return DateTime.fromSQL(d.timestamp).toFormat('dd-MM-yyyy hh:mm a');
 					},
 					formatTooltipY: d => {
 						return d + 's';
