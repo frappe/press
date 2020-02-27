@@ -51,11 +51,15 @@ class Site(Document):
 	def login(self):
 		log_site_history(self.name, "Login as Administrator")
 		password = get_decrypted_password("Site", self.name, "admin_password")
-		response = requests.post(f'https://{self.name}/api/method/login', data={'usr': 'Administrator', 'pwd': password})
-		return response.cookies.get('sid')
+		response = requests.post(
+			f"https://{self.name}/api/method/login",
+			data={"usr": "Administrator", "pwd": password},
+		)
+		return response.cookies.get("sid")
 
 	def update_site(self):
 		log_site_history(self.name, "Update")
+
 
 def process_new_site_job_update(job):
 	other_job_type = {
