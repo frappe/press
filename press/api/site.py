@@ -28,12 +28,22 @@ def new(site):
 
 
 @frappe.whitelist()
-def jobs(site):
+def jobs(name):
 	jobs = frappe.get_all(
-		"Agent Job", filters={"status": ("in", ("Pending", "Running")), "site": site}
+		"Agent Job", filters={"status": ("in", ("Pending", "Running")), "site": name}
 	)
 	return [job_detail(job.name) for job in jobs]
 
+@frappe.whitelist()
+def backups(name):
+	backups = frappe.get_all("Site Backup", fields=["name", "`database`", "size", "url", "creation", "status"], filters={"site": name}, limit=5)
+	return backups
+
+
+@frappe.whitelist()
+def activities(name):
+	activities = frappe.get_all("Site History", fields=["action", "creation", "owner"], filters={"site": name}, limit=5)
+	return activities
 
 @frappe.whitelist()
 def available():

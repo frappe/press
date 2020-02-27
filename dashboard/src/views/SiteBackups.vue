@@ -70,12 +70,8 @@ export default {
 	},
 	methods: {
 		async fetchBackups() {
-			this.backups = await this.$call('frappe.client.get_list', {
-				doctype: 'Site Backup',
-				fields: '`name`, `database`, `size`, `creation`, `url`, `status`',
-				filters: {
-					site: this.site.name
-				}
+			this.backups = await this.$call('press.api.site.backups', {
+				name: this.site.name
 			});
 		},
 		async scheduleBackup() {
