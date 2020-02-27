@@ -32,7 +32,7 @@ class Site(Document):
 		agent = Agent(server.proxy_server, server_type="Proxy Server")
 		agent.new_upstream_site(self.server, self.name)
 
-	def perform_backup(self):
+	def backup(self):
 		log_site_history(self.name, "Backup")
 		frappe.get_doc({"doctype": "Site Backup", "site": self.name}).insert()
 

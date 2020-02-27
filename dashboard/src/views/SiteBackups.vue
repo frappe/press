@@ -75,7 +75,7 @@ export default {
 			});
 		},
 		async scheduleBackup() {
-			await this.$call('press.api.site.schedule_backup', {
+			await this.$call('press.api.site.backup', {
 				name: this.site.name
 			});
 			this.fetchBackups();
