@@ -86,63 +86,79 @@ def publish_update(job):
 
 	frappe.publish_realtime(event="agent_job_update", message=message, user=job.owner)
 
+
 def collect_site_analytics():
-	benches = frappe.get_all("Bench", fields=["name", "server"], filters={"status": "Active"})
+	benches = frappe.get_all(
+		"Bench", fields=["name", "server"], filters={"status": "Active"}
+	)
 	for bench in benches:
 		agent = Agent(bench.server)
 		logs = agent.fetch_monitor_data(bench.name)
-		request_logs, job_logs = [], []
 		for log in logs:
 			try:
 				if log["transaction_type"] == "request":
-					frappe.get_doc({
-						"doctype": "Site Request Log",
-						"name": log["uuid"],
-						"site": log["site"],
-						"timestamp": log["timestamp"],
-						"duration": log["duration"],
-						"url": log["path"],
-						"ip": log["ip"],
-						"length": log["length"],
-						"http_method": log["method"],
-						"status_code": log["status_code"],
-						"http_referer": log["headers"].get("Referer"),
-						"http_user_agent": log["headers"].get("User-Agent"),
-						"http_headers": json.dumps(log["headers"], indent=4, sort_keys=True),
-					}).insert()				
+					frappe.get_doc(
+						{
+							"doctype": "Site Request Log",
+							"name": log["uuid"],
+							"site": log["site"],
+							"timestamp": log["timestamp"],
+							"duration": log["duration"],
+							"url": log["path"],
+							"ip": log["ip"],
+							"length": log["length"],
+							"http_method": log["method"],
+							"status_code": log["status_code"],
+							"http_referer": log["headers"].get("Referer"),
+							"http_user_agent": log["headers"].get("User-Agent"),
+							"http_headers": json.dumps(log["headers"], indent=4, sort_keys=True),
+						}
+					).insert()
 				elif log["transaction_type"] == "job":
-					frappe.get_doc({
-						"doctype": "Site Job Log",
-						"name": log["uuid"],
-						"site": log["site"],
-						"job_name": log["method"],
-						"timestamp": log["timestamp"],
-						"duration": log["duration"],
-					}).insert()
+					frappe.get_doc(
+						{
+							"doctype": "Site Job Log",
+							"name": log["uuid"],
+							"site": log["site"],
+							"job_name": log["method"],
+							"timestamp": log["timestamp"],
+							"duration": log["duration"],
+						}
+					).insert()
 			except frappe.exceptions.DuplicateEntryError:
 				pass
 
 
 def collect_site_uptime():
-	sites = frappe.get_all("Site", fields=["name", "server", "bench"], filters={"status": "Active", "enable_uptime_monitoring": True})
+	sites = frappe.get_all(
+		"Site",
+		fields=["name", "server", "bench"],
+		filters={"status": "Active", "enable_uptime_monitoring": True},
+	)
 	for site in sites:
 		try:
 			agent = Agent(site.server)
 			status = agent.fetch_site_status(site)
-			frappe.get_doc({
-				"doctype": "Site Uptime Log",
-				"site": site.name,
-				"web": status["web"],
-				"scheduler": status["scheduler"],
-				"timestamp": status["timestamp"],
-			}).insert()
+			frappe.get_doc(
+				{
+					"doctype": "Site Uptime Log",
+					"site": site.name,
+					"web": status["web"],
+					"scheduler": status["scheduler"],
+					"timestamp": status["timestamp"],
+				}
+			).insert()
 			frappe.db.commit()
 		except Exception:
 			pass
 
 
 def schedule_backups():
-	sites = frappe.get_all("Site", fields=["name", "server", "bench"], filters={"status": "Active", "enable_scheduled_backups": True})
+	sites = frappe.get_all(
+		"Site",
+		fields=["name", "server", "bench"],
+		filters={"status": "Active", "enable_scheduled_backups": True},
+	)
 	for site in sites:
 		frappe.get_doc("Site", site.name).perform_backup()
 

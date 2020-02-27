@@ -47,7 +47,11 @@ def all():
 def get(name):
 	site = frappe.get_doc("Site", name)
 	apps = [app.app for app in site.apps]
-	apps = frappe.get_all("Frappe App", fields=["name", "repo_owner as owner", "scrubbed as repo", "url", "branch"], filters={"name": ("in", apps)})
+	apps = frappe.get_all(
+		"Frappe App",
+		fields=["name", "repo_owner as owner", "scrubbed as repo", "url", "branch"],
+		filters={"name": ("in", apps)},
+	)
 	return {
 		"name": site.name,
 		"status": site.status,
@@ -108,9 +112,11 @@ def analytics(name, period="1 hour"):
 		"uptime": uptime_data,
 	}
 
+
 @frappe.whitelist()
 def login(name):
 	return frappe.get_doc("Site", name).login()
+
 
 @frappe.whitelist()
 def schedule_backup(name):
