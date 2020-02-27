@@ -3,7 +3,7 @@
 		<section>
 			<h2 class="font-medium text-lg">Configuration</h2>
 			<p class="text-gray-600">View and edit your site configuration</p>
-			<div class="w-1/2 mt-6 shadow rounded border border-gray-100 px-6 py-4">
+			<div class="w-full sm:w-1/2 mt-6 shadow rounded border border-gray-100 px-6 py-4">
 				<div
 					v-for="(field, i) in fields"
 					class="flex items-baseline"

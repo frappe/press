@@ -10,7 +10,7 @@
 				</div>
 			</template>
 		</PageHeader>
-		<div class="px-8" v-if="site">
+		<div class="px-4 sm:px-8" v-if="site">
 			<div class="border-t"></div>
 			<div class="py-8">
 				<div class="flex items-center">
@@ -26,75 +26,83 @@
 					<FeatherIcon name="external-link" class="ml-1 w-3 h-3" />
 				</a>
 			</div>
-			<div class="mt-6" v-if="siteInstalling">
-				<h2>{{ progress.runningStep }}</h2>
-				<div class="rounded-md overflow-auto h-4 bg-blue-100">
-					<div
-						class="bg-blue-500 h-full"
-						:style="`width: ${(progress.current + 1 / progress.total) * 100}%;`"
-					></div>
-				</div>
+		</div>
+		<div class="px-4 sm:px-8" v-if="site && site.status === 'Active'">
+			<div>
+				<ul class="hidden sm:flex rounded overflow-hidden text-sm border-b">
+					<router-link
+						v-for="tab in tabs"
+						:key="tab.label"
+						:to="tab.route"
+						v-slot="{ href, route, navigate, isActive, isExactActive }"
+					>
+						<li>
+							<a
+								class="mr-8 px-1 py-4 border-b-2 border-transparent font-medium leading-none block focus:outline-none"
+								:class="[
+									isExactActive
+										? 'border-brand text-brand'
+										: 'text-gray-800 hover:text-gray-900'
+								]"
+								:href="href"
+								@click="navigate"
+							>
+								{{ tab.label }}
+							</a>
+						</li>
+					</router-link>
+				</ul>
+				<select
+					class="block sm:hidden form-select w-full"
+					@change="e => changeTab(e.target.value)"
+				>
+					<option
+						v-for="tab in tabs"
+						:selected="isTabSelected(tab)"
+						:value="tab.route"
+					>
+						{{ tab.label }}
+					</option>
+				</select>
+			</div>
+			<div class="w-full pt-6 sm:pt-10 pb-32">
+				<router-view v-bind="{ site }"></router-view>
 			</div>
 		</div>
-		<div class="px-8">
-			<div class="flex items-start">
-				<div class="sticky top-0 pt-4">
-					<ul class="w-56 border rounded overflow-hidden text-sm mr-6">
-						<router-link
-							v-for="tab in tabs"
-							:key="tab.label"
-							:to="tab.route"
-							v-slot="{ href, route, navigate, isActive, isExactActive }"
-						>
-							<li class="-mt-px border-t">
-								<a
-									class="px-4 py-3 leading-none block focus:outline-none focus:bg-gray-100 focus:text-gray-900"
-									:class="[
-										isExactActive
-											? 'font-bold border-brand border-l-2'
-											: 'text-gray-800 hover:text-gray-900 hover:bg-gray-100'
-									]"
-									:href="href"
-									@click="navigate"
-								>
-									{{ tab.label }}
-								</a>
-							</li>
-						</router-link>
-					</ul>
+		<div class="px-4 sm:px-8" v-if="installingJob">
+			<section>
+				<h2 class="font-medium text-lg">Your site is being installed..</h2>
+				<p class="text-gray-600">
+					Please wait while we set up your site for use.
+				</p>
+				<div
+					class="w-full sm:w-1/2 mt-6 border border-gray-100 shadow rounded px-6 py-4"
+				>
+					<div
+						v-for="step in installingJob.steps"
+						class="flex items-center py-2"
+					>
+						<div class="w-4 h-4 text-gray-800">
+							<FeatherIcon
+								class="w-4 h-4"
+								:class="{ spin: step.status === 'Running' }"
+								:name="iconMap[step.status]"
+							/>
+						</div>
+						<span class="ml-2">{{ step.name }}</span>
+					</div>
 				</div>
-				<div class="w-full pt-4" v-if="site">
-					<router-view v-bind="{ site }"></router-view>
-				</div>
-			</div>
+			</section>
 		</div>
 	</div>
 </template>
 
 <script>
-import io from 'socket.io-client';
-
-let steps = [
-	'New Site',
-	'Install Apps',
-	'Site Update Configuration',
-	'Bench Setup NGINX',
-	'Reload NGINX'
-];
 export default {
 	name: 'Site',
 	props: ['siteName'],
 	data: () => ({
 		site: null,
-		newSiteJob: null,
-		siteInstalling: false,
-		newSiteJobSteps: [],
-		progress: {
-			current: 0,
-			total: 5,
-			runningStep: null
-		},
-		socket: null,
 		tabs: [
 			{ label: 'General', route: 'general' },
 			{ label: 'Analytics', route: 'analytics' },
@@ -102,63 +110,37 @@ export default {
 			{ label: 'Site Config', route: 'site-config' },
 			{ label: 'Console', route: 'console' },
 			{ label: 'Drop Site', route: 'drop-site' },
-			{ label: 'Access Control', route: 'access-control' },
-			{ label: 'Settings', route: 'settings' }
-		]
+			{ label: 'Access Control', route: 'access-control' }
+		],
+		iconMap: {
+			Running: 'loader',
+			Success: 'check',
+			Pending: 'minus'
+		},
+		installingJob: null
 	}),
 	async mounted() {
 		await this.fetchSite();
-		// if (this.site.status !== 'Active') {
-		// 	this.updateStatus();
-		// }
-		this.socket = io('http://frappe-cloud:9000');
-		this.socket.on('connect', () => {
-			console.log('connected');
-		});
-		this.socket.on('disconnect', () => {
-			console.log('disconnected');
-		});
+		this.setupSiteInstall();
 
-		this.socket.on('agent_job_update', data => {
-			if (data.site === this.siteName) {
-				this.siteInstalling = data.status === 'Running';
-				this.progress.current = data.current.index;
-				this.progress.runningStep = data.current.name;
-				this.progress.total = data.current.total;
-				if (data.current.index > data.current.total) {
-					this.fetchSite();
-				}
-			}
-			console.log(data);
-		});
 		if (this.$route.matched.length === 1) {
 			let path = this.$route.fullPath;
 			this.$router.replace(`${path}/general`);
 		}
 	},
-	destroyed() {
-		this.socket.disconnect();
-	},
 	methods: {
-		async updateStatus() {
-			if (!this.newSiteJob) {
-				let res = await this.$call('frappe.client.get_value', {
-					doctype: 'Agent Job',
-					filters: {
-						job_type: 'New Site',
-						site: this.siteName
-					},
-					fieldname: 'name'
-				});
-				this.newSiteJob = res.name;
-			}
-			await this.fetchSite();
-			await this.fetchJobSteps();
+		setupSiteInstall() {
+			if (['Pending', 'Installing'].includes(this.site.status)) {
+				this.$store.socket.on('agent_job_update', data => {
+					if (data.site === this.site.name && data.name === 'New Site') {
+						this.installingJob = data;
 
-			if (this.site.status !== 'Active') {
-				setTimeout(() => {
-					this.updateStatus();
-				}, 1000);
+						if (data.status === 'Success') {
+							this.installingJob = null;
+							this.fetchSite();
+						}
+					}
+				});
 			}
 		},
 		async fetchSite() {
@@ -166,44 +148,24 @@ export default {
 				name: this.siteName
 			});
 		},
-		async fetchJobSteps() {
-			this.newSiteJobSteps = await this.$call('frappe.client.get_list', {
-				doctype: 'Agent Job Step',
-				filters: {
-					agent_job: this.newSiteJob
-				},
-				fields: ['step_name, status']
-			});
-			let jobsInOrder = steps.map(name =>
-				this.newSiteJobSteps.find(d => d.step_name === name)
-			);
-			jobsInOrder.forEach((job, i) => {
-				if (job.status === 'Running') {
-					this.progress.runningStep = job.step_name;
-				}
-				if (job.status === 'Success') {
-					this.progress.current = i + 1;
-				}
-			});
-		}
-	},
-	computed: {
-		siteDetails() {
-			return [
-				{
-					label: 'Server',
-					value: this.site.server
-				},
-				{
-					label: 'Bench',
-					value: this.site.bench
-				}
-				// {
-				// 	label: 'Apps',
-				// 	value: this.site.apps.map(a => a.app).join(', ')
-				// }
-			];
+		isTabSelected(tab) {
+			return this.$route.path.endsWith(tab.route);
+		},
+		changeTab(route) {
+			this.$router.push(route);
 		}
 	}
 };
 </script>
+
+<style>
+.spin {
+	animation: spin 4s linear infinite;
+}
+
+@keyframes spin {
+	100% {
+		transform: rotate(360deg);
+	}
+}
+</style>

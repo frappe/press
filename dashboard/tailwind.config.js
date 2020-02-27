@@ -12,6 +12,7 @@ module.exports = {
 				'brand-100': '#f4f9ff',
 				black: '#112B42',
 				gray: {
+                    '50': '#f9fafb',
 					'100': '#f4f4f6',
 					'200': '#e9ebed',
 					'300': '#dfe1e2',

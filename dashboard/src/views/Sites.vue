@@ -12,12 +12,12 @@
 						New Site
 					</span>
 				</Button>
-				<SearchBar class="ml-4" />
+				<SearchBar class="ml-4 hidden sm:block" />
 			</div>
 		</PageHeader>
-		<div class="px-8">
+		<div class="px-4 sm:px-8">
 			<div class="border-t mb-5"></div>
-			<div class="grid grid-cols-3 gap-4">
+			<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-16">
 				<router-link
 					:to="`/sites/${site.name}`"
 					v-for="site in sites"

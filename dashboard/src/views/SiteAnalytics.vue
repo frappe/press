@@ -1,5 +1,5 @@
 <template>
-	<div class="pb-16">
+	<div>
 		<section>
 			<div class="flex justify-between">
 				<div>
@@ -18,7 +18,7 @@
 					</select>
 				</div>
 			</div>
-			<div class="grid grid-cols-2 gap-4" v-if="analytics">
+			<div class="grid grid-cols-1 sm:grid-cols-2 gap-4" v-if="analytics">
 				<div class="mt-6 shadow rounded border border-gray-100 px-6 py-4">
 					<div>Requests per minute</div>
 					<div ref="requests-per-minute"></div>
