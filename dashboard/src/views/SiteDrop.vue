@@ -79,7 +79,7 @@ export default {
 	},
 	methods: {
 		async dropSite() {
-			await this.$call('press.api.site.drop', { name: this.site.name });
+			await this.$call('press.api.site.archive', { name: this.site.name });
 		}
 	}
 };
