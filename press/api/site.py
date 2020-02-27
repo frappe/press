@@ -58,21 +58,54 @@ def get(name):
 
 
 @frappe.whitelist()
-def analytics(name):
-	requests_per_minute = frappe.db.sql("""SELECT COUNT(*) AS value, timestamp FROM `tabSite Request Log` WHERE site = %s GROUP BY EXTRACT(DAY_MINUTE FROM timestamp)""", name, as_dict=True)
-	request_cpu_time_per_minute = frappe.db.sql("""SELECT SUM(duration) AS value, timestamp FROM `tabSite Request Log` WHERE site = %s GROUP BY EXTRACT(DAY_MINUTE FROM timestamp)""", name, as_dict=True)
+def analytics(name, period="1 hour"):
+	interval, divisor, = {
+		"1 hour": ("1 HOUR", 60),
+		"6 hours": ("6 HOUR", 5 * 60),
+		"24 hours": ("24 HOUR", 30 * 60),
+		"7 days": ("7 DAY", 3 * 60 * 60),
+		"30 days": ("30 DAY", 12 * 60 * 60),
+	}[period]
 
-	jobs_per_minute = frappe.db.sql("""SELECT COUNT(*) AS value, timestamp FROM `tabSite Job Log` WHERE site = %s GROUP BY EXTRACT(DAY_MINUTE FROM timestamp)""", name, as_dict=True)
-	job_cpu_time_per_minute = frappe.db.sql("""SELECT SUM(duration) AS value, timestamp FROM `tabSite Job Log` WHERE site = %s GROUP BY EXTRACT(DAY_MINUTE FROM timestamp)""", name, as_dict=True)
+	def get_data(doctype, fields):
+		query = f"""
+			SELECT
+				{fields},
+				FROM_UNIXTIME({divisor} * (UNIX_TIMESTAMP(timestamp) DIV {divisor})) as _timestamp
+			FROM
+				`tab{doctype}`
+			WHERE
+				site = %s AND timestamp >= UTC_TIMESTAMP() - INTERVAL {interval}
+			GROUP BY
+				_timestamp
+		"""
+		result = frappe.db.sql(query, name, as_dict=True, debug=False)
+		for row in result:
+			row["timestamp"] = row.pop("_timestamp")
+		return result
 
-	uptime = frappe.db.sql("""SELECT web, scheduler, socketio, timestamp FROM `tabSite Uptime Log` WHERE site = %s""", name, as_dict=True)
-
+	request_data = get_data(
+		"Site Request Log", "COUNT(name) as request_count, SUM(duration) as request_duration"
+	)
+	job_data = get_data(
+		"Site Job Log", "COUNT(name) as job_count, SUM(duration) as job_duration"
+	)
+	uptime_data = get_data(
+		"Site Uptime Log",
+		"AVG(web) AS web, AVG(scheduler) AS scheduler, AVG(socketio) AS socketio",
+	)
 	return {
-		"requests_per_minute": requests_per_minute,
-		"request_cpu_time_per_minute": request_cpu_time_per_minute,
-		"jobs_per_minute": jobs_per_minute,
-		"job_cpu_time_per_minute": job_cpu_time_per_minute,
-		"uptime": uptime,
+		"request_count": [
+			{"value": r.request_count, "timestamp": r.timestamp} for r in request_data
+		],
+		"request_cpu_time": [
+			{"value": r.request_duration, "timestamp": r.timestamp} for r in request_data
+		],
+		"job_count": [{"value": r.job_count, "timestamp": r.timestamp} for r in job_data],
+		"job_cpu_time": [
+			{"value": r.job_duration, "timestamp": r.timestamp} for r in job_data
+		],
+		"uptime": uptime_data,
 	}
 
 @frappe.whitelist()
