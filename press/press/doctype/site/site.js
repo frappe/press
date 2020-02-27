@@ -34,7 +34,7 @@ frappe.ui.form.on('Site', {
 			frappe.set_route("List", "Site Job Log", filters);
 		}, __('Logs'));
 		frm.add_custom_button(__('Backup'), () => {
-			frm.call({method: "perform_backup", doc: frm.doc, callback: result => frappe.msgprint(result.message)});
+			frm.call({method: "backup", doc: frm.doc, callback: result => frappe.msgprint(result.message)});
 		}, __('Actions'));
 		frm.add_custom_button(__('Archive'), () => {
 			frm.call({method: "archive", doc: frm.doc, callback: result => frappe.msgprint(result.message)});
