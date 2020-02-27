@@ -20,14 +20,16 @@
    "label": "Site",
    "options": "Site",
    "read_only": 1,
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "timestamp",
    "fieldtype": "Datetime",
    "in_list_view": 1,
    "label": "Timestamp",
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "job_name",
@@ -47,7 +49,7 @@
   }
  ],
  "links": [],
- "modified": "2020-02-25 15:27:13.288951",
+ "modified": "2020-02-27 13:24:40.892831",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Job Log",
