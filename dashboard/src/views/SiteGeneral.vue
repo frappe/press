@@ -78,10 +78,8 @@ export default {
 	},
 	methods: {
 		async fetchActivities() {
-			let activities = await this.$call('frappe.client.get_list', {
-				doctype: 'Site History',
-				fields: 'action, creation, owner',
-				filters: { site: this.site.name }
+			let activities = await this.$call('press.api.site.activities', {
+				name: this.site.name
 			});
 
 			this.activities = activities.map(d => {
