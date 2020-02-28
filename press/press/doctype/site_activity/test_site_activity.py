@@ -6,6 +6,5 @@ from __future__ import unicode_literals
 # import frappe
 import unittest
 
-
-class TestSiteHistory(unittest.TestCase):
+class TestSiteActivity(unittest.TestCase):
 	pass

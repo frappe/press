@@ -39,7 +39,7 @@ def backups(name):
 
 @frappe.whitelist()
 def activities(name):
-	activities = frappe.get_all("Site History", fields=["action", "creation", "owner"], filters={"site": name}, limit=5)
+	activities = frappe.get_all("Site Activity", fields=["action", "creation", "owner"], filters={"site": name}, limit=5)
 	return activities
 
 @frappe.whitelist()

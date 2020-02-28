@@ -6,12 +6,10 @@ from __future__ import unicode_literals
 import frappe
 from frappe.model.document import Document
 
-
-class SiteHistory(Document):
+class SiteActivity(Document):
 	pass
 
-
-def log_site_history(site, action):
+def log_site_activity(site, action):
 	return frappe.get_doc(
-		{"doctype": "Site History", "site": site, "action": action}
+		{"doctype": "Site Activity", "site": site, "action": action}
 	).insert()
