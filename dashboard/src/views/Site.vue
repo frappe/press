@@ -110,7 +110,8 @@ export default {
 			{ label: 'Site Config', route: 'site-config' },
 			{ label: 'Console', route: 'console' },
 			{ label: 'Drop Site', route: 'drop-site' },
-			{ label: 'Access Control', route: 'access-control' }
+			{ label: 'Access Control', route: 'access-control' },
+			{ label: 'Jobs', route: 'jobs' }
 		],
 		iconMap: {
 			Running: 'loader',

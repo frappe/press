@@ -31,7 +31,7 @@
 				class="w-full sm:w-1/2 mt-6 border border-gray-100 shadow rounded py-4"
 			>
 				<a
-					class="px-6 py-2 block hover:bg-gray-50"
+					class="px-6 py-3 block hover:bg-gray-50"
 					v-for="app in site.installed_apps"
 					:href="`${app.url}/tree/${app.branch}`"
 					target="_blank"

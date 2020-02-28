@@ -23,9 +23,27 @@ def new(site):
 	).insert(ignore_permissions=True)
 	return site.name
 
-
 @frappe.whitelist()
 def jobs(name):
+	jobs = frappe.get_all("Agent Job",
+		fields=['name', 'job_type', 'creation', 'status', 'start', 'end', 'duration'],
+		filters={"site": name}
+	)
+	return jobs
+
+@frappe.whitelist()
+def job(name):
+	job = frappe.get_doc('Agent Job', name)
+	job = job.as_dict()
+	job.steps = frappe.get_all('Agent Job Step',
+		filters={'agent_job': name},
+		fields=['step_name', 'status', 'start', 'end', 'duration', 'output', 'traceback'],
+		order_by='creation'
+	)
+	return job
+
+@frappe.whitelist()
+def running_jobs(name):
 	jobs = frappe.get_all(
 		"Agent Job", filters={"status": ("in", ("Pending", "Running")), "site": name}
 	)

@@ -18,6 +18,10 @@ export default {
 				}
 				return valid;
 			}
+		},
+		strokeWidth: {
+			type: Number,
+			default: 1.5
 		}
 	},
 	render(h) {
@@ -28,7 +32,7 @@ export default {
 				stroke: 'currentColor',
 				'stroke-linecap': 'round',
 				'stroke-linejoin': 'round',
-				'stroke-width': 1.5,
+				'stroke-width': this.strokeWidth,
 				width: null,
 				height: null
 			}),

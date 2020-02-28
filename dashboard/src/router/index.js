@@ -86,9 +86,9 @@ const routes = [
 					)
 			},
 			{
-				path: '*',
+				path: 'jobs',
 				component: () =>
-					import(/* webpackChunkName: "site" */ '../views/ComingSoon.vue')
+					import(/* webpackChunkName: "site" */ '../views/SiteJobs.vue')
 			}
 		]
 	},

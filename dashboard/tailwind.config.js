@@ -1,7 +1,22 @@
 module.exports = {
 	theme: {
 		fontFamily: {
-			sans: ['Inter', 'sans-serif']
+			sans: ['Inter', 'sans-serif'],
+			mono: [
+				'Consolas',
+				'"Andale Mono WT"',
+				'"Andale Mono"',
+				'"Lucida Console"',
+				'"Lucida Sans Typewriter"',
+				'"DejaVu Sans Mono"',
+				'"Bitstream Vera Sans Mono"',
+				'"Liberation Mono"',
+				'"Nimbus Mono L"',
+				'Monaco',
+				'"Courier New"',
+				'Courier',
+				'monospace'
+			]
 		},
 		extend: {
 			width: {
@@ -12,7 +27,7 @@ module.exports = {
 				'brand-100': '#f4f9ff',
 				black: '#112B42',
 				gray: {
-                    '50': '#f9fafb',
+					'50': '#f9fafb',
 					'100': '#f4f4f6',
 					'200': '#e9ebed',
 					'300': '#dfe1e2',
