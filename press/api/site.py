@@ -10,21 +10,18 @@ from press.press.doctype.agent_job.agent_job import job_detail
 
 @frappe.whitelist()
 def new(site):
-	server = frappe.get_all("Server", limit=1)[0].name
-	bench = frappe.get_all("Bench", filters={"server": server}, limit=1)[0].name
+	bench = frappe.get_all("Bench", fields=["name", "server"], filters={"status": "Active", "group": site["group"]}, order_by="creation desc", limit=1)[0].name
 	site = frappe.get_doc(
 		{
 			"doctype": "Site",
-			"name": site["name"],
-			"server": server,
+			"subdomain": site["name"],
 			"bench": bench,
 			"apps": [{"app": app} for app in site["apps"]],
+			"enable_scheduled_backups": site["backups"],
+			"enable_uptime_monitoring": site["monitor"],
 		},
 	).insert(ignore_permissions=True)
-	return {
-		"name": site.name,
-		"password": get_decrypted_password("Site", site.name, "password"),
-	}
+	return site.name
 
 
 @frappe.whitelist()
@@ -46,19 +43,15 @@ def activities(name):
 	return activities
 
 @frappe.whitelist()
-def available():
-	public = [group.name for group in frappe.get_all("Release Group", filters={"public": True})]
-	available = frappe.get_all("Bench", fields=["name", "`group`", "candidate"], filters={"status": "Active", "group": ("in", public)})
-	from pprint import pprint
-	pprint(available)
-
-
-
-	apps = frappe.get_all(
-		"Installed App", fields=["app"], filters={"parent": bench}, order_by="idx"
-	)
-	return {"name": bench, "apps": [app.app for app in apps]}
-
+def options_for_new():
+	group = frappe.get_doc("Release Group", {"default": True})
+	apps = frappe.get_all("Frappe App", fields=["name", "frappe", "branch", "scrubbed", "url"], filters={"name": ("in", [row.app for row in group.apps])})
+	order = {row.app: row.idx for row in group.apps}
+	return {
+		"domain": frappe.db.get_single_value("Press Settings", "domain"),
+		"group": group.name,
+		"apps": sorted(apps, key=lambda x: order[x.name])
+	}
 
 @frappe.whitelist()
 def all():

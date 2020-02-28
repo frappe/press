@@ -3,7 +3,7 @@
 		<PageHeader>
 			<h1 slot="title">New Site</h1>
 		</PageHeader>
-		<div class="px-8">
+		<div class="px-8" v-if="options">
 			<div class="border-t mb-5"></div>
 			<div class="rounded-lg shadow-md mx-auto px-6 py-8" style="width: 650px">
 				<div>
@@ -21,7 +21,7 @@
 							v-model="siteName"
 						/>
 						<div class="bg-gray-200 flex border items-center px-4 rounded-r">
-							.frappe.cloud
+							{{ options.domain }}
 						</div>
 					</div>
 				</div>
@@ -48,7 +48,7 @@
 							<div>
 								<img class="mx-auto w-8 h-8" :src="app.logo" :alt="app.name" />
 								<div class="mt-3 font-semibold">
-									{{ app.name }}
+									{{ app.repo }}
 								</div>
 							</div>
 						</div>
@@ -87,10 +87,16 @@
 					</div>
 				</div>
 				<div class="mt-10">
-					<label class="flex leading-none">
-						<input type="checkbox" class="form-checkbox" />
+					<label class="flex leading-none py-2">
+						<input type="checkbox" class="form-checkbox" v-model="enableBackups"/>
 						<span class="ml-2">
 							Enable Backups
+						</span>
+					</label>
+					<label class="flex leading-none py-2">
+						<input type="checkbox" class="form-checkbox" v-model="enableMonitoring"/>
+						<span class="ml-2">
+							Enable Uptime Monitoring
 						</span>
 					</label>
 				</div>
@@ -115,10 +121,11 @@ import erpnextLogo from '@/assets/erpnext-logo.svg';
 export default {
 	name: 'NewSite',
 	data: () => ({
-		bench: 'faris2-bench',
-		server: 'f1.frappe.cloud',
 		siteName: null,
 		apps: [],
+		enableBackups: false,
+		enableMonitoring: false,
+		options: null,
 		selectedApps: [],
 		selectedPlan: null,
 		plans: [
@@ -145,15 +152,13 @@ export default {
 		]
 	}),
 	async mounted() {
-		let bench = await this.$call('frappe.client.get', {
-			doctype: 'Bench',
-			name: this.bench
-		});
-		this.apps = bench.apps.map(d => {
+		this.options = await this.$call('press.api.site.options_for_new');
+		this.apps = this.options.apps.map(d => {
 			let app = d.scrubbed;
 			return {
-				app: d.app,
-				name: 'frappe/' + d.scrubbed,
+				app: d.name,
+				frappe: d.frappe,
+				repo: 'frappe/' + d.scrubbed,
 				logo: app === 'frappe' ? frappeLogo : erpnextLogo
 			};
 		});
@@ -165,24 +170,19 @@ export default {
 	},
 	methods: {
 		async createSite() {
-			let siteName = this.siteName + '.frappe.cloud';
-			let res = await this.$call('frappe.client.insert', {
-				doc: {
-					doctype: 'Site',
-					name: siteName,
-					bench: this.bench,
-					server: this.server,
-					apps: this.selectedApps.map(app => {
-						return { app };
-					})
+			let siteName = await this.$call('press.api.site.new', {
+				site: {
+					name: this.siteName,
+					apps: this.selectedApps,
+					backups: this.enableBackups,
+					monitor: this.enableMonitoring,
+					group: this.options.group,
 				}
 			});
-			if (!res.error) {
-				this.$router.push(`/sites/${siteName}`);
-			}
+			this.$router.push(`/sites/${siteName}`);
 		},
 		isFrappeApp(app) {
-			return app.app.toLowerCase().includes('frappe');
+			return app.frappe;
 		},
 		toggleApp(app) {
 			if (this.isFrappeApp(app)) return;

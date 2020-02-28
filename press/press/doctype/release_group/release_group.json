@@ -6,7 +6,8 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "apps"
+  "apps",
+  "default"
  ],
  "fields": [
   {
@@ -15,10 +16,18 @@
    "label": "Apps",
    "options": "Release Group Frappe App",
    "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "default",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Default"
   }
  ],
  "links": [],
- "modified": "2020-01-13 16:04:45.363835",
+ "modified": "2020-02-28 14:43:48.120348",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",
