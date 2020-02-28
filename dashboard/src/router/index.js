@@ -81,13 +81,38 @@ const routes = [
 			{
 				path: 'access-control',
 				component: () =>
-					import(/* webpackChunkName: "site" */ '../views/SiteAccessControl.vue')
+					import(
+						/* webpackChunkName: "site" */ '../views/SiteAccessControl.vue'
+					)
 			},
 			{
 				path: '*',
 				component: () =>
 					import(/* webpackChunkName: "site" */ '../views/ComingSoon.vue')
 			}
+		]
+	},
+	{
+		path: '/account',
+		name: 'Account',
+		component: () =>
+			import(/* webpackChunkName: "account" */ '../views/Account.vue'),
+		children: [
+			{
+				path: 'profile',
+				component: () =>
+					import(/* webpackChunkName: "account" */ '../views/AccountProfile.vue')
+			},
+			{
+				path: 'team',
+				component: () =>
+					import(/* webpackChunkName: "account" */ '../views/AccountTeam.vue')
+			},
+			{
+				path: 'billing',
+				component: () =>
+					import(/* webpackChunkName: "account" */ '../views/AccountBilling.vue')
+			},
 		]
 	}
 ];
@@ -99,14 +124,19 @@ const router = new VueRouter({
 router.beforeEach((to, from, next) => {
 	if (to.matched.some(record => !record.meta.isLoginPage)) {
 		// this route requires auth, check if logged in
-		// if not, redirect to login page.
+        // if not, redirect to login page.
 		if (!store.auth.isLoggedIn) {
 			next({ name: 'Login' });
 		} else {
 			next();
 		}
 	} else {
-		next();
+		// if already logged in, route to /sites
+		if (store.auth.isLoggedIn) {
+			next({ name: 'Sites' });
+		} else {
+			next();
+		}
 	}
 });
 

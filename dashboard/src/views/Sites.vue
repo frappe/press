@@ -4,6 +4,7 @@
 			<h1 slot="title">Sites</h1>
 			<div class="flex items-center" slot="actions">
 				<Button
+					v-if="sites.length"
 					route="/sites/new"
 					class="bg-brand text-white flex items-center pr-5 text-sm leading-none"
 				>
@@ -17,7 +18,10 @@
 		</PageHeader>
 		<div class="px-4 sm:px-8">
 			<div class="border-t mb-5"></div>
-			<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-16">
+			<div
+				v-if="sites.length"
+				class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-16"
+			>
 				<router-link
 					:to="`/sites/${site.name}`"
 					v-for="site in sites"
@@ -38,6 +42,14 @@
 						</div>
 					</div>
 				</router-link>
+			</div>
+			<div class="p-24 text-center" v-else>
+				<div class="text-gray-800">
+					You haven't created any sites yet.
+				</div>
+				<Button route="/sites/new" class="mt-10 bg-brand text-white">
+					Create your first Site
+				</Button>
 			</div>
 		</div>
 	</div>

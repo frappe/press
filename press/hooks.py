@@ -57,7 +57,7 @@ home_page = "index"
 # ------------
 
 # before_install = "press.install.before_install"
-# after_install = "press.install.after_install"
+after_install = "press.install.after_install"
 
 # Desk Notifications
 # ------------------

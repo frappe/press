@@ -1,20 +1,30 @@
 <template>
 	<div class="h-full bg-gray-100 pt-16">
-		<div>
+		<div v-if="state != 'Signup Success'">
 			<div class="flex">
 				<h1 class="mx-auto font-bold text-2xl px-6 py-4">Frappe Cloud</h1>
 			</div>
 			<div class="mt-6 mx-auto w-112 py-12 px-12 rounded-md bg-white shadow-lg">
 				<div class="mb-8">
-					<span class="text-lg">Signup to your account</span>
+					<span class="text-lg">Signup to create your account</span>
 				</div>
-				<form class="flex flex-col" @submit.prevent="login">
+				<form class="flex flex-col" @submit.prevent="signup">
 					<label class="block">
-						<span class="text-gray-800">Full Name</span>
+						<span class="text-gray-800">First Name</span>
 						<input
 							class="mt-2 form-input block w-full shadow"
 							type="text"
-							placeholder="John Doe"
+							placeholder="John"
+							v-model="firstName"
+						/>
+					</label>
+					<label class="mt-4 block">
+						<span class="text-gray-800">Last Name</span>
+						<input
+							class="mt-2 form-input block w-full shadow"
+							type="text"
+							placeholder="Doe"
+							v-model="lastName"
 						/>
 					</label>
 					<label class="mt-4 block">
@@ -23,37 +33,18 @@
 							class="mt-2 form-input block w-full shadow"
 							type="email"
 							placeholder="johndoe@mail.com"
+							v-model="email"
 						/>
 					</label>
-					<label class="mt-4 block">
-						<span class="text-gray-800">Password</span>
-						<input
-							class="mt-2 form-input block w-full shadow"
-							type="password"
-							placeholder="******"
-						/>
-					</label>
-					<label class="mt-4 block">
-						<span class="text-gray-800">Confirm Password</span>
-						<input
-							class="mt-2 form-input block w-full shadow"
-							type="password"
-							placeholder="******"
-						/>
-					</label>
-					<span
-						v-if="state === 'Login Error'"
-						class="mt-2 text-sm text-red-500"
-					>
-						Invalid email or password
-					</span>
+					<div class="mt-6 text-red-600" v-if="state == 'Signup Error'">
+						{{ errorMessage }}
+					</div>
 					<Button
 						class="mt-6 bg-brand focus:bg-blue-600 hover:bg-blue-400 text-white shadow"
-						:disabled="state === 'Logging In'"
+						:disabled="state === 'Signing Up'"
 						:class="{
-							'bg-blue-300 cursor-not-allowed': state === 'Logging In'
+							'bg-blue-300 cursor-not-allowed': state === 'Signing Up'
 						}"
-						@click="login"
 					>
 						Signup
 					</Button>
@@ -70,5 +61,41 @@
 				</form>
 			</div>
 		</div>
+		<div class="text-center mt-20" v-else>
+			We have sent an email to <span class="font-semibold">{{ email }}</span
+			>. Please click on the link received to verify your email and set up your
+			account.
+		</div>
 	</div>
 </template>
+
+<script>
+export default {
+	name: 'Signup',
+	data() {
+		return {
+			state: 'Idle', // Idle, Signing Up, Signup Error, Signup Success
+			firstName: null,
+			lastName: null,
+			email: null,
+			errorMessage: null
+		};
+	},
+	methods: {
+		async signup() {
+			try {
+				this.state = 'Signing Up';
+				await this.$call('press.api.account.signup', {
+					first_name: this.firstName,
+					last_name: this.lastName,
+					email: this.email
+				});
+				this.state = 'Signup Success';
+			} catch (error) {
+				this.errorMessage = error.messages.map(m => m.message).join('\n');
+				this.state = 'Signup Error';
+			}
+		}
+	}
+};
+</script>

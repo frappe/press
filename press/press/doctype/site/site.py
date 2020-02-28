@@ -9,11 +9,11 @@ import requests
 from frappe.model.document import Document
 from press.press.doctype.agent_job.agent_job import Agent
 from frappe.utils.password import get_decrypted_password
-from press.press.doctype.site_history.site_history import log_site_history
+from press.press.doctype.site_activity.site_activity import log_site_activity
 
 
 class Site(Document):
-	def autoname(self):		
+	def autoname(self):
 		domain = frappe.db.get_single_value("Press Settings", "domain")
 		self.name = f"{self.subdomain}.{domain}"
 
@@ -22,7 +22,7 @@ class Site(Document):
 			self.admin_password = frappe.generate_hash(length=16)
 
 	def after_insert(self):
-		log_site_history(self.name, "Create")
+		log_site_activity(self.name, "Create")
 		self.create_agent_request()
 
 	def create_agent_request(self):
@@ -37,11 +37,11 @@ class Site(Document):
 		agent.new_upstream_site(self.server, self.name)
 
 	def backup(self):
-		log_site_history(self.name, "Backup")
+		log_site_activity(self.name, "Backup")
 		frappe.get_doc({"doctype": "Site Backup", "site": self.name}).insert()
 
 	def archive(self):
-		log_site_history(self.name, "Archive")
+		log_site_activity(self.name, "Archive")
 		agent = Agent(self.server)
 		agent.archive_site(self)
 
@@ -53,7 +53,7 @@ class Site(Document):
 		agent.remove_upstream_site(self.server, self.name)
 
 	def login(self):
-		log_site_history(self.name, "Login as Administrator")
+		log_site_activity(self.name, "Login as Administrator")
 		password = get_decrypted_password("Site", self.name, "admin_password")
 		response = requests.post(
 			f"https://{self.name}/api/method/login",
@@ -62,7 +62,7 @@ class Site(Document):
 		return response.cookies.get("sid")
 
 	def update_site(self):
-		log_site_history(self.name, "Update")
+		log_site_activity(self.name, "Update")
 
 
 def process_new_site_job_update(job):
