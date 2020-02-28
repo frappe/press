@@ -8,7 +8,7 @@ export default async function call(method, args) {
 		headers: {
 			Accept: 'application/json',
 			'Content-Type': 'application/json; charset=utf-8',
-            'X-Frappe-Site-Name': window.location.hostname
+			'X-Frappe-Site-Name': window.location.hostname
 		},
 		body: JSON.stringify(args)
 	});
@@ -20,20 +20,34 @@ export default async function call(method, args) {
 		}
 		return data.message;
 	} else {
-		let error = null;
-		let data = null;
+		let response = await res.text();
+		let error, exception;
 		try {
-			data = await res.json();
-			if (data.exc) {
-				error = JSON.parse(data.exc)[0];
-			}
-		} catch (e) {
-			error = await res.text();
+			error = JSON.parse(response);
+		} catch (e) {}
+		let errorParts = [
+			[method, error.exc_type, error._error_message].filter(Boolean).join(' ')
+		];
+		if (error.exc) {
+			exception = error.exc;
+			try {
+				exception = JSON.parse(exception)[0];
+			} catch (e) {}
+			errorParts.push(exception);
 		}
-		console.error(error);
-		return {
-			error: true,
-			data
-		};
+		let e = new Error(errorParts.join('\n'));
+		e.exc_type = error.exc_type;
+		e.exc = exception;
+		e.messages = error._server_messages
+			? JSON.parse(error._server_messages)
+			: [];
+		e.messages = e.messages.map(m => {
+			try {
+				return JSON.parse(m);
+			} catch (error) {
+				return m;
+			}
+		});
+		throw e;
 	}
 }
