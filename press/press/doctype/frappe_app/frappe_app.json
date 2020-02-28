@@ -9,7 +9,8 @@
   "url",
   "scrubbed",
   "branch",
-  "repo_owner"
+  "repo_owner",
+  "frappe"
  ],
  "fields": [
   {
@@ -39,10 +40,17 @@
    "fieldtype": "Data",
    "label": "Repo Owner",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "frappe",
+   "fieldtype": "Check",
+   "label": "Frappe",
+   "set_only_once": 1
   }
  ],
  "links": [],
- "modified": "2020-02-04 09:43:55.215860",
+ "modified": "2020-02-25 18:59:47.284708",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Frappe App",

@@ -13,6 +13,10 @@ from press.press.doctype.site_history.site_history import log_site_history
 
 
 class Site(Document):
+	def autoname(self):		
+		domain = frappe.db.get_single_value("Press Settings", "domain")
+		self.name = f"{self.subdomain}.{domain}"
+
 	def validate(self):
 		if not self.admin_password:
 			self.admin_password = frappe.generate_hash(length=16)

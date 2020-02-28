@@ -1,20 +1,29 @@
 {
  "actions": [],
- "autoname": "Prompt",
  "creation": "2019-12-09 12:35:51.941522",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "subdomain",
   "status",
   "server",
   "bench",
   "column_break_3",
   "admin_password",
+  "update",
   "section_break_6",
   "apps",
   "enable_uptime_monitoring",
-  "enable_scheduled_backups"
+  "enable_scheduled_backups",
+  "database_section",
+  "database_type",
+  "database_name",
+  "column_break_13",
+  "database_host",
+  "database_port",
+  "configuration_section",
+  "config"
  ],
  "fields": [
   {
@@ -79,10 +88,70 @@
    "fieldname": "enable_scheduled_backups",
    "fieldtype": "Check",
    "label": "Enable Scheduled Backups"
+  },
+  {
+   "fieldname": "config",
+   "fieldtype": "Code",
+   "label": "Configuration",
+   "options": "JSON"
+  },
+  {
+   "fieldname": "database_section",
+   "fieldtype": "Section Break",
+   "label": "Database"
+  },
+  {
+   "default": "MariaDB",
+   "fieldname": "database_type",
+   "fieldtype": "Select",
+   "label": "Database Type",
+   "options": "MariaDB\nPostgres",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "database_name",
+   "fieldtype": "Data",
+   "label": "Database Name",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "column_break_13",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "localhost",
+   "fieldname": "database_host",
+   "fieldtype": "Data",
+   "label": "Database Host",
+   "set_only_once": 1
+  },
+  {
+   "default": "3306",
+   "fieldname": "database_port",
+   "fieldtype": "Data",
+   "label": "Database Port",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "configuration_section",
+   "fieldtype": "Section Break",
+   "label": "Configuration"
+  },
+  {
+   "fieldname": "update",
+   "fieldtype": "Datetime",
+   "label": "Last Updated On"
+  },
+  {
+   "fieldname": "subdomain",
+   "fieldtype": "Data",
+   "label": "Subdomain",
+   "reqd": 1
   }
  ],
  "links": [],
- "modified": "2020-02-25 15:34:26.731664",
+ "modified": "2020-02-28 15:16:35.685281",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
@@ -101,7 +170,7 @@
    "write": 1
   }
  ],
- "sort_field": "modified",
+ "sort_field": "creation",
  "sort_order": "DESC",
  "track_changes": 1
 }

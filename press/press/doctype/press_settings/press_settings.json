@@ -5,6 +5,7 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "domain",
   "bench_configuration",
   "github_access_token"
  ],
@@ -22,11 +23,17 @@
    "fieldname": "github_access_token",
    "fieldtype": "Data",
    "label": "GitHub Access Token"
+  },
+  {
+   "fieldname": "domain",
+   "fieldtype": "Data",
+   "label": "Domain",
+   "reqd": 1
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2020-02-17 19:39:26.970642",
+ "modified": "2020-02-28 14:57:53.435673",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
