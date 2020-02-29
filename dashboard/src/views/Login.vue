@@ -32,7 +32,7 @@
 						v-if="state === 'Login Error'"
 						class="mt-2 text-sm text-red-500"
 					>
-						Invalid email or password
+						{{ errorMessage }}
 					</span>
 					<Button
 						class="mt-6 bg-brand focus:bg-blue-600 hover:bg-blue-400 text-white shadow"
@@ -66,17 +66,19 @@ export default {
 		return {
 			state: 'Idle', // Idle, Logging In, Login Error
 			email: null,
-			password: null
+            password: null,
+            errorMessage: null
 		};
 	},
 	methods: {
 		async login() {
-			this.state = 'Logging In';
-			let loggedIn = await this.$store.auth.login(this.email, this.password);
-			if (loggedIn) {
+			try {
+				this.state = 'Logging In';
+				let loggedIn = await this.$store.auth.login(this.email, this.password);
 				this.$router.push('/');
 				this.state = 'Idle';
-			} else {
+			} catch (error) {
+                this.errorMessage = error.messages.join('\n');
 				this.state = 'Login Error';
 			}
 		}
