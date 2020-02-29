@@ -1,0 +1,6 @@
+{
+	"name": "press",
+	"scripts": {
+		"build": "cd dashboard && yarn build"
+	}
+}
