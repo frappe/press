@@ -162,3 +162,7 @@ def backup(name):
 @frappe.whitelist()
 def archive(name):
 	frappe.get_doc("Site", name).archive()
+
+@frappe.whitelist()
+def exists(subdomain):
+	return bool(frappe.db.exists('Site', {'subdomain': subdomain}))

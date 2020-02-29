@@ -5,7 +5,10 @@
 		</PageHeader>
 		<div class="px-8" v-if="options">
 			<div class="border-t mb-5"></div>
-			<div class="rounded-lg shadow-md mx-auto px-6 py-8" style="width: 650px">
+			<div
+				class="rounded-lg border border-gray-100 shadow-md mx-auto px-6 py-8"
+				style="width: 650px"
+			>
 				<div>
 					<label>
 						Choose a hostname
@@ -16,13 +19,19 @@
 					</p>
 					<div class="mt-6 flex">
 						<input
-							class="form-input rounded-r-none z-10 bg-gray-100 focus:bg-white w-full"
+							class="form-input rounded-r-none z-10 bg-gray-50 focus:bg-white w-full"
 							type="text"
 							v-model="siteName"
+							@change="checkIfExists"
+                            placeholder="subdomain"
+							ref="siteName"
 						/>
 						<div class="bg-gray-200 flex border items-center px-4 rounded-r">
-							{{ options.domain }}
+							.{{ options.domain }}
 						</div>
+					</div>
+					<div class="mt-1 text-red-600 text-sm" v-if="siteExistsMessage">
+						{{ siteExistsMessage }}
 					</div>
 				</div>
 				<div class="mt-10">
@@ -34,8 +43,8 @@
 						version of the app.
 					</p>
 					<div class="mt-6 flex">
-						<div
-							class="rounded px-6 py-8 border w-40 mr-4 flex justify-center items-center cursor-pointer"
+						<button
+							class="rounded px-6 py-8 border w-40 mr-4 flex justify-center items-center cursor-pointer focus:outline-none focus:shadow-outline"
 							:class="
 								selectedApps.includes(app.app)
 									? 'bg-blue-100 border-blue-500'
@@ -51,7 +60,7 @@
 									{{ app.repo }}
 								</div>
 							</div>
-						</div>
+						</button>
 					</div>
 				</div>
 				<div class="mt-10">
@@ -62,9 +71,9 @@
 						Select a plan based on the type of usage you are expecting on your
 						site.
 					</p>
-					<div class="mt-6 flex overflow-auto">
-						<div
-							class="rounded border text-center w-40 mr-4 cursor-pointer flex-shrink-0"
+					<div class="mt-6 flex overflow-auto py-1 pl-1 -ml-1">
+						<button
+							class="rounded border text-center w-40 mr-4 cursor-pointer flex-shrink-0 focus:outline-none focus:shadow-outline"
 							:class="
 								selectedPlan === plan
 									? 'bg-blue-100 border-blue-500'
@@ -83,25 +92,33 @@
 							<div class="py-3 text-sm text-gray-600">
 								<div v-for="d in plan.items" :key="d">{{ d }}</div>
 							</div>
-						</div>
+						</button>
 					</div>
 				</div>
 				<div class="mt-10">
 					<label class="flex leading-none py-2">
-						<input type="checkbox" class="form-checkbox" v-model="enableBackups"/>
+						<input
+							type="checkbox"
+							class="form-checkbox"
+							v-model="enableBackups"
+						/>
 						<span class="ml-2">
 							Enable Backups
 						</span>
 					</label>
 					<label class="flex leading-none py-2">
-						<input type="checkbox" class="form-checkbox" v-model="enableMonitoring"/>
+						<input
+							type="checkbox"
+							class="form-checkbox"
+							v-model="enableMonitoring"
+						/>
 						<span class="ml-2">
 							Enable Uptime Monitoring
 						</span>
 					</label>
 				</div>
 				<Button
-					class="mt-10 text-white text-sm w-full"
+					class="mt-10 text-white text-sm w-full focus:bg-blue-600"
 					:class="
 						canCreateSite() ? 'bg-blue-500' : 'bg-blue-300 pointer-events-none'
 					"
@@ -128,6 +145,8 @@ export default {
 		options: null,
 		selectedApps: [],
 		selectedPlan: null,
+		siteExistsMessage: null,
+		state: null,
 		plans: [
 			{
 				price: 5,
@@ -167,18 +186,23 @@ export default {
 			this.selectedApps.push(frappeApp.app);
 		}
 		this.selectedPlan = this.plans[0];
+		this.$nextTick(() => {
+			this.$refs.siteName.focus();
+		});
 	},
 	methods: {
 		async createSite() {
+			this.state = 'Creating Site';
 			let siteName = await this.$call('press.api.site.new', {
 				site: {
 					name: this.siteName,
 					apps: this.selectedApps,
 					backups: this.enableBackups,
 					monitor: this.enableMonitoring,
-					group: this.options.group,
+					group: this.options.group
 				}
 			});
+			this.state = null;
 			this.$router.push(`/sites/${siteName}`);
 		},
 		isFrappeApp(app) {
@@ -193,7 +217,21 @@ export default {
 			}
 		},
 		canCreateSite() {
-			return this.siteName && this.selectedApps.length > 0 && this.selectedPlan;
+			return (
+				!this.siteExistsMessage &&
+				this.siteName &&
+				this.selectedApps.length > 0 &&
+				this.selectedPlan &&
+				this.state !== 'Creating Site'
+			);
+		},
+		async checkIfExists() {
+			let exists = await this.$call('press.api.site.exists', {
+				subdomain: this.siteName
+			});
+			this.siteExistsMessage = exists
+				? `${this.siteName}.${this.options.domain} already exists.`
+				: null;
 		}
 	}
 };

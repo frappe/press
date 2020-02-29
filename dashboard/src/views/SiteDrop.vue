@@ -79,7 +79,9 @@ export default {
 	},
 	methods: {
 		async dropSite() {
-			await this.$call('press.api.site.archive', { name: this.site.name });
+            this.showModal = false;
+            await this.$call('press.api.site.archive', { name: this.site.name });
+            this.confirmSiteName = null;
 		}
 	}
 };

@@ -41,6 +41,7 @@ export default async function call(method, args) {
 		e.messages = error._server_messages
 			? JSON.parse(error._server_messages)
 			: [];
+		e.messages = e.messages.concat(error.message);
 		e.messages = e.messages.map(m => {
 			try {
 				return JSON.parse(m);

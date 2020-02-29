@@ -1,5 +1,5 @@
 <template>
-	<div>
+	<div v-if="!installingJob">
 		<section>
 			<h2 class="font-medium text-lg">Site information</h2>
 			<p class="text-gray-600">General information about your site</p>
@@ -62,6 +62,28 @@
 			</div>
 		</section>
 	</div>
+	<div v-else>
+		<section>
+			<h2 class="font-medium text-lg">Your site is being installed..</h2>
+			<p class="text-gray-600">
+				Please wait while we set up your site for use.
+			</p>
+			<div
+				class="w-full sm:w-1/2 mt-6 border border-gray-100 shadow rounded px-6 py-4"
+			>
+				<div v-for="step in installingJob.steps" class="flex items-center py-2">
+					<div class="w-4 h-4 text-gray-800">
+						<FeatherIcon
+							class="w-4 h-4"
+							:class="{ spin: step.status === 'Running' }"
+							:name="iconMap[step.status]"
+						/>
+					</div>
+					<span class="ml-2">{{ step.name }}</span>
+				</div>
+			</div>
+		</section>
+	</div>
 </template>
 
 <script>
@@ -70,13 +92,34 @@ export default {
 	props: ['site'],
 	data() {
 		return {
-			activities: []
+			activities: [],
+			iconMap: {
+				Running: 'loader',
+				Success: 'check',
+				Pending: 'minus'
+			},
+			installingJob: null
 		};
 	},
 	mounted() {
+		this.setupSiteInstall();
 		this.fetchActivities();
+		this.fetchPendingJobs();
 	},
 	methods: {
+		setupSiteInstall() {
+			if (['Pending', 'Installing'].includes(this.site.status)) {
+				this.$store.socket.on('agent_job_update', data => {
+					if (data.site === this.site.name && data.name === 'New Site') {
+						this.installingJob = data;
+
+						if (data.status === 'Success') {
+							this.installingJob = null;
+						}
+					}
+				});
+			}
+		},
 		async fetchActivities() {
 			let activities = await this.$call('press.api.site.activities', {
 				name: this.site.name
@@ -92,7 +135,29 @@ export default {
 					text
 				};
 			});
+		},
+		async fetchPendingJobs() {
+			let jobs = await this.$call('press.api.site.running_jobs', {
+				name: this.site.name
+			});
+			jobs.forEach(job => {
+				if (job.name === 'New Site') {
+					this.installingJob = job;
+				}
+			});
 		}
 	}
 };
 </script>
+
+<style>
+.spin {
+	animation: spin 4s linear infinite;
+}
+
+@keyframes spin {
+	100% {
+		transform: rotate(360deg);
+	}
+}
+</style>
