@@ -135,4 +135,5 @@ dmypy.json
 *.swp
 tags
 press/docs/current
-press/www/dashboard
+press/public/dashboard
+press/www/dashboard.html

@@ -1,0 +1,13 @@
+# Copyright (c) 2020, Frappe Technologies Pvt. Ltd. and Contributors
+# MIT License. See license.txt
+
+from __future__ import unicode_literals
+import frappe
+
+base_template_path = "templates/www/dashboard.html"
+
+
+def get_context(context):
+	csrf_token = frappe.sessions.get_csrf_token()
+	frappe.db.commit()
+	context.csrf_token = csrf_token
