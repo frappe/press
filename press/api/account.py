@@ -45,3 +45,9 @@ def update_profile(first_name, last_name, email):
 	doc.email = email
 	doc.save()
 	return doc
+
+@frappe.whitelist()
+def update_profile_picture(image_url):
+	user = frappe.get_doc('User', frappe.session.user)
+	user.user_image = image_url
+	user.save()

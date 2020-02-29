@@ -54,17 +54,10 @@
 					:class="isActive ? 'bg-white' : 'hover:bg-gray-300'"
 					:href="href"
 				>
-					<img
-						v-if="$store.account.user.image"
-						class="w-8 h-8 rounded-full border-2 border-white"
-						:src="$store.account.user.image"
+					<Avatar
+						:label="$store.account.user.first_name"
+						:imageURL="$store.account.user.image"
 					/>
-					<div
-						class="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center bg-green-200 text-green-700"
-						v-else
-					>
-						{{ $store.account.user.first_name[0] }}
-					</div>
 					<div class="ml-2">
 						<div class="font-semibold">
 							{{ $store.account.user.first_name }}
