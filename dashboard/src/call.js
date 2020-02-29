@@ -3,13 +3,19 @@ export default async function call(method, args) {
 		args = {};
 	}
 
+	let headers = {
+		Accept: 'application/json',
+		'Content-Type': 'application/json; charset=utf-8',
+		'X-Frappe-Site-Name': window.location.hostname
+	};
+
+	if (window.csrf_token && window.csrf_token !== '{{ csrf_token }}') {
+		headers['X-Frappe-CSRF-Token'] = window.csrf_token;
+	}
+
 	const res = await fetch(`/api/method/${method}`, {
 		method: 'POST',
-		headers: {
-			Accept: 'application/json',
-			'Content-Type': 'application/json; charset=utf-8',
-			'X-Frappe-Site-Name': window.location.hostname
-		},
+		headers,
 		body: JSON.stringify(args)
 	});
 

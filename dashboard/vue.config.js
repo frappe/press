@@ -18,15 +18,10 @@ const sites = fs
 
 module.exports = {
 	lintOnSave: 'warning',
-	publicPath: process.env.NODE_ENV === 'production' ? '/dashboard/' : '/',
-	outputDir: path.resolve('../press/www/dashboard'),
-	// configureWebpack(config) {
-	// 	config.entry.app = ['./desk/src/main.js'];
-	// 	config.resolve.alias['frappe$'] = path.resolve(
-	// 		'./desk/src/store/frappe.js'
-	// 	);
-	// 	config.resolve.alias['frappe'] = path.resolve('./desk/src/store/modules/');
-	// },
+	publicPath:
+		process.env.NODE_ENV === 'production' ? '/assets/press/dashboard/' : '/',
+	outputDir: path.resolve('../press/public/dashboard'),
+	indexPath: path.resolve('../press/www/dashboard.html'),
 	devServer: {
 		allowedHosts: sites,
 		proxy: {
