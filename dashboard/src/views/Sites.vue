@@ -4,7 +4,7 @@
 			<h1 slot="title">Sites</h1>
 			<div class="flex items-center" slot="actions">
 				<Button
-					v-if="sites.length"
+					v-if="$store.sites.all.length"
 					route="/sites/new"
 					class="bg-brand text-white flex items-center pr-5 text-sm leading-none"
 				>
@@ -19,12 +19,12 @@
 		<div class="px-4 sm:px-8">
 			<div class="border-t mb-5"></div>
 			<div
-				v-if="sites.length"
+				v-if="$store.sites.all.length"
 				class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-16"
 			>
 				<router-link
 					:to="`/sites/${site.name}`"
-					v-for="site in sites"
+					v-for="site in $store.sites.all"
 					:key="site.name"
 				>
 					<div class="shadow border rounded-md p-4 hover:shadow-md">
@@ -43,7 +43,10 @@
 					</div>
 				</router-link>
 			</div>
-			<div class="p-24 text-center" v-else>
+			<div
+				class="p-24 text-center"
+				v-if="$store.sites.fetched && $store.sites.all.length === 0"
+			>
 				<div class="text-gray-800">
 					You haven't created any sites yet.
 				</div>
@@ -58,11 +61,8 @@
 <script>
 export default {
 	name: 'Sites',
-	data: () => ({
-		sites: []
-	}),
-	async mounted() {
-		this.sites = await this.$call('press.api.site.all');
+	mounted() {
+		this.$store.sites.fetch();
 	},
 	methods: {
 		relativeDate(dateString) {
