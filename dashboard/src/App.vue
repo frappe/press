@@ -2,7 +2,7 @@
     <div class="font-sans text-gray-900 antialiased">
         <div class="flex h-screen overflow-hidden">
             <Sidebar class="w-64 flex-shrink-0 hidden sm:block" v-if="$store.auth.isLoggedIn" />
-            <div class="flex flex-1 overflow-y-auto" :class="{'bg-gray-100': ['Login', 'Signup'].includes($route.name)}">
+            <div class="flex flex-1 overflow-y-auto" :class="{'bg-gray-100': ['Login', 'Signup', 'Setup Account'].includes($route.name)}">
                 <div class="flex-1 container mx-auto">
                     <router-view />
                 </div>

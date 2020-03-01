@@ -28,12 +28,12 @@
 							v-model="password"
 						/>
 					</label>
-					<span
-						v-if="state === 'Login Error'"
-						class="mt-2 text-sm text-red-500"
+					<div
+						class="mt-6 text-red-600 whitespace-pre-line text-sm"
+						v-if="errorMessage"
 					>
 						{{ errorMessage }}
-					</span>
+					</div>
 					<Button
 						class="mt-6 bg-brand focus:bg-blue-600 hover:bg-blue-400 text-white shadow"
 						:disabled="state === 'Logging In'"
@@ -44,9 +44,11 @@
 					>
 						Login
 					</Button>
-					<div class="mt-8 text-center border-t">
+					<div class="mt-10 text-center border-t">
 						<div class="transform -translate-y-1/2">
-							<span class="bg-white px-2 leading-1">
+							<span
+								class="bg-white px-2 leading-8 text-xs text-gray-800 uppercase tracking-wider"
+							>
 								Or
 							</span>
 						</div>
@@ -66,19 +68,20 @@ export default {
 		return {
 			state: 'Idle', // Idle, Logging In, Login Error
 			email: null,
-            password: null,
-            errorMessage: null
+			password: null,
+			errorMessage: null
 		};
 	},
 	methods: {
 		async login() {
 			try {
+                this.errorMessage = null;
 				this.state = 'Logging In';
 				let loggedIn = await this.$store.auth.login(this.email, this.password);
-				this.$router.push('/');
+				this.$router.push('/sites');
 				this.state = 'Idle';
 			} catch (error) {
-                this.errorMessage = error.messages.join('\n');
+				this.errorMessage = error.messages.join('\n');
 				this.state = 'Login Error';
 			}
 		}

@@ -30,6 +30,18 @@ const routes = [
 		}
 	},
 	{
+		path: '/setup-account/:accountKey',
+		name: 'Setup Account',
+		component: () =>
+			import(
+				/* webpackChunkName: "setup-account" */ '../views/SetupAccount.vue'
+			),
+		props: true,
+		meta: {
+			isLoginPage: true
+		}
+	},
+	{
 		path: '/sites',
 		name: 'Sites',
 		component: () =>
@@ -101,7 +113,9 @@ const routes = [
 			{
 				path: 'profile',
 				component: () =>
-					import(/* webpackChunkName: "account" */ '../views/AccountProfile.vue')
+					import(
+						/* webpackChunkName: "account" */ '../views/AccountProfile.vue'
+					)
 			},
 			{
 				path: 'team',
@@ -111,8 +125,10 @@ const routes = [
 			{
 				path: 'billing',
 				component: () =>
-					import(/* webpackChunkName: "account" */ '../views/AccountBilling.vue')
-			},
+					import(
+						/* webpackChunkName: "account" */ '../views/AccountBilling.vue'
+					)
+			}
 		]
 	}
 ];
@@ -124,7 +140,7 @@ const router = new VueRouter({
 router.beforeEach((to, from, next) => {
 	if (to.matched.some(record => !record.meta.isLoginPage)) {
 		// this route requires auth, check if logged in
-        // if not, redirect to login page.
+		// if not, redirect to login page.
 		if (!store.auth.isLoggedIn) {
 			next({ name: 'Login' });
 		} else {

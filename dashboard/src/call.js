@@ -50,11 +50,12 @@ export default async function call(method, args) {
 		e.messages = e.messages.concat(error.message);
 		e.messages = e.messages.map(m => {
 			try {
-				return JSON.parse(m);
+				return JSON.parse(m).message;
 			} catch (error) {
 				return m;
 			}
-		});
+        });
+        e.messages = e.messages.filter(Boolean);
 		throw e;
 	}
 }

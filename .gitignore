@@ -134,6 +134,8 @@ dmypy.json
 *.egg-info
 *.swp
 tags
+node_modules
 press/docs/current
 press/public/dashboard
 press/www/dashboard.html
+press/public/css/email.css
