@@ -36,7 +36,7 @@
 							v-model="email"
 						/>
 					</label>
-					<div class="mt-6 text-red-600" v-if="state == 'Signup Error'">
+					<div class="mt-6 text-red-600 whitespace-pre-line text-sm" v-if="errorMessage">
 						{{ errorMessage }}
 					</div>
 					<Button
@@ -48,9 +48,9 @@
 					>
 						Signup
 					</Button>
-					<div class="mt-8 text-center border-t">
+					<div class="mt-10 text-center border-t">
 						<div class="transform -translate-y-1/2">
-							<span class="bg-white px-2 leading-1">
+							<span class="bg-white px-2 leading-8 text-xs text-gray-800 uppercase tracking-wider">
 								Or
 							</span>
 						</div>
@@ -84,6 +84,7 @@ export default {
 	methods: {
 		async signup() {
 			try {
+                this.errorMessage = null;
 				this.state = 'Signing Up';
 				await this.$call('press.api.account.signup', {
 					first_name: this.firstName,
@@ -92,7 +93,7 @@ export default {
 				});
 				this.state = 'Signup Success';
 			} catch (error) {
-				this.errorMessage = error.messages.map(m => m.message).join('\n');
+				this.errorMessage = error.messages.join('\n');
 				this.state = 'Signup Error';
 			}
 		}

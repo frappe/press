@@ -9,7 +9,8 @@
   "first_name",
   "last_name",
   "email",
-  "user"
+  "user",
+  "account_key"
  ],
  "fields": [
   {
@@ -34,10 +35,15 @@
    "fieldname": "email",
    "fieldtype": "Data",
    "label": "Email"
+  },
+  {
+   "fieldname": "account_key",
+   "fieldtype": "Data",
+   "label": "Account Key"
   }
  ],
  "links": [],
- "modified": "2020-02-28 18:25:42.928820",
+ "modified": "2020-03-01 19:48:18.408832",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "User Account",

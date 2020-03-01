@@ -31,8 +31,10 @@ export default {
 			this.state = 'Logging In';
 			let sid = await this.$call('press.api.site.login', {
 				name: this.site.name
-			});
-			window.open(`https://${this.site.name}/desk?sid=${sid}`, '_blank');
+            });
+            if (sid) {
+                window.open(`https://${this.site.name}/desk?sid=${sid}`, '_blank');
+            }
 			this.state = null;
 		}
 	}
