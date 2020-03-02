@@ -166,3 +166,7 @@ def archive(name):
 @frappe.whitelist()
 def exists(subdomain):
 	return bool(frappe.db.exists('Site', {'subdomain': subdomain}))
+
+@frappe.whitelist()
+def setup_wizard_complete(name):
+	return frappe.get_doc('Site', name).setup_wizard_complete()

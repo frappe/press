@@ -27,6 +27,23 @@
 					<FeatherIcon name="external-link" class="ml-1 w-3 h-3" />
 				</a>
 			</div>
+			<div class="w-1/2 mb-4" v-if="setupComplete === false">
+				<div
+					class="flex justify-between items-center bg-orange-100 border border-orange-300 rounded-md pl-4 pr-2 py-4 text-orange-700 text-sm"
+				>
+					<span>
+						Please complete the setup wizard on your site. Analytics will be
+						collected only after setup is complete.
+					</span>
+					<Button
+						class="ml-4 inline-flex items-center hover:bg-orange-200 border border-orange-200"
+						@click="$store.sites.loginAsAdministrator(siteName)"
+					>
+						Login
+						<FeatherIcon name="arrow-right" class="ml-2 w-4 h-4" />
+					</Button>
+				</div>
+			</div>
 		</div>
 		<div class="px-4 sm:px-8" v-if="site">
 			<div>
@@ -78,10 +95,16 @@ export default {
 	name: 'Site',
 	props: ['siteName'],
 	data: () => ({
-		site: null
+		site: null,
+		setupComplete: null
 	}),
 	async mounted() {
 		await this.fetchSite();
+		this.setupComplete = Boolean(
+			await this.$call('press.api.site.setup_wizard_complete', {
+				name: this.siteName
+			})
+		);
 
 		this.$store.socket.on('agent_job_update', data => {
 			if (data.site === this.site.name && data.name === 'New Site') {

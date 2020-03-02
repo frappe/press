@@ -10,6 +10,8 @@ from frappe.model.document import Document
 from press.press.doctype.agent_job.agent_job import Agent
 from frappe.utils.password import get_decrypted_password
 from press.press.doctype.site_activity.site_activity import log_site_activity
+from frappe.frappeclient import FrappeClient
+from frappe.utils import cint
 
 
 class Site(Document):
@@ -54,12 +56,23 @@ class Site(Document):
 
 	def login(self):
 		log_site_activity(self.name, "Login as Administrator")
+		return self.get_login_sid()
+
+	def get_login_sid(self):
 		password = get_decrypted_password("Site", self.name, "admin_password")
 		response = requests.post(
 			f"https://{self.name}/api/method/login",
 			data={"usr": "Administrator", "pwd": password},
 		)
 		return response.cookies.get("sid")
+
+	def setup_wizard_complete(self):
+		password = get_decrypted_password("Site", self.name, "admin_password")
+		conn = FrappeClient(
+			f"https://{self.name}", username="Administrator", password=password
+		)
+		value = conn.get_value("System Settings", "setup_complete", "System Settings")
+		return cint(value["setup_complete"])
 
 	def update_site(self):
 		log_site_activity(self.name, "Update")
