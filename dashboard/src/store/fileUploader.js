@@ -62,7 +62,10 @@ export default class FileUploader {
 				}
 			};
 			xhr.open('POST', '/api/method/upload_file', true);
-			xhr.setRequestHeader('Accept', 'application/json');
+            xhr.setRequestHeader('Accept', 'application/json');
+            if (window.csrf_token && window.csrf_token !== '{{ csrf_token }}') {
+                xhr.setRequestHeader('X-Frappe-CSRF-Token', window.csrf_token);
+            }
 
 			let form_data = new FormData();
 			if (file) {
