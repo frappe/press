@@ -29,12 +29,7 @@ export default {
 	methods: {
 		async loginAsAdministrator() {
 			this.state = 'Logging In';
-			let sid = await this.$call('press.api.site.login', {
-				name: this.site.name
-            });
-            if (sid) {
-                window.open(`https://${this.site.name}/desk?sid=${sid}`, '_blank');
-            }
+			await this.$store.sites.loginAsAdministrator(this.site.name);
 			this.state = null;
 		}
 	}
