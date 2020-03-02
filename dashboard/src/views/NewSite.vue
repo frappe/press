@@ -119,7 +119,7 @@
 				</div>
 				<Button
 					class="mt-10 bg-brand text-white text-sm w-full focus:bg-blue-600"
-					:disabled="canCreateSite()"
+					:disabled="!canCreateSite()"
 					@click="createSite"
 				>
 					Create Site
