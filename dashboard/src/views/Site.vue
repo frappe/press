@@ -100,11 +100,13 @@ export default {
 	}),
 	async mounted() {
 		await this.fetchSite();
-		this.setupComplete = Boolean(
-			await this.$call('press.api.site.setup_wizard_complete', {
-				name: this.siteName
-			})
-		);
+		if (this.site.status === 'Active') {
+			this.setupComplete = Boolean(
+				await this.$call('press.api.site.setup_wizard_complete', {
+					name: this.siteName
+				})
+			);
+		}
 
 		this.$store.socket.on('agent_job_update', data => {
 			if (data.site === this.site.name && data.name === 'New Site') {

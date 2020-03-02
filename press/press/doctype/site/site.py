@@ -10,7 +10,7 @@ from frappe.model.document import Document
 from press.press.doctype.agent_job.agent_job import Agent
 from frappe.utils.password import get_decrypted_password
 from press.press.doctype.site_activity.site_activity import log_site_activity
-from frappe.frappeclient import FrappeClient
+from frappe.frappeclient import FrappeClient, FrappeException
 from frappe.utils import cint
 
 
@@ -71,8 +71,13 @@ class Site(Document):
 		conn = FrappeClient(
 			f"https://{self.name}", username="Administrator", password=password
 		)
-		value = conn.get_value("System Settings", "setup_complete", "System Settings")
-		return cint(value["setup_complete"])
+		try:
+			value = conn.get_value("System Settings", "setup_complete", "System Settings")
+		except FrappeException:
+			value = None
+
+		if value:
+			return cint(value["setup_complete"])
 
 	def update_site(self):
 		log_site_activity(self.name, "Update")
