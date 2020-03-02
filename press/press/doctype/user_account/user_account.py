@@ -24,6 +24,7 @@ class UserAccount(Document):
 			subject="Verify your account",
 			template="verify_account",
 			args={"verify_link": url},
+			now=True,
 		)
 
 	def create_user(self, password):
