@@ -42,6 +42,18 @@ const routes = [
 		}
 	},
 	{
+		path: '/reset-password/:accountKey',
+		name: 'Reset Password',
+		component: () =>
+			import(
+				/* webpackChunkName: "reset-password" */ '../views/ResetPassword.vue'
+			),
+		props: true,
+		meta: {
+			isLoginPage: true
+		}
+	},
+	{
 		path: '/sites',
 		name: 'Sites',
 		component: () =>

@@ -1,6 +1,9 @@
 <template>
 	<button
 		class="focus:outline-none rounded-md py-2 px-4"
+		:class="{
+			'opacity-50 cursor-not-allowed pointer-events-none': disabled
+		}"
 		@click="route && $router.push(route)"
 		v-bind="$attrs"
 		v-on="$listeners"
@@ -11,6 +14,6 @@
 <script>
 export default {
 	name: 'Button',
-	props: ['route']
+	props: ['route', 'disabled']
 };
 </script>

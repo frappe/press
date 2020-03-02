@@ -34,9 +34,12 @@ export default {
 		},
 		async logout() {
 			await this.$call('logout');
-			this.isLoggedIn = false;
-			router.push('/login');
 			window.location.reload();
+		},
+		async resetPassword(email) {
+			return await this.$call('press.api.account.send_reset_password_email', {
+				email
+			});
 		}
 	}
 };

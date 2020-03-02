@@ -46,12 +46,7 @@
 				</span>
 				<span class="flex rounded-md shadow-sm ml-3">
 					<Button
-						class="text-white"
-						:class="
-							site.name !== confirmSiteName
-								? 'bg-red-300'
-								: 'bg-red-500 hover:bg-red-600'
-						"
+						class="text-white bg-red-500 hover:bg-red-600"
 						:disabled="site.name !== confirmSiteName"
 						@click="dropSite"
 					>

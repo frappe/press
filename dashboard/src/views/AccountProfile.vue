@@ -21,7 +21,7 @@
 						/>
 						<Button
 							class="ml-4 border hover:bg-gray-100"
-							:class="uploading ? 'pointer-events-none' : ''"
+							:disabled="uploading"
 							@click="$refs.userImage.click()"
 						>
 							<span v-if="uploading">

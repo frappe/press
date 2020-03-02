@@ -8,6 +8,7 @@ from frappe import _
 from frappe.utils import random_string, get_url
 from frappe.utils.verified_command import verify_request
 from frappe.website.render import build_response
+from frappe.core.doctype.user.user import update_password
 
 
 @frappe.whitelist(allow_guest=True)
@@ -99,6 +100,23 @@ def update_profile_picture(image_url):
 	user = frappe.get_doc("User", frappe.session.user)
 	user.user_image = image_url
 	user.save()
+
+
+@frappe.whitelist(allow_guest=True)
+def send_reset_password_email(email):
+	user = frappe.get_doc("User Account", email)
+	user.send_reset_password_email()
+	return True
+
+
+@frappe.whitelist(allow_guest=True)
+def reset_password(key, password):
+	return update_password(new_password=password, key=key)
+
+
+@frappe.whitelist(allow_guest=True)
+def get_user_for_reset_password_key(key):
+	return frappe.db.get_value("User", {"reset_password_key": key}, "name")
 
 
 def redirect_to(location):
