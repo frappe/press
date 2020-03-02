@@ -42,6 +42,7 @@
 					<Button
 						class="mt-6 bg-brand focus:bg-blue-600 hover:bg-blue-400 text-white shadow"
 						:disabled="state === 'Signing Up'"
+                        type="submit"
 					>
 						Signup
 					</Button>

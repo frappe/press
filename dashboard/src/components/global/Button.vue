@@ -5,6 +5,7 @@
 			'opacity-50 cursor-not-allowed pointer-events-none': disabled
 		}"
 		@click="route && $router.push(route)"
+        type="button"
 		v-bind="$attrs"
 		v-on="$listeners"
 	>

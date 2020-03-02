@@ -32,6 +32,7 @@
 								v-model="password"
 							/>
 							<button
+								type="button"
 								@click="view = 'Reset Password'"
 								class="absolute flex items-center inset-y-0 right-0 pr-3 text-sm text-gray-900 underline"
 							>
@@ -49,6 +50,7 @@
 						class="mt-6 bg-brand focus:bg-blue-600 hover:bg-blue-400 text-white shadow"
 						:disabled="state === 'Working'"
 						@click="loginOrResetPassword"
+                        type="submit"
 					>
 						{{ view }}
 					</Button>
@@ -111,7 +113,7 @@ export default {
 			}
 		},
 		async resetPassword() {
-            await this.$store.auth.resetPassword(this.email);
+			await this.$store.auth.resetPassword(this.email);
 			this.successMessage = true;
 		}
 	}
