@@ -42,9 +42,6 @@
 					<Button
 						class="mt-6 bg-brand focus:bg-blue-600 hover:bg-blue-400 text-white shadow"
 						:disabled="state === 'Signing Up'"
-						:class="{
-							'bg-blue-300 cursor-not-allowed': state === 'Signing Up'
-						}"
 					>
 						Signup
 					</Button>

@@ -23,7 +23,7 @@
 							type="text"
 							v-model="siteName"
 							@change="checkIfExists"
-                            placeholder="subdomain"
+							placeholder="subdomain"
 							ref="siteName"
 						/>
 						<div class="bg-gray-200 flex border items-center px-4 rounded-r">
@@ -118,10 +118,8 @@
 					</label>
 				</div>
 				<Button
-					class="mt-10 text-white text-sm w-full focus:bg-blue-600"
-					:class="
-						canCreateSite() ? 'bg-blue-500' : 'bg-blue-300 pointer-events-none'
-					"
+					class="mt-10 bg-brand text-white text-sm w-full focus:bg-blue-600"
+					:disabled="canCreateSite()"
 					@click="createSite"
 				>
 					Create Site

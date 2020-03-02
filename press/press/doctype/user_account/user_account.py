@@ -16,14 +16,24 @@ class UserAccount(Document):
 
 	def send_verification_email(self):
 		signed_params = get_signed_params({"user": self.name})
-		url = frappe.utils.get_url(
-			"api/method/press.api.account.verify_account?" + signed_params
-		)
+		url = get_url("api/method/press.api.account.verify_account?" + signed_params)
 		frappe.sendmail(
 			recipients=self.name,
 			subject="Verify your account",
 			template="verify_account",
 			args={"verify_link": url},
+			now=True,
+		)
+
+	def send_reset_password_email(self):
+		key = random_string(32)
+		frappe.db.set_value("User", self.name, "reset_password_key", key)
+		url = get_url("/dashboard/#/reset-password/" + key)
+		frappe.sendmail(
+			recipients=self.name,
+			subject="Reset Password",
+			template="reset_password",
+			args={"link": url},
 			now=True,
 		)
 
