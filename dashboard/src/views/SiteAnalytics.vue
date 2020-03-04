@@ -200,7 +200,7 @@ export default {
 						return DateTime.fromSQL(d.timestamp).toFormat('dd-MM-yyyy hh:mm a');
 					},
 					formatTooltipY: d => {
-						return d + 's';
+						return d + ' ms';
 					}
 				}
 			});

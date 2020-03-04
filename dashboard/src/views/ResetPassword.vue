@@ -1,54 +1,55 @@
 <template>
-	<div class="h-full bg-gray-100 pt-16" v-if="!fetching && email">
-		<div class="flex">
-			<h1 class="mx-auto font-bold text-2xl px-6 py-4">Frappe Cloud</h1>
+	<LoginBox v-if="!fetching && email">
+		<div class="mb-8">
+			<span class="text-lg">Set a new password for your account</span>
 		</div>
-		<div class="mt-6 mx-auto w-112 py-12 px-12 rounded-md bg-white shadow-lg">
-			<div class="mb-8">
-				<span class="text-lg">Set a new password for your account</span>
+		<form class="flex flex-col" @submit.prevent="resetPassword">
+			<label class="block">
+				<span class="text-gray-800">Email</span>
+				<input
+					class="mt-2 form-input block w-full shadow pointer-events-none"
+					type="text"
+					:value="email"
+					disabled
+				/>
+			</label>
+			<label class="mt-4 block">
+				<span class="text-gray-800">Password</span>
+				<input
+					class="mt-2 form-input block w-full shadow"
+					type="password"
+					v-model="password"
+					required
+				/>
+			</label>
+			<div
+				class="mt-6 text-red-600 whitespace-pre-line text-sm"
+				v-if="errorMessage"
+			>
+				{{ errorMessage }}
 			</div>
-			<form class="flex flex-col" @submit.prevent="resetPassword">
-				<label class="block">
-					<span class="text-gray-800">Email</span>
-					<input
-						class="mt-2 form-input block w-full shadow pointer-events-none"
-						type="text"
-						:value="email"
-						disabled
-					/>
-				</label>
-				<label class="mt-4 block">
-					<span class="text-gray-800">Password</span>
-					<input
-						class="mt-2 form-input block w-full shadow"
-						type="password"
-						v-model="password"
-					/>
-				</label>
-				<div
-					class="mt-6 text-red-600 whitespace-pre-line text-sm"
-					v-if="errorMessage"
-				>
-					{{ errorMessage }}
-				</div>
-				<Button
-					class="mt-6 bg-brand focus:bg-blue-600 hover:bg-blue-400 text-white shadow"
-					:disabled="!password"
-                    type="submit"
-				>
-					Submit
-				</Button>
-			</form>
-		</div>
-	</div>
-	<div class="text-center mt-20" v-else-if="!fetching && !email">
+			<Button
+				class="mt-6 bg-brand focus:bg-blue-600 hover:bg-blue-400 text-white shadow"
+				:disabled="!password"
+				type="submit"
+			>
+				Submit
+			</Button>
+		</form>
+	</LoginBox>
+	<div class="text-center mt-20 px-6" v-else-if="!fetching && !email">
 		Account Key <strong>{{ accountKey }}</strong> is invalid or expired.
 	</div>
 </template>
 
 <script>
+import LoginBox from './partials/LoginBox';
+
 export default {
 	name: 'ResetPassword',
+	components: {
+		LoginBox
+	},
 	props: ['accountKey'],
 	data() {
 		return {
