@@ -12,13 +12,14 @@ const routes = [
 		component: Home
 	},
 	{
-		path: '/login',
+		path: '/login/:forgot?',
 		name: 'Login',
 		component: () =>
 			import(/* webpackChunkName: "login" */ '../views/Login.vue'),
 		meta: {
 			isLoginPage: true
-		}
+        },
+        props: true
 	},
 	{
 		path: '/signup',
