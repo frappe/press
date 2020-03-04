@@ -46,11 +46,14 @@
 					>
 						{{ errorMessage }}
 					</div>
+					<a v-if="view === 'Reset Password'" href @click.prevent="view = 'Login'" class="mt-2 block text-left text-sm">
+						I remember my password
+					</a>
 					<Button
 						class="mt-6 bg-brand focus:bg-blue-600 hover:bg-blue-400 text-white shadow"
 						:disabled="state === 'Working'"
 						@click="loginOrResetPassword"
-                        type="submit"
+						type="submit"
 					>
 						{{ view }}
 					</Button>
