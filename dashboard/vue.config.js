@@ -16,6 +16,11 @@ const sites = fs
 			].includes(folder_name)
 	);
 
+// FRAPPE_ENV will be either undefined, 'development' or 'production'
+if (process.env.FRAPPE_ENV) {
+	process.env.NODE_ENV = process.env.FRAPPE_ENV;
+}
+
 module.exports = {
 	lintOnSave: 'warning',
 	publicPath:
