@@ -16,7 +16,9 @@
 						v-for="backup in backups"
 					>
 						<div class="w-full">
-							<a class="w-full flex font-semibold justify-between items-baseline">
+							<a
+								class="w-full flex font-semibold justify-between items-baseline"
+							>
 								<span>
 									{{ backup.database || 'Performing backup..' }}
 								</span>
@@ -39,9 +41,6 @@
 						@click="scheduleBackup"
 					>
 						Schedule Backup
-					</Button>
-					<Button class="ml-4 border hover:bg-gray-100">
-						Disable Backups
 					</Button>
 				</div>
 			</div>
