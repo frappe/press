@@ -18,8 +18,8 @@ const routes = [
 			import(/* webpackChunkName: "login" */ '../views/Login.vue'),
 		meta: {
 			isLoginPage: true
-        },
-        props: true
+		},
+		props: true
 	},
 	{
 		path: '/signup',
@@ -111,9 +111,10 @@ const routes = [
 					)
 			},
 			{
-				path: 'jobs',
+				path: 'jobs/:jobName?',
 				component: () =>
-					import(/* webpackChunkName: "site" */ '../views/SiteJobs.vue')
+					import(/* webpackChunkName: "site" */ '../views/SiteJobs.vue'),
+				props: true
 			}
 		]
 	},

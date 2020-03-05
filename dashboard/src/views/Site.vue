@@ -27,16 +27,16 @@
 					<FeatherIcon name="external-link" class="ml-1 w-3 h-3" />
 				</a>
 			</div>
-			<div class="w-1/2 mb-4" v-if="setupComplete === false">
+			<div class="w-full sm:w-1/2 mb-4" v-if="setupComplete === false">
 				<div
-					class="flex justify-between items-center bg-orange-100 border border-orange-300 rounded-md pl-4 pr-2 py-4 text-orange-700 text-sm"
+					class="sm:flex justify-between items-center bg-orange-100 border border-orange-300 rounded-md px-4 py-4 text-orange-700 text-sm"
 				>
 					<span>
 						Please complete the setup wizard on your site. Analytics will be
 						collected only after setup is complete.
 					</span>
 					<Button
-						class="ml-4 inline-flex items-center hover:bg-orange-200 border border-orange-200"
+						class="mt-4 sm:mt-0 sm:ml-4 flex items-center hover:bg-orange-200 border border-orange-200"
 						@click="$store.sites.loginAsAdministrator(siteName)"
 					>
 						Login
@@ -51,7 +51,7 @@
 					<router-link
 						v-for="tab in tabs"
 						:key="tab.label"
-						:to="tab.route"
+						:to="`/sites/${siteName}/${tab.route}`"
 						v-slot="{ href, route, navigate, isActive, isExactActive }"
 					>
 						<li>
@@ -72,7 +72,7 @@
 				</ul>
 				<select
 					class="block sm:hidden form-select w-full"
-					@change="e => changeTab(e.target.value)"
+					@change="e => changeTab(`/sites/${siteName}/${e.target.value}`)"
 				>
 					<option
 						v-for="tab in tabs"
