@@ -141,7 +141,7 @@ export default {
 				{ label: 'Analytics', route: 'analytics' },
 				{ label: 'Backups', route: 'backups' },
 				{ label: 'Site Config', route: 'site-config' },
-				{ label: 'Console', route: 'console' },
+				// { label: 'Console', route: 'console' },
 				{ label: 'Drop Site', route: 'drop-site' },
 				{ label: 'Access Control', route: 'access-control' },
 				{ label: 'Jobs', route: 'jobs' }
