@@ -27,7 +27,8 @@ def new(site):
 def jobs(name):
 	jobs = frappe.get_all("Agent Job",
 		fields=['name', 'job_type', 'creation', 'status', 'start', 'end', 'duration'],
-		filters={"site": name}
+		filters={"site": name},
+		limit=10
 	)
 	return jobs
 
