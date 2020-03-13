@@ -7,6 +7,7 @@ import json
 import frappe
 from frappe.model.document import Document
 from press.agent import Agent
+from press.utils import log_error
 
 
 class AgentJob(Document):
@@ -101,38 +102,32 @@ def collect_site_analytics():
 		logs = agent.fetch_monitor_data(bench.name)
 		for log in logs:
 			try:
-				if log["transaction_type"] == "request":
-					frappe.get_doc(
-						{
-							"doctype": "Site Request Log",
-							"name": log["uuid"],
-							"site": log["site"],
-							"timestamp": log["timestamp"],
-							"duration": log["duration"],
-							"url": log["path"],
-							"ip": log["ip"],
-							"length": log["length"],
-							"http_method": log["method"],
-							"status_code": log["status_code"],
-							"http_referer": log["headers"].get("Referer"),
-							"http_user_agent": log["headers"].get("User-Agent"),
-							"http_headers": json.dumps(log["headers"], indent=4, sort_keys=True),
-						}
-					).insert()
-				elif log["transaction_type"] == "job":
-					frappe.get_doc(
-						{
-							"doctype": "Site Job Log",
-							"name": log["uuid"],
-							"site": log["site"],
-							"job_name": log["method"],
-							"timestamp": log["timestamp"],
-							"duration": log["duration"],
-						}
-					).insert()
-			except frappe.exceptions.DuplicateEntryError:
-				pass
+				doc = {
+					"name": log["uuid"],
+					"site": log["site"],
+					"timestamp": log["timestamp"],
+					"duration": log["duration"]
+				}
 
+				if log["transaction_type"] == "request":
+					doc.update({
+						"doctype": "Site Request Log",
+						"url": log["request"]["path"],
+						"ip": log["request"]["ip"],
+						"http_method": log["request"]["method"],
+						"length": log["request"]["response_length"],
+						"status_code": log["request"]["status_code"],
+					})
+				elif log["transaction_type"] == "job":
+					doc.update({
+						"doctype": "Site Job Log",
+						"job_name": log["job"]["method"],
+						"scheduled": log["job"]["scheduled"],
+						"wait": log["job"]["wait"],
+					})
+				frappe.get_doc(doc).insert()
+			except frappe.exceptions.DuplicateEntryError:
+				log_error("Agent Analytics Collection Exception", log=log, doc=doc)
 
 def collect_site_uptime():
 	sites = frappe.get_all(
@@ -144,18 +139,17 @@ def collect_site_uptime():
 		try:
 			agent = Agent(site.server)
 			status = agent.fetch_site_status(site)
-			frappe.get_doc(
-				{
-					"doctype": "Site Uptime Log",
-					"site": site.name,
-					"web": status["web"],
-					"scheduler": status["scheduler"],
-					"timestamp": status["timestamp"],
-				}
-			).insert()
+			doc = {
+				"doctype": "Site Uptime Log",
+				"site": site.name,
+				"web": status["web"],
+				"scheduler": status["scheduler"],
+				"timestamp": status["timestamp"],
+			}
+			frappe.get_doc(doc).insert()
 			frappe.db.commit()
 		except Exception:
-			frappe.log_error(title="Agent Uptime Collection Exception")
+			log_error("Agent Uptime Collection Exception", status=status, doc=doc)
 
 
 def schedule_backups():
@@ -271,4 +265,4 @@ def process_job_updates(job):
 		if job.job_type == "Remove Site from Upstream":
 			process_archive_site_job_update(job)
 	except Exception:
-		frappe.log_error(title="Agent Job Callback Exception")
+		log_error("Agent Job Callback Exception", job=job)

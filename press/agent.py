@@ -9,6 +9,7 @@ import frappe
 import json
 import requests
 from frappe.utils.password import get_decrypted_password
+from press.utils import log_error
 
 
 class Agent:
@@ -138,35 +139,27 @@ class Agent:
 	def ping(self):
 		return self.get(f"ping")["message"]
 
+	def get(self, path):
+		return self.request("GET", path)
+
 	def post(self, path, data):
-		url = f"http://{self.server}:{self.port}/agent/{path}"
-		password = get_decrypted_password(self.server_type, self.server, "agent_password")
-		headers = {"Authorization": f"bearer {password}"}
-		result = requests.post(url, headers=headers, json=data)
-		try:
-			return result.json()
-		except Exception:
-			frappe.log_error(result.text, title="Agent Request Exception")
+		return self.request("POST", path, data)
 
 	def delete(self, path):
-		url = f"http://{self.server}:{self.port}/agent/{path}"
-		password = get_decrypted_password(self.server_type, self.server, "agent_password")
-		headers = {"Authorization": f"bearer {password}"}
-		result = requests.delete(url, headers=headers)
-		try:
-			return result.json()
-		except Exception:
-			frappe.log_error(result.text, title="Agent Request Exception")
+		return self.request("DELETE", path)
 
-	def get(self, path):
-		url = f"http://{self.server}:{self.port}/agent/{path}"
-		password = get_decrypted_password(self.server_type, self.server, "agent_password")
-		headers = {"Authorization": f"bearer {password}"}
-		result = requests.get(url, headers=headers)
+	def request(self, method, path, data=None):
 		try:
-			return result.json()
+			url = f"http://{self.server}:{self.port}/agent/{path}"
+			password = get_decrypted_password(self.server_type, self.server, "agent_password")
+			headers = {"Authorization": f"bearer {password}"}
+			result = requests.request(method, url, headers=headers, data=data)
+			try:
+				return result.json()
+			except Exception:
+				log_error(title="Agent Request Result Exception", method=method, url=url, data=data, headers=headers, result=result.text)
 		except Exception:
-			frappe.log_error(result.text, title="Agent Request Exception")
+			log_error(title="Agent Request Exception", method=method, url=url, data=data, headers=headers)
 
 	def create_agent_job(self, job_type, path, data, bench=None, site=None, upstream=None):
 		job = frappe.get_doc(
