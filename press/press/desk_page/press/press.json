@@ -1,0 +1,70 @@
+{
+ "cards": [
+  {
+   "icon": "octicon octicon-rocket",
+   "links": "[\n\t{\"type\": \"doctype\", \"name\": \"Proxy Server\"},\n\t{\"type\": \"doctype\", \"name\": \"Server\"},\n\t{\"type\": \"doctype\", \"name\": \"Bench\"},\n\t{\"type\": \"doctype\", \"name\": \"Site\"},\n\t{\"type\": \"doctype\", \"name\": \"Account Request\"}\n]",
+   "title": "Components"
+  },
+  {
+   "links": "[\n\t{\"type\": \"doctype\", \"name\": \"Agent Job\"},\n\t{\"type\": \"doctype\", \"name\": \"Agent Job Step\"},\n\t{\"type\": \"doctype\", \"name\": \"Agent Job Type\"}\n]",
+   "title": "Agent"
+  },
+  {
+   "links": "[\n\t{\"type\": \"doctype\", \"name\": \"Frappe App\"},\n\t{\"type\": \"doctype\", \"name\": \"Release Group\"},\n\t{\"type\": \"doctype\", \"name\": \"App Release\"},\n\t{\"type\": \"doctype\", \"name\": \"Deploy Candidate\"}\n]",
+   "title": "Setup"
+  },
+  {
+   "links": "[{\"type\": \"doctype\", \"name\": \"Custom Domain\"}]",
+   "title": "Domains"
+  },
+  {
+   "links": "[\n\t{\"type\": \"doctype\", \"name\": \"Credit Ledger Entry\"},\n\t{\"type\": \"doctype\", \"name\": \"Payment\"},\n\t{\"type\": \"doctype\", \"name\": \"Usage Report\"}\n]",
+   "title": "Payments"
+  },
+  {
+   "links": "[\n\t{\"type\": \"doctype\", \"name\": \"Site Uptime Log\"},\n\t{\"type\": \"doctype\", \"name\": \"Site Job Log\"},\n\t{\"type\": \"doctype\", \"name\": \"Site Request Log\"}\n]",
+   "title": "Analytics"
+  },
+  {
+   "links": "[\n    {\"type\": \"doctype\", \"name\": \"Site Deploy\"},\n    {\"type\": \"doctype\", \"name\": \"Bench Deploy\"}\n]",
+   "title": "Deploy"
+  }
+ ],
+ "category": "Modules",
+ "charts": [],
+ "creation": "2020-03-13 12:00:25.244955",
+ "developer_mode_only": 0,
+ "disable_user_customization": 0,
+ "docstatus": 0,
+ "doctype": "Desk Page",
+ "icon": "octicon octicon-rocket",
+ "idx": 0,
+ "label": "Press",
+ "modified": "2020-03-13 12:13:33.856243",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Press",
+ "owner": "Administrator",
+ "pin_to_bottom": 0,
+ "pin_to_top": 0,
+ "shortcuts": [
+  {
+   "is_query_report": 0,
+   "link_to": "Site",
+   "stats_filter": "{\"status\": \"Active\"}",
+   "type": "DocType"
+  },
+  {
+   "is_query_report": 0,
+   "link_to": "Bench",
+   "stats_filter": "{\"status\": \"Active\"}",
+   "type": "DocType"
+  },
+  {
+   "is_query_report": 0,
+   "link_to": "Agent Job",
+   "stats_filter": "{\"status\": [\"in\", [\"Running\", \"Pending\"]]}",
+   "type": "DocType"
+  }
+ ]
+}
