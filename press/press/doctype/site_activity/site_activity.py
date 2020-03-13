@@ -6,8 +6,10 @@ from __future__ import unicode_literals
 import frappe
 from frappe.model.document import Document
 
+
 class SiteActivity(Document):
 	pass
+
 
 def log_site_activity(site, action):
 	return frappe.get_doc(
