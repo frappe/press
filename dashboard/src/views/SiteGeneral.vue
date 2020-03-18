@@ -43,6 +43,19 @@
 				</a>
 			</div>
 		</section>
+		<section class="mt-10" v-if="domains">
+			<h2 class="font-medium text-lg">Domains</h2>
+			<p class="text-gray-600">Domains pointing to your site</p>
+			<div
+				class="w-full sm:w-1/2 mt-6 border border-gray-100 shadow rounded py-4"
+			>
+				<div class="px-6 py-3 hover:bg-gray-50" v-for="d in domains">
+					<div>
+						{{ d.domain }}
+					</div>
+				</div>
+			</div>
+		</section>
 		<section class="mt-10">
 			<h2 class="font-medium text-lg">Activity</h2>
 			<p class="text-gray-600">Activities performed on your site</p>
@@ -93,6 +106,7 @@ export default {
 	data() {
 		return {
 			activities: [],
+			domains: [],
 			iconMap: {
 				Running: 'loader',
 				Success: 'check',
@@ -104,6 +118,7 @@ export default {
 	mounted() {
 		this.setupSiteInstall();
 		this.fetchActivities();
+		this.fetchDomains();
 		this.fetchPendingJobs();
 	},
 	methods: {
@@ -134,6 +149,11 @@ export default {
 					...d,
 					text
 				};
+			});
+		},
+		async fetchDomains() {
+			this.domains = await this.$call('press.api.site.domains', {
+				name: this.site.name
 			});
 		},
 		async fetchPendingJobs() {
