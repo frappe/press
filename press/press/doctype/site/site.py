@@ -13,6 +13,7 @@ from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.press.doctype.team.team import get_team_members, get_default_team
 from frappe.frappeclient import FrappeClient, FrappeException
 from frappe.utils import cint
+from press.api.site import check_dns
 
 
 class Site(Document):
@@ -42,6 +43,17 @@ class Site(Document):
 	def backup(self):
 		log_site_activity(self.name, "Backup")
 		frappe.get_doc({"doctype": "Site Backup", "site": self.name}).insert()
+
+	def add_domain(self, domain):
+		if check_dns(self.name, domain):
+			log_site_activity(self.name, "Add Domain")
+			frappe.get_doc({
+				"doctype": "Site Domain",
+				"site": self.name,
+				"domain": domain,
+				"dns_type": "CNAME",
+				"ssl": False,
+			}).insert()
 
 	def archive(self):
 		log_site_activity(self.name, "Archive")

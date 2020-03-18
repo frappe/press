@@ -3,9 +3,12 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
+import dns.resolver
+
 import frappe
 from frappe.utils.password import get_decrypted_password
 from press.press.doctype.agent_job.agent_job import job_detail
+from press.utils import log_error
 
 
 @frappe.whitelist()
@@ -57,6 +60,10 @@ def backups(name):
 	backups = frappe.get_all("Site Backup", fields=["name", "`database`", "size", "url", "creation", "status"], filters={"site": name}, limit=5)
 	return backups
 
+@frappe.whitelist()
+def domains(name):
+	domains = frappe.get_all("Site Domain", fields=["name", "domain"], filters={"site": name})
+	return domains
 
 @frappe.whitelist()
 def activities(name):
@@ -173,3 +180,19 @@ def exists(subdomain):
 @frappe.whitelist()
 def setup_wizard_complete(name):
 	return frappe.get_doc('Site', name).setup_wizard_complete()
+
+@frappe.whitelist()
+def check_dns(name, domain):
+	try:
+		answer = dns.resolver.query(domain, "CNAME")[0].to_text()
+		mapped_domain = answer.rsplit(".", 1)[0]
+		if mapped_domain == name:
+			return True
+	except Exception:
+		log_error("DNS Query Exception", site=name, domain=domain)
+	return False
+
+@frappe.whitelist()
+def add_domain(name, domain):
+	frappe.get_doc('Site', name).add_domain(domain)
+

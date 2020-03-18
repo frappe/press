@@ -79,6 +79,11 @@ const routes = [
 					import(/* webpackChunkName: "site" */ '../views/SiteGeneral.vue')
 			},
 			{
+				path: 'domains',
+				component: () =>
+					import(/* webpackChunkName: "site" */ '../views/SiteDomains.vue')
+			},
+			{
 				path: 'analytics',
 				component: () =>
 					import(/* webpackChunkName: "site" */ '../views/SiteAnalytics.vue')

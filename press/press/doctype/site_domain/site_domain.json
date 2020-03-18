@@ -1,12 +1,14 @@
 {
  "actions": [],
- "creation": "2020-02-28 18:28:34.651116",
+ "creation": "2020-03-17 16:35:11.520003",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
   "site",
-  "action"
+  "domain",
+  "ssl",
+  "dns_type"
  ],
  "fields": [
   {
@@ -20,21 +22,39 @@
    "reqd": 1
   },
   {
-   "fieldname": "action",
+   "fieldname": "domain",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Domain",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "ssl",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "SSL",
+   "read_only": 1
+  },
+  {
+   "default": "CNAME",
+   "fieldname": "dns_type",
    "fieldtype": "Select",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Action",
-   "options": "Create\nBackup\nLogin as Administrator\nUpdate\nArchive\nAdd Domain",
+   "label": "DNS Type",
+   "options": "A\nNS\nCNAME",
    "read_only": 1,
    "reqd": 1
   }
  ],
  "links": [],
- "modified": "2020-03-18 16:26:02.968032",
+ "modified": "2020-03-18 16:34:24.714216",
  "modified_by": "Administrator",
  "module": "Press",
- "name": "Site Activity",
+ "name": "Site Domain",
  "owner": "Administrator",
  "permissions": [
   {
@@ -48,21 +68,10 @@
    "role": "System Manager",
    "share": 1,
    "write": 1
-  },
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Press Admin",
-   "share": 1,
-   "write": 1
   }
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "title_field": "domain",
  "track_changes": 1
 }
