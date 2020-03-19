@@ -33,6 +33,13 @@ class Site(Document):
 		if not self.admin_password:
 			self.admin_password = frappe.generate_hash(length=16)
 
+		self.set_plan()
+
+	def set_plan(self):
+		if not self.plan:
+			self.plan = frappe.db.get_value("Plan",
+				{'for_site': 1, 'is_default': 1})
+
 	def after_insert(self):
 		log_site_activity(self.name, "Create")
 		self.create_agent_request()

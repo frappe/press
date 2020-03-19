@@ -9,6 +9,7 @@
   "status",
   "server",
   "bench",
+  "plan",
   "column_break_3",
   "admin_password",
   "update",
@@ -157,10 +158,17 @@
    "fieldtype": "Link",
    "label": "Team",
    "options": "Team"
+  },
+  {
+   "fieldname": "plan",
+   "fieldtype": "Link",
+   "label": "Plan",
+   "options": "Plan",
+   "reqd": 1
   }
  ],
  "links": [],
- "modified": "2020-03-19 18:20:44.196820",
+ "modified": "2020-03-23 18:34:09.889838",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

@@ -1,0 +1,45 @@
+{
+ "actions": [],
+ "creation": "2020-03-19 18:18:17.803721",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "currency",
+  "gateway_plan_id",
+  "pricing_factor"
+ ],
+ "fields": [
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Currency",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "gateway_plan_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Gateway Plan Id"
+  },
+  {
+   "fieldname": "pricing_factor",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Pricing Factor"
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2020-03-19 18:19:27.487316",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Plan Amount",
+ "owner": "Administrator",
+ "permissions": [],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}
