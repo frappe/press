@@ -19,7 +19,8 @@
   "wildcard_tls_certificate",
   "column_break_11",
   "webroot_directory",
-  "certbot_directory"
+  "certbot_directory",
+  "stripe_account"
  ],
  "fields": [
   {
@@ -111,6 +112,13 @@
    "fieldtype": "Link",
    "label": "Wildcard TLS Certificate",
    "options": "TLS Certificate"
+  },
+  {
+   "fieldname": "stripe_account",
+   "fieldtype": "Link",
+   "label": "Stripe Account",
+   "options": "Stripe Settings",
+   "reqd": 1
   }
  ],
  "issingle": 1,
