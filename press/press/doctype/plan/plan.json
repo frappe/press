@@ -10,8 +10,10 @@
   "plan_title",
   "expiry",
   "column_break_3",
-  "for_site",
+  "enabled",
   "is_default",
+  "for_account",
+  "for_site",
   "section_break_6",
   "pricing_details"
  ],
@@ -19,7 +21,6 @@
   {
    "fieldname": "plan_name",
    "fieldtype": "Data",
-   "in_list_view": 1,
    "label": "Plan Name",
    "reqd": 1,
    "unique": 1
@@ -35,8 +36,10 @@
   },
   {
    "default": "0",
+   "depends_on": "eval:!doc.for_account",
    "fieldname": "for_site",
    "fieldtype": "Check",
+   "in_list_view": 1,
    "label": "For Site"
   },
   {
@@ -44,7 +47,6 @@
    "description": "Expiry in hrs. By default, system will set to 720 hrs ie for month",
    "fieldname": "expiry",
    "fieldtype": "Int",
-   "in_list_view": 1,
    "label": "Expiry",
    "reqd": 1
   },
@@ -53,22 +55,35 @@
    "fieldtype": "Section Break"
   },
   {
-   "depends_on": "eval:doc.for_site",
    "fieldname": "pricing_details",
    "fieldtype": "Table",
    "label": "Pricing Details",
-   "options": "Plan Amount"
+   "options": "Plan Details"
   },
   {
    "default": "0",
-   "depends_on": "eval:doc.for_site",
    "fieldname": "is_default",
    "fieldtype": "Check",
+   "in_list_view": 1,
    "label": "Is Default"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:!doc.for_site",
+   "fieldname": "for_account",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "For Account"
+  },
+  {
+   "default": "0",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
   }
  ],
  "links": [],
- "modified": "2020-03-19 18:35:22.432917",
+ "modified": "2020-03-20 12:10:17.492131",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Plan",
@@ -90,5 +105,6 @@
  "quick_entry": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
+ "title_field": "plan_title",
  "track_changes": 1
 }

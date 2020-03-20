@@ -7,4 +7,11 @@ from __future__ import unicode_literals
 from frappe.model.document import Document
 
 class Plan(Document):
-	pass
+	def get_plan_id(self, currency='USD'):
+		plan_id = None
+		for plan in self.plan_details:
+			if plan.currency == currency:
+				plan_id = plan.plan_id
+				break
+
+		return plan_id
