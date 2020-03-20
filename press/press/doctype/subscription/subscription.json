@@ -1,0 +1,87 @@
+{
+ "actions": [],
+ "creation": "2020-03-20 12:31:19.564793",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "user_account",
+  "subscription_id",
+  "subscription_item_id",
+  "column_break_4",
+  "status",
+  "start_date",
+  "end_date"
+ ],
+ "fields": [
+  {
+   "fieldname": "subscription_id",
+   "fieldtype": "Data",
+   "label": "Subscription Id",
+   "reqd": 1
+  },
+  {
+   "fieldname": "subscription_item_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Subscription Item Id",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "start_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Start Date"
+  },
+  {
+   "fieldname": "end_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "End Date"
+  },
+  {
+   "default": "Active",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "\nActive\nCompleted"
+  },
+  {
+   "fieldname": "user_account",
+   "fieldtype": "Link",
+   "label": "User Account",
+   "options": "User",
+   "reqd": 1
+  }
+ ],
+ "links": [],
+ "modified": "2020-03-20 12:50:58.790690",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Subscription",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "title_field": "user_account",
+ "track_changes": 1
+}
