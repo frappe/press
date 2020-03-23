@@ -1,6 +1,7 @@
 {
 	"name": "press",
 	"scripts": {
+        "watch": "cd dashboard && yarn serve",
 		"build": "yarn run build-email-css && yarn run build-app",
 		"build-app": "cd dashboard && yarn build",
 		"build-email-css": "yarn run postcss ./press/public/email/style.css -o ./press/public/css/email.css -c ./press/public/email/postcss.config.js"
