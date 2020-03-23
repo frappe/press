@@ -57,7 +57,7 @@ home_page = "index"
 # ------------
 
 # before_install = "press.install.before_install"
-after_install = "press.install.after_install"
+# after_install = "press.install.after_install"
 
 # Desk Notifications
 # ------------------
@@ -69,12 +69,12 @@ after_install = "press.install.after_install"
 # -----------
 # Permissions evaluated in scripted ways
 
-# permission_query_conditions = {
-# 	"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
-# }
-#
+permission_query_conditions = {
+	"Site": "press.press.doctype.site.site.get_permission_query_conditions",
+}
+
 # has_permission = {
-# 	"Event": "frappe.desk.doctype.event.event.has_permission",
+# 	"Site": "press.press.doctype.site.site.has_permission",
 # }
 
 # Document Events

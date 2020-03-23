@@ -23,7 +23,8 @@
   "database_host",
   "database_port",
   "configuration_section",
-  "config"
+  "config",
+  "team"
  ],
  "fields": [
   {
@@ -148,10 +149,16 @@
    "fieldtype": "Data",
    "label": "Subdomain",
    "reqd": 1
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team"
   }
  ],
  "links": [],
- "modified": "2020-02-28 15:16:35.685281",
+ "modified": "2020-03-19 18:20:44.196820",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
@@ -174,11 +181,22 @@
    "delete": 1,
    "email": 1,
    "export": 1,
-   "if_owner": 1,
    "print": 1,
    "read": 1,
    "report": 1,
    "role": "Press Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
    "share": 1,
    "write": 1
   }
