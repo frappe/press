@@ -6,11 +6,9 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "first_name",
-  "last_name",
-  "email",
+  "enabled",
   "user",
-  "account_key"
+  "team_members"
  ],
  "fields": [
   {
@@ -22,31 +20,23 @@
    "unique": 1
   },
   {
-   "fieldname": "first_name",
-   "fieldtype": "Data",
-   "label": "First Name"
+   "fieldname": "team_members",
+   "fieldtype": "Table",
+   "label": "Team Members",
+   "options": "Team Member"
   },
   {
-   "fieldname": "last_name",
-   "fieldtype": "Data",
-   "label": "Last Name"
-  },
-  {
-   "fieldname": "email",
-   "fieldtype": "Data",
-   "label": "Email"
-  },
-  {
-   "fieldname": "account_key",
-   "fieldtype": "Data",
-   "label": "Account Key"
+   "default": "0",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
   }
  ],
  "links": [],
- "modified": "2020-03-01 19:48:18.408832",
+ "modified": "2020-03-06 19:44:23.895732",
  "modified_by": "Administrator",
  "module": "Press",
- "name": "User Account",
+ "name": "Team",
  "owner": "Administrator",
  "permissions": [
   {

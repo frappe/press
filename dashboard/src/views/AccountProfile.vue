@@ -10,7 +10,7 @@
 						<Avatar
 							size="lg"
 							:label="account.user.first_name"
-							:imageURL="account.user.image"
+							:imageURL="account.user.user_image"
 						/>
 						<input
 							ref="userImage"
@@ -71,19 +71,19 @@
 						<div class="py-2">
 							<label class="inline-flex items-center">
 								<input type="checkbox" class="form-checkbox" checked />
-								<span class="ml-2">Weekly usage summary</span>
+								<span class="ml-2">Weekly Usage Summary</span>
 							</label>
 						</div>
 						<div class="py-2">
 							<label class="inline-flex items-center">
 								<input type="checkbox" class="form-checkbox" />
-								<span class="ml-2">Critical action required</span>
+								<span class="ml-2">Critical Action Required</span>
 							</label>
 						</div>
 						<div class="py-2">
 							<label class="inline-flex items-center">
 								<input type="checkbox" class="form-checkbox" />
-								<span class="ml-2">Site goes down</span>
+								<span class="ml-2">Site Goes Down</span>
 							</label>
 						</div>
 					</div>
@@ -92,7 +92,7 @@
 		</section>
 		<div class="border-t mt-10 py-4">
 			<Button
-				class="bg-brand hover:bg-blue-600 text-white"
+				class="bg-blue-500 hover:bg-blue-600 text-white"
 				@click="$store.account.updateProfile"
 			>
 				Save changes

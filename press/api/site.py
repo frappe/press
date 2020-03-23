@@ -74,12 +74,8 @@ def options_for_new():
 
 @frappe.whitelist()
 def all():
-	if frappe.session.user == "Administrator":
-		filters = {}
-	else:
-		filters = {"owner": frappe.session.user}
-	sites = frappe.get_all(
-		"Site", fields=["name", "status", "modified"], filters=filters, order_by="creation desc"
+	sites = frappe.get_list(
+		"Site", fields=["name", "status", "modified"], order_by="creation desc"
 	)
 	return sites
 

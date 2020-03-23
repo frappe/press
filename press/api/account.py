@@ -9,85 +9,102 @@ from frappe.utils import random_string, get_url
 from frappe.utils.verified_command import verify_request
 from frappe.website.render import build_response
 from frappe.core.doctype.user.user import update_password
+from press.press.doctype.team.team import get_team_members
+from datetime import datetime, timedelta
 
 
 @frappe.whitelist(allow_guest=True)
-def signup(first_name, last_name, email):
-	first_name = first_name.strip()
-	last_name = last_name.strip()
+def signup(email):
+	current_user = frappe.session.user
+	frappe.set_user("Administrator")
+
 	email = email.strip()
-	try:
-		doc = frappe.new_doc("User Account")
-		doc.first_name = first_name
-		doc.last_name = last_name
-		doc.email = email
-		doc.name = email
-		doc.insert(ignore_permissions=True)
-	except frappe.DuplicateEntryError:
-		frappe.clear_last_message()
-		if frappe.db.exists("User", email):
-			# account exists
-			frappe.throw(_("Account {0} is already registered").format(email))
-		else:
-			# account was created but not verified
-			doc = frappe.get_doc("User Account", email)
-			doc.first_name = first_name
-			doc.last_name = last_name
-			doc.save(ignore_permissions=True)
-			doc.send_verification_email()
+	exists, enabled = frappe.db.get_values("Team", email, ["name", "enabled"]) or [0, 0]
 
-
-@frappe.whitelist(allow_guest=True)
-def verify_account(user):
-	if not verify_request():
-		frappe.throw("Invalid or expired link")
-
-	# set account key
-	doc = frappe.get_doc("User Account", user)
-	key = random_string(32)
-	doc.db_set("account_key", key)
-	frappe.db.commit()
-
-	return redirect_to(get_url("/dashboard/#/setup-account/" + key))
-
-
-@frappe.whitelist(allow_guest=True)
-def setup_account(key, password):
-	user_account = get_user_for_key(key)
-	if user_account:
-		doc = frappe.get_doc("User Account", user_account)
-		doc.create_user(password)
-		frappe.local.login_manager.login_as(user_account)
+	if exists and not enabled:
+		# account was created but not verified
+		doc = frappe.get_doc("Team", email)
+		doc.add_team_member(email, owner=True)
+	elif exists and enabled:
+		# account exists
+		frappe.throw(_("Account {0} is already registered").format(email))
 	else:
-		frappe.throw("Invalid Account Key")
+		doc = frappe.new_doc("Team")
+		doc.name = email
+		doc.add_team_member(email, owner=True)
+		doc.insert()
+
+	frappe.set_user(current_user)
 
 
 @frappe.whitelist(allow_guest=True)
-def get_user_for_key(key):
-	return frappe.db.get_value("User Account", {"account_key": key}, "name")
+def setup_account(key, first_name=None, last_name=None, password=None):
+	account_request = get_account_request_from_key(key)
+	if not account_request:
+		frappe.throw("Invalid or Expired Key")
+
+	team = account_request.team
+	email = account_request.email
+	role = account_request.role
+
+	doc = frappe.get_doc("Team", team)
+	doc.create_user_for_member(first_name, last_name, email, password, role)
+
+	frappe.local.login_manager.login_as(email)
+
+
+@frappe.whitelist(allow_guest=True)
+def get_email_from_request_key(key):
+	account_request = get_account_request_from_key(key)
+	if account_request:
+		return {
+			"email": account_request.email,
+			"user_exists": frappe.db.exists("User", account_request.email),
+			"team": account_request.team,
+			"is_invitation": frappe.db.get_value("Team", account_request.team, "enabled"),
+		}
+
+
+def get_account_request_from_key(key):
+	"""Find Account Request using `key` in the past 30 minutes"""
+	minutes = 30
+	result = frappe.db.get_all(
+		"Account Request",
+		filters={
+			"request_key": key,
+			"creation": (">", datetime.now() - timedelta(seconds=minutes * 60)),
+		},
+		fields=["name", "email", "team", "role"],
+		order_by="creation desc",
+		limit=1,
+	)
+	if result:
+		return result[0]
 
 
 @frappe.whitelist()
-def get():
-	try:
-		user = frappe.session.user
-		if user == "Administrator":
-			doc = frappe.new_doc("User Account")
-			doc.first_name = "Administrator"
-		else:
-			doc = frappe.get_doc("User Account", user)
-
-		out = doc.as_dict()
-		out.image = frappe.db.get_value("User", user, "user_image")
-		return out
-	except frappe.DoesNotExistError:
+def get(team=None):
+	user = frappe.session.user
+	team = team or user
+	if frappe.db.exists("User", user):
+		teams = [
+			d.parent for d in frappe.db.get_all("Team Member", {"user": user}, ["parent"])
+		]
+		teams = list(set(teams))
+		return {
+			"user": frappe.get_doc("User", user),
+			"team": frappe.get_doc("Team", team),
+			"team_members": get_team_members(team),
+			"teams": teams,
+		}
+	else:
 		frappe.throw(_("Account does not exist"))
 
 
 @frappe.whitelist()
 def update_profile(first_name, last_name, email):
 	user = frappe.session.user
-	doc = frappe.get_doc("User Account", user)
+	doc = frappe.get_doc("User", user)
 	doc.first_name = first_name
 	doc.last_name = last_name
 	doc.email = email
@@ -104,9 +121,17 @@ def update_profile_picture(image_url):
 
 @frappe.whitelist(allow_guest=True)
 def send_reset_password_email(email):
-	user = frappe.get_doc("User Account", email)
-	user.send_reset_password_email()
-	return True
+	email = email.strip()
+	key = random_string(32)
+	frappe.db.set_value("User", email, "reset_password_key", key)
+	url = get_url("/dashboard/#/reset-password/" + key)
+	frappe.sendmail(
+		recipients=email,
+		subject="Reset Password",
+		template="reset_password",
+		args={"link": url},
+		now=True,
+	)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -119,6 +144,24 @@ def get_user_for_reset_password_key(key):
 	return frappe.db.get_value("User", {"reset_password_key": key}, "name")
 
 
+@frappe.whitelist()
+def add_team_member(team, email):
+	team_doc = frappe.get_doc("Team", team)
+	if team_doc.user == frappe.session.user:
+		team_doc.add_team_member(email)
+	else:
+		frappe.throw(_("Only Team Owner can add other members"), frappe.PermissionError)
+
+
+@frappe.whitelist()
+def switch_team(team):
+	if frappe.db.exists("Team Member", {"parent": team, "user": frappe.session.user}):
+		return {
+			"team": frappe.get_doc("Team", team),
+			"team_members": get_team_members(team),
+		}
+
+
 def redirect_to(location):
 	return build_response(
 		frappe.local.request.path,
@@ -126,3 +169,4 @@ def redirect_to(location):
 		301,
 		{"Location": location, "Cache-Control": "no-store, no-cache, must-revalidate",},
 	)
+
