@@ -10,6 +10,7 @@ from press.press.doctype.agent_job.agent_job import job_detail
 
 @frappe.whitelist()
 def new(site):
+	team = frappe.get_request_header('X-Press-Team')
 	bench = frappe.get_all("Bench", fields=["name", "server"], filters={"status": "Active", "group": site["group"]}, order_by="creation desc", limit=1)[0].name
 	site = frappe.get_doc(
 		{
@@ -19,6 +20,7 @@ def new(site):
 			"apps": [{"app": app} for app in site["apps"]],
 			"enable_scheduled_backups": site["backups"],
 			"enable_uptime_monitoring": site["monitor"],
+			"team": team
 		},
 	).insert(ignore_permissions=True)
 	return site.name
