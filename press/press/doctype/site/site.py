@@ -10,6 +10,7 @@ from frappe.model.document import Document
 from press.press.doctype.agent_job.agent_job import Agent
 from frappe.utils.password import get_decrypted_password
 from press.press.doctype.site_activity.site_activity import log_site_activity
+from press.press.doctype.team.team import get_team_members, get_default_team
 from frappe.frappeclient import FrappeClient, FrappeException
 from frappe.utils import cint
 
@@ -129,3 +130,18 @@ def process_archive_site_job_update(job):
 	site_status = frappe.get_value("Site", job.site, "status")
 	if updated_status != site_status:
 		frappe.db.set_value("Site", job.site, "status", updated_status)
+
+
+def get_permission_query_conditions(user):
+	if not user:
+		user = frappe.session.user
+	if user == "Administrator":
+		return ""
+
+	# get team passed via request header and fallback to default team
+	team = frappe.get_request_header("X-Press-Team", get_default_team(user))
+
+	if not team:
+		frappe.throw("Not permitted", frappe.PermissionError)
+
+	return f"(`tabSite`.`team` = {frappe.db.escape(team)})"
