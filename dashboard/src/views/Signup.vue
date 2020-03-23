@@ -1,30 +1,10 @@
 <template>
 	<LoginBox v-if="state != 'Signup Success'">
 		<div class="mb-8">
-			<span class="text-lg">Signup to create your account</span>
+			<span class="text-lg">Create your account</span>
 		</div>
 		<form class="flex flex-col" @submit.prevent="signup">
 			<label class="block">
-				<span class="text-gray-800">First Name</span>
-				<input
-					class="mt-2 form-input block w-full shadow"
-					type="text"
-					placeholder="John"
-					v-model="firstName"
-					required
-				/>
-			</label>
-			<label class="mt-4 block">
-				<span class="text-gray-800">Last Name</span>
-				<input
-					class="mt-2 form-input block w-full shadow"
-					type="text"
-					placeholder="Doe"
-					v-model="lastName"
-					required
-				/>
-			</label>
-			<label class="mt-4 block">
 				<span class="text-gray-800">Email</span>
 				<input
 					class="mt-2 form-input block w-full shadow"
@@ -41,7 +21,7 @@
 				{{ errorMessage }}
 			</div>
 			<Button
-				class="mt-6 bg-brand focus:bg-blue-600 hover:bg-blue-400 text-white shadow"
+				class="mt-6 bg-blue-500 focus:bg-blue-600 hover:bg-blue-400 text-white shadow"
 				:disabled="state === 'Signing Up'"
 				type="submit"
 			>
@@ -80,8 +60,6 @@ export default {
 	data() {
 		return {
 			state: 'Idle', // Idle, Signing Up, Signup Error, Signup Success
-			firstName: null,
-			lastName: null,
 			email: null,
 			errorMessage: null
 		};
@@ -92,8 +70,6 @@ export default {
 				this.errorMessage = null;
 				this.state = 'Signing Up';
 				await this.$call('press.api.account.signup', {
-					first_name: this.firstName,
-					last_name: this.lastName,
 					email: this.email
 				});
 				this.state = 'Signup Success';

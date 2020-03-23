@@ -1,3 +1,5 @@
+import store from '@/store';
+
 export default async function call(method, args) {
 	if (!args) {
 		args = {};
@@ -7,7 +9,11 @@ export default async function call(method, args) {
 		Accept: 'application/json',
 		'Content-Type': 'application/json; charset=utf-8',
 		'X-Frappe-Site-Name': window.location.hostname
-	};
+    };
+
+	if (store?.account?.team) {
+		headers['X-Press-Team'] = store.account.team.name;
+	}
 
 	if (window.csrf_token && window.csrf_token !== '{{ csrf_token }}') {
 		headers['X-Frappe-CSRF-Token'] = window.csrf_token;
@@ -54,8 +60,8 @@ export default async function call(method, args) {
 			} catch (error) {
 				return m;
 			}
-        });
-        e.messages = e.messages.filter(Boolean);
+		});
+		e.messages = e.messages.filter(Boolean);
 		throw e;
 	}
 }

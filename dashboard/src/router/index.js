@@ -31,7 +31,7 @@ const routes = [
 		}
 	},
 	{
-		path: '/setup-account/:accountKey',
+		path: '/setup-account/:requestKey/:joinRequest?',
 		name: 'Setup Account',
 		component: () =>
 			import(
@@ -43,7 +43,7 @@ const routes = [
 		}
 	},
 	{
-		path: '/reset-password/:accountKey',
+		path: '/reset-password/:requestKey',
 		name: 'Reset Password',
 		component: () =>
 			import(
@@ -151,18 +151,24 @@ const router = new VueRouter({
 	routes
 });
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
 	if (to.matched.some(record => !record.meta.isLoginPage)) {
 		// this route requires auth, check if logged in
 		// if not, redirect to login page.
 		if (!store.auth.isLoggedIn) {
 			next({ name: 'Login' });
 		} else {
+			if (!store.account.user) {
+				await store.account.fetchAccount();
+			}
 			next();
 		}
 	} else {
 		// if already logged in, route to /sites
 		if (store.auth.isLoggedIn) {
+			if (!store.account.user) {
+				await store.account.fetchAccount();
+			}
 			next({ name: 'Sites' });
 		} else {
 			next();

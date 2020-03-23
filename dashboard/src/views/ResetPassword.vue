@@ -29,7 +29,7 @@
 				{{ errorMessage }}
 			</div>
 			<Button
-				class="mt-6 bg-brand focus:bg-blue-600 hover:bg-blue-400 text-white shadow"
+				class="mt-6 bg-blue-500 focus:bg-blue-600 hover:bg-blue-400 text-white shadow"
 				:disabled="!password"
 				type="submit"
 			>
@@ -38,7 +38,7 @@
 		</form>
 	</LoginBox>
 	<div class="text-center mt-20 px-6" v-else-if="!fetching && !email">
-		Account Key <strong>{{ accountKey }}</strong> is invalid or expired.
+		Account Key <strong>{{ requestKey }}</strong> is invalid or expired.
 	</div>
 </template>
 
@@ -50,7 +50,7 @@ export default {
 	components: {
 		LoginBox
 	},
-	props: ['accountKey'],
+	props: ['requestKey'],
 	data() {
 		return {
 			fetching: false,
@@ -65,7 +65,7 @@ export default {
 			let res = await this.$call(
 				'press.api.account.get_user_for_reset_password_key',
 				{
-					key: this.accountKey
+					key: this.requestKey
 				}
 			);
 			this.email = res || null;
@@ -78,7 +78,7 @@ export default {
 			try {
 				this.errorMessage = null;
 				await this.$call('press.api.account.reset_password', {
-					key: this.accountKey,
+					key: this.requestKey,
 					password: this.password
 				});
 				window.location.reload();

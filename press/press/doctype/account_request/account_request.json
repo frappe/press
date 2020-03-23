@@ -1,70 +1,40 @@
 {
+ "actions": [],
  "creation": "2019-11-22 15:05:22.773809",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "first_name",
+  "request_key",
+  "team",
   "email",
-  "ip",
-  "column_break_5",
-  "last_name",
-  "user",
-  "password"
+  "role"
  ],
  "fields": [
   {
-   "fieldname": "first_name",
-   "fieldtype": "Data",
-   "label": "First Name",
-   "read_only": 1,
-   "reqd": 1
-  },
-  {
-   "fieldname": "user",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "User",
-   "options": "User",
-   "read_only": 1,
-   "reqd": 1
-  },
-  {
-   "fieldname": "ip",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "IP",
-   "read_only": 1,
-   "reqd": 1
-  },
-  {
-   "fieldname": "column_break_5",
-   "fieldtype": "Column Break"
-  },
-  {
    "fieldname": "email",
    "fieldtype": "Data",
-   "label": "Email",
-   "read_only": 1,
-   "reqd": 1
+   "label": "Email"
   },
   {
-   "fieldname": "last_name",
+   "fieldname": "request_key",
    "fieldtype": "Data",
-   "label": "Last Name",
-   "read_only": 1,
-   "reqd": 1
+   "label": "Request Key"
   },
   {
-   "fieldname": "password",
-   "fieldtype": "Password",
-   "label": "Password",
-   "read_only": 1,
-   "reqd": 1
+   "fieldname": "team",
+   "fieldtype": "Data",
+   "label": "Team"
+  },
+  {
+   "fieldname": "role",
+   "fieldtype": "Data",
+   "label": "Role"
   }
  ],
  "in_create": 1,
- "modified": "2019-11-22 15:56:44.779265",
+ "links": [],
+ "modified": "2020-03-19 21:12:02.778575",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",
@@ -79,6 +49,18 @@
    "read": 1,
    "report": 1,
    "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
    "share": 1,
    "write": 1
   }
