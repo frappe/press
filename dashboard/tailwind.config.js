@@ -1,24 +1,9 @@
 module.exports = {
 	theme: {
-		fontFamily: {
-			sans: ['Inter', 'sans-serif'],
-			mono: [
-				'Consolas',
-				'"Andale Mono WT"',
-				'"Andale Mono"',
-				'"Lucida Console"',
-				'"Lucida Sans Typewriter"',
-				'"DejaVu Sans Mono"',
-				'"Bitstream Vera Sans Mono"',
-				'"Liberation Mono"',
-				'"Nimbus Mono L"',
-				'Monaco',
-				'"Courier New"',
-				'Courier',
-				'monospace'
-			]
-		},
 		extend: {
+			fontFamily: {
+				sans: ['Inter', 'sans-serif']
+			},
 			width: {
 				112: '28rem'
 			},
@@ -26,6 +11,18 @@ module.exports = {
 				brand: '#2490EF',
 				'brand-100': '#f4f9ff',
 				black: '#112B42',
+				blue: {
+					'50': '#f4f9ff',
+					'100': '#E8F4FD',
+					'200': '#BDDDFA',
+					'300': '#88C3F6',
+					'400': '#54A8F2',
+					'500': '#2490EF',
+					'600': '#107CDB',
+					'700': '#0D66B5',
+					'800': '#0A518F',
+					'900': '#083B69'
+				},
 				gray: {
 					'50': '#f9fafb',
 					'100': '#f4f4f6',
@@ -41,5 +38,5 @@ module.exports = {
 			}
 		}
 	},
-	plugins: [require('@tailwindcss/custom-forms')]
+	plugins: [require('@tailwindcss/ui')]
 };

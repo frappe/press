@@ -118,7 +118,7 @@
 					</label>
 				</div>
 				<Button
-					class="mt-10 bg-brand text-white text-sm w-full focus:bg-blue-600"
+					class="mt-10 bg-blue-500 text-white text-sm w-full focus:bg-blue-600"
 					:disabled="!canCreateSite()"
 					@click="createSite"
 				>

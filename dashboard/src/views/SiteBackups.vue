@@ -37,7 +37,7 @@
 				</div>
 				<div class="px-6 mt-4">
 					<Button
-						class="bg-brand hover:bg-blue-600 text-white"
+						class="bg-blue-500 hover:bg-blue-600 text-white"
 						@click="scheduleBackup"
 					>
 						Schedule Backup
