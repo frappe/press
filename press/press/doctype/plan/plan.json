@@ -15,7 +15,7 @@
   "for_account",
   "for_site",
   "section_break_6",
-  "pricing_details"
+  "plan_details"
  ],
  "fields": [
   {
@@ -55,12 +55,6 @@
    "fieldtype": "Section Break"
   },
   {
-   "fieldname": "pricing_details",
-   "fieldtype": "Table",
-   "label": "Pricing Details",
-   "options": "Plan Details"
-  },
-  {
    "default": "0",
    "fieldname": "is_default",
    "fieldtype": "Check",
@@ -80,10 +74,16 @@
    "fieldname": "enabled",
    "fieldtype": "Check",
    "label": "Enabled"
+  },
+  {
+   "fieldname": "plan_details",
+   "fieldtype": "Table",
+   "label": "Plan Details",
+   "options": "Plan Details"
   }
  ],
  "links": [],
- "modified": "2020-03-20 12:10:17.492131",
+ "modified": "2020-03-23 11:53:05.304036",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Plan",

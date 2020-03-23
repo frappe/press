@@ -10,7 +10,11 @@ class Subscription(Document):
 	def validate(self):
 		if self.status == "Active":
 			for subscription in frappe.get_all("Subscription",
-					{"status": "Active", 'name': ["!=", self.name]}):
+					{
+						"status": "Active",
+						"user_account": self.user_account,
+						"name": ["!=", self.name]
+					}
+				):
 
-				frappd.db.set_value("Subscription", subscription.name, 'status', 'Completed')
-
+				frappe.db.set_value("Subscription", subscription.name, 'status', 'Completed')
