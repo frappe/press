@@ -8,7 +8,11 @@
  "field_order": [
   "enabled",
   "user",
-  "team_members"
+  "section_break_6",
+  "team_members",
+  "subscription_details_section",
+  "profile_id",
+  "transaction_currency"
  ],
  "fields": [
   {
@@ -30,10 +34,31 @@
    "fieldname": "enabled",
    "fieldtype": "Check",
    "label": "Enabled"
+  },
+  {
+   "description": "The system will use this field to set the payment gateway's subscription profile id",
+   "fieldname": "profile_id",
+   "fieldtype": "Data",
+   "label": "Profile Id"
+  },
+  {
+   "fieldname": "section_break_6",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "subscription_details_section",
+   "fieldtype": "Section Break",
+   "label": "Subscription Details"
+  },
+  {
+   "fieldname": "transaction_currency",
+   "fieldtype": "Link",
+   "label": "Transaction Currency",
+   "options": "Currency"
   }
  ],
  "links": [],
- "modified": "2020-03-06 19:44:23.895732",
+ "modified": "2020-03-23 15:10:49.043159",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
