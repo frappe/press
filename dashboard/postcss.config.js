@@ -1,6 +1,6 @@
 const purgecss = require('@fullhuman/postcss-purgecss')({
 	content: ['./public/index.html', './src/**/*.html', './src/**/*.vue'],
-    defaultExtractor: content => content.match(/[\w-/:]+(?<!:)/g) || [],
+    defaultExtractor: content => content.match(/[\w-/.:]+(?<!:)/g) || [],
     whitelistPatternsChildren: [/chart-container$/, /graph-svg-tip$/]
 });
 

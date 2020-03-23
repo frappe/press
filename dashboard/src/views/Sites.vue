@@ -6,7 +6,7 @@
 				<Button
 					v-if="$store.sites.all.length"
 					route="/sites/new"
-					class="bg-brand text-white flex items-center pr-5 text-sm leading-none"
+					class="bg-blue-500 text-white flex items-center pr-5 text-sm leading-none"
 				>
 					<FeatherIcon name="plus" class="w-4 h-4" />
 					<span class="ml-1">
@@ -50,7 +50,7 @@
 				<div class="text-gray-800">
 					You haven't created any sites yet.
 				</div>
-				<Button route="/sites/new" class="mt-10 bg-brand text-white">
+				<Button route="/sites/new" class="mt-10 bg-blue-500 text-white">
 					Create your first Site
 				</Button>
 			</div>

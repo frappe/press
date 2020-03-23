@@ -25,7 +25,7 @@
 					</div>
 				</div>
 				<div class="mt-6">
-					<Button class="bg-brand text-white">Update Configuration</Button>
+					<Button class="bg-blue-500 text-white">Update Configuration</Button>
 				</div>
 			</div>
 		</section>

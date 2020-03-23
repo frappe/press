@@ -2,7 +2,7 @@
   <Row
     :ratio="ratio"
     class="border-b px-2 w-full "
-    :class="{ 'bg-brand-100': hovering }"
+    :class="{ 'bg-blue-50': hovering }"
     @mouseover="hovering = true"
     @mouseleave="hovering = false"
     @click="hovering = false"

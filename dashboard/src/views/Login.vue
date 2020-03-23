@@ -49,7 +49,7 @@
 				I remember my password
 			</router-link>
 			<Button
-				class="mt-6 bg-brand focus:bg-blue-600 hover:bg-blue-400 text-white shadow"
+				class="mt-6 bg-blue-500 focus:bg-blue-600 hover:bg-blue-400 text-white shadow"
 				:disabled="state === 'Working'"
 				@click="loginOrResetPassword"
 				type="submit"
