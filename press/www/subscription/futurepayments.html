@@ -1,0 +1,187 @@
+
+
+<link rel="stylesheet" href="/assets/press/subscription/stripe.css" />
+<script src="https://js.stripe.com/v3/"></script>
+
+
+<div class="sr-root">
+    <div class="sr-main">
+    <div class="sr-payment-summary payment-view">
+        <h4>Frappe Cloud subscription</h4>
+    </div>
+    <form>
+        <div class="sr-payment-form payment-view">
+        <div class="sr-form-row">
+            <label for="card-element">
+            Payment details
+            </label>
+            <div class="sr-combo-inputs">
+            <div class="sr-combo-inputs-row">
+                <input
+                type="text"
+                id="email"
+                placeholder="Email"
+                autocomplete="cardholder"
+                class="sr-input"
+                />
+            </div>
+            <div class="sr-combo-inputs-row">
+                <div class="sr-input sr-card-element" id="card-element"></div>
+            </div>
+            </div>
+            <div class="sr-field-error" id="card-errors" role="alert"></div>
+        <h4>This card will get charged automatically based on monthly usage</h4>
+        </div>
+
+        <button id="submit">
+            <div id="spinner" class="hidden"></div>
+            <span id="button-text">Subscribe</span>
+        </button>
+        </div>
+    </form>
+    <div class="sr-payment-summary hidden completed-view">
+        <h1>Your subscription is <span class="order-status"></span></h1>
+    </div>
+    </div>
+</div>
+<script>
+
+frappe.ready(function(){
+    var stripe;
+    var stripeElements = function(publicKey) {
+        stripe = Stripe(publicKey);
+        var elements = stripe.elements();
+
+        // Element styles
+        var style = {
+            base: {
+            fontSize: '16px',
+            color: '#32325d',
+            fontFamily:
+                '-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif',
+            fontSmoothing: 'antialiased',
+            '::placeholder': {
+                color: 'rgba(0,0,0,0.4)'
+            }
+            }
+        };
+
+        var card = elements.create('card', { style: style });
+
+        card.mount('#card-element');
+
+        // Element focus ring
+        card.on('focus', function() {
+            var el = document.getElementById('card-element');
+            el.classList.add('focused');
+        });
+
+        card.on('blur', function() {
+            var el = document.getElementById('card-element');
+            el.classList.remove('focused');
+        });
+
+        document.querySelector('#submit').addEventListener('click', function(evt) {
+            evt.preventDefault();
+            changeLoadingState(true);
+            // Initiate payment
+            createPaymentMethodAndCustomer(stripe, card);
+        });
+    };
+
+    function getPublicKey() {
+        return stripeElements('pk_test_bqV4myVbvWFB7TCtOEsaFIhm00qswYQKOm');
+    }
+
+    getPublicKey();
+
+    function showCardError(error) {
+        changeLoadingState(false);
+        // The card was declined (i.e. insufficient funds, card has expired, etc)
+        var errorMsg = document.querySelector('.sr-field-error');
+        errorMsg.textContent = error.message;
+        setTimeout(function() {
+            errorMsg.textContent = '';
+        }, 8000);
+    }
+
+    var createPaymentMethodAndCustomer = function(stripe, card) {
+        var cardholderEmail = document.querySelector('#email').value;
+        stripe
+            .createPaymentMethod('card', card, {
+                billing_details: {
+                    email: cardholderEmail
+                }
+            })
+            .then(function(result) {
+                if (result.error) {
+                    showCardError(result.error);
+                } else {
+                    createCustomer(result.paymentMethod.id, cardholderEmail);
+                }
+            });
+    };
+
+    async function createCustomer(paymentMethod, cardholderEmail) {
+        frappe.call({
+            method: "press.www.subscription.futurepayments.create_customer_and_subscription",
+            args: {
+                email: cardholderEmail,
+                payment_method: paymentMethod
+            },
+            callback: function(r){
+                handleSubscription(r.message.subscription);
+            }
+        })
+    }
+
+    function handleSubscription(subscription) {
+        const { latest_invoice } = subscription;
+        const { payment_intent } = latest_invoice;
+
+        if (payment_intent) {
+            const { client_secret, status } = payment_intent;
+
+
+
+            orderComplete(subscription);
+
+        } else {
+            orderComplete(subscription);
+        }
+    }
+
+    /* ------- Post-payment helpers ------- */
+
+    /* Shows a success / error message when the payment is complete */
+    var orderComplete = function(subscription) {
+        changeLoadingState(false);
+        var subscriptionJson = JSON.stringify(subscription, null, 2);
+        document.querySelectorAll('.payment-view').forEach(function(view) {
+            view.classList.add('hidden');
+        });
+        document.querySelectorAll('.completed-view').forEach(function(view) {
+            view.classList.remove('hidden');
+        });
+        document.querySelector('.order-status').textContent = subscription.status;
+    };
+
+    // Show a spinner on subscription submission
+    var changeLoadingState = function(isLoading) {
+        if (isLoading) {
+            document.querySelector('#spinner').classList.add('loading');
+            document.querySelector('button').disabled = true;
+
+            document.querySelector('#button-text').classList.add('hidden');
+        } else {
+            document.querySelector('button').disabled = false;
+            document.querySelector('#spinner').classList.remove('loading');
+            document.querySelector('#button-text').classList.remove('hidden');
+        }
+    };
+
+})
+
+</script>
+
+<!-- CSS and JS reference from https://github.com/stripe-samples/set-up-subscriptions -->
