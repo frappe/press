@@ -21,7 +21,7 @@ home_page = "index"
 # app_include_js = "/assets/press/js/press.js"
 
 # include js, css files in header of web template
-# web_include_css = "/assets/press/css/press.css"
+web_include_css = "/assets/press/css/subscription/stripe.css"
 # web_include_js = "/assets/press/js/press.js"
 
 # include js in page
