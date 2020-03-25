@@ -93,3 +93,9 @@ class StripeController(SubscriptionController):
 			customer=self.customer_id,
 			type="card"
 		)
+
+	def retrieve_intent(self, intent_id):
+		intent = self.stripe_obj.SetupIntent.retrieve(intent_id)
+		self.subscription_details.update({
+			'future_intent': intent
+		})
