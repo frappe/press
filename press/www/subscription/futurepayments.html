@@ -30,13 +30,15 @@
             </div>
             </div>
             <div class="sr-field-error" id="card-errors" role="alert"></div>
-        <h4>This card will get charged automatically based on monthly usage</h4>
         </div>
 
         <button id="submit">
             <div id="spinner" class="hidden"></div>
             <span id="button-text">Subscribe</span>
         </button>
+        <div style='margin-top: 10px;text-align: center;'>
+                <h4>By confirming your subscription, you allow Frappe Cloud to charge your card for future payments in accordance with their terms.</h4>
+        </div>
         </div>
     </form>
     <div class="sr-payment-summary hidden completed-view">
@@ -48,6 +50,7 @@
 
 frappe.ready(function(){
     var stripe;
+
     var stripeElements = function(publicKey) {
         stripe = Stripe(publicKey);
         var elements = stripe.elements();
@@ -90,7 +93,13 @@ frappe.ready(function(){
     };
 
     function getPublicKey() {
-        return stripeElements('pk_test_bqV4myVbvWFB7TCtOEsaFIhm00qswYQKOm');
+        frappe.call({
+            method: "press.www.subscription.futurepayments.get_public_key",
+            callback: function(){
+                return stripeElements('pk_test_bqV4myVbvWFB7TCtOEsaFIhm00qswYQKOm');
+            }
+        })
+
     }
 
     getPublicKey();
@@ -136,16 +145,28 @@ frappe.ready(function(){
     }
 
     function handleSubscription(subscription) {
-        const { latest_invoice } = subscription;
-        const { payment_intent } = latest_invoice;
+        const { future_intent } = subscription;
 
-        if (payment_intent) {
-            const { client_secret, status } = payment_intent;
+        if (future_intent) {
+            const { client_secret, status } = future_intent;
 
-
-
-            orderComplete(subscription);
-
+            if (status === 'requires_action') {
+                stripe.confirmCardSetup(client_secret).then(function(result) {
+                    if (result.error) {
+                        // Display error message in your UI.
+                        // The card was declined (i.e. insufficient funds, card has expired, etc)
+                        changeLoadingState(false);
+                        showCardError(result.error);
+                    } else {
+                        // Show a success message to your customer
+                        orderComplete(subscription);
+                    }
+                });
+            } else {
+                // No additional information was needed
+                // Show a success message to your customer
+                orderComplete(subscription);
+            }
         } else {
             orderComplete(subscription);
         }
