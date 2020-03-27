@@ -99,3 +99,8 @@ class StripeController(SubscriptionController):
 		self.subscription_details.update({
 			'future_intent': intent
 		})
+
+	@staticmethod
+	def get_publishable_key():
+		active_stripe_account = frappe.db.get_single_value("Press Settings", "stripe_account")
+		return frappe.db.get_value("Stripe Settings", active_stripe_account, "publishable_key")
