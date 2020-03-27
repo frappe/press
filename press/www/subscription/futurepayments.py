@@ -3,7 +3,9 @@ from press.utils.stripe_controller import StripeController
 
 @frappe.whitelist(allow_guest=True)
 def get_public_key():
-    pass
+    return {
+        "publishable_key": StripeController.get_publishable_key()
+    }
 
 @frappe.whitelist(allow_guest=True)
 def create_customer_and_subscription(email, payment_method):

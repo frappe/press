@@ -95,8 +95,8 @@ frappe.ready(function(){
     function getPublicKey() {
         frappe.call({
             method: "press.www.subscription.futurepayments.get_public_key",
-            callback: function(){
-                return stripeElements('pk_test_bqV4myVbvWFB7TCtOEsaFIhm00qswYQKOm');
+            callback: function(r){
+                return stripeElements(r.message.publishable_key);
             }
         })
 
