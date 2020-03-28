@@ -21,10 +21,10 @@ class Subscription(Document):
 				frappe.db.set_value("Subscription", subscription.name, 'status', 'Completed')
 
 class SubscriptionController(object):
-	def __init__(self, email_id):
+	def __init__(self, email_id, team):
 		self.email_id = email_id
 		self.payer_name = None
-		self.team = None
+		self.team = team
 		self.transaction_currency = 'USD'
 		self.subscription_item_id = None
 
@@ -35,8 +35,9 @@ class SubscriptionController(object):
 		self.set_subscription_item_id()
 
 	def set_team(self):
-		self.team = frappe.db.get_value('Team Member', {'user': self.email_id}, 'parent')
-		self.payer_name = frappe.db.get_value('User', self.email_id, 'full_name')
+		if not self.team:
+			self.team = frappe.db.get_value('Team Member', {'user': self.email_id}, 'parent')
+			self.payer_name = frappe.db.get_value('User', self.email_id, 'full_name')
 
 	def set_transaction_currency(self):
 		if self.team:
