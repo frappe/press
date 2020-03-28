@@ -126,12 +126,12 @@ frappe.ready(function(){
                 if (result.error) {
                     showCardError(result.error);
                 } else {
-                    createCustomer(result.paymentMethod.id, cardholderEmail);
+                    createCustomer(result.paymentMethod.id, cardholderEmail, card);
                 }
             });
     };
 
-    async function createCustomer(paymentMethod, cardholderEmail) {
+    async function createCustomer(paymentMethod, cardholderEmail, card) {
         frappe.call({
             method: "press.www.subscription.futurepayments.create_customer_and_subscription",
             args: {
@@ -139,19 +139,23 @@ frappe.ready(function(){
                 payment_method: paymentMethod
             },
             callback: function(r){
-                handleSubscription(r.message.subscription);
+                handleSubscription(r.message.subscription, card);
             }
         })
     }
 
-    function handleSubscription(subscription) {
+    function handleSubscription(subscription, card) {
         const { future_intent } = subscription;
 
         if (future_intent) {
             const { client_secret, status } = future_intent;
 
             if (status === 'requires_action') {
-                stripe.confirmCardSetup(client_secret).then(function(result) {
+                stripe.confirmCardSetup(client_secret, {
+                    payment_method: {
+                        card: card,
+                    }
+                }).then(function(result) {
                     if (result.error) {
                         // Display error message in your UI.
                         // The card was declined (i.e. insufficient funds, card has expired, etc)

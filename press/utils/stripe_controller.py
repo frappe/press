@@ -11,7 +11,7 @@ from frappe.utils import get_datetime
 from press.press.doctype.subscription.subscription import SubscriptionController
 
 class StripeController(SubscriptionController):
-	def __init__(self, email_id=None, token=None):
+	def __init__(self, email_id=None, team=None):
 		self.token = token
 		self.customer_obj = None
 		self.stripe_obj = stripe
@@ -19,7 +19,7 @@ class StripeController(SubscriptionController):
 		self.intent_client_secret = None
 		self.payment_methods = {}
 
-		super(StripeController, self).__init__(email_id=email_id)
+		super(StripeController, self).__init__(email_id=email_id, team=team)
 		self.setup()
 
 	def setup(self):

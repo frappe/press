@@ -15,3 +15,14 @@ class Plan(Document):
 				break
 
 		return plan_id
+
+	def get_units_to_charge(self, team):
+		currency = frappe.db.get_value("Team", team, "currency"):
+		pricing_factor = 1
+
+		for plan in self.plan_details:
+			if plan.currency == currency:
+				pricing_factor = plan.pricing_factor
+				break
+
+		return plan_id
