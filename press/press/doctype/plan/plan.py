@@ -17,7 +17,7 @@ class Plan(Document):
 		return plan_id
 
 	def get_units_to_charge(self, team):
-		currency = frappe.db.get_value("Team", team, "currency"):
+		currency = frappe.db.get_value("Team", team, "currency")
 		pricing_factor = 1
 
 		for plan in self.plan_details:
