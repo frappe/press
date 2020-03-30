@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
-# import frappe
+import frappe
 from frappe.model.document import Document
 
 class Plan(Document):
@@ -17,7 +17,7 @@ class Plan(Document):
 		return plan_id
 
 	def get_units_to_charge(self, team):
-		currency = frappe.db.get_value("Team", team, "currency")
+		currency = frappe.db.get_value("Team", team, "transaction_currency")
 		pricing_factor = 1
 
 		for plan in self.plan_details:
@@ -25,4 +25,4 @@ class Plan(Document):
 				pricing_factor = plan.pricing_factor
 				break
 
-		return plan_id
+		return pricing_factor

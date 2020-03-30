@@ -12,8 +12,7 @@ from frappe.utils import get_datetime
 from press.press.doctype.subscription.subscription import SubscriptionController
 
 class StripeController(SubscriptionController):
-	def __init__(self, email_id=None, team=None, token=None):
-		self.token = token
+	def __init__(self, email_id=None, team=None):
 		self.customer_obj = None
 		self.stripe_obj = stripe
 		self.customer_id = None
@@ -105,23 +104,3 @@ class StripeController(SubscriptionController):
 	def get_publishable_key():
 		active_stripe_account = frappe.db.get_single_value("Press Settings", "stripe_account")
 		return frappe.db.get_value("Stripe Settings", active_stripe_account, "publishable_key")
-
-@frappe.whitelist(allow_guest=True)
-def stripe_webhooks_handler():
-	try:
-		data = frappe.local.form_dict
-
-		data.update({
-			"payment_gateway": "Stripe"
-		})
-
-		doc = frappe.get_doc({
-			"data": json.dumps(frappe.local.form_dict),
-			"doctype": "Integration Request",
-			"integration_type": "Subscription Notification",
-			"status": "Queued"
-		}).insert(ignore_permissions=True)
-		frappe.db.commit()
-
-	except Exception as e:
-		frappe.log_error()

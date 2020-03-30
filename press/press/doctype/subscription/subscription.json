@@ -11,7 +11,9 @@
   "column_break_4",
   "status",
   "start_date",
-  "end_date"
+  "end_date",
+  "current_period_start",
+  "current_period_end"
  ],
  "fields": [
   {
@@ -34,14 +36,15 @@
   {
    "fieldname": "start_date",
    "fieldtype": "Date",
-   "in_list_view": 1,
-   "label": "Start Date"
+   "label": "Start Date",
+   "read_only": 1
   },
   {
    "fieldname": "end_date",
    "fieldtype": "Date",
-   "in_list_view": 1,
-   "label": "End Date"
+   "hidden": 1,
+   "label": "End Date",
+   "read_only": 1
   },
   {
    "default": "Active",
@@ -57,10 +60,24 @@
    "label": "Team",
    "options": "Team",
    "reqd": 1
+  },
+  {
+   "fieldname": "current_period_start",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Current Period Start",
+   "read_only": 1
+  },
+  {
+   "fieldname": "current_period_end",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Current Period End",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2020-03-23 15:23:11.092610",
+ "modified": "2020-03-30 15:29:15.749016",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Subscription",
