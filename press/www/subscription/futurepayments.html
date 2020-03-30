@@ -151,11 +151,7 @@ frappe.ready(function(){
             const { client_secret, status } = future_intent;
 
             if (status === 'requires_action') {
-                stripe.confirmCardSetup(client_secret, {
-                    payment_method: {
-                        card: card,
-                    }
-                }).then(function(result) {
+                stripe.confirmCardSetup(client_secret).then(function(result) {
                     if (result.error) {
                         // Display error message in your UI.
                         // The card was declined (i.e. insufficient funds, card has expired, etc)
