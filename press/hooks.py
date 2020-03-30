@@ -93,7 +93,17 @@ permission_query_conditions = {
 # ---------------
 
 scheduler_events = {
-	"hourly": ["press.press.doctype.frappe_app.frappe_app.poll_new_releases"],
+	"all": [
+		"press.press.doctype.payment.payment.handle_payment_logs",
+		"press.press.doctype.subscription.subscription.handle_subscription_logs",
+	],
+	"hourly": [
+		"press.press.doctype.frappe_app.frappe_app.poll_new_releases",
+	],
+	"hourly_long": [
+		"press.press.doctype.payment_provision.payment_provision.setup_payment_provision",
+		"press.press.doctype.payment_provision.payment_provision.setup_usage_record_with_stripe",
+	],
 	"cron": {
 		"* * * * * 0/5": ["press.press.doctype.agent_job.agent_job.poll_pending_jobs"],
 		"* * * * * 0/60": [

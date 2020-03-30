@@ -12,30 +12,31 @@ class PaymentProvision(Document):
 	pass
 
 def setup_usage_record_with_stripe():
-	date = add_days(getdate(), days=-1)
+	date = add_days(getdate(), day=-1)
 
 	for subs in frappe.get_all("Subscription", {"status": "Active"}, ['team']):
 		sc = StripeController(team=subs.team)
 		total_units = 0
 		provisions = []
+
 		for provision in frappe.get_all("Payment Provision", {
 				"date": date,
 				"pushed_to_stripe": 0,
-				"team": subs
+				"team": subs.team
 				}, ['*']
 			):
 
 			total_units += cint(provision.provisioned_qty)
 			provisions.append(provision.name)
 
-		sc.create_usage_record(qty=total_units)
-
-		frappe.db.set_value("Payment Provision", {"name", ["in", provisions]}, 'pushed_to_stripe', 1)
+		if total_units and provisions:
+			sc.create_usage_record(qty=total_units)
+			frappe.db.set_value("Payment Provision", {"name": ["in", provisions]}, 'pushed_to_stripe', 1)
 
 def setup_payment_provision():
 	for subs in frappe.get_all("Subscription", {"status": "Active"}, ['team']):
 		for site in frappe.get_all("Site", {"team": subs.team, "status": "Active"}, ['name', 'plan']):
-			if not frappe.db.exists("Payment Provision", {"data": getdate, "site": site.name}):
+			if not frappe.db.exists("Payment Provision", {"date": getdate(), "site": site.name}):
 				plan_doc = frappe.get_cached_doc("Plan", site.plan)
 
 				frappe.get_doc({

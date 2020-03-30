@@ -6,6 +6,10 @@ from __future__ import unicode_literals
 import frappe
 from frappe.model.document import Document
 from datetime import datetime
+import json
+from press.utils.dateutils import get_formated_date
+from press.press.doctype.stripe_webhook_log.stripe_webhook_log import set_status
+from frappe.utils import getdate
 
 class Subscription(Document):
 	def validate(self):
@@ -64,8 +68,10 @@ class SubscriptionController(object):
 		)
 
 	def setup_press_subscription_record(self):
-		current_period_end = self.subscription_details['current_period_end']
-		current_period_start = self.subscription_details['current_period_start']
+		from press.utils.dateutils import get_formated_date
+
+		current_period_end = get_formated_date(self.subscription_details['current_period_end'])
+		current_period_start = get_formated_date(self.subscription_details['current_period_start'])
 
 		subscription_doc = frappe.get_doc({
 			"doctype": "Subscription",
@@ -73,8 +79,35 @@ class SubscriptionController(object):
 			"subscription_id": self.subscription_details['id'],
 			"subscription_item_id": self.subscription_details['items']['data'][0]['id'], # charge usage against this id
 			"status": "Active",
-			"start_date": datetime.fromtimestamp(current_period_start).strftime('%Y-%m-%d'),
-			"end_date": datetime.fromtimestamp(current_period_end).strftime('%Y-%m-%d')
+			"start_date": current_period_start,
+			"current_period_start": current_period_start,
+			"end_date": current_period_end,
+			"current_period_end": current_period_end
 		})
 
 		subscription_doc.save(ignore_permissions=True)
+
+def handle_subscription_logs():
+	for log in frappe.get_all("Stripe Webhook Log", {
+			'event_type': 'customer.subscription.updated',
+			'status': 'Queued'
+		}, ["data", "name"]):
+
+		set_status(log.name, 'In Progress')
+
+		webhook_data = json.loads(log.data)
+		subscription_data = webhook_data['data']['object']
+
+		subscription_doc_name = frappe.db.get_value("Subscription",
+			{"subscription_id": subscription_data['id']})
+
+		subscription_doc = frappe.get_cached_doc("Subscription", subscription_doc_name)
+
+		subscription_doc.update({
+			"current_period_end": get_formated_date(subscription_data['current_period_end']),
+			"current_period_start": get_formated_date(subscription_data['current_period_start'])
+		})
+
+		subscription_doc.save()
+
+		set_status(log.name, 'Complete')
