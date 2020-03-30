@@ -8,7 +8,8 @@
   "request_key",
   "team",
   "email",
-  "role"
+  "role",
+  "invited_by"
  ],
  "fields": [
   {
@@ -30,11 +31,16 @@
    "fieldname": "role",
    "fieldtype": "Data",
    "label": "Role"
+  },
+  {
+   "fieldname": "invited_by",
+   "fieldtype": "Data",
+   "label": "Invited By"
   }
  ],
  "in_create": 1,
  "links": [],
- "modified": "2020-03-19 21:12:02.778575",
+ "modified": "2020-03-30 18:54:13.739727",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",

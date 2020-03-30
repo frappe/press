@@ -21,23 +21,21 @@ def signup(email):
 	exists, enabled = frappe.db.get_values("Team", email, ["name", "enabled"]) or [0, 0]
 
 	if exists and not enabled:
-		# account was created but not verified
-		doc = frappe.get_doc("Team", email)
-		doc.add_team_member(email, owner=True)
+		frappe.throw(_("Account {0} has been deactivated").format(email))
 	elif exists and enabled:
-		# account exists
 		frappe.throw(_("Account {0} is already registered").format(email))
 	else:
-		doc = frappe.new_doc("Team")
-		doc.name = email
-		doc.add_team_member(email, owner=True)
-		doc.insert()
+		frappe.get_doc(
+			{"doctype": "Account Request", "email": email, "role": "Press Admin"}
+		).insert()
 
 	frappe.set_user(current_user)
 
 
 @frappe.whitelist(allow_guest=True)
-def setup_account(key, first_name=None, last_name=None, password=None):
+def setup_account(
+	key, first_name=None, last_name=None, password=None, is_invitation=False
+):
 	account_request = get_account_request_from_key(key)
 	if not account_request:
 		frappe.throw("Invalid or Expired Key")
@@ -46,7 +44,15 @@ def setup_account(key, first_name=None, last_name=None, password=None):
 	email = account_request.email
 	role = account_request.role
 
-	doc = frappe.get_doc("Team", team)
+	if is_invitation:
+		# if this is a request from an invitation
+		# then Team already exists and will be added to that team
+		doc = frappe.get_doc("Team", team)
+	else:
+		# Team doesn't exist, create it
+		doc = frappe.get_doc(
+			{"doctype": "Team", "name": team, "user": email, "enabled": 1}
+		).insert(ignore_permissions=True)
 	doc.create_user_for_member(first_name, last_name, email, password, role)
 
 	frappe.local.login_manager.login_as(email)
@@ -146,10 +152,18 @@ def get_user_for_reset_password_key(key):
 @frappe.whitelist()
 def add_team_member(team, email):
 	team_doc = frappe.get_doc("Team", team)
-	if team_doc.user == frappe.session.user:
-		team_doc.add_team_member(email)
-	else:
+	if team_doc.user != frappe.session.user:
 		frappe.throw(_("Only Team Owner can add other members"), frappe.PermissionError)
+
+	frappe.get_doc(
+		{
+			"doctype": "Account Request",
+			"team": team,
+			"email": email,
+			"role": "Press Member",
+			"invited_by": team_doc.user,
+		}
+	).insert()
 
 
 @frappe.whitelist()

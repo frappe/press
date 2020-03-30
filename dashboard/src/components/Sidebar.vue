@@ -1,11 +1,11 @@
 <template>
 	<div>
 		<div
-			class="pb-2 px-2 flex flex-col justify-between h-full block bg-gray-200 text-sm"
+			class="flex flex-col justify-between block h-full px-2 pb-2 text-sm bg-gray-200"
 		>
 			<div>
-				<div class="flex py-4 px-2">
-					<div class="font-bold text-lg">Frappe Cloud</div>
+				<div class="flex px-2 py-4">
+					<div class="text-lg font-bold">Frappe Cloud</div>
 				</div>
 				<router-link
 					v-for="item in items"
@@ -14,7 +14,7 @@
 					v-slot="{ href, route, navigate, isActive, isExactActive }"
 				>
 					<a
-						class="mt-1 px-3 py-2 flex items-center rounded-lg cursor-pointer hover:bg-white"
+						class="flex items-center px-3 py-2 mt-1 rounded-lg cursor-pointer hover:bg-white"
 						:class="[
 							(item.route == '/'
 							? isExactActive
@@ -35,13 +35,13 @@
 				v-slot="{ href, route, navigate, isActive, isExactActive }"
 			>
 				<a
-					class="inline-flex items-start rounded-md px-2 py-3"
+					class="inline-flex items-start px-2 py-3 rounded-md"
 					:class="isActive ? 'bg-white' : 'hover:bg-gray-300'"
 					:href="href"
 				>
 					<Avatar
 						:label="$store.account.user.first_name"
-						:imageURL="$store.account.user.image"
+						:imageURL="$store.account.user.user_image"
 					/>
 					<div class="ml-2">
 						<div class="font-semibold">
