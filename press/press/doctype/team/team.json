@@ -12,6 +12,7 @@
   "section_break_6",
   "team_members",
   "subscription_details_section",
+  "stripe_customer_id",
   "profile_id",
   "transaction_currency"
  ],
@@ -62,10 +63,15 @@
    "fieldtype": "Select",
    "label": "Status",
    "options": "\nActive\nSuspended\nTerminated"
+  },
+  {
+   "fieldname": "stripe_customer_id",
+   "fieldtype": "Data",
+   "label": "Stripe Customer ID"
   }
- ],
- "links": [],
- "modified": "2020-03-30 16:38:24.821180",
+],
+"links": [],
+"modified": "2020-03-30 19:22:51.067917",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

@@ -5,9 +5,10 @@
 from __future__ import unicode_literals
 
 import frappe
+from press.api.billing import get_stripe
 from frappe.model.document import Document
 from frappe import _
-from frappe.utils import random_string, get_url
+from frappe.utils import random_string, get_url, get_fullname
 
 
 class Team(Document):
@@ -26,6 +27,9 @@ class Team(Document):
 		if not self.user and self.team_members:
 			self.user = self.team_members[0].user
 
+	def after_insert(self):
+		self.create_stripe_customer()
+
 	def create_user_for_member(
 		self, first_name=None, last_name=None, email=None, password=None, role=None
 	):
@@ -43,34 +47,12 @@ class Team(Document):
 
 		self.append("team_members", {"user": user.name})
 
-		if not self.enabled and role == "Press Admin":
-			self.enabled = 1
-
 		self.save(ignore_permissions=True)
 
-	def add_team_member(self, email, owner=False):
-		key = random_string(32)
-		frappe.get_doc(
-			{
-				"doctype": "Account Request",
-				"request_key": key,
-				"team": self.name,
-				"email": email,
-				"role": "Press Admin" if owner else "Press Member",
-			}
-		).insert()
-
-		url = get_url("/dashboard/#/setup-account/" + key)
-
-		subject = "Verify your account"
-		template = "verify_account"
-		if not owner:
-			subject = f"You are invited by {self.name} to join Frappe Cloud"
-			template = "invite_team_member"
-
-		frappe.sendmail(
-			recipients=email, subject=subject, template=template, args={"link": url}, now=True,
-		)
+	def create_stripe_customer(self):
+		stripe = get_stripe()
+		customer = stripe.Customer.create(email=self.user, name=get_fullname(self.user))
+		self.db_set("stripe_customer_id", customer.id)
 
 
 def get_team_members(team):

@@ -7,7 +7,7 @@
 			<label class="block">
 				<span class="text-gray-800">Email</span>
 				<input
-					class="mt-2 form-input block w-full shadow"
+					class="block w-full mt-2 shadow form-input"
 					type="email"
 					placeholder="johndoe@mail.com"
 					v-model="email"
@@ -15,13 +15,13 @@
 				/>
 			</label>
 			<div
-				class="mt-6 text-red-600 whitespace-pre-line text-sm"
+				class="mt-6 text-sm text-red-600 whitespace-pre-line"
 				v-if="errorMessage"
 			>
 				{{ errorMessage }}
 			</div>
 			<Button
-				class="mt-6 bg-blue-500 focus:bg-blue-600 hover:bg-blue-400 text-white shadow"
+				class="mt-6 text-white bg-blue-500 shadow focus:bg-blue-600 hover:bg-blue-400"
 				:disabled="state === 'Signing Up'"
 				type="submit"
 			>
@@ -30,18 +30,18 @@
 			<div class="mt-10 text-center border-t">
 				<div class="transform -translate-y-1/2">
 					<span
-						class="bg-white px-2 leading-8 text-xs text-gray-800 uppercase tracking-wider"
+						class="px-2 text-xs leading-8 tracking-wider text-gray-800 uppercase bg-white"
 					>
 						Or
 					</span>
 				</div>
 			</div>
-			<router-link class="text-center text-sm" to="/login">
+			<router-link class="text-sm text-center" to="/login">
 				Already have an account? Login
 			</router-link>
 		</form>
 	</LoginBox>
-	<div class="text-center mt-20 px-6" v-else>
+	<div class="px-6 mt-20 text-center" v-else>
 		We have sent an email to
 		<span class="font-semibold">{{ email }}</span
 		>. Please click on the link received to verify your email and set up your
