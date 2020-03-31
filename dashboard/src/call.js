@@ -36,6 +36,7 @@ export default async function call(method, args) {
 		let error, exception;
 		try {
 			error = JSON.parse(response);
+			// eslint-disable-next-line no-empty
 		} catch (e) {}
 		let errorParts = [
 			[method, error.exc_type, error._error_message].filter(Boolean).join(' ')
@@ -44,6 +45,7 @@ export default async function call(method, args) {
 			exception = error.exc;
 			try {
 				exception = JSON.parse(exception)[0];
+				// eslint-disable-next-line no-empty
 			} catch (e) {}
 			errorParts.push(exception);
 		}

@@ -18,7 +18,7 @@ def signup(email):
 	frappe.set_user("Administrator")
 
 	email = email.strip()
-	exists, enabled = frappe.db.get_values("Team", email, ["name", "enabled"]) or [0, 0]
+	exists, enabled = frappe.db.get_value("Team", email, ["name", "enabled"]) or [0, 0]
 
 	if exists and not enabled:
 		frappe.throw(_("Account {0} has been deactivated").format(email))
