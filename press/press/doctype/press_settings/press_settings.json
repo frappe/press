@@ -7,7 +7,19 @@
  "field_order": [
   "domain",
   "bench_configuration",
-  "github_access_token"
+  "github_access_token",
+  "dns_section",
+  "dns_provider",
+  "column_break_6",
+  "aws_access_key_id",
+  "aws_secret_access_key",
+  "tls_section",
+  "eff_registration_email",
+  "rsa_key_size",
+  "wildcard_tls_certificate",
+  "column_break_11",
+  "webroot_directory",
+  "certbot_directory"
  ],
  "fields": [
   {
@@ -29,11 +41,81 @@
    "fieldtype": "Data",
    "label": "Domain",
    "reqd": 1
+  },
+  {
+   "fieldname": "dns_section",
+   "fieldtype": "Section Break",
+   "label": "DNS"
+  },
+  {
+   "fieldname": "aws_access_key_id",
+   "fieldtype": "Data",
+   "label": "AWS Access Key ID",
+   "reqd": 1
+  },
+  {
+   "fieldname": "aws_secret_access_key",
+   "fieldtype": "Password",
+   "label": "AWS Secret Access Key",
+   "reqd": 1
+  },
+  {
+   "default": "AWS Route 53",
+   "fieldname": "dns_provider",
+   "fieldtype": "Select",
+   "label": "DNS Provider",
+   "options": "AWS Route 53",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_6",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "2048",
+   "fieldname": "rsa_key_size",
+   "fieldtype": "Select",
+   "label": "RSA Key Size",
+   "options": "2048\n3072\n4096",
+   "reqd": 1
+  },
+  {
+   "fieldname": "eff_registration_email",
+   "fieldtype": "Data",
+   "label": "EFF Registration Email",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_11",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "webroot_directory",
+   "fieldtype": "Data",
+   "label": "Webroot Directory",
+   "reqd": 1
+  },
+  {
+   "fieldname": "certbot_directory",
+   "fieldtype": "Data",
+   "label": "Certbot Directory",
+   "reqd": 1
+  },
+  {
+   "fieldname": "tls_section",
+   "fieldtype": "Section Break",
+   "label": "TLS"
+  },
+  {
+   "fieldname": "wildcard_tls_certificate",
+   "fieldtype": "Link",
+   "label": "Wildcard TLS Certificate",
+   "options": "TLS Certificate"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2020-02-28 14:57:53.435673",
+ "modified": "2020-03-30 22:30:29.641951",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
