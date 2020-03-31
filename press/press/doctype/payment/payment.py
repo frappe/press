@@ -8,7 +8,7 @@ import json
 from frappe.model.document import Document
 from frappe.utils import nowdate
 from datetime import datetime
-from press.utils.dateutils import get_formated_date
+from press.utils import get_formated_date
 from press.press.doctype.stripe_webhook_log.stripe_webhook_log import set_status
 
 class Payment(Document):

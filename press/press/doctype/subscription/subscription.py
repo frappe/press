@@ -7,7 +7,7 @@ import frappe
 from frappe.model.document import Document
 from datetime import datetime
 import json
-from press.utils.dateutils import get_formated_date
+from press.utils import get_formated_date
 from press.press.doctype.stripe_webhook_log.stripe_webhook_log import set_status
 from frappe.utils import getdate
 
@@ -68,7 +68,7 @@ class SubscriptionController(object):
 		)
 
 	def setup_press_subscription_record(self):
-		from press.utils.dateutils import get_formated_date
+		from press.utils import get_formated_date
 
 		current_period_end = get_formated_date(self.subscription_details['current_period_end'])
 		current_period_start = get_formated_date(self.subscription_details['current_period_start'])
