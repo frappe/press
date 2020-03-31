@@ -21,4 +21,4 @@ class ReleaseGroup(Document):
 			releases.append({"release": release.name, "app": release.app, "hash": release.hash})
 		frappe.get_doc(
 			{"doctype": "Deploy Candidate", "group": self.name, "apps": releases}
-		).insert()
+		).insert(ignore_permissions=True)
