@@ -6,7 +6,6 @@ from __future__ import unicode_literals
 import frappe
 from frappe import _
 from frappe.utils import random_string, get_url
-from frappe.utils.verified_command import verify_request
 from frappe.website.render import build_response
 from frappe.core.doctype.user.user import update_password
 from press.press.doctype.team.team import get_team_members
@@ -167,6 +166,5 @@ def redirect_to(location):
 		frappe.local.request.path,
 		"",
 		301,
-		{"Location": location, "Cache-Control": "no-store, no-cache, must-revalidate",},
+		{"Location": location, "Cache-Control": "no-store, no-cache, must-revalidate"},
 	)
-

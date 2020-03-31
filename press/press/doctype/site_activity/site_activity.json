@@ -25,13 +25,13 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Action",
-   "options": "Create\nBackup\nLogin as Administrator\nUpdate\nArchive",
+   "options": "Create\nBackup\nLogin as Administrator\nUpdate\nArchive\nAdd Domain",
    "read_only": 1,
    "reqd": 1
   }
  ],
  "links": [],
- "modified": "2020-02-28 18:28:34.651116",
+ "modified": "2020-03-18 16:26:02.968032",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Activity",

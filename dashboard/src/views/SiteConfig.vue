@@ -14,7 +14,7 @@
 					<div class="mt-2 w-2/3 px-4">
 						<input
 							:class="{
-								'form-input w-full': ['text', 'number'].includes(
+								'form-input w-full': ['text', 'number', 'email', 'password'].includes(
 									field.fieldtype
 								),
 								'form-checkbox': ['checkbox'].includes(field.fieldtype)
@@ -25,7 +25,10 @@
 					</div>
 				</div>
 				<div class="mt-6">
-					<Button class="bg-blue-500 text-white">Update Configuration</Button>
+					<Button class="text-white" 
+						:class="showButton? 'bg-blue-500' : 'bg-blue-300 pointer-events-none'"
+						:disabled="!showButton"
+						@click="updateConfig">Update Configuration</Button>
 				</div>
 			</div>
 		</section>
@@ -47,7 +50,17 @@ export default {
 				{
 					label: 'Mail Port',
 					fieldname: 'mail_port',
+					fieldtype: 'number'
+				},
+				{
+					label: 'Mail Login',
+					fieldname: 'mail_login',
 					fieldtype: 'text'
+				},
+				{
+					label: 'Mail Password',
+					fieldname: 'mail_password',
+					fieldtype: 'password'
 				},
 				{
 					label: 'Use SSL',
@@ -55,8 +68,18 @@ export default {
 					fieldtype: 'checkbox'
 				},
 				{
+					label: 'Auto Email Address',
+					fieldname: 'auto_email_id',
+					fieldtype: 'email'
+				},
+				{
 					label: 'Mute Emails',
 					fieldname: 'mute_emails',
+					fieldtype: 'checkbox'
+				},
+				{
+					label: 'Enable Server Scripts',
+					fieldname: 'server_script_enabled',
 					fieldtype: 'checkbox'
 				},
 				{
@@ -65,8 +88,8 @@ export default {
 					fieldtype: 'checkbox'
 				},
 				{
-					label: 'Developer Mode',
-					fieldname: 'developer_mode',
+					label: 'Disable Global Search',
+					fieldname: 'disable_global_search',
 					fieldtype: 'checkbox'
 				},
 				{
@@ -76,12 +99,36 @@ export default {
 				}
 			],
 			siteConfig: {
-				developer_mode: 1,
+				mail_server: null,
+				mail_port: null,
+				mail_login: null,
+				mail_password: null,
+				use_ssl: null,
+				auto_email_id: null,
 				mute_emails: 0,
+				server_script_enabled: 0,
 				disable_website_cache: 0,
+				disable_global_search: 0,
 				max_file_size: 10240
-			}
+			},
+			showButton: false
 		};
-	}
+	},
+	methods: {
+		async updateConfig() {
+			await this.$call('press.api.site.update_site', {
+				name: this.site.name,
+				config: this.siteConfig
+			});
+		}
+	},
+	watch: {
+		siteConfig: {
+			handler: function (value) {
+				this.showButton = true;
+			},
+			deep: true
+		}
+	},
 };
 </script>

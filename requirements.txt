@@ -1,1 +1,2 @@
 frappe
+PyGithub==1.44.1

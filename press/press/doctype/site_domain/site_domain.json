@@ -1,16 +1,14 @@
 {
  "actions": [],
- "autoname": "Prompt",
- "creation": "2020-02-24 12:07:12.801958",
+ "creation": "2020-03-17 16:35:11.520003",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
   "site",
-  "timestamp",
-  "job_name",
-  "duration",
-  "wait"
+  "domain",
+  "ssl",
+  "dns_type"
  ],
  "fields": [
   {
@@ -21,46 +19,42 @@
    "label": "Site",
    "options": "Site",
    "read_only": 1,
-   "reqd": 1,
-   "search_index": 1
+   "reqd": 1
   },
   {
-   "fieldname": "timestamp",
-   "fieldtype": "Datetime",
-   "in_list_view": 1,
-   "label": "Timestamp",
-   "read_only": 1,
-   "search_index": 1
-  },
-  {
-   "fieldname": "job_name",
+   "fieldname": "domain",
    "fieldtype": "Data",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Job Name",
+   "label": "Domain",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "ssl",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "SSL",
    "read_only": 1
   },
   {
-   "fieldname": "duration",
-   "fieldtype": "Int",
+   "default": "CNAME",
+   "fieldname": "dns_type",
+   "fieldtype": "Select",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Duration",
-   "read_only": 1
-  },
-  {
-   "fieldname": "wait",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "label": "Wait",
-   "read_only": 1
+   "label": "DNS Type",
+   "options": "A\nNS\nCNAME",
+   "read_only": 1,
+   "reqd": 1
   }
  ],
  "links": [],
- "modified": "2020-03-13 12:51:20.890410",
+ "modified": "2020-03-18 16:34:24.714216",
  "modified_by": "Administrator",
  "module": "Press",
- "name": "Site Job Log",
+ "name": "Site Domain",
  "owner": "Administrator",
  "permissions": [
   {
@@ -78,5 +72,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "title_field": "domain",
  "track_changes": 1
 }
