@@ -1,9 +1,11 @@
 <template>
 	<div>
 		<section>
-			<h2 class="font-medium text-lg">Configuration</h2>
+			<h2 class="text-lg font-medium">Configuration</h2>
 			<p class="text-gray-600">View and edit your site configuration</p>
-			<div class="w-full sm:w-1/2 mt-6 shadow rounded border border-gray-100 px-6 py-4">
+			<div
+				class="w-full px-6 py-4 mt-6 border border-gray-100 rounded shadow sm:w-1/2"
+			>
 				<div
 					v-for="(field, i) in fields"
 					class="flex items-baseline"
@@ -11,12 +13,15 @@
 					:key="field.fieldname"
 				>
 					<label class="w-1/3 text-gray-800">{{ field.label }}</label>
-					<div class="mt-2 w-2/3 px-4">
+					<div class="w-2/3 px-4 mt-2">
 						<input
 							:class="{
-								'form-input w-full': ['text', 'number', 'email', 'password'].includes(
-									field.fieldtype
-								),
+								'form-input w-full': [
+									'text',
+									'number',
+									'email',
+									'password'
+								].includes(field.fieldtype),
 								'form-checkbox': ['checkbox'].includes(field.fieldtype)
 							}"
 							:type="field.fieldtype"
@@ -25,10 +30,9 @@
 					</div>
 				</div>
 				<div class="mt-6">
-					<Button class="text-white" 
-						:class="showButton? 'bg-blue-500' : 'bg-blue-300 pointer-events-none'"
-						:disabled="!showButton"
-						@click="updateConfig">Update Configuration</Button>
+					<Button :disabled="!showButton" type="primary" @click="updateConfig">
+						Update Configuration
+					</Button>
 				</div>
 			</div>
 		</section>
@@ -124,11 +128,11 @@ export default {
 	},
 	watch: {
 		siteConfig: {
-			handler: function (value) {
+			handler: function(value) {
 				this.showButton = true;
 			},
 			deep: true
 		}
-	},
+	}
 };
 </script>

@@ -1,18 +1,18 @@
 <template>
 	<div>
 		<section>
-			<h2 class="font-medium text-lg">Access Console</h2>
+			<h2 class="text-lg font-medium">Access Console</h2>
 			<p class="text-gray-600">
 				Access your site's Python and Database Console
 			</p>
-            <div class="flex">
-                <Button class="mt-6 hover:bg-gray-100 border">
-                    Launch Python Console
-                </Button>
-                <Button class="mt-6 ml-4 hover:bg-gray-100 border">
-                    Launch Database Console
-                </Button>
-            </div>
+			<div class="flex">
+				<Button class="mt-6">
+					Launch Python Console
+				</Button>
+				<Button class="mt-6 ml-4">
+					Launch Database Console
+				</Button>
+			</div>
 		</section>
 	</div>
 </template>

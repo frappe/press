@@ -32,7 +32,7 @@
 			<router-link
 				v-if="$store.account.user"
 				to="/account"
-				v-slot="{ href, route, navigate, isActive, isExactActive }"
+				v-slot="{ href, route, navigate, isActive }"
 			>
 				<a
 					class="inline-flex items-start px-2 py-3 rounded-md"

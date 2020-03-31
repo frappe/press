@@ -53,9 +53,9 @@
 				{{ errorMessage }}
 			</div>
 			<Button
-				class="mt-6 text-white bg-blue-500 shadow focus:bg-blue-600 hover:bg-blue-400"
+				class="mt-6"
+				type="primary"
 				:disabled="!(password && firstName && lastName) && !userExists"
-				type="submit"
 			>
 				<span v-if="!isInvitation">
 					Submit

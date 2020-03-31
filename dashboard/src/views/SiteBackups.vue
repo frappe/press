@@ -36,10 +36,7 @@
 					No backups found
 				</div>
 				<div class="px-6 mt-4">
-					<Button
-						class="bg-blue-500 hover:bg-blue-600 text-white"
-						@click="scheduleBackup"
-					>
+					<Button type="primary" @click="scheduleBackup">
 						Schedule Backup
 					</Button>
 				</div>
