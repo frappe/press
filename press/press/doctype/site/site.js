@@ -39,5 +39,9 @@ frappe.ui.form.on('Site', {
 		frm.add_custom_button(__('Archive'), () => {
 			frm.call({method: "archive", doc: frm.doc, callback: result => frappe.msgprint(result.message)});
 		}, __('Actions'));
+		frm.add_custom_button(__('Domains'), () => {
+			const filters = {site: frm.doc.name};
+			frappe.set_route("List", "Site Domain", filters);
+		});
 	}
 });
