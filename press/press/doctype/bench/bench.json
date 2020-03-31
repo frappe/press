@@ -68,14 +68,15 @@
    "fieldname": "config",
    "fieldtype": "Code",
    "label": "Configuration",
-   "options": "JSON"
+   "options": "JSON",
+   "read_only": 1
   },
   {
    "collapsible": 1,
    "collapsible_depends_on": "true",
    "fieldname": "common_site_configuration",
    "fieldtype": "Section Break",
-   "label": "Common Site Configuration"
+   "label": "Configuration"
   },
   {
    "default": "4",
@@ -100,7 +101,7 @@
   }
  ],
  "links": [],
- "modified": "2020-02-18 21:24:12.663443",
+ "modified": "2020-02-28 18:52:55.783991",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",
