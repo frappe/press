@@ -7,7 +7,6 @@ from __future__ import unicode_literals
 import frappe
 from frappe.model.document import Document
 from frappe import _
-from frappe.utils.verified_command import verify_request, get_signed_params
 from frappe.utils import random_string, get_url
 
 

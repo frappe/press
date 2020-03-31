@@ -7,5 +7,5 @@ from __future__ import unicode_literals
 import unittest
 
 
-class TestTeam(unittest.TestCase):
+class TestTLSCertificate(unittest.TestCase):
 	pass

@@ -91,10 +91,12 @@
    "label": "Enable Scheduled Backups"
   },
   {
+   "default": "{}",
    "fieldname": "config",
    "fieldtype": "Code",
    "label": "Configuration",
-   "options": "JSON"
+   "options": "JSON",
+   "read_only": 1
   },
   {
    "fieldname": "database_section",

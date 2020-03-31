@@ -138,6 +138,7 @@ export default {
 		tabs() {
 			let tabs = [
 				{ label: 'General', route: 'general' },
+				{ label: 'Domains', route: 'domains' },
 				{ label: 'Analytics', route: 'analytics' },
 				{ label: 'Backups', route: 'backups' },
 				{ label: 'Site Config', route: 'site-config' },
