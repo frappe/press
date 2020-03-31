@@ -9,5 +9,6 @@
     - role: nginx
     - role: agent
     - role: docker
+    - role: bench
     
 ...
