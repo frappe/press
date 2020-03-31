@@ -4,8 +4,6 @@
 
 from __future__ import unicode_literals
 import frappe
-from frappe.utils.password import get_decrypted_password
-from press.press.doctype.agent_job.agent_job import job_detail
 
 
 @frappe.whitelist()

@@ -12,4 +12,3 @@ def log_error(title, **kwargs):
 	serialized = json.dumps(kwargs, indent=4, sort_keys=True)
 	message = f"Data:\n{serialized}\nException:\n{traceback}"
 	frappe.log_error(title=title, message=message)
-	

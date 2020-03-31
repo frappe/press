@@ -6,15 +6,20 @@ from __future__ import unicode_literals
 import dns.resolver
 
 import frappe
-from frappe.utils.password import get_decrypted_password
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.utils import log_error
 
 
 @frappe.whitelist()
 def new(site):
-	team = frappe.get_request_header('X-Press-Team')
-	bench = frappe.get_all("Bench", fields=["name", "server"], filters={"status": "Active", "group": site["group"]}, order_by="creation desc", limit=1)[0].name
+	team = frappe.get_request_header("X-Press-Team")
+	bench = frappe.get_all(
+		"Bench",
+		fields=["name", "server"],
+		filters={"status": "Active", "group": site["group"]},
+		order_by="creation desc",
+		limit=1,
+	)[0].name
 	site = frappe.get_doc(
 		{
 			"doctype": "Site",
@@ -23,30 +28,35 @@ def new(site):
 			"apps": [{"app": app} for app in site["apps"]],
 			"enable_scheduled_backups": site["backups"],
 			"enable_uptime_monitoring": site["monitor"],
-			"team": team
+			"team": team,
 		},
 	).insert(ignore_permissions=True)
 	return site.name
 
+
 @frappe.whitelist()
 def jobs(name):
-	jobs = frappe.get_all("Agent Job",
-		fields=['name', 'job_type', 'creation', 'status', 'start', 'end', 'duration'],
+	jobs = frappe.get_all(
+		"Agent Job",
+		fields=["name", "job_type", "creation", "status", "start", "end", "duration"],
 		filters={"site": name},
-		limit=10
+		limit=10,
 	)
 	return jobs
 
+
 @frappe.whitelist()
 def job(name):
-	job = frappe.get_doc('Agent Job', name)
+	job = frappe.get_doc("Agent Job", name)
 	job = job.as_dict()
-	job.steps = frappe.get_all('Agent Job Step',
-		filters={'agent_job': name},
-		fields=['step_name', 'status', 'start', 'end', 'duration', 'output', 'traceback'],
-		order_by='creation'
+	job.steps = frappe.get_all(
+		"Agent Job Step",
+		filters={"agent_job": name},
+		fields=["step_name", "status", "start", "end", "duration", "output", "traceback"],
+		order_by="creation",
 	)
 	return job
+
 
 @frappe.whitelist()
 def running_jobs(name):
@@ -55,31 +65,52 @@ def running_jobs(name):
 	)
 	return [job_detail(job.name) for job in jobs]
 
+
 @frappe.whitelist()
 def backups(name):
-	backups = frappe.get_all("Site Backup", fields=["name", "`database`", "size", "url", "creation", "status"], filters={"site": name}, limit=5)
+	backups = frappe.get_all(
+		"Site Backup",
+		fields=["name", "`database`", "size", "url", "creation", "status"],
+		filters={"site": name},
+		limit=5,
+	)
 	return backups
+
 
 @frappe.whitelist()
 def domains(name):
-	domains = frappe.get_all("Site Domain", fields=["name", "domain"], filters={"site": name})
+	domains = frappe.get_all(
+		"Site Domain", fields=["name", "domain"], filters={"site": name}
+	)
 	return domains
+
 
 @frappe.whitelist()
 def activities(name):
-	activities = frappe.get_all("Site Activity", fields=["action", "creation", "owner"], filters={"site": name}, limit=5)
+	activities = frappe.get_all(
+		"Site Activity",
+		fields=["action", "creation", "owner"],
+		filters={"site": name},
+		limit=5,
+	)
 	return activities
+
 
 @frappe.whitelist()
 def options_for_new():
 	group = frappe.get_doc("Release Group", {"default": True})
-	apps = frappe.get_all("Frappe App", fields=["name", "frappe", "branch", "scrubbed", "url"], filters={"name": ("in", [row.app for row in group.apps])})
+	apps = frappe.get_all(
+		"Frappe App",
+		fields=["name", "frappe", "branch", "scrubbed", "url"],
+		filters={"name": ("in", [row.app for row in group.apps])},
+	)
 	order = {row.app: row.idx for row in group.apps}
 	return {
 		"domain": frappe.db.get_single_value("Press Settings", "domain"),
 		"group": group.name,
-		"apps": sorted(apps, key=lambda x: order[x.name])
+		"apps": sorted(apps, key=lambda x: order[x.name]),
 	}
+
 
 @frappe.whitelist()
 def all():
@@ -173,13 +204,16 @@ def backup(name):
 def archive(name):
 	frappe.get_doc("Site", name).archive()
 
+
 @frappe.whitelist()
 def exists(subdomain):
-	return bool(frappe.db.exists('Site', {'subdomain': subdomain}))
+	return bool(frappe.db.exists("Site", {"subdomain": subdomain}))
+
 
 @frappe.whitelist()
 def setup_wizard_complete(name):
-	return frappe.get_doc('Site', name).setup_wizard_complete()
+	return frappe.get_doc("Site", name).setup_wizard_complete()
+
 
 @frappe.whitelist()
 def check_dns(name, domain):
@@ -192,9 +226,11 @@ def check_dns(name, domain):
 		log_error("DNS Query Exception", site=name, domain=domain)
 	return False
 
+
 @frappe.whitelist()
 def add_domain(name, domain):
-	frappe.get_doc('Site', name).add_domain(domain)
+	frappe.get_doc("Site", name).add_domain(domain)
+
 
 def update_config(name, config):
 	print(name, config)

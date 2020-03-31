@@ -10,7 +10,7 @@ from frappe.model.document import Document
 from press.press.doctype.agent_job.agent_job import Agent
 from frappe.utils.password import get_decrypted_password
 from press.press.doctype.site_activity.site_activity import log_site_activity
-from press.press.doctype.team.team import get_team_members, get_default_team
+from press.press.doctype.team.team import get_default_team
 from frappe.frappeclient import FrappeClient, FrappeException
 from frappe.utils import cint
 from press.api.site import check_dns
@@ -43,7 +43,9 @@ class Site(Document):
 		agent.new_upstream_site(self.server, self.name)
 
 	def backup(self):
-		if frappe.db.count("Site Backup", {"site": self.name, "status": ("in", ["Running", "Pending"])}) > 0:
+		if frappe.db.count(
+			"Site Backup", {"site": self.name, "status": ("in", ["Running", "Pending"])}
+		):
 			raise Exception("Too many pending backups")
 		log_site_activity(self.name, "Backup")
 		frappe.get_doc({"doctype": "Site Backup", "site": self.name}).insert()
@@ -51,13 +53,15 @@ class Site(Document):
 	def add_domain(self, domain):
 		if check_dns(self.name, domain):
 			log_site_activity(self.name, "Add Domain")
-			frappe.get_doc({
-				"doctype": "Site Domain",
-				"site": self.name,
-				"domain": domain,
-				"dns_type": "CNAME",
-				"ssl": False,
-			}).insert()
+			frappe.get_doc(
+				{
+					"doctype": "Site Domain",
+					"site": self.name,
+					"domain": domain,
+					"dns_type": "CNAME",
+					"ssl": False,
+				}
+			).insert()
 
 	def archive(self):
 		log_site_activity(self.name, "Archive")
@@ -97,7 +101,7 @@ class Site(Document):
 			return cint(value["setup_complete"])
 
 	def update_site_config(self, config):
-		log_site_history(self.name, "Update Configuration")
+		log_site_activity(self.name, "Update Configuration")
 		agent = Agent(self.server)
 		agent.update_site_config(self, config)
 
