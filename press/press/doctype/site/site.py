@@ -41,6 +41,8 @@ class Site(Document):
 		agent.new_upstream_site(self.server, self.name)
 
 	def backup(self):
+		if frappe.db.count("Site Backup", {"site": self.name, "status": ("in", ["Running", "Pending"])}) > 0:
+			raise Exception("Too many pending backups")
 		log_site_activity(self.name, "Backup")
 		frappe.get_doc({"doctype": "Site Backup", "site": self.name}).insert()
 
