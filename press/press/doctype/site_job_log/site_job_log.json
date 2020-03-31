@@ -9,7 +9,8 @@
   "site",
   "timestamp",
   "job_name",
-  "duration"
+  "duration",
+  "wait"
  ],
  "fields": [
   {
@@ -46,10 +47,17 @@
    "in_standard_filter": 1,
    "label": "Duration",
    "read_only": 1
+  },
+  {
+   "fieldname": "wait",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Wait",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2020-02-27 13:24:40.892831",
+ "modified": "2020-03-13 12:51:20.890410",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Job Log",
