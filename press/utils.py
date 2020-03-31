@@ -12,3 +12,8 @@ def log_error(title, **kwargs):
 	serialized = json.dumps(kwargs, indent=4, sort_keys=True)
 	message = f"Data:\n{serialized}\nException:\n{traceback}"
 	frappe.log_error(title=title, message=message)
+
+def get_formated_date(timestamp):
+	from datetime import datetime
+	date_format = '%Y-%m-%d'
+	return datetime.fromtimestamp(timestamp).strftime(date_format)
