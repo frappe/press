@@ -106,28 +106,33 @@ def collect_site_analytics():
 					"name": log["uuid"],
 					"site": log["site"],
 					"timestamp": log["timestamp"],
-					"duration": log["duration"]
+					"duration": log["duration"],
 				}
 
 				if log["transaction_type"] == "request":
-					doc.update({
-						"doctype": "Site Request Log",
-						"url": log["request"]["path"],
-						"ip": log["request"]["ip"],
-						"http_method": log["request"]["method"],
-						"length": log["request"]["response_length"],
-						"status_code": log["request"]["status_code"],
-					})
+					doc.update(
+						{
+							"doctype": "Site Request Log",
+							"url": log["request"]["path"],
+							"ip": log["request"]["ip"],
+							"http_method": log["request"]["method"],
+							"length": log["request"]["response_length"],
+							"status_code": log["request"]["status_code"],
+						}
+					)
 				elif log["transaction_type"] == "job":
-					doc.update({
-						"doctype": "Site Job Log",
-						"job_name": log["job"]["method"],
-						"scheduled": log["job"]["scheduled"],
-						"wait": log["job"]["wait"],
-					})
+					doc.update(
+						{
+							"doctype": "Site Job Log",
+							"job_name": log["job"]["method"],
+							"scheduled": log["job"]["scheduled"],
+							"wait": log["job"]["wait"],
+						}
+					)
 				frappe.get_doc(doc).insert()
 			except frappe.exceptions.DuplicateEntryError:
 				log_error("Agent Analytics Collection Exception", log=log, doc=doc)
+
 
 def collect_site_uptime():
 	sites = frappe.get_all(

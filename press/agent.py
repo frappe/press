@@ -170,9 +170,18 @@ class Agent:
 			try:
 				return result.json()
 			except Exception:
-				log_error(title="Agent Request Result Exception", method=method, url=url, data=data, headers=headers, result=result.text)
+				log_error(
+					title="Agent Request Result Exception",
+					method=method,
+					url=url,
+					data=data,
+					headers=headers,
+					result=result.text,
+				)
 		except Exception:
-			log_error(title="Agent Request Exception", method=method, url=url, data=data, headers=headers)
+			log_error(
+				title="Agent Request Exception", method=method, url=url, data=data, headers=headers
+			)
 
 	def create_agent_job(self, job_type, path, data, bench=None, site=None, upstream=None):
 		job = frappe.get_doc(
