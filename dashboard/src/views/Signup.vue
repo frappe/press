@@ -14,11 +14,9 @@
 					required
 				/>
 			</label>
-			<div
-				class="mt-6 text-sm text-red-600 whitespace-pre-line"
-				v-if="errorMessage"
-			>
+			<ErrorMessage class="mt-6" v-if="errorMessage">
 				{{ errorMessage }}
+			</ErrorMessage>
 			<Button class="mt-6" :disabled="state === 'Signing Up'" type="primary">
 				Signup
 			</Button>

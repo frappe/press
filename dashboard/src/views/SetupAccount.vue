@@ -46,12 +46,9 @@
 					/>
 				</label>
 			</template>
-			<div
-				class="mt-6 text-sm text-red-600 whitespace-pre-line"
-				v-if="errorMessage"
-			>
+			<ErrorMessage class="mt-6 " v-if="errorMessage">
 				{{ errorMessage }}
-			</div>
+			</ErrorMessage>
 			<Button
 				class="mt-6"
 				type="primary"

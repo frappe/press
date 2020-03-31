@@ -35,12 +35,9 @@
 					</router-link>
 				</div>
 			</label>
-			<div
-				class="mt-6 text-sm text-red-600 whitespace-pre-line"
-				v-if="errorMessage"
-			>
+			<ErrorMessage v-if="errorMessage" class="mt-6">
 				{{ errorMessage }}
-			</div>
+			</ErrorMessage>
 			<router-link
 				v-if="forgot"
 				to="/login"
