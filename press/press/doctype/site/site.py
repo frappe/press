@@ -22,6 +22,8 @@ class Site(Document):
 		self.name = f"{self.subdomain}.{domain}"
 
 	def validate(self):
+		if not self.subdomain.isalnum():
+			raise frappe.ValidationError("Subdomain should be alphanumeric")
 		if not self.admin_password:
 			self.admin_password = frappe.generate_hash(length=16)
 
