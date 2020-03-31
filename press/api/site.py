@@ -196,3 +196,7 @@ def check_dns(name, domain):
 def add_domain(name, domain):
 	frappe.get_doc('Site', name).add_domain(domain)
 
+def update_config(name, config):
+	print(name, config)
+	return
+	frappe.get_doc("Site", name).update_site_config(config)

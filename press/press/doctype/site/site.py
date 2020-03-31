@@ -92,6 +92,11 @@ class Site(Document):
 		if value:
 			return cint(value["setup_complete"])
 
+	def update_site_config(self, config):
+		log_site_history(self.name, "Update Configuration")
+		agent = Agent(self.server)
+		agent.update_site_config(self, config)
+
 	def update_site(self):
 		log_site_activity(self.name, "Update")
 

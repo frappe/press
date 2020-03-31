@@ -40,7 +40,7 @@ class Agent:
 	def new_site(self, site):
 		apps = [frappe.db.get_value("Frappe App", app.app, "scrubbed") for app in site.apps]
 		data = {
-			"config": {"monitor": True, "developer_mode": True},
+			"config": json.loads(site.config),
 			"apps": apps,
 			"name": site.name,
 			"mariadb_root_password": get_decrypted_password(
@@ -53,6 +53,19 @@ class Agent:
 			"New Site", f"benches/{site.bench}/sites", data, bench=site.bench, site=site.name
 		)
 		job_id = self.post(f"benches/{site.bench}/sites", data)["job"]
+		job.job_id = job_id
+		job.save()
+
+	def update_site_config(self, site):
+		data = {"config": json.loads(site.config)}
+		job = self.create_agent_job(
+			"Update Site Configuration",
+			f"benches/{site.bench}/sites/{site.name}/config",
+			data,
+			bench=site.bench,
+			site=site.name,
+		)
+		job_id = self.post(f"benches/{site.bench}/sites/{site.name}/config", data)["job"]
 		job.job_id = job_id
 		job.save()
 
