@@ -7,12 +7,12 @@ import dns.resolver
 
 import frappe
 from press.press.doctype.agent_job.agent_job import job_detail
-from press.utils import log_error
+from press.utils import log_error, get_current_team
 
 
 @frappe.whitelist()
 def new(site):
-	team = frappe.get_request_header("X-Press-Team")
+	team = get_current_team()
 	bench = frappe.get_all(
 		"Bench",
 		fields=["name", "server"],

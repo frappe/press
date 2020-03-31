@@ -20,7 +20,9 @@
   "column_break_11",
   "webroot_directory",
   "certbot_directory",
-  "stripe_account"
+  "billing_settings_section",
+  "stripe_account",
+  "default_plan"
  ],
  "fields": [
   {
@@ -119,11 +121,22 @@
    "label": "Stripe Account",
    "options": "Stripe Settings",
    "reqd": 1
+  },
+  {
+   "fieldname": "billing_settings_section",
+   "fieldtype": "Section Break",
+   "label": "Billing Settings"
+  },
+  {
+   "fieldname": "default_plan",
+   "fieldtype": "Link",
+   "label": "Default Plan",
+   "options": "Plan"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2020-03-30 22:30:29.641951",
+ "modified": "2020-03-31 20:21:34.781446",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

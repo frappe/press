@@ -8,12 +8,10 @@
  "field_order": [
   "enabled",
   "user",
-  "status",
   "section_break_6",
   "team_members",
   "subscription_details_section",
   "stripe_customer_id",
-  "profile_id",
   "transaction_currency"
  ],
  "fields": [
@@ -38,40 +36,30 @@
    "label": "Enabled"
   },
   {
-   "description": "The system will use this field to set the payment gateway's subscription profile id",
-   "fieldname": "profile_id",
-   "fieldtype": "Data",
-   "label": "Stripe Customer Id"
-  },
-  {
    "fieldname": "section_break_6",
    "fieldtype": "Section Break"
   },
   {
    "fieldname": "subscription_details_section",
    "fieldtype": "Section Break",
-   "label": "Stripe Subscription Details"
+   "label": "Subscription Details"
   },
   {
    "fieldname": "transaction_currency",
    "fieldtype": "Link",
    "label": "Transaction Currency",
-   "options": "Currency"
-  },
-  {
-   "fieldname": "status",
-   "fieldtype": "Select",
-   "label": "Status",
-   "options": "\nActive\nSuspended\nTerminated"
+   "options": "Currency",
+   "reqd": 1
   },
   {
    "fieldname": "stripe_customer_id",
    "fieldtype": "Data",
-   "label": "Stripe Customer ID"
+   "label": "Stripe Customer ID",
+   "read_only": 1
   }
-],
-"links": [],
-"modified": "2020-03-30 19:22:51.067917",
+ ],
+ "links": [],
+ "modified": "2020-03-31 21:16:44.738928",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

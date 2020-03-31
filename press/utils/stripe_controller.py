@@ -9,7 +9,7 @@ import stripe
 import json
 from datetime import datetime
 from frappe.utils import get_datetime
-from press.press.doctype.subscription.subscription import SubscriptionController
+from press.press.utils.subscription_controller import SubscriptionController
 
 class StripeController(SubscriptionController):
 	def __init__(self, email_id=None, team=None):

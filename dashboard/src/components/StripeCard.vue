@@ -107,7 +107,6 @@ export default {
 				this.errorMessage = error;
 			} else {
 				if (setupIntent.status === 'succeeded') {
-					this.$call('press.api.billing.clear_setup_intent');
 					this.$emit('complete');
 				}
 			}
