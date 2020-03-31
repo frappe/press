@@ -80,6 +80,7 @@ export default {
 		onCardAdd() {
 			this.state = 'Idle';
 			this.fetchPaymentMethods();
+			this.$call('press.api.billing.after_card_add');
 		}
 	}
 };

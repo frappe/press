@@ -6,8 +6,9 @@
  "engine": "InnoDB",
  "field_order": [
   "team",
-  "subscription_id",
-  "subscription_item_id",
+  "plan",
+  "stripe_subscription_id",
+  "stripe_subscription_item_id",
   "column_break_4",
   "status",
   "start_date",
@@ -16,19 +17,6 @@
   "current_period_end"
  ],
  "fields": [
-  {
-   "fieldname": "subscription_id",
-   "fieldtype": "Data",
-   "label": "Subscription Id",
-   "reqd": 1
-  },
-  {
-   "fieldname": "subscription_item_id",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Subscription Item Id",
-   "reqd": 1
-  },
   {
    "fieldname": "column_break_4",
    "fieldtype": "Column Break"
@@ -74,10 +62,30 @@
    "in_list_view": 1,
    "label": "Current Period End",
    "read_only": 1
+  },
+  {
+   "fieldname": "plan",
+   "fieldtype": "Link",
+   "label": "Plan",
+   "options": "Plan",
+   "reqd": 1
+  },
+  {
+   "fieldname": "stripe_subscription_id",
+   "fieldtype": "Data",
+   "label": "Stripe Subscription ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "stripe_subscription_item_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Stripe Subscription Item ID",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2020-03-30 15:29:15.749016",
+ "modified": "2020-03-31 21:27:15.255224",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Subscription",
@@ -92,6 +100,18 @@
    "read": 1,
    "report": 1,
    "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
    "share": 1,
    "write": 1
   }

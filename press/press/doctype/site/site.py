@@ -37,8 +37,7 @@ class Site(Document):
 
 	def set_plan(self):
 		if not self.plan:
-			self.plan = frappe.db.get_value("Plan",
-				{'for_site': 1, 'is_default': 1})
+			self.plan = frappe.db.get_value("Plan", {"for_site": 1, "is_default": 1})
 
 	def after_insert(self):
 		log_site_activity(self.name, "Create")
@@ -171,15 +170,14 @@ def process_archive_site_job_update(job):
 
 
 def get_permission_query_conditions(user):
+	from press.utils import get_current_team
+
 	if not user:
 		user = frappe.session.user
 	if user == "Administrator":
 		return ""
 
-	# get team passed via request header and fallback to default team
-	team = frappe.get_request_header("X-Press-Team", get_default_team(user))
 
-	if not team:
-		frappe.throw("Not permitted", frappe.PermissionError)
+	team = get_current_team()
 
 	return f"(`tabSite`.`team` = {frappe.db.escape(team)})"

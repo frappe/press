@@ -4,14 +4,12 @@
 from __future__ import unicode_literals
 import frappe
 import stripe
+from press.utils import get_current_team
 
 
 @frappe.whitelist()
 def get_publishable_key_and_setup_intent():
-	team = frappe.get_request_header("X-Press-Team")
-	if not team:
-		frappe.throw("Invalid Team")
-
+	team = get_current_team()
 	return {
 		"publishable_key": get_publishable_key(),
 		"setup_intent": get_setup_intent(team),
@@ -20,17 +18,32 @@ def get_publishable_key_and_setup_intent():
 
 @frappe.whitelist()
 def get_payment_methods():
-	team = frappe.get_request_header("X-Press-Team")
-	customer_id = frappe.db.get_value("Team", team, "stripe_customer_id")
-	stripe = get_stripe()
-	res = stripe.PaymentMethod.list(customer=customer_id, type="card")
-	return res["data"] or []
+	team = get_current_team()
+	return frappe.get_doc("Team", team).get_payment_methods()
 
 
 @frappe.whitelist()
+def after_card_add():
+	clear_setup_intent()
+	set_currency_and_default_payment_method()
+	create_subscription()
+
+
 def clear_setup_intent():
-	team = frappe.get_request_header("X-Press-Team")
+	team = get_current_team()
 	frappe.cache().hdel("setup_intent", team)
+
+
+def set_currency_and_default_payment_method():
+	team = get_current_team()
+	frappe.get_doc("Team", team).set_currency_and_default_payment_method()
+
+
+def create_subscription():
+	team = get_current_team()
+	default_plan = frappe.db.get_single_value("Press Settings", "default_plan")
+	doc = frappe.get_doc({"doctype": "Subscription", "team": team, "plan": default_plan})
+	doc.insert(ignore_permissions=True)
 
 
 def get_publishable_key():

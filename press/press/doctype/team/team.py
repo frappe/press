@@ -54,6 +54,24 @@ class Team(Document):
 		customer = stripe.Customer.create(email=self.user, name=get_fullname(self.user))
 		self.db_set("stripe_customer_id", customer.id)
 
+	def set_currency_and_default_payment_method(self):
+		payment_methods = self.get_payment_methods()
+		payment_method = payment_methods[0]
+		stripe = get_stripe()
+		# set currency
+		country = payment_method["card"]["country"]
+		self.db_set("transaction_currency", "INR" if country == "IN" else "USD")
+		# set default payment method
+		stripe.Customer.modify(
+			self.stripe_customer_id,
+			invoice_settings={"default_payment_method": payment_methods[0]["id"]},
+		)
+
+	def get_payment_methods(self):
+		stripe = get_stripe()
+		res = stripe.PaymentMethod.list(customer=self.stripe_customer_id, type="card")
+		return res["data"] or []
+
 
 def get_team_members(team):
 	if not frappe.db.exists("Team", team):
