@@ -19,12 +19,7 @@
 				v-if="errorMessage"
 			>
 				{{ errorMessage }}
-			</div>
-			<Button
-				class="mt-6 text-white bg-blue-500 shadow focus:bg-blue-600 hover:bg-blue-400"
-				:disabled="state === 'Signing Up'"
-				type="submit"
-			>
+			<Button class="mt-6" :disabled="state === 'Signing Up'" type="primary">
 				Signup
 			</Button>
 			<div class="mt-10 text-center border-t">

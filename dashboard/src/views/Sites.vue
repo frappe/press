@@ -6,28 +6,28 @@
 				<Button
 					v-if="$store.sites.all.length"
 					route="/sites/new"
-					class="bg-blue-500 text-white flex items-center pr-5 text-sm leading-none"
+					type="primary"
 				>
 					<FeatherIcon name="plus" class="w-4 h-4" />
 					<span class="ml-1">
 						New Site
 					</span>
 				</Button>
-				<SearchBar class="ml-4 hidden sm:block" />
+				<SearchBar class="hidden ml-4 sm:block" />
 			</div>
 		</PageHeader>
 		<div class="px-4 sm:px-8">
-			<div class="border-t mb-5"></div>
+			<div class="mb-5 border-t"></div>
 			<div
 				v-if="$store.sites.all.length"
-				class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-16"
+				class="grid grid-cols-1 gap-4 mb-16 sm:grid-cols-3"
 			>
 				<router-link
 					:to="`/sites/${site.name}`"
 					v-for="site in $store.sites.all"
 					:key="site.name"
 				>
-					<div class="shadow border rounded-md p-4 hover:shadow-md">
+					<div class="p-4 border rounded-md shadow hover:shadow-md">
 						<div class="flex items-baseline justify-between">
 							<span>
 								{{ site.name }}
@@ -50,7 +50,7 @@
 				<div class="text-gray-800">
 					You haven't created any sites yet.
 				</div>
-				<Button route="/sites/new" class="mt-10 bg-blue-500 text-white">
+				<Button route="/sites/new" class="mt-10" type="primary">
 					Create your first Site
 				</Button>
 			</div>

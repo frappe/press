@@ -28,11 +28,7 @@
 			>
 				{{ errorMessage }}
 			</div>
-			<Button
-				class="mt-6 bg-blue-500 focus:bg-blue-600 hover:bg-blue-400 text-white shadow"
-				:disabled="!password"
-				type="submit"
-			>
+			<Button class="mt-6" type="primary" :disabled="!password">
 				Submit
 			</Button>
 		</form>

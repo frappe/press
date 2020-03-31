@@ -5,10 +5,7 @@
 			<p class="text-gray-600">
 				Once you drop your site, there's no going back
 			</p>
-			<Button
-				class="mt-6 bg-red-500 hover:bg-red-600 text-white"
-				@click="showModal = true"
-			>
+			<Button class="mt-6" type="danger" @click="showModal = true">
 				Drop Site
 			</Button>
 		</section>
@@ -40,13 +37,13 @@
 			</div>
 			<div class="p-4 sm:px-6 sm:py-4 flex items-center justify-end">
 				<span class="flex rounded-md shadow-sm">
-					<Button class="border hover:bg-gray-100" @click="showModal = false">
+					<Button @click="showModal = false">
 						Cancel
 					</Button>
 				</span>
 				<span class="flex rounded-md shadow-sm ml-3">
 					<Button
-						class="text-white bg-red-500 hover:bg-red-600"
+						type="danger"
 						:disabled="site.name !== confirmSiteName"
 						@click="dropSite"
 					>
