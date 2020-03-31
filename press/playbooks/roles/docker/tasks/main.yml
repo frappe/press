@@ -1,0 +1,33 @@
+---
+- name: Install required packages
+  apt: 
+    state: present
+    force: yes
+    pkg:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - software-properties-common
+
+- name: Add Docker GPG apt Key
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: Add Docker Repository
+  apt_repository:
+    repo: deb https://download.docker.com/linux/ubuntu bionic stable
+    state: present
+
+- name: Install docker-ce
+  apt: 
+    name: docker-ce
+    state: present
+
+- name: Add frappe to docker group
+  user:
+    name: frappe
+    groups: docker
+    append: true
+  
+...
