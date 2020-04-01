@@ -95,4 +95,39 @@
   args:
     chdir: /home/frappe/agent
 
+- name: Create tls directory
+  become: yes
+  become_user: frappe
+  file:
+    dest: /home/frappe/agent/tls
+    state: directory
+
+- name: Setup agent tls (private key)
+  become: yes
+  become_user: frappe
+  copy:
+    content: "{{ certificate_privkey }}"
+    dest: /home/frappe/agent/tls/privkey.pem
+  
+- name: Setup agent tls (certificate)
+  become: yes
+  become_user: frappe
+  copy:
+    content: "{{ certificate_fullchain }}"
+    dest: /home/frappe/agent/tls/fullchain.pem
+
+- name: Setup agent tls (intermediate certificate)
+  become: yes
+  become_user: frappe
+  copy:
+    content: "{{ certificate_chain }}"
+    dest: /home/frappe/agent/tls/chain.pem
+
+- name: Setup agent tls 
+  become: yes
+  become_user: frappe
+  command: /home/frappe/agent/env/bin/agent setup tls
+  args:
+    chdir: /home/frappe/agent
+  
 ...
