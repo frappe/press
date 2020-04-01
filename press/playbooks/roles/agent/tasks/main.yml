@@ -66,6 +66,28 @@
   args:
     chdir: /home/frappe/agent
 
+- name: Create nginx directory
+  become: yes
+  become_user: frappe
+  file:
+    dest: /home/frappe/agent/nginx
+    state: directory
+  
+- name: Create nginx root configuration file (empty)
+  become: yes
+  become_user: frappe
+  file:
+    path: /home/frappe/agent/nginx/nginx.conf
+    state: touch
+  
+- name: Symlink nginx root configuration
+  file:
+    src: /home/frappe/agent/nginx/nginx.conf
+    dest: /etc/nginx/nginx.conf
+    state: link
+    force: yes
+    follow: no
+
 - name: Setup agent nginx 
   become: yes
   become_user: frappe
