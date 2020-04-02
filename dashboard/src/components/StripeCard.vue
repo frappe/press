@@ -104,7 +104,7 @@ export default {
 			this.state = null;
 
 			if (error) {
-				this.errorMessage = error;
+				this.errorMessage = error.message;
 			} else {
 				if (setupIntent.status === 'succeeded') {
 					this.$emit('complete');

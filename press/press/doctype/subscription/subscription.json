@@ -1,12 +1,12 @@
 {
  "actions": [],
+ "autoname": "SUB-.YYYY.-",
  "creation": "2020-03-20 12:31:19.564793",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
   "team",
-  "plan",
   "stripe_subscription_id",
   "stripe_subscription_item_id",
   "column_break_4",
@@ -64,13 +64,6 @@
    "read_only": 1
   },
   {
-   "fieldname": "plan",
-   "fieldtype": "Link",
-   "label": "Plan",
-   "options": "Plan",
-   "reqd": 1
-  },
-  {
    "fieldname": "stripe_subscription_id",
    "fieldtype": "Data",
    "label": "Stripe Subscription ID",
@@ -85,7 +78,7 @@
   }
  ],
  "links": [],
- "modified": "2020-03-31 21:27:15.255224",
+ "modified": "2020-04-02 23:52:53.398291",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Subscription",

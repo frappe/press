@@ -34,6 +34,7 @@
 					class="px-6 py-3 block hover:bg-gray-50"
 					v-for="app in site.installed_apps"
 					:href="`${app.url}/tree/${app.branch}`"
+					:key="app.url"
 					target="_blank"
 				>
 					<p class="font-medium text-brand">{{ app.owner }}/{{ app.repo }}</p>
@@ -49,7 +50,7 @@
 			<div
 				class="w-full sm:w-1/2 mt-6 border border-gray-100 shadow rounded py-4"
 			>
-				<div class="px-6 py-3 hover:bg-gray-50" v-for="d in domains">
+				<div class="px-6 py-3 hover:bg-gray-50" v-for="d in domains" :key="d.domain">
 					<div>
 						{{ d.domain }}
 					</div>
@@ -62,7 +63,7 @@
 			<div
 				class="w-full sm:w-1/2 mt-6 border border-gray-100 shadow rounded py-4"
 			>
-				<div class="px-6 py-3 hover:bg-gray-50" v-for="a in activities">
+				<div class="px-6 py-3 hover:bg-gray-50" v-for="a in activities" :key="a.creation">
 					<div>
 						{{ a.text }} <span class="text-gray-800">by {{ a.owner }}</span>
 					</div>
@@ -84,7 +85,7 @@
 			<div
 				class="w-full sm:w-1/2 mt-6 border border-gray-100 shadow rounded px-6 py-4"
 			>
-				<div v-for="step in installingJob.steps" class="flex items-center py-2">
+				<div v-for="step in installingJob.steps" class="flex items-center py-2" :key="step.name">
 					<div class="w-4 h-4 text-gray-800">
 						<FeatherIcon
 							class="w-4 h-4"

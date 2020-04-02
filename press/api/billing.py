@@ -41,8 +41,7 @@ def set_currency_and_default_payment_method():
 
 def create_subscription():
 	team = get_current_team()
-	default_plan = frappe.db.get_single_value("Press Settings", "default_plan")
-	doc = frappe.get_doc({"doctype": "Subscription", "team": team, "plan": default_plan})
+	doc = frappe.get_doc({"doctype": "Subscription", "team": team, "status": "Active"})
 	doc.insert(ignore_permissions=True)
 
 

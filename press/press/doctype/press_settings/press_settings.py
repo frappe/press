@@ -7,6 +7,7 @@ from __future__ import unicode_literals
 import frappe
 from frappe.model.document import Document
 from press.utils import log_error
+from press.api.billing import get_stripe
 
 
 class PressSettings(Document):
@@ -27,3 +28,33 @@ class PressSettings(Document):
 			self.save()
 		except Exception:
 			log_error("Root Domain TLS Exception")
+
+	def create_stripe_plans(self):
+		stripe = get_stripe()
+		product_name = "Cloud Plan - " + frappe.utils.nowdate()
+		product = stripe.Product.create(name=product_name, type="service")
+		self.stripe_product_id = product.id
+
+		usd_plan = stripe.Plan.create(
+			usage_type="metered",
+			aggregate_usage="sum",
+			currency="usd",
+			interval="month",
+			product=product.id,
+			nickname="USD Monthly",
+			amount_decimal="1",
+		)
+		inr_plan = stripe.Plan.create(
+			usage_type="metered",
+			aggregate_usage="sum",
+			currency="inr",
+			interval="month",
+			product=product.id,
+			nickname="INR Monthly",
+			amount_decimal="1",
+		)
+
+		self.stripe_inr_plan_id = inr_plan.id
+		self.stripe_usd_plan_id = usd_plan.id
+		self.flags.ignore_mandatory = True
+		self.save()

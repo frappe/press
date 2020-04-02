@@ -3,8 +3,36 @@
 
 frappe.ui.form.on('Press Settings', {
 	refresh: function(frm) {
-		frm.add_custom_button(__('Obtain TLS Certificate'), () => {
-			frm.call({method: "obtain_root_domain_tls_certificate", doc: frm.doc, callback: result => frappe.refresh()});
-		}, __('TLS'));
+		frm.add_custom_button(
+			__('Obtain TLS Certificate'),
+			() => {
+				frm.call({
+					method: 'obtain_root_domain_tls_certificate',
+					doc: frm.doc,
+					callback: () => frappe.refresh()
+				});
+			},
+			__('TLS')
+		);
+	},
+	create_stripe_plans(frm) {
+		if (frm.doc.stripe_product_id) {
+			frappe.confirm(
+				// prettier-ignore
+				__('This will create new Stripe Plans. If there are existing customers who were on old plans, they will have to be migrated over. Are you sure you want to continue?'),
+				() => {
+					call_method();
+				}
+			);
+		} else {
+			call_method();
+		}
+
+		function call_method() {
+			frm.call({
+				method: 'create_stripe_plans',
+				btn: frm.get_field('create_stripe_plans').$input
+			});
+		}
 	}
 });
