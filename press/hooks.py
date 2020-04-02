@@ -101,8 +101,7 @@ scheduler_events = {
 		"press.press.doctype.frappe_app.frappe_app.poll_new_releases",
 	],
 	"hourly_long": [
-		"press.press.doctype.payment_provision.payment_provision.setup_payment_provision",
-		"press.press.doctype.payment_provision.payment_provision.setup_usage_record_with_stripe",
+		"press.press.doctype.site_usage_ledger_entry.site_usage_ledger_entry.create_ledger_entries"
 	],
 	"cron": {
 		"* * * * * 0/5": ["press.press.doctype.agent_job.agent_job.poll_pending_jobs"],

@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_rename": 1,
  "autoname": "Prompt",
  "creation": "2020-03-19 18:14:42.352448",
  "doctype": "DocType",
@@ -8,9 +9,10 @@
  "field_order": [
   "enabled",
   "plan_title",
-  "stripe_product_id",
-  "stripe_inr_plan_id",
-  "stripe_usd_plan_id"
+  "price_usd",
+  "price_inr",
+  "cpu_time_per_day",
+  "concurrent_users"
  ],
  "fields": [
   {
@@ -25,26 +27,34 @@
    "label": "Enabled"
   },
   {
-   "fieldname": "stripe_inr_plan_id",
-   "fieldtype": "Data",
-   "label": "Stripe INR Plan ID",
-   "read_only": 1
+   "fieldname": "price_usd",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Price (USD)",
+   "options": "USD",
+   "reqd": 1
   },
   {
-   "fieldname": "stripe_usd_plan_id",
-   "fieldtype": "Data",
-   "label": "Stripe USD Plan ID",
-   "read_only": 1
+   "fieldname": "price_inr",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Price (INR)",
+   "options": "INR",
+   "reqd": 1
   },
   {
-   "fieldname": "stripe_product_id",
-   "fieldtype": "Data",
-   "label": "Stripe Product ID",
-   "read_only": 1
+   "fieldname": "concurrent_users",
+   "fieldtype": "Int",
+   "label": "Concurrent Users"
+  },
+  {
+   "fieldname": "cpu_time_per_day",
+   "fieldtype": "Int",
+   "label": "CPU Time Per Day"
   }
  ],
  "links": [],
- "modified": "2020-03-31 20:02:26.727453",
+ "modified": "2020-04-02 21:37:45.499433",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Plan",
@@ -64,8 +74,8 @@
   }
  ],
  "quick_entry": 1,
- "sort_field": "modified",
- "sort_order": "DESC",
+ "sort_field": "price_usd",
+ "sort_order": "ASC",
  "title_field": "plan_title",
  "track_changes": 1
 }

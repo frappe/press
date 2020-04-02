@@ -1,5 +1,8 @@
 <template>
 	<div>
+		<div class="text-gray-800" v-if="state === 'Fetching'">
+			Fetching billing information..
+		</div>
 		<section v-if="state.startsWith('ShowSetup')">
 			<h2 class="text-lg font-medium">Setup Payment Method</h2>
 			<p class="text-gray-600">
@@ -64,6 +67,7 @@ export default {
 		};
 	},
 	mounted() {
+		this.state = 'Fetching';
 		this.fetchPaymentMethods();
 	},
 	methods: {

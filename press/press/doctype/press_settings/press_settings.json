@@ -22,7 +22,10 @@
   "certbot_directory",
   "billing_settings_section",
   "stripe_account",
-  "default_plan"
+  "create_stripe_plans",
+  "stripe_product_id",
+  "stripe_inr_plan_id",
+  "stripe_usd_plan_id"
  ],
  "fields": [
   {
@@ -128,15 +131,33 @@
    "label": "Billing Settings"
   },
   {
-   "fieldname": "default_plan",
-   "fieldtype": "Link",
-   "label": "Default Plan",
-   "options": "Plan"
+   "fieldname": "stripe_product_id",
+   "fieldtype": "Data",
+   "label": "Stripe Product ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "stripe_inr_plan_id",
+   "fieldtype": "Data",
+   "label": "Stripe INR Plan ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "stripe_usd_plan_id",
+   "fieldtype": "Data",
+   "label": "Stripe USD Plan ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "create_stripe_plans",
+   "fieldtype": "Button",
+   "label": "Create Stripe Plans",
+   "options": "create_stripe_plans"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2020-03-31 20:21:34.781446",
+ "modified": "2020-04-02 19:38:50.068483",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
