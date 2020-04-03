@@ -13,6 +13,18 @@ from press.utils import log_error
 class AgentJob(Document):
 	def after_insert(self):
 		self.create_agent_job_steps()
+		self.enqueue_http_request()
+
+	def enqueue_http_request(self):
+		frappe.enqueue_doc(
+			self.doctype, self.name, "create_http_request", enqueue_after_commit=True
+		)
+
+	def create_http_request(self):
+		agent = Agent(self.server, server_type=self.server_type)
+		data = json.loads(self.request_data)
+		self.job_id = agent.request(self.request_method, self.request_path, data)["job"]
+		self.save()
 
 	def create_agent_job_steps(self):
 		job_type = frappe.get_doc("Agent Job Type", self.job_type)
