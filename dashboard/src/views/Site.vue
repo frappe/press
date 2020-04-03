@@ -102,13 +102,6 @@ export default {
 	}),
 	async mounted() {
 		await this.fetchSite();
-		if (this.site.status === 'Active') {
-			this.setupComplete = Boolean(
-				await this.$call('press.api.site.setup_wizard_complete', {
-					name: this.siteName
-				})
-			);
-		}
 
 		this.$store.socket.on('agent_job_update', data => {
 			if (data.site === this.site.name && data.name === 'New Site') {
@@ -121,6 +114,14 @@ export default {
 		if (this.$route.matched.length === 1) {
 			let path = this.$route.fullPath;
 			this.$router.replace(`${path}/general`);
+		}
+
+		if (this.site.status === 'Active') {
+			this.setupComplete = Boolean(
+				await this.$call('press.api.site.setup_wizard_complete', {
+					name: this.siteName
+				})
+			);
 		}
 	},
 	methods: {

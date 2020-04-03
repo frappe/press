@@ -72,6 +72,10 @@ class Team(Document):
 		res = stripe.PaymentMethod.list(customer=self.stripe_customer_id, type="card")
 		return res["data"] or []
 
+	def get_upcoming_invoice(self):
+		stripe = get_stripe()
+		return stripe.Invoice.upcoming(customer=self.stripe_customer_id)
+
 
 def get_team_members(team):
 	if not frappe.db.exists("Team", team):

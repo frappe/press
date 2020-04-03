@@ -3,6 +3,34 @@
 		<div class="text-gray-800" v-if="state === 'Fetching'">
 			Fetching billing information..
 		</div>
+		<section v-if="upcomingInvoice" class="mb-10">
+			<h2 class="text-lg font-medium">
+				Upcoming Invoice
+			</h2>
+			<p class="text-gray-600">
+				This is the amount so far based on the usage of your sites.
+			</p>
+			<div
+				class="w-full py-4 mt-6 border border-gray-100 rounded-md shadow sm:w-1/2"
+			>
+				<div class="grid grid-cols-3 px-6 py-3 text-sm">
+					<div class="font-medium text-gray-700">Usage Amount:</div>
+					<div class="col-span-2 font-medium">{{ upcomingInvoice.amount }}</div>
+				</div>
+				<div class="grid grid-cols-3 px-6 py-3 text-sm border-t">
+					<div class="font-medium text-gray-700">Next Invoice Date:</div>
+					<div class="col-span-2 font-medium">
+						{{ upcomingInvoice.next_payment_attempt }}
+					</div>
+				</div>
+				<div class="grid grid-cols-3 px-6 py-3 text-sm border-t">
+					<div class="font-medium text-gray-700">Bill To:</div>
+					<div class="col-span-2 font-medium">
+						{{ upcomingInvoice.customer_email }}
+					</div>
+				</div>
+			</div>
+		</section>
 		<section v-if="state.startsWith('ShowSetup')">
 			<h2 class="text-lg font-medium">Setup Payment Method</h2>
 			<p class="text-gray-600">
@@ -63,12 +91,14 @@ export default {
 	data() {
 		return {
 			state: 'Idle',
-			paymentMethods: null
+			paymentMethods: null,
+			upcomingInvoice: null
 		};
 	},
 	mounted() {
 		this.state = 'Fetching';
 		this.fetchPaymentMethods();
+		this.fetchUpcomingInvoice();
 	},
 	methods: {
 		async fetchPaymentMethods() {
@@ -80,6 +110,11 @@ export default {
 			} else {
 				this.state = 'ShowSetup';
 			}
+		},
+		async fetchUpcomingInvoice() {
+			this.upcomingInvoice = await this.$call(
+				'press.api.billing.get_upcoming_invoice'
+			);
 		},
 		onCardAdd() {
 			this.state = 'Idle';

@@ -59,14 +59,15 @@
   },
   {
    "fieldname": "usage_units",
-   "fieldtype": "Data",
+   "fieldtype": "Int",
    "label": "Units",
    "read_only": 1
   },
   {
    "fieldname": "usage_value",
-   "fieldtype": "Data",
+   "fieldtype": "Currency",
    "label": "Usage Value",
+   "options": "currency",
    "read_only": 1
   },
   {
@@ -98,7 +99,7 @@
   }
  ],
  "links": [],
- "modified": "2020-04-03 00:18:21.575281",
+ "modified": "2020-04-03 02:24:26.535539",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Usage Ledger Entry",

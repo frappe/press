@@ -4,6 +4,8 @@
 from __future__ import unicode_literals
 import frappe
 import stripe
+from datetime import datetime
+from frappe.utils import global_date_format, fmt_money
 from press.utils import get_current_team
 
 
@@ -13,6 +15,23 @@ def get_publishable_key_and_setup_intent():
 	return {
 		"publishable_key": get_publishable_key(),
 		"setup_intent": get_setup_intent(team),
+	}
+
+
+@frappe.whitelist()
+def get_upcoming_invoice():
+	team = get_current_team()
+	team_doc = frappe.get_doc("Team", team)
+	invoice = team_doc.get_upcoming_invoice()
+	customer_name = invoice['customer_name']
+	customer_email = invoice['customer_email']
+	next_payment_attempt = invoice['next_payment_attempt']
+	total_amount = invoice['total']
+
+	return {
+		'next_payment_attempt': global_date_format(datetime.fromtimestamp(next_payment_attempt)),
+		'amount': fmt_money(total_amount / 100, 2, team_doc.transaction_currency),
+		'customer_email': customer_email
 	}
 
 
