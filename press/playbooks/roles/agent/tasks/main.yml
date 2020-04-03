@@ -16,29 +16,6 @@
     virtualenv_python: python3
     editable: yes
 
-- name: Symlink nginx configuration
-  file:
-    src: /home/frappe/agent/nginx.conf
-    dest: /etc/nginx/conf.d/agent.conf
-    state: link
-    force: yes
-    follow: no
-
-- name: Symlink supervisor configuration
-  file:
-    src: /home/frappe/agent/supervisor.conf
-    dest: /etc/supervisor/conf.d/agent.conf
-    state: link
-    force: yes
-    follow: no
-
-- name: Create logs directory for supervisor
-  become: yes
-  become_user: frappe
-  file:
-    dest: /home/frappe/agent/logs
-    state: directory
-
 - name: Generate agent configuration 
   become: yes
   become_user: frappe
@@ -59,6 +36,21 @@
   command: "/home/frappe/agent/env/bin/agent setup authentication --password {{ password }}"
   args:
     chdir: /home/frappe/agent
+
+- name: Symlink supervisor configuration
+  file:
+    src: /home/frappe/agent/supervisor.conf
+    dest: /etc/supervisor/conf.d/agent.conf
+    state: link
+    force: yes
+    follow: no
+
+- name: Create logs directory for supervisor
+  become: yes
+  become_user: frappe
+  file:
+    dest: /home/frappe/agent/logs
+    state: directory
 
 - name: Setup agent supervisor
   become: yes
@@ -89,12 +81,20 @@
     force: yes
     follow: no
 
-- name: Setup agent nginx 
+- name: Create agent nginx configuration file (empty)
   become: yes
   become_user: frappe
-  command: /home/frappe/agent/env/bin/agent setup nginx 
-  args:
-    chdir: /home/frappe/agent
+  file:
+    path: /home/frappe/agent/nginx.conf
+    state: touch
+  
+- name: Symlink agent nginx configuration
+  file:
+    src: /home/frappe/agent/nginx.conf
+    dest: /etc/nginx/conf.d/agent.conf
+    state: link
+    force: yes
+    follow: no
 
 - name: Create tls directory
   become: yes
@@ -124,10 +124,10 @@
     content: "{{ certificate_chain }}"
     dest: /home/frappe/agent/tls/chain.pem
 
-- name: Setup agent tls 
+- name: Setup agent nginx 
   become: yes
   become_user: frappe
-  command: /home/frappe/agent/env/bin/agent setup tls
+  command: /home/frappe/agent/env/bin/agent setup nginx 
   args:
     chdir: /home/frappe/agent
   
