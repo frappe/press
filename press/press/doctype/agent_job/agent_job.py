@@ -191,18 +191,18 @@ def poll_pending_jobs():
 		polled_job = agent.get_job_status(job.job_id)
 
 		try:
-		# Update Job Status
-		# If it is worthy of an update
-		if job.status != polled_job["status"]:
-			update_job(job.name, polled_job)
+			# Update Job Status
+			# If it is worthy of an update
+			if job.status != polled_job["status"]:
+				update_job(job.name, polled_job)
 
-		# Update Steps' Status
-		update_steps(job.name, polled_job)
-		publish_update(job.name)
-		if polled_job["steps"][-1]["status"] == "Failure":
-			skip_pending_steps(job.name)
+			# Update Steps' Status
+			update_steps(job.name, polled_job)
+			publish_update(job.name)
+			if polled_job["steps"][-1]["status"] == "Failure":
+				skip_pending_steps(job.name)
 
-		process_job_updates(job.name)
+			process_job_updates(job.name)
 		except Exception:
 			log_error("Agent Job Poll Exception", job=job, polled=polled_job)
 
@@ -283,7 +283,7 @@ def process_job_updates(job_name):
 		)
 		from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
 
-		if job.job_type == "New Server":
+		if job.job_type == "Add Upstream to Proxy":
 			process_new_server_job_update(job)
 		if job.job_type == "New Bench":
 			process_new_bench_job_update(job)
