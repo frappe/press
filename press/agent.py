@@ -32,10 +32,7 @@ class Agent:
 				{"name": app.scrubbed, "repo": repo, "branch": branch, "hash": app.hash}
 			)
 
-		job = self.create_agent_job("New Bench", "benches", data, bench=bench.name)
-		job_id = self.post("benches", data)["job"]
-		job.job_id = job_id
-		job.save()
+		return self.create_agent_job("New Bench", "benches", data, bench=bench.name)
 
 	def new_site(self, site):
 		apps = [frappe.db.get_value("Frappe App", app.app, "scrubbed") for app in site.apps]
@@ -49,56 +46,42 @@ class Agent:
 			"admin_password": get_decrypted_password("Site", site.name, "admin_password"),
 		}
 
-		job = self.create_agent_job(
+		return self.create_agent_job(
 			"New Site", f"benches/{site.bench}/sites", data, bench=site.bench, site=site.name
 		)
-		job_id = self.post(f"benches/{site.bench}/sites", data)["job"]
-		job.job_id = job_id
-		job.save()
 
 	def update_site_config(self, site):
 		data = {"config": json.loads(site.config)}
-		job = self.create_agent_job(
+		return self.create_agent_job(
 			"Update Site Configuration",
 			f"benches/{site.bench}/sites/{site.name}/config",
 			data,
 			bench=site.bench,
 			site=site.name,
 		)
-		job_id = self.post(f"benches/{site.bench}/sites/{site.name}/config", data)["job"]
-		job.job_id = job_id
-		job.save()
 
 	def archive_site(self, site):
 		password = get_decrypted_password("Server", site.server, "mariadb_root_password")
 		data = {"mariadb_root_password": password}
 
-		job = self.create_agent_job(
+		return self.create_agent_job(
 			"Archive Site",
 			f"benches/{site.bench}/sites/{site.name}/archive",
 			data,
 			bench=site.bench,
 			site=site.name,
 		)
-		job_id = self.post(f"benches/{site.bench}/sites/{site.name}/archive", data)["job"]
-		job.job_id = job_id
-		job.save()
 
 	def backup_site(self, site):
-		job = self.create_agent_job(
+		return self.create_agent_job(
 			"Backup Site",
 			f"benches/{site.bench}/sites/{site.name}/backup",
-			{},
 			bench=site.bench,
 			site=site.name,
 		)
-		job_id = self.post(f"benches/{site.bench}/sites/{site.name}/backup", {})["job"]
-		job.job_id = job_id
-		job.save()
-		return job
 
 	def fetch_monitor_data(self, bench):
-		data = self.post(f"benches/{bench}/monitor", {})["data"]
+		data = self.post(f"benches/{bench}/monitor")["data"]
 		return data
 
 	def fetch_site_status(self, site):
@@ -107,47 +90,35 @@ class Agent:
 
 	def new_domain(self, domain):
 		data = {"name": domain}
-		job = self.create_agent_job("Add Host to Proxy", "proxy/hosts", data)
-		job_id = self.post(f"proxy/hosts", data)["job"]
-		job.job_id = job_id
-		job.save()
+		return self.create_agent_job("Add Host to Proxy", "proxy/hosts", data)
 
 	def new_server(self, server):
 		ip = frappe.db.get_value("Server", server, "ip")
 		data = {"name": ip}
-		job = self.create_agent_job(
+		return self.create_agent_job(
 			"Add Upstream to Proxy", "proxy/upstreams", data, upstream=server
 		)
-		job_id = self.post(f"proxy/upstreams", data)["job"]
-		job.job_id = job_id
-		job.save()
 
 	def new_upstream_site(self, server, site):
 		ip = frappe.db.get_value("Server", server, "ip")
 		data = {"name": site}
-		job = self.create_agent_job(
+		return self.create_agent_job(
 			"Add Site to Upstream",
 			f"proxy/upstreams/{ip}/sites",
 			data,
 			site=site,
 			upstream=server,
 		)
-		job_id = self.post(f"proxy/upstreams/{ip}/sites", data)["job"]
-		job.job_id = job_id
-		job.save()
 
 	def remove_upstream_site(self, server, site):
 		ip = frappe.db.get_value("Server", server, "ip")
-		job = self.create_agent_job(
+		return self.create_agent_job(
 			"Remove Site from Upstream",
 			f"proxy/upstreams/{ip}/sites/{site}",
-			{},
+			method="DELETE",
 			site=site,
 			upstream=server,
 		)
-		job_id = self.delete(f"proxy/upstreams/{ip}/sites/{site}")["job"]
-		job.job_id = job_id
-		job.save()
 
 	def ping(self):
 		return self.get(f"ping")["message"]
@@ -183,7 +154,9 @@ class Agent:
 				title="Agent Request Exception", method=method, url=url, data=data, headers=headers
 			)
 
-	def create_agent_job(self, job_type, path, data, bench=None, site=None, upstream=None):
+	def create_agent_job(
+		self, job_type, path, data=None, method="POST", bench=None, site=None, upstream=None
+	):
 		job = frappe.get_doc(
 			{
 				"doctype": "Agent Job",
@@ -193,9 +166,9 @@ class Agent:
 				"site": site,
 				"upstream": upstream,
 				"status": "Pending",
-				"request_method": "POST",
+				"request_method": method,
 				"request_path": path,
-				"request_data": json.dumps(data, indent=4, sort_keys=True),
+				"request_data": json.dumps(data or {}, indent=4, sort_keys=True),
 				"job_type": job_type,
 			}
 		).insert()
@@ -206,4 +179,4 @@ class Agent:
 		return status
 
 	def update(self):
-		return self.post("update", {})
+		return self.post("update")
