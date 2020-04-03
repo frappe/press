@@ -1,54 +1,39 @@
 ---
-- name: Create nginx directory
+
+- name: Create agent nginx hosts directory
   become: yes
   become_user: frappe
   file:
-    dest: /home/frappe/nginx
+    path: /home/frappe/agent/nginx/hosts
     state: directory
 
-- name: Create nginx hosts configuration file (empty)
+- name: Create agent nginx upstream directory
   become: yes
   become_user: frappe
   file:
-    path: /home/frappe/nginx/hosts.conf
+    path: /home/frappe/agent/nginx/upstreams
+    state: directory
+
+- name: Create nginx proxy configuration file (empty)
+  become: yes
+  become_user: frappe
+  file:
+    path: /home/frappe/agent/nginx/proxy.conf
     state: touch
 
-- name: Symlink nginx hosts configuration
+- name: Symlink nginx proxy configuration
   file:
-    src: /home/frappe/nginx/hosts.conf
-    dest: /etc/nginx/conf.d/hosts.conf
+    src: /home/frappe/agent/nginx/proxy.conf
+    dest: /etc/nginx/conf.d/proxy.conf
     state: link
     force: yes
     follow: no
 
-- name: Create nginx upstream list configuration file (empty)
+- name: Setup agent proxy 
   become: yes
   become_user: frappe
-  file:
-    path: /home/frappe/nginx/upstreams.list
-    state: touch
+  command: "/home/frappe/agent/env/bin/agent setup proxy --domain {{ domain }}"
+  args:
+    chdir: /home/frappe/agent
 
-- name: Symlink nginx upstream list configuration
-  file:
-    src: /home/frappe/nginx/upstreams.list
-    dest: /etc/nginx/conf.d/upstreams.list
-    state: link
-    force: yes
-    follow: no
-
-- name: Create nginx upstream map configuration file (empty)
-  become: yes
-  become_user: frappe
-  file:
-    path: /home/frappe/nginx/upstreams.map
-    state: touch
-
-- name: Symlink nginx upstream map configuration
-  file:
-    src: /home/frappe/nginx/upstreams.map
-    dest: /etc/nginx/conf.d/upstreams.map
-    state: link
-    force: yes
-    follow: no
-    
 ...

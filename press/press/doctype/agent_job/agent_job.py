@@ -8,11 +8,24 @@ import frappe
 from frappe.model.document import Document
 from press.agent import Agent
 from press.utils import log_error
+from frappe.core.utils import find
 
 
 class AgentJob(Document):
 	def after_insert(self):
 		self.create_agent_job_steps()
+		self.enqueue_http_request()
+
+	def enqueue_http_request(self):
+		frappe.enqueue_doc(
+			self.doctype, self.name, "create_http_request", enqueue_after_commit=True
+		)
+
+	def create_http_request(self):
+		agent = Agent(self.server, server_type=self.server_type)
+		data = json.loads(self.request_data)
+		self.job_id = agent.request(self.request_method, self.request_path, data)["job"]
+		self.save()
 
 	def create_agent_job_steps(self):
 		job_type = frappe.get_doc("Agent Job Type", self.job_type)
@@ -168,85 +181,99 @@ def schedule_backups():
 
 
 def poll_pending_jobs():
-	jobs = frappe.get_all(
+	pending_jobs = frappe.get_all(
 		"Agent Job",
-		fields=["name", "server", "server_type", "job_id"],
-		filters={"status": ("in", ["Pending", "Running"])},
+		fields=["name", "server", "server_type", "job_id", "status"],
+		filters={"status": ("in", ["Pending", "Running"]), "job_id": ("is", "set")},
 	)
-	for job in jobs:
-
-		if not job.job_id:
-			continue
-
+	for job in pending_jobs:
 		agent = Agent(job.server, server_type=job.server_type)
-		polled = agent.get_job_status(job.job_id)
+		polled_job = agent.get_job_status(job.job_id)
 
-		# Update Job Status
-		# If it is worthy of an update
-		if job.status != polled["status"]:
-			frappe.db.set_value("Agent Job", job.name, "start", polled["start"])
-			frappe.db.set_value("Agent Job", job.name, "end", polled["end"])
-			frappe.db.set_value("Agent Job", job.name, "duration", polled["duration"])
+		try:
+			# Update Job Status
+			# If it is worthy of an update
+			if job.status != polled_job["status"]:
+				update_job(job.name, polled_job)
 
-			frappe.db.set_value("Agent Job", job.name, "status", polled["status"])
-			frappe.db.set_value(
-				"Agent Job", job.name, "data", json.dumps(polled["data"], indent=4, sort_keys=True)
-			)
-			frappe.db.set_value("Agent Job", job.name, "output", polled["data"].get("output"))
-			frappe.db.set_value(
-				"Agent Job", job.name, "traceback", polled["data"].get("traceback")
-			)
+			# Update Steps' Status
+			update_steps(job.name, polled_job)
+			publish_update(job.name)
+			if polled_job["steps"][-1]["status"] == "Failure":
+				skip_pending_steps(job.name)
 
-		# Update Steps' Status
-		for step in polled["steps"]:
-			agent_job_step = frappe.db.get_all(
-				"Agent Job Step",
-				fields=["name", "status"],
-				filters={
-					"agent_job": job.name,
-					"status": ("in", ["Pending", "Running"]),
-					"step_name": step["name"],
-				},
-			)
-			if agent_job_step:
-				agent_job_step = agent_job_step[0]
-				if agent_job_step.status != step["status"]:
-					frappe.db.set_value("Agent Job Step", agent_job_step.name, "start", step["start"])
-					frappe.db.set_value("Agent Job Step", agent_job_step.name, "end", step["end"])
-					frappe.db.set_value(
-						"Agent Job Step", agent_job_step.name, "duration", step["duration"]
-					)
-
-					frappe.db.set_value(
-						"Agent Job Step", agent_job_step.name, "status", step["status"]
-					)
-					frappe.db.set_value(
-						"Agent Job Step",
-						agent_job_step.name,
-						"data",
-						json.dumps(step["data"], indent=4, sort_keys=True),
-					)
-					frappe.db.set_value(
-						"Agent Job Step", agent_job_step.name, "output", step["data"].get("output")
-					)
-					frappe.db.set_value(
-						"Agent Job Step", agent_job_step.name, "traceback", step["data"].get("traceback")
-					)
-		publish_update(job.name)
-
-		if step["status"] == "Failure":
-			frappe.db.sql(
-				"UPDATE `tabAgent Job Step` SET status = 'Skipped' WHERE status = 'Pending' AND agent_job = %s",
-				job.name,
-			)
-
-		job = frappe.get_doc("Agent Job", job.name)
-		process_job_updates(job)
+			process_job_updates(job.name)
+		except Exception:
+			log_error("Agent Job Poll Exception", job=job, polled=polled_job)
 
 
-def process_job_updates(job):
+def update_job(job_name, job):
+	job_data = json.dumps(job["data"], indent=4, sort_keys=True)
+	frappe.db.set_value(
+		"Agent Job",
+		job_name,
+		{
+			"start": job["start"],
+			"end": job["end"],
+			"duration": job["duration"],
+			"status": job["status"],
+			"data": job_data,
+			"output": job["data"].get("output"),
+			"traceback": job["data"].get("traceback"),
+		},
+	)
+
+
+def update_steps(job_name, job):
+	step_names = [polled_step["name"] for polled_step in job["steps"]]
+	steps = frappe.db.get_all(
+		"Agent Job Step",
+		fields=["name", "status", "step_name"],
+		filters={
+			"agent_job": job_name,
+			"status": ("in", ["Pending", "Running"]),
+			"step_name": ("in", step_names),
+		},
+	)
+	for polled_step in job["steps"]:
+		step = find(steps, lambda x: x.step_name == polled_step["name"])
+		if step and step.status != polled_step["status"]:
+			update_step(step.name, polled_step)
+
+
+def update_step(step_name, step):
+	step_data = json.dumps(step["data"], indent=4, sort_keys=True)
+	frappe.db.set_value(
+		"Agent Job Step",
+		step_name,
+		{
+			"start": step["start"],
+			"end": step["end"],
+			"duration": step["duration"],
+			"status": step["status"],
+			"data": step_data,
+			"output": step["data"].get("output"),
+			"traceback": step["data"].get("traceback"),
+		},
+	)
+
+
+def skip_pending_steps(job_name):
+	frappe.db.sql(
+		"""UPDATE  `tabAgent Job Step` SET  status = 'Skipped'
+		WHERE status = 'Pending' AND agent_job = %s""",
+		job_name,
+	)
+
+
+def process_job_updates(job_name):
+	job = frappe.get_doc("Agent Job", job_name)
 	try:
-		from press.press.doctype.bench.bench import process_new_bench_job_update
+		from press.press.doctype.server.server import process_new_server_job_update
+		from press.press.doctype.bench.bench import (
+			process_new_bench_job_update,
+			process_archive_bench_job_update,
+		)
 		from press.press.doctype.bench_deploy.bench_deploy import (
 			process_bench_deploy_job_update,
 		)
@@ -256,9 +283,13 @@ def process_job_updates(job):
 		)
 		from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
 
+		if job.job_type == "Add Upstream to Proxy":
+			process_new_server_job_update(job)
 		if job.job_type == "New Bench":
 			process_new_bench_job_update(job)
 			process_bench_deploy_job_update(job)
+		if job.job_type == "Archive Bench":
+			process_archive_bench_job_update(job)
 		if job.job_type == "New Site":
 			process_new_site_job_update(job)
 		if job.job_type == "Add Site to Upstream":
@@ -270,4 +301,4 @@ def process_job_updates(job):
 		if job.job_type == "Remove Site from Upstream":
 			process_archive_site_job_update(job)
 	except Exception:
-		log_error("Agent Job Callback Exception", job=job)
+		log_error("Agent Job Callback Exception", job=job.as_dict())

@@ -6,11 +6,19 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "status",
   "ip",
+  "is_server_setup",
+  "column_break_2",
   "private_ip",
+  "mariadb_section",
   "mariadb_root_password",
+  "agent_section",
+  "agent_password",
+  "upstream",
   "proxy_server",
-  "agent_password"
+  "column_break_8",
+  "is_upstream_setup"
  ],
  "fields": [
   {
@@ -42,10 +50,56 @@
    "fieldname": "agent_password",
    "fieldtype": "Password",
    "label": "Agent Password"
+  },
+  {
+   "fieldname": "upstream",
+   "fieldtype": "Section Break",
+   "label": "Upstream"
+  },
+  {
+   "fieldname": "agent_section",
+   "fieldtype": "Section Break",
+   "label": "Agent"
+  },
+  {
+   "fieldname": "column_break_8",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "mariadb_section",
+   "fieldtype": "Section Break",
+   "label": "MariaDB"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_server_setup",
+   "fieldtype": "Check",
+   "label": "Server Setup",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_upstream_setup",
+   "fieldtype": "Check",
+   "label": "Upstream Setup",
+   "read_only": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Active\nBroken",
+   "reqd": 1
   }
  ],
  "links": [],
- "modified": "2020-01-24 14:05:52.077956",
+ "modified": "2020-04-03 13:28:11.887351",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

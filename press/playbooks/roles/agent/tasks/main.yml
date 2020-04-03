@@ -5,6 +5,7 @@
   git:
     repo: 'https://adityahase:uqknfFYBrziJ4kohumR8YhcKjyhYRmJe@github.com:/frappe/agent'
     dest: /home/frappe/agent/repo
+    remote: upstream
 
 - name: Install agent
   become: yes
@@ -14,29 +15,6 @@
     virtualenv: /home/frappe/agent/env
     virtualenv_python: python3
     editable: yes
-
-- name: Symlink nginx configuration
-  file:
-    src: /home/frappe/agent/nginx.conf
-    dest: /etc/nginx/conf.d/agent.conf
-    state: link
-    force: yes
-    follow: no
-
-- name: Symlink supervisor configuration
-  file:
-    src: /home/frappe/agent/supervisor.conf
-    dest: /etc/supervisor/conf.d/agent.conf
-    state: link
-    force: yes
-    follow: no
-
-- name: Create logs directory for supervisor
-  become: yes
-  become_user: frappe
-  file:
-    dest: /home/frappe/agent/logs
-    state: directory
 
 - name: Generate agent configuration 
   become: yes
@@ -59,6 +37,21 @@
   args:
     chdir: /home/frappe/agent
 
+- name: Symlink supervisor configuration
+  file:
+    src: /home/frappe/agent/supervisor.conf
+    dest: /etc/supervisor/conf.d/agent.conf
+    state: link
+    force: yes
+    follow: no
+
+- name: Create logs directory for supervisor
+  become: yes
+  become_user: frappe
+  file:
+    dest: /home/frappe/agent/logs
+    state: directory
+
 - name: Setup agent supervisor
   become: yes
   become_user: frappe
@@ -66,11 +59,76 @@
   args:
     chdir: /home/frappe/agent
 
+- name: Create nginx directory
+  become: yes
+  become_user: frappe
+  file:
+    dest: /home/frappe/agent/nginx
+    state: directory
+  
+- name: Create nginx root configuration file (empty)
+  become: yes
+  become_user: frappe
+  file:
+    path: /home/frappe/agent/nginx/nginx.conf
+    state: touch
+  
+- name: Symlink nginx root configuration
+  file:
+    src: /home/frappe/agent/nginx/nginx.conf
+    dest: /etc/nginx/nginx.conf
+    state: link
+    force: yes
+    follow: no
+
+- name: Create agent nginx configuration file (empty)
+  become: yes
+  become_user: frappe
+  file:
+    path: /home/frappe/agent/nginx.conf
+    state: touch
+  
+- name: Symlink agent nginx configuration
+  file:
+    src: /home/frappe/agent/nginx.conf
+    dest: /etc/nginx/conf.d/agent.conf
+    state: link
+    force: yes
+    follow: no
+
+- name: Create tls directory
+  become: yes
+  become_user: frappe
+  file:
+    dest: /home/frappe/agent/tls
+    state: directory
+
+- name: Setup agent tls (private key)
+  become: yes
+  become_user: frappe
+  copy:
+    content: "{{ certificate_privkey }}"
+    dest: /home/frappe/agent/tls/privkey.pem
+  
+- name: Setup agent tls (certificate)
+  become: yes
+  become_user: frappe
+  copy:
+    content: "{{ certificate_fullchain }}"
+    dest: /home/frappe/agent/tls/fullchain.pem
+
+- name: Setup agent tls (intermediate certificate)
+  become: yes
+  become_user: frappe
+  copy:
+    content: "{{ certificate_chain }}"
+    dest: /home/frappe/agent/tls/chain.pem
+
 - name: Setup agent nginx 
   become: yes
   become_user: frappe
   command: /home/frappe/agent/env/bin/agent setup nginx 
   args:
     chdir: /home/frappe/agent
-
+  
 ...

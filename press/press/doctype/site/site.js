@@ -7,6 +7,7 @@ frappe.ui.form.on('Site', {
 			return {
 				"filters": {
 					"server": frm.doc.server,
+					"status": "Active",
 				}
 			};
 		});

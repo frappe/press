@@ -4,14 +4,6 @@
     pkg: nginx
     state: present
 
-- name: Copy nginx configuration.
-  template:
-    src: files/nginx.conf
-    dest: /etc/nginx/nginx.conf
-    owner: root
-    group: root
-    mode: 0644
-
 - name: Remove default enabled nginx vhost
   file:
     path: /etc/nginx/sites-enabled/default
