@@ -21,11 +21,10 @@ class TLSCertificate(Document):
 			self.name = self.domain
 
 	def after_insert(self):
-		frappe.db.commit()
 		self.obtain_certificate()
 
 	def obtain_certificate(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_obtain_certificate")
+		frappe.enqueue_doc(self.doctype, self.name, "_obtain_certificate", enqueue_after_commit=True)
 
 	def _obtain_certificate(self):
 		try:
@@ -65,7 +64,7 @@ class TLSCertificate(Document):
 		else:
 			plugin = f"--webroot --webroot-path {settings.webroot_directory}"
 
-		staging = "" #"--staging " if frappe.conf.developer_mode else ""
+		staging = ""  # "--staging " if frappe.conf.developer_mode else ""
 
 		command = (
 			"certbot certonly --quiet "
