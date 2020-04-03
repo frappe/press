@@ -36,9 +36,10 @@ class TLSCertificate(Document):
 				self._obtain_default_certificate(settings)
 			self._extract_certificate_details(settings)
 			self.status = "Active"
-			self.save()
 		except Exception:
+			self.status = "Failure"
 			log_error("TLS Certificate Exception", certificate=self.name)
+		self.save()
 
 	def _obtain_wildcard_certificate(self, settings):
 		environment = os.environ
@@ -64,7 +65,7 @@ class TLSCertificate(Document):
 		else:
 			plugin = f"--webroot --webroot-path {settings.webroot_directory}"
 
-		staging = "--staging " if frappe.conf.developer_mode else ""
+		staging = "" #"--staging " if frappe.conf.developer_mode else ""
 
 		command = (
 			"certbot certonly --quiet "
