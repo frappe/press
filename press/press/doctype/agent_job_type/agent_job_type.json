@@ -6,7 +6,10 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "steps"
+  "steps",
+  "agent_request_section",
+  "request_path",
+  "request_method"
  ],
  "fields": [
   {
@@ -15,10 +18,26 @@
    "label": "Steps",
    "options": "Agent Job Type Step",
    "reqd": 1
+  },
+  {
+   "fieldname": "agent_request_section",
+   "fieldtype": "Section Break",
+   "label": "Agent Request"
+  },
+  {
+   "fieldname": "request_path",
+   "fieldtype": "Data",
+   "label": "Request Path"
+  },
+  {
+   "fieldname": "request_method",
+   "fieldtype": "Select",
+   "label": "Request Method",
+   "options": "POST\nDELETE"
   }
  ],
  "links": [],
- "modified": "2020-01-14 10:43:48.794694",
+ "modified": "2020-04-03 18:43:57.735469",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Job Type",
