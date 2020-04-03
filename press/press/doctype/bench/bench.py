@@ -70,3 +70,14 @@ def process_new_bench_job_update(job):
 
 	if updated_status != bench_status:
 		frappe.db.set_value("Bench", job.bench, "status", updated_status)
+
+
+def process_archive_bench_job_update(job):
+	bench_status = frappe.get_value("Bench", job.bench, "status")
+
+	updated_status = {"Pending": "Pending", "Success": "Archived", "Failure": "Broken"}[
+		job.status
+	]
+
+	if updated_status != bench_status:
+		frappe.db.set_value("Bench", job.bench, "status", updated_status)
