@@ -17,7 +17,7 @@ class SiteUsageLedgerEntry(Document):
 
 	def check_duplicate(self):
 		date = frappe.utils.nowdate()
-		filters = {"site": site.name, "team": site.team, "plan": site.plan, "date": date}
+		filters = {"site": self.site, "team": self.team, "plan": self.plan, "date": date}
 		if frappe.db.exists("Site Usage Ledger Entry", filters):
 			frappe.throw("This ledger entry already exists.", frappe.DuplicateEntryError)
 
