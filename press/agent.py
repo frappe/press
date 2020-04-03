@@ -85,14 +85,6 @@ class Agent:
 			site=site.name,
 		)
 
-	def fetch_monitor_data(self, bench):
-		data = self.post(f"benches/{bench}/monitor")["data"]
-		return data
-
-	def fetch_site_status(self, site):
-		data = self.get(f"benches/{site.bench}/sites/{site.name}/status")["data"]
-		return data
-
 	def new_domain(self, domain):
 		data = {"name": domain}
 		return self.create_agent_job("Add Host to Proxy", "proxy/hosts", data)
@@ -125,17 +117,11 @@ class Agent:
 			upstream=server,
 		)
 
-	def ping(self):
-		return self.get(f"ping")["message"]
-
 	def get(self, path):
 		return self.request("GET", path)
 
 	def post(self, path, data):
 		return self.request("POST", path, data)
-
-	def delete(self, path):
-		return self.request("DELETE", path)
 
 	def request(self, method, path, data=None):
 		try:
@@ -185,3 +171,14 @@ class Agent:
 
 	def update(self):
 		return self.post("update")
+
+	def ping(self):
+		return self.get(f"ping")["message"]
+
+	def fetch_monitor_data(self, bench):
+		data = self.post(f"benches/{bench}/monitor")["data"]
+		return data
+
+	def fetch_site_status(self, site):
+		data = self.get(f"benches/{site.bench}/sites/{site.name}/status")["data"]
+		return data
