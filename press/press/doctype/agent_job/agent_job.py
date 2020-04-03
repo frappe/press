@@ -8,6 +8,7 @@ import frappe
 from frappe.model.document import Document
 from press.agent import Agent
 from press.utils import log_error
+from frappe.core.utils import find
 
 
 class AgentJob(Document):
@@ -187,72 +188,83 @@ def poll_pending_jobs():
 	)
 	for job in pending_jobs:
 		agent = Agent(job.server, server_type=job.server_type)
-		polled = agent.get_job_status(job.job_id)
+		polled_job = agent.get_job_status(job.job_id)
 
 		# Update Job Status
 		# If it is worthy of an update
-		if job.status != polled["status"]:
-			update_job_status(job.name, polled)
+		if job.status != polled_job["status"]:
+			update_job(job.name, polled_job)
 
 		# Update Steps' Status
-		for step in polled["steps"]:
-			agent_job_step = frappe.db.get_all(
-				"Agent Job Step",
-				fields=["name", "status"],
-				filters={
-					"agent_job": job.name,
-					"status": ("in", ["Pending", "Running"]),
-					"step_name": step["name"],
-				},
-			)
-			if agent_job_step:
-				agent_job_step = agent_job_step[0]
-				if agent_job_step.status != step["status"]:
-					update_step_status(agent_job_step.name, step)
+		update_steps(job.name, polled_job)
 		publish_update(job.name)
-
-		if step["status"] == "Failure":
-			update_status_for_skipped_steps(job.name)
+		if polled_job["steps"][-1]["status"] == "Failure":
+			skip_pending_steps(job.name)
 
 		process_job_updates(job.name)
 
 
-def update_status_for_skipped_steps(name):
-	frappe.db.sql(
-		"""UPDATE 
-			`tabAgent Job Step` 
-		SET 
-			status = 'Skipped' 
-		WHERE 
-			status = 'Pending' AND agent_job = %s""",
-		name,
+def update_job(job_name, job):
+	job_data = json.dumps(job["data"], indent=4, sort_keys=True)
+	frappe.db.set_value(
+		"Agent Job",
+		job_name,
+		{
+			"start": job["start"],
+			"end": job["end"],
+			"duration": job["duration"],
+			"status": job["status"],
+			"data": job_data,
+			"output": job["data"].get("output"),
+			"traceback": job["data"].get("traceback"),
+		},
 	)
 
 
-def update_step_status(name, step):
-	polled_data = json.dumps(step["data"], indent=4, sort_keys=True)
-	frappe.db.set_value("Agent Job Step", name, "start", step["start"])
-	frappe.db.set_value("Agent Job Step", name, "end", step["end"])
-	frappe.db.set_value("Agent Job Step", name, "duration", step["duration"])
-	frappe.db.set_value("Agent Job Step", name, "status", step["status"])
-	frappe.db.set_value("Agent Job Step", name, "data", polled_data)
-	frappe.db.set_value("Agent Job Step", name, "output", step["data"].get("output"))
-	frappe.db.set_value("Agent Job Step", name, "traceback", step["data"].get("traceback"))
+def update_steps(job_name, polled_job):
+	step_names = [polled_step["name"] for polled_step in polled_job["steps"]]
+	steps = frappe.db.get_all(
+		"Agent Job Step",
+		fields=["name", "status"],
+		filters={
+			"agent_job": job.name,
+			"status": ("in", ["Pending", "Running"]),
+			"step_name": ("in", step_names),
+		},
+	)
+	for polled_step in polled_job["steps"]:
+		step = find(steps, lambda x: x.step_name == polled_step["name"])
+		if step and step.status != polled_step["status"]:
+			update_step(step.name, polled_step)
 
 
-def update_job_status(name, polled):
-	polled_data = json.dumps(polled["data"], indent=4, sort_keys=True)
-	frappe.db.set_value("Agent Job", name, "start", polled["start"])
-	frappe.db.set_value("Agent Job", name, "end", polled["end"])
-	frappe.db.set_value("Agent Job", name, "duration", polled["duration"])
-	frappe.db.set_value("Agent Job", name, "status", polled["status"])
-	frappe.db.set_value("Agent Job", name, "data", polled_data)
-	frappe.db.set_value("Agent Job", name, "output", polled["data"].get("output"))
-	frappe.db.set_value("Agent Job", name, "traceback", polled["data"].get("traceback"))
+def update_step(step_name, step):
+	step_data = json.dumps(step["data"], indent=4, sort_keys=True)
+	frappe.db.set_value(
+		"Agent Job Step",
+		step_name,
+		{
+			"start": step["start"],
+			"end": step["end"],
+			"duration": step["duration"],
+			"status": step["status"],
+			"data": step_data,
+			"output": step["data"].get("output"),
+			"traceback": step["data"].get("traceback"),
+		},
+	)
 
 
-def process_job_updates(name):
-	job = frappe.get_doc("Agent Job", name)
+def skip_pending_steps(job_name):
+	frappe.db.sql(
+		"""UPDATE  `tabAgent Job Step` SET  status = 'Skipped'
+		WHERE status = 'Pending' AND agent_job = %s""",
+		job_name,
+	)
+
+
+def process_job_updates(job_name):
+	job = frappe.get_doc("Agent Job", job_name)
 	try:
 		from press.press.doctype.server.server import process_new_server_job_update
 		from press.press.doctype.bench.bench import (
