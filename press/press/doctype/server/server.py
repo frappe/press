@@ -28,16 +28,22 @@ class Server(Document):
 
 	def _setup_server(self):
 		agent_password = get_decrypted_password(self.doctype, self.name, "agent_password")
-		mariadb_root_password = get_decrypted_password(self.doctype, self.name, "mariadb_root_password")
-		certificate_name = frappe.db.get_value("Press Settings", "Press Settings", "wildcard_tls_certificate")
+		mariadb_root_password = get_decrypted_password(
+			self.doctype, self.name, "mariadb_root_password"
+		)
+		certificate_name = frappe.db.get_value(
+			"Press Settings", "Press Settings", "wildcard_tls_certificate"
+		)
 		certificate = frappe.get_doc("TLS Certificate", certificate_name)
 
-		command = (f"ansible-playbook ../apps/press/press/playbooks/server.yml "
-		f"-i {self.name}, -u root -vv "
-		f"-e \""
-		f"server={self.name} workers=2 password={agent_password} mariadb_root_password={mariadb_root_password} "
-		f"certificate_privkey='{certificate.privkey}' certificate_fullchain='{certificate.fullchain}' certificate_chain='{certificate.chain}' "
-		"\"")
+		command = (
+			f"ansible-playbook ../apps/press/press/playbooks/server.yml "
+			f"-i {self.name}, -u root -vv "
+			f'-e "'
+			f"server={self.name} workers=2 password={agent_password} mariadb_root_password={mariadb_root_password} "
+			f"certificate_privkey='{certificate.privkey}' certificate_fullchain='{certificate.fullchain}' certificate_chain='{certificate.chain}' "
+			'"'
+		)
 		try:
 			subprocess.run(shlex.split(command))
 			self.status = "Active"
@@ -48,7 +54,10 @@ class Server(Document):
 		self.save()
 
 	def setup_server(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_setup_server", queue="long", timeout=1200)
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_setup_server", queue="long", timeout=1200
+		)
+
 
 def process_new_server_job_update(job):
 	if job.status == "Success":
