@@ -4,6 +4,7 @@
 
 from __future__ import unicode_literals
 
+import re
 import frappe
 import requests
 from frappe.model.document import Document
@@ -22,8 +23,13 @@ class Site(Document):
 		self.name = f"{self.subdomain}.{domain}"
 
 	def validate(self):
-		if not self.subdomain.isalnum() or not self.subdomain.islower():
-			raise frappe.ValidationError("Subdomain should be a lowercase alphanumeric string")
+		site_regex = r"^[a-z0-9][a-z0-9-]*[a-z0-9]$"
+		if len(self.subdomain) < 5:
+			raise frappe.ValidationError("Subdomain too short")
+		if len(self.subdomain) > 32:
+			raise frappe.ValidationError("Subdomain too long")
+		if not re.match(site_regex, self.subdomain):
+			raise frappe.ValidationError("Subdomain invalid")
 		if not self.admin_password:
 			self.admin_password = frappe.generate_hash(length=16)
 

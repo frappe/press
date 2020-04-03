@@ -9,5 +9,5 @@
     - role: nginx
     - role: agent
     - role: proxy
-    
+
 ...

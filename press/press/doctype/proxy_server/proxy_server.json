@@ -6,8 +6,12 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "status",
   "ip",
+  "column_break_3",
   "private_ip",
+  "is_server_setup",
+  "agent_section",
   "agent_password"
  ],
  "fields": [
@@ -16,22 +20,49 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "IP",
-   "reqd": 1
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "private_ip",
    "fieldtype": "Data",
    "label": "Private IP",
-   "reqd": 1
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "agent_password",
    "fieldtype": "Password",
    "label": "Agent Password"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Active\nBroken",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_server_setup",
+   "fieldtype": "Check",
+   "label": "Server Setup",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "agent_section",
+   "fieldtype": "Section Break",
+   "label": "Agent"
   }
  ],
  "links": [],
- "modified": "2020-01-24 14:04:17.708753",
+ "modified": "2020-04-03 18:23:55.355483",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",

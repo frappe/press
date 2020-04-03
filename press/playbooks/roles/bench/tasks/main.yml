@@ -30,7 +30,10 @@
   command: bench install nodejs
 
 - name: Setup Fonts
-  command: "bench setup fonts"
+  command: bench setup fonts
+
+- name: Setup Fail2ban
+  command: bench setup role fail2ban
 
 - name: Create benches directory
   become: yes
