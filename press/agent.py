@@ -120,7 +120,7 @@ class Agent:
 	def get(self, path):
 		return self.request("GET", path)
 
-	def post(self, path, data):
+	def post(self, path, data=None):
 		return self.request("POST", path, data)
 
 	def request(self, method, path, data=None):
