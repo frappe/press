@@ -166,7 +166,7 @@ class Agent:
 			url = f"https://{self.server}:{self.port}/agent/{path}"
 			password = get_decrypted_password(self.server_type, self.server, "agent_password")
 			headers = {"Authorization": f"bearer {password}"}
-			result = requests.request(method, url, headers=headers, data=data)
+			result = requests.request(method, url, headers=headers, json=data)
 			try:
 				return result.json()
 			except Exception:
