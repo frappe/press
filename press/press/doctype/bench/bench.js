@@ -21,5 +21,8 @@ frappe.ui.form.on('Bench', {
 			const filters = {bench: frm.doc.name};
 			frappe.set_route("List", "Agent Job", filters);
 		});
+		frm.add_custom_button(__("Archive Bench"), () => {
+			frm.call({method: "archive", doc: frm.doc, callback: result => frappe.msgprint(result.message)});
+		}, __("Actions"));
 	}
 });
