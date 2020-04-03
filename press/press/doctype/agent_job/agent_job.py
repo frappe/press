@@ -183,13 +183,14 @@ def schedule_backups():
 def poll_pending_jobs():
 	pending_jobs = frappe.get_all(
 		"Agent Job",
-		fields=["name", "server", "server_type", "job_id"],
+		fields=["name", "server", "server_type", "job_id", "status"],
 		filters={"status": ("in", ["Pending", "Running"]), "job_id": ("is", "set")},
 	)
 	for job in pending_jobs:
 		agent = Agent(job.server, server_type=job.server_type)
 		polled_job = agent.get_job_status(job.job_id)
 
+		try:
 		# Update Job Status
 		# If it is worthy of an update
 		if job.status != polled_job["status"]:
@@ -202,6 +203,8 @@ def poll_pending_jobs():
 			skip_pending_steps(job.name)
 
 		process_job_updates(job.name)
+		except Exception:
+			log_error("Agent Job Poll Exception", job=job, polled=polled_job)
 
 
 def update_job(job_name, job):
@@ -221,18 +224,18 @@ def update_job(job_name, job):
 	)
 
 
-def update_steps(job_name, polled_job):
-	step_names = [polled_step["name"] for polled_step in polled_job["steps"]]
+def update_steps(job_name, job):
+	step_names = [polled_step["name"] for polled_step in job["steps"]]
 	steps = frappe.db.get_all(
 		"Agent Job Step",
-		fields=["name", "status"],
+		fields=["name", "status", "step_name"],
 		filters={
-			"agent_job": job.name,
+			"agent_job": job_name,
 			"status": ("in", ["Pending", "Running"]),
 			"step_name": ("in", step_names),
 		},
 	)
-	for polled_step in polled_job["steps"]:
+	for polled_step in job["steps"]:
 		step = find(steps, lambda x: x.step_name == polled_step["name"])
 		if step and step.status != polled_step["status"]:
 			update_step(step.name, polled_step)
