@@ -21,3 +21,7 @@ class Server(Document):
 	def update_agent(self):
 		agent = Agent(self.name)
 		return agent.update()
+
+def process_new_server_job_update(job):
+	if job.status == "Success":
+		frappe.db.set_value("Server", job.upstream, "is_upstream_setup", True)
