@@ -53,6 +53,10 @@ class Bench(Document):
 		agent = Agent(self.server)
 		agent.new_bench(self)
 
+	def archive(self):
+		agent = Agent(self.server)
+		agent.archive_bench(self)
+
 
 def process_new_bench_job_update(job):
 	bench_status = frappe.get_value("Bench", job.bench, "status")

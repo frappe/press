@@ -34,6 +34,11 @@ class Agent:
 
 		return self.create_agent_job("New Bench", "benches", data, bench=bench.name)
 
+	def archive_bench(self, bench):
+		return self.create_agent_job(
+			"Archive Bench", f"benches/{bench.name}/archive", bench=bench.name
+		)
+
 	def new_site(self, site):
 		apps = [frappe.db.get_value("Frappe App", app.app, "scrubbed") for app in site.apps]
 		data = {
