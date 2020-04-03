@@ -5,4 +5,3 @@ frappe ALL = (root) NOPASSWD: /usr/bin/supervisorctl
 frappe ALL = (root) NOPASSWD: /usr/sbin/nginx
 frappe ALL = (root) NOPASSWD: /usr/local/bin/bench
 
-Defaults:frappe !requiretty
