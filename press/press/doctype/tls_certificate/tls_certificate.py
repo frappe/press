@@ -24,7 +24,9 @@ class TLSCertificate(Document):
 		self.obtain_certificate()
 
 	def obtain_certificate(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_obtain_certificate", enqueue_after_commit=True)
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_obtain_certificate", enqueue_after_commit=True
+		)
 
 	def _obtain_certificate(self):
 		try:
