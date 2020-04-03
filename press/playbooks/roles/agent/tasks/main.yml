@@ -5,6 +5,7 @@
   git:
     repo: 'https://adityahase:uqknfFYBrziJ4kohumR8YhcKjyhYRmJe@github.com:/frappe/agent'
     dest: /home/frappe/agent/repo
+    remote: upstream
 
 - name: Install agent
   become: yes
