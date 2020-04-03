@@ -16,7 +16,7 @@ class Agent:
 	def __init__(self, server, server_type="Server"):
 		self.server_type = server_type
 		self.server = server
-		self.port = 80
+		self.port = 443
 
 	def new_bench(self, bench, clone=None):
 		data = {
@@ -163,7 +163,7 @@ class Agent:
 
 	def request(self, method, path, data=None):
 		try:
-			url = f"http://{self.server}:{self.port}/agent/{path}"
+			url = f"https://{self.server}:{self.port}/agent/{path}"
 			password = get_decrypted_password(self.server_type, self.server, "agent_password")
 			headers = {"Authorization": f"bearer {password}"}
 			result = requests.request(method, url, headers=headers, data=data)
