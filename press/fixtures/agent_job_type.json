@@ -2,11 +2,172 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
+  "modified": "2020-02-21 12:34:39.569810",
+  "name": "Recover Failed Site Migration",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "request_method": null,
+  "request_path": null,
+  "steps": [
+   {
+    "parent": "Recover Failed Site Migration",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Move Site"
+   },
+   {
+    "parent": "Recover Failed Site Migration",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Restore Touched Tables"
+   },
+   {
+    "parent": "Recover Failed Site Migration",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Disable Maintenance Mode"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2020-02-21 10:50:45.060582",
+  "name": "Update Site Pull",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "request_method": null,
+  "request_path": null,
+  "steps": [
+   {
+    "parent": "Update Site Pull",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Enable Maintenance Mode"
+   },
+   {
+    "parent": "Update Site Pull",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Wait for Enqueued Jobs"
+   },
+   {
+    "parent": "Update Site Pull",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Move Site"
+   },
+   {
+    "parent": "Update Site Pull",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Disable Maintenance Mode"
+   },
+   {
+    "parent": "Update Site Pull",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Setup NGINX"
+   },
+   {
+    "parent": "Update Site Pull",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Setup NGINX Target"
+   },
+   {
+    "parent": "Update Site Pull",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2020-02-21 10:51:00.894837",
+  "name": "Update Site Migrate",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "request_method": null,
+  "request_path": null,
+  "steps": [
+   {
+    "parent": "Update Site Migrate",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Enable Maintenance Mode"
+   },
+   {
+    "parent": "Update Site Migrate",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Wait for Enqueued Jobs"
+   },
+   {
+    "parent": "Update Site Migrate",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Clear Backup Directory"
+   },
+   {
+    "parent": "Update Site Migrate",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Backup Site Tables"
+   },
+   {
+    "parent": "Update Site Migrate",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Move Site"
+   },
+   {
+    "parent": "Update Site Migrate",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Migrate Site"
+   },
+   {
+    "parent": "Update Site Migrate",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Disable Maintenance Mode"
+   },
+   {
+    "parent": "Update Site Migrate",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Setup NGINX"
+   },
+   {
+    "parent": "Update Site Migrate",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Setup NGINX Target"
+   },
+   {
+    "parent": "Update Site Migrate",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
   "modified": "2020-02-03 19:23:54.452866",
   "name": "Backup Site",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
+  "request_method": null,
+  "request_path": null,
   "steps": [
    {
     "parent": "Backup Site",
@@ -24,6 +185,8 @@
   "parent": null,
   "parentfield": null,
   "parenttype": null,
+  "request_method": null,
+  "request_path": null,
   "steps": [
    {
     "parent": "New Site",
@@ -60,23 +223,25 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-01-15 17:37:17.392776",
+  "modified": "2020-04-03 23:20:55.186989",
   "name": "Add Host to Proxy",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
+  "request_method": "POST",
+  "request_path": "/proxy/hosts",
   "steps": [
    {
     "parent": "Add Host to Proxy",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
-    "step_name": "Add Host File"
+    "step_name": "Add Host to Proxy"
    },
    {
     "parent": "Add Host to Proxy",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
-    "step_name": "Generate Hosts Configuration"
+    "step_name": "Generate NGINX Configuration"
    },
    {
     "parent": "Add Host to Proxy",
@@ -89,11 +254,13 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-01-15 17:38:03.549871",
+  "modified": "2020-04-03 23:20:14.208716",
   "name": "Add Site to Upstream",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
+  "request_method": "POST",
+  "request_path": "/proxy/upstreams/{upstream}/sites",
   "steps": [
    {
     "parent": "Add Site to Upstream",
@@ -105,7 +272,7 @@
     "parent": "Add Site to Upstream",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
-    "step_name": "Generate Upstream Map Configuration"
+    "step_name": "Generate NGINX Configuration"
    },
    {
     "parent": "Add Site to Upstream",
@@ -118,11 +285,13 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-01-15 17:39:01.766866",
+  "modified": "2020-04-03 23:20:08.170631",
   "name": "Add Upstream to Proxy",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
+  "request_method": "POST",
+  "request_path": "/proxy/upstreams",
   "steps": [
    {
     "parent": "Add Upstream to Proxy",
@@ -134,7 +303,7 @@
     "parent": "Add Upstream to Proxy",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
-    "step_name": "Generate Upstream List Configuration"
+    "step_name": "Generate NGINX Configuration"
    },
    {
     "parent": "Add Upstream to Proxy",
@@ -147,11 +316,13 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-02-18 12:42:34.683677",
+  "modified": "2020-04-03 18:45:21.231192",
   "name": "New Bench",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
+  "request_method": "POST",
+  "request_path": "/benches",
   "steps": [
    {
     "parent": "New Bench",
@@ -206,11 +377,13 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-02-20 10:10:15.793715",
+  "modified": "2020-04-03 23:19:43.720292",
   "name": "Remove Site from Upstream",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
+  "request_method": "DELETE",
+  "request_path": "/proxy/upstreams/{upstream}/sites/{site}",
   "steps": [
    {
     "parent": "Remove Site from Upstream",
@@ -222,7 +395,7 @@
     "parent": "Remove Site from Upstream",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
-    "step_name": "Generate Upstream Map Configuration"
+    "step_name": "Generate NGINX Configuration"
    },
    {
     "parent": "Remove Site from Upstream",
@@ -240,6 +413,8 @@
   "parent": null,
   "parentfield": null,
   "parenttype": null,
+  "request_method": null,
+  "request_path": null,
   "steps": [
    {
     "parent": "Archive Site",
@@ -258,6 +433,31 @@
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Reload NGINX"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2020-04-03 20:16:04.843363",
+  "name": "Archive Bench",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/archive",
+  "steps": [
+   {
+    "parent": "Archive Bench",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Disable Production"
+   },
+   {
+    "parent": "Archive Bench",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Move Bench to Archived Directory"
    }
   ]
  }
