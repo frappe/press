@@ -169,6 +169,11 @@ class Agent:
 		status = self.get(f"jobs/{id}")
 		return status
 
+	def get_jobs_status(self, ids):
+		ids = ",".join()
+		status = self.get(f"jobs/{ids}")
+		return status
+
 	def update(self):
 		return self.post("update")
 

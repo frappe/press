@@ -9,6 +9,7 @@ from frappe.model.document import Document
 from press.agent import Agent
 from press.utils import log_error
 from frappe.core.utils import find
+from itertools import groupby
 
 
 class AgentJob(Document):
@@ -185,26 +186,31 @@ def poll_pending_jobs():
 		"Agent Job",
 		fields=["name", "server", "server_type", "job_id", "status"],
 		filters={"status": ("in", ["Pending", "Running"]), "job_id": ("is", "set")},
+		order_by="server",
 	)
-	for job in pending_jobs:
-		agent = Agent(job.server, server_type=job.server_type)
-		polled_job = agent.get_job_status(job.job_id)
+	for server, server_jobs in groupby(pending_jobs, lambda x: x.server):
+		server_jobs = list(server_jobs)
+		agent = Agent(server_jobs[0].server, server_type=server_jobs[0].server_type)
+		pending_ids = [j.job_id for j in server_jobs]
+		polled_jobs = agent.get_jobs_status(pending_ids)
+		for polled_job in polled_jobs:
+			job = find(server_jobs, lambda x: x.job_id == polled_job["id"])
+			try:
+				# Update Job Status
+				# If it is worthy of an update
+				if job.status != polled_job["status"]:
+					update_job(job.name, polled_job)
 
-		try:
-			# Update Job Status
-			# If it is worthy of an update
-			if job.status != polled_job["status"]:
-				update_job(job.name, polled_job)
+				# Update Steps' Status
+				update_steps(job.name, polled_job)
+				publish_update(job.name)
+				if polled_job["steps"][-1]["status"] == "Failure":
+					skip_pending_steps(job.name)
 
-			# Update Steps' Status
-			update_steps(job.name, polled_job)
-			publish_update(job.name)
-			if polled_job["steps"][-1]["status"] == "Failure":
-				skip_pending_steps(job.name)
-
-			process_job_updates(job.name)
-		except Exception:
-			log_error("Agent Job Poll Exception", job=job, polled=polled_job)
+				process_job_updates(job.name)
+			except Exception:
+				log_error("Agent Job Poll Exception", job=job, polled=polled_job)
+		frappe.db.commit()
 
 
 def update_job(job_name, job):
