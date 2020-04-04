@@ -29,10 +29,10 @@ frappe.ui.form.on('Press Settings', {
 		}
 
 		function call_method() {
-			frm.call({
-				method: 'create_stripe_plans',
-				btn: frm.get_field('create_stripe_plans').$input
-			});
+			frm.call('create_stripe_plans');
 		}
+	},
+	create_stripe_webhook(frm) {
+		frm.call('create_stripe_webhook');
 	}
 });

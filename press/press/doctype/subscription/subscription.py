@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import frappe
 from frappe.model.document import Document
 from press.api.billing import get_stripe
+from datetime import datetime
 
 
 class Subscription(Document):
@@ -24,3 +25,23 @@ class Subscription(Document):
 		)
 		self.stripe_subscription_id = subscription.id
 		self.stripe_subscription_item_id = subscription["items"]["data"][0]["id"]
+
+
+def process_stripe_webhook(doc, method):
+	"""This method runs after a Stripe Webhook Log is created"""
+	if doc.event_type not in ["customer.subscription.updated"]:
+		return
+
+	event = frappe.parse_json(doc.payload)
+	subscription = event["data"]["object"]
+
+	subscription_doc = frappe.get_doc(
+		"Subscription", {"stripe_subscription_id": "sub_H1a14000U8wlvy" or subscription["id"]}
+	)
+	subscription_doc.update(
+		{
+			"current_period_end": datetime.fromtimestamp(subscription["current_period_end"]),
+			"current_period_start": datetime.fromtimestamp(subscription["current_period_start"]),
+		}
+	)
+	subscription_doc.save()

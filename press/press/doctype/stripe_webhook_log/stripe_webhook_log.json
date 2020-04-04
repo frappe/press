@@ -1,13 +1,13 @@
 {
  "actions": [],
+ "autoname": "Prompt",
  "creation": "2020-03-30 15:42:28.497505",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
   "event_type",
-  "status",
-  "data"
+  "payload"
  ],
  "fields": [
   {
@@ -18,21 +18,14 @@
    "read_only": 1
   },
   {
-   "fieldname": "status",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "label": "Status",
-   "options": "\nQueued\nIn Progress\nCompleted\nFailed"
-  },
-  {
-   "fieldname": "data",
+   "fieldname": "payload",
    "fieldtype": "Code",
-   "label": "Data",
+   "label": "Payload",
    "read_only": 1
   }
  ],
  "links": [],
- "modified": "2020-03-30 19:00:20.343145",
+ "modified": "2020-04-04 14:25:26.007541",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Stripe Webhook Log",

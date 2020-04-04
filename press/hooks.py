@@ -81,25 +81,20 @@ permission_query_conditions = {
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+	"Stripe Webhook Log": {
+		"after_insert": [
+			"press.press.doctype.payment.payment.process_stripe_webhook",
+			"press.press.doctype.subscription.subscription.process_stripe_webhook",
+		],
+	}
+}
 
 # Scheduled Tasks
 # ---------------
 
 scheduler_events = {
-	"all": [
-		"press.press.doctype.payment.payment.handle_payment_logs",
-		"press.press.doctype.subscription.subscription.handle_subscription_logs",
-	],
-	"hourly": [
-		"press.press.doctype.frappe_app.frappe_app.poll_new_releases",
-	],
+	"hourly": ["press.press.doctype.frappe_app.frappe_app.poll_new_releases"],
 	"hourly_long": [
 		"press.press.doctype.site_usage_ledger_entry.site_usage_ledger_entry.create_ledger_entries"
 	],
