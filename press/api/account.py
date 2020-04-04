@@ -52,8 +52,9 @@ def setup_account(
 		# Team doesn't exist, create it
 		doc = frappe.get_doc(
 			{"doctype": "Team", "name": team, "user": email, "enabled": 1}
-		).insert(ignore_permissions=True)
+		).insert(ignore_permissions=True, ignore_links=True)
 	doc.create_user_for_member(first_name, last_name, email, password, role)
+	doc.create_stripe_customer()
 
 	frappe.local.login_manager.login_as(email)
 

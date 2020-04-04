@@ -52,7 +52,7 @@ class SiteUsageLedgerEntry(Document):
 		)
 		usage_record = stripe.SubscriptionItem.create_usage_record(
 			subscription_item_id,
-			quantity=self.usage_units,
+			quantity=int(self.usage_units),
 			timestamp=self.timestamp,
 			action="increment",
 			idempotency_key=self.name,
@@ -65,7 +65,9 @@ def create_ledger_entries():
 	This runs hourly but will only create one record per day for each site"""
 
 	active_sites = frappe.db.get_all(
-		"Site", filters={"status": "Active"}, fields=["name", "team", "plan"]
+		"Site",
+		filters={"status": "Active", "team": ("is", "set"), "plan": ("is", "set")},
+		fields=["name", "team", "plan"],
 	)
 	for site in active_sites:
 		date = frappe.utils.nowdate()

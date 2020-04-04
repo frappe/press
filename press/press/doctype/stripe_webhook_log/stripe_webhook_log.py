@@ -49,7 +49,7 @@ def parse_payload(payload, signature):
 	secret = frappe.db.get_single_value("Press Settings", "stripe_webhook_secret")
 	stripe = get_stripe()
 	try:
-		return stripe.Webhook.construct_event(payload, signature, endpoint_secret)
+		return stripe.Webhook.construct_event(payload, signature, secret)
 	except ValueError as e:
 		# Invalid payload
 		frappe.throw("Invalid Payload", InvalidStripeWebhookEvent)

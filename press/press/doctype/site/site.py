@@ -25,11 +25,11 @@ class Site(Document):
 	def validate(self):
 		site_regex = r"^[a-z0-9][a-z0-9-]*[a-z0-9]$"
 		if len(self.subdomain) < 5:
-			raise frappe.ValidationError("Subdomain too short")
+			frappe.throw("Subdomain too short")
 		if len(self.subdomain) > 32:
-			raise frappe.ValidationError("Subdomain too long")
+			frappe.throw("Subdomain too long")
 		if not re.match(site_regex, self.subdomain):
-			raise frappe.ValidationError("Subdomain invalid")
+			frappe.throw("Subdomain invalid")
 		if not self.admin_password:
 			self.admin_password = frappe.generate_hash(length=16)
 

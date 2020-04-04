@@ -31,6 +31,43 @@
 				</div>
 			</div>
 		</section>
+		<section v-if="pastPayments.length" class="mb-10">
+			<h2 class="text-lg font-medium">Past Payments</h2>
+			<p class="text-gray-600">
+				Your last 3 payments
+			</p>
+			<div
+				class="w-full py-4 mt-6 border border-gray-100 rounded-md shadow sm:w-1/2"
+			>
+				<div
+					class="grid items-center grid-cols-3 px-6 py-4 hover:bg-gray-50"
+					v-for="payment in pastPayments"
+					:key="payment.stripe_invoice_id"
+				>
+					<div class="font-semibold">
+						<div v-if="payment.status === 'Paid'">
+							{{ payment.payment_date }}
+						</div>
+						<div v-else-if="payment.payment_link">
+							<a
+								class="inline-flex items-center justify-center text-blue-500"
+								:href="payment.payment_link"
+								target="_blank"
+							>
+								Pay Now
+								<FeatherIcon name="arrow-right" class="w-4 h-4 ml-2" />
+							</a>
+						</div>
+					</div>
+					<div>{{ payment.formatted_amount }}</div>
+					<div>
+						<Badge :color="{ Paid: 'green', Failed: 'red' }[payment.status]">
+							{{ payment.status }}
+						</Badge>
+					</div>
+				</div>
+			</div>
+		</section>
 		<section v-if="state.startsWith('ShowSetup')">
 			<h2 class="text-lg font-medium">Setup Payment Method</h2>
 			<p class="text-gray-600">
@@ -92,7 +129,8 @@ export default {
 		return {
 			state: 'Idle',
 			paymentMethods: null,
-			upcomingInvoice: null
+			upcomingInvoice: null,
+			pastPayments: []
 		};
 	},
 	mounted() {
@@ -112,9 +150,11 @@ export default {
 			}
 		},
 		async fetchUpcomingInvoice() {
-			this.upcomingInvoice = await this.$call(
-				'press.api.billing.get_upcoming_invoice'
+			let { upcoming_invoice, past_payments } = await this.$call(
+				'press.api.billing.get_invoices'
 			);
+			this.upcomingInvoice = upcoming_invoice;
+			this.pastPayments = past_payments;
 		},
 		onCardAdd() {
 			this.state = 'Idle';

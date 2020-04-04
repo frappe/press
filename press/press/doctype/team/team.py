@@ -27,9 +27,6 @@ class Team(Document):
 		if not self.user and self.team_members:
 			self.user = self.team_members[0].user
 
-	def after_insert(self):
-		self.create_stripe_customer()
-
 	def create_user_for_member(
 		self, first_name=None, last_name=None, email=None, password=None, role=None
 	):
@@ -75,6 +72,45 @@ class Team(Document):
 	def get_upcoming_invoice(self):
 		stripe = get_stripe()
 		return stripe.Invoice.upcoming(customer=self.stripe_customer_id)
+
+	def get_past_payments(self):
+		success_payments = frappe.db.get_all(
+			"Payment",
+			filters={"team": self.name, "status": "Paid"},
+			fields=[
+				"amount",
+				"payment_date",
+				"status",
+				"currency",
+				"payment_link",
+				"creation",
+				"stripe_invoice_id",
+			],
+		)
+		failed_payments = frappe.db.get_all(
+			"Payment",
+			filters={
+				"team": self.name,
+				"status": "Failed",
+				"stripe_invoice_id": ("not in", [d.stripe_invoice_id for d in success_payments]),
+			},
+			fields=[
+				"amount",
+				"payment_date",
+				"status",
+				"currency",
+				"payment_link",
+				"creation",
+				"stripe_invoice_id",
+			],
+		)
+		payments = success_payments + failed_payments
+		payments = sorted(payments, key=lambda x: x["creation"], reverse=True)
+		for payment in payments:
+			payment.formatted_amount = frappe.utils.fmt_money(
+				payment.amount, 2, payment.currency
+			)
+		return payments
 
 
 def get_team_members(team):

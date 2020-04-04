@@ -31,7 +31,7 @@ class PressSettings(Document):
 
 	def create_stripe_plans(self):
 		stripe = get_stripe()
-		product_name = "Cloud Plan - " + frappe.utils.nowdate()
+		product_name = "Frappe Cloud"
 		product = stripe.Product.create(name=product_name, type="service")
 		self.stripe_product_id = product.id
 
