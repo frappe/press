@@ -19,6 +19,7 @@
  ],
  "fields": [
   {
+   "fetch_from": "site.team",
    "fieldname": "team",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -37,6 +38,7 @@
    "set_only_once": 1
   },
   {
+   "fetch_from": "site.plan",
    "fieldname": "plan",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -99,7 +101,7 @@
   }
  ],
  "links": [],
- "modified": "2020-04-03 02:24:26.535539",
+ "modified": "2020-04-04 20:24:04.338803",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Usage Ledger Entry",

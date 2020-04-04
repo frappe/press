@@ -19,20 +19,31 @@ def get_publishable_key_and_setup_intent():
 
 
 @frappe.whitelist()
-def get_upcoming_invoice():
+def get_invoices():
 	team = get_current_team()
 	team_doc = frappe.get_doc("Team", team)
 	invoice = team_doc.get_upcoming_invoice()
-	customer_name = invoice['customer_name']
-	customer_email = invoice['customer_email']
-	next_payment_attempt = invoice['next_payment_attempt']
-	total_amount = invoice['total']
+	customer_name = invoice["customer_name"]
+	customer_email = invoice["customer_email"]
+	next_payment_attempt = invoice["next_payment_attempt"]
+	total_amount = invoice["total"]
+	currency = team_doc.transaction_currency
+	past_payments = team_doc.get_past_payments()
 
 	return {
-		'next_payment_attempt': global_date_format(datetime.fromtimestamp(next_payment_attempt)),
-		'amount': fmt_money(total_amount / 100, 2, team_doc.transaction_currency),
-		'customer_email': customer_email
+		"upcoming_invoice": {
+			"next_payment_attempt": global_date_format(
+				datetime.fromtimestamp(next_payment_attempt)
+			),
+			"amount": format_stripe_money(total_amount, currency),
+			"customer_email": customer_email,
+		},
+		"past_payments": past_payments,
 	}
+
+
+def format_stripe_money(amount, currency):
+	return fmt_money(amount / 100, 2, currency)
 
 
 @frappe.whitelist()

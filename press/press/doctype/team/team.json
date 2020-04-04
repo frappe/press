@@ -48,8 +48,7 @@
    "fieldname": "transaction_currency",
    "fieldtype": "Link",
    "label": "Transaction Currency",
-   "options": "Currency",
-   "reqd": 1
+   "options": "Currency"
   },
   {
    "fieldname": "stripe_customer_id",
@@ -59,7 +58,7 @@
   }
  ],
  "links": [],
- "modified": "2020-03-31 21:16:44.738928",
+ "modified": "2020-04-04 19:38:07.062541",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

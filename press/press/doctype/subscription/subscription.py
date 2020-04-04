@@ -35,13 +35,16 @@ def process_stripe_webhook(doc, method):
 	event = frappe.parse_json(doc.payload)
 	subscription = event["data"]["object"]
 
-	subscription_doc = frappe.get_doc(
-		"Subscription", {"stripe_subscription_id": "sub_H1a14000U8wlvy" or subscription["id"]}
-	)
-	subscription_doc.update(
-		{
-			"current_period_end": datetime.fromtimestamp(subscription["current_period_end"]),
-			"current_period_start": datetime.fromtimestamp(subscription["current_period_start"]),
-		}
-	)
-	subscription_doc.save()
+	if frappe.db.exists("Subscription", {"stripe_subscription_id": subscription["id"]}):
+		subscription_doc = frappe.get_doc(
+			"Subscription", {"stripe_subscription_id": subscription["id"]},
+		)
+		subscription_doc.update(
+			{
+				"current_period_end": datetime.fromtimestamp(subscription["current_period_end"]),
+				"current_period_start": datetime.fromtimestamp(
+					subscription["current_period_start"]
+				),
+			}
+		)
+		subscription_doc.save()

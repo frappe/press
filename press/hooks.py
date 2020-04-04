@@ -108,7 +108,7 @@ scheduler_events = {
 	},
 }
 
-fixtures = ["Agent Job Type"]
+fixtures = ["Agent Job Type", "Plan"]
 # Testing
 # -------
 

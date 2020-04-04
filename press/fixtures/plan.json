@@ -1,0 +1,62 @@
+[
+ {
+  "concurrent_users": 1,
+  "cpu_time_per_day": 1,
+  "docstatus": 0,
+  "doctype": "Plan",
+  "enabled": 1,
+  "modified": "2020-04-04 19:58:36.955071",
+  "name": "USD 10",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "plan_title": "$10",
+  "price_inr": 750.0,
+  "price_usd": 10.0
+ },
+ {
+  "concurrent_users": 3,
+  "cpu_time_per_day": 2,
+  "docstatus": 0,
+  "doctype": "Plan",
+  "enabled": 1,
+  "modified": "2020-04-04 19:58:36.994398",
+  "name": "USD 25",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "plan_title": "$25",
+  "price_inr": 1885.0,
+  "price_usd": 25.0
+ },
+ {
+  "concurrent_users": 10,
+  "cpu_time_per_day": 4,
+  "docstatus": 0,
+  "doctype": "Plan",
+  "enabled": 1,
+  "modified": "2020-04-04 19:58:37.000524",
+  "name": "USD 50",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "plan_title": "$50",
+  "price_inr": 3770.0,
+  "price_usd": 50.0
+ },
+ {
+  "concurrent_users": 20,
+  "cpu_time_per_day": 8,
+  "docstatus": 0,
+  "doctype": "Plan",
+  "enabled": 1,
+  "modified": "2020-04-04 19:58:37.006381",
+  "name": "USD 100",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "plan_title": "$100",
+  "price_inr": 7540.0,
+  "price_usd": 100.0
+ }
+]
