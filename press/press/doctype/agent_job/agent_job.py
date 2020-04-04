@@ -53,6 +53,7 @@ class AgentJob(Document):
 				"bench": self.bench,
 				"site": self.site,
 				"upstream": self.upstream,
+				"host": self.host,
 				"request_path": self.request_path,
 				"request_data": self.request_data,
 				"request_method": self.request_method,
@@ -284,6 +285,7 @@ def process_job_updates(job_name):
 			process_archive_site_job_update,
 		)
 		from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
+		from press.press.doctype.site_domain.site_domain import process_new_host_job_update
 
 		if job.job_type == "Add Upstream to Proxy":
 			process_new_server_job_update(job)
@@ -302,5 +304,7 @@ def process_job_updates(job_name):
 			process_archive_site_job_update(job)
 		if job.job_type == "Remove Site from Upstream":
 			process_archive_site_job_update(job)
+		if job.job_type == "Add Host to Proxy":
+			process_new_host_job_update(job)
 	except Exception:
 		log_error("Agent Job Callback Exception", job=job.as_dict())

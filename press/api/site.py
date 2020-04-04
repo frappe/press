@@ -80,7 +80,7 @@ def backups(name):
 @frappe.whitelist()
 def domains(name):
 	domains = frappe.get_all(
-		"Site Domain", fields=["name", "domain"], filters={"site": name}
+		"Site Domain", fields=["name", "domain", "status"], filters={"site": name}
 	)
 	return domains
 
