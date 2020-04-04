@@ -58,3 +58,23 @@ class PressSettings(Document):
 		self.stripe_usd_plan_id = usd_plan.id
 		self.flags.ignore_mandatory = True
 		self.save()
+
+	def create_stripe_webhook(self):
+		stripe = get_stripe()
+		url = frappe.utils.get_url(
+			"/api/method/press.press.doctype.stripe_webhook_log.stripe_webhook_log.stripe_webhook_handler"
+		)
+		webhook = stripe.WebhookEndpoint.create(
+			url=url,
+			enabled_events=[
+				"payment_method.attached",
+				"invoice.payment_action_required",
+				"invoice.payment_succeeded",
+				"invoice.payment_failed",
+				"customer.subscription.updated",
+			],
+		)
+		self.stripe_webhook_endpoint_id = webhook["id"]
+		self.stripe_webhook_secret = webhook["secret"]
+		self.flags.ignore_mandatory = True
+		self.save()

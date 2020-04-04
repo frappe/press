@@ -20,12 +20,15 @@
   "column_break_11",
   "webroot_directory",
   "certbot_directory",
-  "billing_settings_section",
+  "stripe_settings_section",
   "stripe_account",
   "create_stripe_plans",
   "stripe_product_id",
   "stripe_inr_plan_id",
-  "stripe_usd_plan_id"
+  "stripe_usd_plan_id",
+  "create_stripe_webhook",
+  "stripe_webhook_endpoint_id",
+  "stripe_webhook_secret"
  ],
  "fields": [
   {
@@ -126,11 +129,6 @@
    "reqd": 1
   },
   {
-   "fieldname": "billing_settings_section",
-   "fieldtype": "Section Break",
-   "label": "Billing Settings"
-  },
-  {
    "fieldname": "stripe_product_id",
    "fieldtype": "Data",
    "label": "Stripe Product ID",
@@ -151,13 +149,34 @@
   {
    "fieldname": "create_stripe_plans",
    "fieldtype": "Button",
-   "label": "Create Stripe Plans",
-   "options": "create_stripe_plans"
+   "label": "Create Stripe Plans"
+  },
+  {
+   "fieldname": "stripe_settings_section",
+   "fieldtype": "Section Break",
+   "label": "Stripe Settings"
+  },
+  {
+   "fieldname": "stripe_webhook_secret",
+   "fieldtype": "Data",
+   "label": "Stripe Webhook Secret",
+   "read_only": 1
+  },
+  {
+   "fieldname": "stripe_webhook_endpoint_id",
+   "fieldtype": "Data",
+   "label": "Stripe Webhook Endpoint ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "create_stripe_webhook",
+   "fieldtype": "Button",
+   "label": "Create Stripe Webhook"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2020-04-02 19:38:50.068483",
+ "modified": "2020-04-04 16:48:14.335756",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

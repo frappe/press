@@ -14,12 +14,6 @@ def log_error(title, **kwargs):
 	frappe.log_error(title=title, message=message)
 
 
-def get_formated_date(timestamp):
-	from datetime import datetime
-	date_format = "%Y-%m-%d"
-	return datetime.fromtimestamp(timestamp).strftime(date_format)
-
-
 def get_current_team():
 	if not hasattr(frappe.local, "request"):
 		# if this is not a request, send the current user as default team
