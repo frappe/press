@@ -58,11 +58,7 @@ class AgentJob(Document):
 				"request_method": self.request_method,
 			}
 		).insert()
-		agent = Agent(self.server, server_type=self.server_type)
-		job_id = agent.post(self.request_path, self.request_data)["job"]
-		job.job_id = job_id
-		job.save()
-		return job.name
+		return job
 
 
 def job_detail(job):
