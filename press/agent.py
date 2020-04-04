@@ -85,9 +85,20 @@ class Agent:
 			site=site.name,
 		)
 
-	def new_domain(self, domain):
-		data = {"name": domain}
-		return self.create_agent_job("Add Host to Proxy", "proxy/hosts", data)
+	def new_host(self, domain):
+		certificate = frappe.get_doc("TLS Certificate", domain.tls_certificate)
+		data = {
+			"name": domain.domain,
+			"target": domain.site,
+			"certificate": {
+				"privkey.pem": certificate.privkey,
+				"fullchain.pem": certificate.fullchain,
+				"chain.pem": certificate.chain,
+			},
+		}
+		return self.create_agent_job(
+			"Add Host to Proxy", "proxy/hosts", data, host=domain.domain, site=domain.site
+		)
 
 	def new_server(self, server):
 		ip = frappe.db.get_value("Server", server, "ip")
@@ -146,7 +157,15 @@ class Agent:
 			)
 
 	def create_agent_job(
-		self, job_type, path, data=None, method="POST", bench=None, site=None, upstream=None
+		self,
+		job_type,
+		path,
+		data=None,
+		method="POST",
+		bench=None,
+		site=None,
+		upstream=None,
+		host=None,
 	):
 		job = frappe.get_doc(
 			{
@@ -154,6 +173,7 @@ class Agent:
 				"server_type": self.server_type,
 				"server": self.server,
 				"bench": bench,
+				"host": host,
 				"site": site,
 				"upstream": upstream,
 				"status": "Pending",

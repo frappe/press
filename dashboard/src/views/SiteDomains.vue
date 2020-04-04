@@ -11,6 +11,9 @@
 				>
 					<div class="px-6 py-3 hover:bg-gray-50" v-for="d in domains">
 						<div>
+							{{ d.status }}
+						</div>
+						<div>
 							{{ d.domain }}
 						</div>
 					</div>

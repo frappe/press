@@ -1,14 +1,17 @@
 {
  "actions": [],
+ "autoname": "field:domain",
  "creation": "2020-03-17 16:35:11.520003",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "status",
   "site",
   "domain",
   "ssl",
-  "dns_type"
+  "dns_type",
+  "tls_certificate"
  ],
  "fields": [
   {
@@ -28,7 +31,8 @@
    "in_standard_filter": 1,
    "label": "Domain",
    "read_only": 1,
-   "reqd": 1
+   "reqd": 1,
+   "unique": 1
   },
   {
    "default": "0",
@@ -48,10 +52,26 @@
    "options": "A\nNS\nCNAME",
    "read_only": 1,
    "reqd": 1
+  },
+  {
+   "fieldname": "tls_certificate",
+   "fieldtype": "Link",
+   "label": "TLS Certificate",
+   "options": "TLS Certificate"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Pending\nIn Progress\nActive\nBroken",
+   "reqd": 1
   }
  ],
  "links": [],
- "modified": "2020-03-18 16:34:24.714216",
+ "modified": "2020-04-04 21:10:11.155736",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Domain",

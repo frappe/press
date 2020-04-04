@@ -13,6 +13,7 @@
   "bench",
   "site",
   "upstream",
+  "host",
   "request_section",
   "job_id",
   "request_path",
@@ -167,11 +168,18 @@
   {
    "fieldname": "data_19",
    "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "host",
+   "fieldtype": "Link",
+   "label": "Host",
+   "options": "Site Domain",
+   "read_only": 1
   }
  ],
  "in_create": 1,
  "links": [],
- "modified": "2020-04-04 10:43:25.715383",
+ "modified": "2020-04-04 21:56:50.829270",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Job",

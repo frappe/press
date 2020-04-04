@@ -41,6 +41,12 @@ class TLSCertificate(Document):
 			self.status = "Failure"
 			log_error("TLS Certificate Exception", certificate=self.name)
 		self.save()
+		self.trigger_site_domain_callback()
+
+	def trigger_site_domain_callback(self):
+		domain = frappe.db.get_value("Site Domain", {"tls_certificate": self.name}, "name")
+		if domain:
+			frappe.get_doc("Site Domain", domain).process_tls_certificate_update()
 
 	def _obtain_wildcard_certificate(self, settings):
 		environment = os.environ
