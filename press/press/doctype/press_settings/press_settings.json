@@ -19,7 +19,16 @@
   "wildcard_tls_certificate",
   "column_break_11",
   "webroot_directory",
-  "certbot_directory"
+  "certbot_directory",
+  "stripe_settings_section",
+  "stripe_account",
+  "create_stripe_plans",
+  "stripe_product_id",
+  "stripe_inr_plan_id",
+  "stripe_usd_plan_id",
+  "create_stripe_webhook",
+  "stripe_webhook_endpoint_id",
+  "stripe_webhook_secret"
  ],
  "fields": [
   {
@@ -111,11 +120,63 @@
    "fieldtype": "Link",
    "label": "Wildcard TLS Certificate",
    "options": "TLS Certificate"
+  },
+  {
+   "fieldname": "stripe_account",
+   "fieldtype": "Link",
+   "label": "Stripe Account",
+   "options": "Stripe Settings",
+   "reqd": 1
+  },
+  {
+   "fieldname": "stripe_product_id",
+   "fieldtype": "Data",
+   "label": "Stripe Product ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "stripe_inr_plan_id",
+   "fieldtype": "Data",
+   "label": "Stripe INR Plan ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "stripe_usd_plan_id",
+   "fieldtype": "Data",
+   "label": "Stripe USD Plan ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "create_stripe_plans",
+   "fieldtype": "Button",
+   "label": "Create Stripe Plans"
+  },
+  {
+   "fieldname": "stripe_settings_section",
+   "fieldtype": "Section Break",
+   "label": "Stripe Settings"
+  },
+  {
+   "fieldname": "stripe_webhook_secret",
+   "fieldtype": "Data",
+   "label": "Stripe Webhook Secret",
+   "read_only": 1
+  },
+  {
+   "fieldname": "stripe_webhook_endpoint_id",
+   "fieldtype": "Data",
+   "label": "Stripe Webhook Endpoint ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "create_stripe_webhook",
+   "fieldtype": "Button",
+   "label": "Create Stripe Webhook"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2020-03-30 22:30:29.641951",
+ "modified": "2020-04-04 16:48:14.335756",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

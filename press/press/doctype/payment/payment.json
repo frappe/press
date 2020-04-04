@@ -6,41 +6,78 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "user",
+  "team",
+  "currency",
   "amount",
-  "date"
+  "stripe_invoice_id",
+  "payment_link",
+  "column_break_6",
+  "status",
+  "payment_date"
  ],
  "fields": [
   {
-   "fieldname": "user",
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Amount",
+   "options": "currency",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "team",
    "fieldtype": "Link",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "User",
-   "options": "User",
+   "label": "Team",
+   "options": "Team",
    "reqd": 1,
    "set_only_once": 1
   },
   {
-   "fieldname": "amount",
-   "fieldtype": "Int",
+   "fieldname": "status",
+   "fieldtype": "Select",
    "in_list_view": 1,
-   "label": "Amount",
-   "reqd": 1,
-   "set_only_once": 1
+   "label": "Status",
+   "options": "\nPaid\nFailed",
+   "read_only": 1
   },
   {
-   "fieldname": "date",
+   "fieldname": "payment_link",
+   "fieldtype": "Small Text",
+   "label": "Payment Link",
+   "read_only": 1
+  },
+  {
+   "fieldname": "stripe_invoice_id",
+   "fieldtype": "Data",
+   "label": "Stripe Invoice ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_6",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "payment_date",
    "fieldtype": "Date",
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Date",
-   "reqd": 1,
-   "set_only_once": 1
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2019-12-11 15:22:38.327789",
+ "modified": "2020-04-04 16:27:45.040424",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Payment",
@@ -61,6 +98,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
- "title_field": "user",
+ "title_field": "team",
  "track_changes": 1
 }

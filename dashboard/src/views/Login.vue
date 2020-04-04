@@ -10,18 +10,18 @@
 			<label class="block">
 				<span class="text-gray-800">Email</span>
 				<input
-					class="mt-2 form-input block w-full shadow"
+					class="block w-full mt-2 shadow form-input"
 					placeholder="johndoe@mail.com"
 					v-model="email"
 					:type="email !== 'Administrator' ? 'email' : ''"
 					required
 				/>
 			</label>
-			<label class="mt-4 block" v-if="!forgot">
+			<label class="block mt-4" v-if="!forgot">
 				<span class="text-gray-800">Password</span>
 				<div class="relative">
 					<input
-						class="mt-2 form-input block w-full shadow"
+						class="block w-full mt-2 shadow form-input"
 						type="password"
 						placeholder="******"
 						v-model="password"
@@ -29,30 +29,27 @@
 					/>
 					<router-link
 						to="/login/forgot"
-						class="absolute flex items-center inset-y-0 right-0 pr-3 text-sm text-gray-900 underline"
+						class="absolute inset-y-0 right-0 flex items-center pr-3 text-sm text-gray-900 underline"
 					>
 						Forgot?
 					</router-link>
 				</div>
 			</label>
-			<div
-				class="mt-6 text-red-600 whitespace-pre-line text-sm"
-				v-if="errorMessage"
-			>
+			<ErrorMessage v-if="errorMessage" class="mt-6">
 				{{ errorMessage }}
-			</div>
+			</ErrorMessage>
 			<router-link
 				v-if="forgot"
 				to="/login"
-				class="mt-2 block text-left text-sm"
+				class="block mt-2 text-sm text-left"
 			>
 				I remember my password
 			</router-link>
 			<Button
-				class="mt-6 bg-blue-500 focus:bg-blue-600 hover:bg-blue-400 text-white shadow"
+				class="mt-6"
 				:disabled="state === 'Working'"
 				@click="loginOrResetPassword"
-				type="submit"
+				type="primary"
 			>
 				{{ forgot ? 'Reset Password' : 'Login' }}
 			</Button>
@@ -60,19 +57,19 @@
 				<div class="mt-10 text-center border-t">
 					<div class="transform -translate-y-1/2">
 						<span
-							class="bg-white px-2 leading-8 text-xs text-gray-800 uppercase tracking-wider"
+							class="px-2 text-xs leading-8 tracking-wider text-gray-800 uppercase bg-white"
 						>
 							Or
 						</span>
 					</div>
 				</div>
-				<router-link class="text-center text-sm" to="/signup">
+				<router-link class="text-sm text-center" to="/signup">
 					Signup for a new account
 				</router-link>
 			</template>
 		</form>
 	</LoginBox>
-	<div class="text-center mt-20 px-6" v-else>
+	<div class="px-6 mt-20 text-center" v-else>
 		We have sent an email to <span class="font-semibold">{{ email }}</span
 		>. Please click on the link received to reset your password.
 	</div>

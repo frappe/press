@@ -7,37 +7,30 @@
 			<label class="block">
 				<span class="text-gray-800">Email</span>
 				<input
-					class="mt-2 form-input block w-full shadow pointer-events-none"
+					class="block w-full mt-2 shadow pointer-events-none form-input"
 					type="text"
 					:value="email"
 					disabled
 				/>
 			</label>
-			<label class="mt-4 block">
+			<label class="block mt-4">
 				<span class="text-gray-800">Password</span>
 				<input
-					class="mt-2 form-input block w-full shadow"
+					class="block w-full mt-2 shadow form-input"
 					type="password"
 					v-model="password"
 					required
 				/>
 			</label>
-			<div
-				class="mt-6 text-red-600 whitespace-pre-line text-sm"
-				v-if="errorMessage"
-			>
+			<ErrorMessage class="mt-6" v-if="errorMessage">
 				{{ errorMessage }}
-			</div>
-			<Button
-				class="mt-6 bg-blue-500 focus:bg-blue-600 hover:bg-blue-400 text-white shadow"
-				:disabled="!password"
-				type="submit"
-			>
+			</ErrorMessage>
+			<Button class="mt-6" type="primary" :disabled="!password">
 				Submit
 			</Button>
 		</form>
 	</LoginBox>
-	<div class="text-center mt-20 px-6" v-else-if="!fetching && !email">
+	<div class="px-6 mt-20 text-center" v-else-if="!fetching && !email">
 		Account Key <strong>{{ requestKey }}</strong> is invalid or expired.
 	</div>
 </template>

@@ -21,7 +21,7 @@ home_page = "index"
 # app_include_js = "/assets/press/js/press.js"
 
 # include js, css files in header of web template
-# web_include_css = "/assets/press/css/press.css"
+web_include_css = "/assets/press/css/subscription/stripe.css"
 # web_include_js = "/assets/press/js/press.js"
 
 # include js in page
@@ -81,19 +81,23 @@ permission_query_conditions = {
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+	"Stripe Webhook Log": {
+		"after_insert": [
+			"press.press.doctype.payment.payment.process_stripe_webhook",
+			"press.press.doctype.subscription.subscription.process_stripe_webhook",
+		],
+	}
+}
 
 # Scheduled Tasks
 # ---------------
 
 scheduler_events = {
 	"hourly": ["press.press.doctype.frappe_app.frappe_app.poll_new_releases"],
+	"hourly_long": [
+		"press.press.doctype.site_usage_ledger_entry.site_usage_ledger_entry.create_ledger_entries"
+	],
 	"cron": {
 		"* * * * * 0/5": ["press.press.doctype.agent_job.agent_job.poll_pending_jobs"],
 		"* * * * * 0/60": [
@@ -104,7 +108,7 @@ scheduler_events = {
 	},
 }
 
-fixtures = ["Agent Job Type"]
+fixtures = ["Agent Job Type", "Plan"]
 # Testing
 # -------
 

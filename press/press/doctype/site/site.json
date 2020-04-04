@@ -9,6 +9,8 @@
   "status",
   "server",
   "bench",
+  "plan",
+  "team",
   "column_break_3",
   "admin_password",
   "update",
@@ -23,8 +25,7 @@
   "database_host",
   "database_port",
   "configuration_section",
-  "config",
-  "team"
+  "config"
  ],
  "fields": [
   {
@@ -157,10 +158,17 @@
    "fieldtype": "Link",
    "label": "Team",
    "options": "Team"
+  },
+  {
+   "fieldname": "plan",
+   "fieldtype": "Link",
+   "label": "Plan",
+   "options": "Plan",
+   "reqd": 1
   }
  ],
  "links": [],
- "modified": "2020-03-19 18:20:44.196820",
+ "modified": "2020-03-30 17:27:37.232848",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

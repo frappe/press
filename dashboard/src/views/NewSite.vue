@@ -4,9 +4,9 @@
 			<h1 slot="title">New Site</h1>
 		</PageHeader>
 		<div class="px-8" v-if="options">
-			<div class="border-t mb-5"></div>
+			<div class="mb-5 border-t"></div>
 			<div
-				class="rounded-lg border border-gray-100 shadow-md mx-auto px-6 py-8"
+				class="px-6 py-8 mx-auto mb-20 border border-gray-100 rounded-lg shadow-md"
 				style="width: 650px"
 			>
 				<div>
@@ -17,20 +17,20 @@
 						Give your site a unique name. It can only contain alphanumeric
 						characters and dashes.
 					</p>
-					<div class="mt-6 flex">
+					<div class="flex mt-6">
 						<input
-							class="form-input rounded-r-none z-10 bg-gray-50 focus:bg-white w-full"
+							class="z-10 w-full rounded-r-none form-input focus:bg-white"
 							type="text"
 							v-model="siteName"
 							@change="checkIfExists"
 							placeholder="subdomain"
 							ref="siteName"
 						/>
-						<div class="bg-gray-200 flex border items-center px-4 rounded-r">
+						<div class="flex items-center px-4 bg-gray-200 border rounded-r">
 							.{{ options.domain }}
 						</div>
 					</div>
-					<div class="mt-1 text-red-600 text-sm" v-if="siteExistsMessage">
+					<div class="mt-1 text-sm text-red-600" v-if="siteExistsMessage">
 						{{ siteExistsMessage }}
 					</div>
 				</div>
@@ -42,9 +42,9 @@
 						Select apps to install to your site. You can also choose a specific
 						version of the app.
 					</p>
-					<div class="mt-6 flex">
+					<div class="flex mt-6">
 						<button
-							class="rounded px-6 py-8 border w-40 mr-4 flex justify-center items-center cursor-pointer focus:outline-none focus:shadow-outline"
+							class="flex items-center justify-center w-40 px-6 py-8 mr-4 border rounded cursor-pointer focus:outline-none focus:shadow-outline"
 							:class="
 								selectedApps.includes(app.app)
 									? 'bg-blue-100 border-blue-500'
@@ -55,7 +55,7 @@
 							@click="toggleApp(app)"
 						>
 							<div>
-								<img class="mx-auto w-8 h-8" :src="app.logo" :alt="app.name" />
+								<img class="w-8 h-8 mx-auto" :src="app.logo" :alt="app.name" />
 								<div class="mt-3 font-semibold">
 									{{ app.repo }}
 								</div>
@@ -71,32 +71,61 @@
 						Select a plan based on the type of usage you are expecting on your
 						site.
 					</p>
-					<div class="mt-6 flex overflow-auto py-1 pl-1 -ml-1">
-						<button
-							class="rounded border text-center w-40 mr-4 cursor-pointer flex-shrink-0 focus:outline-none focus:shadow-outline"
-							:class="
-								selectedPlan === plan
-									? 'bg-blue-100 border-blue-500'
-									: 'hover:bg-gray-100'
-							"
-							v-for="plan in plans"
-							:key="plan.price"
+					<div class="mt-6">
+						<div
+							class="flex px-4 py-3 text-sm text-gray-600 border border-b-0 bg-gray-50 rounded-t-md"
+						>
+							<div class="w-10"></div>
+							<div class="w-1/3">Plan</div>
+							<div class="w-1/3">Concurrent Users</div>
+							<div class="w-1/3">CPU Time</div>
+						</div>
+						<div
+							class="flex px-4 py-3 text-sm text-left border border-b-0 cursor-pointer focus-within:shadow-outline"
+							:class="[
+								selectedPlan === plan ? 'bg-blue-100' : 'hover:bg-blue-50',
+								{ 'border-b rounded-b-md': i === options.plans.length - 1 }
+							]"
+							v-for="(plan, i) in options.plans"
+							:key="plan.name"
 							@click="selectedPlan = plan"
 						>
-							<div class="border-b py-3">
-								<span class="font-semibold text-base"> ${{ plan.price }} </span>
-								<span class="text-gray-600">
-									/mo
+							<div class="flex items-center w-10">
+								<input
+									type="radio"
+									class="form-radio"
+									:checked="selectedPlan === plan"
+									@change="e => (selectedPlan = e.target.checked ? plan : null)"
+								/>
+							</div>
+							<div class="w-1/3">
+								<span class="font-semibold">
+									{{ plan.plan_title }}
 								</span>
+								<span> /mo</span>
 							</div>
-							<div class="py-3 text-sm text-gray-600">
-								<div v-for="d in plan.items" :key="d">{{ d }}</div>
+							<div class="w-1/3 text-gray-700">
+								{{ plan.concurrent_users }}
+								{{ $plural(plan.concurrent_users, 'user', 'users') }}
 							</div>
-						</button>
+							<div class="w-1/3 text-gray-700">
+								{{ plan.cpu_time_per_day }}
+								{{ $plural(plan.concurrent_users, 'hour', 'hours') }} / day
+							</div>
+						</div>
+					</div>
+					<div class="mt-2 text-sm text-gray-900" v-if="selectedPlan">
+						This plan is ideal for
+						{{ selectedPlan.concurrent_users }} concurrent
+						{{ $plural(selectedPlan.concurrent_users, 'user', 'users') }}. It
+						will allow the CPU execution time equivalent to
+						{{ selectedPlan.cpu_time_per_day }}
+						{{ $plural(selectedPlan.cpu_time_per_day, 'hour', 'hours') }} per
+						day.
 					</div>
 				</div>
 				<div class="mt-10">
-					<label class="flex leading-none py-2">
+					<label class="flex py-2 leading-none">
 						<input
 							type="checkbox"
 							class="form-checkbox"
@@ -106,7 +135,7 @@
 							Enable Backups
 						</span>
 					</label>
-					<label class="flex leading-none py-2">
+					<label class="flex py-2 leading-none">
 						<input
 							type="checkbox"
 							class="form-checkbox"
@@ -117,13 +146,19 @@
 						</span>
 					</label>
 				</div>
-				<Button
-					class="mt-10 bg-blue-500 text-white text-sm w-full focus:bg-blue-600"
-					:disabled="!canCreateSite()"
-					@click="createSite"
-				>
-					Create Site
-				</Button>
+				<div class="mt-10">
+					<ErrorMessage v-if="errorMessage">
+						{{ errorMessage }}
+					</ErrorMessage>
+					<Button
+						class="w-full mt-2"
+						type="primary"
+						:disabled="!canCreateSite()"
+						@click="createSite"
+					>
+						Create Site
+					</Button>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -145,28 +180,7 @@ export default {
 		selectedPlan: null,
 		siteExistsMessage: null,
 		state: null,
-		plans: [
-			{
-				price: 5,
-				items: ['5000 emails', '5GB storage']
-			},
-			{
-				price: 10,
-				items: ['15000 emails', '10GB storage']
-			},
-			{
-				price: 30,
-				items: ['30000 emails', '30GB storage']
-			},
-			{
-				price: 50,
-				items: ['50000 emails', '50GB storage']
-			},
-			{
-				price: 100,
-				items: ['100000 emails', '200GB storage']
-			}
-		]
+		errorMessage: null
 	}),
 	async mounted() {
 		this.options = await this.$call('press.api.site.options_for_new');
@@ -183,7 +197,6 @@ export default {
 		if (frappeApp) {
 			this.selectedApps.push(frappeApp.app);
 		}
-		this.selectedPlan = this.plans[0];
 		this.$nextTick(() => {
 			this.$refs.siteName.focus();
 		});
@@ -191,17 +204,22 @@ export default {
 	methods: {
 		async createSite() {
 			this.state = 'Creating Site';
-			let siteName = await this.$call('press.api.site.new', {
-				site: {
-					name: this.siteName,
-					apps: this.selectedApps,
-					backups: this.enableBackups,
-					monitor: this.enableMonitoring,
-					group: this.options.group
-				}
-			});
+			try {
+				let siteName = await this.$call('press.api.site.new', {
+					site: {
+						name: this.siteName,
+						apps: this.selectedApps,
+						backups: this.enableBackups,
+						monitor: this.enableMonitoring,
+						group: this.options.group,
+						plan: this.selectedPlan.name
+					}
+				});
+				this.$router.push(`/sites/${siteName}`);
+			} catch (error) {
+				this.errorMessage = error.messages.join('\n');
+			}
 			this.state = null;
-			this.$router.push(`/sites/${siteName}`);
 		},
 		isFrappeApp(app) {
 			return app.frappe;
