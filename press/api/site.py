@@ -7,12 +7,12 @@ import dns.resolver
 
 import frappe
 from press.press.doctype.agent_job.agent_job import job_detail
-from press.utils import log_error
+from press.utils import log_error, get_current_team
 
 
 @frappe.whitelist()
 def new(site):
-	team = frappe.get_request_header("X-Press-Team")
+	team = get_current_team()
 	bench = frappe.get_all(
 		"Bench",
 		fields=["name", "server"],
@@ -29,6 +29,7 @@ def new(site):
 			"enable_scheduled_backups": site["backups"],
 			"enable_uptime_monitoring": site["monitor"],
 			"team": team,
+			"plan": site["plan"],
 		},
 	).insert(ignore_permissions=True)
 	return site.name
@@ -105,11 +106,24 @@ def options_for_new():
 		filters={"name": ("in", [row.app for row in group.apps])},
 	)
 	order = {row.app: row.idx for row in group.apps}
-	return {
-		"domain": frappe.db.get_single_value("Press Settings", "domain"),
-		"group": group.name,
-		"apps": sorted(apps, key=lambda x: order[x.name]),
-	}
+	sorted_apps = sorted(apps, key=lambda x: order[x.name])
+	domain = frappe.db.get_single_value("Press Settings", "domain")
+
+	plans = frappe.db.get_all(
+		"Plan",
+		fields=[
+			"plan_title",
+			"price_usd",
+			"price_inr",
+			"name",
+			"concurrent_users",
+			"cpu_time_per_day",
+		],
+		filters={"enabled": True},
+		order_by="price_usd asc"
+	)
+
+	return {"domain": domain, "group": group.name, "apps": sorted_apps, "plans": plans}
 
 
 @frappe.whitelist()

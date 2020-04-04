@@ -1,12 +1,12 @@
 <template>
 	<div>
 		<section>
-			<h2 class="font-medium text-lg">Profile</h2>
+			<h2 class="text-lg font-medium">Profile</h2>
 			<p class="text-gray-600">Your profile information</p>
-			<div class="w-full sm:w-1/2 mt-6 text-sm">
+			<div class="w-full mt-6 text-sm sm:w-1/2">
 				<div>
 					<span class="text-gray-800">Photo</span>
-					<div class="mt-2 flex items-center">
+					<div class="flex items-center mt-2">
 						<Avatar
 							size="lg"
 							:label="account.user.first_name"
@@ -20,7 +20,7 @@
 							@change="onUserImage"
 						/>
 						<Button
-							class="ml-4 border hover:bg-gray-100"
+							class="ml-4"
 							:disabled="uploading"
 							@click="$refs.userImage.click()"
 						>
@@ -31,11 +31,11 @@
 						</Button>
 					</div>
 				</div>
-				<div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+				<div class="grid grid-cols-1 gap-4 mt-4 sm:grid-cols-2">
 					<label class="block">
 						<span class="text-gray-800">First Name</span>
 						<input
-							class="mt-2 form-input block w-full shadow"
+							class="block w-full mt-2 shadow form-input"
 							type="text"
 							v-model="account.user.first_name"
 						/>
@@ -43,16 +43,16 @@
 					<label class="block">
 						<span class="text-gray-800">Last Name</span>
 						<input
-							class="mt-2 form-input block w-full shadow"
+							class="block w-full mt-2 shadow form-input"
 							type="text"
 							v-model="account.user.last_name"
 						/>
 					</label>
 				</div>
-				<label class="mt-4 block">
+				<label class="block mt-4">
 					<span class="text-gray-800">Email Address</span>
 					<input
-						class="mt-2 form-input block w-full shadow"
+						class="block w-full mt-2 shadow form-input"
 						type="text"
 						v-model="account.user.email"
 					/>
@@ -60,12 +60,12 @@
 			</div>
 		</section>
 		<section class="mt-10">
-			<h2 class="font-medium text-lg">Notifications</h2>
+			<h2 class="text-lg font-medium">Notifications</h2>
 			<p class="text-gray-600">
 				We send only important changes, but you can choose what you want to hear
 				about.
 			</p>
-			<div class="w-full sm:w-1/2 mt-6">
+			<div class="w-full mt-6 sm:w-1/2">
 				<div class="block">
 					<div>
 						<div class="py-2">
@@ -90,14 +90,11 @@
 				</div>
 			</div>
 		</section>
-		<div class="border-t mt-10 py-4">
-			<Button
-				class="bg-blue-500 hover:bg-blue-600 text-white"
-				@click="$store.account.updateProfile"
-			>
+		<div class="py-4 mt-10 border-t">
+			<Button type="primary" @click="$store.account.updateProfile">
 				Save changes
 			</Button>
-			<Button class="ml-2 border hover:bg-gray-100">Cancel</Button>
+			<Button class="ml-2">Cancel</Button>
 		</div>
 	</div>
 </template>

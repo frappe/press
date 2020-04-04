@@ -25,6 +25,7 @@ def get_data():
 		{
 			"label": _("Setup"),
 			"items": [
+				{"type": "doctype", "name": "Plan"},
 				{"type": "doctype", "name": "Frappe App"},
 				{"type": "doctype", "name": "Release Group"},
 				{"type": "doctype", "name": "App Release"},
@@ -37,6 +38,8 @@ def get_data():
 			"items": [
 				{"type": "doctype", "name": "Credit Ledger Entry"},
 				{"type": "doctype", "name": "Payment"},
+				{"type": "doctype", "name": "Payment Provision"},
+				{"type": "doctype", "name": "Subscription"},
 				{"type": "doctype", "name": "Usage Report"},
 			],
 		},

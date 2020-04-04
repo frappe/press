@@ -1,0 +1,117 @@
+{
+ "actions": [],
+ "autoname": "SUB-.YYYY.-",
+ "creation": "2020-03-20 12:31:19.564793",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "team",
+  "stripe_subscription_id",
+  "stripe_subscription_item_id",
+  "column_break_4",
+  "status",
+  "start_date",
+  "end_date",
+  "current_period_start",
+  "current_period_end"
+ ],
+ "fields": [
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "start_date",
+   "fieldtype": "Date",
+   "label": "Start Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "end_date",
+   "fieldtype": "Date",
+   "hidden": 1,
+   "label": "End Date",
+   "read_only": 1
+  },
+  {
+   "default": "Active",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "\nActive\nCompleted"
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team",
+   "reqd": 1
+  },
+  {
+   "fieldname": "current_period_start",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Current Period Start",
+   "read_only": 1
+  },
+  {
+   "fieldname": "current_period_end",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Current Period End",
+   "read_only": 1
+  },
+  {
+   "fieldname": "stripe_subscription_id",
+   "fieldtype": "Data",
+   "label": "Stripe Subscription ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "stripe_subscription_item_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Stripe Subscription Item ID",
+   "read_only": 1
+  }
+ ],
+ "links": [],
+ "modified": "2020-04-02 23:52:53.398291",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Subscription",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "title_field": "team",
+ "track_changes": 1
+}

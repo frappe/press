@@ -25,13 +25,19 @@ class Site(Document):
 	def validate(self):
 		site_regex = r"^[a-z0-9][a-z0-9-]*[a-z0-9]$"
 		if len(self.subdomain) < 5:
-			raise frappe.ValidationError("Subdomain too short")
+			frappe.throw("Subdomain too short")
 		if len(self.subdomain) > 32:
-			raise frappe.ValidationError("Subdomain too long")
+			frappe.throw("Subdomain too long")
 		if not re.match(site_regex, self.subdomain):
-			raise frappe.ValidationError("Subdomain invalid")
+			frappe.throw("Subdomain invalid")
 		if not self.admin_password:
 			self.admin_password = frappe.generate_hash(length=16)
+
+		self.set_plan()
+
+	def set_plan(self):
+		if not self.plan:
+			self.plan = frappe.db.get_value("Plan", {"for_site": 1, "is_default": 1})
 
 	def after_insert(self):
 		log_site_activity(self.name, "Create")
@@ -164,15 +170,14 @@ def process_archive_site_job_update(job):
 
 
 def get_permission_query_conditions(user):
+	from press.utils import get_current_team
+
 	if not user:
 		user = frappe.session.user
 	if user == "Administrator":
 		return ""
 
-	# get team passed via request header and fallback to default team
-	team = frappe.get_request_header("X-Press-Team", get_default_team(user))
 
-	if not team:
-		frappe.throw("Not permitted", frappe.PermissionError)
+	team = get_current_team()
 
 	return f"(`tabSite`.`team` = {frappe.db.escape(team)})"

@@ -9,3 +9,9 @@ Vue.use(PortalVue);
 Vue.directive('on-outside-click', outsideClickDirective);
 Vue.prototype.$store = store;
 Vue.prototype.$call = call;
+Vue.prototype.$plural = function(number, singular, plural) {
+	if (number === 1) {
+		return singular;
+	}
+	return plural;
+};

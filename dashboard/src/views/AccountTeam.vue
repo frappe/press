@@ -1,31 +1,28 @@
 <template>
 	<div>
 		<section>
-			<h2 class="font-medium text-lg">Team</h2>
+			<h2 class="text-lg font-medium">Team</h2>
 			<p class="text-gray-600">
 				Teams you are part of and the current active team.
 			</p>
 			<div
-				class="w-full sm:w-1/2 mt-6 border border-gray-100 shadow rounded-md py-4"
+				class="w-full py-4 mt-6 border border-gray-100 rounded-md shadow sm:w-1/2"
 			>
 				<div
-					class="px-6 py-4 grid grid-cols-4 items-center hover:bg-gray-50"
+					class="grid items-center grid-cols-4 px-6 py-4 hover:bg-gray-50"
 					v-for="t in teams"
 					:key="t"
 				>
-					<div class="font-semibold col-span-3">
+					<div class="col-span-3 font-semibold">
 						{{ t }}
 					</div>
 
-					<div class="text-center w-full">
+					<div class="w-full text-center">
 						<div class="text-sm" v-if="team.name === t">
 							Active
 						</div>
 						<div v-else>
-							<Button
-								@click="$store.account.switchToTeam(t)"
-								class="border hover:bg-gray-100 text-sm"
-							>
+							<Button @click="$store.account.switchToTeam(t)">
 								Switch
 							</Button>
 						</div>
@@ -34,16 +31,16 @@
 			</div>
 		</section>
 		<section class="mt-10">
-			<h2 class="font-medium text-lg">Team Members</h2>
+			<h2 class="text-lg font-medium">Team Members</h2>
 			<p class="text-gray-600">
 				Team members can access your account on your behalf.
 			</p>
 			<div
 				v-if="team_members.length"
-				class="w-full sm:w-1/2 mt-6 border border-gray-100 shadow rounded-md py-4"
+				class="w-full py-4 mt-6 border border-gray-100 rounded-md shadow sm:w-1/2"
 			>
 				<div
-					class="px-6 py-4 grid grid-cols-4 items-start hover:bg-gray-50"
+					class="grid items-start grid-cols-4 px-6 py-4 hover:bg-gray-50"
 					v-for="member in team_members"
 					:key="member.name"
 				>
@@ -63,27 +60,24 @@
 					</div>
 				</div>
 				<div class="px-6 mt-4" v-if="$store.account.hasRole('Press Admin')">
-					<Button
-						class="bg-blue-500 text-white hover:bg-blue-600"
-						@click="showModal = true"
-					>
+					<Button type="primary" @click="showModal = true">
 						Add Member
 					</Button>
 
 					<Modal :show="showModal" @hide="showModal = false">
-						<div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+						<div class="px-4 pt-5 pb-4 bg-white sm:p-6 sm:pb-4">
 							<div class="sm:flex sm:items-start">
-								<div class="mt-3 sm:mt-0 sm:text-left w-full">
-									<h3 class="text-xl leading-6 font-medium text-gray-900">
+								<div class="w-full mt-3 sm:mt-0 sm:text-left">
+									<h3 class="text-xl font-medium leading-6 text-gray-900">
 										Add Member
 									</h3>
 									<div class="mt-4 leading-5 text-gray-800">
-										<p class="mt-4 w-full">
+										<p class="w-full mt-4">
 											Enter the email address of your teammate to invite them.
 										</p>
 										<input
 											type="text"
-											class="mt-4 form-input text-gray-900 w-full"
+											class="w-full mt-4 text-gray-900 form-input"
 											v-model="memberEmail"
 											required
 										/>
@@ -94,18 +88,15 @@
 								{{ errorMessage }}
 							</div>
 						</div>
-						<div class="p-4 sm:px-6 sm:py-4 flex items-center justify-end">
+						<div class="flex items-center justify-end p-4 sm:px-6 sm:py-4">
 							<span class="flex rounded-md shadow-sm">
-								<Button
-									class="border hover:bg-gray-100"
-									@click="showModal = false"
-								>
+								<Button @click="showModal = false">
 									Cancel
 								</Button>
 							</span>
-							<span class="flex rounded-md shadow-sm ml-3">
+							<span class="flex ml-3 rounded-md shadow-sm">
 								<Button
-									class="text-white bg-blue-500 hover:bg-blue-600"
+									type="primary"
 									:disabled="!memberEmail || state === 'Adding Member'"
 									@click="addMember(memberEmail)"
 								>

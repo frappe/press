@@ -8,7 +8,7 @@
  "field_order": [
   "credit",
   "debit",
-  "user",
+  "team",
   "date",
   "site",
   "usage_report",
@@ -28,15 +28,6 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Debit",
-   "read_only": 1,
-   "reqd": 1
-  },
-  {
-   "fieldname": "user",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "User",
-   "options": "User",
    "read_only": 1,
    "reqd": 1
   },
@@ -67,10 +58,19 @@
    "label": "Payment",
    "options": "Payment",
    "read_only": 1
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Team",
+   "options": "Team",
+   "read_only": 1,
+   "reqd": 1
   }
  ],
  "links": [],
- "modified": "2019-12-11 15:12:44.523107",
+ "modified": "2020-03-30 15:45:47.388982",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Credit Ledger Entry",

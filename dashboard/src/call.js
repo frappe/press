@@ -9,7 +9,7 @@ export default async function call(method, args) {
 		Accept: 'application/json',
 		'Content-Type': 'application/json; charset=utf-8',
 		'X-Frappe-Site-Name': window.location.hostname
-    };
+	};
 
 	if (store?.account?.team) {
 		headers['X-Press-Team'] = store.account.team.name;
@@ -36,6 +36,7 @@ export default async function call(method, args) {
 		let error, exception;
 		try {
 			error = JSON.parse(response);
+			// eslint-disable-next-line no-empty
 		} catch (e) {}
 		let errorParts = [
 			[method, error.exc_type, error._error_message].filter(Boolean).join(' ')
@@ -44,6 +45,7 @@ export default async function call(method, args) {
 			exception = error.exc;
 			try {
 				exception = JSON.parse(exception)[0];
+				// eslint-disable-next-line no-empty
 			} catch (e) {}
 			errorParts.push(exception);
 		}
@@ -62,6 +64,9 @@ export default async function call(method, args) {
 			}
 		});
 		e.messages = e.messages.filter(Boolean);
+		if (!e.messages.length) {
+			e.messages = ['Internal Server Error'];
+		}
 		throw e;
 	}
 }

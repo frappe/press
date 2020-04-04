@@ -5,9 +5,10 @@
 from __future__ import unicode_literals
 
 import frappe
+from press.api.billing import get_stripe
 from frappe.model.document import Document
 from frappe import _
-from frappe.utils import random_string, get_url
+from frappe.utils import random_string, get_url, get_fullname
 
 
 class Team(Document):
@@ -43,34 +44,73 @@ class Team(Document):
 
 		self.append("team_members", {"user": user.name})
 
-		if not self.enabled and role == "Press Admin":
-			self.enabled = 1
-
 		self.save(ignore_permissions=True)
 
-	def add_team_member(self, email, owner=False):
-		key = random_string(32)
-		frappe.get_doc(
-			{
-				"doctype": "Account Request",
-				"request_key": key,
-				"team": self.name,
-				"email": email,
-				"role": "Press Admin" if owner else "Press Member",
-			}
-		).insert()
+	def create_stripe_customer(self):
+		stripe = get_stripe()
+		customer = stripe.Customer.create(email=self.user, name=get_fullname(self.user))
+		self.db_set("stripe_customer_id", customer.id)
 
-		url = get_url("/dashboard/#/setup-account/" + key)
-
-		subject = "Verify your account"
-		template = "verify_account"
-		if not owner:
-			subject = f"You are invited by {self.name} to join Frappe Cloud"
-			template = "invite_team_member"
-
-		frappe.sendmail(
-			recipients=email, subject=subject, template=template, args={"link": url}, now=True,
+	def set_currency_and_default_payment_method(self):
+		payment_methods = self.get_payment_methods()
+		payment_method = payment_methods[0]
+		stripe = get_stripe()
+		# set currency
+		country = payment_method["card"]["country"]
+		self.db_set("transaction_currency", "INR" if country == "IN" else "USD")
+		# set default payment method
+		stripe.Customer.modify(
+			self.stripe_customer_id,
+			invoice_settings={"default_payment_method": payment_methods[0]["id"]},
 		)
+
+	def get_payment_methods(self):
+		stripe = get_stripe()
+		res = stripe.PaymentMethod.list(customer=self.stripe_customer_id, type="card")
+		return res["data"] or []
+
+	def get_upcoming_invoice(self):
+		stripe = get_stripe()
+		return stripe.Invoice.upcoming(customer=self.stripe_customer_id)
+
+	def get_past_payments(self):
+		success_payments = frappe.db.get_all(
+			"Payment",
+			filters={"team": self.name, "status": "Paid"},
+			fields=[
+				"amount",
+				"payment_date",
+				"status",
+				"currency",
+				"payment_link",
+				"creation",
+				"stripe_invoice_id",
+			],
+		)
+		failed_payments = frappe.db.get_all(
+			"Payment",
+			filters={
+				"team": self.name,
+				"status": "Failed",
+				"stripe_invoice_id": ("not in", [d.stripe_invoice_id for d in success_payments]),
+			},
+			fields=[
+				"amount",
+				"payment_date",
+				"status",
+				"currency",
+				"payment_link",
+				"creation",
+				"stripe_invoice_id",
+			],
+		)
+		payments = success_payments + failed_payments
+		payments = sorted(payments, key=lambda x: x["creation"], reverse=True)
+		for payment in payments:
+			payment.formatted_amount = frappe.utils.fmt_money(
+				payment.amount, 2, payment.currency
+			)
+		return payments
 
 
 def get_team_members(team):
