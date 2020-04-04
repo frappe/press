@@ -68,6 +68,7 @@ class Site(Document):
 			frappe.get_doc(
 				{
 					"doctype": "Site Domain",
+					"status": "Pending",
 					"site": self.name,
 					"domain": domain,
 					"dns_type": "CNAME",
