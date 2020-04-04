@@ -186,7 +186,7 @@ def poll_pending_jobs():
 		"Agent Job",
 		fields=["name", "server", "server_type", "job_id", "status"],
 		filters={"status": ("in", ["Pending", "Running"]), "job_id": ("is", "set")},
-		order_by="server",
+		order_by="server, job_id",
 	)
 	for server, server_jobs in groupby(pending_jobs, lambda x: x.server):
 		server_jobs = list(server_jobs)

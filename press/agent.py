@@ -170,8 +170,9 @@ class Agent:
 		return status
 
 	def get_jobs_status(self, ids):
-		ids = ",".join()
-		status = self.get(f"jobs/{ids}")
+		status = self.get(f"jobs/{','.join(map(str, ids))}")
+		if len(ids) == 1:
+			return [status]
 		return status
 
 	def update(self):
