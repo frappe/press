@@ -110,6 +110,7 @@ class Team(Document):
 			payment.formatted_amount = frappe.utils.fmt_money(
 				payment.amount, 2, payment.currency
 			)
+			payment.payment_date = frappe.utils.global_date_format(payment.payment_date)
 		return payments
 
 
