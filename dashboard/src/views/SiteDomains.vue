@@ -1,20 +1,26 @@
 <template>
 	<div>
 		<section>
-			<h2 class="font-medium text-lg">Domains</h2>
+			<h2 class="text-lg font-medium">Domains</h2>
 			<div v-if="domains.length">
 				<p class="text-gray-600">
 					Domains pointing to your site
 				</p>
 				<div
-					class="w-full sm:w-1/2 mt-6 border border-gray-100 shadow rounded py-4"
+					class="w-full py-4 mt-6 border border-gray-100 rounded shadow sm:w-1/2"
 				>
-					<div class="px-6 py-3 hover:bg-gray-50" v-for="d in domains">
-						<div>
-							{{ d.status }}
+					<div
+						class="grid grid-cols-2 px-6 py-3 hover:bg-gray-50"
+						v-for="d in domains"
+						:key="d.domain"
+					>
+						<div class="font-semibold">
+							{{ d.domain }}
 						</div>
 						<div>
-							{{ d.domain }}
+							<Badge :status="d.status">
+								{{ d.status }}
+							</Badge>
 						</div>
 					</div>
 				</div>
@@ -22,84 +28,79 @@
 			<div class="text-gray-600" v-else>
 				No domains pointing to your site
 			</div>
-
 			<div class="mt-4">
-				<Button
-					class="bg-brand hover:bg-blue-600 text-white"
-					@click="showModal=true"
-				>
+				<Button type="primary" @click="showDialog = true">
 					Add Domain
 				</Button>
 			</div>
 		</section>
-		<Modal :show="showModal" @hide="showModal = false">
-			<div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-				<div class="sm:flex sm:items-start">
-					<div class="mt-3 sm:mt-0 sm:text-left">
-						<h3 class="text-xl leading-6 font-medium text-gray-900">
-							Add Domain
-						</h3>
-						<div class="mt-4 leading-5 text-gray-800">
-							<p>
-								Domain
-							</p>
-							<input
-								type="text"
-								class="mt-4 form-input text-gray-900 w-full"
-								v-model="newDomain"
-								@change="dnsVerified=false"
-							/>
-							<p class="mt-4" v-if="newDomain && !dnsVerified">
-								Make a <span class="font-semibold">CNAME</span> 
-								record from <span class="font-semibold">{{ newDomain }}</span> 
-								to <span class="font-semibold">{{site.name}}</span>
-							</p>
-						</div>
-					</div>
-				</div>
+		<Dialog v-model="showDialog" title="Add Domain">
+			<p>
+				To add a custom domain, you must already own it. If you don't have one,
+				buy it and come back here.
+			</p>
+			<input
+				type="text"
+				class="w-full mt-4 text-gray-900 form-input"
+				placeholder="example.com"
+				v-model="newDomain"
+				@change="dnsVerified = null"
+			/>
+			<p class="mt-4" v-if="newDomain && !dnsVerified">
+				Make a <span class="font-semibold">CNAME</span> record from
+				<span class="font-semibold">{{ newDomain }}</span> to
+				<span class="font-semibold">{{ site.name }}</span>
+			</p>
+			<p class="flex mt-4" v-if="dnsVerified === false">
+				<FeatherIcon
+					name="x"
+					class="w-5 h-5 p-1 mr-2 text-red-500 bg-red-100 rounded-full"
+				/>
+				DNS Verification Failed
+			</p>
+			<p class="flex mt-4" v-if="dnsVerified === true">
+				<FeatherIcon
+					name="check"
+					class="w-5 h-5 p-1 mr-2 text-green-500 bg-green-100 rounded-full"
+				/>
+				DNS records successfully verified. Click on Add Domain.
+			</p>
+			<div slot="actions">
+				<Button class="border hover:bg-gray-100" @click="showDialog = false">
+					Cancel
+				</Button>
+				<Button
+					v-if="!dnsVerified"
+					class="ml-3"
+					type="primary"
+					:disabled="!newDomain || state == 'RequestStarted'"
+					@click="checkDNS"
+				>
+					Verify DNS
+				</Button>
+				<Button class="ml-3" type="primary" @click="addDomain" v-else>
+					Add Domain
+				</Button>
 			</div>
-			<div class="p-4 sm:px-6 sm:py-4 flex items-center justify-end">
-				<span class="flex rounded-md shadow-sm">
-					<Button class="border hover:bg-gray-100" @click="showModal = false">
-						Cancel
-					</Button>
-				</span>
-				<span class="flex rounded-md shadow-sm ml-3" v-if="!dnsVerified">
-					<Button
-						class="bg-brand hover:bg-blue-600 text-white"
-						:disabled="!newDomain"
-						@click="checkDNS"
-					>
-						Verify DNS
-					</Button>
-				</span>
-				<span class="flex rounded-md shadow-sm ml-3" v-else>
-					<Button
-						class="bg-brand hover:bg-blue-600 text-white"
-						@click="addDomain"
-					>
-						Add Domain
-					</Button>
-				</span>
-			</div>
-		</Modal>
+		</Dialog>
 	</div>
 </template>
 
 <script>
-import Modal from '@/components/Modal';
+import Dialog from '@/components/Dialog';
 export default {
 	name: 'SiteDomains',
 	props: ['site'],
 	components: {
-		Modal
+		Dialog
 	},
 	data() {
 		return {
-			showModal: false,
+			state: null,
+			showDialog: false,
 			domains: [],
 			newDomain: null,
-			dnsVerified: false,
+			dnsVerified: null
 		};
 	},
 	methods: {
@@ -109,23 +110,24 @@ export default {
 			});
 		},
 		async checkDNS() {
+			this.dnsVerified = null;
 			this.dnsVerified = await this.$call('press.api.site.check_dns', {
 				name: this.site.name,
-				domain: this.newDomain,
+				domain: this.newDomain
 			});
 		},
 		async addDomain() {
 			await this.$call('press.api.site.add_domain', {
 				name: this.site.name,
-				domain: this.newDomain,
+				domain: this.newDomain
 			});
 			this.dnsVerified = false;
-			this.showModal = false;
+			this.showDialog = false;
 			this.fetchDomains();
-		},
+		}
 	},
 	mounted() {
 		this.fetchDomains();
-	},
+	}
 };
 </script>
