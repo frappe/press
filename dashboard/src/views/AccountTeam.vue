@@ -64,47 +64,34 @@
 						Add Member
 					</Button>
 
-					<Modal :show="showModal" @hide="showModal = false">
-						<div class="px-4 pt-5 pb-4 bg-white sm:p-6 sm:pb-4">
-							<div class="sm:flex sm:items-start">
-								<div class="w-full mt-3 sm:mt-0 sm:text-left">
-									<h3 class="text-xl font-medium leading-6 text-gray-900">
-										Add Member
-									</h3>
-									<div class="mt-4 leading-5 text-gray-800">
-										<p class="w-full mt-4">
-											Enter the email address of your teammate to invite them.
-										</p>
-										<input
-											type="text"
-											class="w-full mt-4 text-gray-900 form-input"
-											v-model="memberEmail"
-											required
-										/>
-									</div>
-								</div>
-							</div>
-							<div v-if="errorMessage" class="mt-2 text-sm text-red-600">
-								{{ errorMessage }}
-							</div>
+					<Dialog v-model="showModal" title="Add Member">
+						<p class="w-full mt-4">
+							Enter the email address of your teammate to invite them.
+						</p>
+						<input
+							type="text"
+							class="w-full mt-4 text-gray-900 form-input"
+							v-model="memberEmail"
+							required
+						/>
+
+						<div v-if="errorMessage" class="mt-2 text-sm text-red-600">
+							{{ errorMessage }}
 						</div>
-						<div class="flex items-center justify-end p-4 sm:px-6 sm:py-4">
-							<span class="flex rounded-md shadow-sm">
-								<Button @click="showModal = false">
-									Cancel
-								</Button>
-							</span>
-							<span class="flex ml-3 rounded-md shadow-sm">
-								<Button
-									type="primary"
-									:disabled="!memberEmail || state === 'Adding Member'"
-									@click="addMember(memberEmail)"
-								>
-									Send Invitation
-								</Button>
-							</span>
+						<div slot="actions">
+							<Button @click="showModal = false">
+								Cancel
+							</Button>
+							<Button
+								class="ml-3"
+								type="primary"
+								:disabled="!memberEmail || state === 'Adding Member'"
+								@click="addMember(memberEmail)"
+							>
+								Send Invitation
+							</Button>
 						</div>
-					</Modal>
+					</Dialog>
 				</div>
 			</div>
 		</section>
@@ -112,12 +99,12 @@
 </template>
 
 <script>
-import Modal from '@/components/Modal';
+import Dialog from '@/components/Dialog';
 
 export default {
 	name: 'AccountTeam',
 	components: {
-		Modal
+		Dialog
 	},
 	data() {
 		return {
