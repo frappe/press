@@ -5,10 +5,10 @@ import sites from './sites';
 import socket from './socket';
 
 let store = Vue.observable({
-    auth: new Vue(auth),
-    account: new Vue(account),
-    sites: new Vue(sites),
-    socket
+	auth: new Vue(auth),
+	account: new Vue(account),
+	sites: new Vue(sites),
+	socket
 });
 
 export default store;
