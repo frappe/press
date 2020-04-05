@@ -128,15 +128,10 @@ export default {
 	methods: {
 		async addMember(email) {
 			let team = this.$store.account.team.name;
-			this.state = 'Adding Member';
-			try {
-				await this.$call('press.api.account.add_team_member', { team, email });
-				this.state = 'Invite Email Sent';
-				this.showModal = false;
-				this.memberEmail = null;
-			} catch (error) {
-				this.errorMessage = error.messages.join('\n');
-			}
+			await this.$call('press.api.account.add_team_member', { team, email });
+			this.showModal = false;
+			this.memberEmail = null;
+
 		},
 		getRole(member) {
 			let roleMap = {
