@@ -1,7 +1,7 @@
 <template>
 	<div>
 		<section>
-			<h2 class="font-medium text-lg">Login</h2>
+			<h2 class="text-lg font-medium">Login</h2>
 			<p class="text-gray-600">Login directly to your site as Administrator</p>
 			<Button
 				class="mt-6"
@@ -10,11 +10,6 @@
 			>
 				Login as Administrator
 			</Button>
-		</section>
-		<section class="mt-10">
-			<h2 class="font-medium text-lg">Reset password</h2>
-			<p class="text-gray-600">Send a password reset email for Administrator</p>
-			<Button class="mt-6">Reset Password</Button>
 		</section>
 	</div>
 </template>
