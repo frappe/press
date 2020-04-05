@@ -74,7 +74,6 @@
 							v-model="memberEmail"
 							required
 						/>
-
 						<div v-if="errorMessage" class="mt-2 text-sm text-red-600">
 							{{ errorMessage }}
 						</div>
@@ -85,7 +84,7 @@
 							<Button
 								class="ml-3"
 								type="primary"
-								:disabled="!memberEmail || state === 'Adding Member'"
+								:disabled="!memberEmail || state === 'RequestStarted'"
 								@click="addMember(memberEmail)"
 							>
 								Send Invitation
@@ -132,6 +131,12 @@ export default {
 			this.showModal = false;
 			this.memberEmail = null;
 
+			this.$notify({
+				title: 'Invite Sent!',
+				message: 'They will receive an email shortly to join your team.',
+				color: 'green',
+				icon: 'check'
+			});
 		},
 		getRole(member) {
 			let roleMap = {
