@@ -71,7 +71,7 @@
   }
  ],
  "links": [],
- "modified": "2020-04-04 21:10:11.155736",
+ "modified": "2020-04-06 00:30:44.024389",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Domain",
@@ -86,6 +86,18 @@
    "read": 1,
    "report": 1,
    "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
    "share": 1,
    "write": 1
   }
