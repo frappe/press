@@ -34,7 +34,7 @@
 		<section v-if="pastPayments.length" class="mb-10">
 			<h2 class="text-lg font-medium">Past Payments</h2>
 			<p class="text-gray-600">
-				Your last 3 payments
+				History of your invoice payments
 			</p>
 			<div
 				class="w-full py-4 mt-6 border border-gray-100 rounded-md shadow sm:w-1/2"
