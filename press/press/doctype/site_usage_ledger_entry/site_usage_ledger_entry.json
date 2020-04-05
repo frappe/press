@@ -96,12 +96,11 @@
    "fieldtype": "Link",
    "label": "Subscription",
    "options": "Subscription",
-   "reqd": 1,
    "set_only_once": 1
   }
  ],
  "links": [],
- "modified": "2020-04-04 20:24:04.338803",
+ "modified": "2020-04-06 00:10:08.336635",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Usage Ledger Entry",

@@ -47,6 +47,9 @@ class SiteUsageLedgerEntry(Document):
 
 	def create_usage_record_on_stripe(self):
 		stripe = get_stripe()
+		if not self.subscription:
+			frappe.throw("Subscription not created for {0}".format(self.team))
+
 		subscription_item_id = frappe.db.get_value(
 			"Subscription", self.subscription, "stripe_subscription_item_id"
 		)
