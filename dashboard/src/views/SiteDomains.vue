@@ -15,7 +15,15 @@
 						:key="d.domain"
 					>
 						<div class="font-semibold">
-							{{ d.domain }}
+							<a
+								class="text-blue-500"
+								:href="'https://' + d.domain"
+								target="_blank"
+								v-if="d.status === 'Active'"
+							>
+								{{ d.domain }}
+							</a>
+							<span v-else>{{ d.domain }}</span>
 						</div>
 						<div>
 							<Badge :status="d.status">
