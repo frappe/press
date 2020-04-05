@@ -97,19 +97,10 @@ export default {
 	name: 'Site',
 	props: ['siteName'],
 	data: () => ({
-		site: null,
 		setupComplete: null
 	}),
 	async mounted() {
-		await this.fetchSite();
-
-		this.$store.socket.on('agent_job_update', data => {
-			if (data.site === this.site.name && data.name === 'New Site') {
-				if (data.status === 'Success') {
-					this.fetchSite();
-				}
-			}
-		});
+		await this.$store.sites.fetchSite(this.siteName);
 
 		if (this.$route.matched.length === 1) {
 			let path = this.$route.fullPath;
@@ -125,11 +116,6 @@ export default {
 		}
 	},
 	methods: {
-		async fetchSite() {
-			this.site = await this.$call('press.api.site.get', {
-				name: this.siteName
-			});
-		},
 		isTabSelected(tab) {
 			return this.$route.path.endsWith(tab.route);
 		},
@@ -138,11 +124,18 @@ export default {
 		}
 	},
 	computed: {
+		site() {
+			return this.$store.sites.site[this.siteName] || null;
+		},
 		tabs() {
 			let tabs = [
 				{ label: 'General', route: 'general' },
 				{ label: 'Domains', route: 'domains' },
-				{ label: 'Analytics', route: 'analytics' },
+				{
+					label: 'Analytics',
+					route: 'analytics',
+					condition: () => this.setupComplete
+				},
 				{ label: 'Backups', route: 'backups' },
 				{ label: 'Site Config', route: 'site-config' },
 				// { label: 'Console', route: 'console' },
@@ -157,7 +150,7 @@ export default {
 						tabsToShowForInactiveSite.includes(tab.label)
 					);
 				}
-				return tabs;
+				return tabs.filter(t => !t.condition || t.condition());
 			}
 			return [];
 		}
