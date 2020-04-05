@@ -1,23 +1,23 @@
 <template>
 	<div v-if="!installingJob">
 		<section>
-			<h2 class="font-medium text-lg">Site information</h2>
+			<h2 class="text-lg font-medium">Site information</h2>
 			<p class="text-gray-600">General information about your site</p>
 			<div
-				class="w-full sm:w-1/2 mt-6 border border-gray-100 shadow rounded py-2"
+				class="w-full py-2 mt-6 border border-gray-100 rounded shadow sm:w-1/2"
 			>
-				<div class="grid grid-cols-3 py-3 px-6 text-sm">
-					<div class="text-gray-700 font-medium">Site name:</div>
+				<div class="grid grid-cols-3 px-6 py-3 text-sm">
+					<div class="font-medium text-gray-700">Site name:</div>
 					<div class="col-span-2 font-medium">{{ site.name }}</div>
 				</div>
-				<div class="grid grid-cols-3 py-3 border-t px-6 text-sm">
-					<div class="text-gray-700 font-medium">Created:</div>
+				<div class="grid grid-cols-3 px-6 py-3 text-sm border-t">
+					<div class="font-medium text-gray-700">Created:</div>
 					<div class="col-span-2 font-medium">
 						<FormatDate>{{ site.creation }}</FormatDate>
 					</div>
 				</div>
-				<div class="grid grid-cols-3 py-3 border-t px-6 text-sm">
-					<div class="text-gray-700 font-medium">Last update:</div>
+				<div class="grid grid-cols-3 px-6 py-3 text-sm border-t">
+					<div class="font-medium text-gray-700">Last update:</div>
 					<div class="col-span-2 font-medium">
 						<FormatDate>{{ site.last_updated }}</FormatDate>
 					</div>
@@ -25,13 +25,13 @@
 			</div>
 		</section>
 		<section class="mt-10">
-			<h2 class="font-medium text-lg">Installed apps</h2>
+			<h2 class="text-lg font-medium">Installed apps</h2>
 			<p class="text-gray-600">Apps installed on your site</p>
 			<div
-				class="w-full sm:w-1/2 mt-6 border border-gray-100 shadow rounded py-4"
+				class="w-full py-4 mt-6 border border-gray-100 rounded shadow sm:w-1/2"
 			>
 				<a
-					class="px-6 py-3 block hover:bg-gray-50"
+					class="block px-6 py-3 hover:bg-gray-50"
 					v-for="app in site.installed_apps"
 					:href="`${app.url}/tree/${app.branch}`"
 					:key="app.url"
@@ -44,26 +44,17 @@
 				</a>
 			</div>
 		</section>
-		<section class="mt-10" v-if="domains">
-			<h2 class="font-medium text-lg">Domains</h2>
-			<p class="text-gray-600">Domains pointing to your site</p>
-			<div
-				class="w-full sm:w-1/2 mt-6 border border-gray-100 shadow rounded py-4"
-			>
-				<div class="px-6 py-3 hover:bg-gray-50" v-for="d in domains" :key="d.domain">
-					<div>
-						{{ d.domain }}
-					</div>
-				</div>
-			</div>
-		</section>
 		<section class="mt-10">
-			<h2 class="font-medium text-lg">Activity</h2>
+			<h2 class="text-lg font-medium">Activity</h2>
 			<p class="text-gray-600">Activities performed on your site</p>
 			<div
-				class="w-full sm:w-1/2 mt-6 border border-gray-100 shadow rounded py-4"
+				class="w-full py-4 mt-6 border border-gray-100 rounded shadow sm:w-1/2"
 			>
-				<div class="px-6 py-3 hover:bg-gray-50" v-for="a in activities" :key="a.creation">
+				<div
+					class="px-6 py-3 hover:bg-gray-50"
+					v-for="a in activities"
+					:key="a.creation"
+				>
 					<div>
 						{{ a.text }} <span class="text-gray-800">by {{ a.owner }}</span>
 					</div>
@@ -78,14 +69,18 @@
 	</div>
 	<div v-else>
 		<section>
-			<h2 class="font-medium text-lg">Your site is being installed..</h2>
+			<h2 class="text-lg font-medium">Your site is being installed..</h2>
 			<p class="text-gray-600">
 				Please wait while we set up your site for use.
 			</p>
 			<div
-				class="w-full sm:w-1/2 mt-6 border border-gray-100 shadow rounded px-6 py-4"
+				class="w-full px-6 py-4 mt-6 border border-gray-100 rounded shadow sm:w-1/2"
 			>
-				<div v-for="step in installingJob.steps" class="flex items-center py-2" :key="step.name">
+				<div
+					v-for="step in installingJob.steps"
+					class="flex items-center py-2"
+					:key="step.name"
+				>
 					<div class="w-4 h-4 text-gray-800">
 						<FeatherIcon
 							class="w-4 h-4"
@@ -107,7 +102,6 @@ export default {
 	data() {
 		return {
 			activities: [],
-			domains: [],
 			iconMap: {
 				Running: 'loader',
 				Success: 'check',
@@ -119,7 +113,6 @@ export default {
 	mounted() {
 		this.setupSiteInstall();
 		this.fetchActivities();
-		this.fetchDomains();
 		this.fetchPendingJobs();
 	},
 	methods: {
@@ -150,11 +143,6 @@ export default {
 					...d,
 					text
 				};
-			});
-		},
-		async fetchDomains() {
-			this.domains = await this.$call('press.api.site.domains', {
-				name: this.site.name
 			});
 		},
 		async fetchPendingJobs() {
