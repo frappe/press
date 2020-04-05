@@ -32,10 +32,6 @@ def process_stripe_webhook(doc, method):
 		["name", "transaction_currency"],
 		as_dict=True,
 	)
-	if not team:
-		team = frappe.db.get_value(
-			"Team", "farisansari17@gmail.com", ["name", "transaction_currency"], as_dict=True
-		)
 
 	payment = frappe.get_doc(
 		{
