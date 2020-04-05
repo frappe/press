@@ -100,7 +100,7 @@
   }
  ],
  "links": [],
- "modified": "2020-04-03 13:11:07.062356",
+ "modified": "2020-04-06 00:32:20.562551",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "TLS Certificate",
@@ -115,6 +115,18 @@
    "read": 1,
    "report": 1,
    "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
    "share": 1,
    "write": 1
   }
