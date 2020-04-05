@@ -1,5 +1,5 @@
 <template>
-	<LoginBox v-if="state != 'Signup Success'">
+	<LoginBox v-if="state !== 'SignupSuccess'">
 		<div class="mb-8">
 			<span class="text-lg">Create your account</span>
 		</div>
@@ -17,7 +17,11 @@
 			<ErrorMessage class="mt-6" v-if="errorMessage">
 				{{ errorMessage }}
 			</ErrorMessage>
-			<Button class="mt-6" :disabled="state === 'Signing Up'" type="primary">
+			<Button
+				class="mt-6"
+				:disabled="state === 'RequestStarted'"
+				type="primary"
+			>
 				Signup
 			</Button>
 			<div class="mt-10 text-center border-t">
@@ -52,24 +56,17 @@ export default {
 	},
 	data() {
 		return {
-			state: 'Idle', // Idle, Signing Up, Signup Error, Signup Success
+			state: null,
 			email: null,
 			errorMessage: null
 		};
 	},
 	methods: {
 		async signup() {
-			try {
-				this.errorMessage = null;
-				this.state = 'Signing Up';
-				await this.$call('press.api.account.signup', {
-					email: this.email
-				});
-				this.state = 'Signup Success';
-			} catch (error) {
-				this.errorMessage = error.messages.join('\n');
-				this.state = 'Signup Error';
-			}
+			await this.$call('press.api.account.signup', {
+				email: this.email
+			});
+			this.state = 'SignupSuccess';
 		}
 	}
 };

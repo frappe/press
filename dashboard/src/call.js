@@ -19,6 +19,8 @@ export default async function call(method, args) {
 		headers['X-Frappe-CSRF-Token'] = window.csrf_token;
 	}
 
+	updateState(this, 'RequestStarted', null);
+
 	const res = await fetch(`/api/method/${method}`, {
 		method: 'POST',
 		headers,
@@ -26,6 +28,7 @@ export default async function call(method, args) {
 	});
 
 	if (res.ok) {
+		updateState(null);
 		const data = await res.json();
 		if (data.docs) {
 			return data;
@@ -67,6 +70,16 @@ export default async function call(method, args) {
 		if (!e.messages.length) {
 			e.messages = ['Internal Server Error'];
 		}
+		updateState(this, null, e.messages.join('\n'));
 		throw e;
+	}
+
+	function updateState(vm, state, errorMessage) {
+		if (vm?.state !== undefined) {
+			vm.state = state;
+		}
+		if (vm?.errorMessage !== undefined) {
+			vm.errorMessage = errorMessage;
+		}
 	}
 }
