@@ -62,7 +62,8 @@
 export default {
 	name: 'Sites',
 	mounted() {
-		this.$store.sites.fetch();
+		this.$store.sites.fetchAll();
+		this.$store.sites.setupSocketListener();
 	},
 	methods: {
 		relativeDate(dateString) {
