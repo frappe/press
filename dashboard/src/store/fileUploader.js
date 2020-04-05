@@ -18,7 +18,7 @@ export default class FileUploader {
 	upload(file, options) {
 		return new Promise((resolve, reject) => {
 			let xhr = new XMLHttpRequest();
-			xhr.upload.addEventListener('loadstart', e => {
+			xhr.upload.addEventListener('loadstart', () => {
 				this.trigger('start');
 			});
 			xhr.upload.addEventListener('progress', e => {
@@ -29,10 +29,10 @@ export default class FileUploader {
 					});
 				}
 			});
-			xhr.upload.addEventListener('load', e => {
+			xhr.upload.addEventListener('load', () => {
 				this.trigger('finish');
 			});
-			xhr.addEventListener('error', e => {
+			xhr.addEventListener('error', () => {
 				this.trigger('error');
 				reject();
 			});
@@ -45,8 +45,8 @@ export default class FileUploader {
 							r = JSON.parse(xhr.responseText);
 						} catch (e) {
 							r = xhr.responseText;
-                        }
-                        let out = r.message || r;
+						}
+						let out = r.message || r;
 						resolve(out);
 					} else if (xhr.status === 403) {
 						error = JSON.parse(xhr.responseText);
@@ -62,10 +62,10 @@ export default class FileUploader {
 				}
 			};
 			xhr.open('POST', '/api/method/upload_file', true);
-            xhr.setRequestHeader('Accept', 'application/json');
-            if (window.csrf_token && window.csrf_token !== '{{ csrf_token }}') {
-                xhr.setRequestHeader('X-Frappe-CSRF-Token', window.csrf_token);
-            }
+			xhr.setRequestHeader('Accept', 'application/json');
+			if (window.csrf_token && window.csrf_token !== '{{ csrf_token }}') {
+				xhr.setRequestHeader('X-Frappe-CSRF-Token', window.csrf_token);
+			}
 
 			let form_data = new FormData();
 			if (file) {
