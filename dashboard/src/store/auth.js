@@ -1,12 +1,10 @@
-import router from '@/router';
 export default {
 	data() {
 		return {
 			isLoggedIn: false,
 			user: null,
 			user_image: null,
-			cookie: null,
-			csrf_token: null
+			cookie: null
 		};
 	},
 	created() {
@@ -33,6 +31,7 @@ export default {
 			return false;
 		},
 		async logout() {
+			localStorage.removeItem('current_team');
 			await this.$call('logout');
 			window.location.reload();
 		},
