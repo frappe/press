@@ -28,7 +28,7 @@ export default async function call(method, args) {
 	});
 
 	if (res.ok) {
-		updateState(null);
+		updateState(this, null, null);
 		const data = await res.json();
 		if (data.docs) {
 			return data;
