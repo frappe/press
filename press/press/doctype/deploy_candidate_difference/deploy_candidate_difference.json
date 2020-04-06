@@ -8,6 +8,7 @@
   "group",
   "source",
   "destination",
+  "deploy_type",
   "apps"
  ],
  "fields": [
@@ -44,10 +45,18 @@
    "fieldtype": "Table",
    "label": "Apps",
    "options": "Deploy Candidate Difference App"
+  },
+  {
+   "fieldname": "deploy_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Deploy Type",
+   "options": "\nPull\nMigrate"
   }
  ],
  "links": [],
- "modified": "2020-04-06 14:42:32.690059",
+ "modified": "2020-04-06 15:57:00.420062",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate Difference",
