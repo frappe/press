@@ -1,14 +1,14 @@
 <template>
 	<div>
 		<div class="text-gray-800" v-if="state === 'RequestStarted'">
-			Fetching billing information..
+			Fetching billing information...
 		</div>
 		<section v-if="upcomingInvoice" class="mb-10">
 			<h2 class="text-lg font-medium">
 				Upcoming Invoice
 			</h2>
 			<p class="text-gray-600">
-				This is the amount so far based on the usage of your sites.
+				This is the amount so far based on the usage of your sites
 			</p>
 			<div
 				class="w-full py-4 mt-6 border border-gray-100 rounded-md shadow sm:w-1/2"
@@ -69,7 +69,7 @@
 			</div>
 		</section>
 		<section v-if="state && state.startsWith('ShowSetup')">
-			<h2 class="text-lg font-medium">Setup Payment Method</h2>
+			<h2 class="text-lg font-medium">Set up Payment Method</h2>
 			<p class="text-gray-600">
 				Add your card details to start your subscription
 			</p>
@@ -82,7 +82,7 @@
 						@click="state = 'ShowSetup.ShowStripeCard'"
 						v-if="state != 'ShowSetup.ShowStripeCard'"
 					>
-						Setup Payment Method
+						Set up Payment Method
 					</Button>
 					<StripeCard
 						v-if="state === 'ShowSetup.ShowStripeCard'"

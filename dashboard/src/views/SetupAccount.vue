@@ -2,7 +2,7 @@
 	<LoginBox v-if="!fetching && email">
 		<div class="mb-8">
 			<span v-if="!isInvitation" class="text-lg">
-				Setup your account
+				Set up your account
 			</span>
 			<span v-else class="text-lg"
 				>Invitation to join team <strong>{{ invitationToTeam }}</strong></span

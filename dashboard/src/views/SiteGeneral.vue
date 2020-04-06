@@ -69,9 +69,9 @@
 	</div>
 	<div v-else>
 		<section>
-			<h2 class="text-lg font-medium">Your site is being installed..</h2>
+			<h2 class="text-lg font-medium">Your site is being installed...</h2>
 			<p class="text-gray-600">
-				Please wait while we set up your site for use.
+				Please wait while we set up your site for use
 			</p>
 			<div
 				class="w-full px-6 py-4 mt-6 border border-gray-100 rounded shadow sm:w-1/2"
