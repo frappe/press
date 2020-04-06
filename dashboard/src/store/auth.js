@@ -23,7 +23,7 @@ export default {
 				usr: email,
 				pwd: password
 			});
-			if (res === 'Logged In') {
+			if (res) {
 				this.$store.account.fetchAccount();
 				this.isLoggedIn = true;
 				return true;
