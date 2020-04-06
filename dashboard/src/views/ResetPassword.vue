@@ -25,7 +25,11 @@
 			<ErrorMessage class="mt-6" v-if="errorMessage">
 				{{ errorMessage }}
 			</ErrorMessage>
-			<Button class="mt-6" type="primary" :disabled="!password">
+			<Button
+				class="mt-6"
+				type="primary"
+				:disabled="!password || state === 'RequestStarted'"
+			>
 				Submit
 			</Button>
 		</form>
@@ -46,6 +50,7 @@ export default {
 	props: ['requestKey'],
 	data() {
 		return {
+			state: null,
 			fetching: false,
 			email: null,
 			password: null,
@@ -68,16 +73,11 @@ export default {
 	},
 	methods: {
 		async resetPassword() {
-			try {
-				this.errorMessage = null;
-				await this.$call('press.api.account.reset_password', {
-					key: this.requestKey,
-					password: this.password
-				});
-				window.location.reload();
-			} catch (error) {
-				this.errorMessage = error.messages.join('\n').replace(/<br>/gi, '\n');
-			}
+			await this.$call('press.api.account.reset_password', {
+				key: this.requestKey,
+				password: this.password
+			});
+			window.location.reload();
 		}
 	}
 };
