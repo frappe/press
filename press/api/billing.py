@@ -22,6 +22,10 @@ def get_publishable_key_and_setup_intent():
 def get_invoices():
 	team = get_current_team()
 	team_doc = frappe.get_doc("Team", team)
+	has_subscription = team_doc.has_subscription()
+	if not has_subscription:
+		return
+
 	invoice = team_doc.get_upcoming_invoice()
 	customer_name = invoice["customer_name"]
 	customer_email = invoice["customer_email"]
@@ -29,15 +33,16 @@ def get_invoices():
 	total_amount = invoice["total"]
 	currency = team_doc.transaction_currency
 	past_payments = team_doc.get_past_payments()
+	upcoming_invoice = {
+		"next_payment_attempt": global_date_format(
+			datetime.fromtimestamp(next_payment_attempt)
+		),
+		"amount": format_stripe_money(total_amount, currency),
+		"customer_email": customer_email,
+	}
 
 	return {
-		"upcoming_invoice": {
-			"next_payment_attempt": global_date_format(
-				datetime.fromtimestamp(next_payment_attempt)
-			),
-			"amount": format_stripe_money(total_amount, currency),
-			"customer_email": customer_email,
-		},
+		"upcoming_invoice": upcoming_invoice,
 		"past_payments": past_payments,
 	}
 
