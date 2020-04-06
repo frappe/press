@@ -9,8 +9,6 @@
   "status",
   "server",
   "bench",
-  "plan",
-  "team",
   "column_break_3",
   "admin_password",
   "update",
@@ -25,7 +23,11 @@
   "database_host",
   "database_port",
   "configuration_section",
-  "config"
+  "config",
+  "subscription_section",
+  "team",
+  "plan",
+  "trial_expiration_date"
  ],
  "fields": [
   {
@@ -165,10 +167,20 @@
    "label": "Plan",
    "options": "Plan",
    "reqd": 1
+  },
+  {
+   "fieldname": "subscription_section",
+   "fieldtype": "Section Break",
+   "label": "Subscription"
+  },
+  {
+   "fieldname": "trial_expiration_date",
+   "fieldtype": "Date",
+   "label": "Trial Expires On"
   }
  ],
  "links": [],
- "modified": "2020-03-30 17:27:37.232848",
+ "modified": "2020-04-06 12:44:37.307426",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

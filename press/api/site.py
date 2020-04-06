@@ -8,6 +8,7 @@ import dns.resolver
 import frappe
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.utils import log_error, get_current_team
+from frappe.utils import cint
 
 
 @frappe.whitelist()
@@ -107,23 +108,41 @@ def options_for_new():
 	)
 	order = {row.app: row.idx for row in group.apps}
 	sorted_apps = sorted(apps, key=lambda x: order[x.name])
-	domain = frappe.db.get_single_value("Press Settings", "domain")
+	domain, trial_sites_count = frappe.db.get_value(
+		"Press Settings", "Press Settings", ["domain", "trial_sites_count"]
+	)
+	trial_sites_count = cint(trial_sites_count)
+	team = get_current_team()
+	has_subscription = bool(frappe.db.get_value("Subscription", {"team": team}))
 
 	plans = frappe.db.get_all(
 		"Plan",
 		fields=[
+			"name",
 			"plan_title",
 			"price_usd",
 			"price_inr",
-			"name",
 			"concurrent_users",
 			"cpu_time_per_day",
+			"trial_period",
 		],
 		filters={"enabled": True},
-		order_by="price_usd asc"
+		order_by="price_usd asc",
+	)
+	# disable site creation if subscription not created and trial sites are exhausted
+	disable_site_creation = bool(
+		not has_subscription and frappe.db.count("Site", {"team": team}) >= trial_sites_count
 	)
 
-	return {"domain": domain, "group": group.name, "apps": sorted_apps, "plans": plans}
+	return {
+		"domain": domain,
+		"group": group.name,
+		"apps": sorted_apps,
+		"plans": plans,
+		"has_subscription": has_subscription,
+		"disable_site_creation": disable_site_creation,
+		"trial_sites_count": trial_sites_count,
+	}
 
 
 @frappe.whitelist()

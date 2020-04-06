@@ -8,6 +8,7 @@
   "domain",
   "bench_configuration",
   "github_access_token",
+  "trial_sites_count",
   "dns_section",
   "dns_provider",
   "column_break_6",
@@ -172,11 +173,17 @@
    "fieldname": "create_stripe_webhook",
    "fieldtype": "Button",
    "label": "Create Stripe Webhook"
+  },
+  {
+   "default": "1",
+   "fieldname": "trial_sites_count",
+   "fieldtype": "Int",
+   "label": "Number of Sites in Trial"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2020-04-04 16:48:14.335756",
+ "modified": "2020-04-06 14:35:25.296668",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

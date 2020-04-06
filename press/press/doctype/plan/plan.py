@@ -8,4 +8,6 @@ from frappe.model.document import Document
 
 
 class Plan(Document):
-	pass
+	def validate(self):
+		if not self.period:
+			frappe.throw("Period must be greater than 0")
