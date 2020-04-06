@@ -80,9 +80,9 @@
 							{{ $plural(options.trial_sites_count, 'site', 'sites') }} in trial
 							mode.
 							<a href="#/account/billing" class="border-b border-yellow-500">
-								Setup your subscription
+								Set up your subscription
 							</a>
-							to remove trial mode.
+							to create more sites.
 						</div>
 						<div
 							class="flex px-4 py-3 text-sm text-gray-600 border border-b-0 bg-gray-50 rounded-t-md"

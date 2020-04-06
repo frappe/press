@@ -22,7 +22,7 @@
 				:disabled="state === 'RequestStarted'"
 				type="primary"
 			>
-				Signup
+				Submit
 			</Button>
 			<div class="mt-10 text-center border-t">
 				<div class="transform -translate-y-1/2">
@@ -34,7 +34,7 @@
 				</div>
 			</div>
 			<router-link class="text-sm text-center" to="/login">
-				Already have an account? Login
+				Already have an account? Log in.
 			</router-link>
 		</form>
 	</LoginBox>

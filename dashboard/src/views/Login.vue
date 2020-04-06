@@ -2,7 +2,7 @@
 	<LoginBox v-if="!successMessage">
 		<div class="mb-8">
 			<span v-if="!forgot" class="text-lg">
-				Login to your account
+				Log in to your account
 			</span>
 			<span v-else class="text-lg">Reset your password</span>
 		</div>
@@ -47,11 +47,11 @@
 			</router-link>
 			<Button
 				class="mt-6"
-				:disabled="state === 'Working'"
+				:disabled="state === 'RequestStarted'"
 				@click="loginOrResetPassword"
 				type="primary"
 			>
-				{{ forgot ? 'Reset Password' : 'Login' }}
+				Submit
 			</Button>
 			<template v-if="!forgot">
 				<div class="mt-10 text-center border-t">
@@ -64,7 +64,7 @@
 					</div>
 				</div>
 				<router-link class="text-sm text-center" to="/signup">
-					Signup for a new account
+					Sign up for a new account
 				</router-link>
 			</template>
 		</form>
