@@ -79,7 +79,7 @@ class Team(Document):
 	def get_past_payments(self):
 		success_payments = frappe.db.get_all(
 			"Payment",
-			filters={"team": self.name, "status": "Paid"},
+			filters={"team": self.name, "status": "Paid", "amount": (">", 0)},
 			fields=[
 				"amount",
 				"payment_date",
