@@ -91,7 +91,7 @@
 				</div>
 			</div>
 		</section>
-		<section v-if="state === 'ShowPaymentMethods'">
+		<section v-if="paymentMethods && paymentMethods.length > 0">
 			<h2 class="text-lg font-medium">Payment Methods</h2>
 			<p class="text-gray-600">
 				Cards you have added for automatic billing
@@ -142,9 +142,7 @@ export default {
 			this.paymentMethods = await this.$call(
 				'press.api.billing.get_payment_methods'
 			);
-			if (this.paymentMethods.length > 0) {
-				this.state = 'ShowPaymentMethods';
-			} else {
+			if (this.paymentMethods.length === 0) {
 				this.state = 'ShowSetup';
 			}
 		},
