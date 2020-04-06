@@ -1,15 +1,15 @@
 <template>
 	<div>
 		<section>
-			<h2 class="font-medium text-lg">Jobs</h2>
+			<h2 class="text-lg font-medium">Jobs</h2>
 			<p class="text-gray-600">History of jobs that ran on your site</p>
-			<div class="mt-6 flex">
+			<div class="flex mt-6">
 				<div
-					class="w-full sm:w-1/3 py-4 rounded-md sm:rounded-r-none border overflow-auto"
+					class="w-full py-4 overflow-auto border rounded-md sm:w-1/3 sm:rounded-r-none"
 					:class="{ 'hidden sm:block': selectedJob }"
 				>
 					<router-link
-						class="px-6 py-3 block cursor-pointer"
+						class="block px-6 py-3 cursor-pointer"
 						:class="
 							selectedJob && selectedJob.name === job.name
 								? 'bg-gray-100'
@@ -22,7 +22,7 @@
 						<div>
 							{{ job.job_type }}
 						</div>
-						<div class="text-gray-600 text-sm">
+						<div class="text-sm text-gray-600">
 							<FormatDate>
 								{{ job.creation }}
 							</FormatDate>
@@ -32,16 +32,16 @@
 				<div class="w-full sm:w-2/3" v-if="selectedJob">
 					<router-link
 						:to="`/sites/${site.name}/jobs`"
-						class="-mt-4 py-4 sm:hidden flex items-center"
+						class="flex items-center py-4 -mt-4 sm:hidden"
 					>
 						<FeatherIcon name="arrow-left" class="w-4 h-4" />
 						<span class="ml-2">
 							Select another Job
 						</span>
 					</router-link>
-					<div class="bg-black pb-16 min-h-full -mx-4 sm:mx-0">
-						<div class="mb-2 py-4 px-6 border-b border-gray-900">
-							<div class="text-white text-sm font-semibold">
+					<div class="min-h-full pb-16 -mx-4 bg-black sm:mx-0">
+						<div class="px-6 py-4 mb-2 border-b border-gray-900">
+							<div class="text-sm font-semibold text-white">
 								{{ selectedJob.job_type }}
 							</div>
 							<div
@@ -58,9 +58,10 @@
 						<details
 							class="px-6 text-white cursor-pointer"
 							v-for="step in selectedJob.steps"
+							:key="step.step_name"
 						>
 							<summary
-								class="py-2 inline-flex items-center text-gray-600 text-xs focus:outline-none"
+								class="inline-flex items-center py-2 text-xs text-gray-600 focus:outline-none"
 							>
 								<span class="ml-1">
 									<FeatherIcon
@@ -82,11 +83,11 @@
 										class="w-3 h-3 text-gray-500"
 									/>
 								</span>
-								<span class="ml-2 text-white font-semibold">
+								<span class="ml-2 font-semibold text-white">
 									{{ step.step_name }}
 								</span>
 							</summary>
-							<div class="text-gray-200 font-mono text-xs">
+							<div class="font-mono text-xs text-gray-200">
 								<div>
 									{{ step.output }}
 								</div>
@@ -122,7 +123,6 @@ export default {
 	mounted() {
 		this.fetchJobs();
 		this.fetchJobDetails();
-		console.log('mounted', this.jobName);
 	},
 	methods: {
 		async fetchJobs() {

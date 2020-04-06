@@ -1,9 +1,9 @@
 <template>
 	<div>
-		<section>
+		<section v-if="teams.length > 1" class="mb-10">
 			<h2 class="text-lg font-medium">Team</h2>
 			<p class="text-gray-600">
-				Teams you are part of and the current active team.
+				Teams you are part of and the current active team
 			</p>
 			<div
 				class="w-full py-4 mt-6 border border-gray-100 rounded-md shadow sm:w-1/2"
@@ -30,7 +30,7 @@
 				</div>
 			</div>
 		</section>
-		<section class="mt-10">
+		<section>
 			<h2 class="text-lg font-medium">Team Members</h2>
 			<p class="text-gray-600">
 				Team members can access your account on your behalf.
