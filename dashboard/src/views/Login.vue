@@ -93,15 +93,22 @@ export default {
 			email: null,
 			password: null,
 			errorMessage: null,
-			view: 'Login', // 'Reset Password'
 			successMessage: null
 		};
+	},
+	watch: {
+		forgot() {
+			this.errorMessage = null;
+			this.state = null;
+			this.password = null;
+			this.successMessage = null;
+		}
 	},
 	methods: {
 		async loginOrResetPassword() {
 			try {
 				this.errorMessage = null;
-				this.state = 'Working';
+				this.state = 'RequestStarted';
 				if (!this.forgot) {
 					await this.login();
 				} else {
