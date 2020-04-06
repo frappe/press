@@ -24,9 +24,8 @@ class SiteUsageLedgerEntry(Document):
 	def before_insert(self):
 		self.currency = frappe.db.get_value("Team", self.team, "transaction_currency")
 		price_field = "price_inr" if self.currency == "INR" else "price_usd"
-		price = frappe.db.get_value("Plan", self.plan, price_field)
-		# 30 days
-		price_per_day = price / 30
+		price, period = frappe.db.get_value("Plan", self.plan, [price_field, "period"])
+		price_per_day = price / period
 		# Stripe will charge 0.01 amount / unit
 		# and we can only send integers as unit
 		# that is why the value is rounded to 2 decimal places
@@ -66,15 +65,21 @@ class SiteUsageLedgerEntry(Document):
 def create_ledger_entries():
 	"""Creates a Site Usage Ledger Entry for each active site.
 	This runs hourly but will only create one record per day for each site"""
-
+	today = frappe.utils.nowdate()
 	active_sites = frappe.db.get_all(
 		"Site",
-		filters={"status": "Active", "team": ("is", "set"), "plan": ("is", "set")},
+		filters=[
+			["status", "=", "Active"],
+			["team", "is", "set"],
+			["team", "!=", "Administrator"],
+			["plan", "is", "set"],
+			# sites which are out of trial period
+			["trial_expiration_date", "<", today],
+		],
 		fields=["name", "team", "plan"],
 	)
 	for site in active_sites:
-		date = frappe.utils.nowdate()
-		filters = {"site": site.name, "team": site.team, "plan": site.plan, "date": date}
+		filters = {"site": site.name, "team": site.team, "plan": site.plan, "date": today}
 		if frappe.db.exists("Site Usage Ledger Entry", filters):
 			continue
 

@@ -73,6 +73,18 @@
 					</p>
 					<div class="mt-6">
 						<div
+							class="px-4 py-2 mb-4 text-sm text-yellow-700 border border-yellow-200 rounded-lg bg-yellow-50"
+							v-if="!options.has_subscription"
+						>
+							You can only create {{ options.trial_sites_count }}
+							{{ $plural(options.trial_sites_count, 'site', 'sites') }} in trial
+							mode.
+							<a href="#/account/billing" class="border-b border-yellow-500">
+								Setup your subscription
+							</a>
+							to remove trial mode.
+						</div>
+						<div
 							class="flex px-4 py-3 text-sm text-gray-600 border border-b-0 bg-gray-50 rounded-t-md"
 						>
 							<div class="w-10"></div>
@@ -84,7 +96,10 @@
 							class="flex px-4 py-3 text-sm text-left border border-b-0 cursor-pointer focus-within:shadow-outline"
 							:class="[
 								selectedPlan === plan ? 'bg-blue-100' : 'hover:bg-blue-50',
-								{ 'border-b rounded-b-md': i === options.plans.length - 1 }
+								{
+									'border-b rounded-b-md': i === options.plans.length - 1,
+									'pointer-events-none': disablePlan(plan)
+								}
 							]"
 							v-for="(plan, i) in options.plans"
 							:key="plan.name"
@@ -98,17 +113,23 @@
 									@change="e => (selectedPlan = e.target.checked ? plan : null)"
 								/>
 							</div>
-							<div class="w-1/3">
+							<div class="w-1/3" :class="{ 'opacity-25': disablePlan(plan) }">
 								<span class="font-semibold">
 									{{ plan.plan_title }}
 								</span>
 								<span> /mo</span>
 							</div>
-							<div class="w-1/3 text-gray-700">
+							<div
+								class="w-1/3 text-gray-700"
+								:class="{ 'opacity-25': disablePlan(plan) }"
+							>
 								{{ plan.concurrent_users }}
 								{{ $plural(plan.concurrent_users, 'user', 'users') }}
 							</div>
-							<div class="w-1/3 text-gray-700">
+							<div
+								class="w-1/3 text-gray-700"
+								:class="{ 'opacity-25': disablePlan(plan) }"
+							>
 								{{ plan.cpu_time_per_day }}
 								{{ $plural(plan.concurrent_users, 'hour', 'hours') }} / day
 							</div>
@@ -124,7 +145,7 @@
 						day.
 					</div>
 				</div>
-				<div class="mt-10">
+				<div class="mt-4">
 					<label class="flex py-2 leading-none">
 						<input
 							type="checkbox"
@@ -146,7 +167,7 @@
 						</span>
 					</label>
 				</div>
-				<div class="mt-10">
+				<div class="mt-6">
 					<ErrorMessage v-if="errorMessage">
 						{{ errorMessage }}
 					</ErrorMessage>
@@ -203,23 +224,17 @@ export default {
 	},
 	methods: {
 		async createSite() {
-			this.state = 'Creating Site';
-			try {
-				let siteName = await this.$call('press.api.site.new', {
-					site: {
-						name: this.siteName,
-						apps: this.selectedApps,
-						backups: this.enableBackups,
-						monitor: this.enableMonitoring,
-						group: this.options.group,
-						plan: this.selectedPlan.name
-					}
-				});
-				this.$router.push(`/sites/${siteName}`);
-			} catch (error) {
-				this.errorMessage = error.messages.join('\n');
-			}
-			this.state = null;
+			let siteName = await this.$call('press.api.site.new', {
+				site: {
+					name: this.siteName,
+					apps: this.selectedApps,
+					backups: this.enableBackups,
+					monitor: this.enableMonitoring,
+					group: this.options.group,
+					plan: this.selectedPlan.name
+				}
+			});
+			this.$router.push(`/sites/${siteName}`);
 		},
 		isFrappeApp(app) {
 			return app.frappe;
@@ -238,7 +253,7 @@ export default {
 				this.siteName &&
 				this.selectedApps.length > 0 &&
 				this.selectedPlan &&
-				this.state !== 'Creating Site'
+				this.state !== 'RequestStarted'
 			);
 		},
 		async checkIfExists() {
@@ -248,6 +263,18 @@ export default {
 			this.siteExistsMessage = exists
 				? `${this.siteName}.${this.options.domain} already exists.`
 				: null;
+		},
+		disablePlan(plan) {
+			if (this.options.has_subscription) {
+				return false;
+			}
+			if (this.options.disable_site_creation) {
+				return true;
+			}
+			if (plan.trial_period) {
+				return false;
+			}
+			return true;
 		}
 	}
 };

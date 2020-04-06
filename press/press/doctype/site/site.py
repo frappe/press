@@ -33,11 +33,38 @@ class Site(Document):
 		if not self.admin_password:
 			self.admin_password = frappe.generate_hash(length=16)
 
-		self.set_plan()
+		if self.is_new() and frappe.session.user != "Administrator":
+			self.can_create_site()
+			self.validate_plan()
 
-	def set_plan(self):
+	def can_create_site(self):
 		if not self.plan:
-			self.plan = frappe.db.get_value("Plan", {"for_site": 1, "is_default": 1})
+			frappe.throw("Cannot create site without plan")
+
+		if self.has_subscription():
+			return
+
+		# if a site is created with a plan without trial_period, throw
+		trial_period = frappe.db.get_value("Plan", self.plan, ["trial_period"])
+		if not trial_period:
+			frappe.throw("Cannot create site without subscription")
+
+		# if trial sites reach their limit, throw
+		trial_sites_count = cint(
+			frappe.db.get_single_value("Press Settings", "trial_sites_count")
+		)
+		if frappe.db.count("Site", {"team": self.team}) >= trial_sites_count:
+			frappe.throw("Cannot create site without subscription")
+
+	def validate_plan(self):
+		if not self.has_subscription():
+			trial_period_days = frappe.db.get_value("Plan", self.plan, ["trial_period"])
+			self.trial_expiration_date = frappe.utils.add_days(
+				frappe.utils.nowdate(), trial_period_days
+			)
+
+	def has_subscription(self):
+		return bool(frappe.db.get_value("Subscription", {"team": self.team}))
 
 	def after_insert(self):
 		log_site_activity(self.name, "Create")
@@ -177,7 +204,6 @@ def get_permission_query_conditions(user):
 		user = frappe.session.user
 	if user == "Administrator":
 		return ""
-
 
 	team = get_current_team()
 

@@ -11,6 +11,8 @@
   "plan_title",
   "price_usd",
   "price_inr",
+  "period",
+  "trial_period",
   "cpu_time_per_day",
   "concurrent_users"
  ],
@@ -51,10 +53,22 @@
    "fieldname": "cpu_time_per_day",
    "fieldtype": "Int",
    "label": "CPU Time Per Day"
+  },
+  {
+   "fieldname": "period",
+   "fieldtype": "Int",
+   "label": "Period (Days)",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "trial_period",
+   "fieldtype": "Int",
+   "label": "Trial Period (Days)"
   }
  ],
  "links": [],
- "modified": "2020-04-02 21:37:45.499433",
+ "modified": "2020-04-06 12:01:25.753569",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Plan",
