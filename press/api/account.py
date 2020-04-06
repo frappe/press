@@ -14,6 +14,8 @@ from datetime import datetime, timedelta
 
 @frappe.whitelist(allow_guest=True)
 def signup(email):
+	frappe.utils.validate_email_address(email, True)
+
 	current_user = frappe.session.user
 	frappe.set_user("Administrator")
 
@@ -109,6 +111,7 @@ def get(team=None):
 
 @frappe.whitelist()
 def update_profile(first_name, last_name, email):
+	frappe.utils.validate_email_address(email, True)
 	user = frappe.session.user
 	doc = frappe.get_doc("User", user)
 	doc.first_name = first_name
@@ -127,17 +130,22 @@ def update_profile_picture(image_url):
 
 @frappe.whitelist(allow_guest=True)
 def send_reset_password_email(email):
+	frappe.utils.validate_email_address(email, True)
+
 	email = email.strip()
 	key = random_string(32)
-	frappe.db.set_value("User", email, "reset_password_key", key)
-	url = get_url("/dashboard/#/reset-password/" + key)
-	frappe.sendmail(
-		recipients=email,
-		subject="Reset Password",
-		template="reset_password",
-		args={"link": url},
-		now=True,
-	)
+	if frappe.db.exists("User", email):
+		frappe.db.set_value("User", email, "reset_password_key", key)
+		url = get_url("/dashboard/#/reset-password/" + key)
+		frappe.sendmail(
+			recipients=email,
+			subject="Reset Password",
+			template="reset_password",
+			args={"link": url},
+			now=True,
+		)
+	else:
+		frappe.throw("User {0} does not exist".format(email))
 
 
 @frappe.whitelist(allow_guest=True)
@@ -152,6 +160,8 @@ def get_user_for_reset_password_key(key):
 
 @frappe.whitelist()
 def add_team_member(team, email):
+	frappe.utils.validate_email_address(email, True)
+
 	team_doc = frappe.get_doc("Team", team)
 	if team_doc.user != frappe.session.user:
 		frappe.throw(_("Only Team Owner can add other members"), frappe.PermissionError)
