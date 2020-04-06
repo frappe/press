@@ -96,7 +96,8 @@ doc_events = {
 scheduler_events = {
 	"hourly": ["press.press.doctype.frappe_app.frappe_app.poll_new_releases"],
 	"hourly_long": [
-		"press.press.doctype.site_usage_ledger_entry.site_usage_ledger_entry.create_ledger_entries"
+		"press.press.doctype.site_usage_ledger_entry.site_usage_ledger_entry.create_ledger_entries",
+		"press.press.doctype.site_usage_ledger_entry.site_usage_ledger_entry.create_usage_record_for_failed_requests",
 	],
 	"cron": {
 		"* * * * * 0/5": ["press.press.doctype.agent_job.agent_job.poll_pending_jobs"],
