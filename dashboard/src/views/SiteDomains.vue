@@ -2,7 +2,7 @@
 	<div>
 		<section>
 			<h2 class="text-lg font-medium">Domains</h2>
-			<div v-if="domains.length">
+			<div v-if="domains && domains.length">
 				<p class="text-gray-600">
 					Domains pointing to your site
 				</p>
@@ -33,7 +33,7 @@
 					</div>
 				</div>
 			</div>
-			<div class="text-gray-600" v-else>
+			<div class="text-gray-600" v-if="domains && !domains.length">
 				No domains pointing to your site
 			</div>
 			<div class="mt-4">
@@ -106,7 +106,7 @@ export default {
 		return {
 			state: null,
 			showDialog: false,
-			domains: [],
+			domains: null,
 			newDomain: null,
 			dnsVerified: null
 		};

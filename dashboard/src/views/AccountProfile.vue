@@ -59,7 +59,7 @@
 				</label>
 			</div>
 		</section>
-		<section class="mt-10">
+		<!-- <section class="mt-10">
 			<h2 class="text-lg font-medium">Notifications</h2>
 			<p class="text-gray-600">
 				We send only important changes, but you can choose what you want to hear
@@ -89,7 +89,7 @@
 					</div>
 				</div>
 			</div>
-		</section>
+		</section> -->
 		<div class="py-4 mt-10 border-t">
 			<Button type="primary" @click="$store.account.updateProfile">
 				Save changes
