@@ -73,6 +73,9 @@ class Team(Document):
 		stripe = get_stripe()
 		return stripe.Invoice.upcoming(customer=self.stripe_customer_id)
 
+	def has_subscription(self):
+		return bool(frappe.db.get_value("Subscription", {"team": self.name}))
+
 	def get_past_payments(self):
 		success_payments = frappe.db.get_all(
 			"Payment",

@@ -3,10 +3,10 @@
 		<PageHeader>
 			<template slot="title">
 				<div class="flex items-center">
-					<router-link to="/" class="flex items-center">
+					<a @click.prevent="$router.back()" class="flex items-center" href="#">
 						<FeatherIcon name="arrow-left" class="w-4 h-4" />
 						<span class="ml-2 text-base">Back</span>
-					</router-link>
+					</a>
 				</div>
 			</template>
 		</PageHeader>
@@ -14,7 +14,7 @@
 			<div class="border-t"></div>
 			<div class="py-8">
 				<div class="flex items-center">
-					<h1 class="font-medium text-2xl">Account</h1>
+					<h1 class="text-2xl font-medium">Account</h1>
 					<span class="ml-2 text-gray-600">
 						{{ account.user.name }}
 					</span>
@@ -23,7 +23,7 @@
 		</div>
 		<div class="px-4 sm:px-8">
 			<div>
-				<ul class="hidden sm:flex rounded overflow-hidden text-sm border-b">
+				<ul class="hidden overflow-hidden text-sm border-b rounded sm:flex">
 					<router-link
 						v-for="tab in tabs"
 						:key="tab.label"
@@ -32,7 +32,7 @@
 					>
 						<li>
 							<a
-								class="mr-8 px-1 py-4 border-b-2 border-transparent font-medium leading-none block focus:outline-none"
+								class="block px-1 py-4 mr-8 font-medium leading-none border-b-2 border-transparent focus:outline-none"
 								:class="[
 									isExactActive
 										? 'border-brand text-brand'
@@ -47,11 +47,12 @@
 					</router-link>
 				</ul>
 				<select
-					class="block sm:hidden form-select w-full"
+					class="block w-full sm:hidden form-select"
 					@change="e => changeTab(e.target.value)"
 				>
 					<option
 						v-for="tab in tabs"
+						:key="tab.label"
 						:selected="isTabSelected(tab)"
 						:value="tab.route"
 					>
@@ -59,7 +60,7 @@
 					</option>
 				</select>
 			</div>
-			<div class="w-full pt-6 sm:pt-10 pb-32" v-if="account.user">
+			<div class="w-full pt-6 pb-32 sm:pt-10" v-if="account.user">
 				<router-view v-bind="{ account }"></router-view>
 			</div>
 		</div>

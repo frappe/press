@@ -1,6 +1,6 @@
 <template>
 	<div>
-		<div class="text-gray-800" v-if="state === 'Fetching'">
+		<div class="text-gray-800" v-if="state === 'RequestStarted'">
 			Fetching billing information..
 		</div>
 		<section v-if="upcomingInvoice" class="mb-10">
@@ -68,7 +68,7 @@
 				</div>
 			</div>
 		</section>
-		<section v-if="state.startsWith('ShowSetup')">
+		<section v-if="state && state.startsWith('ShowSetup')">
 			<h2 class="text-lg font-medium">Setup Payment Method</h2>
 			<p class="text-gray-600">
 				Add your card details to start your subscription
@@ -127,14 +127,13 @@ export default {
 	},
 	data() {
 		return {
-			state: 'Idle',
+			state: null,
 			paymentMethods: null,
 			upcomingInvoice: null,
 			pastPayments: []
 		};
 	},
 	mounted() {
-		this.state = 'Fetching';
 		this.fetchPaymentMethods();
 		this.fetchUpcomingInvoice();
 	},
@@ -150,9 +149,8 @@ export default {
 			}
 		},
 		async fetchUpcomingInvoice() {
-			let { upcoming_invoice, past_payments } = await this.$call(
-				'press.api.billing.get_invoices'
-			);
+			let { upcoming_invoice = null, past_payments = [] } =
+				(await this.$call('press.api.billing.get_invoices')) || {};
 			this.upcomingInvoice = upcoming_invoice;
 			this.pastPayments = past_payments;
 		},
