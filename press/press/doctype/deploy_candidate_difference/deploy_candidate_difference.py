@@ -60,6 +60,7 @@ class DeployCandidateDifference(Document):
 		else:
 			client = Github()
 
+		self.deploy_type = "Pull"
 		for app in self.apps:
 			frappe_app = frappe.get_doc("Frappe App", app.app)
 			repo = client.get_repo(f"{frappe_app.repo_owner}/{frappe_app.scrubbed}")
@@ -67,6 +68,8 @@ class DeployCandidateDifference(Document):
 			app.github_diff_url = diff.html_url
 			files = [f.filename for f in diff.files]
 			deploy_type = "Migrate" if is_migrate_needed(files) else "Pull"
+			if deploy_type == "Migrate":
+				self.deploy_type = "Migrate"
 			app.deploy_type = deploy_type
 			app.files = json.dumps(files, indent=4)
 
