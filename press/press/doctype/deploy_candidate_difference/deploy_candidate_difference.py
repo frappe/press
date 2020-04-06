@@ -19,7 +19,7 @@ class DeployCandidateDifference(Document):
 				"group": self.group,
 				"source": self.source,
 				"destination": self.destination,
-				"name": ("!=", self.name)
+				"name": ("!=", self.name),
 			},
 		):
 			raise frappe.throw(

@@ -29,7 +29,7 @@ def stripe_webhook_handler():
 		# set user to Administrator, to not have to do ignore_permissions everywhere
 		frappe.set_user("Administrator")
 
-		doc = frappe.get_doc(
+		frappe.get_doc(
 			{
 				"doctype": "Stripe Webhook Log",
 				"name": event.id,
@@ -50,10 +50,10 @@ def parse_payload(payload, signature):
 	stripe = get_stripe()
 	try:
 		return stripe.Webhook.construct_event(payload, signature, secret)
-	except ValueError as e:
+	except ValueError:
 		# Invalid payload
 		frappe.throw("Invalid Payload", InvalidStripeWebhookEvent)
-	except stripe.error.SignatureVerificationError as e:
+	except stripe.error.SignatureVerificationError:
 		# Invalid signature
 		frappe.throw("Invalid Signature", InvalidStripeWebhookEvent)
 

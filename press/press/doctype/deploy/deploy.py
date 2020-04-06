@@ -36,12 +36,14 @@ def create_deploy_candidate_differences(bench):
 	candidates = list(set(b.candidate for b in benches if b.candidate != bench.candidate))
 	for candidate in candidates:
 		try:
-			frappe.get_doc({
-				"doctype": "Deploy Candidate Difference",
-				"group": bench.group,
-				"source": candidate,
-				"destination": bench.candidate,
-			}).insert()
+			frappe.get_doc(
+				{
+					"doctype": "Deploy Candidate Difference",
+					"group": bench.group,
+					"source": candidate,
+					"destination": bench.candidate,
+				}
+			).insert()
 		except Exception:
 			log_error(
 				"Deploy Candidate Differnce Creation Error",

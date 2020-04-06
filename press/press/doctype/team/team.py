@@ -8,7 +8,7 @@ import frappe
 from press.api.billing import get_stripe
 from frappe.model.document import Document
 from frappe import _
-from frappe.utils import random_string, get_url, get_fullname
+from frappe.utils import get_fullname
 
 
 class Team(Document):
