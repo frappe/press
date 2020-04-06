@@ -1,0 +1,111 @@
+{
+ "actions": [],
+ "creation": "2020-04-06 15:49:03.259926",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "site",
+  "source_bench",
+  "source_candidate",
+  "column_break_4",
+  "status",
+  "destination_bench",
+  "destination_candidate",
+  "section_break_8",
+  "difference",
+  "deploy_type",
+  "agent_job"
+ ],
+ "fields": [
+  {
+   "fieldname": "site",
+   "fieldtype": "Link",
+   "label": "Site",
+   "options": "Site"
+  },
+  {
+   "fetch_from": "site.bench",
+   "fieldname": "source_bench",
+   "fieldtype": "Link",
+   "label": "Source Bench",
+   "options": "Bench"
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Pending\nRunning\nSuccess\nFailure"
+  },
+  {
+   "fieldname": "destination_bench",
+   "fieldtype": "Link",
+   "label": "Destination Bench",
+   "options": "Bench"
+  },
+  {
+   "fieldname": "section_break_8",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fetch_from": "difference.deploy_type",
+   "fieldname": "deploy_type",
+   "fieldtype": "Select",
+   "label": "Deploy Type",
+   "options": "\nPull\nMigrate"
+  },
+  {
+   "fieldname": "agent_job",
+   "fieldtype": "Link",
+   "label": "Agent Job",
+   "options": "Agent Job"
+  },
+  {
+   "fetch_from": "source_bench.candidate",
+   "fieldname": "source_candidate",
+   "fieldtype": "Link",
+   "label": "Source Deploy Candidate",
+   "options": "Deploy Candidate"
+  },
+  {
+   "fetch_from": "destination_bench.candidate",
+   "fieldname": "destination_candidate",
+   "fieldtype": "Link",
+   "label": "Destination Deploy Candidate",
+   "options": "Deploy Candidate"
+  },
+  {
+   "fieldname": "difference",
+   "fieldtype": "Link",
+   "label": "Deploy Candidate Difference",
+   "options": "Deploy Candidate Difference"
+  }
+ ],
+ "links": [],
+ "modified": "2020-04-06 15:55:52.685926",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Site Update",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}
