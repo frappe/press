@@ -13,6 +13,9 @@ export default {
 	},
 	methods: {
 		async fetchAccount() {
+			if (document.cookie.includes('sid=Guest;')) {
+				return;
+			}
 			let team = localStorage.getItem('current_team');
 			let result = await call('press.api.account.get', { team });
 			this.user = result.user;
