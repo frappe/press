@@ -109,7 +109,11 @@ scheduler_events = {
 	},
 }
 
-fixtures = ["Agent Job Type", "Plan"]
+fixtures = [
+	"Agent Job Type",
+	"Plan",
+	{"dt": "Role", "filters": [["role_name", "like", "Press%"]]},
+]
 # Testing
 # -------
 
