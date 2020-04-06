@@ -79,22 +79,27 @@ def create_ledger_entries():
 		fields=["name", "team", "plan"],
 	)
 	for site in active_sites:
-		filters = {"site": site.name, "team": site.team, "plan": site.plan, "date": today}
-		if frappe.db.exists("Site Usage Ledger Entry", filters):
-			continue
+		try:
+			filters = {"site": site.name, "team": site.team, "plan": site.plan, "date": today}
+			if frappe.db.exists("Site Usage Ledger Entry", filters):
+				continue
 
-		subscription = frappe.db.get_value(
-			"Subscription", filters={"team": site.team, "status": "Active"}
-		)
-		frappe.get_doc(
-			{
-				"doctype": "Site Usage Ledger Entry",
-				"site": site.name,
-				"team": site.team,
-				"plan": site.plan,
-				"subscription": subscription,
-			}
-		).insert()
+			subscription = frappe.db.get_value(
+				"Subscription", filters={"team": site.team, "status": "Active"}
+			)
+			frappe.get_doc(
+				{
+					"doctype": "Site Usage Ledger Entry",
+					"site": site.name,
+					"team": site.team,
+					"plan": site.plan,
+					"subscription": subscription,
+				}
+			).insert()
+		except Exception:
+			frappe.db.rollback()
+			frappe.log_error(title="Create Usage Ledger Entries")
+			frappe.db.commit()
 
 
 def create_usage_record_for_failed_requests():
@@ -105,4 +110,9 @@ def create_usage_record_for_failed_requests():
 		"Site Usage Ledger Entry", filters={"stripe_usage_record_id": ""}
 	)
 	for entry in entries:
-		frappe.get_doc("Site Usage Ledger Entry", entry.name).create_usage_record_on_stripe()
+		try:
+			frappe.get_doc("Site Usage Ledger Entry", entry.name).create_usage_record_on_stripe()
+		except Exception:
+			frappe.db.rollback()
+			frappe.log_error(title="Create Usage Record for Failed Requests")
+			frappe.db.commit()
