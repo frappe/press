@@ -13,6 +13,22 @@ from github import Github
 
 class DeployCandidateDifference(Document):
 	def validate(self):
+		if self.source == self.destination:
+			frappe.throw(
+				"Destination Candidate must be different from Source Candidate",
+				frappe.ValidationError,
+			)
+
+		source_creation = frappe.db.get_value("Deploy Candidate", self.source, "creation")
+		destination_creation = frappe.db.get_value(
+			"Deploy Candidate", self.destination, "creation"
+		)
+		if source_creation > destination_creation:
+			frappe.throw(
+				"Destination Candidate must be created after Source Candidate",
+				frappe.ValidationError,
+			)
+
 		if frappe.get_all(
 			"Deploy Candidate Difference",
 			filters={
@@ -22,7 +38,7 @@ class DeployCandidateDifference(Document):
 				"name": ("!=", self.name),
 			},
 		):
-			raise frappe.throw(
+			frappe.throw(
 				"Deploy Candidate Difference already exists for Release Group: {} "
 				", Source Release: {} and Destination Release: {}".format(
 					self.group, self.source, self.destination
