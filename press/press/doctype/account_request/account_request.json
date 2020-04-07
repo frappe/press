@@ -9,7 +9,8 @@
   "team",
   "email",
   "role",
-  "invited_by"
+  "invited_by",
+  "ip_address"
  ],
  "fields": [
   {
@@ -36,11 +37,16 @@
    "fieldname": "invited_by",
    "fieldtype": "Data",
    "label": "Invited By"
+  },
+  {
+   "fieldname": "ip_address",
+   "fieldtype": "Data",
+   "label": "IP Address"
   }
  ],
  "in_create": 1,
  "links": [],
- "modified": "2020-03-30 18:54:13.739727",
+ "modified": "2020-04-07 20:21:55.454111",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",

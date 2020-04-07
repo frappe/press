@@ -46,14 +46,18 @@
 					/>
 				</label>
 			</template>
+			<label class="block mt-4" v-if="!isInvitation">
+				<span class="text-gray-800">Country</span>
+				<select class="block w-full mt-2 shadow form-select" v-model="country">
+					<option v-for="country in countries" :key="country">
+						{{ country }}
+					</option>
+				</select>
+			</label>
 			<ErrorMessage class="mt-6 " v-if="errorMessage">
 				{{ errorMessage }}
 			</ErrorMessage>
-			<Button
-				class="mt-6"
-				type="primary"
-				:disabled="!(password && firstName && lastName) && !userExists"
-			>
+			<Button class="mt-6" type="primary" :disabled="disableButton">
 				<span v-if="!isInvitation">
 					Submit
 				</span>
@@ -82,7 +86,9 @@ export default {
 	props: ['requestKey', 'joinRequest'],
 	data() {
 		return {
+			state: null,
 			fetching: false,
+			countries: [],
 			email: null,
 			firstName: null,
 			lastName: null,
@@ -90,29 +96,35 @@ export default {
 			errorMessage: null,
 			userExists: null,
 			invitationToTeam: null,
-			isInvitation: null
+			isInvitation: null,
+			country: null
 		};
 	},
-	async mounted() {
-		this.fetching = true;
-		try {
-			let res = await this.$call(
-				'press.api.account.get_email_from_request_key',
-				{
-					key: this.requestKey
-				}
-			);
-			if (res.email) {
-				this.email = res.email;
-				this.userExists = res.user_exists;
-				this.invitationToTeam = res.team;
-				this.isInvitation = res.is_invitation;
-			}
-		} finally {
-			this.fetching = false;
-		}
+	mounted() {
+		this.getEmailFromRequestKey();
+		this.fetchCountryList();
 	},
 	methods: {
+		async getEmailFromRequestKey() {
+			this.fetching = true;
+			try {
+				let res = await this.$call(
+					'press.api.account.get_email_from_request_key',
+					{
+						key: this.requestKey
+					}
+				);
+				if (res.email) {
+					this.email = res.email;
+					this.country = res.country;
+					this.userExists = res.user_exists;
+					this.invitationToTeam = res.team;
+					this.isInvitation = res.is_invitation;
+				}
+			} finally {
+				this.fetching = false;
+			}
+		},
 		async setupAccount() {
 			try {
 				this.errorMessage = null;
@@ -121,12 +133,36 @@ export default {
 					password: this.password,
 					first_name: this.firstName,
 					last_name: this.lastName,
+					country: this.country,
 					is_invitation: this.isInvitation
 				});
 				this.$router.push('/sites');
 				window.location.reload();
 			} catch (error) {
 				this.errorMessage = error.messages.join('\n').replace(/<br>/gi, '\n');
+			}
+		},
+		async fetchCountryList() {
+			this.countries = await this.$call('press.api.account.country_list');
+		}
+	},
+	computed: {
+		disableButton() {
+			if (this.state == 'RequestStarted') {
+				return true;
+			}
+			if (this.userExists) {
+				return !this.country;
+			}
+			if (this.isInvitation) {
+				return !(this.password && this.firstName && this.lastName);
+			} else {
+				return !(
+					this.password &&
+					this.firstName &&
+					this.lastName &&
+					this.country
+				);
 			}
 		}
 	}

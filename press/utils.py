@@ -5,6 +5,7 @@
 from __future__ import unicode_literals
 import frappe
 import json
+import requests
 
 
 def log_error(title, **kwargs):
@@ -24,3 +25,26 @@ def get_current_team():
 	if not team:
 		frappe.throw("Invalid Team", frappe.PermissionError)
 	return team
+
+
+def get_country_info():
+	ip = frappe.local.request_ip
+	ip_api_key = frappe.conf.get("ip-api-key")
+
+	def _get_country_info():
+		fields = ["countryCode", "country", "regionName", "city"]
+		res = requests.get(
+			"https://pro.ip-api.com/json/{ip}?key={key}&fields={fields}".format(
+				ip=ip, key=ip_api_key, fields=",".join(fields)
+			)
+		)
+		try:
+			data = res.json()
+			if data.get("status") != "fail":
+				return data
+		except Exception:
+			pass
+
+		return {}
+
+	return frappe.cache().hget("ip_country_map", ip, generator=_get_country_info)

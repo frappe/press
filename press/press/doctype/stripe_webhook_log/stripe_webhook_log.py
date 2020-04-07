@@ -40,7 +40,6 @@ def stripe_webhook_handler():
 	except Exception:
 		frappe.db.rollback()
 		press.utils.log_error(title="Stripe Webhook Handler", stripe_event_id=form_dict.id)
-		frappe.db.commit()
 		frappe.set_user(current_user)
 		raise Exception
 
@@ -56,8 +55,3 @@ def parse_payload(payload, signature):
 	except stripe.error.SignatureVerificationError:
 		# Invalid signature
 		frappe.throw("Invalid Signature", InvalidStripeWebhookEvent)
-
-
-def set_status(name, status):
-	frappe.db.set_value("Stripe Webhook Log", name, "status", status)
-	frappe.db.commit()

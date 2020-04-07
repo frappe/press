@@ -9,6 +9,7 @@ from frappe.utils import random_string, get_url
 from frappe.website.render import build_response
 from frappe.core.doctype.user.user import update_password
 from press.press.doctype.team.team import get_team_members
+from press.utils import get_country_info
 from datetime import datetime, timedelta
 
 
@@ -36,7 +37,7 @@ def signup(email):
 
 @frappe.whitelist(allow_guest=True)
 def setup_account(
-	key, first_name=None, last_name=None, password=None, is_invitation=False
+	key, first_name=None, last_name=None, password=None, is_invitation=False, country=None
 ):
 	account_request = get_account_request_from_key(key)
 	if not account_request:
@@ -51,9 +52,16 @@ def setup_account(
 		# then Team already exists and will be added to that team
 		doc = frappe.get_doc("Team", team)
 	else:
+		currency = "INR" if country == "India" else "USD"
 		# Team doesn't exist, create it
 		doc = frappe.get_doc(
-			{"doctype": "Team", "name": team, "user": email, "enabled": 1}
+			{
+				"doctype": "Team",
+				"name": team,
+				"user": email,
+				"transaction_currency": currency,
+				"enabled": 1,
+			}
 		).insert(ignore_permissions=True, ignore_links=True)
 	doc.create_user_for_member(first_name, last_name, email, password, role)
 	doc.create_stripe_customer()
@@ -65,12 +73,22 @@ def setup_account(
 def get_email_from_request_key(key):
 	account_request = get_account_request_from_key(key)
 	if account_request:
+		data = get_country_info()
 		return {
 			"email": account_request.email,
+			"country": data.get("country"),
 			"user_exists": frappe.db.exists("User", account_request.email),
 			"team": account_request.team,
 			"is_invitation": frappe.db.get_value("Team", account_request.team, "enabled"),
 		}
+
+
+@frappe.whitelist(allow_guest=True)
+def country_list():
+	def get_country_list():
+		return [d.name for d in frappe.db.get_all("Country")]
+
+	return frappe.cache().get_value("country_list", generator=get_country_list)
 
 
 def get_account_request_from_key(key):
