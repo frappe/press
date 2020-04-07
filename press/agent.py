@@ -55,6 +55,26 @@ class Agent:
 			"New Site", f"benches/{site.bench}/sites", data, bench=site.bench, site=site.name
 		)
 
+	def update_site(self, site, target, deploy_type):
+		data = {"target": target}
+		return self.create_agent_job(
+			f"Update Site {deploy_type}",
+			f"benches/{site.bench}/sites/{site.name}/update/{deploy_type.lower()}",
+			data,
+			bench=site.bench,
+			site=site.name,
+		)
+
+	def update_site_recover(self, site, target):
+		data = {"target": target}
+		return self.create_agent_job(
+			f"Recover Failed Site Migration",
+			f"benches/{site.bench}/sites/{site.name}/update/recover",
+			data,
+			bench=site.bench,
+			site=site.name,
+		)
+
 	def update_site_config(self, site):
 		data = {"config": json.loads(site.config)}
 		return self.create_agent_job(

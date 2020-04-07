@@ -88,6 +88,10 @@ class Site(Document):
 		log_site_activity(self.name, "Backup")
 		frappe.get_doc({"doctype": "Site Backup", "site": self.name}).insert()
 
+	def schedule_update(self):
+		log_site_activity(self.name, "Update")
+		frappe.get_doc({"doctype": "Site Update", "site": self.name}).insert()
+
 	def add_domain(self, domain):
 		if check_dns(self.name, domain):
 			log_site_activity(self.name, "Add Domain")
