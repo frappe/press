@@ -7,5 +7,5 @@ from __future__ import unicode_literals
 import unittest
 
 
-class TestBenchDeploy(unittest.TestCase):
+class TestDeployCandidateDifference(unittest.TestCase):
 	pass

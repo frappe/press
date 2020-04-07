@@ -41,6 +41,8 @@
    "fetch_if_empty": 1,
    "fieldname": "group",
    "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Release Group",
    "options": "Release Group",
    "reqd": 1,
@@ -49,6 +51,8 @@
   {
    "fieldname": "candidate",
    "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Deploy Candidate",
    "options": "Deploy Candidate",
    "set_only_once": 1
@@ -101,7 +105,7 @@
   }
  ],
  "links": [],
- "modified": "2020-02-28 18:52:55.783991",
+ "modified": "2020-04-07 13:08:53.598600",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",

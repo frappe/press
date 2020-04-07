@@ -9,6 +9,8 @@
   "status",
   "server",
   "bench",
+  "plan",
+  "team",
   "column_break_3",
   "admin_password",
   "update",
@@ -24,10 +26,8 @@
   "database_port",
   "configuration_section",
   "config",
-  "subscription_section",
-  "team",
-  "plan",
-  "trial_expiration_date"
+  "deploy_section",
+  "timezone"
  ],
  "fields": [
   {
@@ -64,7 +64,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Pending\nInstalling\nActive\nBroken\nArchived",
+   "options": "Pending\nInstalling\nUpdating\nActive\nBroken\nArchived",
    "read_only": 1,
    "reqd": 1
   },
@@ -169,18 +169,18 @@
    "reqd": 1
   },
   {
-   "fieldname": "subscription_section",
+   "fieldname": "deploy_section",
    "fieldtype": "Section Break",
-   "label": "Subscription"
+   "label": "Deploy"
   },
   {
-   "fieldname": "trial_expiration_date",
-   "fieldtype": "Date",
-   "label": "Trial Expires On"
+   "fieldname": "timezone",
+   "fieldtype": "Data",
+   "label": "Timezone"
   }
  ],
  "links": [],
- "modified": "2020-04-06 12:44:37.307426",
+ "modified": "2020-04-07 14:28:17.014995",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

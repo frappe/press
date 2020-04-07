@@ -11,7 +11,6 @@ from frappe.model.document import Document
 from press.press.doctype.agent_job.agent_job import Agent
 from frappe.utils.password import get_decrypted_password
 from press.press.doctype.site_activity.site_activity import log_site_activity
-from press.press.doctype.team.team import get_default_team
 from frappe.frappeclient import FrappeClient, FrappeException
 from frappe.utils import cint
 from press.api.site import check_dns
@@ -88,6 +87,10 @@ class Site(Document):
 			raise Exception("Too many pending backups")
 		log_site_activity(self.name, "Backup")
 		frappe.get_doc({"doctype": "Site Backup", "site": self.name}).insert()
+
+	def schedule_update(self):
+		log_site_activity(self.name, "Update")
+		frappe.get_doc({"doctype": "Site Update", "site": self.name}).insert()
 
 	def add_domain(self, domain):
 		if check_dns(self.name, domain):

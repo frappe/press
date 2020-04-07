@@ -1,0 +1,47 @@
+{
+ "actions": [],
+ "creation": "2020-04-06 12:10:28.479712",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "server",
+  "bench_name",
+  "bench"
+ ],
+ "fields": [
+  {
+   "fieldname": "server",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Server",
+   "options": "Server",
+   "reqd": 1
+  },
+  {
+   "fieldname": "bench",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Bench",
+   "options": "Bench"
+  },
+  {
+   "fieldname": "bench_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Bench Name",
+   "reqd": 1
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2020-04-06 12:16:24.385445",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Deploy Bench",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}
