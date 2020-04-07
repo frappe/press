@@ -9,7 +9,7 @@ import json
 
 def log_error(title, **kwargs):
 	traceback = frappe.get_traceback()
-	serialized = json.dumps(kwargs, indent=4, sort_keys=True)
+	serialized = json.dumps(kwargs, indent=4, sort_keys=True, default=str, skipkeys=True)
 	message = f"Data:\n{serialized}\nException:\n{traceback}"
 	frappe.log_error(title=title, message=message)
 

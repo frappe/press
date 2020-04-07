@@ -4,11 +4,8 @@
 
 from __future__ import unicode_literals
 import frappe
-import json
 from frappe.model.document import Document
-from frappe.utils import nowdate
 from datetime import datetime
-from press.press.doctype.stripe_webhook_log.stripe_webhook_log import set_status
 
 
 class Payment(Document):

@@ -27,7 +27,6 @@ def get_invoices():
 		return
 
 	invoice = team_doc.get_upcoming_invoice()
-	customer_name = invoice["customer_name"]
 	customer_email = invoice["customer_email"]
 	next_payment_attempt = invoice["next_payment_attempt"]
 	total_amount = invoice["total"]

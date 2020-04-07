@@ -145,7 +145,7 @@ export default {
 			];
 			let tabsToShowForInactiveSite = ['General', 'Jobs'];
 			if (this.site) {
-				if (this.site.status !== 'Active') {
+				if (this.site.status !== 'Active' && this.site.status !== 'Updating') {
 					return tabs.filter(tab =>
 						tabsToShowForInactiveSite.includes(tab.label)
 					);
