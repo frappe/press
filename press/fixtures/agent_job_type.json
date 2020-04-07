@@ -2,6 +2,25 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
+  "modified": "2020-04-07 16:10:22.420615",
+  "name": "Update Site Configuration",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/sites/{site}/config",
+  "steps": [
+   {
+    "parent": "Update Site Configuration",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Update Site Configuration"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
   "modified": "2020-02-21 12:34:39.569810",
   "name": "Recover Failed Site Migration",
   "parent": null,
