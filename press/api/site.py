@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import dns.resolver
 
 import frappe
+import json
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.utils import log_error, get_current_team
 from frappe.utils import cint
@@ -166,6 +167,7 @@ def get(name):
 		"name": site.name,
 		"status": site.status,
 		"installed_apps": apps,
+		"config": json.loads(site.config),
 		"creation": site.creation,
 		"last_updated": site.modified,
 	}
@@ -265,7 +267,22 @@ def add_domain(name, domain):
 	frappe.get_doc("Site", name).add_domain(domain)
 
 
+@frappe.whitelist()
 def update_config(name, config):
 	print(name, config)
-	return
+	allowed_keys = [
+		"mail_server",
+		"mail_port",
+		"mail_login",
+		"mail_password",
+		"use_ssl",
+		"auto_email_id",
+		"mute_emails",
+		"server_script_enabled",
+		"disable_website_cache",
+		"disable_global_search",
+		"max_file_size",
+	]
+	if any(key not in allowed_keys for key in config.keys()):
+		return
 	frappe.get_doc("Site", name).update_site_config(config)

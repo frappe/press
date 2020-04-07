@@ -33,7 +33,7 @@
 					</FormatDate>
 					<span class="text-right">
 						<a
-							v-if="site.status === 'Active'"
+							v-if="site.status === 'Active' || site.status === 'Updating'"
 							:href="`https://${site.name}`"
 							target="_blank"
 							class="inline-flex items-baseline text-sm text-blue-500 hover:underline"
