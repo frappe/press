@@ -4,6 +4,7 @@
 
 from __future__ import unicode_literals
 
+import json
 import re
 import frappe
 import requests
@@ -144,9 +145,11 @@ class Site(Document):
 			return cint(value["setup_complete"])
 
 	def update_site_config(self, config):
+		self.config = json.dumps(config, indent=4)
+		self.save()
 		log_site_activity(self.name, "Update Configuration")
 		agent = Agent(self.server)
-		agent.update_site_config(self, config)
+		agent.update_site_config(self)
 
 	def update_site(self):
 		log_site_activity(self.name, "Update")
