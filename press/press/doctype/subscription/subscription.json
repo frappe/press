@@ -1,6 +1,6 @@
 {
  "actions": [],
- "autoname": "SUB-.YYYY.-",
+ "autoname": "format:SUB-{YYYY}-{#####}",
  "creation": "2020-03-20 12:31:19.564793",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -78,7 +78,7 @@
   }
  ],
  "links": [],
- "modified": "2020-04-02 23:52:53.398291",
+ "modified": "2020-04-06 23:18:21.167594",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Subscription",
