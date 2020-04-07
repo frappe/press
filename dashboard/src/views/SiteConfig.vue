@@ -103,27 +103,28 @@ export default {
 				}
 			],
 			siteConfig: {
-				mail_server: null,
-				mail_port: null,
-				mail_login: null,
-				mail_password: null,
-				use_ssl: null,
-				auto_email_id: null,
-				mute_emails: 0,
-				server_script_enabled: 0,
-				disable_website_cache: 0,
-				disable_global_search: 0,
-				max_file_size: 10240
+				mail_server: this.site.config.mail_server,
+				mail_port: this.site.config.mail_port,
+				mail_login: this.site.config.mail_login,
+				mail_password: this.site.config.mail_password,
+				use_ssl: this.site.config.use_ssl,
+				auto_email_id: this.site.config.auto_email_id,
+				mute_emails: this.site.config.mute_emails,
+				server_script_enabled: this.site.config.server_script_enabled,
+				disable_website_cache: this.site.config.disable_website_cache,
+				disable_global_search: this.site.config.disable_global_search,
+				max_file_size: this.site.config.max_file_size
 			},
 			showButton: false
 		};
 	},
 	methods: {
 		async updateConfig() {
-			await this.$call('press.api.site.update_site', {
+			await this.$call('press.api.site.update_config', {
 				name: this.site.name,
 				config: this.siteConfig
 			});
+			this.showButton = false;
 		}
 	},
 	watch: {
