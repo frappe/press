@@ -1,6 +1,6 @@
 {
  "actions": [],
- "autoname": "PAY-.YYYY.-.#####",
+ "autoname": "format:PAY-{YYYY}-{#####}",
  "creation": "2019-12-11 13:43:47.670095",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -13,7 +13,8 @@
   "payment_link",
   "column_break_6",
   "status",
-  "payment_date"
+  "payment_date",
+  "amended_from"
  ],
  "fields": [
   {
@@ -22,7 +23,6 @@
    "in_list_view": 1,
    "label": "Amount",
    "options": "currency",
-   "read_only": 1,
    "reqd": 1
   },
   {
@@ -40,8 +40,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "\nPaid\nFailed",
-   "read_only": 1
+   "options": "\nPaid\nFailed"
   },
   {
    "fieldname": "payment_link",
@@ -56,11 +55,11 @@
    "read_only": 1
   },
   {
+   "fetch_from": "team.transaction_currency",
    "fieldname": "currency",
    "fieldtype": "Link",
    "label": "Currency",
    "options": "Currency",
-   "read_only": 1,
    "reqd": 1
   },
   {
@@ -72,12 +71,21 @@
    "fieldtype": "Date",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Date",
+   "label": "Date"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Payment",
+   "print_hide": 1,
    "read_only": 1
   }
  ],
+ "is_submittable": 1,
  "links": [],
- "modified": "2020-04-04 16:27:45.040424",
+ "modified": "2020-04-07 19:36:54.186598",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Payment",

@@ -1,0 +1,184 @@
+{
+ "actions": [],
+ "autoname": "format:PLE-{YYYY}-{#####}",
+ "creation": "2020-04-02 23:10:12.818541",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "team",
+  "site",
+  "plan",
+  "subscription",
+  "remark",
+  "column_break_4",
+  "purpose",
+  "date",
+  "amount",
+  "currency",
+  "amended_from",
+  "reversed_from",
+  "stripe_section",
+  "stripe_usage_record_id",
+  "usage_units",
+  "timestamp",
+  "stripe_customer_balance_transaction_id",
+  "reference_section",
+  "reference_doctype",
+  "reference_name"
+ ],
+ "fields": [
+  {
+   "fetch_from": "site.team",
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Team",
+   "options": "Team",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "site",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Site",
+   "options": "Site"
+  },
+  {
+   "fetch_from": "site.plan",
+   "fieldname": "plan",
+   "fieldtype": "Link",
+   "label": "Plan",
+   "options": "Plan"
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Posting Date",
+   "search_index": 1
+  },
+  {
+   "fieldname": "usage_units",
+   "fieldtype": "Int",
+   "label": "Units",
+   "read_only": 1
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "stripe_usage_record_id",
+   "fieldtype": "Data",
+   "label": "Stripe Usage Record ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "timestamp",
+   "fieldtype": "Int",
+   "label": "Timestamp",
+   "read_only": 1
+  },
+  {
+   "fieldname": "subscription",
+   "fieldtype": "Link",
+   "label": "Subscription",
+   "options": "Subscription"
+  },
+  {
+   "fieldname": "stripe_section",
+   "fieldtype": "Section Break",
+   "label": "Stripe"
+  },
+  {
+   "fieldname": "remark",
+   "fieldtype": "Small Text",
+   "label": "Remark"
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Amount",
+   "options": "currency"
+  },
+  {
+   "fieldname": "purpose",
+   "fieldtype": "Select",
+   "label": "Purpose",
+   "options": "Site Consumption\nCredits Allocation\nReverse Credits Allocation\nPayment"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Payment Ledger Entry",
+   "print_hide": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "stripe_customer_balance_transaction_id",
+   "fieldtype": "Data",
+   "label": "Stripe Customer Balance Transaction ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reversed_from",
+   "fieldtype": "Data",
+   "label": "Reversed From",
+   "read_only": 1
+  },
+  {
+   "depends_on": "reference_name",
+   "fieldname": "reference_section",
+   "fieldtype": "Section Break",
+   "label": "Reference"
+  },
+  {
+   "fieldname": "reference_doctype",
+   "fieldtype": "Link",
+   "label": "Reference DocType",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "reference_name",
+   "fieldtype": "Dynamic Link",
+   "label": "Reference Name",
+   "options": "reference_doctype"
+  }
+ ],
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2020-04-07 19:24:35.456426",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Payment Ledger Entry",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "title_field": "site",
+ "track_changes": 1
+}

@@ -94,10 +94,12 @@ doc_events = {
 # ---------------
 
 scheduler_events = {
+	"daily": [
+		"press.press.doctype.payment_ledger_entry.payment_ledger_entry.submit_failed_ledger_entries",
+	],
 	"hourly": ["press.press.doctype.frappe_app.frappe_app.poll_new_releases"],
 	"hourly_long": [
-		"press.press.doctype.site_usage_ledger_entry.site_usage_ledger_entry.create_ledger_entries",
-		"press.press.doctype.site_usage_ledger_entry.site_usage_ledger_entry.create_usage_record_for_failed_requests",
+		"press.press.doctype.payment_ledger_entry.payment_ledger_entry.create_ledger_entries",
 	],
 	"cron": {
 		"* * * * * 0/5": ["press.press.doctype.agent_job.agent_job.poll_pending_jobs"],
