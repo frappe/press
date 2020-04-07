@@ -6,8 +6,10 @@
  "engine": "InnoDB",
  "field_order": [
   "site",
+  "server",
   "source_bench",
   "source_candidate",
+  "group",
   "column_break_4",
   "status",
   "destination_bench",
@@ -15,7 +17,10 @@
   "section_break_8",
   "difference",
   "deploy_type",
-  "agent_job"
+  "update_job",
+  "column_break_14",
+  "recover_job",
+  "cause_of_failure_is_resolved"
  ],
  "fields": [
   {
@@ -28,6 +33,8 @@
    "fetch_from": "site.bench",
    "fieldname": "source_bench",
    "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Source Bench",
    "options": "Bench"
   },
@@ -38,8 +45,10 @@
   {
    "fieldname": "status",
    "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Status",
-   "options": "Pending\nRunning\nSuccess\nFailure"
+   "options": "Pending\nRunning\nSuccess\nFailure\nRecovered\nFatal"
   },
   {
    "fieldname": "destination_bench",
@@ -55,14 +64,10 @@
    "fetch_from": "difference.deploy_type",
    "fieldname": "deploy_type",
    "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Deploy Type",
    "options": "\nPull\nMigrate"
-  },
-  {
-   "fieldname": "agent_job",
-   "fieldtype": "Link",
-   "label": "Agent Job",
-   "options": "Agent Job"
   },
   {
    "fetch_from": "source_bench.candidate",
@@ -83,10 +88,48 @@
    "fieldtype": "Link",
    "label": "Deploy Candidate Difference",
    "options": "Deploy Candidate Difference"
+  },
+  {
+   "fetch_from": "source_bench.group",
+   "fieldname": "group",
+   "fieldtype": "Link",
+   "label": "Release Group",
+   "options": "Release Group"
+  },
+  {
+   "fetch_from": "site.server",
+   "fieldname": "server",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Server",
+   "options": "Server"
+  },
+  {
+   "fieldname": "update_job",
+   "fieldtype": "Link",
+   "label": "Update Job",
+   "options": "Agent Job"
+  },
+  {
+   "default": "0",
+   "fieldname": "cause_of_failure_is_resolved",
+   "fieldtype": "Check",
+   "label": "Cause of Failure is Resolved"
+  },
+  {
+   "fieldname": "column_break_14",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "recover_job",
+   "fieldtype": "Link",
+   "label": "Recover Job",
+   "options": "Agent Job"
   }
  ],
  "links": [],
- "modified": "2020-04-06 15:55:52.685926",
+ "modified": "2020-04-07 14:47:51.611688",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Update",
@@ -107,5 +150,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "title_field": "site",
  "track_changes": 1
 }

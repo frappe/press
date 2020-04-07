@@ -283,6 +283,10 @@ def process_job_updates(job_name):
 		)
 		from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
 		from press.press.doctype.site_domain.site_domain import process_new_host_job_update
+		from press.press.doctype.site_update.site_update import (
+			process_update_site_job_update,
+			process_update_site_recover_job_update,
+		)
 
 		if job.job_type == "Add Upstream to Proxy":
 			process_new_server_job_update(job)
@@ -302,5 +306,11 @@ def process_job_updates(job_name):
 			process_archive_site_job_update(job)
 		if job.job_type == "Add Host to Proxy":
 			process_new_host_job_update(job)
+		if job.job_type == "Update Site Migrate":
+			process_update_site_job_update(job)
+		if job.job_type == "Update Site Pull":
+			process_update_site_job_update(job)
+		if job.job_type == "Recover Failed Site Migration":
+			process_update_site_recover_job_update(job)
 	except Exception:
 		log_error("Agent Job Callback Exception", job=job.as_dict())

@@ -106,6 +106,7 @@ scheduler_events = {
 			"press.press.doctype.agent_job.agent_job.collect_site_analytics",
 		],
 		"*/60 * * * *": ["press.press.doctype.agent_job.agent_job.schedule_backups"],
+		"*/15 * * * *": ["press.press.doctype.site_update.site_update.schedule_updates"],
 	},
 }
 

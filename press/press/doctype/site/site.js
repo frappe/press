@@ -22,6 +22,10 @@ frappe.ui.form.on('Site', {
 			const filters = {site: frm.doc.name};
 			frappe.set_route("List", "Site Backup", filters);
 		}, __('Logs'));
+		frm.add_custom_button(__('Updates'), () => {
+			const filters = {site: frm.doc.name};
+			frappe.set_route("List", "Site Update", filters);
+		}, __('Logs'));
 		frm.add_custom_button(__('Site Uptime'), () => {
 			const filters = {site: frm.doc.name};
 			frappe.set_route("List", "Site Uptime Log", filters);
@@ -36,6 +40,9 @@ frappe.ui.form.on('Site', {
 		}, __('Logs'));
 		frm.add_custom_button(__('Backup'), () => {
 			frm.call({method: "backup", doc: frm.doc, callback: result => frappe.msgprint(result.message)});
+		}, __('Actions'));
+		frm.add_custom_button(__('Update'), () => {
+			frm.call({method: "schedule_update", doc: frm.doc, callback: result => frappe.msgprint(result.message)});
 		}, __('Actions'));
 		frm.add_custom_button(__('Archive'), () => {
 			frm.call({method: "archive", doc: frm.doc, callback: result => frappe.msgprint(result.message)});
