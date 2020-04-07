@@ -51,13 +51,10 @@ class Team(Document):
 		customer = stripe.Customer.create(email=self.user, name=get_fullname(self.user))
 		self.db_set("stripe_customer_id", customer.id)
 
-	def set_currency_and_default_payment_method(self):
+	def set_default_payment_method(self):
 		payment_methods = self.get_payment_methods()
 		payment_method = payment_methods[0]
 		stripe = get_stripe()
-		# set currency
-		country = payment_method["card"]["country"]
-		self.db_set("transaction_currency", "INR" if country == "IN" else "USD")
 		# set default payment method
 		stripe.Customer.modify(
 			self.stripe_customer_id,
@@ -73,13 +70,19 @@ class Team(Document):
 		stripe = get_stripe()
 		return stripe.Invoice.upcoming(customer=self.stripe_customer_id)
 
+	def create_subscription(self):
+		if not self.has_subscription():
+			frappe.get_doc(
+				{"doctype": "Subscription", "team": self.name, "status": "Active"}
+			).insert()
+
 	def has_subscription(self):
-		return bool(frappe.db.get_value("Subscription", {"team": self.name}))
+		return bool(frappe.db.exists("Subscription", {"team": self.name}))
 
 	def get_past_payments(self):
-		success_payments = frappe.db.get_all(
+		payments = frappe.db.get_all(
 			"Payment",
-			filters={"team": self.name, "status": "Paid", "amount": (">", 0)},
+			filters={"team": self.name, "amount": (">", 0)},
 			fields=[
 				"amount",
 				"payment_date",
@@ -89,26 +92,8 @@ class Team(Document):
 				"creation",
 				"stripe_invoice_id",
 			],
+			order_by="creation desc",
 		)
-		failed_payments = frappe.db.get_all(
-			"Payment",
-			filters={
-				"team": self.name,
-				"status": "Failed",
-				"stripe_invoice_id": ("not in", [d.stripe_invoice_id for d in success_payments]),
-			},
-			fields=[
-				"amount",
-				"payment_date",
-				"status",
-				"currency",
-				"payment_link",
-				"creation",
-				"stripe_invoice_id",
-			],
-		)
-		payments = success_payments + failed_payments
-		payments = sorted(payments, key=lambda x: x["creation"], reverse=True)
 		for payment in payments:
 			payment.formatted_amount = frappe.utils.fmt_money(
 				payment.amount, 2, payment.currency
@@ -147,3 +132,16 @@ def get_team_members(team):
 def get_default_team(user):
 	if frappe.db.exists("Team", user):
 		return user
+
+
+def process_stripe_webhook(doc, method):
+	"""This method runs after a Stripe Webhook Log is created"""
+	if doc.event_type not in ["payment_method.attached"]:
+		return
+
+	event = frappe.parse_json(doc.payload)
+	payment_method = event["data"]["object"]
+	customer_id = payment_method["customer"]
+	team_doc = frappe.get_doc("Team", {"stripe_customer_id": customer_id})
+	team_doc.set_default_payment_method()
+	team_doc.create_subscription()

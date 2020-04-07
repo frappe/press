@@ -16,6 +16,8 @@ class AccountRequest(Document):
 		if not self.request_key:
 			self.request_key = random_string(32)
 
+		self.ip_address = frappe.local.request_ip
+
 		url = get_url("/dashboard/#/setup-account/" + self.request_key)
 
 		subject = "Verify your account"

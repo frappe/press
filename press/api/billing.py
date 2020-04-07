@@ -29,7 +29,7 @@ def get_invoices():
 	invoice = team_doc.get_upcoming_invoice()
 	customer_email = invoice["customer_email"]
 	next_payment_attempt = invoice["next_payment_attempt"]
-	total_amount = invoice["total"]
+	total_amount = invoice["amount_due"]
 	currency = team_doc.transaction_currency
 	past_payments = team_doc.get_past_payments()
 	upcoming_invoice = {
@@ -59,24 +59,11 @@ def get_payment_methods():
 @frappe.whitelist()
 def after_card_add():
 	clear_setup_intent()
-	set_currency_and_default_payment_method()
-	create_subscription()
 
 
 def clear_setup_intent():
 	team = get_current_team()
 	frappe.cache().hdel("setup_intent", team)
-
-
-def set_currency_and_default_payment_method():
-	team = get_current_team()
-	frappe.get_doc("Team", team).set_currency_and_default_payment_method()
-
-
-def create_subscription():
-	team = get_current_team()
-	doc = frappe.get_doc({"doctype": "Subscription", "team": team, "status": "Active"})
-	doc.insert(ignore_permissions=True)
 
 
 def get_publishable_key():
