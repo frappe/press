@@ -28,26 +28,36 @@ class Deploy(Document):
 
 
 def create_deploy_candidate_differences(bench):
+	group = bench.group
+	destination = bench.candidate
+	destination_creation = frappe.db.get_value("Deploy Candidate", destination, "creation")
 	benches = frappe.get_all(
 		"Bench",
 		fields="candidate",
-		filters={"server": bench.server, "name": ("!=", bench.name), "group": bench.group},
+		filters={
+			"server": bench.server,
+			"status": "Active",
+			"group": group,
+			"candidate": ("!=", destination),
+		},
 	)
-	candidates = list(set(b.candidate for b in benches if b.candidate != bench.candidate))
-	for candidate in candidates:
+	candidates = list(set(b.candidate for b in benches))
+	for source in candidates:
 		try:
-			frappe.get_doc(
-				{
-					"doctype": "Deploy Candidate Difference",
-					"group": bench.group,
-					"source": candidate,
-					"destination": bench.candidate,
-				}
-			).insert()
+			source_creation = frappe.db.get_value("Deploy Candidate", source, "creation")
+			if source_creation < destination_creation:
+				frappe.get_doc(
+					{
+						"doctype": "Deploy Candidate Difference",
+						"group": group,
+						"source": source,
+						"destination": destination,
+					}
+				).insert()
 		except Exception:
 			log_error(
 				"Deploy Candidate Differnce Creation Error",
 				bench=bench.as_dict(),
 				candidates=candidates,
-				candidate=candidate,
+				source=source,
 			)
