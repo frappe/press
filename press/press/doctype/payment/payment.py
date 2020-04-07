@@ -9,7 +9,22 @@ from datetime import datetime
 
 
 class Payment(Document):
-	pass
+	def on_submit(self):
+		if self.status != "Paid":
+			frappe.throw("Cannot submit if payment failed")
+
+		doc = frappe.get_doc(
+			{
+				"doctype": "Payment Ledger Entry",
+				"amount": self.amount,
+				"purpose": "Payment",
+				"team": self.team,
+				"reference_doctype": "Payment",
+				"reference_name": self.name,
+			}
+		)
+		doc.insert()
+		doc.submit()
 
 
 def process_stripe_webhook(doc, method):
@@ -23,30 +38,30 @@ def process_stripe_webhook(doc, method):
 	# value is in cents or paise
 	amount = invoice["total"] / 100
 
-	team = frappe.db.get_value(
-		"Team",
-		{"stripe_customer_id": customer_id},
-		["name", "transaction_currency"],
-		as_dict=True,
+	failed_payment = frappe.db.get_value(
+		"Payment", {"status": "Failed", "stripe_invoice_id": invoice["id"]}
 	)
-
-	payment = frappe.get_doc(
-		{
-			"doctype": "Payment",
-			"team": team.name,
-			"amount": amount,
-			"currency": team.transaction_currency,
-			"stripe_invoice_id": invoice["id"],
-			"payment_link": invoice["hosted_invoice_url"],
-		}
-	)
+	if failed_payment:
+		payment = frappe.get_doc("Payment", failed_payment)
+	else:
+		team = frappe.db.get_value("Team", {"stripe_customer_id": customer_id}, "name")
+		payment = frappe.get_doc(
+			{
+				"doctype": "Payment",
+				"team": team,
+				"amount": amount,
+				"stripe_invoice_id": invoice["id"],
+				"payment_link": invoice["hosted_invoice_url"],
+			}
+		)
 
 	if doc.event_type == "invoice.payment_succeeded":
 		payment.payment_date = datetime.fromtimestamp(
 			invoice["status_transitions"]["paid_at"]
 		)
 		payment.status = "Paid"
+		payment.save()
+		payment.submit()
 	elif doc.event_type == "invoice.payment_failed":
 		payment.status = "Failed"
-
-	payment.insert()
+		payment.save()
