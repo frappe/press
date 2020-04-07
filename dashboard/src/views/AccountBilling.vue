@@ -11,7 +11,7 @@
 				This is the amount so far based on the usage of your sites
 			</p>
 			<div
-				class="w-full py-4 mt-6 border border-gray-100 rounded-md shadow sm:w-1/2"
+				class="w-full py-2 mt-6 border border-gray-100 rounded-md shadow sm:w-1/2"
 			>
 				<div class="grid grid-cols-3 px-6 py-3 text-sm">
 					<div class="font-medium text-gray-700">Usage Amount:</div>
