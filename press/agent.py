@@ -55,6 +55,16 @@ class Agent:
 			"New Site", f"benches/{site.bench}/sites", data, bench=site.bench, site=site.name
 		)
 
+	def install_app_site(self, site, app):
+		data = {"name": frappe.db.get_value("Frappe App", app, "scrubbed")}
+		return self.create_agent_job(
+			"Install App on Site",
+			f"benches/{site.bench}/sites/{site.name}/apps",
+			data,
+			bench=site.bench,
+			site=site.name,
+		)
+
 	def update_site(self, site, target, deploy_type):
 		data = {"target": target}
 		return self.create_agent_job(

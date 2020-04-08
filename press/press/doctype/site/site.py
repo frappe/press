@@ -15,6 +15,7 @@ from press.press.doctype.site_activity.site_activity import log_site_activity
 from frappe.frappeclient import FrappeClient, FrappeException
 from frappe.utils import cint
 from press.api.site import check_dns
+from frappe.core.utils import find
 
 
 class Site(Document):
@@ -35,6 +36,13 @@ class Site(Document):
 
 		if self.is_new() and frappe.session.user != "Administrator":
 			self.can_create_site()
+
+	def install_app(self, app):
+		if not find(self.apps, lambda x: x.app == app):
+			self.append("apps", {"app": app})
+			agent = Agent(self.server)
+			agent.install_app_site(self, app)
+			self.save()
 
 	def can_create_site(self):
 		if not self.plan:
@@ -189,6 +197,19 @@ def process_archive_site_job_update(job):
 		updated_status = "Broken"
 	else:
 		updated_status = "Active"
+
+	site_status = frappe.get_value("Site", job.site, "status")
+	if updated_status != site_status:
+		frappe.db.set_value("Site", job.site, "status", updated_status)
+
+
+def process_install_app_site_job_update(job):
+	updated_status = {
+		"Pending": "Active",
+		"Running": "Installing",
+		"Success": "Active",
+		"Failure": "Broken",
+	}[job.status]
 
 	site_status = frappe.get_value("Site", job.site, "status")
 	if updated_status != site_status:
