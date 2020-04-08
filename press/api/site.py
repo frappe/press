@@ -157,16 +157,25 @@ def all():
 @frappe.whitelist()
 def get(name):
 	site = frappe.get_doc("Site", name)
+	bench_apps = [app.app for app in frappe.get_doc("Bench", site.bench).apps]
 	apps = [app.app for app in site.apps]
+	available_apps = list(filter(lambda x: x not in apps, bench_apps))
 	apps = frappe.get_all(
 		"Frappe App",
 		fields=["name", "repo_owner as owner", "scrubbed as repo", "url", "branch"],
 		filters={"name": ("in", apps)},
 	)
+	available_apps = frappe.get_all(
+		"Frappe App",
+		fields=["name", "repo_owner as owner", "scrubbed as repo", "url", "branch"],
+		filters={"name": ("in", available_apps)},
+	)
+
 	return {
 		"name": site.name,
 		"status": site.status,
 		"installed_apps": apps,
+		"available_apps": available_apps,
 		"config": json.loads(site.config),
 		"creation": site.creation,
 		"last_updated": site.modified,
@@ -265,6 +274,11 @@ def check_dns(name, domain):
 @frappe.whitelist()
 def add_domain(name, domain):
 	frappe.get_doc("Site", name).add_domain(domain)
+
+
+@frappe.whitelist()
+def install_app(name, app):
+	frappe.get_doc("Site", name).install_app(app)
 
 
 @frappe.whitelist()
