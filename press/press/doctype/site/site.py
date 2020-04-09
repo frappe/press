@@ -35,7 +35,6 @@ class Site(Document):
 
 		if self.is_new() and frappe.session.user != "Administrator":
 			self.can_create_site()
-			self.validate_plan()
 
 	def can_create_site(self):
 		if not self.plan:
@@ -55,13 +54,6 @@ class Site(Document):
 		)
 		if frappe.db.count("Site", {"team": self.team}) >= trial_sites_count:
 			frappe.throw("Cannot create site without subscription")
-
-	def validate_plan(self):
-		if not self.has_subscription():
-			trial_period_days = frappe.db.get_value("Plan", self.plan, ["trial_period"])
-			self.trial_expiration_date = frappe.utils.add_days(
-				frappe.utils.nowdate(), trial_period_days
-			)
 
 	def has_subscription(self):
 		return bool(frappe.db.get_value("Subscription", {"team": self.team}))
