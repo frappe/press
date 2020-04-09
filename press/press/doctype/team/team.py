@@ -101,6 +101,20 @@ class Team(Document):
 			payment.payment_date = frappe.utils.global_date_format(payment.payment_date)
 		return payments
 
+	def allocate_credit_amount(self, amount, remark):
+		if amount > 0:
+			doc = frappe.get_doc(
+				{
+					"doctype": "Payment Ledger Entry",
+					"purpose": "Credits Allocation",
+					"amount": amount,
+					"team": self.name,
+					"remark": remark,
+				}
+			)
+			doc.insert()
+			doc.submit()
+
 
 def get_team_members(team):
 	if not frappe.db.exists("Team", team):
@@ -144,4 +158,3 @@ def process_stripe_webhook(doc, method):
 	customer_id = payment_method["customer"]
 	team_doc = frappe.get_doc("Team", {"stripe_customer_id": customer_id})
 	team_doc.set_default_payment_method()
-	team_doc.create_subscription()

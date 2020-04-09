@@ -132,6 +132,7 @@ def create_ledger_entries():
 			}
 		)
 		doc.insert()
+		frappe.db.commit()
 		try:
 			doc.submit()
 		except Exception:
@@ -149,7 +150,8 @@ def submit_failed_ledger_entries():
 	)
 	for entry in entries:
 		try:
-			frappe.get_doc("Payment Ledger Entry", entry.name).submit()
+			doc = frappe.get_doc("Payment Ledger Entry", entry.name)
+			doc.submit()
 		except Exception:
 			frappe.db.rollback()
 			log_error(title="Submit Failed Payment Ledger Entry", doc=doc.name)

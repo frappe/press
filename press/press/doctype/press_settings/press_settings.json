@@ -29,7 +29,10 @@
   "stripe_usd_plan_id",
   "create_stripe_webhook",
   "stripe_webhook_endpoint_id",
-  "stripe_webhook_secret"
+  "stripe_webhook_secret",
+  "column_break_26",
+  "free_credits_inr",
+  "free_credits_usd"
  ],
  "fields": [
   {
@@ -179,11 +182,27 @@
    "fieldname": "trial_sites_count",
    "fieldtype": "Int",
    "label": "Number of Sites in Trial"
+  },
+  {
+   "fieldname": "column_break_26",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "free_credits_inr",
+   "fieldtype": "Currency",
+   "label": "Credits on Signup (INR)",
+   "options": "INR"
+  },
+  {
+   "fieldname": "free_credits_usd",
+   "fieldtype": "Currency",
+   "label": "Credits on Signup (USD)",
+   "options": "USD"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2020-04-06 14:35:25.296668",
+ "modified": "2020-04-09 19:32:37.772364",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
