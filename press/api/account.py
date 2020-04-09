@@ -43,6 +43,10 @@ def setup_account(
 	if not account_request:
 		frappe.throw("Invalid or Expired Key")
 
+	# if the request is authenticated, set the user to Administrator
+	current_user = frappe.session.user
+	frappe.set_user("Administrator")
+
 	team = account_request.team
 	email = account_request.email
 	role = account_request.role
@@ -51,6 +55,7 @@ def setup_account(
 		# if this is a request from an invitation
 		# then Team already exists and will be added to that team
 		doc = frappe.get_doc("Team", team)
+		doc.create_user_for_member(first_name, last_name, email, password, role)
 	else:
 		currency = "INR" if country == "India" else "USD"
 		# Team doesn't exist, create it
@@ -63,8 +68,15 @@ def setup_account(
 				"enabled": 1,
 			}
 		).insert(ignore_permissions=True, ignore_links=True)
-	doc.create_user_for_member(first_name, last_name, email, password, role)
-	doc.create_stripe_customer()
+
+		doc.create_user_for_member(first_name, last_name, email, password, role)
+		doc.create_stripe_customer()
+		doc.create_subscription()
+
+		# allocate free credits on signup
+		credits_field = "free_credits_inr" if currency == "INR" else "free_credits_usd"
+		credit_amount = frappe.db.get_single_value("Press Settings", credits_field)
+		doc.allocate_credit_amount(credit_amount, remark="Free credits on signup")
 
 	frappe.local.login_manager.login_as(email)
 

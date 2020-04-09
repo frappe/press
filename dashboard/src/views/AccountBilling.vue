@@ -1,6 +1,6 @@
 <template>
 	<div>
-		<div class="text-gray-800" v-if="state === 'RequestStarted'">
+		<div class="mb-10 text-gray-800" v-if="state === 'RequestStarted'">
 			Fetching billing information...
 		</div>
 		<section v-if="upcomingInvoice" class="mb-10">
@@ -133,9 +133,9 @@ export default {
 			pastPayments: []
 		};
 	},
-	mounted() {
-		this.fetchPaymentMethods();
-		this.fetchUpcomingInvoice();
+	async mounted() {
+		await this.fetchUpcomingInvoice();
+		await this.fetchPaymentMethods();
 	},
 	methods: {
 		async fetchPaymentMethods() {
