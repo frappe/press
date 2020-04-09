@@ -17,7 +17,8 @@
   "amount",
   "currency",
   "amended_from",
-  "reversed_from",
+  "reverted_from",
+  "reverted",
   "stripe_section",
   "stripe_usage_record_id",
   "usage_units",
@@ -113,6 +114,7 @@
   {
    "fieldname": "purpose",
    "fieldtype": "Select",
+   "in_standard_filter": 1,
    "label": "Purpose",
    "options": "Site Consumption\nCredits Allocation\nReverse Credits Allocation\nPayment"
   },
@@ -132,12 +134,6 @@
    "read_only": 1
   },
   {
-   "fieldname": "reversed_from",
-   "fieldtype": "Data",
-   "label": "Reversed From",
-   "read_only": 1
-  },
-  {
    "depends_on": "reference_name",
    "fieldname": "reference_section",
    "fieldtype": "Section Break",
@@ -154,11 +150,28 @@
    "fieldtype": "Dynamic Link",
    "label": "Reference Name",
    "options": "reference_doctype"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "depends_on": "eval:doc.purpose == 'Credits Allocation' && doc.reverted",
+   "fieldname": "reverted",
+   "fieldtype": "Check",
+   "label": "Reverted",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reverted_from",
+   "fieldtype": "Link",
+   "label": "Reverted From",
+   "options": "Payment Ledger Entry",
+   "read_only": 1,
+   "set_only_once": 1
   }
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2020-04-07 19:24:35.456426",
+ "modified": "2020-04-09 18:06:08.610053",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Payment Ledger Entry",
