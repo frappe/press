@@ -42,7 +42,17 @@
 						Select apps to install to your site. You can also choose a specific
 						version of the app.
 					</p>
-					<div class="flex mt-6">
+					<div class="mt-6">
+						<select class="form-select" v-model="selectedGroup">
+							<option
+								v-for="group in options.groups"
+								:key="group.name"
+							>
+								{{ group.name }}
+							</option>
+						</select>
+					</div>
+					<div class="flex mt-6 overflow-x-auto">
 						<button
 							class="flex items-center justify-center w-40 px-6 py-8 mr-4 border rounded cursor-pointer focus:outline-none focus:shadow-outline"
 							:class="
@@ -198,6 +208,7 @@ export default {
 		enableMonitoring: false,
 		options: null,
 		selectedApps: [],
+		selectedGroup: null,
 		selectedPlan: null,
 		siteExistsMessage: null,
 		state: null,
@@ -205,24 +216,34 @@ export default {
 	}),
 	async mounted() {
 		this.options = await this.$call('press.api.site.options_for_new');
-		this.apps = this.options.apps.map(d => {
-			let app = d.scrubbed;
-			return {
-				app: d.name,
-				frappe: d.frappe,
-				repo: 'frappe/' + d.scrubbed,
-				logo: app === 'frappe' ? frappeLogo : erpnextLogo
-			};
-		});
-		let frappeApp = this.apps.find(a => this.isFrappeApp(a));
-		if (frappeApp) {
-			this.selectedApps.push(frappeApp.app);
+		this.selectedGroup = this.options.groups.find(g => g.default).name;
+	},
+	watch: {
+		selectedGroup() {
+			this.selectedApps = [];
+			this.updateApps();
 		}
-		this.$nextTick(() => {
-			this.$refs.siteName.focus();
-		});
 	},
 	methods: {
+		updateApps() { 
+			let group = this.options.groups.find(g => g.name == this.selectedGroup);
+			this.apps = group.apps.map(d => {
+				let app = d.scrubbed;
+				return {
+					app: d.name,
+					frappe: d.frappe,
+					repo: 'frappe/' + d.scrubbed,
+					logo: app === 'frappe' ? frappeLogo : erpnextLogo
+				};
+			});
+			let frappeApp = this.apps.find(a => this.isFrappeApp(a));
+			if (frappeApp) {
+				this.selectedApps.push(frappeApp.app);
+			}
+			this.$nextTick(() => {
+				this.$refs.siteName.focus();
+			});
+		},
 		async createSite() {
 			let siteName = await this.$call('press.api.site.new', {
 				site: {
@@ -230,7 +251,7 @@ export default {
 					apps: this.selectedApps,
 					backups: this.enableBackups,
 					monitor: this.enableMonitoring,
-					group: this.options.group,
+					group: this.selectedGroup,
 					plan: this.selectedPlan.name
 				}
 			});
