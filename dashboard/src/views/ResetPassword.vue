@@ -10,6 +10,8 @@
 					class="block w-full mt-2 shadow pointer-events-none form-input"
 					type="text"
 					:value="email"
+					name="email"
+					autocomplete="off"
 					disabled
 				/>
 			</label>
@@ -19,6 +21,8 @@
 					class="block w-full mt-2 shadow form-input"
 					type="password"
 					v-model="password"
+					name="password"
+					autocomplete="new-password"
 					required
 				/>
 			</label>
