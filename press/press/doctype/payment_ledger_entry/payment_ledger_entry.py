@@ -112,8 +112,6 @@ def create_ledger_entries():
 			["team", "is", "set"],
 			["team", "!=", "Administrator"],
 			["plan", "is", "set"],
-			# sites which are out of trial period
-			["trial_expiration_date", "<", today],
 		],
 		fields=["name", "team", "plan"],
 	)
