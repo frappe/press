@@ -51,7 +51,7 @@ class PaymentLedgerEntry(Document):
 			# create balance adjustment on Stripe
 			self.create_balance_adjustment_on_stripe()
 
-	def on_cancel(self):
+	def revert(self, reason=None):
 		if self.purpose == "Credits Allocation":
 			# reverse balance adjustment on Stripe
 			doc = frappe.get_doc(
@@ -59,12 +59,16 @@ class PaymentLedgerEntry(Document):
 					"doctype": "Payment Ledger Entry",
 					"purpose": "Reverse Credits Allocation",
 					"amount": self.amount * -1,
-					"reversed_from": self.name,
+					"reverted_from": self.name,
 					"team": self.team,
 				}
 			)
 			doc.insert()
 			doc.submit()
+			if reason:
+				doc.add_comment(text=reason)
+			self.reverted = 1
+			self.save()
 
 	def create_usage_record_on_stripe(self):
 		stripe = get_stripe()
