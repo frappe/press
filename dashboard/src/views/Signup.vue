@@ -10,6 +10,7 @@
 					class="block w-full mt-2 shadow form-input"
 					type="email"
 					placeholder="johndoe@mail.com"
+					autocomplete="email"
 					v-model="email"
 					required
 				/>

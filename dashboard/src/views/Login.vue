@@ -13,6 +13,8 @@
 					class="block w-full mt-2 shadow form-input"
 					placeholder="johndoe@mail.com"
 					v-model="email"
+					name="email"
+					autocomplete="email"
 					:type="email !== 'Administrator' ? 'email' : ''"
 					required
 				/>
@@ -25,6 +27,8 @@
 						type="password"
 						placeholder="******"
 						v-model="password"
+						name="password"
+						autocomplete="current-password"
 						required
 					/>
 					<router-link

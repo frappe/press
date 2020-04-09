@@ -15,6 +15,7 @@
 					class="block w-full mt-2 shadow pointer-events-none form-input"
 					type="text"
 					:value="email"
+					autocomplete="off"
 					disabled
 				/>
 			</label>
@@ -25,6 +26,8 @@
 						class="block w-full mt-2 shadow pointer-events-none form-input"
 						type="text"
 						v-model="firstName"
+						name="fname"
+						autocomplete="given-name"
 						required
 					/>
 				</label>
@@ -34,6 +37,8 @@
 						class="block w-full mt-2 shadow pointer-events-none form-input"
 						type="text"
 						v-model="lastName"
+						name="lname"
+						autocomplete="family-name"
 						required
 					/>
 				</label>
@@ -43,6 +48,8 @@
 						class="block w-full mt-2 shadow form-input"
 						type="password"
 						v-model="password"
+						name="password"
+						autocomplete="new-password"
 					/>
 				</label>
 			</template>
