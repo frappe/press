@@ -7,7 +7,8 @@
  "engine": "InnoDB",
  "field_order": [
   "apps",
-  "default"
+  "default",
+  "public"
  ],
  "fields": [
   {
@@ -24,10 +25,18 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Default"
+  },
+  {
+   "default": "0",
+   "fieldname": "public",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Public"
   }
  ],
  "links": [],
- "modified": "2020-02-28 14:43:48.120348",
+ "modified": "2020-04-08 16:47:15.291075",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",

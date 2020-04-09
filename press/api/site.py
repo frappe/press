@@ -101,14 +101,19 @@ def activities(name):
 
 @frappe.whitelist()
 def options_for_new():
-	group = frappe.get_doc("Release Group", {"default": True})
-	apps = frappe.get_all(
-		"Frappe App",
-		fields=["name", "frappe", "branch", "scrubbed", "url"],
-		filters={"name": ("in", [row.app for row in group.apps])},
+	groups = frappe.get_all(
+		"Release Group", fields=["name", "`default`"], filters={"public": True}
 	)
-	order = {row.app: row.idx for row in group.apps}
-	sorted_apps = sorted(apps, key=lambda x: order[x.name])
+	for group in groups:
+		group_doc = frappe.get_doc("Release Group", group.name)
+		group_apps = frappe.get_all(
+			"Frappe App",
+			fields=["name", "frappe", "branch", "scrubbed", "url"],
+			filters={"name": ("in", [row.app for row in group_doc.apps])},
+		)
+		order = {row.app: row.idx for row in group_doc.apps}
+		group["apps"] = sorted(group_apps, key=lambda x: order[x.name])
+
 	domain, trial_sites_count = frappe.db.get_value(
 		"Press Settings", "Press Settings", ["domain", "trial_sites_count"]
 	)
@@ -137,8 +142,7 @@ def options_for_new():
 
 	return {
 		"domain": domain,
-		"group": group.name,
-		"apps": sorted_apps,
+		"groups": sorted(groups, key=lambda x: not x.default),
 		"plans": plans,
 		"has_subscription": has_subscription,
 		"disable_site_creation": disable_site_creation,
