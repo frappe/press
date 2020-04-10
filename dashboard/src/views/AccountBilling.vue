@@ -14,6 +14,10 @@
 				class="w-full py-2 mt-6 border border-gray-100 rounded-md shadow sm:w-1/2"
 			>
 				<div class="grid grid-cols-3 px-6 py-3 text-sm">
+					<div class="font-medium text-gray-700">Available Credits:</div>
+					<div class="col-span-2 font-medium">{{ availableCredits }}</div>
+				</div>
+				<div class="grid grid-cols-3 px-6 py-3 text-sm border-t">
 					<div class="font-medium text-gray-700">Usage Amount:</div>
 					<div class="col-span-2 font-medium">{{ upcomingInvoice.amount }}</div>
 				</div>
@@ -130,6 +134,7 @@ export default {
 			state: null,
 			paymentMethods: null,
 			upcomingInvoice: null,
+			availableCredits: null,
 			pastPayments: []
 		};
 	},
@@ -147,10 +152,14 @@ export default {
 			}
 		},
 		async fetchUpcomingInvoice() {
-			let { upcoming_invoice = null, past_payments = [] } =
-				(await this.$call('press.api.billing.get_invoices')) || {};
+			let {
+				upcoming_invoice = null,
+				past_payments = [],
+				available_credits = 0
+			} = (await this.$call('press.api.billing.info')) || {};
 			this.upcomingInvoice = upcoming_invoice;
 			this.pastPayments = past_payments;
+			this.availableCredits = available_credits;
 		},
 		onCardAdd() {
 			this.state = 'Idle';
