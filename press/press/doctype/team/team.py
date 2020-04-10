@@ -159,7 +159,7 @@ class Team(Document):
 			{"team": self.name, "docstatus": 1},
 			["sum(amount) as total"],
 		)
-		amount = res[0].total
+		amount = res[0].total or 0
 		if amount > 0:
 			return amount
 		return 0
