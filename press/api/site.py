@@ -161,13 +161,14 @@ def all():
 @frappe.whitelist()
 def get(name):
 	site = frappe.get_doc("Site", name)
-	bench_apps = [app.app for app in frappe.get_doc("Bench", site.bench).apps]
-	apps = [app.app for app in site.apps]
-	available_apps = list(filter(lambda x: x not in apps, bench_apps))
-	apps = frappe.get_all(
+	bench = frappe.get_doc("Bench", site.bench)
+	bench_apps = {app.app: app.idx for app in bench.apps}
+	installed_apps = [app.app for app in site.apps]
+	available_apps = list(filter(lambda x: x not in installed_apps, bench_apps.keys()))
+	installed_apps = frappe.get_all(
 		"Frappe App",
 		fields=["name", "repo_owner as owner", "scrubbed as repo", "url", "branch"],
-		filters={"name": ("in", apps)},
+		filters={"name": ("in", installed_apps)},
 	)
 	available_apps = frappe.get_all(
 		"Frappe App",
@@ -178,8 +179,8 @@ def get(name):
 	return {
 		"name": site.name,
 		"status": site.status,
-		"installed_apps": apps,
-		"available_apps": available_apps,
+		"installed_apps": sorted(installed_apps, key=lambda x: bench_apps[x.name]),
+		"available_apps": sorted(available_apps, key=lambda x: bench_apps[x.name]),
 		"config": json.loads(site.config),
 		"creation": site.creation,
 		"last_updated": site.modified,
