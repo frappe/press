@@ -30,7 +30,7 @@ def get_invoices():
 	customer_email = invoice["customer_email"]
 	next_payment_attempt = invoice["next_payment_attempt"]
 	total_amount = invoice["amount_due"]
-	currency = team_doc.transaction_currency
+	currency = team_doc.currency
 	past_payments = team_doc.get_past_payments()
 	upcoming_invoice = {
 		"next_payment_attempt": global_date_format(

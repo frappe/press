@@ -15,7 +15,7 @@ from press.utils import log_error
 class PaymentLedgerEntry(Document):
 	def validate(self):
 		if self.is_new():
-			self.currency = frappe.db.get_value("Team", self.team, "transaction_currency")
+			self.currency = frappe.db.get_value("Team", self.team, "currency")
 			if self.purpose == "Site Consumption":
 				# self.check_duplicate()
 				self.calculate_consumption_amount()

@@ -12,7 +12,7 @@
   "team_members",
   "subscription_details_section",
   "stripe_customer_id",
-  "transaction_currency"
+  "currency"
  ],
  "fields": [
   {
@@ -45,16 +45,16 @@
    "label": "Subscription Details"
   },
   {
-   "fieldname": "transaction_currency",
-   "fieldtype": "Link",
-   "label": "Transaction Currency",
-   "options": "Currency"
-  },
-  {
    "fieldname": "stripe_customer_id",
    "fieldtype": "Data",
    "label": "Stripe Customer ID",
    "read_only": 1
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency"
   }
  ],
  "links": [],
