@@ -44,7 +44,7 @@ def setup_account(
 		frappe.throw("Invalid or Expired Key")
 
 	# if the request is authenticated, set the user to Administrator
-	current_user = frappe.session.user
+	# current_user = frappe.session.user
 	frappe.set_user("Administrator")
 
 	team = account_request.team
@@ -59,7 +59,7 @@ def setup_account(
 	else:
 		# Team doesn't exist, create it
 		doc = frappe.get_doc(
-			{"doctype": "Team", "name": team, "user": email, "country": country, "enabled": 1,}
+			{"doctype": "Team", "name": team, "user": email, "country": country, "enabled": 1}
 		)
 		doc.insert(ignore_permissions=True, ignore_links=True)
 		doc.create_user_for_member(first_name, last_name, email, password, role)
