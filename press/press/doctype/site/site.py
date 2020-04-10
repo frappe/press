@@ -39,6 +39,7 @@ class Site(Document):
 
 	def install_app(self, app):
 		if not find(self.apps, lambda x: x.app == app):
+			log_site_activity(self.name, "Install App")
 			self.append("apps", {"app": app})
 			agent = Agent(self.server)
 			agent.install_app_site(self, app)
