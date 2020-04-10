@@ -29,17 +29,21 @@
 				/>
 			</div>
 		</div>
+		<CountrySelectionDialog />
 	</div>
 </template>
 <script>
 import Vue from 'vue';
 import Sidebar from '@/components/Sidebar';
 import Notification from '@/components/Notification';
+import CountrySelectionDialog from '@/views/CountrySelectionDialog';
+
 export default {
 	name: 'App',
 	components: {
 		Sidebar,
-		Notification
+		Notification,
+		CountrySelectionDialog
 	},
 	data() {
 		return {

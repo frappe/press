@@ -17,7 +17,7 @@ class PaymentLedgerEntry(Document):
 		if self.is_new():
 			self.currency = frappe.db.get_value("Team", self.team, "currency")
 			if self.purpose == "Site Consumption":
-				# self.check_duplicate()
+				self.check_duplicate()
 				self.calculate_consumption_amount()
 
 	def check_duplicate(self):

@@ -9,7 +9,7 @@ from frappe.utils import random_string, get_url
 from frappe.website.render import build_response
 from frappe.core.doctype.user.user import update_password
 from press.press.doctype.team.team import get_team_members
-from press.utils import get_country_info
+from press.utils import get_country_info, get_current_team
 from datetime import datetime, timedelta
 
 
@@ -57,26 +57,13 @@ def setup_account(
 		doc = frappe.get_doc("Team", team)
 		doc.create_user_for_member(first_name, last_name, email, password, role)
 	else:
-		currency = "INR" if country == "India" else "USD"
 		# Team doesn't exist, create it
 		doc = frappe.get_doc(
-			{
-				"doctype": "Team",
-				"name": team,
-				"user": email,
-				"transaction_currency": currency,
-				"enabled": 1,
-			}
-		).insert(ignore_permissions=True, ignore_links=True)
-
+			{"doctype": "Team", "name": team, "user": email, "country": country, "enabled": 1,}
+		)
+		doc.insert(ignore_permissions=True, ignore_links=True)
 		doc.create_user_for_member(first_name, last_name, email, password, role)
-		doc.create_stripe_customer()
-		doc.create_subscription()
-
-		# allocate free credits on signup
-		credits_field = "free_credits_inr" if currency == "INR" else "free_credits_usd"
-		credit_amount = frappe.db.get_single_value("Press Settings", credits_field)
-		doc.allocate_credit_amount(credit_amount, remark="Free credits on signup")
+		doc.create_stripe_customer_and_subscription()
 
 	frappe.local.login_manager.login_as(email)
 
@@ -101,6 +88,17 @@ def country_list():
 		return [d.name for d in frappe.db.get_all("Country")]
 
 	return frappe.cache().get_value("country_list", generator=get_country_list)
+
+
+@frappe.whitelist()
+def set_country(country):
+	team = get_current_team()
+	doc = frappe.get_doc("Team", team)
+	doc.country = country
+	doc.save()
+
+	if not doc.has_subscription():
+		doc.create_stripe_customer_and_subscription()
 
 
 def get_account_request_from_key(key):

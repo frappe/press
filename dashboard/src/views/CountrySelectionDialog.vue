@@ -1,0 +1,63 @@
+<template>
+	<Dialog v-if="showDialog" v-model="showDialog" title="Update Country">
+		Please select your country
+
+		<select
+			class="block w-full mt-2 shadow form-select"
+			v-model="country"
+			name="country"
+			autocomplete="country"
+		>
+			<option v-for="country in countries" :key="country">
+				{{ country }}
+			</option>
+		</select>
+
+		<template slot="actions">
+			<Button
+				:disabled="state === 'RequestStarted'"
+				type="primary"
+				@click="submit"
+			>
+				Submit
+			</Button>
+		</template>
+	</Dialog>
+</template>
+
+<script>
+import Dialog from '@/components/Dialog';
+export default {
+	components: {
+		Dialog
+	},
+	data() {
+		return {
+			state: null,
+			errorMessage: null,
+			showDialog: false,
+			country: null,
+			countries: []
+		};
+	},
+	async mounted() {
+		this.$store.account.$watch('team', async team => {
+			if (team && !team.country && this.$store.account.hasRole('Press Admin')) {
+				await this.fetchCountries();
+				this.showDialog = true;
+			}
+		});
+	},
+	methods: {
+		async fetchCountries() {
+			this.countries = await this.$call('press.api.account.country_list');
+		},
+		async submit() {
+			await this.$call('press.api.account.set_country', {
+				country: this.country
+			});
+			this.showDialog = false;
+		}
+	}
+};
+</script>

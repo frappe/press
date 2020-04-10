@@ -12,6 +12,7 @@
   "team_members",
   "subscription_details_section",
   "stripe_customer_id",
+  "country",
   "currency"
  ],
  "fields": [
@@ -51,6 +52,12 @@
    "read_only": 1
   },
   {
+   "fieldname": "country",
+   "fieldtype": "Link",
+   "label": "Country",
+   "options": "Country"
+  },
+  {
    "fieldname": "currency",
    "fieldtype": "Link",
    "label": "Currency",
@@ -58,7 +65,7 @@
   }
  ],
  "links": [],
- "modified": "2020-04-04 19:38:07.062541",
+ "modified": "2020-04-09 21:07:27.320177",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

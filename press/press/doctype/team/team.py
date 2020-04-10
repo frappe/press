@@ -23,9 +23,21 @@ class Team(Document):
 				frappe.DuplicateEntryError,
 			)
 
+		if not self.currency and self.country:
+			self.currency = "INR" if self.country == "India" else "USD"
+
 		# set default user
 		if not self.user and self.team_members:
 			self.user = self.team_members[0].user
+
+	def create_stripe_customer_and_subscription(self):
+		self.create_stripe_customer()
+		self.create_subscription()
+
+		# allocate free credits on signup
+		credits_field = "free_credits_inr" if self.currency == "INR" else "free_credits_usd"
+		credit_amount = frappe.db.get_single_value("Press Settings", credits_field)
+		self.allocate_credit_amount(credit_amount, remark="Free credits on signup")
 
 	def create_user_for_member(
 		self, first_name=None, last_name=None, email=None, password=None, role=None
@@ -47,9 +59,10 @@ class Team(Document):
 		self.save(ignore_permissions=True)
 
 	def create_stripe_customer(self):
-		stripe = get_stripe()
-		customer = stripe.Customer.create(email=self.user, name=get_fullname(self.user))
-		self.db_set("stripe_customer_id", customer.id)
+		if not self.stripe_customer_id:
+			stripe = get_stripe()
+			customer = stripe.Customer.create(email=self.user, name=get_fullname(self.user))
+			self.db_set("stripe_customer_id", customer.id)
 
 	def set_default_payment_method(self):
 		payment_methods = self.get_payment_methods()
@@ -112,7 +125,7 @@ class Team(Document):
 					"remark": remark,
 				}
 			)
-			doc.insert()
+			doc.insert(ignore_permissions=True)
 			doc.submit()
 
 
