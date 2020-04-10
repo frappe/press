@@ -1,4 +1,5 @@
 import store from '@/store';
+import router from '@/router';
 
 export default async function call(method, args) {
 	if (!args) {
@@ -71,6 +72,14 @@ export default async function call(method, args) {
 			e.messages = ['Internal Server Error'];
 		}
 		updateState(this, null, e.messages.join('\n'));
+
+		if (
+			[401, 403].includes(res.status) &&
+			document.cookie.includes('sid=Guest;') &&
+			router.currentRoute.name !== 'Login'
+		) {
+			router.push('/login');
+		}
 		throw e;
 	}
 
