@@ -1,0 +1,93 @@
+{
+ "actions": [],
+ "autoname": "format:PM{#####}",
+ "creation": "2020-04-10 12:24:49.998168",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "team",
+  "name_on_card",
+  "last_4",
+  "expiry_month",
+  "expiry_year",
+  "stripe_customer_id",
+  "stripe_payment_method_id",
+  "is_default"
+ ],
+ "fields": [
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Team",
+   "options": "Team",
+   "reqd": 1
+  },
+  {
+   "fieldname": "name_on_card",
+   "fieldtype": "Data",
+   "label": "Name on Card"
+  },
+  {
+   "fieldname": "last_4",
+   "fieldtype": "Data",
+   "label": "Last 4 Numbers",
+   "read_only": 1
+  },
+  {
+   "fieldname": "expiry_month",
+   "fieldtype": "Data",
+   "label": "Expiry Month",
+   "read_only": 1
+  },
+  {
+   "fieldname": "expiry_year",
+   "fieldtype": "Data",
+   "label": "Expiry Year",
+   "read_only": 1
+  },
+  {
+   "fieldname": "stripe_payment_method_id",
+   "fieldtype": "Data",
+   "label": "Stripe Payment Method ID",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "team.stripe_customer_id",
+   "fieldname": "stripe_customer_id",
+   "fieldtype": "Data",
+   "label": "Stripe Customer ID"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_default",
+   "fieldtype": "Check",
+   "label": "Is Default"
+  }
+ ],
+ "links": [],
+ "modified": "2020-04-10 12:37:07.048745",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Stripe Payment Method",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

@@ -104,17 +104,20 @@
 				class="w-full py-4 mt-6 border border-gray-100 rounded-md shadow sm:w-1/2"
 			>
 				<div
-					class="grid items-center grid-cols-3 px-6 py-4 hover:bg-gray-50"
+					class="grid items-center grid-cols-5 px-6 py-4 hover:bg-gray-50"
 					v-for="paymentMethod in paymentMethods"
-					:key="paymentMethod.id"
+					:key="paymentMethod.name"
 				>
-					<div class="font-semibold">•••• {{ paymentMethod.card.last4 }}</div>
-					<div>
-						{{ paymentMethod.billing_details.name }}
+					<div class="font-semibold">•••• {{ paymentMethod.last_4 }}</div>
+					<div class="col-span-2">
+						{{ paymentMethod.name_on_card }}
 					</div>
-					<div>
-						{{ paymentMethod.card.exp_month }} /
-						{{ paymentMethod.card.exp_year }}
+					<div class="text-right">
+						{{ paymentMethod.expiry_month }} /
+						{{ paymentMethod.expiry_year }}
+					</div>
+					<div class="text-right">
+						<Badge v-if="paymentMethod.is_default" color="blue">Default</Badge>
 					</div>
 				</div>
 			</div>
