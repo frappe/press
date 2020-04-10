@@ -101,14 +101,19 @@ def activities(name):
 
 @frappe.whitelist()
 def options_for_new():
-	group = frappe.get_doc("Release Group", {"default": True})
-	apps = frappe.get_all(
-		"Frappe App",
-		fields=["name", "frappe", "branch", "scrubbed", "url"],
-		filters={"name": ("in", [row.app for row in group.apps])},
+	groups = frappe.get_all(
+		"Release Group", fields=["name", "`default`"], filters={"public": True}
 	)
-	order = {row.app: row.idx for row in group.apps}
-	sorted_apps = sorted(apps, key=lambda x: order[x.name])
+	for group in groups:
+		group_doc = frappe.get_doc("Release Group", group.name)
+		group_apps = frappe.get_all(
+			"Frappe App",
+			fields=["name", "frappe", "branch", "scrubbed", "url"],
+			filters={"name": ("in", [row.app for row in group_doc.apps])},
+		)
+		order = {row.app: row.idx for row in group_doc.apps}
+		group["apps"] = sorted(group_apps, key=lambda x: order[x.name])
+
 	domain, trial_sites_count = frappe.db.get_value(
 		"Press Settings", "Press Settings", ["domain", "trial_sites_count"]
 	)
@@ -137,8 +142,7 @@ def options_for_new():
 
 	return {
 		"domain": domain,
-		"group": group.name,
-		"apps": sorted_apps,
+		"groups": sorted(groups, key=lambda x: not x.default),
 		"plans": plans,
 		"has_subscription": has_subscription,
 		"disable_site_creation": disable_site_creation,
@@ -157,16 +161,26 @@ def all():
 @frappe.whitelist()
 def get(name):
 	site = frappe.get_doc("Site", name)
-	apps = [app.app for app in site.apps]
-	apps = frappe.get_all(
+	bench = frappe.get_doc("Bench", site.bench)
+	bench_apps = {app.app: app.idx for app in bench.apps}
+	installed_apps = [app.app for app in site.apps]
+	available_apps = list(filter(lambda x: x not in installed_apps, bench_apps.keys()))
+	installed_apps = frappe.get_all(
 		"Frappe App",
 		fields=["name", "repo_owner as owner", "scrubbed as repo", "url", "branch"],
-		filters={"name": ("in", apps)},
+		filters={"name": ("in", installed_apps)},
 	)
+	available_apps = frappe.get_all(
+		"Frappe App",
+		fields=["name", "repo_owner as owner", "scrubbed as repo", "url", "branch"],
+		filters={"name": ("in", available_apps)},
+	)
+
 	return {
 		"name": site.name,
 		"status": site.status,
-		"installed_apps": apps,
+		"installed_apps": sorted(installed_apps, key=lambda x: bench_apps[x.name]),
+		"available_apps": sorted(available_apps, key=lambda x: bench_apps[x.name]),
 		"config": json.loads(site.config),
 		"creation": site.creation,
 		"last_updated": site.modified,
@@ -265,6 +279,11 @@ def check_dns(name, domain):
 @frappe.whitelist()
 def add_domain(name, domain):
 	frappe.get_doc("Site", name).add_domain(domain)
+
+
+@frappe.whitelist()
+def install_app(name, app):
+	frappe.get_doc("Site", name).install_app(app)
 
 
 @frappe.whitelist()
