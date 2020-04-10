@@ -91,10 +91,16 @@
 			</div>
 		</section> -->
 		<div class="py-4 mt-10 border-t">
-			<Button type="primary" @click="$store.account.updateProfile">
+			<ErrorMessage class="mb-4" v-if="errorMessage">
+				{{ errorMessage }}
+			</ErrorMessage>
+			<Button
+				type="primary"
+				:disabled="state === 'RequestStarted'"
+				@click="updateProfile"
+			>
 				Save changes
 			</Button>
-			<Button class="ml-2">Cancel</Button>
 		</div>
 	</div>
 </template>
@@ -107,6 +113,8 @@ export default {
 	props: ['account'],
 	data() {
 		return {
+			state: null,
+			errorMessage: null,
 			uploader: null,
 			userImage: null,
 			uploading: false,
@@ -134,16 +142,29 @@ export default {
 			this.uploader.on('finish', () => {
 				this.uploading = false;
 			});
-			let fileDoc = await this.uploader.upload(file, {
+			await this.uploader.upload(file, {
 				doctype: 'User',
-				docname: this.$store.account.user.name
+				docname: this.$store.account.user.name,
+				method: 'press.api.account.update_profile_picture'
 			});
-			if (fileDoc.file_url) {
-				await this.$call('press.api.account.update_profile_picture', {
-					image_url: fileDoc.file_url
-				});
-				await this.$store.account.fetchAccount();
-			}
+			await this.$store.account.fetchAccount();
+			this.notifySuccess();
+		},
+		async updateProfile() {
+			let { first_name, last_name, email } = this.$store.account.user;
+			await this.$call('press.api.account.update_profile', {
+				first_name,
+				last_name,
+				email
+			});
+			this.notifySuccess();
+		},
+		notifySuccess() {
+			this.$notify({
+				title: 'Updated profile information',
+				icon: 'check',
+				color: 'green'
+			});
 		}
 	}
 };
