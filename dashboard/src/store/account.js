@@ -28,15 +28,6 @@ export default {
 				this.user.user_image = url + this.user.user_image;
 			}
 		},
-		async updateProfile() {
-			let { first_name, last_name, email } = this.user;
-			await this.$call('press.api.account.update_profile', {
-				first_name,
-				last_name,
-				email
-			});
-			await this.fetchAccount();
-		},
 		hasRole(role) {
 			let roles = this.user.roles.map(d => d.role);
 			return roles.includes(role);

@@ -147,15 +147,27 @@ def update_profile(first_name, last_name, email):
 	doc.first_name = first_name
 	doc.last_name = last_name
 	doc.email = email
-	doc.save()
+	doc.save(ignore_permissions=True)
 	return doc
 
 
 @frappe.whitelist()
-def update_profile_picture(image_url):
-	user = frappe.get_doc("User", frappe.session.user)
-	user.user_image = image_url
-	user.save()
+def update_profile_picture():
+	user = frappe.session.user
+	_file = frappe.get_doc(
+		{
+			"doctype": "File",
+			"attached_to_doctype": "User",
+			"attached_to_name": user,
+			"attached_to_field": "user_image",
+			"folder": "Home/Attachments",
+			"file_name": frappe.local.uploaded_filename,
+			"is_private": 0,
+			"content": frappe.local.uploaded_file,
+		}
+	)
+	_file.save(ignore_permissions=True)
+	frappe.db.set_value("User", user, "user_image", _file.file_url)
 
 
 @frappe.whitelist(allow_guest=True)
