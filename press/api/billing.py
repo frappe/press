@@ -19,7 +19,7 @@ def get_publishable_key_and_setup_intent():
 
 
 @frappe.whitelist()
-def get_invoices():
+def info():
 	team = get_current_team()
 	team_doc = frappe.get_doc("Team", team)
 	has_subscription = team_doc.has_subscription()
@@ -43,6 +43,7 @@ def get_invoices():
 	return {
 		"upcoming_invoice": upcoming_invoice,
 		"past_payments": past_payments,
+		"available_credits": fmt_money(team_doc.get_available_credits(), 2, currency),
 	}
 
 

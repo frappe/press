@@ -128,6 +128,17 @@ class Team(Document):
 			doc.insert(ignore_permissions=True)
 			doc.submit()
 
+	def get_available_credits(self):
+		res = frappe.db.get_all(
+			"Payment Ledger Entry",
+			{"team": self.name, "docstatus": 1},
+			["sum(amount) as total"],
+		)
+		amount = res[0].total
+		if amount > 0:
+			return amount
+		return 0
+
 
 def get_team_members(team):
 	if not frappe.db.exists("Team", team):
