@@ -43,6 +43,7 @@ class Site(Document):
 			self.append("apps", {"app": app})
 			agent = Agent(self.server)
 			agent.install_app_site(self, app)
+			self.status = "Pending"
 			self.save()
 
 	def can_create_site(self):
