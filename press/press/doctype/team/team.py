@@ -64,20 +64,45 @@ class Team(Document):
 			customer = stripe.Customer.create(email=self.user, name=get_fullname(self.user))
 			self.db_set("stripe_customer_id", customer.id)
 
-	def set_default_payment_method(self):
-		payment_methods = self.get_payment_methods()
-		payment_method = payment_methods[0]
-		stripe = get_stripe()
-		# set default payment method
-		stripe.Customer.modify(
-			self.stripe_customer_id,
-			invoice_settings={"default_payment_method": payment_methods[0]["id"]},
+	def create_payment_method(self, payment_method, set_default=False):
+		doc = frappe.get_doc(
+			{
+				"doctype": "Stripe Payment Method",
+				"stripe_payment_method_id": payment_method["id"],
+				"last_4": payment_method["card"]["last4"],
+				"name_on_card": payment_method["billing_details"]["name"],
+				"expiry_month": payment_method["card"]["exp_month"],
+				"expiry_year": payment_method["card"]["exp_year"],
+				"team": self.name,
+			}
 		)
+		doc.insert()
+		if set_default:
+			doc.set_default()
 
 	def get_payment_methods(self):
+		payment_methods = frappe.db.get_all(
+			"Stripe Payment Method",
+			{"team": self.name},
+			["name", "last_4", "name_on_card", "expiry_month", "expiry_year", "is_default"],
+		)
+		if payment_methods:
+			return payment_methods
+
 		stripe = get_stripe()
 		res = stripe.PaymentMethod.list(customer=self.stripe_customer_id, type="card")
-		return res["data"] or []
+		payment_methods = res["data"] or []
+		payment_methods = [
+			{
+				"name": d["id"],
+				"last_4": d["card"]["last4"],
+				"name_on_card": d["billing_details"]["name"],
+				"expiry_month": d["card"]["exp_month"],
+				"expiry_year": d["card"]["exp_year"],
+			}
+			for d in payment_methods
+		]
+		return payment_methods
 
 	def get_upcoming_invoice(self):
 		stripe = get_stripe()
@@ -181,4 +206,4 @@ def process_stripe_webhook(doc, method):
 	payment_method = event["data"]["object"]
 	customer_id = payment_method["customer"]
 	team_doc = frappe.get_doc("Team", {"stripe_customer_id": customer_id})
-	team_doc.set_default_payment_method()
+	team_doc.create_payment_method(payment_method, set_default=True)

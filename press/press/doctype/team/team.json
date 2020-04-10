@@ -13,7 +13,8 @@
   "subscription_details_section",
   "stripe_customer_id",
   "country",
-  "currency"
+  "currency",
+  "default_payment_method"
  ],
  "fields": [
   {
@@ -62,10 +63,16 @@
    "fieldtype": "Link",
    "label": "Currency",
    "options": "Currency"
+  },
+  {
+   "fieldname": "default_payment_method",
+   "fieldtype": "Link",
+   "label": "Default Payment Method",
+   "options": "Stripe Payment Method"
   }
  ],
  "links": [],
- "modified": "2020-04-09 21:07:27.320177",
+ "modified": "2020-04-10 12:25:40.569312",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
