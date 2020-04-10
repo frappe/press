@@ -1,2 +1,3 @@
 press.patches.v0_0_1.site_history_to_site_activity
 press.patches.v0_0_1.user_account_to_team #6
+press.patches.v0_0_1.rename_transaction_currency_to_currency

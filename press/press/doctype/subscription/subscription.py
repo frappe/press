@@ -14,7 +14,7 @@ class Subscription(Document):
 		stripe = get_stripe()
 		# get customer, currency, payment method from team
 		customer_id, currency = frappe.db.get_value(
-			"Team", self.team, ["stripe_customer_id", "transaction_currency"],
+			"Team", self.team, ["stripe_customer_id", "currency"],
 		)
 		# get plan id from plan
 		plan_id_field = "stripe_inr_plan_id" if currency == "INR" else "stripe_usd_plan_id"
