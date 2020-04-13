@@ -10,7 +10,8 @@
   "timestamp",
   "job_name",
   "duration",
-  "wait"
+  "wait",
+  "scheduled"
  ],
  "fields": [
   {
@@ -54,10 +55,16 @@
    "in_list_view": 1,
    "label": "Wait",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "scheduled",
+   "fieldtype": "Check",
+   "label": "Scheduled Job"
   }
  ],
  "links": [],
- "modified": "2020-03-13 12:51:20.890410",
+ "modified": "2020-04-13 08:11:51.269067",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Job Log",
