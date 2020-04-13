@@ -74,6 +74,49 @@
 					</div>
 				</div>
 				<div class="mt-10">
+					<label class="flex py-2 leading-none">
+						<input
+							type="checkbox"
+							class="form-checkbox"
+							v-model="restoreBackup"
+						/>
+						<span class="ml-2">
+							Create Site from Backup
+						</span>
+					</label>
+					<p class="text-sm text-gray-600">
+						Upload backup files instead of starting from a blank site.
+					</p>
+					<div v-if="restoreBackup" class="pl-2">
+						<div v-for="file in files" :key="file.type">
+							<div class="flex items-center mt-1">
+								<span class="text-gray-800 flex-1">{{ file.title }}</span>
+								<span class="text-gray-400 flex-1" v-if="file.file">{{ file.file.name }}</span>
+								<input
+									:ref="file.type"
+									type="file"
+									:accept="file.accept"
+									class="hidden"
+									@change="onFile(file, $event)"
+								/>
+								<Button
+									class="ml-4 flex-2"
+									:disabled="file.uploading"
+									@click="$refs[file.type][0].click()"
+								>
+									<span v-if="file.file">
+										<span v-if="file.uploading">
+											Uploading {{ Math.floor((file.uploaded / file.total) * 100) }}%
+										</span>
+										<span v-else>Change</span>
+									</span>
+									<span v-else>Select</span>
+								</Button>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="mt-10">
 					<label>
 						Choose your plan
 					</label>
@@ -198,6 +241,7 @@
 <script>
 import frappeLogo from '@/assets/frappe-framework-logo.png';
 import erpnextLogo from '@/assets/erpnext-logo.svg';
+import FileUploader from '@/store/fileUploader';
 
 export default {
 	name: 'NewSite',
@@ -207,12 +251,23 @@ export default {
 		enableBackups: false,
 		enableMonitoring: false,
 		options: null,
+		restoreBackup: false,
 		selectedApps: [],
 		selectedGroup: null,
 		selectedPlan: null,
+		selectedFiles: {
+			database: null,
+			public: null,
+			private: null,
+		},
 		siteExistsMessage: null,
 		state: null,
-		errorMessage: null
+		errorMessage: null,
+		files: [
+			{type: "database", title: "Database Backup", uploading: false, uploaded: 0, total: 1, file: null, accept: ".sql.gz"},
+			{type: "public", title: "Public Files", uploading: false, uploaded: 0, total: 1, file: null, accept: ".tar"},
+			{type: "private", title: "Private Files", uploading: false, uploaded: 0, total: 1, file: null, accept: ".tar"}
+		],
 	}),
 	async mounted() {
 		this.options = await this.$call('press.api.site.options_for_new');
@@ -252,7 +307,8 @@ export default {
 					backups: this.enableBackups,
 					monitor: this.enableMonitoring,
 					group: this.selectedGroup,
-					plan: this.selectedPlan.name
+					plan: this.selectedPlan.name,
+					files: this.selectedFiles
 				}
 			});
 			this.$router.push(`/sites/${siteName}`);
@@ -274,7 +330,8 @@ export default {
 				this.siteName &&
 				this.selectedApps.length > 0 &&
 				this.selectedPlan &&
-				this.state !== 'RequestStarted'
+				this.state !== 'RequestStarted' &&
+				(!this.restoreBackup || Object.values(this.selectedFiles).every(v => v))
 			);
 		},
 		async checkIfExists() {
@@ -296,7 +353,31 @@ export default {
 				return false;
 			}
 			return true;
-		}
+		},
+		onFile(file, event) {
+			file.file = event.target.files[0];
+			this.uploadFile(file);
+		},
+		async uploadFile(file) {
+			file.uploader = new FileUploader();
+			file.uploader.on('start', () => {
+				file.uploading = true;
+			});
+			file.uploader.on('progress', data => {
+				file.uploaded = data.uploaded;
+				file.total = data.total;
+			});
+			file.uploader.on('error', () => {
+				file.uploading = false;
+			});
+			file.uploader.on('finish', () => {
+				file.uploading = false;
+			});
+			let result = await file.uploader.upload(file.file, {
+				method: 'press.api.site.upload_backup'
+			});
+			this.selectedFiles[file.type] = result;
+		},
 	}
 };
 </script>
