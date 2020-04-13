@@ -15,7 +15,61 @@
 			>
 				<div class="grid grid-cols-3 px-6 py-3 text-sm">
 					<div class="font-medium text-gray-700">Available Credits:</div>
-					<div class="col-span-2 font-medium">{{ availableCredits }}</div>
+					<div class="col-span-2 font-medium">
+						<div>
+							{{ availableCredits }}
+						</div>
+						<div v-if="$store.account.team.erpnext_partner" class="mt-2">
+							<a
+								href
+								class="text-blue-500 cursor-pointer"
+								@click.prevent="
+									fetchAvailablePartnerCredits();
+									showTransferCreditsDialog = true;
+								"
+							>
+								Transfer Credits from ERPNext.com
+							</a>
+						</div>
+						<Dialog
+							v-model="showTransferCreditsDialog"
+							title="Transfer Credits from ERPNext.com"
+						>
+							<p v-if="availablePartnerCredits">
+								Available credits: {{ availablePartnerCredits.formatted }}
+							</p>
+							<label class="block" v-if="availablePartnerCredits">
+								<span class="text-gray-800 sr-only">Amount to Transfer</span>
+								<input
+									class="block w-full mt-2 shadow form-input"
+									v-model.number="creditsToTransfer"
+									name="amount"
+									autocomplete="off"
+									type="number"
+									min="1"
+									:max="availablePartnerCredits.value"
+								/>
+							</label>
+							<ErrorMessage class="mt-2" v-if="errorMessage">
+								{{ errorMessage }}
+							</ErrorMessage>
+							<template slot="actions">
+								<Button @click="showTransferCreditsDialog = false">
+									Cancel
+								</Button>
+								<Button
+									class="ml-2"
+									type="primary"
+									@click="transferPartnerCredits"
+									:disabled="
+										creditsToTransfer <= 0 || state === 'RequestStarted'
+									"
+								>
+									Transfer
+								</Button>
+							</template>
+						</Dialog>
+					</div>
 				</div>
 				<div class="grid grid-cols-3 px-6 py-3 text-sm border-t">
 					<div class="font-medium text-gray-700">Usage Amount:</div>
@@ -72,7 +126,7 @@
 				</div>
 			</div>
 		</section>
-		<section v-if="state && state.startsWith('ShowSetup')">
+		<section v-if="paymentMethods && paymentMethods.length === 0">
 			<h2 class="text-lg font-medium">Set up Payment Method</h2>
 			<p class="text-gray-600">
 				Add your card details to start your subscription
@@ -83,15 +137,12 @@
 				<div class="px-6 py-4">
 					<Button
 						type="primary"
-						@click="state = 'ShowSetup.ShowStripeCard'"
-						v-if="state != 'ShowSetup.ShowStripeCard'"
+						@click="state = 'ShowStripeCard'"
+						v-if="state != 'ShowStripeCard'"
 					>
 						Set up Payment Method
 					</Button>
-					<StripeCard
-						v-if="state === 'ShowSetup.ShowStripeCard'"
-						@complete="onCardAdd"
-					/>
+					<StripeCard v-if="state === 'ShowStripeCard'" @complete="onCardAdd" />
 				</div>
 			</div>
 		</section>
@@ -127,18 +178,25 @@
 
 <script>
 import StripeCard from '@/components/StripeCard';
+import Dialog from '@/components/Dialog';
+
 export default {
 	name: 'AccountBilling',
 	components: {
-		StripeCard
+		StripeCard,
+		Dialog
 	},
 	data() {
 		return {
 			state: null,
+			errorMessage: null,
 			paymentMethods: null,
 			upcomingInvoice: null,
 			availableCredits: null,
-			pastPayments: []
+			pastPayments: [],
+			showTransferCreditsDialog: false,
+			availablePartnerCredits: null,
+			creditsToTransfer: null
 		};
 	},
 	async mounted() {
@@ -165,9 +223,21 @@ export default {
 			this.availableCredits = available_credits;
 		},
 		onCardAdd() {
-			this.state = 'Idle';
 			this.fetchPaymentMethods();
 			this.$call('press.api.billing.after_card_add');
+		},
+		async fetchAvailablePartnerCredits() {
+			this.availablePartnerCredits = await this.$call(
+				'press.api.billing.get_available_partner_credits'
+			);
+		},
+		async transferPartnerCredits() {
+			await this.$call('press.api.billing.transfer_partner_credits', {
+				amount: this.creditsToTransfer
+			});
+			this.fetchUpcomingInvoice();
+			this.creditsToTransfer = null;
+			this.showTransferCreditsDialog = false;
 		}
 	}
 };

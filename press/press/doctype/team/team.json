@@ -8,6 +8,7 @@
  "field_order": [
   "enabled",
   "user",
+  "erpnext_partner",
   "section_break_6",
   "team_members",
   "subscription_details_section",
@@ -69,10 +70,16 @@
    "fieldtype": "Link",
    "label": "Default Payment Method",
    "options": "Stripe Payment Method"
+  },
+  {
+   "default": "0",
+   "fieldname": "erpnext_partner",
+   "fieldtype": "Check",
+   "label": "ERPNext Partner"
   }
  ],
  "links": [],
- "modified": "2020-04-10 12:25:40.569312",
+ "modified": "2020-04-13 17:31:22.120053",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
