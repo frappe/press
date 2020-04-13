@@ -27,7 +27,11 @@
   "configuration_section",
   "config",
   "deploy_section",
-  "timezone"
+  "timezone",
+  "restore",
+  "database_file",
+  "private_file",
+  "public_file"
  ],
  "fields": [
   {
@@ -177,10 +181,31 @@
    "fieldname": "timezone",
    "fieldtype": "Data",
    "label": "Timezone"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "restore",
+   "fieldtype": "Section Break",
+   "label": "Restore"
+  },
+  {
+   "fieldname": "database_file",
+   "fieldtype": "Attach",
+   "label": "Database File"
+  },
+  {
+   "fieldname": "private_file",
+   "fieldtype": "Attach",
+   "label": "Private File"
+  },
+  {
+   "fieldname": "public_file",
+   "fieldtype": "Attach",
+   "label": "Public File"
   }
  ],
  "links": [],
- "modified": "2020-04-07 14:28:17.014995",
+ "modified": "2020-04-13 11:29:15.394616",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

@@ -119,7 +119,7 @@ export default {
 		setupSiteInstall() {
 			if (['Pending', 'Installing'].includes(this.site.status)) {
 				this.$store.socket.on('agent_job_update', data => {
-					if (data.site === this.site.name && data.name === 'New Site') {
+					if (data.site === this.site.name && (data.name === 'New Site' || data.name === 'New Site from Backup')) {
 						this.installingJob = data;
 
 						if (data.status === 'Success') {
@@ -150,7 +150,7 @@ export default {
 				name: this.site.name
 			});
 			jobs.forEach(job => {
-				if (job.name === 'New Site') {
+				if (job.name === 'New Site' || job.name === 'New Site from Backup') {
 					this.installingJob = job;
 				}
 			});
