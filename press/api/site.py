@@ -32,6 +32,9 @@ def new(site):
 			"enable_uptime_monitoring": site["monitor"],
 			"team": team,
 			"plan": site["plan"],
+			"database_file": site["files"]["database"],
+			"public_file": site["files"]["public"],
+			"private_file": site["files"]["private"],
 		},
 	).insert(ignore_permissions=True)
 	return site.name
@@ -305,3 +308,18 @@ def update_config(name, config):
 	if any(key not in allowed_keys for key in config.keys()):
 		return
 	frappe.get_doc("Site", name).update_site_config(config)
+
+
+@frappe.whitelist()
+def upload_backup():
+	file = frappe.get_doc(
+		{
+			"doctype": "File",
+			"folder": "Home/Attachments",
+			"file_name": frappe.local.uploaded_filename,
+			"is_private": 1,
+			"content": frappe.local.uploaded_file,
+		}
+	)
+	file.save(ignore_permissions=True)
+	return file.file_url

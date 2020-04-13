@@ -25,7 +25,10 @@ class AgentJob(Document):
 	def create_http_request(self):
 		agent = Agent(self.server, server_type=self.server_type)
 		data = json.loads(self.request_data)
-		self.job_id = agent.request(self.request_method, self.request_path, data)["job"]
+		files = json.loads(self.request_files)
+		self.job_id = agent.request(self.request_method, self.request_path, data, files)[
+			"job"
+		]
 		self.save()
 
 	def create_agent_job_steps(self):
@@ -56,6 +59,7 @@ class AgentJob(Document):
 				"host": self.host,
 				"request_path": self.request_path,
 				"request_data": self.request_data,
+				"request_files": self.request_files,
 				"request_method": self.request_method,
 			}
 		).insert()
@@ -142,6 +146,8 @@ def collect_site_analytics():
 					)
 				frappe.get_doc(doc).insert()
 			except frappe.exceptions.DuplicateEntryError:
+				pass
+			except Exception:
 				log_error("Agent Analytics Collection Exception", log=log, doc=doc)
 
 
@@ -296,6 +302,8 @@ def process_job_updates(job_name):
 		if job.job_type == "Archive Bench":
 			process_archive_bench_job_update(job)
 		if job.job_type == "New Site":
+			process_new_site_job_update(job)
+		if job.job_type == "New Site from Backup":
 			process_new_site_job_update(job)
 		if job.job_type == "Install App on Site":
 			process_install_app_site_job_update(job)

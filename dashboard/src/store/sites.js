@@ -13,7 +13,7 @@ export default {
 			this._socketSetup = true;
 
 			this.$store.socket.on('agent_job_update', data => {
-				if (data.name === 'New Site') {
+				if (data.name === 'New Site' || data.name === 'New Site from Backup') {
 					let siteName = data.site;
 					if (data.status === 'Success') {
 						this.fetchSite(siteName);
