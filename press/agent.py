@@ -164,11 +164,19 @@ class Agent:
 	def post(self, path, data=None):
 		return self.request("POST", path, data)
 
-	def request(self, method, path, data=None):
+	def request(self, method, path, data=None, files=None):
 		try:
 			url = f"https://{self.server}:{self.port}/agent/{path}"
 			password = get_decrypted_password(self.server_type, self.server, "agent_password")
 			headers = {"Authorization": f"bearer {password}"}
+			if files:
+				file_objects = {
+					key: frappe.get_doc("File", {"file_url": url}).get_content()
+					for key, url in files.items()
+				}
+				file_objects["json"] = json.dumps(data).encode()
+				result = requests.request(method, url, headers=headers, files=file_objects)
+			else:
 			result = requests.request(method, url, headers=headers, json=data)
 			try:
 				return result.json()
@@ -178,12 +186,18 @@ class Agent:
 					method=method,
 					url=url,
 					data=data,
+					files=files,
 					headers=headers,
 					result=result.text,
 				)
 		except Exception:
 			log_error(
-				title="Agent Request Exception", method=method, url=url, data=data, headers=headers
+				title="Agent Request Exception",
+				method=method,
+				url=url,
+				data=data,
+				files=files,
+				headers=headers,
 			)
 
 	def create_agent_job(
@@ -191,6 +205,7 @@ class Agent:
 		job_type,
 		path,
 		data=None,
+		files=None,
 		method="POST",
 		bench=None,
 		site=None,
@@ -210,6 +225,7 @@ class Agent:
 				"request_method": method,
 				"request_path": path,
 				"request_data": json.dumps(data or {}, indent=4, sort_keys=True),
+				"request_files": json.dumps(files or {}, indent=4, sort_keys=True),
 				"job_type": job_type,
 			}
 		).insert()

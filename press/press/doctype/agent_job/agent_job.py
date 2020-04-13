@@ -25,7 +25,10 @@ class AgentJob(Document):
 	def create_http_request(self):
 		agent = Agent(self.server, server_type=self.server_type)
 		data = json.loads(self.request_data)
-		self.job_id = agent.request(self.request_method, self.request_path, data)["job"]
+		files = json.loads(self.request_files)
+		self.job_id = agent.request(self.request_method, self.request_path, data, files)[
+			"job"
+		]
 		self.save()
 
 	def create_agent_job_steps(self):
@@ -56,6 +59,7 @@ class AgentJob(Document):
 				"host": self.host,
 				"request_path": self.request_path,
 				"request_data": self.request_data,
+				"request_files": self.request_files,
 				"request_method": self.request_method,
 			}
 		).insert()
