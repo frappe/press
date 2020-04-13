@@ -32,7 +32,11 @@
   "stripe_webhook_secret",
   "column_break_26",
   "free_credits_inr",
-  "free_credits_usd"
+  "free_credits_usd",
+  "erpnext_authentication",
+  "erpnext_url",
+  "erpnext_api_key",
+  "erpnext_api_secret"
  ],
  "fields": [
   {
@@ -198,11 +202,31 @@
    "fieldtype": "Currency",
    "label": "Credits on Signup (USD)",
    "options": "USD"
+  },
+  {
+   "fieldname": "erpnext_authentication",
+   "fieldtype": "Section Break",
+   "label": "ERPNext Authentication"
+  },
+  {
+   "fieldname": "erpnext_api_key",
+   "fieldtype": "Data",
+   "label": "ERPNext API Key"
+  },
+  {
+   "fieldname": "erpnext_api_secret",
+   "fieldtype": "Password",
+   "label": "ERPNext API Secret"
+  },
+  {
+   "fieldname": "erpnext_url",
+   "fieldtype": "Data",
+   "label": "ERPNext URL"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2020-04-09 19:32:37.772364",
+ "modified": "2020-04-13 16:01:10.404205",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
