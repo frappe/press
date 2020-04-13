@@ -498,5 +498,60 @@
     "step_name": "Install App on Site"
    }
   ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2020-04-13 12:46:58.382778",
+  "name": "New Site from Backup",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/sites/restore",
+  "steps": [
+   {
+    "parent": "New Site from Backup",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "New Site"
+   },
+   {
+    "parent": "New Site from Backup",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Update Site Configuration"
+   },
+   {
+    "parent": "New Site from Backup",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Restore Site"
+   },
+   {
+    "parent": "New Site from Backup",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Migrate Site"
+   },
+   {
+    "parent": "New Site from Backup",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Set Administrator Password"
+   },
+   {
+    "parent": "New Site from Backup",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Setup NGINX"
+   },
+   {
+    "parent": "New Site from Backup",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
+   }
+  ]
  }
 ]
