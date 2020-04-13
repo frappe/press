@@ -142,6 +142,8 @@ def collect_site_analytics():
 					)
 				frappe.get_doc(doc).insert()
 			except frappe.exceptions.DuplicateEntryError:
+				pass
+			except Exception:
 				log_error("Agent Analytics Collection Exception", log=log, doc=doc)
 
 
