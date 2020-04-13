@@ -55,6 +55,30 @@ class Agent:
 			"New Site", f"benches/{site.bench}/sites", data, bench=site.bench, site=site.name
 		)
 
+	def new_site_from_backup(self, site):
+		data = {
+			"config": json.loads(site.config),
+			"name": site.name,
+			"mariadb_root_password": get_decrypted_password(
+				"Server", site.server, "mariadb_root_password"
+			),
+			"admin_password": get_decrypted_password("Site", site.name, "admin_password"),
+		}
+		files = {
+			"database": site.database_file,
+			"public": site.public_file,
+			"private": site.private_file,
+		}
+
+		return self.create_agent_job(
+			"New Site from Backup",
+			f"benches/{site.bench}/sites/restore",
+			data,
+			files=files,
+			bench=site.bench,
+			site=site.name,
+		)
+
 	def install_app_site(self, site, app):
 		data = {"name": frappe.db.get_value("Frappe App", app, "scrubbed")}
 		return self.create_agent_job(
@@ -177,7 +201,7 @@ class Agent:
 				file_objects["json"] = json.dumps(data).encode()
 				result = requests.request(method, url, headers=headers, files=file_objects)
 			else:
-			result = requests.request(method, url, headers=headers, json=data)
+				result = requests.request(method, url, headers=headers, json=data)
 			try:
 				return result.json()
 			except Exception:

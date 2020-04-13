@@ -74,7 +74,10 @@ class Site(Document):
 
 	def create_agent_request(self):
 		agent = Agent(self.server)
-		agent.new_site(self)
+		if self.database_file and self.private_file and self.public_file:
+			agent.new_site_from_backup(self)
+		else:
+			agent.new_site(self)
 
 		server = frappe.get_all(
 			"Server", filters={"name": self.server}, fields=["proxy_server"], limit=1
@@ -158,14 +161,17 @@ class Site(Document):
 
 
 def process_new_site_job_update(job):
-	other_job_type = {
-		"Add Site to Upstream": "New Site",
-		"New Site": "Add Site to Upstream",
+	other_job_types = {
+		"Add Site to Upstream": ("New Site", "New Site from Backup"),
+		"New Site": ("Add Site to Upstream",),
+		"New Site from Backup": ("Add Site to Upstream",),
 	}[job.job_type]
 
 	first = job.status
 	second = frappe.get_all(
-		"Agent Job", fields=["status"], filters={"job_type": other_job_type, "site": job.site}
+		"Agent Job",
+		fields=["status"],
+		filters={"job_type": ("in", other_job_types), "site": job.site},
 	)[0].status
 
 	if "Success" == first == second:
