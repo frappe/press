@@ -74,11 +74,7 @@ def transfer_partner_credits(amount):
 
 	res = erpnext_com.post_api(
 		"central.api.consume_partner_credits",
-		{
-			"email": partner_email,
-			"currency": team_doc.currency,
-			"amount": amount,
-		},
+		{"email": partner_email, "currency": team_doc.currency, "amount": amount},
 	)
 
 	if res.get("error_message"):
