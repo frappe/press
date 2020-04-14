@@ -11,7 +11,6 @@ app_color = "grey"
 app_email = "aditya@erpnext.com"
 app_license = "Proprietary"
 version = app_version
-home_page = "index"
 
 # Includes in <head>
 # ------------------
