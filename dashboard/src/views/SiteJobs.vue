@@ -87,12 +87,12 @@
 									{{ step.step_name }}
 								</span>
 							</summary>
-							<div class="font-mono text-xs text-gray-200">
+							<div class="font-mono text-xs text-gray-200 px-6">
 								<div>
-									{{ step.output }}
+									<pre>{{ step.output }}</pre>
 								</div>
 								<div>
-									{{ step.traceback }}
+									<pre>{{ step.traceback }}</pre>
 								</div>
 							</div>
 						</details>
