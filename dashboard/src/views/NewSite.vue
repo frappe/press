@@ -22,7 +22,7 @@
 							class="z-10 w-full rounded-r-none form-input focus:bg-white"
 							type="text"
 							v-model="siteName"
-							@change="checkIfExists"
+							@change="checkIfValid"
 							placeholder="subdomain"
 							ref="siteName"
 						/>
@@ -30,8 +30,8 @@
 							.{{ options.domain }}
 						</div>
 					</div>
-					<div class="mt-1 text-sm text-red-600" v-if="siteExistsMessage">
-						{{ siteExistsMessage }}
+					<div class="mt-1 text-sm text-red-600" v-if="siteErrorMessage">
+						{{ siteErrorMessage }}
 					</div>
 				</div>
 				<div class="mt-10">
@@ -259,7 +259,7 @@ export default {
 			public: null,
 			private: null,
 		},
-		siteExistsMessage: null,
+		siteErrorMessage: null,
 		state: null,
 		errorMessage: null,
 		files: [
@@ -325,7 +325,7 @@ export default {
 		},
 		canCreateSite() {
 			return (
-				!this.siteExistsMessage &&
+				!this.siteErrorMessage &&
 				this.siteName &&
 				this.selectedApps.length > 0 &&
 				this.selectedPlan &&
@@ -333,13 +333,28 @@ export default {
 				(!this.restoreBackup || Object.values(this.selectedFiles).every(v => v))
 			);
 		},
-		async checkIfExists() {
-			let exists = await this.$call('press.api.site.exists', {
-				subdomain: this.siteName
-			});
-			this.siteExistsMessage = exists
-				? `${this.siteName}.${this.options.domain} already exists.`
-				: null;
+		async checkIfValid() {
+			this.siteErrorMessage = null;
+			if (this.siteName.length < 5) {
+				this.siteErrorMessage = "Subdomain too short. Use 5 or more characters";
+				return
+			}
+			if (this.siteName.length > 32) {
+				this.siteErrorMessage = "Subdomain too long. Use 32 or less characters";				
+				return
+			}
+			if (!this.siteName.match(/^[a-z0-9][a-z0-9-]*[a-z0-9]$/)) {
+				this.siteErrorMessage = "Subdomain contains invalid characters. Use lowercase characters, numbers and hyphens";
+				return
+			}
+			if (!this.siteErrorMessage) {
+				let exists = await this.$call('press.api.site.exists', {
+					subdomain: this.siteName
+				});
+				if (exists) {
+					this.siteErrorMessage = `${this.siteName}.${this.options.domain} already exists.`
+				}
+			}
 		},
 		disablePlan(plan) {
 			if (this.options.has_subscription) {
