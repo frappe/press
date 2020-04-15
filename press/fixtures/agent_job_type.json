@@ -199,7 +199,7 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-01-14 15:08:11.839256",
+  "modified": "2020-04-15 14:59:02.613798",
   "name": "New Site",
   "parent": null,
   "parentfield": null,
@@ -223,7 +223,7 @@
     "parent": "New Site",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
-    "step_name": "Site Update Configuration"
+    "step_name": "Update Site Configuration"
    },
    {
     "parent": "New Site",
