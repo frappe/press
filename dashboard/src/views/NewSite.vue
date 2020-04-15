@@ -95,7 +95,6 @@
 								<input
 									:ref="file.type"
 									type="file"
-									:accept="file.accept"
 									class="hidden"
 									@change="onFile(file, $event)"
 								/>
@@ -264,9 +263,9 @@ export default {
 		state: null,
 		errorMessage: null,
 		files: [
-			{type: "database", title: "Database Backup", uploading: false, uploaded: 0, total: 1, file: null, accept: ".sql.gz"},
-			{type: "public", title: "Public Files", uploading: false, uploaded: 0, total: 1, file: null, accept: ".tar"},
-			{type: "private", title: "Private Files", uploading: false, uploaded: 0, total: 1, file: null, accept: ".tar"}
+			{type: "database", title: "Database Backup", uploading: false, uploaded: 0, total: 1, file: null},
+			{type: "public", title: "Public Files", uploading: false, uploaded: 0, total: 1, file: null},
+			{type: "private", title: "Private Files", uploading: false, uploaded: 0, total: 1, file: null}
 		],
 	}),
 	async mounted() {
