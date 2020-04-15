@@ -181,7 +181,10 @@ def schedule_backups():
 		filters={"status": "Active", "enable_scheduled_backups": True},
 	)
 	for site in sites:
-		frappe.get_doc("Site", site.name).backup()
+		try:
+			frappe.get_doc("Site", site.name).backup()
+		except Exception:
+			pass
 
 
 def poll_pending_jobs():
