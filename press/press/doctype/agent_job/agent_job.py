@@ -210,7 +210,7 @@ def poll_pending_jobs():
 				# Update Steps' Status
 				update_steps(job.name, polled_job)
 				publish_update(job.name)
-				if polled_job["steps"][-1]["status"] == "Failure":
+				if polled_job["steps"] and polled_job["steps"][-1]["status"] == "Failure":
 					skip_pending_steps(job.name)
 
 				process_job_updates(job.name)
