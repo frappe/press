@@ -125,18 +125,6 @@
 					</p>
 					<div class="mt-6">
 						<div
-							class="px-4 py-2 mb-4 text-sm text-yellow-700 border border-yellow-200 rounded-lg bg-yellow-50"
-							v-if="!options.has_subscription"
-						>
-							You can only create {{ options.trial_sites_count }}
-							{{ $plural(options.trial_sites_count, 'site', 'sites') }} in trial
-							mode.
-							<a href="#/account/billing" class="border-b border-yellow-500">
-								Set up your subscription
-							</a>
-							to create more sites.
-						</div>
-						<div
 							class="flex px-4 py-3 text-sm text-gray-600 border border-b-0 bg-gray-50 rounded-t-md"
 						>
 							<div class="w-10"></div>
@@ -359,9 +347,6 @@ export default {
 		disablePlan(plan) {
 			if (this.options.has_subscription) {
 				return false;
-			}
-			if (this.options.disable_site_creation) {
-				return true;
 			}
 			if (plan.trial_period) {
 				return false;

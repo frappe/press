@@ -30,7 +30,9 @@ class Site(Document):
 		if len(self.subdomain) > 32:
 			frappe.throw("Subdomain too long. Use 32 or less characters")
 		if not re.match(site_regex, self.subdomain):
-			frappe.throw("Subdomain contains invalid characters. Use lowercase characters, numbers and hyphens")
+			frappe.throw(
+				"Subdomain contains invalid characters. Use lowercase characters, numbers and hyphens"
+			)
 		if not self.admin_password:
 			self.admin_password = frappe.generate_hash(length=16)
 
@@ -56,13 +58,6 @@ class Site(Document):
 		# if a site is created with a plan without trial_period, throw
 		trial_period = frappe.db.get_value("Plan", self.plan, ["trial_period"])
 		if not trial_period:
-			frappe.throw("Cannot create site without subscription")
-
-		# if trial sites reach their limit, throw
-		trial_sites_count = cint(
-			frappe.db.get_single_value("Press Settings", "trial_sites_count")
-		)
-		if frappe.db.count("Site", {"team": self.team}) >= trial_sites_count:
 			frappe.throw("Cannot create site without subscription")
 
 	def has_subscription(self):
