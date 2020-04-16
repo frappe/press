@@ -74,7 +74,7 @@ export default {
 			uptimeTypes: [
 				{ key: 'web', label: 'Web' },
 				{ key: 'scheduler', label: 'Scheduler' },
-				{ key: 'socketio', label: 'SocketIO' }
+				// { key: 'socketio', label: 'SocketIO' }
 			]
 		};
 	},
