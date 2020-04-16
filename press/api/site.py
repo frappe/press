@@ -58,7 +58,7 @@ def job(name):
 	job.steps = frappe.get_all(
 		"Agent Job Step",
 		filters={"agent_job": name},
-		fields=["step_name", "status", "start", "end", "duration", "output", "traceback"],
+		fields=["step_name", "status", "start", "end", "duration", "output"],
 		order_by="creation",
 	)
 	return job

@@ -91,9 +91,6 @@
 								<div>
 									<pre>{{ step.output }}</pre>
 								</div>
-								<div>
-									<pre>{{ step.traceback }}</pre>
-								</div>
 							</div>
 						</details>
 					</div>
