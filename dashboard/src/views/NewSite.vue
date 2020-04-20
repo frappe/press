@@ -91,7 +91,7 @@
 						<div v-for="file in files" :key="file.type">
 							<div class="flex items-center mt-1">
 								<span class="text-gray-800 flex-1">{{ file.title }}</span>
-								<span class="text-gray-400 flex-1" v-if="file.file">{{ file.file.name }}</span>
+								<span class="text-gray-400 flex-1 truncate" v-if="file.file">{{ file.file.name }}</span>
 								<input
 									:ref="file.type"
 									type="file"
