@@ -502,7 +502,7 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-04-13 12:46:58.382778",
+  "modified": "2020-04-20 13:17:13.324336",
   "name": "New Site from Backup",
   "parent": null,
   "parentfield": null,
@@ -527,6 +527,12 @@
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Restore Site"
+   },
+   {
+    "parent": "New Site from Backup",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Uninstall Unavailable Apps"
    },
    {
     "parent": "New Site from Backup",

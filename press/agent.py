@@ -56,8 +56,10 @@ class Agent:
 		)
 
 	def new_site_from_backup(self, site):
+		apps = [frappe.db.get_value("Frappe App", app.app, "scrubbed") for app in site.apps]
 		data = {
 			"config": json.loads(site.config),
+			"apps": apps,
 			"name": site.name,
 			"mariadb_root_password": get_decrypted_password(
 				"Server", site.server, "mariadb_root_password"
