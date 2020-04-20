@@ -502,7 +502,7 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-04-20 13:17:13.324336",
+  "modified": "2020-04-20 16:10:34.475347",
   "name": "New Site from Backup",
   "parent": null,
   "parentfield": null,
@@ -545,6 +545,12 @@
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Set Administrator Password"
+   },
+   {
+    "parent": "New Site from Backup",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Enable Scheduler"
    },
    {
     "parent": "New Site from Backup",
