@@ -3,7 +3,7 @@
 		<section>
 			<h2 class="font-medium text-lg">Backups</h2>
 			<p class="text-gray-600">
-				Backups are enabled and are scheduled every week at 12:00 AM
+				Backups are enabled and are scheduled to run every six hours.
 			</p>
 			<div
 				class="mt-6 w-full sm:w-1/2 shadow rounded border border-gray-100 py-4"
