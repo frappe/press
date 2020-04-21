@@ -32,7 +32,7 @@
 			</div>
 		</section>
 		<section class="mt-10" v-if="site.available_apps.length">
-			<h2 class="text-lg font-medium">Avaiable Apps</h2>
+			<h2 class="text-lg font-medium">Available Apps</h2>
 			<p class="text-gray-600">Apps available to install on your site</p>
 			<div
 				class="w-full py-4 mt-6 border border-gray-100 rounded shadow sm:w-1/2"
