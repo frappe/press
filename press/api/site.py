@@ -269,14 +269,27 @@ def setup_wizard_complete(name):
 
 @frappe.whitelist()
 def check_dns(name, domain):
-	try:
-		answer = dns.resolver.query(domain, "CNAME")[0].to_text()
-		mapped_domain = answer.rsplit(".", 1)[0]
-		if mapped_domain == name:
-			return True
-	except Exception:
-		log_error("DNS Query Exception", site=name, domain=domain)
-	return False
+	def check_dns_cname(name, domain):
+		try:
+			answer = dns.resolver.query(domain, "CNAME")[0].to_text()
+			mapped_domain = answer.rsplit(".", 1)[0]
+			if mapped_domain == name:
+				return True
+		except Exception:
+			log_error("DNS Query Exception - CNAME", site=name, domain=domain)
+		return False
+
+	def check_dns_a(name, domain):
+		try:
+			domain_ip = dns.resolver.query(domain, "A")[0].to_text()
+			site_ip = dns.resolver.query(name, "A")[0].to_text()
+			if domain_ip == site_ip:
+				return True
+		except Exception:
+			log_error("DNS Query Exception - A", site=name, domain=domain)
+		return False
+
+	return check_dns_cname(name, domain) or check_dns_a(name, domain)
 
 
 @frappe.whitelist()
