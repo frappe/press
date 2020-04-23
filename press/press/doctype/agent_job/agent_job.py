@@ -19,7 +19,11 @@ class AgentJob(Document):
 
 	def enqueue_http_request(self):
 		frappe.enqueue_doc(
-			self.doctype, self.name, "create_http_request", timeout=600, enqueue_after_commit=True
+			self.doctype,
+			self.name,
+			"create_http_request",
+			timeout=600,
+			enqueue_after_commit=True,
 		)
 
 	def create_http_request(self):
