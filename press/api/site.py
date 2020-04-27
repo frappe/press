@@ -304,7 +304,6 @@ def install_app(name, app):
 
 @frappe.whitelist()
 def update_config(name, config):
-	print(name, config)
 	allowed_keys = [
 		"mail_server",
 		"mail_port",
@@ -320,6 +319,14 @@ def update_config(name, config):
 	]
 	if any(key not in allowed_keys for key in config.keys()):
 		return
+
+	# Remove keys with empty values
+	config = {key: value for key, value in config.items() if value != ""}
+
+	for key in ["max_file_size", "mail_port"]:
+		if key in config:
+			config[key] = cint(config[key])
+
 	frappe.get_doc("Site", name).update_site_config(config)
 
 
