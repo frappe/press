@@ -97,7 +97,7 @@ export default {
 					fieldtype: 'checkbox'
 				},
 				{
-					label: 'Max File Size',
+					label: 'Max File Size (Bytes)',
 					fieldname: 'max_file_size',
 					fieldtype: 'number'
 				}
