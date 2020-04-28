@@ -71,7 +71,7 @@ const routes = [
 		path: '/support',
 		name: 'Support',
 		component: () =>
-			import(/* webpackChunkName: "support" */ '../views/Support.vue'),
+			import(/* webpackChunkName: "support" */ '../views/Support.vue')
 	},
 	{
 		path: '/sites/:siteName',

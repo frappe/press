@@ -14,6 +14,7 @@
 						target="_blank"
 						class="px-6 py-4 hover:bg-gray-50 block"
 						v-for="backup in backups"
+						:key="backup.url"
 					>
 						<div class="w-full">
 							<a

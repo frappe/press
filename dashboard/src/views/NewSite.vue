@@ -44,10 +44,7 @@
 					</p>
 					<div class="mt-6">
 						<select class="form-select" v-model="selectedGroup">
-							<option
-								v-for="group in options.groups"
-								:key="group.name"
-							>
+							<option v-for="group in options.groups" :key="group.name">
 								{{ group.name }}
 							</option>
 						</select>
@@ -90,8 +87,10 @@
 					<div v-if="restoreBackup" class="pl-2">
 						<div v-for="file in files" :key="file.type">
 							<div class="flex items-center mt-1">
-								<span class="text-gray-800 flex-1">{{ file.title }}</span>
-								<span class="text-gray-400 flex-1 truncate" v-if="file.file">{{ file.file.name }}</span>
+								<span class="flex-1 text-gray-800">{{ file.title }}</span>
+								<span class="flex-1 text-gray-400 truncate" v-if="file.file">
+									{{ file.file.name }}
+								</span>
 								<input
 									:ref="file.type"
 									type="file"
@@ -105,7 +104,8 @@
 								>
 									<span v-if="file.file">
 										<span v-if="file.uploading">
-											Uploading {{ Math.floor((file.uploaded / file.total) * 100) }}%
+											Uploading
+											{{ Math.floor((file.uploaded / file.total) * 100) }}%
 										</span>
 										<span v-else>Change</span>
 									</span>
@@ -257,16 +257,37 @@ export default {
 		selectedFiles: {
 			database: null,
 			public: null,
-			private: null,
+			private: null
 		},
 		siteErrorMessage: null,
 		state: null,
 		errorMessage: null,
 		files: [
-			{type: "database", title: "Database Backup", uploading: false, uploaded: 0, total: 1, file: null},
-			{type: "public", title: "Public Files", uploading: false, uploaded: 0, total: 1, file: null},
-			{type: "private", title: "Private Files", uploading: false, uploaded: 0, total: 1, file: null}
-		],
+			{
+				type: 'database',
+				title: 'Database Backup',
+				uploading: false,
+				uploaded: 0,
+				total: 1,
+				file: null
+			},
+			{
+				type: 'public',
+				title: 'Public Files',
+				uploading: false,
+				uploaded: 0,
+				total: 1,
+				file: null
+			},
+			{
+				type: 'private',
+				title: 'Private Files',
+				uploading: false,
+				uploaded: 0,
+				total: 1,
+				file: null
+			}
+		]
 	}),
 	async mounted() {
 		this.options = await this.$call('press.api.site.options_for_new');
@@ -279,7 +300,7 @@ export default {
 		}
 	},
 	methods: {
-		updateApps() { 
+		updateApps() {
 			let group = this.options.groups.find(g => g.name == this.selectedGroup);
 			this.apps = group.apps.map(d => {
 				let app = d.scrubbed;
@@ -336,23 +357,24 @@ export default {
 		async checkIfValid() {
 			this.siteErrorMessage = null;
 			if (this.siteName.length < 5) {
-				this.siteErrorMessage = "Subdomain too short. Use 5 or more characters";
-				return
+				this.siteErrorMessage = 'Subdomain too short. Use 5 or more characters';
+				return;
 			}
 			if (this.siteName.length > 32) {
-				this.siteErrorMessage = "Subdomain too long. Use 32 or less characters";				
-				return
+				this.siteErrorMessage = 'Subdomain too long. Use 32 or less characters';
+				return;
 			}
 			if (!this.siteName.match(/^[a-z0-9][a-z0-9-]*[a-z0-9]$/)) {
-				this.siteErrorMessage = "Subdomain contains invalid characters. Use lowercase characters, numbers and hyphens";
-				return
+				this.siteErrorMessage =
+					'Subdomain contains invalid characters. Use lowercase characters, numbers and hyphens';
+				return;
 			}
 			if (!this.siteErrorMessage) {
 				let exists = await this.$call('press.api.site.exists', {
 					subdomain: this.siteName
 				});
 				if (exists) {
-					this.siteErrorMessage = `${this.siteName}.${this.options.domain} already exists.`
+					this.siteErrorMessage = `${this.siteName}.${this.options.domain} already exists.`;
 				}
 			}
 		},
@@ -391,7 +413,7 @@ export default {
 				method: 'press.api.site.upload_backup'
 			});
 			this.selectedFiles[file.type] = result;
-		},
+		}
 	}
 };
 </script>

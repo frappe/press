@@ -87,8 +87,8 @@
 									{{ step.step_name }}
 								</span>
 							</summary>
-							<div class="font-mono text-xs text-gray-200 px-6">
-								<div>
+							<div class="px-6 font-mono text-xs text-gray-200">
+								<div class="overflow-auto">
 									<pre>{{ step.output }}</pre>
 								</div>
 							</div>

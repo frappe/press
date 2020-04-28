@@ -3,7 +3,7 @@
 		<section>
 			<div class="flex justify-between">
 				<div>
-					<h2 class="font-medium text-lg">Analytics</h2>
+					<h2 class="text-lg font-medium">Analytics</h2>
 					<p class="text-gray-600">Realtime usage analytics of your site</p>
 				</div>
 				<div>
@@ -12,41 +12,49 @@
 							v-for="o in periodOptions"
 							:value="o"
 							:selected="period === o"
+							:key="o"
 						>
 							{{ o }}
 						</option>
 					</select>
 				</div>
 			</div>
-			<div class="grid grid-cols-1 sm:grid-cols-2 gap-4" v-if="analytics">
-				<div class="mt-6 shadow rounded border border-gray-100 px-6 py-4">
+			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2" v-if="analytics">
+				<div class="px-6 py-4 mt-6 border border-gray-100 rounded shadow">
 					<div>Requests per minute</div>
 					<div ref="requests-per-minute"></div>
 				</div>
-				<div class="mt-6 shadow rounded border border-gray-100 px-6 py-4">
+				<div class="px-6 py-4 mt-6 border border-gray-100 rounded shadow">
 					<div>CPU usage per minute</div>
 					<div ref="requests-cpu-usage"></div>
 				</div>
-				<div class="mt-6 shadow rounded border border-gray-100 px-6 py-4">
+				<div class="px-6 py-4 mt-6 border border-gray-100 rounded shadow">
 					<div>Background Jobs per minute</div>
 					<div ref="jobs-per-minute"></div>
 				</div>
-				<div class="mt-6 shadow rounded border border-gray-100 px-6 py-4">
+				<div class="px-6 py-4 mt-6 border border-gray-100 rounded shadow">
 					<div>Background Jobs CPU usage per minute</div>
 					<div ref="jobs-cpu-usage"></div>
 				</div>
-				<div class="mt-6 shadow rounded border border-gray-100 px-6 py-4">
+				<div class="px-6 py-4 mt-6 border border-gray-100 rounded shadow">
 					<div>Uptime</div>
 					<div>
-						<div class="mt-8" v-for="type in uptimeTypes">
+						<div class="mt-8" v-for="type in uptimeTypes" :key="type.key">
 							<div class="flex justify-between h-4">
 								<div
 									v-for="d in analytics.uptime"
+									:key="d.timestamp"
 									style="width: 2px;"
-									:class="[d[type.key] === 1 ? 'bg-green-500' : (d[type.key] === 0 ? 'bg-red-500' : 'bg-orange-500')]"
+									:class="[
+										d[type.key] === 1
+											? 'bg-green-500'
+											: d[type.key] === 0
+											? 'bg-red-500'
+											: 'bg-orange-500'
+									]"
 								></div>
 							</div>
-							<div class="mt-2 text-sm flex justify-between">
+							<div class="flex justify-between mt-2 text-sm">
 								<span>
 									{{ type.label }}
 								</span>
@@ -73,7 +81,7 @@ export default {
 			periodOptions: ['1 hour', '6 hours', '24 hours', '7 days', '30 days'],
 			uptimeTypes: [
 				{ key: 'web', label: 'Web' },
-				{ key: 'scheduler', label: 'Scheduler' },
+				{ key: 'scheduler', label: 'Scheduler' }
 				// { key: 'socketio', label: 'SocketIO' }
 			]
 		};
@@ -111,9 +119,7 @@ export default {
 							}
 						};
 					}),
-					datasets: [
-						{ values: this.analytics.request_count.map(d => d.value) }
-					]
+					datasets: [{ values: this.analytics.request_count.map(d => d.value) }]
 				},
 				type: 'line',
 				colors: ['red'],
@@ -144,9 +150,7 @@ export default {
 							}
 						};
 					}),
-					datasets: [
-						{ values: this.analytics.job_count.map(d => d.value) }
-					]
+					datasets: [{ values: this.analytics.job_count.map(d => d.value) }]
 				},
 				type: 'line',
 				colors: ['red'],
@@ -179,9 +183,7 @@ export default {
 					}),
 					datasets: [
 						{
-							values: this.analytics.request_cpu_time.map(
-								d => d.value / 1000
-							)
+							values: this.analytics.request_cpu_time.map(d => d.value / 1000)
 						}
 					]
 				},
@@ -218,9 +220,7 @@ export default {
 					}),
 					datasets: [
 						{
-							values: this.analytics.job_cpu_time.map(
-								d => d.value / 1000
-							)
+							values: this.analytics.job_cpu_time.map(d => d.value / 1000)
 						}
 					]
 				},
