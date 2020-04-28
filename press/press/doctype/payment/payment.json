@@ -55,7 +55,7 @@
    "read_only": 1
   },
   {
-   "fetch_from": "team.transaction_currency",
+   "fetch_from": "team.currency",
    "fieldname": "currency",
    "fieldtype": "Link",
    "label": "Currency",
@@ -85,7 +85,7 @@
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2020-04-07 19:36:54.186598",
+ "modified": "2020-04-28 14:37:36.436199",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Payment",
