@@ -129,7 +129,7 @@ export default {
 	},
 	watch: {
 		siteConfig: {
-			handler: function(value) {
+			handler: function() {
 				this.showButton = true;
 			},
 			deep: true

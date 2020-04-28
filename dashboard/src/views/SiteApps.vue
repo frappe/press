@@ -11,23 +11,22 @@
 					v-for="app in site.installed_apps"
 					:key="app.url"
 				>
-					<div class="text-md my-auto flex-1">
+					<div class="flex-1 my-auto text-md">
 						<p>
 							{{ app.name }}
 						</p>
 					</div>
-					<div class="text-md flex-1">
-						<a
-							:href="`${app.url}/tree/${app.branch}`"
-							target="_blank"
-						>
-							<p class="font-medium text-brand">{{ app.owner }}/{{ app.repo }}</p>
+					<div class="flex-1 text-md">
+						<a :href="`${app.url}/tree/${app.branch}`" target="_blank">
+							<p class="font-medium text-brand">
+								{{ app.owner }}/{{ app.repo }}
+							</p>
 							<p class="text-sm text-gray-800">
 								{{ app.branch }}
 							</p>
 						</a>
 					</div>
-					<div class="text-md flex-1"></div>
+					<div class="flex-1 text-md"></div>
 				</div>
 			</div>
 		</section>
@@ -42,23 +41,22 @@
 					v-for="app in site.available_apps"
 					:key="app.url"
 				>
-					<div class="text-md my-auto flex-1">
+					<div class="flex-1 my-auto text-md">
 						<p>
 							{{ app.name }}
 						</p>
 					</div>
-					<div class="text-md flex-1">
-						<a
-							:href="`${app.url}/tree/${app.branch}`"
-							target="_blank"
-						>
-							<p class="font-medium text-brand">{{ app.owner }}/{{ app.repo }}</p>
+					<div class="flex-1 text-md">
+						<a :href="`${app.url}/tree/${app.branch}`" target="_blank">
+							<p class="font-medium text-brand">
+								{{ app.owner }}/{{ app.repo }}
+							</p>
 							<p class="text-sm text-gray-800">
 								{{ app.branch }}
 							</p>
 						</a>
 					</div>
-					<div class="text-md flex-1">
+					<div class="flex-1 text-md">
 						<Button @click="installApp(app.name)">
 							Install
 						</Button>
