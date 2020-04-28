@@ -66,6 +66,10 @@ export default {
 				{
 					label: 'Sites',
 					route: '/sites'
+				},
+				{
+					label: 'Support',
+					route: '/support'
 				}
 			]
 		};

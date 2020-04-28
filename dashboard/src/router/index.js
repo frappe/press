@@ -68,6 +68,12 @@ const routes = [
 		props: true
 	},
 	{
+		path: '/support',
+		name: 'Support',
+		component: () =>
+			import(/* webpackChunkName: "support" */ '../views/Support.vue'),
+	},
+	{
 		path: '/sites/:siteName',
 		name: 'Site',
 		component: () => import(/* webpackChunkName: "site" */ '../views/Site.vue'),
