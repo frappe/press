@@ -104,7 +104,7 @@ class Agent:
 	def update_site_recover(self, site, target):
 		data = {"target": target}
 		return self.create_agent_job(
-			f"Recover Failed Site Migration",
+			"Recover Failed Site Migration",
 			f"benches/{site.bench}/sites/{site.name}/update/recover",
 			data,
 			bench=site.bench,
@@ -271,7 +271,7 @@ class Agent:
 		return self.post("update")
 
 	def ping(self):
-		return self.get(f"ping")["message"]
+		return self.get("ping")["message"]
 
 	def fetch_monitor_data(self, bench):
 		data = self.post(f"benches/{bench}/monitor")["data"]
