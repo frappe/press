@@ -174,7 +174,7 @@ def collect_site_uptime():
 				frappe.get_doc(doc).insert()
 			frappe.db.commit()
 		except Exception:
-			log_error("Agent Uptime Collection Exception", status=bench_status)
+			log_error("Agent Uptime Collection Exception", bench=bench, status=bench_status)
 
 
 def schedule_backups():
