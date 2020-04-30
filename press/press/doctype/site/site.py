@@ -117,6 +117,8 @@ class Site(Document):
 	def archive(self):
 		log_site_activity(self.name, "Archive")
 		agent = Agent(self.server)
+		self.status = "Pending"
+		self.save()
 		agent.archive_site(self)
 
 		server = frappe.get_all(
@@ -206,7 +208,7 @@ def process_archive_site_job_update(job):
 	elif "Failure" in (first, second):
 		updated_status = "Broken"
 	else:
-		updated_status = "Active"
+		updated_status = "Pending"
 
 	site_status = frappe.get_value("Site", job.site, "status")
 	if updated_status != site_status:
