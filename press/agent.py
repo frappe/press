@@ -280,3 +280,7 @@ class Agent:
 	def fetch_site_status(self, site):
 		data = self.get(f"benches/{site.bench}/sites/{site.name}/status")["data"]
 		return data
+
+	def fetch_bench_status(self, bench):
+		data = self.get(f"benches/{bench}/status")
+		return data

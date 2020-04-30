@@ -156,26 +156,25 @@ def collect_site_analytics():
 
 
 def collect_site_uptime():
-	sites = frappe.get_all(
-		"Site",
-		fields=["name", "server", "bench"],
-		filters={"status": "Active", "enable_uptime_monitoring": True},
+	benches = frappe.get_all(
+		"Bench", fields=["name", "server"], filters={"status": "Active"},
 	)
-	for site in sites:
+	for bench in benches:
 		try:
-			agent = Agent(site.server)
-			status = agent.fetch_site_status(site)
-			doc = {
-				"doctype": "Site Uptime Log",
-				"site": site.name,
-				"web": status["web"],
-				"scheduler": status["scheduler"],
-				"timestamp": status["timestamp"],
-			}
-			frappe.get_doc(doc).insert()
+			agent = Agent(bench.server)
+			bench_status = agent.fetch_bench_status(bench.name)
+			for site, status in bench_status["sites"].items():
+				doc = {
+					"doctype": "Site Uptime Log",
+					"site": site,
+					"web": status["web"],
+					"scheduler": status["scheduler"],
+					"timestamp": bench_status["timestamp"],
+				}
+				frappe.get_doc(doc).insert()
 			frappe.db.commit()
 		except Exception:
-			log_error("Agent Uptime Collection Exception", status=status, doc=doc)
+			log_error("Agent Uptime Collection Exception", status=bench_status)
 
 
 def schedule_backups():
