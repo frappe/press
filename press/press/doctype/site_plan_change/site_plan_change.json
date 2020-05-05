@@ -1,0 +1,103 @@
+{
+ "actions": [],
+ "creation": "2020-05-05 16:37:23.906627",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "site",
+  "team",
+  "from_plan",
+  "to_plan",
+  "column_break_5",
+  "type",
+  "timestamp"
+ ],
+ "fields": [
+  {
+   "fieldname": "site",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Site",
+   "options": "Site",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "site.team",
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Team",
+   "options": "Team"
+  },
+  {
+   "fetch_from": "site.plan",
+   "fieldname": "from_plan",
+   "fieldtype": "Link",
+   "label": "From Plan",
+   "options": "Plan"
+  },
+  {
+   "fieldname": "to_plan",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "To Plan",
+   "options": "Plan",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_5",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Type",
+   "options": "\nInitial Plan\nUpgrade\nDowngrade"
+  },
+  {
+   "default": "Now",
+   "fieldname": "timestamp",
+   "fieldtype": "Datetime",
+   "label": "Timestamp"
+  }
+ ],
+ "links": [],
+ "modified": "2020-05-05 20:56:30.672606",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Site Plan Change",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "title_field": "site",
+ "track_changes": 1
+}

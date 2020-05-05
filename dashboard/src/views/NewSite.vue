@@ -136,65 +136,7 @@
 							</a>
 							to create more sites.
 						</div>
-						<div
-							class="flex px-4 py-3 text-sm text-gray-600 border border-b-0 bg-gray-50 rounded-t-md"
-						>
-							<div class="w-10"></div>
-							<div class="w-1/3">Plan</div>
-							<div class="w-1/3">Concurrent Users</div>
-							<div class="w-1/3">CPU Time</div>
-						</div>
-						<div
-							class="flex px-4 py-3 text-sm text-left border border-b-0 cursor-pointer focus-within:shadow-outline"
-							:class="[
-								selectedPlan === plan ? 'bg-blue-100' : 'hover:bg-blue-50',
-								{
-									'border-b rounded-b-md': i === options.plans.length - 1,
-									'pointer-events-none': disablePlan(plan)
-								}
-							]"
-							v-for="(plan, i) in options.plans"
-							:key="plan.name"
-							@click="selectedPlan = plan"
-						>
-							<div class="flex items-center w-10">
-								<input
-									type="radio"
-									class="form-radio"
-									:checked="selectedPlan === plan"
-									@change="e => (selectedPlan = e.target.checked ? plan : null)"
-								/>
-							</div>
-							<div class="w-1/3" :class="{ 'opacity-25': disablePlan(plan) }">
-								<span class="font-semibold">
-									{{ plan.plan_title }}
-								</span>
-								<span> /mo</span>
-							</div>
-							<div
-								class="w-1/3 text-gray-700"
-								:class="{ 'opacity-25': disablePlan(plan) }"
-							>
-								{{ plan.concurrent_users }}
-								{{ $plural(plan.concurrent_users, 'user', 'users') }}
-							</div>
-							<div
-								class="w-1/3 text-gray-700"
-								:class="{ 'opacity-25': disablePlan(plan) }"
-							>
-								{{ plan.cpu_time_per_day }}
-								{{ $plural(plan.concurrent_users, 'hour', 'hours') }} / day
-							</div>
-						</div>
-					</div>
-					<div class="mt-2 text-sm text-gray-900" v-if="selectedPlan">
-						This plan is ideal for
-						{{ selectedPlan.concurrent_users }} concurrent
-						{{ $plural(selectedPlan.concurrent_users, 'user', 'users') }}. It
-						will allow the CPU execution time equivalent to
-						{{ selectedPlan.cpu_time_per_day }}
-						{{ $plural(selectedPlan.cpu_time_per_day, 'hour', 'hours') }} per
-						day.
+						<SitePlansTable :plans="options.plans" v-model="selectedPlan" />
 					</div>
 				</div>
 				<div class="mt-4">
@@ -241,9 +183,13 @@
 import frappeLogo from '@/assets/frappe-framework-logo.png';
 import erpnextLogo from '@/assets/erpnext-logo.svg';
 import FileUploader from '@/store/fileUploader';
+import SitePlansTable from '@/views/partials/SitePlansTable';
 
 export default {
 	name: 'NewSite',
+	components: {
+		SitePlansTable
+	},
 	data: () => ({
 		siteName: null,
 		apps: [],
@@ -291,6 +237,10 @@ export default {
 	}),
 	async mounted() {
 		this.options = await this.$call('press.api.site.options_for_new');
+		this.options.plans = this.options.plans.map(plan => {
+			plan.disabled = this.disablePlan(plan);
+			return plan;
+		});
 		this.selectedGroup = this.options.groups.find(g => g.default).name;
 	},
 	watch: {

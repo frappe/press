@@ -85,6 +85,11 @@ const routes = [
 					import(/* webpackChunkName: "site" */ '../views/SiteGeneral.vue')
 			},
 			{
+				path: 'plan',
+				component: () =>
+					import(/* webpackChunkName: "site" */ '../views/SitePlan.vue')
+			},
+			{
 				path: 'apps',
 				component: () =>
 					import(/* webpackChunkName: "site" */ '../views/SiteApps.vue')

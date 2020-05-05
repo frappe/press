@@ -9,7 +9,7 @@ import frappe
 import json
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.utils import log_error, get_current_team
-from frappe.utils import cint
+from frappe.utils import cint, flt, time_diff_in_hours
 
 
 @frappe.whitelist()
@@ -124,20 +124,7 @@ def options_for_new():
 	team = get_current_team()
 	has_subscription = bool(frappe.db.get_value("Subscription", {"team": team}))
 
-	plans = frappe.db.get_all(
-		"Plan",
-		fields=[
-			"name",
-			"plan_title",
-			"price_usd",
-			"price_inr",
-			"concurrent_users",
-			"cpu_time_per_day",
-			"trial_period",
-		],
-		filters={"enabled": True},
-		order_by="price_usd asc",
-	)
+	plans = get_plans()
 	# disable site creation if subscription not created and trial sites are exhausted
 	disable_site_creation = bool(
 		not has_subscription and frappe.db.count("Site", {"team": team}) >= trial_sites_count
@@ -151,6 +138,24 @@ def options_for_new():
 		"disable_site_creation": disable_site_creation,
 		"trial_sites_count": trial_sites_count,
 	}
+
+
+@frappe.whitelist()
+def get_plans():
+	return frappe.db.get_all(
+		"Plan",
+		fields=[
+			"name",
+			"plan_title",
+			"price_usd",
+			"price_inr",
+			"concurrent_users",
+			"cpu_time_per_day",
+			"trial_period",
+		],
+		filters={"enabled": True},
+		order_by="price_usd asc",
+	)
 
 
 @frappe.whitelist()
@@ -240,6 +245,63 @@ def analytics(name, period="1 hour"):
 		],
 		"uptime": uptime_data,
 	}
+
+
+@frappe.whitelist()
+def current_plan(site):
+	plan_name = frappe.db.get_value("Site", site, "plan")
+	plan = frappe.get_doc("Plan", plan_name)
+	site_plan_changes = frappe.db.get_all(
+		"Site Plan Change",
+		filters={"site": site},
+		fields=["name", "type", "owner", "to_plan", "timestamp"],
+		order_by="timestamp desc",
+		limit=5
+	)
+
+	result = frappe.db.sql(
+		"""SELECT
+			SUM(duration) as total_cpu_usage
+		FROM
+			`tabSite Request Log` t
+		WHERE
+			t.site = %s
+			and date(timestamp) = CURDATE();""",
+		(site,),
+		as_dict=True,
+	)
+
+	# cpu usage in microseconds
+	total_cpu_usage = result[0].total_cpu_usage or 0
+	# convert into hours
+	total_cpu_usage_hours = flt(total_cpu_usage / (3.6 * (10 ** 9)), 5)
+
+	# number of hours until cpu usage resets
+	now = frappe.utils.now_datetime()
+	today_end = now.replace(hour=23, minute=59, second=59)
+	hours_left_today = flt(time_diff_in_hours(today_end, now), 2)
+
+	return {
+		"current_plan": plan,
+		"history": site_plan_changes,
+		"total_cpu_usage_hours": total_cpu_usage_hours,
+		"hours_until_reset": hours_left_today,
+	}
+
+
+@frappe.whitelist()
+def change_plan(site, plan):
+	frappe.get_doc("Site", site).change_plan(plan)
+
+
+@frappe.whitelist()
+def deactivate(site):
+	frappe.get_doc("Site", site).deactivate()
+
+
+@frappe.whitelist()
+def activate(site):
+	frappe.get_doc("Site", site).activate()
 
 
 @frappe.whitelist()
