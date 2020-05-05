@@ -49,25 +49,31 @@
 							</option>
 						</select>
 					</div>
-					<div class="flex mt-6 overflow-x-auto">
-						<button
-							class="flex items-center justify-center w-40 px-6 py-8 mr-4 border rounded cursor-pointer focus:outline-none focus:shadow-outline"
-							:class="
-								selectedApps.includes(app.app)
-									? 'bg-blue-100 border-blue-500'
-									: 'hover:bg-gray-100'
-							"
-							v-for="app in apps"
-							:key="app.app"
-							@click="toggleApp(app)"
-						>
-							<div>
-								<img class="w-8 h-8 mx-auto" :src="app.logo" :alt="app.name" />
-								<div class="mt-3 font-semibold">
-									{{ app.repo }}
+					<div class="mt-6">
+						<div class="flex py-2 pl-1 -my-2 -ml-1 overflow-x-auto">
+							<button
+								class="flex items-center justify-center w-40 px-6 py-8 mr-4 border rounded cursor-pointer focus:outline-none focus:shadow-outline"
+								:class="
+									selectedApps.includes(app.app)
+										? 'bg-blue-100 border-blue-500'
+										: 'hover:bg-gray-100'
+								"
+								v-for="app in apps"
+								:key="app.app"
+								@click="toggleApp(app)"
+							>
+								<div>
+									<img
+										class="w-8 h-8 mx-auto"
+										:src="app.logo"
+										:alt="app.name"
+									/>
+									<div class="mt-3 font-semibold">
+										{{ app.repo }}
+									</div>
 								</div>
-							</div>
-						</button>
+							</button>
+						</div>
 					</div>
 				</div>
 				<div class="mt-10">
