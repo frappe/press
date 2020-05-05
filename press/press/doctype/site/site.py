@@ -71,6 +71,9 @@ class Site(Document):
 		return bool(frappe.db.get_value("Subscription", {"team": self.team}))
 
 	def after_insert(self):
+		# create a site plan change log
+		self._create_initial_site_plan_change()
+		# log activity
 		log_site_activity(self.name, "Create")
 		self.create_agent_request()
 
@@ -162,6 +165,35 @@ class Site(Document):
 
 	def update_site(self):
 		log_site_activity(self.name, "Update")
+
+	def change_plan(self, plan):
+		frappe.get_doc(
+			{"doctype": "Site Plan Change", "site": self.name, "to_plan": plan}
+		).insert()
+
+	def deactivate(self):
+		self.update_site_config({"maintenance_mode": 1})
+		log_site_activity(self.name, "Deactivate Site")
+		self.status = "Inactive"
+		self.save()
+
+	def activate(self):
+		self.update_site_config({"maintenance_mode": 0})
+		log_site_activity(self.name, "Activate Site")
+		self.status = "Active"
+		self.save()
+
+	def _create_initial_site_plan_change(self):
+		frappe.get_doc(
+			{
+				"doctype": "Site Plan Change",
+				"site": self.name,
+				"from_plan": "",
+				"to_plan": self.plan,
+				"type": "Initial Plan",
+				"timestamp": self.creation,
+			}
+		).insert(ignore_permissions=True)
 
 
 def process_new_site_job_update(job):

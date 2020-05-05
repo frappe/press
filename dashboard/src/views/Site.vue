@@ -130,6 +130,7 @@ export default {
 		tabs() {
 			let tabs = [
 				{ label: 'General', route: 'general' },
+				{ label: 'Plan', route: 'plan' },
 				{ label: 'Apps', route: 'apps' },
 				{ label: 'Domains', route: 'domains' },
 				{
