@@ -48,7 +48,7 @@
 		</div>
 		<div class="px-4 sm:px-8" v-if="site">
 			<div>
-				<ul class="hidden overflow-hidden text-sm border-b rounded sm:flex">
+				<ul class="hidden overflow-hidden text-sm border-b sm:flex">
 					<router-link
 						v-for="tab in tabs"
 						:key="tab.label"
@@ -133,11 +133,7 @@ export default {
 				{ label: 'Plan', route: 'plan' },
 				{ label: 'Apps', route: 'apps' },
 				{ label: 'Domains', route: 'domains' },
-				{
-					label: 'Analytics',
-					route: 'analytics',
-					condition: () => this.setupComplete
-				},
+				{ label: 'Analytics', route: 'analytics' },
 				{ label: 'Backups', route: 'backups' },
 				{ label: 'Site Config', route: 'site-config' },
 				// { label: 'Console', route: 'console' },
@@ -145,7 +141,13 @@ export default {
 				{ label: 'Access Control', route: 'access-control' },
 				{ label: 'Jobs', route: 'jobs' }
 			];
-			let tabsToShowForInactiveSite = ['General', 'Jobs'];
+			let tabsToShowForInactiveSite = [
+				'General',
+				'Plan',
+				'Site Config',
+				'Drop Site',
+				'Jobs'
+			];
 			if (this.site) {
 				if (this.site.status !== 'Active' && this.site.status !== 'Updating') {
 					return tabs.filter(tab =>
