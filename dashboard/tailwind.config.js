@@ -38,5 +38,11 @@ module.exports = {
 			}
 		}
 	},
-	plugins: [require('@tailwindcss/ui')]
+	plugins: [require('@tailwindcss/ui')],
+	purge: {
+		content: ['./public/index.html', './src/**/*.html', './src/**/*.vue'],
+		options: {
+			whitelistPatternsChildren: [/chart-container$/, /graph-svg-tip$/]
+		}
+	}
 };
