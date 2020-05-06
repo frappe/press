@@ -87,6 +87,10 @@ export default class FileUploader {
 				form_data.append('method', options.method);
 			}
 
+			if (options.type) {
+				form_data.append('type', options.type);
+			}
+
 			xhr.send(form_data);
 		});
 	}

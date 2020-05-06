@@ -94,8 +94,11 @@
 						<div v-for="file in files" :key="file.type">
 							<div class="flex items-center mt-1">
 								<span class="flex-1 text-gray-800">{{ file.title }}</span>
-								<span class="flex-1 text-gray-400 truncate" v-if="file.file">
+								<span class="flex-1 text-gray-400 truncate text-sm" v-if="file.file">
 									{{ file.file.name }}
+								</span>
+								<span class="flex-1 text-red-400 truncate text-sm" v-if="file.errorMessage">
+									{{ file.errorMessage }}
 								</span>
 								<input
 									:ref="file.type"
@@ -221,6 +224,7 @@ export default {
 				uploading: false,
 				uploaded: 0,
 				total: 1,
+				errorMessage: null,
 				file: null
 			},
 			{
@@ -229,6 +233,7 @@ export default {
 				uploading: false,
 				uploaded: 0,
 				total: 1,
+				errorMessage: null,
 				file: null
 			},
 			{
@@ -237,6 +242,7 @@ export default {
 				uploading: false,
 				uploaded: 0,
 				total: 1,
+				errorMessage: null,
 				file: null
 			}
 		]
@@ -347,6 +353,7 @@ export default {
 			return true;
 		},
 		onFile(file, event) {
+			file.errorMessage = null;
 			file.file = event.target.files[0];
 			this.uploadFile(file);
 		},
@@ -366,9 +373,17 @@ export default {
 				file.uploading = false;
 			});
 			let result = await file.uploader.upload(file.file, {
-				method: 'press.api.site.upload_backup'
+				method: 'press.api.site.upload_backup',
+				type: file.type
 			});
-			this.selectedFiles[file.type] = result;
+			console.log(result);
+			if (result.status == 'success') {
+				this.selectedFiles[file.type] = result.file;
+			} else {
+				file.file = null;
+				file.uploading = false;
+				file.errorMessage = result.message;
+			}
 		}
 	}
 };
