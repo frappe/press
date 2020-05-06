@@ -312,6 +312,8 @@ def process_job_updates(job_name):
 			process_new_site_job_update(job)
 		if job.job_type == "New Site from Backup":
 			process_new_site_job_update(job)
+		if job.job_type == "Restore Site":
+			process_reinstall_site_job_update(job)
 		if job.job_type == "Reinstall Site":
 			process_reinstall_site_job_update(job)
 		if job.job_type == "Install App on Site":

@@ -330,6 +330,16 @@ def reinstall(site):
 
 
 @frappe.whitelist()
+def restore(site, files):
+	site = frappe.get_doc("Site", site)
+	site.database_file = files["database"]
+	site.public_file = files["public"]
+	site.private_file = files["private"]
+	site.save()
+	site.restore()
+
+
+@frappe.whitelist()
 def exists(subdomain):
 	return bool(frappe.db.exists("Site", {"subdomain": subdomain}))
 
