@@ -20,7 +20,7 @@ def signup(email):
 	current_user = frappe.session.user
 	frappe.set_user("Administrator")
 
-	email = email.strip()
+	email = email.strip().lower()
 	exists, enabled = frappe.db.get_value("Team", email, ["name", "enabled"]) or [0, 0]
 
 	if exists and not enabled:
