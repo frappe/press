@@ -55,6 +55,22 @@ class Agent:
 			"New Site", f"benches/{site.bench}/sites", data, bench=site.bench, site=site.name
 		)
 
+	def reinstall_site(self, site):
+		data = {
+			"mariadb_root_password": get_decrypted_password(
+				"Server", site.server, "mariadb_root_password"
+			),
+			"admin_password": get_decrypted_password("Site", site.name, "admin_password"),
+		}
+
+		return self.create_agent_job(
+			"Reinstall Site",
+			f"benches/{site.bench}/sites/{site.name}/reinstall",
+			data,
+			bench=site.bench,
+			site=site.name,
+		)
+
 	def new_site_from_backup(self, site):
 		apps = [frappe.db.get_value("Frappe App", app.app, "scrubbed") for app in site.apps]
 		data = {

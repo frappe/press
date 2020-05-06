@@ -565,5 +565,24 @@
     "step_name": "Reload NGINX"
    }
   ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2020-05-06 11:08:03.470650",
+  "name": "Reinstall Site",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "request_method": "POST",
+  "request_path": "benches/{bench}/sites/{site}/reinstall",
+  "steps": [
+   {
+    "parent": "Reinstall Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reinstall Site"
+   }
+  ]
  }
 ]
