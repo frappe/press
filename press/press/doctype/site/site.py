@@ -95,11 +95,15 @@ class Site(Document):
 		log_site_activity(self.name, "Reinstall")
 		agent = Agent(self.server)
 		agent.reinstall_site(self)
+		self.status = "Pending"
+		self.save()
 
 	def restore(self):
 		log_site_activity(self.name, "Restore")
 		agent = Agent(self.server)
 		agent.restore_site(self)
+		self.status = "Pending"
+		self.save()
 
 	def backup(self):
 		if frappe.db.count(
@@ -112,6 +116,8 @@ class Site(Document):
 	def schedule_update(self):
 		log_site_activity(self.name, "Update")
 		frappe.get_doc({"doctype": "Site Update", "site": self.name}).insert()
+		self.status = "Pending"
+		self.save()
 
 	def add_domain(self, domain):
 		if check_dns(self.name, domain):
