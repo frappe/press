@@ -148,28 +148,6 @@
 						<SitePlansTable :plans="options.plans" v-model="selectedPlan" />
 					</div>
 				</div>
-				<div class="mt-4">
-					<label class="flex py-2 leading-none">
-						<input
-							type="checkbox"
-							class="form-checkbox"
-							v-model="enableBackups"
-						/>
-						<span class="ml-2">
-							Enable Backups
-						</span>
-					</label>
-					<label class="flex py-2 leading-none">
-						<input
-							type="checkbox"
-							class="form-checkbox"
-							v-model="enableMonitoring"
-						/>
-						<span class="ml-2">
-							Enable Uptime Monitoring
-						</span>
-					</label>
-				</div>
 				<div class="mt-6">
 					<ErrorMessage v-if="errorMessage">
 						{{ errorMessage }}
@@ -202,8 +180,6 @@ export default {
 	data: () => ({
 		siteName: null,
 		apps: [],
-		enableBackups: false,
-		enableMonitoring: false,
 		options: null,
 		restoreBackup: false,
 		selectedApps: [],
@@ -286,8 +262,6 @@ export default {
 				site: {
 					name: this.siteName,
 					apps: this.selectedApps,
-					backups: this.enableBackups,
-					monitor: this.enableMonitoring,
 					group: this.selectedGroup,
 					plan: this.selectedPlan.name,
 					files: this.selectedFiles
