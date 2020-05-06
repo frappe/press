@@ -376,7 +376,7 @@ export default {
 				method: 'press.api.site.upload_backup',
 				type: file.type
 			});
-			console.log(result);
+
 			if (result.status == 'success') {
 				this.selectedFiles[file.type] = result.file;
 			} else {
