@@ -126,6 +126,9 @@ export default {
 			this.jobs = await this.$call('press.api.site.jobs', {
 				name: this.site.name
 			});
+			if (this.jobs && !this.jobName) {
+				this.$router.push(`/sites/${this.site.name}/jobs/${this.jobs[0].name}`);
+			}
 		},
 		async selectJob(jobName) {
 			this.selectedJob = await this.fetchJobDetails(jobName);
