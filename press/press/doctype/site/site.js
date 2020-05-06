@@ -40,15 +40,23 @@ frappe.ui.form.on('Site', {
 			const filters = {site: frm.doc.name};
 			frappe.set_route("List", "Site Job Log", filters);
 		}, __('Logs'));
+
+		frm.add_custom_button(__('Archive'), () => {
+			frm.call({method: "archive", doc: frm.doc, callback: result => frappe.msgprint(result.message)});
+		}, __('Actions'));
 		frm.add_custom_button(__('Backup'), () => {
 			frm.call({method: "backup", doc: frm.doc, callback: result => frappe.msgprint(result.message)});
+		}, __('Actions'));
+		frm.add_custom_button(__('Reinstall'), () => {
+			frm.call({method: "reinstall", doc: frm.doc, callback: result => frappe.msgprint(result.message)});
+		}, __('Actions'));
+		frm.add_custom_button(__('Restore'), () => {
+			frm.call({method: "restore", doc: frm.doc, callback: result => frappe.msgprint(result.message)});
 		}, __('Actions'));
 		frm.add_custom_button(__('Update'), () => {
 			frm.call({method: "schedule_update", doc: frm.doc, callback: result => frappe.msgprint(result.message)});
 		}, __('Actions'));
-		frm.add_custom_button(__('Archive'), () => {
-			frm.call({method: "archive", doc: frm.doc, callback: result => frappe.msgprint(result.message)});
-		}, __('Actions'));
+
 		frm.add_custom_button(__('Domains'), () => {
 			const filters = {site: frm.doc.name};
 			frappe.set_route("List", "Site Domain", filters);
