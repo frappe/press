@@ -5,8 +5,13 @@
 from __future__ import unicode_literals
 import dns.resolver
 
-import frappe
+import builtins
+import gzip
+import io
 import json
+from pathlib import Path
+import tarfile
+import frappe
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.utils import log_error, get_current_team
 from frappe.utils import cint, flt, time_diff_in_hours
@@ -392,16 +397,55 @@ def update_config(name, config):
 	frappe.get_doc("Site", name).update_site_config(config)
 
 
+def validate_database_backup(filename, content):
+	try:
+		with gzip.open(io.BytesIO(content)) as f:
+			line = f.readline().decode().lower()
+			if "mysql" in line or "mariadb" in line:
+				return True
+	except Exception:
+		log_error("Invalid Database Backup File", filename=filename, content=content[:1024])
+
+
+def validate_files_backup(filename, content, type):
+	try:
+		with tarfile.TarFile.open(fileobj=io.BytesIO(content), mode="r:") as f:
+			files = f.getnames()
+			if files:
+				path = Path(files[0])
+				if (
+					path.name == "files"
+					and path.parent.name == type
+					and path.parent.parent.parent.name == ""
+					and builtins.all(file.startswith(files[0]) for file in files)
+				):
+					return True
+	except tarfile.TarError:
+		log_error("Invalid Files Backup File", filename=filename, content=content[:1024])
+
+
+def validate_backup(filename, content, type):
+	if type == "database":
+		return validate_database_backup(filename, content)
+	else:
+		return validate_files_backup(filename, content, type)
+
+
 @frappe.whitelist()
 def upload_backup():
-	file = frappe.get_doc(
-		{
-			"doctype": "File",
-			"folder": "Home/Attachments",
-			"file_name": frappe.local.uploaded_filename,
-			"is_private": 1,
-			"content": frappe.local.uploaded_file,
-		}
-	)
-	file.save(ignore_permissions=True)
-	return file.file_url
+	content = frappe.local.uploaded_file
+	filename = frappe.local.uploaded_filename
+	if validate_backup(filename, content, frappe.form_dict.type):
+		file = frappe.get_doc(
+			{
+				"doctype": "File",
+				"folder": "Home/Attachments",
+				"file_name": filename,
+				"is_private": 1,
+				"content": content,
+			}
+		)
+		file.save(ignore_permissions=True)
+		return {"status": "success", "file": file.file_url}
+	else:
+		return {"status": "failure", "message": "Invalid Backup File"}
