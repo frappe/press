@@ -91,6 +91,11 @@ class Site(Document):
 		agent = Agent(server.proxy_server, server_type="Proxy Server")
 		agent.new_upstream_site(self.server, self.name)
 
+	def reinstall(self):
+		log_site_activity(self.name, "Reinstall")
+		agent = Agent(self.server)
+		agent.reinstall_site(self)
+
 	def backup(self):
 		if frappe.db.count(
 			"Site Backup", {"site": self.name, "status": ("in", ["Running", "Pending"])}
@@ -250,6 +255,19 @@ def process_archive_site_job_update(job):
 def process_install_app_site_job_update(job):
 	updated_status = {
 		"Pending": "Active",
+		"Running": "Installing",
+		"Success": "Active",
+		"Failure": "Broken",
+	}[job.status]
+
+	site_status = frappe.get_value("Site", job.site, "status")
+	if updated_status != site_status:
+		frappe.db.set_value("Site", job.site, "status", updated_status)
+
+
+def process_reinstall_site_job_update(job):
+	updated_status = {
+		"Pending": "Pending",
 		"Running": "Installing",
 		"Success": "Active",
 		"Failure": "Broken",

@@ -293,6 +293,7 @@ def process_job_updates(job_name):
 			process_new_site_job_update,
 			process_archive_site_job_update,
 			process_install_app_site_job_update,
+			process_reinstall_site_job_update,
 		)
 		from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
 		from press.press.doctype.site_domain.site_domain import process_new_host_job_update
@@ -311,6 +312,8 @@ def process_job_updates(job_name):
 			process_new_site_job_update(job)
 		if job.job_type == "New Site from Backup":
 			process_new_site_job_update(job)
+		if job.job_type == "Reinstall Site":
+			process_reinstall_site_job_update(job)
 		if job.job_type == "Install App on Site":
 			process_install_app_site_job_update(job)
 		if job.job_type == "Add Site to Upstream":

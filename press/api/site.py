@@ -325,6 +325,11 @@ def archive(name):
 
 
 @frappe.whitelist()
+def reinstall(site):
+	frappe.get_doc("Site", site).reinstall()
+
+
+@frappe.whitelist()
 def exists(subdomain):
 	return bool(frappe.db.exists("Site", {"subdomain": subdomain}))
 
