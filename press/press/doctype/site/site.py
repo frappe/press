@@ -96,6 +96,11 @@ class Site(Document):
 		agent = Agent(self.server)
 		agent.reinstall_site(self)
 
+	def restore(self):
+		log_site_activity(self.name, "Restore")
+		agent = Agent(self.server)
+		agent.restore_site(self)
+
 	def backup(self):
 		if frappe.db.count(
 			"Site Backup", {"site": self.name, "status": ("in", ["Running", "Pending"])}
