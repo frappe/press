@@ -261,7 +261,7 @@ def current_plan(site):
 		filters={"site": site},
 		fields=["name", "type", "owner", "to_plan", "timestamp"],
 		order_by="timestamp desc",
-		limit=5
+		limit=5,
 	)
 
 	result = frappe.db.sql(
