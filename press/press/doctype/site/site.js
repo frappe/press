@@ -14,6 +14,8 @@ frappe.ui.form.on('Site', {
 	},
 	refresh: function(frm) {
 		frm.add_web_link(`https://${frm.doc.name}`, __('Visit Site'));
+		frm.add_web_link(`/dashboard/#/sites/${frm.doc.name}/general`, __('Visit Dashboard'));
+
 		frm.add_custom_button(__('Agent Jobs'), () => {
 			const filters = {site: frm.doc.name};
 			frappe.set_route("List", "Agent Job", filters);
