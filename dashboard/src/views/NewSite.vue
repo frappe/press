@@ -365,15 +365,15 @@ export default {
 					file.errorMessage = result.message;
 				}
 			}).catch(error => {
-					file.file = null;
-					file.uploading = false;
-					if (error._server_messages) {
-						file.errorMessage = JSON.parse(JSON.parse(error._server_messages)[0]).message;
-					} else if (error.exc) {
-						file.errorMessage = JSON.parse(error.exc)[0].split("\n").slice(-2, -1)[0];
-					} else {
-						file.errorMessage = "Something Went Wrong";
-					}
+				file.file = null;
+				file.uploading = false;
+				if (error._server_messages) {
+					file.errorMessage = JSON.parse(JSON.parse(error._server_messages)[0]).message;
+				} else if (error.exc) {
+					file.errorMessage = JSON.parse(error.exc)[0].split('\n').slice(-2, -1)[0];
+				} else {
+					file.errorMessage = 'Something Went Wrong';
+				}
 			});
 		}
 	}
