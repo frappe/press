@@ -7,6 +7,7 @@ import frappe
 from frappe.utils import cint
 from frappe.handler import is_whitelisted
 
+
 @frappe.whitelist(allow_guest=True)
 def upload_file():
 	if frappe.session.user == "Guest":
