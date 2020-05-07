@@ -58,7 +58,10 @@ export default class FileUploader {
 							// pass
 						}
 					}
-					console.error(error);
+					if(error && error.exc){
+						console.error(JSON.parse(error.exc)[0]);
+					}
+					reject(error);
 				}
 			};
 			xhr.open('POST', '/api/method/upload_file', true);

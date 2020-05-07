@@ -101,7 +101,7 @@
 									{{ file.file.name }}
 								</span>
 								<span
-									class="flex-1 text-red-400 truncate text-sm"
+									class="flex-1 text-red-400 text-sm"
 									v-if="file.errorMessage"
 								>
 									{{ file.errorMessage }}
@@ -352,18 +352,29 @@ export default {
 			file.uploader.on('finish', () => {
 				file.uploading = false;
 			});
-			let result = await file.uploader.upload(file.file, {
+
+			file.uploader.upload(file.file, {
 				method: 'press.api.site.upload_backup',
 				type: file.type
+			}).then(result => {
+				if (result.status == 'success') {
+					this.selectedFiles[file.type] = result.file;
+				} else {
+					file.file = null;
+					file.uploading = false;
+					file.errorMessage = result.message;
+				}
+			}).catch(error => {
+					file.file = null;
+					file.uploading = false;
+					if (error._server_messages) {
+						file.errorMessage = JSON.parse(JSON.parse(error._server_messages)[0]).message;
+					} else if (error.exc) {
+						file.errorMessage = JSON.parse(error.exc)[0].split("\n").slice(-2, -1)[0];
+					} else {
+						file.errorMessage = "Something Went Wrong";
+					}
 			});
-
-			if (result.status == 'success') {
-				this.selectedFiles[file.type] = result.file;
-			} else {
-				file.file = null;
-				file.uploading = false;
-				file.errorMessage = result.message;
-			}
 		}
 	}
 };
