@@ -11,10 +11,25 @@ import io
 import json
 from pathlib import Path
 import tarfile
+import wrapt
 import frappe
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.utils import log_error, get_current_team
 from frappe.utils import cint, flt, time_diff_in_hours
+
+
+def protected():
+	@wrapt.decorator
+	def wrapper(wrapped, instance, args, kwargs):
+		site = kwargs["name"]
+		team = get_current_team()
+		owner = frappe.db.get_value("Site", site, "team")
+		if frappe.session.user == "Administrator" or owner == team:
+			return wrapped(*args, **kwargs)
+		else:
+			raise frappe.PermissionError
+
+	return wrapper
 
 
 @frappe.whitelist()
@@ -46,6 +61,7 @@ def new(site):
 
 
 @frappe.whitelist()
+@protected()
 def jobs(name):
 	jobs = frappe.get_all(
 		"Agent Job",
@@ -57,12 +73,13 @@ def jobs(name):
 
 
 @frappe.whitelist()
-def job(name):
-	job = frappe.get_doc("Agent Job", name)
+@protected()
+def job(name, job):
+	job = frappe.get_doc("Agent Job", job)
 	job = job.as_dict()
 	job.steps = frappe.get_all(
 		"Agent Job Step",
-		filters={"agent_job": name},
+		filters={"agent_job": job.name},
 		fields=["step_name", "status", "start", "end", "duration", "output"],
 		order_by="creation",
 	)
@@ -70,6 +87,7 @@ def job(name):
 
 
 @frappe.whitelist()
+@protected()
 def running_jobs(name):
 	jobs = frappe.get_all(
 		"Agent Job", filters={"status": ("in", ("Pending", "Running")), "site": name}
@@ -78,6 +96,7 @@ def running_jobs(name):
 
 
 @frappe.whitelist()
+@protected()
 def backups(name):
 	backups = frappe.get_all(
 		"Site Backup",
@@ -89,6 +108,7 @@ def backups(name):
 
 
 @frappe.whitelist()
+@protected()
 def domains(name):
 	domains = frappe.get_all(
 		"Site Domain", fields=["name", "domain", "status"], filters={"site": name}
@@ -97,6 +117,7 @@ def domains(name):
 
 
 @frappe.whitelist()
+@protected()
 def activities(name):
 	activities = frappe.get_all(
 		"Site Activity",
@@ -172,6 +193,7 @@ def all():
 
 
 @frappe.whitelist()
+@protected()
 def get(name):
 	site = frappe.get_doc("Site", name)
 	bench = frappe.get_doc("Bench", site.bench)
@@ -201,6 +223,7 @@ def get(name):
 
 
 @frappe.whitelist()
+@protected()
 def analytics(name, period="1 hour"):
 	interval, divisor, = {
 		"1 hour": ("1 HOUR", 60),
@@ -253,12 +276,13 @@ def analytics(name, period="1 hour"):
 
 
 @frappe.whitelist()
-def current_plan(site):
-	plan_name = frappe.db.get_value("Site", site, "plan")
+@protected()
+def current_plan(name):
+	plan_name = frappe.db.get_value("Site", name, "plan")
 	plan = frappe.get_doc("Plan", plan_name)
 	site_plan_changes = frappe.db.get_all(
 		"Site Plan Change",
-		filters={"site": site},
+		filters={"site": name},
 		fields=["name", "type", "owner", "to_plan", "timestamp"],
 		order_by="timestamp desc",
 		limit=5,
@@ -272,7 +296,7 @@ def current_plan(site):
 		WHERE
 			t.site = %s
 			and date(timestamp) = CURDATE();""",
-		(site,),
+		(name,),
 		as_dict=True,
 	)
 
@@ -295,43 +319,51 @@ def current_plan(site):
 
 
 @frappe.whitelist()
-def change_plan(site, plan):
-	frappe.get_doc("Site", site).change_plan(plan)
+@protected()
+def change_plan(name, plan):
+	frappe.get_doc("Site", name).change_plan(plan)
 
 
 @frappe.whitelist()
-def deactivate(site):
-	frappe.get_doc("Site", site).deactivate()
+@protected()
+def deactivate(name):
+	frappe.get_doc("Site", name).deactivate()
 
 
 @frappe.whitelist()
-def activate(site):
-	frappe.get_doc("Site", site).activate()
+@protected()
+def activate(name):
+	frappe.get_doc("Site", name).activate()
 
 
 @frappe.whitelist()
+@protected()
 def login(name):
 	return frappe.get_doc("Site", name).login()
 
 
 @frappe.whitelist()
+@protected()
 def backup(name):
 	frappe.get_doc("Site", name).backup()
 
 
 @frappe.whitelist()
+@protected()
 def archive(name):
 	frappe.get_doc("Site", name).archive()
 
 
 @frappe.whitelist()
-def reinstall(site):
-	frappe.get_doc("Site", site).reinstall()
+@protected()
+def reinstall(name):
+	frappe.get_doc("Site", name).reinstall()
 
 
 @frappe.whitelist()
-def restore(site, files):
-	site = frappe.get_doc("Site", site)
+@protected()
+def restore(name, files):
+	site = frappe.get_doc("Site", name)
 	site.database_file = files["database"]
 	site.public_file = files["public"]
 	site.private_file = files["private"]
@@ -345,11 +377,13 @@ def exists(subdomain):
 
 
 @frappe.whitelist()
+@protected()
 def setup_wizard_complete(name):
 	return frappe.get_doc("Site", name).setup_wizard_complete()
 
 
 @frappe.whitelist()
+@protected()
 def check_dns(name, domain):
 	def check_dns_cname(name, domain):
 		try:
@@ -375,16 +409,19 @@ def check_dns(name, domain):
 
 
 @frappe.whitelist()
+@protected()
 def add_domain(name, domain):
 	frappe.get_doc("Site", name).add_domain(domain)
 
 
 @frappe.whitelist()
+@protected()
 def install_app(name, app):
 	frappe.get_doc("Site", name).install_app(app)
 
 
 @frappe.whitelist()
+@protected()
 def update_config(name, config):
 	allowed_keys = [
 		"mail_server",
