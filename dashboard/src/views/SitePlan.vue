@@ -170,7 +170,7 @@ export default {
 	methods: {
 		async fetchCurrentPlan() {
 			let out = await this.$call('press.api.site.current_plan', {
-				site: this.site.name
+				name: this.site.name
 			});
 			this.currentPlan = out.current_plan;
 			this.history = out.history;
@@ -187,8 +187,8 @@ export default {
 			});
 		},
 		async changePlan() {
-			await this.$call('press.api.site.change_plan', {
-				site: this.site.name,
+			await this('press.api.site.change_plan', {
+				name: this.site.name,
 				plan: this.selectedPlan.name
 			});
 			this.$notify({
@@ -203,14 +203,14 @@ export default {
 		},
 		deactivate() {
 			this.$call('press.api.site.deactivate', {
-				site: this.site.name
+				name: this.site.name
 			});
 			this.showDeactivateDialog = false;
 			setTimeout(() => window.location.reload(), 1000);
 		},
 		activate() {
 			this.$call('press.api.site.activate', {
-				site: this.site.name
+				name: this.site.name
 			});
 			this.$notify({
 				title: 'Site activated successfully!',

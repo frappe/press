@@ -136,7 +136,8 @@ export default {
 		async fetchJobDetails() {
 			if (this.jobName) {
 				this.selectedJob = await this.$call('press.api.site.job', {
-					name: this.jobName
+					name: this.site.name,
+					job: this.jobName
 				});
 			}
 		},
