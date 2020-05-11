@@ -324,3 +324,12 @@ class Agent:
 	def fetch_bench_status(self, bench):
 		data = self.get(f"benches/{bench}/status")
 		return data
+
+	def fetch_server_status(self):
+		data = {
+			"mariadb_root_password": get_decrypted_password(
+				"Server", self.server, "mariadb_root_password"
+			)
+		}
+		data = self.post("server/status", data=data)
+		return data
