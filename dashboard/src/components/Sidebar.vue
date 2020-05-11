@@ -10,7 +10,7 @@
 					</router-link>
 				</div>
 				<router-link
-					v-for="item in itemsBasedOnUser"
+					v-for="item in items"
 					:key="item.label"
 					:to="item.route"
 					v-slot="{ href, route, navigate, isActive, isExactActive }"
@@ -66,23 +66,8 @@ export default {
 		return {
 			items: [
 				{
-					label: 'Servers',
-					route: '/servers',
-					administrator: true
-				},
-				{
-					label: 'Benches',
-					route: '/benches',
-					administrator: true
-				},
-				{
 					label: 'Sites',
 					route: '/sites'
-				},
-				{
-					label: 'Apps',
-					route: '/apps',
-					administrator: true
 				},
 				{
 					label: 'Support',
@@ -90,16 +75,6 @@ export default {
 				}
 			]
 		};
-	},
-	computed: {
-		itemsBasedOnUser: function() {
-			return this.items.filter(e => {
-				return (
-					this.$store.account?.user?.name === 'Administrator' ||
-					!e.administrator
-				);
-			});
-		}
 	}
 };
 </script>
