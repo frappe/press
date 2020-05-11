@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "autoname": "hash",
  "creation": "2020-02-24 12:01:15.330015",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -63,7 +64,7 @@
   }
  ],
  "links": [],
- "modified": "2020-02-27 13:24:39.155088",
+ "modified": "2020-05-08 17:57:54.079574",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Uptime Log",
