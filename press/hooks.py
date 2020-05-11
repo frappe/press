@@ -107,6 +107,7 @@ scheduler_events = {
 			"press.press.doctype.agent_job.agent_job.collect_site_uptime",
 			"press.press.doctype.agent_job.agent_job.collect_site_analytics",
 		],
+		"* * * * * 0/30": ["press.press.doctype.agent_job.agent_job.collect_server_status"],
 		"0 */6 * * *": ["press.press.doctype.agent_job.agent_job.schedule_backups"],
 		"*/15 * * * *": ["press.press.doctype.site_update.site_update.schedule_updates"],
 	},
