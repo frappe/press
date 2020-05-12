@@ -9,6 +9,7 @@
   "enabled",
   "user",
   "erpnext_partner",
+  "free_account",
   "section_break_6",
   "team_members",
   "subscription_details_section",
@@ -73,13 +74,21 @@
   },
   {
    "default": "0",
+   "description": "If checked, this user can Transfer credits from ERPNext.com",
    "fieldname": "erpnext_partner",
    "fieldtype": "Check",
    "label": "ERPNext Partner"
+  },
+  {
+   "default": "0",
+   "description": "If checked, usage data will not be sent to Stripe and they won't be charged",
+   "fieldname": "free_account",
+   "fieldtype": "Check",
+   "label": "Free Account"
   }
  ],
  "links": [],
- "modified": "2020-04-13 17:31:22.120053",
+ "modified": "2020-05-12 15:28:16.604243",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

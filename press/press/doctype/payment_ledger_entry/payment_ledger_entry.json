@@ -8,23 +8,26 @@
  "field_order": [
   "team",
   "site",
-  "plan",
-  "subscription",
-  "remark",
   "column_break_4",
   "purpose",
   "date",
+  "plan_and_usage_section",
+  "plan",
+  "subscription",
+  "remark",
+  "column_break_10",
   "amount",
   "currency",
+  "free_usage",
   "amended_from",
   "reverted_from",
   "reverted",
+  "failed_submission_attempts",
   "stripe_section",
   "stripe_usage_record_id",
   "usage_units",
   "timestamp",
   "stripe_customer_balance_transaction_id",
-  "failed_submission_attempts",
   "reference_section",
   "reference_doctype",
   "reference_name"
@@ -96,6 +99,7 @@
    "options": "Subscription"
   },
   {
+   "depends_on": "eval:!doc.free_usage",
    "fieldname": "stripe_section",
    "fieldtype": "Section Break",
    "label": "Stripe"
@@ -171,15 +175,32 @@
   },
   {
    "default": "0",
+   "depends_on": "eval:doc.failed_submission_attempts > 0",
    "fieldname": "failed_submission_attempts",
    "fieldtype": "Int",
    "label": "Failed Submission Attempts",
    "read_only": 1
+  },
+  {
+   "fieldname": "plan_and_usage_section",
+   "fieldtype": "Section Break",
+   "label": "Plan and Usage"
+  },
+  {
+   "fieldname": "column_break_10",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fetch_from": "team.free_account",
+   "fieldname": "free_usage",
+   "fieldtype": "Check",
+   "label": "Free Usage"
   }
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2020-05-12 14:54:11.545085",
+ "modified": "2020-05-12 15:44:29.912103",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Payment Ledger Entry",

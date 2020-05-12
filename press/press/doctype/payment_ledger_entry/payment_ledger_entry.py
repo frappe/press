@@ -22,9 +22,19 @@ class PaymentLedgerEntry(Document):
 
 	def check_duplicate(self):
 		date = frappe.utils.nowdate()
-		filters = {"site": self.site, "team": self.team, "plan": self.plan, "date": date}
-		if frappe.db.exists("Payment Ledger Entry", filters):
-			frappe.throw("This ledger entry already exists.", frappe.DuplicateEntryError)
+		filters = {
+			"site": self.site,
+			"team": self.team,
+			"plan": self.plan,
+			"date": date,
+			"docstatus": ("<", 2),
+		}
+		existing_ledger = frappe.db.exists("Payment Ledger Entry", filters)
+		if existing_ledger:
+			link = frappe.utils.get_link_to_form("Payment Ledger Entry", existing_ledger)
+			frappe.throw(
+				"Duplicate Entry {0} already exists.".format(link), frappe.DuplicateEntryError
+			)
 
 	def calculate_consumption_amount(self):
 		self.subscription = frappe.db.get_value(
@@ -44,7 +54,7 @@ class PaymentLedgerEntry(Document):
 		self.date = frappe.utils.nowdate()
 
 	def on_submit(self):
-		if self.purpose == "Site Consumption":
+		if self.purpose == "Site Consumption" and not self.free_usage:
 			# create usage record on Stripe
 			self.create_usage_record_on_stripe()
 		elif self.purpose in ["Credits Allocation", "Reverse Credits Allocation"]:
