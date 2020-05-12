@@ -1,0 +1,31 @@
+{% import "templates/emails/macros.html" as utils %}
+{% extends "templates/emails/base.html" %}
+
+{% block content %}
+
+<td class="text-base leading-6 text-gray-900">
+	<div class="p-8 bg-white">
+		<p class="mb-4 font-bold">
+			Payment of {{ amount }} for Frappe Cloud was unsuccessful.
+		</p>
+		{%- if card_not_added -%}
+		<p class="mb-6">
+			You haven't added a card for your Frappe Cloud subscription. Your sites will be set to inactive unless you
+			add a card. Please update your billing information in your Billing Settings.
+		</p>
+		{{ utils.button('Update Billing Settings', account_update_link) }}
+		{%- else -%}
+		<p class="mb-6">
+			We attempted to charge your Card ending in <strong>{{ last_4 }}</strong> for your Frappe Cloud subscription, but
+			were unsuccessful. Please update your billing in your
+			<a href="{{ account_update_link }}">Billing Settings</a> or pay manually by clicking the following link.
+		</p>
+		{{ utils.button('Pay Invoice Now', payment_link) }}
+		{%- endif -%}
+
+		{{ utils.separator() }}
+		{{ utils.signature() }}
+	</div>
+</td>
+
+{% endblock %}

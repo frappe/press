@@ -9,6 +9,10 @@ from datetime import datetime
 
 
 class Payment(Document):
+	def on_update(self):
+		if self.status == "Failed":
+			self.send_email_for_failed_payment()
+
 	def on_submit(self):
 		if self.status != "Paid":
 			frappe.throw("Cannot submit if payment failed")
@@ -25,6 +29,26 @@ class Payment(Document):
 		)
 		doc.insert()
 		doc.submit()
+
+	def send_email_for_failed_payment(self):
+		team = frappe.get_doc("Team", self.team)
+		email = team.user
+		payment_method = team.default_payment_method
+		last_4 = frappe.db.get_value("Stripe Payment Method", payment_method, "last_4")
+		account_update_link = frappe.utils.get_url("/dashboard/#/account/billing")
+
+		frappe.sendmail(
+			recipients=email,
+			subject="Payment Failed for Frappe Cloud Subscription",
+			template="payment_failed",
+			args={
+				"payment_link": self.payment_link,
+				"amount": self.get_formatted("amount"),
+				"account_update_link": account_update_link,
+				"last_4": last_4 or "",
+				"card_not_added": not payment_method,
+			},
+		)
 
 
 def process_stripe_webhook(doc, method):
