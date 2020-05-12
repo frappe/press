@@ -38,7 +38,7 @@
 					<span>
 						Please
 						<a
-							@click="$store.sites.loginAsAdministrator(siteName)"
+							@click="loginAsAdministrator(siteName)"
 							class="border-b border-orange-700 cursor-pointer"
 						>
 							login
@@ -99,23 +99,41 @@
 export default {
 	name: 'Site',
 	props: ['siteName'],
-	data: () => ({
-		setupComplete: null
-	}),
-	async mounted() {
-		await this.$store.sites.fetchSite(this.siteName);
-
+	resources: {
+		site() {
+			return {
+				method: 'press.api.site.get',
+				params: {
+					name: this.siteName
+				},
+				auto: true,
+				onSuccess: async () => {
+					if (
+						this.site.status === 'Active' &&
+						!this.site.setup_wizard_complete
+					) {
+						this.site.setup_wizard_complete = Boolean(
+							await this.$call('press.api.site.setup_wizard_complete', {
+								name: this.siteName
+							})
+						);
+					}
+				}
+			};
+		}
+	},
+	provide() {
+		return {
+			utils: {
+				loginAsAdministrator: this.loginAsAdministrator
+			}
+		};
+	},
+	activated() {
+		this.setupSocket();
 		if (this.$route.matched.length === 1) {
 			let path = this.$route.fullPath;
 			this.$router.replace(`${path}/general`);
-		}
-
-		if (this.site.status === 'Active') {
-			this.setupComplete = Boolean(
-				await this.$call('press.api.site.setup_wizard_complete', {
-					name: this.siteName
-				})
-			);
 		}
 	},
 	methods: {
@@ -124,11 +142,28 @@ export default {
 		},
 		changeTab(route) {
 			this.$router.push(route);
+		},
+		async loginAsAdministrator(siteName) {
+			let sid = await this.$call('press.api.site.login', {
+				name: siteName
+			});
+			if (sid) {
+				window.open(`https://${siteName}/desk?sid=${sid}`, '_blank');
+			}
+		},
+		setupSocket() {
+			if (this._socketSetup) return;
+			this._socketSetup = true;
+			this.$store.socket.on('list_update', ({ doctype, name }) => {
+				if (doctype === 'Site' && name === this.siteName) {
+					this.$resources.site.reload();
+				}
+			});
 		}
 	},
 	computed: {
 		site() {
-			return this.$store.sites.site[this.siteName] || null;
+			return this.$resources.site.data;
 		},
 		tabs() {
 			let tabs = [
@@ -144,20 +179,19 @@ export default {
 				{ label: 'Access Control', route: 'access-control' },
 				{ label: 'Jobs', route: 'jobs' }
 			];
-			let tabsToShowForInactiveSite = [
-				'General',
-				'Plan',
-				'Site Config',
-				'Drop Site',
-				'Jobs'
-			];
+
+			let tabsByStatus = {
+				Inactive: ['General', 'Plan', 'Site Config', 'Drop Site', 'Jobs'],
+				Installing: ['General', 'Jobs'],
+				Pending: ['General', 'Jobs'],
+				Broken: ['General', 'Plan', 'Jobs']
+			};
 			if (this.site) {
-				if (this.site.status !== 'Active' && this.site.status !== 'Updating') {
-					return tabs.filter(tab =>
-						tabsToShowForInactiveSite.includes(tab.label)
-					);
+				let tabsToShow = tabsByStatus[this.site.status];
+				if (tabsToShow?.length) {
+					return tabs.filter(tab => tabsToShow.includes(tab.label));
 				}
-				return tabs.filter(t => !t.condition || t.condition());
+				return tabs;
 			}
 			return [];
 		}

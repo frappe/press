@@ -10,7 +10,9 @@
 				:class="{ 'sm:bg-gray-100': $route.meta.isLoginPage }"
 			>
 				<div class="container flex-1 mx-auto">
-					<router-view />
+					<keep-alive :include="['Sites', 'Site']">
+						<router-view />
+					</keep-alive>
 				</div>
 			</div>
 		</div>

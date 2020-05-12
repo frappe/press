@@ -77,7 +77,6 @@ export default {
 				name: this.site.name,
 				app: app
 			});
-			this.$parent.$store.sites.fetchSite(this.site.name);
 		}
 	}
 };
