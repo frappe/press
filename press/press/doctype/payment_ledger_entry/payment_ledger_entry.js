@@ -2,6 +2,13 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on('Payment Ledger Entry', {
+	onload(frm) {
+		frm.set_query('site', () => ({
+			filters: {
+				team: frm.doc.team,
+			},
+		}));
+	},
 	refresh(frm) {
 		if (frm.doc.purpose == 'Credits Allocation' && !frm.doc.reverted) {
 			frm.add_custom_button(__('Revert'), () => {
