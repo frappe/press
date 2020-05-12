@@ -154,6 +154,13 @@ export default {
 		setupSocket() {
 			if (this._socketSetup) return;
 			this._socketSetup = true;
+			this.$store.socket.on('agent_job_update', data => {
+				if (data.name === 'New Site' || data.name === 'New Site from Backup') {
+					if (data.status === 'Success' && data.site === this.siteName) {
+						this.$resources.site.reload();
+					}
+				}
+			});
 			this.$store.socket.on('list_update', ({ doctype, name }) => {
 				if (doctype === 'Site' && name === this.siteName) {
 					this.$resources.site.reload();
