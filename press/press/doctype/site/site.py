@@ -143,18 +143,19 @@ class Site(Document):
 		)
 		return response.cookies.get("sid")
 
-	def setup_wizard_complete(self):
+	def is_setup_wizard_complete(self):
+		if self.setup_wizard_complete:
+			return True
+
 		password = get_decrypted_password("Site", self.name, "admin_password")
 		conn = FrappeClient(
 			f"https://{self.name}", username="Administrator", password=password
 		)
-		try:
-			value = conn.get_value("System Settings", "setup_complete", "System Settings")
-		except FrappeException:
-			value = None
-
+		value = conn.get_value("System Settings", "setup_complete", "System Settings")
 		if value:
-			return cint(value["setup_complete"])
+			setup_complete = cint(value["setup_complete"])
+			self.db_set('setup_wizard_complete', setup_complete)
+			return setup_complete
 
 	def update_site_config(self, config):
 		self.config = json.dumps(config, indent=4)
