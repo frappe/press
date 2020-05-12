@@ -24,6 +24,7 @@
   "usage_units",
   "timestamp",
   "stripe_customer_balance_transaction_id",
+  "failed_submission_attempts",
   "reference_section",
   "reference_doctype",
   "reference_name"
@@ -167,11 +168,18 @@
    "options": "Payment Ledger Entry",
    "read_only": 1,
    "set_only_once": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "failed_submission_attempts",
+   "fieldtype": "Int",
+   "label": "Failed Submission Attempts",
+   "read_only": 1
   }
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2020-04-09 18:06:08.610053",
+ "modified": "2020-05-12 14:54:11.545085",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Payment Ledger Entry",

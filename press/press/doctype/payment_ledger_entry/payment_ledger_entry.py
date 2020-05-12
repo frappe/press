@@ -104,6 +104,11 @@ class PaymentLedgerEntry(Document):
 		)
 		self.db_set("stripe_customer_balance_transaction_id", transaction["id"])
 
+	def increment_failed_attempt(self):
+		self.failed_submission_attempts = self.failed_submission_attempts or 0
+		self.failed_submission_attempts += 1
+		self.save()
+
 
 def create_ledger_entries():
 	"""Creates a Payment Ledger Entry for each active site.
@@ -138,6 +143,8 @@ def create_ledger_entries():
 		except Exception:
 			frappe.db.rollback()
 			log_error(title="Submit Payment Ledger Entry", doc=doc.name)
+			doc.reload()
+			doc.increment_failed_attempt()
 
 
 def submit_failed_ledger_entries():
@@ -146,7 +153,13 @@ def submit_failed_ledger_entries():
 
 	entries = frappe.db.get_all(
 		"Payment Ledger Entry",
-		filters={"stripe_usage_record_id": "", "purpose": "Site Consumption", "docstatus": 0},
+		filters={
+			"stripe_usage_record_id": "",
+			"purpose": "Site Consumption",
+			"docstatus": 0,
+			# try to submit entries that have failed less than 3 times
+			"failed_submission_attempts": ("<", 3),
+		},
 	)
 	for entry in entries:
 		try:
@@ -155,3 +168,5 @@ def submit_failed_ledger_entries():
 		except Exception:
 			frappe.db.rollback()
 			log_error(title="Submit Failed Payment Ledger Entry", doc=doc.name)
+			doc.reload()
+			doc.increment_failed_attempt()
