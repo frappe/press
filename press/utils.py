@@ -22,8 +22,19 @@ def get_current_team():
 
 	# get team passed via request header
 	team = frappe.get_request_header("X-Press-Team")
-	if not team:
+
+	if not frappe.db.exists("Team", team):
 		frappe.throw("Invalid Team", frappe.PermissionError)
+
+	valid_team = frappe.db.exists(
+		"Team Member", {"parenttype": "Team", "parent": team, "user": frappe.session.user}
+	)
+	if not valid_team:
+		frappe.throw(
+			"User {0} does not belong to Team {1}".format(frappe.session.user, team),
+			frappe.PermissionError,
+		)
+
 	return team
 
 
