@@ -265,7 +265,7 @@ def get_permission_query_conditions(user):
 
 	if not user:
 		user = frappe.session.user
-	if user == "Administrator":
+	if frappe.session.data.user_type == 'System User':
 		return ""
 
 	team = get_current_team()
