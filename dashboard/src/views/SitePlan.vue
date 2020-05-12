@@ -187,7 +187,7 @@ export default {
 			});
 		},
 		async changePlan() {
-			await this('press.api.site.change_plan', {
+			await this.$call('press.api.site.change_plan', {
 				name: this.site.name,
 				plan: this.selectedPlan.name
 			});
