@@ -21,7 +21,7 @@ from frappe.utils import cint, flt, time_diff_in_hours
 def protected():
 	@wrapt.decorator
 	def wrapper(wrapped, instance, args, kwargs):
-		site = kwargs["name"]
+		site = kwargs.get("name") or args[0]
 		team = get_current_team()
 		owner = frappe.db.get_value("Site", site, "team")
 		if frappe.session.user == "Administrator" or owner == team:
