@@ -5,11 +5,31 @@
 from __future__ import unicode_literals
 import dns.resolver
 
-import frappe
+import builtins
+import gzip
+import io
 import json
+from pathlib import Path
+import tarfile
+import wrapt
+import frappe
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.utils import log_error, get_current_team
 from frappe.utils import cint, flt, time_diff_in_hours
+
+
+def protected():
+	@wrapt.decorator
+	def wrapper(wrapped, instance, args, kwargs):
+		site = kwargs.get("name") or args[0]
+		team = get_current_team()
+		owner = frappe.db.get_value("Site", site, "team")
+		if frappe.session.user == "Administrator" or owner == team:
+			return wrapped(*args, **kwargs)
+		else:
+			raise frappe.PermissionError
+
+	return wrapper
 
 
 @frappe.whitelist()
@@ -28,8 +48,8 @@ def new(site):
 			"subdomain": site["name"],
 			"bench": bench,
 			"apps": [{"app": app} for app in site["apps"]],
-			"enable_scheduled_backups": site["backups"],
-			"enable_uptime_monitoring": site["monitor"],
+			"enable_scheduled_backups": True,
+			"enable_uptime_monitoring": True,
 			"team": team,
 			"plan": site["plan"],
 			"database_file": site["files"]["database"],
@@ -41,6 +61,7 @@ def new(site):
 
 
 @frappe.whitelist()
+@protected()
 def jobs(name):
 	jobs = frappe.get_all(
 		"Agent Job",
@@ -52,12 +73,13 @@ def jobs(name):
 
 
 @frappe.whitelist()
-def job(name):
-	job = frappe.get_doc("Agent Job", name)
+@protected()
+def job(name, job):
+	job = frappe.get_doc("Agent Job", job)
 	job = job.as_dict()
 	job.steps = frappe.get_all(
 		"Agent Job Step",
-		filters={"agent_job": name},
+		filters={"agent_job": job.name},
 		fields=["step_name", "status", "start", "end", "duration", "output"],
 		order_by="creation",
 	)
@@ -65,6 +87,7 @@ def job(name):
 
 
 @frappe.whitelist()
+@protected()
 def running_jobs(name):
 	jobs = frappe.get_all(
 		"Agent Job", filters={"status": ("in", ("Pending", "Running")), "site": name}
@@ -73,6 +96,7 @@ def running_jobs(name):
 
 
 @frappe.whitelist()
+@protected()
 def backups(name):
 	backups = frappe.get_all(
 		"Site Backup",
@@ -84,6 +108,7 @@ def backups(name):
 
 
 @frappe.whitelist()
+@protected()
 def domains(name):
 	domains = frappe.get_all(
 		"Site Domain", fields=["name", "domain", "status"], filters={"site": name}
@@ -92,6 +117,7 @@ def domains(name):
 
 
 @frappe.whitelist()
+@protected()
 def activities(name):
 	activities = frappe.get_all(
 		"Site Activity",
@@ -167,6 +193,7 @@ def all():
 
 
 @frappe.whitelist()
+@protected()
 def get(name):
 	site = frappe.get_doc("Site", name)
 	bench = frappe.get_doc("Bench", site.bench)
@@ -197,6 +224,7 @@ def get(name):
 
 
 @frappe.whitelist()
+@protected()
 def analytics(name, period="1 hour"):
 	interval, divisor, = {
 		"1 hour": ("1 HOUR", 60),
@@ -249,15 +277,16 @@ def analytics(name, period="1 hour"):
 
 
 @frappe.whitelist()
-def current_plan(site):
-	plan_name = frappe.db.get_value("Site", site, "plan")
+@protected()
+def current_plan(name):
+	plan_name = frappe.db.get_value("Site", name, "plan")
 	plan = frappe.get_doc("Plan", plan_name)
 	site_plan_changes = frappe.db.get_all(
 		"Site Plan Change",
-		filters={"site": site},
+		filters={"site": name},
 		fields=["name", "type", "owner", "to_plan", "timestamp"],
 		order_by="timestamp desc",
-		limit=5
+		limit=5,
 	)
 
 	result = frappe.db.sql(
@@ -268,7 +297,7 @@ def current_plan(site):
 		WHERE
 			t.site = %s
 			and date(timestamp) = CURDATE();""",
-		(site,),
+		(name,),
 		as_dict=True,
 	)
 
@@ -291,33 +320,56 @@ def current_plan(site):
 
 
 @frappe.whitelist()
-def change_plan(site, plan):
-	frappe.get_doc("Site", site).change_plan(plan)
+@protected()
+def change_plan(name, plan):
+	frappe.get_doc("Site", name).change_plan(plan)
 
 
 @frappe.whitelist()
-def deactivate(site):
-	frappe.get_doc("Site", site).deactivate()
+@protected()
+def deactivate(name):
+	frappe.get_doc("Site", name).deactivate()
 
 
 @frappe.whitelist()
-def activate(site):
-	frappe.get_doc("Site", site).activate()
+@protected()
+def activate(name):
+	frappe.get_doc("Site", name).activate()
 
 
 @frappe.whitelist()
+@protected()
 def login(name):
 	return frappe.get_doc("Site", name).login()
 
 
 @frappe.whitelist()
+@protected()
 def backup(name):
 	frappe.get_doc("Site", name).backup()
 
 
 @frappe.whitelist()
+@protected()
 def archive(name):
 	frappe.get_doc("Site", name).archive()
+
+
+@frappe.whitelist()
+@protected()
+def reinstall(name):
+	frappe.get_doc("Site", name).reinstall()
+
+
+@frappe.whitelist()
+@protected()
+def restore(name, files):
+	site = frappe.get_doc("Site", name)
+	site.database_file = files["database"]
+	site.public_file = files["public"]
+	site.private_file = files["private"]
+	site.save()
+	site.restore()
 
 
 @frappe.whitelist()
@@ -326,11 +378,13 @@ def exists(subdomain):
 
 
 @frappe.whitelist()
+@protected()
 def setup_wizard_complete(name):
 	return frappe.get_doc("Site", name).is_setup_wizard_complete()
 
 
 @frappe.whitelist()
+@protected()
 def check_dns(name, domain):
 	def check_dns_cname(name, domain):
 		try:
@@ -356,16 +410,19 @@ def check_dns(name, domain):
 
 
 @frappe.whitelist()
+@protected()
 def add_domain(name, domain):
 	frappe.get_doc("Site", name).add_domain(domain)
 
 
 @frappe.whitelist()
+@protected()
 def install_app(name, app):
 	frappe.get_doc("Site", name).install_app(app)
 
 
 @frappe.whitelist()
+@protected()
 def update_config(name, config):
 	allowed_keys = [
 		"mail_server",
@@ -393,16 +450,55 @@ def update_config(name, config):
 	frappe.get_doc("Site", name).update_site_config(config)
 
 
+def validate_database_backup(filename, content):
+	try:
+		with gzip.open(io.BytesIO(content)) as f:
+			line = f.readline().decode().lower()
+			if "mysql" in line or "mariadb" in line:
+				return True
+	except Exception:
+		log_error("Invalid Database Backup File", filename=filename, content=content[:1024])
+
+
+def validate_files_backup(filename, content, type):
+	try:
+		with tarfile.TarFile.open(fileobj=io.BytesIO(content), mode="r:") as f:
+			files = f.getnames()
+			if files:
+				path = Path(files[0])
+				if (
+					path.name == "files"
+					and path.parent.name == type
+					and path.parent.parent.parent.name == ""
+					and builtins.all(file.startswith(files[0]) for file in files)
+				):
+					return True
+	except tarfile.TarError:
+		log_error("Invalid Files Backup File", filename=filename, content=content[:1024])
+
+
+def validate_backup(filename, content, type):
+	if type == "database":
+		return validate_database_backup(filename, content)
+	else:
+		return validate_files_backup(filename, content, type)
+
+
 @frappe.whitelist()
 def upload_backup():
-	file = frappe.get_doc(
-		{
-			"doctype": "File",
-			"folder": "Home/Attachments",
-			"file_name": frappe.local.uploaded_filename,
-			"is_private": 1,
-			"content": frappe.local.uploaded_file,
-		}
-	)
-	file.save(ignore_permissions=True)
-	return file.file_url
+	content = frappe.local.uploaded_file
+	filename = frappe.local.uploaded_filename
+	if validate_backup(filename, content, frappe.form_dict.type):
+		file = frappe.get_doc(
+			{
+				"doctype": "File",
+				"folder": "Home/Attachments",
+				"file_name": filename,
+				"is_private": 1,
+				"content": content,
+			}
+		)
+		file.save(ignore_permissions=True)
+		return {"status": "success", "file": file.file_url}
+	else:
+		return {"status": "failure", "message": "Invalid Backup File"}

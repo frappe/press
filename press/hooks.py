@@ -107,6 +107,7 @@ scheduler_events = {
 			"press.press.doctype.agent_job.agent_job.collect_site_uptime",
 			"press.press.doctype.agent_job.agent_job.collect_site_analytics",
 		],
+		"* * * * * 0/30": ["press.press.doctype.agent_job.agent_job.collect_server_status"],
 		"0 */6 * * *": ["press.press.doctype.agent_job.agent_job.schedule_backups"],
 		"*/15 * * * *": ["press.press.doctype.site_update.site_update.schedule_updates"],
 	},
@@ -125,9 +126,7 @@ fixtures = [
 # Overriding Methods
 # ------------------------------
 #
-# override_whitelisted_methods = {
-# 	"frappe.desk.doctype.event.event.get_events": "press.event.get_events"
-# }
+override_whitelisted_methods = {"upload_file": "press.overrides.upload_file"}
 #
 # each overriding function accepts a `data` argument;
 # generated from the base implementation of the doctype dashboard,

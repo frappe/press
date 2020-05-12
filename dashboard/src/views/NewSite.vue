@@ -94,8 +94,17 @@
 						<div v-for="file in files" :key="file.type">
 							<div class="flex items-center mt-1">
 								<span class="flex-1 text-gray-800">{{ file.title }}</span>
-								<span class="flex-1 text-gray-400 truncate" v-if="file.file">
+								<span
+									class="flex-1 text-gray-400 truncate text-sm"
+									v-if="file.file"
+								>
 									{{ file.file.name }}
+								</span>
+								<span
+									class="flex-1 text-red-400 text-sm"
+									v-if="file.errorMessage"
+								>
+									{{ file.errorMessage }}
 								</span>
 								<input
 									:ref="file.type"
@@ -145,28 +154,6 @@
 						<SitePlansTable :plans="options.plans" v-model="selectedPlan" />
 					</div>
 				</div>
-				<div class="mt-4">
-					<label class="flex py-2 leading-none">
-						<input
-							type="checkbox"
-							class="form-checkbox"
-							v-model="enableBackups"
-						/>
-						<span class="ml-2">
-							Enable Backups
-						</span>
-					</label>
-					<label class="flex py-2 leading-none">
-						<input
-							type="checkbox"
-							class="form-checkbox"
-							v-model="enableMonitoring"
-						/>
-						<span class="ml-2">
-							Enable Uptime Monitoring
-						</span>
-					</label>
-				</div>
 				<div class="mt-6">
 					<ErrorMessage v-if="errorMessage">
 						{{ errorMessage }}
@@ -199,8 +186,6 @@ export default {
 	data: () => ({
 		siteName: null,
 		apps: [],
-		enableBackups: false,
-		enableMonitoring: false,
 		options: null,
 		restoreBackup: false,
 		selectedApps: [],
@@ -221,6 +206,7 @@ export default {
 				uploading: false,
 				uploaded: 0,
 				total: 1,
+				errorMessage: null,
 				file: null
 			},
 			{
@@ -229,6 +215,7 @@ export default {
 				uploading: false,
 				uploaded: 0,
 				total: 1,
+				errorMessage: null,
 				file: null
 			},
 			{
@@ -237,6 +224,7 @@ export default {
 				uploading: false,
 				uploaded: 0,
 				total: 1,
+				errorMessage: null,
 				file: null
 			}
 		]
@@ -280,8 +268,6 @@ export default {
 				site: {
 					name: this.siteName,
 					apps: this.selectedApps,
-					backups: this.enableBackups,
-					monitor: this.enableMonitoring,
 					group: this.selectedGroup,
 					plan: this.selectedPlan.name,
 					files: this.selectedFiles
@@ -347,6 +333,7 @@ export default {
 			return true;
 		},
 		onFile(file, event) {
+			file.errorMessage = null;
 			file.file = event.target.files[0];
 			this.uploadFile(file);
 		},
@@ -365,10 +352,29 @@ export default {
 			file.uploader.on('finish', () => {
 				file.uploading = false;
 			});
-			let result = await file.uploader.upload(file.file, {
-				method: 'press.api.site.upload_backup'
+
+			file.uploader.upload(file.file, {
+				method: 'press.api.site.upload_backup',
+				type: file.type
+			}).then(result => {
+				if (result.status == 'success') {
+					this.selectedFiles[file.type] = result.file;
+				} else {
+					file.file = null;
+					file.uploading = false;
+					file.errorMessage = result.message;
+				}
+			}).catch(error => {
+				file.file = null;
+				file.uploading = false;
+				if (error._server_messages) {
+					file.errorMessage = JSON.parse(JSON.parse(error._server_messages)[0]).message;
+				} else if (error.exc) {
+					file.errorMessage = JSON.parse(error.exc)[0].split('\n').slice(-2, -1)[0];
+				} else {
+					file.errorMessage = 'Something Went Wrong';
+				}
 			});
-			this.selectedFiles[file.type] = result;
 		}
 	}
 };

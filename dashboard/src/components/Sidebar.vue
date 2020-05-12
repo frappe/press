@@ -5,7 +5,9 @@
 		>
 			<div>
 				<div class="flex px-2 py-4">
-					<div class="text-lg font-bold">Frappe Cloud</div>
+					<router-link class="text-lg font-bold" :to="'/'">
+						Frappe Cloud
+					</router-link>
 				</div>
 				<router-link
 					v-for="item in items"
