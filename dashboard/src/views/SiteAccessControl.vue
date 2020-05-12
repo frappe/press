@@ -18,13 +18,14 @@
 export default {
 	name: 'SiteAccessControl',
 	props: ['site'],
+	inject: ['utils'],
 	data: () => ({
 		state: null
 	}),
 	methods: {
 		async loginAsAdministrator() {
 			this.state = 'Logging In';
-			await this.$store.sites.loginAsAdministrator(this.site.name);
+			await this.utils.loginAsAdministrator(this.site.name);
 			this.state = null;
 		}
 	}
