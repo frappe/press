@@ -24,7 +24,7 @@ def protected():
 		site = kwargs.get("name") or args[0]
 		team = get_current_team()
 		owner = frappe.db.get_value("Site", site, "team")
-		if frappe.session.user == "Administrator" or owner == team:
+		if frappe.session.data.user_type == "System User" or owner == team:
 			return wrapped(*args, **kwargs)
 		else:
 			raise frappe.PermissionError
