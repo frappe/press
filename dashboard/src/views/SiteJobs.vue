@@ -126,6 +126,9 @@ export default {
 			this.jobs = await this.$call('press.api.site.jobs', {
 				name: this.site.name
 			});
+			if (this.jobs && !this.jobName) {
+				this.$router.push(`/sites/${this.site.name}/jobs/${this.jobs[0].name}`);
+			}
 		},
 		async selectJob(jobName) {
 			this.selectedJob = await this.fetchJobDetails(jobName);
@@ -133,7 +136,8 @@ export default {
 		async fetchJobDetails() {
 			if (this.jobName) {
 				this.selectedJob = await this.$call('press.api.site.job', {
-					name: this.jobName
+					name: this.site.name,
+					job: this.jobName
 				});
 			}
 		},

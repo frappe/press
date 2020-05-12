@@ -112,6 +112,39 @@ def publish_update(job):
 	frappe.publish_realtime(event="agent_job_update", message=message, user=job_owner)
 
 
+def collect_server_status():
+	servers = frappe.get_all("Server", fields=["name"], filters={"status": "Active"})
+	for server in servers:
+		agent = Agent(server.name)
+		status = agent.fetch_server_status()
+		doc = {
+			"doctype": "Server Status",
+			"server": server.name,
+			"timestamp": status["timestamp"],
+			"systemd_nginx_status": status["nginx"],
+			"supervisor_status": json.dumps(status["supervisor"], indent=True),
+			"mariadb_process_list": json.dumps(status["mariadb"], indent=True),
+			"process_list": json.dumps(status["processes"], indent=True),
+			"memory_usage": json.dumps(status["stats"]["memory"], indent=True),
+			"ram_used": status["stats"]["memory"]["mem"]["used"],
+			"ram_total": status["stats"]["memory"]["mem"]["total"],
+			"memory_used": status["stats"]["memory"]["total"]["used"],
+			"memory_total": status["stats"]["memory"]["total"]["total"],
+			"cpu_usage": json.dumps(status["stats"]["cpu"], indent=True),
+			"cpu_utilization": status["stats"]["cpu"]["usage"]["cpu"],
+			"cpu_count": status["stats"]["cpu"]["count"],
+			"load_average_1": status["stats"]["cpu"]["load_average"]["1"],
+			"load_average_5": status["stats"]["cpu"]["load_average"]["5"],
+			"load_average_15": status["stats"]["cpu"]["load_average"]["15"],
+		}
+		try:
+			frappe.get_doc(doc).insert()
+		except Exception:
+			log_error(
+				"Agent Server Status Collection Exception", server=server, status=status, doc=doc
+			)
+
+
 def collect_site_analytics():
 	benches = frappe.get_all(
 		"Bench", fields=["name", "server"], filters={"status": "Active"}
@@ -293,6 +326,7 @@ def process_job_updates(job_name):
 			process_new_site_job_update,
 			process_archive_site_job_update,
 			process_install_app_site_job_update,
+			process_reinstall_site_job_update,
 		)
 		from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
 		from press.press.doctype.site_domain.site_domain import process_new_host_job_update
@@ -311,6 +345,10 @@ def process_job_updates(job_name):
 			process_new_site_job_update(job)
 		if job.job_type == "New Site from Backup":
 			process_new_site_job_update(job)
+		if job.job_type == "Restore Site":
+			process_reinstall_site_job_update(job)
+		if job.job_type == "Reinstall Site":
+			process_reinstall_site_job_update(job)
 		if job.job_type == "Install App on Site":
 			process_install_app_site_job_update(job)
 		if job.job_type == "Add Site to Upstream":
