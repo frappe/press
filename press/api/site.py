@@ -189,6 +189,7 @@ def get(name):
 		"status": site.status,
 		"installed_apps": sorted(installed_apps, key=lambda x: bench_apps[x.name]),
 		"available_apps": sorted(available_apps, key=lambda x: bench_apps[x.name]),
+		"setup_wizard_complete": site.setup_wizard_complete,
 		"config": json.loads(site.config),
 		"creation": site.creation,
 		"last_updated": site.modified,
@@ -326,7 +327,7 @@ def exists(subdomain):
 
 @frappe.whitelist()
 def setup_wizard_complete(name):
-	return frappe.get_doc("Site", name).setup_wizard_complete()
+	return frappe.get_doc("Site", name).is_setup_wizard_complete()
 
 
 @frappe.whitelist()

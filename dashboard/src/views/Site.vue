@@ -27,7 +27,10 @@
 					<FeatherIcon name="external-link" class="w-3 h-3 ml-1" />
 				</a>
 			</div>
-			<div class="inline-block mb-4" v-if="setupComplete === false">
+			<div
+				class="inline-block mb-4"
+				v-if="site.status == 'Active' && !site.setup_wizard_complete"
+			>
 				<div
 					class="items-center px-4 py-3 text-sm text-orange-700 bg-orange-100 border border-orange-300 rounded-md sm:flex"
 				>
