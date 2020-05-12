@@ -1,7 +1,7 @@
 <template>
 	<div>
 		<div
-			class="flex flex-col justify-between block h-full px-2 pb-2 text-sm bg-gray-200"
+			class="flex flex-col justify-between block h-full px-2 pb-2 text-sm bg-gray-100"
 		>
 			<div>
 				<div class="flex px-2 py-4">
