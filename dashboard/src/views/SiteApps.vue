@@ -1,11 +1,7 @@
 <template>
 	<div>
-		<section>
-			<h2 class="text-lg font-medium">Apps</h2>
-			<p class="text-gray-600">Apps installed on your site</p>
-			<div
-				class="w-full py-4 mt-6 border border-gray-100 rounded shadow sm:w-1/2"
-			>
+		<Section title="Apps" description="Apps installed on your site">
+			<SectionCard>
 				<div
 					class="flex px-6 py-3 hover:bg-gray-50"
 					v-for="app in site.installed_apps"
@@ -28,14 +24,15 @@
 					</div>
 					<div class="flex-1 text-md"></div>
 				</div>
-			</div>
-		</section>
-		<section class="mt-10" v-if="site.available_apps.length">
-			<h2 class="text-lg font-medium">Available Apps</h2>
-			<p class="text-gray-600">Apps available to install on your site</p>
-			<div
-				class="w-full py-4 mt-6 border border-gray-100 rounded shadow sm:w-1/2"
-			>
+			</SectionCard>
+		</Section>
+		<Section
+			title="Available Apps"
+			description="Apps available to install on your site"
+			class="mt-10"
+			v-if="site.available_apps.length"
+		>
+			<SectionCard>
 				<div
 					class="flex px-6 py-3 hover:bg-gray-50"
 					v-for="app in site.available_apps"
@@ -62,8 +59,8 @@
 						</Button>
 					</div>
 				</div>
-			</div>
-		</section>
+			</SectionCard>
+		</Section>
 	</div>
 </template>
 

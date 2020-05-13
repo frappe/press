@@ -1,47 +1,43 @@
 <template>
 	<div>
-		<section>
-			<h2 class="text-lg font-medium">Domains</h2>
-			<div v-if="domains && domains.length">
-				<p class="text-gray-600">
-					Domains pointing to your site
-				</p>
+		<Section
+			title="Domains"
+			:description="
+				domains && domains.length
+					? 'Domains pointing to your site'
+					: 'No domains pointing to your site'
+			"
+		>
+			<SectionCard v-if="domains && domains.length">
 				<div
-					class="w-full py-4 mt-6 border border-gray-100 rounded shadow sm:w-1/2"
+					class="grid grid-cols-2 px-6 py-3 hover:bg-gray-50"
+					v-for="d in domains"
+					:key="d.domain"
 				>
-					<div
-						class="grid grid-cols-2 px-6 py-3 hover:bg-gray-50"
-						v-for="d in domains"
-						:key="d.domain"
-					>
-						<div class="font-semibold">
-							<a
-								class="text-blue-500"
-								:href="'https://' + d.domain"
-								target="_blank"
-								v-if="d.status === 'Active'"
-							>
-								{{ d.domain }}
-							</a>
-							<span v-else>{{ d.domain }}</span>
-						</div>
-						<div>
-							<Badge :status="d.status">
-								{{ d.status }}
-							</Badge>
-						</div>
+					<div class="font-semibold">
+						<a
+							class="text-blue-500"
+							:href="'https://' + d.domain"
+							target="_blank"
+							v-if="d.status === 'Active'"
+						>
+							{{ d.domain }}
+						</a>
+						<span v-else>{{ d.domain }}</span>
+					</div>
+					<div>
+						<Badge :status="d.status">
+							{{ d.status }}
+						</Badge>
 					</div>
 				</div>
-			</div>
-			<div class="text-gray-600" v-if="domains && !domains.length">
-				No domains pointing to your site
-			</div>
+			</SectionCard>
 			<div class="mt-4">
 				<Button type="primary" @click="showDialog = true">
 					Add Domain
 				</Button>
 			</div>
-		</section>
+		</Section>
 		<Dialog v-model="showDialog" title="Add Domain">
 			<p>
 				To add a custom domain, you must already own it. If you don't have one,
