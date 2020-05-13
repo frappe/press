@@ -138,8 +138,9 @@ def get(team=None):
 
 
 @frappe.whitelist()
-def update_profile(first_name, last_name, email):
-	frappe.utils.validate_email_address(email, True)
+def update_profile(first_name=None, last_name=None, email=None):
+	if email:
+		frappe.utils.validate_email_address(email, True)
 	user = frappe.session.user
 	doc = frappe.get_doc("User", user)
 	doc.first_name = first_name
