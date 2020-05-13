@@ -5,12 +5,12 @@
 			description="Backups are enabled and are scheduled to run every six hours."
 		>
 			<SectionCard>
-				<div v-if="backups.length">
+				<div v-if="backups.data.length">
 					<a
 						:href="backup.url"
 						target="_blank"
 						class="block px-6 py-4 hover:bg-gray-50"
-						v-for="backup in backups"
+						v-for="backup in backups.data"
 						:key="backup.url"
 					>
 						<div class="w-full">
@@ -30,11 +30,15 @@
 						</div>
 					</a>
 				</div>
-				<div class="px-6 text-gray-600" v-else>
+				<div class="px-6 mt-2 text-gray-600" v-else>
 					No backups found
 				</div>
 				<div class="px-6 mt-4 mb-2">
-					<Button type="primary" @click="scheduleBackup">
+					<Button
+						type="primary"
+						@click="$resources.scheduleBackup.fetch()"
+						:disabled="$resources.scheduleBackup.loading"
+					>
 						Schedule Backup
 					</Button>
 				</div>
@@ -47,33 +51,39 @@
 export default {
 	name: 'SiteBackups',
 	props: ['site'],
-	data() {
-		return {
-			backups: []
-		};
+	resources: {
+		backups() {
+			return {
+				method: 'press.api.site.backups',
+				params: {
+					name: this.site.name
+				},
+				default: [],
+				auto: true
+			};
+		},
+		scheduleBackup() {
+			return {
+				method: 'press.api.site.backup',
+				params: {
+					name: this.site.name
+				},
+				onSuccess() {
+					this.$resources.backups.reload();
+				}
+			};
+		}
 	},
 	mounted() {
-		this.fetchBackups();
 		this.$store.socket.on('agent_job_update', data => {
 			if (data.site === this.site.name && data.name === 'Backup Site') {
 				if (data.status === 'Success') {
-					this.fetchBackups();
+					this.$resources.backups.reload();
 				}
 			}
 		});
 	},
 	methods: {
-		async fetchBackups() {
-			this.backups = await this.$call('press.api.site.backups', {
-				name: this.site.name
-			});
-		},
-		async scheduleBackup() {
-			await this.$call('press.api.site.backup', {
-				name: this.site.name
-			});
-			this.fetchBackups();
-		},
 		formatBytes(bytes, decimals = 2) {
 			if (bytes === 0) return '0 Bytes';
 
