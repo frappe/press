@@ -3,16 +3,13 @@
 		<div class="mb-10 text-gray-800" v-if="state === 'RequestStarted'">
 			Fetching billing information...
 		</div>
-		<section v-if="upcomingInvoice" class="mb-10">
-			<h2 class="text-lg font-medium">
-				Upcoming Invoice
-			</h2>
-			<p class="text-gray-600">
-				This is the amount so far based on the usage of your sites
-			</p>
-			<div
-				class="w-full py-2 mt-6 border border-gray-100 rounded-md shadow sm:w-1/2"
-			>
+		<Section
+			v-if="upcomingInvoice"
+			class="mb-10"
+			title="Upcoming Invoice"
+			description="This is the amount so far based on the usage of your sites"
+		>
+			<SectionCard>
 				<div class="grid grid-cols-3 px-6 py-3 text-sm">
 					<div class="font-medium text-gray-700">Available Credits:</div>
 					<div class="col-span-2 font-medium">
@@ -50,9 +47,10 @@
 									:max="availablePartnerCredits.value"
 								/>
 							</label>
-							<ErrorMessage class="mt-2" v-if="errorMessage">
-								{{ errorMessage }}
-							</ErrorMessage>
+							<ErrorMessage
+								class="mt-2"
+								:error="$resources.transferPartnerCredits.error"
+							/>
 							<template slot="actions">
 								<Button @click="showTransferCreditsDialog = false">
 									Cancel
@@ -60,10 +58,9 @@
 								<Button
 									class="ml-2"
 									type="primary"
-									@click="transferPartnerCredits"
-									:disabled="
-										creditsToTransfer <= 0 || state === 'RequestStarted'
-									"
+									@click="$resources.transferPartnerCredits.submit()"
+									:loading="$resources.transferPartnerCredits.loading"
+									:disabled="creditsToTransfer <= 0"
 								>
 									Transfer
 								</Button>
@@ -87,16 +84,16 @@
 						{{ upcomingInvoice.customer_email }}
 					</div>
 				</div>
-			</div>
-		</section>
-		<section v-if="pastPayments.length" class="mb-10">
-			<h2 class="text-lg font-medium">Past Payments</h2>
-			<p class="text-gray-600">
-				History of your invoice payments
-			</p>
-			<div
-				class="w-full py-4 mt-6 border border-gray-100 rounded-md shadow sm:w-1/2"
-			>
+			</SectionCard>
+		</Section>
+
+		<Section
+			v-if="pastPayments.length"
+			class="mb-10"
+			title="Past Payments"
+			description="History of your invoice payments"
+		>
+			<SectionCard>
 				<div
 					class="grid items-center grid-cols-3 px-6 py-4 hover:bg-gray-50"
 					v-for="payment in pastPayments"
@@ -124,16 +121,14 @@
 						</Badge>
 					</div>
 				</div>
-			</div>
-		</section>
-		<section v-if="paymentMethods && paymentMethods.length === 0">
-			<h2 class="text-lg font-medium">Set up Payment Method</h2>
-			<p class="text-gray-600">
-				Add your card details to start your subscription
-			</p>
-			<div
-				class="w-full py-4 mt-6 border border-gray-100 rounded-md shadow sm:w-1/2"
-			>
+			</SectionCard>
+		</Section>
+		<Section
+			v-if="paymentMethods && paymentMethods.length === 0"
+			title="Set up Payment Method"
+			description="Add your card details to start your subscription"
+		>
+			<SectionCard>
 				<div class="px-6 py-4">
 					<Button
 						type="primary"
@@ -144,16 +139,14 @@
 					</Button>
 					<StripeCard v-if="state === 'ShowStripeCard'" @complete="onCardAdd" />
 				</div>
-			</div>
-		</section>
-		<section v-if="paymentMethods && paymentMethods.length > 0">
-			<h2 class="text-lg font-medium">Payment Methods</h2>
-			<p class="text-gray-600">
-				Cards you have added for automatic billing
-			</p>
-			<div
-				class="w-full py-4 mt-6 border border-gray-100 rounded-md shadow sm:w-1/2"
-			>
+			</SectionCard>
+		</Section>
+		<Section
+			v-if="paymentMethods && paymentMethods.length > 0"
+			title="Payment Methods"
+			description="Cards you have added for automatic billing"
+		>
+			<SectionCard>
 				<div
 					class="grid items-center grid-cols-5 px-6 py-4 hover:bg-gray-50"
 					v-for="paymentMethod in paymentMethods"
@@ -171,8 +164,8 @@
 						<Badge v-if="paymentMethod.is_default" color="blue">Default</Badge>
 					</div>
 				</div>
-			</div>
-		</section>
+			</SectionCard>
+		</Section>
 	</div>
 </template>
 
@@ -186,58 +179,67 @@ export default {
 		StripeCard,
 		Dialog
 	},
+	resources: {
+		billingDetails: {
+			method: 'press.api.billing.info',
+			default: {
+				upcoming_invoice: null,
+				available_credits: null,
+				past_payments: []
+			},
+			auto: true
+		},
+		paymentMethods: {
+			method: 'press.api.billing.get_payment_methods',
+			auto: true,
+			onSuccess: paymentMethods => {
+				if (paymentMethods.length === 0) {
+					this.state = 'ShowSetup';
+				}
+			}
+		},
+		transferPartnerCredits() {
+			return {
+				method: 'press.api.billing.transfer_partner_credits',
+				params: {
+					amount: this.creditsToTransfer
+				},
+				onSuccess() {
+					this.$resources.billingDetails.reload();
+					this.creditsToTransfer = null;
+					this.showTransferCreditsDialog = false;
+				}
+			};
+		}
+	},
 	data() {
 		return {
 			state: null,
-			errorMessage: null,
-			paymentMethods: null,
-			upcomingInvoice: null,
-			availableCredits: null,
-			pastPayments: [],
 			showTransferCreditsDialog: false,
 			availablePartnerCredits: null,
 			creditsToTransfer: null
 		};
 	},
-	async mounted() {
-		await this.fetchUpcomingInvoice();
-		await this.fetchPaymentMethods();
+	computed: {
+		upcomingInvoice() {
+			return this.billingDetails.data.upcoming_invoice;
+		},
+		pastPayments() {
+			return this.billingDetails.data.past_payments;
+		},
+		availableCredits() {
+			return this.billingDetails.data.available_credits;
+		}
 	},
 	methods: {
-		async fetchPaymentMethods() {
-			this.paymentMethods = await this.$call(
-				'press.api.billing.get_payment_methods'
-			);
-			if (this.paymentMethods.length === 0) {
-				this.state = 'ShowSetup';
-			}
-		},
-		async fetchUpcomingInvoice() {
-			let {
-				upcoming_invoice = null,
-				past_payments = [],
-				available_credits = 0
-			} = (await this.$call('press.api.billing.info')) || {};
-			this.upcomingInvoice = upcoming_invoice;
-			this.pastPayments = past_payments;
-			this.availableCredits = available_credits;
-		},
 		onCardAdd() {
-			this.fetchPaymentMethods();
+			this.$resources.paymentMethods.reload();
 			this.$call('press.api.billing.after_card_add');
 		},
 		async fetchAvailablePartnerCredits() {
 			this.availablePartnerCredits = await this.$call(
 				'press.api.billing.get_available_partner_credits'
 			);
-		},
-		async transferPartnerCredits() {
-			await this.$call('press.api.billing.transfer_partner_credits', {
-				amount: this.creditsToTransfer
-			});
-			this.fetchUpcomingInvoice();
-			this.creditsToTransfer = null;
-			this.showTransferCreditsDialog = false;
 		}
 	}
 };

@@ -4,7 +4,7 @@
 			title="Backups"
 			description="Backups are enabled and are scheduled to run every six hours."
 		>
-			<SectionCard>
+			<SectionCard class="sm:w-2/3">
 				<div v-if="backups.data.length">
 					<a
 						:href="backup.url"
@@ -68,7 +68,7 @@ export default {
 				params: {
 					name: this.site.name
 				},
-				onSuccess() {
+				onSuccess: () => {
 					this.$resources.backups.reload();
 				}
 			};

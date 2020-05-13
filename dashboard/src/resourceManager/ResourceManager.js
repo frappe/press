@@ -18,7 +18,7 @@ export default class ResourceManager {
 					}
 				]);
 			} else {
-				let resource = new Resource(resourceDef);
+				let resource = new Resource(vm, resourceDef);
 				resources[key] = resource;
 
 				if (resource.auto) {
@@ -48,7 +48,7 @@ export default class ResourceManager {
 		if (key in this.resources) {
 			resource = this.resources[key];
 		} else {
-			resource = new Resource(newValue);
+			resource = new Resource(this._vm, newValue);
 			this._vm.$set(this.resources, key, resource);
 		}
 
@@ -72,7 +72,7 @@ export default class ResourceManager {
 }
 
 class Resource {
-	constructor(options = {}, initialValue) {
+	constructor(vm, options = {}, initialValue) {
 		if (typeof options == 'string') {
 			options = { method: options, auto: true };
 		}
@@ -81,7 +81,7 @@ class Resource {
 				'[Resource Manager]: method is required to define a resource'
 			);
 		}
-
+		this._vm = vm;
 		this.method = options.method;
 		this.update(options, initialValue);
 	}
@@ -137,6 +137,10 @@ class Resource {
 		return this.fetch();
 	}
 
+	submit() {
+		return this.fetch();
+	}
+
 	cancel() {}
 
 	on(event, handler) {
@@ -154,10 +158,10 @@ class Resource {
 	emit(event, ...args) {
 		let key = 'on' + event;
 		(this.listeners[key] || []).forEach(handler => {
-			handler(...args);
+			handler.call(this._vm, ...args);
 		});
 		(this.onceListeners[key] || []).forEach(handler => {
-			handler(...args);
+			handler.call(this._vm, ...args);
 			// remove listener after calling handler
 			this.onceListeners[key].splice(
 				this.onceListeners[key].indexOf(handler),

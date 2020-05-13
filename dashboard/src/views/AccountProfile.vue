@@ -1,8 +1,6 @@
 <template>
 	<div>
-		<section>
-			<h2 class="text-lg font-medium">Profile</h2>
-			<p class="text-gray-600">Your profile information</p>
+		<Section title="Profile" description="Your profile information">
 			<div class="w-full mt-6 text-sm sm:w-1/2">
 				<div>
 					<span class="text-gray-800">Photo</span>
@@ -58,46 +56,14 @@
 					/>
 				</label>
 			</div>
-		</section>
-		<!-- <section class="mt-10">
-			<h2 class="text-lg font-medium">Notifications</h2>
-			<p class="text-gray-600">
-				We send only important changes, but you can choose what you want to hear
-				about.
-			</p>
-			<div class="w-full mt-6 sm:w-1/2">
-				<div class="block">
-					<div>
-						<div class="py-2">
-							<label class="inline-flex items-center">
-								<input type="checkbox" class="form-checkbox" checked />
-								<span class="ml-2">Weekly Usage Summary</span>
-							</label>
-						</div>
-						<div class="py-2">
-							<label class="inline-flex items-center">
-								<input type="checkbox" class="form-checkbox" />
-								<span class="ml-2">Critical Action Required</span>
-							</label>
-						</div>
-						<div class="py-2">
-							<label class="inline-flex items-center">
-								<input type="checkbox" class="form-checkbox" />
-								<span class="ml-2">Site Goes Down</span>
-							</label>
-						</div>
-					</div>
-				</div>
-			</div>
-		</section> -->
+		</Section>
 		<div class="py-4 mt-10 border-t">
-			<ErrorMessage class="mb-4" v-if="errorMessage">
-				{{ errorMessage }}
-			</ErrorMessage>
+			<ErrorMessage class="mb-4" :error="$resources.updateProfile.error" />
 			<Button
 				type="primary"
-				:disabled="state === 'RequestStarted'"
-				@click="updateProfile"
+				:loading="$resources.updateProfile.loading"
+				loadingText="Saving..."
+				@click="$resources.updateProfile.submit()"
 			>
 				Save changes
 			</Button>
@@ -111,10 +77,24 @@ import FileUploader from '@/store/fileUploader';
 export default {
 	name: 'AccountProfile',
 	props: ['account'],
+	resources: {
+		updateProfile() {
+			let { first_name, last_name, email } = this.$store.account.user;
+			return {
+				method: 'press.api.account.update_profile',
+				params: {
+					first_name,
+					last_name,
+					email
+				},
+				onSuccess() {
+					this.notifySuccess();
+				}
+			};
+		}
+	},
 	data() {
 		return {
-			state: null,
-			errorMessage: null,
 			uploader: null,
 			userImage: null,
 			uploading: false,
@@ -148,15 +128,6 @@ export default {
 				method: 'press.api.account.update_profile_picture'
 			});
 			await this.$store.account.fetchAccount();
-			this.notifySuccess();
-		},
-		async updateProfile() {
-			let { first_name, last_name, email } = this.$store.account.user;
-			await this.$call('press.api.account.update_profile', {
-				first_name,
-				last_name,
-				email
-			});
 			this.notifySuccess();
 		},
 		notifySuccess() {
