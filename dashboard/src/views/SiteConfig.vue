@@ -1,11 +1,10 @@
 <template>
 	<div>
-		<section>
-			<h2 class="text-lg font-medium">Configuration</h2>
-			<p class="text-gray-600">View and edit your site configuration</p>
-			<div
-				class="w-full px-6 py-4 mt-6 border border-gray-100 rounded shadow sm:w-1/2"
-			>
+		<Section
+			title="Configuration"
+			description="View and edit your site configuration"
+		>
+			<SectionCard class="px-6 py-4">
 				<div
 					v-for="(field, i) in fields"
 					class="flex items-baseline"
@@ -34,8 +33,8 @@
 						Update Configuration
 					</Button>
 				</div>
-			</div>
-		</section>
+			</SectionCard>
+		</Section>
 	</div>
 </template>
 

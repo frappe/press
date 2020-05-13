@@ -1,33 +1,30 @@
 <template>
 	<div>
-		<section>
-			<h2 class="font-medium text-lg">Backups</h2>
-			<p class="text-gray-600">
-				Backups are enabled and are scheduled to run every six hours.
-			</p>
-			<div
-				class="mt-6 w-full sm:w-1/2 shadow rounded border border-gray-100 py-4"
-			>
+		<Section
+			title="Backups"
+			description="Backups are enabled and are scheduled to run every six hours."
+		>
+			<SectionCard>
 				<div v-if="backups.length">
 					<a
 						:href="backup.url"
 						target="_blank"
-						class="px-6 py-4 hover:bg-gray-50 block"
+						class="block px-6 py-4 hover:bg-gray-50"
 						v-for="backup in backups"
 						:key="backup.url"
 					>
 						<div class="w-full">
 							<a
-								class="w-full flex font-semibold justify-between items-baseline"
+								class="flex items-baseline justify-between w-full font-semibold"
 							>
 								<span>
 									{{ backup.database || 'Performing backup..' }}
 								</span>
-								<span class="text-gray-700 font-normal" v-if="backup.size">
+								<span class="font-normal text-gray-700" v-if="backup.size">
 									{{ formatBytes(backup.size) }}
 								</span>
 							</a>
-							<div class="text-gray-600 text-sm" v-if="backup.database">
+							<div class="text-sm text-gray-600" v-if="backup.database">
 								<FormatDate>{{ backup.creation }}</FormatDate>
 							</div>
 						</div>
@@ -36,13 +33,13 @@
 				<div class="px-6 text-gray-600" v-else>
 					No backups found
 				</div>
-				<div class="px-6 mt-4">
+				<div class="px-6 mt-4 mb-2">
 					<Button type="primary" @click="scheduleBackup">
 						Schedule Backup
 					</Button>
 				</div>
-			</div>
-		</section>
+			</SectionCard>
+		</Section>
 	</div>
 </template>
 

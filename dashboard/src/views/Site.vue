@@ -56,13 +56,13 @@
 						v-for="tab in tabs"
 						:key="tab.label"
 						:to="`/sites/${siteName}/${tab.route}`"
-						v-slot="{ href, route, navigate, isActive, isExactActive }"
+						v-slot="{ href, route, navigate, isActive }"
 					>
 						<li>
 							<a
 								class="block px-1 py-4 mr-8 font-medium leading-none border-b-2 border-transparent focus:outline-none"
 								:class="[
-									isExactActive
+									isActive
 										? 'border-brand text-brand'
 										: 'text-gray-800 hover:text-gray-900'
 								]"
