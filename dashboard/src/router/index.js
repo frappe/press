@@ -85,6 +85,11 @@ const routes = [
 					import(/* webpackChunkName: "site" */ '../views/SiteGeneral.vue')
 			},
 			{
+				path: 'installing',
+				component: () =>
+					import(/* webpackChunkName: "site" */ '../views/SiteInstalling.vue')
+			},
+			{
 				path: 'plan',
 				component: () =>
 					import(/* webpackChunkName: "site" */ '../views/SitePlan.vue')
@@ -120,16 +125,10 @@ const routes = [
 					import(/* webpackChunkName: "site" */ '../views/SiteConsole.vue')
 			},
 			{
-				path: 'drop-site',
+				path: 'activity',
 				component: () =>
-					import(/* webpackChunkName: "site" */ '../views/SiteDrop.vue')
-			},
-			{
-				path: 'access-control',
-				component: () =>
-					import(
-						/* webpackChunkName: "site" */ '../views/SiteAccessControl.vue'
-					)
+					import(/* webpackChunkName: "site" */ '../views/SiteActivity.vue'),
+				props: true
 			},
 			{
 				path: 'jobs/:jobName?',

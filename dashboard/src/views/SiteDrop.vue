@@ -1,14 +1,13 @@
 <template>
 	<div>
-		<section>
-			<h2 class="text-lg font-medium">Drop Site</h2>
-			<p class="text-gray-600">
-				Once you drop your site, there's no going back
-			</p>
-			<Button class="mt-6" type="danger" @click="showDialog = true">
+		<Section
+			title="Drop Site"
+			description="Once you drop your site, there's no going back"
+		>
+			<Button type="danger" @click="showDialog = true">
 				Drop Site
 			</Button>
-		</section>
+		</Section>
 		<Dialog v-model="showDialog" title="Drop Site">
 			<p>
 				Are you sure you want to drop your site? The site will be archived and
