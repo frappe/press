@@ -16,10 +16,7 @@
 				ref="card-element"
 			></div>
 		</label>
-		<ErrorMessage class="mt-1" v-if="errorMessage">
-			{{ errorMessage }}
-		</ErrorMessage>
-
+		<ErrorMessage class="mt-1" :error="errorMessage" />
 		<div class="flex items-center justify-between mt-6">
 			<Button type="primary" @click="submit" :disabled="state === 'Working'">
 				Authorize Card for Payments

@@ -155,9 +155,7 @@
 					</div>
 				</div>
 				<div class="mt-6">
-					<ErrorMessage v-if="errorMessage">
-						{{ errorMessage }}
-					</ErrorMessage>
+					<ErrorMessage :error="errorMessage" />
 					<Button
 						class="w-full mt-2"
 						type="primary"
@@ -353,28 +351,35 @@ export default {
 				file.uploading = false;
 			});
 
-			file.uploader.upload(file.file, {
-				method: 'press.api.site.upload_backup',
-				type: file.type
-			}).then(result => {
-				if (result.status == 'success') {
-					this.selectedFiles[file.type] = result.file;
-				} else {
+			file.uploader
+				.upload(file.file, {
+					method: 'press.api.site.upload_backup',
+					type: file.type
+				})
+				.then(result => {
+					if (result.status == 'success') {
+						this.selectedFiles[file.type] = result.file;
+					} else {
+						file.file = null;
+						file.uploading = false;
+						file.errorMessage = result.message;
+					}
+				})
+				.catch(error => {
 					file.file = null;
 					file.uploading = false;
-					file.errorMessage = result.message;
-				}
-			}).catch(error => {
-				file.file = null;
-				file.uploading = false;
-				if (error._server_messages) {
-					file.errorMessage = JSON.parse(JSON.parse(error._server_messages)[0]).message;
-				} else if (error.exc) {
-					file.errorMessage = JSON.parse(error.exc)[0].split('\n').slice(-2, -1)[0];
-				} else {
-					file.errorMessage = 'Something Went Wrong';
-				}
-			});
+					if (error._server_messages) {
+						file.errorMessage = JSON.parse(
+							JSON.parse(error._server_messages)[0]
+						).message;
+					} else if (error.exc) {
+						file.errorMessage = JSON.parse(error.exc)[0]
+							.split('\n')
+							.slice(-2, -1)[0];
+					} else {
+						file.errorMessage = 'Something Went Wrong';
+					}
+				});
 		}
 	}
 };

@@ -15,9 +15,7 @@
 					required
 				/>
 			</label>
-			<ErrorMessage class="mt-6" v-if="errorMessage">
-				{{ errorMessage }}
-			</ErrorMessage>
+			<ErrorMessage class="mt-6" :error="errorMessage" />
 			<Button
 				class="mt-6"
 				:disabled="state === 'RequestStarted'"
