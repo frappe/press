@@ -131,10 +131,16 @@ export default {
 	},
 	activated() {
 		this.setupSocket();
-		if (this.$route.matched.length === 1) {
-			let path = this.$route.fullPath;
-			this.$router.replace(`${path}/general`);
-		}
+		this.$resources.site.once('onSuccess', () => {
+			if (this.$route.matched.length === 1) {
+				let path = this.$route.fullPath;
+				let tab = 'general';
+				if (['Pending', 'Installing'].includes(this.site.status)) {
+					tab = 'installing';
+				}
+				this.$router.replace(`${path}/${tab}`);
+			}
+		});
 	},
 	methods: {
 		isTabSelected(tab) {
@@ -175,22 +181,32 @@ export default {
 		tabs() {
 			let tabs = [
 				{ label: 'General', route: 'general' },
+				{ label: 'Installing', route: 'installing' },
 				{ label: 'Plan', route: 'plan' },
 				{ label: 'Apps', route: 'apps' },
 				{ label: 'Domains', route: 'domains' },
 				{ label: 'Analytics', route: 'analytics' },
 				{ label: 'Backups', route: 'backups' },
 				{ label: 'Site Config', route: 'site-config' },
-				// { label: 'Console', route: 'console' },
-				{ label: 'Drop Site', route: 'drop-site' },
-				{ label: 'Access Control', route: 'access-control' },
+				{ label: 'Activity', route: 'activity' },
 				{ label: 'Jobs', route: 'jobs' }
 			];
 
 			let tabsByStatus = {
-				Inactive: ['General', 'Plan', 'Site Config', 'Drop Site', 'Jobs'],
-				Installing: ['General', 'Jobs'],
-				Pending: ['General', 'Jobs'],
+				Active: [
+					'General',
+					'Plan',
+					'Apps',
+					'Domains',
+					'Analytics',
+					'Backups',
+					'Site Config',
+					'Activity',
+					'Jobs'
+				],
+				Inactive: ['General', 'Plan', 'Site Config', 'Jobs'],
+				Installing: ['Installing', 'Jobs'],
+				Pending: ['Installing', 'Jobs'],
 				Broken: ['General', 'Plan', 'Jobs']
 			};
 			if (this.site) {

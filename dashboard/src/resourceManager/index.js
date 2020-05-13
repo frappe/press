@@ -25,7 +25,7 @@ let plugin = {
 			});
 		}
 
-		Object.keys(resourceManager.resources).forEach(key => {
+		Object.keys(vmOptions.resources).forEach(key => {
 			if (
 				!(
 					hasKey(vmOptions.computed, key) ||

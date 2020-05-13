@@ -123,8 +123,13 @@ def activities(name):
 		"Site Activity",
 		fields=["action", "creation", "owner"],
 		filters={"site": name},
-		limit=5,
+		limit=20,
 	)
+
+	for activity in activities:
+		if activity.action == 'Create':
+			activity.action = 'Site created'
+
 	return activities
 
 

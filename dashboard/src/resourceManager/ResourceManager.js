@@ -103,6 +103,7 @@ class Resource {
 
 		// events
 		this.listeners = Object.create(null);
+		this.onceListeners = Object.create(null);
 		let listenerKeys = Object.keys(options).filter(key => key.startsWith('on'));
 		if (listenerKeys.length > 0) {
 			for (const key of listenerKeys) {
@@ -123,10 +124,10 @@ class Resource {
 		this.loading = true;
 		try {
 			this.data = await call(this.method, this.params);
-			this.emit('Success');
+			this.emit('Success', this.data);
 		} catch (error) {
 			this.error = error.messages.join('\n');
-			this.emit('Error');
+			this.emit('Error', this.error);
 		}
 		this.lastLoaded = new Date();
 		this.loading = false;
@@ -143,10 +144,25 @@ class Resource {
 		return this;
 	}
 
-	emit(event) {
+	once(event, handler) {
+		this.onceListeners[event] = (this.onceListeners[event] || []).concat(
+			handler
+		);
+		return this;
+	}
+
+	emit(event, ...args) {
 		let key = 'on' + event;
 		(this.listeners[key] || []).forEach(handler => {
-			handler(this, key);
+			handler(...args);
+		});
+		(this.onceListeners[key] || []).forEach(handler => {
+			handler(...args);
+			// remove listener after calling handler
+			this.onceListeners[key].splice(
+				this.onceListeners[key].indexOf(handler),
+				1
+			);
 		});
 	}
 }
