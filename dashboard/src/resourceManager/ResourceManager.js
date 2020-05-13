@@ -112,7 +112,7 @@ class Resource {
 		}
 
 		// response
-		this.data = initialValue || null;
+		this.data = initialValue || options.default || null;
 		this.error = null;
 		this.loading = false;
 		this.lastLoaded = null;
