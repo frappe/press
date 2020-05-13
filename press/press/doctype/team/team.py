@@ -120,7 +120,11 @@ class Team(Document):
 	def get_past_payments(self):
 		payments = frappe.db.get_all(
 			"Payment",
-			filters={"team": self.name, "amount": (">", 0)},
+			filters={
+				"team": self.name,
+				"docstatus": 1,
+				"amount": (">", 0)
+			},
 			fields=[
 				"amount",
 				"payment_date",

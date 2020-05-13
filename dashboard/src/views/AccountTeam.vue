@@ -1,13 +1,12 @@
 <template>
 	<div>
-		<section v-if="teams.length > 1" class="mb-10">
-			<h2 class="text-lg font-medium">Team</h2>
-			<p class="text-gray-600">
-				Teams you are part of and the current active team
-			</p>
-			<div
-				class="w-full py-4 mt-6 border border-gray-100 rounded-md shadow sm:w-1/2"
-			>
+		<Section
+			v-if="teams.length > 1"
+			class="mb-10"
+			title="Team"
+			description="Teams you are part of and the current active team"
+		>
+			<SectionCard>
 				<div
 					class="grid items-center grid-cols-4 px-6 py-4 hover:bg-gray-50"
 					v-for="t in teams"
@@ -28,17 +27,13 @@
 						</div>
 					</div>
 				</div>
-			</div>
-		</section>
-		<section>
-			<h2 class="text-lg font-medium">Team Members</h2>
-			<p class="text-gray-600">
-				Team members can access your account on your behalf.
-			</p>
-			<div
-				v-if="team_members.length"
-				class="w-full py-4 mt-6 border border-gray-100 rounded-md shadow sm:w-1/2"
-			>
+			</SectionCard>
+		</Section>
+		<Section
+			title="Team Members"
+			description="Team members can access your account on your behalf."
+		>
+			<SectionCard v-if="team_members.length">
 				<div
 					class="grid items-start grid-cols-4 px-6 py-4 hover:bg-gray-50"
 					v-for="member in team_members"
@@ -59,7 +54,10 @@
 						{{ getRole(member) }}
 					</div>
 				</div>
-				<div class="px-6 mt-4" v-if="$store.account.hasRole('Press Admin')">
+				<div
+					class="px-6 mt-4 mb-2"
+					v-if="$store.account.hasRole('Press Admin')"
+				>
 					<Button type="primary" @click="showModal = true">
 						Add Member
 					</Button>
@@ -92,8 +90,8 @@
 						</div>
 					</Dialog>
 				</div>
-			</div>
-		</section>
+			</SectionCard>
+		</Section>
 	</div>
 </template>
 
