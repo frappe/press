@@ -22,7 +22,6 @@
   {
    "fieldname": "user",
    "fieldtype": "Link",
-   "in_list_view": 1,
    "label": "User",
    "options": "User",
    "unique": 1
@@ -57,18 +56,22 @@
   {
    "fieldname": "country",
    "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Country",
    "options": "Country"
   },
   {
    "fieldname": "currency",
    "fieldtype": "Link",
+   "in_standard_filter": 1,
    "label": "Currency",
    "options": "Currency"
   },
   {
    "fieldname": "default_payment_method",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Default Payment Method",
    "options": "Stripe Payment Method"
   },
@@ -88,7 +91,7 @@
   }
  ],
  "links": [],
- "modified": "2020-05-12 15:28:16.604243",
+ "modified": "2020-05-14 20:05:17.413378",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
