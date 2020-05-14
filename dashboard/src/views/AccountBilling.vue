@@ -124,7 +124,7 @@
 			</SectionCard>
 		</Section>
 		<Section
-			v-if="paymentMethods && paymentMethods.length === 0"
+			v-if="paymentMethods.data && paymentMethods.data.length === 0"
 			title="Set up Payment Method"
 			description="Add your card details to start your subscription"
 		>
@@ -142,14 +142,14 @@
 			</SectionCard>
 		</Section>
 		<Section
-			v-if="paymentMethods && paymentMethods.length > 0"
+			v-if="paymentMethods.data && paymentMethods.data.length > 0"
 			title="Payment Methods"
 			description="Cards you have added for automatic billing"
 		>
 			<SectionCard>
 				<div
 					class="grid items-center grid-cols-5 px-6 py-4 hover:bg-gray-50"
-					v-for="paymentMethod in paymentMethods"
+					v-for="paymentMethod in paymentMethods.data"
 					:key="paymentMethod.name"
 				>
 					<div class="font-semibold">•••• {{ paymentMethod.last_4 }}</div>
@@ -234,7 +234,6 @@ export default {
 	methods: {
 		onCardAdd() {
 			this.$resources.paymentMethods.reload();
-			this.$call('press.api.billing.after_card_add');
 		},
 		async fetchAvailablePartnerCredits() {
 			this.availablePartnerCredits = await this.$call(
