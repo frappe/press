@@ -44,6 +44,7 @@
 			</SectionCard>
 		</Section>
 		<Section
+			v-if="site.status === 'Active'"
 			class="mt-10"
 			title="Login"
 			description="Login directly to your site as Administrator"
