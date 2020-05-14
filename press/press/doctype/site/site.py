@@ -170,7 +170,7 @@ class Site(Document):
 		value = conn.get_value("System Settings", "setup_complete", "System Settings")
 		if value:
 			setup_complete = cint(value["setup_complete"])
-			self.db_set('setup_wizard_complete', setup_complete)
+			self.db_set("setup_wizard_complete", setup_complete)
 			return setup_complete
 
 	def update_site_config(self, config):
@@ -307,7 +307,7 @@ def get_permission_query_conditions(user):
 
 	if not user:
 		user = frappe.session.user
-	if frappe.session.data.user_type == 'System User':
+	if frappe.session.data.user_type == "System User":
 		return ""
 
 	team = get_current_team()
