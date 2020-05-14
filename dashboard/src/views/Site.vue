@@ -27,27 +27,20 @@
 					<FeatherIcon name="external-link" class="w-3 h-3 ml-1" />
 				</a>
 			</div>
-			<div
-				class="inline-block mb-4"
+			<Alert
+				class="mb-4"
 				v-if="site.status == 'Active' && !site.setup_wizard_complete"
 			>
-				<div
-					class="items-center px-4 py-3 text-sm text-orange-700 bg-orange-100 border border-orange-300 rounded-md sm:flex"
+				Please
+				<a
+					@click="loginAsAdministrator(siteName)"
+					class="border-b border-orange-700 cursor-pointer"
 				>
-					<FeatherIcon name="alert-circle" class="w-4 h-4 mr-2" />
-					<span>
-						Please
-						<a
-							@click="loginAsAdministrator(siteName)"
-							class="border-b border-orange-700 cursor-pointer"
-						>
-							login
-						</a>
-						and complete the setup wizard on your site. Analytics will be
-						collected only after setup is complete.
-					</span>
-				</div>
-			</div>
+					login
+				</a>
+				and complete the setup wizard on your site. Analytics will be collected
+				only after setup is complete.
+			</Alert>
 		</div>
 		<div class="px-4 sm:px-8" v-if="site">
 			<div>
