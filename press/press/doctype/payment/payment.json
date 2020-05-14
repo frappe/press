@@ -9,12 +9,16 @@
   "team",
   "currency",
   "amount",
-  "stripe_invoice_id",
-  "payment_link",
   "column_break_6",
   "status",
   "payment_date",
-  "amended_from"
+  "amended_from",
+  "stripe_section",
+  "stripe_invoice_id",
+  "payment_link",
+  "column_break_11",
+  "attempt_count",
+  "attempt_date"
  ],
  "fields": [
   {
@@ -81,11 +85,30 @@
    "options": "Payment",
    "print_hide": 1,
    "read_only": 1
+  },
+  {
+   "fieldname": "stripe_section",
+   "fieldtype": "Section Break",
+   "label": "Stripe"
+  },
+  {
+   "fieldname": "column_break_11",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "attempt_count",
+   "fieldtype": "Int",
+   "label": "Attempt Count"
+  },
+  {
+   "fieldname": "attempt_date",
+   "fieldtype": "Datetime",
+   "label": "Attempt Date"
   }
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2020-04-28 14:37:36.436199",
+ "modified": "2020-05-14 08:25:41.976043",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Payment",

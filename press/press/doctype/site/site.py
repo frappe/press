@@ -200,6 +200,18 @@ class Site(Document):
 		self.status = "Active"
 		self.save()
 
+	def suspend(self, reason=None):
+		self.update_site_config({"maintenance_mode": 1})
+		log_site_activity(self.name, "Suspend Site", reason)
+		self.status = "Suspended"
+		self.save()
+
+	def unsuspend(self, reason=None):
+		self.update_site_config({"maintenance_mode": 0})
+		log_site_activity(self.name, "Unsuspend Site", reason)
+		self.status = "Active"
+		self.save()
+
 	def _create_initial_site_plan_change(self):
 		frappe.get_doc(
 			{

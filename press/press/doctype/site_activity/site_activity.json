@@ -6,7 +6,8 @@
  "engine": "InnoDB",
  "field_order": [
   "site",
-  "action"
+  "action",
+  "reason"
  ],
  "fields": [
   {
@@ -25,13 +26,18 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Action",
-   "options": "Activate Site\nAdd Domain\nArchive\nBackup\nCreate\nDeactivate Site\nInstall App\nLogin as Administrator\nReinstall\nRestore\nUpdate\nUpdate Configuration",
+   "options": "Activate Site\nAdd Domain\nArchive\nBackup\nCreate\nDeactivate Site\nInstall App\nLogin as Administrator\nReinstall\nRestore\nSuspend Site\nUnsuspend Site\nUpdate\nUpdate Configuration",
    "read_only": 1,
    "reqd": 1
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Small Text",
+   "label": "Reason"
   }
  ],
  "links": [],
- "modified": "2020-05-06 12:22:07.971663",
+ "modified": "2020-05-14 15:01:13.714517",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Activity",

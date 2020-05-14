@@ -121,7 +121,7 @@ def domains(name):
 def activities(name):
 	activities = frappe.get_all(
 		"Site Activity",
-		fields=["action", "creation", "owner"],
+		fields=["action", "reason", "creation", "owner"],
 		filters={"site": name},
 		limit=20,
 	)
