@@ -45,7 +45,7 @@
 		<div class="mt-4" v-if="onboardingComplete">
 			Onboarding Complete! Redirecting to sites...
 		</div>
-		<Dialog title="Setup Subscription" v-model="showAddCardDialog">
+		<Dialog title="Add Billing Information" v-model="showAddCardDialog">
 			<StripeCard
 				v-if="showAddCardDialog"
 				class="mb-1"
