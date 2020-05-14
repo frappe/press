@@ -1,5 +1,5 @@
 <template>
-	<div class="py-8">
+	<div class="p-8">
 		<h1 class="text-xl font-semibold">
 			Welcome to Frappe Cloud
 		</h1>
