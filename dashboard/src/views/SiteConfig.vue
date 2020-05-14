@@ -46,6 +46,11 @@ export default {
 		return {
 			fields: [
 				{
+					label: 'Encryption Key',
+					fieldname: 'encryption_key',
+					fieldtype: 'password'
+				},
+				{
 					label: 'Mail Server',
 					fieldname: 'mail_server',
 					fieldtype: 'text'
@@ -102,6 +107,7 @@ export default {
 				}
 			],
 			siteConfig: {
+				encryption_key: this.site.config.encryption_key,
 				mail_server: this.site.config.mail_server,
 				mail_port: this.site.config.mail_port,
 				mail_login: this.site.config.mail_login,
