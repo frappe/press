@@ -127,8 +127,8 @@ def activities(name):
 	)
 
 	for activity in activities:
-		if activity.action == 'Create':
-			activity.action = 'Site created'
+		if activity.action == "Create":
+			activity.action = "Site created"
 
 	return activities
 
@@ -153,19 +153,19 @@ def options_for_new():
 	)
 	trial_sites_count = cint(trial_sites_count)
 	team = get_current_team()
-	has_subscription = bool(frappe.db.get_value("Subscription", {"team": team}))
+	has_card = frappe.db.get_value("Team", team, "default_payment_method")
 
 	plans = get_plans()
 	# disable site creation if subscription not created and trial sites are exhausted
 	disable_site_creation = bool(
-		not has_subscription and frappe.db.count("Site", {"team": team}) >= trial_sites_count
+		not has_card and frappe.db.count("Site", {"team": team}) >= trial_sites_count
 	)
 
 	return {
 		"domain": domain,
 		"groups": sorted(groups, key=lambda x: not x.default),
 		"plans": plans,
-		"has_subscription": has_subscription,
+		"has_card": has_card,
 		"disable_site_creation": disable_site_creation,
 		"trial_sites_count": trial_sites_count,
 	}

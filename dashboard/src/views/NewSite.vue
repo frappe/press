@@ -95,13 +95,13 @@
 							<div class="flex items-center mt-1">
 								<span class="flex-1 text-gray-800">{{ file.title }}</span>
 								<span
-									class="flex-1 text-gray-400 truncate text-sm"
+									class="flex-1 text-sm text-gray-400 truncate"
 									v-if="file.file"
 								>
 									{{ file.file.name }}
 								</span>
 								<span
-									class="flex-1 text-red-400 text-sm"
+									class="flex-1 text-sm text-red-400"
 									v-if="file.errorMessage"
 								>
 									{{ file.errorMessage }}
@@ -139,18 +139,15 @@
 						site.
 					</p>
 					<div class="mt-6">
-						<div
-							class="px-4 py-2 mb-4 text-sm text-yellow-700 border border-yellow-200 rounded-lg bg-yellow-50"
-							v-if="!options.has_subscription"
-						>
+						<Alert class="mb-4" v-if="!options.has_card">
 							You can only create {{ options.trial_sites_count }}
 							{{ $plural(options.trial_sites_count, 'site', 'sites') }} in trial
 							mode.
-							<a href="#/account/billing" class="border-b border-yellow-500">
-								Set up your subscription
-							</a>
+							<router-link to="/welcome" class="border-b border-yellow-500">
+								Add your billing information
+							</router-link>
 							to create more sites.
-						</div>
+						</Alert>
 						<SitePlansTable :plans="options.plans" v-model="selectedPlan" />
 					</div>
 				</div>
@@ -319,7 +316,7 @@ export default {
 			}
 		},
 		disablePlan(plan) {
-			if (this.options.has_subscription) {
+			if (this.options.has_card) {
 				return false;
 			}
 			if (this.options.disable_site_creation) {
