@@ -31,7 +31,7 @@ export default async function call(method, args) {
 	if (res.ok) {
 		updateState(this, null, null);
 		const data = await res.json();
-		if (data.docs) {
+		if (data.docs || method === 'login') {
 			return data;
 		}
 		return data.message;

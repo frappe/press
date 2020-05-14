@@ -55,6 +55,12 @@ const routes = [
 		}
 	},
 	{
+		path: '/welcome',
+		name: 'Welcome',
+		component: () =>
+			import(/* webpackChunkName: "sites" */ '../views/Welcome.vue')
+	},
+	{
 		path: '/sites',
 		name: 'Sites',
 		component: () =>
@@ -172,6 +178,11 @@ const router = new VueRouter({
 });
 
 router.beforeEach(async (to, from, next) => {
+	if (to.name == 'Home') {
+		next({ name: 'Welcome' });
+		return;
+	}
+
 	if (to.matched.some(record => !record.meta.isLoginPage)) {
 		// this route requires auth, check if logged in
 		// if not, redirect to login page.
@@ -184,12 +195,12 @@ router.beforeEach(async (to, from, next) => {
 			next();
 		}
 	} else {
-		// if already logged in, route to /sites
+		// if already logged in, route to /welcome
 		if (store.auth.isLoggedIn) {
 			if (!store.account.user) {
 				await store.account.fetchAccount();
 			}
-			next({ name: 'Sites' });
+			next({ name: 'Welcome' });
 		} else {
 			next();
 		}

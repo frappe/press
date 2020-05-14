@@ -134,3 +134,5 @@ override_whitelisted_methods = {"upload_file": "press.overrides.upload_file"}
 # override_doctype_dashboards = {
 # 	"Task": "press.task.get_dashboard_data"
 # }
+
+on_session_creation = 'press.overrides.on_session_creation'

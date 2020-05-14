@@ -120,11 +120,7 @@ class Team(Document):
 	def get_past_payments(self):
 		payments = frappe.db.get_all(
 			"Payment",
-			filters={
-				"team": self.name,
-				"docstatus": 1,
-				"amount": (">", 0)
-			},
+			filters={"team": self.name, "docstatus": 1, "amount": (">", 0)},
 			fields=[
 				"amount",
 				"payment_date",
@@ -168,6 +164,17 @@ class Team(Document):
 			return amount
 		return 0
 
+	def get_onboarding(self):
+		team_created = True
+		card_added = bool(self.default_payment_method)
+		site_created = frappe.db.count("Site", {"team": self.name}) > 0
+		return {
+			"Create a Team": team_created,
+			"Add Billing Information": card_added,
+			"Create your first site": site_created,
+			"complete": team_created and card_added and site_created,
+		}
+
 
 def get_team_members(team):
 	if not frappe.db.exists("Team", team):
@@ -191,7 +198,7 @@ def get_team_members(team):
 			as_dict=True,
 		)
 		for user in users:
-			user.roles = user.roles.split(",")
+			user.roles = (user.roles or "").split(",")
 
 	return users
 

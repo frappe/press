@@ -12,7 +12,10 @@
 				</div>
 			</div>
 		</div>
-		<div class="flex items-center justify-end p-4 sm:px-6 sm:py-4">
+		<div
+			class="flex items-center justify-end p-4 sm:px-6 sm:py-4"
+			v-if="$slots.actions"
+		>
 			<slot name="actions"></slot>
 		</div>
 	</Modal>

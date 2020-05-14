@@ -52,7 +52,7 @@ export default {
 
 					if (data.status === 'Success') {
 						this.installingJob = null;
-						this.$router.replace(`/sites/${this.site.name}/general`);
+						this.$router.replace(`/sites/${this.site.name}`);
 						window.location.reload();
 					}
 				}

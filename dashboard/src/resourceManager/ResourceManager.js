@@ -157,16 +157,26 @@ class Resource {
 
 	emit(event, ...args) {
 		let key = 'on' + event;
+		let vm = this._vm;
+
 		(this.listeners[key] || []).forEach(handler => {
-			handler.call(this._vm, ...args);
+			runHandler(handler);
 		});
 		(this.onceListeners[key] || []).forEach(handler => {
-			handler.call(this._vm, ...args);
+			runHandler(handler);
 			// remove listener after calling handler
 			this.onceListeners[key].splice(
 				this.onceListeners[key].indexOf(handler),
 				1
 			);
 		});
+
+		function runHandler(handler) {
+			try {
+				handler.call(vm, ...args);
+			} catch (error) {
+				console.error(error);
+			}
+		}
 	}
 }

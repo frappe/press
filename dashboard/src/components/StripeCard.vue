@@ -126,6 +126,7 @@ export default {
 				this.errorMessage = error.message;
 			} else {
 				if (setupIntent.status === 'succeeded') {
+					this.$call('press.api.billing.after_card_add');
 					this.$emit('complete');
 				}
 			}
