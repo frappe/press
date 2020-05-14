@@ -18,5 +18,10 @@ frappe.ui.form.on('Team', {
 			() => frappe.set_route('List', 'Payment Ledger Entry', { team: frm.doc.name }),
 			'View'
 		);
-	},
+		frm.add_custom_button(
+			'Sites',
+			() => frappe.set_route('List', 'Site', { team: frm.doc.name }),
+			'View'
+		);
+	}
 });
