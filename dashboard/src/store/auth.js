@@ -26,7 +26,7 @@ export default {
 			if (res) {
 				this.$store.account.fetchAccount();
 				this.isLoggedIn = true;
-				return true;
+				return res;
 			}
 			return false;
 		},

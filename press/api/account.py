@@ -227,6 +227,12 @@ def switch_team(team):
 		}
 
 
+@frappe.whitelist()
+def onboarding():
+	team = get_current_team()
+	return frappe.get_doc("Team", team).get_onboarding()
+
+
 def redirect_to(location):
 	return build_response(
 		frappe.local.request.path,

@@ -124,8 +124,10 @@ export default {
 		},
 		async login() {
 			if (this.email && this.password) {
-				await this.$store.auth.login(this.email, this.password);
-				this.$router.push('/sites');
+				let res = await this.$store.auth.login(this.email, this.password);
+				if (res) {
+					this.$router.push(res.dashboard_route || '/');
+				}
 			}
 		},
 		async resetPassword() {

@@ -38,6 +38,18 @@ def get_current_team():
 	return team
 
 
+def get_default_team_for_user(user):
+	"""Returns the Team if user has one, or returns the Team to which they belong"""
+	if frappe.db.exists("Team", user):
+		return user
+
+	team = frappe.db.get_value(
+		"Team Member", filters={"parenttype": "Team", "user": user}, fieldname="parent"
+	)
+	if team:
+		return team
+
+
 def get_country_info():
 	ip = frappe.local.request_ip
 	ip_api_key = frappe.conf.get("ip-api-key")

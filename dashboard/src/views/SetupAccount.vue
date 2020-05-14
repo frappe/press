@@ -141,7 +141,7 @@ export default {
 					country: this.country,
 					is_invitation: this.isInvitation
 				});
-				this.$router.push('/sites');
+				this.$router.push('/');
 				window.location.reload();
 			} catch (error) {
 				this.errorMessage = error.messages.join('\n').replace(/<br>/gi, '\n');
