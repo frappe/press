@@ -13,6 +13,10 @@
 					<div>
 						{{ a.action }} <span class="text-gray-800">by {{ a.owner }}</span>
 					</div>
+					<div class="mb-1 text-sm text-gray-800" v-if="a.reason">
+						<span class="font-semibold">Reason:</span>
+						{{ a.reason }}
+					</div>
 					<div class="text-sm text-gray-600">
 						<FormatDate>
 							{{ a.creation }}

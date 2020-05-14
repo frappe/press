@@ -6,21 +6,36 @@
 <td class="text-base leading-6 text-gray-900">
 	<div class="p-8 bg-white">
 		<p class="mb-4 font-bold">
+			{%- if subject -%}
+			{{ subject }}
+			{%- else -%}
 			Payment of {{ amount }} for Frappe Cloud was unsuccessful.
+			{%- endif -%}
 		</p>
 		{%- if card_not_added -%}
 		<p class="mb-6">
-			You haven't added a card for your Frappe Cloud subscription. Your sites will be set to inactive unless you
-			add a card. Please update your billing information in your Billing Settings.
+			You haven't added a card for your Frappe Cloud subscription. Your sites will be suspended until you
+			update your card details in your account.
 		</p>
 		{{ utils.button('Update Billing Settings', account_update_link) }}
 		{%- else -%}
 		<p class="mb-6">
-			We attempted to charge your Card ending in <strong>{{ last_4 }}</strong> for your Frappe Cloud subscription, but
-			were unsuccessful. Please update your billing in your
-			<a href="{{ account_update_link }}">Billing Settings</a> or pay manually by clicking the following link.
+			We attempted to charge your card ending in <strong>{{ last_4 }}</strong> for your Frappe Cloud subscription,
+			but were unsuccessful. Please update your card details in your
+			{{ utils.link('Billing Settings', account_update_link) }}
+			or pay manually by clicking the following link.
 		</p>
 		{{ utils.button('Pay Invoice Now', payment_link) }}
+		{%- endif -%}
+
+		{%- if sites -%}
+		{{ utils.separator() }}
+		<p class="mt-0 mb-2">Following sites were suspended:</p>
+		<ul class="list-disc">
+			{%- for site in sites -%}
+			<li class="text-sm font-medium">{{ site }}</li>
+			{%- endfor -%}
+		</ul>
 		{%- endif -%}
 
 		{{ utils.separator() }}

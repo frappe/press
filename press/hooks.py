@@ -96,6 +96,7 @@ doc_events = {
 scheduler_events = {
 	"daily": [
 		"press.press.doctype.payment_ledger_entry.payment_ledger_entry.submit_failed_ledger_entries",
+		"press.press.doctype.team.team.suspend_sites_for_teams_without_cards",
 	],
 	"hourly": ["press.press.doctype.frappe_app.frappe_app.poll_new_releases"],
 	"hourly_long": [
@@ -135,4 +136,4 @@ override_whitelisted_methods = {"upload_file": "press.overrides.upload_file"}
 # 	"Task": "press.task.get_dashboard_data"
 # }
 
-on_session_creation = 'press.overrides.on_session_creation'
+on_session_creation = "press.overrides.on_session_creation"

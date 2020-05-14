@@ -71,7 +71,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Pending\nInstalling\nUpdating\nActive\nInactive\nBroken\nArchived",
+   "options": "Pending\nInstalling\nUpdating\nActive\nInactive\nBroken\nArchived\nSuspended",
    "read_only": 1,
    "reqd": 1
   },
@@ -218,7 +218,7 @@
   }
  ],
  "links": [],
- "modified": "2020-05-12 18:00:43.029243",
+ "modified": "2020-05-14 14:56:19.592244",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

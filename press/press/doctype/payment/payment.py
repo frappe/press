@@ -11,7 +11,9 @@ from datetime import datetime
 class Payment(Document):
 	def on_update(self):
 		if self.status == "Failed":
-			self.send_email_for_failed_payment()
+			self.queue_action("suspend_sites")
+		if self.status == "Paid":
+			self.queue_action("unsuspend_sites")
 
 	def on_submit(self):
 		if self.status != "Paid":
@@ -30,12 +32,28 @@ class Payment(Document):
 		doc.insert()
 		doc.submit()
 
-	def send_email_for_failed_payment(self):
+	def suspend_sites(self):
+		# suspend sites when payment failure occurs more than 1 time
+		if self.attempt_count > 1:
+			sites = frappe.get_doc("Team", self.team).suspend_sites(
+				reason="Suspended because of payment failure"
+			)
+			self.send_email_for_failed_payment(sites)
+		# send payment failure email when payment fails the first time
+		else:
+			self.send_email_for_failed_payment()
+
+	def unsuspend_sites(self):
+		frappe.get_doc("Team", self.team).unsuspend_sites(
+			reason="Unsuspended on payment success"
+		)
+
+	def send_email_for_failed_payment(self, sites=None):
 		team = frappe.get_doc("Team", self.team)
 		email = team.user
 		payment_method = team.default_payment_method
 		last_4 = frappe.db.get_value("Stripe Payment Method", payment_method, "last_4")
-		account_update_link = frappe.utils.get_url("/dashboard/#/account/billing")
+		account_update_link = frappe.utils.get_url("/dashboard/#/welcome")
 
 		frappe.sendmail(
 			recipients=email,
@@ -47,6 +65,7 @@ class Payment(Document):
 				"account_update_link": account_update_link,
 				"last_4": last_4 or "",
 				"card_not_added": not payment_method,
+				"sites": sites,
 			},
 		)
 
@@ -87,5 +106,9 @@ def process_stripe_webhook(doc, method):
 		payment.save()
 		payment.submit()
 	elif doc.event_type == "invoice.payment_failed":
+		payment.attempt_count = invoice.get("attempt_count")
+		attempt_date = invoice.get("webhooks_delivered_at")
+		if attempt_date:
+			payment.attempt_date = datetime.fromtimestamp(attempt_date)
 		payment.status = "Failed"
 		payment.save()

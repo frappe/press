@@ -77,6 +77,8 @@ class Team(Document):
 			}
 		)
 		doc.insert()
+		# unsuspend sites on payment method added
+		self.unsuspend_sites(reason="Payment method added")
 		if set_default:
 			doc.set_default()
 
@@ -175,6 +177,23 @@ class Team(Document):
 			"complete": team_created and card_added and site_created,
 		}
 
+	def suspend_sites(self, reason=None):
+		active_sites = map(
+			lambda d: d.name, frappe.db.get_all("Site", {"team": self.name, "status": "Active"}),
+		)
+		for site in active_sites:
+			frappe.get_doc("Site", site).suspend(reason)
+		return active_sites
+
+	def unsuspend_sites(self, reason=None):
+		suspended_sites = map(
+			lambda d: d.name,
+			frappe.db.get_all("Site", {"team": self.name, "status": "Suspended"}),
+		)
+		for site in suspended_sites:
+			frappe.get_doc("Site", site).unsuspend(reason)
+		return suspended_sites
+
 
 def get_team_members(team):
 	if not frappe.db.exists("Team", team):
@@ -218,3 +237,52 @@ def process_stripe_webhook(doc, method):
 	customer_id = payment_method["customer"]
 	team_doc = frappe.get_doc("Team", {"stripe_customer_id": customer_id})
 	team_doc.create_payment_method(payment_method, set_default=True)
+
+
+def suspend_sites_for_teams_without_cards():
+	"""
+	If a team has not added their card and they have exhausted their credits, their sites will be set to Suspended.
+	Runs daily.
+	"""
+
+	# find out teams which don't have a card and have exhausted their credit limit
+	res = frappe.db.sql(
+		"""
+		SELECT
+			SUM(ple.amount) as total_credits, ple.team
+		FROM `tabPayment Ledger Entry` ple
+		LEFT JOIN
+			`tabTeam` t
+		ON
+			t.name = ple.team
+		WHERE
+			ple.docstatus = 1
+			AND ifnull(t.default_payment_method, '') != ''
+		GROUP BY
+			ple.team
+		HAVING
+			total_credits < 0
+	""",
+		as_dict=True,
+	)
+
+	teams_without_cards_and_exhausted_credit_limit = [r.team for r in res]
+	for team in teams_without_cards_and_exhausted_credit_limit:
+		team_doc = frappe.get_doc("Team", team)
+		sites = team_doc.suspend_sites(reason="Card not added")
+
+		# send email
+		if sites:
+			email = team_doc.user
+			account_update_link = frappe.utils.get_url("/dashboard/#/welcome")
+			frappe.sendmail(
+				recipients=email,
+				subject="Your sites have been suspended on Frappe Cloud",
+				template="payment_failed",
+				args={
+					"subject": "Your sites have been suspended on Frappe Cloud",
+					"account_update_link": account_update_link,
+					"card_not_added": True,
+					"sites": sites,
+				},
+			)

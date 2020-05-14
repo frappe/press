@@ -13,6 +13,10 @@
 </table>
 {% endmacro %}
 
+{% macro link(label, link) %}
+<a class="text-blue-500 border-b border-blue-500" href="{{ link }}">{{ label }}</a>
+{% endmacro %}
+
 {% macro separator() %}
 <table class="w-full" cellpadding="0" cellspacing="0" role="presentation">
 	<tbody>

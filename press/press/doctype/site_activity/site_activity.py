@@ -11,7 +11,7 @@ class SiteActivity(Document):
 	pass
 
 
-def log_site_activity(site, action):
+def log_site_activity(site, action, reason=None):
 	return frappe.get_doc(
-		{"doctype": "Site Activity", "site": site, "action": action}
+		{"doctype": "Site Activity", "site": site, "action": action, "reason": reason}
 	).insert()
