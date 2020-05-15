@@ -257,7 +257,8 @@ def suspend_sites_for_teams_without_cards():
 			t.name = ple.team
 		WHERE
 			ple.docstatus = 1
-			AND ifnull(t.default_payment_method, '') != ''
+			AND ifnull(t.default_payment_method, '') = ''
+			AND t.free_account = 0
 		GROUP BY
 			ple.team
 		HAVING
