@@ -191,8 +191,12 @@ def get_plans():
 
 @frappe.whitelist()
 def all():
+	team = get_current_team()
 	sites = frappe.get_list(
-		"Site", fields=["name", "status", "modified"], order_by="creation desc"
+		"Site",
+		fields=["name", "status", "modified"],
+		filters={"team": team},
+		order_by="creation desc",
 	)
 	return sites
 
