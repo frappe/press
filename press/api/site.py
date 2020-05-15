@@ -430,6 +430,7 @@ def install_app(name, app):
 @protected()
 def update_config(name, config):
 	allowed_keys = [
+		"encryption_key",
 		"mail_server",
 		"mail_port",
 		"mail_login",
