@@ -193,7 +193,6 @@
   },
   {
    "default": "0",
-   "fetch_from": "team.free_account",
    "fieldname": "free_usage",
    "fieldtype": "Check",
    "label": "Free Usage"
@@ -201,7 +200,7 @@
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2020-05-14 20:08:06.561523",
+ "modified": "2020-05-16 17:30:54.058193",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Payment Ledger Entry",

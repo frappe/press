@@ -9,12 +9,14 @@
   "status",
   "server",
   "bench",
-  "plan",
-  "team",
   "column_break_3",
   "admin_password",
   "update",
   "setup_wizard_complete",
+  "billing",
+  "plan",
+  "team",
+  "free_site",
   "section_break_6",
   "apps",
   "enable_uptime_monitoring",
@@ -215,10 +217,20 @@
    "fieldtype": "Check",
    "label": "Setup Wizard Complete",
    "read_only": 1
+  },
+  {
+   "fieldname": "billing",
+   "fieldtype": "Section Break",
+   "label": "Billing"
+  },
+  {
+   "fieldname": "free_site",
+   "fieldtype": "Data",
+   "label": "Free Site"
   }
  ],
  "links": [],
- "modified": "2020-05-14 14:56:19.592244",
+ "modified": "2020-05-16 17:28:22.920378",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
