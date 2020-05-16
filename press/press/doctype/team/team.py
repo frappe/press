@@ -178,18 +178,17 @@ class Team(Document):
 		}
 
 	def suspend_sites(self, reason=None):
-		active_sites = map(
-			lambda d: d.name, frappe.db.get_all("Site", {"team": self.name, "status": "Active"}),
-		)
+		active_sites = [
+			d.name for d in frappe.db.get_all("Site", {"team": self.name, "status": "Active"})
+		]
 		for site in active_sites:
 			frappe.get_doc("Site", site).suspend(reason)
 		return active_sites
 
 	def unsuspend_sites(self, reason=None):
-		suspended_sites = map(
-			lambda d: d.name,
-			frappe.db.get_all("Site", {"team": self.name, "status": "Suspended"}),
-		)
+		suspended_sites = [
+			d.name for d in frappe.db.get_all("Site", {"team": self.name, "status": "Suspended"})
+		]
 		for site in suspended_sites:
 			frappe.get_doc("Site", site).unsuspend(reason)
 		return suspended_sites
