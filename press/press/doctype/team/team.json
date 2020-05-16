@@ -57,14 +57,12 @@
    "fieldname": "country",
    "fieldtype": "Link",
    "in_list_view": 1,
-   "in_standard_filter": 1,
    "label": "Country",
    "options": "Country"
   },
   {
    "fieldname": "currency",
    "fieldtype": "Link",
-   "in_standard_filter": 1,
    "label": "Currency",
    "options": "Currency"
   },
@@ -80,6 +78,7 @@
    "description": "If checked, this user can Transfer credits from ERPNext.com",
    "fieldname": "erpnext_partner",
    "fieldtype": "Check",
+   "in_standard_filter": 1,
    "label": "ERPNext Partner"
   },
   {
@@ -87,11 +86,12 @@
    "description": "If checked, usage data will not be sent to Stripe and they won't be charged",
    "fieldname": "free_account",
    "fieldtype": "Check",
+   "in_standard_filter": 1,
    "label": "Free Account"
   }
  ],
  "links": [],
- "modified": "2020-05-14 20:05:17.413378",
+ "modified": "2020-05-16 16:08:13.299962",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

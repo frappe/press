@@ -1,65 +1,39 @@
 // Copyright (c) 2019, Frappe and contributors
 // For license information, please see license.txt
 
-frappe.ui.form.on('Site', {	
-	onload: function(frm) {
-		frm.set_query("bench", function() {
+frappe.ui.form.on('Site', {
+	onload: function (frm) {
+		frm.set_query('bench', function () {
 			return {
-				"filters": {
-					"server": frm.doc.server,
-					"status": "Active",
-				}
+				filters: {
+					server: frm.doc.server,
+					status: 'Active',
+				},
 			};
 		});
 	},
-	refresh: function(frm) {
+	refresh: function (frm) {
 		frm.add_web_link(`https://${frm.doc.name}`, __('Visit Site'));
-		frm.add_web_link(`/dashboard/#/sites/${frm.doc.name}/general`, __('Visit Dashboard'));
+		frm.add_web_link(
+			`/dashboard/#/sites/${frm.doc.name}/general`,
+			__('Visit Dashboard')
+		);
 
-		frm.add_custom_button(__('Agent Jobs'), () => {
-			const filters = {site: frm.doc.name};
-			frappe.set_route("List", "Agent Job", filters);
-		}, __('Logs'));
-		frm.add_custom_button(__('Backups'), () => {
-			const filters = {site: frm.doc.name};
-			frappe.set_route("List", "Site Backup", filters);
-		}, __('Logs'));
-		frm.add_custom_button(__('Updates'), () => {
-			const filters = {site: frm.doc.name};
-			frappe.set_route("List", "Site Update", filters);
-		}, __('Logs'));
-		frm.add_custom_button(__('Site Uptime'), () => {
-			const filters = {site: frm.doc.name};
-			frappe.set_route("List", "Site Uptime Log", filters);
-		}, __('Logs'));
-		frm.add_custom_button(__('Web Requests'), () => {
-			const filters = {site: frm.doc.name};
-			frappe.set_route("List", "Site Request Log", filters);
-		}, __('Logs'));
-		frm.add_custom_button(__('Background Jobs'), () => {
-			const filters = {site: frm.doc.name};
-			frappe.set_route("List", "Site Job Log", filters);
-		}, __('Logs'));
-
-		frm.add_custom_button(__('Archive'), () => {
-			frm.call({method: "archive", doc: frm.doc, callback: result => frappe.msgprint(result.message)});
-		}, __('Actions'));
-		frm.add_custom_button(__('Backup'), () => {
-			frm.call({method: "backup", doc: frm.doc, callback: result => frappe.msgprint(result.message)});
-		}, __('Actions'));
-		frm.add_custom_button(__('Reinstall'), () => {
-			frm.call({method: "reinstall", doc: frm.doc, callback: result => frappe.msgprint(result.message)});
-		}, __('Actions'));
-		frm.add_custom_button(__('Restore'), () => {
-			frm.call({method: "restore", doc: frm.doc, callback: result => frappe.msgprint(result.message)});
-		}, __('Actions'));
-		frm.add_custom_button(__('Update'), () => {
-			frm.call({method: "schedule_update", doc: frm.doc, callback: result => frappe.msgprint(result.message)});
-		}, __('Actions'));
-
-		frm.add_custom_button(__('Domains'), () => {
-			const filters = {site: frm.doc.name};
-			frappe.set_route("List", "Site Domain", filters);
+		[
+			[__('Archive'), 'archive'],
+			[__('Archive'), 'archive'],
+			[__('Backup'), 'backup'],
+			[__('Reinstall'), 'reinstall'],
+			[__('Restore'), 'restore'],
+			[__('Update'), 'schedule_update'],
+		].forEach(([label, method]) => {
+			frm.add_custom_button(
+				label,
+				() => {
+					frm.call(method).then((r) => frappe.msgprint(r.message));
+				},
+				__('Actions')
+			);
 		});
-	}
+	},
 });
