@@ -178,12 +178,18 @@ class Team(Document):
 		}
 
 	def suspend_sites(self, reason=None):
-		active_sites = [
-			d.name for d in frappe.db.get_all("Site", {"team": self.name, "status": "Active"})
-		]
-		for site in active_sites:
+		sites_to_suspend = self.get_sites_to_suspend()
+		for site in sites_to_suspend:
 			frappe.get_doc("Site", site).suspend(reason)
-		return active_sites
+		return sites_to_suspend
+
+	def get_sites_to_suspend(self):
+		return [
+			d.name
+			for d in frappe.db.get_all(
+				"Site", {"team": self.name, "status": "Active", "free": 0}
+			)
+		]
 
 	def unsuspend_sites(self, reason=None):
 		suspended_sites = [

@@ -16,7 +16,7 @@
   "billing",
   "plan",
   "team",
-  "free_site",
+  "free",
   "section_break_6",
   "apps",
   "enable_uptime_monitoring",
@@ -224,13 +224,15 @@
    "label": "Billing"
   },
   {
-   "fieldname": "free_site",
-   "fieldtype": "Data",
+   "default": "0",
+   "description": "If checked, this site's usage data won't be sent to Stripe",
+   "fieldname": "free",
+   "fieldtype": "Check",
    "label": "Free Site"
   }
  ],
  "links": [],
- "modified": "2020-05-16 17:28:22.920378",
+ "modified": "2020-05-17 19:52:40.558263",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
