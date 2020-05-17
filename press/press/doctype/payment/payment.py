@@ -33,12 +33,17 @@ class Payment(Document):
 		doc.submit()
 
 	def suspend_sites(self):
+		team = frappe.get_doc("Team", self.team)
+		if team.free_account or not team.get_sites_to_suspend():
+			# dont suspend sites if it is a free account or
+			# there are no sites to suspend
+			return
+
 		# suspend sites when payment failure occurs more than 1 time
 		if self.attempt_count > 1:
-			sites = frappe.get_doc("Team", self.team).suspend_sites(
-				reason="Suspended because of payment failure"
-			)
-			self.send_email_for_failed_payment(sites)
+			sites = team.suspend_sites(reason="Suspended because of payment failure")
+			if sites:
+				self.send_email_for_failed_payment(sites)
 		# send payment failure email when payment fails the first time
 		else:
 			self.send_email_for_failed_payment()

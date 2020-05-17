@@ -18,7 +18,7 @@ class PaymentLedgerEntry(Document):
 			currency, free_account = frappe.db.get_value(
 				"Team", self.team, ["currency", "free_account"]
 			)
-			free_site = frappe.db.get_value("Site", self.site, "free_site")
+			free_site = frappe.db.get_value("Site", self.site, "free")
 			self.currency = currency
 			self.free_usage = free_account or free_site or False
 
