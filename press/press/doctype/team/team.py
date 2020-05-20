@@ -84,21 +84,9 @@ class Team(Document):
 			self.stripe_customer_id = customer.id
 			self.save()
 
-	def update_billing_details_on_stripe(self):
-		res = frappe.db.get_all(
-			"Address",
-			filters=[
-				["Dynamic Link", "link_doctype", "=", "Team"],
-				["Dynamic Link", "link_name", "=", self.name],
-			],
-		)
-		address = frappe._dict()
-		country_code = ""
-		if res:
-			address = frappe.get_doc("Address", res[0].name)
-			country_code = frappe.db.get_value("Country", address.country, "code")
-
+	def update_billing_details_on_stripe(self, address):
 		stripe = get_stripe()
+		country_code = frappe.db.get_value("Country", address.country, "code")
 		stripe.Customer.modify(
 			self.stripe_customer_id,
 			address={
@@ -121,14 +109,28 @@ class Team(Document):
 				"expiry_month": payment_method["card"]["exp_month"],
 				"expiry_year": payment_method["card"]["exp_year"],
 				"team": self.name,
-				"address_line1": billing_details["address"]["line1"],
-				"address_city": billing_details["address"]["city"],
-				"address_state": billing_details["address"]["state"],
-				"address_postal_code": billing_details["address"]["postal_code"],
-				"address_country": billing_details["address"]["country"],
 			}
 		)
 		doc.insert()
+
+		# create address
+		country_code = billing_details["address"]["country"]
+		country = frappe.db.get_value("Country", {"code": country_code.lower()})
+		address = frappe.get_doc(
+			doctype="Address",
+			address_title=self.name,
+			address_line1=billing_details["address"]["line1"],
+			city=billing_details["address"]["city"],
+			state=billing_details["address"]["state"],
+			pincode=billing_details["address"]["postal_code"],
+			country=country,
+			links=[
+				{"link_doctype": self.doctype, "link_name": self.name, "link_title": self.name},
+				{"link_doctype": doc.doctype, "link_name": doc.name, "link_title": self.name},
+			],
+		)
+		address.insert()
+		self.db_set("billing_address", address.name)
 
 		# unsuspend sites on payment method added
 		self.unsuspend_sites(reason="Payment method added")
@@ -139,7 +141,7 @@ class Team(Document):
 			# when first payment method is added
 			# update address in Stripe Customer
 			# create subscription and allocate free credits
-			self.update_billing_details_on_stripe()
+			self.update_billing_details_on_stripe(address)
 			self.create_subscription()
 			self.allocate_free_credits()
 
@@ -230,12 +232,17 @@ class Team(Document):
 	def get_onboarding(self):
 		team_created = True
 		card_added = bool(self.default_payment_method)
+		address_added = bool(self.billing_address)
 		site_created = frappe.db.count("Site", {"team": self.name}) > 0
 		return {
-			"Create a Team": team_created,
-			"Add Billing Information": card_added,
-			"Create your first site": site_created,
-			"complete": team_created and card_added and site_created,
+			"Create a Team": {"done": team_created},
+			"Add Billing Information": {"done": card_added},
+			"Update Billing Address": {
+				"done": address_added,
+				"show": card_added and not address_added,
+			},
+			"Create your first site": {"done": site_created},
+			"complete": team_created and card_added and site_created and address_added,
 		}
 
 	def suspend_sites(self, reason=None):
