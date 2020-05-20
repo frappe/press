@@ -232,6 +232,32 @@ def onboarding():
 	return frappe.get_doc("Team", team).get_onboarding()
 
 
+@frappe.whitelist()
+def update_billing_information(address, city, state, postal_code, country):
+	team = frappe.get_doc("Team", get_current_team())
+	country_name = frappe.db.get_value("Country", {"code": country})
+	address = frappe.get_doc(
+		doctype="Address",
+		address_title=team.name,
+		address_line1=address,
+		city=city,
+		state=state,
+		pincode=postal_code,
+		country=country_name,
+		links=[
+			{"link_doctype": "Team", "link_name": team.name, "link_title": team.name},
+			{
+				"link_doctype": "Stripe Payment Method",
+				"link_name": team.default_payment_method,
+				"link_title": team.name,
+			},
+		],
+	)
+	address.insert(ignore_permissions=True)
+	team.db_set("billing_address", address.name)
+	team.update_billing_details_on_stripe(address)
+
+
 def redirect_to(location):
 	return build_response(
 		frappe.local.request.path,

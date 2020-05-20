@@ -17,6 +17,7 @@
   "country",
   "currency",
   "default_payment_method",
+  "billing_address",
   "free_credits_allocated",
   "column_break_12",
   "address_html"
@@ -106,11 +107,17 @@
    "fieldname": "free_credits_allocated",
    "fieldtype": "Check",
    "label": "Free Credits Allocated"
+  },
+  {
+   "fieldname": "billing_address",
+   "fieldtype": "Link",
+   "label": "Billing Address",
+   "options": "Address"
   }
  ],
  "links": [],
- "modified": "2020-05-20 18:13:19.305591",
- "modified_by": "faris@erpnext.com",
+ "modified": "2020-05-20 22:54:29.103308",
+ "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
  "owner": "Administrator",

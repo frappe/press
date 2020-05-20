@@ -54,9 +54,7 @@ export default {
 	methods: {
 		onChange(e, field) {
 			let value = e.target.value;
-			if (!this.checkRequired(field, value)) {
-				return;
-			}
+			this.checkRequired(field, value);
 			this.updateValue(field.fieldname, value);
 		},
 		updateValue(fieldname, value) {
