@@ -13,7 +13,9 @@
   "expiry_year",
   "stripe_customer_id",
   "stripe_payment_method_id",
-  "is_default"
+  "is_default",
+  "column_break_9",
+  "address_html"
  ],
  "fields": [
   {
@@ -64,11 +66,20 @@
    "fieldname": "is_default",
    "fieldtype": "Check",
    "label": "Is Default"
+  },
+  {
+   "fieldname": "column_break_9",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "address_html",
+   "fieldtype": "HTML",
+   "label": "Address HTML"
   }
  ],
  "links": [],
- "modified": "2020-04-10 12:37:07.048745",
- "modified_by": "Administrator",
+ "modified": "2020-05-20 17:17:05.467868",
+ "modified_by": "faris@erpnext.com",
  "module": "Press",
  "name": "Stripe Payment Method",
  "owner": "Administrator",

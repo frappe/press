@@ -16,7 +16,10 @@
   "stripe_customer_id",
   "country",
   "currency",
-  "default_payment_method"
+  "default_payment_method",
+  "free_credits_allocated",
+  "column_break_12",
+  "address_html"
  ],
  "fields": [
   {
@@ -88,11 +91,26 @@
    "fieldtype": "Check",
    "in_standard_filter": 1,
    "label": "Free Account"
+  },
+  {
+   "fieldname": "address_html",
+   "fieldtype": "HTML",
+   "label": "Address HTML"
+  },
+  {
+   "fieldname": "column_break_12",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "free_credits_allocated",
+   "fieldtype": "Check",
+   "label": "Free Credits Allocated"
   }
  ],
  "links": [],
- "modified": "2020-05-16 16:08:13.299962",
- "modified_by": "Administrator",
+ "modified": "2020-05-20 18:13:19.305591",
+ "modified_by": "faris@erpnext.com",
  "module": "Press",
  "name": "Team",
  "owner": "Administrator",
