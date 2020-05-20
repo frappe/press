@@ -2,4 +2,4 @@ press.patches.v0_0_1.site_history_to_site_activity
 press.patches.v0_0_1.user_account_to_team #6
 press.patches.v0_0_1.rename_transaction_currency_to_currency
 press.patches.v0_0_1.create_site_plan_change_log
-execute:frappe.db.update('Team', {'enabled': 1}, {'free_credits_allocated': 1})
+execute:frappe.db.update('Team', {'enabled': 1}, {'free_credits_allocated': 1}, update_modified=False)
