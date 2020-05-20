@@ -11,9 +11,9 @@ from datetime import datetime
 class Payment(Document):
 	def on_update(self):
 		if self.status == "Failed":
-			frappe.enqueue_doc(self.doctype, self.name, "suspend_sites")
+			frappe.enqueue_doc(self.doctype, self.name, "suspend_sites", enqueue_after_commit=True)
 		if self.status == "Paid":
-			frappe.enqueue_doc(self.doctype, self.name, "unsuspend_sites")
+			frappe.enqueue_doc(self.doctype, self.name, "unsuspend_sites", enqueue_after_commit=True)
 
 	def on_submit(self):
 		if self.status != "Paid":
