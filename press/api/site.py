@@ -148,18 +148,13 @@ def options_for_new():
 		order = {row.app: row.idx for row in group_doc.apps}
 		group["apps"] = sorted(group_apps, key=lambda x: order[x.name])
 
-	domain, trial_sites_count = frappe.db.get_value(
-		"Press Settings", "Press Settings", ["domain", "trial_sites_count"]
-	)
-	trial_sites_count = cint(trial_sites_count)
+	domain = frappe.db.get_value("Press Settings", "Press Settings", ["domain"])
 	team = get_current_team()
 	has_card = frappe.db.get_value("Team", team, "default_payment_method")
 
 	plans = get_plans()
-	# disable site creation if subscription not created and trial sites are exhausted
-	disable_site_creation = bool(
-		not has_card and frappe.db.count("Site", {"team": team}) >= trial_sites_count
-	)
+	# disable site creation if card not added
+	disable_site_creation = not has_card
 
 	return {
 		"domain": domain,
@@ -167,7 +162,6 @@ def options_for_new():
 		"plans": plans,
 		"has_card": has_card,
 		"disable_site_creation": disable_site_creation,
-		"trial_sites_count": trial_sites_count,
 	}
 
 

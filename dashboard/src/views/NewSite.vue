@@ -140,13 +140,11 @@
 					</p>
 					<div class="mt-6">
 						<Alert class="mb-4" v-if="!options.has_card">
-							You can only create {{ options.trial_sites_count }}
-							{{ $plural(options.trial_sites_count, 'site', 'sites') }} in trial
-							mode.
-							<router-link to="/welcome" class="border-b border-yellow-500">
-								Add your billing information
-							</router-link>
-							to create more sites.
+							You have not added your billing information.
+							<router-link to="/welcome" class="border-b border-yellow-500"
+								>Add your billing information</router-link
+							>
+							to create sites.
 						</Alert>
 						<SitePlansTable :plans="options.plans" v-model="selectedPlan" />
 					</div>
