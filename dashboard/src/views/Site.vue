@@ -124,16 +124,13 @@ export default {
 	},
 	activated() {
 		this.setupSocket();
-		this.$resources.site.once('onSuccess', () => {
-			if (this.$route.matched.length === 1) {
-				let path = this.$route.fullPath;
-				let tab = 'general';
-				if (['Pending', 'Installing'].includes(this.site.status)) {
-					tab = 'installing';
-				}
-				this.$router.replace(`${path}/${tab}`);
-			}
-		});
+		if (this.site) {
+			this.routeToGeneral();
+		} else {
+			this.$resources.site.once('onSuccess', () => {
+				this.routeToGeneral();
+			});
+		}
 	},
 	methods: {
 		isTabSelected(tab) {
@@ -165,6 +162,16 @@ export default {
 					this.$resources.site.reload();
 				}
 			});
+		},
+		routeToGeneral() {
+			if (this.$route.matched.length === 1) {
+				let path = this.$route.fullPath;
+				let tab = 'general';
+				if (['Pending', 'Installing'].includes(this.site.status)) {
+					tab = 'installing';
+				}
+				this.$router.replace(`${path}/${tab}`);
+			}
 		}
 	},
 	computed: {
