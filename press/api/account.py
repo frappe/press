@@ -44,7 +44,6 @@ def setup_account(
 		frappe.throw("Invalid or Expired Key")
 
 	# if the request is authenticated, set the user to Administrator
-	# current_user = frappe.session.user
 	frappe.set_user("Administrator")
 
 	team = account_request.team
@@ -63,7 +62,7 @@ def setup_account(
 		)
 		doc.insert(ignore_permissions=True, ignore_links=True)
 		doc.create_user_for_member(first_name, last_name, email, password, role)
-		doc.create_stripe_customer_and_subscription()
+		doc.create_stripe_customer()
 
 	frappe.local.login_manager.login_as(email)
 

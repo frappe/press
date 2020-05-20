@@ -25,14 +25,14 @@
 					<FeatherIcon
 						:name="step.done ? 'check' : step.icon"
 						:stroke-width="step.done ? 4 : 2"
-						class="w-4 h-4 my-1"
+						class="flex-shrink-0 w-4 h-4 my-1"
 					/>
 					<div class="ml-4 text-left">
 						<div class="font-medium">
 							{{ step.name }}
 						</div>
 						<div
-							class="text-sm"
+							class="mt-1 text-sm"
 							:class="step.done ? 'text-green-800 opacity-75' : 'text-gray-800'"
 						>
 							{{ step.description }}
@@ -106,7 +106,7 @@ export default {
 				{
 					name: 'Add Billing Information',
 					description:
-						'To start your subscripton you need to add your billing information',
+						"After adding your billing information you will get a free $25 credit. Sites you create will use your free credits first. If you don't like the experience you can cancel your subscription anytime.",
 					done: false,
 					icon: 'credit-card',
 					click: () => {

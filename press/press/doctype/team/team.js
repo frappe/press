@@ -3,6 +3,9 @@
 
 frappe.ui.form.on('Team', {
 	refresh: function (frm) {
+		frappe.dynamic_link = { doc: frm.doc, fieldname: 'name', doctype: 'Team' };
+		frappe.contacts.render_address_and_contact(frm);
+
 		frm.add_custom_button(
 			'Suspend Sites',
 			() => {

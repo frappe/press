@@ -9,9 +9,13 @@ from press.api.billing import get_stripe
 from frappe.model.document import Document
 from frappe import _
 from frappe.utils import get_fullname
+from frappe.contacts.address_and_contact import load_address_and_contact
 
 
 class Team(Document):
+	def onload(self):
+		load_address_and_contact(self)
+
 	def validate(self):
 		# validate duplicate team members
 		team_members = [row.user for row in self.team_members]
@@ -30,14 +34,29 @@ class Team(Document):
 		if not self.user and self.team_members:
 			self.user = self.team_members[0].user
 
+	def on_update(self):
+		if not self.is_new() and not self.default_payment_method:
+			# if default payment method is unset
+			# then set the is_default field for Stripe Payment Method to 0
+			payment_methods = frappe.db.get_list(
+				"Stripe Payment Method", {"team": self.name, "is_default": 1}
+			)
+			for pm in payment_methods:
+				doc = frappe.get_doc("Stripe Payment Method", pm.name)
+				doc.is_default = 0
+				doc.save()
+
 	def create_stripe_customer_and_subscription(self):
 		self.create_stripe_customer()
 		self.create_subscription()
 
-		# allocate free credits on signup
-		credits_field = "free_credits_inr" if self.currency == "INR" else "free_credits_usd"
-		credit_amount = frappe.db.get_single_value("Press Settings", credits_field)
-		self.allocate_credit_amount(credit_amount, remark="Free credits on signup")
+	def allocate_free_credits(self):
+		if not self.free_credits_allocated:
+			# allocate free credits on signup
+			credits_field = "free_credits_inr" if self.currency == "INR" else "free_credits_usd"
+			credit_amount = frappe.db.get_single_value("Press Settings", credits_field)
+			self.allocate_credit_amount(credit_amount, remark="Free credits on signup")
+			self.db_set("free_credits_allocated", 1)
 
 	def create_user_for_member(
 		self, first_name=None, last_name=None, email=None, password=None, role=None
@@ -62,25 +81,67 @@ class Team(Document):
 		if not self.stripe_customer_id:
 			stripe = get_stripe()
 			customer = stripe.Customer.create(email=self.user, name=get_fullname(self.user))
-			self.db_set("stripe_customer_id", customer.id)
+			self.stripe_customer_id = customer.id
+			self.save()
+
+	def update_billing_details_on_stripe(self):
+		res = frappe.db.get_all(
+			"Address",
+			filters=[
+				["Dynamic Link", "link_doctype", "=", "Team"],
+				["Dynamic Link", "link_name", "=", self.name],
+			],
+		)
+		address = frappe._dict()
+		country_code = ""
+		if res:
+			address = frappe.get_doc("Address", res[0].name)
+			country_code = frappe.db.get_value("Country", address.country, "code")
+
+		stripe = get_stripe()
+		stripe.Customer.modify(
+			self.stripe_customer_id,
+			address={
+				"line1": address.address_line1,
+				"postal_code": address.pincode,
+				"city": address.city,
+				"state": address.state,
+				"country": country_code.upper(),
+			},
+		)
 
 	def create_payment_method(self, payment_method, set_default=False):
+		billing_details = payment_method["billing_details"]
 		doc = frappe.get_doc(
 			{
 				"doctype": "Stripe Payment Method",
 				"stripe_payment_method_id": payment_method["id"],
 				"last_4": payment_method["card"]["last4"],
-				"name_on_card": payment_method["billing_details"]["name"],
+				"name_on_card": billing_details["name"],
 				"expiry_month": payment_method["card"]["exp_month"],
 				"expiry_year": payment_method["card"]["exp_year"],
 				"team": self.name,
+				"address_line1": billing_details["address"]["line1"],
+				"address_city": billing_details["address"]["city"],
+				"address_state": billing_details["address"]["state"],
+				"address_postal_code": billing_details["address"]["postal_code"],
+				"address_country": billing_details["address"]["country"],
 			}
 		)
 		doc.insert()
+
 		# unsuspend sites on payment method added
 		self.unsuspend_sites(reason="Payment method added")
 		if set_default:
 			doc.set_default()
+
+		if frappe.db.count("Stripe Payment Method", {"team": self.name}) == 1:
+			# when first payment method is added
+			# update address in Stripe Customer
+			# create subscription and allocate free credits
+			self.update_billing_details_on_stripe()
+			self.create_subscription()
+			self.allocate_free_credits()
 
 	def get_payment_methods(self):
 		payment_methods = frappe.db.get_all(
