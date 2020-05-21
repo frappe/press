@@ -87,6 +87,11 @@ def sites_with_available_update():
 	return sites
 
 
+def is_update_available_for_site(name):
+	sites = sites_with_available_update()
+	return find(sites, lambda x: x.name == name)
+
+
 def schedule_updates():
 	sites = sites_with_available_update()
 	sites = list(filter(can_update, sites))[:4]

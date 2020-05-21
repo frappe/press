@@ -43,6 +43,11 @@
 						{{ site.modified }}
 					</FormatDate>
 					<span class="text-right">
+						<Badge
+							:status="'Update Available'"
+							v-if="site.update_available"
+							class="mr-4"
+						/>
 						<a
 							v-if="site.status === 'Active' || site.status === 'Updating'"
 							:href="`https://${site.name}`"

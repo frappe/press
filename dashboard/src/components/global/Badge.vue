@@ -22,7 +22,8 @@ export default {
 					Active: 'green',
 					Broken: 'red',
 					Updating: 'blue',
-					Installing: 'orange'
+					Installing: 'orange',
+					'Update Available': 'blue'
 				}[this.status];
 			}
 			return {
