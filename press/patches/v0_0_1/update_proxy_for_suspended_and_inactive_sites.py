@@ -3,9 +3,11 @@
 
 from __future__ import unicode_literals
 import frappe
+from frappe.utils.fixtures import sync_fixtures
 
 
 def execute():
+	sync_fixtures("press")
 	sites = frappe.get_all(
 		"Site",
 		fields=["name", "status"],
