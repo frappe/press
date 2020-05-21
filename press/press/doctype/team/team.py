@@ -234,7 +234,9 @@ class Team(Document):
 		card_added = bool(self.default_payment_method)
 		address_added = bool(self.billing_address)
 		site_created = frappe.db.count("Site", {"team": self.name}) > 0
-		complete = self.free_account or (team_created and card_added and site_created and address_added)
+		complete = self.free_account or (
+			team_created and card_added and site_created and address_added
+		)
 		return {
 			"Create a Team": {"done": team_created},
 			"Add Billing Information": {"done": card_added},
