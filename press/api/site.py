@@ -185,11 +185,14 @@ def get_plans():
 
 @frappe.whitelist()
 def all():
-	team = get_current_team()
+	if frappe.session.data.user_type == "System User":
+		filters = {}
+	else:
+		filters = {"team": get_current_team()}
 	sites = frappe.get_list(
 		"Site",
 		fields=["name", "status", "modified"],
-		filters={"team": team},
+		filters=filters,
 		order_by="creation desc",
 	)
 	return sites
