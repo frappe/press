@@ -52,6 +52,14 @@ class Site(Document):
 		if not self.plan:
 			frappe.throw("Cannot create site without plan")
 
+		if self.team and frappe.db.get_value("Team", self.team, "free_account"):
+			# allow creating sites for free accounts
+			return
+
+		if self.team and not frappe.db.get_value("Team", self.team, "default_payment_method"):
+			# dont allow site creation if card not added
+			frappe.throw("Cannot create site without a subscription")
+
 		if self.has_subscription():
 			return
 

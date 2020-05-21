@@ -138,7 +138,10 @@
 						site.
 					</p>
 					<div class="mt-6">
-						<Alert class="mb-4" v-if="!options.has_card">
+						<Alert
+							class="mb-4"
+							v-if="!options.free_account && !options.has_card"
+						>
 							You have not added your billing information.
 							<router-link to="/welcome" class="border-b border-yellow-500"
 								>Add your billing information</router-link
@@ -323,6 +326,9 @@ export default {
 			}
 		},
 		disablePlan(plan) {
+			if (this.options.free_account) {
+				return false;
+			}
 			if (this.options.has_card) {
 				return false;
 			}
