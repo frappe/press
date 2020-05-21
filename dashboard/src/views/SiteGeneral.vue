@@ -24,6 +24,20 @@
 			</SectionCard>
 		</Section>
 		<Section
+			v-if="site.status === 'Active' && site.update_available"
+			class="mt-10"
+			title="Update Available"
+			description="Schedule an update for your site"
+		>
+			<Button
+				@click="$resources.scheduleUpdate.fetch()"
+				:disabled="$resources.scheduleUpdate.loading"
+				type="primary"
+			>
+				Schedule Update
+			</Button>
+		</Section>
+		<Section
 			class="mt-10"
 			title="Installed apps"
 			description="Apps installed on your site"
@@ -80,6 +94,14 @@ export default {
 					if (sid) {
 						window.open(`https://${this.site.name}/desk?sid=${sid}`, '_blank');
 					}
+				}
+			};
+		},
+		scheduleUpdate() {
+			return {
+				method: 'press.api.site.update',
+				params: {
+					name: this.site.name
 				}
 			};
 		}
