@@ -150,7 +150,7 @@ def options_for_new():
 
 	domain = frappe.db.get_value("Press Settings", "Press Settings", ["domain"])
 	team = get_current_team()
-	has_card = frappe.db.get_value("Team", team, "default_payment_method")
+	has_card, free_account = frappe.db.get_value("Team", team, ["default_payment_method", "free_account"])
 
 	plans = get_plans()
 	# disable site creation if card not added
@@ -161,6 +161,7 @@ def options_for_new():
 		"groups": sorted(groups, key=lambda x: not x.default),
 		"plans": plans,
 		"has_card": has_card,
+		"free_account": free_account,
 		"disable_site_creation": disable_site_creation,
 	}
 
