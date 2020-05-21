@@ -12,7 +12,7 @@ from frappe.model.document import Document
 from press.press.doctype.agent_job.agent_job import Agent
 from frappe.utils.password import get_decrypted_password
 from press.press.doctype.site_activity.site_activity import log_site_activity
-from frappe.frappeclient import FrappeClient, FrappeException
+from frappe.frappeclient import FrappeClient
 from frappe.utils import cint
 from press.api.site import check_dns
 from frappe.core.utils import find

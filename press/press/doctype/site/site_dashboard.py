@@ -2,7 +2,6 @@
 # Proprietary License. See license.txt
 
 from __future__ import unicode_literals
-import frappe
 from frappe import _
 
 
@@ -12,7 +11,7 @@ def get_data():
 		"transactions": [
 			{
 				"label": _("Related Documents"),
-				"items": ["Site Domain", "Site Activity", "Site Plan Change",],
+				"items": ["Site Domain", "Site Activity", "Site Plan Change"],
 			},
 			{
 				"label": _("Logs"),

@@ -60,7 +60,6 @@ def on_session_creation():
 	onboarding_complete = frappe.cache().hget("onboarding_complete", frappe.session.user)
 	if not onboarding_complete:
 		team = get_default_team_for_user(frappe.session.user)
-		team_doc = frappe.get_doc("Team", team)
 		onboarding = frappe.get_doc("Team", team).get_onboarding()
 		onboarding_complete = onboarding["complete"]
 
