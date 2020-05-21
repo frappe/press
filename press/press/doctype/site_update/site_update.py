@@ -10,6 +10,7 @@ from frappe.model.document import Document
 from frappe.core.utils import find
 import pytz
 from press.agent import Agent
+from press.utils import log_error
 
 
 class SiteUpdate(Document):
@@ -69,15 +70,32 @@ def trigger_recovery_job(site_update_name):
 	frappe.db.set_value("Site Update", site_update_name, "recover_job", job.name)
 
 
-def schedule_updates(self):
-	# TODO: Handle scheduled updates
-	return
-	sites = frappe.get_all(
-		"Site", fields=["name", "timezone"], filters={"status": "Active"}
+def sites_with_available_update():
+	sources = frappe.get_all("Deploy Candidate Difference", fields=["source"])
+	source_names = [source.source for source in sources]
+	benches = frappe.get_all(
+		"Bench",
+		filters={"status": "Active", "candidate": ("in", source_names)},
+		fields=["name"],
 	)
-	sites = list(filter(can_update, sites))[10]
+	bench_names = [bench.name for bench in benches]
+	sites = frappe.get_all(
+		"Site",
+		filters={"status": "Active", "bench": ("in", bench_names)},
+		fields=["name", "timezone"],
+	)
+	return sites
+
+
+def schedule_updates():
+	sites = sites_with_available_update()
+	sites = list(filter(can_update, sites))[:4]
 	for site in sites:
-		site.schedule_update()
+		try:
+			site = frappe.get_doc("Site", site.name)
+			site.schedule_update()
+		except Exception:
+			log_error("Site Update Exception", site=site)
 
 
 def can_update(site):
