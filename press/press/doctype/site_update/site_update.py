@@ -103,7 +103,7 @@ def can_update(site):
 	timezone = site.timezone or "Asia/Kolkata"
 	site_timezone = pytz.timezone(timezone)
 	site_time = server_time.astimezone(site_timezone)
-	deploy_hours = [1, 2, 3, 4]
+	deploy_hours = frappe.get_hooks("deploy_hours")
 
 	if site_time.hour in deploy_hours:
 		return True

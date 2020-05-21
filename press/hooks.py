@@ -114,6 +114,8 @@ scheduler_events = {
 	},
 }
 
+deploy_hours = [1, 2, 3, 4]
+
 fixtures = [
 	"Agent Job Type",
 	"Plan",
