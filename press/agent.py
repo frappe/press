@@ -224,6 +224,17 @@ class Agent:
 			upstream=server,
 		)
 
+	def update_site_status(self, server, site, status):
+		data = {"status": status}
+		ip = frappe.db.get_value("Server", server, "ip")
+		return self.create_agent_job(
+			"Update Site Status",
+			f"proxy/upstreams/{ip}/sites/{site}/status",
+			data=data,
+			site=site,
+			upstream=server,
+		)
+
 	def get(self, path):
 		return self.request("GET", path)
 

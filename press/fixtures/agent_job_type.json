@@ -627,5 +627,36 @@
     "step_name": "Enable Scheduler"
    }
   ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2020-05-21 14:43:42.827772",
+  "name": "Update Site Status",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "request_method": "POST",
+  "request_path": "/proxy/upstreams/{upstream}/sites/{site}/status",
+  "steps": [
+   {
+    "parent": "Update Site Status",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Update Site File"
+   },
+   {
+    "parent": "Update Site Status",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Generate NGINX Configuration"
+   },
+   {
+    "parent": "Update Site Status",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
+   }
+  ]
  }
 ]

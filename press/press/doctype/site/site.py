@@ -193,24 +193,33 @@ class Site(Document):
 		log_site_activity(self.name, "Deactivate Site")
 		self.status = "Inactive"
 		self.save()
+		self.update_site_status_on_proxy("deactivated")
 
 	def activate(self):
 		self.update_site_config({"maintenance_mode": 0})
 		log_site_activity(self.name, "Activate Site")
 		self.status = "Active"
 		self.save()
+		self.update_site_status_on_proxy("activated")
 
 	def suspend(self, reason=None):
 		self.update_site_config({"maintenance_mode": 1})
 		log_site_activity(self.name, "Suspend Site", reason)
 		self.status = "Suspended"
 		self.save()
+		self.update_site_status_on_proxy("suspended")
 
 	def unsuspend(self, reason=None):
 		self.update_site_config({"maintenance_mode": 0})
 		log_site_activity(self.name, "Unsuspend Site", reason)
 		self.status = "Active"
 		self.save()
+		self.update_site_status_on_proxy("activated")
+
+	def update_site_status_on_proxy(self, status):
+		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
+		agent = Agent(proxy_server, server_type="Proxy Server")
+		agent.update_site_status(self.server, self.name, status)
 
 	def _create_initial_site_plan_change(self):
 		frappe.get_doc(
