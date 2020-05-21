@@ -22,7 +22,6 @@
 							class="z-10 w-full rounded-r-none form-input focus:bg-white"
 							type="text"
 							v-model="siteName"
-							@change="checkIfValid"
 							placeholder="subdomain"
 							ref="siteName"
 						/>
@@ -229,11 +228,21 @@ export default {
 			return plan;
 		});
 		this.selectedGroup = this.options.groups.find(g => g.default).name;
+		if (this.$route.query.domain) {
+			let domain = this.$route.query.domain.split('.');
+			if (domain) {
+				this.siteName = domain[0];
+			}
+			this.$router.replace({});
+		}
 	},
 	watch: {
 		selectedGroup() {
 			this.selectedApps = [];
 			this.updateApps();
+		},
+		siteName: function() {
+			this.checkIfValid();
 		}
 	},
 	methods: {
