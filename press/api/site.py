@@ -102,7 +102,21 @@ def running_jobs(name):
 def backups(name):
 	backups = frappe.get_all(
 		"Site Backup",
-		fields=["name", "`database`", "size", "url", "creation", "status"],
+		fields=[
+			"name",
+			"with_files",
+			"database_file",
+			"database_size",
+			"database_url",
+			"private_file",
+			"private_size",
+			"private_url",
+			"public_file",
+			"public_size",
+			"public_url",
+			"creation",
+			"status",
+		],
 		filters={"site": name},
 		limit=5,
 	)
@@ -369,8 +383,8 @@ def update(name):
 
 @frappe.whitelist()
 @protected()
-def backup(name):
-	frappe.get_doc("Site", name).backup()
+def backup(name, with_files=False):
+	frappe.get_doc("Site", name).backup(with_files)
 
 
 @frappe.whitelist()

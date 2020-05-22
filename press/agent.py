@@ -173,10 +173,12 @@ class Agent:
 			site=site.name,
 		)
 
-	def backup_site(self, site):
+	def backup_site(self, site, with_files=False):
+		data = {"with_files": with_files}
 		return self.create_agent_job(
 			"Backup Site",
 			f"benches/{site.bench}/sites/{site.name}/backup",
+			data=data,
 			bench=site.bench,
 			site=site.name,
 		)

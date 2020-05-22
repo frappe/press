@@ -113,13 +113,15 @@ class Site(Document):
 		self.status = "Pending"
 		self.save()
 
-	def backup(self):
+	def backup(self, with_files=False):
 		if frappe.db.count(
 			"Site Backup", {"site": self.name, "status": ("in", ["Running", "Pending"])}
 		):
 			raise Exception("Too many pending backups")
 		log_site_activity(self.name, "Backup")
-		frappe.get_doc({"doctype": "Site Backup", "site": self.name}).insert()
+		frappe.get_doc(
+			{"doctype": "Site Backup", "site": self.name, "with_files": with_files}
+		).insert()
 
 	def schedule_update(self):
 		log_site_activity(self.name, "Update")

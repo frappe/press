@@ -6,41 +6,54 @@
 		>
 			<SectionCard class="sm:w-2/3">
 				<div v-if="backups.data.length">
-					<a
-						:href="backup.url"
-						target="_blank"
+					<div
 						class="block px-6 py-4 hover:bg-gray-50"
 						v-for="backup in backups.data"
-						:key="backup.url"
+						:key="backup.database_url"
 					>
 						<div class="w-full">
 							<a
-								class="flex items-baseline justify-between w-full font-semibold"
+								:href="backup.database_url"
+								target="_blank"
+								class="flex items-baseline justify-between w-full font-semibold my-1"
 							>
-								<span>
-									{{ backup.database || 'Performing backup..' }}
-								</span>
-								<span class="font-normal text-gray-700" v-if="backup.size">
-									{{ formatBytes(backup.size) }}
-								</span>
+								<span>{{ backup.database_file || 'Performing backup..' }}</span>
+								<span
+									class="font-normal text-gray-700"
+									v-if="backup.database_size"
+								>{{ formatBytes(backup.database_size) }}</span>
 							</a>
-							<div class="text-sm text-gray-600" v-if="backup.database">
+							<a
+								:href="backup.private_url"
+								target="_blank"
+								class="flex items-baseline justify-between w-full font-semibold my-1"
+								v-if="backup.private_file"
+							>
+								<span>{{ backup.private_file }}</span>
+								<span class="font-normal text-gray-700">{{ formatBytes(backup.private_size) }}</span>
+							</a>
+							<a
+								:href="backup.public_url"
+								target="_blank"
+								class="flex items-baseline justify-between w-full font-semibold my-1"
+								v-if="backup.public_file"
+							>
+								<span>{{ backup.public_file }}</span>
+								<span class="font-normal text-gray-700">{{ formatBytes(backup.public_size) }}</span>
+							</a>
+							<div class="text-sm text-gray-600" v-if="backup.database_file">
 								<FormatDate>{{ backup.creation }}</FormatDate>
 							</div>
 						</div>
-					</a>
+					</div>
 				</div>
-				<div class="px-6 mt-2 text-gray-600" v-else>
-					No backups found
-				</div>
+				<div class="px-6 mt-2 text-gray-600" v-else>No backups found</div>
 				<div class="px-6 mt-4 mb-2">
 					<Button
 						type="primary"
 						@click="$resources.scheduleBackup.fetch()"
 						:disabled="$resources.scheduleBackup.loading"
-					>
-						Schedule Backup
-					</Button>
+					>Schedule Backup</Button>
 				</div>
 			</SectionCard>
 		</Section>
@@ -66,7 +79,8 @@ export default {
 			return {
 				method: 'press.api.site.backup',
 				params: {
-					name: this.site.name
+					name: this.site.name,
+					with_files: true
 				},
 				onSuccess: () => {
 					this.$resources.backups.reload();
