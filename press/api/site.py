@@ -52,8 +52,6 @@ def new(site):
 			"subdomain": site["name"],
 			"bench": bench,
 			"apps": [{"app": app} for app in site["apps"]],
-			"enable_scheduled_backups": True,
-			"enable_uptime_monitoring": True,
 			"team": team,
 			"plan": site["plan"],
 			"database_file": site["files"]["database"],

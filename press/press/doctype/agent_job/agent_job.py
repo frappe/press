@@ -212,15 +212,13 @@ def collect_site_uptime():
 
 def schedule_backups():
 	sites = frappe.get_all(
-		"Site",
-		fields=["name", "server", "bench"],
-		filters={"status": "Active", "enable_scheduled_backups": True},
+		"Site", fields=["name", "server", "bench"], filters={"status": "Active"},
 	)
 	for site in sites:
 		try:
 			frappe.get_doc("Site", site.name).backup()
 		except Exception:
-			pass
+			log_error("Site Backup Exception", site=site)
 
 
 def poll_pending_jobs():
