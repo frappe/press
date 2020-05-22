@@ -11,6 +11,6 @@ def execute():
 		"""
 		UPDATE `tabSite Backup`
 		SET `database_file` = `database`, `database_url` = `url`, `database_size` = `size`
-		WHERE `database_file` IS NOT NULL
+		WHERE `database` IS NOT NULL
 	"""
 	)
