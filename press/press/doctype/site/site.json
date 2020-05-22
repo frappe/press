@@ -19,8 +19,6 @@
   "free",
   "section_break_6",
   "apps",
-  "enable_uptime_monitoring",
-  "enable_scheduled_backups",
   "database_section",
   "database_type",
   "database_name",
@@ -89,18 +87,6 @@
   {
    "fieldname": "section_break_6",
    "fieldtype": "Section Break"
-  },
-  {
-   "default": "0",
-   "fieldname": "enable_uptime_monitoring",
-   "fieldtype": "Check",
-   "label": "Enable Uptime Monitoring"
-  },
-  {
-   "default": "0",
-   "fieldname": "enable_scheduled_backups",
-   "fieldtype": "Check",
-   "label": "Enable Scheduled Backups"
   },
   {
    "default": "{}",
@@ -232,7 +218,7 @@
   }
  ],
  "links": [],
- "modified": "2020-05-17 19:52:40.558263",
+ "modified": "2020-05-22 13:03:17.411929",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
