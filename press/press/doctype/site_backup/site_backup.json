@@ -8,19 +8,33 @@
   "status",
   "site",
   "job",
+  "with_files",
   "database",
   "size",
-  "url"
+  "url",
+  "data_7",
+  "database_file",
+  "database_url",
+  "database_size",
+  "data_12",
+  "public_file",
+  "public_url",
+  "public_size",
+  "column_break_16",
+  "private_file",
+  "private_url",
+  "private_size"
  ],
  "fields": [
   {
    "fieldname": "site",
    "fieldtype": "Link",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Site",
    "options": "Site",
-   "read_only": 1,
-   "reqd": 1
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "default": "Pending",
@@ -56,10 +70,85 @@
    "fieldtype": "Data",
    "label": "url",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "with_files",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "With Files",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "database_file",
+   "fieldtype": "Data",
+   "label": "Database File",
+   "read_only": 1
+  },
+  {
+   "fieldname": "database_size",
+   "fieldtype": "Data",
+   "label": "Database Size",
+   "read_only": 1
+  },
+  {
+   "fieldname": "database_url",
+   "fieldtype": "Data",
+   "label": "Database URL",
+   "read_only": 1
+  },
+  {
+   "fieldname": "public_file",
+   "fieldtype": "Data",
+   "label": "Public File",
+   "read_only": 1
+  },
+  {
+   "fieldname": "public_size",
+   "fieldtype": "Data",
+   "label": "Public Size",
+   "read_only": 1
+  },
+  {
+   "fieldname": "public_url",
+   "fieldtype": "Data",
+   "label": "Public URL",
+   "read_only": 1
+  },
+  {
+   "fieldname": "private_file",
+   "fieldtype": "Data",
+   "label": "Private File",
+   "read_only": 1
+  },
+  {
+   "fieldname": "private_size",
+   "fieldtype": "Data",
+   "label": "Private Size",
+   "read_only": 1
+  },
+  {
+   "fieldname": "private_url",
+   "fieldtype": "Data",
+   "label": "Private URL",
+   "read_only": 1
+  },
+  {
+   "fieldname": "data_7",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "data_12",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_16",
+   "fieldtype": "Column Break"
   }
  ],
  "links": [],
- "modified": "2020-02-29 22:49:15.547215",
+ "modified": "2020-05-22 13:36:40.263742",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Backup",
