@@ -117,7 +117,7 @@ def backups(name):
 			"creation",
 			"status",
 		],
-		filters={"site": name},
+		filters={"site": name, "status": ("!=", "Failure")},
 		limit=5,
 	)
 	return backups
