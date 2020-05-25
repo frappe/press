@@ -11,3 +11,4 @@ def execute():
 	sites = frappe.get_all("Site", filters={"status": "Archived"})
 	for site in sites:
 		release_name(site.name)
+		frappe.db.commit()
