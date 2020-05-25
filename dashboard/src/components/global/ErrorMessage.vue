@@ -3,9 +3,8 @@
 		v-if="error"
 		class="text-sm text-red-600 whitespace-pre-line"
 		role="alert"
-	>
-		{{ error }}
-	</div>
+		v-html="error"
+	></div>
 </template>
 
 <script>
