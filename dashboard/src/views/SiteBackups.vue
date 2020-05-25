@@ -21,7 +21,9 @@
 								<span
 									class="font-normal text-gray-700"
 									v-if="backup.database_size"
-								>{{ formatBytes(backup.database_size) }}</span>
+								>
+									{{ formatBytes(backup.database_size) }}
+								</span>
 							</a>
 							<a
 								:href="backup.private_url"
@@ -30,7 +32,9 @@
 								v-if="backup.private_file"
 							>
 								<span>{{ backup.private_file }}</span>
-								<span class="font-normal text-gray-700">{{ formatBytes(backup.private_size) }}</span>
+								<span class="font-normal text-gray-700">{{
+									formatBytes(backup.private_size)
+								}}</span>
 							</a>
 							<a
 								:href="backup.public_url"
@@ -39,7 +43,9 @@
 								v-if="backup.public_file"
 							>
 								<span>{{ backup.public_file }}</span>
-								<span class="font-normal text-gray-700">{{ formatBytes(backup.public_size) }}</span>
+								<span class="font-normal text-gray-700">{{
+									formatBytes(backup.public_size)
+								}}</span>
 							</a>
 							<div class="text-sm text-gray-600" v-if="backup.database_file">
 								<FormatDate>{{ backup.creation }}</FormatDate>
@@ -53,7 +59,8 @@
 						type="primary"
 						@click="$resources.scheduleBackup.fetch()"
 						:disabled="$resources.scheduleBackup.loading"
-					>Schedule Backup</Button>
+						>Schedule Backup</Button
+					>
 				</div>
 			</SectionCard>
 		</Section>
