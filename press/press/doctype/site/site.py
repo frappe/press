@@ -9,6 +9,7 @@ import re
 import frappe
 import requests
 from frappe.model.document import Document
+from frappe.model.naming import append_number_if_name_exists
 from press.press.doctype.agent_job.agent_job import Agent
 from frappe.utils.password import get_decrypted_password
 from press.press.doctype.site_activity.site_activity import log_site_activity
@@ -244,6 +245,12 @@ class Site(Document):
 		).insert(ignore_permissions=True)
 
 
+def release_name(name):
+	new_name = f"{name}.archived"
+	new_name = append_number_if_name_exists("Site", new_name, separator=".")
+	frappe.rename_doc("Site", name, new_name)
+
+
 def process_new_site_job_update(job):
 	other_job_types = {
 		"Add Site to Upstream": ("New Site", "New Site from Backup"),
@@ -293,6 +300,8 @@ def process_archive_site_job_update(job):
 	site_status = frappe.get_value("Site", job.site, "status")
 	if updated_status != site_status:
 		frappe.db.set_value("Site", job.site, "status", updated_status)
+		if updated_status == "Archived":
+			release_name(job.site)
 
 
 def process_install_app_site_job_update(job):
