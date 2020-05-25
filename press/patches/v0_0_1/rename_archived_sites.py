@@ -3,7 +3,7 @@
 
 from __future__ import unicode_literals
 import frappe
-from press.doctype.site.site import release_name
+from press.press.doctype.site.site import release_name
 
 
 def execute():
