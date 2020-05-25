@@ -533,7 +533,7 @@ def upload_backup():
 		file = frappe.get_doc(
 			{
 				"doctype": "File",
-				"folder": "Home/Attachments",
+				"folder": "Home/Backup Uploads",
 				"file_name": filename,
 				"is_private": 1,
 				"content": content,

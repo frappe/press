@@ -6,3 +6,4 @@ execute:frappe.db.update('Team', {'enabled': 1}, {'free_credits_allocated': 1}, 
 press.patches.v0_0_1.update_proxy_for_suspended_and_inactive_sites
 press.patches.v0_0_1.rename_site_backup_fields # 2020-05-22
 press.patches.v0_0_1.rename_archived_sites
+press.patches.v0_0_1.create_backup_uploads_folder
