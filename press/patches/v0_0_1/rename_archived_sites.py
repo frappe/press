@@ -8,6 +8,6 @@ from press.press.doctype.site.site import release_name
 
 def execute():
 	frappe.reload_doc("press", "doctype", "site")
-	sites = frappe.get_all("Site", {"status", "Archived"})
+	sites = frappe.get_all("Site", filters={"status": "Archived"})
 	for site in sites:
 		release_name(site.name)
