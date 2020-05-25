@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_rename": 1,
  "creation": "2019-12-09 12:35:51.941522",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -218,7 +219,7 @@
   }
  ],
  "links": [],
- "modified": "2020-05-22 13:03:17.411929",
+ "modified": "2020-05-25 11:14:58.599577",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

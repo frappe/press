@@ -412,7 +412,9 @@ def restore(name, files):
 
 @frappe.whitelist()
 def exists(subdomain):
-	return bool(frappe.db.exists("Site", {"subdomain": subdomain}))
+	return bool(
+		frappe.db.exists("Site", {"subdomain": subdomain, "status": ("!=", "Archived")})
+	)
 
 
 @frappe.whitelist()
