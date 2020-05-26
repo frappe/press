@@ -229,13 +229,37 @@ class Team(Document):
 			return amount
 		return 0
 
+	def is_partner_and_has_enough_credits(self):
+		return self.erpnext_partner and self.get_available_credits() > 0
+
+	def can_create_site(self):
+		why = ""
+		allow = (True, "")
+
+		if self.free_account:
+			return allow
+
+		if self.is_partner_and_has_enough_credits():
+			return allow
+		else:
+			why = "Cannot create site due to insufficient credits"
+
+		if self.default_payment_method:
+			return allow
+		else:
+			why = "Cannot create site without subscription"
+
+		return (False, why)
+
 	def get_onboarding(self):
 		team_created = True
 		card_added = bool(self.default_payment_method)
 		address_added = bool(self.billing_address)
 		site_created = frappe.db.count("Site", {"team": self.name}) > 0
-		complete = self.free_account or (
-			team_created and card_added and site_created and address_added
+		complete = (
+			self.free_account
+			or self.erpnext_partner
+			or (team_created and card_added and site_created and address_added)
 		)
 		return {
 			"Create a Team": {"done": team_created},
