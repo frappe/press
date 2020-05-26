@@ -97,7 +97,7 @@ def set_country(country):
 	doc.save()
 
 	if not doc.has_subscription():
-		doc.create_stripe_customer_and_subscription()
+		doc.create_stripe_customer()
 
 
 def get_account_request_from_key(key):

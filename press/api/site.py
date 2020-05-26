@@ -166,20 +166,19 @@ def options_for_new():
 
 	domain = frappe.db.get_value("Press Settings", "Press Settings", ["domain"])
 	team = get_current_team()
-	has_card, free_account = frappe.db.get_value(
-		"Team", team, ["default_payment_method", "free_account"]
-	)
 
-	plans = get_plans()
+	team_doc = frappe.get_doc("Team", team)
 	# disable site creation if card not added
-	disable_site_creation = not has_card
+	disable_site_creation = not team_doc.default_payment_method and not team_doc.erpnext_partner
+	allow_partner = team_doc.is_partner_and_has_enough_credits()
 
 	return {
 		"domain": domain,
 		"groups": sorted(groups, key=lambda x: not x.default),
-		"plans": plans,
-		"has_card": has_card,
-		"free_account": free_account,
+		"plans": get_plans(),
+		"has_card": team_doc.default_payment_method,
+		"free_account": team_doc.free_account,
+		"allow_partner": allow_partner,
 		"disable_site_creation": disable_site_creation,
 	}
 

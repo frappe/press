@@ -40,6 +40,9 @@ class Site(Document):
 		if self.is_new() and frappe.session.user != "Administrator":
 			self.can_create_site()
 
+			if not self.plan:
+				frappe.throw("Cannot create site without plan")
+
 	def install_app(self, app):
 		if not find(self.apps, lambda x: x.app == app):
 			log_site_activity(self.name, "Install App")
@@ -50,34 +53,12 @@ class Site(Document):
 			self.save()
 
 	def can_create_site(self):
-		if not self.plan:
-			frappe.throw("Cannot create site without plan")
-
-		if self.team and frappe.db.get_value("Team", self.team, "free_account"):
-			# allow creating sites for free accounts
-			return
-
-		if self.team and not frappe.db.get_value("Team", self.team, "default_payment_method"):
-			# dont allow site creation if card not added
-			frappe.throw("Cannot create site without a subscription")
-
-		if self.has_subscription():
-			return
-
-		# if a site is created with a plan without trial_period, throw
-		trial_period = frappe.db.get_value("Plan", self.plan, ["trial_period"])
-		if not trial_period:
-			frappe.throw("Cannot create site without subscription")
-
-		# if trial sites reach their limit, throw
-		trial_sites_count = cint(
-			frappe.db.get_single_value("Press Settings", "trial_sites_count")
-		)
-		if frappe.db.count("Site", {"team": self.team}) >= trial_sites_count:
-			frappe.throw("Cannot create site without subscription")
-
-	def has_subscription(self):
-		return bool(frappe.db.get_value("Subscription", {"team": self.team}))
+		if self.team:
+			# validate site creation for team
+			team = frappe.get_doc("Team", self.team)
+			[allow_creation, why] = team.can_create_site()
+			if not allow_creation:
+				frappe.throw(why)
 
 	def after_insert(self):
 		# create a site plan change log
