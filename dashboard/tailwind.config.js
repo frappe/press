@@ -115,7 +115,12 @@ module.exports = {
 					}
 				}
 			}
-		})
+		}),
+		container: {
+			padding: {
+				xl: '5rem'
+			}
+		}
 	},
 	plugins: [require('@tailwindcss/ui')],
 	purge: {
