@@ -50,7 +50,10 @@ export default {
 				) {
 					this.installingJob = data;
 
-					if (data.status === 'Success') {
+					if (
+						data.status === 'Success' &&
+						this.$route.path.startsWith(`/sites/${this.site.name}`)
+					) {
 						this.installingJob = null;
 						this.$router.replace(`/sites/${this.site.name}`);
 						window.location.reload();
