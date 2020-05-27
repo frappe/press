@@ -2,13 +2,27 @@
 	<div class="h-full pt-4 sm:pt-16">
 		<div>
 			<div class="flex">
-				<h1 class="sm:mx-auto font-bold text-2xl px-6 py-4">Frappe Cloud</h1>
+				<FrappeCloudLogo class="w-auto h-4 mx-auto" />
 			</div>
 			<div
-				class="sm:mt-6 mx-auto sm:w-112 py-12 px-6 sm:px-12 sm:rounded-md bg-white sm:shadow-lg"
+				class="px-4 py-8 mx-auto bg-white sm:mt-6 sm:w-0112 sm:w-96 sm:px-10 sm:rounded-lg sm:shadow-xl"
 			>
+				<div class="mb-6 text-center">
+					<span class="text-lg">{{ title }}</span>
+				</div>
 				<slot></slot>
 			</div>
 		</div>
 	</div>
 </template>
+
+<script>
+import FrappeCloudLogo from '@/components/FrappeCloudLogo';
+export default {
+	name: 'LoginBox',
+	props: ['title'],
+	components: {
+		FrappeCloudLogo
+	}
+};
+</script>

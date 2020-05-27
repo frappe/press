@@ -9,7 +9,7 @@
 					<a
 						:href="backup.url"
 						target="_blank"
-						class="block px-6 py-4 hover:bg-gray-50"
+						class="block px-6 py-4 text-base hover:bg-gray-50"
 						v-for="backup in backups.data"
 						:key="backup.url"
 					>
@@ -30,7 +30,7 @@
 						</div>
 					</a>
 				</div>
-				<div class="px-6 mt-2 text-gray-600" v-else>
+				<div class="px-6 mt-2 text-base text-gray-600" v-else>
 					No backups found
 				</div>
 				<div class="px-6 mt-4 mb-2">
@@ -75,7 +75,7 @@ export default {
 		}
 	},
 	mounted() {
-		this.$store.socket.on('agent_job_update', data => {
+		this.$socket.on('agent_job_update', data => {
 			if (data.site === this.site.name && data.name === 'Backup Site') {
 				if (data.status === 'Success') {
 					this.$resources.backups.reload();

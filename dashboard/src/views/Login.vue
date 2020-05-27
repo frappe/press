@@ -1,54 +1,40 @@
 <template>
-	<LoginBox v-if="!successMessage">
-		<div class="mb-8">
-			<span v-if="!forgot" class="text-lg">
-				Log in to your account
-			</span>
-			<span v-else class="text-lg">Reset your password</span>
-		</div>
+	<LoginBox
+		v-if="!successMessage"
+		:title="!forgot ? 'Log in to your account' : 'Reset your password'"
+	>
 		<form class="flex flex-col" @submit.prevent="login">
-			<label class="block">
-				<span class="text-gray-800">Email</span>
-				<input
-					class="block w-full mt-2 shadow form-input"
-					placeholder="johndoe@mail.com"
-					v-model="email"
-					name="email"
-					autocomplete="email"
-					:type="email !== 'Administrator' ? 'email' : ''"
-					required
-				/>
-			</label>
-			<label class="block mt-4" v-if="!forgot">
-				<span class="text-gray-800">Password</span>
-				<div class="relative">
-					<input
-						class="block w-full mt-2 shadow form-input"
-						type="password"
-						placeholder="******"
-						v-model="password"
-						name="password"
-						autocomplete="current-password"
-						required
-					/>
-					<router-link
-						to="/login/forgot"
-						class="absolute inset-y-0 right-0 flex items-center pr-3 text-sm text-gray-900 underline"
-					>
-						Forgot?
-					</router-link>
-				</div>
-			</label>
-			<ErrorMessage :error="errorMessage" class="mt-6" />
-			<router-link
-				v-if="forgot"
-				to="/login"
-				class="block mt-2 text-sm text-left"
-			>
-				I remember my password
-			</router-link>
+			<Input
+				label="Email"
+				placeholder="johndoe@mail.com"
+				v-model="email"
+				name="email"
+				autocomplete="email"
+				:type="email !== 'Administrator' ? 'email' : ''"
+				required
+			/>
+			<Input
+				class="mt-4"
+				v-if="!forgot"
+				label="Password"
+				type="password"
+				placeholder="•••••"
+				v-model="password"
+				name="password"
+				autocomplete="current-password"
+				required
+			/>
+			<div class="mt-2 text-sm">
+				<router-link v-if="forgot" to="/login">
+					I remember my password
+				</router-link>
+				<router-link v-else to="/login/forgot">
+					Forgot Password
+				</router-link>
+			</div>
+			<ErrorMessage :error="errorMessage" class="mt-4" />
 			<Button
-				class="mt-6"
+				class="mt-4"
 				:disabled="state === 'RequestStarted'"
 				@click="loginOrResetPassword"
 				type="primary"
@@ -65,16 +51,16 @@
 						</span>
 					</div>
 				</div>
-				<router-link class="text-sm text-center" to="/signup">
+				<router-link class="text-base text-center" to="/signup">
 					Sign up for a new account
 				</router-link>
 			</template>
 		</form>
 	</LoginBox>
-	<div class="px-6 mt-20 text-center" v-else>
+	<SuccessCard v-else class="mx-auto mt-20" title="Password Reset Link Sent.">
 		We have sent an email to <span class="font-semibold">{{ email }}</span
 		>. Please click on the link received to reset your password.
-	</div>
+	</SuccessCard>
 </template>
 <script>
 import LoginBox from './partials/LoginBox';
@@ -106,6 +92,25 @@ export default {
 			this.successMessage = null;
 		}
 	},
+	resources: {
+		login() {
+			return {
+				method: 'login',
+				params: {
+					usr: this.email,
+					pwd: this.password
+				},
+				onSuccess(res) {
+					if (res) {
+						this.$account.fetchAccount();
+						this.$auth.isLoggedIn = true;
+						return res;
+					}
+				}
+			};
+		}
+		// resetPassword() {}
+	},
 	methods: {
 		async loginOrResetPassword() {
 			try {
@@ -124,14 +129,14 @@ export default {
 		},
 		async login() {
 			if (this.email && this.password) {
-				let res = await this.$store.auth.login(this.email, this.password);
+				let res = await this.$auth.login(this.email, this.password);
 				if (res) {
 					this.$router.push(res.dashboard_route || '/');
 				}
 			}
 		},
 		async resetPassword() {
-			await this.$store.auth.resetPassword(this.email);
+			await this.$auth.resetPassword(this.email);
 			this.successMessage = true;
 		}
 	}

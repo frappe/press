@@ -32,7 +32,7 @@
 				</router-link>
 			</div>
 			<router-link
-				v-if="$store.account.user"
+				v-if="$account.user"
 				to="/account"
 				v-slot="{ href, route, navigate, isActive }"
 			>
@@ -42,15 +42,15 @@
 					:href="href"
 				>
 					<Avatar
-						:label="$store.account.user.first_name"
-						:imageURL="$store.account.user.user_image"
+						:label="$account.user.first_name"
+						:imageURL="$account.user.user_image"
 					/>
 					<div class="ml-2">
 						<div class="font-semibold">
-							{{ $store.account.user.first_name }}
-							{{ $store.account.user.last_name }}
+							{{ $account.user.first_name }}
+							{{ $account.user.last_name }}
 						</div>
-						<div class="text-xs" @click.prevent="$store.auth.logout">
+						<div class="text-xs" @click.prevent="$auth.logout">
 							Logout
 						</div>
 					</div>

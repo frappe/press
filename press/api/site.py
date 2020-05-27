@@ -150,7 +150,9 @@ def options_for_new():
 
 	domain = frappe.db.get_value("Press Settings", "Press Settings", ["domain"])
 	team = get_current_team()
-	has_card, free_account = frappe.db.get_value("Team", team, ["default_payment_method", "free_account"])
+	has_card, free_account = frappe.db.get_value(
+		"Team", team, ["default_payment_method", "free_account"]
+	)
 
 	plans = get_plans()
 	# disable site creation if card not added
@@ -508,6 +510,6 @@ def upload_backup():
 			}
 		)
 		file.save(ignore_permissions=True)
-		return {"status": "success", "file": file.file_url}
+		return file.file_url
 	else:
-		return {"status": "failure", "message": "Invalid Backup File"}
+		frappe.throw("Invalid Backup File")

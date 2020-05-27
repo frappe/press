@@ -1,32 +1,14 @@
 <template>
 	<div class="space-y-4">
-		<label class="block" v-for="field in fields" :key="field.fieldname">
-			<span class="text-gray-800">{{ field.label || field.fieldname }}</span>
-			<select
-				class="block w-full mt-2 shadow form-select"
-				:name="field.fieldname"
-				v-if="field.fieldtype === 'Select'"
-				@change="onChange($event, field)"
-				@blur="checkRequired(field, $event.target.value)"
-			>
-				<option
-					v-for="option in field.options"
-					:value="option.value"
-					:key="option.value"
-					:disabled="!option.value"
-					:selected="values[field.fieldname] === option.value"
-				>
-					{{ option.label }}
-				</option>
-			</select>
-			<input
-				v-else
-				class="block w-full mt-2 shadow form-input"
+		<div v-for="field in fields" :key="field.fieldname">
+			<Input
+				:label="field.label || field.fieldname"
 				:type="getInputType(field)"
+				:options="field.options"
 				:name="field.fieldname"
 				:value="values[field.fieldname]"
 				@change="onChange($event, field)"
-				@blur="checkRequired(field, $event.target.value)"
+				@blur="checkRequired(field, $event)"
 				:required="field.required || false"
 			/>
 			<ErrorMessage
@@ -34,7 +16,7 @@
 				v-if="requiredFieldNotSet.includes(field)"
 				error="This field is required"
 			/>
-		</label>
+		</div>
 	</div>
 </template>
 
@@ -52,8 +34,7 @@ export default {
 		};
 	},
 	methods: {
-		onChange(e, field) {
-			let value = e.target.value;
+		onChange(value, field) {
 			this.checkRequired(field, value);
 			this.updateValue(field.fieldname, value);
 		},
@@ -79,7 +60,10 @@ export default {
 		getInputType(field) {
 			return {
 				Data: 'text',
-				Int: 'number'
+				Int: 'number',
+				Select: 'select',
+				Check: 'checkbox',
+				Password: 'text'
 			}[field.fieldtype || 'Data'];
 		}
 	}

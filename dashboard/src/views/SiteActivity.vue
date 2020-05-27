@@ -6,7 +6,7 @@
 		>
 			<SectionCard>
 				<div
-					class="px-6 py-3 hover:bg-gray-50"
+					class="px-6 py-3 text-base hover:bg-gray-50"
 					v-for="a in activities.data"
 					:key="a.creation"
 				>

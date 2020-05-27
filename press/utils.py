@@ -23,6 +23,12 @@ def get_current_team():
 	# get team passed via request header
 	team = frappe.get_request_header("X-Press-Team")
 
+	if not team:
+		# if team is not passed via header, get the first team that this user is part of
+		team = frappe.db.get_value(
+			"Team Member", {"parenttype": "Team", "user": frappe.session.user}, "parent"
+		)
+
 	if not frappe.db.exists("Team", team):
 		frappe.throw("Invalid Team", frappe.PermissionError)
 
