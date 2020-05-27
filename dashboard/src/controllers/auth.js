@@ -1,4 +1,6 @@
-export default {
+import Vue from 'vue';
+
+export default new Vue({
 	data() {
 		return {
 			isLoggedIn: false,
@@ -24,7 +26,7 @@ export default {
 				pwd: password
 			});
 			if (res) {
-				this.$store.account.fetchAccount();
+				this.$account.fetchAccount();
 				this.isLoggedIn = true;
 				return res;
 			}
@@ -41,4 +43,4 @@ export default {
 			});
 		}
 	}
-};
+});
