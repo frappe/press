@@ -4,51 +4,47 @@
 			title="Backups"
 			description="Backups are enabled and are scheduled to run every six hours."
 		>
-			<SectionCard class="sm:w-2/3">
+			<SectionCard class="sm:w-1/2">
 				<div v-if="backups.data.length">
 					<div
-						class="block px-6 py-4 hover:bg-gray-50"
+						class="block px-6 py-4 text-base hover:bg-gray-50"
 						v-for="backup in backups.data"
 						:key="backup.database_url"
 					>
 						<div class="w-full">
-							<a
-								:href="backup.database_url"
-								target="_blank"
-								class="flex items-baseline justify-between w-full my-1 font-semibold"
-							>
-								<span>{{ backup.database_file || 'Performing backup..' }}</span>
-								<span
-									class="font-normal text-gray-700"
-									v-if="backup.database_size"
-								>
-									{{ formatBytes(backup.database_size) }}
-								</span>
-							</a>
-							<a
-								:href="backup.private_url"
-								target="_blank"
-								class="flex items-baseline justify-between w-full my-1 font-semibold"
-								v-if="backup.private_file"
-							>
-								<span>{{ backup.private_file }}</span>
-								<span class="font-normal text-gray-700">{{
-									formatBytes(backup.private_size)
-								}}</span>
-							</a>
-							<a
-								:href="backup.public_url"
-								target="_blank"
-								class="flex items-baseline justify-between w-full my-1 font-semibold"
-								v-if="backup.public_file"
-							>
-								<span>{{ backup.public_file }}</span>
-								<span class="font-normal text-gray-700">{{
-									formatBytes(backup.public_size)
-								}}</span>
-							</a>
-							<div class="text-sm text-gray-600" v-if="backup.database_file">
-								<FormatDate>{{ backup.creation }}</FormatDate>
+							<div class="font-semibold">
+								Backup on <FormatDate>{{ backup.creation }}</FormatDate>
+							</div>
+							<div class="grid grid-cols-3 mt-2">
+								<div>
+									<a
+										:href="backup.database_url"
+										target="_blank"
+										class="text-gray-800 border-b border-gray-500"
+									>
+										Database ({{ formatBytes(backup.database_size) }})
+									</a>
+								</div>
+								<div>
+									<a
+										:href="backup.private_url"
+										target="_blank"
+										class="text-gray-800 border-b border-gray-500"
+										v-if="backup.private_file"
+									>
+										Private Files ({{ formatBytes(backup.private_size) }})
+									</a>
+								</div>
+								<div>
+									<a
+										:href="backup.public_url"
+										target="_blank"
+										class="text-gray-800 border-b border-gray-500"
+										v-if="backup.public_file"
+									>
+										Public Files ({{ formatBytes(backup.public_size) }})
+									</a>
+								</div>
 							</div>
 						</div>
 					</div>
