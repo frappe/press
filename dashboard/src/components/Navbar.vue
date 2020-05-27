@@ -152,6 +152,10 @@ export default {
 					action: () => this.$router.push('/account')
 				},
 				{
+					label: 'Support',
+					action: () => this.$router.push('/support')
+				},
+				{
 					label: 'Logout',
 					action: () => this.$auth.logout()
 				}
