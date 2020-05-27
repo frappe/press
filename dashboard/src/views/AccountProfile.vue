@@ -10,23 +10,27 @@
 							:label="account.user.first_name"
 							:imageURL="account.user.user_image"
 						/>
-						<input
-							ref="userImage"
-							type="file"
-							accept="image/*"
-							class="hidden"
-							@change="onUserImage"
-						/>
-						<Button
-							class="ml-4"
-							:disabled="uploading"
-							@click="$refs.userImage.click()"
+						<FileUploader
+							@success="onProfilePhotoChange"
+							fileTypes="image/*"
+							:upload-args="{
+								doctype: 'User',
+								docname: $account.user.name,
+								method: 'press.api.account.update_profile_picture'
+							}"
 						>
-							<span v-if="uploading">
-								Uploading {{ Math.floor((uploaded / total) * 100) }}%
-							</span>
-							<span v-else>Change</span>
-						</Button>
+							<template
+								v-slot="{ openFileSelector, uploading, progress, error }"
+							>
+								<div class="ml-4">
+									<Button :loading="uploading" @click="openFileSelector()">
+										<span v-if="uploading">Uploading {{ progress }}%</span>
+										<span v-else>Change</span>
+									</Button>
+									<ErrorMessage class="mt-1" :error="error" />
+								</div>
+							</template>
+						</FileUploader>
 					</div>
 				</div>
 				<div class="grid grid-cols-1 gap-4 mt-4 sm:grid-cols-2">
@@ -72,11 +76,14 @@
 </template>
 
 <script>
-import FileUploader from '@/store/fileUploader';
+import FileUploader from '@/components/FileUploader';
 
 export default {
 	name: 'AccountProfile',
 	props: ['account'],
+	components: {
+		FileUploader
+	},
 	resources: {
 		updateProfile() {
 			let { first_name, last_name, email } = this.$store.account.user;
@@ -93,41 +100,9 @@ export default {
 			};
 		}
 	},
-	data() {
-		return {
-			uploader: null,
-			userImage: null,
-			uploading: false,
-			uploaded: 0,
-			total: 0
-		};
-	},
 	methods: {
-		onUserImage(e) {
-			let file = e.target.files[0];
-			this.uploadFile(file);
-		},
-		async uploadFile(file) {
-			this.uploader = new FileUploader();
-			this.uploader.on('start', () => {
-				this.uploading = true;
-			});
-			this.uploader.on('progress', data => {
-				this.uploaded = data.uploaded;
-				this.total = data.total;
-			});
-			this.uploader.on('error', () => {
-				this.uploading = false;
-			});
-			this.uploader.on('finish', () => {
-				this.uploading = false;
-			});
-			await this.uploader.upload(file, {
-				doctype: 'User',
-				docname: this.$store.account.user.name,
-				method: 'press.api.account.update_profile_picture'
-			});
-			await this.$store.account.fetchAccount();
+		onProfilePhotoChange() {
+			this.$account.fetchAccount();
 			this.notifySuccess();
 		},
 		notifySuccess() {
