@@ -22,27 +22,27 @@
 			</div>
 			<div v-else>
 				<div
-					class="grid items-center grid-cols-4 gap-12 py-4 text-sm text-gray-700 border-b"
+					class="grid items-center grid-cols-2 gap-12 py-4 text-sm text-gray-700 border-b md:grid-cols-4"
 				>
 					<span>Site Name</span>
-					<span class="text-center">Status</span>
-					<span class="text-right">Last Updated</span>
-					<span></span>
+					<span class="text-right md:text-center">Status</span>
+					<span class="hidden text-right md:inline">Last Updated</span>
+					<span class="hidden md:inline"></span>
 				</div>
 				<a
-					class="grid items-center grid-cols-4 gap-12 py-4 text-base border-b hover:bg-gray-50 focus:outline-none focus:shadow-outline"
+					class="grid items-center grid-cols-2 gap-12 py-4 text-base border-b md:grid-cols-4 hover:bg-gray-50 focus:outline-none focus:shadow-outline"
 					v-for="site in $resources.sites.data"
 					:key="site.name"
 					:href="'#/sites/' + site.name"
 				>
 					<span class="">{{ site.name }}</span>
-					<span class="text-center">
+					<span class="text-right md:text-center">
 						<Badge :status="site.status" />
 					</span>
-					<FormatDate class="text-right" type="relative">
+					<FormatDate class="hidden text-right md:block" type="relative">
 						{{ site.modified }}
 					</FormatDate>
-					<span class="text-right">
+					<span class="hidden text-right md:inline">
 						<Badge
 							:status="'Update Available'"
 							v-if="site.update_available"
