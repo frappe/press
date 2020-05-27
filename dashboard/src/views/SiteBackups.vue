@@ -13,9 +13,17 @@
 					>
 						<div class="w-full">
 							<div class="font-semibold">
-								Backup on <FormatDate>{{ backup.creation }}</FormatDate>
+								<span v-if="backup.status === 'Success'">
+									Backup on <FormatDate>{{ backup.creation }}</FormatDate>
+								</span>
+								<span v-else>
+									Performing Backup...
+								</span>
 							</div>
-							<div class="grid grid-cols-3 mt-2">
+							<div
+								v-if="backup.status === 'Success'"
+								class="grid grid-cols-3 mt-2"
+							>
 								<div>
 									<a
 										:href="backup.database_url"
