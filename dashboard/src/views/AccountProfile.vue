@@ -1,9 +1,9 @@
 <template>
 	<div>
 		<Section title="Profile" description="Your profile information">
-			<div class="w-full mt-6 text-sm sm:w-1/2">
+			<div class="w-full mt-6 sm:w-1/2">
 				<div>
-					<span class="text-gray-800">Photo</span>
+					<span class="block mb-2 text-sm leading-4 text-gray-700">Photo</span>
 					<div class="flex items-center mt-2">
 						<Avatar
 							size="lg"
@@ -34,34 +34,26 @@
 					</div>
 				</div>
 				<div class="grid grid-cols-1 gap-4 mt-4 sm:grid-cols-2">
-					<label class="block">
-						<span class="text-gray-800">First Name</span>
-						<input
-							class="block w-full mt-2 shadow form-input"
-							type="text"
-							v-model="account.user.first_name"
-						/>
-					</label>
-					<label class="block">
-						<span class="text-gray-800">Last Name</span>
-						<input
-							class="block w-full mt-2 shadow form-input"
-							type="text"
-							v-model="account.user.last_name"
-						/>
-					</label>
-				</div>
-				<label class="block mt-4">
-					<span class="text-gray-800">Email Address</span>
-					<input
-						class="block w-full mt-2 shadow form-input"
+					<Input
+						label="First Name"
 						type="text"
-						v-model="account.user.email"
+						v-model="account.user.first_name"
 					/>
-				</label>
+					<Input
+						label="Last Name"
+						type="text"
+						v-model="account.user.last_name"
+					/>
+				</div>
+				<Input
+					class="mt-4"
+					label="Email Address"
+					type="email"
+					v-model="account.user.email"
+				/>
 			</div>
 		</Section>
-		<div class="py-4 mt-10 border-t">
+		<div class="py-4">
 			<ErrorMessage class="mb-4" :error="$resources.updateProfile.error" />
 			<Button
 				type="primary"
@@ -86,7 +78,7 @@ export default {
 	},
 	resources: {
 		updateProfile() {
-			let { first_name, last_name, email } = this.$store.account.user;
+			let { first_name, last_name, email } = this.$account.user;
 			return {
 				method: 'press.api.account.update_profile',
 				params: {

@@ -1,18 +1,17 @@
 <template>
 	<div class="font-sans antialiased text-gray-900">
 		<div class="flex h-screen overflow-hidden">
-			<Sidebar
-				class="flex-shrink-0 hidden w-64 sm:block"
-				v-if="$store.auth.isLoggedIn"
-			/>
 			<div
 				class="flex flex-1 overflow-y-auto"
-				:class="{ 'sm:bg-gray-100': $route.meta.isLoginPage }"
+				:class="{ 'sm:bg-gray-50': $route.meta.isLoginPage }"
 			>
-				<div class="container flex-1 mx-auto">
-					<keep-alive :include="['Sites', 'Site']">
-						<router-view />
-					</keep-alive>
+				<div class="flex-1">
+					<Navbar v-if="$auth.isLoggedIn" />
+					<div class="container mx-auto">
+						<keep-alive :include="['Sites', 'Site', 'Account']">
+							<router-view />
+						</keep-alive>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -36,15 +35,15 @@
 </template>
 <script>
 import Vue from 'vue';
-import Sidebar from '@/components/Sidebar';
 import Notification from '@/components/Notification';
+import Navbar from '@/components/Navbar';
 import CountrySelectionDialog from '@/views/CountrySelectionDialog';
 
 export default {
 	name: 'App',
 	components: {
-		Sidebar,
 		Notification,
+		Navbar,
 		CountrySelectionDialog
 	},
 	data() {

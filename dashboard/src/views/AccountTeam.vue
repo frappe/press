@@ -12,17 +12,17 @@
 					v-for="t in teams"
 					:key="t"
 				>
-					<div class="col-span-3 font-semibold">
+					<div class="col-span-3 text-base font-semibold">
 						{{ t }}
 					</div>
 
 					<div class="w-full text-center">
-						<div class="text-sm" v-if="team.name === t">
-							Active
+						<div v-if="team.name === t">
+							<Badge color="blue">Active Team</Badge>
 						</div>
 						<div v-else>
-							<Button @click="$store.account.switchToTeam(t)">
-								Switch
+							<Button @click="$account.switchToTeam(t)">
+								Switch to Team
 							</Button>
 						</div>
 					</div>
@@ -40,7 +40,7 @@
 					:key="member.name"
 				>
 					<div class="col-span-2">
-						<div class="font-semibold">
+						<div class="text-base font-semibold">
 							{{ member.first_name }} {{ member.last_name }}
 						</div>
 						<div class="text-sm text-gray-600">
@@ -50,13 +50,18 @@
 						</div>
 					</div>
 
-					<div>
-						{{ getRole(member) }}
+					<div class="text-base">
+						<Badge :color="{ Owner: 'blue', Member: 'gray' }[getRole(member)]">
+							{{ getRole(member) }}
+						</Badge>
 					</div>
 				</div>
 				<div
 					class="px-6 mt-4 mb-2"
-					v-if="$store.account.hasRole('Press Admin')"
+					v-if="
+						$account.hasRole('Press Admin') &&
+							$account.team.default_payment_method
+					"
 				>
 					<Button type="primary" @click="showModal = true">
 						Add Member
@@ -113,18 +118,18 @@ export default {
 	},
 	computed: {
 		team() {
-			return this.$store.account.team;
+			return this.$account.team;
 		},
 		team_members() {
-			return this.$store.account.team_members;
+			return this.$account.team_members;
 		},
 		teams() {
-			return this.$store.account.teams;
+			return this.$account.teams;
 		}
 	},
 	methods: {
 		async addMember(email) {
-			let team = this.$store.account.team.name;
+			let team = this.$account.team.name;
 			await this.$call('press.api.account.add_team_member', { team, email });
 			this.showModal = false;
 			this.memberEmail = null;

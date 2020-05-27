@@ -4,30 +4,8 @@
 			title="Configuration"
 			description="View and edit your site configuration"
 		>
-			<SectionCard class="px-6 py-4">
-				<div
-					v-for="(field, i) in fields"
-					class="flex items-baseline"
-					:class="[i !== 0 && 'mt-4']"
-					:key="field.fieldname"
-				>
-					<label class="w-1/3 text-gray-800">{{ field.label }}</label>
-					<div class="w-2/3 px-4 mt-2">
-						<input
-							:class="{
-								'form-input w-full': [
-									'text',
-									'number',
-									'email',
-									'password'
-								].includes(field.fieldtype),
-								'form-checkbox': ['checkbox'].includes(field.fieldtype)
-							}"
-							:type="field.fieldtype"
-							v-model="siteConfig[field.fieldname]"
-						/>
-					</div>
-				</div>
+			<SectionCard class="px-6 py-6 space-y-4">
+				<Form :fields="fields" v-model="siteConfig" />
 				<div class="mt-6">
 					<Button :disabled="!showButton" type="primary" @click="updateConfig">
 						Update Configuration
@@ -39,8 +17,13 @@
 </template>
 
 <script>
+import Form from '@/components/Form';
+
 export default {
 	name: 'SiteConfig',
+	components: {
+		Form
+	},
 	props: ['site'],
 	data() {
 		return {
@@ -48,62 +31,62 @@ export default {
 				{
 					label: 'Encryption Key',
 					fieldname: 'encryption_key',
-					fieldtype: 'password'
+					fieldtype: 'Password'
 				},
 				{
 					label: 'Mail Server',
 					fieldname: 'mail_server',
-					fieldtype: 'text'
+					fieldtype: 'Data'
 				},
 				{
 					label: 'Mail Port',
 					fieldname: 'mail_port',
-					fieldtype: 'number'
+					fieldtype: 'Int'
 				},
 				{
 					label: 'Mail Login',
 					fieldname: 'mail_login',
-					fieldtype: 'text'
+					fieldtype: 'Data'
 				},
 				{
 					label: 'Mail Password',
 					fieldname: 'mail_password',
-					fieldtype: 'password'
+					fieldtype: 'Password'
 				},
 				{
 					label: 'Use SSL',
 					fieldname: 'use_ssl',
-					fieldtype: 'checkbox'
+					fieldtype: 'Check'
 				},
 				{
 					label: 'Auto Email Address',
 					fieldname: 'auto_email_id',
-					fieldtype: 'email'
+					fieldtype: 'Data'
 				},
 				{
 					label: 'Mute Emails',
 					fieldname: 'mute_emails',
-					fieldtype: 'checkbox'
+					fieldtype: 'Check'
 				},
 				{
 					label: 'Enable Server Scripts',
 					fieldname: 'server_script_enabled',
-					fieldtype: 'checkbox'
+					fieldtype: 'Check'
 				},
 				{
 					label: 'Disable Website Cache',
 					fieldname: 'disable_website_cache',
-					fieldtype: 'checkbox'
+					fieldtype: 'Check'
 				},
 				{
 					label: 'Disable Global Search',
 					fieldname: 'disable_global_search',
-					fieldtype: 'checkbox'
+					fieldtype: 'Check'
 				},
 				{
 					label: 'Max File Size (Bytes)',
 					fieldname: 'max_file_size',
-					fieldtype: 'number'
+					fieldtype: 'Int'
 				}
 			],
 			siteConfig: {

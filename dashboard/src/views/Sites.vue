@@ -30,12 +30,12 @@
 					<span></span>
 				</div>
 				<a
-					class="grid items-center grid-cols-4 gap-12 py-4 text-sm border-b hover:bg-gray-50 focus:outline-none focus:shadow-outline"
+					class="grid items-center grid-cols-4 gap-12 py-4 text-base border-b hover:bg-gray-50 focus:outline-none focus:shadow-outline"
 					v-for="site in $resources.sites.data"
 					:key="site.name"
 					:href="'#/sites/' + site.name"
 				>
-					<span class="font-medium">{{ site.name }}</span>
+					<span class="">{{ site.name }}</span>
 					<span class="text-center">
 						<Badge :status="site.status" />
 					</span>
@@ -74,7 +74,7 @@ export default {
 			if (this._socketSetup) return;
 			this._socketSetup = true;
 
-			this.$store.socket.on('agent_job_update', data => {
+			this.$socket.on('agent_job_update', data => {
 				if (data.name === 'New Site' || data.name === 'New Site from Backup') {
 					if (data.status === 'Success') {
 						this.$resources.sites.reload();
@@ -88,7 +88,7 @@ export default {
 				}
 			});
 
-			this.$store.socket.on('list_update', ({ doctype }) => {
+			this.$socket.on('list_update', ({ doctype }) => {
 				if (doctype === 'Site') {
 					this.$resources.sites.reload();
 				}

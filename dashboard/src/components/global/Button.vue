@@ -1,13 +1,13 @@
 <template>
 	<button
-		class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium leading-5 border rounded-md focus:outline-none "
+		class="inline-flex items-center justify-center px-3 py-1 text-base leading-5 rounded-md focus:outline-none"
 		:class="{
 			'opacity-50 cursor-not-allowed pointer-events-none': isDisabled,
-			'bg-blue-500 border-transparent hover:bg-blue-400 text-white focus:shadow-outline-blue focus:border-blue-700':
+			'bg-gradient-blue hover:bg-gradient-none hover:bg-blue-500 text-white focus:shadow-outline-blue':
 				type === 'primary',
-			'bg-white border-gray-400 hover:text-gray-800 text-gray-900 focus:shadow-outline-blue focus:border-blue-300':
+			'bg-gray-50 hover:bg-gray-100 text-gray-900 focus:shadow-outline-gray':
 				type === 'secondary',
-			'bg-red-500 border-transparent hover:bg-red-400 text-white focus:shadow-outline-red focus:border-red-700':
+			'bg-red-500 hover:bg-red-400 text-white focus:shadow-outline-red':
 				type === 'danger'
 		}"
 		@click="route && $router.push(route)"
@@ -15,7 +15,7 @@
 		v-on="$listeners"
 		:disabled="isDisabled"
 	>
-		<FeatherIcon v-if="iconLeft" :name="iconLeft" class="w-4 h-4 mr-2" />
+		<FeatherIcon v-if="iconLeft" :name="iconLeft" class="w-4 h-4 mr-1.5" />
 		<template v-if="loading && loadingText">
 			{{ loadingText }}
 		</template>

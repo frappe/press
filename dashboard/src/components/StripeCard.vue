@@ -3,11 +3,8 @@
 		<Form :fields="fields" v-model="billingInformation" />
 
 		<label class="block mt-4">
-			<span class="text-gray-800">Credit or Debit Card</span>
-			<div
-				class="block w-full py-3 mt-2 shadow form-input"
-				ref="card-element"
-			></div>
+			<span class="text-sm leading-4 text-gray-700">Credit or Debit Card</span>
+			<div class="block w-full py-2 mt-2 form-input" ref="card-element"></div>
 			<ErrorMessage class="mt-1" :error="cardErrorMessage" />
 		</label>
 		<ErrorMessage class="mt-2" :error="errorMessage" />
@@ -73,12 +70,12 @@ export default {
 		this.setupCard();
 		await this.fetchCountries();
 		let country = this.countryList.find(
-			d => d.label === this.$store.account.team.country
+			d => d.label === this.$account.team.country
 		);
 		if (country) {
 			this.billingInformation.country = country.value;
 		}
-		let { first_name, last_name } = this.$store.account.user;
+		let { first_name, last_name } = this.$account.user;
 		let fullname = first_name + ' ' + last_name;
 		this.billingInformation.cardHolderName = fullname;
 	},
@@ -97,7 +94,7 @@ export default {
 					color: theme.colors.black,
 					fontFamily: theme.fontFamily.sans.join(', '),
 					fontSmoothing: 'antialiased',
-					fontSize: '14px',
+					fontSize: '13px',
 					'::placeholder': {
 						color: theme.colors.gray['400']
 					}
@@ -112,7 +109,7 @@ export default {
 				style: style,
 				classes: {
 					complete: '',
-					focus: 'shadow-outline-blue'
+					focus: 'bg-gray-100'
 				}
 			});
 			this.card.mount(this.$refs['card-element']);
@@ -151,7 +148,11 @@ export default {
 			this.state = null;
 
 			if (error) {
-				this.errorMessage = error.message;
+				let errorMessage = error.message;
+				// fix for duplicate error message
+				if (errorMessage != 'Your card number is incomplete.') {
+					this.errorMessage = errorMessage;
+				}
 			} else {
 				if (setupIntent.status === 'succeeded') {
 					this.$call('press.api.billing.after_card_add');

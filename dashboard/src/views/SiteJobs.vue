@@ -2,7 +2,7 @@
 	<Section title="Jobs" description="History of jobs that ran on your site">
 		<div class="flex">
 			<div
-				class="w-full py-4 overflow-auto border rounded-md sm:w-1/3 sm:rounded-r-none"
+				class="w-full py-4 overflow-auto text-base border rounded-md sm:w-1/3 sm:rounded-r-none"
 				:class="{ 'hidden sm:block': selectedJob }"
 			>
 				<router-link

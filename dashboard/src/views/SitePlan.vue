@@ -1,30 +1,26 @@
 <template>
 	<div>
-		<section>
-			<h2 class="text-lg font-medium">Plan</h2>
-			<p class="text-gray-600">
-				Upgrade, downgrade or deactivate this site based on usage
-			</p>
-			<div
-				v-if="currentPlan"
-				class="w-full py-4 mt-6 border border-gray-100 rounded shadow sm:w-1/2"
-			>
+		<Section
+			title="Plan"
+			description="Upgrade, downgrade or deactivate this site based on usage"
+		>
+			<SectionCard v-if="currentPlan">
 				<div
-					class="px-6 py-4 mb-4 hover:bg-gray-50"
+					class="px-6 py-4 mb-2 text-base hover:bg-gray-50"
 					v-if="site.status == 'Active'"
 				>
-					<div>
+					<div class="leading-6">
 						<span class="font-bold">{{ currentPlan.plan_title }} </span>
 						(Current Plan)
 					</div>
-					<div class="text-sm text-gray-800">
+					<div class="text-gray-800">
 						Effective from <FormatDate>{{ lastPlan.timestamp }}</FormatDate>
 					</div>
 				</div>
-				<div class="px-6 mb-4" v-if="site.status == 'Inactive'">
+				<div class="px-6 mb-2" v-if="site.status == 'Inactive'">
 					Your site is deactivated
 				</div>
-				<div class="px-6 space-x-2">
+				<div class="px-6 pb-2 space-x-2">
 					<Button
 						v-if="site.status == 'Active'"
 						type="primary"
@@ -52,7 +48,7 @@
 						Activate Site
 					</Button>
 				</div>
-			</div>
+			</SectionCard>
 			<Dialog title="Change Plan" v-model="showChangePlanDialog">
 				<SitePlansTable class="mt-6" :plans="plans" v-model="selectedPlan" />
 				<template slot="actions">
@@ -65,7 +61,7 @@
 				</template>
 			</Dialog>
 			<Dialog title="Deactivate" v-model="showDeactivateDialog">
-				<p>
+				<p class="text-base">
 					Are you sure you want to deactivate this site? The site will go in an
 					inactive state. It won't be accessible and background jobs won't run.
 					We will also not charge you for it.
@@ -79,26 +75,15 @@
 					</Button>
 				</template>
 			</Dialog>
-		</section>
-		<section class="mt-10">
-			<h2 class="text-lg font-medium">Usage</h2>
-			<p class="text-gray-600">
-				Calculated usage of this site updated every hour
-			</p>
-			<div
-				v-if="currentPlan"
-				class="w-full py-4 mt-6 border border-gray-100 rounded shadow sm:w-1/2"
-			>
-				<div class="flex px-6 py-4 hover:bg-gray-50">
-					<!-- <div class="w-1/2">
-						<div class="font-bold">
-							$40
-						</div>
-						<div class="text-sm text-gray-800">
-							Since April 17, 2020
-						</div>
-					</div> -->
-					<div class="w-1/2 text-sm">
+		</Section>
+		<Section
+			class="mt-10"
+			title="Usage"
+			description="Calculated usage of this site updated every hour"
+		>
+			<SectionCard v-if="currentPlan">
+				<div class="flex px-6 py-4 text-base hover:bg-gray-50">
+					<div class="w-1/2">
 						<div class="leading-6">
 							<span class="font-bold"> {{ totalCPUUsage }} hours </span>
 							/ {{ currentPlan.cpu_time_per_day }} hours CPU usage
@@ -108,18 +93,16 @@
 						</div>
 					</div>
 				</div>
-			</div>
-		</section>
-		<section class="mt-10">
-			<h2 class="text-lg font-medium">History</h2>
-			<p class="text-gray-600">
-				Log of plan changes for this site
-			</p>
-			<div
-				class="w-full py-4 mt-6 border border-gray-100 rounded shadow sm:w-1/2"
-			>
+			</SectionCard>
+		</Section>
+		<Section
+			class="mt-10"
+			title="History"
+			description="Log of plan changes for this site"
+		>
+			<SectionCard>
 				<div
-					class="px-6 py-4 hover:bg-gray-50"
+					class="px-6 py-4 text-base hover:bg-gray-50"
 					v-for="row in history"
 					:key="row.name"
 				>
@@ -136,8 +119,8 @@
 						<FormatDate>{{ row.timestamp }}</FormatDate>
 					</div>
 				</div>
-			</div>
-		</section>
+			</SectionCard>
+		</Section>
 	</div>
 </template>
 
