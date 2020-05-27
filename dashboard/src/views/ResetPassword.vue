@@ -1,43 +1,48 @@
 <template>
-	<LoginBox v-if="!fetching && email">
-		<div class="mb-8">
-			<span class="text-lg">Set a new password for your account</span>
-		</div>
-		<form class="flex flex-col" @submit.prevent="resetPassword">
-			<label class="block">
-				<span class="text-gray-800">Email</span>
-				<input
-					class="block w-full mt-2 shadow pointer-events-none form-input"
+	<LoginBox
+		v-if="!$resources.validateResetKey.loading && email"
+		title="Set a new password for your account"
+	>
+		<form
+			class="flex flex-col"
+			@submit.prevent="$resources.resetPassword.submit()"
+		>
+			<div class="space-y-4">
+				<Input
+					label="Email"
+					class="pointer-events-none"
 					type="text"
 					:value="email"
 					name="email"
 					autocomplete="off"
 					disabled
 				/>
-			</label>
-			<label class="block mt-4">
-				<span class="text-gray-800">Password</span>
-				<input
-					class="block w-full mt-2 shadow form-input"
+				<Input
+					label="Password"
 					type="password"
 					v-model="password"
 					name="password"
 					autocomplete="new-password"
 					required
 				/>
-			</label>
-			<ErrorMessage class="mt-6" :error="errorMessage" />
+			</div>
+			<ErrorMessage class="mt-6" :error="$resourceErrors" />
 			<Button
 				class="mt-6"
 				type="primary"
-				:disabled="!password || state === 'RequestStarted'"
+				:disabled="!password"
+				:loading="$resources.resetPassword.loading"
 			>
 				Submit
 			</Button>
 		</form>
 	</LoginBox>
-	<div class="px-6 mt-20 text-center" v-else-if="!fetching && !email">
-		Account Key <strong>{{ requestKey }}</strong> is invalid or expired.
+	<div
+		class="px-6 mt-20 text-center"
+		v-else-if="!$resources.validateResetKey.loading && !email"
+	>
+		Account Key <strong>{{ requestKey }}</strong> is invalid or expired. Go back
+		to <router-link class="underline" to="/login">login</router-link>.
 	</div>
 </template>
 
@@ -52,34 +57,34 @@ export default {
 	props: ['requestKey'],
 	data() {
 		return {
-			state: null,
-			fetching: false,
 			email: null,
-			password: null,
-			errorMessage: null
+			password: null
 		};
 	},
-	async mounted() {
-		this.fetching = true;
-		try {
-			let res = await this.$call(
-				'press.api.account.get_user_for_reset_password_key',
-				{
+	resources: {
+		validateResetKey() {
+			return {
+				method: 'press.api.account.get_user_for_reset_password_key',
+				params: {
 					key: this.requestKey
+				},
+				onSuccess(email) {
+					this.email = email || null;
+				},
+				auto: true
+			};
+		},
+		resetPassword() {
+			return {
+				method: 'press.api.account.reset_password',
+				params: {
+					key: this.requestKey,
+					password: this.password
+				},
+				onSuccess() {
+					window.location.reload();
 				}
-			);
-			this.email = res || null;
-		} finally {
-			this.fetching = false;
-		}
-	},
-	methods: {
-		async resetPassword() {
-			await this.$call('press.api.account.reset_password', {
-				key: this.requestKey,
-				password: this.password
-			});
-			window.location.reload();
+			};
 		}
 	}
 };

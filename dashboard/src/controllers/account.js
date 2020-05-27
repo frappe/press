@@ -1,6 +1,7 @@
-import call from '../call';
+import Vue from 'vue';
+import call from './call';
 
-export default {
+export default new Vue({
 	data() {
 		return {
 			user: null,
@@ -40,6 +41,7 @@ export default {
 			this.team = result.team;
 			this.team_members = result.team_members;
 			localStorage.setItem('current_team', team);
+			window.location.reload();
 		}
 	}
-};
+});

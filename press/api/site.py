@@ -539,6 +539,6 @@ def upload_backup():
 			}
 		)
 		file.save(ignore_permissions=True)
-		return {"status": "success", "file": file.file_url}
+		return file.file_url
 	else:
-		return {"status": "failure", "message": "Invalid Backup File"}
+		frappe.throw("Invalid Backup File")

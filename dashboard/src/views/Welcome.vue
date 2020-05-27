@@ -3,7 +3,7 @@
 		<h1 class="text-xl font-semibold">
 			Welcome to Frappe Cloud
 		</h1>
-		<p>
+		<p class="text-base">
 			To start using Frappe Cloud, complete the following steps to get your
 			account up and running.
 		</p>
@@ -25,12 +25,17 @@
 				>
 					<FeatherIcon
 						:name="step.done ? 'check' : step.icon"
-						:stroke-width="step.done ? 4 : 2"
-						class="flex-shrink-0 w-4 h-4 my-1"
+						:stroke-width="step.done ? 3 : 2"
+						class="flex-shrink-0 w-4 h-4 mt-0.5"
 					/>
 					<div class="ml-4 text-left">
-						<div class="font-medium">
-							{{ step.name }}
+						<div class="text-base font-medium">
+							<span v-if="!step.loading">
+								{{ step.name }}
+							</span>
+							<span v-else>
+								{{ step.loadingName }}
+							</span>
 						</div>
 						<div
 							class="mt-1 text-sm"
@@ -129,7 +134,7 @@ export default {
 		}
 	},
 	data() {
-		let team = this.$store.account.team?.name || '';
+		let team = this.$account.team?.name || '';
 		return {
 			showAddCardDialog: false,
 			onboardingComplete: false,
@@ -151,6 +156,8 @@ export default {
 					done: false,
 					show: true,
 					icon: 'credit-card',
+					loading: false,
+					loadingName: 'Adding Billing Information...',
 					click: () => {
 						this.showAddCardDialog = true;
 					},
@@ -195,7 +202,7 @@ export default {
 			}))
 		);
 		let country = this.countryList.find(
-			d => d.label === this.$store.account.team.country
+			d => d.label === this.$account.team.country
 		);
 		if (country) {
 			this.billingInformation.country = country.value;
@@ -204,10 +211,12 @@ export default {
 	methods: {
 		afterCardAdd() {
 			this.showAddCardDialog = false;
+			let step = this.getBillingStep();
+			step.loading = true;
 			this.reloadUntilAddCardIsTrue();
 		},
 		async reloadUntilAddCardIsTrue() {
-			let cardStep = this.steps.find(d => d.name === 'Add Billing Information');
+			let cardStep = this.getBillingStep();
 			if (!cardStep.done) {
 				cardStep.disabled = true;
 				await this.$resources.onboarding.reload();
@@ -216,7 +225,11 @@ export default {
 				}, 1000);
 			} else {
 				cardStep.disabled = false;
+				cardStep.loading = false;
 			}
+		},
+		getBillingStep() {
+			return this.steps.find(d => d.name === 'Add Billing Information');
 		}
 	},
 	computed: {

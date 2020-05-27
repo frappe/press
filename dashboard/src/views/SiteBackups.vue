@@ -15,7 +15,7 @@
 							<a
 								:href="backup.database_url"
 								target="_blank"
-								class="flex items-baseline justify-between w-full font-semibold my-1"
+								class="flex items-baseline justify-between w-full my-1 font-semibold"
 							>
 								<span>{{ backup.database_file || 'Performing backup..' }}</span>
 								<span
@@ -28,7 +28,7 @@
 							<a
 								:href="backup.private_url"
 								target="_blank"
-								class="flex items-baseline justify-between w-full font-semibold my-1"
+								class="flex items-baseline justify-between w-full my-1 font-semibold"
 								v-if="backup.private_file"
 							>
 								<span>{{ backup.private_file }}</span>
@@ -39,7 +39,7 @@
 							<a
 								:href="backup.public_url"
 								target="_blank"
-								class="flex items-baseline justify-between w-full font-semibold my-1"
+								class="flex items-baseline justify-between w-full my-1 font-semibold"
 								v-if="backup.public_file"
 							>
 								<span>{{ backup.public_file }}</span>
@@ -53,7 +53,9 @@
 						</div>
 					</div>
 				</div>
-				<div class="px-6 mt-2 text-gray-600" v-else>No backups found</div>
+				<div class="px-6 mt-2 text-base text-gray-600" v-else>
+					No backups found
+				</div>
 				<div class="px-6 mt-4 mb-2">
 					<Button
 						type="primary"
@@ -96,7 +98,7 @@ export default {
 		}
 	},
 	mounted() {
-		this.$store.socket.on('agent_job_update', data => {
+		this.$socket.on('agent_job_update', data => {
 			if (data.site === this.site.name && data.name === 'Backup Site') {
 				if (data.status === 'Success') {
 					this.$resources.backups.reload();

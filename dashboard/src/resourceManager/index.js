@@ -53,6 +53,16 @@ let plugin = {
 		};
 	},
 
+	computed: {
+		$resourceErrors() {
+			if (!this._rm) return '';
+			return Object.keys(this.$resources)
+				.map(key => this.$resources[key].error)
+				.filter(Boolean)
+				.join('\n');
+		}
+	},
+
 	created() {
 		if (!this._rm) return;
 		this._rm.init();

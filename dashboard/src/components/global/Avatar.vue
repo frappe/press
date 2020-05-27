@@ -1,5 +1,5 @@
 <template>
-	<div class="rounded-full overflow-hidden" :class="sizeClasses">
+	<div class="overflow-hidden rounded-full" :class="sizeClasses">
 		<img
 			v-if="imageURL"
 			:src="imageURL"
@@ -8,7 +8,7 @@
 		/>
 		<div
 			v-else
-			class="bg-green-200 text-green-800 flex h-full items-center justify-center w-full uppercase"
+			class="flex items-center justify-center w-full h-full text-green-800 uppercase bg-green-200"
 			:class="{ sm: 'text-xs', md: 'text-base', lg: 'text-lg' }[size]"
 		>
 			{{ label && label[0] }}

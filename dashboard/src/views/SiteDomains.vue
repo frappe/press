@@ -39,7 +39,7 @@
 			</div>
 		</Section>
 		<Dialog v-model="showDialog" title="Add Domain">
-			<p>
+			<p class="text-base">
 				To add a custom domain, you must already own it. If you don't have one,
 				buy it and come back here.
 			</p>
@@ -50,19 +50,19 @@
 				v-model="newDomain"
 				@change="dnsVerified = null"
 			/>
-			<p class="mt-4" v-if="newDomain && !dnsVerified">
+			<p class="mt-4 text-base" v-if="newDomain && !dnsVerified">
 				Make a <span class="font-semibold">CNAME</span> record from
 				<span class="font-semibold">{{ newDomain }}</span> to
 				<span class="font-semibold">{{ site.name }}</span>
 			</p>
-			<p class="flex mt-4" v-if="dnsVerified === false">
+			<p class="flex mt-4 text-base" v-if="dnsVerified === false">
 				<FeatherIcon
 					name="x"
 					class="w-5 h-5 p-1 mr-2 text-red-500 bg-red-100 rounded-full"
 				/>
 				DNS Verification Failed
 			</p>
-			<p class="flex mt-4" v-if="dnsVerified === true">
+			<p class="flex mt-4 text-base" v-if="dnsVerified === true">
 				<FeatherIcon
 					name="check"
 					class="w-5 h-5 p-1 mr-2 text-green-500 bg-green-100 rounded-full"
@@ -70,7 +70,7 @@
 				DNS records successfully verified. Click on Add Domain.
 			</p>
 			<div slot="actions">
-				<Button class="border hover:bg-gray-100" @click="showDialog = false">
+				<Button @click="showDialog = false">
 					Cancel
 				</Button>
 				<Button

@@ -43,6 +43,18 @@ def setup_account(
 	if not account_request:
 		frappe.throw("Invalid or Expired Key")
 
+	if not first_name:
+		frappe.throw("First Name is required")
+
+	if not last_name:
+		frappe.throw("Last Name is required")
+
+	if not password:
+		frappe.throw("Password is required")
+
+	if not is_invitation and not country:
+		frappe.throw("Country is required")
+
 	# if the request is authenticated, set the user to Administrator
 	frappe.set_user("Administrator")
 
@@ -120,20 +132,25 @@ def get_account_request_from_key(key):
 @frappe.whitelist()
 def get(team=None):
 	user = frappe.session.user
-	team = team or user
-	if frappe.db.exists("User", user):
-		teams = [
-			d.parent for d in frappe.db.get_all("Team Member", {"user": user}, ["parent"])
-		]
-		teams = list(set(teams))
-		return {
-			"user": frappe.get_doc("User", user),
-			"team": frappe.get_doc("Team", team),
-			"team_members": get_team_members(team),
-			"teams": teams,
-		}
-	else:
+	if not frappe.db.exists("User", user):
 		frappe.throw(_("Account does not exist"))
+
+	team = team or user
+	team_doc = frappe.get_doc("Team", team)
+
+	if not team_doc.has_member(user):
+		frappe.throw("Invalid Team")
+
+	teams = [
+		d.parent for d in frappe.db.get_all("Team Member", {"user": user}, ["parent"])
+	]
+	teams = list(set(teams))
+	return {
+		"user": frappe.get_doc("User", user),
+		"team": team_doc,
+		"team_members": get_team_members(team),
+		"teams": teams,
+	}
 
 
 @frappe.whitelist()
