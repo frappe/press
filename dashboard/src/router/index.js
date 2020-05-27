@@ -1,6 +1,7 @@
 import Vue from 'vue';
 import VueRouter from 'vue-router';
-import store from '../store';
+import account from '../controllers/account';
+import auth from '../controllers/auth';
 import Home from '../views/Home.vue';
 
 Vue.use(VueRouter);
@@ -186,19 +187,19 @@ router.beforeEach(async (to, from, next) => {
 	if (to.matched.some(record => !record.meta.isLoginPage)) {
 		// this route requires auth, check if logged in
 		// if not, redirect to login page.
-		if (!store.auth.isLoggedIn) {
+		if (!auth.isLoggedIn) {
 			next({ name: 'Login' });
 		} else {
-			if (!store.account.user) {
-				await store.account.fetchAccount();
+			if (!account.user) {
+				await account.fetchAccount();
 			}
 			next();
 		}
 	} else {
 		// if already logged in, route to /welcome
-		if (store.auth.isLoggedIn) {
-			if (!store.account.user) {
-				await store.account.fetchAccount();
+		if (auth.isLoggedIn) {
+			if (!account.user) {
+				await account.fetchAccount();
 			}
 			next({ name: 'Welcome' });
 		} else {

@@ -1,143 +1,157 @@
 <template>
-	<div>
-		<PageHeader>
-			<h1 slot="title">New Site</h1>
-		</PageHeader>
+	<div class="mt-5">
 		<div class="px-8" v-if="options">
-			<div class="mb-5 border-t"></div>
 			<div
-				class="px-6 py-8 mx-auto mb-20 border border-gray-100 rounded-lg shadow-md"
+				class="p-8 mx-auto mb-20 space-y-8 border rounded-lg shadow-md"
 				style="width: 650px"
 			>
 				<div>
-					<label>
+					<h1 class="mb-6 text-2xl font-bold">Create a New Site</h1>
+					<label class="text-lg">
 						Choose a hostname
 					</label>
-					<p class="text-sm text-gray-600">
+					<p class="text-base text-gray-700">
 						Give your site a unique name. It can only contain alphanumeric
 						characters and dashes.
 					</p>
-					<div class="flex mt-6">
+					<div class="flex mt-4">
 						<input
-							class="z-10 w-full rounded-r-none form-input focus:bg-white"
+							class="z-10 w-full rounded-r-none form-input "
 							type="text"
 							v-model="siteName"
 							placeholder="subdomain"
 							ref="siteName"
+							@change="checkIfExists"
 						/>
-						<div class="flex items-center px-4 bg-gray-200 border rounded-r">
+						<div class="flex items-center px-4 text-base bg-gray-100 rounded-r">
 							.{{ options.domain }}
 						</div>
 					</div>
-					<div class="mt-1 text-sm text-red-600" v-if="siteErrorMessage">
-						{{ siteErrorMessage }}
-					</div>
+					<ErrorMessage class="mt-1" :error="subdomainInvalidMessage" />
 				</div>
-				<div class="mt-10">
-					<label>
+				<div>
+					<label class="text-lg">
 						Choose your apps
 					</label>
-					<p class="text-sm text-gray-600">
+					<p class="text-base text-gray-700">
 						Select apps to install to your site. You can also choose a specific
 						version of the app.
 					</p>
-					<div class="mt-6">
-						<select class="form-select" v-model="selectedGroup">
-							<option v-for="group in options.groups" :key="group.name">
-								{{ group.name }}
-							</option>
-						</select>
+					<div class="mt-4">
+						<Input
+							type="select"
+							v-model="selectedGroup"
+							:options="groupOptions"
+						/>
 					</div>
 					<div class="mt-6">
 						<div class="flex py-2 pl-1 -my-2 -ml-1 overflow-x-auto">
 							<button
-								class="flex items-center justify-center w-40 px-6 py-8 mr-4 border rounded cursor-pointer focus:outline-none focus:shadow-outline"
+								class="relative flex items-center justify-center py-4 pl-4 pr-8 mr-4 border rounded-md cursor-pointer focus:outline-none focus:shadow-outline"
 								:class="
 									selectedApps.includes(app.app)
-										? 'bg-blue-100 border-blue-500'
-										: 'hover:bg-gray-100'
+										? 'bg-blue-50 border-blue-500'
+										: 'hover:border-blue-400'
 								"
 								v-for="app in apps"
 								:key="app.app"
 								@click="toggleApp(app)"
 							>
-								<div>
-									<img
-										class="w-8 h-8 mx-auto"
-										:src="app.logo"
-										:alt="app.name"
+								<div class="flex items-start">
+									<Input
+										class="pt-0.5 pointer-events-none"
+										tabindex="-1"
+										type="checkbox"
+										:value="selectedApps.includes(app.app)"
 									/>
-									<div class="mt-3 font-semibold">
-										{{ app.repo }}
+									<div class="ml-3 text-base text-left">
+										<div class="font-semibold">
+											{{ app.prettyName }}
+										</div>
+										<div class="text-gray-700">
+											{{ app.branch }}
+										</div>
 									</div>
 								</div>
 							</button>
 						</div>
 					</div>
 				</div>
-				<div class="mt-10">
+				<div>
 					<label class="flex py-2 leading-none">
-						<input
+						<Input
+							label="Create Site from Backup"
 							type="checkbox"
-							class="form-checkbox"
 							v-model="restoreBackup"
 						/>
-						<span class="ml-2">
-							Create Site from Backup
-						</span>
 					</label>
-					<p class="text-sm text-gray-600">
+					<p class="text-base text-gray-700">
 						Upload backup files instead of starting from a blank site.
 					</p>
-					<div v-if="restoreBackup" class="pl-2">
-						<div v-for="file in files" :key="file.type">
-							<div class="flex items-center mt-1">
-								<span class="flex-1 text-gray-800">{{ file.title }}</span>
-								<span
-									class="flex-1 text-sm text-gray-400 truncate"
-									v-if="file.file"
+					<div class="flex grid grid-cols-3 gap-4 mt-6" v-if="restoreBackup">
+						<FileUploader
+							v-for="file in files"
+							:key="file.type"
+							@success="onFileUpload(file, $event)"
+							:upload-args="{
+								method: 'press.api.site.upload_backup',
+								type: file.type
+							}"
+						>
+							<template
+								v-slot="{
+									file: fileObj,
+									uploading,
+									progress,
+									error,
+									success,
+									openFileSelector
+								}"
+							>
+								<button
+									class="w-full h-full px-4 py-6 border rounded-md focus:outline-none focus:shadow-outline hover:border-blue-400"
+									:class="success ? 'bg-blue-50 border-blue-500' : ''"
+									@click="openFileSelector()"
+									:disabled="uploading"
 								>
-									{{ file.file.name }}
-								</span>
-								<span
-									class="flex-1 text-sm text-red-400"
-									v-if="file.errorMessage"
-								>
-									{{ file.errorMessage }}
-								</span>
-								<input
-									:ref="file.type"
-									type="file"
-									class="hidden"
-									@change="onFile(file, $event)"
-								/>
-								<Button
-									class="ml-4 flex-2"
-									:disabled="file.uploading"
-									@click="$refs[file.type][0].click()"
-								>
-									<span v-if="file.file">
-										<span v-if="file.uploading">
-											Uploading
-											{{ Math.floor((file.uploaded / file.total) * 100) }}%
-										</span>
-										<span v-else>Change</span>
-									</span>
-									<span v-else>Select</span>
-								</Button>
-							</div>
-						</div>
+									<FeatherIcon
+										:name="success ? 'check' : file.icon"
+										class="inline-block w-5 h-5 text-gray-700"
+									/>
+									<div
+										class="mt-3 text-base font-semibold leading-none text-gray-800"
+									>
+										{{ file.title }}
+									</div>
+									<div
+										class="mt-2 text-xs leading-snug text-gray-700"
+										v-if="fileObj"
+									>
+										{{ fileObj.name }}
+									</div>
+									<div class="text-base" v-if="progress && progress !== 100">
+										{{ progress }} %
+									</div>
+									<div class="mt-2 text-sm text-red-600" v-if="error">
+										{{ error }}
+									</div>
+									<div class="mt-2 text-xs text-gray-500" v-if="!progress">
+										Click to upload
+									</div>
+								</button>
+							</template>
+						</FileUploader>
 					</div>
 				</div>
-				<div class="mt-10">
-					<label>
+				<div>
+					<label class="text-lg">
 						Choose your plan
 					</label>
-					<p class="text-sm text-gray-600">
+					<p class="text-base text-gray-700">
 						Select a plan based on the type of usage you are expecting on your
 						site.
 					</p>
-					<div class="mt-6">
+					<div class="mt-4">
 						<Alert class="mb-4" v-if="showAlert">
 							You have not added your billing information.
 							<router-link to="/welcome" class="border-b border-yellow-500"
@@ -148,7 +162,7 @@
 						<SitePlansTable :plans="options.plans" v-model="selectedPlan" />
 					</div>
 				</div>
-				<div class="mt-6">
+				<div>
 					<ErrorMessage :error="errorMessage" />
 					<Button
 						class="w-full mt-2"
@@ -165,19 +179,17 @@
 </template>
 
 <script>
-import frappeLogo from '@/assets/frappe-framework-logo.png';
-import erpnextLogo from '@/assets/erpnext-logo.svg';
-import FileUploader from '@/store/fileUploader';
+import FileUploader from '@/components/FileUploader';
 import SitePlansTable from '@/views/partials/SitePlansTable';
 
 export default {
 	name: 'NewSite',
 	components: {
+		FileUploader,
 		SitePlansTable
 	},
 	data: () => ({
 		siteName: null,
-		apps: [],
 		options: null,
 		restoreBackup: false,
 		selectedApps: [],
@@ -188,35 +200,26 @@ export default {
 			public: null,
 			private: null
 		},
-		siteErrorMessage: null,
+		subdomainTaken: false,
 		state: null,
 		errorMessage: null,
 		files: [
 			{
+				icon: 'database',
 				type: 'database',
 				title: 'Database Backup',
-				uploading: false,
-				uploaded: 0,
-				total: 1,
-				errorMessage: null,
 				file: null
 			},
 			{
+				icon: 'file',
 				type: 'public',
 				title: 'Public Files',
-				uploading: false,
-				uploaded: 0,
-				total: 1,
-				errorMessage: null,
 				file: null
 			},
 			{
+				icon: 'file-minus',
 				type: 'private',
 				title: 'Private Files',
-				uploading: false,
-				uploaded: 0,
-				total: 1,
-				errorMessage: null,
 				file: null
 			}
 		]
@@ -237,12 +240,9 @@ export default {
 		}
 	},
 	watch: {
-		selectedGroup() {
-			this.selectedApps = [];
-			this.updateApps();
-		},
-		siteName: function() {
-			this.checkIfValid();
+		selectedGroup: {
+			handler: 'resetAppSelection',
+			immediate: true
 		}
 	},
 	computed: {
@@ -253,27 +253,55 @@ export default {
 				!this.options.has_card &&
 				!this.options.allow_partner
 			);
+		},
+		groupOptions() {
+			return this.options.groups.map(option => option.name);
+		},
+		apps() {
+			if (!this.options) return [];
+
+			let group = this.options.groups.find(g => g.name == this.selectedGroup);
+			return group.apps.map(d => {
+				let prettyName = d.scrubbed;
+				if (d.url.includes('https://github.com/frappe')) {
+					prettyName = 'frappe/' + d.scrubbed;
+				}
+				return {
+					name: d.name,
+					app: d.name,
+					frappe: d.frappe,
+					branch: d.branch,
+					url: d.url,
+					prettyName
+				};
+			});
+		},
+		subdomainInvalidMessage() {
+			if (!this.siteName) {
+				return '';
+			}
+			if (this.siteName.length < 5) {
+				return 'Subdomain too short. Use 5 or more characters';
+			}
+			if (this.siteName.length > 32) {
+				return 'Subdomain too long. Use 32 or less characters';
+			}
+			if (!this.siteName.match(/^[a-z0-9][a-z0-9-]*[a-z0-9]$/)) {
+				return 'Subdomain contains invalid characters. Use lowercase characters, numbers and hyphens';
+			}
+			if (this.subdomainTaken) {
+				return `${this.siteName}.${this.options.domain} already exists.`;
+			}
+			return '';
 		}
 	},
 	methods: {
-		updateApps() {
-			let group = this.options.groups.find(g => g.name == this.selectedGroup);
-			this.apps = group.apps.map(d => {
-				let app = d.scrubbed;
-				return {
-					app: d.name,
-					frappe: d.frappe,
-					repo: 'frappe/' + d.scrubbed,
-					logo: app === 'frappe' ? frappeLogo : erpnextLogo
-				};
-			});
-			let frappeApp = this.apps.find(a => this.isFrappeApp(a));
+		resetAppSelection() {
+			this.selectedApps = [];
+			let frappeApp = this.apps.find(app => app.frappe);
 			if (frappeApp) {
 				this.selectedApps.push(frappeApp.app);
 			}
-			this.$nextTick(() => {
-				this.$refs.siteName.focus();
-			});
 		},
 		async createSite() {
 			let siteName = await this.$call('press.api.site.new', {
@@ -287,11 +315,8 @@ export default {
 			});
 			this.$router.push(`/sites/${siteName}`);
 		},
-		isFrappeApp(app) {
-			return app.frappe;
-		},
 		toggleApp(app) {
-			if (this.isFrappeApp(app)) return;
+			if (app.frappe) return;
 			if (!this.selectedApps.includes(app.app)) {
 				this.selectedApps.push(app.app);
 			} else {
@@ -300,7 +325,7 @@ export default {
 		},
 		canCreateSite() {
 			return (
-				!this.siteErrorMessage &&
+				!this.subdomainInvalidMessage &&
 				this.siteName &&
 				this.selectedApps.length > 0 &&
 				this.selectedPlan &&
@@ -308,29 +333,10 @@ export default {
 				(!this.restoreBackup || Object.values(this.selectedFiles).every(v => v))
 			);
 		},
-		async checkIfValid() {
-			this.siteErrorMessage = null;
-			if (this.siteName.length < 5) {
-				this.siteErrorMessage = 'Subdomain too short. Use 5 or more characters';
-				return;
-			}
-			if (this.siteName.length > 32) {
-				this.siteErrorMessage = 'Subdomain too long. Use 32 or less characters';
-				return;
-			}
-			if (!this.siteName.match(/^[a-z0-9][a-z0-9-]*[a-z0-9]$/)) {
-				this.siteErrorMessage =
-					'Subdomain contains invalid characters. Use lowercase characters, numbers and hyphens';
-				return;
-			}
-			if (!this.siteErrorMessage) {
-				let exists = await this.$call('press.api.site.exists', {
-					subdomain: this.siteName
-				});
-				if (exists) {
-					this.siteErrorMessage = `${this.siteName}.${this.options.domain} already exists.`;
-				}
-			}
+		async checkIfExists() {
+			this.subdomainTaken = await this.$call('press.api.site.exists', {
+				subdomain: this.siteName
+			});
 		},
 		disablePlan(plan) {
 			if (this.options.free_account) {
@@ -350,56 +356,8 @@ export default {
 			}
 			return true;
 		},
-		onFile(file, event) {
-			file.errorMessage = null;
-			file.file = event.target.files[0];
-			this.uploadFile(file);
-		},
-		async uploadFile(file) {
-			file.uploader = new FileUploader();
-			file.uploader.on('start', () => {
-				file.uploading = true;
-			});
-			file.uploader.on('progress', data => {
-				file.uploaded = data.uploaded;
-				file.total = data.total;
-			});
-			file.uploader.on('error', () => {
-				file.uploading = false;
-			});
-			file.uploader.on('finish', () => {
-				file.uploading = false;
-			});
-
-			file.uploader
-				.upload(file.file, {
-					method: 'press.api.site.upload_backup',
-					type: file.type
-				})
-				.then(result => {
-					if (result.status == 'success') {
-						this.selectedFiles[file.type] = result.file;
-					} else {
-						file.file = null;
-						file.uploading = false;
-						file.errorMessage = result.message;
-					}
-				})
-				.catch(error => {
-					file.file = null;
-					file.uploading = false;
-					if (error._server_messages) {
-						file.errorMessage = JSON.parse(
-							JSON.parse(error._server_messages)[0]
-						).message;
-					} else if (error.exc) {
-						file.errorMessage = JSON.parse(error.exc)[0]
-							.split('\n')
-							.slice(-2, -1)[0];
-					} else {
-						file.errorMessage = 'Something Went Wrong';
-					}
-				});
+		onFileUpload(file, fileurl) {
+			this.selectedFiles[file.type] = fileurl;
 		}
 	}
 };

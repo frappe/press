@@ -5,17 +5,17 @@
 			description="General information about your site"
 		>
 			<SectionCard>
-				<div class="grid grid-cols-3 px-6 py-3 text-sm">
+				<div class="grid grid-cols-3 px-6 py-3 text-base">
 					<div class="font-medium text-gray-700">Site name:</div>
 					<div class="col-span-2 font-medium">{{ site.name }}</div>
 				</div>
-				<div class="grid grid-cols-3 px-6 py-3 text-sm border-t">
+				<div class="grid grid-cols-3 px-6 py-3 text-base">
 					<div class="font-medium text-gray-700">Created:</div>
 					<div class="col-span-2 font-medium">
 						<FormatDate>{{ site.creation }}</FormatDate>
 					</div>
 				</div>
-				<div class="grid grid-cols-3 px-6 py-3 text-sm border-t">
+				<div class="grid grid-cols-3 px-6 py-3 text-base">
 					<div class="font-medium text-gray-700">Last update:</div>
 					<div class="col-span-2 font-medium">
 						<FormatDate>{{ site.last_updated }}</FormatDate>
@@ -50,7 +50,9 @@
 					:key="app.url"
 					target="_blank"
 				>
-					<p class="font-medium text-brand">{{ app.owner }}/{{ app.repo }}</p>
+					<p class="text-base font-medium text-brand">
+						{{ app.owner }}/{{ app.repo }}
+					</p>
 					<p class="text-sm text-gray-800">
 						{{ app.branch }}
 					</p>

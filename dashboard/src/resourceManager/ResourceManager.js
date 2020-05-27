@@ -1,4 +1,4 @@
-import call from '../call';
+import call from '../controllers/call';
 
 export default class ResourceManager {
 	constructor(vm, resourceDefs) {

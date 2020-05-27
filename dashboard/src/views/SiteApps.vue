@@ -3,7 +3,7 @@
 		<Section title="Apps" description="Apps installed on your site">
 			<SectionCard>
 				<div
-					class="flex px-6 py-3 hover:bg-gray-50"
+					class="flex px-6 py-3 text-base hover:bg-gray-50"
 					v-for="app in site.installed_apps"
 					:key="app.url"
 				>
@@ -34,7 +34,7 @@
 		>
 			<SectionCard>
 				<div
-					class="flex px-6 py-3 hover:bg-gray-50"
+					class="flex px-6 py-3 text-base hover:bg-gray-50"
 					v-for="app in site.available_apps"
 					:key="app.url"
 				>

@@ -1,26 +1,20 @@
 <template>
-	<LoginBox v-if="state !== 'SignupSuccess'">
-		<div class="mb-8">
-			<span class="text-lg">Create your account</span>
-		</div>
-		<form class="flex flex-col" @submit.prevent="signup">
-			<label class="block">
-				<span class="text-gray-800">Email</span>
-				<input
-					class="block w-full mt-2 shadow form-input"
-					type="email"
-					placeholder="johndoe@mail.com"
-					autocomplete="email"
-					v-model="email"
-					required
-				/>
-			</label>
-			<ErrorMessage class="mt-6" :error="errorMessage" />
-			<Button
-				class="mt-6"
-				:disabled="state === 'RequestStarted'"
-				type="primary"
-			>
+	<LoginBox
+		v-if="!emailSent"
+		title="Create your account"
+		:class="{ 'pointer-events-none': $resources.signup.loading }"
+	>
+		<form class="flex flex-col" @submit.prevent="$resources.signup.submit()">
+			<Input
+				label="Email"
+				type="email"
+				placeholder="johndoe@mail.com"
+				autocomplete="email"
+				v-model="email"
+				required
+			/>
+			<ErrorMessage class="mt-4" :error="$resources.signup.error" />
+			<Button class="mt-6" :loading="$resources.signup.loading" type="primary">
 				Submit
 			</Button>
 			<div class="mt-10 text-center border-t">
@@ -32,17 +26,17 @@
 					</span>
 				</div>
 			</div>
-			<router-link class="text-sm text-center" to="/login">
+			<router-link class="text-base text-center" to="/login">
 				Already have an account? Log in.
 			</router-link>
 		</form>
 	</LoginBox>
-	<div class="px-6 mt-20 text-center" v-else>
+	<SuccessCard class="mx-auto mt-20" title="Verification Email Sent!" v-else>
 		We have sent an email to
 		<span class="font-semibold">{{ email }}</span
 		>. Please click on the link received to verify your email and set up your
 		account.
-	</div>
+	</SuccessCard>
 </template>
 
 <script>
@@ -55,17 +49,21 @@ export default {
 	},
 	data() {
 		return {
-			state: null,
 			email: null,
-			errorMessage: null
+			emailSent: false
 		};
 	},
-	methods: {
-		async signup() {
-			await this.$call('press.api.account.signup', {
-				email: this.email
-			});
-			this.state = 'SignupSuccess';
+	resources: {
+		signup() {
+			return {
+				method: 'press.api.account.signup',
+				params: {
+					email: this.email
+				},
+				onSuccess() {
+					this.emailSent = true;
+				}
+			};
 		}
 	}
 };

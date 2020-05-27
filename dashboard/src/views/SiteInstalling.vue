@@ -7,7 +7,7 @@
 		<SectionCard>
 			<div
 				v-for="step in installingJob.steps"
-				class="flex items-center px-6 py-2"
+				class="flex items-center px-6 py-2 text-base"
 				:key="step.name"
 			>
 				<div class="w-4 h-4 text-gray-800">
@@ -43,7 +43,7 @@ export default {
 	},
 	methods: {
 		setupSiteInstall() {
-			this.$store.socket.on('agent_job_update', data => {
+			this.$socket.on('agent_job_update', data => {
 				if (
 					data.site === this.site.name &&
 					(data.name === 'New Site' || data.name === 'New Site from Backup')

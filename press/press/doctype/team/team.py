@@ -77,6 +77,10 @@ class Team(Document):
 
 		self.save(ignore_permissions=True)
 
+	def has_member(self, user):
+		users = [row.user for row in self.team_members]
+		return user in users
+
 	def create_stripe_customer(self):
 		if not self.stripe_customer_id:
 			stripe = get_stripe()
