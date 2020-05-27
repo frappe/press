@@ -9,19 +9,15 @@
 			</Button>
 		</Section>
 		<Dialog v-model="showDialog" title="Drop Site">
-			<p>
+			<p class="text-base">
 				Are you sure you want to drop your site? The site will be archived and
 				all of its files will be deleted. This action cannot be undone.
 			</p>
-			<p class="mt-4">
+			<p class="mt-4 text-base">
 				Please type
 				<span class="font-semibold">{{ site.name }}</span> to confirm.
 			</p>
-			<input
-				type="text"
-				class="w-full mt-4 text-gray-900 form-input"
-				v-model="confirmSiteName"
-			/>
+			<Input type="text" class="w-full mt-4" v-model="confirmSiteName" />
 			<div slot="actions">
 				<Button @click="showDialog = false">
 					Cancel
