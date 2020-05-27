@@ -23,23 +23,23 @@
 			</div>
 			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2" v-if="analytics">
 				<div class="px-6 py-4 mt-6 border rounded shadow">
-					<div>Requests per minute</div>
+					<div class="text-base">Requests per minute</div>
 					<div ref="requests-per-minute"></div>
 				</div>
 				<div class="px-6 py-4 mt-6 border rounded shadow">
-					<div>CPU usage per minute</div>
+					<div class="text-base">CPU usage per minute</div>
 					<div ref="requests-cpu-usage"></div>
 				</div>
 				<div class="px-6 py-4 mt-6 border rounded shadow">
-					<div>Background Jobs per minute</div>
+					<div class="text-base">Background Jobs per minute</div>
 					<div ref="jobs-per-minute"></div>
 				</div>
 				<div class="px-6 py-4 mt-6 border rounded shadow">
-					<div>Background Jobs CPU usage per minute</div>
+					<div class="text-base">Background Jobs CPU usage per minute</div>
 					<div ref="jobs-cpu-usage"></div>
 				</div>
 				<div class="px-6 py-4 mt-6 border rounded shadow">
-					<div>Uptime</div>
+					<div class="text-base">Uptime</div>
 					<div>
 						<div class="mt-8" v-for="type in uptimeTypes" :key="type.key">
 							<div class="flex justify-between h-4">
