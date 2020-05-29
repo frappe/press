@@ -127,7 +127,9 @@ def backups(name):
 @protected()
 def domains(name):
 	domains = frappe.get_all(
-		"Site Domain", fields=["name", "domain", "status"], filters={"site": name}
+		"Site Domain",
+		fields=["name", "domain", "status", "retry_count"],
+		filters={"site": name},
 	)
 	return domains
 
@@ -452,6 +454,12 @@ def check_dns(name, domain):
 @protected()
 def add_domain(name, domain):
 	frappe.get_doc("Site", name).add_domain(domain)
+
+
+@frappe.whitelist()
+@protected()
+def retry_add_domain(name, domain):
+	frappe.get_doc("Site", name).retry_add_domain(domain)
 
 
 @frappe.whitelist()

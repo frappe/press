@@ -11,7 +11,8 @@
   "domain",
   "ssl",
   "dns_type",
-  "tls_certificate"
+  "tls_certificate",
+  "retry_count"
  ],
  "fields": [
   {
@@ -68,10 +69,18 @@
    "label": "Status",
    "options": "Pending\nIn Progress\nActive\nBroken",
    "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "retry_count",
+   "fieldtype": "Int",
+   "label": "retry_count",
+   "read_only": 1,
+   "reqd": 1
   }
  ],
  "links": [],
- "modified": "2020-04-06 00:30:44.024389",
+ "modified": "2020-05-29 12:49:26.576863",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Domain",

@@ -29,6 +29,22 @@
 						<Badge :status="d.status">
 							{{ d.status }}
 						</Badge>
+						<Button
+							@click="retryAddDomain(d.domain)"
+							v-if="d.status == 'Broken' && d.retry_count <= 5"
+							class="ml-8"
+						>
+							Retry
+						</Button>
+					</div>
+
+					<div
+						v-if="d.status == 'Broken'"
+						class="col-span-2 text-red-600 text-sm pt-1"
+					>
+						<p>
+							We encountered an error while adding the domain.
+						</p>
 					</div>
 				</div>
 			</SectionCard>
@@ -127,6 +143,13 @@ export default {
 			});
 			this.dnsVerified = false;
 			this.showDialog = false;
+			this.fetchDomains();
+		},
+		async retryAddDomain(domain) {
+			await this.$call('press.api.site.retry_add_domain', {
+				name: this.site.name,
+				domain: domain
+			});
 			this.fetchDomains();
 		}
 	},
