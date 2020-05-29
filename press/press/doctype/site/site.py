@@ -125,6 +125,20 @@ class Site(Document):
 				}
 			).insert()
 
+	def retry_add_domain(self, domain):
+		if check_dns(self.name, domain):
+			site_domain = frappe.get_all(
+				"Site Domain",
+				filters={
+					"site": self.name,
+					"domain": domain,
+					"status": ("!=", "Active"),
+					"retry_count": ("<=", 5),
+				},
+			)[0]
+			site_domain = frappe.get_doc("Site Domain", site_domain.name)
+			site_domain.retry()
+
 	def archive(self):
 		log_site_activity(self.name, "Archive")
 		agent = Agent(self.server)

@@ -21,8 +21,14 @@ class SiteDomain(Document):
 		self.save()
 
 	def process_tls_certificate_update(self):
-		if frappe.db.get_value("TLS Certificate", self.tls_certificate, "status") == "Active":
+		certificate_status = frappe.db.get_value(
+			"TLS Certificate", self.tls_certificate, "status"
+		)
+		if certificate_status == "Active":
 			self.create_agent_request()
+		elif certificate_status == "Failure":
+			self.status = "Broken"
+			self.save()
 
 	def create_agent_request(self):
 		server = frappe.db.get_value("Site", self.site, "server")
@@ -30,6 +36,16 @@ class SiteDomain(Document):
 		agent = Agent(proxy_server, server_type="Proxy Server")
 		agent.ping()
 		agent.new_host(self)
+
+	def retry(self):
+		self.status = "Pending"
+		self.retry_count += 1
+		self.save()
+		if self.tls_certificate:
+			certificate = frappe.get_doc("TLS Certificate", self.tls_certificate)
+			certificate.obtain_certificate()
+		else:
+			self.create_tls_certificate()
 
 
 def process_new_host_job_update(job):
