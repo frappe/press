@@ -20,7 +20,9 @@
   "billing_address",
   "free_credits_allocated",
   "column_break_12",
-  "address_html"
+  "address_html",
+  "github_section",
+  "github_access_token"
  ],
  "fields": [
   {
@@ -113,10 +115,20 @@
    "fieldtype": "Link",
    "label": "Billing Address",
    "options": "Address"
+  },
+  {
+   "fieldname": "github_section",
+   "fieldtype": "Section Break",
+   "label": "GitHub"
+  },
+  {
+   "fieldname": "github_access_token",
+   "fieldtype": "Data",
+   "label": "GitHub Access Token"
   }
  ],
  "links": [],
- "modified": "2020-05-20 22:54:29.103308",
+ "modified": "2020-05-29 18:14:35.843662",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

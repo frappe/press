@@ -36,7 +36,11 @@
   "erpnext_authentication",
   "erpnext_url",
   "erpnext_api_key",
-  "erpnext_api_secret"
+  "erpnext_api_secret",
+  "section_break_33",
+  "github_app_client_id",
+  "github_app_client_secret",
+  "github_webhook_secret",
  ],
  "fields": [
   {
@@ -222,6 +226,21 @@
    "fieldname": "erpnext_url",
    "fieldtype": "Data",
    "label": "ERPNext URL"
+  },
+  {
+   "fieldname": "section_break_33",
+   "fieldtype": "Section Break",
+   "label": "GitHub App Authentication"
+  },
+  {
+   "fieldname": "github_app_client_id",
+   "fieldtype": "Data",
+   "label": "GitHub App Client ID"
+  },
+  {
+   "fieldname": "github_app_client_secret",
+   "fieldtype": "Data",
+   "label": "GitHub App Client Secret"
   }
  ],
  "issingle": 1,
