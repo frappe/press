@@ -142,6 +142,10 @@ export default {
 					route: '/sites'
 				},
 				{
+					label: 'Apps',
+					route: '/apps'
+				},
+				{
 					label: 'Settings',
 					route: '/account'
 				}
