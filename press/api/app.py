@@ -5,6 +5,7 @@
 from __future__ import unicode_literals
 import frappe
 from press.utils import get_current_team
+from press.api.site import protected
 
 
 @frappe.whitelist()
@@ -29,6 +30,7 @@ def new(installation, url, owner, repo, branch, app_name, enable_auto_deploy):
 
 
 @frappe.whitelist()
+@protected("Frappe App")
 def get(name):
 	app = frappe.get_doc("Frappe App", name)
 	return {"name": app.name, "url": app.url, "releases": [], "deploys": []}
