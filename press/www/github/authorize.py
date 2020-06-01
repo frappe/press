@@ -16,15 +16,19 @@ def get_context(context):
 
 
 def obtain_access_token(code):
-	client_id = frappe.db.get_single_value("Press Settings", "github_app_client_id")
-	client_secret = frappe.db.get_single_value(
-		"Press Settings", "github_app_client_secret"
-	)
-	data = {"client_id": client_id, "client_secret": client_secret, "code": code}
-	headers = {"Accept": "application/json"}
-	response = requests.post(
-		"https://github.com/login/oauth/access_token", data=data, headers=headers,
-	).json()
-	team = frappe.get_doc("Team", frappe.session.user)
-	team.github_access_token = response["access_token"]
-	team.save()
+	try:
+		client_id = frappe.db.get_single_value("Press Settings", "github_app_client_id")
+		client_secret = frappe.db.get_single_value(
+			"Press Settings", "github_app_client_secret"
+		)
+		data = {"client_id": client_id, "client_secret": client_secret, "code": code}
+		headers = {"Accept": "application/json"}
+		response = requests.post(
+			"https://github.com/login/oauth/access_token", data=data, headers=headers,
+		).json()
+		team = frappe.get_doc("Team", frappe.session.user)
+		team.github_access_token = response["access_token"]
+		team.save(ignore_permissions=True)
+	except Exception:
+		import traceback
+		traceback.print_exc()
