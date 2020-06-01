@@ -10,12 +10,6 @@ from github import Github
 
 
 class FrappeApp(Document):
-	def validate(self):
-		*_, self.repo_owner, self.scrubbed = self.url.split("/")
-
-	def after_insert(self):
-		self.create_app_release()
-
 	def create_app_release(self):
 		github_access_token = frappe.db.get_single_value(
 			"Press Settings", "github_access_token"
@@ -25,7 +19,7 @@ class FrappeApp(Document):
 		else:
 			client = Github()
 
-		repo = client.get_repo(f"{self.repo_owner}/{self.scrubbed}")
+		repo = client.get_repo(f"{self.repo_owner}/{self.repo}")
 		branch = repo.get_branch(self.branch)
 		hash = branch.commit.sha
 		if not frappe.db.exists("App Release", {"hash": hash}):
@@ -36,3 +30,15 @@ def poll_new_releases():
 	for app in frappe.get_all("Frappe App"):
 		app = frappe.get_doc("Frappe App", app.name)
 		app.create_app_release()
+
+def get_permission_query_conditions(user):
+	from press.utils import get_current_team
+
+	if not user:
+		user = frappe.session.user
+	if frappe.session.data.user_type == "System User":
+		return ""
+
+	team = get_current_team()
+
+	return f"(`tabFrappe App`.`team` = {frappe.db.escape(team)})"
