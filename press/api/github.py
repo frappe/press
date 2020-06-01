@@ -29,6 +29,27 @@ def hook(*args, **kwargs):
 		log_error("GitHub Webhook Error", args=args, kwargs=kwargs)
 
 
+def get_jwt_token():
+	key = frappe.db.get_single_value("Press Settings", "github_app_private_key")
+	app_id = frappe.db.get_single_value("Press Settings", "github_app_id")
+	now = datetime.now()
+	expiry = now + timedelta(minutes=10)
+	payload = {"iat": int(now.timestamp()), "exp": int(expiry.timestamp()), "iss": app_id}
+	token = jwt.encode(payload, key.encode(), algorithm="RS256")
+	return token.decode()
+
+
+def get_access_token(install):
+	token = get_jwt_token()
+	headers = {
+		"Authorization": f"Bearer {token}",
+		"Accept": "application/vnd.github.machine-man-preview+json",
+	}
+	response = requests.post(
+		f"https://api.github.com/app/installations/{install}/access_tokens", headers=headers,
+	).json()
+	return response["token"]
+
 
 @frappe.whitelist()
 def options():
