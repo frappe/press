@@ -74,7 +74,7 @@ const routes = [
 		props: true
 	},
 	{
-		path: '/apps/:appName',
+		path: '/apps/:appName(.*)',
 		name: 'App',
 		component: () =>
 			import(/* webpackChunkName: "frappeapp" */ '../views/App.vue'),
