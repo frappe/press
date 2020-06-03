@@ -327,6 +327,7 @@ def process_job_updates(job_name):
 			process_reinstall_site_job_update,
 		)
 		from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
+		from press.press.doctype.offsite_backup.offsite_backup import process_offsite_backup_job_update
 		from press.press.doctype.site_domain.site_domain import process_new_host_job_update
 		from press.press.doctype.site_update.site_update import (
 			process_update_site_job_update,
@@ -353,6 +354,8 @@ def process_job_updates(job_name):
 			process_new_site_job_update(job)
 		if job.job_type == "Backup Site":
 			process_backup_site_job_update(job)
+		if job.job_type == "Backup Sites to S3":
+			process_offsite_backup_job_update(job)
 		if job.job_type == "Archive Site":
 			process_archive_site_job_update(job)
 		if job.job_type == "Remove Site from Upstream":
