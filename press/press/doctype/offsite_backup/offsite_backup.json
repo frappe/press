@@ -34,14 +34,16 @@
   {
    "fieldname": "job",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Job",
    "options": "Agent Job",
+   "read_only": 1,
    "show_days": 1,
    "show_seconds": 1
   }
  ],
  "links": [],
- "modified": "2020-06-03 17:02:14.544982",
+ "modified": "2020-06-03 22:42:23.473403",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Offsite Backup",
