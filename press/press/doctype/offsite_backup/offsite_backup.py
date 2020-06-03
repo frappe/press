@@ -20,7 +20,7 @@ class OffsiteBackup(Document):
 	def after_insert(self):
 		bench = frappe.get_doc("Bench", self.bench)
 		server = frappe.get_doc("Server", bench.server)
-		auth = {"ACCESS KEY": server.aws_access_key, "SECRET KEY": server.aws_secret_key}
+		auth = {"ACCESS_KEY": server.aws_access_key, "SECRET_KEY": server.aws_secret_key}
 		agent = Agent(bench.server)
 
 		if not server.s3_bucket:
