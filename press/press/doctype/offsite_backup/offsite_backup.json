@@ -5,7 +5,9 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "bench"
+  "status",
+  "bench",
+  "job"
  ],
  "fields": [
   {
@@ -13,12 +15,33 @@
    "fieldtype": "Link",
    "label": "Bench",
    "options": "Bench",
+   "reqd": 1,
+   "show_days": 1,
+   "show_seconds": 1
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Pending\nRunning\nSuccess\nFailure",
+   "read_only": 1,
+   "reqd": 1,
+   "show_days": 1,
+   "show_seconds": 1
+  },
+  {
+   "fieldname": "job",
+   "fieldtype": "Link",
+   "label": "Job",
+   "options": "Agent Job",
    "show_days": 1,
    "show_seconds": 1
   }
  ],
  "links": [],
- "modified": "2020-06-03 13:39:34.225621",
+ "modified": "2020-06-03 17:02:14.544982",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Offsite Backup",
