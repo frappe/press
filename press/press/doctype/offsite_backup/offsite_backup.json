@@ -1,0 +1,42 @@
+{
+ "actions": [],
+ "creation": "2020-06-03 13:33:12.175047",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "bench"
+ ],
+ "fields": [
+  {
+   "fieldname": "bench",
+   "fieldtype": "Link",
+   "label": "Bench",
+   "options": "Bench",
+   "show_days": 1,
+   "show_seconds": 1
+  }
+ ],
+ "links": [],
+ "modified": "2020-06-03 13:39:34.225621",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Offsite Backup",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}

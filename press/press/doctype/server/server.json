@@ -18,7 +18,12 @@
   "upstream",
   "proxy_server",
   "column_break_8",
-  "is_upstream_setup"
+  "is_upstream_setup",
+  "aws_configuration_section",
+  "s3_bucket",
+  "column_break_16",
+  "aws_access_key",
+  "aws_secret_key"
  ],
  "fields": [
   {
@@ -27,66 +32,90 @@
    "in_list_view": 1,
    "label": "IP",
    "reqd": 1,
-   "set_only_once": 1
+   "set_only_once": 1,
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "mariadb_root_password",
    "fieldtype": "Password",
-   "label": "MariaDB Root Password"
+   "label": "MariaDB Root Password",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "proxy_server",
    "fieldtype": "Link",
    "label": "Proxy Server",
-   "options": "Proxy Server"
+   "options": "Proxy Server",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "private_ip",
    "fieldtype": "Data",
    "label": "Private IP",
-   "reqd": 1
+   "reqd": 1,
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "agent_password",
    "fieldtype": "Password",
-   "label": "Agent Password"
+   "label": "Agent Password",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "upstream",
    "fieldtype": "Section Break",
-   "label": "Upstream"
+   "label": "Upstream",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "agent_section",
    "fieldtype": "Section Break",
-   "label": "Agent"
+   "label": "Agent",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "column_break_8",
-   "fieldtype": "Column Break"
+   "fieldtype": "Column Break",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "column_break_2",
-   "fieldtype": "Column Break"
+   "fieldtype": "Column Break",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "mariadb_section",
    "fieldtype": "Section Break",
-   "label": "MariaDB"
+   "label": "MariaDB",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "default": "0",
    "fieldname": "is_server_setup",
    "fieldtype": "Check",
    "label": "Server Setup",
-   "read_only": 1
+   "read_only": 1,
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "default": "0",
    "fieldname": "is_upstream_setup",
    "fieldtype": "Check",
    "label": "Upstream Setup",
-   "read_only": 1
+   "read_only": 1,
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "status",
@@ -95,11 +124,47 @@
    "in_standard_filter": 1,
    "label": "Status",
    "options": "Active\nBroken",
-   "reqd": 1
+   "reqd": 1,
+   "show_days": 1,
+   "show_seconds": 1
+  },
+  {
+   "fieldname": "aws_configuration_section",
+   "fieldtype": "Section Break",
+   "label": "AWS Configuration",
+   "show_days": 1,
+   "show_seconds": 1
+  },
+  {
+   "fieldname": "s3_bucket",
+   "fieldtype": "Data",
+   "label": "Bucket",
+   "show_days": 1,
+   "show_seconds": 1
+  },
+  {
+   "fieldname": "aws_access_key",
+   "fieldtype": "Data",
+   "label": "Access Key",
+   "show_days": 1,
+   "show_seconds": 1
+  },
+  {
+   "fieldname": "aws_secret_key",
+   "fieldtype": "Data",
+   "label": "Secret Key",
+   "show_days": 1,
+   "show_seconds": 1
+  },
+  {
+   "fieldname": "column_break_16",
+   "fieldtype": "Column Break",
+   "show_days": 1,
+   "show_seconds": 1
   }
  ],
  "links": [],
- "modified": "2020-04-03 13:28:11.887351",
+ "modified": "2020-06-03 16:14:15.201617",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
