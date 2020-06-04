@@ -7,6 +7,18 @@ from frappe.model.document import Document
 from press.agent import Agent
 
 
+def take_offsite_backups():
+	benches = [x.name for x in frappe.get_all(
+		"Bench",
+		fields=["name"],
+		filters={"status": "Active"}
+	)]
+	for bench in benches:
+		doc = frappe.new_doc("Offsite Backup")
+		doc.bench = bench
+		doc.insert()
+
+
 def process_offsite_backup_job_update(job):
 	offsite_backup = frappe.get_all(
 		"Offsite Backup", fields=["name", "status"], filters={"job": job.name}
