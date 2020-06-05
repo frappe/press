@@ -4,6 +4,7 @@
 
 import frappe
 from frappe.model.document import Document
+from frappe.utils.password import get_decrypted_password
 from press.agent import Agent
 
 
@@ -31,12 +32,15 @@ def process_offsite_backup_job_update(job):
 class OffsiteBackup(Document):
 	def after_insert(self):
 		bench = frappe.get_doc("Bench", self.bench)
-		server = frappe.get_doc("Server", bench.server)
-		auth = {"ACCESS_KEY": server.aws_access_key, "SECRET_KEY": server.aws_secret_key}
+		settings = frappe.get_single("Press Settings")
+		auth = {
+			"ACCESS_KEY": settings.offsite_backups_access_key_id,
+			"SECRET_KEY": get_decrypted_password(settings.offsite_backups_secret_access_key)
+		}
 		agent = Agent(bench.server)
 
-		if not server.s3_bucket:
-			frappe.msgprint(f"S3 Bucket isn't set for server {server.name}", raise_exception=True)
+		if not settings.aws_s3_bucket:
+			frappe.throw("Offsite Backups aren't set yet")
 
-		job = agent.offsite_backup(bench.name, server.s3_bucket, auth)
+		job = agent.offsite_backup(bench.name, settings.aws_s3_bucket, auth)
 		frappe.db.set_value(self.doctype, self.name, "job", job.name)
