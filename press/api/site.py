@@ -13,6 +13,7 @@ from pathlib import Path
 import tarfile
 import wrapt
 import frappe
+from press.agent import Agent
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.site_update.site_update import (
 	is_update_available_for_site,
@@ -466,6 +467,20 @@ def retry_add_domain(name, domain):
 @protected()
 def install_app(name, app):
 	frappe.get_doc("Site", name).install_app(app)
+
+
+@frappe.whitelist()
+@protected()
+def logs(name):
+	site = frappe.get_doc("Site", name)
+	return Agent(site.server).get(f"benches/{site.bench}/sites/{name}/logs")
+
+
+@frappe.whitelist()
+@protected()
+def log(name, log):
+	site = frappe.get_doc("Site", name)
+	return Agent(site.server).get(f"benches/{site.bench}/sites/{name}/logs/{log}")
 
 
 @frappe.whitelist()
