@@ -18,12 +18,7 @@
   "upstream",
   "proxy_server",
   "column_break_8",
-  "is_upstream_setup",
-  "aws_configuration_section",
-  "s3_bucket",
-  "column_break_16",
-  "aws_access_key",
-  "aws_secret_key"
+  "is_upstream_setup"
  ],
  "fields": [
   {
@@ -127,44 +122,10 @@
    "reqd": 1,
    "show_days": 1,
    "show_seconds": 1
-  },
-  {
-   "fieldname": "aws_configuration_section",
-   "fieldtype": "Section Break",
-   "label": "AWS Configuration",
-   "show_days": 1,
-   "show_seconds": 1
-  },
-  {
-   "fieldname": "s3_bucket",
-   "fieldtype": "Data",
-   "label": "Bucket",
-   "show_days": 1,
-   "show_seconds": 1
-  },
-  {
-   "fieldname": "aws_access_key",
-   "fieldtype": "Data",
-   "label": "Access Key",
-   "show_days": 1,
-   "show_seconds": 1
-  },
-  {
-   "fieldname": "aws_secret_key",
-   "fieldtype": "Data",
-   "label": "Secret Key",
-   "show_days": 1,
-   "show_seconds": 1
-  },
-  {
-   "fieldname": "column_break_16",
-   "fieldtype": "Column Break",
-   "show_days": 1,
-   "show_seconds": 1
   }
  ],
  "links": [],
- "modified": "2020-06-03 16:14:15.201617",
+ "modified": "2020-06-05 18:58:15.941498",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
