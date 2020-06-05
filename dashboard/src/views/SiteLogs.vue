@@ -68,32 +68,6 @@ export default {
 		logs: [],
 		selectedLog: null
 	}),
-	// resources: {
-	// 	logs() {
-	// 		return {
-	// 			method: 'press.api.site.logs',
-	// 			params: {
-	// 				name: this.site.name
-	// 			},
-	// 			default: [],
-	// 			auto: true,
-	// 			onSuccess: () => {
-	// 				if (this.logs && !this.logName) {
-	// 					this.$router.push(`/sites/${this.site.name}/logs/${this.logs[0].name}`);
-	// 				}
-	// 			}
-	// 		};
-	// 	},
-	// 	fetchLogFile() {
-	// 		return {
-	// 			method: 'press.api.site.log',
-	// 			params: {
-	// 				name: this.site.name,
-	// 				log: this.logName
-	// 			}
-	// 		}
-	// 	}
-	// },
 	watch: {
 		logName(value) {
 			if (!value) {
