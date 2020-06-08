@@ -40,7 +40,7 @@
 
 					<div
 						v-if="d.status == 'Broken'"
-						class="col-span-2 text-red-600 text-sm pt-1"
+						class="col-span-2 pt-1 text-sm text-red-600"
 					>
 						<p>
 							We encountered an error while adding the domain.
@@ -59,9 +59,9 @@
 				To add a custom domain, you must already own it. If you don't have one,
 				buy it and come back here.
 			</p>
-			<input
+			<Input
 				type="text"
-				class="w-full mt-4 text-gray-900 form-input"
+				class="mt-4"
 				placeholder="example.com"
 				v-model="newDomain"
 				@change="dnsVerified = null"

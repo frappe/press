@@ -35,21 +35,18 @@
 								v-model="showTransferCreditsDialog"
 								title="Transfer Credits from ERPNext.com"
 							>
-								<p v-if="availablePartnerCredits">
-									Available credits: {{ availablePartnerCredits.formatted }}
-								</p>
-								<label class="block" v-if="availablePartnerCredits">
-									<span class="text-gray-800 sr-only">Amount to Transfer</span>
-									<input
-										class="block w-full mt-2 shadow form-input"
-										v-model.number="creditsToTransfer"
-										name="amount"
-										autocomplete="off"
-										type="number"
-										min="1"
-										:max="availablePartnerCredits.value"
-									/>
-								</label>
+								<Input
+									v-if="availablePartnerCredits"
+									:label="
+										`Amount to Transfer (Credits available: ${availablePartnerCredits.formatted})`
+									"
+									v-model.number="creditsToTransfer"
+									name="amount"
+									autocomplete="off"
+									type="number"
+									min="1"
+									:max="availablePartnerCredits.value"
+								/>
 								<ErrorMessage
 									class="mt-2"
 									:error="$resources.transferPartnerCredits.error"
