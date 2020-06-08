@@ -50,6 +50,8 @@ class GitHubWebhookLog(Document):
 		if self.event == "push":
 			if self.git_reference_type == "branch":
 				self.create_app_release(payload)
+			elif self.git_reference_type == "tag":
+				self.create_app_tag(payload)
 
 	@property
 	def parsed_payload(self):
@@ -81,3 +83,20 @@ class GitHubWebhookLog(Document):
 				release.insert(ignore_permissions=True)
 		except Exception:
 			log_error("App Release Creation Error", payload=payload)
+
+	def create_app_tag(self, payload):
+		try:
+			commit = payload.head_commit
+			tag = frappe.get_doc(
+				{
+					"doctype": "App Tag",
+					"tag": self.tag,
+					"hash": commit["id"],
+					"repository": self.repository,
+					"repository_owner": self.repository_owner,
+					"installation": self.installation,
+				}
+			)
+			tag.insert(ignore_permissions=True)
+		except Exception:
+			log_error("App Tag Creation Error", payload=payload)
