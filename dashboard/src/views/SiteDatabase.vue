@@ -67,22 +67,50 @@
 							:loading="$resources.restoreBackup.loading"
 							@click="$resources.restoreBackup.submit()"
 						>
-							Restore
+							Restore Database
 						</Button>
 					</div>
 				</div>
 			</SectionCard>
 		</Section>
+
+		<Section
+			class="mt-10"
+			title="Reset"
+			description="Reset your database to a clean state."
+		>
+			<Button type="danger" @click="showResetDatabaseDialog = true">
+				Reset Database
+			</Button>
+		</Section>
+		<Dialog title="Reset Database" v-model="showResetDatabaseDialog">
+			<p class="text-base">
+				All the data from your site will be lost. Are you sure you want to reset
+				your database?
+			</p>
+
+			<template slot="actions">
+				<Button
+					type="danger"
+					:loading="$resources.resetDatabase.loading"
+					@click="$resources.resetDatabase.submit()"
+				>
+					Reset Database
+				</Button>
+			</template>
+		</Dialog>
 	</div>
 </template>
 
 <script>
 import FileUploader from '@/components/FileUploader';
+import Dialog from '@/components/Dialog';
 
 export default {
 	name: 'SiteDatabase',
 	components: {
-		FileUploader
+		FileUploader,
+		Dialog
 	},
 	props: ['site'],
 	resources: {
@@ -101,10 +129,26 @@ export default {
 					}, 1000);
 				}
 			};
+		},
+		resetDatabase() {
+			return {
+				method: 'press.api.site.reinstall',
+				params: {
+					name: this.site.name
+				},
+				onSuccess() {
+					this.showResetDatabaseDialog = false;
+					this.$router.push(`/sites/${this.site.name}/installing`);
+					setTimeout(() => {
+						window.location.reload();
+					}, 1000);
+				}
+			};
 		}
 	},
 	data() {
 		return {
+			showResetDatabaseDialog: false,
 			selectedFiles: {
 				database: null,
 				public: null,
