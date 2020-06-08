@@ -62,7 +62,7 @@
 						/>
 					</div>
 				</div>
-				<div class="px-6 my-2">
+				<div class="px-6 my-2" v-if="!$resources.requestLogs.lastPageEmpty">
 					<Button
 						:loading="$resources.requestLogs.loading"
 						loadingText="Fetching..."
