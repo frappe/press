@@ -152,7 +152,7 @@ def activities(name, start=0):
 
 
 @frappe.whitelist()
-@protected()
+@protected("Site")
 def request_logs(name, start=0):
 	logs = frappe.get_all(
 		"Site Request Log",
