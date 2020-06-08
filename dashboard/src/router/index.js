@@ -78,7 +78,19 @@ const routes = [
 		name: 'App',
 		component: () =>
 			import(/* webpackChunkName: "frappeapp" */ '../views/App.vue'),
-		props: true
+		props: true,
+		children: [
+			{
+				path: 'general',
+				component: () =>
+					import(/* webpackChunkName: "frappeapp" */ '../views/AppGeneral.vue')
+			},
+			{
+				path: 'releases',
+				component: () =>
+					import(/* webpackChunkName: "frappeapp" */ '../views/AppReleases.vue')
+			}
+		]
 	},
 	{
 		path: '/sites',
