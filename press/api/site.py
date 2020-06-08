@@ -136,11 +136,12 @@ def domains(name):
 
 @frappe.whitelist()
 @protected()
-def activities(name):
+def activities(name, start=0):
 	activities = frappe.get_all(
 		"Site Activity",
 		fields=["action", "reason", "creation", "owner"],
 		filters={"site": name},
+		start=start,
 		limit=20,
 	)
 
