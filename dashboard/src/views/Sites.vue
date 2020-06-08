@@ -22,7 +22,7 @@
 			</div>
 			<div v-else>
 				<div
-					class="grid items-center grid-cols-2 gap-12 py-4 text-sm text-gray-700 border-b md:grid-cols-4"
+					class="grid items-center grid-cols-2 gap-12 py-4 text-sm text-gray-600 border-b md:grid-cols-4"
 				>
 					<span>Site Name</span>
 					<span class="text-right md:text-center">Status</span>
