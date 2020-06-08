@@ -147,6 +147,12 @@ const routes = [
 				component: () =>
 					import(/* webpackChunkName: "site" */ '../views/SiteJobs.vue'),
 				props: true
+			},
+			{
+				path: 'request-logs',
+				component: () =>
+					import(/* webpackChunkName: "site" */ '../views/SiteRequestLogs.vue'),
+				props: true
 			}
 		]
 	},
