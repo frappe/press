@@ -4,6 +4,7 @@
 from __future__ import unicode_literals
 import frappe
 import requests
+from press.utils import log_error
 
 
 def get_context(context):
@@ -30,5 +31,4 @@ def obtain_access_token(code):
 		team.github_access_token = response["access_token"]
 		team.save(ignore_permissions=True)
 	except Exception:
-		import traceback
-		traceback.print_exc()
+		log_error("Access Token Error", code=code)
