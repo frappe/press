@@ -87,3 +87,17 @@ def all():
 	)
 
 	return apps
+
+
+@frappe.whitelist()
+@protected("Frappe App")
+def deploy(name, release):
+	app = frappe.get_doc("Frappe App", name)
+	app.deploy()
+
+
+@frappe.whitelist()
+@protected("Frappe App")
+def request_approval(name, release):
+	app = frappe.get_doc("Frappe App", name)
+	app.request_approval()
