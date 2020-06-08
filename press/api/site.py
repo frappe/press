@@ -155,7 +155,11 @@ def activities(name):
 @protected()
 def request_logs(name, start=0):
 	logs = frappe.get_all(
-		"Site Request Log", fields=["*"], filters={"site": name}, start=start, limit=20
+		"Site Request Log",
+		fields=["*"],
+		filters={"site": name, "url": ("!=", "/api/method/ping")},
+		start=start,
+		limit=20,
 	)
 	return logs
 
