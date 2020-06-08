@@ -13,79 +13,27 @@
 					Fetching billing information...
 				</div>
 				<template v-if="upcomingInvoice">
-					<div class="grid grid-cols-3 px-6 py-3 text-base">
-						<div class="font-medium text-gray-700">Available Credits:</div>
-						<div class="col-span-2 font-medium">
-							<div>
-								{{ availableCredits }}
-							</div>
-							<div v-if="$account.team.erpnext_partner" class="mt-2">
-								<a
-									href
-									class="text-blue-500 cursor-pointer"
-									@click.prevent="
-										fetchAvailablePartnerCredits();
-										showTransferCreditsDialog = true;
-									"
-								>
-									Transfer Credits from ERPNext.com
-								</a>
-							</div>
-							<Dialog
-								v-model="showTransferCreditsDialog"
-								title="Transfer Credits from ERPNext.com"
-							>
-								<Input
-									v-if="availablePartnerCredits"
-									:label="
-										`Amount to Transfer (Credits available: ${availablePartnerCredits.formatted})`
-									"
-									v-model.number="creditsToTransfer"
-									name="amount"
-									autocomplete="off"
-									type="number"
-									min="1"
-									:max="availablePartnerCredits.value"
-								/>
-								<ErrorMessage
-									class="mt-2"
-									:error="$resources.transferPartnerCredits.error"
-								/>
-								<template slot="actions">
-									<Button @click="showTransferCreditsDialog = false">
-										Cancel
-									</Button>
-									<Button
-										class="ml-2"
-										type="primary"
-										@click="$resources.transferPartnerCredits.submit()"
-										:loading="$resources.transferPartnerCredits.loading"
-										:disabled="creditsToTransfer <= 0"
-									>
-										Transfer
-									</Button>
-								</template>
-							</Dialog>
-						</div>
-					</div>
-					<div class="grid grid-cols-3 px-6 py-3 text-base">
-						<div class="font-medium text-gray-700">Usage Amount:</div>
-						<div class="col-span-2 font-medium">
-							{{ upcomingInvoice.amount }}
-						</div>
-					</div>
-					<div class="grid grid-cols-3 px-6 py-3 text-base">
-						<div class="font-medium text-gray-700">Next Invoice Date:</div>
-						<div class="col-span-2 font-medium">
-							{{ upcomingInvoice.next_payment_attempt }}
-						</div>
-					</div>
-					<div class="grid grid-cols-3 px-6 py-3 text-base">
-						<div class="font-medium text-gray-700">Bill To:</div>
-						<div class="col-span-2 font-medium">
-							{{ upcomingInvoice.customer_email }}
-						</div>
-					</div>
+					<DescriptionList
+						class="px-6 py-4"
+						:items="[
+							{
+								label: 'Available Credits',
+								value: availableCredits
+							},
+							{
+								label: 'Usage Amount',
+								value: upcomingInvoice.amount
+							},
+							{
+								label: 'Next Invoice Date',
+								value: upcomingInvoice.next_payment_attempt
+							},
+							{
+								label: 'Billed To',
+								value: upcomingInvoice.customer_email
+							}
+						]"
+					/>
 				</template>
 				<div
 					class="px-6 py-4"
@@ -95,8 +43,57 @@
 						Setup your account
 					</Button>
 				</div>
+				<div
+					class="px-6 pb-2"
+					v-if="upcomingInvoice && $account.team.erpnext_partner"
+				>
+					<Button
+						@click="
+							fetchAvailablePartnerCredits();
+							showTransferCreditsDialog = true;
+						"
+					>
+						Transfer Credits from ERPNext.com
+					</Button>
+				</div>
 			</SectionCard>
 		</Section>
+
+		<Dialog
+			v-model="showTransferCreditsDialog"
+			title="Transfer Credits from ERPNext.com"
+		>
+			<Input
+				v-if="availablePartnerCredits"
+				:label="
+					`Amount to Transfer (Credits available: ${availablePartnerCredits.formatted})`
+				"
+				v-model.number="creditsToTransfer"
+				name="amount"
+				autocomplete="off"
+				type="number"
+				min="1"
+				:max="availablePartnerCredits.value"
+			/>
+			<ErrorMessage
+				class="mt-2"
+				:error="$resources.transferPartnerCredits.error"
+			/>
+			<template slot="actions">
+				<Button @click="showTransferCreditsDialog = false">
+					Cancel
+				</Button>
+				<Button
+					class="ml-2"
+					type="primary"
+					@click="$resources.transferPartnerCredits.submit()"
+					:loading="$resources.transferPartnerCredits.loading"
+					:disabled="creditsToTransfer <= 0"
+				>
+					Transfer
+				</Button>
+			</template>
+		</Dialog>
 
 		<Section
 			v-if="pastPayments.length"
@@ -180,12 +177,14 @@
 <script>
 import StripeCard from '@/components/StripeCard';
 import Dialog from '@/components/Dialog';
+import DescriptionList from '@/components/DescriptionList';
 
 export default {
 	name: 'AccountBilling',
 	components: {
 		StripeCard,
-		Dialog
+		Dialog,
+		DescriptionList
 	},
 	resources: {
 		billingDetails: {

@@ -5,22 +5,23 @@
 			description="General information about your site"
 		>
 			<SectionCard>
-				<div class="grid grid-cols-3 px-6 py-3 text-base">
-					<div class="font-medium text-gray-700">Site name:</div>
-					<div class="col-span-2 font-medium">{{ site.name }}</div>
-				</div>
-				<div class="grid grid-cols-3 px-6 py-3 text-base">
-					<div class="font-medium text-gray-700">Created:</div>
-					<div class="col-span-2 font-medium">
-						<FormatDate>{{ site.creation }}</FormatDate>
-					</div>
-				</div>
-				<div class="grid grid-cols-3 px-6 py-3 text-base">
-					<div class="font-medium text-gray-700">Last update:</div>
-					<div class="col-span-2 font-medium">
-						<FormatDate>{{ site.last_updated }}</FormatDate>
-					</div>
-				</div>
+				<DescriptionList
+					class="px-6 py-4"
+					:items="[
+						{
+							label: 'Site Name',
+							value: site.name
+						},
+						{
+							label: 'Created On',
+							value: formatDate(site.creation)
+						},
+						{
+							label: 'Last Updated',
+							value: formatDate(site.last_updated)
+						}
+					]"
+				/>
 			</SectionCard>
 		</Section>
 		<Section
@@ -78,12 +79,14 @@
 
 <script>
 import SiteDrop from './SiteDrop.vue';
+import DescriptionList from '@/components/DescriptionList';
 
 export default {
 	name: 'SiteGeneral',
 	props: ['site'],
 	components: {
-		SiteDrop
+		SiteDrop,
+		DescriptionList
 	},
 	resources: {
 		loginAsAdministrator() {
