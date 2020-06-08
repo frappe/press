@@ -31,6 +31,7 @@ def poll_new_releases():
 		app = frappe.get_doc("Frappe App", app.name)
 		app.create_app_release()
 
+
 def get_permission_query_conditions(user):
 	from press.utils import get_current_team
 
