@@ -122,6 +122,11 @@ const routes = [
 					import(/* webpackChunkName: "site" */ '../views/SiteBackups.vue')
 			},
 			{
+				path: 'database',
+				component: () =>
+					import(/* webpackChunkName: "site" */ '../views/SiteDatabase.vue')
+			},
+			{
 				path: 'site-config',
 				component: () =>
 					import(/* webpackChunkName: "site" */ '../views/SiteConfig.vue')
