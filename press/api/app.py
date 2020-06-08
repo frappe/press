@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import frappe
 from press.utils import get_current_team
 from press.api.site import protected
+from frappe.core.utils import find
 
 
 @frappe.whitelist()
@@ -33,16 +34,43 @@ def new(installation, url, owner, repo, branch, app_name, enable_auto_deploy):
 @protected("Frappe App")
 def get(name):
 	app = frappe.get_doc("Frappe App", name)
-	releases = frappe.get_all("App Release", filters={"app": name}, fields=["name", "hash", "creation"])
-	deploys = frappe.get_all("Bench", filters={"status": ("!=", "Archived")}, fields=["name", "server", "status", "creation", "`group`"])
+	releases = frappe.get_all(
+		"App Release",
+		filters={"app": name},
+		fields=["name", "hash", "creation", "message", "author", "status", "reason"],
+	)
+	tags = frappe.get_all(
+		"App Tag",
+		filters={
+			"repository": app.repo,
+			"repository_owner": app.repo_owner,
+			"installation": app.installation,
+		},
+		fields=["hash", "tag"],
+	)
+	for tag in tags:
+		release = find(releases, lambda x: x.hash == tag.hash)
+		if release:
+			release.setdefault("tags", []).append(tag.tag)
+
+	deploys = frappe.get_all(
+		"Bench",
+		filters={"status": ("!=", "Archived")},
+		fields=["name", "server", "status", "creation", "`group`"],
+	)
 	return {
-		"name": app.name, 
+		"name": app.name,
 		"branch": app.branch,
 		"repo": app.repo,
 		"enable_auto_deploy": app.enable_auto_deploy,
 		"scrubbed": app.scrubbed,
 		"owner": app.repo_owner,
-		"url": app.url, "releases": releases, "deploys": deploys}
+		"url": app.url,
+		"releases": releases,
+		"deploys": deploys,
+		"last_updated": app.modified,
+		"created": app.creation,
+	}
 
 
 @frappe.whitelist()
