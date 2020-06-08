@@ -146,7 +146,8 @@ export default {
 				{ label: 'Database', route: 'database' },
 				{ label: 'Site Config', route: 'site-config' },
 				{ label: 'Activity', route: 'activity' },
-				{ label: 'Jobs', route: 'jobs' }
+				{ label: 'Jobs', route: 'jobs' },
+				{ label: 'Request Logs', route: 'request-logs' }
 			];
 
 			let tabsByStatus = {
@@ -160,7 +161,8 @@ export default {
 					'Database',
 					'Site Config',
 					'Activity',
-					'Jobs'
+					'Jobs',
+					'Request Logs'
 				],
 				Inactive: ['General', 'Plan', 'Site Config', 'Activity', 'Jobs'],
 				Installing: ['Installing', 'Jobs'],
