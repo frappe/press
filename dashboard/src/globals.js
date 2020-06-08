@@ -7,9 +7,11 @@ import resourceManager from './resourceManager';
 import auth from './controllers/auth';
 import account from './controllers/account';
 import socket from './controllers/socket';
+import utils from './utils';
 
 Vue.use(PortalVue);
 Vue.use(resourceManager);
+Vue.use(utils);
 Vue.directive('on-outside-click', outsideClickDirective);
 
 Vue.prototype.$call = call;
@@ -17,10 +19,3 @@ Vue.prototype.$auth = auth;
 Vue.prototype.$account = account;
 Vue.prototype.$account = account;
 Vue.prototype.$socket = socket;
-
-Vue.prototype.$plural = function(number, singular, plural) {
-	if (number === 1) {
-		return singular;
-	}
-	return plural;
-};
