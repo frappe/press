@@ -3,9 +3,12 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
-
+import os
+import subprocess
 import frappe
 from frappe.model.document import Document
+from press.api.github import get_access_token
+from press.utils import log_error
 
 
 class AppRelease(Document):
@@ -31,6 +34,7 @@ class AppRelease(Document):
 		if self.status == "":
 			self.status = "Awaiting Approval"
 			self.save()
+			self.clone_locally()
 
 	def approve(self):
 		if self.status == "Awaiting Approval":
@@ -42,3 +46,32 @@ class AppRelease(Document):
 			self.status = "Rejected"
 			self.save()
 
+	def clone_locally(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_clone_locally")
+
+	def _clone_locally(self):
+		try:
+			directory = "/home/aditya/Frappe/benches/press/clones"
+			if not os.path.exists(directory):
+				os.mkdir(directory)
+
+			self.directory = os.path.join(directory, self.hash[:10])
+			self.save()
+			if not os.path.exists(self.directory):
+				os.mkdir(self.directory)
+
+			app = frappe.get_doc("Frappe App", self.app)
+			token = get_access_token(app.installation)
+
+			subprocess.run("git init".split(), check=True, cwd=self.directory)
+			subprocess.run(
+				f"git remote add origin https://x-access-token:{token}@github.com/{app.repo_owner}/{app.repo}".split(),
+				check=True,
+				cwd=self.directory,
+			)
+			subprocess.run(
+				f"git fetch --depth 1 origin {self.hash}".split(), check=True, cwd=self.directory
+			)
+			subprocess.run(f"git checkout {self.hash}".split(), check=True, cwd=self.directory)
+		except Exception:
+			log_error("Clone Error", release=self.name)
