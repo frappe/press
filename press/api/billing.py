@@ -32,10 +32,13 @@ def info():
 	total_amount = invoice["amount_due"]
 	currency = team_doc.currency
 	past_payments = team_doc.get_past_payments()
+	next_payment_attempt = (
+		global_date_format(datetime.fromtimestamp(next_payment_attempt))
+		if next_payment_attempt
+		else None
+	)
 	upcoming_invoice = {
-		"next_payment_attempt": global_date_format(
-			datetime.fromtimestamp(next_payment_attempt)
-		),
+		"next_payment_attempt": next_payment_attempt,
 		"amount": format_stripe_money(total_amount, currency),
 		"customer_email": customer_email,
 	}
