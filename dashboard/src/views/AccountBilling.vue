@@ -15,24 +15,28 @@
 				<template v-if="upcomingInvoice">
 					<DescriptionList
 						class="px-6 py-4"
-						:items="[
-							{
-								label: 'Available Credits',
-								value: availableCredits
-							},
-							{
-								label: 'Usage Amount',
-								value: upcomingInvoice.amount
-							},
-							{
-								label: 'Next Invoice Date',
-								value: upcomingInvoice.next_payment_attempt
-							},
-							{
-								label: 'Billed To',
-								value: upcomingInvoice.customer_email
-							}
-						]"
+						:items="
+							[
+								{
+									label: 'Available Credits',
+									value: availableCredits
+								},
+								{
+									label: 'Usage Amount',
+									value: upcomingInvoice.amount
+								},
+								upcomingInvoice.next_payment_attempt
+									? {
+											label: 'Next Invoice Date',
+											value: upcomingInvoice.next_payment_attempt
+									  }
+									: null,
+								{
+									label: 'Billed To',
+									value: upcomingInvoice.customer_email
+								}
+							].filter(Boolean)
+						"
 					/>
 				</template>
 				<div
