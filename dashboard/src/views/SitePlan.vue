@@ -9,15 +9,15 @@
 					class="px-6 py-4 mb-2 text-base hover:bg-gray-50"
 					v-if="site.status == 'Active'"
 				>
-					<div class="leading-6">
+					<div class="leading-6 text-gray-900">
 						<span class="font-bold">{{ currentPlan.plan_title }} </span>
 						(Current Plan)
 					</div>
-					<div class="text-gray-800">
+					<div class="text-gray-600">
 						Effective from <FormatDate>{{ lastPlan.timestamp }}</FormatDate>
 					</div>
 				</div>
-				<div class="px-6 mb-2" v-if="site.status == 'Inactive'">
+				<div class="px-6 my-2 text-base" v-if="site.status == 'Inactive'">
 					Your site is deactivated
 				</div>
 				<div class="px-6 pb-2 space-x-2">
@@ -88,7 +88,7 @@
 							<span class="font-bold"> {{ totalCPUUsage }} hours </span>
 							/ {{ currentPlan.cpu_time_per_day }} hours CPU usage
 						</div>
-						<div class="text-gray-800">
+						<div class="text-gray-600">
 							Cycle resets in {{ hoursUntilReset }} hours
 						</div>
 					</div>
@@ -115,7 +115,7 @@
 					<div v-else-if="row.type == 'Upgrade'">
 						Site upgraded to {{ row.to_plan }} plan
 					</div>
-					<div class="text-sm text-gray-800">
+					<div class="text-sm text-gray-600">
 						<FormatDate>{{ row.timestamp }}</FormatDate>
 					</div>
 				</div>

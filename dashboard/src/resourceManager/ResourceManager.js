@@ -100,6 +100,7 @@ class Resource {
 		this.auto = options.auto || false;
 		this.keepData = options.keepData || false;
 		this.condition = options.condition || (() => true);
+		this.paged = options.paged || false;
 
 		// events
 		this.listeners = Object.create(null);
@@ -116,6 +117,7 @@ class Resource {
 		this.error = null;
 		this.loading = false;
 		this.lastLoaded = null;
+		this.lastPageEmpty = false;
 	}
 
 	async fetch() {
@@ -123,7 +125,13 @@ class Resource {
 
 		this.loading = true;
 		try {
-			this.data = await call(this.method, this.params);
+			let data = await call(this.method, this.params);
+			if (Array.isArray(data) && this.paged) {
+				this.lastPageEmpty = data.length === 0;
+				this.data = [].concat(this.data || [], data);
+			} else {
+				this.data = data;
+			}
 			this.emit('Success', this.data);
 		} catch (error) {
 			this.error = error.messages.join('\n');

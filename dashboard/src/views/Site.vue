@@ -143,10 +143,12 @@ export default {
 				{ label: 'Domains', route: 'domains' },
 				{ label: 'Analytics', route: 'analytics' },
 				{ label: 'Backups', route: 'backups' },
+				{ label: 'Database', route: 'database' },
 				{ label: 'Site Config', route: 'site-config' },
 				{ label: 'Activity', route: 'activity' },
 				{ label: 'Jobs', route: 'jobs' },
-				{ label: 'Logs', route: 'logs' }
+				{ label: 'Site Logs', route: 'logs' },
+				{ label: 'Request Logs', route: 'request-logs' }
 			];
 
 			let tabsByStatus = {
@@ -157,15 +159,17 @@ export default {
 					'Domains',
 					'Analytics',
 					'Backups',
+					'Database',
 					'Site Config',
 					'Activity',
 					'Jobs',
-					'Logs'
+					'Site Logs',
+					'Request Logs'
 				],
-				Inactive: ['General', 'Plan', 'Site Config', 'Activity', 'Jobs', 'Logs'],
+				Inactive: ['General', 'Plan', 'Site Config', 'Activity', 'Jobs', 'Site Logs'],
 				Installing: ['Installing', 'Jobs'],
 				Pending: ['Installing', 'Jobs'],
-				Broken: ['General', 'Plan', 'Activity', 'Jobs', 'Logs'],
+				Broken: ['General', 'Plan', 'Activity', 'Jobs', 'Site Logs'],
 				Suspended: ['General', 'Activity', 'Jobs']
 			};
 			if (this.site) {
