@@ -2,3 +2,4 @@ frappe
 PyGithub==1.44.1
 dnspython==1.16.0
 ansible==2.9.6
+boto3==1.13.19

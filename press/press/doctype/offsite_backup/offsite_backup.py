@@ -6,6 +6,9 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils.password import get_decrypted_password
 from press.agent import Agent
+from press.utils import log_error
+import boto3
+from botocore.exceptions import ClientError
 
 
 def take_offsite_backups():
@@ -27,6 +30,28 @@ def process_offsite_backup_job_update(job):
 
 	if job.status != offsite_backup.status:
 		frappe.db.set_value("Offsite Backup", offsite_backup.name, "status", job.status)
+
+
+def download_offsite_backup(bucket, backup, expiration=3600):
+	# bucket name
+	# backup is the object name typically the whole path on s3
+	# default expiration time is 1 hr
+
+	settings = frappe.get_single("Press Settings")
+
+	s3 = boto3.client(
+		's3',
+		aws_access_key_id=settings.offsite_backups_access_key_id,
+		aws_secret_access_key=get_decrypted_password(settings.offsite_backups_secret_access_key)
+	)
+
+	try:
+		response = s3.generate_presigned_url('get_object', Params={'Bucket': bucket, 'Key': backup}, ExpiresIn=expiration)
+	except ClientError:
+		log_error(title="Offsite Backup Response Exception")
+		return None
+
+	return response
 
 
 class OffsiteBackup(Document):
