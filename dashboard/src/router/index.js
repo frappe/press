@@ -122,6 +122,11 @@ const routes = [
 					import(/* webpackChunkName: "site" */ '../views/SiteBackups.vue')
 			},
 			{
+				path: 'database',
+				component: () =>
+					import(/* webpackChunkName: "site" */ '../views/SiteDatabase.vue')
+			},
+			{
 				path: 'site-config',
 				component: () =>
 					import(/* webpackChunkName: "site" */ '../views/SiteConfig.vue')
@@ -147,6 +152,12 @@ const routes = [
 				path: 'logs/:logName?',
 				component: () =>
 					import(/* webpackChunkName: "site" */ '../views/SiteLogs.vue'),
+				props: true
+			},
+			{
+				path: 'request-logs',
+				component: () =>
+					import(/* webpackChunkName: "site" */ '../views/SiteRequestLogs.vue'),
 				props: true
 			}
 		]
