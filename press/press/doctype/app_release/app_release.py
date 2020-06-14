@@ -50,11 +50,14 @@ class AppRelease(Document):
 
 	def clone_locally(self):
 		try:
-			directory = "/home/aditya/Frappe/benches/press/clones"
+			directory = frappe.db.get_single_value("Press Settings", "clone_directory")
+			code_server = frappe.db.get_single_value("Press Settings", "code_server")
 			if not os.path.exists(directory):
 				os.mkdir(directory)
 
 			self.directory = os.path.join(directory, self.hash[:10])
+			code_server_url = f"{code_server}/?folder=/home/coder/project/{self.hash[:10]}"
+			self.code_server_url = code_server_url
 			self.save()
 			if not os.path.exists(self.directory):
 				os.mkdir(self.directory)
