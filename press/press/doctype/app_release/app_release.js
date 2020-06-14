@@ -15,5 +15,12 @@ frappe.ui.form.on('App Release', {
 				__('Actions')
 			);
 		});
+
+		frm.add_custom_button(
+			__('View'),
+			() => {
+				window.open(frm.doc.code_server_url);
+			},
+		);
 	},
 });
