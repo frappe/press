@@ -34,7 +34,9 @@ class AppRelease(Document):
 		if self.status == "":
 			self.status = "Awaiting Approval"
 			self.save()
-			self.clone_locally()
+			frappe.enqueue_doc(
+				self.doctype, self.name, "clone_locally", enqueue_after_commit=True
+			)
 
 	def approve(self):
 		if self.status == "Awaiting Approval":
@@ -47,9 +49,6 @@ class AppRelease(Document):
 			self.save()
 
 	def clone_locally(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_clone_locally")
-
-	def _clone_locally(self):
 		try:
 			directory = "/home/aditya/Frappe/benches/press/clones"
 			if not os.path.exists(directory):
