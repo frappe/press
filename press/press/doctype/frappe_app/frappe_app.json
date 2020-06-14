@@ -17,7 +17,8 @@
   "section_break_9",
   "team",
   "public",
-  "enable_auto_deploy"
+  "enable_auto_deploy",
+  "auto_approve"
  ],
  "fields": [
   {
@@ -26,7 +27,9 @@
    "in_list_view": 1,
    "label": "Branch",
    "reqd": 1,
-   "set_only_once": 1
+   "set_only_once": 1,
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "scrubbed",
@@ -34,70 +37,100 @@
    "in_list_view": 1,
    "label": "Scrubbed Name",
    "reqd": 1,
-   "set_only_once": 1
+   "set_only_once": 1,
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "url",
    "fieldtype": "Data",
    "label": "Repository URL",
    "reqd": 1,
-   "set_only_once": 1
+   "set_only_once": 1,
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "repo_owner",
    "fieldtype": "Data",
    "label": "Repository Owner",
    "read_only": 1,
-   "reqd": 1
+   "reqd": 1,
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "default": "0",
    "fieldname": "frappe",
    "fieldtype": "Check",
    "label": "Frappe",
-   "set_only_once": 1
+   "set_only_once": 1,
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "team",
    "fieldtype": "Link",
    "label": "Team",
-   "options": "Team"
+   "options": "Team",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "installation",
    "fieldtype": "Data",
    "label": "Installation",
-   "reqd": 1
+   "reqd": 1,
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "default": "0",
    "fieldname": "public",
    "fieldtype": "Check",
-   "label": "Public"
+   "label": "Public",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "repo",
    "fieldtype": "Data",
    "label": "Repository",
-   "reqd": 1
+   "reqd": 1,
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "column_break_5",
-   "fieldtype": "Column Break"
+   "fieldtype": "Column Break",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "section_break_9",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "default": "0",
    "fieldname": "enable_auto_deploy",
    "fieldtype": "Check",
-   "label": "Enable Auto Deploy"
+   "label": "Enable Auto Deploy",
+   "show_days": 1,
+   "show_seconds": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "auto_approve",
+   "fieldtype": "Check",
+   "label": "Auto Approve",
+   "show_days": 1,
+   "show_seconds": 1
   }
  ],
  "links": [],
- "modified": "2020-06-01 12:21:00.144898",
+ "modified": "2020-06-09 11:00:52.644619",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Frappe App",
