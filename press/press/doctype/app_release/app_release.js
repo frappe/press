@@ -22,5 +22,10 @@ frappe.ui.form.on('App Release', {
 				window.open(frm.doc.code_server_url);
 			},
 		);
+
+		if (frm.doc.result_html) {
+			let wrapper = frm.get_field("result_html_rendered").$wrapper;
+			wrapper.html(frm.doc.result_html);
+		}
 	},
 });

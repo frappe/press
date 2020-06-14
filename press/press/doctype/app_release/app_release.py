@@ -88,7 +88,10 @@ class AppRelease(Document):
 
 	def screen(self):
 		result = self._screen_python_files()
+		self._render_html(result)
 		self._read_requirements()
+		self.save()
+
 	def _screen_python_files(self):
 		files = glob.glob(self.directory + "/**/*.py", recursive=True)
 		result = []
@@ -130,6 +133,14 @@ class AppRelease(Document):
 				)
 		return lines_with_issues
 
+	def _render_html(self, result):
+		formatter = HF()
+		styles = f"<style>{formatter.get_style_defs()}</style>"
+		html = frappe.render_template(
+			"press/press/doctype/app_release/app_release.html",
+			{"result": result, "styles": styles},
+		)
+		self.result_html = html
 
 	def _read_requirements(self):
 		requirements_txt = os.path.join(self.directory, "requirements.txt")
