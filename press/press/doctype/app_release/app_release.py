@@ -12,6 +12,9 @@ import frappe
 from frappe.model.document import Document
 from press.api.github import get_access_token
 from press.utils import log_error
+from pygments import highlight
+from pygments.lexers import PythonLexer as PL
+from pygments.formatters import HtmlFormatter as HF
 
 
 class AppRelease(Document):
@@ -133,3 +136,19 @@ class AppRelease(Document):
 		if os.path.exists(requirements_txt):
 			with open(requirements_txt) as f:
 				self.requirements = f.read()
+
+
+def get_context(lines, index, size=2):
+	length = len(lines)
+	lines = lines[max(0, index - size) : min(index + size + 1, length)]  # noqa
+	code = "\n".join(lines)
+	formatter = HF(
+		linenos="table",
+		linenostart=max(1, index - size + 1),
+		hl_lines=[index - max(0, index - size) + 1],
+	)
+	lexer = PL(tabsize=4)
+	highlighted = highlight(code, lexer, formatter)
+	return highlighted
+
+
