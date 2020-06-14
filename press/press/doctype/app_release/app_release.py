@@ -3,7 +3,10 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
+import glob
+import json
 import os
+import regex
 import subprocess
 import frappe
 from frappe.model.document import Document
@@ -75,5 +78,50 @@ class AppRelease(Document):
 				f"git fetch --depth 1 origin {self.hash}".split(), check=True, cwd=self.directory
 			)
 			subprocess.run(f"git checkout {self.hash}".split(), check=True, cwd=self.directory)
+
+			frappe.enqueue_doc(self.doctype, self.name, "screen", enqueue_after_commit=True)
 		except Exception:
 			log_error("Clone Error", release=self.name)
+
+	def screen(self):
+		result = self._screen_python_files()
+	def _screen_python_files(self):
+		files = glob.glob(self.directory + "/**/*.py", recursive=True)
+		result = []
+		for file in files:
+			lines = self._screen_python_file(file)
+			if lines:
+				name = file.replace(self.directory, "", 1)[1:]
+				f = {
+					"name": name,
+					"id": name.replace("/", "_").replace(".", "_"),
+					"lines": lines,
+					"score": len(lines),
+				}
+				result.append(f)
+		result = sorted(result, key=lambda x: x["score"], reverse=True)
+		self.result = json.dumps(result, indent=4)
+		return result
+
+	def _screen_python_file(self, filename):
+		with open(filename, "r") as ff:
+			lines = ff.read().splitlines()
+		lines_with_issues = []
+		for index, line in enumerate(lines):
+			issues = []
+			configuration = get_configuration()
+			for severity, violations in configuration.items():
+				for violation, keywords in violations.items():
+					pattern = r"(?:^|\W)({})(?:\W|$)".format("|".join(keywords))
+					re = regex.compile(pattern)
+					search = re.search(line)
+					if search:
+						issues.append(
+							{"severity": severity, "violation": violation, "match": search.group(1)}
+						)
+			if issues:
+				context = get_context(lines, index)
+				lines_with_issues.append(
+					{"lineno": index + 1, "issues": issues, "context": context}
+				)
+		return lines_with_issues
