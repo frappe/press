@@ -152,3 +152,76 @@ def get_context(lines, index, size=2):
 	return highlighted
 
 
+def get_configuration():
+	return {
+		"Critical": {
+			"Arbitrary Command Injection": ["os", "sys", "subprocess", "sysconfig"],
+			"Arbitrary Command Injection - Frappe": ["popen", "execute_in_shell"],
+			"Arbitrary Code Execution": [
+				"exec",
+				"eval",
+				"safe_eval",
+				"safe_exec",
+				"compile",
+				"codeop",
+			],
+			"Runtime Imports": [
+				"__import__",
+				"importlib",
+				"zipimport",
+				"runpy",
+				"pkgutil",
+				"modulefinder",
+			],
+			"Runtime Imports - Frappe": ["get_attr", "get_module"],
+			"Unsafe Serialization": ["pickle", "marshal"],
+			"Template Rendering": ["jinja", "jinja2"],
+			"Foreign Functions Library": ["ctypes"],
+			"Arbitrary Code Injection - Posix": [
+				"signal",
+				"syslog",
+				"pipes",
+				"fcntl",
+				"pty",
+				"tty",
+				"posix",
+				"pwd",
+				"grp",
+				"spwd",
+			],
+		},
+		"Major": {
+			"File Manipulation": [
+				"open",
+				"io",
+				"shutil",
+				"pathlib",
+				"fileinput",
+				"sqlite3",
+				"gzip",
+				"bz2",
+				"lzma",
+				"zipfile",
+			],
+			"File Manipulation - Frappe": ["touch_file", "get_file_json", "read_file"],
+			"Site Access": ["get_site_config", "get_sites"],
+		},
+		"Moderate": {
+			"Potential Screening Bypass": [
+				"globals",
+				"builtins",
+				"__globals__",
+				"__builtins__",
+				"__module__",
+				"__file__",
+				"__func__",
+				"__class__",
+				"__dict__",
+				"__self__",
+			],
+		},
+		"Low": {
+			"Debugging": ["inspect", "breakpoint"],
+			"Multiprocessing": ["multiprocessing", "threading"],
+		},
+	}
