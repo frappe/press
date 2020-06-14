@@ -85,6 +85,7 @@ class AppRelease(Document):
 
 	def screen(self):
 		result = self._screen_python_files()
+		self._read_requirements()
 	def _screen_python_files(self):
 		files = glob.glob(self.directory + "/**/*.py", recursive=True)
 		result = []
@@ -125,3 +126,10 @@ class AppRelease(Document):
 					{"lineno": index + 1, "issues": issues, "context": context}
 				)
 		return lines_with_issues
+
+
+	def _read_requirements(self):
+		requirements_txt = os.path.join(self.directory, "requirements.txt")
+		if os.path.exists(requirements_txt):
+			with open(requirements_txt) as f:
+				self.requirements = f.read()
