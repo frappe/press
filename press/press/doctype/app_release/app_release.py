@@ -110,7 +110,7 @@ class AppRelease(Document):
 				}
 				result.append(f)
 		result = sorted(result, key=lambda x: x["score"], reverse=True)
-		self.result = json.dumps(result, indent=4)
+		self.result = json.dumps(result, indent=2)
 		return result
 
 	def _screen_python_file(self, filename):
