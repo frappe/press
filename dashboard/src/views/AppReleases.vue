@@ -4,8 +4,7 @@
 			title="Releases"
 			description="Everything you have pushed to GitHub"
 		>
-			<SectionCard class="sm:w-1/2">
-				<div v-if="app.releases">
+				<div v-if="releases.data">
 					<div
 						class="block px-6 py-4 text-base hover:bg-gray-50"
 						v-for="release in app.releases"
@@ -89,6 +88,15 @@ export default {
 			this.$resources.releases.reload();
 		}
 	},
+	resources: {
+		releases() {
+			return {
+				method: 'press.api.app.releases',
+				params: {
+					name: this.app.name
+				},
+				auto: true
+			};
 		}
 	}
 };
