@@ -168,7 +168,9 @@ def highlight_context(context):
 	lines = context["lines"]
 	code = "\n".join(lines)
 	formatter = HF(
-		linenos="table", linenostart=line_range[0], hl_lines=[line_number - line_range[0]],
+		linenos="table",
+		linenostart=line_range[0],
+		hl_lines=[line_number - line_range[0] + 1],
 	)
 	lexer = PL(stripnl=False, tabsize=4)
 	highlighted = highlight(code, lexer, formatter)
