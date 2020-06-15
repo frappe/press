@@ -60,7 +60,8 @@ def releases(name):
 	releases = frappe.get_all(
 		"App Release",
 		filters={"app": name},
-		fields=["name", "hash", "creation", "message", "author", "status", "reason"],
+		fields=["name", "hash", "creation", "message", "author", "status", "reason", "comments"],
+		order_by="creation desc"
 	)
 	tags = frappe.get_all(
 		"App Tag",
