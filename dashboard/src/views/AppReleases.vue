@@ -67,6 +67,7 @@
 							<div v-if="release.status == 'Rejected'">
 								Reason:
 								<span class="text-red-600">{{ release.reason }}</span>
+								<span class="text-red-600" v-html="release.comments"></span>
 							</div>
 						</div>
 					</div>
