@@ -52,6 +52,7 @@ def get(name):
 		"created": app.creation,
 	}
 
+
 @frappe.whitelist()
 @protected("Frappe App")
 def releases(name):
@@ -77,6 +78,7 @@ def releases(name):
 
 	return releases
 
+
 @frappe.whitelist()
 def all():
 	if frappe.session.data.user_type == "System User":
@@ -99,6 +101,7 @@ def deploy(name, release):
 	release = frappe.get_doc("App Release", release)
 	deploy = release.deploy()
 	return deploy.name
+
 
 @frappe.whitelist()
 @protected("Frappe App")
