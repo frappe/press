@@ -101,7 +101,6 @@ class AppRelease(Document):
 				name = file.replace(self.directory, "", 1)[1:]
 				f = {
 					"name": name,
-					"id": name.replace("/", "_").replace(".", "_"),
 					"lines": lines,
 					"score": len(lines),
 				}
@@ -128,14 +127,16 @@ class AppRelease(Document):
 						)
 			if issues:
 				context = get_context(lines, index)
-				lines_with_issues.append(
-					{"lineno": index + 1, "issues": issues, "context": context}
-				)
+				lines_with_issues.append({"issues": issues, "context": context})
 		return lines_with_issues
 
 	def _render_html(self, result):
 		formatter = HF()
 		styles = f"<style>{formatter.get_style_defs()}</style>"
+		for file in result:
+			file["id"] = file["name"].replace("/", "_").replace(".", "_")
+			for line in file["lines"]:
+				line["highlighted_context"] = highlight_context(line["context"])
 		html = frappe.render_template(
 			"press/press/doctype/app_release/app_release.html",
 			{"result": result, "styles": styles},
@@ -151,12 +152,23 @@ class AppRelease(Document):
 
 def get_context(lines, index, size=2):
 	length = len(lines)
-	lines = lines[max(0, index - size) : min(index + size + 1, length)]  # noqa
+	start = max(0, index - size)
+	end = min(index + size, length)
+	lines = lines[start : end + 1]  # noqa
+	return {
+		"line_number": index + 1,
+		"line_range": list(range(start + 1, end + 2)),
+		"lines": lines,
+	}
+
+
+def highlight_context(context):
+	line_number = context["line_number"]
+	line_range = context["line_range"]
+	lines = context["lines"]
 	code = "\n".join(lines)
 	formatter = HF(
-		linenos="table",
-		linenostart=max(1, index - size + 1),
-		hl_lines=[index - max(0, index - size) + 1],
+		linenos="table", linenostart=line_range[0], hl_lines=[line_number - line_range[0]],
 	)
 	lexer = PL(tabsize=4)
 	highlighted = highlight(code, lexer, formatter)
