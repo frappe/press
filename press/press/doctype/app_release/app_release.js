@@ -6,6 +6,7 @@ frappe.ui.form.on('App Release', {
 		[
 			[__('Request Approal'), 'request_approval'],
 			[__('Approve'), 'approve'],
+			[__('Deploy'), 'deploy'],
 		].forEach(([label, method]) => {
 			frm.add_custom_button(
 				label,
