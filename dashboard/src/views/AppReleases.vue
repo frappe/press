@@ -4,50 +4,70 @@
 			title="Releases"
 			description="Everything you have pushed to GitHub"
 		>
+			<SectionCard class="md:w-2/3">
 				<div v-if="releases.data">
 					<div
-						class="block px-6 py-4 text-base hover:bg-gray-50"
-						v-for="release in app.releases"
+						class="text-base cursor-pointer items-center px-6 py-3 hover:bg-gray-50"
+						v-for="release in releases.data"
 						:key="release.name"
+						@click="
+							showDetailsForRelease =
+								showDetailsForRelease === release ? null : release
+						"
 					>
-						<div class="w-full">
-							<div class="font-semibold">
+						<div class="flex justify-between">
+							<div class="pr-2 font-mono">
+								{{ release.hash.slice(0, 6) }}
+							</div>
+							<div class="flex-1 pr-2 truncate font-semibold">
 								{{ release.message }}
 							</div>
-							<div>
-								{{ release.hash.slice(0, 10) }}
+							<FormatDate>{{ release.creation }}</FormatDate>
+							<FeatherIcon
+								:name="
+									showDetailsForRelease === release
+										? 'chevron-up'
+										: 'chevron-down'
+								"
+								class="w-4 h-4 ml-2"
+							/>
+						</div>
+						<div v-show="showDetailsForRelease === release" class="py-4">
+							<div class="flex items-center justify-between">
+								<div>
+									<Badge :color="color(release.status)" v-if="release.status">
+										{{ release.status }}
+									</Badge>
+								</div>
+								<div class="flex items-center" v-if="release.tags">
+									<span>Tags:</span>
+									<Badge
+										v-for="(tag, index) in release.tags"
+										:key="index"
+										class="mr-2"
+									>
+										{{ tag }}
+									</Badge>
+								</div>
 							</div>
-							<div>
-								{{ release.author }}
+							<div class="mt-4">
+								<Button
+									v-if="release.status == 'Approved'"
+									type="primary"
+									@click="deploy(release)"
+									>Deploy</Button
+								>
+								<Button
+									v-if="release.status == ''"
+									type="primary"
+									@click="request_approval(release)"
+									>Request Approval</Button
+								>
 							</div>
-							<Badge
-								v-for="(tag, index) in release.tags"
-								:key="index"
-								class="mr-2 mt-2"
-							>
-								{{ tag }}
-							</Badge>
-							<Badge class="ml-4" :color="color(release.status)">{{
-								release.status
-							}}</Badge>
 							<div v-if="release.status == 'Rejected'">
-								{{ release.reason }}
+								Reason:
+								<span class="text-red-600">{{ release.reason }}</span>
 							</div>
-							<div class="font-semibold">
-								<span>
-									Release on <FormatDate>{{ release.creation }}</FormatDate>
-								</span>
-							</div>
-							<Button
-								v-if="release.status == 'Approved'"
-								@click="deploy(release.name)"
-								>Deploy</Button
-							>
-							<Button
-								v-if="release.status == ''"
-								@click="request_approval(release.name)"
-								>Request Approval</Button
-							>
 						</div>
 					</div>
 				</div>
@@ -63,6 +83,11 @@
 export default {
 	name: 'AppReleases',
 	props: ['app'],
+	data() {
+		return {
+			showDetailsForRelease: null
+		};
+	},
 	methods: {
 		color(status) {
 			let color = {
