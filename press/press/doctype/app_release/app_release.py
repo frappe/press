@@ -92,6 +92,8 @@ class AppRelease(Document):
 		result = self._filter_results(result)
 		self._render_html(result)
 		self._read_requirements()
+		if not json.loads(self.diff_result) and not self.diff_requirements:
+			self.approve()
 		self.save()
 
 	def _screen_python_files(self):
