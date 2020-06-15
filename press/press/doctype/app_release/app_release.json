@@ -15,13 +15,21 @@
   "reason",
   "column_break_9",
   "directory",
-  "section_break_11",
+  "code_server_url",
+  "section_break_12",
   "comments",
-  "requirements",
+  "difference_section",
+  "diff_requirements",
+  "diff_result",
   "result_html",
   "result_html_rendered",
-  "result",
-  "code_server_url"
+  "baseline_section",
+  "baseline_release",
+  "baseline_requirements",
+  "baseline_result",
+  "result_section",
+  "requirements",
+  "result"
  ],
  "fields": [
   {
@@ -116,6 +124,7 @@
   {
    "fieldname": "requirements",
    "fieldtype": "Code",
+   "hidden": 1,
    "label": "Requirements",
    "read_only": 1,
    "show_days": 1,
@@ -131,13 +140,6 @@
    "fieldname": "review_section",
    "fieldtype": "Section Break",
    "label": "Review",
-   "show_days": 1,
-   "show_seconds": 1
-  },
-  {
-   "fieldname": "section_break_11",
-   "fieldtype": "Section Break",
-   "hide_border": 1,
    "show_days": 1,
    "show_seconds": 1
   },
@@ -161,11 +163,83 @@
    "read_only": 1,
    "show_days": 1,
    "show_seconds": 1
+  },
+  {
+   "fieldname": "baseline_release",
+   "fieldtype": "Link",
+   "label": "Baseline Release",
+   "options": "App Release",
+   "read_only": 1,
+   "show_days": 1,
+   "show_seconds": 1
+  },
+  {
+   "fieldname": "diff_result",
+   "fieldtype": "Code",
+   "hidden": 1,
+   "label": "Diff Result",
+   "read_only": 1,
+   "show_days": 1,
+   "show_seconds": 1
+  },
+  {
+   "fieldname": "diff_requirements",
+   "fieldtype": "Code",
+   "label": "Diff Requirements",
+   "read_only": 1,
+   "show_days": 1,
+   "show_seconds": 1
+  },
+  {
+   "fieldname": "difference_section",
+   "fieldtype": "Section Break",
+   "label": "Difference",
+   "show_days": 1,
+   "show_seconds": 1
+  },
+  {
+   "fieldname": "baseline_section",
+   "fieldtype": "Section Break",
+   "label": "Baseline",
+   "show_days": 1,
+   "show_seconds": 1
+  },
+  {
+   "fieldname": "baseline_result",
+   "fieldtype": "Code",
+   "hidden": 1,
+   "label": "Baseline Result",
+   "read_only": 1,
+   "show_days": 1,
+   "show_seconds": 1
+  },
+  {
+   "fieldname": "baseline_requirements",
+   "fieldtype": "Code",
+   "hidden": 1,
+   "label": "Baseline Requirements",
+   "read_only": 1,
+   "show_days": 1,
+   "show_seconds": 1
+  },
+  {
+   "fieldname": "result_section",
+   "fieldtype": "Section Break",
+   "label": "Result",
+   "show_days": 1,
+   "show_seconds": 1
+  },
+  {
+   "fieldname": "section_break_12",
+   "fieldtype": "Section Break",
+   "hide_border": 1,
+   "show_days": 1,
+   "show_seconds": 1
   }
  ],
  "in_create": 1,
  "links": [],
- "modified": "2020-06-14 10:52:30.281373",
+ "modified": "2020-06-15 19:35:18.422344",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Release",

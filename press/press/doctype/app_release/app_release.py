@@ -20,6 +20,7 @@ from pygments.formatters import HtmlFormatter as HF
 class AppRelease(Document):
 	def after_insert(self):
 		auto_approve = frappe.db.get_value("Frappe App", self.app, "auto_approve")
+		self.set_baseline()
 		if auto_approve:
 			self.status = "Approved"
 			self.save()
@@ -88,6 +89,7 @@ class AppRelease(Document):
 
 	def screen(self):
 		result = self._screen_python_files()
+		result = self._filter_results(result)
 		self._render_html(result)
 		self._read_requirements()
 		self.save()
@@ -148,6 +150,41 @@ class AppRelease(Document):
 		if os.path.exists(requirements_txt):
 			with open(requirements_txt) as f:
 				self.requirements = f.read()
+			if self.baseline_requirements:
+				diff = [
+					r for r in self.requirements.splitlines() if r not in self.baseline_requirements
+				]
+				self.diff_requirements = "\n".join(diff)
+			else:
+				self.diff_requirements = self.requirements
+
+	def _filter_results(self, result):
+		if not self.baseline_result:
+			self.diff_result = json.dumps(result, indent=2)
+			return result
+
+		baseline_result = json.loads(self.baseline_result)
+		unmatched = []
+		for file in result:
+			if file not in baseline_result:
+				unmatched.append(file)
+		self.diff_result = json.dumps(unmatched, indent=2)
+		return unmatched
+
+	def set_baseline(self):
+		approved_releases = frappe.get_all(
+			"App Release",
+			fields=["name", "result", "requirements"],
+			filters={"status": "Approved", "app": self.app, "name": ("!=", self.name)},
+			order_by="creation desc",
+			limit=1,
+		)
+		if approved_releases:
+			baseline = approved_releases[0]
+			self.baseline_release = baseline.name
+			self.baseline_result = baseline.result
+			self.baseline_requirements = baseline.requirements
+			self.save()
 
 
 def get_context(lines, index, size=2):
