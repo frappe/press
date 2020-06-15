@@ -170,7 +170,7 @@ def highlight_context(context):
 	formatter = HF(
 		linenos="table", linenostart=line_range[0], hl_lines=[line_number - line_range[0]],
 	)
-	lexer = PL(tabsize=4)
+	lexer = PL(stripnl=False, tabsize=4)
 	highlighted = highlight(code, lexer, formatter)
 	return highlighted
 
