@@ -13,24 +13,30 @@
 							Fetching your repositories.
 						</p>
 					</div>
-					<div
-						v-if="
-							options.authorized === false ||
-								(options.authorized === true &&
-									options.installations.length == 0)
-						"
-					>
-						<label class="text-lg">
-							Connect to GitHub
-						</label>
-						<p class="text-base text-gray-700">
-							Connect to GitHub to access your repositories.
-						</p>
-						<Button class="mt-6" type="primary">
-							<a :href="options.installation_url">Connect To GitHub</a>
-						</Button>
+					<div v-if="options.enable_custom_apps === true">
+						<div
+							v-if="
+								options.authorized === false ||
+									(options.authorized === true &&
+										options.installations.length == 0)
+							"
+						>
+							<label class="text-lg">
+								Connect to GitHub
+							</label>
+							<p class="text-base text-gray-700">
+								Connect to GitHub to access your repositories.
+							</p>
+							<Button class="mt-6" type="primary">
+								<a :href="options.installation_url">Connect To GitHub</a>
+							</Button>
+						</div>
 					</div>
-
+					<div v-if="options.enable_custom_apps === false">
+						<label class="text-lg">
+							You are not authorized to use this feature. Contact support.
+						</label>
+					</div>
 					<div v-if="options.authorized === true">
 						<div v-if="options.installations.length != 0">
 							<label class="text-lg">

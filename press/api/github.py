@@ -55,9 +55,11 @@ def get_access_token(install):
 def options():
 	team = get_current_team()
 	token = frappe.db.get_value("Team", team, "github_access_token")
+	enable_custom_apps = frappe.db.get_value("Team", team, "enable_custom_apps")
 	public_link = frappe.db.get_single_value("Press Settings", "github_app_public_link")
 	options = {
 		"authorized": bool(token),
+		"enable_custom_apps": bool(enable_custom_apps),
 		"installation_url": f"{public_link}/installations/new",
 		"installations": installations(token) if token else [],
 	}
