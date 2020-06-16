@@ -36,11 +36,12 @@
 									>Deploy</Button
 								>
 						</div>
-							<div v-if="release.status == 'Rejected'">
+						<div class="" v-if="release.status == 'Rejected'">
+							<div>
 								Reason:
 								<span class="text-red-600">{{ release.reason }}</span>
-								<span class="text-red-600" v-html="release.comments"></span>
 							</div>
+							<div class="text-red-400 ml-4" v-html="release.comments"></div>
 						</div>
 					</div>
 				</div>
