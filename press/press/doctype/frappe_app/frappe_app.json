@@ -54,8 +54,8 @@
    "fieldname": "repo_owner",
    "fieldtype": "Data",
    "label": "Repository Owner",
-   "read_only": 1,
    "reqd": 1,
+   "set_only_once": 1,
    "show_days": 1,
    "show_seconds": 1
   },
@@ -130,7 +130,7 @@
   }
  ],
  "links": [],
- "modified": "2020-06-09 11:00:52.644619",
+ "modified": "2020-06-16 13:31:23.200095",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Frappe App",
