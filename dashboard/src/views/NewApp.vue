@@ -51,6 +51,7 @@
 									type="select"
 									v-model="selectedInstallationId"
 									:options="installationOptions"
+									:disabled="connectedRepository"
 								/>
 							</div>
 							<div class="text-base text-gray-700 mt-4">
