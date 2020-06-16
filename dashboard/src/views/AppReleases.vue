@@ -105,13 +105,6 @@ export default {
 				release: release.name
 			});
 			this.$router.push(`/apps/depoys/${result.name}`);
-		},
-		async request_approval(release) {
-			await this.$call('press.api.app.request_approval', {
-				name: this.app.name,
-				release: release.name
-			});
-			this.$resources.releases.reload();
 		}
 	},
 	resources: {

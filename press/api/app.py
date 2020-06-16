@@ -111,10 +111,3 @@ def deploy(name, release):
 	release = frappe.get_doc("App Release", release)
 	deploy = release.deploy()
 	return deploy.name
-
-
-@frappe.whitelist()
-@protected("Frappe App")
-def request_approval(name, release):
-	release = frappe.get_doc("App Release", release)
-	release.request_approval()
