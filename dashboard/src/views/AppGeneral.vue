@@ -5,34 +5,31 @@
 			description="General information about your app"
 		>
 			<SectionCard>
-				<div class="grid grid-cols-3 px-6 py-3 text-base">
-					<div class="font-medium text-gray-700">App name:</div>
-					<div class="col-span-2 font-medium">{{ app.name }}</div>
-				</div>
-				<div class="grid grid-cols-3 px-6 py-3 text-base">
-					<div class="font-medium text-gray-700">Created:</div>
-					<div class="col-span-2 font-medium">
-						<FormatDate>{{ app.created }}</FormatDate>
-					</div>
-				</div>
-				<div class="grid grid-cols-3 px-6 py-3 text-base">
-					<div class="font-medium text-gray-700">Last update:</div>
-					<div class="col-span-2 font-medium">
-						<FormatDate>{{ app.last_updated }}</FormatDate>
-					</div>
-				</div>
-				<div class="grid grid-cols-3 px-6 py-3 text-base">
-					<div class="font-medium text-gray-700">Branch:</div>
-					<div class="col-span-2 font-medium">{{ app.branch }}</div>
-				</div>
-				<div class="grid grid-cols-3 px-6 py-3 text-base">
-					<div class="font-medium text-gray-700">Repository:</div>
-					<div class="col-span-2 font-medium">{{ app.repo }}</div>
-				</div>
-				<div class="grid grid-cols-3 px-6 py-3 text-base">
-					<div class="font-medium text-gray-700">Owner:</div>
-					<div class="col-span-2 font-medium">{{ app.owner }}</div>
-				</div>
+				<DescriptionList
+					class="px-6 py-4"
+					:items="[
+						{
+							label: 'App Name',
+							value: app.scrubbed
+						},
+						{
+							label: 'Repository',
+							value: app.repo_owner + '/' + app.repo
+						},
+						{
+							label: 'Branch',
+							value: app.branch
+						},
+						{
+							label: 'Created On',
+							value: formatDate(app.creation)
+						},
+						{
+							label: 'Last Updated',
+							value: formatDate(app.last_updated)
+						}
+					]"
+				/>
 			</SectionCard>
 		</Section>
 		<Section
@@ -61,8 +58,13 @@
 </template>
 
 <script>
+import DescriptionList from '@/components/DescriptionList';
+
 export default {
 	name: 'AppGeneral',
-	props: ['app']
+	props: ['app'],
+	components: {
+		DescriptionList
+	}
 };
 </script>

@@ -49,10 +49,10 @@ def get(name):
 		"repo": app.repo,
 		"enable_auto_deploy": app.enable_auto_deploy,
 		"scrubbed": app.scrubbed,
-		"owner": app.repo_owner,
+		"repo_owner": app.repo_owner,
 		"url": app.url,
 		"last_updated": app.modified,
-		"created": app.creation,
+		"creation": app.creation,
 	}
 
 
