@@ -29,7 +29,9 @@
   "baseline_result",
   "result_section",
   "requirements",
-  "result"
+  "result",
+  "section_break_26",
+  "output"
  ],
  "fields": [
   {
@@ -233,6 +235,20 @@
    "fieldname": "section_break_12",
    "fieldtype": "Section Break",
    "hide_border": 1,
+   "show_days": 1,
+   "show_seconds": 1
+  },
+  {
+   "fieldname": "output",
+   "fieldtype": "Code",
+   "label": "Output",
+   "read_only": 1,
+   "show_days": 1,
+   "show_seconds": 1
+  },
+  {
+   "fieldname": "section_break_26",
+   "fieldtype": "Section Break",
    "show_days": 1,
    "show_seconds": 1
   }

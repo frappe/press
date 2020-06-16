@@ -71,30 +71,12 @@ class AppRelease(Document):
 
 			app = frappe.get_doc("Frappe App", self.app)
 			token = get_access_token(app.installation)
-
-			subprocess.run("git init".split(), check=True, cwd=self.directory)
-			subprocess.run(
-				f"git remote add origin https://x-access-token:{token}@github.com/{app.repo_owner}/{app.repo}".split(),
-				check=True,
-				cwd=self.directory,
-			)
-			subprocess.run(
-				f"git fetch --depth 1 origin {self.hash}".split(), check=True, cwd=self.directory
-			)
-			subprocess.run(f"git checkout {self.hash}".split(), check=True, cwd=self.directory)
-
-			frappe.enqueue_doc(self.doctype, self.name, "screen", enqueue_after_commit=True)
-		except Exception:
-			log_error("Clone Error", release=self.name)
-
-	def screen(self):
-		result = self._screen_python_files()
-		result = self._filter_results(result)
-		self._render_html(result)
-		self._read_requirements()
-		if not json.loads(self.diff_result) and not self.diff_requirements:
-			self.approve()
-		self.save()
+		url = f"https://x-access-token:{token}@github.com/{app.repo_owner}/{app.repo}"
+		self.output = ""
+		self.output += self.run("git init")
+		self.output += self.run(f"git remote add origin {url}",)
+		self.output += self.run(f"git fetch --depth 1 origin {self.hash}")
+		self.output += self.run(f"git checkout {self.hash}")
 
 	def _screen_python_files(self):
 		files = glob.glob(self.directory + "/**/*.py", recursive=True)
