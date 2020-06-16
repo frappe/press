@@ -10,6 +10,7 @@ import json
 import requests
 from frappe.utils.password import get_decrypted_password
 from press.utils import log_error
+from press.api.github import get_access_token
 
 
 class Agent:
@@ -27,11 +28,12 @@ class Agent:
 			"clone": clone,
 		}
 		for app in bench.apps:
-			repo, branch = frappe.db.get_value("Frappe App", app.app, ["url", "branch"])
+			repo_owner, repo, branch, installation = frappe.db.get_value("Frappe App", app.app, ["repo_owner", "repo", "branch", "installation"])
+			token = get_access_token(installation)
+			url = f"https://x-access-token:{token}@github.com/{repo_owner}/{repo}"
 			data["apps"].append(
-				{"name": app.scrubbed, "repo": repo, "branch": branch, "hash": app.hash}
+				{"name": app.scrubbed, "repo": url, "branch": branch, "hash": app.hash}
 			)
-
 		return self.create_agent_job("New Bench", "benches", data, bench=bench.name)
 
 	def archive_bench(self, bench):
