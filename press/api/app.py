@@ -34,11 +34,6 @@ def new(installation, url, owner, repo, branch, app_name, enable_auto_deploy):
 @protected("Frappe App")
 def get(name):
 	app = frappe.get_doc("Frappe App", name)
-	deploys = frappe.get_all(
-		"Bench",
-		filters={"status": ("!=", "Archived")},
-		fields=["name", "server", "status", "creation", "`group`"],
-	)
 	return {
 		"name": app.name,
 		"branch": app.branch,
@@ -47,10 +42,20 @@ def get(name):
 		"scrubbed": app.scrubbed,
 		"owner": app.repo_owner,
 		"url": app.url,
-		"deploys": deploys,
 		"last_updated": app.modified,
 		"created": app.creation,
 	}
+
+
+@frappe.whitelist()
+@protected("Frappe App")
+def deploys(name):
+	deploys = frappe.get_all(
+		"Bench",
+		filters={"status": ("!=", "Archived")},
+		fields=["name", "server", "status", "creation", "`group`"],
+	)
+	return deploys
 
 
 @frappe.whitelist()
