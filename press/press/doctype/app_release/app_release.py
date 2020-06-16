@@ -25,9 +25,20 @@ class AppRelease(Document):
 			self.status = "Approved"
 		else:
 			frappe.enqueue_doc(self.doctype, self.name, "screen", enqueue_after_commit=True)
-		self.create_deploy_candidates()
+
+	def on_update(self):
+		if self.status == "Approved":
+			self.create_deploy_candidates()
 
 	def create_deploy_candidates(self):
+		candidates = frappe.get_all(
+			"Deploy Candidate App Release",
+			fields=["parent"],
+			filters={"app": self.app, "release": self.name},
+		)
+		if candidates:
+			return
+
 		for group_app in frappe.get_all(
 			"Release Group Frappe App", fields=["parent"], filters={"app": self.app}
 		):
