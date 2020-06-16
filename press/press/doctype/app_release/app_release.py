@@ -7,6 +7,7 @@ import glob
 import json
 import os
 import regex
+import shutil
 import subprocess
 import frappe
 from frappe.model.document import Document
@@ -37,40 +38,60 @@ class AppRelease(Document):
 		if self.status == "Approved":
 			pass
 
-	def request_approval(self):
-		if self.status == "":
-			self.status = "Awaiting Approval"
-			self.save()
-			frappe.enqueue_doc(
-				self.doctype, self.name, "clone_locally", enqueue_after_commit=True
-			)
-
-	def approve(self):
-		if self.status == "Awaiting Approval":
-			self.status = "Approved"
-			self.save()
-
-	def reject(self, reason):
-		if self.status == "Awaiting Approval":
-			self.status = "Rejected"
-			self.save()
-
-	def clone_locally(self):
+	def screen(self):
 		try:
-			directory = frappe.db.get_single_value("Press Settings", "clone_directory")
-			code_server = frappe.db.get_single_value("Press Settings", "code_server")
-			if not os.path.exists(directory):
-				os.mkdir(directory)
+			self._set_baseline()
 
-			self.directory = os.path.join(directory, self.hash[:10])
-			code_server_url = f"{code_server}/?folder=/home/coder/project/{self.hash[:10]}"
-			self.code_server_url = code_server_url
-			self.save()
-			if not os.path.exists(self.directory):
-				os.mkdir(self.directory)
+			self._prepare_for_cloning()
+			self._clone_repo()
 
-			app = frappe.get_doc("Frappe App", self.app)
-			token = get_access_token(app.installation)
+			self._screen_python_files()
+			self._filter_results()
+			self._render_html()
+
+			self._read_requirements()
+			self._filter_requirements()
+			self._approve_if_no_issues_found()
+
+			self.save(ignore_permissions=True)
+		except Exception:
+			log_error("App Release Screen Error", release=self.name)
+
+	def run(self, command):
+		return subprocess.check_output(command.split(), stderr=subprocess.STDOUT, cwd=self.directory).decode()
+
+	def _set_baseline(self):
+		approved_releases = frappe.get_all(
+			"App Release",
+			fields=["name", "result", "requirements"],
+			filters={"status": "Approved", "app": self.app, "name": ("!=", self.name)},
+			order_by="creation desc",
+			limit=1,
+		)
+		if approved_releases:
+			baseline = approved_releases[0]
+			self.baseline_release = baseline.name
+			self.baseline_result = baseline.result
+			self.baseline_requirements = baseline.requirements
+
+	def _prepare_for_cloning(self):
+		clone_directory = frappe.db.get_single_value("Press Settings", "clone_directory")
+		code_server = frappe.db.get_single_value("Press Settings", "code_server")
+		if not os.path.exists(clone_directory):
+			os.mkdir(clone_directory)
+
+		self.directory = os.path.join(clone_directory, self.hash[:10])
+		if os.path.exists(self.directory):
+			shutil.rmtree(self.directory)
+
+		os.mkdir(self.directory)
+
+		code_server_url = f"{code_server}/?folder=/home/coder/project/{self.hash[:10]}"
+		self.code_server_url = code_server_url
+
+	def _clone_repo(self):
+		app = frappe.get_doc("Frappe App", self.app)
+		token = get_access_token(app.installation)
 		url = f"https://x-access-token:{token}@github.com/{app.repo_owner}/{app.repo}"
 		self.output = ""
 		self.output += self.run("git init")
@@ -93,7 +114,6 @@ class AppRelease(Document):
 				result.append(f)
 		result = sorted(result, key=lambda x: x["score"], reverse=True)
 		self.result = json.dumps(result, indent=2)
-		return result
 
 	def _screen_python_file(self, filename):
 		with open(filename, "r") as ff:
@@ -116,16 +136,29 @@ class AppRelease(Document):
 				lines_with_issues.append({"issues": issues, "context": context})
 		return lines_with_issues
 
-	def _render_html(self, result):
+	def _filter_results(self):
+		result = json.loads(self.result)
+		if self.baseline_release:
+			baseline_result = json.loads(self.baseline_result)
+			diff_result = []
+			for file in result:
+				if file not in baseline_result:
+					diff_result.append(file)
+		else:
+			diff_result = result
+		self.diff_result = json.dumps(diff_result, indent=2)
+
+	def _render_html(self):
+		diff_result = json.loads(self.diff_result)
 		formatter = HF()
 		styles = f"<style>{formatter.get_style_defs()}</style>"
-		for file in result:
+		for file in diff_result:
 			file["id"] = file["name"].replace("/", "_").replace(".", "_")
 			for line in file["lines"]:
 				line["highlighted_context"] = highlight_context(line["context"])
 		html = frappe.render_template(
 			"press/press/doctype/app_release/app_release.html",
-			{"result": result, "styles": styles},
+			{"result": diff_result, "styles": styles},
 		)
 		self.result_html = html
 
@@ -134,41 +167,23 @@ class AppRelease(Document):
 		if os.path.exists(requirements_txt):
 			with open(requirements_txt) as f:
 				self.requirements = f.read()
-			if self.baseline_requirements:
-				diff = [
-					r for r in self.requirements.splitlines() if r not in self.baseline_requirements
-				]
-				self.diff_requirements = "\n".join(diff)
-			else:
-				self.diff_requirements = self.requirements
+		else:
+			self.requirements = ""
 
-	def _filter_results(self, result):
-		if not self.baseline_result:
-			self.diff_result = json.dumps(result, indent=2)
-			return result
+	def _filter_requirements(self):
+		if self.baseline_requirements:
+			diff = [
+				r for r in self.requirements.splitlines() if r not in self.baseline_requirements
+			]
+			self.diff_requirements = "\n".join(diff)
+		else:
+			self.diff_requirements = self.requirements
 
-		baseline_result = json.loads(self.baseline_result)
-		unmatched = []
-		for file in result:
-			if file not in baseline_result:
-				unmatched.append(file)
-		self.diff_result = json.dumps(unmatched, indent=2)
-		return unmatched
-
-	def set_baseline(self):
-		approved_releases = frappe.get_all(
-			"App Release",
-			fields=["name", "result", "requirements"],
-			filters={"status": "Approved", "app": self.app, "name": ("!=", self.name)},
-			order_by="creation desc",
-			limit=1,
-		)
-		if approved_releases:
-			baseline = approved_releases[0]
-			self.baseline_release = baseline.name
-			self.baseline_result = baseline.result
-			self.baseline_requirements = baseline.requirements
-			self.save()
+	def _approve_if_no_issues_found(self):
+		if not json.loads(self.diff_result) and not self.diff_requirements:
+			self.status = "Approved"
+		else:
+			self.status = "Awaiting Approval"
 
 
 def get_context(lines, index, size=2):
