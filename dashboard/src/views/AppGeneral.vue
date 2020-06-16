@@ -34,24 +34,22 @@
 		</Section>
 		<Section
 			class="mt-10"
-			title="Installed apps"
-			description="Apps installed on your app"
+			title="Compatible Versions"
+			description="Versions compatible with your app"
 		>
 			<SectionCard>
-				<a
+				<div
 					class="block px-6 py-3 hover:bg-gray-50"
-					v-for="app in app.installed_apps"
-					:href="`${app.url}/tree/${app.branch}`"
-					:key="app.url"
-					target="_blank"
+					v-for="group in app.groups"
+					:key="group.name"
 				>
 					<p class="text-base font-medium text-brand">
-						{{ app.owner }}/{{ app.repo }}
+						{{ group.name }}
 					</p>
 					<p class="text-sm text-gray-800">
-						{{ app.branch }}
+						{{ group.frappe.scrubbed }}/{{ group.frappe.branch }}
 					</p>
-				</a>
+				</div>
 			</SectionCard>
 		</Section>
 	</div>
