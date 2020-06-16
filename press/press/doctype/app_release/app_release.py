@@ -58,7 +58,9 @@ class AppRelease(Document):
 			log_error("App Release Screen Error", release=self.name)
 
 	def run(self, command):
-		return subprocess.check_output(command.split(), stderr=subprocess.STDOUT, cwd=self.directory).decode()
+		return subprocess.check_output(
+			command.split(), stderr=subprocess.STDOUT, cwd=self.directory
+		).decode()
 
 	def _set_baseline(self):
 		approved_releases = frappe.get_all(
