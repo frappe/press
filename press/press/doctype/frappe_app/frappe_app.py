@@ -6,24 +6,38 @@ from __future__ import unicode_literals
 
 import frappe
 from frappe.model.document import Document
-from github import Github
+from press.api.github import get_access_token
+from press.utils import log_error
+import requests
 
 
 class FrappeApp(Document):
-	def create_app_release(self):
-		github_access_token = frappe.db.get_single_value(
-			"Press Settings", "github_access_token"
-		)
-		if github_access_token:
-			client = Github(github_access_token)
-		else:
-			client = Github()
+	def after_insert(self):
+		self.create_app_release()
 
-		repo = client.get_repo(f"{self.repo_owner}/{self.repo}")
-		branch = repo.get_branch(self.branch)
-		hash = branch.commit.sha
-		if not frappe.db.exists("App Release", {"hash": hash}):
-			frappe.get_doc({"doctype": "App Release", "app": self.name, "hash": hash}).insert()
+	def create_app_release(self):
+		try:
+			token = get_access_token(self.installation)
+			headers = {
+				"Authorization": f"token {token}",
+			}
+			branch = requests.get(
+				f"https://api.github.com/repos/{self.repo_owner}/{self.repo}/branches/{self.branch}",
+				headers=headers,
+			).json()
+			hash = branch["commit"]["sha"]
+			if not frappe.db.exists("App Release", {"hash": hash}):
+				frappe.get_doc(
+					{
+						"doctype": "App Release",
+						"app": self.name,
+						"hash": hash,
+						"message": branch["commit"]["commit"]["message"],
+						"author": branch["commit"]["author"]["login"],
+					}
+				).insert()
+		except Exception:
+			log_error("App Release Creation Error", app=self.name)
 
 
 def poll_new_releases():
