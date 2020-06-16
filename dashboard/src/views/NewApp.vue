@@ -81,7 +81,7 @@
 										Don't see your repository here?
 										<a
 											:href="
-												`https://github.com/settings/installations/${selectedInstallation.id}?repository_ids=`
+												`https://github.com/settings/installations/${selectedInstallation.id}`
 											"
 											class="underline"
 											>Configure the Frappe Cloud app on GitHub.</a
@@ -97,7 +97,7 @@
 										repositories in your account.
 										<a
 											:href="
-												`https://github.com/settings/installations/${selectedInstallation.id}?repository_ids=`
+												`https://github.com/settings/installations/${selectedInstallation.id}`
 											"
 											class="underline"
 											>Configure the Frappe Cloud app on GitHub</a
