@@ -4,9 +4,8 @@
 frappe.ui.form.on('App Release', {
 	refresh: function (frm) {
 		[
-			[__('Request Approal'), 'request_approval'],
-			[__('Approve'), 'approve'],
 			[__('Deploy'), 'deploy'],
+			[__('Screen'), 'screen'],
 		].forEach(([label, method]) => {
 			frm.add_custom_button(
 				label,
