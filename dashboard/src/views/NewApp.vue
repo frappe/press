@@ -3,7 +3,7 @@
 		<div class="px-8">
 			<div
 				class="p-8 mx-auto mb-20 space-y-8 border rounded-lg shadow-md"
-				style="width: 650px"
+				style="width: 700px"
 			>
 				<div>
 					<h1 class="mb-6 text-2xl font-bold">Add a New App</h1>
@@ -209,7 +209,7 @@
 										</p>
 										<div class="flex pl-1 -ml-1 overflow-x-auto pb-2 pt-4">
 											<button
-												class="relative flex items-center justify-center py-4 pl-4 pr-8 mr-4 border rounded-md focus:outline-none focus:shadow-outline"
+												class="relative flex flex-shrink-0 items-center justify-center py-4 pl-4 pr-8 mr-4 border rounded-md focus:outline-none focus:shadow-outline"
 												:class="[
 													selectedGroups.includes(group.name)
 														? 'bg-blue-50 border-blue-500'
