@@ -166,6 +166,7 @@ def request_logs(name, start=0):
 
 @frappe.whitelist()
 def options_for_new():
+	team = get_current_team()
 	groups = frappe.get_all(
 		"Release Group", fields=["name", "`default`"], filters={"public": True}
 	)
@@ -173,14 +174,14 @@ def options_for_new():
 		group_doc = frappe.get_doc("Release Group", group.name)
 		group_apps = frappe.get_all(
 			"Frappe App",
-			fields=["name", "frappe", "branch", "scrubbed", "url"],
+			fields=["name", "frappe", "branch", "scrubbed", "repo_owner", "repo", "public", "team"],
 			filters={"name": ("in", [row.app for row in group_doc.apps])},
 		)
+		group_apps = list(filter(lambda a: a.public or a.team == team, group_apps))
 		order = {row.app: row.idx for row in group_doc.apps}
 		group["apps"] = sorted(group_apps, key=lambda x: order[x.name])
 
 	domain = frappe.db.get_value("Press Settings", "Press Settings", ["domain"])
-	team = get_current_team()
 
 	team_doc = frappe.get_doc("Team", team)
 	# disable site creation if card not added

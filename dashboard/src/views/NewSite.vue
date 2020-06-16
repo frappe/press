@@ -66,7 +66,7 @@
 									/>
 									<div class="ml-3 text-base text-left">
 										<div class="font-semibold">
-											{{ app.prettyName }}
+											{{ app.repo_owner }}/{{ app.repo }}
 										</div>
 										<div class="text-gray-700">
 											{{ app.branch }}
@@ -261,20 +261,7 @@ export default {
 			if (!this.options) return [];
 
 			let group = this.options.groups.find(g => g.name == this.selectedGroup);
-			return group.apps.map(d => {
-				let prettyName = d.scrubbed;
-				if (d.url.includes('https://github.com/frappe')) {
-					prettyName = 'frappe/' + d.scrubbed;
-				}
-				return {
-					name: d.name,
-					app: d.name,
-					frappe: d.frappe,
-					branch: d.branch,
-					url: d.url,
-					prettyName
-				};
-			});
+			return group.apps;
 		},
 		subdomainInvalidMessage() {
 			if (!this.siteName) {
