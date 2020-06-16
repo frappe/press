@@ -111,6 +111,7 @@ def repositories(installation, token):
 	}
 	response = requests.get(
 		f"https://api.github.com/user/installations/{installation}/repositories",
+		params={"per_page": 100},
 		headers=headers,
 	)
 	repositories = []
@@ -136,7 +137,9 @@ def repository(installation, owner, name):
 		f"https://api.github.com/repos/{owner}/{name}", headers=headers,
 	).json()
 	repo["branches"] = requests.get(
-		f"https://api.github.com/repos/{owner}/{name}/branches", headers=headers,
+		f"https://api.github.com/repos/{owner}/{name}/branches",
+		params={"per_page": 100},
+		headers=headers,
 	).json()
 	return repo
 
