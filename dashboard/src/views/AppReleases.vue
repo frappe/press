@@ -19,22 +19,28 @@
 								{{ release.message }}
 							</div>
 							<div class="flex items-center" v-if="release.tags">
-									<Badge
-										v-for="(tag, index) in release.tags"
-										:key="index"
-										class="mr-2"
-									>
-										{{ tag }}
-									</Badge>
-								</div>
+								<Badge
+									v-for="(tag, index) in release.tags"
+									:key="index"
+									class="mr-2"
+								>
+									{{ tag }}
+								</Badge>
 							</div>
-							<div class="mt-4">
+							<div class="w-32">
+								<Badge
+									:color="color(release.status)"
+									v-if="release.status != 'Approved'"
+								>
+									{{ release.status }}
+								</Badge>
 								<Button
 									v-if="release.status == 'Approved'"
-									type="primary"
+									type="secondary"
 									@click="deploy(release)"
 									>Deploy</Button
 								>
+							</div>
 						</div>
 						<div class="" v-if="release.status == 'Rejected'">
 							<div>
@@ -66,7 +72,7 @@ export default {
 		color(status) {
 			let color = {
 				'Awaiting Approval': 'orange',
-				Running: 'yellow',
+				Pending: 'orange',
 				Approved: 'green',
 				Rejected: 'red'
 			}[status];
