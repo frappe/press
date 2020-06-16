@@ -43,12 +43,26 @@ def exists(name):
 @protected("Frappe App")
 def get(name):
 	app = frappe.get_doc("Frappe App", name)
+	groups = frappe.get_all(
+		"Release Group Frappe App", fields=["parent as name"], filters={"app": app.name}
+	)
+	for group in groups:
+		group_doc = frappe.get_doc("Release Group", group.name)
+		group_apps = frappe.get_all(
+			"Frappe App",
+			fields=["name", "frappe", "scrubbed", "branch"],
+			filters={"name": ("in", [row.app for row in group_doc.apps])},
+		)
+		frappe_app = find(group_apps, lambda x: x.frappe)
+		group["frappe"] = frappe_app
+
 	return {
 		"name": app.name,
 		"branch": app.branch,
 		"repo": app.repo,
 		"enable_auto_deploy": app.enable_auto_deploy,
 		"scrubbed": app.scrubbed,
+		"groups": groups,
 		"repo_owner": app.repo_owner,
 		"url": app.url,
 		"last_updated": app.modified,
