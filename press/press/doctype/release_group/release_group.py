@@ -9,7 +9,7 @@ from frappe.model.document import Document
 
 
 class ReleaseGroup(Document):
-	def after_insert(self):
+	def on_update(self):
 		self.create_deploy_candidate()
 
 	def create_deploy_candidate(self):
