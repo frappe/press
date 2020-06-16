@@ -15,7 +15,7 @@ def new(app):
 	app_doc = frappe.get_doc(
 		{
 			"doctype": "Frappe App",
-			"name": f"{app['repo_owner']}/{app['repo']}",
+			"name": app["name"],
 			"branch": app["branch"],
 			"url": app["url"],
 			"repo": app["repo"],
@@ -32,6 +32,11 @@ def new(app):
 		release_group.append("apps", {"app": app_doc.name})
 		release_group.save()
 	return app_doc.name
+
+
+@frappe.whitelist()
+def exists(name):
+	return bool(frappe.db.exists("Frappe App", name))
 
 
 @frappe.whitelist()

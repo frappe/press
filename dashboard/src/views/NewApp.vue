@@ -165,14 +165,14 @@
 												branch for a Frappe application.
 											</div>
 											<div v-if="$resources.app.loading === false">
-												<div v-if="appName" class="text-lg flex">
+												<div v-if="scrubbed" class="text-lg flex">
 													<FeatherIcon
 														name="check"
 														class="w-5 h-5 p-1 mr-2 text-green-500 bg-green-100 rounded-full"
 													/>
-													Found {{ appName }}
+													Found {{ scrubbed }}
 												</div>
-												<div v-if="!appName" class="text-lg text-red-600 flex">
+												<div v-if="!scrubbed" class="text-lg text-red-600 flex">
 													<FeatherIcon
 														name="x"
 														class="w-5 h-5 p-1 mr-2 text-red-500 bg-red-100 rounded-full"
@@ -182,7 +182,24 @@
 											</div>
 										</div>
 									</div>
-									<div class="mt-6" v-if="appName">
+									<div class="mt-6" v-if="scrubbed">
+										<label class="text-lg">
+											Choose a name for your app
+										</label>
+										<p class="text-base text-gray-700">
+											Give your app a unique name.
+										</p>
+										<div class="flex mt-4">
+											<input
+												class="z-10 w-full form-input"
+												type="text"
+												v-model="appName"
+												@change="checkIfExists()"
+											/>
+										</div>
+										<ErrorMessage class="mt-1" :error="appNameInvalidMessage" />
+									</div>
+									<div class="mt-6" v-if="scrubbed">
 										<label class="text-lg">
 											Choose compatible Frappe versions
 										</label>
@@ -227,7 +244,7 @@
 											</button>
 										</div>
 									</div>
-									<div class="mt-6" v-if="appName">
+									<div class="mt-6" v-if="scrubbed">
 										<label class="flex py-2 leading-none">
 											<Input
 												label="Enable Auto Deploy"
@@ -245,12 +262,12 @@
 							</div>
 						</div>
 					</div>
-					<div v-if="appName">
+					<div v-if="scrubbed">
 						<Button
 							class="mt-6"
 							type="primary"
 							@click="createApp()"
-							:disabled="selectedGroups.length === 0"
+							:disabled="!canCreate()"
 						>
 							Create App
 						</Button>
@@ -271,19 +288,23 @@ export default {
 			enableAutoDeploy: false,
 			selectedBranch: null,
 			selectedGroups: [],
-			appName: null
+			scrubbed: null,
+			appName: null,
+			appNameTaken: false,
+			appNameInvalidMessage: null
 		};
 	},
 	methods: {
 		async createApp() {
 			let appName = await this.$call('press.api.app.new', {
 				app: {
+					name: this.appName,
 					installation: this.selectedInstallation.id,
 					url: this.connectedRepository.url,
 					repo_owner: this.selectedInstallation.login,
 					repo: this.connectedRepository.name,
 					branch: this.selectedBranch,
-					scrubbed: this.appName,
+					scrubbed: this.scrubbed,
 					enable_auto_deploy: this.enableAutoDeploy,
 					groups: this.selectedGroups
 				}
@@ -298,8 +319,26 @@ export default {
 			}
 		},
 		checkAvailability(group) {
-			let matched = group.apps.find(a => a.scrubbed === this.appName);
+			let matched = group.apps.find(a => a.scrubbed === this.scrubbed);
 			return !matched;
+		},
+		async checkIfExists() {
+			this.appNameTaken = await this.$call('press.api.app.exists', {
+				name: this.appName
+			});
+			if (this.appNameTaken) {
+				this.appNameInvalidMessage = `${this.appName} already exists`;
+			}
+		},
+		canCreate() {
+			if (
+				this.appName &&
+				!this.appNameInvalidMessage &&
+				this.selectedGroups.length != 0
+			) {
+				return true;
+			}
+			return false;
 		}
 	},
 	errorCaptured(err, vm, info) {
@@ -309,18 +348,18 @@ export default {
 	watch: {
 		connectedRepository() {
 			this.selectedBranch = null;
-			this.appName = null;
+			this.scrubbed = null;
 			if (this.connectedRepository) {
 				this.$resources.repository.reload();
 			}
 		},
 		selectedBranch() {
-			this.appName = null;
+			this.scrubbed = null;
 			if (this.selectedBranch) {
 				this.$resources.app.reload();
 			}
 		},
-		appName() {
+		scrubbed() {
 			this.selectedGroups = [];
 			let available = this.options.groups.find(
 				g => this.checkAvailability(g) === true
@@ -405,7 +444,9 @@ export default {
 				params: this.appParams,
 				default: {},
 				onSuccess(app) {
-					this.appName = app.name;
+					this.scrubbed = app.name;
+					this.appName = app.title;
+					this.checkIfExists();
 				},
 				auto: false
 			};
