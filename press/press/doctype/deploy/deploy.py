@@ -21,6 +21,7 @@ class Deploy(Document):
 					"server": bench.server,
 					"group": self.group,
 					"candidate": self.candidate,
+					"workers": 1,
 				}
 			).insert()
 			bench.bench = new.name
