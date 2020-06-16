@@ -9,11 +9,9 @@
 				</div>
 				<div class="flex items-center mt-2">
 					<h1 class="text-2xl font-bold">{{ app.name }}</h1>
-					<Badge class="ml-4" :status="app.status">{{ app.status }}</Badge>
 				</div>
 				<a
-					v-if="app.status === 'Active' || app.status === 'Updating'"
-					:href="`https://${app.name}`"
+					:href="`https://${app.url}`"
 					target="_blank"
 					class="inline-flex items-baseline text-sm text-blue-500 hover:underline"
 				>
