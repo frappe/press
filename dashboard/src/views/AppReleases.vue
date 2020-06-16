@@ -11,7 +11,7 @@
 						v-for="release in releases.data"
 						:key="release.name"
 					>
-						<div class="flex justify-between">
+						<div class="flex justify-between items-center">
 							<div class="pr-2 font-mono">
 								{{ release.hash.slice(0, 6) }}
 							</div>
