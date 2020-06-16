@@ -9,6 +9,8 @@ from pathlib import Path
 from press.utils import get_current_team, log_error
 import requests
 import jwt
+import regex
+from base64 import b64decode
 from frappe.core.utils import find
 
 
@@ -175,11 +177,21 @@ def app(installation, owner, repository, branch):
 
 	tree = _generate_files_tree(contents["tree"])
 	app_name = None
+	title = None
 	if "setup.py" in tree and "requirements.txt" in tree:
 		for directory, files in tree.items():
 			if files and "hooks.py" in files and "patches.txt" in files:
 				app_name = directory
+				hooks = requests.get(
+					f"https://api.github.com/repos/{owner}/{repository}/contents/{app_name}/hooks.py",
+					params={"ref": branch["name"]},
+					headers=headers,
+				).json()
+				content = b64decode(hooks["content"]).decode()
+				match = regex.search("app_title = \"(.*)\"", content)
+				if match:
+					title = match.group(1)
 				break
 	return {
-		"name": app_name,
+		"name": app_name, "title": title
 	}
