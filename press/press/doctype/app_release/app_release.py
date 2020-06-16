@@ -20,10 +20,10 @@ from pygments.formatters import HtmlFormatter as HF
 class AppRelease(Document):
 	def after_insert(self):
 		auto_approve = frappe.db.get_value("Frappe App", self.app, "auto_approve")
-		self.set_baseline()
 		if auto_approve:
 			self.status = "Approved"
-			self.save()
+		else:
+			frappe.enqueue_doc(self.doctype, self.name, "screen", enqueue_after_commit=True)
 		self.create_deploy_candidates()
 
 	def create_deploy_candidates(self):
