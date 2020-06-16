@@ -188,10 +188,8 @@ def app(installation, owner, repository, branch):
 					headers=headers,
 				).json()
 				content = b64decode(hooks["content"]).decode()
-				match = regex.search("app_title = \"(.*)\"", content)
+				match = regex.search('app_title = "(.*)"', content)
 				if match:
 					title = match.group(1)
 				break
-	return {
-		"name": app_name, "title": title
-	}
+	return {"name": app_name, "title": title}
