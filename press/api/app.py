@@ -10,24 +10,28 @@ from frappe.core.utils import find
 
 
 @frappe.whitelist()
-def new(installation, url, owner, repo, branch, app_name, enable_auto_deploy):
+def new(app):
 	team = get_current_team()
-	app = frappe.get_doc(
+	app_doc = frappe.get_doc(
 		{
 			"doctype": "Frappe App",
-			"name": f"{owner}/{repo}",
-			"branch": branch,
-			"url": url,
-			"repo": repo,
-			"repo_owner": owner,
-			"scrubbed": app_name,
-			"installation": installation,
+			"name": f"{app['repo_owner']}/{app['repo']}",
+			"branch": app["branch"],
+			"url": app["url"],
+			"repo": app["repo"],
+			"repo_owner": app["repo_owner"],
+			"scrubbed": app["scrubbed"],
+			"installation": app["installation"],
 			"team": team,
-			"enable_auto_deploy": enable_auto_deploy,
+			"enable_auto_deploy": app["enable_auto_deploy"],
 		}
 	)
-	app.insert()
-	return app.name
+	app_doc.insert()
+	for group in app["groups"]:
+		release_group = frappe.get_doc("Release Group", group)
+		release_group.append("apps", {"app": app_doc.name})
+		release_group.save()
+	return app_doc.name
 
 
 @frappe.whitelist()

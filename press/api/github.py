@@ -9,6 +9,7 @@ from pathlib import Path
 from press.utils import get_current_team, log_error
 import requests
 import jwt
+from frappe.core.utils import find
 
 
 @frappe.whitelist(allow_guest=True)
@@ -57,11 +58,25 @@ def options():
 	token = frappe.db.get_value("Team", team, "github_access_token")
 	enable_custom_apps = frappe.db.get_value("Team", team, "enable_custom_apps")
 	public_link = frappe.db.get_single_value("Press Settings", "github_app_public_link")
+
+	groups = frappe.get_all("Release Group", {"public": True})
+	for group in groups:
+		group_doc = frappe.get_doc("Release Group", group.name)
+		group_apps = frappe.get_all(
+			"Frappe App",
+			fields=["name", "frappe", "scrubbed", "branch"],
+			filters={"name": ("in", [row.app for row in group_doc.apps])},
+		)
+		frappe_app = find(group_apps, lambda x: x.frappe)
+		group["frappe"] = frappe_app
+		group["apps"] = group_apps
+
 	options = {
 		"authorized": bool(token),
 		"enable_custom_apps": bool(enable_custom_apps),
 		"installation_url": f"{public_link}/installations/new",
 		"installations": installations(token) if token else [],
+		"groups": groups,
 	}
 	return options
 

@@ -182,7 +182,52 @@
 											</div>
 										</div>
 									</div>
-									<div class="mt-4" v-if="appName">
+									<div class="mt-6" v-if="appName">
+										<label class="text-lg">
+											Choose compatible Frappe versions
+										</label>
+										<p class="text-base text-gray-700">
+											Your app will be available for installation with these
+											versions.
+										</p>
+										<div class="flex pl-1 -ml-1 overflow-x-auto pb-2 pt-4">
+											<button
+												class="relative flex items-center justify-center py-4 pl-4 pr-8 mr-4 border rounded-md focus:outline-none focus:shadow-outline"
+												:class="[
+													selectedGroups.includes(group.name)
+														? 'bg-blue-50 border-blue-500'
+														: 'hover:border-blue-400',
+													checkAvailability(group)
+														? 'cursor-pointer'
+														: 'cursor-not-allowed bg-gray-50 border-gray-500'
+												]"
+												v-for="group in options.groups"
+												:key="group.name"
+												@click="toggleVersion(group)"
+												:disabled="!checkAvailability(group)"
+											>
+												<div class="flex items-start">
+													<Input
+														class="pt-0.5 pointer-events-none"
+														tabindex="-1"
+														type="checkbox"
+														:value="selectedGroups.includes(group.name)"
+													/>
+													<div class="ml-3 text-base text-left">
+														<div class="font-semibold">
+															{{ group.name }}
+														</div>
+														<div class="text-gray-700">
+															{{ group.frappe.scrubbed }}/{{
+																group.frappe.branch
+															}}
+														</div>
+													</div>
+												</div>
+											</button>
+										</div>
+									</div>
+									<div class="mt-6" v-if="appName">
 										<label class="flex py-2 leading-none">
 											<Input
 												label="Enable Auto Deploy"
@@ -201,7 +246,12 @@
 						</div>
 					</div>
 					<div v-if="appName">
-						<Button class="mt-6" type="primary" @click="createApp()">
+						<Button
+							class="mt-6"
+							type="primary"
+							@click="createApp()"
+							:disabled="selectedGroups.length === 0"
+						>
 							Create App
 						</Button>
 					</div>
@@ -220,21 +270,36 @@ export default {
 			connectedRepository: null,
 			enableAutoDeploy: false,
 			selectedBranch: null,
+			selectedGroups: [],
 			appName: null
 		};
 	},
 	methods: {
 		async createApp() {
 			let appName = await this.$call('press.api.app.new', {
-				installation: this.selectedInstallation.id,
-				url: this.connectedRepository.url,
-				owner: this.selectedInstallation.login,
-				repo: this.connectedRepository.name,
-				branch: this.selectedBranch,
-				app_name: this.appName,
-				enable_auto_deploy: this.enableAutoDeploy
+				app: {
+					installation: this.selectedInstallation.id,
+					url: this.connectedRepository.url,
+					repo_owner: this.selectedInstallation.login,
+					repo: this.connectedRepository.name,
+					branch: this.selectedBranch,
+					scrubbed: this.appName,
+					enable_auto_deploy: this.enableAutoDeploy,
+					groups: this.selectedGroups
+				}
 			});
 			this.$router.push(`/apps/${appName}`);
+		},
+		toggleVersion(group) {
+			if (!this.selectedGroups.includes(group.name)) {
+				this.selectedGroups.push(group.name);
+			} else {
+				this.selectedGroups = this.selectedGroups.filter(a => a !== group.name);
+			}
+		},
+		checkAvailability(group) {
+			let matched = group.apps.find(a => a.scrubbed === this.appName);
+			return !matched;
 		}
 	},
 	errorCaptured(err, vm, info) {
@@ -253,6 +318,15 @@ export default {
 			this.appName = null;
 			if (this.selectedBranch) {
 				this.$resources.app.reload();
+			}
+		},
+		appName() {
+			this.selectedGroups = [];
+			let available = this.options.groups.find(
+				g => this.checkAvailability(g) === true
+			);
+			if (available) {
+				this.selectedGroups.push(available.name);
 			}
 		}
 	},
