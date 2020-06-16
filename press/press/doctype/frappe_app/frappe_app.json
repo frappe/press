@@ -18,7 +18,7 @@
   "team",
   "public",
   "enable_auto_deploy",
-  "auto_approve"
+  "skip_review"
  ],
  "fields": [
   {
@@ -122,15 +122,15 @@
   },
   {
    "default": "0",
-   "fieldname": "auto_approve",
+   "fieldname": "skip_review",
    "fieldtype": "Check",
-   "label": "Auto Approve",
+   "label": "Skip Review",
    "show_days": 1,
    "show_seconds": 1
   }
  ],
  "links": [],
- "modified": "2020-06-16 13:31:23.200095",
+ "modified": "2020-06-16 21:29:28.436689",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Frappe App",
