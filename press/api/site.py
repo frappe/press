@@ -170,16 +170,27 @@ def options_for_new():
 	groups = frappe.get_all(
 		"Release Group", fields=["name", "`default`"], filters={"public": True}
 	)
+	deployed_groups = []
 	for group in groups:
-		group_doc = frappe.get_doc("Release Group", group.name)
+		benches = frappe.get_all(
+			"Bench",
+			filters={"status": "Active", "group": group.name},
+			order_by="creation desc",
+			limit=1,
+		)
+		if not benches:
+			continue
+		bench = benches[0].name
+		bench_doc = frappe.get_doc("Bench", bench)
 		group_apps = frappe.get_all(
 			"Frappe App",
 			fields=["name", "frappe", "branch", "scrubbed", "repo_owner", "repo", "public", "team"],
-			filters={"name": ("in", [row.app for row in group_doc.apps])},
+			filters={"name": ("in", [row.app for row in bench_doc.apps])},
 		)
 		group_apps = list(filter(lambda a: a.public or a.team == team, group_apps))
-		order = {row.app: row.idx for row in group_doc.apps}
+		order = {row.app: row.idx for row in bench_doc.apps}
 		group["apps"] = sorted(group_apps, key=lambda x: order[x.name])
+		deployed_groups.append(group)
 
 	domain = frappe.db.get_value("Press Settings", "Press Settings", ["domain"])
 
@@ -192,7 +203,7 @@ def options_for_new():
 
 	return {
 		"domain": domain,
-		"groups": sorted(groups, key=lambda x: not x.default),
+		"groups": sorted(deployed_groups, key=lambda x: not x.default),
 		"plans": get_plans(),
 		"has_card": team_doc.default_payment_method,
 		"free_account": team_doc.free_account,
