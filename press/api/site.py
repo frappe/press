@@ -173,11 +173,12 @@ def domains(name):
 
 @frappe.whitelist()
 @protected()
-def activities(name):
+def activities(name, start=0):
 	activities = frappe.get_all(
 		"Site Activity",
 		fields=["action", "reason", "creation", "owner"],
 		filters={"site": name},
+		start=start,
 		limit=20,
 	)
 
@@ -186,6 +187,19 @@ def activities(name):
 			activity.action = "Site created"
 
 	return activities
+
+
+@frappe.whitelist()
+@protected()
+def request_logs(name, start=0):
+	logs = frappe.get_all(
+		"Site Request Log",
+		fields=["*"],
+		filters={"site": name, "url": ("!=", "/api/method/ping")},
+		start=start,
+		limit=20,
+	)
+	return logs
 
 
 @frappe.whitelist()
@@ -208,7 +222,9 @@ def options_for_new():
 
 	team_doc = frappe.get_doc("Team", team)
 	# disable site creation if card not added
-	disable_site_creation = not team_doc.default_payment_method and not team_doc.erpnext_partner
+	disable_site_creation = (
+		not team_doc.default_payment_method and not team_doc.erpnext_partner
+	)
 	allow_partner = team_doc.is_partner_and_has_enough_credits()
 
 	return {

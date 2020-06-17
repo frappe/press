@@ -23,6 +23,15 @@
 						</FormatDate>
 					</div>
 				</div>
+				<div class="px-6 my-2" v-if="!$resources.activities.lastPageEmpty">
+					<Button
+						:loading="$resources.activities.loading"
+						loadingText="Fetching..."
+						@click="pageStart += 20"
+					>
+						Load more
+					</Button>
+				</div>
 			</SectionCard>
 		</Section>
 	</div>
@@ -37,11 +46,19 @@ export default {
 			return {
 				method: 'press.api.site.activities',
 				params: {
-					name: this.site.name
+					name: this.site.name,
+					start: this.pageStart
 				},
-				auto: true
+				auto: true,
+				paged: true,
+				keepData: true
 			};
 		}
+	},
+	data() {
+		return {
+			pageStart: 0
+		};
 	}
 };
 </script>

@@ -71,8 +71,9 @@
 						type="primary"
 						@click="$resources.scheduleBackup.fetch()"
 						:disabled="$resources.scheduleBackup.loading"
-						>Schedule Backup</Button
 					>
+						Schedule Backup with Files
+					</Button>
 				</div>
 			</SectionCard>
 		</Section>
@@ -117,17 +118,6 @@ export default {
 		});
 	},
 	methods: {
-		formatBytes(bytes, decimals = 2) {
-			if (bytes === 0) return '0 Bytes';
-
-			const k = 1024;
-			const dm = decimals < 0 ? 0 : decimals;
-			const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-
-			const i = Math.floor(Math.log(bytes) / Math.log(k));
-
-			return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
-		},
 		async downloadBackup(backup_file, database_url, offsite) {
 			let link = offsite ? await this.$call('press.api.site.get_backup_link', {
 				name: this.site.name,

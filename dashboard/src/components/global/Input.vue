@@ -8,6 +8,7 @@
 		</span>
 		<input
 			v-if="type !== 'select'"
+			class="placeholder-gray-500"
 			:class="[
 				{
 					'block w-full form-input': type != 'checkbox',
