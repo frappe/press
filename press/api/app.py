@@ -125,7 +125,7 @@ def all():
 		filters = {"team": get_current_team()}
 	apps = frappe.get_list(
 		"Frappe App",
-		fields=["name", "modified", "url", "branch"],
+		fields=["name", "modified", "url", "repo_owner", "repo", "branch"],
 		filters=filters,
 		order_by="creation desc",
 	)

@@ -22,18 +22,22 @@
 			</div>
 			<div v-else>
 				<div
-					class="grid items-center grid-cols-2 gap-12 py-4 text-sm text-gray-700 border-b"
+					class="grid items-center grid-cols-4 gap-12 py-4 text-sm text-gray-700 border-b"
 				>
 					<span>App Name</span>
+					<span>Repository</span>
+					<span>Branch</span>
 					<span></span>
 				</div>
 				<a
-					class="grid items-center grid-cols-2 gap-12 py-4 text-sm border-b hover:bg-gray-50 focus:outline-none focus:shadow-outline"
+					class="grid items-center grid-cols-4 gap-12 py-4 text-sm border-b hover:bg-gray-50 focus:outline-none focus:shadow-outline"
 					v-for="app in $resources.apps.data"
 					:key="app.name"
 					:href="'#/apps/' + app.name"
 				>
 					<span class="font-medium">{{ app.name }}</span>
+					<span class="font-medium">{{ app.repo_owner }}/{{ app.repo }}</span>
+					<span class="font-medium">{{ app.branch }}</span>
 					<span class="text-right">
 						<a
 							:href="app.url"
