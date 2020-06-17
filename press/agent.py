@@ -28,7 +28,9 @@ class Agent:
 			"clone": clone,
 		}
 		for app in bench.apps:
-			repo_owner, repo, branch, installation = frappe.db.get_value("Frappe App", app.app, ["repo_owner", "repo", "branch", "installation"])
+			repo_owner, repo, branch, installation = frappe.db.get_value(
+				"Frappe App", app.app, ["repo_owner", "repo", "branch", "installation"]
+			)
 			token = get_access_token(installation)
 			url = f"https://x-access-token:{token}@github.com/{repo_owner}/{repo}"
 			data["apps"].append(
