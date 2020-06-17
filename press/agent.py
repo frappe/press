@@ -173,8 +173,27 @@ class Agent:
 			site=site.name,
 		)
 
-	def backup_site(self, site, with_files=False):
+	def backup_site(self, site, with_files=False, offsite=False):
 		data = {"with_files": with_files}
+
+		if offsite:
+			settings = frappe.get_single("Press Settings")
+
+			if settings.aws_s3_bucket:
+				auth = {
+					"ACCESS_KEY": settings.offsite_backups_access_key_id,
+					"SECRET_KEY": get_decrypted_password("Press Settings", "Press Settings", "offsite_backups_secret_access_key")
+				}
+				data.update({
+					"offsite": {
+						"bucket": settings.aws_s3_bucket,
+						"auth": auth
+					}
+				})
+
+			else:
+				log_error("Offsite Backups aren't set yet")
+
 		return self.create_agent_job(
 			"Backup Site",
 			f"benches/{site.bench}/sites/{site.name}/backup",
