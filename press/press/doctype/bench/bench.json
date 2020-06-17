@@ -83,7 +83,7 @@
    "label": "Configuration"
   },
   {
-   "default": "4",
+   "default": "1",
    "fieldname": "workers",
    "fieldtype": "Int",
    "label": "Workers",
