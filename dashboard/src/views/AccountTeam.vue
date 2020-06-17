@@ -60,7 +60,8 @@
 					class="px-6 mt-4 mb-2"
 					v-if="
 						$account.hasRole('Press Admin') &&
-							$account.team.default_payment_method
+							($account.team.default_payment_method ||
+								$account.team.free_account)
 					"
 				>
 					<Button type="primary" @click="showModal = true">
@@ -68,12 +69,10 @@
 					</Button>
 
 					<Dialog v-model="showModal" title="Add Member">
-						<p class="w-full mt-4">
-							Enter the email address of your teammate to invite them.
-						</p>
-						<input
+						<Input
+							label="Enter the email address of your teammate to invite them."
 							type="text"
-							class="w-full mt-4 text-gray-900 form-input"
+							class="mt-4"
 							v-model="memberEmail"
 							required
 						/>

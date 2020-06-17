@@ -1,7 +1,7 @@
 <template>
 	<div>
 		<div>
-			<ul class="hidden overflow-x-auto text-sm border-b sm:flex">
+			<ul class="hidden overflow-x-auto text-base border-b sm:flex">
 				<router-link
 					v-for="tab in tabs"
 					:key="tab.label"
@@ -13,8 +13,8 @@
 							class="block px-1 py-4 mr-8 font-medium leading-none truncate border-b border-transparent focus:outline-none"
 							:class="[
 								isActive
-									? 'border-brand text-brand'
-									: 'text-gray-800 hover:text-gray-900'
+									? 'border-brand text-gray-900'
+									: 'text-gray-600 hover:text-gray-900'
 							]"
 							:href="href"
 							@click="navigate"
