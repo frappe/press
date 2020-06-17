@@ -49,12 +49,12 @@
 							<button
 								class="relative flex items-center justify-center py-4 pl-4 pr-8 mr-4 border rounded-md cursor-pointer focus:outline-none focus:shadow-outline"
 								:class="
-									selectedApps.includes(app.app)
+									selectedApps.includes(app.name)
 										? 'bg-blue-50 border-blue-500'
 										: 'hover:border-blue-400'
 								"
 								v-for="app in apps"
-								:key="app.app"
+								:key="app.name"
 								@click="toggleApp(app)"
 							>
 								<div class="flex items-start">
@@ -62,7 +62,7 @@
 										class="pt-0.5 pointer-events-none"
 										tabindex="-1"
 										type="checkbox"
-										:value="selectedApps.includes(app.app)"
+										:value="selectedApps.includes(app.name)"
 									/>
 									<div class="ml-3 text-base text-left">
 										<div class="font-semibold">
@@ -287,7 +287,7 @@ export default {
 			this.selectedApps = [];
 			let frappeApp = this.apps.find(app => app.frappe);
 			if (frappeApp) {
-				this.selectedApps.push(frappeApp.app);
+				this.selectedApps.push(frappeApp.name);
 			}
 		},
 		async createSite() {
@@ -304,10 +304,10 @@ export default {
 		},
 		toggleApp(app) {
 			if (app.frappe) return;
-			if (!this.selectedApps.includes(app.app)) {
-				this.selectedApps.push(app.app);
+			if (!this.selectedApps.includes(app.name)) {
+				this.selectedApps.push(app.name);
 			} else {
-				this.selectedApps = this.selectedApps.filter(a => a !== app.app);
+				this.selectedApps = this.selectedApps.filter(a => a !== app.name);
 			}
 		},
 		canCreateSite() {
