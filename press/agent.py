@@ -183,15 +183,6 @@ class Agent:
 			site=site.name,
 		)
 
-	def offsite_backup(self, bench, bucket, auth):
-		data = { "bucket": bucket, "auth": auth }
-		return self.create_agent_job(
-			"Backup Sites to S3",
-			f"benches/{bench}/offsite_backup",
-			bench=bench,
-			data=data
-		)
-
 	def new_host(self, domain):
 		certificate = frappe.get_doc("TLS Certificate", domain.tls_certificate)
 		data = {

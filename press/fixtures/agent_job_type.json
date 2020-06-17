@@ -2,25 +2,6 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-06-03 16:53:46.846274",
-  "name": "Backup Sites to S3",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
-  "request_method": "POST",
-  "request_path": null,
-  "steps": [
-   {
-    "parent": "Backup Sites to S3",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Backup Sites to S3"
-   }
-  ]
- },
- {
-  "docstatus": 0,
-  "doctype": "Agent Job Type",
   "modified": "2020-04-07 16:10:22.420615",
   "name": "Update Site Configuration",
   "parent": null,
@@ -199,7 +180,7 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-02-03 19:23:54.452866",
+  "modified": "2020-06-17 16:44:12.364275",
   "name": "Backup Site",
   "parent": null,
   "parentfield": null,
@@ -212,6 +193,12 @@
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Backup Site"
+   },
+   {
+    "parent": "Backup Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Upload Site Backup to S3"
    }
   ]
  },
