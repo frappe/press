@@ -32,7 +32,7 @@ class Agent:
 			token = get_access_token(installation)
 			url = f"https://x-access-token:{token}@github.com/{repo_owner}/{repo}"
 			data["apps"].append(
-				{"name": app.scrubbed, "repo": url, "branch": branch, "hash": app.hash}
+				{"name": app.scrubbed, "repo": repo, "url": url, "branch": branch, "hash": app.hash}
 			)
 		return self.create_agent_job("New Bench", "benches", data, bench=bench.name)
 
