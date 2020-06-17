@@ -184,7 +184,16 @@ def options_for_new():
 		bench_doc = frappe.get_doc("Bench", bench)
 		group_apps = frappe.get_all(
 			"Frappe App",
-			fields=["name", "frappe", "branch", "scrubbed", "repo_owner", "repo", "public", "team"],
+			fields=[
+				"name",
+				"frappe",
+				"branch",
+				"scrubbed",
+				"repo_owner",
+				"repo",
+				"public",
+				"team",
+			],
 			filters={"name": ("in", [row.app for row in bench_doc.apps])},
 		)
 		group_apps = list(filter(lambda a: a.public or a.team == team, group_apps))

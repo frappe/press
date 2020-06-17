@@ -16,7 +16,11 @@ class ReleaseGroup(Document):
 		releases = []
 		for app in self.apps:
 			release = frappe.get_all(
-				"App Release", fields=["name", "app", "hash"], filters={"app": app.app, "status": "Approved"}, order_by="creation desc",limit=1
+				"App Release",
+				fields=["name", "app", "hash"],
+				filters={"app": app.app, "status": "Approved"},
+				order_by="creation desc",
+				limit=1,
 			)
 			if release:
 				release = release[0]
