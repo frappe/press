@@ -258,7 +258,7 @@
  ],
  "in_create": 1,
  "links": [],
- "modified": "2020-06-15 21:56:23.882612",
+ "modified": "2020-06-17 18:37:01.000494",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Release",
@@ -277,7 +277,7 @@
    "write": 1
   }
  ],
- "sort_field": "modified",
+ "sort_field": "creation",
  "sort_order": "DESC",
  "track_changes": 1
 }
