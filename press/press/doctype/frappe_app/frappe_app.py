@@ -12,7 +12,7 @@ import requests
 
 
 class FrappeApp(Document):
-	def after_insert(self):
+	def on_update(self):
 		self.create_app_release()
 
 	def create_app_release(self):
