@@ -37,6 +37,7 @@ class Bench(Document):
 		config.update(
 			{
 				"background_workers": self.workers,
+				"gunicorn_workers": self.gunicorn_workers,
 				"redis_cache": f"redis://localhost:{13000 + self.port_offset}",
 				"redis_queue": f"redis://localhost:{11000 + self.port_offset}",
 				"redis_socketio": f"redis://localhost:{12000 + self.port_offset}",
