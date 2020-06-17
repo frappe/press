@@ -13,8 +13,17 @@
 					>
 						<div class="w-full">
 							<div class="font-semibold">
-								<span v-if="backup.status === 'Success'">
+								<span v-if="backup.status === 'Success'" class="flex justify-between items-center">
+									<span>
 									Backup on <FormatDate>{{ backup.creation }}</FormatDate>
+									</span>
+									<Badge
+										v-if="backup.offsite"
+										class="ml-4"
+										color="green"
+									>
+										Offsite
+									</Badge>
 								</span>
 								<span v-else>
 									Performing Backup...
@@ -25,33 +34,30 @@
 								class="grid grid-cols-3 mt-2"
 							>
 								<div>
-									<a
-										:href="backup.database_url"
-										target="_blank"
+									<button
+										v-on:click="downloadBackup(backup.database_file, backup.database_url, backup.offsite)"
 										class="text-gray-800 border-b border-gray-500"
 									>
 										Database ({{ formatBytes(backup.database_size) }})
-									</a>
+									</button>
 								</div>
 								<div>
-									<a
-										:href="backup.private_url"
-										target="_blank"
+									<button
+										v-on:click="downloadBackup(backup.private_file, backup.private_url, backup.offsite)"
 										class="text-gray-800 border-b border-gray-500"
 										v-if="backup.private_file"
 									>
 										Private Files ({{ formatBytes(backup.private_size) }})
-									</a>
+									</button>
 								</div>
 								<div>
-									<a
-										:href="backup.public_url"
-										target="_blank"
+									<button
+										v-on:click="downloadBackup(backup.public_file, backup.public_url, backup.offsite)"
 										class="text-gray-800 border-b border-gray-500"
 										v-if="backup.public_file"
 									>
 										Public Files ({{ formatBytes(backup.public_size) }})
-									</a>
+									</button>
 								</div>
 							</div>
 						</div>
@@ -121,6 +127,13 @@ export default {
 			const i = Math.floor(Math.log(bytes) / Math.log(k));
 
 			return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+		},
+		async downloadBackup(backup_file, database_url, offsite) {
+			let link = offsite ? await this.$call('press.api.site.get_backup_link', {
+				name: this.site.name,
+				backup: backup_file
+			}) : database_url;
+			window.open(link);
 		}
 	}
 };

@@ -5,21 +5,26 @@
 from __future__ import unicode_literals
 import dns.resolver
 
+import boto3
 import builtins
+import datetime
 import gzip
 import io
+import os
 import json
 from pathlib import Path
 import tarfile
 import wrapt
 import frappe
+from botocore.exceptions import ClientError
+from frappe.utils import cint, flt, time_diff_in_hours
+from frappe.utils.password import get_decrypted_password
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.site_update.site_update import (
 	is_update_available_for_site,
 	sites_with_available_update,
 )
 from press.utils import log_error, get_current_team
-from frappe.utils import cint, flt, time_diff_in_hours
 
 
 def protected():
@@ -100,27 +105,59 @@ def running_jobs(name):
 @frappe.whitelist()
 @protected()
 def backups(name):
-	backups = frappe.get_all(
+	one_month_ago = datetime.date.today() - datetime.timedelta(days=30)
+	fields = [
+		"name",
+		"with_files",
+		"database_file",
+		"database_size",
+		"database_url",
+		"private_file",
+		"private_size",
+		"private_url",
+		"public_file",
+		"public_size",
+		"public_url",
+		"creation",
+		"status",
+		"offsite"
+	]
+	latest_backups = frappe.get_all(
 		"Site Backup",
-		fields=[
-			"name",
-			"with_files",
-			"database_file",
-			"database_size",
-			"database_url",
-			"private_file",
-			"private_size",
-			"private_url",
-			"public_file",
-			"public_size",
-			"public_url",
-			"creation",
-			"status",
-		],
-		filters={"site": name, "status": ("!=", "Failure")},
+		fields=fields,
+		filters={"site": name, "status": ("!=", "Failure"), "offsite": 0},
 		limit=5,
 	)
-	return backups
+	offsite_backups = frappe.get_all(
+		"Site Backup",
+		fields=fields,
+		filters={"site": name, "status": ("!=", "Failure"), "offsite": 1, "creation": (">", one_month_ago)},
+	)
+	return sorted(latest_backups + offsite_backups, key=lambda x: x["creation"], reverse=True)
+
+
+@frappe.whitelist()
+@protected()
+def get_backup_link(name, backup, expiration=3600):
+	bench = frappe.get_value("Site", name, "bench")
+	bucket = frappe.db.get_single_value("Press Settings", "aws_s3_bucket")
+	date = str(datetime.datetime.strptime(backup.split("_")[0], "%Y%m%d").date())
+	file_path = os.path.join(bench, name, date, backup)
+
+	s3 = boto3.client(
+		's3',
+		aws_access_key_id=frappe.db.get_single_value("Press Settings", "offsite_backups_access_key_id"),
+		aws_secret_access_key=get_decrypted_password("Press Settings", "Press Settings", "offsite_backups_secret_access_key"),
+		region_name="ap-south-1"
+	)
+
+	try:
+		response = s3.generate_presigned_url('get_object', Params={'Bucket': bucket, 'Key': file_path}, ExpiresIn=expiration)
+	except ClientError:
+		log_error(title="Offsite Backup Response Exception")
+		return
+
+	return response
 
 
 @frappe.whitelist()
