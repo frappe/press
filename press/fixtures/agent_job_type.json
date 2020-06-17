@@ -335,7 +335,7 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-04-03 18:45:21.231192",
+  "modified": "2020-06-17 10:37:02.751999",
   "name": "New Bench",
   "parent": null,
   "parentfield": null,
@@ -365,13 +365,13 @@
     "parent": "New Bench",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
-    "step_name": "Bench Get Apps"
+    "step_name": "Bench Reset Frappe App"
    },
    {
     "parent": "New Bench",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
-    "step_name": "Bench Reset Apps"
+    "step_name": "Bench Get Apps"
    },
    {
     "parent": "New Bench",
