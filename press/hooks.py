@@ -70,7 +70,9 @@ version = app_version
 
 permission_query_conditions = {
 	"Site": "press.press.doctype.site.site.get_permission_query_conditions",
-	"Frappe App": "press.press.doctype.frappe_app.frappe_app.get_permission_query_conditions",
+	"Frappe App": (
+		"press.press.doctype.frappe_app.frappe_app.get_permission_query_conditions"
+	),
 }
 # has_permission = {
 # 	"Site": "press.press.doctype.site.site.has_permission",

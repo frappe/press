@@ -32,7 +32,8 @@ class Site(Document):
 			frappe.throw("Subdomain too long. Use 32 or less characters")
 		if not re.match(site_regex, self.subdomain):
 			frappe.throw(
-				"Subdomain contains invalid characters. Use lowercase characters, numbers and hyphens"
+				"Subdomain contains invalid characters. Use lowercase characters,"
+				" numbers and hyphens"
 			)
 		if not self.admin_password:
 			self.admin_password = frappe.generate_hash(length=16)

@@ -47,7 +47,8 @@ class SiteUpdate(Document):
 			self.deploy_type = difference.deploy_type
 		except Exception:
 			frappe.throw(
-				f"Could not find Deploy Candidate Difference from {self.source_bench} to {self.destination_bench}",
+				f"Could not find Deploy Candidate Difference from {self.source_bench}"
+				f" to {self.destination_bench}",
 				frappe.ValidationError,
 			)
 
