@@ -9,13 +9,19 @@
 				</div>
 				<div class="flex items-center mt-2">
 					<h1 class="text-2xl font-bold">{{ app.name }}</h1>
+					<Badge
+						class="ml-4"
+						:status="'Update Available'"
+						v-if="app.update_available"
+						>Update Available</Badge
+					>
 				</div>
 				<a
 					:href="`https://${app.url}`"
 					target="_blank"
 					class="inline-flex items-baseline text-sm text-blue-500 hover:underline"
 				>
-					Visit Repository
+					Visit Repo
 					<FeatherIcon name="external-link" class="w-3 h-3 ml-1" />
 				</a>
 			</div>

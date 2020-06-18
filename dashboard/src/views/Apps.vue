@@ -35,16 +35,21 @@
 					:key="app.name"
 					:href="'#/apps/' + app.name"
 				>
-					<span class="font-medium">{{ app.name }}</span>
-					<span class="font-medium">{{ app.repo_owner }}/{{ app.repo }}</span>
-					<span class="font-medium">{{ app.branch }}</span>
+					<span>{{ app.name }}</span>
+					<span>{{ app.repo_owner }}/{{ app.repo }}</span>
+					<span>{{ app.branch }}</span>
 					<span class="text-right">
+						<Badge
+							:status="'Update Available'"
+							v-if="app.update_available"
+							class="mr-4"
+						/>
 						<a
 							:href="app.url"
 							target="_blank"
 							class="inline-flex items-baseline text-sm text-blue-500 hover:underline"
 						>
-							Visit Repository
+							Visit Repo
 							<FeatherIcon name="external-link" class="w-3 h-3 ml-1" />
 						</a>
 					</span>

@@ -52,6 +52,20 @@
 				</div>
 			</SectionCard>
 		</Section>
+		<Section
+			v-if="app.update_available"
+			class="mt-10"
+			title="Update Available"
+			description="Deploy most recent version of your app"
+		>
+			<Button
+				@click="$resources.deploy.fetch()"
+				:disabled="$resources.deploy.loading"
+				type="primary"
+			>
+				Deploy
+			</Button>
+		</Section>
 	</div>
 </template>
 
@@ -63,6 +77,16 @@ export default {
 	props: ['app'],
 	components: {
 		DescriptionList
+	},
+	resources: {
+		deploy() {
+			return {
+				method: 'press.api.app.deploy',
+				params: {
+					name: this.app.name
+				}
+			};
+		}
 	}
 };
 </script>
