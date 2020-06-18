@@ -147,7 +147,8 @@
 												:options="branchOptions"
 											/>
 										</div>
-										<div class="mt-6">
+										<ErrorMessage class="mt-1" :error="similarAppMessage" />
+										<div class="mt-6" v-if="!similarAppMessage">
 											<div
 												v-if="$resources.app.loading === true"
 												class="text-base text-gray-700"
@@ -195,7 +196,7 @@
 												class="z-10 w-full form-input"
 												type="text"
 												v-model="appName"
-												@change="checkIfExists()"
+												@change="checkIfNameExists()"
 											/>
 										</div>
 										<ErrorMessage class="mt-1" :error="appNameInvalidMessage" />
@@ -245,7 +246,7 @@
 											</button>
 										</div>
 									</div>
-									<div class="mt-6" v-if="scrubbed">
+									<div class="mt-4" v-if="scrubbed">
 										<label class="flex py-2 leading-none">
 											<Input
 												label="Enable Auto Deploy"
@@ -263,9 +264,9 @@
 							</div>
 						</div>
 					</div>
-					<div v-if="scrubbed">
+					<div v-if="scrubbed" class="mt-6">
+						<ErrorMessage class="mb-2" :error="appCreationErrorMessage" />
 						<Button
-							class="mt-6"
 							type="primary"
 							@click="createApp()"
 							:disabled="!canCreate()"
@@ -291,13 +292,14 @@ export default {
 			selectedGroups: [],
 			scrubbed: null,
 			appName: null,
-			appNameTaken: false,
-			appNameInvalidMessage: null
+			appNameInvalidMessage: null,
+			similarAppMessage: null,
+			appCreationErrorMessage: null
 		};
 	},
 	methods: {
 		async createApp() {
-			let appName = await this.$call('press.api.app.new', {
+			let appName = this.$call('press.api.app.new', {
 				app: {
 					name: this.appName,
 					installation: this.selectedInstallation.id,
@@ -310,7 +312,13 @@ export default {
 					groups: this.selectedGroups
 				}
 			});
-			this.$router.push(`/apps/${appName}`);
+			appName
+				.then(response => {
+					this.$router.push(`/apps/${response}`);
+				})
+				.catch(error => {
+					this.appCreationErrorMessage = error.messages[0];
+				});
 		},
 		toggleVersion(group) {
 			if (!this.selectedGroups.includes(group.name)) {
@@ -323,18 +331,37 @@ export default {
 			let matched = group.apps.find(a => a.scrubbed === this.scrubbed);
 			return !matched;
 		},
-		async checkIfExists() {
-			this.appNameTaken = await this.$call('press.api.app.exists', {
+		async checkIfNameExists() {
+			let appNameTaken = await this.$call('press.api.app.exists', {
 				name: this.appName
 			});
-			if (this.appNameTaken) {
+			if (appNameTaken) {
 				this.appNameInvalidMessage = `${this.appName} already exists`;
+			} else {
+				this.appNameInvalidMessage = null;
 			}
+		},
+		async checkIfSimilarExists() {
+			let repo_owner = this.selectedInstallation.login;
+			let repo = this.connectedRepository.name;
+			let branch = this.selectedBranch;
+			let similarAppExists = await this.$call('press.api.app.similar_exists', {
+				repo_owner,
+				repo,
+				branch
+			});
+			if (similarAppExists) {
+				this.similarAppMessage = `App from repository ${repo_owner}/${repo} and branch ${branch} already exists`;
+			} else {
+				this.similarAppMessage = null;
+			}
+			return similarAppExists;
 		},
 		canCreate() {
 			if (
 				this.appName &&
 				!this.appNameInvalidMessage &&
+				!this.appCreationErrorMessage &&
 				this.selectedGroups.length != 0
 			) {
 				return true;
@@ -354,9 +381,10 @@ export default {
 				this.$resources.repository.reload();
 			}
 		},
-		selectedBranch() {
+		async selectedBranch() {
 			this.scrubbed = null;
-			if (this.selectedBranch) {
+			let similar = await this.checkIfSimilarExists();
+			if (!similar && this.selectedBranch) {
 				this.$resources.app.reload();
 			}
 		},
@@ -447,7 +475,7 @@ export default {
 				onSuccess(app) {
 					this.scrubbed = app.name;
 					this.appName = app.title;
-					this.checkIfExists();
+					this.checkIfNameExists();
 				},
 				auto: false
 			};
