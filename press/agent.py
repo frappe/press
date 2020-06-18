@@ -43,6 +43,12 @@ class Agent:
 			"Archive Bench", f"benches/{bench.name}/archive", bench=bench.name
 		)
 
+	def update_bench_config(self, bench):
+		data = {"config": json.loads(bench.config)}
+		return self.create_agent_job(
+			"Update Bench Configuration", f"benches/{bench.name}/config", data, bench=bench.name,
+		)
+
 	def new_site(self, site):
 		apps = [frappe.db.get_value("Frappe App", app.app, "scrubbed") for app in site.apps]
 		data = {

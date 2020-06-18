@@ -335,7 +335,7 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-06-17 10:37:02.751999",
+  "modified": "2020-06-18 10:07:19.031918",
   "name": "New Bench",
   "parent": null,
   "parentfield": null,
@@ -353,7 +353,7 @@
     "parent": "New Bench",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
-    "step_name": "Bench Set Configuration"
+    "step_name": "Update Bench Configuration"
    },
    {
     "parent": "New Bench",
@@ -653,6 +653,49 @@
    },
    {
     "parent": "Update Site Status",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2020-06-18 09:02:49.972271",
+  "name": "Update Bench Configuration",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/config",
+  "steps": [
+   {
+    "parent": "Update Bench Configuration",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Update Bench Configuration"
+   },
+   {
+    "parent": "Update Bench Configuration",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Setup Supervisor"
+   },
+   {
+    "parent": "Update Bench Configuration",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Update Supervisor"
+   },
+   {
+    "parent": "Update Bench Configuration",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Setup NGINX"
+   },
+   {
+    "parent": "Update Bench Configuration",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Reload NGINX"
