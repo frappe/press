@@ -12,14 +12,23 @@ from frappe.core.utils import find
 @frappe.whitelist()
 def new(app):
 	team = get_current_team()
+	repo_owner, repo, branch = app["repo_owner"], app["repo"], app["branch"]
+	existing = frappe.db.exists(
+		"Frappe App", {"repo_owner": repo_owner, "repo": repo, "branch": branch},
+	)
+	if existing:
+		frappe.throw(
+			f"App with repository {repo_owner}/{repo} and branch {branch} already exists."
+		)
+
 	app_doc = frappe.get_doc(
 		{
 			"doctype": "Frappe App",
 			"name": app["name"],
-			"branch": app["branch"],
+			"branch": branch,
+			"repo": repo,
+			"repo_owner": repo_owner,
 			"url": app["url"],
-			"repo": app["repo"],
-			"repo_owner": app["repo_owner"],
 			"scrubbed": app["scrubbed"],
 			"installation": app["installation"],
 			"team": team,
@@ -37,6 +46,15 @@ def new(app):
 @frappe.whitelist()
 def exists(name):
 	return bool(frappe.db.exists("Frappe App", name))
+
+
+@frappe.whitelist()
+def similar_exists(repo_owner, repo, branch):
+	return bool(
+		frappe.db.exists(
+			"Frappe App", {"repo": repo, "repo_owner": repo_owner, "branch": branch}
+		)
+	)
 
 
 @frappe.whitelist()
