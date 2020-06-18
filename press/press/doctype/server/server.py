@@ -37,12 +37,12 @@ class Server(Document):
 		certificate = frappe.get_doc("TLS Certificate", certificate_name)
 
 		command = (
-			f"ansible-playbook ../apps/press/press/playbooks/server.yml "
-			f"-i {self.name}, -u root -vv "
-			f'-e "'
-			f"server={self.name} workers=2 password={agent_password} mariadb_root_password={mariadb_root_password} "
-			f"certificate_privkey='{certificate.privkey}' certificate_fullchain='{certificate.fullchain}' certificate_chain='{certificate.chain}' "
-			'"'
+			f"ansible-playbook ../apps/press/press/playbooks/server.yml -i {self.name},"
+			f' -u root -vv -e "server={self.name} workers=2 password={agent_password}'
+			f" mariadb_root_password={mariadb_root_password}"
+			f" certificate_privkey='{certificate.privkey}'"
+			f" certificate_fullchain='{certificate.fullchain}'"
+			f" certificate_chain='{certificate.chain}' \""
 		)
 		try:
 			subprocess.run(shlex.split(command))

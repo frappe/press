@@ -88,7 +88,7 @@ def installations(token):
 		"Authorization": f"token {token}",
 		"Accept": "application/vnd.github.machine-man-preview+json",
 	}
-	response = requests.get(f"https://api.github.com/user/installations", headers=headers)
+	response = requests.get("https://api.github.com/user/installations", headers=headers)
 	installations = []
 	for installation in response.json()["installations"]:
 		installations.append(
