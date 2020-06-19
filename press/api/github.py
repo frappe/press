@@ -14,7 +14,7 @@ from base64 import b64decode
 from frappe.core.utils import find
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(allow_guest=True, xss_safe=True)
 def hook(*args, **kwargs):
 	try:
 		headers = frappe.request.headers
