@@ -80,7 +80,7 @@ class GitHubWebhookLog(Document):
 						"author": commit["author"]["username"],
 					}
 				)
-				release.insert(ignore_permissions=True)
+				release.insert()
 		except Exception:
 			log_error("App Release Creation Error", payload=payload)
 
@@ -97,6 +97,6 @@ class GitHubWebhookLog(Document):
 					"installation": self.installation,
 				}
 			)
-			tag.insert(ignore_permissions=True)
+			tag.insert()
 		except Exception:
 			log_error("App Tag Creation Error", payload=payload)

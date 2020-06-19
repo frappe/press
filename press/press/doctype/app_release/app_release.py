@@ -70,7 +70,7 @@ class AppRelease(Document):
 			self._filter_requirements()
 			self._approve_if_no_issues_found()
 
-			self.save(ignore_permissions=True)
+			self.save()
 		except Exception:
 			log_error("App Release Screen Error", release=self.name)
 
