@@ -8,7 +8,7 @@
 				<div v-if="releases.data">
 					<div
 						class="text-base items-center px-6 py-3 hover:bg-gray-50"
-						v-for="release in releases.data"
+						v-for="(release, index) in releases.data"
 						:key="release.name"
 					>
 						<div class="flex justify-between items-center">
@@ -29,15 +29,21 @@
 							</div>
 							<div class="w-32">
 								<Badge
-									:color="color(release.status)"
-									v-if="release.status != 'Approved'"
+									v-if="
+										(index === 0 && release.status != 'Approved') ||
+											release.status === 'Rejected'
+									"
 								>
 									{{ release.status }}
 								</Badge>
 								<Button
-									v-if="release.status == 'Approved'"
-									type="secondary"
-									@click="deploy(release)"
+									v-if="
+										index === 0 &&
+											release.status == 'Approved' &&
+											!release.deployable
+									"
+									type="primary"
+									@click="deploy()"
 									>Deploy</Button
 								>
 							</div>
@@ -63,27 +69,12 @@
 export default {
 	name: 'AppReleases',
 	props: ['app'],
-	data() {
-		return {
-			showDetailsForRelease: null
-		};
-	},
 	methods: {
-		color(status) {
-			let color = {
-				'Awaiting Approval': 'orange',
-				Pending: 'orange',
-				Approved: 'green',
-				Rejected: 'red'
-			}[status];
-			return color;
-		},
-		async deploy(release) {
-			let result = await this.$call('press.api.app.deploy', {
-				name: this.app.name,
-				release: release.name
+		async deploy() {
+			await this.$call('press.api.app.deploy', {
+				name: this.app.name
 			});
-			this.$router.push(`/apps/depoys/${result.name}`);
+			this.$router.push(`/apps/${this.app.name}/deploys`);
 		}
 	},
 	resources: {
