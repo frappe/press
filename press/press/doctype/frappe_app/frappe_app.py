@@ -26,7 +26,7 @@ class FrappeApp(Document):
 				headers=headers,
 			).json()
 			hash = branch["commit"]["sha"]
-			if not frappe.db.exists("App Release", {"hash": hash}):
+			if not frappe.db.exists("App Release", {"hash": hash, "app": self.name}):
 				frappe.get_doc(
 					{
 						"doctype": "App Release",
@@ -34,6 +34,7 @@ class FrappeApp(Document):
 						"hash": hash,
 						"message": branch["commit"]["commit"]["message"],
 						"author": branch["commit"]["author"]["login"],
+						"deployable": not bool(self.get_doc_before_save()),
 					}
 				).insert()
 		except Exception:
