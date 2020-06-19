@@ -9,15 +9,10 @@
 				</div>
 				<div class="flex items-center mt-2">
 					<h1 class="text-2xl font-bold">{{ app.name }}</h1>
-					<Badge
-						class="ml-4"
-						:status="'Update Available'"
-						v-if="app.update_available"
-						>Update Available</Badge
-					>
+					<Badge class="ml-4" :status="app.status">{{ app.status }}</Badge>
 				</div>
 				<a
-					:href="`https://${app.url}`"
+					:href="app.url"
 					target="_blank"
 					class="inline-flex items-baseline text-sm text-blue-500 hover:underline"
 				>
@@ -25,6 +20,10 @@
 					<FeatherIcon name="external-link" class="w-3 h-3 ml-1" />
 				</a>
 			</div>
+			<Alert class="mb-4" v-if="app.status == 'Awaiting Approval'">
+				Our engineers are reviewing your code for issues. After review your app
+				will be available for installation.
+			</Alert>
 		</div>
 		<div class="px-4 sm:px-8" v-if="app">
 			<Tabs class="pb-32" :tabs="tabs">

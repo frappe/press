@@ -25,8 +25,10 @@
 					class="grid items-center grid-cols-4 gap-12 py-4 text-sm text-gray-700 border-b"
 				>
 					<span>App Name</span>
-					<span>Repository</span>
-					<span>Branch</span>
+					<span class="text-center">
+						Status
+					</span>
+					<span class="text-right">Last Updated</span>
 					<span></span>
 				</div>
 				<a
@@ -36,8 +38,12 @@
 					:href="'#/apps/' + app.name"
 				>
 					<span>{{ app.name }}</span>
-					<span>{{ app.repo_owner }}/{{ app.repo }}</span>
-					<span>{{ app.branch }}</span>
+					<span class="text-center">
+						<Badge :status="app.status" />
+					</span>
+					<FormatDate class="text-right" type="relative">
+						{{ app.modified }}
+					</FormatDate>
 					<span class="text-right">
 						<Badge
 							:status="'Update Available'"
