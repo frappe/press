@@ -31,7 +31,7 @@ def hook(*args, **kwargs):
 				"payload": frappe.request.get_data().decode(),
 			}
 		)
-		doc.insert(ignore_permissions=True)
+		doc.insert()
 	except Exception:
 		frappe.set_user(user)
 		log_error("GitHub Webhook Error", args=args, kwargs=kwargs)
