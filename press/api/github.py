@@ -17,6 +17,10 @@ from frappe.core.utils import find
 @frappe.whitelist(allow_guest=True, xss_safe=True)
 def hook(*args, **kwargs):
 	try:
+		user = frappe.session.user
+		# set user to Administrator, to not have to do ignore_permissions everywhere
+		frappe.set_user("Administrator")
+
 		headers = frappe.request.headers
 		doc = frappe.get_doc(
 			{
@@ -29,8 +33,9 @@ def hook(*args, **kwargs):
 		)
 		doc.insert(ignore_permissions=True)
 	except Exception:
+		frappe.set_user(user)
 		log_error("GitHub Webhook Error", args=args, kwargs=kwargs)
-
+		raise Exception
 
 def get_jwt_token():
 	key = frappe.db.get_single_value("Press Settings", "github_app_private_key")
