@@ -7,7 +7,9 @@ import frappe
 
 
 def execute():
-	benches = frappe.get_all("Bench", fields=["name", "candidate"], filters={"status": ("!=", "Archived")})
+	benches = frappe.get_all(
+		"Bench", fields=["name", "candidate"], filters={"status": ("!=", "Archived")}
+	)
 	candidates = list(set(bench.candidate for bench in benches))
 	for candidate in candidates:
 		for app in frappe.get_doc("Deploy Candidate", candidate).apps:
