@@ -57,6 +57,18 @@ def similar_exists(repo_owner, repo, branch):
 	)
 
 
+def update_available(name):
+	releases = frappe.get_all(
+		"App Release",
+		fields=["deployable"],
+		filters={"app": name, "status": "Approved"},
+		order_by="creation desc",
+		limit=1,
+	)
+	if releases and not releases[0].deployable:
+		return True
+	return False
+
 @frappe.whitelist()
 @protected("Frappe App")
 def get(name):
@@ -83,6 +95,7 @@ def get(name):
 		"groups": groups,
 		"repo_owner": app.repo_owner,
 		"url": app.url,
+		"update_available": update_available(app.name),
 		"last_updated": app.modified,
 		"creation": app.creation,
 	}
@@ -147,6 +160,8 @@ def all():
 		filters=filters,
 		order_by="creation desc",
 	)
+	for app in apps:
+		app["update_available"] = update_available(app.name)
 
 	return apps
 

@@ -20,16 +20,19 @@ from pygments.formatters import HtmlFormatter as HF
 
 class AppRelease(Document):
 	def after_insert(self):
-		auto_deploy, skip_review = frappe.db.get_value("Frappe App", self.app, ["enable_auto_deploy", "skip_review"])
+		auto_deploy, skip_review = frappe.db.get_value(
+			"Frappe App", self.app, ["enable_auto_deploy", "skip_review"]
+		)
 		if auto_deploy:
 			self.deployable = True
+			self.save()
 		if skip_review:
 			self.status = "Approved"
 		else:
 			frappe.enqueue_doc(self.doctype, self.name, "screen", enqueue_after_commit=True)
 
 	def on_update(self):
-		if self.status == "Approved":
+		if self.status == "Approved" and self.deployable:
 			self.create_deploy_candidates()
 
 	def create_deploy_candidates(self):
@@ -48,8 +51,9 @@ class AppRelease(Document):
 			group.create_deploy_candidate()
 
 	def deploy(self):
-		if self.status == "Approved":
-			pass
+		if self.status == "Approved" and not self.deployable:
+			self.deployable = True
+			self.save()
 
 	def screen(self):
 		try:
