@@ -69,6 +69,23 @@ def update_available(name):
 		return True
 	return False
 
+
+def app_status(name):
+	status = frappe.get_all(
+		"App Release",
+		fields=["status"],
+		filters={"app": name},
+		order_by="creation desc",
+		limit=1,
+	)[0].status
+	return {
+		"Approved": "Active",
+		"Pending": "Pending",
+		"Awaiting Approval": "Awaiting Approval",
+		"Rejected": "Rejected",
+	}[status]
+
+
 @frappe.whitelist()
 @protected("Frappe App")
 def get(name):
@@ -89,6 +106,7 @@ def get(name):
 	return {
 		"name": app.name,
 		"branch": app.branch,
+		"status": app_status(app.name),
 		"repo": app.repo,
 		"enable_auto_deploy": app.enable_auto_deploy,
 		"scrubbed": app.scrubbed,
@@ -162,6 +180,7 @@ def all():
 	)
 	for app in apps:
 		app["update_available"] = update_available(app.name)
+		app["status"] = app_status(app.name)
 
 	return apps
 
