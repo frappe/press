@@ -20,7 +20,9 @@ from pygments.formatters import HtmlFormatter as HF
 
 class AppRelease(Document):
 	def after_insert(self):
-		skip_review = frappe.db.get_value("Frappe App", self.app, "skip_review")
+		auto_deploy, skip_review = frappe.db.get_value("Frappe App", self.app, ["enable_auto_deploy", "skip_review"])
+		if auto_deploy:
+			self.deployable = True
 		if skip_review:
 			self.status = "Approved"
 		else:

@@ -7,6 +7,7 @@
  "field_order": [
   "status",
   "app",
+  "deployable",
   "column_break_3",
   "hash",
   "author",
@@ -41,9 +42,7 @@
    "label": "App",
    "options": "Frappe App",
    "read_only": 1,
-   "reqd": 1,
-   "show_days": 1,
-   "show_seconds": 1
+   "reqd": 1
   },
   {
    "fieldname": "hash",
@@ -52,25 +51,19 @@
    "label": "Hash",
    "read_only": 1,
    "reqd": 1,
-   "show_days": 1,
-   "show_seconds": 1,
    "unique": 1
   },
   {
    "fieldname": "message",
    "fieldtype": "Code",
    "label": "Message",
-   "read_only": 1,
-   "show_days": 1,
-   "show_seconds": 1
+   "read_only": 1
   },
   {
    "fieldname": "author",
    "fieldtype": "Data",
    "label": "Author",
-   "read_only": 1,
-   "show_days": 1,
-   "show_seconds": 1
+   "read_only": 1
   },
   {
    "default": "Pending",
@@ -79,186 +72,149 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Pending\nAwaiting Approval\nApproved\nRejected",
-   "show_days": 1,
-   "show_seconds": 1
+   "options": "Pending\nAwaiting Approval\nApproved\nRejected"
   },
   {
    "depends_on": "eval:doc.status === \"Rejected\"",
    "fieldname": "reason",
    "fieldtype": "Select",
    "label": "Reason",
-   "options": "\nMalicious Code\nVulnerable Code",
-   "show_days": 1,
-   "show_seconds": 1
+   "options": "\nMalicious Code\nVulnerable Code"
   },
   {
    "fieldname": "directory",
    "fieldtype": "Data",
    "label": "Directory",
-   "read_only": 1,
-   "show_days": 1,
-   "show_seconds": 1
+   "read_only": 1
   },
   {
    "fieldname": "result",
    "fieldtype": "Code",
    "hidden": 1,
    "label": "Result",
-   "read_only": 1,
-   "show_days": 1,
-   "show_seconds": 1
+   "read_only": 1
   },
   {
    "fieldname": "result_html",
    "fieldtype": "Code",
    "hidden": 1,
    "label": "Result HTML",
-   "read_only": 1,
-   "show_days": 1,
-   "show_seconds": 1
+   "read_only": 1
   },
   {
    "fieldname": "result_html_rendered",
    "fieldtype": "HTML",
-   "label": "Result HTML Rendered",
-   "show_days": 1,
-   "show_seconds": 1
+   "label": "Result HTML Rendered"
   },
   {
    "fieldname": "requirements",
    "fieldtype": "Code",
    "hidden": 1,
    "label": "Requirements",
-   "read_only": 1,
-   "show_days": 1,
-   "show_seconds": 1
+   "read_only": 1
   },
   {
    "fieldname": "column_break_3",
-   "fieldtype": "Column Break",
-   "show_days": 1,
-   "show_seconds": 1
+   "fieldtype": "Column Break"
   },
   {
    "fieldname": "review_section",
    "fieldtype": "Section Break",
-   "label": "Review",
-   "show_days": 1,
-   "show_seconds": 1
+   "label": "Review"
   },
   {
    "fieldname": "column_break_9",
-   "fieldtype": "Column Break",
-   "show_days": 1,
-   "show_seconds": 1
+   "fieldtype": "Column Break"
   },
   {
    "depends_on": "eval:doc.status === \"Rejected\"",
    "fieldname": "comments",
    "fieldtype": "Text Editor",
-   "label": "Comments",
-   "show_days": 1,
-   "show_seconds": 1
+   "label": "Comments"
   },
   {
    "fieldname": "code_server_url",
    "fieldtype": "Data",
    "label": "Code Server URL",
-   "read_only": 1,
-   "show_days": 1,
-   "show_seconds": 1
+   "read_only": 1
   },
   {
    "fieldname": "baseline_release",
    "fieldtype": "Link",
    "label": "Baseline Release",
    "options": "App Release",
-   "read_only": 1,
-   "show_days": 1,
-   "show_seconds": 1
+   "read_only": 1
   },
   {
    "fieldname": "diff_result",
    "fieldtype": "Code",
    "hidden": 1,
    "label": "Diff Result",
-   "read_only": 1,
-   "show_days": 1,
-   "show_seconds": 1
+   "read_only": 1
   },
   {
    "fieldname": "diff_requirements",
    "fieldtype": "Code",
    "label": "Diff Requirements",
-   "read_only": 1,
-   "show_days": 1,
-   "show_seconds": 1
+   "read_only": 1
   },
   {
    "fieldname": "difference_section",
    "fieldtype": "Section Break",
-   "label": "Difference",
-   "show_days": 1,
-   "show_seconds": 1
+   "label": "Difference"
   },
   {
    "fieldname": "baseline_section",
    "fieldtype": "Section Break",
-   "label": "Baseline",
-   "show_days": 1,
-   "show_seconds": 1
+   "label": "Baseline"
   },
   {
    "fieldname": "baseline_result",
    "fieldtype": "Code",
    "hidden": 1,
    "label": "Baseline Result",
-   "read_only": 1,
-   "show_days": 1,
-   "show_seconds": 1
+   "read_only": 1
   },
   {
    "fieldname": "baseline_requirements",
    "fieldtype": "Code",
    "hidden": 1,
    "label": "Baseline Requirements",
-   "read_only": 1,
-   "show_days": 1,
-   "show_seconds": 1
+   "read_only": 1
   },
   {
    "fieldname": "result_section",
    "fieldtype": "Section Break",
-   "label": "Result",
-   "show_days": 1,
-   "show_seconds": 1
+   "label": "Result"
   },
   {
    "fieldname": "section_break_12",
    "fieldtype": "Section Break",
-   "hide_border": 1,
-   "show_days": 1,
-   "show_seconds": 1
+   "hide_border": 1
   },
   {
    "fieldname": "output",
    "fieldtype": "Code",
    "label": "Output",
-   "read_only": 1,
-   "show_days": 1,
-   "show_seconds": 1
+   "read_only": 1
   },
   {
    "fieldname": "section_break_26",
-   "fieldtype": "Section Break",
-   "show_days": 1,
-   "show_seconds": 1
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "deployable",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Deployable",
+   "set_only_once": 1
   }
  ],
  "in_create": 1,
  "links": [],
- "modified": "2020-06-17 18:37:01.000494",
+ "modified": "2020-06-19 10:49:56.760132",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Release",
