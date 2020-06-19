@@ -115,6 +115,7 @@ class AppRelease(Document):
 		self.output = ""
 		self.output += self.run("git init")
 		self.output += self.run(f"git remote add origin {url}",)
+		self.output += self.run("git config credential.helper ''")
 		self.output += self.run(f"git fetch --depth 1 origin {self.hash}")
 		self.output += self.run(f"git checkout {self.hash}")
 
