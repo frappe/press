@@ -37,6 +37,7 @@ def hook(*args, **kwargs):
 		log_error("GitHub Webhook Error", args=args, kwargs=kwargs)
 		raise Exception
 
+
 def get_jwt_token():
 	key = frappe.db.get_single_value("Press Settings", "github_app_private_key")
 	app_id = frappe.db.get_single_value("Press Settings", "github_app_id")
