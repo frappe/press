@@ -146,8 +146,10 @@ def releases(name):
 			"status",
 			"reason",
 			"comments",
+			"deployable",
 		],
 		order_by="creation desc",
+		limit=10,
 	)
 	tags = frappe.get_all(
 		"App Tag",
@@ -187,7 +189,12 @@ def all():
 
 @frappe.whitelist()
 @protected("Frappe App")
-def deploy(name, release):
-	release = frappe.get_doc("App Release", release)
-	deploy = release.deploy()
-	return deploy.name
+def deploy(name):
+	release = frappe.get_all(
+		"App Release",
+		{"app": name, "deployable": False, "status": "Approved"},
+		order_by="creation desc",
+		limit=1,
+	)[0]
+	release_doc = frappe.get_doc("App Release", release)
+	release_doc.deploy()
