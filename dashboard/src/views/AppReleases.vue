@@ -33,6 +33,7 @@
 										(index === 0 && release.status != 'Approved') ||
 											release.status === 'Rejected'
 									"
+									:status="release.status"
 								>
 									{{ release.status }}
 								</Badge>
