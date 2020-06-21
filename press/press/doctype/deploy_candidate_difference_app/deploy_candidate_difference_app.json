@@ -6,6 +6,7 @@
  "engine": "InnoDB",
  "field_order": [
   "app",
+  "changed",
   "column_break_3",
   "deploy_type",
   "github_diff_url",
@@ -41,7 +42,6 @@
   {
    "fieldname": "github_diff_url",
    "fieldtype": "Data",
-   "in_list_view": 1,
    "label": "GitHub Diff URL",
    "read_only": 1
   },
@@ -90,11 +90,18 @@
    "label": "Destination App Release",
    "options": "App Release",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "changed",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Changed"
   }
  ],
  "istable": 1,
  "links": [],
- "modified": "2020-04-06 14:40:48.662683",
+ "modified": "2020-06-21 11:02:33.603368",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate Difference App",
