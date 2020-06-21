@@ -62,7 +62,6 @@ class AppRelease(Document):
 			self._prepare_for_cloning()
 			self._clone_repo()
 
-			self._populate_files_list()
 			self._screen_python_files()
 			self._filter_results()
 			self._render_html()
@@ -119,10 +118,6 @@ class AppRelease(Document):
 		self.output += self.run("git config credential.helper ''")
 		self.output += self.run(f"git fetch --depth 1 origin {self.hash}")
 		self.output += self.run(f"git checkout {self.hash}")
-
-	def _populate_files_list(self):
-		files = self.run(f"git ls-files").splitlines()
-		self.files = json.dumps(files, indent=2)
 
 	def _screen_python_files(self):
 		files = glob.glob(self.directory + "/**/*.py", recursive=True)
