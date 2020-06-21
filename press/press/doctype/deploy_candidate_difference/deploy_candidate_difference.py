@@ -61,9 +61,7 @@ class DeployCandidateDifference(Document):
 			}
 			source = find(source_candidate.apps, lambda x: x.app == destination.app)
 			if source:
-				app.update(
-					{"source_release": source.release, "source_hash": source.hash}
-				)
+				app.update({"source_release": source.release, "source_hash": source.hash})
 			self.append("apps", app)
 		self.save()
 		self.compute_deploy_type()
