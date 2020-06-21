@@ -59,9 +59,6 @@
 						</div>
 					</div>
 				</div>
-				<div class="px-6 mt-2 text-base text-gray-600" v-else>
-					No releases found. Push something.
-				</div>
 			</SectionCard>
 		</Section>
 	</div>
