@@ -72,9 +72,19 @@ export default {
 		}
 	},
 	activated() {
+		this.setupSocketListener();
 		this.routeToGeneral();
 	},
 	methods: {
+		setupSocketListener() {
+			if (this._socketSetup) return;
+			this._socketSetup = true;
+			this.$socket.on('list_update', ({ doctype }) => {
+				if (doctype === 'App Release') {
+					this.$resources.app.reload();
+				}
+			});
+		},
 		routeToGeneral() {
 			if (this.$route.matched.length === 1) {
 				let path = this.$route.fullPath;
