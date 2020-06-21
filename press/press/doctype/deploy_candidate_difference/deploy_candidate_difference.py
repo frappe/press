@@ -9,6 +9,7 @@ import json
 from frappe.model.document import Document
 from frappe.core.utils import find
 from github import Github
+from press.api.github import get_access_token
 
 
 class DeployCandidateDifference(Document):
@@ -69,14 +70,6 @@ class DeployCandidateDifference(Document):
 		self.save()
 
 	def compute_deploy_type(self):
-		github_access_token = frappe.db.get_single_value(
-			"Press Settings", "github_access_token"
-		)
-		if github_access_token:
-			client = Github(github_access_token)
-		else:
-			client = Github()
-
 		self.deploy_type = "Pull"
 		for app in self.apps:
 			if app.source_hash and app.source_hash == app.destination_hash:
@@ -84,6 +77,8 @@ class DeployCandidateDifference(Document):
 			app.changed = True
 			app.deploy_type = "Pull"
 			frappe_app = frappe.get_doc("Frappe App", app.app)
+			github_access_token = get_access_token(frappe_app.installation)
+			client = Github(github_access_token)
 			repo = client.get_repo(f"{frappe_app.repo_owner}/{frappe_app.repo}")
 			diff = repo.compare(app.source_hash, app.destination_hash)
 			app.github_diff_url = diff.html_url
