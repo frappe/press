@@ -12,7 +12,8 @@ def get_context(context):
 	if code:
 		obtain_access_token(code)
 		frappe.db.commit()
-	frappe.flags.redirect_location = "http://press.com:8080/dashboard/#/apps/new"
+	redirect_url = frappe.utils.get_url("/dashboard/#/apps/new")
+	frappe.flags.redirect_location = redirect_url
 	raise frappe.Redirect
 
 
