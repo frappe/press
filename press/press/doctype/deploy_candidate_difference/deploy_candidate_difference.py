@@ -79,7 +79,7 @@ class DeployCandidateDifference(Document):
 		self.deploy_type = "Pull"
 		for app in self.apps:
 			frappe_app = frappe.get_doc("Frappe App", app.app)
-			repo = client.get_repo(f"{frappe_app.repo_owner}/{frappe_app.scrubbed}")
+			repo = client.get_repo(f"{frappe_app.repo_owner}/{frappe_app.repo}")
 			diff = repo.compare(app.source_hash, app.destination_hash)
 			app.github_diff_url = diff.html_url
 			files = [f.filename for f in diff.files]
