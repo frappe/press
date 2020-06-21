@@ -4,7 +4,7 @@
 from __future__ import unicode_literals
 import frappe
 import requests
-from press.utils import log_error
+from press.utils import log_error, get_current_team
 
 
 def get_context(context):
@@ -18,6 +18,8 @@ def get_context(context):
 
 
 def obtain_access_token(code):
+	team = get_current_team()
+	response = None
 	try:
 		client_id = frappe.db.get_single_value("Press Settings", "github_app_client_id")
 		client_secret = frappe.db.get_single_value(
@@ -28,8 +30,8 @@ def obtain_access_token(code):
 		response = requests.post(
 			"https://github.com/login/oauth/access_token", data=data, headers=headers,
 		).json()
-		team = frappe.get_doc("Team", frappe.session.user)
-		team.github_access_token = response["access_token"]
-		team.save(ignore_permissions=True)
+		frappe.db.set_value(
+			"Team", frappe.session.user, "github_access_token", response["access_token"]
+		)
 	except Exception:
-		log_error("Access Token Error", code=code)
+		log_error("Access Token Error", team=team, code=code, response=response)
