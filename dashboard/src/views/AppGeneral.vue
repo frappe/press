@@ -84,6 +84,9 @@ export default {
 				method: 'press.api.app.deploy',
 				params: {
 					name: this.app.name
+				},
+				onSuccess: () => {
+					this.$router.push(`/apps/${this.app.name}/deploys`);
 				}
 			};
 		}

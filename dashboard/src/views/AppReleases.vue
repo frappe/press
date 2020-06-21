@@ -44,7 +44,8 @@
 											!release.deployable
 									"
 									type="primary"
-									@click="deploy()"
+									@click="$resources.deploy.fetch()"
+									:disabled="$resources.deploy.loading"
 									>Deploy</Button
 								>
 							</div>
@@ -70,15 +71,18 @@
 export default {
 	name: 'AppReleases',
 	props: ['app'],
-	methods: {
-		async deploy() {
-			await this.$call('press.api.app.deploy', {
-				name: this.app.name
-			});
-			this.$router.push(`/apps/${this.app.name}/deploys`);
-		}
-	},
 	resources: {
+		deploy() {
+			return {
+				method: 'press.api.app.deploy',
+				params: {
+					name: this.app.name
+				},
+				onSuccess: () => {
+					this.$router.push(`/apps/${this.app.name}/deploys`);
+				}
+			};
+		},
 		releases() {
 			return {
 				method: 'press.api.app.releases',
