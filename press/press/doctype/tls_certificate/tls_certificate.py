@@ -75,13 +75,12 @@ class TLSCertificate(Document):
 		staging = ""  # "--staging " if frappe.conf.developer_mode else ""
 
 		command = (
-			"certbot certonly --quiet "
-			f"{plugin} "
-			f"{staging}"
-			f"--logs-dir {certbot_directory}/logs --work-dir {certbot_directory} --config-dir {certbot_directory} "
-			f"--agree-tos --eff-email --email {settings.eff_registration_email} "
-			f"--must-staple --staple-ocsp --rsa-key-size {self.rsa_key_size} "
-			f"--cert-name {self.name} --domains {self.name}"
+			f"certbot certonly --quiet {plugin} {staging}--logs-dir"
+			f" {certbot_directory}/logs --work-dir {certbot_directory} --config-dir"
+			f" {certbot_directory} --agree-tos --eff-email --email"
+			f" {settings.eff_registration_email} --must-staple --staple-ocsp"
+			f" --rsa-key-size {self.rsa_key_size} --cert-name {self.name} --domains"
+			f" {self.name}"
 		)
 
 		return command

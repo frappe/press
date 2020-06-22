@@ -3,50 +3,260 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
-import json
 import frappe
-from press.utils import log_error
+from press.utils import get_current_team
+from press.api.site import protected
+from frappe.core.utils import find
 
 
 @frappe.whitelist()
-def new(name):
-	app = frappe.get_doc({"doctype": "Frappe App", "name": name})
-	app.insert()
-	return app
+def new(app):
+	team = get_current_team()
+	repo_owner, repo, branch = app["repo_owner"], app["repo"], app["branch"]
+	existing = frappe.db.exists(
+		"Frappe App", {"repo_owner": repo_owner, "repo": repo, "branch": branch},
+	)
+	if existing:
+		frappe.throw(
+			f"App with repository {repo_owner}/{repo} and branch {branch} already exists."
+		)
+
+	app_doc = frappe.get_doc(
+		{
+			"doctype": "Frappe App",
+			"name": app["name"],
+			"branch": branch,
+			"repo": repo,
+			"repo_owner": repo_owner,
+			"url": app["url"],
+			"scrubbed": app["scrubbed"],
+			"installation": app["installation"],
+			"team": team,
+			"enable_auto_deploy": app["enable_auto_deploy"],
+		}
+	)
+	app_doc.insert()
+	for group in app["groups"]:
+		release_group = frappe.get_doc("Release Group", group)
+		release_group.append("apps", {"app": app_doc.name})
+		release_group.save()
+	return app_doc.name
+
+
+@frappe.whitelist()
+def exists(name):
+	return bool(frappe.db.exists("Frappe App", name))
+
+
+@frappe.whitelist()
+def similar_exists(repo_owner, repo, branch):
+	return bool(
+		frappe.db.exists(
+			"Frappe App", {"repo": repo, "repo_owner": repo_owner, "branch": branch}
+		)
+	)
+
+
+def update_available(name):
+	releases = frappe.get_all(
+		"App Release",
+		fields=["deployable"],
+		filters={"app": name, "status": "Approved"},
+		order_by="creation desc",
+		limit=1,
+	)
+	if releases and not releases[0].deployable:
+		return True
+	return False
+
+
+def app_status(name):
+	status = frappe.get_all(
+		"App Release",
+		fields=["status"],
+		filters={"app": name},
+		order_by="creation desc",
+		limit=1,
+	)[0].status
+	return {
+		"Approved": "Active",
+		"Pending": "Pending",
+		"Awaiting Approval": "Awaiting Approval",
+		"Rejected": "Rejected",
+	}[status]
+
+
+@frappe.whitelist()
+@protected("Frappe App")
+def get(name):
+	app = frappe.get_doc("Frappe App", name)
+	groups = frappe.get_all(
+		"Release Group Frappe App", fields=["parent as name"], filters={"app": app.name}
+	)
+	for group in groups:
+		group_doc = frappe.get_doc("Release Group", group.name)
+		frappe_app = frappe.get_all(
+			"Frappe App",
+			fields=["name", "scrubbed", "branch"],
+			filters={"name": ("in", [row.app for row in group_doc.apps]), "frappe": True},
+		)[0]
+		group["frappe"] = frappe_app
+
+	return {
+		"name": app.name,
+		"branch": app.branch,
+		"status": app_status(app.name),
+		"repo": app.repo,
+		"enable_auto_deploy": app.enable_auto_deploy,
+		"scrubbed": app.scrubbed,
+		"groups": groups,
+		"repo_owner": app.repo_owner,
+		"url": app.url,
+		"update_available": update_available(app.name),
+		"last_updated": app.modified,
+		"creation": app.creation,
+	}
+
+
+@frappe.whitelist()
+@protected("Frappe App")
+def deploys(name):
+	releases = frappe.get_all(
+		"App Release",
+		filters={"app": name, "deployable": True, "status": "Approved"},
+		fields=["name", "hash", "creation", "message"],
+		order_by="creation desc",
+		limit=10,
+	)
+
+	group_names = frappe.get_all(
+		"Release Group Frappe App", fields=["parent as name"], filters={"app": name}
+	)
+	groups = {}
+	for group in group_names:
+		group_doc = frappe.get_doc("Release Group", group.name)
+		frappe_app = frappe.get_all(
+			"Frappe App",
+			fields=["name", "scrubbed", "branch"],
+			filters={"name": ("in", [row.app for row in group_doc.apps]), "frappe": True},
+		)[0]
+		groups[group.name] = frappe_app
+
+	app = frappe.get_doc("Frappe App", name)
+	tags = frappe.get_all(
+		"App Tag",
+		filters={
+			"repository": app.repo,
+			"repository_owner": app.repo_owner,
+			"installation": app.installation,
+		},
+		fields=["hash", "tag"],
+	)
+	for tag in tags:
+		release = find(releases, lambda x: x.hash == tag.hash)
+		if release:
+			release.setdefault("tags", []).append(tag.tag)
+
+	for release in releases:
+		release["groups"] = []
+		for group in groups:
+			candidates = frappe.get_all(
+				"Deploy Candidate",
+				fields=["name", "group"],
+				filters={"app": name, "release": release.name, "group": group},
+				order_by="`tabDeploy Candidate App Release`.`creation` asc",
+				limit=1,
+			)
+
+			if not candidates:
+				continue
+			candidate = candidates[0]
+			deploy = frappe.get_value(
+				"Deploy", {"group": group, "candidate": candidate.name}, "name"
+			)
+			if not deploy:
+				continue
+			bench_names = [
+				bench.bench_name for bench in frappe.get_doc("Deploy", deploy).benches
+			]
+			benches = frappe.get_all(
+				"Bench", fields=["status"], filters={"name": ("in", bench_names)}
+			)
+			statuses = set(bench.status for bench in benches)
+			for status in ("Broken", "Installing", "Pending", "Active", "Archived"):
+				if status in statuses:
+					candidate.status = status
+					break
+			release["groups"].append(candidate)
+
+	return {"groups": groups, "releases": releases}
+
+
+@frappe.whitelist()
+@protected("Frappe App")
+def releases(name):
+	app = frappe.get_doc("Frappe App", name)
+	releases = frappe.get_all(
+		"App Release",
+		filters={"app": name},
+		fields=[
+			"name",
+			"hash",
+			"creation",
+			"message",
+			"author",
+			"status",
+			"reason",
+			"comments",
+			"deployable",
+		],
+		order_by="creation desc",
+		limit=10,
+	)
+	tags = frappe.get_all(
+		"App Tag",
+		filters={
+			"repository": app.repo,
+			"repository_owner": app.repo_owner,
+			"installation": app.installation,
+		},
+		fields=["hash", "tag"],
+	)
+	for tag in tags:
+		release = find(releases, lambda x: x.hash == tag.hash)
+		if release:
+			release.setdefault("tags", []).append(tag.tag)
+
+	return releases
 
 
 @frappe.whitelist()
 def all():
-	groups = frappe.get_all("Release Group", filters={"owner": frappe.session.user})
-	if groups:
-		group = groups[0]
-		group = frappe.get_doc("Release Group", group.name)
-		return group
+	if frappe.session.data.user_type == "System User":
+		filters = {}
 	else:
-		return []
+		filters = {"team": get_current_team()}
+	apps = frappe.get_list(
+		"Frappe App",
+		fields=["name", "modified", "url", "repo_owner", "repo", "branch"],
+		filters=filters,
+		order_by="creation desc",
+	)
+	for app in apps:
+		app["update_available"] = update_available(app.name)
+		app["status"] = app_status(app.name)
+
+	return apps
 
 
-@frappe.whitelist(allow_guest=True)
-def hook(*args, **kwargs):
-	event = frappe.request.headers.get("X-Github-Event")
-
-	if event != "push":
-		return
-
-	payload = frappe.request.get_data()
-	try:
-		payload = json.loads(payload)
-
-		url = payload["repository"]["html_url"]
-		branch = payload["ref"].rsplit("refs/heads/")[1]
-
-		app = frappe.get_all("Frappe App", {"url": url, "branch": branch})[0].name
-
-		hash = payload["after"]
-		if not frappe.db.exists("App Release", {"app": app, "hash": hash}):
-			frappe.get_doc({"doctype": "App Release", "app": app, "hash": hash}).insert(
-				ignore_permissions=True
-			)
-
-	except Exception:
-		log_error("GitHub Webhook Error", payload=payload)
+@frappe.whitelist()
+@protected("Frappe App")
+def deploy(name):
+	release = frappe.get_all(
+		"App Release",
+		{"app": name, "deployable": False, "status": "Approved"},
+		order_by="creation desc",
+		limit=1,
+	)[0]
+	release_doc = frappe.get_doc("App Release", release)
+	release_doc.deploy()
