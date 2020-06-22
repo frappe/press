@@ -15,4 +15,6 @@ def execute():
 		group_by="site",
 	)
 	for domain in domains:
-		frappe.get_doc("Site", domain.site).set_host_name(domain.domain)
+		site = frappe.get_doc("Site", domain.site)
+		if site.status == "Active":
+			site.set_host_name(domain.domain)
