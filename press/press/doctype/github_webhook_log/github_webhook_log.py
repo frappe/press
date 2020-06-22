@@ -22,7 +22,8 @@ class GitHubWebhookLog(Document):
 		payload = self.parsed_payload
 		repository = payload.repository
 		installation = payload.installation
-		self.installation = installation["id"]
+		if installation:
+			self.installation = installation["id"]
 
 		if payload.repository:
 			self.repository = repository["name"]
