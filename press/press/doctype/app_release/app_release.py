@@ -115,7 +115,7 @@ class AppRelease(Document):
 			token = get_access_token(app.installation)
 			url = f"https://x-access-token:{token}@github.com/{app.repo_owner}/{app.repo}"
 		else:
-			url = app.repo_url
+			url = app.url
 		self.output = ""
 		self.output += self.run("git init")
 		self.output += self.run(f"git remote add origin {url}",)
