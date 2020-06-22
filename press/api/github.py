@@ -9,7 +9,7 @@ from pathlib import Path
 from press.utils import get_current_team, log_error
 import requests
 import jwt
-import regex
+import re
 from base64 import b64decode
 from frappe.core.utils import find
 
@@ -197,7 +197,7 @@ def app(installation, owner, repository, branch):
 					headers=headers,
 				).json()
 				content = b64decode(hooks["content"]).decode()
-				match = regex.search('app_title = "(.*)"', content)
+				match = re.search('app_title = "(.*)"', content)
 				if match:
 					title = match.group(1)
 				break

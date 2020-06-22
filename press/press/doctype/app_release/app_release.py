@@ -6,7 +6,7 @@ from __future__ import unicode_literals
 import glob
 import json
 import os
-import regex
+import re
 import shutil
 import subprocess
 import frappe
@@ -145,8 +145,8 @@ class AppRelease(Document):
 			for severity, violations in configuration.items():
 				for violation, keywords in violations.items():
 					pattern = r"(?:^|\W)({})(?:\W|$)".format("|".join(keywords))
-					re = regex.compile(pattern)
-					search = re.search(line)
+					regex = re.compile(pattern)
+					search = regex.search(line)
 					if search:
 						issues.append(
 							{"severity": severity, "violation": violation, "match": search.group(1)}
