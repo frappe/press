@@ -7,6 +7,7 @@ import frappe
 
 
 def execute():
+	frappe.reload_doctype("App Release")
 	benches = frappe.get_all(
 		"Bench", fields=["name", "candidate"], filters={"status": ("!=", "Archived")}
 	)
