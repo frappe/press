@@ -65,7 +65,6 @@ class GitHubWebhookLog(Document):
 					"branch": self.branch,
 					"repo": self.repository,
 					"repo_owner": self.repository_owner,
-					"installation": self.installation,
 				},
 				"name",
 			)

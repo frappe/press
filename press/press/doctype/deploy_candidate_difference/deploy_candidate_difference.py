@@ -75,8 +75,11 @@ class DeployCandidateDifference(Document):
 			app.changed = True
 			app.deploy_type = "Pull"
 			frappe_app = frappe.get_doc("Frappe App", app.app)
-			github_access_token = get_access_token(frappe_app.installation)
-			client = Github(github_access_token)
+			if frappe_app.installation:
+				github_access_token = get_access_token(frappe_app.installation)
+				client = Github(github_access_token)
+			else:
+				client = Github()
 			repo = client.get_repo(f"{frappe_app.repo_owner}/{frappe_app.repo}")
 			diff = repo.compare(app.source_hash, app.destination_hash)
 			app.github_diff_url = diff.html_url

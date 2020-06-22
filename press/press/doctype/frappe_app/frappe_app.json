@@ -67,8 +67,7 @@
   {
    "fieldname": "installation",
    "fieldtype": "Data",
-   "label": "Installation",
-   "reqd": 1
+   "label": "Installation"
   },
   {
    "default": "0",
@@ -104,7 +103,7 @@
   }
  ],
  "links": [],
- "modified": "2020-06-19 20:02:42.190253",
+ "modified": "2020-06-22 10:47:12.848063",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Frappe App",

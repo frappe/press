@@ -17,10 +17,13 @@ class FrappeApp(Document):
 
 	def create_app_release(self):
 		try:
-			token = get_access_token(self.installation)
-			headers = {
-				"Authorization": f"token {token}",
-			}
+			if self.installation:
+				token = get_access_token(self.installation)
+				headers = {
+					"Authorization": f"token {token}",
+				}
+			else:
+				headers = {}
 			branch = requests.get(
 				f"https://api.github.com/repos/{self.repo_owner}/{self.repo}/branches/{self.branch}",
 				headers=headers,

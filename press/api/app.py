@@ -145,11 +145,7 @@ def deploys(name):
 	app = frappe.get_doc("Frappe App", name)
 	tags = frappe.get_all(
 		"App Tag",
-		filters={
-			"repository": app.repo,
-			"repository_owner": app.repo_owner,
-			"installation": app.installation,
-		},
+		filters={"repository": app.repo, "repository_owner": app.repo_owner},
 		fields=["hash", "tag"],
 	)
 	for tag in tags:
@@ -215,11 +211,7 @@ def releases(name):
 	)
 	tags = frappe.get_all(
 		"App Tag",
-		filters={
-			"repository": app.repo,
-			"repository_owner": app.repo_owner,
-			"installation": app.installation,
-		},
+		filters={"repository": app.repo, "repository_owner": app.repo_owner},
 		fields=["hash", "tag"],
 	)
 	for tag in tags:
