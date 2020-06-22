@@ -64,6 +64,9 @@ class Bench(Document):
 		agent.new_bench(self)
 
 	def archive(self):
+		unarchived_sites = frappe.db.exists("Site", {"bench": self.name, "status": ("!=", "Archived")})
+		if unarchived_sites:
+			frappe.throw("Cannot archive bench with active sites.")
 		agent = Agent(self.server)
 		agent.archive_bench(self)
 
