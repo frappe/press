@@ -42,7 +42,7 @@
 							{{ selectedJob.job_type }}
 						</div>
 						<div
-							class="text-xs text-gray-800"
+							class="text-xs text-gray-500"
 							v-if="selectedJob.status === 'Success'"
 						>
 							Completed

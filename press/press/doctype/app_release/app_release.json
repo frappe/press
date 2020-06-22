@@ -5,8 +5,34 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "status",
   "app",
-  "hash"
+  "deployable",
+  "column_break_3",
+  "hash",
+  "author",
+  "message",
+  "review_section",
+  "directory",
+  "code_server_url",
+  "column_break_9",
+  "reason",
+  "section_break_12",
+  "comments",
+  "difference_section",
+  "diff_requirements",
+  "diff_result",
+  "result_html",
+  "result_html_rendered",
+  "baseline_section",
+  "baseline_release",
+  "baseline_requirements",
+  "baseline_result",
+  "result_section",
+  "requirements",
+  "result",
+  "section_break_26",
+  "output"
  ],
  "fields": [
   {
@@ -26,11 +52,168 @@
    "read_only": 1,
    "reqd": 1,
    "unique": 1
+  },
+  {
+   "fieldname": "message",
+   "fieldtype": "Code",
+   "label": "Message",
+   "read_only": 1
+  },
+  {
+   "fieldname": "author",
+   "fieldtype": "Data",
+   "label": "Author",
+   "read_only": 1
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Pending\nAwaiting Approval\nApproved\nRejected"
+  },
+  {
+   "depends_on": "eval:doc.status === \"Rejected\"",
+   "fieldname": "reason",
+   "fieldtype": "Select",
+   "label": "Reason",
+   "options": "\nMalicious Code\nVulnerable Code"
+  },
+  {
+   "fieldname": "directory",
+   "fieldtype": "Data",
+   "label": "Directory",
+   "read_only": 1
+  },
+  {
+   "fieldname": "result",
+   "fieldtype": "Code",
+   "hidden": 1,
+   "label": "Result",
+   "read_only": 1
+  },
+  {
+   "fieldname": "result_html",
+   "fieldtype": "Code",
+   "hidden": 1,
+   "label": "Result HTML",
+   "read_only": 1
+  },
+  {
+   "fieldname": "result_html_rendered",
+   "fieldtype": "HTML",
+   "label": "Result HTML Rendered"
+  },
+  {
+   "fieldname": "requirements",
+   "fieldtype": "Code",
+   "hidden": 1,
+   "label": "Requirements",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "review_section",
+   "fieldtype": "Section Break",
+   "label": "Review"
+  },
+  {
+   "fieldname": "column_break_9",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.status === \"Rejected\"",
+   "fieldname": "comments",
+   "fieldtype": "Text Editor",
+   "label": "Comments"
+  },
+  {
+   "fieldname": "code_server_url",
+   "fieldtype": "Data",
+   "label": "Code Server URL",
+   "read_only": 1
+  },
+  {
+   "fieldname": "baseline_release",
+   "fieldtype": "Link",
+   "label": "Baseline Release",
+   "options": "App Release",
+   "read_only": 1
+  },
+  {
+   "fieldname": "diff_result",
+   "fieldtype": "Code",
+   "hidden": 1,
+   "label": "Diff Result",
+   "read_only": 1
+  },
+  {
+   "fieldname": "diff_requirements",
+   "fieldtype": "Code",
+   "label": "Diff Requirements",
+   "read_only": 1
+  },
+  {
+   "fieldname": "difference_section",
+   "fieldtype": "Section Break",
+   "label": "Difference"
+  },
+  {
+   "fieldname": "baseline_section",
+   "fieldtype": "Section Break",
+   "label": "Baseline"
+  },
+  {
+   "fieldname": "baseline_result",
+   "fieldtype": "Code",
+   "hidden": 1,
+   "label": "Baseline Result",
+   "read_only": 1
+  },
+  {
+   "fieldname": "baseline_requirements",
+   "fieldtype": "Code",
+   "hidden": 1,
+   "label": "Baseline Requirements",
+   "read_only": 1
+  },
+  {
+   "fieldname": "result_section",
+   "fieldtype": "Section Break",
+   "label": "Result"
+  },
+  {
+   "fieldname": "section_break_12",
+   "fieldtype": "Section Break",
+   "hide_border": 1
+  },
+  {
+   "fieldname": "output",
+   "fieldtype": "Code",
+   "label": "Output",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_26",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "deployable",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Deployable"
   }
  ],
  "in_create": 1,
  "links": [],
- "modified": "2020-02-20 15:42:08.373055",
+ "modified": "2020-06-19 20:14:36.476654",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Release",
@@ -47,9 +230,20 @@
    "role": "System Manager",
    "share": 1,
    "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1,
+   "write": 1
   }
  ],
- "sort_field": "modified",
+ "sort_field": "creation",
  "sort_order": "DESC",
  "track_changes": 1
 }

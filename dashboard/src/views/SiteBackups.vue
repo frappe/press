@@ -65,8 +65,9 @@
 						type="primary"
 						@click="$resources.scheduleBackup.fetch()"
 						:disabled="$resources.scheduleBackup.loading"
-						>Schedule Backup</Button
 					>
+						Schedule Backup with Files
+					</Button>
 				</div>
 			</SectionCard>
 		</Section>

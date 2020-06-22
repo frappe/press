@@ -11,9 +11,9 @@ export default {
 	},
 	render(h) {
 		let node = this.$slots.default[0];
-        let value = node.text;
-        value = value.trim();
-        let datetime = DateTime.fromSQL(value);
+		let value = node.text;
+		value = value.trim();
+		let datetime = DateTime.fromSQL(value);
 		let formatted = datetime.toLocaleString(DateTime.DATETIME_FULL);
 		let format;
 		if (this.type === 'relative') {
