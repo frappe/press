@@ -176,7 +176,9 @@ class Site(Document):
 			return setup_complete
 
 	def update_site_config(self, config):
-		self.config = json.dumps(config, indent=4)
+		new_config = json.loads(self.config)
+		new_config.update(config)
+		self.config = json.dumps(new_config, indent=4)
 		self.save()
 		log_site_activity(self.name, "Update Configuration")
 		agent = Agent(self.server)
