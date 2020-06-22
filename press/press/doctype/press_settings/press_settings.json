@@ -7,7 +7,6 @@
  "field_order": [
   "domain",
   "bench_configuration",
-  "github_access_token",
   "trial_sites_count",
   "dns_section",
   "dns_provider",
@@ -36,7 +35,18 @@
   "erpnext_authentication",
   "erpnext_url",
   "erpnext_api_key",
-  "erpnext_api_secret"
+  "erpnext_api_secret",
+  "section_break_33",
+  "github_app_id",
+  "github_app_client_id",
+  "github_app_client_secret",
+  "column_break_36",
+  "github_app_public_link",
+  "github_webhook_secret",
+  "clone_directory",
+  "code_server",
+  "section_break_41",
+  "github_app_private_key"
  ],
  "fields": [
   {
@@ -47,11 +57,6 @@
    "label": "Bench Confguration",
    "options": "JSON",
    "reqd": 1
-  },
-  {
-   "fieldname": "github_access_token",
-   "fieldtype": "Data",
-   "label": "GitHub Access Token"
   },
   {
    "fieldname": "domain",
@@ -222,11 +227,65 @@
    "fieldname": "erpnext_url",
    "fieldtype": "Data",
    "label": "ERPNext URL"
+  },
+  {
+   "fieldname": "github_app_private_key",
+   "fieldtype": "Code",
+   "label": "GitHub App Private Key"
+  },
+  {
+   "fieldname": "section_break_33",
+   "fieldtype": "Section Break",
+   "label": "GitHub App Authentication"
+  },
+  {
+   "fieldname": "github_webhook_secret",
+   "fieldtype": "Data",
+   "label": "GitHub Webhook Secret"
+  },
+  {
+   "fieldname": "github_app_id",
+   "fieldtype": "Data",
+   "label": "GitHub App ID"
+  },
+  {
+   "fieldname": "github_app_client_id",
+   "fieldtype": "Data",
+   "label": "GitHub App Client ID"
+  },
+  {
+   "fieldname": "github_app_client_secret",
+   "fieldtype": "Data",
+   "label": "GitHub App Client Secret"
+  },
+  {
+   "fieldname": "github_app_public_link",
+   "fieldtype": "Data",
+   "label": "GitHub App Public Link"
+  },
+  {
+   "fieldname": "clone_directory",
+   "fieldtype": "Data",
+   "label": "Clone Directory"
+  },
+  {
+   "fieldname": "code_server",
+   "fieldtype": "Data",
+   "label": "Code Server"
+  },
+  {
+   "fieldname": "column_break_36",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_41",
+   "fieldtype": "Section Break",
+   "hide_border": 1
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2020-04-13 16:01:10.404205",
+ "modified": "2020-06-22 11:18:20.917016",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

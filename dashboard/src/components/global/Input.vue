@@ -8,6 +8,7 @@
 		</span>
 		<input
 			v-if="type !== 'select'"
+			class="placeholder-gray-500"
 			:class="[
 				{
 					'block w-full form-input': type != 'checkbox',
@@ -19,7 +20,12 @@
 			v-bind="$attrs"
 			v-model="inputVal"
 		/>
-		<select class="block w-full form-select" v-model="inputVal" v-else>
+		<select
+			class="block w-full form-select"
+			v-model="inputVal"
+			v-else
+			:disabled="disabled"
+		>
 			<option
 				v-for="option in selectOptions"
 				:key="option.value"
@@ -43,7 +49,7 @@
 export default {
 	name: 'Input',
 	inheritAttrs: false,
-	props: ['label', 'type', 'value', 'inputClass', 'options'],
+	props: ['label', 'type', 'value', 'inputClass', 'options', 'disabled'],
 	computed: {
 		inputVal: {
 			get() {

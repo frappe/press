@@ -10,7 +10,15 @@
   "scrubbed",
   "branch",
   "repo_owner",
-  "frappe"
+  "column_break_5",
+  "repo",
+  "frappe",
+  "installation",
+  "section_break_9",
+  "team",
+  "public",
+  "enable_auto_deploy",
+  "skip_review"
  ],
  "fields": [
   {
@@ -26,6 +34,7 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Scrubbed Name",
+   "reqd": 1,
    "set_only_once": 1
   },
   {
@@ -38,8 +47,9 @@
   {
    "fieldname": "repo_owner",
    "fieldtype": "Data",
-   "label": "Repo Owner",
-   "read_only": 1
+   "label": "Repository Owner",
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "default": "0",
@@ -47,10 +57,53 @@
    "fieldtype": "Check",
    "label": "Frappe",
    "set_only_once": 1
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team"
+  },
+  {
+   "fieldname": "installation",
+   "fieldtype": "Data",
+   "label": "Installation"
+  },
+  {
+   "default": "0",
+   "fieldname": "public",
+   "fieldtype": "Check",
+   "label": "Public"
+  },
+  {
+   "fieldname": "repo",
+   "fieldtype": "Data",
+   "label": "Repository",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_5",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_9",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_auto_deploy",
+   "fieldtype": "Check",
+   "label": "Enable Auto Deploy"
+  },
+  {
+   "default": "0",
+   "fieldname": "skip_review",
+   "fieldtype": "Check",
+   "label": "Skip Review"
   }
  ],
  "links": [],
- "modified": "2020-02-25 18:59:47.284708",
+ "modified": "2020-06-22 10:47:12.848063",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Frappe App",
@@ -67,6 +120,16 @@
    "role": "System Manager",
    "share": 1,
    "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1
   }
  ],
  "sort_field": "modified",

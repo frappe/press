@@ -15,7 +15,9 @@
   "apps",
   "common_site_configuration",
   "workers",
+  "gunicorn_workers",
   "port_offset",
+  "column_break_11",
   "config"
  ],
  "fields": [
@@ -83,7 +85,7 @@
    "label": "Configuration"
   },
   {
-   "default": "4",
+   "default": "1",
    "fieldname": "workers",
    "fieldtype": "Int",
    "label": "Workers",
@@ -102,10 +104,21 @@
   {
    "fieldname": "section_break_6",
    "fieldtype": "Section Break"
+  },
+  {
+   "default": "2",
+   "fieldname": "gunicorn_workers",
+   "fieldtype": "Int",
+   "label": "Gunicorn Workers",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_11",
+   "fieldtype": "Column Break"
   }
  ],
  "links": [],
- "modified": "2020-04-07 13:08:53.598600",
+ "modified": "2020-06-19 20:04:30.201213",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",
@@ -122,6 +135,16 @@
    "role": "System Manager",
    "share": 1,
    "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1
   }
  ],
  "sort_field": "modified",
