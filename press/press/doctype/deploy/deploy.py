@@ -25,11 +25,13 @@ class Deploy(Document):
 				}
 			).insert()
 			bench.bench = new.name
+	
 			frappe.enqueue(
 				"press.press.doctype.deploy.deploy.create_deploy_candidate_differences",
 				bench=new,
 				enqueue_after_commit=True,
 			)
+		self.save()
 
 
 def create_deploy_candidate_differences(bench):
