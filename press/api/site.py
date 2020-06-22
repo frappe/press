@@ -488,15 +488,13 @@ def install_app(name, app):
 @frappe.whitelist()
 @protected()
 def logs(name):
-	site = frappe.get_doc("Site", name)
-	return Agent(site.server).get(f"benches/{site.bench}/sites/{name}/logs")
+	return frappe.get_doc("Site", name).server_logs
 
 
 @frappe.whitelist()
 @protected()
 def log(name, log):
-	site = frappe.get_doc("Site", name)
-	return Agent(site.server).get(f"benches/{site.bench}/sites/{name}/logs/{log}")
+	return frappe.get_doc("Site", name).get_server_log(log)
 
 
 @frappe.whitelist()
