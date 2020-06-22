@@ -139,6 +139,11 @@ class Site(Document):
 			site_domain = frappe.get_doc("Site Domain", site_domain.name)
 			site_domain.retry()
 
+	def set_host_name(self, domain):
+		self.host_name = domain
+		self.save()
+		self.update_site_config({"host_name": f"https://{domain}"})
+
 	def archive(self):
 		log_site_activity(self.name, "Archive")
 		agent = Agent(self.server)

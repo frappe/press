@@ -13,6 +13,7 @@ from pathlib import Path
 import tarfile
 import wrapt
 import frappe
+from frappe.core.utils import find
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.site_update.site_update import (
 	is_update_available_for_site,
@@ -131,6 +132,10 @@ def domains(name):
 		fields=["name", "domain", "status", "retry_count"],
 		filters={"site": name},
 	)
+	host_name = frappe.db.get_value("Site", name, "host_name")
+	primary = find(domains, lambda x: x.domain == host_name)
+	if primary:
+		primary.primary = True
 	return domains
 
 
@@ -463,6 +468,8 @@ def setup_wizard_complete(name):
 @frappe.whitelist()
 @protected("Site")
 def check_dns(name, domain):
+	return True
+
 	def check_dns_cname(name, domain):
 		try:
 			answer = dns.resolver.query(domain, "CNAME")[0].to_text()
@@ -496,6 +503,12 @@ def add_domain(name, domain):
 @protected("Site")
 def retry_add_domain(name, domain):
 	frappe.get_doc("Site", name).retry_add_domain(domain)
+
+
+@frappe.whitelist()
+@protected("Site")
+def set_host_name(name, domain):
+	frappe.get_doc("Site", name).set_host_name(domain)
 
 
 @frappe.whitelist()
