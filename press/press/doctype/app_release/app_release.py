@@ -7,6 +7,7 @@ import glob
 import json
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import frappe
@@ -76,7 +77,7 @@ class AppRelease(Document):
 
 	def run(self, command):
 		return subprocess.check_output(
-			command.split(), stderr=subprocess.STDOUT, cwd=self.directory
+			shlex.split(command), stderr=subprocess.STDOUT, cwd=self.directory
 		).decode()
 
 	def _set_baseline(self):
