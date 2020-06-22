@@ -1,7 +1,7 @@
 <template>
 	<div class="inline-block">
 		<div
-			class="items-start px-4 py-3 text-sm border rounded-md sm:flex"
+			class="items-center px-4 py-3 text-sm border rounded-md sm:flex"
 			:class="classes"
 		>
 			<FeatherIcon :name="icon" class="w-4 h-4 my-1 mr-2" />

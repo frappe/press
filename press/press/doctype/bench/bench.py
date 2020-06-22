@@ -37,6 +37,7 @@ class Bench(Document):
 		config.update(
 			{
 				"background_workers": self.workers,
+				"gunicorn_workers": self.gunicorn_workers,
 				"redis_cache": f"redis://localhost:{13000 + self.port_offset}",
 				"redis_queue": f"redis://localhost:{11000 + self.port_offset}",
 				"redis_socketio": f"redis://localhost:{12000 + self.port_offset}",
@@ -45,6 +46,15 @@ class Bench(Document):
 			}
 		)
 		self.config = json.dumps(config, indent=4)
+
+	def on_update(self):
+		self.update_bench_config()
+
+	def update_bench_config(self):
+		old = self.get_doc_before_save()
+		if old and old.config != self.config:
+			agent = Agent(self.server)
+			agent.update_bench_config(self)
 
 	def after_insert(self):
 		self.create_agent_request()
