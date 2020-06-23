@@ -60,16 +60,16 @@ class GitHubWebhookLog(Document):
 
 	def create_app_release(self, payload):
 		try:
-			frappe_app_name = frappe.get_value(
+			frappe_app_name, enabled = frappe.get_value(
 				"Frappe App",
 				{
 					"branch": self.branch,
 					"repo": self.repository,
 					"repo_owner": self.repository_owner,
 				},
-				"name",
+				["name", "enabled"],
 			)
-			if frappe_app_name:
+			if frappe_app_name and enabled:
 				commit = payload.head_commit
 				release = frappe.get_doc(
 					{

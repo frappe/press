@@ -10,6 +10,8 @@ from frappe.model.document import Document
 
 class ReleaseGroup(Document):
 	def create_deploy_candidate(self):
+		if not self.enabled:
+			return
 		releases = []
 		for app in self.apps:
 			release = frappe.get_all(

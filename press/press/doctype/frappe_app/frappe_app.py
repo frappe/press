@@ -16,6 +16,8 @@ class FrappeApp(Document):
 		self.create_app_release()
 
 	def create_app_release(self):
+		if not self.enabled:
+			return
 		try:
 			if self.installation:
 				token = get_access_token(self.installation)
