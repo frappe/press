@@ -162,7 +162,7 @@ class AppRelease(Document):
 
 	def _filter_results(self):
 		result = json.loads(self.result)
-		if self.baseline_release:
+		if self.baseline_release and self.baseline_result:
 			baseline_result = json.loads(self.baseline_result)
 			diff_result = []
 			for file in result:
