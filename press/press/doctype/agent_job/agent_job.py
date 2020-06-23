@@ -27,13 +27,21 @@ class AgentJob(Document):
 		)
 
 	def create_http_request(self):
-		agent = Agent(self.server, server_type=self.server_type)
-		data = json.loads(self.request_data)
-		files = json.loads(self.request_files)
-		self.job_id = agent.request(self.request_method, self.request_path, data, files)[
-			"job"
-		]
-		self.save()
+		try:
+			agent = Agent(self.server, server_type=self.server_type)
+			data = json.loads(self.request_data)
+			files = json.loads(self.request_files)
+
+			self.job_id = agent.request(self.request_method, self.request_path, data, files)[
+				"job"
+			]
+			self.status = "Pending"
+			self.save()
+		except Exception:
+			self.status = "Failure"
+			self.save()
+			process_job_updates(self.name)
+			frappe.db.set_value("Agent Job", self.name, "status", "Undelivered")
 
 	def create_agent_job_steps(self):
 		job_type = frappe.get_doc("Agent Job Type", self.job_type)
@@ -53,7 +61,7 @@ class AgentJob(Document):
 		job = frappe.get_doc(
 			{
 				"doctype": "Agent Job",
-				"status": "Pending",
+				"status": "Undelivered",
 				"job_type": self.job_type,
 				"server_type": self.server_type,
 				"server": self.server,

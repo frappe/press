@@ -45,7 +45,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Pending\nRunning\nSuccess\nFailure",
+   "options": "Undelivered\nPending\nRunning\nSuccess\nFailure",
    "read_only": 1,
    "reqd": 1
   },
@@ -186,7 +186,7 @@
  ],
  "in_create": 1,
  "links": [],
- "modified": "2020-04-13 12:27:20.288449",
+ "modified": "2020-06-23 20:39:59.479576",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Job",
