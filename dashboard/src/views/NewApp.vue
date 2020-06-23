@@ -322,7 +322,7 @@ export default {
 		},
 		toggleVersion(group) {
 			if (!this.selectedGroups.includes(group.name)) {
-				this.selectedGroups.push(group.name);
+				this.selectedGroups = [group.name];
 			} else {
 				this.selectedGroups = this.selectedGroups.filter(a => a !== group.name);
 			}
