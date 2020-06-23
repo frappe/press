@@ -95,6 +95,8 @@ def get(name):
 	)
 	for group in groups:
 		group_doc = frappe.get_doc("Release Group", group.name)
+		if not group_doc.enabled:
+			continue
 		frappe_app = frappe.get_all(
 			"Frappe App",
 			fields=["name", "scrubbed", "branch"],
@@ -135,6 +137,8 @@ def deploys(name):
 	groups = {}
 	for group in group_names:
 		group_doc = frappe.get_doc("Release Group", group.name)
+		if not group_doc.enabled:
+			continue
 		frappe_app = frappe.get_all(
 			"Frappe App",
 			fields=["name", "scrubbed", "branch"],
@@ -224,10 +228,9 @@ def releases(name):
 
 @frappe.whitelist()
 def all():
-	if frappe.session.data.user_type == "System User":
-		filters = {}
-	else:
-		filters = {"team": get_current_team()}
+	filters = {"enabled": True}
+	if frappe.session.data.user_type != "System User":
+		filters.update({"team": get_current_team()})
 	apps = frappe.get_list(
 		"Frappe App",
 		fields=["name", "modified", "url", "repo_owner", "repo", "branch"],
