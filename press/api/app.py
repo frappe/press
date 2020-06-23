@@ -93,6 +93,7 @@ def get(name):
 	groups = frappe.get_all(
 		"Release Group Frappe App", fields=["parent as name"], filters={"app": app.name}
 	)
+	enabled_groups = []
 	for group in groups:
 		group_doc = frappe.get_doc("Release Group", group.name)
 		if not group_doc.enabled:
@@ -103,6 +104,7 @@ def get(name):
 			filters={"name": ("in", [row.app for row in group_doc.apps]), "frappe": True},
 		)[0]
 		group["frappe"] = frappe_app
+		enabled_groups.append(group)
 
 	return {
 		"name": app.name,
@@ -111,7 +113,7 @@ def get(name):
 		"repo": app.repo,
 		"enable_auto_deploy": app.enable_auto_deploy,
 		"scrubbed": app.scrubbed,
-		"groups": groups,
+		"groups": enabled_groups,
 		"repo_owner": app.repo_owner,
 		"url": app.url,
 		"update_available": update_available(app.name),
