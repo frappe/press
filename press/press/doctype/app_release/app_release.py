@@ -29,6 +29,7 @@ class AppRelease(Document):
 			self.save()
 		if skip_review:
 			self.status = "Approved"
+			self.save()
 		else:
 			frappe.enqueue_doc(self.doctype, self.name, "screen", enqueue_after_commit=True)
 
