@@ -246,20 +246,6 @@
 											</button>
 										</div>
 									</div>
-									<div class="mt-4" v-if="scrubbed">
-										<label class="flex py-2 leading-none">
-											<Input
-												label="Enable Auto Deploy"
-												type="checkbox"
-												v-model="enableAutoDeploy"
-											/>
-										</label>
-										<p class="text-base text-gray-700">
-											Deploys happen automatically: be sure that this branch is
-											always in a deployable state and any tests have passed
-											before you push.
-										</p>
-									</div>
 								</div>
 							</div>
 						</div>
