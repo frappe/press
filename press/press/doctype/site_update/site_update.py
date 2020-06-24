@@ -106,7 +106,14 @@ def sites_with_available_update():
 
 
 def schedule_updates():
+	# Prevent flooding the queue
 	queue_size = frappe.db.get_single_value("Press Settings", "auto_update_queue_size")
+	pending_update_count = frappe.db.count(
+		"Site Update", {"status": ("in", ("Pending", "Running"))}
+	)
+	if pending_update_count > queue_size:
+		return
+
 	sites = sites_with_available_update()
 	sites = list(filter(can_update, sites))[:queue_size]
 	for site in sites:
