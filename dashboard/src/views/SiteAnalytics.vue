@@ -23,19 +23,19 @@
 			</div>
 			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2" v-if="analytics">
 				<div class="px-6 py-4 mt-6 border rounded shadow">
-					<div class="text-base">Requests per minute</div>
+					<div class="text-base">Requests</div>
 					<div ref="requests-per-minute"></div>
 				</div>
 				<div class="px-6 py-4 mt-6 border rounded shadow">
-					<div class="text-base">CPU usage per minute</div>
+					<div class="text-base">CPU Usage</div>
 					<div ref="requests-cpu-usage"></div>
 				</div>
 				<div class="px-6 py-4 mt-6 border rounded shadow">
-					<div class="text-base">Background Jobs per minute</div>
+					<div class="text-base">Background Jobs</div>
 					<div ref="jobs-per-minute"></div>
 				</div>
 				<div class="px-6 py-4 mt-6 border rounded shadow">
-					<div class="text-base">Background Jobs CPU usage per minute</div>
+					<div class="text-base">Background Jobs CPU usage</div>
 					<div ref="jobs-cpu-usage"></div>
 				</div>
 				<div class="px-6 py-4 mt-6 border rounded shadow">
@@ -192,7 +192,9 @@ export default {
 					}),
 					datasets: [
 						{
-							values: this.analytics.request_cpu_time.map(d => d.value / 1000)
+							values: this.analytics.request_cpu_time.map(
+								d => d.value / 1000000
+							)
 						}
 					]
 				},
@@ -211,7 +213,7 @@ export default {
 						return DateTime.fromSQL(d.timestamp).toFormat('dd-MM-yyyy hh:mm a');
 					},
 					formatTooltipY: d => {
-						return d + ' ms';
+						return d + ' s';
 					}
 				}
 			});
@@ -229,7 +231,7 @@ export default {
 					}),
 					datasets: [
 						{
-							values: this.analytics.job_cpu_time.map(d => d.value / 1000)
+							values: this.analytics.job_cpu_time.map(d => d.value / 1000000)
 						}
 					]
 				},
