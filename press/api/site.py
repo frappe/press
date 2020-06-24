@@ -21,6 +21,7 @@ from press.press.doctype.site_update.site_update import (
 )
 from press.utils import log_error, get_current_team
 from frappe.utils import cint, flt, time_diff_in_hours
+from press.press.doctype.plan.plan import get_plan_config
 
 
 def protected(doctype):
@@ -325,6 +326,7 @@ def analytics(name, period="1 hour"):
 			row["timestamp"] = row.pop("_timestamp")
 		return result
 
+	usage_data = get_data("Site Request Log", "counter")
 	request_data = get_data(
 		"Site Request Log", "COUNT(name) as request_count, SUM(duration) as request_duration"
 	)
@@ -335,7 +337,10 @@ def analytics(name, period="1 hour"):
 		"Site Uptime Log",
 		"AVG(web) AS web, AVG(scheduler) AS scheduler, AVG(socketio) AS socketio",
 	)
+	plan = frappe.db.get_value("Site", name, "plan")
+	plan_limit = get_plan_config(plan)["rate_limit"]["limit"]
 	return {
+		"usage_counter": [{"value": r.counter, "timestamp": r.timestamp} for r in usage_data],
 		"request_count": [
 			{"value": r.request_count, "timestamp": r.timestamp} for r in request_data
 		],
@@ -346,7 +351,7 @@ def analytics(name, period="1 hour"):
 		"job_cpu_time": [
 			{"value": r.job_duration, "timestamp": r.timestamp} for r in job_data
 		],
-		"uptime": uptime_data,
+		"plan_limit": plan_limit,
 	}
 
 
