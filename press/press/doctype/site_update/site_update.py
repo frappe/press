@@ -138,6 +138,10 @@ def schedule_updates():
 	sites = list(filter(is_site_in_deploy_hours, sites))
 	sites = list(filter(should_try_update, sites))
 
+	# If a site can't be updated for some reason, then we shouldn't get stuck
+	# Shuffle sites list, to achieve this
+	random.shuffle(sites)
+
 	for site in sites:
 		try:
 			site = frappe.get_doc("Site", site.name)
