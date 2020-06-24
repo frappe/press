@@ -121,7 +121,7 @@ def sites_with_available_update():
 			"status": ("in", ("Active", "Inactive", "Suspended")),
 			"bench": ("in", benches),
 		},
-		fields=["name", "timezone"],
+		fields=["name", "timezone", "bench"],
 	)
 	return sites
 
@@ -156,6 +156,7 @@ def schedule_updates():
 
 
 def should_try_update(site):
+	print(site)
 	source = frappe.db.get_value("Bench", site.bench, "candidate")
 	destination = frappe.get_all(
 		"Deploy Candidate Difference",
@@ -204,6 +205,7 @@ def process_update_site_job_update(job):
 			frappe.db.set_value("Site", job.site, "status", "Updating")
 		elif updated_status == "Success":
 			frappe.db.set_value("Site", job.site, "status", "Active")
+			frappe.get_doc("Site", job.site).reset_previous_status()
 		elif updated_status == "Failure":
 			frappe.db.set_value("Site", job.site, "status", "Broken")
 			if job.job_type == "Update Site Migrate":
@@ -230,6 +232,7 @@ def process_update_site_recover_job_update(job):
 		frappe.db.set_value("Site Update", site_update.name, "status", updated_status)
 		if updated_status == "Recovered":
 			frappe.db.set_value("Site", job.site, "status", "Active")
+			frappe.get_doc("Site", job.site).reset_previous_status()
 
 		site_bench = frappe.db.get_value("Site", job.site, "bench")
 		if site_bench != site_update.source_bench:
