@@ -22,6 +22,7 @@ from press.press.doctype.site_update.site_update import (
 from press.utils import log_error, get_current_team
 from frappe.utils import cint, flt, time_diff_in_hours
 from press.press.doctype.plan.plan import get_plan_config
+from frappe.utils import cint
 
 
 def protected(doctype):
@@ -368,23 +369,21 @@ def current_plan(name):
 		order_by="timestamp desc",
 		limit=5,
 	)
-
-	result = frappe.db.sql(
-		"""SELECT
-			SUM(duration) as total_cpu_usage
-		FROM
-			`tabSite Request Log` t
-		WHERE
-			t.site = %s
-			and date(timestamp) = CURDATE();""",
-		(name,),
-		as_dict=True,
+	result = frappe.get_all(
+		"Site Request Log",
+		fields=["reset", "counter"],
+		filters={"site": name},
+		order_by="creation desc",
+		limit=1,
 	)
-
-	# cpu usage in microseconds
-	total_cpu_usage = result[0].total_cpu_usage or 0
-	# convert into hours
-	total_cpu_usage_hours = flt(total_cpu_usage / (3.6 * (10 ** 9)), 5)
+	if result:
+		result = result[0]
+		# cpu usage in microseconds
+		total_cpu_usage = cint(result.counter)
+		# convert into hours
+		total_cpu_usage_hours = flt(total_cpu_usage / (3.6 * (10 ** 9)), 5)
+	else:
+		total_cpu_usage_hours = 0
 
 	# number of hours until cpu usage resets
 	now = frappe.utils.now_datetime()
