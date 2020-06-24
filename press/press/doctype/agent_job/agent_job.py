@@ -191,7 +191,7 @@ def collect_site_analytics():
 							"wait": log["job"]["wait"],
 						}
 					)
-				frappe.get_doc(doc).insert()
+				frappe.get_doc(doc).db_insert()
 			except frappe.exceptions.DuplicateEntryError:
 				pass
 			except Exception:
@@ -217,7 +217,7 @@ def collect_site_uptime():
 					"scheduler": status["scheduler"],
 					"timestamp": bench_status["timestamp"],
 				}
-				frappe.get_doc(doc).insert()
+				frappe.get_doc(doc).db_insert()
 			frappe.db.commit()
 		except Exception:
 			log_error("Agent Uptime Collection Exception", bench=bench, status=bench_status)
