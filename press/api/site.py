@@ -22,7 +22,6 @@ from press.press.doctype.site_update.site_update import (
 from press.utils import log_error, get_current_team
 from frappe.utils import cint, flt, time_diff_in_hours
 from press.press.doctype.plan.plan import get_plan_config
-from frappe.utils import cint
 
 
 def protected(doctype):
