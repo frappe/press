@@ -15,10 +15,7 @@ import wrapt
 import frappe
 from frappe.core.utils import find
 from press.press.doctype.agent_job.agent_job import job_detail
-from press.press.doctype.site_update.site_update import (
-	is_update_available_for_site,
-	sites_with_available_update,
-)
+from press.press.doctype.site_update.site_update import benches_with_available_update
 from press.utils import log_error, get_current_team
 from frappe.utils import cint, flt, time_diff_in_hours
 from press.press.doctype.plan.plan import get_plan_config
@@ -254,13 +251,13 @@ def all():
 	filters.update({"status": ("!=", "Archived")})
 	sites = frappe.get_list(
 		"Site",
-		fields=["name", "status", "modified"],
+		fields=["name", "status", "modified", "bench"],
 		filters=filters,
 		order_by="creation desc",
 	)
-	sites_with_updates = set(site.name for site in sites_with_available_update())
+	benches_with_updates = set(benches_with_available_update())
 	for site in sites:
-		if site.name in sites_with_updates:
+		if site.bench in benches_with_updates:
 			site.update_available = True
 
 	return sites
@@ -294,7 +291,7 @@ def get(name):
 		"config": json.loads(site.config),
 		"creation": site.creation,
 		"last_updated": site.modified,
-		"update_available": is_update_available_for_site(site.name),
+		"update_available": site.bench in benches_with_available_update(),
 	}
 
 

@@ -71,26 +71,38 @@ def trigger_recovery_job(site_update_name):
 	frappe.db.set_value("Site Update", site_update_name, "recover_job", job.name)
 
 
-def sites_with_available_update():
-	sources = frappe.get_all("Deploy Candidate Difference", fields=["source"])
-	source_names = [source.source for source in sources]
-	benches = frappe.get_all(
-		"Bench",
-		filters={"status": "Active", "candidate": ("in", source_names)},
-		fields=["name"],
+def benches_with_available_update():
+	active_destination_benches = frappe.get_all(
+		"Bench", filters={"status": "Active"}, fields=["candidate"],
 	)
-	bench_names = [bench.name for bench in benches]
+
+	active_destination_candidates = list(
+		set(bench.candidate for bench in active_destination_benches)
+	)
+
+	source_differences = frappe.get_all(
+		"Deploy Candidate Difference",
+		fields=["source"],
+		filters={"destination": ("in", active_destination_candidates)},
+	)
+	source_candidates = list(set(source.source for source in source_differences))
+	benches = frappe.get_all(
+		"Bench", filters={"status": "Active", "candidate": ("in", source_candidates)},
+	)
+	return list(set(bench.name for bench in benches))
+
+
+def sites_with_available_update():
+	benches = benches_with_available_update()
 	sites = frappe.get_all(
 		"Site",
-		filters={"status": "Active", "bench": ("in", bench_names)},
+		filters={
+			"status": ("in", ("Active", "Inactive", "Suspended")),
+			"bench": ("in", benches),
+		},
 		fields=["name", "timezone"],
 	)
 	return sites
-
-
-def is_update_available_for_site(name):
-	sites = sites_with_available_update()
-	return find(sites, lambda x: x.name == name)
 
 
 def schedule_updates():
