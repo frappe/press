@@ -19,7 +19,9 @@
   "http_referer",
   "http_user_agent",
   "http_forwarded_for",
-  "http_headers"
+  "http_headers",
+  "counter",
+  "reset"
  ],
  "fields": [
   {
@@ -115,10 +117,22 @@
    "fieldtype": "Data",
    "label": "HTTP Referer",
    "read_only": 1
+  },
+  {
+   "fieldname": "counter",
+   "fieldtype": "Data",
+   "label": "Counter",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reset",
+   "fieldtype": "Data",
+   "label": "Reset",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2020-02-27 13:24:36.287048",
+ "modified": "2020-06-24 17:51:59.180003",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Request Log",

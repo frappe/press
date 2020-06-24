@@ -178,6 +178,8 @@ def collect_site_analytics():
 							"http_method": log["request"]["method"],
 							"length": log["request"]["response_length"],
 							"status_code": log["request"]["status_code"],
+							"reset": log["request"].get("reset"),
+							"counter": log["request"].get("counter"),
 						}
 					)
 				elif log["transaction_type"] == "job":
@@ -206,7 +208,7 @@ def collect_site_uptime():
 			bench_status = agent.fetch_bench_status(bench.name)
 			if not bench_status:
 				continue
-			
+
 			for site, status in bench_status["sites"].items():
 				doc = {
 					"doctype": "Site Uptime Log",
