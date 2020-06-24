@@ -17,6 +17,7 @@ from frappe.utils import cint
 from press.api.site import check_dns
 from frappe.core.utils import find
 from press.utils import log_error
+from press.press.doctype.plan.plan import get_plan_config
 
 
 class Site(Document):
@@ -43,6 +44,10 @@ class Site(Document):
 
 			if not self.plan:
 				frappe.throw("Cannot create site without plan")
+
+			config = json.loads(self.config)
+			config.update(get_plan_config(self.plan))
+			self.config = json.dumps(config, indent=4)
 
 	def install_app(self, app):
 		if not find(self.apps, lambda x: x.app == app):
@@ -206,6 +211,8 @@ class Site(Document):
 		log_site_activity(self.name, "Update")
 
 	def change_plan(self, plan):
+		plan_config = get_plan_config(plan)
+		self.update_site_config(plan_config)
 		frappe.get_doc(
 			{"doctype": "Site Plan Change", "site": self.name, "to_plan": plan}
 		).insert()
