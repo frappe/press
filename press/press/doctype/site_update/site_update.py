@@ -54,6 +54,13 @@ class SiteUpdate(Document):
 				frappe.ValidationError,
 			)
 
+		if self.have_past_updates_failed():
+			frappe.throw(
+				f"Update from Source Candidate {self.source_candidate} to Destination"
+				f" Candidate {self.destination_candidate} has failed in the past.",
+				frappe.ValidationError,
+			)
+
 	def after_insert(self):
 		self.create_agent_request()
 
@@ -63,6 +70,17 @@ class SiteUpdate(Document):
 		job = agent.update_site(site, self.destination_bench, self.deploy_type)
 		self.update_job = job.name
 		self.save()
+
+	def have_past_updates_failed(self):
+		return frappe.db.exists(
+			"Site Update",
+			{
+				"site": self.name,
+				"source_candidate": self.source_candidate,
+				"destination_candidate": self.destination_candidate,
+				"case_of_failure_is_resolved": False,
+			},
+		)
 
 
 def trigger_recovery_job(site_update_name):
