@@ -46,7 +46,8 @@
   "clone_directory",
   "code_server",
   "section_break_41",
-  "github_app_private_key"
+  "github_app_private_key",
+  "auto_update_queue_size"
  ],
  "fields": [
   {
@@ -281,11 +282,17 @@
    "fieldname": "section_break_41",
    "fieldtype": "Section Break",
    "hide_border": 1
+  },
+  {
+   "default": "4",
+   "fieldname": "auto_update_queue_size",
+   "fieldtype": "Int",
+   "label": "Auto Update Queue Size"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2020-06-22 11:18:20.917016",
+ "modified": "2020-06-24 23:08:40.896677",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

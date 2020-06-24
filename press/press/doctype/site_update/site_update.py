@@ -106,8 +106,9 @@ def sites_with_available_update():
 
 
 def schedule_updates():
+	queue_size = frappe.db.get_single_value("Press Settings", "auto_update_queue_size")
 	sites = sites_with_available_update()
-	sites = list(filter(can_update, sites))[:4]
+	sites = list(filter(can_update, sites))[:queue_size]
 	for site in sites:
 		try:
 			site = frappe.get_doc("Site", site.name)
