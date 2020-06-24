@@ -47,6 +47,7 @@
   "code_server",
   "section_break_41",
   "github_app_private_key",
+  "auto_update_section",
   "auto_update_queue_size"
  ],
  "fields": [
@@ -288,11 +289,16 @@
    "fieldname": "auto_update_queue_size",
    "fieldtype": "Int",
    "label": "Auto Update Queue Size"
+  },
+  {
+   "fieldname": "auto_update_section",
+   "fieldtype": "Section Break",
+   "label": "Auto Update"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2020-06-24 23:08:40.896677",
+ "modified": "2020-06-24 23:58:36.606646",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
