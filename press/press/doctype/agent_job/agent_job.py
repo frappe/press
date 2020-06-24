@@ -204,6 +204,9 @@ def collect_site_uptime():
 		try:
 			agent = Agent(bench.server)
 			bench_status = agent.fetch_bench_status(bench.name)
+			if not bench_status:
+				continue
+			
 			for site, status in bench_status["sites"].items():
 				doc = {
 					"doctype": "Site Uptime Log",
