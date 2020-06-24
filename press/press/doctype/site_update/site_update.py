@@ -4,6 +4,7 @@
 
 from __future__ import unicode_literals
 
+import random
 import frappe
 from datetime import datetime
 from frappe.model.document import Document
@@ -142,10 +143,14 @@ def schedule_updates():
 	# Shuffle sites list, to achieve this
 	random.shuffle(sites)
 
+	update_triggered_count = 0
 	for site in sites:
+		if update_triggered_count > queue_size:
+			break
 		try:
 			site = frappe.get_doc("Site", site.name)
 			site.schedule_update()
+			update_triggered_count += 1
 		except Exception:
 			log_error("Site Update Exception", site=site)
 
