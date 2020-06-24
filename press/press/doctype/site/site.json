@@ -8,6 +8,7 @@
  "field_order": [
   "subdomain",
   "status",
+  "status_before_update",
   "server",
   "bench",
   "column_break_3",
@@ -278,10 +279,16 @@
    "fieldname": "host_name",
    "fieldtype": "Data",
    "label": "Host Name"
+  },
+  {
+   "fieldname": "status_before_update",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Status Before Update"
   }
  ],
  "links": [],
- "modified": "2020-06-22 20:19:52.439890",
+ "modified": "2020-06-24 21:54:08.542772",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

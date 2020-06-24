@@ -15,7 +15,10 @@ import wrapt
 import frappe
 from frappe.core.utils import find
 from press.press.doctype.agent_job.agent_job import job_detail
-from press.press.doctype.site_update.site_update import benches_with_available_update, should_try_update
+from press.press.doctype.site_update.site_update import (
+	benches_with_available_update,
+	should_try_update,
+)
 from press.utils import log_error, get_current_team
 from frappe.utils import cint, flt, time_diff_in_hours
 from press.press.doctype.plan.plan import get_plan_config
@@ -291,7 +294,8 @@ def get(name):
 		"config": json.loads(site.config),
 		"creation": site.creation,
 		"last_updated": site.modified,
-		"update_available": (site.bench in benches_with_available_update()) and should_try_update(site),
+		"update_available": (site.bench in benches_with_available_update())
+		and should_try_update(site),
 	}
 
 
