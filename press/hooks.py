@@ -103,6 +103,7 @@ scheduler_events = {
 	"hourly": ["press.press.doctype.frappe_app.frappe_app.poll_new_releases"],
 	"hourly_long": [
 		"press.press.doctype.payment_ledger_entry.payment_ledger_entry.create_ledger_entries",
+		"press.press.doctype.bench.bench.archive_obsolete_benches",
 	],
 	"cron": {
 		"* * * * * 0/5": ["press.press.doctype.agent_job.agent_job.poll_pending_jobs"],
