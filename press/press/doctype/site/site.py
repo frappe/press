@@ -16,6 +16,7 @@ from frappe.frappeclient import FrappeClient
 from frappe.utils import cint
 from press.api.site import check_dns
 from frappe.core.utils import find
+from press.utils import log_error
 
 
 class Site(Document):
@@ -165,6 +166,18 @@ class Site(Document):
 	def get_login_sid(self):
 		agent = Agent(self.server)
 		return agent.get_site_sid(self)
+
+	def sync_info(self):
+		agent = Agent(self.server)
+		data = agent.get_site_info(self)
+		fetched_config = data["config"]
+		keys_to_fetch = ["encryption_key"]
+		config = {key: fetched_config[key] for key in keys_to_fetch if key in fetched_config}
+		new_config = json.loads(self.config)
+		new_config.update(config)
+		self.config = json.dumps(new_config, indent=4)
+		self.timezone = data["timezone"]
+		self.save()
 
 	def is_setup_wizard_complete(self):
 		if self.setup_wizard_complete:
@@ -339,3 +352,23 @@ def get_permission_query_conditions(user):
 	team = get_current_team()
 
 	return f"(`tabSite`.`team` = {frappe.db.escape(team)})"
+
+
+def sync_sites():
+	benches = frappe.get_all("Bench", {"status": "Active"})
+	for bench in benches:
+		frappe.enqueue(
+			"press.press.doctype.site.site.sync_site_benches",
+			bench=bench,
+			enqueue_after_commit=True,
+		)
+
+
+def sync_bench_sites(bench):
+	sites = frappe.get_all("Site", {"status": ("!=", "Archived"), "bench": bench.name})
+	for site in sites:
+		site_doc = frappe.get_doc("Site", site.name)
+		try:
+			site_doc.sync_info()
+		except Exception:
+			log_error("Site Sync Error", site=site.name, bench=bench.name)

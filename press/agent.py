@@ -328,6 +328,9 @@ class Agent:
 	def get_site_sid(self, site):
 		return self.get(f"benches/{site.bench}/sites/{site.name}/sid")["sid"]
 
+	def get_site_info(self, site):
+		return self.get(f"benches/{site.bench}/sites/{site.name}/info")["data"]
+
 	def get_jobs_status(self, ids):
 		status = self.get(f"jobs/{','.join(map(str, ids))}")
 		if len(ids) == 1:
