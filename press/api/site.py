@@ -351,6 +351,7 @@ def analytics(name, period="1 hour"):
 		"job_cpu_time": [
 			{"value": r.job_duration, "timestamp": r.timestamp} for r in job_data
 		],
+		"uptime": (uptime_data + [{}] * 60)[:60],
 		"plan_limit": plan_limit,
 	}
 

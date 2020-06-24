@@ -52,7 +52,9 @@
 									:key="d.timestamp"
 									style="width: 2px;"
 									:class="[
-										d[type.key] === 1
+										d[type.key] === undefined
+											? 'bg-white'
+											: d[type.key] === 1
 											? 'bg-green-500'
 											: d[type.key] === 0
 											? 'bg-red-500'
