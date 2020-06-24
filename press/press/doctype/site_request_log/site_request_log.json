@@ -16,10 +16,6 @@
   "column_break_9",
   "http_method",
   "length",
-  "http_referer",
-  "http_user_agent",
-  "http_forwarded_for",
-  "http_headers",
   "counter",
   "reset"
  ],
@@ -81,18 +77,6 @@
    "read_only": 1
   },
   {
-   "fieldname": "http_user_agent",
-   "fieldtype": "Data",
-   "label": "HTTP User Agent",
-   "read_only": 1
-  },
-  {
-   "fieldname": "http_forwarded_for",
-   "fieldtype": "Data",
-   "label": "HTTP Forwarded For",
-   "read_only": 1
-  },
-  {
    "fieldname": "column_break_4",
    "fieldtype": "Column Break"
   },
@@ -101,21 +85,9 @@
    "fieldtype": "Section Break"
   },
   {
-   "fieldname": "http_headers",
-   "fieldtype": "Long Text",
-   "label": "HTTP Headers",
-   "read_only": 1
-  },
-  {
    "fieldname": "length",
    "fieldtype": "Int",
    "label": "Response Length",
-   "read_only": 1
-  },
-  {
-   "fieldname": "http_referer",
-   "fieldtype": "Data",
-   "label": "HTTP Referer",
    "read_only": 1
   },
   {
@@ -132,7 +104,7 @@
   }
  ],
  "links": [],
- "modified": "2020-06-24 17:51:59.180003",
+ "modified": "2020-06-24 20:41:35.173428",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Request Log",
