@@ -39,6 +39,10 @@
 					<div ref="jobs-cpu-usage"></div>
 				</div>
 				<div class="px-6 py-4 mt-6 border rounded shadow">
+					<div class="text-base">Usage Counter</div>
+					<div ref="usage-counter"></div>
+				</div>
+				<div class="px-6 py-4 mt-6 border rounded shadow">
 					<div class="text-base">Uptime</div>
 					<div>
 						<div class="mt-8" v-for="type in uptimeTypes" :key="type.key">
@@ -109,6 +113,7 @@ export default {
 			this.makeJobsPerSecondChart();
 			this.makeCPUUsageChart();
 			this.makeJobCPUUsageChart();
+			this.makeUsageCounterChart();
 		},
 		makeRequestsPerSecondChart() {
 			new Chart(this.$refs['requests-per-minute'], {
@@ -242,6 +247,46 @@ export default {
 					},
 					formatTooltipY: d => {
 						return d + 's';
+					}
+				}
+			});
+		},
+		makeUsageCounterChart() {
+			new Chart(this.$refs['usage-counter'], {
+				data: {
+					labels: this.analytics.usage_counter.map(d => {
+						return {
+							timestamp: d.timestamp,
+							toString() {
+								return DateTime.fromSQL(d.timestamp).toFormat('hh:mm a');
+							}
+						};
+					}),
+					datasets: [
+						{
+							values: this.analytics.usage_counter.map(d => d.value / 1000000)
+						}
+					],
+					yMarkers: [
+						{ label: 'Daily CPU Time Limit', value: this.analytics.plan_limit }
+					]
+				},
+				type: 'line',
+				colors: ['blue'],
+				axisOptions: {
+					xIsSeries: true,
+					shortenYAxisNumbers: 1
+				},
+				lineOptions: {
+					hideDots: true,
+					spline: true
+				},
+				tooltipOptions: {
+					formatTooltipX: d => {
+						return DateTime.fromSQL(d.timestamp).toFormat('dd-MM-yyyy hh:mm a');
+					},
+					formatTooltipY: d => {
+						return d + ' s';
 					}
 				}
 			});
