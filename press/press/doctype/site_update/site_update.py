@@ -15,6 +15,8 @@ from press.utils import log_error
 
 class SiteUpdate(Document):
 	def validate(self):
+		if not self.is_new():
+			return
 		differences = frappe.get_all(
 			"Deploy Candidate Difference",
 			fields=["name", "destination", "deploy_type"],
