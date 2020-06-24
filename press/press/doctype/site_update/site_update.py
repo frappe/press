@@ -135,7 +135,9 @@ def schedule_updates():
 		return
 
 	sites = sites_with_available_update()
-	sites = list(filter(can_update, sites))[:queue_size]
+	sites = list(filter(is_site_in_deploy_hours, sites))
+	sites = list(filter(should_try_update, sites))
+
 	for site in sites:
 		try:
 			site = frappe.get_doc("Site", site.name)
@@ -144,7 +146,26 @@ def schedule_updates():
 			log_error("Site Update Exception", site=site)
 
 
-def can_update(site):
+def should_try_update(site):
+	source = frappe.db.get_value("Bench", site.bench, "candidate")
+	destination = frappe.get_all(
+		"Deploy Candidate Difference",
+		fields=["destination"],
+		filters={"source": source},
+		limit=1,
+	)[0].destination
+	return not frappe.db.exists(
+		"Site Update",
+		{
+			"site": site.name,
+			"source_candidate": source,
+			"destination_candidate": destination,
+			"case_of_failure_is_resolved": False,
+		},
+	)
+
+
+def is_site_in_deploy_hours(site):
 	server_time = datetime.now()
 	timezone = site.timezone or "Asia/Kolkata"
 	site_timezone = pytz.timezone(timezone)
