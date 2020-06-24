@@ -25,7 +25,12 @@
 			</SectionCard>
 		</Section>
 		<Section
-			v-if="site.status === 'Active' && site.update_available"
+			v-if="
+				(site.status === 'Active' ||
+					site.status === 'Inactive' ||
+					site.status === 'Suspended') &&
+					site.update_available
+			"
 			class="mt-10"
 			title="Update Available"
 			description="Schedule an update for your site"
