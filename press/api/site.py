@@ -269,10 +269,16 @@ def all():
 @frappe.whitelist()
 @protected("Site")
 def get(name):
+	team = get_current_team()
 	site = frappe.get_doc("Site", name)
-	bench = frappe.get_doc("Bench", site.bench)
-	bench_apps = {app.app: app.idx for app in bench.apps}
 	installed_apps = [app.app for app in site.apps]
+	bench = frappe.get_doc("Bench", site.bench)
+	bench_apps = {}
+	for app in bench.apps:
+		app_team, app_public = frappe.db.get_value("Frappe App", app.app, ["team", "public"])
+		if app.app in installed_apps or app_public or app_team == team:
+			bench_apps[app.app] = app.idx
+
 	available_apps = list(filter(lambda x: x not in installed_apps, bench_apps.keys()))
 	installed_apps = frappe.get_all(
 		"Frappe App",
