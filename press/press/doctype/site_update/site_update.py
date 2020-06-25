@@ -76,7 +76,7 @@ class SiteUpdate(Document):
 		return frappe.db.exists(
 			"Site Update",
 			{
-				"site": self.name,
+				"site": self.site,
 				"source_candidate": self.source_candidate,
 				"destination_candidate": self.destination_candidate,
 				"cause_of_failure_is_resolved": False,
