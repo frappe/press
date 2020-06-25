@@ -377,7 +377,7 @@ def sync_sites():
 	benches = frappe.get_all("Bench", {"status": "Active"})
 	for bench in benches:
 		frappe.enqueue(
-			"press.press.doctype.site.site.sync_site_benches",
+			"press.press.doctype.site.site.sync_bench_sites",
 			bench=bench,
 			enqueue_after_commit=True,
 		)
