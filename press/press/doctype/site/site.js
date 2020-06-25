@@ -38,11 +38,20 @@ frappe.ui.form.on('Site', {
 				__('Actions')
 			);
 		});
+		[
+			[__('Suspend'), 'suspend'],
+			[__('Unuspend'), 'unsuspend'],
 		].forEach(([label, method]) => {
 			frm.add_custom_button(
 				label,
 				() => {
-					frm.call(method).then((r) => frappe.msgprint(r.message));
+					frappe.prompt(
+						{ fieldtype: 'Data', label: 'Reason', fieldname: 'reason', reqd: 1 },
+						({ reason }) => {
+							frm.call(method, { reason }).then((r) => frm.refresh());
+						},
+						__('Provide Reason')
+					);
 				},
 				__('Actions')
 			);
