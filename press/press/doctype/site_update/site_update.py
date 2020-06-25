@@ -79,7 +79,7 @@ class SiteUpdate(Document):
 				"site": self.name,
 				"source_candidate": self.source_candidate,
 				"destination_candidate": self.destination_candidate,
-				"case_of_failure_is_resolved": False,
+				"cause_of_failure_is_resolved": False,
 			},
 		)
 
@@ -121,7 +121,7 @@ def sites_with_available_update():
 			"status": ("in", ("Active", "Inactive", "Suspended")),
 			"bench": ("in", benches),
 		},
-		fields=["name", "timezone", "bench"],
+		fields=["name", "timezone", "bench", "status"],
 	)
 	return sites
 
@@ -169,7 +169,7 @@ def should_try_update(site):
 			"site": site.name,
 			"source_candidate": source,
 			"destination_candidate": destination,
-			"case_of_failure_is_resolved": False,
+			"cause_of_failure_is_resolved": False,
 		},
 	)
 
