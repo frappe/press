@@ -175,6 +175,8 @@ def should_try_update(site):
 
 
 def is_site_in_deploy_hours(site):
+	if site.status in ("Inactive", "Suspended"):
+		return True
 	server_time = datetime.now()
 	timezone = site.timezone or "Asia/Kolkata"
 	site_timezone = pytz.timezone(timezone)
