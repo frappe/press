@@ -390,5 +390,6 @@ def sync_bench_sites(bench):
 		site_doc = frappe.get_doc("Site", site.name)
 		try:
 			site_doc.sync_info()
+			frappe.db.commit()
 		except Exception:
 			log_error("Site Sync Error", site=site.name, bench=bench.name)
