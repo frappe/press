@@ -378,6 +378,7 @@ def sync_sites():
 	for bench in benches:
 		frappe.enqueue(
 			"press.press.doctype.site.site.sync_bench_sites",
+			queue="long",
 			bench=bench,
 			enqueue_after_commit=True,
 		)
