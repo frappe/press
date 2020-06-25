@@ -40,11 +40,12 @@
   "github_app_id",
   "github_app_client_id",
   "github_app_client_secret",
-  "column_break_36",
   "github_app_public_link",
+  "column_break_36",
   "github_webhook_secret",
   "clone_directory",
   "code_server",
+  "code_server_password",
   "section_break_41",
   "github_app_private_key",
   "auto_update_section",
@@ -294,11 +295,16 @@
    "fieldname": "auto_update_section",
    "fieldtype": "Section Break",
    "label": "Auto Update"
+  },
+  {
+   "fieldname": "code_server_password",
+   "fieldtype": "Data",
+   "label": "Code Server Password"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2020-06-24 23:58:36.606646",
+ "modified": "2020-06-25 09:47:32.572851",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
