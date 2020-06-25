@@ -91,8 +91,7 @@ def trigger_recovery_job(site_update_name):
 	agent = Agent(site_update.server)
 	site = frappe.get_doc("Site", site_update.site)
 	job = agent.update_site_recover(site, site_update.source_bench)
-	site_update.recover_job = job.name
-	site_update.save()
+	frappe.db.set_value("Site Update", site_update_name, "recover_job", job.name)
 
 
 def benches_with_available_update():
