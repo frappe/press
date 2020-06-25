@@ -156,7 +156,6 @@ def schedule_updates():
 
 
 def should_try_update(site):
-	print(site)
 	source = frappe.db.get_value("Bench", site.bench, "candidate")
 	destination = frappe.get_all(
 		"Deploy Candidate Difference",
