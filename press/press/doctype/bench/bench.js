@@ -19,7 +19,10 @@ frappe.ui.form.on('Bench', {
 			frm.add_custom_button(
 				label,
 				() => {
-					frm.call(method).then((r) => frappe.msgprint(r.message));
+					frappe.confirm(
+						`Are you sure you want to ${label.toLowerCase()} this bench?`,
+						() => frm.call(method).then((r) => frm.refresh())
+					);
 				},
 				__('Actions')
 			);
