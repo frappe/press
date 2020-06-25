@@ -21,11 +21,23 @@ frappe.ui.form.on('Site', {
 
 		[
 			[__('Archive'), 'archive'],
-			[__('Archive'), 'archive'],
-			[__('Backup'), 'backup'],
 			[__('Reinstall'), 'reinstall'],
 			[__('Restore'), 'restore'],
 			[__('Update'), 'schedule_update'],
+			[__('Deactivate'), 'deactivate'],
+			[__('Activate'), 'activate'],
+		].forEach(([label, method]) => {
+			frm.add_custom_button(
+				label,
+				() => {
+					frappe.confirm(
+						`Are you sure you want to ${label.toLowerCase()} this site?`,
+						() => frm.call(method).then((r) => frm.refresh())
+					);
+				},
+				__('Actions')
+			);
+		});
 		].forEach(([label, method]) => {
 			frm.add_custom_button(
 				label,
