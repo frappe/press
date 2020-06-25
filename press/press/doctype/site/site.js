@@ -20,6 +20,15 @@ frappe.ui.form.on('Site', {
 		);
 
 		[
+			[__('Backup'), 'backup'],
+		].forEach(([label, method]) => {
+			frm.add_custom_button(
+				label,
+				() => { frm.call(method).then((r) => frm.refresh()) },
+				__('Actions')
+			);
+		});
+		[
 			[__('Archive'), 'archive'],
 			[__('Reinstall'), 'reinstall'],
 			[__('Restore'), 'restore'],
