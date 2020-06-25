@@ -112,7 +112,10 @@ scheduler_events = {
 			"press.press.doctype.agent_job.agent_job.collect_site_analytics",
 		],
 		"* * * * * 0/30": ["press.press.doctype.agent_job.agent_job.collect_server_status"],
-		"0 */6 * * *": ["press.press.doctype.agent_job.agent_job.schedule_backups"],
+		"0 */6 * * *": [
+			"press.press.doctype.agent_job.agent_job.schedule_backups",
+			"press.press.doctype.site.site.sync_sites",
+		],
 		"*/15 * * * *": [
 			"press.press.doctype.site_update.site_update.schedule_updates",
 			"press.press.doctype.bench.bench.archive_obsolete_benches",
