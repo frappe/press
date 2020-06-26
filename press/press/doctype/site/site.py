@@ -7,6 +7,7 @@ from __future__ import unicode_literals
 import json
 import re
 import frappe
+import requests
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
 from press.press.doctype.agent_job.agent_job import Agent
@@ -192,8 +193,17 @@ class Site(Document):
 		return self.get_login_sid()
 
 	def get_login_sid(self):
-		agent = Agent(self.server)
-		return agent.get_site_sid(self)
+		password = get_decrypted_password("Site", self.name, "admin_password")
+		response = requests.post(
+			f"https://{self.name}/api/method/login",
+			data={"usr": "Administrator", "pwd": password},
+		)
+		sid = response.cookies.get("sid")
+		if sid:
+			return sid
+		else:
+			agent = Agent(self.server)
+			return agent.get_site_sid(self)
 
 	def sync_info(self):
 		agent = Agent(self.server)
