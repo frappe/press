@@ -10,7 +10,8 @@
   "enabled",
   "apps",
   "default",
-  "public"
+  "public",
+  "team"
  ],
  "fields": [
   {
@@ -41,10 +42,16 @@
    "fieldname": "enabled",
    "fieldtype": "Check",
    "label": "Enabled"
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team"
   }
  ],
  "links": [],
- "modified": "2020-06-23 10:01:04.148116",
+ "modified": "2020-06-26 13:12:57.044909",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",
