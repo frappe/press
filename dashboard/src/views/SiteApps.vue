@@ -3,18 +3,13 @@
 		<Section title="Apps" description="Apps installed on your site">
 			<SectionCard>
 				<div
-					class="flex px-6 py-3 text-base hover:bg-gray-50"
+					class="flex px-6 py-3 text-base hover:bg-gray-50 items-center"
 					v-for="app in site.installed_apps"
 					:key="app.url"
 				>
-					<div class="flex-1 my-auto text-md">
-						<p>
-							{{ app.name }}
-						</p>
-					</div>
-					<div class="flex-1 text-md">
+					<div class="flex-1">
 						<a :href="`${app.url}/tree/${app.branch}`" target="_blank">
-							<p class="font-medium text-brand">
+							<p class="text-base font-medium text-brand">
 								{{ app.owner }}/{{ app.repo }}
 							</p>
 							<p class="text-sm text-gray-800">
@@ -38,18 +33,13 @@
 		>
 			<SectionCard>
 				<div
-					class="flex px-6 py-3 text-base hover:bg-gray-50"
+					class="flex px-6 py-3 text-base hover:bg-gray-50 items-center"
 					v-for="app in site.available_apps"
 					:key="app.url"
 				>
-					<div class="flex-1 my-auto text-md">
-						<p>
-							{{ app.name }}
-						</p>
-					</div>
-					<div class="flex-1 text-md">
+					<div class="flex-1">
 						<a :href="`${app.url}/tree/${app.branch}`" target="_blank">
-							<p class="font-medium text-brand">
+							<p class="text-base font-medium text-brand">
 								{{ app.owner }}/{{ app.repo }}
 							</p>
 							<p class="text-sm text-gray-800">
@@ -57,7 +47,7 @@
 							</p>
 						</a>
 					</div>
-					<div class="flex-1 text-md">
+					<div>
 						<Button @click="installApp(app.name)">
 							Install
 						</Button>
@@ -78,12 +68,14 @@ export default {
 				name: this.site.name,
 				app: app
 			});
+			this.$router.push(`/sites/${this.site.name}/general`);
 		},
 		async uninstallApp(app) {
 			await this.$call('press.api.site.uninstall_app', {
 				name: this.site.name,
 				app: app
 			});
+			this.$router.push(`/sites/${this.site.name}/general`);
 		}
 	}
 };
