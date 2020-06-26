@@ -16,9 +16,10 @@
   "destination_candidate",
   "section_break_8",
   "difference",
+  "difference_deploy_type",
   "deploy_type",
-  "update_job",
   "column_break_14",
+  "update_job",
   "recover_job",
   "cause_of_failure_is_resolved"
  ],
@@ -73,7 +74,6 @@
    "hide_seconds": 1
   },
   {
-   "fetch_from": "difference.deploy_type",
    "fieldname": "deploy_type",
    "fieldtype": "Select",
    "hide_days": 1,
@@ -158,10 +158,17 @@
    "hide_seconds": 1,
    "label": "Recover Job",
    "options": "Agent Job"
+  },
+  {
+   "fetch_from": "difference.deploy_type",
+   "fieldname": "difference_deploy_type",
+   "fieldtype": "Select",
+   "label": "Difference Deploy Type",
+   "options": "\nPull\nMigrate"
   }
  ],
  "links": [],
- "modified": "2020-06-24 22:06:27.383779",
+ "modified": "2020-06-26 10:31:29.680584",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Update",
