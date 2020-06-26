@@ -38,7 +38,7 @@ class FrappeApp(Document):
 						"app": self.name,
 						"hash": hash,
 						"message": branch["commit"]["commit"]["message"],
-						"author": branch["commit"]["author"]["login"],
+						"author": branch["commit"]["commit"]["author"]["name"],
 						"deployable": not bool(self.get_doc_before_save()),
 					}
 				).insert()
