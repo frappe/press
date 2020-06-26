@@ -174,7 +174,9 @@ def request_logs(name, start=0):
 def options_for_new():
 	team = get_current_team()
 	groups = frappe.get_all(
-		"Release Group", fields=["name", "`default`"], filters={"public": True}
+		"Release Group",
+		fields=["name", "`default`"],
+		or_filters={"public": True, "team": team},
 	)
 	deployed_groups = []
 	for group in groups:
@@ -190,19 +192,10 @@ def options_for_new():
 		bench_doc = frappe.get_doc("Bench", bench)
 		group_apps = frappe.get_all(
 			"Frappe App",
-			fields=[
-				"name",
-				"frappe",
-				"branch",
-				"scrubbed",
-				"repo_owner",
-				"repo",
-				"public",
-				"team",
-			],
+			fields=["name", "frappe", "branch", "scrubbed", "repo_owner", "repo"],
 			filters={"name": ("in", [row.app for row in bench_doc.apps])},
+			or_filters={"team": team, "public": True},
 		)
-		group_apps = list(filter(lambda a: a.public or a.team == team, group_apps))
 		order = {row.app: row.idx for row in bench_doc.apps}
 		group["apps"] = sorted(group_apps, key=lambda x: order[x.name])
 		deployed_groups.append(group)
