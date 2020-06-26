@@ -78,7 +78,7 @@ class GitHubWebhookLog(Document):
 						"app": app.name,
 						"hash": commit["id"],
 						"message": commit["message"],
-						"author": commit["author"]["username"],
+						"author": commit["author"]["name"],
 					}
 				)
 				release.insert()
