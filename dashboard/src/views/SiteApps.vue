@@ -22,7 +22,11 @@
 							</p>
 						</a>
 					</div>
-					<div class="flex-1 text-md"></div>
+					<div v-if="!app.frappe">
+						<Button @click="uninstallApp(app.name)">
+							Uninstall
+						</Button>
+					</div>
 				</div>
 			</SectionCard>
 		</Section>
@@ -71,6 +75,12 @@ export default {
 	methods: {
 		async installApp(app) {
 			await this.$call('press.api.site.install_app', {
+				name: this.site.name,
+				app: app
+			});
+		},
+		async uninstallApp(app) {
+			await this.$call('press.api.site.uninstall_app', {
 				name: this.site.name,
 				app: app
 			});

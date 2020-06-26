@@ -70,6 +70,15 @@ class Site(Document):
 			self.status = "Pending"
 			self.save()
 
+	def uninstall_app(self, app):
+		app_doc = find(self.apps, lambda x: x.app == app)
+		log_site_activity(self.name, "Uninstall App")
+		self.remove(app_doc)
+		agent = Agent(self.server)
+		agent.uninstall_app_site(self, app_doc.app)
+		self.status = "Pending"
+		self.save()
+
 	def can_create_site(self):
 		if self.team:
 			# validate site creation for team

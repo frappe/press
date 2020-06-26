@@ -275,7 +275,7 @@ def get(name):
 	available_apps = list(filter(lambda x: x not in installed_apps, bench_apps.keys()))
 	installed_apps = frappe.get_all(
 		"Frappe App",
-		fields=["name", "repo_owner as owner", "scrubbed as repo", "url", "branch"],
+		fields=["name", "repo_owner as owner", "scrubbed as repo", "url", "branch", "frappe"],
 		filters={"name": ("in", installed_apps)},
 	)
 	available_apps = frappe.get_all(
@@ -519,6 +519,12 @@ def set_host_name(name, domain):
 @protected("Site")
 def install_app(name, app):
 	frappe.get_doc("Site", name).install_app(app)
+
+
+@frappe.whitelist()
+@protected("Site")
+def uninstall_app(name, app):
+	frappe.get_doc("Site", name).uninstall_app(app)
 
 
 @frappe.whitelist()

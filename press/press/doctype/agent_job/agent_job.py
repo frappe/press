@@ -370,6 +370,8 @@ def process_job_updates(job_name):
 			process_reinstall_site_job_update(job)
 		if job.job_type == "Install App on Site":
 			process_install_app_site_job_update(job)
+		if job.job_type == "Uninstall App from Site":
+			process_install_app_site_job_update(job)
 		if job.job_type == "Add Site to Upstream":
 			process_new_site_job_update(job)
 		if job.job_type == "Backup Site":
