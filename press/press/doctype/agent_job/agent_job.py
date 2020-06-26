@@ -9,7 +9,9 @@ from frappe.model.document import Document
 from press.agent import Agent
 from press.utils import log_error
 from frappe.core.utils import find
+import pytz
 from itertools import groupby
+from datetime import datetime
 
 
 class AgentJob(Document):
@@ -225,11 +227,17 @@ def collect_site_uptime():
 
 def schedule_backups():
 	sites = frappe.get_all(
-		"Site", fields=["name", "server", "bench"], filters={"status": "Active"},
+		"Site", fields=["name", "timezone"], filters={"status": "Active"},
 	)
+	interval = frappe.db.get_single_value("Press Settings", "backup_interval") or 6
 	for site in sites:
 		try:
-			frappe.get_doc("Site", site.name).backup()
+			server_time = datetime.now()
+			timezone = site.timezone or "Asia/Kolkata"
+			site_timezone = pytz.timezone(timezone)
+			site_time = server_time.astimezone(site_timezone)
+			if site_time.hour % interval == 0:
+				frappe.get_doc("Site", site.name).backup()
 		except Exception:
 			log_error("Site Backup Exception", site=site)
 
