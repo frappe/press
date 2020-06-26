@@ -49,7 +49,9 @@
   "section_break_41",
   "github_app_private_key",
   "auto_update_section",
-  "auto_update_queue_size"
+  "auto_update_queue_size",
+  "backups_section",
+  "backup_interval"
  ],
  "fields": [
   {
@@ -300,11 +302,21 @@
    "fieldname": "code_server_password",
    "fieldtype": "Data",
    "label": "Code Server Password"
+  },
+  {
+   "fieldname": "backups_section",
+   "fieldtype": "Section Break",
+   "label": "Backups"
+  },
+  {
+   "fieldname": "backup_interval",
+   "fieldtype": "Int",
+   "label": "Backup Interval"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2020-06-25 09:47:32.572851",
+ "modified": "2020-06-26 09:50:59.736444",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
