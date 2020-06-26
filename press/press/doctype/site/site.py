@@ -49,6 +49,17 @@ class Site(Document):
 			config.update(get_plan_config(self.plan))
 			self.config = json.dumps(config, indent=4)
 
+		bench_apps = frappe.get_doc("Bench", self.bench).apps
+		for app in self.apps:
+			if not find(bench_apps, lambda x: x.app == app.app):
+				frappe.throw(f"Frappe App {app.app} is not available on Bench {self.bench}.")
+		frappe_app = self.apps[0]
+		if not frappe.db.get_value("Frappe App", frappe_app.app, "frappe"):
+			frappe.throw("First app to be installed on site must be frappe.")
+		apps = [app.app for app in self.apps]
+		if len(apps) != len(set(apps)):
+			frappe.throw("Can't install same app twice.")
+
 	def install_app(self, app):
 		if not find(self.apps, lambda x: x.app == app):
 			log_site_activity(self.name, "Install App")
