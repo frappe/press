@@ -204,7 +204,10 @@ def process_update_site_job_update(job):
 	)[0]
 	if updated_status != site_update.status:
 		site_bench = frappe.db.get_value("Site", job.site, "bench")
-		if site_bench != site_update.destination_bench:
+		move_site_step_status = frappe.db.get_value(
+			"Agent Job Step", {"step_name": "Move Site", "agent_job": job.name}, "status"
+		)
+		if site_bench != site_update.destination_bench and move_site_step_status == "Success":
 			frappe.db.set_value("Site", job.site, "bench", site_update.destination_bench)
 
 		frappe.db.set_value("Site Update", site_update.name, "status", updated_status)
@@ -215,7 +218,11 @@ def process_update_site_job_update(job):
 			frappe.get_doc("Site", job.site).reset_previous_status()
 		elif updated_status == "Failure":
 			frappe.db.set_value("Site", job.site, "status", "Broken")
-			if job.job_type == "Update Site Migrate":
+			site_bench = frappe.db.get_value("Site", job.site, "bench")
+			if (
+				job.job_type == "Update Site Migrate"
+				and site_bench == site_update.destination_bench
+			):
 				trigger_recovery_job(site_update.name)
 
 
