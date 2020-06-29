@@ -13,6 +13,7 @@ from pathlib import Path
 import tarfile
 import wrapt
 import frappe
+from press.agent import Agent
 from frappe.core.utils import find
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.site_update.site_update import (
@@ -525,6 +526,18 @@ def install_app(name, app):
 @protected("Site")
 def uninstall_app(name, app):
 	frappe.get_doc("Site", name).uninstall_app(app)
+
+
+@frappe.whitelist()
+@protected("Site")
+def logs(name):
+	return frappe.get_doc("Site", name).server_logs
+
+
+@frappe.whitelist()
+@protected("Site")
+def log(name, log):
+	return frappe.get_doc("Site", name).get_server_log(log)
 
 
 @frappe.whitelist()

@@ -10,7 +10,7 @@ import frappe
 import requests
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
-from press.press.doctype.agent_job.agent_job import Agent
+from press.agent import Agent
 from frappe.utils.password import get_decrypted_password
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from frappe.frappeclient import FrappeClient
@@ -303,6 +303,13 @@ class Site(Document):
 				"timestamp": self.creation,
 			}
 		).insert(ignore_permissions=True)
+
+	@property
+	def server_logs(self):
+		return Agent(self.server).get(f"benches/{self.bench}/sites/{self.name}/logs")
+
+	def get_server_log(self, log):
+		return Agent(self.server).get(f"benches/{self.bench}/sites/{self.name}/logs/{log}")
 
 
 def release_name(name):
