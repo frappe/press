@@ -10,6 +10,7 @@ import json
 import requests
 from frappe.utils.password import get_decrypted_password
 from press.utils import log_error
+from press.api.github import get_access_token
 
 
 class Agent:
@@ -27,16 +28,26 @@ class Agent:
 			"clone": clone,
 		}
 		for app in bench.apps:
-			repo, branch = frappe.db.get_value("Frappe App", app.app, ["url", "branch"])
-			data["apps"].append(
-				{"name": app.scrubbed, "repo": repo, "branch": branch, "hash": app.hash}
+			url, repo_owner, repo, branch, installation = frappe.db.get_value(
+				"Frappe App", app.app, ["url", "repo_owner", "repo", "branch", "installation"]
 			)
-
+			if installation:
+				token = get_access_token(installation)
+				url = f"https://x-access-token:{token}@github.com/{repo_owner}/{repo}"
+			data["apps"].append(
+				{"name": app.scrubbed, "repo": repo, "url": url, "branch": branch, "hash": app.hash}
+			)
 		return self.create_agent_job("New Bench", "benches", data, bench=bench.name)
 
 	def archive_bench(self, bench):
 		return self.create_agent_job(
 			"Archive Bench", f"benches/{bench.name}/archive", bench=bench.name
+		)
+
+	def update_bench_config(self, bench):
+		data = {"config": json.loads(bench.config)}
+		return self.create_agent_job(
+			"Update Bench Configuration", f"benches/{bench.name}/config", data, bench=bench.name,
 		)
 
 	def new_site(self, site):
@@ -127,6 +138,16 @@ class Agent:
 			"Install App on Site",
 			f"benches/{site.bench}/sites/{site.name}/apps",
 			data,
+			bench=site.bench,
+			site=site.name,
+		)
+
+	def uninstall_app_site(self, site, app):
+		scrubbed = frappe.db.get_value("Frappe App", app, "scrubbed")
+		return self.create_agent_job(
+			"Uninstall App from Site",
+			f"benches/{site.bench}/sites/{site.name}/apps/{scrubbed}",
+			method="DELETE",
 			bench=site.bench,
 			site=site.name,
 		)
@@ -332,6 +353,12 @@ class Agent:
 	def get_job_status(self, id):
 		status = self.get(f"jobs/{id}")
 		return status
+
+	def get_site_sid(self, site):
+		return self.get(f"benches/{site.bench}/sites/{site.name}/sid")["sid"]
+
+	def get_site_info(self, site):
+		return self.get(f"benches/{site.bench}/sites/{site.name}/info")["data"]
 
 	def get_jobs_status(self, ids):
 		status = self.get(f"jobs/{','.join(map(str, ids))}")

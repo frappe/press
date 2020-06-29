@@ -9,7 +9,9 @@ from frappe.model.document import Document
 from press.agent import Agent
 from press.utils import log_error
 from frappe.core.utils import find
+import pytz
 from itertools import groupby
+from datetime import datetime
 
 
 class AgentJob(Document):
@@ -27,13 +29,21 @@ class AgentJob(Document):
 		)
 
 	def create_http_request(self):
-		agent = Agent(self.server, server_type=self.server_type)
-		data = json.loads(self.request_data)
-		files = json.loads(self.request_files)
-		self.job_id = agent.request(self.request_method, self.request_path, data, files)[
-			"job"
-		]
-		self.save()
+		try:
+			agent = Agent(self.server, server_type=self.server_type)
+			data = json.loads(self.request_data)
+			files = json.loads(self.request_files)
+
+			self.job_id = agent.request(self.request_method, self.request_path, data, files)[
+				"job"
+			]
+			self.status = "Pending"
+			self.save()
+		except Exception:
+			self.status = "Failure"
+			self.save()
+			process_job_updates(self.name)
+			frappe.db.set_value("Agent Job", self.name, "status", "Undelivered")
 
 	def create_agent_job_steps(self):
 		job_type = frappe.get_doc("Agent Job Type", self.job_type)
@@ -53,7 +63,7 @@ class AgentJob(Document):
 		job = frappe.get_doc(
 			{
 				"doctype": "Agent Job",
-				"status": "Pending",
+				"status": "Undelivered",
 				"job_type": self.job_type,
 				"server_type": self.server_type,
 				"server": self.server,
@@ -170,6 +180,8 @@ def collect_site_analytics():
 							"http_method": log["request"]["method"],
 							"length": log["request"]["response_length"],
 							"status_code": log["request"]["status_code"],
+							"reset": log["request"].get("reset"),
+							"counter": log["request"].get("counter"),
 						}
 					)
 				elif log["transaction_type"] == "job":
@@ -181,7 +193,7 @@ def collect_site_analytics():
 							"wait": log["job"]["wait"],
 						}
 					)
-				frappe.get_doc(doc).insert()
+				frappe.get_doc(doc).db_insert()
 			except frappe.exceptions.DuplicateEntryError:
 				pass
 			except Exception:
@@ -196,6 +208,9 @@ def collect_site_uptime():
 		try:
 			agent = Agent(bench.server)
 			bench_status = agent.fetch_bench_status(bench.name)
+			if not bench_status:
+				continue
+
 			for site, status in bench_status["sites"].items():
 				doc = {
 					"doctype": "Site Uptime Log",
@@ -204,7 +219,7 @@ def collect_site_uptime():
 					"scheduler": status["scheduler"],
 					"timestamp": bench_status["timestamp"],
 				}
-				frappe.get_doc(doc).insert()
+				frappe.get_doc(doc).db_insert()
 			frappe.db.commit()
 		except Exception:
 			log_error("Agent Uptime Collection Exception", bench=bench, status=bench_status)
@@ -212,11 +227,17 @@ def collect_site_uptime():
 
 def schedule_backups():
 	sites = frappe.get_all(
-		"Site", fields=["name", "server", "bench"], filters={"status": "Active"},
+		"Site", fields=["name", "timezone"], filters={"status": "Active"},
 	)
+	interval = frappe.db.get_single_value("Press Settings", "backup_interval") or 6
 	for site in sites:
 		try:
-			frappe.get_doc("Site", site.name).backup()
+			server_time = datetime.now()
+			timezone = site.timezone or "Asia/Kolkata"
+			site_timezone = pytz.timezone(timezone)
+			site_time = server_time.astimezone(site_timezone)
+			if site_time.hour % interval == 0:
+				frappe.get_doc("Site", site.name).backup()
 		except Exception:
 			log_error("Site Backup Exception", site=site)
 
@@ -348,6 +369,8 @@ def process_job_updates(job_name):
 		if job.job_type == "Reinstall Site":
 			process_reinstall_site_job_update(job)
 		if job.job_type == "Install App on Site":
+			process_install_app_site_job_update(job)
+		if job.job_type == "Uninstall App from Site":
 			process_install_app_site_job_update(job)
 		if job.job_type == "Add Site to Upstream":
 			process_new_site_job_update(job)

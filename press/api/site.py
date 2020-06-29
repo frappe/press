@@ -3,36 +3,41 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
-import dns.resolver
 
-import boto3
 import builtins
 import datetime
 import gzip
 import io
-import os
 import json
-from pathlib import Path
+import os
 import tarfile
+from pathlib import Path
+
+import boto3
+import dns.resolver
 import wrapt
-import frappe
 from botocore.exceptions import ClientError
+
+import frappe
+from frappe.core.utils import find
 from frappe.utils import cint, flt, time_diff_in_hours
 from frappe.utils.password import get_decrypted_password
+from press.agent import Agent
 from press.press.doctype.agent_job.agent_job import job_detail
+from press.press.doctype.plan.plan import get_plan_config
 from press.press.doctype.site_update.site_update import (
-	is_update_available_for_site,
-	sites_with_available_update,
+	benches_with_available_update,
+	should_try_update
 )
-from press.utils import log_error, get_current_team
+from press.utils import get_current_team, log_error
 
 
-def protected():
+def protected(doctype):
 	@wrapt.decorator
 	def wrapper(wrapped, instance, args, kwargs):
-		site = kwargs.get("name") or args[0]
+		name = kwargs.get("name") or args[0]
 		team = get_current_team()
-		owner = frappe.db.get_value("Site", site, "team")
+		owner = frappe.db.get_value(doctype, name, "team")
 		if frappe.session.data.user_type == "System User" or owner == team:
 			return wrapped(*args, **kwargs)
 		else:
@@ -68,7 +73,7 @@ def new(site):
 
 
 @frappe.whitelist()
-@protected()
+@protected("Site")
 def jobs(name):
 	jobs = frappe.get_all(
 		"Agent Job",
@@ -80,7 +85,7 @@ def jobs(name):
 
 
 @frappe.whitelist()
-@protected()
+@protected("Site")
 def job(name, job):
 	job = frappe.get_doc("Agent Job", job)
 	job = job.as_dict()
@@ -94,7 +99,7 @@ def job(name, job):
 
 
 @frappe.whitelist()
-@protected()
+@protected("Site")
 def running_jobs(name):
 	jobs = frappe.get_all(
 		"Agent Job", filters={"status": ("in", ("Pending", "Running")), "site": name}
@@ -103,7 +108,7 @@ def running_jobs(name):
 
 
 @frappe.whitelist()
-@protected()
+@protected("Site")
 def backups(name):
 	one_month_ago = datetime.date.today() - datetime.timedelta(days=30)
 	fields = [
@@ -137,7 +142,7 @@ def backups(name):
 
 
 @frappe.whitelist()
-@protected()
+@protected("Site")
 def get_backup_link(name, backup, expiration=3600):
 	bench = frappe.get_value("Site", name, "bench")
 	bucket = frappe.db.get_single_value("Press Settings", "aws_s3_bucket")
@@ -161,18 +166,21 @@ def get_backup_link(name, backup, expiration=3600):
 
 
 @frappe.whitelist()
-@protected()
+@protected("Site")
 def domains(name):
 	domains = frappe.get_all(
 		"Site Domain",
 		fields=["name", "domain", "status", "retry_count"],
 		filters={"site": name},
 	)
+	host_name = frappe.db.get_value("Site", name, "host_name")
+	primary = find(domains, lambda x: x.domain == host_name)
+	if primary:
+		primary.primary = True
 	return domains
 
 
 @frappe.whitelist()
-@protected()
 def activities(name, start=0):
 	activities = frappe.get_all(
 		"Site Activity",
@@ -190,7 +198,7 @@ def activities(name, start=0):
 
 
 @frappe.whitelist()
-@protected()
+@protected("Site")
 def request_logs(name, start=0):
 	logs = frappe.get_all(
 		"Site Request Log",
@@ -204,21 +212,35 @@ def request_logs(name, start=0):
 
 @frappe.whitelist()
 def options_for_new():
+	team = get_current_team()
 	groups = frappe.get_all(
-		"Release Group", fields=["name", "`default`"], filters={"public": True}
+		"Release Group",
+		fields=["name", "`default`"],
+		or_filters={"public": True, "team": team},
 	)
+	deployed_groups = []
 	for group in groups:
-		group_doc = frappe.get_doc("Release Group", group.name)
+		benches = frappe.get_all(
+			"Bench",
+			filters={"status": "Active", "group": group.name},
+			order_by="creation desc",
+			limit=1,
+		)
+		if not benches:
+			continue
+		bench = benches[0].name
+		bench_doc = frappe.get_doc("Bench", bench)
 		group_apps = frappe.get_all(
 			"Frappe App",
-			fields=["name", "frappe", "branch", "scrubbed", "url"],
-			filters={"name": ("in", [row.app for row in group_doc.apps])},
+			fields=["name", "frappe", "branch", "scrubbed", "repo_owner", "repo"],
+			filters={"name": ("in", [row.app for row in bench_doc.apps])},
+			or_filters={"team": team, "public": True},
 		)
-		order = {row.app: row.idx for row in group_doc.apps}
+		order = {row.app: row.idx for row in bench_doc.apps}
 		group["apps"] = sorted(group_apps, key=lambda x: order[x.name])
+		deployed_groups.append(group)
 
 	domain = frappe.db.get_value("Press Settings", "Press Settings", ["domain"])
-	team = get_current_team()
 
 	team_doc = frappe.get_doc("Team", team)
 	# disable site creation if card not added
@@ -229,7 +251,7 @@ def options_for_new():
 
 	return {
 		"domain": domain,
-		"groups": sorted(groups, key=lambda x: not x.default),
+		"groups": sorted(deployed_groups, key=lambda x: not x.default),
 		"plans": get_plans(),
 		"has_card": team_doc.default_payment_method,
 		"free_account": team_doc.free_account,
@@ -265,29 +287,35 @@ def all():
 	filters.update({"status": ("!=", "Archived")})
 	sites = frappe.get_list(
 		"Site",
-		fields=["name", "status", "modified"],
+		fields=["name", "status", "modified", "bench"],
 		filters=filters,
 		order_by="creation desc",
 	)
-	sites_with_updates = set(site.name for site in sites_with_available_update())
+	benches_with_updates = set(benches_with_available_update())
 	for site in sites:
-		if site.name in sites_with_updates:
+		if site.bench in benches_with_updates:
 			site.update_available = True
 
 	return sites
 
 
 @frappe.whitelist()
-@protected()
+@protected("Site")
 def get(name):
+	team = get_current_team()
 	site = frappe.get_doc("Site", name)
-	bench = frappe.get_doc("Bench", site.bench)
-	bench_apps = {app.app: app.idx for app in bench.apps}
 	installed_apps = [app.app for app in site.apps]
+	bench = frappe.get_doc("Bench", site.bench)
+	bench_apps = {}
+	for app in bench.apps:
+		app_team, app_public = frappe.db.get_value("Frappe App", app.app, ["team", "public"])
+		if app.app in installed_apps or app_public or app_team == team:
+			bench_apps[app.app] = app.idx
+
 	available_apps = list(filter(lambda x: x not in installed_apps, bench_apps.keys()))
 	installed_apps = frappe.get_all(
 		"Frappe App",
-		fields=["name", "repo_owner as owner", "scrubbed as repo", "url", "branch"],
+		fields=["name", "repo_owner as owner", "scrubbed as repo", "url", "branch", "frappe"],
 		filters={"name": ("in", installed_apps)},
 	)
 	available_apps = frappe.get_all(
@@ -305,12 +333,13 @@ def get(name):
 		"config": json.loads(site.config),
 		"creation": site.creation,
 		"last_updated": site.modified,
-		"update_available": is_update_available_for_site(site.name),
+		"update_available": (site.bench in benches_with_available_update())
+		and should_try_update(site),
 	}
 
 
 @frappe.whitelist()
-@protected()
+@protected("Site")
 def analytics(name, period="1 hour"):
 	interval, divisor, = {
 		"1 hour": ("1 HOUR", 60),
@@ -337,6 +366,7 @@ def analytics(name, period="1 hour"):
 			row["timestamp"] = row.pop("_timestamp")
 		return result
 
+	usage_data = get_data("Site Request Log", "counter")
 	request_data = get_data(
 		"Site Request Log", "COUNT(name) as request_count, SUM(duration) as request_duration"
 	)
@@ -347,7 +377,10 @@ def analytics(name, period="1 hour"):
 		"Site Uptime Log",
 		"AVG(web) AS web, AVG(scheduler) AS scheduler, AVG(socketio) AS socketio",
 	)
+	plan = frappe.db.get_value("Site", name, "plan")
+	plan_limit = get_plan_config(plan)["rate_limit"]["limit"]
 	return {
+		"usage_counter": [{"value": r.counter, "timestamp": r.timestamp} for r in usage_data],
 		"request_count": [
 			{"value": r.request_count, "timestamp": r.timestamp} for r in request_data
 		],
@@ -358,12 +391,13 @@ def analytics(name, period="1 hour"):
 		"job_cpu_time": [
 			{"value": r.job_duration, "timestamp": r.timestamp} for r in job_data
 		],
-		"uptime": uptime_data,
+		"uptime": (uptime_data + [{}] * 60)[:60],
+		"plan_limit": plan_limit,
 	}
 
 
 @frappe.whitelist()
-@protected()
+@protected("Site")
 def current_plan(name):
 	plan_name = frappe.db.get_value("Site", name, "plan")
 	plan = frappe.get_doc("Plan", plan_name)
@@ -374,23 +408,21 @@ def current_plan(name):
 		order_by="timestamp desc",
 		limit=5,
 	)
-
-	result = frappe.db.sql(
-		"""SELECT
-			SUM(duration) as total_cpu_usage
-		FROM
-			`tabSite Request Log` t
-		WHERE
-			t.site = %s
-			and date(timestamp) = CURDATE();""",
-		(name,),
-		as_dict=True,
+	result = frappe.get_all(
+		"Site Request Log",
+		fields=["reset", "counter"],
+		filters={"site": name},
+		order_by="creation desc",
+		limit=1,
 	)
-
-	# cpu usage in microseconds
-	total_cpu_usage = result[0].total_cpu_usage or 0
-	# convert into hours
-	total_cpu_usage_hours = flt(total_cpu_usage / (3.6 * (10 ** 9)), 5)
+	if result:
+		result = result[0]
+		# cpu usage in microseconds
+		total_cpu_usage = cint(result.counter)
+		# convert into hours
+		total_cpu_usage_hours = flt(total_cpu_usage / (3.6 * (10 ** 9)), 5)
+	else:
+		total_cpu_usage_hours = 0
 
 	# number of hours until cpu usage resets
 	now = frappe.utils.now_datetime()
@@ -406,55 +438,55 @@ def current_plan(name):
 
 
 @frappe.whitelist()
-@protected()
+@protected("Site")
 def change_plan(name, plan):
 	frappe.get_doc("Site", name).change_plan(plan)
 
 
 @frappe.whitelist()
-@protected()
+@protected("Site")
 def deactivate(name):
 	frappe.get_doc("Site", name).deactivate()
 
 
 @frappe.whitelist()
-@protected()
+@protected("Site")
 def activate(name):
 	frappe.get_doc("Site", name).activate()
 
 
 @frappe.whitelist()
-@protected()
+@protected("Site")
 def login(name):
 	return frappe.get_doc("Site", name).login()
 
 
 @frappe.whitelist()
-@protected()
+@protected("Site")
 def update(name):
 	return frappe.get_doc("Site", name).schedule_update()
 
 
 @frappe.whitelist()
-@protected()
+@protected("Site")
 def backup(name, with_files=False):
 	frappe.get_doc("Site", name).backup(with_files)
 
 
 @frappe.whitelist()
-@protected()
+@protected("Site")
 def archive(name):
 	frappe.get_doc("Site", name).archive()
 
 
 @frappe.whitelist()
-@protected()
+@protected("Site")
 def reinstall(name):
 	frappe.get_doc("Site", name).reinstall()
 
 
 @frappe.whitelist()
-@protected()
+@protected("Site")
 def restore(name, files):
 	site = frappe.get_doc("Site", name)
 	site.database_file = files["database"]
@@ -472,14 +504,16 @@ def exists(subdomain):
 
 
 @frappe.whitelist()
-@protected()
+@protected("Site")
 def setup_wizard_complete(name):
 	return frappe.get_doc("Site", name).is_setup_wizard_complete()
 
 
 @frappe.whitelist()
-@protected()
+@protected("Site")
 def check_dns(name, domain):
+	return True
+
 	def check_dns_cname(name, domain):
 		try:
 			answer = dns.resolver.query(domain, "CNAME")[0].to_text()
@@ -504,25 +538,49 @@ def check_dns(name, domain):
 
 
 @frappe.whitelist()
-@protected()
+@protected("Site")
 def add_domain(name, domain):
 	frappe.get_doc("Site", name).add_domain(domain)
 
 
 @frappe.whitelist()
-@protected()
+@protected("Site")
 def retry_add_domain(name, domain):
 	frappe.get_doc("Site", name).retry_add_domain(domain)
 
 
 @frappe.whitelist()
-@protected()
+@protected("Site")
+def set_host_name(name, domain):
+	frappe.get_doc("Site", name).set_host_name(domain)
+
+
+@frappe.whitelist()
+@protected("Site")
 def install_app(name, app):
 	frappe.get_doc("Site", name).install_app(app)
 
 
 @frappe.whitelist()
-@protected()
+@protected("Site")
+def uninstall_app(name, app):
+	frappe.get_doc("Site", name).uninstall_app(app)
+
+
+@frappe.whitelist()
+@protected("Site")
+def logs(name):
+	return frappe.get_doc("Site", name).server_logs
+
+
+@frappe.whitelist()
+@protected("Site")
+def log(name, log):
+	return frappe.get_doc("Site", name).get_server_log(log)
+
+
+@frappe.whitelist()
+@protected("Site")
 def update_config(name, config):
 	allowed_keys = [
 		"encryption_key",

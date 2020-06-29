@@ -16,9 +16,10 @@
   "destination_candidate",
   "section_break_8",
   "difference",
+  "difference_deploy_type",
   "deploy_type",
-  "update_job",
   "column_break_14",
+  "update_job",
   "recover_job",
   "cause_of_failure_is_resolved"
  ],
@@ -26,6 +27,8 @@
   {
    "fieldname": "site",
    "fieldtype": "Link",
+   "hide_days": 1,
+   "hide_seconds": 1,
    "label": "Site",
    "options": "Site"
   },
@@ -33,6 +36,8 @@
    "fetch_from": "site.bench",
    "fieldname": "source_bench",
    "fieldtype": "Link",
+   "hide_days": 1,
+   "hide_seconds": 1,
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Source Bench",
@@ -40,11 +45,15 @@
   },
   {
    "fieldname": "column_break_4",
-   "fieldtype": "Column Break"
+   "fieldtype": "Column Break",
+   "hide_days": 1,
+   "hide_seconds": 1
   },
   {
    "fieldname": "status",
    "fieldtype": "Select",
+   "hide_days": 1,
+   "hide_seconds": 1,
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
@@ -53,17 +62,22 @@
   {
    "fieldname": "destination_bench",
    "fieldtype": "Link",
+   "hide_days": 1,
+   "hide_seconds": 1,
    "label": "Destination Bench",
    "options": "Bench"
   },
   {
    "fieldname": "section_break_8",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "hide_days": 1,
+   "hide_seconds": 1
   },
   {
-   "fetch_from": "difference.deploy_type",
    "fieldname": "deploy_type",
    "fieldtype": "Select",
+   "hide_days": 1,
+   "hide_seconds": 1,
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Deploy Type",
@@ -73,6 +87,8 @@
    "fetch_from": "source_bench.candidate",
    "fieldname": "source_candidate",
    "fieldtype": "Link",
+   "hide_days": 1,
+   "hide_seconds": 1,
    "label": "Source Deploy Candidate",
    "options": "Deploy Candidate"
   },
@@ -80,12 +96,16 @@
    "fetch_from": "destination_bench.candidate",
    "fieldname": "destination_candidate",
    "fieldtype": "Link",
+   "hide_days": 1,
+   "hide_seconds": 1,
    "label": "Destination Deploy Candidate",
    "options": "Deploy Candidate"
   },
   {
    "fieldname": "difference",
    "fieldtype": "Link",
+   "hide_days": 1,
+   "hide_seconds": 1,
    "label": "Deploy Candidate Difference",
    "options": "Deploy Candidate Difference"
   },
@@ -93,6 +113,8 @@
    "fetch_from": "source_bench.group",
    "fieldname": "group",
    "fieldtype": "Link",
+   "hide_days": 1,
+   "hide_seconds": 1,
    "label": "Release Group",
    "options": "Release Group"
   },
@@ -100,6 +122,8 @@
    "fetch_from": "site.server",
    "fieldname": "server",
    "fieldtype": "Link",
+   "hide_days": 1,
+   "hide_seconds": 1,
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Server",
@@ -108,6 +132,8 @@
   {
    "fieldname": "update_job",
    "fieldtype": "Link",
+   "hide_days": 1,
+   "hide_seconds": 1,
    "label": "Update Job",
    "options": "Agent Job"
   },
@@ -115,21 +141,34 @@
    "default": "0",
    "fieldname": "cause_of_failure_is_resolved",
    "fieldtype": "Check",
+   "hide_days": 1,
+   "hide_seconds": 1,
    "label": "Cause of Failure is Resolved"
   },
   {
    "fieldname": "column_break_14",
-   "fieldtype": "Column Break"
+   "fieldtype": "Column Break",
+   "hide_days": 1,
+   "hide_seconds": 1
   },
   {
    "fieldname": "recover_job",
    "fieldtype": "Link",
+   "hide_days": 1,
+   "hide_seconds": 1,
    "label": "Recover Job",
    "options": "Agent Job"
+  },
+  {
+   "fetch_from": "difference.deploy_type",
+   "fieldname": "difference_deploy_type",
+   "fieldtype": "Select",
+   "label": "Difference Deploy Type",
+   "options": "\nPull\nMigrate"
   }
  ],
  "links": [],
- "modified": "2020-04-07 14:47:51.611688",
+ "modified": "2020-06-26 10:31:29.680584",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Update",
@@ -144,6 +183,17 @@
    "read": 1,
    "report": 1,
    "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
    "share": 1,
    "write": 1
   }

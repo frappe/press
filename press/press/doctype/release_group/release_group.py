@@ -9,16 +9,21 @@ from frappe.model.document import Document
 
 
 class ReleaseGroup(Document):
-	def after_insert(self):
-		self.create_deploy_candidate()
-
 	def create_deploy_candidate(self):
+		if not self.enabled:
+			return
 		releases = []
 		for app in self.apps:
 			release = frappe.get_all(
-				"App Release", fields=["name", "app", "hash"], filters={"app": app.app}, limit=1
-			)[0]
-			releases.append({"release": release.name, "app": release.app, "hash": release.hash})
+				"App Release",
+				fields=["name", "app", "hash"],
+				filters={"app": app.app, "status": "Approved", "deployable": True},
+				order_by="creation desc",
+				limit=1,
+			)
+			if release:
+				release = release[0]
+				releases.append({"release": release.name, "app": release.app, "hash": release.hash})
 		frappe.get_doc(
 			{"doctype": "Deploy Candidate", "group": self.name, "apps": releases}
-		).insert(ignore_permissions=True)
+		).insert()
