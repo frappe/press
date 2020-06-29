@@ -60,3 +60,5 @@ def process_new_host_job_update(job):
 
 	if updated_status != domain_status:
 		frappe.db.set_value("Site Domain", job.host, "status", updated_status)
+		if updated_status == "Success":
+			frappe.get_doc("Site", job.site).set_host_name(job.host)

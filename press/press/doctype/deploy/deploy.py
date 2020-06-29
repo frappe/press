@@ -43,7 +43,7 @@ def create_deploy_candidate_differences(bench):
 		fields="candidate",
 		filters={
 			"server": bench.server,
-			"status": "Active",
+			"status": ("!=", "Archived"),
 			"group": group,
 			"candidate": ("!=", destination),
 		},

@@ -8,6 +8,7 @@ import frappe
 from frappe.model.document import Document
 import json
 from press.agent import Agent
+from press.utils import log_error
 
 
 class Bench(Document):
@@ -85,14 +86,55 @@ def process_new_bench_job_update(job):
 
 	if updated_status != bench_status:
 		frappe.db.set_value("Bench", job.bench, "status", updated_status)
+		if updated_status == "Active":
+			frappe.enqueue(
+				"press.press.doctype.bench.bench.archive_obsolete_benches",
+				enqueue_after_commit=True,
+			)
 
 
 def process_archive_bench_job_update(job):
 	bench_status = frappe.get_value("Bench", job.bench, "status")
 
-	updated_status = {"Pending": "Pending", "Success": "Archived", "Failure": "Broken"}[
-		job.status
-	]
+	updated_status = {
+		"Pending": "Pending",
+		"Running": "Pending",
+		"Success": "Archived",
+		"Failure": "Broken",
+	}[job.status]
 
 	if updated_status != bench_status:
 		frappe.db.set_value("Bench", job.bench, "status", updated_status)
+
+
+def archive_obsolete_benches():
+	benches = frappe.get_all(
+		"Bench", fields=["name", "candidate"], filters={"status": "Active"}
+	)
+	for bench in benches:
+		# Don't try archiving benches with sites
+		if frappe.db.count("Site", {"bench": bench.name, "status": ("!=", "Archived")}):
+			continue
+		# If there isn't a Deploy Candidate Difference with this bench's candidate as source
+		# That means this is the most recent bench and should be skipped.
+		if not frappe.db.exists("Deploy Candidate Difference", {"source": bench.candidate}):
+			continue
+
+		# This bench isn't most recent.
+		# But if none of the recent versions of this bench are yet active then this bench is still useful.
+
+		# If any of the recent versions are active then, this bench can be safely archived.
+		differences = frappe.get_all(
+			"Deploy Candidate Difference",
+			fields=["destination"],
+			filters={"source": bench.candidate},
+		)
+		for difference in differences:
+			if frappe.db.exists(
+				"Bench", {"candidate": difference.destination, "status": "Active"}
+			):
+				try:
+					frappe.get_doc("Bench", bench.name).archive()
+					return
+				except Exception:
+					log_error("Bench Archival Error", bench=bench.name)

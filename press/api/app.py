@@ -93,14 +93,18 @@ def get(name):
 	groups = frappe.get_all(
 		"Release Group Frappe App", fields=["parent as name"], filters={"app": app.name}
 	)
+	enabled_groups = []
 	for group in groups:
 		group_doc = frappe.get_doc("Release Group", group.name)
+		if not group_doc.enabled:
+			continue
 		frappe_app = frappe.get_all(
 			"Frappe App",
 			fields=["name", "scrubbed", "branch"],
 			filters={"name": ("in", [row.app for row in group_doc.apps]), "frappe": True},
 		)[0]
 		group["frappe"] = frappe_app
+		enabled_groups.append(group)
 
 	return {
 		"name": app.name,
@@ -109,7 +113,7 @@ def get(name):
 		"repo": app.repo,
 		"enable_auto_deploy": app.enable_auto_deploy,
 		"scrubbed": app.scrubbed,
-		"groups": groups,
+		"groups": enabled_groups,
 		"repo_owner": app.repo_owner,
 		"url": app.url,
 		"update_available": update_available(app.name),
@@ -135,6 +139,8 @@ def deploys(name):
 	groups = {}
 	for group in group_names:
 		group_doc = frappe.get_doc("Release Group", group.name)
+		if not group_doc.enabled:
+			continue
 		frappe_app = frappe.get_all(
 			"Frappe App",
 			fields=["name", "scrubbed", "branch"],
@@ -224,10 +230,9 @@ def releases(name):
 
 @frappe.whitelist()
 def all():
-	if frappe.session.data.user_type == "System User":
-		filters = {}
-	else:
-		filters = {"team": get_current_team()}
+	filters = {"enabled": True}
+	if frappe.session.data.user_type != "System User":
+		filters.update({"team": get_current_team()})
 	apps = frappe.get_list(
 		"Frappe App",
 		fields=["name", "modified", "url", "repo_owner", "repo", "branch"],

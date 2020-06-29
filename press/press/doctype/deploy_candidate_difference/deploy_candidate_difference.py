@@ -70,7 +70,7 @@ class DeployCandidateDifference(Document):
 	def compute_deploy_type(self):
 		self.deploy_type = "Pull"
 		for app in self.apps:
-			if app.source_hash and app.source_hash == app.destination_hash:
+			if (not app.source_hash) or (app.source_hash == app.destination_hash):
 				continue
 			app.changed = True
 			app.deploy_type = "Pull"

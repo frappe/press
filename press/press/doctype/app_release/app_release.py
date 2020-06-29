@@ -29,6 +29,7 @@ class AppRelease(Document):
 			self.save()
 		if skip_review:
 			self.status = "Approved"
+			self.save()
 		else:
 			frappe.enqueue_doc(self.doctype, self.name, "screen", enqueue_after_commit=True)
 
@@ -115,7 +116,7 @@ class AppRelease(Document):
 			token = get_access_token(app.installation)
 			url = f"https://x-access-token:{token}@github.com/{app.repo_owner}/{app.repo}"
 		else:
-			url = app.repo_url
+			url = app.url
 		self.output = ""
 		self.output += self.run("git init")
 		self.output += self.run(f"git remote add origin {url}",)
@@ -162,7 +163,7 @@ class AppRelease(Document):
 
 	def _filter_results(self):
 		result = json.loads(self.result)
-		if self.baseline_release:
+		if self.baseline_release and self.baseline_result:
 			baseline_result = json.loads(self.baseline_result)
 			diff_result = []
 			for file in result:
