@@ -6,33 +6,60 @@ from __future__ import unicode_literals
 
 import frappe
 from frappe.model.document import Document
-from github import Github
+from press.api.github import get_access_token
+from press.utils import log_error
+import requests
 
 
 class FrappeApp(Document):
-	def validate(self):
-		*_, self.repo_owner, self.scrubbed = self.url.split("/")
-
-	def after_insert(self):
+	def on_update(self):
 		self.create_app_release()
 
 	def create_app_release(self):
-		github_access_token = frappe.db.get_single_value(
-			"Press Settings", "github_access_token"
-		)
-		if github_access_token:
-			client = Github(github_access_token)
-		else:
-			client = Github()
-
-		repo = client.get_repo(f"{self.repo_owner}/{self.scrubbed}")
-		branch = repo.get_branch(self.branch)
-		hash = branch.commit.sha
-		if not frappe.db.exists("App Release", {"hash": hash}):
-			frappe.get_doc({"doctype": "App Release", "app": self.name, "hash": hash}).insert()
+		if not self.enabled:
+			return
+		try:
+			if self.installation:
+				token = get_access_token(self.installation)
+				headers = {
+					"Authorization": f"token {token}",
+				}
+			else:
+				headers = {}
+			branch = requests.get(
+				f"https://api.github.com/repos/{self.repo_owner}/{self.repo}/branches/{self.branch}",
+				headers=headers,
+			).json()
+			hash = branch["commit"]["sha"]
+			if not frappe.db.exists("App Release", {"hash": hash, "app": self.name}):
+				frappe.get_doc(
+					{
+						"doctype": "App Release",
+						"app": self.name,
+						"hash": hash,
+						"message": branch["commit"]["commit"]["message"],
+						"author": branch["commit"]["commit"]["author"]["name"],
+						"deployable": not bool(self.get_doc_before_save()),
+					}
+				).insert()
+		except Exception:
+			log_error("App Release Creation Error", app=self.name)
 
 
 def poll_new_releases():
 	for app in frappe.get_all("Frappe App"):
 		app = frappe.get_doc("Frappe App", app.name)
 		app.create_app_release()
+
+
+def get_permission_query_conditions(user):
+	from press.utils import get_current_team
+
+	if not user:
+		user = frappe.session.user
+	if frappe.session.data.user_type == "System User":
+		return ""
+
+	team = get_current_team()
+
+	return f"(`tabFrappe App`.`team` = {frappe.db.escape(team)})"

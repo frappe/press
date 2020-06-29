@@ -36,7 +36,7 @@
   }
  ],
  "links": [],
- "modified": "2020-04-06 12:19:43.686593",
+ "modified": "2020-06-19 20:03:58.040039",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy",
@@ -53,6 +53,16 @@
    "role": "System Manager",
    "share": 1,
    "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1
   }
  ],
  "sort_field": "modified",

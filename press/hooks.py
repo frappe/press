@@ -70,8 +70,10 @@ version = app_version
 
 permission_query_conditions = {
 	"Site": "press.press.doctype.site.site.get_permission_query_conditions",
+	"Frappe App": (
+		"press.press.doctype.frappe_app.frappe_app.get_permission_query_conditions"
+	),
 }
-
 # has_permission = {
 # 	"Site": "press.press.doctype.site.site.has_permission",
 # }
@@ -101,6 +103,8 @@ scheduler_events = {
 	"hourly": ["press.press.doctype.frappe_app.frappe_app.poll_new_releases"],
 	"hourly_long": [
 		"press.press.doctype.payment_ledger_entry.payment_ledger_entry.create_ledger_entries",
+		"press.press.doctype.bench.bench.archive_obsolete_benches",
+		"press.press.doctype.agent_job.agent_job.schedule_backups",
 	],
 	"cron": {
 		"* * * * * 0/5": ["press.press.doctype.agent_job.agent_job.poll_pending_jobs"],
@@ -109,8 +113,11 @@ scheduler_events = {
 			"press.press.doctype.agent_job.agent_job.collect_site_analytics",
 		],
 		"* * * * * 0/30": ["press.press.doctype.agent_job.agent_job.collect_server_status"],
-		"0 */6 * * *": ["press.press.doctype.agent_job.agent_job.schedule_backups"],
-		"*/15 * * * *": ["press.press.doctype.site_update.site_update.schedule_updates"],
+		"0 */6 * * *": ["press.press.doctype.site.site.sync_sites"],
+		"*/15 * * * *": [
+			"press.press.doctype.site_update.site_update.schedule_updates",
+			"press.press.doctype.bench.bench.archive_obsolete_benches",
+		],
 	},
 }
 

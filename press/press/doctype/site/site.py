@@ -11,13 +11,15 @@ import frappe
 import requests
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
-from press.press.doctype.agent_job.agent_job import Agent
+from press.agent import Agent
 from frappe.utils.password import get_decrypted_password
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from frappe.frappeclient import FrappeClient
 from frappe.utils import cint
 from press.api.site import check_dns
 from frappe.core.utils import find
+from press.utils import log_error
+from press.press.doctype.plan.plan import get_plan_config
 
 
 class Site(Document):
@@ -33,7 +35,8 @@ class Site(Document):
 			frappe.throw("Subdomain too long. Use 32 or less characters")
 		if not re.match(site_regex, self.subdomain):
 			frappe.throw(
-				"Subdomain contains invalid characters. Use lowercase characters, numbers and hyphens"
+				"Subdomain contains invalid characters. Use lowercase characters,"
+				" numbers and hyphens"
 			)
 		if not self.admin_password:
 			self.admin_password = frappe.generate_hash(length=16)
@@ -44,6 +47,21 @@ class Site(Document):
 			if not self.plan:
 				frappe.throw("Cannot create site without plan")
 
+			config = json.loads(self.config)
+			config.update(get_plan_config(self.plan))
+			self.config = json.dumps(config, indent=4)
+
+		bench_apps = frappe.get_doc("Bench", self.bench).apps
+		for app in self.apps:
+			if not find(bench_apps, lambda x: x.app == app.app):
+				frappe.throw(f"Frappe App {app.app} is not available on Bench {self.bench}.")
+		frappe_app = self.apps[0]
+		if not frappe.db.get_value("Frappe App", frappe_app.app, "frappe"):
+			frappe.throw("First app to be installed on site must be frappe.")
+		apps = [app.app for app in self.apps]
+		if len(apps) != len(set(apps)):
+			frappe.throw("Can't install same app twice.")
+
 	def install_app(self, app):
 		if not find(self.apps, lambda x: x.app == app):
 			log_site_activity(self.name, "Install App")
@@ -52,6 +70,15 @@ class Site(Document):
 			agent.install_app_site(self, app)
 			self.status = "Pending"
 			self.save()
+
+	def uninstall_app(self, app):
+		app_doc = find(self.apps, lambda x: x.app == app)
+		log_site_activity(self.name, "Uninstall App")
+		self.remove(app_doc)
+		agent = Agent(self.server)
+		agent.uninstall_app_site(self, app_doc.app)
+		self.status = "Pending"
+		self.save()
 
 	def can_create_site(self):
 		if self.team:
@@ -112,8 +139,20 @@ class Site(Document):
 	def schedule_update(self):
 		log_site_activity(self.name, "Update")
 		frappe.get_doc({"doctype": "Site Update", "site": self.name}).insert()
+		if self.status in ("Inactive", "Suspended"):
+			self.status_before_update = self.status
+		else:
+			self.status_before_update = None
 		self.status = "Pending"
 		self.save()
+
+	def reset_previous_status(self):
+		if self.status_before_update == "Inactive":
+			self.status_before_update = None
+			self.deactivate()
+		elif self.status_before_update == "Suspended":
+			self.status_before_update = None
+			self.suspend("Resuspended after update")
 
 	def add_domain(self, domain):
 		if check_dns(self.name, domain):
@@ -143,6 +182,11 @@ class Site(Document):
 			site_domain = frappe.get_doc("Site Domain", site_domain.name)
 			site_domain.retry()
 
+	def set_host_name(self, domain):
+		self.host_name = domain
+		self.save()
+		self.update_site_config({"host_name": f"https://{domain}"})
+
 	def archive(self):
 		log_site_activity(self.name, "Archive")
 		agent = Agent(self.server)
@@ -167,7 +211,24 @@ class Site(Document):
 			f"https://{self.name}/api/method/login",
 			data={"usr": "Administrator", "pwd": password},
 		)
-		return response.cookies.get("sid")
+		sid = response.cookies.get("sid")
+		if sid:
+			return sid
+		else:
+			agent = Agent(self.server)
+			return agent.get_site_sid(self)
+
+	def sync_info(self):
+		agent = Agent(self.server)
+		data = agent.get_site_info(self)
+		fetched_config = data["config"]
+		keys_to_fetch = ["encryption_key"]
+		config = {key: fetched_config[key] for key in keys_to_fetch if key in fetched_config}
+		new_config = json.loads(self.config)
+		new_config.update(config)
+		self.config = json.dumps(new_config, indent=4)
+		self.timezone = data["timezone"]
+		self.save()
 
 	def is_setup_wizard_complete(self):
 		if self.setup_wizard_complete:
@@ -184,7 +245,9 @@ class Site(Document):
 			return setup_complete
 
 	def update_site_config(self, config):
-		self.config = json.dumps(config, indent=4)
+		new_config = json.loads(self.config)
+		new_config.update(config)
+		self.config = json.dumps(new_config, indent=4)
 		self.save()
 		log_site_activity(self.name, "Update Configuration")
 		agent = Agent(self.server)
@@ -194,6 +257,8 @@ class Site(Document):
 		log_site_activity(self.name, "Update")
 
 	def change_plan(self, plan):
+		plan_config = get_plan_config(plan)
+		self.update_site_config(plan_config)
 		frappe.get_doc(
 			{"doctype": "Site Plan Change", "site": self.name, "to_plan": plan}
 		).insert()
@@ -242,6 +307,13 @@ class Site(Document):
 				"timestamp": self.creation,
 			}
 		).insert(ignore_permissions=True)
+
+	@property
+	def server_logs(self):
+		return Agent(self.server).get(f"benches/{self.bench}/sites/{self.name}/logs")
+
+	def get_server_log(self, log):
+		return Agent(self.server).get(f"benches/{self.bench}/sites/{self.name}/logs/{log}")
 
 
 def release_name(name):
@@ -340,3 +412,25 @@ def get_permission_query_conditions(user):
 	team = get_current_team()
 
 	return f"(`tabSite`.`team` = {frappe.db.escape(team)})"
+
+
+def sync_sites():
+	benches = frappe.get_all("Bench", {"status": "Active"})
+	for bench in benches:
+		frappe.enqueue(
+			"press.press.doctype.site.site.sync_bench_sites",
+			queue="long",
+			bench=bench,
+			enqueue_after_commit=True,
+		)
+
+
+def sync_bench_sites(bench):
+	sites = frappe.get_all("Site", {"status": ("!=", "Archived"), "bench": bench.name})
+	for site in sites:
+		site_doc = frappe.get_doc("Site", site.name)
+		try:
+			site_doc.sync_info()
+			frappe.db.commit()
+		except Exception:
+			log_error("Site Sync Error", site=site.name, bench=bench.name)

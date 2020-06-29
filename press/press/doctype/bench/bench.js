@@ -2,8 +2,8 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on('Bench', {
-	onload: function(frm) {
-		frm.set_query("candidate", function() {
+	onload: function (frm) {
+		frm.set_query("candidate", function () {
 			return {
 				"filters": {
 					"group": frm.doc.group,
@@ -12,17 +12,20 @@ frappe.ui.form.on('Bench', {
 		});
 	},
 
-	refresh: function(frm) {
-		frm.add_custom_button(__('Sites'), () => {
-			const filters = {bench: frm.doc.name};
-			frappe.set_route("List", "Site", filters);
+	refresh: function (frm) {
+		[
+			[__('Archive'), 'archive'],
+		].forEach(([label, method]) => {
+			frm.add_custom_button(
+				label,
+				() => {
+					frappe.confirm(
+						`Are you sure you want to ${label.toLowerCase()} this bench?`,
+						() => frm.call(method).then((r) => frm.refresh())
+					);
+				},
+				__('Actions')
+			);
 		});
-		frm.add_custom_button(__('Jobs'), () => {
-			const filters = {bench: frm.doc.name};
-			frappe.set_route("List", "Agent Job", filters);
-		});
-		frm.add_custom_button(__("Archive Bench"), () => {
-			frm.call({method: "archive", doc: frm.doc, callback: result => frappe.msgprint(result.message)});
-		}, __("Actions"));
 	}
 });

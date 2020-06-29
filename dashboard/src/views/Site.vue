@@ -147,6 +147,7 @@ export default {
 				{ label: 'Site Config', route: 'site-config' },
 				{ label: 'Activity', route: 'activity' },
 				{ label: 'Jobs', route: 'jobs' },
+				{ label: 'Site Logs', route: 'logs' },
 				{ label: 'Request Logs', route: 'request-logs' }
 			];
 
@@ -162,12 +163,13 @@ export default {
 					'Site Config',
 					'Activity',
 					'Jobs',
+					'Site Logs',
 					'Request Logs'
 				],
-				Inactive: ['General', 'Plan', 'Site Config', 'Activity', 'Jobs'],
+				Inactive: ['General', 'Plan', 'Site Config', 'Activity', 'Jobs', 'Site Logs'],
 				Installing: ['Installing', 'Jobs'],
 				Pending: ['Installing', 'Jobs'],
-				Broken: ['General', 'Plan', 'Activity', 'Jobs'],
+				Broken: ['General', 'Plan', 'Activity', 'Jobs', 'Site Logs'],
 				Suspended: ['General', 'Activity', 'Jobs']
 			};
 			if (this.site) {

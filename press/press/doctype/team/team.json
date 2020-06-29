@@ -20,7 +20,10 @@
   "billing_address",
   "free_credits_allocated",
   "column_break_12",
-  "address_html"
+  "address_html",
+  "github_section",
+  "enable_custom_apps",
+  "github_access_token"
  ],
  "fields": [
   {
@@ -28,54 +31,72 @@
    "fieldtype": "Link",
    "label": "User",
    "options": "User",
+   "show_days": 1,
+   "show_seconds": 1,
    "unique": 1
   },
   {
    "fieldname": "team_members",
    "fieldtype": "Table",
    "label": "Team Members",
-   "options": "Team Member"
+   "options": "Team Member",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "default": "0",
    "fieldname": "enabled",
    "fieldtype": "Check",
-   "label": "Enabled"
+   "label": "Enabled",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "section_break_6",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "subscription_details_section",
    "fieldtype": "Section Break",
-   "label": "Subscription Details"
+   "label": "Subscription Details",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "stripe_customer_id",
    "fieldtype": "Data",
    "label": "Stripe Customer ID",
-   "read_only": 1
+   "read_only": 1,
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "country",
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Country",
-   "options": "Country"
+   "options": "Country",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "currency",
    "fieldtype": "Link",
    "label": "Currency",
-   "options": "Currency"
+   "options": "Currency",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "default_payment_method",
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Default Payment Method",
-   "options": "Stripe Payment Method"
+   "options": "Stripe Payment Method",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "default": "0",
@@ -83,7 +104,9 @@
    "fieldname": "erpnext_partner",
    "fieldtype": "Check",
    "in_standard_filter": 1,
-   "label": "ERPNext Partner"
+   "label": "ERPNext Partner",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "default": "0",
@@ -91,32 +114,64 @@
    "fieldname": "free_account",
    "fieldtype": "Check",
    "in_standard_filter": 1,
-   "label": "Free Account"
+   "label": "Free Account",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "address_html",
    "fieldtype": "HTML",
-   "label": "Address HTML"
+   "label": "Address HTML",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "column_break_12",
-   "fieldtype": "Column Break"
+   "fieldtype": "Column Break",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "default": "0",
    "fieldname": "free_credits_allocated",
    "fieldtype": "Check",
-   "label": "Free Credits Allocated"
+   "label": "Free Credits Allocated",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "billing_address",
    "fieldtype": "Link",
    "label": "Billing Address",
-   "options": "Address"
+   "options": "Address",
+   "show_days": 1,
+   "show_seconds": 1
+  },
+  {
+   "fieldname": "github_section",
+   "fieldtype": "Section Break",
+   "label": "Custom Apps",
+   "show_days": 1,
+   "show_seconds": 1
+  },
+  {
+   "fieldname": "github_access_token",
+   "fieldtype": "Data",
+   "label": "GitHub Access Token",
+   "show_days": 1,
+   "show_seconds": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_custom_apps",
+   "fieldtype": "Check",
+   "label": "Enable Custom Apps",
+   "show_days": 1,
+   "show_seconds": 1
   }
  ],
  "links": [],
- "modified": "2020-05-20 22:54:29.103308",
+ "modified": "2020-06-14 21:11:57.107314",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

@@ -49,12 +49,12 @@
 							<button
 								class="relative flex items-center justify-center py-4 pl-4 pr-8 mr-4 border rounded-md cursor-pointer focus:outline-none focus:shadow-outline"
 								:class="
-									selectedApps.includes(app.app)
+									selectedApps.includes(app.name)
 										? 'bg-blue-50 border-blue-500'
 										: 'hover:border-blue-400'
 								"
 								v-for="app in apps"
-								:key="app.app"
+								:key="app.name"
 								@click="toggleApp(app)"
 							>
 								<div class="flex items-start">
@@ -62,11 +62,11 @@
 										class="pt-0.5 pointer-events-none"
 										tabindex="-1"
 										type="checkbox"
-										:value="selectedApps.includes(app.app)"
+										:value="selectedApps.includes(app.name)"
 									/>
 									<div class="ml-3 text-base text-left">
 										<div class="font-semibold">
-											{{ app.prettyName }}
+											{{ app.repo_owner }}/{{ app.repo }}
 										</div>
 										<div class="text-gray-700">
 											{{ app.branch }}
@@ -261,20 +261,7 @@ export default {
 			if (!this.options) return [];
 
 			let group = this.options.groups.find(g => g.name == this.selectedGroup);
-			return group.apps.map(d => {
-				let prettyName = d.scrubbed;
-				if (d.url.includes('https://github.com/frappe')) {
-					prettyName = 'frappe/' + d.scrubbed;
-				}
-				return {
-					name: d.name,
-					app: d.name,
-					frappe: d.frappe,
-					branch: d.branch,
-					url: d.url,
-					prettyName
-				};
-			});
+			return group.apps;
 		},
 		subdomainInvalidMessage() {
 			if (!this.siteName) {
@@ -300,7 +287,7 @@ export default {
 			this.selectedApps = [];
 			let frappeApp = this.apps.find(app => app.frappe);
 			if (frappeApp) {
-				this.selectedApps.push(frappeApp.app);
+				this.selectedApps.push(frappeApp.name);
 			}
 		},
 		async createSite() {
@@ -317,10 +304,10 @@ export default {
 		},
 		toggleApp(app) {
 			if (app.frappe) return;
-			if (!this.selectedApps.includes(app.app)) {
-				this.selectedApps.push(app.app);
+			if (!this.selectedApps.includes(app.name)) {
+				this.selectedApps.push(app.name);
 			} else {
-				this.selectedApps = this.selectedApps.filter(a => a !== app.app);
+				this.selectedApps = this.selectedApps.filter(a => a !== app.name);
 			}
 		},
 		canCreateSite() {

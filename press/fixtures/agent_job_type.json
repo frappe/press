@@ -341,7 +341,7 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-04-03 18:45:21.231192",
+  "modified": "2020-06-18 10:07:19.031918",
   "name": "New Bench",
   "parent": null,
   "parentfield": null,
@@ -359,7 +359,7 @@
     "parent": "New Bench",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
-    "step_name": "Bench Set Configuration"
+    "step_name": "Update Bench Configuration"
    },
    {
     "parent": "New Bench",
@@ -371,13 +371,13 @@
     "parent": "New Bench",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
-    "step_name": "Bench Get Apps"
+    "step_name": "Bench Reset Frappe App"
    },
    {
     "parent": "New Bench",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
-    "step_name": "Bench Reset Apps"
+    "step_name": "Bench Get Apps"
    },
    {
     "parent": "New Bench",
@@ -662,6 +662,68 @@
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Reload NGINX"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2020-06-18 09:02:49.972271",
+  "name": "Update Bench Configuration",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/config",
+  "steps": [
+   {
+    "parent": "Update Bench Configuration",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Update Bench Configuration"
+   },
+   {
+    "parent": "Update Bench Configuration",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Setup Supervisor"
+   },
+   {
+    "parent": "Update Bench Configuration",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Update Supervisor"
+   },
+   {
+    "parent": "Update Bench Configuration",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Setup NGINX"
+   },
+   {
+    "parent": "Update Bench Configuration",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2020-06-26 15:27:03.310761",
+  "name": "Uninstall App from Site",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "request_method": "DELETE",
+  "request_path": "/benches/{bench}/sites/{site}/apps",
+  "steps": [
+   {
+    "parent": "Uninstall App from Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Uninstall App from Site"
    }
   ]
  }

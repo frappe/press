@@ -7,3 +7,8 @@ press.patches.v0_0_1.update_proxy_for_suspended_and_inactive_sites
 press.patches.v0_0_1.rename_site_backup_fields # 2020-05-22
 press.patches.v0_0_1.rename_archived_sites
 press.patches.v0_0_1.create_backup_uploads_folder
+press.patches.v0_0_1.mark_deployed_app_releases_as_approved_and_deployable # 2020-22-06
+press.patches.v0_0_1.set_repository_in_frappe_app # 2020-22-06
+press.patches.v0_0_1.make_apps_in_public_release_group_public
+press.patches.v0_0_1.set_host_name_for_sites_with_domains
+press.patches.v0_0_1.set_rate_limit_config_based_on_plan

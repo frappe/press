@@ -23,20 +23,24 @@
 			</div>
 			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2" v-if="analytics">
 				<div class="px-6 py-4 mt-6 border rounded shadow">
-					<div class="text-base">Requests per minute</div>
+					<div class="text-base">Requests</div>
 					<div ref="requests-per-minute"></div>
 				</div>
 				<div class="px-6 py-4 mt-6 border rounded shadow">
-					<div class="text-base">CPU usage per minute</div>
+					<div class="text-base">CPU Usage</div>
 					<div ref="requests-cpu-usage"></div>
 				</div>
 				<div class="px-6 py-4 mt-6 border rounded shadow">
-					<div class="text-base">Background Jobs per minute</div>
+					<div class="text-base">Background Jobs</div>
 					<div ref="jobs-per-minute"></div>
 				</div>
 				<div class="px-6 py-4 mt-6 border rounded shadow">
-					<div class="text-base">Background Jobs CPU usage per minute</div>
+					<div class="text-base">Background Jobs CPU usage</div>
 					<div ref="jobs-cpu-usage"></div>
+				</div>
+				<div class="px-6 py-4 mt-6 border rounded shadow">
+					<div class="text-base">Usage Counter</div>
+					<div ref="usage-counter"></div>
 				</div>
 				<div class="px-6 py-4 mt-6 border rounded shadow">
 					<div class="text-base">Uptime</div>
@@ -48,7 +52,9 @@
 									:key="d.timestamp"
 									style="width: 2px;"
 									:class="[
-										d[type.key] === 1
+										d[type.key] === undefined
+											? 'bg-white'
+											: d[type.key] === 1
 											? 'bg-green-500'
 											: d[type.key] === 0
 											? 'bg-red-500'
@@ -109,6 +115,7 @@ export default {
 			this.makeJobsPerSecondChart();
 			this.makeCPUUsageChart();
 			this.makeJobCPUUsageChart();
+			this.makeUsageCounterChart();
 		},
 		makeRequestsPerSecondChart() {
 			new Chart(this.$refs['requests-per-minute'], {
@@ -185,7 +192,9 @@ export default {
 					}),
 					datasets: [
 						{
-							values: this.analytics.request_cpu_time.map(d => d.value / 1000)
+							values: this.analytics.request_cpu_time.map(
+								d => d.value / 1000000
+							)
 						}
 					]
 				},
@@ -204,7 +213,7 @@ export default {
 						return DateTime.fromSQL(d.timestamp).toFormat('dd-MM-yyyy hh:mm a');
 					},
 					formatTooltipY: d => {
-						return d + ' ms';
+						return d + ' s';
 					}
 				}
 			});
@@ -222,7 +231,7 @@ export default {
 					}),
 					datasets: [
 						{
-							values: this.analytics.job_cpu_time.map(d => d.value / 1000)
+							values: this.analytics.job_cpu_time.map(d => d.value / 1000000)
 						}
 					]
 				},
@@ -242,6 +251,46 @@ export default {
 					},
 					formatTooltipY: d => {
 						return d + 's';
+					}
+				}
+			});
+		},
+		makeUsageCounterChart() {
+			new Chart(this.$refs['usage-counter'], {
+				data: {
+					labels: this.analytics.usage_counter.map(d => {
+						return {
+							timestamp: d.timestamp,
+							toString() {
+								return DateTime.fromSQL(d.timestamp).toFormat('hh:mm a');
+							}
+						};
+					}),
+					datasets: [
+						{
+							values: this.analytics.usage_counter.map(d => d.value / 1000000)
+						}
+					],
+					yMarkers: [
+						{ label: 'Daily CPU Time Limit', value: this.analytics.plan_limit }
+					]
+				},
+				type: 'line',
+				colors: ['blue'],
+				axisOptions: {
+					xIsSeries: true,
+					shortenYAxisNumbers: 1
+				},
+				lineOptions: {
+					hideDots: true,
+					spline: true
+				},
+				tooltipOptions: {
+					formatTooltipX: d => {
+						return DateTime.fromSQL(d.timestamp).toFormat('dd-MM-yyyy hh:mm a');
+					},
+					formatTooltipY: d => {
+						return d + ' s';
 					}
 				}
 			});
