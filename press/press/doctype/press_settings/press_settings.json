@@ -40,13 +40,18 @@
   "github_app_id",
   "github_app_client_id",
   "github_app_client_secret",
-  "column_break_36",
   "github_app_public_link",
+  "column_break_36",
   "github_webhook_secret",
   "clone_directory",
   "code_server",
+  "code_server_password",
   "section_break_41",
-  "github_app_private_key"
+  "github_app_private_key",
+  "auto_update_section",
+  "auto_update_queue_size",
+  "backups_section",
+  "backup_interval"
  ],
  "fields": [
   {
@@ -281,11 +286,37 @@
    "fieldname": "section_break_41",
    "fieldtype": "Section Break",
    "hide_border": 1
+  },
+  {
+   "default": "4",
+   "fieldname": "auto_update_queue_size",
+   "fieldtype": "Int",
+   "label": "Auto Update Queue Size"
+  },
+  {
+   "fieldname": "auto_update_section",
+   "fieldtype": "Section Break",
+   "label": "Auto Update"
+  },
+  {
+   "fieldname": "code_server_password",
+   "fieldtype": "Data",
+   "label": "Code Server Password"
+  },
+  {
+   "fieldname": "backups_section",
+   "fieldtype": "Section Break",
+   "label": "Backups"
+  },
+  {
+   "fieldname": "backup_interval",
+   "fieldtype": "Int",
+   "label": "Backup Interval"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2020-06-22 11:18:20.917016",
+ "modified": "2020-06-26 09:50:59.736444",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

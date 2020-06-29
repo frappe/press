@@ -36,6 +36,13 @@
 						>
 							Retry
 						</Button>
+						<Button
+							@click="setHostName(d.domain)"
+							v-if="d.status == 'Active' && !d.primary"
+							class="ml-8"
+						>
+							Set Primary
+						</Button>
 					</div>
 
 					<div
@@ -147,6 +154,13 @@ export default {
 		},
 		async retryAddDomain(domain) {
 			await this.$call('press.api.site.retry_add_domain', {
+				name: this.site.name,
+				domain: domain
+			});
+			this.fetchDomains();
+		},
+		async setHostName(domain) {
+			await this.$call('press.api.site.set_host_name', {
 				name: this.site.name,
 				domain: domain
 			});

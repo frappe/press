@@ -142,6 +142,16 @@ class Agent:
 			site=site.name,
 		)
 
+	def uninstall_app_site(self, site, app):
+		scrubbed = frappe.db.get_value("Frappe App", app, "scrubbed")
+		return self.create_agent_job(
+			"Uninstall App from Site",
+			f"benches/{site.bench}/sites/{site.name}/apps/{scrubbed}",
+			method="DELETE",
+			bench=site.bench,
+			site=site.name,
+		)
+
 	def update_site(self, site, target, deploy_type):
 		data = {"target": target}
 		return self.create_agent_job(
@@ -324,6 +334,12 @@ class Agent:
 	def get_job_status(self, id):
 		status = self.get(f"jobs/{id}")
 		return status
+
+	def get_site_sid(self, site):
+		return self.get(f"benches/{site.bench}/sites/{site.name}/sid")["sid"]
+
+	def get_site_info(self, site):
+		return self.get(f"benches/{site.bench}/sites/{site.name}/info")["data"]
 
 	def get_jobs_status(self, ids):
 		status = self.get(f"jobs/{','.join(map(str, ids))}")

@@ -16,6 +16,8 @@ class FrappeApp(Document):
 		self.create_app_release()
 
 	def create_app_release(self):
+		if not self.enabled:
+			return
 		try:
 			if self.installation:
 				token = get_access_token(self.installation)
@@ -36,7 +38,7 @@ class FrappeApp(Document):
 						"app": self.name,
 						"hash": hash,
 						"message": branch["commit"]["commit"]["message"],
-						"author": branch["commit"]["author"]["login"],
+						"author": branch["commit"]["commit"]["author"]["name"],
 						"deployable": not bool(self.get_doc_before_save()),
 					}
 				).insert()

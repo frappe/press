@@ -10,6 +10,7 @@
   "scrubbed",
   "branch",
   "repo_owner",
+  "enabled",
   "column_break_5",
   "repo",
   "frappe",
@@ -100,10 +101,16 @@
    "fieldname": "skip_review",
    "fieldtype": "Check",
    "label": "Skip Review"
+  },
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
   }
  ],
  "links": [],
- "modified": "2020-06-22 10:47:12.848063",
+ "modified": "2020-06-23 10:00:36.071430",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Frappe App",

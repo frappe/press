@@ -8,6 +8,7 @@
  "field_order": [
   "subdomain",
   "status",
+  "status_before_update",
   "server",
   "bench",
   "column_break_3",
@@ -27,6 +28,7 @@
   "database_host",
   "database_port",
   "configuration_section",
+  "host_name",
   "config",
   "deploy_section",
   "timezone",
@@ -41,6 +43,8 @@
    "fetch_if_empty": 1,
    "fieldname": "server",
    "fieldtype": "Link",
+   "hide_days": 1,
+   "hide_seconds": 1,
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Server",
@@ -51,6 +55,8 @@
   {
    "fieldname": "bench",
    "fieldtype": "Link",
+   "hide_days": 1,
+   "hide_seconds": 1,
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Bench",
@@ -61,6 +67,8 @@
   {
    "fieldname": "apps",
    "fieldtype": "Table",
+   "hide_days": 1,
+   "hide_seconds": 1,
    "label": "Apps",
    "options": "Site App",
    "reqd": 1
@@ -69,6 +77,8 @@
    "default": "Pending",
    "fieldname": "status",
    "fieldtype": "Select",
+   "hide_days": 1,
+   "hide_seconds": 1,
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
@@ -79,20 +89,28 @@
   {
    "fieldname": "admin_password",
    "fieldtype": "Password",
+   "hide_days": 1,
+   "hide_seconds": 1,
    "label": "Administrator Password"
   },
   {
    "fieldname": "column_break_3",
-   "fieldtype": "Column Break"
+   "fieldtype": "Column Break",
+   "hide_days": 1,
+   "hide_seconds": 1
   },
   {
    "fieldname": "section_break_6",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "hide_days": 1,
+   "hide_seconds": 1
   },
   {
    "default": "{}",
    "fieldname": "config",
    "fieldtype": "Code",
+   "hide_days": 1,
+   "hide_seconds": 1,
    "label": "Configuration",
    "options": "JSON",
    "read_only": 1
@@ -100,12 +118,16 @@
   {
    "fieldname": "database_section",
    "fieldtype": "Section Break",
+   "hide_days": 1,
+   "hide_seconds": 1,
    "label": "Database"
   },
   {
    "default": "MariaDB",
    "fieldname": "database_type",
    "fieldtype": "Select",
+   "hide_days": 1,
+   "hide_seconds": 1,
    "label": "Database Type",
    "options": "MariaDB\nPostgres",
    "reqd": 1,
@@ -114,17 +136,23 @@
   {
    "fieldname": "database_name",
    "fieldtype": "Data",
+   "hide_days": 1,
+   "hide_seconds": 1,
    "label": "Database Name",
    "set_only_once": 1
   },
   {
    "fieldname": "column_break_13",
-   "fieldtype": "Column Break"
+   "fieldtype": "Column Break",
+   "hide_days": 1,
+   "hide_seconds": 1
   },
   {
    "default": "localhost",
    "fieldname": "database_host",
    "fieldtype": "Data",
+   "hide_days": 1,
+   "hide_seconds": 1,
    "label": "Database Host",
    "set_only_once": 1
   },
@@ -132,28 +160,38 @@
    "default": "3306",
    "fieldname": "database_port",
    "fieldtype": "Data",
+   "hide_days": 1,
+   "hide_seconds": 1,
    "label": "Database Port",
    "set_only_once": 1
   },
   {
    "fieldname": "configuration_section",
    "fieldtype": "Section Break",
+   "hide_days": 1,
+   "hide_seconds": 1,
    "label": "Configuration"
   },
   {
    "fieldname": "update",
    "fieldtype": "Datetime",
+   "hide_days": 1,
+   "hide_seconds": 1,
    "label": "Last Updated On"
   },
   {
    "fieldname": "subdomain",
    "fieldtype": "Data",
+   "hide_days": 1,
+   "hide_seconds": 1,
    "label": "Subdomain",
    "reqd": 1
   },
   {
    "fieldname": "team",
    "fieldtype": "Link",
+   "hide_days": 1,
+   "hide_seconds": 1,
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Team",
@@ -162,6 +200,8 @@
   {
    "fieldname": "plan",
    "fieldtype": "Link",
+   "hide_days": 1,
+   "hide_seconds": 1,
    "in_standard_filter": 1,
    "label": "Plan",
    "options": "Plan",
@@ -170,44 +210,60 @@
   {
    "fieldname": "deploy_section",
    "fieldtype": "Section Break",
+   "hide_days": 1,
+   "hide_seconds": 1,
    "label": "Deploy"
   },
   {
    "fieldname": "timezone",
    "fieldtype": "Data",
+   "hide_days": 1,
+   "hide_seconds": 1,
    "label": "Timezone"
   },
   {
    "collapsible": 1,
    "fieldname": "restore",
    "fieldtype": "Section Break",
+   "hide_days": 1,
+   "hide_seconds": 1,
    "label": "Restore"
   },
   {
    "fieldname": "database_file",
    "fieldtype": "Attach",
+   "hide_days": 1,
+   "hide_seconds": 1,
    "label": "Database File"
   },
   {
    "fieldname": "private_file",
    "fieldtype": "Attach",
+   "hide_days": 1,
+   "hide_seconds": 1,
    "label": "Private File"
   },
   {
    "fieldname": "public_file",
    "fieldtype": "Attach",
+   "hide_days": 1,
+   "hide_seconds": 1,
    "label": "Public File"
   },
   {
    "default": "0",
    "fieldname": "setup_wizard_complete",
    "fieldtype": "Check",
+   "hide_days": 1,
+   "hide_seconds": 1,
    "label": "Setup Wizard Complete",
    "read_only": 1
   },
   {
    "fieldname": "billing",
    "fieldtype": "Section Break",
+   "hide_days": 1,
+   "hide_seconds": 1,
    "label": "Billing"
   },
   {
@@ -215,11 +271,24 @@
    "description": "If checked, this site's usage data won't be sent to Stripe",
    "fieldname": "free",
    "fieldtype": "Check",
+   "hide_days": 1,
+   "hide_seconds": 1,
    "label": "Free Site"
+  },
+  {
+   "fieldname": "host_name",
+   "fieldtype": "Data",
+   "label": "Host Name"
+  },
+  {
+   "fieldname": "status_before_update",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Status Before Update"
   }
  ],
  "links": [],
- "modified": "2020-05-25 11:14:58.599577",
+ "modified": "2020-06-24 21:54:08.542772",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

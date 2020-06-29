@@ -20,17 +20,47 @@ frappe.ui.form.on('Site', {
 		);
 
 		[
-			[__('Archive'), 'archive'],
-			[__('Archive'), 'archive'],
 			[__('Backup'), 'backup'],
+		].forEach(([label, method]) => {
+			frm.add_custom_button(
+				label,
+				() => { frm.call(method).then((r) => frm.refresh()) },
+				__('Actions')
+			);
+		});
+		[
+			[__('Archive'), 'archive'],
 			[__('Reinstall'), 'reinstall'],
 			[__('Restore'), 'restore'],
 			[__('Update'), 'schedule_update'],
+			[__('Deactivate'), 'deactivate'],
+			[__('Activate'), 'activate'],
 		].forEach(([label, method]) => {
 			frm.add_custom_button(
 				label,
 				() => {
-					frm.call(method).then((r) => frappe.msgprint(r.message));
+					frappe.confirm(
+						`Are you sure you want to ${label.toLowerCase()} this site?`,
+						() => frm.call(method).then((r) => frm.refresh())
+					);
+				},
+				__('Actions')
+			);
+		});
+		[
+			[__('Suspend'), 'suspend'],
+			[__('Unuspend'), 'unsuspend'],
+		].forEach(([label, method]) => {
+			frm.add_custom_button(
+				label,
+				() => {
+					frappe.prompt(
+						{ fieldtype: 'Data', label: 'Reason', fieldname: 'reason', reqd: 1 },
+						({ reason }) => {
+							frm.call(method, { reason }).then((r) => frm.refresh());
+						},
+						__('Provide Reason')
+					);
 				},
 				__('Actions')
 			);
