@@ -13,7 +13,6 @@ from pathlib import Path
 import tarfile
 import wrapt
 import frappe
-from press.agent import Agent
 from frappe.core.utils import find
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.site_update.site_update import (
