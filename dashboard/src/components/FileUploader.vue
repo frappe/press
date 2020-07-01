@@ -24,14 +24,14 @@
 
 <script>
 import FileUploader from '@/controllers/fileUploader';
+import S3FileUploader from '@/controllers/s3FileUploader';
 
 export default {
 	name: 'FileUploader',
-	props: ['fileTypes', 'uploadArgs'],
+	props: ['fileTypes', 'uploadArgs', 's3'],
 	data() {
 		return {
 			uploader: null,
-
 			uploading: false,
 			uploaded: 0,
 			error: null,
@@ -61,7 +61,7 @@ export default {
 			this.uploaded = 0;
 			this.total = 0;
 
-			this.uploader = new FileUploader();
+			this.uploader = this.s3 ? new S3FileUploader() : new FileUploader();
 			this.uploader.on('start', () => {
 				this.uploading = true;
 			});
