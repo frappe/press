@@ -4,7 +4,6 @@
 
 from __future__ import unicode_literals
 
-import datetime
 import json
 import re
 import frappe
@@ -123,14 +122,12 @@ class Site(Document):
 		self.status = "Pending"
 		self.save()
 
-	def backup(self, with_files=False):
+	def backup(self, with_files=False, offsite=False):
 		if frappe.db.count(
 			"Site Backup", {"site": self.name, "status": ("in", ["Running", "Pending"])}
 		):
 			raise Exception("Too many pending backups")
 
-		yesterday = datetime.date.today() - datetime.timedelta(days=1)
-		offsite = not frappe.db.count("Site Backup", {"creation": [">", yesterday], "site": self.name, "offsite": 1, "status": "Success"})
 		log_site_activity(self.name, "Backup")
 		frappe.get_doc(
 			{"doctype": "Site Backup", "site": self.name, "with_files": with_files, "offsite": offsite}
