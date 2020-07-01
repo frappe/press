@@ -15,6 +15,7 @@
 								method: 'press.api.site.upload_backup',
 								type: file.type
 							}"
+							:s3="true"
 						>
 							<template
 								v-slot="{

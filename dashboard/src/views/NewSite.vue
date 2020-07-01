@@ -92,6 +92,7 @@
 						<FileUploader
 							v-for="file in files"
 							:key="file.type"
+							:s3="true"
 							@success="onFileUpload(file, $event)"
 							:upload-args="{
 								method: 'press.api.site.upload_backup',
