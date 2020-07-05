@@ -96,7 +96,7 @@ class Site(Document):
 
 	def create_agent_request(self):
 		agent = Agent(self.server)
-		if self.database_file and self.private_file and self.public_file:
+		if self.remote_database_file and self.remote_private_file and self.remote_public_file:
 			agent.new_site_from_backup(self)
 		else:
 			agent.new_site(self)

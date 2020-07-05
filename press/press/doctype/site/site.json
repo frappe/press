@@ -35,7 +35,11 @@
   "restore",
   "database_file",
   "private_file",
-  "public_file"
+  "public_file",
+  "remote_files",
+  "remote_database_file",
+  "remote_private_file",
+  "remote_public_file"
  ],
  "fields": [
   {
@@ -227,7 +231,7 @@
    "fieldtype": "Section Break",
    "hide_days": 1,
    "hide_seconds": 1,
-   "label": "Restore"
+   "label": "Site Files"
   },
   {
    "fieldname": "database_file",
@@ -285,10 +289,37 @@
    "fieldtype": "Data",
    "hidden": 1,
    "label": "Status Before Update"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "remote_files",
+   "fieldtype": "Section Break",
+   "label": "Remote Files"
+  },
+  {
+   "fieldname": "remote_database_file",
+   "fieldtype": "Link",
+   "label": "Remote Database File",
+   "options": "Remote File",
+   "read_only": 1
+  },
+  {
+   "fieldname": "remote_private_file",
+   "fieldtype": "Link",
+   "label": "Remote Private File",
+   "options": "Remote File",
+   "read_only": 1
+  },
+  {
+   "fieldname": "remote_public_file",
+   "fieldtype": "Link",
+   "label": "Remote Public File",
+   "options": "Remote File",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2020-06-24 21:54:08.542772",
+ "modified": "2020-07-06 15:21:53.854267",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

@@ -56,9 +56,9 @@ def new(site):
 			"apps": [{"app": app} for app in site["apps"]],
 			"team": team,
 			"plan": site["plan"],
-			"database_file": site["files"]["database"],
-			"public_file": site["files"]["public"],
-			"private_file": site["files"]["private"],
+			"remote_database_file": site["files"]["database"],
+			"remote_public_file": site["files"]["public"],
+			"remote_private_file": site["files"]["private"],
 		},
 	).insert(ignore_permissions=True)
 	return site.name
@@ -449,9 +449,9 @@ def reinstall(name):
 @protected("Site")
 def restore(name, files):
 	site = frappe.get_doc("Site", name)
-	site.database_file = files["database"]
-	site.public_file = files["public"]
-	site.private_file = files["private"]
+	site.remote_database_file = files["database"]
+	site.remote_public_file = files["public"]
+	site.remote_private_file = files["private"]
 	site.save()
 	site.restore()
 
