@@ -13,6 +13,8 @@ from pathlib import Path
 import tarfile
 import wrapt
 import frappe
+from boto3 import client
+from botocore.exceptions import ClientError
 from frappe.core.utils import find
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.site_update.site_update import (
@@ -21,7 +23,9 @@ from press.press.doctype.site_update.site_update import (
 )
 from press.utils import log_error, get_current_team
 from frappe.utils import cint, flt, time_diff_in_hours
+from frappe.utils.password import get_decrypted_password
 from press.press.doctype.plan.plan import get_plan_config
+from press.press.doctype.remote_file.remote_file import get_remote_key
 
 
 def protected(doctype):
@@ -619,3 +623,34 @@ def upload_backup():
 		return file.file_url
 	else:
 		frappe.throw("Invalid Backup File")
+
+
+@frappe.whitelist()
+def get_upload_link(file):
+	bucket_name = frappe.db.get_single_value("Press Settings", "remote_uploads_bucket")
+	expiration = frappe.db.get_single_value("Press Settings", "remote_link_expiry") or 3600
+	object_name = get_remote_key(file)
+
+	s3_client = client(
+		"s3",
+		aws_access_key_id=frappe.db.get_single_value("Press Settings", "remote_access_key_id"),
+		aws_secret_access_key=get_decrypted_password("Press Settings", "Press Settings", "remote_secret_access_key"),
+		region_name="ap-south-1"
+	)
+	try:
+		# The response contains the presigned URL and required fields
+		return s3_client.generate_presigned_post(bucket_name, object_name, ExpiresIn=expiration)
+	except ClientError as e:
+		log_error("Failed to Generate Presigned URL", content=e)
+
+
+@frappe.whitelist()
+def uploaded_backup_info(file, type, size):
+	doc = frappe.get_doc({
+		"doctype": "Remote File",
+		"file_name": file,
+		"file_type": type,
+		"file_size": size,
+		"file_path": get_remote_key(file)
+	}).insert()
+	return doc.name
