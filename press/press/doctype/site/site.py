@@ -130,7 +130,12 @@ class Site(Document):
 
 		log_site_activity(self.name, "Backup")
 		frappe.get_doc(
-			{"doctype": "Site Backup", "site": self.name, "with_files": with_files, "offsite": offsite}
+			{
+				"doctype": "Site Backup",
+				"site": self.name,
+				"with_files": with_files,
+				"offsite": offsite,
+			}
 		).insert()
 
 	def schedule_update(self):

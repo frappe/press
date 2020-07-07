@@ -22,12 +22,11 @@ import frappe
 from frappe.core.utils import find
 from frappe.utils import cint, flt, time_diff_in_hours
 from frappe.utils.password import get_decrypted_password
-from press.agent import Agent
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.plan.plan import get_plan_config
 from press.press.doctype.site_update.site_update import (
 	benches_with_available_update,
-	should_try_update
+	should_try_update,
 )
 from press.utils import get_current_team, log_error
 
@@ -125,7 +124,7 @@ def backups(name):
 		"public_url",
 		"creation",
 		"status",
-		"offsite"
+		"offsite",
 	]
 	latest_backups = frappe.get_all(
 		"Site Backup",
@@ -136,28 +135,40 @@ def backups(name):
 	offsite_backups = frappe.get_all(
 		"Site Backup",
 		fields=fields,
-		filters={"site": name, "status": ("!=", "Failure"), "offsite": 1, "creation": (">", one_month_ago)},
+		filters={
+			"site": name,
+			"status": ("!=", "Failure"),
+			"offsite": 1,
+			"creation": (">", one_month_ago),
+		},
 	)
-	return sorted(latest_backups + offsite_backups, key=lambda x: x["creation"], reverse=True)
+	return sorted(
+		latest_backups + offsite_backups, key=lambda x: x["creation"], reverse=True
+	)
 
 
 @frappe.whitelist()
 @protected("Site")
 def get_backup_link(name, backup, expiration=3600):
-	bench = frappe.get_value("Site", name, "bench")
 	bucket = frappe.db.get_single_value("Press Settings", "aws_s3_bucket")
 	date = str(datetime.datetime.strptime(backup.split("_")[0], "%Y%m%d").date())
 	file_path = os.path.join(bench, name, date, backup)
 
 	s3 = boto3.client(
-		's3',
-		aws_access_key_id=frappe.db.get_single_value("Press Settings", "offsite_backups_access_key_id"),
-		aws_secret_access_key=get_decrypted_password("Press Settings", "Press Settings", "offsite_backups_secret_access_key"),
-		region_name="ap-south-1"
+		"s3",
+		aws_access_key_id=frappe.db.get_single_value(
+			"Press Settings", "offsite_backups_access_key_id"
+		),
+		aws_secret_access_key=get_decrypted_password(
+			"Press Settings", "Press Settings", "offsite_backups_secret_access_key"
+		),
+		region_name="ap-south-1",
 	)
 
 	try:
-		response = s3.generate_presigned_url('get_object', Params={'Bucket': bucket, 'Key': file_path}, ExpiresIn=expiration)
+		response = s3.generate_presigned_url(
+			"get_object", Params={"Bucket": bucket, "Key": file_path}, ExpiresIn=expiration
+		)
 	except ClientError:
 		log_error(title="Offsite Backup Response Exception")
 		return
