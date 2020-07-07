@@ -11,6 +11,7 @@ import OpenSSL
 from frappe.utils.password import get_decrypted_password
 from frappe.model.document import Document
 from press.utils import log_error
+from press.api.site import check_dns_cname_a
 
 
 class TLSCertificate(Document):
@@ -98,3 +99,21 @@ class TLSCertificate(Document):
 			OpenSSL.crypto.FILETYPE_TEXT, x509
 		).decode()
 		self.expiry = datetime.strptime(x509.get_notAfter().decode(), "%Y%m%d%H%M%SZ")
+
+
+def renew_tls_certificates():
+	pending = frappe.get_all(
+		"TLS Certificate",
+		fields=["name", "domain"],
+		filters={"status": "Active", "expiry": ("<", frappe.utils.add_days(None, 25))},
+	)
+	for certificate in pending:
+		site = frappe.db.get_value(
+			"Site Domain", {"tls_certificate": certificate.name, "status": "Active"}, "site"
+		)
+		if site:
+			site_status = frappe.db.get_value("Site", site, "status")
+			if site_status == "Active" and check_dns_cname_a(site, certificate.domain):
+				certificate_doc = frappe.get_doc("TLS Certificate", certificate.name)
+				certificate_doc._obtain_certificate()
+				frappe.db.commit()
