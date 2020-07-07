@@ -523,8 +523,6 @@ def setup_wizard_complete(name):
 @frappe.whitelist()
 @protected("Site")
 def check_dns(name, domain):
-	return True
-
 	def check_dns_cname(name, domain):
 		try:
 			answer = dns.resolver.query(domain, "CNAME")[0].to_text()
