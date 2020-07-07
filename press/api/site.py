@@ -520,9 +520,7 @@ def setup_wizard_complete(name):
 	return frappe.get_doc("Site", name).is_setup_wizard_complete()
 
 
-@frappe.whitelist()
-@protected("Site")
-def check_dns(name, domain):
+def check_dns_cname_a(name, domain):
 	def check_dns_cname(name, domain):
 		try:
 			answer = dns.resolver.query(domain, "CNAME")[0].to_text()
@@ -544,6 +542,12 @@ def check_dns(name, domain):
 		return False
 
 	return check_dns_cname(name, domain) or check_dns_a(name, domain)
+
+
+@frappe.whitelist()
+@protected("Site")
+def check_dns(name, domain):
+	return check_dns_cname_a(name, domain)
 
 
 @frappe.whitelist()
