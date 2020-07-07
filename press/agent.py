@@ -11,6 +11,8 @@ import requests
 from frappe.utils.password import get_decrypted_password
 from press.utils import log_error
 from press.api.github import get_access_token
+import os
+from datetime import date
 
 
 class Agent:
@@ -199,6 +201,7 @@ class Agent:
 
 		if offsite:
 			settings = frappe.get_single("Press Settings")
+			backups_path = os.path.join(site.name, str(date.today()))
 
 			if settings.aws_s3_bucket:
 				auth = {
@@ -208,7 +211,8 @@ class Agent:
 				data.update({
 					"offsite": {
 						"bucket": settings.aws_s3_bucket,
-						"auth": auth
+						"auth": auth,
+						"path": backups_path,
 					}
 				})
 
