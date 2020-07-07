@@ -239,9 +239,15 @@ def schedule_backups():
 
 			if site_time.hour % interval == 0:
 				yesterday = site_time - timedelta(days=1)
-				common_filters = {"creation": [">", yesterday], "site": site.name, "status": "Success"}
+				common_filters = {
+					"creation": [">", yesterday],
+					"site": site.name,
+					"status": "Success",
+				}
 				offsite = not frappe.db.count("Site Backup", {**common_filters, "offsite": 1})
-				with_files = not frappe.db.count("Site Backup", {**common_filters, "with_files": 1}) or offsite
+				with_files = (
+					not frappe.db.count("Site Backup", {**common_filters, "with_files": 1}) or offsite
+				)
 
 				frappe.get_doc("Site", site.name).backup(with_files=with_files, offsite=offsite)
 

@@ -206,15 +206,13 @@ class Agent:
 			if settings.aws_s3_bucket:
 				auth = {
 					"ACCESS_KEY": settings.offsite_backups_access_key_id,
-					"SECRET_KEY": get_decrypted_password("Press Settings", "Press Settings", "offsite_backups_secret_access_key")
+					"SECRET_KEY": get_decrypted_password(
+						"Press Settings", "Press Settings", "offsite_backups_secret_access_key"
+					),
 				}
-				data.update({
-					"offsite": {
-						"bucket": settings.aws_s3_bucket,
-						"auth": auth,
-						"path": backups_path,
-					}
-				})
+				data.update(
+					{"offsite": {"bucket": settings.aws_s3_bucket, "auth": auth, "path": backups_path}}
+				)
 
 			else:
 				log_error("Offsite Backups aren't set yet")
