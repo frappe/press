@@ -166,7 +166,14 @@ export default {
 					'Site Logs',
 					'Request Logs'
 				],
-				Inactive: ['General', 'Plan', 'Site Config', 'Activity', 'Jobs', 'Site Logs'],
+				Inactive: [
+					'General',
+					'Plan',
+					'Site Config',
+					'Activity',
+					'Jobs',
+					'Site Logs'
+				],
 				Installing: ['Installing', 'Jobs'],
 				Pending: ['Installing', 'Jobs'],
 				Broken: ['General', 'Plan', 'Activity', 'Jobs', 'Site Logs'],
