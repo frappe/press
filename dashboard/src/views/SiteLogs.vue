@@ -41,16 +41,23 @@
 				<div class="min-h-full pb-16 -mx-4 bg-black sm:mx-0">
 					<div class="px-6 py-4 mb-2 border-b border-gray-900">
 						<div class="text-sm font-semibold text-white">
-							{{ logName }} <span class="text-gray-900">({{ selectedLogLines.length }} lines)</span>
+							{{ logName }}
+							<span class="text-gray-900"
+								>({{ selectedLogLines.length }} lines)</span
+							>
 						</div>
 					</div>
-						<div class="px-6 font-mono text-xs text-gray-200">
-							<div class="overflow-auto" style="white-space: pre-line;">
-								<div v-for="(line, id) in selectedLogLines" v-bind:key="id" class='hover:text-yellow-200'>
-									{{ line }}
-								</div>
+					<div class="px-6 font-mono text-xs text-gray-200">
+						<div class="overflow-auto" style="white-space: pre-line;">
+							<div
+								v-for="(line, id) in selectedLogLines"
+								v-bind:key="id"
+								class="hover:text-yellow-200"
+							>
+								{{ line }}
 							</div>
 						</div>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -102,8 +109,8 @@ export default {
 	computed: {
 		selectedLogLines() {
 			if (this.selectedLog && this.logName && this.selectedLog[this.logName])
-				return this.selectedLog[this.logName].split("\n")
-			return []
+				return this.selectedLog[this.logName].split('\n');
+			return [];
 		}
 	}
 };

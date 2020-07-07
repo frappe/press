@@ -13,15 +13,14 @@
 					>
 						<div class="w-full">
 							<div class="font-semibold">
-								<span v-if="backup.status === 'Success'" class="flex justify-between items-center">
+								<span
+									v-if="backup.status === 'Success'"
+									class="flex justify-between items-center"
+								>
 									<span>
-									Backup on <FormatDate>{{ backup.creation }}</FormatDate>
+										Backup on <FormatDate>{{ backup.creation }}</FormatDate>
 									</span>
-									<Badge
-										v-if="backup.offsite"
-										class="ml-4"
-										color="green"
-									>
+									<Badge v-if="backup.offsite" class="ml-4" color="green">
 										Offsite
 									</Badge>
 								</span>
@@ -35,7 +34,13 @@
 							>
 								<div>
 									<button
-										v-on:click="downloadBackup(backup.database_file, backup.database_url, backup.offsite)"
+										v-on:click="
+											downloadBackup(
+												backup.database_file,
+												backup.database_url,
+												backup.offsite
+											)
+										"
 										class="text-gray-800 border-b border-gray-500"
 									>
 										Database ({{ formatBytes(backup.database_size) }})
@@ -43,7 +48,13 @@
 								</div>
 								<div>
 									<button
-										v-on:click="downloadBackup(backup.private_file, backup.private_url, backup.offsite)"
+										v-on:click="
+											downloadBackup(
+												backup.private_file,
+												backup.private_url,
+												backup.offsite
+											)
+										"
 										class="text-gray-800 border-b border-gray-500"
 										v-if="backup.private_file"
 									>
@@ -52,7 +63,13 @@
 								</div>
 								<div>
 									<button
-										v-on:click="downloadBackup(backup.public_file, backup.public_url, backup.offsite)"
+										v-on:click="
+											downloadBackup(
+												backup.public_file,
+												backup.public_url,
+												backup.offsite
+											)
+										"
 										class="text-gray-800 border-b border-gray-500"
 										v-if="backup.public_file"
 									>
@@ -119,10 +136,12 @@ export default {
 	},
 	methods: {
 		async downloadBackup(backup_file, database_url, offsite) {
-			let link = offsite ? await this.$call('press.api.site.get_backup_link', {
-				name: this.site.name,
-				backup: backup_file
-			}) : database_url;
+			let link = offsite
+				? await this.$call('press.api.site.get_backup_link', {
+						name: this.site.name,
+						backup: backup_file
+				  })
+				: database_url;
 			window.open(link);
 		}
 	}
