@@ -152,7 +152,7 @@ def backups(name):
 def get_backup_link(name, backup, expiration=3600):
 	bucket = frappe.db.get_single_value("Press Settings", "aws_s3_bucket")
 	date = str(datetime.datetime.strptime(backup.split("_")[0], "%Y%m%d").date())
-	file_path = os.path.join(bench, name, date, backup)
+	file_path = os.path.join(name, date, backup)
 
 	s3 = boto3.client(
 		"s3",
