@@ -6,6 +6,7 @@
  "engine": "InnoDB",
  "field_order": [
   "file_name",
+  "status",
   "section_break_5",
   "file_size",
   "file_path",
@@ -44,11 +45,22 @@
    "fieldtype": "Data",
    "label": "File Type",
    "read_only": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Available\nUnavailable",
+   "read_only": 1,
+   "reqd": 1
   }
  ],
  "icon": "fa fa-file",
  "links": [],
- "modified": "2020-07-02 14:52:58.513990",
+ "modified": "2020-07-08 16:49:51.968211",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Remote File",
@@ -83,5 +95,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "ASC",
- "title_field": "file_name"
+ "title_field": "file_name",
+ "track_views": 1
 }

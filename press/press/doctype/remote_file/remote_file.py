@@ -5,6 +5,7 @@
 from __future__ import unicode_literals
 
 from boto3 import client
+from botocore.exceptions import ClientError
 
 import frappe
 from frappe.model.document import Document
@@ -12,17 +13,25 @@ from frappe.utils.password import get_decrypted_password
 
 
 def get_remote_key(file):
-	from hashlib import sha1
-	from frappe.utils import getdate, today
 	from press.utils import get_current_team
+	from hashlib import sha1
 	from os.path import join
+	from time import time
 
-	team = get_current_team()
-	date = str(getdate(today()))
-	key = (team + date).encode()
-	hash = sha1(key).hexdigest()
+	team = sha1(get_current_team().encode()).hexdigest()
+	time = str(time()).replace(".", "_")
 
-	return join(hash, file)
+	return join(team, time, file)
+
+
+def poll_file_statuses():
+	doctype = "Remote File"
+	for d in frappe.get_all(doctype):
+		doc = frappe.get_doc(doctype, d["name"])
+		current_status = "Available" if doc.exists() else "Unavailable"
+		if current_status != doc.status:
+			doc.status = current_status
+			doc.save()
 
 
 class RemoteFile(Document):
