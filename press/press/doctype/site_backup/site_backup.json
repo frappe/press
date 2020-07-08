@@ -9,6 +9,7 @@
   "site",
   "job",
   "with_files",
+  "offsite",
   "database",
   "size",
   "url",
@@ -23,7 +24,9 @@
   "column_break_16",
   "private_file",
   "private_url",
-  "private_size"
+  "private_size",
+  "section_break_21",
+  "offsite_backup"
  ],
  "fields": [
   {
@@ -145,10 +148,29 @@
   {
    "fieldname": "column_break_16",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "offsite",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Offsite",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "section_break_21",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "offsite_backup",
+   "fieldtype": "Code",
+   "label": "Offsite Backup",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2020-05-22 13:36:40.263742",
+ "modified": "2020-06-17 17:49:22.430516",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Backup",

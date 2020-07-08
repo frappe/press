@@ -1,6 +1,6 @@
 <template>
 	<span
-		class="inline-block px-3 py-1 text-xs font-medium rounded-md"
+		class="inline-block px-3 py-1 text-xs font-medium rounded-md cursor-default"
 		:class="classes"
 	>
 		<slot>{{ status }}</slot>

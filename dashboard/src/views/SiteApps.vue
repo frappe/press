@@ -17,11 +17,6 @@
 							</p>
 						</a>
 					</div>
-					<div v-if="!app.frappe">
-						<Button @click="uninstallApp(app.name)">
-							Uninstall
-						</Button>
-					</div>
 				</div>
 			</SectionCard>
 		</Section>

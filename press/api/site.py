@@ -3,29 +3,33 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
-import dns.resolver
 
 import builtins
+import datetime
 import gzip
 import io
 import json
-from pathlib import Path
+import os
 import tarfile
+from pathlib import Path
+
+import boto3
+import dns.resolver
 import wrapt
-import frappe
 from boto3 import client
 from botocore.exceptions import ClientError
+
+import frappe
 from frappe.core.utils import find
-from press.press.doctype.agent_job.agent_job import job_detail
-from press.press.doctype.site_update.site_update import (
-	benches_with_available_update,
-	should_try_update,
-)
-from press.utils import log_error, get_current_team
 from frappe.utils import cint, flt, time_diff_in_hours
 from frappe.utils.password import get_decrypted_password
+from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.plan.plan import get_plan_config
 from press.press.doctype.remote_file.remote_file import get_remote_key
+from press.press.doctype.site_update.site_update import (
+	benches_with_available_update, should_try_update
+)
+from press.utils import get_current_team, log_error
 
 
 def protected(doctype):
@@ -106,27 +110,71 @@ def running_jobs(name):
 @frappe.whitelist()
 @protected("Site")
 def backups(name):
-	backups = frappe.get_all(
+	one_month_ago = datetime.date.today() - datetime.timedelta(days=30)
+	fields = [
+		"name",
+		"with_files",
+		"database_file",
+		"database_size",
+		"database_url",
+		"private_file",
+		"private_size",
+		"private_url",
+		"public_file",
+		"public_size",
+		"public_url",
+		"creation",
+		"status",
+		"offsite",
+	]
+	latest_backups = frappe.get_all(
 		"Site Backup",
-		fields=[
-			"name",
-			"with_files",
-			"database_file",
-			"database_size",
-			"database_url",
-			"private_file",
-			"private_size",
-			"private_url",
-			"public_file",
-			"public_size",
-			"public_url",
-			"creation",
-			"status",
-		],
-		filters={"site": name, "status": ("!=", "Failure")},
+		fields=fields,
+		filters={"site": name, "status": ("!=", "Failure"), "offsite": 0},
 		limit=5,
 	)
-	return backups
+	offsite_backups = frappe.get_all(
+		"Site Backup",
+		fields=fields,
+		filters={
+			"site": name,
+			"status": ("!=", "Failure"),
+			"offsite": 1,
+			"creation": (">", one_month_ago),
+		},
+	)
+	return sorted(
+		latest_backups + offsite_backups, key=lambda x: x["creation"], reverse=True
+	)
+
+
+@frappe.whitelist()
+@protected("Site")
+def get_backup_link(name, backup, expiration=3600):
+	bucket = frappe.db.get_single_value("Press Settings", "aws_s3_bucket")
+	date = str(datetime.datetime.strptime(backup.split("_")[0], "%Y%m%d").date())
+	file_path = os.path.join(name, date, backup)
+
+	s3 = boto3.client(
+		"s3",
+		aws_access_key_id=frappe.db.get_single_value(
+			"Press Settings", "offsite_backups_access_key_id"
+		),
+		aws_secret_access_key=get_decrypted_password(
+			"Press Settings", "Press Settings", "offsite_backups_secret_access_key"
+		),
+		region_name="ap-south-1",
+	)
+
+	try:
+		response = s3.generate_presigned_url(
+			"get_object", Params={"Bucket": bucket, "Key": file_path}, ExpiresIn=expiration
+		)
+	except ClientError:
+		log_error(title="Offsite Backup Response Exception")
+		return
+
+	return response
 
 
 @frappe.whitelist()
@@ -473,9 +521,7 @@ def setup_wizard_complete(name):
 	return frappe.get_doc("Site", name).is_setup_wizard_complete()
 
 
-@frappe.whitelist()
-@protected("Site")
-def check_dns(name, domain):
+def check_dns_cname_a(name, domain):
 	def check_dns_cname(name, domain):
 		try:
 			answer = dns.resolver.query(domain, "CNAME")[0].to_text()
@@ -497,6 +543,12 @@ def check_dns(name, domain):
 		return False
 
 	return check_dns_cname(name, domain) or check_dns_a(name, domain)
+
+
+@frappe.whitelist()
+@protected("Site")
+def check_dns(name, domain):
+	return check_dns_cname_a(name, domain)
 
 
 @frappe.whitelist()

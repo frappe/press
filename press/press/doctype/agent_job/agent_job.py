@@ -11,7 +11,7 @@ from press.utils import log_error
 from frappe.core.utils import find
 import pytz
 from itertools import groupby
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 class AgentJob(Document):
@@ -236,8 +236,21 @@ def schedule_backups():
 			timezone = site.timezone or "Asia/Kolkata"
 			site_timezone = pytz.timezone(timezone)
 			site_time = server_time.astimezone(site_timezone)
+
 			if site_time.hour % interval == 0:
-				frappe.get_doc("Site", site.name).backup()
+				yesterday = site_time - timedelta(days=1)
+				common_filters = {
+					"creation": [">", yesterday],
+					"site": site.name,
+					"status": "Success",
+				}
+				offsite = not frappe.db.count("Site Backup", {**common_filters, "offsite": 1})
+				with_files = (
+					not frappe.db.count("Site Backup", {**common_filters, "with_files": 1}) or offsite
+				)
+
+				frappe.get_doc("Site", site.name).backup(with_files=with_files, offsite=offsite)
+
 		except Exception:
 			log_error("Site Backup Exception", site=site)
 
