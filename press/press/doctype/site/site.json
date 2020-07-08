@@ -300,26 +300,23 @@
    "fieldname": "remote_database_file",
    "fieldtype": "Link",
    "label": "Remote Database File",
-   "options": "Remote File",
-   "read_only": 1
+   "options": "Remote File"
   },
   {
    "fieldname": "remote_private_file",
    "fieldtype": "Link",
    "label": "Remote Private File",
-   "options": "Remote File",
-   "read_only": 1
+   "options": "Remote File"
   },
   {
    "fieldname": "remote_public_file",
    "fieldtype": "Link",
    "label": "Remote Public File",
-   "options": "Remote File",
-   "read_only": 1
+   "options": "Remote File"
   }
  ],
  "links": [],
- "modified": "2020-07-06 15:21:53.854267",
+ "modified": "2020-07-08 18:22:03.435788",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
