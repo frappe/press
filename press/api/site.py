@@ -697,12 +697,12 @@ def get_upload_link(file):
 
 
 @frappe.whitelist()
-def uploaded_backup_info(file, type, size):
+def uploaded_backup_info(file, path, type, size):
 	doc = frappe.get_doc({
 		"doctype": "Remote File",
 		"file_name": file,
 		"file_type": type,
 		"file_size": size,
-		"file_path": get_remote_key(file)
+		"file_path": path,
 	}).insert()
 	return doc.name
