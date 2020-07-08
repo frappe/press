@@ -25,6 +25,7 @@ export default class S3FileUploader {
 				return data.message;
 			}
 			const upload_link = await getUploadLink();
+			const file_path = upload_link.fields.key;
 
 			let xhr = new XMLHttpRequest();
 			xhr.upload.addEventListener('loadstart', () => {
@@ -57,6 +58,7 @@ export default class S3FileUploader {
 						}
 						let out = r.message || call("press.api.site.uploaded_backup_info", {
 							"file": file.name,
+							"path": file_path,
 							"type": file.type,
 							"size": file.size
 						});
