@@ -3,15 +3,26 @@
 
 frappe.ui.form.on('Remote File', {
 	refresh: function(frm){
-		frm.add_custom_button(__('Download'), function() {
-			frm.events.download(frm);
-		});
-	},
-	download: function(frm){
-		frm.call("get_download_link").then(r => {
-			if(!r.exc) {
-				window.open(r.message);
-			}
-		});
+		frm.add_custom_button(
+			__('Download'),
+			() => {
+				frm.call('get_download_link').then(r => {
+					if(!r.exc) {
+						window.open(r.message);
+					}
+				});
+			},
+			__('Actions')
+		);
+		frm.add_custom_button(
+			__('Delete File'),
+			() => {
+				frappe.confirm(
+					`Doing this won't allow you to restore the Site again using this backup. Are you sure you want to delete this file from S3?`,
+					() => frm.call('delete_remote_object').then((r) => frm.refresh())
+				);
+			},
+			__('Actions')
+		);
 	}
 });

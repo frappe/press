@@ -39,17 +39,30 @@ class RemoteFile(Document):
 	def download_link(self):
 		return self.get_download_link()
 
-	def on_trash(self):
+	def exists(self):
+		try:
+			return self.s3_client.head_object(Bucket=self.get_bucket(), Key=self.file_path)
+		except ClientError:
+			return False
+
+	def get_bucket(self):
+		return frappe.db.get_single_value("Press Settings", "remote_uploads_bucket")
+
+	def delete_remote_object(self):
+		self.db_set("status", "Unavailable")
 		return self.s3_client.delete_object(
 			Bucket=frappe.db.get_single_value("Press Settings", "remote_uploads_bucket"),
 			Key=self.file_path
 		)
 
+	def on_trash(self):
+		self.delete_remote_object()
+
 	def get_download_link(self):
 		return self.s3_client.generate_presigned_url(
 			"get_object",
 			Params={
-				"Bucket": frappe.db.get_single_value("Press Settings", "remote_uploads_bucket"),
+				"Bucket": self.get_bucket(),
 				"Key": self.file_path
 			},
 			ExpiresIn=frappe.db.get_single_value("Press Settings", "remote_link_expiry") or 3600
