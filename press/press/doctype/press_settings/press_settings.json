@@ -36,6 +36,12 @@
   "erpnext_url",
   "erpnext_api_key",
   "erpnext_api_secret",
+  "offsite_backups_section",
+  "offsite_backups_provider",
+  "aws_s3_bucket",
+  "column_break_35",
+  "offsite_backups_access_key_id",
+  "offsite_backups_secret_access_key",
   "section_break_33",
   "github_app_id",
   "github_app_client_id",
@@ -67,30 +73,40 @@
    "in_list_view": 1,
    "label": "Bench Confguration",
    "options": "JSON",
-   "reqd": 1
+   "reqd": 1,
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "domain",
    "fieldtype": "Data",
    "label": "Domain",
-   "reqd": 1
+   "reqd": 1,
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "dns_section",
    "fieldtype": "Section Break",
-   "label": "DNS"
+   "label": "DNS",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "aws_access_key_id",
    "fieldtype": "Data",
    "label": "AWS Access Key ID",
-   "reqd": 1
+   "reqd": 1,
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "aws_secret_access_key",
    "fieldtype": "Password",
    "label": "AWS Secret Access Key",
-   "reqd": 1
+   "reqd": 1,
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "default": "AWS Route 53",
@@ -98,11 +114,15 @@
    "fieldtype": "Select",
    "label": "DNS Provider",
    "options": "AWS Route 53",
-   "reqd": 1
+   "reqd": 1,
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "column_break_6",
-   "fieldtype": "Column Break"
+   "fieldtype": "Column Break",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "default": "2048",
@@ -110,134 +130,225 @@
    "fieldtype": "Select",
    "label": "RSA Key Size",
    "options": "2048\n3072\n4096",
-   "reqd": 1
+   "reqd": 1,
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "eff_registration_email",
    "fieldtype": "Data",
    "label": "EFF Registration Email",
-   "reqd": 1
+   "reqd": 1,
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "column_break_11",
-   "fieldtype": "Column Break"
+   "fieldtype": "Column Break",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "webroot_directory",
    "fieldtype": "Data",
    "label": "Webroot Directory",
-   "reqd": 1
+   "reqd": 1,
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "certbot_directory",
    "fieldtype": "Data",
    "label": "Certbot Directory",
-   "reqd": 1
+   "reqd": 1,
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "tls_section",
    "fieldtype": "Section Break",
-   "label": "TLS"
+   "label": "TLS",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "wildcard_tls_certificate",
    "fieldtype": "Link",
    "label": "Wildcard TLS Certificate",
-   "options": "TLS Certificate"
+   "options": "TLS Certificate",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "stripe_account",
    "fieldtype": "Link",
    "label": "Stripe Account",
    "options": "Stripe Settings",
-   "reqd": 1
+   "reqd": 1,
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "stripe_product_id",
    "fieldtype": "Data",
    "label": "Stripe Product ID",
-   "read_only": 1
+   "read_only": 1,
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "stripe_inr_plan_id",
    "fieldtype": "Data",
    "label": "Stripe INR Plan ID",
-   "read_only": 1
+   "read_only": 1,
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "stripe_usd_plan_id",
    "fieldtype": "Data",
    "label": "Stripe USD Plan ID",
-   "read_only": 1
+   "read_only": 1,
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "create_stripe_plans",
    "fieldtype": "Button",
-   "label": "Create Stripe Plans"
+   "label": "Create Stripe Plans",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "stripe_settings_section",
    "fieldtype": "Section Break",
-   "label": "Stripe Settings"
+   "label": "Stripe Settings",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "stripe_webhook_secret",
    "fieldtype": "Data",
    "label": "Stripe Webhook Secret",
-   "read_only": 1
+   "read_only": 1,
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "stripe_webhook_endpoint_id",
    "fieldtype": "Data",
    "label": "Stripe Webhook Endpoint ID",
-   "read_only": 1
+   "read_only": 1,
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "create_stripe_webhook",
    "fieldtype": "Button",
-   "label": "Create Stripe Webhook"
+   "label": "Create Stripe Webhook",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "default": "1",
    "fieldname": "trial_sites_count",
    "fieldtype": "Int",
-   "label": "Number of Sites in Trial"
+   "label": "Number of Sites in Trial",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "column_break_26",
-   "fieldtype": "Column Break"
+   "fieldtype": "Column Break",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "free_credits_inr",
    "fieldtype": "Currency",
    "label": "Credits on Signup (INR)",
-   "options": "INR"
+   "options": "INR",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "free_credits_usd",
    "fieldtype": "Currency",
    "label": "Credits on Signup (USD)",
-   "options": "USD"
+   "options": "USD",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "erpnext_authentication",
    "fieldtype": "Section Break",
-   "label": "ERPNext Authentication"
+   "label": "ERPNext Authentication",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "erpnext_api_key",
    "fieldtype": "Data",
-   "label": "ERPNext API Key"
+   "label": "ERPNext API Key",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "erpnext_api_secret",
    "fieldtype": "Password",
-   "label": "ERPNext API Secret"
+   "label": "ERPNext API Secret",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "erpnext_url",
    "fieldtype": "Data",
-   "label": "ERPNext URL"
+   "label": "ERPNext URL",
+   "show_days": 1,
+   "show_seconds": 1
+  },
+  {
+   "fieldname": "offsite_backups_section",
+   "fieldtype": "Section Break",
+   "label": "Offsite Backups",
+   "show_days": 1,
+   "show_seconds": 1
+  },
+  {
+   "fieldname": "column_break_35",
+   "fieldtype": "Column Break",
+   "show_days": 1,
+   "show_seconds": 1
+  },
+  {
+   "default": "AWS S3",
+   "fieldname": "offsite_backups_provider",
+   "fieldtype": "Select",
+   "label": "Backup Provider",
+   "options": "AWS S3",
+   "show_days": 1,
+   "show_seconds": 1
+  },
+  {
+   "fieldname": "offsite_backups_access_key_id",
+   "fieldtype": "Data",
+   "label": "Access Key ID",
+   "show_days": 1,
+   "show_seconds": 1
+  },
+  {
+   "fieldname": "offsite_backups_secret_access_key",
+   "fieldtype": "Password",
+   "label": "Secret Access Key",
+   "show_days": 1,
+   "show_seconds": 1
+  },
+  {
+   "fieldname": "aws_s3_bucket",
+   "fieldtype": "Data",
+   "label": "Bucket Name",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "github_app_private_key",
@@ -351,7 +462,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2020-07-06 18:13:26.480661",
+ "modified": "2020-07-07 10:59:59.736444",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
