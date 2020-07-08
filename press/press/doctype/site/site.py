@@ -116,6 +116,9 @@ class Site(Document):
 		self.save()
 
 	def restore(self):
+		if not frappe.get_doc("Remote File", self.remote_database_file).exists():
+			raise Exception("Remote File {0} is unavailable on S3".format(self.remote_database_file))
+
 		log_site_activity(self.name, "Restore")
 		agent = Agent(self.server)
 		agent.restore_site(self)
