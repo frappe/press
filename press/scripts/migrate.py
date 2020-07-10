@@ -68,6 +68,7 @@ def upload_backup_file(file_type, file_path):
 		"type": file_type
 	})
 
+
 def render_actions_table():
 	actions_table = [["#", "Action"]]
 	actions = []
@@ -186,6 +187,7 @@ def select_team(session):
 
 	return team
 
+
 def is_valid_subdomain(subdomain):
 	if len(subdomain) < 5:
 		print("Subdomain too short. Use 5 or more characters")
@@ -194,6 +196,7 @@ def is_valid_subdomain(subdomain):
 	if matched:
 		return True
 	print("Subdomain contains invalid characters. Use lowercase characters, numbers and hyphens")
+
 
 @add_line_after
 def choose_plan(plans_list):
@@ -398,6 +401,7 @@ def create_session():
 	else:
 		handle_request_failure(message="Authorization Failed with Error Code {}".format(login_sc.status_code), traceback=False)
 
+
 def frappecloud_migrator(local_site):
 	global login_url, upload_url, files_url, options_url, site_exists_url, restore_site_url, account_details_url, all_site_url
 	global session, migrator_actions, remote_site
@@ -425,6 +429,7 @@ def frappecloud_migrator(local_site):
 	primary_action = select_primary_action()
 
 	primary_action(local_site)
+
 
 if __name__ in ("__main__", "frappe.integrations.frappe_providers.frappecloud"):
 	try:
