@@ -440,7 +440,7 @@ if __name__ in ("__main__", "frappe.integrations.frappe_providers.frappecloud"):
 	try:
 		frappe.init(site=local_site)
 		frappecloud_migrator(local_site)
-	except KeyboardInterrupt:
+	except (KeyboardInterrupt, click.exceptions.Abort):
 		print("\nExitting...")
 	except Exception:
 		from frappe.utils import get_traceback
