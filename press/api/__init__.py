@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 
 import frappe
-import os
+
 
 @frappe.whitelist(allow_guest=True)
 def script():
