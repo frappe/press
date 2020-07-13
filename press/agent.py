@@ -94,7 +94,7 @@ class Agent:
 			"admin_password": get_decrypted_password("Site", site.name, "admin_password"),
 			"database": frappe.get_doc("Remote File", site.remote_database_file).download_link,
 			"public": frappe.get_doc("Remote File", site.remote_public_file).download_link,
-			"private": frappe.get_doc("Remote File", site.remote_private_file).download_link
+			"private": frappe.get_doc("Remote File", site.remote_private_file).download_link,
 		}
 
 		return self.create_agent_job(
@@ -117,7 +117,7 @@ class Agent:
 			"admin_password": get_decrypted_password("Site", site.name, "admin_password"),
 			"database": frappe.get_doc("Remote File", site.remote_database_file).download_link,
 			"public": frappe.get_doc("Remote File", site.remote_public_file).download_link,
-			"private": frappe.get_doc("Remote File", site.remote_private_file).download_link
+			"private": frappe.get_doc("Remote File", site.remote_private_file).download_link,
 		}
 
 		return self.create_agent_job(
