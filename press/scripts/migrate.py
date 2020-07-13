@@ -473,7 +473,7 @@ if __name__ in ("__main__", "frappe.integrations.frappe_providers.frappecloud"):
 	try:
 		local_site = sys.argv[1]
 	except Exception:
-		local_site = input("Name of the site you wan't to migrate: ").strip()
+		local_site = input("Name of the site you want to migrate: ").strip()
 
 	try:
 		frappe.init(site=local_site)
