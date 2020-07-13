@@ -75,6 +75,8 @@ def setup_account(
 		doc.insert(ignore_permissions=True, ignore_links=True)
 		doc.create_user_for_member(first_name, last_name, email, password, role)
 		doc.create_stripe_customer()
+		if doc.has_partner_account_on_erpnext_com():
+			doc.enable_erpnext_partner_privileges()
 
 	frappe.local.login_manager.login_as(email)
 

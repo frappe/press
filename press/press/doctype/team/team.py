@@ -5,7 +5,7 @@
 from __future__ import unicode_literals
 
 import frappe
-from press.api.billing import get_stripe
+from press.api.billing import get_stripe, get_erpnext_com_connection
 from frappe.model.document import Document
 from frappe import _
 from frappe.utils import get_fullname
@@ -49,6 +49,11 @@ class Team(Document):
 	def create_stripe_customer_and_subscription(self):
 		self.create_stripe_customer()
 		self.create_subscription()
+
+	def enable_erpnext_partner_privileges(self):
+		self.create_subscription()
+		self.erpnext_partner = 1
+		self.save()
 
 	def allocate_free_credits(self):
 		if not self.free_credits_allocated:
@@ -235,6 +240,13 @@ class Team(Document):
 
 	def is_partner_and_has_enough_credits(self):
 		return self.erpnext_partner and self.get_available_credits() > 0
+
+	def has_partner_account_on_erpnext_com(self):
+		erpnext_com = get_erpnext_com_connection()
+		res = erpnext_com.get_value(
+			"ERPNext Partner", "name", filters={"email": self.name, "status": "Approved"}
+		)
+		return res["name"] if res else None
 
 	def can_create_site(self):
 		why = ""
