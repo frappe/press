@@ -20,7 +20,9 @@ export default class S3FileUploader {
 	upload(file, options) {
 		return new Promise(async (resolve, reject) => {
 			async function getUploadLink() {
-				let response = await fetch(`/api/method/press.api.site.get_upload_link?file=${file.name}`);
+				let response = await fetch(
+					`/api/method/press.api.site.get_upload_link?file=${file.name}`
+				);
 				let data = await response.json();
 				return data.message;
 			}
@@ -56,12 +58,14 @@ export default class S3FileUploader {
 						} catch (e) {
 							r = xhr.responseText;
 						}
-						let out = r.message || call("press.api.site.uploaded_backup_info", {
-							"file": file.name,
-							"path": file_path,
-							"type": file.type,
-							"size": file.size
-						});
+						let out =
+							r.message ||
+							call('press.api.site.uploaded_backup_info', {
+								file: file.name,
+								path: file_path,
+								type: file.type,
+								size: file.size
+							});
 						resolve(out || upload_link.fields.key);
 					} else if (xhr.status === 403) {
 						error = JSON.parse(xhr.responseText);
