@@ -57,14 +57,15 @@ def format_stripe_money(amount, currency):
 def get_erpnext_com_connection():
 	from frappe.frappeclient import FrappeClient
 
+	# TODO: Remove password authentication when API Key Authentication bug is fixed
 	press_settings = frappe.get_single("Press Settings")
-	erpnext_api_secret = frappe.utils.password.get_decrypted_password(
-		"Press Settings", "Press Settings", fieldname="erpnext_api_secret"
+	erpnext_password = frappe.utils.password.get_decrypted_password(
+		"Press Settings", "Press Settings", fieldname="erpnext_password"
 	)
 	return FrappeClient(
 		press_settings.erpnext_url,
-		api_key=press_settings.erpnext_api_key,
-		api_secret=erpnext_api_secret,
+		username=press_settings.erpnext_username,
+		password=erpnext_password,
 	)
 
 
