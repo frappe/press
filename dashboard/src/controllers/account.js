@@ -14,7 +14,7 @@ export default new Vue({
 	},
 	methods: {
 		async fetchAccount() {
-			if (document.cookie.includes('sid=Guest;')) {
+			if (document.cookie.includes('user_id=Guest;')) {
 				return;
 			}
 			let team = localStorage.getItem('current_team');

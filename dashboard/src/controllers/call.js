@@ -80,7 +80,7 @@ export default async function call(method, args) {
 
 		if (
 			[401, 403].includes(res.status) &&
-			document.cookie.includes('sid=Guest;') &&
+			document.cookie.includes('user_id=Guest;') &&
 			router.currentRoute.name !== 'Login'
 		) {
 			router.push('/login');
