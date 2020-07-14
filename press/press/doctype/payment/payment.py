@@ -90,7 +90,7 @@ def process_stripe_webhook(doc, method):
 	invoice = event["data"]["object"]
 	customer_id = invoice["customer"]
 	# value is in cents or paise
-	amount = invoice["total"] / 100
+	amount = invoice["amount_due"] / 100
 
 	failed_payment = frappe.db.get_value(
 		"Payment", {"status": "Failed", "stripe_invoice_id": invoice["id"]}
