@@ -128,7 +128,7 @@ def deploys(name):
 	releases = frappe.get_all(
 		"App Release",
 		filters={"app": name, "deployable": True, "status": "Approved"},
-		fields=["name", "hash", "creation", "message"],
+		fields=["name", "hash", "creation", "message", "app"],
 		order_by="creation desc",
 		limit=10,
 	)
@@ -162,34 +162,19 @@ def deploys(name):
 	for release in releases:
 		release["groups"] = []
 		for group in groups:
-			candidates = frappe.get_all(
-				"Deploy Candidate",
-				fields=["name", "group"],
-				filters={"app": name, "release": release.name, "group": group},
-				order_by="`tabDeploy Candidate App Release`.`creation` asc",
-				limit=1,
-			)
-
-			if not candidates:
-				continue
-			candidate = candidates[0]
-			deploy = frappe.get_value(
-				"Deploy", {"group": group, "candidate": candidate.name}, "name"
-			)
-			if not deploy:
-				continue
-			bench_names = [
-				bench.bench_name for bench in frappe.get_doc("Deploy", deploy).benches
-			]
 			benches = frappe.get_all(
-				"Bench", fields=["status"], filters={"name": ("in", bench_names)}
+				"Bench",
+				{"group": group, "app": release.app, "hash": release.hash},
+				["status", "group"],
 			)
 			statuses = set(bench.status for bench in benches)
-			for status in ("Broken", "Installing", "Pending", "Active", "Archived"):
-				if status in statuses:
-					candidate.status = status
-					break
-			release["groups"].append(candidate)
+			if benches:
+				bench = benches[0]
+				for status in ("Active", "Installing", "Pending", "Broken", "Archived"):
+					if status in statuses:
+						bench.status = status
+						break
+				release["groups"].append(bench)
 
 	return {"groups": groups, "releases": releases}
 
