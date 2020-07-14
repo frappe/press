@@ -27,7 +27,8 @@ from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.plan.plan import get_plan_config
 from press.press.doctype.remote_file.remote_file import get_remote_key
 from press.press.doctype.site_update.site_update import (
-	benches_with_available_update, should_try_update
+	benches_with_available_update,
+	should_try_update,
 )
 from press.utils import get_current_team, log_error
 
@@ -685,24 +686,32 @@ def get_upload_link(file):
 
 	s3_client = client(
 		"s3",
-		aws_access_key_id=frappe.db.get_single_value("Press Settings", "remote_access_key_id"),
-		aws_secret_access_key=get_decrypted_password("Press Settings", "Press Settings", "remote_secret_access_key"),
-		region_name="ap-south-1"
+		aws_access_key_id=frappe.db.get_single_value(
+			"Press Settings", "remote_access_key_id"
+		),
+		aws_secret_access_key=get_decrypted_password(
+			"Press Settings", "Press Settings", "remote_secret_access_key"
+		),
+		region_name="ap-south-1",
 	)
 	try:
 		# The response contains the presigned URL and required fields
-		return s3_client.generate_presigned_post(bucket_name, object_name, ExpiresIn=expiration)
+		return s3_client.generate_presigned_post(
+			bucket_name, object_name, ExpiresIn=expiration
+		)
 	except ClientError as e:
 		log_error("Failed to Generate Presigned URL", content=e)
 
 
 @frappe.whitelist()
 def uploaded_backup_info(file, path, type, size):
-	doc = frappe.get_doc({
-		"doctype": "Remote File",
-		"file_name": file,
-		"file_type": type,
-		"file_size": size,
-		"file_path": path,
-	}).insert()
+	doc = frappe.get_doc(
+		{
+			"doctype": "Remote File",
+			"file_name": file,
+			"file_type": type,
+			"file_size": size,
+			"file_path": path,
+		}
+	).insert()
 	return doc.name
