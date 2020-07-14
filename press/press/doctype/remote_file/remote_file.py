@@ -39,9 +39,13 @@ class RemoteFile(Document):
 	def s3_client(self):
 		return client(
 			"s3",
-			aws_access_key_id=frappe.db.get_single_value("Press Settings", "remote_access_key_id"),
-			aws_secret_access_key=get_decrypted_password("Press Settings", "Press Settings", "remote_secret_access_key"),
-			region_name="ap-south-1"
+			aws_access_key_id=frappe.db.get_single_value(
+				"Press Settings", "remote_access_key_id"
+			),
+			aws_secret_access_key=get_decrypted_password(
+				"Press Settings", "Press Settings", "remote_secret_access_key"
+			),
+			region_name="ap-south-1",
 		)
 
 	@property
@@ -61,7 +65,7 @@ class RemoteFile(Document):
 		self.db_set("status", "Unavailable")
 		return self.s3_client.delete_object(
 			Bucket=frappe.db.get_single_value("Press Settings", "remote_uploads_bucket"),
-			Key=self.file_path
+			Key=self.file_path,
 		)
 
 	def on_trash(self):
@@ -70,9 +74,6 @@ class RemoteFile(Document):
 	def get_download_link(self):
 		return self.s3_client.generate_presigned_url(
 			"get_object",
-			Params={
-				"Bucket": self.get_bucket(),
-				"Key": self.file_path
-			},
-			ExpiresIn=frappe.db.get_single_value("Press Settings", "remote_link_expiry") or 3600
+			Params={"Bucket": self.get_bucket(), "Key": self.file_path},
+			ExpiresIn=frappe.db.get_single_value("Press Settings", "remote_link_expiry") or 3600,
 		)
