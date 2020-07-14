@@ -20,14 +20,22 @@ export default class S3FileUploader {
 	upload(file, options) {
 		return new Promise(async (resolve, reject) => {
 			async function getUploadLink() {
-				let response = await fetch(
-					`/api/method/press.api.site.get_upload_link?file=${file.name}`
-				);
-				let data = await response.json();
-				return data.message;
+				try {
+					let response = await fetch(
+						`/api/method/press.api.site.get_upload_link?file=${file.name}`
+					);
+					let data = await response.json();
+					return data.message;
+				} catch (e) {
+					reject(e);
+				}
 			}
 			const upload_link = await getUploadLink();
-			const file_path = upload_link.fields.key;
+			const file_path = upload_link?.fields?.key;
+
+			if (!file_path) {
+				return
+			}
 
 			let xhr = new XMLHttpRequest();
 			xhr.upload.addEventListener('loadstart', () => {
@@ -67,15 +75,13 @@ export default class S3FileUploader {
 								size: file.size
 							});
 						resolve(out || upload_link.fields.key);
-					} else if (xhr.status === 403) {
-						error = JSON.parse(xhr.responseText);
 					} else {
-						this.failed = true;
-						try {
-							error = JSON.parse(xhr.responseText);
-						} catch (e) {
-							// pass
-						}
+						// response from aws is in xml
+						let xmlDoc = new DOMParser().parseFromString(xhr.responseText, "text/xml");
+						let code = xmlDoc.getElementsByTagName("Code")[0].childNodes[0].nodeValue;
+						let message = xmlDoc.getElementsByTagName("Message")[0].childNodes[0].nodeValue;
+						console.error(`${code}: ${message}`);
+						error = xhr.responseText;
 					}
 					if (error && error.exc) {
 						console.error(JSON.parse(error.exc)[0]);
