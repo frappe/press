@@ -31,7 +31,7 @@ frappe.ui.form.on('Site', {
 		[
 			[__('Archive'), 'archive'],
 			[__('Reinstall'), 'reinstall'],
-			[__('Restore'), 'restore'],
+			[__('Restore'), 'restore_site'],
 			[__('Update'), 'schedule_update'],
 			[__('Deactivate'), 'deactivate'],
 			[__('Activate'), 'activate'],

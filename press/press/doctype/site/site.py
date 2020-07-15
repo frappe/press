@@ -96,7 +96,7 @@ class Site(Document):
 
 	def create_agent_request(self):
 		agent = Agent(self.server)
-		if self.database_file and self.private_file and self.public_file:
+		if self.remote_database_file and self.remote_private_file and self.remote_public_file:
 			agent.new_site_from_backup(self)
 		else:
 			agent.new_site(self)
@@ -115,7 +115,12 @@ class Site(Document):
 		self.status = "Pending"
 		self.save()
 
-	def restore(self):
+	def restore_site(self):
+		if not frappe.get_doc("Remote File", self.remote_database_file).exists():
+			raise Exception(
+				"Remote File {0} is unavailable on S3".format(self.remote_database_file)
+			)
+
 		log_site_activity(self.name, "Restore")
 		agent = Agent(self.server)
 		agent.restore_site(self)

@@ -92,18 +92,15 @@ class Agent:
 				"Server", site.server, "mariadb_root_password"
 			),
 			"admin_password": get_decrypted_password("Site", site.name, "admin_password"),
-		}
-		files = {
-			"database": site.database_file,
-			"public": site.public_file,
-			"private": site.private_file,
+			"database": frappe.get_doc("Remote File", site.remote_database_file).download_link,
+			"public": frappe.get_doc("Remote File", site.remote_public_file).download_link,
+			"private": frappe.get_doc("Remote File", site.remote_private_file).download_link,
 		}
 
 		return self.create_agent_job(
 			"Restore Site",
 			f"benches/{site.bench}/sites/{site.name}/restore",
 			data,
-			files=files,
 			bench=site.bench,
 			site=site.name,
 		)
@@ -118,18 +115,15 @@ class Agent:
 				"Server", site.server, "mariadb_root_password"
 			),
 			"admin_password": get_decrypted_password("Site", site.name, "admin_password"),
-		}
-		files = {
-			"database": site.database_file,
-			"public": site.public_file,
-			"private": site.private_file,
+			"database": frappe.get_doc("Remote File", site.remote_database_file).download_link,
+			"public": frappe.get_doc("Remote File", site.remote_public_file).download_link,
+			"private": frappe.get_doc("Remote File", site.remote_private_file).download_link,
 		}
 
 		return self.create_agent_job(
 			"New Site from Backup",
 			f"benches/{site.bench}/sites/restore",
 			data,
-			files=files,
 			bench=site.bench,
 			site=site.name,
 		)

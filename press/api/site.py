@@ -16,6 +16,7 @@ from pathlib import Path
 import boto3
 import dns.resolver
 import wrapt
+from boto3 import client
 from botocore.exceptions import ClientError
 
 import frappe
@@ -24,6 +25,7 @@ from frappe.utils import cint, flt, time_diff_in_hours
 from frappe.utils.password import get_decrypted_password
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.plan.plan import get_plan_config
+from press.press.doctype.remote_file.remote_file import get_remote_key
 from press.press.doctype.site_update.site_update import (
 	benches_with_available_update,
 	should_try_update,
@@ -63,9 +65,9 @@ def new(site):
 			"apps": [{"app": app} for app in site["apps"]],
 			"team": team,
 			"plan": site["plan"],
-			"database_file": site["files"]["database"],
-			"public_file": site["files"]["public"],
-			"private_file": site["files"]["private"],
+			"remote_database_file": site["files"]["database"],
+			"remote_public_file": site["files"]["public"],
+			"remote_private_file": site["files"]["private"],
 		},
 	).insert(ignore_permissions=True)
 	return site.name
@@ -500,11 +502,11 @@ def reinstall(name):
 @protected("Site")
 def restore(name, files):
 	site = frappe.get_doc("Site", name)
-	site.database_file = files["database"]
-	site.public_file = files["public"]
-	site.private_file = files["private"]
+	site.remote_database_file = files["database"]
+	site.remote_public_file = files["public"]
+	site.remote_private_file = files["private"]
 	site.save()
-	site.restore()
+	site.restore_site()
 
 
 @frappe.whitelist()
@@ -674,3 +676,42 @@ def upload_backup():
 		return file.file_url
 	else:
 		frappe.throw("Invalid Backup File")
+
+
+@frappe.whitelist()
+def get_upload_link(file):
+	bucket_name = frappe.db.get_single_value("Press Settings", "remote_uploads_bucket")
+	expiration = frappe.db.get_single_value("Press Settings", "remote_link_expiry") or 3600
+	object_name = get_remote_key(file)
+
+	s3_client = client(
+		"s3",
+		aws_access_key_id=frappe.db.get_single_value(
+			"Press Settings", "remote_access_key_id"
+		),
+		aws_secret_access_key=get_decrypted_password(
+			"Press Settings", "Press Settings", "remote_secret_access_key"
+		),
+		region_name="ap-south-1",
+	)
+	try:
+		# The response contains the presigned URL and required fields
+		return s3_client.generate_presigned_post(
+			bucket_name, object_name, ExpiresIn=expiration
+		)
+	except ClientError as e:
+		log_error("Failed to Generate Presigned URL", content=e)
+
+
+@frappe.whitelist()
+def uploaded_backup_info(file, path, type, size):
+	doc = frappe.get_doc(
+		{
+			"doctype": "Remote File",
+			"file_name": file,
+			"file_type": type,
+			"file_size": size,
+			"file_path": path,
+		}
+	).insert()
+	return doc.name
