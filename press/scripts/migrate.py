@@ -486,14 +486,15 @@ def frappecloud_migrator(local_site):
 	primary_action(local_site)
 
 
-def cleanup():
-	current_file = os.path.abspath(__file__)
+def cleanup(current_file):
 	print("Cleaning Up...")
 	os.remove(current_file)
 
 
 if __name__ in ("__main__", "frappe.integrations.frappe_providers.frappecloud"):
-	atexit.register(cleanup)
+	current_file = os.path.abspath(__file__)
+	atexit.register(cleanup, current_file)
+
 	try:
 		local_site = sys.argv[1]
 	except Exception:
@@ -502,7 +503,7 @@ if __name__ in ("__main__", "frappe.integrations.frappe_providers.frappecloud"):
 	try:
 		frappe.init(site=local_site)
 		frappecloud_migrator(local_site)
-	except (KeyboardInterrupt, click.exceptions.Abort, RetryError):
+	except (KeyboardInterrupt, click.exceptions.Abort):
 		print("\nExitting...")
 	except Exception:
 		from frappe.utils import get_traceback
