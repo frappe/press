@@ -34,7 +34,7 @@ export default class S3FileUploader {
 			const file_path = upload_link?.fields?.key;
 
 			if (!file_path) {
-				return
+				return;
 			}
 
 			let xhr = new XMLHttpRequest();
@@ -77,9 +77,14 @@ export default class S3FileUploader {
 						resolve(out || upload_link.fields.key);
 					} else {
 						// response from aws is in xml
-						let xmlDoc = new DOMParser().parseFromString(xhr.responseText, "text/xml");
-						let code = xmlDoc.getElementsByTagName("Code")[0].childNodes[0].nodeValue;
-						let message = xmlDoc.getElementsByTagName("Message")[0].childNodes[0].nodeValue;
+						let xmlDoc = new DOMParser().parseFromString(
+							xhr.responseText,
+							'text/xml'
+						);
+						let code = xmlDoc.getElementsByTagName('Code')[0].childNodes[0]
+							.nodeValue;
+						let message = xmlDoc.getElementsByTagName('Message')[0]
+							.childNodes[0].nodeValue;
 						console.error(`${code}: ${message}`);
 						error = xhr.responseText;
 					}
