@@ -514,6 +514,7 @@ if __name__ in ("__main__", "frappe.integrations.frappe_providers.frappecloud"):
 
 	try:
 		frappe.init(site=local_site)
+		frappe.connect()
 		frappecloud_migrator(local_site)
 	except (KeyboardInterrupt, click.exceptions.Abort):
 		print("\nExitting...")
@@ -521,3 +522,5 @@ if __name__ in ("__main__", "frappe.integrations.frappe_providers.frappecloud"):
 		from frappe.utils import get_traceback
 
 		print(get_traceback())
+
+	frappe.destroy()
