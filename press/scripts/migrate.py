@@ -57,18 +57,36 @@ def is_subdomain_available(subdomain):
 
 
 @retry(stop=stop_after_attempt(2), wait=wait_fixed(5))
-def upload_backup_file(file_type, file_path):
-	return session.post(
-		files_url,
-		data={},
-		files={
-			"file": open(file_path, "rb"),
-			"is_private": 1,
-			"folder": "Home",
-			"method": "press.api.site.upload_backup",
-			"type": file_type,
-		},
+def upload_backup_file(file_type, file_name, file_path):
+	# retreive upload link
+	upload_ticket = session.get(remote_link_url, data={"file": file_name})
+	if not upload_ticket.ok:
+		raise
+
+	payload = upload_ticket.json()["message"]
+	url, fields = payload["url"], payload["fields"]
+
+	# upload remote file
+	upload_remote = session.post(
+		url,
+		data=fields,
+		files={"file": open(file_path, "rb")},
+		headers={'Accept': 'application/json'}
 	)
+	if not upload_remote.ok:
+		raise
+
+	# register remote file to site
+	register_press = session.post(register_remote_url, {
+		"file": file_name,
+		"path": fields["key"],
+		"type": "application/x-gzip" if file_type == "database" else "application/x-tar",
+		"size": os.path.getsize(file_path)
+	})
+
+	if register_press.ok:
+		return register_press.json()["message"]
+	raise
 
 
 def render_actions_table():
@@ -313,7 +331,7 @@ def get_subdomain(domain):
 @add_line_after
 def upload_backup(local_site):
 	# take backup
-	files_session = {}
+	files_uploaded = {}
 	print("Taking backup for site {}".format(local_site))
 	odb = frappe.utils.backups.new_backup(ignore_files=False, force=True)
 
@@ -328,17 +346,16 @@ def upload_backup(local_site):
 		file_name = file_path.split(os.sep)[-1]
 
 		print("Uploading {} file: {} ({}/3)".format(file_type, file_name, x + 1))
-		file_upload_response = upload_backup_file(file_type, file_path)
+		uploaded_file = upload_backup_file(file_type, file_name, file_path)
 
-		if file_upload_response.ok:
-			files_session[file_type] = file_upload_response.json()["message"]
+		if uploaded_file:
+			files_uploaded[file_type] = uploaded_file
 		else:
 			print("Upload failed for: {}".format(file_path))
 			print("Cannot create site on Frappe Cloud without all site backup files uploaded.")
 			print("Exitting...")
 			sys.exit(1)
 
-	files_uploaded = {k: v["file_url"] for k, v in files_session.items()}
 	print("Uploaded backup files! ✅")
 
 	return files_uploaded
@@ -440,17 +457,16 @@ def create_session():
 
 
 def frappecloud_migrator(local_site):
-	global login_url, upload_url, files_url, options_url, site_exists_url, restore_site_url, account_details_url, all_site_url
+	global login_url, upload_url, remote_link_url, register_remote_url, options_url, site_exists_url, restore_site_url, account_details_url, all_site_url
 	global session, migrator_actions, remote_site
 
 	remote_site = frappe.conf.frappecloud_url or "frappecloud.com"
 
 	login_url = "https://{}/api/method/login".format(remote_site)
 	upload_url = "https://{}/api/method/press.api.site.new".format(remote_site)
-	files_url = "https://{}/api/method/upload_file".format(remote_site)
-	options_url = "https://{}/api/method/press.api.site.options_for_new".format(
-		remote_site
-	)
+	remote_link_url = "https://{}/api/method/press.api.site.get_upload_link".format(remote_site)
+	register_remote_url = "https://{}/api/method/press.api.site.uploaded_backup_info".format(remote_site)
+	options_url = "https://{}/api/method/press.api.site.options_for_new".format(remote_site)
 	site_exists_url = "https://{}/api/method/press.api.site.exists".format(remote_site)
 	account_details_url = "https://{}/api/method/press.api.account.get".format(remote_site)
 	all_site_url = "https://{}/api/method/press.api.site.all".format(remote_site)
