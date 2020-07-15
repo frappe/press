@@ -21,7 +21,7 @@ try:
 	import html2text
 	import requests
 	import click
-	from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
+	from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type, RetryError
 except ImportError:
 	dependencies = ["tenacity", "html2text", "requests", "click"]
 	install_command = shlex.split(
@@ -486,7 +486,7 @@ if __name__ in ("__main__", "frappe.integrations.frappe_providers.frappecloud"):
 	try:
 		frappe.init(site=local_site)
 		frappecloud_migrator(local_site)
-	except (KeyboardInterrupt, click.exceptions.Abort):
+	except (KeyboardInterrupt, click.exceptions.Abort, RetryError):
 		print("\nExitting...")
 	except Exception:
 		from frappe.utils import get_traceback
