@@ -468,9 +468,15 @@ def frappecloud_migrator(local_site):
 
 	login_url = "https://{}/api/method/login".format(remote_site)
 	upload_url = "https://{}/api/method/press.api.site.new".format(remote_site)
-	remote_link_url = "https://{}/api/method/press.api.site.get_upload_link".format(remote_site)
-	register_remote_url = "https://{}/api/method/press.api.site.uploaded_backup_info".format(remote_site)
-	options_url = "https://{}/api/method/press.api.site.options_for_new".format(remote_site)
+	remote_link_url = "https://{}/api/method/press.api.site.get_upload_link".format(
+		remote_site
+	)
+	register_remote_url = (
+		"https://{}/api/method/press.api.site.uploaded_backup_info".format(remote_site)
+	)
+	options_url = "https://{}/api/method/press.api.site.options_for_new".format(
+		remote_site
+	)
 	site_exists_url = "https://{}/api/method/press.api.site.exists".format(remote_site)
 	account_details_url = "https://{}/api/method/press.api.account.get".format(remote_site)
 	all_site_url = "https://{}/api/method/press.api.site.all".format(remote_site)
