@@ -71,18 +71,21 @@ def upload_backup_file(file_type, file_name, file_path):
 		url,
 		data=fields,
 		files={"file": open(file_path, "rb")},
-		headers={'Accept': 'application/json'}
+		headers={"Accept": "application/json"},
 	)
 	if not upload_remote.ok:
 		raise
 
 	# register remote file to site
-	register_press = session.post(register_remote_url, {
-		"file": file_name,
-		"path": fields["key"],
-		"type": "application/x-gzip" if file_type == "database" else "application/x-tar",
-		"size": os.path.getsize(file_path)
-	})
+	register_press = session.post(
+		register_remote_url,
+		{
+			"file": file_name,
+			"path": fields["key"],
+			"type": "application/x-gzip" if file_type == "database" else "application/x-tar",
+			"size": os.path.getsize(file_path),
+		},
+	)
 
 	if register_press.ok:
 		return register_press.json()["message"]
