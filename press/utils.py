@@ -4,8 +4,11 @@
 
 from __future__ import unicode_literals
 import frappe
+import functools
 import json
 import requests
+from datetime import datetime, timedelta
+from python_minifier import minify
 
 
 def log_error(title, **kwargs):
@@ -77,3 +80,29 @@ def get_country_info():
 		return {}
 
 	return frappe.cache().hget("ip_country_map", ip, generator=_get_country_info)
+
+
+def cache(seconds: int, maxsize: int = 128, typed: bool = False):
+	def wrapper_cache(func):
+		func = functools.lru_cache(maxsize=maxsize, typed=typed)(func)
+		func.delta = timedelta(seconds=seconds)
+		func.expiration = datetime.utcnow() + func.delta
+
+		@functools.wraps(func)
+		def wrapped_func(*args, **kwargs):
+			if datetime.utcnow() >= func.expiration:
+				func.cache_clear()
+				func.expiration = datetime.utcnow() + func.delta
+
+			return func(*args, **kwargs)
+
+		return wrapped_func
+
+	return wrapper_cache
+
+
+@cache(seconds=1800)
+def get_minified_script():
+	migration_script = "../apps/press/press/scripts/migrate.py"
+	script_contents = open(migration_script).read()
+	return minify(script_contents)
