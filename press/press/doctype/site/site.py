@@ -115,7 +115,7 @@ class Site(Document):
 		self.status = "Pending"
 		self.save()
 
-	def restore(self):
+	def restore_site(self):
 		if not frappe.get_doc("Remote File", self.remote_database_file).exists():
 			raise Exception(
 				"Remote File {0} is unavailable on S3".format(self.remote_database_file)

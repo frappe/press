@@ -32,7 +32,7 @@
   "config",
   "deploy_section",
   "timezone",
-  "restore",
+  "site_files_section",
   "database_file",
   "private_file",
   "public_file",
@@ -226,14 +226,6 @@
    "label": "Timezone"
   },
   {
-   "collapsible": 1,
-   "fieldname": "restore",
-   "fieldtype": "Section Break",
-   "hide_days": 1,
-   "hide_seconds": 1,
-   "label": "Site Files"
-  },
-  {
    "fieldname": "database_file",
    "fieldtype": "Attach",
    "hide_days": 1,
@@ -313,10 +305,18 @@
    "fieldtype": "Link",
    "label": "Remote Public File",
    "options": "Remote File"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "site_files_section",
+   "fieldtype": "Section Break",
+   "hide_days": 1,
+   "hide_seconds": 1,
+   "label": "Site Files"
   }
  ],
  "links": [],
- "modified": "2020-07-08 18:22:03.435788",
+ "modified": "2020-07-15 10:27:54.501733",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
