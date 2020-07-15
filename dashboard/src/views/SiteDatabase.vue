@@ -15,6 +15,7 @@
 								method: 'press.api.site.upload_backup',
 								type: file.type
 							}"
+							:s3="true"
 						>
 							<template
 								v-slot="{
@@ -53,7 +54,10 @@
 									<div class="mt-2 text-sm text-red-600" v-if="error">
 										{{ error }}
 									</div>
-									<div class="mt-2 text-xs text-gray-500" v-if="!progress">
+									<div
+										class="mt-2 text-xs text-gray-500"
+										v-if="!(progress || error)"
+									>
 										Click to upload
 									</div>
 								</button>

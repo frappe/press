@@ -59,7 +59,13 @@
   "auto_update_section",
   "auto_update_queue_size",
   "backups_section",
-  "backup_interval"
+  "backup_interval",
+  "remote_files_section",
+  "remote_uploads_bucket",
+  "remote_link_expiry",
+  "column_break_51",
+  "remote_access_key_id",
+  "remote_secret_access_key"
  ],
  "fields": [
   {
@@ -353,6 +359,35 @@
    "label": "Backup Interval"
   },
   {
+   "fieldname": "remote_files_section",
+   "fieldtype": "Section Break",
+   "label": "Remote Files"
+  },
+  {
+   "fieldname": "remote_uploads_bucket",
+   "fieldtype": "Data",
+   "label": "Bucket Name"
+  },
+  {
+   "fieldname": "remote_link_expiry",
+   "fieldtype": "Int",
+   "label": "Link Expiry"
+  },
+  {
+   "fieldname": "remote_access_key_id",
+   "fieldtype": "Data",
+   "label": "Remote Access Key ID"
+  },
+  {
+   "fieldname": "remote_secret_access_key",
+   "fieldtype": "Password",
+   "label": "Remote Secret Access Key"
+  },
+  {
+   "fieldname": "column_break_51",
+   "fieldtype": "Column Break"
+  },
+  {
    "fieldname": "erpnext_username",
    "fieldtype": "Data",
    "label": "ERPNext Username"
@@ -365,7 +400,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2020-07-13 18:09:59.563679",
+ "modified": "2020-07-14 08:09:59.563679",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
