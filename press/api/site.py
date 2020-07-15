@@ -506,7 +506,7 @@ def restore(name, files):
 	site.remote_public_file = files["public"]
 	site.remote_private_file = files["private"]
 	site.save()
-	site.restore()
+	site.restore_site()
 
 
 @frappe.whitelist()
