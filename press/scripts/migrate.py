@@ -7,6 +7,7 @@ import re
 import shlex
 import subprocess
 import sys
+import tempfile
 
 # imports - module imports
 import frappe
@@ -494,9 +495,17 @@ def cleanup(current_file):
 	os.remove(current_file)
 
 
+def executed_from_temp_dir():
+	"""Return True if script executed from temp directory"""
+	temp_dir = tempfile.gettempdir()
+	cur_file = __file__
+	return cur_file.startswith(temp_dir)
+
+
 if __name__ in ("__main__", "frappe.integrations.frappe_providers.frappecloud"):
-	current_file = os.path.abspath(__file__)
-	atexit.register(cleanup, current_file)
+	if executed_from_temp_dir():
+		current_file = os.path.abspath(__file__)
+		atexit.register(cleanup, current_file)
 
 	try:
 		local_site = sys.argv[1]
