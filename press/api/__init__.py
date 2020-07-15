@@ -1,9 +1,9 @@
 from __future__ import unicode_literals
 
 import frappe
+from press.utils import get_minified_script
 
 
 @frappe.whitelist(allow_guest=True)
 def script():
-	migration_script = "../apps/press/press/scripts/migrate.py"
-	return open(migration_script).read()
+	return get_minified_script()
