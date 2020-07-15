@@ -21,7 +21,7 @@ try:
 	import html2text
 	import requests
 	import click
-	from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type, RetryError
+	from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
 except ImportError:
 	dependencies = ["tenacity", "html2text", "requests", "click"]
 	install_command = shlex.split(
