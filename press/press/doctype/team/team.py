@@ -228,15 +228,10 @@ class Team(Document):
 			doc.submit()
 
 	def get_available_credits(self):
-		res = frappe.db.get_all(
-			"Payment Ledger Entry",
-			{"team": self.name, "docstatus": 1},
-			["sum(amount) as total"],
-		)
-		amount = res[0].total or 0
-		if amount > 0:
-			return amount
-		return 0
+		stripe = get_stripe()
+		customer_object = stripe.Customer.retrieve(self.stripe_customer_id)
+		balance = (customer_object['balance'] * -1) / 100
+		return balance
 
 	def is_partner_and_has_enough_credits(self):
 		return self.erpnext_partner and self.get_available_credits() > 0
