@@ -1,4 +1,5 @@
 # imports - standard imports
+import atexit
 import getpass
 import json
 import os
@@ -469,7 +470,14 @@ def frappecloud_migrator(local_site):
 	primary_action(local_site)
 
 
+def cleanup():
+	current_file = os.path.abspath(__file__)
+	print("Cleaning Up...")
+	os.remove(current_file)
+
+
 if __name__ in ("__main__", "frappe.integrations.frappe_providers.frappecloud"):
+	atexit.register(cleanup)
 	try:
 		local_site = sys.argv[1]
 	except Exception:
