@@ -230,7 +230,7 @@ class Team(Document):
 	def get_available_credits(self):
 		stripe = get_stripe()
 		customer_object = stripe.Customer.retrieve(self.stripe_customer_id)
-		balance = (customer_object['balance'] * -1) / 100
+		balance = (customer_object["balance"] * -1) / 100
 		return balance
 
 	def is_partner_and_has_enough_credits(self):
