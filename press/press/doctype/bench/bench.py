@@ -158,6 +158,8 @@ def archive_obsolete_benches():
 
 
 def scale_workers():
+	# This method only operates on one bench at a time to avoid command collision
+	# TODO: Fix this in agent. Lock commands that can't be run simultaneously
 	benches = frappe.get_all(
 		"Bench",
 		fields=["name", "candidate", "workers", "gunicorn_workers"],
@@ -178,3 +180,4 @@ def scale_workers():
 			bench = frappe.get_doc("Bench", bench.name)
 			bench.workers, bench.gunicorn_workers = workers, gunicorn_workers
 			bench.save()
+			return
