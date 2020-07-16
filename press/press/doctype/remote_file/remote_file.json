@@ -28,7 +28,7 @@
   },
   {
    "fieldname": "file_size",
-   "fieldtype": "Int",
+   "fieldtype": "Data",
    "in_list_view": 1,
    "label": "File Size",
    "length": 20,
@@ -60,7 +60,7 @@
  ],
  "icon": "fa fa-file",
  "links": [],
- "modified": "2020-07-08 16:49:51.968211",
+ "modified": "2020-07-16 18:17:33.439314",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Remote File",
