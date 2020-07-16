@@ -107,6 +107,7 @@ scheduler_events = {
 	"hourly_long": [
 		"press.press.doctype.payment_ledger_entry.payment_ledger_entry.create_ledger_entries",
 		"press.press.doctype.bench.bench.archive_obsolete_benches",
+		"press.press.doctype.bench.bench.scale_workers",
 		"press.press.doctype.agent_job.agent_job.schedule_backups",
 	],
 	"cron": {

@@ -155,3 +155,26 @@ def archive_obsolete_benches():
 					return
 				except Exception:
 					log_error("Bench Archival Error", bench=bench.name)
+
+
+def scale_workers():
+	benches = frappe.get_all(
+		"Bench",
+		fields=["name", "candidate", "workers", "gunicorn_workers"],
+		filters={"status": "Active", "auto_scale_workers": True},
+	)
+	for bench in benches:
+		site_count = frappe.db.count("Site", {"bench": bench.name, "status": "Active"})
+		if site_count <= 25:
+			workers, gunicorn_workers = 1, 2
+		elif site_count <= 50:
+			workers, gunicorn_workers = 2, 4
+		elif site_count <= 75:
+			workers, gunicorn_workers = 3, 6
+		else:
+			workers, gunicorn_workers = 4, 8
+
+		if (bench.workers, bench.gunicorn_workers) != (workers, gunicorn_workers):
+			bench = frappe.get_doc("Bench", bench.name)
+			bench.workers, bench.gunicorn_workers = workers, gunicorn_workers
+			bench.save()

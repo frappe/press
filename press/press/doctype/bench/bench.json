@@ -17,6 +17,7 @@
   "workers",
   "gunicorn_workers",
   "port_offset",
+  "auto_scale_workers",
   "column_break_11",
   "config"
  ],
@@ -115,10 +116,16 @@
   {
    "fieldname": "column_break_11",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "auto_scale_workers",
+   "fieldtype": "Check",
+   "label": "Auto Scale Workers"
   }
  ],
  "links": [],
- "modified": "2020-06-19 20:04:30.201213",
+ "modified": "2020-07-16 13:12:34.786038",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",
