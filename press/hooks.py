@@ -88,6 +88,7 @@ doc_events = {
 			"press.press.doctype.payment.payment.process_stripe_webhook",
 			"press.press.doctype.subscription.subscription.process_stripe_webhook",
 			"press.press.doctype.team.team.process_stripe_webhook",
+			"press.api.telegram.process_stripe_webhook",
 		],
 	}
 }

@@ -1,0 +1,53 @@
+{
+ "actions": [],
+ "creation": "2020-07-16 15:18:10.663893",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "bot_token",
+  "group_chat_id",
+  "message"
+ ],
+ "fields": [
+  {
+   "fieldname": "bot_token",
+   "fieldtype": "Data",
+   "label": "Bot Token"
+  },
+  {
+   "fieldname": "group_chat_id",
+   "fieldtype": "Data",
+   "label": "Group Chat ID"
+  },
+  {
+   "description": "You can use jinja to format the message. Stripe <code>invoice</code> object is available in context.",
+   "fieldname": "message",
+   "fieldtype": "Code",
+   "label": "Message"
+  }
+ ],
+ "issingle": 1,
+ "links": [],
+ "modified": "2020-07-16 15:27:18.289581",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Telegram Notification Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}
