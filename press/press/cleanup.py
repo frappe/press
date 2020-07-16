@@ -4,8 +4,8 @@ from frappe.desk.form.load import get_attachments
 
 
 def remove_baggage():
-	# condition: any sort of file attached to a site and creation time > 24 hr
-	past_day = datetime.date.today() - datetime.timedelta(days=1)
+	# condition: any sort of file attached to a site and creation time > 12 hr
+	half_day = datetime.datetime.now() - datetime.timedelta(hours=12)
 	or_filters = [
 		["database_file", "!=", ""],
 		["public_file", "!=", ""],
@@ -15,7 +15,7 @@ def remove_baggage():
 		["remote_private_file", "!=", ""],
 	]
 	filters = [
-		["creation", "<", past_day],
+		["creation", "<", half_day],
 		["status", "not in", "Pending,Installing,Updating,Active,Broken"]
 	]
 
