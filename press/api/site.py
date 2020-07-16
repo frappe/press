@@ -151,10 +151,10 @@ def backups(name):
 
 @frappe.whitelist()
 @protected("Site")
-def get_backup_link(name, backup, expiration=3600):
+def get_backup_link(name, backup, file, expiration=3600):
 	bucket = frappe.db.get_single_value("Press Settings", "aws_s3_bucket")
-	date = str(datetime.datetime.strptime(backup.split("_")[0], "%Y%m%d").date())
-	file_path = os.path.join(name, date, backup)
+	backup_data = frappe.db.get_value("Site Backup", backup, "offsite_backup")
+	file_path = json.loads(backup_data).get(file)
 
 	s3 = boto3.client(
 		"s3",
