@@ -117,6 +117,18 @@ def archive_obsolete_benches():
 		"Bench", fields=["name", "candidate"], filters={"status": "Active"}
 	)
 	for bench in benches:
+		# If this bench is already being archived then don't do anything.
+		active_archival_jobs = frappe.db.exists(
+			"Agent Job",
+			{
+				"job_type": "Archive Bench",
+				"bench": bench.name,
+				"status": ("in", ("Pending", "Running", "Success")),
+			},
+		)
+		if active_archival_jobs:
+			continue
+
 		# Don't try archiving benches with sites
 		if frappe.db.count("Site", {"bench": bench.name, "status": ("!=", "Archived")}):
 			continue
