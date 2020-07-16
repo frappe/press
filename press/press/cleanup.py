@@ -25,7 +25,7 @@ def remove_baggage():
 		# remove local files attached to site
 		attachments = get_attachments("Site", site["name"])
 		for attachment in attachments:
-			frappe.get_doc("File", attachment["name"]).delete()
+			frappe.delete_doc_if_exists("File", attachment["name"])
 
 		# remove remote files attached to site
 		remote_files = frappe.db.get_value("Site", site["name"], [
