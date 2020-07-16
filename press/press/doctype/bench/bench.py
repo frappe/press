@@ -42,7 +42,7 @@ class Bench(Document):
 		)
 		self.config = json.dumps(config, indent=4)
 
-	def get_unused_port_offset(self, min):
+	def get_unused_port_offset(self):
 		benches = frappe.get_all(
 			"Bench",
 			fields=["port_offset"],
