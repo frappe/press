@@ -25,13 +25,7 @@ class Bench(Document):
 				)
 
 		if not self.port_offset:
-			benches = frappe.get_all(
-				"Bench", fields=["port_offset"], filters={"server": self.server}
-			)
-			if benches:
-				self.port_offset = max(map(lambda x: x.port_offset, benches)) + 1
-			else:
-				self.port_offset = 0
+			self.port_offset = self.get_unused_port_offset()
 
 		config = frappe.db.get_single_value("Press Settings", "bench_configuration")
 		config = json.loads(config)
@@ -47,6 +41,17 @@ class Bench(Document):
 			}
 		)
 		self.config = json.dumps(config, indent=4)
+
+	def get_unused_port_offset(self, min):
+		benches = frappe.get_all(
+			"Bench",
+			fields=["port_offset"],
+			filters={"server": self.server, "status": ("!=", "Archived")},
+		)
+		all_offsets = range(0, 100)
+		used_offsets = map(lambda x: x.port_offset, benches)
+		available_offsets = set(all_offsets) - set(used_offsets)
+		return min(available_offsets)
 
 	def on_update(self):
 		self.update_bench_config()
