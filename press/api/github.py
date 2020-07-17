@@ -10,7 +10,7 @@ from press.utils import get_current_team, log_error
 import requests
 import jwt
 import re
-from base64 import b64decode
+from base64 import b64decode, b64encode
 from frappe.core.utils import find
 
 
@@ -79,10 +79,11 @@ def options():
 		group["frappe"] = frappe_app
 		group["apps"] = group_apps
 
+	state = b64encode(team.encode()).decode()
 	options = {
 		"authorized": bool(token),
 		"enable_custom_apps": bool(enable_custom_apps),
-		"installation_url": f"{public_link}/installations/new",
+		"installation_url": f"{public_link}/installations/new?state={state}",
 		"installations": installations(token) if token else [],
 		"groups": groups,
 	}
