@@ -9,7 +9,9 @@
 					<div class="flex grid grid-cols-3 gap-4 px-6">
 						<FileUploader
 							v-for="file in files"
+							:fileTypes="file.ext"
 							:key="file.type"
+							:type="file.type"
 							@success="onFileUpload(file, $event)"
 							:upload-args="{
 								method: 'press.api.site.upload_backup',
@@ -162,18 +164,21 @@ export default {
 				{
 					icon: 'database',
 					type: 'database',
+					ext: 'application/x-gzip',
 					title: 'Database Backup',
 					file: null
 				},
 				{
 					icon: 'file',
 					type: 'public',
+					ext: 'application/x-tar',
 					title: 'Public Files',
 					file: null
 				},
 				{
 					icon: 'file-minus',
 					type: 'private',
+					ext: 'application/x-tar',
 					title: 'Private Files',
 					file: null
 				}
