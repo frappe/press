@@ -20,6 +20,7 @@ from botocore.exceptions import ClientError
 
 import frappe
 from frappe.core.utils import find
+from frappe.desk.doctype.tag.tag import add_tag
 from frappe.utils import cint, flt, time_diff_in_hours
 from frappe.utils.password import get_decrypted_password
 from press.press.doctype.agent_job.agent_job import job_detail
@@ -711,6 +712,8 @@ def uploaded_backup_info(file, path, type, size):
 			"file_type": type,
 			"file_size": size,
 			"file_path": path,
+			"bucket": frappe.db.get_single_value("Press Settings", "remote_uploads_bucket")
 		}
 	).insert()
+	add_tag("Site Upload", doc.doctype, doc.name)
 	return doc.name
