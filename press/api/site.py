@@ -712,7 +712,7 @@ def uploaded_backup_info(file, path, type, size):
 			"file_type": type,
 			"file_size": size,
 			"file_path": path,
-			"bucket": frappe.db.get_single_value("Press Settings", "remote_uploads_bucket")
+			"bucket": frappe.db.get_single_value("Press Settings", "remote_uploads_bucket"),
 		}
 	).insert()
 	add_tag("Site Upload", doc.doctype, doc.name)

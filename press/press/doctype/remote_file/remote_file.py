@@ -38,17 +38,30 @@ class RemoteFile(Document):
 	@property
 	def s3_client(self):
 		if self.bucket == frappe.db.get_single_value("Press Settings", "aws_s3_bucket"):
-			access_key_id = frappe.db.get_single_value("Press Settings", "offsite_backups_access_key_id")
-			secret_access_key = get_decrypted_password("Press Settings", "Press Settings", "offsite_backups_secret_access_key")
+			access_key_id = frappe.db.get_single_value(
+				"Press Settings", "offsite_backups_access_key_id"
+			)
+			secret_access_key = get_decrypted_password(
+				"Press Settings", "Press Settings", "offsite_backups_secret_access_key"
+			)
 
-		elif self.bucket == frappe.db.get_single_value("Press Settings", "remote_uploads_bucket"):
+		elif self.bucket == frappe.db.get_single_value(
+			"Press Settings", "remote_uploads_bucket"
+		):
 			access_key_id = frappe.db.get_single_value("Press Settings", "remote_access_key_id")
-			secret_access_key = get_decrypted_password("Press Settings", "Press Settings", "remote_secret_access_key")
+			secret_access_key = get_decrypted_password(
+				"Press Settings", "Press Settings", "remote_secret_access_key"
+			)
 
 		else:
 			raise Exception("Credentials for the bucket don't exist!")
 
-		return client("s3", aws_access_key_id=access_key_id, aws_secret_access_key=secret_access_key, region_name="ap-south-1")
+		return client(
+			"s3",
+			aws_access_key_id=access_key_id,
+			aws_secret_access_key=secret_access_key,
+			region_name="ap-south-1",
+		)
 
 	@property
 	def download_link(self):

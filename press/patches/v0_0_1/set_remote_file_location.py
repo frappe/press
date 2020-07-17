@@ -4,12 +4,14 @@
 
 from __future__ import unicode_literals
 import frappe
-import json
 from frappe.desk.doctype.tag.tag import add_tag
+
 
 def execute():
 	frappe.reload_doc("press", "doctype", "remote_file")
-	remote_files = (x["name"] for x in frappe.get_all("Remote File", [["bucket", "like", ""]]))
+	remote_files = (
+		x["name"] for x in frappe.get_all("Remote File", [["bucket", "like", ""]])
+	)
 	uploads_bucket = frappe.db.get_single_value("Press Settings", "remote_uploads_bucket")
 
 	for remote_file in remote_files:
