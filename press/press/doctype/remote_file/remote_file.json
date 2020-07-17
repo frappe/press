@@ -68,7 +68,7 @@
  ],
  "icon": "fa fa-file",
  "links": [],
- "modified": "2020-07-17 13:51:37.935556",
+ "modified": "2020-07-17 15:53:44.984197",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Remote File",
@@ -104,5 +104,5 @@
  "sort_field": "modified",
  "sort_order": "ASC",
  "title_field": "file_name",
- "track_views": 1
+ "track_changes": 1
 }
