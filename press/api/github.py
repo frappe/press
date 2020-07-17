@@ -101,7 +101,7 @@ def installations(token):
 			{
 				"id": installation["id"],
 				"login": installation["account"]["login"],
-				"url": installation["account"]["html_url"],
+				"url": installation["html_url"],
 				"image": installation["account"]["avatar_url"],
 				"repos": repositories(installation["id"], token),
 			}
