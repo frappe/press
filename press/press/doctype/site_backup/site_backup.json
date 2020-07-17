@@ -16,14 +16,17 @@
   "data_7",
   "database_file",
   "database_url",
+  "remote_database_file",
   "database_size",
   "data_12",
   "public_file",
   "public_url",
+  "remote_public_file",
   "public_size",
   "column_break_16",
   "private_file",
   "private_url",
+  "remote_private_file",
   "private_size",
   "section_break_21",
   "offsite_backup"
@@ -167,10 +170,31 @@
    "fieldtype": "Code",
    "label": "Offsite Backup",
    "read_only": 1
+  },
+  {
+   "fieldname": "remote_database_file",
+   "fieldtype": "Link",
+   "label": "Remote File",
+   "options": "Remote File",
+   "read_only": 1
+  },
+  {
+   "fieldname": "remote_public_file",
+   "fieldtype": "Link",
+   "label": "Remote File",
+   "options": "Remote File",
+   "read_only": 1
+  },
+  {
+   "fieldname": "remote_private_file",
+   "fieldtype": "Link",
+   "label": "Remote File",
+   "options": "Remote File",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2020-06-17 17:49:22.430516",
+ "modified": "2020-07-17 12:01:54.422645",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Backup",
