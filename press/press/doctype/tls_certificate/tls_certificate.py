@@ -79,7 +79,7 @@ class TLSCertificate(Document):
 			f"certbot certonly --quiet {plugin} {staging}--logs-dir"
 			f" {certbot_directory}/logs --work-dir {certbot_directory} --config-dir"
 			f" {certbot_directory} --agree-tos --eff-email --email"
-			f" {settings.eff_registration_email} --must-staple --staple-ocsp"
+			f" {settings.eff_registration_email} --staple-ocsp"
 			f" --rsa-key-size {self.rsa_key_size} --cert-name {self.name} --domains"
 			f" {self.name}"
 		)
