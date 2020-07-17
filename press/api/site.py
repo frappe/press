@@ -5,7 +5,6 @@
 from __future__ import unicode_literals
 
 import builtins
-import datetime
 import gzip
 import io
 import json
@@ -111,7 +110,9 @@ def running_jobs(name):
 @frappe.whitelist()
 @protected("Site")
 def backups(name):
-	one_month_ago = datetime.date.today() - datetime.timedelta(days=30)
+	available_offsite_backups = (
+		frappe.db.get_single_value("Press Settings", "offsite_backups_count") or 30
+	)
 	fields = [
 		"name",
 		"with_files",
@@ -140,9 +141,9 @@ def backups(name):
 		filters={
 			"site": name,
 			"status": ("!=", "Failure"),
-			"offsite": 1,
-			"creation": (">", one_month_ago),
+			"offsite": 1
 		},
+		limit=available_offsite_backups
 	)
 	return sorted(
 		latest_backups + offsite_backups, key=lambda x: x["creation"], reverse=True
