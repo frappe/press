@@ -11,8 +11,6 @@ from base64 import b64decode
 def get_context(context):
 	code = frappe.form_dict.code
 	state = frappe.form_dict.state
-	frappe.local.cookie_manager.cookies = {}
-	frappe.local.cookie_manager.to_delete = []
 	if code and state:
 		team = b64decode(state).decode()
 		obtain_access_token(code, team)
