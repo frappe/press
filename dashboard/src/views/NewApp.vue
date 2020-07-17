@@ -80,11 +80,7 @@
 									</div>
 									<p class="text-base text-gray-700 mt-4">
 										Don't see your repository here?
-										<a
-											:href="
-												`https://github.com/settings/installations/${selectedInstallation.id}`
-											"
-											class="underline"
+										<a :href="selectedInstallation.url" class="underline"
 											>Configure the Frappe Cloud app on GitHub.</a
 										>
 									</p>
@@ -96,11 +92,7 @@
 									<p class="text-base text-gray-700 mt-4">
 										This can happen when Frappe Cloud doesn’t have access to the
 										repositories in your account.
-										<a
-											:href="
-												`https://github.com/settings/installations/${selectedInstallation.id}`
-											"
-											class="underline"
+										<a :href="selectedInstallation.url" class="underline"
 											>Configure the Frappe Cloud app on GitHub</a
 										>, and give it access to the repository you want to link.
 									</p>
