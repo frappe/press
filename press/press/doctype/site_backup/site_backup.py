@@ -19,11 +19,7 @@ class SiteBackup(Document):
 
 
 def track_offsite_backups(backup_data: dict, offsite_backup_data: dict) -> tuple:
-	remote_files = {
-		"database": None,
-		"public": None,
-		"private": None
-	}
+	remote_files = {"database": None, "public": None, "private": None}
 
 	if offsite_backup_data:
 		bucket = frappe.db.get_single_value("Press Settings", "aws_s3_bucket")
@@ -32,14 +28,16 @@ def track_offsite_backups(backup_data: dict, offsite_backup_data: dict) -> tuple
 			file_path = offsite_backup_data.get(file_name)
 
 			if file_path:
-				remote_file = frappe.get_doc({
-					"doctype": "Remote File",
-					"file_name": file_name,
-					"file_path": file_path,
-					"file_size": file_size,
-					"file_type": "application/x-gzip" if type == "database" else "application/x-tar",
-					"bucket": bucket
-				})
+				remote_file = frappe.get_doc(
+					{
+						"doctype": "Remote File",
+						"file_name": file_name,
+						"file_path": file_path,
+						"file_size": file_size,
+						"file_type": "application/x-gzip" if type == "database" else "application/x-tar",
+						"bucket": bucket,
+					}
+				)
 				remote_file.save()
 				add_tag("Offsite Backup", remote_file.doctype, remote_file.name)
 				remote_files[type] = remote_file.name
@@ -56,7 +54,9 @@ def process_backup_site_job_update(job):
 		if job.status == "Success":
 			job_data = json.loads(job.data)
 			backup_data, offsite_backup_data = job_data["backups"], job_data["offsite"]
-			remote_database, remote_public, remote_private = track_offsite_backups(backup_data, offsite_backup_data)
+			remote_database, remote_public, remote_private = track_offsite_backups(
+				backup_data, offsite_backup_data
+			)
 
 			frappe.db.set_value(
 				"Site Backup",
@@ -65,7 +65,7 @@ def process_backup_site_job_update(job):
 					"database_size": backup_data["database"]["size"],
 					"database_url": backup_data["database"]["url"],
 					"database_file": backup_data["database"]["file"],
-					"remote_database_file": remote_database
+					"remote_database_file": remote_database,
 				},
 			)
 			if "private" in backup_data and "public" in backup_data:
