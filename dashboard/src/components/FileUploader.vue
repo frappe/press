@@ -60,21 +60,23 @@ export default {
 			this.file = e.target.files[0];
 			this.message = 'Validating File';
 			const validationMessage = await this.validateFile();
+			const validationName = await this.validateFileName();
 			this.message = '';
 
 			if (validationMessage === true) {
-				delete window._unarchiver;
+				this.uploadFile(this.file);
+			} else if (validationName && validationMessage !== false) {
 				this.uploadFile(this.file);
 			} else {
 				const title = this.type[0].toUpperCase() + this.type.slice(1);
 				const errorTitle =
-					validationMessage?.length > 10
+					validationMessage?.length > 24
 						? 'Validation Error'
 						: validationMessage;
-				console.error(validationMessage);
 				this.error = validationMessage ? errorTitle : `Invalid ${title} File`;
 				if (validationMessage) {
 					this.message = 'Skipping Validation...';
+					console.error(validationMessage);
 					setTimeout(() => {
 						this.message = '';
 						this.uploadFile(this.file);
@@ -82,22 +84,37 @@ export default {
 				}
 			}
 		},
+		validateFileName() {
+			return new Promise((resolve, reject) => {
+				const name = this.file.name;
+				const suffix = `${this.type ? 'private' : ''}-files.tar`;
+				const result = name.indexOf(suffix, name.length - suffix.length) !== -1;
+				resolve(result);
+			});
+		},
 		validateFile() {
 			if (this.file.type !== 'application/x-tar') {
 				console.error('File not validated!');
 				return Promise.resolve(true);
 			}
 			return new Promise((resolve, reject) => {
-				setTimeout(() => {
-					window._unarchiver?.stop();
-					resolve('Validation Timed Out');
-				}, 100000);
+				let timeout;
+				if (this.file.size < 200 * 1000 * 1000) {
+					timeout = 30 * 1000;
+				} else {
+					timeout = 60 * 1000;
+				}
 				let upload_type = this.type;
 				let reader = new FileReader();
 				reader.readAsArrayBuffer(this.file);
 				reader.onload = function() {
+					setTimeout(() => {
+						_unarchiver?.stop();
+						resolve('Validation Timed Out');
+					}, timeout);
+
 					const FileArrayBuffer = reader.result;
-					window._unarchiver = new Untarrer(
+					let _unarchiver = new Untarrer(
 						FileArrayBuffer,
 						'/assets/press/node_modules/@codedread/bitjs/'
 					);
@@ -107,7 +124,7 @@ export default {
 							const path = e.currentFilename.split('/');
 							const type = path.indexOf(upload_type) == 2;
 							const files = path.indexOf('files') == 3;
-							window._unarchiver.stop();
+							_unarchiver.stop();
 							if (type && files) {
 								resolve(true);
 							}
@@ -115,8 +132,8 @@ export default {
 						}
 					}
 
-					window._unarchiver.addEventListener('progress', readCompression);
-					window._unarchiver.start();
+					_unarchiver.addEventListener('progress', readCompression);
+					_unarchiver.start();
 				};
 				reader.onerror = function() {
 					resolve(reader.error.toString());
