@@ -106,6 +106,7 @@
 									file: fileObj,
 									uploading,
 									progress,
+									message,
 									error,
 									success,
 									openFileSelector
@@ -140,9 +141,9 @@
 									</div>
 									<div
 										class="mt-2 text-xs text-gray-500"
-										v-if="!(progress || error)"
+										v-if="!(progress || error) || message"
 									>
-										Click to upload
+										{{ message || 'Click to upload' }}
 									</div>
 								</button>
 							</template>
