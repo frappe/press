@@ -77,7 +77,7 @@
 						</div>
 					</div>
 				</div>
-				<div>
+				<div v-if="!migrateFromSelfHosted">
 					<label class="flex py-2 leading-none">
 						<Input
 							label="Create Site from Backup"
@@ -147,6 +147,63 @@
 						</FileUploader>
 					</div>
 				</div>
+				<div v-if="!restoreBackup">
+					<label class="flex py-2 leading-none">
+						<Input
+							label="Migrate Site from URL"
+							type="checkbox"
+							v-model="migrateFromSelfHosted"
+						/>
+						<Badge color="blue" class="ml-2">beta</Badge>
+					</label>
+					<p class="text-base text-gray-700">
+						Migrate your currently hosted site to Frappe Cloud.
+					</p>
+					<div v-if="migrateFromSelfHosted">
+						<div class="flex grid gap-4 mt-6 w-full">
+							<div class="grid grid-cols-3">
+								<Input
+									type="text"
+									class="mt-6"
+									placeholder="example.com"
+									v-model="frappeSite"
+								/>
+								<p class="mt-7 ml-2 w-1/2 text-base">
+									<FeatherIcon
+										name="check"
+										class="w-5 h-5 p-1 mr-2 text-green-500 bg-green-100 rounded-full"
+										v-if="verifiedFrappeSite === true"
+									/>
+									<FeatherIcon
+										name="x"
+										class="w-5 h-5 p-1 mr-2 text-red-500 bg-red-100 rounded-full"
+										v-if="verifiedFrappeSite === false"
+									/>
+								</p>
+								<Button class="mt-6 w-30" type="primary" @click="verifySite">
+									Verify Site
+								</Button>
+							</div>
+							<div v-if="verifiedFrappeSite">
+								<Input
+									type="email"
+									class="mt-6"
+									placeholder="user@example.com"
+									v-model="userNameFrappeSite"
+								/>
+								<Input
+									type="password"
+									class="mt-6"
+									placeholder="Password"
+									v-model="passwordFrappeSite"
+								/>
+								<Button class="mt-6" type="primary" @click="getBackup">
+									Get Backups
+								</Button>
+							</div>
+						</div>
+					</div>
+				</div>
 				<div>
 					<label class="text-lg">
 						Choose your plan
@@ -196,6 +253,11 @@ export default {
 		siteName: null,
 		options: null,
 		restoreBackup: false,
+		migrateFromSelfHosted: false,
+		frappeSite: null,
+		verifiedFrappeSite: null,
+		userNameFrappeSite: null,
+		passwordFrappeSite: null,
 		selectedApps: [],
 		selectedGroup: null,
 		selectedPlan: null,
@@ -349,6 +411,28 @@ export default {
 		},
 		onFileUpload(file, fileurl) {
 			this.selectedFiles[file.type] = fileurl;
+		},
+		async verifySite() {
+			this.verifiedFrappeSite = null;
+			let result = await this.$call('press.api.site.verify', {"site": this.frappeSite});
+			let { status } = result;
+			this.verifiedFrappeSite = status;
+		},
+		async getBackup() {
+			let result = await this.$call('press.api.site.get_backup_links', {"site": this.frappeSite, "usr": this.userNameFrappeSite, "pwd": this.passwordFrappeSite });
+			let data = result;
+			console.log(result);
+
+			for (let file of Object.keys(result)) {
+				let map = data[file].split("/");
+				let name = map[map.length - 1].split("?")[0];
+				let upload = await this.$call('press.api.site.uploaded_backup_info', {
+					"file": name,
+					"url": result[file],
+					"type": file === "database" ? "application/x-gzip": "application/x-tar"
+				});
+				this.selectedFiles[file] = upload
+			}
 		}
 	}
 };

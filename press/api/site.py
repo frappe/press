@@ -30,7 +30,12 @@ from press.press.doctype.site_update.site_update import (
 	benches_with_available_update,
 	should_try_update,
 )
-from press.utils import get_current_team, log_error
+from press.utils import (
+	get_current_team,
+	log_error,
+	verify_frappe_site,
+	get_frappe_backups,
+)
 
 
 def protected(doctype):
@@ -704,7 +709,7 @@ def get_upload_link(file):
 
 
 @frappe.whitelist()
-def uploaded_backup_info(file, path, type, size):
+def uploaded_backup_info(file=None, path=None, type=None, size=None, url=None):
 	doc = frappe.get_doc(
 		{
 			"doctype": "Remote File",
@@ -712,6 +717,17 @@ def uploaded_backup_info(file, path, type, size):
 			"file_type": type,
 			"file_size": size,
 			"file_path": path,
+			"url": url,
 		}
 	).insert()
 	return doc.name
+
+
+@frappe.whitelist()
+def verify(site):
+	return verify_frappe_site(site)
+
+
+@frappe.whitelist()
+def get_backup_links(site, usr, pwd):
+	return get_frappe_backups(site, usr, pwd)

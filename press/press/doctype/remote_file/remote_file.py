@@ -50,7 +50,7 @@ class RemoteFile(Document):
 
 	@property
 	def download_link(self):
-		return self.get_download_link()
+		return self.url or self.get_download_link()
 
 	def exists(self):
 		try:
