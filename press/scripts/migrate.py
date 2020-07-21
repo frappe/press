@@ -109,15 +109,21 @@ def render_actions_table():
 	return actions
 
 
-def render_site_table(sites_info):
-	sites_table = [["#", "Site Name", "Status"]]
-	available_sites = []
+def render_site_table(sites_info, version_info):
+	sites_table = [["#", "Site Name", "Frappe", "Status"]]
+	available_sites = {}
 
 	for n, site_data in enumerate(sites_info):
 		name, status = site_data["name"], site_data["status"]
+		frappe = version_info[name]
 		if status in ("Active", "Broken"):
-			sites_table.append([n + 1, name, status])
-			available_sites.append(name)
+			sites_table.append([n + 1, name, frappe, status])
+			available_sites[name] = {
+				"status": status,
+				"frappe": frappe,
+				"name": name,
+				"branch": version_info,
+			}
 
 	render_table(sites_table)
 	return available_sites
@@ -176,6 +182,42 @@ def select_primary_action():
 	return actions[idx]
 
 
+def get_site_info(site):
+	site_info_response = session.post(site_info_url, {"name": site})
+	if site_info_response.ok:
+		return site_info_response.json()["message"]
+	return {}
+
+
+def get_version(info, app="frappe"):
+	for app in info.get("installed_apps", {}):
+		if app.get("frappe", 0) == 1:
+			return app.get("name").lower().strip("frappe").strip().title()
+
+
+def get_branch(info, app="frappe"):
+	for app in info.get("installed_apps", {}):
+		if app.get("frappe", 0) == 1:
+			return app.get("branch")
+
+
+def get_version_from_branch(branch):
+	try:
+		return int(re.findall(r"[0-9]+", branch)[0])
+	except:
+		return
+
+
+def is_downgrade(cloud_data):
+	current = get_versions().get("frappe")
+	current_version = Version(current["version"]).major
+
+	cloud_branch = get_branch(cloud_data)
+	cloud_version = get_version_from_branch(cloud_branch) or 1000
+
+	return current_version > cloud_version
+
+
 @add_line_after
 def select_site():
 	get_all_sites_request = session.post(
@@ -189,14 +231,26 @@ def select_site():
 
 	if get_all_sites_request.ok:
 		all_sites = get_all_sites_request.json()["message"]
-		available_sites = render_site_table(all_sites)
+		sites_info = {site["name"]: get_site_info(site["name"]) for site in all_sites}
+		sites_version = {x: get_version(y) for x, y in sites_info.items()}
+		available_sites = render_site_table(all_sites, sites_version)
 
 		while True:
 			selected_site = click.prompt(
 				"Name of the site you want to restore to", type=str
 			).strip()
 			if selected_site in available_sites:
-				return selected_site
+				site_data = available_sites[selected_site]
+				downgrade = is_downgrade(sites_info[selected_site])
+
+				if (not downgrade) or (
+					downgrade
+					and click.confirm(
+						"Downgrading may lead to a broken site. Are you sure you want to do this?"
+					)
+				):
+					return site_data
+
 			else:
 				print("Site {} does not exist. Try again ❌".format(selected_site))
 	else:
@@ -465,7 +519,7 @@ def create_session():
 
 
 def frappecloud_migrator(local_site):
-	global login_url, upload_url, remote_link_url, register_remote_url, options_url, site_exists_url, restore_site_url, account_details_url, all_site_url
+	global login_url, upload_url, remote_link_url, register_remote_url, options_url, site_exists_url, site_info_url, restore_site_url, account_details_url, all_site_url
 	global session, migrator_actions, remote_site
 
 	remote_site = frappe.conf.frappecloud_url or "frappecloud.com"
@@ -482,6 +536,7 @@ def frappecloud_migrator(local_site):
 		remote_site
 	)
 	site_exists_url = "https://{}/api/method/press.api.site.exists".format(remote_site)
+	site_info_url = "https://{}/api/method/press.api.site.get".format(remote_site)
 	account_details_url = "https://{}/api/method/press.api.account.get".format(remote_site)
 	all_site_url = "https://{}/api/method/press.api.site.all".format(remote_site)
 	restore_site_url = "https://{}/api/method/press.api.site.restore".format(remote_site)
