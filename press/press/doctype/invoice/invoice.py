@@ -49,13 +49,14 @@ class Invoice(Document):
 			self.status = "Unpaid"
 
 	def validate_duplicate(self):
-		res = frappe.db.get_all(
-			"Invoice", filters={"month": self.month, "year": self.year, "team": self.team}
-		)
-		if res:
-			frappe.throw(
-				f"Duplicate Entry {res[0].name} already exists", frappe.DuplicateEntryError
+		if self.is_new():
+			res = frappe.db.get_all(
+				"Invoice", filters={"month": self.month, "year": self.year, "team": self.team}
 			)
+			if res:
+				frappe.throw(
+					f"Duplicate Entry {res[0].name} already exists", frappe.DuplicateEntryError
+				)
 
 	def validate_dates(self):
 		period_start = frappe.utils.getdate(self.period_start)
