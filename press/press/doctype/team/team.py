@@ -10,6 +10,7 @@ from frappe.model.document import Document
 from frappe import _
 from frappe.utils import get_fullname
 from frappe.contacts.address_and_contact import load_address_and_contact
+from press.press.doctype.team.team_invoice import TeamInvoice
 
 
 class Team(Document):
@@ -46,12 +47,7 @@ class Team(Document):
 				doc.is_default = 0
 				doc.save()
 
-	def create_stripe_customer_and_subscription(self):
-		self.create_stripe_customer()
-		self.create_subscription()
-
 	def enable_erpnext_partner_privileges(self):
-		self.create_subscription()
 		self.erpnext_partner = 1
 		self.save()
 
@@ -151,7 +147,6 @@ class Team(Document):
 			# update address in Stripe Customer
 			# create subscription and allocate free credits
 			self.update_billing_details_on_stripe(address)
-			self.create_subscription()
 			self.allocate_free_credits()
 
 	def get_payment_methods(self):
@@ -177,19 +172,6 @@ class Team(Document):
 			for d in payment_methods
 		]
 		return payment_methods
-
-	def get_upcoming_invoice(self):
-		stripe = get_stripe()
-		return stripe.Invoice.upcoming(customer=self.stripe_customer_id)
-
-	def create_subscription(self):
-		if not self.has_subscription():
-			frappe.get_doc(
-				{"doctype": "Subscription", "team": self.name, "status": "Active"}
-			).insert()
-
-	def has_subscription(self):
-		return bool(frappe.db.exists("Subscription", {"team": self.name}))
 
 	def get_past_payments(self):
 		payments = frappe.db.get_all(
@@ -304,6 +286,11 @@ class Team(Document):
 		for site in suspended_sites:
 			frappe.get_doc("Site", site).unsuspend(reason)
 		return suspended_sites
+
+	def get_upcoming_invoice(self):
+		# get this month's invoice
+		today = frappe.utils.datetime.datetime.today()
+		return TeamInvoice(self, today.month, today.year).get_invoice()
 
 
 def get_team_members(team):

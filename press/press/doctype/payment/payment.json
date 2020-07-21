@@ -108,13 +108,15 @@
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2020-05-14 08:25:41.976043",
- "modified_by": "Administrator",
+ "modified": "2020-07-20 13:45:48.395887",
+ "modified_by": "faris@erpnext.com",
  "module": "Press",
  "name": "Payment",
  "owner": "Administrator",
  "permissions": [
   {
+   "amend": 1,
+   "cancel": 1,
    "create": 1,
    "delete": 1,
    "email": 1,
@@ -124,6 +126,7 @@
    "report": 1,
    "role": "System Manager",
    "share": 1,
+   "submit": 1,
    "write": 1
   }
  ],
