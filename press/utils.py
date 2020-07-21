@@ -106,3 +106,40 @@ def get_minified_script():
 	migration_script = "../apps/press/press/scripts/migrate.py"
 	script_contents = open(migration_script).read()
 	return minify(script_contents)
+
+
+def verify_frappe_site(site):
+	schema = "http"
+	status = False
+
+	try:
+		res = requests.get(f"{schema}://{site}/api/method/frappe.ping")
+		data = res.json()
+		if data.get("message") == "pong":
+			status = True
+	except Exception:
+		pass
+
+	return {"schema": schema, "status": status}
+
+
+def get_frappe_backups(site, usr, pwd):
+	schema = "http"
+	response = requests.post(
+		f"{schema}://{site}/api/method/login", data={"usr": usr, "pwd": pwd},
+	)
+	sid = response.cookies.get("sid")
+
+	if sid:
+
+		def url(path):
+			host = site.split(":")[0]
+			file = path.lstrip(f"./{host}/private/")
+			url = f"{schema}://{site}/{file}?sid={sid}"
+			return url
+
+		data = requests.post(
+			f"{schema}://{site}/api/method/frappe.utils.backups.fetch_latest_backups?sid={sid}"
+		)
+
+		return {x: url(y) for x, y in data.json()["message"].items()}

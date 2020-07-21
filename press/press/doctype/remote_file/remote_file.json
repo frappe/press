@@ -2,6 +2,7 @@
  "actions": [],
  "allow_import": 1,
  "creation": "2020-07-02 14:40:15.222405",
+ "description": "Tracks S3 uploads made via Press",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -10,7 +11,9 @@
   "section_break_5",
   "file_size",
   "file_path",
-  "file_type"
+  "file_type",
+  "bucket",
+  "url"
  ],
  "fields": [
   {
@@ -56,12 +59,24 @@
    "options": "Available\nUnavailable",
    "read_only": 1,
    "reqd": 1
+  },
+  {
+   "fieldname": "bucket",
+   "fieldtype": "Data",
+   "label": "Location",
+   "read_only": 1
+  },
+  {
+   "fieldname": "url",
+   "fieldtype": "Code",
+   "label": "URL",
+   "read_only": 1
   }
  ],
  "icon": "fa fa-file",
  "links": [],
- "modified": "2020-07-16 18:17:33.439314",
- "modified_by": "Administrator",
+ "modified": "2020-07-21 16:04:41.686239",
+ "modified_by": "gavin18d@gmail.com",
  "module": "Press",
  "name": "Remote File",
  "owner": "Administrator",
@@ -96,5 +111,5 @@
  "sort_field": "modified",
  "sort_order": "ASC",
  "title_field": "file_name",
- "track_views": 1
+ "track_changes": 1
 }
