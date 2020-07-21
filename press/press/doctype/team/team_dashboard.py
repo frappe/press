@@ -10,6 +10,6 @@ def get_data():
 		"fieldname": "team",
 		"transactions": [
 			{"label": _("Related Documents"), "items": ["Site"]},
-			{"label": _("Billing"), "items": ["Payment", "Payment Ledger Entry"]},
+			{"label": _("Billing"), "items": ["Payment", "Payment Ledger Entry", "Invoice"]},
 		],
 	}

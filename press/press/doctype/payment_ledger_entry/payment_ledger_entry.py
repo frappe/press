@@ -10,6 +10,7 @@ from frappe.model.document import Document
 from frappe.utils import rounded
 from press.api.billing import get_stripe
 from press.utils import log_error
+from press.press.doctype.team.team_invoice import TeamInvoice
 
 
 class PaymentLedgerEntry(Document):
@@ -23,7 +24,8 @@ class PaymentLedgerEntry(Document):
 			self.free_usage = free_account or free_site or False
 
 			if self.purpose == "Site Consumption":
-				self.check_duplicate()
+				if not frappe.conf.developer_mode:
+					self.check_duplicate()
 				self.calculate_consumption_amount()
 
 	def check_duplicate(self):
@@ -43,16 +45,11 @@ class PaymentLedgerEntry(Document):
 			)
 
 	def calculate_consumption_amount(self):
-		self.subscription = frappe.db.get_value(
-			"Subscription", {"team": self.team, "status": "Active"}
-		)
-		price_field = "price_inr" if self.currency == "INR" else "price_usd"
-		price, period = frappe.db.get_value("Plan", self.plan, [price_field, "period"])
-
+		plan = frappe.get_doc("Plan", self.plan)
 		# Stripe will charge 0.01 amount per unit
 		# and we can only send integers as unit
 		# that is why price_per_day is rounded to 2 decimal places
-		price_per_day = rounded(price / period, 2)
+		price_per_day = plan.get_price_per_day(self.currency)
 		# negative because this amount is used up
 		self.amount = price_per_day * -1
 		self.usage_units = price_per_day * 100
@@ -61,10 +58,8 @@ class PaymentLedgerEntry(Document):
 
 	def on_submit(self):
 		if self.purpose == "Site Consumption" and not self.free_usage:
-			# create usage record on Stripe
-			self.create_usage_record_on_stripe()
+			self.update_usage_in_invoice()
 		elif self.purpose in ["Credits Allocation", "Reverse Credits Allocation"]:
-			# create balance adjustment on Stripe
 			self.create_balance_adjustment_on_stripe()
 
 	def revert(self, reason=None):
@@ -86,22 +81,12 @@ class PaymentLedgerEntry(Document):
 			self.reverted = 1
 			self.save()
 
-	def create_usage_record_on_stripe(self):
-		stripe = get_stripe()
-		if not self.subscription:
-			frappe.throw("Subscription not created for {0}".format(self.team))
-
-		subscription_item_id = frappe.db.get_value(
-			"Subscription", self.subscription, "stripe_subscription_item_id"
-		)
-		usage_record = stripe.SubscriptionItem.create_usage_record(
-			subscription_item_id,
-			quantity=int(self.usage_units),
-			timestamp=self.timestamp,
-			action="increment",
-			idempotency_key=self.name,
-		)
-		self.db_set("stripe_usage_record_id", usage_record["id"])
+	def update_usage_in_invoice(self):
+		if self.purpose != "Site Consumption":
+			return
+		date = frappe.utils.getdate(self.date)
+		ti = TeamInvoice(self.team, date.month, date.year)
+		ti.update_site_usage(self)
 
 	def create_balance_adjustment_on_stripe(self):
 		stripe = get_stripe()
@@ -145,22 +130,7 @@ def create_ledger_entries():
 		if frappe.db.exists("Payment Ledger Entry", filters):
 			continue
 
-		doc = frappe.get_doc(
-			{
-				"doctype": "Payment Ledger Entry",
-				"site": site.name,
-				"purpose": "Site Consumption",
-			}
-		)
-		doc.insert()
-		frappe.db.commit()
-		try:
-			doc.submit()
-		except Exception:
-			frappe.db.rollback()
-			log_error(title="Submit Payment Ledger Entry", doc=doc.name)
-			doc.reload()
-			doc.increment_failed_attempt()
+		frappe.get_doc("Site", site.name).create_usage_ledger_entry()
 
 
 def submit_failed_ledger_entries():

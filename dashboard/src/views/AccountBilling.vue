@@ -18,12 +18,12 @@
 						:items="
 							[
 								{
-									label: 'Available Credits',
-									value: availableCredits
+									label: 'Usage So Far',
+									value: upcomingInvoice.total_amount
 								},
 								{
-									label: 'Usage Amount',
-									value: upcomingInvoice.amount
+									label: 'Available Credits',
+									value: availableCredits
 								},
 								upcomingInvoice.next_payment_attempt
 									? {
@@ -40,11 +40,11 @@
 					/>
 				</template>
 				<div
-					class="px-6 py-4"
-					v-if="!$resources.billingDetails.loading && !upcomingInvoice"
+					class="px-6 pb-4"
+					v-if="!$resources.billingDetails.loading && !paymentMethodAdded"
 				>
 					<Button type="primary" route="/welcome">
-						Setup your account
+						Add Billing Information
 					</Button>
 				</div>
 				<div
@@ -227,6 +227,9 @@ export default {
 		};
 	},
 	computed: {
+		paymentMethodAdded() {
+			return this.billingDetails.data?.payment_method;
+		},
 		upcomingInvoice() {
 			return this.billingDetails.data?.upcoming_invoice;
 		},

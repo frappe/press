@@ -39,7 +39,6 @@ def get_data():
 				{"type": "doctype", "name": "Credit Ledger Entry"},
 				{"type": "doctype", "name": "Payment"},
 				{"type": "doctype", "name": "Payment Provision"},
-				{"type": "doctype", "name": "Subscription"},
 				{"type": "doctype", "name": "Usage Report"},
 			],
 		},

@@ -85,8 +85,7 @@ permission_query_conditions = {
 doc_events = {
 	"Stripe Webhook Log": {
 		"after_insert": [
-			"press.press.doctype.payment.payment.process_stripe_webhook",
-			"press.press.doctype.subscription.subscription.process_stripe_webhook",
+			"press.press.doctype.invoice.invoice.process_stripe_webhook",
 			"press.press.doctype.team.team.process_stripe_webhook",
 		],
 	}
@@ -102,6 +101,7 @@ scheduler_events = {
 		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
 		"press.press.doctype.remote_file.remote_file.poll_file_statuses",
 		"press.press.cleanup.remove_baggage",
+		"press.press.doctype.invoice.invoice.submit_invoices"
 	],
 	"hourly": ["press.press.doctype.frappe_app.frappe_app.poll_new_releases"],
 	"hourly_long": [
