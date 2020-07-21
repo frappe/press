@@ -14,7 +14,9 @@ import frappe
 import frappe.utils.backups
 from frappe.utils import get_installed_apps_info
 from frappe.utils.commands import add_line_after, add_line_before, render_table
+from frappe.utils.change_log import get_versions
 
+# third party imports
 
 try:
 	print("Setting Up requirements...")
@@ -22,9 +24,10 @@ try:
 	import html2text
 	import requests
 	import click
+	from semantic_version import Version
 	from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
 except ImportError:
-	dependencies = ["tenacity", "html2text", "requests", "click"]
+	dependencies = ["tenacity", "html2text", "requests", "click", "semantic-version"]
 	install_command = shlex.split(
 		"{} -m pip install {}".format(sys.executable, " ".join(dependencies))
 	)
@@ -32,6 +35,7 @@ except ImportError:
 	import html2text
 	import requests
 	import click
+	from semantic_version import Version
 	from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
 
 
