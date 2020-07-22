@@ -124,12 +124,8 @@ def verify_frappe_site(site):
 
 
 def get_frappe_backups(site, auth):
-	from frappe.frappeclient import FrappeClient
 	schema = "https"
-	headers = {
-		'Accept': 'application/json',
-		'Content-Type': 'application/json'
-	}
+	headers = {"Accept": "application/json", "Content-Type": "application/json"}
 
 	api_key = auth.get("api_key")
 	api_secret = auth.get("api_secret")
@@ -145,10 +141,9 @@ def get_frappe_backups(site, auth):
 		url = f"{schema}://{site}/{file}?sid={sid}"
 		return url
 
-
 	if api:
 		# tested - doesnt work (broken in frappe)
-		headers = headers.update({ 'Authorization': f'token {api_key}:{api_secret}' })
+		headers = headers.update({"Authorization": f"token {api_key}:{api_secret}"})
 
 	if passwd:
 		# tested - works
@@ -160,7 +155,7 @@ def get_frappe_backups(site, auth):
 	suffix = f"?sid={sid}" if passwd else ""
 	data = requests.post(
 		f"{schema}://{site}/api/method/frappe.utils.backups.fetch_latest_backups{suffix}",
-		headers=headers
+		headers=headers,
 	)
 
 	return {x: url(y) for x, y in data.json().get("message", {}).items()}

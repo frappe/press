@@ -189,24 +189,28 @@
 									<button
 										class="relative flex items-center justify-center py-4 pl-4 pr-8 mr-4 border rounded-md cursor-pointer focus:outline-none focus:shadow-outline"
 										:class="
-											this.method === 'credentials' ? 'bg-blue-50 border-blue-500' : 'hover:border-blue-400'
+											this.method === 'credentials'
+												? 'bg-blue-50 border-blue-500'
+												: 'hover:border-blue-400'
 										"
 										@click="selectMethod('credentials')"
 									>
-									<div>
-										System Manager Credentials
-									</div>
+										<div>
+											System Manager Credentials
+										</div>
 									</button>
 									<button
 										class="relative flex items-center justify-center py-4 pl-4 pr-8 mr-4 border rounded-md cursor-pointer focus:outline-none focus:shadow-outline"
 										:class="
-											this.method === 'api' ? 'bg-blue-50 border-blue-500' : 'hover:border-blue-400'
+											this.method === 'api'
+												? 'bg-blue-50 border-blue-500'
+												: 'hover:border-blue-400'
 										"
 										@click="selectMethod('api')"
 									>
-									<div>
-										System Manager API
-									</div>
+										<div>
+											System Manager API
+										</div>
 									</button>
 								</div>
 							</div>
@@ -245,7 +249,13 @@
 								<FeatherIcon
 									name="check"
 									class="w-5 h-5 p-1 mr-2 text-green-500 bg-green-100 rounded-full"
-									v-if="!(selectedFiles.database == selectedFiles.public == selectedFiles.private != null)"
+									v-if="
+										!(
+											((selectedFiles.database == selectedFiles.public) ==
+												selectedFiles.private) !=
+											null
+										)
+									"
 								/>
 							</div>
 						</div>
@@ -467,39 +477,44 @@ export default {
 		},
 		async verifySite() {
 			this.verifiedFrappeSite = null;
-			let result = await this.$call('press.api.site.verify', {"site": this.frappeSite});
+			let result = await this.$call('press.api.site.verify', {
+				site: this.frappeSite
+			});
 			let { status } = result;
 			this.verifiedFrappeSite = status;
 		},
 		async getBackup() {
 			let payload = {
-				"site": this.frappeSite,
+				site: this.frappeSite
 			};
 			let auth = {};
 
 			if (this.method === 'credentials') {
 				auth = {
-					"usr": this.userNameFrappeSite,
-					"pwd": this.passwordFrappeSite
-				}
+					usr: this.userNameFrappeSite,
+					pwd: this.passwordFrappeSite
+				};
 			} else if (this.method === 'api') {
 				auth = {
-					"api_key": this.frappeAPIkey,
-					"api_secret": this.frappeAPISecret
-				}
+					api_key: this.frappeAPIkey,
+					api_secret: this.frappeAPISecret
+				};
 			}
 
-			let result = await this.$call('press.api.site.get_backup_links', { ...payload, "auth": auth });
+			let result = await this.$call('press.api.site.get_backup_links', {
+				...payload,
+				auth: auth
+			});
 
 			for (let file of Object.keys(result)) {
-				let map = result[file].split("/");
-				let name = map[map.length - 1].split("?")[0];
+				let map = result[file].split('/');
+				let name = map[map.length - 1].split('?')[0];
 				let upload = await this.$call('press.api.site.uploaded_backup_info', {
-					"file": name,
-					"url": result[file],
-					"type": file === "database" ? "application/x-gzip": "application/x-tar"
+					file: name,
+					url: result[file],
+					type: file === 'database' ? 'application/x-gzip' : 'application/x-tar'
 				});
-				this.selectedFiles[file] = upload
+				this.selectedFiles[file] = upload;
 			}
 		}
 	}
