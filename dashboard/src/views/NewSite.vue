@@ -184,22 +184,69 @@
 									Verify Site
 								</Button>
 							</div>
+							<div class="mt-6">
+								<div class="flex py-2 pl-1 -my-2 -ml-1 overflow-x-auto">
+									<button
+										class="relative flex items-center justify-center py-4 pl-4 pr-8 mr-4 border rounded-md cursor-pointer focus:outline-none focus:shadow-outline"
+										:class="
+											this.method === 'credentials' ? 'bg-blue-50 border-blue-500' : 'hover:border-blue-400'
+										"
+										@click="selectMethod('credentials')"
+									>
+									<div>
+										System Manager Credentials
+									</div>
+									</button>
+									<button
+										class="relative flex items-center justify-center py-4 pl-4 pr-8 mr-4 border rounded-md cursor-pointer focus:outline-none focus:shadow-outline"
+										:class="
+											this.method === 'api' ? 'bg-blue-50 border-blue-500' : 'hover:border-blue-400'
+										"
+										@click="selectMethod('api')"
+									>
+									<div>
+										System Manager API
+									</div>
+									</button>
+								</div>
+							</div>
 							<div v-if="verifiedFrappeSite">
-								<Input
-									type="email"
-									class="mt-6"
-									placeholder="user@example.com"
-									v-model="userNameFrappeSite"
-								/>
-								<Input
-									type="password"
-									class="mt-6"
-									placeholder="Password"
-									v-model="passwordFrappeSite"
-								/>
+								<div v-if="method == 'credentials'">
+									<Input
+										type="email"
+										class="mt-6"
+										placeholder="user@example.com"
+										v-model="userNameFrappeSite"
+									/>
+									<Input
+										type="password"
+										class="mt-6"
+										placeholder="Password"
+										v-model="passwordFrappeSite"
+									/>
+								</div>
+								<div v-if="method == 'api'">
+									<Input
+										type="text"
+										class="mt-6"
+										placeholder="API Key"
+										v-model="frappeAPIkey"
+									/>
+									<Input
+										type="password"
+										class="mt-6"
+										placeholder="API Secret"
+										v-model="frappeAPISecret"
+									/>
+								</div>
 								<Button class="mt-6" type="primary" @click="getBackup">
 									Get Backups
 								</Button>
+								<FeatherIcon
+									name="check"
+									class="w-5 h-5 p-1 mr-2 text-green-500 bg-green-100 rounded-full"
+									v-if="!(selectedFiles.database == selectedFiles.public == selectedFiles.private != null)"
+								/>
 							</div>
 						</div>
 					</div>
@@ -257,6 +304,9 @@ export default {
 		frappeSite: null,
 		verifiedFrappeSite: null,
 		userNameFrappeSite: null,
+		method: '',
+		frappeAPIkey: null,
+		frappeAPISecret: null,
 		passwordFrappeSite: null,
 		selectedApps: [],
 		selectedGroup: null,
@@ -376,6 +426,9 @@ export default {
 				this.selectedApps = this.selectedApps.filter(a => a !== app.name);
 			}
 		},
+		selectMethod(method) {
+			this.method = method;
+		},
 		canCreateSite() {
 			return (
 				!this.subdomainInvalidMessage &&
@@ -419,12 +472,27 @@ export default {
 			this.verifiedFrappeSite = status;
 		},
 		async getBackup() {
-			let result = await this.$call('press.api.site.get_backup_links', {"site": this.frappeSite, "usr": this.userNameFrappeSite, "pwd": this.passwordFrappeSite });
-			let data = result;
-			console.log(result);
+			let payload = {
+				"site": this.frappeSite,
+			};
+			let auth = {};
+
+			if (this.method === 'credentials') {
+				auth = {
+					"usr": this.userNameFrappeSite,
+					"pwd": this.passwordFrappeSite
+				}
+			} else if (this.method === 'api') {
+				auth = {
+					"api_key": this.frappeAPIkey,
+					"api_secret": this.frappeAPISecret
+				}
+			}
+
+			let result = await this.$call('press.api.site.get_backup_links', { ...payload, "auth": auth });
 
 			for (let file of Object.keys(result)) {
-				let map = data[file].split("/");
+				let map = result[file].split("/");
 				let name = map[map.length - 1].split("?")[0];
 				let upload = await this.$call('press.api.site.uploaded_backup_info', {
 					"file": name,

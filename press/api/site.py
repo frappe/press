@@ -730,5 +730,5 @@ def verify(site):
 
 
 @frappe.whitelist()
-def get_backup_links(site, usr, pwd):
-	return get_frappe_backups(site, usr, pwd)
+def get_backup_links(site, auth):
+	return get_frappe_backups(site, auth)

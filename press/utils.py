@@ -123,23 +123,44 @@ def verify_frappe_site(site):
 	return {"schema": schema, "status": status}
 
 
-def get_frappe_backups(site, usr, pwd):
-	schema = "http"
-	response = requests.post(
-		f"{schema}://{site}/api/method/login", data={"usr": usr, "pwd": pwd},
-	)
-	sid = response.cookies.get("sid")
+def get_frappe_backups(site, auth):
+	from frappe.frappeclient import FrappeClient
+	schema = "https"
+	headers = {
+		'Accept': 'application/json',
+		'Content-Type': 'application/json'
+	}
 
-	if sid:
+	api_key = auth.get("api_key")
+	api_secret = auth.get("api_secret")
+	usr = auth.get("usr")
+	pwd = auth.get("pwd")
 
-		def url(path):
-			host = site.split(":")[0]
-			file = path.lstrip(f"./{host}/private/")
-			url = f"{schema}://{site}/{file}?sid={sid}"
-			return url
+	api = api_key and api_secret
+	passwd = usr and pwd
 
-		data = requests.post(
-			f"{schema}://{site}/api/method/frappe.utils.backups.fetch_latest_backups?sid={sid}"
+	def url(path):
+		host = site.split(":")[0]
+		file = path.lstrip(f"./{host}/private/")
+		url = f"{schema}://{site}/{file}?sid={sid}"
+		return url
+
+
+	if api:
+		# tested - doesnt work (broken in frappe)
+		headers = headers.update({ 'Authorization': f'token {api_key}:{api_secret}' })
+
+	if passwd:
+		# tested - works
+		response = requests.post(
+			f"{schema}://{site}/api/method/login", data={"usr": usr, "pwd": pwd},
 		)
+		sid = response.cookies.get("sid")
 
-		return {x: url(y) for x, y in data.json()["message"].items()}
+	suffix = f"?sid={sid}" if passwd else ""
+	data = requests.post(
+		f"{schema}://{site}/api/method/frappe.utils.backups.fetch_latest_backups{suffix}",
+		headers=headers
+	)
+
+	return {x: url(y) for x, y in data.json().get("message", {}).items()}
