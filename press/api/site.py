@@ -350,6 +350,7 @@ def get(name):
 		"setup_wizard_complete": site.setup_wizard_complete,
 		"config": json.loads(site.config),
 		"creation": site.creation,
+		"owner": site.owner,
 		"last_updated": site.modified,
 		"update_available": (site.bench in benches_with_available_update())
 		and should_try_update(site),

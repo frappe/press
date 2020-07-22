@@ -17,9 +17,13 @@
 							value: formatDate(site.creation)
 						},
 						{
+							label: 'Created By',
+							value: site.owner
+						},
+						{
 							label: 'Last Updated',
 							value: formatDate(site.last_updated)
-						}
+						},
 					]"
 				/>
 			</SectionCard>
