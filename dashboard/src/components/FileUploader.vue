@@ -13,6 +13,7 @@
 				uploading,
 				progress,
 				uploaded,
+				message,
 				error,
 				total,
 				success,
@@ -25,16 +26,18 @@
 <script>
 import FileUploader from '@/controllers/fileUploader';
 import S3FileUploader from '@/controllers/s3FileUploader';
+import { Untarrer } from '@codedread/bitjs/archive/archive';
 
 export default {
 	name: 'FileUploader',
-	props: ['fileTypes', 'uploadArgs', 's3'],
+	props: ['fileTypes', 'uploadArgs', 's3', 'type'],
 	data() {
 		return {
 			uploader: null,
 			uploading: false,
 			uploaded: 0,
 			error: null,
+			message: '',
 			total: 0,
 			file: null,
 			finishedUploading: false
@@ -52,9 +55,90 @@ export default {
 		openFileSelector() {
 			this.$refs['input'].click();
 		},
-		onFileAdd(e) {
+		async onFileAdd(e) {
+			this.error = null;
 			this.file = e.target.files[0];
-			this.uploadFile(this.file);
+			this.message = 'Validating File';
+			const validationMessage = await this.validateFile();
+			const validationName = await this.validateFileName();
+			this.message = '';
+
+			if (validationMessage === true) {
+				this.uploadFile(this.file);
+			} else if (validationName && validationMessage !== false) {
+				this.uploadFile(this.file);
+			} else {
+				const title = this.type[0].toUpperCase() + this.type.slice(1);
+				const errorTitle =
+					validationMessage?.length > 24
+						? 'Validation Error'
+						: validationMessage;
+				this.error = validationMessage ? errorTitle : `Invalid ${title} File`;
+				if (validationMessage) {
+					this.message = 'Skipping Validation...';
+					console.error(validationMessage);
+					setTimeout(() => {
+						this.message = '';
+						this.uploadFile(this.file);
+					}, 3000);
+				}
+			}
+		},
+		validateFileName() {
+			return new Promise((resolve, reject) => {
+				const name = this.file.name;
+				const suffix = `${this.type ? 'private' : ''}-files.tar`;
+				const result = name.indexOf(suffix, name.length - suffix.length) !== -1;
+				resolve(result);
+			});
+		},
+		validateFile() {
+			if (this.file.type !== 'application/x-tar') {
+				console.error('File not validated!');
+				return Promise.resolve(true);
+			}
+			return new Promise((resolve, reject) => {
+				let timeout;
+				if (this.file.size < 200 * 1000 * 1000) {
+					timeout = 30 * 1000;
+				} else {
+					timeout = 60 * 1000;
+				}
+				let upload_type = this.type;
+				let reader = new FileReader();
+				reader.readAsArrayBuffer(this.file);
+				reader.onload = function() {
+					setTimeout(() => {
+						_unarchiver?.stop();
+						resolve('Validation Timed Out');
+					}, timeout);
+
+					const FileArrayBuffer = reader.result;
+					let _unarchiver = new Untarrer(
+						FileArrayBuffer,
+						'/assets/press/node_modules/@codedread/bitjs/'
+					);
+
+					function readCompression(e) {
+						if (e.currentFileNumber == 1) {
+							const path = e.currentFilename.split('/');
+							const type = path.indexOf(upload_type) == 2;
+							const files = path.indexOf('files') == 3;
+							_unarchiver.stop();
+							if (type && files) {
+								resolve(true);
+							}
+							resolve(false);
+						}
+					}
+
+					_unarchiver.addEventListener('progress', readCompression);
+					_unarchiver.start();
+				};
+				reader.onerror = function() {
+					resolve(reader.error.toString());
+				};
+			});
 		},
 		async uploadFile(file) {
 			this.error = null;

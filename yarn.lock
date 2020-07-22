@@ -2,6 +2,11 @@
 # yarn lockfile v1
 
 
+"@codedread/bitjs@^1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@codedread/bitjs/-/bitjs-1.0.0.tgz#89edf2de2d9ee68724734de07fc27b7ad660326e"
+  integrity sha512-Kef0roimBHrfkiTJ/Y4su3bhHAiAVq7P0XXQXIiNMgILtT6wj9wiitm1NfzW6CaJcAbWBeojM+1sxIcYTy7HYw==
+
 "@fullhuman/postcss-purgecss@^2.1.0":
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/@fullhuman/postcss-purgecss/-/postcss-purgecss-2.1.0.tgz#955fc2e3f69b0d0c84367eeee4f85c01238a65dc"

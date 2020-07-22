@@ -5,11 +5,9 @@
 from __future__ import unicode_literals
 
 import builtins
-import datetime
 import gzip
 import io
 import json
-import os
 import tarfile
 from pathlib import Path
 
@@ -21,6 +19,7 @@ from botocore.exceptions import ClientError
 
 import frappe
 from frappe.core.utils import find
+from frappe.desk.doctype.tag.tag import add_tag
 from frappe.utils import cint, flt, time_diff_in_hours
 from frappe.utils.password import get_decrypted_password
 from press.press.doctype.agent_job.agent_job import job_detail
@@ -116,7 +115,9 @@ def running_jobs(name):
 @frappe.whitelist()
 @protected("Site")
 def backups(name):
-	one_month_ago = datetime.date.today() - datetime.timedelta(days=30)
+	available_offsite_backups = (
+		frappe.db.get_single_value("Press Settings", "offsite_backups_count") or 30
+	)
 	fields = [
 		"name",
 		"with_files",
@@ -145,9 +146,9 @@ def backups(name):
 		filters={
 			"site": name,
 			"status": ("!=", "Failure"),
-			"offsite": 1,
-			"creation": (">", one_month_ago),
+			"offsite": 1
 		},
+		limit=available_offsite_backups
 	)
 	return sorted(
 		latest_backups + offsite_backups, key=lambda x: x["creation"], reverse=True
@@ -156,10 +157,10 @@ def backups(name):
 
 @frappe.whitelist()
 @protected("Site")
-def get_backup_link(name, backup, expiration=3600):
+def get_backup_link(name, backup, file, expiration=3600):
 	bucket = frappe.db.get_single_value("Press Settings", "aws_s3_bucket")
-	date = str(datetime.datetime.strptime(backup.split("_")[0], "%Y%m%d").date())
-	file_path = os.path.join(name, date, backup)
+	backup_data = frappe.db.get_value("Site Backup", backup, "offsite_backup")
+	file_path = json.loads(backup_data).get(file)
 
 	s3 = boto3.client(
 		"s3",
@@ -719,8 +720,10 @@ def uploaded_backup_info(file=None, path=None, type=None, size=None, url=None):
 			"file_size": size,
 			"file_path": path,
 			"url": url,
+			"bucket": frappe.db.get_single_value("Press Settings", "remote_uploads_bucket"),
 		}
 	).insert()
+	add_tag("Site Upload", doc.doctype, doc.name)
 	return doc.name
 
 
