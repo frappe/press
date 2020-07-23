@@ -84,6 +84,8 @@ class PaymentLedgerEntry(Document):
 	def update_usage_in_invoice(self):
 		if self.purpose != "Site Consumption":
 			return
+		if self.invoice:
+			return
 		date = frappe.utils.getdate(self.date)
 		ti = TeamInvoice(self.team, date.month, date.year)
 		ti.update_site_usage(self)
@@ -134,25 +136,28 @@ def create_ledger_entries():
 
 
 def submit_failed_ledger_entries():
-	"""Will go through every Payment Ledger Entry for which usage record is not
-	created on Stripe and will attempt to create it again."""
+	"""Will go through every Payment Ledger Entry for which usage is not updated in Invoice
+		and will attempt to update it again."""
 
 	entries = frappe.db.get_all(
 		"Payment Ledger Entry",
 		filters={
-			"stripe_usage_record_id": "",
+			"invoice": "",
 			"purpose": "Site Consumption",
-			"docstatus": 0,
-			# try to submit entries that have failed less than 3 times
+			# get entries that have failed less than 3 times
 			"failed_submission_attempts": ("<", 3),
 		},
 	)
 	for entry in entries:
 		try:
 			doc = frappe.get_doc("Payment Ledger Entry", entry.name)
-			doc.submit()
+			if doc.docstatus == 0:
+				doc.submit()
+				doc.reload()
+			if not doc.invoice:
+				doc.update_usage_in_invoice()
 		except Exception:
 			frappe.db.rollback()
-			log_error(title="Submit Failed Payment Ledger Entry", doc=doc.name)
+			log_error(title="Update PLE Usage in invoice failed", doc=doc.name)
 			doc.reload()
 			doc.increment_failed_attempt()

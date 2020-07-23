@@ -17,7 +17,6 @@
   "period_end",
   "month",
   "year",
-  "paid",
   "amended_from",
   "section_break_8",
   "site_usage",
@@ -70,12 +69,6 @@
    "fieldtype": "Table",
    "label": "Items",
    "options": "Invoice Item"
-  },
-  {
-   "default": "0",
-   "fieldname": "paid",
-   "fieldtype": "Check",
-   "label": "Paid"
   },
   {
    "fieldname": "status",
@@ -214,7 +207,7 @@
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2020-07-23 12:07:34.194711",
+ "modified": "2020-07-23 12:33:51.883396",
  "modified_by": "faris@erpnext.com",
  "module": "Press",
  "name": "Invoice",

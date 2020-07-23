@@ -304,13 +304,9 @@ class Site(Document):
 		agent.update_site_status(self.server, self.name, status)
 
 	def create_usage_ledger_entry(self):
-		doc = frappe.get_doc(
-			{
-				"doctype": "Payment Ledger Entry",
-				"site": self.name,
-				"purpose": "Site Consumption",
-			}
-		)
+		doc = frappe.new_doc("Payment Ledger Entry")
+		doc.site = self.name
+		doc.purpose = "Site Consumption"
 		doc.insert()
 		frappe.db.commit()
 		try:
