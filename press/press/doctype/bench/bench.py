@@ -24,7 +24,7 @@ class Bench(Document):
 					"apps", {"app": release.app, "scrubbed": scrubbed, "hash": release.hash}
 				)
 
-		if not self.port_offset:
+		if self.is_new():
 			self.port_offset = self.get_unused_port_offset()
 
 		config = frappe.db.get_single_value("Press Settings", "bench_configuration")
