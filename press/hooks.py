@@ -96,11 +96,12 @@ doc_events = {
 
 scheduler_events = {
 	"daily": [
+		"press.press.cleanup.remove_baggage",
+		"press.press.cleanup.cleanup_offsite_backups",
 		"press.press.doctype.payment_ledger_entry.payment_ledger_entry.submit_failed_ledger_entries",
 		"press.press.doctype.team.team.suspend_sites_for_teams_without_cards",
 		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
 		"press.press.doctype.remote_file.remote_file.poll_file_statuses",
-		"press.press.cleanup.remove_baggage",
 		"press.press.doctype.invoice.invoice.submit_invoices"
 	],
 	"hourly": ["press.press.doctype.frappe_app.frappe_app.poll_new_releases"],

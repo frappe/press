@@ -11,5 +11,8 @@
 		"@fullhuman/postcss-purgecss": "^2.1.0",
 		"postcss-cli": "^7.1.0",
 		"tailwindcss": "^1.2.0"
+	},
+	"dependencies": {
+		"@codedread/bitjs": "^1.0.0"
 	}
 }
