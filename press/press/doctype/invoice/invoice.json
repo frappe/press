@@ -1,6 +1,6 @@
 {
  "actions": [],
- "autoname": "INV-.#####",
+ "autoname": "format:INV-{YYYY}-{#####}",
  "creation": "2020-07-17 18:05:24.317258",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -214,7 +214,7 @@
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2020-07-21 11:28:02.153034",
+ "modified": "2020-07-23 12:07:34.194711",
  "modified_by": "faris@erpnext.com",
  "module": "Press",
  "name": "Invoice",
