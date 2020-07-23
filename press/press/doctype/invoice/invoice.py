@@ -67,6 +67,9 @@ class Invoice(Document):
 		_, days_in_month = monthrange(period_start.year, period_start.month)
 		self.period_end = period_start.replace(day=days_in_month)
 
+		# due date
+		self.due_date = self.period_end
+
 	def validate_items(self):
 		self.items = []
 		for row in self.site_usage:
