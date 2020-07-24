@@ -19,20 +19,22 @@ total_match_failure_key = "total_match_failure"
 def execute():
 	skip_teams = list(frappe.cache().smembers(migrated_cache_key))
 	for d in frappe.db.get_all("Team", filters={"name": ("not in", skip_teams)}):
-		team = d.name
+		migrate_team(d.name)
 
-		try:
-			# cancel_subscription(team)
-			last_invoice_period_end = create_past_invoices(team)
-			create_draft_invoice(team, last_invoice_period_end)
-			frappe.db.commit()
-			frappe.cache().sadd(migrated_cache_key, team)
-			log(team, message="migration_success")
-		except Exception:
-			frappe.cache().hset(traceback_cache_key, team, frappe.get_traceback())
-			frappe.db.rollback()
-			log(team, message="migration_failed")
-		print()
+
+def migrate_team(team):
+	try:
+		cancel_subscription(team)
+		last_invoice_period_end = create_past_invoices(team)
+		create_draft_invoice(team, last_invoice_period_end)
+		frappe.db.commit()
+		frappe.cache().sadd(migrated_cache_key, team)
+		log(team, message="migration_success")
+	except Exception:
+		frappe.cache().hset(traceback_cache_key, team, frappe.get_traceback())
+		frappe.db.rollback()
+		log(team, message="migration_failed ❌")
+	print()
 
 
 def cancel_subscription(team):
@@ -108,7 +110,7 @@ def create_past_invoices(team):
 			i.db_set("docstatus", 1)
 		else:
 			log(
-				team, invoice=i.name, stripe_invoice=invoice["id"], message="total_match_failure"
+				team, invoice=i.name, stripe_invoice=invoice["id"], message="total_match_failure ❌"
 			)
 			frappe.cache().sadd(total_match_failure_key, i.name)
 	return last_invoice_period_end
