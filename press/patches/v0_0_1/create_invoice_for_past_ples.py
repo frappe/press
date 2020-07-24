@@ -14,6 +14,7 @@ from press.press.doctype.team.team_invoice import TeamInvoice
 migrated_cache_key = "migrated_teams"
 traceback_cache_key = "team_traceback"
 total_match_failure_key = "total_match_failure"
+failed_subscriptions = "failed_subscriptions"
 
 
 def execute():
@@ -43,7 +44,11 @@ def cancel_subscription(team):
 		"Subscription", {"team": team}, "stripe_subscription_id"
 	)
 	if subscription_id:
-		stripe.Subscription.delete(subscription_id)
+		try:
+			stripe.Subscription.delete(subscription_id)
+		except Exception:
+			log(team, message="cancel_subscription_failed ❌")
+			frappe.cache().sadd(failed_subscriptions, subscription_id)
 
 
 def create_past_invoices(team):
