@@ -42,6 +42,7 @@
    "fieldname": "team",
    "fieldtype": "Link",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Team",
    "options": "Team",
    "reqd": 1
@@ -49,7 +50,6 @@
   {
    "fieldname": "customer_name",
    "fieldtype": "Data",
-   "in_list_view": 1,
    "label": "Customer Name"
   },
   {
@@ -79,6 +79,7 @@
   {
    "fieldname": "total",
    "fieldtype": "Currency",
+   "in_list_view": 1,
    "label": "Total",
    "options": "currency"
   },
@@ -139,6 +140,7 @@
    "fetch_from": "team.currency",
    "fieldname": "currency",
    "fieldtype": "Link",
+   "in_standard_filter": 1,
    "label": "Currency",
    "options": "Currency"
   },
@@ -197,18 +199,20 @@
   {
    "fieldname": "month",
    "fieldtype": "Int",
+   "in_standard_filter": 1,
    "label": "Month"
   },
   {
    "fieldname": "year",
    "fieldtype": "Int",
+   "in_standard_filter": 1,
    "label": "Year"
   }
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2020-07-23 12:33:51.883396",
- "modified_by": "faris@erpnext.com",
+ "modified": "2020-07-24 17:22:56.032331",
+ "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",
  "owner": "Administrator",

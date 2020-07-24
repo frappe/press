@@ -15,6 +15,7 @@ from press.press.doctype.team.team_invoice import TeamInvoice
 
 class Invoice(Document):
 	def validate(self):
+		self.validate_team()
 		self.validate_dates()
 		self.validate_duplicate()
 		self.validate_items()
@@ -51,21 +52,35 @@ class Invoice(Document):
 	def validate_duplicate(self):
 		if self.is_new():
 			res = frappe.db.get_all(
-				"Invoice", filters={"month": self.month, "year": self.year, "team": self.team}
+				"Invoice",
+				filters={
+					"period_start": self.period_start,
+					"period_end": self.period_end,
+					"team": self.team,
+				},
 			)
 			if res:
 				frappe.throw(
 					f"Duplicate Entry {res[0].name} already exists", frappe.DuplicateEntryError
 				)
 
-	def validate_dates(self):
-		period_start = frappe.utils.getdate(self.period_start)
-		self.year = period_start.year
-		self.month = period_start.month
+	def validate_team(self):
+		self.customer_name = frappe.utils.get_fullname(self.team)
+		self.customer_email = self.team
+		self.currency = frappe.db.get_value("Team", self.team, "currency")
 
-		# period ends on last day of month
-		_, days_in_month = monthrange(period_start.year, period_start.month)
-		self.period_end = period_start.replace(day=days_in_month)
+	def validate_dates(self):
+		if not self.period_start:
+			d = datetime.now()
+			# period starts on 1st of the month
+			self.period_start = d.replace(day=1, month=self.month, year=self.year)
+
+		period_start = frappe.utils.getdate(self.period_start)
+
+		if not self.period_end:
+			# period ends on last day of month
+			_, days_in_month = monthrange(period_start.year, period_start.month)
+			self.period_end = period_start.replace(day=days_in_month)
 
 		# due date
 		self.due_date = self.period_end
@@ -122,18 +137,12 @@ class Invoice(Document):
 
 
 def submit_invoices():
-	"""This method will submit invoices on the last day of every month"""
-	from press.press.doctype.payment_ledger_entry.payment_ledger_entry import (
-		create_ledger_entries,
-	)
+	"""This method will run every day and submit the invoices whose period end was the previous day"""
 
-	# create any pending ledger entries
-	create_ledger_entries()
-
-	# get draft invoices whose period ends today or has ended before
+	# get draft invoices whose period has ended before
 	today = frappe.utils.today()
 	invoices = frappe.db.get_all(
-		"Invoice", {"status": "Draft", "period_end": ("<=", today)}
+		"Invoice", {"status": "Draft", "period_end": ("<", today)}
 	)
 	for d in invoices:
 		invoice = frappe.get_doc("Invoice", d.name)
@@ -144,11 +153,21 @@ def submit_invoices():
 			frappe.db.rollback()
 			log_error("Invoice Submit Failed", invoice=d.name)
 
-		# create invoice for next month
-		d = datetime.now()
-		d = d.replace(month=invoice.month, year=invoice.year)
-		next_month = frappe.utils.add_months(d, 1)
-		TeamInvoice(invoice.team, next_month.month, next_month.year).create()
+		try:
+			# create invoice for next month
+			d = datetime.now()
+			d = d.replace(month=invoice.month, year=invoice.year)
+			next_month = frappe.utils.add_months(d, 1)
+			ti = TeamInvoice(invoice.team, next_month.month, next_month.year)
+			if not ti.get_draft_invoice():
+				ti.create()
+		except Exception:
+			frappe.db.rollback()
+			log_error(
+				"Invoice creation for next month failed",
+				month=next_month.month,
+				year=next_month.year,
+			)
 
 
 def process_stripe_webhook(doc, method):

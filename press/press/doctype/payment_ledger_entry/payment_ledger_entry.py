@@ -57,7 +57,7 @@ class PaymentLedgerEntry(Document):
 		self.date = frappe.utils.nowdate()
 
 	def on_submit(self):
-		if self.purpose == "Site Consumption" and not self.free_usage:
+		if self.purpose == "Site Consumption":
 			self.update_usage_in_invoice()
 		elif self.purpose in ["Credits Allocation", "Reverse Credits Allocation"]:
 			self.create_balance_adjustment_on_stripe()
@@ -86,8 +86,13 @@ class PaymentLedgerEntry(Document):
 			return
 		if self.invoice:
 			return
+		if self.free_usage:
+			return
 		date = frappe.utils.getdate(self.date)
 		ti = TeamInvoice(self.team, date.month, date.year)
+		# if invoice is not created for this month create it
+		if not ti.get_draft_invoice():
+			ti.create()
 		ti.update_site_usage(self)
 
 	def create_balance_adjustment_on_stripe(self):
@@ -137,7 +142,7 @@ def create_ledger_entries():
 
 def submit_failed_ledger_entries():
 	"""Will go through every Payment Ledger Entry for which usage is not updated in Invoice
-		and will attempt to update it again."""
+	and will attempt to update it again."""
 
 	entries = frappe.db.get_all(
 		"Payment Ledger Entry",

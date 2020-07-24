@@ -16,26 +16,19 @@ class TeamInvoice:
 
 	def create(self, period_start=None):
 		invoice = frappe.new_doc("Invoice")
-
-		if not period_start:
-			d = frappe.utils.datetime.datetime.now()
-			# period starts on 1st of the month
-			period_start = d.replace(day=1, month=self.month, year=self.year)
-
 		invoice.update(
 			{
 				"team": self.team.name,
-				"customer_name": frappe.utils.get_fullname(self.team.user),
-				"customer_email": self.team.user,
-				"currency": self.team.currency,
 				"period_start": period_start,
+				"month": self.month,
+				"year": self.year,
 			}
 		)
 		invoice.insert()
 		return invoice
 
 	def update_site_usage(self, ledger_entry):
-		self.draft_invoice = self.get_draft_invoice()
+		self.get_draft_invoice()
 
 		if not self.draft_invoice:
 			log_error(
@@ -47,6 +40,10 @@ class TeamInvoice:
 		if ledger_entry.invoice:
 			return
 
+		# return if this ledger_entry usage is not supposed to be billed
+		if ledger_entry.free_usage:
+			return
+
 		# return if this ledger entry does not match month-year of invoice
 		ledger_entry_date = frappe.utils.getdate(ledger_entry.date)
 		if not (
@@ -54,15 +51,17 @@ class TeamInvoice:
 			and self.draft_invoice.year == ledger_entry_date.year
 		):
 			return
+		self.update_ledger_entry_in_invoice(ledger_entry, self.draft_invoice)
 
+	def update_ledger_entry_in_invoice(self, ledger_entry, invoice):
 		usage_row = None
-		for usage in self.draft_invoice.site_usage:
+		for usage in invoice.site_usage:
 			if usage.site == ledger_entry.site and usage.plan == ledger_entry.plan:
 				usage_row = usage
 
 		# if no row found, create a new row
 		if not usage_row:
-			self.draft_invoice.append(
+			invoice.append(
 				"site_usage",
 				{"site": ledger_entry.site, "plan": ledger_entry.plan, "days_active": 1},
 			)
@@ -70,10 +69,13 @@ class TeamInvoice:
 		else:
 			usage_row.days_active = (usage_row.days_active or 0) + 1
 
-		self.draft_invoice.save()
-		ledger_entry.db_set("invoice", self.draft_invoice.name)
+		invoice.save()
+		ledger_entry.db_set("invoice", invoice.name)
 
 	def get_draft_invoice(self):
+		if hasattr(self, "draft_invoice"):
+			return self.draft_invoice
+
 		res = frappe.db.get_all(
 			"Invoice",
 			filters={
@@ -84,7 +86,8 @@ class TeamInvoice:
 			},
 			limit=1,
 		)
-		return frappe.get_doc("Invoice", res[0].name) if res else None
+		self.draft_invoice = frappe.get_doc("Invoice", res[0].name) if res else None
+		return self.draft_invoice
 
 	def get_invoice(self):
 		res = frappe.db.get_all(
