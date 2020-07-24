@@ -105,12 +105,18 @@ def create_past_invoices(team):
 		i.reload()
 		if i.total == (invoice["total"] / 100):
 			log(
-				team, invoice=i.name, stripe_invoice=invoice["id"], message="total_match_success"
+				team.name,
+				invoice=i.name,
+				stripe_invoice=invoice["id"],
+				message="total_match_success",
 			)
 			i.db_set("docstatus", 1)
 		else:
 			log(
-				team, invoice=i.name, stripe_invoice=invoice["id"], message="total_match_failure ❌"
+				team.name,
+				invoice=i.name,
+				stripe_invoice=invoice["id"],
+				message="total_match_failure ❌",
 			)
 			frappe.cache().sadd(total_match_failure_key, i.name)
 	return last_invoice_period_end
