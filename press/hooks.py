@@ -132,6 +132,7 @@ fixtures = [
 	"Agent Job Type",
 	"Plan",
 	{"dt": "Role", "filters": [["role_name", "like", "Press%"]]},
+	"Print Format"
 ]
 # Testing
 # -------
