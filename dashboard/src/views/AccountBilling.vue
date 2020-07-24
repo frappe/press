@@ -4,6 +4,7 @@
 			class="mb-10"
 			title="Upcoming Invoice"
 			description="This is the amount so far based on the usage of your sites"
+			v-if="$resources.billingDetails.loading || upcomingInvoice"
 		>
 			<SectionCard>
 				<div
