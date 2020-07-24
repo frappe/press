@@ -19,6 +19,11 @@ class AccountRequest(Document):
 		self.ip_address = frappe.local.request_ip
 
 		url = get_url("/dashboard/#/setup-account/" + self.request_key)
+		if frappe.conf.developer_mode:
+			print()
+			print(f'Setup account URL for {self.email}:')
+			print(url)
+			print()
 
 		subject = "Verify your account"
 		template = "verify_account"

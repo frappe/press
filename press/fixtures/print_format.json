@@ -1,0 +1,28 @@
+[
+ {
+  "align_labels_right": 0,
+  "css": ".print-format {\n    margin-top: 1cm;\n}\n\n.print-format td, .print-format th {\n    padding-left: 0 !important;\n    padding-right: 0 !important;\n}\n\n.print-format th {\n    background-color: white !important;\n    border-bottom: 1px solid #d2d2d2 !important;\n}\n\n.print-format .table > tbody > tr > td {\n    border-top-color: transparent;\n}",
+  "custom_format": 0,
+  "default_print_language": null,
+  "disabled": 0,
+  "doc_type": "Invoice",
+  "docstatus": 0,
+  "doctype": "Print Format",
+  "font": "Default",
+  "format_data": "[{\"fieldname\": \"print_heading_template\", \"fieldtype\": \"Custom HTML\", \"options\": \"{% set months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] %}\\n\\n<div style=\\\"margin-bottom: 30px; margin-top: 12px; font-size: 16px;\\\">\\n    Invoice for {{ months[doc.month - 1] }} {{ doc.year}} billing period\\n</div>\"}, {\"fieldtype\": \"Section Break\", \"label\": \"\"}, {\"fieldtype\": \"Column Break\"}, {\"fieldname\": \"_custom_html\", \"print_hide\": 0, \"label\": \"Custom HTML\", \"fieldtype\": \"HTML\", \"options\": \"<div>\\n    <label>From</label>\\n    <div>\\n        Frappe Technologies Pvt. Ltd.<br>\\n        D/324, Neelkanth Business Park,<br>\\n        Vidyavihar (W), Mumbai 4000 86, India.\\n    </div>\\n</div>\\n\\n<div style=\\\"margin-top: 15px;\\\">\\n    <label>Bill To</label>\\n    <div>\\n        {% set address = frappe.db.get_value('Team', doc.team, 'billing_address') %}\\n        {{ frappe.get_doc('Address', address).get_display() if address else '' }}\\n    </div>\\n</div>\"}, {\"fieldtype\": \"Column Break\"}, {\"fieldname\": \"_custom_html\", \"print_hide\": 0, \"label\": \"Custom HTML\", \"fieldtype\": \"HTML\", \"options\": \"{% set details = {\\n    'Invoice': doc.name,\\n    'Payment due on': frappe.utils.global_date_format(doc.due_date)\\n} %}\\n{% for d in details %}\\n<div class=\\\"row\\\">\\n    <div class=\\\"col-xs-6\\\">\\n        <label>{{ d }}</label>\\n    </div>\\n    <div class=\\\"col-xs-6 text-right\\\">\\n        {{ details[d] }}\\n    </div>\\n</div>\\n{% endfor %}\"}, {\"fieldtype\": \"Section Break\", \"label\": \"\"}, {\"fieldtype\": \"Column Break\"}, {\"fieldname\": \"_custom_html\", \"print_hide\": 0, \"label\": \"Custom HTML\", \"fieldtype\": \"HTML\", \"options\": \"<h2 style=\\\"margin: 30px 0;\\\">\\n  Total due {{ doc.get_formatted('amount_due') }} on {{\\n  frappe.utils.global_date_format(doc.due_date) }}\\n</h2>\\n\\n<h4>Usage Charges</h4>\\n\\n<table class=\\\"table\\\" style=\\\"width: 100%; margin-top: 0;\\\">\\n  <thead>\\n    <tr>\\n      <th>Site</th>\\n      <th>Plan</th>\\n      <th class=\\\"text-right\\\">Days</th>\\n      <th class=\\\"text-right\\\">Amount</th>\\n    </tr>\\n  </thead>\\n  <tbody>\\n    {% for row in doc.site_usage %} {% set lineitem = doc.items[loop.index - 1]\\n    %}\\n    <tr>\\n      <td>{{ row.site }}</td>\\n      <td>{{ frappe.db.get_value('Plan', row.plan, 'plan_title') }}</td>\\n      <td class=\\\"text-right\\\">{{ frappe.utils.cint(row.days_active) }}</td>\\n      <td class=\\\"text-right\\\">{{ lineitem.get_formatted('amount') }}</td>\\n    </tr>\\n    {% endfor %}\\n  </tbody>\\n  <tr>\\n    <td colspan=\\\"4\\\"></td>\\n  </tr>\\n  <tr>\\n    <td colspan=\\\"3\\\" class=\\\"text-right\\\" style=\\\"font-weight: bold;\\\">\\n      Total\\n    </td>\\n    <td class=\\\"text-right\\\">{{ doc.get_formatted('total') }}</td>\\n  </tr>\\n  {% if doc.amount_due > 0 %}\\n  <tr>\\n    <td colspan=\\\"3\\\" class=\\\"text-right\\\" style=\\\"font-weight: bold;\\\">\\n      Applied Credit Balance\\n    </td>\\n    <td class=\\\"text-right\\\">{{ doc.get_formatted('starting_balance') }}</td>\\n  </tr>\\n  <tr>\\n    <td colspan=\\\"3\\\" class=\\\"text-right\\\" style=\\\"font-weight: bold;\\\">\\n      Amount Due\\n    </td>\\n    <td class=\\\"text-right\\\">{{ doc.get_formatted('amount_due') }}</td>\\n  </tr>\\n  {% endif %}\\n</table>\\n\"}, {\"fieldtype\": \"Section Break\", \"label\": \"Stripe Billing\"}, {\"fieldtype\": \"Column Break\"}, {\"fieldname\": \"_custom_html\", \"print_hide\": 0, \"label\": \"Custom HTML\", \"fieldtype\": \"HTML\", \"options\": \"<div style=\\\"margin-top: 50px;\\\">\\n    If you have added a card on file, then it will automatically be charged.<br> If not, pay using the following link: {{ doc.stripe_invoice_url }}\\n</div>\"}]",
+  "html": null,
+  "line_breaks": 0,
+  "modified": "2020-07-23 12:04:26.876744",
+  "module": "Press",
+  "name": "Frappe Brand 2020",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "print_format_builder": 1,
+  "print_format_type": "Jinja",
+  "raw_commands": null,
+  "raw_printing": 0,
+  "show_section_headings": 0,
+  "standard": "No"
+ }
+]
