@@ -213,6 +213,11 @@ def process_stripe_webhook(doc, method):
 					stripe_invoice["status_transitions"]["paid_at"]
 				),
 				"status": "Paid",
+				"starting_balance": stripe_invoice["starting_balance"] / 100,
+				"ending_balance": (stripe_invoice["ending_balance"] or 0) / 100,
+				"amount_due": stripe_invoice["amount_due"] / 100,
+				"amount_paid": stripe_invoice["amount_paid"] / 100,
+				"stripe_invoice_url": stripe_invoice["hosted_invoice_url"],
 			}
 		)
 
