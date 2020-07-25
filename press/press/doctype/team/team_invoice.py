@@ -4,6 +4,7 @@
 from __future__ import unicode_literals
 import frappe
 from press.utils import log_error
+from frappe.utils import getdate
 
 
 class TeamInvoice:
@@ -44,12 +45,11 @@ class TeamInvoice:
 		if ledger_entry.free_usage:
 			return
 
-		# return if this ledger entry does not match month-year of invoice
-		ledger_entry_date = frappe.utils.getdate(ledger_entry.date)
-		if not (
-			self.draft_invoice.month == ledger_entry_date.month
-			and self.draft_invoice.year == ledger_entry_date.year
-		):
+		# return if this ledger entry does not fall inside period of invoice
+		ledger_entry_date = getdate(ledger_entry.date)
+		start = getdate(self.draft_invoice.period_start)
+		end = getdate(self.draft_invoice.period_end)
+		if not (start <= ledger_entry_date <= end):
 			return
 		self.update_ledger_entry_in_invoice(ledger_entry, self.draft_invoice)
 
