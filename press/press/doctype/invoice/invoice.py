@@ -13,6 +13,7 @@ from calendar import monthrange
 from press.press.doctype.team.team_invoice import TeamInvoice
 from frappe import _
 
+
 class Invoice(Document):
 	def validate(self):
 		self.validate_team()
@@ -24,7 +25,6 @@ class Invoice(Document):
 	def before_submit(self):
 		try:
 			self.create_stripe_invoice()
-			self.finalize_stripe_invoice()
 		except Exception:
 			frappe.db.rollback()
 
@@ -51,7 +51,6 @@ class Invoice(Document):
 		)
 		self.stripe_invoice_id = invoice["id"]
 
-	def finalize_stripe_invoice(self):
 		finalized_invoice = stripe.Invoice.finalize_invoice(self.stripe_invoice_id)
 		self.starting_balance = finalized_invoice["starting_balance"] / 100
 		self.ending_balance = (finalized_invoice["ending_balance"] or 0) / 100
