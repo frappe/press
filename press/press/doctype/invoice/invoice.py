@@ -11,7 +11,7 @@ from press.utils import log_error
 from datetime import datetime
 from calendar import monthrange
 from press.press.doctype.team.team_invoice import TeamInvoice
-
+from frappe import _
 
 class Invoice(Document):
 	def validate(self):
