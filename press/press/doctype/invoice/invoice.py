@@ -59,7 +59,9 @@ class Invoice(Document):
 			)
 			self.stripe_invoice_id = invoice["id"]
 
-		finalized_invoice = stripe.Invoice.finalize_invoice(self.stripe_invoice_id)
+		finalized_invoice = stripe.Invoice.finalize_invoice(
+			self.stripe_invoice_id, idempotency_key=self.name
+		)
 		self.starting_balance = finalized_invoice["starting_balance"] / 100
 		self.ending_balance = (finalized_invoice["ending_balance"] or 0) / 100
 		self.amount_due = finalized_invoice["amount_due"] / 100
@@ -167,7 +169,7 @@ def submit_invoices():
 	# get draft invoices whose period has ended before
 	today = frappe.utils.today()
 	invoices = frappe.db.get_all(
-		"Invoice", {"status": "Draft", "period_end": ("<", today)}
+		"Invoice", {"status": "Draft", "period_end": ("<", today), "total": (">", 0)}
 	)
 	for d in invoices:
 		invoice = frappe.get_doc("Invoice", d.name)
