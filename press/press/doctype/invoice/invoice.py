@@ -41,6 +41,7 @@ class Invoice(Document):
 		stripe = get_stripe()
 		customer_id = frappe.db.get_value("Team", self.team, "stripe_customer_id")
 
+		invoice = None
 		if not self.stripe_invoice_id:
 			start = getdate(self.period_start)
 			end = getdate(self.period_end).strftime("%b %d")
@@ -59,14 +60,19 @@ class Invoice(Document):
 			)
 			self.stripe_invoice_id = invoice["id"]
 
-		finalized_invoice = stripe.Invoice.finalize_invoice(
-			self.stripe_invoice_id, idempotency_key=self.name
-		)
-		self.starting_balance = finalized_invoice["starting_balance"] / 100
-		self.ending_balance = (finalized_invoice["ending_balance"] or 0) / 100
-		self.amount_due = finalized_invoice["amount_due"] / 100
-		self.amount_paid = finalized_invoice["amount_paid"] / 100
-		self.stripe_invoice_url = finalized_invoice["hosted_invoice_url"]
+		if not invoice:
+			invoice = stripe.Invoice.retrieve(self.stripe_invoice_id)
+
+		if invoice["status"] == "draft":
+			invoice = stripe.Invoice.finalize_invoice(
+				self.stripe_invoice_id, idempotency_key=self.name
+			)
+
+		self.starting_balance = invoice["starting_balance"] / 100
+		self.ending_balance = (invoice["ending_balance"] or 0) / 100
+		self.amount_due = invoice["amount_due"] / 100
+		self.amount_paid = invoice["amount_paid"] / 100
+		self.stripe_invoice_url = invoice["hosted_invoice_url"]
 		if self.amount_due == 0:
 			self.status = "Paid"
 		else:
