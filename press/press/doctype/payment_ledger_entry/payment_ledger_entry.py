@@ -151,6 +151,7 @@ def submit_failed_ledger_entries():
 			"purpose": "Site Consumption",
 			# get entries that have failed less than 3 times
 			"failed_submission_attempts": ("<", 3),
+			"free_usage": False,
 		},
 	)
 	for entry in entries:
