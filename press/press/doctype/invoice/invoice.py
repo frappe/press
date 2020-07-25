@@ -12,6 +12,7 @@ from datetime import datetime
 from calendar import monthrange
 from press.press.doctype.team.team_invoice import TeamInvoice
 from frappe import _
+from frappe.utils import getdate
 
 
 class Invoice(Document):
@@ -41,9 +42,12 @@ class Invoice(Document):
 		customer_id = frappe.db.get_value("Team", self.team, "stripe_customer_id")
 
 		if not self.stripe_invoice_id:
+			start = getdate(self.period_start)
+			end = getdate(self.period_end).strftime("%b %d")
+			period_string = f"{start.strftime('%b %d')} - {end.strftime('%b %d')} {end.year}"
 			stripe.InvoiceItem.create(
 				customer=customer_id,
-				description="Frappe Cloud Subscription",
+				description=f"Frappe Cloud Subscription ({period_string})",
 				amount=int(self.total * 100),
 				currency=self.currency.lower(),
 			)
@@ -85,6 +89,10 @@ class Invoice(Document):
 		self.customer_name = frappe.utils.get_fullname(self.team)
 		self.customer_email = self.team
 		self.currency = frappe.db.get_value("Team", self.team, "currency")
+		if not self.currency:
+			frappe.throw(
+				f"Cannot create Invoice because Currency is not set in Team {self.team}"
+			)
 
 	def validate_dates(self):
 		if not self.period_start:
