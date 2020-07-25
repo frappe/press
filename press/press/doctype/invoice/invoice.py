@@ -40,19 +40,20 @@ class Invoice(Document):
 		stripe = get_stripe()
 		customer_id = frappe.db.get_value("Team", self.team, "stripe_customer_id")
 
-		stripe.InvoiceItem.create(
-			customer=customer_id,
-			description="Frappe Cloud Subscription",
-			amount=int(self.total * 100),
-			currency=self.currency.lower(),
-		)
-		invoice = stripe.Invoice.create(
-			customer=customer_id,
-			collection_method="charge_automatically",
-			auto_advance=True,
-			idempotency_key=self.name,
-		)
-		self.stripe_invoice_id = invoice["id"]
+		if not self.stripe_invoice_id:
+			stripe.InvoiceItem.create(
+				customer=customer_id,
+				description="Frappe Cloud Subscription",
+				amount=int(self.total * 100),
+				currency=self.currency.lower(),
+			)
+			invoice = stripe.Invoice.create(
+				customer=customer_id,
+				collection_method="charge_automatically",
+				auto_advance=True,
+				idempotency_key=self.name,
+			)
+			self.stripe_invoice_id = invoice["id"]
 
 		finalized_invoice = stripe.Invoice.finalize_invoice(self.stripe_invoice_id)
 		self.starting_balance = finalized_invoice["starting_balance"] / 100
