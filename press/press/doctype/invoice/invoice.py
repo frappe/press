@@ -47,7 +47,10 @@ class Invoice(Document):
 			currency=self.currency.lower(),
 		)
 		invoice = stripe.Invoice.create(
-			customer=customer_id, collection_method="charge_automatically", auto_advance=True,
+			customer=customer_id,
+			collection_method="charge_automatically",
+			auto_advance=True,
+			idempotency_key=self.name,
 		)
 		self.stripe_invoice_id = invoice["id"]
 
