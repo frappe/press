@@ -212,6 +212,7 @@ def process_stripe_webhook(doc, method):
 				"payment_date": datetime.fromtimestamp(
 					stripe_invoice["status_transitions"]["paid_at"]
 				),
+				"docstatus": 1,
 				"status": "Paid",
 				"starting_balance": stripe_invoice["starting_balance"] / 100,
 				"ending_balance": (stripe_invoice["ending_balance"] or 0) / 100,
