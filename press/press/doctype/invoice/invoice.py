@@ -22,7 +22,19 @@ class Invoice(Document):
 		self.validate_amount()
 
 	def before_submit(self):
-		self.create_stripe_invoice()
+		try:
+			self.create_stripe_invoice()
+			self.finalize_stripe_invoice()
+		except Exception:
+			frappe.db.rollback()
+
+			msg = "<pre><code>" + frappe.get_traceback() + "</pre></code>"
+			self.add_comment("Comment", _("Action Failed") + "<br><br>" + msg)
+			if self.stripe_invoice_id:
+				self.db_set("stripe_invoice_id", self.stripe_invoice_id)
+			frappe.db.commit()
+
+			raise
 
 	def create_stripe_invoice(self):
 		stripe = get_stripe()
@@ -37,8 +49,10 @@ class Invoice(Document):
 		invoice = stripe.Invoice.create(
 			customer=customer_id, collection_method="charge_automatically", auto_advance=True,
 		)
-		finalized_invoice = stripe.Invoice.finalize_invoice(invoice["id"])
-		self.stripe_invoice_id = finalized_invoice["id"]
+		self.stripe_invoice_id = invoice["id"]
+
+	def finalize_stripe_invoice(self):
+		finalized_invoice = stripe.Invoice.finalize_invoice(self.stripe_invoice_id)
 		self.starting_balance = finalized_invoice["starting_balance"] / 100
 		self.ending_balance = (finalized_invoice["ending_balance"] or 0) / 100
 		self.amount_due = finalized_invoice["amount_due"] / 100
