@@ -399,7 +399,11 @@ def process_job_updates(job_name):
 			process_update_site_job_update(job)
 		if job.job_type == "Update Site Pull":
 			process_update_site_job_update(job)
-		if job.job_type == "Recover Failed Site Migration":
+		if job.job_type == "Recover Failed Site Migrate":
+			process_update_site_recover_job_update(job)
+		if job.job_type == "Recover Failed Site Pull":
+			process_update_site_recover_job_update(job)
+		if job.job_type == "Recover Failed Site Update":
 			process_update_site_recover_job_update(job)
 	except Exception:
 		log_error("Agent Job Callback Exception", job=job.as_dict())

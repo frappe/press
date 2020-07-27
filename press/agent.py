@@ -159,13 +159,20 @@ class Agent:
 			site=site.name,
 		)
 
-	def update_site_recover(self, site, target):
-		activate = site.status_before_update == "Active"
+	def update_site_recover_move(self, site, target, deploy_type, activate):
 		data = {"target": target, "activate": activate}
 		return self.create_agent_job(
-			"Recover Failed Site Migration",
-			f"benches/{site.bench}/sites/{site.name}/update/recover",
+			f"Recover Failed Site {deploy_type}",
+			f"benches/{site.bench}/sites/{site.name}/update/{deploy_type.lower()}/recover",
 			data,
+			bench=site.bench,
+			site=site.name,
+		)
+
+	def update_site_recover(self, site):
+		return self.create_agent_job(
+			"Recover Failed Site Update",
+			f"benches/{site.bench}/sites/{site.name}/update/recover",
 			bench=site.bench,
 			site=site.name,
 		)
