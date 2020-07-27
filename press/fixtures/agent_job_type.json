@@ -21,44 +21,13 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-02-21 12:34:39.569810",
-  "name": "Recover Failed Site Migration",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
-  "request_method": null,
-  "request_path": null,
-  "steps": [
-   {
-    "parent": "Recover Failed Site Migration",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Move Site"
-   },
-   {
-    "parent": "Recover Failed Site Migration",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Restore Touched Tables"
-   },
-   {
-    "parent": "Recover Failed Site Migration",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Disable Maintenance Mode"
-   }
-  ]
- },
- {
-  "docstatus": 0,
-  "doctype": "Agent Job Type",
-  "modified": "2020-02-21 10:50:45.060582",
+  "modified": "2020-07-27 19:18:17.532920",
   "name": "Update Site Pull",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
-  "request_method": null,
-  "request_path": null,
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/sites/{site}/update/pull",
   "steps": [
    {
     "parent": "Update Site Pull",
@@ -82,12 +51,6 @@
     "parent": "Update Site Pull",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
-    "step_name": "Disable Maintenance Mode"
-   },
-   {
-    "parent": "Update Site Pull",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
     "step_name": "Bench Setup NGINX"
    },
    {
@@ -101,19 +64,25 @@
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Reload NGINX"
+   },
+   {
+    "parent": "Update Site Pull",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Disable Maintenance Mode"
    }
   ]
  },
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-02-21 10:51:00.894837",
+  "modified": "2020-07-27 19:19:05.246993",
   "name": "Update Site Migrate",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
-  "request_method": null,
-  "request_path": null,
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/sites/{site}/update/migrate",
   "steps": [
    {
     "parent": "Update Site Migrate",
@@ -149,18 +118,6 @@
     "parent": "Update Site Migrate",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
-    "step_name": "Migrate Site"
-   },
-   {
-    "parent": "Update Site Migrate",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Disable Maintenance Mode"
-   },
-   {
-    "parent": "Update Site Migrate",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
     "step_name": "Bench Setup NGINX"
    },
    {
@@ -174,6 +131,18 @@
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Reload NGINX"
+   },
+   {
+    "parent": "Update Site Migrate",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Migrate Site"
+   },
+   {
+    "parent": "Update Site Migrate",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Disable Maintenance Mode"
    }
   ]
  },
@@ -724,6 +693,117 @@
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Uninstall App from Site"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2020-07-27 20:49:03.616821",
+  "name": "Recover Failed Site Pull",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/sites/{site}/update/pull/recover",
+  "steps": [
+   {
+    "parent": "Recover Failed Site Pull",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Move Site"
+   },
+   {
+    "parent": "Recover Failed Site Pull",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Setup NGINX"
+   },
+   {
+    "parent": "Recover Failed Site Pull",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Setup NGINX Target"
+   },
+   {
+    "parent": "Recover Failed Site Pull",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
+   },
+   {
+    "parent": "Recover Failed Site Pull",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Disable Maintenance Mode"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2020-07-27 20:48:53.225074",
+  "name": "Recover Failed Site Update",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/sites/{site}/update/recover",
+  "steps": [
+   {
+    "parent": "Recover Failed Site Update",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Disable Maintenance Mode"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2020-07-27 20:48:35.869422",
+  "name": "Recover Failed Site Migrate",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/sites/{site}/update/migrate/recover",
+  "steps": [
+   {
+    "parent": "Recover Failed Site Migrate",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Move Site"
+   },
+   {
+    "parent": "Recover Failed Site Migrate",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Setup NGINX"
+   },
+   {
+    "parent": "Recover Failed Site Migrate",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Setup NGINX Target"
+   },
+   {
+    "parent": "Recover Failed Site Migrate",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
+   },
+   {
+    "parent": "Recover Failed Site Migrate",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Restore Touched Tables"
+   },
+   {
+    "parent": "Recover Failed Site Migrate",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Disable Maintenance Mode"
    }
   ]
  }
