@@ -245,10 +245,13 @@ def process_update_site_recover_job_update(job):
 		filters={"recover_job": job.name},
 	)[0]
 	if updated_status != site_update.status:
+		site_bench = frappe.db.get_value("Site", job.site, "bench")
+		move_site_step_status = frappe.db.get_value(
+			"Agent Job Step", {"step_name": "Move Site", "agent_job": job.name}, "status"
+		)
+		if site_bench != site_update.source_bench and move_site_step_status == "Success":
+			frappe.db.set_value("Site", job.site, "bench", site_update.source_bench)
+
 		frappe.db.set_value("Site Update", site_update.name, "status", updated_status)
 		if updated_status == "Recovered":
 			frappe.get_doc("Site", job.site).reset_previous_status()
-
-		site_bench = frappe.db.get_value("Site", job.site, "bench")
-		if site_bench != site_update.source_bench:
-			frappe.db.set_value("Site", job.site, "bench", site_update.source_bench)
