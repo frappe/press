@@ -221,7 +221,6 @@ def process_update_site_job_update(job):
 		if updated_status == "Running":
 			frappe.db.set_value("Site", job.site, "status", "Updating")
 		elif updated_status == "Success":
-			frappe.db.set_value("Site", job.site, "status", "Active")
 			frappe.get_doc("Site", job.site).reset_previous_status()
 		elif updated_status == "Failure":
 			frappe.db.set_value("Site", job.site, "status", "Broken")
@@ -248,7 +247,6 @@ def process_update_site_recover_job_update(job):
 	if updated_status != site_update.status:
 		frappe.db.set_value("Site Update", site_update.name, "status", updated_status)
 		if updated_status == "Recovered":
-			frappe.db.set_value("Site", job.site, "status", "Active")
 			frappe.get_doc("Site", job.site).reset_previous_status()
 
 		site_bench = frappe.db.get_value("Site", job.site, "bench")
