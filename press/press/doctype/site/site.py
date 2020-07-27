@@ -146,20 +146,14 @@ class Site(Document):
 	def schedule_update(self):
 		log_site_activity(self.name, "Update")
 		frappe.get_doc({"doctype": "Site Update", "site": self.name}).insert()
-		if self.status in ("Inactive", "Suspended"):
-			self.status_before_update = self.status
-		else:
-			self.status_before_update = None
+		self.status_before_update = self.status
 		self.status = "Pending"
 		self.save()
 
 	def reset_previous_status(self):
-		if self.status_before_update == "Inactive":
-			self.status_before_update = None
-			self.deactivate()
-		elif self.status_before_update == "Suspended":
-			self.status_before_update = None
-			self.suspend("Resuspended after update")
+		self.status = self.status_before_update
+		self.status_before_update = None
+		self.save()
 
 	def add_domain(self, domain):
 		if check_dns(self.name, domain):
