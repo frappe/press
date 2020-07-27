@@ -102,7 +102,7 @@ scheduler_events = {
 		"press.press.doctype.team.team.suspend_sites_for_teams_without_cards",
 		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
 		"press.press.doctype.remote_file.remote_file.poll_file_statuses",
-		"press.press.doctype.invoice.invoice.submit_invoices"
+		"press.press.doctype.invoice.invoice.submit_invoices",
 	],
 	"hourly": ["press.press.doctype.frappe_app.frappe_app.poll_new_releases"],
 	"hourly_long": [
@@ -132,7 +132,7 @@ fixtures = [
 	"Agent Job Type",
 	"Plan",
 	{"dt": "Role", "filters": [["role_name", "like", "Press%"]]},
-	"Print Format"
+	"Print Format",
 ]
 # Testing
 # -------
