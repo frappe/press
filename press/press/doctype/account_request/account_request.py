@@ -21,7 +21,7 @@ class AccountRequest(Document):
 		url = get_url("/dashboard/#/setup-account/" + self.request_key)
 		if frappe.conf.developer_mode:
 			print()
-			print(f'Setup account URL for {self.email}:')
+			print(f"Setup account URL for {self.email}:")
 			print(url)
 			print()
 

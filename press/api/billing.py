@@ -4,7 +4,6 @@
 from __future__ import unicode_literals
 import frappe
 import stripe
-from datetime import datetime
 from frappe.utils import global_date_format, fmt_money, flt
 from press.utils import get_current_team
 
@@ -25,16 +24,14 @@ def info():
 	invoice = team_doc.get_upcoming_invoice()
 
 	if invoice:
-		customer_email = invoice.customer_email
-		total_amount = invoice.amount_due
 		currency = team_doc.currency
 		next_payment_attempt = (
 			global_date_format(invoice.due_date) if invoice.due_date else None
 		)
 		upcoming_invoice = {
 			"next_payment_attempt": next_payment_attempt,
-			"amount": invoice.get_formatted('amount_due'),
-			"total_amount": invoice.get_formatted('total'),
+			"amount": invoice.get_formatted("amount_due"),
+			"total_amount": invoice.get_formatted("total"),
 			"customer_email": invoice.customer_email,
 		}
 	else:

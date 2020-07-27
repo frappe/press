@@ -6,7 +6,6 @@ from __future__ import unicode_literals
 import frappe
 from frappe.model.document import Document
 from press.api.billing import get_stripe
-from datetime import datetime
 
 
 class Subscription(Document):

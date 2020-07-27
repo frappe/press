@@ -204,7 +204,7 @@ def get_branch(info, app="frappe"):
 def get_version_from_branch(branch):
 	try:
 		return int(re.findall(r"[0-9]+", branch)[0])
-	except:
+	except Exception:
 		return
 
 
