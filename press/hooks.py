@@ -98,6 +98,7 @@ scheduler_events = {
 	"daily": [
 		"press.press.cleanup.remove_baggage",
 		"press.press.cleanup.cleanup_offsite_backups",
+		"press.press.cleanup.remove_logs",
 		"press.press.doctype.payment_ledger_entry.payment_ledger_entry.submit_failed_ledger_entries",
 		"press.press.doctype.team.team.suspend_sites_for_teams_without_cards",
 		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
