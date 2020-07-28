@@ -18,9 +18,9 @@ class Telegram:
 	def send(self, message, html=False):
 		try:
 			self.bot = telegram.Bot(token=self.token)
-			return self.bot.send_message(
-				chat_id=self.chat_id, text=message, parse_mode=self._get_parse_mode(html)
-			)
+			text = message[: telegram.MAX_MESSAGE_LENGTH]
+			parse_mode = self._get_parse_mode(html)
+			return self.bot.send_message(chat_id=self.chat_id, text=text, parse_mode=parse_mode)
 		except Exception:
 			log_error("Telegram Bot Error", message=message, html=html)
 
