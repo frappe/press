@@ -66,7 +66,11 @@
   "remote_link_expiry",
   "column_break_51",
   "remote_access_key_id",
-  "remote_secret_access_key"
+  "remote_secret_access_key",
+  "telegram_section",
+  "telegram_chat_id",
+  "column_break_65",
+  "telegram_bot_token"
  ],
  "fields": [
   {
@@ -403,11 +407,30 @@
    "fieldname": "offsite_backups_count",
    "fieldtype": "Int",
    "label": "Total Backups Count"
+  },
+  {
+   "fieldname": "telegram_section",
+   "fieldtype": "Section Break",
+   "label": "Telegram"
+  },
+  {
+   "fieldname": "telegram_chat_id",
+   "fieldtype": "Data",
+   "label": "Telegram Chat ID"
+  },
+  {
+   "fieldname": "telegram_bot_token",
+   "fieldtype": "Data",
+   "label": "Telegram Bot Token"
+  },
+  {
+   "fieldname": "column_break_65",
+   "fieldtype": "Column Break"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2020-07-16 15:22:20.811129",
+ "modified": "2020-07-28 09:57:43.925012",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
