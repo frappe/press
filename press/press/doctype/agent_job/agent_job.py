@@ -225,6 +225,54 @@ def collect_site_uptime():
 			log_error("Agent Uptime Collection Exception", bench=bench, status=bench_status)
 
 
+def report_site_downtime():
+	# Report sites that are offline as of this minute
+	# Also report how long they have been offline if possible
+	now = datetime.utcnow()
+	offline_site_logs = frappe.get_all(
+		"Site Uptime Log",
+		fields=["site"],
+		filters={"web": "False", "timestamp": (">", now - timedelta(minutes=1))},
+	)
+	offline_sites = set(log.site for log in offline_site_logs)
+	if offline_sites:
+		last_online_logs = frappe.get_all(
+			"Site Uptime Log",
+			fields=["site", "max(timestamp) as last_online"],
+			filters={"site": ("in", offline_sites), "web": True},
+			group_by="site",
+		)
+		last_online_map = {log.site: log.last_online for log in last_online_logs}
+		sites = []
+		for site in offline_sites:
+			last_online = last_online_map.get(site)
+			if last_online:
+				timestamp = convert_utc_to_user_timezone(last_online).replace(tzinfo=None)
+				human = pretty_date(timestamp)
+			else:
+				timestamp = datetime.min
+				human = "Forever"
+			sites.append(
+				{
+					"site": site,
+					"human": human,
+					"timestamp": timestamp,
+					"url": get_url_to_form("Site", site),
+				}
+			)
+		template = """*CRITICAL* - Sites offline
+
+{% for site in sites -%}
+	{{ site.human }} - [{{ site.site }}]({{ site.url }})
+{% endfor %}
+"""
+		message = frappe.render_template(
+			template, {"sites": sorted(sites, key=lambda x: x["timestamp"])}
+		)
+		telegram = Telegram()
+		telegram.send(message)
+
+
 def schedule_backups():
 	sites = frappe.get_all(
 		"Site", fields=["name", "timezone"], filters={"status": "Active"},
