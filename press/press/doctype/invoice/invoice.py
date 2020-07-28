@@ -211,6 +211,7 @@ def process_stripe_webhook(doc, method):
 	event = frappe.parse_json(doc.payload)
 	stripe_invoice = event["data"]["object"]
 	invoice = frappe.get_doc("Invoice", {"stripe_invoice_id": stripe_invoice["id"]})
+	team = frappe.get_doc("Team", invoice.team)
 
 	if doc.event_type == "invoice.payment_succeeded":
 		invoice.db_set(
@@ -228,6 +229,9 @@ def process_stripe_webhook(doc, method):
 			}
 		)
 
+		# unsuspend sites
+		team.unsuspend_sites(reason=f"Unsuspending sites because of successful payment of {invoice.name}")
+
 	elif doc.event_type == "invoice.payment_failed":
 		attempt_date = stripe_invoice.get("webhooks_delivered_at")
 		if attempt_date:
@@ -240,3 +244,7 @@ def process_stripe_webhook(doc, method):
 				"status": "Unpaid",
 			}
 		)
+
+		if attempt_count > 1:
+			# suspend sites
+			team.suspend_sites(reason=f"Suspending sites because of failed payment of {invoice.name}")
