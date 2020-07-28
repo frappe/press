@@ -7,7 +7,9 @@ import json
 import frappe
 from frappe.model.document import Document
 from press.agent import Agent
+from frappe.utils import pretty_date, convert_utc_to_user_timezone, get_url_to_form
 from press.utils import log_error
+from press.telegram import Telegram
 from frappe.core.utils import find
 import pytz
 from itertools import groupby
@@ -204,22 +206,26 @@ def collect_site_uptime():
 	benches = frappe.get_all(
 		"Bench", fields=["name", "server"], filters={"status": "Active"},
 	)
+	online_sites = frappe.get_all(
+		"Site", filters={"status": ("not in", ("Inactive", "Suspended", "Archived"))}
+	)
+	online_sites = set(site.name for site in online_sites)
 	for bench in benches:
 		try:
 			agent = Agent(bench.server)
 			bench_status = agent.fetch_bench_status(bench.name)
 			if not bench_status:
 				continue
-
 			for site, status in bench_status["sites"].items():
-				doc = {
-					"doctype": "Site Uptime Log",
-					"site": site,
-					"web": status["web"],
-					"scheduler": status["scheduler"],
-					"timestamp": bench_status["timestamp"],
-				}
-				frappe.get_doc(doc).db_insert()
+				if site in online_sites:
+					doc = {
+						"doctype": "Site Uptime Log",
+						"site": site,
+						"web": status["web"],
+						"scheduler": status["scheduler"],
+						"timestamp": bench_status["timestamp"],
+					}
+					frappe.get_doc(doc).db_insert()
 			frappe.db.commit()
 		except Exception:
 			log_error("Agent Uptime Collection Exception", bench=bench, status=bench_status)
