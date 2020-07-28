@@ -8,7 +8,7 @@ import frappe
 from press.api.billing import get_stripe, get_erpnext_com_connection
 from frappe.model.document import Document
 from frappe import _
-from frappe.utils import get_fullname
+from frappe.utils import get_fullname, flt
 from frappe.contacts.address_and_contact import load_address_and_contact
 from press.press.doctype.team.team_invoice import TeamInvoice
 
@@ -344,44 +344,52 @@ def suspend_sites_for_teams_without_cards():
 	"""
 
 	# find out teams which don't have a card and have exhausted their credit limit
-	res = frappe.db.sql(
+	teams_with_total_usage = frappe.db.sql(
 		"""
 		SELECT
-			SUM(ple.amount) as total_credits, ple.team
+			SUM(ple.amount) as total_usage, ple.team
 		FROM `tabPayment Ledger Entry` ple
-		LEFT JOIN
-			`tabTeam` t
-		ON
-			t.name = ple.team
+		LEFT JOIN `tabTeam` t
+		ON t.name = ple.team
 		WHERE
 			ple.docstatus = 1
+			AND ple.purpose = 'Site Consumption'
 			AND ifnull(t.default_payment_method, '') = ''
 			AND t.free_account = 0
+			AND t.erpnext_partner = 0
 		GROUP BY
 			ple.team
-		HAVING
-			total_credits < 0
 	""",
 		as_dict=True,
 	)
 
-	teams_without_cards_and_exhausted_credit_limit = [r.team for r in res]
-	for team in teams_without_cards_and_exhausted_credit_limit:
-		team_doc = frappe.get_doc("Team", team)
-		sites = team_doc.suspend_sites(reason="Card not added")
+	free_credits_inr, free_credits_usd = frappe.db.get_value(
+		"Press Settings", None, ["free_credits_inr", "free_credits_usd"]
+	)
+	# teams_without_cards_and_exhausted_credit_limit = [r.team for r in res]
+	for d in teams_with_total_usage:
+		total_usage = d.total_usage * -1
+		team = frappe.get_doc("Team", d.team)
+		total_usage_limit = flt(
+			free_credits_inr if team.currency == "INR" else free_credits_usd
+		)
 
-		# send email
-		if sites:
-			email = team_doc.user
-			account_update_link = frappe.utils.get_url("/dashboard/#/welcome")
-			frappe.sendmail(
-				recipients=email,
-				subject="Your sites have been suspended on Frappe Cloud",
-				template="payment_failed",
-				args={
-					"subject": "Your sites have been suspended on Frappe Cloud",
-					"account_update_link": account_update_link,
-					"card_not_added": True,
-					"sites": sites,
-				},
-			)
+		# if total usage has crossed the allotted free credits, suspend their sites
+		if total_usage > total_usage_limit:
+			sites = team.suspend_sites(reason="Card not added and free credits exhausted")
+
+			# send email
+			if sites:
+				email = team.user
+				account_update_link = frappe.utils.get_url("/dashboard/#/welcome")
+				frappe.sendmail(
+					recipients=email,
+					subject="Your sites have been suspended on Frappe Cloud",
+					template="payment_failed",
+					args={
+						"subject": "Your sites have been suspended on Frappe Cloud",
+						"account_update_link": account_update_link,
+						"card_not_added": True,
+						"sites": sites,
+					},
+				)
