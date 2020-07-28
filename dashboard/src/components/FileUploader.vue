@@ -58,11 +58,25 @@ export default {
 		async onFileAdd(e) {
 			this.error = null;
 			this.file = e.target.files[0];
+
+			// Check for upload size limits
+			this.message = 'Checking File Limits';
+			if (
+				this.file.type === 'application/x-gzip' &&
+				this.file.size > 524 * 1000 * 1000
+			) {
+				this.error = 'Max File Size Limit for Database file is 500M';
+				this.message = '';
+				return;
+			}
+
+			// Check for validity of files
 			this.message = 'Validating File';
 			const validationMessage = await this.validateFile();
 			const validationName = await this.validateFileName();
 			this.message = '';
 
+			// Try uploading the files
 			if (validationMessage === true) {
 				this.uploadFile(this.file);
 			} else if (validationName && validationMessage !== false) {
