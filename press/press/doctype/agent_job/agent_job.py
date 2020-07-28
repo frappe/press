@@ -206,9 +206,7 @@ def collect_site_uptime():
 	benches = frappe.get_all(
 		"Bench", fields=["name", "server"], filters={"status": "Active"},
 	)
-	online_sites = frappe.get_all(
-		"Site", filters={"status": ("not in", ("Inactive", "Suspended", "Archived"))}
-	)
+	online_sites = frappe.get_all("Site", filters={"status": "Active"})
 	online_sites = set(site.name for site in online_sites)
 	for bench in benches:
 		try:
