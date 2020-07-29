@@ -230,15 +230,16 @@ def collect_site_uptime():
 
 
 def report_site_downtime():
-	# Report sites that are offline as of this minute
+	# Report sites that are offline for at least last two minutes
 	# Also report how long they have been offline if possible
 	now = datetime.utcnow()
 	offline_site_logs = frappe.get_all(
 		"Site Uptime Log",
-		fields=["site"],
-		filters={"web": "False", "timestamp": (">", now - timedelta(minutes=1))},
+		fields=["site", "count(site) as count"],
+		filters={"web": "False", "timestamp": (">", now - timedelta(minutes=2))},
+		group_by="site"
 	)
-	offline_sites = set(log.site for log in offline_site_logs)
+	offline_sites = set(log.site for log in offline_site_logs if log.count >= 2)
 	if offline_sites:
 		last_online_logs = frappe.get_all(
 			"Site Uptime Log",
@@ -273,6 +274,8 @@ def report_site_downtime():
 		message = frappe.render_template(
 			template, {"sites": sorted(sites, key=lambda x: x["timestamp"])}
 		)
+		print(message)
+		return
 		telegram = Telegram()
 		telegram.send(message)
 
