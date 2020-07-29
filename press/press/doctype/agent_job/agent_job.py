@@ -274,8 +274,6 @@ def report_site_downtime():
 		message = frappe.render_template(
 			template, {"sites": sorted(sites, key=lambda x: x["timestamp"])}
 		)
-		print(message)
-		return
 		telegram = Telegram()
 		telegram.send(message)
 
