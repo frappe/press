@@ -53,6 +53,18 @@ class TeamInvoice:
 			return
 		self.update_ledger_entry_in_invoice(ledger_entry, self.draft_invoice)
 
+	def remove_ledger_entry_from_invoice(self, ledger_entry, invoice):
+		usage_row = None
+		for usage in invoice.site_usage:
+			if usage.site == ledger_entry.site and usage.plan == ledger_entry.plan:
+				usage_row = usage
+
+		if usage_row and usage_row.days_active > 0:
+			usage_row.days_active = usage_row.days_active - 1
+
+		invoice.save()
+		ledger_entry.db_set("invoice", "")
+
 	def update_ledger_entry_in_invoice(self, ledger_entry, invoice):
 		usage_row = None
 		for usage in invoice.site_usage:
