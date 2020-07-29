@@ -153,102 +153,59 @@
 				<div v-if="!restoreBackup">
 					<label class="flex py-2 leading-none">
 						<Input
-							label="Migrate Site from URL"
+							label="Migrate From Existing Site"
 							type="checkbox"
 							v-model="migrateFromSelfHosted"
+							@click="migrateFromSelfHosted = true"
 						/>
 						<Badge color="blue" class="ml-2">beta</Badge>
 					</label>
 					<p class="text-base text-gray-700">
 						Migrate your currently hosted site to Frappe Cloud.
 					</p>
-					<div v-if="migrateFromSelfHosted">
+					<div v-if="migrateFromSelfHosted == true">
 						<div class="flex grid gap-4 mt-6 w-full">
-							<div class="grid grid-cols-3">
-								<Input
+							<div class="grid grid-cols-2">
+								<input
 									type="text"
-									class="mt-6"
+									class="z-10 w-full rounded-md form-input"
 									placeholder="example.com"
 									v-model="frappeSite"
+									@change="verifySite"
 								/>
-								<p class="mt-7 ml-2 w-1/2 text-base">
+								<p class="ml-3 w-1/2 text-base">
 									<FeatherIcon
 										name="check"
-										class="w-5 h-5 p-1 mr-2 text-green-500 bg-green-100 rounded-full"
+										class="w-6 h-6 p-1 mr-2 text-green-500 bg-green-100 rounded-full"
 										v-if="verifiedFrappeSite === true"
 									/>
 									<FeatherIcon
 										name="x"
-										class="w-5 h-5 p-1 mr-2 text-red-500 bg-red-100 rounded-full"
+										class="w-6 h-6 p-1 mr-2 text-red-500 bg-red-100 rounded-full"
 										v-if="verifiedFrappeSite === false"
 									/>
 								</p>
-								<Button class="mt-6 w-30" type="primary" @click="verifySite">
-									Verify Site
-								</Button>
+								<ErrorMessage class="mt-1 ml-1" :error="invalidFrappeSite" />
 							</div>
-							<div class="mt-6">
-								<div class="flex py-2 pl-1 -my-2 -ml-1 overflow-x-auto">
-									<button
-										class="relative flex items-center justify-center py-4 pl-4 pr-8 mr-4 border rounded-md cursor-pointer focus:outline-none focus:shadow-outline"
-										:class="
-											this.method === 'credentials'
-												? 'bg-blue-50 border-blue-500'
-												: 'hover:border-blue-400'
-										"
-										@click="selectMethod('credentials')"
-									>
-										<div>
-											System Manager Credentials
-										</div>
-									</button>
-									<button
-										class="relative flex items-center justify-center py-4 pl-4 pr-8 mr-4 border rounded-md cursor-pointer focus:outline-none focus:shadow-outline"
-										:class="
-											this.method === 'api'
-												? 'bg-blue-50 border-blue-500'
-												: 'hover:border-blue-400'
-										"
-										@click="selectMethod('api')"
-									>
-										<div>
-											System Manager API
-										</div>
-									</button>
-								</div>
-							</div>
-							<div v-if="verifiedFrappeSite">
-								<div v-if="method == 'credentials'">
-									<Input
-										type="email"
-										class="mt-6"
-										placeholder="user@example.com"
-										v-model="userNameFrappeSite"
-									/>
-									<Input
-										type="password"
-										class="mt-6"
-										placeholder="Password"
-										v-model="passwordFrappeSite"
-									/>
-								</div>
-								<div v-if="method == 'api'">
-									<Input
-										type="text"
-										class="mt-6"
-										placeholder="API Key"
-										v-model="frappeAPIkey"
-									/>
-									<Input
-										type="password"
-										class="mt-6"
-										placeholder="API Secret"
-										v-model="frappeAPISecret"
-									/>
-								</div>
-								<Button class="mt-6" type="primary" @click="getBackup">
-									Get Backups
-								</Button>
+							<div>
+								<input
+									type="email"
+									class="z-10 w-full rounded-md form-input"
+									placeholder="user@example.com"
+									v-model="userNameFrappeSite"
+									@change="getBackup"
+								/>
+								<input
+									type="password"
+									class="mt-3 z-10 w-full rounded-md form-input"
+									placeholder="Password"
+									v-model="passwordFrappeSite"
+									@change="getBackup"
+								/>
+								<ErrorMessage class="mt-3" :error="invalidAccountCredentials" />
+								<ErrorMessage class="mt-3" :error="incompatibleSite" />
+								<ErrorMessage class="mt-3" :error="magicalError" />
+								<SuccessMessage class="mt-3" :success="receivedBackups" />
 								<FeatherIcon
 									name="check"
 									class="w-5 h-5 p-1 mr-2 text-green-500 bg-green-100 rounded-full"
@@ -314,12 +271,12 @@ export default {
 		options: null,
 		restoreBackup: false,
 		migrateFromSelfHosted: false,
+		magicalErrorOccurred: false,
 		frappeSite: null,
 		verifiedFrappeSite: null,
+		validFrappeSiteCredentials: null,
+		incompatibleFrappeSite: null,
 		userNameFrappeSite: null,
-		method: '',
-		frappeAPIkey: null,
-		frappeAPISecret: null,
 		passwordFrappeSite: null,
 		selectedApps: [],
 		selectedGroup: null,
@@ -412,6 +369,31 @@ export default {
 				return `${this.siteName}.${this.options.domain} already exists.`;
 			}
 			return '';
+		},
+		invalidFrappeSite() {
+			if (this.frappeSite && this.verifiedFrappeSite === false) {
+				return `${this.frappeSite} is not a valid Frappe Site`;
+			}
+		},
+		invalidAccountCredentials() {
+			if (!this.incompatibleFrappeSite && this.validFrappeSiteCredentials === false) {
+				return 'Invalid Credentials or Insufficient Permissions';
+			}
+		},
+		incompatibleSite() {
+			if (this.incompatibleFrappeSite === true) {
+				return `Update your site ${this.frappeSite} to use this feature or use a different site creation method`;
+			}
+		},
+		receivedBackups() {
+			if (this.validFrappeSiteCredentials === true) {
+				return 'Selected Backup Files';
+			}
+		},
+		magicalError() {
+			if (this.magicalErrorOccurred === true) {
+				return 'An Internal Error has occurred. Use another method or contact support'
+			}
 		}
 	},
 	methods: {
@@ -490,37 +472,32 @@ export default {
 			this.verifiedFrappeSite = status;
 		},
 		async getBackup() {
-			let payload = {
-				site: this.frappeSite
-			};
-			let auth = {};
-
-			if (this.method === 'credentials') {
-				auth = {
+			if (!(this.frappeSite && this.userNameFrappeSite && this.passwordFrappeSite)) {
+				return false;
+			}
+			let { site, files, status, exc } = await this.$call('press.api.site.get_backup_links', {
+				site: this.frappeSite,
+				auth: {
 					usr: this.userNameFrappeSite,
 					pwd: this.passwordFrappeSite
-				};
-			} else if (this.method === 'api') {
-				auth = {
-					api_key: this.frappeAPIkey,
-					api_secret: this.frappeAPISecret
-				};
-			}
-
-			let result = await this.$call('press.api.site.get_backup_links', {
-				...payload,
-				auth: auth
+				}
 			});
 
-			for (let file of Object.keys(result)) {
-				let map = result[file].split('/');
-				let name = map[map.length - 1].split('?')[0];
-				let upload = await this.$call('press.api.site.uploaded_backup_info', {
-					file: name,
-					url: result[file],
-					type: file === 'database' ? 'application/x-gzip' : 'application/x-tar'
-				});
-				this.selectedFiles[file] = upload;
+			this.validFrappeSiteCredentials = status.toString()[0] == "2";
+			this.magicalErrorOccurred = status.toString()[0] == "5";
+			this.incompatibleFrappeSite = status == 404;
+
+			if (this.validFrappeSiteCredentials) {
+				for (let file of Object.keys(files)) {
+					let map = files[file].split('/');
+					let name = map[map.length - 1].split('?')[0];
+					let upload = await this.$call('press.api.site.uploaded_backup_info', {
+						file: name,
+						url: files[file],
+						type: file === 'database' ? 'application/x-gzip' : 'application/x-tar'
+					});
+					this.selectedFiles[file] = upload;
+				}
 			}
 		}
 	}
