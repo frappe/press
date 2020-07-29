@@ -61,6 +61,10 @@ class PaymentLedgerEntry(Document):
 		elif self.purpose in ["Credits Allocation", "Reverse Credits Allocation"]:
 			self.create_balance_adjustment_on_stripe()
 
+	def on_cancel(self):
+		if self.purpose == "Site Consumption":
+			self.remove_usage_from_invoice()
+
 	def revert(self, reason=None):
 		if self.purpose == "Credits Allocation":
 			# reverse balance adjustment on Stripe
@@ -93,6 +97,18 @@ class PaymentLedgerEntry(Document):
 		if not ti.get_draft_invoice() and date.month > 6 and date.year > 2020:
 			ti.create()
 		ti.update_site_usage(self)
+
+	def remove_usage_from_invoice(self):
+		if self.purpose != "Site Consumption":
+			return
+		if not self.invoice:
+			return
+		if self.free_usage:
+			return
+		date = frappe.utils.getdate(self.date)
+		ti = TeamInvoice(self.team, date.month, date.year)
+		invoice = frappe.get_doc("Invoice", self.invoice)
+		ti.remove_ledger_entry_from_invoice(self, invoice)
 
 	def create_balance_adjustment_on_stripe(self):
 		stripe = get_stripe()

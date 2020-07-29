@@ -120,6 +120,7 @@ class Invoice(Document):
 
 	def validate_items(self):
 		self.items = []
+		self.site_usage = [row for row in self.site_usage if row.days_active > 0]
 		for row in self.site_usage:
 			plan = frappe.get_cached_doc("Plan", row.plan)
 			price_per_day = plan.get_price_per_day(self.currency)
