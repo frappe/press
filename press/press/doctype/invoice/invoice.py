@@ -231,7 +231,9 @@ def process_stripe_webhook(doc, method):
 		)
 
 		# unsuspend sites
-		team.unsuspend_sites(reason=f"Unsuspending sites because of successful payment of {invoice.name}")
+		team.unsuspend_sites(
+			reason=f"Unsuspending sites because of successful payment of {invoice.name}"
+		)
 
 	elif doc.event_type == "invoice.payment_failed":
 		attempt_date = stripe_invoice.get("webhooks_delivered_at")
@@ -248,4 +250,6 @@ def process_stripe_webhook(doc, method):
 
 		if attempt_count > 1:
 			# suspend sites
-			team.suspend_sites(reason=f"Suspending sites because of failed payment of {invoice.name}")
+			team.suspend_sites(
+				reason=f"Suspending sites because of failed payment of {invoice.name}"
+			)
