@@ -250,6 +250,30 @@ def process_stripe_webhook(doc, method):
 
 		if attempt_count > 1:
 			# suspend sites
-			team.suspend_sites(
+			sites = team.suspend_sites(
 				reason=f"Suspending sites because of failed payment of {invoice.name}"
 			)
+			if sites:
+				send_email_for_failed_payment(invoice, sites)
+
+
+def send_email_for_failed_payment(invoice, sites=None):
+	team = frappe.get_doc("Team", invoice.team)
+	email = team.user
+	payment_method = team.default_payment_method
+	last_4 = frappe.db.get_value("Stripe Payment Method", payment_method, "last_4")
+	account_update_link = frappe.utils.get_url("/dashboard/#/welcome")
+
+	frappe.sendmail(
+		recipients=email,
+		subject="Payment Failed for Frappe Cloud Subscription",
+		template="payment_failed",
+		args={
+			"payment_link": invoice.stripe_invoice_url,
+			"amount": invoice.get_formatted("amount_due"),
+			"account_update_link": account_update_link,
+			"last_4": last_4 or "",
+			"card_not_added": not payment_method,
+			"sites": sites,
+		},
+	)
