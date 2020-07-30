@@ -477,7 +477,7 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-07-29 22:07:13.326045",
+  "modified": "2020-07-30 10:46:32.814468",
   "name": "New Site from Backup",
   "parent": null,
   "parentfield": null,
@@ -508,6 +508,12 @@
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Restore Site"
+   },
+   {
+    "parent": "New Site from Backup",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Delete Downloaded Backup Files"
    },
    {
     "parent": "New Site from Backup",
@@ -569,7 +575,7 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-07-29 22:07:11.057218",
+  "modified": "2020-07-30 10:46:20.712793",
   "name": "Restore Site",
   "parent": null,
   "parentfield": null,
@@ -588,6 +594,12 @@
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Restore Site"
+   },
+   {
+    "parent": "Restore Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Delete Downloaded Backup Files"
    },
    {
     "parent": "Restore Site",
