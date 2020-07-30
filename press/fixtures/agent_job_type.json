@@ -830,5 +830,30 @@
     "step_name": "Disable Maintenance Mode"
    }
   ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2020-07-30 12:39:21.236716",
+  "name": "Cleanup Unused Files",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "request_method": "POST",
+  "request_path": "server/cleanup",
+  "steps": [
+   {
+    "parent": "Cleanup Unused Files",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Remove Archived Benches"
+   },
+   {
+    "parent": "Cleanup Unused Files",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Remove Temporary Files"
+   }
+  ]
  }
 ]
