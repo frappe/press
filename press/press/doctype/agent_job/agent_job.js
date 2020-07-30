@@ -4,7 +4,10 @@
 frappe.ui.form.on('Agent Job', {
 	refresh: function (frm) {
 		frm.add_custom_button(__('Retry'), () => {
-			frm.call({method: "retry", doc: frm.doc, callback: result => frappe.msgprint(result.message.name)});
+			frappe.confirm(
+				`Are you sure you want to retry this job?`,
+				() => frm.call("retry").then((result) => frappe.msgprint(result.message.name))
+			);
 		});
 	}
 });
