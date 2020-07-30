@@ -8,10 +8,5 @@ from frappe import _
 def get_data():
 	return {
 		"fieldname": "agent_job",
-		"transactions": [
-			{
-				"label": _("Related Documents"),
-				"items": ["Agent Job Step"],
-			},
-		],
+		"transactions": [{"label": _("Related Documents"), "items": ["Agent Job Step"]}],
 	}
