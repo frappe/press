@@ -310,6 +310,7 @@ class Site(Document):
 			log_error(title="Submit Payment Ledger Entry", doc=doc.name)
 			doc.reload()
 			doc.increment_failed_attempt()
+			doc.add_comment(text=f"<pre><code>{frappe.get_traceback()}</code></pre>")
 		return doc
 
 	def _create_initial_site_plan_change(self):

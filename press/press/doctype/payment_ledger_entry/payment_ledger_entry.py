@@ -182,3 +182,4 @@ def submit_failed_ledger_entries():
 			log_error(title="Update PLE Usage in invoice failed", doc=doc.name)
 			doc.reload()
 			doc.increment_failed_attempt()
+			doc.add_comment(text=f"<pre><code>{frappe.get_traceback()}</code></pre>")
