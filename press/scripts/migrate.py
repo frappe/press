@@ -61,12 +61,12 @@ def is_subdomain_available(subdomain):
 		return available
 
 
-@retry(stop=stop_after_attempt(2), wait=wait_fixed(5))
+@retry(stop=stop_after_attempt(2) | retry_if_exception_type(SystemExit), wait=wait_fixed(5))
 def upload_backup_file(file_type, file_name, file_path):
 	# retreive upload link
 	upload_ticket = session.get(remote_link_url, data={"file": file_name})
 	if not upload_ticket.ok:
-		raise
+		handle_request_failure(upload_ticket)
 
 	payload = upload_ticket.json()["message"]
 	url, fields = payload["url"], payload["fields"]
@@ -79,7 +79,7 @@ def upload_backup_file(file_type, file_name, file_path):
 		headers={"Accept": "application/json"},
 	)
 	if not upload_remote.ok:
-		raise
+		handle_request_failure(upload_remote)
 
 	# register remote file to site
 	register_press = session.post(
@@ -94,7 +94,8 @@ def upload_backup_file(file_type, file_name, file_path):
 
 	if register_press.ok:
 		return register_press.json()["message"]
-	raise
+
+	handle_request_failure(register_press)
 
 
 def render_actions_table():
