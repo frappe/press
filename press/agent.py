@@ -282,6 +282,9 @@ class Agent:
 			upstream=server,
 		)
 
+	def cleanup_unused_files(self):
+		return self.create_agent_job("Cleanup Unused Files", "server/cleanup", {})
+
 	def get(self, path):
 		return self.request("GET", path)
 

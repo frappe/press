@@ -58,7 +58,20 @@ class Server(Document):
 			self.doctype, self.name, "_setup_server", queue="long", timeout=1200
 		)
 
+	def cleanup_unused_files(self):
+		agent = Agent(self.name)
+		agent.cleanup_unused_files()
+
 
 def process_new_server_job_update(job):
 	if job.status == "Success":
 		frappe.db.set_value("Server", job.upstream, "is_upstream_setup", True)
+
+
+def cleanup_unused_files():
+	servers = frappe.get_all("Server", fields=["name"], filters={"status": "Active"})
+	for server in servers:
+		try:
+			frappe.get_doc("Server", server.name).cleanup_unused_files()
+		except Exception:
+			log_error("Server File Cleanup Error", server=server)
