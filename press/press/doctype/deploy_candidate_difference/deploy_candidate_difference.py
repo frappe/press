@@ -95,5 +95,17 @@ def is_migrate_needed(files):
 	if any(map(patches_file_regex.match, files)):
 		return True
 
+	fixtures_regex = re.compile(r"\w+/fixtures/")
+	if any(map(fixtures_regex.match, files)):
+		return True
+
+	custom_regex = re.compile(r"\w+/\w+/custom/")
+	if any(map(custom_regex.match, files)):
+		return True
+
+	languages_json = re.compile(r"frappe/geo/languages.json")
+	if any(map(languages_json.match, files)):
+		return True
+
 	json_regex = re.compile(r"\w+/\w+/\w+/(.+)/\1\.json")
 	return any(map(json_regex.match, files))
