@@ -85,6 +85,7 @@ class AgentJob(Document):
 def job_detail(job):
 	job = frappe.get_doc("Agent Job", job)
 	steps = []
+	current = {}
 	for index, job_step in enumerate(
 		frappe.get_all(
 			"Agent Job Step",
