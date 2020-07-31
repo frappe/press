@@ -26,8 +26,16 @@ try:
 	import click
 	from semantic_version import Version
 	from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
+	from requests_toolbelt.multipart import encoder
 except ImportError:
-	dependencies = ["tenacity", "html2text", "requests", "click", "semantic-version"]
+	dependencies = [
+		"tenacity",
+		"html2text",
+		"requests",
+		"click",
+		"semantic-version",
+		"requests-toolbelt",
+	]
 	install_command = shlex.split(
 		"{} -m pip install {}".format(sys.executable, " ".join(dependencies))
 	)
@@ -37,6 +45,7 @@ except ImportError:
 	import click
 	from semantic_version import Version
 	from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
+	from requests_toolbelt.multipart import encoder
 
 
 @retry(stop=stop_after_attempt(5))
@@ -72,11 +81,15 @@ def upload_backup_file(file_type, file_name, file_path):
 	url, fields = payload["url"], payload["fields"]
 
 	# upload remote file
+	fields["file"] = (file_name, open(file_path, "rb"))
+	multipart_payload = encoder.MultipartEncoder(fields=fields)
 	upload_remote = session.post(
 		url,
-		data=fields,
-		files={"file": open(file_path, "rb")},
-		headers={"Accept": "application/json"},
+		data=multipart_payload,
+		headers={
+			"Accept": "application/json",
+			"Content-Type": multipart_payload.content_type,
+		},
 	)
 	if not upload_remote.ok:
 		handle_request_failure(upload_remote)
