@@ -70,7 +70,9 @@ def is_subdomain_available(subdomain):
 		return available
 
 
-@retry(stop=stop_after_attempt(2) | retry_if_exception_type(SystemExit), wait=wait_fixed(5))
+@retry(
+	stop=stop_after_attempt(2) | retry_if_exception_type(SystemExit), wait=wait_fixed(5)
+)
 def upload_backup_file(file_type, file_name, file_path):
 	def _update_progress_bar(monitor):
 		update_progress_bar(
