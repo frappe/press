@@ -22,9 +22,9 @@ def info():
 	team = get_current_team()
 	team_doc = frappe.get_doc("Team", team)
 	invoice = team_doc.get_upcoming_invoice()
+	currency = team_doc.currency
 
 	if invoice:
-		currency = team_doc.currency
 		next_payment_attempt = (
 			global_date_format(invoice.due_date) if invoice.due_date else None
 		)
@@ -37,11 +37,11 @@ def info():
 	else:
 		upcoming_invoice = None
 
-	past_payments = team_doc.get_past_payments()
+	past_invoices = team_doc.get_past_invoices()
 
 	return {
 		"upcoming_invoice": upcoming_invoice,
-		"past_payments": past_payments,
+		"past_invoices": past_invoices,
 		"payment_method": team_doc.default_payment_method,
 		"available_credits": fmt_money(team_doc.get_available_credits(), 2, currency),
 	}

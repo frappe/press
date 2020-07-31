@@ -173,27 +173,25 @@ class Team(Document):
 		]
 		return payment_methods
 
-	def get_past_payments(self):
-		payments = frappe.db.get_all(
-			"Payment",
-			filters={"team": self.name, "docstatus": 1, "amount": (">", 0)},
+	def get_past_invoices(self):
+		invoices = frappe.db.get_all(
+			"Invoice",
+			filters={"team": self.name, "status": ("!=", "Draft")},
 			fields=[
-				"amount",
-				"payment_date",
+				"name",
+				"total",
+				"amount_due",
 				"status",
-				"currency",
-				"payment_link",
-				"creation",
-				"stripe_invoice_id",
+				"stripe_invoice_url",
+				"period_start",
+				"period_end",
+				"payment_date",
 			],
-			order_by="creation desc",
+			order_by="period_start desc",
 		)
-		for payment in payments:
-			payment.formatted_amount = frappe.utils.fmt_money(
-				payment.amount, 2, payment.currency
-			)
-			payment.payment_date = frappe.utils.global_date_format(payment.payment_date)
-		return payments
+		for invoice in invoices:
+			invoice.formatted_total = frappe.utils.fmt_money(invoice.total, 2, invoice.currency)
+		return invoices
 
 	def allocate_credit_amount(self, amount, remark):
 		if amount > 0:
