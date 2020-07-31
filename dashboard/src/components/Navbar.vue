@@ -21,7 +21,7 @@
 										(item.route == '/'
 										? isExactActive
 										: isActive)
-											? 'bg-blue-50 text-blue-500 bg-white'
+											? 'bg-blue-50 text-blue-500'
 											: 'text-gray-900 hover:bg-gray-50'
 									]"
 									:href="href"
@@ -35,7 +35,8 @@
 					</div>
 				</div>
 				<div class="hidden md:block">
-					<div class="flex items-center ml-4 md:ml-6">
+					<div class="flex items-center">
+						<ImpersonateTeam />
 						<div class="relative ml-3">
 							<div>
 								<Dropdown :items="dropdownItems" right>
@@ -128,10 +129,12 @@
 
 <script>
 import FrappeCloudLogo from '@/components/FrappeCloudLogo.vue';
+import ImpersonateTeam from '@/components/ImpersonateTeam.vue';
 
 export default {
 	components: {
-		FrappeCloudLogo
+		FrappeCloudLogo,
+		ImpersonateTeam
 	},
 	data() {
 		return {

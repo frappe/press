@@ -290,15 +290,10 @@ def get_plans():
 
 @frappe.whitelist()
 def all():
-	if frappe.session.data.user_type == "System User":
-		filters = {}
-	else:
-		filters = {"team": get_current_team()}
-	filters.update({"status": ("!=", "Archived")})
 	sites = frappe.get_list(
 		"Site",
 		fields=["name", "status", "modified", "bench"],
-		filters=filters,
+		filters={"team": get_current_team(), "status": ("!=", "Archived")},
 		order_by="creation desc",
 	)
 	benches_with_updates = set(benches_with_available_update())
