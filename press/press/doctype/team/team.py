@@ -47,6 +47,21 @@ class Team(Document):
 				doc.is_default = 0
 				doc.save()
 
+	def impersonate(self, member, reason):
+		user = frappe.db.get_value("Team Member", member, "user")
+		impersonation = frappe.get_doc(
+			{
+				"doctype": "Team Member Impersonation",
+				"user": user,
+				"impersonator": frappe.session.user,
+				"team": self.name,
+				"member": member,
+				"reason": reason,
+			}
+		)
+		impersonation.save()
+		frappe.local.login_manager.login_as(user)
+
 	def enable_erpnext_partner_privileges(self):
 		self.erpnext_partner = 1
 		self.save()
