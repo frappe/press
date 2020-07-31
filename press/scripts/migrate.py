@@ -12,6 +12,7 @@ import tempfile
 # imports - module imports
 import frappe
 import frappe.utils.backups
+from frappe.utils.backups import BackupGenerator
 from frappe.utils import get_installed_apps_info, update_progress_bar
 from frappe.utils.commands import add_line_after, add_line_before, render_table
 from frappe.utils.change_log import get_versions
@@ -25,7 +26,14 @@ try:
 	import requests
 	import click
 	from semantic_version import Version
-	from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
+	from tenacity import (
+		retry,
+		RetryError,
+		stop_after_attempt,
+		wait_fixed,
+		retry_if_exception_type,
+		retry_unless_exception_type,
+	)
 	from requests_toolbelt.multipart import encoder
 except ImportError:
 	dependencies = [
@@ -44,7 +52,14 @@ except ImportError:
 	import requests
 	import click
 	from semantic_version import Version
-	from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
+	from tenacity import (
+		retry,
+		RetryError,
+		stop_after_attempt,
+		wait_fixed,
+		retry_if_exception_type,
+		retry_unless_exception_type,
+	)
 	from requests_toolbelt.multipart import encoder
 
 
@@ -242,6 +257,22 @@ def is_downgrade(cloud_data):
 	cloud_version = get_version_from_branch(cloud_branch) or 1000
 
 	return current_version > cloud_version
+
+
+def raise_limits_warning():
+	raise_warn = False
+	files = BackupGenerator(
+		frappe.conf.db_name, frappe.conf.db_name, frappe.conf.db_password
+	).get_recent_backup(older_than=24 * 30)
+
+	for file in files:
+		if file:
+			file_size_in_mb = os.path.getsize(file) / (1024 * 1024)
+			if (file_size_in_mb / 1024) < 5:
+				raise_warn = True
+			if "database" in file and file_size_in_mb > 500:
+				raise_warn = True
+	return raise_warn
 
 
 @add_line_after
@@ -520,9 +551,12 @@ def restore_site(local_site):
 
 
 @add_line_after
-@retry(stop=stop_after_attempt(3) | retry_if_exception_type(SystemExit))
+@retry(
+	stop=stop_after_attempt(3)
+	| retry_if_exception_type(SystemExit) & retry_unless_exception_type(KeyboardInterrupt)
+)
 def create_session():
-	print("Frappe Cloud credentials @ {}".format(remote_site))
+	print("\nFrappe Cloud credentials @ {}".format(remote_site))
 
 	# take user input from STDIN
 	username = click.prompt("Username").strip()
@@ -573,8 +607,23 @@ def frappecloud_migrator(local_site):
 		{"title": "Restore to an existing site", "fn": restore_site},
 	]
 
+	if raise_limits_warning():
+		notice = (
+			"\n"
+			+ """Note:
+* Sites with a compressed database size of over 500MB aren't supported currently on {0}
+* If one of your backup files exceeds 5GB in size, using https://{0}/dashboard/#/sites/new directly is your only option currently
+		""".format(
+				remote_site
+			).strip()
+		)
+		click.secho(notice, fg="yellow")
+
 	# get credentials + auth user + start session
-	session = create_session()
+	try:
+		session = create_session()
+	except RetryError:
+		raise KeyboardInterrupt
 
 	# available actions defined in migrator_actions
 	primary_action = select_primary_action()
