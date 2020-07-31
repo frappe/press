@@ -12,7 +12,7 @@ import tempfile
 # imports - module imports
 import frappe
 import frappe.utils.backups
-from frappe.utils import get_installed_apps_info
+from frappe.utils import get_installed_apps_info, update_progress_bar
 from frappe.utils.commands import add_line_after, add_line_before, render_table
 from frappe.utils.change_log import get_versions
 
@@ -72,6 +72,11 @@ def is_subdomain_available(subdomain):
 
 @retry(stop=stop_after_attempt(2) | retry_if_exception_type(SystemExit), wait=wait_fixed(5))
 def upload_backup_file(file_type, file_name, file_path):
+	def _update_progress_bar(monitor):
+		update_progress_bar(
+			"Uploading {} file".format(file_type), monitor.bytes_read, monitor.len
+		)
+
 	# retreive upload link
 	upload_ticket = session.get(remote_link_url, data={"file": file_name})
 	if not upload_ticket.ok:
@@ -83,6 +88,10 @@ def upload_backup_file(file_type, file_name, file_path):
 	# upload remote file
 	fields["file"] = (file_name, open(file_path, "rb"))
 	multipart_payload = encoder.MultipartEncoder(fields=fields)
+	multipart_payload = encoder.MultipartEncoderMonitor(
+		multipart_payload, _update_progress_bar
+	)
+
 	upload_remote = session.post(
 		url,
 		data=multipart_payload,
@@ -91,6 +100,7 @@ def upload_backup_file(file_type, file_name, file_path):
 			"Content-Type": multipart_payload.content_type,
 		},
 	)
+	print()
 	if not upload_remote.ok:
 		handle_request_failure(upload_remote)
 
@@ -421,7 +431,6 @@ def upload_backup(local_site):
 	):
 		file_name = file_path.split(os.sep)[-1]
 
-		print("Uploading {} file: {} ({}/3)".format(file_type, file_name, x + 1))
 		uploaded_file = upload_backup_file(file_type, file_name, file_path)
 
 		if uploaded_file:
