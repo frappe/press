@@ -101,37 +101,35 @@
 		</Dialog>
 
 		<Section
-			v-if="pastPayments.length"
+			v-if="pastInvoices.length"
 			class="mb-10"
-			title="Past Payments"
+			title="Past Invoices"
 			description="History of your invoice payments"
 		>
 			<SectionCard>
 				<div
 					class="grid items-center grid-cols-3 px-6 py-4 hover:bg-gray-50"
-					v-for="payment in pastPayments"
-					:key="payment.stripe_invoice_id"
+					v-for="invoice in pastInvoices"
+					:key="invoice.name"
 				>
 					<div class="text-base font-semibold">
-						<div v-if="payment.status === 'Paid'">
-							{{ payment.payment_date }}
-						</div>
-						<div v-else-if="payment.payment_link">
+						<div>{{ invoicePeriod(invoice) }}</div>
+					</div>
+					<div class="text-base">{{ invoice.formatted_total }}</div>
+					<div>
+						<Badge v-if="invoice.status == 'Paid'" color="green">
+							Paid
+						</Badge>
+						<div v-else-if="invoice.stripe_invoice_url">
 							<a
-								class="inline-flex items-center justify-center text-blue-500"
-								:href="payment.payment_link"
+								class="inline-flex items-center justify-center text-base text-blue-500"
+								:href="invoice.stripe_invoice_url"
 								target="_blank"
 							>
 								Pay Now
 								<FeatherIcon name="arrow-right" class="w-4 h-4 ml-2" />
 							</a>
 						</div>
-					</div>
-					<div class="text-base">{{ payment.formatted_amount }}</div>
-					<div>
-						<Badge :color="{ Paid: 'green', Failed: 'red' }[payment.status]">
-							{{ payment.status }}
-						</Badge>
 					</div>
 				</div>
 			</SectionCard>
@@ -183,6 +181,7 @@
 import StripeCard from '@/components/StripeCard';
 import Dialog from '@/components/Dialog';
 import DescriptionList from '@/components/DescriptionList';
+import { DateTime } from 'luxon';
 
 export default {
 	name: 'AccountBilling',
@@ -197,7 +196,7 @@ export default {
 			default: {
 				upcoming_invoice: null,
 				available_credits: null,
-				past_payments: []
+				past_invoices: []
 			},
 			auto: true
 		},
@@ -234,8 +233,8 @@ export default {
 		upcomingInvoice() {
 			return this.billingDetails.data?.upcoming_invoice;
 		},
-		pastPayments() {
-			return this.billingDetails.data?.past_payments || [];
+		pastInvoices() {
+			return this.billingDetails.data?.past_invoices || [];
 		},
 		availableCredits() {
 			return this.billingDetails.data?.available_credits;
@@ -250,6 +249,16 @@ export default {
 			this.availablePartnerCredits = await this.$call(
 				'press.api.billing.get_available_partner_credits'
 			);
+		},
+		invoicePeriod(invoice) {
+			if (!invoice.period_start || !invoice.period_end) {
+				return invoice.payment_date;
+			}
+			let periodStart = DateTime.fromSQL(invoice.period_start);
+			let periodEnd = DateTime.fromSQL(invoice.period_end);
+			let start = periodStart.toLocaleString({ month: 'long', day: 'numeric' });
+			let end = periodEnd.toLocaleString({ month: 'short', day: 'numeric' });
+			return `${start} - ${end} ${periodEnd.year}`;
 		}
 	}
 };
