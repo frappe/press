@@ -143,7 +143,7 @@ def get(team=None):
 	team = team or user
 	team_doc = frappe.get_doc("Team", team)
 
-	if not team_doc.has_member(user):
+	if not team_doc.has_member(user) and frappe.session.data.user_type != "System User":
 		frappe.throw("Invalid Team")
 
 	teams = [
@@ -241,7 +241,11 @@ def add_team_member(team, email):
 
 @frappe.whitelist()
 def switch_team(team):
-	if frappe.db.exists("Team Member", {"parent": team, "user": frappe.session.user}):
+	user_is_part_of_team = frappe.db.exists(
+		"Team Member", {"parent": team, "user": frappe.session.user}
+	)
+	user_is_system_user = frappe.session.data.user_type == "System User"
+	if user_is_part_of_team or user_is_system_user:
 		return {
 			"team": frappe.get_doc("Team", team),
 			"team_members": get_team_members(team),
