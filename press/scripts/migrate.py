@@ -480,9 +480,11 @@ def new_site(local_site):
 		site_url = site_creation_request.json()["message"]
 		print("Your site {} is being migrated ✨".format(local_site))
 		print(
-			"View your site dashboard at {}/dashboard/#/sites/{}".format(remote_site, site_url)
+			"View your site dashboard at https://{}/dashboard/#/sites/{}".format(
+				remote_site, site_url
+			)
 		)
-		print("Your site URL: {}".format(site_url))
+		print("Your site URL: https://{}".format(site_url))
 	else:
 		handle_request_failure(site_creation_request)
 
@@ -508,11 +510,11 @@ def restore_site(local_site):
 	if site_restore_request.ok:
 		print("Your site {0} is being restored on {1} ✨".format(local_site, selected_site))
 		print(
-			"View your site dashboard at {}/dashboard/#/sites/{}".format(
+			"View your site dashboard at https://{}/dashboard/#/sites/{}".format(
 				remote_site, selected_site
 			)
 		)
-		print("Your site URL: {}".format(selected_site))
+		print("Your site URL: https://{}".format(selected_site))
 	else:
 		handle_request_failure(site_restore_request)
 
