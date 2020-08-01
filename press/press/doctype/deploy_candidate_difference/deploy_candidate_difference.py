@@ -95,6 +95,10 @@ def is_migrate_needed(files):
 	if any(map(patches_file_regex.match, files)):
 		return True
 
+	hooks_regex = re.compile(r"\w+/hooks\.py")
+	if any(map(hooks_regex.match, files)):
+		return True
+
 	fixtures_regex = re.compile(r"\w+/fixtures/")
 	if any(map(fixtures_regex.match, files)):
 		return True
