@@ -80,10 +80,11 @@ class AppRelease(Document):
 			log_error("App Release Screen Error", release=self.name)
 
 	def send_telegram_notification(self):
-		telegram = Telegram()
-		form_url = get_url_to_form(self.doctype, self.name)
-		message = f"*URGENT* - Awaiting Approval [{self.app}]({form_url})"
-		telegram.send(message)
+		if self.status == "Awaiting Approval":
+			telegram = Telegram()
+			form_url = get_url_to_form(self.doctype, self.name)
+			message = f"*URGENT* - Awaiting Approval [{self.app}]({form_url})"
+			telegram.send(message)
 
 	def run(self, command):
 		return subprocess.check_output(
