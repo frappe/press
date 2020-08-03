@@ -120,6 +120,9 @@
 						<Badge v-if="invoice.status == 'Paid'" color="green">
 							Paid
 						</Badge>
+						<Badge v-else-if="invoice.status == 'Invoice Created'" color="blue">
+							Created
+						</Badge>
 						<div v-else-if="invoice.stripe_invoice_url">
 							<a
 								class="inline-flex items-center justify-center text-base text-blue-500"
