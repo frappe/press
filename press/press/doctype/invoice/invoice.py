@@ -180,7 +180,7 @@ def submit_invoice(invoice):
 		frappe.db.commit()
 	except Exception:
 		frappe.db.rollback()
-		log_error("Invoice Submit Failed", invoice=d.name)
+		log_error("Invoice Submit Failed", invoice=invoice.name)
 
 	try:
 		invoice.create_next()
