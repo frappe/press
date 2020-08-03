@@ -44,7 +44,7 @@ class Invoice(Document):
 		invoice = None
 		if not self.stripe_invoice_id:
 			start = getdate(self.period_start)
-			end = getdate(self.period_end).strftime("%b %d")
+			end = getdate(self.period_end)
 			period_string = f"{start.strftime('%b %d')} - {end.strftime('%b %d')} {end.year}"
 			stripe.InvoiceItem.create(
 				customer=customer_id,
