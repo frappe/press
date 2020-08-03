@@ -104,8 +104,10 @@ class Team(Document):
 			self.stripe_customer_id = customer.id
 			self.save()
 
-	def update_billing_details_on_stripe(self, address):
+	def update_billing_details_on_stripe(self, address=None):
 		stripe = get_stripe()
+		if not address:
+			address = frappe.get_doc("Address", self.billing_address)
 		country_code = frappe.db.get_value("Country", address.country, "code")
 		stripe.Customer.modify(
 			self.stripe_customer_id,
@@ -201,6 +203,7 @@ class Team(Document):
 				"period_start",
 				"period_end",
 				"payment_date",
+				"currency"
 			],
 			order_by="period_start desc",
 		)
