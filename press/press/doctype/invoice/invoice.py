@@ -30,19 +30,16 @@ class Invoice(Document):
 			frappe.db.rollback()
 
 			msg = "<pre><code>" + frappe.get_traceback() + "</pre></code>"
-			self.add_comment("Comment", _("Action Failed") + "<br><br>" + msg)
-			if self.stripe_invoice_id:
-				self.db_set("stripe_invoice_id", self.stripe_invoice_id)
+			self.add_comment("Comment", _("Submit Failed") + "<br><br>" + msg)
 			frappe.db.commit()
 
 			raise
 
 	def create_stripe_invoice(self):
-		stripe = get_stripe()
-		customer_id = frappe.db.get_value("Team", self.team, "stripe_customer_id")
-
-		invoice = None
 		if not self.stripe_invoice_id:
+			stripe = get_stripe()
+			customer_id = frappe.db.get_value("Team", self.team, "stripe_customer_id")
+
 			start = getdate(self.period_start)
 			end = getdate(self.period_end)
 			period_string = f"{start.strftime('%b %d')} - {end.strftime('%b %d')} {end.year}"
@@ -51,32 +48,17 @@ class Invoice(Document):
 				description=f"Frappe Cloud Subscription ({period_string})",
 				amount=int(self.total * 100),
 				currency=self.currency.lower(),
+				idempotency_key=f"create_invoiceitem_{self.name}",
 			)
 			invoice = stripe.Invoice.create(
 				customer=customer_id,
 				collection_method="charge_automatically",
 				auto_advance=True,
-				idempotency_key=self.name,
+				idempotency_key=f"create_invoice_{self.name}",
 			)
-			self.stripe_invoice_id = invoice["id"]
-
-		if not invoice:
-			invoice = stripe.Invoice.retrieve(self.stripe_invoice_id)
-
-		if invoice["status"] == "draft":
-			invoice = stripe.Invoice.finalize_invoice(
-				self.stripe_invoice_id, idempotency_key=self.name
+			self.db_set(
+				{"stripe_invoice_id": invoice["id"], "status": "Invoice Created"}, commit=True
 			)
-
-		self.starting_balance = invoice["starting_balance"] / 100
-		self.ending_balance = (invoice["ending_balance"] or 0) / 100
-		self.amount_due = invoice["amount_due"] / 100
-		self.amount_paid = invoice["amount_paid"] / 100
-		self.stripe_invoice_url = invoice["hosted_invoice_url"]
-		if self.amount_due == 0:
-			self.status = "Paid"
-		else:
-			self.status = "Unpaid"
 
 	def validate_duplicate(self):
 		if self.is_new():
@@ -169,6 +151,15 @@ class Invoice(Document):
 			values=values,
 		)
 
+	def create_next(self):
+		# create invoice for next month if not already created
+		d = datetime.now()
+		d = d.replace(month=self.month, year=self.year)
+		next_month = frappe.utils.add_months(d, 1)
+		ti = TeamInvoice(self.team, next_month.month, next_month.year)
+		if not ti.get_draft_invoice():
+			ti.create()
+
 
 def submit_invoices():
 	"""This method will run every day and submit the invoices whose period end was the previous day"""
@@ -180,33 +171,33 @@ def submit_invoices():
 	)
 	for d in invoices:
 		invoice = frappe.get_doc("Invoice", d.name)
-		try:
-			invoice.submit()
-			frappe.db.commit()
-		except Exception:
-			frappe.db.rollback()
-			log_error("Invoice Submit Failed", invoice=d.name)
+		submit_invoice(invoice)
 
-		try:
-			# create invoice for next month
-			d = datetime.now()
-			d = d.replace(month=invoice.month, year=invoice.year)
-			next_month = frappe.utils.add_months(d, 1)
-			ti = TeamInvoice(invoice.team, next_month.month, next_month.year)
-			if not ti.get_draft_invoice():
-				ti.create()
-		except Exception:
-			frappe.db.rollback()
-			log_error(
-				"Invoice creation for next month failed",
-				month=next_month.month,
-				year=next_month.year,
-			)
+
+def submit_invoice(invoice):
+	try:
+		invoice.submit()
+		frappe.db.commit()
+	except Exception:
+		frappe.db.rollback()
+		log_error("Invoice Submit Failed", invoice=d.name)
+
+	try:
+		invoice.create_next()
+	except Exception:
+		frappe.db.rollback()
+		log_error(
+			"Invoice creation for next month failed", invoice=invoice.name,
+		)
 
 
 def process_stripe_webhook(doc, method):
 	"""This method runs after a Stripe Webhook Log is created"""
-	if doc.event_type not in ["invoice.payment_succeeded", "invoice.payment_failed"]:
+	if doc.event_type not in [
+		"invoice.payment_succeeded",
+		"invoice.payment_failed",
+		"invoice.finalized",
+	]:
 		return
 
 	event = frappe.parse_json(doc.payload)
@@ -214,7 +205,21 @@ def process_stripe_webhook(doc, method):
 	invoice = frappe.get_doc("Invoice", {"stripe_invoice_id": stripe_invoice["id"]})
 	team = frappe.get_doc("Team", invoice.team)
 
-	if doc.event_type == "invoice.payment_succeeded":
+	if doc.event_type == "invoice.finalized":
+		amount_due = stripe_invoice["amount_due"] / 100
+		invoice.db_set(
+			{
+				"docstatus": 1,
+				"starting_balance": stripe_invoice["starting_balance"] / 100,
+				"ending_balance": (stripe_invoice["ending_balance"] or 0) / 100,
+				"amount_due": amount_due,
+				"amount_paid": stripe_invoice["amount_paid"] / 100,
+				"stripe_invoice_url": stripe_invoice["hosted_invoice_url"],
+				"status": "Paid" if amount_due == 0 else "Unpaid",
+			}
+		)
+
+	elif doc.event_type == "invoice.payment_succeeded":
 		invoice.db_set(
 			{
 				"payment_date": datetime.fromtimestamp(
