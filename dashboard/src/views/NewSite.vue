@@ -6,8 +6,43 @@
 				style="width: 650px"
 			>
 				<div>
-					<h1 class="mb-6 text-2xl font-bold">Create a New Site</h1>
-					<label class="text-lg">
+					<h1 class="mb-6 text-2xl font-bold text-center">Create a New Site</h1>
+					<div class="flex items-center justify-center ">
+						<div class="flex space-x-8">
+							<div
+								class="relative"
+								v-for="(step, index) in steps"
+								:key="step.name"
+							>
+								<div
+									class="z-10 flex items-center justify-center w-5 h-5 bg-white border border-gray-400 rounded-full"
+									:class="{
+										'bg-blue-500 text-white': step.completed,
+										'border-blue-500': step.current || step.completed
+									}"
+								>
+									<FeatherIcon
+										v-if="step.completed"
+										name="check"
+										class="w-3 h-3"
+										:stroke-width="3"
+									/>
+									<div
+										class="w-1.5 h-1.5 bg-blue-500 rounded-full"
+										v-if="step.current"
+									></div>
+								</div>
+								<div
+									class="absolute w-8 transform -translate-x-8 -translate-y-1/2 border-t border-gray-400 top-1/2"
+									:class="{ 'border-blue-500': step.completed || step.current }"
+									v-show="index !== 0"
+								></div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div v-show="currentStep.name === 'Hostname'">
+					<label class="text-lg font-semibold">
 						Choose a hostname
 					</label>
 					<p class="text-base text-gray-700">
@@ -29,12 +64,12 @@
 					</div>
 					<ErrorMessage class="mt-1" :error="subdomainInvalidMessage" />
 				</div>
-				<div>
-					<label class="text-lg">
-						Choose your apps
+				<div v-show="currentStep.name === 'Apps'">
+					<label class="text-lg font-semibold">
+						Select apps to install
 					</label>
 					<p class="text-base text-gray-700">
-						Select apps to install to your site. You can also choose a specific
+						Choose apps to install on your site. You can also choose a specific
 						version of the app.
 					</p>
 					<div class="mt-4">
@@ -77,151 +112,157 @@
 						</div>
 					</div>
 				</div>
-				<div v-if="!migrateFromSelfHosted">
-					<label class="flex py-2 leading-none">
-						<Input
-							label="Create Site from Backup"
-							type="checkbox"
-							v-model="restoreBackup"
-						/>
+				<div v-show="currentStep.name == 'Restore'">
+					<label class="text-lg font-semibold">
+						Restore an existing site
 					</label>
 					<p class="text-base text-gray-700">
-						Upload backup files instead of starting from a blank site.
+						Restore an existing site from backup files or directly from site
+						url.
 					</p>
-					<div class="flex grid grid-cols-3 gap-4 mt-6" v-if="restoreBackup">
-						<FileUploader
-							v-for="file in files"
-							:fileTypes="file.ext"
-							:key="file.type"
-							:type="file.type"
-							:s3="true"
-							@success="onFileUpload(file, $event)"
-							:upload-args="{
-								method: 'press.api.site.upload_backup',
-								type: file.type
-							}"
+					<div class="flex mt-4 space-x-8">
+						<button
+							v-for="tab in [
+								{ name: 'Upload Backups', key: 'backup' },
+								{ name: 'Migrate from Site URL', key: 'siteUrl' }
+							]"
+							:key="tab.key"
+							class="block px-1 py-4 text-base font-medium leading-none truncate border-b focus:outline-none"
+							:class="
+								restoreFrom === tab.key
+									? 'border-brand text-gray-900'
+									: 'text-gray-600 hover:text-gray-900 border-transparent'
+							"
+							@click="restoreFrom = tab.key"
 						>
-							<template
-								v-slot="{
-									file: fileObj,
-									uploading,
-									progress,
-									message,
-									error,
-									success,
-									openFileSelector
+							{{ tab.name }}
+						</button>
+					</div>
+					<div v-if="restoreFrom === 'backup'">
+						<div class="grid grid-cols-3 gap-4 mt-6">
+							<FileUploader
+								v-for="file in files"
+								:fileTypes="file.ext"
+								:key="file.type"
+								:type="file.type"
+								:s3="true"
+								@success="onFileUpload(file, $event)"
+								:upload-args="{
+									method: 'press.api.site.upload_backup',
+									type: file.type
 								}"
 							>
-								<button
-									class="w-full h-full px-4 py-6 border rounded-md focus:outline-none focus:shadow-outline hover:border-blue-400"
-									:class="success ? 'bg-blue-50 border-blue-500' : ''"
-									@click="openFileSelector()"
-									:disabled="uploading"
+								<template
+									v-slot="{
+										file: fileObj,
+										uploading,
+										progress,
+										message,
+										error,
+										success,
+										openFileSelector
+									}"
 								>
-									<FeatherIcon
-										:name="success ? 'check' : file.icon"
-										class="inline-block w-5 h-5 text-gray-700"
-									/>
-									<div
-										class="mt-3 text-base font-semibold leading-none text-gray-800"
+									<button
+										class="w-full h-full px-4 py-6 border rounded-md focus:outline-none focus:shadow-outline hover:border-blue-400"
+										:class="success ? 'bg-blue-50 border-blue-500' : ''"
+										@click="openFileSelector()"
+										:disabled="uploading"
 									>
-										{{ file.title }}
-									</div>
-									<div
-										class="mt-2 text-xs leading-snug text-gray-700"
-										v-if="fileObj"
-									>
-										{{ fileObj.name }}
-									</div>
-									<div class="text-base" v-if="progress && progress !== 100">
-										{{ progress }} %
-									</div>
-									<div class="mt-2 text-sm text-red-600" v-if="error">
-										{{ error }}
-									</div>
-									<div
-										class="mt-2 text-xs text-gray-500"
-										v-if="!(progress || error) || message"
-									>
-										{{ message || 'Click to upload' }}
-									</div>
-								</button>
-							</template>
-						</FileUploader>
+										<FeatherIcon
+											:name="success ? 'check' : file.icon"
+											class="inline-block w-5 h-5 text-gray-700"
+										/>
+										<div
+											class="mt-3 text-base font-semibold leading-none text-gray-800"
+										>
+											{{ file.title }}
+										</div>
+										<div
+											class="mt-2 text-xs leading-snug text-gray-700"
+											v-if="fileObj"
+										>
+											{{ fileObj.name }}
+										</div>
+										<div class="text-base" v-if="progress && progress !== 100">
+											{{ progress }} %
+										</div>
+										<div class="mt-2 text-sm text-red-600" v-if="error">
+											{{ error }}
+										</div>
+										<div
+											class="mt-2 text-xs text-gray-500"
+											v-if="!(progress || error) || message"
+										>
+											{{ message || 'Click to upload' }}
+										</div>
+									</button>
+								</template>
+							</FileUploader>
+						</div>
 					</div>
-				</div>
-				<div v-if="!restoreBackup">
-					<label class="flex py-2 leading-none">
-						<Input
-							label="Migrate From Existing Site"
-							type="checkbox"
-							v-model="migrateFromSelfHosted"
-							@click="migrateFromSelfHosted = true"
-						/>
-						<Badge color="blue" class="ml-2">beta</Badge>
-					</label>
-					<p class="text-base text-gray-700">
-						Migrate your currently hosted site to Frappe Cloud.
-					</p>
-					<div v-if="migrateFromSelfHosted == true">
-						<div class="flex grid gap-4 mt-6 w-full">
-							<div class="grid grid-cols-2">
-								<input
-									type="text"
-									class="z-10 w-full rounded-md form-input"
-									placeholder="example.com"
-									v-model="frappeSite"
-									@change="verifySite"
-								/>
-								<p class="ml-3 w-1/2 text-base">
-									<FeatherIcon
-										name="check"
-										class="w-6 h-6 p-1 mr-2 text-green-500 bg-green-100 rounded-full"
-										v-if="verifiedFrappeSite === true"
-									/>
-									<FeatherIcon
-										name="x"
-										class="w-6 h-6 p-1 mr-2 text-red-500 bg-red-100 rounded-full"
-										v-if="verifiedFrappeSite === false"
-									/>
-								</p>
-								<ErrorMessage class="mt-1 ml-1" :error="invalidFrappeSite" />
-							</div>
-							<div>
-								<input
-									type="email"
-									class="z-10 w-full rounded-md form-input"
-									placeholder="user@example.com"
-									v-model="userNameFrappeSite"
-									@change="getBackup"
-								/>
-								<input
-									type="password"
-									class="mt-3 z-10 w-full rounded-md form-input"
-									placeholder="Password"
-									v-model="passwordFrappeSite"
-									@change="getBackup"
-								/>
-								<ErrorMessage class="mt-3" :error="invalidAccountCredentials" />
-								<ErrorMessage class="mt-3" :error="incompatibleSite" />
-								<ErrorMessage class="mt-3" :error="magicalError" />
-								<SuccessMessage class="mt-3" :success="receivedBackups" />
-								<FeatherIcon
-									name="check"
-									class="w-5 h-5 p-1 mr-2 text-green-500 bg-green-100 rounded-full"
-									v-if="
-										!(
-											((selectedFiles.database == selectedFiles.public) ==
-												selectedFiles.private) !=
-											null
-										)
-									"
-								/>
-							</div>
+					<div v-if="restoreFrom === 'siteUrl'">
+						<div class="mt-6">
+							<Form
+								:fields="[
+									{
+										label: 'Site URL',
+										fieldtype: 'Data',
+										fieldname: 'url'
+									},
+									{
+										label: 'Email',
+										fieldtype: 'Data',
+										fieldname: 'email'
+									},
+									{
+										label: 'Password',
+										fieldtype: 'Password',
+										fieldname: 'password'
+									}
+								]"
+								v-model="frappeSite"
+							/>
+							<!-- <Input
+								label="Site URL"
+								type="text"
+								placeholder="example.com"
+								v-model="frappeSite"
+							/> -->
+							<ErrorMessage class="mt-1 ml-1" :error="invalidFrappeSite" />
+							<!-- <Input
+								class="mt-4"
+								label="Email"
+								type="email"
+								placeholder="user@example.com"
+								v-model="userNameFrappeSite"
+							/>
+							<Input
+								class="mt-4"
+								label="Password"
+								type="password"
+								placeholder="********"
+								v-model="passwordFrappeSite"
+							/> -->
+							<ErrorMessage class="mt-3" :error="invalidAccountCredentials" />
+							<ErrorMessage class="mt-3" :error="incompatibleSite" />
+							<ErrorMessage class="mt-3" :error="magicalError" />
+							<SuccessMessage class="mt-3" :success="receivedBackups" />
+							<FeatherIcon
+								name="check"
+								class="w-5 h-5 p-1 mr-2 text-green-500 bg-green-100 rounded-full"
+								v-if="
+									!(
+										((selectedFiles.database == selectedFiles.public) ==
+											selectedFiles.private) !=
+										null
+									)
+								"
+							/>
 						</div>
 					</div>
 				</div>
-				<div>
+				<div v-show="currentStep.name === 'Plan'">
 					<label class="text-lg">
 						Choose your plan
 					</label>
@@ -242,10 +283,22 @@
 				</div>
 				<div>
 					<ErrorMessage :error="errorMessage" />
+					<div class="flex justify-between">
+						<Button @click="backStep" v-show="currentStep.name != 'Hostname'">
+							Back
+						</Button>
+						<Button
+							type="primary"
+							@click="nextStep"
+							v-show="currentStep.name != 'Plan'"
+						>
+							Next
+						</Button>
+					</div>
 					<Button
+						v-show="currentStep.name === 'Plan'"
 						class="w-full mt-2"
 						type="primary"
-						:disabled="!canCreateSite()"
 						@click="createSite"
 					>
 						Create Site
@@ -259,20 +312,27 @@
 <script>
 import FileUploader from '@/components/FileUploader';
 import SitePlansTable from '@/views/partials/SitePlansTable';
+import Form from '@/components/Form';
 
 export default {
 	name: 'NewSite',
 	components: {
 		FileUploader,
-		SitePlansTable
+		SitePlansTable,
+		Form
 	},
 	data: () => ({
 		siteName: null,
 		options: null,
+		restoreFrom: 'backup', // backup, siteUrl
 		restoreBackup: false,
 		migrateFromSelfHosted: false,
 		magicalErrorOccurred: false,
-		frappeSite: null,
+		frappeSite: {
+			url: '',
+			email: '',
+			password: ''
+		},
 		verifiedFrappeSite: null,
 		validFrappeSiteCredentials: null,
 		incompatibleFrappeSite: null,
@@ -310,6 +370,29 @@ export default {
 				ext: 'application/x-tar',
 				title: 'Private Files',
 				file: null
+			}
+		],
+		steps: [
+			{
+				name: 'Hostname',
+				current: true,
+				completed: false
+			},
+			{
+				name: 'Apps',
+				current: false,
+				completed: false
+			},
+			{
+				name: 'Restore',
+				skippable: true,
+				current: false,
+				completed: false
+			},
+			{
+				name: 'Plan',
+				current: false,
+				completed: false
 			}
 		]
 	}),
@@ -376,7 +459,10 @@ export default {
 			}
 		},
 		invalidAccountCredentials() {
-			if (!this.incompatibleFrappeSite && this.validFrappeSiteCredentials === false) {
+			if (
+				!this.incompatibleFrappeSite &&
+				this.validFrappeSiteCredentials === false
+			) {
 				return 'Invalid Credentials or Insufficient Permissions';
 			}
 		},
@@ -392,8 +478,11 @@ export default {
 		},
 		magicalError() {
 			if (this.magicalErrorOccurred === true) {
-				return 'An Internal Error has occurred. Use another method or contact support'
+				return 'An Internal Error has occurred. Use another method or contact support';
 			}
+		},
+		currentStep() {
+			return this.steps.find(step => step.current);
 		}
 	},
 	methods: {
@@ -472,19 +561,24 @@ export default {
 			this.verifiedFrappeSite = status;
 		},
 		async getBackup() {
-			if (!(this.frappeSite && this.userNameFrappeSite && this.passwordFrappeSite)) {
+			if (
+				!(this.frappeSite && this.userNameFrappeSite && this.passwordFrappeSite)
+			) {
 				return false;
 			}
-			let { site, files, status, exc } = await this.$call('press.api.site.get_backup_links', {
-				site: this.frappeSite,
-				auth: {
-					usr: this.userNameFrappeSite,
-					pwd: this.passwordFrappeSite
+			let { site, files, status, exc } = await this.$call(
+				'press.api.site.get_backup_links',
+				{
+					site: this.frappeSite,
+					auth: {
+						usr: this.userNameFrappeSite,
+						pwd: this.passwordFrappeSite
+					}
 				}
-			});
+			);
 
-			this.validFrappeSiteCredentials = status.toString()[0] == "2";
-			this.magicalErrorOccurred = status.toString()[0] == "5";
+			this.validFrappeSiteCredentials = status.toString()[0] == '2';
+			this.magicalErrorOccurred = status.toString()[0] == '5';
 			this.incompatibleFrappeSite = status == 404;
 
 			if (this.validFrappeSiteCredentials) {
@@ -494,11 +588,24 @@ export default {
 					let upload = await this.$call('press.api.site.uploaded_backup_info', {
 						file: name,
 						url: files[file],
-						type: file === 'database' ? 'application/x-gzip' : 'application/x-tar'
+						type:
+							file === 'database' ? 'application/x-gzip' : 'application/x-tar'
 					});
 					this.selectedFiles[file] = upload;
 				}
 			}
+		},
+		nextStep() {
+			let currentStepIndex = this.steps.findIndex(step => step.current);
+			this.steps[currentStepIndex].current = false;
+			this.steps[currentStepIndex].completed = true;
+			this.steps[currentStepIndex + 1].current = true;
+		},
+		backStep() {
+			let currentStepIndex = this.steps.findIndex(step => step.current);
+			this.steps[currentStepIndex].current = false;
+			this.steps[currentStepIndex - 1].current = true;
+			this.steps[currentStepIndex - 1].completed = false;
 		}
 	}
 };

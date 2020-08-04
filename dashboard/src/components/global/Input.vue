@@ -18,6 +18,7 @@
 			]"
 			:type="type || 'text'"
 			v-bind="$attrs"
+			@blur="$emit('blur', $event)"
 			v-model="inputVal"
 		/>
 		<select
