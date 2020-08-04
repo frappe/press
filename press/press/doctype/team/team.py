@@ -232,10 +232,13 @@ class Team(Document):
 			doc.submit()
 
 	def get_available_credits(self):
-		stripe = get_stripe()
-		customer_object = stripe.Customer.retrieve(self.stripe_customer_id)
-		balance = (customer_object["balance"] * -1) / 100
-		return balance
+		def get_stripe_balance():
+			stripe = get_stripe()
+			customer_object = stripe.Customer.retrieve(self.stripe_customer_id)
+			balance = (customer_object["balance"] * -1) / 100
+			return balance
+
+		return frappe.cache().hget('customer_available_credits', self.name, generator=get_stripe_balance)
 
 	def is_partner_and_has_enough_credits(self):
 		return self.erpnext_partner and self.get_available_credits() > 0
