@@ -37,6 +37,12 @@ class SiteDomain(Document):
 		agent.ping()
 		agent.new_host(self)
 
+	def create_remove_host_agent_request(self):
+		server = frappe.db.get_value("Site", self.site, "server")
+		proxy_server = frappe.db.get_value("Server", server, "proxy_server")
+		agent = Agent(proxy_server, server_type="Proxy Server")
+		agent.remove_host(self)
+
 	def retry(self):
 		self.status = "Pending"
 		self.retry_count += 1
@@ -46,6 +52,21 @@ class SiteDomain(Document):
 			certificate.obtain_certificate()
 		else:
 			self.create_tls_certificate()
+
+	def on_trash(self):
+		self.disavow_agent_jobs()
+		self.create_remove_host_agent_request()
+
+	def after_delete(self):
+		self.delete_tls_certificate()
+
+	def delete_tls_certificate(self):
+		frappe.delete_doc("TLS Certificate", self.tls_certificate)
+
+	def disavow_agent_jobs(self):
+		jobs = frappe.get_all("Agent Job", filters={"host": self.name})
+		for job in jobs:
+			frappe.db.set_value("Agent Job", job.name, "host", None)
 
 
 def process_new_host_job_update(job):

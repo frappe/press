@@ -169,6 +169,12 @@ class Site(Document):
 				}
 			).insert()
 
+	def remove_domain(self, domain):
+		site_domain = frappe.get_all(
+			"Site Domain", filters={"site": self.name, "domain": domain}
+		)[0]
+		site_domain = frappe.delete_doc("Site Domain", site_domain.name)
+
 	def retry_add_domain(self, domain):
 		if check_dns(self.name, domain):
 			site_domain = frappe.get_all(
