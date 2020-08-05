@@ -208,11 +208,13 @@ class Team(Document):
 			order_by="period_start desc",
 		)
 
-		print_format = frappe.get_meta('Invoice').default_print_format
+		print_format = frappe.get_meta("Invoice").default_print_format
 		for invoice in invoices:
 			invoice.formatted_total = frappe.utils.fmt_money(invoice.total, 2, invoice.currency)
-			if invoice.currency == 'USD':
-				invoice.invoice_pdf = frappe.utils.get_url(f"/api/method/frappe.utils.print_format.download_pdf?doctype=Invoice&name={invoice.name}&format={print_format}&no_letterhead=0")
+			if invoice.currency == "USD":
+				invoice.invoice_pdf = frappe.utils.get_url(
+					f"/api/method/frappe.utils.print_format.download_pdf?doctype=Invoice&name={invoice.name}&format={print_format}&no_letterhead=0"
+				)
 		return invoices
 
 	def allocate_credit_amount(self, amount, remark):
