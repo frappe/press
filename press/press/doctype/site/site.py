@@ -339,6 +339,24 @@ class Site(Document):
 		return Agent(self.server).get(f"benches/{self.bench}/sites/{self.name}/logs/{log}")
 
 
+def site_cleanup_after_archive(site):
+	delete_logs(site)
+	delete_site_domains(site)
+	release_name(site)
+
+
+def delete_logs(site):
+	frappe.db.delete("Site Job Log", {"site": site})
+	frappe.db.delete("Site Request Log", {"site": site})
+	frappe.db.delete("Site Uptime Log", {"site": site})
+
+
+def delete_site_domains(site):
+	domains = frappe.get_all("Site Domain", {"site": site})
+	for domain in domains:
+		frappe.delete_doc("Site Domain", domain.name)
+
+
 def release_name(name):
 	new_name = f"{name}.archived"
 	new_name = append_number_if_name_exists("Site", new_name, separator=".")
@@ -395,7 +413,7 @@ def process_archive_site_job_update(job):
 	if updated_status != site_status:
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 		if updated_status == "Archived":
-			release_name(job.site)
+			site_cleanup_after_archive(job.site)
 
 
 def process_install_app_site_job_update(job):
