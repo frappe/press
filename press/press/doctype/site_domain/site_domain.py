@@ -34,7 +34,6 @@ class SiteDomain(Document):
 		server = frappe.db.get_value("Site", self.site, "server")
 		proxy_server = frappe.db.get_value("Server", server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
-		agent.ping()
 		agent.new_host(self)
 
 	def create_remove_host_agent_request(self):
