@@ -156,6 +156,7 @@ class Site(Document):
 		self.save()
 
 	def add_domain(self, domain):
+		domain = domain.lower()
 		if check_dns(self.name, domain):
 			log_site_activity(self.name, "Add Domain")
 			frappe.get_doc(
