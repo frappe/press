@@ -16,3 +16,4 @@ press.patches.v0_0_1.set_rate_limit_config_based_on_plan
 press.patches.v0_0_1.enable_partner_privileges
 press.patches.v0_0_1.set_remote_file_location
 press.patches.v0_0_1.track_offsite_backups_via_remote_files
+press.patches.v0_0_1.move_domains_from_archived_to_active_sites
