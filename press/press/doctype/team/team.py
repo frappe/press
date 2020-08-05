@@ -203,7 +203,7 @@ class Team(Document):
 				"period_start",
 				"period_end",
 				"payment_date",
-				"currency"
+				"currency",
 			],
 			order_by="period_start desc",
 		)
