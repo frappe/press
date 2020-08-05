@@ -14,16 +14,18 @@
     <script>
         window.csrf_token = '{{ csrf_token }}';
 	</script>
-	{% if google_analytics_id -%}
-	<!-- Google Analytics -->
-	<script>
-		window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
-		ga('create', '{{ google_analytics_id }}', 'auto');
-		ga('send', 'pageview');
-	</script>
-	<script async src='https://www.google-analytics.com/analytics.js'></script>
-	<!-- End Google Analytics -->
-	{%- endif %}
+	<div class="invisible">
+		{% if google_analytics_id -%}
+		<!-- Google Analytics -->
+		<script>
+			window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+			ga('create', '{{ google_analytics_id }}', 'auto');
+			ga('send', 'pageview');
+		</script>
+		<script async src='https://www.google-analytics.com/analytics.js'></script>
+		<!-- End Google Analytics -->
+		{%- endif %}
+	</div>
     <!-- built files will be auto injected -->
   </body>
 </html>
