@@ -552,6 +552,12 @@ def add_domain(name, domain):
 
 @frappe.whitelist()
 @protected("Site")
+def remove_domain(name, domain):
+	frappe.get_doc("Site", name).remove_domain(domain)
+
+
+@frappe.whitelist()
+@protected("Site")
 def retry_add_domain(name, domain):
 	frappe.get_doc("Site", name).retry_add_domain(domain)
 
