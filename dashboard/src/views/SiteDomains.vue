@@ -82,9 +82,19 @@
 				class="mt-4"
 				placeholder="example.com"
 				v-model="newDomain"
-				@change="dnsVerified = null"
+				@change="
+					dnsVerified = null;
+					checkIfExists(newDomain);
+				"
 			/>
-			<p class="mt-4 text-base" v-if="newDomain && !dnsVerified">
+			<p class="mt-4 text-base text-red-600" v-if="domainTaken">
+				Domain is already added to
+				<span class="font-semibold">{{ domainTaken }}</span>
+			</p>
+			<p
+				class="mt-4 text-base"
+				v-if="!domainTaken && newDomain && !dnsVerified"
+			>
 				Make a <span class="font-semibold">CNAME</span> record from
 				<span class="font-semibold">{{ newDomain }}</span> to
 				<span class="font-semibold">{{ site.name }}</span>
@@ -111,7 +121,7 @@
 					v-if="!dnsVerified"
 					class="ml-3"
 					type="primary"
-					:disabled="!newDomain || state == 'RequestStarted'"
+					:disabled="!newDomain || domainTaken || state == 'RequestStarted'"
 					@click="checkDNS"
 				>
 					Verify DNS
@@ -161,6 +171,7 @@ export default {
 			showDialog: false,
 			domains: null,
 			newDomain: null,
+			domainTaken: false,
 			dnsVerified: null,
 			confirmDomainName: null,
 			showRemoveDomainDialog: false,
@@ -212,6 +223,11 @@ export default {
 				domain: domain
 			});
 			this.fetchDomains();
+		},
+		async checkIfExists(domain) {
+			this.domainTaken = await this.$call('press.api.site.domain_exists', {
+				domain
+			});
 		}
 	},
 	mounted() {
