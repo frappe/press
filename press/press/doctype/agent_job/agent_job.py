@@ -81,6 +81,11 @@ class AgentJob(Document):
 		).insert()
 		return job
 
+	def on_trash(self):
+		steps = frappe.get_all("Agent Job Step", filters={"agent_job": self.name})
+		for step in steps:
+			frappe.delete_doc("Agent Job Step", step.name)
+
 
 def job_detail(job):
 	job = frappe.get_doc("Agent Job", job)
