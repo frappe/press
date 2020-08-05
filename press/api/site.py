@@ -545,6 +545,11 @@ def check_dns(name, domain):
 
 
 @frappe.whitelist()
+def domain_exists(domain):
+	return frappe.db.get_value("Site Domain", domain.lower(), "site")
+
+
+@frappe.whitelist()
 @protected("Site")
 def add_domain(name, domain):
 	frappe.get_doc("Site", name).add_domain(domain)
