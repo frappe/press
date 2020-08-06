@@ -10,11 +10,11 @@
 		>
 			<SectionCard v-if="domains && domains.length">
 				<div
-					class="grid grid-cols-3 px-6 py-3"
+					class="grid grid-cols-2 px-6 py-3 hover:bg-gray-50 items-center"
 					v-for="d in domains"
 					:key="d.domain"
 				>
-					<div class="font-semibold">
+					<div class="font-semibold text-base">
 						<a
 							class="text-blue-500"
 							:href="'https://' + d.domain"
@@ -25,7 +25,7 @@
 						</a>
 						<span v-else>{{ d.domain }}</span>
 					</div>
-					<div class="col-span-2">
+					<div>
 						<Badge :status="d.status">
 							{{ d.status }}
 						</Badge>
@@ -41,16 +41,14 @@
 								domainToRemove = d.domain;
 								showRemoveDomainDialog = true;
 							"
-							v-if="d.status == 'Active'"
-							class="ml-8 float-right"
-							type="danger"
+							v-if="false"
 						>
-							Remove
+							class="ml-8 float-right" type="danger" > Remove
 						</Button>
 						<Button
 							@click="setHostName(d.domain)"
 							v-if="d.status == 'Active' && !d.primary"
-							class="ml-8  float-right"
+							class="ml-8"
 						>
 							Set Primary
 						</Button>
