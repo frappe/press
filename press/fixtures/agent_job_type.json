@@ -886,5 +886,24 @@
     "step_name": "Reload NGINX"
    }
   ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2020-08-06 10:47:06.751838",
+  "name": "Migrate Site",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/sites/{site}/migrate",
+  "steps": [
+   {
+    "parent": "Migrate Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Migrate Site"
+   }
+  ]
  }
 ]
