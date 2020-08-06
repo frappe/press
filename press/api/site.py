@@ -492,6 +492,12 @@ def reinstall(name):
 
 @frappe.whitelist()
 @protected("Site")
+def migrate(name):
+	frappe.get_doc("Site", name).migrate()
+
+
+@frappe.whitelist()
+@protected("Site")
 def restore(name, files):
 	site = frappe.get_doc("Site", name)
 	site.remote_database_file = files["database"]

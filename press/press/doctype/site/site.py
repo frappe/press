@@ -115,6 +115,13 @@ class Site(Document):
 		self.status = "Pending"
 		self.save()
 
+	def migrate(self):
+		log_site_activity(self.name, "Migrate")
+		agent = Agent(self.server)
+		agent.migrate_site(self)
+		self.status = "Pending"
+		self.save()
+
 	def restore_site(self):
 		if not frappe.get_doc("Remote File", self.remote_database_file).exists():
 			raise Exception(
@@ -434,6 +441,19 @@ def process_reinstall_site_job_update(job):
 	updated_status = {
 		"Pending": "Pending",
 		"Running": "Installing",
+		"Success": "Active",
+		"Failure": "Broken",
+	}[job.status]
+
+	site_status = frappe.get_value("Site", job.site, "status")
+	if updated_status != site_status:
+		frappe.db.set_value("Site", job.site, "status", updated_status)
+
+
+def process_migrate_site_job_update(job):
+	updated_status = {
+		"Pending": "Pending",
+		"Running": "Updating",
 		"Success": "Active",
 		"Failure": "Broken",
 	}[job.status]
