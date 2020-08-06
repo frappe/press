@@ -13,6 +13,7 @@ from calendar import monthrange
 from press.press.doctype.team.team_invoice import TeamInvoice
 from frappe import _
 from frappe.utils import getdate
+from press.telegram import Telegram
 
 
 class Invoice(Document):
@@ -254,12 +255,17 @@ def process_stripe_webhook(doc, method):
 		)
 
 		if attempt_count > 1:
-			# suspend sites
-			sites = team.suspend_sites(
-				reason=f"Suspending sites because of failed payment of {invoice.name}"
-			)
-			if sites:
-				send_email_for_failed_payment(invoice, sites)
+			if team.erpnext_partner:
+				# dont suspend partner sites, send alert on telegram
+				telegram = Telegram()
+				telegram.send(f"Failed Invoice Payment of Partner: {team.name}")
+			else:
+				# suspend sites
+				sites = team.suspend_sites(
+					reason=f"Suspending sites because of failed payment of {invoice.name}"
+				)
+				if sites:
+					send_email_for_failed_payment(invoice, sites)
 
 
 def send_email_for_failed_payment(invoice, sites=None):
