@@ -256,6 +256,15 @@ def report_site_downtime():
 		last_online_map = {log.site: log.last_online for log in last_online_logs}
 		sites = []
 		for site in offline_sites:
+			last_request = frappe.get_all(
+				"Site Request Log",
+				fields=["status_code"],
+				filters={"site": site},
+				order_by="creation desc",
+				limit=1,
+			)
+			if last_request and last_request.status_code == "429":
+				continue
 			last_online = last_online_map.get(site)
 			if last_online:
 				timestamp = convert_utc_to_user_timezone(last_online).replace(tzinfo=None)
@@ -416,6 +425,7 @@ def process_job_updates(job_name):
 		from press.press.doctype.site.site import (
 			process_new_site_job_update,
 			process_archive_site_job_update,
+			process_migrate_site_job_update,
 			process_install_app_site_job_update,
 			process_reinstall_site_job_update,
 		)
@@ -440,6 +450,8 @@ def process_job_updates(job_name):
 			process_reinstall_site_job_update(job)
 		if job.job_type == "Reinstall Site":
 			process_reinstall_site_job_update(job)
+		if job.job_type == "Migrate Site":
+			process_migrate_site_job_update(job)
 		if job.job_type == "Install App on Site":
 			process_install_app_site_job_update(job)
 		if job.job_type == "Uninstall App from Site":
