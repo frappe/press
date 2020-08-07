@@ -11,7 +11,6 @@ import json
 import tarfile
 from pathlib import Path
 
-import boto3
 import dns.resolver
 import wrapt
 from boto3 import client
@@ -153,7 +152,7 @@ def get_backup_link(name, backup, file, expiration=3600):
 	backup_data = frappe.db.get_value("Site Backup", backup, "offsite_backup")
 	file_path = json.loads(backup_data).get(file)
 
-	s3 = boto3.client(
+	s3 = client(
 		"s3",
 		aws_access_key_id=frappe.db.get_single_value(
 			"Press Settings", "offsite_backups_access_key_id"
