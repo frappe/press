@@ -198,7 +198,8 @@ def collect_site_analytics():
 							"doctype": "Site Job Log",
 							"job_name": log["job"]["method"],
 							"scheduled": log["job"]["scheduled"],
-							"wait": log["job"]["wait"],
+							"wait": log["job"]["wait"] / 1000,
+							"duration": log["duration"] / 1000,
 						}
 					)
 				frappe.get_doc(doc).db_insert()
