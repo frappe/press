@@ -855,5 +855,55 @@
     "step_name": "Remove Temporary Files"
    }
   ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2020-08-05 17:32:00.556643",
+  "name": "Remove Host from Proxy",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "request_method": "DELETE",
+  "request_path": "/proxy/hosts/{host}",
+  "steps": [
+   {
+    "parent": "Remove Host from Proxy",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Remove Host from Proxy"
+   },
+   {
+    "parent": "Remove Host from Proxy",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Generate NGINX Configuration"
+   },
+   {
+    "parent": "Remove Host from Proxy",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2020-08-06 10:47:06.751838",
+  "name": "Migrate Site",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/sites/{site}/migrate",
+  "steps": [
+   {
+    "parent": "Migrate Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Migrate Site"
+   }
+  ]
  }
 ]

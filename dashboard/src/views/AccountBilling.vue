@@ -108,28 +108,43 @@
 		>
 			<SectionCard>
 				<div
-					class="grid items-center grid-cols-3 px-6 py-4 hover:bg-gray-50"
+					class="grid items-start grid-cols-5 px-6 py-4 hover:bg-gray-50"
 					v-for="invoice in pastInvoices"
 					:key="invoice.name"
 				>
-					<div class="text-base font-semibold">
-						<div>{{ invoicePeriod(invoice) }}</div>
+					<div class="col-span-2">
+						<div class="text-base font-semibold">
+							{{ invoicePeriod(invoice) }}
+						</div>
+						<div class="mt-2 text-base">{{ invoice.formatted_total }}</div>
 					</div>
-					<div class="text-base">{{ invoice.formatted_total }}</div>
-					<div>
+					<div class="text-right">
 						<Badge v-if="invoice.status == 'Paid'" color="green">
 							Paid
 						</Badge>
-						<div v-else-if="invoice.stripe_invoice_url">
-							<a
-								class="inline-flex items-center justify-center text-base text-blue-500"
-								:href="invoice.stripe_invoice_url"
-								target="_blank"
-							>
-								Pay Now
-								<FeatherIcon name="arrow-right" class="w-4 h-4 ml-2" />
-							</a>
-						</div>
+						<Badge v-else-if="invoice.status == 'Invoice Created'" color="blue">
+							Created
+						</Badge>
+					</div>
+					<div class="col-span-2 text-right">
+						<a
+							v-if="invoice.status == 'Paid' && invoice.invoice_pdf"
+							class="inline-flex items-center justify-center text-base text-blue-500"
+							:href="invoice.invoice_pdf"
+							target="_blank"
+						>
+							Download Invoice
+							<FeatherIcon name="arrow-right" class="w-4 h-4 ml-2" />
+						</a>
+						<a
+							v-if="invoice.status != 'Paid' && invoice.stripe_invoice_url"
+							class="inline-flex items-center justify-center text-base text-blue-500"
+							:href="invoice.stripe_invoice_url"
+							target="_blank"
+						>
+							Pay Now
+							<FeatherIcon name="arrow-right" class="w-4 h-4 ml-2" />
+						</a>
 					</div>
 				</div>
 			</SectionCard>

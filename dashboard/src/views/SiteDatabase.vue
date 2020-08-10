@@ -83,6 +83,15 @@
 
 		<Section
 			class="mt-10"
+			title="Migrate"
+			description="Run bench migrate command on your database."
+		>
+			<Button type="secondary" @click="showMigrateDatabaseDialog = true">
+				Migrate Database
+			</Button>
+		</Section>
+		<Section
+			class="mt-10"
 			title="Reset"
 			description="Reset your database to a clean state."
 		>
@@ -103,6 +112,24 @@
 					@click="$resources.resetDatabase.submit()"
 				>
 					Reset Database
+				</Button>
+			</template>
+		</Dialog>
+		<Dialog title="Migrate Database" v-model="showMigrateDatabaseDialog">
+			<p class="text-base">
+				Bench migrate command will be executed on your database. Are you sure
+				you want to run this command?
+			</p>
+			<p class="text-base mt-2 text-gray-500">
+				We recommend that you download a database backup before continuing.
+			</p>
+			<template slot="actions">
+				<Button
+					type="danger"
+					:loading="$resources.migrateDatabase.loading"
+					@click="$resources.migrateDatabase.submit()"
+				>
+					Migrate Database
 				</Button>
 			</template>
 		</Dialog>
@@ -151,11 +178,27 @@ export default {
 					}, 1000);
 				}
 			};
+		},
+		migrateDatabase() {
+			return {
+				method: 'press.api.site.migrate',
+				params: {
+					name: this.site.name
+				},
+				onSuccess() {
+					this.showMigrateDatabaseDialog = false;
+					this.$router.push(`/sites/${this.site.name}/general`);
+					setTimeout(() => {
+						window.location.reload();
+					}, 1000);
+				}
+			};
 		}
 	},
 	data() {
 		return {
 			showResetDatabaseDialog: false,
+			showMigrateDatabaseDialog: false,
 			selectedFiles: {
 				database: null,
 				public: null,

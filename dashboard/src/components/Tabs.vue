@@ -1,7 +1,7 @@
 <template>
 	<div>
 		<div>
-			<ul class="hidden overflow-x-auto text-base border-b sm:flex">
+			<ul class="hidden text-base border-b sm:flex">
 				<router-link
 					v-for="tab in tabs"
 					:key="tab.label"

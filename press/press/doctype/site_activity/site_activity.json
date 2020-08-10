@@ -26,7 +26,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Action",
-   "options": "Activate Site\nAdd Domain\nArchive\nBackup\nCreate\nDeactivate Site\nInstall App\nLogin as Administrator\nReinstall\nRestore\nSuspend Site\nUninstall App\nUnsuspend Site\nUpdate\nUpdate Configuration",
+   "options": "Activate Site\nAdd Domain\nArchive\nBackup\nCreate\nDeactivate Site\nInstall App\nLogin as Administrator\nMigrate\nReinstall\nRestore\nSuspend Site\nUninstall App\nUnsuspend Site\nUpdate\nUpdate Configuration",
    "read_only": 1,
    "reqd": 1
   },
@@ -37,7 +37,7 @@
   }
  ],
  "links": [],
- "modified": "2020-06-26 15:27:31.265843",
+ "modified": "2020-08-06 10:34:27.686514",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Activity",

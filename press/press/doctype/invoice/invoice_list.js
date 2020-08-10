@@ -7,7 +7,7 @@ frappe.listview_settings['Invoice'] = {
 			"Draft": "darkgrey",
 			"Unpaid": "orange",
 			"Paid": "green",
-			"Overdue": "red"
+			"Invoice Created": "blue"
 		};
 		return [__(doc.status), status_color[doc.status], "status,=," + doc.status];
 	}

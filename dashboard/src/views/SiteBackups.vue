@@ -37,7 +37,7 @@
 										v-on:click="
 											downloadBackup(
 												backup.name,
-												backup.database_file,
+												'database',
 												backup.database_url,
 												backup.offsite
 											)
@@ -52,7 +52,7 @@
 										v-on:click="
 											downloadBackup(
 												backup.name,
-												backup.private_file,
+												'private',
 												backup.private_url,
 												backup.offsite
 											)
@@ -68,7 +68,7 @@
 										v-on:click="
 											downloadBackup(
 												backup.name,
-												backup.public_file,
+												'public',
 												backup.public_url,
 												backup.offsite
 											)
@@ -138,12 +138,12 @@ export default {
 		});
 	},
 	methods: {
-		async downloadBackup(name, backup_file, database_url, offsite) {
+		async downloadBackup(name, file, database_url, offsite) {
 			let link = offsite
 				? await this.$call('press.api.site.get_backup_link', {
 						name: this.site.name,
 						backup: name,
-						file: backup_file
+						file: file
 				  })
 				: database_url;
 			window.open(link);
