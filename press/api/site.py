@@ -689,26 +689,23 @@ def get_upload_link(file, parts=1):
 	try:
 		# The response contains the presigned URL and required fields
 		if parts > 1:
-			import datetime
-			from dateutil.tz import tzutc
 			signed_urls = []
 			response = s3_client.create_multipart_upload(Bucket=bucket_name, Key=object_name)
 
 			for count in range(parts):
 				signed_url = s3_client.generate_presigned_url(
-					ClientMethod='upload_part',
+					ClientMethod="upload_part",
 					Params={
-						'Bucket': bucket_name,
-						'Key': object_name,
-						'UploadId': response.get("UploadId"),
-						'PartNumber': count + 1
-					}
+						"Bucket": bucket_name,
+						"Key": object_name,
+						"UploadId": response.get("UploadId"),
+						"PartNumber": count + 1,
+					},
 				)
 				signed_urls.append(signed_url)
 
 			payload = response
 			payload["signed_urls"] = signed_urls
-			frappe.logger("gavin").info(payload)
 			return payload
 
 		return s3_client.generate_presigned_post(
@@ -733,20 +730,16 @@ def multipart_exit(file, id, action, parts=None):
 	)
 	if action == "abort":
 		response = s3_client.abort_multipart_upload(
-			Bucket='uploads.frappe.cloud',
-			Key=file,
-			UploadId=id,
+			Bucket="uploads.frappe.cloud", Key=file, UploadId=id,
 		)
 	elif action == "complete":
-		import json
 		parts = json.loads(parts)
-		frappe.logger("gavin").info({"file": file, "id": id, "action": action, "parts": parts})
-		#After completing for all parts, you will use complete_multipart_upload api which requires that parts list
+		# After completing for all parts, you will use complete_multipart_upload api which requires that parts list
 		response = s3_client.complete_multipart_upload(
-			Bucket='uploads.frappe.cloud',
+			Bucket="uploads.frappe.cloud",
 			Key=file,
 			UploadId=id,
-			MultipartUpload={'Parts': parts}
+			MultipartUpload={"Parts": parts},
 		)
 	return response
 
