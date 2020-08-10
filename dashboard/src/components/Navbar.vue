@@ -36,6 +36,7 @@
 				</div>
 				<div class="hidden md:block">
 					<div class="flex items-center">
+						<Feedback />
 						<div class="relative ml-3">
 							<div>
 								<Dropdown :items="dropdownItems" right>
@@ -128,10 +129,12 @@
 
 <script>
 import FrappeCloudLogo from '@/components/FrappeCloudLogo.vue';
+import Feedback from '@/components/Feedback';
 
 export default {
 	components: {
-		FrappeCloudLogo
+		FrappeCloudLogo,
+		Feedback
 	},
 	data() {
 		return {
