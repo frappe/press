@@ -136,17 +136,27 @@ export default {
 					function readCompression(e) {
 						if (e.currentFileNumber == 1) {
 							const path = e.currentFilename.split('/');
-							const type = path.indexOf(upload_type) == 2;
-							const files = path.indexOf('files') == 3;
-							_unarchiver.stop();
-							if (type && files) {
-								resolve(true);
+							if (path[0] === '.') {
+								const type = path.indexOf(upload_type) == 2;
+								const files = path.indexOf('files') == 3;
+								_unarchiver.stop();
+								if (type && files) {
+									resolve(true);
+								}
+								resolve(false);
+							} else {
+								console.log(
+									'Probably locale not set! @gavin fix it in @codedread/bitjs'
+								);
+								resolve('Could not Validate File');
 							}
-							resolve(false);
 						}
 					}
 
-					_unarchiver.addEventListener('progress', readCompression);
+					_unarchiver.onerror = function() {
+						resolve(_unarchiver.error.toString());
+					};
+					_unarchiver.addEventListener('progress', e => readCompression(e));
 					_unarchiver.start();
 				};
 				reader.onerror = function() {
