@@ -1,7 +1,11 @@
 <template>
 	<div>
 		<Button @click="isOpen = true">Feedback</Button>
-		<Dialog title="Feedback" v-model="isOpen" @change="handleClose">
+		<Dialog
+			:title="submitted ? '' : 'Feedback'"
+			v-model="isOpen"
+			@change="handleClose"
+		>
 			<template v-if="!submitted">
 				<p class="mb-4 text-base text-gray-900">
 					Your feedback will help us decide which features to improve or which
@@ -24,12 +28,9 @@
 					Submit Feedback
 				</Button>
 			</template>
-			<p class="mt-8 mb-8 text-lg text-gray-900" v-else>
-				Thanks for your feedback!<br />
-				<span class="inline-block mt-2 text-base">
-					The Frappe Team
-				</span>
-			</p>
+			<SuccessCard class="mb-4" title="Thanks for your feedback!" v-else>
+				Your feedback improves Frappe Cloud.
+			</SuccessCard>
 		</Dialog>
 	</div>
 </template>
