@@ -141,7 +141,6 @@ export default {
 		async downloadBackup(name, file, database_url, offsite) {
 			let link = offsite
 				? await this.$call('press.api.site.get_backup_link', {
-						name: this.site.name,
 						backup: name,
 						file: file
 				  })
