@@ -148,7 +148,7 @@ def backups(name):
 
 @frappe.whitelist()
 @protected("Site")
-def get_backup_link(backup, file):
+def get_backup_link(name, backup, file):
 	try:
 		remote_file = frappe.db.get_value("Site Backup", backup, f"remote_{file}_file")
 		return frappe.get_doc("Remote File", remote_file).download_link
