@@ -1,0 +1,91 @@
+[
+  {
+    "group_title": "Getting Started",
+    "group_items": [
+      {
+        "title": "Overview",
+        "route": "/docs/getting-started/overview"
+      }
+    ]
+  },
+  {
+    "group_title": "Sites",
+    "group_items": [
+      {
+        "title": "Creating a new site",
+        "route": "/docs/sites/creating-a-new-site"
+      },
+      {
+        "title": "Restore an existing site",
+        "route": "/docs/sites/restore-an-existing-site"
+      },
+      {
+        "title": "Monitoring",
+        "route": "/docs/sites/monitoring"
+      },
+      {
+        "title": "Backups",
+        "route": "/docs/sites/backups"
+      },
+      {
+        "title": "Site Config",
+        "route": "/docs/sites/site-config"
+      },
+      {
+        "title": "Custom Domains",
+        "route": "/docs/sites/custom-domains"
+      },
+      {
+        "title": "Delete Site",
+        "route": "/docs/sites/delete-site"
+      },
+      {
+        "title": "Jobs",
+        "route": "/docs/sites/jobs"
+      }
+    ]
+  },
+  {
+    "group_title": "Custom Apps",
+    "group_items": [
+      {
+        "title": "Adding a custom app",
+        "route": "/docs/user/en/installation"
+      },
+      {
+        "title": "App Release and Deploy",
+        "route": "/docs/user/en/guides"
+      }
+    ]
+  },
+  {
+    "group_title": "Team",
+    "group_items": [
+      {
+        "title": "Adding members",
+        "route": "/docs/user/en/installation"
+      },
+      {
+        "title": "Member privileges",
+        "route": "/docs/user/en/guides"
+      }
+    ]
+  },
+  {
+    "group_title": "Billing",
+    "group_items": [
+      {
+        "title": "Paying your bill",
+        "route": "/docs/user/en/installation"
+      },
+      {
+        "title": "Managing Cards",
+        "route": "/docs/user/en/guides"
+      },
+      {
+        "title": "Invoices",
+        "route": "/docs/user/en/guides"
+      }
+    ]
+  }
+]

@@ -52,6 +52,12 @@ version = app_version
 # automatically create page for each record of this doctype
 # website_generators = ["Web Page"]
 
+look_for_sidebar_json = True
+
+base_template_map = {
+	r"docs.*": "templates/doc.html"
+}
+
 # Installation
 # ------------
 
