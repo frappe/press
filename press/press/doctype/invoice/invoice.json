@@ -74,7 +74,7 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "Draft\nUnpaid\nOverdue\nPaid"
+   "options": "Draft\nInvoice Created\nUnpaid\nPaid"
   },
   {
    "fieldname": "total",
@@ -211,7 +211,7 @@
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2020-07-24 17:22:56.032331",
+ "modified": "2020-08-03 20:00:11.538719",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",

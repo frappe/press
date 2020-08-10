@@ -148,6 +148,14 @@ class Agent:
 			site=site.name,
 		)
 
+	def migrate_site(self, site):
+		return self.create_agent_job(
+			"Migrate Site",
+			f"benches/{site.bench}/sites/{site.name}/migrate",
+			bench=site.bench,
+			site=site.name,
+		)
+
 	def update_site(self, site, target, deploy_type):
 		activate = site.status == "Active"
 		data = {"target": target, "activate": activate}
@@ -241,6 +249,14 @@ class Agent:
 		}
 		return self.create_agent_job(
 			"Add Host to Proxy", "proxy/hosts", data, host=domain.domain, site=domain.site
+		)
+
+	def remove_host(self, domain):
+		return self.create_agent_job(
+			"Remove Host from Proxy",
+			f"proxy/hosts/{domain.domain}",
+			method="DELETE",
+			site=domain.site,
 		)
 
 	def new_server(self, server):

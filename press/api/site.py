@@ -148,30 +148,11 @@ def backups(name):
 @frappe.whitelist()
 @protected("Site")
 def get_backup_link(name, backup, file, expiration=3600):
-	bucket = frappe.db.get_single_value("Press Settings", "aws_s3_bucket")
-	backup_data = frappe.db.get_value("Site Backup", backup, "offsite_backup")
-	file_path = json.loads(backup_data).get(file)
-
-	s3 = client(
-		"s3",
-		aws_access_key_id=frappe.db.get_single_value(
-			"Press Settings", "offsite_backups_access_key_id"
-		),
-		aws_secret_access_key=get_decrypted_password(
-			"Press Settings", "Press Settings", "offsite_backups_secret_access_key"
-		),
-		region_name="ap-south-1",
-	)
-
 	try:
-		response = s3.generate_presigned_url(
-			"get_object", Params={"Bucket": bucket, "Key": file_path}, ExpiresIn=expiration
-		)
+		remote_file = frappe.db.get_value("Site Backup", backup, f"remote_{file}_file")
+		return frappe.get_doc("Remote File", remote_file).download_link
 	except ClientError:
 		log_error(title="Offsite Backup Response Exception")
-		return
-
-	return response
 
 
 @frappe.whitelist()
@@ -391,9 +372,9 @@ def analytics(name, period="1 hour"):
 		"request_cpu_time": [
 			{"value": r.request_duration, "timestamp": r.timestamp} for r in request_data
 		],
-		"job_count": [{"value": r.job_count, "timestamp": r.timestamp} for r in job_data],
+		"job_count": [{"value": r.job_count * 1000, "timestamp": r.timestamp} for r in job_data],
 		"job_cpu_time": [
-			{"value": r.job_duration, "timestamp": r.timestamp} for r in job_data
+			{"value": r.job_duration * 1000, "timestamp": r.timestamp} for r in job_data
 		],
 		"uptime": (uptime_data + [{}] * 60)[:60],
 		"plan_limit": plan_limit,
@@ -491,6 +472,12 @@ def reinstall(name):
 
 @frappe.whitelist()
 @protected("Site")
+def migrate(name):
+	frappe.get_doc("Site", name).migrate()
+
+
+@frappe.whitelist()
+@protected("Site")
 def restore(name, files):
 	site = frappe.get_doc("Site", name)
 	site.remote_database_file = files["database"]
@@ -544,9 +531,20 @@ def check_dns(name, domain):
 
 
 @frappe.whitelist()
+def domain_exists(domain):
+	return frappe.db.get_value("Site Domain", domain.lower(), "site")
+
+
+@frappe.whitelist()
 @protected("Site")
 def add_domain(name, domain):
 	frappe.get_doc("Site", name).add_domain(domain)
+
+
+@frappe.whitelist()
+@protected("Site")
+def remove_domain(name, domain):
+	frappe.get_doc("Site", name).remove_domain(domain)
 
 
 @frappe.whitelist()

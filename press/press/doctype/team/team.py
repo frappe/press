@@ -104,8 +104,10 @@ class Team(Document):
 			self.stripe_customer_id = customer.id
 			self.save()
 
-	def update_billing_details_on_stripe(self, address):
+	def update_billing_details_on_stripe(self, address=None):
 		stripe = get_stripe()
+		if not address:
+			address = frappe.get_doc("Address", self.billing_address)
 		country_code = frappe.db.get_value("Country", address.country, "code")
 		stripe.Customer.modify(
 			self.stripe_customer_id,
@@ -201,11 +203,18 @@ class Team(Document):
 				"period_start",
 				"period_end",
 				"payment_date",
+				"currency",
 			],
 			order_by="period_start desc",
 		)
+
+		print_format = frappe.get_meta("Invoice").default_print_format
 		for invoice in invoices:
 			invoice.formatted_total = frappe.utils.fmt_money(invoice.total, 2, invoice.currency)
+			if invoice.currency == "USD":
+				invoice.invoice_pdf = frappe.utils.get_url(
+					f"/api/method/frappe.utils.print_format.download_pdf?doctype=Invoice&name={invoice.name}&format={print_format}&no_letterhead=0"
+				)
 		return invoices
 
 	def allocate_credit_amount(self, amount, remark):
@@ -303,7 +312,7 @@ class Team(Document):
 	def get_upcoming_invoice(self):
 		# get this month's invoice
 		today = frappe.utils.datetime.datetime.today()
-		return TeamInvoice(self, today.month, today.year).get_invoice()
+		return TeamInvoice(self, today.month, today.year).get_draft_invoice()
 
 
 def get_team_members(team):
