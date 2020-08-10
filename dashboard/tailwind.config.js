@@ -100,6 +100,24 @@ module.exports = {
 						boxShadow: theme('boxShadow.none')
 					}
 				},
+				textarea: {
+					borderRadius: theme('borderRadius.md'),
+					backgroundColor: theme('colors.gray.100'),
+					borderWidth: '0',
+					fontSize: theme('fontSize.base'),
+					paddingTop: theme('spacing.1'),
+					paddingBottom: theme('spacing.1'),
+					lineHeight: theme('spacing.5'),
+					'&::placeholder': {
+						color: theme('colors.gray.700'),
+						opacity: '1'
+					},
+					'&:focus': {
+						outline: 'none',
+						backgroundColor: theme('colors.gray.200'),
+						boxShadow: theme('boxShadow.none')
+					}
+				},
 				select: {
 					borderRadius: theme('borderRadius.md'),
 					backgroundColor: theme('colors.gray.100'),

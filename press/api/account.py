@@ -284,6 +284,16 @@ def update_billing_information(address, city, state, postal_code, country):
 	team.update_billing_details_on_stripe(address)
 
 
+@frappe.whitelist()
+def feedback(message, route=None):
+	team = get_current_team()
+	feedback = frappe.new_doc("Feedback")
+	feedback.team = team
+	feedback.message = message
+	feedback.route = route
+	feedback.insert(ignore_permissions=True)
+
+
 def redirect_to(location):
 	return build_response(
 		frappe.local.request.path,
