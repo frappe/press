@@ -149,30 +149,11 @@ def backups(name):
 @frappe.whitelist()
 @protected("Site")
 def get_backup_link(name, backup, file, expiration=3600):
-	bucket = frappe.db.get_single_value("Press Settings", "aws_s3_bucket")
-	backup_data = frappe.db.get_value("Site Backup", backup, "offsite_backup")
-	file_path = json.loads(backup_data).get(file)
-
-	s3 = boto3.client(
-		"s3",
-		aws_access_key_id=frappe.db.get_single_value(
-			"Press Settings", "offsite_backups_access_key_id"
-		),
-		aws_secret_access_key=get_decrypted_password(
-			"Press Settings", "Press Settings", "offsite_backups_secret_access_key"
-		),
-		region_name="ap-south-1",
-	)
-
 	try:
-		response = s3.generate_presigned_url(
-			"get_object", Params={"Bucket": bucket, "Key": file_path}, ExpiresIn=expiration
-		)
+		remote_file = frappe.db.get_value("Site Backup", backup, f"remote_{file}_file")
+		return frappe.get_doc("Remote File", remote_file).download_link
 	except ClientError:
 		log_error(title="Offsite Backup Response Exception")
-		return
-
-	return response
 
 
 @frappe.whitelist()
