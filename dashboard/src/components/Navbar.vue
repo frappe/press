@@ -36,7 +36,6 @@
 				</div>
 				<div class="hidden md:block">
 					<div class="flex items-center">
-						<ImpersonateTeam />
 						<div class="relative ml-3">
 							<div>
 								<Dropdown :items="dropdownItems" right>
@@ -129,12 +128,10 @@
 
 <script>
 import FrappeCloudLogo from '@/components/FrappeCloudLogo.vue';
-import ImpersonateTeam from '@/components/ImpersonateTeam.vue';
 
 export default {
 	components: {
-		FrappeCloudLogo,
-		ImpersonateTeam
+		FrappeCloudLogo
 	},
 	data() {
 		return {
