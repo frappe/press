@@ -130,7 +130,6 @@ class Resource {
 		if (this.validate) {
 			let message = await this.validate();
 			if (message) {
-				console.log(message);
 				this.setError(message);
 				return;
 			}
