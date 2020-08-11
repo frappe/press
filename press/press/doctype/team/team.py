@@ -241,6 +241,8 @@ class Team(Document):
 		return self.erpnext_partner and self.get_available_credits() > 0
 
 	def has_partner_account_on_erpnext_com(self):
+		if frappe.conf.developer_mode:
+			return False
 		erpnext_com = get_erpnext_com_connection()
 		res = erpnext_com.get_value(
 			"ERPNext Partner", "name", filters={"email": self.name, "status": "Approved"}
@@ -273,16 +275,12 @@ class Team(Document):
 		site_created = frappe.db.count("Site", {"team": self.name}) > 0
 		complete = (
 			self.free_account
-			or (self.erpnext_partner and address_added)
-			or (team_created and card_added and site_created and address_added)
+			or self.erpnext_partner
+			or (team_created and card_added and site_created)
 		)
 		return {
 			"Create a Team": {"done": team_created},
 			"Add Billing Information": {"done": card_added},
-			"Update Billing Address": {
-				"done": address_added,
-				"show": card_added and not address_added,
-			},
 			"Create your first site": {"done": site_created},
 			"complete": complete,
 		}
