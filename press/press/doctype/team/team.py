@@ -273,7 +273,7 @@ class Team(Document):
 		site_created = frappe.db.count("Site", {"team": self.name}) > 0
 		complete = (
 			self.free_account
-			or self.erpnext_partner
+			or (self.erpnext_partner and address_added)
 			or (team_created and card_added and site_created and address_added)
 		)
 		return {

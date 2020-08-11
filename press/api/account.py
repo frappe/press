@@ -135,16 +135,13 @@ def get_account_request_from_key(key):
 
 
 @frappe.whitelist()
-def get(team=None):
+def get():
 	user = frappe.session.user
 	if not frappe.db.exists("User", user):
 		frappe.throw(_("Account does not exist"))
 
-	team = team or user
+	team = get_current_team()
 	team_doc = frappe.get_doc("Team", team)
-
-	if not team_doc.has_member(user) and frappe.session.data.user_type != "System User":
-		frappe.throw("Invalid Team")
 
 	teams = [
 		d.parent for d in frappe.db.get_all("Team Member", {"user": user}, ["parent"])
