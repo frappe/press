@@ -50,7 +50,7 @@
 					type="select"
 					v-if="!isInvitation"
 					label="Country"
-					:options="$resources.countryList.data"
+					:options="countryList"
 					v-model="country"
 					required
 				/>
@@ -142,6 +142,14 @@ export default {
 			};
 		},
 		countryList: 'press.api.account.country_list'
+	},
+	computed: {
+		countryList() {
+			return this.$resources.countryList.data.map(d => ({
+				label: d.name,
+				value: d.name
+			}));
+		}
 	}
 };
 </script>
