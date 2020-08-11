@@ -30,21 +30,21 @@
 				/>
 			</div>
 		</div>
-		<CountrySelectionDialog />
+		<UserPrompts />
 	</div>
 </template>
 <script>
 import Vue from 'vue';
 import Notification from '@/components/Notification';
 import Navbar from '@/components/Navbar';
-import CountrySelectionDialog from '@/views/CountrySelectionDialog';
+import UserPrompts from '@/views/UserPrompts';
 
 export default {
 	name: 'App',
 	components: {
 		Notification,
 		Navbar,
-		CountrySelectionDialog
+		UserPrompts
 	},
 	data() {
 		return {

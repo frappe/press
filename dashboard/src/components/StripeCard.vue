@@ -1,6 +1,7 @@
 <template>
 	<div :class="{ 'opacity-0': !ready }">
-		<Form :fields="fields" v-model="billingInformation" />
+		<Input label="Name on Card" v-model="billingInformation.cardHolderName" />
+		<AddressForm class="mt-4" v-model="billingInformation" ref="address-form" />
 
 		<label class="block mt-4">
 			<span class="text-sm leading-4 text-gray-700">Credit or Debit Card</span>
@@ -42,7 +43,7 @@
 </template>
 
 <script>
-import Form from '@/components/Form';
+import AddressForm from '@/components/AddressForm';
 import { loadStripe } from '@stripe/stripe-js';
 import resolveConfig from 'tailwindcss/resolveConfig';
 import config from '@/../tailwind.config.js';
@@ -50,7 +51,7 @@ import config from '@/../tailwind.config.js';
 export default {
 	name: 'StripeCard',
 	components: {
-		Form
+		AddressForm
 	},
 	data() {
 		return {
@@ -60,24 +61,22 @@ export default {
 			setupIntent: null,
 			billingInformation: {
 				cardHolderName: '',
-				country: ''
+				country: '',
+				gstin: ''
 			},
-			state: null,
-			countryList: []
+			gstNotApplicable: false,
+			state: null
 		};
 	},
 	async mounted() {
 		this.setupCard();
-		await this.fetchCountries();
-		let country = this.countryList.find(
-			d => d.label === this.$account.team.country
-		);
-		if (country) {
-			this.billingInformation.country = country.value;
-		}
+
 		let { first_name, last_name } = this.$account.user;
 		let fullname = first_name + ' ' + last_name;
 		this.billingInformation.cardHolderName = fullname;
+	},
+	resources: {
+		countryList: 'press.api.account.country_list'
 	},
 	methods: {
 		async setupCard() {
@@ -122,8 +121,12 @@ export default {
 			});
 		},
 		async submit() {
-			if (!this.validateValues()) {
+			let message = this.$refs['address-form'].validateValues();
+			if (message) {
+				this.errorMessage = message;
 				return;
+			} else {
+				this.errorMessage = null;
 			}
 
 			this.state = 'Working';
@@ -139,7 +142,7 @@ export default {
 								city: this.billingInformation.city,
 								state: this.billingInformation.state,
 								postal_code: this.billingInformation.postal_code,
-								country: this.billingInformation.country.toUpperCase()
+								country: this.getCountryCode(this.billingInformation.country)
 							}
 						}
 					}
@@ -160,74 +163,11 @@ export default {
 				}
 			}
 		},
-		validateValues() {
-			let values = this.fields.map(df => this.billingInformation[df.fieldname]);
-			if (!values.every(Boolean)) {
-				this.errorMessage = 'Please fill required values';
-				return false;
-			} else {
-				this.errorMessage = null;
-			}
-			return true;
-		},
-		async fetchCountries() {
-			let countryList = await this.$call('frappe.client.get_list', {
-				doctype: 'Country',
-				fields: 'name, code',
-				limit_page_length: null
-			});
-			this.countryList = [{ label: 'Select Country', value: '' }].concat(
-				countryList.map(d => ({
-					label: d.name,
-					value: d.code
-				}))
-			);
-		}
-	},
-	computed: {
-		fields() {
-			return [
-				{
-					fieldtype: 'Data',
-					label: 'Name on Card',
-					fieldname: 'cardHolderName',
-					required: 1
-				},
-				{
-					fieldtype: 'Data',
-					label: 'Address',
-					fieldname: 'address',
-					required: 1
-				},
-				{
-					fieldtype: 'Data',
-					label: 'City',
-					fieldname: 'city',
-					required: 1
-				},
-				{
-					fieldtype: 'Data',
-					label: 'State',
-					fieldname: 'state',
-					required: 1
-				},
-				{
-					fieldtype: 'Data',
-					label: 'Postal Code',
-					fieldname: 'postal_code',
-					required: 1
-				},
-				{
-					fieldtype: 'Select',
-					label: 'Country',
-					fieldname: 'country',
-					options: this.countryList,
-					required: 1
-				}
-			];
+		getCountryCode(country) {
+			let code = this.$resources.countryList.data.find(d => d.name === country)
+				.code;
+			return code.toUpperCase();
 		}
 	}
 };
 </script>
-
-<style></style>
