@@ -32,7 +32,7 @@
   }
  ],
  "links": [],
- "modified": "2020-08-10 18:57:08.745042",
+ "modified": "2020-08-11 16:53:14.472527",
  "modified_by": "faris@erpnext.com",
  "module": "Press",
  "name": "Feedback",
@@ -47,6 +47,28 @@
    "read": 1,
    "report": 1,
    "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
    "share": 1,
    "write": 1
   }
