@@ -103,7 +103,7 @@ def get_email_from_request_key(key):
 @frappe.whitelist(allow_guest=True)
 def country_list():
 	def get_country_list():
-		return [d.name for d in frappe.db.get_all("Country")]
+		return frappe.db.get_all("Country", fields=["name", "code"])
 
 	return frappe.cache().get_value("country_list", generator=get_country_list)
 
