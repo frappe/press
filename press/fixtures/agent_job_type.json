@@ -2,6 +2,68 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
+  "modified": "2020-08-11 12:17:23.658693",
+  "name": "Add Domain",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "request_method": "POST",
+  "request_path": "benches/{bench}/sites/{site}/domains",
+  "steps": [
+   {
+    "parent": "Add Domain",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Update Site Configuration"
+   },
+   {
+    "parent": "Add Domain",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Setup NGINX"
+   },
+   {
+    "parent": "Add Domain",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2020-08-11 12:17:43.993040",
+  "name": "Remove Domain",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "request_method": "DELETE",
+  "request_path": "benches/{bench}/sites/{site}/domains/{domain}",
+  "steps": [
+   {
+    "parent": "Remove Domain",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Update Site Configuration"
+   },
+   {
+    "parent": "Remove Domain",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Setup NGINX"
+   },
+   {
+    "parent": "Remove Domain",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
   "modified": "2020-04-07 16:10:22.420615",
   "name": "Update Site Configuration",
   "parent": null,

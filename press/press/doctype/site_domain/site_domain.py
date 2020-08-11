@@ -55,6 +55,7 @@ class SiteDomain(Document):
 	def on_trash(self):
 		self.disavow_agent_jobs()
 		self.create_remove_host_agent_request()
+		self.remove_domain_from_site_config()
 
 	def after_delete(self):
 		self.delete_tls_certificate()
@@ -66,6 +67,12 @@ class SiteDomain(Document):
 		jobs = frappe.get_all("Agent Job", filters={"host": self.name})
 		for job in jobs:
 			frappe.db.set_value("Agent Job", job.name, "host", None)
+
+	def remove_domain_from_site_config(self):
+		site_doc = frappe.get_doc("Site", self.site)
+		if site_doc.status == "Archived":
+			return
+		site_doc.remove_domain_from_config(self.domain)
 
 
 def process_new_host_job_update(job):
@@ -81,4 +88,4 @@ def process_new_host_job_update(job):
 	if updated_status != domain_status:
 		frappe.db.set_value("Site Domain", job.host, "status", updated_status)
 		if updated_status == "Active":
-			frappe.get_doc("Site", job.site).set_host_name(job.host)
+			frappe.get_doc("Site", job.site).add_domain_to_config(job.host)

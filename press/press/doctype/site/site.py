@@ -177,6 +177,14 @@ class Site(Document):
 				}
 			).insert()
 
+	def add_domain_to_config(self, domain):
+		agent = Agent(self.server)
+		agent.add_domain(self, domain)
+
+	def remove_domain_from_config(self, domain):
+		agent = Agent(self.server)
+		agent.remove_domain(self, domain)
+
 	def remove_domain(self, domain):
 		site_domain = frappe.get_all(
 			"Site Domain", filters={"site": self.name, "domain": domain}
