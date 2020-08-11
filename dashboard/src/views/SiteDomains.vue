@@ -156,13 +156,9 @@
 </template>
 
 <script>
-import Dialog from '@/components/Dialog';
 export default {
 	name: 'SiteDomains',
 	props: ['site'],
-	components: {
-		Dialog
-	},
 	data() {
 		return {
 			state: null,

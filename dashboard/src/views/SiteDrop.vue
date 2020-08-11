@@ -36,13 +36,9 @@
 </template>
 
 <script>
-import Dialog from '@/components/Dialog';
 export default {
 	name: 'SiteDrop',
 	props: ['site'],
-	components: {
-		Dialog
-	},
 	data() {
 		return {
 			showDialog: false,

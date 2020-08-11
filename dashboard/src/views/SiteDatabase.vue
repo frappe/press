@@ -138,13 +138,11 @@
 
 <script>
 import FileUploader from '@/components/FileUploader';
-import Dialog from '@/components/Dialog';
 
 export default {
 	name: 'SiteDatabase',
 	components: {
 		FileUploader,
-		Dialog
 	},
 	props: ['site'],
 	resources: {

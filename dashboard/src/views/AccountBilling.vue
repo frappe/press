@@ -194,7 +194,6 @@
 
 <script>
 import StripeCard from '@/components/StripeCard';
-import Dialog from '@/components/Dialog';
 import DescriptionList from '@/components/DescriptionList';
 import { DateTime } from 'luxon';
 
@@ -202,7 +201,6 @@ export default {
 	name: 'AccountBilling',
 	components: {
 		StripeCard,
-		Dialog,
 		DescriptionList
 	},
 	resources: {
