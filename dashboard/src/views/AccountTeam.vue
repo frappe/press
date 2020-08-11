@@ -100,13 +100,9 @@
 </template>
 
 <script>
-import Dialog from '@/components/Dialog';
 
 export default {
 	name: 'AccountTeam',
-	components: {
-		Dialog
-	},
 	data() {
 		return {
 			state: null,

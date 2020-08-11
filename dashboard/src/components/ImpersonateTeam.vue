@@ -20,12 +20,8 @@
 </template>
 
 <script>
-import Dialog from '@/components/Dialog';
 export default {
 	name: 'ImpersonateTeam',
-	components: {
-		Dialog
-	},
 	data() {
 		return {
 			dialogOpen: false,

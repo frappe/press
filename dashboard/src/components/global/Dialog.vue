@@ -1,5 +1,9 @@
 <template>
-	<Modal :show="show" @change="$emit('change', $event)">
+	<Modal
+		:show="show"
+		@change="$emit('change', $event)"
+		:dismissable="dismissable"
+	>
 		<div class="px-4 pt-5 pb-4 bg-white sm:p-6 sm:pb-4">
 			<div class="sm:flex sm:items-start">
 				<div class="relative w-full mt-3 sm:mt-0 sm:text-left">
@@ -9,6 +13,7 @@
 						</h3>
 					</div>
 					<button
+						v-if="dismissable"
 						class="absolute top-0 right-0"
 						@click="$emit('change', false)"
 					>
@@ -30,14 +35,14 @@
 </template>
 
 <script>
-import Modal from './Modal';
+import Modal from '@/components/Modal';
 export default {
 	name: 'Dialog',
 	model: {
 		prop: 'show',
 		event: 'change'
 	},
-	props: ['title', 'show'],
+	props: ['title', 'show', 'dismissable'],
 	components: {
 		Modal
 	}
