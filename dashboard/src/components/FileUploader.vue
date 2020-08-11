@@ -26,7 +26,7 @@
 <script>
 import FileUploader from '@/controllers/fileUploader';
 import S3FileUploader from '@/controllers/s3FileUploader';
-import { Untarrer } from '@codedread/bitjs/archive/archive';
+import { Archive } from 'libarchive.js/main.js';
 
 export default {
 	name: 'FileUploader',
@@ -107,61 +107,42 @@ export default {
 			});
 		},
 		validateFile() {
-			if (this.file.type !== 'application/x-tar') {
-				console.error('File not validated!');
-				return Promise.resolve(true);
-			}
 			return new Promise((resolve, reject) => {
 				let timeout;
 				if (this.file.size < 200 * 1000 * 1000) {
-					timeout = 30 * 1000;
+					timeout = 15 * 1000;
 				} else {
-					timeout = 60 * 1000;
+					timeout = 30 * 1000;
 				}
 				let upload_type = this.type;
-				let reader = new FileReader();
-				reader.readAsArrayBuffer(this.file);
-				reader.onload = function() {
-					setTimeout(() => {
-						_unarchiver?.stop();
-						resolve('Validation Timed Out');
-					}, timeout);
 
-					const FileArrayBuffer = reader.result;
-					let _unarchiver = new Untarrer(
-						FileArrayBuffer,
-						'/assets/press/node_modules/@codedread/bitjs/'
-					);
+				setTimeout(() => {
+					resolve('Validation Timed Out');
+				}, timeout);
 
-					function readCompression(e) {
-						if (e.currentFileNumber == 1) {
-							const path = e.currentFilename.split('/');
-							if (path[0] === '.') {
-								const type = path.indexOf(upload_type) == 2;
-								const files = path.indexOf('files') == 3;
-								_unarchiver.stop();
-								if (type && files) {
-									resolve(true);
+				Archive.init({
+					workerUrl:
+						'/assets/press/node_modules/libarchive.js/dist/worker-bundle.js'
+				});
+				Archive.open(this.file)
+					.then(archive => {
+						archive
+							.getFilesArray()
+							.then(files => {
+								if (files.length > 0) {
+									const path = files[0].path.split('/');
+									const type = path.indexOf(upload_type) === 2;
+									const compressed_files = path.indexOf('files') === 3;
+									resolve(type && compressed_files);
 								}
-								resolve(false);
-							} else {
-								console.log(
-									'Probably locale not set! @gavin fix it in @codedread/bitjs'
-								);
-								resolve('Could not Validate File');
-							}
-						}
-					}
-
-					_unarchiver.onerror = function() {
-						resolve(_unarchiver.error.toString());
-					};
-					_unarchiver.addEventListener('progress', e => readCompression(e));
-					_unarchiver.start();
-				};
-				reader.onerror = function() {
-					resolve(reader.error.toString());
-				};
+							})
+							.catch(err => {
+								resolve(`An error occurred while reading Files Array: ${err}`);
+							});
+					})
+					.catch(err => {
+						resolve(`An error occurred while reading compressed file: ${err}`);
+					});
 			});
 		},
 		async uploadFile(file) {
