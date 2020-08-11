@@ -26,7 +26,8 @@ export default new Vue({
 				pwd: password
 			});
 			if (res) {
-				this.$account.fetchAccount();
+				await this.$account.fetchAccount();
+				localStorage.setItem('current_team', this.$account.team.name);
 				this.isLoggedIn = true;
 				return res;
 			}
