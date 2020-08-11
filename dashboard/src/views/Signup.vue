@@ -31,7 +31,11 @@
 			</router-link>
 		</form>
 	</LoginBox>
-	<SuccessCard class="mx-auto mt-20 shadow-md w-96" title="Verification Email Sent!" v-else>
+	<SuccessCard
+		class="mx-auto mt-20 shadow-md w-96"
+		title="Verification Email Sent!"
+		v-else
+	>
 		We have sent an email to
 		<span class="font-semibold">{{ email }}</span
 		>. Please click on the link received to verify your email and set up your
