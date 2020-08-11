@@ -13,6 +13,6 @@
 		"tailwindcss": "^1.2.0"
 	},
 	"dependencies": {
-		"@codedread/bitjs": "^1.0.0"
+		"libarchive.js": "^1.3.0"
 	}
 }
