@@ -256,7 +256,7 @@ def onboarding():
 
 
 @frappe.whitelist()
-def update_billing_information(address, city, state, postal_code, country):
+def update_billing_information(address, city, state, postal_code, country, gstin=None):
 	team = frappe.get_doc("Team", get_current_team())
 	country_name = frappe.db.get_value("Country", {"code": country})
 	address = frappe.get_doc(
@@ -267,6 +267,7 @@ def update_billing_information(address, city, state, postal_code, country):
 		state=state,
 		pincode=postal_code,
 		country=country_name,
+		gstin=gstin,
 		links=[
 			{"link_doctype": "Team", "link_name": team.name, "link_title": team.name},
 			{
@@ -289,6 +290,35 @@ def feedback(message, route=None):
 	feedback.message = message
 	feedback.route = route
 	feedback.insert(ignore_permissions=True)
+
+
+@frappe.whitelist()
+def update_gstin(gstin):
+	team = get_current_team()
+	address = frappe.db.get_value("Team", team, "billing_address")
+	doc = frappe.get_doc("Address", address)
+	if doc.country == "India":
+		doc.gstin = gstin
+		doc.save(ignore_permissions=True)
+
+
+@frappe.whitelist()
+def user_prompts():
+	team = get_current_team()
+	doc = frappe.get_doc("Team", team)
+
+	onboarding = doc.get_onboarding()
+	if not onboarding["complete"]:
+		return
+
+	if not doc.billing_address:
+		return "UpdateBillingAddress"
+
+	gstin, country = frappe.db.get_value(
+		"Address", doc.billing_address, ["gstin", "country"]
+	)
+	if country == "India" and not gstin:
+		return "UpdateGSTIN"
 
 
 def redirect_to(location):

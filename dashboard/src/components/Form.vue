@@ -1,15 +1,22 @@
 <template>
 	<div class="space-y-4">
-		<div v-for="field in fields" :key="field.fieldname">
+		<div
+			v-for="field in fields"
+			:key="field.fieldname"
+			v-show="field.condition ? field.condition() : true"
+		>
+			<div class="flex space-x-4" v-if="Array.isArray(field)">
+				<Input
+					class="w-full"
+					v-for="subfield in field"
+					v-bind="getBindProps(subfield)"
+					v-on="getBindListeners(subfield)"
+				/>
+			</div>
 			<Input
-				:label="field.label || field.fieldname"
-				:type="getInputType(field)"
-				:options="field.options"
-				:name="field.fieldname"
-				:value="values[field.fieldname]"
-				@change="onChange($event, field)"
-				@blur="checkRequired(field, $event)"
-				:required="field.required || false"
+				v-else
+				v-bind="getBindProps(field)"
+				v-on="getBindListeners(field)"
 			/>
 			<ErrorMessage
 				class="mt-1"
@@ -56,6 +63,23 @@ export default {
 				}
 			}
 			return true;
+		},
+		getBindProps(field) {
+			return {
+				label: field.label || field.fieldname,
+				type: this.getInputType(field),
+				options: field.options,
+				name: field.fieldname,
+				value: this.values[field.fieldname],
+				disabled: field.disabled,
+				required: field.required || false
+			};
+		},
+		getBindListeners(field) {
+			return {
+				change: e => this.onChange(e, field),
+				blur: e => this.checkRequired(field, e)
+			};
 		},
 		getInputType(field) {
 			return {

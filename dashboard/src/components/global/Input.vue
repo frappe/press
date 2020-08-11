@@ -17,6 +17,7 @@
 				inputClass
 			]"
 			:type="type || 'text'"
+			:disabled="disabled"
 			v-bind="$attrs"
 			v-model="inputVal"
 		/>

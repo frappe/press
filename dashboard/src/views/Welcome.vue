@@ -58,35 +58,17 @@
 				@complete="afterCardAdd"
 			/>
 		</Dialog>
-		<Dialog title="Update Billing Address" v-model="showAddressDialog">
-			<p>
-				Add your billing address so that we can show it in your monthly invoice.
-			</p>
-			<Form class="mt-4" :fields="addressFields" v-model="billingInformation" />
-			<template slot="actions">
-				<Button
-					type="primary"
-					@click="updateBillingInformation.submit()"
-					:loading="updateBillingInformation.loading"
-					:disabled="!billingInformationValid"
-				>
-					Submit
-				</Button>
-			</template>
-		</Dialog>
 	</div>
 </template>
 
 <script>
 import StripeCard from '@/components/StripeCard';
-import Dialog from '@/components/Dialog';
 import Form from '@/components/Form';
 
 export default {
 	name: 'Welcome',
 	components: {
 		StripeCard,
-		Dialog,
 		Form
 	},
 	resources: {
@@ -107,12 +89,12 @@ export default {
 					return step;
 				});
 
-				let addressStep = this.steps.find(
-					d => d.name == 'Update Billing Address'
-				);
-				if (addressStep.show && !addressStep.done) {
-					this.showAddressDialog = true;
-				}
+				// let addressStep = this.steps.find(
+				// 	d => d.name == 'Update Billing Address'
+				// );
+				// if (addressStep.show && !addressStep.done) {
+				// 	this.showAddressDialog = true;
+				// }
 
 				this.onboardingComplete = onboarding.complete;
 				if (this.onboardingComplete) {
@@ -121,16 +103,6 @@ export default {
 					}, 2000);
 				}
 			}
-		},
-		updateBillingInformation() {
-			return {
-				method: 'press.api.account.update_billing_information',
-				params: this.billingInformation,
-				onSuccess() {
-					this.showAddressDialog = false;
-					this.$resources.onboarding.reload();
-				}
-			};
 		}
 	},
 	data() {
@@ -139,7 +111,6 @@ export default {
 			showAddCardDialog: false,
 			onboardingComplete: false,
 			showAddressDialog: false,
-			billingInformation: {},
 			countryList: [],
 			steps: [
 				{
@@ -163,18 +134,18 @@ export default {
 					},
 					disabled: false
 				},
-				{
-					name: 'Update Billing Address',
-					description:
-						'Add your billing address so that we can show it in your monthly invoice.',
-					done: false,
-					show: false,
-					icon: 'map',
-					click: () => {
-						this.showAddressDialog = true;
-					},
-					disabled: false
-				},
+				// {
+				// 	name: 'Update Billing Address',
+				// 	description:
+				// 		'Add your billing address so that we can show it in your monthly invoice.',
+				// 	done: false,
+				// 	show: false,
+				// 	icon: 'map',
+				// 	click: () => {
+				// 		this.showAddressDialog = true;
+				// 	},
+				// 	disabled: false
+				// },
 				{
 					name: 'Create your first site',
 					done: false,
@@ -188,25 +159,6 @@ export default {
 				}
 			]
 		};
-	},
-	async mounted() {
-		let countryList = await this.$call('frappe.client.get_list', {
-			doctype: 'Country',
-			fields: 'name, code',
-			limit_page_length: null
-		});
-		this.countryList = [{ label: 'Select Country', value: '' }].concat(
-			countryList.map(d => ({
-				label: d.name,
-				value: d.code
-			}))
-		);
-		let country = this.countryList.find(
-			d => d.label === this.$account.team.country
-		);
-		if (country) {
-			this.billingInformation.country = country.value;
-		}
 	},
 	methods: {
 		afterCardAdd() {
@@ -230,48 +182,6 @@ export default {
 		},
 		getBillingStep() {
 			return this.steps.find(d => d.name === 'Add Billing Information');
-		}
-	},
-	computed: {
-		billingInformationValid() {
-			return this.addressFields
-				.map(df => this.billingInformation[df.fieldname])
-				.every(Boolean);
-		},
-		addressFields() {
-			return [
-				{
-					fieldtype: 'Data',
-					label: 'Address',
-					fieldname: 'address',
-					required: 1
-				},
-				{
-					fieldtype: 'Data',
-					label: 'City',
-					fieldname: 'city',
-					required: 1
-				},
-				{
-					fieldtype: 'Data',
-					label: 'State',
-					fieldname: 'state',
-					required: 1
-				},
-				{
-					fieldtype: 'Data',
-					label: 'Postal Code',
-					fieldname: 'postal_code',
-					required: 1
-				},
-				{
-					fieldtype: 'Select',
-					label: 'Country',
-					fieldname: 'country',
-					options: this.countryList,
-					required: 1
-				}
-			];
 		}
 	}
 };
