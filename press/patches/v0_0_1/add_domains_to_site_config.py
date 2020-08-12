@@ -7,6 +7,7 @@ import frappe
 
 
 def execute():
+	frappe.reload_doctype("Agent Job Type")
 	domains = frappe.get_all(
 		"Site Domain", fields=["site", "domain", "name"], filters={"status": "Active"},
 	)
