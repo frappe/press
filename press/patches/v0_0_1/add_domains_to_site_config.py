@@ -4,10 +4,11 @@
 
 from __future__ import unicode_literals
 import frappe
+from frappe.utils.fixtures import sync_fixtures
 
 
 def execute():
-	frappe.reload_doctype("Agent Job Type")
+	sync_fixtures("press")
 	domains = frappe.get_all(
 		"Site Domain", fields=["site", "domain", "name"], filters={"status": "Active"},
 	)
