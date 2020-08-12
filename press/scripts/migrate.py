@@ -94,32 +94,93 @@ def upload_backup_file(file_type, file_name, file_path):
 			"Uploading {} file".format(file_type), monitor.bytes_read, monitor.len
 		)
 
+	from math import ceil
+
+	K = 1024
+	M = K ** 2
+
+	max_size = (
+		100  # in M: Max Size for multipart uploads - break down big files in `n` MB parts
+	)
+	file_size = os.path.getsize(file_path) / M
+
+	total_size = ceil(file_size / 1024)  # in G
+	allowed_max_size = (
+		4  # in G: aws allows max 5G but we'll cap single requests at 4 instead
+	)
+
+	parts = 1
+
+	if total_size > allowed_max_size:
+		parts = ceil(file_size / max_size)
+
 	# retreive upload link
-	upload_ticket = session.get(remote_link_url, data={"file": file_name})
+	upload_ticket = session.get(remote_link_url, data={"file": file_name, "parts": parts})
+
 	if not upload_ticket.ok:
 		handle_request_failure(upload_ticket)
 
 	payload = upload_ticket.json()["message"]
-	url, fields = payload["url"], payload["fields"]
 
-	# upload remote file
-	fields["file"] = (file_name, open(file_path, "rb"))
-	multipart_payload = encoder.MultipartEncoder(fields=fields)
-	multipart_payload = encoder.MultipartEncoderMonitor(
-		multipart_payload, _update_progress_bar
-	)
+	if parts > 1:
+		def get_file_data(path, part):
+			value = part * max_size * M
+			with open(path, "rb") as f:
+				f.seek(value)
+				return f.read(max_size * M)
 
-	upload_remote = session.post(
-		url,
-		data=multipart_payload,
-		headers={
-			"Accept": "application/json",
-			"Content-Type": multipart_payload.content_type,
-		},
-	)
-	print()
-	if not upload_remote.ok:
-		handle_request_failure(upload_remote)
+		upload_id = payload["UploadId"]
+		key = payload["Key"]
+		signed_urls = payload["signed_urls"]
+		file_parts = []
+
+		for count in range(parts):
+			signed_url = signed_urls[count]
+			file_data = get_file_data(file_path, count)
+			update_progress_bar("Uploading {} File".format(file_type), count, parts)
+
+			res = requests.put(signed_url, data=file_data)
+			etag = res.headers["ETag"]
+			file_parts.append(
+				{"ETag": etag, "PartNumber": count + 1}
+			)  # you have to append etag and partnumber of each parts
+
+		upload_remote = session.post(
+			finish_multipart_url,
+			data={
+				"file": key,
+				"id": upload_id,
+				"action": "complete",
+				"parts": json.dumps(file_parts),
+			},
+		)
+		print()
+		if not upload_remote.ok:
+			# not needed. try the failed parts again!!!
+			handle_request_failure(upload_remote)
+
+	else:
+		url = payload["url"]
+		fields = payload["fields"]
+
+		# upload remote file
+		fields["file"] = (file_name, open(file_path, "rb"))
+		multipart_payload = encoder.MultipartEncoder(fields=fields)
+		multipart_payload = encoder.MultipartEncoderMonitor(
+			multipart_payload, _update_progress_bar
+		)
+
+		upload_remote = session.post(
+			url,
+			data=multipart_payload,
+			headers={
+				"Accept": "application/json",
+				"Content-Type": multipart_payload.content_type,
+			},
+		)
+		print()
+		if not upload_remote.ok:
+			handle_request_failure(upload_remote)
 
 	# register remote file to site
 	register_press = session.post(
@@ -580,27 +641,37 @@ def create_session():
 
 
 def frappecloud_migrator(local_site):
-	global login_url, upload_url, remote_link_url, register_remote_url, options_url, site_exists_url, site_info_url, restore_site_url, account_details_url, all_site_url
+	global login_url, upload_url, remote_link_url, register_remote_url, options_url, site_exists_url, site_info_url, restore_site_url, account_details_url, all_site_url, finish_multipart_url
 	global session, migrator_actions, remote_site
 
 	remote_site = frappe.conf.frappecloud_url or "frappecloud.com"
+	schema = "https"
 
-	login_url = "https://{}/api/method/login".format(remote_site)
-	upload_url = "https://{}/api/method/press.api.site.new".format(remote_site)
-	remote_link_url = "https://{}/api/method/press.api.site.get_upload_link".format(
-		remote_site
+	login_url = "{}://{}/api/method/login".format(schema, remote_site)
+	upload_url = "{}://{}/api/method/press.api.site.new".format(schema, remote_site)
+	remote_link_url = "{}://{}/api/method/press.api.site.get_upload_link".format(
+		schema, remote_site
 	)
 	register_remote_url = (
-		"https://{}/api/method/press.api.site.uploaded_backup_info".format(remote_site)
+		"{}://{}/api/method/press.api.site.uploaded_backup_info".format(schema, remote_site)
 	)
-	options_url = "https://{}/api/method/press.api.site.options_for_new".format(
-		remote_site
+	options_url = "{}://{}/api/method/press.api.site.options_for_new".format(
+		schema, remote_site
 	)
-	site_exists_url = "https://{}/api/method/press.api.site.exists".format(remote_site)
-	site_info_url = "https://{}/api/method/press.api.site.get".format(remote_site)
-	account_details_url = "https://{}/api/method/press.api.account.get".format(remote_site)
-	all_site_url = "https://{}/api/method/press.api.site.all".format(remote_site)
-	restore_site_url = "https://{}/api/method/press.api.site.restore".format(remote_site)
+	site_exists_url = "{}://{}/api/method/press.api.site.exists".format(
+		schema, remote_site
+	)
+	site_info_url = "{}://{}/api/method/press.api.site.get".format(schema, remote_site)
+	account_details_url = "{}://{}/api/method/press.api.account.get".format(
+		schema, remote_site
+	)
+	all_site_url = "{}://{}/api/method/press.api.site.all".format(schema, remote_site)
+	restore_site_url = "{}://{}/api/method/press.api.site.restore".format(
+		schema, remote_site
+	)
+	finish_multipart_url = "{}://{}/api/method/press.api.site.multipart_exit".format(
+		schema, remote_site
+	)
 
 	migrator_actions = [
 		{"title": "Create a new site", "fn": new_site},
@@ -612,7 +683,6 @@ def frappecloud_migrator(local_site):
 			"\n"
 			+ """Note:
 * Sites with a compressed database size of over 500MB aren't supported currently on {0}
-* If one of your backup files exceeds 5GB in size, using https://{0}/dashboard/#/sites/new directly is your only option currently
 		""".format(
 				remote_site
 			).strip()
