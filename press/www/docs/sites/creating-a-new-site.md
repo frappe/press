@@ -17,13 +17,17 @@ title: Creating a new site - Sites
    checkbox. Upload a GZipped database backup file, a TAR file containing public
    files, and a TAR file containing private files.
 
+Alternatively, you can use the `bench --site {name} migrate-to frappecloud.com`
+to migrate a new site or restore an existing one from your currently hosted service
+providers or local development setups. See [Moving Frappe Sites](/docs/sites/migrate-to-frappecloud)
+
    See [Restore an existing Site](/docs/sites/restore-an-existing-site).
 1. Choose an appropriate plan for your site. For more details visit our [pricing
    page](/pricing).
 1. It will take a few seconds for site creation depending on the apps you have
    chosen and the size of your backup files.
 1. Click on Visit Site at the top of the page to access your site.
-2. After site creation you will see a message, you can proceed to
+1. After site creation you will see a message, you can proceed to
    complete the setup wizard by clicking on login. Please log in and complete
    the setup wizard on your site. Analytics will be collected only after the
    setup is complete.
