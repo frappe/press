@@ -318,9 +318,11 @@ def schedule_backups():
 					fields=["count(*) as total"],
 					filters={**common_filters, "offsite": 1},
 				)[0]["total"]
-				with_files = (
-					not frappe.db.count("Site Backup", {**common_filters, "with_files": 1}) or offsite
-				)
+				with_files = not frappe.get_all(
+					"Site Backup",
+					fields=["count(*) as total"],
+					filters={**common_filters, "with_files": 1},
+				)[0]["total"] or offsite
 
 				frappe.get_doc("Site", site.name).backup(with_files=with_files, offsite=offsite)
 
