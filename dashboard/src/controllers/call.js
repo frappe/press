@@ -1,10 +1,4 @@
-import * as accountImport from './account';
 import router from '@/router';
-
-// account.js and call.js have circular imports
-// account will be available later
-// this will make it work
-let account = accountImport.default;
 
 export default async function call(method, args) {
 	if (!args) {
@@ -17,8 +11,9 @@ export default async function call(method, args) {
 		'X-Frappe-Site-Name': window.location.hostname
 	};
 
-	if (account?.team) {
-		headers['X-Press-Team'] = account.team.name;
+	let team = localStorage.getItem('current_team') || null;
+	if (team) {
+		headers['X-Press-Team'] = team;
 	}
 
 	if (window.csrf_token && window.csrf_token !== '{{ csrf_token }}') {

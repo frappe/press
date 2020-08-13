@@ -9,6 +9,7 @@ from frappe.utils import random_string, get_url
 from frappe.website.render import build_response
 from frappe.core.doctype.user.user import update_password
 from press.press.doctype.team.team import get_team_members
+from press.press.doctype.team.team_invoice import TeamInvoice
 from press.utils import get_country_info, get_current_team
 from datetime import datetime, timedelta
 
@@ -75,6 +76,10 @@ def setup_account(
 		doc.insert(ignore_permissions=True, ignore_links=True)
 		doc.create_user_for_member(first_name, last_name, email, password, role)
 		doc.create_stripe_customer()
+
+		today = frappe.utils.getdate()
+		TeamInvoice(doc, today.month, today.year).create(period_start=today)
+
 		if doc.has_partner_account_on_erpnext_com():
 			doc.enable_erpnext_partner_privileges()
 
@@ -109,9 +114,7 @@ def set_country(country):
 	doc = frappe.get_doc("Team", team)
 	doc.country = country
 	doc.save()
-
-	if not doc.has_subscription():
-		doc.create_stripe_customer()
+	doc.create_stripe_customer()
 
 
 def get_account_request_from_key(key):
@@ -132,16 +135,13 @@ def get_account_request_from_key(key):
 
 
 @frappe.whitelist()
-def get(team=None):
+def get():
 	user = frappe.session.user
 	if not frappe.db.exists("User", user):
 		frappe.throw(_("Account does not exist"))
 
-	team = team or user
+	team = get_current_team()
 	team_doc = frappe.get_doc("Team", team)
-
-	if not team_doc.has_member(user):
-		frappe.throw("Invalid Team")
 
 	teams = [
 		d.parent for d in frappe.db.get_all("Team Member", {"user": user}, ["parent"])
@@ -238,7 +238,11 @@ def add_team_member(team, email):
 
 @frappe.whitelist()
 def switch_team(team):
-	if frappe.db.exists("Team Member", {"parent": team, "user": frappe.session.user}):
+	user_is_part_of_team = frappe.db.exists(
+		"Team Member", {"parent": team, "user": frappe.session.user}
+	)
+	user_is_system_user = frappe.session.data.user_type == "System User"
+	if user_is_part_of_team or user_is_system_user:
 		return {
 			"team": frappe.get_doc("Team", team),
 			"team_members": get_team_members(team),
@@ -275,6 +279,16 @@ def update_billing_information(address, city, state, postal_code, country):
 	address.insert(ignore_permissions=True)
 	team.db_set("billing_address", address.name)
 	team.update_billing_details_on_stripe(address)
+
+
+@frappe.whitelist()
+def feedback(message, route=None):
+	team = get_current_team()
+	feedback = frappe.new_doc("Feedback")
+	feedback.team = team
+	feedback.message = message
+	feedback.route = route
+	feedback.insert(ignore_permissions=True)
 
 
 def redirect_to(location):

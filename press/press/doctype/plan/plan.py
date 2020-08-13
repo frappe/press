@@ -5,12 +5,18 @@
 from __future__ import unicode_literals
 import frappe
 from frappe.model.document import Document
+from frappe.utils import rounded
 
 
 class Plan(Document):
 	def validate(self):
 		if not self.period:
 			frappe.throw("Period must be greater than 0")
+
+	def get_price_per_day(self, currency):
+		price = self.price_inr if currency == "INR" else self.price_usd
+		price_per_day = rounded(price / self.period, 2)
+		return price_per_day
 
 
 def get_plan_config(name):

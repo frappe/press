@@ -11,7 +11,6 @@ import json
 import tarfile
 from pathlib import Path
 
-import boto3
 import dns.resolver
 import wrapt
 from boto3 import client
@@ -143,12 +142,8 @@ def backups(name):
 	offsite_backups = frappe.get_all(
 		"Site Backup",
 		fields=fields,
-		filters={
-			"site": name,
-			"status": ("!=", "Failure"),
-			"offsite": 1
-		},
-		limit=available_offsite_backups
+		filters={"site": name, "status": ("!=", "Failure"), "offsite": 1},
+		limit=available_offsite_backups,
 	)
 	return sorted(
 		latest_backups + offsite_backups, key=lambda x: x["creation"], reverse=True
@@ -157,31 +152,12 @@ def backups(name):
 
 @frappe.whitelist()
 @protected("Site")
-def get_backup_link(name, backup, file, expiration=3600):
-	bucket = frappe.db.get_single_value("Press Settings", "aws_s3_bucket")
-	backup_data = frappe.db.get_value("Site Backup", backup, "offsite_backup")
-	file_path = json.loads(backup_data).get(file)
-
-	s3 = boto3.client(
-		"s3",
-		aws_access_key_id=frappe.db.get_single_value(
-			"Press Settings", "offsite_backups_access_key_id"
-		),
-		aws_secret_access_key=get_decrypted_password(
-			"Press Settings", "Press Settings", "offsite_backups_secret_access_key"
-		),
-		region_name="ap-south-1",
-	)
-
+def get_backup_link(name, backup, file):
 	try:
-		response = s3.generate_presigned_url(
-			"get_object", Params={"Bucket": bucket, "Key": file_path}, ExpiresIn=expiration
-		)
+		remote_file = frappe.db.get_value("Site Backup", backup, f"remote_{file}_file")
+		return frappe.get_doc("Remote File", remote_file).download_link
 	except ClientError:
 		log_error(title="Offsite Backup Response Exception")
-		return
-
-	return response
 
 
 @frappe.whitelist()
@@ -299,15 +275,10 @@ def get_plans():
 
 @frappe.whitelist()
 def all():
-	if frappe.session.data.user_type == "System User":
-		filters = {}
-	else:
-		filters = {"team": get_current_team()}
-	filters.update({"status": ("!=", "Archived")})
 	sites = frappe.get_list(
 		"Site",
 		fields=["name", "status", "modified", "bench"],
-		filters=filters,
+		filters={"team": get_current_team(), "status": ("!=", "Archived")},
 		order_by="creation desc",
 	)
 	benches_with_updates = set(benches_with_available_update())
@@ -407,9 +378,11 @@ def analytics(name, period="1 hour"):
 		"request_cpu_time": [
 			{"value": r.request_duration, "timestamp": r.timestamp} for r in request_data
 		],
-		"job_count": [{"value": r.job_count, "timestamp": r.timestamp} for r in job_data],
+		"job_count": [
+			{"value": r.job_count * 1000, "timestamp": r.timestamp} for r in job_data
+		],
 		"job_cpu_time": [
-			{"value": r.job_duration, "timestamp": r.timestamp} for r in job_data
+			{"value": r.job_duration * 1000, "timestamp": r.timestamp} for r in job_data
 		],
 		"uptime": (uptime_data + [{}] * 60)[:60],
 		"plan_limit": plan_limit,
@@ -507,6 +480,12 @@ def reinstall(name):
 
 @frappe.whitelist()
 @protected("Site")
+def migrate(name):
+	frappe.get_doc("Site", name).migrate()
+
+
+@frappe.whitelist()
+@protected("Site")
 def restore(name, files):
 	site = frappe.get_doc("Site", name)
 	site.remote_database_file = files["database"]
@@ -560,9 +539,20 @@ def check_dns(name, domain):
 
 
 @frappe.whitelist()
+def domain_exists(domain):
+	return frappe.db.get_value("Site Domain", domain.lower(), "site")
+
+
+@frappe.whitelist()
 @protected("Site")
 def add_domain(name, domain):
 	frappe.get_doc("Site", name).add_domain(domain)
+
+
+@frappe.whitelist()
+@protected("Site")
+def remove_domain(name, domain):
+	frappe.get_doc("Site", name).remove_domain(domain)
 
 
 @frappe.whitelist()
@@ -686,10 +676,11 @@ def upload_backup():
 
 
 @frappe.whitelist()
-def get_upload_link(file):
+def get_upload_link(file, parts=1):
 	bucket_name = frappe.db.get_single_value("Press Settings", "remote_uploads_bucket")
 	expiration = frappe.db.get_single_value("Press Settings", "remote_link_expiry") or 3600
 	object_name = get_remote_key(file)
+	parts = int(parts)
 
 	s3_client = client(
 		"s3",
@@ -703,11 +694,60 @@ def get_upload_link(file):
 	)
 	try:
 		# The response contains the presigned URL and required fields
+		if parts > 1:
+			signed_urls = []
+			response = s3_client.create_multipart_upload(Bucket=bucket_name, Key=object_name)
+
+			for count in range(parts):
+				signed_url = s3_client.generate_presigned_url(
+					ClientMethod="upload_part",
+					Params={
+						"Bucket": bucket_name,
+						"Key": object_name,
+						"UploadId": response.get("UploadId"),
+						"PartNumber": count + 1,
+					},
+				)
+				signed_urls.append(signed_url)
+
+			payload = response
+			payload["signed_urls"] = signed_urls
+			return payload
+
 		return s3_client.generate_presigned_post(
 			bucket_name, object_name, ExpiresIn=expiration
 		)
+
 	except ClientError as e:
 		log_error("Failed to Generate Presigned URL", content=e)
+
+
+@frappe.whitelist()
+def multipart_exit(file, id, action, parts=None):
+	s3_client = client(
+		"s3",
+		aws_access_key_id=frappe.db.get_single_value(
+			"Press Settings", "remote_access_key_id"
+		),
+		aws_secret_access_key=get_decrypted_password(
+			"Press Settings", "Press Settings", "remote_secret_access_key"
+		),
+		region_name="ap-south-1",
+	)
+	if action == "abort":
+		response = s3_client.abort_multipart_upload(
+			Bucket="uploads.frappe.cloud", Key=file, UploadId=id,
+		)
+	elif action == "complete":
+		parts = json.loads(parts)
+		# After completing for all parts, you will use complete_multipart_upload api which requires that parts list
+		response = s3_client.complete_multipart_upload(
+			Bucket="uploads.frappe.cloud",
+			Key=file,
+			UploadId=id,
+			MultipartUpload={"Parts": parts},
+		)
+	return response
 
 
 @frappe.whitelist()

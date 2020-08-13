@@ -71,6 +71,7 @@ class PressSettings(Document):
 				"invoice.payment_action_required",
 				"invoice.payment_succeeded",
 				"invoice.payment_failed",
+				"invoice.finalized",
 				"customer.subscription.updated",
 			],
 		)

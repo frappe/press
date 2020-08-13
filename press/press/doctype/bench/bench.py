@@ -173,8 +173,12 @@ def scale_workers():
 			workers, gunicorn_workers = 2, 4
 		elif site_count <= 75:
 			workers, gunicorn_workers = 3, 6
-		else:
+		elif site_count <= 100:
 			workers, gunicorn_workers = 4, 8
+		elif site_count <= 150:
+			workers, gunicorn_workers = 6, 8
+		else:
+			workers, gunicorn_workers = 8, 8
 
 		if (bench.workers, bench.gunicorn_workers) != (workers, gunicorn_workers):
 			bench = frappe.get_doc("Bench", bench.name)

@@ -26,7 +26,7 @@
 <script>
 import FileUploader from '@/controllers/fileUploader';
 import S3FileUploader from '@/controllers/s3FileUploader';
-import { Untarrer } from '@codedread/bitjs/archive/archive';
+import { Archive } from 'libarchive.js/main.js';
 
 export default {
 	name: 'FileUploader',
@@ -58,11 +58,51 @@ export default {
 		async onFileAdd(e) {
 			this.error = null;
 			this.file = e.target.files[0];
-			this.message = 'Validating File';
-			const validationMessage = await this.validateFile();
-			const validationName = await this.validateFileName();
-			this.message = '';
 
+			// Check for upload size limits
+			this.message = 'Checking File Limits';
+			if (
+				this.file.type === 'application/x-gzip' &&
+				this.file.size > 524 * 1000 * 1000
+			) {
+				this.error = 'Max File Size Limit for Database file is 500M';
+				this.message = '';
+				return;
+			}
+
+			// Check if browser supports WASM
+			// ref: https://stackoverflow.com/a/47880734/10309266
+			const supported = (() => {
+				try {
+					if (
+						typeof WebAssembly === 'object' &&
+						typeof WebAssembly.instantiate === 'function'
+					) {
+						const module = new WebAssembly.Module(
+							Uint8Array.of(0x0, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00)
+						);
+						if (module instanceof WebAssembly.Module)
+							return (
+								new WebAssembly.Instance(module) instanceof WebAssembly.Instance
+							);
+					}
+				} catch (e) {}
+				return false;
+			})();
+
+			// Check for validity of files
+			let validationMessage, validationName;
+
+			if (supported) {
+				this.message = 'Validating File';
+				validationMessage = await this.validateFile();
+				validationName = await this.validateFileName();
+				this.message = '';
+			} else {
+				validationMessage = 'WASM not supported on this browser';
+			}
+
+			// Try uploading the files
 			if (validationMessage === true) {
 				this.uploadFile(this.file);
 			} else if (validationName && validationMessage !== false) {
@@ -93,51 +133,42 @@ export default {
 			});
 		},
 		validateFile() {
-			if (this.file.type !== 'application/x-tar') {
-				console.error('File not validated!');
-				return Promise.resolve(true);
-			}
 			return new Promise((resolve, reject) => {
 				let timeout;
 				if (this.file.size < 200 * 1000 * 1000) {
-					timeout = 30 * 1000;
+					timeout = 15 * 1000;
 				} else {
-					timeout = 60 * 1000;
+					timeout = 30 * 1000;
 				}
 				let upload_type = this.type;
-				let reader = new FileReader();
-				reader.readAsArrayBuffer(this.file);
-				reader.onload = function() {
-					setTimeout(() => {
-						_unarchiver?.stop();
-						resolve('Validation Timed Out');
-					}, timeout);
 
-					const FileArrayBuffer = reader.result;
-					let _unarchiver = new Untarrer(
-						FileArrayBuffer,
-						'/assets/press/node_modules/@codedread/bitjs/'
-					);
+				setTimeout(() => {
+					resolve('Validation Timed Out');
+				}, timeout);
 
-					function readCompression(e) {
-						if (e.currentFileNumber == 1) {
-							const path = e.currentFilename.split('/');
-							const type = path.indexOf(upload_type) == 2;
-							const files = path.indexOf('files') == 3;
-							_unarchiver.stop();
-							if (type && files) {
-								resolve(true);
-							}
-							resolve(false);
-						}
-					}
-
-					_unarchiver.addEventListener('progress', readCompression);
-					_unarchiver.start();
-				};
-				reader.onerror = function() {
-					resolve(reader.error.toString());
-				};
+				Archive.init({
+					workerUrl:
+						'/assets/press/node_modules/libarchive.js/dist/worker-bundle.js'
+				});
+				Archive.open(this.file)
+					.then(archive => {
+						archive
+							.getFilesArray()
+							.then(files => {
+								if (files.length > 0) {
+									const path = files[0].path.split('/');
+									const type = path.indexOf(upload_type) === 2;
+									const compressed_files = path.indexOf('files') === 3;
+									resolve(type && compressed_files);
+								}
+							})
+							.catch(err => {
+								resolve(`An error occurred while reading Files Array: ${err}`);
+							});
+					})
+					.catch(err => {
+						resolve(`An error occurred while reading compressed file: ${err}`);
+					});
 			});
 		},
 		async uploadFile(file) {

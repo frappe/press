@@ -8,8 +8,9 @@ import frappe
 from press.api.billing import get_stripe, get_erpnext_com_connection
 from frappe.model.document import Document
 from frappe import _
-from frappe.utils import get_fullname
+from frappe.utils import get_fullname, flt
 from frappe.contacts.address_and_contact import load_address_and_contact
+from press.press.doctype.team.team_invoice import TeamInvoice
 
 
 class Team(Document):
@@ -46,12 +47,22 @@ class Team(Document):
 				doc.is_default = 0
 				doc.save()
 
-	def create_stripe_customer_and_subscription(self):
-		self.create_stripe_customer()
-		self.create_subscription()
+	def impersonate(self, member, reason):
+		user = frappe.db.get_value("Team Member", member, "user")
+		impersonation = frappe.get_doc(
+			{
+				"doctype": "Team Member Impersonation",
+				"user": user,
+				"impersonator": frappe.session.user,
+				"team": self.name,
+				"member": member,
+				"reason": reason,
+			}
+		)
+		impersonation.save()
+		frappe.local.login_manager.login_as(user)
 
 	def enable_erpnext_partner_privileges(self):
-		self.create_subscription()
 		self.erpnext_partner = 1
 		self.save()
 
@@ -93,8 +104,10 @@ class Team(Document):
 			self.stripe_customer_id = customer.id
 			self.save()
 
-	def update_billing_details_on_stripe(self, address):
+	def update_billing_details_on_stripe(self, address=None):
 		stripe = get_stripe()
+		if not address:
+			address = frappe.get_doc("Address", self.billing_address)
 		country_code = frappe.db.get_value("Country", address.country, "code")
 		stripe.Customer.modify(
 			self.stripe_customer_id,
@@ -151,7 +164,6 @@ class Team(Document):
 			# update address in Stripe Customer
 			# create subscription and allocate free credits
 			self.update_billing_details_on_stripe(address)
-			self.create_subscription()
 			self.allocate_free_credits()
 
 	def get_payment_methods(self):
@@ -178,40 +190,32 @@ class Team(Document):
 		]
 		return payment_methods
 
-	def get_upcoming_invoice(self):
-		stripe = get_stripe()
-		return stripe.Invoice.upcoming(customer=self.stripe_customer_id)
-
-	def create_subscription(self):
-		if not self.has_subscription():
-			frappe.get_doc(
-				{"doctype": "Subscription", "team": self.name, "status": "Active"}
-			).insert()
-
-	def has_subscription(self):
-		return bool(frappe.db.exists("Subscription", {"team": self.name}))
-
-	def get_past_payments(self):
-		payments = frappe.db.get_all(
-			"Payment",
-			filters={"team": self.name, "docstatus": 1, "amount": (">", 0)},
+	def get_past_invoices(self):
+		invoices = frappe.db.get_all(
+			"Invoice",
+			filters={"team": self.name, "status": ("!=", "Draft")},
 			fields=[
-				"amount",
-				"payment_date",
+				"name",
+				"total",
+				"amount_due",
 				"status",
+				"stripe_invoice_url",
+				"period_start",
+				"period_end",
+				"payment_date",
 				"currency",
-				"payment_link",
-				"creation",
-				"stripe_invoice_id",
 			],
-			order_by="creation desc",
+			order_by="period_start desc",
 		)
-		for payment in payments:
-			payment.formatted_amount = frappe.utils.fmt_money(
-				payment.amount, 2, payment.currency
-			)
-			payment.payment_date = frappe.utils.global_date_format(payment.payment_date)
-		return payments
+
+		print_format = frappe.get_meta("Invoice").default_print_format
+		for invoice in invoices:
+			invoice.formatted_total = frappe.utils.fmt_money(invoice.total, 2, invoice.currency)
+			if invoice.currency == "USD":
+				invoice.invoice_pdf = frappe.utils.get_url(
+					f"/api/method/frappe.utils.print_format.download_pdf?doctype=Invoice&name={invoice.name}&format={print_format}&no_letterhead=0"
+				)
+		return invoices
 
 	def allocate_credit_amount(self, amount, remark):
 		if amount > 0:
@@ -269,7 +273,7 @@ class Team(Document):
 		site_created = frappe.db.count("Site", {"team": self.name}) > 0
 		complete = (
 			self.free_account
-			or self.erpnext_partner
+			or (self.erpnext_partner and address_added)
 			or (team_created and card_added and site_created and address_added)
 		)
 		return {
@@ -304,6 +308,11 @@ class Team(Document):
 		for site in suspended_sites:
 			frappe.get_doc("Site", site).unsuspend(reason)
 		return suspended_sites
+
+	def get_upcoming_invoice(self):
+		# get this month's invoice
+		today = frappe.utils.datetime.datetime.today()
+		return TeamInvoice(self, today.month, today.year).get_draft_invoice()
 
 
 def get_team_members(team):
@@ -357,44 +366,52 @@ def suspend_sites_for_teams_without_cards():
 	"""
 
 	# find out teams which don't have a card and have exhausted their credit limit
-	res = frappe.db.sql(
+	teams_with_total_usage = frappe.db.sql(
 		"""
 		SELECT
-			SUM(ple.amount) as total_credits, ple.team
+			SUM(ple.amount) as total_usage, ple.team
 		FROM `tabPayment Ledger Entry` ple
-		LEFT JOIN
-			`tabTeam` t
-		ON
-			t.name = ple.team
+		LEFT JOIN `tabTeam` t
+		ON t.name = ple.team
 		WHERE
 			ple.docstatus = 1
+			AND ple.purpose = 'Site Consumption'
 			AND ifnull(t.default_payment_method, '') = ''
 			AND t.free_account = 0
+			AND t.erpnext_partner = 0
 		GROUP BY
 			ple.team
-		HAVING
-			total_credits < 0
 	""",
 		as_dict=True,
 	)
 
-	teams_without_cards_and_exhausted_credit_limit = [r.team for r in res]
-	for team in teams_without_cards_and_exhausted_credit_limit:
-		team_doc = frappe.get_doc("Team", team)
-		sites = team_doc.suspend_sites(reason="Card not added")
+	free_credits_inr, free_credits_usd = frappe.db.get_value(
+		"Press Settings", None, ["free_credits_inr", "free_credits_usd"]
+	)
+	# teams_without_cards_and_exhausted_credit_limit = [r.team for r in res]
+	for d in teams_with_total_usage:
+		total_usage = d.total_usage * -1
+		team = frappe.get_doc("Team", d.team)
+		total_usage_limit = flt(
+			free_credits_inr if team.currency == "INR" else free_credits_usd
+		)
 
-		# send email
-		if sites:
-			email = team_doc.user
-			account_update_link = frappe.utils.get_url("/dashboard/#/welcome")
-			frappe.sendmail(
-				recipients=email,
-				subject="Your sites have been suspended on Frappe Cloud",
-				template="payment_failed",
-				args={
-					"subject": "Your sites have been suspended on Frappe Cloud",
-					"account_update_link": account_update_link,
-					"card_not_added": True,
-					"sites": sites,
-				},
-			)
+		# if total usage has crossed the allotted free credits, suspend their sites
+		if total_usage > total_usage_limit:
+			sites = team.suspend_sites(reason="Card not added and free credits exhausted")
+
+			# send email
+			if sites:
+				email = team.user
+				account_update_link = frappe.utils.get_url("/dashboard/#/welcome")
+				frappe.sendmail(
+					recipients=email,
+					subject="Your sites have been suspended on Frappe Cloud",
+					template="payment_failed",
+					args={
+						"subject": "Your sites have been suspended on Frappe Cloud",
+						"account_update_link": account_update_link,
+						"card_not_added": True,
+						"sites": sites,
+					},
+				)

@@ -109,7 +109,6 @@ export default {
 				}
 			};
 		}
-		// resetPassword() {}
 	},
 	methods: {
 		async loginOrResetPassword() {

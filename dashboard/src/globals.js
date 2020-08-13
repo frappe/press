@@ -19,3 +19,6 @@ Vue.prototype.$auth = auth;
 Vue.prototype.$account = account;
 Vue.prototype.$account = account;
 Vue.prototype.$socket = socket;
+
+// global accessor to expose switchToTeam method
+window.$account = account;

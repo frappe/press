@@ -10,11 +10,11 @@
 		>
 			<SectionCard v-if="domains && domains.length">
 				<div
-					class="grid grid-cols-2 px-6 py-3 hover:bg-gray-50"
+					class="grid grid-cols-2 px-6 py-3 hover:bg-gray-50 items-center"
 					v-for="d in domains"
 					:key="d.domain"
 				>
-					<div class="font-semibold">
+					<div class="font-semibold text-base">
 						<a
 							class="text-blue-500"
 							:href="'https://' + d.domain"
@@ -37,6 +37,15 @@
 							Retry
 						</Button>
 						<Button
+							@click="
+								domainToRemove = d.domain;
+								showRemoveDomainDialog = true;
+							"
+							v-if="false"
+						>
+							class="ml-8 float-right" type="danger" > Remove
+						</Button>
+						<Button
 							@click="setHostName(d.domain)"
 							v-if="d.status == 'Active' && !d.primary"
 							class="ml-8"
@@ -55,7 +64,7 @@
 					</div>
 				</div>
 			</SectionCard>
-			<div class="mt-4">
+			<div class="mt-6">
 				<Button type="primary" @click="showDialog = true">
 					Add Domain
 				</Button>
@@ -71,9 +80,19 @@
 				class="mt-4"
 				placeholder="example.com"
 				v-model="newDomain"
-				@change="dnsVerified = null"
+				@change="
+					dnsVerified = null;
+					checkIfExists(newDomain);
+				"
 			/>
-			<p class="mt-4 text-base" v-if="newDomain && !dnsVerified">
+			<p class="mt-4 text-base text-red-600" v-if="domainTaken">
+				Domain is already added to
+				<span class="font-semibold">{{ domainTaken }}</span>
+			</p>
+			<p
+				class="mt-4 text-base"
+				v-if="!domainTaken && newDomain && !dnsVerified"
+			>
 				Make a <span class="font-semibold">CNAME</span> record from
 				<span class="font-semibold">{{ newDomain }}</span> to
 				<span class="font-semibold">{{ site.name }}</span>
@@ -100,13 +119,36 @@
 					v-if="!dnsVerified"
 					class="ml-3"
 					type="primary"
-					:disabled="!newDomain || state == 'RequestStarted'"
+					:disabled="!newDomain || domainTaken || state == 'RequestStarted'"
 					@click="checkDNS"
 				>
 					Verify DNS
 				</Button>
 				<Button class="ml-3" type="primary" @click="addDomain" v-else>
 					Add Domain
+				</Button>
+			</div>
+		</Dialog>
+		<Dialog v-model="showRemoveDomainDialog" title="Remove Domain">
+			<p class="text-base">
+				Are you sure you want to remove this domain?
+			</p>
+			<p class="mt-4 text-base">
+				Please type
+				<span class="font-semibold">{{ domainToRemove }}</span> to confirm.
+			</p>
+			<Input type="text" class="w-full mt-4" v-model="confirmDomainName" />
+			<div slot="actions">
+				<Button @click="showRemoveDomainDialog = false">
+					Cancel
+				</Button>
+				<Button
+					class="ml-3"
+					type="danger"
+					:disabled="domainToRemove !== confirmDomainName"
+					@click="removeDomain(domainToRemove)"
+				>
+					Remove Domain
 				</Button>
 			</div>
 		</Dialog>
@@ -127,7 +169,11 @@ export default {
 			showDialog: false,
 			domains: null,
 			newDomain: null,
-			dnsVerified: null
+			domainTaken: false,
+			dnsVerified: null,
+			confirmDomainName: null,
+			showRemoveDomainDialog: false,
+			domainToRemove: null
 		};
 	},
 	methods: {
@@ -159,12 +205,27 @@ export default {
 			});
 			this.fetchDomains();
 		},
+		async removeDomain(domain) {
+			await this.$call('press.api.site.remove_domain', {
+				name: this.site.name,
+				domain: domain
+			});
+			this.showRemoveDomainDialog = false;
+			this.domainToRemove = null;
+			this.confirmDomainName = null;
+			this.fetchDomains();
+		},
 		async setHostName(domain) {
 			await this.$call('press.api.site.set_host_name', {
 				name: this.site.name,
 				domain: domain
 			});
 			this.fetchDomains();
+		},
+		async checkIfExists(domain) {
+			this.domainTaken = await this.$call('press.api.site.domain_exists', {
+				domain
+			});
 		}
 	},
 	mounted() {

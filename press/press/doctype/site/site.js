@@ -30,6 +30,7 @@ frappe.ui.form.on('Site', {
 		});
 		[
 			[__('Archive'), 'archive'],
+			[__('Migrate'), 'migrate'],
 			[__('Reinstall'), 'reinstall'],
 			[__('Restore'), 'restore_site'],
 			[__('Update'), 'schedule_update'],

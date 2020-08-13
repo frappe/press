@@ -30,7 +30,8 @@
   "stripe_customer_balance_transaction_id",
   "reference_section",
   "reference_doctype",
-  "reference_name"
+  "reference_name",
+  "invoice"
  ],
  "fields": [
   {
@@ -140,7 +141,6 @@
    "read_only": 1
   },
   {
-   "depends_on": "reference_name",
    "fieldname": "reference_section",
    "fieldtype": "Section Break",
    "label": "Reference"
@@ -196,17 +196,27 @@
    "fieldname": "free_usage",
    "fieldtype": "Check",
    "label": "Free Usage"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "invoice",
+   "fieldtype": "Data",
+   "in_standard_filter": 1,
+   "label": "Invoice",
+   "read_only": 1
   }
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2020-05-16 17:30:54.058193",
- "modified_by": "Administrator",
+ "modified": "2020-07-20 14:02:14.830167",
+ "modified_by": "faris@erpnext.com",
  "module": "Press",
  "name": "Payment Ledger Entry",
  "owner": "Administrator",
  "permissions": [
   {
+   "amend": 1,
+   "cancel": 1,
    "create": 1,
    "delete": 1,
    "email": 1,
@@ -216,6 +226,7 @@
    "report": 1,
    "role": "System Manager",
    "share": 1,
+   "submit": 1,
    "write": 1
   }
  ],
