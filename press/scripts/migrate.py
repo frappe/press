@@ -123,6 +123,7 @@ def upload_backup_file(file_type, file_name, file_path):
 	payload = upload_ticket.json()["message"]
 
 	if parts > 1:
+
 		def get_file_data(path, part):
 			value = part * max_size * M
 			with open(path, "rb") as f:
@@ -584,7 +585,7 @@ def new_site(local_site):
 
 def restore_site(local_site):
 	# get list of existing sites they can restore
-	selected_site = select_site()['name']
+	selected_site = select_site()["name"]
 
 	# TODO: check if they can restore it
 
