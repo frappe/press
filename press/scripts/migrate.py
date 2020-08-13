@@ -348,6 +348,7 @@ def select_site():
 	)
 
 	if get_all_sites_request.ok:
+		# the following lines have data with a lot of redundancy, but there's no real reason to bother cleaning them up
 		all_sites = get_all_sites_request.json()["message"]
 		sites_info = {site["name"]: get_site_info(site["name"]) for site in all_sites}
 		sites_version = {x: get_version(y) for x, y in sites_info.items()}
@@ -583,7 +584,7 @@ def new_site(local_site):
 
 def restore_site(local_site):
 	# get list of existing sites they can restore
-	selected_site = select_site()
+	selected_site = select_site()['name']
 
 	# TODO: check if they can restore it
 
