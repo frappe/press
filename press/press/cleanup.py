@@ -61,3 +61,16 @@ def cleanup_offsite_backups():
 			for file in remote_files:
 				if file:
 					frappe.get_doc("Remote File", file).delete_remote_object()
+
+
+def remove_logs():
+	for doctype in (
+		"Site Uptime Log",
+		"Site Request Log",
+		"Site Job Log",
+	):
+		frappe.db.delete(doctype, {"modified": ("<", datetime.now() - timedelta(days=10))})
+		frappe.db.commit()
+
+	frappe.db.delete(doctype, {"modified": ("<", datetime.now() - timedelta(days=1))})
+	frappe.db.commit()

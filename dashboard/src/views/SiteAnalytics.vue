@@ -86,7 +86,7 @@ export default {
 		return {
 			analytics: null,
 			period: '1 hour',
-			periodOptions: ['1 hour', '6 hours', '24 hours', '7 days', '30 days'],
+			periodOptions: ['1 hour', '6 hours', '24 hours', '7 days'],
 			uptimeTypes: [
 				{ key: 'web', label: 'Web' },
 				{ key: 'scheduler', label: 'Scheduler' }

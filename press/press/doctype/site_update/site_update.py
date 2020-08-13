@@ -97,8 +97,28 @@ def trigger_recovery_job(site_update_name):
 		return
 	agent = Agent(site_update.server)
 	site = frappe.get_doc("Site", site_update.site)
-	job = agent.update_site_recover(site, site_update.source_bench)
-	frappe.db.set_value("Site Update", site_update_name, "recover_job", job.name)
+	job = None
+	if site.bench == site_update.destination_bench:
+		# The site is already on destination bench
+		# Attempt to move site to source bench
+
+		# Disable maintenance mode for active sites
+		activate = site.status_before_update == "Active"
+		job = agent.update_site_recover_move(
+			site, site_update.source_bench, site_update.deploy_type, activate
+		)
+	else:
+		# Site is already on the source bench
+
+		if site.status_before_update == "Active":
+			# Disable maintenance mode for active sites
+			job = agent.update_site_recover(site)
+		else:
+			# Site is already on source bench and maintenance mode is on
+			# No need to do anything
+			site.reset_previous_status()
+	if job:
+		frappe.db.set_value("Site Update", site_update_name, "recover_job", job.name)
 
 
 def benches_with_available_update():
@@ -221,16 +241,10 @@ def process_update_site_job_update(job):
 		if updated_status == "Running":
 			frappe.db.set_value("Site", job.site, "status", "Updating")
 		elif updated_status == "Success":
-			frappe.db.set_value("Site", job.site, "status", "Active")
 			frappe.get_doc("Site", job.site).reset_previous_status()
 		elif updated_status == "Failure":
 			frappe.db.set_value("Site", job.site, "status", "Broken")
-			site_bench = frappe.db.get_value("Site", job.site, "bench")
-			if (
-				job.job_type == "Update Site Migrate"
-				and site_bench == site_update.destination_bench
-			):
-				trigger_recovery_job(site_update.name)
+			trigger_recovery_job(site_update.name)
 
 
 def process_update_site_recover_job_update(job):
@@ -246,11 +260,15 @@ def process_update_site_recover_job_update(job):
 		filters={"recover_job": job.name},
 	)[0]
 	if updated_status != site_update.status:
+		site_bench = frappe.db.get_value("Site", job.site, "bench")
+		move_site_step_status = frappe.db.get_value(
+			"Agent Job Step", {"step_name": "Move Site", "agent_job": job.name}, "status"
+		)
+		if site_bench != site_update.source_bench and move_site_step_status == "Success":
+			frappe.db.set_value("Site", job.site, "bench", site_update.source_bench)
+
 		frappe.db.set_value("Site Update", site_update.name, "status", updated_status)
 		if updated_status == "Recovered":
-			frappe.db.set_value("Site", job.site, "status", "Active")
 			frappe.get_doc("Site", job.site).reset_previous_status()
-
-		site_bench = frappe.db.get_value("Site", job.site, "bench")
-		if site_bench != site_update.source_bench:
-			frappe.db.set_value("Site", job.site, "bench", site_update.source_bench)
+		elif updated_status == "Fatal":
+			frappe.db.set_value("Site", job.site, "status", "Broken")

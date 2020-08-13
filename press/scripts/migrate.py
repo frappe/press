@@ -12,7 +12,8 @@ import tempfile
 # imports - module imports
 import frappe
 import frappe.utils.backups
-from frappe.utils import get_installed_apps_info
+from frappe.utils.backups import BackupGenerator
+from frappe.utils import get_installed_apps_info, update_progress_bar
 from frappe.utils.commands import add_line_after, add_line_before, render_table
 from frappe.utils.change_log import get_versions
 
@@ -25,9 +26,24 @@ try:
 	import requests
 	import click
 	from semantic_version import Version
-	from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
+	from tenacity import (
+		retry,
+		RetryError,
+		stop_after_attempt,
+		wait_fixed,
+		retry_if_exception_type,
+		retry_unless_exception_type,
+	)
+	from requests_toolbelt.multipart import encoder
 except ImportError:
-	dependencies = ["tenacity", "html2text", "requests", "click", "semantic-version"]
+	dependencies = [
+		"tenacity",
+		"html2text",
+		"requests",
+		"click",
+		"semantic-version",
+		"requests-toolbelt",
+	]
 	install_command = shlex.split(
 		"{} -m pip install {}".format(sys.executable, " ".join(dependencies))
 	)
@@ -36,7 +52,15 @@ except ImportError:
 	import requests
 	import click
 	from semantic_version import Version
-	from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
+	from tenacity import (
+		retry,
+		RetryError,
+		stop_after_attempt,
+		wait_fixed,
+		retry_if_exception_type,
+		retry_unless_exception_type,
+	)
+	from requests_toolbelt.multipart import encoder
 
 
 @retry(stop=stop_after_attempt(5))
@@ -61,25 +85,102 @@ def is_subdomain_available(subdomain):
 		return available
 
 
-@retry(stop=stop_after_attempt(2), wait=wait_fixed(5))
+@retry(
+	stop=stop_after_attempt(2) | retry_if_exception_type(SystemExit), wait=wait_fixed(5)
+)
 def upload_backup_file(file_type, file_name, file_path):
+	def _update_progress_bar(monitor):
+		update_progress_bar(
+			"Uploading {} file".format(file_type), monitor.bytes_read, monitor.len
+		)
+
+	from math import ceil
+
+	K = 1024
+	M = K ** 2
+
+	max_size = (
+		100  # in M: Max Size for multipart uploads - break down big files in `n` MB parts
+	)
+	file_size = os.path.getsize(file_path) / M
+
+	total_size = ceil(file_size / 1024)  # in G
+	allowed_max_size = (
+		4  # in G: aws allows max 5G but we'll cap single requests at 4 instead
+	)
+
+	parts = 1
+
+	if total_size > allowed_max_size:
+		parts = ceil(file_size / max_size)
+
 	# retreive upload link
-	upload_ticket = session.get(remote_link_url, data={"file": file_name})
+	upload_ticket = session.get(remote_link_url, data={"file": file_name, "parts": parts})
+
 	if not upload_ticket.ok:
-		raise
+		handle_request_failure(upload_ticket)
 
 	payload = upload_ticket.json()["message"]
-	url, fields = payload["url"], payload["fields"]
 
-	# upload remote file
-	upload_remote = session.post(
-		url,
-		data=fields,
-		files={"file": open(file_path, "rb")},
-		headers={"Accept": "application/json"},
-	)
-	if not upload_remote.ok:
-		raise
+	if parts > 1:
+		def get_file_data(path, part):
+			value = part * max_size * M
+			with open(path, "rb") as f:
+				f.seek(value)
+				return f.read(max_size * M)
+
+		upload_id = payload["UploadId"]
+		key = payload["Key"]
+		signed_urls = payload["signed_urls"]
+		file_parts = []
+
+		for count in range(parts):
+			signed_url = signed_urls[count]
+			file_data = get_file_data(file_path, count)
+			update_progress_bar("Uploading {} File".format(file_type), count, parts)
+
+			res = requests.put(signed_url, data=file_data)
+			etag = res.headers["ETag"]
+			file_parts.append(
+				{"ETag": etag, "PartNumber": count + 1}
+			)  # you have to append etag and partnumber of each parts
+
+		upload_remote = session.post(
+			finish_multipart_url,
+			data={
+				"file": key,
+				"id": upload_id,
+				"action": "complete",
+				"parts": json.dumps(file_parts),
+			},
+		)
+		print()
+		if not upload_remote.ok:
+			# not needed. try the failed parts again!!!
+			handle_request_failure(upload_remote)
+
+	else:
+		url = payload["url"]
+		fields = payload["fields"]
+
+		# upload remote file
+		fields["file"] = (file_name, open(file_path, "rb"))
+		multipart_payload = encoder.MultipartEncoder(fields=fields)
+		multipart_payload = encoder.MultipartEncoderMonitor(
+			multipart_payload, _update_progress_bar
+		)
+
+		upload_remote = session.post(
+			url,
+			data=multipart_payload,
+			headers={
+				"Accept": "application/json",
+				"Content-Type": multipart_payload.content_type,
+			},
+		)
+		print()
+		if not upload_remote.ok:
+			handle_request_failure(upload_remote)
 
 	# register remote file to site
 	register_press = session.post(
@@ -94,7 +195,8 @@ def upload_backup_file(file_type, file_name, file_path):
 
 	if register_press.ok:
 		return register_press.json()["message"]
-	raise
+
+	handle_request_failure(register_press)
 
 
 def render_actions_table():
@@ -204,7 +306,7 @@ def get_branch(info, app="frappe"):
 def get_version_from_branch(branch):
 	try:
 		return int(re.findall(r"[0-9]+", branch)[0])
-	except:
+	except Exception:
 		return
 
 
@@ -216,6 +318,22 @@ def is_downgrade(cloud_data):
 	cloud_version = get_version_from_branch(cloud_branch) or 1000
 
 	return current_version > cloud_version
+
+
+def raise_limits_warning():
+	raise_warn = False
+	files = BackupGenerator(
+		frappe.conf.db_name, frappe.conf.db_name, frappe.conf.db_password
+	).get_recent_backup(older_than=24 * 30)
+
+	for file in files:
+		if file:
+			file_size_in_mb = os.path.getsize(file) / (1024 * 1024)
+			if (file_size_in_mb / 1024) < 5:
+				raise_warn = True
+			if "database" in file and file_size_in_mb > 500:
+				raise_warn = True
+	return raise_warn
 
 
 @add_line_after
@@ -407,7 +525,6 @@ def upload_backup(local_site):
 	):
 		file_name = file_path.split(os.sep)[-1]
 
-		print("Uploading {} file: {} ({}/3)".format(file_type, file_name, x + 1))
 		uploaded_file = upload_backup_file(file_type, file_name, file_path)
 
 		if uploaded_file:
@@ -455,9 +572,11 @@ def new_site(local_site):
 		site_url = site_creation_request.json()["message"]
 		print("Your site {} is being migrated ✨".format(local_site))
 		print(
-			"View your site dashboard at {}/dashboard/#/sites/{}".format(remote_site, site_url)
+			"View your site dashboard at https://{}/dashboard/#/sites/{}".format(
+				remote_site, site_url
+			)
 		)
-		print("Your site URL: {}".format(site_url))
+		print("Your site URL: https://{}".format(site_url))
 	else:
 		handle_request_failure(site_creation_request)
 
@@ -483,19 +602,22 @@ def restore_site(local_site):
 	if site_restore_request.ok:
 		print("Your site {0} is being restored on {1} ✨".format(local_site, selected_site))
 		print(
-			"View your site dashboard at {}/dashboard/#/sites/{}".format(
+			"View your site dashboard at https://{}/dashboard/#/sites/{}".format(
 				remote_site, selected_site
 			)
 		)
-		print("Your site URL: {}".format(selected_site))
+		print("Your site URL: https://{}".format(selected_site))
 	else:
 		handle_request_failure(site_restore_request)
 
 
 @add_line_after
-@retry(stop=stop_after_attempt(3) | retry_if_exception_type(SystemExit))
+@retry(
+	stop=stop_after_attempt(3)
+	| retry_if_exception_type(SystemExit) & retry_unless_exception_type(KeyboardInterrupt)
+)
 def create_session():
-	print("Frappe Cloud credentials @ {}".format(remote_site))
+	print("\nFrappe Cloud credentials @ {}".format(remote_site))
 
 	# take user input from STDIN
 	username = click.prompt("Username").strip()
@@ -519,35 +641,59 @@ def create_session():
 
 
 def frappecloud_migrator(local_site):
-	global login_url, upload_url, remote_link_url, register_remote_url, options_url, site_exists_url, site_info_url, restore_site_url, account_details_url, all_site_url
+	global login_url, upload_url, remote_link_url, register_remote_url, options_url, site_exists_url, site_info_url, restore_site_url, account_details_url, all_site_url, finish_multipart_url
 	global session, migrator_actions, remote_site
 
 	remote_site = frappe.conf.frappecloud_url or "frappecloud.com"
+	scheme = "https"
 
-	login_url = "https://{}/api/method/login".format(remote_site)
-	upload_url = "https://{}/api/method/press.api.site.new".format(remote_site)
-	remote_link_url = "https://{}/api/method/press.api.site.get_upload_link".format(
-		remote_site
+	login_url = "{}://{}/api/method/login".format(scheme, remote_site)
+	upload_url = "{}://{}/api/method/press.api.site.new".format(scheme, remote_site)
+	remote_link_url = "{}://{}/api/method/press.api.site.get_upload_link".format(
+		scheme, remote_site
 	)
 	register_remote_url = (
-		"https://{}/api/method/press.api.site.uploaded_backup_info".format(remote_site)
+		"{}://{}/api/method/press.api.site.uploaded_backup_info".format(scheme, remote_site)
 	)
-	options_url = "https://{}/api/method/press.api.site.options_for_new".format(
-		remote_site
+	options_url = "{}://{}/api/method/press.api.site.options_for_new".format(
+		scheme, remote_site
 	)
-	site_exists_url = "https://{}/api/method/press.api.site.exists".format(remote_site)
-	site_info_url = "https://{}/api/method/press.api.site.get".format(remote_site)
-	account_details_url = "https://{}/api/method/press.api.account.get".format(remote_site)
-	all_site_url = "https://{}/api/method/press.api.site.all".format(remote_site)
-	restore_site_url = "https://{}/api/method/press.api.site.restore".format(remote_site)
+	site_exists_url = "{}://{}/api/method/press.api.site.exists".format(
+		scheme, remote_site
+	)
+	site_info_url = "{}://{}/api/method/press.api.site.get".format(scheme, remote_site)
+	account_details_url = "{}://{}/api/method/press.api.account.get".format(
+		scheme, remote_site
+	)
+	all_site_url = "{}://{}/api/method/press.api.site.all".format(scheme, remote_site)
+	restore_site_url = "{}://{}/api/method/press.api.site.restore".format(
+		scheme, remote_site
+	)
+	finish_multipart_url = "{}://{}/api/method/press.api.site.multipart_exit".format(
+		scheme, remote_site
+	)
 
 	migrator_actions = [
 		{"title": "Create a new site", "fn": new_site},
 		{"title": "Restore to an existing site", "fn": restore_site},
 	]
 
+	if raise_limits_warning():
+		notice = (
+			"\n"
+			+ """Note:
+* Sites with a compressed database size of over 500MB aren't supported currently on {0}
+		""".format(
+				remote_site
+			).strip()
+		)
+		click.secho(notice, fg="yellow")
+
 	# get credentials + auth user + start session
-	session = create_session()
+	try:
+		session = create_session()
+	except RetryError:
+		raise KeyboardInterrupt
 
 	# available actions defined in migrator_actions
 	primary_action = select_primary_action()

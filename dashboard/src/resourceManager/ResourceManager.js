@@ -101,6 +101,10 @@ class Resource {
 		this.keepData = options.keepData || false;
 		this.condition = options.condition || (() => true);
 		this.paged = options.paged || false;
+		this.validate = options.validate || null;
+		if (this.validate) {
+			this.validate = this.validate.bind(this._vm);
+		}
 
 		// events
 		this.listeners = Object.create(null);
@@ -123,6 +127,15 @@ class Resource {
 	async fetch() {
 		if (!this.condition()) return;
 
+		if (this.validate) {
+			let message = await this.validate();
+			if (message) {
+				console.log(message);
+				this.setError(message);
+				return;
+			}
+		}
+
 		this.loading = true;
 		try {
 			let data = await call(this.method, this.params);
@@ -134,8 +147,7 @@ class Resource {
 			}
 			this.emit('Success', this.data);
 		} catch (error) {
-			this.error = error.messages.join('\n');
-			this.emit('Error', this.error);
+			this.setError(error.messages.join('\n'));
 		}
 		this.lastLoaded = new Date();
 		this.loading = false;
@@ -150,6 +162,11 @@ class Resource {
 	}
 
 	cancel() {}
+
+	setError(error) {
+		this.error = error;
+		this.emit('Error', this.error);
+	}
 
 	on(event, handler) {
 		this.listeners[event] = (this.listeners[event] || []).concat(handler);

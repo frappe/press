@@ -37,14 +37,14 @@
 			"
 			class="mt-10"
 			title="Update Available"
-			description="Schedule an update for your site"
+			description="Update your site now"
 		>
 			<Button
 				@click="$resources.scheduleUpdate.fetch()"
 				:disabled="$resources.scheduleUpdate.loading"
 				type="primary"
 			>
-				Schedule Update
+				Update now
 			</Button>
 		</Section>
 		<Section

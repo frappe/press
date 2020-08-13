@@ -17,8 +17,7 @@ export default new Vue({
 			if (document.cookie.includes('user_id=Guest;')) {
 				return;
 			}
-			let team = localStorage.getItem('current_team');
-			let result = await call('press.api.account.get', { team });
+			let result = await call('press.api.account.get');
 			this.user = result.user;
 			this.team = result.team;
 			this.teams = result.teams;

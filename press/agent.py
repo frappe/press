@@ -148,8 +148,17 @@ class Agent:
 			site=site.name,
 		)
 
+	def migrate_site(self, site):
+		return self.create_agent_job(
+			"Migrate Site",
+			f"benches/{site.bench}/sites/{site.name}/migrate",
+			bench=site.bench,
+			site=site.name,
+		)
+
 	def update_site(self, site, target, deploy_type):
-		data = {"target": target}
+		activate = site.status == "Active"
+		data = {"target": target, "activate": activate}
 		return self.create_agent_job(
 			f"Update Site {deploy_type}",
 			f"benches/{site.bench}/sites/{site.name}/update/{deploy_type.lower()}",
@@ -158,12 +167,20 @@ class Agent:
 			site=site.name,
 		)
 
-	def update_site_recover(self, site, target):
-		data = {"target": target}
+	def update_site_recover_move(self, site, target, deploy_type, activate):
+		data = {"target": target, "activate": activate}
 		return self.create_agent_job(
-			"Recover Failed Site Migration",
-			f"benches/{site.bench}/sites/{site.name}/update/recover",
+			f"Recover Failed Site {deploy_type}",
+			f"benches/{site.bench}/sites/{site.name}/update/{deploy_type.lower()}/recover",
 			data,
+			bench=site.bench,
+			site=site.name,
+		)
+
+	def update_site_recover(self, site):
+		return self.create_agent_job(
+			"Recover Failed Site Update",
+			f"benches/{site.bench}/sites/{site.name}/update/recover",
 			bench=site.bench,
 			site=site.name,
 		)
@@ -219,6 +236,27 @@ class Agent:
 			site=site.name,
 		)
 
+	def add_domain(self, site, domain):
+		data = {
+			"domain": domain,
+		}
+		return self.create_agent_job(
+			"Add Domain",
+			f"benches/{site.bench}/sites/{site.name}/domains",
+			data,
+			bench=site.bench,
+			site=site.name,
+		)
+
+	def remove_domain(self, site, domain):
+		return self.create_agent_job(
+			"Remove Domain",
+			f"benches/{site.bench}/sites/{site.name}/domains/{domain}",
+			method="DELETE",
+			site=site.name,
+			bench=site.bench,
+		)
+
 	def new_host(self, domain):
 		certificate = frappe.get_doc("TLS Certificate", domain.tls_certificate)
 		data = {
@@ -232,6 +270,14 @@ class Agent:
 		}
 		return self.create_agent_job(
 			"Add Host to Proxy", "proxy/hosts", data, host=domain.domain, site=domain.site
+		)
+
+	def remove_host(self, domain):
+		return self.create_agent_job(
+			"Remove Host from Proxy",
+			f"proxy/hosts/{domain.domain}",
+			method="DELETE",
+			site=domain.site,
 		)
 
 	def new_server(self, server):
@@ -272,6 +318,9 @@ class Agent:
 			site=site,
 			upstream=server,
 		)
+
+	def cleanup_unused_files(self):
+		return self.create_agent_job("Cleanup Unused Files", "server/cleanup", {})
 
 	def get(self, path):
 		return self.request("GET", path)

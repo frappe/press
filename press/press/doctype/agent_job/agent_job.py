@@ -7,7 +7,9 @@ import json
 import frappe
 from frappe.model.document import Document
 from press.agent import Agent
+from frappe.utils import pretty_date, convert_utc_to_user_timezone, get_url_to_form
 from press.utils import log_error
+from press.telegram import Telegram
 from frappe.core.utils import find
 import pytz
 from itertools import groupby
@@ -79,10 +81,16 @@ class AgentJob(Document):
 		).insert()
 		return job
 
+	def on_trash(self):
+		steps = frappe.get_all("Agent Job Step", filters={"agent_job": self.name})
+		for step in steps:
+			frappe.delete_doc("Agent Job Step", step.name)
+
 
 def job_detail(job):
 	job = frappe.get_doc("Agent Job", job)
 	steps = []
+	current = {}
 	for index, job_step in enumerate(
 		frappe.get_all(
 			"Agent Job Step",
@@ -190,7 +198,8 @@ def collect_site_analytics():
 							"doctype": "Site Job Log",
 							"job_name": log["job"]["method"],
 							"scheduled": log["job"]["scheduled"],
-							"wait": log["job"]["wait"],
+							"wait": log["job"]["wait"] / 1000,
+							"duration": log["duration"] / 1000,
 						}
 					)
 				frappe.get_doc(doc).db_insert()
@@ -204,25 +213,85 @@ def collect_site_uptime():
 	benches = frappe.get_all(
 		"Bench", fields=["name", "server"], filters={"status": "Active"},
 	)
+	online_sites = frappe.get_all("Site", filters={"status": "Active"})
+	online_sites = set(site.name for site in online_sites)
 	for bench in benches:
 		try:
 			agent = Agent(bench.server)
 			bench_status = agent.fetch_bench_status(bench.name)
 			if not bench_status:
 				continue
-
 			for site, status in bench_status["sites"].items():
-				doc = {
-					"doctype": "Site Uptime Log",
-					"site": site,
-					"web": status["web"],
-					"scheduler": status["scheduler"],
-					"timestamp": bench_status["timestamp"],
-				}
-				frappe.get_doc(doc).db_insert()
+				if site in online_sites:
+					doc = {
+						"doctype": "Site Uptime Log",
+						"site": site,
+						"web": status["web"],
+						"scheduler": status["scheduler"],
+						"timestamp": bench_status["timestamp"],
+					}
+					frappe.get_doc(doc).db_insert()
 			frappe.db.commit()
 		except Exception:
 			log_error("Agent Uptime Collection Exception", bench=bench, status=bench_status)
+
+
+def report_site_downtime():
+	# Report sites that are offline for at least last two minutes
+	# Also report how long they have been offline if possible
+	now = datetime.utcnow()
+	offline_site_logs = frappe.get_all(
+		"Site Uptime Log",
+		fields=["site", "count(site) as count"],
+		filters={"web": "False", "timestamp": (">", now - timedelta(minutes=2))},
+		group_by="site",
+	)
+	offline_sites = set(log.site for log in offline_site_logs if log.count >= 2)
+	if offline_sites:
+		last_online_logs = frappe.get_all(
+			"Site Uptime Log",
+			fields=["site", "max(timestamp) as last_online"],
+			filters={"site": ("in", offline_sites), "web": True},
+			group_by="site",
+		)
+		last_online_map = {log.site: log.last_online for log in last_online_logs}
+		sites = []
+		for site in offline_sites:
+			last_request = frappe.get_all(
+				"Site Request Log",
+				fields=["status_code"],
+				filters={"site": site},
+				order_by="creation desc",
+				limit=1,
+			)
+			if last_request and last_request.status_code == "429":
+				continue
+			last_online = last_online_map.get(site)
+			if last_online:
+				timestamp = convert_utc_to_user_timezone(last_online).replace(tzinfo=None)
+				human = pretty_date(timestamp)
+			else:
+				timestamp = datetime.min
+				human = "Forever"
+			sites.append(
+				{
+					"site": site,
+					"human": human,
+					"timestamp": timestamp,
+					"url": get_url_to_form("Site", site),
+				}
+			)
+		template = """*CRITICAL* - Sites offline
+
+{% for site in sites -%}
+	{{ site.human }} - [{{ site.site }}]({{ site.url }})
+{% endfor %}
+"""
+		message = frappe.render_template(
+			template, {"sites": sorted(sites, key=lambda x: x["timestamp"])}
+		)
+		telegram = Telegram()
+		telegram.send(message)
 
 
 def schedule_backups():
@@ -238,16 +307,22 @@ def schedule_backups():
 			site_time = server_time.astimezone(site_timezone)
 
 			if site_time.hour % interval == 0:
-				yesterday = site_time - timedelta(days=1)
+				today = site_time.date()
 				common_filters = {
-					"creation": [">", yesterday],
+					"creation": ("between", [today, today]),
 					"site": site.name,
 					"status": "Success",
 				}
-				offsite = not frappe.db.count("Site Backup", {**common_filters, "offsite": 1})
-				with_files = (
-					not frappe.db.count("Site Backup", {**common_filters, "with_files": 1}) or offsite
-				)
+				offsite = not frappe.get_all(
+					"Site Backup",
+					fields=["count(*) as total"],
+					filters={**common_filters, "offsite": 1},
+				)[0]["total"]
+				with_files = not frappe.get_all(
+					"Site Backup",
+					fields=["count(*) as total"],
+					filters={**common_filters, "with_files": 1},
+				)[0]["total"] or offsite
 
 				frappe.get_doc("Site", site.name).backup(with_files=with_files, offsite=offsite)
 
@@ -278,7 +353,7 @@ def poll_pending_jobs():
 				# Update Steps' Status
 				update_steps(job.name, polled_job)
 				publish_update(job.name)
-				if polled_job["steps"] and polled_job["steps"][-1]["status"] == "Failure":
+				if polled_job["status"] in ("Success", "Failure", "Undelivered"):
 					skip_pending_steps(job.name)
 
 				process_job_updates(job.name)
@@ -357,6 +432,7 @@ def process_job_updates(job_name):
 		from press.press.doctype.site.site import (
 			process_new_site_job_update,
 			process_archive_site_job_update,
+			process_migrate_site_job_update,
 			process_install_app_site_job_update,
 			process_reinstall_site_job_update,
 		)
@@ -381,6 +457,8 @@ def process_job_updates(job_name):
 			process_reinstall_site_job_update(job)
 		if job.job_type == "Reinstall Site":
 			process_reinstall_site_job_update(job)
+		if job.job_type == "Migrate Site":
+			process_migrate_site_job_update(job)
 		if job.job_type == "Install App on Site":
 			process_install_app_site_job_update(job)
 		if job.job_type == "Uninstall App from Site":
@@ -399,7 +477,11 @@ def process_job_updates(job_name):
 			process_update_site_job_update(job)
 		if job.job_type == "Update Site Pull":
 			process_update_site_job_update(job)
-		if job.job_type == "Recover Failed Site Migration":
+		if job.job_type == "Recover Failed Site Migrate":
+			process_update_site_recover_job_update(job)
+		if job.job_type == "Recover Failed Site Pull":
+			process_update_site_recover_job_update(job)
+		if job.job_type == "Recover Failed Site Update":
 			process_update_site_recover_job_update(job)
 	except Exception:
 		log_error("Agent Job Callback Exception", job=job.as_dict())

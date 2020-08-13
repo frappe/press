@@ -45,4 +45,21 @@ frappe.ui.form.on('Team', {
 			'Actions'
 		);
 	},
+
+});
+
+frappe.ui.form.on('Team Member', {
+	impersonate: function (frm, doctype, member) {
+		frappe.prompt(
+			[
+				{ fieldtype: 'HTML', options: "Beware! Your current session will be replaced." },
+				{ fieldtype: 'Text Editor', label: 'Reason', fieldname: 'reason', reqd: 1 }],
+			({ reason }) => {
+				frm.call('impersonate', { reason, member }).then((r) => {
+					location.href = "/dashboard";
+				});
+			},
+			"Impersonate User"
+		);
+	}
 });

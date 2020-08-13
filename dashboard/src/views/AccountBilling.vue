@@ -4,6 +4,7 @@
 			class="mb-10"
 			title="Upcoming Invoice"
 			description="This is the amount so far based on the usage of your sites"
+			v-if="$resources.billingDetails.loading || upcomingInvoice"
 		>
 			<SectionCard>
 				<div
@@ -18,12 +19,12 @@
 						:items="
 							[
 								{
-									label: 'Available Credits',
-									value: availableCredits
+									label: 'Usage So Far',
+									value: upcomingInvoice.total_amount
 								},
 								{
-									label: 'Usage Amount',
-									value: upcomingInvoice.amount
+									label: 'Available Credits',
+									value: availableCredits
 								},
 								upcomingInvoice.next_payment_attempt
 									? {
@@ -40,11 +41,11 @@
 					/>
 				</template>
 				<div
-					class="px-6 py-4"
-					v-if="!$resources.billingDetails.loading && !upcomingInvoice"
+					class="px-6 pb-4"
+					v-if="!$resources.billingDetails.loading && !paymentMethodAdded"
 				>
 					<Button type="primary" route="/welcome">
-						Setup your account
+						Add Billing Information
 					</Button>
 				</div>
 				<div
@@ -100,37 +101,50 @@
 		</Dialog>
 
 		<Section
-			v-if="pastPayments.length"
+			v-if="pastInvoices.length"
 			class="mb-10"
-			title="Past Payments"
+			title="Past Invoices"
 			description="History of your invoice payments"
 		>
 			<SectionCard>
 				<div
-					class="grid items-center grid-cols-3 px-6 py-4 hover:bg-gray-50"
-					v-for="payment in pastPayments"
-					:key="payment.stripe_invoice_id"
+					class="grid items-start grid-cols-5 px-6 py-4 hover:bg-gray-50"
+					v-for="invoice in pastInvoices"
+					:key="invoice.name"
 				>
-					<div class="text-base font-semibold">
-						<div v-if="payment.status === 'Paid'">
-							{{ payment.payment_date }}
+					<div class="col-span-2">
+						<div class="text-base font-semibold">
+							{{ invoicePeriod(invoice) }}
 						</div>
-						<div v-else-if="payment.payment_link">
-							<a
-								class="inline-flex items-center justify-center text-blue-500"
-								:href="payment.payment_link"
-								target="_blank"
-							>
-								Pay Now
-								<FeatherIcon name="arrow-right" class="w-4 h-4 ml-2" />
-							</a>
-						</div>
+						<div class="mt-2 text-base">{{ invoice.formatted_total }}</div>
 					</div>
-					<div class="text-base">{{ payment.formatted_amount }}</div>
-					<div>
-						<Badge :color="{ Paid: 'green', Failed: 'red' }[payment.status]">
-							{{ payment.status }}
+					<div class="text-right">
+						<Badge v-if="invoice.status == 'Paid'" color="green">
+							Paid
 						</Badge>
+						<Badge v-else-if="invoice.status == 'Invoice Created'" color="blue">
+							Created
+						</Badge>
+					</div>
+					<div class="col-span-2 text-right">
+						<a
+							v-if="invoice.status == 'Paid' && invoice.invoice_pdf"
+							class="inline-flex items-center justify-center text-base text-blue-500"
+							:href="invoice.invoice_pdf"
+							target="_blank"
+						>
+							Download Invoice
+							<FeatherIcon name="arrow-right" class="w-4 h-4 ml-2" />
+						</a>
+						<a
+							v-if="invoice.status != 'Paid' && invoice.stripe_invoice_url"
+							class="inline-flex items-center justify-center text-base text-blue-500"
+							:href="invoice.stripe_invoice_url"
+							target="_blank"
+						>
+							Pay Now
+							<FeatherIcon name="arrow-right" class="w-4 h-4 ml-2" />
+						</a>
 					</div>
 				</div>
 			</SectionCard>
@@ -182,6 +196,7 @@
 import StripeCard from '@/components/StripeCard';
 import Dialog from '@/components/Dialog';
 import DescriptionList from '@/components/DescriptionList';
+import { DateTime } from 'luxon';
 
 export default {
 	name: 'AccountBilling',
@@ -196,7 +211,7 @@ export default {
 			default: {
 				upcoming_invoice: null,
 				available_credits: null,
-				past_payments: []
+				past_invoices: []
 			},
 			auto: true
 		},
@@ -227,11 +242,14 @@ export default {
 		};
 	},
 	computed: {
+		paymentMethodAdded() {
+			return this.billingDetails.data?.payment_method;
+		},
 		upcomingInvoice() {
 			return this.billingDetails.data?.upcoming_invoice;
 		},
-		pastPayments() {
-			return this.billingDetails.data?.past_payments || [];
+		pastInvoices() {
+			return this.billingDetails.data?.past_invoices || [];
 		},
 		availableCredits() {
 			return this.billingDetails.data?.available_credits;
@@ -246,6 +264,16 @@ export default {
 			this.availablePartnerCredits = await this.$call(
 				'press.api.billing.get_available_partner_credits'
 			);
+		},
+		invoicePeriod(invoice) {
+			if (!invoice.period_start || !invoice.period_end) {
+				return invoice.payment_date;
+			}
+			let periodStart = DateTime.fromSQL(invoice.period_start);
+			let periodEnd = DateTime.fromSQL(invoice.period_end);
+			let start = periodStart.toLocaleString({ month: 'long', day: 'numeric' });
+			let end = periodEnd.toLocaleString({ month: 'short', day: 'numeric' });
+			return `${start} - ${end} ${periodEnd.year}`;
 		}
 	}
 };

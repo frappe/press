@@ -13,7 +13,9 @@ import subprocess
 import frappe
 from frappe.model.document import Document
 from press.api.github import get_access_token
+from frappe.utils import get_url_to_form
 from press.utils import log_error
+from press.telegram import Telegram
 from pygments import highlight
 from pygments.lexers import PythonLexer as PL
 from pygments.formatters import HtmlFormatter as HF
@@ -73,8 +75,16 @@ class AppRelease(Document):
 			self._approve_if_no_issues_found()
 
 			self.save()
+			self.send_telegram_notification()
 		except Exception:
 			log_error("App Release Screen Error", release=self.name)
+
+	def send_telegram_notification(self):
+		if self.status == "Awaiting Approval":
+			telegram = Telegram()
+			form_url = get_url_to_form(self.doctype, self.name)
+			message = f"*URGENT* - Awaiting Approval [{self.app}]({form_url})"
+			telegram.send(message)
 
 	def run(self, command):
 		return subprocess.check_output(

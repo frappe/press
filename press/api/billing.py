@@ -4,7 +4,6 @@
 from __future__ import unicode_literals
 import frappe
 import stripe
-from datetime import datetime
 from frappe.utils import global_date_format, fmt_money, flt
 from press.utils import get_current_team
 
@@ -22,30 +21,28 @@ def get_publishable_key_and_setup_intent():
 def info():
 	team = get_current_team()
 	team_doc = frappe.get_doc("Team", team)
-	has_subscription = team_doc.has_subscription()
-	if not has_subscription:
-		return
-
 	invoice = team_doc.get_upcoming_invoice()
-	customer_email = invoice["customer_email"]
-	next_payment_attempt = invoice["next_payment_attempt"]
-	total_amount = invoice["amount_due"]
 	currency = team_doc.currency
-	past_payments = team_doc.get_past_payments()
-	next_payment_attempt = (
-		global_date_format(datetime.fromtimestamp(next_payment_attempt))
-		if next_payment_attempt
-		else None
-	)
-	upcoming_invoice = {
-		"next_payment_attempt": next_payment_attempt,
-		"amount": format_stripe_money(total_amount, currency),
-		"customer_email": customer_email,
-	}
+
+	if invoice:
+		next_payment_attempt = (
+			global_date_format(invoice.due_date) if invoice.due_date else None
+		)
+		upcoming_invoice = {
+			"next_payment_attempt": next_payment_attempt,
+			"amount": invoice.get_formatted("amount_due"),
+			"total_amount": invoice.get_formatted("total"),
+			"customer_email": invoice.customer_email,
+		}
+	else:
+		upcoming_invoice = None
+
+	past_invoices = team_doc.get_past_invoices()
 
 	return {
 		"upcoming_invoice": upcoming_invoice,
-		"past_payments": past_payments,
+		"past_invoices": past_invoices,
+		"payment_method": team_doc.default_payment_method,
 		"available_credits": fmt_money(team_doc.get_available_credits(), 2, currency),
 	}
 

@@ -23,6 +23,7 @@ def get_current_team():
 		# if this is not a request, send the current user as default team
 		return frappe.session.user
 
+	user_is_system_user = frappe.session.data.user_type == "System User"
 	# get team passed via request header
 	team = frappe.get_request_header("X-Press-Team")
 
@@ -38,7 +39,7 @@ def get_current_team():
 	valid_team = frappe.db.exists(
 		"Team Member", {"parenttype": "Team", "parent": team, "user": frappe.session.user}
 	)
-	if not valid_team:
+	if not valid_team and not user_is_system_user:
 		frappe.throw(
 			"User {0} does not belong to Team {1}".format(frappe.session.user, team),
 			frappe.PermissionError,

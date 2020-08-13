@@ -115,6 +115,13 @@ class Site(Document):
 		self.status = "Pending"
 		self.save()
 
+	def migrate(self):
+		log_site_activity(self.name, "Migrate")
+		agent = Agent(self.server)
+		agent.migrate_site(self)
+		self.status = "Pending"
+		self.save()
+
 	def restore_site(self):
 		if not frappe.get_doc("Remote File", self.remote_database_file).exists():
 			raise Exception(
@@ -146,22 +153,17 @@ class Site(Document):
 	def schedule_update(self):
 		log_site_activity(self.name, "Update")
 		frappe.get_doc({"doctype": "Site Update", "site": self.name}).insert()
-		if self.status in ("Inactive", "Suspended"):
-			self.status_before_update = self.status
-		else:
-			self.status_before_update = None
+		self.status_before_update = self.status
 		self.status = "Pending"
 		self.save()
 
 	def reset_previous_status(self):
-		if self.status_before_update == "Inactive":
-			self.status_before_update = None
-			self.deactivate()
-		elif self.status_before_update == "Suspended":
-			self.status_before_update = None
-			self.suspend("Resuspended after update")
+		self.status = self.status_before_update
+		self.status_before_update = None
+		self.save()
 
 	def add_domain(self, domain):
+		domain = domain.lower()
 		if check_dns(self.name, domain):
 			log_site_activity(self.name, "Add Domain")
 			frappe.get_doc(
@@ -174,6 +176,20 @@ class Site(Document):
 					"ssl": False,
 				}
 			).insert()
+
+	def add_domain_to_config(self, domain):
+		agent = Agent(self.server)
+		agent.add_domain(self, domain)
+
+	def remove_domain_from_config(self, domain):
+		agent = Agent(self.server)
+		agent.remove_domain(self, domain)
+
+	def remove_domain(self, domain):
+		site_domain = frappe.get_all(
+			"Site Domain", filters={"site": self.name, "domain": domain}
+		)[0]
+		site_domain = frappe.delete_doc("Site Domain", site_domain.name)
 
 	def retry_add_domain(self, domain):
 		if check_dns(self.name, domain):
@@ -303,6 +319,22 @@ class Site(Document):
 		agent = Agent(proxy_server, server_type="Proxy Server")
 		agent.update_site_status(self.server, self.name, status)
 
+	def create_usage_ledger_entry(self):
+		doc = frappe.new_doc("Payment Ledger Entry")
+		doc.site = self.name
+		doc.purpose = "Site Consumption"
+		doc.insert()
+		frappe.db.commit()
+		try:
+			doc.submit()
+		except Exception:
+			frappe.db.rollback()
+			log_error(title="Submit Payment Ledger Entry", doc=doc.name)
+			doc.reload()
+			doc.increment_failed_attempt()
+			doc.add_comment(text=f"<pre><code>{frappe.get_traceback()}</code></pre>")
+		return doc
+
 	def _create_initial_site_plan_change(self):
 		frappe.get_doc(
 			{
@@ -321,6 +353,24 @@ class Site(Document):
 
 	def get_server_log(self, log):
 		return Agent(self.server).get(f"benches/{self.bench}/sites/{self.name}/logs/{log}")
+
+
+def site_cleanup_after_archive(site):
+	delete_logs(site)
+	delete_site_domains(site)
+	release_name(site)
+
+
+def delete_logs(site):
+	frappe.db.delete("Site Job Log", {"site": site})
+	frappe.db.delete("Site Request Log", {"site": site})
+	frappe.db.delete("Site Uptime Log", {"site": site})
+
+
+def delete_site_domains(site):
+	domains = frappe.get_all("Site Domain", {"site": site})
+	for domain in domains:
+		frappe.delete_doc("Site Domain", domain.name)
 
 
 def release_name(name):
@@ -379,7 +429,7 @@ def process_archive_site_job_update(job):
 	if updated_status != site_status:
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 		if updated_status == "Archived":
-			release_name(job.site)
+			site_cleanup_after_archive(job.site)
 
 
 def process_install_app_site_job_update(job):
@@ -399,6 +449,19 @@ def process_reinstall_site_job_update(job):
 	updated_status = {
 		"Pending": "Pending",
 		"Running": "Installing",
+		"Success": "Active",
+		"Failure": "Broken",
+	}[job.status]
+
+	site_status = frappe.get_value("Site", job.site, "status")
+	if updated_status != site_status:
+		frappe.db.set_value("Site", job.site, "status", updated_status)
+
+
+def process_migrate_site_job_update(job):
+	updated_status = {
+		"Pending": "Pending",
+		"Running": "Updating",
 		"Success": "Active",
 		"Failure": "Broken",
 	}[job.status]
