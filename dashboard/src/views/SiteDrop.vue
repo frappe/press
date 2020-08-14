@@ -11,7 +11,7 @@
 		<Dialog v-model="showDialog" title="Drop Site">
 			<p class="text-base">
 				Are you sure you want to drop your site? The site will be archived and
-				all of its files will be deleted. This action cannot be undone.
+				all of its files and Offsite Backups will be deleted. This action cannot be undone.
 			</p>
 			<p class="mt-4 text-base">
 				Please type
