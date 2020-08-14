@@ -25,13 +25,19 @@ def get_remote_key(file):
 
 
 def poll_file_statuses():
+	from datetime import datetime, timedelta
+
 	doctype = "Remote File"
-	for d in frappe.get_all(doctype):
+	remote_files = frappe.get_all(doctype, filters={"modified": (">", datetime.now() - timedelta(days=3))})
+
+	for d in remote_files:
 		doc = frappe.get_doc(doctype, d["name"])
 		current_status = "Available" if doc.exists() else "Unavailable"
 		if current_status != doc.status:
 			doc.status = current_status
 			doc.save()
+
+	frappe.db.commit()
 
 
 class RemoteFile(Document):
