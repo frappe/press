@@ -26,7 +26,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Action",
-   "options": "Activate Site\nAdd Domain\nArchive\nBackup\nCreate\nDeactivate Site\nInstall App\nLogin as Administrator\nMigrate\nReinstall\nRestore\nSuspend Site\nUninstall App\nUnsuspend Site\nUpdate\nUpdate Configuration\nDelete All Offsite Backups",
+   "options": "Activate Site\nAdd Domain\nArchive\nBackup\nCreate\nDeactivate Site\nInstall App\nLogin as Administrator\nMigrate\nReinstall\nRestore\nSuspend Site\nUninstall App\nUnsuspend Site\nUpdate\nUpdate Configuration\nDrop Offsite Backups",
    "read_only": 1,
    "reqd": 1
   },
@@ -37,7 +37,7 @@
   }
  ],
  "links": [],
- "modified": "2020-08-14 18:33:30.071095",
+ "modified": "2020-08-14 18:34:30.071095",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Activity",

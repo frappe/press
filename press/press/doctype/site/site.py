@@ -227,7 +227,7 @@ class Site(Document):
 		self.delete_offsite_backups()
 
 	def delete_offsite_backups(self):
-		log_site_activity(self.name, "Delete All Offsite Backups")
+		log_site_activity(self.name, "Drop Offsite Backups")
 		del_obj = []
 		offsite_backups = [
 			frappe.db.get_value(
