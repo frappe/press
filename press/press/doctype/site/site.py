@@ -293,6 +293,7 @@ class Site(Document):
 		agent = Agent(self.server)
 		data = agent.get_site_info(self)
 		fetched_config = data["config"]
+		fetched_usage = data["usage"]
 		keys_to_fetch = ["encryption_key"]
 		config = {key: fetched_config[key] for key in keys_to_fetch if key in fetched_config}
 		new_config = json.loads(self.config)
@@ -300,14 +301,13 @@ class Site(Document):
 		self.config = json.dumps(new_config, indent=4)
 		self.timezone = data["timezone"]
 
-		fetched_usage = data["usage"]
 		frappe.get_doc({
 			"doctype": "Site Usage",
 			"site": self.name,
-			"database": self.database_usage,
-			"public": self.public_files_usage,
-			"private": self.private_files_usage,
-			"backups": self.backups_usage
+			"database": fetched_usage["database"],
+			"public": fetched_usage["public"],
+			"private": fetched_usage["private"],
+			"backups": fetched_usage["backups"]
 		}).insert()
 
 		self.save()
