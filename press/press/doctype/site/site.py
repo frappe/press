@@ -300,14 +300,12 @@ class Site(Document):
 		new_config = json.loads(self.config)
 		new_config.update(config)
 		current_config = json.dumps(new_config, indent=4)
+		dirty = (self.config != current_config) or (self.timezone != data["timezone"])
 
-		if self.config != current_config:
+		if dirty:
 			self.config = current_config
-			dirty = True
-
-		if self.timezone != data["timezone"]:
 			self.timezone = data["timezone"]
-			dirty = True
+			self.save()
 
 		frappe.get_doc(
 			{
@@ -319,9 +317,6 @@ class Site(Document):
 				"backups": fetched_usage["backups"],
 			}
 		).insert()
-
-		if dirty:
-			self.save()
 
 	def is_setup_wizard_complete(self):
 		if self.setup_wizard_complete:
