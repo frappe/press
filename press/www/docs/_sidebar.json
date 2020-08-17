@@ -16,8 +16,8 @@
         "route": "/docs/sites/creating-a-new-site"
       },
       {
-        "title": "Restore an existing site",
-        "route": "/docs/sites/restore-an-existing-site"
+        "title": "Migrate an existing site",
+        "route": "/docs/sites/migrate-an-existing-site"
       },
       {
         "title": "Monitoring",
@@ -46,45 +46,11 @@
     ]
   },
   {
-    "group_title": "Custom Apps",
-    "group_items": [
-      {
-        "title": "Adding a custom app",
-        "route": "/docs/user/en/installation"
-      },
-      {
-        "title": "App Release and Deploy",
-        "route": "/docs/user/en/guides"
-      }
-    ]
-  },
-  {
-    "group_title": "Team",
-    "group_items": [
-      {
-        "title": "Adding members",
-        "route": "/docs/user/en/installation"
-      },
-      {
-        "title": "Member privileges",
-        "route": "/docs/user/en/guides"
-      }
-    ]
-  },
-  {
     "group_title": "Billing",
     "group_items": [
       {
-        "title": "Paying your bill",
-        "route": "/docs/user/en/installation"
-      },
-      {
-        "title": "Managing Cards",
-        "route": "/docs/user/en/guides"
-      },
-      {
-        "title": "Invoices",
-        "route": "/docs/user/en/guides"
+        "title": "Bill Payments",
+        "route": "/docs/billing/bill-payments"
       }
     ]
   }

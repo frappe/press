@@ -13,3 +13,5 @@ backup and download it.
 1. Click on Drop Site.
 1. Type the site name to confirm this action.
 1. Click on Drop Site.
+
+[![Delete Site](/assets/press/images/docs/drop-site.png)](/assets/press/images/docs/drop-site.png)

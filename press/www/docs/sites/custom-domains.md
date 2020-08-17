@@ -4,6 +4,8 @@ title: Custom Domains - Sites
 
 # Custom Domains
 
+Frappe Cloud allows you to map custom domains that you own in a few simple steps.
+
 1. From your site page, go to **Domains** tab.
 2. Click on Add Domain.
 3. Enter the custom domain.
@@ -15,6 +17,8 @@ title: Custom Domains - Sites
    example.frappe.cloud.
 
    For the instructions to add such a record please contact your domain provider.
+
+   [![Custom Domains](/assets/press/images/docs/custom-domains.png)](/assets/press/images/docs/custom-domains.png)
 5. Click on Verify DNS.
 6. If we can verify that you have correctly added the CNAME record, then you
    will see Add Domain button. Click on Add Domain.

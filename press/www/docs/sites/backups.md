@@ -6,15 +6,21 @@ title: Backups - Sites
 
 Frappe Cloud takes automated backup of your sites every 6 hours.
 
-1 out of every 4 automated backup is stored offsite, which means the files are
-stored on a different server than the site. This ensures that you can access
-your backups even in the unfortunate event of server downtime.
-
 ## Downloading backups
 
 On the site page, go to the **Backups** tab. Here you will see the list of
 backups that were taken of your site. Every backup consists of a database
 backup, public files backup and private files backup.
+
+[![Offsite Backups](/assets/press/images/docs/backups.png)](/assets/press/images/docs/backups.png)
+
+## Offsite Backups
+
+1 out of every 4 automated backup is stored offsite, which means the files are
+stored on a different server than the site. This ensures that you can access
+your backups even in the unfortunate event of server downtime.
+
+Offsite backups are marked as such in the Backups tab.
 
 ## Trigger on-demand backup
 

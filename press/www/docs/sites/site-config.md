@@ -21,3 +21,5 @@ For e.g.
 1. Go to the **Site Config** tab.
 1. Enter values in the corresponding input field.
 1. Click on **Update Configuration**.
+
+[![Offsite Backups](/assets/press/images/docs/site-config.png)](/assets/press/images/docs/site-config.png)
