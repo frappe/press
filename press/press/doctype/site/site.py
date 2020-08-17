@@ -227,8 +227,12 @@ class Site(Document):
 		self.delete_offsite_backups()
 
 	def delete_offsite_backups(self):
+		# self._del_obj and self._s3_response are object properties available when this method is called
+		from boto3 import resource
+
 		log_site_activity(self.name, "Drop Offsite Backups")
-		del_obj = []
+
+		self._del_obj = {}
 		offsite_backups = [
 			frappe.db.get_value(
 				"Site Backup",
@@ -237,14 +241,36 @@ class Site(Document):
 			)
 			for doc in frappe.get_all("Site Backup", filters={"site": self.name, "offsite": 1})
 		]
+		offsite_bucket = {
+			"bucket": frappe.db.get_single_value("Press Settings", "aws_s3_bucket"),
+			"access_key_id": frappe.db.get_single_value(
+				"Press Settings", "offsite_backups_access_key_id"
+			),
+			"secret_access_key": get_decrypted_password(
+				"Press Settings", "Press Settings", "offsite_backups_secret_access_key"
+			),
+		}
+		s3 = resource(
+			"s3",
+			aws_access_key_id=offsite_bucket["access_key_id"],
+			aws_secret_access_key=offsite_bucket["secret_access_key"],
+			region_name="ap-south-1",
+		)
+
 		for remote_files in offsite_backups:
 			for file in remote_files:
 				if file:
-					s3_res = frappe.get_doc("Remote File", file).delete_remote_object()
-					del_obj.append(s3_res)
+					self._del_obj[file] = frappe.db.get_value("Remote File", file, "file_path")
 
-		# helps in debugging via console
-		self._s3_response = del_obj
+		if not self._del_obj:
+			return
+
+		self._s3_response = s3.Bucket(offsite_bucket["bucket"]).delete_objects(
+			Delete={"Objects": [{"Key": x} for x in self._del_obj.values()]}
+		)
+
+		for key in self._del_obj:
+			frappe.db.set_value("Remote File", key, "status", "Unavailable")
 
 	def login(self):
 		log_site_activity(self.name, "Login as Administrator")
