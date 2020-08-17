@@ -70,7 +70,9 @@
   "telegram_section",
   "telegram_chat_id",
   "column_break_65",
-  "telegram_bot_token"
+  "telegram_bot_token",
+  "product_documentation_section",
+  "publish_docs"
  ],
  "fields": [
   {
@@ -426,12 +428,23 @@
   {
    "fieldname": "column_break_65",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "publish_docs",
+   "fieldtype": "Check",
+   "label": "Published"
+  },
+  {
+   "fieldname": "product_documentation_section",
+   "fieldtype": "Section Break",
+   "label": "Product Documentation"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2020-07-28 09:57:43.925012",
- "modified_by": "Administrator",
+ "modified": "2020-08-17 21:48:01.198091",
+ "modified_by": "faris@erpnext.com",
  "module": "Press",
  "name": "Press Settings",
  "owner": "Administrator",
