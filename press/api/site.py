@@ -138,7 +138,8 @@ def backups(name):
 		"Site Backup",
 		fields=fields,
 		filters={"site": name, "status": ("!=", "Failure"), "offsite": 1},
-		limit=available_offsite_backups,
+		order_by="creation desc",
+		limit_page_length=available_offsite_backups
 	)
 	return sorted(
 		latest_backups + offsite_backups, key=lambda x: x["creation"], reverse=True
