@@ -58,6 +58,8 @@ base_template_map = {
 	r"docs.*": "templates/doc.html"
 }
 
+update_website_context = ["press.overrides.update_website_context"]
+
 # Installation
 # ------------
 
