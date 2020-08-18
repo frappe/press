@@ -62,7 +62,7 @@ update_website_context = ["press.overrides.update_website_context"]
 # ------------
 
 # before_install = "press.install.before_install"
-# after_install = "press.install.after_install"
+after_install = "press.install.after_install"
 
 # Desk Notifications
 # ------------------
