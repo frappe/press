@@ -558,6 +558,7 @@ def sync_sites():
 			bench=bench,
 			enqueue_after_commit=True,
 		)
+	frappe.db.commit()
 
 
 def sync_bench_sites(bench):
