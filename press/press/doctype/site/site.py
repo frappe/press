@@ -299,6 +299,17 @@ class Site(Document):
 		new_config.update(config)
 		self.config = json.dumps(new_config, indent=4)
 		self.timezone = data["timezone"]
+
+		fetched_usage = data["usage"]
+		frappe.get_doc({
+			"doctype": "Site Usage",
+			"site": self.name,
+			"database": self.database_usage,
+			"public": self.public_files_usage,
+			"private": self.private_files_usage,
+			"backups": self.backups_usage
+		}).insert()
+
 		self.save()
 
 	def is_setup_wizard_complete(self):
