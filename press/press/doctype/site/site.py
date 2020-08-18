@@ -290,16 +290,33 @@ class Site(Document):
 			return agent.get_site_sid(self)
 
 	def sync_info(self):
+		dirty = False
 		agent = Agent(self.server)
 		data = agent.get_site_info(self)
 		fetched_config = data["config"]
+		fetched_usage = data["usage"]
 		keys_to_fetch = ["encryption_key"]
 		config = {key: fetched_config[key] for key in keys_to_fetch if key in fetched_config}
 		new_config = json.loads(self.config)
 		new_config.update(config)
-		self.config = json.dumps(new_config, indent=4)
-		self.timezone = data["timezone"]
-		self.save()
+		current_config = json.dumps(new_config, indent=4)
+		dirty = (self.config != current_config) or (self.timezone != data["timezone"])
+
+		if dirty:
+			self.config = current_config
+			self.timezone = data["timezone"]
+			self.save()
+
+		frappe.get_doc(
+			{
+				"doctype": "Site Usage",
+				"site": self.name,
+				"database": fetched_usage["database"],
+				"public": fetched_usage["public"],
+				"private": fetched_usage["private"],
+				"backups": fetched_usage["backups"],
+			}
+		).insert()
 
 	def is_setup_wizard_complete(self):
 		if self.setup_wizard_complete:
