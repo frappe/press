@@ -54,9 +54,7 @@ version = app_version
 
 look_for_sidebar_json = True
 
-base_template_map = {
-	r"docs.*": "templates/doc.html"
-}
+base_template_map = {r"docs.*": "templates/doc.html"}
 
 update_website_context = ["press.overrides.update_website_context"]
 

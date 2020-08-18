@@ -6,5 +6,5 @@ import frappe
 
 
 def get_context(context):
-	frappe.flags.redirect_location = '/docs/getting-started/overview'
+	frappe.flags.redirect_location = "/docs/getting-started/overview"
 	raise frappe.Redirect
