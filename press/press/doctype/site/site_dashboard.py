@@ -9,6 +9,8 @@ def get_data():
 	return {
 		"fieldname": "site",
 		"transactions": [
+			{"label": _("Usage"), "items": ["Site Usage", "Remote File"]},
+			{"label": _("Billing"), "items": ["Payment Ledger Entry"]},
 			{
 				"label": _("Related Documents"),
 				"items": ["Site Domain", "Site Activity", "Site Plan Change"],
@@ -24,6 +26,5 @@ def get_data():
 					"Site Request Log",
 				],
 			},
-			{"label": _("Billing"), "items": ["Payment Ledger Entry"]},
 		],
 	}

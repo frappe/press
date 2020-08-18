@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "file_name",
+  "site",
   "status",
   "section_break_5",
   "file_size",
@@ -64,12 +65,19 @@
    "fieldtype": "Data",
    "label": "Location",
    "read_only": 1
+  },
+  {
+   "fieldname": "site",
+   "fieldtype": "Link",
+   "label": "Site",
+   "options": "Site",
+   "read_only": 1
   }
  ],
  "icon": "fa fa-file",
  "links": [],
- "modified": "2020-07-17 15:53:44.984197",
- "modified_by": "Administrator",
+ "modified": "2020-08-18 14:29:53.686444",
+ "modified_by": "gavin18d@gmail.com",
  "module": "Press",
  "name": "Remote File",
  "owner": "Administrator",
@@ -101,6 +109,7 @@
    "write": 1
   }
  ],
+ "search_fields": "file_name",
  "sort_field": "modified",
  "sort_order": "ASC",
  "title_field": "file_name",
