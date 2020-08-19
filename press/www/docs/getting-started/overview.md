@@ -40,5 +40,4 @@ provider of your choice.
 ## Affordable Pricing
 
 Frappe Cloud starts with $10 per site per month, so you can give it a test spin
-without investing too much. You also get a free $25 credit, so you dont even
-need to add your payment details to get started.
+without investing too much. You even get a free $25 credit on signup.
