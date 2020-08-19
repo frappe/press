@@ -273,7 +273,7 @@ def get_plans():
 def all():
 	sites = frappe.get_list(
 		"Site",
-		fields=["name", "status", "modified", "bench"],
+		fields=["name", "status", "creation", "bench"],
 		filters={"team": get_current_team(), "status": ("!=", "Archived")},
 		order_by="creation desc",
 	)
@@ -310,6 +310,11 @@ def get(name):
 		filters={"name": ("in", available_apps)},
 	)
 
+	try:
+		last_updated = frappe.get_all("Site Update", fields=["modified"], filters={"site": name}, order_by="creation desc", limit_page_length=1)[0].modified
+	except Exception:
+		last_updated = site.modified
+
 	return {
 		"name": site.name,
 		"status": site.status,
@@ -318,7 +323,7 @@ def get(name):
 		"setup_wizard_complete": site.setup_wizard_complete,
 		"config": json.loads(site.config),
 		"creation": site.creation,
-		"last_updated": site.modified,
+		"last_updated": last_updated,
 		"update_available": (site.bench in benches_with_available_update())
 		and should_try_update(site),
 	}
