@@ -9,6 +9,7 @@ import json
 import requests
 from datetime import datetime, timedelta
 from python_minifier import minify
+from urllib.parse import urljoin
 
 
 def log_error(title, **kwargs):
@@ -109,53 +110,74 @@ def get_minified_script():
 	return minify(script_contents)
 
 
-def verify_frappe_site(site):
-	schema = "http"
-	status = False
+def verify_frappe_site(site_url):
+	url = None
 
 	try:
-		res = requests.get(f"{schema}://{site}/api/method/frappe.ping")
-		data = res.json()
-		if data.get("message") == "pong":
-			status = True
+		res = requests.get(f"{site_url}/api/method/frappe.ping")
+		if res.ok:
+			data = res.json()
+			if data.get("message") == "pong":
+				url = res.url.split("/api")[0]
 	except Exception:
 		pass
 
-	return {"schema": schema, "status": status}
+	return url
 
 
-def get_frappe_backups(site, auth):
+def get_frappe_backups(site_url, username, password):
 	schema = "https"
 	headers = {"Accept": "application/json", "Content-Type": "application/json"}
-	usr = auth.get("usr")
-	pwd = auth.get("pwd")
-	passwd = usr and pwd
 
-	def url(path):
-		host = site.split(":")[0]
-		file = path.lstrip(f"./{host}/private/")
-		url = f"{schema}://{site}/{file}?sid={sid}"
-		return url
+	if not site_url.startswith("http"):
+		# http will be redirected to https in requests
+		site_url = f"http://{site_url}"
 
-	if passwd:
-		# tested - works
-		response = requests.post(
-			f"{schema}://{site}/api/method/login", data={"usr": usr, "pwd": pwd},
-		)
+	site_url = verify_frappe_site(site_url)
+	if not site_url:
+		frappe.throw("Invalid Frappe Site")
+
+	# tested - works
+	response = requests.post(
+		f"{site_url}/api/method/login", data={"usr": username, "pwd": password},
+	)
+	if response.ok:
 		sid = response.cookies.get("sid")
+	else:
+		if response.status_code == 401:
+			frappe.throw("Invalid Credentials")
+		else:
+			response.raise_for_status()
 
-	suffix = f"?sid={sid}" if passwd else ""
-	data = requests.post(
-		f"{schema}://{site}/api/method/frappe.utils.backups.fetch_latest_backups{suffix}",
+	suffix = f"?sid={sid}" if sid else ""
+	res = requests.get(
+		f"{site_url}/api/method/frappe.utils.backups.fetch_latest_backups{suffix}",
 		headers=headers,
 	)
 
-	if data.ok:
-		payload = data.json()
-		files = {x: url(y) for x, y in payload.get("message", {}).items()}
-		exc = payload.get("exc", "")
-	else:
-		files = {}
-		exc = data.raw
+	def url(file_path, sid):
+		if not file_path:
+			return None
+		backup_path = file_path.split('/private')[1]
+		return urljoin(site_url, f'{backup_path}?sid={sid}')
 
-	return {"site": site, "status": data.status_code, "exc": exc, "files": files}
+	if res.ok:
+		payload = res.json()
+		files = payload.get('message', {})
+
+		missing_files = []
+		file_urls = {}
+		for file_type, file_path in files.items():
+			if file_type == 'config':
+				continue
+			if not file_path:
+				missing_files.append(file_type)
+			else:
+				file_urls[file_type] = url(file_path, sid)
+
+		if missing_files:
+			frappe.throw(f'Missing backup files: {", ".join(missing_files)}')
+
+		return file_urls
+	else:
+		frappe.throw("An unknown error occurred")

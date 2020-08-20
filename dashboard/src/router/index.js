@@ -107,7 +107,7 @@ const routes = [
 		path: '/sites/new',
 		name: 'NewSite',
 		component: () =>
-			import(/* webpackChunkName: "newsite" */ '../views/NewSite.vue'),
+			import(/* webpackChunkName: "newsite" */ '../views/NewSite/Index.vue'),
 		props: true
 	},
 	{
