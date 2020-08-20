@@ -52,11 +52,17 @@ version = app_version
 # automatically create page for each record of this doctype
 # website_generators = ["Web Page"]
 
+look_for_sidebar_json = True
+
+base_template_map = {r"docs.*": "templates/doc.html"}
+
+update_website_context = ["press.overrides.update_website_context"]
+
 # Installation
 # ------------
 
 # before_install = "press.install.before_install"
-# after_install = "press.install.after_install"
+after_install = "press.install.after_install"
 
 # Desk Notifications
 # ------------------
@@ -111,6 +117,7 @@ scheduler_events = {
 		"press.press.doctype.bench.bench.archive_obsolete_benches",
 		"press.press.doctype.bench.bench.scale_workers",
 		"press.press.doctype.agent_job.agent_job.schedule_backups",
+		"press.press.doctype.site.site.sync_sites",
 	],
 	"cron": {
 		"* * * * * 0/5": ["press.press.doctype.agent_job.agent_job.poll_pending_jobs"],
@@ -120,14 +127,8 @@ scheduler_events = {
 			"press.press.doctype.agent_job.agent_job.report_site_downtime",
 		],
 		"* * * * * 0/30": ["press.press.doctype.agent_job.agent_job.collect_server_status"],
-		"0 */6 * * *": [
-			"press.press.doctype.site.site.sync_sites",
-			"press.press.doctype.server.server.cleanup_unused_files",
-		],
-		"*/15 * * * *": [
-			"press.press.doctype.site_update.site_update.schedule_updates",
-			"press.press.doctype.bench.bench.archive_obsolete_benches",
-		],
+		"0 */6 * * *": ["press.press.doctype.server.server.cleanup_unused_files"],
+		"*/15 * * * *": ["press.press.doctype.site_update.site_update.schedule_updates"],
 	},
 }
 

@@ -131,7 +131,8 @@ export default {
 					first_name: this.firstName,
 					last_name: this.lastName,
 					country: this.country,
-					is_invitation: this.isInvitation
+					is_invitation: this.isInvitation,
+					user_exists: this.userExists
 				},
 				onSuccess(res) {
 					if (res) {

@@ -122,7 +122,7 @@ export default {
 			if (this.$route.matched.length === 1) {
 				let path = this.$route.fullPath;
 				let tab = 'general';
-				if (['Pending', 'Installing'].includes(this.site.status)) {
+				if (['Installing'].includes(this.site.status)) {
 					tab = 'installing';
 				}
 				this.$router.replace(`${path}/${tab}`);
@@ -175,8 +175,8 @@ export default {
 					'Site Logs'
 				],
 				Installing: ['Installing', 'Jobs'],
-				Pending: ['Installing', 'Jobs'],
-				Broken: ['General', 'Plan', 'Activity', 'Jobs', 'Site Logs'],
+				Pending: ['General', 'Jobs'],
+				Broken: ['General', 'Plan', 'Backups', 'Activity', 'Jobs', 'Site Logs'],
 				Suspended: ['General', 'Activity', 'Jobs']
 			};
 			if (this.site) {
