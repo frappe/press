@@ -766,12 +766,19 @@ def uploaded_backup_info(file=None, path=None, type=None, size=None, url=None):
 	add_tag("Site Upload", doc.doctype, doc.name)
 	return doc.name
 
-
 @frappe.whitelist()
-def verify(site):
-	return verify_frappe_site(site)
+def get_backup_links(url, email, password):
+	files = get_frappe_backups(url, email, password)
+	remote_files = []
+	for file_type, file_url in files.items():
+		file_name = file_url.split("backups/")[1].split("?sid=")[0]
+		remote_files.append(
+			{
+				"type": file_type,
+				"remote_file": uploaded_backup_info(file=file_name, url=file_url, type=file_type),
+				"file_name": file_name,
+				"url": file_url,
+			}
+		)
 
-
-@frappe.whitelist()
-def get_backup_links(site, auth):
-	return get_frappe_backups(site, auth)
+	return remote_files
