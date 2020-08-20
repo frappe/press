@@ -82,7 +82,7 @@
 				Login as Administrator
 			</Button>
 		</Section>
-		<SiteDrop class="mt-10" :site="site" />
+		<SiteDrop class="mt-10" :site="site" v-if="site.status !== 'Pending'" />
 	</div>
 </template>
 

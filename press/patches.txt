@@ -20,3 +20,5 @@ press.patches.v0_0_1.move_domains_from_archived_to_active_sites
 press.patches.v0_0_1.remove_domains_linked_to_archived_sites
 press.patches.v0_0_1.delete_logs_from_archived_sites
 press.patches.v0_0_1.add_domains_to_site_config
+execute:frappe.reload_doc('press', 'doctype', 'Remote File')
+press.patches.v0_0_1.add_site_to_remote_file

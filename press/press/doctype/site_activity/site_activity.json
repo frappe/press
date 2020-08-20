@@ -26,7 +26,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Action",
-   "options": "Activate Site\nAdd Domain\nArchive\nBackup\nCreate\nDeactivate Site\nInstall App\nLogin as Administrator\nMigrate\nReinstall\nRestore\nSuspend Site\nUninstall App\nUnsuspend Site\nUpdate\nUpdate Configuration",
+   "options": "Activate Site\nAdd Domain\nArchive\nBackup\nCreate\nDeactivate Site\nInstall App\nLogin as Administrator\nMigrate\nReinstall\nRestore\nSuspend Site\nUninstall App\nUnsuspend Site\nUpdate\nUpdate Configuration\nDrop Offsite Backups",
    "read_only": 1,
    "reqd": 1
   },
@@ -37,7 +37,7 @@
   }
  ],
  "links": [],
- "modified": "2020-08-06 10:34:27.686514",
+ "modified": "2020-08-14 18:34:30.071095",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Activity",
@@ -64,6 +64,18 @@
    "read": 1,
    "report": 1,
    "role": "Press Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
    "share": 1,
    "write": 1
   }

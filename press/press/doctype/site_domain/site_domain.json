@@ -80,8 +80,8 @@
   }
  ],
  "links": [],
- "modified": "2020-05-29 12:49:26.576863",
- "modified_by": "Administrator",
+ "modified": "2020-08-13 20:37:30.518820",
+ "modified_by": "faris@erpnext.com",
  "module": "Press",
  "name": "Site Domain",
  "owner": "Administrator",
@@ -107,6 +107,18 @@
    "read": 1,
    "report": 1,
    "role": "Press Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
    "share": 1,
    "write": 1
   }

@@ -69,3 +69,10 @@ def on_session_creation():
 
 	route = "/sites" if onboarding_complete else "/welcome"
 	frappe.local.response.update({"dashboard_route": route})
+
+
+def update_website_context(context):
+	if frappe.request.path.startswith("/docs") and not frappe.db.get_single_value(
+		"Press Settings", "publish_docs"
+	):
+		raise frappe.DoesNotExistError
