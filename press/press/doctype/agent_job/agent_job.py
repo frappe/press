@@ -360,9 +360,9 @@ def poll_pending_jobs():
 					skip_pending_steps(job.name)
 
 				process_job_updates(job.name)
+				frappe.db.commit()
 			except Exception:
 				log_error("Agent Job Poll Exception", job=job, polled=polled_job)
-		frappe.db.commit()
 
 
 def update_job(job_name, job):
