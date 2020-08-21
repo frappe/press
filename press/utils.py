@@ -126,7 +126,6 @@ def verify_frappe_site(site_url):
 
 
 def get_frappe_backups(site_url, username, password):
-	schema = "https"
 	headers = {"Accept": "application/json", "Content-Type": "application/json"}
 
 	if not site_url.startswith("http"):
@@ -176,8 +175,9 @@ def get_frappe_backups(site_url, username, password):
 				file_urls[file_type] = url(file_path, sid)
 
 		if missing_files:
-			frappe.throw(f'Missing backup files: {", ".join(missing_files)}')
+			frappe.throw(f'Missing backup files: {", ".join([x.title() for x in missing_files])}')
 
 		return file_urls
 	else:
+		log_error("Backups Retreival Error - Magic Migration", response=res.text, remote_site=site_url)
 		frappe.throw("An unknown error occurred")
