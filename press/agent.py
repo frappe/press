@@ -107,6 +107,20 @@ class Agent:
 
 	def new_site_from_backup(self, site):
 		apps = [frappe.db.get_value("Frappe App", app.app, "scrubbed") for app in site.apps]
+		site_config_link = None
+
+		if site.remote_config_file:
+			site_config = frappe.get_doc("Remote File", site.remote_database_file)
+			site_config_link = site_config.download_link
+
+			new_config = site_config.get_content()
+			existing_config = json.loads(site.config)
+			existing_config.update(new_config)
+			site.config = json.dumps(new_config, indent=4)
+			site.save()
+
+			log_site_activity(self.name, "Update Configuration")
+
 		data = {
 			"config": json.loads(site.config),
 			"apps": apps,
@@ -115,7 +129,7 @@ class Agent:
 				"Server", site.server, "mariadb_root_password"
 			),
 			"admin_password": get_decrypted_password("Site", site.name, "admin_password"),
-			"site_config": frappe.get_doc("Remote File", site.remote_config_file).download_link if site.remote_config_file else None,
+			"site_config": site_config_link,
 			"database": frappe.get_doc("Remote File", site.remote_database_file).download_link,
 			"public": frappe.get_doc("Remote File", site.remote_public_file).download_link,
 			"private": frappe.get_doc("Remote File", site.remote_private_file).download_link,
