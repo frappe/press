@@ -4,9 +4,11 @@
 
 from __future__ import unicode_literals
 
+import json
+
+import requests
 from boto3 import client, resource
 from botocore.exceptions import ClientError
-import requests
 
 import frappe
 from frappe.model.document import Document
@@ -157,3 +159,10 @@ class RemoteFile(Document):
 			Params={"Bucket": self.bucket, "Key": self.file_path},
 			ExpiresIn=frappe.db.get_single_value("Press Settings", "remote_link_expiry") or 3600,
 		)
+
+	def get_content(self):
+		if self.url:
+			return json.loads(requests.get(self.url).content)
+		else:
+			obj = self.s3_client.get_object(Bucket=self.bucket, Key=self.file_path)
+			return json.loads(obj["Body"].read()).decode("utf-8")
