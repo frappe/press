@@ -167,15 +167,15 @@ def get_frappe_backups(site_url, username, password):
 		missing_files = []
 		file_urls = {}
 		for file_type, file_path in files.items():
-			if file_type == 'config':
-				continue
 			if not file_path:
 				missing_files.append(file_type)
 			else:
 				file_urls[file_type] = url(file_path, sid)
 
 		if missing_files:
-			frappe.throw(f'Missing backup files: {", ".join([x.title() for x in missing_files])}')
+			missing_config = "site config and " if not file_urls.get("config") else ""
+			missing_backups = f"Missing {missing_config}backup files: {', '.join([x.title() for x in missing_files])}"
+			frappe.throw(missing_backups)
 
 		return file_urls
 	else:
