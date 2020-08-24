@@ -311,7 +311,13 @@ def get(name):
 	)
 
 	try:
-		last_updated = frappe.get_all("Site Update", fields=["modified"], filters={"site": name}, order_by="creation desc", limit_page_length=1)[0].modified
+		last_updated = frappe.get_all(
+			"Site Update",
+			fields=["modified"],
+			filters={"site": name},
+			order_by="creation desc",
+			limit_page_length=1,
+		)[0].modified
 	except Exception:
 		last_updated = site.modified
 
