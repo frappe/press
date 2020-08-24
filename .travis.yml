@@ -16,7 +16,7 @@ cache:
   pip: true
 
 install:
-  - git clone https://github.com/frappe/frappe
+  - git clone https://github.com/frappe/frappe --depth 1
   - pip install ./frappe
   - pip install $TRAVIS_BUILD_DIR
 
