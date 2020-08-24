@@ -1,5 +1,6 @@
-sudo: required
+os: linux
 dist: bionic
+language: python
 python: 3.7
 
 addons:
@@ -8,17 +9,25 @@ addons:
     packages:
     - cpu-checker
 
+git:
+  depth: 1
+
+cache:
+  pip: true
+
 install:
+  - git clone https://github.com/frappe/frappe
+  - pip install ./frappe
   - pip install $TRAVIS_BUILD_DIR
 
 script:
   - backbone tests
 
-matrix:
-include:
-- name: Backbone Setup
-  script: 
-    - backbone hypervisor setup
+jobs:
+  include:
+  - name: Backbone Setup
+    script:
+      - backbone hypervisor setup
 
-- name: Backbone Tests
-  script: backbone tests
+  - name: Backbone Tests
+    script: backbone tests
