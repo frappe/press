@@ -9,20 +9,16 @@
 					class="px-6 py-4"
 					:items="[
 						{
-							label: 'Site Name',
-							value: site.name
-						},
-						{
 							label: 'Created On',
 							value: formatDate(site.creation)
 						},
 						{
-							label: 'Created By',
-							value: site.owner
-						},
-						{
 							label: 'Last Updated',
 							value: formatDate(site.last_updated)
+						},
+						{
+							label: 'Created By',
+							value: site.owner
 						},
 					]"
 				/>
