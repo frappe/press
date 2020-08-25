@@ -10,7 +10,7 @@
 				>
 					<li>
 						<a
-							class="block px-1 py-4 mr-8 font-medium leading-none truncate border-b border-transparent focus:outline-none"
+							class="relative block px-1 py-4 mr-8 font-medium leading-none truncate border-b border-transparent focus:outline-none"
 							:class="[
 								isActive
 									? 'border-brand text-gray-900'
@@ -19,7 +19,13 @@
 							:href="href"
 							@click="navigate"
 						>
-							{{ tab.label }}
+							<span>
+								{{ tab.label }}
+							</span>
+							<div
+								class="absolute right-0 w-2 h-2 bg-red-500 rounded-full top-2"
+								v-if="tab.showRedDot && !isActive"
+							></div>
 						</a>
 					</li>
 				</router-link>
