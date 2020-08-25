@@ -33,6 +33,7 @@ from press.utils import (
 	log_error,
 	verify_frappe_site,
 	get_frappe_backups,
+	sanitize_config,
 )
 
 
@@ -601,30 +602,7 @@ def log(name, log):
 @frappe.whitelist()
 @protected("Site")
 def update_config(name, config):
-	allowed_keys = [
-		"encryption_key",
-		"mail_server",
-		"mail_port",
-		"mail_login",
-		"mail_password",
-		"use_ssl",
-		"auto_email_id",
-		"mute_emails",
-		"server_script_enabled",
-		"disable_website_cache",
-		"disable_global_search",
-		"max_file_size",
-	]
-	if not any(key in allowed_keys for key in config.keys()):
-		return
-
-	# Remove keys with empty values
-	config = {key: value for key, value in config.items() if value != ""}
-
-	for key in ["max_file_size", "mail_port"]:
-		if key in config:
-			config[key] = cint(config[key])
-
+	config = sanitize_config(config)
 	frappe.get_doc("Site", name).update_site_config(config)
 
 
