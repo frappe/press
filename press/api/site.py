@@ -628,60 +628,6 @@ def update_config(name, config):
 	frappe.get_doc("Site", name).update_site_config(config)
 
 
-def validate_database_backup(filename, content):
-	try:
-		with gzip.open(io.BytesIO(content)) as f:
-			line = f.readline().decode().lower()
-			if "mysql" in line or "mariadb" in line:
-				return True
-	except Exception:
-		log_error("Invalid Database Backup File", filename=filename, content=content[:1024])
-
-
-def validate_files_backup(filename, content, type):
-	try:
-		with tarfile.TarFile.open(fileobj=io.BytesIO(content), mode="r:") as f:
-			files = f.getnames()
-			if files:
-				path = Path(files[0])
-				if (
-					path.name == "files"
-					and path.parent.name == type
-					and path.parent.parent.parent.name == ""
-					and builtins.all(file.startswith(files[0]) for file in files)
-				):
-					return True
-	except tarfile.TarError:
-		log_error("Invalid Files Backup File", filename=filename, content=content[:1024])
-
-
-def validate_backup(filename, content, type):
-	if type == "database":
-		return validate_database_backup(filename, content)
-	else:
-		return validate_files_backup(filename, content, type)
-
-
-@frappe.whitelist()
-def upload_backup():
-	content = frappe.local.uploaded_file
-	filename = frappe.local.uploaded_filename
-	if validate_backup(filename, content, frappe.form_dict.type):
-		file = frappe.get_doc(
-			{
-				"doctype": "File",
-				"folder": "Home/Backup Uploads",
-				"file_name": filename,
-				"is_private": 1,
-				"content": content,
-			}
-		)
-		file.save(ignore_permissions=True)
-		return file.file_url
-	else:
-		frappe.throw("Invalid Backup File")
-
-
 @frappe.whitelist()
 def get_upload_link(file, parts=1):
 	bucket_name = frappe.db.get_single_value("Press Settings", "remote_uploads_bucket")
@@ -772,6 +718,7 @@ def uploaded_backup_info(file=None, path=None, type=None, size=None, url=None):
 	).insert()
 	add_tag("Site Upload", doc.doctype, doc.name)
 	return doc.name
+
 
 @frappe.whitelist()
 def get_backup_links(url, email, password):
