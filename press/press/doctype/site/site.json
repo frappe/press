@@ -37,6 +37,7 @@
   "private_file",
   "public_file",
   "remote_files",
+  "remote_config_file",
   "remote_database_file",
   "remote_private_file",
   "remote_public_file"
@@ -313,11 +314,17 @@
    "hide_days": 1,
    "hide_seconds": 1,
    "label": "Site Files"
+  },
+  {
+   "fieldname": "remote_config_file",
+   "fieldtype": "Link",
+   "label": "Remote Config File",
+   "options": "Remote File"
   }
  ],
  "links": [],
- "modified": "2020-07-15 10:27:54.501733",
- "modified_by": "Administrator",
+ "modified": "2020-08-25 10:51:34.264913",
+ "modified_by": "gavin18d@gmail.com",
  "module": "Press",
  "name": "Site",
  "owner": "Administrator",
