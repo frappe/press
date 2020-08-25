@@ -1,13 +1,7 @@
 os: linux
-dist: bionic
+dist: focal
 language: python
 python: 3.7
-
-addons:
-  apt:
-    update: true
-    packages:
-    - cpu-checker
 
 git:
   depth: 1
@@ -16,18 +10,16 @@ cache:
   pip: true
 
 install:
-  - git clone https://github.com/frappe/frappe --depth 1
-  - pip install ./frappe
   - pip install $TRAVIS_BUILD_DIR
-
-script:
-  - backbone tests
+  - python3 $TRAVIS_BUILD_DIR/backbone/setup.py
 
 jobs:
   include:
-  - name: Backbone Setup
+  - name: Vagrant Hello World
     script:
-      - backbone hypervisor setup
+      - cd $TRAVIS_BUILD_DIR/backbone
+      - vagrant up --provider=libvirt
+      - vagrant ssh -c "echo 'Hello, World'"
 
   - name: Backbone Tests
     script: backbone tests
