@@ -11,13 +11,15 @@
 		<Dialog v-model="showDialog" title="Drop Site">
 			<p class="text-base">
 				Are you sure you want to drop your site? The site will be archived and
-				all of its files and Offsite Backups will be deleted. This action cannot be undone.
+				all of its files and Offsite Backups will be deleted. This action cannot
+				be undone.
 			</p>
 			<p class="mt-4 text-base">
 				Please type
 				<span class="font-semibold">{{ site.name }}</span> to confirm.
 			</p>
 			<Input type="text" class="w-full mt-4" v-model="confirmSiteName" />
+			<ErrorMessage class="mt-2" :error="$resources.dropSite.error" />
 			<div slot="actions">
 				<Button @click="showDialog = false">
 					Cancel
@@ -25,8 +27,8 @@
 				<Button
 					class="ml-3"
 					type="danger"
-					:disabled="site.name !== confirmSiteName"
-					@click="dropSite"
+					@click="$resources.dropSite.submit()"
+					:loading="$resources.dropSite.loading"
 				>
 					Drop Site
 				</Button>
@@ -49,11 +51,23 @@ export default {
 			confirmSiteName: null
 		};
 	},
-	methods: {
-		async dropSite() {
-			await this.$call('press.api.site.archive', { name: this.site.name });
-			this.showDialog = false;
-			this.$router.push(`/sites`);
+	resources: {
+		dropSite() {
+			return {
+				method: 'press.api.site.archive',
+				params: {
+					name: this.site.name
+				},
+				onSuccess() {
+					this.showDialog = false;
+					this.$router.push('/sites');
+				},
+				validate() {
+					if (this.site.name !== this.confirmSiteName) {
+						return 'Please type the site name to confirm'
+					}
+				}
+			};
 		}
 	}
 };
