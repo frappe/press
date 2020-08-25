@@ -310,7 +310,7 @@ export default {
 					files: this.selectedFiles
 				}
 			});
-			this.$router.push(`/sites/${siteName}`);
+			this.$router.push(`/sites/${siteName}/jobs`);
 		},
 		toggleApp(app) {
 			if (app.frappe) return;

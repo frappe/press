@@ -16,8 +16,20 @@
 					:key="job.name"
 					:to="`/sites/${site.name}/jobs/${job.name}`"
 				>
-					<div>
-						{{ job.job_type }}
+					<div class="flex items-center justify-between">
+						<span>
+							{{ job.job_type }}
+						</span>
+						<Badge
+							v-if="
+								runningJob &&
+									runningJob.id == job.name &&
+									runningJob.status !== 'Success'
+							"
+							:status="runningJob.status"
+						>
+							{{ runningJob.status }}
+						</Badge>
 					</div>
 					<div class="text-sm text-gray-600">
 						<FormatDate>
@@ -54,27 +66,31 @@
 					</div>
 					<details
 						class="px-6 text-white cursor-pointer"
-						v-for="step in selectedJob.steps"
+						v-for="(step, index) in selectedJob.steps"
 						:key="step.step_name"
 					>
 						<summary
 							class="inline-flex items-center py-2 text-xs text-gray-600 focus:outline-none"
 						>
 							<span class="ml-1">
+								<Spinner
+									v-if="isStepRunning(step)"
+									class="w-3 h-3 text-gray-500"
+								/>
 								<FeatherIcon
-									v-if="step.status === 'Success'"
+									v-else-if="isStepCompleted(step, index)"
 									name="check"
 									:stroke-width="3"
 									class="w-3 h-3 text-green-500"
 								/>
 								<FeatherIcon
-									v-if="step.status === 'Failure'"
+									v-else-if="step.status === 'Failure'"
 									name="x"
 									:stroke-width="3"
 									class="w-3 h-3 text-red-500"
 								/>
 								<FeatherIcon
-									v-if="step.status === 'Skipped'"
+									v-else-if="step.status === 'Skipped'"
 									name="minus"
 									:stroke-width="3"
 									class="w-3 h-3 text-gray-500"
@@ -102,7 +118,8 @@ export default {
 	props: ['site', 'jobName'],
 	data: () => ({
 		jobs: [],
-		selectedJob: null
+		selectedJob: null,
+		runningJob: null
 	}),
 	watch: {
 		jobName(value) {
@@ -116,8 +133,28 @@ export default {
 	mounted() {
 		this.fetchJobs();
 		this.fetchJobDetails();
+		this.setupRealtime();
+	},
+	destroyed() {
+		clearInterval(this.pollPendingJobs);
 	},
 	methods: {
+		setupRealtime() {
+			if (this._realtimeSetup) return;
+			this._realtimeSetup = true;
+
+			this.$socket.on('agent_job_update', data => {
+				this.runningJob = data;
+				if (this.runningJob.current.status === 'Success') {
+					this.fetchJobDetails();
+				}
+			});
+
+			this.$call('press.press.doctype.agent_job.agent_job.poll_pending_jobs');
+			this.pollPendingJobs = setInterval(() => {
+				this.$call('press.press.doctype.agent_job.agent_job.poll_pending_jobs');
+			}, 1000 * 5);
+		},
 		async fetchJobs() {
 			this.jobs = await this.$call('press.api.site.jobs', {
 				name: this.site.name
@@ -139,7 +176,18 @@ export default {
 		},
 		formatDuration(duration) {
 			return duration.split('.')[0];
+		},
+		isStepRunning(step) {
+			if (this.jobName !== this.runningJob?.id) return false;
+			let runningStep = this.runningJob.steps.find(s => s.name == step.step_name);
+			return runningStep?.status === 'Running';
+		},
+		isStepCompleted(step, index) {
+			if (this.jobName === this.runningJob?.id) {
+				return this.runningJob.current.index > index;
+			}
+			return step.status === 'Success';
 		}
-	}
+	},
 };
 </script>
