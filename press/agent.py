@@ -115,6 +115,7 @@ class Agent:
 				"Server", site.server, "mariadb_root_password"
 			),
 			"admin_password": get_decrypted_password("Site", site.name, "admin_password"),
+			"site_config": frappe.get_doc("Remote File", site.remote_config_file).download_link if site.remote_config_file else None,
 			"database": frappe.get_doc("Remote File", site.remote_database_file).download_link,
 			"public": frappe.get_doc("Remote File", site.remote_public_file).download_link,
 			"private": frappe.get_doc("Remote File", site.remote_private_file).download_link,

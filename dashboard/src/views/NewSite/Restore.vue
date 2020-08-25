@@ -127,7 +127,7 @@
 					v-model="frappeSite"
 				/>
 				<div class="mt-2">
-					<ErrorMessage :error="$resources.getBackupLinks.error" />
+					<ErrorMessage :error="$resources.getBackupLinks.error" v-if="!$resources.getBackupLinks.data" />
 					<div
 						class="text-base font-semibold text-green-500"
 						v-if="$resources.getBackupLinks.data"

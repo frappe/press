@@ -68,9 +68,10 @@ def new(site):
 			"apps": [{"app": app} for app in site["apps"]],
 			"team": team,
 			"plan": site["plan"],
-			"remote_database_file": site["files"]["database"],
-			"remote_public_file": site["files"]["public"],
-			"remote_private_file": site["files"]["private"],
+			"remote_config_file": site["files"].get("config"),
+			"remote_database_file": site["files"].get("database"),
+			"remote_public_file": site["files"].get("public"),
+			"remote_private_file": site["files"].get("private"),
 		},
 	).insert(ignore_permissions=True)
 	return site.name
@@ -614,7 +615,7 @@ def update_config(name, config):
 		"disable_global_search",
 		"max_file_size",
 	]
-	if any(key not in allowed_keys for key in config.keys()):
+	if not any(key in allowed_keys for key in config.keys()):
 		return
 
 	# Remove keys with empty values
