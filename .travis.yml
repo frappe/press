@@ -11,15 +11,15 @@ cache:
 
 install:
   - pip install $TRAVIS_BUILD_DIR
-  - python3 $TRAVIS_BUILD_DIR/backbone/setup.py
 
 jobs:
   include:
   - name: Vagrant Hello World
+    after_install: python3 $TRAVIS_BUILD_DIR/backbone/setup.py
     script:
       - cd $TRAVIS_BUILD_DIR/backbone
-      - vagrant up --provider=libvirt
-      - vagrant ssh -c "echo 'Hello, World'"
+      - sudo -E su $USER -c 'vagrant up --provider=libvirt'
+      - sudo -E su $USER -c 'vagrant ssh -c "echo \'Hello, World\'"'
 
   - name: Backbone Tests
     script: backbone tests
