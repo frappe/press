@@ -19,7 +19,7 @@ jobs:
     script:
       - cd $TRAVIS_BUILD_DIR/backbone
       - sudo -E su $USER -c 'vagrant up --provider=libvirt'
-      - sudo -E su $USER -c 'vagrant ssh -c "echo \'Hello, World\'"'
+      - sudo -E su $USER -c 'vagrant ssh -c "echo Hello, World"'
 
   - name: Backbone Tests
     script: backbone tests
