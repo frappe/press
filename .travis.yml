@@ -15,7 +15,7 @@ install:
 jobs:
   include:
   - name: Vagrant Hello World
-    after_install: python3 $TRAVIS_BUILD_DIR/backbone/setup.py
+    before_script: python3 $TRAVIS_BUILD_DIR/backbone/setup.py
     script:
       - cd $TRAVIS_BUILD_DIR/backbone
       - sudo -E su $USER -c 'vagrant up --provider=libvirt'
