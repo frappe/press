@@ -12,7 +12,15 @@
       ],
       "memory": "2048",
       "output_directory": "{{template_dir}}/scratch",
+      "qemuargs": [
+        [
+          "-fda",
+          "{{template_dir}}/cloud-init.img"
+        ]
+      ],
       "shutdown_command": "echo 'vagrant' | sudo -S shutdown -P now",
+      "ssh_password": "vagrant",
+      "ssh_username": "vagrant",
       "type": "qemu",
       "use_backing_file": true,
       "vm_name": "backbone"
