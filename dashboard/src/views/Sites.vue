@@ -26,7 +26,7 @@
 				>
 					<span>Site Name</span>
 					<span class="text-right md:text-center">Status</span>
-					<span class="hidden text-right md:inline">Last Updated</span>
+					<span class="hidden text-right md:inline">Active Since</span>
 					<span class="hidden md:inline"></span>
 				</div>
 				<a
@@ -40,7 +40,7 @@
 						<Badge :status="site.status" />
 					</span>
 					<FormatDate class="hidden text-right md:block" type="relative">
-						{{ site.modified }}
+						{{ site.creation }}
 					</FormatDate>
 					<span class="hidden text-right md:inline">
 						<Badge

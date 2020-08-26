@@ -38,23 +38,30 @@ def signup(email):
 
 @frappe.whitelist(allow_guest=True)
 def setup_account(
-	key, first_name=None, last_name=None, password=None, is_invitation=False, country=None
+	key,
+	first_name=None,
+	last_name=None,
+	password=None,
+	is_invitation=False,
+	country=None,
+	user_exists=False,
 ):
 	account_request = get_account_request_from_key(key)
 	if not account_request:
 		frappe.throw("Invalid or Expired Key")
 
-	if not first_name:
-		frappe.throw("First Name is required")
+	if not user_exists:
+		if not first_name:
+			frappe.throw("First Name is required")
 
-	if not last_name:
-		frappe.throw("Last Name is required")
+		if not last_name:
+			frappe.throw("Last Name is required")
 
-	if not password:
-		frappe.throw("Password is required")
+		if not password:
+			frappe.throw("Password is required")
 
-	if not is_invitation and not country:
-		frappe.throw("Country is required")
+		if not is_invitation and not country:
+			frappe.throw("Country is required")
 
 	# if the request is authenticated, set the user to Administrator
 	frappe.set_user("Administrator")

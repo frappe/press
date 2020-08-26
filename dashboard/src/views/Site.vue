@@ -53,6 +53,11 @@ export default {
 	components: {
 		Tabs
 	},
+	data() {
+		return {
+			runningJob: false
+		};
+	},
 	resources: {
 		site() {
 			return {
@@ -105,12 +110,15 @@ export default {
 		setupSocket() {
 			if (this._socketSetup) return;
 			this._socketSetup = true;
+
 			this.$socket.on('agent_job_update', data => {
 				if (data.name === 'New Site' || data.name === 'New Site from Backup') {
 					if (data.status === 'Success' && data.site === this.siteName) {
 						this.$resources.site.reload();
 					}
 				}
+				this.runningJob =
+					data.site === this.siteName && data.status !== 'Success';
 			});
 			this.$socket.on('list_update', ({ doctype, name }) => {
 				if (doctype === 'Site' && name === this.siteName) {
@@ -122,9 +130,6 @@ export default {
 			if (this.$route.matched.length === 1) {
 				let path = this.$route.fullPath;
 				let tab = 'general';
-				if (['Pending', 'Installing'].includes(this.site.status)) {
-					tab = 'installing';
-				}
 				this.$router.replace(`${path}/${tab}`);
 			}
 		}
@@ -137,7 +142,6 @@ export default {
 			let tabRoute = subRoute => `/sites/${this.siteName}/${subRoute}`;
 			let tabs = [
 				{ label: 'General', route: 'general' },
-				{ label: 'Installing', route: 'installing' },
 				{ label: 'Plan', route: 'plan' },
 				{ label: 'Apps', route: 'apps' },
 				{ label: 'Domains', route: 'domains' },
@@ -146,7 +150,7 @@ export default {
 				{ label: 'Database', route: 'database' },
 				{ label: 'Site Config', route: 'site-config' },
 				{ label: 'Activity', route: 'activity' },
-				{ label: 'Jobs', route: 'jobs' },
+				{ label: 'Jobs', route: 'jobs', showRedDot: this.runningJob },
 				{ label: 'Site Logs', route: 'logs' },
 				{ label: 'Request Logs', route: 'request-logs' }
 			];
@@ -174,9 +178,8 @@ export default {
 					'Jobs',
 					'Site Logs'
 				],
-				Installing: ['Installing', 'Jobs'],
-				Pending: ['Installing', 'Jobs'],
-				Broken: ['General', 'Plan', 'Activity', 'Jobs', 'Site Logs'],
+				Pending: ['General', 'Jobs'],
+				Broken: ['General', 'Plan', 'Backups', 'Activity', 'Jobs', 'Site Logs'],
 				Suspended: ['General', 'Activity', 'Jobs']
 			};
 			if (this.site) {

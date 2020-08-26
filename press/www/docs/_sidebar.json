@@ -1,0 +1,57 @@
+[
+  {
+    "group_title": "Getting Started",
+    "group_items": [
+      {
+        "title": "Overview",
+        "route": "/docs/getting-started/overview"
+      }
+    ]
+  },
+  {
+    "group_title": "Sites",
+    "group_items": [
+      {
+        "title": "Creating a new site",
+        "route": "/docs/sites/creating-a-new-site"
+      },
+      {
+        "title": "Migrate an existing site",
+        "route": "/docs/sites/migrate-an-existing-site"
+      },
+      {
+        "title": "Monitoring",
+        "route": "/docs/sites/monitoring"
+      },
+      {
+        "title": "Backups",
+        "route": "/docs/sites/backups"
+      },
+      {
+        "title": "Site Config",
+        "route": "/docs/sites/site-config"
+      },
+      {
+        "title": "Custom Domains",
+        "route": "/docs/sites/custom-domains"
+      },
+      {
+        "title": "Delete Site",
+        "route": "/docs/sites/delete-site"
+      },
+      {
+        "title": "Jobs",
+        "route": "/docs/sites/jobs"
+      }
+    ]
+  },
+  {
+    "group_title": "Billing",
+    "group_items": [
+      {
+        "title": "Bill Payments",
+        "route": "/docs/billing/bill-payments"
+      }
+    ]
+  }
+]

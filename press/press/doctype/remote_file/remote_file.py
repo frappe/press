@@ -4,7 +4,7 @@
 
 from __future__ import unicode_literals
 
-from boto3 import client
+from boto3 import client, resource
 from botocore.exceptions import ClientError
 
 import frappe
@@ -25,13 +25,67 @@ def get_remote_key(file):
 
 
 def poll_file_statuses():
+	available_files = {}
 	doctype = "Remote File"
-	for d in frappe.get_all(doctype):
-		doc = frappe.get_doc(doctype, d["name"])
-		current_status = "Available" if doc.exists() else "Unavailable"
-		if current_status != doc.status:
-			doc.status = current_status
-			doc.save()
+	buckets = {
+		"backups": {
+			"bucket": frappe.db.get_single_value("Press Settings", "aws_s3_bucket"),
+			"access_key_id": frappe.db.get_single_value(
+				"Press Settings", "offsite_backups_access_key_id"
+			),
+			"secret_access_key": get_decrypted_password(
+				"Press Settings", "Press Settings", "offsite_backups_secret_access_key"
+			),
+			"tag": "Offsite Backup",
+		},
+		"uploads": {
+			"bucket": frappe.db.get_single_value("Press Settings", "remote_uploads_bucket"),
+			"access_key_id": frappe.db.get_single_value(
+				"Press Settings", "remote_access_key_id"
+			),
+			"secret_access_key": get_decrypted_password(
+				"Press Settings", "Press Settings", "remote_secret_access_key"
+			),
+			"tag": "Site Upload",
+		},
+	}
+
+	for bucket in buckets:
+		current_bucket = buckets[bucket]
+		available_files[current_bucket["bucket"]] = []
+
+		s3 = resource(
+			"s3",
+			aws_access_key_id=current_bucket["access_key_id"],
+			aws_secret_access_key=current_bucket["secret_access_key"],
+			region_name="ap-south-1",
+		)
+
+		for s3_object in s3.Bucket(current_bucket["bucket"]).objects.all():
+			available_files[current_bucket["bucket"]].append(s3_object.key)
+
+		all_files = tuple(available_files[current_bucket["bucket"]])
+
+		remote_files = frappe.get_all(
+			doctype,
+			fields=["name", "file_path", "status"],
+			filters={"_user_tags": ("like", f"%{current_bucket['tag']}%")},
+		)
+
+		for remote_file in remote_files:
+			name, file_path, status = (
+				remote_file["name"],
+				remote_file["file_path"],
+				remote_file["status"],
+			)
+			if file_path not in all_files:
+				if status == "Available":
+					frappe.db.set_value(doctype, name, "status", "Unavailable")
+			else:
+				if status == "Unavailable":
+					frappe.db.set_value(doctype, name, "status", "Available")
+
+		frappe.db.commit()
 
 
 class RemoteFile(Document):
