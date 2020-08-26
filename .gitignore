@@ -139,3 +139,8 @@ press/docs/current
 press/public/dashboard
 press/www/dashboard.html
 press/public/css/email.css
+
+# Backbone artefacts
+press/backbone/packer/builds/
+press/backbone/packer/scratch/
+press/backbone/packer/images/

@@ -1,0 +1,27 @@
+{
+  "builders": [
+    {
+      "boot_wait": "10s",
+      "cpus": "2",
+      "disk_image": true,
+      "disk_size": "4G",
+      "iso_checksum": "896d13fcadd1106632444c87fa7d225ce81c20c07ae996e575a00c9b92b84cd4",
+      "iso_urls": [
+        "{{template_dir}}/images/ubuntu-20.04-server-cloudimg-amd64.img",
+        "https://cloud-images.ubuntu.com/releases/focal/release-20200804/ubuntu-20.04-server-cloudimg-amd64.img"
+      ],
+      "memory": "2048",
+      "output_directory": "{{template_dir}}/scratch",
+      "shutdown_command": "echo 'vagrant' | sudo -S shutdown -P now",
+      "type": "qemu",
+      "use_backing_file": true,
+      "vm_name": "backbone"
+    }
+  ],
+  "post-processors": [
+    {
+      "output": "{{template_dir}}/builds/backbone.box",
+      "type": "vagrant"
+    }
+  ]
+}
