@@ -2,6 +2,7 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 import subprocess
+from pathlib import Path
 
 
 class Hypervisor:
@@ -14,7 +15,9 @@ class Hypervisor:
 		self.verify()
 
 	def build(self):
-		pass
+		cloud_init_yml = str(Path(__file__).parent.joinpath("packer", "cloud-init.yml"))
+		cloud_init_image = str(Path(__file__).parent.joinpath("packer", "cloud-init.img"))
+		cloud_init = self.shell.execute(f"cloud-localds {cloud_init_image} {cloud_init_yml}")
 
 	def up(self):
 		pass
