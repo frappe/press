@@ -30,11 +30,8 @@
 					/>
 					<div class="ml-4 text-left">
 						<div class="text-base font-medium">
-							<span v-if="!step.loading">
+							<span>
 								{{ step.name }}
-							</span>
-							<span v-else>
-								{{ step.loadingName }}
 							</span>
 						</div>
 						<div
@@ -87,13 +84,6 @@ export default {
 					return step;
 				});
 
-				// let addressStep = this.steps.find(
-				// 	d => d.name == 'Update Billing Address'
-				// );
-				// if (addressStep.show && !addressStep.done) {
-				// 	this.showAddressDialog = true;
-				// }
-
 				this.onboardingComplete = onboarding.complete;
 				if (this.onboardingComplete) {
 					setTimeout(() => {
@@ -125,25 +115,11 @@ export default {
 					done: false,
 					show: true,
 					icon: 'credit-card',
-					loading: false,
-					loadingName: 'Adding Billing Information...',
 					click: () => {
 						this.showAddCardDialog = true;
 					},
 					disabled: false
 				},
-				// {
-				// 	name: 'Update Billing Address',
-				// 	description:
-				// 		'Add your billing address so that we can show it in your monthly invoice.',
-				// 	done: false,
-				// 	show: false,
-				// 	icon: 'map',
-				// 	click: () => {
-				// 		this.showAddressDialog = true;
-				// 	},
-				// 	disabled: false
-				// },
 				{
 					name: 'Create your first site',
 					done: false,
@@ -162,21 +138,8 @@ export default {
 		afterCardAdd() {
 			this.showAddCardDialog = false;
 			let step = this.getBillingStep();
-			step.loading = true;
-			this.reloadUntilAddCardIsTrue();
-		},
-		async reloadUntilAddCardIsTrue() {
-			let cardStep = this.getBillingStep();
-			if (!cardStep.done) {
-				cardStep.disabled = true;
-				await this.$resources.onboarding.reload();
-				setTimeout(() => {
-					this.reloadUntilAddCardIsTrue();
-				}, 1000);
-			} else {
-				cardStep.disabled = false;
-				cardStep.loading = false;
-			}
+			step.done = true;
+			this.$resources.onboarding.reload();
 		},
 		getBillingStep() {
 			return this.steps.find(d => d.name === 'Add Billing Information');

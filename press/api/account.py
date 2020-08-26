@@ -263,30 +263,17 @@ def onboarding():
 
 
 @frappe.whitelist()
-def update_billing_information(address, city, state, postal_code, country, gstin=None):
-	team = frappe.get_doc("Team", get_current_team())
-	country_name = frappe.db.get_value("Country", {"code": country})
-	address = frappe.get_doc(
-		doctype="Address",
-		address_title=team.name,
-		address_line1=address,
-		city=city,
-		state=state,
-		pincode=postal_code,
-		country=country_name,
-		gstin=gstin,
-		links=[
-			{"link_doctype": "Team", "link_name": team.name, "link_title": team.name},
-			{
-				"link_doctype": "Stripe Payment Method",
-				"link_name": team.default_payment_method,
-				"link_title": team.name,
-			},
-		],
-	)
-	address.insert(ignore_permissions=True)
-	team.db_set("billing_address", address.name)
-	team.update_billing_details_on_stripe(address)
+def get_billing_information():
+	team = get_current_team(True)
+	if team.billing_address:
+		return frappe.get_doc("Address", team.billing_address)
+
+
+@frappe.whitelist()
+def update_billing_information(address):
+	address = frappe._dict(address)
+	team = get_current_team(True)
+	team.create_or_update_address(address)
 
 
 @frappe.whitelist()
@@ -300,16 +287,6 @@ def feedback(message, route=None):
 
 
 @frappe.whitelist()
-def update_gstin(gstin):
-	team = get_current_team()
-	address = frappe.db.get_value("Team", team, "billing_address")
-	doc = frappe.get_doc("Address", address)
-	if doc.country == "India":
-		doc.gstin = gstin
-		doc.save(ignore_permissions=True)
-
-
-@frappe.whitelist()
 def user_prompts():
 	team = get_current_team()
 	doc = frappe.get_doc("Team", team)
@@ -319,13 +296,20 @@ def user_prompts():
 		return
 
 	if not doc.billing_address:
-		return "UpdateBillingAddress"
+		return [
+			"UpdateBillingAddress",
+			"Update your billing address so that we can show it in your monthly invoice.",
+		]
 
 	gstin, country = frappe.db.get_value(
 		"Address", doc.billing_address, ["gstin", "country"]
 	)
 	if country == "India" and not gstin:
-		return "UpdateGSTIN"
+		return [
+			"UpdateBillingAddress",
+			"If you have a registered GSTIN number, you are required to update it, so"
+			" that we can generate a GST Invoice.",
+		]
 
 
 def redirect_to(location):

@@ -1,8 +1,7 @@
 <template>
 	<Dialog title="Update Billing Address" v-model="show">
-		<p class="text-base">
-			Update your billing address so that we can show it in your monthly
-			invoice.
+		<p class="text-base" v-if="message">
+			{{ message }}
 		</p>
 		<AddressForm ref="address-form" class="mt-4" v-model="billingInformation" />
 		<ErrorMessage
@@ -26,6 +25,7 @@ import AddressForm from '@/components/AddressForm';
 
 export default {
 	name: 'UpdateBillingAddress',
+	props: ['message'],
 	components: {
 		AddressForm
 	},
@@ -33,21 +33,44 @@ export default {
 		return {
 			show: true,
 			billingInformation: {
-				gstin: '',
-				country: ''
+				address: '',
+				city: '',
+				state: '',
+				postal_code: '',
+				country: '',
+				gstin: ''
 			}
 		};
 	},
 	resources: {
+		currentBillingInformation: {
+			method: 'press.api.account.get_billing_information',
+			auto: true,
+			onSuccess(billingInformation) {
+				if ('country' in (billingInformation || {})) {
+					Object.assign(this.billingInformation, {
+						address: billingInformation.address_line1,
+						city: billingInformation.city,
+						state: billingInformation.state,
+						postal_code: billingInformation.pincode,
+						country: billingInformation.country,
+						gstin: billingInformation.gstin
+					});
+				}
+			}
+		},
 		updateBillingInformation() {
 			return {
 				method: 'press.api.account.update_billing_information',
-				params: this.billingInformation,
+				params: {
+					address: this.billingInformation
+				},
 				onSuccess() {
 					this.show = false;
 					this.$notify({
 						title: 'Address updated successfully!'
 					});
+					this.$emit('updated');
 				},
 				validate() {
 					return this.$refs['address-form'].validateValues();
