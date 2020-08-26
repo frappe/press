@@ -141,7 +141,7 @@ press/www/dashboard.html
 press/public/css/email.css
 
 # Backbone artefacts
-press/backbone/packer/builds/
-press/backbone/packer/scratch/
-press/backbone/packer/images/
-press/backbone/packer/cloud-init.img
+backbone/packer/builds/
+backbone/packer/scratch/
+backbone/packer/images/
+backbone/packer/cloud-init.img
