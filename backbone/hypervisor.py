@@ -24,11 +24,24 @@ class Hypervisor:
 		if packer.returncode:
 			raise Exception("Build Failed")
 
+		box = str(Path(__file__).parent.joinpath("packer", "builds", "backbone.box"))
+		add = self.shell.execute(f"vagrant box add {box} --name backbone --force")
+		if add.returncode:
+			raise Exception("Cannot add box {box}")
+
 	def up(self):
-		pass
+		vagrant = self.shell.execute(f"vagrant init backbone")
+		vagrant = self.shell.execute(f"vagrant up --provider=libvirt")
+		if vagrant.returncode:
+			raise Exception("Cannot start hypervisor")
 
 	def ssh(self, command=None):
-		pass
+		if command:
+			vagrant = self.shell.execute(f"vagrant ssh -c \"{command}\"")
+		else:
+			vagrant = self.shell.execute("vagrant ssh")
+		if vagrant.returncode:
+			raise Exception("Cannot ssh")
 
 	def preinstall(self):
 		kvm_ok = self.shell.execute("kvm-ok")
