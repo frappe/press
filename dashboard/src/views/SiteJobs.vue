@@ -149,11 +149,6 @@ export default {
 					this.fetchJobDetails();
 				}
 			});
-
-			this.$call('press.press.doctype.agent_job.agent_job.poll_pending_jobs');
-			this.pollPendingJobs = setInterval(() => {
-				this.$call('press.press.doctype.agent_job.agent_job.poll_pending_jobs');
-			}, 1000 * 5);
 		},
 		async fetchJobs() {
 			this.jobs = await this.$call('press.api.site.jobs', {
