@@ -24,6 +24,28 @@ def setup():
 	hypervisor.setup()
 
 
+@hypervisor.command()
+def build():
+	shell = Shell()
+	hypervisor = Hypervisor(shell=shell)
+	hypervisor.build()
+
+
+@hypervisor.command()
+def up():
+	shell = Shell()
+	hypervisor = Hypervisor(shell=shell)
+	hypervisor.up()
+
+
+@hypervisor.command()
+@click.option("-c", "--command")
+def ssh(command):
+	shell = Shell()
+	hypervisor = Hypervisor(shell=shell)
+	hypervisor.ssh(command=command)
+
+
 @cli.command()
 def tests():
 	run_tests()
