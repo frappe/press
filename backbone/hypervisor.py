@@ -13,6 +13,15 @@ class Hypervisor:
 		self.install()
 		self.verify()
 
+	def build(self):
+		pass
+
+	def up(self):
+		pass
+
+	def ssh(self, command=None):
+		pass
+
 	def preinstall(self):
 		kvm_ok = self.shell.execute("kvm-ok")
 		if kvm_ok.returncode:
