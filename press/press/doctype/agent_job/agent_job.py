@@ -333,7 +333,6 @@ def schedule_backups():
 			log_error("Site Backup Exception", site=site)
 
 
-@frappe.whitelist()
 def poll_pending_jobs():
 	pending_jobs = frappe.get_all(
 		"Agent Job",

@@ -111,7 +111,6 @@ export default {
 			if (this._socketSetup) return;
 			this._socketSetup = true;
 
-			this.$call('press.press.doctype.agent_job.agent_job.poll_pending_jobs');
 			this.$socket.on('agent_job_update', data => {
 				if (data.name === 'New Site' || data.name === 'New Site from Backup') {
 					if (data.status === 'Success' && data.site === this.siteName) {
