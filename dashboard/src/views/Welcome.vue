@@ -63,13 +63,11 @@
 
 <script>
 import StripeCard from '@/components/StripeCard';
-import Form from '@/components/Form';
 
 export default {
 	name: 'Welcome',
 	components: {
-		StripeCard,
-		Form
+		StripeCard
 	},
 	resources: {
 		onboarding: {

@@ -60,7 +60,7 @@ export default {
 				},
 				validate() {
 					if (this.site.name !== this.confirmSiteName) {
-						return 'Please type the site name to confirm'
+						return 'Please type the site name to confirm';
 					}
 				}
 			};
