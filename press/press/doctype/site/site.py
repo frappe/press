@@ -177,6 +177,14 @@ class Site(Document):
 				}
 			).insert()
 
+	def add_domain_to_config(self, domain):
+		agent = Agent(self.server)
+		agent.add_domain(self, domain)
+
+	def remove_domain_from_config(self, domain):
+		agent = Agent(self.server)
+		agent.remove_domain(self, domain)
+
 	def remove_domain(self, domain):
 		site_domain = frappe.get_all(
 			"Site Domain", filters={"site": self.name, "domain": domain}
@@ -216,6 +224,54 @@ class Site(Document):
 		agent = Agent(server.proxy_server, server_type="Proxy Server")
 		agent.remove_upstream_site(self.server, self.name)
 
+		self.delete_offsite_backups()
+
+	def delete_offsite_backups(self):
+		# self._del_obj and self._s3_response are object properties available when this method is called
+		from boto3 import resource
+
+		log_site_activity(self.name, "Drop Offsite Backups")
+
+		self._del_obj = {}
+		offsite_backups = [
+			frappe.db.get_value(
+				"Site Backup",
+				doc["name"],
+				["remote_database_file", "remote_public_file", "remote_private_file"],
+			)
+			for doc in frappe.get_all("Site Backup", filters={"site": self.name, "offsite": 1})
+		]
+		offsite_bucket = {
+			"bucket": frappe.db.get_single_value("Press Settings", "aws_s3_bucket"),
+			"access_key_id": frappe.db.get_single_value(
+				"Press Settings", "offsite_backups_access_key_id"
+			),
+			"secret_access_key": get_decrypted_password(
+				"Press Settings", "Press Settings", "offsite_backups_secret_access_key"
+			),
+		}
+		s3 = resource(
+			"s3",
+			aws_access_key_id=offsite_bucket["access_key_id"],
+			aws_secret_access_key=offsite_bucket["secret_access_key"],
+			region_name="ap-south-1",
+		)
+
+		for remote_files in offsite_backups:
+			for file in remote_files:
+				if file:
+					self._del_obj[file] = frappe.db.get_value("Remote File", file, "file_path")
+
+		if not self._del_obj:
+			return
+
+		self._s3_response = s3.Bucket(offsite_bucket["bucket"]).delete_objects(
+			Delete={"Objects": [{"Key": x} for x in self._del_obj.values()]}
+		)
+
+		for key in self._del_obj:
+			frappe.db.set_value("Remote File", key, "status", "Unavailable")
+
 	def login(self):
 		log_site_activity(self.name, "Login as Administrator")
 		return self.get_login_sid()
@@ -234,16 +290,33 @@ class Site(Document):
 			return agent.get_site_sid(self)
 
 	def sync_info(self):
+		dirty = False
 		agent = Agent(self.server)
 		data = agent.get_site_info(self)
 		fetched_config = data["config"]
+		fetched_usage = data["usage"]
 		keys_to_fetch = ["encryption_key"]
 		config = {key: fetched_config[key] for key in keys_to_fetch if key in fetched_config}
 		new_config = json.loads(self.config)
 		new_config.update(config)
-		self.config = json.dumps(new_config, indent=4)
-		self.timezone = data["timezone"]
-		self.save()
+		current_config = json.dumps(new_config, indent=4)
+		dirty = (self.config != current_config) or (self.timezone != data["timezone"])
+
+		if dirty:
+			self.config = current_config
+			self.timezone = data["timezone"]
+			self.save()
+
+		frappe.get_doc(
+			{
+				"doctype": "Site Usage",
+				"site": self.name,
+				"database": fetched_usage["database"],
+				"public": fetched_usage["public"],
+				"private": fetched_usage["private"],
+				"backups": fetched_usage["backups"],
+			}
+		).insert()
 
 	def is_setup_wizard_complete(self):
 		if self.setup_wizard_complete:
@@ -485,6 +558,7 @@ def sync_sites():
 			bench=bench,
 			enqueue_after_commit=True,
 		)
+	frappe.db.commit()
 
 
 def sync_bench_sites(bench):

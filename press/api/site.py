@@ -138,7 +138,8 @@ def backups(name):
 		"Site Backup",
 		fields=fields,
 		filters={"site": name, "status": ("!=", "Failure"), "offsite": 1},
-		limit=available_offsite_backups,
+		order_by="creation desc",
+		limit_page_length=available_offsite_backups,
 	)
 	return sorted(
 		latest_backups + offsite_backups, key=lambda x: x["creation"], reverse=True
@@ -272,7 +273,7 @@ def get_plans():
 def all():
 	sites = frappe.get_list(
 		"Site",
-		fields=["name", "status", "modified", "bench"],
+		fields=["name", "status", "creation", "bench"],
 		filters={"team": get_current_team(), "status": ("!=", "Archived")},
 		order_by="creation desc",
 	)
@@ -309,6 +310,17 @@ def get(name):
 		filters={"name": ("in", available_apps)},
 	)
 
+	try:
+		last_updated = frappe.get_all(
+			"Site Update",
+			fields=["modified"],
+			filters={"site": name},
+			order_by="creation desc",
+			limit_page_length=1,
+		)[0].modified
+	except Exception:
+		last_updated = site.modified
+
 	return {
 		"name": site.name,
 		"status": site.status,
@@ -317,7 +329,7 @@ def get(name):
 		"setup_wizard_complete": site.setup_wizard_complete,
 		"config": json.loads(site.config),
 		"creation": site.creation,
-		"last_updated": site.modified,
+		"last_updated": last_updated,
 		"update_available": (site.bench in benches_with_available_update())
 		and should_try_update(site),
 	}
@@ -670,10 +682,11 @@ def upload_backup():
 
 
 @frappe.whitelist()
-def get_upload_link(file):
+def get_upload_link(file, parts=1):
 	bucket_name = frappe.db.get_single_value("Press Settings", "remote_uploads_bucket")
 	expiration = frappe.db.get_single_value("Press Settings", "remote_link_expiry") or 3600
 	object_name = get_remote_key(file)
+	parts = int(parts)
 
 	s3_client = client(
 		"s3",
@@ -687,11 +700,60 @@ def get_upload_link(file):
 	)
 	try:
 		# The response contains the presigned URL and required fields
+		if parts > 1:
+			signed_urls = []
+			response = s3_client.create_multipart_upload(Bucket=bucket_name, Key=object_name)
+
+			for count in range(parts):
+				signed_url = s3_client.generate_presigned_url(
+					ClientMethod="upload_part",
+					Params={
+						"Bucket": bucket_name,
+						"Key": object_name,
+						"UploadId": response.get("UploadId"),
+						"PartNumber": count + 1,
+					},
+				)
+				signed_urls.append(signed_url)
+
+			payload = response
+			payload["signed_urls"] = signed_urls
+			return payload
+
 		return s3_client.generate_presigned_post(
 			bucket_name, object_name, ExpiresIn=expiration
 		)
+
 	except ClientError as e:
 		log_error("Failed to Generate Presigned URL", content=e)
+
+
+@frappe.whitelist()
+def multipart_exit(file, id, action, parts=None):
+	s3_client = client(
+		"s3",
+		aws_access_key_id=frappe.db.get_single_value(
+			"Press Settings", "remote_access_key_id"
+		),
+		aws_secret_access_key=get_decrypted_password(
+			"Press Settings", "Press Settings", "remote_secret_access_key"
+		),
+		region_name="ap-south-1",
+	)
+	if action == "abort":
+		response = s3_client.abort_multipart_upload(
+			Bucket="uploads.frappe.cloud", Key=file, UploadId=id,
+		)
+	elif action == "complete":
+		parts = json.loads(parts)
+		# After completing for all parts, you will use complete_multipart_upload api which requires that parts list
+		response = s3_client.complete_multipart_upload(
+			Bucket="uploads.frappe.cloud",
+			Key=file,
+			UploadId=id,
+			MultipartUpload={"Parts": parts},
+		)
+	return response
 
 
 @frappe.whitelist()

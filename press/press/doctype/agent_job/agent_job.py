@@ -307,15 +307,24 @@ def schedule_backups():
 			site_time = server_time.astimezone(site_timezone)
 
 			if site_time.hour % interval == 0:
-				yesterday = site_time - timedelta(days=1)
+				today = site_time.date()
 				common_filters = {
-					"creation": [">", yesterday],
+					"creation": ("between", [today, today]),
 					"site": site.name,
 					"status": "Success",
 				}
-				offsite = not frappe.db.count("Site Backup", {**common_filters, "offsite": 1})
+				offsite = not frappe.get_all(
+					"Site Backup",
+					fields=["count(*) as total"],
+					filters={**common_filters, "offsite": 1},
+				)[0]["total"]
 				with_files = (
-					not frappe.db.count("Site Backup", {**common_filters, "with_files": 1}) or offsite
+					not frappe.get_all(
+						"Site Backup",
+						fields=["count(*) as total"],
+						filters={**common_filters, "with_files": 1},
+					)[0]["total"]
+					or offsite
 				)
 
 				frappe.get_doc("Site", site.name).backup(with_files=with_files, offsite=offsite)
@@ -351,9 +360,10 @@ def poll_pending_jobs():
 					skip_pending_steps(job.name)
 
 				process_job_updates(job.name)
+				frappe.db.commit()
 			except Exception:
 				log_error("Agent Job Poll Exception", job=job, polled=polled_job)
-		frappe.db.commit()
+				frappe.db.rollback()
 
 
 def update_job(job_name, job):

@@ -236,6 +236,27 @@ class Agent:
 			site=site.name,
 		)
 
+	def add_domain(self, site, domain):
+		data = {
+			"domain": domain,
+		}
+		return self.create_agent_job(
+			"Add Domain",
+			f"benches/{site.bench}/sites/{site.name}/domains",
+			data,
+			bench=site.bench,
+			site=site.name,
+		)
+
+	def remove_domain(self, site, domain):
+		return self.create_agent_job(
+			"Remove Domain",
+			f"benches/{site.bench}/sites/{site.name}/domains/{domain}",
+			method="DELETE",
+			site=site.name,
+			bench=site.bench,
+		)
+
 	def new_host(self, domain):
 		certificate = frappe.get_doc("TLS Certificate", domain.tls_certificate)
 		data = {
