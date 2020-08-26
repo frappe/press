@@ -127,15 +127,17 @@ class Resource {
 	async fetch() {
 		if (!this.condition()) return;
 
+		this.loading = true;
+
 		if (this.validate) {
 			let message = await this.validate();
 			if (message) {
 				this.setError(message);
+				this.loading = false;
 				return;
 			}
 		}
 
-		this.loading = true;
 		try {
 			let data = await call(this.method, this.params);
 			if (Array.isArray(data) && this.paged) {

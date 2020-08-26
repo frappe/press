@@ -29,7 +29,6 @@
 
 <script>
 import Form from '@/components/Form';
-import { validateGST } from '@/utils';
 
 export default {
 	name: 'AddressForm',
@@ -58,6 +57,19 @@ export default {
 					this.update('country', country.value);
 				}
 			}
+		},
+		indianStates: {
+			method: 'press.api.billing.indian_states'
+		}
+	},
+	watch: {
+		'address.country': {
+			handler(value) {
+				if (value === 'India') {
+					this.$resources.indianStates.fetch();
+				}
+			},
+			immediate: true
 		}
 	},
 	methods: {
@@ -67,8 +79,8 @@ export default {
 				[key]: value
 			});
 		},
-		validateValues() {
-			let { gstin, country } = this.address;
+		async validateValues() {
+			let { country } = this.address;
 			let is_india = country == 'India';
 			let values = this.fields
 				.flat()
@@ -79,8 +91,12 @@ export default {
 				return 'Please fill required values';
 			}
 
-			if (is_india && gstin != 'Not Applicable' && !validateGST(gstin)) {
-				return 'Invalid GSTIN';
+			try {
+				await this.$call('press.api.billing.validate_gst', {
+					address: this.address
+				});
+			} catch (error) {
+				return error.messages.join('\n');
 			}
 		}
 	},
@@ -89,6 +105,12 @@ export default {
 			return (this.$resources.countryList.data || []).map(d => ({
 				label: d.name,
 				value: d.name
+			}));
+		},
+		indianStates() {
+			return (this.$resources.indianStates.data || []).map(d => ({
+				label: d,
+				value: d
 			}));
 		},
 		fields() {
@@ -107,10 +129,11 @@ export default {
 						required: 1
 					},
 					{
-						fieldtype: 'Data',
+						fieldtype: this.address.country === 'India' ? 'Select' : 'Data',
 						label: 'State',
 						fieldname: 'state',
-						required: 1
+						required: 1,
+						options: this.address.country === 'India' ? this.indianStates : null
 					},
 					{
 						fieldtype: 'Data',
