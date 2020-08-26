@@ -160,8 +160,8 @@ export default {
 						files: this.selectedFiles
 					}
 				},
-				onSuccess(subdomain) {
-					this.$router.push(`/sites/${subdomain}`);
+				onSuccess(siteUrl) {
+					this.$router.push(`/sites/${siteUrl}/jobs`);
 				},
 				validate() {
 					let canCreate =
