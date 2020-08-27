@@ -196,7 +196,13 @@
 						{{ paymentMethod.name_on_card }}
 					</div>
 					<div class="text-sm text-right text-gray-600 whitespace-no-wrap">
-						Added on {{ dateShort(paymentMethod.creation) }}
+						Added on
+						{{
+							$date(paymentMethod.creation).toLocaleString({
+								month: 'short',
+								day: 'numeric'
+							})
+						}}
 					</div>
 				</div>
 				<div class="px-6 py-4">
@@ -302,10 +308,6 @@ export default {
 			let start = periodStart.toLocaleString({ month: 'long', day: 'numeric' });
 			let end = periodEnd.toLocaleString({ month: 'short', day: 'numeric' });
 			return `${start} - ${end} ${periodEnd.year}`;
-		},
-		dateShort(date) {
-			let dt = DateTime.fromSQL(date);
-			return dt.toLocaleString({ month: 'short', day: 'numeric' });
 		}
 	}
 };

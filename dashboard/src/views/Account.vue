@@ -2,11 +2,27 @@
 	<div>
 		<div class="px-4 sm:px-8" v-if="$account.user">
 			<div class="py-8">
-				<div class="flex items-center">
+				<div>
 					<h1 class="text-2xl font-bold">Account Settings</h1>
-					<span class="ml-2 text-gray-600">
-						{{ $account.user.name }}
-					</span>
+					<div class="mt-2 text-base text-gray-600">
+						<span>
+							{{ $account.user.name }}
+						</span>
+						<template v-if="$account.team.erpnext_partner">
+							&middot;
+							<span>ERPNext Partner</span>
+						</template>
+						&middot;
+						<span>
+							Member since
+							{{
+								$date($account.team.creation).toLocaleString({
+									month: 'short',
+									day: 'numeric'
+								})
+							}}
+						</span>
+					</div>
 				</div>
 			</div>
 		</div>

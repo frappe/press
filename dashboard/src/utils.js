@@ -8,6 +8,9 @@ let utils = {
 			}
 			return plural;
 		},
+		$date(date) {
+			return DateTime.fromSQL(date);
+		},
 		formatDate(value, type = 'full') {
 			let datetime = DateTime.fromSQL(value);
 			let format = value;
