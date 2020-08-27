@@ -124,7 +124,6 @@ class Agent:
 
 			return json.dumps(sanitized_config)
 
-
 		data = {
 			"config": json.loads(site.config),
 			"apps": apps,

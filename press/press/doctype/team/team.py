@@ -238,7 +238,9 @@ class Team(Document):
 			balance = (customer_object["balance"] * -1) / 100
 			return balance
 
-		return frappe.cache().hget('customer_available_credits', self.name, generator=get_stripe_balance)
+		return frappe.cache().hget(
+			"customer_available_credits", self.name, generator=get_stripe_balance
+		)
 
 	def is_partner_and_has_enough_credits(self):
 		return self.erpnext_partner and self.get_available_credits() > 0

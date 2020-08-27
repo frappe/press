@@ -158,12 +158,12 @@ def get_frappe_backups(site_url, username, password):
 	def url(file_path, sid):
 		if not file_path:
 			return None
-		backup_path = file_path.split('/private')[1]
-		return urljoin(site_url, f'{backup_path}?sid={sid}')
+		backup_path = file_path.split("/private")[1]
+		return urljoin(site_url, f"{backup_path}?sid={sid}")
 
 	if res.ok:
 		payload = res.json()
-		files = payload.get('message', {})
+		files = payload.get("message", {})
 
 		missing_files = []
 		file_urls = {}
@@ -175,12 +175,17 @@ def get_frappe_backups(site_url, username, password):
 
 		if missing_files:
 			missing_config = "site config and " if not file_urls.get("config") else ""
-			missing_backups = f"Missing {missing_config}backup files: {', '.join([x.title() for x in missing_files])}"
+			missing_backups = (
+				f"Missing {missing_config}backup files:"
+				f" {', '.join([x.title() for x in missing_files])}"
+			)
 			frappe.throw(missing_backups)
 
 		return file_urls
 	else:
-		log_error("Backups Retreival Error - Magic Migration", response=res.text, remote_site=site_url)
+		log_error(
+			"Backups Retreival Error - Magic Migration", response=res.text, remote_site=site_url
+		)
 		frappe.throw("An unknown error occurred")
 
 
@@ -207,7 +212,9 @@ def sanitize_config(config: dict) -> dict:
 			sanitized_config.pop(key)
 
 	# Remove keys with empty values
-	sanitized_config = {key: value for key, value in sanitized_config.items() if value != ""}
+	sanitized_config = {
+		key: value for key, value in sanitized_config.items() if value != ""
+	}
 
 	for key in ["max_file_size", "mail_port"]:
 		if key in sanitized_config:
