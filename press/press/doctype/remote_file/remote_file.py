@@ -8,7 +8,6 @@ import json
 
 import requests
 from boto3 import client, resource
-from botocore.exceptions import ClientError
 
 import frappe
 from frappe.model.document import Document

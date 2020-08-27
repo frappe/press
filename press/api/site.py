@@ -4,12 +4,7 @@
 
 from __future__ import unicode_literals
 
-import builtins
-import gzip
-import io
 import json
-import tarfile
-from pathlib import Path
 
 import dns.resolver
 import wrapt
@@ -31,7 +26,6 @@ from press.press.doctype.site_update.site_update import (
 from press.utils import (
 	get_current_team,
 	log_error,
-	verify_frappe_site,
 	get_frappe_backups,
 	sanitize_config,
 )
