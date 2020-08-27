@@ -61,7 +61,8 @@
 					v-if="
 						$account.hasRole('Press Admin') &&
 							($account.team.default_payment_method ||
-								$account.team.free_account)
+								$account.team.free_account ||
+								$account.team.erpnext_partner)
 					"
 				>
 					<Button type="primary" @click="showModal = true">
