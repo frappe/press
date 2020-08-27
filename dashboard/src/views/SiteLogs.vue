@@ -1,6 +1,13 @@
 <template>
 	<Section title="Logs" description="Available Logs for your site">
-		<div class="flex" v-if="logs.length > 0">
+		<div class="flex text-base text-center text-gray-900" v-if="logs === null">
+			<Button
+				:loading="true"
+				loadingText="Fetching..."
+			>
+			</Button>
+		</div>
+		<div class="flex" v-else-if="logs.length > 0">
 			<div
 				class="w-full py-4 overflow-auto text-base border rounded-md sm:w-1/3 sm:rounded-r-none"
 				:class="{ 'hidden sm:block': selectedLog }"
@@ -42,7 +49,7 @@
 					<div class="px-6 py-4 mb-2 border-b border-gray-900">
 						<div class="text-sm font-semibold text-white">
 							{{ logName }}
-							<span class="text-gray-900"
+							<span class="text-gray-500"
 								>({{ selectedLogLines.length }} lines)</span
 							>
 						</div>
@@ -61,7 +68,7 @@
 				</div>
 			</div>
 		</div>
-		<div class="flex text-base text-center text-gray-900" v-else>
+		<div class="flex text-base text-center text-gray-900" v-else-if="logs.length === 0">
 			Site wise logging is enabled only for sites powered by Frappe Version 13.
 		</div>
 	</Section>
@@ -72,7 +79,7 @@ export default {
 	name: 'SiteLogs',
 	props: ['site', 'logName'],
 	data: () => ({
-		logs: [],
+		logs: null,
 		selectedLog: null
 	}),
 	watch: {

@@ -63,7 +63,7 @@ export default {
 				Int: 'number',
 				Select: 'select',
 				Check: 'checkbox',
-				Password: 'text'
+				Password: 'password'
 			}[field.fieldtype || 'Data'];
 		}
 	}

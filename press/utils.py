@@ -4,11 +4,13 @@
 
 from __future__ import unicode_literals
 import frappe
+from frappe.utils import cint
 import functools
 import json
 import requests
 from datetime import datetime, timedelta
 from python_minifier import minify
+from urllib.parse import urljoin
 
 
 def log_error(title, **kwargs):
@@ -107,3 +109,108 @@ def get_minified_script():
 	migration_script = "../apps/press/press/scripts/migrate.py"
 	script_contents = open(migration_script).read()
 	return minify(script_contents)
+
+
+def verify_frappe_site(site_url):
+	url = None
+
+	try:
+		res = requests.get(f"{site_url}/api/method/frappe.ping")
+		if res.ok:
+			data = res.json()
+			if data.get("message") == "pong":
+				url = res.url.split("/api")[0]
+	except Exception:
+		pass
+
+	return url
+
+
+def get_frappe_backups(site_url, username, password):
+	headers = {"Accept": "application/json", "Content-Type": "application/json"}
+
+	if not site_url.startswith("http"):
+		# http will be redirected to https in requests
+		site_url = f"http://{site_url}"
+
+	site_url = verify_frappe_site(site_url)
+	if not site_url:
+		frappe.throw("Invalid Frappe Site")
+
+	# tested - works
+	response = requests.post(
+		f"{site_url}/api/method/login", data={"usr": username, "pwd": password},
+	)
+	if response.ok:
+		sid = response.cookies.get("sid")
+	else:
+		if response.status_code == 401:
+			frappe.throw("Invalid Credentials")
+		else:
+			response.raise_for_status()
+
+	suffix = f"?sid={sid}" if sid else ""
+	res = requests.get(
+		f"{site_url}/api/method/frappe.utils.backups.fetch_latest_backups{suffix}",
+		headers=headers,
+	)
+
+	def url(file_path, sid):
+		if not file_path:
+			return None
+		backup_path = file_path.split('/private')[1]
+		return urljoin(site_url, f'{backup_path}?sid={sid}')
+
+	if res.ok:
+		payload = res.json()
+		files = payload.get('message', {})
+
+		missing_files = []
+		file_urls = {}
+		for file_type, file_path in files.items():
+			if not file_path:
+				missing_files.append(file_type)
+			else:
+				file_urls[file_type] = url(file_path, sid)
+
+		if missing_files:
+			missing_config = "site config and " if not file_urls.get("config") else ""
+			missing_backups = f"Missing {missing_config}backup files: {', '.join([x.title() for x in missing_files])}"
+			frappe.throw(missing_backups)
+
+		return file_urls
+	else:
+		log_error("Backups Retreival Error - Magic Migration", response=res.text, remote_site=site_url)
+		frappe.throw("An unknown error occurred")
+
+
+def sanitize_config(config: dict) -> dict:
+	allowed_keys = [
+		"encryption_key",
+		"mail_server",
+		"mail_port",
+		"mail_login",
+		"mail_password",
+		"use_ssl",
+		"auto_email_id",
+		"mute_emails",
+		"server_script_enabled",
+		"disable_website_cache",
+		"disable_global_search",
+		"max_file_size",
+	]
+
+	sanitized_config = config.copy()
+
+	for key in config:
+		if key not in allowed_keys:
+			sanitized_config.pop(key)
+
+	# Remove keys with empty values
+	sanitized_config = {key: value for key, value in sanitized_config.items() if value != ""}
+
+	for key in ["max_file_size", "mail_port"]:
+		if key in sanitized_config:
+			sanitized_config[key] = cint(sanitized_config[key])
+
+	return sanitized_config

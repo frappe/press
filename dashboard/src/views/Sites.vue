@@ -44,8 +44,13 @@
 					</FormatDate>
 					<span class="hidden text-right md:inline">
 						<Badge
+						v-if="
+							(site.status === 'Active' ||
+								site.status === 'Inactive' ||
+								site.status === 'Suspended') &&
+								site.update_available
+						"
 							:status="'Update Available'"
-							v-if="site.update_available"
 							class="mr-4"
 						/>
 						<a

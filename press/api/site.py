@@ -28,7 +28,13 @@ from press.press.doctype.site_update.site_update import (
 	benches_with_available_update,
 	should_try_update,
 )
-from press.utils import get_current_team, log_error
+from press.utils import (
+	get_current_team,
+	log_error,
+	verify_frappe_site,
+	get_frappe_backups,
+	sanitize_config,
+)
 
 
 def protected(doctype):
@@ -63,9 +69,10 @@ def new(site):
 			"apps": [{"app": app} for app in site["apps"]],
 			"team": team,
 			"plan": site["plan"],
-			"remote_database_file": site["files"]["database"],
-			"remote_public_file": site["files"]["public"],
-			"remote_private_file": site["files"]["private"],
+			"remote_config_file": site["files"].get("config"),
+			"remote_database_file": site["files"].get("database"),
+			"remote_public_file": site["files"].get("public"),
+			"remote_private_file": site["files"].get("private"),
 		},
 	).insert(ignore_permissions=True)
 	return site.name
@@ -329,6 +336,7 @@ def get(name):
 		"setup_wizard_complete": site.setup_wizard_complete,
 		"config": json.loads(site.config),
 		"creation": site.creation,
+		"owner": site.owner,
 		"last_updated": last_updated,
 		"update_available": (site.bench in benches_with_available_update())
 		and should_try_update(site),
@@ -600,85 +608,8 @@ def log(name, log):
 @frappe.whitelist()
 @protected("Site")
 def update_config(name, config):
-	allowed_keys = [
-		"encryption_key",
-		"mail_server",
-		"mail_port",
-		"mail_login",
-		"mail_password",
-		"use_ssl",
-		"auto_email_id",
-		"mute_emails",
-		"server_script_enabled",
-		"disable_website_cache",
-		"disable_global_search",
-		"max_file_size",
-	]
-	if any(key not in allowed_keys for key in config.keys()):
-		return
-
-	# Remove keys with empty values
-	config = {key: value for key, value in config.items() if value != ""}
-
-	for key in ["max_file_size", "mail_port"]:
-		if key in config:
-			config[key] = cint(config[key])
-
+	config = sanitize_config(config)
 	frappe.get_doc("Site", name).update_site_config(config)
-
-
-def validate_database_backup(filename, content):
-	try:
-		with gzip.open(io.BytesIO(content)) as f:
-			line = f.readline().decode().lower()
-			if "mysql" in line or "mariadb" in line:
-				return True
-	except Exception:
-		log_error("Invalid Database Backup File", filename=filename, content=content[:1024])
-
-
-def validate_files_backup(filename, content, type):
-	try:
-		with tarfile.TarFile.open(fileobj=io.BytesIO(content), mode="r:") as f:
-			files = f.getnames()
-			if files:
-				path = Path(files[0])
-				if (
-					path.name == "files"
-					and path.parent.name == type
-					and path.parent.parent.parent.name == ""
-					and builtins.all(file.startswith(files[0]) for file in files)
-				):
-					return True
-	except tarfile.TarError:
-		log_error("Invalid Files Backup File", filename=filename, content=content[:1024])
-
-
-def validate_backup(filename, content, type):
-	if type == "database":
-		return validate_database_backup(filename, content)
-	else:
-		return validate_files_backup(filename, content, type)
-
-
-@frappe.whitelist()
-def upload_backup():
-	content = frappe.local.uploaded_file
-	filename = frappe.local.uploaded_filename
-	if validate_backup(filename, content, frappe.form_dict.type):
-		file = frappe.get_doc(
-			{
-				"doctype": "File",
-				"folder": "Home/Backup Uploads",
-				"file_name": filename,
-				"is_private": 1,
-				"content": content,
-			}
-		)
-		file.save(ignore_permissions=True)
-		return file.file_url
-	else:
-		frappe.throw("Invalid Backup File")
 
 
 @frappe.whitelist()
@@ -757,7 +688,7 @@ def multipart_exit(file, id, action, parts=None):
 
 
 @frappe.whitelist()
-def uploaded_backup_info(file, path, type, size):
+def uploaded_backup_info(file=None, path=None, type=None, size=None, url=None):
 	doc = frappe.get_doc(
 		{
 			"doctype": "Remote File",
@@ -765,8 +696,27 @@ def uploaded_backup_info(file, path, type, size):
 			"file_type": type,
 			"file_size": size,
 			"file_path": path,
+			"url": url,
 			"bucket": frappe.db.get_single_value("Press Settings", "remote_uploads_bucket"),
 		}
 	).insert()
 	add_tag("Site Upload", doc.doctype, doc.name)
 	return doc.name
+
+
+@frappe.whitelist()
+def get_backup_links(url, email, password):
+	files = get_frappe_backups(url, email, password)
+	remote_files = []
+	for file_type, file_url in files.items():
+		file_name = file_url.split("backups/")[1].split("?sid=")[0]
+		remote_files.append(
+			{
+				"type": file_type,
+				"remote_file": uploaded_backup_info(file=file_name, url=file_url, type=file_type),
+				"file_name": file_name,
+				"url": file_url,
+			}
+		)
+
+	return remote_files
