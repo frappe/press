@@ -26,6 +26,9 @@ EOF
 rm -rf /var/log/unattended-upgrades
 apt-get -y purge unattended-upgrades
 
+# Install QEMU guest agent
+apt-get install qemu-guest-agent
+
 # Update the package list
 apt-get -y update
 
