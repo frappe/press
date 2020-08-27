@@ -57,6 +57,14 @@ _EOF_
 rm -rf /lib/firmware/*
 rm -rf /usr/share/doc/linux-firmware/*
 
+# Clean up orphaned packages with deborphan
+apt-get -y install deborphan
+while [ -n "$(deborphan --guess-all --libdevel)" ]
+do
+    deborphan --guess-all --libdevel | xargs apt-get -y purge
+done
+apt-get -y purge deborphan dialog
+
 apt-get -y autoremove
 apt-get -y autoclean
 apt-get -y clean
