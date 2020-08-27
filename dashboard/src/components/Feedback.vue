@@ -29,20 +29,15 @@
 				</Button>
 			</template>
 			<SuccessCard class="mb-4" title="Thanks for your feedback!" v-else>
-				Your feedback improves Frappe Cloud.
+				Your feedback helps improve Frappe Cloud.
 			</SuccessCard>
 		</Dialog>
 	</div>
 </template>
 
 <script>
-import Dialog from '@/components/Dialog';
-
 export default {
 	name: 'Feedback',
-	components: {
-		Dialog
-	},
 	data() {
 		return {
 			isOpen: false,

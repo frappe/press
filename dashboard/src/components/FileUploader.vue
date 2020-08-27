@@ -86,7 +86,7 @@ export default {
 								new WebAssembly.Instance(module) instanceof WebAssembly.Instance
 							);
 					}
-				} catch (e) {}
+				} catch (e) {} // eslint-disable-line no-empty
 				return false;
 			})();
 
@@ -125,7 +125,7 @@ export default {
 			}
 		},
 		validateFileName() {
-			return new Promise((resolve, reject) => {
+			return new Promise(resolve => {
 				const name = this.file.name;
 				const suffix = `${this.type ? 'private' : ''}-files.tar`;
 				const result = name.indexOf(suffix, name.length - suffix.length) !== -1;
@@ -133,7 +133,7 @@ export default {
 			});
 		},
 		validateFile() {
-			return new Promise((resolve, reject) => {
+			return new Promise(resolve => {
 				let timeout;
 				if (this.file.size < 200 * 1000 * 1000) {
 					timeout = 15 * 1000;

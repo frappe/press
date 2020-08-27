@@ -6,7 +6,7 @@
 		>
 			<SectionCard>
 				<div class="py-2 space-y-4">
-					<div class="flex grid grid-cols-3 gap-4 px-6">
+					<div class="grid grid-cols-3 gap-4 px-6">
 						<FileUploader
 							v-for="file in files"
 							:fileTypes="file.ext"
@@ -120,7 +120,7 @@
 				Bench migrate command will be executed on your database. Are you sure
 				you want to run this command?
 			</p>
-			<p class="text-base mt-2 text-gray-500">
+			<p class="mt-2 text-base text-gray-500">
 				We recommend that you download a database backup before continuing.
 			</p>
 			<template slot="actions">
@@ -138,13 +138,11 @@
 
 <script>
 import FileUploader from '@/components/FileUploader';
-import Dialog from '@/components/Dialog';
 
 export default {
 	name: 'SiteDatabase',
 	components: {
-		FileUploader,
-		Dialog
+		FileUploader
 	},
 	props: ['site'],
 	resources: {

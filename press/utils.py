@@ -20,7 +20,7 @@ def log_error(title, **kwargs):
 	frappe.log_error(title=title, message=message)
 
 
-def get_current_team():
+def get_current_team(get_doc=False):
 	if not hasattr(frappe.local, "request"):
 		# if this is not a request, send the current user as default team
 		return frappe.session.user
@@ -46,6 +46,9 @@ def get_current_team():
 			"User {0} does not belong to Team {1}".format(frappe.session.user, team),
 			frappe.PermissionError,
 		)
+
+	if get_doc:
+		return frappe.get_doc("Team", team)
 
 	return team
 

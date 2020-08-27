@@ -72,7 +72,9 @@ class Team(Document):
 			credits_field = "free_credits_inr" if self.currency == "INR" else "free_credits_usd"
 			credit_amount = frappe.db.get_single_value("Press Settings", credits_field)
 			self.allocate_credit_amount(credit_amount, remark="Free credits on signup")
-			self.db_set("free_credits_allocated", 1)
+			self.free_credits_allocated = 1
+			self.save()
+			self.reload()
 
 	def create_user_for_member(
 		self, first_name=None, last_name=None, email=None, password=None, role=None
@@ -104,10 +106,39 @@ class Team(Document):
 			self.stripe_customer_id = customer.id
 			self.save()
 
+	def create_or_update_address(self, address):
+		if self.billing_address:
+			address_doc = frappe.get_doc("Address", self.billing_address)
+		else:
+			address_doc = frappe.new_doc("Address")
+			address_doc.address_title = self.name
+			address_doc.append(
+				"links",
+				{"link_doctype": self.doctype, "link_name": self.name, "link_title": self.name},
+			)
+
+		address_doc.update(
+			{
+				"address_line1": address.address,
+				"city": address.city,
+				"state": address.state,
+				"pincode": address.postal_code,
+				"country": address.country,
+				"gstin": address.gstin,
+			}
+		)
+		address_doc.save()
+
+		self.billing_address = address_doc.name
+		self.save()
+		self.reload()
+		self.update_billing_details_on_stripe(address_doc)
+
 	def update_billing_details_on_stripe(self, address=None):
 		stripe = get_stripe()
 		if not address:
 			address = frappe.get_doc("Address", self.billing_address)
+
 		country_code = frappe.db.get_value("Country", address.country, "code")
 		stripe.Customer.modify(
 			self.stripe_customer_id,
@@ -120,14 +151,16 @@ class Team(Document):
 			},
 		)
 
-	def create_payment_method(self, payment_method, set_default=False):
-		billing_details = payment_method["billing_details"]
+	def create_payment_method(self, payment_method_id, set_default=False):
+		stripe = get_stripe()
+		payment_method = stripe.PaymentMethod.retrieve(payment_method_id)
+
 		doc = frappe.get_doc(
 			{
 				"doctype": "Stripe Payment Method",
 				"stripe_payment_method_id": payment_method["id"],
 				"last_4": payment_method["card"]["last4"],
-				"name_on_card": billing_details["name"],
+				"name_on_card": payment_method["billing_details"]["name"],
 				"expiry_month": payment_method["card"]["exp_month"],
 				"expiry_year": payment_method["card"]["exp_year"],
 				"team": self.name,
@@ -135,42 +168,28 @@ class Team(Document):
 		)
 		doc.insert()
 
-		# create address
-		country_code = billing_details["address"]["country"]
-		country = frappe.db.get_value("Country", {"code": country_code.lower()})
-		address = frappe.get_doc(
-			doctype="Address",
-			address_title=self.name,
-			address_line1=billing_details["address"]["line1"],
-			city=billing_details["address"]["city"],
-			state=billing_details["address"]["state"],
-			pincode=billing_details["address"]["postal_code"],
-			country=country,
-			links=[
-				{"link_doctype": self.doctype, "link_name": self.name, "link_title": self.name},
-				{"link_doctype": doc.doctype, "link_name": doc.name, "link_title": self.name},
-			],
-		)
-		address.insert()
-		self.db_set("billing_address", address.name)
-
 		# unsuspend sites on payment method added
 		self.unsuspend_sites(reason="Payment method added")
 		if set_default:
 			doc.set_default()
+			self.reload()
 
-		if frappe.db.count("Stripe Payment Method", {"team": self.name}) == 1:
-			# when first payment method is added
-			# update address in Stripe Customer
-			# create subscription and allocate free credits
-			self.update_billing_details_on_stripe(address)
-			self.allocate_free_credits()
+		# allocate credits if not already allocated
+		self.allocate_free_credits()
 
 	def get_payment_methods(self):
 		payment_methods = frappe.db.get_all(
 			"Stripe Payment Method",
 			{"team": self.name},
-			["name", "last_4", "name_on_card", "expiry_month", "expiry_year", "is_default"],
+			[
+				"name",
+				"last_4",
+				"name_on_card",
+				"expiry_month",
+				"expiry_year",
+				"is_default",
+				"creation",
+			],
 		)
 		if payment_methods:
 			return payment_methods
@@ -246,6 +265,8 @@ class Team(Document):
 		return self.erpnext_partner and self.get_available_credits() > 0
 
 	def has_partner_account_on_erpnext_com(self):
+		if frappe.conf.developer_mode:
+			return False
 		erpnext_com = get_erpnext_com_connection()
 		res = erpnext_com.get_value(
 			"ERPNext Partner", "name", filters={"email": self.name, "status": "Approved"}
@@ -278,16 +299,12 @@ class Team(Document):
 		site_created = frappe.db.count("Site", {"team": self.name}) > 0
 		complete = (
 			self.free_account
-			or (self.erpnext_partner and address_added)
-			or (team_created and card_added and site_created and address_added)
+			or self.erpnext_partner
+			or (team_created and card_added and site_created)
 		)
 		return {
 			"Create a Team": {"done": team_created},
 			"Add Billing Information": {"done": card_added},
-			"Update Billing Address": {
-				"done": address_added,
-				"show": card_added and not address_added,
-			},
 			"Create your first site": {"done": site_created},
 			"complete": complete,
 		}
@@ -350,18 +367,6 @@ def get_team_members(team):
 def get_default_team(user):
 	if frappe.db.exists("Team", user):
 		return user
-
-
-def process_stripe_webhook(doc, method):
-	"""This method runs after a Stripe Webhook Log is created"""
-	if doc.event_type not in ["payment_method.attached"]:
-		return
-
-	event = frappe.parse_json(doc.payload)
-	payment_method = event["data"]["object"]
-	customer_id = payment_method["customer"]
-	team_doc = frappe.get_doc("Team", {"stripe_customer_id": customer_id})
-	team_doc.create_payment_method(payment_method, set_default=True)
 
 
 def suspend_sites_for_teams_without_cards():

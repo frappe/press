@@ -2,6 +2,7 @@
 # Proprietary License. See license.txt
 
 from __future__ import unicode_literals
+import re
 import frappe
 import stripe
 from frappe.utils import global_date_format, fmt_money, flt
@@ -39,9 +40,19 @@ def info():
 
 	past_invoices = team_doc.get_past_invoices()
 
+	if team_doc.billing_address:
+		address = frappe.get_doc("Address", team_doc.billing_address)
+		billing_address = (
+			f"{address.address_line1}, {address.city}, {address.state},"
+			f" {address.country}, {address.pincode}"
+		)
+	else:
+		billing_address = ""
+
 	return {
 		"upcoming_invoice": upcoming_invoice,
 		"past_invoices": past_invoices,
+		"billing_address": billing_address,
 		"payment_method": team_doc.default_payment_method,
 		"available_credits": fmt_money(team_doc.get_available_credits(), 2, currency),
 	}
@@ -117,6 +128,17 @@ def after_card_add():
 	clear_setup_intent()
 
 
+@frappe.whitelist()
+def setup_intent_success(setup_intent, address):
+	setup_intent = frappe._dict(setup_intent)
+	address = frappe._dict(address)
+
+	team = get_current_team(True)
+	clear_setup_intent()
+	team.create_payment_method(setup_intent.payment_method, set_default=True)
+	team.create_or_update_address(address)
+
+
 def clear_setup_intent():
 	team = get_current_team()
 	frappe.cache().hdel("setup_intent", team)
@@ -148,3 +170,78 @@ def get_stripe():
 		stripe.api_key = secret_key
 		frappe.local.press_stripe_object = stripe
 	return frappe.local.press_stripe_object
+
+
+states_with_tin = {
+	"Andaman and Nicobar Islands": "35",
+	"Andhra Pradesh": "37",
+	"Arunachal Pradesh": "12",
+	"Assam": "18",
+	"Bihar": "10",
+	"Chandigarh": "04",
+	"Chattisgarh": "22",
+	"Dadra and Nagar Haveli": "26",
+	"Daman and Diu": "25",
+	"Delhi": "07",
+	"Goa": "30",
+	"Gujarat": "24",
+	"Haryana": "06",
+	"Himachal Pradesh": "02",
+	"Jammu and Kashmir": "01",
+	"Jharkhand": "20",
+	"Karnataka": "29",
+	"Kerala": "32",
+	"Ladakh": "38",
+	"Lakshadweep Islands": "31",
+	"Madhya Pradesh": "23",
+	"Maharashtra": "27",
+	"Manipur": "14",
+	"Meghalaya": "17",
+	"Mizoram": "15",
+	"Nagaland": "13",
+	"Odisha": "21",
+	"Other Territory": "97",
+	"Pondicherry": "34",
+	"Punjab": "03",
+	"Rajasthan": "08",
+	"Sikkim": "11",
+	"Tamil Nadu": "33",
+	"Telangana": "36",
+	"Tripura": "16",
+	"Uttar Pradesh": "09",
+	"Uttarakhand": "05",
+	"West Bengal": "19",
+}
+
+
+@frappe.whitelist()
+def indian_states():
+	return states_with_tin.keys()
+
+
+@frappe.whitelist()
+def validate_gst(address, method=None):
+	if isinstance(address, dict):
+		address = frappe._dict(address)
+
+	if address.country != "India":
+		return
+
+	if address.state not in states_with_tin:
+		frappe.throw("Invalid State for India.")
+
+	if not address.gstin:
+		frappe.throw("GSTIN is required for Indian customers.")
+
+	if address.gstin and address.gstin != "Not Applicable":
+		pattern = re.compile(
+			"^[0-9]{2}[A-Z]{4}[0-9A-Z]{1}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}[1-9A-Z]{1}[0-9A-Z]{1}$"
+		)
+		if not pattern.match(address.gstin):
+			frappe.throw(
+				"Invalid GSTIN. The input you've entered does not match the format of GSTIN."
+			)
+
+		tin_code = states_with_tin[address.state]
+		if not address.gstin.startswith(tin_code):
+			frappe.throw(f"GSTIN must start with {tin_code} for {address.state}.")

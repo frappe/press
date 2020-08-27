@@ -125,14 +125,12 @@
 </template>
 
 <script>
-import Dialog from '@/components/Dialog';
 import SitePlansTable from '@/views/partials/SitePlansTable';
 
 export default {
 	name: 'SitePlan',
 	props: ['site'],
 	components: {
-		Dialog,
 		SitePlansTable
 	},
 	data() {

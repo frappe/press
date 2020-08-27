@@ -8,8 +8,8 @@
 			name="country"
 			autocomplete="country"
 		>
-			<option v-for="country in countries" :key="country">
-				{{ country }}
+			<option v-for="country in countries" :key="country.name">
+				{{ country.name }}
 			</option>
 		</select>
 
@@ -26,11 +26,7 @@
 </template>
 
 <script>
-import Dialog from '@/components/Dialog';
 export default {
-	components: {
-		Dialog
-	},
 	data() {
 		return {
 			state: null,
