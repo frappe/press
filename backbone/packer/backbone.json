@@ -37,7 +37,8 @@
       "execute_command": "echo 'vagrant' | {{.Vars}} sudo -S -E sh -eux '{{.Path}}'",
       "expect_disconnect": true,
       "scripts": [
-        "{{template_dir}}/scripts/sshd.sh"
+        "{{template_dir}}/scripts/sshd.sh",
+        "{{template_dir}}/scripts/sudoers.sh"
       ],
       "type": "shell"
     }
