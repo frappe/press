@@ -520,7 +520,11 @@ def upload_backup(local_site):
 	# upload files
 	for x, (file_type, file_path) in enumerate(
 		[
-			("config", getattr(odb, "site_config_backup_path", None) or getattr(odb, "backup_path_conf", None)),
+			(
+				"config",
+				getattr(odb, "site_config_backup_path", None)
+				or getattr(odb, "backup_path_conf", None),
+			),
 			("database", odb.backup_path_db),
 			("public", odb.backup_path_files),
 			("private", odb.backup_path_private_files),

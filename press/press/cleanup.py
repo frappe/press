@@ -33,7 +33,12 @@ def remove_baggage():
 		remote_files = frappe.db.get_value(
 			"Site",
 			site["name"],
-			["remote_config_file", "remote_database_file", "remote_public_file", "remote_private_file"],
+			[
+				"remote_config_file",
+				"remote_database_file",
+				"remote_public_file",
+				"remote_private_file",
+			],
 		)
 		for remote_file in remote_files:
 			# this only deletes the object from s3, link still exists
