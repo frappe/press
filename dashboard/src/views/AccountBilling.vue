@@ -1,7 +1,6 @@
 <template>
-	<div>
+	<div class="space-y-10">
 		<Section
-			class="mb-10"
 			title="Upcoming Invoice"
 			description="This is the amount so far based on the usage of your sites"
 			v-if="$resources.billingDetails.loading || upcomingInvoice"
@@ -102,7 +101,6 @@
 
 		<Section
 			v-if="pastInvoices.length"
-			class="mb-10"
 			title="Past Invoices"
 			description="History of your invoice payments"
 		>
@@ -150,30 +148,59 @@
 			</SectionCard>
 		</Section>
 		<Section
+			v-if="!$resources.billingDetails.loading"
+			title="Billing Address"
+			description="Your billing address is shown in monthly invoice"
+		>
+			<SectionCard>
+				<div class="flex items-center justify-between px-6 py-2">
+					<span class="text-base">
+						{{ billingDetails.data.billing_address }}
+					</span>
+					<Button @click="editAddress = true">Edit Address</Button>
+				</div>
+				<UpdateBillingAddress
+					v-if="editAddress"
+					@updated="
+						editAddress = false;
+						billingDetails.reload();
+					"
+				/>
+			</SectionCard>
+		</Section>
+		<Section
 			v-if="paymentMethods.data && paymentMethods.data.length > 0"
 			title="Payment Methods"
 			description="Cards you have added for automatic billing"
 		>
 			<SectionCard>
 				<div
-					class="grid items-center grid-cols-5 px-6 py-4 text-base hover:bg-gray-50"
+					class="grid items-start grid-cols-5 px-6 py-4 text-base hover:bg-gray-50"
 					v-for="paymentMethod in paymentMethods.data"
 					:key="paymentMethod.name"
 				>
-					<div class="font-semibold">•••• {{ paymentMethod.last_4 }}</div>
+					<div class="col-span-2">
+						<div class="flex items-baseline space-x-2">
+							<div class="font-semibold">•••• {{ paymentMethod.last_4 }}</div>
+							<Badge v-if="paymentMethod.is_default" color="blue">
+								Default
+							</Badge>
+						</div>
+						<div class="text-sm text-gray-600">
+							Expires
+							{{ paymentMethod.expiry_month }} /
+							{{ paymentMethod.expiry_year }}
+						</div>
+					</div>
 					<div class="col-span-2">
 						{{ paymentMethod.name_on_card }}
 					</div>
-					<div class="text-right">
-						{{ paymentMethod.expiry_month }} /
-						{{ paymentMethod.expiry_year }}
-					</div>
-					<div class="text-right">
-						<Badge v-if="paymentMethod.is_default" color="blue">Default</Badge>
+					<div class="text-sm text-right text-gray-600 whitespace-no-wrap">
+						Added on {{ dateShort(paymentMethod.creation) }}
 					</div>
 				</div>
 				<div class="px-6 py-4">
-					<Button type="primary" @click="showStripeCardDialog = true">
+					<Button @click="showStripeCardDialog = true">
 						Add Payment Method
 					</Button>
 					<Dialog
@@ -194,7 +221,6 @@
 
 <script>
 import StripeCard from '@/components/StripeCard';
-import Dialog from '@/components/Dialog';
 import DescriptionList from '@/components/DescriptionList';
 import { DateTime } from 'luxon';
 
@@ -202,8 +228,8 @@ export default {
 	name: 'AccountBilling',
 	components: {
 		StripeCard,
-		Dialog,
-		DescriptionList
+		DescriptionList,
+		UpdateBillingAddress: () => import('@/components/UpdateBillingAddress')
 	},
 	resources: {
 		billingDetails: {
@@ -211,6 +237,7 @@ export default {
 			default: {
 				upcoming_invoice: null,
 				available_credits: null,
+				billing_address: null,
 				past_invoices: []
 			},
 			auto: true
@@ -238,7 +265,8 @@ export default {
 			showStripeCardDialog: false,
 			showTransferCreditsDialog: false,
 			availablePartnerCredits: null,
-			creditsToTransfer: null
+			creditsToTransfer: null,
+			editAddress: false
 		};
 	},
 	computed: {
@@ -274,6 +302,10 @@ export default {
 			let start = periodStart.toLocaleString({ month: 'long', day: 'numeric' });
 			let end = periodEnd.toLocaleString({ month: 'short', day: 'numeric' });
 			return `${start} - ${end} ${periodEnd.year}`;
+		},
+		dateShort(date) {
+			let dt = DateTime.fromSQL(date);
+			return dt.toLocaleString({ month: 'short', day: 'numeric' });
 		}
 	}
 };

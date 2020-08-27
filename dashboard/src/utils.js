@@ -32,6 +32,14 @@ let utils = {
 	}
 };
 
+export function validateGST(gst) {
+	// https://github.com/raysk4ever/raysk-vali/blob/master/validate.js#L51
+	const gstReg = new RegExp(
+		/\d{2}[A-Z]{5}\d{4}[A-Z]{1}[A-Z\d]{1}[Z]{1}[A-Z\d]{1}/
+	);
+	return gstReg.test(gst);
+}
+
 export default function install(Vue) {
 	Vue.mixin(utils);
 }

@@ -17,6 +17,7 @@
 				inputClass
 			]"
 			:type="type || 'text'"
+			:disabled="disabled"
 			v-bind="$attrs"
 			@blur="$emit('blur', $event)"
 			v-model="inputVal"

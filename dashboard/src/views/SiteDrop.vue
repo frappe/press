@@ -38,13 +38,9 @@
 </template>
 
 <script>
-import Dialog from '@/components/Dialog';
 export default {
 	name: 'SiteDrop',
 	props: ['site'],
-	components: {
-		Dialog
-	},
 	data() {
 		return {
 			showDialog: false,
@@ -64,7 +60,7 @@ export default {
 				},
 				validate() {
 					if (this.site.name !== this.confirmSiteName) {
-						return 'Please type the site name to confirm'
+						return 'Please type the site name to confirm';
 					}
 				}
 			};

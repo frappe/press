@@ -30,11 +30,8 @@
 					/>
 					<div class="ml-4 text-left">
 						<div class="text-base font-medium">
-							<span v-if="!step.loading">
+							<span>
 								{{ step.name }}
-							</span>
-							<span v-else>
-								{{ step.loadingName }}
 							</span>
 						</div>
 						<div
@@ -58,36 +55,16 @@
 				@complete="afterCardAdd"
 			/>
 		</Dialog>
-		<Dialog title="Update Billing Address" v-model="showAddressDialog">
-			<p>
-				Add your billing address so that we can show it in your monthly invoice.
-			</p>
-			<Form class="mt-4" :fields="addressFields" v-model="billingInformation" />
-			<template slot="actions">
-				<Button
-					type="primary"
-					@click="updateBillingInformation.submit()"
-					:loading="updateBillingInformation.loading"
-					:disabled="!billingInformationValid"
-				>
-					Submit
-				</Button>
-			</template>
-		</Dialog>
 	</div>
 </template>
 
 <script>
 import StripeCard from '@/components/StripeCard';
-import Dialog from '@/components/Dialog';
-import Form from '@/components/Form';
 
 export default {
 	name: 'Welcome',
 	components: {
-		StripeCard,
-		Dialog,
-		Form
+		StripeCard
 	},
 	resources: {
 		onboarding: {
@@ -107,13 +84,6 @@ export default {
 					return step;
 				});
 
-				let addressStep = this.steps.find(
-					d => d.name == 'Update Billing Address'
-				);
-				if (addressStep.show && !addressStep.done) {
-					this.showAddressDialog = true;
-				}
-
 				this.onboardingComplete = onboarding.complete;
 				if (this.onboardingComplete) {
 					setTimeout(() => {
@@ -121,16 +91,6 @@ export default {
 					}, 2000);
 				}
 			}
-		},
-		updateBillingInformation() {
-			return {
-				method: 'press.api.account.update_billing_information',
-				params: this.billingInformation,
-				onSuccess() {
-					this.showAddressDialog = false;
-					this.$resources.onboarding.reload();
-				}
-			};
 		}
 	},
 	data() {
@@ -139,7 +99,6 @@ export default {
 			showAddCardDialog: false,
 			onboardingComplete: false,
 			showAddressDialog: false,
-			billingInformation: {},
 			countryList: [],
 			steps: [
 				{
@@ -156,22 +115,8 @@ export default {
 					done: false,
 					show: true,
 					icon: 'credit-card',
-					loading: false,
-					loadingName: 'Adding Billing Information...',
 					click: () => {
 						this.showAddCardDialog = true;
-					},
-					disabled: false
-				},
-				{
-					name: 'Update Billing Address',
-					description:
-						'Add your billing address so that we can show it in your monthly invoice.',
-					done: false,
-					show: false,
-					icon: 'map',
-					click: () => {
-						this.showAddressDialog = true;
 					},
 					disabled: false
 				},
@@ -189,89 +134,15 @@ export default {
 			]
 		};
 	},
-	async mounted() {
-		let countryList = await this.$call('frappe.client.get_list', {
-			doctype: 'Country',
-			fields: 'name, code',
-			limit_page_length: null
-		});
-		this.countryList = [{ label: 'Select Country', value: '' }].concat(
-			countryList.map(d => ({
-				label: d.name,
-				value: d.code
-			}))
-		);
-		let country = this.countryList.find(
-			d => d.label === this.$account.team.country
-		);
-		if (country) {
-			this.billingInformation.country = country.value;
-		}
-	},
 	methods: {
 		afterCardAdd() {
 			this.showAddCardDialog = false;
 			let step = this.getBillingStep();
-			step.loading = true;
-			this.reloadUntilAddCardIsTrue();
-		},
-		async reloadUntilAddCardIsTrue() {
-			let cardStep = this.getBillingStep();
-			if (!cardStep.done) {
-				cardStep.disabled = true;
-				await this.$resources.onboarding.reload();
-				setTimeout(() => {
-					this.reloadUntilAddCardIsTrue();
-				}, 1000);
-			} else {
-				cardStep.disabled = false;
-				cardStep.loading = false;
-			}
+			step.done = true;
+			this.$resources.onboarding.reload();
 		},
 		getBillingStep() {
 			return this.steps.find(d => d.name === 'Add Billing Information');
-		}
-	},
-	computed: {
-		billingInformationValid() {
-			return this.addressFields
-				.map(df => this.billingInformation[df.fieldname])
-				.every(Boolean);
-		},
-		addressFields() {
-			return [
-				{
-					fieldtype: 'Data',
-					label: 'Address',
-					fieldname: 'address',
-					required: 1
-				},
-				{
-					fieldtype: 'Data',
-					label: 'City',
-					fieldname: 'city',
-					required: 1
-				},
-				{
-					fieldtype: 'Data',
-					label: 'State',
-					fieldname: 'state',
-					required: 1
-				},
-				{
-					fieldtype: 'Data',
-					label: 'Postal Code',
-					fieldname: 'postal_code',
-					required: 1
-				},
-				{
-					fieldtype: 'Select',
-					label: 'Country',
-					fieldname: 'country',
-					options: this.countryList,
-					required: 1
-				}
-			];
 		}
 	}
 };

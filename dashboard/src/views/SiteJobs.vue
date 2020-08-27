@@ -174,7 +174,9 @@ export default {
 		},
 		isStepRunning(step) {
 			if (this.jobName !== this.runningJob?.id) return false;
-			let runningStep = this.runningJob.steps.find(s => s.name == step.step_name);
+			let runningStep = this.runningJob.steps.find(
+				s => s.name == step.step_name
+			);
 			return runningStep?.status === 'Running';
 		},
 		isStepCompleted(step, index) {
@@ -183,6 +185,6 @@ export default {
 			}
 			return step.status === 'Success';
 		}
-	},
+	}
 };
 </script>

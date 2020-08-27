@@ -4,7 +4,11 @@
 			v-show="show"
 			class="fixed inset-x-0 bottom-0 px-4 pb-4 sm:inset-0 sm:flex sm:items-center sm:justify-center"
 		>
-			<div v-show="show" class="fixed inset-0 transition-opacity" @click="hide">
+			<div
+				v-show="show"
+				class="fixed inset-0 transition-opacity"
+				@click="onBackdropClick"
+			>
 				<div class="absolute inset-0 bg-gray-900 opacity-75"></div>
 			</div>
 
@@ -29,9 +33,14 @@ export default {
 		show: {
 			type: Boolean,
 			default: false
+		},
+		dismissable: {
+			type: Boolean,
+			default: true
 		}
 	},
 	created() {
+		if (!this.dismissable) return;
 		this.escapeListener = e => {
 			if (e.key === 'Escape') {
 				this.hide();
@@ -43,6 +52,10 @@ export default {
 		document.removeEventListener('keydown', this.escapeListener);
 	},
 	methods: {
+		onBackdropClick() {
+			if (!this.dismissable) return;
+			this.hide();
+		},
 		hide() {
 			this.$emit('change', false);
 		}
