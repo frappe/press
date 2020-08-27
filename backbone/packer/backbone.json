@@ -39,7 +39,10 @@
       "scripts": [
         "{{template_dir}}/scripts/sshd.sh",
         "{{template_dir}}/scripts/sudoers.sh",
-        "{{template_dir}}/scripts/networking.sh"
+        "{{template_dir}}/scripts/networking.sh",
+        "{{template_dir}}/scripts/update.sh",
+        "{{template_dir}}/scripts/cleanup.sh",
+        "{{template_dir}}/scripts/minimize.sh"
       ],
       "type": "shell"
     }
