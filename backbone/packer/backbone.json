@@ -38,7 +38,8 @@
       "expect_disconnect": true,
       "scripts": [
         "{{template_dir}}/scripts/sshd.sh",
-        "{{template_dir}}/scripts/sudoers.sh"
+        "{{template_dir}}/scripts/sudoers.sh",
+        "{{template_dir}}/scripts/networking.sh"
       ],
       "type": "shell"
     }
