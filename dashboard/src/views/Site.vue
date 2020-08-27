@@ -114,7 +114,8 @@ export default {
 			this.$socket.on('agent_job_update', data => {
 				if (data.name === 'New Site' || data.name === 'New Site from Backup') {
 					if (data.status === 'Success' && data.site === this.siteName) {
-						this.$resources.site.reload();
+						// running reload immediately doesn't work for some reason
+						setTimeout(() => this.$resources.site.reload(), 1000);
 					}
 				}
 				this.runningJob =
