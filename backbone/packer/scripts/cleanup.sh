@@ -1,7 +1,11 @@
 #!/bin/sh -eux
 export DEBIAN_FRONTEND=noninteractive
 
+# Remove open-vm-tools
+apt-get -y purge open-vm-tools
 
+# Remove git and vim 
+apt-get -y purge git vim-common
 
 # Remove snapd
 apt-get -y purge snapd
