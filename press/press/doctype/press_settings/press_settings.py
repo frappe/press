@@ -67,12 +67,13 @@ class PressSettings(Document):
 		webhook = stripe.WebhookEndpoint.create(
 			url=url,
 			enabled_events=[
+				"payment_intent.requires_action",
+				"payment_intent.payment_failed",
 				"payment_method.attached",
 				"invoice.payment_action_required",
 				"invoice.payment_succeeded",
 				"invoice.payment_failed",
 				"invoice.finalized",
-				"customer.subscription.updated",
 			],
 		)
 		self.stripe_webhook_endpoint_id = webhook["id"]

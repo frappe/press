@@ -93,6 +93,7 @@ doc_events = {
 		"after_insert": ["press.press.doctype.invoice.invoice.process_stripe_webhook"],
 	},
 	"Address": {"validate": "press.api.billing.validate_gst"},
+	"Site": {"after_insert": "press.press.doctype.team.team.update_site_onboarding"},
 }
 
 # Scheduled Tasks
