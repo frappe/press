@@ -100,6 +100,12 @@ def transfer_partner_credits(amount):
 		"Transferred Credits from ERPNext Cloud. Transaction ID: {0}".format(transaction_id),
 	)
 
+	if (team_doc.currency == "INR" and amount == 1000) or (
+		team_doc.currency == "USD" and amount == 10
+	):
+		# via onboarding
+		team_doc.update_onboarding("Transfer Credits", "Completed")
+
 
 @frappe.whitelist()
 def get_available_partner_credits():
@@ -137,6 +143,7 @@ def setup_intent_success(setup_intent, address):
 	clear_setup_intent()
 	team.create_payment_method(setup_intent.payment_method, set_default=True)
 	team.create_or_update_address(address)
+	team.update_onboarding("Add Billing Information", "Completed")
 
 
 def clear_setup_intent():

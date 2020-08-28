@@ -1,0 +1,45 @@
+{% import "templates/emails/macros.html" as utils %}
+{% extends "templates/emails/base.html" %}
+
+{% block content %}
+
+<td class="text-base leading-6 text-gray-900">
+	<div class="p-8 bg-white">
+		<p class="mb-4 font-bold">
+			{{ subject }}
+		</p>
+		{%- if card_not_added -%}
+		<p class="mb-6">
+			You don't have enough credits for the usage of your sites on Frappe Cloud. Either transfer credits or add a
+			card for automatic billing. You can also make the payment of this invoice manually by clicking the following
+			link.
+		</p>
+		{{ utils.button('Pay Invoice Now', payment_link) }}
+		{%- endif -%}
+
+		{%- if team.default_payment_method -%}
+		<p class="mb-6">
+			We attempted to charge your card ending in <strong>{{ last_4 }}</strong> for your Frappe Cloud subscription,
+			but were unsuccessful. Please update your card details in your
+			{{ utils.link('Billing Settings', account_update_link) }}
+			or pay manually by clicking the following link.
+		</p>
+		{{ utils.button('Pay Invoice Now', payment_link) }}
+		{%- endif -%}
+
+		{%- if sites -%}
+		{{ utils.separator() }}
+		<p class="mt-0 mb-2">Following sites were suspended:</p>
+		<ul class="list-disc">
+			{%- for site in sites -%}
+			<li class="text-sm font-medium">{{ site }}</li>
+			{%- endfor -%}
+		</ul>
+		{%- endif -%}
+
+		{{ utils.separator() }}
+		{{ utils.signature() }}
+	</div>
+</td>
+
+{% endblock %}

@@ -6,6 +6,12 @@ frappe.ui.form.on('Team', {
 		frappe.dynamic_link = { doc: frm.doc, fieldname: 'name', doctype: 'Team' };
 		frappe.contacts.render_address_and_contact(frm);
 
+		frm.add_custom_button('Enable Partner Privileges',
+			() => frappe.confirm(`Enable ERPNext Partner Privileges for ${frm.doc.name.bold()}? They will be allowed to create sites without adding a card and can transfer credits from ERPNext.com`,
+				() => frm.call('enable_erpnext_partner_privileges')
+			),
+		);
+
 		frm.add_custom_button(
 			'Suspend Sites',
 			() => {

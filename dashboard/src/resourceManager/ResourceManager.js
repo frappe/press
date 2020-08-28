@@ -124,7 +124,7 @@ class Resource {
 		this.lastPageEmpty = false;
 	}
 
-	async fetch() {
+	async fetch(params) {
 		if (!this.condition()) return;
 
 		this.loading = true;
@@ -139,7 +139,7 @@ class Resource {
 		}
 
 		try {
-			let data = await call(this.method, this.params);
+			let data = await call(this.method, params || this.params);
 			if (Array.isArray(data) && this.paged) {
 				this.lastPageEmpty = data.length === 0;
 				this.data = [].concat(this.data || [], data);
