@@ -62,6 +62,12 @@ class SiteUpdate(Document):
 				frappe.ValidationError,
 			)
 
+		if self.has_pending_updates():
+			frappe.throw(
+				"An update is already pending for this site",
+				frappe.ValidationError,
+			)
+
 		if self.have_past_updates_failed():
 			frappe.throw(
 				f"Update from Source Candidate {self.source_candidate} to Destination"
@@ -87,6 +93,15 @@ class SiteUpdate(Document):
 				"source_candidate": self.source_candidate,
 				"destination_candidate": self.destination_candidate,
 				"cause_of_failure_is_resolved": False,
+			},
+		)
+
+	def has_pending_updates(self):
+		return frappe.db.exists(
+			"Site Update",
+			{
+				"site": self.site,
+				"status": ("in", ("Pending", "Running", "Failure"))
 			},
 		)
 
