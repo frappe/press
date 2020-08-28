@@ -264,7 +264,7 @@ def report_site_downtime():
 				order_by="creation desc",
 				limit=1,
 			)
-			if last_request and last_request.status_code == "429":
+			if last_request and last_request[0].status_code == "429":
 				continue
 			last_online = last_online_map.get(site)
 			if last_online:
