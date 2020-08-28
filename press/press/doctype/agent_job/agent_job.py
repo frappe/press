@@ -281,12 +281,12 @@ def report_site_downtime():
 					"url": get_url_to_form("Site", site),
 				}
 			)
-		template = """*CRITICAL* - Sites offline
+		template = """*CRITICAL* - {0} Sites offline
 
 {% for site in sites -%}
 	{{ site.human }} - [{{ site.site }}]({{ site.url }})
 {% endfor %}
-"""
+""".format(len(sites))
 		message = frappe.render_template(
 			template, {"sites": sorted(sites, key=lambda x: x["timestamp"])}
 		)
