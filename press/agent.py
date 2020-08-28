@@ -175,7 +175,7 @@ class Agent:
 		)
 
 	def update_site(self, site, target, deploy_type):
-		activate = site.status == "Active"
+		activate = site.status_before_update == "Active"
 		data = {"target": target, "activate": activate}
 		return self.create_agent_job(
 			f"Update Site {deploy_type}",
