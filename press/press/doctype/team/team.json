@@ -89,8 +89,7 @@
    "fieldtype": "Check",
    "in_standard_filter": 1,
    "label": "ERPNext Partner",
-   "show_days": 1,
-   "show_seconds": 1
+   "read_only": 1
   },
   {
    "default": "0",
