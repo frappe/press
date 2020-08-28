@@ -152,10 +152,10 @@ class Site(Document):
 
 	def schedule_update(self):
 		log_site_activity(self.name, "Update")
-		frappe.get_doc({"doctype": "Site Update", "site": self.name}).insert()
 		self.status_before_update = self.status
 		self.status = "Pending"
 		self.save()
+		frappe.get_doc({"doctype": "Site Update", "site": self.name}).insert()
 
 	def reset_previous_status(self):
 		self.status = self.status_before_update
