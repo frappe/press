@@ -26,13 +26,13 @@ EOF
 rm -rf /var/log/unattended-upgrades
 apt-get -y purge unattended-upgrades
 
-# Install QEMU guest agent
-apt-get install qemu-guest-agent
-
 # Update the package list
 apt-get -y update
 
 # Upgrade all installed packages incl. kernel and kernel headers
 apt-get -y dist-upgrade -o Dpkg::Options::="--force-confnew"
+
+# Install QEMU guest agent
+apt-get install qemu-guest-agent
 
 reboot
