@@ -2,6 +2,12 @@
 export DEBIAN_FRONTEND=noninteractive
 
 
+
+# Remove snapd
+apt-get -y purge snapd
+rm -rf /var/cache/snapd/
+rm -rf /snap
+
 # Delete all Linux headers
 dpkg --list \
   | awk '{ print $2 }' \
