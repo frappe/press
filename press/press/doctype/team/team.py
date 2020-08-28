@@ -460,6 +460,7 @@ def suspend_sites_for_teams_without_cards():
 						"account_update_link": account_update_link,
 						"card_not_added": True,
 						"sites": sites,
+						"team": team
 					},
 				)
 
