@@ -64,8 +64,7 @@ class SiteUpdate(Document):
 
 		if self.has_pending_updates():
 			frappe.throw(
-				"An update is already pending for this site",
-				frappe.ValidationError,
+				"An update is already pending for this site", frappe.ValidationError,
 			)
 
 		if self.have_past_updates_failed():
@@ -99,10 +98,7 @@ class SiteUpdate(Document):
 	def has_pending_updates(self):
 		return frappe.db.exists(
 			"Site Update",
-			{
-				"site": self.site,
-				"status": ("in", ("Pending", "Running", "Failure"))
-			},
+			{"site": self.site, "status": ("in", ("Pending", "Running", "Failure"))},
 		)
 
 

@@ -295,7 +295,6 @@ class Team(Document):
 	def get_onboarding(self):
 		team_created = True
 		card_added = bool(self.default_payment_method)
-		address_added = bool(self.billing_address)
 		site_created = frappe.db.count("Site", {"team": self.name}) > 0
 		complete = (
 			self.free_account
