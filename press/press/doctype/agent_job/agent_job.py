@@ -264,7 +264,7 @@ def report_site_downtime():
 				order_by="creation desc",
 				limit=1,
 			)
-			if last_request and last_request.status_code == "429":
+			if last_request and last_request[0].status_code == "429":
 				continue
 			last_online = last_online_map.get(site)
 			if last_online:
@@ -281,7 +281,11 @@ def report_site_downtime():
 					"url": get_url_to_form("Site", site),
 				}
 			)
-		template = """*CRITICAL* - Sites offline
+
+		if not sites:
+			return
+
+		template = """*CRITICAL* - {{sites | len}} Sites offline
 
 {% for site in sites -%}
 	{{ site.human }} - [{{ site.site }}]({{ site.url }})
@@ -487,5 +491,6 @@ def process_job_updates(job_name):
 			process_update_site_recover_job_update(job)
 		if job.job_type == "Recover Failed Site Update":
 			process_update_site_recover_job_update(job)
-	except Exception:
+	except Exception as e:
 		log_error("Agent Job Callback Exception", job=job.as_dict())
+		raise e
