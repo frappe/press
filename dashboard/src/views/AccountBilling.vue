@@ -51,53 +51,18 @@
 					class="px-6 pb-2"
 					v-if="upcomingInvoice && $account.team.erpnext_partner"
 				>
-					<Button
-						@click="
-							fetchAvailablePartnerCredits();
-							showTransferCreditsDialog = true;
-						"
-					>
+					<Button @click="showTransferCreditsDialog = true">
 						Transfer Credits from ERPNext.com
 					</Button>
 				</div>
 			</SectionCard>
 		</Section>
 
-		<Dialog
-			v-model="showTransferCreditsDialog"
-			title="Transfer Credits from ERPNext.com"
-		>
-			<Input
-				v-if="availablePartnerCredits"
-				:label="
-					`Amount to Transfer (Credits available: ${availablePartnerCredits.formatted})`
-				"
-				v-model.number="creditsToTransfer"
-				name="amount"
-				autocomplete="off"
-				type="number"
-				min="1"
-				:max="availablePartnerCredits.value"
-			/>
-			<ErrorMessage
-				class="mt-2"
-				:error="$resources.transferPartnerCredits.error"
-			/>
-			<template slot="actions">
-				<Button @click="showTransferCreditsDialog = false">
-					Cancel
-				</Button>
-				<Button
-					class="ml-2"
-					type="primary"
-					@click="$resources.transferPartnerCredits.submit()"
-					:loading="$resources.transferPartnerCredits.loading"
-					:disabled="creditsToTransfer <= 0"
-				>
-					Transfer
-				</Button>
-			</template>
-		</Dialog>
+		<TransferCreditsDialog
+			v-if="showTransferCreditsDialog"
+			:show.sync="showTransferCreditsDialog"
+			@success="$resources.billingDetails.reload()"
+		/>
 
 		<Section
 			v-if="pastInvoices.length"
@@ -235,6 +200,7 @@ export default {
 	components: {
 		StripeCard,
 		DescriptionList,
+		TransferCreditsDialog: () => import('@/components/TransferCreditsDialog'),
 		UpdateBillingAddress: () => import('@/components/UpdateBillingAddress')
 	},
 	resources: {
@@ -251,27 +217,12 @@ export default {
 		paymentMethods: {
 			method: 'press.api.billing.get_payment_methods',
 			auto: true
-		},
-		transferPartnerCredits() {
-			return {
-				method: 'press.api.billing.transfer_partner_credits',
-				params: {
-					amount: this.creditsToTransfer
-				},
-				onSuccess() {
-					this.$resources.billingDetails.reload();
-					this.creditsToTransfer = null;
-					this.showTransferCreditsDialog = false;
-				}
-			};
 		}
 	},
 	data() {
 		return {
 			showStripeCardDialog: false,
 			showTransferCreditsDialog: false,
-			availablePartnerCredits: null,
-			creditsToTransfer: null,
 			editAddress: false
 		};
 	},
@@ -293,11 +244,6 @@ export default {
 		onCardAdd() {
 			this.showStripeCardDialog = false;
 			this.$resources.paymentMethods.reload();
-		},
-		async fetchAvailablePartnerCredits() {
-			this.availablePartnerCredits = await this.$call(
-				'press.api.billing.get_available_partner_credits'
-			);
 		},
 		invoicePeriod(invoice) {
 			if (!invoice.period_start || !invoice.period_end) {

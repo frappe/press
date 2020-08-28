@@ -35,6 +35,52 @@ class Team(Document):
 		if not self.user and self.team_members:
 			self.user = self.team_members[0].user
 
+		self.validate_onboarding()
+
+	def validate_onboarding(self):
+		if self.is_new():
+			self.initialize_onboarding_steps()
+			return
+
+		for step in self.onboarding:
+			if self.free_account:
+				step.status = "Skipped"
+
+	def initialize_onboarding_steps(self):
+		self.set(
+			"onboarding",
+			[
+				{"step_name": "Create Team", "status": "Completed"},
+				{"step_name": "Add Billing Information", "status": "Pending"},
+				{"step_name": "Transfer Credits", "status": "Not Applicable"},
+				{"step_name": "Create Site", "status": "Pending"},
+			],
+		)
+
+	def update_onboarding(self, step_name, status):
+		def get_step(step_name):
+			for step in self.onboarding:
+				if step.step_name == step_name:
+					return step
+
+		step = get_step(step_name)
+		step.status = status
+		if (
+			step_name == "Add Billing Information"
+			and status == "Completed"
+			and self.erpnext_partner
+		):
+			get_step("Transfer Credits").status = "Skipped"
+
+		if (
+			step_name == "Add Billing Information"
+			and status == "Skipped"
+			and not self.erpnext_partner
+		):
+			frappe.throw("Cannot skip this step")
+
+		self.save()
+
 	def on_update(self):
 		if not self.is_new() and not self.default_payment_method:
 			# if default payment method is unset
@@ -64,7 +110,7 @@ class Team(Document):
 
 	def enable_erpnext_partner_privileges(self):
 		self.erpnext_partner = 1
-		self.save()
+		self.update_onboarding("Transfer Credits", "Pending")
 
 	def allocate_free_credits(self):
 		if not self.free_credits_allocated:
@@ -249,6 +295,7 @@ class Team(Document):
 			)
 			doc.insert(ignore_permissions=True)
 			doc.submit()
+			frappe.cache().hdel("customer_available_credits", self.name)
 
 	def get_available_credits(self):
 		def get_stripe_balance():
@@ -293,20 +340,10 @@ class Team(Document):
 		return (False, why)
 
 	def get_onboarding(self):
-		team_created = True
-		card_added = bool(self.default_payment_method)
-		address_added = bool(self.billing_address)
-		site_created = frappe.db.count("Site", {"team": self.name}) > 0
-		complete = (
-			self.free_account
-			or self.erpnext_partner
-			or (team_created and card_added and site_created)
-		)
+		valid_steps = [step for step in self.onboarding if step.status != "Not Applicable"]
 		return {
-			"Create a Team": {"done": team_created},
-			"Add Billing Information": {"done": card_added},
-			"Create your first site": {"done": site_created},
-			"complete": complete,
+			"steps": self.onboarding,
+			"complete": all(step.status in ["Completed", "Skipped"] for step in valid_steps),
 		}
 
 	def suspend_sites(self, reason=None):
@@ -425,3 +462,10 @@ def suspend_sites_for_teams_without_cards():
 						"sites": sites,
 					},
 				)
+
+
+def update_site_onboarding(site, method):
+	if site.team:
+		team = frappe.get_doc("Team", site.team)
+		if not team.get_onboarding()["complete"]:
+			team.update_onboarding("Create Site", "Completed")
