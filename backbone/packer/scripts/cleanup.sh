@@ -12,6 +12,11 @@ apt-get -y purge snapd
 rm -rf /var/cache/snapd/
 rm -rf /snap
 
+# Remove cloud init
+apt-get -y purge cloud-init
+rm -rf /etc/cloud/
+rm -rf /var/lib/cloud/
+
 # Delete all Linux headers
 dpkg --list \
   | awk '{ print $2 }' \
