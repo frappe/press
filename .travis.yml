@@ -10,7 +10,7 @@ cache:
   pip: true
 
 install:
-  - pip install $TRAVIS_BUILD_DIR
+  - pip install -e $TRAVIS_BUILD_DIR
   - mkdir ~/scratch && cd ~/scratch
 
 jobs:
