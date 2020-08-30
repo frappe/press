@@ -8,8 +8,11 @@
       "iso_checksum": "896d13fcadd1106632444c87fa7d225ce81c20c07ae996e575a00c9b92b84cd4",
       "iso_urls": [
         "{{template_dir}}/images/ubuntu-20.04-server-cloudimg-amd64.img",
+        "{{template_dir}}/images/035471102426aae4a15228e43ebf427b53b45a6f.img",
         "https://cloud-images.ubuntu.com/releases/focal/release-20200804/ubuntu-20.04-server-cloudimg-amd64.img"
       ],
+      "iso_target_path": "{{template_dir}}/images",
+      "iso_target_extension": "img",
       "memory": "2048",
       "output_directory": "{{template_dir}}/scratch",
       "headless": true,
