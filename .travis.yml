@@ -16,7 +16,9 @@ install:
 jobs:
   include:
   - name: Backbone Base Image Build
-    before_script: python3 $TRAVIS_BUILD_DIR/backbone/setup.py
+    before_script:
+      - sudo apt remove packer --yes
+      - python3 $TRAVIS_BUILD_DIR/backbone/setup.py
     script:
       - backbone hypervisor build
       - backbone hypervisor up
