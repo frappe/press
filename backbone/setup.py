@@ -12,10 +12,10 @@ def apt_install(packages):
 
 
 def main(args):
-	# prepare()
-	# setup_vagrant()
+	prepare()
+	setup_vagrant()
 	setup_kvm()
-	# setup_libvirt()
+	setup_libvirt()
 	setup_packer()
 
 
