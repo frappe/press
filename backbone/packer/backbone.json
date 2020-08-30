@@ -4,7 +4,7 @@
       "boot_wait": "10s",
       "cpus": "2",
       "disk_image": true,
-      "disk_size": "4G",
+      "disk_size": "3072",
       "iso_checksum": "896d13fcadd1106632444c87fa7d225ce81c20c07ae996e575a00c9b92b84cd4",
       "iso_urls": [
         "{{template_dir}}/images/ubuntu-20.04-server-cloudimg-amd64.img",
