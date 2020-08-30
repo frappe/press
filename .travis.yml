@@ -20,9 +20,9 @@ jobs:
       - sudo rm /usr/local/bin/packer
       - python3 $TRAVIS_BUILD_DIR/backbone/setup.py
     script:
-      - sudo -E su $USER -c '~/virtualenv/python3.7/bin/backbone hypervisor build'
-      - sudo -E su $USER -c '~/virtualenv/python3.7/bin/backbone hypervisor up'
-      - sudo -E su $USER -c '~/virtualenv/python3.7/bin/backbone hypervisor ssh -c "echo Hello, World"'
+      - backbone hypervisor build
+      - backbone hypervisor up
+      - backbone hypervisor ssh -c "echo Hello, World"
 
   - name: Backbone Tests
     script: backbone tests
