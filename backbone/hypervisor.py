@@ -20,7 +20,7 @@ class Hypervisor:
 		cloud_init = self.shell.execute(f"cloud-localds {cloud_init_image} {cloud_init_yml}")
 
 		packer_template = str(Path(__file__).parent.joinpath("packer", "backbone.json"))
-		packer = self.shell.execute(f"packer build {packer_template}")
+		packer = self.shell.execute(f"PACKER_LOG=1 packer build {packer_template}")
 		if packer.returncode:
 			raise Exception("Build Failed")
 
