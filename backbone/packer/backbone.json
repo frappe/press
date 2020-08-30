@@ -12,6 +12,7 @@
       ],
       "memory": "2048",
       "output_directory": "{{template_dir}}/scratch",
+      "headless": true,
       "qemuargs": [
         [
           "-fda",
