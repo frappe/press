@@ -146,7 +146,7 @@ export default {
 	},
 	computed: {
 		countryList() {
-			return this.$resources.countryList.data.map(d => ({
+			return (this.$resources.countryList.data || []).map(d => ({
 				label: d.name,
 				value: d.name
 			}));
