@@ -19,6 +19,7 @@ install:
 jobs:
   include:
   - name: Backbone Base Image Build
+    if: commit_message =~ travis:rebuild-image
     before_script:
       - sudo rm /usr/local/bin/packer
       - python3 $TRAVIS_BUILD_DIR/backbone/setup.py
