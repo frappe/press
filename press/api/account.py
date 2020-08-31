@@ -115,6 +115,10 @@ def country_list():
 	return frappe.cache().get_value("country_list", generator=get_country_list)
 
 
+def clear_country_list_cache():
+	frappe.cache().delete_value("country_list")
+
+
 @frappe.whitelist()
 def set_country(country):
 	team = get_current_team()
