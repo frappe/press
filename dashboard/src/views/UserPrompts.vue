@@ -11,7 +11,12 @@ export default {
 	resources: {
 		prompts: {
 			method: 'press.api.account.user_prompts',
-			auto: true
+			auto: true,
+			validate() {
+				if (document.cookie.includes('user_id=Guest')) {
+					return 'Not logged in';
+				}
+			}
 		}
 	},
 	computed: {
