@@ -112,7 +112,7 @@ export default {
 				},
 				auto: true,
 				onSuccess(res) {
-					if (res.email) {
+					if (res && res.email) {
 						this.email = res.email;
 						this.country = res.country;
 						this.userExists = res.user_exists;
