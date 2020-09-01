@@ -1,5 +1,6 @@
 {
 	"name": "press",
+	"private": true,
 	"scripts": {
 		"watch": "cd dashboard && yarn serve",
 		"build": "yarn run build-email-css && yarn run build-app",
@@ -7,6 +8,7 @@
 		"build-email-css": "yarn run postcss ./press/public/email/style.css -o ./press/public/css/email.css -c ./press/public/email/postcss.config.js",
 		"postinstall": "cd dashboard && yarn install"
 	},
+	"workspaces": ["dashboard", "marketplace"],
 	"devDependencies": {
 		"@fullhuman/postcss-purgecss": "^2.1.0",
 		"postcss-cli": "^7.1.0",

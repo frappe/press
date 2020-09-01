@@ -1,0 +1,8 @@
+@import '../../dashboard/src/assets/style.css';
+
+.line-clamp {
+	display: -webkit-box;
+	-webkit-line-clamp: var(--lines-to-clamp, 2);
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}

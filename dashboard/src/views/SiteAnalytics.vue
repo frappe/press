@@ -300,6 +300,7 @@ export default {
 </script>
 
 <style>
+@import '~frappe-charts/dist/frappe-charts.min.css';
 .frappe-chart .line-vertical {
 	display: none;
 }
