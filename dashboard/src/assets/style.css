@@ -1,5 +1,4 @@
 @import './Inter/inter.css';
-@import '../../node_modules/frappe-charts/dist/frappe-charts.min.css';
 
 /* purgecss start ignore */
 @tailwind base;

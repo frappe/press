@@ -242,3 +242,11 @@ def deploy(name):
 	)[0]
 	release_doc = frappe.get_doc("App Release", release)
 	release_doc.deploy()
+
+
+@frappe.whitelist(allow_guest=True)
+def marketplace_apps():
+	# TODO: Caching, Pagination, Filtering, Sorting
+	return frappe.get_all(
+		"Frappe App", filters={"publish_on_marketplace": 1}, fields=["*"]
+	)
