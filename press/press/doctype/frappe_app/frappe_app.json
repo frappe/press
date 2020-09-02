@@ -19,13 +19,7 @@
   "team",
   "public",
   "enable_auto_deploy",
-  "skip_review",
-  "publish_on_marketplace",
-  "marketplace_section",
-  "image",
-  "url_slug",
-  "description",
-  "readme"
+  "skip_review"
  ],
  "fields": [
   {
@@ -113,43 +107,11 @@
    "fieldname": "enabled",
    "fieldtype": "Check",
    "label": "Enabled"
-  },
-  {
-   "depends_on": "publish_on_marketplace",
-   "fieldname": "marketplace_section",
-   "fieldtype": "Section Break",
-   "label": "Marketplace"
-  },
-  {
-   "fieldname": "image",
-   "fieldtype": "Attach Image",
-   "label": "Image"
-  },
-  {
-   "fieldname": "url_slug",
-   "fieldtype": "Data",
-   "label": "URL Slug"
-  },
-  {
-   "fieldname": "description",
-   "fieldtype": "Small Text",
-   "label": "Description"
-  },
-  {
-   "fieldname": "readme",
-   "fieldtype": "Markdown Editor",
-   "label": "Readme"
-  },
-  {
-   "default": "0",
-   "fieldname": "publish_on_marketplace",
-   "fieldtype": "Check",
-   "label": "Publish on Marketplace"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2020-09-01 17:09:48.228617",
+ "modified": "2020-09-03 00:38:50.794761",
  "modified_by": "faris@erpnext.com",
  "module": "Press",
  "name": "Frappe App",
