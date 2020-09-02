@@ -9,10 +9,6 @@
 		"build-marketplace-css": "yarn run postcss ./press/public/marketplace/style.css -o ./press/public/css/marketplace.css -c ./press/public/marketplace/postcss.config.js",
 		"postinstall": "cd dashboard && yarn install"
 	},
-	"workspaces": [
-		"dashboard",
-		"marketplace"
-	],
 	"devDependencies": {
 		"@fullhuman/postcss-purgecss": "^2.1.0",
 		"@tailwindcss/typography": "^0.2.0",
