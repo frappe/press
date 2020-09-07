@@ -76,19 +76,12 @@ export default {
 	},
 	watch: {
 		isOpen(value) {
-			if (value) {
-				// mark all as read if notification dropdown is open for 3 seconds
-				this.markReadTimer = setTimeout(() => {
-					if (this.newNotifications) {
-						this.$resources.markAsRead
-							.submit()
-							.then(() => this.$resources.notifications.reload());
-					}
-				}, 3000);
-			} else {
-				if (this.markReadTimer) {
-					clearTimeout(this.markReadTimer);
-					this.markReadTimer = null;
+			if (!value) {
+				// mark all as read when notification dropdown is closed
+				if (this.newNotifications) {
+					this.$resources.markAsRead
+						.submit()
+						.then(() => this.$resources.notifications.reload());
 				}
 			}
 		}
