@@ -216,7 +216,7 @@ def process_stripe_webhook(doc, method):
 				"amount_due": amount_due,
 				"amount_paid": stripe_invoice["amount_paid"] / 100,
 				"stripe_invoice_url": stripe_invoice["hosted_invoice_url"],
-				"status": "Paid" if amount_due == 0 else "Unpaid",
+				"status": "Paid" if stripe_invoice["status"] == "paid" else "Unpaid",
 			}
 		)
 
@@ -289,6 +289,6 @@ def send_email_for_failed_payment(invoice, sites=None):
 			"last_4": last_4 or "",
 			"card_not_added": not payment_method,
 			"sites": sites,
-			"team": team
+			"team": team,
 		},
 	)
