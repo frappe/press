@@ -35,9 +35,10 @@
 					</div>
 				</div>
 				<div class="hidden md:block">
-					<div class="flex items-center">
-						<Feedback />
-						<div class="relative ml-3">
+					<div class="flex items-center space-x-3">
+						<Feedback ref="feedback" />
+						<Notifications />
+						<div class="relative">
 							<div>
 								<Dropdown :items="dropdownItems" right>
 									<template v-slot="{ toggleDropdown }">
@@ -130,11 +131,13 @@
 <script>
 import FrappeCloudLogo from '@/components/FrappeCloudLogo.vue';
 import Feedback from '@/components/Feedback';
+import Notifications from '@/components/Notifications';
 
 export default {
 	components: {
 		FrappeCloudLogo,
-		Feedback
+		Feedback,
+		Notifications
 	},
 	data() {
 		return {
@@ -157,6 +160,10 @@ export default {
 				{
 					label: 'Settings',
 					action: () => this.$router.push('/account')
+				},
+				{
+					label: 'Feedback',
+					action: () => this.$refs.feedback.open()
 				},
 				{
 					label: 'Support',

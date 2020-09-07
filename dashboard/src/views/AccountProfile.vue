@@ -1,5 +1,5 @@
 <template>
-	<div>
+	<div class="space-y-10">
 		<Section title="Profile" description="Your profile information">
 			<div class="w-full mt-6 sm:w-1/2">
 				<div>
@@ -52,18 +52,40 @@
 					v-model="account.user.email"
 				/>
 			</div>
+			<div class="py-4">
+				<ErrorMessage class="mb-4" :error="$resources.updateProfile.error" />
+				<Button
+					type="primary"
+					:loading="$resources.updateProfile.loading"
+					loadingText="Saving..."
+					@click="$resources.updateProfile.submit()"
+				>
+					Save changes
+				</Button>
+			</div>
 		</Section>
-		<div class="py-4">
-			<ErrorMessage class="mb-4" :error="$resources.updateProfile.error" />
-			<Button
-				type="primary"
-				:loading="$resources.updateProfile.loading"
-				loadingText="Saving..."
-				@click="$resources.updateProfile.submit()"
+		<Section title="Notifications" description="Your notification settings">
+			<div class="w-full mt-6 sm:w-1/2">
+				<div>
+					<Input
+						type="checkbox"
+						label="Enable Email Notifications"
+						v-model="$account.notifications.enable_email_notifications"
+						@change="$resources.updateNotificationSettings.submit()"
+					/>
+				</div>
+			</div>
+			<ErrorMessage
+				class="mt-2"
+				:error="$resources.updateNotificationSettings.error"
+			/>
+			<div
+				class="mt-2 text-base text-gray-600"
+				v-if="$resources.updateNotificationSettings.loading"
 			>
-				Save changes
-			</Button>
-		</div>
+				Saving...
+			</div>
+		</Section>
 	</div>
 </template>
 
@@ -88,6 +110,14 @@ export default {
 				},
 				onSuccess() {
 					this.notifySuccess();
+				}
+			};
+		},
+		updateNotificationSettings() {
+			return {
+				method: 'press.api.account.update_notification_settings',
+				params: {
+					email: this.$account.notifications.enable_email_notifications
 				}
 			};
 		}

@@ -6,7 +6,8 @@ export default new Vue({
 		return {
 			user: null,
 			team: null,
-			teams: []
+			teams: [],
+			notifications: {}
 		};
 	},
 	created() {
@@ -22,6 +23,7 @@ export default new Vue({
 			this.team = result.team;
 			this.teams = result.teams;
 			this.team_members = result.team_members;
+			this.notifications = result.notifications;
 			if (this.user.user_image) {
 				let url = window.location.origin;
 				url = url.replace('8080', '8000');

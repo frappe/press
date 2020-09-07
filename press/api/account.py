@@ -158,11 +158,18 @@ def get():
 		d.parent for d in frappe.db.get_all("Team Member", {"user": user}, ["parent"])
 	]
 	teams = list(set(teams))
+
+	try:
+		notification_settings = frappe.get_doc("Notification Settings", frappe.session.user)
+	except frappe.DoesNotExistError:
+		notification_settings = {}
+
 	return {
 		"user": frappe.get_doc("User", user),
 		"team": team_doc,
 		"team_members": get_team_members(team),
 		"teams": teams,
+		"notifications": notification_settings,
 	}
 
 
@@ -196,6 +203,23 @@ def update_profile_picture():
 	)
 	_file.save(ignore_permissions=True)
 	frappe.db.set_value("User", user, "user_image", _file.file_url)
+
+
+@frappe.whitelist()
+def update_notification_settings(email):
+	doc = frappe.get_doc("Notification Settings", frappe.session.user)
+	doc.enable_email_notifications = email
+	doc.save()
+
+
+@frappe.whitelist()
+def notifications():
+	return frappe.get_list(
+		"Notification Log",
+		fields=["`subject` as message", "`read`"],
+		order_by="creation desc",
+		limit=20,
+	)
 
 
 @frappe.whitelist(allow_guest=True)

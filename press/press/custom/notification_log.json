@@ -1,0 +1,31 @@
+{
+ "custom_fields": [],
+ "custom_perms": [],
+ "doctype": "Notification Log",
+ "property_setters": [
+  {
+   "_assign": null,
+   "_comments": null,
+   "_liked_by": null,
+   "_user_tags": null,
+   "creation": "2020-09-07 16:38:47.233159",
+   "default_value": null,
+   "doc_type": "Notification Log",
+   "docstatus": 0,
+   "doctype_or_field": "DocField",
+   "field_name": "type",
+   "idx": 0,
+   "modified": "2020-09-07 16:38:47.233159",
+   "modified_by": "faris@erpnext.com",
+   "name": "Notification Log-type-options",
+   "owner": "faris@erpnext.com",
+   "parent": null,
+   "parentfield": null,
+   "parenttype": null,
+   "property": "options",
+   "property_type": "Text",
+   "value": "Mention\nEnergy Point\nAssignment\nShare\nAlert\nFrappe Cloud"
+  }
+ ],
+ "sync_on_migrate": 1
+}

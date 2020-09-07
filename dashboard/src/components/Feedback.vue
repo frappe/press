@@ -1,6 +1,6 @@
 <template>
 	<div>
-		<Button @click="isOpen = true">Feedback</Button>
+		<Button v-if="renderButton" @click="open">Feedback</Button>
 		<Dialog
 			:title="submitted ? '' : 'Feedback'"
 			v-model="isOpen"
@@ -38,6 +38,12 @@
 <script>
 export default {
 	name: 'Feedback',
+	props: {
+		renderButton: {
+			type: Boolean,
+			default: false
+		}
+	},
 	data() {
 		return {
 			isOpen: false,
@@ -65,6 +71,9 @@ export default {
 		}
 	},
 	methods: {
+		open() {
+			this.isOpen = true;
+		},
 		handleClose(isOpen) {
 			if (!isOpen) {
 				this.submitted = false;
