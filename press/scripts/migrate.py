@@ -26,6 +26,7 @@ try:
 	import requests
 	import click
 	from semantic_version import Version
+	from six import PY2
 	from tenacity import (
 		retry,
 		RetryError,
@@ -47,7 +48,7 @@ except ImportError:
 	install_command = shlex.split(
 		"{} -m pip install {}".format(sys.executable, " ".join(dependencies))
 	)
-	subprocess.call(install_command, stdout=subprocess.DEVNULL)
+	subprocess.call(install_command, stdout=open(os.devnull, 'w'))
 	import html2text
 	import requests
 	import click
@@ -61,6 +62,10 @@ except ImportError:
 		retry_unless_exception_type,
 	)
 	from requests_toolbelt.multipart import encoder
+
+if PY2:
+	reload(sys)
+	sys.setdefaultencoding("utf-8")
 
 
 @retry(stop=stop_after_attempt(5))
