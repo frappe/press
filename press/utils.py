@@ -111,7 +111,7 @@ def cache(seconds: int, maxsize: int = 128, typed: bool = False):
 def get_minified_script():
 	migration_script = "../apps/press/press/scripts/migrate.py"
 	script_contents = open(migration_script).read()
-	return minify(script_contents)
+	return script_contents
 
 
 def verify_frappe_site(site_url):
