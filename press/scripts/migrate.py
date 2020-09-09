@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # imports - standard imports
 import atexit
 import getpass
