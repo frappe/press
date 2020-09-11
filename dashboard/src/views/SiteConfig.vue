@@ -1,5 +1,5 @@
 <template>
-	<div>
+	<div class="space-y-10">
 		<Section
 			title="Configuration"
 			description="View and edit your site configuration"
@@ -9,6 +9,43 @@
 				<div class="mt-6">
 					<Button :disabled="!showButton" type="primary" @click="updateConfig">
 						Update Configuration
+					</Button>
+				</div>
+			</SectionCard>
+		</Section>
+		<Section
+			title="Custom Config"
+			description="Add custom key value pairs to your site config"
+		>
+			<SectionCard class="px-6 py-6 space-y-4">
+				<div
+					class="grid grid-cols-3 gap-4 mb-4"
+					v-for="(config, i) in customConfigs"
+					:key="i"
+				>
+					<Input type="text" placeholder="key" v-model="config.key" />
+					<Input
+						type="select"
+						placeholder="type"
+						:options="['String', 'Number', 'Boolean', 'JSON']"
+						v-model="config.type"
+					/>
+					<Input
+						:type="customConfigType(config)"
+						placeholder="value"
+						v-model="config.value"
+					/>
+				</div>
+				<div class="space-x-2">
+					<Button
+						@click="customConfigs.push({ key: '', value: '', type: 'String' })"
+					>
+						Add Config
+					</Button>
+					<Button
+						@click="customConfigs.push({ key: '', value: '', type: 'String' })"
+					>
+						Save Changes
 					</Button>
 				</div>
 			</SectionCard>
@@ -103,7 +140,8 @@ export default {
 				disable_global_search: this.site.config.disable_global_search,
 				max_file_size: this.site.config.max_file_size
 			},
-			showButton: false
+			showButton: false,
+			customConfigs: []
 		};
 	},
 	methods: {
@@ -113,6 +151,14 @@ export default {
 				config: this.siteConfig
 			});
 			this.showButton = false;
+		},
+		customConfigType(config) {
+			return {
+				String: 'text',
+				Number: 'number',
+				JSON: 'text',
+				Boolean: 'text'
+			}[config.type];
 		}
 	},
 	watch: {
