@@ -164,4 +164,4 @@ class RemoteFile(Document):
 			return json.loads(requests.get(self.url).content)
 		else:
 			obj = self.s3_client.get_object(Bucket=self.bucket, Key=self.file_path)
-			return json.loads(obj["Body"].read()).decode("utf-8")
+			return json.loads(obj["Body"].read().decode("utf-8"))
