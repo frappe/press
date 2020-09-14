@@ -8,18 +8,25 @@ git:
 
 cache:
   pip: true
+  directories:
+    - backbone/packer/images
+    - backbone/packer/builds
 
 install:
-  - pip install $TRAVIS_BUILD_DIR
+  - pip install -e $TRAVIS_BUILD_DIR
+  - mkdir ~/scratch && cd ~/scratch
 
 jobs:
   include:
-  - name: Vagrant Hello World
-    before_script: python3 $TRAVIS_BUILD_DIR/backbone/setup.py
+  - name: Backbone Base Image Build
+    if: commit_message =~ travis:rebuild-image
+    before_script:
+      - sudo rm /usr/local/bin/packer
+      - python3 $TRAVIS_BUILD_DIR/backbone/setup.py
     script:
-      - cd $TRAVIS_BUILD_DIR/backbone
-      - sudo -E su $USER -c 'vagrant up --provider=libvirt'
-      - sudo -E su $USER -c 'vagrant ssh -c "echo Hello, World"'
+      - sudo -E su $USER -c '~/virtualenv/python3.7/bin/backbone hypervisor build'
+      - sudo -E su $USER -c '~/virtualenv/python3.7/bin/backbone hypervisor up'
+      - sudo -E su $USER -c '~/virtualenv/python3.7/bin/backbone hypervisor ssh -c "echo Hello, World"'
 
   - name: Backbone Tests
     script: backbone tests
