@@ -266,6 +266,12 @@ def report_site_downtime():
 			)
 			if last_request and last_request[0].status_code == "429":
 				continue
+			try:
+				if requests.get(f"https://{site}").status_code == 429:
+					continue
+			except Exception:
+				pass
+
 			last_online = last_online_map.get(site)
 			if last_online:
 				timestamp = convert_utc_to_user_timezone(last_online).replace(tzinfo=None)
