@@ -17,7 +17,7 @@ class Hypervisor:
 	def build(self):
 		cloud_init_yml = str(Path(__file__).parent.joinpath("packer", "cloud-init.yml"))
 		cloud_init_image = str(Path(__file__).parent.joinpath("packer", "cloud-init.img"))
-		cloud_init = self.shell.execute(f"cloud-localds {cloud_init_image} {cloud_init_yml}")
+		self.shell.execute(f"cloud-localds {cloud_init_image} {cloud_init_yml}")
 
 		packer_template = str(Path(__file__).parent.joinpath("packer", "backbone.json"))
 		packer = self.shell.execute(f"packer build {packer_template}")
@@ -27,17 +27,17 @@ class Hypervisor:
 		box = str(Path(__file__).parent.joinpath("packer", "builds", "backbone.box"))
 		add = self.shell.execute(f"vagrant box add {box} --name backbone --force")
 		if add.returncode:
-			raise Exception("Cannot add box {box}")
+			raise Exception(f"Cannot add box {box}")
 
 	def up(self):
-		vagrant = self.shell.execute(f"vagrant init backbone")
-		vagrant = self.shell.execute(f"vagrant up --provider=libvirt")
+		vagrant = self.shell.execute("vagrant init backbone")
+		vagrant = self.shell.execute("vagrant up --provider=libvirt")
 		if vagrant.returncode:
 			raise Exception("Cannot start hypervisor")
 
 	def ssh(self, command=None):
 		if command:
-			vagrant = self.shell.execute(f"vagrant ssh -c \"{command}\"")
+			vagrant = self.shell.execute(f'vagrant ssh -c "{command}"')
 		else:
 			vagrant = self.shell.execute("vagrant ssh")
 		if vagrant.returncode:

@@ -1,7 +1,6 @@
 Click
 coverage
 PyGithub==1.44.1
-python-minifier==2.3.1
 dnspython==1.16.0
 ansible==2.9.6
 python-telegram-bot==12.8

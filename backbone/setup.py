@@ -33,7 +33,9 @@ def setup_vagrant():
 
 def setup_packer():
 	PACKER_KEY = "https://apt.releases.hashicorp.com/gpg"
-	PACKER_REPO = "\"deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main\""
+	PACKER_REPO = (
+		'"deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"'
+	)
 	shell.execute(f"curl -fsSL {PACKER_KEY} | sudo apt-key add -")
 	shell.execute(f"sudo apt-add-repository {PACKER_REPO}")
 	apt_install("packer cloud-utils")
