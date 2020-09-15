@@ -160,6 +160,13 @@ class Site(Document):
 	def reset_previous_status(self):
 		self.status = self.status_before_update
 		self.status_before_update = None
+		if not self.status:
+			status_map = {402: "Inactive", 503: "Suspended"}
+			try:
+				response = requests.get(f"https://{self.name}")
+				self.status = status_map.get(response.status_code, "Active")
+			except Exception:
+				log_error("Site Status Fetch Error", site=self.name)
 		self.save()
 
 	def add_domain(self, domain):
