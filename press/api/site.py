@@ -413,7 +413,7 @@ def current_plan(name):
 		"Site Request Log",
 		fields=["reset", "counter"],
 		filters={"site": name},
-		order_by="creation desc",
+		order_by="timestamp desc",
 		limit=1,
 	)
 	if result:
