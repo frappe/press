@@ -262,7 +262,7 @@ def report_site_downtime():
 				"Site Request Log",
 				fields=["status_code"],
 				filters={"site": site},
-				order_by="creation desc",
+				order_by="timestamp desc",
 				limit=1,
 			)
 			if last_request and last_request[0].status_code == "429":
