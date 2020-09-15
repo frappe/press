@@ -81,7 +81,8 @@ export default {
 			email: null,
 			password: null,
 			errorMessage: null,
-			successMessage: null
+			successMessage: null,
+			redirect_route: null
 		};
 	},
 	watch: {
@@ -110,6 +111,12 @@ export default {
 			};
 		}
 	},
+	async mounted() {
+		if (this.$route?.query?.route) {
+			this.redirect_route = this.$route.query.route;
+			this.$router.replace({ query: null });
+		}
+	},
 	methods: {
 		async loginOrResetPassword() {
 			try {
@@ -130,7 +137,7 @@ export default {
 			if (this.email && this.password) {
 				let res = await this.$auth.login(this.email, this.password);
 				if (res) {
-					this.$router.push(res.dashboard_route || '/');
+					this.$router.push(this.redirect_route || res.dashboard_route || '/');
 				}
 			}
 		},
