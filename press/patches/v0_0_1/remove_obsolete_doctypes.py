@@ -18,5 +18,5 @@ def execute():
 		"User Account",
 	]
 	for doctype in obsolete_doctypes:
-		if frappe.db.exists('DocType', doctype):
-			frappe.delete_doc('DocType', doctype)
+		if frappe.db.exists("DocType", doctype):
+			frappe.delete_doc("DocType", doctype)

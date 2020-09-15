@@ -9,7 +9,6 @@ import functools
 import json
 import requests
 from datetime import datetime, timedelta
-from python_minifier import minify
 from urllib.parse import urljoin
 
 

@@ -49,7 +49,7 @@ except ImportError:
 	install_command = shlex.split(
 		"{} -m pip install {}".format(sys.executable, " ".join(dependencies))
 	)
-	subprocess.call(install_command, stdout=open(os.devnull, 'w'))
+	subprocess.call(install_command, stdout=open(os.devnull, "w"))
 	import html2text
 	import requests
 	import click
@@ -65,7 +65,7 @@ except ImportError:
 	from requests_toolbelt.multipart import encoder
 
 if PY2:
-	reload(sys)
+	reload(sys)  # noqa
 	sys.setdefaultencoding("utf-8")
 
 
