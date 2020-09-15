@@ -12,6 +12,7 @@ from press.utils import log_error
 from press.telegram import Telegram
 from frappe.core.utils import find
 import pytz
+import requests
 from itertools import groupby
 from datetime import datetime, timedelta
 
