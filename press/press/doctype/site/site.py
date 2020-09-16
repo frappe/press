@@ -65,7 +65,9 @@ class Site(Document):
 
 		self.update_config_preview()
 		if self._update_site_config:
-			self.update_site_config(json.loads(self.config or {}))
+			log_site_activity(self.name, "Update Configuration")
+			agent = Agent(self.server)
+			agent.update_site_config(self)
 
 	def update_config_preview(self):
 		# update site.config with site.configuration data
