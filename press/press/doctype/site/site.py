@@ -28,6 +28,8 @@ class Site(Document):
 
 	def validate(self):
 		site_regex = r"^[a-z0-9][a-z0-9-]*[a-z0-9]$"
+		self._update_site_config = False
+
 		if len(self.subdomain) < 5:
 			frappe.throw("Subdomain too short. Use 5 or more characters")
 		if len(self.subdomain) > 32:
@@ -60,6 +62,35 @@ class Site(Document):
 		apps = [app.app for app in self.apps]
 		if len(apps) != len(set(apps)):
 			frappe.throw("Can't install same app twice.")
+
+		self.update_config_preview()
+		if self._update_site_config:
+			self.update_site_config(json.loads(self.config or {}))
+
+	def update_config_preview(self):
+		# update site.config with site.configuration data
+		new_config = json.loads(self.config)
+
+		for row in self.configuration:
+			# compare current and new values
+			key_type = row.get_type()
+			cur_key, cur_value = row.db_get("key"), row.db_get("value")
+			# cur_key, cur_value = row.db_get("key"), row.db_get("value")
+			new_key, new_value = row.key, row.value
+
+			if key_type == "Check":
+				key_value = bool(int(row.value))
+			elif key_type == "Number":
+				key_value = int(row.value)
+			else:
+				key_value = row.value
+
+			new_config[row.key] = key_value
+
+			if (cur_key != new_key) or (cur_value != new_value):
+				self._update_site_config = True
+
+		self.config = json.dumps(new_config, indent=4)
 
 	def install_app(self, app):
 		if not find(self.apps, lambda x: x.app == app):
