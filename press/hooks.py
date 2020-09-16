@@ -139,6 +139,8 @@ fixtures = [
 	"Plan",
 	{"dt": "Role", "filters": [["role_name", "like", "Press%"]]},
 	"Print Format",
+	"Site Config Key",
+	"Site Config Key Blacklist",
 ]
 # Testing
 # -------
