@@ -310,6 +310,7 @@ def get(name):
 		fields=["name", "repo_owner as owner", "scrubbed as repo", "url", "branch"],
 		filters={"name": ("in", available_apps)},
 	)
+	site_config = list(filter(lambda x: not x.internal, site.configuration))
 
 	try:
 		last_updated = frappe.get_all(
@@ -328,7 +329,7 @@ def get(name):
 		"installed_apps": sorted(installed_apps, key=lambda x: bench_apps[x.name]),
 		"available_apps": sorted(available_apps, key=lambda x: bench_apps[x.name]),
 		"setup_wizard_complete": site.setup_wizard_complete,
-		"config": json.loads(site.config),
+		"config": site_config,
 		"creation": site.creation,
 		"owner": site.owner,
 		"last_updated": last_updated,
