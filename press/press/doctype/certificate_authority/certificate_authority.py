@@ -104,6 +104,13 @@ class CertificateAuthority(Document):
 		self.issued_on = datetime.strptime(x509.get_notBefore().decode(), "%Y%m%d%H%M%SZ")
 		self.expires_on = datetime.strptime(x509.get_notAfter().decode(), "%Y%m%d%H%M%SZ")
 
+	def on_trash(self):
+		if os.path.exists(self.directory):
+			shutil.rmtree(self.directory)
+		children = frappe.get_all(self.doctype, {"parent_authority": self.name})
+		for child in children:
+			frappe.delete_doc(self.doctype, child.name)
+
 	@property
 	def certificate_chain_file(self):
 		return os.path.join(self.directory, "ca.chain.pem")
@@ -135,4 +142,3 @@ class CertificateAuthority(Document):
 	@property
 	def serial_file(self):
 		return os.path.join(self.directory, "serial")
-
