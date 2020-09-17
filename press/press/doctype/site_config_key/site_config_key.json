@@ -9,7 +9,8 @@
   "key",
   "type",
   "title",
-  "description"
+  "description",
+  "internal"
  ],
  "fields": [
   {
@@ -43,12 +44,21 @@
    "fieldname": "description",
    "fieldtype": "Small Text",
    "label": "Description"
+  },
+  {
+   "default": "0",
+   "description": "If set, this key won't be an allowed to be set via external APIs.",
+   "fieldname": "internal",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Internal Usage"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2020-09-15 14:54:46.958430",
- "modified_by": "Administrator",
+ "modified": "2020-09-18 15:06:31.741276",
+ "modified_by": "gavin18d@gmail.com",
  "module": "Press",
  "name": "Site Config Key",
  "owner": "gavin18d@gmail.com",
