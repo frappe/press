@@ -24,6 +24,9 @@ def create_certificate_authorities():
 	if not os.path.exists(scratch):
 		os.mkdir(scratch)
 
+	if frappe.db.count("Certificate Authority"):
+		return
+
 	root_ca = frappe.get_doc(
 		{
 			"doctype": "Certificate Authority",
