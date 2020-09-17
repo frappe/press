@@ -29,6 +29,10 @@ class CertificateAuthority(Document):
 		self.generate_private_key()
 		if self.is_root_ca:
 			self.generate_root_certificate()
+		else:
+			self.generate_certificate_signing_request()
+			self.sign_certificate_signing_request()
+			self.generate_chain_certificate()
 		self.extract_certificate_details()
 
 	def setup_directory(self):
@@ -61,6 +65,32 @@ class CertificateAuthority(Document):
 			f" {self.certificate_file}"
 		)
 		os.chmod(self.certificate_file, 444)
+
+	def generate_certificate_signing_request(self):
+		self.run(
+			f"openssl req -new -config {self.openssl_config_file} -key"
+			f" {self.private_key_file} -out {self.certificate_signing_request_file}"
+		)
+		os.chmod(self.certificate_signing_request_file, 444)
+
+	def sign_certificate_signing_request(self):
+		parent = frappe.get_doc(self.doctype, self.parent_authority)
+		self.run(
+			f"openssl ca -batch -notext -days {self.validity_days} -config"
+			f" {parent.openssl_config_file} -extensions v3_intermediate_ca -in"
+			f" {self.certificate_signing_request_file} -out {self.certificate_file}"
+		)
+		os.chmod(self.certificate_file, 444)
+
+	def generate_chain_certificate(self):
+		parent = frappe.get_doc(self.doctype, self.parent_authority)
+		with open(self.certificate_file) as f:
+			certificate = f.read()
+		with open(parent.certificate_file) as f:
+			certificate += f.read()
+		with open(self.certificate_chain_file, "w") as f:
+			f.write(certificate)
+		os.chmod(self.certificate_chain_file, 444)
 
 	def extract_certificate_details(self):
 		with open(self.certificate_file) as f:
