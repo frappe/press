@@ -85,23 +85,26 @@
 						<Badge v-if="invoice.status == 'Paid'" color="green">
 							Paid
 						</Badge>
+						<Badge v-if="invoice.status == 'Unpaid'" color="orange">
+							Unpaid
+						</Badge>
 						<Badge v-else-if="invoice.status == 'Invoice Created'" color="blue">
 							Created
 						</Badge>
 					</div>
-					<div class="col-span-2 text-right">
+					<div class="flex flex-col items-end col-span-2 space-y-2">
 						<a
-							v-if="invoice.status == 'Paid' && invoice.invoice_pdf"
-							class="inline-flex items-center justify-center text-base text-blue-500"
-							:href="invoice.invoice_pdf"
-							target="_blank"
+							v-if="['Unpaid', 'Paid'].includes(invoice.status)"
+							href=""
+							class="flex items-center justify-center text-base text-blue-500"
+							@click.prevent="showUsageForInvoice = invoice.name"
 						>
-							Download Invoice
+							View Usage
 							<FeatherIcon name="arrow-right" class="w-4 h-4 ml-2" />
 						</a>
 						<a
 							v-if="invoice.status != 'Paid' && invoice.stripe_invoice_url"
-							class="inline-flex items-center justify-center text-base text-blue-500"
+							class="flex items-center justify-center text-base text-blue-500"
 							:href="invoice.stripe_invoice_url"
 							target="_blank"
 						>
@@ -111,6 +114,7 @@
 					</div>
 				</div>
 			</SectionCard>
+			<InvoiceUsage :invoice.sync="showUsageForInvoice" />
 		</Section>
 		<Section
 			v-if="!$resources.billingDetails.loading"
@@ -201,7 +205,8 @@ export default {
 		StripeCard,
 		DescriptionList,
 		TransferCreditsDialog: () => import('@/components/TransferCreditsDialog'),
-		UpdateBillingAddress: () => import('@/components/UpdateBillingAddress')
+		UpdateBillingAddress: () => import('@/components/UpdateBillingAddress'),
+		InvoiceUsage: () => import('@/components/InvoiceUsage')
 	},
 	resources: {
 		billingDetails: {
@@ -223,6 +228,7 @@ export default {
 		return {
 			showStripeCardDialog: false,
 			showTransferCreditsDialog: false,
+			showUsageForInvoice: null,
 			editAddress: false
 		};
 	},

@@ -161,6 +161,12 @@ class Invoice(Document):
 		if not ti.get_draft_invoice():
 			ti.create()
 
+	def get_pdf(self):
+		print_format = self.meta.default_print_format
+		return frappe.utils.get_url(
+			f"/api/method/frappe.utils.print_format.download_pdf?doctype=Invoice&name={self.name}&format={print_format}&no_letterhead=0"
+		)
+
 
 def submit_invoices():
 	"""This method will run every day and submit the invoices whose period end was the previous day"""

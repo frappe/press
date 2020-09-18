@@ -130,6 +130,41 @@ def get_payment_methods():
 
 
 @frappe.whitelist()
+def get_invoice_usage(invoice):
+	team = get_current_team()
+	doc = frappe.get_doc("Invoice", {"name": invoice, "team": team})
+
+	usage = []
+	for i, row in enumerate(doc.site_usage):
+		usage.append(
+			{
+				"idx": row.idx,
+				"site": row.site,
+				"plan": frappe.get_cached_value("Plan", row.plan, "plan_title"),
+				"days_active": row.days_active,
+				"rate": doc.items[i].get_formatted("rate"),
+				"amount": doc.items[i].get_formatted("amount"),
+			}
+		)
+
+	applied_balance = (
+		doc.starting_balance * -1 if doc.starting_balance * -1 < doc.total else doc.total
+	)
+	return {
+		"usage": usage,
+		"status": doc.status,
+		# TODO: indian customers should get GST invoices
+		# allow non-indian customers to download invoices
+		"invoice_pdf": doc.get_pdf() if doc.currency == "USD" else None,
+		"period_start": doc.period_start,
+		"period_end": doc.period_end,
+		"total": doc.get_formatted("total"),
+		"amount_due": doc.get_formatted("amount_due"),
+		"applied_balance": fmt_money(applied_balance, 2, doc.currency),
+	}
+
+
+@frappe.whitelist()
 def after_card_add():
 	clear_setup_intent()
 
