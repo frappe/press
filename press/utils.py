@@ -193,34 +193,15 @@ def get_frappe_backups(site_url, username, password):
 
 
 def sanitize_config(config: dict) -> dict:
-	allowed_keys = [
-		"encryption_key",
-		"mail_server",
-		"mail_port",
-		"mail_login",
-		"mail_password",
-		"use_ssl",
-		"auto_email_id",
-		"mute_emails",
-		"server_script_enabled",
-		"disable_website_cache",
-		"disable_global_search",
-		"max_file_size",
+	client_blacklisted_keys = [
+		x.key
+		for x in frappe.get_all("Site Config Key Blacklist", fields=["key"])
+		+ frappe.get_all("Site Config Key", fields=["key"], filters={"internal": True})
 	]
-
 	sanitized_config = config.copy()
 
 	for key in config:
-		if key not in allowed_keys:
+		if key in client_blacklisted_keys:
 			sanitized_config.pop(key)
-
-	# Remove keys with empty values
-	sanitized_config = {
-		key: value for key, value in sanitized_config.items() if value != ""
-	}
-
-	for key in ["max_file_size", "mail_port"]:
-		if key in sanitized_config:
-			sanitized_config[key] = cint(sanitized_config[key])
 
 	return sanitized_config
