@@ -28,7 +28,6 @@ class Site(Document):
 
 	def validate(self):
 		site_regex = r"^[a-z0-9][a-z0-9-]*[a-z0-9]$"
-		self._update_site_config = False
 
 		if len(self.subdomain) < 5:
 			frappe.throw("Subdomain too short. Use 5 or more characters")
@@ -64,33 +63,30 @@ class Site(Document):
 			frappe.throw("Can't install same app twice.")
 
 		self.update_config_preview()
-		if self._update_site_config:
-			log_site_activity(self.name, "Update Configuration")
-			agent = Agent(self.server)
-			agent.update_site_config(self)
 
 	def update_config_preview(self):
-		# update site.config with site.configuration data
-		new_config = json.loads(self.config)
+		"""Regenrates site.config on each site.validate from the site.configuration child table data"""
+		new_config = {}
 
+		# Update from site.configuration
 		for row in self.configuration:
+			# update internal flag from master
+			row.internal = frappe.db.get_value("Site Config Key", row.key, "internal")
+
 			# compare current and new values
 			key_type = row.get_type()
 			cur_key, cur_value = row.db_get("key"), row.db_get("value")
 			# cur_key, cur_value = row.db_get("key"), row.db_get("value")
 			new_key, new_value = row.key, row.value
 
-			if key_type == "Check":
-				key_value = bool(int(row.value))
-			elif key_type == "Number":
-				key_value = int(row.value)
+			if key_type in ("Number", "JSON"):
+				key_value = json.loads(row.value)
+			elif key_type == "Check":
+				key_value = bool(json.loads(row.value))
 			else:
 				key_value = row.value
 
 			new_config[row.key] = key_value
-
-			if (cur_key != new_key) or (cur_value != new_value):
-				self._update_site_config = True
 
 		self.config = json.dumps(new_config, indent=4)
 
@@ -322,8 +318,13 @@ class Site(Document):
 			agent = Agent(self.server)
 			return agent.get_site_sid(self)
 
+	def sync_site_config(self):
+		agent = Agent(self.server)
+		agent.update_site_config(self)
+
 	def sync_info(self):
-		dirty = False
+		"""Updates Site Usage, site.config.encryption_key and timezone details for site."""
+		save = False
 		agent = Agent(self.server)
 		data = agent.get_site_info(self)
 		fetched_config = data["config"]
@@ -333,11 +334,16 @@ class Site(Document):
 		new_config = json.loads(self.config)
 		new_config.update(config)
 		current_config = json.dumps(new_config, indent=4)
-		dirty = (self.config != current_config) or (self.timezone != data["timezone"])
 
-		if dirty:
-			self.config = current_config
+		if self.timezone != data["timezone"]:
 			self.timezone = data["timezone"]
+			save = True
+
+		if self.config != current_config:
+			self.update_configuration(new_config)
+			save = False
+
+		if save:
 			self.save()
 
 		frappe.get_doc(
@@ -365,12 +371,30 @@ class Site(Document):
 			self.db_set("setup_wizard_complete", setup_complete)
 			return setup_complete
 
-	def update_site_config(self, config):
-		new_config = json.loads(self.config)
-		new_config.update(config)
-		self.config = json.dumps(new_config, indent=4)
+	def update_configuration(self, config):
+		"""Updates site.configuration, runs site.save which updates site.config
+
+		Args:
+		        config (dict): Python dict for any suitable frappe.conf
+		"""
+		keys = {x.key: i for i, x in enumerate(self.configuration)}
+		for key, value in config.items():
+			if key in keys:
+				self.configuration[keys[key]].value = json.dumps(value)
+			else:
+				self.append("configuration", {"key": key, "value": json.dumps(value)})
 		self.save()
-		log_site_activity(self.name, "Update Configuration")
+
+	def update_site_config(self, config):
+		"""Updates site.configuration, site.config, runs site.save and initiates an Agent Request
+		This checks for the blacklisted config keys via Frappe Validations, but not for internal usages.
+		Don't expose this directly to an external API. Pass through `press.utils.sanitize_config` or use
+		`press.api.site.update_config` instead.
+
+		Args:
+		        config (dict): Python dict for any suitable frappe.conf
+		"""
+		self.update_configuration(config)
 		agent = Agent(self.server)
 		agent.update_site_config(self)
 
