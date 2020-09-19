@@ -13,5 +13,9 @@ class SiteConfigKey(Document):
 		if not self.title:
 			self.title = self.key.replace("_", " ").title()
 
-		if frappe.db.exists("Site Config Key Blacklist", {"key": self.key}):
-			frappe.throw(f"Key {self.key} is Blacklisted. Please contact Administrators to enable it.")
+		if not self.internal and frappe.db.exists(
+			"Site Config Key Blacklist", {"key": self.key}
+		):
+			frappe.throw(
+				f"Key {self.key} is Blacklisted. Please contact Administrators to enable it."
+			)
