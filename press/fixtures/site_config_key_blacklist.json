@@ -178,17 +178,6 @@
  {
   "docstatus": 0,
   "doctype": "Site Config Key Blacklist",
-  "key": "rate_limit",
-  "modified": "2020-09-15 13:02:12.191857",
-  "name": "rate_limit",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
-  "reason": null
- },
- {
-  "docstatus": 0,
-  "doctype": "Site Config Key Blacklist",
   "key": "developer_mode",
   "modified": "2020-09-15 13:02:12.202427",
   "name": "developer_mode",
@@ -262,5 +251,16 @@
   "parentfield": null,
   "parenttype": null,
   "reason": "for only granting certain perms on databases. named because of AWS RDS?"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Site Config Key Blacklist",
+  "key": "rate_limit",
+  "modified": "2020-09-18 11:54:37.058867",
+  "name": "rate_limit",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "reason": null
  }
 ]
