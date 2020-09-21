@@ -95,12 +95,18 @@ export default {
 		};
 	},
 	resources: {
-		standardConfigKeys: 'press.api.config.standard_config_keys',
+		standardConfigKeys: 'press.api.config.standard_keys',
 		updateSiteConfig() {
 			let updatedConfig = this.site.config.map(d => {
 				let value = d.value;
 				if (d.type === 'Boolean') {
-					value = d.value === '1' ? 1 : 0;
+					value = d.value === 'true' ? true : false;
+				} else if (d.type === 'Number') {
+					value = Number(d.value);
+				} else if (d.type == "JSON") {
+					try {
+						value = JSON.parse(d.value || "{}");
+					} catch (error) {}
 				}
 				return {
 					key: d.key,
@@ -123,9 +129,15 @@ export default {
 					for (let config of updatedConfig) {
 						if (config.type === 'JSON') {
 							try {
-								JSON.parse(config.value);
+								JSON.parse(JSON.stringify(config.value));
 							} catch (error) {
-								return 'Invalid JSON';
+								return `Invalid JSON -- ${error}`;
+							}
+						} else if (config.type === 'Number') {
+							try {
+								Number(config.value);
+							} catch (error) {
+								return 'Invalid Number';
 							}
 						}
 					}
@@ -147,7 +159,7 @@ export default {
 			}[config.type];
 			return {
 				type,
-				options: config.type === 'Boolean' ? ['1', '0'] : null
+				options: config.type === 'Boolean' ? ['true', 'false'] : null
 			};
 		},
 		addConfig() {
@@ -184,8 +196,19 @@ export default {
 		},
 		siteConfig() {
 			let obj = {};
+
 			for (let d of this.site.config) {
-				obj[d.key] = d.value;
+				let value = null;
+				if (d.type === 'Boolean') {
+					value = Boolean(d.value);
+				} else if (d.type === 'Number') {
+					value = Number(d.value);
+				} else if (d.type == "JSON") {
+					value = JSON.parse(d.value || "{}");
+				} else {
+					value = d.value
+				}
+				obj[d.key] = value;
 			}
 			return obj;
 		}

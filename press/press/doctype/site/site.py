@@ -17,7 +17,7 @@ from frappe.frappeclient import FrappeClient
 from frappe.utils import cint
 from press.api.site import check_dns
 from frappe.core.utils import find
-from press.utils import log_error
+from press.utils import log_error, get_client_blacklisted_keys
 from press.press.doctype.plan.plan import get_plan_config
 
 
@@ -76,17 +76,9 @@ class Site(Document):
 			# compare current and new values
 			key_type = row.get_type()
 			cur_key, cur_value = row.db_get("key"), row.db_get("value")
-			# cur_key, cur_value = row.db_get("key"), row.db_get("value")
 			new_key, new_value = row.key, row.value
 
-			if key_type in ("Number", "JSON"):
-				key_value = json.loads(row.value)
-			elif key_type == "Check":
-				key_value = bool(json.loads(row.value))
-			else:
-				key_value = row.value
-
-			new_config[row.key] = key_value
+			new_config[row.key] = row.value
 
 		self.config = json.dumps(new_config, indent=4)
 
@@ -329,8 +321,7 @@ class Site(Document):
 		data = agent.get_site_info(self)
 		fetched_config = data["config"]
 		fetched_usage = data["usage"]
-		keys_to_fetch = ["encryption_key"]
-		config = {key: fetched_config[key] for key in keys_to_fetch if key in fetched_config}
+		config = {key: fetched_config[key] for key in fetched_config if key not in get_client_blacklisted_keys()}
 		new_config = json.loads(self.config)
 		new_config.update(config)
 		current_config = json.dumps(new_config, indent=4)
