@@ -371,6 +371,24 @@ class Site(Document):
 			self.db_set("setup_wizard_complete", setup_complete)
 			return setup_complete
 
+	def set_configuration(self, config):
+		"""Similar to update_configuration but will replace full configuration at once
+		This is necessary because when you update site config from the UI, you can update the key,
+		update the value, remove the key. All of this can be handled by setting the full configuration at once.
+
+		Args:
+		        config (list): List of dicts with key, value, and type
+		"""
+		self.configuration = []
+		for d in config:
+			d = frappe._dict(d)
+			if isinstance(d.value, (dict, list)):
+				value = json.dumps(d.value)
+			else:
+				value = d.value
+			self.append("configuration", {"key": d.key, "value": value, "type": d.type})
+		self.save()
+
 	def update_configuration(self, config):
 		"""Updates site.configuration, runs site.save which updates site.config
 

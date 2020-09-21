@@ -192,12 +192,16 @@ def get_frappe_backups(site_url, username, password):
 		frappe.throw("An unknown error occurred")
 
 
-def sanitize_config(config: dict) -> dict:
-	client_blacklisted_keys = [
+def get_client_blacklisted_keys():
+	return [
 		x.key
-		for x in frappe.get_all("Site Config Key Blacklist", fields=["key"])
-		+ frappe.get_all("Site Config Key", fields=["key"], filters={"internal": True})
+		for x in frappe.get_all("Site Config Key Blacklist", fields=["`key`"])
+		+ frappe.get_all("Site Config Key", fields=["`key`"], filters={"internal": True})
 	]
+
+
+def sanitize_config(config: dict) -> dict:
+	client_blacklisted_keys = get_client_blacklisted_keys()
 	sanitized_config = config.copy()
 
 	for key in config:

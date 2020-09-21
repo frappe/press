@@ -7,7 +7,7 @@
 			{{ label }}
 		</span>
 		<input
-			v-if="type !== 'select'"
+			v-if="['text', 'number', 'checkbox'].includes(type)"
 			class="placeholder-gray-500"
 			:class="[
 				{
@@ -22,10 +22,19 @@
 			@blur="$emit('blur', $event)"
 			v-model="inputVal"
 		/>
+		<textarea
+			v-if="type === 'textarea'"
+			:class="['block w-full resize-none form-textarea', inputClass]"
+			v-model="inputVal"
+			:disabled="disabled"
+			v-bind="$attrs"
+			rows="3"
+			@blur="$emit('blur', $event)"
+		></textarea>
 		<select
 			class="block w-full form-select"
 			v-model="inputVal"
-			v-else
+			v-if="type === 'select'"
 			:disabled="disabled"
 		>
 			<option
@@ -51,7 +60,39 @@
 export default {
 	name: 'Input',
 	inheritAttrs: false,
-	props: ['label', 'type', 'value', 'inputClass', 'options', 'disabled'],
+	props: {
+		label: {
+			type: String
+		},
+		type: {
+			type: String,
+			validator(value) {
+				let isValid = [
+					'text',
+					'number',
+					'checkbox',
+					'textarea',
+					'select'
+				].includes(value);
+				if (!isValid) {
+					console.warn(`Invalid value "${value}" for "type" prop for Input`);
+				}
+				return isValid;
+			}
+		},
+		value: {
+			type: [String, Number, Boolean, Object, Array]
+		},
+		inputClass: {
+			type: [String, Array, Object]
+		},
+		options: {
+			type: Array
+		},
+		disabled: {
+			type: Boolean
+		}
+	},
 	computed: {
 		inputVal: {
 			get() {
