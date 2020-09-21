@@ -28,6 +28,7 @@ from press.utils import (
 	log_error,
 	get_frappe_backups,
 	sanitize_config,
+	get_client_blacklisted_keys,
 )
 
 
@@ -603,8 +604,25 @@ def log(name, log):
 @frappe.whitelist()
 @protected("Site")
 def update_config(name, config):
-	config = sanitize_config(config)
-	frappe.get_doc("Site", name).update_site_config(config)
+	config = frappe.parse_json(config)
+	config = [frappe._dict(c) for c in config]
+	blacklisted_keys = get_client_blacklisted_keys()
+
+	sanitized_config = []
+	for c in config:
+		if c.key in blacklisted_keys:
+			continue
+		if c.type == "Number":
+			c.value = flt(c.value)
+		elif c.type == "JSON":
+			c.value = frappe.parse_json(c.value)
+		elif c.type == "Boolean":
+			c.value = bool(c.value)
+		sanitized_config.append(c)
+
+	site = frappe.get_doc("Site", name)
+	site.set_configuration(sanitized_config)
+	return list(filter(lambda x: not x.internal, site.configuration))
 
 
 @frappe.whitelist()

@@ -1,54 +1,80 @@
 <template>
 	<div class="space-y-10">
 		<Section
-			title="Configuration"
-			description="View and edit your site configuration"
+			title="Site Config"
+			description="Add key value pairs to your site's site_config.json"
 		>
-			<SectionCard class="px-6 py-6 space-y-4">
-				<Form :fields="fields" v-model="siteConfig" />
-				<div class="mt-6">
-					<Button :disabled="!showButton" type="primary" @click="updateConfig">
-						Update Configuration
-					</Button>
-				</div>
-			</SectionCard>
-		</Section>
-		<Section
-			title="Custom Config"
-			description="Add custom key value pairs to your site config"
-		>
-			<SectionCard class="px-6 py-6 space-y-4">
+			<div class="flex space-x-4">
+				<SectionCard class="px-6 py-6 space-y-4 md:w-2/3">
+					<div class="space-y-4" v-if="editMode">
+						<div
+							class="grid grid-cols-5 gap-4"
+							v-for="(config, i) in siteConfigList"
+							:key="i"
+						>
+							<Input
+								type="text"
+								placeholder="key"
+								v-model="config.key"
+								class="col-span-2"
+								@change="isDirty = true"
+							/>
+							<Input
+								type="select"
+								placeholder="type"
+								v-model="config.type"
+								:options="['String', 'Number', 'JSON', 'Boolean']"
+							/>
+							<div class="flex items-center col-span-2">
+								<Input
+									class="w-full"
+									v-bind="configInputProps(config)"
+									:input-class="{ 'font-mono': config.type === 'JSON' }"
+									placeholder="value"
+									v-model="config.value"
+									@change="isDirty = true"
+								/>
+								<button
+									class="p-1 ml-2 rounded-md hover:bg-gray-100"
+									@click="removeConfig(config)"
+								>
+									<FeatherIcon name="x" class="w-5 h-5 text-gray-700" />
+								</button>
+							</div>
+						</div>
+						<ErrorMessage :error="$resources.updateSiteConfig.error" />
+						<div class="space-x-2">
+							<Button @click="addConfig" v-if="!isDirty">
+								Add Key
+							</Button>
+							<Button
+								v-else
+								@click="$resources.updateSiteConfig.submit()"
+								:loading="$resources.updateSiteConfig.loading"
+							>
+								Update Config
+							</Button>
+						</div>
+					</div>
+
+					<div v-else>
+						<Form
+							:fields="siteConfigFields"
+							v-model="siteConfig"
+							class="pointer-events-none"
+						/>
+						<div class="mt-4">
+							<Button @click="editMode = !editMode">Edit Config</Button>
+						</div>
+					</div>
+				</SectionCard>
 				<div
-					class="grid grid-cols-3 gap-4 mb-4"
-					v-for="(config, i) in customConfigs"
-					:key="i"
+					class="flex-1 p-4 font-mono text-base whitespace-pre-line bg-gray-100 rounded"
 				>
-					<Input type="text" placeholder="key" v-model="config.key" />
-					<Input
-						type="select"
-						placeholder="type"
-						:options="['String', 'Number', 'Boolean', 'JSON']"
-						v-model="config.type"
-					/>
-					<Input
-						:type="customConfigType(config)"
-						placeholder="value"
-						v-model="config.value"
-					/>
+					<div class="mb-4">site_config.json</div>
+					<div v-html="siteConfigPreview"></div>
 				</div>
-				<div class="space-x-2">
-					<Button
-						@click="customConfigs.push({ key: '', value: '', type: 'String' })"
-					>
-						Add Config
-					</Button>
-					<Button
-						@click="customConfigs.push({ key: '', value: '', type: 'String' })"
-					>
-						Save Changes
-					</Button>
-				</div>
-			</SectionCard>
+			</div>
 		</Section>
 	</div>
 </template>
@@ -64,109 +90,104 @@ export default {
 	props: ['site'],
 	data() {
 		return {
-			fields: [
-				{
-					label: 'Encryption Key',
-					fieldname: 'encryption_key',
-					fieldtype: 'Password'
-				},
-				{
-					label: 'Mail Server',
-					fieldname: 'mail_server',
-					fieldtype: 'Data'
-				},
-				{
-					label: 'Mail Port',
-					fieldname: 'mail_port',
-					fieldtype: 'Int'
-				},
-				{
-					label: 'Mail Login',
-					fieldname: 'mail_login',
-					fieldtype: 'Data'
-				},
-				{
-					label: 'Mail Password',
-					fieldname: 'mail_password',
-					fieldtype: 'Password'
-				},
-				{
-					label: 'Use SSL',
-					fieldname: 'use_ssl',
-					fieldtype: 'Check'
-				},
-				{
-					label: 'Auto Email Address',
-					fieldname: 'auto_email_id',
-					fieldtype: 'Data'
-				},
-				{
-					label: 'Mute Emails',
-					fieldname: 'mute_emails',
-					fieldtype: 'Check'
-				},
-				{
-					label: 'Enable Server Scripts',
-					fieldname: 'server_script_enabled',
-					fieldtype: 'Check'
-				},
-				{
-					label: 'Disable Website Cache',
-					fieldname: 'disable_website_cache',
-					fieldtype: 'Check'
-				},
-				{
-					label: 'Disable Global Search',
-					fieldname: 'disable_global_search',
-					fieldtype: 'Check'
-				},
-				{
-					label: 'Max File Size (Bytes)',
-					fieldname: 'max_file_size',
-					fieldtype: 'Int'
-				}
-			],
-			siteConfig: {
-				encryption_key: this.site.config.encryption_key,
-				mail_server: this.site.config.mail_server,
-				mail_port: this.site.config.mail_port,
-				mail_login: this.site.config.mail_login,
-				mail_password: this.site.config.mail_password,
-				use_ssl: this.site.config.use_ssl,
-				auto_email_id: this.site.config.auto_email_id,
-				mute_emails: this.site.config.mute_emails,
-				server_script_enabled: this.site.config.server_script_enabled,
-				disable_website_cache: this.site.config.disable_website_cache,
-				disable_global_search: this.site.config.disable_global_search,
-				max_file_size: this.site.config.max_file_size
-			},
-			showButton: false,
-			customConfigs: []
+			editMode: false,
+			isDirty: false
 		};
 	},
-	methods: {
-		async updateConfig() {
-			await this.$call('press.api.site.update_config', {
-				name: this.site.name,
-				config: this.siteConfig
+	resources: {
+		standardConfigKeys: 'press.api.config.standard_config_keys',
+		updateSiteConfig() {
+			let updatedConfig = this.site.config.map(d => {
+				let value = d.value;
+				if (d.type === 'Boolean') {
+					value = d.value === '1' ? 1 : 0;
+				}
+				return {
+					key: d.key,
+					value,
+					type: d.type
+				};
 			});
-			this.showButton = false;
-		},
-		customConfigType(config) {
+
 			return {
-				String: 'text',
-				Number: 'number',
-				JSON: 'text',
-				Boolean: 'text'
-			}[config.type];
+				method: 'press.api.site.update_config',
+				params: {
+					name: this.site.name,
+					config: JSON.stringify(updatedConfig)
+				},
+				validate() {
+					let keys = updatedConfig.map(d => d.key);
+					if (keys.length !== [...new Set(keys)].length) {
+						return 'Duplicate key';
+					}
+					for (let config of updatedConfig) {
+						if (config.type === 'JSON') {
+							try {
+								JSON.parse(config.value);
+							} catch (error) {
+								return 'Invalid JSON';
+							}
+						}
+					}
+				},
+				onSuccess() {
+					this.editMode = false;
+					this.isDirty = false;
+				}
+			};
 		}
 	},
-	watch: {
-		siteConfig: {
-			handler: function() {
-				this.showButton = true;
-			},
-			deep: true
+	methods: {
+		configInputProps(config) {
+			let type = {
+				String: 'text',
+				Number: 'number',
+				JSON: 'textarea',
+				Boolean: 'select'
+			}[config.type];
+			return {
+				type,
+				options: config.type === 'Boolean' ? ['1', '0'] : null
+			};
+		},
+		addConfig() {
+			this.site.config.push({ key: '', value: '', type: 'String' });
+			this.isDirty = true;
+		},
+		removeConfig(config) {
+			this.site.config = this.site.config.filter(d => d !== config);
+			this.isDirty = true;
+		}
+	},
+	computed: {
+		siteConfigPreview() {
+			return JSON.stringify(this.siteConfig, null, '&nbsp;');
+		},
+		siteConfigList() {
+			return (this.site.config || []).filter(d => !d.toRemove);
+		},
+		siteConfigFields() {
+			if (!this.$resources.standardConfigKeys.data) {
+				return [];
+			}
+			let fields = [];
+			for (let key in this.siteConfig) {
+				let standardKey = this.$resources.standardConfigKeys.data.find(
+					d => d.key === key
+				);
+				fields.push({
+					label: standardKey?.title || key,
+					fieldname: standardKey?.key || key
+				});
+			}
+			return fields;
+		},
+		siteConfig() {
+			let obj = {};
+			for (let d of this.site.config) {
+				obj[d.key] = d.value;
+			}
+			return obj;
 		}
 	}
 };
