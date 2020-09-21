@@ -614,10 +614,8 @@ def update_config(name, config):
 			continue
 		if c.type == "Number":
 			c.value = flt(c.value)
-		elif c.type == "JSON":
+		elif c.type in ("JSON", "Boolean"):
 			c.value = frappe.parse_json(c.value)
-		elif c.type == "Boolean":
-			c.value = bool(c.value)
 		sanitized_config.append(c)
 
 	site = frappe.get_doc("Site", name)

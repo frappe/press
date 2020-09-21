@@ -192,7 +192,8 @@ def get_frappe_backups(site_url, username, password):
 		frappe.throw("An unknown error occurred")
 
 
-def get_client_blacklisted_keys():
+def get_client_blacklisted_keys() -> list:
+	"""Returns list of blacklisted Site Config Keys accessible to Press /dashboard users."""
 	return [
 		x.key
 		for x in frappe.get_all("Site Config Key Blacklist", fields=["`key`"])
