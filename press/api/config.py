@@ -11,5 +11,14 @@ def standard_keys():
 	)
 
 @frappe.whitelist()
-def is_valid(key):
-	return key not in get_client_blacklisted_keys()
+def is_valid(keys):
+	keys = frappe.parse_json(keys)
+
+	invalid = []
+	blacklisted = get_client_blacklisted_keys()
+
+	for key in keys:
+		if key in blacklisted:
+			invalid.append(key)
+
+	return set(invalid)
