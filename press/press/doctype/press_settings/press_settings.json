@@ -18,6 +18,7 @@
   "rsa_key_size",
   "wildcard_tls_certificate",
   "column_break_11",
+  "backbone_intermediate_ca",
   "webroot_directory",
   "certbot_directory",
   "stripe_settings_section",
@@ -439,6 +440,12 @@
    "fieldname": "product_documentation_section",
    "fieldtype": "Section Break",
    "label": "Product Documentation"
+  },
+  {
+   "fieldname": "backbone_intermediate_ca",
+   "fieldtype": "Link",
+   "label": "Backbone Intermediate CA",
+   "options": "Certificate Authority"
   }
  ],
  "issingle": 1,
