@@ -113,15 +113,15 @@ class CertificateAuthority(Document):
 
 	@property
 	def certificate_chain_file(self):
-		return os.path.join(self.directory, "ca.chain.pem")
+		return os.path.join(self.directory, "chain.pem")
 
 	@property
 	def certificate_file(self):
-		return os.path.join(self.directory, "ca.cert.pem")
+		return os.path.join(self.directory, "cert.pem")
 
 	@property
 	def certificate_signing_request_file(self):
-		return os.path.join(self.directory, "ca.csr.pem")
+		return os.path.join(self.directory, "csr.pem")
 
 	@property
 	def database_file(self):
@@ -137,7 +137,7 @@ class CertificateAuthority(Document):
 
 	@property
 	def private_key_file(self):
-		return os.path.join(self.directory, "ca.key.pem")
+		return os.path.join(self.directory, "key.pem")
 
 	@property
 	def serial_file(self):
