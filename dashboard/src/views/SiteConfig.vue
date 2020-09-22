@@ -5,7 +5,7 @@
 			description="Add key value pairs to your site's site_config.json"
 		>
 			<div class="flex space-x-4">
-				<SectionCard class="px-6 py-6 space-y-4 md:w-2/3">
+				<SectionCard class="px-6 py-6 space-y-4 md:w-2/3 flex-shrink-0">
 					<div class="space-y-4" v-if="editMode">
 						<div
 							class="grid grid-cols-5 gap-4"
@@ -69,7 +69,7 @@
 					</div>
 				</SectionCard>
 				<div
-					class="flex-1 p-4 font-mono text-base whitespace-pre-line bg-gray-100 rounded"
+					class="flex-1 p-4 font-mono text-base whitespace-pre-line bg-gray-100 rounded max-w-full overflow-x-scroll"
 				>
 					<div class="mb-4">site_config.json</div>
 					<div v-html="siteConfigPreview"></div>
@@ -121,10 +121,14 @@ export default {
 					name: this.site.name,
 					config: JSON.stringify(updatedConfig)
 				},
-				validate() {
+				async validate() {
 					let keys = updatedConfig.map(d => d.key);
 					if (keys.length !== [...new Set(keys)].length) {
 						return 'Duplicate key';
+					}
+					let invalidKeys = await this.$call('press.api.config.is_valid', { keys: JSON.stringify(keys) })
+					if (invalidKeys?.length > 0) {
+						return `Invalid key -- ${invalidKeys.join(", ")}`;
 					}
 					for (let config of updatedConfig) {
 						if (config.type === 'JSON') {
@@ -173,7 +177,26 @@ export default {
 	},
 	computed: {
 		siteConfigPreview() {
-			return JSON.stringify(this.siteConfig, null, '&nbsp;');
+			let obj = {};
+
+			for (let d of this.site.config) {
+				let value = null;
+				if (d.type === 'Boolean') {
+					value = Boolean(d.value);
+				} else if (d.type === 'Number') {
+					value = Number(d.value);
+				} else if (d.type === "JSON") {
+					try {
+						value = JSON.parse(d.value);
+					} catch(error) {
+						value = {};
+					}
+				} else {
+					value = d.value;
+				}
+				obj[d.key] = value;
+			}
+			return JSON.stringify(obj, null, '&nbsp;');
 		},
 		siteConfigList() {
 			return (this.site.config || []).filter(d => !d.toRemove);
@@ -203,10 +226,8 @@ export default {
 					value = Boolean(d.value);
 				} else if (d.type === 'Number') {
 					value = Number(d.value);
-				} else if (d.type == "JSON") {
-					value = JSON.parse(d.value || "{}");
 				} else {
-					value = d.value
+					value = d.value;
 				}
 				obj[d.key] = value;
 			}
