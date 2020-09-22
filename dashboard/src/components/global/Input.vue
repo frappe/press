@@ -7,7 +7,7 @@
 			{{ label }}
 		</span>
 		<input
-			v-if="['text', 'number', 'checkbox'].includes(type)"
+			v-if="['text', 'number', 'checkbox', 'email', 'password'].includes(type)"
 			class="placeholder-gray-500"
 			:class="[
 				{
@@ -72,7 +72,9 @@ export default {
 					'number',
 					'checkbox',
 					'textarea',
-					'select'
+					'select',
+					'email',
+					'password'
 				].includes(value);
 				if (!isValid) {
 					console.warn(`Invalid value "${value}" for "type" prop for Input`);
