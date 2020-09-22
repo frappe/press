@@ -35,7 +35,7 @@ def create_certificate_authorities():
 			"directory": f"{scratch}/root",
 		}
 	).insert()
-	frappe.get_doc(
+	intermediate_ca = frappe.get_doc(
 		{
 			"doctype": "Certificate Authority",
 			"common_name": "Backbone Intermediate Certificate Authority",
@@ -43,6 +43,9 @@ def create_certificate_authorities():
 			"directory": f"{scratch}/intermediate",
 		}
 	).insert()
+	frappe.db.set_value(
+		"Press Settings", "Press Settings", "backbone_intermediate_ca", intermediate_ca.name
+	)
 
 
 def create_administrator_team():
