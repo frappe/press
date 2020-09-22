@@ -619,7 +619,7 @@ def update_config(name, config):
 		sanitized_config.append(c)
 
 	site = frappe.get_doc("Site", name)
-	site.set_configuration(sanitized_config)
+	site.update_site_config(sanitized_config)
 	return list(filter(lambda x: not x.internal, site.configuration))
 
 
