@@ -79,11 +79,20 @@ class Site(Document):
 			row.internal = frappe.db.get_value("Site Config Key", row.key, "internal")
 
 			# compare current and new values
-			key_type = row.get_type()
+			key_type = row.type or row.get_type()
 			cur_key, cur_value = row.db_get("key"), row.db_get("value")
 			new_key, new_value = row.key, row.value
 
-			new_config[row.key] = row.value
+			if key_type == "Number":
+				key_value = int(row.value) if isinstance(row.value, (float, int)) else json.loads(row.value)
+			elif key_type in ("Check", "Boolean"):
+				key_value = row.value if isinstance(row.value, bool) else bool(json.loads(row.value))
+			elif key_type == "JSON":
+				key_value = json.loads(row.value)
+			else:
+				key_value = row.value
+
+			new_config[row.key] = key_value
 
 		self.config = json.dumps(new_config, indent=4)
 
@@ -391,12 +400,43 @@ class Site(Document):
 		Args:
 		        config (dict): Python dict for any suitable frappe.conf
 		"""
+		def guess_type(value):
+			type_dict = {
+				int: "Number",
+				float: "Number",
+				bool: "Boolean",
+				dict: "JSON"
+			}
+			value_type = type(value)
+
+			if value_type in type_dict:
+				return type_dict[value_type]
+			else:
+				if is_json(value):
+					return "JSON"
+				return "String"
+
+		def is_json(string):
+			string = string.strip()
+			return string.startswith("{") and string.endswith("}")
+
+		def convert(string):
+			if isinstance(string, str):
+				if is_json(string):
+					return json.loads(string)
+				else:
+					return string
+			if isinstance(string, dict):
+				return json.dumps(string)
+			return string
+
 		keys = {x.key: i for i, x in enumerate(self.configuration)}
 		for key, value in config.items():
 			if key in keys:
-				self.configuration[keys[key]].value = json.dumps(value)
+				self.configuration[keys[key]].value = convert(value)
+				self.configuration[keys[key]].type = guess_type(value)
 			else:
-				self.append("configuration", {"key": key, "value": json.dumps(value)})
+				self.append("configuration", {"key": key, "value": convert(value), "type": guess_type(value)})
 		self.save()
 
 	def update_site_config(self, config):
