@@ -10,7 +10,7 @@
 				v-model="email"
 				name="email"
 				autocomplete="email"
-				:type="email !== 'Administrator' ? 'email' : ''"
+				:type="email !== 'Administrator' ? 'email' : 'text'"
 				required
 			/>
 			<Input
