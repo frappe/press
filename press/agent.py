@@ -203,7 +203,7 @@ class Agent:
 		)
 
 	def update_site_config(self, site):
-		data = {"config": json.loads(site.config)}
+		data = {"config": json.loads(site.config), "remove": json.loads(site._keys_removed_in_last_update)}
 		return self.create_agent_job(
 			"Update Site Configuration",
 			f"benches/{site.bench}/sites/{site.name}/config",

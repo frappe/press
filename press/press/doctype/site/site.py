@@ -62,6 +62,11 @@ class Site(Document):
 		if len(apps) != len(set(apps)):
 			frappe.throw("Can't install same app twice.")
 
+		# this is a little hack to remember which key is being removed from the site config
+		old_keys = json.loads(self.config)
+		new_keys = [x.key for x in self.configuration]
+		self._keys_removed_in_last_update = json.dumps([x for x in old_keys if x not in new_keys])
+
 		self.update_config_preview()
 
 	def update_config_preview(self):
@@ -403,7 +408,10 @@ class Site(Document):
 		Args:
 		        config (dict): Python dict for any suitable frappe.conf
 		"""
-		self.update_configuration(config)
+		if isinstance(config, list):
+			self.set_configuration(config)
+		else:
+			self.update_configuration(config)
 		agent = Agent(self.server)
 		agent.update_site_config(self)
 

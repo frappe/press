@@ -31,6 +31,7 @@
   "host_name",
   "config",
   "configuration",
+  "_keys_removed_in_last_update",
   "deploy_section",
   "timezone",
   "site_files_section",
@@ -327,10 +328,16 @@
    "fieldtype": "Table",
    "label": "Configuration",
    "options": "Site Config"
+  },
+  {
+   "fieldname": "_keys_removed_in_last_update",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Keys Removed in Last Config Change"
   }
  ],
  "links": [],
- "modified": "2020-09-15 12:04:46.220884",
+ "modified": "2020-09-22 19:20:47.121523",
  "modified_by": "gavin18d@gmail.com",
  "module": "Press",
  "name": "Site",
