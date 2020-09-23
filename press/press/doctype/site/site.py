@@ -384,16 +384,13 @@ class Site(Document):
 		Args:
 		        config (list): List of dicts with key, value, and type
 		"""
-		old_configuration = [x for x in self.configuration if x.key in get_client_blacklisted_keys()]
-		retain_configuration = []
+		blacklisted_config = [x for x in self.configuration if x.key in get_client_blacklisted_keys()]
+		self.configuration = []
 
-		# Rebuild child table index
-		for i, _config in enumerate(old_configuration):
-			conf = _config
-			conf.idx = i + 1
-			retain_configuration.append(conf)
-
-		self.configuration = retain_configuration
+		# Maintain keys that aren't accessible to Dashboard user
+		for i, _config in enumerate(blacklisted_config):
+			_config.idx = i + 1
+			self.configuration.append(_config)
 
 		for d in config:
 			d = frappe._dict(d)
@@ -410,6 +407,13 @@ class Site(Document):
 		Args:
 		        config (dict): Python dict for any suitable frappe.conf
 		"""
+		def is_json(string):
+			if isinstance(string, str):
+				string = string.strip()
+				return string.startswith("{") and string.endswith("}")
+			elif isinstance(string, dict):
+				return True
+
 		def guess_type(value):
 			type_dict = {
 				int: "Number",
@@ -425,13 +429,6 @@ class Site(Document):
 				if is_json(value):
 					return "JSON"
 				return "String"
-
-		def is_json(string):
-			if isinstance(string, str):
-				string = string.strip()
-				return string.startswith("{") and string.endswith("}")
-			elif isinstance(string, dict):
-				return True
 
 		def convert(string):
 			if isinstance(string, str):
