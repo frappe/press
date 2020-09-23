@@ -11,6 +11,9 @@ def execute():
 
 	for _site in sites:
 		site = frappe.get_doc("Site", _site.name)
+		if site.configuration:
+			continue
+		print(f"Updating Site Config for {site.name}")
 		config = json.loads(site.config)
 		for key, value in config.items():
 			if isinstance(value, (dict, list)):
