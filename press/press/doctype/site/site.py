@@ -14,7 +14,7 @@ from press.agent import Agent
 from frappe.utils.password import get_decrypted_password
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from frappe.frappeclient import FrappeClient
-from frappe.utils import cint
+from frappe.utils import cint, cstr
 from press.api.site import check_dns
 from frappe.core.utils import find
 from press.utils import log_error, get_client_blacklisted_keys
@@ -88,10 +88,10 @@ class Site(Document):
 				)
 			elif key_type == "Boolean":
 				key_value = (
-					row.value if isinstance(row.value, bool) else bool(json.loads(row.value))
+					row.value if isinstance(row.value, bool) else bool(json.loads(cstr(row.value)))
 				)
 			elif key_type == "JSON":
-				key_value = json.loads(row.value)
+				key_value = json.loads(cstr(row.value))
 			else:
 				key_value = row.value
 

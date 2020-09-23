@@ -5,11 +5,11 @@
 			description="Add key value pairs to your site's site_config.json"
 		>
 			<div class="flex space-x-4">
-				<SectionCard class="px-6 py-6 space-y-4 md:w-2/3 flex-shrink-0">
+				<SectionCard class="flex-shrink-0 px-6 py-6 space-y-4 md:w-2/3">
 					<div class="space-y-4" v-if="editMode">
 						<div
 							class="grid grid-cols-5 gap-4"
-							v-for="(config, i) in siteConfigList"
+							v-for="(config, i) in site.config"
 							:key="i"
 						>
 							<Input
@@ -24,6 +24,7 @@
 								placeholder="type"
 								v-model="config.type"
 								:options="['String', 'Number', 'JSON', 'Boolean']"
+								@change="onTypeChange(config)"
 							/>
 							<div class="flex items-center col-span-2">
 								<Input
@@ -58,18 +59,14 @@
 					</div>
 
 					<div v-else>
-						<Form
-							:fields="siteConfigFields"
-							v-model="siteConfig"
-							class="pointer-events-none"
-						/>
+						<Form v-bind="readOnlyFormProps" class="pointer-events-none" />
 						<div class="mt-4">
 							<Button @click="editMode = !editMode">Edit Config</Button>
 						</div>
 					</div>
 				</SectionCard>
 				<div
-					class="flex-1 p-4 font-mono text-base whitespace-pre-line bg-gray-100 rounded max-w-full overflow-x-scroll"
+					class="flex-1 max-w-full p-4 overflow-x-scroll font-mono text-base whitespace-pre-line bg-gray-100 rounded"
 				>
 					<div class="mb-4">site_config.json</div>
 					<div v-html="siteConfigPreview"></div>
@@ -99,13 +96,11 @@ export default {
 		updateSiteConfig() {
 			let updatedConfig = this.site.config.map(d => {
 				let value = d.value;
-				if (d.type === 'Boolean') {
-					value = d.value === 'true' ? true : false;
-				} else if (d.type === 'Number') {
+				if (d.type === 'Number') {
 					value = Number(d.value);
-				} else if (d.type == "JSON") {
+				} else if (d.type == 'JSON') {
 					try {
-						value = JSON.parse(d.value || "{}");
+						value = JSON.parse(d.value || '{}');
 					} catch (error) {}
 				}
 				return {
@@ -126,9 +121,11 @@ export default {
 					if (keys.length !== [...new Set(keys)].length) {
 						return 'Duplicate key';
 					}
-					let invalidKeys = await this.$call('press.api.config.is_valid', { keys: JSON.stringify(keys) })
+					let invalidKeys = await this.$call('press.api.config.is_valid', {
+						keys: JSON.stringify(keys)
+					});
 					if (invalidKeys?.length > 0) {
-						return `Invalid key -- ${invalidKeys.join(", ")}`;
+						return `Invalid key -- ${invalidKeys.join(', ')}`;
 					}
 					for (let config of updatedConfig) {
 						if (config.type === 'JSON') {
@@ -163,7 +160,7 @@ export default {
 			}[config.type];
 			return {
 				type,
-				options: config.type === 'Boolean' ? ['true', 'false'] : null
+				options: config.type === 'Boolean' ? ['1', '0'] : null
 			};
 		},
 		addConfig() {
@@ -173,6 +170,15 @@ export default {
 		removeConfig(config) {
 			this.site.config = this.site.config.filter(d => d !== config);
 			this.isDirty = true;
+		},
+		onTypeChange(config) {
+			if (config.type === 'Boolean') {
+				config.value = '1';
+			} else if (config.type === 'Number') {
+				config.value = Number(config.value) || 0;
+			} else if (config.type === 'String') {
+				config.value = String(config.value);
+			}
 		}
 	},
 	computed: {
@@ -180,58 +186,48 @@ export default {
 			let obj = {};
 
 			for (let d of this.site.config) {
-				let value = null;
-				if (d.type === 'Boolean') {
-					value = Boolean(d.value);
-				} else if (d.type === 'Number') {
+				let value = d.value;
+				if (['Boolean', 'Number'].includes(d.type)) {
 					value = Number(d.value);
-				} else if (d.type === "JSON") {
+				} else if (d.type === 'JSON') {
 					try {
 						value = JSON.parse(d.value);
-					} catch(error) {
+					} catch (error) {
 						value = {};
 					}
-				} else {
-					value = d.value;
 				}
 				obj[d.key] = value;
 			}
-			return JSON.stringify(obj, null, '&nbsp;');
+			return JSON.stringify(obj, null, '&nbsp; ');
 		},
-		siteConfigList() {
-			return (this.site.config || []).filter(d => !d.toRemove);
-		},
-		siteConfigFields() {
+		readOnlyFormProps() {
 			if (!this.$resources.standardConfigKeys.data) {
-				return [];
+				return {};
 			}
-			let fields = [];
-			for (let key in this.siteConfig) {
-				let standardKey = this.$resources.standardConfigKeys.data.find(
-					d => d.key === key
-				);
-				fields.push({
-					label: standardKey?.title || key,
-					fieldname: standardKey?.key || key
-				});
-			}
-			return fields;
-		},
-		siteConfig() {
-			let obj = {};
 
+			let fields = this.site.config.map(config => {
+				let standardKey = this.$resources.standardConfigKeys.data.find(
+					d => d.key === config.key
+				);
+				return {
+					label: standardKey?.title || config.key,
+					fieldname: standardKey?.key || config.key
+				};
+			});
+
+			let values = {};
 			for (let d of this.site.config) {
-				let value = null;
-				if (d.type === 'Boolean') {
-					value = Boolean(d.value);
-				} else if (d.type === 'Number') {
-					value = Number(d.value);
-				} else {
-					value = d.value;
+				let value = d.value;
+				if (['Boolean', 'Number'].includes(d.type)) {
+					value = Number(value);
 				}
-				obj[d.key] = value;
+				values[d.key] = value;
 			}
-			return obj;
+
+			return {
+				fields,
+				values
+			};
 		}
 	}
 };
