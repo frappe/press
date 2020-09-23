@@ -19,13 +19,13 @@
   "doctype": "Site Config Key",
   "internal": 0,
   "key": "google_analytics_id",
-  "modified": "2020-09-15 14:07:29.032921",
+  "modified": "2020-09-23 13:20:06.853336",
   "name": "google_analytics_id",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
   "title": "Google Analytics ID",
-  "type": "Data"
+  "type": "String"
  },
  {
   "description": null,
@@ -33,13 +33,13 @@
   "doctype": "Site Config Key",
   "internal": 0,
   "key": "server_script_enabled",
-  "modified": "2020-09-15 14:04:28.801798",
+  "modified": "2020-09-23 13:19:31.392060",
   "name": "server_script_enabled",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
   "title": "Enable Server Script",
-  "type": "Check"
+  "type": "Boolean"
  },
  {
   "description": "For MixPanel analytics on desk",
@@ -47,13 +47,13 @@
   "doctype": "Site Config Key",
   "internal": 0,
   "key": "mixpanel_id",
-  "modified": "2020-09-15 15:00:35.027157",
+  "modified": "2020-09-23 13:20:06.665519",
   "name": "mixpanel_id",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
   "title": "Mixpanel ID",
-  "type": "Data"
+  "type": "String"
  },
  {
   "description": "Utilise frappe.debug_log via frappe.log to enable different levels of logging. At level 2, shows queries and results run at every action.",
@@ -89,13 +89,13 @@
   "doctype": "Site Config Key",
   "internal": 0,
   "key": "disable_scheduler",
-  "modified": "2020-09-15 14:07:46.758659",
+  "modified": "2020-09-23 13:19:29.813690",
   "name": "disable_scheduler",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
   "title": "Disable Scheduler",
-  "type": "Check"
+  "type": "Boolean"
  },
  {
   "description": "Skips socket.IO setup on frontend",
@@ -103,13 +103,13 @@
   "doctype": "Site Config Key",
   "internal": 0,
   "key": "disable_async",
-  "modified": "2020-09-15 14:46:22.171458",
+  "modified": "2020-09-23 13:19:29.424739",
   "name": "disable_async",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
   "title": "Disable Async",
-  "type": "Check"
+  "type": "Boolean"
  },
  {
   "description": null,
@@ -117,13 +117,13 @@
   "doctype": "Site Config Key",
   "internal": 0,
   "key": "mail_server",
-  "modified": "2020-09-15 13:45:00.653614",
+  "modified": "2020-09-23 13:20:09.314591",
   "name": "mail_server",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
   "title": "Mail Server",
-  "type": "Data"
+  "type": "String"
  },
  {
   "description": null,
@@ -131,13 +131,13 @@
   "doctype": "Site Config Key",
   "internal": 0,
   "key": "pause_scheduler",
-  "modified": "2020-09-15 14:04:28.716915",
+  "modified": "2020-09-23 13:19:31.595626",
   "name": "pause_scheduler",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
   "title": "Pause Scheduler",
-  "type": "Check"
+  "type": "Boolean"
  },
  {
   "description": null,
@@ -145,13 +145,13 @@
   "doctype": "Site Config Key",
   "internal": 0,
   "key": "email_sender_name",
-  "modified": "2020-09-15 13:46:42.253862",
+  "modified": "2020-09-23 13:20:09.161227",
   "name": "email_sender_name",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
   "title": "Email Sender Name",
-  "type": "Data"
+  "type": "String"
  },
  {
   "description": null,
@@ -173,13 +173,13 @@
   "doctype": "Site Config Key",
   "internal": 0,
   "key": "error_report_email",
-  "modified": "2020-09-15 13:47:40.566619",
+  "modified": "2020-09-23 13:20:09.049932",
   "name": "error_report_email",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
   "title": "Error Report Email",
-  "type": "Data"
+  "type": "String"
  },
  {
   "description": null,
@@ -187,13 +187,13 @@
   "doctype": "Site Config Key",
   "internal": 0,
   "key": "mail_login",
-  "modified": "2020-09-15 13:48:39.175711",
+  "modified": "2020-09-23 13:20:08.959200",
   "name": "mail_login",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
   "title": "Mail Login",
-  "type": "Data"
+  "type": "String"
  },
  {
   "description": null,
@@ -201,13 +201,13 @@
   "doctype": "Site Config Key",
   "internal": 0,
   "key": "sandbox_api_key",
-  "modified": "2020-09-15 13:48:53.644198",
+  "modified": "2020-09-23 13:20:08.873969",
   "name": "sandbox_api_key",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
   "title": "Sandbox API Key",
-  "type": "Data"
+  "type": "String"
  },
  {
   "description": null,
@@ -215,13 +215,13 @@
   "doctype": "Site Config Key",
   "internal": 0,
   "key": "dropbox_broker_site",
-  "modified": "2020-09-15 14:07:28.978421",
+  "modified": "2020-09-23 13:20:06.896234",
   "name": "dropbox_broker_site",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
   "title": "Dropbox Broker Site",
-  "type": "Data"
+  "type": "String"
  },
  {
   "description": null,
@@ -229,13 +229,13 @@
   "doctype": "Site Config Key",
   "internal": 0,
   "key": "dropbox_access_key",
-  "modified": "2020-09-15 14:01:49.089447",
+  "modified": "2020-09-23 13:20:08.191030",
   "name": "dropbox_access_key",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
   "title": "Dropbox Access Key",
-  "type": "Data"
+  "type": "String"
  },
  {
   "description": null,
@@ -257,13 +257,13 @@
   "doctype": "Site Config Key",
   "internal": 0,
   "key": "sandbox_publishable_key",
-  "modified": "2020-09-15 14:01:49.775549",
+  "modified": "2020-09-23 13:20:08.046283",
   "name": "sandbox_publishable_key",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
   "title": "Sandbox Publishable Key",
-  "type": "Data"
+  "type": "String"
  },
  {
   "description": "Load Data from local infile for mysql",
@@ -271,13 +271,13 @@
   "doctype": "Site Config Key",
   "internal": 0,
   "key": "local_infile",
-  "modified": "2020-09-15 14:05:44.379978",
+  "modified": "2020-09-23 13:20:07.338841",
   "name": "local_infile",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
   "title": "Local Infile",
-  "type": "Data"
+  "type": "String"
  },
  {
   "description": null,
@@ -285,13 +285,13 @@
   "doctype": "Site Config Key",
   "internal": 0,
   "key": "paypal_username",
-  "modified": "2020-09-15 14:01:49.971017",
+  "modified": "2020-09-23 13:20:07.720966",
   "name": "paypal_username",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
   "title": "Paypal Username",
-  "type": "Data"
+  "type": "String"
  },
  {
   "description": null,
@@ -299,13 +299,13 @@
   "doctype": "Site Config Key",
   "internal": 0,
   "key": "disable_session_cache",
-  "modified": "2020-09-15 14:06:39.232394",
+  "modified": "2020-09-23 13:19:30.483940",
   "name": "disable_session_cache",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
   "title": "Disable Session Cache",
-  "type": "Check"
+  "type": "Boolean"
  },
  {
   "description": null,
@@ -327,13 +327,13 @@
   "doctype": "Site Config Key",
   "internal": 0,
   "key": "always_use_account_email_id_as_sender",
-  "modified": "2020-09-15 14:04:28.656323",
+  "modified": "2020-09-23 13:19:31.704114",
   "name": "always_use_account_email_id_as_sender",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
   "title": "Use Account Email ID As Sender",
-  "type": "Check"
+  "type": "Boolean"
  },
  {
   "description": null,
@@ -341,13 +341,13 @@
   "doctype": "Site Config Key",
   "internal": 0,
   "key": "mail_port",
-  "modified": "2020-09-15 14:07:28.723008",
+  "modified": "2020-09-23 13:20:07.292141",
   "name": "mail_port",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
   "title": "Mail Port",
-  "type": "Data"
+  "type": "String"
  },
  {
   "description": null,
@@ -355,13 +355,13 @@
   "doctype": "Site Config Key",
   "internal": 0,
   "key": "use_tls",
-  "modified": "2020-09-15 14:04:28.850333",
+  "modified": "2020-09-23 13:19:31.190810",
   "name": "use_tls",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
   "title": "Use TLS",
-  "type": "Check"
+  "type": "Boolean"
  },
  {
   "description": null,
@@ -369,13 +369,13 @@
   "doctype": "Site Config Key",
   "internal": 0,
   "key": "skip_setup_wizard",
-  "modified": "2020-09-15 14:04:28.885591",
+  "modified": "2020-09-23 13:19:30.992492",
   "name": "skip_setup_wizard",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
   "title": "Skip Setup Wizard",
-  "type": "Check"
+  "type": "Boolean"
  },
  {
   "description": "",
@@ -383,13 +383,13 @@
   "doctype": "Site Config Key",
   "internal": 0,
   "key": "ignore_csrf",
-  "modified": "2020-09-15 14:07:46.694981",
+  "modified": "2020-09-23 13:19:29.953144",
   "name": "ignore_csrf",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
   "title": "Ignore CSRF",
-  "type": "Check"
+  "type": "Boolean"
  },
  {
   "description": null,
@@ -397,13 +397,13 @@
   "doctype": "Site Config Key",
   "internal": 0,
   "key": "disable_global_search",
-  "modified": "2020-09-15 14:06:39.279166",
+  "modified": "2020-09-23 13:19:30.364289",
   "name": "disable_global_search",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
   "title": "Disable Global Search",
-  "type": "Check"
+  "type": "Boolean"
  },
  {
   "description": null,
@@ -411,13 +411,13 @@
   "doctype": "Site Config Key",
   "internal": 0,
   "key": "disable_error_snapshot",
-  "modified": "2020-09-15 14:06:39.314998",
+  "modified": "2020-09-23 13:19:30.291418",
   "name": "disable_error_snapshot",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
   "title": "Disable Error Snapshot",
-  "type": "Check"
+  "type": "Boolean"
  },
  {
   "description": null,
@@ -425,13 +425,13 @@
   "doctype": "Site Config Key",
   "internal": 0,
   "key": "sandbox_api_username",
-  "modified": "2020-09-15 14:08:20.222715",
+  "modified": "2020-09-23 13:20:06.789882",
   "name": "sandbox_api_username",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
   "title": "Sandbox API Username",
-  "type": "Data"
+  "type": "String"
  },
  {
   "description": null,
@@ -439,13 +439,13 @@
   "doctype": "Site Config Key",
   "internal": 0,
   "key": "deny_multiple_sessions",
-  "modified": "2020-09-15 14:07:46.609648",
+  "modified": "2020-09-23 13:19:30.124051",
   "name": "deny_multiple_sessions",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
   "title": "Deny Multiple Sessions",
-  "type": "Check"
+  "type": "Boolean"
  },
  {
   "description": null,
@@ -453,13 +453,13 @@
   "doctype": "Site Config Key",
   "internal": 0,
   "key": "use_ssl",
-  "modified": "2020-09-15 14:04:29.038852",
+  "modified": "2020-09-23 13:19:30.603957",
   "name": "use_ssl",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
   "title": "Use SSL",
-  "type": "Check"
+  "type": "Boolean"
  },
  {
   "description": null,
@@ -467,13 +467,13 @@
   "doctype": "Site Config Key",
   "internal": 0,
   "key": "sandbox_signature",
-  "modified": "2020-09-15 14:07:28.810151",
+  "modified": "2020-09-23 13:20:07.221238",
   "name": "sandbox_signature",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
   "title": "Sandbox Signature",
-  "type": "Data"
+  "type": "String"
  },
  {
   "description": "for RazorPay Settings",
@@ -481,13 +481,13 @@
   "doctype": "Site Config Key",
   "internal": 0,
   "key": "converted_rupee_to_paisa",
-  "modified": "2020-09-15 14:45:41.044507",
+  "modified": "2020-09-23 13:19:29.608942",
   "name": "converted_rupee_to_paisa",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
   "title": "Converted Rupee To Paisa",
-  "type": "Check"
+  "type": "Boolean"
  },
  {
   "description": null,
@@ -495,13 +495,13 @@
   "doctype": "Site Config Key",
   "internal": 0,
   "key": "auto_email_id",
-  "modified": "2020-09-15 14:01:48.843151",
+  "modified": "2020-09-23 13:20:08.539873",
   "name": "auto_email_id",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
   "title": "Auto Email ID",
-  "type": "Data"
+  "type": "String"
  },
  {
   "description": null,
@@ -509,13 +509,13 @@
   "doctype": "Site Config Key",
   "internal": 0,
   "key": "host_name",
-  "modified": "2020-09-15 14:07:28.860114",
+  "modified": "2020-09-23 13:20:07.065755",
   "name": "host_name",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
   "title": "Host Name",
-  "type": "Data"
+  "type": "String"
  },
  {
   "description": null,
@@ -523,13 +523,13 @@
   "doctype": "Site Config Key",
   "internal": 0,
   "key": "always_use_account_name_as_sender_name",
-  "modified": "2020-09-15 14:04:28.961405",
+  "modified": "2020-09-23 13:19:30.881690",
   "name": "always_use_account_name_as_sender_name",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
   "title": "Use Account Name as Sender Name",
-  "type": "Check"
+  "type": "Boolean"
  },
  {
   "description": null,
@@ -537,13 +537,13 @@
   "doctype": "Site Config Key",
   "internal": 0,
   "key": "paypal_signature",
-  "modified": "2020-09-15 14:07:28.915828",
+  "modified": "2020-09-23 13:20:06.930263",
   "name": "paypal_signature",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
   "title": "Paypal Signature",
-  "type": "Data"
+  "type": "String"
  },
  {
   "description": null,
@@ -551,13 +551,13 @@
   "doctype": "Site Config Key",
   "internal": 0,
   "key": "disable_website_cache",
-  "modified": "2020-09-15 14:04:29.012440",
+  "modified": "2020-09-23 13:19:30.743853",
   "name": "disable_website_cache",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
   "title": "Disable Website Cache",
-  "type": "Check"
+  "type": "Boolean"
  },
  {
   "description": null,
@@ -607,13 +607,13 @@
   "doctype": "Site Config Key",
   "internal": 0,
   "key": "mute_emails",
-  "modified": "2020-09-15 14:56:08.859808",
+  "modified": "2020-09-23 13:19:29.237748",
   "name": "mute_emails",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
   "title": "Mute Emails",
-  "type": "Check"
+  "type": "Boolean"
  },
  {
   "description": null,
@@ -649,12 +649,12 @@
   "doctype": "Site Config Key",
   "internal": 1,
   "key": "maintenance_mode",
-  "modified": "2020-09-18 15:05:47.654964",
+  "modified": "2020-09-23 13:19:29.122411",
   "name": "maintenance_mode",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
   "title": "Enable Maintenance Mode",
-  "type": "Check"
+  "type": "Boolean"
  }
 ]

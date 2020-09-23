@@ -30,7 +30,7 @@
    "in_preview": 1,
    "in_standard_filter": 1,
    "label": "Type",
-   "options": "Check\nData\nPassword\nNumber\nJSON"
+   "options": "Password\nString\nNumber\nBoolean\nJSON"
   },
   {
    "fieldname": "title",
@@ -57,7 +57,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2020-09-18 15:06:31.741276",
+ "modified": "2020-09-23 13:19:02.340661",
  "modified_by": "gavin18d@gmail.com",
  "module": "Press",
  "name": "Site Config Key",

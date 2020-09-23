@@ -87,7 +87,7 @@ class Site(Document):
 				key_value = (
 					int(row.value) if isinstance(row.value, (float, int)) else json.loads(row.value)
 				)
-			elif key_type in ("Check", "Boolean"):
+			elif key_type == "Boolean":
 				key_value = (
 					row.value if isinstance(row.value, bool) else bool(json.loads(row.value))
 				)
