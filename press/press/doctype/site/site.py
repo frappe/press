@@ -79,9 +79,8 @@ class Site(Document):
 		for row in self.configuration:
 			# update internal flag from master
 			row.internal = frappe.db.get_value("Site Config Key", row.key, "internal")
-
-			# compare current and new values
 			key_type = row.type or row.get_type()
+			row.type = key_type
 
 			if key_type == "Number":
 				key_value = (
@@ -453,7 +452,7 @@ class Site(Document):
 				self.configuration[keys[key]].type = guess_type(value)
 			else:
 				self.append(
-					"configuration", {"key": key, "value": convert(value), "type": guess_type(value)}
+					"configuration", {"key": key, "value": convert(value)}
 				)
 		self.save()
 
