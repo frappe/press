@@ -10,6 +10,7 @@ def standard_keys():
 		filters={"internal": False},
 	)
 
+
 @frappe.whitelist()
 def is_valid(keys):
 	keys = frappe.parse_json(keys)
