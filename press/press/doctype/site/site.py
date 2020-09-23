@@ -65,7 +65,9 @@ class Site(Document):
 		# this is a little hack to remember which key is being removed from the site config
 		old_keys = json.loads(self.config)
 		new_keys = [x.key for x in self.configuration]
-		self._keys_removed_in_last_update = json.dumps([x for x in old_keys if x not in new_keys])
+		self._keys_removed_in_last_update = json.dumps(
+			[x for x in old_keys if x not in new_keys]
+		)
 
 		self.update_config_preview()
 
@@ -80,13 +82,15 @@ class Site(Document):
 
 			# compare current and new values
 			key_type = row.type or row.get_type()
-			cur_key, cur_value = row.db_get("key"), row.db_get("value")
-			new_key, new_value = row.key, row.value
 
 			if key_type == "Number":
-				key_value = int(row.value) if isinstance(row.value, (float, int)) else json.loads(row.value)
+				key_value = (
+					int(row.value) if isinstance(row.value, (float, int)) else json.loads(row.value)
+				)
 			elif key_type in ("Check", "Boolean"):
-				key_value = row.value if isinstance(row.value, bool) else bool(json.loads(row.value))
+				key_value = (
+					row.value if isinstance(row.value, bool) else bool(json.loads(row.value))
+				)
 			elif key_type == "JSON":
 				key_value = json.loads(row.value)
 			else:
@@ -335,7 +339,11 @@ class Site(Document):
 		data = agent.get_site_info(self)
 		fetched_config = data["config"]
 		fetched_usage = data["usage"]
-		config = {key: fetched_config[key] for key in fetched_config if key not in get_client_blacklisted_keys()}
+		config = {
+			key: fetched_config[key]
+			for key in fetched_config
+			if key not in get_client_blacklisted_keys()
+		}
 		new_config = json.loads(self.config)
 		new_config.update(config)
 		current_config = json.dumps(new_config, indent=4)
@@ -382,9 +390,11 @@ class Site(Document):
 		update the value, remove the key. All of this can be handled by setting the full configuration at once.
 
 		Args:
-		        config (list): List of dicts with key, value, and type
+			config (list): List of dicts with key, value, and type
 		"""
-		blacklisted_config = [x for x in self.configuration if x.key in get_client_blacklisted_keys()]
+		blacklisted_config = [
+			x for x in self.configuration if x.key in get_client_blacklisted_keys()
+		]
 		self.configuration = []
 
 		# Maintain keys that aren't accessible to Dashboard user
@@ -405,8 +415,9 @@ class Site(Document):
 		"""Updates site.configuration, runs site.save which updates site.config
 
 		Args:
-		        config (dict): Python dict for any suitable frappe.conf
+			config (dict): Python dict for any suitable frappe.conf
 		"""
+
 		def is_json(string):
 			if isinstance(string, str):
 				string = string.strip()
@@ -415,12 +426,7 @@ class Site(Document):
 				return True
 
 		def guess_type(value):
-			type_dict = {
-				int: "Number",
-				float: "Number",
-				bool: "Boolean",
-				dict: "JSON"
-			}
+			type_dict = {int: "Number", float: "Number", bool: "Boolean", dict: "JSON"}
 			value_type = type(value)
 
 			if value_type in type_dict:
@@ -446,7 +452,9 @@ class Site(Document):
 				self.configuration[keys[key]].value = convert(value)
 				self.configuration[keys[key]].type = guess_type(value)
 			else:
-				self.append("configuration", {"key": key, "value": convert(value), "type": guess_type(value)})
+				self.append(
+					"configuration", {"key": key, "value": convert(value), "type": guess_type(value)}
+				)
 		self.save()
 
 	def update_site_config(self, config):
@@ -456,7 +464,7 @@ class Site(Document):
 		`press.api.site.update_config` instead.
 
 		Args:
-		        config (dict): Python dict for any suitable frappe.conf
+			config (dict): Python dict for any suitable frappe.conf
 		"""
 		if isinstance(config, list):
 			self.set_configuration(config)

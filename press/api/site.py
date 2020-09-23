@@ -27,7 +27,6 @@ from press.utils import (
 	get_current_team,
 	log_error,
 	get_frappe_backups,
-	sanitize_config,
 	get_client_blacklisted_keys,
 )
 

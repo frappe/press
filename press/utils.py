@@ -3,14 +3,15 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
-import frappe
-from frappe.utils import cint
+
 import functools
 import json
-import requests
 from datetime import datetime, timedelta
-from python_minifier import minify
 from urllib.parse import urljoin
+
+import requests
+
+import frappe
 
 
 def log_error(title, **kwargs):
@@ -194,11 +195,15 @@ def get_frappe_backups(site_url, username, password):
 
 def get_client_blacklisted_keys() -> list:
 	"""Returns list of blacklisted Site Config Keys accessible to Press /dashboard users."""
-	return list(set([
-		x.key
-		for x in frappe.get_all("Site Config Key Blacklist", fields=["`key`"])
-		+ frappe.get_all("Site Config Key", fields=["`key`"], filters={"internal": True})
-	]))
+	return list(
+		set(
+			[
+				x.key
+				for x in frappe.get_all("Site Config Key Blacklist", fields=["`key`"])
+				+ frappe.get_all("Site Config Key", fields=["`key`"], filters={"internal": True})
+			]
+		)
+	)
 
 
 def sanitize_config(config: dict) -> dict:
