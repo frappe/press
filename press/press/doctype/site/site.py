@@ -384,7 +384,17 @@ class Site(Document):
 		Args:
 		        config (list): List of dicts with key, value, and type
 		"""
-		self.configuration = []
+		old_configuration = [x for x in self.configuration if x.key in get_client_blacklisted_keys()]
+		retain_configuration = []
+
+		# Rebuild child table index
+		for i, _config in enumerate(old_configuration):
+			conf = _config
+			conf.idx = i + 1
+			retain_configuration.append(conf)
+
+		self.configuration = retain_configuration
+
 		for d in config:
 			d = frappe._dict(d)
 			if isinstance(d.value, (dict, list)):
@@ -417,8 +427,11 @@ class Site(Document):
 				return "String"
 
 		def is_json(string):
-			string = string.strip()
-			return string.startswith("{") and string.endswith("}")
+			if isinstance(string, str):
+				string = string.strip()
+				return string.startswith("{") and string.endswith("}")
+			elif isinstance(string, dict):
+				return True
 
 		def convert(string):
 			if isinstance(string, str):
