@@ -5,7 +5,7 @@ const config = require('../../../dashboard/tailwind.config');
 
 module.exports = {
 	theme: config.theme,
-	plugins: [require('@tailwindcss/ui'), require('@tailwindcss/typography')],
+	plugins: config.plugins,
 	purge: {
 		content: [path.resolve('./press/+(www|templates)/marketplace/**/*.html')],
 		options: {

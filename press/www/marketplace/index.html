@@ -28,6 +28,11 @@
 				type="search"
 				placeholder="Search for apps" />
 		</div>
+		<div class="mt-4">
+			<a class="text-base text-blue-500" href="/dashboard">
+				Submit your app →
+			</a>
+		</div>
 	</div>
 
 	<div class="pb-36">
@@ -35,7 +40,7 @@
 		<div class="grid grid-cols-4 gap-8 mt-8">
 			{%- for app in apps -%}
 			<a
-				href="/marketplace/{{ app.name }}"
+				href="/marketplace/apps/{{ app.name }}"
 				class="p-6 border border-gray-100 rounded-lg shadow cursor-pointer hover:shadow-lg">
 				<img
 					src="{{ app.image }}"

@@ -9,16 +9,3 @@
 	overflow: hidden;
 }
 
-.bg-gradient-blue {
-	background-image: linear-gradient(
-		180deg,
-		#2c9af1 0%,
-		theme('colors.blue.500') 100%
-	);
-}
-
-@variants focus, hover {
-	.bg-gradient-none {
-		background-image: none;
-	}
-}
