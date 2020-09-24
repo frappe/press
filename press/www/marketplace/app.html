@@ -1,0 +1,57 @@
+{% extends "templates/marketplace/base.html" %}
+{%- from "templates/marketplace/macros.html" import button, link, breadcrumbs -%}
+
+{%- block body -%}
+<div class="px-4 sm:px-8">
+	<div>
+		<div class="flex items-center space-x-8 py-14">
+			<div>
+				<img class="w-32 h-32 border border-gray-200 rounded-full" src="{{ app.image }}" alt="{{ app.title }}">
+			</div>
+			<div class="w-3/4">
+				<div class="mb-1">
+					{{ breadcrumbs([
+						{ 'label': 'Apps', 'url': '/marketplace' },
+						{ 'label': category.title, 'url': '/marketplace/category/' + category.name },
+					]) }}
+				</div>
+				<h1 class="text-6xl font-bold text-gray-900"> {{ app.title }} </h1>
+				<p class="text-gray-700">{{ app.description }}</p>
+				<div class="mt-4">
+					{{ button('Install Now', '/marketplace/' + app.name + '/install', 'primary') }}
+				</div>
+			</div>
+		</div>
+		<div class="flex">
+			<div class="w-3/5 pb-32 prose text-gray-900">
+				{{ frappe.utils.md_to_html(app.long_description) }}
+			</div>
+			<div class="w-2/5 pl-24 space-y-8">
+				<div>
+					<h5 class="text-base text-gray-600">Website</h5>
+					<ul class="mt-2 space-y-1 text-base">
+						<li class="">{{ link(app.website, app.website) }}</li>
+					</ul>
+				</div>
+				<div>
+					<h5 class="text-base text-gray-600">Supported Versions</h5>
+					<ul class="mt-2 space-y-1 text-base">
+						<li class="">{{ link('Version 11', '#') }}</li>
+						<li class="">{{ link('Version 12', '#') }}</li>
+						<li class="">{{ link('Version 13', '#') }}</li>
+					</ul>
+				</div>
+				<div>
+					<h5 class="text-base text-gray-600">Developer Links</h5>
+					<ul class="mt-2 space-y-1 text-base">
+						<li class="">{{ link('Support', app.support) }}</li>
+						<li class="">{{ link('Documentation', app.documentation) }}</li>
+						<li class="">{{ link('Privacy Policy', app.privacy_policy) }}</li>
+						<li class="">{{ link('Terms of Service', app.terms_of_service) }}</li>
+					</ul>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+{%- endblock -%}
