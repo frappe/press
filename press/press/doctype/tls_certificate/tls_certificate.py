@@ -123,6 +123,8 @@ class LetsEncrypt(BaseCA):
 		self.aws_secret_access_key = settings.get_password("aws_secret_access_key")
 
 	def _obtain(self):
+		if not os.path.exists(self.directory):
+			os.mkdir(self.directory)
 		if self.wildcard:
 			self._obtain_wildcard()
 		else:
@@ -140,8 +142,8 @@ class LetsEncrypt(BaseCA):
 		subprocess.check_output(shlex.split(command), env=environment)
 
 	def _obtain_naked(self):
-		command = self._certbot_command()
-		subprocess.check_output(shlex.split(command))
+		if not os.path.exists(self.webroot_directory):
+			os.mkdir(self.webroot_directory)
 
 	def _certbot_command(self):
 		if self.wildcard:
