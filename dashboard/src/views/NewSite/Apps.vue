@@ -1,50 +1,98 @@
 <template>
-	<div>
-		<label class="text-lg font-semibold">
-			Select apps to install
-		</label>
-		<p class="text-base text-gray-700">
-			Choose apps to install on your site. You can also choose a specific
-			version of the app.
-		</p>
-		<div class="mt-4">
-			<Input
-				type="select"
-				:value="selectedGroup"
-				@change="value => $emit('update:selectedGroup', value)"
-				:options="groupOptions"
-			/>
+	<div class="space-y-6">
+		<div>
+			<h2 class="text-lg font-semibold">
+				Select Frappe Version
+			</h2>
+			<p class="text-base text-gray-700">
+				Select the Frappe version for your site
+			</p>
+			<div class="mt-4">
+				<Input
+					type="select"
+					:value="selectedGroup"
+					@change="value => $emit('update:selectedGroup', value)"
+					:options="groupOptions"
+				/>
+			</div>
 		</div>
-		<div class="mt-6">
-			<div class="flex py-2 pl-1 -my-2 -ml-1 overflow-x-auto">
-				<button
-					class="relative flex items-center justify-center py-4 pl-4 pr-8 mr-4 border rounded-md cursor-pointer focus:outline-none focus:shadow-outline"
-					:class="
-						selectedApps.includes(app.name)
-							? 'bg-blue-50 border-blue-500'
-							: 'hover:border-blue-400'
-					"
-					v-for="app in apps"
-					:key="app.name"
-					@click="toggleApp(app)"
-				>
-					<div class="flex items-start">
-						<Input
-							class="pt-0.5 pointer-events-none"
-							tabindex="-1"
-							type="checkbox"
-							:value="selectedApps.includes(app.name)"
-						/>
-						<div class="ml-3 text-base text-left">
-							<div class="font-semibold">
-								{{ app.repo_owner }}/{{ app.repo }}
-							</div>
-							<div class="text-gray-700">
-								{{ app.branch }}
+		<div>
+			<h2 class="text-lg font-semibold">
+				Select apps to install
+			</h2>
+			<p class="text-base text-gray-700">
+				Choose apps to install on your site. You can also choose a specific
+				version of the app.
+			</p>
+			<div class="mt-6">
+				<div class="mt-4">
+					<button
+						class="px-4 py-2 text-left border border-gray-100 rounded-lg shadow cursor-pointer w-60"
+						v-for="marketplaceApp in marketplaceApps"
+						:key="marketplaceApp.name"
+						@click="toggleApp(marketplaceApp.app)"
+						:class="
+							selectedApps.includes(marketplaceApp.app.name)
+								? 'border-blue-500 shadow-outline-blue'
+								: 'hover:border-gray-300'
+						"
+					>
+						<div class="flex items-center">
+							<img
+								:src="marketplaceApp.image"
+								:alt="marketplaceApp.title"
+								class="w-10 h-10 rounded-full"
+							/>
+							<div class="my-1 ml-4">
+								<h3 class="text-lg font-bold text-gray-900">
+									{{ marketplaceApp.title }}
+								</h3>
+								<a
+									class="inline-block text-sm leading-snug text-blue-600"
+									:href="'/marketplace/apps/' + marketplaceApp.name"
+									target="_blank"
+								>
+									Details
+								</a>
 							</div>
 						</div>
-					</div>
-				</button>
+					</button>
+				</div>
+			</div>
+			<div class="mt-6" v-if="privateApps.length > 0">
+				<div class="text-base font-semibold">
+					Your Apps
+				</div>
+				<div class="flex py-2 pl-1 -my-2 -ml-1 overflow-x-auto">
+					<button
+						class="relative flex items-center justify-center py-4 pl-4 pr-8 mr-4 border rounded-md cursor-pointer focus:outline-none focus:shadow-outline"
+						:class="
+							selectedApps.includes(app.name)
+								? 'bg-blue-50 border-blue-500'
+								: 'hover:border-blue-400'
+						"
+						v-for="app in privateApps"
+						:key="app.name"
+						@click="toggleApp(app)"
+					>
+						<div class="flex items-start">
+							<Input
+								class="pt-0.5 pointer-events-none"
+								tabindex="-1"
+								type="checkbox"
+								:value="selectedApps.includes(app.name)"
+							/>
+							<div class="ml-3 text-base text-left">
+								<div class="font-semibold">
+									{{ app.repo_owner }}/{{ app.repo }}
+								</div>
+								<div class="text-gray-700">
+									{{ app.branch }}
+								</div>
+							</div>
+						</div>
+					</button>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -54,6 +102,22 @@ export default {
 	name: 'Apps',
 	props: ['options', 'selectedApps', 'selectedGroup'],
 	computed: {
+		privateApps() {
+			return this.apps.filter(app => app.team === this.$account.team.name);
+		},
+		marketplaceApps() {
+			return this.apps
+				.filter(app => app.public)
+				.map(app => {
+					let options = this.options.marketplace_apps[app.name];
+					if (!options) {
+						return false;
+					}
+					options.app = app;
+					return options;
+				})
+				.filter(Boolean);
+		},
 		apps() {
 			if (!this.options) return [];
 
