@@ -13,6 +13,14 @@ class SiteDomain(Document):
 	def after_insert(self):
 		self.create_tls_certificate()
 
+	def redirect(self, target):
+		self.redirect_to_primary = True
+		self.save()
+		server = frappe.db.get_value("Site", self.site, "server")
+		proxy_server = frappe.db.get_value("Server", server, "proxy_server")
+		agent = Agent(proxy_server, server_type="Proxy Server")
+		agent.setup_redirect(self, target)
+
 	def create_tls_certificate(self):
 		certificate = frappe.get_doc(
 			{"doctype": "TLS Certificate", "wildcard": False, "domain": self.domain}

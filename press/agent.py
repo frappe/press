@@ -290,6 +290,14 @@ class Agent:
 			"Add Host to Proxy", "proxy/hosts", data, host=domain.domain, site=domain.site
 		)
 
+	def setup_redirect(self, domain, target):
+		data = {
+			"target": target,
+		}
+		return self.create_agent_job(
+			"Setup Redirect on Host", f"proxy/hosts/{domain.domain}/redirect", data, host=domain.domain, site=domain.site
+		)
+
 	def remove_host(self, domain):
 		return self.create_agent_job(
 			"Remove Host from Proxy",
