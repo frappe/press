@@ -12,7 +12,6 @@ def execute():
 		"Custom Domain",
 		"Site Analytics",
 		"Site History",
-		"Site Usage",
 		"Site Usage Ledger Entry",
 		"Usage Report",
 		"User Account",
