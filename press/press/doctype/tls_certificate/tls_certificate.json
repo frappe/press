@@ -11,17 +11,20 @@
   "rsa_key_size",
   "wildcard",
   "section_break_6",
-  "expiry",
+  "issued_on",
+  "column_break_8",
+  "expires_on",
+  "section_break_10",
   "decoded_certificate",
-  "fullchain",
-  "chain",
-  "privkey"
+  "certificate",
+  "full_chain",
+  "intermediate_chain",
+  "private_key"
  ],
  "fields": [
   {
    "fieldname": "domain",
    "fieldtype": "Data",
-   "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Domain",
    "reqd": 1,
@@ -36,34 +39,6 @@
    "label": "Wildcard",
    "reqd": 1,
    "set_only_once": 1
-  },
-  {
-   "fieldname": "expiry",
-   "fieldtype": "Date",
-   "in_list_view": 1,
-   "label": "Expiry",
-   "read_only": 1
-  },
-  {
-   "description": "privkey.pem",
-   "fieldname": "privkey",
-   "fieldtype": "Code",
-   "label": "Private Key",
-   "read_only": 1
-  },
-  {
-   "description": "fullchain.pem",
-   "fieldname": "fullchain",
-   "fieldtype": "Code",
-   "label": "Full Chain",
-   "read_only": 1
-  },
-  {
-   "description": "chain.pem",
-   "fieldname": "chain",
-   "fieldtype": "Code",
-   "label": "Chain",
-   "read_only": 1
   },
   {
    "fieldname": "decoded_certificate",
@@ -97,10 +72,57 @@
    "options": "2048\n3072\n4096",
    "reqd": 1,
    "set_only_once": 1
+  },
+  {
+   "fieldname": "issued_on",
+   "fieldtype": "Datetime",
+   "label": "Issued On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_8",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "expires_on",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Expires On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_10",
+   "fieldtype": "Section Break",
+   "hide_border": 1
+  },
+  {
+   "fieldname": "certificate",
+   "fieldtype": "Code",
+   "label": "Certificate",
+   "read_only": 1
+  },
+  {
+   "fieldname": "full_chain",
+   "fieldtype": "Code",
+   "label": "Full Chain",
+   "read_only": 1
+  },
+  {
+   "fieldname": "intermediate_chain",
+   "fieldtype": "Code",
+   "label": "Intermediate Chain",
+   "read_only": 1
+  },
+  {
+   "fieldname": "private_key",
+   "fieldtype": "Code",
+   "label": "Private Key",
+   "read_only": 1
   }
  ],
+ "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2020-04-06 00:32:20.562551",
+ "modified": "2020-09-22 10:01:53.240030",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "TLS Certificate",
