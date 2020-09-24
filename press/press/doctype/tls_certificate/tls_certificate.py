@@ -138,12 +138,12 @@ class LetsEncrypt(BaseCA):
 				"AWS_SECRET_ACCESS_KEY": self.aws_secret_access_key,
 			}
 		)
-		command = self._certbot_command()
-		subprocess.check_output(shlex.split(command), env=environment)
+		self.run(self._certbot_command(), environment=environment)
 
 	def _obtain_naked(self):
 		if not os.path.exists(self.webroot_directory):
 			os.mkdir(self.webroot_directory)
+		self.run(self._certbot_command())
 
 	def _certbot_command(self):
 		if self.wildcard:
@@ -163,6 +163,13 @@ class LetsEncrypt(BaseCA):
 		)
 
 		return command
+
+	def run(self, command, environment=None):
+		try:
+			subprocess.check_output(shlex.split(command), stderr=subprocess.STDOUT, env=environment)
+		except Exception as e:
+			log_error("Certbot Exception", command=command, output=e.output.decode())
+			raise e
 
 	@property
 	def certificate_file(self):
@@ -188,7 +195,11 @@ class Backbone(BaseCA):
 		self.ca = frappe.get_doc("Certificate Authority", ca)
 
 	def run(self, command):
-		return subprocess.check_output(shlex.split(command)).decode()
+		try:
+			subprocess.check_output(shlex.split(command), stderr=subprocess.STDOUT)
+		except Exception as e:
+			log_error("Backbone CA Exception", command=command, output=e.output.decode())
+			raise e
 
 	def _obtain(self):
 		self.directory = os.path.join(self.ca.directory, "..", self.domain)
