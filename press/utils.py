@@ -3,13 +3,15 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
-import frappe
-from frappe.utils import cint
+
 import functools
 import json
-import requests
 from datetime import datetime, timedelta
 from urllib.parse import urljoin
+
+import requests
+
+import frappe
 
 
 def log_error(title, **kwargs):
@@ -191,35 +193,25 @@ def get_frappe_backups(site_url, username, password):
 		frappe.throw("An unknown error occurred")
 
 
-def sanitize_config(config: dict) -> dict:
-	allowed_keys = [
-		"encryption_key",
-		"mail_server",
-		"mail_port",
-		"mail_login",
-		"mail_password",
-		"use_ssl",
-		"auto_email_id",
-		"mute_emails",
-		"server_script_enabled",
-		"disable_website_cache",
-		"disable_global_search",
-		"max_file_size",
-	]
+def get_client_blacklisted_keys() -> list:
+	"""Returns list of blacklisted Site Config Keys accessible to Press /dashboard users."""
+	return list(
+		set(
+			[
+				x.key
+				for x in frappe.get_all("Site Config Key Blacklist", fields=["`key`"])
+				+ frappe.get_all("Site Config Key", fields=["`key`"], filters={"internal": True})
+			]
+		)
+	)
 
+
+def sanitize_config(config: dict) -> dict:
+	client_blacklisted_keys = get_client_blacklisted_keys()
 	sanitized_config = config.copy()
 
 	for key in config:
-		if key not in allowed_keys:
+		if key in client_blacklisted_keys:
 			sanitized_config.pop(key)
-
-	# Remove keys with empty values
-	sanitized_config = {
-		key: value for key, value in sanitized_config.items() if value != ""
-	}
-
-	for key in ["max_file_size", "mail_port"]:
-		if key in sanitized_config:
-			sanitized_config[key] = cint(sanitized_config[key])
 
 	return sanitized_config

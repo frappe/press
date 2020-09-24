@@ -14,10 +14,10 @@ from press.agent import Agent
 from frappe.utils.password import get_decrypted_password
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from frappe.frappeclient import FrappeClient
-from frappe.utils import cint
+from frappe.utils import cint, cstr
 from press.api.site import check_dns
 from frappe.core.utils import find
-from press.utils import log_error
+from press.utils import log_error, get_client_blacklisted_keys
 from press.press.doctype.plan.plan import get_plan_config
 
 
@@ -28,6 +28,7 @@ class Site(Document):
 
 	def validate(self):
 		site_regex = r"^[a-z0-9][a-z0-9-]*[a-z0-9]$"
+
 		if len(self.subdomain) < 5:
 			frappe.throw("Subdomain too short. Use 5 or more characters")
 		if len(self.subdomain) > 32:
@@ -60,6 +61,43 @@ class Site(Document):
 		apps = [app.app for app in self.apps]
 		if len(apps) != len(set(apps)):
 			frappe.throw("Can't install same app twice.")
+
+		# this is a little hack to remember which key is being removed from the site config
+		old_keys = json.loads(self.config)
+		new_keys = [x.key for x in self.configuration]
+		self._keys_removed_in_last_update = json.dumps(
+			[x for x in old_keys if x not in new_keys]
+		)
+
+		self.update_config_preview()
+
+	def update_config_preview(self):
+		"""Regenrates site.config on each site.validate from the site.configuration child table data"""
+		new_config = {}
+
+		# Update from site.configuration
+		for row in self.configuration:
+			# update internal flag from master
+			row.internal = frappe.db.get_value("Site Config Key", row.key, "internal")
+			key_type = row.type or row.get_type()
+			row.type = key_type
+
+			if key_type == "Number":
+				key_value = (
+					int(row.value) if isinstance(row.value, (float, int)) else json.loads(row.value)
+				)
+			elif key_type == "Boolean":
+				key_value = (
+					row.value if isinstance(row.value, bool) else bool(json.loads(cstr(row.value)))
+				)
+			elif key_type == "JSON":
+				key_value = json.loads(cstr(row.value))
+			else:
+				key_value = row.value
+
+			new_config[row.key] = key_value
+
+		self.config = json.dumps(new_config, indent=4)
 
 	def install_app(self, app):
 		if not find(self.apps, lambda x: x.app == app):
@@ -296,22 +334,35 @@ class Site(Document):
 			agent = Agent(self.server)
 			return agent.get_site_sid(self)
 
+	def sync_site_config(self):
+		agent = Agent(self.server)
+		agent.update_site_config(self)
+
 	def sync_info(self):
-		dirty = False
+		"""Updates Site Usage, site.config.encryption_key and timezone details for site."""
+		save = False
 		agent = Agent(self.server)
 		data = agent.get_site_info(self)
 		fetched_config = data["config"]
 		fetched_usage = data["usage"]
-		keys_to_fetch = ["encryption_key"]
-		config = {key: fetched_config[key] for key in keys_to_fetch if key in fetched_config}
+		config = {
+			key: fetched_config[key]
+			for key in fetched_config
+			if key not in get_client_blacklisted_keys()
+		}
 		new_config = json.loads(self.config)
 		new_config.update(config)
 		current_config = json.dumps(new_config, indent=4)
-		dirty = (self.config != current_config) or (self.timezone != data["timezone"])
 
-		if dirty:
-			self.config = current_config
+		if self.timezone != data["timezone"]:
 			self.timezone = data["timezone"]
+			save = True
+
+		if self.config != current_config:
+			self.update_configuration(new_config)
+			save = False
+
+		if save:
 			self.save()
 
 		frappe.get_doc(
@@ -339,12 +390,92 @@ class Site(Document):
 			self.db_set("setup_wizard_complete", setup_complete)
 			return setup_complete
 
-	def update_site_config(self, config):
-		new_config = json.loads(self.config)
-		new_config.update(config)
-		self.config = json.dumps(new_config, indent=4)
+	def set_configuration(self, config):
+		"""Similar to update_configuration but will replace full configuration at once
+		This is necessary because when you update site config from the UI, you can update the key,
+		update the value, remove the key. All of this can be handled by setting the full configuration at once.
+
+		Args:
+			config (list): List of dicts with key, value, and type
+		"""
+		blacklisted_config = [
+			x for x in self.configuration if x.key in get_client_blacklisted_keys()
+		]
+		self.configuration = []
+
+		# Maintain keys that aren't accessible to Dashboard user
+		for i, _config in enumerate(blacklisted_config):
+			_config.idx = i + 1
+			self.configuration.append(_config)
+
+		for d in config:
+			d = frappe._dict(d)
+			if isinstance(d.value, (dict, list)):
+				value = json.dumps(d.value)
+			else:
+				value = d.value
+			self.append("configuration", {"key": d.key, "value": value, "type": d.type})
 		self.save()
-		log_site_activity(self.name, "Update Configuration")
+
+	def update_configuration(self, config):
+		"""Updates site.configuration, runs site.save which updates site.config
+
+		Args:
+			config (dict): Python dict for any suitable frappe.conf
+		"""
+
+		def is_json(string):
+			if isinstance(string, str):
+				string = string.strip()
+				return string.startswith("{") and string.endswith("}")
+			elif isinstance(string, dict):
+				return True
+
+		def guess_type(value):
+			type_dict = {int: "Number", float: "Number", bool: "Boolean", dict: "JSON"}
+			value_type = type(value)
+
+			if value_type in type_dict:
+				return type_dict[value_type]
+			else:
+				if is_json(value):
+					return "JSON"
+				return "String"
+
+		def convert(string):
+			if isinstance(string, str):
+				if is_json(string):
+					return json.loads(string)
+				else:
+					return string
+			if isinstance(string, dict):
+				return json.dumps(string)
+			return string
+
+		keys = {x.key: i for i, x in enumerate(self.configuration)}
+		for key, value in config.items():
+			if key in keys:
+				self.configuration[keys[key]].value = convert(value)
+				self.configuration[keys[key]].type = guess_type(value)
+			else:
+				self.append(
+					"configuration", {"key": key, "value": convert(value)}
+				)
+		self.save()
+
+	def update_site_config(self, config):
+		"""Updates site.configuration, site.config, runs site.save and initiates an Agent Request
+		This checks for the blacklisted config keys via Frappe Validations, but not for internal usages.
+		Don't expose this directly to an external API. Pass through `press.utils.sanitize_config` or use
+		`press.api.site.update_config` instead.
+
+		Args:
+			config (dict): Python dict for any suitable frappe.conf
+		"""
+		if isinstance(config, list):
+			self.set_configuration(config)
+		else:
+			self.update_configuration(config)
 		agent = Agent(self.server)
 		agent.update_site_config(self)
 
