@@ -162,7 +162,7 @@ def get_backup_link(name, backup, file):
 def domains(name):
 	domains = frappe.get_all(
 		"Site Domain",
-		fields=["name", "domain", "status", "retry_count"],
+		fields=["name", "domain", "status", "retry_count", "redirect_to_primary"],
 		filters={"site": name},
 	)
 	host_name = frappe.db.get_value("Site", name, "host_name")
@@ -573,6 +573,12 @@ def retry_add_domain(name, domain):
 @protected("Site")
 def set_host_name(name, domain):
 	frappe.get_doc("Site", name).set_host_name(domain)
+
+
+@frappe.whitelist()
+@protected("Site")
+def redirect_to_primary_domain(name, domain):
+	frappe.get_doc("Site", name).redirect_to_primary_domain(domain)
 
 
 @frappe.whitelist()

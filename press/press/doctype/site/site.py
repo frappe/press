@@ -217,6 +217,19 @@ class Site(Document):
 		self.save()
 		self.update_site_config({"host_name": f"https://{domain}"})
 
+	def redirect_to_primary_domain(self, domain):
+		# TODO: Implement checkbox for primary domain in doctype <24-09-20, Balamurali M> #
+		site_domain = frappe.get_all(
+			"Site Domain",
+			filters={
+				"site": self.name,
+				"domain": domain,
+			},
+		)[0]
+		site_domain = frappe.get_doc("Site Domain", site_domain.name)
+		target = self.host_name or self.name
+		site_domain.redirect(target)
+
 	def archive(self):
 		log_site_activity(self.name, "Archive")
 		agent = Agent(self.server)
