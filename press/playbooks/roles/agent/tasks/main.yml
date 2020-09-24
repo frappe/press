@@ -107,21 +107,21 @@
   become: yes
   become_user: frappe
   copy:
-    content: "{{ certificate_privkey }}"
+    content: "{{ certificate_private_key }}"
     dest: /home/frappe/agent/tls/privkey.pem
   
 - name: Setup agent tls (certificate)
   become: yes
   become_user: frappe
   copy:
-    content: "{{ certificate_fullchain }}"
+    content: "{{ certificate_full_chain }}"
     dest: /home/frappe/agent/tls/fullchain.pem
 
 - name: Setup agent tls (intermediate certificate)
   become: yes
   become_user: frappe
   copy:
-    content: "{{ certificate_chain }}"
+    content: "{{ certificate_intermediate_chain }}"
     dest: /home/frappe/agent/tls/chain.pem
 
 - name: Setup agent nginx 

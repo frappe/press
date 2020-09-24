@@ -40,9 +40,9 @@ class Server(Document):
 			f"ansible-playbook ../apps/press/press/playbooks/server.yml -i {self.name},"
 			f' -u root -vv -e "server={self.name} workers=2 password={agent_password}'
 			f" mariadb_root_password={mariadb_root_password}"
-			f" certificate_privkey='{certificate.privkey}'"
-			f" certificate_fullchain='{certificate.fullchain}'"
-			f" certificate_chain='{certificate.chain}' \""
+			f" certificate_private_key='{certificate.private_key}'"
+			f" certificate_full_chain='{certificate.full_chain}'"
+			f" certificate_intermediate_chain='{certificate.intermediate_chain}' \""
 		)
 		try:
 			subprocess.run(shlex.split(command))
