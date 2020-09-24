@@ -248,5 +248,5 @@ def deploy(name):
 def marketplace_apps():
 	# TODO: Caching, Pagination, Filtering, Sorting
 	return frappe.get_all(
-		"Frappe App", filters={"publish_on_marketplace": 1}, fields=["*"]
+		"Marketplace App", filters={"status": "Published"}, fields=["*"]
 	)

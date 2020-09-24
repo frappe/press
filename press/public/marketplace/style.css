@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.line-clamp {
+	display: -webkit-box;
+	-webkit-line-clamp: var(--lines-to-clamp, 2);
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+
+.bg-gradient-blue {
+	background-image: linear-gradient(
+		180deg,
+		#2c9af1 0%,
+		theme('colors.blue.500') 100%
+	);
+}
+
+@variants focus, hover {
+	.bg-gradient-none {
+		background-image: none;
+	}
+}
