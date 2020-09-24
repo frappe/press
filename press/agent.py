@@ -118,8 +118,7 @@ class Agent:
 				sanitized_config = sanitize_config(new_config)
 				existing_config = json.loads(site.config)
 				existing_config.update(sanitized_config)
-				site.config = json.dumps(existing_config, indent=4)
-				site.save()
+				site.update_site_config(existing_config)
 				log_site_activity(site.name, "Update Configuration")
 
 			return json.dumps(sanitized_config)
@@ -204,7 +203,10 @@ class Agent:
 		)
 
 	def update_site_config(self, site):
-		data = {"config": json.loads(site.config)}
+		data = {
+			"config": json.loads(site.config),
+			"remove": json.loads(site._keys_removed_in_last_update),
+		}
 		return self.create_agent_job(
 			"Update Site Configuration",
 			f"benches/{site.bench}/sites/{site.name}/config",
