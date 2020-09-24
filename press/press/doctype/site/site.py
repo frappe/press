@@ -80,6 +80,9 @@ class Site(Document):
 			# update internal flag from master
 			row.internal = frappe.db.get_value("Site Config Key", row.key, "internal")
 			key_type = row.type or row.get_type()
+			if key_type == "Password":
+				# we don't support password type yet!
+				key_type = "String"
 			row.type = key_type
 
 			if key_type == "Number":
