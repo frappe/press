@@ -145,3 +145,7 @@ backbone/packer/builds/
 backbone/packer/scratch/
 backbone/packer/images/
 backbone/packer/cloud-init.img
+
+# Vim
+.vim
+.nvimrc
