@@ -24,3 +24,4 @@ execute:frappe.reload_doc('press', 'doctype', 'Remote File')
 press.patches.v0_0_1.add_site_to_remote_file
 press.patches.v0_0_1.new_onboarding
 press.patches.v0_0_1.remove_obsolete_doctypes
+press.patches.v0_0_1.update_site_config_doc
