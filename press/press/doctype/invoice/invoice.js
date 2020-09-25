@@ -31,6 +31,7 @@ frappe.ui.form.on('Invoice', {
 								if (!r.exc) {
 									frappe.show_alert('Success');
 								}
+								d.hide();
 							});
 					},
 				});
