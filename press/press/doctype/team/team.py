@@ -282,20 +282,19 @@ class Team(Document):
 				)
 		return invoices
 
-	def allocate_credit_amount(self, amount, remark):
-		if amount > 0:
-			doc = frappe.get_doc(
-				{
-					"doctype": "Payment Ledger Entry",
-					"purpose": "Credits Allocation",
-					"amount": amount,
-					"team": self.name,
-					"remark": remark,
-				}
-			)
-			doc.insert(ignore_permissions=True)
-			doc.submit()
-			frappe.cache().hdel("customer_available_credits", self.name)
+	def allocate_credit_amount(self, amount, remark, reference_doctype=None, reference_name=None):
+		doc = frappe.get_doc(
+			{
+				"doctype": "Payment Ledger Entry",
+				"purpose": "Credits Allocation",
+				"amount": amount,
+				"team": self.name,
+				"remark": remark,
+			}
+		)
+		doc.insert(ignore_permissions=True)
+		doc.submit()
+		return doc
 
 	def get_available_credits(self):
 		def get_stripe_balance():
