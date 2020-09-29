@@ -431,11 +431,11 @@ class Site(Document):
 			if isinstance(string, str):
 				string = string.strip()
 				return string.startswith("{") and string.endswith("}")
-			elif isinstance(string, dict):
+			elif isinstance(string, (dict, list)):
 				return True
 
 		def guess_type(value):
-			type_dict = {int: "Number", float: "Number", bool: "Boolean", dict: "JSON"}
+			type_dict = {int: "Number", float: "Number", bool: "Boolean", dict: "JSON", list: "JSON"}
 			value_type = type(value)
 
 			if value_type in type_dict:
@@ -451,7 +451,7 @@ class Site(Document):
 					return json.loads(string)
 				else:
 					return string
-			if isinstance(string, dict):
+			if isinstance(string, (dict, list)):
 				return json.dumps(string)
 			return string
 
