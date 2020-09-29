@@ -166,7 +166,9 @@ class LetsEncrypt(BaseCA):
 
 	def run(self, command, environment=None):
 		try:
-			subprocess.check_output(shlex.split(command), stderr=subprocess.STDOUT, env=environment)
+			subprocess.check_output(
+				shlex.split(command), stderr=subprocess.STDOUT, env=environment
+			)
 		except Exception as e:
 			log_error("Certbot Exception", command=command, output=e.output.decode())
 			raise e
