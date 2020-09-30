@@ -19,7 +19,7 @@
 				<div class="mb-1">
 					{{ breadcrumbs([
 						{ 'label': 'Apps', 'url': '/marketplace' },
-						{ 'label': category.title, 'url': '/marketplace/category/' + category.name },
+						{ 'label': category.name, 'url': '/marketplace/category/' + category.slug },
 					]) }}
 				</div>
 				<h1 class="text-6xl font-bold text-gray-900"> {{ app.title }} </h1>

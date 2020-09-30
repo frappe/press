@@ -58,10 +58,6 @@ base_template_map = {r"docs.*": "templates/doc.html"}
 
 update_website_context = ["press.overrides.update_website_context"]
 
-website_route_rules = [
-	{"from_route": "/marketplace/apps/<path:app>", "to_route": "marketplace/app"},
-]
-
 # Installation
 # ------------
 

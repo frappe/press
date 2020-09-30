@@ -7,13 +7,20 @@ from __future__ import unicode_literals
 import requests
 import frappe
 from base64 import b64decode
-from frappe.model.document import Document
+from frappe.website.website_generator import WebsiteGenerator
 from press.api.github import get_access_token
+from frappe.website.utils import cleanup_page_name
 
 
-class MarketplaceApp(Document):
+class MarketplaceApp(WebsiteGenerator):
 	def before_insert(self):
 		self.long_description = self.fetch_readme()
+
+	def set_route(self):
+		self.route = "marketplace/apps/" + cleanup_page_name(self.title)
+
+	def validate(self):
+		self.published = self.status == "Published"
 
 	def on_update(self):
 		doc_before_save = self.get_doc_before_save()
@@ -49,3 +56,30 @@ class MarketplaceApp(Document):
 				continue
 
 		return readme_content
+
+	def get_context(self, context):
+		context.no_cache = True
+		context.app = self
+		if self.category:
+			context.category = frappe.get_doc("Marketplace App Category", self.category)
+
+		groups = frappe.get_all(
+			"Release Group Frappe App",
+			fields=["parent as name"],
+			filters={"app": self.frappe_app},
+		)
+		print("groups")
+		enabled_groups = []
+		for group in groups:
+			group_doc = frappe.get_doc("Release Group", group.name)
+			if not group_doc.enabled:
+				continue
+			frappe_app = frappe.get_all(
+				"Frappe App",
+				fields=["name", "scrubbed", "branch", "url"],
+				filters={"name": ("in", [row.app for row in group_doc.apps]), "frappe": True},
+			)[0]
+			group["frappe"] = frappe_app
+			enabled_groups.append(group)
+
+		context.supported_versions = enabled_groups

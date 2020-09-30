@@ -3,8 +3,10 @@
 
 from __future__ import unicode_literals
 import frappe
-from press.api.app import marketplace_apps
 
 
 def get_context(context):
-	context.apps = marketplace_apps()
+	# TODO: Caching, Pagination, Filtering, Sorting
+	context.apps = frappe.get_all(
+		"Marketplace App", filters={"status": "Published"}, fields=["*"]
+	)

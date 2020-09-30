@@ -6,28 +6,28 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "title",
-  "description"
+  "description",
+  "slug"
  ],
  "fields": [
-  {
-   "fieldname": "title",
-   "fieldtype": "Data",
-   "label": "Title"
-  },
   {
    "fieldname": "description",
    "fieldtype": "Small Text",
    "label": "Description"
+  },
+  {
+   "fieldname": "slug",
+   "fieldtype": "Data",
+   "label": "Slug"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2020-09-22 20:43:32.134431",
- "modified_by": "faris@erpnext.com",
+ "modified": "2020-09-30 21:07:58.159721",
+ "modified_by": "Administrator",
  "module": "Press",
  "name": "Marketplace App Category",
- "owner": "faris@erpnext.com",
+ "owner": "Administrator",
  "permissions": [
   {
    "create": 1,
