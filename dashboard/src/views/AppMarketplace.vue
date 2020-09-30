@@ -26,6 +26,19 @@
 				Your app is queued for approval. You will be notified when your app is
 				approved.
 			</Alert>
+			<div v-if="marketplaceApp.status == 'Published'">
+				<AvatarUploader :image.sync="updateFormValues.image" label="App Logo" />
+				<Form :fields="updateFormFields" v-model="updateFormValues" />
+				<ErrorMessage class="mt-4" :error="$resources.update.error" />
+				<Button
+					type="primary"
+					class="mt-4"
+					:loading="$resources.update.loading"
+					@click="$resources.update.submit()"
+				>
+					Update
+				</Button>
+			</div>
 		</div>
 	</div>
 </template>
@@ -49,29 +62,7 @@ export default {
 					values: this.submissionFormValues
 				},
 				validate() {
-					let requiredFields = this.submissionFormFields.filter(
-						df => df.required
-					);
-
-					if (
-						requiredFields
-							.map(df => df.fieldname)
-							.some(field => !this.submissionFormValues[field])
-					) {
-						return `${requiredFields
-							.map(df => df.label)
-							.join(', ')} fields are required`;
-					}
-
-					let toValidate = this.submissionFormFields.filter(df => df.validate);
-
-					for (let df of toValidate) {
-						let value = this.submissionFormValues[df.fieldname];
-						let error = df.validate(value);
-						if (error) {
-							return df.label + ': ' + error;
-						}
-					}
+					return this.validateForm('submit');
 				},
 				onSuccess() {
 					this.$notify({
@@ -84,6 +75,26 @@ export default {
 				}
 			};
 		},
+		update() {
+			return {
+				method: 'press.api.marketplace.update',
+				params: {
+					app: this.marketplaceApp?.name,
+					values: this.updateFormValues
+				},
+				validate() {
+					return this.validateForm('update');
+				},
+				onSuccess() {
+					this.$notify({
+						title: 'Updated',
+						icon: 'check',
+						color: 'green'
+					});
+					this.$resources.marketplaceApp.reload();
+				}
+			};
+		},
 		categories: 'press.api.marketplace.categories',
 		marketplaceApp() {
 			return {
@@ -91,6 +102,11 @@ export default {
 				auto: this.app ? true : false,
 				params: {
 					app: this.app.name
+				},
+				onSuccess(marketplaceApp) {
+					if (marketplaceApp.status == 'Published') {
+						Object.assign(this.updateFormValues, marketplaceApp);
+					}
 				}
 			};
 		}
@@ -108,8 +124,46 @@ export default {
 				documentation: '',
 				terms_of_service: '',
 				support: ''
+			},
+			updateFormValues: {
+				title: '',
+				description: '',
+				image: '',
+				long_description: '',
+				website: '',
+				privacy_policy: '',
+				documentation: '',
+				terms_of_service: '',
+				support: ''
 			}
 		};
+	},
+	methods: {
+		validateForm(type) {
+			let [fields, values] =
+				type == 'submit'
+					? [this.submissionFormFields, this.submissionFormValues]
+					: [this.updateFormFields, this.updateFormValues];
+
+			let requiredFields = fields.filter(df => df.required);
+			if (
+				requiredFields.map(df => df.fieldname).some(field => !values[field])
+			) {
+				return `${requiredFields
+					.map(df => df.label)
+					.join(', ')} fields are required`;
+			}
+
+			let toValidate = fields.filter(df => df.validate);
+
+			for (let df of toValidate) {
+				let value = values[df.fieldname];
+				let error = df.validate(value);
+				if (error) {
+					return df.label + ': ' + error;
+				}
+			}
+		}
 	},
 	computed: {
 		name() {
@@ -192,6 +246,9 @@ export default {
 					fieldtype: 'Data'
 				}
 			];
+		},
+		updateFormFields() {
+			return this.submissionFormFields;
 		}
 	}
 };
