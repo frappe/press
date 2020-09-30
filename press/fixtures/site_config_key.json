@@ -507,7 +507,7 @@
   "description": null,
   "docstatus": 0,
   "doctype": "Site Config Key",
-  "internal": 0,
+  "internal": 1,
   "key": "host_name",
   "modified": "2020-09-23 13:20:07.065755",
   "name": "host_name",
@@ -656,5 +656,19 @@
   "parenttype": null,
   "title": "Enable Maintenance Mode",
   "type": "Boolean"
- }
+ },
+ {
+  "description": "Maintains a list of domains for site",
+  "docstatus": 0,
+  "doctype": "Site Config Key",
+  "internal": 1,
+  "key": "domains",
+  "modified": "2020-09-30 11:04:28.883458",
+  "name": "domains",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "title": "Domains",
+  "type": "JSON"
+  }
 ]
