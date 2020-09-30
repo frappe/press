@@ -24,10 +24,11 @@
 				Choose apps to install on your site. You can also choose a specific
 				version of the app.
 			</p>
-			<div class="mt-6">
-				<div class="mt-4 space-x-4">
+			<div class="mt-4">
+				<h3 class="sr-only">Marketplace Apps</h3>
+				<div class="grid grid-cols-2 gap-4 px-2 py-2 mt-4 -mx-2 overflow-y-scroll max-h-56">
 					<button
-						class="px-4 py-2 text-left border border-gray-100 rounded-lg shadow cursor-pointer w-60"
+						class="px-4 py-2 text-left border border-gray-100 rounded-lg shadow cursor-pointer"
 						v-for="marketplaceApp in marketplaceApps"
 						:key="marketplaceApp.name"
 						@click="toggleApp(marketplaceApp.app)"
@@ -51,38 +52,34 @@
 									class="inline-block text-sm leading-snug text-blue-600"
 									:href="'/marketplace/apps/' + marketplaceApp.name"
 									target="_blank"
+									@click.stop
 								>
 									Details
 								</a>
 							</div>
 						</div>
 					</button>
+					<div class="h-1 py-4" v-if="marketplaceApps.length > 4"></div>
 				</div>
 			</div>
 			<div class="mt-6" v-if="privateApps.length > 0">
-				<div class="text-base font-semibold">
-					Your Apps
-				</div>
-				<div class="flex py-2 pl-1 -my-2 -ml-1 overflow-x-auto">
+				<h3 class="text-base font-semibold">
+					Your Private Apps
+				</h3>
+				<div class="grid grid-cols-2 gap-4 px-2 py-2 mt-2 -mx-2 overflow-y-scroll max-h-56">
 					<button
-						class="relative flex items-center justify-center py-4 pl-4 pr-8 mr-4 border rounded-md cursor-pointer focus:outline-none focus:shadow-outline"
+						class="px-4 py-3 text-left border border-gray-100 rounded-lg shadow cursor-pointer"
 						:class="
 							selectedApps.includes(app.name)
-								? 'bg-blue-50 border-blue-500'
-								: 'hover:border-blue-400'
+								? 'border-blue-500 shadow-outline-blue'
+								: 'hover:border-gray-300'
 						"
 						v-for="app in privateApps"
 						:key="app.name"
 						@click="toggleApp(app)"
 					>
 						<div class="flex items-start">
-							<Input
-								class="pt-0.5 pointer-events-none"
-								tabindex="-1"
-								type="checkbox"
-								:value="selectedApps.includes(app.name)"
-							/>
-							<div class="ml-3 text-base text-left">
+							<div class="text-base text-left">
 								<div class="font-semibold">
 									{{ app.repo_owner }}/{{ app.repo }}
 								</div>
@@ -103,7 +100,7 @@ export default {
 	props: ['options', 'selectedApps', 'selectedGroup'],
 	computed: {
 		privateApps() {
-			return this.apps.filter(app => app.team === this.$account.team.name);
+			return this.apps.filter(app => app.team === this.$account.team.name && !app.public);
 		},
 		marketplaceApps() {
 			return this.apps
