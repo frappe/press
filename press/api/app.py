@@ -246,7 +246,3 @@ def deploy(name):
 	release_doc.deploy()
 
 
-@frappe.whitelist(allow_guest=True)
-def marketplace_apps():
-	# TODO: Caching, Pagination, Filtering, Sorting
-	return frappe.get_all("Marketplace App", filters={"status": "Published"}, fields=["*"])

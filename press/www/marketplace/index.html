@@ -40,7 +40,7 @@
 		<div class="grid grid-cols-4 gap-8 mt-8">
 			{%- for app in apps -%}
 			<a
-				href="/marketplace/apps/{{ app.name }}"
+				href="/{{ app.route }}"
 				class="p-6 border border-gray-100 rounded-lg shadow cursor-pointer hover:shadow-lg">
 				<img
 					src="{{ app.image }}"
