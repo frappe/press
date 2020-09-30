@@ -18,6 +18,7 @@
 			]"
 			:type="type || 'text'"
 			:disabled="disabled"
+			:placeholder="placeholder"
 			v-bind="$attrs"
 			@blur="$emit('blur', $event)"
 			v-model="inputVal"
@@ -96,6 +97,9 @@ export default {
 		},
 		rows: {
 			type: Number
+		},
+		placeholder: {
+			type: String
 		}
 	},
 	computed: {

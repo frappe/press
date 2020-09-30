@@ -6,7 +6,14 @@
 	<div>
 		<div class="flex items-center space-x-8 py-14">
 			<div>
+				{%- if app.image -%}
 				<img class="w-32 h-32 border border-gray-200 rounded-full" src="{{ app.image }}" alt="{{ app.title }}">
+				{%- else -%}
+				<div class="flex items-center justify-center w-32 h-32 text-gray-500 bg-gray-100 border border-gray-200 rounded-full"
+					style="font-size: 4rem;">
+					{{ app.title[0].upper() }}
+				</div>
+				{%- endif -%}
 			</div>
 			<div class="w-3/4">
 				<div class="mb-1">
@@ -36,19 +43,27 @@
 				<div>
 					<h5 class="text-base text-gray-600">Supported Versions</h5>
 					<ul class="mt-2 space-y-1 text-base">
-						<li class="">{{ link('Version 11', '#') }}</li>
-						<li class="">{{ link('Version 12', '#') }}</li>
-						<li class="">{{ link('Version 13', '#') }}</li>
+						{%- for version in supported_versions -%}
+						<li class="">{{ link(version.name, version.frappe.url + '/tree/' + version.frappe.branch) }}</li>
+						{%- endfor -%}
 					</ul>
 				</div>
 				<div>
-					<h5 class="text-base text-gray-600">Developer Links</h5>
+					<h5 class="text-base text-gray-600">Links</h5>
 					<ul class="mt-2 space-y-1 text-base">
-						<li class="">{{ link('Support', app.support) }}</li>
-						<li class="">{{ link('Documentation', app.documentation) }}</li>
-						<li class="">{{ link('Privacy Policy', app.privacy_policy) }}</li>
-						<li class="">{{ link('Terms of Service', app.terms_of_service) }}</li>
+						{%- for label, value in ({
+							'Support': app.support,
+							'Documentation': app.documentation,
+							'Privacy Policy': app.privacy_policy,
+							'Terms of Service': app.terms_of_service
+						}).items() -%}
+						{%- if value -%}
+						<li class="">{{ link(label, value) }}</li>
+						{%- endif -%}
+						{%- endfor -%}
 					</ul>
+
+
 				</div>
 			</div>
 		</div>

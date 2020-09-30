@@ -54,7 +54,7 @@
 									:disabled="connectedRepository"
 								/>
 							</div>
-							<div class="text-base text-gray-700 mt-4">
+							<div class="mt-4 text-base text-gray-700">
 								Not this account?
 								<a :href="options.installation_url" class="underline"
 									>Add another organization.</a
@@ -65,20 +65,20 @@
 									<div
 										v-for="repo in selectedInstallation.repos"
 										:key="repo.id"
-										class="text-base flex py-1"
+										class="flex py-1 text-base"
 									>
 										<div :href="repo.url" class="flex-1">
 											{{ selectedInstallation.login }} /
 											<span class="font-semibold">{{ repo.name }}</span>
 										</div>
 										<Button
-											class=" text-right"
+											class="text-right "
 											@click="connectedRepository = repo"
 										>
 											Connect
 										</Button>
 									</div>
-									<p class="text-base text-gray-700 mt-4">
+									<p class="mt-4 text-base text-gray-700">
 										Don't see your repository here?
 										<a :href="selectedInstallation.url" class="underline"
 											>Configure the Frappe Cloud app on GitHub.</a
@@ -89,7 +89,7 @@
 									<label class="text-lg text-red-600">
 										No repositories found
 									</label>
-									<p class="text-base text-gray-700 mt-4">
+									<p class="mt-4 text-base text-gray-700">
 										This can happen when Frappe Cloud doesn’t have access to the
 										repositories in your account.
 										<a :href="selectedInstallation.url" class="underline"
@@ -99,7 +99,7 @@
 								</div>
 							</div>
 							<div v-if="connectedRepository">
-								<div class="mt-4 flex">
+								<div class="flex mt-4">
 									<div class="flex-1 text-lg">
 										Connected To
 										<a :href="connectedRepository.url" class="underline"
@@ -159,14 +159,14 @@
 												branch for a Frappe application.
 											</div>
 											<div v-if="$resources.app.loading === false">
-												<div v-if="scrubbed" class="text-lg flex">
+												<div v-if="scrubbed" class="flex text-lg">
 													<FeatherIcon
 														name="check"
 														class="w-5 h-5 p-1 mr-2 text-green-500 bg-green-100 rounded-full"
 													/>
 													Found {{ scrubbed }}
 												</div>
-												<div v-if="!scrubbed" class="text-lg text-red-600 flex">
+												<div v-if="!scrubbed" class="flex text-lg text-red-600">
 													<FeatherIcon
 														name="x"
 														class="w-5 h-5 p-1 mr-2 text-red-500 bg-red-100 rounded-full"
@@ -201,9 +201,9 @@
 											Your app will be available for installation with these
 											versions.
 										</p>
-										<div class="flex pl-1 -ml-1 overflow-x-auto pb-2 pt-4">
+										<div class="flex pt-4 pb-2 pl-1 -ml-1 overflow-x-auto">
 											<button
-												class="relative flex flex-shrink-0 items-center justify-center py-4 pl-4 pr-8 mr-4 border rounded-md focus:outline-none focus:shadow-outline"
+												class="relative flex items-center justify-center flex-shrink-0 py-4 pl-4 pr-8 mr-4 border rounded-md focus:outline-none focus:shadow-outline"
 												:class="[
 													selectedGroups.includes(group.name)
 														? 'bg-blue-50 border-blue-500'
@@ -428,7 +428,7 @@ export default {
 				},
 				auto: true,
 				onSuccess(options) {
-					this.selectedInstallationId = options.installations[0].id;
+					this.selectedInstallationId = options.installations[0]?.id;
 				}
 			};
 		},

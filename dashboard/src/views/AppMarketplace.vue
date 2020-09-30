@@ -6,31 +6,26 @@
 			</Button>
 			<div v-if="showForm">
 				<AvatarUploader
-					:image.sync="publishFormValues.image"
+					:image.sync="submissionFormValues.image"
 					label="App Logo"
 				/>
-				<Form :fields="publishFormFields" v-model="publishFormValues" />
-				<ErrorMessage class="mt-4" :error="$resources.publish.error" />
+				<Form :fields="submissionFormFields" v-model="submissionFormValues" />
+				<ErrorMessage class="mt-4" :error="$resources.submit.error" />
 				<Button
 					type="primary"
 					class="mt-4"
-					:loading="$resources.publish.loading"
-					@click="$resources.publish.submit()"
+					:loading="$resources.submit.loading"
+					@click="$resources.submit.submit()"
 				>
 					Submit
 				</Button>
 			</div>
 		</div>
 		<div v-if="marketplaceApp">
-			<div class="flex items-center mb-4 space-x-2">
-				<Avatar
-					:imageURL="marketplaceApp.image"
-					:label="marketplaceApp.title"
-				/>
-				<h2 class="text-xl font-semibold ">{{ marketplaceApp.title }}</h2>
-				<Badge>{{ marketplaceApp.status }}</Badge>
-			</div>
-			<Form :fields="publishFormFields" v-model="marketplaceApp" />
+			<Alert v-if="marketplaceApp.status == 'Draft'">
+				Your app is queued for approval. You will be notified when your app is
+				approved.
+			</Alert>
 		</div>
 	</div>
 </template>
@@ -46,21 +41,36 @@ export default {
 		AvatarUploader
 	},
 	resources: {
-		publish() {
+		submit() {
 			return {
-				method: 'press.api.marketplace.publish',
+				method: 'press.api.marketplace.submit',
 				params: {
 					app: this.app.name,
-					values: this.publishFormValues
+					values: this.submissionFormValues
 				},
 				validate() {
-					let requiredFields = this.publishFormFields
-						.filter(df => df.required)
-						.map(df => df.fieldname)
-						.concat('image');
+					let requiredFields = this.submissionFormFields.filter(
+						df => df.required
+					);
 
-					if (requiredFields.some(field => !this.publishFormValues[field])) {
-						return 'All fields are required';
+					if (
+						requiredFields
+							.map(df => df.fieldname)
+							.some(field => !this.submissionFormValues[field])
+					) {
+						return `${requiredFields
+							.map(df => df.label)
+							.join(', ')} fields are required`;
+					}
+
+					let toValidate = this.submissionFormFields.filter(df => df.validate);
+
+					for (let df of toValidate) {
+						let value = this.submissionFormValues[df.fieldname];
+						let error = df.validate(value);
+						if (error) {
+							return df.label + ': ' + error;
+						}
 					}
 				},
 				onSuccess() {
@@ -88,11 +98,16 @@ export default {
 	data() {
 		return {
 			showForm: false,
-			publishFormValues: {
+			submissionFormValues: {
 				title: this.app.name,
 				description: '',
 				image: '',
-				long_description: ''
+				long_description: '',
+				website: '',
+				privacy_policy: '',
+				documentation: '',
+				terms_of_service: '',
+				support: ''
 			}
 		};
 	},
@@ -101,13 +116,29 @@ export default {
 			return this.data;
 		},
 		marketplaceApp() {
-			return this.$resources.marketplaceApp.data;
+			return this.$resources.marketplaceApp?.data;
 		},
-		publishFormFields() {
+		badgeColor() {
+			if (!this.marketplaceApp) return;
+
+			return {
+				Published: 'green',
+				Approved: 'blue',
+				Draft: 'orange'
+			}[this.marketplaceApp.status];
+		},
+		submissionFormFields() {
+			let urlValidator = value => {
+				if (!value) return;
+				let regExp = /^(https?|s?ftp):\/\/(((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:)*@)?(((\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5]))|((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.?)(:\d*)?)(\/((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)+(\/(([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)*)*)?)?(\?((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|[\uE000-\uF8FF]|\/|\?)*)?(#((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|\/|\?)*)?$/i;
+				if (!regExp.test(value)) {
+					return 'Invalid URL';
+				}
+			};
 			return [
 				{
 					fieldname: 'title',
-					label: 'Title',
+					label: 'App Name',
 					fieldtype: 'Data',
 					required: true
 				},
@@ -125,11 +156,40 @@ export default {
 					required: true
 				},
 				{
-					fieldname: 'long_description',
-					label: 'Readme',
-					fieldtype: 'Text',
-					rows: 20,
+					fieldname: 'website',
+					label: 'Public Website',
+					placeholder: 'https://example.com',
+					validate: urlValidator,
+					fieldtype: 'Data',
 					required: true
+				},
+				{
+					fieldname: 'support',
+					label: 'Support',
+					placeholder: 'https://example.com/support',
+					validate: urlValidator,
+					fieldtype: 'Data'
+				},
+				{
+					fieldname: 'privacy_policy',
+					label: 'Privacy Policy',
+					placeholder: 'https://example.com/privacy-policy',
+					validate: urlValidator,
+					fieldtype: 'Data'
+				},
+				{
+					fieldname: 'documentation',
+					label: 'Documentation',
+					placeholder: 'https://example.com/docs',
+					validate: urlValidator,
+					fieldtype: 'Data'
+				},
+				{
+					fieldname: 'terms_of_service',
+					label: 'Terms of Service',
+					placeholder: 'https://example.com/terms',
+					validate: urlValidator,
+					fieldtype: 'Data'
 				}
 			];
 		}
