@@ -25,7 +25,7 @@
 				version of the app.
 			</p>
 			<div class="mt-6">
-				<div class="mt-4">
+				<div class="mt-4 space-x-4">
 					<button
 						class="px-4 py-2 text-left border border-gray-100 rounded-lg shadow cursor-pointer w-60"
 						v-for="marketplaceApp in marketplaceApps"

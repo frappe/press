@@ -6,16 +6,27 @@ import frappe
 
 
 @frappe.whitelist()
-def publish(app, values):
+def submit(app, values):
 	values = frappe.parse_json(values)
 	doc = frappe.new_doc("Marketplace App")
-	doc.frappe_app = app
-	doc.title = values.title
+
+	fields = [
+		"title",
+		"description",
+		"category",
+		"image",
+		"website",
+		"privacy_policy",
+		"documentation",
+		"terms_of_service",
+		"support",
+	]
+	for f in fields:
+		doc.set(f, values[f])
+
 	doc.name = frappe.scrub(doc.title)
-	doc.description = values.description
-	doc.category = values.category
-	doc.long_description = values.long_description
-	doc.image = values.image
+	doc.frappe_app = app
+
 	doc.insert()
 	return doc.name
 

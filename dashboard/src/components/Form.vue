@@ -74,7 +74,8 @@ export default {
 				value: this.values[field.fieldname],
 				disabled: field.disabled,
 				required: field.required || false,
-				rows: field.rows
+				rows: field.rows,
+				placeholder: field.placeholder
 			};
 		},
 		getBindListeners(field) {
