@@ -697,26 +697,3 @@ def get_permission_query_conditions(user):
 	team = get_current_team()
 
 	return f"(`tabSite`.`team` = {frappe.db.escape(team)})"
-
-
-def sync_sites():
-	benches = frappe.get_all("Bench", {"status": "Active"})
-	for bench in benches:
-		frappe.enqueue(
-			"press.press.doctype.site.site.sync_bench_sites",
-			queue="long",
-			bench=bench,
-			enqueue_after_commit=True,
-		)
-	frappe.db.commit()
-
-
-def sync_bench_sites(bench):
-	sites = frappe.get_all("Site", {"status": ("!=", "Archived"), "bench": bench.name})
-	for site in sites:
-		site_doc = frappe.get_doc("Site", site.name)
-		try:
-			site_doc.sync_info()
-			frappe.db.commit()
-		except Exception:
-			log_error("Site Sync Error", site=site.name, bench=bench.name)
