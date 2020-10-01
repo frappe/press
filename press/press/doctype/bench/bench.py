@@ -201,7 +201,7 @@ def sync_benches():
 		frappe.enqueue(
 			"press.press.doctype.bench.bench.sync_bench",
 			queue="long",
-			bench=bench,
+			name=bench,
 			enqueue_after_commit=True,
 		)
 	frappe.db.commit()
