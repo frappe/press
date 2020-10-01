@@ -3,69 +3,35 @@
 # See license.txt
 from __future__ import unicode_literals
 
-import frappe
 import unittest
+
+import frappe
+
 from press.agent import Agent
-from press.press.doctype.site_domain.test_site_domain import (
-	create_test_site_domain
-)
-from press.press.doctype.frappe_app.test_frappe_app import (
-	create_test_frappe_app
-)
+
+from ..bench.test_bench import create_test_bench
+from ..frappe_app.test_frappe_app import create_test_frappe_app
+from ..plan.test_plan import create_test_plan
+from ..proxy_server.test_proxy_server import create_test_proxy_server
+from ..release_group.test_release_group import create_test_release_group
+from ..server.test_server import create_test_server
+from ..site_domain.test_site_domain import create_test_site_domain
+from .site import Site
 
 
-def create_test_site(subdomain):
+def create_test_site(subdomain: str) -> Site:
 	"""Create test Site doc."""
 	frappe.set_user("Administrator")
 
-	proxy_server = frappe.get_doc({
-		"doctype": "Proxy Server",
-		"status": "Active",
-		"ip": "0.0.0.0.0",
-		"private_ip": "0.9.9.9.9",
-		"name": "n.frappe.cloudtest",
-	}).insert(ignore_if_duplicate=True)
-
-	server = frappe.get_doc({
-		"doctype": "Server",
-		"status": "Active",
-		"ip": "0.0.0.0",
-		"private_ip": "9.9.9.9",
-		"name": "f.frappe.cloudtest",
-		"mariadb_root_password": "admin",
-		"proxy_server": proxy_server.name
-	}).insert(ignore_if_duplicate=True)
-
+	proxy_server = create_test_proxy_server()
+	server = create_test_server(proxy_server.name)
 	frappe_app = create_test_frappe_app()
 
-	release_group = frappe.get_doc({
-		"doctype": "Release Group",
-		"name": "Test Release Group",
-		"apps": [{
-			"app": frappe_app.name,
-		}],
-		"enabled": True
-	}).insert(ignore_if_duplicate=True)
-
+	release_group = create_test_release_group(frappe_app.name)
 	release_group.create_deploy_candidate()
 
-	bench = frappe.get_doc({
-		"name": "Test Bench",
-		"doctype": "Bench",
-		"status": "Active",
-		"workers": 1,
-		"gunicorn_workers": 2,
-		"group": release_group.name,
-		"server": server.name
-	}).insert(ignore_if_duplicate=True)
-
-	plan = frappe.get_doc({
-		"name": "Test 10 dollar plan",
-		"doctype": "Plan",
-		"price_inr": 750.0,
-		"price_usd": 10.0,
-		"period": 30
-	}).insert(ignore_if_duplicate=True)
+	plan = create_test_plan()
+	bench = create_test_bench(release_group.name, server.name)
 
 	return frappe.get_doc({
 		"doctype": "Site",
@@ -154,7 +120,7 @@ class TestSite(unittest.TestCase):
 		site_domain_2.save()
 		self.assertEqual(site.primary_domain_name, site_domain_2.name)
 
-	def test_primary_domain_works_correct_when_site_domain_for_some_other_site_exists(
+	def test_primary_domain_when_site_domain_for_some_other_site_exists(
 		self
 	):
 		# TODO: commit previous tests before implementing <01-10-20, Balamurali M> #
