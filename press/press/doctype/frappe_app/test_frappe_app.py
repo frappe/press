@@ -12,7 +12,11 @@ from press.utils import log_error
 
 
 def create_test_frappe_app():
-	"""Create test Frappe App doc."""
+	"""
+	Create test Frappe App doc.
+
+	Github API call will not be made when creating the doc.
+	"""
 	fake_create_app_release()
 
 	name = frappe.mock("name")
