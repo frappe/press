@@ -1,5 +1,6 @@
 ---
-- hosts: all
+- name: Setup Proxy Server
+  hosts: all
   become: yes
   become_user: root
   gather_facts: no
@@ -9,5 +10,3 @@
     - role: nginx
     - role: agent
     - role: proxy
-
-...
