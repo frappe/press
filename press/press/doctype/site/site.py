@@ -341,11 +341,16 @@ class Site(Document):
 		agent = Agent(self.server)
 		agent.update_site_config(self)
 
-	def sync_info(self):
-		"""Updates Site Usage, site.config.encryption_key and timezone details for site."""
-		save = False
+	def fetch_info(self):
 		agent = Agent(self.server)
-		data = agent.get_site_info(self)
+		return agent.get_site_info(self)
+
+	def sync_info(self, data=None):
+		"""Updates Site Usage, site.config.encryption_key and timezone details for site."""
+		if not data:
+			data = self.fetch_info()
+
+		save = False
 		fetched_config = data["config"]
 		fetched_usage = data["usage"]
 		config = {
