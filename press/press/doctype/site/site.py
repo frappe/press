@@ -341,11 +341,16 @@ class Site(Document):
 		agent = Agent(self.server)
 		agent.update_site_config(self)
 
-	def sync_info(self):
-		"""Updates Site Usage, site.config.encryption_key and timezone details for site."""
-		save = False
+	def fetch_info(self):
 		agent = Agent(self.server)
-		data = agent.get_site_info(self)
+		return agent.get_site_info(self)
+
+	def sync_info(self, data=None):
+		"""Updates Site Usage, site.config.encryption_key and timezone details for site."""
+		if not data:
+			data = self.fetch_info()
+
+		save = False
 		fetched_config = data["config"]
 		fetched_usage = data["usage"]
 		config = {
@@ -435,7 +440,13 @@ class Site(Document):
 				return True
 
 		def guess_type(value):
-			type_dict = {int: "Number", float: "Number", bool: "Boolean", dict: "JSON", list: "JSON"}
+			type_dict = {
+				int: "Number",
+				float: "Number",
+				bool: "Boolean",
+				dict: "JSON",
+				list: "JSON",
+			}
 			value_type = type(value)
 
 			if value_type in type_dict:
@@ -461,9 +472,7 @@ class Site(Document):
 				self.configuration[keys[key]].value = convert(value)
 				self.configuration[keys[key]].type = guess_type(value)
 			else:
-				self.append(
-					"configuration", {"key": key, "value": convert(value)}
-				)
+				self.append("configuration", {"key": key, "value": convert(value)})
 		self.save()
 
 	def update_site_config(self, config):
@@ -688,26 +697,3 @@ def get_permission_query_conditions(user):
 	team = get_current_team()
 
 	return f"(`tabSite`.`team` = {frappe.db.escape(team)})"
-
-
-def sync_sites():
-	benches = frappe.get_all("Bench", {"status": "Active"})
-	for bench in benches:
-		frappe.enqueue(
-			"press.press.doctype.site.site.sync_bench_sites",
-			queue="long",
-			bench=bench,
-			enqueue_after_commit=True,
-		)
-	frappe.db.commit()
-
-
-def sync_bench_sites(bench):
-	sites = frappe.get_all("Site", {"status": ("!=", "Archived"), "bench": bench.name})
-	for site in sites:
-		site_doc = frappe.get_doc("Site", site.name)
-		try:
-			site_doc.sync_info()
-			frappe.db.commit()
-		except Exception:
-			log_error("Site Sync Error", site=site.name, bench=bench.name)
