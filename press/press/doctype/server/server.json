@@ -7,9 +7,9 @@
  "engine": "InnoDB",
  "field_order": [
   "status",
-  "ip",
   "is_server_setup",
-  "column_break_2",
+  "column_break_3",
+  "ip",
   "private_ip",
   "mariadb_section",
   "mariadb_root_password",
@@ -17,7 +17,7 @@
   "agent_password",
   "upstream",
   "proxy_server",
-  "column_break_8",
+  "column_break_12",
   "is_upstream_setup"
  ],
  "fields": [
@@ -32,7 +32,8 @@
   {
    "fieldname": "mariadb_root_password",
    "fieldtype": "Password",
-   "label": "MariaDB Root Password"
+   "label": "MariaDB Root Password",
+   "reqd": 1
   },
   {
    "fieldname": "proxy_server",
@@ -44,12 +45,14 @@
    "fieldname": "private_ip",
    "fieldtype": "Data",
    "label": "Private IP",
-   "reqd": 1
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "agent_password",
    "fieldtype": "Password",
-   "label": "Agent Password"
+   "label": "Agent Password",
+   "reqd": 1
   },
   {
    "fieldname": "upstream",
@@ -62,17 +65,10 @@
    "label": "Agent"
   },
   {
-   "fieldname": "column_break_8",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "column_break_2",
-   "fieldtype": "Column Break"
-  },
-  {
    "fieldname": "mariadb_section",
    "fieldtype": "Section Break",
-   "label": "MariaDB"
+   "label": "MariaDB",
+   "set_only_once": 1
   },
   {
    "default": "0",
@@ -89,17 +85,27 @@
    "read_only": 1
   },
   {
+   "default": "Pending",
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Active\nBroken",
+   "options": "Pending\nInstalling\nActive\nBroken",
+   "read_only": 1,
    "reqd": 1
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_12",
+   "fieldtype": "Column Break"
   }
  ],
  "links": [],
- "modified": "2020-04-03 13:28:11.887351",
+ "modified": "2020-10-01 19:29:13.611060",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
