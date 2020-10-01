@@ -78,6 +78,14 @@ class Bench(Document):
 		agent = Agent(self.server)
 		agent.archive_bench(self)
 
+	def sync_info(self):
+		"""Updates Site Usage, site.config.encryption_key and timezone details for all sites on Bench."""
+		agent = Agent(self.server)
+		data = agent.get_sites_info(self)
+
+		for site, info in data.items():
+			frappe.get_doc("Site", site).sync_info(info)
+
 
 def process_new_bench_job_update(job):
 	bench_status = frappe.get_value("Bench", job.bench, "status")
@@ -185,3 +193,24 @@ def scale_workers():
 			bench.workers, bench.gunicorn_workers = workers, gunicorn_workers
 			bench.save()
 			return
+
+
+def sync_benches():
+	benches = frappe.get_all("Bench", {"status": "Active"}, pluck="name")
+	for bench in benches:
+		frappe.enqueue(
+			"press.press.doctype.bench.bench.sync_bench",
+			queue="long",
+			name=bench,
+			enqueue_after_commit=True,
+		)
+	frappe.db.commit()
+
+
+def sync_bench(name):
+	bench = frappe.get_doc("Bench", name)
+	try:
+		bench.sync_info()
+		frappe.db.commit()
+	except Exception:
+		log_error("Bench Sync Error", bench=bench.name)

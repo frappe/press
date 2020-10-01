@@ -282,7 +282,9 @@ class Team(Document):
 				)
 		return invoices
 
-	def allocate_credit_amount(self, amount, remark, reference_doctype=None, reference_name=None):
+	def allocate_credit_amount(
+		self, amount, remark, reference_doctype=None, reference_name=None
+	):
 		doc = frappe.get_doc(
 			{
 				"doctype": "Payment Ledger Entry",
