@@ -1,4 +1,46 @@
 Vagrant.configure("2") do |config|
     config.vm.box = "backbone"
-    config.vm.define 'ubuntu'
+    config.vm.synced_folder ".", "/vagrant", disabled: true
+
+    # This let's us access all guests with their names from host and other guests
+    config.hostmanager.enabled = true
+    config.hostmanager.manage_host = true
+    config.hostmanager.manage_guest = true
+
+    config.vm.provider :libvirt do |libvirt|
+        libvirt.driver = "kvm"
+        libvirt.default_prefix = ""
+        # VMs with little disk space may fail to boot
+        libvirt.machine_virtual_size = 8
+        libvirt.cpus = 1
+        libvirt.memory = 512
+    end
+
+    # We will add two static IPs to simulate public and private interfaces
+    # Host manager plugin will work only with first interface in this list
+    # Public    10.0.x.x
+    # Private   10.1.x.x
+
+    # IP Pattern based on server types
+    # Proxy     x.x.1.x
+    # Frappe    x.x.2.x
+    
+    # We'll start IPs from x.x.x.101
+
+    config.vm.define "n.fc.dev" do |n|
+        n.vm.network "private_network", ip: "10.0.1.101", netmask: "255.255.0.0"
+        n.vm.network "private_network", ip: "10.1.1.101", netmask: "255.255.0.0"
+        n.vm.hostname = "n.fc.dev"
+    end
+
+    config.vm.define "f.fc.dev" do |f|
+        f.vm.hostname = "f.fc.dev"
+        f.vm.network "private_network", ip: "10.0.2.101", netmask: "255.255.0.0"
+        f.vm.network "private_network", ip: "10.1.2.101", netmask: "255.255.0.0"
+        f.vm.provider :libvirt do |libvirt|
+            libvirt.cpus = 2
+            libvirt.machine_virtual_size = 12
+            libvirt.memory = 2048
+        end
+    end
 end
