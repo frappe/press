@@ -191,6 +191,25 @@
 				</div>
 			</SectionCard>
 		</Section>
+
+		<Section
+			v-if="creditsTransferLog.length > 0"
+			title="Credits Transfer Log"
+			description="History of credit transfers"
+		>
+			<SectionCard>
+				<div
+					class="px-6 py-4 text-base hover:bg-gray-50"
+					v-for="row in creditsTransferLog"
+					:key="row.name"
+				>
+					<div>{{ row.formatted_amount }} credits transferred</div>
+					<div class="text-sm text-gray-600">
+						<FormatDate>{{ row.creation }}</FormatDate>
+					</div>
+				</div>
+			</SectionCard>
+		</Section>
 	</div>
 </template>
 
@@ -244,6 +263,9 @@ export default {
 		},
 		availableCredits() {
 			return this.billingDetails.data?.available_credits;
+		},
+		creditsTransferLog() {
+			return this.billingDetails.data?.credits_transfer_log || [];
 		}
 	},
 	methods: {

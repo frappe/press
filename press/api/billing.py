@@ -49,12 +49,28 @@ def info():
 	else:
 		billing_address = ""
 
+	credits_transfer_log = []
+	if team_doc.erpnext_partner:
+		credits_transfer_log = frappe.db.get_all(
+			"Payment Ledger Entry",
+			filters={
+				"team": team_doc.name,
+				"purpose": "Credits Allocation",
+				"remark": ("like", "Transferred Credits from ERPNext Cloud%"),
+			},
+			fields=["name", "creation", "amount"],
+		)
+
+		for d in credits_transfer_log:
+			d.formatted_amount = fmt_money(d.amount, 2, currency)
+
 	return {
 		"upcoming_invoice": upcoming_invoice,
 		"past_invoices": past_invoices,
 		"billing_address": billing_address,
 		"payment_method": team_doc.default_payment_method,
 		"available_credits": fmt_money(team_doc.get_available_credits(), 2, currency),
+		"credits_transfer_log": credits_transfer_log,
 	}
 
 
