@@ -7,9 +7,7 @@ from __future__ import unicode_literals
 import frappe
 from frappe.model.document import Document
 from press.agent import Agent
-from frappe.utils.password import get_decrypted_password
-import subprocess
-import shlex
+from press.runner import Ansible
 from press.utils import log_error
 
 
@@ -27,33 +25,43 @@ class Server(Document):
 		return agent.update()
 
 	def _setup_server(self):
-		agent_password = get_decrypted_password(self.doctype, self.name, "agent_password")
-		mariadb_root_password = get_decrypted_password(
-			self.doctype, self.name, "mariadb_root_password"
-		)
+		agent_password = self.get_password("agent_password")
+		mariadb_root_password = self.get_password("mariadb_root_password")
 		certificate_name = frappe.db.get_value(
 			"Press Settings", "Press Settings", "wildcard_tls_certificate"
 		)
 		certificate = frappe.get_doc("TLS Certificate", certificate_name)
-
-		command = (
-			f"ansible-playbook ../apps/press/press/playbooks/server.yml -i {self.name},"
-			f' -u root -vv -e "server={self.name} workers=2 password={agent_password}'
-			f" mariadb_root_password={mariadb_root_password}"
-			f" certificate_private_key='{certificate.private_key}'"
-			f" certificate_full_chain='{certificate.full_chain}'"
-			f" certificate_intermediate_chain='{certificate.intermediate_chain}' \""
-		)
 		try:
-			subprocess.run(shlex.split(command))
-			self.status = "Active"
-			self.is_server_setup = True
+			ansible = Ansible(
+				playbook="server.yml",
+				server=self,
+				variables={
+					"server": self.name,
+					"workers": "2",
+					"password": agent_password,
+					"mariadb_root_password": mariadb_root_password,
+					"certificate_private_key": certificate.private_key,
+					"certificate_full_chain": certificate.full_chain,
+					"certificate_intermediate_chain": certificate.intermediate_chain,
+				},
+			)
+			play = ansible.run()
+			if play.status == "Success":
+				self.status = "Active"
+				self.is_server_setup = True
+			else:
+				self.status = "Broken"
 		except Exception:
 			self.status = "Broken"
-			log_error("Server Setup Exception", commmand=command)
+			import traceback
+
+			traceback.print_exc()
+			log_error("Server Setup Exception")
 		self.save()
 
 	def setup_server(self):
+		self.status = "Installing"
+		self.save()
 		frappe.enqueue_doc(
 			self.doctype, self.name, "_setup_server", queue="long", timeout=1200
 		)
