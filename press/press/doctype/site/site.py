@@ -440,7 +440,13 @@ class Site(Document):
 				return True
 
 		def guess_type(value):
-			type_dict = {int: "Number", float: "Number", bool: "Boolean", dict: "JSON", list: "JSON"}
+			type_dict = {
+				int: "Number",
+				float: "Number",
+				bool: "Boolean",
+				dict: "JSON",
+				list: "JSON",
+			}
 			value_type = type(value)
 
 			if value_type in type_dict:
@@ -466,9 +472,7 @@ class Site(Document):
 				self.configuration[keys[key]].value = convert(value)
 				self.configuration[keys[key]].type = guess_type(value)
 			else:
-				self.append(
-					"configuration", {"key": key, "value": convert(value)}
-				)
+				self.append("configuration", {"key": key, "value": convert(value)})
 		self.save()
 
 	def update_site_config(self, config):
