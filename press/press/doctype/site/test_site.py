@@ -78,6 +78,9 @@ class TestSite(unittest.TestCase):
 		frappe.db.rollback()
 
 	# TODO: remove this test when implementing with defautl site domain doc <01-10-20, Balamurali M> #
+
+
+	# TODO: test for default site domain created when site created <01-10-20, Balamurali M> #
 	def test_primary_domain_is_default_when_no_site_domain_exists(self):
 		site = create_test_site(self.subdomain)
 		self.assertEqual(site.primary_domain_name, site.name)
@@ -123,8 +126,16 @@ class TestSite(unittest.TestCase):
 	def test_primary_domain_when_site_domain_for_some_other_site_exists(
 		self
 	):
-		# TODO: commit previous tests before implementing <01-10-20, Balamurali M> #
-		# TODO: need mocks to implement <01-10-20, Balamurali M> #
-		pass
-
-	# TODO: test for default site domain created when site created <01-10-20, Balamurali M> #
+		"""Ensure primary domain works when multiple sites for site domains exist."""
+		site = create_test_site(self.subdomain)
+		site2 = create_test_site("anothersubdomain")
+		site_domain = create_test_site_domain(site.name)
+		site_domain2 = create_test_site_domain(site2.name)
+		site_domain2.primary = True
+		site_domain2.save()
+		self.assertEqual(site.primary_domain_name, site.name)
+		self.assertEqual(site2.primary_domain_name, site_domain2.name)
+		site_domain.primary = True
+		site_domain.save()
+		self.assertEqual(site2.primary_domain_name, site_domain2.name)
+		self.assertEqual(site.primary_domain_name, site_domain.name)
