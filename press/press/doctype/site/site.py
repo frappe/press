@@ -202,7 +202,7 @@ class Site(Document):
 		self.status = self.status_before_update
 		self.status_before_update = None
 		if not self.status:
-			status_map = {402: "Inactive", 503: "Suspended"}
+			status_map = {402: "Suspended", 503: "Inactive"}
 			try:
 				response = requests.get(f"https://{self.name}")
 				self.status = status_map.get(response.status_code, "Active")
