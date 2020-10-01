@@ -11,7 +11,7 @@ from .frappe_app import FrappeApp
 from press.utils import log_error
 
 
-def create_test_frappe_app():
+def create_test_frappe_app() -> FrappeApp:
 	"""
 	Create test Frappe App doc.
 
@@ -56,7 +56,7 @@ def fake_create_app_release():
 					"app": self.name,
 					"hash": hash,
 					"message": "Test commit message",
-					"author": "Test author",
+					"author": frappe.mock("name"),
 					"deployable": bool(is_first_release),
 				}).insert()
 		except Exception:

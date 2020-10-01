@@ -7,8 +7,10 @@ import unittest
 
 import frappe
 
+from .site_domain import SiteDomain
 
-def create_test_site_domain(site):
+
+def create_test_site_domain(site: str) -> SiteDomain:
 	"""Create test Site Domain doc."""
 	return frappe.get_doc({
 		"doctype": "Site Domain",
