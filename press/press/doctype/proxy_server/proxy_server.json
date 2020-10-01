@@ -7,10 +7,10 @@
  "engine": "InnoDB",
  "field_order": [
   "status",
-  "ip",
-  "column_break_3",
-  "private_ip",
   "is_server_setup",
+  "column_break_3",
+  "ip",
+  "private_ip",
   "agent_section",
   "agent_password"
  ],
@@ -33,15 +33,17 @@
   {
    "fieldname": "agent_password",
    "fieldtype": "Password",
-   "label": "Agent Password"
+   "label": "Agent Password",
+   "reqd": 1
   },
   {
+   "default": "Pending",
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Active\nBroken",
+   "options": "Pending\nInstalling\nActive\nBroken",
    "reqd": 1
   },
   {
@@ -62,7 +64,7 @@
   }
  ],
  "links": [],
- "modified": "2020-04-03 18:23:55.355483",
+ "modified": "2020-10-01 18:44:39.126624",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",
