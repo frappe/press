@@ -79,10 +79,13 @@ class Bench(Document):
 		agent.archive_bench(self)
 
 	def sync_info(self):
-		"""Updates Site Usage, site.config.encryption_key and timezone details for all sites on Bench."""
+		"""Initiates a Job to update Site Usage, site.config.encryption_key and timezone details for all sites on Bench."""
 		agent = Agent(self.server)
-		data = agent.get_sites_info(self)
+		agent.get_sites_info(self)
 
+def process_bench_sync_info_job_update(job):
+	if job.status == "Success":
+		data = json.loads(job.data)
 		for site, info in data.items():
 			frappe.get_doc("Site", site).sync_info(info)
 
