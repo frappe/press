@@ -7,8 +7,6 @@ import unittest
 
 import frappe
 
-from press.agent import Agent
-
 from ..bench.test_bench import create_test_bench
 from ..frappe_app.test_frappe_app import create_test_frappe_app
 from ..plan.test_plan import create_test_plan
@@ -47,32 +45,11 @@ def create_test_site(subdomain: str) -> Site:
 	}).insert(ignore_if_duplicate=True)
 
 
-def fake_agent_job():
-	"""Monkey patch Agent Job doctype methods to work in isolated tests."""
-
-	def create_agent_job(
-		self,
-		job_type,
-		path,
-		data=None,
-		files=None,
-		method="POST",
-		bench=None,
-		site=None,
-		upstream=None,
-		host=None,
-	):
-		return {"job": 1}
-
-	Agent.create_agent_job = create_agent_job
-
-
 class TestSite(unittest.TestCase):
 	"""Tests for Site Document methods."""
 
 	def setUp(self):
 		self.subdomain = "testsubdomain"
-		fake_agent_job()
 
 	def tearDown(self):
 		frappe.db.rollback()
