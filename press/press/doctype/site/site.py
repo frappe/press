@@ -87,12 +87,25 @@ class Site(Document):
 			if not allow_creation:
 				frappe.throw(why)
 
+	def _create_default_site_domain(self):
+		"""Create Site Domain with Site name."""
+		return frappe.get_doc({
+			"doctype": "Site Domain",
+			"site": self.name,
+			"domain": self.name,
+			"status": "Active",
+			"retry_count": 0,
+			"dns_type": "A"
+		}).insert(ignore_if_duplicate=True)
+
 	def after_insert(self):
 		# create a site plan change log
 		self._create_initial_site_plan_change()
 		# log activity
 		log_site_activity(self.name, "Create")
 		self.create_agent_request()
+		self.set_host_name(self._create_default_site_domain().name)
+
 
 	def create_agent_request(self):
 		agent = Agent(self.server)
