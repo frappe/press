@@ -49,7 +49,3 @@ class TestSite(unittest.TestCase):
 
 	def tearDown(self):
 		frappe.db.rollback()
-
-	def test_primary_domain_is_default_when_no_site_domain_exists(self):
-		site = create_test_site("test-subdomain")
-		self.assertEqual(site.primary_domain_name, site.name)
