@@ -59,3 +59,9 @@ class DatabaseServer(Document):
 			self.doctype, self.name, "_setup_server", queue="long", timeout=1200
 		)
 
+	def ping_ansible(self):
+		try:
+			ansible = Ansible(playbook="ping.yml", server=self)
+			ansible.run()
+		except Exception:
+			log_error("Database Server Ping Exception")
