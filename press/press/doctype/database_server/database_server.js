@@ -10,6 +10,13 @@ frappe.ui.form.on('Database Server', {
 				callback: result => frappe.msgprint(result.message)
 			});
 		}, __("Actions"));
+		frm.add_custom_button(__('Ping Ansible'), () => {
+			frm.call({
+				method: "ping_ansible",
+				doc: frm.doc,
+				callback: result => frappe.msgprint(result.message)
+			});
+		}, __("Actions"));
 		frm.add_custom_button(__('Update Agent'), () => {
 			frm.call({
 				method: "update_agent",
