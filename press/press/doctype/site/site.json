@@ -274,8 +274,9 @@
   },
   {
    "fieldname": "host_name",
-   "fieldtype": "Data",
-   "label": "Host Name"
+   "fieldtype": "Link",
+   "label": "Host Name",
+   "options": "Site Domain"
   },
   {
    "fieldname": "status_before_update",
@@ -323,8 +324,8 @@
   }
  ],
  "links": [],
- "modified": "2020-08-25 10:51:34.264913",
- "modified_by": "gavin18d@gmail.com",
+ "modified": "2020-10-04 08:51:12.953040",
+ "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
  "owner": "Administrator",
