@@ -28,25 +28,32 @@ def create_test_site_domain(
 class TestSiteDomain(unittest.TestCase):
 	"""Tests for Site Domain Document methods."""
 
-	def setUp(self):
-		self.site = create_test_site("testing")
-		self.domain_name = frappe.mock("domain_name")
-
 	def tearDown(self):
 		frappe.db.rollback()
 
 	def test_set_host_name(self):
 		"""Test set_host_name() method of Site doctype sets host_name property."""
-		site_domain = create_test_site_domain(self.site.name, self.domain_name)
-		self.site.set_host_name(site_domain.name)
-		self.assertEqual(self.site.host_name, self.domain_name)
+		site = create_test_site("testing")
+		domain_name = frappe.mock("domain_name")
+
+		site_domain = create_test_site_domain(site.name, domain_name)
+		site.set_host_name(site_domain.name)
+		self.assertEqual(site.host_name, domain_name)
 
 	def test_only_active_site_domain_can_be_primary(self):
 		"""Ensure active site domains can be primary."""
+		site = create_test_site("testing")
+		domain_name = frappe.mock("domain_name")
+
 		site_domain = create_test_site_domain(
-			self.site.name, self.domain_name, "Pending"
+			site.name, domain_name, "Pending"
 		)
 		self.assertRaises(
-			frappe.exceptions.LinkValidationError, self.site.set_host_name,
+			frappe.exceptions.LinkValidationError, site.set_host_name,
 			site_domain.name
 		)
+
+	def test_default_host_name_is_site_subdomain(self):
+		"""Ensure subdomain+domain is default primary host_name"""
+		site = create_test_site("testing")
+		self.assertEqual(site.host_name, site.name)
