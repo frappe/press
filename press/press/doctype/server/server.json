@@ -15,10 +15,13 @@
   "mariadb_root_password",
   "agent_section",
   "agent_password",
-  "upstream",
+  "reverse_proxy_section",
   "proxy_server",
   "column_break_12",
-  "is_upstream_setup"
+  "is_upstream_setup",
+  "database_section",
+  "database_server",
+  "is_database_client_setup"
  ],
  "fields": [
   {
@@ -53,11 +56,6 @@
    "fieldtype": "Password",
    "label": "Agent Password",
    "reqd": 1
-  },
-  {
-   "fieldname": "upstream",
-   "fieldtype": "Section Break",
-   "label": "Upstream"
   },
   {
    "fieldname": "agent_section",
@@ -102,10 +100,32 @@
   {
    "fieldname": "column_break_12",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "reverse_proxy_section",
+   "fieldtype": "Section Break",
+   "label": "Reverse Proxy"
+  },
+  {
+   "fieldname": "database_section",
+   "fieldtype": "Section Break",
+   "label": "Database"
+  },
+  {
+   "fieldname": "database_server",
+   "fieldtype": "Link",
+   "label": "Database Server",
+   "options": "Database Server"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_database_client_setup",
+   "fieldtype": "Check",
+   "label": "Database Client Setup"
   }
  ],
  "links": [],
- "modified": "2020-10-01 19:29:13.611060",
+ "modified": "2020-10-02 17:35:34.825191",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
