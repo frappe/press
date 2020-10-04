@@ -83,6 +83,7 @@ class Bench(Document):
 		agent = Agent(self.server)
 		agent.get_sites_info(self)
 
+
 def process_bench_sync_info_job_update(job):
 	if job.status == "Success":
 		data = json.loads(job.data)

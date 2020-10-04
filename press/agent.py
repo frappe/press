@@ -426,7 +426,9 @@ class Agent:
 		return self.get(f"benches/{site.bench}/sites/{site.name}/info")["data"]
 
 	def get_sites_info(self, bench):
-		return self.create_agent_job("Fetch Sites Info", f"benches/{bench.name}/info", method="GET")
+		return self.create_agent_job(
+			"Fetch Sites Info", f"benches/{bench.name}/info", method="GET"
+		)
 
 	def get_jobs_status(self, ids):
 		status = self.get(f"jobs/{','.join(map(str, ids))}")
