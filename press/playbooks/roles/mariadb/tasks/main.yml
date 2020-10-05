@@ -54,14 +54,6 @@
     state: started
     enabled: yes
 
-- name: Add .my.cnf MariaDB Configuration File
-  template:
-    src: my.cnf
-    dest: /root/.my.cnf
-    owner: root
-    group: root
-    mode: 0600
-
 - name: Set MariaDB root Password
   mysql_user:
     login_user: root
@@ -69,6 +61,7 @@
     check_implicit_admin: yes
     name: root
     host: "{{ item }}"
+    priv: "*.*:ALL,GRANT"
     password: "{{ mariadb_root_password }}"
     state: present
   with_items:
@@ -76,6 +69,14 @@
     - 127.0.0.1
     - ::1
     - "%"
+
+- name: Add .my.cnf MariaDB Configuration File
+  template:
+    src: my.cnf
+    dest: /root/.my.cnf
+    owner: root
+    group: root
+    mode: 0600
 
 - name: Remove MariaDB Test Database
   mysql_db:
