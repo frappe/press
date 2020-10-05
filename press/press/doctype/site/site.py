@@ -237,13 +237,17 @@ class Site(Document):
 				f"Site Domain {domain} for site {self.name} does not exist"
 			)
 
-	def set_host_name(self, domain: str):
-		"""Set host_name/primary domain of site."""
-		self._check_if_domain_belongs_to_site(domain)
+	def _check_if_domain_is_active(self, domain: str):
 		status = frappe.get_value("Site Domain", domain, "status")
 		if status != "Active":
 			raise frappe.exceptions.LinkValidationError(
-				"Only active domains can be primary")
+				"Only active domains can be primary"
+			)
+
+	def set_host_name(self, domain: str):
+		"""Set host_name/primary domain of site."""
+		self._check_if_domain_belongs_to_site(domain)
+		self._check_if_domain_is_active(domain)
 		self.host_name = domain
 		self.save()
 		self.update_site_config({"host_name": f"https://{domain}"})
