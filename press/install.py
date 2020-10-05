@@ -48,12 +48,14 @@ def create_certificate_authorities():
 			"directory": f"{ca_directory}/intermediate",
 		}
 	).insert()
-	frappe.db.set_value(
-		"Press Settings", "Press Settings", "backbone_intermediate_ca", intermediate_ca.name
-	)
-	frappe.db.set_value(
-		"Press Settings", "Press Settings", "backbone_directory", scratch_directory
-	)
+	settings = frappe.get_doc("Press Settings", "Press Settings")
+	settings.backbone_intermediate_ca = intermediate_ca.name
+	settings.backbone_directory = scratch_directory
+	if not settings.domain:
+		settings.domain = "fc.dev"
+
+	if not settings.wildcard_tls_certificate:
+		settings._obtain_root_domain_tls_certificate()
 
 
 def create_administrator_team():
