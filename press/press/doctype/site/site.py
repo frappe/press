@@ -227,8 +227,19 @@ class Site(Document):
 			site_domain = frappe.get_doc("Site Domain", site_domain.name)
 			site_domain.retry()
 
+	def _check_if_domain_belongs_to_site(self, domain: str):
+		if not frappe.db.exists({
+			"doctype": "Site Domain",
+			"site": self.name,
+			"domain": domain
+		}):
+			raise frappe.exceptions.LinkValidationError(
+				f"Site Domain {domain} for site {self.name} does not exist"
+			)
+
 	def set_host_name(self, domain: str):
-		"""Set host_name/primary domain of site"""
+		"""Set host_name/primary domain of site."""
+		self._check_if_domain_belongs_to_site(domain)
 		status = frappe.get_value("Site Domain", domain, "status")
 		if status != "Active":
 			raise frappe.exceptions.LinkValidationError(
@@ -238,7 +249,6 @@ class Site(Document):
 		self.update_site_config({"host_name": f"https://{domain}"})
 
 	def redirect_to_primary_domain(self, domain):
-		# TODO: Implement checkbox for primary domain in doctype <24-09-20, Balamurali M> #
 		site_domain = frappe.get_all(
 			"Site Domain",
 			filters={
