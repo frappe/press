@@ -17,11 +17,23 @@ frappe.ui.form.on('Server', {
 						if (confirm) {
 							frappe.confirm(
 								`Are you sure you want to ${label.toLowerCase()}?`,
-								() => frm.call(method).then((r) => frm.refresh())
+								() => frm.call(method).then((r) => {
+									if (r.message) {
+										frappe.msgprint(r.message);
+									} else {
+										frm.refresh();
+									}
+								})
 							);
 
 						} else {
-							frm.call(method).then((r) => frm.refresh())
+							frm.call(method).then((r) => {
+								if (r.message) {
+									frappe.msgprint(r.message);
+								} else {
+									frm.refresh();
+								}
+							})
 						}
 					},
 					__('Actions')
