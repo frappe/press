@@ -25,7 +25,7 @@
     "ssh_password": "vagrant",
     "ssh_username": "vagrant",
     "type": "qemu",
-    "use_backing_file": true,
+    "use_backing_file": false,
     "vm_name": "backbone"
   }],
   "post-processors": [{
