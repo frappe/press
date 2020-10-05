@@ -24,6 +24,7 @@
    "in_standard_filter": 1,
    "label": "Status",
    "options": "Pending\nInstalling\nActive\nBroken",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -38,13 +39,15 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "IP",
-   "reqd": 1
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "private_ip",
    "fieldtype": "Data",
    "label": "Private IP",
-   "reqd": 1
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "mariadb_section",
@@ -75,7 +78,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2020-10-04 16:50:27.176644",
+ "modified": "2020-10-05 12:53:37.270446",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
