@@ -22,6 +22,8 @@ class SiteDomain(Document):
 		agent.setup_redirect(self, target)
 
 	def create_tls_certificate(self):
+		if self.domain == self.site:
+			return
 		certificate = frappe.get_doc(
 			{"doctype": "TLS Certificate", "wildcard": False, "domain": self.domain}
 		).insert()
