@@ -16,7 +16,7 @@ class Server(Document):
 		agent = Agent(self.proxy_server, server_type="Proxy Server")
 		agent.new_server(self.name)
 
-	def ping(self):
+	def ping_agent(self):
 		agent = Agent(self.name)
 		return agent.ping()
 
@@ -53,10 +53,7 @@ class Server(Document):
 				self.status = "Broken"
 		except Exception:
 			self.status = "Broken"
-			import traceback
-
-			traceback.print_exc()
-			log_error("Server Setup Exception")
+			log_error("Server Setup Exception", server=self.as_dict())
 		self.save()
 
 	def setup_server(self):
@@ -65,6 +62,13 @@ class Server(Document):
 		frappe.enqueue_doc(
 			self.doctype, self.name, "_setup_server", queue="long", timeout=1200
 		)
+
+	def ping_ansible(self):
+		try:
+			ansible = Ansible(playbook="ping.yml", server=self)
+			ansible.run()
+		except Exception:
+			log_error("Server Ping Exception", server=self.as_dict())
 
 	def cleanup_unused_files(self):
 		agent = Agent(self.name)

@@ -49,7 +49,7 @@ class DatabaseServer(Document):
 				self.status = "Broken"
 		except Exception:
 			self.status = "Broken"
-			log_error("Database Server Setup Exception")
+			log_error("Database Server Setup Exception", server=self.as_dict())
 		self.save()
 
 	def setup_server(self):
@@ -64,4 +64,4 @@ class DatabaseServer(Document):
 			ansible = Ansible(playbook="ping.yml", server=self)
 			ansible.run()
 		except Exception:
-			log_error("Database Server Ping Exception")
+			log_error("Database Server Ping Exception", server=self.as_dict())
