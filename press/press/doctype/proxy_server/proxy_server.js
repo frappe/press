@@ -3,29 +3,29 @@
 
 frappe.ui.form.on('Proxy Server', {
 	refresh: function (frm) {
-		frm.add_custom_button(__('Ping'), () => {
-			frm.call({
-				method: "ping",
-				doc: frm.doc,
-				callback: result => frappe.msgprint(result.message)
-			});
-		}, __("Actions"));
-		frm.add_custom_button(__('Update Agent'), () => {
-			frm.call({
-				method: "update_agent",
-				doc: frm.doc,
-				callback: result => frappe.msgprint(result.message)
-			});
-		}, __("Actions"));
-		if (!frm.doc.is_server_setup) {
-			frm.add_custom_button(__('Setup Server'), () => {
-				frm.call({
-					method: "setup_server",
-					doc: frm.doc,
-					callback: result => frappe.msgprint(result.message)
-				});
-			}, __("Actions"));
-		}
+		[
+			[__('Ping Agent'), "ping_agent", false, frm.doc.is_server_setup],
+			[__('Ping Ansible'), "ping_ansible", true],
+			[__('Update Agent'), "update_agent", true, frm.doc.is_server_setup],
+			[__('Setup Server'), "setup_server", true, !frm.doc.is_server_setup],
+		].forEach(([label, method, confirm, condition]) => {
+			if (typeof condition === "undefined" || condition) {
+				frm.add_custom_button(
+					label,
+					() => {
+						if (confirm) {
+							frappe.confirm(
+								`Are you sure you want to ${label.toLowerCase()}?`,
+								() => frm.call(method).then((r) => frm.refresh())
+							);
 
+						} else {
+							frm.call(method).then((r) => frm.refresh())
+						}
+					},
+					__('Actions')
+				);
+			}
+		});
 	}
 });

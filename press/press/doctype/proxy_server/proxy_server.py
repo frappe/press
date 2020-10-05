@@ -12,7 +12,7 @@ from press.utils import log_error
 
 
 class ProxyServer(Document):
-	def ping(self):
+	def ping_agent(self):
 		agent = Agent(self.name, server_type="Proxy Server")
 		return agent.ping()
 
@@ -49,7 +49,7 @@ class ProxyServer(Document):
 				self.status = "Broken"
 		except Exception:
 			self.status = "Broken"
-			log_error("Proxy Server Setup Exception")
+			log_error("Proxy Server Setup Exception", server=self.as_dict())
 		self.save()
 
 	def setup_server(self):
@@ -58,3 +58,10 @@ class ProxyServer(Document):
 		frappe.enqueue_doc(
 			self.doctype, self.name, "_setup_server", queue="long", timeout=1200
 		)
+
+	def ping_ansible(self):
+		try:
+			ansible = Ansible(playbook="ping.yml", server=self)
+			ansible.run()
+		except Exception:
+			log_error("Proxy Server Ping Exception", server=self.as_dict())
