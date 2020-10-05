@@ -66,12 +66,12 @@ class TestSiteDomain(unittest.TestCase):
 		)
 
 	def test_default_host_name_is_site_subdomain(self):
-		"""Ensure subdomain+domain is default primary host_name"""
+		"""Ensure subdomain+domain is default primary host_name."""
 		site = create_test_site("testing")
 		self.assertEqual(site.host_name, site.name)
 
 	def test_default_site_domain_cannot_be_deleted(self):
-		"""Ensure default site domain for a site cannot be deleted"""
+		"""Ensure default site domain for a site cannot be deleted."""
 		site = create_test_site("testing")
 		site_domain = frappe.get_doc({
 			"doctype": "Site Domain",
@@ -82,3 +82,21 @@ class TestSiteDomain(unittest.TestCase):
 		test_domain = create_test_site_domain(site.name, test_domain_name)
 		site.set_host_name(test_domain.name)
 		self.assertRaises(Exception, site.remove_domain, site_domain.name)
+
+	def test_only_site_domains_can_be_host_names(self):
+		"""Ensure error is thrown if string other than site domain name is passed."""
+		site = create_test_site("testing")
+		self.assertRaises(
+			frappe.exceptions.LinkValidationError, site.set_host_name,
+			"site-domain-name-that-doesnt-exist"
+		)
+
+	def test_site_domain_for_other_site_cant_be_primary(self):
+		"""Ensure host_name cannot be set to site domain for another site."""
+		site1 = create_test_site("testing")
+		site2 = create_test_site("testing-another")
+		site_domain = create_test_site_domain(site2.name, "hellohello.com")
+		self.assertRaises(
+			frappe.exceptions.LinkValidationError, site1.set_host_name,
+			site_domain.name
+		)
