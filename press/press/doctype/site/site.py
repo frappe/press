@@ -206,6 +206,8 @@ class Site(Document):
 		agent.remove_domain(self, domain)
 
 	def remove_domain(self, domain):
+		if domain == self.name:
+			raise Exception("Cannot delete default site_domain")
 		site_domain = frappe.get_all(
 			"Site Domain", filters={"site": self.name, "domain": domain}
 		)[0]
