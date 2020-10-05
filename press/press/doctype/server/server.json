@@ -121,11 +121,12 @@
    "default": "0",
    "fieldname": "is_database_client_setup",
    "fieldtype": "Check",
-   "label": "Database Client Setup"
+   "label": "Database Client Setup",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2020-10-02 17:35:34.825191",
+ "modified": "2020-10-05 12:27:12.539527",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
