@@ -27,10 +27,12 @@ class Bench(Document):
 		if self.is_new():
 			self.port_offset = self.get_unused_port_offset()
 
+		db_host = frappe.db.get_value("Database Server", self.database_server, "private_ip") 
 		config = frappe.db.get_single_value("Press Settings", "bench_configuration")
 		config = json.loads(config)
 		config.update(
 			{
+				"db_host": db_host or "localhost",
 				"background_workers": self.workers,
 				"gunicorn_workers": self.gunicorn_workers,
 				"redis_cache": f"redis://localhost:{13000 + self.port_offset}",
