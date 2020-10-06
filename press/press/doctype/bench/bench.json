@@ -8,6 +8,7 @@
  "field_order": [
   "status",
   "server",
+  "database_server",
   "column_break_3",
   "group",
   "candidate",
@@ -122,10 +123,18 @@
    "fieldname": "auto_scale_workers",
    "fieldtype": "Check",
    "label": "Auto Scale Workers"
+  },
+  {
+   "fetch_from": "server.database_server",
+   "fieldname": "database_server",
+   "fieldtype": "Link",
+   "label": "Database Server",
+   "options": "Database Server",
+   "set_only_once": 1
   }
  ],
  "links": [],
- "modified": "2020-07-16 13:12:34.786038",
+ "modified": "2020-10-05 16:20:21.525657",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",
