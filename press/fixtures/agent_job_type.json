@@ -967,5 +967,24 @@
     "step_name": "Migrate Site"
    }
   ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2020-10-06 09:59:13.715751",
+  "name": "Setup Redirect on Host",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "request_method": "POST",
+  "request_path": "/proxy/hosts/{domain}/redirect",
+  "steps": [
+   {
+    "parent": "Setup Redirect on Host",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Setup Redirect on Host"
+   }
+  ]
  }
 ]
