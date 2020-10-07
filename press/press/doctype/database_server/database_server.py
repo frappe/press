@@ -145,6 +145,37 @@ class DatabaseServer(Document):
 			self.doctype, self.name, "_setup_replication", queue="long", timeout=1200
 		)
 
+	def _trigger_failover(self):
+		try:
+			ansible = Ansible(
+				playbook="failover.yml",
+				server=self,
+				variables={"mariadb_root_password": self.get_password("mariadb_root_password")},
+			)
+			play = ansible.run()
+			self.reload()
+			if play.status == "Success":
+				self.status = "Active"
+				self.is_replication_setup = False
+				self.is_primary = True
+				old_primary = self.primary
+				self.primary = None
+			else:
+				self.status = "Broken"
+		except Exception:
+			self.status = "Broken"
+			log_error("Database Server Failover Exception", server=self.as_dict())
+		self.save()
+
+	def trigger_failover(self):
+		if self.is_primary:
+			return
+		self.status = "Installing"
+		self.save()
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_trigger_failover", queue="long", timeout=1200
+		)
+
 	def ping_ansible(self):
 		try:
 			ansible = Ansible(playbook="ping.yml", server=self)
