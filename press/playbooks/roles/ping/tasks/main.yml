@@ -1,0 +1,8 @@
+---
+- name: Ping
+  ping:
+    data: pong
+
+- name: Gather Facts
+  debug:
+    var: ansible_facts

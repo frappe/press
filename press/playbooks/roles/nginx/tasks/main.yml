@@ -1,23 +1,21 @@
 ---
-- name: Install nginx
+- name: Install NGINX
   apt:
     pkg: nginx
     state: present
 
-- name: Remove default enabled nginx vhost
+- name: Remove Default Enabled NGINX Virtual Host
   file:
     path: /etc/nginx/sites-enabled/default
     state: absent
 
-- name: Remove default available nginx vhost
+- name: Remove Default Available NGINX Virtual Host
   file:
     path: /etc/nginx/sites-available/default
     state: absent
 
-- name: Restart nginx and enable at boot
-  service: 
-    name: nginx 
+- name: Restart NGINX and Enable at Boot
+  service:
+    name: nginx
     state: restarted
     enabled: yes
-
-...

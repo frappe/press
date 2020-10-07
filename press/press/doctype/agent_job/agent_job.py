@@ -443,7 +443,7 @@ def process_job_updates(job_name):
 		from press.press.doctype.bench.bench import (
 			process_new_bench_job_update,
 			process_archive_bench_job_update,
-			process_bench_sync_info_job_update
+			process_bench_sync_info_job_update,
 		)
 		from press.press.doctype.site.site import (
 			process_new_site_job_update,

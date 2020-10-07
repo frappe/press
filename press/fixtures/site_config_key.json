@@ -670,5 +670,61 @@
   "parenttype": null,
   "title": "Domains",
   "type": "JSON"
-  }
+ },
+ {
+  "description": null,
+  "docstatus": 0,
+  "doctype": "Site Config Key",
+  "internal": 1,
+  "key": "Database Name",
+  "modified": "2020-10-06 15:14:39.109169",
+  "name": "Database Name",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "title": "db_name",
+  "type": "String"
+ },
+ {
+  "description": null,
+  "docstatus": 0,
+  "doctype": "Site Config Key",
+  "internal": 1,
+  "key": "Database Host",
+  "modified": "2020-10-06 15:14:52.349324",
+  "name": "Database Host",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "title": "db_host",
+  "type": "String"
+ },
+ {
+  "description": null,
+  "docstatus": 0,
+  "doctype": "Site Config Key",
+  "internal": 1,
+  "key": "Database Password",
+  "modified": "2020-10-06 15:15:07.176131",
+  "name": "Database Password",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "title": "db_password",
+  "type": "String"
+ },
+ {
+  "description": null,
+  "docstatus": 0,
+  "doctype": "Site Config Key",
+  "internal": 1,
+  "key": "Database Type",
+  "modified": "2020-10-06 15:15:30.540554",
+  "name": "Database Type",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "title": "db_type",
+  "type": "String"
+ }
 ]
