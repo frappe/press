@@ -17,11 +17,12 @@ datadir                         = /var/lib/mysql/
 
 # BINARY LOGGING #
 log-bin                         = /var/lib/mysql/mysql-bin
+log_bin_index                   = /var/lib/mysql/mysql-bin.index
 expire-logs-days                = 14
 sync-binlog                     = 1
 
 # REPLICATION #
-server-id                       = 1
+server-id                       = {{ server_id }}
 
 # CACHES AND LIMITS #
 tmp-table-size                  = 32M
