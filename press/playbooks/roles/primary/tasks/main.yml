@@ -1,0 +1,16 @@
+---
+- name: Install MariaBackup
+  apt:
+    pkg: mariadb-backup
+
+- name: Create Directory for Database Dump
+  file:
+    dest: /tmp/replica
+    state: directory
+
+- name: Start MariaBackup
+  command: mariabackup --backup --rsync --target-dir /tmp/replica --user root --password "{{ mariadb_root_password }}"
+
+- name: Prepare MariaBackup
+  command: mariabackup --prepare --target-dir /tmp/replica
+
