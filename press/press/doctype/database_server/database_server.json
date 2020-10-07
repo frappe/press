@@ -14,6 +14,9 @@
   "mariadb_section",
   "mariadb_root_password",
   "agent_section",
+  "agent_password",
+  "replication_section",
+  "server_id",
   "ssh_section",
   "root_public_key",
   "column_break_18",
@@ -77,6 +80,17 @@
   {
    "fieldname": "column_break_3",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "replication_section",
+   "fieldtype": "Section Break",
+   "label": "Replication"
+  },
+  {
+   "fieldname": "server_id",
+   "fieldtype": "Int",
+   "label": "Server ID"
+  },
   {
    "fieldname": "column_break_12",
    "fieldtype": "Column Break"
