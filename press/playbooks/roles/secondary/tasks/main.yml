@@ -70,7 +70,7 @@
     mode: 0600
 
 - name: Test Access to Primary
-  community.mysql.mysql_query:
+  mysql_query:
     login_user: root
     login_password: "{{ mariadb_root_password }}"
     query: "SHOW FULL PROCESSLIST"
@@ -80,7 +80,7 @@
   register: primary_position
 
 - name: Set Primary Position
-  community.mysql.mysql_variables:
+  mysql_variables:
     mode: global
     login_user: root
     login_password: "{{ mariadb_root_password }}"
@@ -88,7 +88,7 @@
     value: "{{ primary_position.stdout.split()[2] }}"
 
 - name: Set Primary Details
-  community.mysql.mysql_replication:
+  mysql_replication:
     mode: changemaster
     login_user: root
     login_password: "{{ mariadb_root_password }}"
