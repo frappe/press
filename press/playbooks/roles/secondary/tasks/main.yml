@@ -44,6 +44,18 @@
     path: /var/lib/mysql
     mode: 0755
 
+- name: Set Open Files Count Limit for MariaDB
+  lineinfile:
+    dest: /lib/systemd/system/mariadb.service
+    regexp: '^LimitNOFILE(\s*)=(\s*)\d+'
+    line: "LimitNOFILE = infinity"
+    insertafter: '\[Service\]'
+    state: present
+
+- name: Force Systemd to Reread Configuration
+  systemd:
+    daemon_reload: yes
+
 - name: Start MariaDB Service
   service:
     name: mysql
