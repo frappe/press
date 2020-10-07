@@ -46,6 +46,7 @@ class Server(Document):
 				},
 			)
 			play = ansible.run()
+			self.reload()
 			if play.status == "Success":
 				self.status = "Active"
 				self.is_server_setup = True
