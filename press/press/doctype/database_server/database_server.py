@@ -96,9 +96,44 @@ class DatabaseServer(Document):
 			log_error("Primary Server Setup Exception", server=self.as_dict())
 		self.save()
 
+	def setup_secondary(self):
+		if self.is_primary:
+			return
+		self.status = "Installing"
+		self.save()
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_setup_secondary", queue="long", timeout=1200
+		)
+
+	def _setup_secondary(self):
+		primary = frappe.get_doc("Database Server", self.primary)
+		mariadb_root_password = primary.get_password("mariadb_root_password")
+		try:
+			ansible = Ansible(
+				playbook="secondary.yml",
+				server=self,
+				variables={
+					"mariadb_root_password": mariadb_root_password,
+					"primary_private_ip": primary.private_ip,
+				},
+			)
+			play = ansible.run()
+			self.reload()
+			if play.status == "Success":
+				self.status = "Active"
+				self.is_replication_setup = True
+			else:
+				self.status = "Broken"
+		except Exception:
+			self.status = "Broken"
+			log_error("Secondary Server Setup Exception", server=self.as_dict())
+		self.save()
+
 	def _setup_replication(self):
 		primary = frappe.get_doc("Database Server", self.primary)
 		primary._setup_primary(self.name)
+		if primary.status == "Active":
+			self._setup_secondary()
 
 	def setup_replication(self):
 		if self.is_primary:
