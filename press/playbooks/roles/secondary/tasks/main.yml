@@ -24,6 +24,11 @@
     name: mysql
     state: stopped
 
+- name: Delete MariaDB Data Directory
+  file:
+    path: /var/lib/mysql
+    state: absent
+
 - name: Move Backup Directory to MariaDB Data Directory
   command: mariabackup --copy-back --target-dir /tmp/replica
 
