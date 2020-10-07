@@ -432,9 +432,12 @@ class Agent:
 		return self.get(f"benches/{site.bench}/sites/{site.name}/info")["data"]
 
 	def get_sites_info(self, bench):
-		return self.create_agent_job(
-			"Fetch Sites Info", f"benches/{bench.name}/info", method="GET"
-		)
+		data = {
+			"mariadb_root_password": get_decrypted_password(
+				"Server", self.server, "mariadb_root_password"
+			)
+		}
+		return self.create_agent_job("Fetch Sites Info", f"benches/{bench.name}/info", bench=bench.name, data=data, method="GET")
 
 	def get_jobs_status(self, ids):
 		status = self.get(f"jobs/{','.join(map(str, ids))}")
