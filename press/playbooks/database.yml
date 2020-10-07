@@ -1,0 +1,12 @@
+---
+- name: Setup Database Server
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: yes
+  roles:
+    - role: essentials
+    - role: user
+    - role: mariadb
+    - role: nginx
+    - role: agent

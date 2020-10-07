@@ -185,7 +185,7 @@ class Invoice(Document):
 			remark += f" Reason: {reason}"
 
 		stripe = get_stripe()
-		invoice = stripe.Invoice.modify(self.stripe_invoice_id, paid=True)
+		stripe.Invoice.modify(self.stripe_invoice_id, paid=True)
 
 		ple = team.allocate_credit_amount(
 			amount=self.amount_due * -1,

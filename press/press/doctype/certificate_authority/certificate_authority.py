@@ -43,7 +43,7 @@ class CertificateAuthority(Document):
 		os.mkdir(self.new_certificates_directory)
 		Path(self.database_file).touch()
 		with open(self.serial_file, "w") as f:
-			f.write(f"{secrets.randbits(16*8):x}")
+			f.write(f"{secrets.randbits(16*8):0{32}x}\n")
 
 		template = "root.conf" if self.is_root_ca else "intermediate.conf"
 		template = f"press/press/doctype/certificate_authority/{template}"
