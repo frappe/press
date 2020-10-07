@@ -3,6 +3,14 @@
   apt:
     pkg: mariadb-backup
 
+- name: Remove Primary from Known Hosts
+  known_hosts:
+    name: "{{ primary_private_ip }}"
+    state: absent
+
+- name: Add Primary to Known Hosts
+  shell: ssh-keyscan {{ primary_private_ip }} >> /root/.ssh/known_hosts
+
 - name: Create Directory for RSync
   file:
     path: /tmp/replica
