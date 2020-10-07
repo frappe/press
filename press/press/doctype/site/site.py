@@ -289,8 +289,11 @@ class Site(Document):
 			)
 			for doc in frappe.get_all("Site Backup", filters={"site": self.name, "offsite": 1})
 		]
+		s3_bucket = frappe.db.get_single_value("Press Settings", "aws_s3_bucket")
+		if not s3_bucket:
+			return
 		offsite_bucket = {
-			"bucket": frappe.db.get_single_value("Press Settings", "aws_s3_bucket"),
+			"bucket": s3_bucket,
 			"access_key_id": frappe.db.get_single_value(
 				"Press Settings", "offsite_backups_access_key_id"
 			),
