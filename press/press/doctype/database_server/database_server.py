@@ -11,6 +11,16 @@ from press.utils import log_error
 
 
 class DatabaseServer(Document):
+	def validate(self):
+		if self.is_new() and not self.server_id:
+			server_ids = frappe.get_all(
+				"Database Server", fields=["server_id"], pluck="server_id"
+			)
+			if server_ids:
+				self.server_id = max(server_ids or []) + 1
+			else:
+				self.server_id = 1
+
 	def ping_agent(self):
 		agent = Agent(self.name, server_type=self.doctype)
 		return agent.ping()
@@ -35,6 +45,7 @@ class DatabaseServer(Document):
 					"workers": "2",
 					"password": agent_password,
 					"private_ip": self.private_ip,
+					"server_id": self.server_id,
 					"mariadb_root_password": mariadb_root_password,
 					"certificate_private_key": certificate.private_key,
 					"certificate_full_chain": certificate.full_chain,

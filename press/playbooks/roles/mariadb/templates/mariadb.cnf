@@ -21,7 +21,7 @@ expire-logs-days                = 14
 sync-binlog                     = 1
 
 # REPLICATION #
-server-id                       = 1
+server-id                       = {{ server_id }}
 
 # CACHES AND LIMITS #
 tmp-table-size                  = 32M
