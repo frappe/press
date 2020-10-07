@@ -99,6 +99,8 @@
    "depends_on": "eval: !doc.is_primary",
    "fieldname": "primary",
    "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Primary",
    "mandatory_depends_on": "eval: !doc.is_primary",
    "options": "Database Server"
@@ -107,6 +109,8 @@
    "default": "0",
    "fieldname": "is_primary",
    "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Is Primary"
   },
   {
@@ -145,7 +149,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2020-10-07 19:22:34.891083",
+ "modified": "2020-10-07 22:35:47.217140",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
