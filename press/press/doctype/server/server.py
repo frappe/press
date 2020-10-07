@@ -12,6 +12,15 @@ from press.utils import log_error
 
 
 class Server(Document):
+	def on_update(self):
+		# If Database Server is changed for the server then change it for all the benches
+		if not self.is_new() and self.has_value_changed("database_server"):
+			benches = frappe.get_all("Bench", {"server": self.name, "status": ("!=", "Archived")})
+			for bench in benches:
+				bench = frappe.get_doc("Bench", bench)
+				bench.database_server = self.database_server
+				bench.save()
+
 	def add_upstream_to_proxy(self):
 		agent = Agent(self.proxy_server, server_type="Proxy Server")
 		agent.new_server(self.name)

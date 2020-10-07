@@ -160,6 +160,11 @@ class DatabaseServer(Document):
 				self.is_primary = True
 				old_primary = self.primary
 				self.primary = None
+				servers = frappe.get_all("Server", {"database_server": old_primary})
+				for server in servers:
+					server = frappe.get_doc("Server", server.name)
+					server.database_server = self.name
+					server.save()
 			else:
 				self.status = "Broken"
 		except Exception:
