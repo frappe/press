@@ -67,7 +67,7 @@ def options():
 	enable_custom_apps = frappe.db.get_value("Team", team, "enable_custom_apps")
 	public_link = frappe.db.get_single_value("Press Settings", "github_app_public_link")
 
-	groups = frappe.get_all("Release Group", {"public": True})
+	groups = frappe.get_all("Release Group", or_filters={"public": True, "team": team})
 	for group in groups:
 		group_doc = frappe.get_doc("Release Group", group.name)
 		group_apps = frappe.get_all(
