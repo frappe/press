@@ -17,8 +17,22 @@ class AnsibleCallback(CallbackBase):
 	def __init__(self, *args, **kwargs):
 		super(AnsibleCallback, self).__init__(*args, **kwargs)
 
+	def process_task_success(self, result):
+		result, action = frappe._dict(result._result), result._task.action
+		if action == "user":
+			server_type, server = frappe.db.get_value(
+				"Ansible Play", self.play, ["server_type", "server"]
+			)
+			server = frappe.get_doc(server_type, server)
+			if result.name == "root":
+				server.root_public_key = result.ssh_public_key
+			elif result.name == "frappe":
+				server.frappe_public_key = result.ssh_public_key
+			server.save()
+
 	def v2_runner_on_ok(self, result, *args, **kwargs):
 		self.update_task("Success", result)
+		self.process_task_success(result)
 
 	def v2_runner_on_failed(self, result, *args, **kwargs):
 		self.update_task("Failure", result)

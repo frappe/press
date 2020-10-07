@@ -14,7 +14,10 @@
   "mariadb_section",
   "mariadb_root_password",
   "agent_section",
-  "agent_password"
+  "ssh_section",
+  "root_public_key",
+  "column_break_18",
+  "frappe_public_key"
  ],
  "fields": [
   {
@@ -74,6 +77,26 @@
   {
    "fieldname": "column_break_3",
    "fieldtype": "Column Break"
+  {
+   "fieldname": "column_break_12",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "ssh_section",
+   "fieldtype": "Section Break",
+   "label": "SSH"
+  },
+  {
+   "fieldname": "root_public_key",
+   "fieldtype": "Code",
+   "label": "Root Public Key",
+   "read_only": 1
+  },
+  {
+   "fieldname": "frappe_public_key",
+   "fieldtype": "Code",
+   "label": "Frappe Public Key",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
