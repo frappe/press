@@ -283,9 +283,9 @@ class Agent:
 			"name": domain.domain,
 			"target": domain.site,
 			"certificate": {
-				"privkey.pem": certificate.privkey,
-				"fullchain.pem": certificate.fullchain,
-				"chain.pem": certificate.chain,
+				"privkey.pem": certificate.private_key,
+				"fullchain.pem": certificate.full_chain,
+				"chain.pem": certificate.intermediate_chain,
 			},
 		}
 		return self.create_agent_job(

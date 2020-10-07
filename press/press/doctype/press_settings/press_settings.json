@@ -18,6 +18,7 @@
   "rsa_key_size",
   "wildcard_tls_certificate",
   "column_break_11",
+  "backbone_intermediate_ca",
   "webroot_directory",
   "certbot_directory",
   "stripe_settings_section",
@@ -98,14 +99,12 @@
   {
    "fieldname": "aws_access_key_id",
    "fieldtype": "Data",
-   "label": "AWS Access Key ID",
-   "reqd": 1
+   "label": "AWS Access Key ID"
   },
   {
    "fieldname": "aws_secret_access_key",
    "fieldtype": "Password",
-   "label": "AWS Secret Access Key",
-   "reqd": 1
+   "label": "AWS Secret Access Key"
   },
   {
    "default": "AWS Route 53",
@@ -130,8 +129,7 @@
   {
    "fieldname": "eff_registration_email",
    "fieldtype": "Data",
-   "label": "EFF Registration Email",
-   "reqd": 1
+   "label": "EFF Registration Email"
   },
   {
    "fieldname": "column_break_11",
@@ -140,14 +138,12 @@
   {
    "fieldname": "webroot_directory",
    "fieldtype": "Data",
-   "label": "Webroot Directory",
-   "reqd": 1
+   "label": "Webroot Directory"
   },
   {
    "fieldname": "certbot_directory",
    "fieldtype": "Data",
-   "label": "Certbot Directory",
-   "reqd": 1
+   "label": "Certbot Directory"
   },
   {
    "fieldname": "tls_section",
@@ -439,12 +435,18 @@
    "fieldname": "product_documentation_section",
    "fieldtype": "Section Break",
    "label": "Product Documentation"
+  },
+  {
+   "fieldname": "backbone_intermediate_ca",
+   "fieldtype": "Link",
+   "label": "Backbone Intermediate CA",
+   "options": "Certificate Authority"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2020-08-17 21:48:01.198091",
- "modified_by": "faris@erpnext.com",
+ "modified": "2020-09-22 19:59:13.698703",
+ "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
  "owner": "Administrator",

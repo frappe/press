@@ -404,7 +404,7 @@ class Site(Document):
 		update the value, remove the key. All of this can be handled by setting the full configuration at once.
 
 		Args:
-			config (list): List of dicts with key, value, and type
+		config (list): List of dicts with key, value, and type
 		"""
 		blacklisted_config = [
 			x for x in self.configuration if x.key in get_client_blacklisted_keys()
@@ -429,7 +429,7 @@ class Site(Document):
 		"""Updates site.configuration, runs site.save which updates site.config
 
 		Args:
-			config (dict): Python dict for any suitable frappe.conf
+		config (dict): Python dict for any suitable frappe.conf
 		"""
 
 		def is_json(string):
@@ -482,7 +482,7 @@ class Site(Document):
 		`press.api.site.update_config` instead.
 
 		Args:
-			config (dict): Python dict for any suitable frappe.conf
+		config (dict): Python dict for any suitable frappe.conf
 		"""
 		if isinstance(config, list):
 			self.set_configuration(config)

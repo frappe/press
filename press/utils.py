@@ -215,3 +215,8 @@ def sanitize_config(config: dict) -> dict:
 			sanitized_config.pop(key)
 
 	return sanitized_config
+
+
+def developer_mode_only():
+	if not frappe.conf.developer_mode:
+		frappe.throw("You don't know what you're doing. Go away!", frappe.ValidationError)

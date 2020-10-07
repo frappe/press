@@ -33,9 +33,9 @@ class ProxyServer(Document):
 		command = (
 			f"ansible-playbook ../apps/press/press/playbooks/proxy.yml -i {self.name},"
 			f' -u root -vv -e "server={self.name} workers=1 password={agent_password}'
-			f" domain={domain} certificate_privkey='{certificate.privkey}'"
-			f" certificate_fullchain='{certificate.fullchain}'"
-			f" certificate_chain='{certificate.chain}' \""
+			f" domain={domain} certificate_private_key='{certificate.private_key}'"
+			f" certificate_full_chain='{certificate.full_chain}'"
+			f" certificate_intermediate_chain='{certificate.intermediate_chain}' \""
 		)
 		try:
 			subprocess.run(shlex.split(command))
