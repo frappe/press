@@ -71,9 +71,48 @@ class DatabaseServer(Document):
 			self.doctype, self.name, "_setup_server", queue="long", timeout=1200
 		)
 
+	def _setup_primary(self, secondary):
+		mariadb_root_password = self.get_password("mariadb_root_password")
+		secondary_root_public_key = frappe.db.get_value(
+			"Database Server", secondary, "root_public_key"
+		)
+		try:
+			ansible = Ansible(
+				playbook="primary.yml",
+				server=self,
+				variables={
+					"mariadb_root_password": mariadb_root_password,
+					"secondary_root_public_key": secondary_root_public_key,
+				},
+			)
+			play = ansible.run()
+			self.reload()
+			if play.status == "Success":
+				self.status = "Active"
+			else:
+				self.status = "Broken"
+		except Exception:
+			self.status = "Broken"
+			log_error("Primary Server Setup Exception", server=self.as_dict())
+		self.save()
+
+	def _setup_replication(self):
+		primary = frappe.get_doc("Database Server", self.primary)
+		primary._setup_primary(self.name)
+
+	def setup_replication(self):
+		if self.is_primary:
+			return
+		self.status = "Installing"
+		self.save()
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_setup_replication", queue="long", timeout=1200
+		)
+
 	def ping_ansible(self):
 		try:
 			ansible = Ansible(playbook="ping.yml", server=self)
 			ansible.run()
+
 		except Exception:
 			log_error("Database Server Ping Exception", server=self.as_dict())
