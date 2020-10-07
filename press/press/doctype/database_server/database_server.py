@@ -122,6 +122,7 @@ class DatabaseServer(Document):
 			if play.status == "Success":
 				self.status = "Active"
 				self.is_replication_setup = True
+				self.mariadb_root_password = mariadb_root_password
 			else:
 				self.status = "Broken"
 		except Exception:

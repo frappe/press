@@ -61,6 +61,14 @@
     name: mysql
     state: started
 
+- name: Add .my.cnf MariaDB Configuration File
+  template:
+    src: my.cnf
+    dest: /root/.my.cnf
+    owner: root
+    group: root
+    mode: 0600
+
 - name: Test Access to Primary
   community.mysql.mysql_query:
     login_user: root
