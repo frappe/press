@@ -17,6 +17,7 @@ datadir                         = /var/lib/mysql/
 
 # BINARY LOGGING #
 log-bin                         = /var/lib/mysql/mysql-bin
+log_bin_index                   = /var/lib/mysql/mysql-bin.index
 expire-logs-days                = 14
 sync-binlog                     = 1
 
