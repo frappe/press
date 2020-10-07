@@ -42,3 +42,8 @@
 - name: Prepare MariaBackup
   command: mariabackup --prepare --target-dir /tmp/replica
 
+- name: Add Secondary Public Key to Authorized Keys
+  authorized_key:
+    user: root
+    key: "{{ secondary_root_public_key }}"
+    state: present
