@@ -44,7 +44,7 @@ class AnsibleCallback(CallbackBase):
 			# Assume we're running on one host
 			host = list(stats.processed.keys())[0]
 			play.update(stats.summarize(host))
-			if play.failures:
+			if play.failures or play.unreachable:
 				play.status = "Failure"
 			else:
 				play.status = "Success"
