@@ -21,7 +21,12 @@
   "is_upstream_setup",
   "database_section",
   "database_server",
-  "is_database_client_setup"
+  "column_break_16",
+  "is_database_client_setup",
+  "ssh_section",
+  "root_public_key",
+  "column_break_20",
+  "frappe_public_key"
  ],
  "fields": [
   {
@@ -123,10 +128,35 @@
    "fieldtype": "Check",
    "label": "Database Client Setup",
    "read_only": 1
+  },
+  {
+   "fieldname": "ssh_section",
+   "fieldtype": "Section Break",
+   "label": "SSH"
+  },
+  {
+   "fieldname": "root_public_key",
+   "fieldtype": "Code",
+   "label": "Root Public Key",
+   "read_only": 1
+  },
+  {
+   "fieldname": "frappe_public_key",
+   "fieldtype": "Code",
+   "label": "Frappe Public Key",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_16",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_20",
+   "fieldtype": "Column Break"
   }
  ],
  "links": [],
- "modified": "2020-10-05 12:27:12.539527",
+ "modified": "2020-10-07 18:03:21.911682",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

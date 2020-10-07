@@ -17,8 +17,22 @@ class AnsibleCallback(CallbackBase):
 	def __init__(self, *args, **kwargs):
 		super(AnsibleCallback, self).__init__(*args, **kwargs)
 
+	def process_task_success(self, result):
+		result, action = frappe._dict(result._result), result._task.action
+		if action == "user":
+			server_type, server = frappe.db.get_value(
+				"Ansible Play", self.play, ["server_type", "server"]
+			)
+			server = frappe.get_doc(server_type, server)
+			if result.name == "root":
+				server.root_public_key = result.ssh_public_key
+			elif result.name == "frappe":
+				server.frappe_public_key = result.ssh_public_key
+			server.save()
+
 	def v2_runner_on_ok(self, result, *args, **kwargs):
 		self.update_task("Success", result)
+		self.process_task_success(result)
 
 	def v2_runner_on_failed(self, result, *args, **kwargs):
 		self.update_task("Failure", result)
@@ -44,7 +58,7 @@ class AnsibleCallback(CallbackBase):
 			# Assume we're running on one host
 			host = list(stats.processed.keys())[0]
 			play.update(stats.summarize(host))
-			if play.failures:
+			if play.failures or play.unreachable:
 				play.status = "Failure"
 			else:
 				play.status = "Success"
@@ -56,8 +70,12 @@ class AnsibleCallback(CallbackBase):
 
 	def update_task(self, status, result=None, task=None):
 		if result:
+			if not result._task._role:
+				return
 			task_name, result = self.parse_result(result)
 		else:
+			if not task._role:
+				return
 			task_name = self.tasks[task._role.get_name()][task.name]
 		task = frappe.get_doc("Ansible Task", task_name)
 		task.status = status

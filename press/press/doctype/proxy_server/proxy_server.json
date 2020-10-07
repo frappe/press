@@ -12,7 +12,11 @@
   "ip",
   "private_ip",
   "agent_section",
-  "agent_password"
+  "agent_password",
+  "ssh_section",
+  "root_public_key",
+  "column_break_10",
+  "frappe_public_key"
  ],
  "fields": [
   {
@@ -61,10 +65,31 @@
    "fieldname": "agent_section",
    "fieldtype": "Section Break",
    "label": "Agent"
+  },
+  {
+   "fieldname": "ssh_section",
+   "fieldtype": "Section Break",
+   "label": "SSH"
+  },
+  {
+   "fieldname": "root_public_key",
+   "fieldtype": "Code",
+   "label": "Root Public Key",
+   "read_only": 1
+  },
+  {
+   "fieldname": "frappe_public_key",
+   "fieldtype": "Code",
+   "label": "Frappe Public Key",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_10",
+   "fieldtype": "Column Break"
   }
  ],
  "links": [],
- "modified": "2020-10-01 18:44:39.126624",
+ "modified": "2020-10-07 19:23:36.186380",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",

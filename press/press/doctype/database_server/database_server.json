@@ -14,7 +14,17 @@
   "mariadb_section",
   "mariadb_root_password",
   "agent_section",
-  "agent_password"
+  "agent_password",
+  "replication_section",
+  "server_id",
+  "is_primary",
+  "column_break_12",
+  "primary",
+  "is_replication_setup",
+  "ssh_section",
+  "root_public_key",
+  "column_break_18",
+  "frappe_public_key"
  ],
  "fields": [
   {
@@ -74,11 +84,68 @@
   {
    "fieldname": "column_break_3",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "replication_section",
+   "fieldtype": "Section Break",
+   "label": "Replication"
+  },
+  {
+   "fieldname": "server_id",
+   "fieldtype": "Int",
+   "label": "Server ID"
+  },
+  {
+   "depends_on": "eval: !doc.is_primary",
+   "fieldname": "primary",
+   "fieldtype": "Link",
+   "label": "Primary",
+   "mandatory_depends_on": "eval: !doc.is_primary",
+   "options": "Database Server"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_primary",
+   "fieldtype": "Check",
+   "label": "Is Primary"
+  },
+  {
+   "fieldname": "column_break_12",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "ssh_section",
+   "fieldtype": "Section Break",
+   "label": "SSH"
+  },
+  {
+   "fieldname": "root_public_key",
+   "fieldtype": "Code",
+   "label": "Root Public Key",
+   "read_only": 1
+  },
+  {
+   "fieldname": "frappe_public_key",
+   "fieldtype": "Code",
+   "label": "Frappe Public Key",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "depends_on": "eval: !doc.is_primary",
+   "fieldname": "is_replication_setup",
+   "fieldtype": "Check",
+   "label": "Replication Setup",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_18",
+   "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2020-10-05 12:53:37.270446",
+ "modified": "2020-10-07 19:22:34.891083",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
