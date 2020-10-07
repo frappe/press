@@ -130,11 +130,11 @@
    "fieldtype": "Link",
    "label": "Database Server",
    "options": "Database Server",
-   "set_only_once": 1
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2020-10-05 16:20:21.525657",
+ "modified": "2020-10-07 22:54:07.354802",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",
