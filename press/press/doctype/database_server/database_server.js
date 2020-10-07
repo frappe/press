@@ -9,6 +9,7 @@ frappe.ui.form.on('Database Server', {
 			[__('Update Agent'), "update_agent", true, frm.doc.is_server_setup],
 			[__('Setup Server'), "setup_server", true, !frm.doc.is_server_setup],
 			[__('Setup Replication'), "setup_replication", true, frm.doc.is_server_setup && !frm.doc.is_primary && !frm.doc.is_replication_setup],
+			[__('Trigger Failover'), "trigger_failover", true, frm.doc.is_server_setup && !frm.doc.is_primary && frm.doc.is_replication_setup],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === "undefined" || condition) {
 				frm.add_custom_button(
