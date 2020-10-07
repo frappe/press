@@ -56,8 +56,12 @@ class AnsibleCallback(CallbackBase):
 
 	def update_task(self, status, result=None, task=None):
 		if result:
+			if not result._task._role:
+				return
 			task_name, result = self.parse_result(result)
 		else:
+			if not task._role:
+				return
 			task_name = self.tasks[task._role.get_name()][task.name]
 		task = frappe.get_doc("Ansible Task", task_name)
 		task.status = status
