@@ -103,7 +103,7 @@
     login_user: root
     login_password: "{{ mariadb_root_password }}"
 
-- name: Show Secondary Status
+- name: Check Secondary Status
   mysql_replication:
     mode: getslave
     login_user: root
