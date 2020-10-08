@@ -37,6 +37,7 @@
     state: absent
 
 - name: Start MariaBackup
+  command: mariabackup --backup --rsync --target-dir /tmp/replica --user root --password "{{ mariadb_root_password }}" --open-files-limit {{ open_files_limit }}
   async: 3600
   poll: 5
 
