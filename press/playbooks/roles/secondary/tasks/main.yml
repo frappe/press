@@ -18,6 +18,8 @@
 
 - name: RSync Backup Directory From Primary
   command: rsync -avpPR -e ssh\ -p22 root@{{ primary_private_ip }}:/tmp/replica /
+  async: 3600
+  poll: 5
 
 - name: Stop MariaDB Service
   service:
