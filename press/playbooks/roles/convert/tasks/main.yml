@@ -1,4 +1,10 @@
 ---
+- name: Install MySQLdb Python Package
+  apt:
+    pkg:
+      - python-mysqldb
+    state: present
+
 - name: Allow Users to Access from any Host
   mysql_query:
     login_user: root
