@@ -142,7 +142,7 @@ class DatabaseServer(Document):
 		self.status = "Installing"
 		self.save()
 		frappe.enqueue_doc(
-			self.doctype, self.name, "_setup_replication", queue="long", timeout=1200
+			self.doctype, self.name, "_setup_replication", queue="long", timeout=7200
 		)
 
 	def _trigger_failover(self):
@@ -188,3 +188,43 @@ class DatabaseServer(Document):
 
 		except Exception:
 			log_error("Database Server Ping Exception", server=self.as_dict())
+
+	def _convert_from_frappe_server(self):
+		mariadb_root_password = self.get_password("mariadb_root_password")
+		try:
+			ansible = Ansible(
+				playbook="convert.yml",
+				server=self,
+				variables={
+					"private_ip": self.private_ip,
+					"mariadb_root_password": mariadb_root_password,
+				},
+			)
+			play = ansible.run()
+			self.reload()
+			if play.status == "Success":
+				self.status = "Active"
+				self.is_server_setup = True
+				server = frappe.get_doc("Server", self.name)
+				server.database_server = self.name
+				server.save()
+			else:
+				self.status = "Broken"
+		except Exception:
+			self.status = "Broken"
+			log_error("Database Server Conversion Exception", server=self.as_dict())
+		self.save()
+
+	def convert_from_frappe_server(self):
+		self.status = "Installing"
+		self.save()
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_convert_from_frappe_server", queue="long", timeout=1200
+		)
+
+	def fetch_keys(self):
+		try:
+			ansible = Ansible(playbook="keys.yml", server=self)
+			ansible.run()
+		except Exception:
+			log_error("Database Server Key Fetch Exception", server=self.as_dict())
