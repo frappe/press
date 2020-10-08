@@ -142,7 +142,7 @@ class DatabaseServer(Document):
 		self.status = "Installing"
 		self.save()
 		frappe.enqueue_doc(
-			self.doctype, self.name, "_setup_replication", queue="long", timeout=1200
+			self.doctype, self.name, "_setup_replication", queue="long", timeout=7200
 		)
 
 	def _trigger_failover(self):
