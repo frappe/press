@@ -1,0 +1,45 @@
+---
+- name: Allow Users to Access from any Host
+  mysql_query:
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+    login_db: mysql
+    query:
+      - UPDATE mysql.user SET host = '%' WHERE host = 'localhost' AND user NOT IN ('root', 'debian-sys-maint');
+      - UPDATE mysql.db SET host = '%' WHERE host = 'localhost' AND user NOT IN ('root', 'debian-sys-maint');
+      - FLUSH PRIVILEGES;
+
+- name: Allow Remote root Login
+  mysql_user:
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+    check_implicit_admin: yes
+    name: root
+    host: "%"
+    priv: "*.*:ALL,GRANT"
+    password: "{{ mariadb_root_password }}"
+    state: present
+
+- name: Allow Remote root Login
+  mysql_user:
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+    check_implicit_admin: yes
+    name: root
+    host: "%"
+    priv: "*.*:ALL,GRANT"
+    password: "{{ mariadb_root_password }}"
+    state: present
+
+- name: Bind MariaDB to Private IP Address
+  lineinfile:
+    dest: /etc/mysql/conf.d/settings.cnf
+    regexp: "^bind-address"
+    line: "bind-address                    = {{ private_ip }}"
+    insertafter: '\[mysqld\]'
+    state: present
+
+- name: Restart MariaDB Service
+  service:
+    name: mysql
+    state: restarted
