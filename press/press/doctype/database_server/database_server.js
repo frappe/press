@@ -8,6 +8,7 @@ frappe.ui.form.on('Database Server', {
 			[__('Ping Ansible'), "ping_ansible", true],
 			[__('Update Agent'), "update_agent", true, frm.doc.is_server_setup],
 			[__('Setup Server'), "setup_server", true, !frm.doc.is_server_setup],
+			[__('Convert From Frappe Server'), "convert_from_frappe_server", true, !frm.doc.is_server_setup],
 			[__('Setup Replication'), "setup_replication", true, frm.doc.is_server_setup && !frm.doc.is_primary && !frm.doc.is_replication_setup],
 			[__('Trigger Failover'), "trigger_failover", true, frm.doc.is_server_setup && !frm.doc.is_primary && frm.doc.is_replication_setup],
 		].forEach(([label, method, confirm, condition]) => {
