@@ -35,7 +35,7 @@ class TLSCertificate(Document):
 	def _obtain_certificate(self):
 		try:
 			settings = frappe.get_doc("Press Settings", "Press Settings")
-			if frappe.conf.developer_mode:
+			if frappe.conf.developer_mode and settings.use_backbone_ca:
 				ca_class = Backbone
 			else:
 				ca_class = LetsEncrypt
