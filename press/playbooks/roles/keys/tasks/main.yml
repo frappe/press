@@ -1,0 +1,10 @@
+---
+- name: Create SSH Keys for Frappe User
+  user:
+    name: frappe
+    generate_ssh_key: yes
+
+- name: Create SSH Keys for root User
+  user:
+    name: root
+    generate_ssh_key: yes
