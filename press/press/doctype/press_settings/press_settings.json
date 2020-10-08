@@ -26,6 +26,7 @@
   "backbone_directory",
   "column_break_20",
   "backbone_intermediate_ca",
+  "use_backbone_ca",
   "stripe_settings_section",
   "stripe_account",
   "create_stripe_plans",
@@ -473,11 +474,17 @@
   {
    "fieldname": "column_break_38",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "use_backbone_ca",
+   "fieldtype": "Check",
+   "label": "Use Backbone CA"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2020-09-28 13:55:30.686812",
+ "modified": "2020-10-08 10:20:20.763127",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
