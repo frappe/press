@@ -94,7 +94,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Pending\nInstalling\nActive\nBroken",
+   "options": "Pending\nInstalling\nActive\nBroken\nArchived",
    "read_only": 1,
    "reqd": 1
   },
@@ -156,7 +156,7 @@
   }
  ],
  "links": [],
- "modified": "2020-10-07 18:03:21.911682",
+ "modified": "2020-10-09 18:14:55.805169",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
