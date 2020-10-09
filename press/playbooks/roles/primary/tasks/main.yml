@@ -14,7 +14,7 @@
 
 - name: Calculate Open Files Limit
   set_fact:
-    open_files_limit: "{{ [ibdata_file_count.stdout|int + 1000, 65535] | max }}"
+    open_files_limit: "{{ [ibdata_file_count.stdout|int + 10000, 65535] | max }}"
 
 - name: Set Soft Limit on Open Files in Linux
   pam_limits:
