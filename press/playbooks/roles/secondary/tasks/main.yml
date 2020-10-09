@@ -31,8 +31,18 @@
     path: /var/lib/mysql
     state: absent
 
+- name: Count Number of IBData Files
+  shell: 'cd /tmp/replica && find . -name "*.ibd" | wc -l'
+  register: ibdata_file_count
+
+- name: Calculate Open Files Limit
+  set_fact:
+    open_files_limit: "{{ [ibdata_file_count.stdout|int + 10000, 65535] | max }}"
+
 - name: Move Backup Directory to MariaDB Data Directory
-  command: mariabackup --copy-back --target-dir /tmp/replica
+  command: mariabackup --copy-back --target-dir /tmp/replica --open-files-limit {{ open_files_limit }}
+  async: 3600
+  poll: 5
 
 - name: Change Ownership of MariaDB Data Directory to mysql User
   file:
