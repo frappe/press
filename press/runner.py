@@ -8,6 +8,7 @@ from ansible.inventory.manager import InventoryManager
 from ansible.module_utils.common.collections import ImmutableDict
 from ansible.parsing.dataloader import DataLoader
 from ansible.playbook import Playbook
+from ansible.plugins.action.async_status import ActionModule
 from ansible.plugins.callback import CallbackBase
 from ansible.utils.display import Display
 from ansible.vars.manager import VariableManager
@@ -129,6 +130,19 @@ class AnsibleCallback(CallbackBase):
 		task.save()
 		frappe.db.commit()
 
+	@reconnect_on_failure()
+	def on_async_poll(self, result):
+		job_id = result["ansible_job_id"]
+		task_name = frappe.get_value(
+			"Ansible Task", {"play": self.play, "job_id": job_id}, "name"
+		)
+		task = frappe.get_doc("Ansible Task", task_name)
+		task.result = json.dumps(result, indent=4)
+		task.duration = now() - task.start
+		task.save()
+		frappe.db.commit()
+
+
 class Ansible:
 	def __init__(self, server, playbook, variables=None):
 		self.patch()
@@ -163,11 +177,20 @@ class Ansible:
 		self.create_ansible_play()
 
 	def patch(self):
+		def modified_action_module_run(*args, **kwargs):
+			result = self.action_module_run(*args, **kwargs)
+			self.callback.on_async_poll(result)
+			return result
+
 		def modified_poll_async_result(executor, result, templar, task_vars=None):
 			job_id = result["ansible_job_id"]
 			task = executor._task
 			self.callback.on_async_start(task._role.get_name(), task.name, job_id)
 			return self._poll_async_result(executor, result, templar, task_vars=task_vars)
+
+		if ActionModule.run.__module__ != "press.runner":
+			self.action_module_run = ActionModule.run
+			ActionModule.run = modified_action_module_run
 
 		if TaskExecutor.run.__module__ != "press.runner":
 			self._poll_async_result = TaskExecutor._poll_async_result
