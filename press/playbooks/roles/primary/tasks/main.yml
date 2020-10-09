@@ -12,11 +12,11 @@
   shell: 'cd /var/lib/mysql && find . -name "*.ibd" | wc -l'
   register: ibdata_file_count
 
-- name: Calculate Open Files Count Limit
+- name: Calculate Open Files Limit
   set_fact:
     open_files_limit: "{{ [ibdata_file_count.stdout|int + 1000, 65535] | max }}"
 
-- name: Set Soft Limit on Open Files Count in Linux
+- name: Set Soft Limit on Open Files in Linux
   pam_limits:
     domain: "*"
     limit_type: "soft"
@@ -24,7 +24,7 @@
     value: "{{ open_files_limit }}"
     backup: yes
 
-- name: Set Hard Limit on Open Files Count in Linux
+- name: Set Hard Limit on Open Files in Linux
   pam_limits:
     domain: "*"
     limit_type: "hard"
