@@ -1,5 +1,6 @@
 import json
 
+import wrapt
 from ansible import context
 from ansible.executor.playbook_executor import PlaybookExecutor
 from ansible.inventory.manager import InventoryManager
@@ -9,15 +10,29 @@ from ansible.playbook import Playbook
 from ansible.plugins.callback import CallbackBase
 from ansible.utils.display import Display
 from ansible.vars.manager import VariableManager
+from pymysql.err import InterfaceError
 
 import frappe
 from frappe.utils import now_datetime as now
+
+
+def reconnect_on_failure():
+	@wrapt.decorator
+	def wrapper(wrapped, instance, args, kwargs):
+		try:
+			return wrapped(*args, **kwargs)
+		except InterfaceError:
+			frappe.db.connect()
+			return wrapped(*args, **kwargs)
+
+	return wrapper
 
 
 class AnsibleCallback(CallbackBase):
 	def __init__(self, *args, **kwargs):
 		super(AnsibleCallback, self).__init__(*args, **kwargs)
 
+	@reconnect_on_failure()
 	def process_task_success(self, result):
 		result, action = frappe._dict(result._result), result._task.action
 		if action == "user":
@@ -53,6 +68,7 @@ class AnsibleCallback(CallbackBase):
 	def v2_playbook_on_stats(self, stats):
 		self.update_play(None, stats)
 
+	@reconnect_on_failure()
 	def update_play(self, status=None, stats=None):
 		play = frappe.get_doc("Ansible Play", self.play)
 		if stats:
@@ -72,6 +88,7 @@ class AnsibleCallback(CallbackBase):
 		play.save()
 		frappe.db.commit()
 
+	@reconnect_on_failure()
 	def update_task(self, status, result=None, task=None):
 		if result:
 			if not result._task._role:
