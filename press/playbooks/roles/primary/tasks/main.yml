@@ -42,7 +42,7 @@
   poll: 5
 
 - name: Prepare MariaBackup
-  command: mariabackup --prepare --target-dir /tmp/replica
+  command: mariabackup --prepare --target-dir /tmp/replica --open-files-limit {{ open_files_limit }}
 
 - name: Add Secondary Public Key to Authorized Keys
   authorized_key:
