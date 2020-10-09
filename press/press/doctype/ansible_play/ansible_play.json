@@ -11,6 +11,11 @@
   "column_break_3",
   "server_type",
   "server",
+  "section_break_7",
+  "start",
+  "end",
+  "column_break_10",
+  "duration",
   "statistics_section",
   "ok",
   "failures",
@@ -136,11 +141,37 @@
    "options": "Pending\nRunning\nSuccess\nFailure",
    "read_only": 1,
    "reqd": 1
+  },
+  {
+   "fieldname": "section_break_7",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "start",
+   "fieldtype": "Datetime",
+   "label": "Start",
+   "read_only": 1
+  },
+  {
+   "fieldname": "end",
+   "fieldtype": "Datetime",
+   "label": "End",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_10",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "duration",
+   "fieldtype": "Time",
+   "label": "Duration",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2020-10-01 14:24:10.516269",
+ "modified": "2020-10-09 13:19:51.562521",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Ansible Play",
