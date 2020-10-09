@@ -251,6 +251,17 @@ class Site(Document):
 		self.host_name = domain
 		self.save()
 		self.update_site_config({"host_name": f"https://{domain}"})
+		self._update_redirects_for_all_site_domains()
+
+	def _update_redirects_for_all_site_domains(self):
+		site_domains = frappe.get_all(
+			"Site Domain",
+			fields=["name", "domain", "status", "retry_count", "redirect_to_primary"],
+			filters={"site": self.name, "redirect_to_primary": True},
+		)
+		domains = [domain['name'] for domain in site_domains]
+		for domain in domains:
+			self.redirect_to_primary_domain(domain)
 
 	def redirect_to_primary_domain(self, domain):
 		site_domain = frappe.get_all(
