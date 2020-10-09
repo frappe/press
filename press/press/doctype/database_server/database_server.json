@@ -33,7 +33,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Pending\nInstalling\nActive\nBroken",
+   "options": "Pending\nInstalling\nActive\nBroken\nArchived",
    "read_only": 1,
    "reqd": 1
   },
@@ -149,7 +149,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2020-10-07 22:35:47.217140",
+ "modified": "2020-10-09 18:14:41.255173",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

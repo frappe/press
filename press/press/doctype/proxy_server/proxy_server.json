@@ -47,7 +47,8 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Pending\nInstalling\nActive\nBroken",
+   "options": "Pending\nInstalling\nActive\nBroken\nArchived",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -89,7 +90,7 @@
   }
  ],
  "links": [],
- "modified": "2020-10-07 19:23:36.186380",
+ "modified": "2020-10-09 18:17:51.938477",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",
