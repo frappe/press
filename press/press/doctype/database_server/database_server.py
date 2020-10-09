@@ -96,15 +96,6 @@ class DatabaseServer(Document):
 			log_error("Primary Server Setup Exception", server=self.as_dict())
 		self.save()
 
-	def setup_secondary(self):
-		if self.is_primary:
-			return
-		self.status = "Installing"
-		self.save()
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_setup_secondary", queue="long", timeout=1200
-		)
-
 	def _setup_secondary(self):
 		primary = frappe.get_doc("Database Server", self.primary)
 		mariadb_root_password = primary.get_password("mariadb_root_password")
