@@ -11,6 +11,7 @@ from ansible.utils.display import Display
 from ansible.vars.manager import VariableManager
 
 import frappe
+from frappe.utils import now_datetime as now
 
 
 class AnsibleCallback(CallbackBase):
@@ -62,8 +63,11 @@ class AnsibleCallback(CallbackBase):
 				play.status = "Failure"
 			else:
 				play.status = "Success"
+			play.end = now()
+			play.duration = play.end - play.start
 		else:
 			play.status = status
+			play.start = now()
 
 		play.save()
 		frappe.db.commit()
@@ -87,6 +91,10 @@ class AnsibleCallback(CallbackBase):
 			for key in ("stdout", "stdout_lines", "stderr", "stderr_lines", "msg"):
 				result.pop(key, None)
 			task.result = json.dumps(result, indent=4)
+			task.end = now()
+			task.duration = task.end - task.start
+		else:
+			task.start = now()
 		task.save()
 		frappe.db.commit()
 
