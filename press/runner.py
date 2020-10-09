@@ -3,6 +3,7 @@ import json
 import wrapt
 from ansible import context
 from ansible.executor.playbook_executor import PlaybookExecutor
+from ansible.executor.task_executor import TaskExecutor
 from ansible.inventory.manager import InventoryManager
 from ansible.module_utils.common.collections import ImmutableDict
 from ansible.parsing.dataloader import DataLoader
@@ -120,9 +121,17 @@ class AnsibleCallback(CallbackBase):
 		role = result._task._role.get_name()
 		return self.tasks[role][task], frappe._dict(result._result)
 
+	@reconnect_on_failure()
+	def on_async_start(self, role, task, job_id):
+		task_name = self.tasks[role][task]
+		task = frappe.get_doc("Ansible Task", task_name)
+		task.job_id = job_id
+		task.save()
+		frappe.db.commit()
 
 class Ansible:
 	def __init__(self, server, playbook, variables=None):
+		self.patch()
 		self.server = server
 		self.playbook = playbook
 		self.playbook_path = frappe.get_app_path("press", "playbooks", self.playbook)
@@ -152,6 +161,17 @@ class Ansible:
 		self.display = Display()
 		self.display.verbosity = 3
 		self.create_ansible_play()
+
+	def patch(self):
+		def modified_poll_async_result(executor, result, templar, task_vars=None):
+			job_id = result["ansible_job_id"]
+			task = executor._task
+			self.callback.on_async_start(task._role.get_name(), task.name, job_id)
+			return self._poll_async_result(executor, result, templar, task_vars=task_vars)
+
+		if TaskExecutor.run.__module__ != "press.runner":
+			self._poll_async_result = TaskExecutor._poll_async_result
+			TaskExecutor._poll_async_result = modified_poll_async_result
 
 	def run(self):
 		self.executor = PlaybookExecutor(
