@@ -196,6 +196,10 @@ class Ansible:
 			self._poll_async_result = TaskExecutor._poll_async_result
 			TaskExecutor._poll_async_result = modified_poll_async_result
 
+	def unpatch(self):
+		TaskExecutor._poll_async_result = self._poll_async_result
+		ActionModule.run = self.action_module_run
+
 	def run(self):
 		self.executor = PlaybookExecutor(
 			playbooks=[self.playbook_path],
@@ -209,6 +213,7 @@ class Ansible:
 		self.callback.play = self.play
 		self.callback.tasks = self.tasks
 		self.executor.run()
+		self.unpatch()
 		return frappe.get_doc("Ansible Play", self.play)
 
 	def create_ansible_play(self):
