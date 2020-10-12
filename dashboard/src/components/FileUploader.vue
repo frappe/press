@@ -67,6 +67,7 @@ export default {
 			) {
 				this.error = 'Max File Size Limit for Database file is 500M';
 				this.message = '';
+				this.$emit('failure', 'showAlert');
 				return;
 			}
 
