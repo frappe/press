@@ -971,7 +971,38 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-10-06 09:59:13.715751",
+  "modified": "2020-10-12 21:03:33.225786",
+  "name": "Remove Redirect on Host",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "request_method": "POST",
+  "request_path": null,
+  "steps": [
+   {
+    "parent": "Remove Redirect on Host",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Remove Redirect on Host"
+   },
+   {
+    "parent": "Remove Redirect on Host",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Generate NGINX Configuration"
+   },
+   {
+    "parent": "Remove Redirect on Host",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2020-10-11 16:24:39.286430",
   "name": "Setup Redirect on Host",
   "parent": null,
   "parentfield": null,
@@ -984,6 +1015,18 @@
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Setup Redirect on Host"
+   },
+   {
+    "parent": "Setup Redirect on Host",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Generate NGINX Configuration"
+   },
+   {
+    "parent": "Setup Redirect on Host",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
    }
   ]
  }
