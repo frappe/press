@@ -13,7 +13,7 @@ class SiteDomain(Document):
 	def after_insert(self):
 		self.create_tls_certificate()
 
-	def redirect(self, target):
+	def setup_redirect(self, target):
 		self.redirect_to_primary = True
 		self.save()
 		server = frappe.db.get_value("Site", self.site, "server")
