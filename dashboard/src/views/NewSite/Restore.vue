@@ -33,6 +33,18 @@
 					<li>Download the files backup from the links in the email and upload the files here.</li>
 				</ol>
 			</div>
+			<Alert
+				class="mt-5 w-full"
+				v-if="manualMigration"
+			>
+				Seems like your site is huge.
+				Click
+				<a
+					@click="openMigrationRequestWindow()"
+					class="border-b border-orange-700 cursor-pointer"
+				>here</a>
+				to schedule a migration with us.
+			</Alert>
 			<div class="grid grid-cols-3 gap-4 mt-6">
 				<FileUploader
 					v-for="file in files"
@@ -41,6 +53,7 @@
 					:type="file.type"
 					:s3="true"
 					@success="onFileUpload(file, $event)"
+					@failure="showAlert(file, $event)"
 					:upload-args="{
 						method: 'press.api.site.upload_backup',
 						type: file.type
@@ -161,7 +174,7 @@ import { DateTime } from 'luxon';
 
 export default {
 	name: 'Restore',
-	props: ['options', 'selectedFiles'],
+	props: ['options', 'selectedFiles', 'manualMigration'],
 	components: {
 		FileUploader,
 		Form
@@ -235,6 +248,12 @@ export default {
 		onFileUpload(file, fileurl) {
 			this.uploadedFiles[file.type] = fileurl;
 			this.$emit('update:selectedFiles', this.uploadedFiles);
+		},
+		openMigrationRequestWindow() {
+			window.open('https://frappe.cloud/migration-request', '_blank')
+		},
+		showAlert(file, $event) {
+			this.manualMigration = true;
 		}
 	},
 	computed: {
