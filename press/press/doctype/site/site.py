@@ -261,8 +261,8 @@ class Site(Document):
 			},
 		)[0]
 		site_domain = frappe.get_doc("Site Domain", site_domain.name)
-		target = self.host_name or self.name
-		site_domain.redirect(target)
+		target = self.host_name or self.name  # fallback
+		site_domain.setup_redirect(target)
 
 	def undo_redirect_to_primary_domain(self, domain):
 		site_domain = frappe.get_all(
