@@ -580,6 +580,11 @@ def set_host_name(name, domain):
 def redirect_to_primary_domain(name, domain):
 	frappe.get_doc("Site", name).redirect_to_primary_domain(domain)
 
+@frappe.whitelist()
+@protected("Site")
+def undo_redirect_to_primary_domain(name, domain):
+	frappe.get_doc("Site", name).undo_redirect_to_primary_domain(domain)
+
 
 @frappe.whitelist()
 @protected("Site")

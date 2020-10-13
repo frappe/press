@@ -298,6 +298,12 @@ class Agent:
 			"Setup Redirect on Host", f"proxy/hosts/{domain.domain}/redirect", data, host=domain.domain, site=domain.site
 		)
 
+	def remove_redirect(self, domain):
+		return self.create_agent_job(
+			"Remove Redirect on Host", f"proxy/hosts/{domain.domain}/redirect", method="DELETE", host=domain.domain, site=domain.site
+		)
+
+
 	def remove_host(self, domain):
 		return self.create_agent_job(
 			"Remove Host from Proxy",

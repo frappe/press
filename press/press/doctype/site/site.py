@@ -264,6 +264,17 @@ class Site(Document):
 		target = self.host_name or self.name
 		site_domain.redirect(target)
 
+	def undo_redirect_to_primary_domain(self, domain):
+		site_domain = frappe.get_all(
+			"Site Domain",
+			filters={
+				"site": self.name,
+				"domain": domain,
+			},
+		)[0]
+		site_domain = frappe.get_doc("Site Domain", site_domain.name)
+		site_domain.remove_redirect()
+
 	def archive(self):
 		log_site_activity(self.name, "Archive")
 		agent = Agent(self.server)
