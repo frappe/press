@@ -21,6 +21,14 @@ class SiteDomain(Document):
 		agent = Agent(proxy_server, server_type="Proxy Server")
 		agent.setup_redirect(self, target)
 
+	def remove_redirect(self):
+		self.redirect_to_primary = False
+		self.save()
+		server = frappe.db.get_value("Site", self.site, "server")
+		proxy_server = frappe.db.get_value("Server", server, "proxy_server")
+		agent = Agent(proxy_server, server_type="Proxy Server")
+		agent.remove_redirect(self)
+
 	def create_tls_certificate(self):
 		if self.domain == self.site:
 			return
