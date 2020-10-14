@@ -365,8 +365,8 @@ class Site(Document):
 		new_config.update(config)
 		current_config = json.dumps(new_config, indent=4)
 
-		if self.timezone != data["timezone"]:
-			self.timezone = data["timezone"]
+		if data["time_zone"] and self.timezone != data["time_zone"]:
+			self.timezone = data["time_zone"]
 			save = True
 
 		if self.config != current_config:
@@ -376,16 +376,22 @@ class Site(Document):
 		if save:
 			self.save()
 
-		frappe.get_doc(
-			{
+		def _insert_usage(usage: dict):
+			return frappe.get_doc({
 				"doctype": "Site Usage",
 				"site": self.name,
-				"database": fetched_usage["database"],
-				"public": fetched_usage["public"],
-				"private": fetched_usage["private"],
-				"backups": fetched_usage["backups"],
-			}
-		).insert()
+				"backups": usage["backups"],
+				"database": usage["database"],
+				"public": usage["public"],
+				"private": usage["private"],
+			}).insert()
+
+		if isinstance(fetched_usage, list):
+			for usage in fetched_usage:
+				doc = _insert_usage(usage)
+				doc.db_set("creation", usage["timestamp"])
+		else:
+			_insert_usage(fetched_usage)
 
 	def is_setup_wizard_complete(self):
 		if self.setup_wizard_complete:

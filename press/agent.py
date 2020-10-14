@@ -4,15 +4,17 @@
 
 from __future__ import unicode_literals
 
-import frappe
-
 import json
-import requests
-from frappe.utils.password import get_decrypted_password
-from press.utils import log_error, sanitize_config
-from press.api.github import get_access_token
 import os
 from datetime import date
+
+import frappe
+import requests
+from frappe.utils.data import convert_utc_to_user_timezone
+from frappe.utils.password import get_decrypted_password
+
+from press.api.github import get_access_token
+from press.utils import log_error, sanitize_config
 
 
 class Agent:
@@ -438,11 +440,23 @@ class Agent:
 		return self.get(f"benches/{site.bench}/sites/{site.name}/info")["data"]
 
 	def get_sites_info(self, bench):
-		data = {
-			"mariadb_root_password": get_decrypted_password(
-				"Server", self.server, "mariadb_root_password"
+		try:
+			last_synced_time = str(
+				convert_utc_to_user_timezone(
+					frappe.get_all("Site Usage",
+						limit_page_length=1,
+						order_by="creation desc",
+						pluck="creation",
+					)[0]
+				)
 			)
+		except IndexError:
+			last_synced_time = None
+
+		data = {
+			"since": last_synced_time
 		}
+
 		return self.create_agent_job(
 			"Fetch Sites Info",
 			f"benches/{bench.name}/info",
