@@ -117,7 +117,7 @@ scheduler_events = {
 		"press.press.doctype.bench.bench.archive_obsolete_benches",
 		"press.press.doctype.bench.bench.scale_workers",
 		"press.press.doctype.agent_job.agent_job.schedule_backups",
-		"press.press.doctype.bench.bench.sync_benches"
+		"press.press.doctype.bench.bench.sync_benches",
 	],
 	"cron": {
 		"* * * * * 0/5": ["press.press.doctype.agent_job.agent_job.poll_pending_jobs"],

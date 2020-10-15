@@ -377,14 +377,16 @@ class Site(Document):
 			self.save()
 
 		def _insert_usage(usage: dict):
-			return frappe.get_doc({
-				"doctype": "Site Usage",
-				"site": self.name,
-				"backups": usage["backups"],
-				"database": usage["database"],
-				"public": usage["public"],
-				"private": usage["private"],
-			}).insert()
+			return frappe.get_doc(
+				{
+					"doctype": "Site Usage",
+					"site": self.name,
+					"backups": usage["backups"],
+					"database": usage["database"],
+					"public": usage["public"],
+					"private": usage["private"],
+				}
+			).insert()
 
 		if isinstance(fetched_usage, list):
 			for usage in fetched_usage:

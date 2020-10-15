@@ -443,19 +443,15 @@ class Agent:
 		try:
 			last_synced_time = str(
 				convert_utc_to_user_timezone(
-					frappe.get_all("Site Usage",
-						limit_page_length=1,
-						order_by="creation desc",
-						pluck="creation",
+					frappe.get_all(
+						"Site Usage", limit_page_length=1, order_by="creation desc", pluck="creation",
 					)[0]
 				)
 			)
 		except IndexError:
 			last_synced_time = None
 
-		data = {
-			"since": last_synced_time
-		}
+		data = {"since": last_synced_time}
 
 		return self.create_agent_job(
 			"Fetch Sites Info",
