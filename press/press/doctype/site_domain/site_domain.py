@@ -13,6 +13,14 @@ class SiteDomain(Document):
 	def after_insert(self):
 		self.create_tls_certificate()
 
+	def validate(self):
+		if self.redirect_to_primary:
+			site = frappe.get_doc("Site", self.site)
+			if site.host_name == self.name:
+				raise frappe.exceptions.ValidationError(
+					"Primary domain cant be redirected."
+				)
+
 	def setup_redirect(self, target):
 		self.redirect_to_primary = True
 		self.save()
