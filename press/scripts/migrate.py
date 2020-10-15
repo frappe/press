@@ -694,13 +694,12 @@ def frappecloud_migrator(local_site):
 	if raise_limits_warning():
 		notice = (
 			"\n"
-			+ """Note:
-* Sites with a compressed database size of over 500MB aren't supported currently on {0}
-		""".format(
-				remote_site
-			).strip()
-		)
+			"Note:\n"
+			"* For migrating sites with compressed database backup larger than 500MiB, "
+			"please schedule a migration with us from {}".
+		).format("https://frappecloud.com/migration-request")
 		click.secho(notice, fg="yellow")
+		sys.exit(1)
 
 	# get credentials + auth user + start session
 	try:
