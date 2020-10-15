@@ -185,6 +185,15 @@ def get_frappe_backups(site_url, username, password):
 			)
 			frappe.throw(missing_backups)
 
+		# check if database is > 500MiB and show alert
+		database_size = float(requests.head(file_urls["database"]).headers.get('Content-Length', 999))
+
+		if (database_size / 1024 * 2) > 500:
+			frappe.throw(
+				"Your site exceeds the limits for this operation. "
+				"Schedule a migration with us <a href='https://frappecloud.com/migration-request>here</a>"
+			)
+
 		return file_urls
 	else:
 		log_error(
