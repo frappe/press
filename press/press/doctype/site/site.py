@@ -248,6 +248,10 @@ class Site(Document):
 		"""Set host_name/primary domain of site."""
 		self._check_if_domain_belongs_to_site(domain)
 		self._check_if_domain_is_active(domain)
+
+		site_domain = frappe.get_doc("Site Domain", domain)
+		site_domain.remove_redirect()
+
 		self.host_name = domain
 		self.save()
 		self.update_site_config({"host_name": f"https://{domain}"})
