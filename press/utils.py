@@ -190,7 +190,7 @@ def get_frappe_backups(site_url, username, password):
 		log_error(
 			"Backups Retreival Error - Magic Migration", response=res.text, remote_site=site_url
 		)
-		frappe.throw("An unknown error occurred")
+		res.raise_for_status()
 
 
 def get_client_blacklisted_keys() -> list:
