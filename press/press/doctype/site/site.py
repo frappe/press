@@ -260,34 +260,21 @@ class Site(Document):
 	def _update_redirects_for_all_site_domains(self):
 		site_domains = frappe.get_all(
 			"Site Domain",
-			fields=["name", "domain", "status", "retry_count", "redirect_to_primary"],
 			filters={"site": self.name, "redirect_to_primary": True},
 		)
 		domains = [domain['name'] for domain in site_domains]
 		for domain in domains:
 			self.redirect_to_primary_domain(domain)
 
-	def redirect_to_primary_domain(self, domain):
-		site_domain = frappe.get_all(
-			"Site Domain",
-			filters={
-				"site": self.name,
-				"domain": domain,
-			},
-		)[0]
-		site_domain = frappe.get_doc("Site Domain", site_domain.name)
+	def redirect_to_primary_domain(self, domain: str):
+		self._check_if_domain_belongs_to_site(domain)
+		site_domain = frappe.get_doc("Site Domain", domain)
 		target = self.host_name or self.name  # fallback
 		site_domain.setup_redirect(target)
 
-	def undo_redirect_to_primary_domain(self, domain):
-		site_domain = frappe.get_all(
-			"Site Domain",
-			filters={
-				"site": self.name,
-				"domain": domain,
-			},
-		)[0]
-		site_domain = frappe.get_doc("Site Domain", site_domain.name)
+	def undo_redirect_to_primary_domain(self, domain: str):
+		self._check_if_domain_belongs_to_site(domain)
+		site_domain = frappe.get_doc("Site Domain", domain)
 		site_domain.remove_redirect()
 
 	def archive(self):
