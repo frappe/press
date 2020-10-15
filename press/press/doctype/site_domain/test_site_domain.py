@@ -103,3 +103,22 @@ class TestSiteDomain(unittest.TestCase):
 			frappe.exceptions.LinkValidationError, site1.set_host_name,
 			site_domain.name
 		)
+
+	def test_set_host_name_removes_redirect_of_domain(self):
+		"""Ensure set_host_name removes redirect of domain."""
+		site = create_test_site(self.site_subdomain)
+		site_domain = create_test_site_domain(site.name, "hellohello.com")
+		site_domain.redirect_to_primary = True
+		site_domain.save()
+		site.set_host_name(site_domain.domain)
+		site_domain.reload()
+		self.assertFalse(site_domain.redirect_to_primary)
+
+	def test_primary_domain_cannot_have_redirect_to_primary_checked(self):
+		"""Ensure primary domain cannot have redirect_to_primary checked."""
+		site = create_test_site(self.site_subdomain)
+		site_domain = create_test_site_domain(site.name, "hellohello.com")
+		site.set_host_name(site_domain.domain)
+		site_domain.reload()
+		site_domain.redirect_to_primary = True
+		self.assertRaises(frappe.exceptions.ValidationError, site_domain.save)
