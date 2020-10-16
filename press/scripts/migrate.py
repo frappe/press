@@ -336,8 +336,6 @@ def raise_limits_warning():
 	for file in files:
 		if file:
 			file_size_in_mb = os.path.getsize(file) / (1024 * 1024)
-			if (file_size_in_mb / 1024) < 5:
-				raise_warn = True
 			if "database" in file and file_size_in_mb > 500:
 				raise_warn = True
 	return raise_warn
