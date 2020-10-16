@@ -47,7 +47,7 @@ class Site(Document):
 			if not self.plan:
 				frappe.throw("Cannot create site without plan")
 
-			self.update_configuration(get_plan_config(self.plan), save=False)
+			self._update_configuration(get_plan_config(self.plan), save=False)
 
 		bench_apps = frappe.get_doc("Bench", self.bench).apps
 		for app in self.apps:
@@ -368,7 +368,7 @@ class Site(Document):
 			save = True
 
 		if self.config != current_config:
-			self.update_configuration(new_config)
+			self._update_configuration(new_config)
 			save = False
 
 		if save:
@@ -399,8 +399,8 @@ class Site(Document):
 			self.db_set("setup_wizard_complete", setup_complete)
 			return setup_complete
 
-	def set_configuration(self, config):
-		"""Similar to update_configuration but will replace full configuration at once
+	def _set_configuration(self, config):
+		"""Similar to _update_configuration but will replace full configuration at once
 		This is necessary because when you update site config from the UI, you can update the key,
 		update the value, remove the key. All of this can be handled by setting the full configuration at once.
 
@@ -426,7 +426,7 @@ class Site(Document):
 			self.append("configuration", {"key": d.key, "value": value, "type": d.type})
 		self.save()
 
-	def update_configuration(self, config, save=True):
+	def _update_configuration(self, config, save=True):
 		"""Updates site.configuration, runs site.save which updates site.config
 
 		Args:
@@ -488,9 +488,9 @@ class Site(Document):
 		config (dict): Python dict for any suitable frappe.conf
 		"""
 		if isinstance(config, list):
-			self.set_configuration(config)
+			self._set_configuration(config)
 		else:
-			self.update_configuration(config)
+			self._update_configuration(config)
 		agent = Agent(self.server)
 		agent.update_site_config(self)
 
