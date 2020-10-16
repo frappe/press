@@ -7,12 +7,18 @@ title: Restore an existing site - Sites
 Restore an existing site by uploading backup files or by using bench from your
 local setup or from your cloud provider.
 
+> Note: If your database file has size larger 500MB, site restoration may take
+> some time. Fill out [this form](https://frappecloud.com/migration-request) to
+> schedule a site migration request with us.
+
 ## Restore from Backup Files
 
 The easiest way to migrate an existing site on Frappe Cloud is to restore it
 from backup files.
 
-1. [Download backup](https://docs.erpnext.com/docs/user/manual/en/setting-up/data/download-backup) files of your site.
+1. [Download
+   backup](https://docs.erpnext.com/docs/user/manual/en/setting-up/data/download-backup)
+   files of your site.
 1. You must have 3 files that should be named like the following:
    - 20200817\_125915-sitename-database.sql.gz (Database)
    - 20200817\_125915-sitename-files.tar (Public Files)
@@ -25,7 +31,8 @@ from backup files.
 3. Click on **Create Site**.
 
 > Note: This method is ideal if your backup files size is less 200MB. If you
-> have larger backup files, you should use the `bench` command to migrate your site.
+> have larger backup files, you should use the `bench` command to migrate your
+> site.
 
 ## Migrate using Bench
 
@@ -40,12 +47,9 @@ You can run this command even from your local setup. If your site is hosted on a
 cloud provider like Digital Ocean or Amazon AWS, you must ssh into your server,
 and run this command.
 
-> **Note**: This method will work only if your sites are on Version 11 or greater.
-> If you are on an older version or this command didn't work for you, you can
-> try the Python Script method explained later.
-
-> **Note**: This method works for backup files sizes of less than or equal to 500MB.
-> If you have larger backup files, you can send us request to migrate your site.
+> **Note**: This method will work only if your sites are on Version 11 or
+> greater. If you are on an older version or this command didn't work for you,
+> you can try the Python Script method explained later.
 
 ## Migrate using Python Script
 

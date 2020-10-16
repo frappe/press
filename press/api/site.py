@@ -27,7 +27,7 @@ from press.utils import (
 	get_current_team,
 	log_error,
 	get_frappe_backups,
-	sanitize_config,
+	get_client_blacklisted_keys,
 )
 
 
@@ -310,6 +310,7 @@ def get(name):
 		fields=["name", "repo_owner as owner", "scrubbed as repo", "url", "branch"],
 		filters={"name": ("in", available_apps)},
 	)
+	site_config = list(filter(lambda x: not x.internal, site.configuration))
 
 	try:
 		last_updated = frappe.get_all(
@@ -328,7 +329,7 @@ def get(name):
 		"installed_apps": sorted(installed_apps, key=lambda x: bench_apps[x.name]),
 		"available_apps": sorted(available_apps, key=lambda x: bench_apps[x.name]),
 		"setup_wizard_complete": site.setup_wizard_complete,
-		"config": json.loads(site.config),
+		"config": site_config,
 		"creation": site.creation,
 		"owner": site.owner,
 		"last_updated": last_updated,
@@ -386,9 +387,7 @@ def analytics(name, period="1 hour"):
 		"request_cpu_time": [
 			{"value": r.request_duration, "timestamp": r.timestamp} for r in request_data
 		],
-		"job_count": [
-			{"value": r.job_count * 1000, "timestamp": r.timestamp} for r in job_data
-		],
+		"job_count": [{"value": r.job_count, "timestamp": r.timestamp} for r in job_data],
 		"job_cpu_time": [
 			{"value": r.job_duration * 1000, "timestamp": r.timestamp} for r in job_data
 		],
@@ -613,8 +612,23 @@ def log(name, log):
 @frappe.whitelist()
 @protected("Site")
 def update_config(name, config):
-	config = sanitize_config(config)
-	frappe.get_doc("Site", name).update_site_config(config)
+	config = frappe.parse_json(config)
+	config = [frappe._dict(c) for c in config]
+	blacklisted_keys = get_client_blacklisted_keys()
+
+	sanitized_config = []
+	for c in config:
+		if c.key in blacklisted_keys:
+			continue
+		if c.type == "Number":
+			c.value = flt(c.value)
+		elif c.type in ("JSON", "Boolean"):
+			c.value = frappe.parse_json(c.value)
+		sanitized_config.append(c)
+
+	site = frappe.get_doc("Site", name)
+	site.update_site_config(sanitized_config)
+	return list(filter(lambda x: not x.internal, site.configuration))
 
 
 @frappe.whitelist()

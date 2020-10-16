@@ -1,0 +1,94 @@
+---
+- name: Add MariaDB Repository File
+  template:
+    src: mariadb.list
+    dest: /etc/apt/sources.list.d/mariadb.list
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Add MariaDB Repository Key
+  apt_key:
+    id: C74CD1D8
+    url: http://keyserver.ubuntu.com/pks/lookup?op=get&search=0xF1656F24C74CD1D8
+    state: present
+
+- name: Update APT Cache
+  apt:
+    update_cache: yes
+
+- name: Use Debian Unattended Package Installation Mode
+  shell: export DEBIAN_FRONTEND=noninteractive
+  changed_when: false
+
+- name: Install MariaDB
+  apt:
+    pkg:
+      - mariadb-server
+      - mariadb-client
+      - libmariadbclient18
+    state: present
+
+- name: Install MySQLdb Python Package
+  apt:
+    pkg:
+      - python3-mysqldb
+    state: present
+
+- name: Add MariaDB Configuration File
+  template:
+    src: mariadb.cnf
+    dest: /etc/mysql/conf.d/frappe.cnf
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Restart MariaDB Service
+  service:
+    name: mysql
+    state: restarted
+
+- name: Start MariaDB Service and Enable at Boot
+  service:
+    name: mysql
+    state: started
+    enabled: yes
+
+- name: Set MariaDB root Password
+  mysql_user:
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+    check_implicit_admin: yes
+    name: root
+    host: "{{ item }}"
+    priv: "*.*:ALL,GRANT"
+    password: "{{ mariadb_root_password }}"
+    state: present
+  with_items:
+    - localhost
+    - 127.0.0.1
+    - ::1
+    - "%"
+
+- name: Add .my.cnf MariaDB Configuration File
+  template:
+    src: my.cnf
+    dest: /root/.my.cnf
+    owner: root
+    group: root
+    mode: 0600
+
+- name: Remove MariaDB Test Database
+  mysql_db:
+    name: test
+    state: absent
+
+- name: Remove MariaDB Test Users
+  mysql_user:
+    name: test
+    state: absent
+
+- name: Remove Anonymous MariaDB Users
+  mysql_user:
+    name: ""
+    state: absent

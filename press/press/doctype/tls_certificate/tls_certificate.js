@@ -2,10 +2,14 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on('TLS Certificate', {
-	refresh: function(frm) {
-		if (!frm.doc.fullchain) {
+	refresh: function (frm) {
+		if (!frm.doc.full_chain) {
 			frm.add_custom_button(__('Obtain Certificate'), () => {
-				frm.call({method: "obtain_certificate", doc: frm.doc, callback: result => frm.refresh()});
+				frm.call({
+					method: "obtain_certificate",
+					doc: frm.doc,
+					callback: result => frm.refresh()
+				});
 			});
 		}
 	}

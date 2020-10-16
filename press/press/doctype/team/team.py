@@ -282,20 +282,21 @@ class Team(Document):
 				)
 		return invoices
 
-	def allocate_credit_amount(self, amount, remark):
-		if amount > 0:
-			doc = frappe.get_doc(
-				{
-					"doctype": "Payment Ledger Entry",
-					"purpose": "Credits Allocation",
-					"amount": amount,
-					"team": self.name,
-					"remark": remark,
-				}
-			)
-			doc.insert(ignore_permissions=True)
-			doc.submit()
-			frappe.cache().hdel("customer_available_credits", self.name)
+	def allocate_credit_amount(
+		self, amount, remark, reference_doctype=None, reference_name=None
+	):
+		doc = frappe.get_doc(
+			{
+				"doctype": "Payment Ledger Entry",
+				"purpose": "Credits Allocation",
+				"amount": amount,
+				"team": self.name,
+				"remark": remark,
+			}
+		)
+		doc.insert(ignore_permissions=True)
+		doc.submit()
+		return doc
 
 	def get_available_credits(self):
 		def get_stripe_balance():
@@ -353,12 +354,11 @@ class Team(Document):
 		return sites_to_suspend
 
 	def get_sites_to_suspend(self):
-		return [
-			d.name
-			for d in frappe.db.get_all(
-				"Site", {"team": self.name, "status": "Active", "free": 0}
-			)
-		]
+		return frappe.db.get_all(
+			"Site",
+			{"team": self.name, "status": ("in", ("Active", "Inactive")), "free": 0},
+			pluck="name",
+		)
 
 	def unsuspend_sites(self, reason=None):
 		suspended_sites = [

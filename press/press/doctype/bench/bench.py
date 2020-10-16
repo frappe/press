@@ -27,10 +27,12 @@ class Bench(Document):
 		if self.is_new():
 			self.port_offset = self.get_unused_port_offset()
 
+		db_host = frappe.db.get_value("Database Server", self.database_server, "private_ip")
 		config = frappe.db.get_single_value("Press Settings", "bench_configuration")
 		config = json.loads(config)
 		config.update(
 			{
+				"db_host": db_host or "localhost",
 				"background_workers": self.workers,
 				"gunicorn_workers": self.gunicorn_workers,
 				"redis_cache": f"redis://localhost:{13000 + self.port_offset}",
@@ -77,6 +79,18 @@ class Bench(Document):
 			frappe.throw("Cannot archive bench with active sites.")
 		agent = Agent(self.server)
 		agent.archive_bench(self)
+
+	def sync_info(self):
+		"""Initiates a Job to update Site Usage, site.config.encryption_key and timezone details for all sites on Bench."""
+		agent = Agent(self.server)
+		agent.get_sites_info(self)
+
+
+def process_bench_sync_info_job_update(job):
+	if job.status == "Success":
+		data = json.loads(job.data)
+		for site, info in data.items():
+			frappe.get_doc("Site", site).sync_info(info)
 
 
 def process_new_bench_job_update(job):
@@ -185,3 +199,24 @@ def scale_workers():
 			bench.workers, bench.gunicorn_workers = workers, gunicorn_workers
 			bench.save()
 			return
+
+
+def sync_benches():
+	benches = frappe.get_all("Bench", {"status": "Active"}, pluck="name")
+	for bench in benches:
+		frappe.enqueue(
+			"press.press.doctype.bench.bench.sync_bench",
+			queue="long",
+			name=bench,
+			enqueue_after_commit=True,
+		)
+	frappe.db.commit()
+
+
+def sync_bench(name):
+	bench = frappe.get_doc("Bench", name)
+	try:
+		bench.sync_info()
+		frappe.db.commit()
+	except Exception:
+		log_error("Bench Sync Error", bench=bench.name)

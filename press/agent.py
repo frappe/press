@@ -118,8 +118,7 @@ class Agent:
 				sanitized_config = sanitize_config(new_config)
 				existing_config = json.loads(site.config)
 				existing_config.update(sanitized_config)
-				site.config = json.dumps(existing_config, indent=4)
-				site.save()
+				site._update_configuration(existing_config)
 				log_site_activity(site.name, "Update Configuration")
 
 			return json.dumps(sanitized_config)
@@ -204,7 +203,10 @@ class Agent:
 		)
 
 	def update_site_config(self, site):
-		data = {"config": json.loads(site.config)}
+		data = {
+			"config": json.loads(site.config),
+			"remove": json.loads(site._keys_removed_in_last_update),
+		}
 		return self.create_agent_job(
 			"Update Site Configuration",
 			f"benches/{site.bench}/sites/{site.name}/config",
@@ -281,9 +283,9 @@ class Agent:
 			"name": domain.domain,
 			"target": domain.site,
 			"certificate": {
-				"privkey.pem": certificate.privkey,
-				"fullchain.pem": certificate.fullchain,
-				"chain.pem": certificate.chain,
+				"privkey.pem": certificate.private_key,
+				"fullchain.pem": certificate.full_chain,
+				"chain.pem": certificate.intermediate_chain,
 			},
 		}
 		return self.create_agent_job(
@@ -365,15 +367,27 @@ class Agent:
 			url = f"https://{self.server}:{self.port}/agent/{path}"
 			password = get_decrypted_password(self.server_type, self.server, "agent_password")
 			headers = {"Authorization": f"bearer {password}"}
+			intermediate_ca = frappe.db.get_value(
+				"Press Settings", "Press Settings", "backbone_intermediate_ca"
+			)
+			if frappe.conf.developer_mode and intermediate_ca:
+				root_ca = frappe.db.get_value(
+					"Certificate Authority", intermediate_ca, "parent_authority"
+				)
+				verify = frappe.get_doc("Certificate Authority", root_ca).certificate_file
+			else:
+				verify = True
 			if files:
 				file_objects = {
 					key: frappe.get_doc("File", {"file_url": url}).get_content()
 					for key, url in files.items()
 				}
 				file_objects["json"] = json.dumps(data).encode()
-				result = requests.request(method, url, headers=headers, files=file_objects)
+				result = requests.request(
+					method, url, headers=headers, files=file_objects, verify=verify
+				)
 			else:
-				result = requests.request(method, url, headers=headers, json=data)
+				result = requests.request(method, url, headers=headers, json=data, verify=verify)
 			try:
 				return result.json()
 			except Exception:
@@ -436,6 +450,20 @@ class Agent:
 
 	def get_site_info(self, site):
 		return self.get(f"benches/{site.bench}/sites/{site.name}/info")["data"]
+
+	def get_sites_info(self, bench):
+		data = {
+			"mariadb_root_password": get_decrypted_password(
+				"Server", self.server, "mariadb_root_password"
+			)
+		}
+		return self.create_agent_job(
+			"Fetch Sites Info",
+			f"benches/{bench.name}/info",
+			bench=bench.name,
+			data=data,
+			method="GET",
+		)
 
 	def get_jobs_status(self, ids):
 		status = self.get(f"jobs/{','.join(map(str, ids))}")

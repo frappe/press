@@ -25,10 +25,11 @@ def setup():
 
 
 @hypervisor.command()
-def build():
+@click.option("--size", default=8192, type=int)
+def build(size):
 	shell = Shell()
 	hypervisor = Hypervisor(shell=shell)
-	hypervisor.build()
+	hypervisor.build(size=size)
 
 
 @hypervisor.command()
