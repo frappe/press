@@ -2,7 +2,11 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on('Site Domain', {
-	// refresh: function(frm) {
-
-	// }
+	after_save: function (frm) {
+		if (frm.doc.redirect_to_primary) {
+			frm.call('setup_redirect');
+		} else {
+			frm.call('remove_redirect');
+		}
+	},
 });

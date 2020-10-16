@@ -21,12 +21,13 @@ class SiteDomain(Document):
 					"Primary domain cant be redirected."
 				)
 
-	def setup_redirect(self, target):
+	def setup_redirect(self):
 		self.redirect_to_primary = True
 		self.save()
 		server = frappe.db.get_value("Site", self.site, "server")
 		proxy_server = frappe.db.get_value("Server", server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
+		target = frappe.get_value("Site", self.site, "host_name")
 		agent.setup_redirect(self, target)
 
 	def remove_redirect(self):
