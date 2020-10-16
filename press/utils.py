@@ -191,10 +191,7 @@ def get_frappe_backups(site_url, username, password):
 		)
 
 		if (database_size / 1024 * 2) > 500:
-			frappe.throw(
-				"Your site exceeds the limits for this operation. Schedule a migration"
-				" with us <a href='https://frappecloud.com/migration-request>here</a>"
-			)
+			frappe.throw("Your site exceeds the limits for this operation.")
 
 		return file_urls
 	else:
