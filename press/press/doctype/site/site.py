@@ -47,9 +47,7 @@ class Site(Document):
 			if not self.plan:
 				frappe.throw("Cannot create site without plan")
 
-			config = json.loads(self.config)
-			config.update(get_plan_config(self.plan))
-			self.config = json.dumps(config, indent=4)
+			self.update_configuration(get_plan_config(self.plan), save=False)
 
 		bench_apps = frappe.get_doc("Bench", self.bench).apps
 		for app in self.apps:
@@ -428,7 +426,7 @@ class Site(Document):
 			self.append("configuration", {"key": d.key, "value": value, "type": d.type})
 		self.save()
 
-	def update_configuration(self, config):
+	def update_configuration(self, config, save=True):
 		"""Updates site.configuration, runs site.save which updates site.config
 
 		Args:
@@ -476,7 +474,9 @@ class Site(Document):
 				self.configuration[keys[key]].type = guess_type(value)
 			else:
 				self.append("configuration", {"key": key, "value": convert(value)})
-		self.save()
+
+		if save:
+			self.save()
 
 	def update_site_config(self, config):
 		"""Updates site.configuration, site.config, runs site.save and initiates an Agent Request
