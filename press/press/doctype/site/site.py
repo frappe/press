@@ -60,6 +60,8 @@ class Site(Document):
 		apps = [app.app for app in self.apps]
 		if len(apps) != len(set(apps)):
 			frappe.throw("Can't install same app twice.")
+		if not self.is_new():
+			self._verify_host_name()
 
 	def install_app(self, app):
 		if not find(self.apps, lambda x: x.app == app):
@@ -105,7 +107,6 @@ class Site(Document):
 		log_site_activity(self.name, "Create")
 		self.create_agent_request()
 		self.set_host_name(self._create_default_site_domain().name)
-
 
 	def create_agent_request(self):
 		agent = Agent(self.server)
@@ -244,17 +245,22 @@ class Site(Document):
 				"Only active domains can be primary"
 			)
 
+	def _verify_host_name(self):
+		"""Perform checks for primary domain."""
+		self._check_if_domain_belongs_to_site(self.host_name)
+		self._check_if_domain_is_active(self.host_name)
+		site_domain = frappe.get_doc("Site Domain", self.host_name)
+		if site_domain.redirect_to_primary:
+			site_domain.remove_redirect()
+
 	def set_host_name(self, domain: str):
 		"""Set host_name/primary domain of site."""
-		self._check_if_domain_belongs_to_site(domain)
-		self._check_if_domain_is_active(domain)
-
-		site_domain = frappe.get_doc("Site Domain", domain)
-		site_domain.remove_redirect()
-
 		self.host_name = domain
 		self.save()
-		self.update_site_config({"host_name": f"https://{domain}"})
+		self.update_host_name_in_agent()
+
+	def update_host_name_in_agent(self):
+		self.update_site_config({"host_name": f"https://{self.host_name}"})
 		self._update_redirects_for_all_site_domains()
 
 	def _update_redirects_for_all_site_domains(self):
