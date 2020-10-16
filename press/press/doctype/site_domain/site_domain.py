@@ -17,8 +17,9 @@ class SiteDomain(Document):
 		if self.redirect_to_primary:
 			site = frappe.get_doc("Site", self.site)
 			if site.host_name == self.name:
-				raise frappe.exceptions.ValidationError(
-					"Primary domain cant be redirected."
+				frappe.throw(
+					"Primary domain cant be redirected.",
+					exc=frappe.exceptions.ValidationError
 				)
 
 	def setup_redirect(self):

@@ -234,15 +234,17 @@ class Site(Document):
 			"site": self.name,
 			"domain": domain
 		}):
-			raise frappe.exceptions.LinkValidationError(
-				f"Site Domain {domain} for site {self.name} does not exist"
+			frappe.throw(
+				msg=f"Site Domain {domain} for site {self.name} does not exist",
+				exc=frappe.exceptions.LinkValidationError
 			)
 
 	def _check_if_domain_is_active(self, domain: str):
 		status = frappe.get_value("Site Domain", domain, "status")
 		if status != "Active":
-			raise frappe.exceptions.LinkValidationError(
-				"Only active domains can be primary"
+			frappe.throw(
+				msg="Only active domains can be primary",
+				exc=frappe.exceptions.LinkValidationError
 			)
 
 	def _verify_host_name(self):
