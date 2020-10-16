@@ -696,7 +696,7 @@ def frappecloud_migrator(local_site):
 			"\n"
 			"Note:\n"
 			"* For migrating sites with compressed database backup larger than 500MiB, "
-			"please schedule a migration with us from {}".
+			"please schedule a migration with us from {}"
 		).format("https://frappecloud.com/migration-request")
 		click.secho(notice, fg="yellow")
 		sys.exit(1)
