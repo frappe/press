@@ -11,6 +11,14 @@ frappe.ui.form.on('Site', {
 				},
 			};
 		});
+		frm.set_query('host_name', () => {
+			return {
+				filters: {
+					site: frm.doc.name,
+					status: 'Active'
+				},
+			};
+		});
 	},
 	refresh: function (frm) {
 		frm.add_web_link(`https://${frm.doc.name}`, __('Visit Site'));
