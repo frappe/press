@@ -198,7 +198,17 @@ def get_frappe_backups(site_url, username, password):
 		log_error(
 			"Backups Retreival Error - Magic Migration", response=res.text, remote_site=site_url
 		)
-		res.raise_for_status()
+
+		if res.status_code == 403:
+			error_msg = "Insufficient Permissions"
+		else:
+			side = "Client" if 400 <= res.status_code < 500 else "Server"
+			error_msg = (
+				f"{side} Error occurred: {res.status_code} {res.raw.reason} recieved"
+				f" from {site_url}"
+			)
+
+		frappe.throw(error_msg)
 
 
 def get_client_blacklisted_keys() -> list:
