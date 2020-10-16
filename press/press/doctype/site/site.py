@@ -395,6 +395,11 @@ class Site(Document):
 		else:
 			_insert_usage(fetched_usage)
 
+		self.validate_usage_limits()
+
+	def validate_usage_limits():
+		pass
+
 	def is_setup_wizard_complete(self):
 		if self.setup_wizard_complete:
 			return True

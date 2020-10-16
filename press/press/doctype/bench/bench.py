@@ -98,13 +98,6 @@ class Bench(Document):
 			frappe.get_doc("Site", site).sync_info(info)
 
 
-def process_bench_sync_info_job_update(job):
-	if job.status == "Success":
-		data = json.loads(job.data)
-		for site, info in data.items():
-			frappe.get_doc("Site", site).sync_info(info)
-
-
 def process_new_bench_job_update(job):
 	bench_status = frappe.get_value("Bench", job.bench, "status")
 
