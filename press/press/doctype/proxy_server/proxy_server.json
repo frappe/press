@@ -7,12 +7,16 @@
  "engine": "InnoDB",
  "field_order": [
   "status",
-  "ip",
-  "column_break_3",
-  "private_ip",
   "is_server_setup",
+  "column_break_3",
+  "ip",
+  "private_ip",
   "agent_section",
-  "agent_password"
+  "agent_password",
+  "ssh_section",
+  "root_public_key",
+  "column_break_10",
+  "frappe_public_key"
  ],
  "fields": [
   {
@@ -33,15 +37,18 @@
   {
    "fieldname": "agent_password",
    "fieldtype": "Password",
-   "label": "Agent Password"
+   "label": "Agent Password",
+   "reqd": 1
   },
   {
+   "default": "Pending",
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Active\nBroken",
+   "options": "Pending\nInstalling\nActive\nBroken\nArchived",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -59,10 +66,31 @@
    "fieldname": "agent_section",
    "fieldtype": "Section Break",
    "label": "Agent"
+  },
+  {
+   "fieldname": "ssh_section",
+   "fieldtype": "Section Break",
+   "label": "SSH"
+  },
+  {
+   "fieldname": "root_public_key",
+   "fieldtype": "Code",
+   "label": "Root Public Key",
+   "read_only": 1
+  },
+  {
+   "fieldname": "frappe_public_key",
+   "fieldtype": "Code",
+   "label": "Frappe Public Key",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_10",
+   "fieldtype": "Column Break"
   }
  ],
  "links": [],
- "modified": "2020-04-03 18:23:55.355483",
+ "modified": "2020-10-09 18:17:51.938477",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",

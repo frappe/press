@@ -167,6 +167,41 @@ class Invoice(Document):
 			f"/api/method/frappe.utils.print_format.download_pdf?doctype=Invoice&name={self.name}&format={print_format}&no_letterhead=0"
 		)
 
+	def consume_credits_and_mark_as_paid(self, reason=None):
+		if self.amount_due <= 0:
+			frappe.throw("Amount due is less than or equal to 0")
+
+		team = frappe.get_doc("Team", self.team)
+		available_credits = team.get_available_credits()
+		if available_credits < self.amount_due:
+			available = frappe.utils.fmt_money(available_credits, 2, self.currency)
+			frappe.throw(
+				f"Available credits ({available}) is less than amount due"
+				f" ({self.get_formatted('amount_due')})"
+			)
+
+		remark = "Manually consuming credits and marking the unpaid invoice as paid."
+		if reason:
+			remark += f" Reason: {reason}"
+
+		stripe = get_stripe()
+		stripe.Invoice.modify(self.stripe_invoice_id, paid=True)
+
+		ple = team.allocate_credit_amount(
+			amount=self.amount_due * -1,
+			remark=remark,
+			reference_doctype="Invoice",
+			reference_name=self.name,
+		)
+
+		self.add_comment(
+			text=(
+				"Manually consuming credits and marking the unpaid invoice as paid."
+				f" {frappe.utils.get_link_to_form(ple.doctype, ple.name)}"
+			)
+		)
+		self.db_set("status", "Paid")
+
 
 def submit_invoices():
 	"""This method will run every day and submit the invoices whose period end was the previous day"""

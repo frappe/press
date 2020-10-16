@@ -1,0 +1,124 @@
+---
+- name: Install MariaBackup
+  apt:
+    pkg: mariadb-backup
+
+- name: Remove Primary from Known Hosts
+  known_hosts:
+    name: "{{ primary_private_ip }}"
+    state: absent
+
+- name: Add Primary to Known Hosts
+  shell: ssh-keyscan {{ primary_private_ip }} >> /root/.ssh/known_hosts
+
+- name: Create Directory for RSync
+  file:
+    path: /tmp/replica
+    state: directory
+
+- name: RSync Backup Directory From Primary
+  command: rsync -avpPR -e ssh\ -p22 root@{{ primary_private_ip }}:/tmp/replica /
+  async: 3600
+  poll: 5
+
+- name: Stop MariaDB Service
+  service:
+    name: mysql
+    state: stopped
+
+- name: Delete MariaDB Data Directory
+  file:
+    path: /var/lib/mysql
+    state: absent
+
+- name: Count Number of IBData Files
+  shell: 'cd /tmp/replica && find . -name "*.ibd" | wc -l'
+  register: ibdata_file_count
+
+- name: Calculate Open Files Limit
+  set_fact:
+    open_files_limit: "{{ [ibdata_file_count.stdout|int + 10000, 65535] | max }}"
+
+- name: Move Backup Directory to MariaDB Data Directory
+  command: mariabackup --copy-back --target-dir /tmp/replica --open-files-limit {{ open_files_limit }} --parallel 4
+  async: 3600
+  poll: 5
+
+- name: Change Ownership of MariaDB Data Directory to mysql User
+  file:
+    path: /var/lib/mysql
+    owner: mysql
+    group: mysql
+    recurse: yes
+
+- name: Change Permissions of MariaDB Data Directory
+  file:
+    path: /var/lib/mysql
+    mode: 0755
+
+- name: Set Open Files Count Limit for MariaDB
+  lineinfile:
+    dest: /lib/systemd/system/mariadb.service
+    regexp: '^LimitNOFILE(\s*)=(\s*)\d+'
+    line: "LimitNOFILE = infinity"
+    insertafter: '\[Service\]'
+    state: present
+
+- name: Force Systemd to Reread Configuration
+  systemd:
+    daemon_reload: yes
+
+- name: Start MariaDB Service
+  service:
+    name: mysql
+    state: started
+
+- name: Add .my.cnf MariaDB Configuration File
+  template:
+    src: my.cnf
+    dest: /root/.my.cnf
+    owner: root
+    group: root
+    mode: 0600
+
+- name: Test Access to Primary
+  mysql_query:
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+    query: "SHOW FULL PROCESSLIST"
+
+- name: Read XtraBackup Binlog Info
+  shell: cat /tmp/replica/xtrabackup_binlog_info
+  register: primary_position
+
+- name: Set Primary Position
+  mysql_variables:
+    mode: global
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+    variable: gtid_slave_pos
+    value: "{{ primary_position.stdout.split()[2] }}"
+
+- name: Set Primary Details
+  mysql_replication:
+    mode: changemaster
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+    master_host: "{{ primary_private_ip }}"
+    master_user: root
+    master_password: "{{ mariadb_root_password }}"
+    master_use_gtid: slave_pos
+
+- name: Start MariaDB Secondary Thread
+  mysql_replication:
+    mode: startslave
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+
+- name: Check Secondary Status
+  mysql_replication:
+    mode: getslave
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+  register: secondary_status
+  failed_when: 'secondary_status["Slave_IO_Running"] == "No" or secondary_status["Slave_SQL_Running"] == "No"'

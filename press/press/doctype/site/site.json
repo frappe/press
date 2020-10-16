@@ -21,15 +21,11 @@
   "free",
   "section_break_6",
   "apps",
-  "database_section",
-  "database_type",
-  "database_name",
-  "column_break_13",
-  "database_host",
-  "database_port",
   "configuration_section",
   "host_name",
   "config",
+  "configuration",
+  "_keys_removed_in_last_update",
   "deploy_section",
   "timezone",
   "site_files_section",
@@ -116,59 +112,9 @@
    "fieldtype": "Code",
    "hide_days": 1,
    "hide_seconds": 1,
-   "label": "Configuration",
+   "label": "Preview",
    "options": "JSON",
    "read_only": 1
-  },
-  {
-   "fieldname": "database_section",
-   "fieldtype": "Section Break",
-   "hide_days": 1,
-   "hide_seconds": 1,
-   "label": "Database"
-  },
-  {
-   "default": "MariaDB",
-   "fieldname": "database_type",
-   "fieldtype": "Select",
-   "hide_days": 1,
-   "hide_seconds": 1,
-   "label": "Database Type",
-   "options": "MariaDB\nPostgres",
-   "reqd": 1,
-   "set_only_once": 1
-  },
-  {
-   "fieldname": "database_name",
-   "fieldtype": "Data",
-   "hide_days": 1,
-   "hide_seconds": 1,
-   "label": "Database Name",
-   "set_only_once": 1
-  },
-  {
-   "fieldname": "column_break_13",
-   "fieldtype": "Column Break",
-   "hide_days": 1,
-   "hide_seconds": 1
-  },
-  {
-   "default": "localhost",
-   "fieldname": "database_host",
-   "fieldtype": "Data",
-   "hide_days": 1,
-   "hide_seconds": 1,
-   "label": "Database Host",
-   "set_only_once": 1
-  },
-  {
-   "default": "3306",
-   "fieldname": "database_port",
-   "fieldtype": "Data",
-   "hide_days": 1,
-   "hide_seconds": 1,
-   "label": "Database Port",
-   "set_only_once": 1
   },
   {
    "fieldname": "configuration_section",
@@ -321,10 +267,22 @@
    "fieldtype": "Link",
    "label": "Remote Config File",
    "options": "Remote File"
+  },
+  {
+   "fieldname": "configuration",
+   "fieldtype": "Table",
+   "label": "Configuration",
+   "options": "Site Config"
+  },
+  {
+   "fieldname": "_keys_removed_in_last_update",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Keys Removed in Last Config Change"
   }
  ],
  "links": [],
- "modified": "2020-10-04 08:51:12.953040",
+ "modified": "2020-10-06 15:05:34.824331",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

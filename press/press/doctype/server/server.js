@@ -2,30 +2,43 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on('Server', {
-	refresh: function(frm) {
-		frm.add_custom_button(__('Benches'), () => {
-			const filters = {bench: frm.doc.name};
-			frappe.set_route("List", "Bench", filters);
+	refresh: function (frm) {
+		[
+			[__('Ping Agent'), "ping_agent", false, frm.doc.is_server_setup],
+			[__('Ping Ansible'), "ping_ansible", true],
+			[__('Update Agent'), "update_agent", true, frm.doc.is_server_setup],
+			[__('Setup Server'), "setup_server", true, !frm.doc.is_server_setup],
+			[__('Add to Proxy'), "add_upstream_to_proxy", true, frm.doc.is_server_setup && !frm.doc.is_upstream_setup],
+		].forEach(([label, method, confirm, condition]) => {
+			if (typeof condition === "undefined" || condition) {
+				frm.add_custom_button(
+					label,
+					() => {
+						if (confirm) {
+							frappe.confirm(
+								`Are you sure you want to ${label.toLowerCase()}?`,
+								() => frm.call(method).then((r) => {
+									if (r.message) {
+										frappe.msgprint(r.message);
+									} else {
+										frm.refresh();
+									}
+								})
+							);
+
+						} else {
+							frm.call(method).then((r) => {
+								if (r.message) {
+									frappe.msgprint(r.message);
+								} else {
+									frm.refresh();
+								}
+							})
+						}
+					},
+					__('Actions')
+				);
+			}
 		});
-		frm.add_custom_button(__('Jobs'), () => {
-			const filters = {server: frm.doc.name};
-			frappe.set_route("List", "Agent Job", filters);
-		});
-		frm.add_custom_button(__('Ping'), () => {
-			frm.call({method: "ping", doc: frm.doc, callback: result => frappe.msgprint(result.message)});
-		}, __("Actions"));
-		frm.add_custom_button(__('Update Agent'), () => {
-			frm.call({method: "update_agent", doc: frm.doc, callback: result => frappe.msgprint(result.message)});
-		}, __("Actions"));
-		if (!frm.doc.is_server_setup) {
-			frm.add_custom_button(__('Setup Server'), () => {
-				frm.call({method: "setup_server", doc: frm.doc, callback: result => frappe.msgprint(result.message)});
-			}, __("Actions"));
-		}
-		if (!frm.doc.is_upstream_setup) {
-			frm.add_custom_button(__("Add to Proxy"), () => {
-				frm.call({method: "add_upstream_to_proxy", doc: frm.doc, callback: result => frappe.msgprint(result.message)});
-			}, __("Actions"));
-		}
-}
+	}
 });

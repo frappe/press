@@ -1,15 +1,20 @@
 ---
-- name: Create frappe user
+- name: Create Frappe User
   user:
     name: frappe
-    groups: sudo
+    groups:
+      - sudo
     shell: /bin/bash
     append: yes
     uid: 1000
+    generate_ssh_key: yes
 
-- name: Allow passwordless sudo access to frappe
+- name: Allow Passwordless sudo Access to Frappe User
   copy:
     src: files/sudoers
     dest: /etc/sudoers.d/frappe
 
-...
+- name: Create SSH Keys for root User
+  user:
+    name: root
+    generate_ssh_key: yes

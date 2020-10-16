@@ -1,0 +1,198 @@
+{
+ "actions": [],
+ "creation": "2020-09-29 20:35:02.147164",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "status",
+  "play",
+  "playbook",
+  "column_break_3",
+  "server_type",
+  "server",
+  "section_break_7",
+  "start",
+  "end",
+  "column_break_10",
+  "duration",
+  "statistics_section",
+  "ok",
+  "failures",
+  "changed",
+  "unreachable",
+  "column_break_14",
+  "skipped",
+  "rescued",
+  "ignored",
+  "section_break_5",
+  "variables"
+ ],
+ "fields": [
+  {
+   "fieldname": "server_type",
+   "fieldtype": "Link",
+   "label": "Server Type",
+   "options": "DocType",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "server",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Server",
+   "options": "server_type",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "playbook",
+   "fieldtype": "Data",
+   "label": "Playbook",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "default": "{}",
+   "fieldname": "variables",
+   "fieldtype": "Code",
+   "label": "Variables",
+   "options": "JSON",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_5",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "play",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Play",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "statistics_section",
+   "fieldtype": "Section Break",
+   "label": "Agreagate Statistics"
+  },
+  {
+   "fieldname": "changed",
+   "fieldtype": "Int",
+   "label": "Changed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "unreachable",
+   "fieldtype": "Int",
+   "label": "Unreachable",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_14",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "skipped",
+   "fieldtype": "Int",
+   "label": "Skipped",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rescued",
+   "fieldtype": "Int",
+   "label": "Rescued",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ignored",
+   "fieldtype": "Int",
+   "label": "Ignored",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ok",
+   "fieldtype": "Int",
+   "label": "OK",
+   "read_only": 1
+  },
+  {
+   "fieldname": "failures",
+   "fieldtype": "Int",
+   "label": "Failures",
+   "read_only": 1
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Pending\nRunning\nSuccess\nFailure",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_7",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "start",
+   "fieldtype": "Datetime",
+   "label": "Start",
+   "read_only": 1
+  },
+  {
+   "fieldname": "end",
+   "fieldtype": "Datetime",
+   "label": "End",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_10",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "duration",
+   "fieldtype": "Time",
+   "label": "Duration",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2020-10-09 13:19:51.562521",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Ansible Play",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "title_field": "play",
+ "track_changes": 1
+}

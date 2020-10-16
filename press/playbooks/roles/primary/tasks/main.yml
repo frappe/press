@@ -1,0 +1,53 @@
+---
+- name: Install MariaBackup
+  apt:
+    pkg: mariadb-backup
+
+- name: Create Directory for Database Dump
+  file:
+    dest: /tmp/replica
+    state: directory
+
+- name: Count Number of IBData Files
+  shell: 'cd /var/lib/mysql && find . -name "*.ibd" | wc -l'
+  register: ibdata_file_count
+
+- name: Calculate Open Files Limit
+  set_fact:
+    open_files_limit: "{{ [ibdata_file_count.stdout|int + 10000, 65535] | max }}"
+
+- name: Set Soft Limit on Open Files in Linux
+  pam_limits:
+    domain: "*"
+    limit_type: "soft"
+    limit_item: "nofile"
+    value: "{{ open_files_limit }}"
+    backup: yes
+
+- name: Set Hard Limit on Open Files in Linux
+  pam_limits:
+    domain: "*"
+    limit_type: "hard"
+    limit_item: "nofile"
+    value: "{{ open_files_limit|int * 2 }}"
+
+- name: Delete MariaBackup Directory
+  file:
+    path: /tmp/replica
+    state: absent
+
+- name: Start MariaBackup
+  command: mariabackup --backup --rsync --target-dir /tmp/replica --user root --password "{{ mariadb_root_password }}" --open-files-limit {{ open_files_limit }} --parallel 4 --compress-threads 4
+  async: 3600
+  poll: 5
+
+- name: Prepare MariaBackup
+  command: mariabackup --prepare --target-dir /tmp/replica --open-files-limit {{ open_files_limit }}
+  async: 3600
+  poll: 5
+
+- name: Add Secondary Public Key to Authorized Keys
+  authorized_key:
+    user: root
+    key: "{{ secondary_root_public_key }}"
+    state: present

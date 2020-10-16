@@ -1,7 +1,10 @@
 ---
+- name: Update APT Cache
+  apt:
+    update_cache: yes
 
-- name: Install essential packages
-  apt: 
+- name: Install Essential Packages
+  apt:
     state: present
     force: yes
     pkg:
@@ -20,5 +23,3 @@
       - supervisor
       - vim
       - zlib1g-dev
-
-...

@@ -7,14 +7,12 @@ from __future__ import unicode_literals
 import frappe
 from frappe.model.document import Document
 from press.press.doctype.agent_job.agent_job import Agent
-from frappe.utils.password import get_decrypted_password
-import subprocess
-import shlex
+from press.runner import Ansible
 from press.utils import log_error
 
 
 class ProxyServer(Document):
-	def ping(self):
+	def ping_agent(self):
 		agent = Agent(self.name, server_type="Proxy Server")
 		return agent.ping()
 
@@ -23,30 +21,48 @@ class ProxyServer(Document):
 		return agent.update()
 
 	def _setup_server(self):
-		agent_password = get_decrypted_password(self.doctype, self.name, "agent_password")
+		agent_password = self.get_password("agent_password")
+		domain = frappe.db.get_value("Press Settings", "Press Settings", "domain")
 		certificate_name = frappe.db.get_value(
 			"Press Settings", "Press Settings", "wildcard_tls_certificate"
 		)
-		domain = frappe.db.get_value("Press Settings", "Press Settings", "domain")
 		certificate = frappe.get_doc("TLS Certificate", certificate_name)
-
-		command = (
-			f"ansible-playbook ../apps/press/press/playbooks/proxy.yml -i {self.name},"
-			f' -u root -vv -e "server={self.name} workers=1 password={agent_password}'
-			f" domain={domain} certificate_privkey='{certificate.privkey}'"
-			f" certificate_fullchain='{certificate.fullchain}'"
-			f" certificate_chain='{certificate.chain}' \""
-		)
 		try:
-			subprocess.run(shlex.split(command))
-			self.status = "Active"
-			self.is_server_setup = True
+			ansible = Ansible(
+				playbook="proxy.yml",
+				server=self,
+				variables={
+					"server": self.name,
+					"workers": 1,
+					"domain": domain,
+					"password": agent_password,
+					"certificate_private_key": certificate.private_key,
+					"certificate_full_chain": certificate.full_chain,
+					"certificate_intermediate_chain": certificate.intermediate_chain,
+				},
+			)
+			play = ansible.run()
+			self.reload()
+			if play.status == "Success":
+				self.status = "Active"
+				self.is_server_setup = True
+			else:
+				self.status = "Broken"
 		except Exception:
 			self.status = "Broken"
-			log_error("Proxy Server Setup Exception", commmand=command)
+			log_error("Proxy Server Setup Exception", server=self.as_dict())
 		self.save()
 
 	def setup_server(self):
+		self.status = "Installing"
+		self.save()
 		frappe.enqueue_doc(
 			self.doctype, self.name, "_setup_server", queue="long", timeout=1200
 		)
+
+	def ping_ansible(self):
+		try:
+			ansible = Ansible(playbook="ping.yml", server=self)
+			ansible.run()
+		except Exception:
+			log_error("Proxy Server Ping Exception", server=self.as_dict())

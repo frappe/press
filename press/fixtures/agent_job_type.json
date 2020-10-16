@@ -971,6 +971,25 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
+  "modified": "2020-10-02 15:34:23.594712",
+  "name": "Fetch Sites Info",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/info",
+  "steps": [
+   {
+    "parent": "Fetch Sites Info",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Fetch Sites Info"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
   "modified": "2020-10-12 21:03:33.225786",
   "name": "Remove Redirect on Host",
   "parent": null,

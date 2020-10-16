@@ -25,3 +25,6 @@ press.patches.v0_0_1.add_site_to_remote_file
 press.patches.v0_0_1.new_onboarding
 press.patches.v0_0_1.remove_obsolete_doctypes
 press.patches.v0_0_1.make_default_site_domain
+press.patches.v0_0_1.update_site_config_doc
+press.patches.v0_0_1.create_certificate_authorities
+press.patches.v0_0_1.rename_columns_in_tls_certificate

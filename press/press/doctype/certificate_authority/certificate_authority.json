@@ -1,0 +1,158 @@
+{
+ "actions": [],
+ "autoname": "field:common_name",
+ "creation": "2020-09-17 10:43:35.055591",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "common_name",
+  "organization",
+  "organizational_unit",
+  "column_break_4",
+  "validity_days",
+  "rsa_key_size",
+  "is_root_ca",
+  "parent_authority",
+  "section_break_9",
+  "directory",
+  "section_break_11",
+  "issued_on",
+  "column_break_13",
+  "expires_on",
+  "section_break_15",
+  "decoded_certificate"
+ ],
+ "fields": [
+  {
+   "fieldname": "common_name",
+   "fieldtype": "Data",
+   "label": "Common Name",
+   "reqd": 1,
+   "set_only_once": 1,
+   "unique": 1
+  },
+  {
+   "default": "Frappe Technologies",
+   "fieldname": "organization",
+   "fieldtype": "Data",
+   "label": "Organization",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "default": "7300",
+   "fieldname": "validity_days",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Validity (Days)",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "default": "4096",
+   "fieldname": "rsa_key_size",
+   "fieldtype": "Select",
+   "label": "RSA Key Size",
+   "options": "2048\n3072\n4096",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "directory",
+   "fieldtype": "Data",
+   "label": "Directory",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "issued_on",
+   "fieldtype": "Datetime",
+   "label": "Issued On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "expires_on",
+   "fieldtype": "Datetime",
+   "label": "Expires On",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_root_ca",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Is Root CA",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "decoded_certificate",
+   "fieldtype": "Code",
+   "label": "Decoded Certificate",
+   "read_only": 1
+  },
+  {
+   "default": "Frappe Cloud",
+   "fieldname": "organizational_unit",
+   "fieldtype": "Data",
+   "label": "Organizational Unit",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "section_break_9",
+   "fieldtype": "Section Break"
+  },
+  {
+   "depends_on": "eval: !doc.is_root_ca",
+   "fieldname": "parent_authority",
+   "fieldtype": "Link",
+   "label": "Parent Authority",
+   "mandatory_depends_on": "eval: !doc.is_root_ca",
+   "options": "Certificate Authority",
+   "read_only_depends_on": "eval: doc.is_root_ca",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_11",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_13",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_15",
+   "fieldtype": "Section Break",
+   "hide_border": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2020-09-17 19:30:23.565306",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Certificate Authority",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}
