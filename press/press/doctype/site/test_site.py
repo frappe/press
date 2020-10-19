@@ -30,18 +30,18 @@ def create_test_site(subdomain: str) -> Site:
 	plan = create_test_plan()
 	bench = create_test_bench(release_group.name, server.name)
 
-	return frappe.get_doc({
-		"doctype": "Site",
-		"status": "Active",
-		"subdomain": subdomain,
-		"server": server.name,
-		"bench": bench.name,
-		"plan": plan.name,
-		"apps": [{
-			"app": frappe_app.name
-		}],
-		"admin_password": "admin"
-	}).insert(ignore_if_duplicate=True)
+	return frappe.get_doc(
+		{
+			"doctype": "Site",
+			"status": "Active",
+			"subdomain": subdomain,
+			"server": server.name,
+			"bench": bench.name,
+			"plan": plan.name,
+			"apps": [{"app": frappe_app.name}],
+			"admin_password": "admin",
+		}
+	).insert(ignore_if_duplicate=True)
 
 
 class TestSite(unittest.TestCase):

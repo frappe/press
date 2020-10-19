@@ -27,14 +27,16 @@ def create_test_site_domain(
 ) -> SiteDomain:
 	"""Create test Site Domain doc."""
 	fake_tls_certificate()
-	return frappe.get_doc({
-		"doctype": "Site Domain",
-		"site": site,
-		"domain": domain,
-		"status": status,
-		"retry_count": 1,
-		"dns_type": "A"
-	}).insert(ignore_if_duplicate=True)
+	return frappe.get_doc(
+		{
+			"doctype": "Site Domain",
+			"site": site,
+			"domain": domain,
+			"status": status,
+			"retry_count": 1,
+			"dns_type": "A",
+		}
+	).insert(ignore_if_duplicate=True)
 
 
 class TestSiteDomain(unittest.TestCase):
@@ -60,12 +62,9 @@ class TestSiteDomain(unittest.TestCase):
 		site = create_test_site(self.site_subdomain)
 		domain_name = frappe.mock("domain_name")
 
-		site_domain = create_test_site_domain(
-			site.name, domain_name, "Pending"
-		)
+		site_domain = create_test_site_domain(site.name, domain_name, "Pending")
 		self.assertRaises(
-			frappe.exceptions.LinkValidationError, site.set_host_name,
-			site_domain.name
+			frappe.exceptions.LinkValidationError, site.set_host_name, site_domain.name
 		)
 
 	def test_default_host_name_is_site_subdomain(self):
@@ -76,11 +75,9 @@ class TestSiteDomain(unittest.TestCase):
 	def test_default_site_domain_cannot_be_deleted(self):
 		"""Ensure default site domain for a site cannot be deleted."""
 		site = create_test_site(self.site_subdomain)
-		site_domain = frappe.get_doc({
-			"doctype": "Site Domain",
-			"site": site.name,
-			"name": site.name
-		})
+		site_domain = frappe.get_doc(
+			{"doctype": "Site Domain", "site": site.name, "name": site.name}
+		)
 		test_domain_name = frappe.mock("domain_name")
 		test_domain = create_test_site_domain(site.name, test_domain_name)
 		site.set_host_name(test_domain.name)
@@ -90,8 +87,9 @@ class TestSiteDomain(unittest.TestCase):
 		"""Ensure error is thrown if string other than site domain name is passed."""
 		site = create_test_site(self.site_subdomain)
 		self.assertRaises(
-			frappe.exceptions.LinkValidationError, site.set_host_name,
-			"site-domain-name-that-doesnt-exist"
+			frappe.exceptions.LinkValidationError,
+			site.set_host_name,
+			"site-domain-name-that-doesnt-exist",
 		)
 
 	def test_site_domain_for_other_site_cant_be_primary(self):
@@ -100,8 +98,7 @@ class TestSiteDomain(unittest.TestCase):
 		site2 = create_test_site("testing-another")
 		site_domain = create_test_site_domain(site2.name, "hellohello.com")
 		self.assertRaises(
-			frappe.exceptions.LinkValidationError, site1.set_host_name,
-			site_domain.name
+			frappe.exceptions.LinkValidationError, site1.set_host_name, site_domain.name
 		)
 
 	def test_set_host_name_removes_redirect_of_domain(self):

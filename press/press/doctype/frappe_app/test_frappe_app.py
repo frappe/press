@@ -20,18 +20,20 @@ def create_test_frappe_app() -> FrappeApp:
 	fake_create_app_release()
 
 	name = frappe.mock("name")
-	return frappe.get_doc({
-		"doctype": "Frappe App",
-		"url": frappe.mock("url"),
-		"scrubbed": "frappe",
-		"branch": "master",
-		"repo_owner": "frappe",
-		"repo": "frappe",
-		"name": f"Test Frappe App {name}",
-		"skip_review": True,
-		"enable_auto_deploy": True,
-		"frappe": True
-	}).insert(ignore_if_duplicate=True)
+	return frappe.get_doc(
+		{
+			"doctype": "Frappe App",
+			"url": frappe.mock("url"),
+			"scrubbed": "frappe",
+			"branch": "master",
+			"repo_owner": "frappe",
+			"repo": "frappe",
+			"name": f"Test Frappe App {name}",
+			"skip_review": True,
+			"enable_auto_deploy": True,
+			"frappe": True,
+		}
+	).insert(ignore_if_duplicate=True)
 
 
 def fake_create_app_release():
@@ -42,23 +44,18 @@ def fake_create_app_release():
 			return
 		try:
 			hash = frappe.mock("name")
-			if not frappe.db.exists(
-				"App Release", {
-				"hash": hash,
-				"app": self.name
-				}
-			):
-				is_first_release = frappe.db.count(
-					"App Release", {"app": self.name}
-				) == 0
-				frappe.get_doc({
-					"doctype": "App Release",
-					"app": self.name,
-					"hash": hash,
-					"message": "Test commit message",
-					"author": frappe.mock("name"),
-					"deployable": bool(is_first_release),
-				}).insert()
+			if not frappe.db.exists("App Release", {"hash": hash, "app": self.name}):
+				is_first_release = frappe.db.count("App Release", {"app": self.name}) == 0
+				frappe.get_doc(
+					{
+						"doctype": "App Release",
+						"app": self.name,
+						"hash": hash,
+						"message": "Test commit message",
+						"author": frappe.mock("name"),
+						"deployable": bool(is_first_release),
+					}
+				).insert()
 		except Exception:
 			log_error("App Release Creation Error", app=self.name)
 

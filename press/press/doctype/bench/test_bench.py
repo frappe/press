@@ -20,15 +20,17 @@ def create_test_bench(release_group: str, server: str) -> Bench:
 	"""
 	fake_agent_job()
 	name = frappe.mock("name")
-	return frappe.get_doc({
-		"name": f"Test Bench{name}",
-		"doctype": "Bench",
-		"status": "Active",
-		"workers": 1,
-		"gunicorn_workers": 2,
-		"group": release_group,
-		"server": server
-	}).insert(ignore_if_duplicate=True)
+	return frappe.get_doc(
+		{
+			"name": f"Test Bench{name}",
+			"doctype": "Bench",
+			"status": "Active",
+			"workers": 1,
+			"gunicorn_workers": 2,
+			"group": release_group,
+			"server": server,
+		}
+	).insert(ignore_if_duplicate=True)
 
 
 def fake_agent_job():
