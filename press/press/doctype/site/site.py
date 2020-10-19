@@ -35,8 +35,8 @@ class Site(Document):
 			frappe.throw("Subdomain too long. Use 32 or less characters")
 		if not re.match(site_regex, self.subdomain):
 			frappe.throw(
-				"Subdomain contains invalid characters. Use lowercase characters,"
-				" numbers and hyphens"
+				"Subdomain contains invalid characters. Use lowercase"
+				" characters, numbers and hyphens"
 			)
 		if not self.admin_password:
 			self.admin_password = frappe.generate_hash(length=16)
@@ -52,7 +52,9 @@ class Site(Document):
 		bench_apps = frappe.get_doc("Bench", self.bench).apps
 		for app in self.apps:
 			if not find(bench_apps, lambda x: x.app == app.app):
-				frappe.throw(f"Frappe App {app.app} is not available on Bench {self.bench}.")
+				frappe.throw(
+					f"Frappe App {app.app} is not available on Bench {self.bench}."
+				)
 		frappe_app = self.apps[0]
 		if not frappe.db.get_value("Frappe App", frappe_app.app, "frappe"):
 			frappe.throw("First app to be installed on site must be frappe.")
@@ -87,11 +89,15 @@ class Site(Document):
 
 			if key_type == "Number":
 				key_value = (
-					int(row.value) if isinstance(row.value, (float, int)) else json.loads(row.value)
+					int(row.value)
+					if isinstance(row.value, (float, int))
+					else json.loads(row.value)
 				)
 			elif key_type == "Boolean":
 				key_value = (
-					row.value if isinstance(row.value, bool) else bool(json.loads(cstr(row.value)))
+					row.value
+					if isinstance(row.value, bool)
+					else bool(json.loads(cstr(row.value)))
 				)
 			elif key_type == "JSON":
 				key_value = json.loads(cstr(row.value))
@@ -130,14 +136,16 @@ class Site(Document):
 
 	def _create_default_site_domain(self):
 		"""Create Site Domain with Site name."""
-		return frappe.get_doc({
-			"doctype": "Site Domain",
-			"site": self.name,
-			"domain": self.name,
-			"status": "Active",
-			"retry_count": 0,
-			"dns_type": "A"
-		}).insert(ignore_if_duplicate=True)
+		return frappe.get_doc(
+			{
+				"doctype": "Site Domain",
+				"site": self.name,
+				"domain": self.name,
+				"status": "Active",
+				"retry_count": 0,
+				"dns_type": "A",
+			}
+		).insert(ignore_if_duplicate=True)
 
 	def after_insert(self):
 		# create a site plan change log
@@ -149,7 +157,11 @@ class Site(Document):
 
 	def create_agent_request(self):
 		agent = Agent(self.server)
-		if self.remote_database_file and self.remote_private_file and self.remote_public_file:
+		if (
+			self.remote_database_file
+			and self.remote_private_file
+			and self.remote_public_file
+		):
 			agent.new_site_from_backup(self)
 		else:
 			agent.new_site(self)
@@ -268,14 +280,12 @@ class Site(Document):
 			site_domain.retry()
 
 	def _check_if_domain_belongs_to_site(self, domain: str):
-		if not frappe.db.exists({
-			"doctype": "Site Domain",
-			"site": self.name,
-			"domain": domain
-		}):
+		if not frappe.db.exists(
+			{"doctype": "Site Domain", "site": self.name, "domain": domain}
+		):
 			frappe.throw(
 				msg=f"Site Domain {domain} for site {self.name} does not exist",
-				exc=frappe.exceptions.LinkValidationError
+				exc=frappe.exceptions.LinkValidationError,
 			)
 
 	def _check_if_domain_is_active(self, domain: str):
@@ -283,7 +293,7 @@ class Site(Document):
 		if status != "Active":
 			frappe.throw(
 				msg="Only active domains can be primary",
-				exc=frappe.exceptions.LinkValidationError
+				exc=frappe.exceptions.LinkValidationError,
 			)
 
 	def _verify_host_name(self):
@@ -306,10 +316,9 @@ class Site(Document):
 
 	def _update_redirects_for_all_site_domains(self):
 		site_domains = frappe.get_all(
-			"Site Domain",
-			filters={"site": self.name, "redirect_to_primary": True},
+			"Site Domain", filters={"site": self.name, "redirect_to_primary": True},
 		)
-		domains = [domain['name'] for domain in site_domains]
+		domains = [domain["name"] for domain in site_domains]
 		for domain in domains:
 			self.redirect_to_primary_domain(domain)
 
@@ -352,7 +361,9 @@ class Site(Document):
 				doc["name"],
 				["remote_database_file", "remote_public_file", "remote_private_file"],
 			)
-			for doc in frappe.get_all("Site Backup", filters={"site": self.name, "offsite": 1})
+			for doc in frappe.get_all(
+				"Site Backup", filters={"site": self.name, "offsite": 1}
+			)
 		]
 		s3_bucket = frappe.db.get_single_value("Press Settings", "aws_s3_bucket")
 		if not s3_bucket:
@@ -376,7 +387,9 @@ class Site(Document):
 		for remote_files in offsite_backups:
 			for file in remote_files:
 				if file:
-					self._del_obj[file] = frappe.db.get_value("Remote File", file, "file_path")
+					self._del_obj[file] = frappe.db.get_value(
+						"Remote File", file, "file_path"
+					)
 
 		if not self._del_obj:
 			return
@@ -460,7 +473,9 @@ class Site(Document):
 		conn = FrappeClient(
 			f"https://{self.name}", username="Administrator", password=password
 		)
-		value = conn.get_value("System Settings", "setup_complete", "System Settings")
+		value = conn.get_value(
+			"System Settings", "setup_complete", "System Settings"
+		)
 		if value:
 			setup_complete = cint(value["setup_complete"])
 			self.db_set("setup_wizard_complete", setup_complete)
@@ -637,7 +652,9 @@ class Site(Document):
 		return Agent(self.server).get(f"benches/{self.bench}/sites/{self.name}/logs")
 
 	def get_server_log(self, log):
-		return Agent(self.server).get(f"benches/{self.bench}/sites/{self.name}/logs/{log}")
+		return Agent(self.server).get(
+			f"benches/{self.bench}/sites/{self.name}/logs/{log}"
+		)
 
 
 def site_cleanup_after_archive(site):
@@ -700,7 +717,9 @@ def process_archive_site_job_update(job):
 
 	first = job.status
 	second = frappe.get_all(
-		"Agent Job", fields=["status"], filters={"job_type": other_job_type, "site": job.site}
+		"Agent Job",
+		fields=["status"],
+		filters={"job_type": other_job_type, "site": job.site},
 	)[0].status
 
 	if "Success" == first == second:

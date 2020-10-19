@@ -14,7 +14,9 @@ from press.utils import log_error
 class Bench(Document):
 	def validate(self):
 		if not self.candidate:
-			candidate = frappe.get_all("Deploy Candidate", filters={"group": self.group})[0]
+			candidate = frappe.get_all(
+				"Deploy Candidate", filters={"group": self.group}
+			)[0]
 			self.candidate = candidate.name
 		candidate = frappe.get_doc("Deploy Candidate", self.candidate)
 		if not self.apps:
@@ -27,7 +29,9 @@ class Bench(Document):
 		if self.is_new():
 			self.port_offset = self.get_unused_port_offset()
 
-		db_host = frappe.db.get_value("Database Server", self.database_server, "private_ip")
+		db_host = frappe.db.get_value(
+			"Database Server", self.database_server, "private_ip"
+		)
 		config = frappe.db.get_single_value("Press Settings", "bench_configuration")
 		config = json.loads(config)
 		config.update(
@@ -144,11 +148,15 @@ def archive_obsolete_benches():
 			continue
 
 		# Don't try archiving benches with sites
-		if frappe.db.count("Site", {"bench": bench.name, "status": ("!=", "Archived")}):
+		if frappe.db.count(
+			"Site", {"bench": bench.name, "status": ("!=", "Archived")}
+		):
 			continue
 		# If there isn't a Deploy Candidate Difference with this bench's candidate as source
 		# That means this is the most recent bench and should be skipped.
-		if not frappe.db.exists("Deploy Candidate Difference", {"source": bench.candidate}):
+		if not frappe.db.exists(
+			"Deploy Candidate Difference", {"source": bench.candidate}
+		):
 			continue
 
 		# This bench isn't most recent.
@@ -180,7 +188,9 @@ def scale_workers():
 		filters={"status": "Active", "auto_scale_workers": True},
 	)
 	for bench in benches:
-		site_count = frappe.db.count("Site", {"bench": bench.name, "status": "Active"})
+		site_count = frappe.db.count(
+			"Site", {"bench": bench.name, "status": "Active"}
+		)
 		if site_count <= 25:
 			workers, gunicorn_workers = 1, 2
 		elif site_count <= 50:

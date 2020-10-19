@@ -31,13 +31,21 @@ class Agent:
 		}
 		for app in bench.apps:
 			url, repo_owner, repo, branch, installation = frappe.db.get_value(
-				"Frappe App", app.app, ["url", "repo_owner", "repo", "branch", "installation"]
+				"Frappe App",
+				app.app,
+				["url", "repo_owner", "repo", "branch", "installation"],
 			)
 			if installation:
 				token = get_access_token(installation)
 				url = f"https://x-access-token:{token}@github.com/{repo_owner}/{repo}"
 			data["apps"].append(
-				{"name": app.scrubbed, "repo": repo, "url": url, "branch": branch, "hash": app.hash}
+				{
+					"name": app.scrubbed,
+					"repo": repo,
+					"url": url,
+					"branch": branch,
+					"hash": app.hash,
+				}
 			)
 		return self.create_agent_job("New Bench", "benches", data, bench=bench.name)
 
@@ -49,11 +57,16 @@ class Agent:
 	def update_bench_config(self, bench):
 		data = {"config": json.loads(bench.config)}
 		return self.create_agent_job(
-			"Update Bench Configuration", f"benches/{bench.name}/config", data, bench=bench.name,
+			"Update Bench Configuration",
+			f"benches/{bench.name}/config",
+			data,
+			bench=bench.name,
 		)
 
 	def new_site(self, site):
-		apps = [frappe.db.get_value("Frappe App", app.app, "scrubbed") for app in site.apps]
+		apps = [
+			frappe.db.get_value("Frappe App", app.app, "scrubbed") for app in site.apps
+		]
 		data = {
 			"config": json.loads(site.config),
 			"apps": apps,
@@ -61,11 +74,17 @@ class Agent:
 			"mariadb_root_password": get_decrypted_password(
 				"Server", site.server, "mariadb_root_password"
 			),
-			"admin_password": get_decrypted_password("Site", site.name, "admin_password"),
+			"admin_password": get_decrypted_password(
+				"Site", site.name, "admin_password"
+			),
 		}
 
 		return self.create_agent_job(
-			"New Site", f"benches/{site.bench}/sites", data, bench=site.bench, site=site.name
+			"New Site",
+			f"benches/{site.bench}/sites",
+			data,
+			bench=site.bench,
+			site=site.name,
 		)
 
 	def reinstall_site(self, site):
@@ -73,7 +92,9 @@ class Agent:
 			"mariadb_root_password": get_decrypted_password(
 				"Server", site.server, "mariadb_root_password"
 			),
-			"admin_password": get_decrypted_password("Site", site.name, "admin_password"),
+			"admin_password": get_decrypted_password(
+				"Site", site.name, "admin_password"
+			),
 		}
 
 		return self.create_agent_job(
@@ -85,16 +106,26 @@ class Agent:
 		)
 
 	def restore_site(self, site):
-		apps = [frappe.db.get_value("Frappe App", app.app, "scrubbed") for app in site.apps]
+		apps = [
+			frappe.db.get_value("Frappe App", app.app, "scrubbed") for app in site.apps
+		]
 		data = {
 			"apps": apps,
 			"mariadb_root_password": get_decrypted_password(
 				"Server", site.server, "mariadb_root_password"
 			),
-			"admin_password": get_decrypted_password("Site", site.name, "admin_password"),
-			"database": frappe.get_doc("Remote File", site.remote_database_file).download_link,
-			"public": frappe.get_doc("Remote File", site.remote_public_file).download_link,
-			"private": frappe.get_doc("Remote File", site.remote_private_file).download_link,
+			"admin_password": get_decrypted_password(
+				"Site", site.name, "admin_password"
+			),
+			"database": frappe.get_doc(
+				"Remote File", site.remote_database_file
+			).download_link,
+			"public": frappe.get_doc(
+				"Remote File", site.remote_public_file
+			).download_link,
+			"private": frappe.get_doc(
+				"Remote File", site.remote_private_file
+			).download_link,
 		}
 
 		return self.create_agent_job(
@@ -106,12 +137,16 @@ class Agent:
 		)
 
 	def new_site_from_backup(self, site):
-		apps = [frappe.db.get_value("Frappe App", app.app, "scrubbed") for app in site.apps]
+		apps = [
+			frappe.db.get_value("Frappe App", app.app, "scrubbed") for app in site.apps
+		]
 
 		def sanitized_site_config(site):
 			sanitized_config = {}
 			if site.remote_config_file:
-				from press.press.doctype.site_activity.site_activity import log_site_activity
+				from press.press.doctype.site_activity.site_activity import (
+					log_site_activity,
+				)
 
 				site_config = frappe.get_doc("Remote File", site.remote_config_file)
 				new_config = site_config.get_content()
@@ -130,11 +165,19 @@ class Agent:
 			"mariadb_root_password": get_decrypted_password(
 				"Server", site.server, "mariadb_root_password"
 			),
-			"admin_password": get_decrypted_password("Site", site.name, "admin_password"),
+			"admin_password": get_decrypted_password(
+				"Site", site.name, "admin_password"
+			),
 			"site_config": sanitized_site_config(site),
-			"database": frappe.get_doc("Remote File", site.remote_database_file).download_link,
-			"public": frappe.get_doc("Remote File", site.remote_public_file).download_link,
-			"private": frappe.get_doc("Remote File", site.remote_private_file).download_link,
+			"database": frappe.get_doc(
+				"Remote File", site.remote_database_file
+			).download_link,
+			"public": frappe.get_doc(
+				"Remote File", site.remote_public_file
+			).download_link,
+			"private": frappe.get_doc(
+				"Remote File", site.remote_private_file
+			).download_link,
 		}
 
 		return self.create_agent_job(
@@ -216,7 +259,9 @@ class Agent:
 		)
 
 	def archive_site(self, site):
-		password = get_decrypted_password("Server", site.server, "mariadb_root_password")
+		password = get_decrypted_password(
+			"Server", site.server, "mariadb_root_password"
+		)
 		data = {"mariadb_root_password": password}
 
 		return self.create_agent_job(
@@ -242,7 +287,13 @@ class Agent:
 					),
 				}
 				data.update(
-					{"offsite": {"bucket": settings.aws_s3_bucket, "auth": auth, "path": backups_path}}
+					{
+						"offsite": {
+							"bucket": settings.aws_s3_bucket,
+							"auth": auth,
+							"path": backups_path,
+						}
+					}
 				)
 
 			else:
@@ -289,7 +340,11 @@ class Agent:
 			},
 		}
 		return self.create_agent_job(
-			"Add Host to Proxy", "proxy/hosts", data, host=domain.domain, site=domain.site
+			"Add Host to Proxy",
+			"proxy/hosts",
+			data,
+			host=domain.domain,
+			site=domain.site,
 		)
 
 	def setup_redirect(self, domain, target):
@@ -297,14 +352,21 @@ class Agent:
 			"target": target,
 		}
 		return self.create_agent_job(
-			"Setup Redirect on Host", f"proxy/hosts/{domain.domain}/redirect", data, host=domain.domain, site=domain.site
+			"Setup Redirect on Host",
+			f"proxy/hosts/{domain.domain}/redirect",
+			data,
+			host=domain.domain,
+			site=domain.site,
 		)
 
 	def remove_redirect(self, domain):
 		return self.create_agent_job(
-			"Remove Redirect on Host", f"proxy/hosts/{domain.domain}/redirect", method="DELETE", host=domain.domain, site=domain.site
+			"Remove Redirect on Host",
+			f"proxy/hosts/{domain.domain}/redirect",
+			method="DELETE",
+			host=domain.domain,
+			site=domain.site,
 		)
-
 
 	def remove_host(self, domain):
 		return self.create_agent_job(
@@ -365,7 +427,9 @@ class Agent:
 	def request(self, method, path, data=None, files=None):
 		try:
 			url = f"https://{self.server}:{self.port}/agent/{path}"
-			password = get_decrypted_password(self.server_type, self.server, "agent_password")
+			password = get_decrypted_password(
+				self.server_type, self.server, "agent_password"
+			)
 			headers = {"Authorization": f"bearer {password}"}
 			intermediate_ca = frappe.db.get_value(
 				"Press Settings", "Press Settings", "backbone_intermediate_ca"
@@ -387,7 +451,9 @@ class Agent:
 					method, url, headers=headers, files=file_objects, verify=verify
 				)
 			else:
-				result = requests.request(method, url, headers=headers, json=data, verify=verify)
+				result = requests.request(
+					method, url, headers=headers, json=data, verify=verify
+				)
 			try:
 				return result.json()
 			except Exception:
