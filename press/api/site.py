@@ -387,9 +387,7 @@ def analytics(name, period="1 hour"):
 		"request_cpu_time": [
 			{"value": r.request_duration, "timestamp": r.timestamp} for r in request_data
 		],
-		"job_count": [
-			{"value": r.job_count, "timestamp": r.timestamp} for r in job_data
-		],
+		"job_count": [{"value": r.job_count, "timestamp": r.timestamp} for r in job_data],
 		"job_cpu_time": [
 			{"value": r.job_duration * 1000, "timestamp": r.timestamp} for r in job_data
 		],
