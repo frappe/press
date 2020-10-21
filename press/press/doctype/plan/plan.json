@@ -8,6 +8,7 @@
  "engine": "InnoDB",
  "field_order": [
   "enabled",
+  "document_type",
   "plan_title",
   "price_usd",
   "price_inr",
@@ -65,10 +66,18 @@
    "fieldname": "trial_period",
    "fieldtype": "Int",
    "label": "Trial Period (Days)"
+  },
+  {
+   "fieldname": "document_type",
+   "fieldtype": "Link",
+   "label": "Document Type",
+   "options": "DocType",
+   "reqd": 1
   }
  ],
+ "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2020-04-06 12:01:25.753569",
+ "modified": "2020-10-21 14:54:48.798195",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Plan",
