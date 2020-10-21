@@ -13,7 +13,7 @@
 							Fetching your repositories.
 						</p>
 					</div>
-					<div v-if="options.enable_custom_apps === true">
+					<div>
 						<div
 							v-if="
 								options.authorized === false ||
@@ -31,11 +31,6 @@
 								<a :href="options.installation_url">Connect To GitHub</a>
 							</Button>
 						</div>
-					</div>
-					<div v-if="options.enable_custom_apps === false">
-						<label class="text-lg">
-							You are not authorized to use this feature. Contact support.
-						</label>
 					</div>
 					<div v-if="options.authorized === true">
 						<div v-if="options.installations.length != 0">

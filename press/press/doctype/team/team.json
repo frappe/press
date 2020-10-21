@@ -22,7 +22,6 @@
   "column_break_12",
   "address_html",
   "github_section",
-  "enable_custom_apps",
   "github_access_token",
   "onboarding_section",
   "onboarding"
@@ -131,12 +130,6 @@
    "label": "GitHub Access Token"
   },
   {
-   "default": "0",
-   "fieldname": "enable_custom_apps",
-   "fieldtype": "Check",
-   "label": "Enable Custom Apps"
-  },
-  {
    "collapsible": 1,
    "fieldname": "onboarding_section",
    "fieldtype": "Section Break",
@@ -150,7 +143,7 @@
   }
  ],
  "links": [],
- "modified": "2020-08-28 14:56:49.458325",
+ "modified": "2020-10-21 11:02:45.200974",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
