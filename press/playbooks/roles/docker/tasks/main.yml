@@ -1,6 +1,17 @@
 ---
+- name: Remove Old Docker Packages
+  apt:
+    state: absent
+    force: yes
+    pkg:
+      - docker
+      - docker-engine
+      - docker.io
+      - containerd
+      - runc
+
 - name: Install required packages
-  apt: 
+  apt:
     state: present
     force: yes
     pkg:
@@ -9,25 +20,24 @@
       - curl
       - software-properties-common
 
-- name: Add Docker GPG apt Key
+- name: Add Docker Repository
+  apt_repository:
+    repo: deb https://download.docker.com/linux/ubuntu focal stable
+    state: present
+
+- name: Add Docker Repository Key
   apt_key:
     url: https://download.docker.com/linux/ubuntu/gpg
     state: present
 
-- name: Add Docker Repository
-  apt_repository:
-    repo: deb https://download.docker.com/linux/ubuntu bionic stable
-    state: present
-
-- name: Install docker-ce
-  apt: 
+- name: Install Docker
+  apt:
     name: docker-ce
     state: present
 
-- name: Add frappe to docker group
+- name: Add Frappe User to docker Group
   user:
     name: frappe
-    groups: docker
+    groups:
+      - docker
     append: true
-  
-...
