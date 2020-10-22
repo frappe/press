@@ -137,6 +137,7 @@ deploy_hours = [1, 2, 3, 4]
 fixtures = [
 	"Agent Job Type",
 	"Plan",
+	"Frappe Version",
 	{"dt": "Role", "filters": [["role_name", "like", "Press%"]]},
 	"Print Format",
 	"Site Config Key",
