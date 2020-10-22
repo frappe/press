@@ -185,12 +185,30 @@ def get_frappe_backups(site_url, username, password):
 			)
 			frappe.throw(missing_backups)
 
+		# check if database is > 500MiB and show alert
+		database_size = float(
+			requests.head(file_urls["database"]).headers.get("Content-Length", 999)
+		)
+
+		if (database_size / 1024 * 2) > 500:
+			frappe.throw("Your site exceeds the limits for this operation.")
+
 		return file_urls
 	else:
 		log_error(
 			"Backups Retreival Error - Magic Migration", response=res.text, remote_site=site_url
 		)
-		frappe.throw("An unknown error occurred")
+
+		if res.status_code == 403:
+			error_msg = "Insufficient Permissions"
+		else:
+			side = "Client" if 400 <= res.status_code < 500 else "Server"
+			error_msg = (
+				f"{side} Error occurred: {res.status_code} {res.raw.reason} recieved"
+				f" from {site_url}"
+			)
+
+		frappe.throw(error_msg)
 
 
 def get_client_blacklisted_keys() -> list:
