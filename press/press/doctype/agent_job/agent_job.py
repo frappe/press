@@ -248,6 +248,7 @@ def report_site_downtime():
 		fields=["site", "count(site) as count"],
 		filters={"web": "False", "timestamp": (">", now - timedelta(minutes=2))},
 		group_by="site",
+		ignore_ifnull=True,
 	)
 	offline_sites = set(log.site for log in offline_site_logs if log.count >= 2)
 	if offline_sites:
