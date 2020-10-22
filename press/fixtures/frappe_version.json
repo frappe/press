@@ -1,0 +1,35 @@
+[
+ {
+  "docstatus": 0,
+  "doctype": "Frappe Version",
+  "modified": "2020-10-22 09:33:29.906760",
+  "name": "Version 12",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "predecessor": null,
+  "public": 1
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Frappe Version",
+  "modified": "2020-10-22 09:33:18.293698",
+  "name": "Version 13",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "predecessor": "Version 12",
+  "public": 1
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Frappe Version",
+  "modified": "2020-10-22 09:33:09.778123",
+  "name": "Nightly",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "predecessor": "Version 13",
+  "public": 1
+ }
+]
