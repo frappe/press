@@ -66,6 +66,8 @@
   "code_server_password",
   "section_break_41",
   "github_app_private_key",
+  "section_break_59",
+  "build_directory",
   "auto_update_section",
   "auto_update_queue_size",
   "backups_section",
@@ -487,6 +489,17 @@
    "fieldname": "use_backbone_ca",
    "fieldtype": "Check",
    "label": "Use Backbone CA"
+  },
+  {
+   "fieldname": "section_break_59",
+   "fieldtype": "Section Break",
+   "label": "Docker"
+  },
+  {
+   "fieldname": "build_directory",
+   "fieldtype": "Data",
+   "label": "Build Directory"
+  },
   {
    "depends_on": "eval: !doc.github_app_id",
    "fieldname": "create_github_app",
@@ -497,7 +510,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2020-10-08 10:20:20.763127",
+ "modified": "2020-10-21 10:54:36.088128",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
