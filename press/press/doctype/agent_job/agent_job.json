@@ -47,7 +47,8 @@
    "label": "Status",
    "options": "Undelivered\nPending\nRunning\nSuccess\nFailure",
    "read_only": 1,
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "request_method",
@@ -68,7 +69,8 @@
    "fieldname": "job_id",
    "fieldtype": "Int",
    "label": "Job ID",
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "request_path",
@@ -186,8 +188,8 @@
  ],
  "in_create": 1,
  "links": [],
- "modified": "2020-08-13 20:35:19.925368",
- "modified_by": "faris@erpnext.com",
+ "modified": "2020-10-22 11:52:55.470816",
+ "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Job",
  "owner": "Administrator",
