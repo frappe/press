@@ -40,7 +40,7 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "App",
-   "options": "Frappe App",
+   "options": "Application",
    "read_only": 1,
    "reqd": 1
   },
@@ -212,7 +212,7 @@
  ],
  "in_create": 1,
  "links": [],
- "modified": "2020-10-19 20:14:36.476654",
+ "modified": "2020-10-26 19:53:38.833189",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Release",

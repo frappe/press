@@ -11,7 +11,7 @@ from press.utils import log_error
 import requests
 
 
-class FrappeApp(Document):
+class Application(Document):
 	def on_update(self):
 		self.create_app_release()
 
@@ -48,8 +48,8 @@ class FrappeApp(Document):
 
 
 def poll_new_releases():
-	for app in frappe.get_all("Frappe App"):
-		app = frappe.get_doc("Frappe App", app.name)
+	for app in frappe.get_all("Application"):
+		app = frappe.get_doc("Application", app.name)
 		app.create_app_release()
 
 
@@ -63,4 +63,4 @@ def get_permission_query_conditions(user):
 
 	team = get_current_team()
 
-	return f"(`tabFrappe App`.`team` = {frappe.db.escape(team)})"
+	return f"(`tabApplication`.`team` = {frappe.db.escape(team)})"

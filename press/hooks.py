@@ -77,8 +77,8 @@ after_migrate = "press.api.account.clear_country_list_cache"
 
 permission_query_conditions = {
 	"Site": "press.press.doctype.site.site.get_permission_query_conditions",
-	"Frappe App": (
-		"press.press.doctype.frappe_app.frappe_app.get_permission_query_conditions"
+	"Application": (
+		"press.press.doctype.application.application.get_permission_query_conditions"
 	),
 }
 # has_permission = {
@@ -111,7 +111,7 @@ scheduler_events = {
 		"press.press.doctype.remote_file.remote_file.poll_file_statuses",
 		"press.press.doctype.invoice.invoice.submit_invoices",
 	],
-	"hourly": ["press.press.doctype.frappe_app.frappe_app.poll_new_releases"],
+	"hourly": ["press.press.doctype.application.application.poll_new_releases"],
 	"hourly_long": [
 		"press.press.doctype.payment_ledger_entry.payment_ledger_entry.create_ledger_entries",
 		"press.press.doctype.bench.bench.archive_obsolete_benches",

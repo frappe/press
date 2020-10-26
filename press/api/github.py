@@ -70,7 +70,7 @@ def options():
 	for group in groups:
 		group_doc = frappe.get_doc("Release Group", group.name)
 		group_apps = frappe.get_all(
-			"Frappe App",
+			"Application",
 			fields=["name", "frappe", "scrubbed", "branch"],
 			filters={"name": ("in", [row.app for row in group_doc.apps])},
 		)

@@ -9,7 +9,7 @@ def get_data():
 	return {
 		"fieldname": "team",
 		"transactions": [
-			{"label": _("Related Documents"), "items": ["Site", "Frappe App", "Release Group"]},
+			{"label": _("Related Documents"), "items": ["Site", "Application", "Release Group"]},
 			{"label": _("Billing"), "items": ["Invoice", "Payment Ledger Entry"]},
 		],
 	}

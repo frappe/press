@@ -223,7 +223,7 @@ def options_for_new():
 		bench = benches[0].name
 		bench_doc = frappe.get_doc("Bench", bench)
 		group_apps = frappe.get_all(
-			"Frappe App",
+			"Application",
 			fields=["name", "frappe", "branch", "scrubbed", "repo_owner", "repo"],
 			filters={"name": ("in", [row.app for row in bench_doc.apps])},
 			or_filters={"team": team, "public": True},
@@ -295,18 +295,18 @@ def get(name):
 	bench = frappe.get_doc("Bench", site.bench)
 	bench_apps = {}
 	for app in bench.apps:
-		app_team, app_public = frappe.db.get_value("Frappe App", app.app, ["team", "public"])
+		app_team, app_public = frappe.db.get_value("Application", app.app, ["team", "public"])
 		if app.app in installed_apps or app_public or app_team == team:
 			bench_apps[app.app] = app.idx
 
 	available_apps = list(filter(lambda x: x not in installed_apps, bench_apps.keys()))
 	installed_apps = frappe.get_all(
-		"Frappe App",
+		"Application",
 		fields=["name", "repo_owner as owner", "scrubbed as repo", "url", "branch", "frappe"],
 		filters={"name": ("in", installed_apps)},
 	)
 	available_apps = frappe.get_all(
-		"Frappe App",
+		"Application",
 		fields=["name", "repo_owner as owner", "scrubbed as repo", "url", "branch"],
 		filters={"name": ("in", available_apps)},
 	)

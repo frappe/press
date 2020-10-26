@@ -7,5 +7,5 @@ from __future__ import unicode_literals
 import unittest
 
 
-class TestFrappeApp(unittest.TestCase):
+class TestApplication(unittest.TestCase):
 	pass

@@ -74,7 +74,7 @@ class DeployCandidateDifference(Document):
 				continue
 			app.changed = True
 			app.deploy_type = "Pull"
-			frappe_app = frappe.get_doc("Frappe App", app.app)
+			frappe_app = frappe.get_doc("Application", app.app)
 			if frappe_app.installation:
 				github_access_token = get_access_token(frappe_app.installation)
 				client = Github(github_access_token)

@@ -19,7 +19,7 @@ class Bench(Document):
 		candidate = frappe.get_doc("Deploy Candidate", self.candidate)
 		if not self.apps:
 			for release in candidate.apps:
-				scrubbed = frappe.get_value("Frappe App", release.app, "scrubbed")
+				scrubbed = frappe.get_value("Application", release.app, "scrubbed")
 				self.append(
 					"apps", {"app": release.app, "scrubbed": scrubbed, "hash": release.hash}
 				)

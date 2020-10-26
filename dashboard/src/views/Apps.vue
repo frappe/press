@@ -79,7 +79,7 @@ export default {
 			if (this._socketSetup) return;
 			this._socketSetup = true;
 			this.$socket.on('list_update', ({ doctype }) => {
-				if (doctype === 'Frappe App' || doctype === 'App Release') {
+				if (doctype === 'Application' || doctype === 'App Release') {
 					this.$resources.apps.reload();
 				}
 			});

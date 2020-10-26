@@ -14,7 +14,7 @@ def new(app):
 	team = get_current_team()
 	repo_owner, repo, branch = app["repo_owner"], app["repo"], app["branch"]
 	existing = frappe.db.exists(
-		"Frappe App", {"repo_owner": repo_owner, "repo": repo, "branch": branch},
+		"Application", {"repo_owner": repo_owner, "repo": repo, "branch": branch},
 	)
 	if existing:
 		frappe.throw(
@@ -23,7 +23,7 @@ def new(app):
 
 	app_doc = frappe.get_doc(
 		{
-			"doctype": "Frappe App",
+			"doctype": "Application",
 			"name": app["name"],
 			"branch": branch,
 			"repo": repo,
@@ -45,14 +45,14 @@ def new(app):
 
 @frappe.whitelist()
 def exists(name):
-	return bool(frappe.db.exists("Frappe App", name))
+	return bool(frappe.db.exists("Application", name))
 
 
 @frappe.whitelist()
 def similar_exists(repo_owner, repo, branch):
 	return bool(
 		frappe.db.exists(
-			"Frappe App", {"repo": repo, "repo_owner": repo_owner, "branch": branch}
+			"Application", {"repo": repo, "repo_owner": repo_owner, "branch": branch}
 		)
 	)
 
@@ -87,11 +87,11 @@ def app_status(name):
 
 
 @frappe.whitelist()
-@protected("Frappe App")
+@protected("Application")
 def get(name):
-	app = frappe.get_doc("Frappe App", name)
+	app = frappe.get_doc("Application", name)
 	groups = frappe.get_all(
-		"Release Group Frappe App", fields=["parent as name"], filters={"app": app.name}
+		"Release Group Application", fields=["parent as name"], filters={"app": app.name}
 	)
 	enabled_groups = []
 	for group in groups:
@@ -99,7 +99,7 @@ def get(name):
 		if not group_doc.enabled:
 			continue
 		frappe_app = frappe.get_all(
-			"Frappe App",
+			"Application",
 			fields=["name", "scrubbed", "branch"],
 			filters={"name": ("in", [row.app for row in group_doc.apps]), "frappe": True},
 		)[0]
@@ -123,7 +123,7 @@ def get(name):
 
 
 @frappe.whitelist()
-@protected("Frappe App")
+@protected("Application")
 def deploys(name):
 	releases = frappe.get_all(
 		"App Release",
@@ -134,7 +134,7 @@ def deploys(name):
 	)
 
 	group_names = frappe.get_all(
-		"Release Group Frappe App", fields=["parent as name"], filters={"app": name}
+		"Release Group Application", fields=["parent as name"], filters={"app": name}
 	)
 	groups = {}
 	for group in group_names:
@@ -142,13 +142,13 @@ def deploys(name):
 		if not group_doc.enabled:
 			continue
 		frappe_app = frappe.get_all(
-			"Frappe App",
+			"Application",
 			fields=["name", "scrubbed", "branch"],
 			filters={"name": ("in", [row.app for row in group_doc.apps]), "frappe": True},
 		)[0]
 		groups[group.name] = frappe_app
 
-	app = frappe.get_doc("Frappe App", name)
+	app = frappe.get_doc("Application", name)
 	tags = frappe.get_all(
 		"App Tag",
 		filters={"repository": app.repo, "repository_owner": app.repo_owner},
@@ -180,9 +180,9 @@ def deploys(name):
 
 
 @frappe.whitelist()
-@protected("Frappe App")
+@protected("Application")
 def releases(name):
-	app = frappe.get_doc("Frappe App", name)
+	app = frappe.get_doc("Application", name)
 	releases = frappe.get_all(
 		"App Release",
 		filters={"app": name},
@@ -219,7 +219,7 @@ def all():
 	if frappe.session.data.user_type != "System User":
 		filters.update({"team": get_current_team()})
 	apps = frappe.get_list(
-		"Frappe App",
+		"Application",
 		fields=["name", "modified", "url", "repo_owner", "repo", "branch"],
 		filters=filters,
 		order_by="creation desc",
@@ -232,7 +232,7 @@ def all():
 
 
 @frappe.whitelist()
-@protected("Frappe App")
+@protected("Application")
 def deploy(name):
 	release = frappe.get_all(
 		"App Release",

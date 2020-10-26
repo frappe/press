@@ -61,7 +61,7 @@ class GitHubWebhookLog(Document):
 	def create_app_release(self, payload):
 		try:
 			app = frappe.get_value(
-				"Frappe App",
+				"Application",
 				{
 					"branch": self.branch,
 					"repo": self.repository,
