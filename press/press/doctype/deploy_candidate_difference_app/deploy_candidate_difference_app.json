@@ -25,7 +25,7 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "App",
-   "options": "Frappe App",
+   "options": "Application",
    "read_only": 1,
    "reqd": 1
   },
@@ -101,7 +101,7 @@
  ],
  "istable": 1,
  "links": [],
- "modified": "2020-06-21 11:02:33.603368",
+ "modified": "2020-10-26 19:53:39.540677",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate Difference App",

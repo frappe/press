@@ -24,7 +24,7 @@ from pygments.formatters import HtmlFormatter as HF
 class AppRelease(Document):
 	def after_insert(self):
 		auto_deploy, skip_review = frappe.db.get_value(
-			"Frappe App", self.app, ["enable_auto_deploy", "skip_review"]
+			"Application", self.app, ["enable_auto_deploy", "skip_review"]
 		)
 		if auto_deploy:
 			self.deployable = True
@@ -49,7 +49,7 @@ class AppRelease(Document):
 			return
 
 		for group_app in frappe.get_all(
-			"Release Group Frappe App", fields=["parent"], filters={"app": self.app}
+			"Release Group Application", fields=["parent"], filters={"app": self.app}
 		):
 			group = frappe.get_doc("Release Group", group_app.parent)
 			group.create_deploy_candidate()
@@ -121,7 +121,7 @@ class AppRelease(Document):
 		self.code_server_url = code_server_url
 
 	def _clone_repo(self):
-		app = frappe.get_doc("Frappe App", self.app)
+		app = frappe.get_doc("Application", self.app)
 		if app.installation:
 			token = get_access_token(app.installation)
 			url = f"https://x-access-token:{token}@github.com/{app.repo_owner}/{app.repo}"

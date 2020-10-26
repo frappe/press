@@ -26,7 +26,7 @@ def get_data():
 			"label": _("Setup"),
 			"items": [
 				{"type": "doctype", "name": "Plan"},
-				{"type": "doctype", "name": "Frappe App"},
+				{"type": "doctype", "name": "Application"},
 				{"type": "doctype", "name": "Release Group"},
 				{"type": "doctype", "name": "App Release"},
 				{"type": "doctype", "name": "Deploy Candidate"},
