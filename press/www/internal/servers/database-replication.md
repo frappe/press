@@ -9,6 +9,8 @@ title: Database Replication - Server
 #### Requires 
 - Primary and secondary Database Servers should be already setup.
 
+#### Steps
+
 1. Set **Primary** field on the secondary Database Server
 
  ![Server](/assets/press/images/internal/servers/database-replication/primary-set.png)

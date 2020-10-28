@@ -8,20 +8,21 @@ Proxy Server runs NGINX as a reverse proxy.
 > Note: See [Server Setup](/internal/servers/server-setup) for detailed explanation
 
 #### Requires 
-- Public IP
-- Private IP
-- Agent Password
+- Press host must have root SSH access to the target machine.
 
-Press host must have root SSH access to the target machine.
+#### Steps
 
 1. Create a Proxy Server
-![New Proxy Server](/assets/press/images/internal/servers/proxy-server/new-proxy-server.png)
+
+ ![New Proxy Server](/assets/press/images/internal/servers/proxy-server/new-proxy-server.png)
 
 1. Click on **Actions > Setup Server**
-![Setup Server](/assets/press/images/internal/servers/proxy-server/proxy-server-setup-server.png)
+
+ ![Setup Server](/assets/press/images/internal/servers/proxy-server/proxy-server-setup-server.png)
 
 1. Setup Complete
-![Proxy Server Setup Success](/assets/press/images/internal/servers/proxy-server/proxy-server-setup-success.png)
+
+ ![Proxy Server Setup Success](/assets/press/images/internal/servers/proxy-server/proxy-server-setup-success.png)
 
 
 
