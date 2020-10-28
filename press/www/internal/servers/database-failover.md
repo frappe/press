@@ -13,7 +13,7 @@ title: Database Failover - Server
 
 1. On Secondary Database Server Click on **Actions > Trigger Failover**
 
- This doesn't require primary Database Server to be online. 
+ This doesn't require the primary Database Server to be online. 
 
  ![Setup Replication](/assets/press/images/internal/servers/database-failover/database-server-actions-failover.png)
 

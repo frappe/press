@@ -12,12 +12,12 @@ Local infrastructure subsystem is a faster, cheaper and more flexible alternativ
 
 #### Dependencies
 
-- Packer - For building virtual machine images
-- Vagrant - Simplified CLI/API for managing virtual hosts
+- Packer - For building virtual machine images.
+- Vagrant - Simplified CLI/API for managing virtual hosts.
     - vagrant-libvirt - For using KVM/Libvirt. Duh!
-    - vagrant-hostmanager - For managing hosts file in guests and host machine
+    - vagrant-hostmanager - For managing hosts file in guests and host machine.
 
-- Libvirt/KVM - Virtualization provider
+- Libvirt/KVM - Virtualization provider.
 
 ### Installation
 Dependencies can be installed with 
@@ -25,7 +25,7 @@ Dependencies can be installed with
 ```bash
 python3 apps/press/backbone/setup.py
 ```
-> Note: After this logout completely and login again to start with local infrastructure. Start a new shell session. if you're on a Non-GUI server
+> Note: After this logout completely and login again to start with local infrastructure. Start a new shell session. if you're on a Non-GUI server.
 
 ### Building Base Images
 
@@ -40,7 +40,7 @@ backbone hypervisor build
 
 > Note: When running for the very first time this will download a ~500 MB ubuntu image.
 
-See contents of `press/backbone/packer` directory for more details on this
+See contents of `press/backbone/packer` directory for more details.
 
 ### Spawning Virtual Machines
 There's no simple CLI for this at the moment. 
@@ -61,7 +61,7 @@ You can destroy the machines with
 ```
 vagrant destroy -f
 ```
-and spawn them again with `vagrant up` command
+and spawn them again with `vagrant up` command.
 
 Local machines have following names/ips by default
 

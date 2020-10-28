@@ -16,7 +16,7 @@ Convert a Server into a Database Server, So that, a local database can be moved 
 #### Steps
 
 1. Create a Database Server
- - Use all values from the Server as is.
+ - Use all values from the Server as-is.
  - Set unique **Server ID** (a unique value will be set if not left unset).
 
  ![Server](/assets/press/images/internal/servers/convert-frappe-to-database/server.png)
@@ -29,7 +29,7 @@ Convert a Server into a Database Server, So that, a local database can be moved 
 
 1. Setup Complete
 
- **Database Server** field on Server will be set. (As if the MariaDB is hosted remotely).
+ **Database Server** field on the Server will be set. (As if the MariaDB is hosted remotely).
 
  ![Database Server Active](/assets/press/images/internal/servers/convert-frappe-to-database/database-server-active.png)
 
