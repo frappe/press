@@ -47,7 +47,7 @@ Once the playbook execution is complete, If failed, Server status is set as **Br
 If successful, Server status is set as **Active** and **Server Setup** field is checked. 
 
 
-# Add Server to Proxy
+### Add Server to Proxy
 
 This adds the Server as an NGINX upstream on the Proxy Server. This action is carried out using Agent. The status of this job can be tracked under Add Upstream to Proxy Agent Job. If successful, the **Upstream Setup** field is checked.
 
