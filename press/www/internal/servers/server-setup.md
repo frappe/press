@@ -19,7 +19,7 @@ Server runs benches as well as its own MariaDB database.
 
  ![New Server Document](/assets/press/images/internal/servers/server/setup-server-actions.png)
 
-During the playbook execution Server status is set as **Installing**
+During the playbook execution, Server status is set as **Installing**.
 
  ![Setup Server Installing](/assets/press/images/internal/servers/server/setup-server-installing.png)
 
@@ -42,14 +42,14 @@ Setup Server action runs an Ansible playbook. The status of the play is tracked 
 
  ![Setup Server Success](/assets/press/images/internal/servers/server/setup-server-success.png)
 
-Once the playbook execution is complete, If failed, Server status is set as **Broken**. Server setup can be retried with **Actions > Setup Server**.
+Once the playbook execution is complete, If failed, Server status is set as **Broken**. The Server setup can be retried with **Actions > Setup Server**.
 
 If successful, Server status is set as **Active** and **Server Setup** field is checked. 
 
 
 # Add Server to Proxy
 
-This adds the Server as an NGINX upstream on the Proxy Server. This action is carried out using Agent. The status of this job can be tracked under Add Upstream to Proxy Agent Job. If successful, **Upstream Setup** field is checked.
+This adds the Server as an NGINX upstream on the Proxy Server. This action is carried out using Agent. The status of this job can be tracked under Add Upstream to Proxy Agent Job. If successful, the **Upstream Setup** field is checked.
 
 1. Set **Proxy Server** field and Save.
 

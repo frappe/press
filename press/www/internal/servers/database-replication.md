@@ -19,7 +19,7 @@ title: Database Replication - Server
 
  ![Setup Replication](/assets/press/images/internal/servers/database-replication/database-server-actions.png)
 
- This runs playbooks on both, primary and secondary Database Server.
+ This runs playbooks on both primary and secondary Database Server.
 
  ![Multiple Plays](/assets/press/images/internal/servers/database-replication/multiple-plays.png)
 

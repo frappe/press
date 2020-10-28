@@ -5,7 +5,7 @@ title: Proxy Server Setup - Server
 # Proxy Server Setup
 Proxy Server runs NGINX as a reverse proxy.
 
-> Note: See [Server Setup](/internal/servers/server-setup) for detailed explanation
+> Note: See [Server Setup](/internal/servers/server-setup) for detailed explanation.
 
 #### Requires 
 - Press host must have root SSH access to the target machine.
