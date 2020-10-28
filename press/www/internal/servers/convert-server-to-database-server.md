@@ -11,12 +11,9 @@ Convert a Server into a Database Server, So that, a local database can be moved 
 > Note: MariaDB running on a Server allows clients to connect from localhost only. MariaDB running on Database Server allows clients to connect from the private network.
 
 #### Requires 
-- Public IP
-- Private IP
-- MariaDB Password
-- Agent Password
+- Press host must have root SSH access to the target machine.
 
-Press host must have root SSH access to the target machine.
+#### Steps
 
 1. Create a Database Server
  - Use all values from the Server as is.

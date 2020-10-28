@@ -8,12 +8,9 @@ Database Server runs MariaDB server listening on a private IP address.
 > Note: See [Server Setup](/internal/servers/server-setup) for detailed explanation.
 
 #### Requires 
-- Public IP
-- Private IP
-- MariaDB Password
-- Agent Password
+- Press host must have root SSH access to the target machine.
 
-Press host must have root SSH access to the target machine.
+#### Steps
 
 1. Create a Database Server
  - Set unique **Server ID** (a unique value will be set if not left unset).
