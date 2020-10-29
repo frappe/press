@@ -25,7 +25,8 @@
    "label": "Agent Job",
    "options": "Agent Job",
    "read_only": 1,
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "step_name",
@@ -42,7 +43,8 @@
    "label": "Status",
    "options": "Pending\nRunning\nSuccess\nFailure\nSkipped",
    "read_only": 1,
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "output",
@@ -92,7 +94,7 @@
  ],
  "in_create": 1,
  "links": [],
- "modified": "2020-10-05 17:19:47.720984",
+ "modified": "2020-10-22 11:53:20.577184",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Job Step",
