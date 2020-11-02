@@ -90,7 +90,7 @@
 					<Button
 						type="primary"
 						@click="$resources.scheduleBackup.fetch()"
-						:disabled="$resources.scheduleBackup.loading"
+						:disabled="$resources.scheduleBackup.loading || site.status !== 'Active'"
 					>
 						Schedule Backup with Files
 					</Button>
