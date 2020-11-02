@@ -50,7 +50,9 @@ def process_backup_site_job_update(job):
 		"Site Backup", fields=["name", "status"], filters={"job": job.name}
 	)[0]
 	if job.status != backup.status:
-		frappe.db.set_value("Site Backup", backup.name, "status", job.status)
+		frappe.db.set_value(
+			"Site Backup", backup.name, "status", job.status, for_update=False
+		)
 		if job.status == "Success":
 			job_data = json.loads(job.data)
 			backup_data, offsite_backup_data = job_data["backups"], job_data["offsite"]
@@ -67,6 +69,7 @@ def process_backup_site_job_update(job):
 					"database_file": backup_data["database"]["file"],
 					"remote_database_file": remote_database,
 				},
+				for_update=False,
 			)
 			if "private" in backup_data and "public" in backup_data:
 				frappe.db.set_value(
@@ -82,4 +85,5 @@ def process_backup_site_job_update(job):
 						"public_file": backup_data["public"]["file"],
 						"remote_private_file": remote_private,
 					},
+					for_update=False,
 				)
