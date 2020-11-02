@@ -174,6 +174,7 @@ export default {
 				Inactive: [
 					'General',
 					'Plan',
+					'Backups',
 					'Site Config',
 					'Activity',
 					'Jobs',
