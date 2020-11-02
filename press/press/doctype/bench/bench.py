@@ -83,10 +83,16 @@ class Bench(Document):
 	def sync_info(self):
 		"""Initiates a Job to update Site Usage, site.config.encryption_key and timezone details for all sites on Bench."""
 		try:
-			sites = frappe.get_all("Site", filters={"bench": self.name, "status": ("!=", "Archived")}, pluck="name")
+			sites = frappe.get_all(
+				"Site", filters={"bench": self.name, "status": ("!=", "Archived")}, pluck="name"
+			)
 			last_synced_time = round(
 				frappe.get_all(
-					"Site Usage", filters=[["site", "in", sites]], limit_page_length=1, order_by="creation desc", pluck="creation",
+					"Site Usage",
+					filters=[["site", "in", sites]],
+					limit_page_length=1,
+					order_by="creation desc",
+					pluck="creation",
 				)[0].timestamp()
 			)
 		except IndexError:
