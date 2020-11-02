@@ -86,11 +86,11 @@
 				<div class="px-6 mt-2 text-base text-gray-600" v-else>
 					No backups found
 				</div>
-				<div class="px-6 mt-4 mb-2">
+				<div class="px-6 mt-4 mb-2" v-if="site.status === 'Active'">
 					<Button
 						type="primary"
 						@click="$resources.scheduleBackup.fetch()"
-						:disabled="$resources.scheduleBackup.loading || site.status !== 'Active'"
+						:disabled="$resources.scheduleBackup.loading"
 					>
 						Schedule Backup with Files
 					</Button>
