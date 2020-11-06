@@ -437,8 +437,8 @@ def current_plan(name):
 		total_database_usage = usage.database
 		total_storage_usage = usage.public + usage.private
 	else:
-		total_database_usage = -1
-		total_storage_usage = -1
+		total_database_usage = 0
+		total_storage_usage = 0
 
 	# number of hours until cpu usage resets
 	now = frappe.utils.now_datetime()
