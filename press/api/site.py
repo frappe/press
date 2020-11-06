@@ -328,6 +328,7 @@ def get(name):
 		"status": site.status,
 		"installed_apps": sorted(installed_apps, key=lambda x: bench_apps[x.name]),
 		"available_apps": sorted(available_apps, key=lambda x: bench_apps[x.name]),
+		"usage": json.loads(site._site_usages),
 		"setup_wizard_complete": site.setup_wizard_complete,
 		"config": site_config,
 		"creation": site.creation,
@@ -424,6 +425,21 @@ def current_plan(name):
 	else:
 		total_cpu_usage_hours = 0
 
+	usage = frappe.get_all(
+		"Site Usage",
+		fields=["database", "public", "private"],
+		filters={"site": name},
+		order_by="creation desc",
+		limit=1,
+	)
+	if usage:
+		usage = usage[0]
+		total_database_usage = usage.database
+		total_storage_usage = usage.public + usage.private
+	else:
+		total_database_usage = -1
+		total_storage_usage = -1
+
 	# number of hours until cpu usage resets
 	now = frappe.utils.now_datetime()
 	today_end = now.replace(hour=23, minute=59, second=59)
@@ -434,6 +450,10 @@ def current_plan(name):
 		"history": site_plan_changes,
 		"total_cpu_usage_hours": total_cpu_usage_hours,
 		"hours_until_reset": hours_left_today,
+		"max_database_usage": plan.max_database_usage,
+		"max_storage_usage": plan.max_storage_usage,
+		"total_database_usage": total_database_usage,
+		"total_storage_usage": total_storage_usage,
 	}
 
 
