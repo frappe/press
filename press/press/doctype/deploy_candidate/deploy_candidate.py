@@ -43,3 +43,13 @@ class DeployCandidate(Document):
 					deploy_doc.insert()
 		except Exception:
 			log_error("Deploy Creation Error", candidate=self.name)
+
+
+@frappe.whitelist()
+def desk_app(doctype, txt, searchfield, start, page_len, filters):
+	return frappe.get_all(
+		"Release Group Frappe App",
+		filters={"parent": filters["release_group"]},
+		fields=["app"],
+		as_list=True,
+	)
