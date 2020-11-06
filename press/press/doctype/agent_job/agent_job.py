@@ -350,16 +350,18 @@ def report_usage_violations():
 		cpu_limit = _get_config(plan)["rate_limit"]["limit"] * 1000000
 		database_limit, disk_limit = _get_limits(plan)
 
-		counter = cint(
-			frappe.get_all(
-				"Site Request Log",
-				fields=["counter"],
-				filters={"site": site},
-				order_by="timestamp desc",
-				pluck="counter",
-				limit=1,
-			)[0]
+		_temp_cpu_counter = frappe.get_all(
+			"Site Request Log",
+			fields=["counter"],
+			filters={"site": site},
+			order_by="timestamp desc",
+			pluck="counter",
+			limit=1,
 		)
+		if _temp_cpu_counter:
+			counter = cint(_temp_cpu_counter[0])
+		else:
+			counter = 0
 
 		site_usages = {
 			"cpu": counter / cpu_limit,
