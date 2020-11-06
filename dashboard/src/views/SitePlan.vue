@@ -93,6 +93,28 @@
 						</div>
 					</div>
 				</div>
+				<div class="flex px-6 py-4 text-base hover:bg-gray-50">
+					<div class="w-1/2">
+						<div class="leading-6">
+							<span class="font-bold"> {{ totalDatabaseUsage >= 0 ? formatBytes(totalDatabaseUsage, 0, 2) : 'Unavailable' }}</span>
+							/ {{ formatBytes(currentPlan.max_database_usage, 0, 2) }} Database usage
+						</div>
+						<div class="text-gray-600">
+							Available database space: {{ formatBytes(currentPlan.max_database_usage - (totalDatabaseUsage >= 0 ? totalDatabaseUsage : 0), 0, 2) }}
+						</div>
+					</div>
+				</div>
+				<div class="flex px-6 py-4 text-base hover:bg-gray-50">
+					<div class="w-1/2">
+						<div class="leading-6">
+							<span class="font-bold"> {{ totalDiskUsage >= 0 ? formatBytes(totalDiskUsage, 0, 2) : 'Unavailable' }}</span>
+							/ {{ formatBytes(currentPlan.max_storage_usage, 0, 2) }} Disk usage
+						</div>
+						<div class="text-gray-600">
+							Available Storage space: {{ formatBytes(currentPlan.max_storage_usage - (totalDiskUsage >= 0 ? totalDiskUsage : 0), 0, 2) }}
+						</div>
+					</div>
+				</div>
 			</SectionCard>
 		</Section>
 		<Section
@@ -137,6 +159,8 @@ export default {
 		return {
 			currentPlan: null,
 			totalCPUUsage: 0,
+			totalDatabaseUsage: 0,
+			totalDiskUsage: 0,
 			hoursUntilReset: 0,
 			history: [],
 			showChangePlanDialog: false,
@@ -156,6 +180,8 @@ export default {
 			this.currentPlan = out.current_plan;
 			this.history = out.history;
 			this.totalCPUUsage = out.total_cpu_usage_hours;
+			this.totalDatabaseUsage = out.total_database_usage;
+			this.totalDiskUsage = out.total_storage_usage;
 			this.hoursUntilReset = out.hours_until_reset;
 		},
 		async fetchPlans() {
