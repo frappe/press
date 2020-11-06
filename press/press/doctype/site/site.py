@@ -347,7 +347,7 @@ class Site(Document):
 		return agent.get_site_info(self)
 
 	def sync_info(self, data=None):
-		"""Updates Site Usage, site.config.encryption_key and timezone details for site."""
+		"""Updates Site Usage, site.config and timezone details for site."""
 		if not data:
 			data = self.fetch_info()
 
@@ -392,11 +392,6 @@ class Site(Document):
 				doc.db_set("creation", usage["timestamp"])
 		else:
 			_insert_usage(fetched_usage)
-
-		self.validate_usage_limits()
-
-	def validate_usage_limits():
-		pass
 
 	def is_setup_wizard_complete(self):
 		if self.setup_wizard_complete:
