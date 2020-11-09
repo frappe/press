@@ -605,14 +605,14 @@ def set_host_name(name, domain):
 
 @frappe.whitelist()
 @protected("Site")
-def redirect_to_primary_domain(name, domain):
-	frappe.get_doc("Site", name).redirect_to_primary_domain(domain)
+def set_redirect(name, domain):
+	frappe.get_doc("Site", name).set_redirect(domain)
 
 
 @frappe.whitelist()
 @protected("Site")
-def undo_redirect_to_primary_domain(name, domain):
-	frappe.get_doc("Site", name).undo_redirect_to_primary_domain(domain)
+def unset_redirect(name, domain):
+	frappe.get_doc("Site", name).unset_redirect(domain)
 
 
 @frappe.whitelist()

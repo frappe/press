@@ -320,14 +320,16 @@ class Site(Document):
 		)
 		domains = [domain["name"] for domain in site_domains]
 		for domain in domains:
-			self.redirect_to_primary_domain(domain)
+			self.set_redirect(domain)
 
-	def redirect_to_primary_domain(self, domain: str):
+	def set_redirect(self, domain: str):
+		"""Enable redirect to primary for domain."""
 		self._check_if_domain_belongs_to_site(domain)
 		site_domain = frappe.get_doc("Site Domain", domain)
 		site_domain.setup_redirect()
 
-	def undo_redirect_to_primary_domain(self, domain: str):
+	def unset_redirect(self, domain: str):
+		"""Disable redirect to primary for domain."""
 		self._check_if_domain_belongs_to_site(domain)
 		site_domain = frappe.get_doc("Site Domain", domain)
 		site_domain.remove_redirect()
