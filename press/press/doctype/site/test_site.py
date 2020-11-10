@@ -18,8 +18,6 @@ from .site import Site
 
 def create_test_site(subdomain: str) -> Site:
 	"""Create test Site doc."""
-	frappe.set_user("Administrator")
-
 	proxy_server = create_test_proxy_server()
 	server = create_test_server(proxy_server.name)
 	frappe_app = create_test_frappe_app()
