@@ -19,6 +19,7 @@ def create_test_server(proxy_server):
 			"ip": frappe.mock("ipv4"),
 			"private_ip": frappe.mock("ipv4_private"),
 			"name": frappe.mock("domain_name"),
+			"agent_password": frappe.mock("password"),
 		}
 	).insert(ignore_if_duplicate=True)
 
