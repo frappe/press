@@ -20,20 +20,42 @@ class SitePlanChange(Document):
 
 	def after_insert(self):
 		if self.type == "Initial Plan":
-			return
+			self.create_subscription()
+		else:
+			self.change_subscription_plan()
 
+	def create_subscription(self):
+		frappe.get_doc(
+			doctype="Subscription",
+			team=self.team,
+			plan=self.to_plan,
+			document_type="Site",
+			document_name=self.name,
+		).insert()
+
+	def change_subscription_plan(self):
 		site = frappe.get_doc("Site", self.site)
+		subscription = frappe.get_doc(
+			"Subscription",
+			{
+				"team": site.team,
+				"document_type": "Site",
+				"document_name": site.name,
+				"enabled": True,
+			},
+		)
 
-		if self.from_plan and self.from_plan != site.plan:
+		if self.from_plan and self.from_plan != subscription.plan:
 			frappe.throw(
 				_("Site {0} is currently on {1} plan and not {2}").format(
-					site.name, site.plan, self.from_plan
+					site.name, subscription.plan, self.from_plan
 				)
 			)
-		site.plan = self.to_plan
-		site.flags.updater_reference = {
+
+		subscription.plan = self.to_plan
+		subscription.flags.updater_reference = {
 			"doctype": self.doctype,
 			"docname": self.name,
 			"label": _("via Site Plan Change"),
 		}
-		site.save()
+		subscription.save()

@@ -16,7 +16,6 @@
   "update",
   "setup_wizard_complete",
   "billing",
-  "plan",
   "team",
   "free",
   "section_break_6",
@@ -149,16 +148,6 @@
    "options": "Team"
   },
   {
-   "fieldname": "plan",
-   "fieldtype": "Link",
-   "hide_days": 1,
-   "hide_seconds": 1,
-   "in_standard_filter": 1,
-   "label": "Plan",
-   "options": "Plan",
-   "reqd": 1
-  },
-  {
    "fieldname": "deploy_section",
    "fieldtype": "Section Break",
    "hide_days": 1,
@@ -281,7 +270,7 @@
   }
  ],
  "links": [],
- "modified": "2020-10-06 15:05:34.824331",
+ "modified": "2020-10-22 23:57:14.282926",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
