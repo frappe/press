@@ -18,7 +18,7 @@ def create_test_release_group(frappe_app: str) -> ReleaseGroup:
 		{
 			"doctype": "Release Group",
 			"name": f"Test Release Group{name}",
-			"apps": [{"app": frappe_app,}],
+			"apps": [{"app": frappe_app}],
 			"enabled": True,
 		}
 	).insert(ignore_if_duplicate=True)

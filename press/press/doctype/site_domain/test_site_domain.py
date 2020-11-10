@@ -4,11 +4,13 @@
 from __future__ import unicode_literals
 
 import unittest
+from unittest.mock import patch, call
 
 import frappe
 
 from ..site.test_site import create_test_site
 from .site_domain import SiteDomain
+from press.press.doctype.site.site import Site
 
 from ..tls_certificate.tls_certificate import TLSCertificate
 
@@ -119,3 +121,21 @@ class TestSiteDomain(unittest.TestCase):
 		site_domain.reload()
 		site_domain.redirect_to_primary = True
 		self.assertRaises(frappe.exceptions.ValidationError, site_domain.save)
+
+	def test_all_redirects_updated_on_updating_host_name(self):
+		"""Ensure all redirects are updated when host_name of site is updated."""
+		site = create_test_site(self.site_subdomain)
+		site_domain1 = create_test_site_domain(site.name, "sitedomain1.com")
+		site_domain2 = create_test_site_domain(site.name, "sitedomain2.com")
+		site_domain3 = create_test_site_domain(site.name, "sitedomain3.com")
+
+		site_domain2.setup_redirect()
+		site_domain3.setup_redirect()
+
+		with patch.object(Site, "set_redirect") as mock_set_redirect:
+			site.set_host_name(site_domain1.name)
+
+		mock_set_redirect.assert_has_calls(
+			[call(site_domain2.name), call(site_domain3.name)],
+			any_order=True,
+		)
