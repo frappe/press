@@ -30,7 +30,7 @@
    "fieldname": "type",
    "fieldtype": "Select",
    "label": "Type",
-   "options": "Adjustment\nApplied To Invoice\nInitial"
+   "options": "Adjustment\nApplied To Invoice"
   },
   {
    "fetch_from": "team.currency",
@@ -83,7 +83,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2020-11-10 12:10:22.115526",
+ "modified": "2020-11-10 15:31:57.471099",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Balance Transaction",
