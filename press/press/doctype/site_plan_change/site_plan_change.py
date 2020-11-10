@@ -30,7 +30,7 @@ class SitePlanChange(Document):
 			team=self.team,
 			plan=self.to_plan,
 			document_type="Site",
-			document_name=self.name,
+			document_name=self.site,
 		).insert()
 
 	def change_subscription_plan(self):
