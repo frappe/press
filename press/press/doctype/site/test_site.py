@@ -47,3 +47,9 @@ class TestSite(unittest.TestCase):
 
 	def tearDown(self):
 		frappe.db.rollback()
+
+	def test_host_name_updates_perform_checks_on_host_name(self):
+		"""Ensure update of host name triggers verification of host_name"""
+		site = create_test_site("testsubdomain")
+		site.host_name = "balu.codes"  # domain that doesn't exist
+		self.assertRaises(frappe.exceptions.ValidationError, site.save)
