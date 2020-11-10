@@ -61,7 +61,7 @@ class Site(Document):
 		apps = [app.app for app in self.apps]
 		if len(apps) != len(set(apps)):
 			frappe.throw("Can't install same app twice.")
-		if not self.is_new():
+		if not self.is_new() and self.has_value_changed("host_name"):
 			self._verify_host_name()
 
 		# this is a little hack to remember which key is being removed from the site config
