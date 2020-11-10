@@ -498,3 +498,21 @@ def update_site_onboarding(site, method):
 		team = frappe.get_doc("Team", site.team)
 		if not team.get_onboarding()["complete"]:
 			team.update_onboarding("Create Site", "Completed")
+
+
+def process_stripe_webhook(doc, method):
+	"""This method runs after a Stripe Webhook Log is created"""
+	if doc.event_type not in ["payment_intent.succeeded"]:
+		return
+
+	event = frappe.parse_json(doc.payload)
+	payment_intent = event["data"]["object"]
+	if payment_intent.get("invoice"):
+		# ignore payment for invoice
+		return
+
+	team = frappe.get_doc("Team", {"stripe_customer_id": payment_intent["customer"]})
+	amount = payment_intent["amount"] / 100
+	team.allocate_credit_amount(
+		amount, source="Prepaid Credits", remark=payment_intent["id"]
+	)
