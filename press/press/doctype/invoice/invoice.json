@@ -12,18 +12,16 @@
   "currency",
   "column_break_4",
   "status",
-  "due_date",
   "period_start",
   "period_end",
-  "month",
-  "year",
+  "due_date",
   "amended_from",
   "section_break_8",
-  "site_usage",
   "items",
   "section_break_10",
   "starting_balance",
   "ending_balance",
+  "applied_credits",
   "column_break_15",
   "total",
   "amount_due",
@@ -74,7 +72,7 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "Draft\nInvoice Created\nUnpaid\nPaid"
+   "options": "Draft\nInvoice Created\nUnpaid\nPaid\nRefunded"
   },
   {
    "fieldname": "total",
@@ -163,18 +161,13 @@
   {
    "fieldname": "period_start",
    "fieldtype": "Date",
-   "label": "Period Start"
+   "label": "Period Start",
+   "reqd": 1
   },
   {
    "fieldname": "period_end",
    "fieldtype": "Date",
    "label": "Period End"
-  },
-  {
-   "fieldname": "site_usage",
-   "fieldtype": "Table",
-   "label": "Site Usage",
-   "options": "Invoice Site Usage"
   },
   {
    "fieldname": "payment_section",
@@ -197,21 +190,15 @@
    "label": "Payment Attempt Date"
   },
   {
-   "fieldname": "month",
-   "fieldtype": "Int",
-   "in_standard_filter": 1,
-   "label": "Month"
-  },
-  {
-   "fieldname": "year",
-   "fieldtype": "Int",
-   "in_standard_filter": 1,
-   "label": "Year"
+   "fieldname": "applied_credits",
+   "fieldtype": "Currency",
+   "label": "Applied Credits",
+   "options": "currency"
   }
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2020-08-03 20:00:11.538719",
+ "modified": "2020-11-10 10:11:32.640002",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",

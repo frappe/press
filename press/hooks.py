@@ -105,7 +105,6 @@ scheduler_events = {
 		"press.press.cleanup.remove_baggage",
 		"press.press.cleanup.cleanup_offsite_backups",
 		"press.press.cleanup.remove_logs",
-		"press.press.doctype.payment_ledger_entry.payment_ledger_entry.submit_failed_ledger_entries",
 		"press.press.doctype.team.team.suspend_sites_for_teams_without_cards",
 		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
 		"press.press.doctype.remote_file.remote_file.poll_file_statuses",
@@ -113,10 +112,10 @@ scheduler_events = {
 	],
 	"hourly": ["press.press.doctype.frappe_app.frappe_app.poll_new_releases"],
 	"hourly_long": [
-		"press.press.doctype.payment_ledger_entry.payment_ledger_entry.create_ledger_entries",
 		"press.press.doctype.bench.bench.archive_obsolete_benches",
 		"press.press.doctype.bench.bench.scale_workers",
 		"press.press.doctype.agent_job.agent_job.schedule_backups",
+		"press.press.doctype.subscription.subscription.create_usage_records",
 	],
 	"cron": {
 		"* * * * * 0/5": ["press.press.doctype.agent_job.agent_job.poll_pending_jobs"],
@@ -136,7 +135,6 @@ deploy_hours = [1, 2, 3, 4]
 
 fixtures = [
 	"Agent Job Type",
-	"Plan",
 	{"dt": "Role", "filters": [["role_name", "like", "Press%"]]},
 	"Print Format",
 	"Site Config Key",

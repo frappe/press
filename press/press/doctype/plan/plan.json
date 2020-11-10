@@ -10,6 +10,7 @@
   "enabled",
   "document_type",
   "plan_title",
+  "interval",
   "price_usd",
   "price_inr",
   "period",
@@ -73,11 +74,17 @@
    "label": "Document Type",
    "options": "DocType",
    "reqd": 1
+  },
+  {
+   "fieldname": "interval",
+   "fieldtype": "Select",
+   "label": "Interval",
+   "options": "Daily\nMonthly"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2020-10-21 14:54:48.798195",
+ "modified": "2020-11-10 11:03:52.336592",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Plan",

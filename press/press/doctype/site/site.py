@@ -127,8 +127,6 @@ class Site(Document):
 				frappe.throw(why)
 
 	def after_insert(self):
-		# create a site plan change log
-		self._create_initial_site_plan_change()
 		# log activity
 		log_site_activity(self.name, "Create")
 		self.create_agent_request()
@@ -497,11 +495,20 @@ class Site(Document):
 	def update_site(self):
 		log_site_activity(self.name, "Update")
 
+	def create_subscription(self, plan):
+		# create a site plan change log
+		self._create_initial_site_plan_change(plan)
+
 	def change_plan(self, plan):
 		plan_config = get_plan_config(plan)
 		self.update_site_config(plan_config)
 		frappe.get_doc(
-			{"doctype": "Site Plan Change", "site": self.name, "to_plan": plan}
+			{
+				"doctype": "Site Plan Change",
+				"site": self.name,
+				"from_plan": self.plan,
+				"to_plan": plan,
+			}
 		).insert()
 
 	def deactivate(self):
@@ -553,13 +560,36 @@ class Site(Document):
 			doc.add_comment(text=f"<pre><code>{frappe.get_traceback()}</code></pre>")
 		return doc
 
-	def _create_initial_site_plan_change(self):
+	@property
+	def subscription(self):
+		return frappe.get_doc(
+			"Subscription",
+			{"document_type": "Site", "document_name": self.name, "enabled": True},
+		)
+
+	@property
+	def plan(self):
+		return frappe.db.get_value(
+			"Subscription",
+			filters={"document_type": "Site", "document_name": self.name, "enabled": True},
+			fieldname="plan",
+		)
+
+	def can_charge_for_subscription(self):
+		return (
+			self.status == "Active"
+			and self.team
+			and self.team != "Administrator"
+			and not self.free
+		)
+
+	def _create_initial_site_plan_change(self, plan):
 		frappe.get_doc(
 			{
 				"doctype": "Site Plan Change",
 				"site": self.name,
 				"from_plan": "",
-				"to_plan": self.plan,
+				"to_plan": plan,
 				"type": "Initial Plan",
 				"timestamp": self.creation,
 			}
