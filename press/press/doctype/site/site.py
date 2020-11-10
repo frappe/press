@@ -44,10 +44,10 @@ class Site(Document):
 		if self.is_new() and frappe.session.user != "Administrator":
 			self.can_create_site()
 
-			if not self.plan:
+			if not self.subscription_plan:
 				frappe.throw("Cannot create site without plan")
 
-			self._update_configuration(get_plan_config(self.plan), save=False)
+			self._update_configuration(get_plan_config(self.subscription_plan), save=False)
 
 		bench_apps = frappe.get_doc("Bench", self.bench).apps
 		for app in self.apps:

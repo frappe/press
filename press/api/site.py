@@ -63,7 +63,7 @@ def new(site):
 			"bench": bench,
 			"apps": [{"app": app} for app in site["apps"]],
 			"team": team,
-			"plan": plan,
+			"subscription_plan": plan,
 			"remote_config_file": site["files"].get("config"),
 			"remote_database_file": site["files"].get("database"),
 			"remote_public_file": site["files"].get("public"),
