@@ -38,15 +38,7 @@ def execute():
 				source = "Free Credits"
 
 			# set the balance as initial balance here
-			team.allocate_credit_amount(balance, source=source, remark="Initial Balance")
-			transaction = frappe.get_doc(
-				doctype="Balance Transaction",
-				team=team.name,
-				type="Adjustment",
-				amount=balance,
-				description="Initial Balance",
-			).insert()
-			transaction.submit()
+			team.allocate_credit_amount(balance, source=source, remark="Stripe Balance")
 
 
 def get_free_credits_left(team):
