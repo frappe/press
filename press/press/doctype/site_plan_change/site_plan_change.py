@@ -21,8 +21,17 @@ class SitePlanChange(Document):
 	def after_insert(self):
 		if self.type == "Initial Plan":
 			self.create_subscription()
-		else:
-			self.change_subscription_plan()
+			return
+
+		if self.type == "Downgrade":
+			last_plan_change = frappe.get_last_doc(
+				"Site Plan Change", filters={"site": self.site, "team": self.team}
+			)
+			# check if last site plan change was made before 48 hours
+			if last_plan_change.creation > frappe.utils.add_days(None, -2):
+				frappe.throw("Cannot downgrade plan within 48 hours")
+
+		self.change_subscription_plan()
 
 	def create_subscription(self):
 		frappe.get_doc(
