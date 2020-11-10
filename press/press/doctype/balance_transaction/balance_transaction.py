@@ -25,3 +25,6 @@ class BalanceTransaction(Document):
 			self.ending_balance = (res[0] or 0) + self.amount
 		else:
 			self.ending_balance = self.amount
+
+	def on_submit(self):
+		frappe.publish_realtime("balance_updated", user=self.team)
