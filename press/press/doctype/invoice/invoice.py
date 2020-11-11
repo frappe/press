@@ -314,31 +314,27 @@ def process_stripe_webhook(doc, method):
 	team = frappe.get_doc("Team", invoice.team)
 
 	if doc.event_type == "invoice.finalized":
-		invoice.db_set(
+		invoice.update(
 			{
-				"docstatus": 1,
-				"starting_balance": stripe_invoice["starting_balance"] / 100,
-				"ending_balance": (stripe_invoice["ending_balance"] or 0) / 100,
 				"amount_paid": stripe_invoice["amount_paid"] / 100,
 				"stripe_invoice_url": stripe_invoice["hosted_invoice_url"],
 				"status": "Paid" if stripe_invoice["status"] == "paid" else "Unpaid",
 			}
 		)
+		invoice.save()
 
 	elif doc.event_type == "invoice.payment_succeeded":
-		invoice.db_set(
+		invoice.update(
 			{
 				"payment_date": datetime.fromtimestamp(
 					stripe_invoice["status_transitions"]["paid_at"]
 				),
-				"docstatus": 1,
 				"status": "Paid",
-				"starting_balance": stripe_invoice["starting_balance"] / 100,
-				"ending_balance": (stripe_invoice["ending_balance"] or 0) / 100,
 				"amount_paid": stripe_invoice["amount_paid"] / 100,
 				"stripe_invoice_url": stripe_invoice["hosted_invoice_url"],
 			}
 		)
+		invoice.save()
 
 		# unsuspend sites
 		team.unsuspend_sites(
@@ -350,13 +346,14 @@ def process_stripe_webhook(doc, method):
 		if attempt_date:
 			attempt_date = datetime.fromtimestamp(attempt_date)
 		attempt_count = stripe_invoice.get("attempt_count")
-		invoice.db_set(
+		invoice.update(
 			{
 				"payment_attempt_count": attempt_count,
 				"payment_attempt_date": attempt_date,
 				"status": "Unpaid",
 			}
 		)
+		invoice.save()
 
 		if team.erpnext_partner:
 			# dont suspend partner sites, send alert on telegram

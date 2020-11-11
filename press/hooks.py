@@ -91,8 +91,10 @@ permission_query_conditions = {
 
 doc_events = {
 	"Stripe Webhook Log": {
-		"after_insert": ["press.press.doctype.invoice.invoice.process_stripe_webhook"],
-		"after_insert": ["press.press.doctype.team.team.process_stripe_webhook"],
+		"after_insert": [
+			"press.press.doctype.invoice.invoice.process_stripe_webhook",
+			"press.press.doctype.team.team.process_stripe_webhook",
+		],
 	},
 	"Address": {"validate": "press.api.billing.validate_gst"},
 	"Site": {"after_insert": "press.press.doctype.team.team.update_site_onboarding"},
