@@ -316,10 +316,11 @@ class Site(Document):
 
 	def _update_redirects_for_all_site_domains(self):
 		site_domains = frappe.get_all(
-			"Site Domain", filters={"site": self.name, "redirect_to_primary": True},
+			"Site Domain",
+			filters={"site": self.name, "redirect_to_primary": True},
+			pluck="name"
 		)
-		domains = [domain["name"] for domain in site_domains]
-		for domain in domains:
+		for domain in site_domains:
 			self.set_redirect(domain)
 
 	def set_redirect(self, domain: str):
