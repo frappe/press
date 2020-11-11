@@ -4,15 +4,16 @@
 from __future__ import unicode_literals
 
 import unittest
-from unittest.mock import patch, call
+from unittest.mock import call, patch
 
 import frappe
 
-from ..site.test_site import create_test_site
-from .site_domain import SiteDomain
+from press.agent import Agent
 from press.press.doctype.site.site import Site
 
+from ..site.test_site import create_test_site
 from ..tls_certificate.tls_certificate import TLSCertificate
+from .site_domain import SiteDomain
 
 
 def fake_tls_certificate():
@@ -136,6 +137,49 @@ class TestSiteDomain(unittest.TestCase):
 			site.set_host_name(site_domain1.name)
 
 		mock_set_redirect.assert_has_calls(
-			[call(site_domain2.name), call(site_domain3.name)],
-			any_order=True,
+			[call(site_domain2.name), call(site_domain3.name)], any_order=True,
 		)
+
+	def test_setup_redirect_updates_redirect_in_agent(self):
+		"""
+		Ensure setting redirect_to_primary in doc updates agent.
+
+		(Check if Agent object method call is being made)
+		"""
+		site = create_test_site(self.site_subdomain)
+		site_domain = create_test_site_domain(site.name, "hellohello.com")
+
+		with patch.object(Agent, "setup_redirect") as mock_setup_redirect:
+			site_domain.setup_redirect()
+		mock_setup_redirect.assert_called_with(site_domain, site.name)
+
+	def test_remove_redirect_updates_redirect_in_agent(self):
+		"""
+		Ensure removing redirect_to_primary in doc updates agent.
+
+		(Check if Agent object method call is being made)
+		"""
+		site = create_test_site(self.site_subdomain)
+		site_domain = create_test_site_domain(site.name, "hellohello.com")
+		site_domain.setup_redirect()
+
+		with patch.object(Agent, "remove_redirect") as mock_remove_redirect:
+			site_domain.remove_redirect()
+		mock_remove_redirect.assert_called_with(site_domain)
+
+	def test_making_doc_with_redirect_to_primary_true_updates_agent(self):
+		"""Ensure agent is updated when redirected site domain is created."""
+		site = create_test_site(self.site_subdomain)
+		with patch.object(Agent, "setup_redirect") as mock_setup_redirect:
+			site_domain = frappe.get_doc(
+				{
+					"doctype": "Site Domain",
+					"site": site.name,
+					"domain": "hellohello.com",
+					"status": "Active",
+					"retry_count": 1,
+					"dns_type": "A",
+					"redirect_to_primary": True,
+				}
+			).insert(ignore_if_duplicate=True)
+		mock_setup_redirect.assert_called_with(site_domain, site.name)
