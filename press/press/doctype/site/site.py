@@ -297,22 +297,19 @@ class Site(Document):
 			)
 
 	def _verify_host_name(self):
-		"""Perform checks for primary domain."""
+		"""Perform checks & follow up updates for primary domain."""
 		self._check_if_domain_belongs_to_site(self.host_name)
 		self._check_if_domain_is_active(self.host_name)
 		site_domain = frappe.get_doc("Site Domain", self.host_name)
 		if site_domain.redirect_to_primary:
 			site_domain.remove_redirect()
+		self._update_redirects_for_all_site_domains()
 
 	def set_host_name(self, domain: str):
 		"""Set host_name/primary domain of site."""
 		self.host_name = domain
 		self.save()
-		self.update_host_name_in_agent()
-
-	def update_host_name_in_agent(self):
 		self.update_site_config({"host_name": f"https://{self.host_name}"})
-		self._update_redirects_for_all_site_domains()
 
 	def _update_redirects_for_all_site_domains(self):
 		site_domains = frappe.get_all(

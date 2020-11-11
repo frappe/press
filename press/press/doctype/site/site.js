@@ -76,7 +76,4 @@ frappe.ui.form.on('Site', {
 			);
 		});
 	},
-	after_save: function(frm){
-		frm.call('update_host_name_in_agent');
-	}
 });
