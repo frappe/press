@@ -14,30 +14,37 @@ class SiteDomain(Document):
 		self.create_tls_certificate()
 
 	def validate(self):
-		if self.redirect_to_primary:
-			site = frappe.get_doc("Site", self.site)
-			if site.host_name == self.name:
-				frappe.throw(
-					"Primary domain cant be redirected.",
-					exc=frappe.exceptions.ValidationError,
-				)
+		if self.has_value_changed("redirect_to_primary"):
+			if self.redirect_to_primary:
+				self._setup_redirect()
+			else:
+				self._remove_redirect()
 
-	def setup_redirect(self):
-		self.redirect_to_primary = True
-		self.save()
+	def _setup_redirect(self):
+		target = frappe.get_value("Site", self.site, "host_name")
+		if target == self.name:
+			frappe.throw(
+				"Primary domain cant be redirected.",
+				exc=frappe.exceptions.ValidationError,
+			)
 		server = frappe.db.get_value("Site", self.site, "server")
 		proxy_server = frappe.db.get_value("Server", server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
-		target = frappe.get_value("Site", self.site, "host_name")
 		agent.setup_redirect(self, target)
 
-	def remove_redirect(self):
-		self.redirect_to_primary = False
-		self.save()
+	def _remove_redirect(self):
 		server = frappe.db.get_value("Site", self.site, "server")
 		proxy_server = frappe.db.get_value("Server", server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
 		agent.remove_redirect(self)
+
+	def setup_redirect(self):
+		self.redirect_to_primary = True
+		self.save()
+
+	def remove_redirect(self):
+		self.redirect_to_primary = False
+		self.save()
 
 	def create_tls_certificate(self):
 		if self.domain == self.site:
