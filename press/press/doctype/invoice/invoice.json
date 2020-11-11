@@ -69,6 +69,7 @@
    "options": "Invoice Item"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
@@ -88,6 +89,7 @@
    "options": "currency"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "amount_paid",
    "fieldtype": "Currency",
    "label": "Amount Paid",
@@ -130,6 +132,7 @@
    "label": "Stripe Invoice ID"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "stripe_invoice_url",
    "fieldtype": "Data",
    "label": "Stripe Invoice URL"
@@ -175,16 +178,19 @@
    "label": "Payment"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "payment_date",
    "fieldtype": "Date",
    "label": "Payment Date"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "payment_attempt_count",
    "fieldtype": "Int",
    "label": "Payment Attempt Count"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "payment_attempt_date",
    "fieldtype": "Date",
    "label": "Payment Attempt Date"
@@ -198,7 +204,7 @@
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2020-11-10 10:11:32.640002",
+ "modified": "2020-11-11 11:58:34.960671",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",
