@@ -46,6 +46,10 @@
   "column_break_38",
   "erpnext_username",
   "erpnext_password",
+  "frappeio_authentication_section",
+  "frappe_url",
+  "frappe_username",
+  "frappe_password",
   "offsite_backups_section",
   "offsite_backups_provider",
   "aws_s3_bucket",
@@ -480,11 +484,31 @@
    "fieldname": "use_backbone_ca",
    "fieldtype": "Check",
    "label": "Use Backbone CA"
+  },
+  {
+   "fieldname": "frappeio_authentication_section",
+   "fieldtype": "Section Break",
+   "label": "Frappe.io Authentication"
+  },
+  {
+   "fieldname": "frappe_username",
+   "fieldtype": "Data",
+   "label": "Username"
+  },
+  {
+   "fieldname": "frappe_password",
+   "fieldtype": "Password",
+   "label": "Password"
+  },
+  {
+   "fieldname": "frappe_url",
+   "fieldtype": "Data",
+   "label": "URL"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2020-10-08 10:20:20.763127",
+ "modified": "2020-11-11 15:52:21.051224",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

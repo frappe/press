@@ -37,6 +37,10 @@ class Invoice(Document):
 
 			raise
 
+	def on_update_after_submit(self):
+		if self.status == "Paid":
+			self.create_invoice_on_frappeio()
+
 	def create_stripe_invoice(self):
 		if not self.stripe_invoice_id:
 			stripe = get_stripe()
@@ -230,6 +234,35 @@ class Invoice(Document):
 		print_format = self.meta.default_print_format
 		return frappe.utils.get_url(
 			f"/api/method/frappe.utils.print_format.download_pdf?doctype=Invoice&name={self.name}&format={print_format}&no_letterhead=0"
+		)
+
+	def create_invoice_on_frappeio(self):
+		if self.frappe_invoice:
+			return
+
+		try:
+			client = self.get_frappeio_connection()
+			invoice = client.post_api("create-fc-invoice", self.as_dict())
+			if invoice:
+				self.frappe_invoice = invoice
+				self.save()
+				return invoice
+		except Exception:
+			log_error("Failed to create invoice on frappe.io", invoice=self.name)
+			traceback = "<pre><code>" + frappe.get_traceback() + "</pre></code>"
+			self.add_comment(text="Failed to create invoice on frappe.io" + "<br><br>" + traceback)
+
+	def get_frappeio_connection(self):
+		from frappe.frappeclient import FrappeClient
+
+		press_settings = frappe.get_single("Press Settings")
+		frappe_password = frappe.utils.password.get_decrypted_password(
+			"Press Settings", "Press Settings", fieldname="frappe_password"
+		)
+		return FrappeClient(
+			press_settings.frappe_url,
+			username=press_settings.frappe_username,
+			password=frappe_password,
 		)
 
 	def consume_credits_and_mark_as_paid(self, reason=None):

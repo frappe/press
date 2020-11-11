@@ -82,6 +82,16 @@ def get_erpnext_com_connection():
 
 
 @frappe.whitelist()
+def get_customer_details(team):
+	'''This method is called by frappe.io for creating Customer and Address'''
+	team_doc = frappe.db.get_value("Team", team, "*")
+	return {
+		"team": team_doc,
+		"address": frappe.get_doc("Address", team_doc.billing_address),
+	}
+
+
+@frappe.whitelist()
 def transfer_partner_credits(amount):
 	team = get_current_team()
 	team_doc = frappe.get_doc("Team", team)
