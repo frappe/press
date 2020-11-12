@@ -23,13 +23,14 @@ class SitePlanChange(Document):
 			self.create_subscription()
 			return
 
-		if self.type == "Downgrade":
-			last_plan_change = frappe.get_last_doc(
-				"Site Plan Change", filters={"site": self.site, "team": self.team}
-			)
-			# check if last site plan change was made before 48 hours
-			if last_plan_change.creation > frappe.utils.add_days(None, -2):
-				frappe.throw("Cannot downgrade plan within 48 hours")
+		# move this code to Server Scripts
+		# if self.type == "Downgrade":
+		# 	last_plan_change = frappe.get_last_doc(
+		# 		"Site Plan Change", filters={"site": self.site, "team": self.team}
+		# 	)
+		# 	# check if last site plan change was made before 48 hours
+		# 	if last_plan_change.creation > frappe.utils.add_days(None, -2):
+		# 		frappe.throw("Cannot downgrade plan within 48 hours")
 
 		self.change_subscription_plan()
 
