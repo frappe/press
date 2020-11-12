@@ -62,7 +62,7 @@ class Site(Document):
 		if len(apps) != len(set(apps)):
 			frappe.throw("Can't install same app twice.")
 		if not self.is_new() and self.has_value_changed("host_name"):
-			self._verify_host_name()
+			self._validate_host_name()
 
 		# this is a little hack to remember which key is being removed from the site config
 		old_keys = json.loads(self.config)
@@ -73,6 +73,12 @@ class Site(Document):
 
 		self.update_config_preview()
 
+	def on_update(self):
+		if self.has_value_changed("host_name"):
+			site_domain = frappe.get_doc("Site Domain", self.host_name)
+			if site_domain.redirect_to_primary:
+				site_domain.remove_redirect()
+			self._update_redirects_for_all_site_domains()
 	def update_config_preview(self):
 		"""Regenrates site.config on each site.validate from the site.configuration child table data"""
 		new_config = {}
@@ -296,14 +302,10 @@ class Site(Document):
 				exc=frappe.exceptions.LinkValidationError,
 			)
 
-	def _verify_host_name(self):
-		"""Perform checks & follow up updates for primary domain."""
+	def _validate_host_name(self):
+		"""Perform checks for primary domain."""
 		self._check_if_domain_belongs_to_site(self.host_name)
 		self._check_if_domain_is_active(self.host_name)
-		site_domain = frappe.get_doc("Site Domain", self.host_name)
-		if site_domain.redirect_to_primary:
-			site_domain.remove_redirect()
-		self._update_redirects_for_all_site_domains()
 
 	def set_host_name(self, domain: str):
 		"""Set host_name/primary domain of site."""
