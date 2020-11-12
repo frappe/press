@@ -56,5 +56,18 @@ frappe.ui.form.on('Invoice', {
 				}
 			);
 		}
+
+		if (frm.doc.status == 'Invoice Created') {
+			let btn = frm.add_custom_button(
+				"Finalize Stripe Invoice",
+				() => {
+					frm.call({
+						doc: frm.doc,
+						method: "finalize_stripe_invoice",
+						btn,
+					}).then(r => frm.refresh())
+				}
+			);
+		}
 	},
 });
