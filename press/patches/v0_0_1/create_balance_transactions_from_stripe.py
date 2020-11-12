@@ -8,7 +8,6 @@ from press.api.billing import get_stripe
 from datetime import datetime
 
 
-@frappe.whitelist()
 def execute():
 	frappe.reload_doc("press", "doctype", "balance_transaction")
 
