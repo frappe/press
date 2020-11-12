@@ -7,7 +7,7 @@ import unittest
 
 import frappe
 
-from .release_group import ReleaseGroup
+from press.press.doctype.release_group.release_group import ReleaseGroup
 
 
 def create_test_release_group(frappe_app: str) -> ReleaseGroup:

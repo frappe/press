@@ -8,8 +8,9 @@ from unittest.mock import patch
 
 import frappe
 
-from .frappe_app import FrappeApp
 from press.utils import log_error
+
+from press.press.doctype.frappe_app.frappe_app import FrappeApp
 
 
 def create_test_frappe_app(name=frappe.mock("name")) -> FrappeApp:

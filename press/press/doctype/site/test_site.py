@@ -21,6 +21,7 @@ from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
 from press.press.doctype.server.test_server import create_test_server
+from press.press.doctype.site.site import Site
 
 from .site import Site
 

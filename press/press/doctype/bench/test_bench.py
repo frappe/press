@@ -9,8 +9,7 @@ from unittest.mock import Mock, patch
 import frappe
 
 from press.agent import Agent
-
-from .bench import Bench
+from press.press.doctype.bench.bench import Bench
 
 
 def create_test_bench(release_group: str, server: str) -> Bench:

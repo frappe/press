@@ -3,11 +3,12 @@
 # See license.txt
 from __future__ import unicode_literals
 
-import frappe
 import unittest
 
+import frappe
 
-def create_test_plan() -> "Plan":
+
+def create_test_plan():
 	"""Create test Plan doc."""
 	name = frappe.mock("name")
 	return frappe.get_doc(
