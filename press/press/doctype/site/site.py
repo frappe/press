@@ -79,6 +79,7 @@ class Site(Document):
 			if site_domain.redirect_to_primary:
 				site_domain.remove_redirect()
 			self._update_redirects_for_all_site_domains()
+
 	def update_config_preview(self):
 		"""Regenrates site.config on each site.validate from the site.configuration child table data"""
 		new_config = {}
@@ -314,13 +315,14 @@ class Site(Document):
 		self.update_site_config({"host_name": f"https://{self.host_name}"})
 
 	def _update_redirects_for_all_site_domains(self):
-		site_domains = frappe.get_all(
+		domains = frappe.get_all(
 			"Site Domain",
 			filters={"site": self.name, "redirect_to_primary": True},
-			pluck="name"
+			pluck="name",
 		)
-		for domain in site_domains:
-			self.set_redirect(domain)
+		for domain in domains:
+			site_domain = frappe.get_doc("Site Domain", domain)
+			site_domain.setup_redirect_in_proxy()
 
 	def set_redirect(self, domain: str):
 		"""Enable redirect to primary for domain."""
