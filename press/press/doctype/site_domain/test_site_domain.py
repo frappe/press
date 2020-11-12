@@ -4,44 +4,35 @@
 from __future__ import unicode_literals
 
 import unittest
-from unittest.mock import call, patch
+from unittest.mock import Mock, call, patch
 
 import frappe
 
 from press.agent import Agent
-from press.press.doctype.site.site import Site
 
 from ..site.test_site import create_test_site
 from ..tls_certificate.tls_certificate import TLSCertificate
 from .site_domain import SiteDomain
 
 
-def fake_tls_certificate():
-	"""Fake tls certificate obtain call."""
-
-	def obtain_certificate(self):
-		return
-
-	TLSCertificate.obtain_certificate = obtain_certificate
-
-
 def create_test_site_domain(
 	site: str, domain: str, status: str = "Active"
 ) -> SiteDomain:
 	"""Create test Site Domain doc."""
-	fake_tls_certificate()
-	return frappe.get_doc(
-		{
-			"doctype": "Site Domain",
-			"site": site,
-			"domain": domain,
-			"status": status,
-			"retry_count": 1,
-			"dns_type": "A",
-		}
-	).insert(ignore_if_duplicate=True)
+	with patch.object(TLSCertificate, "obtain_certificate"):
+		return frappe.get_doc(
+			{
+				"doctype": "Site Domain",
+				"site": site,
+				"domain": domain,
+				"status": status,
+				"retry_count": 1,
+				"dns_type": "A",
+			}
+		).insert(ignore_if_duplicate=True)
 
 
+@patch.object(Agent, "create_agent_job", new=Mock(return_value={"job": 1}))
 class TestSiteDomain(unittest.TestCase):
 	"""Tests for Site Domain Document methods."""
 

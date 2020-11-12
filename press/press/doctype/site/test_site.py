@@ -4,8 +4,11 @@
 from __future__ import unicode_literals
 
 import unittest
+from unittest.mock import Mock, patch
 
 import frappe
+
+from press.agent import Agent
 
 from ..bench.test_bench import create_test_bench
 from ..frappe_app.test_frappe_app import create_test_frappe_app
@@ -42,6 +45,7 @@ def create_test_site(subdomain: str) -> Site:
 	).insert(ignore_if_duplicate=True)
 
 
+@patch.object(Agent, "create_agent_job", new=Mock(return_value={"job": 1}))
 class TestSite(unittest.TestCase):
 	"""Tests for Site Document methods."""
 
