@@ -66,6 +66,10 @@ class Invoice(Document):
 				{"stripe_invoice_id": invoice["id"], "status": "Invoice Created"}, commit=True
 			)
 
+	def finalize_stripe_invoice(self):
+		stripe = get_stripe()
+		stripe.Invoice.finalize_invoice(self.stripe_invoice_id)
+
 	def validate_duplicate(self):
 		if self.is_new():
 			intersecting_invoices = frappe.db.get_all(
@@ -391,7 +395,9 @@ def process_stripe_webhook(doc, method):
 
 	event = frappe.parse_json(doc.payload)
 	stripe_invoice = event["data"]["object"]
-	invoice = frappe.get_doc("Invoice", {"stripe_invoice_id": stripe_invoice["id"]})
+	invoice = frappe.get_doc(
+		"Invoice", {"stripe_invoice_id": stripe_invoice["id"]}, for_update=True
+	)
 	team = frappe.get_doc("Team", invoice.team)
 
 	if doc.event_type == "invoice.finalized":
