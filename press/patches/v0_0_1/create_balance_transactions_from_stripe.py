@@ -16,7 +16,6 @@ def execute():
 
 	for name in teams:
 		team = frappe.get_doc("Team", name)
-		print(f"Creating Balance Transactions for {team.name}")
 
 		# skip if already done
 		if frappe.db.exists(
@@ -24,6 +23,8 @@ def execute():
 		):
 			print(f"Skipping for {team.name}")
 			continue
+
+		print(f"Creating Balance Transactions for {team.name}")
 
 		response = stripe.Customer.list_balance_transactions(
 			team.stripe_customer_id, limit=100,
