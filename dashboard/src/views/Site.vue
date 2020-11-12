@@ -184,14 +184,24 @@ export default {
 				Inactive: [
 					'General',
 					'Plan',
+					'Backups',
 					'Site Config',
 					'Activity',
 					'Jobs',
 					'Site Logs'
 				],
-				Pending: ['General', 'Jobs'],
-				Broken: ['General', 'Plan', 'Backups', 'Activity', 'Jobs', 'Site Logs'],
-				Suspended: ['General', 'Activity', 'Jobs']
+				Pending: ['General', 'Jobs', 'Site Logs'],
+				Broken: [
+					'General',
+					'Plan',
+					'Site Config',
+					'Backups',
+					'Database',
+					'Activity',
+					'Jobs',
+					'Site Logs'
+				],
+				Suspended: ['General', 'Activity', 'Backups', 'Jobs']
 			};
 			if (this.site) {
 				let tabsToShow = tabsByStatus[this.site.status];
