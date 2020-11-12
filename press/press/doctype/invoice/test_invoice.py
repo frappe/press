@@ -131,6 +131,65 @@ class TestInvoice(unittest.TestCase):
 		self.assertEqual(invoice.amount_due, 0)
 		self.assertEqual(invoice.applied_credits, 60)
 
+	def test_invoice_credit_allocation(self):
+		team = frappe.get_doc(
+			doctype="Team", name="testuser3@example.com", country="India", enabled=1
+		).insert()
+
+		# First Invoice
+		# Total: 600
+		# Team has 100 Free Credits and 1000 Prepaid Credits
+		# Invoice can be paid using credits
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=team.name,
+			period_start=today(),
+			period_end=add_days(today(), 10),
+			items=[{"quantity": 1, "rate": 600}],
+		).insert()
+
+		self.assertEqual(team.get_balance(), 0)
+		team.allocate_credit_amount(100, source="Free Credits")
+		team.allocate_credit_amount(1000, source="Prepaid Credits")
+		self.assertEqual(team.get_balance(), 1100)
+
+		with patch.object(invoice, "create_stripe_invoice", return_value=None):
+			invoice.submit()
+
+		self.assertEqual(invoice.total, 600)
+		self.assertEqual(team.get_balance(), 1100 - 600)
+		self.assertEqual(invoice.amount_due, 0)
+		self.assertEqual(invoice.applied_credits, 600)
+		self.assertDictContainsSubset(
+			{"amount": 100, "source": "Free Credits"}, invoice.credit_allocations[0].as_dict()
+		)
+		self.assertDictContainsSubset(
+			{"amount": 500, "source": "Prepaid Credits"}, invoice.credit_allocations[1].as_dict()
+		)
+
+		# Second Invoice
+		# Total: 700
+		# Team has 500 Credits left after the first invoice
+		# Invoice due should be 200
+		invoice2 = frappe.get_doc(
+			doctype="Invoice",
+			team=team.name,
+			period_start=add_days(today(), 11),
+			items=[{"quantity": 1, "rate": 700}],
+		).insert()
+
+		with patch.object(invoice2, "create_stripe_invoice", return_value=None):
+			invoice2.submit()
+		invoice2.reload()
+
+		self.assertEqual(invoice2.total, 700)
+		self.assertEqual(invoice2.applied_credits, 500)
+		self.assertEqual(invoice2.amount_due, 200)
+		self.assertDictContainsSubset(
+			{"amount": 500, "source": "Prepaid Credits"},
+			invoice2.credit_allocations[0].as_dict(),
+		)
+
 	def test_intersecting_invoices(self):
 		team = frappe.get_doc(
 			doctype="Team", name="testuser4@example.com", country="India", enabled=1

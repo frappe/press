@@ -27,6 +27,7 @@
   "amount_due",
   "amount_paid",
   "section_break_15",
+  "credit_allocations",
   "payment_section",
   "payment_date",
   "payment_attempt_count",
@@ -120,7 +121,8 @@
   },
   {
    "fieldname": "section_break_15",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "hide_border": 1
   },
   {
    "fieldname": "stripe_billing_section",
@@ -207,11 +209,17 @@
    "fieldname": "frappe_invoice",
    "fieldtype": "Data",
    "label": "Frappe Invoice"
+  },
+  {
+   "fieldname": "credit_allocations",
+   "fieldtype": "Table",
+   "label": "Credit Allocations",
+   "options": "Invoice Credit Allocation"
   }
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2020-11-11 15:46:25.328046",
+ "modified": "2020-11-12 21:21:01.497826",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",

@@ -26,5 +26,12 @@ class BalanceTransaction(Document):
 		else:
 			self.ending_balance = self.amount
 
+		if self.type == "Adjustment":
+			self.unallocated_amount = self.amount
+
+	def before_update_after_submit(self):
+		total_allocated = sum([d.amount for d in self.allocated_to])
+		self.unallocated_amount = self.amount - total_allocated
+
 	def on_submit(self):
 		frappe.publish_realtime("balance_updated", user=self.team)
