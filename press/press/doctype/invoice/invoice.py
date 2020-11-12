@@ -189,18 +189,64 @@ class Invoice(Document):
 		if balance == 0:
 			return
 
-		applied_credits = balance if balance <= self.total else self.total
+		last_allocated_creation = (
+			frappe.db.get_all(
+				"Balance Transaction",
+				filters={"team": self.team, "type": "Adjustment", "unallocated_amount": 0},
+				order_by="creation desc",
+				limit=1,
+				pluck="creation",
+			)
+			or [None]
+		)[0]
+
+		unallocated_balances = frappe.db.get_all(
+			"Balance Transaction",
+			filters={
+				"team": self.team,
+				"type": "Adjustment",
+				"creation": (">", last_allocated_creation),
+			},
+			fields=["name", "unallocated_amount", "source"],
+			order_by="creation desc",
+		)
+		# sort by ascending for FIFO
+		unallocated_balances.reverse()
+
+		total_allocated = 0
+		due = self.total
+		for balance in unallocated_balances:
+			if due == 0:
+				break
+			allocated = min(due, balance.unallocated_amount)
+			due -= allocated
+			self.append(
+				"credit_allocations",
+				{
+					"transaction": balance.name,
+					"amount": allocated,
+					"currency": self.currency,
+					"source": balance.source,
+				},
+			)
+			doc = frappe.get_doc("Balance Transaction", balance.name)
+			doc.append(
+				"allocated_to",
+				{"invoice": self.name, "amount": allocated, "currency": self.currency},
+			)
+			doc.save()
+			total_allocated += allocated
 
 		balance_transaction = frappe.get_doc(
 			doctype="Balance Transaction",
 			team=self.team,
 			type="Applied To Invoice",
-			amount=applied_credits * -1,
+			amount=total_allocated * -1,
 			invoice=self.name,
 		).insert()
 		balance_transaction.submit()
 
-		self.applied_credits = applied_credits
+		self.applied_credits = total_allocated
 		self.amount_due = self.total - self.applied_credits
 
 	def unlink_usage_records(self):
@@ -250,7 +296,9 @@ class Invoice(Document):
 		except Exception:
 			log_error("Failed to create invoice on frappe.io", invoice=self.name)
 			traceback = "<pre><code>" + frappe.get_traceback() + "</pre></code>"
-			self.add_comment(text="Failed to create invoice on frappe.io" + "<br><br>" + traceback)
+			self.add_comment(
+				text="Failed to create invoice on frappe.io" + "<br><br>" + traceback
+			)
 
 	def get_frappeio_connection(self):
 		from frappe.frappeclient import FrappeClient
