@@ -24,35 +24,35 @@
   },
   {
    "fieldname": "database",
-   "fieldtype": "Data",
+   "fieldtype": "Int",
    "label": "Database",
    "read_only": 1
   },
   {
    "fieldname": "public",
-   "fieldtype": "Data",
+   "fieldtype": "Int",
    "label": "Public",
    "read_only": 1
   },
   {
    "fieldname": "private",
-   "fieldtype": "Data",
+   "fieldtype": "Int",
    "label": "Private",
    "read_only": 1
   },
   {
    "fieldname": "backups",
-   "fieldtype": "Data",
+   "fieldtype": "Int",
    "label": "Backups",
    "read_only": 1
   }
  ],
  "links": [],
- "modified": "2020-08-18 14:33:05.328269",
- "modified_by": "gavin18d@gmail.com",
+ "modified": "2020-11-11 12:50:10.146277",
+ "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Usage",
- "owner": "gavin18d@gmail.com",
+ "owner": "Administrator",
  "permissions": [
   {
    "create": 1,
