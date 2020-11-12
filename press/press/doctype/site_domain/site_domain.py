@@ -16,11 +16,11 @@ class SiteDomain(Document):
 	def validate(self):
 		if self.has_value_changed("redirect_to_primary"):
 			if self.redirect_to_primary:
-				self._setup_redirect()
+				self.setup_redirect_in_proxy()
 			else:
-				self._remove_redirect()
+				self.remove_redirect_in_proxy()
 
-	def _setup_redirect(self):
+	def setup_redirect_in_proxy(self):
 		target = frappe.get_value("Site", self.site, "host_name")
 		if target == self.name:
 			frappe.throw(
@@ -32,7 +32,7 @@ class SiteDomain(Document):
 		agent = Agent(proxy_server, server_type="Proxy Server")
 		agent.setup_redirect(self, target)
 
-	def _remove_redirect(self):
+	def remove_redirect_in_proxy(self):
 		server = frappe.db.get_value("Site", self.site, "server")
 		proxy_server = frappe.db.get_value("Server", server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
