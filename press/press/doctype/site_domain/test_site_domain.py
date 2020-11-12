@@ -133,12 +133,24 @@ class TestSiteDomain(unittest.TestCase):
 		site_domain2.setup_redirect()
 		site_domain3.setup_redirect()
 
-		with patch.object(Site, "set_redirect") as mock_set_redirect:
+		with patch.object(Agent, "setup_redirect") as mock_set_redirect:
 			site.set_host_name(site_domain1.name)
 
-		mock_set_redirect.assert_has_calls(
-			[call(site_domain2.name), call(site_domain3.name)], any_order=True,
-		)
+		def __eq__(self, other):
+			return (
+				self.name == other.name
+				and self.domain == other.domain
+				and self.site == other.site
+			)
+
+		with patch.object(SiteDomain, "__eq__", new=__eq__):
+			mock_set_redirect.assert_has_calls(
+				[
+					call(site_domain2, site_domain1.name),
+					call(site_domain3, site_domain1.name),
+				],
+				any_order=True,
+			)
 
 	def test_setup_redirect_updates_redirect_in_agent(self):
 		"""
