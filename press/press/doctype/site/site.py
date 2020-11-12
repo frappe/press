@@ -6,19 +6,21 @@ from __future__ import unicode_literals
 
 import json
 import re
+
 import frappe
 import requests
+from frappe.core.utils import find
+from frappe.frappeclient import FrappeClient
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
-from press.agent import Agent
-from frappe.utils.password import get_decrypted_password
-from press.press.doctype.site_activity.site_activity import log_site_activity
-from frappe.frappeclient import FrappeClient
 from frappe.utils import cint, cstr
+from frappe.utils.password import get_decrypted_password
+
+from press.agent import Agent
 from press.api.site import check_dns
-from frappe.core.utils import find
-from press.utils import log_error, get_client_blacklisted_keys
 from press.press.doctype.plan.plan import get_plan_config
+from press.press.doctype.site_activity.site_activity import log_site_activity
+from press.utils import get_client_blacklisted_keys, log_error
 
 
 class Site(Document):
