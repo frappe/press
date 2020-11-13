@@ -42,7 +42,7 @@ class Invoice(Document):
 			self.create_invoice_on_frappeio()
 
 	def create_stripe_invoice(self):
-		if not self.stripe_invoice_id:
+		if not self.stripe_invoice_id and self.amount_due > 0:
 			stripe = get_stripe()
 			customer_id = frappe.db.get_value("Team", self.team, "stripe_customer_id")
 
@@ -287,6 +287,8 @@ class Invoice(Document):
 		)
 
 	def create_invoice_on_frappeio(self):
+		if self.amount_due == 0:
+			return
 		if self.frappe_invoice:
 			return
 
