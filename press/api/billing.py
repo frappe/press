@@ -83,7 +83,7 @@ def get_erpnext_com_connection():
 
 @frappe.whitelist()
 def get_customer_details(team):
-	'''This method is called by frappe.io for creating Customer and Address'''
+	"""This method is called by frappe.io for creating Customer and Address"""
 	team_doc = frappe.db.get_value("Team", team, "*")
 	return {
 		"team": team_doc,
