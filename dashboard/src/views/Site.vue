@@ -43,7 +43,17 @@
 				Check out <a
 					:href="`#/sites/${site.name}/plan`"
 					class="border-b border-orange-700 cursor-pointer"
-				>Plans</a> for more details
+				>Plans</a> for more details.
+			</Alert>
+			<Alert
+				class="mb-4"
+				v-if="site.status == 'Active' && Object.values(site.usage).some(x=> x > 1.0)"
+			>
+				Your site has exceeded the allowed Usage for your Plan.
+				Check out <a
+					:href="`#/sites/${site.name}/plan`"
+					class="border-b border-orange-700 cursor-pointer"
+				>Plans</a> for more details.
 			</Alert>
 		</div>
 		<div class="px-4 sm:px-8" v-if="site">
