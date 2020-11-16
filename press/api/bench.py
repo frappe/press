@@ -14,7 +14,7 @@ from press.press.doctype.release_group.release_group import new_release_group
 def new(bench):
 	team = get_current_team()
 	applications = [
-		{"app": app["name"], "source": app["source"]} for app in bench["applications"]
+		{"application": app["name"], "source": app["source"]} for app in bench["applications"]
 	]
 	group = new_release_group(bench["version"], bench["title"], applications, team)
 	return group.name
@@ -27,7 +27,7 @@ def get(name):
 	apps = []
 	for app in group.apps:
 		source = frappe.get_doc("Application Source", app.source)
-		application = frappe.get_doc("Application", app.app)
+		application = frappe.get_doc("Application", app.application)
 
 		apps.append(
 			{
