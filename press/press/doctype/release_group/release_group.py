@@ -18,7 +18,9 @@ class ReleaseGroup(Document):
 
 	def validate_title(self):
 		if frappe.get_all(
-			"Release Group", {"title": self.title, "team": self.team or ""}, limit=1
+			"Release Group",
+			{"title": self.title, "team": self.team or "", "name": ("!=", self.name)},
+			limit=1,
 		):
 			frappe.throw(f"Release Group {self.title} already exists.", frappe.ValidationError)
 
