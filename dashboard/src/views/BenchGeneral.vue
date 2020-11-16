@@ -36,7 +36,7 @@
 			<SectionCard>
 				<div
 					class="block px-6 py-3 hover:bg-gray-50"
-					v-for="app in bench.apps"
+					v-for="app in bench.applications"
 					:key="app.name"
 				>
 					<p class="text-base font-medium text-brand">

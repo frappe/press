@@ -45,7 +45,7 @@ class TestReleaseGroup(unittest.TestCase):
 			"Version 12",
 			[{"application": source2.application, "source": source1.name}],
 		)
-		self.assertEqual(group.apps[0].application, source1.application)
+		self.assertEqual(group.applications[0].application, source1.application)
 
 	def test_create_release_group_fail_when_first_app_is_not_frappe(self):
 		app = new_application("erpnext", "ERPNext")

@@ -25,12 +25,12 @@ class ReleaseGroup(Document):
 			frappe.throw(f"Release Group {self.title} already exists.", frappe.ValidationError)
 
 	def validate_frappe_app(self):
-		if self.apps[0].application != "frappe":
+		if self.applications[0].application != "frappe":
 			frappe.throw("First application must be Frappe", frappe.ValidationError)
 
 	def validate_duplicate_app(self):
 		apps = set()
-		for app in self.apps:
+		for app in self.applications:
 			app_name = app.application
 			if app_name in apps:
 				frappe.throw(
@@ -39,11 +39,11 @@ class ReleaseGroup(Document):
 			apps.add(app_name)
 
 	def validate_app_versions(self):
-		source_names = [app.source for app in self.apps]
+		source_names = [app.source for app in self.applications]
 		sources = frappe.get_all(
 			"Application Source", ["name", "version"], {"name": ("in", source_names)}
 		)
-		for app in self.apps:
+		for app in self.applications:
 			source = find(sources, lambda x: x.name == app.source)
 			if source.version != self.version:
 				frappe.throw(
@@ -55,7 +55,7 @@ class ReleaseGroup(Document):
 		if not self.enabled:
 			return
 		releases = []
-		for app in self.apps:
+		for app in self.applications:
 			release = frappe.get_all(
 				"App Release",
 				fields=["name", "app", "hash"],
@@ -71,7 +71,7 @@ class ReleaseGroup(Document):
 		).insert()
 
 	def add_app(self, source):
-		self.append("apps", {"source": source.name, "application": source.application})
+		self.append("applications", {"source": source.name, "application": source.application})
 
 
 def new_release_group(title, version, applications, team=None):
@@ -80,7 +80,7 @@ def new_release_group(title, version, applications, team=None):
 			"doctype": "Release Group",
 			"title": title,
 			"version": version,
-			"apps": applications,
+			"applications": applications,
 			"team": team,
 		}
 	).insert()
