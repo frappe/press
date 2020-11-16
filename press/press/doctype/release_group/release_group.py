@@ -23,16 +23,16 @@ class ReleaseGroup(Document):
 			frappe.throw(f"Release Group {self.title} already exists.", frappe.ValidationError)
 
 	def validate_frappe_app(self):
-		if self.apps[0].app != "frappe":
+		if self.apps[0].application != "frappe":
 			frappe.throw("First application must be Frappe", frappe.ValidationError)
 
 	def validate_duplicate_app(self):
 		apps = set()
 		for app in self.apps:
-			app_name = app.app
+			app_name = app.application
 			if app_name in apps:
 				frappe.throw(
-					f"Application {app.app} can be added only once", frappe.ValidationError,
+					f"Application {app.application} can be added only once", frappe.ValidationError,
 				)
 			apps.add(app_name)
 
@@ -57,7 +57,7 @@ class ReleaseGroup(Document):
 			release = frappe.get_all(
 				"App Release",
 				fields=["name", "app", "hash"],
-				filters={"app": app.app, "status": "Approved", "deployable": True},
+				filters={"app": app.application, "status": "Approved", "deployable": True},
 				order_by="creation desc",
 				limit=1,
 			)
@@ -69,7 +69,7 @@ class ReleaseGroup(Document):
 		).insert()
 
 	def add_app(self, source):
-		self.append("apps", {"source": source.name, "app": source.application})
+		self.append("apps", {"source": source.name, "application": source.application})
 
 
 def new_release_group(title, version, applications, team=None):
