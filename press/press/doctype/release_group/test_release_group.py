@@ -25,7 +25,9 @@ class TestReleaseGroup(unittest.TestCase):
 			"Version 12", "https://github.com/frappe/frappe", "version-12"
 		)
 		group = new_release_group(
-			"Test Group", "Version 12", [{"application": source.application, "source": source.name}]
+			"Test Group",
+			"Version 12",
+			[{"application": source.application, "source": source.name}],
 		)
 		self.assertEqual(group.title, "Test Group")
 
@@ -39,7 +41,9 @@ class TestReleaseGroup(unittest.TestCase):
 			"Version 12", "https://github.com/frappe/erpnext", "version-12"
 		)
 		group = new_release_group(
-			"Test Group", "Version 12", [{"application": source2.application, "source": source1.name}],
+			"Test Group",
+			"Version 12",
+			[{"application": source2.application, "source": source1.name}],
 		)
 		self.assertEqual(group.apps[0].application, source1.application)
 
@@ -91,7 +95,9 @@ class TestReleaseGroup(unittest.TestCase):
 			"Version 12", "https://github.com/frappe/frappe", "version-12"
 		)
 		new_release_group(
-			"Test Group", "Version 12", [{"application": source.application, "source": source.name}],
+			"Test Group",
+			"Version 12",
+			[{"application": source.application, "source": source.name}],
 		)
 		self.assertRaises(
 			frappe.ValidationError,

@@ -21,7 +21,7 @@
    "fieldname": "apps",
    "fieldtype": "Table",
    "label": "Apps",
-   "options": "Release Group Frappe App",
+   "options": "Release Group Application",
    "reqd": 1
   },
   {
@@ -79,7 +79,7 @@
   }
  ],
  "links": [],
- "modified": "2020-11-16 19:12:11.940762",
+ "modified": "2020-11-16 23:12:17.078691",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",
