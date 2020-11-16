@@ -1,23 +1,18 @@
 {
  "actions": [],
+ "allow_rename": 1,
  "autoname": "Prompt",
  "creation": "2020-10-19 17:58:10.458990",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "predecessor",
-  "public"
+  "public",
+  "number",
+  "default",
+  "status"
  ],
  "fields": [
-  {
-   "fieldname": "predecessor",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Predecessor",
-   "options": "Frappe Version"
-  },
   {
    "default": "1",
    "fieldname": "public",
@@ -25,11 +20,36 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Public"
+  },
+  {
+   "fieldname": "number",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Number",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "default",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Default"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Develop\nBeta\nStable\nEnd of Life",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2020-10-22 09:32:31.595228",
+ "modified": "2020-11-12 17:31:19.434446",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Frappe Version",
