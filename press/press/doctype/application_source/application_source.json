@@ -1,0 +1,124 @@
+{
+ "actions": [],
+ "creation": "2020-10-26 20:13:19.792375",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "version",
+  "application",
+  "branch",
+  "data_3",
+  "repository_url",
+  "repository",
+  "repository_owner",
+  "section_break_8",
+  "team",
+  "public",
+  "column_break_11",
+  "github_installation_id"
+ ],
+ "fields": [
+  {
+   "fieldname": "version",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Version",
+   "options": "Frappe Version",
+   "reqd": 1
+  },
+  {
+   "fieldname": "application",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Application",
+   "options": "Application",
+   "reqd": 1
+  },
+  {
+   "fieldname": "repository_url",
+   "fieldtype": "Data",
+   "label": "Repository URL",
+   "reqd": 1
+  },
+  {
+   "fieldname": "repository",
+   "fieldtype": "Data",
+   "label": "Repository",
+   "read_only": 1
+  },
+  {
+   "fieldname": "repository_owner",
+   "fieldtype": "Data",
+   "label": "Repository Owner",
+   "read_only": 1
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Branch",
+   "reqd": 1
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Team",
+   "options": "Team"
+  },
+  {
+   "default": "0",
+   "fieldname": "public",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Public"
+  },
+  {
+   "fieldname": "github_installation_id",
+   "fieldtype": "Data",
+   "label": "GitHub Installation ID"
+  },
+  {
+   "fieldname": "data_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_8",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_11",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2020-10-27 09:23:55.960683",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Application Source",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "title_field": "application",
+ "track_changes": 1
+}
