@@ -7,54 +7,22 @@ import frappe
 from press.utils import get_current_team
 from press.api.site import protected
 from frappe.core.utils import find
+from press.press.doctype.application.application import new_application
 
 
 @frappe.whitelist()
 def new(app):
+	name = app["name"]
 	team = get_current_team()
-	repo_owner, repo, branch = app["repo_owner"], app["repo"], app["branch"]
-	existing = frappe.db.exists(
-		"Application", {"repo_owner": repo_owner, "repo": repo, "branch": branch},
-	)
-	if existing:
-		frappe.throw(
-			f"App with repository {repo_owner}/{repo} and branch {branch} already exists."
+	if frappe.db.exists("Application", name):
+		app_doc = frappe.get_doc("Application", name)
+	else:
+		app_doc = new_application(name, app["title"])
+	for version in app["versions"]:
+		app_doc.add_source(
+			version, app["repository_url"], app["branch"], team, app["github_installation_id"]
 		)
-
-	app_doc = frappe.get_doc(
-		{
-			"doctype": "Application",
-			"name": app["name"],
-			"branch": branch,
-			"repo": repo,
-			"repo_owner": repo_owner,
-			"url": app["url"],
-			"scrubbed": app["scrubbed"],
-			"installation": app["installation"],
-			"team": team,
-			"enable_auto_deploy": app["enable_auto_deploy"],
-		}
-	)
-	app_doc.insert()
-	for group in app["groups"]:
-		release_group = frappe.get_doc("Release Group", group)
-		release_group.append("apps", {"app": app_doc.name})
-		release_group.save()
 	return app_doc.name
-
-
-@frappe.whitelist()
-def exists(name):
-	return bool(frappe.db.exists("Application", name))
-
-
-@frappe.whitelist()
-def similar_exists(repo_owner, repo, branch):
-	return bool(
-		frappe.db.exists(
-			"Application", {"repo": repo, "repo_owner": repo_owner, "branch": branch}
-		)
-	)
 
 
 def update_available(name):
