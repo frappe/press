@@ -1,17 +1,20 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "Prompt",
  "creation": "2020-01-13 16:04:45.363835",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "title",
+  "version",
+  "column_break_4",
+  "team",
   "enabled",
-  "apps",
   "default",
   "public",
-  "team"
+  "section_break_7",
+  "apps"
  ],
  "fields": [
   {
@@ -46,12 +49,37 @@
   {
    "fieldname": "team",
    "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Team",
    "options": "Team"
+  },
+  {
+   "fieldname": "version",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Version",
+   "options": "Frappe Version",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_7",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1
   }
  ],
  "links": [],
- "modified": "2020-06-26 13:12:57.044909",
+ "modified": "2020-11-16 19:12:11.940762",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",
@@ -82,5 +110,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "title_field": "title",
  "track_changes": 1
 }

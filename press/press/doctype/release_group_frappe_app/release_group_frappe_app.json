@@ -5,21 +5,36 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "app"
+  "app",
+  "column_break_2",
+  "source"
  ],
  "fields": [
   {
+   "fetch_from": "source.application",
    "fieldname": "app",
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "App",
    "options": "Application",
    "reqd": 1
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Source",
+   "options": "Application Source",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
   }
  ],
  "istable": 1,
  "links": [],
- "modified": "2020-10-26 19:53:39.968126",
+ "modified": "2020-11-16 19:15:44.042809",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group Frappe App",
