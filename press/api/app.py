@@ -58,34 +58,28 @@ def app_status(name):
 @protected("Application")
 def get(name):
 	app = frappe.get_doc("Application", name)
-	groups = frappe.get_all(
-		"Release Group Application", fields=["parent as name"], filters={"app": app.name}
+	team = get_current_team()
+	sources = frappe.get_all(
+		"Application Source",
+		filters={"application": name},
+		or_filters={"team": team, "public": True},
 	)
-	enabled_groups = []
-	for group in groups:
-		group_doc = frappe.get_doc("Release Group", group.name)
-		if not group_doc.enabled:
-			continue
-		frappe_app = frappe.get_all(
-			"Application",
-			fields=["name", "scrubbed", "branch"],
-			filters={"name": ("in", [row.app for row in group_doc.apps]), "frappe": True},
-		)[0]
-		group["frappe"] = frappe_app
-		enabled_groups.append(group)
+	versions = frappe.get_all(
+		"Application Source",
+		fields=["version as name"],
+		filters={"application": name},
+		or_filters={"team": team, "public": True},
+		group_by="version",
+	)
 
 	return {
 		"name": app.name,
-		"branch": app.branch,
-		"status": app_status(app.name),
-		"repo": app.repo,
-		"enable_auto_deploy": app.enable_auto_deploy,
-		"scrubbed": app.scrubbed,
-		"groups": enabled_groups,
-		"repo_owner": app.repo_owner,
-		"url": app.url,
-		"update_available": update_available(app.name),
-		"last_updated": app.modified,
+		"title": app.title,
+		"update_available": True,
+		"installations": 124,
+		"versions": versions,
+		"sources": sources,
+		"modified": app.modified,
 		"creation": app.creation,
 	}
 

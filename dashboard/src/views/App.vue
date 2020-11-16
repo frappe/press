@@ -8,22 +8,9 @@
 					</router-link>
 				</div>
 				<div class="flex items-center mt-2">
-					<h1 class="text-2xl font-bold">{{ app.name }}</h1>
-					<Badge class="ml-4" :status="app.status">{{ app.status }}</Badge>
+					<h1 class="text-2xl font-bold">{{ app.title }}</h1>
 				</div>
-				<a
-					:href="app.url"
-					target="_blank"
-					class="inline-flex items-baseline text-sm text-blue-500 hover:underline"
-				>
-					Visit Repo
-					<FeatherIcon name="external-link" class="w-3 h-3 ml-1" />
-				</a>
 			</div>
-			<Alert class="mb-4" v-if="app.status == 'Awaiting Approval'">
-				Our engineers are reviewing your code for issues. After review your app
-				will be available for installation.
-			</Alert>
 		</div>
 		<div class="px-4 sm:px-8" v-if="app">
 			<Tabs class="pb-32" :tabs="tabs">
@@ -59,11 +46,7 @@ export default {
 		},
 		tabs() {
 			let tabRoute = subRoute => `/apps/${this.appName}/${subRoute}`;
-			let tabs = [
-				{ label: 'General', route: 'general' },
-				{ label: 'Releases', route: 'releases' },
-				{ label: 'Deploys', route: 'deploys' }
-			];
+			let tabs = [{ label: 'General', route: 'general' }];
 			return tabs.map(tab => {
 				return {
 					...tab,
