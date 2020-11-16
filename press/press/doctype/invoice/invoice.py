@@ -294,6 +294,8 @@ class Invoice(Document):
 
 		try:
 			client = self.get_frappeio_connection()
+			if not client:
+				frappe.throw("Frappe.io URL not set up in Press Settings")
 			invoice = client.post_api("create-fc-invoice", self.as_dict())
 			if invoice:
 				self.frappe_invoice = invoice
@@ -310,6 +312,9 @@ class Invoice(Document):
 		from frappe.frappeclient import FrappeClient
 
 		press_settings = frappe.get_single("Press Settings")
+		if not press_settings.frappe_url:
+			return
+
 		frappe_password = frappe.utils.password.get_decrypted_password(
 			"Press Settings", "Press Settings", fieldname="frappe_password"
 		)
