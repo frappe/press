@@ -145,6 +145,10 @@ export default {
 					route: '/sites'
 				},
 				{
+					label: 'Benches',
+					route: '/benches'
+				},
+				{
 					label: 'Apps',
 					route: '/apps'
 				},
