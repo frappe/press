@@ -28,4 +28,4 @@ press.patches.v0_0_1.update_site_config_doc
 press.patches.v0_0_1.create_certificate_authorities
 press.patches.v0_0_1.rename_columns_in_tls_certificate
 press.patches.v0_0_1.frappe_app_to_application
-press.patches.v0_0_1.rename_columns_in_release_group_frappe_app
+press.patches.v0_0_1.rename_release_group_frappe_app
