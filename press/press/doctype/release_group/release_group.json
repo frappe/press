@@ -14,16 +14,9 @@
   "default",
   "public",
   "section_break_7",
-  "apps"
+  "applications"
  ],
  "fields": [
-  {
-   "fieldname": "apps",
-   "fieldtype": "Table",
-   "label": "Apps",
-   "options": "Release Group Application",
-   "reqd": 1
-  },
   {
    "default": "0",
    "fieldname": "default",
@@ -76,10 +69,17 @@
    "fieldtype": "Data",
    "label": "Title",
    "reqd": 1
+  },
+  {
+   "fieldname": "applications",
+   "fieldtype": "Table",
+   "label": "Applications",
+   "options": "Release Group Application",
+   "reqd": 1
   }
  ],
  "links": [],
- "modified": "2020-11-16 23:12:17.078691",
+ "modified": "2020-11-16 23:23:37.671814",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",

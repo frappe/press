@@ -24,12 +24,12 @@ def new(bench):
 @protected("Release Group")
 def get(name):
 	group = frappe.get_doc("Release Group", name)
-	apps = []
-	for app in group.apps:
+	applications = []
+	for app in group.applications:
 		source = frappe.get_doc("Application Source", app.source)
 		application = frappe.get_doc("Application", app.application)
 
-		apps.append(
+		applications.append(
 			{
 				"name": application.name,
 				"frappe": application.frappe,
@@ -45,7 +45,7 @@ def get(name):
 		"title": group.title,
 		"version": group.version,
 		"status": "Active",
-		"apps": apps,
+		"applications": applications,
 		"update_available": True,
 		"last_updated": group.modified,
 		"creation": group.creation,
