@@ -183,19 +183,27 @@ def releases(name):
 
 @frappe.whitelist()
 def all():
-	filters = {"enabled": True}
-	if frappe.session.data.user_type != "System User":
-		filters.update({"team": get_current_team()})
-	apps = frappe.get_list(
-		"Application",
-		fields=["name", "modified", "url", "repo_owner", "repo", "branch"],
-		filters=filters,
-		order_by="creation desc",
+	team = get_current_team()
+	apps = frappe.db.sql(
+		"""
+	SELECT
+		source.application as name, application.title, application.modified
+	FROM
+		`tabApplication Source` AS source
+	LEFT JOIN
+		`tabApplication` AS application
+	ON
+		source.application = application.name
+	WHERE
+		(source.team = %(team)s OR source.public = 1)
+	GROUP BY source.application
+	ORDER BY source.creation DESC
+	""",
+		{"team": team},
+		as_dict=True,
 	)
 	for app in apps:
-		app["update_available"] = update_available(app.name)
-		app["status"] = app_status(app.name)
-
+		app["update_available"] = True
 	return apps
 
 

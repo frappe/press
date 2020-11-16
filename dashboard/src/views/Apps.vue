@@ -22,25 +22,19 @@
 			</div>
 			<div v-else>
 				<div
-					class="grid items-center grid-cols-4 gap-12 py-4 text-sm text-gray-700 border-b"
+					class="grid items-center grid-cols-3 gap-12 py-4 text-sm text-gray-700 border-b"
 				>
 					<span>App Name</span>
-					<span class="text-center">
-						Status
-					</span>
 					<span class="text-right">Last Updated</span>
 					<span></span>
 				</div>
 				<a
-					class="grid items-center grid-cols-4 gap-12 py-4 text-sm border-b hover:bg-gray-50 focus:outline-none focus:shadow-outline"
+					class="grid items-center grid-cols-3 gap-12 py-4 text-sm border-b hover:bg-gray-50 focus:outline-none focus:shadow-outline"
 					v-for="app in $resources.apps.data"
 					:key="app.name"
 					:href="'#/apps/' + app.name"
 				>
-					<span>{{ app.name }}</span>
-					<span class="text-center">
-						<Badge :status="app.status" />
-					</span>
+					<span>{{ app.title }}</span>
 					<FormatDate class="text-right" type="relative">
 						{{ app.modified }}
 					</FormatDate>
@@ -50,14 +44,6 @@
 							v-if="app.update_available"
 							class="mr-4"
 						/>
-						<a
-							:href="app.url"
-							target="_blank"
-							class="inline-flex items-baseline text-sm text-blue-500 hover:underline"
-						>
-							Visit Repo
-							<FeatherIcon name="external-link" class="w-3 h-3 ml-1" />
-						</a>
 					</span>
 				</a>
 			</div>
