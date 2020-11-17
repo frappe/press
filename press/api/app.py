@@ -106,7 +106,10 @@ def deploys(name):
 		frappe_app = frappe.get_all(
 			"Application",
 			fields=["name", "scrubbed", "branch"],
-			filters={"name": ("in", [row.app for row in group_doc.applications]), "frappe": True},
+			filters={
+				"name": ("in", [row.app for row in group_doc.applications]),
+				"frappe": True,
+			},
 		)[0]
 		groups[group.name] = frappe_app
 

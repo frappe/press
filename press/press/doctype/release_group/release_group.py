@@ -71,7 +71,9 @@ class ReleaseGroup(Document):
 		).insert()
 
 	def add_app(self, source):
-		self.append("applications", {"source": source.name, "application": source.application})
+		self.append(
+			"applications", {"source": source.name, "application": source.application}
+		)
 
 
 def new_release_group(title, version, applications, team=None):
