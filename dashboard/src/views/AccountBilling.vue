@@ -47,14 +47,14 @@
 						Add Billing Information
 					</Button>
 				</div>
-				<div class="px-6 pb-2" v-if="upcomingInvoice">
+				<div class="px-6 pb-2 space-x-2" v-if="upcomingInvoice">
 					<Button
 						@click="showTransferCreditsDialog = true"
 						v-if="$account.team.erpnext_partner"
 					>
 						Transfer Credits from ERPNext.com
 					</Button>
-					<Button @click="showPrepaidCreditsDialog = true">
+					<Button v-if="$account.team.enable_prepaid_credits" @click="showPrepaidCreditsDialog = true">
 						Buy Prepaid Credits
 					</Button>
 				</div>
