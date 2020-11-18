@@ -18,7 +18,6 @@ from frappe.utils import (
 	cint,
 	convert_utc_to_user_timezone,
 	get_url_to_form,
-	now_datetime,
 	pretty_date,
 )
 from press.agent import Agent
