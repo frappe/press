@@ -8,8 +8,6 @@ from math import ceil
 import frappe
 from frappe.utils import cint
 
-from six import string_types
-
 
 def execute():
 	doctype = "Site Usage"
@@ -26,9 +24,9 @@ def execute():
 		current_values = frappe.db.get_value(doctype, record, fields)
 
 		for field, value in zip(fields, current_values):
-			if isinstance(value, string_types):
-				value = ceil(cint(value) / (1024 ** 2))
-				frappe.get_doc(doctype, record).db_set(field, value, update_modified=False)
+			value = ceil(cint(value) / (1024 ** 2))
+			frappe.get_doc(doctype, record).db_set(field, value, update_modified=False)
 
+	frappe.db.commit()
 	frappe.db.auto_commit_on_many_writes = scheme_before
 	print(f"{total} {doctype} records updated")
