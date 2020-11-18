@@ -8,6 +8,7 @@ import json
 import re
 import frappe
 import requests
+import dateutil.parser
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
 from press.agent import Agent
@@ -388,7 +389,10 @@ class Site(Document):
 		if isinstance(fetched_usage, list):
 			for usage in fetched_usage:
 				doc = _insert_usage(usage)
-				doc.db_set("creation", convert_utc_to_user_timezone(usage["timestamp"]))
+				equivalent_site_time = convert_utc_to_user_timezone(
+					dateutil.parser.parse(usage["timestamp"])
+				)
+				doc.db_set("creation", equivalent_site_time)
 		else:
 			_insert_usage(fetched_usage)
 
