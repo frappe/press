@@ -80,7 +80,9 @@
   "column_break_65",
   "telegram_bot_token",
   "product_documentation_section",
-  "publish_docs"
+  "publish_docs",
+  "storage_and_disk_limits_section",
+  "enforce_storage_limits"
  ],
  "fields": [
   {
@@ -480,11 +482,23 @@
    "fieldname": "use_backbone_ca",
    "fieldtype": "Check",
    "label": "Use Backbone CA"
+  },
+  {
+   "fieldname": "storage_and_disk_limits_section",
+   "fieldtype": "Section Break",
+   "label": "Storage and Disk Limits"
+  },
+  {
+   "default": "0",
+   "description": "Setting this to true will start suspending sites that cross the Site Usages with respect to their existing plans.",
+   "fieldname": "enforce_storage_limits",
+   "fieldtype": "Check",
+   "label": "Enforce Storage and Disk Limits"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2020-10-08 10:20:20.763127",
+ "modified": "2020-11-18 14:49:55.905345",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
