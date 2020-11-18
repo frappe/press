@@ -16,7 +16,6 @@
   "update",
   "setup_wizard_complete",
   "billing",
-  "plan",
   "team",
   "free",
   "section_break_6",
@@ -148,16 +147,6 @@
    "in_standard_filter": 1,
    "label": "Team",
    "options": "Team"
-  },
-  {
-   "fieldname": "plan",
-   "fieldtype": "Link",
-   "hide_days": 1,
-   "hide_seconds": 1,
-   "in_standard_filter": 1,
-   "label": "Plan",
-   "options": "Plan",
-   "reqd": 1
   },
   {
    "fieldname": "deploy_section",

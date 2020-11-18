@@ -31,7 +31,6 @@
    "options": "Team"
   },
   {
-   "fetch_from": "site.plan",
    "fieldname": "from_plan",
    "fieldtype": "Link",
    "label": "From Plan",
@@ -64,8 +63,8 @@
   }
  ],
  "links": [],
- "modified": "2020-08-13 20:37:10.982395",
- "modified_by": "faris@erpnext.com",
+ "modified": "2020-11-10 12:04:18.786132",
+ "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Plan Change",
  "owner": "Administrator",

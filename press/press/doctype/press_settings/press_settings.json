@@ -46,6 +46,10 @@
   "column_break_38",
   "erpnext_username",
   "erpnext_password",
+  "frappeio_authentication_section",
+  "frappe_url",
+  "frappe_username",
+  "frappe_password",
   "offsite_backups_section",
   "offsite_backups_provider",
   "aws_s3_bucket",
@@ -482,6 +486,26 @@
    "fieldname": "use_backbone_ca",
    "fieldtype": "Check",
    "label": "Use Backbone CA"
+  },
+  {
+   "fieldname": "frappeio_authentication_section",
+   "fieldtype": "Section Break",
+   "label": "Frappe.io Authentication"
+  },
+  {
+   "fieldname": "frappe_username",
+   "fieldtype": "Data",
+   "label": "Username"
+  },
+  {
+   "fieldname": "frappe_password",
+   "fieldtype": "Password",
+   "label": "Password"
+  },
+  {
+   "fieldname": "frappe_url",
+   "fieldtype": "Data",
+   "label": "URL"
   },
   {
    "fieldname": "storage_and_disk_limits_section",

@@ -51,11 +51,16 @@
 			</SectionCard>
 			<Dialog title="Change Plan" v-model="showChangePlanDialog">
 				<SitePlansTable class="mt-6" :plans="plans" v-model="selectedPlan" />
+				<ErrorMessage class="mt-4" :error="$resources.changePlan.error" />
 				<template slot="actions">
 					<Button type="secondary" @click="showChangePlanDialog = false">
 						Cancel
 					</Button>
-					<Button class="ml-2" type="primary" @click="changePlan">
+					<Button
+						class="ml-2"
+						type="primary"
+						@click="$resources.changePlan.submit()"
+					>
 						Submit
 					</Button>
 				</template>
@@ -169,6 +174,28 @@ export default {
 			showDeactivateDialog: false
 		};
 	},
+	resources: {
+		changePlan() {
+			return {
+				method: 'press.api.site.change_plan',
+				params: {
+					name: this.site.name,
+					plan: this.selectedPlan?.name
+				},
+				onSuccess() {
+					this.$notify({
+						title: `Plan changed to ${this.selectedPlan.plan_title}`,
+						icon: 'check',
+						color: 'green'
+					});
+					this.showChangePlanDialog = false;
+					this.selectedPlan = null;
+					this.fetchCurrentPlan();
+					this.fetchPlans();
+				}
+			};
+		}
+	},
 	mounted() {
 		this.fetchCurrentPlan();
 	},
@@ -192,21 +219,6 @@ export default {
 				}
 				return plan;
 			});
-		},
-		async changePlan() {
-			await this.$call('press.api.site.change_plan', {
-				name: this.site.name,
-				plan: this.selectedPlan.name
-			});
-			this.$notify({
-				title: `Plan changed to ${this.selectedPlan.plan_title}`,
-				icon: 'check',
-				color: 'green'
-			});
-			this.showChangePlanDialog = false;
-			this.selectedPlan = null;
-			this.fetchCurrentPlan();
-			this.fetchPlans();
 		},
 		deactivate() {
 			this.$call('press.api.site.deactivate', {

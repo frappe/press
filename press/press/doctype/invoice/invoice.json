@@ -12,30 +12,30 @@
   "currency",
   "column_break_4",
   "status",
-  "due_date",
   "period_start",
   "period_end",
-  "month",
-  "year",
+  "due_date",
   "amended_from",
   "section_break_8",
-  "site_usage",
   "items",
   "section_break_10",
   "starting_balance",
   "ending_balance",
   "column_break_15",
   "total",
+  "applied_credits",
   "amount_due",
   "amount_paid",
   "section_break_15",
+  "credit_allocations",
   "payment_section",
   "payment_date",
   "payment_attempt_count",
   "payment_attempt_date",
   "stripe_billing_section",
   "stripe_invoice_id",
-  "stripe_invoice_url"
+  "stripe_invoice_url",
+  "frappe_invoice"
  ],
  "fields": [
   {
@@ -71,10 +71,11 @@
    "options": "Invoice Item"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "Draft\nInvoice Created\nUnpaid\nPaid"
+   "options": "Draft\nInvoice Created\nUnpaid\nPaid\nRefunded"
   },
   {
    "fieldname": "total",
@@ -90,6 +91,7 @@
    "options": "currency"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "amount_paid",
    "fieldtype": "Currency",
    "label": "Amount Paid",
@@ -119,7 +121,8 @@
   },
   {
    "fieldname": "section_break_15",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "hide_border": 1
   },
   {
    "fieldname": "stripe_billing_section",
@@ -132,6 +135,7 @@
    "label": "Stripe Invoice ID"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "stripe_invoice_url",
    "fieldtype": "Data",
    "label": "Stripe Invoice URL"
@@ -163,7 +167,8 @@
   {
    "fieldname": "period_start",
    "fieldtype": "Date",
-   "label": "Period Start"
+   "label": "Period Start",
+   "reqd": 1
   },
   {
    "fieldname": "period_end",
@@ -171,47 +176,50 @@
    "label": "Period End"
   },
   {
-   "fieldname": "site_usage",
-   "fieldtype": "Table",
-   "label": "Site Usage",
-   "options": "Invoice Site Usage"
-  },
-  {
    "fieldname": "payment_section",
    "fieldtype": "Section Break",
    "label": "Payment"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "payment_date",
    "fieldtype": "Date",
    "label": "Payment Date"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "payment_attempt_count",
    "fieldtype": "Int",
    "label": "Payment Attempt Count"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "payment_attempt_date",
    "fieldtype": "Date",
    "label": "Payment Attempt Date"
   },
   {
-   "fieldname": "month",
-   "fieldtype": "Int",
-   "in_standard_filter": 1,
-   "label": "Month"
+   "fieldname": "applied_credits",
+   "fieldtype": "Currency",
+   "label": "Applied Credits",
+   "options": "currency"
   },
   {
-   "fieldname": "year",
-   "fieldtype": "Int",
-   "in_standard_filter": 1,
-   "label": "Year"
+   "allow_on_submit": 1,
+   "fieldname": "frappe_invoice",
+   "fieldtype": "Data",
+   "label": "Frappe Invoice"
+  },
+  {
+   "fieldname": "credit_allocations",
+   "fieldtype": "Table",
+   "label": "Credit Allocations",
+   "options": "Invoice Credit Allocation"
   }
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2020-08-03 20:00:11.538719",
+ "modified": "2020-11-18 14:38:06.646436",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",
@@ -248,7 +256,6 @@
    "write": 1
   }
  ],
- "quick_entry": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
  "track_changes": 1

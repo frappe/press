@@ -38,5 +38,36 @@ frappe.ui.form.on('Invoice', {
 				d.show();
 			});
 		}
+
+		if (frm.doc.status == "Paid" && !frm.doc.frappe_invoice) {
+			let btn = frm.add_custom_button(
+				"Create Invoice on frappe.io",
+				() => {
+					frm.call({
+						doc: frm.doc,
+						method: "create_invoice_on_frappeio",
+						btn,
+					}).then(r => {
+						if (r.message) {
+							frappe.msgprint(`Sales Invoice ${r.message} created successfully.`)
+						}
+						frm.refresh()
+					})
+				}
+			);
+		}
+
+		if (frm.doc.status == 'Invoice Created') {
+			let btn = frm.add_custom_button(
+				"Finalize Stripe Invoice",
+				() => {
+					frm.call({
+						doc: frm.doc,
+						method: "finalize_stripe_invoice",
+						btn,
+					}).then(r => frm.refresh())
+				}
+			);
+		}
 	},
 });
