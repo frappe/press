@@ -20,13 +20,18 @@
 									<span>
 										Backup on <FormatDate>{{ backup.creation }}</FormatDate>
 									</span>
+									<Button
+										v-on:click="restoreOffsiteBackup(backup)"
+										v-if="backup.offsite"
+										class="ml-8"
+									>
+										Restore
+									</Button>
 									<Badge v-if="backup.offsite" class="ml-4" color="green">
 										Offsite
 									</Badge>
 								</span>
-								<span v-else>
-									Performing Backup...
-								</span>
+								<span v-else> Performing Backup... </span>
 							</div>
 							<div
 								v-if="backup.status === 'Success'"
@@ -147,6 +152,12 @@ export default {
 				  })
 				: database_url;
 			window.open(link);
+		},
+		async restoreOffsiteBackup(backup) {
+			this.$call('press.api.site.restore_offsite_backup', {
+				name: this.site.name,
+				backup_name: backup.name
+			});
 		}
 	}
 };
