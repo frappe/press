@@ -25,7 +25,9 @@
   "enable_custom_apps",
   "github_access_token",
   "onboarding_section",
-  "onboarding"
+  "onboarding",
+  "feature_flags_section",
+  "enable_prepaid_credits"
  ],
  "fields": [
   {
@@ -147,10 +149,21 @@
    "fieldtype": "Table",
    "label": "Onboarding Steps",
    "options": "Team Onboarding"
+  },
+  {
+   "fieldname": "feature_flags_section",
+   "fieldtype": "Section Break",
+   "label": "Feature Flags"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_prepaid_credits",
+   "fieldtype": "Check",
+   "label": "Enable Prepaid Credits"
   }
  ],
  "links": [],
- "modified": "2020-08-28 14:56:49.458325",
+ "modified": "2020-11-18 20:37:54.276374",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
