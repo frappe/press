@@ -14,9 +14,16 @@
   "price_usd",
   "price_inr",
   "period",
-  "trial_period",
+  "features_section",
   "cpu_time_per_day",
-  "concurrent_users"
+  "max_database_usage",
+  "max_storage_usage",
+  "concurrent_users",
+  "column_break_12",
+  "trial_period",
+  "_max_database_usage",
+  "_max_storage_usage",
+  "offsite_backups"
  ],
  "fields": [
   {
@@ -54,6 +61,7 @@
   {
    "fieldname": "cpu_time_per_day",
    "fieldtype": "Int",
+   "in_list_view": 1,
    "label": "CPU Time Per Day"
   },
   {
@@ -80,6 +88,46 @@
    "fieldtype": "Select",
    "label": "Interval",
    "options": "Daily\nMonthly"
+  },
+  {
+   "fieldname": "features_section",
+   "fieldtype": "Section Break",
+   "label": "Features"
+  },
+  {
+   "default": "0",
+   "fieldname": "offsite_backups",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Offsite Backups"
+  },
+  {
+   "fieldname": "max_database_usage",
+   "fieldtype": "Int",
+   "label": "Max Database Usage (MiB)"
+  },
+  {
+   "fieldname": "max_storage_usage",
+   "fieldtype": "Int",
+   "label": "Max Storage Usage (MiB)"
+  },
+  {
+   "fieldname": "_max_database_usage",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Max Database Usage (Readable)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "_max_storage_usage",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Max Storage Usage (Readable)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_12",
+   "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,

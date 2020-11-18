@@ -25,6 +25,7 @@
   "config",
   "configuration",
   "_keys_removed_in_last_update",
+  "_site_usages",
   "deploy_section",
   "timezone",
   "site_files_section",
@@ -267,10 +268,17 @@
    "fieldtype": "Data",
    "hidden": 1,
    "label": "Keys Removed in Last Config Change"
+  },
+  {
+   "default": "{}",
+   "fieldname": "_site_usages",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Site Usage"
   }
  ],
  "links": [],
- "modified": "2020-10-22 23:57:14.282926",
+ "modified": "2020-11-05 11:11:37.836382",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

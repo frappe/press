@@ -3,15 +3,28 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
+
 import frappe
 from frappe.model.document import Document
 from frappe.utils import rounded
 
+from press.utils import human_readable
+
 
 class Plan(Document):
 	def validate(self):
+		readable_mapped_fields = {
+			"max_database_usage": "_max_database_usage",
+			"max_storage_usage": "_max_storage_usage",
+		}
+
 		if not self.period:
 			frappe.throw("Period must be greater than 0")
+
+		for real, readable in readable_mapped_fields.items():
+			num = self.get(real)
+			if num:
+				setattr(self, readable, human_readable(num))
 
 	def get_price_per_day(self, currency):
 		price = self.price_inr if currency == "INR" else self.price_usd

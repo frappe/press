@@ -4,15 +4,16 @@
 
 from __future__ import unicode_literals
 
-import frappe
-
 import json
-import requests
-from frappe.utils.password import get_decrypted_password
-from press.utils import log_error, sanitize_config
-from press.api.github import get_access_token
 import os
 from datetime import date
+
+import frappe
+import requests
+from frappe.utils.password import get_decrypted_password
+
+from press.api.github import get_access_token
+from press.utils import log_error, sanitize_config
 
 
 class Agent:
@@ -437,19 +438,8 @@ class Agent:
 	def get_site_info(self, site):
 		return self.get(f"benches/{site.bench}/sites/{site.name}/info")["data"]
 
-	def get_sites_info(self, bench):
-		data = {
-			"mariadb_root_password": get_decrypted_password(
-				"Server", self.server, "mariadb_root_password"
-			)
-		}
-		return self.create_agent_job(
-			"Fetch Sites Info",
-			f"benches/{bench.name}/info",
-			bench=bench.name,
-			data=data,
-			method="GET",
-		)
+	def get_sites_info(self, bench, since):
+		return self.post(f"benches/{bench.name}/info", data={"since": since})
 
 	def get_jobs_status(self, ids):
 		status = self.get(f"jobs/{','.join(map(str, ids))}")
