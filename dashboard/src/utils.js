@@ -21,16 +21,16 @@ let utils = {
 			}
 			return format;
 		},
-		formatBytes(bytes, decimals = 2) {
+		formatBytes(bytes, decimals = 2, current = 0) {
 			if (bytes === 0) return '0 Bytes';
 
 			const k = 1024;
 			const dm = decimals < 0 ? 0 : decimals;
-			const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+			const sizes = ['Bytes', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
 
 			const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-			return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+			return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i + current];
 		}
 	}
 };

@@ -14,7 +14,7 @@ from press.agent import Agent
 from frappe.utils.password import get_decrypted_password
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from frappe.frappeclient import FrappeClient
-from frappe.utils import cint, cstr
+from frappe.utils import cint, cstr, convert_utc_to_user_timezone
 from press.api.site import check_dns
 from frappe.core.utils import find
 from press.utils import log_error, get_client_blacklisted_keys
@@ -347,7 +347,7 @@ class Site(Document):
 		return agent.get_site_info(self)
 
 	def sync_info(self, data=None):
-		"""Updates Site Usage, site.config.encryption_key and timezone details for site."""
+		"""Updates Site Usage, site.config and timezone details for site."""
 		if not data:
 			data = self.fetch_info()
 
@@ -363,8 +363,8 @@ class Site(Document):
 		new_config.update(config)
 		current_config = json.dumps(new_config, indent=4)
 
-		if self.timezone != data["timezone"]:
-			self.timezone = data["timezone"]
+		if data["time_zone"] and self.timezone != data["time_zone"]:
+			self.timezone = data["time_zone"]
 			save = True
 
 		if self.config != current_config:
@@ -374,16 +374,24 @@ class Site(Document):
 		if save:
 			self.save()
 
-		frappe.get_doc(
-			{
-				"doctype": "Site Usage",
-				"site": self.name,
-				"database": fetched_usage["database"],
-				"public": fetched_usage["public"],
-				"private": fetched_usage["private"],
-				"backups": fetched_usage["backups"],
-			}
-		).insert()
+		def _insert_usage(usage: dict):
+			return frappe.get_doc(
+				{
+					"doctype": "Site Usage",
+					"site": self.name,
+					"backups": usage["backups"],
+					"database": usage["database"],
+					"public": usage["public"],
+					"private": usage["private"],
+				}
+			).insert()
+
+		if isinstance(fetched_usage, list):
+			for usage in fetched_usage:
+				doc = _insert_usage(usage)
+				doc.db_set("creation", convert_utc_to_user_timezone(usage["timestamp"]))
+		else:
+			_insert_usage(fetched_usage)
 
 	def is_setup_wizard_complete(self):
 		if self.setup_wizard_complete:
