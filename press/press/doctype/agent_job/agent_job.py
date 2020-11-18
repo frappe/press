@@ -375,6 +375,10 @@ def report_usage_violations():
 
 def suspend_sites():
 	"""Suspend sites if they have exceeded database or disk limits"""
+
+	if not frappe.db.get_single_value("Press Settings", "enforce_storage_limits"):
+		return
+
 	free_teams = frappe.get_all(
 		"Team", filters={"free_account": True, "enabled": True}, pluck="name"
 	)
