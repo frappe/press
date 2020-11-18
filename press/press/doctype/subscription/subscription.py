@@ -46,10 +46,8 @@ class Subscription(Document):
 		if not doc:
 			return False
 
-		if (
-			hasattr(doc, "can_charge_for_subscription") and not doc.can_charge_for_subscription()
-		):
-			return False
+		if hasattr(doc, "can_charge_for_subscription"):
+			return doc.can_charge_for_subscription()
 
 		return True
 

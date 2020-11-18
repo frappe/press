@@ -68,15 +68,16 @@ class TestSubscription(unittest.TestCase):
 			plan=plan.name,
 		).insert()
 
-		def method(self):
+		def method():
 			return False
 
 		# subscription calls this method when checking if it should create a usage record
 		todo.can_charge_for_subscription = method
 
-		# shouldn't create a usage record
-		usage_record = subscription.create_usage_record()
-		self.assertTrue(usage_record is None)
+		with patch.object(subscription, "get_subscribed_document", return_value=todo):
+			# shouldn't create a usage record
+			usage_record = subscription.create_usage_record()
+			self.assertTrue(usage_record is None)
 
 	def tearDown(self):
 		frappe.db.rollback()
