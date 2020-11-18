@@ -269,7 +269,7 @@ class Site(Document):
 		agent.remove_upstream_site(self.server, self.name)
 
 		self.delete_offsite_backups()
-		self.delete_subscription()
+		self.disable_subscription()
 
 	def delete_offsite_backups(self):
 		# self._del_obj and self._s3_response are object properties available when this method is called
@@ -508,10 +508,10 @@ class Site(Document):
 		# create a site plan change log
 		self._create_initial_site_plan_change(plan)
 
-	def delete_subscription(self):
+	def disable_subscription(self):
 		subscription = self.subscription
 		if subscription:
-			subscription.delete()
+			subscription.disable()
 
 	def change_plan(self, plan):
 		plan_config = get_plan_config(plan)
