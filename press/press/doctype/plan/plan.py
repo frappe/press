@@ -31,6 +31,15 @@ class Plan(Document):
 		price_per_day = rounded(price / self.period, 2)
 		return price_per_day
 
+	def get_price_for_interval(self, interval, currency):
+		price_per_day = self.get_price_per_day(currency)
+
+		if interval == "Daily":
+			return price_per_day
+
+		if interval == "Monthly":
+			return rounded(price_per_day * 30)
+
 
 def get_plan_config(name):
 	cpu_time = frappe.db.get_value("Plan", name, "cpu_time_per_day")

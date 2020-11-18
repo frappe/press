@@ -8,7 +8,9 @@
  "engine": "InnoDB",
  "field_order": [
   "enabled",
+  "document_type",
   "plan_title",
+  "interval",
   "price_usd",
   "price_inr",
   "period",
@@ -75,6 +77,19 @@
    "label": "Trial Period (Days)"
   },
   {
+   "fieldname": "document_type",
+   "fieldtype": "Link",
+   "label": "Document Type",
+   "options": "DocType",
+   "reqd": 1
+  },
+  {
+   "fieldname": "interval",
+   "fieldtype": "Select",
+   "label": "Interval",
+   "options": "Daily\nMonthly"
+  },
+  {
    "fieldname": "features_section",
    "fieldtype": "Section Break",
    "label": "Features"
@@ -117,7 +132,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2020-11-02 16:36:12.092585",
+ "modified": "2020-11-10 11:03:52.336592",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Plan",
