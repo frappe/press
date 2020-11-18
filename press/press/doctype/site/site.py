@@ -269,6 +269,7 @@ class Site(Document):
 		agent.remove_upstream_site(self.server, self.name)
 
 		self.delete_offsite_backups()
+		self.delete_subscription()
 
 	def delete_offsite_backups(self):
 		# self._del_obj and self._s3_response are object properties available when this method is called
@@ -507,6 +508,11 @@ class Site(Document):
 		# create a site plan change log
 		self._create_initial_site_plan_change(plan)
 
+	def delete_subscription(self):
+		subscription = self.subscription
+		if subscription:
+			subscription.delete()
+
 	def change_plan(self, plan):
 		plan_config = get_plan_config(plan)
 		self.update_site_config(plan_config)
@@ -570,10 +576,11 @@ class Site(Document):
 
 	@property
 	def subscription(self):
-		return frappe.get_doc(
+		name = frappe.db.get_value(
 			"Subscription",
 			{"document_type": "Site", "document_name": self.name, "enabled": True},
 		)
+		return frappe.get_doc("Subscription", name) if name else None
 
 	@property
 	def plan(self):
