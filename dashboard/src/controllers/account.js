@@ -22,11 +22,6 @@ export default new Vue({
 			this.team = result.team;
 			this.teams = result.teams;
 			this.team_members = result.team_members;
-			if (this.user.user_image) {
-				let url = window.location.origin;
-				url = url.replace('8080', '8000');
-				this.user.user_image = url + this.user.user_image;
-			}
 		},
 		hasRole(role) {
 			let roles = this.user.roles.map(d => d.role);

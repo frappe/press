@@ -35,6 +35,16 @@
 				and complete the setup wizard on your site. Analytics will be collected
 				only after setup is complete.
 			</Alert>
+			<Alert
+				class="mb-4"
+				v-if="site.status == 'Active' && Object.values(site.usage).some(x=> 1.0 >= x && x > 0.8)"
+			>
+				Your site has exceeded 80% of the allowed Usage for your Plan.
+				Check out <a
+					:href="`#/sites/${site.name}/plan`"
+					class="border-b border-orange-700 cursor-pointer"
+				>Plans</a> for more details
+			</Alert>
 		</div>
 		<div class="px-4 sm:px-8" v-if="site">
 			<Tabs class="pb-32" :tabs="tabs">
@@ -174,14 +184,24 @@ export default {
 				Inactive: [
 					'General',
 					'Plan',
+					'Backups',
 					'Site Config',
 					'Activity',
 					'Jobs',
 					'Site Logs'
 				],
-				Pending: ['General', 'Jobs'],
-				Broken: ['General', 'Plan', 'Backups', 'Activity', 'Jobs', 'Site Logs'],
-				Suspended: ['General', 'Activity', 'Jobs']
+				Pending: ['General', 'Jobs', 'Site Logs'],
+				Broken: [
+					'General',
+					'Plan',
+					'Site Config',
+					'Backups',
+					'Database',
+					'Activity',
+					'Jobs',
+					'Site Logs'
+				],
+				Suspended: ['General', 'Activity', 'Backups', 'Jobs']
 			};
 			if (this.site) {
 				let tabsToShow = tabsByStatus[this.site.status];

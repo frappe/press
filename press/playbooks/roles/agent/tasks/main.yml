@@ -30,6 +30,13 @@
   args:
     chdir: /home/frappe/agent
 
+- name: Setup Agent Usage Tracker
+  become: yes
+  become_user: frappe
+  command: /home/frappe/agent/env/bin/agent setup usage
+  args:
+    chdir: /home/frappe/agent
+
 - name: Setup Agent Authentication
   become: yes
   become_user: frappe

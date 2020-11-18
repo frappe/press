@@ -27,8 +27,11 @@ press.patches.v0_0_1.remove_obsolete_doctypes
 press.patches.v0_0_1.update_site_config_doc
 press.patches.v0_0_1.create_certificate_authorities
 press.patches.v0_0_1.rename_columns_in_tls_certificate
+press.patches.v0_0_1.site_usage_convert_history
 press.patches.v0_0_1.set_document_type_in_plan
-press.patches.v0_0_1.create_site_subscriptions
-press.patches.v0_0_1.ple_to_usage_record
-press.patches.v0_0_1.patch_invoice
-press.patches.v0_0_1.create_balance_transactions_from_stripe
+# Billing Refactor 3
+# these will be run separately with the execute command, to avoid downtime
+# press.patches.v0_0_1.create_site_subscriptions
+# press.patches.v0_0_1.ple_to_usage_record
+# press.patches.v0_0_1.patch_invoice
+# press.patches.v0_0_1.create_balance_transactions_from_stripe

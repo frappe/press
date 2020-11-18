@@ -3,18 +3,27 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
+
+import functools
 import json
+from datetime import datetime, timedelta
+from itertools import groupby
+
 import frappe
-from frappe.model.document import Document
-from press.agent import Agent
-from frappe.utils import pretty_date, convert_utc_to_user_timezone, get_url_to_form
-from press.utils import log_error
-from press.telegram import Telegram
-from frappe.core.utils import find
 import pytz
 import requests
-from itertools import groupby
-from datetime import datetime, timedelta
+from frappe.core.utils import find
+from frappe.model.document import Document
+from frappe.utils import (
+	cint,
+	convert_utc_to_user_timezone,
+	get_url_to_form,
+	pretty_date,
+)
+from press.agent import Agent
+from press.press.doctype.plan.plan import get_plan_config
+from press.telegram import Telegram
+from press.utils import log_error
 
 
 class AgentJob(Document):
@@ -46,7 +55,9 @@ class AgentJob(Document):
 			self.status = "Failure"
 			self.save()
 			process_job_updates(self.name)
-			frappe.db.set_value("Agent Job", self.name, "status", "Undelivered")
+			frappe.db.set_value(
+				"Agent Job", self.name, "status", "Undelivered", for_update=False
+			)
 
 	def create_agent_job_steps(self):
 		job_type = frappe.get_doc("Agent Job Type", self.job_type)
@@ -246,6 +257,7 @@ def report_site_downtime():
 		fields=["site", "count(site) as count"],
 		filters={"web": "False", "timestamp": (">", now - timedelta(minutes=2))},
 		group_by="site",
+		ignore_ifnull=True,
 	)
 	offline_sites = set(log.site for log in offline_site_logs if log.count >= 2)
 	if offline_sites:
@@ -303,6 +315,82 @@ def report_site_downtime():
 		)
 		telegram = Telegram()
 		telegram.send(message)
+
+
+def report_usage_violations():
+	"""Notify users if they reach 80% of daily CPU usage or total capacity for DB or FS limit"""
+
+	latest_usages = frappe.db.sql(
+		r"""WITH disk_usage AS (
+			SELECT `site`, `backups`, `database`, `public`, `private`,
+			ROW_NUMBER() OVER (PARTITION BY `site` ORDER BY `creation` DESC) AS 'rank'
+			FROM `tabSite Usage`
+			WHERE `site` NOT LIKE '%cloud.archived%'
+		) SELECT d.*, s.plan
+			FROM disk_usage d INNER JOIN `tabSite` s
+			ON d.site = s.name
+			WHERE `rank` = 1
+		""",
+		as_dict=True,
+	)
+
+	@functools.lru_cache(maxsize=128)
+	def _get_limits(plan):
+		return frappe.db.get_value("Plan", plan, ["max_database_usage", "max_storage_usage"])
+
+	@functools.lru_cache(maxsize=128)
+	def _get_config(plan):
+		return get_plan_config(plan)
+
+	for usage in latest_usages:
+		site = usage.site
+		plan = usage.plan
+
+		cpu_limit = _get_config(plan)["rate_limit"]["limit"] * 1000000
+		database_limit, disk_limit = _get_limits(plan)
+
+		_temp_cpu_counter = frappe.get_all(
+			"Site Request Log",
+			fields=["counter"],
+			filters={"site": site},
+			order_by="timestamp desc",
+			pluck="counter",
+			limit=1,
+		)
+		if _temp_cpu_counter:
+			counter = cint(_temp_cpu_counter[0])
+		else:
+			counter = 0
+
+		site_usages = {
+			"cpu": counter / cpu_limit,
+			"database": usage.database / database_limit,
+			"disk": (usage.public + usage.private) / disk_limit,
+		}
+
+		# notify if reaching disk/database limits
+		frappe.db.set_value("Site", site, "_site_usages", json.dumps(site_usages))
+
+
+def suspend_sites():
+	"""Suspend sites if they have exceeded database or disk limits"""
+
+	if not frappe.db.get_single_value("Press Settings", "enforce_storage_limits"):
+		return
+
+	free_teams = frappe.get_all(
+		"Team", filters={"free_account": True, "enabled": True}, pluck="name"
+	)
+	active_sites = frappe.get_all(
+		"Site",
+		filters={"status": "Active", "free": False, "team": ("not in", free_teams)},
+		fields=["name", "_site_usages", "team"],
+	)
+
+	for site in active_sites:
+		usages = json.loads(site._site_usages or "{}")
+		if usages.get("database", 0) > 1 or usages.get("disk", 0) > 1:
+			frappe.get_doc("Site", site.name).suspend(reason="Site Usage Exceeds Plan limits")
 
 
 def schedule_backups():
@@ -391,6 +479,7 @@ def update_job(job_name, job):
 			"output": job["data"].get("output"),
 			"traceback": job["data"].get("traceback"),
 		},
+		for_update=False,
 	)
 
 
@@ -425,6 +514,7 @@ def update_step(step_name, step):
 			"output": step["data"].get("output"),
 			"traceback": step["data"].get("traceback"),
 		},
+		for_update=False,
 	)
 
 
@@ -439,17 +529,16 @@ def skip_pending_steps(job_name):
 def process_job_updates(job_name):
 	job = frappe.get_doc("Agent Job", job_name)
 	try:
-		from press.press.doctype.server.server import process_new_server_job_update
 		from press.press.doctype.bench.bench import (
-			process_new_bench_job_update,
 			process_archive_bench_job_update,
-			process_bench_sync_info_job_update,
+			process_new_bench_job_update,
 		)
+		from press.press.doctype.server.server import process_new_server_job_update
 		from press.press.doctype.site.site import (
-			process_new_site_job_update,
 			process_archive_site_job_update,
-			process_migrate_site_job_update,
 			process_install_app_site_job_update,
+			process_migrate_site_job_update,
+			process_new_site_job_update,
 			process_reinstall_site_job_update,
 		)
 		from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
@@ -499,8 +588,6 @@ def process_job_updates(job_name):
 			process_update_site_recover_job_update(job)
 		if job.job_type == "Recover Failed Site Update":
 			process_update_site_recover_job_update(job)
-		if job.job_type == "Fetch Sites Info":
-			process_bench_sync_info_job_update(job)
 
 	except Exception as e:
 		log_error("Agent Job Callback Exception", job=job.as_dict())
