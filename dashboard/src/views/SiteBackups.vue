@@ -21,7 +21,7 @@
 										Backup on <FormatDate>{{ backup.creation }}</FormatDate>
 									</span>
 									<Button
-										v-on:click="restoreOffsiteBackup(backup)"
+										@click="restoreOffsiteBackup(backup)"
 										v-if="backup.offsite"
 										class="ml-8"
 									>
@@ -158,6 +158,7 @@ export default {
 				name: this.site.name,
 				backup_name: backup.name
 			});
+			this.$router.push(`/sites/${this.site.name}/installing`);
 		}
 	}
 };
