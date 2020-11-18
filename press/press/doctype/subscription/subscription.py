@@ -12,6 +12,10 @@ class Subscription(Document):
 	def validate(self):
 		self.validate_duplicate()
 
+	def disable(self):
+		self.enabled = False
+		self.save()
+
 	def create_usage_record(self):
 		cannot_charge = not self.can_charge_for_subscription()
 		if cannot_charge:
