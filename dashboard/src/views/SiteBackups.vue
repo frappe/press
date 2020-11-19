@@ -179,8 +179,10 @@ export default {
 			this.$call('press.api.site.restore_offsite_backup', {
 				name: this.site.name,
 				backup_name: backup.name
+			}).then(() => {
+				this.$router.push(`/sites/${this.site.name}/jobs`);
+				window.location.reload();
 			});
-			this.$router.push(`/sites/${this.site.name}/installing`);
 			this.confirmRestore = false;
 		}
 	}
