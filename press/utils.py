@@ -108,6 +108,12 @@ def cache(seconds: int, maxsize: int = 128, typed: bool = False):
 	return wrapper_cache
 
 
+def chunk(iterable, size):
+	"""Creates list of elements split into groups of n."""
+	for i in range(0, len(iterable), size):
+		yield iterable[i:i + size]
+
+
 @cache(seconds=1800)
 def get_minified_script():
 	migration_script = "../apps/press/press/scripts/migrate.py"
