@@ -145,6 +145,46 @@ def deploys(name):
 
 
 @frappe.whitelist()
+def sources(name):
+	team = get_current_team()
+	rows = frappe.db.sql(
+		"""
+	SELECT
+		source.name , source.repository_url, source.repository, source.repository_owner, source.branch,
+		version.number as version
+	FROM
+		`tabApplication Source` AS source
+	LEFT JOIN
+		`tabFrappe Version` AS version
+	ON
+		source.version = version.name
+	WHERE
+		(source.team = %(team)s OR source.public = 1) AND
+		source.application = %(application)s
+	ORDER BY version.creation, source.creation
+	""",
+		{"team": team, "application": name},
+		as_dict=True,
+	)
+	sources = []
+	for row in rows:
+		signature = (row.repository_url, row.branch)
+		source = find(sources, lambda x: x["signature"] == signature)
+		if not source:
+			source = {
+				"repository_url": row.repository_url,
+				"repository_owner": row.repository_owner,
+				"repository": row.repository,
+				"branch": row.branch,
+				"signature": signature,
+				"versions": [],
+			}
+			sources.append(source)
+		source["versions"].append({"name": row.name, "version": row.version})
+	return sources
+
+
+@frappe.whitelist()
 @protected("Application")
 def releases(name):
 	app = frappe.get_doc("Application", name)
