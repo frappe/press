@@ -86,6 +86,11 @@ const routes = [
 					import(/* webpackChunkName: "frappeapp" */ '../views/AppGeneral.vue')
 			},
 			{
+				path: 'sources',
+				component: () =>
+					import(/* webpackChunkName: "frappeapp" */ '../views/AppSources.vue')
+			},
+			{
 				path: 'releases',
 				component: () =>
 					import(/* webpackChunkName: "frappeapp" */ '../views/AppReleases.vue')
