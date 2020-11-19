@@ -17,9 +17,9 @@ frappe.ui.form.on('Site', {
 		frm.dashboard.set_headline_alert(
 			`<div class="container-fluid">
 				<div class="row">
-					<div class="col-sm-4">CPU Usage: ${Math.round(cpu * 100) / 100}%</div>
-					<div class="col-sm-4">Database Usage: ${Math.round(database * 100) / 100}%</div>
-					<div class="col-sm-4">Disk Usage: ${Math.round(disk * 100) / 100}%</div>
+					<div class="col-sm-4">CPU Usage: ${Math.round((cpu || 0) * 100) / 100}%</div>
+					<div class="col-sm-4">Database Usage: ${Math.round((database || 0) * 100) / 100}%</div>
+					<div class="col-sm-4">Disk Usage: ${Math.round((disk || 0) * 100) / 100}%</div>
 				</div>
 			</div>`
 		);
