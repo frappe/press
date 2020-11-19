@@ -2,11 +2,6 @@
 	<div class="pt-4">
 		<PageHeader>
 			<h1 slot="title">Apps</h1>
-			<div class="flex items-center" slot="actions">
-				<Button route="/apps/new" type="primary" iconLeft="plus"
-					>New App</Button
-				>
-			</div>
 		</PageHeader>
 		<div class="px-4 sm:px-8">
 			<div
@@ -16,9 +11,6 @@
 				<div class="text-xl text-gray-800">
 					You haven't added any apps yet.
 				</div>
-				<Button route="/apps/new" class="mt-10" type="primary"
-					>Add your first App</Button
-				>
 			</div>
 			<div v-else>
 				<div
