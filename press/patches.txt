@@ -21,7 +21,7 @@ press.patches.v0_0_1.remove_domains_linked_to_archived_sites
 press.patches.v0_0_1.delete_logs_from_archived_sites
 press.patches.v0_0_1.add_domains_to_site_config
 execute:frappe.reload_doc('press', 'doctype', 'Remote File')
-press.patches.v0_0_1.add_site_to_remote_file
+# press.patches.v0_0_1.add_site_to_remote_file # 2020-11-12 run via run-patch command in active site state
 press.patches.v0_0_1.new_onboarding
 press.patches.v0_0_1.remove_obsolete_doctypes
 press.patches.v0_0_1.update_site_config_doc
