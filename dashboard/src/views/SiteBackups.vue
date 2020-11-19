@@ -22,6 +22,7 @@
 									</span>
 									<Button
 										v-if="backup.offsite"
+										:disabled="isRestorePending"
 										@click="
 											backupToRestore = backup;
 											confirmRestore = true;
@@ -151,6 +152,7 @@ export default {
 	},
 	data() {
 		return {
+			isRestorePending: false,
 			confirmRestore: false,
 			backupToRestore: null
 		};
@@ -176,10 +178,12 @@ export default {
 			window.open(link);
 		},
 		async restoreOffsiteBackup(backup) {
+			this.isRestorePending = true;
 			this.$call('press.api.site.restore_offsite_backup', {
 				name: this.site.name,
 				backup_name: backup.name
 			}).then(() => {
+				this.isRestorePending = false;
 				this.$router.push(`/sites/${this.site.name}/jobs`);
 				window.location.reload();
 			});
