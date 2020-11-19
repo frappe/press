@@ -29,26 +29,6 @@
 			</SectionCard>
 		</Section>
 		<Section
-			class="mt-10"
-			title="Compatible Versions"
-			description="Versions compatible with your bench"
-		>
-			<SectionCard>
-				<div
-					class="block px-6 py-3 hover:bg-gray-50"
-					v-for="app in bench.applications"
-					:key="app.name"
-				>
-					<p class="text-base font-medium text-brand">
-						{{ app.title }}
-					</p>
-					<p class="text-sm text-gray-800">
-						{{ app.repository_owner }}/{{ app.repository }} # {{ app.branch }}
-					</p>
-				</div>
-			</SectionCard>
-		</Section>
-		<Section
 			v-if="bench.update_available"
 			class="mt-10"
 			title="Update Available"
