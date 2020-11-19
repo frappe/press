@@ -121,6 +121,11 @@ const routes = [
 				path: 'general',
 				component: () =>
 					import(/* webpackChunkName: "bench" */ '../views/BenchGeneral.vue')
+			},
+			{
+				path: 'apps',
+				component: () =>
+					import(/* webpackChunkName: "bench" */ '../views/BenchApps.vue')
 			}
 		]
 	},
