@@ -327,9 +327,9 @@ def report_usage_violations():
 			FROM `tabSite Usage`
 			WHERE `site` NOT LIKE '%cloud.archived%'
 		) SELECT d.*, s.plan
-			FROM disk_usage d INNER JOIN `tabSite` s
-			ON d.site = s.name
-			WHERE `rank` = 1
+			FROM disk_usage d INNER JOIN `tabSubscription` s
+			ON d.site = s.document_name
+			WHERE `rank` = 1 AND s.`document_type` = 'Site' AND s.`enabled`
 		""",
 		as_dict=True,
 	)
