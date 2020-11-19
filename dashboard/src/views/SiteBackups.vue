@@ -21,8 +21,11 @@
 										Backup on <FormatDate>{{ backup.creation }}</FormatDate>
 									</span>
 									<Button
-										@click="restoreOffsiteBackup(backup)"
 										v-if="backup.offsite"
+										@click="
+											backupToRestore = backup;
+											confirmRestore = true;
+										"
 										class="ml-8"
 									>
 										Restore
@@ -91,6 +94,19 @@
 				<div class="px-6 mt-2 text-base text-gray-600" v-else>
 					No backups found
 				</div>
+				<Dialog v-model="confirmRestore" title="Restore Site">
+					<p class="text-base">Are you sure you want to restore?</p>
+					<div slot="actions">
+						<Button @click="confirmRestore = false"> Cancel </Button>
+						<Button
+							type="primary"
+							class="ml-3"
+							@click="restoreOffsiteBackup(backupToRestore)"
+						>
+							Restore
+						</Button>
+					</div>
+				</Dialog>
 				<div class="px-6 mt-4 mb-2" v-if="site.status === 'Active'">
 					<Button
 						type="primary"
@@ -133,6 +149,12 @@ export default {
 			};
 		}
 	},
+	data() {
+		return {
+			confirmRestore: false,
+			backupToRestore: null
+		};
+	},
 	mounted() {
 		this.$socket.on('agent_job_update', data => {
 			if (data.site === this.site.name && data.name === 'Backup Site') {
@@ -159,6 +181,7 @@ export default {
 				backup_name: backup.name
 			});
 			this.$router.push(`/sites/${this.site.name}/installing`);
+			this.confirmRestore = false;
 		}
 	}
 };
