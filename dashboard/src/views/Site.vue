@@ -37,7 +37,7 @@
 			</Alert>
 			<Alert
 				class="mb-4"
-				v-if="site.status != 'Archived' && Object.values(site.usage).some(x=> 1.0 >= x && x > 0.8)"
+				v-if="site.status == 'Active' && Object.values(site.usage).some(x=> 1.0 >= x && x > 0.8)"
 			>
 				Your site has exceeded 80% of the allowed Usage for your Plan.
 				Check out <a

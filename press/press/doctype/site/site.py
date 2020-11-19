@@ -14,7 +14,7 @@ from press.agent import Agent
 from frappe.utils.password import get_decrypted_password
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from frappe.frappeclient import FrappeClient
-from frappe.utils import cint, cstr
+from frappe.utils import cint, cstr, convert_utc_to_user_timezone
 from press.api.site import check_dns
 from frappe.core.utils import find
 from press.utils import log_error, get_client_blacklisted_keys
@@ -389,7 +389,7 @@ class Site(Document):
 		if isinstance(fetched_usage, list):
 			for usage in fetched_usage:
 				doc = _insert_usage(usage)
-				doc.db_set("creation", usage["timestamp"])
+				doc.db_set("creation", convert_utc_to_user_timezone(usage["timestamp"]))
 		else:
 			_insert_usage(fetched_usage)
 
