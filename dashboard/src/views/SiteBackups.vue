@@ -96,7 +96,13 @@
 					No backups found
 				</div>
 				<Dialog v-model="confirmRestore" title="Restore Site">
-					<p class="text-base">Are you sure you want to restore?</p>
+					<p class="text-base" v-if="backupToRestore">
+						Are you sure you want to restore site to
+						<strong
+							><FormatDate>{{ backupToRestore.creation }}</FormatDate></strong
+						>
+						?
+					</p>
 					<div slot="actions">
 						<Button @click="confirmRestore = false"> Cancel </Button>
 						<Button
