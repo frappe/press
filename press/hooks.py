@@ -122,11 +122,11 @@ scheduler_events = {
 		"press.press.doctype.bench.bench.sync_benches",
 	],
 	"cron": {
-		"0 3 * * *": [
+		"0 3 * * *": ["press.press.doctype.remote_file.remote_file.poll_file_statuses"],
+		"0 4 * * *": [
 			"press.press.cleanup.cleanup_offsite_backups",
 			"press.press.cleanup.remove_baggage",
 		],
-		"0 4 * * *": ["press.press.doctype.remote_file.remote_file.poll_file_statuses"],
 		"* * * * * 0/5": ["press.press.doctype.agent_job.agent_job.poll_pending_jobs"],
 		"* * * * * 0/60": [
 			"press.press.doctype.agent_job.agent_job.collect_site_uptime",

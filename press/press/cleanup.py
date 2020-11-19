@@ -20,29 +20,29 @@ def remove_baggage():
 		["creation", "<", half_day],
 		["status", "not in", "Pending,Installing,Updating,Active,Broken"],
 	]
+	fields = [
+		"remote_config_file",
+		"remote_database_file",
+		"remote_public_file",
+		"remote_private_file",
+	]
 
-	sites = frappe.get_all("Site", filters=filters, or_filters=or_filters)
+	sites = frappe.get_all(
+		"Site", fields=["name"] + fields, filters=filters, or_filters=or_filters
+	)
 
 	for site in sites:
 		# remove local files attached to site
-		attachments = get_attachments("Site", site["name"])
+		attachments = get_attachments("Site", site.name)
 		for attachment in attachments:
 			frappe.delete_doc_if_exists("File", attachment["name"])
 
 		# remove remote files attached to site
-		remote_files = frappe.db.get_value(
-			"Site",
-			site["name"],
-			[
-				"remote_config_file",
-				"remote_database_file",
-				"remote_public_file",
-				"remote_private_file",
-			],
-		)
-		for remote_file in remote_files:
-			# this only deletes the object from s3, link still exists
-			frappe.get_doc("Remote File", remote_file).delete_remote_object()
+		remote_files = {x: site.get(x) for x in fields}
+
+		for remote_file_type, remote_file_name in remote_files.items():
+			# s3 uploads.frappe.cloud has a 1 day expiry rule for all objects, so we'll let it handle that
+			frappe.db.set_value("Site", site.name, remote_file_type, None, for_update=False)
 
 
 def cleanup_offsite_backups():
