@@ -46,15 +46,45 @@ def remove_baggage():
 
 
 def cleanup_offsite_backups():
-	sites = frappe.get_all("Site")
+	from press.utils import chunk
+	from frappe.utils.password import get_decrypted_password
+	from boto3 import resource
+
+	backups_bucket = frappe.db.get_single_value("Press Settings", "aws_s3_bucket")
+	if not backups_bucket:
+		return
+
+	s3_objects = {}
+	files_to_drop = []
+	offsite_bucket = {
+		"bucket": backups_bucket,
+		"access_key_id": frappe.db.get_single_value(
+			"Press Settings", "offsite_backups_access_key_id"
+		),
+		"secret_access_key": get_decrypted_password(
+			"Press Settings", "Press Settings", "offsite_backups_secret_access_key"
+		),
+	}
+	s3 = resource(
+		"s3",
+		aws_access_key_id=offsite_bucket["access_key_id"],
+		aws_secret_access_key=offsite_bucket["secret_access_key"],
+		region_name="ap-south-1",
+	)
+	sites = frappe.get_all("Site", filters={"status": ("!=", "Archived")}, pluck="name")
 	keep_count = (
 		frappe.db.get_single_value("Press Settings", "offsite_backups_count") or 30
 	)
 
-	for site in sites:
+	for i, site in enumerate(sites):
 		expired_offsite_backups = frappe.get_all(
 			"Site Backup",
-			filters={"site": site["name"], "offsite": 1, "status": "Success"},
+			filters={
+				"site": site,
+				"status": "Success",
+				"backup_availability": "Available",
+				"offsite": True,
+			},
 			order_by="creation desc",
 		)[keep_count:]
 
@@ -64,9 +94,24 @@ def cleanup_offsite_backups():
 				offsite_backup["name"],
 				["remote_database_file", "remote_private_file", "remote_public_file"],
 			)
-			for file in remote_files:
-				if file:
-					frappe.get_doc("Remote File", file).delete_remote_object()
+			files_to_drop.extend(remote_files)
+
+	for remote_file in set(files_to_drop):
+		if remote_file:
+			s3_objects[remote_file] = frappe.db.get_value(
+				"Remote File", remote_file, "file_path"
+			)
+
+	if not s3_objects:
+		return
+
+	for objects in chunk([{"Key": x} for x in s3_objects.values()], 1000):
+		s3.Bucket(offsite_bucket["bucket"]).delete_objects(Delete={"Objects": objects})
+
+	for key in s3_objects:
+		frappe.db.set_value("Remote File", key, "status", "Unavailable")
+
+	frappe.db.commit()
 
 
 def remove_logs():

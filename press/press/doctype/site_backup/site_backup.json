@@ -6,6 +6,7 @@
  "engine": "InnoDB",
  "field_order": [
   "status",
+  "backup_availability",
   "site",
   "job",
   "with_files",
@@ -191,11 +192,20 @@
    "label": "Remote File",
    "options": "Remote File",
    "read_only": 1
+  },
+  {
+   "default": "Available",
+   "fieldname": "backup_availability",
+   "fieldtype": "Select",
+   "in_filter": 1,
+   "label": "Backup Availability",
+   "options": "Available\nPartially Available\nUnavailable",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2020-08-13 20:35:55.200547",
- "modified_by": "faris@erpnext.com",
+ "modified": "2020-11-12 17:34:41.065125",
+ "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Backup",
  "owner": "Administrator",
