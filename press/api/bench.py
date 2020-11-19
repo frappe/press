@@ -16,7 +16,7 @@ def new(bench):
 	applications = [
 		{"application": app["name"], "source": app["source"]} for app in bench["applications"]
 	]
-	group = new_release_group(bench["version"], bench["title"], applications, team)
+	group = new_release_group(bench["title"], bench["version"], applications, team)
 	return group.name
 
 
