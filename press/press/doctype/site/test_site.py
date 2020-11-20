@@ -23,8 +23,6 @@ from press.press.doctype.release_group.test_release_group import (
 from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.site.site import Site
 
-from .site import Site
-
 
 def create_test_site(subdomain: str) -> Site:
 	"""Create test Site doc."""
