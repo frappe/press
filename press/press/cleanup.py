@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 
 import frappe
-from frappe.desk.form.load import get_attachments
 
 
 def remove_baggage():
