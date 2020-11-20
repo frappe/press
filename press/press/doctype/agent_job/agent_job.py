@@ -398,6 +398,14 @@ def schedule_backups():
 		"Site", fields=["name", "timezone"], filters={"status": "Active"},
 	)
 	interval = frappe.db.get_single_value("Press Settings", "backup_interval") or 6
+	offsite_setup = any(
+		frappe.db.get_value(
+			"Press Settings",
+			"Press Settings",
+			["aws_s3_bucket", "offsite_backups_access_key_id"],
+		)
+	)
+
 	for site in sites:
 		try:
 			server_time = datetime.now()
@@ -412,11 +420,14 @@ def schedule_backups():
 					"site": site.name,
 					"status": "Success",
 				}
-				offsite = not frappe.get_all(
-					"Site Backup",
-					fields=["count(*) as total"],
-					filters={**common_filters, "offsite": 1},
-				)[0]["total"]
+				offsite = (
+					offsite_setup
+					and not frappe.get_all(
+						"Site Backup",
+						fields=["count(*) as total"],
+						filters={**common_filters, "offsite": 1},
+					)[0]["total"]
+				)
 				with_files = (
 					not frappe.get_all(
 						"Site Backup",

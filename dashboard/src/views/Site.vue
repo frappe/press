@@ -35,15 +35,23 @@
 				and complete the setup wizard on your site. Analytics will be collected
 				only after setup is complete.
 			</Alert>
-			<Alert
-				class="mb-4"
-				v-if="site.status == 'Active' && Object.values(site.usage).some(x=> 1.0 >= x && x > 0.8)"
-			>
-				Your site has exceeded 80% of the allowed Usage for your Plan.
-				Check out <a
+			<Alert class="mb-4" v-if="limitExceeded">
+				Your site has exceeded the allowed Usage for your Plan. Check out
+				<a
 					:href="`#/sites/${site.name}/plan`"
 					class="border-b border-orange-700 cursor-pointer"
-				>Plans</a> for more details
+					>Plans</a
+				>
+				for more details.
+			</Alert>
+			<Alert class="mb-4" v-else-if="closeToLimits">
+				Your site has exceeded 80% of the allowed Usage for your Plan. Check out
+				<a
+					:href="`#/sites/${site.name}/plan`"
+					class="border-b border-orange-700 cursor-pointer"
+					>Plans</a
+				>
+				for more details.
 			</Alert>
 		</div>
 		<div class="px-4 sm:px-8" v-if="site">
@@ -148,6 +156,14 @@ export default {
 	computed: {
 		site() {
 			return this.$resources.site.data;
+		},
+		closeToLimits() {
+			return Object.values(this.$resources.site.data.usage).some(
+				x => 1.0 >= x && x > 0.8
+			);
+		},
+		limitExceeded() {
+			return Object.values(this.$resources.site.data.usage).some(x => x > 1.0);
 		},
 		tabs() {
 			let tabRoute = subRoute => `/sites/${this.siteName}/${subRoute}`;
