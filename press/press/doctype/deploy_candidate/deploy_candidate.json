@@ -6,7 +6,7 @@
  "engine": "InnoDB",
  "field_order": [
   "group",
-  "apps"
+  "applications"
  ],
  "fields": [
   {
@@ -19,15 +19,15 @@
    "set_only_once": 1
   },
   {
-   "fieldname": "apps",
+   "fieldname": "applications",
    "fieldtype": "Table",
-   "label": "Apps",
+   "label": "Applications",
    "options": "Deploy Candidate Application Release",
    "reqd": 1
   }
  ],
  "links": [],
- "modified": "2020-11-20 13:13:12.895472",
+ "modified": "2020-11-20 18:13:56.613553",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",
