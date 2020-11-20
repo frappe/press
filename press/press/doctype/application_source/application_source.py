@@ -61,7 +61,9 @@ class ApplicationSource(Document):
 			if not frappe.db.exists(
 				"Application Release", {"app": self.application, "source": self.name, "hash": hash}
 			):
-				is_first_release = 0  # frappe.db.count("Application Release", {"app": self.name}) == 0
+				is_first_release = (
+					0  # frappe.db.count("Application Release", {"app": self.name}) == 0
+				)
 				frappe.get_doc(
 					{
 						"doctype": "Application Release",

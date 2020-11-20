@@ -3,29 +3,20 @@
 
 frappe.ui.form.on('Application Release', {
 	refresh: function (frm) {
-		[
-			[__('Deploy'), 'deploy'],
-			[__('Screen'), 'screen'],
-		].forEach(([label, method]) => {
+		if (!frm.doc.cloned) {
 			frm.add_custom_button(
-				label,
+				__('Clone'),
 				() => {
-					frm.call(method).then((r) => frappe.msgprint(r.message));
+					frm.call("clone").then((r) => frappe.msgprint(r.message));
 				},
-				__('Actions')
 			);
-		});
-
-		frm.add_custom_button(
-			__('View'),
-			() => {
-				window.open(frm.doc.code_server_url);
-			},
-		);
-
-		if (frm.doc.result_html) {
-			let wrapper = frm.get_field("result_html_rendered").$wrapper;
-			wrapper.html(frm.doc.result_html);
+		} else {
+			frm.add_custom_button(
+				__('View'),
+				() => {
+					window.open(frm.doc.code_server_url);
+				},
+			);
 		}
 	},
 });
