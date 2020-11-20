@@ -19,6 +19,9 @@ class ReleaseGroup(Document):
 	def after_insert(self):
 		self.create_deploy_candidate()
 
+	def on_update(self):
+		self.create_deploy_candidate()
+
 	def validate_title(self):
 		if frappe.get_all(
 			"Release Group",
