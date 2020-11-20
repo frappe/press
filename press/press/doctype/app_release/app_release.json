@@ -7,6 +7,7 @@
  "field_order": [
   "status",
   "app",
+  "source",
   "deployable",
   "column_break_3",
   "hash",
@@ -208,11 +209,18 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Deployable"
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Link",
+   "label": "Source",
+   "options": "Application Source",
+   "reqd": 1
   }
  ],
  "in_create": 1,
  "links": [],
- "modified": "2020-10-26 19:53:38.833189",
+ "modified": "2020-11-19 11:01:27.824011",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Release",
