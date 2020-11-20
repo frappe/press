@@ -12,7 +12,7 @@ from press.utils import log_error
 
 class DeployCandidate(Document):
 	def after_insert(self):
-		self.create_deploy()
+		return
 
 	def create_deploy(self):
 		try:

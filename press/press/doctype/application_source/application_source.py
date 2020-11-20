@@ -12,6 +12,12 @@ import requests
 
 
 class ApplicationSource(Document):
+	def after_insert(self):
+		self.create_release()
+
+	def on_update(self):
+		self.create_release()
+
 	def validate(self):
 		self.validate_source_signature()
 

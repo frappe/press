@@ -16,6 +16,9 @@ class ReleaseGroup(Document):
 		self.validate_duplicate_app()
 		self.validate_app_versions()
 
+	def after_insert(self):
+		self.create_deploy_candidate()
+
 	def validate_title(self):
 		if frappe.get_all(
 			"Release Group",
@@ -59,7 +62,7 @@ class ReleaseGroup(Document):
 			release = frappe.get_all(
 				"Application Release",
 				fields=["name", "app", "hash"],
-				filters={"app": app.application, "status": "Approved", "deployable": True},
+				filters={"app": app.application},
 				order_by="creation desc",
 				limit=1,
 			)
