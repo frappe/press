@@ -59,11 +59,12 @@
   "github_app_client_id",
   "github_app_client_secret",
   "github_app_public_link",
-  "column_break_36",
   "github_webhook_secret",
+  "column_break_36",
   "clone_directory",
   "code_server",
   "code_server_password",
+  "github_access_token",
   "section_break_41",
   "github_app_private_key",
   "section_break_59",
@@ -506,11 +507,16 @@
    "fieldtype": "Button",
    "label": "Create GitHub App",
    "mandatory_depends_on": "eval"
+  },
+  {
+   "fieldname": "github_access_token",
+   "fieldtype": "Data",
+   "label": "GitHub Access Token"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2020-10-21 10:54:36.088128",
+ "modified": "2020-11-20 13:42:17.689238",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

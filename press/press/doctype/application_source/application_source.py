@@ -46,8 +46,13 @@ class ApplicationSource(Document):
 
 	def create_release(self):
 		try:
+			token = None
 			if self.github_installation_id:
 				token = get_access_token(self.github_installation_id)
+			else:
+				token = frappe.get_value("Press Settings", None, "github_access_token")
+
+			if token:
 				headers = {
 					"Authorization": f"token {token}",
 				}
