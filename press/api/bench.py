@@ -130,4 +130,3 @@ def applications(name):
 			}
 		)
 	return applications
-

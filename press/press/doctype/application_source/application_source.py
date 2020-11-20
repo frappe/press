@@ -39,8 +39,6 @@ class ApplicationSource(Document):
 		# self.create_release()
 
 	def create_release(self):
-		if not self.enabled:
-			return
 		try:
 			if self.github_installation_id:
 				token = get_access_token(self.github_installation_id)
@@ -50,16 +48,19 @@ class ApplicationSource(Document):
 			else:
 				headers = {}
 			branch = requests.get(
-				f"https://api.github.com/repos/{self.repo_owner}/{self.repo}/branches/{self.branch}",
+				f"https://api.github.com/repos/{self.repository_owner}/{self.repository}/branches/{self.branch}",
 				headers=headers,
 			).json()
 			hash = branch["commit"]["sha"]
-			if not frappe.db.exists("App Release", {"hash": hash, "app": self.name}):
-				is_first_release = frappe.db.count("App Release", {"app": self.name}) == 0
+			if not frappe.db.exists(
+				"App Release", {"app": self.application, "source": self.name, "hash": hash}
+			):
+				is_first_release = 0  # frappe.db.count("App Release", {"app": self.name}) == 0
 				frappe.get_doc(
 					{
 						"doctype": "App Release",
-						"app": self.name,
+						"app": self.application,
+						"source": self.name,
 						"hash": hash,
 						"message": branch["commit"]["commit"]["message"],
 						"author": branch["commit"]["commit"]["author"]["name"],
