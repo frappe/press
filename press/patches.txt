@@ -35,3 +35,5 @@ press.patches.v0_0_1.set_document_type_in_plan
 # press.patches.v0_0_1.ple_to_usage_record
 # press.patches.v0_0_1.patch_invoice
 # press.patches.v0_0_1.create_balance_transactions_from_stripe
+# Backups "refactor"
+# press.patches.v0_0_1.update_backups_availability
