@@ -29,7 +29,7 @@ def update_available(name):
 	releases = frappe.get_all(
 		"Application Release",
 		fields=["deployable"],
-		filters={"app": name, "status": "Approved"},
+		filters={"application": name, "status": "Approved"},
 		order_by="creation desc",
 		limit=1,
 	)
@@ -42,7 +42,7 @@ def app_status(name):
 	status = frappe.get_all(
 		"Application Release",
 		fields=["status"],
-		filters={"app": name},
+		filters={"application": name},
 		order_by="creation desc",
 		limit=1,
 	)[0].status
@@ -89,7 +89,7 @@ def get(name):
 def deploys(name):
 	releases = frappe.get_all(
 		"Application Release",
-		filters={"app": name, "deployable": True, "status": "Approved"},
+		filters={"application": name, "deployable": True, "status": "Approved"},
 		fields=["name", "hash", "creation", "message", "app"],
 		order_by="creation desc",
 		limit=10,
@@ -189,7 +189,7 @@ def sources(name):
 def releases(name):
 	releases = frappe.get_all(
 		"Application Release",
-		filters={"app": name},
+		filters={"application": name},
 		fields=["name", "hash", "creation", "message", "author"],
 		order_by="creation desc",
 		limit=10,
@@ -229,7 +229,7 @@ def all():
 def deploy(name):
 	release = frappe.get_all(
 		"Application Release",
-		{"app": name, "deployable": False, "status": "Approved"},
+		{"application": name, "deployable": False, "status": "Approved"},
 		order_by="creation desc",
 		limit=1,
 	)[0]

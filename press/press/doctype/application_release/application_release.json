@@ -5,7 +5,7 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "app",
+  "application",
   "source",
   "cloned",
   "column_break_3",
@@ -20,16 +20,6 @@
   "output"
  ],
  "fields": [
-  {
-   "fieldname": "app",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "App",
-   "options": "Application",
-   "read_only": 1,
-   "reqd": 1
-  },
   {
    "fieldname": "hash",
    "fieldtype": "Data",
@@ -103,11 +93,21 @@
    "in_standard_filter": 1,
    "label": "Cloned",
    "read_only": 1
+  },
+  {
+   "fieldname": "application",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Application",
+   "options": "Application",
+   "read_only": 1,
+   "reqd": 1
   }
  ],
  "in_create": 1,
  "links": [],
- "modified": "2020-11-20 12:50:36.146908",
+ "modified": "2020-11-20 13:04:15.438373",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Application Release",
