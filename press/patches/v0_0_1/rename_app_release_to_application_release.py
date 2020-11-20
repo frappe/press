@@ -5,6 +5,7 @@
 from __future__ import unicode_literals
 
 import frappe
+from frappe.model.utils.rename_field import rename_field
 
 
 def execute():
@@ -12,3 +13,6 @@ def execute():
 	to_doctype = "Application Release"
 	if frappe.db.table_exists(from_doctype) and not frappe.db.table_exists(to_doctype):
 		frappe.rename_doc("DocType", from_doctype, to_doctype, force=True)
+
+	frappe.reload_doctype("Application Release")
+	rename_field("Application Release", "app", "application")

@@ -21,13 +21,13 @@ class ApplicationRelease(Document):
 		candidates = frappe.get_all(
 			"Deploy Candidate App Release",
 			fields=["parent"],
-			filters={"app": self.app, "release": self.name},
+			filters={"app": self.application, "release": self.name},
 		)
 		if candidates:
 			return
 
 		for group_app in frappe.get_all(
-			"Release Group Application", fields=["parent"], filters={"app": self.app}
+			"Release Group Application", fields=["parent"], filters={"app": self.application}
 		):
 			group = frappe.get_doc("Release Group", group_app.parent)
 			group.create_deploy_candidate()
