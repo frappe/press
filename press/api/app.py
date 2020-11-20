@@ -187,33 +187,13 @@ def sources(name):
 @frappe.whitelist()
 @protected("Application")
 def releases(name):
-	app = frappe.get_doc("Application", name)
 	releases = frappe.get_all(
 		"App Release",
 		filters={"app": name},
-		fields=[
-			"name",
-			"hash",
-			"creation",
-			"message",
-			"author",
-			"status",
-			"reason",
-			"comments",
-			"deployable",
-		],
+		fields=["name", "hash", "creation", "message", "author"],
 		order_by="creation desc",
 		limit=10,
 	)
-	tags = frappe.get_all(
-		"App Tag",
-		filters={"repository": app.repo, "repository_owner": app.repo_owner},
-		fields=["hash", "tag"],
-	)
-	for tag in tags:
-		release = find(releases, lambda x: x.hash == tag.hash)
-		if release:
-			release.setdefault("tags", []).append(tag.tag)
 
 	return releases
 
