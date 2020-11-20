@@ -53,7 +53,7 @@ class DeployCandidateDifference(Document):
 	def populate_apps_table(self):
 		source_candidate = frappe.get_doc("Deploy Candidate", self.source)
 		destination_candidate = frappe.get_doc("Deploy Candidate", self.destination)
-		for destination in destination_candidate.apps:
+		for destination in destination_candidate.applications:
 			app = {
 				"app": destination.app,
 				"destination_release": destination.release,

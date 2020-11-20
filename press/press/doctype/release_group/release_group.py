@@ -75,7 +75,7 @@ class ReleaseGroup(Document):
 					{"release": release.name, "application": release.application, "hash": release.hash}
 				)
 		frappe.get_doc(
-			{"doctype": "Deploy Candidate", "group": self.name, "apps": releases}
+			{"doctype": "Deploy Candidate", "group": self.name, "applications": releases}
 		).insert()
 
 	def add_app(self, source):
