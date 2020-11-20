@@ -142,7 +142,7 @@
    "fieldname": "baseline_release",
    "fieldtype": "Link",
    "label": "Baseline Release",
-   "options": "App Release",
+   "options": "Application Release",
    "read_only": 1
   },
   {
@@ -220,10 +220,10 @@
  ],
  "in_create": 1,
  "links": [],
- "modified": "2020-11-19 11:01:27.824011",
+ "modified": "2020-11-20 10:20:26.447329",
  "modified_by": "Administrator",
  "module": "Press",
- "name": "App Release",
+ "name": "Application Release",
  "owner": "Administrator",
  "permissions": [
   {

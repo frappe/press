@@ -74,7 +74,7 @@ class GitHubWebhookLog(Document):
 				commit = payload.head_commit
 				release = frappe.get_doc(
 					{
-						"doctype": "App Release",
+						"doctype": "Application Release",
 						"app": app.name,
 						"hash": commit["id"],
 						"message": commit["message"],

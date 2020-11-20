@@ -13,6 +13,6 @@ def get_data():
 		},
 		"transactions": [
 			{"items": ["Bench", "Site"]},
-			{"items": ["Application Source", "Release Group", "App Release"]},
+			{"items": ["Application Source", "Release Group", "Application Release"]},
 		],
 	}

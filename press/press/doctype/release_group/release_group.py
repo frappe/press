@@ -57,7 +57,7 @@ class ReleaseGroup(Document):
 		releases = []
 		for app in self.applications:
 			release = frappe.get_all(
-				"App Release",
+				"Application Release",
 				fields=["name", "app", "hash"],
 				filters={"app": app.application, "status": "Approved", "deployable": True},
 				order_by="creation desc",
