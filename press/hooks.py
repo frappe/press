@@ -124,7 +124,7 @@ scheduler_events = {
 	"cron": {
 		"0 3 * * *": ["press.press.doctype.remote_file.remote_file.poll_file_statuses"],
 		"0 4 * * *": [
-			"press.press.cleanup.cleanup_offsite_backups",
+			"press.press.cleanup.cleanup_backups",
 			"press.press.cleanup.remove_baggage",
 		],
 		"* * * * * 0/5": ["press.press.doctype.agent_job.agent_job.poll_pending_jobs"],

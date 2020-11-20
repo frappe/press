@@ -111,7 +111,7 @@ def cache(seconds: int, maxsize: int = 128, typed: bool = False):
 def chunk(iterable, size):
 	"""Creates list of elements split into groups of n."""
 	for i in range(0, len(iterable), size):
-		yield iterable[i:i + size]
+		yield iterable[i : i + size]
 
 
 @cache(seconds=1800)

@@ -5,7 +5,7 @@ from frappe.desk.form.load import get_attachments
 
 
 def remove_baggage():
-	# condition: any sort of file attached to a site and creation time > 12 hr
+	"""Remove any remote files attached to the Site doc if older than 12 hours"""
 	half_day = datetime.now() - timedelta(hours=12)
 	or_filters = [
 		["database_file", "!=", ""],
@@ -32,11 +32,6 @@ def remove_baggage():
 	)
 
 	for site in sites:
-		# remove local files attached to site
-		attachments = get_attachments("Site", site.name)
-		for attachment in attachments:
-			frappe.delete_doc_if_exists("File", attachment["name"])
-
 		# remove remote files attached to site
 		remote_files = {x: site.get(x) for x in fields}
 
@@ -45,24 +40,25 @@ def remove_baggage():
 			frappe.db.set_value("Site", site.name, remote_file_type, None, for_update=False)
 
 
-def cleanup_offsite_backups():
+def cleanup_backups():
+	"""Delete expired offsite backups and set statuses for old local ones"""
 	from press.utils import chunk
 	from frappe.utils.password import get_decrypted_password
 	from boto3 import resource
 
-	backups_bucket = frappe.db.get_single_value("Press Settings", "aws_s3_bucket")
-	if not backups_bucket:
-		return
-
 	s3_objects = {}
 	files_to_drop = []
+
 	offsite_bucket = {
-		"bucket": backups_bucket,
+		"bucket": frappe.db.get_single_value("Press Settings", "aws_s3_bucket"),
 		"access_key_id": frappe.db.get_single_value(
 			"Press Settings", "offsite_backups_access_key_id"
 		),
 		"secret_access_key": get_decrypted_password(
-			"Press Settings", "Press Settings", "offsite_backups_secret_access_key"
+			"Press Settings",
+			"Press Settings",
+			"offsite_backups_secret_access_key",
+			raise_exception=False,
 		),
 	}
 	s3 = resource(
@@ -72,21 +68,44 @@ def cleanup_offsite_backups():
 		region_name="ap-south-1",
 	)
 	sites = frappe.get_all("Site", filters={"status": ("!=", "Archived")}, pluck="name")
-	keep_count = (
+	offsite_keep_count = (
 		frappe.db.get_single_value("Press Settings", "offsite_backups_count") or 30
 	)
+	local_keep_hours = (
+		frappe.parse_json(
+			frappe.db.get_single_value("Press Settings", "bench_configuration")
+		).keep_backups_for_hours
+		or 24
+	)
 
-	for i, site in enumerate(sites):
+	for site in sites:
+		expired_local_backups = frappe.get_all(
+			"Site Backup",
+			filters={
+				"site": site,
+				"status": "Success",
+				"files_availability": "Available",
+				"offsite": False,
+				"creation": ("<", datetime.now() - timedelta(hours=local_keep_hours)),
+			},
+		)
+
 		expired_offsite_backups = frappe.get_all(
 			"Site Backup",
 			filters={
 				"site": site,
 				"status": "Success",
-				"backup_availability": "Available",
+				"files_availability": "Available",
 				"offsite": True,
 			},
 			order_by="creation desc",
-		)[keep_count:]
+		)[offsite_keep_count:]
+
+		for local_backup in expired_local_backups:
+			# we're assuming each site's Frappe does it's work and marking them as available
+			frappe.db.set_value(
+				"Site Backup", local_backup["name"], "files_availability", "Unavailable"
+			)
 
 		for offsite_backup in expired_offsite_backups:
 			remote_files = frappe.db.get_value(
@@ -95,6 +114,9 @@ def cleanup_offsite_backups():
 				["remote_database_file", "remote_private_file", "remote_public_file"],
 			)
 			files_to_drop.extend(remote_files)
+			frappe.db.set_value(
+				"Site Backup", offsite_backup["name"], "files_availability", "Unavailable"
+			)
 
 	for remote_file in set(files_to_drop):
 		if remote_file:
