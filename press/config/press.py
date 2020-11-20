@@ -28,7 +28,7 @@ def get_data():
 				{"type": "doctype", "name": "Plan"},
 				{"type": "doctype", "name": "Application"},
 				{"type": "doctype", "name": "Release Group"},
-				{"type": "doctype", "name": "App Release"},
+				{"type": "doctype", "name": "Application Release"},
 				{"type": "doctype", "name": "Deploy Candidate"},
 			],
 		},

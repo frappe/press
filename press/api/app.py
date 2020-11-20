@@ -27,7 +27,7 @@ def new(app):
 
 def update_available(name):
 	releases = frappe.get_all(
-		"App Release",
+		"Application Release",
 		fields=["deployable"],
 		filters={"app": name, "status": "Approved"},
 		order_by="creation desc",
@@ -40,7 +40,7 @@ def update_available(name):
 
 def app_status(name):
 	status = frappe.get_all(
-		"App Release",
+		"Application Release",
 		fields=["status"],
 		filters={"app": name},
 		order_by="creation desc",
@@ -88,7 +88,7 @@ def get(name):
 @protected("Application")
 def deploys(name):
 	releases = frappe.get_all(
-		"App Release",
+		"Application Release",
 		filters={"app": name, "deployable": True, "status": "Approved"},
 		fields=["name", "hash", "creation", "message", "app"],
 		order_by="creation desc",
@@ -188,7 +188,7 @@ def sources(name):
 @protected("Application")
 def releases(name):
 	releases = frappe.get_all(
-		"App Release",
+		"Application Release",
 		filters={"app": name},
 		fields=["name", "hash", "creation", "message", "author"],
 		order_by="creation desc",
@@ -228,10 +228,10 @@ def all():
 @protected("Application")
 def deploy(name):
 	release = frappe.get_all(
-		"App Release",
+		"Application Release",
 		{"app": name, "deployable": False, "status": "Approved"},
 		order_by="creation desc",
 		limit=1,
 	)[0]
-	release_doc = frappe.get_doc("App Release", release)
+	release_doc = frappe.get_doc("Application Release", release)
 	release_doc.deploy()

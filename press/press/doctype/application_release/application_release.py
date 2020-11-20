@@ -21,7 +21,7 @@ from pygments.lexers import PythonLexer as PL
 from pygments.formatters import HtmlFormatter as HF
 
 
-class AppRelease(Document):
+class ApplicationRelease(Document):
 	def on_update(self):
 		if self.status == "Approved" and self.deployable:
 			self.create_deploy_candidates()
@@ -80,7 +80,7 @@ class AppRelease(Document):
 
 	def _set_baseline(self):
 		approved_releases = frappe.get_all(
-			"App Release",
+			"Application Release",
 			fields=["name", "result", "requirements"],
 			filters={"status": "Approved", "app": self.app, "name": ("!=", self.name)},
 			order_by="creation desc",
@@ -179,7 +179,7 @@ class AppRelease(Document):
 			for line in file["lines"]:
 				line["highlighted_context"] = highlight_context(line["context"])
 		html = frappe.render_template(
-			"press/press/doctype/app_release/app_release.html",
+			"press/press/doctype/application_release/application_release.html",
 			{"result": diff_result, "styles": styles},
 		)
 		self.result_html = html
