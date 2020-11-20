@@ -134,23 +134,13 @@ def backups(name):
 	latest_backups = frappe.get_all(
 		"Site Backup",
 		fields=fields,
-		filters={
-			"site": name,
-			"status": ("!=", "Failure"),
-			"files_availability": "Available",
-			"offsite": 0,
-		},
-		limit=5,
+		filters={"site": name, "files_availability": "Available", "offsite": 0},
+		order_by="creation desc",
 	)
 	offsite_backups = frappe.get_all(
 		"Site Backup",
 		fields=fields,
-		filters={
-			"site": name,
-			"status": ("!=", "Failure"),
-			"files_availability": "Available",
-			"offsite": 1,
-		},
+		filters={"site": name, "files_availability": "Available", "offsite": 1},
 		order_by="creation desc",
 		limit_page_length=available_offsite_backups,
 	)
