@@ -6,7 +6,7 @@
  "engine": "InnoDB",
  "field_order": [
   "status",
-  "backup_availability",
+  "files_availability",
   "site",
   "job",
   "with_files",
@@ -194,17 +194,18 @@
    "read_only": 1
   },
   {
-   "default": "Available",
-   "fieldname": "backup_availability",
+   "fieldname": "files_availability",
    "fieldtype": "Select",
    "in_filter": 1,
-   "label": "Backup Availability",
-   "options": "Available\nPartially Available\nUnavailable",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Files Availability",
+   "options": "\nAvailable\nUnavailable",
    "read_only": 1
   }
  ],
  "links": [],
- "modified": "2020-11-12 17:34:41.065125",
+ "modified": "2020-11-20 18:16:03.970599",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Backup",

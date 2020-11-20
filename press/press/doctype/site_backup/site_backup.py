@@ -67,6 +67,7 @@ def process_backup_site_job_update(job):
 				"Site Backup",
 				backup.name,
 				{
+					"files_availability": "Available",
 					"database_size": backup_data["database"]["size"],
 					"database_url": backup_data["database"]["url"],
 					"database_file": backup_data["database"]["file"],
