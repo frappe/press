@@ -19,9 +19,9 @@ class ApplicationRelease(Document):
 
 	def create_deploy_candidates(self):
 		candidates = frappe.get_all(
-			"Deploy Candidate App Release",
+			"Deploy Candidate Application Release",
 			fields=["parent"],
-			filters={"app": self.application, "release": self.name},
+			filters={"application": self.application, "release": self.name},
 		)
 		if candidates:
 			return

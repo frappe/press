@@ -22,12 +22,12 @@
    "fieldname": "apps",
    "fieldtype": "Table",
    "label": "Apps",
-   "options": "Deploy Candidate App Release",
+   "options": "Deploy Candidate Application Release",
    "reqd": 1
   }
  ],
  "links": [],
- "modified": "2020-06-19 20:02:59.753231",
+ "modified": "2020-11-20 13:13:12.895472",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",
