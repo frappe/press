@@ -34,9 +34,6 @@ class Application(Document):
 	def before_save(self):
 		self.frappe = self.name == "frappe"
 
-	def on_update(self):
-		return
-
 
 def new_application(name, title):
 	application = frappe.get_doc(
@@ -49,16 +46,3 @@ def poll_new_releases():
 	for app in frappe.get_all("Application"):
 		app = frappe.get_doc("Application", app.name)
 		app.create_app_release()
-
-
-def get_permission_query_conditions(user):
-	from press.utils import get_current_team
-
-	if not user:
-		user = frappe.session.user
-	if frappe.session.data.user_type == "System User":
-		return ""
-
-	team = get_current_team()
-
-	return f"(`tabApplication`.`team` = {frappe.db.escape(team)})"

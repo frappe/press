@@ -77,9 +77,6 @@ after_migrate = "press.api.account.clear_country_list_cache"
 
 permission_query_conditions = {
 	"Site": "press.press.doctype.site.site.get_permission_query_conditions",
-	"Application": (
-		"press.press.doctype.application.application.get_permission_query_conditions"
-	),
 }
 # has_permission = {
 # 	"Site": "press.press.doctype.site.site.has_permission",
