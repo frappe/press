@@ -130,3 +130,26 @@ def applications(name):
 			}
 		)
 	return applications
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def deploys(name):
+	deploys = frappe.get_all("Deploy", ["name", "creation"], {"group": name}, limit=20)
+	return deploys
+
+
+@frappe.whitelist()
+def deploy(name):
+	deploy = frappe.get_doc("Deploy", name)
+	applications = frappe.get_all(
+		"Deploy Candidate Application Release",
+		["name", "application", "hash"],
+		{"parent": deploy.candidate},
+	)
+	return {
+		"name": deploy.name,
+		"creation": deploy.creation,
+		"deployed": False,
+		"applications": applications,
+	}

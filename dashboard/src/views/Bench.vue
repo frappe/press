@@ -61,7 +61,8 @@ export default {
 			let tabRoute = subRoute => `/benches/${this.benchName}/${subRoute}`;
 			let tabs = [
 				{ label: 'General', route: 'general' },
-				{ label: 'Apps', route: 'apps' }
+				{ label: 'Apps', route: 'apps' },
+				{ label: 'Deploys', route: 'deploys' }
 			];
 			if (this.bench) {
 				return tabs.map(tab => {
