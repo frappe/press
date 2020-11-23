@@ -16,7 +16,6 @@
   "update",
   "setup_wizard_complete",
   "billing",
-  "plan",
   "team",
   "free",
   "section_break_6",
@@ -26,6 +25,7 @@
   "config",
   "configuration",
   "_keys_removed_in_last_update",
+  "_site_usages",
   "deploy_section",
   "timezone",
   "site_files_section",
@@ -149,16 +149,6 @@
    "options": "Team"
   },
   {
-   "fieldname": "plan",
-   "fieldtype": "Link",
-   "hide_days": 1,
-   "hide_seconds": 1,
-   "in_standard_filter": 1,
-   "label": "Plan",
-   "options": "Plan",
-   "reqd": 1
-  },
-  {
    "fieldname": "deploy_section",
    "fieldtype": "Section Break",
    "hide_days": 1,
@@ -279,10 +269,17 @@
    "fieldtype": "Data",
    "hidden": 1,
    "label": "Keys Removed in Last Config Change"
+  },
+  {
+   "default": "{}",
+   "fieldname": "_site_usages",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Site Usage"
   }
  ],
  "links": [],
- "modified": "2020-10-06 15:05:34.824331",
+ "modified": "2020-11-05 11:11:37.836382",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

@@ -108,6 +108,12 @@ def cache(seconds: int, maxsize: int = 128, typed: bool = False):
 	return wrapper_cache
 
 
+def chunk(iterable, size):
+	"""Creates list of elements split into groups of n."""
+	for i in range(0, len(iterable), size):
+		yield iterable[i : i + size]
+
+
 @cache(seconds=1800)
 def get_minified_script():
 	migration_script = "../apps/press/press/scripts/migrate.py"
@@ -238,3 +244,12 @@ def sanitize_config(config: dict) -> dict:
 def developer_mode_only():
 	if not frappe.conf.developer_mode:
 		frappe.throw("You don't know what you're doing. Go away!", frappe.ValidationError)
+
+
+def human_readable(num: int) -> str:
+	"""Assumes int data to describe size is in MiB"""
+	for unit in ["Mi", "Gi", "Ti", "Pi", "Ei", "Zi"]:
+		if abs(num) < 1024:
+			return f"{num:3.1f}{unit}B"
+		num /= 1024
+	return f"{num:.1f}YiB"

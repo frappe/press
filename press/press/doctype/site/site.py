@@ -7,13 +7,14 @@ from __future__ import unicode_literals
 import json
 import re
 
+import dateutil.parser
 import frappe
 import requests
 from frappe.core.utils import find
 from frappe.frappeclient import FrappeClient
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
-from frappe.utils import cint, cstr
+from frappe.utils import cint, convert_utc_to_user_timezone, cstr
 from frappe.utils.password import get_decrypted_password
 
 from press.agent import Agent
@@ -46,10 +47,10 @@ class Site(Document):
 		if self.is_new() and frappe.session.user != "Administrator":
 			self.can_create_site()
 
-			if not self.plan:
+			if not self.subscription_plan:
 				frappe.throw("Cannot create site without plan")
 
-			self._update_configuration(get_plan_config(self.plan), save=False)
+			self._update_configuration(get_plan_config(self.subscription_plan), save=False)
 
 		bench_apps = frappe.get_doc("Bench", self.bench).apps
 		for app in self.apps:
@@ -158,8 +159,6 @@ class Site(Document):
 		).insert(ignore_if_duplicate=True)
 
 	def after_insert(self):
-		# create a site plan change log
-		self._create_initial_site_plan_change()
 		# log activity
 		log_site_activity(self.name, "Create")
 		self.create_agent_request()
@@ -353,6 +352,7 @@ class Site(Document):
 		agent.remove_upstream_site(self.server, self.name)
 
 		self.delete_offsite_backups()
+		self.disable_subscription()
 
 	def delete_offsite_backups(self):
 		# self._del_obj and self._s3_response are object properties available when this method is called
@@ -433,7 +433,7 @@ class Site(Document):
 		return agent.get_site_info(self)
 
 	def sync_info(self, data=None):
-		"""Updates Site Usage, site.config.encryption_key and timezone details for site."""
+		"""Updates Site Usage, site.config and timezone details for site."""
 		if not data:
 			data = self.fetch_info()
 
@@ -449,8 +449,8 @@ class Site(Document):
 		new_config.update(config)
 		current_config = json.dumps(new_config, indent=4)
 
-		if self.timezone != data["timezone"]:
-			self.timezone = data["timezone"]
+		if data["time_zone"] and self.timezone != data["time_zone"]:
+			self.timezone = data["time_zone"]
 			save = True
 
 		if self.config != current_config:
@@ -460,16 +460,27 @@ class Site(Document):
 		if save:
 			self.save()
 
-		frappe.get_doc(
-			{
-				"doctype": "Site Usage",
-				"site": self.name,
-				"database": fetched_usage["database"],
-				"public": fetched_usage["public"],
-				"private": fetched_usage["private"],
-				"backups": fetched_usage["backups"],
-			}
-		).insert()
+		def _insert_usage(usage: dict):
+			return frappe.get_doc(
+				{
+					"doctype": "Site Usage",
+					"site": self.name,
+					"backups": usage["backups"],
+					"database": usage["database"],
+					"public": usage["public"],
+					"private": usage["private"],
+				}
+			).insert()
+
+		if isinstance(fetched_usage, list):
+			for usage in fetched_usage:
+				doc = _insert_usage(usage)
+				equivalent_site_time = convert_utc_to_user_timezone(
+					dateutil.parser.parse(usage["timestamp"])
+				)
+				doc.db_set("creation", equivalent_site_time)
+		else:
+			_insert_usage(fetched_usage)
 
 	def is_setup_wizard_complete(self):
 		if self.setup_wizard_complete:
@@ -585,11 +596,25 @@ class Site(Document):
 	def update_site(self):
 		log_site_activity(self.name, "Update")
 
+	def create_subscription(self, plan):
+		# create a site plan change log
+		self._create_initial_site_plan_change(plan)
+
+	def disable_subscription(self):
+		subscription = self.subscription
+		if subscription:
+			subscription.disable()
+
 	def change_plan(self, plan):
 		plan_config = get_plan_config(plan)
 		self.update_site_config(plan_config)
 		frappe.get_doc(
-			{"doctype": "Site Plan Change", "site": self.name, "to_plan": plan}
+			{
+				"doctype": "Site Plan Change",
+				"site": self.name,
+				"from_plan": self.plan,
+				"to_plan": plan,
+			}
 		).insert()
 
 	def deactivate(self):
@@ -641,13 +666,37 @@ class Site(Document):
 			doc.add_comment(text=f"<pre><code>{frappe.get_traceback()}</code></pre>")
 		return doc
 
-	def _create_initial_site_plan_change(self):
+	@property
+	def subscription(self):
+		name = frappe.db.get_value(
+			"Subscription",
+			{"document_type": "Site", "document_name": self.name, "enabled": True},
+		)
+		return frappe.get_doc("Subscription", name) if name else None
+
+	@property
+	def plan(self):
+		return frappe.db.get_value(
+			"Subscription",
+			filters={"document_type": "Site", "document_name": self.name, "enabled": True},
+			fieldname="plan",
+		)
+
+	def can_charge_for_subscription(self):
+		return (
+			self.status == "Active"
+			and self.team
+			and self.team != "Administrator"
+			and not self.free
+		)
+
+	def _create_initial_site_plan_change(self, plan):
 		frappe.get_doc(
 			{
 				"doctype": "Site Plan Change",
 				"site": self.name,
 				"from_plan": "",
-				"to_plan": self.plan,
+				"to_plan": plan,
 				"type": "Initial Plan",
 				"timestamp": self.creation,
 			}

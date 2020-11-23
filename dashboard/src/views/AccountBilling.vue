@@ -47,12 +47,15 @@
 						Add Billing Information
 					</Button>
 				</div>
-				<div
-					class="px-6 pb-2"
-					v-if="upcomingInvoice && $account.team.erpnext_partner"
-				>
-					<Button @click="showTransferCreditsDialog = true">
+				<div class="px-6 pb-2 space-x-2" v-if="upcomingInvoice">
+					<Button
+						@click="showTransferCreditsDialog = true"
+						v-if="$account.team.erpnext_partner"
+					>
 						Transfer Credits from ERPNext.com
+					</Button>
+					<Button v-if="$account.team.enable_prepaid_credits" @click="showPrepaidCreditsDialog = true">
+						Buy Prepaid Credits
 					</Button>
 				</div>
 			</SectionCard>
@@ -61,6 +64,13 @@
 		<TransferCreditsDialog
 			v-if="showTransferCreditsDialog"
 			:show.sync="showTransferCreditsDialog"
+			@success="$resources.billingDetails.reload()"
+		/>
+
+		<PrepaidCreditsDialog
+			v-if="showPrepaidCreditsDialog"
+			:show.sync="showPrepaidCreditsDialog"
+			:minimum-amount="$account.team.currency == 'INR' ? 800 : 10"
 			@success="$resources.billingDetails.reload()"
 		/>
 
@@ -205,6 +215,7 @@ export default {
 		StripeCard,
 		DescriptionList,
 		TransferCreditsDialog: () => import('@/components/TransferCreditsDialog'),
+		PrepaidCreditsDialog: () => import('@/components/PrepaidCreditsDialog'),
 		UpdateBillingAddress: () => import('@/components/UpdateBillingAddress'),
 		InvoiceUsage: () => import('@/components/InvoiceUsage')
 	},
@@ -228,9 +239,18 @@ export default {
 		return {
 			showStripeCardDialog: false,
 			showTransferCreditsDialog: false,
+			showPrepaidCreditsDialog: false,
 			showUsageForInvoice: null,
 			editAddress: false
 		};
+	},
+	mounted() {
+		this.$socket.on('balance_updated', () => {
+			this.$resources.billingDetails.reload();
+		});
+	},
+	destroyed() {
+		this.$socket.off('balance_updated');
 	},
 	computed: {
 		paymentMethodAdded() {
