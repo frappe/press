@@ -94,7 +94,10 @@ permission_query_conditions = {
 
 doc_events = {
 	"Stripe Webhook Log": {
-		"after_insert": ["press.press.doctype.invoice.invoice.process_stripe_webhook"],
+		"after_insert": [
+			"press.press.doctype.invoice.invoice.process_stripe_webhook",
+			"press.press.doctype.team.team.process_stripe_webhook",
+		],
 	},
 	"Address": {"validate": "press.api.billing.validate_gst"},
 	"Site": {"after_insert": "press.press.doctype.team.team.update_site_onboarding"},
@@ -105,23 +108,25 @@ doc_events = {
 
 scheduler_events = {
 	"daily": [
-		"press.press.cleanup.remove_baggage",
-		"press.press.cleanup.cleanup_offsite_backups",
 		"press.press.cleanup.remove_logs",
-		"press.press.doctype.payment_ledger_entry.payment_ledger_entry.submit_failed_ledger_entries",
 		"press.press.doctype.team.team.suspend_sites_for_teams_without_cards",
 		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
-		"press.press.doctype.remote_file.remote_file.poll_file_statuses",
 		"press.press.doctype.invoice.invoice.submit_invoices",
 	],
 	"hourly": ["press.press.doctype.frappe_app.frappe_app.poll_new_releases"],
 	"hourly_long": [
-		"press.press.doctype.payment_ledger_entry.payment_ledger_entry.create_ledger_entries",
 		"press.press.doctype.bench.bench.archive_obsolete_benches",
 		"press.press.doctype.bench.bench.scale_workers",
 		"press.press.doctype.agent_job.agent_job.schedule_backups",
+		"press.press.doctype.subscription.subscription.create_usage_records",
+		"press.press.doctype.bench.bench.sync_benches",
 	],
 	"cron": {
+		"0 3 * * *": ["press.press.doctype.remote_file.remote_file.poll_file_statuses"],
+		"0 4 * * *": [
+			"press.press.cleanup.cleanup_backups",
+			"press.press.cleanup.remove_baggage",
+		],
 		"* * * * * 0/5": ["press.press.doctype.agent_job.agent_job.poll_pending_jobs"],
 		"* * * * * 0/60": [
 			"press.press.doctype.agent_job.agent_job.collect_site_uptime",
@@ -130,8 +135,11 @@ scheduler_events = {
 		],
 		"* * * * * 0/30": ["press.press.doctype.agent_job.agent_job.collect_server_status"],
 		"0 */6 * * *": ["press.press.doctype.server.server.cleanup_unused_files"],
-		"*/15 * * * *": ["press.press.doctype.site_update.site_update.schedule_updates"],
-		"30 */6 * * *": ["press.press.doctype.bench.bench.sync_benches"],
+		"30 * * * *": ["press.press.doctype.agent_job.agent_job.suspend_sites"],
+		"*/15 * * * *": [
+			"press.press.doctype.site_update.site_update.schedule_updates",
+			"press.press.doctype.agent_job.agent_job.report_usage_violations",
+		],
 	},
 }
 
@@ -139,7 +147,6 @@ deploy_hours = [1, 2, 3, 4]
 
 fixtures = [
 	"Agent Job Type",
-	"Plan",
 	{"dt": "Role", "filters": [["role_name", "like", "Press%"]]},
 	"Print Format",
 	"Site Config Key",

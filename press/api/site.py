@@ -55,6 +55,7 @@ def new(site):
 		order_by="creation desc",
 		limit=1,
 	)[0].name
+	plan = site["plan"]
 	site = frappe.get_doc(
 		{
 			"doctype": "Site",
@@ -62,13 +63,14 @@ def new(site):
 			"bench": bench,
 			"apps": [{"app": app} for app in site["apps"]],
 			"team": team,
-			"plan": site["plan"],
+			"subscription_plan": plan,
 			"remote_config_file": site["files"].get("config"),
 			"remote_database_file": site["files"].get("database"),
 			"remote_public_file": site["files"].get("public"),
 			"remote_private_file": site["files"].get("private"),
 		},
 	).insert(ignore_permissions=True)
+	site.create_subscription(plan)
 	return site.name
 
 
@@ -140,13 +142,13 @@ def backups(name):
 	latest_backups = frappe.get_all(
 		"Site Backup",
 		fields=fields,
-		filters={"site": name, "status": ("!=", "Failure"), "offsite": 0},
-		limit=5,
+		filters={"site": name, "files_availability": "Available", "offsite": 0},
+		order_by="creation desc",
 	)
 	offsite_backups = frappe.get_all(
 		"Site Backup",
 		fields=fields,
-		filters={"site": name, "status": ("!=", "Failure"), "offsite": 1},
+		filters={"site": name, "files_availability": "Available", "offsite": 1},
 		order_by="creation desc",
 		limit_page_length=available_offsite_backups,
 	)
@@ -275,7 +277,7 @@ def get_plans():
 			"cpu_time_per_day",
 			"trial_period",
 		],
-		filters={"enabled": True},
+		filters={"enabled": True, "document_type": "Site"},
 		order_by="price_usd asc",
 	)
 
@@ -349,6 +351,7 @@ def get(name):
 		"status": site.status,
 		"installed_apps": sorted(installed_apps, key=lambda x: bench_apps[x.name]),
 		"available_apps": sorted(available_apps, key=lambda x: bench_apps[x.name]),
+		"usage": json.loads(site._site_usages),
 		"setup_wizard_complete": site.setup_wizard_complete,
 		"config": site_config,
 		"creation": site.creation,
@@ -399,7 +402,7 @@ def analytics(name, period="1 hour"):
 		"Site Uptime Log",
 		"AVG(web) AS web, AVG(scheduler) AS scheduler, AVG(socketio) AS socketio",
 	)
-	plan = frappe.db.get_value("Site", name, "plan")
+	plan = frappe.get_cached_doc("Site", name).plan
 	plan_limit = get_plan_config(plan)["rate_limit"]["limit"]
 	return {
 		"usage_counter": [
@@ -426,7 +429,7 @@ def analytics(name, period="1 hour"):
 @frappe.whitelist()
 @protected("Site")
 def current_plan(name):
-	plan_name = frappe.db.get_value("Site", name, "plan")
+	plan_name = frappe.get_doc("Site", name).plan
 	plan = frappe.get_doc("Plan", plan_name)
 	site_plan_changes = frappe.db.get_all(
 		"Site Plan Change",
@@ -451,6 +454,21 @@ def current_plan(name):
 	else:
 		total_cpu_usage_hours = 0
 
+	usage = frappe.get_all(
+		"Site Usage",
+		fields=["database", "public", "private"],
+		filters={"site": name},
+		order_by="creation desc",
+		limit=1,
+	)
+	if usage:
+		usage = usage[0]
+		total_database_usage = usage.database
+		total_storage_usage = usage.public + usage.private
+	else:
+		total_database_usage = 0
+		total_storage_usage = 0
+
 	# number of hours until cpu usage resets
 	now = frappe.utils.now_datetime()
 	today_end = now.replace(hour=23, minute=59, second=59)
@@ -461,6 +479,10 @@ def current_plan(name):
 		"history": site_plan_changes,
 		"total_cpu_usage_hours": total_cpu_usage_hours,
 		"hours_until_reset": hours_left_today,
+		"max_database_usage": plan.max_database_usage,
+		"max_storage_usage": plan.max_storage_usage,
+		"total_database_usage": total_database_usage,
+		"total_storage_usage": total_storage_usage,
 	}
 
 

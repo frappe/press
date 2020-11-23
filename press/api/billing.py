@@ -42,10 +42,14 @@ def info():
 
 	if team_doc.billing_address:
 		address = frappe.get_doc("Address", team_doc.billing_address)
-		billing_address = (
-			f"{address.address_line1}, {address.city}, {address.state},"
-			f" {address.country}, {address.pincode}"
-		)
+		address_parts = [
+			address.address_line1,
+			address.city,
+			address.state,
+			address.country,
+			address.pincode,
+		]
+		billing_address = ", ".join([d for d in address_parts if d])
 	else:
 		billing_address = ""
 
@@ -54,7 +58,7 @@ def info():
 		"past_invoices": past_invoices,
 		"billing_address": billing_address,
 		"payment_method": team_doc.default_payment_method,
-		"available_credits": fmt_money(team_doc.get_available_credits(), 2, currency),
+		"available_credits": fmt_money(team_doc.get_balance(), 2, currency),
 	}
 
 
@@ -78,6 +82,16 @@ def get_erpnext_com_connection():
 
 
 @frappe.whitelist()
+def get_customer_details(team):
+	"""This method is called by frappe.io for creating Customer and Address"""
+	team_doc = frappe.db.get_value("Team", team, "*")
+	return {
+		"team": team_doc,
+		"address": frappe.get_doc("Address", team_doc.billing_address),
+	}
+
+
+@frappe.whitelist()
 def transfer_partner_credits(amount):
 	team = get_current_team()
 	team_doc = frappe.get_doc("Team", team)
@@ -97,7 +111,10 @@ def transfer_partner_credits(amount):
 
 	team_doc.allocate_credit_amount(
 		transferred_credits,
-		"Transferred Credits from ERPNext Cloud. Transaction ID: {0}".format(transaction_id),
+		source="Transferred Credits",
+		remark="Transferred Credits from ERPNext Cloud. Transaction ID: {0}".format(
+			transaction_id
+		),
 	)
 
 	if (team_doc.currency == "INR" and amount == 1000) or (
@@ -124,6 +141,19 @@ def get_available_partner_credits():
 
 
 @frappe.whitelist()
+def create_payment_intent_for_buying_credits(amount):
+	team = get_current_team(True)
+	stripe = get_stripe()
+	intent = stripe.PaymentIntent.create(
+		amount=amount * 100, currency=team.currency.lower(), customer=team.stripe_customer_id
+	)
+	return {
+		"client_secret": intent["client_secret"],
+		"publishable_key": get_publishable_key(),
+	}
+
+
+@frappe.whitelist()
 def get_payment_methods():
 	team = get_current_team()
 	return frappe.get_doc("Team", team).get_payment_methods()
@@ -132,24 +162,22 @@ def get_payment_methods():
 @frappe.whitelist()
 def get_invoice_usage(invoice):
 	team = get_current_team()
+	# apply team filter for safety
 	doc = frappe.get_doc("Invoice", {"name": invoice, "team": team})
 
 	usage = []
-	for i, row in enumerate(doc.site_usage):
+	for row in doc.items:
 		usage.append(
 			{
 				"idx": row.idx,
-				"site": row.site,
+				"site": row.document_name,
 				"plan": frappe.get_cached_value("Plan", row.plan, "plan_title"),
-				"days_active": row.days_active,
-				"rate": doc.items[i].get_formatted("rate"),
-				"amount": doc.items[i].get_formatted("amount"),
+				"days_active": row.quantity,
+				"rate": row.get_formatted("rate"),
+				"amount": row.get_formatted("amount"),
 			}
 		)
 
-	applied_balance = (
-		doc.starting_balance * -1 if doc.starting_balance * -1 < doc.total else doc.total
-	)
 	return {
 		"usage": usage,
 		"status": doc.status,
@@ -160,7 +188,7 @@ def get_invoice_usage(invoice):
 		"period_end": doc.period_end,
 		"total": doc.get_formatted("total"),
 		"amount_due": doc.get_formatted("amount_due"),
-		"applied_balance": fmt_money(applied_balance, 2, doc.currency),
+		"applied_balance": doc.get_formatted("applied_credits"),
 	}
 
 

@@ -51,11 +51,16 @@
 			</SectionCard>
 			<Dialog title="Change Plan" v-model="showChangePlanDialog">
 				<SitePlansTable class="mt-6" :plans="plans" v-model="selectedPlan" />
+				<ErrorMessage class="mt-4" :error="$resources.changePlan.error" />
 				<template slot="actions">
 					<Button type="secondary" @click="showChangePlanDialog = false">
 						Cancel
 					</Button>
-					<Button class="ml-2" type="primary" @click="changePlan">
+					<Button
+						class="ml-2"
+						type="primary"
+						@click="$resources.changePlan.submit()"
+					>
 						Submit
 					</Button>
 				</template>
@@ -90,6 +95,28 @@
 						</div>
 						<div class="text-gray-600">
 							Cycle resets in {{ hoursUntilReset }} hours
+						</div>
+					</div>
+				</div>
+				<div class="flex px-6 py-4 text-base hover:bg-gray-50">
+					<div class="w-1/2">
+						<div class="leading-6">
+							<span class="font-bold"> {{ formatBytes(totalDatabaseUsage, 0, 2) }}</span>
+							/ {{ formatBytes(currentPlan.max_database_usage, 0, 2) }} Database usage
+						</div>
+						<div class="text-gray-600">
+							Available database space: {{ formatBytes(currentPlan.max_database_usage - totalDatabaseUsage, 0, 2) }}
+						</div>
+					</div>
+				</div>
+				<div class="flex px-6 py-4 text-base hover:bg-gray-50">
+					<div class="w-1/2">
+						<div class="leading-6">
+							<span class="font-bold"> {{ formatBytes(totalDiskUsage, 0, 2) }}</span>
+							/ {{ formatBytes(currentPlan.max_storage_usage, 0, 2) }} Disk usage
+						</div>
+						<div class="text-gray-600">
+							Available Storage space: {{ formatBytes(currentPlan.max_storage_usage - totalDiskUsage, 0, 2) }}
 						</div>
 					</div>
 				</div>
@@ -137,6 +164,8 @@ export default {
 		return {
 			currentPlan: null,
 			totalCPUUsage: 0,
+			totalDatabaseUsage: 0,
+			totalDiskUsage: 0,
 			hoursUntilReset: 0,
 			history: [],
 			showChangePlanDialog: false,
@@ -144,6 +173,28 @@ export default {
 			selectedPlan: null,
 			showDeactivateDialog: false
 		};
+	},
+	resources: {
+		changePlan() {
+			return {
+				method: 'press.api.site.change_plan',
+				params: {
+					name: this.site.name,
+					plan: this.selectedPlan?.name
+				},
+				onSuccess() {
+					this.$notify({
+						title: `Plan changed to ${this.selectedPlan.plan_title}`,
+						icon: 'check',
+						color: 'green'
+					});
+					this.showChangePlanDialog = false;
+					this.selectedPlan = null;
+					this.fetchCurrentPlan();
+					this.fetchPlans();
+				}
+			};
+		}
 	},
 	mounted() {
 		this.fetchCurrentPlan();
@@ -156,6 +207,8 @@ export default {
 			this.currentPlan = out.current_plan;
 			this.history = out.history;
 			this.totalCPUUsage = out.total_cpu_usage_hours;
+			this.totalDatabaseUsage = out.total_database_usage;
+			this.totalDiskUsage = out.total_storage_usage;
 			this.hoursUntilReset = out.hours_until_reset;
 		},
 		async fetchPlans() {
@@ -166,21 +219,6 @@ export default {
 				}
 				return plan;
 			});
-		},
-		async changePlan() {
-			await this.$call('press.api.site.change_plan', {
-				name: this.site.name,
-				plan: this.selectedPlan.name
-			});
-			this.$notify({
-				title: `Plan changed to ${this.selectedPlan.plan_title}`,
-				icon: 'check',
-				color: 'green'
-			});
-			this.showChangePlanDialog = false;
-			this.selectedPlan = null;
-			this.fetchCurrentPlan();
-			this.fetchPlans();
 		},
 		deactivate() {
 			this.$call('press.api.site.deactivate', {

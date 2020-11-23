@@ -1,84 +1,74 @@
 {
  "actions": [],
- "autoname": "format:SUB-{YYYY}-{#####}",
- "creation": "2020-03-20 12:31:19.564793",
+ "autoname": "SUB-.YYYY.-.#####.",
+ "creation": "2020-10-19 19:01:35.606131",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "enabled",
   "team",
-  "stripe_subscription_id",
-  "stripe_subscription_item_id",
-  "column_break_4",
-  "status",
-  "start_date",
-  "end_date",
-  "current_period_start",
-  "current_period_end"
+  "document_type",
+  "document_name",
+  "plan",
+  "interval"
  ],
  "fields": [
   {
-   "fieldname": "column_break_4",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "start_date",
-   "fieldtype": "Date",
-   "label": "Start Date",
-   "read_only": 1
-  },
-  {
-   "fieldname": "end_date",
-   "fieldtype": "Date",
-   "hidden": 1,
-   "label": "End Date",
-   "read_only": 1
-  },
-  {
-   "default": "Active",
-   "fieldname": "status",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "label": "Status",
-   "options": "\nActive\nCompleted"
-  },
-  {
    "fieldname": "team",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Team",
    "options": "Team",
    "reqd": 1
   },
   {
-   "fieldname": "current_period_start",
-   "fieldtype": "Date",
+   "fieldname": "document_type",
+   "fieldtype": "Link",
    "in_list_view": 1,
-   "label": "Current Period Start",
-   "read_only": 1
+   "label": "Document Type",
+   "options": "DocType",
+   "reqd": 1
   },
   {
-   "fieldname": "current_period_end",
-   "fieldtype": "Date",
+   "fieldname": "document_name",
+   "fieldtype": "Dynamic Link",
    "in_list_view": 1,
-   "label": "Current Period End",
-   "read_only": 1
+   "label": "Document Name",
+   "options": "document_type",
+   "reqd": 1
   },
   {
-   "fieldname": "stripe_subscription_id",
-   "fieldtype": "Data",
-   "label": "Stripe Subscription ID",
-   "read_only": 1
+   "default": "Daily",
+   "fetch_from": "plan.interval",
+   "fieldname": "interval",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Interval",
+   "options": "Daily\nMonthly"
   },
   {
-   "fieldname": "stripe_subscription_item_id",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Stripe Subscription Item ID",
-   "read_only": 1
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "fieldname": "plan",
+   "fieldtype": "Link",
+   "label": "Plan",
+   "options": "Plan",
+   "reqd": 1
   }
  ],
- "links": [],
- "modified": "2020-04-06 23:18:21.167594",
+ "index_web_pages_for_search": 1,
+ "links": [
+  {
+   "link_doctype": "Usage Record",
+   "link_fieldname": "subscription"
+  }
+ ],
+ "modified": "2020-11-10 11:04:19.524085",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Subscription",

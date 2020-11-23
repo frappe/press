@@ -18,7 +18,9 @@ class SiteBackup(Document):
 		frappe.db.set_value("Site Backup", self.name, "job", job.name)
 
 
-def track_offsite_backups(backup_data: dict, offsite_backup_data: dict) -> tuple:
+def track_offsite_backups(
+	site: str, backup_data: dict, offsite_backup_data: dict
+) -> tuple:
 	remote_files = {"database": None, "public": None, "private": None}
 
 	if offsite_backup_data:
@@ -31,6 +33,7 @@ def track_offsite_backups(backup_data: dict, offsite_backup_data: dict) -> tuple
 				remote_file = frappe.get_doc(
 					{
 						"doctype": "Remote File",
+						"site": site,
 						"file_name": file_name,
 						"file_path": file_path,
 						"file_size": file_size,
@@ -57,13 +60,14 @@ def process_backup_site_job_update(job):
 			job_data = json.loads(job.data)
 			backup_data, offsite_backup_data = job_data["backups"], job_data["offsite"]
 			remote_database, remote_public, remote_private = track_offsite_backups(
-				backup_data, offsite_backup_data
+				job.site, backup_data, offsite_backup_data
 			)
 
 			frappe.db.set_value(
 				"Site Backup",
 				backup.name,
 				{
+					"files_availability": "Available",
 					"database_size": backup_data["database"]["size"],
 					"database_url": backup_data["database"]["url"],
 					"database_file": backup_data["database"]["file"],

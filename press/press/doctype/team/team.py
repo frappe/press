@@ -10,7 +10,6 @@ from frappe.model.document import Document
 from frappe import _
 from frappe.utils import get_fullname, flt
 from frappe.contacts.address_and_contact import load_address_and_contact
-from press.press.doctype.team.team_invoice import TeamInvoice
 
 
 class Team(Document):
@@ -117,7 +116,7 @@ class Team(Document):
 			# allocate free credits on signup
 			credits_field = "free_credits_inr" if self.currency == "INR" else "free_credits_usd"
 			credit_amount = frappe.db.get_single_value("Press Settings", credits_field)
-			self.allocate_credit_amount(credit_amount, remark="Free credits on signup")
+			self.allocate_credit_amount(credit_amount, source="Free Credits")
 			self.free_credits_allocated = 1
 			self.save()
 			self.reload()
@@ -282,17 +281,14 @@ class Team(Document):
 				)
 		return invoices
 
-	def allocate_credit_amount(
-		self, amount, remark, reference_doctype=None, reference_name=None
-	):
+	def allocate_credit_amount(self, amount, source, remark=None):
 		doc = frappe.get_doc(
-			{
-				"doctype": "Payment Ledger Entry",
-				"purpose": "Credits Allocation",
-				"amount": amount,
-				"team": self.name,
-				"remark": remark,
-			}
+			doctype="Balance Transaction",
+			team=self.name,
+			type="Adjustment",
+			source=source,
+			amount=amount,
+			description=remark,
 		)
 		doc.insert(ignore_permissions=True)
 		doc.submit()
@@ -300,17 +296,32 @@ class Team(Document):
 
 	def get_available_credits(self):
 		def get_stripe_balance():
-			stripe = get_stripe()
-			customer_object = stripe.Customer.retrieve(self.stripe_customer_id)
-			balance = (customer_object["balance"] * -1) / 100
-			return balance
+			return self.get_stripe_balance()
 
 		return frappe.cache().hget(
 			"customer_available_credits", self.name, generator=get_stripe_balance
 		)
 
+	def get_stripe_balance(self):
+		stripe = get_stripe()
+		customer_object = stripe.Customer.retrieve(self.stripe_customer_id)
+		balance = (customer_object["balance"] * -1) / 100
+		return balance
+
+	def get_balance(self):
+		res = frappe.db.get_all(
+			"Balance Transaction",
+			filters={"team": self.name, "docstatus": 1},
+			order_by="creation desc",
+			limit=1,
+			pluck="ending_balance",
+		)
+		if not res:
+			return 0
+		return res[0]
+
 	def is_partner_and_has_enough_credits(self):
-		return self.erpnext_partner and self.get_available_credits() > 0
+		return self.erpnext_partner and self.get_balance() > 0
 
 	def has_partner_account_on_erpnext_com(self):
 		if frappe.conf.developer_mode:
@@ -336,7 +347,7 @@ class Team(Document):
 		if self.default_payment_method:
 			return allow
 		else:
-			why = "Cannot create site without subscription"
+			why = "Cannot create site without adding a card"
 
 		return (False, why)
 
@@ -369,9 +380,26 @@ class Team(Document):
 		return suspended_sites
 
 	def get_upcoming_invoice(self):
-		# get this month's invoice
+		# get the current period's invoice
 		today = frappe.utils.datetime.datetime.today()
-		return TeamInvoice(self, today.month, today.year).get_draft_invoice()
+		result = frappe.db.get_all(
+			"Invoice",
+			filters={
+				"status": "Draft",
+				"team": self.name,
+				"period_start": ("<=", today),
+				"period_end": (">=", today),
+			},
+			order_by="creation desc",
+			limit=1,
+			pluck="name",
+		)
+		if result:
+			return frappe.get_doc("Invoice", result[0])
+
+	def create_upcoming_invoice(self):
+		today = frappe.utils.today()
+		return frappe.get_doc(doctype="Invoice", team=self.name, period_start=today).insert()
 
 
 def get_team_members(team):
@@ -416,18 +444,18 @@ def suspend_sites_for_teams_without_cards():
 	teams_with_total_usage = frappe.db.sql(
 		"""
 		SELECT
-			SUM(ple.amount) as total_usage, ple.team
-		FROM `tabPayment Ledger Entry` ple
-		LEFT JOIN `tabTeam` t
-		ON t.name = ple.team
+			SUM(i.total) as total_usage,
+			i.team
+		FROM
+			`tabInvoice` i
+			LEFT JOIN `tabTeam` t ON t.name = i.team
 		WHERE
-			ple.docstatus = 1
-			AND ple.purpose = 'Site Consumption'
+			i.docstatus < 2
 			AND ifnull(t.default_payment_method, '') = ''
 			AND t.free_account = 0
 			AND t.erpnext_partner = 0
 		GROUP BY
-			ple.team
+			i.team
 	""",
 		as_dict=True,
 	)
@@ -435,9 +463,9 @@ def suspend_sites_for_teams_without_cards():
 	free_credits_inr, free_credits_usd = frappe.db.get_value(
 		"Press Settings", None, ["free_credits_inr", "free_credits_usd"]
 	)
-	# teams_without_cards_and_exhausted_credit_limit = [r.team for r in res]
+
 	for d in teams_with_total_usage:
-		total_usage = d.total_usage * -1
+		total_usage = d.total_usage
 		team = frappe.get_doc("Team", d.team)
 		total_usage_limit = flt(
 			free_credits_inr if team.currency == "INR" else free_credits_usd
@@ -470,3 +498,21 @@ def update_site_onboarding(site, method):
 		team = frappe.get_doc("Team", site.team)
 		if not team.get_onboarding()["complete"]:
 			team.update_onboarding("Create Site", "Completed")
+
+
+def process_stripe_webhook(doc, method):
+	"""This method runs after a Stripe Webhook Log is created"""
+	if doc.event_type not in ["payment_intent.succeeded"]:
+		return
+
+	event = frappe.parse_json(doc.payload)
+	payment_intent = event["data"]["object"]
+	if payment_intent.get("invoice"):
+		# ignore payment for invoice
+		return
+
+	team = frappe.get_doc("Team", {"stripe_customer_id": payment_intent["customer"]})
+	amount = payment_intent["amount"] / 100
+	team.allocate_credit_amount(
+		amount, source="Prepaid Credits", remark=payment_intent["id"]
+	)
