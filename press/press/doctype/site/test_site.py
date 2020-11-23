@@ -33,7 +33,7 @@ def create_test_site(subdomain: str) -> Site:
 	release_group = create_test_release_group(frappe_app.name)
 	release_group.create_deploy_candidate()
 
-	plan = create_test_plan()
+	plan = create_test_plan("Site")
 	bench = create_test_bench(release_group.name, server.name)
 
 	return frappe.get_doc(
