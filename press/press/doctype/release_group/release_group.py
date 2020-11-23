@@ -16,8 +16,10 @@ class ReleaseGroup(Document):
 		self.validate_duplicate_app()
 		self.validate_app_versions()
 
-	def after_insert(self):
-		self.create_deploy_candidate()
+	def on_trash(self):
+		candidates = frappe.get_all("Deploy Candidate", {"group": self.name})
+		for candidate in candidates:
+			frappe.delete_doc("Deploy Candidate", candidate.name)
 
 	def on_update(self):
 		self.create_deploy_candidate()
