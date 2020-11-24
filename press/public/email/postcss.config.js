@@ -7,5 +7,5 @@ const tailwindcss = require('tailwindcss');
 const config_path = path.resolve(__dirname, './tailwind.config.js');
 
 module.exports = {
-	plugins: [tailwindcss(config_path), purgecss]
+	plugins: [tailwindcss(config_path), require('postcss-nested'), purgecss]
 };
