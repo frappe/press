@@ -37,3 +37,5 @@ press.patches.v0_0_1.set_document_type_in_plan
 # press.patches.v0_0_1.create_balance_transactions_from_stripe
 # Backups "refactor"
 # press.patches.v0_0_1.update_backups_availability
+# Update transaction details in paid invoices
+# press.press.doctype.invoice.patches.set_transaction_details
