@@ -35,7 +35,8 @@
   "stripe_billing_section",
   "stripe_invoice_id",
   "stripe_invoice_url",
-  "frappe_invoice"
+  "frappe_invoice",
+  "invoice_pdf",
  ],
  "fields": [
   {
@@ -215,6 +216,13 @@
    "fieldtype": "Table",
    "label": "Credit Allocations",
    "options": "Invoice Credit Allocation"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "invoice_pdf",
+   "fieldtype": "Attach",
+   "label": "Invoice PDF"
+  },
   }
  ],
  "is_submittable": 1,
