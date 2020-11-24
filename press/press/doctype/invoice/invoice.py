@@ -431,6 +431,10 @@ def process_stripe_webhook(doc, method):
 	]:
 		return
 
+	from press.api.billing import get_stripe
+
+	stripe = get_stripe()
+
 	event = frappe.parse_json(doc.payload)
 	stripe_invoice = event["data"]["object"]
 	invoice = frappe.get_doc(
@@ -460,6 +464,26 @@ def process_stripe_webhook(doc, method):
 			}
 		)
 		invoice.save()
+
+		# update transaction amount, fee and exchange rate
+		if stripe_invoice.get("charge"):
+			charge = stripe.Charge.retrieve(stripe_invoice.get("charge"))
+			if charge.balance_transaction:
+				balance_transaction = stripe.BalanceTransaction.retrieve(charge.balance_transaction)
+				invoice.exchange_rate = balance_transaction.exchange_rate
+				invoice.transaction_amount = convert_stripe_money(balance_transaction.amount)
+				invoice.transaction_net = convert_stripe_money(balance_transaction.net)
+				invoice.transaction_fee = convert_stripe_money(balance_transaction.fee)
+				for row in balance_transaction.fee_details:
+					invoice.append(
+						"transaction_fee_details",
+						{
+							"description": row.description,
+							"amount": convert_stripe_money(row.amount),
+							"currency": row.currency.upper(),
+						},
+					)
+				invoice.save()
 
 		# unsuspend sites
 		team.unsuspend_sites(
@@ -493,6 +517,10 @@ def process_stripe_webhook(doc, method):
 					reason=f"Suspending sites because of failed payment of {invoice.name}"
 				)
 			send_email_for_failed_payment(invoice, sites)
+
+
+def convert_stripe_money(amount):
+	return amount / 100
 
 
 def send_email_for_failed_payment(invoice, sites=None):

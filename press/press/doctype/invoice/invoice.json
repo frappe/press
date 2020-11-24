@@ -21,6 +21,9 @@
   "section_break_10",
   "starting_balance",
   "ending_balance",
+  "payment_date",
+  "payment_attempt_count",
+  "payment_attempt_date",
   "column_break_15",
   "total",
   "applied_credits",
@@ -28,15 +31,17 @@
   "amount_paid",
   "section_break_15",
   "credit_allocations",
-  "payment_section",
-  "payment_date",
-  "payment_attempt_count",
-  "payment_attempt_date",
   "stripe_billing_section",
   "stripe_invoice_id",
   "stripe_invoice_url",
   "frappe_invoice",
   "invoice_pdf",
+  "column_break_32",
+  "transaction_amount",
+  "transaction_net",
+  "transaction_fee",
+  "exchange_rate",
+  "transaction_fee_details"
  ],
  "fields": [
   {
@@ -152,12 +157,14 @@
   {
    "fieldname": "starting_balance",
    "fieldtype": "Currency",
+   "hidden": 1,
    "label": "Starting Balance",
    "options": "currency"
   },
   {
    "fieldname": "ending_balance",
    "fieldtype": "Currency",
+   "hidden": 1,
    "label": "Ending Balance",
    "options": "currency"
   },
@@ -175,11 +182,6 @@
    "fieldname": "period_end",
    "fieldtype": "Date",
    "label": "Period End"
-  },
-  {
-   "fieldname": "payment_section",
-   "fieldtype": "Section Break",
-   "label": "Payment"
   },
   {
    "allow_on_submit": 1,
@@ -223,11 +225,48 @@
    "fieldtype": "Attach",
    "label": "Invoice PDF"
   },
+  {
+   "fieldname": "column_break_32",
+   "fieldtype": "Column Break"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "transaction_amount",
+   "fieldtype": "Currency",
+   "label": "Transaction Amount",
+   "options": "INR"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "transaction_net",
+   "fieldtype": "Currency",
+   "label": "Transaction Net",
+   "options": "INR"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "transaction_fee",
+   "fieldtype": "Currency",
+   "label": "Transaction Fee",
+   "options": "INR"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "exchange_rate",
+   "fieldtype": "Float",
+   "label": "Exchange Rate"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "transaction_fee_details",
+   "fieldtype": "Table",
+   "label": "Transaction Fee Details",
+   "options": "Invoice Transaction Fee"
   }
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2020-11-18 14:38:06.646436",
+ "modified": "2020-11-24 20:58:37.255104",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",
