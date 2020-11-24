@@ -287,6 +287,8 @@ class Invoice(Document):
 		)
 
 	def create_invoice_on_frappeio(self):
+		if self.flags.skip_frappe_invoice:
+			return
 		if self.amount_due == 0:
 			return
 		if self.frappe_invoice:
@@ -354,6 +356,30 @@ class Invoice(Document):
 			)
 
 		return self.frappeio_connection
+
+	def update_transaction_details(self):
+		stripe = get_stripe()
+		stripe_invoice = stripe.Invoice.retrieve(self.stripe_invoice_id)
+		if stripe_invoice.get("charge"):
+			charge = stripe.Charge.retrieve(stripe_invoice.get("charge"))
+			if charge.balance_transaction:
+				balance_transaction = stripe.BalanceTransaction.retrieve(charge.balance_transaction)
+				self.exchange_rate = balance_transaction.exchange_rate
+				self.transaction_amount = convert_stripe_money(balance_transaction.amount)
+				self.transaction_net = convert_stripe_money(balance_transaction.net)
+				self.transaction_fee = convert_stripe_money(balance_transaction.fee)
+				self.transaction_fee_details = []
+				for row in balance_transaction.fee_details:
+					self.append(
+						"transaction_fee_details",
+						{
+							"description": row.description,
+							"amount": convert_stripe_money(row.amount),
+							"currency": row.currency.upper(),
+						},
+					)
+				self.save()
+				return True
 
 	def consume_credits_and_mark_as_paid(self, reason=None):
 		if self.amount_due <= 0:
@@ -466,24 +492,7 @@ def process_stripe_webhook(doc, method):
 		invoice.save()
 
 		# update transaction amount, fee and exchange rate
-		if stripe_invoice.get("charge"):
-			charge = stripe.Charge.retrieve(stripe_invoice.get("charge"))
-			if charge.balance_transaction:
-				balance_transaction = stripe.BalanceTransaction.retrieve(charge.balance_transaction)
-				invoice.exchange_rate = balance_transaction.exchange_rate
-				invoice.transaction_amount = convert_stripe_money(balance_transaction.amount)
-				invoice.transaction_net = convert_stripe_money(balance_transaction.net)
-				invoice.transaction_fee = convert_stripe_money(balance_transaction.fee)
-				for row in balance_transaction.fee_details:
-					invoice.append(
-						"transaction_fee_details",
-						{
-							"description": row.description,
-							"amount": convert_stripe_money(row.amount),
-							"currency": row.currency.upper(),
-						},
-					)
-				invoice.save()
+		invoice.update_transaction_details()
 
 		# unsuspend sites
 		team.unsuspend_sites(
