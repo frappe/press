@@ -559,7 +559,7 @@ class Site(Document):
 			self.save()
 
 	def update_site_config(self, config):
-		"""Updates site.configuration, site.config, runs site.save and initiates an Agent Request
+		"""Updates site.configuration, site.config and runs site.save which initiates an Agent Request
 		This checks for the blacklisted config keys via Frappe Validations, but not for internal usages.
 		Don't expose this directly to an external API. Pass through `press.utils.sanitize_config` or use
 		`press.api.site.update_config` instead.
