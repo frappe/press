@@ -299,6 +299,7 @@ class Invoice(Document):
 			invoice = client.post_api("create-fc-invoice", {"invoice": frappe.as_json(self)})
 			if invoice:
 				self.frappe_invoice = invoice
+				self.fetch_invoice_pdf()
 				self.save()
 				return invoice
 		except Exception:
@@ -308,21 +309,51 @@ class Invoice(Document):
 				text="Failed to create invoice on frappe.io" + "<br><br>" + traceback
 			)
 
+	def fetch_invoice_pdf(self):
+		if self.frappe_invoice:
+			client = self.get_frappeio_connection()
+			url = (
+				client.url
+				+ "/api/method/frappe.utils.print_format.download_pdf?"
+				f"doctype=Sales%20Invoice&name={self.frappe_invoice}&"
+				"format=Frappe%20Cloud&no_letterhead=0"
+			)
+
+			with client.session.get(url, stream=True) as r:
+				r.raise_for_status()
+				ret = frappe.get_doc(
+					{
+						"doctype": "File",
+						"attached_to_doctype": "Invoice",
+						"attached_to_name": self.name,
+						"attached_to_field": "invoice_pdf",
+						"folder": "Home/Attachments",
+						"file_name": self.frappe_invoice + ".pdf",
+						"is_private": 1,
+						"content": r.content,
+					}
+				)
+				ret.save(ignore_permissions=True)
+				self.invoice_pdf = ret.file_url
+
 	def get_frappeio_connection(self):
-		from frappe.frappeclient import FrappeClient
+		if not hasattr(self, "frappeio_connection"):
+			from frappe.frappeclient import FrappeClient
 
-		press_settings = frappe.get_single("Press Settings")
-		if not press_settings.frappe_url:
-			return
+			press_settings = frappe.get_single("Press Settings")
+			if not press_settings.frappe_url:
+				return
 
-		frappe_password = frappe.utils.password.get_decrypted_password(
-			"Press Settings", "Press Settings", fieldname="frappe_password"
-		)
-		return FrappeClient(
-			press_settings.frappe_url,
-			username=press_settings.frappe_username,
-			password=frappe_password,
-		)
+			frappe_password = frappe.utils.password.get_decrypted_password(
+				"Press Settings", "Press Settings", fieldname="frappe_password"
+			)
+			self.frappeio_connection = FrappeClient(
+				press_settings.frappe_url,
+				username=press_settings.frappe_username,
+				password=frappe_password,
+			)
+
+		return self.frappeio_connection
 
 	def consume_credits_and_mark_as_paid(self, reason=None):
 		if self.amount_due <= 0:
