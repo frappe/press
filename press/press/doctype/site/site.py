@@ -86,8 +86,8 @@ class Site(Document):
 		self.update_config_preview()
 
 		# create an agent request if config has been updated
-		if not self.is_new() and self.has_value_changed("config"):
-			Agent(self.server).update_site_config(self)
+		# if not self.is_new() and self.has_value_changed("config"):
+		# 	Agent(self.server).update_site_config(self)
 
 	def on_update(self):
 		if self.status == "Active" and self.has_value_changed("host_name"):
@@ -580,6 +580,7 @@ class Site(Document):
 			self._set_configuration(config)
 		else:
 			self._update_configuration(config)
+		Agent(self.server).update_site_config(self)
 
 	def update_site(self):
 		log_site_activity(self.name, "Update")
