@@ -70,6 +70,11 @@
 	h4 {
 		font-size: theme("fontSize.sm") !important;
 	}
+
+	a {
+		color: theme('colors.blue.600') !important;
+		text-decoration: underline !important;
+	}
 }
 
 /* purgecss end ignore */
