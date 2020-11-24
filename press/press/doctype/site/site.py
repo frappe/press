@@ -303,7 +303,7 @@ class Site(Document):
 		status = frappe.get_value("Site Domain", domain, "status")
 		if status != "Active":
 			frappe.throw(
-				msg="Only active domains can be primary", exc=frappe.exceptions.LinkValidationError,
+				msg="Only active domains can be primary", exc=frappe.LinkValidationError,
 			)
 
 	def _validate_host_name(self):
