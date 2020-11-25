@@ -18,7 +18,7 @@ class SiteDomain(Document):
 		if self.has_value_changed("redirect_to_primary"):
 			if self.redirect_to_primary:
 				self.setup_redirect_in_proxy()
-			else:
+			elif not self.is_new():
 				self.remove_redirect_in_proxy()
 
 	def setup_redirect_in_proxy(self):
