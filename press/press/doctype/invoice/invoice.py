@@ -302,17 +302,22 @@ class Invoice(Document):
 				f"{client.url}/api/method/create-fc-invoice",
 				data={"invoice": frappe.as_json(self)},
 			)
-			response.raise_for_status()
-			res = response.json()
-			invoice = res["message"]
+			if response.ok:
+				res = response.json()
+				invoice = res["message"]
 
-			if invoice:
-				self.frappe_invoice = invoice
-				self.fetch_invoice_pdf()
-				self.save()
-				return invoice
+				if invoice:
+					self.frappe_invoice = invoice
+					self.fetch_invoice_pdf()
+					self.save()
+					return invoice
+			else:
+				from bs4 import BeautifulSoup
+				soup = BeautifulSoup(response.text, 'html.parser')
+				self.add_comment(
+					text="Failed to create invoice on frappe.io" + "<br><br>" + str(soup.find('pre'))
+				)
 		except Exception:
-			log_error("Failed to create invoice on frappe.io", invoice=self.name)
 			traceback = "<pre><code>" + frappe.get_traceback() + "</pre></code>"
 			self.add_comment(
 				text="Failed to create invoice on frappe.io" + "<br><br>" + traceback
