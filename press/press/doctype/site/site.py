@@ -162,7 +162,7 @@ class Site(Document):
 		# log activity
 		log_site_activity(self.name, "Create")
 		self.create_agent_request()
-		self.set_host_name(self._create_default_site_domain().name)
+		self._create_default_site_domain()
 
 	def create_agent_request(self):
 		agent = Agent(self.server)
