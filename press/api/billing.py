@@ -171,7 +171,7 @@ def get_invoice_usage(invoice):
 			{
 				"idx": row.idx,
 				"site": row.document_name,
-				"plan": frappe.get_cached_value("Plan", row.plan, "plan_title"),
+				"plan": frappe.get_cached_value("Plan", row.plan, "plan_title") if row.plan else None,
 				"days_active": row.quantity,
 				"rate": row.get_formatted("rate"),
 				"amount": row.get_formatted("amount"),
@@ -181,9 +181,7 @@ def get_invoice_usage(invoice):
 	return {
 		"usage": usage,
 		"status": doc.status,
-		# TODO: indian customers should get GST invoices
-		# allow non-indian customers to download invoices
-		"invoice_pdf": doc.get_pdf() if doc.currency == "USD" else None,
+		"invoice_pdf": doc.get_pdf() if doc.currency == "USD" else doc.invoice_pdf,
 		"period_start": doc.period_start,
 		"period_end": doc.period_end,
 		"total": doc.get_formatted("total"),
