@@ -298,7 +298,14 @@ class Invoice(Document):
 			client = self.get_frappeio_connection()
 			if not client:
 				frappe.throw("Frappe.io URL not set up in Press Settings")
-			invoice = client.post_api("create-fc-invoice", {"invoice": frappe.as_json(self)})
+			response = client.session.post(
+				f"{client.url}/api/method/create-fc-invoice",
+				data={"invoice": frappe.as_json(self)},
+			)
+			response.raise_for_status()
+			res = response.json()
+			invoice = res["message"]
+
 			if invoice:
 				self.frappe_invoice = invoice
 				self.fetch_invoice_pdf()
