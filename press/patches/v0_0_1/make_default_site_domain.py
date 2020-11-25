@@ -7,6 +7,7 @@ import frappe
 
 def execute():
 	frappe.reload_doc("press", "doctype", "site")
+	frappe.reload_doc("press", "doctype", "site_domain")
 	for site in frappe.db.get_all(
 		"Site", {"status": ("!=", "Archived")}, pluck="name"
 	):
