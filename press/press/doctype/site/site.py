@@ -50,7 +50,9 @@ class Site(Document):
 			if not self.subscription_plan:
 				frappe.throw("Cannot create site without plan")
 
-			self._update_configuration(get_plan_config(self.subscription_plan), save=False)
+			self._update_configuration(
+				get_plan_config(self.subscription_plan), save=False
+			)
 
 		bench_apps = frappe.get_doc("Bench", self.bench).apps
 		for app in self.apps:
@@ -69,7 +71,8 @@ class Site(Document):
 		elif self.has_value_changed("host_name"):
 			self._validate_host_name()
 
-		# this is a little hack to remember which key is being removed from the site config
+		# this is a little hack to remember which key is being removed from the
+		# site config
 		old_keys = json.loads(self.config)
 		new_keys = [x.key for x in self.configuration]
 		self._keys_removed_in_last_update = json.dumps(
@@ -679,7 +682,11 @@ class Site(Document):
 	def plan(self):
 		return frappe.db.get_value(
 			"Subscription",
-			filters={"document_type": "Site", "document_name": self.name, "enabled": True},
+			filters={
+				"document_type": "Site",
+				"document_name": self.name,
+				"enabled": True,
+			},
 			fieldname="plan",
 		)
 
