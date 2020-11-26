@@ -4,8 +4,10 @@
 			class="flex px-4 py-3 text-base text-gray-800 border border-b-0 bg-gray-0 rounded-t-md"
 		>
 			<div class="w-10"></div>
-			<div class="w-1/2">Plan</div>
-			<div class="w-1/2">CPU Time</div>
+			<div class="w-1/4">Plan</div>
+			<div class="w-1/4">CPU Time</div>
+			<div class="w-1/4">Database</div>
+			<div class="w-1/4">Disk</div>
 		</div>
 		<div
 			class="flex px-4 py-3 text-base text-left border border-b-0 cursor-pointer focus-within:shadow-outline"
@@ -28,15 +30,21 @@
 					@change="e => (selectedPlan = e.target.checked ? plan : null)"
 				/>
 			</div>
-			<div class="w-1/2 text-gray-900" :class="{ 'opacity-25': plan.disabled }">
+			<div class="w-1/4 text-gray-900" :class="{ 'opacity-25': plan.disabled }">
 				<span class="font-semibold">
 					{{ plan.plan_title }}
 				</span>
 				<span> /mo</span>
 			</div>
-			<div class="w-1/2 text-gray-900" :class="{ 'opacity-25': plan.disabled }">
+			<div class="w-1/4 text-gray-900" :class="{ 'opacity-25': plan.disabled }">
 				{{ plan.cpu_time_per_day }}
 				{{ $plural(plan.concurrent_users, 'hour', 'hours') }} / day
+			</div>
+			<div class="w-1/4 text-gray-900" :class="{ 'opacity-25': plan.disabled }">
+				{{ formatBytes(plan.max_database_usage, 0, 2) }}
+			</div>
+			<div class="w-1/4 text-gray-900" :class="{ 'opacity-25': plan.disabled }">
+				{{ formatBytes(plan.max_storage_usage, 0, 2) }}
 			</div>
 		</div>
 	</div>

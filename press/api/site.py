@@ -266,6 +266,8 @@ def get_plans():
 			"concurrent_users",
 			"cpu_time_per_day",
 			"trial_period",
+			"max_storage_usage",
+			"max_database_usage",
 		],
 		filters={"enabled": True, "document_type": "Site"},
 		order_by="price_usd asc",
