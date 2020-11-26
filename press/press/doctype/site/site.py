@@ -64,7 +64,9 @@ class Site(Document):
 		apps = [app.app for app in self.apps]
 		if len(apps) != len(set(apps)):
 			frappe.throw("Can't install same app twice.")
-		if not self.is_new() and self.has_value_changed("host_name"):
+		if self.is_new():
+			self.host_name = self._create_default_site_domain().name
+		elif self.has_value_changed("host_name"):
 			self._validate_host_name()
 
 		# this is a little hack to remember which key is being removed from the site config
@@ -77,7 +79,7 @@ class Site(Document):
 		self.update_config_preview()
 
 	def on_update(self):
-		if self.host_name and self.has_value_changed("host_name"):
+		if self.status == "Active" and self.has_value_changed("host_name"):
 			site_domain = frappe.get_doc("Site Domain", self.host_name)
 			if site_domain.redirect_to_primary:
 				site_domain.remove_redirect()
@@ -156,13 +158,12 @@ class Site(Document):
 				"retry_count": 0,
 				"dns_type": "A",
 			}
-		).insert(ignore_if_duplicate=True)
+		).insert(ignore_if_duplicate=True, ignore_links=True)
 
 	def after_insert(self):
 		# log activity
 		log_site_activity(self.name, "Create")
 		self.create_agent_request()
-		self._create_default_site_domain()
 
 	def create_agent_request(self):
 		agent = Agent(self.server)
