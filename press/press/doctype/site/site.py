@@ -77,7 +77,7 @@ class Site(Document):
 		self.update_config_preview()
 
 	def on_update(self):
-		if self.has_value_changed("host_name"):
+		if self.host_name and self.has_value_changed("host_name"):
 			site_domain = frappe.get_doc("Site Domain", self.host_name)
 			if site_domain.redirect_to_primary:
 				site_domain.remove_redirect()
