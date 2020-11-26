@@ -348,16 +348,13 @@ class Agent:
 			site=domain.site,
 		)
 
-	def setup_redirect(self, domain, target):
-		data = {
-			"target": target,
-		}
+	def setup_redirects(self, domains, target):
+		data = {"domains": domains, "target": target}
 		return self.create_agent_job(
 			"Setup Redirect on Host",
-			f"proxy/hosts/{domain.domain}/redirect",
+			"proxy/hosts/redirects",
 			data,
-			host=domain.domain,
-			site=domain.site,
+			site=domains[0].site,
 		)
 
 	def remove_redirect(self, domain):
