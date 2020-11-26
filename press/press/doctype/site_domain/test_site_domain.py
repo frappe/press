@@ -123,7 +123,7 @@ class TestSiteDomain(unittest.TestCase):
 		site_domain2.setup_redirect()
 		site_domain3.setup_redirect()
 
-		with patch.object(Agent, "setup_redirect") as mock_set_redirect:
+		with patch.object(Agent, "setup_redirects") as mock_set_redirects:
 			site.set_host_name(site_domain1.name)
 
 		# override eq because id of object is different
@@ -135,7 +135,7 @@ class TestSiteDomain(unittest.TestCase):
 			)
 
 		with patch.object(SiteDomain, "__eq__", new=__eq__):
-			mock_set_redirect.assert_has_calls(
+			mock_set_redirects.assert_has_calls(
 				[
 					call(site_domain2, site_domain1.name),
 					call(site_domain3, site_domain1.name),
@@ -152,9 +152,9 @@ class TestSiteDomain(unittest.TestCase):
 		site = create_test_site(self.site_subdomain)
 		site_domain = create_test_site_domain(site.name, "hellohello.com")
 
-		with patch.object(Agent, "setup_redirect") as mock_setup_redirect:
+		with patch.object(Agent, "setup_redirects") as mock_setup_redirects:
 			site_domain.setup_redirect()
-		mock_setup_redirect.assert_called_with(site_domain, site.name)
+		mock_setup_redirects.assert_called_with([site_domain], site.name)
 
 	def test_remove_redirect_updates_redirect_in_agent(self):
 		"""
@@ -173,7 +173,7 @@ class TestSiteDomain(unittest.TestCase):
 	def test_making_doc_with_redirect_to_primary_true_updates_agent(self):
 		"""Ensure agent is updated when redirected site domain is created."""
 		site = create_test_site(self.site_subdomain)
-		with patch.object(Agent, "setup_redirect") as mock_setup_redirect:
+		with patch.object(Agent, "setup_redirects") as mock_setup_redirects:
 			site_domain = frappe.get_doc(
 				{
 					"doctype": "Site Domain",
@@ -185,7 +185,7 @@ class TestSiteDomain(unittest.TestCase):
 					"redirect_to_primary": True,
 				}
 			).insert(ignore_if_duplicate=True)
-		mock_setup_redirect.assert_called_with(site_domain, site.name)
+		mock_setup_redirects.assert_called_with([site_domain], site.name)
 
 	def test_redirect_is_deleted_when_site_domain_is_deleted(self):
 		"""Ensure redirect in agent is deleted when site domain doc is deleted."""
