@@ -85,5 +85,6 @@ frappe.ui.form.on('Site', {
 				__('Actions')
 			);
 		});
+		frm.toggle_enable(['host_name'], frm.doc.status === 'Active');
 	},
 });
