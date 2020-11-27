@@ -22,22 +22,18 @@ class SiteDomain(Document):
 				self.remove_redirect_in_proxy()
 
 	def setup_redirect_in_proxy(self):
-		target = frappe.get_value("Site", self.site, "host_name")
+		site = frappe.get_doc("Site", self.site)
+		target = site.host_name
 		if target == self.name:
 			frappe.throw(
 				"Primary domain can't be redirected.",
 				exc=frappe.exceptions.ValidationError,
 			)
-		server = frappe.db.get_value("Site", self.site, "server")
-		proxy_server = frappe.db.get_value("Server", server, "proxy_server")
-		agent = Agent(proxy_server, server_type="Proxy Server")
-		agent.setup_redirects(self.site, [self.name], target)
+		site.set_redirects_in_proxy([self.name])
 
 	def remove_redirect_in_proxy(self):
-		server = frappe.db.get_value("Site", self.site, "server")
-		proxy_server = frappe.db.get_value("Server", server, "proxy_server")
-		agent = Agent(proxy_server, server_type="Proxy Server")
-		agent.remove_redirects(self.site, [self.name])
+		site = frappe.get_doc("Site", self.site)
+		site.unset_redirects_in_proxy([self.name])
 
 	def setup_redirect(self):
 		self.redirect_to_primary = True
