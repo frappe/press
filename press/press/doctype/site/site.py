@@ -347,7 +347,7 @@ class Site(Document):
 	def unset_redirects_in_proxy(self, domains):
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
-		agent.setup_redirects(self.name, domains)
+		agent.remove_redirects(self.name, domains)
 
 	def set_redirect(self, domain: str):
 		"""Enable redirect to primary for domain."""
