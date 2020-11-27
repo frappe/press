@@ -83,11 +83,11 @@ class Site(Document):
 
 	def on_update(self):
 		if self.status == "Active" and self.has_value_changed("host_name"):
-			site_domain = frappe.get_doc("Site Domain", self.host_name)
-			if site_domain.redirect_to_primary:
-				site_domain.remove_redirect()
 			self.update_site_config({"host_name": f"https://{self.host_name}"})
 			self._update_redirects_for_all_site_domains()
+			frappe.db.set_value(
+				"Site Domain", self.host_name, "redirect_to_primary", False
+			)
 
 	def update_config_preview(self):
 		"""Regenrates site.config on each site.validate from the site.configuration child table data"""
