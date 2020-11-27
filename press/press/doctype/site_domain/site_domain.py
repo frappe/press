@@ -88,8 +88,6 @@ class SiteDomain(Document):
 		self.disavow_agent_jobs()
 		self.create_remove_host_agent_request()
 		self.remove_domain_from_site_config()
-		if self.redirect_to_primary:
-			self.remove_redirect_in_proxy()
 
 	def after_delete(self):
 		self.delete_tls_certificate()
