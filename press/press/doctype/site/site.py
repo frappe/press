@@ -338,13 +338,13 @@ class Site(Document):
 		if domains:
 			self.unset_redirects_in_proxy(domains)
 
-	def set_redirects_in_proxy(self, domains):
+	def set_redirects_in_proxy(self, domains: List[str]):
 		target = self.host_name
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
 		agent.setup_redirects(self.name, domains, target)
 
-	def unset_redirects_in_proxy(self, domains):
+	def unset_redirects_in_proxy(self, domains: List[str]):
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
 		agent.remove_redirects(self.name, domains)
