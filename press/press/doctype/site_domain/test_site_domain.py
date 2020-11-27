@@ -179,26 +179,3 @@ class TestSiteDomain(unittest.TestCase):
 		mock_setup_redirects.assert_called_with(
 			site.name, [site_domain.name], site.name
 		)
-
-	def test_redirect_is_deleted_when_site_domain_is_deleted(self):
-		"""Ensure redirect in agent is deleted when site domain doc is deleted."""
-		site = create_test_site(self.site_subdomain)
-		site_domain = create_test_site_domain(site.name, "hellohello.com")
-		site_domain.setup_redirect()
-
-		with patch.object(Agent, "remove_redirects") as mock_remove_redirects:
-			site_domain.delete()
-
-		# override eq because id of object is different
-		def __eq__(self, other):
-			return (
-				self.name == other.name
-				and self.domain == other.domain
-				and self.site == other.site
-			)
-
-		with patch.object(SiteDomain, "__eq__", new=__eq__):
-			mock_remove_redirects.assert_called_with(site.name, [site_domain.name])
-		frappe.delete_doc(site_domain.doctype, site_domain.name, force=True)
-		frappe.delete_doc("Site Domain", site.name, force=True)
-		frappe.delete_doc("Site", site.name, force=True)
