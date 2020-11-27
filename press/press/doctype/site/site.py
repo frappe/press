@@ -325,9 +325,15 @@ class Site(Document):
 			filters={"site": self.name, "redirect_to_primary": True},
 			pluck="name",
 		)
-		for domain in domains:
-			site_domain = frappe.get_doc("Site Domain", domain)
-			site_domain.setup_redirect_in_proxy()
+		site_domains = [frappe.get_doc("Site Domain", domain) for domain in domains]
+		if site_domains:
+			self._set_redirects_in_proxy(site_domains)
+
+	def _set_redirects_in_proxy(self, domains):
+		target = self.host_name
+		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
+		agent = Agent(proxy_server, server_type="Proxy Server")
+		agent.setup_redirects(domains, target)
 
 	def set_redirect(self, domain: str):
 		"""Enable redirect to primary for domain."""
