@@ -37,7 +37,7 @@ class SiteDomain(Document):
 		server = frappe.db.get_value("Site", self.site, "server")
 		proxy_server = frappe.db.get_value("Server", server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
-		agent.remove_redirect(self)
+		agent.remove_redirects([self])
 
 	def setup_redirect(self):
 		self.redirect_to_primary = True
