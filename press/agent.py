@@ -7,6 +7,7 @@ from __future__ import unicode_literals
 import json
 import os
 from datetime import date
+from typing import List
 
 import frappe
 import requests
@@ -348,23 +349,20 @@ class Agent:
 			site=domain.site,
 		)
 
-	def setup_redirects(self, domains, target):
-		data = {"domains": [domain.domain for domain in domains], "target": target}
+	def setup_redirects(self, site: str, domains: List[str], target: str):
+		data = {"domains": domains, "target": target}
 		return self.create_agent_job(
-			"Setup Redirects on Hosts",
-			"proxy/hosts/redirects",
-			data,
-			site=domains[0].site,
+			"Setup Redirects on Hosts", "proxy/hosts/redirects", data, site=site,
 		)
 
-	def remove_redirects(self, domains):
-		data = {"domains": [domain.domain for domain in domains]}
+	def remove_redirects(self, site: str, domains: List[str]):
+		data = {"domains": domains}
 		return self.create_agent_job(
 			"Remove Redirects on Hosts",
 			"proxy/hosts/redirects",
 			data,
 			method="DELETE",
-			site=domains[0].site,
+			site=site,
 		)
 
 	def remove_host(self, domain):
