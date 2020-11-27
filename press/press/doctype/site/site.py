@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 
 import json
 import re
+from typing import List
 
 import dateutil.parser
 import frappe
@@ -319,21 +320,34 @@ class Site(Document):
 		self.host_name = domain
 		self.save()
 
-	def _update_redirects_for_all_site_domains(self):
-		domains = frappe.get_all(
+	def _get_redirected_domains(self) -> List[str]:
+		"""Get list of redirected site domains for site."""
+		return frappe.get_all(
 			"Site Domain",
 			filters={"site": self.name, "redirect_to_primary": True},
 			pluck="name",
 		)
-		site_domains = [frappe.get_doc("Site Domain", domain) for domain in domains]
-		if site_domains:
-			self._set_redirects_in_proxy(site_domains)
+
+	def _update_redirects_for_all_site_domains(self):
+		domains = self._get_redirected_domains()
+		if domains:
+			self._set_redirects_in_proxy(domains)
+
+	def _remove_redirects_for_all_site_domains(self):
+		domains = self._get_redirected_domains()
+		if domains:
+			self._unset_redirects_in_proxy(domains)
 
 	def _set_redirects_in_proxy(self, domains):
 		target = self.host_name
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
-		agent.setup_redirects(domains, target)
+		agent.setup_redirects(self.name, domains, target)
+
+	def _unset_redirects_in_proxy(self, domains):
+		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
+		agent = Agent(proxy_server, server_type="Proxy Server")
+		agent.setup_redirects(self.name, domains)
 
 	def set_redirect(self, domain: str):
 		"""Enable redirect to primary for domain."""
