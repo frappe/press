@@ -33,25 +33,6 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-10-02 15:34:23.594712",
-  "name": "Fetch Sites Info",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
-  "request_method": "POST",
-  "request_path": "/benches/{bench}/info",
-  "steps": [
-   {
-    "parent": "Fetch Sites Info",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Fetch Sites Info"
-   }
-  ]
- },
- {
-  "docstatus": 0,
-  "doctype": "Agent Job Type",
   "modified": "2020-08-11 12:17:23.658693",
   "name": "Add Domain",
   "parent": null,
@@ -1040,28 +1021,34 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-10-12 21:03:33.225786",
-  "name": "Remove Redirect on Host",
+  "modified": "2020-11-27 12:41:54.367394",
+  "name": "Setup Redirects on Hosts",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
   "request_method": "POST",
-  "request_path": null,
+  "request_path": "/proxy/hosts/redirects",
   "steps": [
    {
-    "parent": "Remove Redirect on Host",
+    "parent": "Setup Redirects on Hosts",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
-    "step_name": "Remove Redirect on Host"
+    "step_name": "Remove Redirect for Primary Domain"
    },
    {
-    "parent": "Remove Redirect on Host",
+    "parent": "Setup Redirects on Hosts",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Setup Redirects on Hosts"
+   },
+   {
+    "parent": "Setup Redirects on Hosts",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Generate NGINX Configuration"
    },
    {
-    "parent": "Remove Redirect on Host",
+    "parent": "Setup Redirects on Hosts",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Reload NGINX"
@@ -1071,28 +1058,28 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-10-11 16:24:39.286430",
-  "name": "Setup Redirect on Host",
+  "modified": "2020-11-27 12:42:23.899058",
+  "name": "Remove Redirects on Hosts",
   "parent": null,
   "parentfield": null,
   "parenttype": null,
-  "request_method": "POST",
-  "request_path": "/proxy/hosts/{domain}/redirect",
+  "request_method": "DELETE",
+  "request_path": "/proxy/hosts/redirects",
   "steps": [
    {
-    "parent": "Setup Redirect on Host",
+    "parent": "Remove Redirects on Hosts",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
-    "step_name": "Setup Redirect on Host"
+    "step_name": "Remove Redirects on Hosts"
    },
    {
-    "parent": "Setup Redirect on Host",
+    "parent": "Remove Redirects on Hosts",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Generate NGINX Configuration"
    },
    {
-    "parent": "Setup Redirect on Host",
+    "parent": "Remove Redirects on Hosts",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Reload NGINX"
