@@ -155,9 +155,9 @@ class TestSiteDomain(unittest.TestCase):
 		site_domain = create_test_site_domain(site.name, "hellohello.com")
 		site_domain.setup_redirect()
 
-		with patch.object(Agent, "remove_redirect") as mock_remove_redirect:
+		with patch.object(Agent, "remove_redirects") as mock_remove_redirects:
 			site_domain.remove_redirect()
-		mock_remove_redirect.assert_called_with(site_domain)
+		mock_remove_redirects.assert_called_with([site_domain])
 
 	def test_making_doc_with_redirect_to_primary_true_updates_agent(self):
 		"""Ensure agent is updated when redirected site domain is created."""
@@ -182,7 +182,7 @@ class TestSiteDomain(unittest.TestCase):
 		site_domain = create_test_site_domain(site.name, "hellohello.com")
 		site_domain.setup_redirect()
 
-		with patch.object(Agent, "remove_redirect") as mock_remove_redirect:
+		with patch.object(Agent, "remove_redirects") as mock_remove_redirects:
 			site_domain.delete()
 
 		# override eq because id of object is different
@@ -194,7 +194,7 @@ class TestSiteDomain(unittest.TestCase):
 			)
 
 		with patch.object(SiteDomain, "__eq__", new=__eq__):
-			mock_remove_redirect.assert_called_with(site_domain)
+			mock_remove_redirects.assert_called_with([site_domain])
 		frappe.delete_doc(site_domain.doctype, site_domain.name, force=True)
 		frappe.delete_doc("Site Domain", site.name, force=True)
 		frappe.delete_doc("Site", site.name, force=True)
