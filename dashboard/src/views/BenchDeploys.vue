@@ -132,8 +132,18 @@ export default {
 		formatDuration(duration) {
 			return duration.split('.')[0];
 		},
-		if (this.deployName) {
-			this.$resources.selectedDeploy.reload();
+		setupSocket() {
+			if (this._socketSetup) return;
+			this._socketSetup = true;
+
+			this.$socket.on('list_update', ({ doctype, name }) => {
+				if (
+					doctype === 'Deploy Candidate' &&
+					name === this.selectedCandidate.name
+				) {
+					this.$resources.selectedCandidate.reload();
+				}
+			});
 		}
 	},
 	resources: {
