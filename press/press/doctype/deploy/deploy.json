@@ -15,17 +15,21 @@
    "fieldname": "group",
    "fieldtype": "Link",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Release Group",
    "options": "Release Group",
-   "reqd": 1
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "candidate",
    "fieldtype": "Link",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Deploy Candidate",
    "options": "Deploy Candidate",
-   "reqd": 1
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "benches",
@@ -36,7 +40,7 @@
   }
  ],
  "links": [],
- "modified": "2020-06-19 20:03:58.040039",
+ "modified": "2020-11-28 12:38:15.340857",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy",
