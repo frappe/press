@@ -217,7 +217,7 @@ export default {
 					'Jobs',
 					'Site Logs'
 				],
-				Suspended: ['General', 'Activity', 'Backups', 'Jobs']
+				Suspended: ['General', 'Activity', 'Backups', 'Jobs', 'Plan']
 			};
 			if (this.site) {
 				let tabsToShow = tabsByStatus[this.site.status];

@@ -5,10 +5,7 @@
 			description="Upgrade, downgrade or deactivate this site based on usage"
 		>
 			<SectionCard v-if="currentPlan">
-				<div
-					class="px-6 py-4 mb-2 text-base hover:bg-gray-50"
-					v-if="site.status == 'Active'"
-				>
+				<div class="px-6 py-4 mb-2 text-base hover:bg-gray-50">
 					<div class="leading-6 text-gray-900">
 						<span class="font-bold">{{ currentPlan.plan_title }} </span>
 						(Current Plan)
@@ -20,9 +17,12 @@
 				<div class="px-6 my-2 text-base" v-if="site.status == 'Inactive'">
 					Your site is deactivated
 				</div>
+				<div class="px-6 my-2 text-base" v-if="site.status == 'Suspended'">
+					Your site has been suspended
+				</div>
 				<div class="px-6 pb-2 space-x-2">
 					<Button
-						v-if="site.status == 'Active'"
+						v-if="['Active', 'Suspended'].includes(site.status)"
 						type="primary"
 						@click="
 							() => {
@@ -215,6 +215,13 @@ export default {
 			this.plans = await this.$call('press.api.site.get_plans');
 			this.plans = this.plans.map(plan => {
 				if (this.currentPlan.name === plan.name) {
+					plan.disabled = true;
+				}
+
+				if (
+					this.totalDiskUsage > plan.max_storage_usage ||
+					this.totalDatabaseUsage > plan.max_database_usage
+				) {
 					plan.disabled = true;
 				}
 				return plan;
