@@ -42,6 +42,7 @@ class DeployCandidate(Document):
 			self._prepare_build_directory()
 			self._prepare_build_context()
 			self._run_docker_build()
+			self._push_docker_image()
 		except Exception:
 			log_error("Deploy Candidate Build Exception", name=self.name)
 			self.status = "Failure"
@@ -229,6 +230,29 @@ class DeployCandidate(Document):
 		return_code = process.wait()
 		if return_code:
 			raise subprocess.CalledProcessError(return_code, command)
+
+	def _push_docker_image(self):
+		settings = frappe.db.get_value(
+			"Press Settings",
+			None,
+			["docker_registry_url", "docker_registry_username", "docker_registry_password"],
+			as_dict=True,
+		)
+
+		client = docker.from_env()
+		client.login(
+			registry=settings.docker_registry_url,
+			username=settings.docker_registry_username,
+			password=settings.docker_registry_password,
+		)
+
+		image = client.images.get(self.docker_image_id)
+		repository = f"{settings.docker_registry_url}/{self.docker_image_name}"
+		image.tag(repository, self.docker_image_tag)
+
+		client.images.push(
+			repository, self.docker_image_tag
+		)
 
 	def create_deploy(self):
 		try:
