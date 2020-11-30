@@ -11,6 +11,14 @@ frappe.ui.form.on('Site', {
 				},
 			};
 		});
+		frm.set_query('host_name', () => {
+			return {
+				filters: {
+					site: frm.doc.name,
+					status: 'Active'
+				},
+			};
+		});
 	},
 	refresh: function (frm) {
 		let { cpu, database, disk } = JSON.parse(frm.doc._site_usages);
@@ -77,5 +85,6 @@ frappe.ui.form.on('Site', {
 				__('Actions')
 			);
 		});
+		frm.toggle_enable(['host_name'], frm.doc.status === 'Active');
 	},
 });

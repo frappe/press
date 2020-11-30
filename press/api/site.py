@@ -164,7 +164,7 @@ def get_backup_link(name, backup, file):
 def domains(name):
 	domains = frappe.get_all(
 		"Site Domain",
-		fields=["name", "domain", "status", "retry_count"],
+		fields=["name", "domain", "status", "retry_count", "redirect_to_primary"],
 		filters={"site": name},
 	)
 	host_name = frappe.db.get_value("Site", name, "host_name")
@@ -306,7 +306,14 @@ def get(name):
 	available_apps = list(filter(lambda x: x not in installed_apps, bench_apps.keys()))
 	installed_apps = frappe.get_all(
 		"Frappe App",
-		fields=["name", "repo_owner as owner", "scrubbed as repo", "url", "branch", "frappe"],
+		fields=[
+			"name",
+			"repo_owner as owner",
+			"scrubbed as repo",
+			"url",
+			"branch",
+			"frappe",
+		],
 		filters={"name": ("in", installed_apps)},
 	)
 	available_apps = frappe.get_all(
@@ -373,7 +380,7 @@ def analytics(name, period="1 hour"):
 
 	usage_data = get_data("Site Request Log", "counter")
 	request_data = get_data(
-		"Site Request Log", "COUNT(name) as request_count, SUM(duration) as request_duration"
+		"Site Request Log", "COUNT(name) as request_count, SUM(duration) as request_duration",
 	)
 	job_data = get_data(
 		"Site Job Log", "COUNT(name) as job_count, SUM(duration) as job_duration"
@@ -596,6 +603,18 @@ def retry_add_domain(name, domain):
 @protected("Site")
 def set_host_name(name, domain):
 	frappe.get_doc("Site", name).set_host_name(domain)
+
+
+@frappe.whitelist()
+@protected("Site")
+def set_redirect(name, domain):
+	frappe.get_doc("Site", name).set_redirect(domain)
+
+
+@frappe.whitelist()
+@protected("Site")
+def unset_redirect(name, domain):
+	frappe.get_doc("Site", name).unset_redirect(domain)
 
 
 @frappe.whitelist()

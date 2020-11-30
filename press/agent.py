@@ -7,6 +7,7 @@ from __future__ import unicode_literals
 import json
 import os
 from datetime import date
+from typing import List
 
 import frappe
 import requests
@@ -32,13 +33,19 @@ class Agent:
 		}
 		for app in bench.apps:
 			url, repo_owner, repo, branch, installation = frappe.db.get_value(
-				"Frappe App", app.app, ["url", "repo_owner", "repo", "branch", "installation"]
+				"Frappe App", app.app, ["url", "repo_owner", "repo", "branch", "installation"],
 			)
 			if installation:
 				token = get_access_token(installation)
 				url = f"https://x-access-token:{token}@github.com/{repo_owner}/{repo}"
 			data["apps"].append(
-				{"name": app.scrubbed, "repo": repo, "url": url, "branch": branch, "hash": app.hash}
+				{
+					"name": app.scrubbed,
+					"repo": repo,
+					"url": url,
+					"branch": branch,
+					"hash": app.hash,
+				}
 			)
 		return self.create_agent_job("New Bench", "benches", data, bench=bench.name)
 
@@ -66,7 +73,7 @@ class Agent:
 		}
 
 		return self.create_agent_job(
-			"New Site", f"benches/{site.bench}/sites", data, bench=site.bench, site=site.name
+			"New Site", f"benches/{site.bench}/sites", data, bench=site.bench, site=site.name,
 		)
 
 	def reinstall_site(self, site):
@@ -290,7 +297,23 @@ class Agent:
 			},
 		}
 		return self.create_agent_job(
-			"Add Host to Proxy", "proxy/hosts", data, host=domain.domain, site=domain.site
+			"Add Host to Proxy", "proxy/hosts", data, host=domain.domain, site=domain.site,
+		)
+
+	def setup_redirects(self, site: str, domains: List[str], target: str):
+		data = {"domains": domains, "target": target}
+		return self.create_agent_job(
+			"Setup Redirects on Hosts", "proxy/hosts/redirects", data, site=site,
+		)
+
+	def remove_redirects(self, site: str, domains: List[str]):
+		data = {"domains": domains}
+		return self.create_agent_job(
+			"Remove Redirects on Hosts",
+			"proxy/hosts/redirects",
+			data,
+			method="DELETE",
+			site=site,
 		)
 
 	def remove_host(self, domain):

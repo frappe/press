@@ -210,8 +210,9 @@
   },
   {
    "fieldname": "host_name",
-   "fieldtype": "Data",
-   "label": "Host Name"
+   "fieldtype": "Link",
+   "label": "Host Name",
+   "options": "Site Domain"
   },
   {
    "fieldname": "status_before_update",
