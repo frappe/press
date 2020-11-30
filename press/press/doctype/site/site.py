@@ -621,6 +621,17 @@ class Site(Document):
 			}
 		).insert()
 
+		if self.status == "Suspended":
+			usage = frappe.get_last_doc("Site Usage", {"site": self.name})
+			disk_usage = usage.public + usage.private
+			plan = frappe.get_doc("Plan", self.plan)
+
+			if (
+				usage.database < plan.max_database_usage
+				and disk_usage < plan.max_storage_usage
+			):
+				self.unsuspend(reason="Plan Upgraded")
+
 	def deactivate(self):
 		self.update_site_config({"maintenance_mode": 1})
 		log_site_activity(self.name, "Deactivate Site")
