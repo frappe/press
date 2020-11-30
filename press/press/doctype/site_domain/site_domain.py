@@ -12,7 +12,9 @@ from press.agent import Agent
 
 class SiteDomain(Document):
 	def after_insert(self):
-		self.create_tls_certificate()
+		if self.domain != self.site:
+			# default domain
+			self.create_tls_certificate()
 
 	def validate(self):
 		if self.has_value_changed("redirect_to_primary"):
@@ -44,8 +46,6 @@ class SiteDomain(Document):
 		self.save()
 
 	def create_tls_certificate(self):
-		if self.domain == self.site:
-			return
 		certificate = frappe.get_doc(
 			{"doctype": "TLS Certificate", "wildcard": False, "domain": self.domain}
 		).insert()
