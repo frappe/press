@@ -1021,7 +1021,7 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-11-27 12:41:54.367394",
+  "modified": "2020-11-30 12:12:41.282921",
   "name": "Setup Redirects on Hosts",
   "parent": null,
   "parentfield": null,
@@ -1033,13 +1033,13 @@
     "parent": "Setup Redirects on Hosts",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
-    "step_name": "Remove Redirect for Primary Domain"
+    "step_name": "Remove Redirect on Host"
    },
    {
     "parent": "Setup Redirects on Hosts",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
-    "step_name": "Setup Redirects on Hosts"
+    "step_name": "Setup Redirect on Host"
    },
    {
     "parent": "Setup Redirects on Hosts",
@@ -1058,7 +1058,7 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-11-27 12:42:23.899058",
+  "modified": "2020-11-30 12:12:21.595092",
   "name": "Remove Redirects on Hosts",
   "parent": null,
   "parentfield": null,
@@ -1070,7 +1070,7 @@
     "parent": "Remove Redirects on Hosts",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
-    "step_name": "Remove Redirects on Hosts"
+    "step_name": "Remove Redirect on Host"
    },
    {
     "parent": "Remove Redirects on Hosts",
