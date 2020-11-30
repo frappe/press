@@ -24,9 +24,15 @@
   "column_break_16",
   "is_database_client_setup",
   "ssh_section",
+  "ssh_port",
   "root_public_key",
   "column_break_20",
-  "frappe_public_key"
+  "frappe_public_key",
+  "replication_section",
+  "is_replica",
+  "replication_status",
+  "column_break_24",
+  "primary_server"
  ],
  "fields": [
   {
@@ -153,10 +159,47 @@
   {
    "fieldname": "column_break_20",
    "fieldtype": "Column Break"
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "eval:doc.is_replica",
+   "fieldname": "replication_section",
+   "fieldtype": "Section Break",
+   "label": "Replication"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_replica",
+   "fieldtype": "Check",
+   "label": "Is Replica"
+  },
+  {
+   "fieldname": "column_break_24",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "primary_server",
+   "fieldtype": "Link",
+   "label": "Primary Server",
+   "options": "Server"
+  },
+  {
+   "default": "22",
+   "fieldname": "ssh_port",
+   "fieldtype": "Int",
+   "label": "SSH Port"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "replication_status",
+   "fieldtype": "Select",
+   "label": "Replication Status",
+   "options": "Pending\nInstalling\nActive\nBroken\nDeactivated",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2020-10-09 18:14:55.805169",
+ "modified": "2020-11-30 16:36:17.329906",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

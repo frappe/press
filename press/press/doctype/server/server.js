@@ -9,6 +9,7 @@ frappe.ui.form.on('Server', {
 			[__('Update Agent'), "update_agent", true, frm.doc.is_server_setup],
 			[__('Setup Server'), "setup_server", true, !frm.doc.is_server_setup],
 			[__('Add to Proxy'), "add_upstream_to_proxy", true, frm.doc.is_server_setup && !frm.doc.is_upstream_setup],
+			[__('Setup Replication'), "setup_replication", true, frm.doc.is_server_setup && frm.doc.is_replica && frm.doc.replication_status!='Active'],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === "undefined" || condition) {
 				frm.add_custom_button(

@@ -1,0 +1,12 @@
+
+- name: Setup SSH Access for frappe user
+  hosts: all
+  become: yes
+  become_user: frappe
+  gather_facts: yes
+  tasks:
+    - name: Add Public Key to Authorized Keys
+      authorized_key:
+        user: frappe
+        key: "{{ frappe_public_key }}"
+        state: present

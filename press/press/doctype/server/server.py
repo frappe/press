@@ -86,6 +86,53 @@ class Server(Document):
 		agent = Agent(self.name)
 		agent.cleanup_unused_files()
 
+	def setup_replication(self):
+		self.replication_status = "Installing"
+		self.save()
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_setup_replication", queue="long", timeout=1200
+		)
+
+	def _setup_replication(self):
+		primary_server = frappe.get_doc('Server', self.primary_server)
+
+		try:
+			ansible = Ansible(
+				playbook="setup_authorized_keys.yml",
+				server=self,
+				variables={
+					"frappe_public_key": primary_server.frappe_public_key
+				},
+			)
+			play = ansible.run()
+			self.reload()
+
+			if play.status == "Success":
+				ansible = Ansible(
+					playbook="replication.yml",
+					server=primary_server,
+					variables={
+						"replica_server_ip": self.ip,
+						"home_dir": "/home/frappe",
+						"ssh_port": self.ssh_port or 22
+					},
+				)
+				play = ansible.run()
+				self.reload()
+
+				if play.status == "Success":
+					self.replication_status = 'Active'
+				else:
+					self.replication_status = "Broken"
+
+			else:
+				self.replication_status = "Broken"
+
+		except Exception:
+			self.replication_status = "Broken"
+			log_error("Replica Server Setup Exception", server=self.as_dict())
+
+		self.save()
 
 def process_new_server_job_update(job):
 	if job.status == "Success":

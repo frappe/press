@@ -1,0 +1,70 @@
+---
+- name: Remove Primary from Known Hosts
+  known_hosts:
+    name: "{{ replica_server_ip }}"
+    state: absent
+
+- name: Add Primary to Known Hosts
+  shell: ssh-keyscan {{ replica_server_ip }} >> /root/.ssh/known_hosts
+
+- name: install lsyncd
+  apt:
+    state: present
+    force: yes
+    pkg:
+      - lsyncd
+
+- name: Create Logs Directory
+  file:
+    dest: /var/log/lsyncd
+    state: directory
+    owner: frappe
+    group: frappe
+
+- name: Touch log and status files
+  file:
+    dest: /var/log/lsyncd/{{ item }}
+    state: touch
+    owner: frappe
+    group: frappe
+  with_items:
+    - lsyncd.logs
+    - lsyncd.status
+
+- name: Setup environment variables
+  copy:
+    src: files/lsyncd
+    dest: /etc/default/lsyncd
+
+- name: Setup config dir under etc
+  file:
+    dest: /etc/lsyncd
+    state: directory
+
+- name: Add lsyncd config under /etc/lsyncd
+  template:
+    src: lsyncd.conf
+    dest: /etc/lsyncd/lsyncd.conf.lua
+    owner: root
+    group: root
+
+- name: Setup lsyncd service for frappe user
+  copy:
+    src: files/lsyncd.service
+    dest: /etc/systemd/system/lsyncd.service
+
+- name: Get total file count for initial sync
+  shell: 'cd /home/frappe && find . -type f | wc -l'
+  register: file_count
+
+- name: Set max_user_watches
+  sysctl:
+    name: fs.inotify.max_user_watches
+    value: '{{ file_count.stdout | string }}'
+    state: present
+
+- name: Enable and Start lsyncd service
+  systemd:
+    name: lsyncd
+    state: started
+    enabled: True
