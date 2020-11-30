@@ -5,8 +5,26 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "status",
+  "column_break_2",
   "group",
-  "applications"
+  "section_break_4",
+  "applications",
+  "section_break_6",
+  "build_directory",
+  "assets_file",
+  "column_break_7",
+  "build_start",
+  "build_end",
+  "build_duration",
+  "section_break_11",
+  "docker_image_id",
+  "docker_image_name",
+  "column_break_13",
+  "docker_image_tag",
+  "section_break_9",
+  "build_steps",
+  "build_output"
  ],
  "fields": [
   {
@@ -24,10 +42,111 @@
    "label": "Applications",
    "options": "Deploy Candidate Application Release",
    "reqd": 1
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Draft\nPending\nRunning\nSuccess\nFailure",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_4",
+   "fieldtype": "Section Break",
+   "hide_border": 1
+  },
+  {
+   "fieldname": "build_directory",
+   "fieldtype": "Data",
+   "label": "Build Directory",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "build_duration",
+   "fieldtype": "Time",
+   "label": "Build Duration",
+   "read_only": 1
+  },
+  {
+   "fieldname": "build_start",
+   "fieldtype": "Datetime",
+   "label": "Build Start",
+   "read_only": 1
+  },
+  {
+   "fieldname": "build_end",
+   "fieldtype": "Datetime",
+   "label": "Build End",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_9",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "build_steps",
+   "fieldtype": "Table",
+   "label": "Build Steps",
+   "options": "Deploy Candidate Build Step",
+   "read_only": 1
+  },
+  {
+   "fieldname": "build_output",
+   "fieldtype": "Code",
+   "label": "Build Output",
+   "read_only": 1
+  },
+  {
+   "fieldname": "docker_image_id",
+   "fieldtype": "Data",
+   "label": "Docker Image ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_7",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "assets_file",
+   "fieldtype": "Data",
+   "label": "Assets File",
+   "read_only": 1
+  },
+  {
+   "fieldname": "docker_image_tag",
+   "fieldtype": "Data",
+   "label": "Docker Image Tag",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_11",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_13",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_6",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "docker_image_name",
+   "fieldtype": "Data",
+   "label": "Docker Image Name",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2020-11-20 18:13:56.613553",
+ "modified": "2020-11-30 19:13:18.836400",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",

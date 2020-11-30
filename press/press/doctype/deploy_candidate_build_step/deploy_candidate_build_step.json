@@ -1,0 +1,130 @@
+{
+ "actions": [],
+ "creation": "2020-11-26 10:03:32.946618",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "stage",
+  "stage_slug",
+  "step",
+  "step_slug",
+  "column_break_3",
+  "status",
+  "duration",
+  "cached",
+  "step_index",
+  "section_break_7",
+  "command",
+  "output",
+  "lines"
+ ],
+ "fields": [
+  {
+   "fieldname": "stage",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Stage",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Pending\nRunning\nSuccess\nFailure",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "cached",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Cached",
+   "read_only": 1
+  },
+  {
+   "fieldname": "duration",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Duration",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_7",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "command",
+   "fieldtype": "Code",
+   "label": "Command",
+   "read_only": 1
+  },
+  {
+   "fieldname": "output",
+   "fieldtype": "Code",
+   "label": "Output",
+   "read_only": 1
+  },
+  {
+   "fieldname": "stage_slug",
+   "fieldtype": "Data",
+   "label": "Stage Slug",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "step",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Step",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_slug",
+   "fieldtype": "Data",
+   "label": "Step Slug",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "step_index",
+   "fieldtype": "Int",
+   "label": "Step Index",
+   "read_only": 1
+  },
+  {
+   "default": "[]",
+   "fieldname": "lines",
+   "fieldtype": "Code",
+   "hidden": 1,
+   "label": "Lines"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2020-11-28 17:07:05.436880",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Deploy Candidate Build Step",
+ "owner": "Administrator",
+ "permissions": [],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

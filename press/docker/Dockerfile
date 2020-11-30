@@ -1,0 +1,122 @@
+# syntax = docker/dockerfile:experimental
+FROM ubuntu:20.04
+
+ENV NVM_VERSION 0.36.0
+ENV NODE_VERSION 12.19.0
+ENV PYTHON_VERSION 3.7
+ENV WKHTMLTOPDF_VERSION 0.12.5
+
+ENV LANG C.UTF-8
+ENV DEBIAN_FRONTEND noninteractive
+
+# Install essential packages
+RUN --mount=type=cache,target=/var/cache/apt apt-get update \
+  && apt-get install --yes --no-install-suggests --no-install-recommends \
+  # Essentials
+  git \
+  mariadb-client \
+  pv \
+  ntp \
+  wget \
+  # Dependencies for SSH access
+  openssh-server \
+  nano \
+  vim \
+  # Dependencies for adding Python PPA
+  software-properties-common \
+  gnupg \
+  # wkhtmltopdf dependencies
+  ca-certificates \
+  fontconfig \
+  libfreetype6 \
+  libjpeg-turbo8 \
+  libpng16-16 \
+  libx11-6 \
+  libxcb1 \
+  libxext6 \
+  libxrender1 \
+  xfonts-75dpi \
+  xfonts-base \
+  && rm -rf /var/lib/apt/lists/* \
+  `#stage-pre-essentials`
+
+
+# Install Python from DeadSnakes PPA
+RUN --mount=type=cache,target=/var/cache/apt add-apt-repository ppa:deadsnakes/ppa \
+  && apt-get update \
+  && apt-get install --yes --no-install-suggests --no-install-recommends \
+  python${PYTHON_VERSION} \
+  python3-virtualenv \
+  python3-pip \
+  && rm -rf /var/lib/apt/lists/* \
+  `#stage-pre-python`
+
+
+# COPY deadsnakes.list /etc/apt/sources.list.d/deadsnakes.list
+# RUN --mount=type=cache,target=/var/cache/apt apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F23C5A6CF475977595C89F51BA6932366A755776 \
+#   && apt-get update \
+#   && apt-get install --yes --no-install-suggests --no-install-recommends \
+#   python${PYTHON_VERSION} \
+#   python3-virtualenv \
+#   python3-pip \
+#   && rm -rf /var/lib/apt/lists/* \
+#   `#stage-pre-python`
+
+
+# Install wkhtmltopdf
+RUN wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/${WKHTMLTOPDF_VERSION}/wkhtmltox_${WKHTMLTOPDF_VERSION}-1.focal_amd64.deb \
+  && dpkg -i wkhtmltox_${WKHTMLTOPDF_VERSION}-1.focal_amd64.deb \
+  && rm wkhtmltox_${WKHTMLTOPDF_VERSION}-1.focal_amd64.deb \
+  `#stage-pre-wkhtmltopdf`
+
+
+RUN useradd -ms /bin/bash frappe
+USER frappe
+WORKDIR /home/frappe
+
+
+# Install Node using NVM
+ENV NVM_DIR /home/frappe/.nvm
+RUN wget https://raw.githubusercontent.com/nvm-sh/nvm/v${NVM_VERSION}/install.sh \
+  && bash install.sh \
+  && . "/home/frappe/.nvm/nvm.sh" \
+  && nvm install ${NODE_VERSION} \
+  && nvm use v${NODE_VERSION} \
+  && nvm alias default v${NODE_VERSION} \
+  && rm install.sh \
+  && nvm cache clear \
+  `#stage-pre-node`
+
+ENV PATH "$PATH:/home/frappe/.nvm/versions/node/v${NODE_VERSION}/bin"
+
+# Install Yarn
+RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 npm install -g yarn `#stage-pre-yarn`
+
+
+# Install Bench
+ENV PATH "$PATH:/home/frappe/.local/bin"
+# RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 pip3 install --upgrade git+https://github.com/frappe/bench `#stage-bench-bench` 
+RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 pip3 install --upgrade  frappe-bench==5.2.1 `#stage-bench-bench`
+
+RUN mkdir /home/frappe/frappe-bench
+WORKDIR /home/frappe/frappe-bench
+RUN mkdir -p apps logs sites sites/assets config/pids
+
+# Create virtual environment for bench
+RUN virtualenv -p python${PYTHON_VERSION} env `#stage-bench-env`
+
+
+# Install Frappe application
+COPY --chown=frappe:frappe apps/frappe /home/frappe/frappe-bench/apps/frappe 
+RUN touch .bench.cmd
+RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 echo "N\nY\n" | bench get-app frappe --skip-assets `#stage-apps-frappe`
+RUN rm .bench.cmd
+
+# Install other applications
+COPY --chown=frappe:frappe apps/erpnext /home/frappe/frappe-bench/apps/erpnext
+RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 echo "N\nY\n" | bench get-app erpnext --skip-assets `#stage-apps-erpnext`
+
+
+VOLUME ["/home/frappe/frappe-bench/sites", "/home/frappe/frappe-bench/sites/assets"]
+EXPOSE 8000
+CMD ["/bin/bash"]
