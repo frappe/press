@@ -51,16 +51,12 @@ class Site(Document):
 			if not self.subscription_plan:
 				frappe.throw("Cannot create site without plan")
 
-			self._update_configuration(
-				get_plan_config(self.subscription_plan), save=False
-			)
+			self._update_configuration(get_plan_config(self.subscription_plan), save=False)
 
 		bench_apps = frappe.get_doc("Bench", self.bench).apps
 		for app in self.apps:
 			if not find(bench_apps, lambda x: x.app == app.app):
-				frappe.throw(
-					f"Frappe App {app.app} is not available on Bench {self.bench}."
-				)
+				frappe.throw(f"Frappe App {app.app} is not available on Bench {self.bench}.")
 		frappe_app = self.apps[0]
 		if not frappe.db.get_value("Frappe App", frappe_app.app, "frappe"):
 			frappe.throw("First app to be installed on site must be frappe.")
@@ -87,9 +83,7 @@ class Site(Document):
 		if self.status == "Active" and self.has_value_changed("host_name"):
 			self.update_site_config({"host_name": f"https://{self.host_name}"})
 			self._update_redirects_for_all_site_domains()
-			frappe.db.set_value(
-				"Site Domain", self.host_name, "redirect_to_primary", False
-			)
+			frappe.db.set_value("Site Domain", self.host_name, "redirect_to_primary", False)
 
 	def update_config_preview(self):
 		"""Regenrates site.config on each site.validate from the site.configuration child table data"""
@@ -107,15 +101,11 @@ class Site(Document):
 
 			if key_type == "Number":
 				key_value = (
-					int(row.value)
-					if isinstance(row.value, (float, int))
-					else json.loads(row.value)
+					int(row.value) if isinstance(row.value, (float, int)) else json.loads(row.value)
 				)
 			elif key_type == "Boolean":
 				key_value = (
-					row.value
-					if isinstance(row.value, bool)
-					else bool(json.loads(cstr(row.value)))
+					row.value if isinstance(row.value, bool) else bool(json.loads(cstr(row.value)))
 				)
 			elif key_type == "JSON":
 				key_value = json.loads(cstr(row.value))
@@ -172,11 +162,7 @@ class Site(Document):
 
 	def create_agent_request(self):
 		agent = Agent(self.server)
-		if (
-			self.remote_database_file
-			and self.remote_private_file
-			and self.remote_public_file
-		):
+		if self.remote_database_file and self.remote_private_file and self.remote_public_file:
 			agent.new_site_from_backup(self)
 		else:
 			agent.new_site(self)
@@ -307,8 +293,7 @@ class Site(Document):
 		status = frappe.get_value("Site Domain", domain, "status")
 		if status != "Active":
 			frappe.throw(
-				msg="Only active domains can be primary",
-				exc=frappe.exceptions.LinkValidationError,
+				msg="Only active domains can be primary", exc=frappe.exceptions.LinkValidationError,
 			)
 
 	def _validate_host_name(self):
@@ -392,9 +377,7 @@ class Site(Document):
 				doc["name"],
 				["remote_database_file", "remote_public_file", "remote_private_file"],
 			)
-			for doc in frappe.get_all(
-				"Site Backup", filters={"site": self.name, "offsite": 1}
-			)
+			for doc in frappe.get_all("Site Backup", filters={"site": self.name, "offsite": 1})
 		]
 		s3_bucket = frappe.db.get_single_value("Press Settings", "aws_s3_bucket")
 		if not s3_bucket:
@@ -418,9 +401,7 @@ class Site(Document):
 		for remote_files in offsite_backups:
 			for file in remote_files:
 				if file:
-					self._del_obj[file] = frappe.db.get_value(
-						"Remote File", file, "file_path"
-					)
+					self._del_obj[file] = frappe.db.get_value("Remote File", file, "file_path")
 
 		if not self._del_obj:
 			return
@@ -515,9 +496,7 @@ class Site(Document):
 		conn = FrappeClient(
 			f"https://{self.name}", username="Administrator", password=password
 		)
-		value = conn.get_value(
-			"System Settings", "setup_complete", "System Settings"
-		)
+		value = conn.get_value("System Settings", "setup_complete", "System Settings")
 		if value:
 			setup_complete = cint(value["setup_complete"])
 			self.db_set("setup_wizard_complete", setup_complete)
@@ -703,11 +682,7 @@ class Site(Document):
 	def plan(self):
 		return frappe.db.get_value(
 			"Subscription",
-			filters={
-				"document_type": "Site",
-				"document_name": self.name,
-				"enabled": True,
-			},
+			filters={"document_type": "Site", "document_name": self.name, "enabled": True},
 			fieldname="plan",
 		)
 
@@ -736,9 +711,7 @@ class Site(Document):
 		return Agent(self.server).get(f"benches/{self.bench}/sites/{self.name}/logs")
 
 	def get_server_log(self, log):
-		return Agent(self.server).get(
-			f"benches/{self.bench}/sites/{self.name}/logs/{log}"
-		)
+		return Agent(self.server).get(f"benches/{self.bench}/sites/{self.name}/logs/{log}")
 
 
 def site_cleanup_after_archive(site):

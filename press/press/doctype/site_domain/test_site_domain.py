@@ -4,7 +4,7 @@
 from __future__ import unicode_literals
 
 import unittest
-from unittest.mock import Mock, call, patch
+from unittest.mock import Mock, patch
 
 import frappe
 
@@ -143,9 +143,7 @@ class TestSiteDomain(unittest.TestCase):
 
 		with patch.object(Agent, "setup_redirects") as mock_setup_redirects:
 			site_domain.setup_redirect()
-		mock_setup_redirects.assert_called_with(
-			site.name, [site_domain.name], site.name
-		)
+		mock_setup_redirects.assert_called_with(site.name, [site_domain.name], site.name)
 
 	def test_remove_redirect_updates_redirect_in_agent(self):
 		"""
@@ -176,6 +174,4 @@ class TestSiteDomain(unittest.TestCase):
 					"redirect_to_primary": True,
 				}
 			).insert(ignore_if_duplicate=True)
-		mock_setup_redirects.assert_called_with(
-			site.name, [site_domain.name], site.name
-		)
+		mock_setup_redirects.assert_called_with(site.name, [site_domain.name], site.name)

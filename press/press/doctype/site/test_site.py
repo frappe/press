@@ -10,13 +10,9 @@ import frappe
 
 from press.agent import Agent
 from press.press.doctype.bench.test_bench import create_test_bench
-from press.press.doctype.frappe_app.test_frappe_app import (
-	create_test_frappe_app,
-)
+from press.press.doctype.frappe_app.test_frappe_app import create_test_frappe_app
 from press.press.doctype.plan.test_plan import create_test_plan
-from press.press.doctype.proxy_server.test_proxy_server import (
-	create_test_proxy_server,
-)
+from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )

@@ -19,9 +19,7 @@ def create_test_bench(release_group: str, server: str) -> Bench:
 	API call to agent will be faked when creating the doc.
 	"""
 
-	with patch.object(
-		Agent, "create_agent_job", new=Mock(return_value={"job": 1})
-	):
+	with patch.object(Agent, "create_agent_job", new=Mock(return_value={"job": 1})):
 		name = frappe.mock("name")
 		return frappe.get_doc(
 			{
