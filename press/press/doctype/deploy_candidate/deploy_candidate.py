@@ -307,9 +307,7 @@ class DeployCandidate(Document):
 		repository = f"{settings.docker_registry_url}/{self.docker_image_name}"
 		image.tag(repository, self.docker_image_tag)
 
-		client.images.push(
-			repository, self.docker_image_tag
-		)
+		client.images.push(repository, self.docker_image_tag)
 
 	def create_deploy(self):
 		try:
