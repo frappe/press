@@ -133,7 +133,7 @@ const routes = [
 					import(/* webpackChunkName: "bench" */ '../views/BenchApps.vue')
 			},
 			{
-				path: 'deploys/:deployName?',
+				path: 'deploys/:candidateName?',
 				component: () =>
 					import(/* webpackChunkName: "bench" */ '../views/BenchDeploys.vue'),
 				props: true
