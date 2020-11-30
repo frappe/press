@@ -79,15 +79,7 @@ def new(site):
 def jobs(name):
 	jobs = frappe.get_all(
 		"Agent Job",
-		fields=[
-			"name",
-			"job_type",
-			"creation",
-			"status",
-			"start",
-			"end",
-			"duration",
-		],
+		fields=["name", "job_type", "creation", "status", "start", "end", "duration"],
 		filters={"site": name},
 		limit=10,
 	)
@@ -161,9 +153,7 @@ def backups(name):
 @protected("Site")
 def get_backup_link(name, backup, file):
 	try:
-		remote_file = frappe.db.get_value(
-			"Site Backup", backup, f"remote_{file}_file"
-		)
+		remote_file = frappe.db.get_value("Site Backup", backup, f"remote_{file}_file")
 		return frappe.get_doc("Remote File", remote_file).download_link
 	except ClientError:
 		log_error(title="Offsite Backup Response Exception")
@@ -307,15 +297,11 @@ def get(name):
 	bench = frappe.get_doc("Bench", site.bench)
 	bench_apps = {}
 	for app in bench.apps:
-		app_team, app_public = frappe.db.get_value(
-			"Frappe App", app.app, ["team", "public"]
-		)
+		app_team, app_public = frappe.db.get_value("Frappe App", app.app, ["team", "public"])
 		if app.app in installed_apps or app_public or app_team == team:
 			bench_apps[app.app] = app.idx
 
-	available_apps = list(
-		filter(lambda x: x not in installed_apps, bench_apps.keys())
-	)
+	available_apps = list(filter(lambda x: x not in installed_apps, bench_apps.keys()))
 	installed_apps = frappe.get_all(
 		"Frappe App",
 		fields=[
@@ -392,8 +378,7 @@ def analytics(name, period="1 hour"):
 
 	usage_data = get_data("Site Request Log", "counter")
 	request_data = get_data(
-		"Site Request Log",
-		"COUNT(name) as request_count, SUM(duration) as request_duration",
+		"Site Request Log", "COUNT(name) as request_count, SUM(duration) as request_duration",
 	)
 	job_data = get_data(
 		"Site Job Log", "COUNT(name) as job_count, SUM(duration) as job_duration"
@@ -405,19 +390,14 @@ def analytics(name, period="1 hour"):
 	plan = frappe.get_cached_doc("Site", name).plan
 	plan_limit = get_plan_config(plan)["rate_limit"]["limit"]
 	return {
-		"usage_counter": [
-			{"value": r.counter, "timestamp": r.timestamp} for r in usage_data
-		],
+		"usage_counter": [{"value": r.counter, "timestamp": r.timestamp} for r in usage_data],
 		"request_count": [
 			{"value": r.request_count, "timestamp": r.timestamp} for r in request_data
 		],
 		"request_cpu_time": [
-			{"value": r.request_duration, "timestamp": r.timestamp}
-			for r in request_data
+			{"value": r.request_duration, "timestamp": r.timestamp} for r in request_data
 		],
-		"job_count": [
-			{"value": r.job_count, "timestamp": r.timestamp} for r in job_data
-		],
+		"job_count": [{"value": r.job_count, "timestamp": r.timestamp} for r in job_data],
 		"job_cpu_time": [
 			{"value": r.job_duration * 1000, "timestamp": r.timestamp} for r in job_data
 		],
@@ -554,9 +534,7 @@ def restore(name, files):
 @frappe.whitelist()
 def exists(subdomain):
 	return bool(
-		frappe.db.exists(
-			"Site", {"subdomain": subdomain, "status": ("!=", "Archived")}
-		)
+		frappe.db.exists("Site", {"subdomain": subdomain, "status": ("!=", "Archived")})
 	)
 
 
@@ -685,12 +663,8 @@ def update_config(name, config):
 
 @frappe.whitelist()
 def get_upload_link(file, parts=1):
-	bucket_name = frappe.db.get_single_value(
-		"Press Settings", "remote_uploads_bucket"
-	)
-	expiration = (
-		frappe.db.get_single_value("Press Settings", "remote_link_expiry") or 3600
-	)
+	bucket_name = frappe.db.get_single_value("Press Settings", "remote_uploads_bucket")
+	expiration = frappe.db.get_single_value("Press Settings", "remote_link_expiry") or 3600
 	object_name = get_remote_key(file)
 	parts = int(parts)
 
@@ -708,9 +682,7 @@ def get_upload_link(file, parts=1):
 		# The response contains the presigned URL and required fields
 		if parts > 1:
 			signed_urls = []
-			response = s3_client.create_multipart_upload(
-				Bucket=bucket_name, Key=object_name
-			)
+			response = s3_client.create_multipart_upload(Bucket=bucket_name, Key=object_name)
 
 			for count in range(parts):
 				signed_url = s3_client.generate_presigned_url(
@@ -774,9 +746,7 @@ def uploaded_backup_info(file=None, path=None, type=None, size=None, url=None):
 			"file_size": size,
 			"file_path": path,
 			"url": url,
-			"bucket": frappe.db.get_single_value(
-				"Press Settings", "remote_uploads_bucket"
-			),
+			"bucket": frappe.db.get_single_value("Press Settings", "remote_uploads_bucket"),
 		}
 	).insert()
 	add_tag("Site Upload", doc.doctype, doc.name)
@@ -792,9 +762,7 @@ def get_backup_links(url, email, password):
 		remote_files.append(
 			{
 				"type": file_type,
-				"remote_file": uploaded_backup_info(
-					file=file_name, url=file_url, type=file_type
-				),
+				"remote_file": uploaded_backup_info(file=file_name, url=file_url, type=file_type),
 				"file_name": file_name,
 				"url": file_url,
 			}
