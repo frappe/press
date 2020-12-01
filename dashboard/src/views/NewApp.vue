@@ -170,42 +170,6 @@
 											</div>
 										</div>
 									</div>
-									<div class="mt-6" v-if="appName">
-										<label class="text-lg">
-											Choose Compatible Frappe Versions
-										</label>
-										<p class="text-base text-gray-700">
-											Your app will be available for installation with these
-											versions.
-										</p>
-										<div class="flex pl-1 -ml-1 overflow-x-auto pb-2 pt-4">
-											<button
-												class="relative flex flex-shrink-0 items-center justify-center py-4 pl-4 pr-8 mr-4 border rounded-md focus:outline-none focus:shadow-outline"
-												:class="[
-													selectedVersions.includes(version.name)
-														? 'bg-blue-50 border-blue-500'
-														: 'hover:border-blue-400 cursor-pointer'
-												]"
-												v-for="version in options.versions"
-												:key="version.name"
-												@click="toggleVersion(version)"
-											>
-												<div class="flex items-start">
-													<Input
-														class="pt-0.5 pointer-events-none"
-														tabindex="-1"
-														type="checkbox"
-														:value="selectedVersions.includes(version.name)"
-													/>
-													<div class="ml-3 text-base text-left">
-														<div class="font-semibold">
-															{{ version.name }}
-														</div>
-													</div>
-												</div>
-											</button>
-										</div>
-									</div>
 								</div>
 							</div>
 						</div>
@@ -229,12 +193,12 @@
 <script>
 export default {
 	name: 'NewApp',
+	props: ['benchName'],
 	data() {
 		return {
 			selectedInstallationId: null,
 			connectedRepository: null,
 			selectedBranch: null,
-			selectedVersions: [],
 			appName: null,
 			appTitle: null,
 			appCreationErrorMessage: null
@@ -242,39 +206,26 @@ export default {
 	},
 	methods: {
 		async createApp() {
-			let appName = this.$call('press.api.app.new', {
+			let result = this.$call('press.api.app.new', {
 				app: {
 					name: this.appName,
 					title: this.appTitle,
-					versions: this.selectedVersions,
+					group: this.benchName,
 					repository_url: this.connectedRepository.url,
 					branch: this.selectedBranch,
 					github_installation_id: this.selectedInstallation.id
 				}
 			});
-			appName
-				.then(response => {
-					this.$router.push(`/apps/${response}`);
+			result
+				.then(() => {
+					this.$router.push(`/benches/${this.benchName}/apps`);
 				})
 				.catch(error => {
 					this.appCreationErrorMessage = error.messages[0];
 				});
 		},
-		toggleVersion(version) {
-			if (!this.selectedVersions.includes(version.name)) {
-				this.selectedVersions.push(version.name);
-			} else {
-				this.selectedVersions = this.selectedVersions.filter(
-					a => a !== version.name
-				);
-			}
-		},
 		canCreate() {
-			if (
-				this.appName &&
-				!this.appCreationErrorMessage &&
-				this.selectedVersions.length != 0
-			) {
+			if (this.appName && !this.appCreationErrorMessage) {
 				return true;
 			}
 			return false;
@@ -295,9 +246,6 @@ export default {
 		async selectedBranch() {
 			this.appName = null;
 			this.$resources.app.reload();
-		},
-		appName() {
-			this.selectedVersions = [];
 		}
 	},
 	computed: {
