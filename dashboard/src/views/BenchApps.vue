@@ -16,6 +16,13 @@
 					</p>
 				</div>
 			</SectionCard>
+			<Button
+				class="mt-6"
+				type="primary"
+				:route="'/benches/' + this.bench.name + '/apps/new'"
+			>
+				Add App
+			</Button>
 		</Section>
 	</div>
 </template>

@@ -116,7 +116,7 @@ const routes = [
 		props: true
 	},
 	{
-		path: '/benches/:benchName(.*)',
+		path: '/benches/:benchName',
 		name: 'Bench',
 		component: () =>
 			import(/* webpackChunkName: "bench" */ '../views/Bench.vue'),
@@ -139,6 +139,13 @@ const routes = [
 				props: true
 			}
 		]
+	},
+	{
+		path: '/benches/:benchName/apps/new',
+		name: 'NewApp',
+		component: () =>
+			import(/* webpackChunkName: "bench" */ '../views/NewApp.vue'),
+		props: true
 	},
 	{
 		path: '/sites',
