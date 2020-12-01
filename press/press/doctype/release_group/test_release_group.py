@@ -12,6 +12,8 @@ from press.press.doctype.application.application import new_application
 
 class TestReleaseGroup(unittest.TestCase):
 	def setUp(self):
+		for group in frappe.get_all("Deploy"):
+			frappe.delete_doc("Deploy", group.name)
 		for group in frappe.get_all("Deploy Candidate"):
 			frappe.delete_doc("Deploy Candidate", group.name)
 		for group in frappe.get_all("Release Group"):
