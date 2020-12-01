@@ -13,7 +13,7 @@
   "author",
   "message",
   "review_section",
-  "directory",
+  "clone_directory",
   "column_break_9",
   "code_server_url",
   "section_break_26",
@@ -38,12 +38,6 @@
    "fieldname": "author",
    "fieldtype": "Data",
    "label": "Author",
-   "read_only": 1
-  },
-  {
-   "fieldname": "directory",
-   "fieldtype": "Data",
-   "label": "Directory",
    "read_only": 1
   },
   {
@@ -103,11 +97,17 @@
    "options": "Application",
    "read_only": 1,
    "reqd": 1
+  },
+  {
+   "fieldname": "clone_directory",
+   "fieldtype": "Data",
+   "label": "Clone Directory",
+   "read_only": 1
   }
  ],
  "in_create": 1,
  "links": [],
- "modified": "2020-11-20 13:04:15.438373",
+ "modified": "2020-12-01 20:41:11.901834",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Application Release",
