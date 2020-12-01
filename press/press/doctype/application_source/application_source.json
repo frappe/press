@@ -5,29 +5,21 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "version",
   "application",
-  "branch",
-  "data_3",
   "repository_url",
+  "data_3",
   "repository",
   "repository_owner",
+  "branch",
   "section_break_8",
   "team",
   "public",
   "column_break_11",
-  "github_installation_id"
+  "github_installation_id",
+  "section_break_12",
+  "versions"
  ],
  "fields": [
-  {
-   "fieldname": "version",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Version",
-   "options": "Frappe Version",
-   "reqd": 1
-  },
   {
    "fieldname": "application",
    "fieldtype": "Link",
@@ -94,11 +86,22 @@
   {
    "fieldname": "column_break_11",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "versions",
+   "fieldtype": "Table",
+   "label": "Versions",
+   "options": "Application Source Version",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_12",
+   "fieldtype": "Section Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2020-10-27 09:23:55.960683",
+ "modified": "2020-12-01 09:54:08.600724",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Application Source",

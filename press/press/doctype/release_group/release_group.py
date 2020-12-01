@@ -6,7 +6,6 @@ from __future__ import unicode_literals
 
 import frappe
 from frappe.model.document import Document
-from frappe.core.utils import find
 
 
 class ReleaseGroup(Document):
@@ -47,13 +46,10 @@ class ReleaseGroup(Document):
 			apps.add(app_name)
 
 	def validate_app_versions(self):
-		source_names = [app.source for app in self.applications]
-		sources = frappe.get_all(
-			"Application Source", ["name", "version"], {"name": ("in", source_names)}
-		)
+		# Application Source should be compatible with Release Group's version
 		for app in self.applications:
-			source = find(sources, lambda x: x.name == app.source)
-			if source.version != self.version:
+			source = frappe.get_doc("Application Source", app.source)
+			if all(row.version != self.version for row in source.versions):
 				frappe.throw(
 					f"Application Source {app.source} version is not {self.version}",
 					frappe.ValidationError,
@@ -80,10 +76,11 @@ class ReleaseGroup(Document):
 			{"doctype": "Deploy Candidate", "group": self.name, "applications": releases}
 		).insert()
 
-	def add_app(self, source):
+	def add_application(self, source):
 		self.append(
 			"applications", {"source": source.name, "application": source.application}
 		)
+		self.save()
 
 
 def new_release_group(title, version, applications, team=None):
