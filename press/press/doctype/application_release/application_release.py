@@ -49,7 +49,7 @@ class ApplicationRelease(Document):
 	def run(self, command):
 		try:
 			return subprocess.check_output(
-				shlex.split(command), stderr=subprocess.STDOUT, cwd=self.directory
+				shlex.split(command), stderr=subprocess.STDOUT, cwd=self.clone_directory
 			).decode()
 		except Exception as e:
 			log_error(
@@ -63,10 +63,17 @@ class ApplicationRelease(Document):
 		if not os.path.exists(clone_directory):
 			os.mkdir(clone_directory)
 
-		self.directory = os.path.join(clone_directory, self.hash[:10])
-		os.mkdir(self.directory)
+		app_directory = os.path.join(clone_directory, self.application)
+		if not os.path.exists(app_directory):
+			os.mkdir(app_directory)
 
-		code_server_url = f"{code_server}/?folder=/home/coder/project/{self.hash[:10]}"
+		self.clone_directory = os.path.join(clone_directory, self.application, self.hash[:10])
+		if not os.path.exists(self.clone_directory):
+			os.mkdir(self.clone_directory)
+
+		code_server_url = (
+			f"{code_server}/?folder=/home/coder/project/{self.application}/{self.hash[:10]}"
+		)
 		self.code_server_url = code_server_url
 
 	def _clone_repo(self):
@@ -84,5 +91,5 @@ class ApplicationRelease(Document):
 		self.output += self.run(f"git checkout {self.hash}")
 
 	def on_trash(self):
-		if self.directory and os.path.exists(self.directory):
-			shutil.rmtree(self.directory)
+		if self.clone_directory and os.path.exists(self.clone_directory):
+			shutil.rmtree(self.clone_directory)
