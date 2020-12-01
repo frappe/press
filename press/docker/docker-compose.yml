@@ -1,0 +1,114 @@
+version: "3.8"
+services:
+  # TODO: Remove NGINX service in production
+  nginx:
+    image: nginx:1.19
+    ports:
+      - "18080:80"
+      - "80:80"
+    volumes:
+      - nginx:/etc/nginx/conf.d:ro
+      - sites:/etc/nginx/sites:ro
+      - assets:/etc/nginx/sites/assets:ro
+    depends_on:
+      - web
+  web:
+    image: backbone:latest
+    command:
+      [
+        "/home/frappe/frappe-bench/env/bin/gunicorn",
+        "--bind",
+        "0.0.0.0:8000",
+        "--timeout",
+        "120",
+        "--workers",
+        "4",
+        "--worker-tmp-dir",
+        "/dev/shm",
+        "--preload",
+        "frappe.app:application",
+        "--log-level",
+        "DEBUG",
+      ]
+    working_dir: /home/frappe/frappe-bench/sites
+    # ports:
+    #   - "18000:8000"
+    volumes:
+      # - nginx:/home/frappe/frappe-bench/nginx:rw
+      - logs:/home/frappe/frappe-bench/logs:rw
+      - sites:/home/frappe/frappe-bench/sites:rw
+      - assets:/home/frappe/frappe-bench/sites/assets:ro
+    depends_on:
+      - redis-cache
+      - redis-queue
+      - redis-socketio
+  socketio:
+    image: backbone:latest
+    command: ["node", "/home/frappe/frappe-bench/apps/frappe/socketio.js"]
+    working_dir: /home/frappe/frappe-bench
+    # ports:
+    #   - "19000:9000"
+    volumes:
+      - logs:/home/frappe/frappe-bench/logs:rw
+      - sites:/home/frappe/frappe-bench/sites:ro
+    depends_on:
+      - redis-socketio
+      - web
+  worker_default:
+    image: backbone:latest
+    command: ["bench", "worker", "--queue", "default"]
+    volumes:
+      - sites:/home/frappe/frappe-bench/sites:rw
+      - logs:/home/frappe/frappe-bench/logs:rw
+    depends_on:
+      - redis-cache
+      - redis-queue
+      - redis-socketio
+  worker_long:
+    image: backbone:latest
+    command: ["bench", "worker", "--queue", "long"]
+    volumes:
+      - sites:/home/frappe/frappe-bench/sites:rw
+      - logs:/home/frappe/frappe-bench/logs:rw
+    depends_on:
+      - redis-cache
+      - redis-queue
+      - redis-socketio
+  worker_short:
+    image: backbone:latest
+    command: ["bench", "worker", "--queue", "short"]
+    volumes:
+      - sites:/home/frappe/frappe-bench/sites:rw
+      - logs:/home/frappe/frappe-bench/logs:rw
+    depends_on:
+      - redis-cache
+      - redis-queue
+      - redis-socketio
+  redis-cache:
+    image: redis:6.0
+  redis-queue:
+    image: redis:6.0
+  redis-socketio:
+    image: redis:6.0
+
+volumes:
+  nginx:
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/aditya/Frappe/benches/press/apps/press/mason/run/nginx
+  logs:
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/aditya/Frappe/benches/press/apps/press/mason/run/logs
+  sites:
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/aditya/Frappe/benches/press/apps/press/mason/run/sites
+  assets:
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/aditya/Frappe/benches/press/apps/press/mason/run/assets
