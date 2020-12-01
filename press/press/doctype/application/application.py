@@ -18,18 +18,29 @@ class Application(Document):
 		github_installation_id=None,
 		public=False,
 	):
-		return frappe.get_doc(
-			{
-				"doctype": "Application Source",
-				"application": self.name,
-				"version": version,
-				"repository_url": repository_url,
-				"branch": branch,
-				"team": team,
-				"github_installation_id": github_installation_id,
-				"public": public,
-			}
-		).insert()
+		existing_source = frappe.get_all(
+			"Application Source",
+			{"application": self.name, "repository_url": repository_url, "branch": branch},
+			limit=1,
+		)
+		if existing_source:
+			source = frappe.get_doc("Application Source", existing_source[0].name)
+			source.add_version(version)
+		else:
+			# Add new Application Source
+			source = frappe.get_doc(
+				{
+					"doctype": "Application Source",
+					"application": self.name,
+					"versions": [{"version": version}],
+					"repository_url": repository_url,
+					"branch": branch,
+					"team": team,
+					"github_installation_id": github_installation_id,
+					"public": public,
+				}
+			).insert()
+		return source
 
 	def before_save(self):
 		self.frappe = self.name == "frappe"

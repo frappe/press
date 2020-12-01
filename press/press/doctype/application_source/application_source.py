@@ -20,6 +20,11 @@ class ApplicationSource(Document):
 
 	def validate(self):
 		self.validate_source_signature()
+		self.validate_duplicate_versions()
+
+	def add_version(self, version):
+		self.append("versions", {"version": version})
+		self.save()
 
 	def validate_source_signature(self):
 		# Don't allow multiple sources with same signature
@@ -28,16 +33,24 @@ class ApplicationSource(Document):
 			{
 				"name": ("!=", self.name),
 				"application": self.application,
-				"version": self.version,
 				"repository_url": self.repository_url,
 				"branch": self.branch,
 			},
 		):
 			frappe.throw(
-				f"Duplicate source {(self.version, self.repository_url, self.branch)}"
-				f" for {self.application}",
+				f"Alread added {(self.repository_url, self.branch)} for {self.application}",
 				frappe.ValidationError,
 			)
+
+	def validate_duplicate_versions(self):
+		# Don't allow versions to be added multiple times
+		versions = set()
+		for row in self.versions:
+			if row.version in versions:
+				frappe.throw(
+					f"Version {row.version} can be added only once", frappe.ValidationError,
+				)
+			versions.add(row.version)
 
 	def before_save(self):
 		# Assumes repository_url looks like https://github.com/frappe/erpnext
