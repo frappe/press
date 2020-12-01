@@ -34,6 +34,13 @@
 			title="Update Available"
 			description="Deploy most recent version of your bench"
 		>
+			<Button
+				type="primary"
+				@click="$resources.deploy.fetch()"
+				:disabled="$resources.deploy.loading"
+			>
+				Deploy now
+			</Button>
 		</Section>
 	</div>
 </template>
@@ -47,6 +54,18 @@ export default {
 	components: {
 		DescriptionList
 	},
-	resources: {}
+	resources: {
+		deploy() {
+			return {
+				method: 'press.api.bench.deploy',
+				params: {
+					name: this.bench.name
+				},
+				onSuccess(candidate) {
+					this.$router.push(`/benches/${this.bench.name}/deploys/${candidate}`);
+				}
+			};
+		}
+	}
 };
 </script>
