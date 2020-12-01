@@ -115,7 +115,13 @@ class DeployCandidate(Document):
 		os.mkdir(apps_directory)
 
 		for application in self.applications:
-			source = frappe.db.get_value("Application Release", application.release, "directory")
+			source, cloned = frappe.db.get_value(
+				"Application Release", application.release, ["clone_directory", "cloned"]
+			)
+			if not cloned:
+				release = frappe.get_doc("Application Release", application.release)
+				release._clone()
+				source = release.clone_directory
 			target = os.path.join(self.build_directory, "apps", application.application)
 			shutil.copytree(source, target)
 
