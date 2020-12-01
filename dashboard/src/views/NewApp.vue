@@ -181,7 +181,7 @@
 							@click="createApp()"
 							:disabled="!canCreate()"
 						>
-							Create App
+							Add App
 						</Button>
 					</div>
 				</div>
@@ -218,7 +218,7 @@ export default {
 			});
 			result
 				.then(() => {
-					this.$router.push(`/benches/${this.benchName}/apps`);
+					this.$router.push(`/benches/${this.benchName}`);
 				})
 				.catch(error => {
 					this.appCreationErrorMessage = error.messages[0];
