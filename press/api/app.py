@@ -14,15 +14,23 @@ from press.press.doctype.application.application import new_application
 def new(app):
 	name = app["name"]
 	team = get_current_team()
+
 	if frappe.db.exists("Application", name):
 		app_doc = frappe.get_doc("Application", name)
 	else:
 		app_doc = new_application(name, app["title"])
-	for version in app["versions"]:
-		app_doc.add_source(
-			version, app["repository_url"], app["branch"], team, app["github_installation_id"]
-		)
-	return app_doc.name
+	group = frappe.get_doc("Release Group", app["group"])
+
+	source = app_doc.add_source(
+		group.version,
+		app["repository_url"],
+		app["branch"],
+		team,
+		app["github_installation_id"],
+	)
+
+	group.add_application(source)
+	return group.name
 
 
 def update_available(name):
