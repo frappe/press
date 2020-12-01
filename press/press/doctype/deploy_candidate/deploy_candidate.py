@@ -101,8 +101,13 @@ class DeployCandidate(Document):
 		if not os.path.exists(build_directory):
 			os.mkdir(build_directory)
 
-		self.build_directory = os.path.join(build_directory, self.name)
-		os.mkdir(self.build_directory)
+		group_directory = os.path.join(build_directory, self.group)
+		if not os.path.exists(group_directory):
+			os.mkdir(group_directory)
+
+		self.build_directory = os.path.join(build_directory, self.group, self.name)
+		if not os.path.exists(self.build_directory):
+			os.mkdir(self.build_directory)
 
 	def _prepare_build_context(self):
 		# Create apps directory
