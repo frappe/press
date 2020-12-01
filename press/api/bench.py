@@ -64,11 +64,15 @@ def options():
 		source.name as source, source.application, source.repository_url, source.repository, source.repository_owner, source.branch,
 		application.title, application.frappe
 	FROM
-		`tabFrappe Version` AS version
+		`tabApplication Source Version` AS source_version
 	LEFT JOIN
 		`tabApplication Source` AS source
 	ON
-		source.version = version.name
+		source.name = source_version.parent
+	LEFT JOIN
+		`tabFrappe Version` AS version
+	ON
+		source_version.version = version.name
 	LEFT JOIN
 		`tabApplication` AS application
 	ON
