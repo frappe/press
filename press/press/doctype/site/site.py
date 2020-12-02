@@ -609,7 +609,17 @@ class Site(Document):
 		if subscription:
 			subscription.disable()
 
+	def can_change_plan(self):
+		team = frappe.get_doc("Team", self.team)
+
+		if not team.is_defaulter():
+			frappe.throw("Cannot change plan because you have unpaid invoices")
+
+		if not (team.default_payment_method or team.get_balance()):
+			frappe.throw("Cannot change plan because you haven't added a card and not have enough balance")
+
 	def change_plan(self, plan):
+		self.can_change_plan()
 		plan_config = get_plan_config(plan)
 		self.update_site_config(plan_config)
 		frappe.get_doc(
@@ -620,17 +630,19 @@ class Site(Document):
 				"to_plan": plan,
 			}
 		).insert()
-
 		if self.status == "Suspended":
-			usage = frappe.get_last_doc("Site Usage", {"site": self.name})
-			disk_usage = usage.public + usage.private
-			plan = frappe.get_doc("Plan", self.plan)
+			self.unsuspend_if_applicable()
 
-			if (
-				usage.database < plan.max_database_usage
-				and disk_usage < plan.max_storage_usage
-			):
-				self.unsuspend(reason="Plan Upgraded")
+	def unsuspend_if_applicable(self):
+		usage = frappe.get_last_doc("Site Usage", {"site": self.name})
+		disk_usage = usage.public + usage.private
+		plan = frappe.get_doc("Plan", self.plan)
+
+		if (
+			usage.database < plan.max_database_usage
+			and disk_usage < plan.max_storage_usage
+		):
+			self.unsuspend(reason="Plan Upgraded")
 
 	def deactivate(self):
 		self.update_site_config({"maintenance_mode": 1})
