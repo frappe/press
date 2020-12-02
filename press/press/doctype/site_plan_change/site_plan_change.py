@@ -45,15 +45,9 @@ class SitePlanChange(Document):
 
 	def change_subscription_plan(self):
 		site = frappe.get_doc("Site", self.site)
-		subscription = frappe.get_doc(
-			"Subscription",
-			{
-				"team": site.team,
-				"document_type": "Site",
-				"document_name": site.name,
-				"enabled": True,
-			},
-		)
+		subscription = site.subscription
+		if not subscription:
+			frappe.throw(f"No subscription for site {site.name}")
 
 		if self.from_plan and self.from_plan != subscription.plan:
 			frappe.throw(
@@ -68,4 +62,5 @@ class SitePlanChange(Document):
 			"docname": self.name,
 			"label": _("via Site Plan Change"),
 		}
+		subscription.enabled = 1
 		subscription.save()
