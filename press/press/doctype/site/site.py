@@ -22,7 +22,7 @@ from press.agent import Agent
 from press.api.site import check_dns
 from press.press.doctype.plan.plan import get_plan_config
 from press.press.doctype.site_activity.site_activity import log_site_activity
-from press.utils import get_client_blacklisted_keys, log_error
+from press.utils import convert, get_client_blacklisted_keys, guess_type, log_error
 
 
 class Site(Document):
@@ -31,8 +31,8 @@ class Site(Document):
 		self.name = f"{self.subdomain}.{domain}"
 
 	def validate(self):
+		# validate site name
 		site_regex = r"^[a-z0-9][a-z0-9-]*[a-z0-9]$"
-
 		if len(self.subdomain) < 5:
 			frappe.throw("Subdomain too short. Use 5 or more characters")
 		if len(self.subdomain) > 32:
@@ -42,9 +42,12 @@ class Site(Document):
 				"Subdomain contains invalid characters. Use lowercase"
 				" characters, numbers and hyphens"
 			)
+
+		# set site.admin_password if doesn't exist
 		if not self.admin_password:
 			self.admin_password = frappe.generate_hash(length=16)
 
+		# validate site creation and initialize site.config
 		if self.is_new() and frappe.session.user != "Administrator":
 			self.can_create_site()
 
@@ -53,6 +56,7 @@ class Site(Document):
 
 			self._update_configuration(get_plan_config(self.subscription_plan), save=False)
 
+		# validate apps to be installed on site
 		bench_apps = frappe.get_doc("Bench", self.bench).apps
 		for app in self.apps:
 			if not find(bench_apps, lambda x: x.app == app.app):
@@ -63,21 +67,27 @@ class Site(Document):
 		apps = [app.app for app in self.apps]
 		if len(apps) != len(set(apps)):
 			frappe.throw("Can't install same app twice.")
+
+		# set or update site.host_name
 		if self.is_new():
 			self.host_name = self._create_default_site_domain().name
 			self._update_configuration({"host_name": self.host_name}, save=False)
 		elif self.has_value_changed("host_name"):
 			self._validate_host_name()
 
-		# this is a little hack to remember which key is being removed from the
-		# site config
+		# update site._keys_removed_in_last_update value
 		old_keys = json.loads(self.config)
 		new_keys = [x.key for x in self.configuration]
 		self._keys_removed_in_last_update = json.dumps(
 			[x for x in old_keys if x not in new_keys]
 		)
 
+		# generate site.config from site.configuration
 		self.update_config_preview()
+
+		# create an agent request if config has been updated
+		if not self.is_new() and self.has_value_changed("config"):
+			Agent(self.server).update_site_config(self)
 
 	def on_update(self):
 		if self.status == "Active" and self.has_value_changed("host_name"):
@@ -437,6 +447,7 @@ class Site(Document):
 		Args:
 			fetched_usage (dict): Requires backups, database, public, private keys with Numeric values
 		"""
+
 		def _insert_usage(usage: dict):
 			doc = frappe.get_doc(
 				{
@@ -536,41 +547,6 @@ class Site(Document):
 		Args:
 		config (dict): Python dict for any suitable frappe.conf
 		"""
-
-		def is_json(string):
-			if isinstance(string, str):
-				string = string.strip()
-				return string.startswith("{") and string.endswith("}")
-			elif isinstance(string, (dict, list)):
-				return True
-
-		def guess_type(value):
-			type_dict = {
-				int: "Number",
-				float: "Number",
-				bool: "Boolean",
-				dict: "JSON",
-				list: "JSON",
-			}
-			value_type = type(value)
-
-			if value_type in type_dict:
-				return type_dict[value_type]
-			else:
-				if is_json(value):
-					return "JSON"
-				return "String"
-
-		def convert(string):
-			if isinstance(string, str):
-				if is_json(string):
-					return json.loads(string)
-				else:
-					return string
-			if isinstance(string, (dict, list)):
-				return json.dumps(string)
-			return string
-
 		keys = {x.key: i for i, x in enumerate(self.configuration)}
 		for key, value in config.items():
 			if key in keys:
@@ -595,8 +571,6 @@ class Site(Document):
 			self._set_configuration(config)
 		else:
 			self._update_configuration(config)
-		agent = Agent(self.server)
-		agent.update_site_config(self)
 
 	def update_site(self):
 		log_site_activity(self.name, "Update")
@@ -617,7 +591,9 @@ class Site(Document):
 			frappe.throw("Cannot change plan because you have unpaid invoices")
 
 		if not (team.default_payment_method or team.get_balance()):
-			frappe.throw("Cannot change plan because you haven't added a card and not have enough balance")
+			frappe.throw(
+				"Cannot change plan because you haven't added a card and not have enough balance"
+			)
 
 	def change_plan(self, plan):
 		self.can_change_plan()
@@ -639,38 +615,31 @@ class Site(Document):
 		disk_usage = usage.public + usage.private
 		plan = frappe.get_doc("Plan", self.plan)
 
-		if (
-			usage.database < plan.max_database_usage
-			and disk_usage < plan.max_storage_usage
-		):
+		if usage.database < plan.max_database_usage and disk_usage < plan.max_storage_usage:
 			self.unsuspend(reason="Plan Upgraded")
 
 	def deactivate(self):
-		self.update_site_config({"maintenance_mode": 1})
 		log_site_activity(self.name, "Deactivate Site")
 		self.status = "Inactive"
-		self.save()
+		self.update_site_config({"maintenance_mode": 1})
 		self.update_site_status_on_proxy("deactivated")
 
 	def activate(self):
-		self.update_site_config({"maintenance_mode": 0})
 		log_site_activity(self.name, "Activate Site")
 		self.status = "Active"
-		self.save()
+		self.update_site_config({"maintenance_mode": 0})
 		self.update_site_status_on_proxy("activated")
 
 	def suspend(self, reason=None):
-		self.update_site_config({"maintenance_mode": 1})
 		log_site_activity(self.name, "Suspend Site", reason)
 		self.status = "Suspended"
-		self.save()
+		self.update_site_config({"maintenance_mode": 1})
 		self.update_site_status_on_proxy("suspended")
 
 	def unsuspend(self, reason=None):
-		self.update_site_config({"maintenance_mode": 0})
 		log_site_activity(self.name, "Unsuspend Site", reason)
 		self.status = "Active"
-		self.save()
+		self.update_site_config({"maintenance_mode": 0})
 		self.update_site_status_on_proxy("activated")
 
 	def update_site_status_on_proxy(self, status):
