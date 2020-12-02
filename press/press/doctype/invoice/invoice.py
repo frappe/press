@@ -313,9 +313,10 @@ class Invoice(Document):
 					return invoice
 			else:
 				from bs4 import BeautifulSoup
-				soup = BeautifulSoup(response.text, 'html.parser')
+
+				soup = BeautifulSoup(response.text, "html.parser")
 				self.add_comment(
-					text="Failed to create invoice on frappe.io" + "<br><br>" + str(soup.find('pre'))
+					text="Failed to create invoice on frappe.io" + "<br><br>" + str(soup.find("pre"))
 				)
 		except Exception:
 			traceback = "<pre><code>" + frappe.get_traceback() + "</pre></code>"
@@ -476,10 +477,6 @@ def process_stripe_webhook(doc, method):
 		"invoice.finalized",
 	]:
 		return
-
-	from press.api.billing import get_stripe
-
-	stripe = get_stripe()
 
 	event = frappe.parse_json(doc.payload)
 	stripe_invoice = event["data"]["object"]

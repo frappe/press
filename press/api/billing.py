@@ -171,7 +171,9 @@ def get_invoice_usage(invoice):
 			{
 				"idx": row.idx,
 				"site": row.document_name,
-				"plan": frappe.get_cached_value("Plan", row.plan, "plan_title") if row.plan else None,
+				"plan": frappe.get_cached_value("Plan", row.plan, "plan_title")
+				if row.plan
+				else None,
 				"days_active": row.quantity,
 				"rate": row.get_formatted("rate"),
 				"amount": row.get_formatted("amount"),

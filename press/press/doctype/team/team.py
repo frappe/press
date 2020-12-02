@@ -148,7 +148,9 @@ class Team(Document):
 		if self.free_account:
 			return
 
-		last_invoice = frappe.get_last_doc("Invoice", filters={"docstatus": 1, "team": self.team})
+		last_invoice = frappe.get_last_doc(
+			"Invoice", filters={"docstatus": 1, "team": self.team}
+		)
 		return last_invoice.status == "Unpaid"
 
 	def create_stripe_customer(self):
