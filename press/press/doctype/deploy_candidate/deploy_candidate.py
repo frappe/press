@@ -29,11 +29,14 @@ class DeployCandidate(Document):
 		return
 
 	def build(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_build", timeout=1200)
+		self.status = "Pending"
+		self.add_build_steps()
+		self.save()
+		frappe.enqueue_doc(self.doctype, self.name, "_build", timeout=1200, enqueue_after_commit=True)
+		frappe.db.commit()
 
 	def _build(self):
 		self.status = "Running"
-		self.add_build_steps()
 		self.build_start = now()
 		self.save()
 		frappe.db.commit()
