@@ -65,7 +65,7 @@ class Site(Document):
 			frappe.throw("Can't install same app twice.")
 		if self.is_new():
 			self.host_name = self._create_default_site_domain().name
-			self._update_configuration({"host_name": f"https://{self.host_name}"}, save=False)
+			self._update_configuration({"host_name": self.host_name}, save=False)
 		elif self.has_value_changed("host_name"):
 			self._validate_host_name()
 

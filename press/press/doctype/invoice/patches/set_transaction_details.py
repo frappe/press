@@ -18,5 +18,5 @@ def execute():
 		invoice.flags.skip_frappe_invoice = True
 		updated = invoice.update_transaction_details()
 		if updated:
-			print(f"✅ Done")
+			print("✅ Done")
 			frappe.db.commit()
