@@ -393,6 +393,14 @@ class Invoice(Document):
 				self.save()
 				return True
 
+	def refund(self, reason):
+		stripe = get_stripe()
+		stripe_invoice = stripe.Invoice.retrieve(self.stripe_invoice_id)
+		stripe.Refund.create(charge=stripe_invoice.charge)
+		self.status = "Refunded"
+		self.save()
+		self.add_comment(text=f"Refund reason: {reason}")
+
 	def consume_credits_and_mark_as_paid(self, reason=None):
 		if self.amount_due <= 0:
 			frappe.throw("Amount due is less than or equal to 0")
