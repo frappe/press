@@ -430,44 +430,40 @@ class Site(Document):
 			agent = Agent(self.server)
 			return agent.get_site_sid(self)
 
-	def sync_site_config(self):
-		agent = Agent(self.server)
-		agent.update_site_config(self)
-
 	def fetch_info(self):
 		agent = Agent(self.server)
 		return agent.get_site_info(self)
 
-	def sync_info(self, data=None):
-		"""Updates Site Usage, site.config and timezone details for site."""
-		if not data:
-			data = self.fetch_info()
+	def _sync_config_info(self, fetched_config):
+		"""Updates site doc config with the fetched_config values
 
-		save = False
-		fetched_config = data["config"]
-		fetched_usage = data["usage"]
+		Args:
+			fetched_config (dict): Generally data passed is the config
+			part of the agent info response
+
+		Returns:
+			Bool: Returns True if value has changed
+		"""
 		config = {
 			key: fetched_config[key]
 			for key in fetched_config
 			if key not in get_client_blacklisted_keys()
 		}
-		new_config = json.loads(self.config)
-		new_config.update(config)
+		new_config = json.loads(self.config or "{}").update(config)
 		current_config = json.dumps(new_config, indent=4)
 
-		if data["time_zone"] and self.timezone != data["time_zone"]:
-			self.timezone = data["time_zone"]
-			save = True
-
 		if self.config != current_config:
-			self._update_configuration(new_config)
-			save = False
+			self._update_configuration(new_config, save=False)
+			return True
 
-		if save:
-			self.save()
+	def _sync_usage_info(self, fetched_usage):
+		"""Generates a Site Usage doc for the site using the fetched_usage data
 
+		Args:
+			fetched_usage (dict): Requires backups, database, public, private keys with Numeric values
+		"""
 		def _insert_usage(usage: dict):
-			return frappe.get_doc(
+			doc = frappe.get_doc(
 				{
 					"doctype": "Site Usage",
 					"site": self.name,
@@ -477,16 +473,46 @@ class Site(Document):
 					"private": usage["private"],
 				}
 			).insert()
+			equivalent_site_time = convert_utc_to_user_timezone(
+				dateutil.parser.parse(usage["timestamp"])
+			)
+			doc.db_set("creation", equivalent_site_time)
 
 		if isinstance(fetched_usage, list):
 			for usage in fetched_usage:
-				doc = _insert_usage(usage)
-				equivalent_site_time = convert_utc_to_user_timezone(
-					dateutil.parser.parse(usage["timestamp"])
-				)
-				doc.db_set("creation", equivalent_site_time)
+				_insert_usage(usage)
 		else:
 			_insert_usage(fetched_usage)
+
+	def _sync_timezone_info(self, time_zone):
+		"""Updates site doc timezone with the passed value of time_zone
+
+		Args:
+			time_zone (str): Timezone passed in part of the agent info
+			response
+
+		Returns:
+			Bool: Returns True if value has changed
+		"""
+		if self.timezone != time_zone:
+			self.timezone = time_zone
+			return True
+
+	def sync_info(self, data=None):
+		"""Updates Site Usage, site.config and timezone details for site."""
+		if not data:
+			data = self.fetch_info()
+
+		fetched_usage = data["usage"]
+		fetched_config = data["config"]
+		fetched_timezone = data["time_zone"]
+
+		self._sync_usage_info(fetched_usage)
+		to_save = self._sync_config_info(fetched_config)
+		to_save |= self._sync_timezone_info(fetched_timezone)
+
+		if to_save:
+			self.save()
 
 	def is_setup_wizard_complete(self):
 		if self.setup_wizard_complete:

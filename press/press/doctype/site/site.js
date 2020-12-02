@@ -54,7 +54,6 @@ frappe.ui.form.on('Site', {
 			[__('Update'), 'schedule_update'],
 			[__('Deactivate'), 'deactivate'],
 			[__('Activate'), 'activate'],
-			[__('Sync Config'), 'sync_site_config']
 		].forEach(([label, method]) => {
 			frm.add_custom_button(
 				label,
