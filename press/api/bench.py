@@ -143,6 +143,7 @@ def candidates(name):
 		"Deploy Candidate",
 		["name", "creation", "status"],
 		{"group": name, "status": ("!=", "Draft")},
+		order_by="creation desc",
 		limit=20,
 	)
 	return candidates
@@ -166,7 +167,9 @@ def candidate(name):
 
 @frappe.whitelist()
 def deploy(name):
-	candidate = frappe.get_all("Deploy Candidate", {"group": name}, limit=1)[0]
+	candidate = frappe.get_all(
+		"Deploy Candidate", {"group": name}, limit=1, order_by="creation desc"
+	)[0]
 	candidate = frappe.get_doc("Deploy Candidate", candidate.name)
 	candidate.build()
 	return candidate.name
