@@ -253,3 +253,40 @@ def human_readable(num: int) -> str:
 			return f"{num:3.1f}{unit}B"
 		num /= 1024
 	return f"{num:.1f}YiB"
+
+
+def is_json(string):
+	if isinstance(string, str):
+		string = string.strip()
+		return string.startswith("{") and string.endswith("}")
+	elif isinstance(string, (dict, list)):
+		return True
+
+
+def guess_type(value):
+	type_dict = {
+		int: "Number",
+		float: "Number",
+		bool: "Boolean",
+		dict: "JSON",
+		list: "JSON",
+	}
+	value_type = type(value)
+
+	if value_type in type_dict:
+		return type_dict[value_type]
+	else:
+		if is_json(value):
+			return "JSON"
+		return "String"
+
+
+def convert(string):
+	if isinstance(string, str):
+		if is_json(string):
+			return json.loads(string)
+		else:
+			return string
+	if isinstance(string, (dict, list)):
+		return json.dumps(string)
+	return string
