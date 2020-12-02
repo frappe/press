@@ -57,6 +57,24 @@ frappe.ui.form.on('Invoice', {
 			);
 		}
 
+		if (frm.doc.status == "Paid" && frm.doc.stripe_invoice_id) {
+			let btn = frm.add_custom_button(
+				"Refund Invoice",
+				() => {
+					frm.call({
+						doc: frm.doc,
+						method: "refund",
+						btn,
+					}).then(r => {
+						if (r.message) {
+							frappe.msgprint(`Refunded successfully.`)
+						}
+						frm.refresh()
+					})
+				}
+			);
+		}
+
 		if (frm.doc.status == 'Invoice Created') {
 			let btn = frm.add_custom_button(
 				"Finalize Stripe Invoice",
