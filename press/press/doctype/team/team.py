@@ -149,7 +149,7 @@ class Team(Document):
 			return
 
 		last_invoice = frappe.get_last_doc(
-			"Invoice", filters={"docstatus": 1, "team": self.team}
+			"Invoice", filters={"docstatus": 1, "team": self.name}
 		)
 		return last_invoice.status == "Unpaid"
 

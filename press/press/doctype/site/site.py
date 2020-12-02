@@ -95,6 +95,11 @@ class Site(Document):
 			self._update_redirects_for_all_site_domains()
 			frappe.db.set_value("Site Domain", self.host_name, "redirect_to_primary", False)
 
+		if self.status in ['Inactive', 'Archived', 'Suspended']:
+			self.disable_subscription()
+		if self.status == 'Active':
+			self.enable_subscription()
+
 	def update_config_preview(self):
 		"""Regenrates site.config on each site.validate from the site.configuration child table data"""
 		new_config = {}
@@ -372,7 +377,6 @@ class Site(Document):
 		agent.remove_upstream_site(self.server, self.name)
 
 		self.delete_offsite_backups()
-		self.disable_subscription()
 
 	def delete_offsite_backups(self):
 		from press.press.doctype.remote_file.remote_file import delete_remote_backup_objects
@@ -579,6 +583,11 @@ class Site(Document):
 		# create a site plan change log
 		self._create_initial_site_plan_change(plan)
 
+	def enable_subscription(self):
+		subscription = self.subscription
+		if subscription:
+			subscription.enable()
+
 	def disable_subscription(self):
 		subscription = self.subscription
 		if subscription:
@@ -587,7 +596,7 @@ class Site(Document):
 	def can_change_plan(self):
 		team = frappe.get_doc("Team", self.team)
 
-		if not team.is_defaulter():
+		if team.is_defaulter():
 			frappe.throw("Cannot change plan because you have unpaid invoices")
 
 		if not (team.default_payment_method or team.get_balance()):
@@ -667,7 +676,7 @@ class Site(Document):
 	def subscription(self):
 		name = frappe.db.get_value(
 			"Subscription",
-			{"document_type": "Site", "document_name": self.name, "enabled": True},
+			{"document_type": "Site", "document_name": self.name},
 		)
 		return frappe.get_doc("Subscription", name) if name else None
 
@@ -675,7 +684,7 @@ class Site(Document):
 	def plan(self):
 		return frappe.db.get_value(
 			"Subscription",
-			filters={"document_type": "Site", "document_name": self.name, "enabled": True},
+			filters={"document_type": "Site", "document_name": self.name},
 			fieldname="plan",
 		)
 

@@ -12,6 +12,10 @@ class Subscription(Document):
 	def validate(self):
 		self.validate_duplicate()
 
+	def enable(self):
+		self.enabled = True
+		self.save()
+
 	def disable(self):
 		self.enabled = False
 		self.save()
