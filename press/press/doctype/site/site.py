@@ -365,53 +365,28 @@ class Site(Document):
 		self.disable_subscription()
 
 	def delete_offsite_backups(self):
-		# self._del_obj and self._s3_response are object properties available when this method is called
-		from boto3 import resource
+		from press.press.doctype.remote_file.remote_file import delete_remote_backup_objects
 
 		log_site_activity(self.name, "Drop Offsite Backups")
 
-		self._del_obj = {}
 		offsite_backups = [
 			frappe.db.get_value(
 				"Site Backup",
 				doc["name"],
 				["remote_database_file", "remote_public_file", "remote_private_file"],
 			)
-			for doc in frappe.get_all("Site Backup", filters={"site": self.name, "offsite": 1})
+			for doc in frappe.get_all(
+				"Site Backup",
+				filters={"site": self.name, "offsite": True, "files_availability": "Available"},
+			)
 		]
-		s3_bucket = frappe.db.get_single_value("Press Settings", "aws_s3_bucket")
-		if not s3_bucket:
-			return
-		offsite_bucket = {
-			"bucket": s3_bucket,
-			"access_key_id": frappe.db.get_single_value(
-				"Press Settings", "offsite_backups_access_key_id"
-			),
-			"secret_access_key": get_decrypted_password(
-				"Press Settings", "Press Settings", "offsite_backups_secret_access_key"
-			),
-		}
-		s3 = resource(
-			"s3",
-			aws_access_key_id=offsite_bucket["access_key_id"],
-			aws_secret_access_key=offsite_bucket["secret_access_key"],
-			region_name="ap-south-1",
-		)
+		remote_files = [
+			frappe.db.get_value("Remote File", file, "file_path")
+			for files in offsite_backups
+			for file in files
+		]
 
-		for remote_files in offsite_backups:
-			for file in remote_files:
-				if file:
-					self._del_obj[file] = frappe.db.get_value("Remote File", file, "file_path")
-
-		if not self._del_obj:
-			return
-
-		self._s3_response = s3.Bucket(offsite_bucket["bucket"]).delete_objects(
-			Delete={"Objects": [{"Key": x} for x in self._del_obj.values()]}
-		)
-
-		for key in self._del_obj:
-			frappe.db.set_value("Remote File", key, "status", "Unavailable")
+		return delete_remote_backup_objects(remote_files)
 
 	def login(self):
 		log_site_activity(self.name, "Login as Administrator")
