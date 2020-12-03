@@ -154,7 +154,14 @@ export default {
 					name: this.bench.name
 				},
 				auto: true,
-				default: []
+				default: [],
+				onSuccess(candidates) {
+					if (candidates && !this.candidateName) {
+						this.$router.push(
+							`/benches/${this.bench.name}/deploys/${candidates[0].name}`
+						);
+					}
+				}
 			};
 		},
 		selectedCandidate() {
