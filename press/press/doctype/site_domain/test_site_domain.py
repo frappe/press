@@ -9,6 +9,7 @@ from unittest.mock import Mock, patch
 import frappe
 
 from press.agent import Agent
+from press.press.doctype.site.site import site_cleanup_after_archive
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.site_domain.site_domain import SiteDomain
 from press.press.doctype.tls_certificate.tls_certificate import TLSCertificate
@@ -68,13 +69,12 @@ class TestSiteDomain(unittest.TestCase):
 	def test_default_site_domain_cannot_be_deleted(self):
 		"""Ensure default site domain for a site cannot be deleted."""
 		site = create_test_site(self.site_subdomain)
-		site_domain = frappe.get_doc(
+		default_domain = frappe.get_doc(
 			{"doctype": "Site Domain", "site": site.name, "name": site.name}
 		)
-		test_domain_name = frappe.mock("domain_name")
-		test_domain = create_test_site_domain(site.name, test_domain_name)
-		site.set_host_name(test_domain.name)
-		self.assertRaises(Exception, site.remove_domain, site_domain.name)
+		site_domain2 = create_test_site_domain(site.name, "hellohello.com")
+		site.set_host_name(site_domain2.name)
+		self.assertRaises(Exception, site.remove_domain, default_domain.name)
 
 	def test_only_site_domains_can_be_host_names(self):
 		"""Ensure error is thrown if string other than site domain name is passed."""
@@ -175,3 +175,18 @@ class TestSiteDomain(unittest.TestCase):
 				}
 			).insert(ignore_if_duplicate=True)
 		mock_setup_redirects.assert_called_with(site.name, [site_domain.name], site.name)
+
+	def test_site_archive_removes_all_site_domains(self):
+		"""Ensure site archive removes all site domains."""
+		site = create_test_site(self.site_subdomain)
+		site_domain = create_test_site_domain(site.name, "hellohello.com")
+
+		site.archive()
+		site_cleanup_after_archive(site.name)
+		self.assertFalse(frappe.db.exists("Site Domain", {"site": site.name}))
+
+		# delete ops are not rolled back
+		frappe.delete_doc("Site", site.name, force=True)
+		frappe.delete_doc("Site Domain", site.name, force=True)
+		frappe.delete_doc("Site Domain", site_domain.name, force=True)
+		frappe.db.commit()
