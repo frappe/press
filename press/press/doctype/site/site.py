@@ -376,6 +376,7 @@ class Site(Document):
 		agent = Agent(server.proxy_server, server_type="Proxy Server")
 		agent.remove_upstream_site(self.server, self.name)
 
+		self.db_set("host_name", None)
 		self.delete_offsite_backups()
 
 	def delete_offsite_backups(self):
