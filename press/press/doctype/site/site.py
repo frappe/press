@@ -397,15 +397,7 @@ class Site(Document):
 		if not sites_remote_files:
 			return
 
-		remote_file_keys = [
-			x[0]
-			for x in frappe.db.get_values(
-				"Remote File", {"name": ("in", sites_remote_files)}, "file_path"
-			)
-		]
-
-		return delete_remote_backup_objects(remote_file_keys)
-
+		return delete_remote_backup_objects(sites_remote_files)
 
 	def login(self):
 		log_site_activity(self.name, "Login as Administrator")
