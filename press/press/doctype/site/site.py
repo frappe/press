@@ -376,7 +376,6 @@ class Site(Document):
 		agent = Agent(server.proxy_server, server_type="Proxy Server")
 		agent.remove_upstream_site(self.server, self.name)
 
-		self.db_set("host_name", None)
 		self.delete_offsite_backups()
 
 	def delete_offsite_backups(self):
@@ -384,24 +383,29 @@ class Site(Document):
 
 		log_site_activity(self.name, "Drop Offsite Backups")
 
-		offsite_backups = [
-			frappe.db.get_value(
-				"Site Backup",
-				doc["name"],
-				["remote_database_file", "remote_public_file", "remote_private_file"],
-			)
-			for doc in frappe.get_all(
+		sites_remote_files = [
+			remote_file
+			for backup_files in frappe.get_all(
 				"Site Backup",
 				filters={"site": self.name, "offsite": True, "files_availability": "Available"},
+				fields=["remote_database_file", "remote_public_file", "remote_private_file"],
+				as_list=True,
 			)
-		]
-		remote_files = [
-			frappe.db.get_value("Remote File", file, "file_path")
-			for files in offsite_backups
-			for file in files
+			for remote_file in backup_files
 		]
 
-		return delete_remote_backup_objects(remote_files)
+		if not sites_remote_files:
+			return
+
+		remote_file_keys = [
+			x[0]
+			for x in frappe.db.get_values(
+				"Remote File", {"name": ("in", sites_remote_files)}, "file_path"
+			)
+		]
+
+		return delete_remote_backup_objects(remote_file_keys)
+
 
 	def login(self):
 		log_site_activity(self.name, "Login as Administrator")
