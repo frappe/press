@@ -63,7 +63,7 @@ class DeployCandidate(Document):
 		if self.build_steps:
 			return
 
-		steps = [
+		preparation_steps = [
 			("pre", "essentials", "Setup Prerequisites", "Install Essential Packages"),
 			("pre", "python", "Setup Prerequisites", "Install Python"),
 			("pre", "wkhtmltopdf", "Setup Prerequisites", "Install wkhtmltopdf"),
@@ -73,20 +73,22 @@ class DeployCandidate(Document):
 			("bench", "env", "Setup Bench", "Setup Virtual Environment"),
 		]
 
+		clone_steps, app_install_steps = [], []
 		for application in self.applications:
 			application_title = frappe.db.get_value(
 				"Application", application.application, "title"
 			)
-			steps.append(
-				(
-					"apps",
-					application.application,
-					"Install Applications",
-					f"Install {application_title}",
-				)
+			clone_steps.append(
+				("clone", application.application, "Clone Repositories", application_title)
 			)
 
-		steps.append(("assets", "assets", "Build Assets", "Build Assets"))
+			app_install_steps.append(
+				("apps", application.application, "Install Applications", application_title)
+			)
+
+		assets_steps = [("assets", "assets", "Build Assets", "Build Assets")]
+
+		steps = clone_steps + preparation_steps + app_install_steps + assets_steps
 
 		for stage_slug, step_slug, stage, step in steps:
 			self.append(
@@ -123,12 +125,36 @@ class DeployCandidate(Document):
 			source, cloned = frappe.db.get_value(
 				"Application Release", application.release, ["clone_directory", "cloned"]
 			)
-			if not cloned:
+			step = find(
+				self.build_steps,
+				lambda x: x.stage_slug == "clone" and x.step_slug == application.application,
+			)
+			step.command = f"git clone {application.application}"
+
+			if cloned:
+				step.cached = True
+				step.status = "Success"
+			else:
+				step.status = "Running"
+				start_time = now()
+
+				self.save()
+				frappe.db.commit()
+
 				release = frappe.get_doc("Application Release", application.release)
 				release._clone()
 				source = release.clone_directory
+
+				end_time = now()
+				step.duration = frappe.utils.rounded((end_time - start_time).total_seconds(), 1)
+				step.output = release.output
+				step.status = "Success"
+
 			target = os.path.join(self.build_directory, "apps", application.application)
 			shutil.copytree(source, target)
+
+			self.save()
+			frappe.db.commit()
 
 		# Copy Dockerfile
 		shutil.copy(
