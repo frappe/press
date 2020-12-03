@@ -620,7 +620,14 @@ class Site(Document):
 			self.unsuspend_if_applicable()
 
 	def unsuspend_if_applicable(self):
-		usage = frappe.get_last_doc("Site Usage", {"site": self.name})
+		try:
+			usage = frappe.get_last_doc("Site Usage", {"site": self.name})
+		except frappe.DoesNotExistError:
+			# If no doc is found, it means the site was created a few moments before
+			# team was suspended, potentially due to failure in payment. Don't unsuspend
+			# site in that case. team.unsuspend_sites should handle that, then.
+			return
+
 		disk_usage = usage.public + usage.private
 		plan = frappe.get_doc("Plan", self.plan)
 
