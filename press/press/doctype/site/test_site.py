@@ -49,26 +49,26 @@ def create_test_site(subdomain: str, new: bool = False) -> Site:
 	).insert(ignore_if_duplicate=True)
 
 
-@patch.object(Agent, "create_agent_job")
+@patch.object(Agent, "create_agent_job", new=Mock(return_value={"job": 1}))
 class TestSite(unittest.TestCase):
 	"""Tests for Site Document methods."""
 
 	def tearDown(self):
 		frappe.db.rollback()
 
-	def test_host_name_updates_perform_checks_on_host_name(self, *args):
+	def test_host_name_updates_perform_checks_on_host_name(self):
 		"""Ensure update of host name triggers verification of host_name."""
 		site = create_test_site("testsubdomain")
 		site.host_name = "balu.codes"  # domain that doesn't exist
 		self.assertRaises(frappe.exceptions.ValidationError, site.save)
 
-	def test_site_has_default_site_domain_on_create(self, *args):
+	def test_site_has_default_site_domain_on_create(self):
 		"""Ensure site has default site domain on create."""
 		site = create_test_site("testsubdomain")
 		self.assertEqual(site.name, site.host_name)
 		self.assertTrue(frappe.db.exists("Site Domain", {"domain": site.name}))
 
-	def test_new_sites_set_host_name_in_site_config(self, *args):
+	def test_new_sites_set_host_name_in_site_config(self):
 		"""Ensure new sites set host_name in site config in f server."""
 		with patch.object(Site, "_update_configuration") as mock_update_config:
 			print(mock_update_config.call_args_list)
@@ -76,8 +76,3 @@ class TestSite(unittest.TestCase):
 		mock_update_config.assert_called_with(
 			{"host_name": f"https://{site.name}"}, save=False
 		)
-
-	def test_site_create_makes_exactly_2_agent_jobs(self, mock_create_agent_job):
-		"""Ensure new site creates exactly 2 agent jobs."""
-		create_test_site("testsubdomain", new=True)
-		self.assertEqual(mock_create_agent_job.call_count, 2)
