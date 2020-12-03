@@ -82,22 +82,21 @@ class Subscription(Document):
 		return bool(result)
 
 	def validate_duplicate(self):
-		if self.enabled:
-			results = frappe.db.get_all(
-				"Subscription",
-				{
-					"enabled": True,
-					"team": self.team,
-					"document_type": self.document_type,
-					"document_name": self.document_name,
-					"plan": self.plan,
-				},
-				pluck="name",
-				limit=1,
-			)
-			if results:
-				link = frappe.utils.get_link_to_form("Subscription", results[0])
-				frappe.throw(f"A Subscription already exists: {link}", frappe.DuplicateEntryError)
+		if not self.is_new():
+			return
+		results = frappe.db.get_all(
+			"Subscription",
+			{
+				"team": self.team,
+				"document_type": self.document_type,
+				"document_name": self.document_name,
+			},
+			pluck="name",
+			limit=1,
+		)
+		if results:
+			link = frappe.utils.get_link_to_form("Subscription", results[0])
+			frappe.throw(f"A Subscription already exists: {link}", frappe.DuplicateEntryError)
 
 	def get_subscribed_document(self):
 		if not hasattr(self, "_subscribed_document"):
