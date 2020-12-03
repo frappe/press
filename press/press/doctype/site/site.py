@@ -395,11 +395,7 @@ class Site(Document):
 				filters={"site": self.name, "offsite": True, "files_availability": "Available"},
 			)
 		]
-		remote_files = [
-			frappe.db.get_value("Remote File", file, "file_path")
-			for files in offsite_backups
-			for file in files
-		]
+		remote_files = [file for files in offsite_backups for file in files]
 
 		return delete_remote_backup_objects(remote_files)
 
