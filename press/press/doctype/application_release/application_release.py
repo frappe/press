@@ -85,10 +85,12 @@ class ApplicationRelease(Document):
 			url = source.repository_url
 		self.output = ""
 		self.output += self.run("git init")
+		self.output += self.run(f"git checkout -b {source.branch}")
 		self.output += self.run(f"git remote add origin {url}",)
 		self.output += self.run("git config credential.helper ''")
 		self.output += self.run(f"git fetch --depth 1 --progress origin {self.hash}")
 		self.output += self.run(f"git checkout {self.hash}")
+		self.output += self.run(f"git reset --hard {self.hash}")
 
 	def on_trash(self):
 		if self.clone_directory and os.path.exists(self.clone_directory):
