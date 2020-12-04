@@ -93,45 +93,40 @@ def poll_file_statuses():
 def delete_remote_backup_objects(remote_files):
 	"""Delete specified objects identified by keys in the backups bucket"""
 	from press.utils import chunk
-	from frappe.utils.password import get_decrypted_password
 	from boto3 import resource
 
-	remote_files_info = {}
-	offsite_bucket = {
-		"bucket": frappe.db.get_single_value("Press Settings", "aws_s3_bucket"),
-		"access_key_id": frappe.db.get_single_value(
-			"Press Settings", "offsite_backups_access_key_id"
-		),
-		"secret_access_key": get_decrypted_password(
-			"Press Settings",
-			"Press Settings",
-			"offsite_backups_secret_access_key",
-			raise_exception=False,
-		),
-	}
+	press_settings = frappe.get_single("Press Settings")
 	s3 = resource(
 		"s3",
-		aws_access_key_id=offsite_bucket["access_key_id"],
-		aws_secret_access_key=offsite_bucket["secret_access_key"],
+		aws_access_key_id=press_settings.offsite_backups_access_key_id,
+		aws_secret_access_key=press_settings.get_password(
+			"offsite_backups_secret_access_key", raise_exception=False
+		),
 		region_name="ap-south-1",
-	)
+	).Bucket(press_settings.aws_s3_bucket)
 
-	for remote_file in set(remote_files):
-		if remote_file:
-			remote_files_info[remote_file] = frappe.db.get_value(
-				"Remote File", remote_file, "file_path"
-			)
+	remote_files = set([x for x in remote_files if x])
 
-	if not remote_files_info:
+	if not remote_files:
 		return
 
-	for objects in chunk([{"Key": x} for x in remote_files_info.values()], 1000):
-		s3.Bucket(offsite_bucket["bucket"]).delete_objects(Delete={"Objects": objects})
+	remote_files_keys = set(
+		[
+			x[0]
+			for x in frappe.db.get_values(
+				"Remote File", {"name": ("in", remote_files)}, "file_path"
+			)
+		]
+	)
 
-	for key in remote_files_info:
-		frappe.db.set_value("Remote File", key, "status", "Unavailable")
+	for objects in chunk([{"Key": x} for x in remote_files_keys], 1000):
+		s3.delete_objects(Delete={"Objects": objects})
 
-	return remote_files_info
+	frappe.db.set_value(
+		"Remote File", {"name": ("in", remote_files)}, "status", "Unavailable",
+	)
+
+	return remote_files
 
 
 class RemoteFile(Document):
