@@ -403,7 +403,7 @@ def schedule_backups():
 	sites_without_offsite_backups = set(
 		frappe.get_all(
 			"Subscription",
-			filters={"document_type": "Site", "plan": ("in", plans_without_offsite_backups),},
+			filters={"document_type": "Site", "plan": ("in", plans_without_offsite_backups)},
 			pluck="document_name",
 		)
 	)
