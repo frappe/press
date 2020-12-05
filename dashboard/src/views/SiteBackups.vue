@@ -25,7 +25,7 @@
 										:disabled="isRestorePending"
 										@click="
 											backupToRestore = backup;
-											confirmRestore = true;
+											showConfirmRestoreDialog = true;
 										"
 										class="ml-8"
 									>
@@ -95,7 +95,7 @@
 				<div class="px-6 mt-2 text-base text-gray-600" v-else>
 					No backups found
 				</div>
-				<Dialog v-model="confirmRestore" title="Restore Site">
+				<Dialog v-model="showConfirmRestoreDialog" title="Restore Site">
 					<p class="text-base" v-if="backupToRestore">
 						Are you sure you want to restore site to
 						<strong
@@ -104,7 +104,7 @@
 						?
 					</p>
 					<div slot="actions">
-						<Button @click="confirmRestore = false"> Cancel </Button>
+						<Button @click="showConfirmRestoreDialog = false"> Cancel </Button>
 						<Button
 							type="primary"
 							class="ml-3"
@@ -159,7 +159,7 @@ export default {
 	data() {
 		return {
 			isRestorePending: false,
-			confirmRestore: false,
+			showConfirmRestoreDialog: false,
 			backupToRestore: null
 		};
 	},
@@ -199,7 +199,7 @@ export default {
 					window.location.reload();
 				}, 1000);
 			});
-			this.confirmRestore = false;
+			this.showConfirmRestoreDialog = false;
 		}
 	}
 };
