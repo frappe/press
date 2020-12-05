@@ -195,7 +195,9 @@ export default {
 			}).then(() => {
 				this.isRestorePending = false;
 				this.$router.push(`/sites/${this.site.name}/jobs`);
-				window.location.reload();
+				setTimeout(() => {
+					window.location.reload();
+				}, 1000);
 			});
 			this.confirmRestore = false;
 		}
