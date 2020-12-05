@@ -130,6 +130,9 @@ def backups(name):
 		"creation",
 		"status",
 		"offsite",
+		"remote_database_file",
+		"remote_public_file",
+		"remote_private_file",
 	]
 	latest_backups = frappe.get_all(
 		"Site Backup",
@@ -531,17 +534,6 @@ def restore(name, files):
 	site.remote_private_file = files["private"]
 	site.save()
 	site.restore_site()
-
-
-@frappe.whitelist()
-@protected("Site")
-def restore_offsite_backup(name, backup_name):
-	site_backup = frappe.get_doc("Site Backup", backup_name)
-	files = {}
-	files["database"] = site_backup.remote_database_file
-	files["public"] = site_backup.remote_public_file
-	files["private"] = site_backup.remote_private_file
-	restore(name, files)
 
 
 @frappe.whitelist()

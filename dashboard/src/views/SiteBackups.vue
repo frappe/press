@@ -185,9 +185,13 @@ export default {
 		},
 		async restoreOffsiteBackup(backup) {
 			this.isRestorePending = true;
-			this.$call('press.api.site.restore_offsite_backup', {
+			this.$call('press.api.site.restore', {
 				name: this.site.name,
-				backup_name: backup.name
+				files: {
+					database: backup.remote_database_file,
+					public: backup.remote_public_file,
+					private: backup.remote_private_file
+				}
 			}).then(() => {
 				this.isRestorePending = false;
 				this.$router.push(`/sites/${this.site.name}/jobs`);
