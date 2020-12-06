@@ -48,7 +48,6 @@ class DeployCandidate(Document):
 			self._prepare_build_context()
 			self._run_docker_build()
 			self._push_docker_image()
-			self._export_assets()
 		except Exception:
 			log_error("Deploy Candidate Build Exception", name=self.name)
 			self.status = "Failure"
@@ -277,62 +276,6 @@ class DeployCandidate(Document):
 		return_code = process.wait()
 		if return_code:
 			raise subprocess.CalledProcessError(return_code, command)
-
-	def _export_assets(self):
-		cache_directory = os.path.join(self.build_directory, "cache")
-		assets_directory = os.path.join(self.build_directory, "assets")
-
-		os.mkdir(cache_directory)
-		os.mkdir(assets_directory)
-
-		client = docker.from_env()
-		volumes = {
-			cache_directory: {"bind": "/home/frappe/.cache"},
-			assets_directory: {"bind": "/home/frappe/frappe-bench/sites/assets"},
-		}
-
-		container = client.containers.run(
-			self.docker_image_id,
-			"bench build --make-copy",
-			auto_remove=True,
-			remove=True,
-			detach=True,
-			volumes=volumes,
-		)
-		self._parse_export_assets_result(container)
-		self._compress_assets()
-
-	def _parse_export_assets_result(self, container):
-		stream = container.attach(stream=True, logs=True)
-		lines = []
-
-		last_update = now()
-
-		step = find(
-			self.build_steps, lambda x: x.stage_slug == "assets" and x.step_slug == "assets",
-		)
-		step.status = "Running"
-		start_time = now()
-
-		for line in stream:
-			line = ansi_escape(line.decode())
-			lines.append(line)
-			if (now() - last_update).total_seconds() > 0.5:
-				step.output = "".join(lines)
-				self.save(ignore_version=True)
-				frappe.db.commit()
-				last_update = now()
-
-		end_time = now()
-		step.duration = frappe.utils.rounded((end_time - start_time).total_seconds(), 1)
-		step.status = "Success"
-		step.output = "".join(lines)
-		self.save()
-		frappe.db.commit()
-
-	def _compress_assets(self):
-		list(self.run("tar czf assets.tar.gz assets"))
-		self.assets_file = os.path.join(self.build_directory, "assets.tar.gz")
 
 	def _push_docker_image(self):
 		settings = frappe.db.get_value(
