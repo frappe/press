@@ -161,6 +161,10 @@ class DeployCandidate(Document):
 			os.path.join(frappe.get_app_path("press", "docker"), "Dockerfile"),
 			self.build_directory,
 		)
+		shutil.copy(
+			os.path.join(frappe.get_app_path("press", "docker"), "common_site_config.json"),
+			self.build_directory,
+		)
 
 	def _run_docker_build(self):
 		environment = os.environ

@@ -117,6 +117,8 @@ COPY --chown=frappe:frappe apps/erpnext /home/frappe/frappe-bench/apps/erpnext
 RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 echo "N\nY\n" | bench get-app erpnext --skip-assets `#stage-apps-erpnext`
 
 
+COPY --chown=frappe:frappe common_site_config.json /home/frappe/frappe-bench/sites/common_site_config.json
+
 VOLUME ["/home/frappe/frappe-bench/sites", "/home/frappe/frappe-bench/sites/assets"]
 EXPOSE 8000
 CMD ["/bin/bash"]
