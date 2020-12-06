@@ -52,17 +52,6 @@ RUN --mount=type=cache,target=/var/cache/apt add-apt-repository ppa:deadsnakes/p
   `#stage-pre-python`
 
 
-# COPY deadsnakes.list /etc/apt/sources.list.d/deadsnakes.list
-# RUN --mount=type=cache,target=/var/cache/apt apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F23C5A6CF475977595C89F51BA6932366A755776 \
-#   && apt-get update \
-#   && apt-get install --yes --no-install-suggests --no-install-recommends \
-#   python${PYTHON_VERSION} \
-#   python3-virtualenv \
-#   python3-pip \
-#   && rm -rf /var/lib/apt/lists/* \
-#   `#stage-pre-python`
-
-
 # Install wkhtmltopdf
 RUN wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/${WKHTMLTOPDF_VERSION}/wkhtmltox_${WKHTMLTOPDF_VERSION}-1.focal_amd64.deb \
   && dpkg -i wkhtmltox_${WKHTMLTOPDF_VERSION}-1.focal_amd64.deb \
@@ -95,8 +84,8 @@ RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 npm install 
 
 # Install Bench
 ENV PATH "$PATH:/home/frappe/.local/bin"
-# RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 pip3 install --upgrade git+https://github.com/frappe/bench `#stage-bench-bench` 
-RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 pip3 install --upgrade  frappe-bench==5.2.1 `#stage-bench-bench`
+
+RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 pip3 install --upgrade frappe-bench==5.2.1 `#stage-bench-bench`
 
 RUN mkdir /home/frappe/frappe-bench
 WORKDIR /home/frappe/frappe-bench
