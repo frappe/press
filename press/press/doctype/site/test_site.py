@@ -4,7 +4,7 @@
 from __future__ import unicode_literals
 
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import frappe
 
