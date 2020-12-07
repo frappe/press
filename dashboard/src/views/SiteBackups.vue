@@ -20,13 +20,22 @@
 									<span>
 										Backup on <FormatDate>{{ backup.creation }}</FormatDate>
 									</span>
+									<Button
+										v-if="backup.offsite"
+										:disabled="isRestorePending"
+										@click="
+											backupToRestore = backup;
+											showConfirmRestoreDialog = true;
+										"
+										class="ml-8"
+									>
+										Restore
+									</Button>
 									<Badge v-if="backup.offsite" class="ml-4" color="green">
 										Offsite
 									</Badge>
 								</span>
-								<span v-else>
-									Performing Backup...
-								</span>
+								<span v-else> Performing Backup... </span>
 							</div>
 							<div
 								v-if="backup.status === 'Success'"
@@ -86,6 +95,25 @@
 				<div class="px-6 mt-2 text-base text-gray-600" v-else>
 					No backups found
 				</div>
+				<Dialog v-model="showConfirmRestoreDialog" title="Restore Site">
+					<p class="text-base" v-if="backupToRestore">
+						Are you sure you want to restore site to
+						<strong
+							><FormatDate>{{ backupToRestore.creation }}</FormatDate></strong
+						>
+						?
+					</p>
+					<div slot="actions">
+						<Button @click="showConfirmRestoreDialog = false"> Cancel </Button>
+						<Button
+							type="primary"
+							class="ml-3"
+							@click="restoreOffsiteBackup(backupToRestore)"
+						>
+							Restore
+						</Button>
+					</div>
+				</Dialog>
 				<div class="px-6 mt-4 mb-2" v-if="site.status === 'Active'">
 					<Button
 						type="primary"
@@ -128,6 +156,13 @@ export default {
 			};
 		}
 	},
+	data() {
+		return {
+			isRestorePending: false,
+			showConfirmRestoreDialog: false,
+			backupToRestore: null
+		};
+	},
 	mounted() {
 		this.$socket.on('agent_job_update', data => {
 			if (data.site === this.site.name && data.name === 'Backup Site') {
@@ -147,6 +182,24 @@ export default {
 				  })
 				: database_url;
 			window.open(link);
+		},
+		async restoreOffsiteBackup(backup) {
+			this.isRestorePending = true;
+			this.$call('press.api.site.restore', {
+				name: this.site.name,
+				files: {
+					database: backup.remote_database_file,
+					public: backup.remote_public_file,
+					private: backup.remote_private_file
+				}
+			}).then(() => {
+				this.isRestorePending = false;
+				this.$router.push(`/sites/${this.site.name}/jobs`);
+				setTimeout(() => {
+					window.location.reload();
+				}, 1000);
+			});
+			this.showConfirmRestoreDialog = false;
 		}
 	}
 };

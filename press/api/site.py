@@ -130,6 +130,9 @@ def backups(name):
 		"creation",
 		"status",
 		"offsite",
+		"remote_database_file",
+		"remote_public_file",
+		"remote_private_file",
 	]
 	latest_backups = frappe.get_all(
 		"Site Backup",
