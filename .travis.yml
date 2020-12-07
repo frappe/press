@@ -1,7 +1,15 @@
 os: linux
-dist: focal
+dist: bionic
 language: python
 python: 3.7
+
+addons:
+  hosts:
+    - test_site
+  mariadb: 10.3
+
+services:
+  - mysql
 
 git:
   depth: 1
@@ -30,3 +38,49 @@ jobs:
 
   - name: Backbone Tests
     script: backbone tests
+  - name: Press Tests
+    python: 3.7
+    env: DB=mariadb TYPE=server
+    script: bench --site test_site run-tests --app press --coverage
+
+    install:
+      - cd ~
+      - source ./.nvm/nvm.sh
+      - nvm install 12
+
+      - pip install frappe-bench
+
+      - bench init frappe-bench --skip-assets --python $(which python) --frappe-path $TRAVIS_BUILD_DIR
+
+      - mkdir ~/frappe-bench/sites/test_site
+      - cp $TRAVIS_BUILD_DIR/.travis/$DB.json ~/frappe-bench/sites/test_site/site_config.json
+
+      - if [ $DB == "mariadb" ];then
+          mysql -u root -e "SET GLOBAL character_set_server = 'utf8mb4'";
+          mysql -u root -e "SET GLOBAL collation_server = 'utf8mb4_unicode_ci'";
+
+          mysql -u root -e "CREATE DATABASE test_frappe";
+          mysql -u root -e "CREATE USER 'test_frappe'@'localhost' IDENTIFIED BY 'test_frappe'";
+          mysql -u root -e "GRANT ALL PRIVILEGES ON \`test_frappe\`.* TO 'test_frappe'@'localhost'";
+
+          mysql -u root -e "UPDATE mysql.user SET Password=PASSWORD('travis') WHERE User='root'";
+          mysql -u root -e "FLUSH PRIVILEGES";
+        fi
+
+      - cd ./frappe-bench
+
+      - sed -i 's/watch:/# watch:/g' Procfile
+      - sed -i 's/schedule:/# schedule:/g' Procfile
+
+      - if [ $TYPE == "server" ]; then sed -i 's/socketio:/# socketio:/g' Procfile; fi
+      - if [ $TYPE == "server" ]; then sed -i 's/redis_socketio:/# redis_socketio:/g' Procfile; fi
+
+      - bench start &
+      - bench --site test_site reinstall --yes
+      - bench --site test_site install-app press
+      - bench build --app press
+
+    after_script:
+      - pip install coverage==4.5.4
+      - pip install python-coveralls
+      - coveralls -b apps/press -d ../../sites/.coverage
