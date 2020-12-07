@@ -75,10 +75,10 @@ jobs:
       - if [ $TYPE == "server" ]; then sed -i 's/socketio:/# socketio:/g' Procfile; fi
       - if [ $TYPE == "server" ]; then sed -i 's/redis_socketio:/# redis_socketio:/g' Procfile; fi
 
+      - bench get-app press $TRAVIS_BUILD_DIR
       - bench start &
       - bench --site test_site reinstall --yes
       - bench --site test_site install-app press
-      - bench build --app press
 
     after_script:
       - pip install coverage==4.5.4
