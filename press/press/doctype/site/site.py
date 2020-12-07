@@ -95,9 +95,9 @@ class Site(Document):
 			self._update_redirects_for_all_site_domains()
 			frappe.db.set_value("Site Domain", self.host_name, "redirect_to_primary", False)
 
-		if self.status in ['Inactive', 'Archived', 'Suspended']:
+		if self.status in ["Inactive", "Archived", "Suspended"]:
 			self.disable_subscription()
-		if self.status == 'Active':
+		if self.status == "Active":
 			self.enable_subscription()
 
 	def update_config_preview(self):
@@ -632,10 +632,12 @@ class Site(Document):
 
 		if usage.database < plan.max_database_usage and disk_usage < plan.max_storage_usage:
 			self.unsuspend(reason="Plan Upgraded")
-			site_usages = json.loads(self._site_usages or "{}").update({
-				"database": usage.database / plan.max_database_usage,
-				"disk": (usage.public + usage.private) / plan.max_storage_usage,
-			})
+			site_usages = json.loads(self._site_usages or "{}").update(
+				{
+					"database": usage.database / plan.max_database_usage,
+					"disk": (usage.public + usage.private) / plan.max_storage_usage,
+				}
+			)
 			self.db_set("_site_usages", json.dumps(site_usages))
 
 	def deactivate(self):
@@ -686,8 +688,7 @@ class Site(Document):
 	@property
 	def subscription(self):
 		name = frappe.db.get_value(
-			"Subscription",
-			{"document_type": "Site", "document_name": self.name},
+			"Subscription", {"document_type": "Site", "document_name": self.name},
 		)
 		return frappe.get_doc("Subscription", name) if name else None
 

@@ -397,6 +397,16 @@ def schedule_backups():
 	sites = frappe.get_all(
 		"Site", fields=["name", "timezone"], filters={"status": "Active"},
 	)
+	plans_without_offsite_backups = frappe.get_all(
+		"Plan", filters={"offsite_backups": 0}, pluck="name"
+	)
+	sites_without_offsite_backups = set(
+		frappe.get_all(
+			"Subscription",
+			filters={"document_type": "Site", "plan": ("in", plans_without_offsite_backups)},
+			pluck="document_name",
+		)
+	)
 	interval = frappe.db.get_single_value("Press Settings", "backup_interval") or 6
 	offsite_setup = any(
 		frappe.db.get_value(
@@ -422,6 +432,7 @@ def schedule_backups():
 				}
 				offsite = (
 					offsite_setup
+					and site not in sites_without_offsite_backups
 					and not frappe.get_all(
 						"Site Backup",
 						fields=["count(*) as total"],
