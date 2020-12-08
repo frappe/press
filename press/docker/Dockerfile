@@ -98,7 +98,7 @@ RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 pip3 install
 
 RUN mkdir /home/frappe/frappe-bench
 WORKDIR /home/frappe/frappe-bench
-RUN mkdir -p apps logs sites sites/assets config/pids
+RUN mkdir -p apps logs sites config/pids
 
 # Create virtual environment for bench
 RUN virtualenv -p python${PYTHON_VERSION} env `#stage-bench-env`
