@@ -46,8 +46,8 @@ jobs:
       env: DB=mariadb TYPE=server
       script:
         - bench --site test_site run-tests --app press --coverage
-        - flake8 --ignore W191,E501,W503 press
-        - black --check press
+        - flake8 --ignore W191,E501,W503 apps/press/press
+        - black --check apps/press/press
 
       install:
         - cd ~
