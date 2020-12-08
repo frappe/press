@@ -442,6 +442,7 @@ class Site(Document):
 		if self.config != current_config:
 			self._update_configuration(new_config, save=False)
 			return True
+		return False
 
 	def _sync_usage_info(self, fetched_usage):
 		"""Generates a Site Usage doc for the site using the fetched_usage data
@@ -485,6 +486,7 @@ class Site(Document):
 		if self.timezone != time_zone:
 			self.timezone = time_zone
 			return True
+		return False
 
 	def sync_info(self, data=None):
 		"""Updates Site Usage, site.config and timezone details for site."""
