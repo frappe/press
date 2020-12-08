@@ -3,14 +3,6 @@ dist: bionic
 language: python
 python: 3.7
 
-addons:
-  hosts:
-    - test_site
-  mariadb: 10.3
-
-services:
-  - mysql
-
 git:
   depth: 1
 
@@ -44,6 +36,12 @@ jobs:
     - name: Press Tests
       python: 3.7
       env: DB=mariadb TYPE=server
+      addons:
+        hosts:
+          - test_site
+        mariadb: 10.3
+      services:
+        - mysql
       script:
         - bench --site test_site run-tests --app press --coverage
         - flake8 --ignore W191,E501,W503 apps/press/press
