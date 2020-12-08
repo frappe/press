@@ -59,6 +59,15 @@ RUN wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/${WKHTMLTO
   `#stage-pre-wkhtmltopdf`
 
 
+# Install Fonts
+RUN git clone --progress --depth 1 https://github.com/frappe/fonts.git /tmp/fonts \
+  && rm -rf /etc/fonts && mv /tmp/fonts/etc_fonts /etc/fonts \
+  && rm -rf /usr/share/fonts && mv /tmp/fonts/usr_share_fonts /usr/share/fonts \
+  && rm -rf /tmp/fonts \
+  && fc-cache -fv \
+  `#stage-pre-fonts`
+
+
 RUN useradd -ms /bin/bash frappe
 USER frappe
 WORKDIR /home/frappe
