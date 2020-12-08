@@ -77,14 +77,46 @@ frappe.ui.form.on('Invoice', {
 
 		if (frm.doc.status == 'Invoice Created') {
 			let btn = frm.add_custom_button(
-				"Finalize Stripe Invoice",
+				"Finalize",
 				() => {
 					frm.call({
 						doc: frm.doc,
 						method: "finalize_stripe_invoice",
 						btn,
 					}).then(r => frm.refresh())
-				}
+				},
+				'Stripe Invoice'
+			);
+		}
+
+		if (frm.doc.docstatus == 1 && frm.doc.stripe_invoice_id) {
+			let btn = frm.add_custom_button(
+				"Change Status",
+				() => {
+					let d = new frappe.ui.Dialog({
+						title: "Change Stripe Invoice Status",
+						fields: [
+							{
+								label: 'Status',
+								fieldname: 'status',
+								fieldtype: 'Select',
+								options: ['Paid', 'Uncollectible', 'Void']
+							}
+						],
+						primary_action({ status }) {
+							frm.call({
+								doc: frm.doc,
+								method: "change_stripe_invoice_status",
+								args: {
+									status
+								},
+								btn,
+							}).then(r => frm.refresh())
+						}
+					});
+					d.show();
+				},
+				"Stripe Invoice"
 			);
 		}
 	},

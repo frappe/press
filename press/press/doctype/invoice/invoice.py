@@ -439,8 +439,7 @@ class Invoice(Document):
 		if reason:
 			remark += f" Reason: {reason}"
 
-		stripe = get_stripe()
-		stripe.Invoice.modify(self.stripe_invoice_id, paid=True)
+		self.change_stripe_invoice_status("Paid")
 
 		# negative value to reduce balance by amount
 		amount = self.amount_due * -1
@@ -455,6 +454,15 @@ class Invoice(Document):
 			)
 		)
 		self.db_set("status", "Paid")
+
+	def change_stripe_invoice_status(self, status):
+		stripe = get_stripe()
+		if status == "Paid":
+			stripe.Invoice.modify(self.stripe_invoice_id, paid=True)
+		elif status == "Uncollectible":
+			stripe.Invoice.mark_uncollectible(self.stripe_invoice_id)
+		elif status == "Void":
+			stripe.Invoice.void_invoice(self.stripe_invoice_id)
 
 
 def submit_invoices():
