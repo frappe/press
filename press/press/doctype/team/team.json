@@ -162,8 +162,49 @@
    "label": "Enable Prepaid Credits"
   }
  ],
- "links": [],
- "modified": "2020-11-18 20:37:54.276374",
+ "links": [
+  {
+   "group": "General",
+   "link_doctype": "Release Group",
+   "link_fieldname": "team"
+  },
+  {
+   "group": "General",
+   "link_doctype": "Site",
+   "link_fieldname": "team"
+  },
+  {
+   "group": "General",
+   "link_doctype": "Frappe App",
+   "link_fieldname": "team"
+  },
+  {
+   "group": "General",
+   "link_doctype": "Feedback",
+   "link_fieldname": "team"
+  },
+  {
+   "group": "Billing",
+   "link_doctype": "Invoice",
+   "link_fieldname": "team"
+  },
+  {
+   "group": "Billing",
+   "link_doctype": "Usage Record",
+   "link_fieldname": "team"
+  },
+  {
+   "group": "Billing",
+   "link_doctype": "Subscription",
+   "link_fieldname": "team"
+  },
+  {
+   "group": "Billing",
+   "link_doctype": "Balance Transaction",
+   "link_fieldname": "team"
+  }
+ ],
+ "modified": "2020-12-08 15:11:57.505079",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
