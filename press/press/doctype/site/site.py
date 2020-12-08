@@ -6,7 +6,7 @@ from __future__ import unicode_literals
 
 import json
 import re
-from typing import List
+from typing import Dict, List
 
 import dateutil.parser
 import frappe
@@ -421,15 +421,11 @@ class Site(Document):
 		agent = Agent(self.server)
 		return agent.get_site_info(self)
 
-	def _sync_config_info(self, fetched_config):
-		"""Updates site doc config with the fetched_config values
+	def _sync_config_info(self, fetched_config: Dict) -> bool:
+		"""Update site doc config with the fetched_config values.
 
-		Args:
-		        fetched_config (dict): Generally data passed is the config
-		        part of the agent info response
-
-		Returns:
-		        Bool: Returns True if value has changed
+		:fetched_config: Generally data passed is the config part of the agent info response
+		:returns: True if value has changed
 		"""
 		config = {
 			key: fetched_config[key]
@@ -443,11 +439,10 @@ class Site(Document):
 			self._update_configuration(new_config, save=False)
 			return True
 
-	def _sync_usage_info(self, fetched_usage):
-		"""Generates a Site Usage doc for the site using the fetched_usage data
+	def _sync_usage_info(self, fetched_usage: Dict):
+		"""Generate a Site Usage doc for the site using the fetched_usage data.
 
-		Args:
-		        fetched_usage (dict): Requires backups, database, public, private keys with Numeric values
+		:fetched_usage: Requires backups, database, public, private keys with Numeric values
 		"""
 
 		def _insert_usage(usage: dict):
@@ -472,15 +467,11 @@ class Site(Document):
 		else:
 			_insert_usage(fetched_usage)
 
-	def _sync_timezone_info(self, time_zone):
-		"""Updates site doc timezone with the passed value of time_zone
+	def _sync_timezone_info(self, time_zone: str) -> bool:
+		"""Update site doc timezone with the passed value of time_zone.
 
-		Args:
-		        time_zone (str): Timezone passed in part of the agent info
-		        response
-
-		Returns:
-		        Bool: Returns True if value has changed
+		:time_zone: Timezone passed in part of the agent info response
+		:returns: True if value has changed
 		"""
 		if self.timezone != time_zone:
 			self.timezone = time_zone
