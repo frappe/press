@@ -275,10 +275,11 @@ class Team(Document):
 				"stripe_invoice_url",
 				"period_start",
 				"period_end",
+				"due_date",
 				"payment_date",
 				"currency",
 			],
-			order_by="period_start desc",
+			order_by="due_date desc",
 		)
 
 		print_format = frappe.get_meta("Invoice").default_print_format
@@ -396,6 +397,7 @@ class Team(Document):
 			filters={
 				"status": "Draft",
 				"team": self.name,
+				"type": "Subscription",
 				"period_start": ("<=", today),
 				"period_end": (">=", today),
 			},
@@ -511,6 +513,8 @@ def update_site_onboarding(site, method):
 
 def process_stripe_webhook(doc, method):
 	"""This method runs after a Stripe Webhook Log is created"""
+	from datetime import datetime
+
 	if doc.event_type not in ["payment_intent.succeeded"]:
 		return
 
@@ -522,6 +526,33 @@ def process_stripe_webhook(doc, method):
 
 	team = frappe.get_doc("Team", {"stripe_customer_id": payment_intent["customer"]})
 	amount = payment_intent["amount"] / 100
-	team.allocate_credit_amount(
+	balance_transaction = team.allocate_credit_amount(
 		amount, source="Prepaid Credits", remark=payment_intent["id"]
 	)
+	invoice = frappe.get_doc(
+		doctype="Invoice",
+		team=team.name,
+		type="Prepaid Credits",
+		status="Paid",
+		due_date=datetime.fromtimestamp(payment_intent["created"]),
+		amount_paid=amount,
+		amount_due=amount,
+		stripe_payment_intent_id=payment_intent["id"],
+	)
+	invoice.append(
+		"items",
+		{
+			"description": "Prepaid Credits",
+			"document_type": "Balance Transaction",
+			"document_name": balance_transaction.name,
+			"quantity": 1,
+			"rate": amount,
+		},
+	)
+	invoice.insert()
+	invoice.reload()
+	# there should only be one charge object
+	charge = payment_intent["charges"]["data"][0]["id"]
+	# update transaction amount, fee and exchange rate
+	invoice.update_transaction_details(charge)
+	invoice.submit()

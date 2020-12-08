@@ -275,5 +275,31 @@ class TestInvoice(unittest.TestCase):
 
 		invoice5.insert()
 
+	def test_prepaid_credits(self):
+		from press.press.doctype.team.team import process_stripe_webhook
+		from pathlib import Path
+
+		team = frappe.get_doc(
+			doctype="Team",
+			name="testuser6@example.com",
+			country="India",
+			stripe_customer_id="cus_H3L4w6RXJPKLQs",
+			enabled=1,
+		).insert()
+		# initial balance is 0
+		self.assertEqual(team.get_balance(), 0)
+
+		with open(
+			Path(__file__).parent / "fixtures/stripe_payment_intent_succeeded_webhook.json", "r",
+		) as payload:
+			doc = frappe._dict(
+				{"event_type": "payment_intent.succeeded", "payload": payload.read()}
+			)
+
+		process_stripe_webhook(doc, "")
+
+		# balance should 900 after buying prepaid credits
+		self.assertEqual(team.get_balance(), 900)
+
 	def tearDown(self):
 		frappe.db.rollback()
