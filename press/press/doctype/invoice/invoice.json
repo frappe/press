@@ -265,8 +265,19 @@
   }
  ],
  "is_submittable": 1,
- "links": [],
- "modified": "2020-11-24 20:58:37.255104",
+ "links": [
+  {
+   "group": "Documents",
+   "link_doctype": "Usage Record",
+   "link_fieldname": "invoice"
+  },
+  {
+   "group": "Documents",
+   "link_doctype": "Balance Transaction",
+   "link_fieldname": "invoice"
+  }
+ ],
+ "modified": "2020-12-08 15:16:14.307788",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",
