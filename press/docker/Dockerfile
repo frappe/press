@@ -105,15 +105,20 @@ RUN virtualenv -p python${PYTHON_VERSION} env `#stage-bench-env`
 
 
 # Install Frappe application
-COPY --chown=frappe:frappe apps/frappe /home/frappe/frappe-bench/apps/frappe 
+COPY --chown=frappe:frappe apps/frappe /home/frappe/frappe-bench/apps/frappe
 RUN touch .bench.cmd
 RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 echo "N\nY\n" | bench get-app frappe --skip-assets `#stage-apps-frappe`
 RUN rm .bench.cmd
 
 # Install other applications
-COPY --chown=frappe:frappe apps/erpnext /home/frappe/frappe-bench/apps/erpnext
-RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 echo "N\nY\n" | bench get-app erpnext --skip-assets `#stage-apps-erpnext`
+{% for app in doc.applications %}
+{% if app.application != "frappe" %}
 
+COPY --chown=frappe:frappe apps/{{ app.application }} /home/frappe/frappe-bench/apps/{{ app.application }}
+RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 echo "N\nY\n" | bench get-app {{ app.application }} --skip-assets `#stage-apps-{{ app.application }}`
+
+{% endif %}
+{% endfor %}
 
 RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 bench build --make-copy `#stage-assets-assets`
 

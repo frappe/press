@@ -156,11 +156,12 @@ class DeployCandidate(Document):
 			self.save()
 			frappe.db.commit()
 
-		# Copy Dockerfile
-		shutil.copy(
-			os.path.join(frappe.get_app_path("press", "docker"), "Dockerfile"),
-			self.build_directory,
-		)
+		dockerfile = os.path.join(self.build_directory, "Dockerfile")
+		with open(dockerfile, "w") as f:
+			dockerfile_template = "press/docker/Dockerfile"
+			content = frappe.render_template(dockerfile_template, {"doc": self}, is_path=True)
+			f.write(content)
+
 		shutil.copy(
 			os.path.join(frappe.get_app_path("press", "docker"), "common_site_config.json"),
 			self.build_directory,
