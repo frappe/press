@@ -48,6 +48,7 @@ class Server(Document):
 				server=self,
 				variables={
 					"server": self.name,
+					"private_ip": self.private_ip,
 					"workers": "2",
 					"password": agent_password,
 					"mariadb_root_password": mariadb_root_password,
