@@ -38,6 +38,7 @@ jobs:
 
   - name: Backbone Tests
     script: backbone tests
+
   - name: Press Tests
     python: 3.7
     env: DB=mariadb TYPE=server
@@ -84,3 +85,11 @@ jobs:
       - pip install coverage==4.5.4
       - pip install python-coveralls
       - coveralls -b apps/press -d ../../sites/.coverage
+
+  - name: Style checks
+    script:
+      - flake8 --ignore W191,E501,W503 press
+      - black --check press
+
+    install:
+      - pip install -U flake8 git+https://github.com/adityahase/black
