@@ -3,6 +3,13 @@
 
 frappe.ui.form.on('Invoice', {
 	refresh: function (frm) {
+		if (frm.doc.stripe_invoice_id) {
+			frm.add_web_link(`https://dashboard.stripe.com/invoices/${frm.doc.stripe_invoice_id}`, 'View Stripe Invoice')
+		}
+		if (frm.doc.frappe_invoice) {
+			frm.add_web_link(`https://frappe.io/desk#Form/Sales Invoice/${frm.doc.frappe_invoice}`, 'View Frappe Invoice')
+		}
+
 		if (frm.doc.status === 'Unpaid') {
 			frm.add_custom_button('Mark as Paid', () => {
 				let d = new frappe.ui.Dialog({
@@ -60,8 +67,9 @@ frappe.ui.form.on('Invoice', {
 		if (frm.doc.status == "Paid" && frm.doc.stripe_invoice_id) {
 			let btn = frm.add_custom_button(
 				"Refund Invoice",
-				() => {
-					frm.call({
+				() => frappe.confirm(
+					"This will refund the total amount paid on this invoice from Stripe. Continue?",
+					() => frm.call({
 						doc: frm.doc,
 						method: "refund",
 						btn,
@@ -71,7 +79,7 @@ frappe.ui.form.on('Invoice', {
 						}
 						frm.refresh()
 					})
-				}
+				)
 			);
 		}
 
