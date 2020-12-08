@@ -22,6 +22,7 @@
   "webroot_directory",
   "column_break_15",
   "eff_registration_email",
+  "use_staging_ca",
   "backbone_section",
   "backbone_directory",
   "column_break_20",
@@ -551,11 +552,17 @@
    "fieldname": "docker_registry_password",
    "fieldtype": "Data",
    "label": "Docker Registry Password"
+  },
+  {
+   "default": "0",
+   "fieldname": "use_staging_ca",
+   "fieldtype": "Check",
+   "label": "Use Staging CA"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2020-11-30 18:12:05.695176",
+ "modified": "2020-12-08 18:36:56.249316",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
