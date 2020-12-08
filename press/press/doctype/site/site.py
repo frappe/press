@@ -436,7 +436,7 @@ class Site(Document):
 			for key in fetched_config
 			if key not in get_client_blacklisted_keys()
 		}
-		new_config = json.loads(self.config or "{}").update(config)
+		new_config = {**json.loads(self.config or "{}"), **config}
 		current_config = json.dumps(new_config, indent=4)
 
 		if self.config != current_config:
