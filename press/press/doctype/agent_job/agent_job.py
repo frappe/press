@@ -432,7 +432,7 @@ def schedule_backups():
 				}
 				offsite = (
 					offsite_setup
-					and site not in sites_without_offsite_backups
+					and site.name not in sites_without_offsite_backups
 					and not frappe.get_all(
 						"Site Backup",
 						fields=["count(*) as total"],
