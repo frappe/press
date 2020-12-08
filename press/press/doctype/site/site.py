@@ -425,11 +425,11 @@ class Site(Document):
 		"""Updates site doc config with the fetched_config values
 
 		Args:
-			fetched_config (dict): Generally data passed is the config
-			part of the agent info response
+		        fetched_config (dict): Generally data passed is the config
+		        part of the agent info response
 
 		Returns:
-			Bool: Returns True if value has changed
+		        Bool: Returns True if value has changed
 		"""
 		config = {
 			key: fetched_config[key]
@@ -447,7 +447,7 @@ class Site(Document):
 		"""Generates a Site Usage doc for the site using the fetched_usage data
 
 		Args:
-			fetched_usage (dict): Requires backups, database, public, private keys with Numeric values
+		        fetched_usage (dict): Requires backups, database, public, private keys with Numeric values
 		"""
 
 		def _insert_usage(usage: dict):
@@ -476,11 +476,11 @@ class Site(Document):
 		"""Updates site doc timezone with the passed value of time_zone
 
 		Args:
-			time_zone (str): Timezone passed in part of the agent info
-			response
+		        time_zone (str): Timezone passed in part of the agent info
+		        response
 
 		Returns:
-			Bool: Returns True if value has changed
+		        Bool: Returns True if value has changed
 		"""
 		if self.timezone != time_zone:
 			self.timezone = time_zone
