@@ -115,7 +115,7 @@ COPY --chown=frappe:frappe apps/erpnext /home/frappe/frappe-bench/apps/erpnext
 RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 echo "N\nY\n" | bench get-app erpnext --skip-assets `#stage-apps-erpnext`
 
 
-RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 bench build `#stage-assets-assets`
+RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 bench build --make-copy `#stage-assets-assets`
 
 COPY --chown=frappe:frappe common_site_config.json /home/frappe/frappe-bench/sites/common_site_config.json
 
