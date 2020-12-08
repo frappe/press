@@ -75,8 +75,3 @@ class TestSite(unittest.TestCase):
 		mock_update_config.assert_called_with(
 			{"host_name": f"https://{site.name}"}, save=False
 		)
-
-	def test_site_create_makes_exactly_2_agent_jobs(self, mock_create_agent_job):
-		"""Ensure new site creates exactly 2 agent jobs."""
-		create_test_site("testsubdomain", new=True)
-		self.assertEqual(mock_create_agent_job.call_count, 2)
