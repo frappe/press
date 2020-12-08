@@ -10,7 +10,7 @@
       - containerd
       - runc
 
-- name: Install required packages
+- name: Install Docker Dependencies
   apt:
     state: present
     force: yes
@@ -20,15 +20,16 @@
       - curl
       - software-properties-common
 
-- name: Add Docker Repository
-  apt_repository:
-    repo: deb https://download.docker.com/linux/ubuntu focal stable
-    state: present
-
 - name: Add Docker Repository Key
   apt_key:
     url: https://download.docker.com/linux/ubuntu/gpg
     state: present
+
+- name: Add Docker Repository
+  apt_repository:
+    repo: deb https://download.docker.com/linux/ubuntu focal stable
+    state: present
+    update_cache: true
 
 - name: Install Docker
   apt:
@@ -41,3 +42,9 @@
     groups:
       - docker
     append: true
+
+- name: Initialize Docker Swarm
+  command: docker swarm init --advertise-addr {{ private_ip }}
+
+- name: Get Docker Info
+  command: docker info
