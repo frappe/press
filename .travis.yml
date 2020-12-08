@@ -79,7 +79,6 @@ jobs:
       - bench get-app press $TRAVIS_BUILD_DIR
       - bench start &
       - bench --site test_site reinstall --yes
-      - bench --site test_site install-app press
 
     after_script:
       - pip install coverage==4.5.4
