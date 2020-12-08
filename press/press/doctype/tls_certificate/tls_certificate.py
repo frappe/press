@@ -122,6 +122,14 @@ class LetsEncrypt(BaseCA):
 		self.aws_access_key_id = settings.aws_access_key_id
 		self.aws_secret_access_key = settings.get_password("aws_secret_access_key")
 
+		# Staging CA provides certificates that are signed by an untrusted root CA
+		# Only use to test certificate procurement/installation flows.
+		# Reference: https://letsencrypt.org/docs/staging-environment/
+		if frappe.conf.developer_mode and settings.use_staging_ca:
+			self.staging = True
+		else:
+			self.staging = False
+
 	def _obtain(self):
 		if not os.path.exists(self.directory):
 			os.mkdir(self.directory)
@@ -151,7 +159,7 @@ class LetsEncrypt(BaseCA):
 		else:
 			plugin = f"--webroot --webroot-path {self.webroot_directory}"
 
-		staging = "--staging" if frappe.conf.developer_mode else ""
+		staging = "--staging" if self.staging else ""
 
 		command = (
 			f"certbot certonly {plugin} {staging} --logs-dir"
