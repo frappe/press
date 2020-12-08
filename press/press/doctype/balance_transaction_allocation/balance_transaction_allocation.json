@@ -12,10 +12,9 @@
  "fields": [
   {
    "fieldname": "invoice",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Invoice",
-   "options": "Invoice"
+   "label": "Invoice"
   },
   {
    "fieldname": "amount",
@@ -35,7 +34,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2020-11-12 21:25:43.509149",
+ "modified": "2020-12-07 21:56:10.582664",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Balance Transaction Allocation",
