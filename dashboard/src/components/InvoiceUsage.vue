@@ -10,7 +10,7 @@
 				<thead class="bg-blue-50">
 					<tr>
 						<th class="py-2 pl-2 pr-2 font-semibold border-b border-blue-100">
-							Site Name
+							Description
 						</th>
 						<th class="py-2 pr-2 font-semibold border-b border-blue-100">
 							Plan
@@ -18,7 +18,7 @@
 						<th
 							class="py-2 pr-2 font-semibold text-right whitespace-no-wrap border-b border-blue-100"
 						>
-							Usage
+							Rate
 						</th>
 						<th
 							class="py-2 pr-2 font-semibold text-right border-b border-blue-100"
@@ -28,14 +28,13 @@
 					</tr>
 				</thead>
 				<tbody>
-					<tr v-for="row in doc.usage" :key="row.idx">
-						<td class="py-2 pl-2 pr-2 border-b">{{ row.site }}</td>
+					<tr v-for="row in doc.items" :key="row.idx">
+						<td class="py-2 pl-2 pr-2 border-b">{{ row.description || row.document_name }}</td>
 						<td class="py-2 pr-2 whitespace-no-wrap border-b">
 							{{ row.plan }}
 						</td>
 						<td class="py-2 pr-2 text-right border-b">
-							{{ row.rate }} x {{ row.days_active }}
-							{{ $plural(row.days_active, 'day', 'days') }}
+							{{ row.rate }} x {{ row.quantity }}
 						</td>
 						<td class="py-2 pr-2 text-right border-b">
 							{{ row.amount }}
@@ -56,21 +55,23 @@
 							</a>
 						</td>
 						<td class="pt-4 pb-2 pr-2 text-right">Total:</td>
-						<td class="pt-4 pb-2 pr-2 font-semibold text-right">{{ doc.total }}</td>
+						<td class="pt-4 pb-2 pr-2 font-semibold text-right">
+							{{ doc.formatted.total }}
+						</td>
 					</tr>
 					<template v-if="doc.total !== doc.amount_due">
 						<tr>
 							<td colspan="2"></td>
 							<td class="pr-2 text-right">Applied Balance:</td>
 							<td class="py-2 pr-2 font-semibold text-right">
-								- {{ doc.applied_balance }}
+								- {{ doc.formatted.applied_credits }}
 							</td>
 						</tr>
 						<tr>
 							<td colspan="2"></td>
 							<td class="pr-2 text-right">Amount Due:</td>
 							<td class="py-2 pr-2 font-semibold text-right">
-								{{ doc.amount_due }}
+								{{ doc.formatted.amount_due }}
 							</td>
 						</tr>
 					</template>
@@ -115,13 +116,13 @@ export default {
 				return '';
 			}
 			if (!this.doc.period_start || !this.doc.period_end) {
-				return `Invoice Usage for ${this.invoice}`;
+				return `Invoice Details for ${this.invoice}`;
 			}
 			let periodStart = this.$date(this.doc.period_start);
 			let periodEnd = this.$date(this.doc.period_end);
 			let start = periodStart.toLocaleString({ month: 'long', day: 'numeric' });
 			let end = periodEnd.toLocaleString({ month: 'short', day: 'numeric' });
-			return `Invoice Usage for ${start} - ${end} ${periodEnd.year}`;
+			return `Invoice Details for ${start} - ${end} ${periodEnd.year}`;
 		}
 	}
 };

@@ -29,7 +29,7 @@
 		<div v-if="step == 'Setting up Stripe'" class="flex justify-center mt-8">
 			<Spinner class="w-4 h-4 text-gray-600" />
 		</div>
-		<ErrorMessage class="mt-2" :error="errorMessage" />
+		<ErrorMessage class="mt-2" :error="$resources.createPaymentIntent.error || errorMessage" />
 		<template slot="actions">
 			<div class="flex justify-between w-full">
 				<StripeLogo />
@@ -95,6 +95,11 @@ export default {
 				params: {
 					amount: this.creditsToBuy
 				},
+				validate() {
+					if (this.creditsToBuy < this.minimumAmount) {
+						return `Amount must be greater than ${this.minimumAmount}`;
+					}
+				},
 				async onSuccess(data) {
 					this.step = 'Setting up Stripe';
 					let { publishable_key, client_secret } = data;
@@ -146,11 +151,6 @@ export default {
 			this.$resources.createPaymentIntent.submit();
 		},
 		async onBuyClick() {
-			if (this.creditsToBuy < this.minimumAmount) {
-				this.errorMessage = `Amount must be greater than ${this.minimumAmount}`;
-				return;
-			}
-
 			this.paymentInProgress = true;
 			let payload = await this.stripe.confirmCardPayment(this.clientSecret, {
 				payment_method: {
