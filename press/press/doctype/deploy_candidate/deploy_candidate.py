@@ -66,6 +66,7 @@ class DeployCandidate(Document):
 			("pre", "essentials", "Setup Prerequisites", "Install Essential Packages"),
 			("pre", "python", "Setup Prerequisites", "Install Python"),
 			("pre", "wkhtmltopdf", "Setup Prerequisites", "Install wkhtmltopdf"),
+			("pre", "fonts", "Setup Prerequisites", "Install Fonts"),
 			("pre", "node", "Setup Prerequisites", "Install Node.js"),
 			("pre", "yarn", "Setup Prerequisites", "Install Yarn"),
 			("bench", "bench", "Setup Bench", "Install Bench"),
