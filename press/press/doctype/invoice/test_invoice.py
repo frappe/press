@@ -190,6 +190,46 @@ class TestInvoice(unittest.TestCase):
 			invoice2.credit_allocations[0].as_dict(),
 		)
 
+	def test_invoice_cancel_reverse_credit_allocation(self):
+		team = frappe.get_doc(
+			doctype="Team", name="testuser4@example.com", country="India", enabled=1
+		).insert()
+
+		# First Invoice
+		# Total: 600
+		# Team has 100 Free Credits and 1000 Prepaid Credits
+		# Invoice can be paid using credits
+		team.allocate_credit_amount(100, source="Free Credits")
+		team.allocate_credit_amount(1000, source="Prepaid Credits")
+		self.assertEqual(team.get_balance(), 1100)
+
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=team.name,
+			period_start=today(),
+			period_end=add_days(today(), 10),
+			items=[{"quantity": 1, "rate": 600}],
+		).insert()
+
+		with patch.object(invoice, "create_stripe_invoice", return_value=None):
+			invoice.submit()
+
+		self.assertEqual(invoice.total, 600)
+		self.assertEqual(team.get_balance(), 1100 - 600)
+		self.assertEqual(invoice.amount_due, 0)
+		self.assertEqual(invoice.applied_credits, 600)
+		self.assertDictContainsSubset(
+			{"amount": 100, "source": "Free Credits"}, invoice.credit_allocations[0].as_dict()
+		)
+		self.assertDictContainsSubset(
+			{"amount": 500, "source": "Prepaid Credits"}, invoice.credit_allocations[1].as_dict()
+		)
+
+		# Cancel Invoice
+		invoice.cancel()
+		# Team balance should go back to 1100
+		self.assertEqual(team.get_balance(), 1100)
+
 	def test_intersecting_invoices(self):
 		team = frappe.get_doc(
 			doctype="Team", name="testuser4@example.com", country="India", enabled=1

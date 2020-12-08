@@ -41,6 +41,29 @@ class Invoice(Document):
 		if self.status == "Paid":
 			self.create_invoice_on_frappeio()
 
+	def after_insert(self):
+		if self.get("amended_from"):
+			values = {
+				"modified": frappe.utils.now(),
+				"modified_by": frappe.session.user,
+				"new_invoice": self.name,
+				"old_invoice": self.amended_from,
+			}
+			# link usage records of old cancelled invoice to the new amended invoice
+			frappe.db.sql(
+				"""
+				UPDATE
+					`tabUsage Record`
+				SET
+					`invoice` = %(new_invoice)s,
+					`modified` = %(modified)s,
+					`modified_by` = %(modified_by)s
+				WHERE
+					`invoice` = %(old_invoice)s
+				""",
+				values=values,
+			)
+
 	def create_stripe_invoice(self):
 		if not self.stripe_invoice_id and self.amount_due > 0:
 			stripe = get_stripe()
@@ -183,7 +206,19 @@ class Invoice(Document):
 		self.total = total
 
 	def on_cancel(self):
-		self.unlink_usage_records()
+		# make reverse entries for credit allocations
+		for transaction in self.credit_allocations:
+			doc = frappe.get_doc(
+				doctype="Balance Transaction",
+				team=self.team,
+				type="Adjustment",
+				source=transaction.source,
+				currency=transaction.currency,
+				amount=transaction.amount,
+				description=f"Reversed on cancel of Invoice {self.name}",
+			)
+			doc.insert()
+			doc.submit()
 
 	def on_trash(self):
 		self.unlink_usage_records()
@@ -193,24 +228,9 @@ class Invoice(Document):
 		if balance == 0:
 			return
 
-		last_allocated_creation = (
-			frappe.db.get_all(
-				"Balance Transaction",
-				filters={"team": self.team, "type": "Adjustment", "unallocated_amount": 0},
-				order_by="creation desc",
-				limit=1,
-				pluck="creation",
-			)
-			or [None]
-		)[0]
-
 		unallocated_balances = frappe.db.get_all(
 			"Balance Transaction",
-			filters={
-				"team": self.team,
-				"type": "Adjustment",
-				"creation": (">", last_allocated_creation),
-			},
+			filters={"team": self.team, "type": "Adjustment", "unallocated_amount": (">", 0)},
 			fields=["name", "unallocated_amount", "source"],
 			order_by="creation desc",
 		)
