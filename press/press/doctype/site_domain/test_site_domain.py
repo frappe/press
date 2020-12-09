@@ -189,4 +189,40 @@ class TestSiteDomain(unittest.TestCase):
 		frappe.delete_doc("Site", site.name, force=True)
 		frappe.delete_doc("Site Domain", site.name, force=True)
 		frappe.delete_doc("Site Domain", site_domain.name, force=True)
+
 		frappe.db.commit()
+
+	def test_tls_certificate_isnt_created_for_default_domain(self):
+		"""Ensure TLS Certificate isn't created for default domain."""
+		with patch.object(SiteDomain, "create_tls_certificate") as mock_create_tls:
+			create_test_site(self.site_subdomain)
+		mock_create_tls.assert_not_called()
+
+	def test_remove_host_called_for_site_domains_on_trash(self):
+		"""Ensure remove host agent job is created when site domain is deleted."""
+		site = create_test_site(self.site_subdomain)
+		site_domain = create_test_site_domain(site.name, "hellohello.com")
+
+		with patch.object(SiteDomain, "create_remove_host_agent_request") as mock_remove_host:
+			site_domain.on_trash()
+		mock_remove_host.assert_called()
+
+	def test_remove_host_called_for_default_domain_only_on_redirect(self):
+		"""
+		Ensure remove host agent job isn't always created for default domain.
+
+		Default domain host should be removed only if redirect exists.
+		"""
+		site = create_test_site(self.site_subdomain)
+		def_domain = frappe.get_doc("Site Domain", site.name)
+		site_domain = create_test_site_domain(site.name, "hellohello.com")
+		site.set_host_name(site_domain.name)
+
+		with patch.object(SiteDomain, "create_remove_host_agent_request") as mock_remove_host:
+			def_domain.on_trash()
+		mock_remove_host.assert_not_called()
+
+		def_domain.setup_redirect()
+		with patch.object(SiteDomain, "create_remove_host_agent_request") as mock_remove_host:
+			def_domain.on_trash()
+		mock_remove_host.assert_called()
