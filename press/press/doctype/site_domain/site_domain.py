@@ -12,8 +12,7 @@ from press.agent import Agent
 
 class SiteDomain(Document):
 	def after_insert(self):
-		if self.domain != self.site:
-			# default domain
+		if not self.default:
 			self.create_tls_certificate()
 
 	def validate(self):
@@ -22,6 +21,10 @@ class SiteDomain(Document):
 				self.setup_redirect_in_proxy()
 			elif not self.is_new():
 				self.remove_redirect_in_proxy()
+
+	@property
+	def default(self):
+		return self.domain == self.site
 
 	def setup_redirect_in_proxy(self):
 		site = frappe.get_doc("Site", self.site)
@@ -85,7 +88,11 @@ class SiteDomain(Document):
 
 	def on_trash(self):
 		self.disavow_agent_jobs()
-		self.create_remove_host_agent_request()
+		if self.default:
+			if self.redirect_to_primary:
+				self.create_remove_host_agent_request()
+		else:
+			self.create_remove_host_agent_request()
 		self.remove_domain_from_site_config()
 
 	def after_delete(self):
