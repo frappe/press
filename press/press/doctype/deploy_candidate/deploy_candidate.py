@@ -37,6 +37,22 @@ class DeployCandidate(Document):
 		)
 		frappe.db.commit()
 
+	def build_and_deploy(self):
+		self.status = "Pending"
+		self.add_build_steps()
+		self.save()
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_build_and_deploy", timeout=1200, enqueue_after_commit=True
+		)
+		frappe.db.commit()
+
+	def _build_and_deploy(self):
+		self._build()
+		self._deploy()
+
+	def _deploy(self):
+		self.create_deploy()
+
 	def _build(self):
 		self.status = "Running"
 		self.build_start = now()
@@ -302,31 +318,33 @@ class DeployCandidate(Document):
 
 	def create_deploy(self):
 		try:
-			deploy = frappe.db.exists("Deploy", {"group": self.group, "candidate": self.name})
-			if deploy:
+			deploy_doc = frappe.db.exists(
+				"Deploy", {"group": self.group, "candidate": self.name}
+			)
+			servers = frappe.get_doc("Release Group", self.group).servers
+
+			if deploy_doc or not servers:
 				return
 
-			deployed_benches = frappe.get_all(
-				"Bench", fields=["server"], filters={"group": self.group, "status": "Active"}
-			)
-			servers = list(set(bench.server for bench in deployed_benches))
-			benches = []
 			domain = frappe.db.get_single_value("Press Settings", "domain")
-			for server in servers:
+			benches = []
+
+			for row in servers:
+				server = row.server
 				server_name = server.replace(f".{domain}", "")
 				bench_name = f"bench-{self.group.replace(' ', '-').lower()}-{server_name}"
 				bench_name = append_number_if_name_exists("Bench", bench_name, separator="-")
 				benches.append({"server": server, "bench_name": bench_name})
-				if benches:
-					deploy_doc = frappe.get_doc(
-						{
-							"doctype": "Deploy",
-							"group": self.group,
-							"candidate": self.name,
-							"benches": benches,
-						}
-					)
-					deploy_doc.insert()
+
+			deploy_doc = frappe.get_doc(
+				{
+					"doctype": "Deploy",
+					"group": self.group,
+					"candidate": self.name,
+					"benches": benches,
+				}
+			)
+			deploy_doc.insert()
 		except Exception:
 			log_error("Deploy Creation Error", candidate=self.name)
 

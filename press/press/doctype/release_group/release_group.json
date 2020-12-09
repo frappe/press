@@ -14,7 +14,9 @@
   "default",
   "public",
   "section_break_7",
-  "applications"
+  "applications",
+  "section_break_10",
+  "servers"
  ],
  "fields": [
   {
@@ -76,10 +78,20 @@
    "label": "Applications",
    "options": "Release Group Application",
    "reqd": 1
+  },
+  {
+   "fieldname": "section_break_10",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "servers",
+   "fieldtype": "Table",
+   "label": "Servers",
+   "options": "Release Group Server"
   }
  ],
  "links": [],
- "modified": "2020-11-16 23:23:37.671814",
+ "modified": "2020-12-09 10:08:42.414880",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",

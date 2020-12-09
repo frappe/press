@@ -5,8 +5,11 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "status",
+  "column_break_2",
   "group",
   "candidate",
+  "section_break_5",
   "benches"
  ],
  "fields": [
@@ -37,10 +40,28 @@
    "label": "Deploy Benches",
    "options": "Deploy Bench",
    "reqd": 1
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Pending\nRunning\nSuccess\nFailure",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_5",
+   "fieldtype": "Section Break"
   }
  ],
  "links": [],
- "modified": "2020-11-28 12:38:15.340857",
+ "modified": "2020-12-09 10:45:45.479183",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy",
