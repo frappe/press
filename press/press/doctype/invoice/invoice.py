@@ -10,7 +10,7 @@ from press.api.billing import get_stripe
 from press.utils import log_error
 from datetime import datetime
 from frappe import _
-from frappe.utils import getdate
+from frappe.utils import getdate, cint
 from press.telegram import Telegram
 
 
@@ -30,6 +30,8 @@ class Invoice(Document):
 		self.apply_credit_balance()
 		if self.amount_due == 0:
 			self.status = "Paid"
+
+		self.update_item_descriptions()
 
 		try:
 			self.create_stripe_invoice()
@@ -147,6 +149,14 @@ class Invoice(Document):
 
 		# due date
 		self.due_date = self.period_end
+
+	def update_item_descriptions(self):
+		for item in self.items:
+			if item.document_type == "Site":
+				site_name = item.document_name.split(".archived")[0]
+				plan = frappe.get_cached_value("Plan", item.plan, "plan_title")
+				how_many_days = f"{cint(item.quantity)} day{'s' if item.quantity > 1 else ''}"
+				item.description = f"{site_name} active for {how_many_days} on {plan} plan"
 
 	def add_usage_record(self, usage_record):
 		if self.type != "Subscription":
