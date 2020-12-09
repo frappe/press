@@ -12,9 +12,6 @@
 						<th class="py-2 pl-2 pr-2 font-semibold border-b border-blue-100">
 							Description
 						</th>
-						<th class="py-2 pr-2 font-semibold border-b border-blue-100">
-							Plan
-						</th>
 						<th
 							class="py-2 pr-2 font-semibold text-right whitespace-no-wrap border-b border-blue-100"
 						>
@@ -29,9 +26,8 @@
 				</thead>
 				<tbody>
 					<tr v-for="row in doc.items" :key="row.idx">
-						<td class="py-2 pl-2 pr-2 border-b">{{ row.description || row.document_name }}</td>
-						<td class="py-2 pr-2 whitespace-no-wrap border-b">
-							{{ row.plan }}
+						<td class="py-2 pl-2 pr-2 border-b">
+							{{ row.description || row.document_name }}
 						</td>
 						<td class="py-2 pr-2 text-right border-b">
 							{{ row.rate }} x {{ row.quantity }}
