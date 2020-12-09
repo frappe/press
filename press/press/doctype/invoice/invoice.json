@@ -12,6 +12,7 @@
   "currency",
   "column_break_4",
   "status",
+  "type",
   "period_start",
   "period_end",
   "due_date",
@@ -33,6 +34,7 @@
   "credit_allocations",
   "stripe_billing_section",
   "stripe_invoice_id",
+  "stripe_payment_intent_id",
   "stripe_invoice_url",
   "frappe_invoice",
   "invoice_pdf",
@@ -175,8 +177,7 @@
   {
    "fieldname": "period_start",
    "fieldtype": "Date",
-   "label": "Period Start",
-   "reqd": 1
+   "label": "Period Start"
   },
   {
    "fieldname": "period_end",
@@ -262,6 +263,19 @@
    "fieldtype": "Table",
    "label": "Transaction Fee Details",
    "options": "Invoice Transaction Fee"
+  },
+  {
+   "default": "Subscription",
+   "fieldname": "type",
+   "fieldtype": "Select",
+   "label": "Type",
+   "options": "Subscription\nPrepaid Credits"
+  },
+  {
+   "depends_on": "eval:doc.type == 'Prepaid Credits'",
+   "fieldname": "stripe_payment_intent_id",
+   "fieldtype": "Data",
+   "label": "Stripe Payment Intent ID"
   }
  ],
  "is_submittable": 1,
@@ -277,7 +291,7 @@
    "link_fieldname": "invoice"
   }
  ],
- "modified": "2020-12-08 15:16:14.307788",
+ "modified": "2020-12-08 16:49:27.892205",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",

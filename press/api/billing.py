@@ -26,15 +26,8 @@ def info():
 	currency = team_doc.currency
 
 	if invoice:
-		next_payment_attempt = (
-			global_date_format(invoice.due_date) if invoice.due_date else None
-		)
-		upcoming_invoice = {
-			"next_payment_attempt": next_payment_attempt,
-			"amount": invoice.get_formatted("amount_due"),
-			"total_amount": invoice.get_formatted("total"),
-			"customer_email": invoice.customer_email,
-		}
+		upcoming_invoice = invoice.as_dict()
+		upcoming_invoice.formatted_total = invoice.get_formatted("total")
 	else:
 		upcoming_invoice = None
 
@@ -159,37 +152,33 @@ def get_payment_methods():
 	return frappe.get_doc("Team", team).get_payment_methods()
 
 
+def make_formatted_doc(doc, fieldtypes=None):
+	formatted = {}
+	filters = None
+	if fieldtypes:
+		filters = {"fieldtype": ["in", fieldtypes]}
+
+	for df in doc.meta.get("fields", filters):
+		formatted[df.fieldname] = doc.get_formatted(df.fieldname)
+
+	for tf in doc.meta.get_table_fields():
+		formatted[tf.fieldname] = []
+		for row in doc.get(tf.fieldname):
+			formatted[tf.fieldname].append(make_formatted_doc(row))
+
+	return formatted
+
+
 @frappe.whitelist()
 def get_invoice_usage(invoice):
 	team = get_current_team()
 	# apply team filter for safety
 	doc = frappe.get_doc("Invoice", {"name": invoice, "team": team})
-
-	usage = []
-	for row in doc.items:
-		usage.append(
-			{
-				"idx": row.idx,
-				"site": row.document_name,
-				"plan": frappe.get_cached_value("Plan", row.plan, "plan_title")
-				if row.plan
-				else None,
-				"days_active": row.quantity,
-				"rate": row.get_formatted("rate"),
-				"amount": row.get_formatted("amount"),
-			}
-		)
-
-	return {
-		"usage": usage,
-		"status": doc.status,
-		"invoice_pdf": doc.get_pdf() if doc.currency == "USD" else doc.invoice_pdf,
-		"period_start": doc.period_start,
-		"period_end": doc.period_end,
-		"total": doc.get_formatted("total"),
-		"amount_due": doc.get_formatted("amount_due"),
-		"applied_balance": doc.get_formatted("applied_credits"),
-	}
+	out = doc.as_dict()
+	# a dict with formatted currency values for display
+	out.formatted = make_formatted_doc(doc)
+	out.invoice_pdf = doc.invoice_pdf or (doc.currency == "USD" and doc.get_pdf())
+	return out
 
 
 @frappe.whitelist()
