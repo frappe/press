@@ -171,5 +171,5 @@ def deploy(name):
 		"Deploy Candidate", {"group": name}, limit=1, order_by="creation desc"
 	)[0]
 	candidate = frappe.get_doc("Deploy Candidate", candidate.name)
-	candidate.build()
+	candidate.build_and_deploy()
 	return candidate.name
