@@ -23,8 +23,13 @@ class Invoice(Document):
 		self.validate_amount()
 
 	def before_submit(self):
+		if self.type == "Prepaid Credits":
+			return
+
 		self.amount_due = self.total
 		self.apply_credit_balance()
+		if self.amount_due == 0:
+			self.status = "Paid"
 
 		try:
 			self.create_stripe_invoice()
@@ -37,9 +42,11 @@ class Invoice(Document):
 
 			raise
 
+	def after_submit(self):
+		self.create_invoice_on_frappeio()
+
 	def on_update_after_submit(self):
-		if self.status == "Paid":
-			self.create_invoice_on_frappeio()
+		self.create_invoice_on_frappeio()
 
 	def after_insert(self):
 		if self.get("amended_from"):
@@ -65,36 +72,45 @@ class Invoice(Document):
 			)
 
 	def create_stripe_invoice(self):
-		if not self.stripe_invoice_id and self.amount_due > 0:
-			stripe = get_stripe()
-			customer_id = frappe.db.get_value("Team", self.team, "stripe_customer_id")
+		if self.type == "Prepaid Credits":
+			return
+		if self.stripe_invoice_id:
+			return
+		if self.amount_due <= 0:
+			return
 
-			start = getdate(self.period_start)
-			end = getdate(self.period_end)
-			period_string = f"{start.strftime('%b %d')} - {end.strftime('%b %d')} {end.year}"
-			stripe.InvoiceItem.create(
-				customer=customer_id,
-				description=f"Frappe Cloud Subscription ({period_string})",
-				amount=int(self.amount_due * 100),
-				currency=self.currency.lower(),
-				idempotency_key=f"create_invoiceitem_{self.name}",
-			)
-			invoice = stripe.Invoice.create(
-				customer=customer_id,
-				collection_method="charge_automatically",
-				auto_advance=True,
-				idempotency_key=f"create_invoice_{self.name}",
-			)
-			self.db_set(
-				{"stripe_invoice_id": invoice["id"], "status": "Invoice Created"}, commit=True
-			)
+		stripe = get_stripe()
+		customer_id = frappe.db.get_value("Team", self.team, "stripe_customer_id")
+
+		start = getdate(self.period_start)
+		end = getdate(self.period_end)
+		period_string = f"{start.strftime('%b %d')} - {end.strftime('%b %d')} {end.year}"
+		stripe.InvoiceItem.create(
+			customer=customer_id,
+			description=f"Frappe Cloud Subscription ({period_string})",
+			amount=int(self.amount_due * 100),
+			currency=self.currency.lower(),
+			idempotency_key=f"create_invoiceitem_{self.name}",
+		)
+		invoice = stripe.Invoice.create(
+			customer=customer_id,
+			collection_method="charge_automatically",
+			auto_advance=True,
+			idempotency_key=f"create_invoice_{self.name}",
+		)
+		self.db_set(
+			{"stripe_invoice_id": invoice["id"], "status": "Invoice Created"}, commit=True
+		)
 
 	def finalize_stripe_invoice(self):
 		stripe = get_stripe()
 		stripe.Invoice.finalize_invoice(self.stripe_invoice_id)
 
 	def validate_duplicate(self):
-		if self.is_new():
+		if self.type == "Prepaid Credits":
+			return
+
+		if self.period_start and self.period_end and self.is_new():
 			intersecting_invoices = frappe.db.get_all(
 				"Invoice",
 				filters={
@@ -122,6 +138,8 @@ class Invoice(Document):
 			)
 
 	def validate_dates(self):
+		if not self.period_start:
+			return
 		if not self.period_end:
 			period_start = getdate(self.period_start)
 			# period ends on last day of month
@@ -131,6 +149,8 @@ class Invoice(Document):
 		self.due_date = self.period_end
 
 	def add_usage_record(self, usage_record):
+		if self.type != "Subscription":
+			return
 		# return if this usage_record is already accounted for in an invoice
 		if usage_record.invoice:
 			return
@@ -161,6 +181,8 @@ class Invoice(Document):
 		usage_record.db_set("invoice", self.name)
 
 	def remove_usage_record(self, usage_record):
+		if self.type != "Subscription":
+			return
 		# return if invoice is not in draft mode
 		if self.docstatus != 0:
 			return
@@ -220,9 +242,6 @@ class Invoice(Document):
 			doc.insert()
 			doc.submit()
 
-	def on_trash(self):
-		self.unlink_usage_records()
-
 	def apply_credit_balance(self):
 		balance = frappe.get_cached_doc("Team", self.team).get_balance()
 		if balance == 0:
@@ -273,26 +292,6 @@ class Invoice(Document):
 		self.applied_credits = total_allocated
 		self.amount_due = self.total - self.applied_credits
 
-	def unlink_usage_records(self):
-		values = {
-			"modified": frappe.utils.now(),
-			"modified_by": frappe.session.user,
-			"invoice": self.name,
-		}
-		frappe.db.sql(
-			"""
-			UPDATE
-				`tabUsage Record`
-			SET
-				`invoice` = null,
-				`modified` = %(modified)s,
-				`modified_by` = %(modified_by)s
-			WHERE
-				`invoice` = %(invoice)s
-			""",
-			values=values,
-		)
-
 	def create_next(self):
 		# the next invoice's period starts after this invoice ends
 		next_start = frappe.utils.add_days(self.period_end, 1)
@@ -308,6 +307,8 @@ class Invoice(Document):
 
 	def create_invoice_on_frappeio(self):
 		if self.flags.skip_frappe_invoice:
+			return
+		if self.status != "Paid":
 			return
 		if self.amount_due == 0:
 			return
@@ -390,34 +391,46 @@ class Invoice(Document):
 
 		return self.frappeio_connection
 
-	def update_transaction_details(self):
+	def update_transaction_details(self, stripe_charge=None):
+		if not stripe_charge:
+			return
 		stripe = get_stripe()
-		stripe_invoice = stripe.Invoice.retrieve(self.stripe_invoice_id)
-		if stripe_invoice.get("charge"):
-			charge = stripe.Charge.retrieve(stripe_invoice.get("charge"))
-			if charge.balance_transaction:
-				balance_transaction = stripe.BalanceTransaction.retrieve(charge.balance_transaction)
-				self.exchange_rate = balance_transaction.exchange_rate
-				self.transaction_amount = convert_stripe_money(balance_transaction.amount)
-				self.transaction_net = convert_stripe_money(balance_transaction.net)
-				self.transaction_fee = convert_stripe_money(balance_transaction.fee)
-				self.transaction_fee_details = []
-				for row in balance_transaction.fee_details:
-					self.append(
-						"transaction_fee_details",
-						{
-							"description": row.description,
-							"amount": convert_stripe_money(row.amount),
-							"currency": row.currency.upper(),
-						},
-					)
-				self.save()
-				return True
+		charge = stripe.Charge.retrieve(stripe_charge)
+		if charge.balance_transaction:
+			balance_transaction = stripe.BalanceTransaction.retrieve(charge.balance_transaction)
+			self.exchange_rate = balance_transaction.exchange_rate
+			self.transaction_amount = convert_stripe_money(balance_transaction.amount)
+			self.transaction_net = convert_stripe_money(balance_transaction.net)
+			self.transaction_fee = convert_stripe_money(balance_transaction.fee)
+			self.transaction_fee_details = []
+			for row in balance_transaction.fee_details:
+				self.append(
+					"transaction_fee_details",
+					{
+						"description": row.description,
+						"amount": convert_stripe_money(row.amount),
+						"currency": row.currency.upper(),
+					},
+				)
+			self.save()
+			return True
 
 	def refund(self, reason):
 		stripe = get_stripe()
-		stripe_invoice = stripe.Invoice.retrieve(self.stripe_invoice_id)
-		stripe.Refund.create(charge=stripe_invoice.charge)
+		charge = None
+		if self.type == "Subscription":
+			stripe_invoice = stripe.Invoice.retrieve(self.stripe_invoice_id)
+			charge = stripe_invoice.charge
+		elif self.type == "Prepaid Credits":
+			payment_intent = stripe.PaymentIntent.retrieve(self.stripe_payment_intent_id)
+			charge = payment_intent["charges"]["data"][0]["id"]
+
+		if not charge:
+			frappe.throw(
+				"Cannot refund payment because Stripe Charge not found for this invoice"
+			)
+
+		stripe.Refund.create(charge=charge)
 		self.status = "Refunded"
 		self.save()
 		self.add_comment(text=f"Refund reason: {reason}")
@@ -537,7 +550,8 @@ def process_stripe_webhook(doc, method):
 		invoice.save()
 
 		# update transaction amount, fee and exchange rate
-		invoice.update_transaction_details()
+		if stripe_invoice.get("charge"):
+			invoice.update_transaction_details(stripe_invoice.get("charge"))
 
 		# unsuspend sites
 		team.unsuspend_sites(
