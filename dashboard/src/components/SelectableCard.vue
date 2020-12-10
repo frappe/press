@@ -6,8 +6,8 @@
 		"
 	>
 		<div class="flex items-center">
-			<img :src="image" :alt="title" class="w-10 h-10 rounded-full" />
-			<div class="my-1 ml-4">
+			<img v-if="image" :src="image" :alt="title" class="w-10 h-10 mr-4 rounded-full" />
+			<div class="my-1">
 				<h3 class="text-lg font-bold text-gray-900">
 					{{ title }}
 				</h3>

@@ -21,8 +21,7 @@
 				Select apps to install
 			</h2>
 			<p class="text-base text-gray-700">
-				Choose apps to install on your site. You can also choose a specific
-				version of the app.
+				Choose apps to install on your site. You can select apps published on marketplace or your private apps.
 			</p>
 			<div class="mt-4">
 				<h3 class="sr-only">Marketplace Apps</h3>
@@ -50,35 +49,24 @@
 					<div class="h-1 py-4" v-if="marketplaceApps.length > 4"></div>
 				</div>
 			</div>
-			<div class="mt-6" v-if="privateApps.length > 0">
-				<h3 class="text-base font-semibold">
+			<div class="mt-4" v-if="privateApps.length > 0">
+				<h3 class="text-sm font-medium">
 					Your Private Apps
 				</h3>
 				<div
-					class="grid grid-cols-2 gap-4 px-2 py-2 mt-2 -mx-2 overflow-y-scroll max-h-56"
+					class="grid grid-cols-2 gap-4 px-2 py-2 -mx-2 overflow-y-scroll mt- max-h-56"
 				>
-					<button
-						class="px-4 py-3 text-left border border-gray-100 rounded-lg shadow cursor-pointer"
-						:class="
-							selectedApps.includes(app.name)
-								? 'border-blue-500 shadow-outline-blue'
-								: 'hover:border-gray-300'
-						"
+					<SelectableCard
 						v-for="app in privateApps"
 						:key="app.name"
-						@click="toggleApp(app)"
+						@click.native="toggleApp(app)"
+						:selected="selectedApps.includes(app.name)"
+						:title="`${app.repo_owner}/${app.repo}`"
 					>
-						<div class="flex items-start">
-							<div class="text-base text-left">
-								<div class="font-semibold">
-									{{ app.repo_owner }}/{{ app.repo }}
-								</div>
-								<div class="text-gray-700">
-									{{ app.branch }}
-								</div>
-							</div>
+						<div slot="secondary-content" class="text-base text-gray-700">
+							{{ app.branch }}
 						</div>
-					</button>
+					</SelectableCard>
 				</div>
 			</div>
 		</div>
