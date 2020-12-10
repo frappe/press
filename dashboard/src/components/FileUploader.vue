@@ -96,11 +96,6 @@ export default {
 				return null;
 			}
 
-			const title = this.type[0].toUpperCase() + this.type.slice(1);
-			const errorTitle =
-				validationMessage?.length > 24 ? 'Validation Error' : validationMessage;
-			let error = validationMessage ? errorTitle : `Invalid ${title} File`;
-
 			if (validationMessage) {
 				this.message = 'Skipping Validation...';
 				console.error(validationMessage);

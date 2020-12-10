@@ -21,7 +21,8 @@
 				Select apps to install
 			</h2>
 			<p class="text-base text-gray-700">
-				Choose apps to install on your site. You can select apps published on marketplace or your private apps.
+				Choose apps to install on your site. You can select apps published on
+				marketplace or your private apps.
 			</p>
 			<div class="mt-4">
 				<h3 class="sr-only">Marketplace Apps</h3>
