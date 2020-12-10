@@ -54,8 +54,8 @@ def keep_backups_for_(bench: str) -> int:
 	)
 
 
-class BackupPolicy:
-	"""Represent backup rotation policy for maintaining offsite backups."""
+class BackupRotationScheme:
+	"""Represent backup rotation scheme for maintaining offsite backups."""
 
 	def expire_local_backups(self, site: Site):
 		expiry = keep_backups_for_(site.bench)
@@ -92,8 +92,8 @@ class BackupPolicy:
 		frappe.db.commit()
 
 
-class FIFO(BackupPolicy):
-	"""Represent First-in-First-out backup rotation policy."""
+class FIFO(BackupRotationScheme):
+	"""Represent First-in-First-out backup rotation scheme."""
 
 	def __init__(self):
 		self.offsite_keep_count = (
@@ -130,8 +130,9 @@ class FIFO(BackupPolicy):
 
 def cleanup_backups():
 	"""Delete expired offsite backups and set statuses for old local ones."""
-	policy = FIFO()
-	policy.cleanup()
+
+	scheme = FIFO()
+	scheme.cleanup()
 
 
 def remove_logs():
