@@ -12,6 +12,7 @@ def execute():
 		stripe_account = create_test_stripe_account()
 		if stripe_account:
 			settings.stripe_account = stripe_account.name
+			settings.flags.ignore_mandatory = True
 			settings.save()
 
 
