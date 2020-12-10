@@ -80,6 +80,7 @@ class BackupRotationScheme:
 		raise NotImplementedError
 
 	def cleanup(self):
+		"""Expire backups according to the rotation scheme."""
 		expired_remote_files = []
 		sites = frappe.get_all(
 			"Site", filters={"status": ("!=", "Archived")}, fields=["name", "bench"]
@@ -128,11 +129,28 @@ class FIFO(BackupRotationScheme):
 
 		return remote_files_to_delete
 
+
+class GFS(BackupRotationScheme):
+	"""Represent Grandfather-father-son backup rotation scheme."""
+
+	def __init__(self):
+		pass
+
+	def expire_offsite_backups(self, site: Site):
+		pass
+
+
 def cleanup_backups():
 	"""Delete expired offsite backups and set statuses for old local ones."""
 
-	scheme = FIFO()
-	scheme.cleanup()
+	scheme = (
+		frappe.db.get_single_value("Press Settings", "backup_rotation_scheme") or "FIFO"
+	)
+	if scheme == "FIFO":
+		rotation = FIFO()
+	elif scheme == "Grandfather-father-son":
+		rotation = GFS()
+	rotation.cleanup()
 
 
 def remove_logs():
