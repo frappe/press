@@ -7,6 +7,41 @@ from press.press.doctype.remote_file.remote_file import delete_remote_backup_obj
 from press.press.doctype.site.site import Site
 
 
+def remove_baggage():
+	"""Remove any remote files attached to the Site doc if older than 12 hours."""
+	half_day = datetime.now() - timedelta(hours=12)
+	or_filters = [
+		["database_file", "!=", ""],
+		["public_file", "!=", ""],
+		["private_file", "!=", ""],
+		["remote_config_file", "!=", ""],
+		["remote_database_file", "!=", ""],
+		["remote_public_file", "!=", ""],
+		["remote_private_file", "!=", ""],
+	]
+	filters = [
+		["creation", "<", half_day],
+		["status", "not in", "Pending,Installing,Updating,Active,Broken"],
+	]
+	fields = [
+		"remote_config_file",
+		"remote_database_file",
+		"remote_public_file",
+		"remote_private_file",
+	]
+
+	sites = frappe.get_all(
+		"Site", fields=["name"] + fields, filters=filters, or_filters=or_filters
+	)
+
+	for site in sites:
+		# remove remote files attached to site
+		remote_files = {x: site.get(x) for x in fields}
+
+		for remote_file_type, remote_file_name in remote_files.items():
+			# s3 uploads.frappe.cloud has a 1 day expiry rule for all objects, so we'll unset those files here
+			frappe.db.set_value("Site", site.name, remote_file_type, None, for_update=False)
+
 @functools.lru_cache(maxsize=128)
 def keep_backups_for_(bench: str) -> int:
 	"""Get no. of hours for which backups are kept on site."""
@@ -40,40 +75,6 @@ class BackupPolicy:
 			# as available
 			frappe.db.set_value("Site Backup", local_backup, "files_availability", "Unavailable")
 
-	def remove_baggage():
-		"""Remove any remote files attached to the Site doc if older than 12 hours."""
-		half_day = datetime.now() - timedelta(hours=12)
-		or_filters = [
-			["database_file", "!=", ""],
-			["public_file", "!=", ""],
-			["private_file", "!=", ""],
-			["remote_config_file", "!=", ""],
-			["remote_database_file", "!=", ""],
-			["remote_public_file", "!=", ""],
-			["remote_private_file", "!=", ""],
-		]
-		filters = [
-			["creation", "<", half_day],
-			["status", "not in", "Pending,Installing,Updating,Active,Broken"],
-		]
-		fields = [
-			"remote_config_file",
-			"remote_database_file",
-			"remote_public_file",
-			"remote_private_file",
-		]
-
-		sites = frappe.get_all(
-			"Site", fields=["name"] + fields, filters=filters, or_filters=or_filters
-		)
-
-		for site in sites:
-			# remove remote files attached to site
-			remote_files = {x: site.get(x) for x in fields}
-
-			for remote_file_type, remote_file_name in remote_files.items():
-				# s3 uploads.frappe.cloud has a 1 day expiry rule for all objects, so we'll unset those files here
-				frappe.db.set_value("Site", site.name, remote_file_type, None, for_update=False)
 
 	def expire_offsite_backups(self):
 		raise NotImplementedError
