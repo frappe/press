@@ -155,7 +155,7 @@ fixtures = [
 # Testing
 # -------
 
-before_tests = "press.tests.before_tests.execute"
+before_tests = "press.tests.before_test.execute"
 
 # Overriding Methods
 # ------------------------------
