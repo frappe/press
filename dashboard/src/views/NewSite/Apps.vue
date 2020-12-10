@@ -26,39 +26,27 @@
 			</p>
 			<div class="mt-4">
 				<h3 class="sr-only">Marketplace Apps</h3>
-				<div class="grid grid-cols-2 gap-4 px-2 py-2 mt-4 -mx-2 overflow-y-scroll max-h-56">
-					<button
-						class="px-4 py-2 text-left border border-gray-100 rounded-lg shadow cursor-pointer"
+				<div
+					class="grid grid-cols-2 gap-4 px-2 py-2 mt-4 -mx-2 overflow-y-scroll max-h-56"
+				>
+					<SelectableCard
 						v-for="marketplaceApp in marketplaceApps"
 						:key="marketplaceApp.name"
-						@click="toggleApp(marketplaceApp.app)"
-						:class="
-							selectedApps.includes(marketplaceApp.app.name)
-								? 'border-blue-500 shadow-outline-blue'
-								: 'hover:border-gray-300'
-						"
+						@click.native="toggleApp(marketplaceApp.app)"
+						:title="marketplaceApp.title"
+						:image="marketplaceApp.image"
+						:selected="selectedApps.includes(marketplaceApp.app.name)"
 					>
-						<div class="flex items-center">
-							<img
-								:src="marketplaceApp.image"
-								:alt="marketplaceApp.title"
-								class="w-10 h-10 rounded-full"
-							/>
-							<div class="my-1 ml-4">
-								<h3 class="text-lg font-bold text-gray-900">
-									{{ marketplaceApp.title }}
-								</h3>
-								<a
-									class="inline-block text-sm leading-snug text-blue-600"
-									:href="'/marketplace/apps/' + marketplaceApp.name"
-									target="_blank"
-									@click.stop
-								>
-									Details
-								</a>
-							</div>
-						</div>
-					</button>
+						<a
+							slot="secondary-content"
+							class="inline-block text-sm leading-snug text-blue-600"
+							:href="'/marketplace/apps/' + marketplaceApp.name"
+							target="_blank"
+							@click.stop
+						>
+							Details
+						</a>
+					</SelectableCard>
 					<div class="h-1 py-4" v-if="marketplaceApps.length > 4"></div>
 				</div>
 			</div>
@@ -66,7 +54,9 @@
 				<h3 class="text-base font-semibold">
 					Your Private Apps
 				</h3>
-				<div class="grid grid-cols-2 gap-4 px-2 py-2 mt-2 -mx-2 overflow-y-scroll max-h-56">
+				<div
+					class="grid grid-cols-2 gap-4 px-2 py-2 mt-2 -mx-2 overflow-y-scroll max-h-56"
+				>
 					<button
 						class="px-4 py-3 text-left border border-gray-100 rounded-lg shadow cursor-pointer"
 						:class="
@@ -95,12 +85,18 @@
 	</div>
 </template>
 <script>
+import SelectableCard from '@/components/SelectableCard.vue';
 export default {
+	components: {
+		SelectableCard
+	},
 	name: 'Apps',
 	props: ['options', 'selectedApps', 'selectedGroup'],
 	computed: {
 		privateApps() {
-			return this.apps.filter(app => app.team === this.$account.team.name && !app.public);
+			return this.apps.filter(
+				app => app.team === this.$account.team.name && !app.public
+			);
 		},
 		marketplaceApps() {
 			return this.apps
