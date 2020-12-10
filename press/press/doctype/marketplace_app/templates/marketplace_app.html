@@ -4,36 +4,37 @@
 {%- block body -%}
 <div class="px-4 sm:px-8">
 	<div>
-		<div class="flex items-center space-x-8 py-14">
-			<div>
+		<div class="flex items-center py-8 space-x-4 sm:space-x-8 sm:py-14">
+			<div class="flex-shrink-0">
 				{%- if app.image -%}
-				<img class="w-32 h-32 border border-gray-200 rounded-full" src="{{ app.image }}" alt="{{ app.title }}">
+				<img class="object-cover w-24 h-24 border border-gray-200 rounded-full sm:w-32 sm:h-32"
+					src="{{ app.image }}" alt="{{ app.title }}">
 				{%- else -%}
-				<div class="flex items-center justify-center w-32 h-32 text-gray-500 bg-gray-100 border border-gray-200 rounded-full"
+				<div class="flex items-center justify-center w-24 h-24 text-gray-500 bg-gray-100 border border-gray-200 rounded-full sm:w-32 sm:h-32"
 					style="font-size: 4rem;">
 					{{ app.title[0].upper() }}
 				</div>
 				{%- endif -%}
 			</div>
-			<div class="w-3/4">
+			<div>
 				<div class="mb-1">
 					{{ breadcrumbs([
 						{ 'label': 'Apps', 'url': '/marketplace' },
 						{ 'label': category.name, 'url': '/marketplace/category/' + category.slug if False else '' },
 					]) }}
 				</div>
-				<h1 class="text-6xl font-bold text-gray-900"> {{ app.title }} </h1>
-				<p class="text-gray-700">{{ app.description }}</p>
+				<h1 class="text-4xl font-bold text-gray-900 sm:text-6xl"> {{ app.title }} </h1>
+				<p class="text-base text-gray-700 sm:text-xl">{{ app.description }}</p>
 				<div class="mt-4">
 					{{ button('Install Now', '/marketplace/apps/' + app.name + '/install', 'primary') }}
 				</div>
 			</div>
 		</div>
-		<div class="flex">
-			<div class="w-3/5 pb-32 prose text-gray-900">
+		<div class="flex flex-col pb-32 sm:flex-row">
+			<div class="w-full pb-8 prose-sm prose text-gray-900 sm:w-3/5">
 				{{ frappe.utils.md_to_html(app.long_description) }}
 			</div>
-			<div class="w-2/5 pl-24 space-y-8">
+			<div class="grid w-full grid-cols-2 pl-0 gap-x-4 gap-y-8 sm:space-y-8 sm:block sm:pl-24 sm:w-2/5">
 				<div>
 					<h5 class="text-base text-gray-600">Website</h5>
 					<ul class="mt-2 space-y-1 text-base">
@@ -44,7 +45,8 @@
 					<h5 class="text-base text-gray-600">Supported Versions</h5>
 					<ul class="mt-2 space-y-1 text-base">
 						{%- for version in supported_versions -%}
-						<li class="">{{ link(version.name, version.frappe.url + '/tree/' + version.frappe.branch) }}</li>
+						<li class="">{{ link(version.name, version.frappe.url + '/tree/' + version.frappe.branch) }}
+						</li>
 						{%- endfor -%}
 					</ul>
 				</div>
@@ -62,8 +64,6 @@
 						{%- endif -%}
 						{%- endfor -%}
 					</ul>
-
-
 				</div>
 			</div>
 		</div>
