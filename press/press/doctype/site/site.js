@@ -11,8 +11,26 @@ frappe.ui.form.on('Site', {
 				},
 			};
 		});
+		frm.set_query('host_name', () => {
+			return {
+				filters: {
+					site: frm.doc.name,
+					status: 'Active'
+				},
+			};
+		});
 	},
 	refresh: function (frm) {
+		let { cpu, database, disk } = JSON.parse(frm.doc._site_usages);
+		frm.dashboard.set_headline_alert(
+			`<div class="container-fluid">
+				<div class="row">
+					<div class="col-sm-4">CPU Usage: ${Math.round((cpu || 0) * 100)}%</div>
+					<div class="col-sm-4">Database Usage: ${Math.round((database || 0) * 100)}%</div>
+					<div class="col-sm-4">Disk Usage: ${Math.round((disk || 0) * 100)}%</div>
+				</div>
+			</div>`
+		);
 		frm.add_web_link(`https://${frm.doc.name}`, __('Visit Site'));
 		frm.add_web_link(
 			`/dashboard/#/sites/${frm.doc.name}/general`,
@@ -36,7 +54,6 @@ frappe.ui.form.on('Site', {
 			[__('Update'), 'schedule_update'],
 			[__('Deactivate'), 'deactivate'],
 			[__('Activate'), 'activate'],
-			[__('Sync Config'), 'sync_site_config']
 		].forEach(([label, method]) => {
 			frm.add_custom_button(
 				label,
@@ -67,5 +84,6 @@ frappe.ui.form.on('Site', {
 				__('Actions')
 			);
 		});
+		frm.toggle_enable(['host_name'], frm.doc.status === 'Active');
 	},
 });

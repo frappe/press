@@ -14,12 +14,19 @@
   "aws_access_key_id",
   "aws_secret_access_key",
   "tls_section",
-  "eff_registration_email",
   "rsa_key_size",
-  "wildcard_tls_certificate",
   "column_break_11",
-  "webroot_directory",
+  "wildcard_tls_certificate",
+  "lets_encrypt_section",
   "certbot_directory",
+  "webroot_directory",
+  "column_break_15",
+  "eff_registration_email",
+  "backbone_section",
+  "backbone_directory",
+  "column_break_20",
+  "backbone_intermediate_ca",
+  "use_backbone_ca",
   "stripe_settings_section",
   "stripe_account",
   "create_stripe_plans",
@@ -36,8 +43,13 @@
   "erpnext_url",
   "erpnext_api_key",
   "erpnext_api_secret",
+  "column_break_38",
   "erpnext_username",
   "erpnext_password",
+  "frappeio_authentication_section",
+  "frappe_url",
+  "frappe_username",
+  "frappe_password",
   "offsite_backups_section",
   "offsite_backups_provider",
   "aws_s3_bucket",
@@ -72,7 +84,9 @@
   "column_break_65",
   "telegram_bot_token",
   "product_documentation_section",
-  "publish_docs"
+  "publish_docs",
+  "storage_and_disk_limits_section",
+  "enforce_storage_limits"
  ],
  "fields": [
   {
@@ -98,14 +112,12 @@
   {
    "fieldname": "aws_access_key_id",
    "fieldtype": "Data",
-   "label": "AWS Access Key ID",
-   "reqd": 1
+   "label": "AWS Access Key ID"
   },
   {
    "fieldname": "aws_secret_access_key",
    "fieldtype": "Password",
-   "label": "AWS Secret Access Key",
-   "reqd": 1
+   "label": "AWS Secret Access Key"
   },
   {
    "default": "AWS Route 53",
@@ -130,8 +142,7 @@
   {
    "fieldname": "eff_registration_email",
    "fieldtype": "Data",
-   "label": "EFF Registration Email",
-   "reqd": 1
+   "label": "EFF Registration Email"
   },
   {
    "fieldname": "column_break_11",
@@ -140,14 +151,12 @@
   {
    "fieldname": "webroot_directory",
    "fieldtype": "Data",
-   "label": "Webroot Directory",
-   "reqd": 1
+   "label": "Webroot Directory"
   },
   {
    "fieldname": "certbot_directory",
    "fieldtype": "Data",
-   "label": "Certbot Directory",
-   "reqd": 1
+   "label": "Certbot Directory"
   },
   {
    "fieldname": "tls_section",
@@ -164,8 +173,7 @@
    "fieldname": "stripe_account",
    "fieldtype": "Link",
    "label": "Stripe Account",
-   "options": "Stripe Settings",
-   "reqd": 1
+   "options": "Stripe Settings"
   },
   {
    "fieldname": "stripe_product_id",
@@ -439,12 +447,83 @@
    "fieldname": "product_documentation_section",
    "fieldtype": "Section Break",
    "label": "Product Documentation"
+  },
+  {
+   "fieldname": "backbone_intermediate_ca",
+   "fieldtype": "Link",
+   "label": "Backbone Intermediate CA",
+   "options": "Certificate Authority"
+  },
+  {
+   "fieldname": "lets_encrypt_section",
+   "fieldtype": "Section Break",
+   "label": "Let's Encrypt"
+  },
+  {
+   "fieldname": "backbone_section",
+   "fieldtype": "Section Break",
+   "label": "Backbone"
+  },
+  {
+   "fieldname": "backbone_directory",
+   "fieldtype": "Data",
+   "label": "Backbone Directory"
+  },
+  {
+   "fieldname": "column_break_15",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_20",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_38",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "use_backbone_ca",
+   "fieldtype": "Check",
+   "label": "Use Backbone CA"
+  },
+  {
+   "fieldname": "frappeio_authentication_section",
+   "fieldtype": "Section Break",
+   "label": "Frappe.io Authentication"
+  },
+  {
+   "fieldname": "frappe_username",
+   "fieldtype": "Data",
+   "label": "Username"
+  },
+  {
+   "fieldname": "frappe_password",
+   "fieldtype": "Password",
+   "label": "Password"
+  },
+  {
+   "fieldname": "frappe_url",
+   "fieldtype": "Data",
+   "label": "URL"
+  },
+  {
+   "fieldname": "storage_and_disk_limits_section",
+   "fieldtype": "Section Break",
+   "label": "Storage and Disk Limits"
+  },
+  {
+   "default": "0",
+   "description": "Setting this to true will start suspending sites that cross the Site Usages with respect to their existing plans.",
+   "fieldname": "enforce_storage_limits",
+   "fieldtype": "Check",
+   "label": "Enforce Storage and Disk Limits"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2020-08-17 21:48:01.198091",
- "modified_by": "faris@erpnext.com",
+ "modified": "2020-11-19 13:27:27.540632",
+ "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
  "owner": "Administrator",

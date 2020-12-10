@@ -2,6 +2,37 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
+  "modified": "2020-02-21 12:34:39.569810",
+  "name": "Recover Failed Site Migration",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "request_method": null,
+  "request_path": null,
+  "steps": [
+   {
+    "parent": "Recover Failed Site Migration",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Move Site"
+   },
+   {
+    "parent": "Recover Failed Site Migration",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Restore Touched Tables"
+   },
+   {
+    "parent": "Recover Failed Site Migration",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Disable Maintenance Mode"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
   "modified": "2020-08-11 12:17:23.658693",
   "name": "Add Domain",
   "parent": null,
@@ -965,6 +996,93 @@
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Migrate Site"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2020-10-02 15:34:23.594712",
+  "name": "Fetch Sites Info",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/info",
+  "steps": [
+   {
+    "parent": "Fetch Sites Info",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Fetch Sites Info"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2020-11-30 12:12:41.282921",
+  "name": "Setup Redirects on Hosts",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "request_method": "POST",
+  "request_path": "/proxy/hosts/redirects",
+  "steps": [
+   {
+    "parent": "Setup Redirects on Hosts",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Remove Redirect on Host"
+   },
+   {
+    "parent": "Setup Redirects on Hosts",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Setup Redirect on Host"
+   },
+   {
+    "parent": "Setup Redirects on Hosts",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Generate NGINX Configuration"
+   },
+   {
+    "parent": "Setup Redirects on Hosts",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2020-11-30 12:12:21.595092",
+  "name": "Remove Redirects on Hosts",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "request_method": "DELETE",
+  "request_path": "/proxy/hosts/redirects",
+  "steps": [
+   {
+    "parent": "Remove Redirects on Hosts",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Remove Redirect on Host"
+   },
+   {
+    "parent": "Remove Redirects on Hosts",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Generate NGINX Configuration"
+   },
+   {
+    "parent": "Remove Redirects on Hosts",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
    }
   ]
  }

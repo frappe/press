@@ -1,43 +1,50 @@
 ---
-- name: Clone agent
+- name: Clone Agent Repository
   become: yes
   become_user: frappe
   git:
-    repo: 'https://adityahase:uqknfFYBrziJ4kohumR8YhcKjyhYRmJe@github.com:/frappe/agent'
+    repo: "https://adityahase:uqknfFYBrziJ4kohumR8YhcKjyhYRmJe@github.com:/frappe/agent"
     dest: /home/frappe/agent/repo
     remote: upstream
 
-- name: Install agent
+- name: Install Agent
   become: yes
   become_user: frappe
-  pip: 
+  pip:
     name: file:///home/frappe/agent/repo
     virtualenv: /home/frappe/agent/env
     virtualenv_python: python3
     editable: yes
 
-- name: Generate agent configuration 
+- name: Generate Agent Configuration File
   become: yes
   become_user: frappe
   command: "/home/frappe/agent/env/bin/agent setup config --name {{ server }} --workers {{ workers }}"
   args:
     chdir: /home/frappe/agent
 
-- name: Setup agent database
+- name: Setup Agent SQLite Database
   become: yes
   become_user: frappe
   command: /home/frappe/agent/env/bin/agent setup database
   args:
     chdir: /home/frappe/agent
 
-- name: Setup agent authentication 
+- name: Setup Agent Usage Tracker
+  become: yes
+  become_user: frappe
+  command: /home/frappe/agent/env/bin/agent setup usage
+  args:
+    chdir: /home/frappe/agent
+
+- name: Setup Agent Authentication
   become: yes
   become_user: frappe
   command: "/home/frappe/agent/env/bin/agent setup authentication --password {{ password }}"
   args:
     chdir: /home/frappe/agent
 
-- name: Symlink supervisor configuration
+- name: Symlink Agent Supervisor Configuration
   file:
     src: /home/frappe/agent/supervisor.conf
     dest: /etc/supervisor/conf.d/agent.conf
@@ -45,35 +52,35 @@
     force: yes
     follow: no
 
-- name: Create logs directory for supervisor
+- name: Create Logs Directory for Supervisor
   become: yes
   become_user: frappe
   file:
     dest: /home/frappe/agent/logs
     state: directory
 
-- name: Setup agent supervisor
+- name: Setup Agent Supervisor
   become: yes
   become_user: frappe
   command: /home/frappe/agent/env/bin/agent setup supervisor
   args:
     chdir: /home/frappe/agent
 
-- name: Create nginx directory
+- name: Create Agent NGINX Configuration Directory
   become: yes
   become_user: frappe
   file:
     dest: /home/frappe/agent/nginx
     state: directory
-  
-- name: Create nginx root configuration file (empty)
+
+- name: Create NGINX Root Configuration File
   become: yes
   become_user: frappe
   file:
     path: /home/frappe/agent/nginx/nginx.conf
     state: touch
-  
-- name: Symlink nginx root configuration
+
+- name: Symlink NGINX Root Configuration File
   file:
     src: /home/frappe/agent/nginx/nginx.conf
     dest: /etc/nginx/nginx.conf
@@ -81,14 +88,14 @@
     force: yes
     follow: no
 
-- name: Create agent nginx configuration file (empty)
+- name: Create Agent NGINX Configuration File
   become: yes
   become_user: frappe
   file:
     path: /home/frappe/agent/nginx.conf
     state: touch
-  
-- name: Symlink agent nginx configuration
+
+- name: Symlink Agent NGINX Configuration File
   file:
     src: /home/frappe/agent/nginx.conf
     dest: /etc/nginx/conf.d/agent.conf
@@ -96,39 +103,37 @@
     force: yes
     follow: no
 
-- name: Create tls directory
+- name: Create Agent TLS Directory
   become: yes
   become_user: frappe
   file:
     dest: /home/frappe/agent/tls
     state: directory
 
-- name: Setup agent tls (private key)
+- name: Setup Agent TLS (Private Key)
   become: yes
   become_user: frappe
   copy:
-    content: "{{ certificate_privkey }}"
+    content: "{{ certificate_private_key }}"
     dest: /home/frappe/agent/tls/privkey.pem
-  
-- name: Setup agent tls (certificate)
+
+- name: Setup Agent TLS (Full Chain)
   become: yes
   become_user: frappe
   copy:
-    content: "{{ certificate_fullchain }}"
+    content: "{{ certificate_full_chain }}"
     dest: /home/frappe/agent/tls/fullchain.pem
 
-- name: Setup agent tls (intermediate certificate)
+- name: Setup Agent TLS (Intermediate Chain)
   become: yes
   become_user: frappe
   copy:
-    content: "{{ certificate_chain }}"
+    content: "{{ certificate_intermediate_chain }}"
     dest: /home/frappe/agent/tls/chain.pem
 
-- name: Setup agent nginx 
+- name: Setup Agent NGINX
   become: yes
   become_user: frappe
-  command: /home/frappe/agent/env/bin/agent setup nginx 
+  command: /home/frappe/agent/env/bin/agent setup nginx
   args:
     chdir: /home/frappe/agent
-  
-...

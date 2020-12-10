@@ -7,18 +7,27 @@ from __future__ import unicode_literals
 import frappe
 from frappe.model.document import Document
 from press.agent import Agent
-from frappe.utils.password import get_decrypted_password
-import subprocess
-import shlex
+from press.runner import Ansible
 from press.utils import log_error
 
 
 class Server(Document):
+	def on_update(self):
+		# If Database Server is changed for the server then change it for all the benches
+		if not self.is_new() and self.has_value_changed("database_server"):
+			benches = frappe.get_all(
+				"Bench", {"server": self.name, "status": ("!=", "Archived")}
+			)
+			for bench in benches:
+				bench = frappe.get_doc("Bench", bench)
+				bench.database_server = self.database_server
+				bench.save()
+
 	def add_upstream_to_proxy(self):
 		agent = Agent(self.proxy_server, server_type="Proxy Server")
 		agent.new_server(self.name)
 
-	def ping(self):
+	def ping_agent(self):
 		agent = Agent(self.name)
 		return agent.ping()
 
@@ -27,36 +36,51 @@ class Server(Document):
 		return agent.update()
 
 	def _setup_server(self):
-		agent_password = get_decrypted_password(self.doctype, self.name, "agent_password")
-		mariadb_root_password = get_decrypted_password(
-			self.doctype, self.name, "mariadb_root_password"
-		)
+		agent_password = self.get_password("agent_password")
+		mariadb_root_password = self.get_password("mariadb_root_password")
 		certificate_name = frappe.db.get_value(
 			"Press Settings", "Press Settings", "wildcard_tls_certificate"
 		)
 		certificate = frappe.get_doc("TLS Certificate", certificate_name)
-
-		command = (
-			f"ansible-playbook ../apps/press/press/playbooks/server.yml -i {self.name},"
-			f' -u root -vv -e "server={self.name} workers=2 password={agent_password}'
-			f" mariadb_root_password={mariadb_root_password}"
-			f" certificate_privkey='{certificate.privkey}'"
-			f" certificate_fullchain='{certificate.fullchain}'"
-			f" certificate_chain='{certificate.chain}' \""
-		)
 		try:
-			subprocess.run(shlex.split(command))
-			self.status = "Active"
-			self.is_server_setup = True
+			ansible = Ansible(
+				playbook="server.yml",
+				server=self,
+				variables={
+					"server": self.name,
+					"workers": "2",
+					"password": agent_password,
+					"mariadb_root_password": mariadb_root_password,
+					"certificate_private_key": certificate.private_key,
+					"certificate_full_chain": certificate.full_chain,
+					"certificate_intermediate_chain": certificate.intermediate_chain,
+				},
+			)
+			play = ansible.run()
+			self.reload()
+			if play.status == "Success":
+				self.status = "Active"
+				self.is_server_setup = True
+			else:
+				self.status = "Broken"
 		except Exception:
 			self.status = "Broken"
-			log_error("Server Setup Exception", commmand=command)
+			log_error("Server Setup Exception", server=self.as_dict())
 		self.save()
 
 	def setup_server(self):
+		self.status = "Installing"
+		self.save()
 		frappe.enqueue_doc(
 			self.doctype, self.name, "_setup_server", queue="long", timeout=1200
 		)
+
+	def ping_ansible(self):
+		try:
+			ansible = Ansible(playbook="ping.yml", server=self)
+			ansible.run()
+		except Exception:
+			log_error("Server Ping Exception", server=self.as_dict())
 
 	def cleanup_unused_files(self):
 		agent = Agent(self.name)

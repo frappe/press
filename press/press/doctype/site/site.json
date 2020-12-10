@@ -16,22 +16,16 @@
   "update",
   "setup_wizard_complete",
   "billing",
-  "plan",
   "team",
   "free",
   "section_break_6",
   "apps",
-  "database_section",
-  "database_type",
-  "database_name",
-  "column_break_13",
-  "database_host",
-  "database_port",
   "configuration_section",
   "host_name",
   "config",
   "configuration",
   "_keys_removed_in_last_update",
+  "_site_usages",
   "deploy_section",
   "timezone",
   "site_files_section",
@@ -123,56 +117,6 @@
    "read_only": 1
   },
   {
-   "fieldname": "database_section",
-   "fieldtype": "Section Break",
-   "hide_days": 1,
-   "hide_seconds": 1,
-   "label": "Database"
-  },
-  {
-   "default": "MariaDB",
-   "fieldname": "database_type",
-   "fieldtype": "Select",
-   "hide_days": 1,
-   "hide_seconds": 1,
-   "label": "Database Type",
-   "options": "MariaDB\nPostgres",
-   "reqd": 1,
-   "set_only_once": 1
-  },
-  {
-   "fieldname": "database_name",
-   "fieldtype": "Data",
-   "hide_days": 1,
-   "hide_seconds": 1,
-   "label": "Database Name",
-   "set_only_once": 1
-  },
-  {
-   "fieldname": "column_break_13",
-   "fieldtype": "Column Break",
-   "hide_days": 1,
-   "hide_seconds": 1
-  },
-  {
-   "default": "localhost",
-   "fieldname": "database_host",
-   "fieldtype": "Data",
-   "hide_days": 1,
-   "hide_seconds": 1,
-   "label": "Database Host",
-   "set_only_once": 1
-  },
-  {
-   "default": "3306",
-   "fieldname": "database_port",
-   "fieldtype": "Data",
-   "hide_days": 1,
-   "hide_seconds": 1,
-   "label": "Database Port",
-   "set_only_once": 1
-  },
-  {
    "fieldname": "configuration_section",
    "fieldtype": "Section Break",
    "hide_days": 1,
@@ -203,16 +147,6 @@
    "in_standard_filter": 1,
    "label": "Team",
    "options": "Team"
-  },
-  {
-   "fieldname": "plan",
-   "fieldtype": "Link",
-   "hide_days": 1,
-   "hide_seconds": 1,
-   "in_standard_filter": 1,
-   "label": "Plan",
-   "options": "Plan",
-   "reqd": 1
   },
   {
    "fieldname": "deploy_section",
@@ -276,8 +210,9 @@
   },
   {
    "fieldname": "host_name",
-   "fieldtype": "Data",
-   "label": "Host Name"
+   "fieldtype": "Link",
+   "label": "Host Name",
+   "options": "Site Domain"
   },
   {
    "fieldname": "status_before_update",
@@ -334,11 +269,18 @@
    "fieldtype": "Data",
    "hidden": 1,
    "label": "Keys Removed in Last Config Change"
+  },
+  {
+   "default": "{}",
+   "fieldname": "_site_usages",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Site Usage"
   }
  ],
  "links": [],
- "modified": "2020-09-22 19:20:47.121523",
- "modified_by": "gavin18d@gmail.com",
+ "modified": "2020-11-05 11:11:37.836382",
+ "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
  "owner": "Administrator",

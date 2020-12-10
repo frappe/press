@@ -26,15 +26,8 @@ def info():
 	currency = team_doc.currency
 
 	if invoice:
-		next_payment_attempt = (
-			global_date_format(invoice.due_date) if invoice.due_date else None
-		)
-		upcoming_invoice = {
-			"next_payment_attempt": next_payment_attempt,
-			"amount": invoice.get_formatted("amount_due"),
-			"total_amount": invoice.get_formatted("total"),
-			"customer_email": invoice.customer_email,
-		}
+		upcoming_invoice = invoice.as_dict()
+		upcoming_invoice.formatted_total = invoice.get_formatted("total")
 	else:
 		upcoming_invoice = None
 
@@ -42,10 +35,14 @@ def info():
 
 	if team_doc.billing_address:
 		address = frappe.get_doc("Address", team_doc.billing_address)
-		billing_address = (
-			f"{address.address_line1}, {address.city}, {address.state},"
-			f" {address.country}, {address.pincode}"
-		)
+		address_parts = [
+			address.address_line1,
+			address.city,
+			address.state,
+			address.country,
+			address.pincode,
+		]
+		billing_address = ", ".join([d for d in address_parts if d])
 	else:
 		billing_address = ""
 
@@ -54,7 +51,7 @@ def info():
 		"past_invoices": past_invoices,
 		"billing_address": billing_address,
 		"payment_method": team_doc.default_payment_method,
-		"available_credits": fmt_money(team_doc.get_available_credits(), 2, currency),
+		"available_credits": fmt_money(team_doc.get_balance(), 2, currency),
 	}
 
 
@@ -78,6 +75,16 @@ def get_erpnext_com_connection():
 
 
 @frappe.whitelist()
+def get_customer_details(team):
+	"""This method is called by frappe.io for creating Customer and Address"""
+	team_doc = frappe.db.get_value("Team", team, "*")
+	return {
+		"team": team_doc,
+		"address": frappe.get_doc("Address", team_doc.billing_address),
+	}
+
+
+@frappe.whitelist()
 def transfer_partner_credits(amount):
 	team = get_current_team()
 	team_doc = frappe.get_doc("Team", team)
@@ -97,7 +104,10 @@ def transfer_partner_credits(amount):
 
 	team_doc.allocate_credit_amount(
 		transferred_credits,
-		"Transferred Credits from ERPNext Cloud. Transaction ID: {0}".format(transaction_id),
+		source="Transferred Credits",
+		remark="Transferred Credits from ERPNext Cloud. Transaction ID: {0}".format(
+			transaction_id
+		),
 	)
 
 	if (team_doc.currency == "INR" and amount == 1000) or (
@@ -124,44 +134,51 @@ def get_available_partner_credits():
 
 
 @frappe.whitelist()
+def create_payment_intent_for_buying_credits(amount):
+	team = get_current_team(True)
+	stripe = get_stripe()
+	intent = stripe.PaymentIntent.create(
+		amount=amount * 100, currency=team.currency.lower(), customer=team.stripe_customer_id
+	)
+	return {
+		"client_secret": intent["client_secret"],
+		"publishable_key": get_publishable_key(),
+	}
+
+
+@frappe.whitelist()
 def get_payment_methods():
 	team = get_current_team()
 	return frappe.get_doc("Team", team).get_payment_methods()
 
 
+def make_formatted_doc(doc, fieldtypes=None):
+	formatted = {}
+	filters = None
+	if fieldtypes:
+		filters = {"fieldtype": ["in", fieldtypes]}
+
+	for df in doc.meta.get("fields", filters):
+		formatted[df.fieldname] = doc.get_formatted(df.fieldname)
+
+	for tf in doc.meta.get_table_fields():
+		formatted[tf.fieldname] = []
+		for row in doc.get(tf.fieldname):
+			formatted[tf.fieldname].append(make_formatted_doc(row))
+
+	return formatted
+
+
 @frappe.whitelist()
 def get_invoice_usage(invoice):
 	team = get_current_team()
+	# apply team filter for safety
 	doc = frappe.get_doc("Invoice", {"name": invoice, "team": team})
-
-	usage = []
-	for i, row in enumerate(doc.site_usage):
-		usage.append(
-			{
-				"idx": row.idx,
-				"site": row.site,
-				"plan": frappe.get_cached_value("Plan", row.plan, "plan_title"),
-				"days_active": row.days_active,
-				"rate": doc.items[i].get_formatted("rate"),
-				"amount": doc.items[i].get_formatted("amount"),
-			}
-		)
-
-	applied_balance = (
-		doc.starting_balance * -1 if doc.starting_balance * -1 < doc.total else doc.total
-	)
-	return {
-		"usage": usage,
-		"status": doc.status,
-		# TODO: indian customers should get GST invoices
-		# allow non-indian customers to download invoices
-		"invoice_pdf": doc.get_pdf() if doc.currency == "USD" else None,
-		"period_start": doc.period_start,
-		"period_end": doc.period_end,
-		"total": doc.get_formatted("total"),
-		"amount_due": doc.get_formatted("amount_due"),
-		"applied_balance": fmt_money(applied_balance, 2, doc.currency),
-	}
+	out = doc.as_dict()
+	# a dict with formatted currency values for display
+	out.formatted = make_formatted_doc(doc)
+	out.invoice_pdf = doc.invoice_pdf or (doc.currency == "USD" and doc.get_pdf())
+	return out
 
 
 @frappe.whitelist()

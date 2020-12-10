@@ -1,9 +1,8 @@
 <template>
 	<div class="space-y-10">
 		<Section
-			title="Upcoming Invoice"
+			title="Subscription"
 			description="This is the amount so far based on the usage of your sites"
-			v-if="$resources.billingDetails.loading || upcomingInvoice"
 		>
 			<SectionCard>
 				<div
@@ -12,33 +11,7 @@
 				>
 					Fetching billing information...
 				</div>
-				<template v-if="upcomingInvoice">
-					<DescriptionList
-						class="px-6 py-4"
-						:items="
-							[
-								{
-									label: 'Usage So Far',
-									value: upcomingInvoice.total_amount
-								},
-								{
-									label: 'Available Credits',
-									value: availableCredits
-								},
-								upcomingInvoice.next_payment_attempt
-									? {
-											label: 'Next Invoice Date',
-											value: upcomingInvoice.next_payment_attempt
-									  }
-									: null,
-								{
-									label: 'Billed To',
-									value: upcomingInvoice.customer_email
-								}
-							].filter(Boolean)
-						"
-					/>
-				</template>
+				<DescriptionList class="px-6 py-4" :items="subscriptionItems" />
 				<div
 					class="px-6 pb-4"
 					v-if="!$resources.billingDetails.loading && !paymentMethodAdded"
@@ -47,11 +20,17 @@
 						Add Billing Information
 					</Button>
 				</div>
-				<div
-					class="px-6 pb-2"
-					v-if="upcomingInvoice && $account.team.erpnext_partner"
-				>
-					<Button @click="showTransferCreditsDialog = true">
+				<div class="px-6 pb-2 space-x-2">
+					<Button
+						v-if="$account.team.enable_prepaid_credits"
+						@click="showPrepaidCreditsDialog = true"
+					>
+						Add Balance
+					</Button>
+					<Button
+						@click="showTransferCreditsDialog = true"
+						v-if="$account.team.erpnext_partner"
+					>
 						Transfer Credits from ERPNext.com
 					</Button>
 				</div>
@@ -61,6 +40,13 @@
 		<TransferCreditsDialog
 			v-if="showTransferCreditsDialog"
 			:show.sync="showTransferCreditsDialog"
+			@success="$resources.billingDetails.reload()"
+		/>
+
+		<PrepaidCreditsDialog
+			v-if="showPrepaidCreditsDialog"
+			:show.sync="showPrepaidCreditsDialog"
+			:minimum-amount="$account.team.currency == 'INR' ? 800 : 10"
 			@success="$resources.billingDetails.reload()"
 		/>
 
@@ -93,15 +79,12 @@
 						</Badge>
 					</div>
 					<div class="flex flex-col items-end col-span-2 space-y-2">
-						<a
+						<Button
 							v-if="['Unpaid', 'Paid'].includes(invoice.status)"
-							href=""
-							class="flex items-center justify-center text-base text-blue-500"
 							@click.prevent="showUsageForInvoice = invoice.name"
 						>
-							View Usage
-							<FeatherIcon name="arrow-right" class="w-4 h-4 ml-2" />
-						</a>
+							Details
+						</Button>
 						<a
 							v-if="invoice.status != 'Paid' && invoice.stripe_invoice_url"
 							class="flex items-center justify-center text-base text-blue-500"
@@ -205,6 +188,7 @@ export default {
 		StripeCard,
 		DescriptionList,
 		TransferCreditsDialog: () => import('@/components/TransferCreditsDialog'),
+		PrepaidCreditsDialog: () => import('@/components/PrepaidCreditsDialog'),
 		UpdateBillingAddress: () => import('@/components/UpdateBillingAddress'),
 		InvoiceUsage: () => import('@/components/InvoiceUsage')
 	},
@@ -228,9 +212,18 @@ export default {
 		return {
 			showStripeCardDialog: false,
 			showTransferCreditsDialog: false,
+			showPrepaidCreditsDialog: false,
 			showUsageForInvoice: null,
 			editAddress: false
 		};
+	},
+	mounted() {
+		this.$socket.on('balance_updated', () => {
+			this.$resources.billingDetails.reload();
+		});
+	},
+	destroyed() {
+		this.$socket.off('balance_updated');
 	},
 	computed: {
 		paymentMethodAdded() {
@@ -244,6 +237,41 @@ export default {
 		},
 		availableCredits() {
 			return this.billingDetails.data?.available_credits;
+		},
+		subscriptionItems() {
+			return [
+				this.upcomingInvoice
+					? {
+							label: `Usage since ${this.$date(
+								this.upcomingInvoice.period_start
+							).toLocaleString({
+								month: 'long',
+								day: 'numeric'
+							})}`,
+							value: this.upcomingInvoice.formatted_total
+					  }
+					: null,
+				this.upcomingInvoice?.due_date
+					? {
+							label: 'Next Invoice Date',
+							value: this.$date(this.upcomingInvoice.due_date).toLocaleString({
+								month: 'long',
+								day: 'numeric',
+								year: 'numeric'
+							})
+					  }
+					: null,
+				this.upcomingInvoice?.customer_email
+					? {
+							label: 'Billed To',
+							value: this.upcomingInvoice.customer_email
+					  }
+					: null,
+				{
+					label: 'Account Balance',
+					value: this.availableCredits || 0
+				}
+			].filter(Boolean);
 		}
 	},
 	methods: {
@@ -253,11 +281,18 @@ export default {
 		},
 		invoicePeriod(invoice) {
 			if (!invoice.period_start || !invoice.period_end) {
-				return invoice.payment_date;
+				return DateTime.fromSQL(invoice.due_date).toLocaleString({
+					month: 'long',
+					day: 'numeric',
+					year: 'numeric'
+				});
 			}
 			let periodStart = DateTime.fromSQL(invoice.period_start);
 			let periodEnd = DateTime.fromSQL(invoice.period_end);
-			let start = periodStart.toLocaleString({ month: 'long', day: 'numeric' });
+			let start = periodStart.toLocaleString({
+				month: 'short',
+				day: 'numeric'
+			});
 			let end = periodEnd.toLocaleString({ month: 'short', day: 'numeric' });
 			return `${start} - ${end} ${periodEnd.year}`;
 		}

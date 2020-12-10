@@ -6,19 +6,23 @@ from __future__ import unicode_literals
 
 import json
 import re
+from typing import Dict, List
+
+import dateutil.parser
 import frappe
 import requests
+from frappe.core.utils import find
+from frappe.frappeclient import FrappeClient
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
-from press.agent import Agent
+from frappe.utils import cint, convert_utc_to_user_timezone, cstr
 from frappe.utils.password import get_decrypted_password
-from press.press.doctype.site_activity.site_activity import log_site_activity
-from frappe.frappeclient import FrappeClient
-from frappe.utils import cint, cstr
+
+from press.agent import Agent
 from press.api.site import check_dns
-from frappe.core.utils import find
-from press.utils import log_error, get_client_blacklisted_keys
 from press.press.doctype.plan.plan import get_plan_config
+from press.press.doctype.site_activity.site_activity import log_site_activity
+from press.utils import convert, get_client_blacklisted_keys, guess_type, log_error
 
 
 class Site(Document):
@@ -27,30 +31,32 @@ class Site(Document):
 		self.name = f"{self.subdomain}.{domain}"
 
 	def validate(self):
+		# validate site name
 		site_regex = r"^[a-z0-9][a-z0-9-]*[a-z0-9]$"
-
 		if len(self.subdomain) < 5:
 			frappe.throw("Subdomain too short. Use 5 or more characters")
 		if len(self.subdomain) > 32:
 			frappe.throw("Subdomain too long. Use 32 or less characters")
 		if not re.match(site_regex, self.subdomain):
 			frappe.throw(
-				"Subdomain contains invalid characters. Use lowercase characters,"
-				" numbers and hyphens"
+				"Subdomain contains invalid characters. Use lowercase"
+				" characters, numbers and hyphens"
 			)
+
+		# set site.admin_password if doesn't exist
 		if not self.admin_password:
 			self.admin_password = frappe.generate_hash(length=16)
 
+		# validate site creation and initialize site.config
 		if self.is_new() and frappe.session.user != "Administrator":
 			self.can_create_site()
 
-			if not self.plan:
+			if not self.subscription_plan:
 				frappe.throw("Cannot create site without plan")
 
-			config = json.loads(self.config)
-			config.update(get_plan_config(self.plan))
-			self.config = json.dumps(config, indent=4)
+			self._update_configuration(get_plan_config(self.subscription_plan), save=False)
 
+		# validate apps to be installed on site
 		bench_apps = frappe.get_doc("Bench", self.bench).apps
 		for app in self.apps:
 			if not find(bench_apps, lambda x: x.app == app.app):
@@ -62,14 +68,37 @@ class Site(Document):
 		if len(apps) != len(set(apps)):
 			frappe.throw("Can't install same app twice.")
 
-		# this is a little hack to remember which key is being removed from the site config
+		# set or update site.host_name
+		if self.is_new():
+			self.host_name = self._create_default_site_domain().name
+			self._update_configuration({"host_name": f"https://{self.host_name}"}, save=False)
+		elif self.has_value_changed("host_name"):
+			self._validate_host_name()
+
+		# update site._keys_removed_in_last_update value
 		old_keys = json.loads(self.config)
 		new_keys = [x.key for x in self.configuration]
 		self._keys_removed_in_last_update = json.dumps(
 			[x for x in old_keys if x not in new_keys]
 		)
 
+		# generate site.config from site.configuration
 		self.update_config_preview()
+
+		# create an agent request if config has been updated
+		# if not self.is_new() and self.has_value_changed("config"):
+		# 	Agent(self.server).update_site_config(self)
+
+	def on_update(self):
+		if self.status == "Active" and self.has_value_changed("host_name"):
+			self.update_site_config({"host_name": f"https://{self.host_name}"})
+			self._update_redirects_for_all_site_domains()
+			frappe.db.set_value("Site Domain", self.host_name, "redirect_to_primary", False)
+
+		if self.status in ["Inactive", "Archived", "Suspended"]:
+			self.disable_subscription()
+		if self.status == "Active":
+			self.enable_subscription()
 
 	def update_config_preview(self):
 		"""Regenrates site.config on each site.validate from the site.configuration child table data"""
@@ -128,9 +157,20 @@ class Site(Document):
 			if not allow_creation:
 				frappe.throw(why)
 
+	def _create_default_site_domain(self):
+		"""Create Site Domain with Site name."""
+		return frappe.get_doc(
+			{
+				"doctype": "Site Domain",
+				"site": self.name,
+				"domain": self.name,
+				"status": "Active",
+				"retry_count": 0,
+				"dns_type": "A",
+			}
+		).insert(ignore_if_duplicate=True, ignore_links=True)
+
 	def after_insert(self):
-		# create a site plan change log
-		self._create_initial_site_plan_change()
 		# log activity
 		log_site_activity(self.name, "Create")
 		self.create_agent_request()
@@ -202,7 +242,7 @@ class Site(Document):
 		self.status = self.status_before_update
 		self.status_before_update = None
 		if not self.status:
-			status_map = {402: "Inactive", 503: "Suspended"}
+			status_map = {402: "Suspended", 503: "Inactive"}
 			try:
 				response = requests.get(f"https://{self.name}")
 				self.status = status_map.get(response.status_code, "Active")
@@ -234,6 +274,8 @@ class Site(Document):
 		agent.remove_domain(self, domain)
 
 	def remove_domain(self, domain):
+		if domain == self.name:
+			raise Exception("Cannot delete default site_domain")
 		site_domain = frappe.get_all(
 			"Site Domain", filters={"site": self.name, "domain": domain}
 		)[0]
@@ -253,10 +295,72 @@ class Site(Document):
 			site_domain = frappe.get_doc("Site Domain", site_domain.name)
 			site_domain.retry()
 
-	def set_host_name(self, domain):
+	def _check_if_domain_belongs_to_site(self, domain: str):
+		if not frappe.db.exists(
+			{"doctype": "Site Domain", "site": self.name, "domain": domain}
+		):
+			frappe.throw(
+				msg=f"Site Domain {domain} for site {self.name} does not exist",
+				exc=frappe.exceptions.LinkValidationError,
+			)
+
+	def _check_if_domain_is_active(self, domain: str):
+		status = frappe.get_value("Site Domain", domain, "status")
+		if status != "Active":
+			frappe.throw(
+				msg="Only active domains can be primary", exc=frappe.LinkValidationError,
+			)
+
+	def _validate_host_name(self):
+		"""Perform checks for primary domain."""
+		self._check_if_domain_belongs_to_site(self.host_name)
+		self._check_if_domain_is_active(self.host_name)
+
+	def set_host_name(self, domain: str):
+		"""Set host_name/primary domain of site."""
 		self.host_name = domain
 		self.save()
-		self.update_site_config({"host_name": f"https://{domain}"})
+
+	def _get_redirected_domains(self) -> List[str]:
+		"""Get list of redirected site domains for site."""
+		return frappe.get_all(
+			"Site Domain",
+			filters={"site": self.name, "redirect_to_primary": True},
+			pluck="name",
+		)
+
+	def _update_redirects_for_all_site_domains(self):
+		domains = self._get_redirected_domains()
+		if domains:
+			self.set_redirects_in_proxy(domains)
+
+	def _remove_redirects_for_all_site_domains(self):
+		domains = self._get_redirected_domains()
+		if domains:
+			self.unset_redirects_in_proxy(domains)
+
+	def set_redirects_in_proxy(self, domains: List[str]):
+		target = self.host_name
+		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
+		agent = Agent(proxy_server, server_type="Proxy Server")
+		agent.setup_redirects(self.name, domains, target)
+
+	def unset_redirects_in_proxy(self, domains: List[str]):
+		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
+		agent = Agent(proxy_server, server_type="Proxy Server")
+		agent.remove_redirects(self.name, domains)
+
+	def set_redirect(self, domain: str):
+		"""Enable redirect to primary for domain."""
+		self._check_if_domain_belongs_to_site(domain)
+		site_domain = frappe.get_doc("Site Domain", domain)
+		site_domain.setup_redirect()
+
+	def unset_redirect(self, domain: str):
+		"""Disable redirect to primary for domain."""
+		self._check_if_domain_belongs_to_site(domain)
+		site_domain = frappe.get_doc("Site Domain", domain)
+		site_domain.remove_redirect()
 
 	def archive(self):
 		log_site_activity(self.name, "Archive")
@@ -272,53 +376,29 @@ class Site(Document):
 		agent = Agent(server.proxy_server, server_type="Proxy Server")
 		agent.remove_upstream_site(self.server, self.name)
 
+		self.db_set("host_name", None)
 		self.delete_offsite_backups()
 
 	def delete_offsite_backups(self):
-		# self._del_obj and self._s3_response are object properties available when this method is called
-		from boto3 import resource
+		from press.press.doctype.remote_file.remote_file import delete_remote_backup_objects
 
 		log_site_activity(self.name, "Drop Offsite Backups")
 
-		self._del_obj = {}
-		offsite_backups = [
-			frappe.db.get_value(
+		sites_remote_files = [
+			remote_file
+			for backup_files in frappe.get_all(
 				"Site Backup",
-				doc["name"],
-				["remote_database_file", "remote_public_file", "remote_private_file"],
+				filters={"site": self.name, "offsite": True, "files_availability": "Available"},
+				fields=["remote_database_file", "remote_public_file", "remote_private_file"],
+				as_list=True,
 			)
-			for doc in frappe.get_all("Site Backup", filters={"site": self.name, "offsite": 1})
+			for remote_file in backup_files
 		]
-		offsite_bucket = {
-			"bucket": frappe.db.get_single_value("Press Settings", "aws_s3_bucket"),
-			"access_key_id": frappe.db.get_single_value(
-				"Press Settings", "offsite_backups_access_key_id"
-			),
-			"secret_access_key": get_decrypted_password(
-				"Press Settings", "Press Settings", "offsite_backups_secret_access_key"
-			),
-		}
-		s3 = resource(
-			"s3",
-			aws_access_key_id=offsite_bucket["access_key_id"],
-			aws_secret_access_key=offsite_bucket["secret_access_key"],
-			region_name="ap-south-1",
-		)
 
-		for remote_files in offsite_backups:
-			for file in remote_files:
-				if file:
-					self._del_obj[file] = frappe.db.get_value("Remote File", file, "file_path")
-
-		if not self._del_obj:
+		if not sites_remote_files:
 			return
 
-		self._s3_response = s3.Bucket(offsite_bucket["bucket"]).delete_objects(
-			Delete={"Objects": [{"Key": x} for x in self._del_obj.values()]}
-		)
-
-		for key in self._del_obj:
-			frappe.db.set_value("Remote File", key, "status", "Unavailable")
+		return delete_remote_backup_objects(sites_remote_files)
 
 	def login(self):
 		log_site_activity(self.name, "Login as Administrator")
@@ -337,47 +417,83 @@ class Site(Document):
 			agent = Agent(self.server)
 			return agent.get_site_sid(self)
 
-	def sync_site_config(self):
+	def fetch_info(self):
 		agent = Agent(self.server)
-		agent.update_site_config(self)
+		return agent.get_site_info(self)
 
-	def sync_info(self):
-		"""Updates Site Usage, site.config.encryption_key and timezone details for site."""
-		save = False
-		agent = Agent(self.server)
-		data = agent.get_site_info(self)
-		fetched_config = data["config"]
-		fetched_usage = data["usage"]
+	def _sync_config_info(self, fetched_config: Dict) -> bool:
+		"""Update site doc config with the fetched_config values.
+
+		:fetched_config: Generally data passed is the config part of the agent info response
+		:returns: True if value has changed
+		"""
 		config = {
 			key: fetched_config[key]
 			for key in fetched_config
 			if key not in get_client_blacklisted_keys()
 		}
-		new_config = json.loads(self.config)
-		new_config.update(config)
+		new_config = {**json.loads(self.config or "{}"), **config}
 		current_config = json.dumps(new_config, indent=4)
 
-		if self.timezone != data["timezone"]:
-			self.timezone = data["timezone"]
-			save = True
-
 		if self.config != current_config:
-			self.update_configuration(new_config)
-			save = False
+			self._update_configuration(new_config, save=False)
+			return True
+		return False
 
-		if save:
+	def _sync_usage_info(self, fetched_usage: Dict):
+		"""Generate a Site Usage doc for the site using the fetched_usage data.
+
+		:fetched_usage: Requires backups, database, public, private keys with Numeric values
+		"""
+
+		def _insert_usage(usage: dict):
+			doc = frappe.get_doc(
+				{
+					"doctype": "Site Usage",
+					"site": self.name,
+					"backups": usage["backups"],
+					"database": usage["database"],
+					"public": usage["public"],
+					"private": usage["private"],
+				}
+			).insert()
+			equivalent_site_time = convert_utc_to_user_timezone(
+				dateutil.parser.parse(usage["timestamp"])
+			)
+			doc.db_set("creation", equivalent_site_time)
+
+		if isinstance(fetched_usage, list):
+			for usage in fetched_usage:
+				_insert_usage(usage)
+		else:
+			_insert_usage(fetched_usage)
+
+	def _sync_timezone_info(self, time_zone: str) -> bool:
+		"""Update site doc timezone with the passed value of time_zone.
+
+		:time_zone: Timezone passed in part of the agent info response
+		:returns: True if value has changed
+		"""
+		if self.timezone != time_zone:
+			self.timezone = time_zone
+			return True
+		return False
+
+	def sync_info(self, data=None):
+		"""Updates Site Usage, site.config and timezone details for site."""
+		if not data:
+			data = self.fetch_info()
+
+		fetched_usage = data["usage"]
+		fetched_config = data["config"]
+		fetched_timezone = data["time_zone"]
+
+		self._sync_usage_info(fetched_usage)
+		to_save = self._sync_config_info(fetched_config)
+		to_save |= self._sync_timezone_info(fetched_timezone)
+
+		if to_save:
 			self.save()
-
-		frappe.get_doc(
-			{
-				"doctype": "Site Usage",
-				"site": self.name,
-				"database": fetched_usage["database"],
-				"public": fetched_usage["public"],
-				"private": fetched_usage["private"],
-				"backups": fetched_usage["backups"],
-			}
-		).insert()
 
 	def is_setup_wizard_complete(self):
 		if self.setup_wizard_complete:
@@ -393,13 +509,13 @@ class Site(Document):
 			self.db_set("setup_wizard_complete", setup_complete)
 			return setup_complete
 
-	def set_configuration(self, config):
-		"""Similar to update_configuration but will replace full configuration at once
+	def _set_configuration(self, config):
+		"""Similar to _update_configuration but will replace full configuration at once
 		This is necessary because when you update site config from the UI, you can update the key,
 		update the value, remove the key. All of this can be handled by setting the full configuration at once.
 
 		Args:
-			config (list): List of dicts with key, value, and type
+		config (list): List of dicts with key, value, and type
 		"""
 		blacklisted_config = [
 			x for x in self.configuration if x.key in get_client_blacklisted_keys()
@@ -420,104 +536,125 @@ class Site(Document):
 			self.append("configuration", {"key": d.key, "value": value, "type": d.type})
 		self.save()
 
-	def update_configuration(self, config):
+	def _update_configuration(self, config, save=True):
 		"""Updates site.configuration, runs site.save which updates site.config
 
 		Args:
-			config (dict): Python dict for any suitable frappe.conf
+		config (dict): Python dict for any suitable frappe.conf
 		"""
-
-		def is_json(string):
-			if isinstance(string, str):
-				string = string.strip()
-				return string.startswith("{") and string.endswith("}")
-			elif isinstance(string, dict):
-				return True
-
-		def guess_type(value):
-			type_dict = {int: "Number", float: "Number", bool: "Boolean", dict: "JSON"}
-			value_type = type(value)
-
-			if value_type in type_dict:
-				return type_dict[value_type]
-			else:
-				if is_json(value):
-					return "JSON"
-				return "String"
-
-		def convert(string):
-			if isinstance(string, str):
-				if is_json(string):
-					return json.loads(string)
-				else:
-					return string
-			if isinstance(string, dict):
-				return json.dumps(string)
-			return string
-
 		keys = {x.key: i for i, x in enumerate(self.configuration)}
 		for key, value in config.items():
 			if key in keys:
 				self.configuration[keys[key]].value = convert(value)
 				self.configuration[keys[key]].type = guess_type(value)
 			else:
-				self.append(
-					"configuration", {"key": key, "value": convert(value)}
-				)
-		self.save()
+				self.append("configuration", {"key": key, "value": convert(value)})
+
+		if save:
+			self.save()
 
 	def update_site_config(self, config):
-		"""Updates site.configuration, site.config, runs site.save and initiates an Agent Request
+		"""Updates site.configuration, site.config and runs site.save which initiates an Agent Request
 		This checks for the blacklisted config keys via Frappe Validations, but not for internal usages.
 		Don't expose this directly to an external API. Pass through `press.utils.sanitize_config` or use
 		`press.api.site.update_config` instead.
 
 		Args:
-			config (dict): Python dict for any suitable frappe.conf
+		config (dict): Python dict for any suitable frappe.conf
 		"""
 		if isinstance(config, list):
-			self.set_configuration(config)
+			self._set_configuration(config)
 		else:
-			self.update_configuration(config)
-		agent = Agent(self.server)
-		agent.update_site_config(self)
+			self._update_configuration(config)
+		Agent(self.server).update_site_config(self)
 
 	def update_site(self):
 		log_site_activity(self.name, "Update")
 
+	def create_subscription(self, plan):
+		# create a site plan change log
+		self._create_initial_site_plan_change(plan)
+
+	def enable_subscription(self):
+		subscription = self.subscription
+		if subscription:
+			subscription.enable()
+
+	def disable_subscription(self):
+		subscription = self.subscription
+		if subscription:
+			subscription.disable()
+
+	def can_change_plan(self):
+		team = frappe.get_doc("Team", self.team)
+
+		if team.is_defaulter():
+			frappe.throw("Cannot change plan because you have unpaid invoices")
+
+		if not (team.default_payment_method or team.get_balance()):
+			frappe.throw(
+				"Cannot change plan because you haven't added a card and not have enough balance"
+			)
+
 	def change_plan(self, plan):
+		self.can_change_plan()
 		plan_config = get_plan_config(plan)
 		self.update_site_config(plan_config)
 		frappe.get_doc(
-			{"doctype": "Site Plan Change", "site": self.name, "to_plan": plan}
+			{
+				"doctype": "Site Plan Change",
+				"site": self.name,
+				"from_plan": self.plan,
+				"to_plan": plan,
+			}
 		).insert()
+		if self.status == "Suspended":
+			self.unsuspend_if_applicable()
+
+	def unsuspend_if_applicable(self):
+		try:
+			usage = frappe.get_last_doc("Site Usage", {"site": self.name})
+		except frappe.DoesNotExistError:
+			# If no doc is found, it means the site was created a few moments before
+			# team was suspended, potentially due to failure in payment. Don't unsuspend
+			# site in that case. team.unsuspend_sites should handle that, then.
+			return
+
+		disk_usage = usage.public + usage.private
+		plan = frappe.get_doc("Plan", self.plan)
+
+		if usage.database < plan.max_database_usage and disk_usage < plan.max_storage_usage:
+			self.unsuspend(reason="Plan Upgraded")
+			site_usages = json.loads(self._site_usages or "{}").update(
+				{
+					"database": usage.database / plan.max_database_usage,
+					"disk": (usage.public + usage.private) / plan.max_storage_usage,
+				}
+			)
+			self.db_set("_site_usages", json.dumps(site_usages))
 
 	def deactivate(self):
-		self.update_site_config({"maintenance_mode": 1})
 		log_site_activity(self.name, "Deactivate Site")
 		self.status = "Inactive"
-		self.save()
+		self.update_site_config({"maintenance_mode": 1})
 		self.update_site_status_on_proxy("deactivated")
 
 	def activate(self):
-		self.update_site_config({"maintenance_mode": 0})
 		log_site_activity(self.name, "Activate Site")
 		self.status = "Active"
-		self.save()
+		self.update_site_config({"maintenance_mode": 0})
 		self.update_site_status_on_proxy("activated")
 
 	def suspend(self, reason=None):
-		self.update_site_config({"maintenance_mode": 1})
 		log_site_activity(self.name, "Suspend Site", reason)
 		self.status = "Suspended"
-		self.save()
+		self.update_site_config({"maintenance_mode": 1})
 		self.update_site_status_on_proxy("suspended")
 
 	def unsuspend(self, reason=None):
-		self.update_site_config({"maintenance_mode": 0})
 		log_site_activity(self.name, "Unsuspend Site", reason)
 		self.status = "Active"
-		self.save()
+		self.update_site_config({"maintenance_mode": 0})
 		self.update_site_status_on_proxy("activated")
 
 	def update_site_status_on_proxy(self, status):
@@ -541,13 +678,36 @@ class Site(Document):
 			doc.add_comment(text=f"<pre><code>{frappe.get_traceback()}</code></pre>")
 		return doc
 
-	def _create_initial_site_plan_change(self):
+	@property
+	def subscription(self):
+		name = frappe.db.get_value(
+			"Subscription", {"document_type": "Site", "document_name": self.name},
+		)
+		return frappe.get_doc("Subscription", name) if name else None
+
+	@property
+	def plan(self):
+		return frappe.db.get_value(
+			"Subscription",
+			filters={"document_type": "Site", "document_name": self.name},
+			fieldname="plan",
+		)
+
+	def can_charge_for_subscription(self):
+		return (
+			self.status == "Active"
+			and self.team
+			and self.team != "Administrator"
+			and not self.free
+		)
+
+	def _create_initial_site_plan_change(self, plan):
 		frappe.get_doc(
 			{
 				"doctype": "Site Plan Change",
 				"site": self.name,
 				"from_plan": "",
-				"to_plan": self.plan,
+				"to_plan": plan,
 				"type": "Initial Plan",
 				"timestamp": self.creation,
 			}
@@ -621,7 +781,9 @@ def process_archive_site_job_update(job):
 
 	first = job.status
 	second = frappe.get_all(
-		"Agent Job", fields=["status"], filters={"job_type": other_job_type, "site": job.site}
+		"Agent Job",
+		fields=["status"],
+		filters={"job_type": other_job_type, "site": job.site},
 	)[0].status
 
 	if "Success" == first == second:
@@ -688,26 +850,3 @@ def get_permission_query_conditions(user):
 	team = get_current_team()
 
 	return f"(`tabSite`.`team` = {frappe.db.escape(team)})"
-
-
-def sync_sites():
-	benches = frappe.get_all("Bench", {"status": "Active"})
-	for bench in benches:
-		frappe.enqueue(
-			"press.press.doctype.site.site.sync_bench_sites",
-			queue="long",
-			bench=bench,
-			enqueue_after_commit=True,
-		)
-	frappe.db.commit()
-
-
-def sync_bench_sites(bench):
-	sites = frappe.get_all("Site", {"status": ("!=", "Archived"), "bench": bench.name})
-	for site in sites:
-		site_doc = frappe.get_doc("Site", site.name)
-		try:
-			site_doc.sync_info()
-			frappe.db.commit()
-		except Exception:
-			log_error("Site Sync Error", site=site.name, bench=bench.name)

@@ -25,7 +25,9 @@
   "enable_custom_apps",
   "github_access_token",
   "onboarding_section",
-  "onboarding"
+  "onboarding",
+  "feature_flags_section",
+  "enable_prepaid_credits"
  ],
  "fields": [
   {
@@ -147,10 +149,62 @@
    "fieldtype": "Table",
    "label": "Onboarding Steps",
    "options": "Team Onboarding"
+  },
+  {
+   "fieldname": "feature_flags_section",
+   "fieldtype": "Section Break",
+   "label": "Feature Flags"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_prepaid_credits",
+   "fieldtype": "Check",
+   "label": "Enable Prepaid Credits"
   }
  ],
- "links": [],
- "modified": "2020-08-28 14:56:49.458325",
+ "links": [
+  {
+   "group": "General",
+   "link_doctype": "Release Group",
+   "link_fieldname": "team"
+  },
+  {
+   "group": "General",
+   "link_doctype": "Site",
+   "link_fieldname": "team"
+  },
+  {
+   "group": "General",
+   "link_doctype": "Frappe App",
+   "link_fieldname": "team"
+  },
+  {
+   "group": "General",
+   "link_doctype": "Feedback",
+   "link_fieldname": "team"
+  },
+  {
+   "group": "Billing",
+   "link_doctype": "Invoice",
+   "link_fieldname": "team"
+  },
+  {
+   "group": "Billing",
+   "link_doctype": "Usage Record",
+   "link_fieldname": "team"
+  },
+  {
+   "group": "Billing",
+   "link_doctype": "Subscription",
+   "link_fieldname": "team"
+  },
+  {
+   "group": "Billing",
+   "link_doctype": "Balance Transaction",
+   "link_fieldname": "team"
+  }
+ ],
+ "modified": "2020-12-08 15:11:57.505079",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

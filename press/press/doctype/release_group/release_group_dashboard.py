@@ -2,14 +2,12 @@
 # Proprietary License. See license.txt
 
 from __future__ import unicode_literals
-from frappe import _
 
 
 def get_data():
 	return {
-		"fieldname": "team",
+		"fieldname": "group",
 		"transactions": [
-			{"label": _("Related Documents"), "items": ["Site"]},
-			{"label": _("Billing"), "items": ["Payment", "Payment Ledger Entry", "Invoice"]},
+			{"items": ["Bench", "Deploy Candidate", "Deploy Candidate Difference"]},
 		],
 	}

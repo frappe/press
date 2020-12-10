@@ -1,0 +1,34 @@
+---
+- name: Stop MariaDB Secondary Thread
+  mysql_replication:
+    mode: stopslave
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+
+- name: Reset MariaDB Secondary Details
+  mysql_replication:
+    mode: resetslaveall
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+
+- name: Reset MariaDB Primary Details
+  mysql_replication:
+    mode: resetmaster
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+
+- name: Check Primary Status
+  mysql_replication:
+    mode: getmaster
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+  register: primary_status
+  failed_when: 'primary_status["File"] == "" or primary_status["Position"] == "" or primary_status["Is_Master"] == false'
+
+- name: Check Secondary Status
+  mysql_replication:
+    mode: getslave
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+  register: secondary_status
+  failed_when: 'secondary_status["Is_Slave"] == true'

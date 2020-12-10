@@ -42,7 +42,7 @@ def get_jwt_token():
 	key = frappe.db.get_single_value("Press Settings", "github_app_private_key")
 	app_id = frappe.db.get_single_value("Press Settings", "github_app_id")
 	now = datetime.now()
-	expiry = now + timedelta(minutes=10)
+	expiry = now + timedelta(minutes=9)
 	payload = {"iat": int(now.timestamp()), "exp": int(expiry.timestamp()), "iss": app_id}
 	token = jwt.encode(payload, key.encode(), algorithm="RS256")
 	return token.decode()
@@ -67,7 +67,7 @@ def options():
 	enable_custom_apps = frappe.db.get_value("Team", team, "enable_custom_apps")
 	public_link = frappe.db.get_single_value("Press Settings", "github_app_public_link")
 
-	groups = frappe.get_all("Release Group", {"public": True})
+	groups = frappe.get_all("Release Group", or_filters={"public": True, "team": team})
 	for group in groups:
 		group_doc = frappe.get_doc("Release Group", group.name)
 		group_apps = frappe.get_all(

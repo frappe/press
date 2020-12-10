@@ -4,15 +4,17 @@
 
 from __future__ import unicode_literals
 
-import frappe
-
 import json
-import requests
-from frappe.utils.password import get_decrypted_password
-from press.utils import log_error, sanitize_config
-from press.api.github import get_access_token
 import os
 from datetime import date
+from typing import List
+
+import frappe
+import requests
+from frappe.utils.password import get_decrypted_password
+
+from press.api.github import get_access_token
+from press.utils import log_error, sanitize_config
 
 
 class Agent:
@@ -31,13 +33,19 @@ class Agent:
 		}
 		for app in bench.apps:
 			url, repo_owner, repo, branch, installation = frappe.db.get_value(
-				"Frappe App", app.app, ["url", "repo_owner", "repo", "branch", "installation"]
+				"Frappe App", app.app, ["url", "repo_owner", "repo", "branch", "installation"],
 			)
 			if installation:
 				token = get_access_token(installation)
 				url = f"https://x-access-token:{token}@github.com/{repo_owner}/{repo}"
 			data["apps"].append(
-				{"name": app.scrubbed, "repo": repo, "url": url, "branch": branch, "hash": app.hash}
+				{
+					"name": app.scrubbed,
+					"repo": repo,
+					"url": url,
+					"branch": branch,
+					"hash": app.hash,
+				}
 			)
 		return self.create_agent_job("New Bench", "benches", data, bench=bench.name)
 
@@ -65,7 +73,7 @@ class Agent:
 		}
 
 		return self.create_agent_job(
-			"New Site", f"benches/{site.bench}/sites", data, bench=site.bench, site=site.name
+			"New Site", f"benches/{site.bench}/sites", data, bench=site.bench, site=site.name,
 		)
 
 	def reinstall_site(self, site):
@@ -118,7 +126,7 @@ class Agent:
 				sanitized_config = sanitize_config(new_config)
 				existing_config = json.loads(site.config)
 				existing_config.update(sanitized_config)
-				site.update_site_config(existing_config)
+				site._update_configuration(existing_config)
 				log_site_activity(site.name, "Update Configuration")
 
 			return json.dumps(sanitized_config)
@@ -283,13 +291,29 @@ class Agent:
 			"name": domain.domain,
 			"target": domain.site,
 			"certificate": {
-				"privkey.pem": certificate.privkey,
-				"fullchain.pem": certificate.fullchain,
-				"chain.pem": certificate.chain,
+				"privkey.pem": certificate.private_key,
+				"fullchain.pem": certificate.full_chain,
+				"chain.pem": certificate.intermediate_chain,
 			},
 		}
 		return self.create_agent_job(
-			"Add Host to Proxy", "proxy/hosts", data, host=domain.domain, site=domain.site
+			"Add Host to Proxy", "proxy/hosts", data, host=domain.domain, site=domain.site,
+		)
+
+	def setup_redirects(self, site: str, domains: List[str], target: str):
+		data = {"domains": domains, "target": target}
+		return self.create_agent_job(
+			"Setup Redirects on Hosts", "proxy/hosts/redirects", data, site=site,
+		)
+
+	def remove_redirects(self, site: str, domains: List[str]):
+		data = {"domains": domains}
+		return self.create_agent_job(
+			"Remove Redirects on Hosts",
+			"proxy/hosts/redirects",
+			data,
+			method="DELETE",
+			site=site,
 		)
 
 	def remove_host(self, domain):
@@ -353,15 +377,27 @@ class Agent:
 			url = f"https://{self.server}:{self.port}/agent/{path}"
 			password = get_decrypted_password(self.server_type, self.server, "agent_password")
 			headers = {"Authorization": f"bearer {password}"}
+			intermediate_ca = frappe.db.get_value(
+				"Press Settings", "Press Settings", "backbone_intermediate_ca"
+			)
+			if frappe.conf.developer_mode and intermediate_ca:
+				root_ca = frappe.db.get_value(
+					"Certificate Authority", intermediate_ca, "parent_authority"
+				)
+				verify = frappe.get_doc("Certificate Authority", root_ca).certificate_file
+			else:
+				verify = True
 			if files:
 				file_objects = {
 					key: frappe.get_doc("File", {"file_url": url}).get_content()
 					for key, url in files.items()
 				}
 				file_objects["json"] = json.dumps(data).encode()
-				result = requests.request(method, url, headers=headers, files=file_objects)
+				result = requests.request(
+					method, url, headers=headers, files=file_objects, verify=verify
+				)
 			else:
-				result = requests.request(method, url, headers=headers, json=data)
+				result = requests.request(method, url, headers=headers, json=data, verify=verify)
 			try:
 				return result.json()
 			except Exception:
@@ -424,6 +460,9 @@ class Agent:
 
 	def get_site_info(self, site):
 		return self.get(f"benches/{site.bench}/sites/{site.name}/info")["data"]
+
+	def get_sites_info(self, bench, since):
+		return self.post(f"benches/{bench.name}/info", data={"since": since})
 
 	def get_jobs_status(self, ids):
 		status = self.get(f"jobs/{','.join(map(str, ids))}")

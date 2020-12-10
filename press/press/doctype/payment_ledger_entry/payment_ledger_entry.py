@@ -60,6 +60,7 @@ class PaymentLedgerEntry(Document):
 			self.update_usage_in_invoice()
 		elif self.purpose in ["Credits Allocation", "Reverse Credits Allocation"]:
 			self.create_balance_adjustment_on_stripe()
+			frappe.cache().hdel("customer_available_credits", self.team)
 
 	def on_cancel(self):
 		if self.purpose == "Site Consumption":
@@ -94,7 +95,7 @@ class PaymentLedgerEntry(Document):
 		date = frappe.utils.getdate(self.date)
 		ti = TeamInvoice(self.team, date.month, date.year)
 		# if invoice is not created for this month create it
-		if not ti.get_draft_invoice() and date.month > 6 and date.year > 2020:
+		if not ti.get_draft_invoice() and date.month > 6 and date.year >= 2020:
 			ti.create()
 		ti.update_site_usage(self)
 

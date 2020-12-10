@@ -1,45 +1,42 @@
 ---
-- name: Clone bench
+- name: Clone Bench Repository
   become: yes
   become_user: frappe
   git:
     repo: https://github.com/frappe/bench
     dest: /home/frappe/bench-repo
 
-- name: Install bench
-  pip: 
-    name: file:///home/frappe/bench-repo 
-    editable: yes
+- name: Install Bench
+  pip:
+    name: file:///home/frappe/bench-repo
     executable: pip3
 
-- name: Install ansible
-  pip: 
+- name: Install Ansible
+  pip:
     name: ansible
     executable: pip3
 
-- name: Install Prerequisites
+- name: Install Bench Prerequisites
   command: bench install prerequisites
 
-- name: Install mariadb
+- name: Install MariaDB
   command: bench install mariadb --mysql_root_password {{ mariadb_root_password }}
 
-- name: Install wkhtmltopdf
+- name: Install Whtmltopdf
   command: bench install wkhtmltopdf
 
-- name: Install nodejs
+- name: Install NodeJS
   command: bench install nodejs
 
-- name: Setup Fonts
+- name: Setup Bench Fonts
   command: bench setup fonts
 
 - name: Setup Fail2ban
   command: bench setup role fail2ban
 
-- name: Create benches directory
+- name: Create Benches Directory
   become: yes
   become_user: frappe
   file:
     dest: /home/frappe/benches
     state: directory
-
-...
