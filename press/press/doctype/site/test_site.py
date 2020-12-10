@@ -71,13 +71,7 @@ class TestSite(unittest.TestCase):
 	def test_new_sites_set_host_name_in_site_config(self, *args):
 		"""Ensure new sites set host_name in site config in f server."""
 		with patch.object(Site, "_update_configuration") as mock_update_config:
-			print(mock_update_config.call_args_list)
 			site = create_test_site("testsubdomain", new=True)
 		mock_update_config.assert_called_with(
 			{"host_name": f"https://{site.name}"}, save=False
 		)
-
-	def test_site_create_makes_exactly_2_agent_jobs(self, mock_create_agent_job):
-		"""Ensure new site creates exactly 2 agent jobs."""
-		create_test_site("testsubdomain", new=True)
-		self.assertEqual(mock_create_agent_job.call_count, 2)
