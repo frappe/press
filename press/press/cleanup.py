@@ -6,8 +6,10 @@ import frappe
 from press.press.doctype.remote_file.remote_file import delete_remote_backup_objects
 from press.press.doctype.site.site import Site
 
+
 @functools.lru_cache(maxsize=128)
-def keep_backups_for_(bench: str):
+def keep_backups_for_(bench: str) -> int:
+	"""Get no. of hours for which backups are kept on site."""
 	return (
 		frappe.parse_json(
 			frappe.db.get_value("Bench", bench, "config") or "{}"
@@ -39,7 +41,7 @@ class BackupPolicy:
 			frappe.db.set_value("Site Backup", local_backup, "files_availability", "Unavailable")
 
 	def remove_baggage():
-		"""Remove any remote files attached to the Site doc if older than 12 hours"""
+		"""Remove any remote files attached to the Site doc if older than 12 hours."""
 		half_day = datetime.now() - timedelta(hours=12)
 		or_filters = [
 			["database_file", "!=", ""],
