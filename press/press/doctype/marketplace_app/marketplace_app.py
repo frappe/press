@@ -68,7 +68,6 @@ class MarketplaceApp(WebsiteGenerator):
 			fields=["parent as name"],
 			filters={"app": self.frappe_app},
 		)
-		print("groups")
 		enabled_groups = []
 		for group in groups:
 			group_doc = frappe.get_doc("Release Group", group.name)

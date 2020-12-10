@@ -37,7 +37,7 @@
 
 	<div class="pb-36">
 		<h2 class="text-4xl font-bold sr-only">Apps</h2>
-		<div class="grid grid-cols-4 gap-8 mt-8">
+		<div class="grid grid-cols-1 gap-8 mt-8 md:grid-cols-3 lg:grid-cols-4 sm:grid-cols-2">
 			{%- for app in apps -%}
 			<a
 				href="/{{ app.route }}"
