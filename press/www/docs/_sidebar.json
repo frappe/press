@@ -49,6 +49,10 @@
     "group_title": "Billing",
     "group_items": [
       {
+        "title": "Plans",
+        "route": "/docs/billing/plans"
+      },
+      {
         "title": "Bill Payments",
         "route": "/docs/billing/bill-payments"
       }

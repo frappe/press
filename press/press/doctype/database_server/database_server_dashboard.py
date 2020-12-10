@@ -7,9 +7,10 @@ from frappe import _
 
 def get_data():
 	return {
-		"fieldname": "team",
+		"fieldname": "server",
+		"non_standard_fieldnames": {"Server": "database_server"},
 		"transactions": [
-			{"label": _("Related Documents"), "items": ["Site"]},
-			{"label": _("Billing"), "items": ["Payment", "Payment Ledger Entry", "Invoice"]},
+			{"label": _("Related Documents"), "items": ["Server"]},
+			{"label": _("Logs"), "items": ["Agent Job", "Ansible Play"]},
 		],
 	}

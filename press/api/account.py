@@ -9,7 +9,6 @@ from frappe.utils import random_string, get_url
 from frappe.website.render import build_response
 from frappe.core.doctype.user.user import update_password
 from press.press.doctype.team.team import get_team_members
-from press.press.doctype.team.team_invoice import TeamInvoice
 from press.utils import get_country_info, get_current_team
 from datetime import datetime, timedelta
 
@@ -83,9 +82,7 @@ def setup_account(
 		doc.insert(ignore_permissions=True, ignore_links=True)
 		doc.create_user_for_member(first_name, last_name, email, password, role)
 		doc.create_stripe_customer()
-
-		today = frappe.utils.getdate()
-		TeamInvoice(doc, today.month, today.year).create(period_start=today)
+		doc.create_upcoming_invoice()
 
 		if doc.has_partner_account_on_erpnext_com():
 			doc.enable_erpnext_partner_privileges()

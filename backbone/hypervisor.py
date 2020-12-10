@@ -14,13 +14,13 @@ class Hypervisor:
 		self.install()
 		self.verify()
 
-	def build(self):
+	def build(self, size):
 		cloud_init_yml = str(Path(__file__).parent.joinpath("packer", "cloud-init.yml"))
 		cloud_init_image = str(Path(__file__).parent.joinpath("packer", "cloud-init.img"))
 		self.shell.execute(f"cloud-localds {cloud_init_image} {cloud_init_yml}")
 
 		packer_template = str(Path(__file__).parent.joinpath("packer", "backbone.json"))
-		packer = self.shell.execute(f"packer build {packer_template}")
+		packer = self.shell.execute(f"packer build -var 'disk_size={size}' {packer_template}")
 		if packer.returncode:
 			raise Exception("Build Failed")
 

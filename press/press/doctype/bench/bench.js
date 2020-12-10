@@ -15,6 +15,7 @@ frappe.ui.form.on('Bench', {
 	refresh: function (frm) {
 		[
 			[__('Archive'), 'archive'],
+			[__('Sync Sites Info'), 'sync_info'],
 		].forEach(([label, method]) => {
 			frm.add_custom_button(
 				label,

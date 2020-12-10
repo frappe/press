@@ -108,6 +108,12 @@ def cache(seconds: int, maxsize: int = 128, typed: bool = False):
 	return wrapper_cache
 
 
+def chunk(iterable, size):
+	"""Creates list of elements split into groups of n."""
+	for i in range(0, len(iterable), size):
+		yield iterable[i : i + size]  # noqa
+
+
 @cache(seconds=1800)
 def get_minified_script():
 	migration_script = "../apps/press/press/scripts/migrate.py"
@@ -185,12 +191,30 @@ def get_frappe_backups(site_url, username, password):
 			)
 			frappe.throw(missing_backups)
 
+		# check if database is > 500MiB and show alert
+		database_size = float(
+			requests.head(file_urls["database"]).headers.get("Content-Length", 999)
+		)
+
+		if (database_size / 1024 * 2) > 500:
+			frappe.throw("Your site exceeds the limits for this operation.")
+
 		return file_urls
 	else:
 		log_error(
 			"Backups Retreival Error - Magic Migration", response=res.text, remote_site=site_url
 		)
-		frappe.throw("An unknown error occurred")
+
+		if res.status_code == 403:
+			error_msg = "Insufficient Permissions"
+		else:
+			side = "Client" if 400 <= res.status_code < 500 else "Server"
+			error_msg = (
+				f"{side} Error occurred: {res.status_code} {res.raw.reason} recieved"
+				f" from {site_url}"
+			)
+
+		frappe.throw(error_msg)
 
 
 def get_client_blacklisted_keys() -> list:
@@ -215,3 +239,54 @@ def sanitize_config(config: dict) -> dict:
 			sanitized_config.pop(key)
 
 	return sanitized_config
+
+
+def developer_mode_only():
+	if not frappe.conf.developer_mode:
+		frappe.throw("You don't know what you're doing. Go away!", frappe.ValidationError)
+
+
+def human_readable(num: int) -> str:
+	"""Assumes int data to describe size is in MiB"""
+	for unit in ["Mi", "Gi", "Ti", "Pi", "Ei", "Zi"]:
+		if abs(num) < 1024:
+			return f"{num:3.1f}{unit}B"
+		num /= 1024
+	return f"{num:.1f}YiB"
+
+
+def is_json(string):
+	if isinstance(string, str):
+		string = string.strip()
+		return string.startswith("{") and string.endswith("}")
+	elif isinstance(string, (dict, list)):
+		return True
+
+
+def guess_type(value):
+	type_dict = {
+		int: "Number",
+		float: "Number",
+		bool: "Boolean",
+		dict: "JSON",
+		list: "JSON",
+	}
+	value_type = type(value)
+
+	if value_type in type_dict:
+		return type_dict[value_type]
+	else:
+		if is_json(value):
+			return "JSON"
+		return "String"
+
+
+def convert(string):
+	if isinstance(string, str):
+		if is_json(string):
+			return json.loads(string)
+		else:
+			return string
+	if isinstance(string, (dict, list)):
+		return json.dumps(string)
+	return string

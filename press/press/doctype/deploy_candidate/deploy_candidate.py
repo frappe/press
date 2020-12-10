@@ -31,15 +31,25 @@ class DeployCandidate(Document):
 				bench_name = f"bench-{self.group.replace(' ', '-').lower()}-{server_name}"
 				bench_name = append_number_if_name_exists("Bench", bench_name, separator="-")
 				benches.append({"server": server, "bench_name": bench_name})
-				if benches:
-					deploy_doc = frappe.get_doc(
-						{
-							"doctype": "Deploy",
-							"group": self.group,
-							"candidate": self.name,
-							"benches": benches,
-						}
-					)
-					deploy_doc.insert()
+			if benches:
+				deploy_doc = frappe.get_doc(
+					{
+						"doctype": "Deploy",
+						"group": self.group,
+						"candidate": self.name,
+						"benches": benches,
+					}
+				)
+				deploy_doc.insert()
 		except Exception:
 			log_error("Deploy Creation Error", candidate=self.name)
+
+
+@frappe.whitelist()
+def desk_app(doctype, txt, searchfield, start, page_len, filters):
+	return frappe.get_all(
+		"Release Group Frappe App",
+		filters={"parent": filters["release_group"]},
+		fields=["app"],
+		as_list=True,
+	)

@@ -76,7 +76,10 @@ export default {
 				this.file.type === 'application/x-gzip' &&
 				this.file.size > 524 * 1000 * 1000
 			) {
-				return 'Max File Size Limit for Database file is 500M';
+				this.error = 'Max File Size Limit for Database file is 500M';
+				this.message = '';
+				this.$emit('failure', 'showAlert');
+				return;
 			}
 
 			// Check for validity of files

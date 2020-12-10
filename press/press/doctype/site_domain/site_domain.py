@@ -6,12 +6,43 @@ from __future__ import unicode_literals
 
 import frappe
 from frappe.model.document import Document
+
 from press.agent import Agent
 
 
 class SiteDomain(Document):
 	def after_insert(self):
-		self.create_tls_certificate()
+		if self.domain != self.site:
+			# default domain
+			self.create_tls_certificate()
+
+	def validate(self):
+		if self.has_value_changed("redirect_to_primary"):
+			if self.redirect_to_primary:
+				self.setup_redirect_in_proxy()
+			elif not self.is_new():
+				self.remove_redirect_in_proxy()
+
+	def setup_redirect_in_proxy(self):
+		site = frappe.get_doc("Site", self.site)
+		target = site.host_name
+		if target == self.name:
+			frappe.throw(
+				"Primary domain can't be redirected.", exc=frappe.exceptions.ValidationError,
+			)
+		site.set_redirects_in_proxy([self.name])
+
+	def remove_redirect_in_proxy(self):
+		site = frappe.get_doc("Site", self.site)
+		site.unset_redirects_in_proxy([self.name])
+
+	def setup_redirect(self):
+		self.redirect_to_primary = True
+		self.save()
+
+	def remove_redirect(self):
+		self.redirect_to_primary = False
+		self.save()
 
 	def create_tls_certificate(self):
 		certificate = frappe.get_doc(
