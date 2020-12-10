@@ -42,6 +42,7 @@ def remove_baggage():
 			# s3 uploads.frappe.cloud has a 1 day expiry rule for all objects, so we'll unset those files here
 			frappe.db.set_value("Site", site.name, remote_file_type, None, for_update=False)
 
+
 @functools.lru_cache(maxsize=128)
 def keep_backups_for_(bench: str) -> int:
 	"""Get no. of hours for which backups are kept on site."""
@@ -56,12 +57,12 @@ def keep_backups_for_(bench: str) -> int:
 class BackupPolicy:
 	"""Represent backup rotation policy for maintaining offsite backups."""
 
-	def expire_local_backups(site: Site):
+	def expire_local_backups(self, site: Site):
 		expiry = keep_backups_for_(site.bench)
 		expired_local_backups = frappe.get_all(
 			"Site Backup",
 			filters={
-				"site": site,
+				"site": site.name,
 				"status": "Success",
 				"files_availability": "Available",
 				"offsite": False,
@@ -75,8 +76,7 @@ class BackupPolicy:
 			# as available
 			frappe.db.set_value("Site Backup", local_backup, "files_availability", "Unavailable")
 
-
-	def expire_offsite_backups(self):
+	def expire_offsite_backups(self, site: Site):
 		raise NotImplementedError
 
 	def cleanup(self):
@@ -85,8 +85,8 @@ class BackupPolicy:
 			"Site", filters={"status": ("!=", "Archived")}, fields=["name", "bench"]
 		)
 		for site in sites:
-			self.expire_local_backups(site.name)
-			expired_sites_remote_files = self.expire_offsite_backups(site.name)
+			self.expire_local_backups(site)
+			expired_sites_remote_files = self.expire_offsite_backups(site)
 			expired_remote_files.extend(expired_sites_remote_files)
 		delete_remote_backup_objects(expired_remote_files)
 		frappe.db.commit()
@@ -100,14 +100,14 @@ class FIFO(BackupPolicy):
 			frappe.db.get_single_value("Press Settings", "offsite_backups_count") or 30
 		)
 
-	def expire_offsite_backups(self, site):
+	def expire_offsite_backups(self, site: Site):
 		offsite_expiry = self.offsite_keep_count
 		remote_files_to_delete = []
 
 		expired_offsite_backups = frappe.get_all(
 			"Site Backup",
 			filters={
-				"site": site,
+				"site": site.name,
 				"status": "Success",
 				"files_availability": "Available",
 				"offsite": True,
