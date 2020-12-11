@@ -119,3 +119,44 @@ class TestGFS(unittest.TestCase):
 		self.assertEqual(limit_backup.files_availability, "Available")
 		self.assertEqual(older_backup.files_availability, "Unavailable")
 		self.assertEqual(newer_backup.files_availability, "Available")
+
+	def _get_next_yearly_backup_day(self, day: date) -> date:
+		backup_day = GFS.yearly_backup_day
+		next_new_year = day.replace(year=day.year + 1).replace(month=1).replace(day=1)
+		return next_new_year + timedelta(backup_day - 1)
+
+	def _get_previous_yearly_backup_day(self, day: date) -> date:
+		backup_day = GFS.yearly_backup_day
+		prev_new_year = day.replace(year=day.year - 1).replace(month=1).replace(day=1)
+		return prev_new_year + timedelta(backup_day - 1)
+
+	def test_only_yearly_backups_older_than_limit_deleted(self):
+		"""Ensure only yearly backups kept for longer than limit are deleted."""
+		site = create_test_site("testsubdomain")
+		_10_years_ago = date.today() - timedelta(3653)
+		oldest_allowed_yearly = (
+			_10_years_ago
+			if _10_years_ago.day == GFS.yearly_backup_day
+			else self._get_next_yearly_backup_day(_10_years_ago)
+		)
+		older_than_oldest_allowed_yearly = self._get_previous_yearly_backup_day(
+			oldest_allowed_yearly
+		)
+		newer_than_oldest_allowed_yearly = self._get_next_yearly_backup_day(
+			oldest_allowed_yearly
+		)
+
+		limit_backup = create_test_site_backup(site.name, oldest_allowed_yearly)
+		older_backup = create_test_site_backup(site.name, older_than_oldest_allowed_yearly)
+		newer_backup = create_test_site_backup(site.name, newer_than_oldest_allowed_yearly)
+
+		gfs = GFS()
+		gfs.expire_offsite_backups(site)
+
+		limit_backup.reload()
+		older_backup.reload()
+		newer_backup.reload()
+
+		self.assertEqual(limit_backup.files_availability, "Available")
+		self.assertEqual(older_backup.files_availability, "Unavailable")
+		self.assertEqual(newer_backup.files_availability, "Available")
