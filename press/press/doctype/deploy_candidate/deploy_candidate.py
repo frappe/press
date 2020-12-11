@@ -102,9 +102,7 @@ class DeployCandidate(Document):
 				("apps", application.application, "Install Applications", application_title)
 			)
 
-		assets_steps = [("assets", "assets", "Build Assets", "Build Assets")]
-
-		steps = clone_steps + preparation_steps + app_install_steps + assets_steps
+		steps = clone_steps + preparation_steps + app_install_steps
 
 		for stage_slug, step_slug, stage, step in steps:
 			self.append(

@@ -106,8 +106,8 @@ RUN virtualenv -p python${PYTHON_VERSION} env `#stage-bench-env`
 
 # Install Frappe application
 COPY --chown=frappe:frappe apps/frappe /home/frappe/frappe-bench/apps/frappe
-RUN touch .bench.cmd
-RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 echo "N\nY\n" | bench get-app frappe --skip-assets `#stage-apps-frappe`
+RUN echo '["build"]' > .bench.cmd
+RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 echo "N\nY\n" | bench get-app frappe `#stage-apps-frappe`
 RUN rm .bench.cmd
 
 # Install other applications
@@ -115,15 +115,14 @@ RUN rm .bench.cmd
 {% if app.application != "frappe" %}
 
 COPY --chown=frappe:frappe apps/{{ app.application }} /home/frappe/frappe-bench/apps/{{ app.application }}
-RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 echo "N\nY\n" | bench get-app {{ app.application }} --skip-assets `#stage-apps-{{ app.application }}`
+RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 echo "N\nY\n" | bench get-app {{ app.application }} `#stage-apps-{{ app.application }}`
 
 {% endif %}
 {% endfor %}
 
-RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 bench build --make-copy `#stage-assets-assets`
 
 COPY --chown=frappe:frappe common_site_config.json /home/frappe/frappe-bench/sites/common_site_config.json
 
-VOLUME ["/home/frappe/frappe-bench/sites", "/home/frappe/frappe-bench/sites/assets"]
+VOLUME ["/home/frappe/frappe-bench/sites", "/home/frappe/frappe-bench/logs"]
 EXPOSE 8000
 CMD ["/bin/bash"]
