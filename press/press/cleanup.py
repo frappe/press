@@ -158,7 +158,6 @@ class GFS(BackupRotationScheme):
 				(DAYOFWEEK(creation) != {self.weekly_backup_day} or creation < "{_30_days_before}") and
 				DAYOFMONTH(creation) != {self.monthly_backup_day}
 			""",
-			debug=True,
 			as_dict=True,
 		)
 		# XXX: DAYOFWEEK in sql gives 1-7 for SUN-SAT in sql
