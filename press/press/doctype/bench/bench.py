@@ -17,11 +17,13 @@ class Bench(Document):
 			candidate = frappe.get_all("Deploy Candidate", filters={"group": self.group})[0]
 			self.candidate = candidate.name
 		candidate = frappe.get_doc("Deploy Candidate", self.candidate)
-		if not self.apps:
+		if not self.docker_image_id:
+			self.docker_image_id = candidate.docker_image_id
+
+		if not self.applications:
 			for release in candidate.applications:
-				scrubbed = frappe.get_value("Application", release.app, "scrubbed")
 				self.append(
-					"apps", {"app": release.app, "scrubbed": scrubbed, "hash": release.hash}
+					"applications", {"application": release.application, "hash": release.hash}
 				)
 
 		if self.is_new():
@@ -32,14 +34,12 @@ class Bench(Document):
 		config = json.loads(config)
 		config.update(
 			{
-				"db_host": db_host or "localhost",
-				"background_workers": self.workers,
-				"gunicorn_workers": self.gunicorn_workers,
-				"redis_cache": f"redis://localhost:{13000 + self.port_offset}",
-				"redis_queue": f"redis://localhost:{11000 + self.port_offset}",
-				"redis_socketio": f"redis://localhost:{12000 + self.port_offset}",
-				"socketio_port": 9000 + self.port_offset,
-				"webserver_port": 8000 + self.port_offset,
+				"db_host": db_host,
+				"redis_cache": "redis://redis-cache:6379",
+				"redis_queue": "redis://redis-queue:6379",
+				"redis_socketio": "redis://redis-socketio:6379",
+				"socketio_port": 9000,
+				"webserver_port": 8000,
 			}
 		)
 		self.config = json.dumps(config, indent=4)
