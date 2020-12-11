@@ -145,7 +145,8 @@ class GFS(BackupRotationScheme):
 	def expire_offsite_backups(self, site: Site):
 		remote_files_to_delete = []
 		oldest_daily = date.today() - timedelta(days=self.daily)
-		_4_weeks_ago = date.today() - timedelta(weeks=4)
+		oldest_weekly = date.today() - timedelta(weeks=4)
+		oldest_monthly = date.today() - timedelta(days=366)
 		expired_offsite_backups = frappe.db.sql(
 			f"""
 			SELECT name from `tabSite Backup`
@@ -155,8 +156,8 @@ class GFS(BackupRotationScheme):
 				files_availability="Available" and
 				offsite=True and
 				creation < "{oldest_daily}" and
-				(DAYOFWEEK(creation) != {self.weekly_backup_day} or creation < "{_4_weeks_ago}") and
-				DAYOFMONTH(creation) != {self.monthly_backup_day}
+				(DAYOFWEEK(creation) != {self.weekly_backup_day} or creation < "{oldest_weekly}") and
+				(DAYOFMONTH(creation) != {self.monthly_backup_day} or creation < "{oldest_monthly}")
 			""",
 			as_dict=True,
 		)
