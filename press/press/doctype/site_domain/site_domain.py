@@ -88,10 +88,9 @@ class SiteDomain(Document):
 
 	def on_trash(self):
 		self.disavow_agent_jobs()
-		if self.default:
-			if self.redirect_to_primary:
-				self.create_remove_host_agent_request()
-		else:
+		if not self.default:
+			self.create_remove_host_agent_request()
+		elif self.redirect_to_primary:
 			self.create_remove_host_agent_request()
 		self.remove_domain_from_site_config()
 
