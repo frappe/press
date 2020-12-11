@@ -1,5 +1,5 @@
 import functools
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 
 import frappe
 
@@ -55,7 +55,11 @@ def keep_backups_for_(bench: str) -> int:
 
 
 class BackupRotationScheme:
-	"""Represent backup rotation scheme for maintaining offsite backups."""
+	"""
+	Represent backup rotation scheme for maintaining offsite backups.
+
+	Rotation is maintained by controlled deletion of daily backups.
+	"""
 
 	def expire_local_backups(self, site: Site):
 		expiry = keep_backups_for_(site.bench)
@@ -134,11 +138,40 @@ class FIFO(BackupRotationScheme):
 class GFS(BackupRotationScheme):
 	"""Represent Grandfather-father-son backup rotation scheme."""
 
-	def __init__(self):
-		pass
+	daily = 7  # no. of previous daily backups to keep
+	weekly_backup_day = 1  # days of the week (1-7)
+	monthly_backup_day = 1  # days of the month (1-31)
 
 	def expire_offsite_backups(self, site: Site):
-		pass
+		remote_files_to_delete = []
+		oldest_daily = date.today() - timedelta(days=self.daily)
+		expired_offsite_backups = frappe.db.sql(
+			f"""
+			SELECT name from `tabSite Backup`
+			WHERE
+				site="{site.name}" and
+				status="Success" and
+				files_availability="Available" and
+				offsite=True and
+				creation < "{oldest_daily}" and
+				DAYOFWEEK(creation) != {self.weekly_backup_day} and
+				DAYOFMONTH(creation) != {self.monthly_backup_day}
+			""",
+			debug=True,
+			as_dict=True,
+		)
+		for offsite_backup in expired_offsite_backups:
+			remote_files = frappe.db.get_value(
+				"Site Backup",
+				offsite_backup["name"],
+				["remote_database_file", "remote_private_file", "remote_public_file"],
+			)
+			remote_files_to_delete.extend(remote_files)
+			frappe.db.set_value(
+				"Site Backup", offsite_backup["name"], "files_availability", "Unavailable"
+			)
+
+		return remote_files_to_delete
 
 
 def cleanup_backups():
