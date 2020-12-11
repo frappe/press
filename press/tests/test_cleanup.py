@@ -65,7 +65,6 @@ class TestGFS(unittest.TestCase):
 		"""
 		site = create_test_site("testsubdomain")
 		sunday = 6
-		# XXX: assuming sundays are when weekly backups are taken
 		a_month_ago = date.today() - timedelta(weeks=4)
 		oldest_allowed_weekly = (
 			a_month_ago
@@ -78,6 +77,49 @@ class TestGFS(unittest.TestCase):
 		limit_backup = create_test_site_backup(site.name, oldest_allowed_weekly)
 		older_backup = create_test_site_backup(site.name, older_than_oldest_allowed_weekly)
 		newer_backup = create_test_site_backup(site.name, newer_than_oldest_allowed_weekly)
+
+		gfs = GFS()
+		gfs.expire_offsite_backups(site)
+
+		limit_backup.reload()
+		older_backup.reload()
+		newer_backup.reload()
+
+		self.assertEqual(limit_backup.files_availability, "Available")
+		self.assertEqual(older_backup.files_availability, "Unavailable")
+		self.assertEqual(newer_backup.files_availability, "Available")
+
+	def _get_next_monthly_backup_day(self, day: date):
+		backup_day = GFS.monthly_backup_day
+		return (day.replace(day=1) + timedelta(days=32)).replace(day=backup_day)
+
+	def _get_previous_monthly_backup_day(self, day: date):
+		backup_day = GFS.monthly_backup_day
+		return (day.replace(day=1) - timedelta(days=1)).replace(day=backup_day)
+
+	def test_only_monthly_backups_longer_than_limit_deleted(self):
+		"""
+		Ensure only monthly backups kept for longer than limit are deleted.
+
+		(Assuming 12 is limit for monthly backups and backups are taken on 1st of the month.)
+		"""
+		site = create_test_site("testsubdomain")
+		a_year_ago = date.today() - timedelta(days=366)
+		oldest_allowed_monthly = (
+			a_year_ago
+			if a_year_ago.day == GFS.monthly_backup_day
+			else self._get_next_monthly_backup_day(a_year_ago)
+		)
+		older_than_oldest_allowed_monthly = self._get_previous_monthly_backup_day(
+			oldest_allowed_monthly
+		)
+		newer_than_oldest_allowed_monthly = self._get_next_monthly_backup_day(
+			oldest_allowed_monthly
+		)
+
+		limit_backup = create_test_site_backup(site.name, oldest_allowed_monthly)
+		older_backup = create_test_site_backup(site.name, older_than_oldest_allowed_monthly)
+		newer_backup = create_test_site_backup(site.name, newer_than_oldest_allowed_monthly)
 
 		gfs = GFS()
 		gfs.expire_offsite_backups(site)
