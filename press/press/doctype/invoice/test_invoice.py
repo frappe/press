@@ -7,6 +7,7 @@ import frappe
 import unittest
 from unittest.mock import patch
 from frappe.utils.data import add_days, today
+from .invoice import Invoice
 
 
 class TestInvoice(unittest.TestCase):
@@ -296,7 +297,8 @@ class TestInvoice(unittest.TestCase):
 				{"event_type": "payment_intent.succeeded", "payload": payload.read()}
 			)
 
-		process_stripe_webhook(doc, "")
+		with patch.object(Invoice, "update_transaction_details", return_value=None):
+			process_stripe_webhook(doc, "")
 
 		# balance should 900 after buying prepaid credits
 		self.assertEqual(team.get_balance(), 900)

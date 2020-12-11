@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 import re
 import frappe
 import stripe
-from frappe.utils import global_date_format, fmt_money, flt
+from frappe.utils import fmt_money, flt
 from press.utils import get_current_team
 
 
