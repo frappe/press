@@ -25,12 +25,17 @@ class MarketplaceApp(WebsiteGenerator):
 	def on_update(self):
 		doc_before_save = self.get_doc_before_save()
 		if not doc_before_save or doc_before_save.status != self.status:
-			frappe_app = frappe.get_doc("Frappe App", self.frappe_app)
+			frappe_app = self.get_frappe_app()
 			frappe_app.public = self.status == "Published"
 			frappe_app.save()
 
+	def get_frappe_app(self):
+		return frappe.get_doc("Frappe App", {"scrubbed": self.name, "public": 1})
+
 	def fetch_readme(self):
-		frappe_app = frappe.get_doc("Frappe App", self.frappe_app)
+		frappe_app = self.get_frappe_app()
+		if not frappe_app.installation:
+			return
 		token = get_access_token(frappe_app.installation)
 		headers = {
 			"Authorization": f"token {token}",
@@ -63,10 +68,11 @@ class MarketplaceApp(WebsiteGenerator):
 		if self.category:
 			context.category = frappe.get_doc("Marketplace App Category", self.category)
 
+		frappe_app = self.get_frappe_app()
 		groups = frappe.get_all(
 			"Release Group Frappe App",
 			fields=["parent as name"],
-			filters={"app": self.frappe_app},
+			filters={"app": frappe_app.name},
 		)
 		enabled_groups = []
 		for group in groups:

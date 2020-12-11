@@ -20,13 +20,13 @@
 				<div class="mb-1">
 					{{ breadcrumbs([
 						{ 'label': 'Apps', 'url': '/marketplace' },
-						{ 'label': category.name, 'url': '/marketplace/category/' + category.slug if False else '' },
+						{ 'label': category.name, 'url': '' },
 					]) }}
 				</div>
 				<h1 class="text-4xl font-bold text-gray-900 sm:text-6xl"> {{ app.title }} </h1>
 				<p class="text-base text-gray-700 sm:text-xl">{{ app.description }}</p>
 				<div class="mt-4">
-					{{ button('Install Now', '/marketplace/apps/' + app.name + '/install', 'primary') }}
+					{{ button('Install Now', '/dashboard#/sites/new', 'primary') }}
 				</div>
 			</div>
 		</div>
