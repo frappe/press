@@ -1,0 +1,46 @@
+{
+ "actions": [],
+ "creation": "2019-12-09 15:15:36.057080",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "application",
+  "column_break_3",
+  "hash"
+ ],
+ "fields": [
+  {
+   "fieldname": "hash",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Hash",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "application",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Application",
+   "options": "Application",
+   "read_only": 1,
+   "reqd": 1
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2020-12-09 19:05:01.054995",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Bench Application",
+ "owner": "Administrator",
+ "permissions": [],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

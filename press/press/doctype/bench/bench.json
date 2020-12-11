@@ -13,9 +13,9 @@
   "group",
   "candidate",
   "section_break_6",
-  "apps",
+  "applications",
   "common_site_configuration",
-  "workers",
+  "background_workers",
   "gunicorn_workers",
   "port_offset",
   "auto_scale_workers",
@@ -32,13 +32,6 @@
    "options": "Server",
    "reqd": 1,
    "set_only_once": 1
-  },
-  {
-   "fieldname": "apps",
-   "fieldtype": "Table",
-   "label": "Apps",
-   "options": "Installed App",
-   "read_only": 1
   },
   {
    "fetch_from": "candidate.group",
@@ -87,13 +80,6 @@
    "label": "Configuration"
   },
   {
-   "default": "1",
-   "fieldname": "workers",
-   "fieldtype": "Int",
-   "label": "Workers",
-   "reqd": 1
-  },
-  {
    "fieldname": "port_offset",
    "fieldtype": "Int",
    "label": "Port Offset",
@@ -131,10 +117,24 @@
    "label": "Database Server",
    "options": "Database Server",
    "read_only": 1
+  },
+  {
+   "fieldname": "applications",
+   "fieldtype": "Table",
+   "label": "Applications",
+   "options": "Bench Application",
+   "read_only": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "background_workers",
+   "fieldtype": "Int",
+   "label": "Background Workers",
+   "reqd": 1
   }
  ],
  "links": [],
- "modified": "2020-10-07 22:54:07.354802",
+ "modified": "2020-12-11 15:31:23.968669",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",
