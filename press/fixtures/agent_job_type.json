@@ -372,7 +372,7 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-06-18 10:07:19.031918",
+  "modified": "2020-12-11 14:03:35.053168",
   "name": "New Bench",
   "parent": null,
   "parentfield": null,
@@ -384,7 +384,7 @@
     "parent": "New Bench",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
-    "step_name": "Bench Initialize"
+    "step_name": "Initialize Bench"
    },
    {
     "parent": "New Bench",
@@ -396,37 +396,13 @@
     "parent": "New Bench",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
-    "step_name": "Bench Setup Redis"
+    "step_name": "Deploy Bench"
    },
    {
     "parent": "New Bench",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
-    "step_name": "Bench Reset Frappe App"
-   },
-   {
-    "parent": "New Bench",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Bench Get Apps"
-   },
-   {
-    "parent": "New Bench",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Bench Setup Requirements"
-   },
-   {
-    "parent": "New Bench",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Bench Build"
-   },
-   {
-    "parent": "New Bench",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Bench Setup Production"
+    "step_name": "Bench Setup NGINX"
    }
   ]
  },
