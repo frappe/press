@@ -39,40 +39,32 @@ class TestGFS(unittest.TestCase):
 		self.assertEqual(older_backup.files_availability, "Unavailable")
 		self.assertEqual(newer_backup.files_availability, "Available")
 
-	def _get_next_sunday(self, day: date) -> date:
-		weekday = day.weekday()
-		sunday = 6  # weekday() returns 0-6 for mon-sun
-		next_sunday = day + timedelta(sunday - weekday)
-		if next_sunday == day:
-			next_sunday += timedelta(7)
-		self.assertEqual(next_sunday.weekday(), sunday)
-		return next_sunday
+	def _get_next_weekly_backup_day(self, day: date) -> date:
+		backup_day = (GFS.weekly_backup_day + 5) % 7
+		return day + timedelta(backup_day - day.weekday())
 
-	def _get_previous_sunday(self, day: date) -> date:
-		weekday = day.weekday()
-		sunday = 6  # weekday() returns 0-6 for mon-sun
-		prev_sunday = day - timedelta(7 - (sunday - weekday))
-		if prev_sunday == day:
-			prev_sunday -= timedelta(7)
-		self.assertEqual(prev_sunday.weekday(), sunday)
-		return prev_sunday
+	def _get_previous_weekly_backup_day(self, day: date) -> date:
+		backup_day = (GFS.weekly_backup_day + 5) % 7
+		return day - timedelta(7 - (backup_day - day.weekday()))
 
 	def test_only_weekly_backups_longer_than_limit_deleted(self):
-		"""
-		Ensure only weekly backups kept for longer than limit are deleted.
-
-		(Assuming 4 is limit for weekly backups and sundays are when weekly backups are taken.)
-		"""
+		"""Ensure only weekly backups kept for longer than limit are deleted."""
 		site = create_test_site("testsubdomain")
-		sunday = 6
+		weekly_backup_day = (
+			GFS.weekly_backup_day + 5
+		) % 7  # convert from sql to python for day of week standard
 		a_month_ago = date.today() - timedelta(weeks=4)
 		oldest_allowed_weekly = (
 			a_month_ago
-			if a_month_ago.weekday() == sunday
-			else self._get_next_sunday(a_month_ago)
+			if a_month_ago.weekday() == weekly_backup_day
+			else self._get_next_weekly_backup_day(a_month_ago)
 		)
-		older_than_oldest_allowed_weekly = self._get_previous_sunday(oldest_allowed_weekly)
-		newer_than_oldest_allowed_weekly = self._get_next_sunday(oldest_allowed_weekly)
+		older_than_oldest_allowed_weekly = self._get_previous_weekly_backup_day(
+			oldest_allowed_weekly
+		)
+		newer_than_oldest_allowed_weekly = self._get_next_weekly_backup_day(
+			oldest_allowed_weekly
+		)
 
 		limit_backup = create_test_site_backup(site.name, oldest_allowed_weekly)
 		older_backup = create_test_site_backup(site.name, older_than_oldest_allowed_weekly)
@@ -98,11 +90,7 @@ class TestGFS(unittest.TestCase):
 		return (day.replace(day=1) - timedelta(days=1)).replace(day=backup_day)
 
 	def test_only_monthly_backups_longer_than_limit_deleted(self):
-		"""
-		Ensure only monthly backups kept for longer than limit are deleted.
-
-		(Assuming 12 is limit for monthly backups and backups are taken on 1st of the month.)
-		"""
+		"""Ensure only monthly backups kept for longer than limit are deleted."""
 		site = create_test_site("testsubdomain")
 		a_year_ago = date.today() - timedelta(days=366)
 		oldest_allowed_monthly = (
