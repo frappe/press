@@ -139,7 +139,7 @@ class GFS(BackupRotationScheme):
 	"""Represent Grandfather-father-son backup rotation scheme."""
 
 	daily = 7  # no. of previous daily backups to keep
-	weekly_backup_day = 1  # days of the week (1-7)
+	weekly_backup_day = 1  # days of the week (1-7) (SUN-SAT)
 	monthly_backup_day = 1  # days of the month (1-31)
 
 	def expire_offsite_backups(self, site: Site):
@@ -160,6 +160,10 @@ class GFS(BackupRotationScheme):
 			debug=True,
 			as_dict=True,
 		)
+		# XXX: DAYOFWEEK in sql gives 1-7 for SUN-SAT in sql
+		# datetime.weekday() in python gives 0-6 for MON-SUN
+		# datetime.isoweekday() in python gives 1-7 for MON-SUN
+
 		for offsite_backup in expired_offsite_backups:
 			remote_files = frappe.db.get_value(
 				"Site Backup",
