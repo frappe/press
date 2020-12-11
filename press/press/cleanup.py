@@ -77,6 +77,7 @@ class BackupRotationScheme:
 			frappe.db.set_value("Site Backup", local_backup, "files_availability", "Unavailable")
 
 	def expire_offsite_backups(self, site: Site):
+		"""Expire and return list of offsite backups to delete."""
 		raise NotImplementedError
 
 	def cleanup(self):
