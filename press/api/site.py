@@ -248,12 +248,12 @@ def options_for_new():
 		order = {row.app: row.idx for row in bench_doc.apps}
 		group["apps"] = sorted(group_apps, key=lambda x: order[x.name])
 		deployed_groups.append(group)
-		apps.update(bench_apps)
+		apps.update([app.scrubbed for app in group_apps])
 
 	marketplace_apps = frappe.db.get_all(
 		"Marketplace App",
-		fields=["title", "category", "image", "description", "frappe_app", "name"],
-		filters={"frappe_app": ("in", list(apps))},
+		fields=["title", "category", "image", "description", "name"],
+		filters={"name": ("in", list(apps))},
 	)
 
 	domain = frappe.db.get_value("Press Settings", "Press Settings", ["domain"])
@@ -273,7 +273,7 @@ def options_for_new():
 		"free_account": team_doc.free_account,
 		"allow_partner": allow_partner,
 		"disable_site_creation": disable_site_creation,
-		"marketplace_apps": {row.frappe_app: row for row in marketplace_apps},
+		"marketplace_apps": {row.name: row for row in marketplace_apps},
 	}
 
 

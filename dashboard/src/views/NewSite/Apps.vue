@@ -89,9 +89,9 @@ export default {
 		},
 		marketplaceApps() {
 			return this.apps
-				.filter(app => app.public)
+				.filter(app => app.public && !app.frappe)
 				.map(app => {
-					let options = this.options.marketplace_apps[app.name];
+					let options = this.options.marketplace_apps[app.scrubbed];
 					if (!options) {
 						return false;
 					}
@@ -118,11 +118,8 @@ export default {
 	},
 	methods: {
 		resetAppSelection() {
-			this.$emit('update:selectedApps', []);
-			let frappeApp = this.apps.find(app => app.frappe);
-			if (frappeApp) {
-				this.$emit('update:selectedApps', [frappeApp.name]);
-			}
+			let onlyFrappe = this.apps.filter(app => app.frappe).map(app => app.name);
+			this.$emit('update:selectedApps', onlyFrappe);
 		},
 		toggleApp(app) {
 			if (app.frappe) return;
