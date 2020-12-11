@@ -10,7 +10,6 @@ import json
 import requests
 from frappe.utils.password import get_decrypted_password
 from press.utils import log_error, sanitize_config
-from press.api.github import get_access_token
 import os
 from datetime import date
 
@@ -21,24 +20,16 @@ class Agent:
 		self.server = server
 		self.port = 443
 
-	def new_bench(self, bench, clone=None):
+	def new_bench(self, bench):
 		data = {
-			"config": json.loads(bench.config),
-			"apps": [],
 			"name": bench.name,
-			"python": "python3",
-			"clone": clone,
+			"docker_image_name": bench.group,
+			"docker_image_tag": bench.candidate,
+			"port_offset": bench.port_offset,
+			"gunicorn_workers": bench.gunicorn_workers,
+			"background_workers": bench.background_workers,
+			"config": json.loads(bench.config),
 		}
-		for app in bench.apps:
-			url, repo_owner, repo, branch, installation = frappe.db.get_value(
-				"Application", app.app, ["url", "repo_owner", "repo", "branch", "installation"]
-			)
-			if installation:
-				token = get_access_token(installation)
-				url = f"https://x-access-token:{token}@github.com/{repo_owner}/{repo}"
-			data["apps"].append(
-				{"name": app.scrubbed, "repo": repo, "url": url, "branch": branch, "hash": app.hash}
-			)
 		return self.create_agent_job("New Bench", "benches", data, bench=bench.name)
 
 	def archive_bench(self, bench):
