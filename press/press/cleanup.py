@@ -62,7 +62,7 @@ class BackupRotationScheme:
 	Rotation is maintained by controlled deletion of daily backups.
 	"""
 
-	def _expire_and_get_remote_files(self, offsite_backups: List[str]) -> List[Tuple[str]]:
+	def _expire_and_get_remote_files(self, offsite_backups: List[str]) -> List[str]:
 		"""Mark backup as unavailable and return remote files to delete."""
 		remote_files_to_delete = []
 		for backup in offsite_backups:
@@ -96,7 +96,7 @@ class BackupRotationScheme:
 			# as available
 			frappe.db.set_value("Site Backup", local_backup, "files_availability", "Unavailable")
 
-	def expire_offsite_backups(self, site: Site):
+	def expire_offsite_backups(self, site: Site) -> List[str]:
 		"""Expire and return list of offsite backups to delete."""
 		raise NotImplementedError
 
@@ -121,7 +121,7 @@ class FIFO(BackupRotationScheme):
 		frappe.db.get_single_value("Press Settings", "offsite_backups_count") or 30
 	)
 
-	def expire_offsite_backups(self, site: Site):
+	def expire_offsite_backups(self, site: Site) -> List[str]:
 		offsite_expiry = self.offsite_keep_count
 
 		to_be_expired_backups = frappe.get_all(
@@ -146,7 +146,7 @@ class GFS(BackupRotationScheme):
 	monthly_backup_day = 1  # days of the month (1-31)
 	yearly_backup_day = 1  # days of the year (1-366)
 
-	def expire_offsite_backups(self, site: Site):
+	def expire_offsite_backups(self, site: Site) -> List[str]:
 		today = date.today()
 		oldest_daily = today - timedelta(days=self.daily)
 		oldest_weekly = today - timedelta(weeks=4)
