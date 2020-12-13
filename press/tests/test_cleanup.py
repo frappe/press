@@ -12,7 +12,7 @@ from press.press.doctype.site_backup.test_site_backup import create_test_site_ba
 
 @patch.object(AgentJob, "after_insert", new=Mock())
 class TestGFS(unittest.TestCase):
-	"""Test Grandfather-father-son policy for keeping backups."""
+	"""Test Grandfather-father-son rotation scheme of keeping backups."""
 
 	def tearDown(self):
 		frappe.db.rollback()
