@@ -56,7 +56,7 @@ def keep_backups_for_(bench: str) -> int:
 
 class BackupRotationScheme:
 	"""
-	Represent backup rotation scheme for maintaining offsite backups.
+	Represents backup rotation scheme for maintaining offsite backups.
 
 	Rotation is maintained by controlled deletion of daily backups.
 	"""
@@ -99,7 +99,7 @@ class BackupRotationScheme:
 
 
 class FIFO(BackupRotationScheme):
-	"""Represent First-in-First-out backup rotation scheme."""
+	"""Represents First-in-First-out backup rotation scheme."""
 
 	def __init__(self):
 		self.offsite_keep_count = (
@@ -136,7 +136,7 @@ class FIFO(BackupRotationScheme):
 
 
 class GFS(BackupRotationScheme):
-	"""Represent Grandfather-father-son backup rotation scheme."""
+	"""Represents Grandfather-father-son backup rotation scheme."""
 
 	daily = 7  # no. of previous daily backups to keep
 	weekly_backup_day = 1  # days of the week (1-7) (SUN-SAT)
