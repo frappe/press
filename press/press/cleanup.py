@@ -148,10 +148,11 @@ class GFS(BackupRotationScheme):
 	yearly_backup_day = 1  # days of the year (1-366)
 
 	def expire_offsite_backups(self, site: Site):
-		oldest_daily = date.today() - timedelta(days=self.daily)
-		oldest_weekly = date.today() - timedelta(weeks=4)
-		oldest_monthly = date.today() - timedelta(days=366)
-		oldest_yearly = date.today() - timedelta(3653)
+		today = date.today()
+		oldest_daily = today - timedelta(days=self.daily)
+		oldest_weekly = today - timedelta(weeks=4)
+		oldest_monthly = today - timedelta(days=366)
+		oldest_yearly = today - timedelta(3653)
 		to_be_expired_backups = frappe.db.sql(
 			f"""
 			SELECT name from `tabSite Backup`
