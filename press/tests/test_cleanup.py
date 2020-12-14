@@ -64,35 +64,31 @@ class TestGFS(unittest.TestCase):
 		self.assertEqual(newer_backup.files_availability, "Available")
 
 	def _get_next_weekly_backup_day(self, day: date) -> date:
-		backup_day = (GFS.weekly_backup_day + 5) % 7
+		backup_day = self._sql_to_python(GFS.weekly_backup_day)
 		return day + timedelta(backup_day - day.weekday())
 
 	def _get_previous_weekly_backup_day(self, day: date) -> date:
-		backup_day = (GFS.weekly_backup_day + 5) % 7
+		backup_day = self._sql_to_python(GFS.weekly_backup_day)
 		return day - timedelta(7 - (backup_day - day.weekday()))
 
 	def test_only_weekly_backups_longer_than_limit_deleted(self):
 		"""Ensure only weekly backups kept for longer than limit are deleted."""
 		site = create_test_site("testsubdomain")
-		weekly_backup_day = (
-			GFS.weekly_backup_day + 5
-		) % 7  # convert from sql to python for day of week standard
+		weekly_backup_day = self._sql_to_python(GFS.weekly_backup_day)
 		a_month_ago = date.today() - timedelta(weeks=4)
 		oldest_allowed_weekly = (
 			a_month_ago
 			if a_month_ago.weekday() == weekly_backup_day
 			else self._get_next_weekly_backup_day(a_month_ago)
 		)
-		older_than_oldest_allowed_weekly = self._get_previous_weekly_backup_day(
-			oldest_allowed_weekly
-		)
-		newer_than_oldest_allowed_weekly = self._get_next_weekly_backup_day(
-			oldest_allowed_weekly
-		)
+		older = self._get_previous_weekly_backup_day(oldest_allowed_weekly)
+		while self._is_monthly_backup_day(older) or self._is_yearly_backup_day(older):
+			older -= self._get_previous_weekly_backup_day(older)
+		newer = self._get_next_weekly_backup_day(oldest_allowed_weekly)
 
 		limit_backup = create_test_site_backup(site.name, oldest_allowed_weekly)
-		older_backup = create_test_site_backup(site.name, older_than_oldest_allowed_weekly)
-		newer_backup = create_test_site_backup(site.name, newer_than_oldest_allowed_weekly)
+		older_backup = create_test_site_backup(site.name, older)
+		newer_backup = create_test_site_backup(site.name, newer)
 
 		gfs = GFS()
 		gfs.expire_offsite_backups(site)
@@ -122,16 +118,14 @@ class TestGFS(unittest.TestCase):
 			if a_year_ago.day == GFS.monthly_backup_day
 			else self._get_next_monthly_backup_day(a_year_ago)
 		)
-		older_than_oldest_allowed_monthly = self._get_previous_monthly_backup_day(
-			oldest_allowed_monthly
-		)
-		newer_than_oldest_allowed_monthly = self._get_next_monthly_backup_day(
-			oldest_allowed_monthly
-		)
+		older = self._get_previous_monthly_backup_day(oldest_allowed_monthly)
+		newer = self._get_next_monthly_backup_day(oldest_allowed_monthly)
+		while self._is_yearly_backup_day(older):
+			older -= self._get_previous_monthly_backup_day(older)
 
 		limit_backup = create_test_site_backup(site.name, oldest_allowed_monthly)
-		older_backup = create_test_site_backup(site.name, older_than_oldest_allowed_monthly)
-		newer_backup = create_test_site_backup(site.name, newer_than_oldest_allowed_monthly)
+		older_backup = create_test_site_backup(site.name, older)
+		newer_backup = create_test_site_backup(site.name, newer)
 
 		gfs = GFS()
 		gfs.expire_offsite_backups(site)
