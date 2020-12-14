@@ -16,7 +16,11 @@ def create_test_site_backup(
 	files_availability: str = "Available",
 	offsite: bool = True,
 ):
-	"""Create test site backup doc for required timestamp."""
+	"""
+	Create test site backup doc for required timestamp.
+
+	Makes offsite backups by default along with remote files.
+	"""
 	params_dict = {
 		"doctype": "Site Backup",
 		"status": "Success",

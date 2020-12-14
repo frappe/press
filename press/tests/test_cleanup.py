@@ -157,16 +157,16 @@ class TestGFS(unittest.TestCase):
 			if _10_years_ago.day == GFS.yearly_backup_day
 			else self._get_next_yearly_backup_day(_10_years_ago)
 		)
-		older_than_oldest_allowed_yearly = self._get_previous_yearly_backup_day(
+		older = self._get_previous_yearly_backup_day(
 			oldest_allowed_yearly
 		)
-		newer_than_oldest_allowed_yearly = self._get_next_yearly_backup_day(
+		newer = self._get_next_yearly_backup_day(
 			oldest_allowed_yearly
 		)
 
 		limit_backup = create_test_site_backup(site.name, oldest_allowed_yearly)
-		older_backup = create_test_site_backup(site.name, older_than_oldest_allowed_yearly)
-		newer_backup = create_test_site_backup(site.name, newer_than_oldest_allowed_yearly)
+		older_backup = create_test_site_backup(site.name, older)
+		newer_backup = create_test_site_backup(site.name, newer)
 
 		gfs = GFS()
 		gfs.expire_offsite_backups(site)
@@ -178,3 +178,27 @@ class TestGFS(unittest.TestCase):
 		self.assertEqual(limit_backup.files_availability, "Available")
 		self.assertEqual(older_backup.files_availability, "Unavailable")
 		self.assertEqual(newer_backup.files_availability, "Available")
+
+	# @patch("press.press.cleanup.delete_remote_backup_objects")
+	# def test_delete_remote_backup_objects_called(self, mock_del_remote_backup_objects):
+	# 	"""Ensure delete_remote_backup_objects is called when backup is to be deleted."""
+	# 	# XXX: might autocommit if you make too many docs
+	# 	site = create_test_site("testsubdomain")
+	# 	today = date.today()
+	# 	oldest_daily = today - timedelta(GFS.daily)
+	# 	create_test_site_backup(site.name, oldest_daily)
+	# 	create_test_site_backup(site.name, oldest_daily - timedelta(1))
+	# 	create_test_site_backup(site.name, oldest_daily + timedelta(1))
+	# 	gfs = GFS()
+	# 	gfs.cleanup()
+	# 	mock_del_remote_backup_objects.assert_called_once()
+	# 	print("*"*20)
+	# 	print("*"*20)
+	# 	print(mock_del_remote_backup_objects.call_args.args)
+	# 	print("*"*20)
+	# 	print("*"*20)
+	# 	self.assertEqual(
+	# 		len(mock_del_remote_backup_objects.call_args.args), 3 * 2
+	# 	)
+
+	# TODO test multiple sites
