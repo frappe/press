@@ -1,6 +1,6 @@
 import functools
-from datetime import datetime, timedelta, date
-from typing import List, Tuple
+from datetime import date, datetime, timedelta
+from typing import List
 
 import frappe
 
@@ -72,9 +72,7 @@ class BackupRotationScheme:
 				["remote_database_file", "remote_private_file", "remote_public_file"],
 			)
 			remote_files_to_delete.extend(remote_files)
-			frappe.db.set_value(
-				"Site Backup", backup, "files_availability", "Unavailable"
-			)
+			frappe.db.set_value("Site Backup", backup, "files_availability", "Unavailable")
 		return remote_files_to_delete
 
 	def expire_local_backups(self, site: Site):
