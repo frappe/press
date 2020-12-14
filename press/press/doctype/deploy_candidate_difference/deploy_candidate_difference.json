@@ -9,7 +9,7 @@
   "source",
   "destination",
   "deploy_type",
-  "apps"
+  "applications"
  ],
  "fields": [
   {
@@ -41,22 +41,22 @@
    "reqd": 1
   },
   {
-   "fieldname": "apps",
-   "fieldtype": "Table",
-   "label": "Apps",
-   "options": "Deploy Candidate Difference App"
-  },
-  {
    "fieldname": "deploy_type",
    "fieldtype": "Select",
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Deploy Type",
    "options": "\nPull\nMigrate"
+  },
+  {
+   "fieldname": "applications",
+   "fieldtype": "Table",
+   "label": "Applications",
+   "options": "Deploy Candidate Difference Application"
   }
  ],
  "links": [],
- "modified": "2020-06-19 20:31:18.981234",
+ "modified": "2020-12-14 20:06:18.815108",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate Difference",

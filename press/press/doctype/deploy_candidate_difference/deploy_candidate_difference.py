@@ -54,40 +54,40 @@ class DeployCandidateDifference(Document):
 		source_candidate = frappe.get_doc("Deploy Candidate", self.source)
 		destination_candidate = frappe.get_doc("Deploy Candidate", self.destination)
 		for destination in destination_candidate.applications:
-			app = {
-				"app": destination.app,
+			application = {
+				"application": destination.application,
 				"destination_release": destination.release,
 				"destination_hash": destination.hash,
 			}
-			source = find(source_candidate.apps, lambda x: x.app == destination.app)
+			source = find(source_candidate.applications, lambda x: x.application == destination.application)
 			if source:
-				app.update({"source_release": source.release, "source_hash": source.hash})
-			self.append("apps", app)
+				application.update({"source_release": source.release, "source_hash": source.hash})
+			self.append("applications", application)
 		self.save()
 		self.compute_deploy_type()
 		self.save()
 
 	def compute_deploy_type(self):
 		self.deploy_type = "Pull"
-		for app in self.apps:
-			if (not app.source_hash) or (app.source_hash == app.destination_hash):
+		for application in self.applications:
+			if (not application.source_hash) or (application.source_hash == application.destination_hash):
 				continue
-			app.changed = True
-			app.deploy_type = "Pull"
-			frappe_app = frappe.get_doc("Application", app.app)
+			application.changed = True
+			application.deploy_type = "Pull"
+			frappe_app = frappe.get_doc("Application", application.application)
 			if frappe_app.installation:
 				github_access_token = get_access_token(frappe_app.installation)
 				client = Github(github_access_token)
 			else:
 				client = Github()
 			repo = client.get_repo(f"{frappe_app.repo_owner}/{frappe_app.repo}")
-			diff = repo.compare(app.source_hash, app.destination_hash)
-			app.github_diff_url = diff.html_url
+			diff = repo.compare(application.source_hash, application.destination_hash)
+			application.github_diff_url = diff.html_url
 			files = [f.filename for f in diff.files]
 			if is_migrate_needed(files):
 				self.deploy_type = "Migrate"
-				app.deploy_type = "Migrate"
-			app.files = json.dumps(files, indent=4)
+				application.deploy_type = "Migrate"
+			application.files = json.dumps(files, indent=4)
 
 
 def is_migrate_needed(files):
