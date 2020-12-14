@@ -7,6 +7,10 @@ import frappe
 
 def get_context(context):
 	# TODO: Caching, Pagination, Filtering, Sorting
+	context.no_cache = 1
 	context.apps = frappe.get_all(
-		"Marketplace App", filters={"status": "Published"}, fields=["*"]
+		"Marketplace App",
+		filters={"status": "Published"},
+		order_by="creation asc",
+		fields=["*"],
 	)
