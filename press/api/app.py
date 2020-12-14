@@ -106,7 +106,6 @@ def get(name):
 		group["frappe"] = frappe_app
 		enabled_groups.append(group)
 
-	marketplace_app = frappe.db.get_value("Marketplace App", {"frappe_app": name})
 	return {
 		"name": app.name,
 		"branch": app.branch,
@@ -120,7 +119,6 @@ def get(name):
 		"update_available": update_available(app.name),
 		"last_updated": app.modified,
 		"creation": app.creation,
-		"marketplace_app": marketplace_app,
 	}
 
 
