@@ -4,7 +4,7 @@ from unittest.mock import Mock, patch
 
 import frappe
 
-from press.press.cleanup import GFS, cleanup_backups
+from press.press.cleanup import FIFO, GFS, cleanup_backups
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.site_backup.test_site_backup import create_test_site_backup
@@ -207,3 +207,30 @@ class TestGFS(unittest.TestCase):
 		self.assertEqual(
 			len(mock_del_remote_backup_objects.call_args.args[0]), 3 * 2,
 		)
+
+
+class TestFIFO(unittest.TestCase):
+	"""Test FIFO backup rotation scheme."""
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_backups_older_than_number_specified_deleted(self):
+		"""Ensure older backups in queue are deleted."""
+		fifo = FIFO()
+		fifo.offsite_keep_count = 2
+		site = create_test_site("testsubdomain")
+		older = create_test_site_backup(site.name, date.today())
+		old = create_test_site_backup(site.name, date.today())
+		new = create_test_site_backup(site.name, date.today())
+
+		fifo.expire_offsite_backups(site)
+
+		older.reload()
+		old.reload()
+		new.reload()
+
+		self.assertEqual(older.files_availability, "Unavailable")
+		self.assertEqual(old.files_availability, "Available")
+		self.assertEqual(new.files_availability, "Available")
+
