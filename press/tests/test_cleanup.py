@@ -157,12 +157,8 @@ class TestGFS(unittest.TestCase):
 			if _10_years_ago.day == GFS.yearly_backup_day
 			else self._get_next_yearly_backup_day(_10_years_ago)
 		)
-		older = self._get_previous_yearly_backup_day(
-			oldest_allowed_yearly
-		)
-		newer = self._get_next_yearly_backup_day(
-			oldest_allowed_yearly
-		)
+		older = self._get_previous_yearly_backup_day(oldest_allowed_yearly)
+		newer = self._get_next_yearly_backup_day(oldest_allowed_yearly)
 
 		limit_backup = create_test_site_backup(site.name, oldest_allowed_yearly)
 		older_backup = create_test_site_backup(site.name, older)
@@ -179,26 +175,35 @@ class TestGFS(unittest.TestCase):
 		self.assertEqual(older_backup.files_availability, "Unavailable")
 		self.assertEqual(newer_backup.files_availability, "Available")
 
-	# @patch("press.press.cleanup.delete_remote_backup_objects")
-	# def test_delete_remote_backup_objects_called(self, mock_del_remote_backup_objects):
-	# 	"""Ensure delete_remote_backup_objects is called when backup is to be deleted."""
-	# 	# XXX: might autocommit if you make too many docs
-	# 	site = create_test_site("testsubdomain")
-	# 	today = date.today()
-	# 	oldest_daily = today - timedelta(GFS.daily)
-	# 	create_test_site_backup(site.name, oldest_daily)
-	# 	create_test_site_backup(site.name, oldest_daily - timedelta(1))
-	# 	create_test_site_backup(site.name, oldest_daily + timedelta(1))
-	# 	gfs = GFS()
-	# 	gfs.cleanup()
-	# 	mock_del_remote_backup_objects.assert_called_once()
-	# 	print("*"*20)
-	# 	print("*"*20)
-	# 	print(mock_del_remote_backup_objects.call_args.args)
-	# 	print("*"*20)
-	# 	print("*"*20)
-	# 	self.assertEqual(
-	# 		len(mock_del_remote_backup_objects.call_args.args), 3 * 2
-	# 	)
+	@patch("press.press.cleanup.delete_remote_backup_objects")
+	@patch("press.press.cleanup.frappe.db.commit")
+	def test_delete_remote_backup_objects_called(
+		self, mock_frappe_commit, mock_del_remote_backup_objects
+	):
+		"""
+		Ensure delete_remote_backup_objects is called when backup is to be deleted.
 
-	# TODO test multiple sites
+		(db commit call inside GFS.cleanup is mocked so tests don't break)
+		"""
+		site = create_test_site("testsubdomain")
+		site2 = create_test_site("testsubdomain2")
+		today = date.today()
+		oldest_allowed_daily = today - timedelta(GFS.daily)
+		older = oldest_allowed_daily - timedelta(days=1)
+		newer = oldest_allowed_daily + timedelta(days=1)
+		while (
+			self._is_weekly_backup_day(older)
+			or self._is_monthly_backup_day(older)
+			or self._is_yearly_backup_day(older)
+		):
+			older -= timedelta(days=1)
+		create_test_site_backup(site.name, older)
+		create_test_site_backup(site2.name, older)
+		create_test_site_backup(site.name, newer)
+		create_test_site_backup(site2.name, newer)
+		gfs = GFS()
+		gfs.cleanup()
+		mock_del_remote_backup_objects.assert_called_once()
+		self.assertEqual(
+			len(mock_del_remote_backup_objects.call_args.args[0]), 3 * 2,
+		)
