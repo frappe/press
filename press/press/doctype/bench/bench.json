@@ -14,13 +14,14 @@
   "candidate",
   "section_break_6",
   "applications",
-  "common_site_configuration",
+  "configuration_section",
   "background_workers",
   "gunicorn_workers",
   "port_offset",
   "auto_scale_workers",
   "column_break_11",
-  "config"
+  "config",
+  "bench_config"
  ],
  "fields": [
   {
@@ -64,20 +65,6 @@
    "options": "Pending\nInstalling\nActive\nBroken\nArchived",
    "read_only": 1,
    "reqd": 1
-  },
-  {
-   "fieldname": "config",
-   "fieldtype": "Code",
-   "label": "Configuration",
-   "options": "JSON",
-   "read_only": 1
-  },
-  {
-   "collapsible": 1,
-   "collapsible_depends_on": "true",
-   "fieldname": "common_site_configuration",
-   "fieldtype": "Section Break",
-   "label": "Configuration"
   },
   {
    "fieldname": "port_offset",
@@ -131,10 +118,31 @@
    "fieldtype": "Int",
    "label": "Background Workers",
    "reqd": 1
+  },
+  {
+   "fieldname": "bench_config",
+   "fieldtype": "Code",
+   "label": "Bench Configuration",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "config",
+   "fieldtype": "Code",
+   "label": "Common Site Configuration",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "true",
+   "fieldname": "configuration_section",
+   "fieldtype": "Section Break",
+   "label": "Configuration"
   }
  ],
  "links": [],
- "modified": "2020-12-11 15:31:23.968669",
+ "modified": "2020-12-14 10:18:13.724952",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",
