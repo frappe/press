@@ -17,8 +17,6 @@ class Bench(Document):
 			candidate = frappe.get_all("Deploy Candidate", filters={"group": self.group})[0]
 			self.candidate = candidate.name
 		candidate = frappe.get_doc("Deploy Candidate", self.candidate)
-		if not self.docker_image_id:
-			self.docker_image_id = candidate.docker_image_id
 
 		if not self.applications:
 			for release in candidate.applications:
@@ -43,6 +41,16 @@ class Bench(Document):
 			}
 		)
 		self.config = json.dumps(config, indent=4)
+
+		bench_config = {
+			"docker_image_name": self.group,
+			"docker_image_tag": self.candidate,
+			"web_port": 18000 + self.port_offset,
+			"socketio_port": 19000 + self.port_offset,
+			"gunicorn_workers": self.gunicorn_workers,
+			"background_workers": self.background_workers,
+		}
+		self.bench_config = json.dumps(bench_config, indent=4)
 
 	def get_unused_port_offset(self):
 		benches = frappe.get_all(

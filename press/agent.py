@@ -23,12 +23,8 @@ class Agent:
 	def new_bench(self, bench):
 		data = {
 			"name": bench.name,
-			"docker_image_name": bench.group,
-			"docker_image_tag": bench.candidate,
-			"port_offset": bench.port_offset,
-			"gunicorn_workers": bench.gunicorn_workers,
-			"background_workers": bench.background_workers,
-			"config": json.loads(bench.config),
+			"bench_config": json.loads(bench.bench_config),
+			"common_site_config": json.loads(bench.config),
 		}
 		return self.create_agent_job("New Bench", "benches", data, bench=bench.name)
 
