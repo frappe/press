@@ -20,7 +20,7 @@
   "team",
   "free",
   "section_break_6",
-  "apps",
+  "applications",
   "configuration_section",
   "host_name",
   "config",
@@ -64,15 +64,6 @@
    "options": "Bench",
    "reqd": 1,
    "set_only_once": 1
-  },
-  {
-   "fieldname": "apps",
-   "fieldtype": "Table",
-   "hide_days": 1,
-   "hide_seconds": 1,
-   "label": "Apps",
-   "options": "Site App",
-   "reqd": 1
   },
   {
    "default": "Pending",
@@ -278,10 +269,19 @@
    "fieldtype": "Data",
    "hidden": 1,
    "label": "Keys Removed in Last Config Change"
+  },
+  {
+   "fieldname": "applications",
+   "fieldtype": "Table",
+   "hide_days": 1,
+   "hide_seconds": 1,
+   "label": "Applications",
+   "options": "Site Application",
+   "reqd": 1
   }
  ],
  "links": [],
- "modified": "2020-10-06 15:05:34.824331",
+ "modified": "2020-12-11 19:49:48.018581",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

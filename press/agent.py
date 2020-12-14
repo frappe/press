@@ -40,10 +40,10 @@ class Agent:
 		)
 
 	def new_site(self, site):
-		apps = [frappe.db.get_value("Application", app.app, "scrubbed") for app in site.apps]
+		applications = [application.application for application in site.applications]
 		data = {
 			"config": json.loads(site.config),
-			"apps": apps,
+			"apps": applications,
 			"name": site.name,
 			"mariadb_root_password": get_decrypted_password(
 				"Server", site.server, "mariadb_root_password"

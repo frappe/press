@@ -49,15 +49,16 @@ class Site(Document):
 
 			self._update_configuration(get_plan_config(self.plan), save=False)
 
-		bench_apps = frappe.get_doc("Bench", self.bench).apps
-		for app in self.apps:
-			if not find(bench_apps, lambda x: x.app == app.app):
-				frappe.throw(f"Application {app.app} is not available on Bench {self.bench}.")
-		frappe_app = self.apps[0]
-		if not frappe.db.get_value("Application", frappe_app.app, "frappe"):
+		applications = frappe.get_doc("Bench", self.bench).applications
+		for application in self.applications:
+			if not find(applications, lambda x: x.application == application.application):
+				frappe.throw(f"Application {application.application} is not available on Bench {self.bench}.")
+
+		if self.applications[0].application != "frappe":
 			frappe.throw("First app to be installed on site must be frappe.")
-		apps = [app.app for app in self.apps]
-		if len(apps) != len(set(apps)):
+
+		applications = [application.application for application in self.applications]
+		if len(applications) != len(set(applications)):
 			frappe.throw("Can't install same app twice.")
 
 		# this is a little hack to remember which key is being removed from the site config
@@ -100,21 +101,21 @@ class Site(Document):
 
 		self.config = json.dumps(new_config, indent=4)
 
-	def install_app(self, app):
-		if not find(self.apps, lambda x: x.app == app):
+	def install_app(self, application):
+		if not find(self.applications, lambda x: x.application == application):
 			log_site_activity(self.name, "Install App")
-			self.append("apps", {"app": app})
+			self.append("applications", {"application": application})
 			agent = Agent(self.server)
-			agent.install_app_site(self, app)
+			agent.install_app_site(self, application)
 			self.status = "Pending"
 			self.save()
 
-	def uninstall_app(self, app):
-		app_doc = find(self.apps, lambda x: x.app == app)
+	def uninstall_app(self, application):
+		app_doc = find(self.applications, lambda x: x.application == application)
 		log_site_activity(self.name, "Uninstall App")
 		self.remove(app_doc)
 		agent = Agent(self.server)
-		agent.uninstall_app_site(self, app_doc.app)
+		agent.uninstall_app_site(self, app_doc.application)
 		self.status = "Pending"
 		self.save()
 
