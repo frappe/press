@@ -73,7 +73,9 @@ export default {
 				name: field.fieldname,
 				value: this.values[field.fieldname],
 				disabled: field.disabled,
-				required: field.required || false
+				required: field.required || false,
+				rows: field.rows,
+				placeholder: field.placeholder
 			};
 		},
 		getBindListeners(field) {
@@ -88,7 +90,8 @@ export default {
 				Int: 'number',
 				Select: 'select',
 				Check: 'checkbox',
-				Password: 'password'
+				Password: 'password',
+				Text: 'textarea'
 			}[field.fieldtype || 'Data'];
 		}
 	}

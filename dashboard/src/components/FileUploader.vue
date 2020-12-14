@@ -27,6 +27,7 @@
 import FileUploader from '@/controllers/fileUploader';
 import S3FileUploader from '@/controllers/s3FileUploader';
 import { Archive } from 'libarchive.js/main.js';
+import { isWasmSupported } from '@/utils';
 
 export default {
 	name: 'FileUploader',
@@ -59,6 +60,16 @@ export default {
 			this.error = null;
 			this.file = e.target.files[0];
 
+			if (this.file.type === 'application/x-gzip') {
+				let error = await this.validateDatabaseFile();
+				if (error) {
+					this.error = error;
+					return;
+				}
+			}
+			this.uploadFile(this.file);
+		},
+		async validateDatabaseFile() {
 			// Check for upload size limits
 			this.message = 'Checking File Limits';
 			if (
@@ -71,69 +82,34 @@ export default {
 				return;
 			}
 
-			// Check if browser supports WASM
-			// ref: https://stackoverflow.com/a/47880734/10309266
-			const supported = (() => {
-				try {
-					if (
-						typeof WebAssembly === 'object' &&
-						typeof WebAssembly.instantiate === 'function'
-					) {
-						const module = new WebAssembly.Module(
-							Uint8Array.of(0x0, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00)
-						);
-						if (module instanceof WebAssembly.Module)
-							return (
-								new WebAssembly.Instance(module) instanceof WebAssembly.Instance
-							);
-					}
-				} catch (e) {} // eslint-disable-line no-empty
-				return false;
-			})();
-
 			// Check for validity of files
-			let validationMessage, validationName;
-
-			if (supported) {
+			let validationMessage;
+			if (isWasmSupported) {
 				this.message = 'Validating File';
 				validationMessage = await this.validateFile();
-				validationName = await this.validateFileName();
 				this.message = '';
 			} else {
 				validationMessage = 'WASM not supported on this browser';
 			}
 
-			// Try uploading the files
-			if (validationMessage === true) {
-				this.uploadFile(this.file);
-			} else if (validationName && validationMessage !== false) {
-				this.uploadFile(this.file);
-			} else {
-				const title = this.type[0].toUpperCase() + this.type.slice(1);
-				const errorTitle =
-					validationMessage?.length > 24
-						? 'Validation Error'
-						: validationMessage;
-				this.error = validationMessage ? errorTitle : `Invalid ${title} File`;
-				if (validationMessage) {
-					this.message = 'Skipping Validation...';
-					console.error(validationMessage);
+			if (!validationMessage) {
+				return null;
+			}
+
+			if (validationMessage) {
+				this.message = 'Skipping Validation...';
+				console.error(validationMessage);
+
+				let after3secs = new Promise(resolve => {
 					setTimeout(() => {
 						this.message = '';
-						this.uploadFile(this.file);
+						resolve(null);
 					}, 3000);
-				}
+				});
+				return after3secs;
 			}
 		},
-		validateFileName() {
-			return new Promise(resolve => {
-				const name = this.file.name;
-				const suffix = `${this.type ? 'private' : ''}-files.tar`;
-				const result = name.indexOf(suffix, name.length - suffix.length) !== -1;
-				resolve(result);
-			});
-		},
-		validateFile() {
+		validateBackupFileContents() {
 			return new Promise(resolve => {
 				let timeout;
 				if (this.file.size < 200 * 1000 * 1000) {

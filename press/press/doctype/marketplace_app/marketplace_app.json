@@ -1,0 +1,144 @@
+{
+ "actions": [],
+ "allow_guest_to_view": 1,
+ "autoname": "Prompt",
+ "creation": "2020-09-02 22:57:04.696244",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "image",
+  "title",
+  "route",
+  "column_break_3",
+  "category",
+  "status",
+  "published",
+  "section_break_5",
+  "description",
+  "long_description",
+  "links_section",
+  "website",
+  "support",
+  "privacy_policy",
+  "documentation",
+  "terms_of_service"
+ ],
+ "fields": [
+  {
+   "fieldname": "image",
+   "fieldtype": "Attach Image",
+   "hidden": 1,
+   "label": "Image"
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Title",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "category",
+   "fieldtype": "Link",
+   "label": "Category",
+   "options": "Marketplace App Category"
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nPublished"
+  },
+  {
+   "fieldname": "section_break_5",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Description",
+   "reqd": 1
+  },
+  {
+   "fieldname": "long_description",
+   "fieldtype": "Markdown Editor",
+   "label": "Long Description"
+  },
+  {
+   "fieldname": "links_section",
+   "fieldtype": "Section Break",
+   "label": "Links"
+  },
+  {
+   "fieldname": "website",
+   "fieldtype": "Data",
+   "label": "Website"
+  },
+  {
+   "fieldname": "support",
+   "fieldtype": "Data",
+   "label": "Support"
+  },
+  {
+   "fieldname": "privacy_policy",
+   "fieldtype": "Data",
+   "label": "Privacy Policy"
+  },
+  {
+   "fieldname": "documentation",
+   "fieldtype": "Data",
+   "label": "Documentation"
+  },
+  {
+   "fieldname": "terms_of_service",
+   "fieldtype": "Data",
+   "label": "Terms of Service"
+  },
+  {
+   "fieldname": "route",
+   "fieldtype": "Data",
+   "label": "Route"
+  },
+  {
+   "default": "0",
+   "fieldname": "published",
+   "fieldtype": "Check",
+   "label": "Published"
+  }
+ ],
+ "has_web_view": 1,
+ "image_field": "image",
+ "index_web_pages_for_search": 1,
+ "is_published_field": "published",
+ "links": [],
+ "modified": "2020-12-11 12:02:59.477289",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Marketplace App",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

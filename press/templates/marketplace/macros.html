@@ -1,0 +1,61 @@
+{% macro button(label, link, kind='default', as='a', type='button') %}
+{%- set classes = resolve_class([
+	'inline-flex items-center justify-center px-3 py-1 text-base leading-5 rounded-md focus:outline-none',
+	{
+		'text-white bg-gradient-blue hover:bg-gradient-none hover:bg-blue-500 focus:shadow-outline-blue': kind == 'primary',
+		'bg-gray-50 hover:bg-gray-100 text-gray-900 focus:shadow-outline-gray': kind == 'default',
+	}
+]) -%}
+{%- if as == 'a' -%}
+<a class="{{ classes }}" href="{{ link }}">{{ label }}</a>
+{%- else -%}
+<button class="{{ classes }}" type="{{ type }}">{{ label }}</button>
+{%- endif -%}
+{% endmacro %}
+
+{% macro link(label, url, class) %}
+<a class="text-gray-800 hover:text-blue-500 {{ resolve_class(class) }}" href="{{ url | abs_url }}">{{ label }}</a>
+{% endmacro %}
+
+{% macro breadcrumbs(items) %}
+<nav class="flex items-center text-sm font-medium leading-5">
+	{%- for item in items -%}
+	<a href="{{ item.url }}"
+		class="text-gray-600 transition duration-150 ease-in-out hover:text-gray-700 focus:outline-none focus:underline">
+		{{ item.label }}
+	</a>
+	{%- if not loop.last -%}
+	<svg class="flex-shrink-0 w-5 h-5 mx-2 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+		<path fill-rule="evenodd"
+			d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+			clip-rule="evenodd"></path>
+	</svg>
+	{%- endif -%}
+	{%- endfor -%}
+</nav>
+{% endmacro %}
+
+{% macro form(fields, action='') %}
+<form action="/api/method/{{ action }}" method="POST">
+	<section class="space-y-4">
+		{%- for df in fields -%}
+		<p class="space-y-2">
+			<label class="block text-base" for="{{ df.fieldname }}">{{ df.label }}</label>
+			{%- if df.fieldtype == 'Select' -%}
+			<select class="w-full form-select" name="{{ df.fieldname }}" id="{{ df.fieldname }}">
+				{%- for option in df.options or [] -%}
+				<option value="{{ option.value }}">{{ option.label }}</option>
+				{%- endfor -%}
+			</select>
+			{%- else -%}
+			<input type="text" id="{{ df.fieldname }}" class="w-full form-input" name="{{ df.fieldname }}">
+			{%- endif -%}
+		</p>
+		{%- endfor -%}
+		<input type="text" name="csrf_token" value="{{ frappe.session.csrf_token }}" hidden>
+	</section>
+	<p class="mt-8 text-center">
+		{{ button('Submit', as='button', type='submit', kind='primary') }}
+	</p>
+</form>
+{% endmacro %}

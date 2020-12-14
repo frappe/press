@@ -1,0 +1,72 @@
+{% extends "templates/marketplace/base.html" %}
+{%- from "templates/marketplace/macros.html" import button, link, breadcrumbs -%}
+
+{%- block body -%}
+<div class="px-4 sm:px-8">
+	<div>
+		<div class="flex items-center py-8 space-x-4 sm:space-x-8 sm:py-14">
+			<div class="flex-shrink-0">
+				{%- if app.image -%}
+				<img class="object-cover w-24 h-24 border border-gray-200 rounded-full sm:w-32 sm:h-32"
+					src="{{ app.image }}" alt="{{ app.title }}">
+				{%- else -%}
+				<div class="flex items-center justify-center w-24 h-24 text-gray-500 bg-gray-100 border border-gray-200 rounded-full sm:w-32 sm:h-32"
+					style="font-size: 4rem;">
+					{{ app.title[0].upper() }}
+				</div>
+				{%- endif -%}
+			</div>
+			<div>
+				<div class="mb-1">
+					{{ breadcrumbs([
+						{ 'label': 'Apps', 'url': '/marketplace' },
+						{ 'label': category.name, 'url': '' },
+					]) }}
+				</div>
+				<h1 class="text-4xl font-bold text-gray-900 sm:text-6xl"> {{ app.title }} </h1>
+				<p class="text-base text-gray-700 sm:text-xl">{{ app.description }}</p>
+				<div class="mt-4">
+					{{ button('Install Now', '/dashboard#/sites/new', 'primary') }}
+				</div>
+			</div>
+		</div>
+		<div class="flex flex-col pb-32 sm:flex-row">
+			<div class="w-full pb-8 prose-sm prose text-gray-900 sm:w-3/5">
+				{{ frappe.utils.md_to_html(app.long_description) }}
+			</div>
+			<div class="grid w-full grid-cols-2 pl-0 gap-x-4 gap-y-8 sm:space-y-8 sm:block sm:pl-24 sm:w-2/5">
+				<div>
+					<h5 class="text-base text-gray-600">Website</h5>
+					<ul class="mt-2 space-y-1 text-base">
+						<li class="">{{ link(app.website, app.website) }}</li>
+					</ul>
+				</div>
+				<div>
+					<h5 class="text-base text-gray-600">Supported Versions</h5>
+					<ul class="mt-2 space-y-1 text-base">
+						{%- for version in supported_versions -%}
+						<li class="">{{ link(version.name, version.frappe.url + '/tree/' + version.frappe.branch) }}
+						</li>
+						{%- endfor -%}
+					</ul>
+				</div>
+				<div>
+					<h5 class="text-base text-gray-600">Links</h5>
+					<ul class="mt-2 space-y-1 text-base">
+						{%- for label, value in ({
+							'Support': app.support,
+							'Documentation': app.documentation,
+							'Privacy Policy': app.privacy_policy,
+							'Terms of Service': app.terms_of_service
+						}).items() -%}
+						{%- if value -%}
+						<li class="">{{ link(label, value) }}</li>
+						{%- endif -%}
+						{%- endfor -%}
+					</ul>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+{%- endblock -%}
