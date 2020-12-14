@@ -18,6 +18,7 @@
 			]"
 			:type="type || 'text'"
 			:disabled="disabled"
+			:placeholder="placeholder"
 			v-bind="$attrs"
 			@blur="$emit('blur', $event)"
 			v-model="inputVal"
@@ -28,7 +29,7 @@
 			v-model="inputVal"
 			:disabled="disabled"
 			v-bind="$attrs"
-			rows="3"
+			:rows="rows || 3"
 			@blur="$emit('blur', $event)"
 		></textarea>
 		<select
@@ -93,6 +94,12 @@ export default {
 		},
 		disabled: {
 			type: Boolean
+		},
+		rows: {
+			type: Number
+		},
+		placeholder: {
+			type: String
 		}
 	},
 	computed: {

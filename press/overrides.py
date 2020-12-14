@@ -57,6 +57,12 @@ def upload_file():
 def on_session_creation():
 	from press.utils import get_default_team_for_user
 
+	if (
+		not frappe.db.exists("Team", frappe.session.user)
+		and frappe.session.data.user_type == "System User"
+	):
+		return
+
 	onboarding_complete = frappe.cache().hget("onboarding_complete", frappe.session.user)
 	if not onboarding_complete:
 		team = get_default_team_for_user(frappe.session.user)

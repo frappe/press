@@ -1,3 +1,5 @@
+const plugin = require('tailwindcss/plugin');
+
 module.exports = {
 	theme: {
 		extend: {
@@ -30,19 +32,6 @@ module.exports = {
 				'brand-100': '#f4f9ff',
 				black: '#112B42',
 				blue: {
-					// old blue colors
-					// '50': '#f4f9ff',
-					// '100': '#E8F4FD',
-					// '200': '#BDDDFA',
-					// '300': '#88C3F6',
-					// '400': '#54A8F2',
-					// '500': '#2490EF',
-					// '600': '#107CDB',
-					// '700': '#0D66B5',
-					// '800': '#0A518F',
-					// '900': '#083B69',
-
-					// new blue colors
 					'50': '#F0F8FE',
 					'100': '#D3E9FC',
 					'200': '#A7D3F9',
@@ -55,18 +44,6 @@ module.exports = {
 					'900': '#1A4469'
 				},
 				gray: {
-					// old gray colors
-					// '50': '#f9fafb',
-					// '100': '#f4f4f6',
-					// '200': '#e9ebed',
-					// '300': '#dfe1e2',
-					// '400': '#cccfd1',
-					// '500': '#b7bfc6',
-					// '600': '#a1abb4',
-					// '700': '#9fa5a8',
-					// '800': '#7f878a',
-					// '900': '#415668'
-					// new gray colors
 					'50': '#F9FAFA',
 					'100': '#F4F5F6',
 					'200': '#EEF0F2',
@@ -140,7 +117,30 @@ module.exports = {
 			}
 		}
 	},
-	plugins: [require('@tailwindcss/ui')],
+	plugins: [
+		require('@tailwindcss/ui'),
+		require('@tailwindcss/typography'),
+		plugin(function({ addUtilities, theme }) {
+			// Add your custom styles here
+			addUtilities({
+				'.bg-gradient-blue': {
+					'background-image': `linear-gradient(180deg,#2c9af1 0%, ${theme(
+						'colors.blue.500'
+					)} 100%)`
+				}
+			});
+			addUtilities(
+				{
+					'.bg-gradient-none': {
+						'background-image': 'none'
+					}
+				},
+				{
+					variants: ['focus', 'hover']
+				}
+			);
+		})
+	],
 	purge: {
 		content: ['./public/index.html', './src/**/*.html', './src/**/*.vue'],
 		options: {
