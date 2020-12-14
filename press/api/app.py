@@ -242,5 +242,3 @@ def deploy(name):
 	)[0]
 	release_doc = frappe.get_doc("App Release", release)
 	release_doc.deploy()
-
-
