@@ -17,16 +17,40 @@ class TestGFS(unittest.TestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
+	def _sql_to_python(self, weekday: int) -> int:
+		"""
+		Convert weekday from sql standard to python.
+
+		sql:    1-7 => sun-sat
+		python: 0-6 => mon-sun
+		"""
+		return (weekday + 5) % 7
+
+	def _is_weekly_backup_day(self, day: date) -> bool:
+		return day.weekday() == self._sql_to_python(GFS.weekly_backup_day)
+
+	def _is_monthly_backup_day(self, day: date) -> bool:
+		return day.day == GFS.monthly_backup_day
+
+	def _is_yearly_backup_day(self, day: date) -> bool:
+		return day.timetuple().tm_yday == GFS.yearly_backup_day
+
 	def test_only_daily_backups_longer_than_limit_deleted(self):
 		"""Ensure only daily backups kept for longer than limit are deleted."""
 		site = create_test_site("testsubdomain")
 		oldest_allowed_daily = date.today() - timedelta(days=GFS.daily)
-		older_than_oldest_allowed_daily = oldest_allowed_daily - timedelta(days=1)
-		newer_than_oldest_allowed_daily = oldest_allowed_daily + timedelta(days=1)
+		older = oldest_allowed_daily - timedelta(days=1)
+		newer = oldest_allowed_daily + timedelta(days=1)
+		while (
+			self._is_weekly_backup_day(older)
+			or self._is_monthly_backup_day(older)
+			or self._is_yearly_backup_day(older)
+		):
+			older -= timedelta(days=1)
 
 		limit_backup = create_test_site_backup(site.name, oldest_allowed_daily)
-		older_backup = create_test_site_backup(site.name, older_than_oldest_allowed_daily)
-		newer_backup = create_test_site_backup(site.name, newer_than_oldest_allowed_daily)
+		older_backup = create_test_site_backup(site.name, older)
+		newer_backup = create_test_site_backup(site.name, newer)
 
 		gfs = GFS()
 		gfs.expire_offsite_backups(site)
