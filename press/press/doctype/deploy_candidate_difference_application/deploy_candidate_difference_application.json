@@ -2,67 +2,24 @@
  "actions": [],
  "creation": "2020-04-06 13:23:22.345482",
  "doctype": "DocType",
- "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
   "application",
-  "changed",
-  "column_break_3",
   "deploy_type",
-  "github_diff_url",
-  "section_break_4",
+  "difference",
+  "column_break_3",
   "source_release",
-  "source_hash",
-  "column_break_7",
-  "destination_release",
-  "destination_hash",
-  "section_break_10",
-  "files"
+  "destination_release"
  ],
  "fields": [
   {
-   "fieldname": "source_hash",
-   "fieldtype": "Data",
-   "label": "Source Hash",
-   "read_only": 1
-  },
-  {
-   "fieldname": "section_break_4",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "github_diff_url",
-   "fieldtype": "Data",
-   "label": "GitHub Diff URL",
-   "read_only": 1
-  },
-  {
-   "fieldname": "destination_hash",
-   "fieldtype": "Data",
-   "label": "Destination Hash",
-   "read_only": 1
-  },
-  {
+   "default": "Pull",
    "fieldname": "deploy_type",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Deploy Type",
-   "options": "\nPull\nMigrate",
+   "options": "Pull\nMigrate",
    "read_only": 1
-  },
-  {
-   "fieldname": "column_break_7",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "files",
-   "fieldtype": "Code",
-   "label": "Files",
-   "read_only": 1
-  },
-  {
-   "fieldname": "section_break_10",
-   "fieldtype": "Section Break"
   },
   {
    "fieldname": "column_break_3",
@@ -71,6 +28,7 @@
   {
    "fieldname": "source_release",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Source Release",
    "options": "Application Release",
    "read_only": 1
@@ -78,30 +36,33 @@
   {
    "fieldname": "destination_release",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Destination Release",
    "options": "Application Release",
    "read_only": 1
   },
   {
-   "default": "0",
-   "fieldname": "changed",
-   "fieldtype": "Check",
-   "in_list_view": 1,
-   "label": "Changed"
-  },
-  {
    "fieldname": "application",
    "fieldtype": "Link",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Application",
    "options": "Application",
    "read_only": 1,
    "reqd": 1
+  },
+  {
+   "fieldname": "difference",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Difference",
+   "options": "Application Release Difference",
+   "read_only": 1
   }
  ],
  "istable": 1,
  "links": [],
- "modified": "2020-12-14 20:07:20.640427",
+ "modified": "2020-12-15 17:55:40.526391",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate Difference Application",

@@ -16,6 +16,7 @@ from press.utils import log_error
 class ApplicationRelease(Document):
 	def after_insert(self):
 		self.create_deploy_candidates()
+		self.create_release_differences()
 
 	def create_deploy_candidates(self):
 		candidates = frappe.get_all(
@@ -27,7 +28,9 @@ class ApplicationRelease(Document):
 			return
 
 		for group_app in frappe.get_all(
-			"Release Group Application", fields=["parent"], filters={"app": self.application}
+			"Release Group Application",
+			fields=["parent"],
+			filters={"application": self.application},
 		):
 			group = frappe.get_doc("Release Group", group_app.parent)
 			group.create_deploy_candidate()
@@ -95,3 +98,20 @@ class ApplicationRelease(Document):
 	def on_trash(self):
 		if self.clone_directory and os.path.exists(self.clone_directory):
 			shutil.rmtree(self.clone_directory)
+
+	def create_release_differences(self):
+		releases = frappe.get_all(
+			"Application Release",
+			{"application": self.application, "source": self.source, "name": ("!=", self.name)},
+		)
+		for release in releases:
+			difference = frappe.get_doc(
+				{
+					"doctype": "Application Release Difference",
+					"application": self.application,
+					"source": self.source,
+					"source_release": release.name,
+					"destination_release": self.name,
+				}
+			)
+			difference.insert()

@@ -1,0 +1,144 @@
+{
+ "actions": [],
+ "creation": "2020-12-14 20:15:05.386124",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "application",
+  "deploy_type",
+  "column_break_2",
+  "source",
+  "section_break_4",
+  "source_release",
+  "source_hash",
+  "column_break_7",
+  "destination_release",
+  "destination_hash",
+  "section_break_10",
+  "github_diff_url",
+  "files"
+ ],
+ "fields": [
+  {
+   "fieldname": "application",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Application",
+   "options": "Application",
+   "reqd": 1,
+   "search_index": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Application Source",
+   "options": "Application Source",
+   "reqd": 1,
+   "search_index": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "section_break_4",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "source_release",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Source Release",
+   "options": "Application Release",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fetch_from": "source_release.hash",
+   "fieldname": "source_hash",
+   "fieldtype": "Data",
+   "label": "Source Hash",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_7",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "destination_release",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Destination Release",
+   "options": "Application Release",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fetch_from": "destination_release.hash",
+   "fieldname": "destination_hash",
+   "fieldtype": "Data",
+   "label": "Destination Hash",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_10",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "github_diff_url",
+   "fieldtype": "Code",
+   "label": "GitHub Diff URL",
+   "read_only": 1
+  },
+  {
+   "default": "Pull",
+   "fieldname": "deploy_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Deploy Type",
+   "options": "Pull\nMigrate",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "files",
+   "fieldtype": "Code",
+   "label": "Files",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2020-12-15 17:56:31.444674",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Application Release Difference",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "title_field": "application",
+ "track_changes": 1
+}
