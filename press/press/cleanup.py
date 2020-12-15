@@ -139,7 +139,7 @@ class FIFO(BackupRotationScheme):
 class GFS(BackupRotationScheme):
 	"""Represents Grandfather-father-son backup rotation scheme."""
 
-	daily = 7  # no. of previous daily backups to keep
+	daily = 7  # no. of daily backups to keep
 	weekly_backup_day = 1  # days of the week (1-7) (SUN-SAT)
 	monthly_backup_day = 1  # days of the month (1-31)
 	yearly_backup_day = 1  # days of the year (1-366)

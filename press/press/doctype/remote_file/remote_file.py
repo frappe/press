@@ -6,19 +6,19 @@ from __future__ import unicode_literals
 
 import json
 
+import frappe
 import requests
 from boto3 import client, resource
-
-import frappe
 from frappe.model.document import Document
 from frappe.utils.password import get_decrypted_password
 
 
 def get_remote_key(file):
-	from press.utils import get_current_team
 	from hashlib import sha1
 	from os.path import join
 	from time import time
+
+	from press.utils import get_current_team
 
 	team = sha1(get_current_team().encode()).hexdigest()
 	time = str(time()).replace(".", "_")
@@ -91,9 +91,10 @@ def poll_file_statuses():
 
 
 def delete_remote_backup_objects(remote_files):
-	"""Delete specified objects identified by keys in the backups bucket"""
-	from press.utils import chunk
+	"""Delete specified objects identified by keys in the backups bucket."""
 	from boto3 import resource
+
+	from press.utils import chunk
 
 	press_settings = frappe.get_single("Press Settings")
 	s3 = resource(
@@ -120,7 +121,8 @@ def delete_remote_backup_objects(remote_files):
 	)
 
 	for objects in chunk([{"Key": x} for x in remote_files_keys], 1000):
-		s3.delete_objects(Delete={"Objects": objects})
+		response = s3.delete_objects(Delete={"Objects": objects})
+		frappe.get_doc(doctype="S3 Bucket Delete Objects Log", response=response).insert()
 
 	frappe.db.set_value(
 		"Remote File", {"name": ("in", remote_files)}, "status", "Unavailable",
