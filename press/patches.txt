@@ -28,12 +28,6 @@ press.patches.v0_0_1.make_default_site_domain
 press.patches.v0_0_1.update_site_config_doc
 press.patches.v0_0_1.create_certificate_authorities
 press.patches.v0_0_1.rename_columns_in_tls_certificate
-press.patches.v0_0_1.frappe_app_to_application
-press.patches.v0_0_1.rename_release_group_frappe_app
-press.patches.v0_0_1.rename_apps_to_applications_in_release_group
-press.patches.v0_0_1.rename_app_release_to_application_release
-press.patches.v0_0_1.rename_deploy_candidate_app_release_to_deploy_candidate_application_release
-press.patches.v0_0_1.rename_apps_to_applications_in_deploy_candidate
 press.patches.v0_0_1.site_usage_convert_history
 press.patches.v0_0_1.set_document_type_in_plan
 # Billing Refactor 3
@@ -46,3 +40,6 @@ press.patches.v0_0_1.set_document_type_in_plan
 # press.patches.v0_0_1.update_backups_availability
 # Update transaction details in paid invoices
 # press.press.doctype.invoice.patches.set_transaction_details
+# App Subsystem Refactor
+press.patches.v0_0_1.rename_frappe_app_to_app
+press.patches.v0_0_1.rename_release_group_frappe_app_to_release_group_app
