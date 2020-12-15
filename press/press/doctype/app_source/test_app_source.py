@@ -57,5 +57,5 @@ def create_test_frappe_app(name=frappe.mock("name")) -> FrappeApp:
 		).insert(ignore_if_duplicate=True)
 
 
-class TestApplicationSource(unittest.TestCase):
+class TestAppSource(unittest.TestCase):
 	pass

@@ -11,7 +11,7 @@ from press.utils import log_error
 import requests
 
 
-class ApplicationSource(Document):
+class AppSource(Document):
 	def after_insert(self):
 		self.create_release()
 
@@ -29,16 +29,16 @@ class ApplicationSource(Document):
 	def validate_source_signature(self):
 		# Don't allow multiple sources with same signature
 		if frappe.db.exists(
-			"Application Source",
+			"App Source",
 			{
 				"name": ("!=", self.name),
-				"application": self.application,
+				"app": self.app,
 				"repository_url": self.repository_url,
 				"branch": self.branch,
 			},
 		):
 			frappe.throw(
-				f"Alread added {(self.repository_url, self.branch)} for {self.application}",
+				f"Alread added {(self.repository_url, self.branch)} for {self.app}",
 				frappe.ValidationError,
 			)
 
@@ -77,16 +77,16 @@ class ApplicationSource(Document):
 			).json()
 			hash = branch["commit"]["sha"]
 			if not frappe.db.exists(
-				"Application Release",
-				{"application": self.application, "source": self.name, "hash": hash},
+				"App Release",
+				{"app": self.app, "source": self.name, "hash": hash},
 			):
 				is_first_release = (
-					0  # frappe.db.count("Application Release", {"app": self.name}) == 0
+					0  # frappe.db.count("App Release", {"app": self.name}) == 0
 				)
 				frappe.get_doc(
 					{
-						"doctype": "Application Release",
-						"application": self.application,
+						"doctype": "App Release",
+						"app": self.app,
 						"source": self.name,
 						"hash": hash,
 						"message": branch["commit"]["commit"]["message"],
