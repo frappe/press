@@ -6,5 +6,6 @@ from __future__ import unicode_literals
 # import frappe
 import unittest
 
+
 class TestS3BucketDeleteObjectsLog(unittest.TestCase):
 	pass
