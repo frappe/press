@@ -260,3 +260,28 @@ class TestFIFO(unittest.TestCase):
 		self.assertEqual(
 			len(mock_del_remote_backup_objects.call_args.args[0]), 3 * 2,
 		)
+
+
+class TestBackupRotationScheme(unittest.TestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+
+	@patch("press.press.cleanup.GFS")
+	@patch("press.press.cleanup.FIFO")
+	def test_press_setting_of_rotation_scheme_works(self, mock_FIFO, mock_GFS):
+		"""Ensure setting rotation scheme in press settings affect rotation scheme used."""
+		press_settings = frappe.get_single("Press Settings")
+		press_settings.backup_rotation_scheme = "FIFO"
+		press_settings.save()
+		cleanup_backups()
+		mock_FIFO.assert_called_once()
+		mock_GFS.assert_not_called()
+
+		mock_FIFO.reset_mock()
+		mock_GFS.reset_mock()
+
+		press_settings.backup_rotation_scheme = "Grandfather-father-son"
+		press_settings.save()
+		cleanup_backups()
+		mock_GFS.assert_called_once()
+		mock_FIFO.assert_not_called()
