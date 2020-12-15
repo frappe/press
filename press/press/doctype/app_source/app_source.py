@@ -77,12 +77,9 @@ class AppSource(Document):
 			).json()
 			hash = branch["commit"]["sha"]
 			if not frappe.db.exists(
-				"App Release",
-				{"app": self.app, "source": self.name, "hash": hash},
+				"App Release", {"app": self.app, "source": self.name, "hash": hash},
 			):
-				is_first_release = (
-					0  # frappe.db.count("App Release", {"app": self.name}) == 0
-				)
+				is_first_release = 0  # frappe.db.count("App Release", {"app": self.name}) == 0
 				frappe.get_doc(
 					{
 						"doctype": "App Release",

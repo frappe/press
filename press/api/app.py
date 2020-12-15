@@ -68,9 +68,7 @@ def get(name):
 	app = frappe.get_doc("App", name)
 	team = get_current_team()
 	sources = frappe.get_all(
-		"App Source",
-		filters={"app": name},
-		or_filters={"team": team, "public": True},
+		"App Source", filters={"app": name}, or_filters={"team": team, "public": True},
 	)
 	versions = frappe.get_all(
 		"App Source",
@@ -114,10 +112,7 @@ def deploys(name):
 		frappe_app = frappe.get_all(
 			"App",
 			fields=["name", "scrubbed", "branch"],
-			filters={
-				"name": ("in", [row.app for row in group_doc.apps]),
-				"frappe": True,
-			},
+			filters={"name": ("in", [row.app for row in group_doc.apps]), "frappe": True},
 		)[0]
 		groups[group.name] = frappe_app
 

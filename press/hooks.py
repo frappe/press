@@ -110,7 +110,7 @@ scheduler_events = {
 		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
 		"press.press.doctype.invoice.invoice.submit_invoices",
 	],
-	"hourly": ["press.press.doctype.application.application.poll_new_releases"],
+	"hourly": ["press.press.doctype.app.app.poll_new_releases"],
 	"hourly_long": [
 		"press.press.doctype.bench.bench.archive_obsolete_benches",
 		"press.press.doctype.bench.bench.scale_workers",

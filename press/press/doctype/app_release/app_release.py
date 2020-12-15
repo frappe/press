@@ -28,9 +28,7 @@ class AppRelease(Document):
 			return
 
 		for group_app in frappe.get_all(
-			"Release Group App",
-			fields=["parent"],
-			filters={"app": self.app},
+			"Release Group App", fields=["parent"], filters={"app": self.app},
 		):
 			group = frappe.get_doc("Release Group", group_app.parent)
 			group.create_deploy_candidate()
@@ -55,9 +53,7 @@ class AppRelease(Document):
 				shlex.split(command), stderr=subprocess.STDOUT, cwd=self.clone_directory
 			).decode()
 		except Exception as e:
-			log_error(
-				"App Release Clone Exception", command=command, output=e.output.decode()
-			)
+			log_error("App Release Clone Exception", command=command, output=e.output.decode())
 			raise e
 
 	def _prepare_clone_directory(self):
@@ -101,8 +97,7 @@ class AppRelease(Document):
 
 	def create_release_differences(self):
 		releases = frappe.get_all(
-			"App Release",
-			{"app": self.app, "source": self.source, "name": ("!=", self.name)},
+			"App Release", {"app": self.app, "source": self.source, "name": ("!=", self.name)},
 		)
 		for release in releases:
 			difference = frappe.get_doc(

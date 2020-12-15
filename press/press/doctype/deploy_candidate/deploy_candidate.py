@@ -91,16 +91,10 @@ class DeployCandidate(Document):
 
 		clone_steps, app_install_steps = [], []
 		for app in self.apps:
-			app_title = frappe.db.get_value(
-				"App", app.app, "title"
-			)
-			clone_steps.append(
-				("clone", app.app, "Clone Repositories", app_title)
-			)
+			app_title = frappe.db.get_value("App", app.app, "title")
+			clone_steps.append(("clone", app.app, "Clone Repositories", app_title))
 
-			app_install_steps.append(
-				("apps", app.app, "Install Apps", app_title)
-			)
+			app_install_steps.append(("apps", app.app, "Install Apps", app_title))
 
 		steps = clone_steps + preparation_steps + app_install_steps
 
@@ -140,8 +134,7 @@ class DeployCandidate(Document):
 				"App Release", app.release, ["clone_directory", "cloned"]
 			)
 			step = find(
-				self.build_steps,
-				lambda x: x.stage_slug == "clone" and x.step_slug == app.app,
+				self.build_steps, lambda x: x.stage_slug == "clone" and x.step_slug == app.app,
 			)
 			step.command = f"git clone {app.app}"
 
@@ -357,7 +350,7 @@ def ansi_escape(text):
 @frappe.whitelist()
 def desk_app(doctype, txt, searchfield, start, page_len, filters):
 	return frappe.get_all(
-		"Release Group Frappe App",
+		"Release Group App",
 		filters={"parent": filters["release_group"]},
 		fields=["app"],
 		as_list=True,

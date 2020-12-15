@@ -49,9 +49,7 @@ class DeployCandidateDifference(Document):
 		source_candidate = frappe.get_doc("Deploy Candidate", self.source)
 		destination_candidate = frappe.get_doc("Deploy Candidate", self.destination)
 		for destination in destination_candidate.apps:
-			source = find(
-				source_candidate.apps, lambda x: x.app == destination.app
-			)
+			source = find(source_candidate.apps, lambda x: x.app == destination.app)
 			if not source or source.release == destination.release:
 				continue
 			difference = frappe.get_all(
