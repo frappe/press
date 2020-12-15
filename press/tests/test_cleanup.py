@@ -220,9 +220,9 @@ class TestFIFO(unittest.TestCase):
 		fifo = FIFO()
 		fifo.offsite_keep_count = 2
 		site = create_test_site("testsubdomain")
-		older = create_test_site_backup(site.name, date.today())
-		old = create_test_site_backup(site.name, date.today())
-		new = create_test_site_backup(site.name, date.today())
+		older = create_test_site_backup(site.name, date.today() - timedelta(2))
+		old = create_test_site_backup(site.name, date.today() - timedelta(1))
+		new = create_test_site_backup(site.name)
 
 		fifo.expire_offsite_backups(site)
 
@@ -250,10 +250,10 @@ class TestFIFO(unittest.TestCase):
 		fifo = FIFO()
 		fifo.offsite_keep_count = 1
 
-		create_test_site_backup(site.name, date.today())
-		create_test_site_backup(site.name, date.today())
-		create_test_site_backup(site2.name, date.today())
-		create_test_site_backup(site2.name, date.today())
+		create_test_site_backup(site.name, date.today() - timedelta(1))
+		create_test_site_backup(site.name)
+		create_test_site_backup(site2.name, date.today() - timedelta(1))
+		create_test_site_backup(site2.name)
 
 		fifo.cleanup()
 		mock_del_remote_backup_objects.assert_called_once()
