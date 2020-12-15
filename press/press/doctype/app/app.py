@@ -47,9 +47,7 @@ class App(Document):
 
 
 def new_app(name, title):
-	app = frappe.get_doc(
-		{"doctype": "App", "name": name, "title": title}
-	).insert()
+	app = frappe.get_doc({"doctype": "App", "name": name, "title": title}).insert()
 	return app
 
 

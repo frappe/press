@@ -12,7 +12,7 @@ from press.press.doctype.app.app import new_app
 from press.press.doctype.release_group.release_group import ReleaseGroup
 
 
-def create_test_release_group(frappe_app: str) -> ReleaseGroup:
+def create_test_release_group(app: str) -> ReleaseGroup:
 	"""Create Release Group doc."""
 	name = frappe.mock("name")
 
@@ -20,7 +20,7 @@ def create_test_release_group(frappe_app: str) -> ReleaseGroup:
 		{
 			"doctype": "Release Group",
 			"name": f"Test Release Group{name}",
-			"apps": [{"app": frappe_app}],
+			"apps": [{"app": app}],
 			"enabled": True,
 		}
 	).insert(ignore_if_duplicate=True)

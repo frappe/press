@@ -51,8 +51,7 @@ class ReleaseGroup(Document):
 			source = frappe.get_doc("App Source", app.source)
 			if all(row.version != self.version for row in source.versions):
 				frappe.throw(
-					f"App Source {app.source} version is not {self.version}",
-					frappe.ValidationError,
+					f"App Source {app.source} version is not {self.version}", frappe.ValidationError,
 				)
 
 	def create_deploy_candidate(self):
@@ -69,17 +68,13 @@ class ReleaseGroup(Document):
 			)
 			if release:
 				release = release[0]
-				releases.append(
-					{"release": release.name, "app": release.app, "hash": release.hash}
-				)
+				releases.append({"release": release.name, "app": release.app, "hash": release.hash})
 		frappe.get_doc(
 			{"doctype": "Deploy Candidate", "group": self.name, "apps": releases}
 		).insert()
 
 	def add_app(self, source):
-		self.append(
-			"apps", {"source": source.name, "app": source.app}
-		)
+		self.append("apps", {"source": source.name, "app": source.app})
 		self.save()
 
 

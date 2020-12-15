@@ -30,7 +30,7 @@ class MarketplaceApp(WebsiteGenerator):
 			frappe_app.save()
 
 	def get_frappe_app(self):
-		return frappe.get_doc("Frappe App", {"scrubbed": self.name, "public": 1})
+		return frappe.get_doc("App", {"scrubbed": self.name, "public": 1})
 
 	def fetch_readme(self):
 		frappe_app = self.get_frappe_app()
@@ -69,7 +69,7 @@ class MarketplaceApp(WebsiteGenerator):
 			context.category = frappe.get_doc("Marketplace App Category", self.category)
 
 		apps = frappe.db.get_all(
-			"Frappe App",
+			"App",
 			filters={"scrubbed": self.name, "public": True, "enabled": True},
 			pluck="name",
 		)
@@ -77,7 +77,7 @@ class MarketplaceApp(WebsiteGenerator):
 			"Release Group",
 			filters=[
 				["Release Group", "enabled", "=", 1],
-				["Release Group Frappe App", "app", "in", apps],
+				["Release Group App", "app", "in", apps],
 			],
 			fields=["name"],
 		)
@@ -85,7 +85,7 @@ class MarketplaceApp(WebsiteGenerator):
 		for group in groups:
 			group_doc = frappe.get_doc("Release Group", group.name)
 			frappe_app = frappe.get_all(
-				"Frappe App",
+				"App",
 				fields=["name", "scrubbed", "branch", "url"],
 				filters={"name": ("in", [row.app for row in group_doc.apps]), "frappe": True},
 				limit=1,

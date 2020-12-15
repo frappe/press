@@ -10,12 +10,12 @@ import frappe
 
 from press.utils import log_error
 
-from press.press.doctype.frappe_app.frappe_app import FrappeApp
+from press.press.doctype.app.app import App
 
 
-def create_test_frappe_app(name=frappe.mock("name")) -> FrappeApp:
+def create_test_frappe_app(name=frappe.mock("name")) -> App:
 	"""
-	Create test Frappe App doc.
+	Create test App doc.
 
 	Github API call will not be made when creating the doc.
 	"""
@@ -40,16 +40,16 @@ def create_test_frappe_app(name=frappe.mock("name")) -> FrappeApp:
 		except Exception:
 			log_error("App Release Creation Error", app=self.name)
 
-	with patch.object(FrappeApp, "create_app_release", new=create_app_release):
+	with patch.object(App, "create_app_release", new=create_app_release):
 		return frappe.get_doc(
 			{
-				"doctype": "Frappe App",
+				"doctype": "App",
 				"url": frappe.mock("url"),
 				"scrubbed": "frappe",
 				"branch": "master",
 				"repo_owner": "frappe",
 				"repo": "frappe",
-				"name": f"Test Frappe App {name}",
+				"name": f"Test App {name}",
 				"skip_review": True,
 				"enable_auto_deploy": True,
 				"frappe": True,

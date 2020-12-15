@@ -13,9 +13,7 @@ from press.press.doctype.release_group.release_group import new_release_group
 @frappe.whitelist()
 def new(bench):
 	team = get_current_team()
-	apps = [
-		{"app": app["name"], "source": app["source"]} for app in bench["apps"]
-	]
+	apps = [{"app": app["name"], "source": app["source"]} for app in bench["apps"]]
 	group = new_release_group(bench["title"], bench["version"], apps, team)
 	return group.name
 
