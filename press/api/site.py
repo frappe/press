@@ -47,7 +47,7 @@ def protected(doctype):
 
 @frappe.whitelist()
 def new(site):
-	team = get_current_team()
+	team = get_current_team(get_doc=True)
 	bench = frappe.get_all(
 		"Bench",
 		fields=["name", "server"],
@@ -62,7 +62,8 @@ def new(site):
 			"subdomain": site["name"],
 			"bench": bench,
 			"apps": [{"app": app} for app in site["apps"]],
-			"team": team,
+			"team": team.name,
+			"free": team.free_acount,
 			"subscription_plan": plan,
 			"remote_config_file": site["files"].get("config"),
 			"remote_database_file": site["files"].get("database"),
