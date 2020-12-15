@@ -204,10 +204,9 @@ class TestGFS(unittest.TestCase):
 		gfs = GFS()
 		gfs.cleanup()
 		mock_del_remote_backup_objects.assert_called_once()
+		args, kwargs = mock_del_remote_backup_objects.call_args
 		self.assertEqual(
-			len(mock_del_remote_backup_objects.call_args.args[0]),
-			3 * 2,
-			msg=mock_del_remote_backup_objects.call_args.args,
+			len(args[0]), 3 * 2, msg=mock_del_remote_backup_objects.call_args,
 		)
 
 
@@ -259,10 +258,9 @@ class TestFIFO(unittest.TestCase):
 
 		fifo.cleanup()
 		mock_del_remote_backup_objects.assert_called_once()
+		args, kwargs = mock_del_remote_backup_objects.call_args
 		self.assertEqual(
-			len(mock_del_remote_backup_objects.call_args.args[0]),
-			3 * 2,
-			msg=mock_del_remote_backup_objects.call_args.args,
+			len(args[0]), 3 * 2, msg=mock_del_remote_backup_objects.call_args,
 		)
 
 
