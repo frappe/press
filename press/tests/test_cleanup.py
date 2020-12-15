@@ -6,6 +6,9 @@ import frappe
 
 from press.press.cleanup import FIFO, GFS, cleanup_backups
 from press.press.doctype.agent_job.agent_job import AgentJob
+from press.press.doctype.press_settings.test_press_settings import (
+	create_test_press_settings,
+)
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.site_backup.test_site_backup import create_test_site_backup
 
@@ -258,7 +261,7 @@ class TestFIFO(unittest.TestCase):
 
 		fifo.cleanup()
 		mock_del_remote_backup_objects.assert_called_once()
-		args, kwargs = mock_del_remote_backup_objects.call_args
+		args = mock_del_remote_backup_objects.call_args[0]
 		self.assertEqual(
 			len(args[0]), 3 * 2, msg=mock_del_remote_backup_objects.call_args,
 		)
@@ -272,7 +275,7 @@ class TestBackupRotationScheme(unittest.TestCase):
 	@patch("press.press.cleanup.FIFO")
 	def test_press_setting_of_rotation_scheme_works(self, mock_FIFO, mock_GFS):
 		"""Ensure setting rotation scheme in press settings affect rotation scheme used."""
-		press_settings = frappe.get_single("Press Settings")
+		press_settings = create_test_press_settings()
 		press_settings.backup_rotation_scheme = "FIFO"
 		press_settings.save()
 		cleanup_backups()
