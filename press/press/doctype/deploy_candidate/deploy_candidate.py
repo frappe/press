@@ -92,7 +92,7 @@ class DeployCandidate(Document):
 		clone_steps, app_install_steps = [], []
 		for app in self.apps:
 			app_title = frappe.db.get_value(
-				"Application", app.app, "title"
+				"App", app.app, "title"
 			)
 			clone_steps.append(
 				("clone", app.app, "Clone Repositories", app_title)
@@ -137,7 +137,7 @@ class DeployCandidate(Document):
 
 		for app in self.apps:
 			source, cloned = frappe.db.get_value(
-				"Application Release", app.release, ["clone_directory", "cloned"]
+				"App Release", app.release, ["clone_directory", "cloned"]
 			)
 			step = find(
 				self.build_steps,
@@ -155,7 +155,7 @@ class DeployCandidate(Document):
 				self.save()
 				frappe.db.commit()
 
-				release = frappe.get_doc("Application Release", app.release)
+				release = frappe.get_doc("App Release", app.release)
 				release._clone()
 				source = release.clone_directory
 

@@ -7,7 +7,7 @@ import frappe
 from press.utils import get_current_team
 from press.api.site import protected
 from frappe.core.utils import find
-from press.press.doctype.application.application import new_application
+from press.press.doctype.app.app import new_app
 
 
 @frappe.whitelist()
@@ -15,10 +15,10 @@ def new(app):
 	name = app["name"]
 	team = get_current_team()
 
-	if frappe.db.exists("Application", name):
-		app_doc = frappe.get_doc("Application", name)
+	if frappe.db.exists("App", name):
+		app_doc = frappe.get_doc("App", name)
 	else:
-		app_doc = new_application(name, app["title"])
+		app_doc = new_app(name, app["title"])
 	group = frappe.get_doc("Release Group", app["group"])
 
 	source = app_doc.add_source(
@@ -29,15 +29,15 @@ def new(app):
 		app["github_installation_id"],
 	)
 
-	group.add_application(source)
+	group.add_app(source)
 	return group.name
 
 
 def update_available(name):
 	releases = frappe.get_all(
-		"Application Release",
+		"App Release",
 		fields=["deployable"],
-		filters={"application": name, "status": "Approved"},
+		filters={"app": name, "status": "Approved"},
 		order_by="creation desc",
 		limit=1,
 	)
@@ -48,9 +48,9 @@ def update_available(name):
 
 def app_status(name):
 	status = frappe.get_all(
-		"Application Release",
+		"App Release",
 		fields=["status"],
-		filters={"application": name},
+		filters={"app": name},
 		order_by="creation desc",
 		limit=1,
 	)[0].status
@@ -63,19 +63,19 @@ def app_status(name):
 
 
 @frappe.whitelist()
-@protected("Application")
+@protected("App")
 def get(name):
-	app = frappe.get_doc("Application", name)
+	app = frappe.get_doc("App", name)
 	team = get_current_team()
 	sources = frappe.get_all(
-		"Application Source",
-		filters={"application": name},
+		"App Source",
+		filters={"app": name},
 		or_filters={"team": team, "public": True},
 	)
 	versions = frappe.get_all(
-		"Application Source",
+		"App Source",
 		fields=["version as name"],
-		filters={"application": name},
+		filters={"app": name},
 		or_filters={"team": team, "public": True},
 		group_by="version",
 	)
@@ -93,18 +93,18 @@ def get(name):
 
 
 @frappe.whitelist()
-@protected("Application")
+@protected("App")
 def deploys(name):
 	releases = frappe.get_all(
-		"Application Release",
-		filters={"application": name, "deployable": True, "status": "Approved"},
+		"App Release",
+		filters={"app": name, "deployable": True, "status": "Approved"},
 		fields=["name", "hash", "creation", "message", "app"],
 		order_by="creation desc",
 		limit=10,
 	)
 
 	group_names = frappe.get_all(
-		"Release Group Application", fields=["parent as name"], filters={"app": name}
+		"Release Group App", fields=["parent as name"], filters={"app": name}
 	)
 	groups = {}
 	for group in group_names:
@@ -112,16 +112,16 @@ def deploys(name):
 		if not group_doc.enabled:
 			continue
 		frappe_app = frappe.get_all(
-			"Application",
+			"App",
 			fields=["name", "scrubbed", "branch"],
 			filters={
-				"name": ("in", [row.app for row in group_doc.applications]),
+				"name": ("in", [row.app for row in group_doc.apps]),
 				"frappe": True,
 			},
 		)[0]
 		groups[group.name] = frappe_app
 
-	app = frappe.get_doc("Application", name)
+	app = frappe.get_doc("App", name)
 	tags = frappe.get_all(
 		"App Tag",
 		filters={"repository": app.repo, "repository_owner": app.repo_owner},
@@ -161,17 +161,17 @@ def sources(name):
 		source.name , source.repository_url, source.repository, source.repository_owner, source.branch,
 		version.number as version
 	FROM
-		`tabApplication Source` AS source
+		`tabApp Source` AS source
 	LEFT JOIN
 		`tabFrappe Version` AS version
 	ON
 		source.version = version.name
 	WHERE
 		(source.team = %(team)s OR source.public = 1) AND
-		source.application = %(application)s
+		source.app = %(app)s
 	ORDER BY version.creation, source.creation
 	""",
-		{"team": team, "application": name},
+		{"team": team, "app": name},
 		as_dict=True,
 	)
 	sources = []
@@ -193,11 +193,11 @@ def sources(name):
 
 
 @frappe.whitelist()
-@protected("Application")
+@protected("App")
 def releases(name):
 	releases = frappe.get_all(
-		"Application Release",
-		filters={"application": name},
+		"App Release",
+		filters={"app": name},
 		fields=["name", "hash", "creation", "message", "author"],
 		order_by="creation desc",
 		limit=10,
@@ -212,16 +212,16 @@ def all():
 	apps = frappe.db.sql(
 		"""
 	SELECT
-		source.application as name, application.title, application.modified
+		source.app as name, app.title, app.modified
 	FROM
-		`tabApplication Source` AS source
+		`tabApp Source` AS source
 	LEFT JOIN
-		`tabApplication` AS application
+		`tabApp` AS app
 	ON
-		source.application = application.name
+		source.app = app.name
 	WHERE
 		(source.team = %(team)s OR source.public = 1)
-	GROUP BY source.application
+	GROUP BY source.app
 	ORDER BY source.creation DESC
 	""",
 		{"team": team},
@@ -233,13 +233,13 @@ def all():
 
 
 @frappe.whitelist()
-@protected("Application")
+@protected("App")
 def deploy(name):
 	release = frappe.get_all(
-		"Application Release",
-		{"application": name, "deployable": False, "status": "Approved"},
+		"App Release",
+		{"app": name, "deployable": False, "status": "Approved"},
 		order_by="creation desc",
 		limit=1,
 	)[0]
-	release_doc = frappe.get_doc("Application Release", release)
+	release_doc = frappe.get_doc("App Release", release)
 	release_doc.deploy()

@@ -46,12 +46,12 @@ class ReleaseGroup(Document):
 			apps.add(app_name)
 
 	def validate_app_versions(self):
-		# Application Source should be compatible with Release Group's version
+		# App Source should be compatible with Release Group's version
 		for app in self.apps:
-			source = frappe.get_doc("Application Source", app.source)
+			source = frappe.get_doc("App Source", app.source)
 			if all(row.version != self.version for row in source.versions):
 				frappe.throw(
-					f"Application Source {app.source} version is not {self.version}",
+					f"App Source {app.source} version is not {self.version}",
 					frappe.ValidationError,
 				)
 

@@ -61,7 +61,7 @@ class GitHubWebhookLog(Document):
 	def create_app_release(self, payload):
 		try:
 			app = frappe.get_value(
-				"Application",
+				"App",
 				{
 					"branch": self.branch,
 					"repo": self.repository,
@@ -74,7 +74,7 @@ class GitHubWebhookLog(Document):
 				commit = payload.head_commit
 				release = frappe.get_doc(
 					{
-						"doctype": "Application Release",
+						"doctype": "App Release",
 						"app": app.name,
 						"hash": commit["id"],
 						"message": commit["message"],

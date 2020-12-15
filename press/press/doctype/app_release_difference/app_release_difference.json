@@ -110,7 +110,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "App",
-   "options": "Application",
+   "options": "App",
    "reqd": 1,
    "search_index": 1,
    "set_only_once": 1
@@ -118,7 +118,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2020-12-15 22:36:11.269544",
+ "modified": "2020-12-15 22:41:53.799995",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Release Difference",

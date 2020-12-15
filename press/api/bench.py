@@ -13,10 +13,10 @@ from press.press.doctype.release_group.release_group import new_release_group
 @frappe.whitelist()
 def new(bench):
 	team = get_current_team()
-	applications = [
-		{"application": app["name"], "source": app["source"]} for app in bench["applications"]
+	apps = [
+		{"app": app["name"], "source": app["source"]} for app in bench["apps"]
 	]
-	group = new_release_group(bench["title"], bench["version"], applications, team)
+	group = new_release_group(bench["title"], bench["version"], apps, team)
 	return group.name
 
 
@@ -61,12 +61,12 @@ def options():
 		"""
 	SELECT
 		version.name as version,
-		source.name as source, source.application, source.repository_url, source.repository, source.repository_owner, source.branch,
-		application.title, application.frappe
+		source.name as source, source.app, source.repository_url, source.repository, source.repository_owner, source.branch,
+		app.title, app.frappe
 	FROM
-		`tabApplication Source Version` AS source_version
+		`tabApp Source Version` AS source_version
 	LEFT JOIN
-		`tabApplication Source` AS source
+		`tabApp Source` AS source
 	ON
 		source.name = source_version.parent
 	LEFT JOIN
@@ -74,13 +74,13 @@ def options():
 	ON
 		source_version.version = version.name
 	LEFT JOIN
-		`tabApplication` AS application
+		`tabApp` AS app
 	ON
-		source.application = application.name
+		source.app = app.name
 	WHERE
 		version.public = 1 AND
 		(source.team = %(team)s OR source.public = 1)
-	ORDER BY application.creation, source.creation
+	ORDER BY app.creation, source.creation
 	""",
 		{"team": team},
 		as_dict=True,
@@ -91,11 +91,11 @@ def options():
 	for version in version_list:
 		version_dict = {"name": version}
 		version_rows = find_all(rows, lambda x: x.version == version)
-		application_list = frappe.utils.unique([row.application for row in version_rows])
-		for application in application_list:
-			application_rows = find_all(version_rows, lambda x: x.application == application)
-			application_dict = {"name": application, "title": application_rows[0].title}
-			for source in application_rows:
+		app_list = frappe.utils.unique([row.app for row in version_rows])
+		for app in app_list:
+			app_rows = find_all(version_rows, lambda x: x.app == app)
+			app_dict = {"name": app, "title": app_rows[0].title}
+			for source in app_rows:
 				source_dict = {
 					"name": source.source,
 					"repository_url": source.repository_url,
@@ -103,9 +103,9 @@ def options():
 					"repository": source.repository,
 					"repository_owner": source.repository_owner,
 				}
-				application_dict.setdefault("sources", []).append(source_dict)
-			application_dict["source"] = application_dict["sources"][0]
-			version_dict.setdefault("applications", []).append(application_dict)
+				app_dict.setdefault("sources", []).append(source_dict)
+			app_dict["source"] = app_dict["sources"][0]
+			version_dict.setdefault("apps", []).append(app_dict)
 		versions.append(version_dict)
 	options = {
 		"versions": versions,
@@ -115,25 +115,25 @@ def options():
 
 @frappe.whitelist()
 @protected("Release Group")
-def applications(name):
+def apps(name):
 	group = frappe.get_doc("Release Group", name)
-	applications = []
-	for app in group.applications:
-		source = frappe.get_doc("Application Source", app.source)
-		application = frappe.get_doc("Application", app.application)
+	apps = []
+	for app in group.apps:
+		source = frappe.get_doc("App Source", app.source)
+		app = frappe.get_doc("App", app.app)
 
-		applications.append(
+		apps.append(
 			{
-				"name": application.name,
-				"frappe": application.frappe,
-				"title": application.title,
+				"name": app.name,
+				"frappe": app.frappe,
+				"title": app.title,
 				"branch": source.branch,
 				"repository_url": source.repository_url,
 				"repository": source.repository,
 				"repository_owner": source.repository_owner,
 			}
 		)
-	return applications
+	return apps
 
 
 @frappe.whitelist()
@@ -161,7 +161,7 @@ def candidate(name):
 		"build_start": candidate.build_start,
 		"build_end": candidate.build_end,
 		"build_duration": candidate.build_duration,
-		"applications": candidate.applications,
+		"apps": candidate.apps,
 	}
 
 

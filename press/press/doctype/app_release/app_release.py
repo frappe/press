@@ -28,9 +28,9 @@ class AppRelease(Document):
 			return
 
 		for group_app in frappe.get_all(
-			"Release Group Application",
+			"Release Group App",
 			fields=["parent"],
-			filters={"application": self.app},
+			filters={"app": self.app},
 		):
 			group = frappe.get_doc("Release Group", group_app.parent)
 			group.create_deploy_candidate()
@@ -80,7 +80,7 @@ class AppRelease(Document):
 		self.code_server_url = code_server_url
 
 	def _clone_repo(self):
-		source = frappe.get_doc("Application Source", self.source)
+		source = frappe.get_doc("App Source", self.source)
 		if source.github_installation_id:
 			token = get_access_token(source.github_installation_id)
 			url = f"https://x-access-token:{token}@github.com/{source.repository_owner}/{source.repository}"

@@ -17,8 +17,8 @@
   },
   {
    "hidden": 0,
-   "label": "Applications",
-   "links": " [\n\t{\"type\": \"doctype\", \"name\": \"Application\"},\n\t{\"type\": \"doctype\", \"name\": \"Release Group\"},\n\t{\"type\": \"doctype\", \"name\": \"Application Release\"},\n\t{\"type\": \"doctype\", \"name\": \"App Tag\"},\n\t{\"type\": \"doctype\", \"name\": \"GitHub Webhook Log\"}\n]"
+   "label": "Apps",
+   "links": " [\n\t{\"type\": \"doctype\", \"name\": \"App\"},\n\t{\"type\": \"doctype\", \"name\": \"Release Group\"},\n\t{\"type\": \"doctype\", \"name\": \"App Release\"},\n\t{\"type\": \"doctype\", \"name\": \"App Tag\"},\n\t{\"type\": \"doctype\", \"name\": \"GitHub Webhook Log\"}\n]"
   },
   {
    "hidden": 0,
@@ -53,7 +53,7 @@
  "idx": 0,
  "is_standard": 1,
  "label": "Press",
- "modified": "2020-11-20 10:25:14.908558",
+ "modified": "2020-12-15 22:44:30.047305",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press",

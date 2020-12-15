@@ -5,12 +5,12 @@ from __future__ import unicode_literals
 
 import frappe
 import unittest
-from press.press.doctype.application.application import new_application
+from press.press.doctype.app.app import new_app
 
 
-class TestApplication(unittest.TestCase):
-	def test_create_frappe_application(self):
-		app = new_application("frappe", "Frappe Framework")
+class TestApp(unittest.TestCase):
+	def test_create_frappe_app(self):
+		app = new_app("frappe", "Frappe Framework")
 		self.assertEqual(app.frappe, True)
 
 		source = app.add_source(
@@ -22,8 +22,8 @@ class TestApplication(unittest.TestCase):
 		self.assertEqual(len(source.versions), 1)
 		self.assertEqual(source.versions[0].version, "Version 12")
 
-	def test_create_non_frappe_application(self):
-		app = new_application("erpnext", "ERPNext")
+	def test_create_non_frappe_app(self):
+		app = new_app("erpnext", "ERPNext")
 		self.assertEqual(app.frappe, False)
 
 		source = app.add_source(
@@ -36,7 +36,7 @@ class TestApplication(unittest.TestCase):
 		self.assertEqual(source.versions[0].version, "Version 12")
 
 	def test_create_app_with_multiple_sources(self):
-		app = new_application("frappe", "Frappe Framework")
+		app = new_app("frappe", "Frappe Framework")
 
 		source_1 = app.add_source(
 			"Version 12", "https://github.com/frappe/frappe", "version-12"
@@ -53,7 +53,7 @@ class TestApplication(unittest.TestCase):
 		self.assertEqual(source_2.versions[0].version, "Version 13")
 
 	def test_create_app_with_one_source_multiple_versions(self):
-		app = new_application("erpnext_documentation", "ERPNext Documentation")
+		app = new_app("erpnext_documentation", "ERPNext Documentation")
 
 		source_1 = app.add_source(
 			"Version 12", "https://github.com/frappe/erpnext_documentation", "master"
@@ -72,7 +72,7 @@ class TestApplication(unittest.TestCase):
 		self.assertEqual(source_2.versions[1].version, "Version 13")
 
 	def test_create_app_add_second_source_after_insert(self):
-		app = new_application("frappe", "Frappe Framework")
+		app = new_app("frappe", "Frappe Framework")
 		source_1 = app.add_source(
 			"Version 12", "https://github.com/frappe/frappe", "version-12"
 		)
@@ -92,7 +92,7 @@ class TestApplication(unittest.TestCase):
 		self.assertEqual(source_2.versions[0].version, "Version 13")
 
 	def test_create_app_with_similar_sources_failure(self):
-		app = new_application("frappe", "Frappe Framework")
+		app = new_app("frappe", "Frappe Framework")
 		source = app.add_source(
 			"Version 12", "https://github.com/frappe/frappe", "version-12"
 		)
@@ -113,9 +113,9 @@ class TestApplication(unittest.TestCase):
 			frappe.delete_doc("Deploy Candidate", group.name)
 		for group in frappe.get_all("Release Group"):
 			frappe.delete_doc("Release Group", group.name)
-		for app in frappe.get_all("Application Release"):
-			frappe.delete_doc("Application Release", app.name)
-		for app in frappe.get_all("Application Source"):
-			frappe.delete_doc("Application Source", app.name)
-		for app in frappe.get_all("Application"):
-			frappe.delete_doc("Application", app.name)
+		for app in frappe.get_all("App Release"):
+			frappe.delete_doc("App Release", app.name)
+		for app in frappe.get_all("App Source"):
+			frappe.delete_doc("App Source", app.name)
+		for app in frappe.get_all("App"):
+			frappe.delete_doc("App", app.name)

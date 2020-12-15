@@ -73,7 +73,7 @@ class Agent:
 		)
 
 	def restore_site(self, site):
-		apps = [frappe.db.get_value("Application", app.app, "scrubbed") for app in site.apps]
+		apps = [frappe.db.get_value("App", app.app, "scrubbed") for app in site.apps]
 		data = {
 			"apps": apps,
 			"mariadb_root_password": get_decrypted_password(
@@ -94,7 +94,7 @@ class Agent:
 		)
 
 	def new_site_from_backup(self, site):
-		apps = [frappe.db.get_value("Application", app.app, "scrubbed") for app in site.apps]
+		apps = [frappe.db.get_value("App", app.app, "scrubbed") for app in site.apps]
 
 		def sanitized_site_config(site):
 			sanitized_config = {}
@@ -134,7 +134,7 @@ class Agent:
 		)
 
 	def install_app_site(self, site, app):
-		data = {"name": frappe.db.get_value("Application", app, "scrubbed")}
+		data = {"name": frappe.db.get_value("App", app, "scrubbed")}
 		return self.create_agent_job(
 			"Install App on Site",
 			f"benches/{site.bench}/sites/{site.name}/apps",
@@ -144,7 +144,7 @@ class Agent:
 		)
 
 	def uninstall_app_site(self, site, app):
-		scrubbed = frappe.db.get_value("Application", app, "scrubbed")
+		scrubbed = frappe.db.get_value("App", app, "scrubbed")
 		return self.create_agent_job(
 			"Uninstall App from Site",
 			f"benches/{site.bench}/sites/{site.name}/apps/{scrubbed}",

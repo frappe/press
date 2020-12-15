@@ -8,7 +8,7 @@ import frappe
 from frappe.model.document import Document
 
 
-class Application(Document):
+class App(Document):
 	def add_source(
 		self,
 		version,
@@ -19,19 +19,19 @@ class Application(Document):
 		public=False,
 	):
 		existing_source = frappe.get_all(
-			"Application Source",
-			{"application": self.name, "repository_url": repository_url, "branch": branch},
+			"App Source",
+			{"app": self.name, "repository_url": repository_url, "branch": branch},
 			limit=1,
 		)
 		if existing_source:
-			source = frappe.get_doc("Application Source", existing_source[0].name)
+			source = frappe.get_doc("App Source", existing_source[0].name)
 			source.add_version(version)
 		else:
-			# Add new Application Source
+			# Add new App Source
 			source = frappe.get_doc(
 				{
-					"doctype": "Application Source",
-					"application": self.name,
+					"doctype": "App Source",
+					"app": self.name,
 					"versions": [{"version": version}],
 					"repository_url": repository_url,
 					"branch": branch,
@@ -46,14 +46,14 @@ class Application(Document):
 		self.frappe = self.name == "frappe"
 
 
-def new_application(name, title):
-	application = frappe.get_doc(
-		{"doctype": "Application", "name": name, "title": title}
+def new_app(name, title):
+	app = frappe.get_doc(
+		{"doctype": "App", "name": name, "title": title}
 	).insert()
-	return application
+	return app
 
 
 def poll_new_releases():
-	for app in frappe.get_all("Application"):
-		app = frappe.get_doc("Application", app.name)
+	for app in frappe.get_all("App"):
+		app = frappe.get_doc("App", app.name)
 		app.create_app_release()

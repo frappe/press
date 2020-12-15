@@ -26,9 +26,9 @@ def get_data():
 			"label": _("Setup"),
 			"items": [
 				{"type": "doctype", "name": "Plan"},
-				{"type": "doctype", "name": "Application"},
+				{"type": "doctype", "name": "App"},
 				{"type": "doctype", "name": "Release Group"},
-				{"type": "doctype", "name": "Application Release"},
+				{"type": "doctype", "name": "App Release"},
 				{"type": "doctype", "name": "Deploy Candidate"},
 			],
 		},
