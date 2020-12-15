@@ -1,0 +1,49 @@
+[
+  {
+    "group_title": "Getting Started",
+    "group_items": [
+      {
+        "title": "Overview",
+        "route": "/internal/getting-started/overview"
+      }
+    ]
+  },
+  {
+    "group_title": "Local Infrastructure",
+    "group_items": [
+      {
+        "title": "Overview",
+        "route": "/internal/infrastructure/overview"
+      }
+    ]
+  },
+  {
+    "group_title": "Server",
+    "group_items": [
+      {
+        "title": "Server Setup",
+        "route": "/internal/servers/server-setup"
+      },
+      {
+        "title": "Proxy Server Setup",
+        "route": "/internal/servers/proxy-server-setup"
+      },
+      {
+        "title": "Database Server Setup",
+        "route": "/internal/servers/database-server-setup"
+      },
+      {
+        "title": "Convert Server into a Database Server",
+        "route": "/internal/servers/convert-server-to-database-server"
+      },
+      {
+        "title": "Database Replication",
+        "route": "/internal/servers/database-replication"
+      },
+      {
+        "title": "Database Failover",
+        "route": "/internal/servers/database-failover"
+      }
+    ]
+  }
+]

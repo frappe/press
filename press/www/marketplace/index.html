@@ -1,0 +1,57 @@
+{% extends "templates/marketplace/base.html" %}
+
+{%- block body -%}
+<div class="px-4 sm:px-8">
+	<div class="pt-20 pb-12 text-center">
+		<h1 class="text-6xl font-bold text-gray-900">
+			One Click Apps for your Frappe Sites
+		</h1>
+		<p class="max-w-lg mx-auto mt-4 text-gray-600">
+			Extend functionality of your Frappe sites by finding an app that suits you
+			and install it in a few steps.
+		</p>
+		<!-- <div class="relative inline-flex items-center justify-center mt-6">
+			<svg
+				class="absolute top-0 left-0 w-4 h-4 mt-1.5 ml-2 text-gray-600"
+				xmlns="http://www.w3.org/2000/svg"
+				fill="none"
+				viewBox="0 0 24 24"
+				stroke="currentColor">
+				<path
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					stroke-width="2"
+					d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+			</svg>
+			<input
+				class="pl-8 placeholder-gray-500 form-input w-96 focus:bg-white focus:shadow-outline-gray"
+				type="search"
+				placeholder="Search for apps" />
+		</div> -->
+		<!-- <div class="mt-4">
+			<a class="text-base text-blue-500" href="/dashboard">
+				Submit your app →
+			</a>
+		</div> -->
+	</div>
+
+	<div class="pb-36">
+		<h2 class="text-4xl font-bold sr-only">Apps</h2>
+		<div class="grid grid-cols-1 gap-8 mt-8 md:grid-cols-3 lg:grid-cols-4 sm:grid-cols-2">
+			{%- for app in apps -%}
+			<a
+				href="/{{ app.route }}"
+				class="block p-6 border border-gray-100 rounded-lg shadow cursor-pointer hover:shadow-lg focus:outline-none focus:border-blue-500 focus:shadow-outline">
+				<img
+					src="{{ app.image }}"
+					class="w-10 h-10 border border-gray-200 rounded-full" />
+				<h3 class="mt-4 font-semibold">{{ app.title }}</h3>
+				<p class="mt-2 text-base text-gray-600 line-clamp">
+					{{ app.description }}
+				</p>
+			</a>
+			{%- endfor -%}
+		</div>
+	</div>
+</div>
+{%- endblock -%}

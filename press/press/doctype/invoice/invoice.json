@@ -12,30 +12,38 @@
   "currency",
   "column_break_4",
   "status",
-  "due_date",
+  "type",
   "period_start",
   "period_end",
-  "month",
-  "year",
+  "due_date",
   "amended_from",
   "section_break_8",
-  "site_usage",
   "items",
   "section_break_10",
   "starting_balance",
   "ending_balance",
-  "column_break_15",
-  "total",
-  "amount_due",
-  "amount_paid",
-  "section_break_15",
-  "payment_section",
   "payment_date",
   "payment_attempt_count",
   "payment_attempt_date",
+  "column_break_15",
+  "total",
+  "applied_credits",
+  "amount_due",
+  "amount_paid",
+  "section_break_15",
+  "credit_allocations",
   "stripe_billing_section",
   "stripe_invoice_id",
-  "stripe_invoice_url"
+  "stripe_payment_intent_id",
+  "stripe_invoice_url",
+  "frappe_invoice",
+  "invoice_pdf",
+  "column_break_32",
+  "transaction_amount",
+  "transaction_net",
+  "transaction_fee",
+  "exchange_rate",
+  "transaction_fee_details"
  ],
  "fields": [
   {
@@ -71,10 +79,11 @@
    "options": "Invoice Item"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "Draft\nInvoice Created\nUnpaid\nPaid"
+   "options": "Draft\nInvoice Created\nUnpaid\nPaid\nRefunded"
   },
   {
    "fieldname": "total",
@@ -90,6 +99,7 @@
    "options": "currency"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "amount_paid",
    "fieldtype": "Currency",
    "label": "Amount Paid",
@@ -119,7 +129,8 @@
   },
   {
    "fieldname": "section_break_15",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "hide_border": 1
   },
   {
    "fieldname": "stripe_billing_section",
@@ -132,6 +143,7 @@
    "label": "Stripe Invoice ID"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "stripe_invoice_url",
    "fieldtype": "Data",
    "label": "Stripe Invoice URL"
@@ -147,12 +159,14 @@
   {
    "fieldname": "starting_balance",
    "fieldtype": "Currency",
+   "hidden": 1,
    "label": "Starting Balance",
    "options": "currency"
   },
   {
    "fieldname": "ending_balance",
    "fieldtype": "Currency",
+   "hidden": 1,
    "label": "Ending Balance",
    "options": "currency"
   },
@@ -171,47 +185,113 @@
    "label": "Period End"
   },
   {
-   "fieldname": "site_usage",
-   "fieldtype": "Table",
-   "label": "Site Usage",
-   "options": "Invoice Site Usage"
-  },
-  {
-   "fieldname": "payment_section",
-   "fieldtype": "Section Break",
-   "label": "Payment"
-  },
-  {
+   "allow_on_submit": 1,
    "fieldname": "payment_date",
    "fieldtype": "Date",
    "label": "Payment Date"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "payment_attempt_count",
    "fieldtype": "Int",
    "label": "Payment Attempt Count"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "payment_attempt_date",
    "fieldtype": "Date",
    "label": "Payment Attempt Date"
   },
   {
-   "fieldname": "month",
-   "fieldtype": "Int",
-   "in_standard_filter": 1,
-   "label": "Month"
+   "fieldname": "applied_credits",
+   "fieldtype": "Currency",
+   "label": "Applied Credits",
+   "options": "currency"
   },
   {
-   "fieldname": "year",
-   "fieldtype": "Int",
-   "in_standard_filter": 1,
-   "label": "Year"
+   "allow_on_submit": 1,
+   "fieldname": "frappe_invoice",
+   "fieldtype": "Data",
+   "label": "Frappe Invoice"
+  },
+  {
+   "fieldname": "credit_allocations",
+   "fieldtype": "Table",
+   "label": "Credit Allocations",
+   "options": "Invoice Credit Allocation"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "invoice_pdf",
+   "fieldtype": "Attach",
+   "label": "Invoice PDF"
+  },
+  {
+   "fieldname": "column_break_32",
+   "fieldtype": "Column Break"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "transaction_amount",
+   "fieldtype": "Currency",
+   "label": "Transaction Amount",
+   "options": "INR"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "transaction_net",
+   "fieldtype": "Currency",
+   "label": "Transaction Net",
+   "options": "INR"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "transaction_fee",
+   "fieldtype": "Currency",
+   "label": "Transaction Fee",
+   "options": "INR"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "exchange_rate",
+   "fieldtype": "Float",
+   "label": "Exchange Rate"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "transaction_fee_details",
+   "fieldtype": "Table",
+   "label": "Transaction Fee Details",
+   "options": "Invoice Transaction Fee"
+  },
+  {
+   "default": "Subscription",
+   "fieldname": "type",
+   "fieldtype": "Select",
+   "label": "Type",
+   "options": "Subscription\nPrepaid Credits"
+  },
+  {
+   "depends_on": "eval:doc.type == 'Prepaid Credits'",
+   "fieldname": "stripe_payment_intent_id",
+   "fieldtype": "Data",
+   "label": "Stripe Payment Intent ID"
   }
  ],
  "is_submittable": 1,
- "links": [],
- "modified": "2020-08-03 20:00:11.538719",
+ "links": [
+  {
+   "group": "Documents",
+   "link_doctype": "Usage Record",
+   "link_fieldname": "invoice"
+  },
+  {
+   "group": "Documents",
+   "link_doctype": "Balance Transaction",
+   "link_fieldname": "invoice"
+  }
+ ],
+ "modified": "2020-12-08 16:49:27.892205",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",
@@ -248,7 +328,6 @@
    "write": 1
   }
  ],
- "quick_entry": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
  "track_changes": 1

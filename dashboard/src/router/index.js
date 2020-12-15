@@ -4,6 +4,11 @@ import account from '../controllers/account';
 import auth from '../controllers/auth';
 import Home from '../views/Home.vue';
 
+import appRoutes from './app';
+import siteRoutes from './site';
+import accountRoute from './account';
+import authRoutes from './auth';
+
 Vue.use(VueRouter);
 
 const routes = [
@@ -11,49 +16,6 @@ const routes = [
 		path: '/',
 		name: 'Home',
 		component: Home
-	},
-	{
-		path: '/login/:forgot?',
-		name: 'Login',
-		component: () =>
-			import(/* webpackChunkName: "login" */ '../views/Login.vue'),
-		meta: {
-			isLoginPage: true
-		},
-		props: true
-	},
-	{
-		path: '/signup',
-		name: 'Signup',
-		component: () =>
-			import(/* webpackChunkName: "signup" */ '../views/Signup.vue'),
-		meta: {
-			isLoginPage: true
-		}
-	},
-	{
-		path: '/setup-account/:requestKey/:joinRequest?',
-		name: 'Setup Account',
-		component: () =>
-			import(
-				/* webpackChunkName: "setup-account" */ '../views/SetupAccount.vue'
-			),
-		props: true,
-		meta: {
-			isLoginPage: true
-		}
-	},
-	{
-		path: '/reset-password/:requestKey',
-		name: 'Reset Password',
-		component: () =>
-			import(
-				/* webpackChunkName: "reset-password" */ '../views/ResetPassword.vue'
-			),
-		props: true,
-		meta: {
-			isLoginPage: true
-		}
 	},
 	{
 		path: '/welcome',
@@ -159,115 +121,10 @@ const routes = [
 		component: () =>
 			import(/* webpackChunkName: "support" */ '../views/Support.vue')
 	},
-	{
-		path: '/sites/:siteName',
-		name: 'Site',
-		component: () => import(/* webpackChunkName: "site" */ '../views/Site.vue'),
-		props: true,
-		children: [
-			{
-				path: 'general',
-				component: () =>
-					import(/* webpackChunkName: "site" */ '../views/SiteGeneral.vue')
-			},
-			{
-				path: 'installing',
-				component: () =>
-					import(/* webpackChunkName: "site" */ '../views/SiteInstalling.vue')
-			},
-			{
-				path: 'plan',
-				component: () =>
-					import(/* webpackChunkName: "site" */ '../views/SitePlan.vue')
-			},
-			{
-				path: 'apps',
-				component: () =>
-					import(/* webpackChunkName: "site" */ '../views/SiteApps.vue')
-			},
-			{
-				path: 'domains',
-				component: () =>
-					import(/* webpackChunkName: "site" */ '../views/SiteDomains.vue')
-			},
-			{
-				path: 'analytics',
-				component: () =>
-					import(/* webpackChunkName: "site" */ '../views/SiteAnalytics.vue')
-			},
-			{
-				path: 'backups',
-				component: () =>
-					import(/* webpackChunkName: "site" */ '../views/SiteBackups.vue')
-			},
-			{
-				path: 'database',
-				component: () =>
-					import(/* webpackChunkName: "site" */ '../views/SiteDatabase.vue')
-			},
-			{
-				path: 'site-config',
-				component: () =>
-					import(/* webpackChunkName: "site" */ '../views/SiteConfig.vue')
-			},
-			{
-				path: 'console',
-				component: () =>
-					import(/* webpackChunkName: "site" */ '../views/SiteConsole.vue')
-			},
-			{
-				path: 'activity',
-				component: () =>
-					import(/* webpackChunkName: "site" */ '../views/SiteActivity.vue'),
-				props: true
-			},
-			{
-				path: 'jobs/:jobName?',
-				component: () =>
-					import(/* webpackChunkName: "site" */ '../views/SiteJobs.vue'),
-				props: true
-			},
-			{
-				path: 'logs/:logName?',
-				component: () =>
-					import(/* webpackChunkName: "site" */ '../views/SiteLogs.vue'),
-				props: true
-			},
-			{
-				path: 'request-logs',
-				component: () =>
-					import(/* webpackChunkName: "site" */ '../views/SiteRequestLogs.vue'),
-				props: true
-			}
-		]
-	},
-	{
-		path: '/account',
-		name: 'Account',
-		component: () =>
-			import(/* webpackChunkName: "account" */ '../views/Account.vue'),
-		children: [
-			{
-				path: 'profile',
-				component: () =>
-					import(
-						/* webpackChunkName: "account" */ '../views/AccountProfile.vue'
-					)
-			},
-			{
-				path: 'team',
-				component: () =>
-					import(/* webpackChunkName: "account" */ '../views/AccountTeam.vue')
-			},
-			{
-				path: 'billing',
-				component: () =>
-					import(
-						/* webpackChunkName: "account" */ '../views/AccountBilling.vue'
-					)
-			}
-		]
-	}
+	...authRoutes,
+	...appRoutes,
+	...siteRoutes,
+	accountRoute
 ];
 
 const router = new VueRouter({

@@ -90,13 +90,24 @@ class Bench(Document):
 
 	def sync_info(self):
 		"""Initiates a Job to update Site Usage, site.config.encryption_key and timezone details for all sites on Bench."""
+		try:
+			sites = frappe.get_all(
+				"Site", filters={"bench": self.name, "status": ("!=", "Archived")}, pluck="name"
+			)
+			last_synced_time = round(
+				frappe.get_all(
+					"Site Usage",
+					filters=[["site", "in", sites]],
+					limit_page_length=1,
+					order_by="creation desc",
+					pluck="creation",
+				)[0].timestamp()
+			)
+		except IndexError:
+			last_synced_time = None
+
 		agent = Agent(self.server)
-		agent.get_sites_info(self)
-
-
-def process_bench_sync_info_job_update(job):
-	if job.status == "Success":
-		data = json.loads(job.data)
+		data = agent.get_sites_info(self, since=last_synced_time)
 		for site, info in data.items():
 			frappe.get_doc("Site", site).sync_info(info)
 

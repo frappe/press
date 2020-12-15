@@ -41,7 +41,7 @@ def get_jwt_token():
 	key = frappe.db.get_single_value("Press Settings", "github_app_private_key")
 	app_id = frappe.db.get_single_value("Press Settings", "github_app_id")
 	now = datetime.now()
-	expiry = now + timedelta(minutes=10)
+	expiry = now + timedelta(minutes=9)
 	payload = {"iat": int(now.timestamp()), "exp": int(expiry.timestamp()), "iss": app_id}
 	token = jwt.encode(payload, key.encode(), algorithm="RS256")
 	return token.decode()

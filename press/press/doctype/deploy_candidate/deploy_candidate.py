@@ -352,3 +352,13 @@ def ansi_escape(text):
 	# https://stackoverflow.com/questions/14693701/how-can-i-remove-the-ansi-escape-sequences-from-a-string-in-python
 	ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 	return ansi_escape.sub("", text)
+
+
+@frappe.whitelist()
+def desk_app(doctype, txt, searchfield, start, page_len, filters):
+	return frappe.get_all(
+		"Release Group Frappe App",
+		filters={"parent": filters["release_group"]},
+		fields=["app"],
+		as_list=True,
+	)

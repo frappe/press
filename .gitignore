@@ -145,3 +145,11 @@ backbone/packer/builds/
 backbone/packer/scratch/
 backbone/packer/images/
 backbone/packer/cloud-init.img
+
+# marketplace
+press/public/css/marketplace.css
+press/public/js/marketplace.*
+
+# Vim
+.vim
+.nvimrc

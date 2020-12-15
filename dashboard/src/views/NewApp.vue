@@ -49,7 +49,7 @@
 									:disabled="connectedRepository"
 								/>
 							</div>
-							<div class="text-base text-gray-700 mt-4">
+							<div class="mt-4 text-base text-gray-700">
 								Not this account?
 								<a :href="options.installation_url" class="underline"
 									>Add another organization.</a
@@ -60,20 +60,20 @@
 									<div
 										v-for="repo in selectedInstallation.repos"
 										:key="repo.id"
-										class="text-base flex py-1"
+										class="flex py-1 text-base"
 									>
 										<div :href="repo.url" class="flex-1">
 											{{ selectedInstallation.login }} /
 											<span class="font-semibold">{{ repo.name }}</span>
 										</div>
 										<Button
-											class=" text-right"
+											class="text-right "
 											@click="connectedRepository = repo"
 										>
 											Connect
 										</Button>
 									</div>
-									<p class="text-base text-gray-700 mt-4">
+									<p class="mt-4 text-base text-gray-700">
 										Don't see your repository here?
 										<a :href="selectedInstallation.url" class="underline"
 											>Configure the Frappe Cloud app on GitHub.</a
@@ -84,7 +84,7 @@
 									<label class="text-lg text-red-600">
 										No repositories found
 									</label>
-									<p class="text-base text-gray-700 mt-4">
+									<p class="mt-4 text-base text-gray-700">
 										This can happen when Frappe Cloud doesn’t have access to the
 										repositories in your account.
 										<a :href="selectedInstallation.url" class="underline"
@@ -94,7 +94,7 @@
 								</div>
 							</div>
 							<div v-if="connectedRepository">
-								<div class="mt-4 flex">
+								<div class="flex mt-4">
 									<div class="flex-1 text-lg">
 										Connected To
 										<a :href="connectedRepository.url" class="underline"
@@ -300,7 +300,7 @@ export default {
 				},
 				auto: true,
 				onSuccess(options) {
-					this.selectedInstallationId = options.installations[0].id;
+					this.selectedInstallationId = options.installations[0]?.id;
 				}
 			};
 		},

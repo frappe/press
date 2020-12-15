@@ -4,14 +4,15 @@
 
 from __future__ import unicode_literals
 
-import frappe
-
 import json
+import os
+from datetime import date
+from typing import List
+
+import frappe
 import requests
 from frappe.utils.password import get_decrypted_password
 from press.utils import log_error, sanitize_config
-import os
-from datetime import date
 
 
 class Agent:
@@ -52,7 +53,7 @@ class Agent:
 		}
 
 		return self.create_agent_job(
-			"New Site", f"benches/{site.bench}/sites", data, bench=site.bench, site=site.name
+			"New Site", f"benches/{site.bench}/sites", data, bench=site.bench, site=site.name,
 		)
 
 	def reinstall_site(self, site):
@@ -276,7 +277,23 @@ class Agent:
 			},
 		}
 		return self.create_agent_job(
-			"Add Host to Proxy", "proxy/hosts", data, host=domain.domain, site=domain.site
+			"Add Host to Proxy", "proxy/hosts", data, host=domain.domain, site=domain.site,
+		)
+
+	def setup_redirects(self, site: str, domains: List[str], target: str):
+		data = {"domains": domains, "target": target}
+		return self.create_agent_job(
+			"Setup Redirects on Hosts", "proxy/hosts/redirects", data, site=site,
+		)
+
+	def remove_redirects(self, site: str, domains: List[str]):
+		data = {"domains": domains}
+		return self.create_agent_job(
+			"Remove Redirects on Hosts",
+			"proxy/hosts/redirects",
+			data,
+			method="DELETE",
+			site=site,
 		)
 
 	def remove_host(self, domain):
@@ -424,19 +441,8 @@ class Agent:
 	def get_site_info(self, site):
 		return self.get(f"benches/{site.bench}/sites/{site.name}/info")["data"]
 
-	def get_sites_info(self, bench):
-		data = {
-			"mariadb_root_password": get_decrypted_password(
-				"Server", self.server, "mariadb_root_password"
-			)
-		}
-		return self.create_agent_job(
-			"Fetch Sites Info",
-			f"benches/{bench.name}/info",
-			bench=bench.name,
-			data=data,
-			method="GET",
-		)
+	def get_sites_info(self, bench, since):
+		return self.post(f"benches/{bench.name}/info", data={"since": since})
 
 	def get_jobs_status(self, ids):
 		status = self.get(f"jobs/{','.join(map(str, ids))}")

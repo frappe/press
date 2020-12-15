@@ -164,7 +164,7 @@ class LetsEncrypt(BaseCA):
 		command = (
 			f"certbot certonly {plugin} {staging} --logs-dir"
 			f" {self.directory}/logs --work-dir {self.directory} --config-dir"
-			f" {self.directory} --agree-tos --eff-email --email"
+			f" {self.directory} --force-renewal --agree-tos --eff-email --email"
 			f" {self.eff_registration_email} --staple-ocsp"
 			f" --rsa-key-size {self.rsa_key_size} --cert-name {self.domain} --domains"
 			f" {self.domain}"

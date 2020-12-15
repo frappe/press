@@ -2,7 +2,7 @@
 	<div class="space-y-10">
 		<Section
 			title="Site Config"
-			description="Add key value pairs to your site's site_config.json"
+			description="Add and update key value pairs to your site's site_config.json"
 		>
 			<div class="flex space-x-4">
 				<SectionCard class="flex-shrink-0 px-6 py-6 space-y-4 md:w-2/3">
@@ -60,8 +60,11 @@
 
 					<div v-else>
 						<Form v-bind="readOnlyFormProps" class="pointer-events-none" />
-						<div class="mt-4">
+						<div class="mt-4" v-if="['Active', 'Broken'].includes(site.status)">
 							<Button @click="editMode = !editMode">Edit Config</Button>
+						</div>
+						<div class="mt-4" v-else>
+							<ErrorMessage :error="NotAllowed"/>
 						</div>
 					</div>
 				</SectionCard>
@@ -228,6 +231,9 @@ export default {
 				fields,
 				values
 			};
+		},
+		NotAllowed() {
+			return `Not Permitted in ${ this.site.status } mode`
 		}
 	}
 };

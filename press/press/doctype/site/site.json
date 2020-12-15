@@ -140,16 +140,6 @@
    "options": "Team"
   },
   {
-   "fieldname": "plan",
-   "fieldtype": "Link",
-   "hide_days": 1,
-   "hide_seconds": 1,
-   "in_standard_filter": 1,
-   "label": "Plan",
-   "options": "Plan",
-   "reqd": 1
-  },
-  {
    "fieldname": "deploy_section",
    "fieldtype": "Section Break",
    "hide_days": 1,
@@ -278,10 +268,20 @@
    "label": "Applications",
    "options": "Site Application",
    "reqd": 1
+  },
+  {
+   "fieldname": "plan",
+   "fieldtype": "Link",
+   "hide_days": 1,
+   "hide_seconds": 1,
+   "in_standard_filter": 1,
+   "label": "Plan",
+   "options": "Plan",
+   "reqd": 1
   }
  ],
  "links": [],
- "modified": "2020-12-11 19:49:48.018581",
+ "modified": "2020-12-15 19:07:34.047255",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

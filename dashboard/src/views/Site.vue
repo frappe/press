@@ -35,6 +35,24 @@
 				and complete the setup wizard on your site. Analytics will be collected
 				only after setup is complete.
 			</Alert>
+			<Alert class="mb-4" v-if="limitExceeded">
+				Your site has exceeded the allowed Usage for your Plan. Check out
+				<a
+					:href="`#/sites/${site.name}/plan`"
+					class="border-b border-orange-700 cursor-pointer"
+					>Plans</a
+				>
+				for more details.
+			</Alert>
+			<Alert class="mb-4" v-else-if="closeToLimits">
+				Your site has exceeded 80% of the allowed Usage for your Plan. Check out
+				<a
+					:href="`#/sites/${site.name}/plan`"
+					class="border-b border-orange-700 cursor-pointer"
+					>Plans</a
+				>
+				for more details.
+			</Alert>
 		</div>
 		<div class="px-4 sm:px-8" v-if="site">
 			<Tabs class="pb-32" :tabs="tabs">
@@ -139,6 +157,14 @@ export default {
 		site() {
 			return this.$resources.site.data;
 		},
+		closeToLimits() {
+			return Object.values(this.$resources.site.data.usage).some(
+				x => 1.0 >= x && x > 0.8
+			);
+		},
+		limitExceeded() {
+			return Object.values(this.$resources.site.data.usage).some(x => x > 1.0);
+		},
 		tabs() {
 			let tabRoute = subRoute => `/sites/${this.siteName}/${subRoute}`;
 			let tabs = [
@@ -174,14 +200,24 @@ export default {
 				Inactive: [
 					'General',
 					'Plan',
+					'Backups',
 					'Site Config',
 					'Activity',
 					'Jobs',
 					'Site Logs'
 				],
-				Pending: ['General', 'Jobs'],
-				Broken: ['General', 'Plan', 'Backups', 'Activity', 'Jobs', 'Site Logs'],
-				Suspended: ['General', 'Activity', 'Jobs']
+				Pending: ['General', 'Jobs', 'Site Logs'],
+				Broken: [
+					'General',
+					'Plan',
+					'Site Config',
+					'Backups',
+					'Database',
+					'Activity',
+					'Jobs',
+					'Site Logs'
+				],
+				Suspended: ['General', 'Activity', 'Backups', 'Jobs', 'Plan']
 			};
 			if (this.site) {
 				let tabsToShow = tabsByStatus[this.site.status];

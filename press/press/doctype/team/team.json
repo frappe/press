@@ -1,181 +1,235 @@
 {
- "actions": [],
- "autoname": "Prompt",
- "creation": "2020-02-27 16:19:51.675782",
- "doctype": "DocType",
- "editable_grid": 1,
- "engine": "InnoDB",
- "field_order": [
-  "enabled",
-  "user",
-  "erpnext_partner",
-  "free_account",
-  "section_break_6",
-  "team_members",
-  "subscription_details_section",
-  "stripe_customer_id",
-  "country",
-  "currency",
-  "default_payment_method",
-  "billing_address",
-  "free_credits_allocated",
-  "column_break_12",
-  "address_html",
-  "github_section",
-  "github_access_token",
-  "onboarding_section",
-  "onboarding"
- ],
- "fields": [
-  {
-   "fieldname": "user",
-   "fieldtype": "Link",
-   "label": "User",
-   "options": "User",
-   "unique": 1
-  },
-  {
-   "fieldname": "team_members",
-   "fieldtype": "Table",
-   "label": "Team Members",
-   "options": "Team Member"
-  },
-  {
-   "default": "0",
-   "fieldname": "enabled",
-   "fieldtype": "Check",
-   "label": "Enabled"
-  },
-  {
-   "fieldname": "section_break_6",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "subscription_details_section",
-   "fieldtype": "Section Break",
-   "label": "Subscription Details"
-  },
-  {
-   "fieldname": "stripe_customer_id",
-   "fieldtype": "Data",
-   "label": "Stripe Customer ID",
-   "read_only": 1
-  },
-  {
-   "fieldname": "country",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Country",
-   "options": "Country"
-  },
-  {
-   "fieldname": "currency",
-   "fieldtype": "Link",
-   "label": "Currency",
-   "options": "Currency"
-  },
-  {
-   "fieldname": "default_payment_method",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Default Payment Method",
-   "options": "Stripe Payment Method"
-  },
-  {
-   "default": "0",
-   "description": "If checked, this user can Transfer credits from ERPNext.com",
-   "fieldname": "erpnext_partner",
-   "fieldtype": "Check",
-   "in_standard_filter": 1,
-   "label": "ERPNext Partner",
-   "read_only": 1
-  },
-  {
-   "default": "0",
-   "description": "If checked, usage data will not be sent to Stripe and they won't be charged",
-   "fieldname": "free_account",
-   "fieldtype": "Check",
-   "in_standard_filter": 1,
-   "label": "Free Account"
-  },
-  {
-   "fieldname": "address_html",
-   "fieldtype": "HTML",
-   "label": "Address HTML"
-  },
-  {
-   "fieldname": "column_break_12",
-   "fieldtype": "Column Break"
-  },
-  {
-   "default": "0",
-   "fieldname": "free_credits_allocated",
-   "fieldtype": "Check",
-   "label": "Free Credits Allocated"
-  },
-  {
-   "fieldname": "billing_address",
-   "fieldtype": "Link",
-   "label": "Billing Address",
-   "options": "Address"
-  },
-  {
-   "fieldname": "github_section",
-   "fieldtype": "Section Break",
-   "label": "Custom Apps"
-  },
-  {
-   "fieldname": "github_access_token",
-   "fieldtype": "Data",
-   "label": "GitHub Access Token"
-  },
-  {
-   "collapsible": 1,
-   "fieldname": "onboarding_section",
-   "fieldtype": "Section Break",
-   "label": "Onboarding"
-  },
-  {
-   "fieldname": "onboarding",
-   "fieldtype": "Table",
-   "label": "Onboarding Steps",
-   "options": "Team Onboarding"
-  }
- ],
- "links": [],
- "modified": "2020-10-21 11:02:45.200974",
- "modified_by": "Administrator",
- "module": "Press",
- "name": "Team",
- "owner": "Administrator",
- "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "System Manager",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Press Admin",
-   "share": 1,
-   "write": 1
-  }
- ],
- "quick_entry": 1,
- "sort_field": "modified",
- "sort_order": "DESC",
- "track_changes": 1
+    "actions": [],
+    "autoname": "Prompt",
+    "creation": "2020-02-27 16:19:51.675782",
+    "doctype": "DocType",
+    "editable_grid": 1,
+    "engine": "InnoDB",
+    "field_order": [
+        "enabled",
+        "user",
+        "erpnext_partner",
+        "free_account",
+        "section_break_6",
+        "team_members",
+        "subscription_details_section",
+        "stripe_customer_id",
+        "country",
+        "currency",
+        "default_payment_method",
+        "billing_address",
+        "free_credits_allocated",
+        "column_break_12",
+        "address_html",
+        "github_section",
+        "github_access_token",
+        "onboarding_section",
+        "onboarding",
+        "feature_flags_section",
+        "enable_prepaid_credits"
+    ],
+    "fields": [
+        {
+            "fieldname": "user",
+            "fieldtype": "Link",
+            "label": "User",
+            "options": "User",
+            "unique": 1
+        },
+        {
+            "fieldname": "team_members",
+            "fieldtype": "Table",
+            "label": "Team Members",
+            "options": "Team Member"
+        },
+        {
+            "default": "0",
+            "fieldname": "enabled",
+            "fieldtype": "Check",
+            "label": "Enabled"
+        },
+        {
+            "fieldname": "section_break_6",
+            "fieldtype": "Section Break"
+        },
+        {
+            "fieldname": "subscription_details_section",
+            "fieldtype": "Section Break",
+            "label": "Subscription Details"
+        },
+        {
+            "fieldname": "stripe_customer_id",
+            "fieldtype": "Data",
+            "label": "Stripe Customer ID",
+            "read_only": 1
+        },
+        {
+            "fieldname": "country",
+            "fieldtype": "Link",
+            "in_list_view": 1,
+            "label": "Country",
+            "options": "Country"
+        },
+        {
+            "fieldname": "currency",
+            "fieldtype": "Link",
+            "label": "Currency",
+            "options": "Currency"
+        },
+        {
+            "fieldname": "default_payment_method",
+            "fieldtype": "Link",
+            "in_list_view": 1,
+            "label": "Default Payment Method",
+            "options": "Stripe Payment Method"
+        },
+        {
+            "default": "0",
+            "description": "If checked, this user can Transfer credits from ERPNext.com",
+            "fieldname": "erpnext_partner",
+            "fieldtype": "Check",
+            "in_standard_filter": 1,
+            "label": "ERPNext Partner",
+            "read_only": 1
+        },
+        {
+            "default": "0",
+            "description": "If checked, usage data will not be sent to Stripe and they won't be charged",
+            "fieldname": "free_account",
+            "fieldtype": "Check",
+            "in_standard_filter": 1,
+            "label": "Free Account"
+        },
+        {
+            "fieldname": "address_html",
+            "fieldtype": "HTML",
+            "label": "Address HTML"
+        },
+        {
+            "fieldname": "column_break_12",
+            "fieldtype": "Column Break"
+        },
+        {
+            "default": "0",
+            "fieldname": "free_credits_allocated",
+            "fieldtype": "Check",
+            "label": "Free Credits Allocated"
+        },
+        {
+            "fieldname": "billing_address",
+            "fieldtype": "Link",
+            "label": "Billing Address",
+            "options": "Address"
+        },
+        {
+            "fieldname": "github_section",
+            "fieldtype": "Section Break",
+            "label": "Custom Apps"
+        },
+        {
+            "fieldname": "github_access_token",
+            "fieldtype": "Data",
+            "label": "GitHub Access Token"
+        },
+        {
+            "collapsible": 1,
+            "fieldname": "onboarding_section",
+            "fieldtype": "Section Break",
+            "label": "Onboarding"
+        },
+        {
+            "fieldname": "onboarding",
+            "fieldtype": "Table",
+            "label": "Onboarding Steps",
+            "options": "Team Onboarding"
+        },
+        {
+            "fieldname": "feature_flags_section",
+            "fieldtype": "Section Break",
+            "label": "Feature Flags"
+        },
+        {
+            "default": "0",
+            "fieldname": "enable_prepaid_credits",
+            "fieldtype": "Check",
+            "label": "Enable Prepaid Credits"
+        }
+    ],
+    "links": [
+        {
+            "group": "General",
+            "link_doctype": "Release Group",
+            "link_fieldname": "team"
+        },
+        {
+            "group": "General",
+            "link_doctype": "Site",
+            "link_fieldname": "team"
+        },
+        {
+            "group": "General",
+            "link_doctype": "Frappe App",
+            "link_fieldname": "team"
+        },
+        {
+            "group": "General",
+            "link_doctype": "Feedback",
+            "link_fieldname": "team"
+        },
+        {
+            "group": "Billing",
+            "link_doctype": "Invoice",
+            "link_fieldname": "team"
+        },
+        {
+            "group": "Billing",
+            "link_doctype": "Usage Record",
+            "link_fieldname": "team"
+        },
+        {
+            "group": "Billing",
+            "link_doctype": "Subscription",
+            "link_fieldname": "team"
+        },
+        {
+            "group": "Billing",
+            "link_doctype": "Balance Transaction",
+            "link_fieldname": "team"
+        }
+    ],
+    "modified": "2020-12-08 15:11:57.505079",
+    "modified_by": "Administrator",
+    "module": "Press",
+    "name": "Team",
+    "owner": "Administrator",
+    "permissions": [
+        {
+            "create": 1,
+            "delete": 1,
+            "email": 1,
+            "export": 1,
+            "print": 1,
+            "read": 1,
+            "report": 1,
+            "role": "System Manager",
+            "share": 1,
+            "write": 1
+        },
+        {
+            "create": 1,
+            "delete": 1,
+            "email": 1,
+            "export": 1,
+            "print": 1,
+            "read": 1,
+            "report": 1,
+            "role": "Press Admin",
+            "share": 1,
+            "write": 1
+        }
+    ],
+    "quick_entry": 1,
+    "sort_field": "modified",
+    "sort_order": "DESC",
+    "track_changes": 1
 }
