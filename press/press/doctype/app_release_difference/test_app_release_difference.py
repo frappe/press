@@ -7,5 +7,5 @@ from __future__ import unicode_literals
 import unittest
 
 
-class TestApplicationReleaseDifference(unittest.TestCase):
+class TestAppReleaseDifference(unittest.TestCase):
 	pass

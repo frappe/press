@@ -5,7 +5,7 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "application",
+  "app",
   "deploy_type",
   "column_break_2",
   "source",
@@ -21,17 +21,6 @@
  ],
  "fields": [
   {
-   "fieldname": "application",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Application",
-   "options": "Application",
-   "reqd": 1,
-   "search_index": 1,
-   "set_only_once": 1
-  },
-  {
    "fieldname": "column_break_2",
    "fieldtype": "Column Break"
   },
@@ -40,7 +29,7 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Application Source",
+   "label": "App Source",
    "options": "Application Source",
    "reqd": 1,
    "search_index": 1,
@@ -114,14 +103,25 @@
    "fieldtype": "Code",
    "label": "Files",
    "read_only": 1
+  },
+  {
+   "fieldname": "app",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "App",
+   "options": "Application",
+   "reqd": 1,
+   "search_index": 1,
+   "set_only_once": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2020-12-15 17:56:31.444674",
+ "modified": "2020-12-15 22:11:32.790664",
  "modified_by": "Administrator",
  "module": "Press",
- "name": "Application Release Difference",
+ "name": "App Release Difference",
  "owner": "Administrator",
  "permissions": [
   {
@@ -139,6 +139,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
- "title_field": "application",
+ "title_field": "app",
  "track_changes": 1
 }

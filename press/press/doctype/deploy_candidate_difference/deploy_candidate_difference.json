@@ -11,7 +11,7 @@
   "source",
   "destination",
   "section_break_6",
-  "applications"
+  "apps"
  ],
  "fields": [
   {
@@ -56,23 +56,23 @@
    "set_only_once": 1
   },
   {
-   "fieldname": "applications",
-   "fieldtype": "Table",
-   "label": "Applications",
-   "options": "Deploy Candidate Difference Application",
-   "read_only": 1
-  },
-  {
    "fieldname": "column_break_3",
    "fieldtype": "Column Break"
   },
   {
    "fieldname": "section_break_6",
    "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "apps",
+   "fieldtype": "Table",
+   "label": "Apps",
+   "options": "Deploy Candidate Difference App",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2020-12-15 17:55:11.375073",
+ "modified": "2020-12-15 22:10:10.535368",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate Difference",
