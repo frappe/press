@@ -77,6 +77,7 @@ class MarketplaceApp(WebsiteGenerator):
 			"Release Group",
 			filters=[
 				["Release Group", "enabled", "=", 1],
+				["Release Group", "public", "=", 1],
 				["Release Group Frappe App", "app", "in", apps],
 			],
 			fields=["name"],
