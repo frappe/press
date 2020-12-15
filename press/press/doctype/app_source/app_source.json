@@ -5,7 +5,7 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "application",
+  "app",
   "repository_url",
   "data_3",
   "repository",
@@ -20,14 +20,6 @@
   "versions"
  ],
  "fields": [
-  {
-   "fieldname": "application",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Application",
-   "options": "Application",
-   "reqd": 1
-  },
   {
    "fieldname": "repository_url",
    "fieldtype": "Data",
@@ -91,20 +83,28 @@
    "fieldname": "versions",
    "fieldtype": "Table",
    "label": "Versions",
-   "options": "Application Source Version",
+   "options": "App Source Version",
    "reqd": 1
   },
   {
    "fieldname": "section_break_12",
    "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "app",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "App",
+   "options": "Application",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2020-12-01 09:54:08.600724",
+ "modified": "2020-12-15 22:37:52.547636",
  "modified_by": "Administrator",
  "module": "Press",
- "name": "Application Source",
+ "name": "App Source",
  "owner": "Administrator",
  "permissions": [
   {
@@ -122,6 +122,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
- "title_field": "application",
+ "title_field": "app",
  "track_changes": 1
 }
