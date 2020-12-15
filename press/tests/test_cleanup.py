@@ -234,3 +234,29 @@ class TestFIFO(unittest.TestCase):
 		self.assertEqual(old.files_availability, "Available")
 		self.assertEqual(new.files_availability, "Available")
 
+	@patch("press.press.cleanup.delete_remote_backup_objects")
+	@patch("press.press.cleanup.frappe.db.commit")
+	def test_delete_remote_backup_objects_called(
+		self, mock_frappe_commit, mock_del_remote_backup_objects
+	):
+		"""
+		Ensure delete_remote_backup_objects is called when backup is to be deleted.
+
+		(db commit call inside GFS.cleanup is mocked so tests don't break)
+		"""
+		site = create_test_site("testsubdomain")
+		site2 = create_test_site("testsubdomain2")
+
+		fifo = FIFO()
+		fifo.offsite_keep_count = 1
+
+		create_test_site_backup(site.name, date.today())
+		create_test_site_backup(site.name, date.today())
+		create_test_site_backup(site2.name, date.today())
+		create_test_site_backup(site2.name, date.today())
+
+		fifo.cleanup()
+		mock_del_remote_backup_objects.assert_called_once()
+		self.assertEqual(
+			len(mock_del_remote_backup_objects.call_args.args[0]), 3 * 2,
+		)
