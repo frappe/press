@@ -18,10 +18,10 @@ class Bench(Document):
 			self.candidate = candidate.name
 		candidate = frappe.get_doc("Deploy Candidate", self.candidate)
 
-		if not self.applications:
-			for release in candidate.applications:
+		if not self.apps:
+			for release in candidate.apps:
 				self.append(
-					"applications", {"application": release.application, "hash": release.hash}
+					"apps", {"app": release.app, "hash": release.hash}
 				)
 
 		if self.is_new():
