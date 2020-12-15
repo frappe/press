@@ -8,5 +8,5 @@ from __future__ import unicode_literals
 from frappe.model.document import Document
 
 
-class ReleaseGroupApplication(Document):
+class ReleaseGroupApp(Document):
 	pass

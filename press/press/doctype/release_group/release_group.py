@@ -32,22 +32,22 @@ class ReleaseGroup(Document):
 			frappe.throw(f"Release Group {self.title} already exists.", frappe.ValidationError)
 
 	def validate_frappe_app(self):
-		if self.applications[0].application != "frappe":
-			frappe.throw("First application must be Frappe", frappe.ValidationError)
+		if self.apps[0].app != "frappe":
+			frappe.throw("First app must be Frappe", frappe.ValidationError)
 
 	def validate_duplicate_app(self):
 		apps = set()
-		for app in self.applications:
-			app_name = app.application
+		for app in self.apps:
+			app_name = app.app
 			if app_name in apps:
 				frappe.throw(
-					f"Application {app.application} can be added only once", frappe.ValidationError,
+					f"App {app.app} can be added only once", frappe.ValidationError,
 				)
 			apps.add(app_name)
 
 	def validate_app_versions(self):
 		# Application Source should be compatible with Release Group's version
-		for app in self.applications:
+		for app in self.apps:
 			source = frappe.get_doc("Application Source", app.source)
 			if all(row.version != self.version for row in source.versions):
 				frappe.throw(
@@ -59,37 +59,37 @@ class ReleaseGroup(Document):
 		if not self.enabled:
 			return
 		releases = []
-		for app in self.applications:
+		for app in self.apps:
 			release = frappe.get_all(
-				"Application Release",
-				fields=["name", "application", "hash"],
-				filters={"application": app.application},
+				"App Release",
+				fields=["name", "app", "hash"],
+				filters={"app": app.app},
 				order_by="creation desc",
 				limit=1,
 			)
 			if release:
 				release = release[0]
 				releases.append(
-					{"release": release.name, "application": release.application, "hash": release.hash}
+					{"release": release.name, "app": release.app, "hash": release.hash}
 				)
 		frappe.get_doc(
-			{"doctype": "Deploy Candidate", "group": self.name, "applications": releases}
+			{"doctype": "Deploy Candidate", "group": self.name, "apps": releases}
 		).insert()
 
-	def add_application(self, source):
+	def add_app(self, source):
 		self.append(
-			"applications", {"source": source.name, "application": source.application}
+			"apps", {"source": source.name, "app": source.app}
 		)
 		self.save()
 
 
-def new_release_group(title, version, applications, team=None):
+def new_release_group(title, version, apps, team=None):
 	group = frappe.get_doc(
 		{
 			"doctype": "Release Group",
 			"title": title,
 			"version": version,
-			"applications": applications,
+			"apps": apps,
 			"team": team,
 		}
 	).insert()

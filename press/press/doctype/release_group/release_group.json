@@ -14,7 +14,7 @@
   "default",
   "public",
   "section_break_7",
-  "applications",
+  "apps",
   "section_break_10",
   "servers"
  ],
@@ -73,13 +73,6 @@
    "reqd": 1
   },
   {
-   "fieldname": "applications",
-   "fieldtype": "Table",
-   "label": "Applications",
-   "options": "Release Group Application",
-   "reqd": 1
-  },
-  {
    "fieldname": "section_break_10",
    "fieldtype": "Section Break"
   },
@@ -88,10 +81,17 @@
    "fieldtype": "Table",
    "label": "Servers",
    "options": "Release Group Server"
+  },
+  {
+   "fieldname": "apps",
+   "fieldtype": "Table",
+   "label": "Apps",
+   "options": "Release Group App",
+   "reqd": 1
   }
  ],
  "links": [],
- "modified": "2020-12-09 10:08:42.414880",
+ "modified": "2020-12-15 22:34:05.956878",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",
