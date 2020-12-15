@@ -69,7 +69,7 @@ after_migrate = "press.api.account.clear_country_list_cache"
 # ------------------
 # See frappe.core.notifications.get_notification_config
 
-# notification_config = "press.notifications.get_notification_config"
+notification_config = "press.notifications.get_notification_config"
 
 # Permissions
 # -----------
