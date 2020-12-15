@@ -41,10 +41,10 @@ class Agent:
 		)
 
 	def new_site(self, site):
-		applications = [application.application for application in site.applications]
+		apps = [app.app for app in site.apps]
 		data = {
 			"config": json.loads(site.config),
-			"apps": applications,
+			"apps": apps,
 			"name": site.name,
 			"mariadb_root_password": get_decrypted_password(
 				"Server", site.server, "mariadb_root_password"

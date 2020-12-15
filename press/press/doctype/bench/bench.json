@@ -13,7 +13,7 @@
   "group",
   "candidate",
   "section_break_6",
-  "applications",
+  "apps",
   "configuration_section",
   "background_workers",
   "gunicorn_workers",
@@ -106,13 +106,6 @@
    "read_only": 1
   },
   {
-   "fieldname": "applications",
-   "fieldtype": "Table",
-   "label": "Applications",
-   "options": "Bench Application",
-   "read_only": 1
-  },
-  {
    "default": "1",
    "fieldname": "background_workers",
    "fieldtype": "Int",
@@ -139,10 +132,17 @@
    "fieldname": "configuration_section",
    "fieldtype": "Section Break",
    "label": "Configuration"
+  },
+  {
+   "fieldname": "apps",
+   "fieldtype": "Table",
+   "label": "Apps",
+   "options": "Bench App",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2020-12-14 10:18:13.724952",
+ "modified": "2020-12-15 22:19:17.635016",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",

@@ -20,7 +20,7 @@
   "team",
   "free",
   "section_break_6",
-  "applications",
+  "apps",
   "configuration_section",
   "host_name",
   "config",
@@ -261,15 +261,6 @@
    "label": "Keys Removed in Last Config Change"
   },
   {
-   "fieldname": "applications",
-   "fieldtype": "Table",
-   "hide_days": 1,
-   "hide_seconds": 1,
-   "label": "Applications",
-   "options": "Site Application",
-   "reqd": 1
-  },
-  {
    "fieldname": "plan",
    "fieldtype": "Link",
    "hide_days": 1,
@@ -278,10 +269,19 @@
    "label": "Plan",
    "options": "Plan",
    "reqd": 1
+  },
+  {
+   "fieldname": "apps",
+   "fieldtype": "Table",
+   "hide_days": 1,
+   "hide_seconds": 1,
+   "label": "Apps",
+   "options": "Site App",
+   "reqd": 1
   }
  ],
  "links": [],
- "modified": "2020-12-15 19:07:34.047255",
+ "modified": "2020-12-15 22:15:05.260696",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
