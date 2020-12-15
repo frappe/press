@@ -90,16 +90,16 @@ class DeployCandidate(Document):
 		]
 
 		clone_steps, app_install_steps = [], []
-		for application in self.applications:
-			application_title = frappe.db.get_value(
-				"Application", application.application, "title"
+		for app in self.apps:
+			app_title = frappe.db.get_value(
+				"Application", app.app, "title"
 			)
 			clone_steps.append(
-				("clone", application.application, "Clone Repositories", application_title)
+				("clone", app.app, "Clone Repositories", app_title)
 			)
 
 			app_install_steps.append(
-				("apps", application.application, "Install Applications", application_title)
+				("apps", app.app, "Install Apps", app_title)
 			)
 
 		steps = clone_steps + preparation_steps + app_install_steps
@@ -135,15 +135,15 @@ class DeployCandidate(Document):
 		apps_directory = os.path.join(self.build_directory, "apps")
 		os.mkdir(apps_directory)
 
-		for application in self.applications:
+		for app in self.apps:
 			source, cloned = frappe.db.get_value(
-				"Application Release", application.release, ["clone_directory", "cloned"]
+				"Application Release", app.release, ["clone_directory", "cloned"]
 			)
 			step = find(
 				self.build_steps,
-				lambda x: x.stage_slug == "clone" and x.step_slug == application.application,
+				lambda x: x.stage_slug == "clone" and x.step_slug == app.app,
 			)
-			step.command = f"git clone {application.application}"
+			step.command = f"git clone {app.app}"
 
 			if cloned:
 				step.cached = True
@@ -155,7 +155,7 @@ class DeployCandidate(Document):
 				self.save()
 				frappe.db.commit()
 
-				release = frappe.get_doc("Application Release", application.release)
+				release = frappe.get_doc("Application Release", app.release)
 				release._clone()
 				source = release.clone_directory
 
@@ -164,7 +164,7 @@ class DeployCandidate(Document):
 				step.output = release.output
 				step.status = "Success"
 
-			target = os.path.join(self.build_directory, "apps", application.application)
+			target = os.path.join(self.build_directory, "apps", app.app)
 			shutil.copytree(source, target)
 
 			self.save()
