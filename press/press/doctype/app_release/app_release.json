@@ -5,14 +5,14 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "application",
+  "app",
   "source",
   "cloned",
   "column_break_3",
   "hash",
   "author",
   "message",
-  "review_section",
+  "clone_section",
   "clone_directory",
   "column_break_9",
   "code_server_url",
@@ -43,11 +43,6 @@
   {
    "fieldname": "column_break_3",
    "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "review_section",
-   "fieldtype": "Section Break",
-   "label": "Clone"
   },
   {
    "fieldname": "code_server_url",
@@ -89,28 +84,33 @@
    "read_only": 1
   },
   {
-   "fieldname": "application",
+   "fieldname": "clone_directory",
+   "fieldtype": "Data",
+   "label": "Clone Directory",
+   "read_only": 1
+  },
+  {
+   "fieldname": "app",
    "fieldtype": "Link",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Application",
+   "label": "App",
    "options": "Application",
    "read_only": 1,
    "reqd": 1
   },
   {
-   "fieldname": "clone_directory",
-   "fieldtype": "Data",
-   "label": "Clone Directory",
-   "read_only": 1
+   "fieldname": "clone_section",
+   "fieldtype": "Section Break",
+   "label": "Clone"
   }
  ],
  "in_create": 1,
  "links": [],
- "modified": "2020-12-01 20:41:11.901834",
+ "modified": "2020-12-15 22:29:45.778546",
  "modified_by": "Administrator",
  "module": "Press",
- "name": "Application Release",
+ "name": "App Release",
  "owner": "Administrator",
  "permissions": [
   {

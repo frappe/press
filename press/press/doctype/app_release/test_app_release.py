@@ -7,5 +7,5 @@ from __future__ import unicode_literals
 import unittest
 
 
-class TestApplicationRelease(unittest.TestCase):
+class TestAppRelease(unittest.TestCase):
 	pass

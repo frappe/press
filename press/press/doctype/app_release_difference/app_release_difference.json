@@ -45,7 +45,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Source Release",
-   "options": "Application Release",
+   "options": "App Release",
    "reqd": 1,
    "set_only_once": 1
   },
@@ -66,7 +66,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Destination Release",
-   "options": "Application Release",
+   "options": "App Release",
    "reqd": 1,
    "set_only_once": 1
   },
@@ -118,7 +118,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2020-12-15 22:11:32.790664",
+ "modified": "2020-12-15 22:30:55.095726",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Release Difference",

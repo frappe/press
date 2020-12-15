@@ -13,16 +13,16 @@ from press.api.github import get_access_token
 from press.utils import log_error
 
 
-class ApplicationRelease(Document):
+class AppRelease(Document):
 	def after_insert(self):
 		self.create_deploy_candidates()
 		self.create_release_differences()
 
 	def create_deploy_candidates(self):
 		candidates = frappe.get_all(
-			"Deploy Candidate Application Release",
+			"Deploy Candidate App Release",
 			fields=["parent"],
-			filters={"application": self.application, "release": self.name},
+			filters={"app": self.app, "release": self.name},
 		)
 		if candidates:
 			return
@@ -30,7 +30,7 @@ class ApplicationRelease(Document):
 		for group_app in frappe.get_all(
 			"Release Group Application",
 			fields=["parent"],
-			filters={"application": self.application},
+			filters={"application": self.app},
 		):
 			group = frappe.get_doc("Release Group", group_app.parent)
 			group.create_deploy_candidate()
@@ -47,7 +47,7 @@ class ApplicationRelease(Document):
 			self.cloned = True
 			self.save()
 		except Exception:
-			log_error("Application Release Clone Exception", release=self.name)
+			log_error("App Release Clone Exception", release=self.name)
 
 	def run(self, command):
 		try:
@@ -56,7 +56,7 @@ class ApplicationRelease(Document):
 			).decode()
 		except Exception as e:
 			log_error(
-				"Application Release Clone Exception", command=command, output=e.output.decode()
+				"App Release Clone Exception", command=command, output=e.output.decode()
 			)
 			raise e
 
@@ -66,16 +66,16 @@ class ApplicationRelease(Document):
 		if not os.path.exists(clone_directory):
 			os.mkdir(clone_directory)
 
-		app_directory = os.path.join(clone_directory, self.application)
+		app_directory = os.path.join(clone_directory, self.app)
 		if not os.path.exists(app_directory):
 			os.mkdir(app_directory)
 
-		self.clone_directory = os.path.join(clone_directory, self.application, self.hash[:10])
+		self.clone_directory = os.path.join(clone_directory, self.app, self.hash[:10])
 		if not os.path.exists(self.clone_directory):
 			os.mkdir(self.clone_directory)
 
 		code_server_url = (
-			f"{code_server}/?folder=/home/coder/project/{self.application}/{self.hash[:10]}"
+			f"{code_server}/?folder=/home/coder/project/{self.app}/{self.hash[:10]}"
 		)
 		self.code_server_url = code_server_url
 
@@ -101,14 +101,14 @@ class ApplicationRelease(Document):
 
 	def create_release_differences(self):
 		releases = frappe.get_all(
-			"Application Release",
-			{"application": self.application, "source": self.source, "name": ("!=", self.name)},
+			"App Release",
+			{"app": self.app, "source": self.source, "name": ("!=", self.name)},
 		)
 		for release in releases:
 			difference = frappe.get_doc(
 				{
-					"doctype": "Application Release Difference",
-					"application": self.application,
+					"doctype": "App Release Difference",
+					"app": self.app,
 					"source": self.source,
 					"source_release": release.name,
 					"destination_release": self.name,
