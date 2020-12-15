@@ -9,7 +9,7 @@
   "column_break_2",
   "group",
   "section_break_4",
-  "applications",
+  "apps",
   "section_break_6",
   "build_directory",
   "assets_file",
@@ -35,13 +35,6 @@
    "options": "Release Group",
    "reqd": 1,
    "set_only_once": 1
-  },
-  {
-   "fieldname": "applications",
-   "fieldtype": "Table",
-   "label": "Applications",
-   "options": "Deploy Candidate Application Release",
-   "reqd": 1
   },
   {
    "default": "Draft",
@@ -143,10 +136,17 @@
    "fieldtype": "Data",
    "label": "Docker Image Name",
    "read_only": 1
+  },
+  {
+   "fieldname": "apps",
+   "fieldtype": "Table",
+   "label": "Apps",
+   "options": "Deploy Candidate App Release",
+   "reqd": 1
   }
  ],
  "links": [],
- "modified": "2020-11-30 19:13:18.836400",
+ "modified": "2020-12-15 22:24:17.452822",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",
