@@ -23,7 +23,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "source.application",
+   "fetch_from": "source.app",
    "fieldname": "app",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -34,7 +34,7 @@
  ],
  "istable": 1,
  "links": [],
- "modified": "2020-12-15 22:42:24.640991",
+ "modified": "2020-12-15 23:05:27.488173",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group App",

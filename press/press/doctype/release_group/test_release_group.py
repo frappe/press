@@ -28,6 +28,8 @@ def create_test_release_group(app: str) -> ReleaseGroup:
 
 class TestReleaseGroup(unittest.TestCase):
 	def setUp(self):
+		for group in frappe.get_all("Deploy Candidate Difference"):
+			frappe.delete_doc("Deploy Candidate Difference", group.name)
 		for group in frappe.get_all("Deploy"):
 			frappe.delete_doc("Deploy", group.name)
 		for group in frappe.get_all("Deploy Candidate"):
