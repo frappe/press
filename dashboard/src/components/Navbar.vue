@@ -164,7 +164,7 @@ export default {
 				},
 				{
 					label: 'Support',
-					action: () => this.$router.push('/support')
+					action: () => window.open('/support/tickets', '_blank')
 				},
 				{
 					label: 'Logout',

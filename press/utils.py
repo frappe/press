@@ -108,6 +108,12 @@ def cache(seconds: int, maxsize: int = 128, typed: bool = False):
 	return wrapper_cache
 
 
+def chunk(iterable, size):
+	"""Creates list of elements split into groups of n."""
+	for i in range(0, len(iterable), size):
+		yield iterable[i : i + size]  # noqa
+
+
 @cache(seconds=1800)
 def get_minified_script():
 	migration_script = "../apps/press/press/scripts/migrate.py"
@@ -238,3 +244,49 @@ def sanitize_config(config: dict) -> dict:
 def developer_mode_only():
 	if not frappe.conf.developer_mode:
 		frappe.throw("You don't know what you're doing. Go away!", frappe.ValidationError)
+
+
+def human_readable(num: int) -> str:
+	"""Assumes int data to describe size is in MiB"""
+	for unit in ["Mi", "Gi", "Ti", "Pi", "Ei", "Zi"]:
+		if abs(num) < 1024:
+			return f"{num:3.1f}{unit}B"
+		num /= 1024
+	return f"{num:.1f}YiB"
+
+
+def is_json(string):
+	if isinstance(string, str):
+		string = string.strip()
+		return string.startswith("{") and string.endswith("}")
+	elif isinstance(string, (dict, list)):
+		return True
+
+
+def guess_type(value):
+	type_dict = {
+		int: "Number",
+		float: "Number",
+		bool: "Boolean",
+		dict: "JSON",
+		list: "JSON",
+	}
+	value_type = type(value)
+
+	if value_type in type_dict:
+		return type_dict[value_type]
+	else:
+		if is_json(value):
+			return "JSON"
+		return "String"
+
+
+def convert(string):
+	if isinstance(string, str):
+		if is_json(string):
+			return json.loads(string)
+		else:
+			return string
+	if isinstance(string, (dict, list)):
+		return json.dumps(string)
+	return string

@@ -10,5 +10,12 @@ frappe.ui.form.on('Deploy Candidate', {
 			},
 			__('Actions')
 		);
+
+		frm.fields_dict['apps'].grid.get_field('app').get_query = function (doc) {
+			return {
+				"query": "press.press.doctype.deploy_candidate.deploy_candidate.desk_app",
+				"filters": { 'release_group': doc.group }
+			}
+		}
 	}
 });

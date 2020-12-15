@@ -90,6 +90,45 @@ def poll_file_statuses():
 		frappe.db.commit()
 
 
+def delete_remote_backup_objects(remote_files):
+	"""Delete specified objects identified by keys in the backups bucket"""
+	from press.utils import chunk
+	from boto3 import resource
+
+	press_settings = frappe.get_single("Press Settings")
+	s3 = resource(
+		"s3",
+		aws_access_key_id=press_settings.offsite_backups_access_key_id,
+		aws_secret_access_key=press_settings.get_password(
+			"offsite_backups_secret_access_key", raise_exception=False
+		),
+		region_name="ap-south-1",
+	).Bucket(press_settings.aws_s3_bucket)
+
+	remote_files = set([x for x in remote_files if x])
+
+	if not remote_files:
+		return
+
+	remote_files_keys = set(
+		[
+			x[0]
+			for x in frappe.db.get_values(
+				"Remote File", {"name": ("in", remote_files)}, "file_path"
+			)
+		]
+	)
+
+	for objects in chunk([{"Key": x} for x in remote_files_keys], 1000):
+		s3.delete_objects(Delete={"Objects": objects})
+
+	frappe.db.set_value(
+		"Remote File", {"name": ("in", remote_files)}, "status", "Unavailable",
+	)
+
+	return remote_files
+
+
 class RemoteFile(Document):
 	@property
 	def s3_client(self):
