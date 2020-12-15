@@ -1,6 +1,6 @@
 import functools
 from datetime import date, datetime, timedelta
-from typing import List
+from typing import Dict, List
 
 import frappe
 
@@ -62,7 +62,9 @@ class BackupRotationScheme:
 	Rotation is maintained by controlled deletion of daily backups.
 	"""
 
-	def _expire_and_get_remote_files(self, offsite_backups: List[str]) -> List[str]:
+	def _expire_and_get_remote_files(
+		self, offsite_backups: List[Dict[str, str]]
+	) -> List[str]:
 		"""Mark backup as unavailable and return remote files to delete."""
 		remote_files_to_delete = []
 		for backup in offsite_backups:
@@ -131,7 +133,6 @@ class FIFO(BackupRotationScheme):
 				"offsite": True,
 			},
 			order_by="creation desc",
-			pluck="name",
 		)[offsite_expiry:]
 		return self._expire_and_get_remote_files(to_be_expired_backups)
 
