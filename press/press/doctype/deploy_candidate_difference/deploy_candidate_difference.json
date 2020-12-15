@@ -6,9 +6,11 @@
  "engine": "InnoDB",
  "field_order": [
   "group",
+  "deploy_type",
+  "column_break_3",
   "source",
   "destination",
-  "deploy_type",
+  "section_break_6",
   "applications"
  ],
  "fields": [
@@ -20,7 +22,8 @@
    "in_standard_filter": 1,
    "label": "Release Group",
    "options": "Release Group",
-   "reqd": 1
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "source",
@@ -29,7 +32,8 @@
    "in_standard_filter": 1,
    "label": "Source Candidate",
    "options": "Deploy Candidate",
-   "reqd": 1
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "destination",
@@ -38,25 +42,37 @@
    "in_standard_filter": 1,
    "label": "Destination Candidate",
    "options": "Deploy Candidate",
-   "reqd": 1
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
+   "default": "Pull",
    "fieldname": "deploy_type",
    "fieldtype": "Select",
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Deploy Type",
-   "options": "\nPull\nMigrate"
+   "options": "Pull\nMigrate",
+   "set_only_once": 1
   },
   {
    "fieldname": "applications",
    "fieldtype": "Table",
    "label": "Applications",
-   "options": "Deploy Candidate Difference Application"
+   "options": "Deploy Candidate Difference Application",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_6",
+   "fieldtype": "Section Break"
   }
  ],
  "links": [],
- "modified": "2020-12-14 20:06:18.815108",
+ "modified": "2020-12-15 17:55:11.375073",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate Difference",
@@ -89,5 +105,6 @@
  "quick_entry": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
+ "title_field": "group",
  "track_changes": 1
 }

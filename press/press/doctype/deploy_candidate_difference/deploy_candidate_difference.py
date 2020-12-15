@@ -4,12 +4,8 @@
 
 from __future__ import unicode_literals
 import frappe
-import re
-import json
 from frappe.model.document import Document
 from frappe.core.utils import find
-from github import Github
-from press.api.github import get_access_token
 
 
 class DeployCandidateDifference(Document):
@@ -47,69 +43,34 @@ class DeployCandidateDifference(Document):
 				frappe.ValidationError,
 			)
 
-	def after_insert(self):
 		self.populate_apps_table()
 
 	def populate_apps_table(self):
 		source_candidate = frappe.get_doc("Deploy Candidate", self.source)
 		destination_candidate = frappe.get_doc("Deploy Candidate", self.destination)
 		for destination in destination_candidate.applications:
-			application = {
-				"application": destination.application,
-				"destination_release": destination.release,
-				"destination_hash": destination.hash,
-			}
-			source = find(source_candidate.applications, lambda x: x.application == destination.application)
-			if source:
-				application.update({"source_release": source.release, "source_hash": source.hash})
-			self.append("applications", application)
-		self.save()
-		self.compute_deploy_type()
-		self.save()
-
-	def compute_deploy_type(self):
-		self.deploy_type = "Pull"
-		for application in self.applications:
-			if (not application.source_hash) or (application.source_hash == application.destination_hash):
+			source = find(
+				source_candidate.applications, lambda x: x.application == destination.application
+			)
+			if not source or source.release == destination.release:
 				continue
-			application.changed = True
-			application.deploy_type = "Pull"
-			frappe_app = frappe.get_doc("Application", application.application)
-			if frappe_app.installation:
-				github_access_token = get_access_token(frappe_app.installation)
-				client = Github(github_access_token)
-			else:
-				client = Github()
-			repo = client.get_repo(f"{frappe_app.repo_owner}/{frappe_app.repo}")
-			diff = repo.compare(application.source_hash, application.destination_hash)
-			application.github_diff_url = diff.html_url
-			files = [f.filename for f in diff.files]
-			if is_migrate_needed(files):
+			difference = frappe.get_all(
+				"Application Release Difference",
+				["name", "deploy_type"],
+				{"source_release": source.release, "destination_release": destination.release},
+				limit=1,
+			)[0]
+
+			self.append(
+				"applications",
+				{
+					"application": destination.application,
+					"destination_release": destination.release,
+					"source_release": source.release,
+					"difference": difference.name,
+					"deploy_type": difference.deploy_type,
+				},
+			)
+
+			if difference.deploy_type == "Migrate":
 				self.deploy_type = "Migrate"
-				application.deploy_type = "Migrate"
-			application.files = json.dumps(files, indent=4)
-
-
-def is_migrate_needed(files):
-	patches_file_regex = re.compile(r"\w+/patches\.txt")
-	if any(map(patches_file_regex.match, files)):
-		return True
-
-	hooks_regex = re.compile(r"\w+/hooks\.py")
-	if any(map(hooks_regex.match, files)):
-		return True
-
-	fixtures_regex = re.compile(r"\w+/fixtures/")
-	if any(map(fixtures_regex.match, files)):
-		return True
-
-	custom_regex = re.compile(r"\w+/\w+/custom/")
-	if any(map(custom_regex.match, files)):
-		return True
-
-	languages_json = re.compile(r"frappe/geo/languages.json")
-	if any(map(languages_json.match, files)):
-		return True
-
-	json_regex = re.compile(r"\w+/\w+/\w+/(.+)/\1\.json")
-	return any(map(json_regex.match, files))
