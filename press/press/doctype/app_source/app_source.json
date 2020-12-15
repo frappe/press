@@ -95,13 +95,13 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "App",
-   "options": "Application",
+   "options": "App",
    "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2020-12-15 22:37:52.547636",
+ "modified": "2020-12-15 22:41:34.066740",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Source",

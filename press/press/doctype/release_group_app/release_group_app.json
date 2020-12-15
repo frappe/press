@@ -15,7 +15,7 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Source",
-   "options": "Application Source",
+   "options": "App Source",
    "reqd": 1
   },
   {
@@ -28,13 +28,13 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "App",
-   "options": "Application",
+   "options": "App",
    "reqd": 1
   }
  ],
  "istable": 1,
  "links": [],
- "modified": "2020-12-15 22:33:34.777554",
+ "modified": "2020-12-15 22:42:24.640991",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group App",

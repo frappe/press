@@ -26,14 +26,14 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "App",
-   "options": "Application",
+   "options": "App",
    "read_only": 1,
    "reqd": 1
   }
  ],
  "istable": 1,
  "links": [],
- "modified": "2020-12-15 22:18:58.430747",
+ "modified": "2020-12-15 22:39:14.689295",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench App",

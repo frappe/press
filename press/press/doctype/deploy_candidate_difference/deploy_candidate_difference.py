@@ -48,9 +48,9 @@ class DeployCandidateDifference(Document):
 	def populate_apps_table(self):
 		source_candidate = frappe.get_doc("Deploy Candidate", self.source)
 		destination_candidate = frappe.get_doc("Deploy Candidate", self.destination)
-		for destination in destination_candidate.applications:
+		for destination in destination_candidate.apps:
 			source = find(
-				source_candidate.applications, lambda x: x.application == destination.application
+				source_candidate.apps, lambda x: x.app == destination.app
 			)
 			if not source or source.release == destination.release:
 				continue
@@ -64,7 +64,7 @@ class DeployCandidateDifference(Document):
 			self.append(
 				"apps",
 				{
-					"app": destination.application,
+					"app": destination.app,
 					"destination_release": destination.release,
 					"source_release": source.release,
 					"difference": difference.name,

@@ -7,12 +7,8 @@ from __future__ import unicode_literals
 def get_data():
 	return {
 		"fieldname": "app",
-		"non_standard_fieldnames": {
-			"Application Source": "application",
-			"Release Group": "application",
-		},
 		"transactions": [
 			{"items": ["Bench", "Site"]},
-			{"items": ["Application Source", "Release Group", "Application Release"]},
+			{"items": ["App Source", "Release Group", "App Release"]},
 		],
 	}

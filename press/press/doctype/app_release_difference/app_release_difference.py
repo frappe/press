@@ -18,7 +18,7 @@ class AppReleaseDifference(Document):
 				"Destination Release must be different from Source Release", frappe.ValidationError,
 			)
 
-		source = frappe.get_doc("Application Source", self.source)
+		source = frappe.get_doc("App Source", self.source)
 		if source.github_installation_id:
 			github_access_token = get_access_token(source.github_installation_id)
 		else:
