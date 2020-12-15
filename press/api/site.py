@@ -71,7 +71,8 @@ def new(site):
 			"remote_private_file": site["files"].get("private"),
 		},
 	).insert(ignore_permissions=True)
-	site.create_subscription(plan)
+	if not team.free_account:
+		site.create_subscription(plan)
 	return site.name
 
 
