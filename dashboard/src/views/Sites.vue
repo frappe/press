@@ -38,7 +38,7 @@
 					<span class="grid-cols-2">
 						{{ site.name }}
 						<span class="pl-2" v-if="usage(site) > 75">
-							<StatusIdicator :usage="usage(site)" />
+							<StatusIndicator :usage="usage(site)" />
 						</span>
 					</span>
 					<span class="text-right md:text-center">
