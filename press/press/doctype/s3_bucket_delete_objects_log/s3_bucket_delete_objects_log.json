@@ -13,12 +13,13 @@
    "fieldtype": "Code",
    "in_list_view": 1,
    "label": "Response",
+   "read_only": 1,
    "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2020-12-15 10:48:21.087859",
+ "modified": "2020-12-16 15:09:56.631668",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "S3 Bucket Delete Objects Log",
