@@ -7,7 +7,7 @@
 </template>
 <script>
 export default {
-	name: 'StatusIdicator',
+	name: 'StatusIndicator',
 	props: ['color', 'usage'],
 	computed: {
 		classes() {
