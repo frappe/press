@@ -1,6 +1,6 @@
 <template>
 	<div class="font-sans antialiased text-gray-900">
-		<div class="flex overflow-hidden">
+		<div class="flex h-screen overflow-hidden">
 			<div
 				class="flex flex-1 overflow-y-auto"
 				:class="{ 'sm:bg-gray-50': $route.meta.isLoginPage }"
