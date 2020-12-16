@@ -57,7 +57,7 @@ export default {
 			if (this._socketSetup) return;
 			this._socketSetup = true;
 			this.$socket.on('list_update', ({ doctype }) => {
-				if (doctype === 'Application' || doctype === 'Application Release') {
+				if (doctype === 'App' || doctype === 'App Release') {
 					this.$resources.apps.reload();
 				}
 			});

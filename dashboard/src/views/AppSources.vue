@@ -5,7 +5,7 @@
 				<div
 					class="px-6 py-3 hover:bg-gray-50 items-center grid grid-cols-3 items-center"
 					v-for="source in sources.data"
-					:key="source.application"
+					:key="source.app"
 				>
 					<div class="col-span-2">
 						<p class="font-semibold  text-base">
