@@ -86,7 +86,7 @@ export default {
 			let validationMessage;
 			if (isWasmSupported) {
 				this.message = 'Validating File';
-				validationMessage = await this.validateFile();
+				validationMessage = await this.validateBackupFileContents();
 				this.message = '';
 			} else {
 				validationMessage = 'WASM not supported on this browser';
