@@ -1,4 +1,18 @@
 {
+ "actions": [
+  {
+   "action": "build",
+   "action_type": "Server Action",
+   "group": "Actions",
+   "label": "Build"
+  },
+  {
+   "action": "build_and_deploy",
+   "action_type": "Server Action",
+   "group": "Actions",
+   "label": "Build and Deploy"
+  }
+ ],
  "autoname": "deploy-.######",
  "creation": "2020-01-13 16:21:04.051415",
  "doctype": "DocType",
@@ -146,7 +160,7 @@
   }
  ],
  "links": [],
- "modified": "2020-12-15 22:24:17.452822",
+ "modified": "2020-12-16 18:28:53.845880",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",
