@@ -5,13 +5,6 @@ export default [
 		component: () => import(/* webpackChunkName: "apps" */ '../views/Apps.vue')
 	},
 	{
-		path: '/apps/new',
-		name: 'NewApp',
-		component: () =>
-			import(/* webpackChunkName: "newapp" */ '../views/NewApp.vue'),
-		props: true
-	},
-	{
 		path: '/apps/:appName(.*)',
 		name: 'App',
 		component: () =>
@@ -29,9 +22,9 @@ export default [
 					import(/* webpackChunkName: "frappeapp" */ '../views/AppReleases.vue')
 			},
 			{
-				path: 'deploys',
+				path: 'sources',
 				component: () =>
-					import(/* webpackChunkName: "frappeapp" */ '../views/AppDeploys.vue')
+					import(/* webpackChunkName: "frappeapp" */ '../views/AppSources.vue')
 			},
 			{
 				path: 'marketplace',
