@@ -6,9 +6,13 @@ from __future__ import unicode_literals
 import frappe
 from frappe.model.document import Document
 from press.utils import log_error
+from frappe.model.naming import append_number_if_name_exists
 
 
 class Deploy(Document):
+	def autoname(self):
+		self.name = append_number_if_name_exists("Deploy", self.candidate, separator="-")
+
 	def after_insert(self):
 		self.create_benches()
 
@@ -17,7 +21,6 @@ class Deploy(Document):
 			new = frappe.get_doc(
 				{
 					"doctype": "Bench",
-					"name": bench.bench_name,
 					"server": bench.server,
 					"group": self.group,
 					"candidate": self.candidate,

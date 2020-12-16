@@ -17,7 +17,6 @@ import regex
 import dockerfile
 import frappe
 from frappe.model.document import Document
-from frappe.model.naming import append_number_if_name_exists
 from frappe.utils import now_datetime as now
 from press.utils import log_error
 from frappe.core.utils import find
@@ -317,22 +316,12 @@ class DeployCandidate(Document):
 			if deploy_doc or not servers:
 				return
 
-			domain = frappe.db.get_single_value("Press Settings", "domain")
-			benches = []
-
-			for row in servers:
-				server = row.server
-				server_name = server.replace(f".{domain}", "")
-				bench_name = f"bench-{self.group.replace(' ', '-').lower()}-{server_name}"
-				bench_name = append_number_if_name_exists("Bench", bench_name, separator="-")
-				benches.append({"server": server, "bench_name": bench_name})
-
 			deploy_doc = frappe.get_doc(
 				{
 					"doctype": "Deploy",
 					"group": self.group,
 					"candidate": self.name,
-					"benches": benches,
+					"benches": [{"server": server.server} for server in servers],
 				}
 			)
 			deploy_doc.insert()

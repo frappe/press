@@ -9,9 +9,16 @@ from frappe.model.document import Document
 import json
 from press.agent import Agent
 from press.utils import log_error
+from frappe.model.naming import append_number_if_name_exists
 
 
 class Bench(Document):
+	def autoname(self):
+		domain = frappe.db.get_single_value("Press Settings", "domain")
+		server_name = self.server.replace(f".{domain}", "")
+		bench_name = f"{self.group}-{server_name}"
+		self.name = append_number_if_name_exists("Bench", bench_name, separator="-")
+
 	def validate(self):
 		if not self.candidate:
 			candidate = frappe.get_all("Deploy Candidate", filters={"group": self.group})[0]
