@@ -1,6 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "bench-.####",
  "creation": "2020-01-13 16:04:45.363835",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -91,7 +92,7 @@
   }
  ],
  "links": [],
- "modified": "2020-12-15 22:34:05.956878",
+ "modified": "2020-12-16 18:13:44.347743",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",
