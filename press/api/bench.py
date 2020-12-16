@@ -22,12 +22,16 @@ def new(bench):
 @protected("Release Group")
 def get(name):
 	group = frappe.get_doc("Release Group", name)
+	most_recent_candidate = frappe.get_all(
+		"Deploy Candidate", ["status"], {"group": name}, limit=1, order_by="creation desc"
+	)[0]
+	update_available = most_recent_candidate.status == "Draft"
 	return {
 		"name": group.name,
 		"title": group.title,
 		"version": group.version,
 		"status": "Active",
-		"update_available": True,
+		"update_available": update_available,
 		"last_updated": group.modified,
 		"creation": group.creation,
 	}
