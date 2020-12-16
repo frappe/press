@@ -26,7 +26,9 @@
   "ssh_section",
   "root_public_key",
   "column_break_20",
-  "frappe_public_key"
+  "frappe_public_key",
+  "section_break_22",
+  "use_for_new_benches"
  ],
  "fields": [
   {
@@ -153,10 +155,20 @@
   {
    "fieldname": "column_break_20",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_22",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "use_for_new_benches",
+   "fieldtype": "Check",
+   "label": "Use For New Benches"
   }
  ],
  "links": [],
- "modified": "2020-10-09 18:14:55.805169",
+ "modified": "2020-12-16 10:03:12.172743",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
