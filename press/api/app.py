@@ -71,10 +71,9 @@ def get(name):
 		"App Source", filters={"app": name}, or_filters={"team": team, "public": True},
 	)
 	versions = frappe.get_all(
-		"App Source",
+		"App Source Version",
 		fields=["version as name"],
-		filters={"app": name},
-		or_filters={"team": team, "public": True},
+		filters={"parent": ("in", [source.name for source in sources])},
 		group_by="version",
 	)
 

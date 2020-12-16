@@ -4,15 +4,15 @@
 			<SectionCard>
 				<div
 					class="px-6 py-3 hover:bg-gray-50 items-center"
-					v-for="application in applications"
-					:key="application.application"
+					v-for="app in apps"
+					:key="app.app"
 				>
 					<div class="font-semibold text-brand text-base">
-						{{ application.title }}
+						{{ app.title }}
 					</div>
 
 					<p class="text-sm text-gray-800">
-						{{ application.repository_owner }}:{{ application.branch }}
+						{{ app.repository_owner }}:{{ app.branch }}
 					</p>
 				</div>
 			</SectionCard>
@@ -32,9 +32,9 @@ export default {
 	name: 'BenchApps',
 	props: ['bench'],
 	resources: {
-		applications() {
+		apps() {
 			return {
-				method: 'press.api.bench.applications',
+				method: 'press.api.bench.apps',
 				params: {
 					name: this.bench.name
 				},
@@ -43,8 +43,8 @@ export default {
 		}
 	},
 	computed: {
-		applications() {
-			return this.$resources.applications.data;
+		apps() {
+			return this.$resources.apps.data;
 		}
 	}
 };

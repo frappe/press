@@ -52,21 +52,21 @@
 								<button
 									class="px-4 py-3 text-left border border-blue-100 rounded-md focus:outline-none focus:shadow-none shadow cursor-pointer"
 									:class="
-										isApplicationSelected(application.name)
+										isAppSelected(app.name)
 											? 'shadow-outline-blue border-blue-500'
 											: 'hover:border-blue-300 cursor-pointer'
 									"
-									v-for="application in selectedVersion.applications"
-									:key="application.name"
-									@click="toggleApplication(application.name)"
+									v-for="app in selectedVersion.apps"
+									:key="app.name"
+									@click="toggleApp(app.name)"
 								>
 									<div class="flex items-start">
 										<div class="ml-1 text-base text-left">
 											<div class="font-semibold">
-												{{ application.title }}
+												{{ app.title }}
 											</div>
 											<div>
-												<Dropdown :items="dropdownItems(application)">
+												<Dropdown :items="dropdownItems(app)">
 													<template v-slot="{ toggleDropdown }">
 														<button
 															class="flex items-center text-base focus:outline-none focus:shadow-none"
@@ -74,10 +74,8 @@
 															@click.stop="toggleDropdown()"
 														>
 															<div class="text-gray-700">
-																<span>{{
-																	application.source.repository_owner
-																}}</span
-																>:<span>{{ application.source.branch }}</span>
+																<span>{{ app.source.repository_owner }}</span
+																>:<span>{{ app.source.branch }}</span>
 															</div>
 															<FeatherIcon
 																:name="'chevron-down'"
@@ -116,7 +114,7 @@ export default {
 		return {
 			selectedVersionName: null,
 			selectedVersion: null,
-			selectedApplications: [],
+			selectedApps: [],
 			benchTitle: null,
 			benchTitleInvalidMessage: null,
 			benchCreationErrorMessage: null
@@ -128,7 +126,7 @@ export default {
 				bench: {
 					title: this.benchTitle,
 					version: this.selectedVersionName,
-					applications: this.selectedApplications
+					apps: this.selectedApps
 				}
 			});
 			benchName
@@ -139,37 +137,33 @@ export default {
 					this.benchCreationErrorMessage = error.messages[0];
 				});
 		},
-		dropdownItems(application) {
-			return application.sources.map(source => ({
+		dropdownItems(app) {
+			return app.sources.map(source => ({
 				label: `${source.repository_owner}:${source.branch}`,
-				action: () => this.selectSource(application, source)
+				action: () => this.selectSource(app, source)
 			}));
 		},
-		selectSource(application, source) {
-			application.source = source;
-			if (!this.isApplicationSelected(application.name)) {
-				this.toggleApplication(application.name);
+		selectSource(app, source) {
+			app.source = source;
+			if (!this.isAppSelected(app.name)) {
+				this.toggleApp(app.name);
 			}
 		},
-		isApplicationSelected(name) {
-			return Boolean(
-				this.selectedApplications.find(application => application.name == name)
-			);
+		isAppSelected(name) {
+			return Boolean(this.selectedApps.find(app => app.name == name));
 		},
-		toggleApplication(name) {
-			let selectedApplications = this.selectedVersion.applications.filter(
-				application => {
-					if (application.name == 'frappe') {
-						return true;
-					} else if (application.name == name) {
-						return !this.isApplicationSelected(application.name);
-					}
-					return this.isApplicationSelected(application.name);
+		toggleApp(name) {
+			let selectedApps = this.selectedVersion.apps.filter(app => {
+				if (app.name == 'frappe') {
+					return true;
+				} else if (app.name == name) {
+					return !this.isAppSelected(app.name);
 				}
-			);
-			this.selectedApplications = selectedApplications.map(application => ({
-				name: application.name,
-				source: application.source.name
+				return this.isAppSelected(app.name);
+			});
+			this.selectedApps = selectedApps.map(app => ({
+				name: app.name,
+				source: app.source.name
 			}));
 		},
 		async checkIfTitleExists() {
@@ -188,7 +182,7 @@ export default {
 				!this.benchTitleInvalidMessage &&
 				!this.benchCreationErrorMessage &&
 				this.selectedVersionName &&
-				this.selectedApplications.length != 0
+				this.selectedApps.length != 0
 			) {
 				return true;
 			}
@@ -205,8 +199,8 @@ export default {
 			this.selectedVersion = this.options.versions.find(
 				v => v.name === this.selectedVersionName
 			);
-			this.selectedApplications = [];
-			this.toggleApplication('frappe');
+			this.selectedApps = [];
+			this.toggleApp('frappe');
 		},
 		async benchTitle() {
 			this.checkIfTitleExists();
