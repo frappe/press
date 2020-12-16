@@ -124,9 +124,7 @@ def delete_remote_backup_objects(remote_files):
 	for objects in chunk([{"Key": x} for x in remote_files_keys], 1000):
 		response = s3.delete_objects(Delete={"Objects": objects})
 		response = pprint.pformat(response)
-		frappe.get_doc(
-			doctype="S3 Bucket Delete Objects Log", response=response
-		).insert()
+		frappe.get_doc(doctype="S3 Bucket Delete Objects Log", response=response).insert()
 
 	frappe.db.set_value(
 		"Remote File", {"name": ("in", remote_files)}, "status", "Unavailable",
