@@ -14,6 +14,7 @@ class ReleaseGroup(Document):
 		self.validate_frappe_app()
 		self.validate_duplicate_app()
 		self.validate_app_versions()
+		self.validate_servers()
 
 	def on_trash(self):
 		candidates = frappe.get_all("Deploy Candidate", {"group": self.name})
@@ -53,6 +54,20 @@ class ReleaseGroup(Document):
 				frappe.throw(
 					f"App Source {app.source} version is not {self.version}", frappe.ValidationError,
 				)
+
+	def validate_servers(self):
+		if self.servers:
+			servers = set(server.server for server in self.servers)
+			if len(servers) != self.servers:
+				frappe.throw(
+					"Servers can be added only once", frappe.ValidationError,
+				)
+		else:
+			servers_for_new_bench = frappe.get_all(
+				"Server", {"status": "Active", "use_for_new_benches": True}, limit=1
+			)
+			if servers_for_new_bench:
+				self.append("servers", {"server": servers_for_new_bench[0].name})
 
 	def create_deploy_candidate(self):
 		if not self.enabled:
