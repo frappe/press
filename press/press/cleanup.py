@@ -138,7 +138,14 @@ class FIFO(BackupRotationScheme):
 
 
 class GFS(BackupRotationScheme):
-	"""Represents Grandfather-father-son backup rotation scheme."""
+	"""
+	Represents Grandfather-father-son backup rotation scheme.
+
+	Daily backups are kept for specified number of days.
+	Weekly backups are kept for 4 weeks.
+	Monthly backups are kept for a year.
+	Yearly backups are kept for a decade.
+	"""
 
 	daily = 7  # no. of daily backups to keep
 	weekly_backup_day = 1  # days of the week (1-7) (SUN-SAT)
@@ -150,7 +157,7 @@ class GFS(BackupRotationScheme):
 		oldest_daily = today - timedelta(days=self.daily)
 		oldest_weekly = today - timedelta(weeks=4)
 		oldest_monthly = today - timedelta(days=366)
-		oldest_yearly = today - timedelta(3653)
+		oldest_yearly = today - timedelta(days=3653)
 		to_be_expired_backups = frappe.db.sql(
 			f"""
 			SELECT name from `tabSite Backup`
