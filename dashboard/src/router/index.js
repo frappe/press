@@ -6,6 +6,7 @@ import Home from '../views/Home.vue';
 
 import appRoutes from './app';
 import siteRoutes from './site';
+import benchRoutes from './bench';
 import accountRoute from './account';
 import authRoutes from './auth';
 
@@ -23,107 +24,10 @@ const routes = [
 		component: () =>
 			import(/* webpackChunkName: "sites" */ '../views/Welcome.vue')
 	},
-	{
-		path: '/apps',
-		name: 'Apps',
-		component: () => import(/* webpackChunkName: "apps" */ '../views/Apps.vue')
-	},
-	{
-		path: '/apps/:appName(.*)',
-		name: 'App',
-		component: () =>
-			import(/* webpackChunkName: "frappeapp" */ '../views/App.vue'),
-		props: true,
-		children: [
-			{
-				path: 'general',
-				component: () =>
-					import(/* webpackChunkName: "frappeapp" */ '../views/AppGeneral.vue')
-			},
-			{
-				path: 'sources',
-				component: () =>
-					import(/* webpackChunkName: "frappeapp" */ '../views/AppSources.vue')
-			},
-			{
-				path: 'releases',
-				component: () =>
-					import(/* webpackChunkName: "frappeapp" */ '../views/AppReleases.vue')
-			},
-			{
-				path: 'deploys',
-				component: () =>
-					import(/* webpackChunkName: "frappeapp" */ '../views/AppDeploys.vue')
-			}
-		]
-	},
-	{
-		path: '/benches',
-		name: 'Benches',
-		component: () =>
-			import(/* webpackChunkName: "benches" */ '../views/Benches.vue')
-	},
-	{
-		path: '/benches/new',
-		name: 'NewBench',
-		component: () =>
-			import(/* webpackChunkName: "newbench" */ '../views/NewBench.vue'),
-		props: true
-	},
-	{
-		path: '/benches/:benchName',
-		name: 'Bench',
-		component: () =>
-			import(/* webpackChunkName: "bench" */ '../views/Bench.vue'),
-		props: true,
-		children: [
-			{
-				path: 'general',
-				component: () =>
-					import(/* webpackChunkName: "bench" */ '../views/BenchGeneral.vue')
-			},
-			{
-				path: 'apps',
-				component: () =>
-					import(/* webpackChunkName: "bench" */ '../views/BenchApps.vue')
-			},
-			{
-				path: 'deploys/:candidateName?',
-				component: () =>
-					import(/* webpackChunkName: "bench" */ '../views/BenchDeploys.vue'),
-				props: true
-			}
-		]
-	},
-	{
-		path: '/benches/:benchName/apps/new',
-		name: 'NewApp',
-		component: () =>
-			import(/* webpackChunkName: "bench" */ '../views/NewApp.vue'),
-		props: true
-	},
-	{
-		path: '/sites',
-		name: 'Sites',
-		component: () =>
-			import(/* webpackChunkName: "sites" */ '../views/Sites.vue')
-	},
-	{
-		path: '/sites/new',
-		name: 'NewSite',
-		component: () =>
-			import(/* webpackChunkName: "newsite" */ '../views/NewSite/Index.vue'),
-		props: true
-	},
-	{
-		path: '/support',
-		name: 'Support',
-		component: () =>
-			import(/* webpackChunkName: "support" */ '../views/Support.vue')
-	},
 	...authRoutes,
 	...appRoutes,
 	...siteRoutes,
+	...benchRoutes,
 	accountRoute
 ];
 
