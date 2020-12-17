@@ -14,9 +14,8 @@ from frappe.model.naming import append_number_if_name_exists
 
 class Bench(Document):
 	def autoname(self):
-		domain = frappe.db.get_single_value("Press Settings", "domain")
-		server_name = self.server.replace(f".{domain}", "")
-		bench_name = f"{self.group}-{server_name}"
+		server_name = frappe.db.get_value("Server", self.server, "hostname")
+		bench_name = f"{self.candidate}-{server_name}"
 		self.name = append_number_if_name_exists("Bench", bench_name, separator="-")
 
 	def validate(self):

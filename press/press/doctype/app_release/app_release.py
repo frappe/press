@@ -11,9 +11,15 @@ import frappe
 from frappe.model.document import Document
 from press.api.github import get_access_token
 from press.utils import log_error
+from frappe.model.naming import make_autoname
 
 
 class AppRelease(Document):
+	def autoname(self):
+		source = self.source[4:]
+		series = f"REL-{source}-.######"
+		self.name = make_autoname(series)
+
 	def after_insert(self):
 		self.create_deploy_candidates()
 		self.create_release_differences()

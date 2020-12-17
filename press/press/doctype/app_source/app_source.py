@@ -9,9 +9,14 @@ from frappe.model.document import Document
 from press.api.github import get_access_token
 from press.utils import log_error
 import requests
+from frappe.model.naming import make_autoname
 
 
 class AppSource(Document):
+	def autoname(self):
+		series = f"SRC-{self.app}-.###"
+		self.name = make_autoname(series)
+
 	def after_insert(self):
 		self.create_release()
 
