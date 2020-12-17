@@ -35,7 +35,7 @@
 					:key="site.name"
 					:href="'#/sites/' + site.name"
 				>
-					<span class="grid-cols-2">{{ site.name }}</span>
+					<span class="">{{ site.name }}</span>
 					<span class="text-right md:text-center">
 						<Badge :status="site.status" :usage="usage(site)" />
 					</span>
