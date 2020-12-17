@@ -8,5 +8,5 @@ from __future__ import unicode_literals
 from frappe.model.document import Document
 
 
-class S3BucketDeleteObjectsLog(Document):
+class S3BucketOperationLog(Document):
 	pass

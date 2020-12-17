@@ -1,28 +1,37 @@
 {
  "actions": [],
- "creation": "2020-12-15 10:48:21.087859",
+ "creation": "2020-12-16 17:01:05.934510",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "operation_type",
   "response"
  ],
  "fields": [
   {
    "fieldname": "response",
    "fieldtype": "Code",
-   "in_list_view": 1,
    "label": "Response",
    "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "operation_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Operation Type",
+   "options": "Delete Objects",
    "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2020-12-16 15:09:56.631668",
+ "modified": "2020-12-16 17:01:22.850162",
  "modified_by": "Administrator",
  "module": "Press",
- "name": "S3 Bucket Delete Objects Log",
+ "name": "S3 Bucket Operation Log",
  "owner": "Administrator",
  "permissions": [
   {
@@ -38,8 +47,6 @@
    "write": 1
   }
  ],
- "quick_entry": 1,
  "sort_field": "modified",
- "sort_order": "DESC",
- "track_changes": 1
+ "sort_order": "DESC"
 }
