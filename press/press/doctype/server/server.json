@@ -1,12 +1,13 @@
 {
  "actions": [],
- "autoname": "Prompt",
  "creation": "2019-12-09 12:34:13.844800",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
   "status",
+  "hostname",
+  "domain",
   "is_server_setup",
   "column_break_3",
   "ip",
@@ -165,10 +166,23 @@
    "fieldname": "use_for_new_benches",
    "fieldtype": "Check",
    "label": "Use For New Benches"
+  },
+  {
+   "fieldname": "hostname",
+   "fieldtype": "Data",
+   "label": "Hostname",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "domain",
+   "fieldtype": "Data",
+   "label": "Domain",
+   "set_only_once": 1
   }
  ],
  "links": [],
- "modified": "2020-12-16 10:03:12.172743",
+ "modified": "2020-12-17 17:27:50.212963",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

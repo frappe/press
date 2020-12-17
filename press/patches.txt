@@ -43,3 +43,4 @@ press.patches.v0_0_1.set_document_type_in_plan
 # App Subsystem Refactor
 press.patches.v0_0_1.rename_frappe_app_to_app
 press.patches.v0_0_1.rename_release_group_frappe_app_to_release_group_app
+press.patches.v0_0_1.set_hostname_in_server

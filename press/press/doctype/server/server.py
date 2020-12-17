@@ -12,6 +12,11 @@ from press.utils import log_error
 
 
 class Server(Document):
+	def autoname(self):
+		if not self.domain:
+			self.domain = frappe.db.get_single_value("Press Settings", "domain")
+		self.name = f"{self.hostname}.{self.domain}"
+
 	def on_update(self):
 		# If Database Server is changed for the server then change it for all the benches
 		if not self.is_new() and self.has_value_changed("database_server"):
