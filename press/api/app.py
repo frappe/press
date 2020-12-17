@@ -33,35 +33,6 @@ def new(app):
 	return group.name
 
 
-def update_available(name):
-	releases = frappe.get_all(
-		"App Release",
-		fields=["deployable"],
-		filters={"app": name, "status": "Approved"},
-		order_by="creation desc",
-		limit=1,
-	)
-	if releases and not releases[0].deployable:
-		return True
-	return False
-
-
-def app_status(name):
-	status = frappe.get_all(
-		"App Release",
-		fields=["status"],
-		filters={"app": name},
-		order_by="creation desc",
-		limit=1,
-	)[0].status
-	return {
-		"Approved": "Active",
-		"Pending": "Pending",
-		"Awaiting Approval": "Awaiting Approval",
-		"Rejected": "Rejected",
-	}[status]
-
-
 @frappe.whitelist()
 @protected("App")
 def get(name):
@@ -80,70 +51,11 @@ def get(name):
 	return {
 		"name": app.name,
 		"title": app.title,
-		"update_available": True,
 		"installations": 124,
 		"versions": versions,
-		"sources": sources,
 		"modified": app.modified,
 		"creation": app.creation,
 	}
-
-
-@frappe.whitelist()
-@protected("App")
-def deploys(name):
-	releases = frappe.get_all(
-		"App Release",
-		filters={"app": name, "deployable": True, "status": "Approved"},
-		fields=["name", "hash", "creation", "message", "app"],
-		order_by="creation desc",
-		limit=10,
-	)
-
-	group_names = frappe.get_all(
-		"Release Group App", fields=["parent as name"], filters={"app": name}
-	)
-	groups = {}
-	for group in group_names:
-		group_doc = frappe.get_doc("Release Group", group.name)
-		if not group_doc.enabled:
-			continue
-		frappe_app = frappe.get_all(
-			"App",
-			fields=["name", "scrubbed", "branch"],
-			filters={"name": ("in", [row.app for row in group_doc.apps]), "frappe": True},
-		)[0]
-		groups[group.name] = frappe_app
-
-	app = frappe.get_doc("App", name)
-	tags = frappe.get_all(
-		"App Tag",
-		filters={"repository": app.repo, "repository_owner": app.repo_owner},
-		fields=["hash", "tag"],
-	)
-	for tag in tags:
-		release = find(releases, lambda x: x.hash == tag.hash)
-		if release:
-			release.setdefault("tags", []).append(tag.tag)
-
-	for release in releases:
-		release["groups"] = []
-		for group in groups:
-			benches = frappe.get_all(
-				"Bench",
-				{"group": group, "app": release.app, "hash": release.hash},
-				["status", "group"],
-			)
-			statuses = set(bench.status for bench in benches)
-			if benches:
-				bench = benches[0]
-				for status in ("Active", "Installing", "Pending", "Broken", "Archived"):
-					if status in statuses:
-						bench.status = status
-						break
-				release["groups"].append(bench)
-
-	return {"groups": groups, "releases": releases}
 
 
 @frappe.whitelist()
@@ -157,9 +69,13 @@ def sources(name):
 	FROM
 		`tabApp Source` AS source
 	LEFT JOIN
+		`tabApp Source Version` AS source_version
+	ON
+		source_version.parent = source.name
+	LEFT JOIN
 		`tabFrappe Version` AS version
 	ON
-		source.version = version.name
+		source_version.version = version.name
 	WHERE
 		(source.team = %(team)s OR source.public = 1) AND
 		source.app = %(app)s
@@ -221,8 +137,6 @@ def all():
 		{"team": team},
 		as_dict=True,
 	)
-	for app in apps:
-		app["update_available"] = True
 	return apps
 
 

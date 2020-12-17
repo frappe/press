@@ -14,14 +14,13 @@
 			</div>
 			<div v-else>
 				<div
-					class="grid items-center grid-cols-3 gap-12 py-4 text-sm text-gray-700 border-b"
+					class="grid items-center grid-cols-2 gap-12 py-4 text-sm text-gray-700 border-b"
 				>
 					<span>App Name</span>
 					<span class="text-right">Last Updated</span>
-					<span></span>
 				</div>
 				<a
-					class="grid items-center grid-cols-3 gap-12 py-4 text-sm border-b hover:bg-gray-50 focus:outline-none focus:shadow-outline"
+					class="grid items-center grid-cols-2 gap-12 py-4 text-sm border-b hover:bg-gray-50 focus:outline-none focus:shadow-outline"
 					v-for="app in $resources.apps.data"
 					:key="app.name"
 					:href="'#/apps/' + app.name"
@@ -30,13 +29,6 @@
 					<FormatDate class="text-right" type="relative">
 						{{ app.modified }}
 					</FormatDate>
-					<span class="text-right">
-						<Badge
-							:status="'Update Available'"
-							v-if="app.update_available"
-							class="mr-4"
-						/>
-					</span>
 				</a>
 			</div>
 		</div>
