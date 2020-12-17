@@ -45,7 +45,16 @@ def all():
 		filters={"enabled": True, "team": get_current_team()},
 		order_by="creation desc",
 	)
+
 	for group in groups:
+		most_recent_candidate = frappe.get_all(
+			"Deploy Candidate",
+			["status"],
+			{"group": group.name},
+			limit=1,
+			order_by="creation desc",
+		)[0]
+		group.update_available = most_recent_candidate.status == "Draft"
 		group.status = "Active"
 	return groups
 
@@ -154,6 +163,19 @@ def candidates(name):
 @frappe.whitelist()
 def candidate(name):
 	candidate = frappe.get_doc("Deploy Candidate", name)
+	jobs = []
+	deploys = frappe.get_all("Deploy", {"candidate": name}, limit=1)
+	if deploys:
+		deploy = frappe.get_doc("Deploy", deploys[0].name)
+		for bench in deploy.benches:
+			job = frappe.get_all(
+				"Agent Job",
+				["name", "status", "end", "duration"],
+				{"bench": bench.bench, "job_type": "New Bench"},
+				limit=1,
+			)[0]
+			jobs.append(job)
+
 	return {
 		"name": candidate.name,
 		"status": candidate.status,
@@ -164,14 +186,21 @@ def candidate(name):
 		"build_end": candidate.build_end,
 		"build_duration": candidate.build_duration,
 		"apps": candidate.apps,
+		"jobs": jobs,
 	}
 
 
 @frappe.whitelist()
 def deploy(name):
 	candidate = frappe.get_all(
-		"Deploy Candidate", {"group": name}, limit=1, order_by="creation desc"
+		"Deploy Candidate",
+		["name", "status"],
+		{"group": name},
+		limit=1,
+		order_by="creation desc",
 	)[0]
+	if candidate.status != "Draft":
+		return
 	candidate = frappe.get_doc("Deploy Candidate", candidate.name)
 	candidate.build_and_deploy()
 	return candidate.name

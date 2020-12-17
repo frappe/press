@@ -38,72 +38,112 @@
 							Select another Deploy
 						</span>
 					</router-link>
-					<div class="min-h-full pb-16 -mx-4 bg-black sm:mx-0">
-						<div class="px-6 py-4 mb-2 border-b border-gray-900">
-							<div class="text-sm font-semibold text-white">
-								Build Log
+					<div class="min-h-full">
+						<div class="pb-4 -mx-4 bg-black sm:mx-0">
+							<div class="px-6 py-4 mb-2 border-b border-gray-900">
+								<div class="text-sm font-semibold text-white">
+									Build Log
+								</div>
+								<div
+									class="text-xs text-gray-500"
+									v-if="selectedCandidate.status === 'Success'"
+								>
+									Completed
+									<FormatDate type="relative">
+										{{ selectedCandidate.build_end }}
+									</FormatDate>
+									in {{ formatDuration(selectedCandidate.build_duration) }}
+								</div>
 							</div>
-							<div
-								class="text-xs text-gray-500"
-								v-if="selectedCandidate.status === 'Success'"
+							<details
+								class="px-6 text-white cursor-pointer"
+								v-for="step in selectedCandidate.build_steps"
+								:key="step.idx"
 							>
-								Completed
-								<FormatDate type="relative">
-									{{ selectedCandidate.build_end }}
-								</FormatDate>
-								in {{ formatDuration(selectedCandidate.build_duration) }}
+								<summary
+									class="flex items-center py-2 text-xs text-gray-600 focus:outline-none"
+								>
+									<span class="ml-1">
+										<Spinner
+											v-if="step.status === 'Running'"
+											class="w-3 h-3 text-gray-500"
+										/>
+										<FeatherIcon
+											v-else-if="step.status === 'Success'"
+											name="check"
+											:stroke-width="3"
+											class="w-3 h-3 text-green-500"
+										/>
+										<FeatherIcon
+											v-else-if="step.status === 'Failure'"
+											name="x"
+											:stroke-width="3"
+											class="w-3 h-3 text-red-500"
+										/>
+									</span>
+									<span class="ml-2 font-semibold text-white flex-grow">
+										{{ step.stage }} - {{ step.step }}
+									</span>
+									<div
+										v-if="
+											step.status === 'Success' || step.status === 'Failure'
+										"
+									>
+										<div
+											class="text-gray-300"
+											v-if="step.cached && !step.duration"
+										>
+											Cached
+										</div>
+										<div class="text-gray-300" v-else>
+											{{ step.duration }}<span class="pl-0.5">s</span>
+										</div>
+									</div>
+								</summary>
+								<div class="px-6 font-mono text-xs text-blue-200">
+									<pre class="whitespace-pre-wrap">{{ step.command }}</pre>
+								</div>
+								<div class="px-6 font-mono text-xs text-gray-200">
+									<pre class="whitespace-pre-wrap">{{ step.output }}</pre>
+								</div>
+							</details>
+						</div>
+						<div class="bg-black sm:mx-0">
+							<div
+								class="px-6 py-4 border-t border-gray-900"
+								v-for="job in selectedCandidate.jobs"
+								:key="job.name"
+							>
+								<router-link
+									:to="`/benches/${bench.name}/logs/${job.name}`"
+									class="flex items-center justify-between"
+								>
+									<div>
+										<div class="text-sm font-semibold text-white">
+											Deploy Log
+										</div>
+										<div
+											class="text-xs text-gray-500"
+											v-if="job.status === 'Success'"
+										>
+											Completed
+											<FormatDate type="relative">
+												{{ job.end }}
+											</FormatDate>
+											in {{ formatDuration(job.duration) }}
+										</div>
+										<div class="text-xs text-gray-500" v-else>
+											{{ job.status }}
+										</div>
+									</div>
+									<FeatherIcon
+										name="external-link"
+										class="w-3 h-3 ml-1"
+										color="white"
+									/>
+								</router-link>
 							</div>
 						</div>
-						<details
-							class="px-6 text-white cursor-pointer"
-							v-for="step in selectedCandidate.build_steps"
-							:key="step.idx"
-						>
-							<summary
-								class="flex items-center py-2 text-xs text-gray-600 focus:outline-none"
-							>
-								<span class="ml-1">
-									<Spinner
-										v-if="step.status === 'Running'"
-										class="w-3 h-3 text-gray-500"
-									/>
-									<FeatherIcon
-										v-else-if="step.status === 'Success'"
-										name="check"
-										:stroke-width="3"
-										class="w-3 h-3 text-green-500"
-									/>
-									<FeatherIcon
-										v-else-if="step.status === 'Failure'"
-										name="x"
-										:stroke-width="3"
-										class="w-3 h-3 text-red-500"
-									/>
-								</span>
-								<span class="ml-2 font-semibold text-white flex-grow">
-									{{ step.stage }} - {{ step.step }}
-								</span>
-								<div
-									v-if="step.status === 'Success' || step.status === 'Failure'"
-								>
-									<div
-										class="text-gray-300"
-										v-if="step.cached && !step.duration"
-									>
-										Cached
-									</div>
-									<div class="text-gray-300" v-else>
-										{{ step.duration }}<span class="pl-0.5">s</span>
-									</div>
-								</div>
-							</summary>
-							<div class="px-6 font-mono text-xs text-blue-200">
-								<pre class="whitespace-pre-wrap">{{ step.command }}</pre>
-							</div>
-							<div class="px-6 font-mono text-xs text-gray-200">
-								<pre class="whitespace-pre-wrap">{{ step.output }}</pre>
-							</div>
-						</details>
 					</div>
 				</div>
 			</div>
