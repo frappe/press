@@ -27,8 +27,9 @@ from press.utils import convert, get_client_blacklisted_keys, guess_type, log_er
 
 class Site(Document):
 	def autoname(self):
-		domain = frappe.db.get_single_value("Press Settings", "domain")
-		self.name = f"{self.subdomain}.{domain}"
+		if not self.domain:
+			self.domain = frappe.db.get_single_value("Press Settings", "domain")
+		self.name = f"{self.subdomain}.{self.domain}"
 
 	def validate(self):
 		# validate site name
