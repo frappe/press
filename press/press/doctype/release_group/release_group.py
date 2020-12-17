@@ -58,7 +58,7 @@ class ReleaseGroup(Document):
 	def validate_servers(self):
 		if self.servers:
 			servers = set(server.server for server in self.servers)
-			if len(servers) != self.servers:
+			if len(servers) != len(self.servers):
 				frappe.throw(
 					"Servers can be added only once", frappe.ValidationError,
 				)
