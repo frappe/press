@@ -16,18 +16,10 @@ export default {
 			let usage = this.usage;
 			this.badgeText = this.status;
 
-			if (usage && usage > 70) {
-				// this is specific to site usage
-				if (usage > 95) {
-					color = 'red';
-				} else if (usage > 80) {
-					color = 'orange';
-				} else {
-					color = 'yellow';
-				}
-				if (this.status == 'Active') {
-					this.badgeText = 'Attention Required';
-				}
+			// this is specific to site usage
+			if (usage && usage >= 80 && this.status == 'Active') {
+				color = 'yellow';
+				this.badgeText = 'Attention Required';
 			}
 			if (!color && this.status) {
 				color = {
