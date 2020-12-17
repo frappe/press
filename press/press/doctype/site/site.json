@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "subdomain",
+  "domain",
   "status",
   "status_before_update",
   "server",
@@ -278,10 +279,16 @@
    "label": "Apps",
    "options": "Site App",
    "reqd": 1
+  },
+  {
+   "fieldname": "domain",
+   "fieldtype": "Data",
+   "label": "Domain",
+   "set_only_once": 1
   }
  ],
  "links": [],
- "modified": "2020-12-15 22:15:05.260696",
+ "modified": "2020-12-17 18:11:02.171066",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
