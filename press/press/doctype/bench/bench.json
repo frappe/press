@@ -1,6 +1,5 @@
 {
  "actions": [],
- "autoname": "Prompt",
  "creation": "2019-12-09 12:35:16.109025",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -53,6 +52,7 @@
    "in_standard_filter": 1,
    "label": "Deploy Candidate",
    "options": "Deploy Candidate",
+   "reqd": 1,
    "set_only_once": 1
   },
   {
@@ -142,7 +142,7 @@
   }
  ],
  "links": [],
- "modified": "2020-12-15 22:19:17.635016",
+ "modified": "2020-12-17 17:51:02.145366",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",

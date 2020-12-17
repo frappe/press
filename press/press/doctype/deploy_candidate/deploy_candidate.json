@@ -13,7 +13,6 @@
    "label": "Build and Deploy"
   }
  ],
- "autoname": "deploy-.######",
  "creation": "2020-01-13 16:21:04.051415",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -160,7 +159,7 @@
   }
  ],
  "links": [],
- "modified": "2020-12-16 18:28:53.845880",
+ "modified": "2020-12-17 16:51:23.798780",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",

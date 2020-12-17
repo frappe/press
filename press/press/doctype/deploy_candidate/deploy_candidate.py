@@ -21,9 +21,15 @@ from frappe.utils import now_datetime as now
 from press.utils import log_error
 from frappe.core.utils import find
 import docker
+from frappe.model.naming import make_autoname
 
 
 class DeployCandidate(Document):
+	def autoname(self):
+		group = self.group[6:]
+		series = f"deploy-{group}-.######"
+		self.name = make_autoname(series)
+
 	def after_insert(self):
 		return
 
