@@ -37,7 +37,7 @@
 				>
 					<span class="grid-cols-2">{{ site.name }}</span>
 					<span class="text-right md:text-center">
-						<Badge :status="site.status" :usage="usage(site)"/>
+						<Badge :status="site.status" :usage="usage(site)" />
 					</span>
 					<FormatDate class="hidden text-right md:block" type="relative">
 						{{ site.creation }}
