@@ -34,6 +34,12 @@ export default [
 				component: () =>
 					import(/* webpackChunkName: "bench" */ '../views/BenchDeploys.vue'),
 				props: true
+			},
+			{
+				path: 'jobs/:jobName?',
+				component: () =>
+					import(/* webpackChunkName: "bench" */ '../views/BenchJobs.vue'),
+				props: true
 			}
 		]
 	},
