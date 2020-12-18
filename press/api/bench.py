@@ -8,6 +8,7 @@ from press.utils import get_current_team
 from press.api.site import protected
 from frappe.core.utils import find_all
 from press.press.doctype.release_group.release_group import new_release_group
+from press.press.doctype.agent_job.agent_job import job_detail
 
 
 @frappe.whitelist()
@@ -204,3 +205,41 @@ def deploy(name):
 	candidate = frappe.get_doc("Deploy Candidate", candidate.name)
 	candidate.build_and_deploy()
 	return candidate.name
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def jobs(name):
+	benches = frappe.get_all("Bench", {"group": name}, pluck="name")
+	jobs = frappe.get_all(
+		"Agent Job",
+		fields=["name", "job_type", "creation", "status", "start", "end", "duration"],
+		filters={"bench": ("in", benches)},
+		limit=10,
+	)
+	return jobs
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def job(name, job):
+	job = frappe.get_doc("Agent Job", job)
+	job = job.as_dict()
+	job.steps = frappe.get_all(
+		"Agent Job Step",
+		filters={"agent_job": job.name},
+		fields=["step_name", "status", "start", "end", "duration", "output"],
+		order_by="creation",
+	)
+	return job
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def running_jobs(name):
+	benches = frappe.get_all("Bench", {"group": name}, pluck="name")
+	jobs = frappe.get_all(
+		"Agent Job",
+		filters={"status": ("in", ("Pending", "Running")), "bench": ("in", benches)},
+	)
+	return [job_detail(job.name) for job in jobs]

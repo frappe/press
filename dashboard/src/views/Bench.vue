@@ -62,7 +62,8 @@ export default {
 			let tabs = [
 				{ label: 'General', route: 'general' },
 				{ label: 'Apps', route: 'apps' },
-				{ label: 'Deploys', route: 'deploys' }
+				{ label: 'Deploys', route: 'deploys' },
+				{ label: 'Jobs', route: 'Jobs' }
 			];
 			if (this.bench) {
 				return tabs.map(tab => {

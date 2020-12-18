@@ -115,7 +115,7 @@
 								:key="job.name"
 							>
 								<router-link
-									:to="`/benches/${bench.name}/logs/${job.name}`"
+									:to="`/benches/${bench.name}/jobs/${job.name}`"
 									class="flex items-center justify-between"
 								>
 									<div>
