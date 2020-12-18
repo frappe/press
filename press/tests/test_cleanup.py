@@ -222,7 +222,7 @@ class TestFIFO(unittest.TestCase):
 	def test_backups_older_than_number_specified_deleted(self):
 		"""Ensure older backups in queue are deleted."""
 		fifo = FIFO()
-		fifo.offsite_keep_count = 2
+		fifo.offsite_backups_count = 2
 		site = create_test_site("testsubdomain")
 		older = create_test_site_backup(site.name, date.today() - timedelta(2))
 		old = create_test_site_backup(site.name, date.today() - timedelta(1))
@@ -252,7 +252,7 @@ class TestFIFO(unittest.TestCase):
 		site2 = create_test_site("testsubdomain2")
 
 		fifo = FIFO()
-		fifo.offsite_keep_count = 1
+		fifo.offsite_backups_count = 1
 
 		create_test_site_backup(site.name, date.today() - timedelta(1))
 		create_test_site_backup(site.name)
@@ -265,6 +265,14 @@ class TestFIFO(unittest.TestCase):
 		self.assertEqual(
 			len(args[0]), 3 * 2, msg=mock_del_remote_backup_objects.call_args,
 		)
+
+	def test_press_setting_updates_new_object(self):
+		"""Ensure updating press settings updates new FIFO objects."""
+		press_settings = create_test_press_settings()
+		press_settings.offsite_backups_count = 2
+		press_settings.save()
+		fifo = FIFO()
+		self.assertEqual(fifo.offsite_backups_count, 2)
 
 
 class TestBackupRotationScheme(unittest.TestCase):
