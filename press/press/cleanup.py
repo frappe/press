@@ -117,9 +117,10 @@ class BackupRotationScheme:
 class FIFO(BackupRotationScheme):
 	"""Represents First-in-First-out backup rotation scheme."""
 
-	offsite_keep_count = (
-		frappe.db.get_single_value("Press Settings", "offsite_backups_count") or 30
-	)
+	def __init__(self):
+		self.offsite_keep_count = (
+			frappe.db.get_single_value("Press Settings", "offsite_backups_count") or 30
+		)
 
 	def expire_offsite_backups(self, site: Site) -> List[str]:
 		offsite_expiry = self.offsite_keep_count
