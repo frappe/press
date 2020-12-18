@@ -22,16 +22,16 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Operation Type",
-   "options": "Delete Objects",
+   "options": "Delete Files",
    "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2020-12-16 17:01:22.850162",
+ "modified": "2020-12-18 09:33:44.398182",
  "modified_by": "Administrator",
  "module": "Press",
- "name": "S3 Bucket Operation Log",
+ "name": "Remote Operation Log",
  "owner": "Administrator",
  "permissions": [
   {

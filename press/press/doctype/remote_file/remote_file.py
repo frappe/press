@@ -125,9 +125,7 @@ def delete_remote_backup_objects(remote_files):
 		response = s3.delete_objects(Delete={"Objects": objects})
 		response = pprint.pformat(response)
 		frappe.get_doc(
-			doctype="S3 Bucket Operation Log",
-			operation_type="Delete Objects",
-			response=response,
+			doctype="Remote Operation Log", operation_type="Delete Files", response=response,
 		).insert()
 
 	frappe.db.set_value(

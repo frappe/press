@@ -7,5 +7,5 @@ from __future__ import unicode_literals
 import unittest
 
 
-class TestS3BucketOperationLog(unittest.TestCase):
+class TestRemoteOperationLog(unittest.TestCase):
 	pass
