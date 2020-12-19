@@ -17,7 +17,6 @@
   "update",
   "setup_wizard_complete",
   "billing",
-  "plan",
   "team",
   "free",
   "section_break_6",
@@ -262,16 +261,6 @@
    "label": "Keys Removed in Last Config Change"
   },
   {
-   "fieldname": "plan",
-   "fieldtype": "Link",
-   "hide_days": 1,
-   "hide_seconds": 1,
-   "in_standard_filter": 1,
-   "label": "Plan",
-   "options": "Plan",
-   "reqd": 1
-  },
-  {
    "fieldname": "apps",
    "fieldtype": "Table",
    "hide_days": 1,
@@ -288,7 +277,7 @@
   }
  ],
  "links": [],
- "modified": "2020-12-17 18:11:02.171066",
+ "modified": "2020-12-19 08:53:54.446499",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
