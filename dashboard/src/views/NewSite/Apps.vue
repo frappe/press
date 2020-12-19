@@ -40,7 +40,7 @@
 						<a
 							slot="secondary-content"
 							class="inline-block text-sm leading-snug text-blue-600"
-							:href="'/marketplace/apps/' + marketplaceApp.name"
+							:href="'/' + marketplaceApp.route"
 							target="_blank"
 							@click.stop
 						>
