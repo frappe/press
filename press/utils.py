@@ -121,100 +121,139 @@ def get_minified_script():
 	return script_contents
 
 
-def verify_frappe_site(site_url):
-	url = None
-
-	try:
-		res = requests.get(f"{site_url}/api/method/frappe.ping")
-		if res.ok:
-			data = res.json()
-			if data.get("message") == "pong":
-				url = res.url.split("/api")[0]
-	except Exception:
-		pass
-
-	return url
+def get_frappe_backups(url, email, password):
+	return RemoteFrappeSite(url, email, password).get_backups()
 
 
-def get_frappe_backups(site_url, username, password):
-	headers = {"Accept": "application/json", "Content-Type": "application/json"}
+class RemoteFrappeSite:
+	def __init__(self, url, usr, pwd):
+		if not url.startswith("http"):
+			# http will be redirected to https in requests
+			url = f"http://{url}"
 
-	if not site_url.startswith("http"):
-		# http will be redirected to https in requests
-		site_url = f"http://{site_url}"
+		self.user_site = url
+		self.user_login = usr
+		self.password_login = pwd
+		self._remote_backup_links = {}
 
-	site_url = verify_frappe_site(site_url)
-	if not site_url:
-		frappe.throw("Invalid Frappe Site")
+		self._validate_frappe_site()
+		self._validate_user_permissions()
 
-	# tested - works
-	response = requests.post(
-		f"{site_url}/api/method/login", data={"usr": username, "pwd": password},
-	)
-	if response.ok:
-		sid = response.cookies.get("sid")
-	else:
-		if response.status_code == 401:
-			frappe.throw("Invalid Credentials")
+	@property
+	def user_sid(self):
+		return self._user_sid
+
+	@property
+	def site(self):
+		return self._site
+
+	@property
+	def backup_links(self):
+		return self._remote_backup_links
+
+	def _validate_frappe_site(self):
+		"""Validates if Frappe Site and sets RemoteBackupRetrieval.site"""
+		res = requests.get(f"{self.user_site}/api/method/frappe.ping")
+
+		if not res.ok:
+			frappe.throw("Invalid Frappe Site")
+
+		if res.json().get("message") == "pong":
+			url = res.url.split("/api")[0]
+			self._site = url
+
+	def _validate_user_permissions(self):
+		"""Validates user permssions on Frappe Site and sets RemoteBackupRetrieval.user_sid"""
+		response = requests.post(
+			f"{self.site}/api/method/login",
+			data={"usr": self.user_login, "pwd": self.password_login},
+		)
+		if not response.ok:
+			if response.status_code == 401:
+				frappe.throw("Invalid Credentials")
+			else:
+				response.raise_for_status()
+
+		self._user_sid = response.cookies.get("sid")
+
+	def _handle_backups_retrieval_failure(self, response):
+		log_error(
+			"Backups Retreival Error - Magic Migration",
+			response=response.text,
+			remote_site=self.site,
+		)
+		if response.status_code == 403:
+			error_msg = "Insufficient Permissions"
 		else:
-			response.raise_for_status()
+			side = "Client" if 400 <= response.status_code < 500 else "Server"
+			error_msg = (
+				f"{side} Error occurred: {response.status_code} {response.raw.reason}"
+				f" recieved from {self.site}"
+			)
+		frappe.throw(error_msg)
 
-	suffix = f"?sid={sid}" if sid else ""
-	res = requests.get(
-		f"{site_url}/api/method/frappe.utils.backups.fetch_latest_backups{suffix}",
-		headers=headers,
-	)
+	def get_backups(self):
+		self._create_fetch_backups_request()
+		self._processed_backups_from_response()
+		self._validate_database_backups_size()
+		self._validate_missing_backups()
 
-	def url(file_path, sid):
-		if not file_path:
-			return None
-		backup_path = file_path.split("/private")[1]
-		return urljoin(site_url, f"{backup_path}?sid={sid}")
+		return self.backup_links
 
-	if res.ok:
-		payload = res.json()
-		files = payload.get("message", {})
+	def _create_fetch_backups_request(self):
+		headers = {"Accept": "application/json", "Content-Type": "application/json"}
+		suffix = f"?sid={self.user_sid}" if self.user_sid else ""
+		res = requests.get(
+			f"{self.site}/api/method/frappe.utils.backups.fetch_latest_backups{suffix}",
+			headers=headers,
+		)
+		if not res.ok:
+			self._handle_backups_retrieval_failure(res)
+		self._fetch_latest_backups_response = res.json().get("message", {})
 
+	def _validate_database_backups_size(self):
+		if not self.backup_links["database"]:
+			return
+
+		# check if database is > 500MiB and show alert
+		database_size_in_mb = (
+			float(
+				requests.head(self.backup_links["database"]).headers.get("Content-Length", 999)
+			)
+			/ 1024
+			* 2
+		)
+
+		if database_size_in_mb > 500:
+			frappe.throw(
+				"Your site exceeds the limits for this operation. Only sites with"
+				" database backups less than 500MB are allowed."
+			)
+
+	def _validate_missing_backups(self):
 		missing_files = []
-		file_urls = {}
-		for file_type, file_path in files.items():
+
+		for file_type, file_path in self.backup_links.items():
 			if not file_path:
 				missing_files.append(file_type)
-			else:
-				file_urls[file_type] = url(file_path, sid)
 
 		if missing_files:
-			missing_config = "site config and " if not file_urls.get("config") else ""
+			missing_config = "site config and " if not self.backup_links.get("config") else ""
 			missing_backups = (
 				f"Missing {missing_config}backup files:"
 				f" {', '.join([x.title() for x in missing_files])}"
 			)
 			frappe.throw(missing_backups)
 
-		# check if database is > 500MiB and show alert
-		database_size = float(
-			requests.head(file_urls["database"]).headers.get("Content-Length", 999)
-		)
+	def __process_frappe_url(self, path):
+		if not path:
+			return None
+		backup_path = path.split("/private")[1]
+		return urljoin(self.site, f"{backup_path}?sid={self.user_sid}")
 
-		if (database_size / 1024 * 2) > 500:
-			frappe.throw("Your site exceeds the limits for this operation.")
-
-		return file_urls
-	else:
-		log_error(
-			"Backups Retreival Error - Magic Migration", response=res.text, remote_site=site_url
-		)
-
-		if res.status_code == 403:
-			error_msg = "Insufficient Permissions"
-		else:
-			side = "Client" if 400 <= res.status_code < 500 else "Server"
-			error_msg = (
-				f"{side} Error occurred: {res.status_code} {res.raw.reason} recieved"
-				f" from {site_url}"
-			)
-
-		frappe.throw(error_msg)
+	def _processed_backups_from_response(self):
+		for file_type, file_path in self._fetch_latest_backups_response.items():
+			self._remote_backup_links[file_type] = self.__process_frappe_url(file_path)
 
 
 def get_client_blacklisted_keys() -> list:

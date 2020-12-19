@@ -47,7 +47,7 @@ def protected(doctype):
 
 @frappe.whitelist()
 def new(site):
-	team = get_current_team()
+	team = get_current_team(get_doc=True)
 	bench = frappe.get_all(
 		"Bench",
 		fields=["name", "server"],
@@ -62,7 +62,8 @@ def new(site):
 			"subdomain": site["name"],
 			"bench": bench,
 			"apps": [{"app": app} for app in site["apps"]],
-			"team": team,
+			"team": team.name,
+			"free": team.free_account,
 			"subscription_plan": plan,
 			"remote_config_file": site["files"].get("config"),
 			"remote_database_file": site["files"].get("database"),
@@ -70,7 +71,8 @@ def new(site):
 			"remote_private_file": site["files"].get("private"),
 		},
 	).insert(ignore_permissions=True)
-	site.create_subscription(plan)
+	if not team.free_account:
+		site.create_subscription(plan)
 	return site.name
 
 
@@ -252,7 +254,7 @@ def options_for_new():
 
 	marketplace_apps = frappe.db.get_all(
 		"Marketplace App",
-		fields=["title", "category", "image", "description", "name"],
+		fields=["title", "category", "image", "description", "name", "route"],
 		filters={"name": ("in", list(apps))},
 	)
 

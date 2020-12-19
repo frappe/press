@@ -22,13 +22,6 @@ class MarketplaceApp(WebsiteGenerator):
 	def validate(self):
 		self.published = self.status == "Published"
 
-	def on_update(self):
-		doc_before_save = self.get_doc_before_save()
-		if not doc_before_save or doc_before_save.status != self.status:
-			frappe_app = self.get_frappe_app()
-			frappe_app.public = self.status == "Published"
-			frappe_app.save()
-
 	def get_frappe_app(self):
 		return frappe.get_doc("App", {"scrubbed": self.name, "public": 1})
 
@@ -77,6 +70,7 @@ class MarketplaceApp(WebsiteGenerator):
 			"Release Group",
 			filters=[
 				["Release Group", "enabled", "=", 1],
+				["Release Group", "public", "=", 1],
 				["Release Group App", "app", "in", apps],
 			],
 			fields=["name"],
