@@ -12,7 +12,7 @@ def execute():
 	for site in non_archived_sites:
 		site_doc = frappe.get_doc("Site", site)
 		parsed_usage = json.loads(site_doc._site_usages or "{}")
-		site_doc.current_cpu_usage = parsed_usage.get("cpu", 0)
-		site_doc.current_database_usage = parsed_usage.get("database", 0)
-		site_doc.current_disk_usage = parsed_usage.get("disk", 0)
+		site_doc.current_cpu_usage = parsed_usage.get("cpu", 0) * 100
+		site_doc.current_database_usage = parsed_usage.get("database", 0) * 100
+		site_doc.current_disk_usage = parsed_usage.get("disk", 0) * 100
 		site_doc.save()

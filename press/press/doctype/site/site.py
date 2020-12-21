@@ -624,8 +624,8 @@ class Site(Document):
 		plan = frappe.get_doc("Plan", self.plan)
 
 		if usage.database < plan.max_database_usage and disk_usage < plan.max_storage_usage:
-			self.current_database_usage = usage.database / plan.max_database_usage
-			self.current_disk_usage = (usage.public + usage.private) / plan.max_storage_usage
+			self.current_database_usage = (usage.database / plan.max_database_usage) * 100
+			self.current_disk_usage = ((usage.public + usage.private) / plan.max_storage_usage) * 100
 			self.unsuspend(reason="Plan Upgraded")
 
 	def deactivate(self):

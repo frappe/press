@@ -364,9 +364,9 @@ def report_usage_violations():
 		cpu_limit = _get_config(plan)["rate_limit"]["limit"] * 1000000
 		database_limit, disk_limit = _get_limits(plan)
 
-		latest_cpu_usage = int(cpu_usage / cpu_limit)
-		latest_database_usage = int(usage.database / database_limit)
-		latest_disk_usage = int((usage.public + usage.private) / disk_limit)
+		latest_cpu_usage = int((cpu_usage / cpu_limit) * 100)
+		latest_database_usage = int((usage.database / database_limit) * 100)
+		latest_disk_usage = int(((usage.public + usage.private) / disk_limit) * 100)
 
 		# notify if reaching disk/database limits
 		site = frappe.get_doc("Site", usage.site)
