@@ -400,7 +400,7 @@ def suspend_sites():
 	)
 
 	for site in active_sites:
-		if site.current_database_usage > 1 or site.current_disk_usage > 1:
+		if site.current_database_usage > 100 or site.current_disk_usage > 100:
 			frappe.get_doc("Site", site.name).suspend(reason="Site Usage Exceeds Plan limits")
 
 
