@@ -3,16 +3,24 @@
 		class="inline-block px-3 py-1 text-xs font-medium rounded-md cursor-default"
 		:class="classes"
 	>
-		<slot>{{ status }}</slot>
+		<slot>{{ badgeText }}</slot>
 	</span>
 </template>
 <script>
 export default {
 	name: 'Badge',
-	props: ['color', 'status'],
+	props: ['color', 'status', 'usage', 'badgeText'],
 	computed: {
 		classes() {
 			let color = this.color;
+			let usage = this.usage;
+			this.badgeText = this.status;
+
+			// this is specific to site usage
+			if (usage && usage >= 80 && this.status == 'Active') {
+				color = 'yellow';
+				this.badgeText = 'Attention Required';
+			}
 			if (!color && this.status) {
 				color = {
 					Pending: 'orange',

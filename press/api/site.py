@@ -303,7 +303,15 @@ def get_plans():
 def all():
 	sites = frappe.get_list(
 		"Site",
-		fields=["name", "status", "creation", "bench"],
+		fields=[
+			"name",
+			"status",
+			"creation",
+			"bench",
+			"current_cpu_usage",
+			"current_database_usage",
+			"current_disk_usage",
+		],
 		filters={"team": get_current_team(), "status": ("!=", "Archived")},
 		order_by="creation desc",
 	)
@@ -364,7 +372,11 @@ def get(name):
 		"status": site.status,
 		"installed_apps": sorted(installed_apps, key=lambda x: bench_apps[x.name]),
 		"available_apps": sorted(available_apps, key=lambda x: bench_apps[x.name]),
-		"usage": json.loads(site._site_usages),
+		"usage": {
+			"cpu": site.current_cpu_usage,
+			"disk": site.current_disk_usage,
+			"database": site.current_database_usage,
+		},
 		"setup_wizard_complete": site.setup_wizard_complete,
 		"config": site_config,
 		"creation": site.creation,
