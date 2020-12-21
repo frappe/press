@@ -486,7 +486,7 @@ class Site(Document):
 
 		fetched_usage = data["usage"]
 		fetched_config = data["config"]
-		fetched_timezone = data["time_zone"]
+		fetched_timezone = data["timezone"]
 
 		self._sync_usage_info(fetched_usage)
 		to_save = self._sync_config_info(fetched_config)
