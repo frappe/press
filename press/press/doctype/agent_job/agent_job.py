@@ -342,13 +342,7 @@ def report_usage_violations():
 	def _get_config(plan):
 		return get_plan_config(plan)
 
-	for usage in latest_usages:
-		site = usage.site
-		plan = usage.plan
-
-		cpu_limit = _get_config(plan)["rate_limit"]["limit"] * 1000000
-		database_limit, disk_limit = _get_limits(plan)
-
+	def _get_cpu_counter(site):
 		_temp_cpu_counter = frappe.get_all(
 			"Site Request Log",
 			fields=["counter"],
@@ -358,18 +352,33 @@ def report_usage_violations():
 			limit=1,
 		)
 		if _temp_cpu_counter:
-			counter = cint(_temp_cpu_counter[0])
+			cpu_usage = cint(_temp_cpu_counter[0])
 		else:
-			counter = 0
+			cpu_usage = 0
+		return cpu_usage
 
-		site_usages = {
-			"cpu": counter / cpu_limit,
-			"database": usage.database / database_limit,
-			"disk": (usage.public + usage.private) / disk_limit,
-		}
+	for usage in latest_usages:
+		plan = usage.plan
+		cpu_usage = _get_cpu_counter(usage.site)
+
+		cpu_limit = _get_config(plan)["rate_limit"]["limit"] * 1000000
+		database_limit, disk_limit = _get_limits(plan)
+
+		latest_cpu_usage = int(cpu_usage / cpu_limit)
+		latest_database_usage = int(usage.database / database_limit)
+		latest_disk_usage = int((usage.public + usage.private) / disk_limit)
 
 		# notify if reaching disk/database limits
-		frappe.db.set_value("Site", site, "_site_usages", json.dumps(site_usages))
+		site = frappe.get_doc("Site", usage.site)
+		if (
+			site.current_cpu_usage != latest_cpu_usage
+			or site.current_database_usage != latest_database_usage
+			or site.current_disk_usage != latest_disk_usage
+		):
+			site.current_cpu_usage = latest_cpu_usage
+			site.current_database_usage = latest_database_usage
+			site.current_disk_usage = latest_disk_usage
+			site.save()
 
 
 def suspend_sites():
@@ -384,12 +393,11 @@ def suspend_sites():
 	active_sites = frappe.get_all(
 		"Site",
 		filters={"status": "Active", "free": False, "team": ("not in", free_teams)},
-		fields=["name", "_site_usages", "team"],
+		fields=["name", "team", "current_database_usage", "current_disk_usage"],
 	)
 
 	for site in active_sites:
-		usages = json.loads(site._site_usages or "{}")
-		if usages.get("database", 0) > 1 or usages.get("disk", 0) > 1:
+		if site.current_database_usage > 1 or site.current_disk_usage > 1:
 			frappe.get_doc("Site", site.name).suspend(reason="Site Usage Exceeds Plan limits")
 
 
