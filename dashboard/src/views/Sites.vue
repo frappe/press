@@ -35,7 +35,12 @@
 					:key="site.name"
 					:href="'#/sites/' + site.name"
 				>
-					<span class="">{{ site.name }}</span>
+					<span class="grid-cols-2">
+						{{ site.name }}
+						<span class="pl-2" v-if="usage(site) > 75">
+							<StatusIdicator :usage="usage(site)" />
+						</span>
+					</span>
 					<span class="text-right md:text-center">
 						<Badge :status="site.status" />
 					</span>
@@ -106,6 +111,13 @@ export default {
 		},
 		relativeDate(dateString) {
 			return dateString;
+		},
+		usage(site) {
+			return Math.max(
+				site.current_cpu_usage,
+				site.current_database_usage,
+				site.current_disk_usage
+			);
 		}
 	}
 };
