@@ -109,7 +109,7 @@ doc_events = {
 scheduler_events = {
 	"daily": [
 		"press.press.cleanup.remove_logs",
-		"press.press.doctype.team.team.suspend_sites.execute",
+		"press.press.doctype.team.suspend_sites.execute",
 		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
 		"press.press.doctype.invoice.invoice.submit_invoices",
 	],
