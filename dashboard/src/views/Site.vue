@@ -151,19 +151,25 @@ export default {
 				let tab = 'general';
 				this.$router.replace(`${path}/${tab}`);
 			}
-		}
+		},
+		closeToLimits() {
+			return [
+				this.site.current_cpu_usage,
+				this.site.current_database_usage,
+				this.site.current_disk_usage
+			].some(x => 100 >= x && x > 80);
+		},
+		limitExceeded() {
+			return [
+				this.site.current_cpu_usage,
+				this.site.current_database_usage,
+				this.site.current_disk_usage
+			].some(x => x > 100);
+		},
 	},
 	computed: {
 		site() {
 			return this.$resources.site.data;
-		},
-		closeToLimits() {
-			return Object.values(this.$resources.site.data.usage).some(
-				x => 1.0 >= x && x > 0.8
-			);
-		},
-		limitExceeded() {
-			return Object.values(this.$resources.site.data.usage).some(x => x > 1.0);
 		},
 		tabs() {
 			let tabRoute = subRoute => `/sites/${this.siteName}/${subRoute}`;
