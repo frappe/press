@@ -35,14 +35,9 @@
 					:key="site.name"
 					:href="'#/sites/' + site.name"
 				>
-					<span class="grid-cols-2">
-						{{ site.name }}
-						<span class="pl-2" v-if="usage(site) > 75">
-							<StatusIndicator :usage="usage(site)" />
-						</span>
-					</span>
+					<span class="grid-cols-2">{{ site.name }}</span>
 					<span class="text-right md:text-center">
-						<Badge :status="site.status" />
+						<Badge :status="site.status" :usage="usage(site)"/>
 					</span>
 					<FormatDate class="hidden text-right md:block" type="relative">
 						{{ site.creation }}
