@@ -154,16 +154,16 @@ export default {
 		},
 		closeToLimits() {
 			return [
-				this.site.current_cpu_usage,
-				this.site.current_database_usage,
-				this.site.current_disk_usage
+				this.site.usage.cpu,
+				this.site.usage.database,
+				this.site.usage.disk
 			].some(x => 100 >= x && x > 80);
 		},
 		limitExceeded() {
 			return [
-				this.site.current_cpu_usage,
-				this.site.current_database_usage,
-				this.site.current_disk_usage
+				this.site.usage.cpu,
+				this.site.usage.database,
+				this.site.usage.disk
 			].some(x => x > 100);
 		},
 	},
