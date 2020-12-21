@@ -40,8 +40,9 @@
 				<a
 					:href="`#/sites/${site.name}/plan`"
 					class="border-b border-orange-700 cursor-pointer"
-					>Plans</a
 				>
+					Plans
+				</a>
 				for more details.
 			</Alert>
 			<Alert class="mb-4" v-else-if="closeToLimits">
@@ -49,8 +50,9 @@
 				<a
 					:href="`#/sites/${site.name}/plan`"
 					class="border-b border-orange-700 cursor-pointer"
-					>Plans</a
 				>
+					Plans
+				</a>
 				for more details.
 			</Alert>
 		</div>
@@ -151,8 +153,14 @@ export default {
 				let tab = 'general';
 				this.$router.replace(`${path}/${tab}`);
 			}
+		}
+	},
+	computed: {
+		site() {
+			return this.$resources.site.data;
 		},
 		closeToLimits() {
+			if (!this.site) return false;
 			return [
 				this.site.usage.cpu,
 				this.site.usage.database,
@@ -160,16 +168,12 @@ export default {
 			].some(x => 100 >= x && x > 80);
 		},
 		limitExceeded() {
+			if (!this.site) return false;
 			return [
 				this.site.usage.cpu,
 				this.site.usage.database,
 				this.site.usage.disk
 			].some(x => x > 100);
-		},
-	},
-	computed: {
-		site() {
-			return this.$resources.site.data;
 		},
 		tabs() {
 			let tabRoute = subRoute => `/sites/${this.siteName}/${subRoute}`;
