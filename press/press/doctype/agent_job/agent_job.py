@@ -336,7 +336,10 @@ def report_usage_violations():
 
 	@functools.lru_cache(maxsize=128)
 	def _get_limits(plan):
-		return frappe.db.get_value("Plan", plan, ["max_database_usage", "max_storage_usage"])
+		return (
+			_get_config(plan)["rate_limit"]["limit"] * 1000000,
+			*frappe.db.get_value("Plan", plan, ["max_database_usage", "max_storage_usage"]),
+		)
 
 	@functools.lru_cache(maxsize=128)
 	def _get_config(plan):
@@ -359,14 +362,14 @@ def report_usage_violations():
 
 	for usage in latest_usages:
 		plan = usage.plan
+		database_usage = usage.database
 		cpu_usage = _get_cpu_counter(usage.site)
-
-		cpu_limit = _get_config(plan)["rate_limit"]["limit"] * 1000000
-		database_limit, disk_limit = _get_limits(plan)
+		disk_usage = usage.public + usage.private
+		cpu_limit, database_limit, disk_limit = _get_limits(plan)
 
 		latest_cpu_usage = int((cpu_usage / cpu_limit) * 100)
-		latest_database_usage = int((usage.database / database_limit) * 100)
-		latest_disk_usage = int(((usage.public + usage.private) / disk_limit) * 100)
+		latest_database_usage = int((database_usage / database_limit) * 100)
+		latest_disk_usage = int((disk_usage / disk_limit) * 100)
 
 		# notify if reaching disk/database limits
 		site = frappe.get_doc("Site", usage.site)
