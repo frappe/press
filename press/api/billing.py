@@ -138,7 +138,10 @@ def create_payment_intent_for_buying_credits(amount):
 	team = get_current_team(True)
 	stripe = get_stripe()
 	intent = stripe.PaymentIntent.create(
-		amount=amount * 100, currency=team.currency.lower(), customer=team.stripe_customer_id
+		amount=amount * 100,
+		currency=team.currency.lower(),
+		customer=team.stripe_customer_id,
+		description="Prepaid Credits",
 	)
 	return {
 		"client_secret": intent["client_secret"],
