@@ -37,7 +37,7 @@
 				>
 					<span class="">{{ site.name }}</span>
 					<span class="text-right md:text-center">
-						<Badge :status="site.status" :usage="usage(site)" />
+						<Badge v-bind="siteStatus(site)" />
 					</span>
 					<FormatDate class="hidden text-right md:block" type="relative">
 						{{ site.creation }}
@@ -107,12 +107,23 @@ export default {
 		relativeDate(dateString) {
 			return dateString;
 		},
-		usage(site) {
-			return Math.max(
+		siteStatus(site) {
+			let status = site.status;
+			let color;
+			let usage = Math.max(
 				site.current_cpu_usage,
 				site.current_database_usage,
 				site.current_disk_usage
 			);
+
+			if (usage && usage >= 80 && status == 'Active') {
+				color = 'yellow';
+				status = 'Attention Required';
+			}
+			return {
+				status,
+				color
+			};
 		}
 	}
 };
