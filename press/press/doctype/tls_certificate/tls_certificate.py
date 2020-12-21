@@ -14,6 +14,7 @@ import OpenSSL
 import frappe
 from frappe.model.document import Document
 from press.api.site import check_dns_cname_a
+from press.runner import Ansible
 from press.utils import log_error
 
 
@@ -55,6 +56,20 @@ class TLSCertificate(Document):
 			log_error("TLS Certificate Exception", certificate=self.name)
 		self.save()
 		self.trigger_site_domain_callback()
+		self.trigger_server_tls_setup_callback()
+
+	def trigger_server_tls_setup_callback(self):
+		if not self.wildcard:
+			return
+
+		server_doctypes = ["Proxy Server", "Server", "Database Server"]
+		for server_doctype in server_doctypes:
+			servers = frappe.get_all(
+				server_doctype, {"status": "Active", "name": ("like", f"%.{self.domain}")}
+			)
+			for server in servers:
+				server_doc = frappe.get_doc(server_doctype, server)
+				update_server_tls_certifcate(server_doc, self)
 
 	def trigger_site_domain_callback(self):
 		domain = frappe.db.get_value("Site Domain", {"tls_certificate": self.name}, "name")
@@ -73,7 +88,7 @@ class TLSCertificate(Document):
 def renew_tls_certificates():
 	pending = frappe.get_all(
 		"TLS Certificate",
-		fields=["name", "domain"],
+		fields=["name", "domain", "wildcard"],
 		filters={"status": "Active", "expires_on": ("<", frappe.utils.add_days(None, 25))},
 	)
 	for certificate in pending:
@@ -86,6 +101,25 @@ def renew_tls_certificates():
 				certificate_doc = frappe.get_doc("TLS Certificate", certificate.name)
 				certificate_doc._obtain_certificate()
 				frappe.db.commit()
+		if certificate.wildcard:
+			certificate_doc = frappe.get_doc("TLS Certificate", certificate.name)
+			certificate_doc._obtain_certificate()
+
+
+def update_server_tls_certifcate(server, certificate):
+	try:
+		ansible = Ansible(
+			playbook="tls.yml",
+			server=server,
+			variables={
+				"certificate_private_key": certificate.private_key,
+				"certificate_full_chain": certificate.full_chain,
+				"certificate_intermediate_chain": certificate.intermediate_chain,
+			},
+		)
+		ansible.run()
+	except Exception:
+		log_error("TLS Setup Exception", server=server.as_dict())
 
 
 class BaseCA:
