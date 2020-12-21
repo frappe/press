@@ -27,10 +27,10 @@ export default {
 			}
 
 			return {
-				'green': 'bg-green-400',
-				'yellow': 'bg-yellow-400',
-				'orange': 'bg-orange-400',
-				'red': 'bg-red-500'
+				green: 'bg-green-400',
+				yellow: 'bg-yellow-400',
+				orange: 'bg-orange-400',
+				red: 'bg-red-500'
 			}[color || 'green'];
 		}
 	}
