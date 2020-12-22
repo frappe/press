@@ -38,6 +38,7 @@ class Bench(Document):
 		config.update(
 			{
 				"db_host": db_host,
+				"monitor": True,
 				"redis_cache": "redis://redis-cache:6379",
 				"redis_queue": "redis://redis-queue:6379",
 				"redis_socketio": "redis://redis-socketio:6379",
@@ -54,6 +55,7 @@ class Bench(Document):
 			"socketio_port": 19000 + self.port_offset,
 			"gunicorn_workers": self.gunicorn_workers,
 			"background_workers": self.background_workers,
+			"http_timeout": 120,
 		}
 		self.bench_config = json.dumps(bench_config, indent=4)
 
