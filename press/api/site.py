@@ -47,7 +47,7 @@ def protected(doctype):
 
 @frappe.whitelist()
 def new(site):
-	team = get_current_team()
+	team = get_current_team(get_doc=True)
 	bench = frappe.get_all(
 		"Bench",
 		fields=["name", "server"],
@@ -62,7 +62,8 @@ def new(site):
 			"subdomain": site["name"],
 			"bench": bench,
 			"apps": [{"app": app} for app in site["apps"]],
-			"team": team,
+			"team": team.name,
+			"free": team.free_account,
 			"subscription_plan": plan,
 			"remote_config_file": site["files"].get("config"),
 			"remote_database_file": site["files"].get("database"),
@@ -70,7 +71,8 @@ def new(site):
 			"remote_private_file": site["files"].get("private"),
 		},
 	).insert(ignore_permissions=True)
-	site.create_subscription(plan)
+	if not team.free_account:
+		site.create_subscription(plan)
 	return site.name
 
 
@@ -215,6 +217,8 @@ def options_for_new():
 		fields=["name", "`default`"],
 		or_filters={"public": True, "team": team},
 	)
+
+	apps = set()
 	deployed_groups = []
 	for group in groups:
 		benches = frappe.get_all(
@@ -227,15 +231,32 @@ def options_for_new():
 			continue
 		bench = benches[0].name
 		bench_doc = frappe.get_doc("Bench", bench)
+		bench_apps = [row.app for row in bench_doc.apps]
 		group_apps = frappe.get_all(
 			"Frappe App",
-			fields=["name", "frappe", "branch", "scrubbed", "repo_owner", "repo"],
-			filters={"name": ("in", [row.app for row in bench_doc.apps])},
+			fields=[
+				"name",
+				"frappe",
+				"branch",
+				"scrubbed",
+				"repo_owner",
+				"repo",
+				"team",
+				"public",
+			],
+			filters={"name": ("in", bench_apps)},
 			or_filters={"team": team, "public": True},
 		)
 		order = {row.app: row.idx for row in bench_doc.apps}
 		group["apps"] = sorted(group_apps, key=lambda x: order[x.name])
 		deployed_groups.append(group)
+		apps.update([app.scrubbed for app in group_apps])
+
+	marketplace_apps = frappe.db.get_all(
+		"Marketplace App",
+		fields=["title", "category", "image", "description", "name", "route"],
+		filters={"name": ("in", list(apps))},
+	)
 
 	domain = frappe.db.get_value("Press Settings", "Press Settings", ["domain"])
 
@@ -254,6 +275,7 @@ def options_for_new():
 		"free_account": team_doc.free_account,
 		"allow_partner": allow_partner,
 		"disable_site_creation": disable_site_creation,
+		"marketplace_apps": {row.name: row for row in marketplace_apps},
 	}
 
 
@@ -281,7 +303,15 @@ def get_plans():
 def all():
 	sites = frappe.get_list(
 		"Site",
-		fields=["name", "status", "creation", "bench"],
+		fields=[
+			"name",
+			"status",
+			"creation",
+			"bench",
+			"current_cpu_usage",
+			"current_database_usage",
+			"current_disk_usage",
+		],
 		filters={"team": get_current_team(), "status": ("!=", "Archived")},
 		order_by="creation desc",
 	)
@@ -342,7 +372,11 @@ def get(name):
 		"status": site.status,
 		"installed_apps": sorted(installed_apps, key=lambda x: bench_apps[x.name]),
 		"available_apps": sorted(available_apps, key=lambda x: bench_apps[x.name]),
-		"usage": json.loads(site._site_usages),
+		"usage": {
+			"cpu": site.current_cpu_usage,
+			"disk": site.current_disk_usage,
+			"database": site.current_database_usage,
+		},
 		"setup_wizard_complete": site.setup_wizard_complete,
 		"config": site_config,
 		"creation": site.creation,

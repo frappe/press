@@ -29,7 +29,11 @@ let utils = {
 			const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
 			const i = Math.floor(Math.log(Math.abs(bytes)) / Math.log(k));
 
-			return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i + current];
+			return (
+				parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) +
+				' ' +
+				sizes[i + current]
+			);
 		}
 	}
 };
@@ -44,4 +48,26 @@ export function validateGST(gst) {
 
 export default function install(Vue) {
 	Vue.mixin(utils);
+}
+
+export function isWasmSupported() {
+	// Check if browser supports WASM
+	// ref: https://stackoverflow.com/a/47880734/10309266
+	return (() => {
+		try {
+			if (
+				typeof WebAssembly === 'object' &&
+				typeof WebAssembly.instantiate === 'function'
+			) {
+				const module = new WebAssembly.Module(
+					Uint8Array.of(0x0, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00)
+				);
+				if (module instanceof WebAssembly.Module)
+					return (
+						new WebAssembly.Instance(module) instanceof WebAssembly.Instance
+					);
+			}
+		} catch (e) {} // eslint-disable-line no-empty
+		return false;
+	})();
 }

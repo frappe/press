@@ -68,7 +68,7 @@
    "link_fieldname": "subscription"
   }
  ],
- "modified": "2020-11-10 11:04:19.524085",
+ "modified": "2020-12-16 13:55:30.369157",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Subscription",
@@ -95,6 +95,18 @@
    "read": 1,
    "report": 1,
    "role": "Press Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
    "share": 1,
    "write": 1
   }

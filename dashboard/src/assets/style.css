@@ -1,5 +1,4 @@
 @import './Inter/inter.css';
-@import '../../node_modules/frappe-charts/dist/frappe-charts.min.css';
 
 /* purgecss start ignore */
 @tailwind base;
@@ -7,17 +6,3 @@
 /* purgecss end ignore */
 
 @tailwind utilities;
-
-.bg-gradient-blue {
-	background-image: linear-gradient(
-		180deg,
-		#2c9af1 0%,
-		theme('colors.blue.500') 100%
-	);
-}
-
-@variants focus, hover {
-	.bg-gradient-none {
-		background-image: none;
-	}
-}
