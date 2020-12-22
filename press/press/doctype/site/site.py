@@ -488,7 +488,7 @@ class Site(Document):
 
 		fetched_usage = data["usage"]
 		fetched_config = data["config"]
-		fetched_timezone = data["time_zone"]
+		fetched_timezone = data["timezone"]
 
 		self._sync_usage_info(fetched_usage)
 		to_save = self._sync_config_info(fetched_config)
@@ -626,14 +626,11 @@ class Site(Document):
 		plan = frappe.get_doc("Plan", self.plan)
 
 		if usage.database < plan.max_database_usage and disk_usage < plan.max_storage_usage:
+			self.current_database_usage = (usage.database / plan.max_database_usage) * 100
+			self.current_disk_usage = (
+				(usage.public + usage.private) / plan.max_storage_usage
+			) * 100
 			self.unsuspend(reason="Plan Upgraded")
-			site_usages = json.loads(self._site_usages or "{}").update(
-				{
-					"database": usage.database / plan.max_database_usage,
-					"disk": (usage.public + usage.private) / plan.max_storage_usage,
-				}
-			)
-			self.db_set("_site_usages", json.dumps(site_usages))
 
 	def deactivate(self):
 		log_site_activity(self.name, "Deactivate Site")

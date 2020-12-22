@@ -26,6 +26,10 @@
   "config",
   "configuration",
   "_keys_removed_in_last_update",
+  "_site_usages",
+  "current_cpu_usage",
+  "current_database_usage",
+  "current_disk_usage",
   "deploy_section",
   "timezone",
   "site_files_section",
@@ -274,10 +278,31 @@
    "fieldtype": "Data",
    "label": "Domain",
    "set_only_once": 1
+  },
+  {
+   "fieldname": "_site_usages",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Site Usage"
+  },
+  {
+   "fieldname": "current_cpu_usage",
+   "fieldtype": "Int",
+   "hidden": 1
+  },
+  {
+   "fieldname": "current_database_usage",
+   "fieldtype": "Int",
+   "hidden": 1
+  },
+  {
+   "fieldname": "current_disk_usage",
+   "fieldtype": "Int",
+   "hidden": 1
   }
  ],
  "links": [],
- "modified": "2020-12-19 08:53:54.446499",
+ "modified": "2020-12-22 10:00:32.611435",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

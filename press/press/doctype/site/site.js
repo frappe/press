@@ -21,13 +21,12 @@ frappe.ui.form.on('Site', {
 		});
 	},
 	refresh: function (frm) {
-		let { cpu, database, disk } = JSON.parse(frm.doc._site_usages);
 		frm.dashboard.set_headline_alert(
 			`<div class="container-fluid">
 				<div class="row">
-					<div class="col-sm-4">CPU Usage: ${Math.round((cpu || 0) * 100)}%</div>
-					<div class="col-sm-4">Database Usage: ${Math.round((database || 0) * 100)}%</div>
-					<div class="col-sm-4">Disk Usage: ${Math.round((disk || 0) * 100)}%</div>
+					<div class="col-sm-4">CPU Usage: ${frm.doc.current_cpu_usage}%</div>
+					<div class="col-sm-4">Database Usage: ${frm.doc.current_database_usage}%</div>
+					<div class="col-sm-4">Disk Usage: ${frm.doc.current_disk_usage}%</div>
 				</div>
 			</div>`
 		);

@@ -37,19 +37,19 @@
 				>
 					<span class="">{{ site.name }}</span>
 					<span class="text-right md:text-center">
-						<Badge :status="site.status" />
+						<Badge v-bind="siteStatus(site)" />
 					</span>
 					<FormatDate class="hidden text-right md:block" type="relative">
 						{{ site.creation }}
 					</FormatDate>
 					<span class="hidden text-right md:inline">
 						<Badge
-						v-if="
-							(site.status === 'Active' ||
-								site.status === 'Inactive' ||
-								site.status === 'Suspended') &&
-								site.update_available
-						"
+							v-if="
+								(site.status === 'Active' ||
+									site.status === 'Inactive' ||
+									site.status === 'Suspended') &&
+									site.update_available
+							"
 							:status="'Update Available'"
 							class="mr-4"
 						/>
@@ -106,6 +106,24 @@ export default {
 		},
 		relativeDate(dateString) {
 			return dateString;
+		},
+		siteStatus(site) {
+			let status = site.status;
+			let color;
+			let usage = Math.max(
+				site.current_cpu_usage,
+				site.current_database_usage,
+				site.current_disk_usage
+			);
+
+			if (usage && usage >= 80 && status == 'Active') {
+				color = 'yellow';
+				status = 'Attention Required';
+			}
+			return {
+				status,
+				color
+			};
 		}
 	}
 };
