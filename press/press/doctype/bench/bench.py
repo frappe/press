@@ -27,7 +27,15 @@ class Bench(Document):
 
 		if not self.apps:
 			for release in candidate.apps:
-				self.append("apps", {"app": release.app, "hash": release.hash})
+				self.append(
+					"apps",
+					{
+						"release": release.release,
+						"source": release.source,
+						"app": release.app,
+						"hash": release.hash,
+					},
+				)
 
 		if self.is_new():
 			self.port_offset = self.get_unused_port_offset()

@@ -6,8 +6,10 @@
  "engine": "InnoDB",
  "field_order": [
   "app",
-  "release",
-  "hash"
+  "hash",
+  "column_break_3",
+  "source",
+  "release"
  ],
  "fields": [
   {
@@ -32,11 +34,23 @@
    "label": "App",
    "options": "App",
    "reqd": 1
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Source",
+   "options": "App Source",
+   "reqd": 1
   }
  ],
  "istable": 1,
  "links": [],
- "modified": "2020-12-15 22:39:55.302949",
+ "modified": "2020-12-22 21:12:53.411928",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate App Release",
