@@ -76,14 +76,21 @@ class ReleaseGroup(Document):
 		for app in self.apps:
 			release = frappe.get_all(
 				"App Release",
-				fields=["name", "app", "hash"],
+				fields=["name", "source", "app", "hash"],
 				filters={"app": app.app},
 				order_by="creation desc",
 				limit=1,
 			)
 			if release:
 				release = release[0]
-				releases.append({"release": release.name, "app": release.app, "hash": release.hash})
+				releases.append(
+					{
+						"release": release.name,
+						"source": release.source,
+						"app": release.app,
+						"hash": release.hash,
+					}
+				)
 		frappe.get_doc(
 			{"doctype": "Deploy Candidate", "group": self.name, "apps": releases}
 		).insert()
