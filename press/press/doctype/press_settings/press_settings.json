@@ -53,6 +53,7 @@
   "offsite_backups_section",
   "offsite_backups_provider",
   "aws_s3_bucket",
+  "backup_rotation_scheme",
   "offsite_backups_count",
   "column_break_35",
   "offsite_backups_access_key_id",
@@ -413,6 +414,7 @@
    "label": "ERPNext Password"
   },
   {
+   "depends_on": "eval:doc.backup_rotation_scheme==\"FIFO\"",
    "description": "The max number of Offsite backups that will be retained at any given time (for each site)",
    "fieldname": "offsite_backups_count",
    "fieldtype": "Int",
@@ -518,11 +520,17 @@
    "fieldname": "enforce_storage_limits",
    "fieldtype": "Check",
    "label": "Enforce Storage and Disk Limits"
+  },
+  {
+   "fieldname": "backup_rotation_scheme",
+   "fieldtype": "Select",
+   "label": "Backup Rotation Scheme",
+   "options": "FIFO\nGrandfather-father-son"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2020-11-19 13:27:27.540632",
+ "modified": "2020-12-10 10:53:57.337476",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

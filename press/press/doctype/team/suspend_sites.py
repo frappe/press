@@ -3,13 +3,14 @@
 
 """
 Suspend Sites of defaulter accounts.
+
 This module deals with suspending sites of defaulters.
 
 Defaulters are identified based on the following conditions:
-  - Is not a free account
-  - Is not an ERPNext Partner
-  - Card not added
-  - Does not have enough credit balance
+- Is not a free account
+- Is not an ERPNext Partner
+- Card not added
+- Does not have enough credit balance
 
 The `execute` method is the main method which is run by the scheduler daily.
 """
