@@ -8,7 +8,7 @@ import frappe
 from press.api.billing import get_stripe, get_erpnext_com_connection
 from frappe.model.document import Document
 from frappe import _
-from frappe.utils import get_fullname, flt
+from frappe.utils import get_fullname
 from frappe.contacts.address_and_contact import load_address_and_contact
 
 
