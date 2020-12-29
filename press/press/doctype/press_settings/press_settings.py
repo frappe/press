@@ -5,12 +5,18 @@
 from __future__ import unicode_literals
 
 import frappe
+from boto3.session import Session
 from frappe.model.document import Document
-from press.utils import log_error
+
 from press.api.billing import get_stripe
+from press.utils import log_error
 
 
 class PressSettings(Document):
+	def validate(self):
+		if self.has_value_changed("offsite_backups_lifecycle_config"):
+			self._set_lifecycle_config()
+
 	def obtain_root_domain_tls_certificate(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_obtain_root_domain_tls_certificate")
 
@@ -80,3 +86,18 @@ class PressSettings(Document):
 		self.stripe_webhook_secret = webhook["secret"]
 		self.flags.ignore_mandatory = True
 		self.save()
+
+	@property
+	def boto3_session(self) -> Session:
+		"""Get new preconfigured boto3 session."""
+		return Session(
+			aws_access_key_id=self.offsite_backups_access_key_id,
+			aws_secret_access_key=self.offsite_backups_secret_access_key,
+			region_name="ap-south-1",
+		)
+
+	def _set_lifecycle_config(self):
+		"""Set Lifecycle config in s3 compatible backup provider."""
+		s3 = self.boto3_session.resource("s3")
+		bucket_lifecycle_configuration = s3.BucketLifecycleConfiguration(self.aws_s3_bucket)
+		bucket_lifecycle_configuration.put(self.offsite_backups_lifecycle_config)
