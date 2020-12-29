@@ -58,6 +58,7 @@
   "column_break_35",
   "offsite_backups_access_key_id",
   "offsite_backups_secret_access_key",
+  "offsite_backups_lifecycle_config",
   "section_break_33",
   "github_app_id",
   "github_app_client_id",
@@ -526,11 +527,17 @@
    "fieldtype": "Select",
    "label": "Backup Rotation Scheme",
    "options": "FIFO\nGrandfather-father-son"
+  },
+  {
+   "fieldname": "offsite_backups_lifecycle_config",
+   "fieldtype": "Code",
+   "label": "Offsite Backups Lifecycle Config",
+   "options": "JSON"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2020-12-10 10:53:57.337476",
+ "modified": "2020-12-29 16:53:12.161040",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
