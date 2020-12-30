@@ -102,7 +102,16 @@ class PressSettings(Document):
 
 	def _set_lifecycle_config(self):
 		"""Set Lifecycle config in s3 compatible backup provider."""
+		lifecycle_config: str = self.offsite_backups_lifecycle_config
+		if not lifecycle_config:
+			return
+		lifecycle_config_dict = json.loads(lifecycle_config)
 		s3 = self.boto3_session.resource("s3")
 		bucket_lifecycle_configuration = s3.BucketLifecycleConfiguration(self.aws_s3_bucket)
-		rules_dict = json.loads(self.offsite_backups_lifecycle_config)
-		bucket_lifecycle_configuration.put(LifecycleConfiguration=rules_dict)
+		bucket_lifecycle_configuration.put(LifecycleConfiguration=lifecycle_config_dict)
+		frappe.get_doc(
+			doctype="Remote Operation Log",
+			operation_type="Update Lifecycle Config",
+			request=lifecycle_config,
+			status="Success",
+		).insert()
