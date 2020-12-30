@@ -101,7 +101,7 @@ class PressSettings(Document):
 		)
 
 	def _set_lifecycle_config(self):
-		"""Set Lifecycle config in s3 compatible backup provider."""
+		"""Update/Replace Lifecycle config in s3 compatible backup provider."""
 		lifecycle_config: str = self.offsite_backups_lifecycle_config
 		if not lifecycle_config:
 			return
