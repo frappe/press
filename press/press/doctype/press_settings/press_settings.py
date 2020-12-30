@@ -4,6 +4,7 @@
 
 from __future__ import unicode_literals
 
+import json
 import frappe
 from boto3.session import Session
 from frappe.model.document import Document
@@ -103,4 +104,5 @@ class PressSettings(Document):
 		"""Set Lifecycle config in s3 compatible backup provider."""
 		s3 = self.boto3_session.resource("s3")
 		bucket_lifecycle_configuration = s3.BucketLifecycleConfiguration(self.aws_s3_bucket)
-		bucket_lifecycle_configuration.put(self.offsite_backups_lifecycle_config)
+		rules_dict = json.loads(self.offsite_backups_lifecycle_config)
+		bucket_lifecycle_configuration.put(LifecycleConfiguration=rules_dict)
