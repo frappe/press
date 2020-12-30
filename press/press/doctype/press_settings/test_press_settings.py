@@ -31,6 +31,7 @@ class TestPressSettings(unittest.TestCase):
 
 	@patch.object(PressSettings, "_set_lifecycle_config")
 	def test_lifecycle_config_is_called_on_create(self, mock_set_lifecycle_config):
+		"""Ensure lifecycle config is updated on create."""
 		create_test_press_settings()
 		mock_set_lifecycle_config.assert_called_once()
 
@@ -38,6 +39,7 @@ class TestPressSettings(unittest.TestCase):
 	def test_lifecycle_config_is_updated_on_settings_update(
 		self, mock_set_lifecycle_config
 	):
+		"""Ensure lifecycle config is updated in remote when field is updated."""
 		press_settings = create_test_press_settings()
 		mock_set_lifecycle_config.reset_mock()
 		press_settings.offsite_backups_lifecycle_config = "{}"
@@ -48,6 +50,7 @@ class TestPressSettings(unittest.TestCase):
 	def test_lifecycle_config_not_updated_when_unreleated_field_updated(
 		self, mock_set_lifecycle_config
 	):
+		"""Ensure lifecycle config is not updated when other settings are updated."""
 		press_settings = create_test_press_settings()
 		mock_set_lifecycle_config.reset_mock()
 		press_settings.aws_s3_bucket = "fake-bucket-name"
@@ -56,6 +59,7 @@ class TestPressSettings(unittest.TestCase):
 
 	@patch.object(PressSettings, "boto3_session")
 	def test_log_is_created_for_lifecycle_update(self, mock_boto3_session):
+		"""Ensure Remote operation log is created for lifecycle config update."""
 		log_count_before = frappe.db.count("Remote Operation Log")
 		press_settings = create_test_press_settings()
 		press_settings.offsite_backups_lifecycle_config = "{}"
