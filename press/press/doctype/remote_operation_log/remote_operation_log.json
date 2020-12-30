@@ -6,15 +6,16 @@
  "engine": "InnoDB",
  "field_order": [
   "operation_type",
-  "response"
+  "request",
+  "response",
+  "status"
  ],
  "fields": [
   {
    "fieldname": "response",
    "fieldtype": "Code",
    "label": "Response",
-   "read_only": 1,
-   "reqd": 1
+   "read_only": 1
   },
   {
    "fieldname": "operation_type",
@@ -22,13 +23,28 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Operation Type",
-   "options": "Delete Files",
+   "options": "Delete Files\nUpdate Lifecycle Config",
+   "reqd": 1
+  },
+  {
+   "fieldname": "request",
+   "fieldtype": "Code",
+   "label": "Request",
+   "read_only": 1
+  },
+  {
+   "default": "Unknown",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Unknown\nSuccess\nFailure",
    "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2020-12-18 09:33:44.398182",
+ "modified": "2020-12-30 11:01:29.639419",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Remote Operation Log",
