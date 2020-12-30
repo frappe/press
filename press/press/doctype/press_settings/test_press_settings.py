@@ -26,6 +26,9 @@ def create_test_press_settings():
 
 
 class TestPressSettings(unittest.TestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+
 	@patch.object(PressSettings, "_set_lifecycle_config")
 	def test_lifecycle_config_is_called_on_create(self, mock_set_lifecycle_config):
 		create_test_press_settings()
@@ -37,7 +40,7 @@ class TestPressSettings(unittest.TestCase):
 	):
 		press_settings = create_test_press_settings()
 		mock_set_lifecycle_config.reset_mock()
-		press_settings.offsite_backups_lifecycle_config = "hello"
+		press_settings.offsite_backups_lifecycle_config = "{}"
 		press_settings.save()
 		mock_set_lifecycle_config.assert_called_once()
 
@@ -50,3 +53,14 @@ class TestPressSettings(unittest.TestCase):
 		press_settings.aws_s3_bucket = "fake-bucket-name"
 		press_settings.save()
 		mock_set_lifecycle_config.assert_not_called()
+
+	@patch.object(PressSettings, "boto3_session")
+	def test_log_is_created_for_lifecycle_update(self, mock_boto3_session):
+		log_count_before = frappe.db.count("Remote Operation Log")
+		press_settings = create_test_press_settings()
+		press_settings.offsite_backups_lifecycle_config = "{}"
+		press_settings.save()
+		log_count_after = frappe.db.count("Remote Operation Log")
+		self.assertGreater(
+			log_count_after, log_count_before, msg=(log_count_after, log_count_before)
+		)
