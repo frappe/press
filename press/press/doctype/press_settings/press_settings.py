@@ -7,6 +7,7 @@ from __future__ import unicode_literals
 import frappe
 from boto3.session import Session
 from frappe.model.document import Document
+from frappe.utils.password import get_decrypted_password
 
 from press.api.billing import get_stripe
 from press.utils import log_error
@@ -92,7 +93,9 @@ class PressSettings(Document):
 		"""Get new preconfigured boto3 session."""
 		return Session(
 			aws_access_key_id=self.offsite_backups_access_key_id,
-			aws_secret_access_key=self.offsite_backups_secret_access_key,
+			aws_secret_access_key=get_decrypted_password(
+				self.doctype, self.doctype, "offsite_backups_secret_access_key"
+			),
 			region_name="ap-south-1",
 		)
 
