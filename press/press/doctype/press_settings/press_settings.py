@@ -90,8 +90,8 @@ class PressSettings(Document):
 		self.save()
 
 	@property
-	def boto3_session(self) -> Session:
-		"""Get new preconfigured boto3 session."""
+	def boto3_offsite_backup_session(self) -> Session:
+		"""Get new preconfigured boto3 session for offisite backup provider."""
 		return Session(
 			aws_access_key_id=self.offsite_backups_access_key_id,
 			aws_secret_access_key=get_decrypted_password(
@@ -106,7 +106,7 @@ class PressSettings(Document):
 		if not lifecycle_config:
 			return
 		lifecycle_config_dict = json.loads(lifecycle_config)
-		s3 = self.boto3_session.resource("s3")
+		s3 = self.boto3_offsite_backup_session.resource("s3")
 		bucket_lifecycle_configuration = s3.BucketLifecycleConfiguration(self.aws_s3_bucket)
 		bucket_lifecycle_configuration.put(LifecycleConfiguration=lifecycle_config_dict)
 		frappe.get_doc(
