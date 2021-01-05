@@ -1,0 +1,152 @@
+{
+ "actions": [],
+ "creation": "2021-01-04 16:30:38.925921",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "status",
+  "hostname",
+  "domain",
+  "is_server_setup",
+  "column_break_3",
+  "ip",
+  "private_ip",
+  "registry_section",
+  "registry_username",
+  "column_break_10",
+  "registry_password",
+  "reverse_proxy_section",
+  "ssh_section",
+  "root_public_key",
+  "column_break_20",
+  "frappe_public_key"
+ ],
+ "fields": [
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Pending\nInstalling\nActive\nBroken\nArchived",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "hostname",
+   "fieldtype": "Data",
+   "label": "Hostname",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "domain",
+   "fieldtype": "Data",
+   "label": "Domain",
+   "set_only_once": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_server_setup",
+   "fieldtype": "Check",
+   "label": "Server Setup",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "ip",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "IP",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "private_ip",
+   "fieldtype": "Data",
+   "label": "Private IP",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "registry_section",
+   "fieldtype": "Section Break",
+   "label": "Registry"
+  },
+  {
+   "fieldname": "registry_username",
+   "fieldtype": "Data",
+   "label": "Registry Username",
+   "reqd": 1
+  },
+  {
+   "fieldname": "registry_password",
+   "fieldtype": "Password",
+   "label": "Registry Password",
+   "reqd": 1
+  },
+  {
+   "fieldname": "reverse_proxy_section",
+   "fieldtype": "Section Break",
+   "label": "Reverse Proxy"
+  },
+  {
+   "fieldname": "ssh_section",
+   "fieldtype": "Section Break",
+   "label": "SSH"
+  },
+  {
+   "fieldname": "root_public_key",
+   "fieldtype": "Code",
+   "label": "Root Public Key",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_20",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "frappe_public_key",
+   "fieldtype": "Code",
+   "label": "Frappe Public Key",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_10",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "links": [
+  {
+   "link_doctype": "Ansible Play",
+   "link_fieldname": "server"
+  }
+ ],
+ "modified": "2021-01-04 18:57:10.909243",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Registry Server",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}
