@@ -377,7 +377,14 @@ class Site(Document):
 		agent.remove_upstream_site(self.server, self.name)
 
 		self.db_set("host_name", None)
+
 		self.delete_offsite_backups()
+		frappe.db.set_value(
+			"Site Backup",
+			{"site": self.name, "offsite": False},
+			"files_availability",
+			"Unavailable",
+		)
 
 	def delete_offsite_backups(self):
 		from press.press.doctype.remote_file.remote_file import delete_remote_backup_objects
@@ -397,6 +404,13 @@ class Site(Document):
 
 		if not sites_remote_files:
 			return
+
+		frappe.db.set_value(
+			"Site Backup",
+			{"site": self.name, "offsite": True},
+			"files_availability",
+			"Unavailable",
+		)
 
 		return delete_remote_backup_objects(sites_remote_files)
 
