@@ -9,6 +9,7 @@
   "file_name",
   "site",
   "status",
+  "storage_class",
   "section_break_5",
   "file_size",
   "file_path",
@@ -79,11 +80,21 @@
    "label": "Site",
    "options": "Site",
    "read_only": 1
+  },
+  {
+   "default": "STANDARD",
+   "fieldname": "storage_class",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Storage Class",
+   "options": "STANDARD\nREDUCED_REDUNDANCY\nGLACIER",
+   "read_only": 1,
+   "reqd": 1
   }
  ],
  "icon": "fa fa-file",
  "links": [],
- "modified": "2020-08-20 15:53:44.984197",
+ "modified": "2021-01-04 11:48:30.079969",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Remote File",
