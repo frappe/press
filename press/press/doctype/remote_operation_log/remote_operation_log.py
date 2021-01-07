@@ -15,7 +15,7 @@ class RemoteOperationLog(Document):
 	pass
 
 
-def make_log(operation_type: str, status="Success"):
+def make_log(operation_type: str, status: str = "Unknown"):
 	"""
 	Make log after remote operation.
 
