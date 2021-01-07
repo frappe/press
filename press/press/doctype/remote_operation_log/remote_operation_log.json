@@ -6,6 +6,7 @@
  "engine": "InnoDB",
  "field_order": [
   "operation_type",
+  "bucket",
   "request",
   "response",
   "status"
@@ -40,11 +41,17 @@
    "label": "Status",
    "options": "Unknown\nSuccess\nFailure",
    "reqd": 1
+  },
+  {
+   "fieldname": "bucket",
+   "fieldtype": "Data",
+   "label": "Location",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2020-12-30 11:01:29.639419",
+ "modified": "2021-01-07 09:18:29.915505",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Remote Operation Log",
