@@ -15,18 +15,23 @@ class RemoteOperationLog(Document):
 	pass
 
 
-def make_log(bucket: str, operation_type: str, status="Success"):
+def make_log(operation_type: str, status="Success"):
 	"""
 	Make log after remote operation.
 
-	Takes first arg of decorated method as request.
+	Takes first arg of decorated method as bucket name.
+	Takes second arg of decorated method as request.
 	"""
 
 	def decorator(func):
 		@functools.wraps(func)
 		def wrapper(*args, **kwargs):
 			try:
-				req = args[0]
+				bucket = args[0]
+			except IndexError:
+				raise "Bucket name not given"
+			try:
+				req = args[1]
 			except IndexError:
 				req = None
 			res = func(*args, **kwargs)
