@@ -329,24 +329,34 @@ def get(name):
 	team = get_current_team()
 	site = frappe.get_doc("Site", name)
 	installed_apps = [app.app for app in site.apps]
-	bench = frappe.get_doc("Bench", site.bench)
-	bench_apps = {}
-	for app in bench.apps:
-		app_team, app_public = frappe.db.get_value("App", app.app, ["team", "public"])
-		if app.app in installed_apps or app_public or app_team == team:
-			bench_apps[app.app] = app.idx
 
-	available_apps = list(filter(lambda x: x not in installed_apps, bench_apps.keys()))
-	installed_apps = frappe.get_all(
-		"App",
-		fields=["name", "repo_owner as owner", "scrubbed as repo", "url", "branch", "frappe"],
-		filters={"name": ("in", installed_apps)},
+	bench_sources = {}
+	installed_sources, available_sources = [], []
+	bench = frappe.get_doc("Bench", site.bench)
+	bench_sources = [app.source for app in bench.apps]
+	sources = frappe.db.sql(
+		"""
+	SELECT
+		source.name, source.app, source.repository_url, source.repository_owner, source.branch, source.team, source.public,
+		app.title
+	FROM
+		`tabApp Source` source
+	LEFT JOIN
+		`tabApp` app
+	ON
+		source.app = app.name
+	WHERE
+		source.name in %s
+	""",
+		(bench_sources,),
+		as_dict=True,
 	)
-	available_apps = frappe.get_all(
-		"App",
-		fields=["name", "repo_owner as owner", "scrubbed as repo", "url", "branch"],
-		filters={"name": ("in", available_apps)},
-	)
+	for source in sources:
+		if source.app in installed_apps:
+			installed_sources.append(source)
+		elif source.public or source.team == team:
+			available_sources.append(source)
+
 	site_config = list(filter(lambda x: not x.internal, site.configuration))
 
 	try:
@@ -363,8 +373,12 @@ def get(name):
 	return {
 		"name": site.name,
 		"status": site.status,
-		"installed_apps": sorted(installed_apps, key=lambda x: bench_apps[x.name]),
-		"available_apps": sorted(available_apps, key=lambda x: bench_apps[x.name]),
+		"installed_apps": sorted(
+			installed_sources, key=lambda x: bench_sources.index(x.name)
+		),
+		"available_apps": sorted(
+			available_sources, key=lambda x: bench_sources.index(x.name)
+		),
 		"usage": {
 			"cpu": site.current_cpu_usage,
 			"disk": site.current_disk_usage,
