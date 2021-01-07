@@ -11,6 +11,7 @@
   "column_break_3",
   "group",
   "candidate",
+  "docker_image",
   "section_break_6",
   "apps",
   "configuration_section",
@@ -139,10 +140,17 @@
    "label": "Apps",
    "options": "Bench App",
    "read_only": 1
+  },
+  {
+   "fieldname": "docker_image",
+   "fieldtype": "Data",
+   "label": "Docker Image",
+   "read_only": 1,
+   "reqd": 1
   }
  ],
  "links": [],
- "modified": "2020-12-17 17:51:02.145366",
+ "modified": "2021-01-05 22:55:08.130469",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",

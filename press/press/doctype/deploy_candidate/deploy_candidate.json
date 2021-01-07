@@ -31,9 +31,10 @@
   "build_end",
   "build_duration",
   "section_break_11",
+  "docker_image",
   "docker_image_id",
-  "docker_image_name",
   "column_break_13",
+  "docker_image_repository",
   "docker_image_tag",
   "section_break_9",
   "build_steps",
@@ -145,21 +146,27 @@
    "fieldtype": "Section Break"
   },
   {
-   "fieldname": "docker_image_name",
-   "fieldtype": "Data",
-   "label": "Docker Image Name",
-   "read_only": 1
-  },
-  {
    "fieldname": "apps",
    "fieldtype": "Table",
    "label": "Apps",
    "options": "Deploy Candidate App Release",
    "reqd": 1
+  },
+  {
+   "fieldname": "docker_image_repository",
+   "fieldtype": "Data",
+   "label": "Docker Image Repository",
+   "read_only": 1
+  },
+  {
+   "fieldname": "docker_image",
+   "fieldtype": "Data",
+   "label": "Docker Image",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2020-12-17 16:51:23.798780",
+ "modified": "2021-01-05 20:54:01.647014",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",

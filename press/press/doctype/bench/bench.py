@@ -24,6 +24,7 @@ class Bench(Document):
 			candidate = frappe.get_all("Deploy Candidate", filters={"group": self.group})[0]
 			self.candidate = candidate.name
 		candidate = frappe.get_doc("Deploy Candidate", self.candidate)
+		self.docker_image = candidate.docker_image
 
 		if not self.apps:
 			for release in candidate.apps:
@@ -57,8 +58,7 @@ class Bench(Document):
 		self.config = json.dumps(config, indent=4)
 
 		bench_config = {
-			"docker_image_name": self.group,
-			"docker_image_tag": self.candidate,
+			"docker_image": self.docker_image,
 			"web_port": 18000 + self.port_offset,
 			"socketio_port": 19000 + self.port_offset,
 			"gunicorn_workers": self.gunicorn_workers,
