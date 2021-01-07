@@ -15,13 +15,20 @@ class RemoteOperationLog(Document):
 	pass
 
 
-def make_log(operation_type, status="Success"):
-	"""Make log after remote operation."""
+def make_log(bucket: str, operation_type: str, status="Success"):
+	"""
+	Make log after remote operation.
+
+	Takes last arg of decorated method as request.
+	"""
 
 	def decorator(func):
 		@functools.wraps(func)
 		def wrapper(*args, **kwargs):
-			req = args[-1]
+			try:
+				req = args[-1]
+			except IndexError:
+				raise "Request argument not provided"
 			res = func(*args, **kwargs)
 			frappe.get_doc(
 				doctype="Remote Operation Log",
@@ -29,6 +36,7 @@ def make_log(operation_type, status="Success"):
 				request=pprint.pformat(req),
 				response=pprint.pformat(res),
 				status=status,
+				bucket=bucket
 			).insert()
 
 			return res
