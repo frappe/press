@@ -187,11 +187,26 @@ class DeployCandidate(Document):
 			{"DOCKER_BUILDKIT": "1", "BUILDKIT_PROGRESS": "plain", "PROGRESS_NO_TRUNC": "1"}
 		)
 
-		self.docker_image_name = self.group
-		self.docker_image_tag = self.name
-		result = self.run(
-			f"docker build -t {self.docker_image_name}:{self.docker_image_tag} .", environment
+		settings = frappe.db.get_value(
+			"Press Settings",
+			None,
+			["domain", "docker_registry_url", "docker_registry_namespace"],
+			as_dict=True,
 		)
+
+		if settings.docker_registry_namespace:
+			namespace = f"{settings.docker_registry_namespace}/{settings.domain}"
+		else:
+			namespace = f"{settings.domain}"
+
+		self.docker_image_repository = (
+			f"{settings.docker_registry_url}/{namespace}/{self.group}"
+		)
+
+		self.docker_image_tag = self.name
+		self.docker_image = f"{self.docker_image_repository}:{self.docker_image_tag}"
+
+		result = self.run(f"docker build -t {self.docker_image} .", environment)
 		self._parse_docker_build_result(result)
 
 	def _parse_docker_build_result(self, result):
@@ -308,11 +323,7 @@ class DeployCandidate(Document):
 			password=settings.docker_registry_password,
 		)
 
-		image = client.images.get(self.docker_image_id)
-		repository = f"{settings.docker_registry_url}/{self.docker_image_name}"
-		image.tag(repository, self.docker_image_tag)
-
-		client.images.push(repository, self.docker_image_tag)
+		client.images.push(self.docker_image_repository, self.docker_image_tag)
 
 	def create_deploy(self):
 		try:

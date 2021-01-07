@@ -22,10 +22,21 @@ class Agent:
 		self.port = 443
 
 	def new_bench(self, bench):
+		settings = frappe.db.get_value(
+			"Press Settings",
+			None,
+			["docker_registry_url", "docker_registry_username", "docker_registry_password"],
+			as_dict=True,
+		)
 		data = {
 			"name": bench.name,
 			"bench_config": json.loads(bench.bench_config),
 			"common_site_config": json.loads(bench.config),
+			"registry": {
+				"url": settings.docker_registry_url,
+				"username": settings.docker_registry_username,
+				"password": settings.docker_registry_password,
+			},
 		}
 		return self.create_agent_job("New Bench", "benches", data, bench=bench.name)
 
