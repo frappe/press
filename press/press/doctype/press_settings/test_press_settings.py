@@ -57,7 +57,7 @@ class TestPressSettings(unittest.TestCase):
 		press_settings.save()
 		mock_set_lifecycle_config.assert_not_called()
 
-	@patch.object(PressSettings, "boto3_session")
+	@patch.object(PressSettings, "boto3_offsite_backup_session")
 	def test_log_is_created_for_lifecycle_update(self, mock_boto3_session):
 		"""Ensure Remote operation log is created for lifecycle config update."""
 		log_count_before = frappe.db.count("Remote Operation Log")
