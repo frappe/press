@@ -13,16 +13,16 @@
   "column_break_6",
   "aws_access_key_id",
   "aws_secret_access_key",
-  "tls_section",
-  "rsa_key_size",
-  "column_break_11",
-  "wildcard_tls_certificate",
   "lets_encrypt_section",
   "certbot_directory",
   "webroot_directory",
   "column_break_15",
   "eff_registration_email",
   "use_staging_ca",
+  "tls_section",
+  "rsa_key_size",
+  "column_break_11",
+  "wildcard_tls_certificate",
   "backbone_section",
   "backbone_directory",
   "column_break_20",
@@ -59,21 +59,24 @@
   "github_app_id",
   "github_app_client_id",
   "github_app_client_secret",
+  "column_break_36",
   "github_app_public_link",
   "github_webhook_secret",
-  "column_break_36",
-  "clone_directory",
-  "code_server",
-  "code_server_password",
   "github_access_token",
   "section_break_41",
   "github_app_private_key",
   "section_break_59",
-  "build_directory",
   "docker_registry_url",
-  "column_break_66",
+  "docker_registry_namespace",
+  "column_break_64",
   "docker_registry_username",
   "docker_registry_password",
+  "docker_build_section",
+  "clone_directory",
+  "build_directory",
+  "column_break_66",
+  "code_server",
+  "code_server_password",
   "auto_update_section",
   "auto_update_queue_size",
   "backups_section",
@@ -312,7 +315,7 @@
    "collapsible": 1,
    "fieldname": "section_break_33",
    "fieldtype": "Section Break",
-   "label": "GitHub App Authentication"
+   "label": "GitHub"
   },
   {
    "fieldname": "github_webhook_secret",
@@ -515,7 +518,7 @@
    "collapsible": 1,
    "fieldname": "section_break_59",
    "fieldtype": "Section Break",
-   "label": "Docker"
+   "label": "Docker Registry"
   },
   {
    "fieldname": "build_directory",
@@ -558,11 +561,25 @@
    "fieldname": "use_staging_ca",
    "fieldtype": "Check",
    "label": "Use Staging CA"
+  },
+  {
+   "fieldname": "docker_registry_namespace",
+   "fieldtype": "Data",
+   "label": "Docker Registry Namespace"
+  },
+  {
+   "fieldname": "column_break_64",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "docker_build_section",
+   "fieldtype": "Section Break",
+   "label": "Docker Build"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2020-12-15 19:06:58.637084",
+ "modified": "2020-12-31 13:36:31.281125",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
