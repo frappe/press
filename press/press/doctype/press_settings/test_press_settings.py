@@ -29,13 +29,13 @@ class TestPressSettings(unittest.TestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
-	@patch.object(PressSettings, "_set_lifecycle_config")
+	@patch.object(PressSettings, "_update_offsite_backups_lifecycle")
 	def test_lifecycle_config_is_called_on_create(self, mock_set_lifecycle_config):
 		"""Ensure lifecycle config is updated on create."""
 		create_test_press_settings()
 		mock_set_lifecycle_config.assert_called_once()
 
-	@patch.object(PressSettings, "_set_lifecycle_config")
+	@patch.object(PressSettings, "_update_offsite_backups_lifecycle")
 	def test_lifecycle_config_is_updated_on_settings_update(
 		self, mock_set_lifecycle_config
 	):
@@ -46,7 +46,7 @@ class TestPressSettings(unittest.TestCase):
 		press_settings.save()
 		mock_set_lifecycle_config.assert_called_once()
 
-	@patch.object(PressSettings, "_set_lifecycle_config")
+	@patch.object(PressSettings, "_update_offsite_backups_lifecycle")
 	def test_lifecycle_config_not_updated_when_unreleated_field_updated(
 		self, mock_set_lifecycle_config
 	):

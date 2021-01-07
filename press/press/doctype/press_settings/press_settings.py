@@ -5,19 +5,21 @@
 from __future__ import unicode_literals
 
 import json
+from typing import Dict
+
 import frappe
 from boto3.session import Session
 from frappe.model.document import Document
-from frappe.utils.password import get_decrypted_password
 
 from press.api.billing import get_stripe
+from press.press.doctype.remote_operation_log.remote_operation_log import make_log
 from press.utils import log_error
 
 
 class PressSettings(Document):
 	def validate(self):
 		if self.has_value_changed("offsite_backups_lifecycle_config"):
-			self._set_lifecycle_config()
+			self._update_offsite_backups_lifecycle()
 
 	def obtain_root_domain_tls_certificate(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_obtain_root_domain_tls_certificate")
@@ -94,24 +96,24 @@ class PressSettings(Document):
 		"""Get new preconfigured boto3 session for offisite backup provider."""
 		return Session(
 			aws_access_key_id=self.offsite_backups_access_key_id,
-			aws_secret_access_key=get_decrypted_password(
-				self.doctype, self.doctype, "offsite_backups_secret_access_key"
+			aws_secret_access_key=self.get_password(
+				"offsite_backups_secret_access_key", raise_exception=False
 			),
 			region_name="ap-south-1",
 		)
 
-	def _set_lifecycle_config(self):
+	@staticmethod
+	@make_log("Update Lifecycle Config", "Success")
+	def __update_lifecycle_in_remote(bucket: str, conf: Dict, s3: Session) -> None:
 		"""Update/Replace Lifecycle config in s3 compatible backup provider."""
-		lifecycle_config: str = self.offsite_backups_lifecycle_config
+		bucket_lifecycle_configuration = s3.BucketLifecycleConfiguration(bucket)
+		return bucket_lifecycle_configuration.put(LifecycleConfiguration=conf)
+
+	def _update_offsite_backups_lifecycle(self):
+		"""Update lifecycle config of offsite backups bucket."""
+		lifecycle_config = self.offsite_backups_lifecycle_config
 		if not lifecycle_config:
 			return
-		lifecycle_config_dict = json.loads(lifecycle_config)
+		lifecycle_config = json.loads(lifecycle_config)
 		s3 = self.boto3_offsite_backup_session.resource("s3")
-		bucket_lifecycle_configuration = s3.BucketLifecycleConfiguration(self.aws_s3_bucket)
-		bucket_lifecycle_configuration.put(LifecycleConfiguration=lifecycle_config_dict)
-		frappe.get_doc(
-			doctype="Remote Operation Log",
-			operation_type="Update Lifecycle Config",
-			request=lifecycle_config,
-			status="Success",
-		).insert()
+		self.__update_lifecycle_in_remote(self.aws_s3_bucket, lifecycle_config, s3)
