@@ -435,6 +435,15 @@ class Site(Document):
 		agent = Agent(self.server)
 		return agent.get_site_info(self)
 
+	def get_disk_usages(self):
+		last_usage = frappe.get_last_doc("Site Usage", {"site": self.name})
+		return {
+			"database": last_usage.database,
+			"backups": last_usage.backups,
+			"public": last_usage.public,
+			"private": last_usage.private
+		}
+
 	def _sync_config_info(self, fetched_config: Dict) -> bool:
 		"""Update site doc config with the fetched_config values.
 
@@ -461,20 +470,32 @@ class Site(Document):
 		"""
 
 		def _insert_usage(usage: dict):
-			doc = frappe.get_doc(
-				{
-					"doctype": "Site Usage",
-					"site": self.name,
-					"backups": usage["backups"],
-					"database": usage["database"],
-					"public": usage["public"],
-					"private": usage["private"],
-				}
-			).insert()
-			equivalent_site_time = convert_utc_to_user_timezone(
-				dateutil.parser.parse(usage["timestamp"])
+			current_usages = self.get_disk_usages()
+			site_usage_data = {
+				"site": self.name,
+				"backups": usage["backups"],
+				"database": usage["database"],
+				"public": usage["public"],
+				"private": usage["private"],
+			}
+
+			same_as_last_usage = (
+				current_usages["backups"] == site_usage_data["backups"]
+				and current_usages["database"] == site_usage_data["database"]
+				and current_usages["public"] == site_usage_data["public"]
+				and current_usages["private"] == site_usage_data["private"]
 			)
-			doc.db_set("creation", equivalent_site_time)
+
+			if same_as_last_usage:
+				return
+
+			site_usage = frappe.get_doc({"doctype": "Site Usage", **site_usage_data}).insert()
+
+			if usage.get("timestamp"):
+				equivalent_site_time = convert_utc_to_user_timezone(
+					dateutil.parser.parse(usage["timestamp"])
+				)
+				site_usage.db_set("creation", equivalent_site_time)
 
 		if isinstance(fetched_usage, list):
 			for usage in fetched_usage:
@@ -482,14 +503,14 @@ class Site(Document):
 		else:
 			_insert_usage(fetched_usage)
 
-	def _sync_timezone_info(self, time_zone: str) -> bool:
-		"""Update site doc timezone with the passed value of time_zone.
+	def _sync_timezone_info(self, timezone: str) -> bool:
+		"""Update site doc timezone with the passed value of timezone.
 
-		:time_zone: Timezone passed in part of the agent info response
+		:timezone: Timezone passed in part of the agent info response
 		:returns: True if value has changed
 		"""
-		if self.timezone != time_zone:
-			self.timezone = time_zone
+		if self.timezone != timezone:
+			self.timezone = timezone
 			return True
 		return False
 
@@ -500,7 +521,7 @@ class Site(Document):
 
 		fetched_usage = data["usage"]
 		fetched_config = data["config"]
-		fetched_timezone = data.get("time_zone")
+		fetched_timezone = data["timezone"]
 
 		self._sync_usage_info(fetched_usage)
 		to_save = self._sync_config_info(fetched_config)
