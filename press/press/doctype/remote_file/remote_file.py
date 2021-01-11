@@ -5,13 +5,15 @@
 from __future__ import unicode_literals
 
 import json
+from typing import Dict
 
 import frappe
 import requests
-import pprint
 from boto3 import client, resource
 from frappe.model.document import Document
 from frappe.utils.password import get_decrypted_password
+
+from press.press.doctype.remote_operation_log.remote_operation_log import make_log
 
 
 def get_remote_key(file):
@@ -91,21 +93,18 @@ def poll_file_statuses():
 		frappe.db.commit()
 
 
+@make_log("Delete Files")
+def delete_in_remote(bucket: str, objects: Dict) -> None:
+	"""Delete objects in remote."""
+	press_settings = frappe.get_single("Press Settings")
+	session = press_settings.boto3_offsite_backup_session
+	bucket = session.Bucket(bucket)
+	bucket.delete_objects(Delete=objects)
+
+
 def delete_remote_backup_objects(remote_files):
 	"""Delete specified objects identified by keys in the backups bucket."""
-	from boto3 import resource
-
 	from press.utils import chunk
-
-	press_settings = frappe.get_single("Press Settings")
-	s3 = resource(
-		"s3",
-		aws_access_key_id=press_settings.offsite_backups_access_key_id,
-		aws_secret_access_key=press_settings.get_password(
-			"offsite_backups_secret_access_key", raise_exception=False
-		),
-		region_name="ap-south-1",
-	).Bucket(press_settings.aws_s3_bucket)
 
 	remote_files = set([x for x in remote_files if x])
 
@@ -121,12 +120,9 @@ def delete_remote_backup_objects(remote_files):
 		]
 	)
 
+	bucket = frappe.get_value("Press Settings", "aws_s3_bucket")
 	for objects in chunk([{"Key": x} for x in remote_files_keys], 1000):
-		response = s3.delete_objects(Delete={"Objects": objects})
-		response = pprint.pformat(response)
-		frappe.get_doc(
-			doctype="Remote Operation Log", operation_type="Delete Files", response=response,
-		).insert()
+		delete_in_remote(bucket, {"Objects": objects})
 
 	frappe.db.set_value(
 		"Remote File", {"name": ("in", remote_files)}, "status", "Unavailable",
