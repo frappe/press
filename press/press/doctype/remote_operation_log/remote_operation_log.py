@@ -12,40 +12,38 @@ from frappe.model.document import Document
 
 
 class RemoteOperationLog(Document):
-	pass
+	@classmethod
+	def make_log(cls, operation_type: str, status: str = "Unknown"):
+		"""
+		Make log after remote operation.
 
+		Takes first arg of decorated method as bucket name.
+		Takes second arg of decorated method as request.
+		"""
 
-def make_log(operation_type: str, status: str = "Unknown"):
-	"""
-	Make log after remote operation.
+		def decorator(func):
+			@functools.wraps(func)
+			def wrapper(*args, **kwargs):
+				try:
+					bucket = args[0]
+				except IndexError:
+					raise "Bucket name not given"
+				try:
+					req = args[1]
+				except IndexError:
+					req = None
+				res = func(*args, **kwargs)
+				frappe.get_doc(
+					doctype="Remote Operation Log",
+					operation_type=operation_type,
+					request=pprint.pformat(req),
+					response=pprint.pformat(res),
+					status=status,
+					bucket=bucket,
+				).insert()
 
-	Takes first arg of decorated method as bucket name.
-	Takes second arg of decorated method as request.
-	"""
+				return res
 
-	def decorator(func):
-		@functools.wraps(func)
-		def wrapper(*args, **kwargs):
-			try:
-				bucket = args[0]
-			except IndexError:
-				raise "Bucket name not given"
-			try:
-				req = args[1]
-			except IndexError:
-				req = None
-			res = func(*args, **kwargs)
-			frappe.get_doc(
-				doctype="Remote Operation Log",
-				operation_type=operation_type,
-				request=pprint.pformat(req),
-				response=pprint.pformat(res),
-				status=status,
-				bucket=bucket,
-			).insert()
+			return wrapper
 
-			return res
-
-		return wrapper
-
-	return decorator
+		return decorator
