@@ -13,7 +13,9 @@ from boto3 import client, resource
 from frappe.model.document import Document
 from frappe.utils.password import get_decrypted_password
 
-from press.press.doctype.remote_operation_log.remote_operation_log import make_log
+from press.press.doctype.remote_operation_log.remote_operation_log import (
+	RemoteOperationLog,
+)
 
 
 def get_remote_key(file):
@@ -93,7 +95,7 @@ def poll_file_statuses():
 		frappe.db.commit()
 
 
-@make_log("Delete Files")
+@RemoteOperationLog.make_log("Delete Files")
 def delete_in_remote(bucket: str, objects: Dict) -> None:
 	"""Delete objects in remote."""
 	press_settings = frappe.get_single("Press Settings")

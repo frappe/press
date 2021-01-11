@@ -12,7 +12,9 @@ from boto3.session import Session
 from frappe.model.document import Document
 
 from press.api.billing import get_stripe
-from press.press.doctype.remote_operation_log.remote_operation_log import make_log
+from press.press.doctype.remote_operation_log.remote_operation_log import (
+	RemoteOperationLog,
+)
 from press.utils import log_error
 
 
@@ -103,7 +105,7 @@ class PressSettings(Document):
 		)
 
 	@staticmethod
-	@make_log("Update Lifecycle Config", "Success")
+	@RemoteOperationLog.make_log("Update Lifecycle Config", "Success")
 	def __update_lifecycle_in_remote(bucket: str, conf: Dict, s3: Session) -> None:
 		"""Update/Replace Lifecycle config in s3 compatible backup provider."""
 		bucket_lifecycle_configuration = s3.BucketLifecycleConfiguration(bucket)
