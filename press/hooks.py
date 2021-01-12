@@ -139,7 +139,7 @@ scheduler_events = {
 		"30 * * * *": ["press.press.doctype.agent_job.agent_job.suspend_sites"],
 		"*/15 * * * *": [
 			"press.press.doctype.site_update.site_update.schedule_updates",
-			"press.press.doctype.agent_job.agent_job.report_usage_violations",
+			"press.press.doctype.site.site_usages.update_disk_usages",
 		],
 	},
 }
