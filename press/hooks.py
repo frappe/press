@@ -117,20 +117,20 @@ scheduler_events = {
 	"hourly_long": [
 		"press.press.doctype.bench.bench.archive_obsolete_benches",
 		"press.press.doctype.bench.bench.scale_workers",
-		"press.press.doctype.agent_job.agent_job.schedule_backups",
+		"press.press.doctype.site.backups.schedule",
 		"press.press.doctype.subscription.subscription.create_usage_records",
 		"press.press.doctype.bench.bench.sync_benches",
 	],
 	"cron": {
 		"0 3 * * *": ["press.press.doctype.remote_file.remote_file.poll_file_statuses"],
 		"0 4 * * *": [
-			"press.press.cleanup.cleanup_backups",
-			"press.press.cleanup.remove_baggage",
+			"press.press.doctype.site.backups.cleanup",
+			"press.press.cleanup.unlink_remote_files_from_site",
 		],
 		"* * * * * 0/5": ["press.press.doctype.agent_job.agent_job.poll_pending_jobs"],
 		"* * * * * 0/60": [
+			"press.press.doctype.site.analytics.collect",
 			"press.press.doctype.agent_job.agent_job.collect_site_uptime",
-			"press.press.doctype.agent_job.agent_job.collect_site_analytics",
 			"press.press.doctype.agent_job.agent_job.report_site_downtime",
 		],
 		"* * * * * 0/30": ["press.press.doctype.agent_job.agent_job.collect_server_status"],

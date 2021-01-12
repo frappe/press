@@ -4,7 +4,7 @@ from unittest.mock import Mock, patch
 
 import frappe
 
-from press.press.cleanup import FIFO, GFS, cleanup_backups
+from press.press.doctype.site.backups import FIFO, GFS, cleanup as cleanup_backups
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.press_settings.test_press_settings import (
 	create_test_press_settings,
