@@ -216,13 +216,7 @@ class Site(Document):
 		self.save()
 
 	def backup(self, with_files=False, offsite=False):
-		if frappe.db.count(
-			"Site Backup", {"site": self.name, "status": ("in", ["Running", "Pending"])}
-		):
-			raise Exception("Too many pending backups")
-
-		log_site_activity(self.name, "Backup")
-		frappe.get_doc(
+		return frappe.get_doc(
 			{
 				"doctype": "Site Backup",
 				"site": self.name,
