@@ -120,7 +120,6 @@ scheduler_events = {
 		"press.press.doctype.agent_job.agent_job.schedule_backups",
 		"press.press.doctype.subscription.subscription.create_usage_records",
 		"press.press.doctype.bench.bench.sync_benches",
-		"press.press.doctype.site.site_usages.update_cpu_usages",
 	],
 	"cron": {
 		"0 3 * * *": ["press.press.doctype.remote_file.remote_file.poll_file_statuses"],
@@ -137,8 +136,9 @@ scheduler_events = {
 		"* * * * * 0/30": ["press.press.doctype.agent_job.agent_job.collect_server_status"],
 		"0 */6 * * *": ["press.press.doctype.server.server.cleanup_unused_files"],
 		"30 * * * *": ["press.press.doctype.agent_job.agent_job.suspend_sites"],
-		"*/15 * * * *": [
-			"press.press.doctype.site_update.site_update.schedule_updates",
+		"*/15 * * * *": ["press.press.doctype.site_update.site_update.schedule_updates"],
+		"15,45 * * * *": [
+			"press.press.doctype.site.site_usages.update_cpu_usages",
 			"press.press.doctype.site.site_usages.update_disk_usages",
 		],
 	},
