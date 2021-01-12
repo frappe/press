@@ -441,7 +441,7 @@ class Site(Document):
 			"database": last_usage.database,
 			"backups": last_usage.backups,
 			"public": last_usage.public,
-			"private": last_usage.private
+			"private": last_usage.private,
 		}
 
 	def _sync_config_info(self, fetched_config: Dict) -> bool:
