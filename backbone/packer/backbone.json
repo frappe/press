@@ -13,7 +13,7 @@
       ],
       "iso_target_path": "{{template_dir}}/images",
       "iso_target_extension": "img",
-      "memory": "2048",
+      "memory": "4096",
       "output_directory": "{{template_dir}}/scratch",
       "headless": true,
       "qemuargs": [
@@ -52,6 +52,6 @@
     }
   ],
   "variables": {
-    "disk_size": "8192"
+    "disk_size": "16384"
   }
 }
