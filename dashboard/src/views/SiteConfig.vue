@@ -69,7 +69,7 @@
 					</div>
 				</SectionCard>
 				<div
-					class="flex-1 max-w-full p-4 overflow-x-scroll font-mono text-base whitespace-pre-line bg-gray-100 rounded"
+					class="flex-1 max-w-full p-4 overflow-x-auto font-mono text-base whitespace-pre-line bg-gray-100 rounded"
 				>
 					<div class="mb-4">site_config.json</div>
 					<div v-html="siteConfigPreview"></div>
