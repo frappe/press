@@ -67,30 +67,19 @@ class MarketplaceApp(WebsiteGenerator):
 		if self.category:
 			context.category = frappe.get_doc("Marketplace App Category", self.category)
 
-		apps = frappe.db.get_all(
-			"App",
-			filters={"scrubbed": self.name, "public": True, "enabled": True},
-			pluck="name",
-		)
 		groups = frappe.db.get_all(
 			"Release Group",
 			filters=[
 				["Release Group", "enabled", "=", 1],
 				["Release Group", "public", "=", 1],
-				["Release Group App", "app", "in", apps],
+				["Release Group App", "app", "=", self.app],
 			],
-			fields=["name"],
 		)
-		enabled_groups = []
 		for group in groups:
 			group_doc = frappe.get_doc("Release Group", group.name)
-			frappe_app = frappe.get_all(
-				"App",
-				fields=["name", "scrubbed", "branch", "url"],
-				filters={"name": ("in", [row.app for row in group_doc.apps]), "frappe": True},
-				limit=1,
-			)[0]
-			group["frappe"] = frappe_app
-			enabled_groups.append(group)
-
-		context.supported_versions = enabled_groups
+			frappe_source = frappe.db.get_value(
+				"App Source", group_doc.apps[0].source, ["repository_url", "branch"], as_dict=True
+			)
+			group["frappe"] = frappe_source
+			group["version"] = group_doc.version
+		context.groups = groups
