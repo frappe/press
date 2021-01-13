@@ -32,6 +32,7 @@
    "label": "Image"
   },
   {
+   "fetch_from": "app.title",
    "fieldname": "title",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -126,7 +127,7 @@
  "index_web_pages_for_search": 1,
  "is_published_field": "published",
  "links": [],
- "modified": "2020-12-11 12:02:59.477289",
+ "modified": "2021-01-12 17:44:15.267384",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Marketplace App",
