@@ -226,6 +226,7 @@ def options_for_new():
 			fields=["name", "`default`", "title"],
 			filters={"enabled": True, "version": version.name},
 			or_filters={"public": True, "team": team},
+			order_by="public desc",
 		)
 		for group in groups:
 			# Find most recently created bench
