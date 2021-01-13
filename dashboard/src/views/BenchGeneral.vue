@@ -42,6 +42,16 @@
 				Deploy now
 			</Button>
 		</Section>
+		<Section
+			v-if="bench.status == 'Active'"
+			class="mt-10"
+			title="New Site"
+			description="Create New Site on your Bench"
+		>
+			<Button type="primary" :route="'/sites/new?bench=' + this.bench.name">
+				New Site
+			</Button>
+		</Section>
 	</div>
 </template>
 

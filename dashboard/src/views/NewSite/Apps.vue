@@ -1,8 +1,8 @@
 <template>
 	<div class="space-y-6">
-		<div>
+		<div v-if="!this.privateBench">
 			<h2 class="text-lg font-semibold">
-				Select Frappe Version
+				Select Frappe version
 			</h2>
 			<p class="text-base text-gray-700">
 				Select the Frappe version for your site
@@ -12,22 +12,6 @@
 					type="select"
 					v-model="selectedVersion"
 					:options="versionOptions"
-				/>
-			</div>
-		</div>
-		<div v-if="groupOptions.length >= 2">
-			<h2 class="text-lg font-semibold">
-				Select Bench
-			</h2>
-			<p class="text-base text-gray-700">
-				Select Bench for your site
-			</p>
-			<div class="mt-4">
-				<Input
-					type="select"
-					:value="selectedGroup"
-					@change="value => $emit('update:selectedGroup', value)"
-					:options="groupOptions"
 				/>
 			</div>
 		</div>
@@ -95,7 +79,7 @@ export default {
 		SelectableCard
 	},
 	name: 'Apps',
-	props: ['options', 'selectedApps', 'selectedGroup'],
+	props: ['options', 'selectedApps', 'selectedGroup', 'privateBench'],
 	data: function() {
 		return {
 			selectedVersion: null
@@ -143,15 +127,24 @@ export default {
 	},
 	watch: {
 		selectedVersion(value) {
-			let selectedVersion = this.options.versions.find(v => v.name == value);
-			this.$emit('update:selectedGroup', selectedVersion.groups[0].name);
+			if (!this.privateBench) {
+				let selectedVersion = this.options.versions.find(v => v.name == value);
+				this.$emit('update:selectedGroup', selectedVersion.groups[0].name);
+			}
 		},
 		selectedGroup() {
 			this.$emit('update:selectedApps', ['frappe']);
 		}
 	},
 	async mounted() {
-		this.selectedVersion = this.options.versions[0].name;
+		if (this.privateBench) {
+			this.selectedVersion = this.options.versions.find(v =>
+				v.groups.some(g => g.name == this.selectedGroup)
+			).name;
+			this.$emit('update:selectedApps', ['frappe']);
+		} else {
+			this.selectedVersion = this.options.versions[0].name;
+		}
 	},
 	methods: {
 		toggleApp(app) {
