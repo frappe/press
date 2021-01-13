@@ -126,7 +126,7 @@ export default {
 				v => v.name == this.selectedVersion
 			);
 			let group = selectedVersion.groups.find(
-				g => g.title == this.selectedGroup
+				g => g.name == this.selectedGroup
 			);
 			return group.apps;
 		},
@@ -135,7 +135,7 @@ export default {
 			let selectedVersion = this.options.versions.find(
 				version => version.name == this.selectedVersion
 			);
-			return selectedVersion.groups.map(group => group.title);
+			return selectedVersion.groups.map(group => group.name);
 		},
 		versionOptions() {
 			return this.options.versions.map(group => group.name);
@@ -144,7 +144,7 @@ export default {
 	watch: {
 		selectedVersion(value) {
 			let selectedVersion = this.options.versions.find(v => v.name == value);
-			this.$emit('update:selectedGroup', selectedVersion.groups[0].title);
+			this.$emit('update:selectedGroup', selectedVersion.groups[0].name);
 		},
 		selectedGroup() {
 			this.$emit('update:selectedApps', ['frappe']);
