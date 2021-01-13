@@ -10,11 +10,10 @@
 					<div v-if="$resources.options.loading === false">
 						<div class="mt-4">
 							<label class="text-lg">
-								Choose a Frappe Version
+								Choose a Frappe version
 							</label>
 							<p class="text-base text-gray-700">
-								Every push to the branch you specify here will be available to
-								deploy a new version of this app.
+								Select the Frappe version for your bench.
 							</p>
 							<div class="mt-4">
 								<Input
