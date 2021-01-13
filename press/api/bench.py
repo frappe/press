@@ -26,12 +26,15 @@ def get(name):
 	most_recent_candidate = frappe.get_all(
 		"Deploy Candidate", ["status"], {"group": name}, limit=1, order_by="creation desc"
 	)[0]
+	active_benches = frappe.get_all(
+		"Bench", {"group": name, "status": "Active"}, limit=1, order_by="creation desc"
+	)
 	update_available = most_recent_candidate.status == "Draft"
 	return {
 		"name": group.name,
 		"title": group.title,
 		"version": group.version,
-		"status": "Active",
+		"status": "Active" if active_benches else "Awaiting Deploy",
 		"update_available": update_available,
 		"last_updated": group.modified,
 		"creation": group.creation,
@@ -55,8 +58,11 @@ def all():
 			limit=1,
 			order_by="creation desc",
 		)[0]
+		active_benches = frappe.get_all(
+			"Bench", {"group": group.name, "status": "Active"}, limit=1, order_by="creation desc"
+		)
 		group.update_available = most_recent_candidate.status == "Draft"
-		group.status = "Active"
+		group.status = "Active" if active_benches else "Awaiting Deploy"
 	return groups
 
 
