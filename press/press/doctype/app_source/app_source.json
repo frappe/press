@@ -6,6 +6,8 @@
  "engine": "InnoDB",
  "field_order": [
   "app",
+  "app_title",
+  "frappe",
   "repository_url",
   "data_3",
   "repository",
@@ -97,11 +99,26 @@
    "label": "App",
    "options": "App",
    "reqd": 1
+  },
+  {
+   "fetch_from": "app.title",
+   "fieldname": "app_title",
+   "fieldtype": "Data",
+   "label": "App Title",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fetch_from": "app.frappe",
+   "fetch_if_empty": 1,
+   "fieldname": "frappe",
+   "fieldtype": "Check",
+   "label": "Frappe"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2020-12-15 22:41:34.066740",
+ "modified": "2021-01-12 10:22:14.031664",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Source",
