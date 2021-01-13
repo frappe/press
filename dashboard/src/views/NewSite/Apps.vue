@@ -27,7 +27,7 @@
 			<div class="mt-4">
 				<h3 class="sr-only">Marketplace Apps</h3>
 				<div
-					class="grid grid-cols-2 gap-4 px-2 py-2 mt-4 -mx-2 overflow-y-scroll max-h-56"
+					class="grid grid-cols-2 gap-4 px-2 py-2 mt-4 -mx-2 overflow-y-auto max-h-56"
 				>
 					<SelectableCard
 						v-for="marketplaceApp in marketplaceApps"
@@ -55,7 +55,7 @@
 					Your Private Apps
 				</h3>
 				<div
-					class="grid grid-cols-2 gap-4 px-2 py-2 -mx-2 overflow-y-scroll mt- max-h-56"
+					class="grid grid-cols-2 gap-4 px-2 py-2 -mx-2 overflow-y-auto mt- max-h-56"
 				>
 					<SelectableCard
 						v-for="app in privateApps"
