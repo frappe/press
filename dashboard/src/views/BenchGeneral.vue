@@ -29,10 +29,24 @@
 			</SectionCard>
 		</Section>
 		<Section
-			v-if="bench.update_available"
+			v-if="bench.status == 'Active' && bench.update_available"
 			class="mt-10"
 			title="Update Available"
 			description="Deploy most recent version of your bench"
+		>
+			<Button
+				type="secondary"
+				@click="$resources.deploy.fetch()"
+				:disabled="$resources.deploy.loading"
+			>
+				Deploy now
+			</Button>
+		</Section>
+		<Section
+			v-if="bench.status == 'Awaiting Deploy'"
+			class="mt-10"
+			title="Deploy"
+			description="Deploy first version of your bench"
 		>
 			<Button
 				type="primary"
