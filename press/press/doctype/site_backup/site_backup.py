@@ -28,7 +28,7 @@ class SiteBackup(Document):
 			raise Exception("Too many pending backups")
 
 	def after_insert(self):
-		log_site_activity(self.name, "Backup")
+		log_site_activity(self.site, "Backup")
 		site = frappe.get_doc("Site", self.site)
 		agent = Agent(site.server)
 		job = agent.backup_site(site, self.with_files, self.offsite)
