@@ -72,18 +72,18 @@ class ReleaseGroup(Document):
 	def create_deploy_candidate(self):
 		if not self.enabled:
 			return
-		releases = []
+		apps = []
 		for app in self.apps:
 			release = frappe.get_all(
 				"App Release",
 				fields=["name", "source", "app", "hash"],
-				filters={"app": app.app},
+				filters={"app": app.app, "source": app.source},
 				order_by="creation desc",
 				limit=1,
 			)
 			if release:
 				release = release[0]
-				releases.append(
+				apps.append(
 					{
 						"release": release.name,
 						"source": release.source,
@@ -92,7 +92,7 @@ class ReleaseGroup(Document):
 					}
 				)
 		frappe.get_doc(
-			{"doctype": "Deploy Candidate", "group": self.name, "apps": releases}
+			{"doctype": "Deploy Candidate", "group": self.name, "apps": apps}
 		).insert()
 
 	def add_app(self, source):
