@@ -212,50 +212,61 @@ def request_logs(name, start=0):
 @frappe.whitelist()
 def options_for_new():
 	team = get_current_team()
-	groups = frappe.get_all(
-		"Release Group",
-		fields=["name", "`default`"],
-		or_filters={"public": True, "team": team},
+	versions = frappe.get_all(
+		"Frappe Version",
+		["name", "number", "default", "status"],
+		{"public": True},
+		order_by="`default` desc, number desc",
 	)
-
+	deployed_versions = []
 	apps = set()
-	deployed_groups = []
-	for group in groups:
-		benches = frappe.get_all(
-			"Bench",
-			filters={"status": "Active", "group": group.name},
-			order_by="creation desc",
-			limit=1,
+	for version in versions:
+		groups = frappe.get_all(
+			"Release Group",
+			fields=["name", "`default`", "title"],
+			filters={"enabled": True, "version": version.name},
+			or_filters={"public": True, "team": team},
 		)
-		if not benches:
-			continue
-		bench = benches[0].name
-		bench_doc = frappe.get_doc("Bench", bench)
-		bench_apps = [row.app for row in bench_doc.apps]
-		group_apps = frappe.get_all(
-			"App",
-			fields=[
-				"name",
-				"frappe",
-				"branch",
-				"scrubbed",
-				"repo_owner",
-				"repo",
-				"team",
-				"public",
-			],
-			filters={"name": ("in", bench_apps)},
-			or_filters={"team": team, "public": True},
-		)
-		order = {row.app: row.idx for row in bench_doc.apps}
-		group["apps"] = sorted(group_apps, key=lambda x: order[x.name])
-		deployed_groups.append(group)
-		apps.update([app.scrubbed for app in group_apps])
+		for group in groups:
+			# Find most recently created bench
+			# Assume that this bench has all the latest updates
+			benches = frappe.get_all(
+				"Bench",
+				filters={"status": "Active", "group": group.name},
+				order_by="creation desc",
+				limit=1,
+			)
+			if not benches:
+				continue
+
+			bench = frappe.get_doc("Bench", benches[0].name)
+			bench_apps = [app.source for app in bench.apps]
+			app_sources = frappe.get_all(
+				"App Source",
+				[
+					"name",
+					"app",
+					"repository_url",
+					"repository_owner",
+					"branch",
+					"team",
+					"public",
+					"app_title",
+					"frappe",
+				],
+				filters={"name": ("in", bench_apps)},
+				or_filters={"public": True, "team": team},
+			)
+			group["apps"] = sorted(app_sources, key=lambda x: bench_apps.index(x.name))
+			version.setdefault("groups", []).append(group)
+			apps.update([source.app for source in app_sources])
+		if version.get("groups"):
+			deployed_versions.append(version)
 
 	marketplace_apps = frappe.db.get_all(
 		"Marketplace App",
-		fields=["title", "category", "image", "description", "name", "route"],
-		filters={"name": ("in", list(apps))},
+		fields=["title", "category", "image", "description", "app", "route"],
+		filters={"app": ("in", list(apps))},
 	)
 
 	domain = frappe.db.get_value("Press Settings", "Press Settings", ["domain"])
@@ -266,16 +277,15 @@ def options_for_new():
 		not team_doc.default_payment_method and not team_doc.erpnext_partner
 	)
 	allow_partner = team_doc.is_partner_and_has_enough_credits()
-
 	return {
 		"domain": domain,
-		"groups": sorted(deployed_groups, key=lambda x: not x.default),
 		"plans": get_plans(),
 		"has_card": team_doc.default_payment_method,
 		"free_account": team_doc.free_account,
 		"allow_partner": allow_partner,
 		"disable_site_creation": disable_site_creation,
-		"marketplace_apps": {row.name: row for row in marketplace_apps},
+		"marketplace_apps": {row.app: row for row in marketplace_apps},
+		"versions": deployed_versions,
 	}
 
 

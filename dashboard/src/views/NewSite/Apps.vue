@@ -10,6 +10,21 @@
 			<div class="mt-4">
 				<Input
 					type="select"
+					v-model="selectedVersion"
+					:options="versionOptions"
+				/>
+			</div>
+		</div>
+		<div v-if="groupOptions.length >= 2">
+			<h2 class="text-lg font-semibold">
+				Select Bench
+			</h2>
+			<p class="text-base text-gray-700">
+				Select Bench for your site
+			</p>
+			<div class="mt-4">
+				<Input
+					type="select"
 					:value="selectedGroup"
 					@change="value => $emit('update:selectedGroup', value)"
 					:options="groupOptions"
@@ -31,11 +46,11 @@
 				>
 					<SelectableCard
 						v-for="marketplaceApp in marketplaceApps"
-						:key="marketplaceApp.name"
+						:key="marketplaceApp.app.app"
 						@click.native="toggleApp(marketplaceApp.app)"
 						:title="marketplaceApp.title"
 						:image="marketplaceApp.image"
-						:selected="selectedApps.includes(marketplaceApp.app.name)"
+						:selected="selectedApps.includes(marketplaceApp.app.app)"
 					>
 						<a
 							slot="secondary-content"
@@ -59,13 +74,13 @@
 				>
 					<SelectableCard
 						v-for="app in privateApps"
-						:key="app.name"
+						:key="app.app"
 						@click.native="toggleApp(app)"
-						:selected="selectedApps.includes(app.name)"
-						:title="`${app.repo_owner}/${app.repo}`"
+						:selected="selectedApps.includes(app.app)"
+						:title="app.app_title"
 					>
 						<div slot="secondary-content" class="text-base text-gray-700">
-							{{ app.branch }}
+							{{ app.repository_owner }}:{{ app.branch }}
 						</div>
 					</SelectableCard>
 				</div>
@@ -81,17 +96,20 @@ export default {
 	},
 	name: 'Apps',
 	props: ['options', 'selectedApps', 'selectedGroup'],
+	data: function() {
+		return {
+			selectedVersion: null
+		};
+	},
 	computed: {
 		privateApps() {
-			return this.apps.filter(
-				app => app.team === this.$account.team.name && !app.public
-			);
+			return this.apps.filter(app => !app.public);
 		},
 		marketplaceApps() {
 			return this.apps
-				.filter(app => app.public && !app.frappe)
+				.filter(app => app.public)
 				.map(app => {
-					let options = this.options.marketplace_apps[app.scrubbed];
+					let options = this.options.marketplace_apps[app.app];
 					if (!options) {
 						return false;
 					}
@@ -101,34 +119,49 @@ export default {
 				.filter(Boolean);
 		},
 		apps() {
-			if (!this.options) return [];
+			if (!this.options || !this.selectedVersion || !this.selectedGroup)
+				return [];
 
-			let group = this.options.groups.find(g => g.name == this.selectedGroup);
+			let selectedVersion = this.options.versions.find(
+				v => v.name == this.selectedVersion
+			);
+			let group = selectedVersion.groups.find(
+				g => g.title == this.selectedGroup
+			);
 			return group.apps;
 		},
 		groupOptions() {
-			return this.options.groups.map(option => option.name);
+			if (!this.options || !this.selectedVersion) return [];
+			let selectedVersion = this.options.versions.find(
+				version => version.name == this.selectedVersion
+			);
+			return selectedVersion.groups.map(group => group.title);
+		},
+		versionOptions() {
+			return this.options.versions.map(group => group.name);
 		}
 	},
 	watch: {
-		selectedGroup: {
-			handler: 'resetAppSelection',
-			immediate: true
+		selectedVersion(value) {
+			let selectedVersion = this.options.versions.find(v => v.name == value);
+			this.$emit('update:selectedGroup', selectedVersion.groups[0].title);
+		},
+		selectedGroup() {
+			this.$emit('update:selectedApps', ['frappe']);
 		}
 	},
+	async mounted() {
+		this.selectedVersion = this.options.versions[0].name;
+	},
 	methods: {
-		resetAppSelection() {
-			let onlyFrappe = this.apps.filter(app => app.frappe).map(app => app.name);
-			this.$emit('update:selectedApps', onlyFrappe);
-		},
 		toggleApp(app) {
 			if (app.frappe) return;
-			if (!this.selectedApps.includes(app.name)) {
-				this.$emit('update:selectedApps', this.selectedApps.concat(app.name));
+			if (!this.selectedApps.includes(app.app)) {
+				this.$emit('update:selectedApps', this.selectedApps.concat(app.app));
 			} else {
 				this.$emit(
 					'update:selectedApps',
-					this.selectedApps.filter(a => a !== app.name)
+					this.selectedApps.filter(a => a !== app.app)
 				);
 			}
 		}

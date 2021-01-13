@@ -138,7 +138,7 @@ export default {
 			plan.disabled = this.disablePlan(plan);
 			return plan;
 		});
-		this.selectedGroup = this.options.groups.find(g => g.default).name;
+
 		if (this.$route.query.domain) {
 			let domain = this.$route.query.domain.split('.');
 			if (domain) {
