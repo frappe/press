@@ -43,7 +43,7 @@
 			</Button>
 		</Section>
 		<Section
-			v-if="bench.status == 'Awaiting Deploy'"
+			v-if="bench.status == 'Awaiting Deploy' && bench.update_available"
 			class="mt-10"
 			title="Deploy"
 			description="Deploy first version of your bench"
