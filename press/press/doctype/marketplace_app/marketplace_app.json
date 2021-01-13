@@ -1,13 +1,13 @@
 {
  "actions": [],
  "allow_guest_to_view": 1,
- "autoname": "Prompt",
  "creation": "2020-09-02 22:57:04.696244",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
   "image",
+  "app",
   "title",
   "route",
   "column_break_3",
@@ -111,6 +111,14 @@
    "fieldname": "published",
    "fieldtype": "Check",
    "label": "Published"
+  },
+  {
+   "fieldname": "app",
+   "fieldtype": "Link",
+   "label": "App",
+   "options": "App",
+   "reqd": 1,
+   "unique": 1
   }
  ],
  "has_web_view": 1,

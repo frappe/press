@@ -13,6 +13,9 @@ from frappe.website.utils import cleanup_page_name
 
 
 class MarketplaceApp(WebsiteGenerator):
+	def autoname(self):
+		self.name = self.app
+
 	def before_insert(self):
 		self.long_description = self.fetch_readme()
 
