@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 
 import json
 import re
+from collections import defaultdict
 from typing import Dict, List
 
 import dateutil.parser
@@ -430,7 +431,11 @@ class Site(Document):
 		return agent.get_site_info(self)
 
 	def get_disk_usages(self):
-		last_usage = frappe.get_last_doc("Site Usage", {"site": self.name})
+		try:
+			last_usage = frappe.get_last_doc("Site Usage", {"site": self.name})
+		except frappe.DoesNotExistError:
+			return defaultdict(lambda: None)
+
 		return {
 			"database": last_usage.database,
 			"backups": last_usage.backups,
