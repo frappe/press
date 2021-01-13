@@ -25,20 +25,23 @@ class MarketplaceApp(WebsiteGenerator):
 	def validate(self):
 		self.published = self.status == "Published"
 
-	def get_frappe_app(self):
-		return frappe.get_doc("App", {"scrubbed": self.name, "public": 1})
+	def get_app_source(self):
+		return frappe.get_doc("App Source", {"app": self.app})
 
 	def fetch_readme(self):
-		frappe_app = self.get_frappe_app()
-		if not frappe_app.installation:
-			return
-		token = get_access_token(frappe_app.installation)
+		source = self.get_app_source()
+
+		if source.github_installation_id:
+			github_access_token = get_access_token(source.github_installation_id)
+		else:
+			github_access_token = frappe.get_value("Press Settings", None, "github_access_token")
+
 		headers = {
-			"Authorization": f"token {token}",
+			"Authorization": f"token {github_access_token}",
 		}
-		owner = frappe_app.repo_owner
-		repository = frappe_app.repo
-		branch = frappe_app.branch
+		owner = source.repository_owner
+		repository = source.repository
+		branch = source.branch
 
 		readme_content = None
 		variants = ["README.md", "readme.md", "readme", "README", "Readme"]
