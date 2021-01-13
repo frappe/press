@@ -39,7 +39,7 @@
 						</span>
 					</router-link>
 					<div class="min-h-full">
-						<div class="pb-4 -mx-4 bg-black sm:mx-0">
+						<div class="pb-6 -mx-4 bg-black sm:mx-0">
 							<div class="px-6 py-4 mb-2 border-b border-gray-900">
 								<div class="text-sm font-semibold text-white">
 									Build Log
@@ -108,7 +108,7 @@
 								</div>
 							</details>
 						</div>
-						<div class="bg-black sm:mx-0">
+						<div class="bg-black sm:mx-0 -mt-2">
 							<div
 								class="px-6 py-4 border-t border-gray-900"
 								v-for="job in selectedCandidate.jobs"
