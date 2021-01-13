@@ -48,8 +48,13 @@
   }
  ],
  "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2020-11-12 17:31:19.434446",
+ "links": [
+  {
+   "link_doctype": "Release Group",
+   "link_fieldname": "version"
+  }
+ ],
+ "modified": "2021-01-12 09:55:49.348217",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Frappe Version",
