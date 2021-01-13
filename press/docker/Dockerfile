@@ -104,18 +104,18 @@ RUN mkdir -p apps logs sites config/pids
 RUN virtualenv -p python${PYTHON_VERSION} env `#stage-bench-env`
 
 
-# Install Frappe application
+# Install Frappe app
 COPY --chown=frappe:frappe apps/frappe /home/frappe/frappe-bench/apps/frappe
 RUN echo '["build"]' > .bench.cmd
 RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 echo "N\nY\n" | bench get-app frappe `#stage-apps-frappe`
 RUN rm .bench.cmd
 
-# Install other applications
-{% for app in doc.applications %}
-{% if app.application != "frappe" %}
+# Install other apps
+{% for app in doc.apps %}
+{% if app.app != "frappe" %}
 
-COPY --chown=frappe:frappe apps/{{ app.application }} /home/frappe/frappe-bench/apps/{{ app.application }}
-RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 echo "N\nY\n" | bench get-app {{ app.application }} `#stage-apps-{{ app.application }}`
+COPY --chown=frappe:frappe apps/{{ app.app }} /home/frappe/frappe-bench/apps/{{ app.app }}
+RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 echo "N\nY\n" | bench get-app {{ app.app }} `#stage-apps-{{ app.app }}`
 
 {% endif %}
 {% endfor %}
