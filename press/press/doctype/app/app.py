@@ -25,7 +25,9 @@ class App(Document):
 		)
 		if existing_source:
 			source = frappe.get_doc("App Source", existing_source[0].name)
-			source.add_version(version)
+			versions = set(version.version for version in source.versions)
+			if version not in versions:
+				source.add_version(version)
 		else:
 			# Add new App Source
 			source = frappe.get_doc(
