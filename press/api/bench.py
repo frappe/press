@@ -217,12 +217,15 @@ def deploy(name):
 @protected("Release Group")
 def jobs(name):
 	benches = frappe.get_all("Bench", {"group": name}, pluck="name")
-	jobs = frappe.get_all(
-		"Agent Job",
-		fields=["name", "job_type", "creation", "status", "start", "end", "duration"],
-		filters={"bench": ("in", benches)},
-		limit=10,
-	)
+	if benches:
+		jobs = frappe.get_all(
+			"Agent Job",
+			fields=["name", "job_type", "creation", "status", "start", "end", "duration"],
+			filters={"bench": ("in", benches)},
+			limit=10,
+		)
+	else:
+		jobs = []
 	return jobs
 
 
