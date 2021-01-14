@@ -49,7 +49,7 @@
 						</a>
 					</div>
 					<div>
-						<Button @click="installApp(app.name)">
+						<Button @click="installApp(app.app)">
 							Install
 						</Button>
 					</div>

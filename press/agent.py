@@ -145,7 +145,7 @@ class Agent:
 		)
 
 	def install_app_site(self, site, app):
-		data = {"name": frappe.db.get_value("App", app, "scrubbed")}
+		data = {"name": app}
 		return self.create_agent_job(
 			"Install App on Site",
 			f"benches/{site.bench}/sites/{site.name}/apps",
@@ -155,10 +155,9 @@ class Agent:
 		)
 
 	def uninstall_app_site(self, site, app):
-		scrubbed = frappe.db.get_value("App", app, "scrubbed")
 		return self.create_agent_job(
 			"Uninstall App from Site",
-			f"benches/{site.bench}/sites/{site.name}/apps/{scrubbed}",
+			f"benches/{site.bench}/sites/{site.name}/apps/{app}",
 			method="DELETE",
 			bench=site.bench,
 			site=site.name,
