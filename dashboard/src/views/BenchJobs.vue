@@ -1,6 +1,13 @@
 <template>
-	<Section title="Jobs" description="History of jobs that ran on your bench">
-		<div class="flex">
+	<Section
+		title="Jobs"
+		:description="
+			jobs.length
+				? 'History of jobs that ran on your bench'
+				: 'No jobs ran on your bench'
+		"
+	>
+		<div class="flex" v-if="jobs.length">
 			<div
 				class="w-full py-4 overflow-auto text-base border rounded-md sm:w-1/3 sm:rounded-r-none"
 				:class="{ 'hidden sm:block': selectedJob }"
