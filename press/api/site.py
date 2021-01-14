@@ -345,22 +345,19 @@ def get(name):
 	installed_sources, available_sources = [], []
 	bench = frappe.get_doc("Bench", site.bench)
 	bench_sources = [app.source for app in bench.apps]
-	sources = frappe.db.sql(
-		"""
-	SELECT
-		source.name, source.app, source.repository_url, source.repository_owner, source.branch, source.team, source.public,
-		app.title
-	FROM
-		`tabApp Source` source
-	LEFT JOIN
-		`tabApp` app
-	ON
-		source.app = app.name
-	WHERE
-		source.name in %s
-	""",
-		(bench_sources,),
-		as_dict=True,
+	sources = frappe.get_all(
+		"App Source",
+		[
+			"name",
+			"app",
+			"repository_url",
+			"repository_owner",
+			"branch",
+			"team",
+			"public",
+			"app_title as title",
+		],
+		filters={"name": ("in", bench_sources)},
 	)
 	for source in sources:
 		if source.app in installed_apps:

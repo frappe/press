@@ -119,23 +119,12 @@ def releases(name):
 @frappe.whitelist()
 def all():
 	team = get_current_team()
-	apps = frappe.db.sql(
-		"""
-	SELECT
-		source.app as name, app.title, app.modified
-	FROM
-		`tabApp Source` AS source
-	LEFT JOIN
-		`tabApp` AS app
-	ON
-		source.app = app.name
-	WHERE
-		(source.team = %(team)s OR source.public = 1)
-	GROUP BY source.app
-	ORDER BY source.creation DESC
-	""",
-		{"team": team},
-		as_dict=True,
+	apps = frappe.get_all(
+		"App Source",
+		["app as name", "app_title as title", "modified"],
+		or_filters={"team": team, "public": True},
+		group_by="app",
+		order_by="creation desc",
 	)
 	return apps
 
