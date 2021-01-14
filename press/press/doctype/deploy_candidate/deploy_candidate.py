@@ -96,10 +96,8 @@ class DeployCandidate(Document):
 
 		clone_steps, app_install_steps = [], []
 		for app in self.apps:
-			app_title = frappe.db.get_value("App", app.app, "title")
-			clone_steps.append(("clone", app.app, "Clone Repositories", app_title))
-
-			app_install_steps.append(("apps", app.app, "Install Apps", app_title))
+			clone_steps.append(("clone", app.app, "Clone Repositories", app.title))
+			app_install_steps.append(("apps", app.app, "Install Apps", app.title))
 
 		steps = clone_steps + preparation_steps + app_install_steps
 
