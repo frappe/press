@@ -84,7 +84,7 @@ class Agent:
 		)
 
 	def restore_site(self, site):
-		apps = [frappe.db.get_value("App", app.app, "scrubbed") for app in site.apps]
+		apps = [app.app for app in site.apps]
 		data = {
 			"apps": apps,
 			"mariadb_root_password": get_decrypted_password(
@@ -105,7 +105,7 @@ class Agent:
 		)
 
 	def new_site_from_backup(self, site):
-		apps = [frappe.db.get_value("App", app.app, "scrubbed") for app in site.apps]
+		apps = [app.app for app in site.apps]
 
 		def sanitized_site_config(site):
 			sanitized_config = {}
