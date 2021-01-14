@@ -279,8 +279,8 @@ class TestBackupRotationScheme(unittest.TestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
-	@patch("press.press.cleanup.GFS")
-	@patch("press.press.cleanup.FIFO")
+	@patch("press.press.doctype.site.backups.GFS")
+	@patch("press.press.doctype.site.backups.FIFO")
 	def test_press_setting_of_rotation_scheme_works(self, mock_FIFO, mock_GFS):
 		"""Ensure setting rotation scheme in press settings affect rotation scheme used."""
 		press_settings = create_test_press_settings()
