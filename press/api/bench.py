@@ -80,7 +80,7 @@ def options():
 	SELECT
 		version.name as version,
 		source.name as source, source.app, source.repository_url, source.repository, source.repository_owner, source.branch,
-		app.title, app.frappe
+		source.app_title as title, source.frappe
 	FROM
 		`tabApp Source Version` AS source_version
 	LEFT JOIN
@@ -91,14 +91,10 @@ def options():
 		`tabFrappe Version` AS version
 	ON
 		source_version.version = version.name
-	LEFT JOIN
-		`tabApp` AS app
-	ON
-		source.app = app.name
 	WHERE
 		version.public = 1 AND
 		(source.team = %(team)s OR source.public = 1)
-	ORDER BY app.creation, source.creation
+	ORDER BY source.creation
 	""",
 		{"team": team},
 		as_dict=True,
