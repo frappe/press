@@ -119,6 +119,10 @@ export default {
 			return this.$account.team_members;
 		},
 		teams() {
+			let current_team = this.$account.team.name;
+			if (!this.$account.teams.includes(current_team)) {
+				this.$account.teams.push(current_team);
+			}
 			return this.$account.teams;
 		}
 	},
