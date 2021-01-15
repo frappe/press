@@ -86,7 +86,7 @@ class TestGFS(unittest.TestCase):
 		)
 		older = self._get_previous_weekly_backup_day(oldest_allowed_weekly)
 		while self._is_monthly_backup_day(older) or self._is_yearly_backup_day(older):
-			older -= self._get_previous_weekly_backup_day(older)
+			older = self._get_previous_weekly_backup_day(older)
 		newer = self._get_next_weekly_backup_day(oldest_allowed_weekly)
 
 		limit_backup = create_test_site_backup(site.name, oldest_allowed_weekly)
@@ -124,7 +124,7 @@ class TestGFS(unittest.TestCase):
 		older = self._get_previous_monthly_backup_day(oldest_allowed_monthly)
 		newer = self._get_next_monthly_backup_day(oldest_allowed_monthly)
 		while self._is_yearly_backup_day(older):
-			older -= self._get_previous_monthly_backup_day(older)
+			older = self._get_previous_monthly_backup_day(older)
 
 		limit_backup = create_test_site_backup(site.name, oldest_allowed_monthly)
 		older_backup = create_test_site_backup(site.name, older)
