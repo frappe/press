@@ -72,7 +72,7 @@
   }
  ],
  "links": [],
- "modified": "2020-12-15 22:10:10.535368",
+ "modified": "2021-01-15 09:34:48.164205",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate Difference",
@@ -98,6 +98,17 @@
    "read": 1,
    "report": 1,
    "role": "Press Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
    "share": 1,
    "write": 1
   }
