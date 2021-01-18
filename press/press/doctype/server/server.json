@@ -29,7 +29,9 @@
   "column_break_20",
   "frappe_public_key",
   "section_break_22",
-  "use_for_new_benches"
+  "use_for_new_benches",
+  "column_break_26",
+  "use_for_new_sites"
  ],
  "fields": [
   {
@@ -179,10 +181,20 @@
    "fieldtype": "Data",
    "label": "Domain",
    "set_only_once": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "use_for_new_sites",
+   "fieldtype": "Check",
+   "label": "Use For New Sites"
+  },
+  {
+   "fieldname": "column_break_26",
+   "fieldtype": "Column Break"
   }
  ],
  "links": [],
- "modified": "2020-12-17 17:27:50.212963",
+ "modified": "2021-01-18 11:46:58.460566",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
