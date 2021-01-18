@@ -17,6 +17,10 @@ class Server(Document):
 			self.domain = frappe.db.get_single_value("Press Settings", "domain")
 		self.name = f"{self.hostname}.{self.domain}"
 
+	def validate(self):
+		if self.is_new() and not self.cluster:
+			self.cluster = frappe.db.get_value("Cluster", {"default": True})
+
 	def on_update(self):
 		# If Database Server is changed for the server then change it for all the benches
 		if not self.is_new() and self.has_value_changed("database_server"):

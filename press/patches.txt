@@ -46,3 +46,4 @@ press.patches.v0_0_1.rename_release_group_frappe_app_to_release_group_app
 press.patches.v0_0_1.set_hostname_in_server
 press.patches.v0_0_1.set_domain_in_site
 press.patches.v0_0_1.breakdown_site_usage_into_multiple_fields
+press.patches.v0_0_1.create_default_cluster

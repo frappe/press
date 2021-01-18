@@ -8,6 +8,7 @@
   "status",
   "hostname",
   "domain",
+  "cluster",
   "is_server_setup",
   "column_break_3",
   "ip",
@@ -191,10 +192,19 @@
   {
    "fieldname": "column_break_26",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Cluster",
+   "options": "Cluster",
+   "reqd": 1
   }
  ],
  "links": [],
- "modified": "2021-01-18 11:46:58.460566",
+ "modified": "2021-01-18 15:15:48.497838",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
