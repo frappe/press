@@ -15,10 +15,11 @@
   "cluster",
   "column_break_3",
   "admin_password",
-  "update",
   "setup_wizard_complete",
+  "group",
   "billing",
   "team",
+  "column_break_15",
   "free",
   "section_break_6",
   "apps",
@@ -33,13 +34,12 @@
   "current_disk_usage",
   "deploy_section",
   "timezone",
-  "site_files_section",
-  "database_file",
-  "private_file",
-  "public_file",
+  "column_break_29",
+  "update",
   "remote_files",
   "remote_config_file",
   "remote_database_file",
+  "column_break_34",
   "remote_private_file",
   "remote_public_file"
  ],
@@ -124,7 +124,8 @@
    "fieldtype": "Datetime",
    "hide_days": 1,
    "hide_seconds": 1,
-   "label": "Last Updated On"
+   "label": "Last Updated On",
+   "read_only": 1
   },
   {
    "fieldname": "subdomain",
@@ -145,6 +146,7 @@
    "options": "Team"
   },
   {
+   "collapsible": 1,
    "fieldname": "deploy_section",
    "fieldtype": "Section Break",
    "hide_days": 1,
@@ -157,27 +159,6 @@
    "hide_days": 1,
    "hide_seconds": 1,
    "label": "Timezone"
-  },
-  {
-   "fieldname": "database_file",
-   "fieldtype": "Attach",
-   "hide_days": 1,
-   "hide_seconds": 1,
-   "label": "Database File"
-  },
-  {
-   "fieldname": "private_file",
-   "fieldtype": "Attach",
-   "hide_days": 1,
-   "hide_seconds": 1,
-   "label": "Private File"
-  },
-  {
-   "fieldname": "public_file",
-   "fieldtype": "Attach",
-   "hide_days": 1,
-   "hide_seconds": 1,
-   "label": "Public File"
   },
   {
    "default": "0",
@@ -240,14 +221,6 @@
    "options": "Remote File"
   },
   {
-   "collapsible": 1,
-   "fieldname": "site_files_section",
-   "fieldtype": "Section Break",
-   "hide_days": 1,
-   "hide_seconds": 1,
-   "label": "Site Files"
-  },
-  {
    "fieldname": "remote_config_file",
    "fieldtype": "Link",
    "label": "Remote Config File",
@@ -307,11 +280,33 @@
    "fieldtype": "Link",
    "label": "Cluster",
    "options": "Cluster",
+   "read_only": 1,
    "reqd": 1
+  },
+  {
+   "fetch_from": "bench.group",
+   "fieldname": "group",
+   "fieldtype": "Link",
+   "label": "Release Group",
+   "options": "Release Group",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_15",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_29",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_34",
+   "fieldtype": "Column Break"
   }
  ],
  "links": [],
- "modified": "2021-01-18 15:27:03.235185",
+ "modified": "2021-01-18 17:09:06.402314",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
