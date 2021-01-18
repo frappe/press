@@ -23,7 +23,7 @@ class GitHubWebhookLog(Document):
 		repository = payload.repository
 		installation = payload.installation
 		if installation:
-			self.installation = installation["id"]
+			self.github_installation_id = installation["id"]
 
 		if payload.repository:
 			self.repository = repository["name"]
@@ -96,7 +96,7 @@ class GitHubWebhookLog(Document):
 					"hash": commit["id"],
 					"repository": self.repository,
 					"repository_owner": self.repository_owner,
-					"installation": self.installation,
+					"github_installation_id": self.github_installation_id,
 				}
 			)
 			tag.insert()
