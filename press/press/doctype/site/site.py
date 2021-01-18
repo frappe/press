@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 
 import json
 import re
+from collections import defaultdict
 from typing import Dict, List
 
 import dateutil.parser
@@ -218,13 +219,7 @@ class Site(Document):
 		self.save()
 
 	def backup(self, with_files=False, offsite=False):
-		if frappe.db.count(
-			"Site Backup", {"site": self.name, "status": ("in", ["Running", "Pending"])}
-		):
-			raise Exception("Too many pending backups")
-
-		log_site_activity(self.name, "Backup")
-		frappe.get_doc(
+		return frappe.get_doc(
 			{
 				"doctype": "Site Backup",
 				"site": self.name,
@@ -379,7 +374,14 @@ class Site(Document):
 		agent.remove_upstream_site(self.server, self.name)
 
 		self.db_set("host_name", None)
+
 		self.delete_offsite_backups()
+		frappe.db.set_value(
+			"Site Backup",
+			{"site": self.name, "offsite": False},
+			"files_availability",
+			"Unavailable",
+		)
 
 	def delete_offsite_backups(self):
 		from press.press.doctype.remote_file.remote_file import delete_remote_backup_objects
@@ -399,6 +401,13 @@ class Site(Document):
 
 		if not sites_remote_files:
 			return
+
+		frappe.db.set_value(
+			"Site Backup",
+			{"site": self.name, "offsite": True},
+			"files_availability",
+			"Unavailable",
+		)
 
 		return delete_remote_backup_objects(sites_remote_files)
 
@@ -422,6 +431,19 @@ class Site(Document):
 	def fetch_info(self):
 		agent = Agent(self.server)
 		return agent.get_site_info(self)
+
+	def get_disk_usages(self):
+		try:
+			last_usage = frappe.get_last_doc("Site Usage", {"site": self.name})
+		except frappe.DoesNotExistError:
+			return defaultdict(lambda: None)
+
+		return {
+			"database": last_usage.database,
+			"backups": last_usage.backups,
+			"public": last_usage.public,
+			"private": last_usage.private,
+		}
 
 	def _sync_config_info(self, fetched_config: Dict) -> bool:
 		"""Update site doc config with the fetched_config values.
@@ -449,20 +471,32 @@ class Site(Document):
 		"""
 
 		def _insert_usage(usage: dict):
-			doc = frappe.get_doc(
-				{
-					"doctype": "Site Usage",
-					"site": self.name,
-					"backups": usage["backups"],
-					"database": usage["database"],
-					"public": usage["public"],
-					"private": usage["private"],
-				}
-			).insert()
-			equivalent_site_time = convert_utc_to_user_timezone(
-				dateutil.parser.parse(usage["timestamp"])
+			current_usages = self.get_disk_usages()
+			site_usage_data = {
+				"site": self.name,
+				"backups": usage["backups"],
+				"database": usage["database"],
+				"public": usage["public"],
+				"private": usage["private"],
+			}
+
+			same_as_last_usage = (
+				current_usages["backups"] == site_usage_data["backups"]
+				and current_usages["database"] == site_usage_data["database"]
+				and current_usages["public"] == site_usage_data["public"]
+				and current_usages["private"] == site_usage_data["private"]
 			)
-			doc.db_set("creation", equivalent_site_time)
+
+			if same_as_last_usage:
+				return
+
+			site_usage = frappe.get_doc({"doctype": "Site Usage", **site_usage_data}).insert()
+
+			if usage.get("timestamp"):
+				equivalent_site_time = convert_utc_to_user_timezone(
+					dateutil.parser.parse(usage["timestamp"])
+				)
+				site_usage.db_set("creation", equivalent_site_time)
 
 		if isinstance(fetched_usage, list):
 			for usage in fetched_usage:
@@ -470,14 +504,14 @@ class Site(Document):
 		else:
 			_insert_usage(fetched_usage)
 
-	def _sync_timezone_info(self, time_zone: str) -> bool:
-		"""Update site doc timezone with the passed value of time_zone.
+	def _sync_timezone_info(self, timezone: str) -> bool:
+		"""Update site doc timezone with the passed value of timezone.
 
-		:time_zone: Timezone passed in part of the agent info response
+		:timezone: Timezone passed in part of the agent info response
 		:returns: True if value has changed
 		"""
-		if self.timezone != time_zone:
-			self.timezone = time_zone
+		if self.timezone != timezone:
+			self.timezone = timezone
 			return True
 		return False
 

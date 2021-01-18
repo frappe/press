@@ -3,15 +3,32 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
-import frappe
+
 import json
+from datetime import datetime, timedelta
+
+import frappe
+from frappe.desk.doctype.tag.tag import add_tag
 from frappe.model.document import Document
 from press.agent import Agent
-from frappe.desk.doctype.tag.tag import add_tag
+from press.press.doctype.site_activity.site_activity import log_site_activity
 
 
 class SiteBackup(Document):
+	def before_insert(self):
+		last_two_hours = datetime.now() - timedelta(hours=2)
+		if frappe.db.count(
+			"Site Backup",
+			{
+				"site": self.site,
+				"status": ("in", ["Running", "Pending"]),
+				"creation": (">", last_two_hours),
+			},
+		):
+			raise Exception("Too many pending backups")
+
 	def after_insert(self):
+		log_site_activity(self.site, "Backup")
 		site = frappe.get_doc("Site", self.site)
 		agent = Agent(site.server)
 		job = agent.backup_site(site, self.with_files, self.offsite)
