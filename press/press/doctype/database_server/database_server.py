@@ -20,6 +20,8 @@ class DatabaseServer(Document):
 				self.server_id = max(server_ids or []) + 1
 			else:
 				self.server_id = 1
+		if self.is_new() and not self.cluster:
+			self.cluster = frappe.db.get_value("Cluster", {"default": True})
 
 	def ping_agent(self):
 		agent = Agent(self.name, server_type=self.doctype)

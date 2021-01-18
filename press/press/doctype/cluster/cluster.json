@@ -1,0 +1,61 @@
+{
+ "actions": [],
+ "autoname": "Prompt",
+ "creation": "2021-01-18 14:53:26.146948",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "default"
+ ],
+ "fields": [
+  {
+   "default": "0",
+   "fieldname": "default",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Default"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [
+  {
+   "group": "Servers",
+   "link_doctype": "Server",
+   "link_fieldname": "cluster"
+  },
+  {
+   "group": "Servers",
+   "link_doctype": "Database Server",
+   "link_fieldname": "cluster"
+  },
+  {
+   "group": "Servers",
+   "link_doctype": "Proxy Server",
+   "link_fieldname": "cluster"
+  }
+ ],
+ "modified": "2021-01-18 15:13:13.917712",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Cluster",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

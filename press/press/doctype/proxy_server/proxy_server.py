@@ -12,6 +12,10 @@ from press.utils import log_error
 
 
 class ProxyServer(Document):
+	def validate(self):
+		if self.is_new() and not self.cluster:
+			self.cluster = frappe.db.get_value("Cluster", {"default": True})
+
 	def ping_agent(self):
 		agent = Agent(self.name, server_type="Proxy Server")
 		return agent.ping()

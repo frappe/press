@@ -8,6 +8,7 @@
  "field_order": [
   "status",
   "is_server_setup",
+  "cluster",
   "column_break_3",
   "ip",
   "private_ip",
@@ -145,11 +146,20 @@
   {
    "fieldname": "column_break_18",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Cluster",
+   "options": "Cluster",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2020-10-09 18:14:41.255173",
+ "modified": "2021-01-18 15:16:08.218837",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
