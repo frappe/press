@@ -12,6 +12,7 @@
   "status_before_update",
   "server",
   "bench",
+  "cluster",
   "column_break_3",
   "admin_password",
   "update",
@@ -299,10 +300,18 @@
    "fieldname": "current_disk_usage",
    "fieldtype": "Int",
    "hidden": 1
+  },
+  {
+   "fetch_from": "bench.cluster",
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "label": "Cluster",
+   "options": "Cluster",
+   "reqd": 1
   }
  ],
  "links": [],
- "modified": "2020-12-22 10:00:32.611435",
+ "modified": "2021-01-18 15:27:03.235185",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

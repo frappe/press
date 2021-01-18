@@ -9,6 +9,7 @@ import re
 from collections import defaultdict
 from typing import Dict, List
 
+import boto3
 import dateutil.parser
 import frappe
 import requests
@@ -176,7 +177,50 @@ class Site(Document):
 	def after_insert(self):
 		# log activity
 		log_site_activity(self.name, "Create")
+		self.create_dns_record()
 		self.create_agent_request()
+
+	def create_dns_record(self):
+		default_cluster = frappe.db.get_value("Cluster", {"default": True})
+		if self.cluster == default_cluster:
+			return
+		proxy_server = frappe.get_value("Server", self.server, "proxy_server")
+		domain = frappe.db.get_single_value("Press Settings", "domain")
+
+		try:
+			client = boto3.client(
+				"route53",
+				aws_access_key_id=frappe.db.get_single_value("Press Settings", "aws_access_key_id"),
+				aws_secret_access_key=get_decrypted_password(
+					"Press Settings", "Press Settings", "aws_secret_access_key"
+				),
+			)
+			hosted_zone = client.list_hosted_zones_by_name(DNSName=domain)["HostedZones"][0][
+				"Id"
+			]
+			client.change_resource_record_sets(
+				ChangeBatch={
+					"Changes": [
+						{
+							"Action": "UPSERT",
+							"ResourceRecordSet": {
+								"Name": self.name,
+								"Type": "CNAME",
+								"TTL": 60,
+								"ResourceRecords": [{"Value": proxy_server}],
+							},
+						}
+					]
+				},
+				HostedZoneId=hosted_zone,
+			)
+		except Exception:
+			log_error(
+				"Route 53 Record Creation Error",
+				domain=domain,
+				site=self.name,
+				proxy_server=proxy_server,
+			)
 
 	def create_agent_request(self):
 		agent = Agent(self.server)

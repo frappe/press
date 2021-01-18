@@ -8,6 +8,7 @@
   "status",
   "server",
   "database_server",
+  "cluster",
   "column_break_3",
   "group",
   "candidate",
@@ -147,10 +148,18 @@
    "label": "Docker Image",
    "read_only": 1,
    "reqd": 1
+  },
+  {
+   "fetch_from": "server.cluster",
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "label": "Cluster",
+   "options": "Cluster",
+   "reqd": 1
   }
  ],
  "links": [],
- "modified": "2021-01-15 09:33:43.695482",
+ "modified": "2021-01-18 15:26:23.031495",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",
