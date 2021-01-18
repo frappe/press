@@ -48,12 +48,24 @@ def protected(doctype):
 @frappe.whitelist()
 def new(site):
 	team = get_current_team(get_doc=True)
-	bench = frappe.get_all(
-		"Bench",
-		fields=["name", "server"],
-		filters={"status": "Active", "group": site["group"]},
-		order_by="creation desc",
-		limit=1,
+	bench = frappe.db.sql(
+		"""
+	SELECT
+		bench.name
+	FROM
+		tabBench bench
+	LEFT JOIN
+		tabServer server
+	ON
+		bench.server = server.name
+	WHERE
+		bench.status = "Active" AND bench.group = %s
+	ORDER BY
+		server.use_for_new_sites DESC, bench.creation DESC
+	LIMIT 1
+	""",
+		(site["group"],),
+		as_dict=True,
 	)[0].name
 	plan = site["plan"]
 	site = frappe.get_doc(
