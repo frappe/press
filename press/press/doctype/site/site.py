@@ -100,6 +100,11 @@ class Site(Document):
 		if self.status == "Active":
 			self.enable_subscription()
 
+	def rename(self, new_name: str):
+		agent = Agent(self.server)
+		agent.rename_site(self, new_name)
+		frappe.rename_doc(self.doctype, self.name, new_name)
+
 	def update_config_preview(self):
 		"""Regenrates site.config on each site.validate from the site.configuration child table data"""
 		new_config = {}

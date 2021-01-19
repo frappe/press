@@ -113,6 +113,16 @@ class Agent:
 			site=site.name,
 		)
 
+	def rename_site(self, site, new_name: str):
+		data = {"new_name": new_name}
+		return self.create_agent_job(
+			"Rename Site",
+			f"benches/{site.bench}/sites/{site.name}/rename",
+			data,
+			bench=site.bench,
+			site=site.name,
+		)
+
 	def new_site_from_backup(self, site):
 		apps = [frappe.db.get_value("Frappe App", app.app, "scrubbed") for app in site.apps]
 
