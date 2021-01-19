@@ -295,21 +295,6 @@ class Team(Document):
 		if payment_methods:
 			return payment_methods
 
-		stripe = get_stripe()
-		res = stripe.PaymentMethod.list(customer=self.stripe_customer_id, type="card")
-		payment_methods = res["data"] or []
-		payment_methods = [
-			{
-				"name": d["id"],
-				"last_4": d["card"]["last4"],
-				"name_on_card": d["billing_details"]["name"],
-				"expiry_month": d["card"]["exp_month"],
-				"expiry_year": d["card"]["exp_year"],
-			}
-			for d in payment_methods
-		]
-		return payment_methods
-
 	def get_past_invoices(self):
 		invoices = frappe.db.get_all(
 			"Invoice",
