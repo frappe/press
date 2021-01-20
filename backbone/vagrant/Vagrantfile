@@ -34,6 +34,12 @@ Vagrant.configure("2") do |config|
         n1.vm.network "private_network", ip: "10.1.1.101", netmask: "255.255.0.0"
     end
 
+    config.vm.define "n2.a.frappe.dev" do |n2|
+        n2.vm.hostname = "n2.a.frappe.dev"
+        n2.vm.network "private_network", ip: "10.0.1.102", netmask: "255.255.0.0"
+        n2.vm.network "private_network", ip: "10.1.1.102", netmask: "255.255.0.0"
+    end
+
     config.vm.define "f1.a.frappe.dev" do |f1|
         f1.vm.hostname = "f1.a.frappe.dev"
         f1.vm.network "private_network", ip: "10.0.2.101", netmask: "255.255.0.0"
