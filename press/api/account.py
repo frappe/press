@@ -305,7 +305,7 @@ def user_prompts():
 	if not doc.billing_address:
 		return [
 			"UpdateBillingAddress",
-			"Update your billing address so that we can show it in your monthly invoice.",
+			"Update your billing details so that we can show it in your monthly invoice.",
 		]
 
 	gstin, country = frappe.db.get_value(

@@ -1,8 +1,14 @@
 <template>
-	<Dialog title="Update Billing Address" v-model="show">
+	<Dialog title="Update Billing Details" v-model="show">
 		<p class="text-base" v-if="message">
 			{{ message }}
 		</p>
+		<Input
+			class="pt-4"
+			type="text"
+			v-model="companyName"
+			label="Company"
+		/>
 		<AddressForm ref="address-form" class="mt-4" v-model="billingInformation" />
 		<ErrorMessage
 			class="mt-2"
@@ -33,6 +39,7 @@ export default {
 		return {
 			show: true,
 			billingInformation: {
+				company: '',
 				address: '',
 				city: '',
 				state: '',
@@ -54,7 +61,8 @@ export default {
 						state: billingInformation.state,
 						postal_code: billingInformation.pincode,
 						country: billingInformation.country,
-						gstin: billingInformation.gstin
+						gstin: billingInformation.gstin,
+						company: companyName
 					});
 				}
 			}
