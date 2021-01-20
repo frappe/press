@@ -10,7 +10,7 @@ from frappe.model.document import Document
 class Cluster(Document):
 	def validate(self):
 		self.defaults = frappe.get_all(
-			self.doctype, {"primary": 1, "name": ("!=", self.name)}
+			self.doctype, {"default": 1, "name": ("!=", self.name)}
 		)
 		if not self.defaults:
 			self.default = 1
