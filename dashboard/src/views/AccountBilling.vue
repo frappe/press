@@ -101,7 +101,7 @@
 		</Section>
 		<Section
 			v-if="!$resources.billingDetails.loading"
-			title="Billing Address"
+			title="Billing Details"
 			description="Your billing address is shown in monthly invoice"
 		>
 			<SectionCard>
