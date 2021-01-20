@@ -12,4 +12,4 @@ def execute():
 	doctypes = ["Server", "Proxy Server", "Database Server"]
 	for doctype in doctypes:
 		frappe.reload_doc("press", "doctype", doctype.lower())
-		frappe.db.set_values(doctype, None, "cluser", "Default")
+		frappe.db.set_value(doctype, None, "cluser", "Default")
