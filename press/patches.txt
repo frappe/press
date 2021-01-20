@@ -47,3 +47,5 @@ press.patches.v0_0_1.set_hostname_in_server
 press.patches.v0_0_1.set_domain_in_site
 press.patches.v0_0_1.breakdown_site_usage_into_multiple_fields
 press.patches.v0_0_1.create_default_cluster
+press.patches.v0_0_1.set_app_title_from_custom_field
+press.patches.v0_0_1.set_release_group_version_and_title_from_custom_field
