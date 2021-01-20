@@ -13,7 +13,6 @@
   "bench",
   "column_break_3",
   "admin_password",
-  "update",
   "setup_wizard_complete",
   "billing",
   "team",
@@ -125,13 +124,6 @@
    "hide_days": 1,
    "hide_seconds": 1,
    "label": "Configuration"
-  },
-  {
-   "fieldname": "update",
-   "fieldtype": "Datetime",
-   "hide_days": 1,
-   "hide_seconds": 1,
-   "label": "Last Updated On"
   },
   {
    "fieldname": "subdomain",
@@ -297,7 +289,7 @@
   }
  ],
  "links": [],
- "modified": "2020-12-17 18:43:13.697333",
+ "modified": "2021-01-20 15:56:05.732012",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
