@@ -178,7 +178,7 @@ class TestGFS(unittest.TestCase):
 		self.assertEqual(older_backup.files_availability, "Unavailable")
 		self.assertEqual(newer_backup.files_availability, "Available")
 
-	@patch("press.press.cleanup.delete_remote_backup_objects")
+	@patch("press.press.doctype.remote_file.remote_file.delete_remote_backup_objects")
 	@patch("press.press.cleanup.frappe.db.commit")
 	def test_delete_remote_backup_objects_called(
 		self, mock_frappe_commit, mock_del_remote_backup_objects
@@ -238,7 +238,7 @@ class TestFIFO(unittest.TestCase):
 		self.assertEqual(old.files_availability, "Available")
 		self.assertEqual(new.files_availability, "Available")
 
-	@patch("press.press.cleanup.delete_remote_backup_objects")
+	@patch("press.press.doctype.remote_file.remote_file.delete_remote_backup_objects")
 	@patch("press.press.cleanup.frappe.db.commit")
 	def test_delete_remote_backup_objects_called(
 		self, mock_frappe_commit, mock_del_remote_backup_objects
