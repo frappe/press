@@ -149,10 +149,6 @@ export default {
 					route: '/benches'
 				},
 				{
-					label: 'Apps',
-					route: '/apps'
-				},
-				{
 					label: 'Settings',
 					route: '/account'
 				}
