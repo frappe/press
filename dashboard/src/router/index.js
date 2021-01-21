@@ -4,7 +4,6 @@ import account from '../controllers/account';
 import auth from '../controllers/auth';
 import Home from '../views/Home.vue';
 
-import appRoutes from './app';
 import siteRoutes from './site';
 import benchRoutes from './bench';
 import accountRoute from './account';
@@ -25,7 +24,6 @@ const routes = [
 			import(/* webpackChunkName: "sites" */ '../views/Welcome.vue')
 	},
 	...authRoutes,
-	...appRoutes,
 	...siteRoutes,
 	...benchRoutes,
 	accountRoute
