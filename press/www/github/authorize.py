@@ -2,6 +2,7 @@
 # Proprietary License. See license.txt
 
 from __future__ import unicode_literals
+import json
 import frappe
 import requests
 from press.utils import log_error
@@ -11,11 +12,13 @@ from base64 import b64decode
 def get_context(context):
 	code = frappe.form_dict.code
 	state = frappe.form_dict.state
+	redirect_url = frappe.utils.get_url("/dashboard")
 	if code and state:
-		team = b64decode(state).decode()
+		decoded_state = json.loads(b64decode(state).decode())
+		team = decoded_state["team"]
+		redirect_url = frappe.utils.get_url(decoded_state["url"])
 		obtain_access_token(code, team)
 		frappe.db.commit()
-	redirect_url = frappe.utils.get_url("/dashboard/#/apps/new")
 	frappe.flags.redirect_location = redirect_url
 	raise frappe.Redirect
 

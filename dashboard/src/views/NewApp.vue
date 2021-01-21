@@ -28,7 +28,9 @@
 								Connect to GitHub to access your repositories.
 							</p>
 							<Button class="mt-6" type="primary">
-								<a :href="options.installation_url">Connect To GitHub</a>
+								<a :href="options.installation_url + '?state=' + state"
+									>Connect To GitHub</a
+								>
 							</Button>
 						</div>
 					</div>
@@ -51,7 +53,9 @@
 							</div>
 							<div class="mt-4 text-base text-gray-700">
 								Not this account?
-								<a :href="options.installation_url" class="underline"
+								<a
+									:href="options.installation_url + '?state=' + state"
+									class="underline"
 									>Add another organization.</a
 								>
 							</div>
@@ -289,6 +293,11 @@ export default {
 				};
 			}
 			return {};
+		},
+		state() {
+			let location = window.location.href;
+			let state = { team: this.$account.team.name, url: location };
+			return btoa(JSON.stringify(state));
 		}
 	},
 	resources: {

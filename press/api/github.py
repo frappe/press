@@ -10,7 +10,7 @@ from press.utils import get_current_team, log_error
 import requests
 import jwt
 import re
-from base64 import b64decode, b64encode
+from base64 import b64decode
 
 
 @frappe.whitelist(allow_guest=True, xss_safe=True)
@@ -67,10 +67,9 @@ def options():
 
 	versions = frappe.get_all("Frappe Version", filters={"public": True})
 
-	state = b64encode(team.encode()).decode()
 	options = {
 		"authorized": bool(token),
-		"installation_url": f"{public_link}/installations/new?state={state}",
+		"installation_url": f"{public_link}/installations/new",
 		"installations": installations(token) if token else [],
 		"versions": versions,
 	}
