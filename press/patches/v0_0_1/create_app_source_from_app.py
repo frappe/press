@@ -18,37 +18,55 @@ def execute():
 	frappe.reload_doc("press", "doctype", "release_group_app")
 	frappe.reload_doc("press", "doctype", "bench_app")
 	frappe.reload_doc("press", "doctype", "deploy_candidate_app")
-	apps = frappe.get_all("App", "*")
-	for app in apps:
-		versions = set(frappe.get_all("Release Group", {"app": app.name}, pluck="version"))
-		if versions:
-			source = {
-				"doctype": "App Source",
-				"app": app.name,
-				"app_title": app.title,
-				"frappe": app.frappe,
-				"enabled": app.enabled,
-				"repository_url": app.url,
-				"repository": app.repo,
-				"repository_owner": app.repo_owner,
-				"branch": app.branch,
-				"github_installation_id": app.installation,
-				"public": app.public,
-				"team": app.team,
-				"versions": [{"version": version} for version in versions],
-			}
-			source = frappe.get_doc(source)
-			source.set_new_name()
-			source.set_parent_in_children()
-			source.db_insert()
+	distinct_apps = frappe.get_all("App", ["title", "scrubbed"], group_by="scrubbed")
 
-			for child in source.get_all_children():
-				child.db_insert()
+	for distinct_app in distinct_apps:
+		apps = frappe.get_all(
+			"App", "*", {"scrubbed": distinct_app.scrubbed}, order_by="enabled desc"
+		)
+		for app in apps:
+			existing = frappe.db.exists("App", app.scrubbed, cache=False)
+			if existing and existing == app.scrubbed:
+				frappe.rename_doc("App", app.name, app.scrubbed, merge=True)
+			else:
+				frappe.rename_doc("App", app.name, app.scrubbed)
 
-			frappe.db.set_value("App Release", {"app": app.name}, "source", source.name)
-			frappe.db.set_value("Bench App", {"app": app.name}, "source", source.name)
-			frappe.db.set_value("Deploy Candidate App", {"app": app.name}, "source", source.name)
-			frappe.db.set_value("Release Group App", {"app": app.name}, "source", source.name)
+		for app in apps:
+			versions = set(
+				frappe.get_all("Release Group", {"app": app.scrubbed}, pluck="version")
+			)
+			if versions:
+				source = {
+					"doctype": "App Source",
+					"app": app.scrubbed,
+					"app_title": app.title,
+					"frappe": app.frappe,
+					"enabled": app.enabled,
+					"repository_url": app.url,
+					"repository": app.repo,
+					"repository_owner": app.repo_owner,
+					"branch": app.branch,
+					"github_installation_id": app.installation,
+					"public": app.public,
+					"team": app.team,
+					"versions": [{"version": version} for version in versions],
+				}
+				source = frappe.get_doc(source)
+				source.set_new_name()
+				source.set_parent_in_children()
+				source.db_insert()
+
+				for child in source.get_all_children():
+					child.db_insert()
+
+				frappe.db.set_value("App Release", {"app": app.scrubbed}, "source", source.name)
+				frappe.db.set_value("Bench App", {"app": app.scrubbed}, "source", source.name)
+				frappe.db.set_value(
+					"Deploy Candidate App", {"app": app.scrubbed}, "source", source.name
+				)
+				frappe.db.set_value(
+					"Release Group App", {"app": app.scrubbed}, "source", source.name
+				)
 
 
 def delete():
