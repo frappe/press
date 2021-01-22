@@ -47,7 +47,9 @@
 								These apps will be available for sites on your bench. You can
 								also add apps to your bench later.
 							</p>
-							<div class="grid grid-cols-2 gap-4 px-2 py-2 mt-2 -mx-2 max-h-56">
+							<div
+								class="grid grid-cols-2 gap-4 px-2 py-2 mt-2 -mx-2 max-h-56 overflow-y-auto"
+							>
 								<button
 									class="px-4 py-3 text-left border border-blue-100 rounded-md focus:outline-none focus:shadow-none shadow cursor-pointer"
 									:class="
