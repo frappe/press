@@ -9,7 +9,7 @@ def execute():
 	frappe.reload_doc("press", "doctype", "cluster")
 	cluster = frappe.get_doc({"doctype": "Cluster", "name": "Default", "default": True})
 	cluster.insert()
-	doctypes = ["Server", "Proxy Server", "Database Server"]
+	doctypes = ["Server", "Proxy Server", "Database Server", "Bench", "Site"]
 	for doctype in doctypes:
-		frappe.reload_doc("press", "doctype", doctype.lower())
-		frappe.db.set_value(doctype, None, "cluser", "Default")
+		frappe.reload_doc("press", "doctype", frappe.scrub(doctype))
+		frappe.db.set_value(doctype, {"name": ("like", "%")}, "cluster", "Default")
