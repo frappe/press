@@ -15,7 +15,7 @@ frappe.ui.form.on('Site', {
 			return {
 				filters: {
 					site: frm.doc.name,
-					status: 'Active'
+					status: 'Active',
 				},
 			};
 		});
@@ -36,12 +36,12 @@ frappe.ui.form.on('Site', {
 			__('Visit Dashboard')
 		);
 
-		[
-			[__('Backup'), 'backup'],
-		].forEach(([label, method]) => {
+		[[__('Backup'), 'backup']].forEach(([label, method]) => {
 			frm.add_custom_button(
 				label,
-				() => { frm.call(method).then((r) => frm.refresh()) },
+				() => {
+					frm.call(method).then((r) => frm.refresh());
+				},
 				__('Actions')
 			);
 		});
@@ -73,7 +73,12 @@ frappe.ui.form.on('Site', {
 				label,
 				() => {
 					frappe.prompt(
-						{ fieldtype: 'Data', label: 'Reason', fieldname: 'reason', reqd: 1 },
+						{
+							fieldtype: 'Data',
+							label: 'Reason',
+							fieldname: 'reason',
+							reqd: 1,
+						},
 						({ reason }) => {
 							frm.call(method, { reason }).then((r) => frm.refresh());
 						},
