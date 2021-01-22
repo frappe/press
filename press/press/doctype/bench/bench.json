@@ -155,11 +155,12 @@
    "fieldtype": "Link",
    "label": "Cluster",
    "options": "Cluster",
+   "read_only": 1,
    "reqd": 1
   }
  ],
  "links": [],
- "modified": "2021-01-18 15:26:23.031495",
+ "modified": "2021-01-22 10:03:12.340143",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",
