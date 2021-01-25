@@ -881,6 +881,35 @@ def process_migrate_site_job_update(job):
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 
 
+def process_rename_site_job_update(job):
+	other_job_type = {
+		"Rename Site": "Rename Site on Upstream",
+		"Rename Site on Upstream": "Rename Site",
+	}[job.job_type]
+
+	first = job.status
+	second = frappe.get_all(
+		"Agent Job",
+		fields=["status"],
+		filters={"job_type": other_job_type, "site": job.site},
+	)[0].status
+
+	if "Success" == first == second:
+		new_name = job.data["new_name"]
+		frappe.rename_doc("Site", job.site, new_name)
+		updated_status = "Active"
+	elif "Failure" in (first, second):
+		updated_status = "Broken"
+	elif "Running" in (first, second):
+		updated_status = "Updating"
+	else:
+		updated_status = "Pending"
+
+	site_status = frappe.get_value("Site", job.site, "status")
+	if updated_status != site_status:
+		frappe.db.set_value("Site", job.site, "status", updated_status)
+
+
 def get_permission_query_conditions(user):
 	from press.utils import get_current_team
 

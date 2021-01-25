@@ -20,6 +20,7 @@ from frappe.utils import (
 	get_url_to_form,
 	pretty_date,
 )
+
 from press.agent import Agent
 from press.press.doctype.plan.plan import get_plan_config
 from press.telegram import Telegram
@@ -573,6 +574,7 @@ def process_job_updates(job_name):
 			process_migrate_site_job_update,
 			process_new_site_job_update,
 			process_reinstall_site_job_update,
+			process_rename_site_job_update,
 		)
 		from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
 		from press.press.doctype.site_domain.site_domain import process_new_host_job_update
@@ -621,6 +623,10 @@ def process_job_updates(job_name):
 			process_update_site_recover_job_update(job)
 		elif job.job_type == "Recover Failed Site Update":
 			process_update_site_recover_job_update(job)
+		elif job.job_type == "Rename Site":
+			process_rename_site_job_update(job)
+		elif job.job_type == "Rename Site on Upstream":
+			process_rename_site_job_update(job)
 
 	except Exception as e:
 		log_error("Agent Job Callback Exception", job=job.as_dict())
