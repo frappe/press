@@ -78,7 +78,7 @@ class TestSite(unittest.TestCase):
 		)
 
 	def test_rename_updates_name(self, *args):
-		"""Ensure calling rename changes name of site."""
+		"""Ensure rename changes name of site."""
 		domain = frappe.db.get_single_value("Press Settings", "domain")
 		site = create_test_site("old-name")
 		new_name = f"new-name.{domain}"
@@ -98,7 +98,29 @@ class TestSite(unittest.TestCase):
 		self.assertFalse(frappe.db.exists("Site", {"name": f"old-name.{domain}"}))
 		self.assertTrue(frappe.db.exists("Site", {"name": new_name}))
 
-	# test rename creates 2 agent jobs
+	def test_rename_creates_2_agent_jobs(self, *args):
+		"""Ensure rename creates 2 agent jobs (for f & n)."""
+		domain = frappe.db.get_single_value("Press Settings", "domain")
+		site = create_test_site("old-name")
+		new_name = f"new-name.{domain}"
+
+		rename_jobs_count_before = frappe.db.count("Agent Job", {"job_type": "Rename Site"})
+		rename_upstream_jobs_count_before = frappe.db.count(
+			"Agent Job", {"job_type": "Rename Site on Upstream"}
+		)
+
+		site.rename(new_name)
+
+		rename_jobs_count_after = frappe.db.count("Agent Job", {"job_type": "Rename Site"})
+		rename_upstream_jobs_count_after = frappe.db.count(
+			"Agent Job", {"job_type": "Rename Site on Upstream"}
+		)
+
+		self.assertEqual(rename_jobs_count_after - rename_jobs_count_before, 1)
+		self.assertEqual(
+			rename_upstream_jobs_count_after - rename_upstream_jobs_count_before, 1
+		)
+
 	# test other actions can't be performed during rename
 	# test rename doesn't leave site in inconsistent state
 	# updates subdomain
