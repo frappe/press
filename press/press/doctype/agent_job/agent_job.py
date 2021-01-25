@@ -583,43 +583,43 @@ def process_job_updates(job_name):
 
 		if job.job_type == "Add Upstream to Proxy":
 			process_new_server_job_update(job)
-		if job.job_type == "New Bench":
+		elif job.job_type == "New Bench":
 			process_new_bench_job_update(job)
-		if job.job_type == "Archive Bench":
+		elif job.job_type == "Archive Bench":
 			process_archive_bench_job_update(job)
-		if job.job_type == "New Site":
+		elif job.job_type == "New Site":
 			process_new_site_job_update(job)
-		if job.job_type == "New Site from Backup":
+		elif job.job_type == "New Site from Backup":
 			process_new_site_job_update(job)
-		if job.job_type == "Restore Site":
+		elif job.job_type == "Restore Site":
 			process_reinstall_site_job_update(job)
-		if job.job_type == "Reinstall Site":
+		elif job.job_type == "Reinstall Site":
 			process_reinstall_site_job_update(job)
-		if job.job_type == "Migrate Site":
+		elif job.job_type == "Migrate Site":
 			process_migrate_site_job_update(job)
-		if job.job_type == "Install App on Site":
+		elif job.job_type == "Install App on Site":
 			process_install_app_site_job_update(job)
-		if job.job_type == "Uninstall App from Site":
+		elif job.job_type == "Uninstall App from Site":
 			process_install_app_site_job_update(job)
-		if job.job_type == "Add Site to Upstream":
+		elif job.job_type == "Add Site to Upstream":
 			process_new_site_job_update(job)
-		if job.job_type == "Backup Site":
+		elif job.job_type == "Backup Site":
 			process_backup_site_job_update(job)
-		if job.job_type == "Archive Site":
+		elif job.job_type == "Archive Site":
 			process_archive_site_job_update(job)
-		if job.job_type == "Remove Site from Upstream":
+		elif job.job_type == "Remove Site from Upstream":
 			process_archive_site_job_update(job)
-		if job.job_type == "Add Host to Proxy":
+		elif job.job_type == "Add Host to Proxy":
 			process_new_host_job_update(job)
-		if job.job_type == "Update Site Migrate":
+		elif job.job_type == "Update Site Migrate":
 			process_update_site_job_update(job)
-		if job.job_type == "Update Site Pull":
+		elif job.job_type == "Update Site Pull":
 			process_update_site_job_update(job)
-		if job.job_type == "Recover Failed Site Migrate":
+		elif job.job_type == "Recover Failed Site Migrate":
 			process_update_site_recover_job_update(job)
-		if job.job_type == "Recover Failed Site Pull":
+		elif job.job_type == "Recover Failed Site Pull":
 			process_update_site_recover_job_update(job)
-		if job.job_type == "Recover Failed Site Update":
+		elif job.job_type == "Recover Failed Site Update":
 			process_update_site_recover_job_update(job)
 
 	except Exception as e:
