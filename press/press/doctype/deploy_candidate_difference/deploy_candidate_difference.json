@@ -72,7 +72,7 @@
   }
  ],
  "links": [],
- "modified": "2021-01-15 09:34:48.164205",
+ "modified": "2021-01-25 15:32:45.822843",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate Difference",
@@ -113,7 +113,6 @@
    "write": 1
   }
  ],
- "quick_entry": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
  "title_field": "group",
