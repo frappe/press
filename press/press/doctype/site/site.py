@@ -100,13 +100,15 @@ class Site(Document):
 		if self.status == "Active":
 			self.enable_subscription()
 
+	def rename_upstream(self, new_name: str):
+		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
+		agent = Agent(proxy_server, server_type="Proxy Server")
+		agent.rename_upstream_site(self.server, new_name)
+
 	def rename(self, new_name: str):
 		agent = Agent(self.server)
 		agent.rename_site(self, new_name)
-		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
-		frappe.rename_doc(self.doctype, self.name, new_name)
-		agent = Agent(proxy_server, server_type="Proxy Server")
-		agent.new_upstream_site(self.server, new_name)
+		self.rename_upstream(new_name)
 
 	def update_config_preview(self):
 		"""Regenrates site.config on each site.validate from the site.configuration child table data"""
