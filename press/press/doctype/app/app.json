@@ -78,8 +78,7 @@
    "default": "0",
    "fieldname": "public",
    "fieldtype": "Check",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
+   "hidden": 1,
    "label": "Public"
   },
   {
@@ -114,6 +113,7 @@
    "default": "1",
    "fieldname": "enabled",
    "fieldtype": "Check",
+   "hidden": 1,
    "label": "Enabled"
   },
   {
@@ -126,7 +126,7 @@
   }
  ],
  "links": [],
- "modified": "2021-01-15 09:34:21.985826",
+ "modified": "2021-01-25 10:03:45.756368",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App",
