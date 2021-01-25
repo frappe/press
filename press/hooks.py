@@ -130,7 +130,6 @@ scheduler_events = {
 			"press.press.doctype.agent_job.agent_job.collect_site_analytics",
 			"press.press.doctype.agent_job.agent_job.report_site_downtime",
 		],
-		"* * * * * 0/30": ["press.press.doctype.agent_job.agent_job.collect_server_status"],
 		"0 */6 * * *": ["press.press.doctype.server.server.cleanup_unused_files"],
 		"30 * * * *": ["press.press.doctype.agent_job.agent_job.suspend_sites"],
 		"*/15 * * * *": [
