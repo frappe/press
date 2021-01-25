@@ -59,7 +59,7 @@ def execute():
 				)
 				frappe.db.set_value("Release Group App", {"app": app.name}, "source", source.name)
 				frappe.db.set_value(
-					"Release Group App", {"app": app.scrubbed}, "source", source.name
+					"Release Group App", {"app": app.name}, "title", source.app_title
 				)
 
 				existing = frappe.db.exists("App", app.scrubbed, cache=False)
