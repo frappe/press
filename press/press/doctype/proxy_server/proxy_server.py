@@ -12,6 +12,11 @@ from press.utils import log_error
 
 
 class ProxyServer(Document):
+	def autoname(self):
+		if not self.domain:
+			self.domain = frappe.db.get_single_value("Press Settings", "domain")
+		self.name = f"{self.hostname}.{self.domain}"
+
 	def validate(self):
 		if self.is_new() and not self.cluster:
 			self.cluster = frappe.db.get_value("Cluster", {"default": True})

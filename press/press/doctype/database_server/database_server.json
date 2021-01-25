@@ -1,12 +1,13 @@
 {
  "actions": [],
- "autoname": "Prompt",
  "creation": "2020-10-02 17:33:00.453792",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
   "status",
+  "hostname",
+  "domain",
   "is_server_setup",
   "cluster",
   "column_break_3",
@@ -155,11 +156,22 @@
    "label": "Cluster",
    "options": "Cluster",
    "reqd": 1
+  },
+  {
+   "fieldname": "hostname",
+   "fieldtype": "Data",
+   "label": "Hostname",
+   "reqd": 1
+  },
+  {
+   "fieldname": "domain",
+   "fieldtype": "Data",
+   "label": "Domain"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-01-18 15:16:08.218837",
+ "modified": "2021-01-25 15:26:32.386687",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
