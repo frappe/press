@@ -895,7 +895,8 @@ def process_rename_site_job_update(job):
 	)[0].status
 
 	if "Success" == first == second:
-		new_name = job.data["new_name"]
+		data = json.loads(job.request_data)
+		new_name = data["new_name"]
 		frappe.rename_doc("Site", job.site, new_name)
 		updated_status = "Active"
 	elif "Failure" in (first, second):
