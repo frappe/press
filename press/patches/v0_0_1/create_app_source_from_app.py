@@ -26,8 +26,11 @@ def execute():
 		)
 		for app in apps:
 			versions = set(frappe.get_all("Release Group", {"app": app.name}, pluck="version"))
-				frappe.get_all("Release Group", {"app": app.scrubbed}, pluck="version")
-			)
+			if not versions:
+				groups = frappe.get_all("Bench", {"app": app.name}, pluck="group")
+				versions = set(
+					frappe.get_all("Release Group", {"name": ("in", groups)}, pluck="version")
+				)
 			if versions:
 				source = {
 					"doctype": "App Source",
