@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 import frappe
 
-from press.agent import Agent
+from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.bench.test_bench import create_test_bench
 from press.press.doctype.frappe_app.test_frappe_app import create_test_frappe_app
 from press.press.doctype.plan.test_plan import create_test_plan
@@ -18,6 +18,7 @@ from press.press.doctype.release_group.test_release_group import (
 )
 from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.site.site import Site
+from press.press.doctype.site.site import process_rename_site_job_update
 
 
 def create_test_site(subdomain: str, new: bool = False) -> Site:
@@ -49,7 +50,7 @@ def create_test_site(subdomain: str, new: bool = False) -> Site:
 	).insert(ignore_if_duplicate=True)
 
 
-@patch.object(Agent, "create_agent_job")
+@patch.object(AgentJob, "after_insert")
 class TestSite(unittest.TestCase):
 	"""Tests for Site Document methods."""
 
@@ -75,3 +76,29 @@ class TestSite(unittest.TestCase):
 		mock_update_config.assert_called_with(
 			{"host_name": f"https://{site.name}"}, save=False
 		)
+
+	def test_rename_updates_name(self, *args):
+		"""Ensure calling rename changes name of site."""
+		domain = frappe.db.get_single_value("Press Settings", "domain")
+		site = create_test_site("old-name")
+		new_name = f"new-name.{domain}"
+		site.rename(new_name)
+
+		rename_job = frappe.get_last_doc("Agent Job", {"job_type": "Rename Site"})
+		rename_upstream_job = frappe.get_last_doc(
+			"Agent Job", {"job_type": "Rename Site on Upstream"}
+		)
+		rename_job.status = "Success"
+		rename_upstream_job.status = "Success"
+		rename_job.save()
+		rename_upstream_job.save()
+
+		process_rename_site_job_update(rename_job)
+
+		self.assertFalse(frappe.db.exists("Site", {"name": f"old-name.{domain}"}))
+		self.assertTrue(frappe.db.exists("Site", {"name": new_name}))
+
+	# test rename creates 2 agent jobs
+	# test other actions can't be performed during rename
+	# test rename doesn't leave site in inconsistent state
+	# updates subdomain
