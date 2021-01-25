@@ -17,7 +17,6 @@ from frappe.desk.doctype.tag.tag import add_tag
 from frappe.utils import cint, flt, time_diff_in_hours
 from frappe.utils.password import get_decrypted_password
 from press.press.doctype.agent_job.agent_job import job_detail
-from press.press.doctype.plan.plan import get_plan_config
 from press.press.doctype.remote_file.remote_file import get_remote_key
 from press.press.doctype.site_update.site_update import (
 	benches_with_available_update,
@@ -294,7 +293,7 @@ def get_plans():
 			"max_storage_usage",
 			"max_database_usage",
 		],
-		filters={"enabled": True, "document_type": "Site"},
+		filters={"enabled": True, "document_type": "Site", "price_usd": (">", 0)},
 		order_by="price_usd asc",
 	)
 
@@ -326,18 +325,57 @@ def all():
 @frappe.whitelist()
 @protected("Site")
 def get(name):
-	team = get_current_team()
 	site = frappe.get_doc("Site", name)
-	installed_apps = [app.app for app in site.apps]
-	bench = frappe.get_doc("Bench", site.bench)
-	bench_apps = {}
-	for app in bench.apps:
-		app_team, app_public = frappe.db.get_value("Frappe App", app.app, ["team", "public"])
-		if app.app in installed_apps or app_public or app_team == team:
-			bench_apps[app.app] = app.idx
+	update_available = (
+		site.bench in benches_with_available_update()
+	) and should_try_update(site)
 
-	available_apps = list(filter(lambda x: x not in installed_apps, bench_apps.keys()))
-	installed_apps = frappe.get_all(
+	return {
+		"name": site.name,
+		"status": site.status,
+		"setup_wizard_complete": site.setup_wizard_complete,
+		"update_available": update_available,
+	}
+
+
+@frappe.whitelist()
+@protected("Site")
+def overview(name):
+	site = frappe.get_cached_doc("Site", name)
+
+	return {
+		"recent_activity": frappe.db.get_all(
+			"Site Activity",
+			fields="*",
+			filters={"site": name},
+			order_by="creation desc",
+			limit=3,
+		),
+		"plan": current_plan(name),
+		"info": {
+			"created_by": frappe.db.get_value(
+				"User", site.team, ["first_name", "last_name", "user_image"], as_dict=True
+			),
+			"created_on": site.creation,
+			"last_deployed": (
+				frappe.db.get_all(
+					"Site Activity",
+					filters={"site": name, "action": "Update"},
+					order_by="creation desc",
+					limit=1,
+					pluck="creation",
+				)
+				or [None]
+			)[0],
+		},
+		"installed_apps": get_installed_apps(site),
+		"domains": domains(name),
+	}
+
+
+def get_installed_apps(site):
+	installed_apps = [app.app for app in site.apps]
+	installed_apps_data = frappe.get_all(
 		"Frappe App",
 		fields=[
 			"name",
@@ -349,114 +387,40 @@ def get(name):
 		],
 		filters={"name": ("in", installed_apps)},
 	)
+	installed_apps_by_name = {}
+	for app in installed_apps_data:
+		installed_apps_by_name[app.name] = app
+
+	return [installed_apps_by_name[app] for app in installed_apps]
+
+
+@frappe.whitelist()
+@protected("Site")
+def available_apps(name):
+	team = get_current_team()
+	site = frappe.get_doc("Site", name)
+	installed_apps = [app.app for app in site.apps]
+	bench = frappe.get_doc("Bench", site.bench)
+	bench_apps = {}
+	for app in bench.apps:
+		app_team, app_public = frappe.db.get_value("Frappe App", app.app, ["team", "public"])
+		if app.app in installed_apps or app_public or app_team == team:
+			bench_apps[app.app] = app.idx
+
+	available_apps = list(filter(lambda x: x not in installed_apps, bench_apps.keys()))
 	available_apps = frappe.get_all(
 		"Frappe App",
 		fields=["name", "repo_owner as owner", "scrubbed as repo", "url", "branch"],
 		filters={"name": ("in", available_apps)},
 	)
-	site_config = list(filter(lambda x: not x.internal, site.configuration))
-
-	try:
-		last_updated = frappe.get_all(
-			"Site Update",
-			fields=["modified"],
-			filters={"site": name},
-			order_by="creation desc",
-			limit_page_length=1,
-		)[0].modified
-	except Exception:
-		last_updated = site.modified
-
-	return {
-		"name": site.name,
-		"status": site.status,
-		"installed_apps": sorted(installed_apps, key=lambda x: bench_apps[x.name]),
-		"available_apps": sorted(available_apps, key=lambda x: bench_apps[x.name]),
-		"usage": {
-			"cpu": site.current_cpu_usage,
-			"disk": site.current_disk_usage,
-			"database": site.current_database_usage,
-		},
-		"setup_wizard_complete": site.setup_wizard_complete,
-		"config": site_config,
-		"creation": site.creation,
-		"owner": site.owner,
-		"last_updated": last_updated,
-		"update_available": (site.bench in benches_with_available_update())
-		and should_try_update(site),
-	}
-
-
-@frappe.whitelist()
-@protected("Site")
-def analytics(name, period="1 hour"):
-	interval, divisor, = {
-		"1 hour": ("1 HOUR", 60),
-		"6 hours": ("6 HOUR", 5 * 60),
-		"24 hours": ("24 HOUR", 30 * 60),
-		"7 days": ("7 DAY", 3 * 60 * 60),
-		"30 days": ("30 DAY", 12 * 60 * 60),
-	}[period]
-
-	def get_data(doctype, fields):
-		query = f"""
-			SELECT
-				{fields},
-				FROM_UNIXTIME({divisor} * (UNIX_TIMESTAMP(timestamp) DIV {divisor})) as _timestamp
-			FROM
-				`tab{doctype}`
-			WHERE
-				site = %s AND timestamp >= UTC_TIMESTAMP() - INTERVAL {interval}
-			GROUP BY
-				_timestamp
-		"""
-		result = frappe.db.sql(query, name, as_dict=True, debug=False)
-		for row in result:
-			row["timestamp"] = row.pop("_timestamp")
-		return result
-
-	usage_data = get_data("Site Request Log", "counter")
-	request_data = get_data(
-		"Site Request Log", "COUNT(name) as request_count, SUM(duration) as request_duration",
-	)
-	job_data = get_data(
-		"Site Job Log", "COUNT(name) as job_count, SUM(duration) as job_duration"
-	)
-	uptime_data = get_data(
-		"Site Uptime Log",
-		"AVG(web) AS web, AVG(scheduler) AS scheduler, AVG(socketio) AS socketio",
-	)
-	plan = frappe.get_cached_doc("Site", name).plan
-	plan_limit = get_plan_config(plan)["rate_limit"]["limit"]
-	return {
-		"usage_counter": [{"value": r.counter, "timestamp": r.timestamp} for r in usage_data],
-		"request_count": [
-			{"value": r.request_count, "timestamp": r.timestamp} for r in request_data
-		],
-		"request_cpu_time": [
-			{"value": r.request_duration, "timestamp": r.timestamp} for r in request_data
-		],
-		"job_count": [{"value": r.job_count, "timestamp": r.timestamp} for r in job_data],
-		"job_cpu_time": [
-			{"value": r.job_duration * 1000, "timestamp": r.timestamp} for r in job_data
-		],
-		"uptime": (uptime_data + [{}] * 60)[:60],
-		"plan_limit": plan_limit,
-	}
+	return sorted(available_apps, key=lambda x: bench_apps[x.name])
 
 
 @frappe.whitelist()
 @protected("Site")
 def current_plan(name):
-	plan_name = frappe.get_doc("Site", name).plan
-	plan = frappe.get_doc("Plan", plan_name)
-	site_plan_changes = frappe.db.get_all(
-		"Site Plan Change",
-		filters={"site": name},
-		fields=["name", "type", "owner", "to_plan", "timestamp"],
-		order_by="timestamp desc",
-		limit=5,
-	)
+	site = frappe.get_doc("Site", name)
+	plan = frappe.get_doc("Plan", site.plan)
 	result = frappe.get_all(
 		"Site Request Log",
 		fields=["reset", "counter"],
@@ -495,13 +459,17 @@ def current_plan(name):
 
 	return {
 		"current_plan": plan,
-		"history": site_plan_changes,
 		"total_cpu_usage_hours": total_cpu_usage_hours,
 		"hours_until_reset": hours_left_today,
 		"max_database_usage": plan.max_database_usage,
 		"max_storage_usage": plan.max_storage_usage,
 		"total_database_usage": total_database_usage,
 		"total_storage_usage": total_storage_usage,
+		"usage_in_percent": {
+			"cpu": site.current_cpu_usage,
+			"disk": site.current_disk_usage,
+			"database": site.current_database_usage,
+		},
 	}
 
 
@@ -676,6 +644,13 @@ def logs(name):
 @protected("Site")
 def log(name, log):
 	return frappe.get_doc("Site", name).get_server_log(log)
+
+
+@frappe.whitelist()
+@protected("Site")
+def site_config(name):
+	site = frappe.get_doc("Site", name)
+	return list(filter(lambda x: not x.internal, site.configuration))
 
 
 @frappe.whitelist()

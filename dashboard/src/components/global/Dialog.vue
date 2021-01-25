@@ -1,9 +1,5 @@
 <template>
-	<Modal
-		:show="show"
-		@change="$emit('change', $event)"
-		:dismissable="dismissable"
-	>
+	<Modal :show="show" @change="handleChange" :dismissable="dismissable">
 		<div class="px-4 pt-5 pb-4 bg-white sm:p-6 sm:pb-4">
 			<div class="sm:flex sm:items-start">
 				<div class="relative w-full mt-3 sm:mt-0 sm:text-left">
@@ -15,7 +11,7 @@
 					<button
 						v-if="dismissable"
 						class="absolute top-0 right-0"
-						@click="$emit('change', false)"
+						@click="handleChange(false)"
 					>
 						<FeatherIcon name="x" class="w-4 h-4" />
 					</button>
@@ -45,6 +41,14 @@ export default {
 	props: ['title', 'show', 'dismissable'],
 	components: {
 		Modal
+	},
+	methods: {
+		handleChange(value) {
+			this.$emit('change', value);
+			if (value === false) {
+				this.$emit('close');
+			}
+		}
 	}
 };
 </script>
