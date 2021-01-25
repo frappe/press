@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_rename": 1,
  "creation": "2020-10-26 20:13:19.792375",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -125,7 +126,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-01-20 19:03:02.400498",
+ "modified": "2021-01-22 11:53:24.768105",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Source",
