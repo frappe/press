@@ -25,6 +25,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "fetch_from": "source_release.source",
    "fieldname": "source",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -118,7 +119,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2020-12-15 22:41:53.799995",
+ "modified": "2021-01-25 11:02:08.918725",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Release Difference",

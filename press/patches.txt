@@ -53,4 +53,5 @@ press.patches.v0_0_1.rename_installed_app_to_bench_app
 press.patches.v0_0_1.rename_deploy_candidate_app_release_to_deploy_candidate_app
 press.patches.v0_0_1.create_app_source_from_app
 press.patches.v0_0_1.rename_release_groups
+press.patches.v0_0_1.create_app_release_difference_from_deploy_candidate_difference
 press.patches.v0_0_1.truncate_server_status_table
