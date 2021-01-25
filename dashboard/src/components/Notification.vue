@@ -6,7 +6,7 @@
 			<div class="p-4">
 				<div class="flex items-start">
 					<div class="flex-shrink-0 mr-3" v-if="icon">
-						<div class="w-6 h-6 p-1 bg-green-100 rounded-full">
+						<div class="w-6 h-6 p-1 rounded-full" :class="iconContainerClass">
 							<FeatherIcon :name="icon" :class="iconClass" class="w-4 h-4" />
 						</div>
 					</div>
@@ -41,6 +41,15 @@ export default {
 				orange: 'text-orange-500',
 				blue: 'text-blue-500',
 				gray: 'text-gray-500'
+			}[this.color || 'gray'];
+		},
+		iconContainerClass() {
+			return {
+				red: 'bg-red-100',
+				green: 'bg-green-100',
+				orange: 'bg-orange-100',
+				blue: 'bg-blue-100',
+				gray: 'bg-gray-100'
 			}[this.color || 'gray'];
 		}
 	}

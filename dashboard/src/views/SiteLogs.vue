@@ -1,6 +1,6 @@
 <template>
 	<Section title="Logs" description="Available Logs for your site">
-		<div class="flex text-base text-center text-gray-900" v-if="logs === null">
+		<div class="flex text-base text-center text-gray-900" v-if="!logs">
 			<Button
 				:loading="true"
 				loadingText="Fetching..."

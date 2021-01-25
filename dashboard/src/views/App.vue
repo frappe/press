@@ -89,7 +89,7 @@ export default {
 		routeToGeneral() {
 			if (this.$route.matched.length === 1) {
 				let path = this.$route.fullPath;
-				let tab = 'general';
+				let tab = 'overview';
 				this.$router.replace(`${path}/${tab}`);
 			}
 		}

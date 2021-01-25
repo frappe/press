@@ -185,7 +185,10 @@ export default {
 				},
 				onSuccess() {
 					this.showMigrateDatabaseDialog = false;
-					this.$router.push(`/sites/${this.site.name}/general`);
+					this.$router.push({
+						name: 'SiteOverview',
+						params: { site: this.site.name }
+					});
 					setTimeout(() => {
 						window.location.reload();
 					}, 1000);

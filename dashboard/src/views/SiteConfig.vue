@@ -9,7 +9,7 @@
 					<div class="space-y-4" v-if="editMode">
 						<div
 							class="grid grid-cols-5 gap-4"
-							v-for="(config, i) in site.config"
+							v-for="(config, i) in $resources.siteConfig.data"
 							:key="i"
 						>
 							<Input
@@ -64,7 +64,7 @@
 							<Button @click="editMode = !editMode">Edit Config</Button>
 						</div>
 						<div class="mt-4" v-else>
-							<ErrorMessage :error="NotAllowed"/>
+							<ErrorMessage :error="NotAllowed" />
 						</div>
 					</div>
 				</SectionCard>
@@ -95,9 +95,17 @@ export default {
 		};
 	},
 	resources: {
+		siteConfig() {
+			return {
+				method: 'press.api.site.site_config',
+				params: { name: this.site.name },
+				auto: true,
+				default: []
+			};
+		},
 		standardConfigKeys: 'press.api.config.standard_keys',
 		updateSiteConfig() {
-			let updatedConfig = this.site.config.map(d => {
+			let updatedConfig = this.$resources.siteConfig.data.map(d => {
 				let value = d.value;
 				if (d.type === 'Number') {
 					value = Number(d.value);
@@ -167,11 +175,17 @@ export default {
 			};
 		},
 		addConfig() {
-			this.site.config.push({ key: '', value: '', type: 'String' });
+			this.$resources.siteConfig.data.push({
+				key: '',
+				value: '',
+				type: 'String'
+			});
 			this.isDirty = true;
 		},
 		removeConfig(config) {
-			this.site.config = this.site.config.filter(d => d !== config);
+			this.$resources.siteConfig.data = this.$resources.siteConfig.data.filter(
+				d => d !== config
+			);
 			this.isDirty = true;
 		},
 		onTypeChange(config) {
@@ -188,7 +202,7 @@ export default {
 		siteConfigPreview() {
 			let obj = {};
 
-			for (let d of this.site.config) {
+			for (let d of this.$resources.siteConfig.data) {
 				let value = d.value;
 				if (['Boolean', 'Number'].includes(d.type)) {
 					value = Number(d.value);
@@ -208,7 +222,7 @@ export default {
 				return {};
 			}
 
-			let fields = this.site.config.map(config => {
+			let fields = this.$resources.siteConfig.data.map(config => {
 				let standardKey = this.$resources.standardConfigKeys.data.find(
 					d => d.key === config.key
 				);
@@ -219,7 +233,7 @@ export default {
 			});
 
 			let values = {};
-			for (let d of this.site.config) {
+			for (let d of this.$resources.siteConfig.data) {
 				let value = d.value;
 				if (['Boolean', 'Number'].includes(d.type)) {
 					value = Number(value);
@@ -233,7 +247,7 @@ export default {
 			};
 		},
 		NotAllowed() {
-			return `Not Permitted in ${ this.site.status } mode`
+			return `Not Permitted in ${this.site.status} mode`;
 		}
 	}
 };

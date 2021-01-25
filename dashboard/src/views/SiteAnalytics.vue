@@ -1,77 +1,67 @@
 <template>
-	<div>
-		<section>
-			<div class="flex justify-between">
+	<div class="space-y-4">
+		<div>
+			<label class="flex items-baseline space-x-2" for="">
+				<div class="text-base font-medium">Showing analytics of last </div>
+				<select class="form-select" v-model="period">
+					<option
+						v-for="o in periodOptions"
+						:value="o"
+						:selected="period === o"
+						:key="o"
+					>
+						{{ o }}
+					</option>
+				</select>
+			</label>
+		</div>
+		<div class="grid grid-cols-1 gap-5 sm:grid-cols-2" v-if="analytics">
+			<Card title="Usage Counter">
+				<div ref="usage-counter"></div>
+			</Card>
+
+			<Card title="Uptime">
 				<div>
-					<h2 class="text-lg font-medium">Analytics</h2>
-					<p class="text-base text-gray-600">
-						Realtime usage analytics of your site
-					</p>
-				</div>
-				<div>
-					<select class="form-select" v-model="period">
-						<option
-							v-for="o in periodOptions"
-							:value="o"
-							:selected="period === o"
-							:key="o"
-						>
-							{{ o }}
-						</option>
-					</select>
-				</div>
-			</div>
-			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2" v-if="analytics">
-				<div class="px-6 py-4 mt-6 border rounded shadow">
-					<div class="text-base">Requests</div>
-					<div ref="requests-per-minute"></div>
-				</div>
-				<div class="px-6 py-4 mt-6 border rounded shadow">
-					<div class="text-base">CPU Usage</div>
-					<div ref="requests-cpu-usage"></div>
-				</div>
-				<div class="px-6 py-4 mt-6 border rounded shadow">
-					<div class="text-base">Background Jobs</div>
-					<div ref="jobs-per-minute"></div>
-				</div>
-				<div class="px-6 py-4 mt-6 border rounded shadow">
-					<div class="text-base">Background Jobs CPU usage</div>
-					<div ref="jobs-cpu-usage"></div>
-				</div>
-				<div class="px-6 py-4 mt-6 border rounded shadow">
-					<div class="text-base">Usage Counter</div>
-					<div ref="usage-counter"></div>
-				</div>
-				<div class="px-6 py-4 mt-6 border rounded shadow">
-					<div class="text-base">Uptime</div>
-					<div>
-						<div class="mt-8" v-for="type in uptimeTypes" :key="type.key">
-							<div class="flex justify-between h-4">
-								<div
-									v-for="d in analytics.uptime"
-									:key="d.timestamp"
-									style="width: 2px;"
-									:class="[
-										d[type.key] === undefined
-											? 'bg-white'
-											: d[type.key] === 1
-											? 'bg-green-500'
-											: d[type.key] === 0
-											? 'bg-red-500'
-											: 'bg-orange-500'
-									]"
-								></div>
-							</div>
-							<div class="flex justify-between mt-2 text-sm">
-								<span>
-									{{ type.label }}
-								</span>
-							</div>
+					<div class="mt-8" v-for="type in uptimeTypes" :key="type.key">
+						<div class="flex justify-between h-4">
+							<div
+								v-for="d in analytics.uptime"
+								:key="d.timestamp"
+								style="width: 2px;"
+								:class="[
+									d[type.key] === undefined
+										? 'bg-white'
+										: d[type.key] === 1
+										? 'bg-green-500'
+										: d[type.key] === 0
+										? 'bg-red-500'
+										: 'bg-orange-500'
+								]"
+							></div>
+						</div>
+						<div class="flex justify-between mt-2 text-sm">
+							<span>
+								{{ type.label }}
+							</span>
 						</div>
 					</div>
 				</div>
-			</div>
-		</section>
+			</Card>
+
+			<Card title="Requests">
+				<div ref="requests-per-minute"></div>
+			</Card>
+
+			<Card title="CPU Usage">
+				<div ref="requests-cpu-usage"></div>
+			</Card>
+			<Card title="Background Jobs">
+				<div ref="jobs-per-minute"></div>
+			</Card>
+			<Card title="Background Jobs CPU Usage">
+				<div ref="jobs-cpu-usage"></div>
+			</Card>
+		</div>
 	</div>
 </template>
 
@@ -104,7 +94,7 @@ export default {
 	},
 	methods: {
 		async fetchAnalytics() {
-			this.analytics = await this.$call('press.api.site.analytics', {
+			this.analytics = await this.$call('press.api.analytics.get', {
 				name: this.site.name,
 				period: this.period
 			});

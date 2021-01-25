@@ -1,20 +1,21 @@
 <template>
-	<div>
-		<Section
-			title="Domains"
-			:description="
-				domains && domains.length
-					? 'Domains pointing to your site'
-					: 'No domains pointing to your site'
-			"
-		>
-			<SectionCard v-if="domains && domains.length">
-				<div
-					class="grid grid-cols-2 px-6 py-3 hover:bg-gray-50 items-center"
-					v-for="d in domains"
-					:key="d.domain"
-				>
-					<div class="font-semibold text-base">
+	<Card
+		title="Domains"
+		:subtitle="
+			domains.data && domains.data.length
+				? 'Domains pointing to your site'
+				: 'No domains pointing to your site'
+		"
+	>
+		<template #actions>
+			<Button @click="showDialog = true">
+				Add Domain
+			</Button>
+		</template>
+		<div class="divide-y" v-if="domains.data">
+			<div v-for="d in domains.data" :key="d.name">
+				<div class="flex items-center py-2">
+					<div class="w-1/2 text-base font-medium">
 						<a
 							class="text-blue-500"
 							:href="'https://' + d.domain"
@@ -25,51 +26,29 @@
 						</a>
 						<span v-else>{{ d.domain }}</span>
 					</div>
-					<div>
-						<Badge :status="d.status">
-							{{ d.status }}
-						</Badge>
+					<Badge :status="d.status">
+						{{ d.status }}
+					</Badge>
+					<div class="flex ml-auto space-x-2">
 						<Button
 							@click="retryAddDomain(d.domain)"
 							v-if="d.status == 'Broken' && d.retry_count <= 5"
-							class="ml-8"
 						>
 							Retry
 						</Button>
-						<Button
-							@click="
-								domainToRemove = d.domain;
-								showRemoveDomainDialog = true;
-							"
-							v-if="false"
-						>
-							class="ml-8 float-right" type="danger" > Remove
-						</Button>
-						<Button
-							@click="setHostName(d.domain)"
-							v-if="d.status == 'Active' && !d.primary"
-							class="ml-8"
-						>
-							Set Primary
-						</Button>
-					</div>
-
-					<div
-						v-if="d.status == 'Broken'"
-						class="col-span-2 pt-1 text-sm text-red-600"
-					>
-						<p>
-							We encountered an error while adding the domain.
-						</p>
+						<Dropdown :items="actionItems(d)" right>
+							<template v-slot="{ toggleDropdown }">
+								<Button icon="more-horizontal" @click="toggleDropdown()" />
+							</template>
+						</Dropdown>
 					</div>
 				</div>
-			</SectionCard>
-			<div class="mt-6">
-				<Button type="primary" @click="showDialog = true">
-					Add Domain
-				</Button>
+				<ErrorMessage
+					v-if="d.status == 'Broken'"
+					error="We encountered an error while adding the domain."
+				/>
 			</div>
-		</Section>
+		</div>
 		<Dialog v-model="showDialog" title="Add Domain">
 			<p class="text-base">
 				To add a custom domain, you must already own it. If you don't have one,
@@ -152,18 +131,17 @@
 				</Button>
 			</div>
 		</Dialog>
-	</div>
+	</Card>
 </template>
 
 <script>
 export default {
-	name: 'SiteDomains',
+	name: 'SiteOverviewDomains',
 	props: ['site'],
 	data() {
 		return {
 			state: null,
 			showDialog: false,
-			domains: null,
 			newDomain: null,
 			domainTaken: false,
 			dnsVerified: null,
@@ -172,11 +150,33 @@ export default {
 			domainToRemove: null
 		};
 	},
+	resources: {
+		domains() {
+			return {
+				method: 'press.api.site.domains',
+				params: { name: this.site.name }
+			};
+		}
+	},
+	mounted() {
+		this.$resources.domains.fetch();
+	},
 	methods: {
-		async fetchDomains() {
-			this.domains = await this.$call('press.api.site.domains', {
-				name: this.site.name
-			});
+		actionItems(domain) {
+			return [
+				{
+					label: 'Remove',
+					action: () => {
+						this.domainToRemove = domain.domain;
+						this.showRemoveDomainDialog = true;
+					}
+				},
+				{
+					label: 'Set Primary',
+					condition: () => domain.status == 'Active' && !domain.primary,
+					action: () => this.setHostName(domain.domain)
+				}
+			].filter(d => (d.condition ? d.condition() : true));
 		},
 		async checkDNS() {
 			this.dnsVerified = null;
@@ -192,14 +192,14 @@ export default {
 			});
 			this.dnsVerified = false;
 			this.showDialog = false;
-			this.fetchDomains();
+			this.$resources.domains.fetch();
 		},
 		async retryAddDomain(domain) {
 			await this.$call('press.api.site.retry_add_domain', {
 				name: this.site.name,
 				domain: domain
 			});
-			this.fetchDomains();
+			this.$resources.domains.fetch();
 		},
 		async removeDomain(domain) {
 			await this.$call('press.api.site.remove_domain', {
@@ -209,23 +209,20 @@ export default {
 			this.showRemoveDomainDialog = false;
 			this.domainToRemove = null;
 			this.confirmDomainName = null;
-			this.fetchDomains();
+			this.$resources.domains.fetch();
 		},
 		async setHostName(domain) {
 			await this.$call('press.api.site.set_host_name', {
 				name: this.site.name,
 				domain: domain
 			});
-			this.fetchDomains();
+			this.$resources.domains.fetch();
 		},
 		async checkIfExists(domain) {
 			this.domainTaken = await this.$call('press.api.site.domain_exists', {
 				domain
 			});
 		}
-	},
-	mounted() {
-		this.fetchDomains();
 	}
 };
 </script>
