@@ -2,6 +2,61 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
+  "modified": "2021-01-13 16:37:19.918335",
+  "name": "Rename Site",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "request_method": "POST",
+  "request_path": "benches/{site.bench}/sites/{site.name}/rename",
+  "steps": [
+   {
+    "parent": "Rename Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Enable Maintenance Mode"
+   },
+   {
+    "parent": "Rename Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Wait for Enqueued Jobs"
+   },
+   {
+    "parent": "Rename Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Rename Site"
+   },
+   {
+    "parent": "Rename Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Setup NGINX"
+   },
+   {
+    "parent": "Rename Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
+   },
+   {
+    "parent": "Rename Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Disable Maintenance Mode"
+   },
+   {
+    "parent": "Rename Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Enable Scheduler"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
   "modified": "2020-02-21 12:34:39.569810",
   "name": "Recover Failed Site Migration",
   "parent": null,
@@ -1080,6 +1135,37 @@
    },
    {
     "parent": "Remove Redirects on Hosts",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2021-01-22 11:51:44.139897",
+  "name": "Rename Site on Upstream",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "request_method": "POST",
+  "request_path": "/proxy/upstreams/{upstream}/sites/{site}/rename",
+  "steps": [
+   {
+    "parent": "Rename Site on Upstream",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Rename Site File in Upstream Directory"
+   },
+   {
+    "parent": "Rename Site on Upstream",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Generate NGINX Configuration"
+   },
+   {
+    "parent": "Rename Site on Upstream",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Reload NGINX"
