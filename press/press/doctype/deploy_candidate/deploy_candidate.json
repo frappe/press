@@ -160,7 +160,7 @@
   }
  ],
  "links": [],
- "modified": "2021-01-14 19:41:57.163194",
+ "modified": "2021-01-25 15:34:03.051329",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",
@@ -201,7 +201,6 @@
    "write": 1
   }
  ],
- "quick_entry": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
  "title_field": "group",

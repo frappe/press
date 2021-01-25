@@ -134,7 +134,7 @@
  "index_web_pages_for_search": 1,
  "is_published_field": "published",
  "links": [],
- "modified": "2021-01-13 10:41:15.741423",
+ "modified": "2021-01-25 15:34:07.698961",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Marketplace App",
@@ -153,7 +153,6 @@
    "write": 1
   }
  ],
- "quick_entry": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
  "title_field": "title",
