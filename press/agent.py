@@ -123,13 +123,13 @@ class Agent:
 			site=site.name,
 		)
 
-	def rename_upstream_site(self, site, new_name: str):
+	def rename_upstream_site(self, server: str, site, new_name: str):
+		ip = frappe.db.get_value("Server", server, "ip")
 		data = {"new_name": new_name}
 		return self.create_agent_job(
 			"Rename Site on Upstream",
-			f"benches/{site.bench}/sites/{site.name}/rename",
+			f"proxy/upstreams/{ip}/sites/{site.name}/rename",
 			data,
-			bench=site.bench,
 			site=site.name,
 		)
 
