@@ -100,9 +100,6 @@ class Server(Document):
 		plays = frappe.get_all("Ansible Play", filters={"server": self.name})
 		for play in plays:
 			frappe.delete_doc("Ansible Play", play.name)
-		statuses = frappe.get_all("Server Status", filters={"server": self.name})
-		for status in statuses:
-			frappe.delete_doc("Server Status", status.name)
 
 
 def process_new_server_job_update(job):
