@@ -88,19 +88,23 @@ frappe.ui.form.on('Site', {
 				__('Actions')
 			);
 		});
-		frm.add_custom_button(__('Rename'), () => {
-			frappe.prompt(
-				{
-					fieldtype: 'Data',
-					label: 'New name',
-					fieldname: 'new_name',
-					reqd: 1,
-				},
-				({ new_name }) => {
-					frm.call('rename', { new_name }).then(() => frm.refresh());
-				}
-			);
-		});
+		frm.add_custom_button(
+			__('Rename'),
+			() => {
+				frappe.prompt(
+					{
+						fieldtype: 'Data',
+						label: 'New name',
+						fieldname: 'new_name',
+						reqd: 1,
+					},
+					({ new_name }) => {
+						frm.call('rename', { new_name }).then(() => frm.refresh());
+					}
+				);
+			},
+			__('Actions')
+		);
 		frm.toggle_enable(['host_name'], frm.doc.status === 'Active');
 	},
 });
