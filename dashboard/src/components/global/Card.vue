@@ -2,7 +2,7 @@
 	<div class="px-6 py-5 bg-white border rounded-lg shadow">
 		<div class="flex items-baseline justify-between">
 			<h2 class="text-xl font-semibold">{{ title }}</h2>
-			<div>
+			<div class="flex items-center space-x-2">
 				<slot name="actions"></slot>
 			</div>
 		</div>
