@@ -147,7 +147,7 @@
 					<div class="col-span-2">
 						{{ paymentMethod.name_on_card }}
 					</div>
-					<div class="text-sm text-right text-gray-600 whitespace-no-wrap">
+					<div class="text-sm text-right text-gray-600 whitespace-nowrap">
 						Added on
 						{{
 							$date(paymentMethod.creation).toLocaleString({

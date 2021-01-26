@@ -25,7 +25,7 @@ module.exports = {
 				40: '10rem'
 			},
 			borderColor: theme => ({
-				default: theme('colors.gray.200')
+				DEFAULT: theme('colors.gray.200')
 			}),
 			colors: {
 				brand: '#2490EF',
@@ -57,68 +57,21 @@ module.exports = {
 				}
 			}
 		},
-		customForms: theme => ({
-			default: {
-				input: {
-					borderRadius: theme('borderRadius.md'),
-					backgroundColor: theme('colors.gray.100'),
-					borderWidth: '0',
-					fontSize: theme('fontSize.base'),
-					paddingTop: theme('spacing.1'),
-					paddingBottom: theme('spacing.1'),
-					lineHeight: theme('spacing.5'),
-					'&::placeholder': {
-						color: theme('colors.gray.700'),
-						opacity: '1'
-					},
-					'&:focus': {
-						outline: 'none',
-						backgroundColor: theme('colors.gray.200'),
-						boxShadow: theme('boxShadow.none')
-					}
-				},
-				textarea: {
-					borderRadius: theme('borderRadius.md'),
-					backgroundColor: theme('colors.gray.100'),
-					borderWidth: '0',
-					fontSize: theme('fontSize.base'),
-					paddingTop: theme('spacing.1'),
-					paddingBottom: theme('spacing.1'),
-					lineHeight: theme('spacing.5'),
-					'&::placeholder': {
-						color: theme('colors.gray.700'),
-						opacity: '1'
-					},
-					'&:focus': {
-						outline: 'none',
-						backgroundColor: theme('colors.gray.200'),
-						boxShadow: theme('boxShadow.none')
-					}
-				},
-				select: {
-					borderRadius: theme('borderRadius.md'),
-					backgroundColor: theme('colors.gray.100'),
-					borderWidth: '0',
-					fontSize: theme('fontSize.base'),
-					paddingTop: theme('spacing.1'),
-					paddingBottom: theme('spacing.1'),
-					lineHeight: theme('spacing.5'),
-					'&:focus': {
-						outline: 'none',
-						backgroundColor: theme('colors.gray.200'),
-						boxShadow: theme('boxShadow.none')
-					}
-				}
-			}
-		}),
 		container: {
 			padding: {
 				xl: '5rem'
 			}
+		},
+		screens: {
+			sm: '640px',
+			md: '768px',
+			lg: '1024px',
+			xl: '1280px'
 		}
 	},
 	plugins: [
-		require('@tailwindcss/ui'),
+		// require('@tailwindcss/ui'),
+		require('@tailwindcss/forms'),
 		require('@tailwindcss/typography'),
 		plugin(function({ addUtilities, theme }) {
 			// Add your custom styles here
