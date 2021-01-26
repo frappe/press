@@ -1,11 +1,7 @@
 <template>
 	<Section title="Logs" description="Available Logs for your site">
 		<div class="flex text-base text-center text-gray-900" v-if="!logs">
-			<Button
-				:loading="true"
-				loadingText="Fetching..."
-			>
-			</Button>
+			<Button :loading="true" loadingText="Fetching..."> </Button>
 		</div>
 		<div class="flex" v-else-if="logs.length > 0">
 			<div
@@ -68,7 +64,10 @@
 				</div>
 			</div>
 		</div>
-		<div class="flex text-base text-center text-gray-900" v-else-if="logs.length === 0">
+		<div
+			class="flex text-base text-center text-gray-900"
+			v-else-if="logs.length === 0"
+		>
 			Site wise logging is enabled only for sites powered by Frappe Version 13.
 		</div>
 	</Section>
