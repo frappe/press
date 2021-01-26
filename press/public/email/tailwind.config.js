@@ -4,13 +4,13 @@ module.exports = {
 	important: true,
 	theme: Object.assign(config.theme, {
 		screens: {
-			sm: { max: '600px' }
+			sm: { max: '600px' },
 		},
 		fontFamily: {
 			sans: ['-apple-system', '"Segoe UI"', 'sans-serif'],
 			serif: ['Constantia', 'Georgia', 'serif'],
-			mono: ['Menlo', 'Consolas', 'monospace']
-		}
+			mono: ['Menlo', 'Consolas', 'monospace'],
+		},
 	}),
 	corePlugins: {
 		accessibility: false,
@@ -32,12 +32,12 @@ module.exports = {
 		gridRowStart: false,
 		gridRowEnd: false,
 		gap: false,
-        gridAutoFlow: false,
-        flex: false,
-        flexDirection: false,
-        flexGrow: false,
-        flexShrink: false,
-        flexWrap: false
+		gridAutoFlow: false,
+		flex: false,
+		flexDirection: false,
+		flexGrow: false,
+		flexShrink: false,
+		flexWrap: false,
 	},
 	variants: {
 		alignContent: ['responsive'],
@@ -126,6 +126,6 @@ module.exports = {
 		skew: ['responsive', 'hover'],
 		transitionProperty: ['responsive'],
 		transitionTimingFunction: ['responsive'],
-		transitionDuration: ['responsive']
-	}
+		transitionDuration: ['responsive'],
+	},
 };

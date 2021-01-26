@@ -13,7 +13,7 @@
 							Description
 						</th>
 						<th
-							class="py-2 pr-2 font-semibold text-right whitespace-no-wrap border-b border-blue-100"
+							class="py-2 pr-2 font-semibold text-right whitespace-nowrap border-b border-blue-100"
 						>
 							Rate
 						</th>
@@ -52,7 +52,7 @@
 						</td>
 						<td class="pt-4 pb-2 pr-2 text-right">Total:</td>
 						<td
-							class="pt-4 pb-2 pr-2 font-semibold text-right whitespace-no-wrap"
+							class="pt-4 pb-2 pr-2 font-semibold text-right whitespace-nowrap"
 						>
 							{{ doc.formatted.total }}
 						</td>
@@ -61,14 +61,14 @@
 						<tr>
 							<td></td>
 							<td class="pr-2 text-right">Applied Balance:</td>
-							<td class="py-2 pr-2 font-semibold text-right whitespace-no-wrap">
+							<td class="py-2 pr-2 font-semibold text-right whitespace-nowrap">
 								- {{ doc.formatted.applied_credits }}
 							</td>
 						</tr>
 						<tr>
 							<td></td>
 							<td class="pr-2 text-right">Amount Due:</td>
-							<td class="py-2 pr-2 font-semibold text-right whitespace-no-wrap">
+							<td class="py-2 pr-2 font-semibold text-right whitespace-nowrap">
 								{{ doc.formatted.amount_due }}
 							</td>
 						</tr>

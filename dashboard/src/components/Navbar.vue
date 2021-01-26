@@ -1,7 +1,7 @@
 <template>
 	<nav class="bg-white border-b">
 		<div class="container z-10 mx-auto">
-			<div class="flex items-center justify-between px-4 h-15 sm:px-8">
+			<div class="flex items-center justify-between h-16 px-4 sm:px-8">
 				<div class="flex items-center">
 					<div class="flex-shrink-0">
 						<router-link to="/sites">
