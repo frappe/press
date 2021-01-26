@@ -35,11 +35,6 @@ export default [
 					import(/* webpackChunkName: "site" */ '../views/SiteAnalytics.vue')
 			},
 			{
-				path: 'backups',
-				component: () =>
-					import(/* webpackChunkName: "site" */ '../views/SiteBackups.vue')
-			},
-			{
 				path: 'database',
 				component: () =>
 					import(/* webpackChunkName: "site" */ '../views/SiteDatabase.vue')

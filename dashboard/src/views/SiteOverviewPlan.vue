@@ -46,7 +46,9 @@
 					<span class="text-lg">/mo</span>
 				</h4>
 				<p class="text-base text-gray-700">
-					{{ plan.current_plan.cpu_time_per_day }} hours of CPU / day
+					{{ plan.current_plan.cpu_time_per_day }}
+					{{ $plural(plan.current_plan.cpu_time_per_day, 'hour', 'hours') }} of
+					CPU / day
 				</p>
 			</div>
 		</div>
@@ -138,7 +140,13 @@ export default {
 			return [
 				{
 					label: 'CPU',
-					value: `${this.plan.total_cpu_usage_hours} / ${this.plan.current_plan.cpu_time_per_day} hours`
+					value: `${this.plan.total_cpu_usage_hours} / ${
+						this.plan.current_plan.cpu_time_per_day
+					} ${this.$plural(
+						this.plan.current_plan.cpu_time_per_day,
+						'hour',
+						'hours'
+					)}`
 				},
 				{
 					label: 'Database',

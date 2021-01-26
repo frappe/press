@@ -25,7 +25,7 @@
 					<div v-for="d in dropdownItems" :key="d.label">
 						<div
 							v-if="d.isGroup"
-							class="px-2 pt-3 pb-1 text-xs font-semibold tracking-wider text-gray-700 uppercase"
+							class="px-2 pt-2 pb-1 text-xs font-semibold tracking-wider text-gray-500 uppercase"
 						>
 							{{ d.label }}
 						</div>
