@@ -2,7 +2,7 @@
 	<div class="space-y-4">
 		<div>
 			<label class="flex items-baseline space-x-2" for="">
-				<div class="text-base font-medium">Showing analytics of last </div>
+				<div class="text-base font-medium">Showing analytics of last</div>
 				<select class="form-select" v-model="period">
 					<option
 						v-for="o in periodOptions"

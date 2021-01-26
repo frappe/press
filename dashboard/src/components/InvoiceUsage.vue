@@ -51,7 +51,9 @@
 							</a>
 						</td>
 						<td class="pt-4 pb-2 pr-2 text-right">Total:</td>
-						<td class="pt-4 pb-2 pr-2 font-semibold text-right whitespace-no-wrap">
+						<td
+							class="pt-4 pb-2 pr-2 font-semibold text-right whitespace-no-wrap"
+						>
 							{{ doc.formatted.total }}
 						</td>
 					</tr>

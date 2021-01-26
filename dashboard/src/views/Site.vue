@@ -7,7 +7,9 @@
 						← Back to Sites
 					</router-link>
 				</div>
-				<div class="flex flex-col space-y-3 md:space-y-0 md:justify-between md:flex-row md:items-baseline">
+				<div
+					class="flex flex-col space-y-3 md:space-y-0 md:justify-between md:flex-row md:items-baseline"
+				>
 					<div class="flex items-center mt-2">
 						<h1 class="text-2xl font-bold">{{ site.name }}</h1>
 						<Badge class="ml-4" :status="site.status">{{ site.status }}</Badge>

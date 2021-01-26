@@ -110,7 +110,7 @@ export default {
 	},
 	methods: {
 		handleClick() {
-			this.route && $router.push(route);
+			this.route && this.$router.push(this.route);
 			this.link ? window.open(this.link, '_blank') : null;
 		}
 	}

@@ -9,11 +9,7 @@
 			</Link>
 		</template>
 		<div class="divide-y">
-			<div
-				class="py-2"
-				v-for="activity in recentActivity"
-				:key="activity.name"
-			>
+			<div class="py-2" v-for="activity in recentActivity" :key="activity.name">
 				<div class="text-base font-medium text-gray-900">
 					{{ activity.action }} by {{ activity.owner }}
 				</div>
