@@ -114,7 +114,7 @@ export default {
 				message: 'Are you sure you want to activate this site?',
 				actionLabel: 'Activate',
 				actionType: 'primary',
-				action: () => this.deactivate()
+				action: () => this.activate()
 			});
 		},
 		deactivate() {

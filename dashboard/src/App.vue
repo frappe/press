@@ -37,14 +37,18 @@
 			v-model="dialog.show"
 			@close="removeConfirmDialog(dialog)"
 		>
-			<p class="text-base">
-				{{ dialog.message }}
-			</p>
+			<div class="prose">
+				<p class="text-base" v-html="dialog.message"></p>
+			</div>
 			<template slot="actions">
 				<Button type="secondary" @click="removeConfirmDialog(dialog)">
 					Cancel
 				</Button>
-				<Button class="ml-2" :type="dialog.actionType" @click="dialog.action">
+				<Button
+					class="ml-2"
+					:type="dialog.actionType"
+					@click="onDialogAction(dialog)"
+				>
 					{{ dialog.actionLabel }}
 				</Button>
 			</template>
@@ -83,6 +87,10 @@ export default {
 		confirm(dialog) {
 			dialog.show = true;
 			this.confirmDialogs.push(dialog);
+		},
+		onDialogAction(dialog) {
+			let closeDialog = () => this.removeConfirmDialog(dialog);
+			dialog.action(closeDialog);
 		},
 		removeConfirmDialog(dialog) {
 			this.confirmDialogs = this.confirmDialogs.filter(

@@ -5,7 +5,14 @@
 			v-show="requestCounter.data.length == 0"
 			class="flex items-center justify-center py-20 text-base text-gray-700"
 		>
-			No data yet
+			<Button
+				v-if="$resources.requestCounter.loading"
+				:loading="true"
+				loading-text="Loading"
+			/>
+			<span v-else>
+				No data yet
+			</span>
 		</div>
 	</Card>
 </template>
