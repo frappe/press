@@ -71,12 +71,19 @@ export default {
 	data() {
 		return {
 			notifications: [],
-			confirmDialogs: []
+			confirmDialogs: [],
+			viewportWidth: 0
 		};
 	},
 	created() {
 		Vue.prototype.$notify = this.notify;
 		Vue.prototype.$confirm = this.confirm;
+	},
+	provide: {
+		viewportWidth: Math.max(
+			document.documentElement.clientWidth || 0,
+			window.innerWidth || 0
+		)
 	},
 	methods: {
 		notify(props) {

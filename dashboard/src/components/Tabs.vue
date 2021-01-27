@@ -59,7 +59,7 @@ export default {
 			this.$router.replace(route);
 		},
 		isTabSelected(tab) {
-			return this.$route.path.endsWith(tab.route);
+			return this.$route.path.startsWith(tab.route);
 		}
 	}
 };
