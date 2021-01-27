@@ -209,7 +209,7 @@ class Team(Document):
 
 	def update_billing_details_on_draft_invoices(self):
 		draft_invoices = frappe.get_all(
-			"Invoice", {"team": self.team, "docstatus": 0}, pluck="name"
+			"Invoice", {"team": self.name, "docstatus": 0}, pluck="name"
 		)
 		for draft_invoice in draft_invoices:
 			# Invoice.customer_name set by Invoice.validate()
