@@ -34,6 +34,10 @@ class Team(Document):
 		if not self.user and self.team_members:
 			self.user = self.team_members[0].user
 
+		# set billing name
+		if not self.billing_name:
+			self.billing_name = frappe.utils.get_fullname(self.team)
+
 		self.validate_onboarding()
 
 	def validate_onboarding(self):
@@ -91,6 +95,9 @@ class Team(Document):
 				doc = frappe.get_doc("Stripe Payment Method", pm.name)
 				doc.is_default = 0
 				doc.save()
+
+		if self.billing_name and not self.is_new() and self.has_value_changed("billing_name"):
+			self.update_billing_details_on_frappeio()
 
 	def impersonate(self, member, reason):
 		user = frappe.db.get_value("Team Member", member, "user")
@@ -160,7 +167,7 @@ class Team(Document):
 			self.stripe_customer_id = customer.id
 			self.save()
 
-	def create_or_update_address(self, address):
+	def update_billing_details(self, billing_details):
 		if self.billing_address:
 			address_doc = frappe.get_doc("Address", self.billing_address)
 		else:
