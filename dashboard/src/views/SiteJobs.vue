@@ -7,9 +7,9 @@
 			:class="{ 'hidden md:flex': jobName }"
 			:style="{ height: viewportWidth > 768 ? 'calc(100vh - 16rem)' : null }"
 		>
-			<div class="w-full text-base divide-y md:rounded-r-none">
+			<div class="w-full text-base md:rounded-r-none">
 				<router-link
-					class="block p-2.5 rounded-md cursor-pointer"
+					class="block px-2.5 pt-3 rounded-md cursor-pointer"
 					:class="jobName === job.name ? 'bg-gray-100' : 'hover:bg-gray-50'"
 					v-for="job in $resources.jobs.data"
 					:key="job.name"
@@ -35,6 +35,7 @@
 							{{ job.creation }}
 						</FormatDate>
 					</div>
+					<div class="pb-3 border-b"></div>
 				</router-link>
 				<div class="py-3" v-if="!$resources.jobs.lastPageEmpty">
 					<Button
