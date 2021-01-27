@@ -4,7 +4,7 @@
 from __future__ import unicode_literals
 
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
 import frappe
 
@@ -50,26 +50,26 @@ def create_test_site(subdomain: str, new: bool = False) -> Site:
 	).insert(ignore_if_duplicate=True)
 
 
-@patch.object(AgentJob, "after_insert")
+@patch.object(AgentJob, "after_insert", new=Mock())
 class TestSite(unittest.TestCase):
 	"""Tests for Site Document methods."""
 
 	def tearDown(self):
 		frappe.db.rollback()
 
-	def test_host_name_updates_perform_checks_on_host_name(self, *args):
+	def test_host_name_updates_perform_checks_on_host_name(self):
 		"""Ensure update of host name triggers verification of host_name."""
 		site = create_test_site("testsubdomain")
 		site.host_name = "balu.codes"  # domain that doesn't exist
 		self.assertRaises(frappe.exceptions.ValidationError, site.save)
 
-	def test_site_has_default_site_domain_on_create(self, *args):
+	def test_site_has_default_site_domain_on_create(self):
 		"""Ensure site has default site domain on create."""
 		site = create_test_site("testsubdomain")
 		self.assertEqual(site.name, site.host_name)
 		self.assertTrue(frappe.db.exists("Site Domain", {"domain": site.name}))
 
-	def test_new_sites_set_host_name_in_site_config(self, *args):
+	def test_new_sites_set_host_name_in_site_config(self):
 		"""Ensure new sites set host_name in site config in f server."""
 		with patch.object(Site, "_update_configuration") as mock_update_config:
 			site = create_test_site("testsubdomain", new=True)
@@ -77,7 +77,7 @@ class TestSite(unittest.TestCase):
 			{"host_name": f"https://{site.name}"}, save=False
 		)
 
-	def test_rename_updates_name(self, *args):
+	def test_rename_updates_name(self):
 		"""Ensure rename changes name of site."""
 		domain = frappe.db.get_single_value("Press Settings", "domain")
 		site = create_test_site("old-name")
@@ -98,7 +98,7 @@ class TestSite(unittest.TestCase):
 		self.assertFalse(frappe.db.exists("Site", {"name": f"old-name.{domain}"}))
 		self.assertTrue(frappe.db.exists("Site", {"name": new_name}))
 
-	def test_rename_creates_2_agent_jobs(self, *args):
+	def test_rename_creates_2_agent_jobs(self):
 		"""Ensure rename creates 2 agent jobs (for f & n)."""
 		domain = frappe.db.get_single_value("Press Settings", "domain")
 		site = create_test_site("old-name")
@@ -121,7 +121,7 @@ class TestSite(unittest.TestCase):
 			rename_upstream_jobs_count_after - rename_upstream_jobs_count_before, 1
 		)
 
-	def test_subdomain_update_renames_site(self, *args):
+	def test_subdomain_update_renames_site(self):
 		"""Ensure updating subdomain renames site."""
 		site = create_test_site("old-name")
 		new_subdomain_name = "new-name"
@@ -143,6 +143,31 @@ class TestSite(unittest.TestCase):
 		self.assertEqual(
 			rename_upstream_jobs_count_after - rename_upstream_jobs_count_before, 1
 		)
+
+	def test_default_domain_is_renamed_along_with_site(self):
+		"""Ensure default domains are renamed when site is renamed."""
+		site = create_test_site("old-name")
+		old_name = site.name
+		new_name = "new-name.fc.dev"
+
+		self.assertTrue(frappe.db.exists("Site Domain", site.name))
+		site.rename(new_name)
+
+		rename_job = frappe.get_last_doc("Agent Job", {"job_type": "Rename Site"})
+		rename_upstream_job = frappe.get_last_doc(
+			"Agent Job", {"job_type": "Rename Site on Upstream"}
+		)
+		rename_job.status = "Success"
+		rename_upstream_job.status = "Success"
+		rename_job.save()
+		rename_upstream_job.save()
+
+		process_rename_site_job_update(rename_job)
+
+		self.assertFalse(frappe.db.exists("Site Domain", old_name))
+		self.assertTrue(frappe.db.exists("Site Domain", new_name))
+
+	# update host_name if default doc (can be done in agent maybe?)
+	# add agent job step and update fixture
 	# test other actions can't be performed during rename
 	# test rename doesn't leave site in inconsistent state
-	# updates subdomain
