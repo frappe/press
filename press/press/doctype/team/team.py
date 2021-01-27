@@ -5,11 +5,12 @@
 from __future__ import unicode_literals
 
 import frappe
-from press.api.billing import get_stripe, get_erpnext_com_connection, get_frappe_io_connection
-from frappe.model.document import Document
 from frappe import _
-from frappe.utils import get_fullname
 from frappe.contacts.address_and_contact import load_address_and_contact
+from frappe.model.document import Document
+from frappe.utils import get_fullname
+from press.api.billing import get_erpnext_com_connection, get_frappe_io_connection, get_stripe
+from press.exceptions import FrappeioServerNotSet
 
 
 class Team(Document):
@@ -209,7 +210,11 @@ class Team(Document):
 			frappe.get_doc("Invoice", draft_invoice).save()
 
 	def update_billing_details_on_frappeio(self):
-		frappeio_client = get_frappe_io_connection()
+		try:
+			frappeio_client = get_frappe_io_connection()
+		except FrappeioServerNotSet:
+			return
+
 		previous_version = self.get_doc_before_save()
 
 		if not previous_version:

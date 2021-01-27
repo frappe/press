@@ -2,6 +2,7 @@ import frappe
 import stripe
 from frappe.utils import fmt_money
 from press.utils import get_current_team
+from press.exceptions import CentralServerNotSet, FrappeioServerNotSet
 
 
 states_with_tin = {
@@ -59,7 +60,7 @@ def get_erpnext_com_connection():
 		"Press Settings", "Press Settings", fieldname="erpnext_password"
 	)
 	if not (press_settings.erpnext_username and press_settings.erpnext_url and erpnext_password):
-		frappe.throw("ERPNext.com URL not set up in Press Settings")
+		frappe.throw("ERPNext.com URL not set up in Press Settings", exc=CentralServerNotSet)
 
 	return FrappeClient(
 		press_settings.erpnext_url,
@@ -77,7 +78,7 @@ def get_frappe_io_connection():
 	press_settings = frappe.get_single("Press Settings")
 	frappe_password = press_settings.get_password("frappe_password", raise_exception=False)
 	if not (frappe_password and press_settings.frappe_url):
-		frappe.throw("Frappe.io URL not set up in Press Settings")
+		frappe.throw("Frappe.io URL not set up in Press Settings", exc=FrappeioServerNotSet)
 
 	frappe.local.press_frappeio_conn = FrappeClient(
 		press_settings.frappe_url,
