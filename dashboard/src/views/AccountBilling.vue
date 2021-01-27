@@ -111,7 +111,7 @@
 					</span>
 					<Button @click="editAddress = true">Edit Address</Button>
 				</div>
-				<UpdateBillingAddress
+				<UpdateBillingDetails
 					v-if="editAddress"
 					@updated="
 						editAddress = false;
@@ -189,7 +189,7 @@ export default {
 		DescriptionList,
 		TransferCreditsDialog: () => import('@/components/TransferCreditsDialog'),
 		PrepaidCreditsDialog: () => import('@/components/PrepaidCreditsDialog'),
-		UpdateBillingAddress: () => import('@/components/UpdateBillingAddress'),
+		UpdateBillingDetails: () => import('@/components/UpdateBillingDetails'),
 		InvoiceUsage: () => import('@/components/InvoiceUsage')
 	},
 	resources: {
