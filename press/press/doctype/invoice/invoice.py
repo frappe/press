@@ -131,7 +131,7 @@ class Invoice(Document):
 				)
 
 	def validate_team(self):
-		self.customer_name = frappe.utils.get_fullname(self.team)
+		self.customer_name = frappe.db.get_value("Team", self.team, "billing_name") or frappe.utils.get_fullname(self.team)
 		self.customer_email = self.team
 		self.currency = frappe.db.get_value("Team", self.team, "currency")
 		if not self.currency:

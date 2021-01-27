@@ -277,10 +277,10 @@ def get_billing_information():
 
 
 @frappe.whitelist()
-def update_billing_information(address):
-	address = frappe._dict(address)
-	team = get_current_team(True)
-	team.create_or_update_address(address)
+def update_billing_information(billing_details):
+	billing_details = frappe._dict(billing_details)
+	team = get_current_team(get_doc=True)
+	team.update_billing_details(billing_details)
 
 
 @frappe.whitelist()

@@ -17,6 +17,7 @@
   "country",
   "currency",
   "default_payment_method",
+  "billing_name",
   "billing_address",
   "free_credits_allocated",
   "column_break_12",
@@ -160,6 +161,11 @@
    "fieldname": "enable_prepaid_credits",
    "fieldtype": "Check",
    "label": "Enable Prepaid Credits"
+  },
+  {
+   "fieldname": "billing_name",
+   "fieldtype": "Data",
+   "label": "Billing Name"
   }
  ],
  "links": [
@@ -204,7 +210,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2020-12-08 15:11:57.505079",
+ "modified": "2021-01-25 16:03:30.295116",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

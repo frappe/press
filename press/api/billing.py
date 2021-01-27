@@ -197,7 +197,7 @@ def setup_intent_success(setup_intent, address):
 	team = get_current_team(True)
 	clear_setup_intent()
 	team.create_payment_method(setup_intent.payment_method, set_default=True)
-	team.create_or_update_address(address)
+	team.update_billing_details(address)
 	team.update_onboarding("Add Billing Information", "Completed")
 
 
