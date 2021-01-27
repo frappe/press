@@ -121,6 +121,28 @@ class TestSite(unittest.TestCase):
 			rename_upstream_jobs_count_after - rename_upstream_jobs_count_before, 1
 		)
 
+	def test_subdomain_update_renames_site(self, *args):
+		"""Ensure updating subdomain renames site."""
+		site = create_test_site("old-name")
+		new_subdomain_name = "new-name"
+
+		rename_jobs_count_before = frappe.db.count("Agent Job", {"job_type": "Rename Site"})
+		rename_upstream_jobs_count_before = frappe.db.count(
+			"Agent Job", {"job_type": "Rename Site on Upstream"}
+		)
+
+		site.subdomain = new_subdomain_name
+		site.save()
+
+		rename_jobs_count_after = frappe.db.count("Agent Job", {"job_type": "Rename Site"})
+		rename_upstream_jobs_count_after = frappe.db.count(
+			"Agent Job", {"job_type": "Rename Site on Upstream"}
+		)
+
+		self.assertEqual(rename_jobs_count_after - rename_jobs_count_before, 1)
+		self.assertEqual(
+			rename_upstream_jobs_count_after - rename_upstream_jobs_count_before, 1
+		)
 	# test other actions can't be performed during rename
 	# test rename doesn't leave site in inconsistent state
 	# updates subdomain
