@@ -96,8 +96,10 @@ class Team(Document):
 				doc.is_default = 0
 				doc.save()
 
-		if self.billing_name and not self.is_new() and self.has_value_changed("billing_name"):
-			self.update_billing_details_on_frappeio()
+		if not self.is_new() and self.billing_name:
+			self.load_doc_before_save()
+			if self.has_value_changed("billing_name"):
+				self.update_billing_details_on_frappeio()
 
 	def impersonate(self, member, reason):
 		user = frappe.db.get_value("Team Member", member, "user")
