@@ -26,9 +26,13 @@ from press.utils import convert, get_client_blacklisted_keys, guess_type, log_er
 
 
 class Site(Document):
-	def autoname(self):
+	def _get_site_name(self, subdomain: str):
+		"""Get full site domain name given subdomain."""
 		domain = frappe.db.get_single_value("Press Settings", "domain")
-		self.name = f"{self.subdomain}.{domain}"
+		return f"{subdomain}.{domain}"
+
+	def autoname(self):
+		self.name = self._get_site_name(self.subdomain)
 
 	def validate(self):
 		# validate site name
@@ -99,6 +103,9 @@ class Site(Document):
 			self.disable_subscription()
 		if self.status == "Active":
 			self.enable_subscription()
+
+		if not self.is_new() and self.has_value_changed("subdomain"):
+			self.rename(self._get_site_name(self.subdomain))
 
 	def rename_upstream(self, new_name: str):
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
