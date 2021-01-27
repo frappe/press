@@ -77,19 +77,19 @@ def new(site):
 
 @frappe.whitelist()
 @protected("Site")
-def jobs(name):
+def jobs(name, start=0):
 	jobs = frappe.get_all(
 		"Agent Job",
 		fields=["name", "job_type", "creation", "status", "start", "end", "duration"],
 		filters={"site": name},
+		start=start,
 		limit=10,
 	)
 	return jobs
 
 
 @frappe.whitelist()
-@protected("Site")
-def job(name, job):
+def job(job):
 	job = frappe.get_doc("Agent Job", job)
 	job = job.as_dict()
 	job.steps = frappe.get_all(
