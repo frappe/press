@@ -198,6 +198,13 @@ class Team(Document):
 		self.reload()
 		self.update_billing_details_on_stripe(address_doc)
 		self.update_billing_details_on_frappeio()
+		self.update_billing_details_on_draft_invoices()
+
+	def update_billing_details_on_draft_invoices(self):
+		draft_invoices = frappe.get_all("Invoice", {"team": self.team, "docstatus": 0}, pluck="name")
+		for draft_invoice in draft_invoices:
+			# Invoice.customer_name set by Invoice.validate()
+			frappe.get_doc("Invoice", draft_invoice).save()
 
 	def update_billing_details_on_frappeio(self):
 		frappeio_client = get_frappe_io_connection()
