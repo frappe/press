@@ -5,7 +5,7 @@
 from __future__ import unicode_literals
 
 import frappe
-from press.api.billing import get_stripe, get_erpnext_com_connection
+from press.api.billing import get_stripe, get_erpnext_com_connection, get_frappe_io_connection
 from frappe.model.document import Document
 from frappe import _
 from frappe.utils import get_fullname
@@ -123,6 +123,8 @@ class Team(Document):
 			# allocate free credits on signup
 			credits_field = "free_credits_inr" if self.currency == "INR" else "free_credits_usd"
 			credit_amount = frappe.db.get_single_value("Press Settings", credits_field)
+			if not credit_amount:
+				return
 			self.allocate_credit_amount(credit_amount, source="Free Credits")
 			self.free_credits_allocated = 1
 			self.save()
@@ -180,20 +182,36 @@ class Team(Document):
 
 		address_doc.update(
 			{
-				"address_line1": address.address,
-				"city": address.city,
-				"state": address.state,
-				"pincode": address.postal_code,
-				"country": address.country,
-				"gstin": address.gstin,
+				"address_line1": billing_details.address,
+				"city": billing_details.city,
+				"state": billing_details.state,
+				"pincode": billing_details.postal_code,
+				"country": billing_details.country,
+				"gstin": billing_details.gstin,
 			}
 		)
 		address_doc.save()
 
+		self.billing_name = billing_details.billing_name or self.billing_name
 		self.billing_address = address_doc.name
 		self.save()
 		self.reload()
 		self.update_billing_details_on_stripe(address_doc)
+		self.update_billing_details_on_frappeio()
+
+	def update_billing_details_on_frappeio(self):
+		frappeio_client = get_frappe_io_connection()
+		previous_version = self.get_doc_before_save()
+
+		if not previous_version:
+			self.load_doc_before_save()
+			previous_version = self.get_doc_before_save()
+
+		previous_billing_name = previous_version.billing_name
+
+		if previous_billing_name:
+			if frappeio_client.rename_doc("Customer", previous_billing_name, self.billing_name):
+				frappe.msgprint(f"Renamed customer from {previous_billing_name} to {self.billing_name}")
 
 	def update_billing_details_on_stripe(self, address=None):
 		stripe = get_stripe()

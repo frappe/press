@@ -67,11 +67,36 @@ def get_erpnext_com_connection():
 	erpnext_password = frappe.utils.password.get_decrypted_password(
 		"Press Settings", "Press Settings", fieldname="erpnext_password"
 	)
+	if not (press_settings.erpnext_username and press_settings.erpnext_url and erpnext_password):
+		frappe.throw("ERPNext.com URL not set up in Press Settings")
+
 	return FrappeClient(
 		press_settings.erpnext_url,
 		username=press_settings.erpnext_username,
 		password=erpnext_password,
 	)
+
+
+def get_frappe_io_connection():
+	if hasattr(frappe.local, "press_frappeio_conn"):
+		return frappe.local.press_frappeio_conn
+
+	from frappe.frappeclient import FrappeClient
+
+	press_settings = frappe.get_single("Press Settings")
+	frappe_password = frappe.utils.password.get_decrypted_password(
+		"Press Settings", "Press Settings", fieldname="frappe_password", raise_exception=False
+	)
+	if not (frappe_password and press_settings.frappe_url):
+		frappe.throw("Frappe.io URL not set up in Press Settings")
+
+	frappe.local.press_frappeio_conn = FrappeClient(
+		press_settings.frappe_url,
+		username=press_settings.frappe_username,
+		password=frappe_password,
+	)
+
+	return get_frappe_io_connection()
 
 
 @frappe.whitelist()
@@ -227,10 +252,15 @@ def get_stripe():
 	if not hasattr(frappe.local, "press_stripe_object"):
 		stripe_account = frappe.db.get_single_value("Press Settings", "stripe_account")
 		secret_key = frappe.utils.password.get_decrypted_password(
-			"Stripe Settings", stripe_account, "secret_key"
+			"Stripe Settings", stripe_account, "secret_key", raise_exception=False
 		)
+
+		if not (stripe_account and secret_key):
+			frappe.throw("Setup stripe via Press Settings before using press.api.billing.get_stripe")
+
 		stripe.api_key = secret_key
 		frappe.local.press_stripe_object = stripe
+
 	return frappe.local.press_stripe_object
 
 
