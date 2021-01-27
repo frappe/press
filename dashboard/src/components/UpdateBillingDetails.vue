@@ -30,7 +30,7 @@
 import AddressForm from '@/components/AddressForm';
 
 export default {
-	name: 'UpdateBillingAddress',
+	name: 'UpdateBillingDetails',
 	props: ['message'],
 	components: {
 		AddressForm
