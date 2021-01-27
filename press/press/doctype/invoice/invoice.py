@@ -6,7 +6,8 @@ from __future__ import unicode_literals
 
 import frappe
 from frappe.model.document import Document
-from press.api.billing import get_stripe, get_frappe_io_connection
+from press.api.billing import get_stripe
+from press.utils.billing import get_frappe_io_connection
 from press.utils import log_error
 from datetime import datetime
 from frappe import _
@@ -131,7 +132,9 @@ class Invoice(Document):
 				)
 
 	def validate_team(self):
-		self.customer_name = frappe.db.get_value("Team", self.team, "billing_name") or frappe.utils.get_fullname(self.team)
+		self.customer_name = frappe.db.get_value(
+			"Team", self.team, "billing_name"
+		) or frappe.utils.get_fullname(self.team)
 		self.customer_email = self.team
 		self.currency = frappe.db.get_value("Team", self.team, "currency")
 		if not self.currency:

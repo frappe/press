@@ -59,7 +59,9 @@ def get_erpnext_com_connection():
 	erpnext_password = frappe.utils.password.get_decrypted_password(
 		"Press Settings", "Press Settings", fieldname="erpnext_password"
 	)
-	if not (press_settings.erpnext_username and press_settings.erpnext_url and erpnext_password):
+	if not (
+		press_settings.erpnext_username and press_settings.erpnext_url and erpnext_password
+	):
 		frappe.throw("ERPNext.com URL not set up in Press Settings", exc=CentralServerNotSet)
 
 	return FrappeClient(
@@ -136,7 +138,9 @@ def get_stripe():
 		)
 
 		if not (stripe_account and secret_key):
-			frappe.throw("Setup stripe via Press Settings before using press.api.billing.get_stripe")
+			frappe.throw(
+				"Setup stripe via Press Settings before using press.api.billing.get_stripe"
+			)
 
 		stripe.api_key = secret_key
 		frappe.local.press_stripe_object = stripe
