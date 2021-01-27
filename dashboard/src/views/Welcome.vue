@@ -142,7 +142,7 @@ export default {
 					let description = {
 						'Create Team': `Your team ${this.$account.team?.name} has been created.`,
 						'Add Billing Information':
-							"After adding your billing information you will get a free $25 credit. Sites you create will use your free credits first. If you don't like the experience you can cancel your subscription anytime.",
+							"After adding your billing information you will get a free $25 credit. Sites you create will use your free credits first.",
 						'Transfer Credits':
 							'As an ERPNext Partner, you have the privilege to use your ERPNext.com credits for creating Frappe Cloud sites.',
 						'Create Site':
