@@ -9,7 +9,11 @@ from frappe import _
 from frappe.contacts.address_and_contact import load_address_and_contact
 from frappe.model.document import Document
 from frappe.utils import get_fullname
-from press.api.billing import get_erpnext_com_connection, get_frappe_io_connection, get_stripe
+from press.utils.billing import (
+	get_erpnext_com_connection,
+	get_frappe_io_connection,
+	get_stripe,
+)
 from press.exceptions import FrappeioServerNotSet
 
 
@@ -204,7 +208,9 @@ class Team(Document):
 		self.update_billing_details_on_draft_invoices()
 
 	def update_billing_details_on_draft_invoices(self):
-		draft_invoices = frappe.get_all("Invoice", {"team": self.team, "docstatus": 0}, pluck="name")
+		draft_invoices = frappe.get_all(
+			"Invoice", {"team": self.team, "docstatus": 0}, pluck="name"
+		)
 		for draft_invoice in draft_invoices:
 			# Invoice.customer_name set by Invoice.validate()
 			frappe.get_doc("Invoice", draft_invoice).save()
@@ -225,7 +231,9 @@ class Team(Document):
 
 		if previous_billing_name:
 			if frappeio_client.rename_doc("Customer", previous_billing_name, self.billing_name):
-				frappe.msgprint(f"Renamed customer from {previous_billing_name} to {self.billing_name}")
+				frappe.msgprint(
+					f"Renamed customer from {previous_billing_name} to {self.billing_name}"
+				)
 
 	def update_billing_details_on_stripe(self, address=None):
 		stripe = get_stripe()
