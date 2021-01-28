@@ -119,6 +119,8 @@ class Site(Document):
 		agent = Agent(self.server)
 		agent.rename_site(self, new_name)
 		self.rename_upstream(new_name)
+		self.status = "Pending"
+		self.save()
 
 	def update_config_preview(self):
 		"""Regenrates site.config on each site.validate from the site.configuration child table data"""
