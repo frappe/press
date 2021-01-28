@@ -115,7 +115,7 @@ RUN rm .bench.cmd
 {% if app.app != "frappe" %}
 
 COPY --chown=frappe:frappe apps/{{ app.app }} /home/frappe/frappe-bench/apps/{{ app.app }}
-RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 echo "N\nY\n" | bench get-app {{ app.app }} `#stage-apps-{{ app.app }}`
+RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 echo "N\nY\n" | bench get-app /home/frappe/frappe-bench/apps/{{ app.app }} `#stage-apps-{{ app.app }}`
 
 {% endif %}
 {% endfor %}
