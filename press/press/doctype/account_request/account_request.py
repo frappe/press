@@ -31,10 +31,11 @@ class AccountRequest(Document):
 			subject = f"You are invited by {self.invited_by} to join Frappe Cloud"
 			template = "invite_team_member"
 
-		frappe.sendmail(
-			recipients=self.email,
-			subject=subject,
-			template=template,
-			args={"link": url},
-			now=True,
-		)
+		if not frappe.conf.developer_mode:
+			frappe.sendmail(
+				recipients=self.email,
+				subject=subject,
+				template=template,
+				args={"link": url},
+				now=True,
+			)

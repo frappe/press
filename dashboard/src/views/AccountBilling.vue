@@ -14,7 +14,7 @@
 				<DescriptionList class="px-6 py-4" :items="subscriptionItems" />
 				<div
 					class="px-6 pb-4"
-					v-if="!$resources.billingDetails.loading && !paymentMethodAdded"
+					v-if="!$resources.billingDetails.loading && !paymentMethodAdded && !$account.team.erpnext_partner"
 				>
 					<Button type="primary" route="/welcome">
 						Add Billing Information
@@ -101,7 +101,7 @@
 		</Section>
 		<Section
 			v-if="!$resources.billingDetails.loading"
-			title="Billing Address"
+			title="Billing Details"
 			description="Your billing address is shown in monthly invoice"
 		>
 			<SectionCard>
@@ -111,7 +111,7 @@
 					</span>
 					<Button @click="editAddress = true">Edit Address</Button>
 				</div>
-				<UpdateBillingAddress
+				<UpdateBillingDetails
 					v-if="editAddress"
 					@updated="
 						editAddress = false;
@@ -121,7 +121,6 @@
 			</SectionCard>
 		</Section>
 		<Section
-			v-if="paymentMethods.data && paymentMethods.data.length > 0"
 			title="Payment Methods"
 			description="Cards you have added for automatic billing"
 		>
@@ -189,7 +188,7 @@ export default {
 		DescriptionList,
 		TransferCreditsDialog: () => import('@/components/TransferCreditsDialog'),
 		PrepaidCreditsDialog: () => import('@/components/PrepaidCreditsDialog'),
-		UpdateBillingAddress: () => import('@/components/UpdateBillingAddress'),
+		UpdateBillingDetails: () => import('@/components/UpdateBillingDetails'),
 		InvoiceUsage: () => import('@/components/InvoiceUsage')
 	},
 	resources: {

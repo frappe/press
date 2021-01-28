@@ -41,3 +41,4 @@ press.patches.v0_0_1.set_document_type_in_plan
 # Update transaction details in paid invoices
 # press.press.doctype.invoice.patches.set_transaction_details
 press.patches.v0_0_1.breakdown_site_usage_into_multiple_fields
+press.patches.v0_0_1.set_billing_name_for_teams

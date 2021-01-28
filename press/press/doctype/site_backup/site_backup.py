@@ -34,6 +34,10 @@ class SiteBackup(Document):
 		job = agent.backup_site(site, self.with_files, self.offsite)
 		frappe.db.set_value("Site Backup", self.name, "job", job.name)
 
+	def after_delete(self):
+		if self.job:
+			frappe.delete_doc_if_exists("Agent Job", self.job)
+
 
 def track_offsite_backups(
 	site: str, backup_data: dict, offsite_backup_data: dict

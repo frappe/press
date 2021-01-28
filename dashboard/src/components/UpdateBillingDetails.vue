@@ -1,8 +1,14 @@
 <template>
-	<Dialog title="Update Billing Address" v-model="show">
+	<Dialog title="Update Billing Details" v-model="show">
 		<p class="text-base" v-if="message">
 			{{ message }}
 		</p>
+		<Input
+			class="pt-4"
+			type="text"
+			v-model="billingInformation.billing_name"
+			label="Billing Name"
+		/>
 		<AddressForm ref="address-form" class="mt-4" v-model="billingInformation" />
 		<ErrorMessage
 			class="mt-2"
@@ -24,7 +30,7 @@
 import AddressForm from '@/components/AddressForm';
 
 export default {
-	name: 'UpdateBillingAddress',
+	name: 'UpdateBillingDetails',
 	props: ['message'],
 	components: {
 		AddressForm
@@ -38,7 +44,8 @@ export default {
 				state: '',
 				postal_code: '',
 				country: '',
-				gstin: ''
+				gstin: '',
+				billing_name: ''
 			}
 		};
 	},
@@ -54,7 +61,8 @@ export default {
 						state: billingInformation.state,
 						postal_code: billingInformation.pincode,
 						country: billingInformation.country,
-						gstin: billingInformation.gstin
+						gstin: billingInformation.gstin,
+						billing_name: billingInformation.billing_name
 					});
 				}
 			}
@@ -63,7 +71,7 @@ export default {
 			return {
 				method: 'press.api.account.update_billing_information',
 				params: {
-					address: this.billingInformation
+					billing_details: this.billingInformation
 				},
 				onSuccess() {
 					this.show = false;
