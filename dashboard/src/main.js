@@ -9,7 +9,7 @@ Vue.config.errorHandler = (error, vm) => {
 	vm.$notify({
 		icon: 'x',
 		title: 'An error occurred',
-		message: error.messages.join('\n'),
+		message: error.messages?.join('\n'),
 		color: 'red'
 	});
 	console.error(error);
