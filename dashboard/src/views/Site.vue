@@ -1,7 +1,7 @@
 <template>
-	<div>
+	<div class="mt-10">
 		<div class="px-4 sm:px-8" v-if="site">
-			<div class="py-8">
+			<div class="pb-3">
 				<div class="text-base text-gray-700">
 					<router-link to="/sites" class="hover:text-gray-800">
 						← Back to Sites
