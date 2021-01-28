@@ -18,9 +18,7 @@ def get_context(context):
 					f"https://api.github.com/app-manifests/{code}/conversions", headers=headers,
 				).json()
 			)
-			from pprint import pprint
 
-			pprint(response)
 			settings = frappe.get_doc("Press Settings", "Press Settings")
 			settings.github_app_id = response.id
 			settings.github_app_client_id = response.client_id
