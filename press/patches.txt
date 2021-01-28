@@ -59,3 +59,4 @@ press.patches.v0_0_1.set_marketplace_app_app_field_from_name
 press.patches.v0_0_1.rename_workers_to_background_workers
 press.patches.v0_0_1.set_release_in_bench_app
 press.patches.v0_0_1.set_app_title_in_deploy_candidate_app
+press.patches.v0_0_1.set_release_group_in_site
