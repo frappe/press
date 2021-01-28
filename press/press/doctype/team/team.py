@@ -5,11 +5,16 @@
 from __future__ import unicode_literals
 
 import frappe
-from press.api.billing import get_stripe, get_erpnext_com_connection
-from frappe.model.document import Document
 from frappe import _
-from frappe.utils import get_fullname
 from frappe.contacts.address_and_contact import load_address_and_contact
+from frappe.model.document import Document
+from frappe.utils import get_fullname
+from press.utils.billing import (
+	get_erpnext_com_connection,
+	get_frappe_io_connection,
+	get_stripe,
+)
+from press.exceptions import FrappeioServerNotSet
 
 
 class Team(Document):
@@ -33,6 +38,10 @@ class Team(Document):
 		# set default user
 		if not self.user and self.team_members:
 			self.user = self.team_members[0].user
+
+		# set billing name
+		if not self.billing_name:
+			self.billing_name = frappe.utils.get_fullname(self.name)
 
 		self.validate_onboarding()
 
@@ -92,6 +101,11 @@ class Team(Document):
 				doc.is_default = 0
 				doc.save()
 
+		if not self.is_new() and self.billing_name:
+			self.load_doc_before_save()
+			if self.has_value_changed("billing_name"):
+				self.update_billing_details_on_frappeio()
+
 	def impersonate(self, member, reason):
 		user = frappe.db.get_value("Team Member", member, "user")
 		impersonation = frappe.get_doc(
@@ -116,6 +130,8 @@ class Team(Document):
 			# allocate free credits on signup
 			credits_field = "free_credits_inr" if self.currency == "INR" else "free_credits_usd"
 			credit_amount = frappe.db.get_single_value("Press Settings", credits_field)
+			if not credit_amount:
+				return
 			self.allocate_credit_amount(credit_amount, source="Free Credits")
 			self.free_credits_allocated = 1
 			self.save()
@@ -160,7 +176,7 @@ class Team(Document):
 			self.stripe_customer_id = customer.id
 			self.save()
 
-	def create_or_update_address(self, address):
+	def update_billing_details(self, billing_details):
 		if self.billing_address:
 			address_doc = frappe.get_doc("Address", self.billing_address)
 		else:
@@ -173,20 +189,51 @@ class Team(Document):
 
 		address_doc.update(
 			{
-				"address_line1": address.address,
-				"city": address.city,
-				"state": address.state,
-				"pincode": address.postal_code,
-				"country": address.country,
-				"gstin": address.gstin,
+				"address_line1": billing_details.address,
+				"city": billing_details.city,
+				"state": billing_details.state,
+				"pincode": billing_details.postal_code,
+				"country": billing_details.country,
+				"gstin": billing_details.gstin,
 			}
 		)
 		address_doc.save()
 
+		self.billing_name = billing_details.billing_name or self.billing_name
 		self.billing_address = address_doc.name
 		self.save()
 		self.reload()
 		self.update_billing_details_on_stripe(address_doc)
+		self.update_billing_details_on_frappeio()
+		self.update_billing_details_on_draft_invoices()
+
+	def update_billing_details_on_draft_invoices(self):
+		draft_invoices = frappe.get_all(
+			"Invoice", {"team": self.name, "docstatus": 0}, pluck="name"
+		)
+		for draft_invoice in draft_invoices:
+			# Invoice.customer_name set by Invoice.validate()
+			frappe.get_doc("Invoice", draft_invoice).save()
+
+	def update_billing_details_on_frappeio(self):
+		try:
+			frappeio_client = get_frappe_io_connection()
+		except FrappeioServerNotSet:
+			return
+
+		previous_version = self.get_doc_before_save()
+
+		if not previous_version:
+			self.load_doc_before_save()
+			previous_version = self.get_doc_before_save()
+
+		previous_billing_name = previous_version.billing_name
+
+		if previous_billing_name:
+			if frappeio_client.rename_doc("Customer", previous_billing_name, self.billing_name):
+				frappe.msgprint(
+					f"Renamed customer from {previous_billing_name} to {self.billing_name}"
+				)
 
 	def update_billing_details_on_stripe(self, address=None):
 		stripe = get_stripe()
