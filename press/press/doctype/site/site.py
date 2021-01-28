@@ -911,6 +911,7 @@ def process_rename_site_job_update(job):
 		new_name = data["new_name"]
 		frappe.rename_doc("Site", job.site, new_name)
 		frappe.rename_doc("Site Domain", job.site, new_name)
+		job.site = new_name
 		updated_status = "Active"
 	elif "Failure" in (first, second):
 		updated_status = "Broken"
