@@ -110,7 +110,10 @@ class Site(Document):
 	def rename_upstream(self, new_name: str):
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
-		agent.rename_upstream_site(self.server, self, new_name)
+		site_domains = frappe.get_all(
+			"Site Domain", {"site": self.name, "name": ("!=", self.name)}, pluck="name"
+		)
+		agent.rename_upstream_site(self.server, self, new_name, site_domains)
 
 	def rename(self, new_name: str):
 		agent = Agent(self.server)
