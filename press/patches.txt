@@ -56,3 +56,4 @@ press.patches.v0_0_1.rename_release_groups
 press.patches.v0_0_1.create_app_release_difference_from_deploy_candidate_difference
 press.patches.v0_0_1.truncate_server_status_table
 press.patches.v0_0_1.set_marketplace_app_app_field_from_name
+press.patches.v0_0_1.rename_workers_to_background_workers
