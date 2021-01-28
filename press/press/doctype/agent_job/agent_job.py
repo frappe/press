@@ -4,24 +4,20 @@
 
 from __future__ import unicode_literals
 
-import functools
 import json
 from datetime import datetime, timedelta
 from itertools import groupby
 
 import frappe
-import pytz
 import requests
 from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.utils import (
-	cint,
 	convert_utc_to_user_timezone,
 	get_url_to_form,
 	pretty_date,
 )
 from press.agent import Agent
-from press.press.doctype.plan.plan import get_plan_config
 from press.telegram import Telegram
 from press.utils import log_error
 
@@ -142,52 +138,6 @@ def publish_update(job):
 	frappe.publish_realtime(event="agent_job_update", message=message, user=job_owner)
 
 
-def collect_site_analytics():
-	benches = frappe.get_all(
-		"Bench", fields=["name", "server"], filters={"status": "Active"}
-	)
-	for bench in benches:
-		agent = Agent(bench.server)
-		logs = agent.fetch_monitor_data(bench.name)
-		for log in logs:
-			try:
-				doc = {
-					"name": log["uuid"],
-					"site": log["site"],
-					"timestamp": log["timestamp"],
-					"duration": log["duration"],
-				}
-
-				if log["transaction_type"] == "request":
-					doc.update(
-						{
-							"doctype": "Site Request Log",
-							"url": log["request"]["path"],
-							"ip": log["request"]["ip"],
-							"http_method": log["request"]["method"],
-							"length": log["request"]["response_length"],
-							"status_code": log["request"]["status_code"],
-							"reset": log["request"].get("reset"),
-							"counter": log["request"].get("counter"),
-						}
-					)
-				elif log["transaction_type"] == "job":
-					doc.update(
-						{
-							"doctype": "Site Job Log",
-							"job_name": log["job"]["method"],
-							"scheduled": log["job"]["scheduled"],
-							"wait": log["job"]["wait"] / 1000,
-							"duration": log["duration"] / 1000,
-						}
-					)
-				frappe.get_doc(doc).db_insert()
-			except frappe.exceptions.DuplicateEntryError:
-				pass
-			except Exception:
-				log_error("Agent Analytics Collection Exception", log=log, doc=doc)
-
-
 def collect_site_uptime():
 	benches = frappe.get_all(
 		"Bench", fields=["name", "server"], filters={"status": "Active"},
@@ -284,73 +234,6 @@ def report_site_downtime():
 		telegram.send(message)
 
 
-def report_usage_violations():
-	"""Notify users if they reach 80% of daily CPU usage or total capacity for DB or FS limit"""
-
-	latest_usages = frappe.db.sql(
-		r"""WITH disk_usage AS (
-			SELECT `site`, `backups`, `database`, `public`, `private`,
-			ROW_NUMBER() OVER (PARTITION BY `site` ORDER BY `creation` DESC) AS 'rank'
-			FROM `tabSite Usage`
-			WHERE `site` NOT LIKE '%cloud.archived%'
-		) SELECT d.*, s.plan
-			FROM disk_usage d INNER JOIN `tabSubscription` s
-			ON d.site = s.document_name
-			WHERE `rank` = 1 AND s.`document_type` = 'Site' AND s.`enabled`
-		""",
-		as_dict=True,
-	)
-
-	@functools.lru_cache(maxsize=128)
-	def _get_limits(plan):
-		return (
-			_get_config(plan)["rate_limit"]["limit"] * 1000000,
-			*frappe.db.get_value("Plan", plan, ["max_database_usage", "max_storage_usage"]),
-		)
-
-	@functools.lru_cache(maxsize=128)
-	def _get_config(plan):
-		return get_plan_config(plan)
-
-	def _get_cpu_counter(site):
-		_temp_cpu_counter = frappe.get_all(
-			"Site Request Log",
-			fields=["counter"],
-			filters={"site": site},
-			order_by="timestamp desc",
-			pluck="counter",
-			limit=1,
-		)
-		if _temp_cpu_counter:
-			cpu_usage = cint(_temp_cpu_counter[0])
-		else:
-			cpu_usage = 0
-		return cpu_usage
-
-	for usage in latest_usages:
-		plan = usage.plan
-		database_usage = usage.database
-		cpu_usage = _get_cpu_counter(usage.site)
-		disk_usage = usage.public + usage.private
-		cpu_limit, database_limit, disk_limit = _get_limits(plan)
-
-		latest_cpu_usage = int((cpu_usage / cpu_limit) * 100)
-		latest_database_usage = int((database_usage / database_limit) * 100)
-		latest_disk_usage = int((disk_usage / disk_limit) * 100)
-
-		# notify if reaching disk/database limits
-		site = frappe.get_doc("Site", usage.site)
-		if (
-			site.current_cpu_usage != latest_cpu_usage
-			or site.current_database_usage != latest_database_usage
-			or site.current_disk_usage != latest_disk_usage
-		):
-			site.current_cpu_usage = latest_cpu_usage
-			site.current_database_usage = latest_database_usage
-			site.current_disk_usage = latest_disk_usage
-			site.save()
-
-
 def suspend_sites():
 	"""Suspend sites if they have exceeded database or disk limits"""
 
@@ -369,67 +252,6 @@ def suspend_sites():
 	for site in active_sites:
 		if site.current_database_usage > 100 or site.current_disk_usage > 100:
 			frappe.get_doc("Site", site.name).suspend(reason="Site Usage Exceeds Plan limits")
-
-
-def schedule_backups():
-	sites = frappe.get_all(
-		"Site", fields=["name", "timezone"], filters={"status": "Active"},
-	)
-	plans_without_offsite_backups = frappe.get_all(
-		"Plan", filters={"offsite_backups": 0}, pluck="name"
-	)
-	sites_without_offsite_backups = set(
-		frappe.get_all(
-			"Subscription",
-			filters={"document_type": "Site", "plan": ("in", plans_without_offsite_backups)},
-			pluck="document_name",
-		)
-	)
-	interval = frappe.db.get_single_value("Press Settings", "backup_interval") or 6
-	offsite_setup = any(
-		frappe.db.get_value(
-			"Press Settings",
-			"Press Settings",
-			["aws_s3_bucket", "offsite_backups_access_key_id"],
-		)
-	)
-
-	for site in sites:
-		try:
-			server_time = datetime.now()
-			timezone = site.timezone or "Asia/Kolkata"
-			site_timezone = pytz.timezone(timezone)
-			site_time = server_time.astimezone(site_timezone)
-
-			if site_time.hour % interval == 0:
-				today = site_time.date()
-				common_filters = {
-					"creation": ("between", [today, today]),
-					"site": site.name,
-					"status": "Success",
-				}
-				offsite = (
-					offsite_setup
-					and site.name not in sites_without_offsite_backups
-					and not frappe.get_all(
-						"Site Backup",
-						fields=["count(*) as total"],
-						filters={**common_filters, "offsite": 1},
-					)[0]["total"]
-				)
-				with_files = (
-					not frappe.get_all(
-						"Site Backup",
-						fields=["count(*) as total"],
-						filters={**common_filters, "with_files": 1},
-					)[0]["total"]
-					or offsite
-				)
-
-				frappe.get_doc("Site", site.name).backup(with_files=with_files, offsite=offsite)
-
-		except Exception:
-			log_error("Site Backup Exception", site=site)
 
 
 def poll_pending_jobs():
