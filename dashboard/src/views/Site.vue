@@ -34,7 +34,7 @@
 			</div>
 		</div>
 		<div class="px-4 sm:px-8" v-if="site">
-			<Tabs class="pb-32" :tabs="tabs">
+			<Tabs class="pb-8" :tabs="tabs">
 				<router-view v-bind="{ site }"></router-view>
 			</Tabs>
 		</div>
@@ -142,10 +142,9 @@ export default {
 				{ label: 'Analytics', route: 'analytics' },
 				{ label: 'Backup & Restore', route: 'database' },
 				{ label: 'Site Config', route: 'site-config' },
-				{ label: 'Activity', route: 'activity' },
 				{ label: 'Jobs', route: 'jobs', showRedDot: this.runningJob },
-				{ label: 'Site Logs', route: 'logs' },
-				{ label: 'Request Logs', route: 'request-logs' }
+				{ label: 'Logs', route: 'logs' },
+				{ label: 'Activity', route: 'activity' },
 			];
 
 			let tabsByStatus = {
@@ -156,7 +155,7 @@ export default {
 					'Site Config',
 					'Activity',
 					'Jobs',
-					'Site Logs',
+					'Logs',
 					'Request Logs'
 				],
 				Inactive: [
@@ -165,16 +164,16 @@ export default {
 					'Site Config',
 					'Activity',
 					'Jobs',
-					'Site Logs'
+					'Logs'
 				],
-				Pending: ['Overview', 'Jobs', 'Site Logs'],
+				Pending: ['Overview', 'Jobs', 'Logs'],
 				Broken: [
 					'Overview',
 					'Site Config',
 					'Backup & Restore',
 					'Activity',
 					'Jobs',
-					'Site Logs'
+					'Logs'
 				],
 				Suspended: ['Overview', 'Activity', 'Backup & Restore', 'Jobs', 'Plan']
 			};

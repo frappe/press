@@ -8,7 +8,7 @@
 				</Button>
 			</div>
 		</PageHeader>
-		<div class="px-4 sm:px-8">
+		<div class="px-4 py-4 sm:px-8">
 			<div
 				class="p-24 text-center"
 				v-if="$resources.sites.data && $resources.sites.data.length === 0"
