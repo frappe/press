@@ -6,7 +6,7 @@
 export default {
 	name: 'UserPrompts',
 	components: {
-		UpdateBillingAddress: () => import('@/components/UpdateBillingAddress')
+		UpdateBillingDetails: () => import('@/components/UpdateBillingDetails')
 	},
 	resources: {
 		prompts: {

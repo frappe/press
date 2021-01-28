@@ -29,7 +29,6 @@
   "use_backbone_ca",
   "stripe_settings_section",
   "stripe_account",
-  "create_stripe_plans",
   "stripe_product_id",
   "stripe_inr_plan_id",
   "stripe_usd_plan_id",
@@ -193,11 +192,6 @@
    "fieldtype": "Data",
    "label": "Stripe USD Plan ID",
    "read_only": 1
-  },
-  {
-   "fieldname": "create_stripe_plans",
-   "fieldtype": "Button",
-   "label": "Create Stripe Plans"
   },
   {
    "fieldname": "stripe_settings_section",
@@ -530,7 +524,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2020-12-10 10:53:57.337476",
+ "modified": "2021-01-22 18:24:46.847660",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
