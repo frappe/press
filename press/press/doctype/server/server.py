@@ -85,6 +85,22 @@ class Server(Document):
 			self.doctype, self.name, "_setup_server", queue="long", timeout=1200
 		)
 
+	def install_docker(self):
+		try:
+			ansible = Ansible(
+				playbook="docker.yml", server=self, variables={"private_ip": self.private_ip},
+			)
+			play = ansible.run()
+			self.reload()
+			if play.status == "Success":
+				self.status = "Active"
+			else:
+				self.status = "Broken"
+		except Exception:
+			self.status = "Broken"
+			log_error("Server - Docker Installation Exception", server=self.as_dict())
+		self.save()
+
 	def ping_ansible(self):
 		try:
 			ansible = Ansible(playbook="ping.yml", server=self)
