@@ -1,347 +1,346 @@
 {
-  "actions": [],
-  "allow_rename": 1,
-  "creation": "2019-12-09 12:35:51.941522",
-  "doctype": "DocType",
-  "editable_grid": 1,
-  "engine": "InnoDB",
-  "field_order": [
-    "subdomain",
-    "domain",
-    "status",
-    "status_before_update",
-    "server",
-    "bench",
-    "cluster",
-    "column_break_3",
-    "admin_password",
-    "setup_wizard_complete",
-    "group",
-    "billing",
-    "team",
-    "column_break_15",
-    "free",
-    "section_break_6",
-    "apps",
-    "configuration_section",
-    "host_name",
-    "config",
-    "configuration",
-    "_keys_removed_in_last_update",
-    "_site_usages",
-    "current_cpu_usage",
-    "current_database_usage",
-    "current_disk_usage",
-    "deploy_section",
-    "timezone",
-    "column_break_29",
-    "update",
-    "remote_files",
-    "remote_config_file",
-    "remote_database_file",
-    "column_break_34",
-    "remote_private_file",
-    "remote_public_file"
-  ],
-  "fields": [
-    {
-      "fetch_from": "bench.server",
-      "fetch_if_empty": 1,
-      "fieldname": "server",
-      "fieldtype": "Link",
-      "hide_days": 1,
-      "hide_seconds": 1,
-      "in_list_view": 1,
-      "in_standard_filter": 1,
-      "label": "Server",
-      "options": "Server",
-      "reqd": 1,
-      "set_only_once": 1
-    },
-    {
-      "fieldname": "bench",
-      "fieldtype": "Link",
-      "hide_days": 1,
-      "hide_seconds": 1,
-      "in_list_view": 1,
-      "in_standard_filter": 1,
-      "label": "Bench",
-      "options": "Bench",
-      "reqd": 1,
-      "set_only_once": 1
-    },
-    {
-      "default": "Pending",
-      "fieldname": "status",
-      "fieldtype": "Select",
-      "hide_days": 1,
-      "hide_seconds": 1,
-      "in_list_view": 1,
-      "in_standard_filter": 1,
-      "label": "Status",
-      "options": "Pending\nInstalling\nUpdating\nActive\nInactive\nBroken\nArchived\nSuspended",
-      "read_only": 1,
-      "reqd": 1
-    },
-    {
-      "fieldname": "admin_password",
-      "fieldtype": "Password",
-      "hide_days": 1,
-      "hide_seconds": 1,
-      "label": "Administrator Password"
-    },
-    {
-      "fieldname": "column_break_3",
-      "fieldtype": "Column Break",
-      "hide_days": 1,
-      "hide_seconds": 1
-    },
-    {
-      "fieldname": "section_break_6",
-      "fieldtype": "Section Break",
-      "hide_days": 1,
-      "hide_seconds": 1
-    },
-    {
-      "default": "{}",
-      "fieldname": "config",
-      "fieldtype": "Code",
-      "hide_days": 1,
-      "hide_seconds": 1,
-      "label": "Preview",
-      "options": "JSON",
-      "read_only": 1
-    },
-    {
-      "fieldname": "configuration_section",
-      "fieldtype": "Section Break",
-      "hide_days": 1,
-      "hide_seconds": 1,
-      "label": "Configuration"
-    },
-    {
-      "fieldname": "subdomain",
-      "fieldtype": "Data",
-      "hide_days": 1,
-      "hide_seconds": 1,
-      "label": "Subdomain",
-      "reqd": 1
-    },
-    {
-      "fieldname": "team",
-      "fieldtype": "Link",
-      "hide_days": 1,
-      "hide_seconds": 1,
-      "in_list_view": 1,
-      "in_standard_filter": 1,
-      "label": "Team",
-      "options": "Team"
-    },
-    {
-      "collapsible": 1,
-      "fieldname": "deploy_section",
-      "fieldtype": "Section Break",
-      "hide_days": 1,
-      "hide_seconds": 1,
-      "label": "Deploy"
-    },
-    {
-      "fieldname": "timezone",
-      "fieldtype": "Data",
-      "hide_days": 1,
-      "hide_seconds": 1,
-      "label": "Timezone"
-    },
-    {
-      "default": "0",
-      "fieldname": "setup_wizard_complete",
-      "fieldtype": "Check",
-      "hide_days": 1,
-      "hide_seconds": 1,
-      "label": "Setup Wizard Complete",
-      "read_only": 1
-    },
-    {
-      "fieldname": "billing",
-      "fieldtype": "Section Break",
-      "hide_days": 1,
-      "hide_seconds": 1,
-      "label": "Billing"
-    },
-    {
-      "default": "0",
-      "description": "If checked, this site's usage data won't be sent to Stripe",
-      "fieldname": "free",
-      "fieldtype": "Check",
-      "hide_days": 1,
-      "hide_seconds": 1,
-      "label": "Free Site"
-    },
-    {
-      "fieldname": "host_name",
-      "fieldtype": "Data",
-      "label": "Host Name"
-    },
-    {
-      "fieldname": "status_before_update",
-      "fieldtype": "Data",
-      "hidden": 1,
-      "label": "Status Before Update"
-    },
-    {
-      "collapsible": 1,
-      "fieldname": "remote_files",
-      "fieldtype": "Section Break",
-      "label": "Remote Files"
-    },
-    {
-      "fieldname": "remote_database_file",
-      "fieldtype": "Link",
-      "label": "Remote Database File",
-      "options": "Remote File"
-    },
-    {
-      "fieldname": "remote_private_file",
-      "fieldtype": "Link",
-      "label": "Remote Private File",
-      "options": "Remote File"
-    },
-    {
-      "fieldname": "remote_public_file",
-      "fieldtype": "Link",
-      "label": "Remote Public File",
-      "options": "Remote File"
-    },
-    {
-      "fieldname": "remote_config_file",
-      "fieldtype": "Link",
-      "label": "Remote Config File",
-      "options": "Remote File"
-    },
-    {
-      "fieldname": "configuration",
-      "fieldtype": "Table",
-      "label": "Configuration",
-      "options": "Site Config"
-    },
-    {
-      "fieldname": "_keys_removed_in_last_update",
-      "fieldtype": "Data",
-      "hidden": 1,
-      "label": "Keys Removed in Last Config Change"
-    },
-    {
-      "fieldname": "apps",
-      "fieldtype": "Table",
-      "hide_days": 1,
-      "hide_seconds": 1,
-      "label": "Apps",
-      "options": "Site App",
-      "reqd": 1
-    },
-    {
-      "fieldname": "domain",
-      "fieldtype": "Data",
-      "label": "Domain",
-      "set_only_once": 1
-    },
-    {
-      "fieldname": "_site_usages",
-      "fieldtype": "Data",
-      "hidden": 1,
-      "label": "Site Usage"
-    },
-    {
-      "fieldname": "current_cpu_usage",
-      "fieldtype": "Int",
-      "hidden": 1
-    },
-    {
-      "fieldname": "current_database_usage",
-      "fieldtype": "Int",
-      "hidden": 1
-    },
-    {
-      "fieldname": "current_disk_usage",
-      "fieldtype": "Int",
-      "hidden": 1
-    },
-    {
-      "fetch_from": "bench.cluster",
-      "fieldname": "cluster",
-      "fieldtype": "Link",
-      "label": "Cluster",
-      "options": "Cluster",
-      "read_only": 1,
-      "reqd": 1
-    },
-    {
-      "fetch_from": "bench.group",
-      "fieldname": "group",
-      "fieldtype": "Link",
-      "label": "Release Group",
-      "options": "Release Group",
-      "read_only": 1,
-      "reqd": 1
-    },
-    {
-      "fieldname": "column_break_15",
-      "fieldtype": "Column Break"
-    },
-    {
-      "fieldname": "column_break_29",
-      "fieldtype": "Column Break"
-    },
-    {
-      "fieldname": "column_break_34",
-      "fieldtype": "Column Break"
-    }
-  ],
-  "links": [],
-  "modified": "2021-01-20 15:56:05.732012",
-  "modified_by": "Administrator",
-  "module": "Press",
-  "name": "Site",
-  "owner": "Administrator",
-  "permissions": [
-    {
-      "create": 1,
-      "delete": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "read": 1,
-      "report": 1,
-      "role": "System Manager",
-      "share": 1,
-      "write": 1
-    },
-    {
-      "create": 1,
-      "delete": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "read": 1,
-      "report": 1,
-      "role": "Press Admin",
-      "share": 1,
-      "write": 1
-    },
-    {
-      "create": 1,
-      "delete": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "read": 1,
-      "report": 1,
-      "role": "Press Member",
-      "share": 1,
-      "write": 1
-    }
-  ],
-  "sort_field": "creation",
-  "sort_order": "DESC",
-  "track_changes": 1
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2019-12-09 12:35:51.941522",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "subdomain",
+  "domain",
+  "status",
+  "status_before_update",
+  "server",
+  "bench",
+  "cluster",
+  "column_break_3",
+  "admin_password",
+  "setup_wizard_complete",
+  "group",
+  "billing",
+  "team",
+  "column_break_15",
+  "free",
+  "section_break_6",
+  "apps",
+  "configuration_section",
+  "host_name",
+  "config",
+  "configuration",
+  "_keys_removed_in_last_update",
+  "_site_usages",
+  "current_cpu_usage",
+  "current_database_usage",
+  "current_disk_usage",
+  "deploy_section",
+  "timezone",
+  "column_break_29",
+  "remote_files",
+  "remote_config_file",
+  "remote_database_file",
+  "column_break_34",
+  "remote_private_file",
+  "remote_public_file"
+ ],
+ "fields": [
+  {
+   "fetch_from": "bench.server",
+   "fetch_if_empty": 1,
+   "fieldname": "server",
+   "fieldtype": "Link",
+   "hide_days": 1,
+   "hide_seconds": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Server",
+   "options": "Server",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "bench",
+   "fieldtype": "Link",
+   "hide_days": 1,
+   "hide_seconds": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Bench",
+   "options": "Bench",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "hide_days": 1,
+   "hide_seconds": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Pending\nInstalling\nUpdating\nActive\nInactive\nBroken\nArchived\nSuspended",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "admin_password",
+   "fieldtype": "Password",
+   "hide_days": 1,
+   "hide_seconds": 1,
+   "label": "Administrator Password"
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break",
+   "hide_days": 1,
+   "hide_seconds": 1
+  },
+  {
+   "fieldname": "section_break_6",
+   "fieldtype": "Section Break",
+   "hide_days": 1,
+   "hide_seconds": 1
+  },
+  {
+   "default": "{}",
+   "fieldname": "config",
+   "fieldtype": "Code",
+   "hide_days": 1,
+   "hide_seconds": 1,
+   "label": "Preview",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "configuration_section",
+   "fieldtype": "Section Break",
+   "hide_days": 1,
+   "hide_seconds": 1,
+   "label": "Configuration"
+  },
+  {
+   "fieldname": "subdomain",
+   "fieldtype": "Data",
+   "hide_days": 1,
+   "hide_seconds": 1,
+   "label": "Subdomain",
+   "reqd": 1
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "hide_days": 1,
+   "hide_seconds": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Team",
+   "options": "Team"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "deploy_section",
+   "fieldtype": "Section Break",
+   "hide_days": 1,
+   "hide_seconds": 1,
+   "label": "Deploy"
+  },
+  {
+   "fieldname": "timezone",
+   "fieldtype": "Data",
+   "hide_days": 1,
+   "hide_seconds": 1,
+   "label": "Timezone"
+  },
+  {
+   "default": "0",
+   "fieldname": "setup_wizard_complete",
+   "fieldtype": "Check",
+   "hide_days": 1,
+   "hide_seconds": 1,
+   "label": "Setup Wizard Complete",
+   "read_only": 1
+  },
+  {
+   "fieldname": "billing",
+   "fieldtype": "Section Break",
+   "hide_days": 1,
+   "hide_seconds": 1,
+   "label": "Billing"
+  },
+  {
+   "default": "0",
+   "description": "If checked, this site's usage data won't be sent to Stripe",
+   "fieldname": "free",
+   "fieldtype": "Check",
+   "hide_days": 1,
+   "hide_seconds": 1,
+   "label": "Free Site"
+  },
+  {
+   "fieldname": "host_name",
+   "fieldtype": "Data",
+   "label": "Host Name"
+  },
+  {
+   "fieldname": "status_before_update",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Status Before Update"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "remote_files",
+   "fieldtype": "Section Break",
+   "label": "Remote Files"
+  },
+  {
+   "fieldname": "remote_database_file",
+   "fieldtype": "Link",
+   "label": "Remote Database File",
+   "options": "Remote File"
+  },
+  {
+   "fieldname": "remote_private_file",
+   "fieldtype": "Link",
+   "label": "Remote Private File",
+   "options": "Remote File"
+  },
+  {
+   "fieldname": "remote_public_file",
+   "fieldtype": "Link",
+   "label": "Remote Public File",
+   "options": "Remote File"
+  },
+  {
+   "fieldname": "remote_config_file",
+   "fieldtype": "Link",
+   "label": "Remote Config File",
+   "options": "Remote File"
+  },
+  {
+   "fieldname": "configuration",
+   "fieldtype": "Table",
+   "label": "Configuration",
+   "options": "Site Config"
+  },
+  {
+   "fieldname": "_keys_removed_in_last_update",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Keys Removed in Last Config Change"
+  },
+  {
+   "fieldname": "apps",
+   "fieldtype": "Table",
+   "hide_days": 1,
+   "hide_seconds": 1,
+   "label": "Apps",
+   "options": "Site App",
+   "reqd": 1
+  },
+  {
+   "fieldname": "domain",
+   "fieldtype": "Data",
+   "label": "Domain",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "_site_usages",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Site Usage"
+  },
+  {
+   "fieldname": "current_cpu_usage",
+   "fieldtype": "Int",
+   "hidden": 1
+  },
+  {
+   "fieldname": "current_database_usage",
+   "fieldtype": "Int",
+   "hidden": 1
+  },
+  {
+   "fieldname": "current_disk_usage",
+   "fieldtype": "Int",
+   "hidden": 1
+  },
+  {
+   "fetch_from": "bench.cluster",
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "label": "Cluster",
+   "options": "Cluster",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fetch_from": "bench.group",
+   "fieldname": "group",
+   "fieldtype": "Link",
+   "label": "Release Group",
+   "options": "Release Group",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_15",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_29",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_34",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "links": [],
+ "modified": "2021-01-28 11:03:56.559449",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Site",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "track_changes": 1
 }
