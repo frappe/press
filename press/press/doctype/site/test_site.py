@@ -167,7 +167,22 @@ class TestSite(unittest.TestCase):
 		self.assertFalse(frappe.db.exists("Site Domain", old_name))
 		self.assertTrue(frappe.db.exists("Site Domain", new_name))
 
-	# update host_name if default doc (can be done in agent maybe?)
-	# add agent job step and update fixture
-	# test other actions can't be performed during rename
-	# test rename doesn't leave site in inconsistent state
+	def test_site_becomes_active_after_successful_rename(self):
+		"""Ensure site becomes active after successful rename."""
+		site = create_test_site("old-name")
+		new_name = "new-name.fc.dev"
+		site.rename(new_name)
+
+		rename_job = frappe.get_last_doc("Agent Job", {"job_type": "Rename Site"})
+		rename_upstream_job = frappe.get_last_doc(
+			"Agent Job", {"job_type": "Rename Site on Upstream"}
+		)
+		rename_job.status = "Success"
+		rename_upstream_job.status = "Success"
+		rename_job.save()
+		rename_upstream_job.save()
+
+		process_rename_site_job_update(rename_job)
+
+		site = frappe.get_doc("Site", new_name)
+		self.assertEqual(site.status, "Active")
