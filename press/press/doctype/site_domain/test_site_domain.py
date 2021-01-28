@@ -9,6 +9,7 @@ from unittest.mock import Mock, patch
 import frappe
 
 from press.agent import Agent
+from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.site.site import site_cleanup_after_archive
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.site_domain.site_domain import SiteDomain
@@ -32,7 +33,7 @@ def create_test_site_domain(
 		).insert(ignore_if_duplicate=True)
 
 
-@patch.object(Agent, "create_agent_job", new=Mock(return_value={"job": 1}))
+@patch.object(AgentJob, "after_insert", new=Mock())
 class TestSiteDomain(unittest.TestCase):
 	"""Tests for Site Domain Document methods."""
 
@@ -226,3 +227,15 @@ class TestSiteDomain(unittest.TestCase):
 		with patch.object(SiteDomain, "create_remove_host_agent_request") as mock_remove_host:
 			def_domain.on_trash()
 		mock_remove_host.assert_called()
+
+	def test_domains_other_than_default_get_sent_for_rename(self):
+		"""Ensure site domains are sent for rename."""
+		site = create_test_site(self.site_subdomain)
+		site_domain1 = create_test_site_domain(site.name, "sitedomain1.com")
+		site_domain2 = create_test_site_domain(site.name, "sitedomain2.com")
+		new_name = "new-name.fc.dev"
+		with patch.object(Agent, "rename_upstream_site") as mock_rename_upstream_site:
+			site.rename(new_name)
+		args, kwargs = mock_rename_upstream_site.call_args
+		from collections import Counter
+		self.assertEqual(Counter(args[-1]), Counter([site_domain1.name, site_domain2.name]))
