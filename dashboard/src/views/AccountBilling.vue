@@ -14,7 +14,7 @@
 				<DescriptionList class="px-6 py-4" :items="subscriptionItems" />
 				<div
 					class="px-6 pb-4"
-					v-if="!$resources.billingDetails.loading && !paymentMethodAdded"
+					v-if="!$resources.billingDetails.loading && !paymentMethodAdded && !$account.team.erpnext_partner"
 				>
 					<Button type="primary" route="/welcome">
 						Add Billing Information
@@ -121,7 +121,6 @@
 			</SectionCard>
 		</Section>
 		<Section
-			v-if="paymentMethods.data && paymentMethods.data.length > 0"
 			title="Payment Methods"
 			description="Cards you have added for automatic billing"
 		>
