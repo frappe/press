@@ -12,7 +12,6 @@ import subprocess
 from subprocess import Popen
 
 # import json
-import regex
 
 import dockerfile
 import frappe
@@ -230,7 +229,7 @@ class DeployCandidate(Document):
 				# Parse first line and add step to steps dict
 				if step_index not in steps and line.startswith("[stage-"):
 					name = line.split("]", maxsplit=1)[1].strip()
-					match = regex.search("`#stage-(.*)`", name)
+					match = re.search("`#stage-(.*)`", name)
 					if name.startswith("RUN") and match:
 						flags = dockerfile.parse_string(name)[0].flags
 						if flags:
