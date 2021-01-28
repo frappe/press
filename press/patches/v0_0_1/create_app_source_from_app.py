@@ -31,50 +31,47 @@ def execute():
 				versions = set(
 					frappe.get_all("Release Group", {"name": ("in", groups)}, pluck="version")
 				)
-			if versions:
-				source = {
-					"doctype": "App Source",
-					"app": app.name,
-					"app_title": app.title,
-					"frappe": app.frappe,
-					"enabled": app.enabled,
-					"repository_url": app.url,
-					"repository": app.repo,
-					"repository_owner": app.repo_owner,
-					"branch": app.branch,
-					"github_installation_id": app.installation,
-					"public": app.public,
-					"team": app.team,
-					"versions": [{"version": version} for version in versions],
-				}
-				source = frappe.get_doc(source)
-				source.set_new_name()
-				source.set_parent_in_children()
-				source.db_insert()
+			if not versions:
+				continue
+			source = {
+				"doctype": "App Source",
+				"app": app.name,
+				"app_title": app.title,
+				"frappe": app.frappe,
+				"enabled": app.enabled,
+				"repository_url": app.url,
+				"repository": app.repo,
+				"repository_owner": app.repo_owner,
+				"branch": app.branch,
+				"github_installation_id": app.installation,
+				"public": app.public,
+				"team": app.team,
+				"versions": [{"version": version} for version in versions],
+			}
+			source = frappe.get_doc(source)
+			source.name = "TEMP-SOURCE"
+			source.set_parent_in_children()
+			source.db_insert()
 
-				for child in source.get_all_children():
-					child.db_insert()
+			for child in source.get_all_children():
+				child.db_insert()
 
-				frappe.db.set_value("App Release", {"app": app.name}, "source", source.name)
-				frappe.db.set_value("Bench App", {"app": app.name}, "source", source.name)
-				frappe.db.set_value(
-					"Deploy Candidate App", {"app": app.name}, "source", source.name
-				)
-				frappe.db.set_value("Release Group App", {"app": app.name}, "source", source.name)
-				frappe.db.set_value(
-					"Release Group App", {"app": app.name}, "title", source.app_title
-				)
+			frappe.db.set_value("App Release", {"app": app.name}, "source", source.name)
+			frappe.db.set_value("Bench App", {"app": app.name}, "source", source.name)
+			frappe.db.set_value("Deploy Candidate App", {"app": app.name}, "source", source.name)
+			frappe.db.set_value("Release Group App", {"app": app.name}, "source", source.name)
+			frappe.db.set_value("Release Group App", {"app": app.name}, "title", app.title)
 
-				existing = frappe.db.exists("App", app.scrubbed, cache=False)
-				if existing and existing == app.scrubbed:
-					frappe.rename_doc("App", app.name, app.scrubbed, merge=True)
-				else:
-					frappe.rename_doc("App", app.name, app.scrubbed)
+			existing = frappe.db.exists("App", app.scrubbed, cache=False)
+			if existing and existing == app.scrubbed:
+				frappe.rename_doc("App", app.name, app.scrubbed, merge=True)
+			else:
+				frappe.rename_doc("App", app.name, app.scrubbed)
 
-				old_source_name = source.name
-				source.reload()
-				source.autoname()
-				frappe.rename_doc("App Source", old_source_name, source.name)
+			old_source_name = source.name
+			source.reload()
+			source.autoname()
+			frappe.rename_doc("App Source", old_source_name, source.name)
 
 
 def delete():
