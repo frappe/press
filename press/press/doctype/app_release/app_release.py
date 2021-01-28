@@ -105,13 +105,31 @@ class AppRelease(Document):
 		releases = frappe.get_all(
 			"App Release", {"app": self.app, "source": self.source, "name": ("!=", self.name)},
 		)
+		releases = frappe.db.sql(
+			"""
+			SELECT
+				DISTINCT(app.release)
+			FROM
+				`tabBench` bench
+			LEFT JOIN
+				`tabBench App` app
+			ON
+				bench.name = app.parent
+			WHERE
+				bench.status != "Archived" AND
+				app.source = %s AND
+				app.release != %s
+		""",
+			(self.source, self.name),
+			as_dict=True,
+		)
 		for release in releases:
 			difference = frappe.get_doc(
 				{
 					"doctype": "App Release Difference",
 					"app": self.app,
 					"source": self.source,
-					"source_release": release.name,
+					"source_release": release.release,
 					"destination_release": self.name,
 				}
 			)
