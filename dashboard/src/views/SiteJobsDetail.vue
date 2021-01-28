@@ -1,14 +1,10 @@
 <template>
-	<div
-		class="flex-col w-full min-h-full md:border-l md:w-2/3"
-		:class="job ? 'flex' : 'hidden md:flex'"
-		:style="{ height: 'calc(100vh - 16rem)' }"
-	>
+	<CardDetails :showDetails="job">
 		<div class="px-6 py-5">
 			<template v-if="job">
-				<div class="flex items-center space-x-3">
+				<div class="flex items-center">
 					<Button
-						class="md:hidden"
+						class="mr-3 md:hidden"
 						@click="$router.back()"
 						icon="chevron-left"
 					/>
@@ -90,6 +86,7 @@
 				<div :class="index == job.steps.length - 1 ? 'pb-4' : 'pb-2'">
 					<div
 						class="ml-4 px-2 py-2.5 font-mono text-xs text-gray-900 bg-gray-100 rounded-md"
+						:style="{ width: viewportWidth < 768 ? 'calc(100vw - 6rem)' : '' }"
 					>
 						<div class="overflow-auto">
 							<pre>{{ step.output || 'No output' }}</pre>
@@ -98,12 +95,15 @@
 				</div>
 			</details>
 		</div>
-	</div>
+	</CardDetails>
 </template>
 <script>
+import CardDetails from '@/components/CardDetails.vue';
 export default {
 	name: 'SiteJobsDetail',
 	props: ['jobName'],
+	components: { CardDetails },
+	inject: ['viewportWidth'],
 	resources: {
 		job() {
 			return {
