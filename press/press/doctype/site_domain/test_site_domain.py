@@ -238,4 +238,5 @@ class TestSiteDomain(unittest.TestCase):
 			site.rename(new_name)
 		args, kwargs = mock_rename_upstream_site.call_args
 		from collections import Counter
+
 		self.assertEqual(Counter(args[-1]), Counter([site_domain1.name, site_domain2.name]))
