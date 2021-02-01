@@ -730,7 +730,7 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-06-18 09:02:49.972271",
+  "modified": "2021-02-01 16:31:25.999308",
   "name": "Update Bench Configuration",
   "parent": null,
   "parentfield": null,
@@ -748,25 +748,19 @@
     "parent": "Update Bench Configuration",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
-    "step_name": "Bench Setup Supervisor"
-   },
-   {
-    "parent": "Update Bench Configuration",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Update Supervisor"
-   },
-   {
-    "parent": "Update Bench Configuration",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
     "step_name": "Bench Setup NGINX"
    },
    {
     "parent": "Update Bench Configuration",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
-    "step_name": "Reload NGINX"
+    "step_name": "Generate Docker Compose File"
+   },
+   {
+    "parent": "Update Bench Configuration",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Deploy Bench"
    }
   ]
  },

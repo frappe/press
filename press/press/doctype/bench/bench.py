@@ -83,7 +83,7 @@ class Bench(Document):
 
 	def update_bench_config(self):
 		old = self.get_doc_before_save()
-		if old and old.config != self.config:
+		if old and (old.config != self.config or old.bench_config != self.bench_config):
 			agent = Agent(self.server)
 			agent.update_bench_config(self)
 
@@ -210,27 +210,33 @@ def scale_workers():
 	# TODO: Fix this in agent. Lock commands that can't be run simultaneously
 	benches = frappe.get_all(
 		"Bench",
-		fields=["name", "candidate", "workers", "gunicorn_workers"],
+		fields=["name", "candidate", "background_workers", "gunicorn_workers"],
 		filters={"status": "Active", "auto_scale_workers": True},
 	)
 	for bench in benches:
 		site_count = frappe.db.count("Site", {"bench": bench.name, "status": "Active"})
 		if site_count <= 25:
-			workers, gunicorn_workers = 1, 2
+			background_workers, gunicorn_workers = 1, 2
 		elif site_count <= 50:
-			workers, gunicorn_workers = 2, 4
+			background_workers, gunicorn_workers = 2, 4
 		elif site_count <= 75:
-			workers, gunicorn_workers = 3, 6
+			background_workers, gunicorn_workers = 3, 6
 		elif site_count <= 100:
-			workers, gunicorn_workers = 4, 8
+			background_workers, gunicorn_workers = 4, 8
 		elif site_count <= 150:
-			workers, gunicorn_workers = 6, 8
+			background_workers, gunicorn_workers = 6, 8
 		else:
-			workers, gunicorn_workers = 8, 8
+			background_workers, gunicorn_workers = 8, 8
 
-		if (bench.workers, bench.gunicorn_workers) != (workers, gunicorn_workers):
+		if (bench.background_workers, bench.gunicorn_workers) != (
+			background_workers,
+			gunicorn_workers,
+		):
 			bench = frappe.get_doc("Bench", bench.name)
-			bench.workers, bench.gunicorn_workers = workers, gunicorn_workers
+			bench.background_workers, bench.gunicorn_workers = (
+				background_workers,
+				gunicorn_workers,
+			)
 			bench.save()
 			return
 
