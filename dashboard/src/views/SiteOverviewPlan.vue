@@ -52,10 +52,13 @@
 				</p>
 			</div>
 		</div>
-		<div class="flex mt-4">
-			<div class="w-1/3" v-for="d in usage" :key="d.label">
-				<div class="text-base text-gray-600">{{ d.label }}</div>
-				<div class="text-lg font-medium text-gray-900">{{ d.value }}</div>
+		<div class="grid grid-cols-3 gap-12 mt-4">
+			<div v-for="d in usage" :key="d.label">
+				<ProgressArc :percentage="d.percentage" />
+				<div class="mt-2 text-base font-medium text-gray-900">
+					{{ d.label }} {{ isNaN(d.percentage) ? '' : `(${d.percentage}%)` }}
+				</div>
+				<div class="mt-1 text-xs text-gray-600">{{ d.value }}</div>
 			</div>
 		</div>
 
@@ -79,11 +82,13 @@
 </template>
 <script>
 import SitePlansTable from '@/components/SitePlansTable';
+import ProgressArc from '@/components/ProgressArc.vue';
 export default {
 	name: 'SiteOverviewPlan',
 	props: ['site', 'plan'],
 	components: {
-		SitePlansTable
+		SitePlansTable,
+		ProgressArc
 	},
 	data() {
 		return {
@@ -146,19 +151,30 @@ export default {
 						this.plan.current_plan.cpu_time_per_day,
 						'hour',
 						'hours'
-					)}`
+					)}`,
+					percentage:
+						(this.plan.total_cpu_usage_hours /
+							this.plan.current_plan.cpu_time_per_day) * 100
 				},
 				{
 					label: 'Database',
 					value: `${this.plan.total_database_usage} / ${f(
 						this.plan.current_plan.max_database_usage
-					)}`
+					)}`,
+					percentage:
+						(this.plan.total_database_usage /
+							this.plan.current_plan.max_database_usage) *
+						100
 				},
 				{
 					label: 'Storage',
 					value: `${this.plan.total_storage_usage} / ${f(
 						this.plan.current_plan.max_storage_usage
-					)}`
+					)}`,
+					percentage:
+						(this.plan.total_storage_usage /
+							this.plan.current_plan.max_storage_usage) *
+						100
 				}
 			];
 		}
