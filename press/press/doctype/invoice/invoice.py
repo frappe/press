@@ -117,9 +117,11 @@ class Invoice(Document):
 			intersecting_invoices = frappe.db.get_all(
 				"Invoice",
 				filters={
-					"period_end": (">=", self.period_start),
-					"team": self.team,
 					"docstatus": ("<", 2),
+					"name": ("!=", self.name),
+					"period_start": self.period_start,
+					"period_end": self.period_end,
+					"team": self.team,
 				},
 				pluck="name",
 			)
