@@ -1,649 +1,643 @@
 {
- "actions": [],
- "creation": "2020-02-03 18:45:44.169074",
- "doctype": "DocType",
- "editable_grid": 1,
- "engine": "InnoDB",
- "field_order": [
-  "domain",
-  "bench_configuration",
-  "trial_sites_count",
-  "dns_section",
-  "dns_provider",
-  "column_break_6",
-  "aws_access_key_id",
-  "aws_secret_access_key",
-  "lets_encrypt_section",
-  "certbot_directory",
-  "webroot_directory",
-  "column_break_15",
-  "eff_registration_email",
-  "use_staging_ca",
-  "tls_section",
-  "rsa_key_size",
-  "column_break_11",
-  "wildcard_tls_certificate",
-  "backbone_section",
-  "backbone_directory",
-  "column_break_20",
-  "backbone_intermediate_ca",
-  "use_backbone_ca",
-  "stripe_settings_section",
-  "stripe_account",
-  "create_stripe_plans",
-  "stripe_product_id",
-  "stripe_inr_plan_id",
-  "stripe_usd_plan_id",
-  "create_stripe_webhook",
-  "stripe_webhook_endpoint_id",
-  "stripe_webhook_secret",
-  "column_break_26",
-  "free_credits_inr",
-  "free_credits_usd",
-  "erpnext_authentication",
-  "erpnext_url",
-  "erpnext_api_key",
-  "erpnext_api_secret",
-  "column_break_38",
-  "erpnext_username",
-  "erpnext_password",
-  "frappeio_authentication_section",
-  "frappe_url",
-  "frappe_username",
-  "frappe_password",
-  "offsite_backups_section",
-  "offsite_backups_provider",
-  "aws_s3_bucket",
-  "backup_rotation_scheme",
-  "offsite_backups_count",
-  "column_break_35",
-  "offsite_backups_access_key_id",
-  "offsite_backups_secret_access_key",
-  "section_break_33",
-  "create_github_app",
-  "github_app_id",
-  "github_app_client_id",
-  "github_app_client_secret",
-  "column_break_36",
-  "github_app_public_link",
-  "github_webhook_secret",
-  "github_access_token",
-  "section_break_41",
-  "github_app_private_key",
-  "section_break_59",
-  "docker_registry_url",
-  "docker_registry_namespace",
-  "column_break_64",
-  "docker_registry_username",
-  "docker_registry_password",
-  "docker_build_section",
-  "clone_directory",
-  "build_directory",
-  "column_break_66",
-  "code_server",
-  "code_server_password",
-  "auto_update_section",
-  "auto_update_queue_size",
-  "backups_section",
-  "backup_interval",
-  "remote_files_section",
-  "remote_uploads_bucket",
-  "remote_link_expiry",
-  "column_break_51",
-  "remote_access_key_id",
-  "remote_secret_access_key",
-  "telegram_section",
-  "telegram_chat_id",
-  "column_break_65",
-  "telegram_bot_token",
-  "product_documentation_section",
-  "publish_docs",
-  "storage_and_disk_limits_section",
-  "enforce_storage_limits"
- ],
- "fields": [
-  {
-   "default": "{}",
-   "fieldname": "bench_configuration",
-   "fieldtype": "Code",
-   "in_list_view": 1,
-   "label": "Bench Confguration",
-   "options": "JSON",
-   "reqd": 1
-  },
-  {
-   "fieldname": "domain",
-   "fieldtype": "Data",
-   "label": "Domain",
-   "reqd": 1
-  },
-  {
-   "collapsible": 1,
-   "fieldname": "dns_section",
-   "fieldtype": "Section Break",
-   "label": "DNS"
-  },
-  {
-   "fieldname": "aws_access_key_id",
-   "fieldtype": "Data",
-   "label": "AWS Access Key ID"
-  },
-  {
-   "fieldname": "aws_secret_access_key",
-   "fieldtype": "Password",
-   "label": "AWS Secret Access Key"
-  },
-  {
-   "default": "AWS Route 53",
-   "fieldname": "dns_provider",
-   "fieldtype": "Select",
-   "label": "DNS Provider",
-   "options": "AWS Route 53",
-   "reqd": 1
-  },
-  {
-   "fieldname": "column_break_6",
-   "fieldtype": "Column Break"
-  },
-  {
-   "default": "2048",
-   "fieldname": "rsa_key_size",
-   "fieldtype": "Select",
-   "label": "RSA Key Size",
-   "options": "2048\n3072\n4096",
-   "reqd": 1
-  },
-  {
-   "fieldname": "eff_registration_email",
-   "fieldtype": "Data",
-   "label": "EFF Registration Email"
-  },
-  {
-   "fieldname": "column_break_11",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "webroot_directory",
-   "fieldtype": "Data",
-   "label": "Webroot Directory"
-  },
-  {
-   "fieldname": "certbot_directory",
-   "fieldtype": "Data",
-   "label": "Certbot Directory"
-  },
-  {
-   "collapsible": 1,
-   "fieldname": "tls_section",
-   "fieldtype": "Section Break",
-   "label": "TLS"
-  },
-  {
-   "fieldname": "wildcard_tls_certificate",
-   "fieldtype": "Link",
-   "label": "Wildcard TLS Certificate",
-   "options": "TLS Certificate"
-  },
-  {
-   "fieldname": "stripe_account",
-   "fieldtype": "Link",
-   "label": "Stripe Account",
-   "options": "Stripe Settings"
-  },
-  {
-   "fieldname": "stripe_product_id",
-   "fieldtype": "Data",
-   "label": "Stripe Product ID",
-   "read_only": 1
-  },
-  {
-   "fieldname": "stripe_inr_plan_id",
-   "fieldtype": "Data",
-   "label": "Stripe INR Plan ID",
-   "read_only": 1
-  },
-  {
-   "fieldname": "stripe_usd_plan_id",
-   "fieldtype": "Data",
-   "label": "Stripe USD Plan ID",
-   "read_only": 1
-  },
-  {
-   "fieldname": "create_stripe_plans",
-   "fieldtype": "Button",
-   "label": "Create Stripe Plans"
-  },
-  {
-   "collapsible": 1,
-   "fieldname": "stripe_settings_section",
-   "fieldtype": "Section Break",
-   "label": "Stripe Settings"
-  },
-  {
-   "fieldname": "stripe_webhook_secret",
-   "fieldtype": "Data",
-   "label": "Stripe Webhook Secret",
-   "read_only": 1
-  },
-  {
-   "fieldname": "stripe_webhook_endpoint_id",
-   "fieldtype": "Data",
-   "label": "Stripe Webhook Endpoint ID",
-   "read_only": 1
-  },
-  {
-   "fieldname": "create_stripe_webhook",
-   "fieldtype": "Button",
-   "label": "Create Stripe Webhook"
-  },
-  {
-   "default": "1",
-   "fieldname": "trial_sites_count",
-   "fieldtype": "Int",
-   "label": "Number of Sites in Trial"
-  },
-  {
-   "fieldname": "column_break_26",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "free_credits_inr",
-   "fieldtype": "Currency",
-   "label": "Credits on Signup (INR)",
-   "options": "INR"
-  },
-  {
-   "fieldname": "free_credits_usd",
-   "fieldtype": "Currency",
-   "label": "Credits on Signup (USD)",
-   "options": "USD"
-  },
-  {
-   "collapsible": 1,
-   "fieldname": "erpnext_authentication",
-   "fieldtype": "Section Break",
-   "label": "ERPNext Authentication"
-  },
-  {
-   "fieldname": "erpnext_api_key",
-   "fieldtype": "Data",
-   "label": "ERPNext API Key"
-  },
-  {
-   "fieldname": "erpnext_api_secret",
-   "fieldtype": "Password",
-   "label": "ERPNext API Secret"
-  },
-  {
-   "fieldname": "erpnext_url",
-   "fieldtype": "Data",
-   "label": "ERPNext URL"
-  },
-  {
-   "collapsible": 1,
-   "fieldname": "offsite_backups_section",
-   "fieldtype": "Section Break",
-   "label": "Offsite Backups"
-  },
-  {
-   "fieldname": "column_break_35",
-   "fieldtype": "Column Break"
-  },
-  {
-   "default": "AWS S3",
-   "fieldname": "offsite_backups_provider",
-   "fieldtype": "Select",
-   "label": "Backup Provider",
-   "options": "AWS S3"
-  },
-  {
-   "fieldname": "offsite_backups_access_key_id",
-   "fieldtype": "Data",
-   "label": "Access Key ID"
-  },
-  {
-   "fieldname": "offsite_backups_secret_access_key",
-   "fieldtype": "Password",
-   "label": "Secret Access Key"
-  },
-  {
-   "fieldname": "aws_s3_bucket",
-   "fieldtype": "Data",
-   "label": "Bucket Name"
-  },
-  {
-   "fieldname": "github_app_private_key",
-   "fieldtype": "Code",
-   "hidden": 1,
-   "label": "GitHub App Private Key",
-   "read_only": 1
-  },
-  {
-   "collapsible": 1,
-   "fieldname": "section_break_33",
-   "fieldtype": "Section Break",
-   "label": "GitHub"
-  },
-  {
-   "fieldname": "github_webhook_secret",
-   "fieldtype": "Data",
-   "label": "GitHub Webhook Secret",
-   "read_only": 1
-  },
-  {
-   "fieldname": "github_app_id",
-   "fieldtype": "Data",
-   "label": "GitHub App ID",
-   "read_only": 1
-  },
-  {
-   "fieldname": "github_app_client_id",
-   "fieldtype": "Data",
-   "label": "GitHub App Client ID",
-   "read_only": 1
-  },
-  {
-   "fieldname": "github_app_client_secret",
-   "fieldtype": "Data",
-   "label": "GitHub App Client Secret",
-   "read_only": 1
-  },
-  {
-   "fieldname": "github_app_public_link",
-   "fieldtype": "Data",
-   "label": "GitHub App Public Link",
-   "read_only": 1
-  },
-  {
-   "fieldname": "clone_directory",
-   "fieldtype": "Data",
-   "label": "Clone Directory"
-  },
-  {
-   "fieldname": "code_server",
-   "fieldtype": "Data",
-   "label": "Code Server"
-  },
-  {
-   "fieldname": "column_break_36",
-   "fieldtype": "Column Break"
-  },
-  {
-   "collapsible": 1,
-   "fieldname": "section_break_41",
-   "fieldtype": "Section Break",
-   "hide_border": 1
-  },
-  {
-   "default": "4",
-   "fieldname": "auto_update_queue_size",
-   "fieldtype": "Int",
-   "label": "Auto Update Queue Size"
-  },
-  {
-   "collapsible": 1,
-   "fieldname": "auto_update_section",
-   "fieldtype": "Section Break",
-   "label": "Auto Update"
-  },
-  {
-   "fieldname": "code_server_password",
-   "fieldtype": "Data",
-   "label": "Code Server Password"
-  },
-  {
-   "collapsible": 1,
-   "fieldname": "backups_section",
-   "fieldtype": "Section Break",
-   "label": "Backups"
-  },
-  {
-   "fieldname": "backup_interval",
-   "fieldtype": "Int",
-   "label": "Backup Interval"
-  },
-  {
-   "collapsible": 1,
-   "fieldname": "remote_files_section",
-   "fieldtype": "Section Break",
-   "label": "Remote Files"
-  },
-  {
-   "fieldname": "remote_uploads_bucket",
-   "fieldtype": "Data",
-   "label": "Bucket Name"
-  },
-  {
-   "fieldname": "remote_link_expiry",
-   "fieldtype": "Int",
-   "label": "Link Expiry"
-  },
-  {
-   "fieldname": "remote_access_key_id",
-   "fieldtype": "Data",
-   "label": "Remote Access Key ID"
-  },
-  {
-   "fieldname": "remote_secret_access_key",
-   "fieldtype": "Password",
-   "label": "Remote Secret Access Key"
-  },
-  {
-   "fieldname": "column_break_51",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "erpnext_username",
-   "fieldtype": "Data",
-   "label": "ERPNext Username"
-  },
-  {
-   "fieldname": "erpnext_password",
-   "fieldtype": "Password",
-   "label": "ERPNext Password"
-  },
-  {
-   "depends_on": "eval:doc.backup_rotation_scheme==\"FIFO\"",
-   "description": "The max number of Offsite backups that will be retained at any given time (for each site)",
-   "fieldname": "offsite_backups_count",
-   "fieldtype": "Int",
-   "label": "Total Backups Count"
-  },
-  {
-   "collapsible": 1,
-   "fieldname": "telegram_section",
-   "fieldtype": "Section Break",
-   "label": "Telegram"
-  },
-  {
-   "fieldname": "telegram_chat_id",
-   "fieldtype": "Data",
-   "label": "Telegram Chat ID"
-  },
-  {
-   "fieldname": "telegram_bot_token",
-   "fieldtype": "Data",
-   "label": "Telegram Bot Token"
-  },
-  {
-   "fieldname": "column_break_65",
-   "fieldtype": "Column Break"
-  },
-  {
-   "default": "0",
-   "fieldname": "publish_docs",
-   "fieldtype": "Check",
-   "label": "Published"
-  },
-  {
-   "collapsible": 1,
-   "fieldname": "product_documentation_section",
-   "fieldtype": "Section Break",
-   "label": "Product Documentation"
-  },
-  {
-   "fieldname": "backbone_intermediate_ca",
-   "fieldtype": "Link",
-   "label": "Backbone Intermediate CA",
-   "options": "Certificate Authority"
-  },
-  {
-   "collapsible": 1,
-   "fieldname": "lets_encrypt_section",
-   "fieldtype": "Section Break",
-   "label": "Let's Encrypt"
-  },
-  {
-   "collapsible": 1,
-   "fieldname": "backbone_section",
-   "fieldtype": "Section Break",
-   "label": "Backbone"
-  },
-  {
-   "fieldname": "backbone_directory",
-   "fieldtype": "Data",
-   "label": "Backbone Directory"
-  },
-  {
-   "fieldname": "column_break_15",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "column_break_20",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "column_break_38",
-   "fieldtype": "Column Break"
-  },
-  {
-   "default": "0",
-   "fieldname": "use_backbone_ca",
-   "fieldtype": "Check",
-   "label": "Use Backbone CA"
-  },
-  {
-   "fieldname": "frappeio_authentication_section",
-   "fieldtype": "Section Break",
-   "label": "Frappe.io Authentication"
-  },
-  {
-   "fieldname": "frappe_username",
-   "fieldtype": "Data",
-   "label": "Username"
-  },
-  {
-   "fieldname": "frappe_password",
-   "fieldtype": "Password",
-   "label": "Password"
-  },
-  {
-   "fieldname": "frappe_url",
-   "fieldtype": "Data",
-   "label": "URL"
-  },
-  {
-   "collapsible": 1,
-   "fieldname": "section_break_59",
-   "fieldtype": "Section Break",
-   "label": "Docker Registry"
-  },
-  {
-   "fieldname": "build_directory",
-   "fieldtype": "Data",
-   "label": "Build Directory"
-  },
-  {
-   "depends_on": "eval: !doc.github_app_id",
-   "fieldname": "create_github_app",
-   "fieldtype": "Button",
-   "label": "Create GitHub App",
-   "mandatory_depends_on": "eval"
-  },
-  {
-   "fieldname": "github_access_token",
-   "fieldtype": "Data",
-   "label": "GitHub Access Token"
-  },
-  {
-   "fieldname": "docker_registry_url",
-   "fieldtype": "Data",
-   "label": "Docker Registry URL"
-  },
-  {
-   "fieldname": "column_break_66",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "docker_registry_username",
-   "fieldtype": "Data",
-   "label": "Docker Registry Username"
-  },
-  {
-   "fieldname": "docker_registry_password",
-   "fieldtype": "Data",
-   "label": "Docker Registry Password"
-  },
-  {
-   "default": "0",
-   "fieldname": "use_staging_ca",
-   "fieldtype": "Check",
-   "label": "Use Staging CA"
-  },
-  {
-   "fieldname": "docker_registry_namespace",
-   "fieldtype": "Data",
-   "label": "Docker Registry Namespace"
-  },
-  {
-   "fieldname": "column_break_64",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "docker_build_section",
-   "fieldtype": "Section Break",
-   "label": "Docker Build"
-  },
-  {
-   "fieldname": "storage_and_disk_limits_section",
-   "fieldtype": "Section Break",
-   "label": "Storage and Disk Limits"
-  },
-  {
-   "default": "0",
-   "description": "Setting this to true will start suspending sites that cross the Site Usages with respect to their existing plans.",
-   "fieldname": "enforce_storage_limits",
-   "fieldtype": "Check",
-   "label": "Enforce Storage and Disk Limits"
-  },
-  {
-   "fieldname": "backup_rotation_scheme",
-   "fieldtype": "Select",
-   "label": "Backup Rotation Scheme",
-   "options": "FIFO\nGrandfather-father-son"
-  }
- ],
- "issingle": 1,
- "links": [],
- "modified": "2021-01-28 11:21:31.056014",
- "modified_by": "Administrator",
- "module": "Press",
- "name": "Press Settings",
- "owner": "Administrator",
- "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "print": 1,
-   "read": 1,
-   "role": "System Manager",
-   "share": 1,
-   "write": 1
-  }
- ],
- "quick_entry": 1,
- "sort_field": "modified",
- "sort_order": "DESC",
- "track_changes": 1
+   "actions": [],
+   "creation": "2020-02-03 18:45:44.169074",
+   "doctype": "DocType",
+   "editable_grid": 1,
+   "engine": "InnoDB",
+   "field_order": [
+      "domain",
+      "bench_configuration",
+      "trial_sites_count",
+      "dns_section",
+      "dns_provider",
+      "column_break_6",
+      "aws_access_key_id",
+      "aws_secret_access_key",
+      "lets_encrypt_section",
+      "certbot_directory",
+      "webroot_directory",
+      "column_break_15",
+      "eff_registration_email",
+      "use_staging_ca",
+      "tls_section",
+      "rsa_key_size",
+      "column_break_11",
+      "wildcard_tls_certificate",
+      "backbone_section",
+      "backbone_directory",
+      "column_break_20",
+      "backbone_intermediate_ca",
+      "use_backbone_ca",
+      "stripe_settings_section",
+      "stripe_account",
+      "stripe_product_id",
+      "stripe_inr_plan_id",
+      "stripe_usd_plan_id",
+      "create_stripe_webhook",
+      "stripe_webhook_endpoint_id",
+      "stripe_webhook_secret",
+      "column_break_26",
+      "free_credits_inr",
+      "free_credits_usd",
+      "erpnext_authentication",
+      "erpnext_url",
+      "erpnext_api_key",
+      "erpnext_api_secret",
+      "column_break_38",
+      "erpnext_username",
+      "erpnext_password",
+      "frappeio_authentication_section",
+      "frappe_url",
+      "frappe_username",
+      "frappe_password",
+      "offsite_backups_section",
+      "offsite_backups_provider",
+      "aws_s3_bucket",
+      "backup_rotation_scheme",
+      "offsite_backups_count",
+      "column_break_35",
+      "offsite_backups_access_key_id",
+      "offsite_backups_secret_access_key",
+      "section_break_33",
+      "create_github_app",
+      "github_app_id",
+      "github_app_client_id",
+      "github_app_client_secret",
+      "column_break_36",
+      "github_app_public_link",
+      "github_webhook_secret",
+      "github_access_token",
+      "section_break_41",
+      "github_app_private_key",
+      "section_break_59",
+      "docker_registry_url",
+      "docker_registry_namespace",
+      "column_break_64",
+      "docker_registry_username",
+      "docker_registry_password",
+      "docker_build_section",
+      "clone_directory",
+      "build_directory",
+      "column_break_66",
+      "code_server",
+      "code_server_password",
+      "auto_update_section",
+      "auto_update_queue_size",
+      "backups_section",
+      "backup_interval",
+      "remote_files_section",
+      "remote_uploads_bucket",
+      "remote_link_expiry",
+      "column_break_51",
+      "remote_access_key_id",
+      "remote_secret_access_key",
+      "telegram_section",
+      "telegram_chat_id",
+      "column_break_65",
+      "telegram_bot_token",
+      "product_documentation_section",
+      "publish_docs",
+      "storage_and_disk_limits_section",
+      "enforce_storage_limits"
+   ],
+   "fields": [
+      {
+         "default": "{}",
+         "fieldname": "bench_configuration",
+         "fieldtype": "Code",
+         "in_list_view": 1,
+         "label": "Bench Confguration",
+         "options": "JSON",
+         "reqd": 1
+      },
+      {
+         "fieldname": "domain",
+         "fieldtype": "Data",
+         "label": "Domain",
+         "reqd": 1
+      },
+      {
+         "collapsible": 1,
+         "fieldname": "dns_section",
+         "fieldtype": "Section Break",
+         "label": "DNS"
+      },
+      {
+         "fieldname": "aws_access_key_id",
+         "fieldtype": "Data",
+         "label": "AWS Access Key ID"
+      },
+      {
+         "fieldname": "aws_secret_access_key",
+         "fieldtype": "Password",
+         "label": "AWS Secret Access Key"
+      },
+      {
+         "default": "AWS Route 53",
+         "fieldname": "dns_provider",
+         "fieldtype": "Select",
+         "label": "DNS Provider",
+         "options": "AWS Route 53",
+         "reqd": 1
+      },
+      {
+         "fieldname": "column_break_6",
+         "fieldtype": "Column Break"
+      },
+      {
+         "default": "2048",
+         "fieldname": "rsa_key_size",
+         "fieldtype": "Select",
+         "label": "RSA Key Size",
+         "options": "2048\n3072\n4096",
+         "reqd": 1
+      },
+      {
+         "fieldname": "eff_registration_email",
+         "fieldtype": "Data",
+         "label": "EFF Registration Email"
+      },
+      {
+         "fieldname": "column_break_11",
+         "fieldtype": "Column Break"
+      },
+      {
+         "fieldname": "webroot_directory",
+         "fieldtype": "Data",
+         "label": "Webroot Directory"
+      },
+      {
+         "fieldname": "certbot_directory",
+         "fieldtype": "Data",
+         "label": "Certbot Directory"
+      },
+      {
+         "collapsible": 1,
+         "fieldname": "tls_section",
+         "fieldtype": "Section Break",
+         "label": "TLS"
+      },
+      {
+         "fieldname": "wildcard_tls_certificate",
+         "fieldtype": "Link",
+         "label": "Wildcard TLS Certificate",
+         "options": "TLS Certificate"
+      },
+      {
+         "fieldname": "stripe_account",
+         "fieldtype": "Link",
+         "label": "Stripe Account",
+         "options": "Stripe Settings"
+      },
+      {
+         "fieldname": "stripe_product_id",
+         "fieldtype": "Data",
+         "label": "Stripe Product ID",
+         "read_only": 1
+      },
+      {
+         "fieldname": "stripe_inr_plan_id",
+         "fieldtype": "Data",
+         "label": "Stripe INR Plan ID",
+         "read_only": 1
+      },
+      {
+         "fieldname": "stripe_usd_plan_id",
+         "fieldtype": "Data",
+         "label": "Stripe USD Plan ID",
+         "read_only": 1
+      },
+      {
+         "collapsible": 1,
+         "fieldname": "stripe_settings_section",
+         "fieldtype": "Section Break",
+         "label": "Stripe Settings"
+      },
+      {
+         "fieldname": "stripe_webhook_secret",
+         "fieldtype": "Data",
+         "label": "Stripe Webhook Secret",
+         "read_only": 1
+      },
+      {
+         "fieldname": "stripe_webhook_endpoint_id",
+         "fieldtype": "Data",
+         "label": "Stripe Webhook Endpoint ID",
+         "read_only": 1
+      },
+      {
+         "fieldname": "create_stripe_webhook",
+         "fieldtype": "Button",
+         "label": "Create Stripe Webhook"
+      },
+      {
+         "default": "1",
+         "fieldname": "trial_sites_count",
+         "fieldtype": "Int",
+         "label": "Number of Sites in Trial"
+      },
+      {
+         "fieldname": "column_break_26",
+         "fieldtype": "Column Break"
+      },
+      {
+         "fieldname": "free_credits_inr",
+         "fieldtype": "Currency",
+         "label": "Credits on Signup (INR)",
+         "options": "INR"
+      },
+      {
+         "fieldname": "free_credits_usd",
+         "fieldtype": "Currency",
+         "label": "Credits on Signup (USD)",
+         "options": "USD"
+      },
+      {
+         "collapsible": 1,
+         "fieldname": "erpnext_authentication",
+         "fieldtype": "Section Break",
+         "label": "ERPNext Authentication"
+      },
+      {
+         "fieldname": "erpnext_api_key",
+         "fieldtype": "Data",
+         "label": "ERPNext API Key"
+      },
+      {
+         "fieldname": "erpnext_api_secret",
+         "fieldtype": "Password",
+         "label": "ERPNext API Secret"
+      },
+      {
+         "fieldname": "erpnext_url",
+         "fieldtype": "Data",
+         "label": "ERPNext URL"
+      },
+      {
+         "collapsible": 1,
+         "fieldname": "offsite_backups_section",
+         "fieldtype": "Section Break",
+         "label": "Offsite Backups"
+      },
+      {
+         "fieldname": "column_break_35",
+         "fieldtype": "Column Break"
+      },
+      {
+         "default": "AWS S3",
+         "fieldname": "offsite_backups_provider",
+         "fieldtype": "Select",
+         "label": "Backup Provider",
+         "options": "AWS S3"
+      },
+      {
+         "fieldname": "offsite_backups_access_key_id",
+         "fieldtype": "Data",
+         "label": "Access Key ID"
+      },
+      {
+         "fieldname": "offsite_backups_secret_access_key",
+         "fieldtype": "Password",
+         "label": "Secret Access Key"
+      },
+      {
+         "fieldname": "aws_s3_bucket",
+         "fieldtype": "Data",
+         "label": "Bucket Name"
+      },
+      {
+         "fieldname": "github_app_private_key",
+         "fieldtype": "Code",
+         "hidden": 1,
+         "label": "GitHub App Private Key",
+         "read_only": 1
+      },
+      {
+         "collapsible": 1,
+         "fieldname": "section_break_33",
+         "fieldtype": "Section Break",
+         "label": "GitHub"
+      },
+      {
+         "fieldname": "github_webhook_secret",
+         "fieldtype": "Data",
+         "label": "GitHub Webhook Secret",
+         "read_only": 1
+      },
+      {
+         "fieldname": "github_app_id",
+         "fieldtype": "Data",
+         "label": "GitHub App ID",
+         "read_only": 1
+      },
+      {
+         "fieldname": "github_app_client_id",
+         "fieldtype": "Data",
+         "label": "GitHub App Client ID",
+         "read_only": 1
+      },
+      {
+         "fieldname": "github_app_client_secret",
+         "fieldtype": "Data",
+         "label": "GitHub App Client Secret",
+         "read_only": 1
+      },
+      {
+         "fieldname": "github_app_public_link",
+         "fieldtype": "Data",
+         "label": "GitHub App Public Link",
+         "read_only": 1
+      },
+      {
+         "fieldname": "clone_directory",
+         "fieldtype": "Data",
+         "label": "Clone Directory"
+      },
+      {
+         "fieldname": "code_server",
+         "fieldtype": "Data",
+         "label": "Code Server"
+      },
+      {
+         "fieldname": "column_break_36",
+         "fieldtype": "Column Break"
+      },
+      {
+         "collapsible": 1,
+         "fieldname": "section_break_41",
+         "fieldtype": "Section Break",
+         "hide_border": 1
+      },
+      {
+         "default": "4",
+         "fieldname": "auto_update_queue_size",
+         "fieldtype": "Int",
+         "label": "Auto Update Queue Size"
+      },
+      {
+         "collapsible": 1,
+         "fieldname": "auto_update_section",
+         "fieldtype": "Section Break",
+         "label": "Auto Update"
+      },
+      {
+         "fieldname": "code_server_password",
+         "fieldtype": "Data",
+         "label": "Code Server Password"
+      },
+      {
+         "collapsible": 1,
+         "fieldname": "backups_section",
+         "fieldtype": "Section Break",
+         "label": "Backups"
+      },
+      {
+         "fieldname": "backup_interval",
+         "fieldtype": "Int",
+         "label": "Backup Interval"
+      },
+      {
+         "collapsible": 1,
+         "fieldname": "remote_files_section",
+         "fieldtype": "Section Break",
+         "label": "Remote Files"
+      },
+      {
+         "fieldname": "remote_uploads_bucket",
+         "fieldtype": "Data",
+         "label": "Bucket Name"
+      },
+      {
+         "fieldname": "remote_link_expiry",
+         "fieldtype": "Int",
+         "label": "Link Expiry"
+      },
+      {
+         "fieldname": "remote_access_key_id",
+         "fieldtype": "Data",
+         "label": "Remote Access Key ID"
+      },
+      {
+         "fieldname": "remote_secret_access_key",
+         "fieldtype": "Password",
+         "label": "Remote Secret Access Key"
+      },
+      {
+         "fieldname": "column_break_51",
+         "fieldtype": "Column Break"
+      },
+      {
+         "fieldname": "erpnext_username",
+         "fieldtype": "Data",
+         "label": "ERPNext Username"
+      },
+      {
+         "fieldname": "erpnext_password",
+         "fieldtype": "Password",
+         "label": "ERPNext Password"
+      },
+      {
+         "depends_on": "eval:doc.backup_rotation_scheme==\"FIFO\"",
+         "description": "The max number of Offsite backups that will be retained at any given time (for each site)",
+         "fieldname": "offsite_backups_count",
+         "fieldtype": "Int",
+         "label": "Total Backups Count"
+      },
+      {
+         "collapsible": 1,
+         "fieldname": "telegram_section",
+         "fieldtype": "Section Break",
+         "label": "Telegram"
+      },
+      {
+         "fieldname": "telegram_chat_id",
+         "fieldtype": "Data",
+         "label": "Telegram Chat ID"
+      },
+      {
+         "fieldname": "telegram_bot_token",
+         "fieldtype": "Data",
+         "label": "Telegram Bot Token"
+      },
+      {
+         "fieldname": "column_break_65",
+         "fieldtype": "Column Break"
+      },
+      {
+         "default": "0",
+         "fieldname": "publish_docs",
+         "fieldtype": "Check",
+         "label": "Published"
+      },
+      {
+         "collapsible": 1,
+         "fieldname": "product_documentation_section",
+         "fieldtype": "Section Break",
+         "label": "Product Documentation"
+      },
+      {
+         "fieldname": "backbone_intermediate_ca",
+         "fieldtype": "Link",
+         "label": "Backbone Intermediate CA",
+         "options": "Certificate Authority"
+      },
+      {
+         "collapsible": 1,
+         "fieldname": "lets_encrypt_section",
+         "fieldtype": "Section Break",
+         "label": "Let's Encrypt"
+      },
+      {
+         "collapsible": 1,
+         "fieldname": "backbone_section",
+         "fieldtype": "Section Break",
+         "label": "Backbone"
+      },
+      {
+         "fieldname": "backbone_directory",
+         "fieldtype": "Data",
+         "label": "Backbone Directory"
+      },
+      {
+         "fieldname": "column_break_15",
+         "fieldtype": "Column Break"
+      },
+      {
+         "fieldname": "column_break_20",
+         "fieldtype": "Column Break"
+      },
+      {
+         "fieldname": "column_break_38",
+         "fieldtype": "Column Break"
+      },
+      {
+         "default": "0",
+         "fieldname": "use_backbone_ca",
+         "fieldtype": "Check",
+         "label": "Use Backbone CA"
+      },
+      {
+         "fieldname": "frappeio_authentication_section",
+         "fieldtype": "Section Break",
+         "label": "Frappe.io Authentication"
+      },
+      {
+         "fieldname": "frappe_username",
+         "fieldtype": "Data",
+         "label": "Username"
+      },
+      {
+         "fieldname": "frappe_password",
+         "fieldtype": "Password",
+         "label": "Password"
+      },
+      {
+         "fieldname": "frappe_url",
+         "fieldtype": "Data",
+         "label": "URL"
+      },
+      {
+         "collapsible": 1,
+         "fieldname": "section_break_59",
+         "fieldtype": "Section Break",
+         "label": "Docker Registry"
+      },
+      {
+         "fieldname": "build_directory",
+         "fieldtype": "Data",
+         "label": "Build Directory"
+      },
+      {
+         "depends_on": "eval: !doc.github_app_id",
+         "fieldname": "create_github_app",
+         "fieldtype": "Button",
+         "label": "Create GitHub App",
+         "mandatory_depends_on": "eval"
+      },
+      {
+         "fieldname": "github_access_token",
+         "fieldtype": "Data",
+         "label": "GitHub Access Token"
+      },
+      {
+         "fieldname": "docker_registry_url",
+         "fieldtype": "Data",
+         "label": "Docker Registry URL"
+      },
+      {
+         "fieldname": "column_break_66",
+         "fieldtype": "Column Break"
+      },
+      {
+         "fieldname": "docker_registry_username",
+         "fieldtype": "Data",
+         "label": "Docker Registry Username"
+      },
+      {
+         "fieldname": "docker_registry_password",
+         "fieldtype": "Data",
+         "label": "Docker Registry Password"
+      },
+      {
+         "default": "0",
+         "fieldname": "use_staging_ca",
+         "fieldtype": "Check",
+         "label": "Use Staging CA"
+      },
+      {
+         "fieldname": "docker_registry_namespace",
+         "fieldtype": "Data",
+         "label": "Docker Registry Namespace"
+      },
+      {
+         "fieldname": "column_break_64",
+         "fieldtype": "Column Break"
+      },
+      {
+         "fieldname": "docker_build_section",
+         "fieldtype": "Section Break",
+         "label": "Docker Build"
+      },
+      {
+         "fieldname": "storage_and_disk_limits_section",
+         "fieldtype": "Section Break",
+         "label": "Storage and Disk Limits"
+      },
+      {
+         "default": "0",
+         "description": "Setting this to true will start suspending sites that cross the Site Usages with respect to their existing plans.",
+         "fieldname": "enforce_storage_limits",
+         "fieldtype": "Check",
+         "label": "Enforce Storage and Disk Limits"
+      },
+      {
+         "fieldname": "backup_rotation_scheme",
+         "fieldtype": "Select",
+         "label": "Backup Rotation Scheme",
+         "options": "FIFO\nGrandfather-father-son"
+      }
+   ],
+   "issingle": 1,
+   "links": [],
+   "modified": "2021-01-28 11:21:31.056014",
+   "modified_by": "Administrator",
+   "module": "Press",
+   "name": "Press Settings",
+   "owner": "Administrator",
+   "permissions": [
+      {
+         "create": 1,
+         "delete": 1,
+         "email": 1,
+         "print": 1,
+         "read": 1,
+         "role": "System Manager",
+         "share": 1,
+         "write": 1
+      }
+   ],
+   "quick_entry": 1,
+   "sort_field": "modified",
+   "sort_order": "DESC",
+   "track_changes": 1
 }
