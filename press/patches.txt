@@ -40,6 +40,7 @@ press.patches.v0_0_1.set_document_type_in_plan
 # press.patches.v0_0_1.update_backups_availability
 # Update transaction details in paid invoices
 # press.press.doctype.invoice.patches.set_transaction_details
+press.patches.v0_0_1.set_billing_name_for_teams
 # App Subsystem Refactor
 press.patches.v0_0_1.rename_frappe_app_to_app
 press.patches.v0_0_1.rename_release_group_frappe_app_to_release_group_app

@@ -7,6 +7,7 @@ from __future__ import unicode_literals
 import frappe
 from frappe.model.document import Document
 from press.api.billing import get_stripe
+from press.utils.billing import get_frappe_io_connection
 from press.utils import log_error
 from datetime import datetime
 from frappe import _
@@ -116,9 +117,11 @@ class Invoice(Document):
 			intersecting_invoices = frappe.db.get_all(
 				"Invoice",
 				filters={
-					"period_end": (">=", self.period_start),
-					"team": self.team,
 					"docstatus": ("<", 2),
+					"name": ("!=", self.name),
+					"period_start": self.period_start,
+					"period_end": self.period_end,
+					"team": self.team,
 				},
 				pluck="name",
 			)
@@ -131,7 +134,9 @@ class Invoice(Document):
 				)
 
 	def validate_team(self):
-		self.customer_name = frappe.utils.get_fullname(self.team)
+		self.customer_name = frappe.db.get_value(
+			"Team", self.team, "billing_name"
+		) or frappe.utils.get_fullname(self.team)
 		self.customer_email = self.team
 		self.currency = frappe.db.get_value("Team", self.team, "currency")
 		if not self.currency:
@@ -327,8 +332,6 @@ class Invoice(Document):
 
 		try:
 			client = self.get_frappeio_connection()
-			if not client:
-				frappe.throw("Frappe.io URL not set up in Press Settings")
 			response = client.session.post(
 				f"{client.url}/api/method/create-fc-invoice",
 				data={"invoice": frappe.as_json(self)},
@@ -384,20 +387,7 @@ class Invoice(Document):
 
 	def get_frappeio_connection(self):
 		if not hasattr(self, "frappeio_connection"):
-			from frappe.frappeclient import FrappeClient
-
-			press_settings = frappe.get_single("Press Settings")
-			if not press_settings.frappe_url:
-				return
-
-			frappe_password = frappe.utils.password.get_decrypted_password(
-				"Press Settings", "Press Settings", fieldname="frappe_password"
-			)
-			self.frappeio_connection = FrappeClient(
-				press_settings.frappe_url,
-				username=press_settings.frappe_username,
-				password=frappe_password,
-			)
+			self.frappeio_connection = get_frappe_io_connection()
 
 		return self.frappeio_connection
 
