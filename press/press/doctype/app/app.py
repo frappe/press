@@ -54,6 +54,6 @@ def new_app(name, title):
 
 
 def poll_new_releases():
-	for app in frappe.get_all("App"):
-		app = frappe.get_doc("App", app.name)
-		app.create_app_release()
+	for source in frappe.get_all("App Source", {"enabled": True}):
+		source = frappe.get_doc("App Source", source.name)
+		source.create_release()
