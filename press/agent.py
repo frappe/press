@@ -46,7 +46,10 @@ class Agent:
 		)
 
 	def update_bench_config(self, bench):
-		data = {"config": json.loads(bench.config)}
+		data = {
+			"bench_config": json.loads(bench.bench_config),
+			"common_site_config": json.loads(bench.config),
+		}
 		return self.create_agent_job(
 			"Update Bench Configuration", f"benches/{bench.name}/config", data, bench=bench.name,
 		)
