@@ -104,7 +104,7 @@ class Site(Document):
 		if self.status == "Active":
 			self.enable_subscription()
 
-		if not self.is_new() and self.has_value_changed("subdomain"):
+		if self.status == "Active" and self.has_value_changed("subdomain"):
 			self.rename(self._get_site_name(self.subdomain))
 
 	def rename_upstream(self, new_name: str):
