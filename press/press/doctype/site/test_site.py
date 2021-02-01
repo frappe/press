@@ -186,3 +186,8 @@ class TestSite(unittest.TestCase):
 
 		site = frappe.get_doc("Site", new_name)
 		self.assertEqual(site.status, "Active")
+
+	@patch.object(Site, "rename")
+	def test_rename_site_not_called_for_new_site(self, mock_rename):
+		create_test_site("some-name", new=True)
+		mock_rename.assert_not_called()
