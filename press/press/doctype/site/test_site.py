@@ -189,5 +189,47 @@ class TestSite(unittest.TestCase):
 
 	@patch.object(Site, "rename")
 	def test_rename_site_not_called_for_new_site(self, mock_rename):
+		"""Rename Site job isn't created for new site."""
 		create_test_site("some-name", new=True)
 		mock_rename.assert_not_called()
+
+	def test_site_rename_update_site_config(self):
+		"""Ensure site configuration child table is updated after rename."""
+		site = create_test_site("old-name")
+		new_name = "new-name.fc.dev"
+		site.rename(new_name)
+
+		rename_job = frappe.get_last_doc("Agent Job", {"job_type": "Rename Site"})
+		rename_upstream_job = frappe.get_last_doc(
+			"Agent Job", {"job_type": "Rename Site on Upstream"}
+		)
+		rename_job.status = "Success"
+		rename_upstream_job.status = "Success"
+		rename_job.save()
+		rename_upstream_job.save()
+
+		process_rename_site_job_update(rename_job)
+		site = frappe.get_doc("Site", new_name)
+		if site.configuration[0].key == "host_name":
+			config_host = site.configuration[0].value
+		self.assertEqual(config_host, f"https://{new_name}")
+
+	def test_no_new_jobs_after_rename(self):
+		"""Ensure no new jobs are created after rename."""
+		site = create_test_site("old-name")
+		new_name = "new-name.fc.dev"
+		site.rename(new_name)
+
+		rename_job = frappe.get_last_doc("Agent Job", {"job_type": "Rename Site"})
+		rename_upstream_job = frappe.get_last_doc(
+			"Agent Job", {"job_type": "Rename Site on Upstream"}
+		)
+		rename_job.status = "Success"
+		rename_upstream_job.status = "Success"
+		rename_job.save()
+		rename_upstream_job.save()
+
+		job_count_before = frappe.db.count("Agent Job")
+		process_rename_site_job_update(rename_job)
+		job_count_after = frappe.db.count("Agent Job")
+		self.assertEqual(job_count_before, job_count_after)
