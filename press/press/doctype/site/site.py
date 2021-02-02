@@ -909,6 +909,9 @@ def process_rename_site_job_update(job):
 	if "Success" == first == second:
 		data = json.loads(job.request_data)
 		new_name = data["new_name"]
+		site = frappe.get_doc("Site", job.site)
+		if site.host_name == job.site:
+			site._update_configuration({"host_name": f"https://{new_name}"})
 		frappe.rename_doc("Site", job.site, new_name)
 		frappe.rename_doc("Site Domain", job.site, new_name)
 		job.site = new_name
