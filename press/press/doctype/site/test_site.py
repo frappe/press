@@ -4,7 +4,7 @@
 from __future__ import unicode_literals
 
 import unittest
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
 
 import frappe
 
@@ -17,8 +17,7 @@ from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
 from press.press.doctype.server.test_server import create_test_server
-from press.press.doctype.site.site import Site
-from press.press.doctype.site.site import process_rename_site_job_update
+from press.press.doctype.site.site import Site, process_rename_site_job_update
 
 
 def create_test_site(subdomain: str, new: bool = False) -> Site:
