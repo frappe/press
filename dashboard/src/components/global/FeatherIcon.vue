@@ -19,6 +19,10 @@ export default {
 				return valid;
 			}
 		},
+		color: {
+			type: String,
+			default: null
+		},
 		strokeWidth: {
 			type: Number,
 			default: 1.5
@@ -30,6 +34,7 @@ export default {
 			attrs: Object.assign({}, icon.attrs, {
 				fill: 'none',
 				stroke: 'currentColor',
+				color: this.color,
 				'stroke-linecap': 'round',
 				'stroke-linejoin': 'round',
 				'stroke-width': this.strokeWidth,

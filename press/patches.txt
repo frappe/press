@@ -40,5 +40,24 @@ press.patches.v0_0_1.set_document_type_in_plan
 # press.patches.v0_0_1.update_backups_availability
 # Update transaction details in paid invoices
 # press.press.doctype.invoice.patches.set_transaction_details
-press.patches.v0_0_1.breakdown_site_usage_into_multiple_fields
 press.patches.v0_0_1.set_billing_name_for_teams
+# App Subsystem Refactor
+press.patches.v0_0_1.rename_frappe_app_to_app
+press.patches.v0_0_1.rename_release_group_frappe_app_to_release_group_app
+press.patches.v0_0_1.set_hostname_in_server
+press.patches.v0_0_1.set_domain_in_site
+press.patches.v0_0_1.breakdown_site_usage_into_multiple_fields
+press.patches.v0_0_1.create_default_cluster
+press.patches.v0_0_1.set_app_title_from_custom_field
+press.patches.v0_0_1.set_release_group_version_and_title_from_custom_field
+press.patches.v0_0_1.rename_installed_app_to_bench_app
+press.patches.v0_0_1.rename_deploy_candidate_app_release_to_deploy_candidate_app
+press.patches.v0_0_1.create_app_source_from_app
+press.patches.v0_0_1.rename_release_groups
+press.patches.v0_0_1.create_app_release_difference_from_deploy_candidate_difference
+press.patches.v0_0_1.truncate_server_status_table
+press.patches.v0_0_1.set_marketplace_app_app_field_from_name
+press.patches.v0_0_1.rename_workers_to_background_workers
+press.patches.v0_0_1.set_release_in_bench_app
+press.patches.v0_0_1.set_app_title_in_deploy_candidate_app
+press.patches.v0_0_1.set_release_group_in_site

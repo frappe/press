@@ -19,7 +19,7 @@
 						{
 							label: 'Created By',
 							value: site.owner
-						},
+						}
 					]"
 				/>
 			</SectionCard>
@@ -52,15 +52,15 @@
 				<a
 					class="block px-6 py-3 hover:bg-gray-50"
 					v-for="app in site.installed_apps"
-					:href="`${app.url}/tree/${app.branch}`"
-					:key="app.url"
+					:href="`${app.repository_url}/tree/${app.branch}`"
+					:key="app.repository_url"
 					target="_blank"
 				>
 					<p class="text-base font-medium text-brand">
-						{{ app.owner }}/{{ app.repo }}
+						{{ app.title }}
 					</p>
 					<p class="text-sm text-gray-800">
-						{{ app.branch }}
+						{{ app.repository_owner }}:{{ app.branch }}
 					</p>
 				</a>
 			</SectionCard>

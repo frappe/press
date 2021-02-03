@@ -4,8 +4,8 @@ import account from '../controllers/account';
 import auth from '../controllers/auth';
 import Home from '../views/Home.vue';
 
-import appRoutes from './app';
 import siteRoutes from './site';
+import benchRoutes from './bench';
 import accountRoute from './account';
 import authRoutes from './auth';
 
@@ -23,15 +23,9 @@ const routes = [
 		component: () =>
 			import(/* webpackChunkName: "sites" */ '../views/Welcome.vue')
 	},
-	{
-		path: '/support',
-		name: 'Support',
-		component: () =>
-			import(/* webpackChunkName: "support" */ '../views/Support.vue')
-	},
 	...authRoutes,
-	...appRoutes,
 	...siteRoutes,
+	...benchRoutes,
 	accountRoute
 ];
 

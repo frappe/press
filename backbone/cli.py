@@ -25,7 +25,7 @@ def setup():
 
 
 @hypervisor.command()
-@click.option("--size", default=8192, type=int)
+@click.option("--size", default=16384, type=int)
 def build(size):
 	shell = Shell()
 	hypervisor = Hypervisor(shell=shell)

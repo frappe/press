@@ -1,26 +1,25 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "Prompt",
+ "autoname": "bench-.####",
  "creation": "2020-01-13 16:04:45.363835",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "title",
+  "version",
+  "column_break_4",
+  "team",
   "enabled",
-  "apps",
   "default",
   "public",
-  "team"
+  "section_break_7",
+  "apps",
+  "section_break_10",
+  "servers"
  ],
  "fields": [
-  {
-   "fieldname": "apps",
-   "fieldtype": "Table",
-   "label": "Apps",
-   "options": "Release Group Frappe App",
-   "reqd": 1
-  },
   {
    "default": "0",
    "fieldname": "default",
@@ -46,12 +45,54 @@
   {
    "fieldname": "team",
    "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Team",
    "options": "Team"
+  },
+  {
+   "fieldname": "version",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Version",
+   "options": "Frappe Version",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_7",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_10",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "servers",
+   "fieldtype": "Table",
+   "label": "Servers",
+   "options": "Release Group Server"
+  },
+  {
+   "fieldname": "apps",
+   "fieldtype": "Table",
+   "label": "Apps",
+   "options": "Release Group App",
+   "reqd": 1
   }
  ],
  "links": [],
- "modified": "2020-06-26 13:12:57.044909",
+ "modified": "2021-01-14 17:37:52.102002",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",
@@ -70,6 +111,7 @@
    "write": 1
   },
   {
+   "create": 1,
    "email": 1,
    "export": 1,
    "print": 1,
@@ -78,9 +120,21 @@
    "role": "Press Admin",
    "share": 1,
    "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
+   "share": 1,
+   "write": 1
   }
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "title_field": "title",
  "track_changes": 1
 }

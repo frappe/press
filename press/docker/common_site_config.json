@@ -1,0 +1,9 @@
+{
+    "monitor": true,
+    "redis_cache": "redis://redis-cache:6379",
+    "redis_queue": "redis://redis-queue:6379",
+    "redis_socketio": "redis://redis-socketio:6379",
+    "restart_systemd_on_update": true,
+    "socketio_port": 9000,
+    "webserver_port": 8000
+}

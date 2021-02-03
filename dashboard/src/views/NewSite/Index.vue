@@ -26,6 +26,7 @@
 						<Apps
 							:options="options"
 							v-show="activeStep.name === 'Apps'"
+							:privateBench="privateBench"
 							:selectedApps.sync="selectedApps"
 							:selectedGroup.sync="selectedGroup"
 						/>
@@ -105,6 +106,7 @@ export default {
 			subdomain: null,
 			subdomainValid: false,
 			options: null,
+			privateBench: false,
 			selectedApps: [],
 			selectedGroup: null,
 			selectedFiles: {
@@ -138,12 +140,17 @@ export default {
 			plan.disabled = this.disablePlan(plan);
 			return plan;
 		});
-		this.selectedGroup = this.options.groups.find(g => g.default).name;
+
 		if (this.$route.query.domain) {
 			let domain = this.$route.query.domain.split('.');
 			if (domain) {
 				this.subdomain = domain[0];
 			}
+			this.$router.replace({});
+		}
+		if (this.$route.query.bench) {
+			this.privateBench = true;
+			this.selectedGroup = this.$route.query.bench;
 			this.$router.replace({});
 		}
 	},

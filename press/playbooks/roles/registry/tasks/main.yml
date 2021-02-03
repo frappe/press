@@ -1,0 +1,112 @@
+---
+- name: Install Ansible Docker Stack Module Dependencies
+  pip:
+    name:
+      - pyyaml
+      - jsondiff
+
+- name: Create Registry Directory
+  become: yes
+  become_user: frappe
+  file:
+    dest: /home/frappe/registry
+    state: directory
+
+- name: Create Registry Data Directory
+  become: yes
+  become_user: frappe
+  file:
+    dest: /home/frappe/registry/data
+    state: directory
+
+- name: Create Registry Compose File
+  become: yes
+  become_user: frappe
+  template:
+    src: docker-compose.yml
+    dest: /home/frappe/registry/docker-compose.yml
+
+- name: Deploy Registry Stack
+  become: yes
+  become_user: frappe
+  docker_stack:
+    state: present
+    name: registry
+    compose:
+      - /home/frappe/registry/docker-compose.yml
+
+- name: Install Htpasswd Package
+  apt:
+    state: present
+    force: yes
+    pkg: apache2-utils
+
+- name: Setup Registry Authentication
+  become: yes
+  become_user: frappe
+  command: "htpasswd -Bbc registry.htpasswd {{ registry_username }} {{ registry_password }}"
+  args:
+    chdir: /home/frappe/registry
+
+- name: Create Registry TLS Directory
+  become: yes
+  become_user: frappe
+  file:
+    dest: /home/frappe/registry/tls
+    state: directory
+
+- name: Setup Registry TLS (Private Key)
+  become: yes
+  become_user: frappe
+  copy:
+    content: "{{ certificate_private_key }}"
+    dest: /home/frappe/registry/tls/privkey.pem
+
+- name: Setup Registry TLS (Full Chain)
+  become: yes
+  become_user: frappe
+  copy:
+    content: "{{ certificate_full_chain }}"
+    dest: /home/frappe/registry/tls/fullchain.pem
+
+- name: Setup Registry TLS (Intermediate Chain)
+  become: yes
+  become_user: frappe
+  copy:
+    content: "{{ certificate_intermediate_chain }}"
+    dest: /home/frappe/registry/tls/chain.pem
+
+- name: Create NGINX Root Configuration File
+  become: yes
+  become_user: frappe
+  template:
+    src: nginx.conf
+    dest: /home/frappe/registry/nginx.conf
+
+- name: Symlink NGINX Root Configuration File
+  file:
+    src: /home/frappe/registry/nginx.conf
+    dest: /etc/nginx/nginx.conf
+    state: link
+    force: yes
+    follow: no
+
+- name: Create Registry NGINX Configuration File
+  become: yes
+  become_user: frappe
+  template:
+    src: registry.conf
+    dest: /home/frappe/registry/registry.conf
+
+- name: Symlink Registry NGINX Configuration File
+  file:
+    src: /home/frappe/registry/registry.conf
+    dest: /etc/nginx/conf.d/registry.conf
+    state: link
+    force: yes
+    follow: no
+
+- name: Restart NGINX
+  service:
+    name: nginx
+    state: restarted

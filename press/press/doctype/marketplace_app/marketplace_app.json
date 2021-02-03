@@ -1,13 +1,13 @@
 {
  "actions": [],
  "allow_guest_to_view": 1,
- "autoname": "Prompt",
  "creation": "2020-09-02 22:57:04.696244",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
   "image",
+  "app",
   "title",
   "route",
   "column_break_3",
@@ -20,8 +20,9 @@
   "links_section",
   "website",
   "support",
-  "privacy_policy",
   "documentation",
+  "column_break_16",
+  "privacy_policy",
   "terms_of_service"
  ],
  "fields": [
@@ -32,6 +33,8 @@
    "label": "Image"
   },
   {
+   "fetch_from": "app.title",
+   "fetch_if_empty": 1,
    "fieldname": "title",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -52,6 +55,8 @@
    "default": "Draft",
    "fieldname": "status",
    "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Status",
    "options": "Draft\nPublished"
   },
@@ -111,6 +116,18 @@
    "fieldname": "published",
    "fieldtype": "Check",
    "label": "Published"
+  },
+  {
+   "fieldname": "app",
+   "fieldtype": "Link",
+   "label": "App",
+   "options": "App",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "column_break_16",
+   "fieldtype": "Column Break"
   }
  ],
  "has_web_view": 1,
@@ -118,7 +135,7 @@
  "index_web_pages_for_search": 1,
  "is_published_field": "published",
  "links": [],
- "modified": "2020-12-11 12:02:59.477289",
+ "modified": "2021-01-27 16:08:25.548722",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Marketplace App",
@@ -137,8 +154,8 @@
    "write": 1
   }
  ],
- "quick_entry": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
+ "title_field": "title",
  "track_changes": 1
 }

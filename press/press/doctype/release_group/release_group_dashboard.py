@@ -8,6 +8,6 @@ def get_data():
 	return {
 		"fieldname": "group",
 		"transactions": [
-			{"items": ["Bench", "Deploy Candidate", "Deploy Candidate Difference"]},
+			{"items": ["Bench", "Deploy", "Deploy Candidate", "Deploy Candidate Difference"]},
 		],
 	}
