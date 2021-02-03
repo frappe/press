@@ -67,7 +67,7 @@ frappe.ui.form.on('Site', {
 		});
 		[
 			[__('Suspend'), 'suspend'],
-			[__('Unuspend'), 'unsuspend'],
+			[__('Unsuspend'), 'unsuspend'],
 		].forEach(([label, method]) => {
 			frm.add_custom_button(
 				label,

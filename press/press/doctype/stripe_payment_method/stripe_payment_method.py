@@ -31,7 +31,7 @@ class StripePaymentMethod(Document):
 		self.save()
 		frappe.db.set_value("Team", self.team, "default_payment_method", self.name)
 
-	def on_trash(self):
+	def after_delete(self):
 		if self.is_default:
 			frappe.throw("Cannot delete default payment method")
 
