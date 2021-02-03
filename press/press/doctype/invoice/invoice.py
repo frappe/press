@@ -114,22 +114,18 @@ class Invoice(Document):
 			return
 
 		if self.period_start and self.period_end and self.is_new():
-			intersecting_invoices = frappe.db.get_all(
-				"Invoice",
-				filters={
-					"docstatus": ("<", 2),
-					"name": ("!=", self.name),
-					"period_start": self.period_start,
-					"period_end": self.period_end,
-					"team": self.team,
-				},
-				pluck="name",
+			intersecting_invoices = frappe.db.sql(
+				f"select `name` from `tabInvoice` where team = '{self.team}' and"
+				f" docstatus < 2 and '{self.period_start}' between `period_start` and"
+				f" `period_end` or '{self.period_end}' between `period_start` and"
+				" `period_end`",
+				as_list=True,
 			)
 
 			if intersecting_invoices:
 				frappe.throw(
 					"There are invoices with intersecting periods:"
-					f" {', '.join(intersecting_invoices)}",
+					f" {', '.join(*intersecting_invoices)}",
 					frappe.DuplicateEntryError,
 				)
 

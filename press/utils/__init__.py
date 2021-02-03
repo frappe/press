@@ -24,7 +24,7 @@ def log_error(title, **kwargs):
 def get_current_team(get_doc=False):
 	if not hasattr(frappe.local, "request"):
 		# if this is not a request, send the current user as default team
-		return frappe.session.user
+		return frappe.get_doc("Team", frappe.session.user) if get_doc else frappe.session.user
 
 	user_is_system_user = frappe.session.data.user_type == "System User"
 	# get team passed via request header
