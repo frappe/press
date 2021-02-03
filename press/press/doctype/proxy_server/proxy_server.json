@@ -1,12 +1,14 @@
 {
  "actions": [],
- "autoname": "Prompt",
  "creation": "2020-01-14 17:55:10.884750",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
   "status",
+  "hostname",
+  "domain",
+  "cluster",
   "is_server_setup",
   "column_break_3",
   "ip",
@@ -87,10 +89,30 @@
   {
    "fieldname": "column_break_10",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Cluster",
+   "options": "Cluster",
+   "reqd": 1
+  },
+  {
+   "fieldname": "hostname",
+   "fieldtype": "Data",
+   "label": "Hostname",
+   "reqd": 1
+  },
+  {
+   "fieldname": "domain",
+   "fieldtype": "Data",
+   "label": "Domain"
   }
  ],
  "links": [],
- "modified": "2020-10-09 18:17:51.938477",
+ "modified": "2021-01-25 15:24:48.383902",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",

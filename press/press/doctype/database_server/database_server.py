@@ -11,6 +11,11 @@ from press.utils import log_error
 
 
 class DatabaseServer(Document):
+	def autoname(self):
+		if not self.domain:
+			self.domain = frappe.db.get_single_value("Press Settings", "domain")
+		self.name = f"{self.hostname}.{self.domain}"
+
 	def validate(self):
 		if self.is_new() and not self.server_id:
 			server_ids = frappe.get_all(
@@ -20,6 +25,8 @@ class DatabaseServer(Document):
 				self.server_id = max(server_ids or []) + 1
 			else:
 				self.server_id = 1
+		if self.is_new() and not self.cluster:
+			self.cluster = frappe.db.get_value("Cluster", {"default": True})
 
 	def ping_agent(self):
 		agent = Agent(self.name, server_type=self.doctype)

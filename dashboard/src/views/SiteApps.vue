@@ -5,15 +5,18 @@
 				<div
 					class="flex px-6 py-3 text-base hover:bg-gray-50 items-center"
 					v-for="app in site.installed_apps"
-					:key="app.url"
+					:key="app.repository_url"
 				>
 					<div class="flex-1">
-						<a :href="`${app.url}/tree/${app.branch}`" target="_blank">
+						<a
+							:href="`${app.repository_url}/tree/${app.branch}`"
+							target="_blank"
+						>
 							<p class="text-base font-medium text-brand">
-								{{ app.owner }}/{{ app.repo }}
+								{{ app.title }}
 							</p>
 							<p class="text-sm text-gray-800">
-								{{ app.branch }}
+								{{ app.repository_owner }}:{{ app.branch }}
 							</p>
 						</a>
 					</div>
@@ -30,20 +33,23 @@
 				<div
 					class="flex px-6 py-3 text-base hover:bg-gray-50 items-center"
 					v-for="app in site.available_apps"
-					:key="app.url"
+					:key="app.repository_url"
 				>
 					<div class="flex-1">
-						<a :href="`${app.url}/tree/${app.branch}`" target="_blank">
+						<a
+							:href="`${app.repository_url}/tree/${app.branch}`"
+							target="_blank"
+						>
 							<p class="text-base font-medium text-brand">
-								{{ app.owner }}/{{ app.repo }}
+								{{ app.title }}
 							</p>
 							<p class="text-sm text-gray-800">
-								{{ app.branch }}
+								{{ app.repository_owner }}:{{ app.branch }}
 							</p>
 						</a>
 					</div>
 					<div>
-						<Button @click="installApp(app.name)">
+						<Button @click="installApp(app.app)">
 							Install
 						</Button>
 					</div>

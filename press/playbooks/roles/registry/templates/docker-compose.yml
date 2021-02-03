@@ -1,0 +1,22 @@
+version: "3.8"
+services:
+  registry:
+    image: registry:2
+    environment:
+      - REGISTRY_STORAGE_DELETE_ENABLED=true
+    ports:
+      - "5000:5000"
+    volumes:
+      - type: bind
+        source: /home/frappe/registry/data
+        target: /var/lib/registry
+  registry-ui:
+    image: joxit/docker-registry-ui:static
+    environment:
+      - REGISTRY_TITLE=Frappe Cloud Registry
+      - REGISTRY_URL=http://registry:5000
+      - DELETE_IMAGES=true
+    ports:
+      - "6000:80"
+    depends_on:
+      - registry

@@ -6,7 +6,9 @@
  "engine": "InnoDB",
  "field_order": [
   "group",
+  "column_break_2",
   "candidate",
+  "section_break_5",
   "benches"
  ],
  "fields": [
@@ -15,17 +17,21 @@
    "fieldname": "group",
    "fieldtype": "Link",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Release Group",
    "options": "Release Group",
-   "reqd": 1
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "candidate",
    "fieldtype": "Link",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Deploy Candidate",
    "options": "Deploy Candidate",
-   "reqd": 1
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "benches",
@@ -33,10 +39,18 @@
    "label": "Deploy Benches",
    "options": "Deploy Bench",
    "reqd": 1
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_5",
+   "fieldtype": "Section Break"
   }
  ],
  "links": [],
- "modified": "2020-06-19 20:03:58.040039",
+ "modified": "2021-01-25 15:18:26.330460",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy",
@@ -62,7 +76,19 @@
    "read": 1,
    "report": 1,
    "role": "Press Admin",
-   "share": 1
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
+   "share": 1,
+   "write": 1
   }
  ],
  "sort_field": "modified",

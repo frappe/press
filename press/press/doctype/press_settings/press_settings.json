@@ -13,15 +13,16 @@
   "column_break_6",
   "aws_access_key_id",
   "aws_secret_access_key",
-  "tls_section",
-  "rsa_key_size",
-  "column_break_11",
-  "wildcard_tls_certificate",
   "lets_encrypt_section",
   "certbot_directory",
   "webroot_directory",
   "column_break_15",
   "eff_registration_email",
+  "use_staging_ca",
+  "tls_section",
+  "rsa_key_size",
+  "column_break_11",
+  "wildcard_tls_certificate",
   "backbone_section",
   "backbone_directory",
   "column_break_20",
@@ -29,6 +30,7 @@
   "use_backbone_ca",
   "stripe_settings_section",
   "stripe_account",
+  "create_stripe_plans",
   "stripe_product_id",
   "stripe_inr_plan_id",
   "stripe_usd_plan_id",
@@ -58,17 +60,28 @@
   "offsite_backups_access_key_id",
   "offsite_backups_secret_access_key",
   "section_break_33",
+  "create_github_app",
   "github_app_id",
   "github_app_client_id",
   "github_app_client_secret",
-  "github_app_public_link",
   "column_break_36",
+  "github_app_public_link",
   "github_webhook_secret",
-  "clone_directory",
-  "code_server",
-  "code_server_password",
+  "github_access_token",
   "section_break_41",
   "github_app_private_key",
+  "section_break_59",
+  "docker_registry_url",
+  "docker_registry_namespace",
+  "column_break_64",
+  "docker_registry_username",
+  "docker_registry_password",
+  "docker_build_section",
+  "clone_directory",
+  "build_directory",
+  "column_break_66",
+  "code_server",
+  "code_server_password",
   "auto_update_section",
   "auto_update_queue_size",
   "backups_section",
@@ -105,6 +118,7 @@
    "reqd": 1
   },
   {
+   "collapsible": 1,
    "fieldname": "dns_section",
    "fieldtype": "Section Break",
    "label": "DNS"
@@ -159,6 +173,7 @@
    "label": "Certbot Directory"
   },
   {
+   "collapsible": 1,
    "fieldname": "tls_section",
    "fieldtype": "Section Break",
    "label": "TLS"
@@ -194,6 +209,7 @@
    "read_only": 1
   },
   {
+   "collapsible": 1,
    "fieldname": "stripe_settings_section",
    "fieldtype": "Section Break",
    "label": "Stripe Settings"
@@ -238,6 +254,7 @@
    "options": "USD"
   },
   {
+   "collapsible": 1,
    "fieldname": "erpnext_authentication",
    "fieldtype": "Section Break",
    "label": "ERPNext Authentication"
@@ -258,6 +275,7 @@
    "label": "ERPNext URL"
   },
   {
+   "collapsible": 1,
    "fieldname": "offsite_backups_section",
    "fieldtype": "Section Break",
    "label": "Offsite Backups"
@@ -291,37 +309,45 @@
   {
    "fieldname": "github_app_private_key",
    "fieldtype": "Code",
-   "label": "GitHub App Private Key"
+   "hidden": 1,
+   "label": "GitHub App Private Key",
+   "read_only": 1
   },
   {
+   "collapsible": 1,
    "fieldname": "section_break_33",
    "fieldtype": "Section Break",
-   "label": "GitHub App Authentication"
+   "label": "GitHub"
   },
   {
    "fieldname": "github_webhook_secret",
    "fieldtype": "Data",
-   "label": "GitHub Webhook Secret"
+   "label": "GitHub Webhook Secret",
+   "read_only": 1
   },
   {
    "fieldname": "github_app_id",
    "fieldtype": "Data",
-   "label": "GitHub App ID"
+   "label": "GitHub App ID",
+   "read_only": 1
   },
   {
    "fieldname": "github_app_client_id",
    "fieldtype": "Data",
-   "label": "GitHub App Client ID"
+   "label": "GitHub App Client ID",
+   "read_only": 1
   },
   {
    "fieldname": "github_app_client_secret",
    "fieldtype": "Data",
-   "label": "GitHub App Client Secret"
+   "label": "GitHub App Client Secret",
+   "read_only": 1
   },
   {
    "fieldname": "github_app_public_link",
    "fieldtype": "Data",
-   "label": "GitHub App Public Link"
+   "label": "GitHub App Public Link",
+   "read_only": 1
   },
   {
    "fieldname": "clone_directory",
@@ -338,6 +364,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "collapsible": 1,
    "fieldname": "section_break_41",
    "fieldtype": "Section Break",
    "hide_border": 1
@@ -349,6 +376,7 @@
    "label": "Auto Update Queue Size"
   },
   {
+   "collapsible": 1,
    "fieldname": "auto_update_section",
    "fieldtype": "Section Break",
    "label": "Auto Update"
@@ -359,6 +387,7 @@
    "label": "Code Server Password"
   },
   {
+   "collapsible": 1,
    "fieldname": "backups_section",
    "fieldtype": "Section Break",
    "label": "Backups"
@@ -369,6 +398,7 @@
    "label": "Backup Interval"
   },
   {
+   "collapsible": 1,
    "fieldname": "remote_files_section",
    "fieldtype": "Section Break",
    "label": "Remote Files"
@@ -415,6 +445,7 @@
    "label": "Total Backups Count"
   },
   {
+   "collapsible": 1,
    "fieldname": "telegram_section",
    "fieldtype": "Section Break",
    "label": "Telegram"
@@ -440,6 +471,7 @@
    "label": "Published"
   },
   {
+   "collapsible": 1,
    "fieldname": "product_documentation_section",
    "fieldtype": "Section Break",
    "label": "Product Documentation"
@@ -451,11 +483,13 @@
    "options": "Certificate Authority"
   },
   {
+   "collapsible": 1,
    "fieldname": "lets_encrypt_section",
    "fieldtype": "Section Break",
    "label": "Let's Encrypt"
   },
   {
+   "collapsible": 1,
    "fieldname": "backbone_section",
    "fieldtype": "Section Break",
    "label": "Backbone"
@@ -484,6 +518,7 @@
    "label": "Use Backbone CA"
   },
   {
+   "collapsible": 1,
    "fieldname": "frappeio_authentication_section",
    "fieldtype": "Section Break",
    "label": "Frappe.io Authentication"
@@ -504,6 +539,70 @@
    "label": "URL"
   },
   {
+   "collapsible": 1,
+   "fieldname": "section_break_59",
+   "fieldtype": "Section Break",
+   "label": "Docker Registry"
+  },
+  {
+   "fieldname": "build_directory",
+   "fieldtype": "Data",
+   "label": "Build Directory"
+  },
+  {
+   "depends_on": "eval: !doc.github_app_id",
+   "fieldname": "create_github_app",
+   "fieldtype": "Button",
+   "label": "Create GitHub App",
+   "mandatory_depends_on": "eval"
+  },
+  {
+   "fieldname": "github_access_token",
+   "fieldtype": "Data",
+   "label": "GitHub Access Token"
+  },
+  {
+   "fieldname": "docker_registry_url",
+   "fieldtype": "Data",
+   "label": "Docker Registry URL"
+  },
+  {
+   "fieldname": "column_break_66",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "docker_registry_username",
+   "fieldtype": "Data",
+   "label": "Docker Registry Username"
+  },
+  {
+   "fieldname": "docker_registry_password",
+   "fieldtype": "Data",
+   "label": "Docker Registry Password"
+  },
+  {
+   "default": "0",
+   "fieldname": "use_staging_ca",
+   "fieldtype": "Check",
+   "label": "Use Staging CA"
+  },
+  {
+   "fieldname": "docker_registry_namespace",
+   "fieldtype": "Data",
+   "label": "Docker Registry Namespace"
+  },
+  {
+   "fieldname": "column_break_64",
+   "fieldtype": "Column Break"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "docker_build_section",
+   "fieldtype": "Section Break",
+   "label": "Docker Build"
+  },
+  {
+   "collapsible": 1,
    "fieldname": "storage_and_disk_limits_section",
    "fieldtype": "Section Break",
    "label": "Storage and Disk Limits"
@@ -520,11 +619,16 @@
    "fieldtype": "Select",
    "label": "Backup Rotation Scheme",
    "options": "FIFO\nGrandfather-father-son"
+  },
+  {
+   "fieldname": "create_stripe_plans",
+   "fieldtype": "Button",
+   "label": "Create Stripe Plans"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2021-01-22 18:24:46.847660",
+ "modified": "2021-02-01 17:45:38.860817",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

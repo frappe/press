@@ -72,7 +72,7 @@ after_migrate = "press.api.account.clear_country_list_cache"
 # ------------------
 # See frappe.core.notifications.get_notification_config
 
-# notification_config = "press.notifications.get_notification_config"
+notification_config = "press.notifications.get_notification_config"
 
 # Permissions
 # -----------
@@ -80,9 +80,6 @@ after_migrate = "press.api.account.clear_country_list_cache"
 
 permission_query_conditions = {
 	"Site": "press.press.doctype.site.site.get_permission_query_conditions",
-	"Frappe App": (
-		"press.press.doctype.frappe_app.frappe_app.get_permission_query_conditions"
-	),
 }
 # has_permission = {
 # 	"Site": "press.press.doctype.site.site.has_permission",
@@ -113,7 +110,7 @@ scheduler_events = {
 		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
 		"press.press.doctype.invoice.invoice.submit_invoices",
 	],
-	"hourly": ["press.press.doctype.frappe_app.frappe_app.poll_new_releases"],
+	"hourly": ["press.press.doctype.app.app.poll_new_releases"],
 	"hourly_long": [
 		"press.press.doctype.bench.bench.archive_obsolete_benches",
 		"press.press.doctype.bench.bench.scale_workers",
@@ -133,7 +130,6 @@ scheduler_events = {
 			"press.press.doctype.agent_job.agent_job.collect_site_uptime",
 			"press.press.doctype.agent_job.agent_job.report_site_downtime",
 		],
-		"* * * * * 0/30": ["press.press.doctype.agent_job.agent_job.collect_server_status"],
 		"0 */6 * * *": ["press.press.doctype.server.server.cleanup_unused_files"],
 		"30 * * * *": ["press.press.doctype.agent_job.agent_job.suspend_sites"],
 		"*/15 * * * *": ["press.press.doctype.site_update.site_update.schedule_updates"],
@@ -148,9 +144,8 @@ deploy_hours = [1, 2, 3, 4]
 
 fixtures = [
 	"Agent Job Type",
+	"Frappe Version",
 	{"dt": "Role", "filters": [["role_name", "like", "Press%"]]},
-	"Print Format",
-	"Site Config Key",
 	"Site Config Key Blacklist",
 ]
 # Testing

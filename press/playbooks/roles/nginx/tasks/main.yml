@@ -1,7 +1,9 @@
 ---
 - name: Install NGINX
   apt:
-    pkg: nginx
+    pkg:
+      - nginx
+      - nginx-extras
     state: present
 
 - name: Remove Default Enabled NGINX Virtual Host
