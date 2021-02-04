@@ -32,7 +32,7 @@ frappe.ui.form.on('Site', {
 		);
 		frm.add_web_link(`https://${frm.doc.name}`, __('Visit Site'));
 		frm.add_web_link(
-			`/dashboard/#/sites/${frm.doc.name}/general`,
+			`/dashboard/sites/${frm.doc.name}/general`,
 			__('Visit Dashboard')
 		);
 

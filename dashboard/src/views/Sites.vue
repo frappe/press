@@ -29,11 +29,11 @@
 					<span class="hidden text-right md:inline">Active Since</span>
 					<span class="hidden md:inline"></span>
 				</div>
-				<a
+				<router-link
 					class="grid items-center grid-cols-2 gap-12 py-4 text-base border-b md:grid-cols-4 hover:bg-gray-50 focus:outline-none focus:shadow-outline"
 					v-for="site in $resources.sites.data"
 					:key="site.name"
-					:href="'#/sites/' + site.name"
+					:to="'/sites/' + site.name"
 				>
 					<span class="">{{ site.name }}</span>
 					<span class="text-right md:text-center">
@@ -64,7 +64,7 @@
 							/>
 						</a>
 					</span>
-				</a>
+				</router-link>
 			</div>
 		</div>
 	</div>

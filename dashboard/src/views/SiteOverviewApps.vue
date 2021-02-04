@@ -22,8 +22,7 @@
 					{{ app.branch }}
 				</div>
 				<Link
-					:href="`${app.url}/tree/${app.branch}`"
-					target="_blank"
+					:to="`${app.url}/tree/${app.branch}`"
 					class="inline-flex ml-auto text-base"
 				>
 					Visit Repo →
