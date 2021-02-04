@@ -4,7 +4,7 @@
 		subtitle="History of recent activities performed on your site"
 	>
 		<template #actions>
-			<Link class="text-base" :href="`#/sites/${site.name}/activity`">
+			<Link class="text-base" :to="`/sites/${site.name}/activity`">
 				All activity →
 			</Link>
 		</template>

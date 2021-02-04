@@ -31,11 +31,11 @@
 					<span class="text-right">Last Updated</span>
 					<span></span>
 				</div>
-				<a
+				<router-link
 					class="grid items-center grid-cols-4 gap-12 py-4 text-sm border-b hover:bg-gray-50 focus:outline-none focus:shadow-outline"
 					v-for="app in $resources.apps.data"
 					:key="app.name"
-					:href="'#/apps/' + app.name"
+					:to="'/apps/' + app.name"
 				>
 					<span>{{ app.name }}</span>
 					<span class="text-center">
@@ -59,7 +59,7 @@
 							<FeatherIcon name="external-link" class="w-3 h-3 ml-1" />
 						</a>
 					</span>
-				</a>
+				</router-link>
 			</div>
 		</div>
 	</div>

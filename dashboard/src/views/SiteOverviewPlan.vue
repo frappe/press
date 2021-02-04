@@ -154,7 +154,8 @@ export default {
 					)}`,
 					percentage:
 						(this.plan.total_cpu_usage_hours /
-							this.plan.current_plan.cpu_time_per_day) * 100
+							this.plan.current_plan.cpu_time_per_day) *
+						100
 				},
 				{
 					label: 'Database',
