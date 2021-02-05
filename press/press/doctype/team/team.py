@@ -22,7 +22,66 @@ class Team(Document):
 		load_address_and_contact(self)
 
 	def validate(self):
-		# validate duplicate team members
+		self.validate_duplicate_members()
+
+		self.set_team_currency()
+		self.set_default_user()
+		self.set_billing_name()
+
+		self.validate_onboarding()
+		self.validate_disabled_team()
+
+	def set_billing_name(self):
+		if not self.billing_name:
+			self.billing_name = frappe.utils.get_fullname(self.name)
+
+	def set_default_user(self):
+		if not self.user and self.team_members:
+			self.user = self.team_members[0].user
+
+	def set_team_currency(self):
+		if not self.currency and self.country:
+			self.currency = "INR" if self.country == "India" else "USD"
+
+	def validate_disabled_team(self):
+		if not self.enabled:
+			team_members = [row.user for row in self.team_members]
+			members_only_in_this_team = [
+				user
+				for user in team_members
+				if not frappe.db.exists("Team Member", {"user": user, "parent": ("!=", self.name)})
+			]
+
+			# disable all users if they dont have their own team
+			for user in members_only_in_this_team:
+				user_doc = frappe.get_doc("User", user)
+				user_doc.enabled = False
+				user_doc.save()
+
+	def validate_duplicate_members(self):
+
+		self.set_team_currency()
+		self.set_default_user()
+		self.set_billing_name()
+
+		self.validate_onboarding()
+		self.validate_disabled_team()
+
+	def set_billing_name(self):
+			team_members = [row.user for row in self.team_members]
+			members_only_in_this_team = [
+				user
+				for user in team_members
+				if not frappe.db.exists("Team Member", {"user": user, "parent": ("!=", self.name)})
+			]
+
+			# disable all users if they dont have their own team
+			for user in members_only_in_this_team:
+				user_doc = frappe.get_doc("User", user)
+				user_doc.enabled = False
+				user_doc.save()
+
+	def validate_duplicate_members(self):
 		team_members = [row.user for row in self.team_members]
 		duplicate_members = [m for m in team_members if team_members.count(m) > 1]
 		duplicate_members = list(set(duplicate_members))
@@ -31,19 +90,6 @@ class Team(Document):
 				_("Duplicate Team Members: {0}").format(", ".join(duplicate_members)),
 				frappe.DuplicateEntryError,
 			)
-
-		if not self.currency and self.country:
-			self.currency = "INR" if self.country == "India" else "USD"
-
-		# set default user
-		if not self.user and self.team_members:
-			self.user = self.team_members[0].user
-
-		# set billing name
-		if not self.billing_name:
-			self.billing_name = frappe.utils.get_fullname(self.name)
-
-		self.validate_onboarding()
 
 	def validate_onboarding(self):
 		if self.is_new():
