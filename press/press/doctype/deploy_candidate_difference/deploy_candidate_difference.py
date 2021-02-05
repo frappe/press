@@ -52,13 +52,25 @@ class DeployCandidateDifference(Document):
 			source = find(source_candidate.apps, lambda x: x.app == destination.app)
 			if not source or source.release == destination.release:
 				continue
-			difference = frappe.get_all(
+			differences = frappe.get_all(
 				"App Release Difference",
 				["name", "deploy_type"],
 				{"source_release": source.release, "destination_release": destination.release},
 				limit=1,
-			)[0]
-
+			)
+			if not differences:
+				difference = frappe.get_doc(
+					{
+						"doctype": "App Release Difference",
+						"app": destination.app,
+						"source": destination.source,
+						"source_release": source.release,
+						"destination_release": destination.release,
+					}
+				)
+				difference.insert()
+			else:
+				difference = differences[0]
 			self.append(
 				"apps",
 				{
