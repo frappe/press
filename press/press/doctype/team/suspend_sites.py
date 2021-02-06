@@ -26,10 +26,11 @@ def execute():
 	for d in teams_with_total_usage:
 		total_usage = d.total_usage
 		team = frappe.get_doc("Team", d.team)
-		total_usage_limit = get_total_free_usage_limit(team)
 
-		if team.get_balance() > 0:
-			return
+		if team.free_account or not total_usage or team.get_balance() > 0:
+			continue
+
+		total_usage_limit = get_total_free_usage_limit(team)
 
 		# if total usage has crossed the allotted free credits, suspend their sites
 		if total_usage > total_usage_limit:
