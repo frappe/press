@@ -568,11 +568,15 @@ def process_stripe_webhook(doc, method):
 		)
 		invoice.save()
 
-		if team.erpnext_partner:
+		if team.free_account:
+			return
+
+		elif team.erpnext_partner:
 			# dont suspend partner sites, send alert on telegram
 			telegram = Telegram()
 			telegram.send(f"Failed Invoice Payment of Partner: {team.name}")
 			send_email_for_failed_payment(invoice)
+
 		else:
 			sites = None
 			if attempt_count > 1:
