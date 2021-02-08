@@ -198,11 +198,13 @@ class Team(Document):
 			}
 		)
 		address_doc.save()
+		address_doc.reload()
 
 		self.billing_name = billing_details.billing_name or self.billing_name
 		self.billing_address = address_doc.name
 		self.save()
 		self.reload()
+
 		self.update_billing_details_on_stripe(address_doc)
 		self.update_billing_details_on_frappeio()
 		self.update_billing_details_on_draft_invoices()
@@ -218,8 +220,11 @@ class Team(Document):
 	def update_billing_details_on_frappeio(self):
 		try:
 			frappeio_client = get_frappe_io_connection()
-		except FrappeioServerNotSet:
-			return
+		except FrappeioServerNotSet as e:
+			if frappe.conf.developer_mode:
+				return
+			else:
+				raise e
 
 		previous_version = self.get_doc_before_save()
 
