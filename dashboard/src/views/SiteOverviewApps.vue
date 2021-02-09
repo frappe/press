@@ -16,13 +16,13 @@
 		<div class="divide-y">
 			<div class="flex py-3" v-for="app in installedApps" :key="app.name">
 				<div class="w-1/3 text-base font-medium">
-					{{ app.owner }}/{{ app.repo }}
+					{{ app.title }}
 				</div>
 				<div class="text-base text-gray-700">
-					{{ app.branch }}
+					{{ app.repository_owner }}:{{ app.branch }}
 				</div>
 				<Link
-					:to="`${app.url}/tree/${app.branch}`"
+					:to="`${app.repository_url}/tree/${app.branch}`"
 					class="inline-flex ml-auto text-base"
 				>
 					Visit Repo →
@@ -31,17 +31,17 @@
 		</div>
 
 		<Dialog title="Install an app on your site" v-model="showInstallAppsDialog">
-			<div class="divide-y">
+			<div v-if="availableApps.data && availableApps.data.length" class="divide-y">
 				<div
 					class="flex items-center py-3"
 					v-for="app in availableApps.data"
 					:key="app.name"
 				>
 					<div class="w-1/3 text-base font-medium">
-						{{ app.owner }}/{{ app.repo }}
+						{{ app.title }}
 					</div>
 					<div class="text-base text-gray-700">
-						{{ app.branch }}
+						{{ app.repository_owner }}:{{ app.branch }}
 					</div>
 					<Button
 						class="ml-auto"
@@ -51,6 +51,9 @@
 						Install
 					</Button>
 				</div>
+			</div>
+			<div class="text-base text-gray-600" v-else>
+				No apps available to install
 			</div>
 		</Dialog>
 	</Card>
