@@ -198,11 +198,13 @@ class Team(Document):
 			}
 		)
 		address_doc.save()
+		address_doc.reload()
 
 		self.billing_name = billing_details.billing_name or self.billing_name
 		self.billing_address = address_doc.name
 		self.save()
 		self.reload()
+
 		self.update_billing_details_on_stripe(address_doc)
 		self.update_billing_details_on_frappeio()
 		self.update_billing_details_on_draft_invoices()
@@ -218,8 +220,11 @@ class Team(Document):
 	def update_billing_details_on_frappeio(self):
 		try:
 			frappeio_client = get_frappe_io_connection()
-		except FrappeioServerNotSet:
-			return
+		except FrappeioServerNotSet as e:
+			if frappe.conf.developer_mode:
+				return
+			else:
+				raise e
 
 		previous_version = self.get_doc_before_save()
 
@@ -295,21 +300,6 @@ class Team(Document):
 		if payment_methods:
 			return payment_methods
 
-		stripe = get_stripe()
-		res = stripe.PaymentMethod.list(customer=self.stripe_customer_id, type="card")
-		payment_methods = res["data"] or []
-		payment_methods = [
-			{
-				"name": d["id"],
-				"last_4": d["card"]["last4"],
-				"name_on_card": d["billing_details"]["name"],
-				"expiry_month": d["card"]["exp_month"],
-				"expiry_year": d["card"]["exp_year"],
-			}
-			for d in payment_methods
-		]
-		return payment_methods
-
 	def get_past_invoices(self):
 		invoices = frappe.db.get_all(
 			"Invoice",
@@ -325,6 +315,7 @@ class Team(Document):
 				"due_date",
 				"payment_date",
 				"currency",
+				"invoice_pdf",
 			],
 			order_by="due_date desc",
 		)
@@ -332,7 +323,7 @@ class Team(Document):
 		print_format = frappe.get_meta("Invoice").default_print_format
 		for invoice in invoices:
 			invoice.formatted_total = frappe.utils.fmt_money(invoice.total, 2, invoice.currency)
-			if invoice.currency == "USD":
+			if invoice.currency == "USD" and not invoice.invoice_pdf:
 				invoice.invoice_pdf = frappe.utils.get_url(
 					f"/api/method/frappe.utils.print_format.download_pdf?doctype=Invoice&name={invoice.name}&format={print_format}&no_letterhead=0"
 				)

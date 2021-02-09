@@ -10,7 +10,7 @@ import frappe
 
 from press.agent import Agent
 from press.press.doctype.bench.test_bench import create_test_bench
-from press.press.doctype.frappe_app.test_frappe_app import create_test_frappe_app
+from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.plan.test_plan import create_test_plan
 from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
 from press.press.doctype.release_group.test_release_group import (
@@ -24,9 +24,9 @@ def create_test_site(subdomain: str, new: bool = False) -> Site:
 	"""Create test Site doc."""
 	proxy_server = create_test_proxy_server()
 	server = create_test_server(proxy_server.name)
-	frappe_app = create_test_frappe_app()
+	app = create_test_app()
 
-	release_group = create_test_release_group(frappe_app.name)
+	release_group = create_test_release_group(app.name)
 	release_group.create_deploy_candidate()
 
 	plan = create_test_plan("Site")
@@ -43,7 +43,7 @@ def create_test_site(subdomain: str, new: bool = False) -> Site:
 			"server": server.name,
 			"bench": bench.name,
 			"plan": plan.name,
-			"apps": [{"app": frappe_app.name}],
+			"apps": [{"app": app.name}],
 			"admin_password": "admin",
 		}
 	).insert(ignore_if_duplicate=True)

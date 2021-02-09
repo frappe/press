@@ -10,8 +10,7 @@ from press.utils import get_current_team, log_error
 import requests
 import jwt
 import re
-from base64 import b64decode, b64encode
-from frappe.core.utils import find
+from base64 import b64decode
 
 
 @frappe.whitelist(allow_guest=True, xss_safe=True)
@@ -64,28 +63,15 @@ def get_access_token(install):
 def options():
 	team = get_current_team()
 	token = frappe.db.get_value("Team", team, "github_access_token")
-	enable_custom_apps = frappe.db.get_value("Team", team, "enable_custom_apps")
 	public_link = frappe.db.get_single_value("Press Settings", "github_app_public_link")
 
-	groups = frappe.get_all("Release Group", or_filters={"public": True, "team": team})
-	for group in groups:
-		group_doc = frappe.get_doc("Release Group", group.name)
-		group_apps = frappe.get_all(
-			"Frappe App",
-			fields=["name", "frappe", "scrubbed", "branch"],
-			filters={"name": ("in", [row.app for row in group_doc.apps])},
-		)
-		frappe_app = find(group_apps, lambda x: x.frappe)
-		group["frappe"] = frappe_app
-		group["apps"] = group_apps
+	versions = frappe.get_all("Frappe Version", filters={"public": True})
 
-	state = b64encode(team.encode()).decode()
 	options = {
 		"authorized": bool(token),
-		"enable_custom_apps": bool(enable_custom_apps),
-		"installation_url": f"{public_link}/installations/new?state={state}",
+		"installation_url": f"{public_link}/installations/new",
 		"installations": installations(token) if token else [],
-		"groups": groups,
+		"versions": versions,
 	}
 	return options
 

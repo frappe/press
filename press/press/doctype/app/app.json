@@ -1,0 +1,174 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "Prompt",
+ "creation": "2019-12-09 14:45:21.955245",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "enabled",
+  "column_break_5",
+  "frappe",
+  "public",
+  "section_break_9",
+  "url",
+  "scrubbed",
+  "branch",
+  "repo_owner",
+  "repo",
+  "installation",
+  "team",
+  "enable_auto_deploy",
+  "skip_review"
+ ],
+ "fields": [
+  {
+   "fieldname": "branch",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Branch",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "scrubbed",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Scrubbed Name",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "url",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Repository URL",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "repo_owner",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Repository Owner",
+   "set_only_once": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "frappe",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Frappe",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Team",
+   "options": "Team"
+  },
+  {
+   "fieldname": "installation",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Installation"
+  },
+  {
+   "default": "0",
+   "fieldname": "public",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Public"
+  },
+  {
+   "fieldname": "repo",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Repository"
+  },
+  {
+   "fieldname": "column_break_5",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_9",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_auto_deploy",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Enable Auto Deploy"
+  },
+  {
+   "default": "0",
+   "fieldname": "skip_review",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Skip Review"
+  },
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Enabled"
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Title",
+   "reqd": 1
+  }
+ ],
+ "links": [],
+ "modified": "2021-01-25 10:03:45.756368",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "App",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "title_field": "title",
+ "track_changes": 1
+}

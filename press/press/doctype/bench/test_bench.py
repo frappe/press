@@ -23,7 +23,7 @@ def create_test_bench(release_group: str, server: str) -> Bench:
 			"name": f"Test Bench{name}",
 			"doctype": "Bench",
 			"status": "Active",
-			"workers": 1,
+			"background_workers": 1,
 			"gunicorn_workers": 2,
 			"group": release_group,
 			"server": server,

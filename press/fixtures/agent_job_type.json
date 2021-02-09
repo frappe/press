@@ -403,7 +403,7 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-06-18 10:07:19.031918",
+  "modified": "2020-12-11 14:03:35.053168",
   "name": "New Bench",
   "parent": null,
   "parentfield": null,
@@ -415,7 +415,7 @@
     "parent": "New Bench",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
-    "step_name": "Bench Initialize"
+    "step_name": "Initialize Bench"
    },
    {
     "parent": "New Bench",
@@ -427,37 +427,13 @@
     "parent": "New Bench",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
-    "step_name": "Bench Setup Redis"
+    "step_name": "Deploy Bench"
    },
    {
     "parent": "New Bench",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
-    "step_name": "Bench Reset Frappe App"
-   },
-   {
-    "parent": "New Bench",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Bench Get Apps"
-   },
-   {
-    "parent": "New Bench",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Bench Setup Requirements"
-   },
-   {
-    "parent": "New Bench",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Bench Build"
-   },
-   {
-    "parent": "New Bench",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Bench Setup Production"
+    "step_name": "Bench Setup NGINX"
    }
   ]
  },
@@ -754,7 +730,7 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-06-18 09:02:49.972271",
+  "modified": "2021-02-01 16:31:25.999308",
   "name": "Update Bench Configuration",
   "parent": null,
   "parentfield": null,
@@ -772,25 +748,19 @@
     "parent": "Update Bench Configuration",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
-    "step_name": "Bench Setup Supervisor"
-   },
-   {
-    "parent": "Update Bench Configuration",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Update Supervisor"
-   },
-   {
-    "parent": "Update Bench Configuration",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
     "step_name": "Bench Setup NGINX"
    },
    {
     "parent": "Update Bench Configuration",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
-    "step_name": "Reload NGINX"
+    "step_name": "Generate Docker Compose File"
+   },
+   {
+    "parent": "Update Bench Configuration",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Deploy Bench"
    }
   ]
  },

@@ -1,0 +1,144 @@
+{
+ "actions": [],
+ "creation": "2021-01-19 15:10:34.077966",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "site",
+  "status",
+  "migration_type",
+  "column_break_3",
+  "source_bench",
+  "destination_bench",
+  "section_break_5",
+  "source_server",
+  "source_cluster",
+  "column_break_5",
+  "destination_server",
+  "destination_cluster"
+ ],
+ "fields": [
+  {
+   "fieldname": "site",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Site",
+   "options": "Site",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "site.bench",
+   "fieldname": "source_bench",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Source Bench",
+   "options": "Bench",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fetch_from": "site.server",
+   "fieldname": "source_server",
+   "fieldtype": "Link",
+   "label": "Source Server",
+   "options": "Server",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fetch_from": "site.cluster",
+   "fieldname": "source_cluster",
+   "fieldtype": "Link",
+   "label": "Source Cluster",
+   "options": "Cluster",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_5",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "destination_bench",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Destination Bench",
+   "options": "Bench",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "destination_bench.server",
+   "fieldname": "destination_server",
+   "fieldtype": "Link",
+   "label": "Destination Server",
+   "options": "Server",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fetch_from": "destination_bench.cluster",
+   "fieldname": "destination_cluster",
+   "fieldtype": "Link",
+   "label": "Destination Cluster",
+   "options": "Cluster",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "migration_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Migration Type",
+   "options": "\nBench\nServer\nCluster",
+   "read_only": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Pending\nRunning\nSuccess\nFailure",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_5",
+   "fieldtype": "Section Break"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2021-01-19 15:48:46.184896",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Site Migration",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "title_field": "site",
+ "track_changes": 1
+}

@@ -11,29 +11,6 @@
     name: file:///home/frappe/bench-repo
     executable: pip3
 
-- name: Install Ansible
-  pip:
-    name: ansible
-    executable: pip3
-
-- name: Install Bench Prerequisites
-  command: bench install prerequisites
-
-- name: Install MariaDB
-  command: bench install mariadb --mysql_root_password {{ mariadb_root_password }}
-
-- name: Install Whtmltopdf
-  command: bench install wkhtmltopdf
-
-- name: Install NodeJS
-  command: bench install nodejs
-
-- name: Setup Bench Fonts
-  command: bench setup fonts
-
-- name: Setup Fail2ban
-  command: bench setup role fail2ban
-
 - name: Create Benches Directory
   become: yes
   become_user: frappe

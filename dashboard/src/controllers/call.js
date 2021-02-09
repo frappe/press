@@ -69,7 +69,7 @@ export default async function call(method, args) {
 		});
 		e.messages = e.messages.filter(Boolean);
 		if (!e.messages.length) {
-			e.messages = ['Internal Server Error'];
+			e.messages = error._error_message ? [error._error_message] : ['Internal Server Error'];
 		}
 		updateState(this, null, e.messages.join('\n'));
 

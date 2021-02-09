@@ -2,6 +2,28 @@
  {
   "docstatus": 0,
   "doctype": "Site Config Key Blacklist",
+  "key": "ssl_certificate",
+  "modified": "2020-10-01 21:10:07.925888",
+  "name": "ssl_certificate",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "reason": null
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Site Config Key Blacklist",
+  "key": "ssl_certificate_key",
+  "modified": "2020-10-01 21:10:31.635305",
+  "name": "ssl_certificate_key",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "reason": null
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Site Config Key Blacklist",
   "key": "frappecloud_url",
   "modified": "2020-09-15 13:02:11.917220",
   "name": "frappecloud_url",

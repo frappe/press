@@ -6,7 +6,6 @@
  "engine": "InnoDB",
  "field_order": [
   "server",
-  "bench_name",
   "bench"
  ],
  "fields": [
@@ -25,18 +24,11 @@
    "label": "Bench",
    "options": "Bench",
    "read_only": 1
-  },
-  {
-   "fieldname": "bench_name",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Bench Name",
-   "reqd": 1
   }
  ],
  "istable": 1,
  "links": [],
- "modified": "2020-06-19 12:59:57.099794",
+ "modified": "2020-12-16 18:32:30.211437",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Bench",

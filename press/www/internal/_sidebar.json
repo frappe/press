@@ -9,6 +9,15 @@
     ]
   },
   {
+    "group_title": "Press",
+    "group_items": [
+      {
+        "title": "Overview",
+        "route": "/internal/press/overview"
+      }
+    ]
+  },
+  {
     "group_title": "Local Infrastructure",
     "group_items": [
       {

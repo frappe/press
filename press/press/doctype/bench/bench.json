@@ -1,6 +1,5 @@
 {
  "actions": [],
- "autoname": "Prompt",
  "creation": "2019-12-09 12:35:16.109025",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -9,18 +8,21 @@
   "status",
   "server",
   "database_server",
+  "cluster",
   "column_break_3",
   "group",
   "candidate",
+  "docker_image",
   "section_break_6",
   "apps",
-  "common_site_configuration",
-  "workers",
+  "configuration_section",
+  "background_workers",
   "gunicorn_workers",
   "port_offset",
   "auto_scale_workers",
   "column_break_11",
-  "config"
+  "config",
+  "bench_config"
  ],
  "fields": [
   {
@@ -32,13 +34,6 @@
    "options": "Server",
    "reqd": 1,
    "set_only_once": 1
-  },
-  {
-   "fieldname": "apps",
-   "fieldtype": "Table",
-   "label": "Apps",
-   "options": "Installed App",
-   "read_only": 1
   },
   {
    "fetch_from": "candidate.group",
@@ -59,6 +54,7 @@
    "in_standard_filter": 1,
    "label": "Deploy Candidate",
    "options": "Deploy Candidate",
+   "reqd": 1,
    "set_only_once": 1
   },
   {
@@ -70,27 +66,6 @@
    "label": "Status",
    "options": "Pending\nInstalling\nActive\nBroken\nArchived",
    "read_only": 1,
-   "reqd": 1
-  },
-  {
-   "fieldname": "config",
-   "fieldtype": "Code",
-   "label": "Configuration",
-   "options": "JSON",
-   "read_only": 1
-  },
-  {
-   "collapsible": 1,
-   "collapsible_depends_on": "true",
-   "fieldname": "common_site_configuration",
-   "fieldtype": "Section Break",
-   "label": "Configuration"
-  },
-  {
-   "default": "1",
-   "fieldname": "workers",
-   "fieldtype": "Int",
-   "label": "Workers",
    "reqd": 1
   },
   {
@@ -131,10 +106,61 @@
    "label": "Database Server",
    "options": "Database Server",
    "read_only": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "background_workers",
+   "fieldtype": "Int",
+   "label": "Background Workers",
+   "reqd": 1
+  },
+  {
+   "fieldname": "bench_config",
+   "fieldtype": "Code",
+   "label": "Bench Configuration",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "config",
+   "fieldtype": "Code",
+   "label": "Common Site Configuration",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "true",
+   "fieldname": "configuration_section",
+   "fieldtype": "Section Break",
+   "label": "Configuration"
+  },
+  {
+   "fieldname": "apps",
+   "fieldtype": "Table",
+   "label": "Apps",
+   "options": "Bench App",
+   "read_only": 1
+  },
+  {
+   "fieldname": "docker_image",
+   "fieldtype": "Data",
+   "label": "Docker Image",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fetch_from": "server.cluster",
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "label": "Cluster",
+   "options": "Cluster",
+   "read_only": 1,
+   "reqd": 1
   }
  ],
  "links": [],
- "modified": "2020-10-07 22:54:07.354802",
+ "modified": "2021-01-22 10:03:12.340143",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",
@@ -160,7 +186,19 @@
    "read": 1,
    "report": 1,
    "role": "Press Admin",
-   "share": 1
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
+   "share": 1,
+   "write": 1
   }
  ],
  "sort_field": "modified",

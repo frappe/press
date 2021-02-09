@@ -44,8 +44,9 @@
 				<div>
 					<h5 class="text-base text-gray-600">Supported Versions</h5>
 					<ul class="mt-2 space-y-1 text-base">
-						{%- for version in supported_versions -%}
-						<li class="">{{ link(version.name, version.frappe.url + '/tree/' + version.frappe.branch) }}
+						{%- for group in groups -%}
+						<li class="">
+							{{ link(group.version, group.frappe.repository_url + '/tree/' + group.frappe.branch, blank=True) }}
 						</li>
 						{%- endfor -%}
 					</ul>

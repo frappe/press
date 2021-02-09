@@ -5,45 +5,21 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "status",
   "app",
-  "deployable",
+  "source",
+  "cloned",
   "column_break_3",
   "hash",
   "author",
   "message",
-  "review_section",
-  "directory",
-  "code_server_url",
+  "clone_section",
+  "clone_directory",
   "column_break_9",
-  "reason",
-  "section_break_12",
-  "comments",
-  "difference_section",
-  "diff_requirements",
-  "diff_result",
-  "result_html",
-  "result_html_rendered",
-  "baseline_section",
-  "baseline_release",
-  "baseline_requirements",
-  "baseline_result",
-  "result_section",
-  "requirements",
-  "result",
+  "code_server_url",
   "section_break_26",
   "output"
  ],
  "fields": [
-  {
-   "fieldname": "app",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "App",
-   "options": "Frappe App",
-   "read_only": 1,
-   "reqd": 1
-  },
   {
    "fieldname": "hash",
    "fieldtype": "Data",
@@ -65,131 +41,14 @@
    "read_only": 1
   },
   {
-   "default": "Pending",
-   "fieldname": "status",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Status",
-   "options": "Pending\nAwaiting Approval\nApproved\nRejected"
-  },
-  {
-   "depends_on": "eval:doc.status === \"Rejected\"",
-   "fieldname": "reason",
-   "fieldtype": "Select",
-   "label": "Reason",
-   "options": "\nMalicious Code\nVulnerable Code"
-  },
-  {
-   "fieldname": "directory",
-   "fieldtype": "Data",
-   "label": "Directory",
-   "read_only": 1
-  },
-  {
-   "fieldname": "result",
-   "fieldtype": "Code",
-   "hidden": 1,
-   "label": "Result",
-   "read_only": 1
-  },
-  {
-   "fieldname": "result_html",
-   "fieldtype": "Code",
-   "hidden": 1,
-   "label": "Result HTML",
-   "read_only": 1
-  },
-  {
-   "fieldname": "result_html_rendered",
-   "fieldtype": "HTML",
-   "label": "Result HTML Rendered"
-  },
-  {
-   "fieldname": "requirements",
-   "fieldtype": "Code",
-   "hidden": 1,
-   "label": "Requirements",
-   "read_only": 1
-  },
-  {
    "fieldname": "column_break_3",
    "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "review_section",
-   "fieldtype": "Section Break",
-   "label": "Review"
-  },
-  {
-   "fieldname": "column_break_9",
-   "fieldtype": "Column Break"
-  },
-  {
-   "depends_on": "eval:doc.status === \"Rejected\"",
-   "fieldname": "comments",
-   "fieldtype": "Text Editor",
-   "label": "Comments"
   },
   {
    "fieldname": "code_server_url",
    "fieldtype": "Data",
    "label": "Code Server URL",
    "read_only": 1
-  },
-  {
-   "fieldname": "baseline_release",
-   "fieldtype": "Link",
-   "label": "Baseline Release",
-   "options": "App Release",
-   "read_only": 1
-  },
-  {
-   "fieldname": "diff_result",
-   "fieldtype": "Code",
-   "hidden": 1,
-   "label": "Diff Result",
-   "read_only": 1
-  },
-  {
-   "fieldname": "diff_requirements",
-   "fieldtype": "Code",
-   "label": "Diff Requirements",
-   "read_only": 1
-  },
-  {
-   "fieldname": "difference_section",
-   "fieldtype": "Section Break",
-   "label": "Difference"
-  },
-  {
-   "fieldname": "baseline_section",
-   "fieldtype": "Section Break",
-   "label": "Baseline"
-  },
-  {
-   "fieldname": "baseline_result",
-   "fieldtype": "Code",
-   "hidden": 1,
-   "label": "Baseline Result",
-   "read_only": 1
-  },
-  {
-   "fieldname": "baseline_requirements",
-   "fieldtype": "Code",
-   "hidden": 1,
-   "label": "Baseline Requirements",
-   "read_only": 1
-  },
-  {
-   "fieldname": "result_section",
-   "fieldtype": "Section Break",
-   "label": "Result"
-  },
-  {
-   "fieldname": "section_break_12",
-   "fieldtype": "Section Break",
-   "hide_border": 1
   },
   {
    "fieldname": "output",
@@ -202,17 +61,53 @@
    "fieldtype": "Section Break"
   },
   {
+   "fieldname": "source",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Source",
+   "options": "App Source",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_9",
+   "fieldtype": "Column Break"
+  },
+  {
    "default": "0",
-   "fieldname": "deployable",
+   "fieldname": "cloned",
    "fieldtype": "Check",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Deployable"
+   "label": "Cloned",
+   "read_only": 1
+  },
+  {
+   "fieldname": "clone_directory",
+   "fieldtype": "Data",
+   "label": "Clone Directory",
+   "read_only": 1
+  },
+  {
+   "fieldname": "app",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "App",
+   "options": "App",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "clone_section",
+   "fieldtype": "Section Break",
+   "label": "Clone"
   }
  ],
  "in_create": 1,
  "links": [],
- "modified": "2020-10-19 20:14:36.476654",
+ "modified": "2021-01-15 09:34:31.529146",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Release",
@@ -238,6 +133,17 @@
    "read": 1,
    "report": 1,
    "role": "Press Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
    "share": 1,
    "write": 1
   }
