@@ -8,6 +8,12 @@ import unittest
 from press.press.doctype.app.app import new_app
 
 
+def create_test_app(name: str = "frappe", title: str = "Frappe Framework"):
+	return frappe.get_doc({"doctype": "App", "name": name, "title": title}).insert(
+		ignore_if_duplicate=True
+	)
+
+
 class TestApp(unittest.TestCase):
 	def test_create_frappe_app(self):
 		app = new_app("frappe", "Frappe Framework")

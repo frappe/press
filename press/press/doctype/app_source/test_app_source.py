@@ -8,53 +8,15 @@ from unittest.mock import patch
 
 import frappe
 
-from press.utils import log_error
-
 from press.press.doctype.app.app import App
+from press.press.doctype.app_source.app_source import AppSource
+from press.press.doctype.release_group.release_group import ReleaseGroup
 
 
-def create_test_frappe_app(name=frappe.mock("name")) -> App:
-	"""
-	Create test App doc.
-
-	Github API call will not be made when creating the doc.
-	"""
-
-	def create_app_release(self):
-		if not self.enabled:
-			return
-		try:
-			hash = frappe.mock("name")
-			if not frappe.db.exists("App Release", {"hash": hash, "app": self.name}):
-				is_first_release = frappe.db.count("App Release", {"app": self.name}) == 0
-				frappe.get_doc(
-					{
-						"doctype": "App Release",
-						"app": self.name,
-						"hash": hash,
-						"message": "Test commit message",
-						"author": frappe.mock("name"),
-						"deployable": bool(is_first_release),
-					}
-				).insert()
-		except Exception:
-			log_error("App Release Creation Error", app=self.name)
-
-	with patch.object(App, "create_app_release", new=create_app_release):
-		return frappe.get_doc(
-			{
-				"doctype": "App",
-				"url": frappe.mock("url"),
-				"scrubbed": "frappe",
-				"branch": "master",
-				"repo_owner": "frappe",
-				"repo": "frappe",
-				"name": f"Test App {name}",
-				"skip_review": True,
-				"enable_auto_deploy": True,
-				"frappe": True,
-			}
-		).insert(ignore_if_duplicate=True)
+def create_test_app_source(release_group: ReleaseGroup, app: App) -> AppSource:
+	"""Create test app source for app and release group."""
+	with patch.object(AppSource, "after_insert"):
+		return app.add_source(release_group.version, frappe.mock("url"), "master")
 
 
 class TestAppSource(unittest.TestCase):
