@@ -104,6 +104,7 @@ class Invoice(Document):
 		self.db_set(
 			{"stripe_invoice_id": invoice["id"], "status": "Invoice Created"}, commit=True
 		)
+		self.reload()
 
 	def finalize_stripe_invoice(self):
 		stripe = get_stripe()
@@ -114,18 +115,18 @@ class Invoice(Document):
 			return
 
 		if self.period_start and self.period_end and self.is_new():
-			intersecting_invoices = frappe.db.sql(
+			query = (
 				f"select `name` from `tabInvoice` where team = '{self.team}' and"
-				f" docstatus < 2 and '{self.period_start}' between `period_start` and"
+				f" docstatus < 2 and ('{self.period_start}' between `period_start` and"
 				f" `period_end` or '{self.period_end}' between `period_start` and"
-				" `period_end`",
-				as_list=True,
+				" `period_end`)"
 			)
+
+			intersecting_invoices = [x[0] for x in frappe.db.sql(query, as_list=True,)]
 
 			if intersecting_invoices:
 				frappe.throw(
-					"There are invoices with intersecting periods:"
-					f" {', '.join(*intersecting_invoices)}",
+					f"There are invoices with intersecting periods:{', '.join(intersecting_invoices)}",
 					frappe.DuplicateEntryError,
 				)
 
