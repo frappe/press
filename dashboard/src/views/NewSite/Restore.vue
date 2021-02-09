@@ -45,7 +45,7 @@
 				Seems like your site is huge. Click
 				<a
 					@click="openMigrationRequestWindow()"
-					class="border-b border-orange-700 cursor-pointer"
+					class="border-b border-yellow-700 cursor-pointer"
 					>here</a
 				>
 				to schedule a migration with us.
@@ -138,7 +138,7 @@
 					Seems like your site is huge. Click
 					<a
 						@click="openMigrationRequestWindow()"
-						class="border-b border-orange-700 cursor-pointer"
+						class="border-b border-yellow-700 cursor-pointer"
 						>here</a
 					>
 					to schedule a migration with us.

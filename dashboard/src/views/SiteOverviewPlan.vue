@@ -56,7 +56,7 @@
 			<div v-for="d in usage" :key="d.label">
 				<ProgressArc :percentage="d.percentage" />
 				<div class="mt-2 text-base font-medium text-gray-900">
-					{{ d.label }} {{ isNaN(d.percentage) ? '' : `(${d.percentage}%)` }}
+					{{ d.label }} {{ isNaN(d.percentage) ? '' : `(${Number(d.percentage).toFixed(1)}%)` }}
 				</div>
 				<div class="mt-1 text-xs text-gray-600">{{ d.value }}</div>
 			</div>

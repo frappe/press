@@ -33,7 +33,7 @@ export default {
 				default: { data: [], plan_limit: 0 },
 				onSuccess(data) {
 					if (data.data.length > 0) {
-						this.makeChart();
+						this.$nextTick().then(() => this.makeChart());
 					}
 				}
 			};

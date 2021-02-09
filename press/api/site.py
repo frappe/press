@@ -84,7 +84,16 @@ def new(site):
 	).insert(ignore_permissions=True)
 	if not team.free_account:
 		site.create_subscription(plan)
-	return site.name
+	return {
+		"site": site.name,
+		"job": frappe.db.get_value(
+			"Agent Job",
+			filters={
+				"site": site.name,
+				"job_type": ("in", ["New Site", "New Site from Backup"]),
+			},
+		),
+	}
 
 
 @frappe.whitelist()
@@ -303,6 +312,10 @@ def options_for_new():
 
 @frappe.whitelist()
 def get_plans():
+	filters = {"enabled": True, "document_type": "Site", "price_usd": (">", 0)}
+	if frappe.local.dev_server:
+		del filters["price_usd"]
+
 	return frappe.db.get_all(
 		"Plan",
 		fields=[
@@ -316,7 +329,7 @@ def get_plans():
 			"max_storage_usage",
 			"max_database_usage",
 		],
-		filters={"enabled": True, "document_type": "Site", "price_usd": (">", 0)},
+		filters=filters,
 		order_by="price_usd asc",
 	)
 
@@ -429,7 +442,9 @@ def available_apps(name):
 	bench = frappe.get_doc("Bench", site.bench)
 	bench_apps = {}
 	for app in bench.apps:
-		app_team, app_public = frappe.db.get_value("App Source", app.source, ["team", "public"])
+		app_team, app_public = frappe.db.get_value(
+			"App Source", app.source, ["team", "public"]
+		)
 		if app_public or app_team == team:
 			bench_apps[app.app] = app.idx
 
