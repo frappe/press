@@ -23,7 +23,7 @@ class GitHubWebhookLog(Document):
 		repository = payload.repository
 		installation = payload.installation
 		if installation:
-			self.installation = installation["id"]
+			self.github_installation_id = installation["id"]
 
 		if payload.repository:
 			self.repository = repository["name"]
@@ -60,22 +60,23 @@ class GitHubWebhookLog(Document):
 
 	def create_app_release(self, payload):
 		try:
-			app = frappe.get_value(
-				"Frappe App",
+			source = frappe.get_value(
+				"App Source",
 				{
 					"branch": self.branch,
-					"repo": self.repository,
-					"repo_owner": self.repository_owner,
+					"repository": self.repository,
+					"repository_owner": self.repository_owner,
 				},
-				["name", "enabled"],
+				["name", "app"],
 				as_dict=True,
 			)
-			if app and app.enabled:
+			if source:
 				commit = payload.head_commit
 				release = frappe.get_doc(
 					{
 						"doctype": "App Release",
-						"app": app.name,
+						"app": source.app,
+						"source": source.name,
 						"hash": commit["id"],
 						"message": commit["message"],
 						"author": commit["author"]["name"],
@@ -95,7 +96,7 @@ class GitHubWebhookLog(Document):
 					"hash": commit["id"],
 					"repository": self.repository,
 					"repository_owner": self.repository_owner,
-					"installation": self.installation,
+					"github_installation_id": self.github_installation_id,
 				}
 			)
 			tag.insert()

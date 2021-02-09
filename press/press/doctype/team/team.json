@@ -22,8 +22,7 @@
   "free_credits_allocated",
   "column_break_12",
   "address_html",
-  "github_section",
-  "enable_custom_apps",
+  "custom_apps_section",
   "github_access_token",
   "onboarding_section",
   "onboarding",
@@ -124,20 +123,9 @@
    "options": "Address"
   },
   {
-   "fieldname": "github_section",
-   "fieldtype": "Section Break",
-   "label": "Custom Apps"
-  },
-  {
    "fieldname": "github_access_token",
    "fieldtype": "Data",
    "label": "GitHub Access Token"
-  },
-  {
-   "default": "0",
-   "fieldname": "enable_custom_apps",
-   "fieldtype": "Check",
-   "label": "Enable Custom Apps"
   },
   {
    "collapsible": 1,
@@ -163,6 +151,11 @@
    "label": "Enable Prepaid Credits"
   },
   {
+   "fieldname": "custom_apps_section",
+   "fieldtype": "Section Break",
+   "label": "Custom Apps"
+  },
+  {
    "fieldname": "billing_name",
    "fieldtype": "Data",
    "label": "Billing Name"
@@ -181,7 +174,7 @@
   },
   {
    "group": "General",
-   "link_doctype": "Frappe App",
+   "link_doctype": "App",
    "link_fieldname": "team"
   },
   {
@@ -210,7 +203,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2021-01-25 16:03:30.295116",
+ "modified": "2021-02-01 17:44:10.518911",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

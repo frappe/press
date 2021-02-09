@@ -1,0 +1,174 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2020-10-26 20:13:19.792375",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "app",
+  "app_title",
+  "frappe",
+  "enabled",
+  "repository_url",
+  "data_3",
+  "repository",
+  "repository_owner",
+  "branch",
+  "section_break_8",
+  "team",
+  "public",
+  "column_break_11",
+  "github_installation_id",
+  "section_break_12",
+  "versions"
+ ],
+ "fields": [
+  {
+   "fieldname": "repository_url",
+   "fieldtype": "Data",
+   "label": "Repository URL",
+   "reqd": 1
+  },
+  {
+   "fieldname": "repository",
+   "fieldtype": "Data",
+   "label": "Repository",
+   "read_only": 1
+  },
+  {
+   "fieldname": "repository_owner",
+   "fieldtype": "Data",
+   "label": "Repository Owner",
+   "read_only": 1
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Branch",
+   "reqd": 1
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Team",
+   "options": "Team"
+  },
+  {
+   "default": "0",
+   "fieldname": "public",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Public"
+  },
+  {
+   "fieldname": "github_installation_id",
+   "fieldtype": "Data",
+   "label": "GitHub Installation ID"
+  },
+  {
+   "fieldname": "data_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_8",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_11",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "versions",
+   "fieldtype": "Table",
+   "label": "Versions",
+   "options": "App Source Version",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_12",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "app",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "App",
+   "options": "App",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "app.title",
+   "fieldname": "app_title",
+   "fieldtype": "Data",
+   "label": "App Title",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fetch_from": "app.frappe",
+   "fetch_if_empty": 1,
+   "fieldname": "frappe",
+   "fieldtype": "Check",
+   "label": "Frappe"
+  },
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2021-01-22 11:53:24.768105",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "App Source",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "title_field": "app",
+ "track_changes": 1
+}

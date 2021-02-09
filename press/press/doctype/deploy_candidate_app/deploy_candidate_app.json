@@ -1,0 +1,75 @@
+{
+ "actions": [],
+ "creation": "2020-01-13 16:20:49.495751",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "app",
+  "title",
+  "column_break_3",
+  "source",
+  "release",
+  "hash"
+ ],
+ "fields": [
+  {
+   "fieldname": "release",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Release",
+   "options": "App Release",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "hash",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Hash",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "app",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "App",
+   "options": "App",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Source",
+   "options": "App Source",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fetch_from": "app.title",
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "read_only": 1,
+   "reqd": 1
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2021-01-14 19:42:54.301962",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Deploy Candidate App",
+ "owner": "Administrator",
+ "permissions": [],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

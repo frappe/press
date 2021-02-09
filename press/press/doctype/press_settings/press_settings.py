@@ -8,6 +8,7 @@ import frappe
 from frappe.model.document import Document
 from press.utils import log_error
 from press.api.billing import get_stripe
+from frappe.utils import get_url
 
 
 class PressSettings(Document):
@@ -50,3 +51,28 @@ class PressSettings(Document):
 		self.stripe_webhook_secret = webhook["secret"]
 		self.flags.ignore_mandatory = True
 		self.save()
+
+	def get_github_app_manifest(self):
+		if frappe.conf.developer_mode:
+			app_name = f"Frappe Cloud {frappe.generate_hash(length=6).upper()}"
+		else:
+			app_name = "Frappe Cloud"
+		manifest = {
+			"name": app_name,
+			"url": "https://frappe.cloud",
+			"hook_attributes": {"url": get_url("api/method/press.api.github.hook")},
+			"redirect_url": get_url("github/redirect"),
+			"description": "Managed Frappe Hosting",
+			"public": True,
+			"default_events": ["create", "push", "release"],
+			"default_permissions": {"contents": "read"},
+			# These keys aren't documented under the app creation from manifest
+			# https://docs.github.com/en/free-pro-team@latest/developers/apps/creating-a-github-app-from-a-manifest
+			# But are shown under app creation using url parameters
+			# https://docs.github.com/en/free-pro-team@latest/developers/apps/creating-a-github-app-using-url-parameters
+			# They seem to work. This might change later
+			"callback_url": get_url("github/authorize"),
+			"request_oauth_on_install": True,
+			"setup_on_update": True,
+		}
+		return manifest

@@ -1,12 +1,43 @@
 {
- "actions": [],
+ "actions": [
+  {
+   "action": "build",
+   "action_type": "Server Action",
+   "group": "Actions",
+   "label": "Build"
+  },
+  {
+   "action": "build_and_deploy",
+   "action_type": "Server Action",
+   "group": "Actions",
+   "label": "Build and Deploy"
+  }
+ ],
  "creation": "2020-01-13 16:21:04.051415",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "status",
+  "column_break_2",
   "group",
-  "apps"
+  "section_break_4",
+  "apps",
+  "section_break_6",
+  "build_start",
+  "build_end",
+  "column_break_7",
+  "build_directory",
+  "build_duration",
+  "section_break_11",
+  "docker_image",
+  "docker_image_id",
+  "column_break_13",
+  "docker_image_repository",
+  "docker_image_tag",
+  "section_break_9",
+  "build_steps",
+  "build_output"
  ],
  "fields": [
   {
@@ -19,15 +50,117 @@
    "set_only_once": 1
   },
   {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Draft\nPending\nRunning\nSuccess\nFailure",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_4",
+   "fieldtype": "Section Break",
+   "hide_border": 1
+  },
+  {
+   "fieldname": "build_directory",
+   "fieldtype": "Data",
+   "label": "Build Directory",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "build_duration",
+   "fieldtype": "Time",
+   "label": "Build Duration",
+   "read_only": 1
+  },
+  {
+   "fieldname": "build_start",
+   "fieldtype": "Datetime",
+   "label": "Build Start",
+   "read_only": 1
+  },
+  {
+   "fieldname": "build_end",
+   "fieldtype": "Datetime",
+   "label": "Build End",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_9",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "build_steps",
+   "fieldtype": "Table",
+   "label": "Build Steps",
+   "options": "Deploy Candidate Build Step",
+   "read_only": 1
+  },
+  {
+   "fieldname": "build_output",
+   "fieldtype": "Code",
+   "label": "Build Output",
+   "read_only": 1
+  },
+  {
+   "fieldname": "docker_image_id",
+   "fieldtype": "Data",
+   "label": "Docker Image ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_7",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "docker_image_tag",
+   "fieldtype": "Data",
+   "label": "Docker Image Tag",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_11",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_13",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_6",
+   "fieldtype": "Section Break"
+  },
+  {
    "fieldname": "apps",
    "fieldtype": "Table",
    "label": "Apps",
-   "options": "Deploy Candidate App Release",
+   "options": "Deploy Candidate App",
+   "read_only": 1,
    "reqd": 1
+  },
+  {
+   "fieldname": "docker_image_repository",
+   "fieldtype": "Data",
+   "label": "Docker Image Repository",
+   "read_only": 1
+  },
+  {
+   "fieldname": "docker_image",
+   "fieldtype": "Data",
+   "label": "Docker Image",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2020-06-19 20:02:59.753231",
+ "modified": "2021-01-25 15:34:03.051329",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",
@@ -53,10 +186,21 @@
    "read": 1,
    "report": 1,
    "role": "Press Admin",
-   "share": 1
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
+   "share": 1,
+   "write": 1
   }
  ],
- "quick_entry": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
  "title_field": "group",

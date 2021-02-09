@@ -58,7 +58,7 @@
 					:type="file.type"
 					:s3="true"
 					@success="onFileUpload(file, $event)"
-					@failure="showAlert(file, $event)"
+					@failure="showAlert()"
 					:upload-args="{
 						method: 'press.api.site.upload_backup',
 						type: file.type

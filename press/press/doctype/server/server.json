@@ -1,12 +1,14 @@
 {
  "actions": [],
- "autoname": "Prompt",
  "creation": "2019-12-09 12:34:13.844800",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
   "status",
+  "hostname",
+  "domain",
+  "cluster",
   "is_server_setup",
   "column_break_3",
   "ip",
@@ -26,7 +28,11 @@
   "ssh_section",
   "root_public_key",
   "column_break_20",
-  "frappe_public_key"
+  "frappe_public_key",
+  "section_break_22",
+  "use_for_new_benches",
+  "column_break_26",
+  "use_for_new_sites"
  ],
  "fields": [
   {
@@ -153,10 +159,52 @@
   {
    "fieldname": "column_break_20",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_22",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "use_for_new_benches",
+   "fieldtype": "Check",
+   "label": "Use For New Benches"
+  },
+  {
+   "fieldname": "hostname",
+   "fieldtype": "Data",
+   "label": "Hostname",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "domain",
+   "fieldtype": "Data",
+   "label": "Domain",
+   "set_only_once": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "use_for_new_sites",
+   "fieldtype": "Check",
+   "label": "Use For New Sites"
+  },
+  {
+   "fieldname": "column_break_26",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Cluster",
+   "options": "Cluster",
+   "reqd": 1
   }
  ],
  "links": [],
- "modified": "2020-10-09 18:14:55.805169",
+ "modified": "2021-01-18 15:15:48.497838",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

@@ -52,7 +52,7 @@ class SiteUpdate(Document):
 			site_doc = frappe.get_doc("Site", self.site)
 			for site_app in site_doc.apps:
 				difference_app = find(difference_doc.apps, lambda x: x.app == site_app.app)
-				if difference_app.changed and difference_app.deploy_type == "Migrate":
+				if difference_app and difference_app.deploy_type == "Migrate":
 					self.deploy_type = "Migrate"
 
 		except Exception:
