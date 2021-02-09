@@ -26,10 +26,10 @@
 						</a>
 						<span v-else>{{ d.domain }}</span>
 					</div>
-					<Badge :status="d.status">
-						{{ d.status }}
-					</Badge>
-					<div class="flex ml-auto space-x-2">
+					<div class="flex items-center ml-auto space-x-2">
+						<Badge v-if="d.status != 'Active' || d.primary" :status="d.status">
+							{{ d.primary ? 'Primary' : d.status }}
+						</Badge>
 						<Button
 							@click="retryAddDomain(d.domain)"
 							v-if="d.status == 'Broken' && d.retry_count <= 5"

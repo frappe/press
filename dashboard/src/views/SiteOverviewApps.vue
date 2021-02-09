@@ -2,7 +2,6 @@
 	<Card title="Apps" subtitle="Apps installed on your site">
 		<template #actions>
 			<Button
-				icon-left="plus"
 				@click="
 					() => {
 						showInstallAppsDialog = true;
@@ -31,7 +30,10 @@
 		</div>
 
 		<Dialog title="Install an app on your site" v-model="showInstallAppsDialog">
-			<div v-if="availableApps.data && availableApps.data.length" class="divide-y">
+			<div
+				v-if="availableApps.data && availableApps.data.length"
+				class="divide-y"
+			>
 				<div
 					class="flex items-center py-3"
 					v-for="app in availableApps.data"

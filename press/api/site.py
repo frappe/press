@@ -161,6 +161,7 @@ def backups(name):
 		fields=fields,
 		filters={"site": name, "files_availability": "Available", "offsite": 0},
 		order_by="creation desc",
+		limit=10,
 	)
 	offsite_backups = frappe.get_all(
 		"Site Backup",

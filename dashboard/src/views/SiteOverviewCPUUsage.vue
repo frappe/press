@@ -1,5 +1,13 @@
 <template>
-	<Card title="CPU Usage">
+	<Card title="Daily usage">
+		<template #actions>
+			<router-link
+				class="text-base text-blue-500 hover:text-blue-600"
+				:to="`/sites/${site.name}/analytics`"
+			>
+				All analytics →
+			</router-link>
+		</template>
 		<div v-show="requestCounter.data.length" ref="target"></div>
 		<div
 			v-show="requestCounter.data.length == 0"
@@ -28,7 +36,8 @@ export default {
 			return {
 				method: 'press.api.analytics.request_counter',
 				params: {
-					name: this.site.name
+					name: this.site.name,
+					period: '24 hours'
 				},
 				default: { data: [], plan_limit: 0 },
 				onSuccess(data) {
