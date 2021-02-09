@@ -97,23 +97,6 @@ class TestApp(unittest.TestCase):
 		self.assertEqual(len(source_2.versions), 1)
 		self.assertEqual(source_2.versions[0].version, "Version 13")
 
-	def test_create_app_with_similar_sources_failure(self):
-		app = new_app("frappe", "Frappe Framework")
-		source = app.add_source(
-			"Version 12", "https://github.com/frappe/frappe", "version-12"
-		)
-
-		self.assertEqual(len(source.versions), 1)
-		self.assertEqual(source.versions[0].version, "Version 12")
-
-		self.assertRaises(
-			frappe.ValidationError,
-			app.add_source,
-			"Version 12",
-			"https://github.com/frappe/frappe",
-			"version-12",
-		)
-
 	def setUp(self):
 		for group in frappe.get_all("Deploy Candidate"):
 			frappe.delete_doc("Deploy Candidate", group.name)
