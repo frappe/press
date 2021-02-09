@@ -26,17 +26,19 @@
 						<span>
 							Backup on <FormatDate>{{ backup.creation }}</FormatDate>
 						</span>
-						<Badge v-if="backup.offsite" class="ml-4" color="green">
-							Offsite
-						</Badge>
 					</span>
 					<span v-else> Performing Backup... </span>
 				</div>
-				<Dropdown :items="dropdownItems(backup)" right>
-					<template v-slot="{ toggleDropdown }">
-						<Button icon="more-horizontal" @click="toggleDropdown()" />
-					</template>
-				</Dropdown>
+				<div class="flex items-center space-x-2">
+					<Badge v-if="backup.offsite" color="green">
+						Offsite
+					</Badge>
+					<Dropdown :items="dropdownItems(backup)" right>
+						<template v-slot="{ toggleDropdown }">
+							<Button icon="more-horizontal" @click="toggleDropdown()" />
+						</template>
+					</Dropdown>
+				</div>
 			</div>
 		</div>
 		<div class="mt-2 text-base text-gray-600" v-else>
