@@ -84,12 +84,20 @@ export default {
 		};
 	},
 	activated() {
-		this.setupSocket();
+		this.setupAgentJobUpdate();
 		if (this.site) {
 			this.routeToGeneral();
 		} else {
 			this.$resources.site.once('onSuccess', () => {
 				this.routeToGeneral();
+			});
+		}
+
+		if (this.site?.status === 'Active') {
+			this.$socket.on('list_update', ({ doctype, name }) => {
+				if (doctype === 'Site' && name === this.siteName) {
+					this.$resources.site.reload();
+				}
 			});
 		}
 	},
@@ -102,24 +110,22 @@ export default {
 				window.open(`https://${siteName}/desk?sid=${sid}`, '_blank');
 			}
 		},
-		setupSocket() {
-			if (this._socketSetup) return;
-			this._socketSetup = true;
+		setupAgentJobUpdate() {
+			if (this._agentJobUpdateSet) return;
+			this._agentJobUpdateSet = true;
 
 			this.$socket.on('agent_job_update', data => {
 				if (data.name === 'New Site' || data.name === 'New Site from Backup') {
 					if (data.status === 'Success' && data.site === this.siteName) {
-						// running reload immediately doesn't work for some reason
-						setTimeout(() => this.$resources.site.reload(), 1000);
+						setTimeout(() => {
+							// running reload immediately doesn't work for some reason
+							this.$router.push(`/sites/${this.siteName}/overview`);
+							this.$resources.site.reload();
+						}, 1000);
 					}
 				}
 				this.runningJob =
 					data.site === this.siteName && data.status !== 'Success';
-			});
-			this.$socket.on('list_update', ({ doctype, name }) => {
-				if (doctype === 'Site' && name === this.siteName) {
-					this.$resources.site.reload();
-				}
 			});
 		},
 		routeToGeneral() {
@@ -144,7 +150,7 @@ export default {
 				{ label: 'Site Config', route: 'site-config' },
 				{ label: 'Jobs', route: 'jobs', showRedDot: this.runningJob },
 				{ label: 'Logs', route: 'logs' },
-				{ label: 'Activity', route: 'activity' },
+				{ label: 'Activity', route: 'activity' }
 			];
 
 			let tabsByStatus = {
@@ -166,7 +172,7 @@ export default {
 					'Jobs',
 					'Logs'
 				],
-				Pending: ['Overview', 'Jobs', 'Logs'],
+				Pending: ['Jobs'],
 				Broken: [
 					'Overview',
 					'Site Config',

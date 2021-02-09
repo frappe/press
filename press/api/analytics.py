@@ -10,7 +10,7 @@ import frappe
 @frappe.whitelist()
 @protected("Site")
 def get(name, period="1 hour"):
-	usage_data = get_data(name, "Site Request Log", "counter", period)
+	usage_data = get_data(name, "Site Request Log", "duration", period)
 	request_data = get_data(
 		name,
 		"Site Request Log",
@@ -32,7 +32,7 @@ def get(name, period="1 hour"):
 	plan = frappe.get_cached_doc("Site", name).plan
 	plan_limit = get_plan_config(plan)["rate_limit"]["limit"]
 	return {
-		"usage_counter": [{"value": r.counter, "timestamp": r.timestamp} for r in usage_data],
+		"usage_counter": [{"value": r.duration, "timestamp": r.timestamp} for r in usage_data],
 		"request_count": [
 			{"value": r.request_count, "timestamp": r.timestamp} for r in request_data
 		],
@@ -51,7 +51,7 @@ def get(name, period="1 hour"):
 @frappe.whitelist()
 @protected("Site")
 def request_counter(name, period="1 hour"):
-	usage_data = get_data(name, "Site Request Log", "counter as value", period)
+	usage_data = get_data(name, "Site Request Log", "duration as value", period)
 	plan = frappe.get_cached_doc("Site", name).plan
 	plan_limit = get_plan_config(plan)["rate_limit"]["limit"]
 	return {

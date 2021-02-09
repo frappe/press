@@ -35,7 +35,7 @@
 										? 'bg-green-500'
 										: d[type.key] === 0
 										? 'bg-red-500'
-										: 'bg-orange-500'
+										: 'bg-yellow-500'
 								]"
 							></div>
 						</div>

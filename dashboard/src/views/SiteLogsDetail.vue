@@ -1,7 +1,7 @@
 <template>
 	<CardDetails :showDetails="log">
 		<div class="px-6 py-5">
-			<template v-if="log">
+			<template v-if="log != null">
 				<div class="flex items-center">
 					<Button
 						class="mr-3 md:hidden"

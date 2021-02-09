@@ -38,7 +38,7 @@ export default {
 			return {
 				red: 'text-red-500',
 				green: 'text-green-500',
-				orange: 'text-orange-500',
+				yellow: 'text-yellow-500',
 				blue: 'text-blue-500',
 				gray: 'text-gray-500'
 			}[this.color || 'gray'];
@@ -47,7 +47,7 @@ export default {
 			return {
 				red: 'bg-red-100',
 				green: 'bg-green-100',
-				orange: 'bg-orange-100',
+				yellow: 'bg-yellow-100',
 				blue: 'bg-blue-100',
 				gray: 'bg-gray-100'
 			}[this.color || 'gray'];

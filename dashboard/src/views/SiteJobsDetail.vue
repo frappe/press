@@ -48,9 +48,14 @@
 					class="inline-flex items-center py-2 text-xs text-gray-600 focus:outline-none"
 				>
 					<span class="ml-1">
-						<Spinner v-if="isStepRunning(step)" class="w-3 h-3 text-gray-500" />
 						<div
-							v-if="step.status"
+							v-if="isStepRunning(step)"
+							class="grid w-4 h-4 rounded-full borde place-items-center bg-gray-50"
+						>
+							<Spinner class="w-3 h-3 text-gray-500" />
+						</div>
+						<div
+							v-else-if="step.status"
 							class="grid w-4 h-4 border rounded-full place-items-center"
 							:class="{
 								'border-green-500 bg-green-50': isStepCompleted(step, index),
@@ -115,24 +120,41 @@ export default {
 			};
 		}
 	},
+	data() {
+		return {
+			runningJob: null
+		};
+	},
 	computed: {
 		job() {
 			return this.$resources.job.data;
 		}
 	},
+	mounted() {
+		this.$socket.on('agent_job_update', this.onAgentJobUpdate);
+	},
+	destroyed() {
+		this.$socket.off('agent_job_update', this.onAgentJobUpdate);
+		this.runningJob = null;
+	},
 	methods: {
+		onAgentJobUpdate(data) {
+			if (data.id === this.jobName) {
+				this.runningJob = data;
+			}
+		},
 		formatDuration(duration) {
 			return duration.split('.')[0];
 		},
 		isStepRunning(step) {
-			if (this.jobName !== this.runningJob?.id) return false;
+			if (!this.runningJob) return false;
 			let runningStep = this.runningJob.steps.find(
 				s => s.name == step.step_name
 			);
 			return runningStep?.status === 'Running';
 		},
 		isStepCompleted(step, index) {
-			if (this.jobName === this.runningJob?.id) {
+			if (this.runningJob) {
 				return this.runningJob.current.index > index;
 			}
 			return step.status === 'Success';

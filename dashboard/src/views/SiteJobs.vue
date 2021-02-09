@@ -24,6 +24,9 @@
 					>
 						{{ runningJob.status }}
 					</Badge>
+					<Badge v-else-if="job.status != 'Success'" :status="job.status">
+						{{ job.status }}
+					</Badge>
 				</div>
 				<div class="text-sm text-gray-600">
 					<FormatDate>
@@ -73,24 +76,24 @@ export default {
 		}
 	},
 	mounted() {
-		this.setupRealtime();
+		this.$socket.on('agent_job_update', this.onAgentJobUpdate);
 	},
 	destroyed() {
 		this.$socket.off('agent_job_update', this.onAgentJobUpdate);
-		this.onAgentJobUpdate = null;
 	},
 	methods: {
-		setupRealtime() {
-			if (this._realtimeSetup) return;
-
-			this._realtimeSetup = true;
-			this.onAgentJobUpdate = data => {
+		onAgentJobUpdate(data) {
+			if (data.site === this.site.name) {
 				this.runningJob = data;
-				if (this.runningJob.current.status === 'Success') {
-					this.fetchJobDetails();
+				if (this.runningJob.status === 'Success') {
+					setTimeout(() => {
+						// calling reload immediately does not fetch the latest status
+						// so adding 1 sec delay
+						this.$resources.jobs.reset();
+						this.$resources.jobs.reload();
+					}, 1000);
 				}
-			};
-			this.$socket.on('agent_job_update', this.onAgentJobUpdate);
+			}
 		}
 	}
 };
