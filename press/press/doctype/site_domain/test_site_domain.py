@@ -4,7 +4,7 @@
 from __future__ import unicode_literals
 
 import unittest
-from unittest.mock import Mock, patch, call
+from unittest.mock import Mock, call, patch
 
 import frappe
 
@@ -185,7 +185,8 @@ class TestSiteDomain(unittest.TestCase):
 		with patch("press.press.doctype.site.site.frappe.delete_doc") as mock_frappe_del:
 			site_cleanup_after_archive(site.name)
 		mock_frappe_del.assert_has_calls(
-			[call("Site Domain", site.name), call("Site Domain", site_domain.name)], any_order=True
+			[call("Site Domain", site.name), call("Site Domain", site_domain.name)],
+			any_order=True,
 		)
 
 	def test_tls_certificate_isnt_created_for_default_domain(self):
