@@ -203,7 +203,7 @@ def send_reset_password_email(email):
 	key = random_string(32)
 	if frappe.db.exists("User", email):
 		frappe.db.set_value("User", email, "reset_password_key", key)
-		url = get_url("/dashboard/#/reset-password/" + key)
+		url = get_url("/dashboard/reset-password/" + key)
 		frappe.sendmail(
 			recipients=email,
 			subject="Reset Password",
