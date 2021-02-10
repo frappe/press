@@ -1,0 +1,27 @@
+#cloud-config
+
+ssh_pwauth: true
+
+users:
+  - name: root
+    shell: /usr/bin/bash
+
+  - name: frappe
+    gecos: Frappe
+    groups: sudo
+    lock_passwd: false
+    passwd: $6$rounds=4096$GytYXpLxIgl5SZ$C3zfa5zfD66lfm/TEgtlAVYbl3IjEK9ZAND4qnI7fXGWGhqUFl7m2DD25VjimMfqH3SepUBTUwuyiubwpTUtc/
+    ssh_authorized_keys:
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDB3zVjTzHQSEHQG7OD3bYi7V1xk+PCwko0W3+d1fSUvSDCxSaMKtR31+CfMKmjnvoHubOHYI9wvLpx6KdZUl2uOzKnoLazi/FCGD+m75PS4lraNU6S/B62OQk0xaClDNYBKC3H3rdXCwTU4aWflWLcfc0bmffFDTDZBJa4ySy9ne9FomGYsaMMdYtt2GNwqOOAkhzI96RFz3d4/HvHDqAeR1zv5hdqpoRL49H+3PYHIpu3rz+oMGIrN/ZM7EhvXP3yCgBMIYDTpihbv0+KTJx9rQmGNdLObM+M3HHq2C4/Xj0yAd2xQYBSr/orUyJKeGB367k72M2NADT5EzPr99AV aditya@aditya
+    shell: /usr/bin/bash
+    uid: "1000"
+
+  - name: vagrant
+    gecos: Vagrant
+    lock_passwd: false
+    passwd: $6$rounds=4096$GytYXpLxIgl5SZ$C3zfa5zfD66lfm/TEgtlAVYbl3IjEK9ZAND4qnI7fXGWGhqUFl7m2DD25VjimMfqH3SepUBTUwuyiubwpTUtc/
+    shell: /usr/bin/bash
+    ssh_authorized_keys:
+      - ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA6NF8iallvQVp22WDkTkyrtvp9eWW6A8YVr+kz4TjGYe7gHzIw+niNltGEFHzD8+v1I2YJ6oXevct1YeS0o9HZyN1Q9qgCgzUFtdOKLv6IedplqoPkcmF0aYet2PkEDo3MlTBckFXPITAMzF8dJSIFo9D8HfdOV0IAdx4O7PtixWKn5y2hMNG0zQPyUecp4pzC6kivAIhyfHilFR61RGL+GPXQ2MWZWFYbAGjyiYJnAmCP3NOTd0jMZEnDkbUvxhMmBYSdETk1rRgm+R4LOzFUGaHqHDLKLX+FIPKcF96hrucXzcWyLbIbEgE98OHlnVYCzRdK8jlqm8tehUc9c9WhQ== vagrant insecure public key
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    uid: "2000"
