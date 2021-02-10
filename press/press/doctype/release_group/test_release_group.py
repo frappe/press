@@ -4,10 +4,13 @@
 from __future__ import unicode_literals
 
 import unittest
+from unittest.mock import patch
 
 import frappe
 
+from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.app.app import new_app
+from press.press.doctype.app_source.app_source import AppSource
 from press.press.doctype.app_source.test_app_source import create_test_app_source
 from press.press.doctype.frappe_version.test_frappe_version import (
 	create_test_frappe_version,
@@ -40,6 +43,7 @@ def create_test_release_group(app: str) -> ReleaseGroup:
 	return release_group
 
 
+@patch.object(AppSource, "create_release", create_test_app_release)
 class TestReleaseGroup(unittest.TestCase):
 	def setUp(self):
 		for group in frappe.get_all("Deploy Candidate Difference"):
