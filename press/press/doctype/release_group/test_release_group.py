@@ -8,7 +8,6 @@ import unittest
 import frappe
 
 from press.press.doctype.app.app import new_app
-from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.app_source.test_app_source import create_test_app_source
 from press.press.doctype.frappe_version.test_frappe_version import (
 	create_test_frappe_version,
@@ -34,9 +33,8 @@ def create_test_release_group(app: str) -> ReleaseGroup:
 			"title": f"Test ReleaseGroup {frappe.mock('name')}",
 		}
 	)
-	app_source = create_test_app_source(release_group, app)
-	create_test_app_release(app.name, app_source.name)
-	release_group.append("apps", {"source": app_source.name, "app": app.name})
+	app_source = create_test_app_source(release_group.version, app)
+	release_group.append("apps", {"app": app.name, "source": app_source.name})
 
 	release_group.insert(ignore_if_duplicate=True)
 	return release_group

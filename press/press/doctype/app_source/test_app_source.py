@@ -10,13 +10,17 @@ import frappe
 
 from press.press.doctype.app.app import App
 from press.press.doctype.app_source.app_source import AppSource
-from press.press.doctype.release_group.release_group import ReleaseGroup
+from press.press.doctype.app_release.test_app_release import create_test_app_release
 
 
-def create_test_app_source(release_group: ReleaseGroup, app: App) -> AppSource:
-	"""Create test app source for app and release group."""
-	with patch.object(AppSource, "after_insert"):
-		return app.add_source(release_group.version, frappe.mock("url"), "master")
+@patch.object(AppSource, "create_release", create_test_app_release)
+def create_test_app_source(version: str, app: App) -> AppSource:
+	"""
+	Create test app source for app with given version.
+
+	Also creates app release without github api call.
+	"""
+	return app.add_source(version, frappe.mock("url"), "master")
 
 
 class TestAppSource(unittest.TestCase):
