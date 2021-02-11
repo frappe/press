@@ -14,82 +14,95 @@
 		</template>
 		<div class="divide-y" v-if="domains.data">
 			<div v-for="d in domains.data" :key="d.name">
-				<div class="flex items-center py-2">
-					<div class="w-1/2 text-base font-medium">
-						<a
-							class="text-blue-500"
-							:href="'https://' + d.domain"
-							target="_blank"
-							v-if="d.status === 'Active'"
-						>
-							{{ d.domain }}
-						</a>
-						<span v-else>{{ d.domain }}</span>
+				<div class="py-2">
+					<div class="flex items-center">
+						<div class="w-1/2 text-base font-medium">
+							<a
+								class="text-blue-500"
+								:href="'https://' + d.domain"
+								target="_blank"
+								v-if="d.status === 'Active'"
+							>
+								{{ d.domain }}
+							</a>
+							<span v-else>{{ d.domain }}</span>
+						</div>
+						<div class="flex items-center ml-auto space-x-2">
+							<Badge
+								v-if="d.status != 'Active' || d.primary"
+								:status="d.status"
+							>
+								{{ d.primary ? 'Primary' : d.status }}
+							</Badge>
+							<Button
+								v-if="d.status == 'Broken' && d.retry_count <= 5"
+								:loading="$resources.retryAddDomain.loading"
+								@click="
+									$resources.retryAddDomain.submit({
+										name: site.name,
+										domain: d.domain
+									})
+								"
+							>
+								Retry
+							</Button>
+							<Button
+								v-if="
+									$resources.removeDomain.loading &&
+										$resources.removeDomain.currentParams.domain == d.domain
+								"
+								:loading="true"
+							>
+								Removing domain
+							</Button>
+							<Dropdown v-else :items="actionItems(d)" right>
+								<template v-slot="{ toggleDropdown }">
+									<Button icon="more-horizontal" @click="toggleDropdown()" />
+								</template>
+							</Dropdown>
+						</div>
 					</div>
-					<div class="flex items-center ml-auto space-x-2">
-						<Badge v-if="d.status != 'Active' || d.primary" :status="d.status">
-							{{ d.primary ? 'Primary' : d.status }}
-						</Badge>
-						<Button
-							@click="retryAddDomain(d.domain)"
-							v-if="d.status == 'Broken' && d.retry_count <= 5"
-						>
-							Retry
-						</Button>
-						<Dropdown :items="actionItems(d)" right>
-							<template v-slot="{ toggleDropdown }">
-								<Button icon="more-horizontal" @click="toggleDropdown()" />
-							</template>
-						</Dropdown>
-					</div>
+					<ErrorMessage
+						v-if="d.status == 'Broken'"
+						error="We encountered an error while adding the domain."
+					/>
+					<ErrorMessage :error="$resources.removeDomain.error" />
+					<ErrorMessage :error="$resources.setHostName.error" />
 				</div>
-				<ErrorMessage
-					v-if="d.status == 'Broken'"
-					error="We encountered an error while adding the domain."
-				/>
 			</div>
 		</div>
 		<Dialog v-model="showDialog" title="Add Domain">
-			<p class="text-base">
-				To add a custom domain, you must already own it. If you don't have one,
-				buy it and come back here.
-			</p>
-			<Input
-				type="text"
-				class="mt-4"
-				placeholder="example.com"
-				v-model="newDomain"
-				@change="
-					dnsVerified = null;
-					checkIfExists(newDomain);
-				"
-			/>
-			<p class="mt-4 text-base text-red-600" v-if="domainTaken">
-				Domain is already added to
-				<span class="font-semibold">{{ domainTaken }}</span>
-			</p>
-			<p
-				class="mt-4 text-base"
-				v-if="!domainTaken && newDomain && !dnsVerified"
-			>
-				Make a <span class="font-semibold">CNAME</span> record from
-				<span class="font-semibold">{{ newDomain }}</span> to
-				<span class="font-semibold">{{ site.name }}</span>
-			</p>
-			<p class="flex mt-4 text-base" v-if="dnsVerified === false">
-				<FeatherIcon
-					name="x"
-					class="w-5 h-5 p-1 mr-2 text-red-500 bg-red-100 rounded-full"
-				/>
-				DNS Verification Failed
-			</p>
-			<p class="flex mt-4 text-base" v-if="dnsVerified === true">
-				<FeatherIcon
-					name="check"
-					class="w-5 h-5 p-1 mr-2 text-green-500 bg-green-100 rounded-full"
-				/>
-				DNS records successfully verified. Click on Add Domain.
-			</p>
+			<div class="space-y-4">
+				<p class="text-base">
+					To add a custom domain, you must already own it. If you don't have
+					one, buy it and come back here.
+				</p>
+				<Input type="text" placeholder="www.example.com" v-model="newDomain" />
+
+				<p class="text-base" v-if="newDomain && !dnsVerified">
+					Make a <span class="font-semibold">CNAME</span> record from
+					<span class="font-semibold">{{ newDomain }}</span> to
+					<span class="font-semibold">{{ site.name }}</span>
+				</p>
+				<p class="flex text-base" v-if="dnsVerified === false">
+					<FeatherIcon
+						name="x"
+						class="w-5 h-5 p-1 mr-2 text-red-500 bg-red-100 rounded-full"
+					/>
+					DNS Verification Failed
+				</p>
+				<p class="flex text-base" v-if="dnsVerified === true">
+					<FeatherIcon
+						name="check"
+						class="w-5 h-5 p-1 mr-2 text-green-500 bg-green-100 rounded-full"
+					/>
+					DNS records successfully verified. Click on Add Domain.
+				</p>
+				<ErrorMessage :error="$resources.checkDNS.error" />
+				<ErrorMessage :error="$resources.addDomain.error" />
+				<ErrorMessage :error="$resources.retryAddDomain.error" />
+			</div>
+
 			<div slot="actions">
 				<Button @click="showDialog = false">
 					Cancel
@@ -98,36 +111,29 @@
 					v-if="!dnsVerified"
 					class="ml-3"
 					type="primary"
-					:disabled="!newDomain || domainTaken || state == 'RequestStarted'"
-					@click="checkDNS"
+					:loading="$resources.checkDNS.loading"
+					@click="
+						$resources.checkDNS.submit({
+							name: site.name,
+							domain: newDomain
+						})
+					"
 				>
 					Verify DNS
 				</Button>
-				<Button class="ml-3" type="primary" @click="addDomain" v-else>
-					Add Domain
-				</Button>
-			</div>
-		</Dialog>
-		<Dialog v-model="showRemoveDomainDialog" title="Remove Domain">
-			<p class="text-base">
-				Are you sure you want to remove this domain?
-			</p>
-			<p class="mt-4 text-base">
-				Please type
-				<span class="font-semibold">{{ domainToRemove }}</span> to confirm.
-			</p>
-			<Input type="text" class="w-full mt-4" v-model="confirmDomainName" />
-			<div slot="actions">
-				<Button @click="showRemoveDomainDialog = false">
-					Cancel
-				</Button>
 				<Button
+					v-if="dnsVerified"
 					class="ml-3"
-					type="danger"
-					:disabled="domainToRemove !== confirmDomainName"
-					@click="removeDomain(domainToRemove)"
+					type="primary"
+					:loading="$resources.addDomain.loading"
+					@click="
+						$resources.addDomain.submit({
+							name: site.name,
+							domain: newDomain
+						})
+					"
 				>
-					Remove Domain
+					Add Domain
 				</Button>
 			</div>
 		</Dialog>
@@ -140,87 +146,98 @@ export default {
 	props: ['site'],
 	data() {
 		return {
-			state: null,
 			showDialog: false,
-			newDomain: null,
-			domainTaken: false,
-			dnsVerified: null,
-			confirmDomainName: null,
-			showRemoveDomainDialog: false,
-			domainToRemove: null
+			newDomain: null
 		};
 	},
 	resources: {
 		domains() {
 			return {
 				method: 'press.api.site.domains',
-				params: { name: this.site.name }
+				params: { name: this.site.name },
+				auto: true
 			};
+		},
+		checkDNS: {
+			method: 'press.api.site.check_dns',
+			validate() {
+				if (!this.newDomain) return 'Domain cannot be empty';
+			}
+		},
+		addDomain: {
+			method: 'press.api.site.add_domain',
+			onSuccess() {
+				this.$resources.checkDNS.reset();
+				this.$resources.domains.reload();
+				this.showDialog = false;
+			}
+		},
+		removeDomain: {
+			method: 'press.api.site.remove_domain',
+			onSuccess() {
+				this.$resources.domains.reload();
+			}
+		},
+		retryAddDomain: {
+			method: 'press.api.site.retry_add_domain',
+			onSuccess() {
+				this.$resources.domains.fetch();
+			}
+		},
+		setHostName: {
+			method: 'press.api.site.set_host_name',
+			onSuccess() {
+				this.$resources.domains.reload();
+			}
 		}
 	},
-	mounted() {
-		this.$resources.domains.fetch();
+	computed: {
+		dnsVerified() {
+			return this.$resources.checkDNS.data;
+		}
 	},
 	methods: {
 		actionItems(domain) {
 			return [
 				{
 					label: 'Remove',
-					action: () => {
-						this.domainToRemove = domain.domain;
-						this.showRemoveDomainDialog = true;
-					}
+					action: () => this.confirmRemoveDomain(domain.domain)
 				},
 				{
 					label: 'Set Primary',
 					condition: () => domain.status == 'Active' && !domain.primary,
-					action: () => this.setHostName(domain.domain)
+					action: () => this.confirmSetPrimary(domain.domain)
 				}
 			].filter(d => (d.condition ? d.condition() : true));
 		},
-		async checkDNS() {
-			this.dnsVerified = null;
-			this.dnsVerified = await this.$call('press.api.site.check_dns', {
-				name: this.site.name,
-				domain: this.newDomain
+		confirmRemoveDomain(domain) {
+			this.$confirm({
+				title: 'Remove Domain',
+				message: `Are you sure you want to remove the domain <b>${domain}</b>?`,
+				actionLabel: 'Remove',
+				actionType: 'danger',
+				action: closeDialog => {
+					closeDialog();
+					this.$resources.removeDomain.submit({
+						name: this.site.name,
+						domain: domain
+					});
+				}
 			});
 		},
-		async addDomain() {
-			await this.$call('press.api.site.add_domain', {
-				name: this.site.name,
-				domain: this.newDomain
-			});
-			this.dnsVerified = false;
-			this.showDialog = false;
-			this.$resources.domains.fetch();
-		},
-		async retryAddDomain(domain) {
-			await this.$call('press.api.site.retry_add_domain', {
-				name: this.site.name,
-				domain: domain
-			});
-			this.$resources.domains.fetch();
-		},
-		async removeDomain(domain) {
-			await this.$call('press.api.site.remove_domain', {
-				name: this.site.name,
-				domain: domain
-			});
-			this.showRemoveDomainDialog = false;
-			this.domainToRemove = null;
-			this.confirmDomainName = null;
-			this.$resources.domains.fetch();
-		},
-		async setHostName(domain) {
-			await this.$call('press.api.site.set_host_name', {
-				name: this.site.name,
-				domain: domain
-			});
-			this.$resources.domains.fetch();
-		},
-		async checkIfExists(domain) {
-			this.domainTaken = await this.$call('press.api.site.domain_exists', {
-				domain
+		confirmSetPrimary(domain) {
+			this.$confirm({
+				title: 'Set as primary',
+				message: `Setting as primary will redirect all other domains to <b>${domain}</b>. Do you want to continue?`,
+				actionLabel: 'Set Primary',
+				actionType: 'primary',
+				action: closeDialog => {
+					closeDialog();
+					this.$resources.setHostName.submit({
+						name: this.site.name,
+						domain: domain
+					});
+				}
 			});
 		}
 	}
