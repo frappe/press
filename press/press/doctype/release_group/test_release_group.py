@@ -3,29 +3,47 @@
 # See license.txt
 from __future__ import unicode_literals
 
-import frappe
 import unittest
+from unittest.mock import patch
 
-from press.press.doctype.release_group.release_group import new_release_group
+import frappe
+
+from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.app.app import new_app
-
-from press.press.doctype.release_group.release_group import ReleaseGroup
+from press.press.doctype.app_source.app_source import AppSource
+from press.press.doctype.app_source.test_app_source import create_test_app_source
+from press.press.doctype.frappe_version.test_frappe_version import (
+	create_test_frappe_version,
+)
+from press.press.doctype.release_group.release_group import (
+	ReleaseGroup,
+	new_release_group,
+)
 
 
 def create_test_release_group(app: str) -> ReleaseGroup:
-	"""Create Release Group doc."""
-	name = frappe.mock("name")
+	"""
+	Create Release Group doc.
 
-	return frappe.get_doc(
+	Also creates app source
+	"""
+	frappe_version = create_test_frappe_version()
+	release_group = frappe.get_doc(
 		{
 			"doctype": "Release Group",
-			"name": f"Test Release Group{name}",
-			"apps": [{"app": app}],
+			"version": frappe_version.name,
 			"enabled": True,
+			"title": f"Test ReleaseGroup {frappe.mock('name')}",
 		}
-	).insert(ignore_if_duplicate=True)
+	)
+	app_source = create_test_app_source(release_group.version, app)
+	release_group.append("apps", {"app": app.name, "source": app_source.name})
+
+	release_group.insert(ignore_if_duplicate=True)
+	return release_group
 
 
+@patch.object(AppSource, "create_release", create_test_app_release)
 class TestReleaseGroup(unittest.TestCase):
 	def setUp(self):
 		for group in frappe.get_all("Deploy Candidate Difference"):
