@@ -95,12 +95,6 @@
 									:stroke-width="3"
 									class="w-3 h-3 text-gray-500"
 								/>
-								<FeatherIcon
-									v-else-if="step.status"
-									name="slash"
-									:stroke-width="3"
-									class="w-3 h-3 text-gray-500"
-								/>
 							</span>
 							<span class="ml-2 font-semibold text-white">
 								{{ step.step_name }}

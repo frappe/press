@@ -13,7 +13,7 @@
 							Fetching your repositories.
 						</p>
 					</div>
-					<div v-if="options.enable_custom_apps === true">
+					<div>
 						<div
 							v-if="
 								options.authorized === false ||
@@ -28,14 +28,11 @@
 								Connect to GitHub to access your repositories.
 							</p>
 							<Button class="mt-6" type="primary">
-								<a :href="options.installation_url">Connect To GitHub</a>
+								<a :href="options.installation_url + '?state=' + state"
+									>Connect To GitHub</a
+								>
 							</Button>
 						</div>
-					</div>
-					<div v-if="options.enable_custom_apps === false">
-						<label class="text-lg">
-							You are not authorized to use this feature. Contact support.
-						</label>
 					</div>
 					<div v-if="options.authorized === true">
 						<div v-if="options.installations.length != 0">
@@ -56,7 +53,9 @@
 							</div>
 							<div class="mt-4 text-base text-gray-700">
 								Not this account?
-								<a :href="options.installation_url" class="underline"
+								<a
+									:href="options.installation_url + '?state=' + state"
+									class="underline"
 									>Add another organization.</a
 								>
 							</div>
@@ -139,8 +138,7 @@
 												:options="branchOptions"
 											/>
 										</div>
-										<ErrorMessage class="mt-1" :error="similarAppMessage" />
-										<div class="mt-6" v-if="!similarAppMessage">
+										<div class="mt-6">
 											<div
 												v-if="$resources.app.loading === true"
 												class="text-base text-gray-700"
@@ -159,14 +157,14 @@
 												branch for a Frappe application.
 											</div>
 											<div v-if="$resources.app.loading === false">
-												<div v-if="scrubbed" class="flex text-lg">
+												<div v-if="appName" class="text-lg flex">
 													<FeatherIcon
 														name="check"
 														class="w-5 h-5 p-1 mr-2 text-green-500 bg-green-100 rounded-full"
 													/>
-													Found {{ scrubbed }}
+													Found {{ appTitle }} ({{ appName }})
 												</div>
-												<div v-if="!scrubbed" class="flex text-lg text-red-600">
+												<div v-if="!appName" class="text-lg text-red-600 flex">
 													<FeatherIcon
 														name="x"
 														class="w-5 h-5 p-1 mr-2 text-red-500 bg-red-100 rounded-full"
@@ -176,80 +174,18 @@
 											</div>
 										</div>
 									</div>
-									<div class="mt-6" v-if="scrubbed">
-										<label class="text-lg">
-											Choose a name for your app
-										</label>
-										<p class="text-base text-gray-700">
-											Give your app a unique name.
-										</p>
-										<div class="flex mt-4">
-											<input
-												class="z-10 w-full form-input"
-												type="text"
-												v-model="appName"
-												@change="checkIfNameExists()"
-											/>
-										</div>
-										<ErrorMessage class="mt-1" :error="appNameInvalidMessage" />
-									</div>
-									<div class="mt-6" v-if="scrubbed">
-										<label class="text-lg">
-											Choose compatible Frappe versions
-										</label>
-										<p class="text-base text-gray-700">
-											Your app will be available for installation with these
-											versions.
-										</p>
-										<div class="flex pt-4 pb-2 pl-1 -ml-1 overflow-x-auto">
-											<button
-												class="relative flex items-center justify-center flex-shrink-0 py-4 pl-4 pr-8 mr-4 border rounded-md focus:outline-none focus:shadow-outline"
-												:class="[
-													selectedGroups.includes(group.name)
-														? 'bg-blue-50 border-blue-500'
-														: 'hover:border-blue-400',
-													checkAvailability(group)
-														? 'cursor-pointer'
-														: 'cursor-not-allowed bg-gray-50 border-gray-500'
-												]"
-												v-for="group in options.groups"
-												:key="group.name"
-												@click="toggleVersion(group)"
-												:disabled="!checkAvailability(group)"
-											>
-												<div class="flex items-start">
-													<Input
-														class="pt-0.5 pointer-events-none"
-														tabindex="-1"
-														type="checkbox"
-														:value="selectedGroups.includes(group.name)"
-													/>
-													<div class="ml-3 text-base text-left">
-														<div class="font-semibold">
-															{{ group.name }}
-														</div>
-														<div class="text-gray-700">
-															{{ group.frappe.scrubbed }}/{{
-																group.frappe.branch
-															}}
-														</div>
-													</div>
-												</div>
-											</button>
-										</div>
-									</div>
 								</div>
 							</div>
 						</div>
 					</div>
-					<div v-if="scrubbed" class="mt-6">
+					<div v-if="appName" class="mt-6">
 						<ErrorMessage class="mb-2" :error="appCreationErrorMessage" />
 						<Button
 							type="primary"
 							@click="createApp()"
 							:disabled="!canCreate()"
 						>
-							Create App
+							Add App
 						</Button>
 					</div>
 				</div>
@@ -261,87 +197,39 @@
 <script>
 export default {
 	name: 'NewApp',
+	props: ['benchName'],
 	data() {
 		return {
 			selectedInstallationId: null,
 			connectedRepository: null,
-			enableAutoDeploy: false,
 			selectedBranch: null,
-			selectedGroups: [],
-			scrubbed: null,
 			appName: null,
-			appNameInvalidMessage: null,
-			similarAppMessage: null,
+			appTitle: null,
 			appCreationErrorMessage: null
 		};
 	},
 	methods: {
 		async createApp() {
-			let appName = this.$call('press.api.app.new', {
+			let result = this.$call('press.api.app.new', {
 				app: {
 					name: this.appName,
-					installation: this.selectedInstallation.id,
-					url: this.connectedRepository.url,
-					repo_owner: this.selectedInstallation.login,
-					repo: this.connectedRepository.name,
+					title: this.appTitle,
+					group: this.benchName,
+					repository_url: this.connectedRepository.url,
 					branch: this.selectedBranch,
-					scrubbed: this.scrubbed,
-					enable_auto_deploy: this.enableAutoDeploy,
-					groups: this.selectedGroups
+					github_installation_id: this.selectedInstallation.id
 				}
 			});
-			appName
-				.then(response => {
-					this.$router.push(`/apps/${response}`);
+			result
+				.then(() => {
+					this.$router.push(`/benches/${this.benchName}`);
 				})
 				.catch(error => {
 					this.appCreationErrorMessage = error.messages[0];
 				});
 		},
-		toggleVersion(group) {
-			if (!this.selectedGroups.includes(group.name)) {
-				this.selectedGroups = [group.name];
-			} else {
-				this.selectedGroups = this.selectedGroups.filter(a => a !== group.name);
-			}
-		},
-		checkAvailability(group) {
-			let matched = group.apps.find(a => a.scrubbed === this.scrubbed);
-			return !matched;
-		},
-		async checkIfNameExists() {
-			let appNameTaken = await this.$call('press.api.app.exists', {
-				name: this.appName
-			});
-			if (appNameTaken) {
-				this.appNameInvalidMessage = `${this.appName} already exists`;
-			} else {
-				this.appNameInvalidMessage = null;
-			}
-		},
-		async checkIfSimilarExists() {
-			let repo_owner = this.selectedInstallation.login;
-			let repo = this.connectedRepository.name;
-			let branch = this.selectedBranch;
-			let similarAppExists = await this.$call('press.api.app.similar_exists', {
-				repo_owner,
-				repo,
-				branch
-			});
-			if (similarAppExists) {
-				this.similarAppMessage = `App from repository ${repo_owner}/${repo} and branch ${branch} already exists`;
-			} else {
-				this.similarAppMessage = null;
-			}
-			return similarAppExists;
-		},
 		canCreate() {
-			if (
-				this.appName &&
-				!this.appNameInvalidMessage &&
-				!this.appCreationErrorMessage &&
-				this.selectedGroups.length != 0
-			) {
+			if (this.appName && !this.appCreationErrorMessage) {
 				return true;
 			}
 			return false;
@@ -354,26 +242,14 @@ export default {
 	watch: {
 		connectedRepository() {
 			this.selectedBranch = null;
-			this.scrubbed = null;
+			this.appName = null;
 			if (this.connectedRepository) {
 				this.$resources.repository.reload();
 			}
 		},
 		async selectedBranch() {
-			this.scrubbed = null;
-			let similar = await this.checkIfSimilarExists();
-			if (!similar && this.selectedBranch) {
-				this.$resources.app.reload();
-			}
-		},
-		scrubbed() {
-			this.selectedGroups = [];
-			let available = this.options.groups.find(
-				g => this.checkAvailability(g) === true
-			);
-			if (available) {
-				this.selectedGroups.push(available.name);
-			}
+			this.appName = null;
+			this.$resources.app.reload();
 		}
 	},
 	computed: {
@@ -417,6 +293,11 @@ export default {
 				};
 			}
 			return {};
+		},
+		state() {
+			let location = window.location.href;
+			let state = { team: this.$account.team.name, url: location };
+			return btoa(JSON.stringify(state));
 		}
 	},
 	resources: {
@@ -451,9 +332,8 @@ export default {
 				params: this.appParams,
 				default: {},
 				onSuccess(app) {
-					this.scrubbed = app.name;
-					this.appName = app.title;
-					this.checkIfNameExists();
+					this.appName = app.name;
+					this.appTitle = app.title;
 				},
 				auto: false
 			};

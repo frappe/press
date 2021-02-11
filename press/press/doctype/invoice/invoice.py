@@ -7,6 +7,7 @@ from __future__ import unicode_literals
 import frappe
 from frappe.model.document import Document
 from press.api.billing import get_stripe
+from press.utils.billing import get_frappe_io_connection
 from press.utils import log_error
 from datetime import datetime
 from frappe import _
@@ -103,6 +104,7 @@ class Invoice(Document):
 		self.db_set(
 			{"stripe_invoice_id": invoice["id"], "status": "Invoice Created"}, commit=True
 		)
+		self.reload()
 
 	def finalize_stripe_invoice(self):
 		stripe = get_stripe()
@@ -113,25 +115,25 @@ class Invoice(Document):
 			return
 
 		if self.period_start and self.period_end and self.is_new():
-			intersecting_invoices = frappe.db.get_all(
-				"Invoice",
-				filters={
-					"period_end": (">=", self.period_start),
-					"team": self.team,
-					"docstatus": ("<", 2),
-				},
-				pluck="name",
+			query = (
+				f"select `name` from `tabInvoice` where team = '{self.team}' and"
+				f" docstatus < 2 and ('{self.period_start}' between `period_start` and"
+				f" `period_end` or '{self.period_end}' between `period_start` and"
+				" `period_end`)"
 			)
+
+			intersecting_invoices = [x[0] for x in frappe.db.sql(query, as_list=True,)]
 
 			if intersecting_invoices:
 				frappe.throw(
-					"There are invoices with intersecting periods:"
-					f" {', '.join(intersecting_invoices)}",
+					f"There are invoices with intersecting periods:{', '.join(intersecting_invoices)}",
 					frappe.DuplicateEntryError,
 				)
 
 	def validate_team(self):
-		self.customer_name = frappe.utils.get_fullname(self.team)
+		self.customer_name = frappe.db.get_value(
+			"Team", self.team, "billing_name"
+		) or frappe.utils.get_fullname(self.team)
 		self.customer_email = self.team
 		self.currency = frappe.db.get_value("Team", self.team, "currency")
 		if not self.currency:
@@ -327,8 +329,6 @@ class Invoice(Document):
 
 		try:
 			client = self.get_frappeio_connection()
-			if not client:
-				frappe.throw("Frappe.io URL not set up in Press Settings")
 			response = client.session.post(
 				f"{client.url}/api/method/create-fc-invoice",
 				data={"invoice": frappe.as_json(self)},
@@ -384,20 +384,7 @@ class Invoice(Document):
 
 	def get_frappeio_connection(self):
 		if not hasattr(self, "frappeio_connection"):
-			from frappe.frappeclient import FrappeClient
-
-			press_settings = frappe.get_single("Press Settings")
-			if not press_settings.frappe_url:
-				return
-
-			frappe_password = frappe.utils.password.get_decrypted_password(
-				"Press Settings", "Press Settings", fieldname="frappe_password"
-			)
-			self.frappeio_connection = FrappeClient(
-				press_settings.frappe_url,
-				username=press_settings.frappe_username,
-				password=frappe_password,
-			)
+			self.frappeio_connection = get_frappe_io_connection()
 
 		return self.frappeio_connection
 
@@ -582,11 +569,15 @@ def process_stripe_webhook(doc, method):
 		)
 		invoice.save()
 
-		if team.erpnext_partner:
+		if team.free_account:
+			return
+
+		elif team.erpnext_partner:
 			# dont suspend partner sites, send alert on telegram
 			telegram = Telegram()
 			telegram.send(f"Failed Invoice Payment of Partner: {team.name}")
 			send_email_for_failed_payment(invoice)
+
 		else:
 			sites = None
 			if attempt_count > 1:

@@ -13,6 +13,9 @@ from frappe.website.utils import cleanup_page_name
 
 
 class MarketplaceApp(WebsiteGenerator):
+	def autoname(self):
+		self.name = self.app
+
 	def before_insert(self):
 		self.long_description = self.fetch_readme()
 
@@ -22,20 +25,23 @@ class MarketplaceApp(WebsiteGenerator):
 	def validate(self):
 		self.published = self.status == "Published"
 
-	def get_frappe_app(self):
-		return frappe.get_doc("Frappe App", {"scrubbed": self.name, "public": 1})
+	def get_app_source(self):
+		return frappe.get_doc("App Source", {"app": self.app})
 
 	def fetch_readme(self):
-		frappe_app = self.get_frappe_app()
-		if not frappe_app.installation:
-			return
-		token = get_access_token(frappe_app.installation)
+		source = self.get_app_source()
+
+		if source.github_installation_id:
+			github_access_token = get_access_token(source.github_installation_id)
+		else:
+			github_access_token = frappe.get_value("Press Settings", None, "github_access_token")
+
 		headers = {
-			"Authorization": f"token {token}",
+			"Authorization": f"token {github_access_token}",
 		}
-		owner = frappe_app.repo_owner
-		repository = frappe_app.repo
-		branch = frappe_app.branch
+		owner = source.repository_owner
+		repository = source.repository
+		branch = source.branch
 
 		readme_content = None
 		variants = ["README.md", "readme.md", "readme", "README", "Readme"]
@@ -61,30 +67,19 @@ class MarketplaceApp(WebsiteGenerator):
 		if self.category:
 			context.category = frappe.get_doc("Marketplace App Category", self.category)
 
-		apps = frappe.db.get_all(
-			"Frappe App",
-			filters={"scrubbed": self.name, "public": True, "enabled": True},
-			pluck="name",
-		)
 		groups = frappe.db.get_all(
 			"Release Group",
 			filters=[
 				["Release Group", "enabled", "=", 1],
 				["Release Group", "public", "=", 1],
-				["Release Group Frappe App", "app", "in", apps],
+				["Release Group App", "app", "=", self.app],
 			],
-			fields=["name"],
 		)
-		enabled_groups = []
 		for group in groups:
 			group_doc = frappe.get_doc("Release Group", group.name)
-			frappe_app = frappe.get_all(
-				"Frappe App",
-				fields=["name", "scrubbed", "branch", "url"],
-				filters={"name": ("in", [row.app for row in group_doc.apps]), "frappe": True},
-				limit=1,
-			)[0]
-			group["frappe"] = frappe_app
-			enabled_groups.append(group)
-
-		context.supported_versions = enabled_groups
+			frappe_source = frappe.db.get_value(
+				"App Source", group_doc.apps[0].source, ["repository_url", "branch"], as_dict=True
+			)
+			group["frappe"] = frappe_source
+			group["version"] = group_doc.version
+		context.groups = groups

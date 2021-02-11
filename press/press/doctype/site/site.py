@@ -6,8 +6,10 @@ from __future__ import unicode_literals
 
 import json
 import re
+from collections import defaultdict
 from typing import Dict, List
 
+import boto3
 import dateutil.parser
 import frappe
 import requests
@@ -28,8 +30,9 @@ from press.utils import convert, get_client_blacklisted_keys, guess_type, log_er
 class Site(Document):
 	def _get_site_name(self, subdomain: str):
 		"""Get full site domain name given subdomain."""
-		domain = frappe.db.get_single_value("Press Settings", "domain")
-		return f"{subdomain}.{domain}"
+		if not self.domain:
+			self.domain = frappe.db.get_single_value("Press Settings", "domain")
+		return f"{subdomain}.{self.domain}"
 
 	def autoname(self):
 		self.name = self._get_site_name(self.subdomain)
@@ -61,13 +64,14 @@ class Site(Document):
 			self._update_configuration(get_plan_config(self.subscription_plan), save=False)
 
 		# validate apps to be installed on site
-		bench_apps = frappe.get_doc("Bench", self.bench).apps
+		apps = frappe.get_doc("Bench", self.bench).apps
 		for app in self.apps:
-			if not find(bench_apps, lambda x: x.app == app.app):
-				frappe.throw(f"Frappe App {app.app} is not available on Bench {self.bench}.")
-		frappe_app = self.apps[0]
-		if not frappe.db.get_value("Frappe App", frappe_app.app, "frappe"):
+			if not find(apps, lambda x: x.app == app.app):
+				frappe.throw(f"app {app.app} is not available on Bench {self.bench}.")
+
+		if self.apps[0].app != "frappe":
 			frappe.throw("First app to be installed on site must be frappe.")
+
 		apps = [app.app for app in self.apps]
 		if len(apps) != len(set(apps)):
 			frappe.throw("Can't install same app twice.")
@@ -195,7 +199,50 @@ class Site(Document):
 	def after_insert(self):
 		# log activity
 		log_site_activity(self.name, "Create")
+		self.create_dns_record()
 		self.create_agent_request()
+
+	def create_dns_record(self):
+		default_cluster = frappe.db.get_value("Cluster", {"default": True})
+		if self.cluster == default_cluster:
+			return
+		proxy_server = frappe.get_value("Server", self.server, "proxy_server")
+		domain = frappe.db.get_single_value("Press Settings", "domain")
+
+		try:
+			client = boto3.client(
+				"route53",
+				aws_access_key_id=frappe.db.get_single_value("Press Settings", "aws_access_key_id"),
+				aws_secret_access_key=get_decrypted_password(
+					"Press Settings", "Press Settings", "aws_secret_access_key"
+				),
+			)
+			hosted_zone = client.list_hosted_zones_by_name(DNSName=domain)["HostedZones"][0][
+				"Id"
+			]
+			client.change_resource_record_sets(
+				ChangeBatch={
+					"Changes": [
+						{
+							"Action": "UPSERT",
+							"ResourceRecordSet": {
+								"Name": self.name,
+								"Type": "CNAME",
+								"TTL": 60,
+								"ResourceRecords": [{"Value": proxy_server}],
+							},
+						}
+					]
+				},
+				HostedZoneId=hosted_zone,
+			)
+		except Exception:
+			log_error(
+				"Route 53 Record Creation Error",
+				domain=domain,
+				site=self.name,
+				proxy_server=proxy_server,
+			)
 
 	def create_agent_request(self):
 		agent = Agent(self.server)
@@ -238,13 +285,7 @@ class Site(Document):
 		self.save()
 
 	def backup(self, with_files=False, offsite=False):
-		if frappe.db.count(
-			"Site Backup", {"site": self.name, "status": ("in", ["Running", "Pending"])}
-		):
-			raise Exception("Too many pending backups")
-
-		log_site_activity(self.name, "Backup")
-		frappe.get_doc(
+		return frappe.get_doc(
 			{
 				"doctype": "Site Backup",
 				"site": self.name,
@@ -458,7 +499,11 @@ class Site(Document):
 		return agent.get_site_info(self)
 
 	def get_disk_usages(self):
-		last_usage = frappe.get_last_doc("Site Usage", {"site": self.name})
+		try:
+			last_usage = frappe.get_last_doc("Site Usage", {"site": self.name})
+		except frappe.DoesNotExistError:
+			return defaultdict(lambda: None)
+
 		return {
 			"database": last_usage.database,
 			"backups": last_usage.backups,

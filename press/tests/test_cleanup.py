@@ -4,7 +4,7 @@ from unittest.mock import Mock, patch
 
 import frappe
 
-from press.press.cleanup import FIFO, GFS, cleanup_backups
+from press.press.doctype.site.backups import FIFO, GFS, cleanup as cleanup_backups
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.press_settings.test_press_settings import (
 	create_test_press_settings,
@@ -178,8 +178,8 @@ class TestGFS(unittest.TestCase):
 		self.assertEqual(older_backup.files_availability, "Unavailable")
 		self.assertEqual(newer_backup.files_availability, "Available")
 
-	@patch("press.press.cleanup.delete_remote_backup_objects")
-	@patch("press.press.cleanup.frappe.db.commit")
+	@patch("press.press.doctype.site.backups.delete_remote_backup_objects")
+	@patch("press.press.doctype.site.backups.frappe.db.commit")
 	def test_delete_remote_backup_objects_called(
 		self, mock_frappe_commit, mock_del_remote_backup_objects
 	):
@@ -238,8 +238,8 @@ class TestFIFO(unittest.TestCase):
 		self.assertEqual(old.files_availability, "Available")
 		self.assertEqual(new.files_availability, "Available")
 
-	@patch("press.press.cleanup.delete_remote_backup_objects")
-	@patch("press.press.cleanup.frappe.db.commit")
+	@patch("press.press.doctype.site.backups.delete_remote_backup_objects")
+	@patch("press.press.doctype.site.backups.frappe.db.commit")
 	def test_delete_remote_backup_objects_called(
 		self, mock_frappe_commit, mock_del_remote_backup_objects
 	):
@@ -279,8 +279,8 @@ class TestBackupRotationScheme(unittest.TestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
-	@patch("press.press.cleanup.GFS")
-	@patch("press.press.cleanup.FIFO")
+	@patch("press.press.doctype.site.backups.GFS")
+	@patch("press.press.doctype.site.backups.FIFO")
 	def test_press_setting_of_rotation_scheme_works(self, mock_FIFO, mock_GFS):
 		"""Ensure setting rotation scheme in press settings affect rotation scheme used."""
 		press_settings = create_test_press_settings()

@@ -25,12 +25,20 @@
 			</button>
 		</div>
 		<div v-if="restoreFrom === 'backup'">
-			<div class="px-4 py-3 mt-6 text-sm text-gray-700 border border-gray-300 rounded-md">
+			<div
+				class="px-4 py-3 mt-6 text-sm text-gray-700 border border-gray-300 rounded-md"
+			>
 				<ol class="pl-4 list-decimal">
 					<li>Login to your site.</li>
 					<li>From the Download Backups page, download the latest backup.</li>
-					<li>To get files backup, click on Download Files Backup. This will generate a new files backup and you will get an email.</li>
-					<li>Download the files backup from the links in the email and upload the files here.</li>
+					<li>
+						To get files backup, click on Download Files Backup. This will
+						generate a new files backup and you will get an email.
+					</li>
+					<li>
+						Download the files backup from the links in the email and upload the
+						files here.
+					</li>
 				</ol>
 			</div>
 			<Alert class="mt-5 w-full" v-if="manualMigration">
@@ -50,7 +58,7 @@
 					:type="file.type"
 					:s3="true"
 					@success="onFileUpload(file, $event)"
-					@failure="showAlert(file, $event)"
+					@failure="showAlert()"
 					:upload-args="{
 						method: 'press.api.site.upload_backup',
 						type: file.type
@@ -107,11 +115,17 @@
 		</div>
 		<div v-if="restoreFrom === 'siteUrl'">
 			<div class="mt-6">
-				<div class="px-4 py-3 text-sm text-gray-700 border border-gray-300 rounded-md">
+				<div
+					class="px-4 py-3 text-sm text-gray-700 border border-gray-300 rounded-md"
+				>
 					<ol class="pl-4 list-decimal">
 						<li>Login to your site.</li>
-						<li>From the Download Backups page, click on Download Files Backup.</li>
-						<li>This will generate a new files backup and you will get an email.</li>
+						<li>
+							From the Download Backups page, click on Download Files Backup.
+						</li>
+						<li>
+							This will generate a new files backup and you will get an email.
+						</li>
 						<li>After that, come back here and click on Get Backups.</li>
 					</ol>
 				</div>
@@ -266,7 +280,7 @@ export default {
 		openMigrationRequestWindow() {
 			window.open('https://frappe.cloud/migration-request', '_blank');
 		},
-		showAlert(file, $event) {
+		showAlert() {
 			this.manualMigration = true;
 		},
 		errorContains(word) {

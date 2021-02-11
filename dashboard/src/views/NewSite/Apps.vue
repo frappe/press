@@ -1,8 +1,8 @@
 <template>
 	<div class="space-y-6">
-		<div>
+		<div v-if="!this.privateBench">
 			<h2 class="text-lg font-semibold">
-				Select Frappe Version
+				Select Frappe version
 			</h2>
 			<p class="text-base text-gray-700">
 				Select the Frappe version for your site
@@ -10,9 +10,8 @@
 			<div class="mt-4">
 				<Input
 					type="select"
-					:value="selectedGroup"
-					@change="value => $emit('update:selectedGroup', value)"
-					:options="groupOptions"
+					v-model="selectedVersion"
+					:options="versionOptions"
 				/>
 			</div>
 		</div>
@@ -27,15 +26,15 @@
 			<div class="mt-4">
 				<h3 class="sr-only">Marketplace Apps</h3>
 				<div
-					class="grid grid-cols-2 gap-4 px-2 py-2 mt-4 -mx-2 overflow-y-scroll max-h-56"
+					class="grid grid-cols-2 gap-4 px-2 py-2 mt-4 -mx-2 overflow-y-auto max-h-56"
 				>
 					<SelectableCard
 						v-for="marketplaceApp in marketplaceApps"
-						:key="marketplaceApp.name"
+						:key="marketplaceApp.app.app"
 						@click.native="toggleApp(marketplaceApp.app)"
 						:title="marketplaceApp.title"
 						:image="marketplaceApp.image"
-						:selected="selectedApps.includes(marketplaceApp.app.name)"
+						:selected="selectedApps.includes(marketplaceApp.app.app)"
 					>
 						<a
 							slot="secondary-content"
@@ -55,17 +54,17 @@
 					Your Private Apps
 				</h3>
 				<div
-					class="grid grid-cols-2 gap-4 px-2 py-2 -mx-2 overflow-y-scroll mt- max-h-56"
+					class="grid grid-cols-2 gap-4 px-2 py-2 -mx-2 overflow-y-auto mt- max-h-56"
 				>
 					<SelectableCard
 						v-for="app in privateApps"
-						:key="app.name"
+						:key="app.app"
 						@click.native="toggleApp(app)"
-						:selected="selectedApps.includes(app.name)"
-						:title="`${app.repo_owner}/${app.repo}`"
+						:selected="selectedApps.includes(app.app)"
+						:title="app.app_title"
 					>
 						<div slot="secondary-content" class="text-base text-gray-700">
-							{{ app.branch }}
+							{{ app.repository_owner }}:{{ app.branch }}
 						</div>
 					</SelectableCard>
 				</div>
@@ -80,18 +79,21 @@ export default {
 		SelectableCard
 	},
 	name: 'Apps',
-	props: ['options', 'selectedApps', 'selectedGroup'],
+	props: ['options', 'selectedApps', 'selectedGroup', 'privateBench'],
+	data: function() {
+		return {
+			selectedVersion: null
+		};
+	},
 	computed: {
 		privateApps() {
-			return this.apps.filter(
-				app => app.team === this.$account.team.name && !app.public
-			);
+			return this.apps.filter(app => !app.public);
 		},
 		marketplaceApps() {
 			return this.apps
-				.filter(app => app.public && !app.frappe)
+				.filter(app => app.public)
 				.map(app => {
-					let options = this.options.marketplace_apps[app.scrubbed];
+					let options = this.options.marketplace_apps[app.app];
 					if (!options) {
 						return false;
 					}
@@ -101,34 +103,58 @@ export default {
 				.filter(Boolean);
 		},
 		apps() {
-			if (!this.options) return [];
+			if (!this.options || !this.selectedVersion || !this.selectedGroup)
+				return [];
 
-			let group = this.options.groups.find(g => g.name == this.selectedGroup);
+			let selectedVersion = this.options.versions.find(
+				v => v.name == this.selectedVersion
+			);
+			let group = selectedVersion.groups.find(
+				g => g.name == this.selectedGroup
+			);
 			return group.apps;
 		},
 		groupOptions() {
-			return this.options.groups.map(option => option.name);
+			if (!this.options || !this.selectedVersion) return [];
+			let selectedVersion = this.options.versions.find(
+				version => version.name == this.selectedVersion
+			);
+			return selectedVersion.groups.map(group => group.name);
+		},
+		versionOptions() {
+			return this.options.versions.map(group => group.name);
 		}
 	},
 	watch: {
-		selectedGroup: {
-			handler: 'resetAppSelection',
-			immediate: true
+		selectedVersion(value) {
+			if (!this.privateBench) {
+				let selectedVersion = this.options.versions.find(v => v.name == value);
+				this.$emit('update:selectedGroup', selectedVersion.groups[0].name);
+			}
+		},
+		selectedGroup() {
+			this.$emit('update:selectedApps', ['frappe']);
+		}
+	},
+	async mounted() {
+		if (this.privateBench) {
+			this.selectedVersion = this.options.versions.find(v =>
+				v.groups.some(g => g.name == this.selectedGroup)
+			).name;
+			this.$emit('update:selectedApps', ['frappe']);
+		} else {
+			this.selectedVersion = this.options.versions[0].name;
 		}
 	},
 	methods: {
-		resetAppSelection() {
-			let onlyFrappe = this.apps.filter(app => app.frappe).map(app => app.name);
-			this.$emit('update:selectedApps', onlyFrappe);
-		},
 		toggleApp(app) {
 			if (app.frappe) return;
-			if (!this.selectedApps.includes(app.name)) {
-				this.$emit('update:selectedApps', this.selectedApps.concat(app.name));
+			if (!this.selectedApps.includes(app.app)) {
+				this.$emit('update:selectedApps', this.selectedApps.concat(app.app));
 			} else {
 				this.$emit(
 					'update:selectedApps',
-					this.selectedApps.filter(a => a !== app.name)
+					this.selectedApps.filter(a => a !== app.app)
 				);
 			}
 		}

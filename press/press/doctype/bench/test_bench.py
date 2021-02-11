@@ -16,16 +16,19 @@ def create_test_bench(release_group: str, server: str) -> Bench:
 
 	API call to agent will be faked when creating the doc.
 	"""
-
 	name = frappe.mock("name")
+	candidate = frappe.get_last_doc("Deploy Candidate", {"group": release_group})
+	candidate.docker_image = frappe.mock("url")
+	candidate.save()
 	return frappe.get_doc(
 		{
 			"name": f"Test Bench{name}",
 			"doctype": "Bench",
 			"status": "Active",
-			"workers": 1,
+			"background_workers": 1,
 			"gunicorn_workers": 2,
 			"group": release_group,
+			"candidate": candidate.name,
 			"server": server,
 		}
 	).insert(ignore_if_duplicate=True)

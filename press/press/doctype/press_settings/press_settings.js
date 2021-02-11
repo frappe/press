@@ -2,7 +2,7 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on('Press Settings', {
-	refresh: function(frm) {
+	refresh: function (frm) {
 		frm.add_custom_button(
 			__('Obtain TLS Certificate'),
 			() => {
@@ -15,24 +15,26 @@ frappe.ui.form.on('Press Settings', {
 			__('TLS')
 		);
 	},
-	create_stripe_plans(frm) {
-		if (frm.doc.stripe_product_id) {
-			frappe.confirm(
-				// prettier-ignore
-				__('This will create new Stripe Plans. If there are existing customers who were on old plans, they will have to be migrated over. Are you sure you want to continue?'),
-				() => {
-					call_method();
-				}
-			);
-		} else {
-			call_method();
-		}
-
-		function call_method() {
-			frm.call('create_stripe_plans');
-		}
-	},
 	create_stripe_webhook(frm) {
 		frm.call('create_stripe_webhook');
+	},
+	create_github_app(frm) {
+		frm.call({
+			method: 'get_github_app_manifest',
+			doc: frm.doc,
+			callback: response => {
+				window.location.href = response.message;
+				let $form = $('<form>', {
+					action: "https://github.com/settings/apps/new",
+					method: "post"
+				});
+				$('<input>').attr({
+					type: "hidden",
+					name: "manifest",
+					value: JSON.stringify(response.message),
+				}).appendTo($form);
+				$form.appendTo('body').submit();
+			}
+		});
 	}
 });

@@ -260,19 +260,19 @@ def render_plan_table(plans_list):
 	render_table(plans_table)
 
 
-def render_group_table(app_groups):
+def render_group_table(versions):
 	# title row
-	app_groups_table = [["#", "App Group", "Apps"]]
+	versions_table = [["#", "Version", "Apps"]]
 
 	# all rows
-	for idx, app_group in enumerate(app_groups):
+	for idx, version in enumerate(versions):
 		apps_list = ", ".join(
-			["{}:{}".format(app["scrubbed"], app["branch"]) for app in app_group["apps"]]
+			["{}:{}".format(app["app"], app["branch"]) for app in version["groups"][0]["apps"]]
 		)
-		row = [idx + 1, app_group["name"], apps_list]
-		app_groups_table.append(row)
+		row = [idx + 1, version["name"], apps_list]
+		versions_table.append(row)
 
-	render_table(app_groups_table)
+	render_table(versions_table)
 
 
 def handle_request_failure(request=None, message=None, traceback=True, exit_code=1):
@@ -440,9 +440,7 @@ def check_app_compat(available_group):
 	print("Checking availability of existing app group")
 
 	for (app, branch) in existing_group:
-		info = [
-			(a["name"], a["branch"]) for a in available_group["apps"] if a["scrubbed"] == app
-		]
+		info = [(a["app"], a["branch"]) for a in available_group["apps"] if a["app"] == app]
 		if info:
 			app_title, available_branch = info[0]
 
@@ -483,15 +481,15 @@ def check_app_compat(available_group):
 
 
 @add_line_after
-def filter_apps(app_groups):
-	render_group_table(app_groups)
+def filter_apps(versions):
+	render_group_table(versions)
 
 	while True:
-		app_group_index = click.prompt("Select App Group Number", type=int) - 1
+		version_index = click.prompt("Select Version Number", type=int) - 1
 		try:
-			if app_group_index == -1:
+			if version_index == -1:
 				raise IndexError
-			selected_group = app_groups[app_group_index]
+			selected_group = versions[version_index]["groups"][0]
 		except IndexError:
 			print("Invalid Selection ❌")
 			continue
@@ -559,8 +557,8 @@ def new_site(local_site):
 	subdomain = get_subdomain(site_options["domain"])
 	plan = choose_plan(site_options["plans"])
 
-	app_groups = site_options["groups"]
-	selected_group, filtered_apps = filter_apps(app_groups)
+	versions = site_options["versions"]
+	selected_group, filtered_apps = filter_apps(versions)
 	files_uploaded = upload_backup(local_site)
 
 	# push to frappe_cloud

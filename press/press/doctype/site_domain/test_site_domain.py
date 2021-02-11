@@ -4,7 +4,7 @@
 from __future__ import unicode_literals
 
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, call, patch
 
 import frappe
 
@@ -186,15 +186,12 @@ class TestSiteDomain(unittest.TestCase):
 		site_domain = create_test_site_domain(site.name, "hellohello.com")
 
 		site.archive()
-		site_cleanup_after_archive(site.name)
-		self.assertFalse(frappe.db.exists("Site Domain", {"site": site.name}))
-
-		# delete ops are not rolled back
-		frappe.delete_doc("Site", site.name, force=True)
-		frappe.delete_doc("Site Domain", site.name, force=True)
-		frappe.delete_doc("Site Domain", site_domain.name, force=True)
-
-		frappe.db.commit()
+		with patch("press.press.doctype.site.site.frappe.delete_doc") as mock_frappe_del:
+			site_cleanup_after_archive(site.name)
+		mock_frappe_del.assert_has_calls(
+			[call("Site Domain", site.name), call("Site Domain", site_domain.name)],
+			any_order=True,
+		)
 
 	def test_tls_certificate_isnt_created_for_default_domain(self):
 		"""Ensure TLS Certificate isn't created for default domain."""

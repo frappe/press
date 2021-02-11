@@ -273,14 +273,16 @@ def skip_onboarding_step(step_name):
 def get_billing_information():
 	team = get_current_team(True)
 	if team.billing_address:
-		return frappe.get_doc("Address", team.billing_address)
+		billing_details = frappe.get_doc("Address", team.billing_address).as_dict()
+		billing_details.billing_name = team.billing_name
+		return billing_details
 
 
 @frappe.whitelist()
-def update_billing_information(address):
-	address = frappe._dict(address)
-	team = get_current_team(True)
-	team.create_or_update_address(address)
+def update_billing_information(billing_details):
+	billing_details = frappe._dict(billing_details)
+	team = get_current_team(get_doc=True)
+	team.update_billing_details(billing_details)
 
 
 @frappe.whitelist()
@@ -304,8 +306,8 @@ def user_prompts():
 
 	if not doc.billing_address:
 		return [
-			"UpdateBillingAddress",
-			"Update your billing address so that we can show it in your monthly invoice.",
+			"UpdateBillingDetails",
+			"Update your billing details so that we can show it in your monthly invoice.",
 		]
 
 	gstin, country = frappe.db.get_value(
@@ -313,7 +315,7 @@ def user_prompts():
 	)
 	if country == "India" and not gstin:
 		return [
-			"UpdateBillingAddress",
+			"UpdateBillingDetails",
 			"If you have a registered GSTIN number, you are required to update it, so"
 			" that we can generate a GST Invoice.",
 		]

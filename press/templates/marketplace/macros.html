@@ -13,8 +13,9 @@
 {%- endif -%}
 {% endmacro %}
 
-{% macro link(label, url, class) %}
-<a class="text-gray-800 hover:text-blue-500 {{ resolve_class(class) }}" href="{{ url | abs_url }}">{{ label }}</a>
+{% macro link(label, url, class, blank=False) %}
+<a class="text-gray-800 hover:text-blue-500 {{ resolve_class(class) }}" href="{{ url | abs_url }}" {% if blank %}
+	target="_blank" {% endif %}>{{ label }}</a>
 {% endmacro %}
 
 {% macro breadcrumbs(items) %}

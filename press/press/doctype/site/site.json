@@ -7,16 +7,19 @@
  "engine": "InnoDB",
  "field_order": [
   "subdomain",
+  "domain",
   "status",
   "status_before_update",
   "server",
   "bench",
+  "cluster",
   "column_break_3",
   "admin_password",
-  "update",
   "setup_wizard_complete",
+  "group",
   "billing",
   "team",
+  "column_break_15",
   "free",
   "section_break_6",
   "apps",
@@ -31,13 +34,11 @@
   "current_disk_usage",
   "deploy_section",
   "timezone",
-  "site_files_section",
-  "database_file",
-  "private_file",
-  "public_file",
+  "column_break_29",
   "remote_files",
   "remote_config_file",
   "remote_database_file",
+  "column_break_34",
   "remote_private_file",
   "remote_public_file"
  ],
@@ -67,15 +68,6 @@
    "options": "Bench",
    "reqd": 1,
    "set_only_once": 1
-  },
-  {
-   "fieldname": "apps",
-   "fieldtype": "Table",
-   "hide_days": 1,
-   "hide_seconds": 1,
-   "label": "Apps",
-   "options": "Site App",
-   "reqd": 1
   },
   {
    "default": "Pending",
@@ -127,13 +119,6 @@
    "label": "Configuration"
   },
   {
-   "fieldname": "update",
-   "fieldtype": "Datetime",
-   "hide_days": 1,
-   "hide_seconds": 1,
-   "label": "Last Updated On"
-  },
-  {
    "fieldname": "subdomain",
    "fieldtype": "Data",
    "hide_days": 1,
@@ -152,6 +137,7 @@
    "options": "Team"
   },
   {
+   "collapsible": 1,
    "fieldname": "deploy_section",
    "fieldtype": "Section Break",
    "hide_days": 1,
@@ -164,27 +150,6 @@
    "hide_days": 1,
    "hide_seconds": 1,
    "label": "Timezone"
-  },
-  {
-   "fieldname": "database_file",
-   "fieldtype": "Attach",
-   "hide_days": 1,
-   "hide_seconds": 1,
-   "label": "Database File"
-  },
-  {
-   "fieldname": "private_file",
-   "fieldtype": "Attach",
-   "hide_days": 1,
-   "hide_seconds": 1,
-   "label": "Private File"
-  },
-  {
-   "fieldname": "public_file",
-   "fieldtype": "Attach",
-   "hide_days": 1,
-   "hide_seconds": 1,
-   "label": "Public File"
   },
   {
    "default": "0",
@@ -213,9 +178,8 @@
   },
   {
    "fieldname": "host_name",
-   "fieldtype": "Link",
-   "label": "Host Name",
-   "options": "Site Domain"
+   "fieldtype": "Data",
+   "label": "Host Name"
   },
   {
    "fieldname": "status_before_update",
@@ -248,14 +212,6 @@
    "options": "Remote File"
   },
   {
-   "collapsible": 1,
-   "fieldname": "site_files_section",
-   "fieldtype": "Section Break",
-   "hide_days": 1,
-   "hide_seconds": 1,
-   "label": "Site Files"
-  },
-  {
    "fieldname": "remote_config_file",
    "fieldtype": "Link",
    "label": "Remote Config File",
@@ -274,7 +230,21 @@
    "label": "Keys Removed in Last Config Change"
   },
   {
-   "default": "{}",
+   "fieldname": "apps",
+   "fieldtype": "Table",
+   "hide_days": 1,
+   "hide_seconds": 1,
+   "label": "Apps",
+   "options": "Site App",
+   "reqd": 1
+  },
+  {
+   "fieldname": "domain",
+   "fieldtype": "Data",
+   "label": "Domain",
+   "set_only_once": 1
+  },
+  {
    "fieldname": "_site_usages",
    "fieldtype": "Data",
    "hidden": 1,
@@ -294,10 +264,40 @@
    "fieldname": "current_disk_usage",
    "fieldtype": "Int",
    "hidden": 1
+  },
+  {
+   "fetch_from": "bench.cluster",
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "label": "Cluster",
+   "options": "Cluster",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fetch_from": "bench.group",
+   "fieldname": "group",
+   "fieldtype": "Link",
+   "label": "Release Group",
+   "options": "Release Group",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_15",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_29",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_34",
+   "fieldtype": "Column Break"
   }
  ],
  "links": [],
- "modified": "2020-12-17 18:43:13.697333",
+ "modified": "2021-01-28 11:03:56.559449",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

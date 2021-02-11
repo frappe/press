@@ -9,19 +9,33 @@ from frappe.model.document import Document
 import json
 from press.agent import Agent
 from press.utils import log_error
+from frappe.model.naming import append_number_if_name_exists
 
 
 class Bench(Document):
+	def autoname(self):
+		server_name = frappe.db.get_value("Server", self.server, "hostname")
+		candidate_name = self.candidate[7:]
+		bench_name = f"bench-{candidate_name}-{server_name}"
+		self.name = append_number_if_name_exists("Bench", bench_name, separator="-")
+
 	def validate(self):
 		if not self.candidate:
 			candidate = frappe.get_all("Deploy Candidate", filters={"group": self.group})[0]
 			self.candidate = candidate.name
 		candidate = frappe.get_doc("Deploy Candidate", self.candidate)
+		self.docker_image = candidate.docker_image
+
 		if not self.apps:
 			for release in candidate.apps:
-				scrubbed = frappe.get_value("Frappe App", release.app, "scrubbed")
 				self.append(
-					"apps", {"app": release.app, "scrubbed": scrubbed, "hash": release.hash}
+					"apps",
+					{
+						"release": release.release,
+						"source": release.source,
+						"app": release.app,
+						"hash": release.hash,
+					},
 				)
 
 		if self.is_new():
@@ -32,17 +46,26 @@ class Bench(Document):
 		config = json.loads(config)
 		config.update(
 			{
-				"db_host": db_host or "localhost",
-				"background_workers": self.workers,
-				"gunicorn_workers": self.gunicorn_workers,
-				"redis_cache": f"redis://localhost:{13000 + self.port_offset}",
-				"redis_queue": f"redis://localhost:{11000 + self.port_offset}",
-				"redis_socketio": f"redis://localhost:{12000 + self.port_offset}",
-				"socketio_port": 9000 + self.port_offset,
-				"webserver_port": 8000 + self.port_offset,
+				"db_host": db_host,
+				"monitor": True,
+				"redis_cache": "redis://redis-cache:6379",
+				"redis_queue": "redis://redis-queue:6379",
+				"redis_socketio": "redis://redis-socketio:6379",
+				"socketio_port": 9000,
+				"webserver_port": 8000,
 			}
 		)
 		self.config = json.dumps(config, indent=4)
+
+		bench_config = {
+			"docker_image": self.docker_image,
+			"web_port": 18000 + self.port_offset,
+			"socketio_port": 19000 + self.port_offset,
+			"gunicorn_workers": self.gunicorn_workers,
+			"background_workers": self.background_workers,
+			"http_timeout": 120,
+		}
+		self.bench_config = json.dumps(bench_config, indent=4)
 
 	def get_unused_port_offset(self):
 		benches = frappe.get_all(
@@ -60,7 +83,7 @@ class Bench(Document):
 
 	def update_bench_config(self):
 		old = self.get_doc_before_save()
-		if old and old.config != self.config:
+		if old and (old.config != self.config or old.bench_config != self.bench_config):
 			agent = Agent(self.server)
 			agent.update_bench_config(self)
 
@@ -187,27 +210,33 @@ def scale_workers():
 	# TODO: Fix this in agent. Lock commands that can't be run simultaneously
 	benches = frappe.get_all(
 		"Bench",
-		fields=["name", "candidate", "workers", "gunicorn_workers"],
+		fields=["name", "candidate", "background_workers", "gunicorn_workers"],
 		filters={"status": "Active", "auto_scale_workers": True},
 	)
 	for bench in benches:
 		site_count = frappe.db.count("Site", {"bench": bench.name, "status": "Active"})
 		if site_count <= 25:
-			workers, gunicorn_workers = 1, 2
+			background_workers, gunicorn_workers = 1, 2
 		elif site_count <= 50:
-			workers, gunicorn_workers = 2, 4
+			background_workers, gunicorn_workers = 2, 4
 		elif site_count <= 75:
-			workers, gunicorn_workers = 3, 6
+			background_workers, gunicorn_workers = 3, 6
 		elif site_count <= 100:
-			workers, gunicorn_workers = 4, 8
+			background_workers, gunicorn_workers = 4, 8
 		elif site_count <= 150:
-			workers, gunicorn_workers = 6, 8
+			background_workers, gunicorn_workers = 6, 8
 		else:
-			workers, gunicorn_workers = 8, 8
+			background_workers, gunicorn_workers = 8, 8
 
-		if (bench.workers, bench.gunicorn_workers) != (workers, gunicorn_workers):
+		if (bench.background_workers, bench.gunicorn_workers) != (
+			background_workers,
+			gunicorn_workers,
+		):
 			bench = frappe.get_doc("Bench", bench.name)
-			bench.workers, bench.gunicorn_workers = workers, gunicorn_workers
+			bench.background_workers, bench.gunicorn_workers = (
+				background_workers,
+				gunicorn_workers,
+			)
 			bench.save()
 			return
 
