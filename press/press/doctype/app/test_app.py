@@ -8,6 +8,12 @@ import unittest
 from press.press.doctype.app.app import new_app
 
 
+def create_test_app(name: str = "frappe", title: str = "Frappe Framework"):
+	return frappe.get_doc({"doctype": "App", "name": name, "title": title}).insert(
+		ignore_if_duplicate=True
+	)
+
+
 class TestApp(unittest.TestCase):
 	def test_create_frappe_app(self):
 		app = new_app("frappe", "Frappe Framework")
@@ -90,23 +96,6 @@ class TestApp(unittest.TestCase):
 		self.assertEqual(source_2.branch, "version-13")
 		self.assertEqual(len(source_2.versions), 1)
 		self.assertEqual(source_2.versions[0].version, "Version 13")
-
-	def test_create_app_with_similar_sources_failure(self):
-		app = new_app("frappe", "Frappe Framework")
-		source = app.add_source(
-			"Version 12", "https://github.com/frappe/frappe", "version-12"
-		)
-
-		self.assertEqual(len(source.versions), 1)
-		self.assertEqual(source.versions[0].version, "Version 12")
-
-		self.assertRaises(
-			frappe.ValidationError,
-			app.add_source,
-			"Version 12",
-			"https://github.com/frappe/frappe",
-			"version-12",
-		)
 
 	def setUp(self):
 		for group in frappe.get_all("Deploy Candidate"):

@@ -26,8 +26,7 @@ def create_test_site(subdomain: str, new: bool = False) -> Site:
 	server = create_test_server(proxy_server.name)
 	app = create_test_app()
 
-	release_group = create_test_release_group(app.name)
-	release_group.create_deploy_candidate()
+	release_group = create_test_release_group(app)
 
 	plan = create_test_plan("Site")
 	bench = create_test_bench(release_group.name, server.name)
