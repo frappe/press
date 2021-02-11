@@ -124,6 +124,7 @@ class Resource {
 		if (!this.condition()) return;
 
 		this.loading = true;
+		this.currentParams = params || this.params;
 
 		if (this.validate) {
 			let message = await this.validate();
@@ -135,7 +136,7 @@ class Resource {
 		}
 
 		try {
-			let data = await call(this.method, params || this.params);
+			let data = await call(this.method, this.currentParams);
 			if (Array.isArray(data) && this.paged) {
 				this.lastPageEmpty = data.length === 0;
 				this.data = [].concat(this.data || [], data);
@@ -148,6 +149,7 @@ class Resource {
 		}
 		this.lastLoaded = new Date();
 		this.loading = false;
+		this.currentParams = null;
 	}
 
 	reload() {
@@ -164,6 +166,7 @@ class Resource {
 		this.loading = false;
 		this.lastLoaded = null;
 		this.lastPageEmpty = false;
+		this.currentParams = null;
 	}
 
 	cancel() {}
