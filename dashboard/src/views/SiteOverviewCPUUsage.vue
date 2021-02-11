@@ -27,6 +27,8 @@
 <script>
 import { DateTime } from 'luxon';
 import { Chart } from 'frappe-charts/dist/frappe-charts.esm.js';
+import resolveConfig from 'tailwindcss/resolveConfig';
+let { theme } = resolveConfig('../../tailwind.config.js');
 
 export default {
 	name: 'CPUUsage',
@@ -34,11 +36,8 @@ export default {
 	resources: {
 		requestCounter() {
 			return {
-				method: 'press.api.analytics.request_counter',
-				params: {
-					name: this.site.name,
-					period: '24 hours'
-				},
+				method: 'press.api.analytics.daily_usage',
+				params: { name: this.site.name },
 				default: { data: [], plan_limit: 0 },
 				onSuccess(data) {
 					if (data.data.length > 0) {
@@ -59,36 +58,36 @@ export default {
 	methods: {
 		makeChart() {
 			let { data, plan_limit } = this.requestCounter;
+			let values = data.map(d => d.value / 1000000);
+
 			this.chart = new Chart(this.$refs['target'], {
 				data: {
 					labels: data.map(d => {
 						return {
-							timestamp: d.timestamp,
+							date: d.date,
 							toString() {
-								return DateTime.fromSQL(d.timestamp).toFormat('hh:mm a');
+								return DateTime.fromSQL(d.date).toFormat('d MMM');
 							}
 						};
 					}),
-					datasets: [
-						{
-							values: data.map(d => d.value / 1000000)
-						}
-					],
-					yMarkers: [{ label: 'Daily CPU Time Limit', value: plan_limit }]
+					datasets: [{ values }],
+					// show daily limit marker if usage crosses 50%
+					yMarkers: values.some(value => value > plan_limit / 2)
+						? [{ label: 'Daily CPU Time Limit', value: plan_limit }]
+						: null
 				},
 				type: 'line',
-				colors: ['blue'],
+				colors: [theme.colors.purple[500]],
 				axisOptions: {
 					xIsSeries: true,
 					shortenYAxisNumbers: 1
 				},
 				lineOptions: {
-					hideDots: true,
-					spline: true
+					hideDots: true
 				},
 				tooltipOptions: {
 					formatTooltipX: d => {
-						return DateTime.fromSQL(d.timestamp).toFormat('dd-MM-yyyy hh:mm a');
+						return DateTime.fromSQL(d.date).toLocaleString();
 					},
 					formatTooltipY: d => {
 						return d + ' s';

@@ -32,7 +32,9 @@ def get(name, period="1 hour"):
 	plan = frappe.get_cached_doc("Site", name).plan
 	plan_limit = get_plan_config(plan)["rate_limit"]["limit"]
 	return {
-		"usage_counter": [{"value": r.duration, "timestamp": r.timestamp} for r in usage_data],
+		"usage_counter": [
+			{"value": r.duration, "timestamp": r.timestamp} for r in usage_data
+		],
 		"request_count": [
 			{"value": r.request_count, "timestamp": r.timestamp} for r in request_data
 		],
@@ -58,6 +60,20 @@ def request_counter(name, period="1 hour"):
 		"data": usage_data,
 		"plan_limit": plan_limit,
 	}
+
+
+@frappe.whitelist()
+@protected("Site")
+def daily_usage(name):
+	data = frappe.db.get_all(
+		"Site Request Log",
+		fields=["SUM(duration) as value", "DATE(timestamp) as date"],
+		filters={"site": name, "timestamp": (">=", frappe.utils.add_days(None, -7))},
+		group_by="DATE(timestamp)",
+	)
+	plan = frappe.get_cached_doc("Site", name).plan
+	plan_limit = get_plan_config(plan)["rate_limit"]["limit"]
+	return dict(data=data, plan_limit=plan_limit)
 
 
 def get_data(site, doctype, fields, period):
