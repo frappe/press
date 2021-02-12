@@ -108,7 +108,7 @@ class Site(Document):
 		if self.status == "Active":
 			self.enable_subscription()
 
-		if self.status not in ["Archived", "Suspended"] and self.has_value_changed(
+		if self.status not in ["Pending", "Archived", "Suspended"] and self.has_value_changed(
 			"subdomain"
 		):
 			self.rename(self._get_site_name(self.subdomain))
