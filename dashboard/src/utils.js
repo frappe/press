@@ -11,6 +11,10 @@ let utils = {
 		$date(date) {
 			return DateTime.fromSQL(date);
 		},
+		round(number, precision) {
+			let multiplier = Math.pow(10, precision || 0);
+			return Math.round(number * multiplier) / multiplier;
+		},
 		formatDate(value, type = 'full') {
 			let datetime = DateTime.fromSQL(value);
 			let format = value;
