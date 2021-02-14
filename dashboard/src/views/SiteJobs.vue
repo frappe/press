@@ -6,34 +6,30 @@
 	>
 		<div>
 			<router-link
-				class="block px-2.5 pt-3 rounded-md cursor-pointer"
+				class="block px-2.5 rounded-md cursor-pointer"
 				:class="jobName === job.name ? 'bg-gray-100' : 'hover:bg-gray-50'"
 				v-for="job in $resources.jobs.data"
 				:key="job.name"
 				:to="`/sites/${site.name}/jobs/${job.name}`"
 			>
-				<div class="flex items-center justify-between">
-					<h3 class="text-base">{{ job.job_type }}</h3>
-					<Badge
-						v-if="
-							runningJob &&
-								runningJob.id == job.name &&
-								runningJob.status !== 'Success'
-						"
-						:status="runningJob.status"
-					>
-						{{ runningJob.status }}
-					</Badge>
-					<Badge v-else-if="job.status != 'Success'" :status="job.status">
-						{{ job.status }}
-					</Badge>
-				</div>
-				<div class="text-sm text-gray-600">
-					<FormatDate>
-						{{ job.creation }}
-					</FormatDate>
-				</div>
-				<div class="pb-3 border-b"></div>
+				<ListItem :title="job.job_type" :description="formatDate(job.creation)">
+					<template slot="actions">
+						<Badge
+							v-if="
+								runningJob &&
+									runningJob.id == job.name &&
+									runningJob.status !== 'Success'
+							"
+							:status="runningJob.status"
+						>
+							{{ runningJob.status }}
+						</Badge>
+						<Badge v-else-if="job.status != 'Success'" :status="job.status">
+							{{ job.status }}
+						</Badge>
+					</template>
+				</ListItem>
+				<div class="border-b"></div>
 			</router-link>
 			<div class="py-3" v-if="!$resources.jobs.lastPageEmpty">
 				<Button

@@ -9,14 +9,12 @@
 			</Link>
 		</template>
 		<div class="divide-y">
-			<div class="py-2" v-for="activity in recentActivity" :key="activity.name">
-				<div class="text-base font-medium text-gray-900">
-					{{ activity.action }} by {{ activity.owner }}
-				</div>
-				<div class="mt-1 text-base text-gray-600">
-					<FormatDate>{{ activity.creation }}</FormatDate>
-				</div>
-			</div>
+			<ListItem
+				v-for="activity in recentActivity"
+				:key="activity.name"
+				:title="`${activity.action} by ${activity.owner}`"
+				:description="formatDate(activity.creation)"
+			/>
 		</div>
 	</Card>
 </template>

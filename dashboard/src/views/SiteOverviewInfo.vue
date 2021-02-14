@@ -1,7 +1,7 @@
 <template>
 	<Card title="Site info" subtitle="General information about your site">
 		<div class="divide-y">
-			<div class="flex items-center py-2">
+			<div class="flex items-center py-3">
 				<Avatar
 					v-if="info.created_by"
 					:imageURL="info.created_by.user_image"
@@ -42,52 +42,37 @@
 					</div>
 				</div>
 			</div>
-			<div class="flex items-center justify-between py-2">
-				<template v-if="site.status == 'Active'">
-					<div>
-						<div class="text-base font-medium text-gray-900">
-							Deactivate Site
-						</div>
-						<div class="mt-1 text-base text-gray-600">
-							The site will go inactive and billing will be paused
-						</div>
-					</div>
-					<Button @click="onDeactivateClick" class="flex-shrink-0">
-						Deactivate Site
-					</Button>
-				</template>
-				<template v-if="site.status == 'Inactive'">
-					<div>
-						<div class="text-base font-medium text-gray-900">
-							Activate Site
-						</div>
-						<div class="mt-1 text-base text-gray-600">
-							The site will become active again and billing will resume
-						</div>
-					</div>
-					<Button @click="onActivateClick" class="flex-shrink-0">
-						Activate Site
-					</Button>
-				</template>
-			</div>
-			<div
-				v-if="site.status !== 'Pending'"
-				class="flex items-center justify-between py-2"
+			<ListItem
+				v-if="site.status == 'Active'"
+				title="Deactivate Site"
+				description="The site will go inactive and billing will be paused"
 			>
-				<div>
-					<div class="text-base font-medium text-gray-900">
-						Drop Site
-					</div>
-					<div class="mt-1 text-base text-gray-600">
-						Once you drop site your site, there is no going back
-					</div>
-				</div>
-				<SiteDrop :site="site" v-slot="{ showDialog }">
-					<Button @click="showDialog">
-						<span class="text-red-600">Drop Site</span>
-					</Button>
-				</SiteDrop>
-			</div>
+				<Button slot="actions" @click="onDeactivateClick" class="flex-shrink-0">
+					Deactivate Site
+				</Button>
+			</ListItem>
+			<ListItem
+				v-if="site.status == 'Inactive'"
+				title="Activate Site"
+				description="The site will become active again and billing will resume"
+			>
+				<Button slot="actions" @click="onActivateClick" class="flex-shrink-0">
+					Activate Site
+				</Button>
+			</ListItem>
+			<ListItem
+				v-if="site.status !== 'Pending'"
+				title="Drop Site"
+				description="Once you drop site your site, there is no going back"
+			>
+				<template slot="actions">
+					<SiteDrop :site="site" v-slot="{ showDialog }">
+						<Button @click="showDialog">
+							<span class="text-red-600">Drop Site</span>
+						</Button>
+					</SiteDrop>
+				</template>
+			</ListItem>
 		</div>
 	</Card>
 </template>
