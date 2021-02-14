@@ -90,7 +90,7 @@ export default {
 						return DateTime.fromSQL(d.date).toLocaleString();
 					},
 					formatTooltipY: d => {
-						return d + ' s';
+						return this.round(d, 1) + ' sec';
 					}
 				}
 			});
