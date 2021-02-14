@@ -5,24 +5,12 @@
 			subtitle="Log of activities performed on your site"
 		>
 			<div class="divide-y">
-				<div
-					class="py-3 text-base"
+				<ListItem
 					v-for="a in activities.data"
 					:key="a.creation"
-				>
-					<h3 class="text-lg font-medium">
-						{{ a.action }} <span class="text-gray-800">by {{ a.owner }}</span>
-					</h3>
-					<p class="mb-1 text-sm text-gray-800" v-if="a.reason">
-						<span class="font-semibold">Reason:</span>
-						{{ a.reason }}
-					</p>
-					<p class="mt-1 text-sm text-gray-600">
-						<FormatDate>
-							{{ a.creation }}
-						</FormatDate>
-					</p>
-				</div>
+					:title="`${a.action} by ${a.owner}`"
+					:description="getDescription(a)"
+				/>
 			</div>
 			<div class="my-2" v-if="!$resources.activities.lastPageEmpty">
 				<Button
@@ -59,6 +47,15 @@ export default {
 		return {
 			pageStart: 0
 		};
+	},
+	methods: {
+		getDescription(activity) {
+			let description = this.formatDate(activity.creation);
+			if (activity.reason) {
+				description = `Reason: ${activity.reason}` + '\n' + description;
+			}
+			return description;
+		}
 	}
 };
 </script>
