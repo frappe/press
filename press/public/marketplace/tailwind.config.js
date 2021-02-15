@@ -1,4 +1,3 @@
-const path = require('path');
 const config = require('../../../dashboard/tailwind.config');
 
 module.exports = {

@@ -1,63 +1,40 @@
 <template>
-	<div>
+	<div class="mt-10">
 		<div class="px-4 sm:px-8" v-if="site">
-			<div class="py-8">
+			<div class="pb-3">
 				<div class="text-base text-gray-700">
 					<router-link to="/sites" class="hover:text-gray-800">
 						← Back to Sites
 					</router-link>
 				</div>
-				<div class="flex items-center mt-2">
-					<h1 class="text-2xl font-bold">{{ site.name }}</h1>
-					<Badge class="ml-4" :status="site.status">{{ site.status }}</Badge>
+				<div
+					class="flex flex-col space-y-3 md:space-y-0 md:justify-between md:flex-row md:items-baseline"
+				>
+					<div class="flex items-center mt-2">
+						<h1 class="text-2xl font-bold">{{ site.name }}</h1>
+						<Badge class="ml-4" :status="site.status">{{ site.status }}</Badge>
+					</div>
+					<div class="space-x-3">
+						<Button
+							v-if="site.status == 'Active'"
+							@click="loginAsAdministrator(siteName)"
+							icon-left="external-link"
+						>
+							Login as Administrator
+						</Button>
+						<Button
+							v-if="site.status === 'Active' || site.status === 'Updating'"
+							:link="`https://${site.name}`"
+							icon-left="external-link"
+						>
+							Visit Site
+						</Button>
+					</div>
 				</div>
-				<a
-					v-if="site.status === 'Active' || site.status === 'Updating'"
-					:href="`https://${site.name}`"
-					target="_blank"
-					class="inline-flex items-baseline text-sm text-blue-500 hover:underline"
-				>
-					Visit Site
-					<FeatherIcon name="external-link" class="w-3 h-3 ml-1" />
-				</a>
 			</div>
-			<Alert
-				class="mb-4"
-				v-if="site.status == 'Active' && !site.setup_wizard_complete"
-			>
-				Please
-				<a
-					@click="loginAsAdministrator(siteName)"
-					class="border-b border-orange-700 cursor-pointer"
-				>
-					login
-				</a>
-				and complete the setup wizard on your site. Analytics will be collected
-				only after setup is complete.
-			</Alert>
-			<Alert class="mb-4" v-if="limitExceeded">
-				Your site has exceeded the allowed Usage for your Plan. Check out
-				<a
-					:href="`#/sites/${site.name}/plan`"
-					class="border-b border-orange-700 cursor-pointer"
-				>
-					Plans
-				</a>
-				for more details.
-			</Alert>
-			<Alert class="mb-4" v-else-if="closeToLimits">
-				Your site has exceeded 80% of the allowed Usage for your Plan. Check out
-				<a
-					:href="`#/sites/${site.name}/plan`"
-					class="border-b border-orange-700 cursor-pointer"
-				>
-					Plans
-				</a>
-				for more details.
-			</Alert>
 		</div>
 		<div class="px-4 sm:px-8" v-if="site">
-			<Tabs class="pb-32" :tabs="tabs">
+			<Tabs class="pb-8" :tabs="tabs">
 				<router-view v-bind="{ site }"></router-view>
 			</Tabs>
 		</div>
@@ -86,35 +63,41 @@ export default {
 					name: this.siteName
 				},
 				auto: true,
-				onSuccess: async () => {
-					if (
-						this.site.status === 'Active' &&
-						!this.site.setup_wizard_complete
-					) {
-						this.site.setup_wizard_complete = Boolean(
-							await this.$call('press.api.site.setup_wizard_complete', {
-								name: this.siteName
-							})
-						);
-					}
+				onSuccess() {
+					if (this.site.status !== 'Active' || this.site.setup_wizard_complete)
+						return;
+
+					this.$call('press.api.site.setup_wizard_complete', {
+						name: this.siteName
+					})
+						.then(complete => {
+							this.site.setup_wizard_complete = Boolean(complete);
+						})
+						.catch(() => (this.site.setup_wizard_complete = false));
 				}
 			};
 		}
 	},
 	provide() {
 		return {
-			utils: {
-				loginAsAdministrator: this.loginAsAdministrator
-			}
+			loginAsAdministrator: this.loginAsAdministrator
 		};
 	},
 	activated() {
-		this.setupSocket();
+		this.setupAgentJobUpdate();
 		if (this.site) {
 			this.routeToGeneral();
 		} else {
 			this.$resources.site.once('onSuccess', () => {
 				this.routeToGeneral();
+			});
+		}
+
+		if (this.site?.status === 'Active') {
+			this.$socket.on('list_update', ({ doctype, name }) => {
+				if (doctype === 'Site' && name === this.siteName) {
+					this.$resources.site.reload();
+				}
 			});
 		}
 	},
@@ -127,30 +110,28 @@ export default {
 				window.open(`https://${siteName}/desk?sid=${sid}`, '_blank');
 			}
 		},
-		setupSocket() {
-			if (this._socketSetup) return;
-			this._socketSetup = true;
+		setupAgentJobUpdate() {
+			if (this._agentJobUpdateSet) return;
+			this._agentJobUpdateSet = true;
 
 			this.$socket.on('agent_job_update', data => {
 				if (data.name === 'New Site' || data.name === 'New Site from Backup') {
 					if (data.status === 'Success' && data.site === this.siteName) {
-						// running reload immediately doesn't work for some reason
-						setTimeout(() => this.$resources.site.reload(), 1000);
+						setTimeout(() => {
+							// running reload immediately doesn't work for some reason
+							this.$router.push(`/sites/${this.siteName}/overview`);
+							this.$resources.site.reload();
+						}, 1000);
 					}
 				}
 				this.runningJob =
 					data.site === this.siteName && data.status !== 'Success';
 			});
-			this.$socket.on('list_update', ({ doctype, name }) => {
-				if (doctype === 'Site' && name === this.siteName) {
-					this.$resources.site.reload();
-				}
-			});
 		},
 		routeToGeneral() {
 			if (this.$route.matched.length === 1) {
 				let path = this.$route.fullPath;
-				let tab = 'general';
+				let tab = 'overview';
 				this.$router.replace(`${path}/${tab}`);
 			}
 		}
@@ -159,75 +140,48 @@ export default {
 		site() {
 			return this.$resources.site.data;
 		},
-		closeToLimits() {
-			if (!this.site) return false;
-			return [
-				this.site.usage.cpu,
-				this.site.usage.database,
-				this.site.usage.disk
-			].some(x => 100 >= x && x > 80);
-		},
-		limitExceeded() {
-			if (!this.site) return false;
-			return [
-				this.site.usage.cpu,
-				this.site.usage.database,
-				this.site.usage.disk
-			].some(x => x > 100);
-		},
+
 		tabs() {
 			let tabRoute = subRoute => `/sites/${this.siteName}/${subRoute}`;
 			let tabs = [
-				{ label: 'General', route: 'general' },
-				{ label: 'Plan', route: 'plan' },
-				{ label: 'Apps', route: 'apps' },
-				{ label: 'Domains', route: 'domains' },
+				{ label: 'Overview', route: 'overview' },
 				{ label: 'Analytics', route: 'analytics' },
-				{ label: 'Backups', route: 'backups' },
-				{ label: 'Database', route: 'database' },
+				{ label: 'Backup & Restore', route: 'database' },
 				{ label: 'Site Config', route: 'site-config' },
-				{ label: 'Activity', route: 'activity' },
 				{ label: 'Jobs', route: 'jobs', showRedDot: this.runningJob },
-				{ label: 'Site Logs', route: 'logs' },
-				{ label: 'Request Logs', route: 'request-logs' }
+				{ label: 'Logs', route: 'logs' },
+				{ label: 'Activity', route: 'activity' }
 			];
 
 			let tabsByStatus = {
 				Active: [
-					'General',
-					'Plan',
-					'Apps',
-					'Domains',
+					'Overview',
 					'Analytics',
-					'Backups',
-					'Database',
+					'Backup & Restore',
 					'Site Config',
 					'Activity',
 					'Jobs',
-					'Site Logs',
+					'Logs',
 					'Request Logs'
 				],
 				Inactive: [
-					'General',
-					'Plan',
-					'Backups',
+					'Overview',
+					'Backup & Restore',
 					'Site Config',
 					'Activity',
 					'Jobs',
-					'Site Logs'
+					'Logs'
 				],
-				Pending: ['General', 'Jobs', 'Site Logs'],
+				Pending: ['Jobs'],
 				Broken: [
-					'General',
-					'Plan',
+					'Overview',
 					'Site Config',
-					'Backups',
-					'Database',
+					'Backup & Restore',
 					'Activity',
 					'Jobs',
-					'Site Logs'
+					'Logs'
 				],
-				Suspended: ['General', 'Activity', 'Backups', 'Jobs', 'Plan']
+				Suspended: ['Overview', 'Activity', 'Backup & Restore', 'Jobs', 'Plan']
 			};
 			if (this.site) {
 				let tabsToShow = tabsByStatus[this.site.status];
