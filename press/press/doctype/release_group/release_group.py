@@ -111,3 +111,39 @@ def new_release_group(title, version, apps, team=None):
 		}
 	).insert()
 	return group
+
+
+def get_permission_query_conditions(user):
+	from press.utils import get_current_team
+
+	if not user:
+		user = frappe.session.user
+	if frappe.session.data.user_type == "System User":
+		return ""
+
+	team = get_current_team()
+
+	return (
+		f"(`tabRelease Group`.`team` = {frappe.db.escape(team)} or `tabRelease"
+		" Group`.`public` = 1)"
+	)
+
+
+def has_permission(doc, ptype, user):
+	from press.utils import get_current_team
+
+	if not user:
+		user = frappe.session.user
+	if frappe.session.data.user_type == "System User":
+		return True
+
+	team = get_current_team()
+	# Don't allow writing to public groups
+	if ptype == "write":
+		if doc.team == team:
+			return True
+	else:
+		if doc.team == team or doc.public:
+			return True
+
+	return False
