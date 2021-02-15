@@ -119,7 +119,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-01-25 11:02:08.918725",
+ "modified": "2021-02-15 11:39:03.528842",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Release Difference",
@@ -135,6 +135,18 @@
    "report": 1,
    "role": "System Manager",
    "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "Press Admin",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "Press Member",
    "write": 1
   }
  ],
