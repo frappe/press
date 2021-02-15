@@ -82,11 +82,15 @@ permission_query_conditions = {
 	"Site": "press.press.doctype.site.site.get_permission_query_conditions",
 	"Team": "press.press.doctype.team.team.get_permission_query_conditions",
 	"Invoice": "press.press.doctype.invoice.invoice.get_permission_query_conditions",
+	"App Source": (
+		"press.press.doctype.app_source.app_source.get_permission_query_conditions"
+	),
 }
 has_permission = {
 	"Site": "press.press.doctype.site.site.has_permission",
 	"Team": "press.press.doctype.team.team.has_permission",
 	"Invoice": "press.press.doctype.invoice.invoice.has_permission",
+	"App Source": "press.press.doctype.app_source.app_source.has_permission",
 }
 
 # Document Events
