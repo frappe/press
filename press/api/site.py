@@ -412,7 +412,11 @@ def overview(name):
 
 def get_installed_apps(site):
 	installed_apps = [app.app for app in site.apps]
-	installed_apps_data = frappe.db.get_all(
+	bench_sources = {}
+	installed_sources = []
+	bench = frappe.get_doc("Bench", site.bench)
+	bench_sources = [app.source for app in bench.apps]
+	sources = frappe.get_all(
 		"App Source",
 		fields=[
 			"name",
@@ -424,13 +428,13 @@ def get_installed_apps(site):
 			"public",
 			"app_title as title",
 		],
-		filters={"app": ("in", installed_apps)},
+		filters={"name": ("in", bench_sources)},
 	)
-	installed_apps_by_name = {}
-	for app in installed_apps_data:
-		installed_apps_by_name[app.app] = app
+	for source in sources:
+		if source.app in installed_apps:
+			installed_sources.append(source)
 
-	return [installed_apps_by_name[app] for app in installed_apps]
+	return sorted(installed_sources, key=lambda x: bench_sources.index(x.name))
 
 
 @frappe.whitelist()
