@@ -29,11 +29,11 @@
 					<span class="hidden text-right md:inline">Active Since</span>
 					<span class="hidden md:inline"></span>
 				</div>
-				<a
+				<router-link
 					class="grid items-center grid-cols-2 gap-12 py-4 text-base border-b md:grid-cols-4 hover:bg-gray-50 focus:outline-none focus:shadow-outline"
 					v-for="bench in $resources.benches.data"
 					:key="bench.name"
-					:href="'#/benches/' + bench.name"
+					:to="'/benches/' + bench.name"
 				>
 					<span class="">{{ bench.title }}</span>
 					<span class="text-right md:text-center">
@@ -54,7 +54,7 @@
 							class="mr-4"
 						/>
 					</span>
-				</a>
+				</router-link>
 			</div>
 		</div>
 	</div>

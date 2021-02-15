@@ -19,9 +19,10 @@ export default [
 		props: true,
 		children: [
 			{
-				path: 'general',
+				name: 'SiteOverview',
+				path: 'overview',
 				component: () =>
-					import(/* webpackChunkName: "site" */ '../views/SiteGeneral.vue')
+					import(/* webpackChunkName: "site" */ '../views/SiteOverview.vue')
 			},
 			{
 				path: 'installing',
@@ -29,29 +30,9 @@ export default [
 					import(/* webpackChunkName: "site" */ '../views/SiteInstalling.vue')
 			},
 			{
-				path: 'plan',
-				component: () =>
-					import(/* webpackChunkName: "site" */ '../views/SitePlan.vue')
-			},
-			{
-				path: 'apps',
-				component: () =>
-					import(/* webpackChunkName: "site" */ '../views/SiteApps.vue')
-			},
-			{
-				path: 'domains',
-				component: () =>
-					import(/* webpackChunkName: "site" */ '../views/SiteDomains.vue')
-			},
-			{
 				path: 'analytics',
 				component: () =>
 					import(/* webpackChunkName: "site" */ '../views/SiteAnalytics.vue')
-			},
-			{
-				path: 'backups',
-				component: () =>
-					import(/* webpackChunkName: "site" */ '../views/SiteBackups.vue')
 			},
 			{
 				path: 'database',

@@ -13,19 +13,12 @@ export default {
 		let node = this.$slots.default[0];
 		let value = node.text;
 		value = value.trim();
-		let datetime = DateTime.fromSQL(value);
-		let formatted = datetime.toLocaleString(DateTime.DATETIME_FULL);
-		let format;
-		if (this.type === 'relative') {
-			format = datetime.toRelative();
-		} else if (this.type === 'full') {
-			format = datetime.toLocaleString(DateTime.DATETIME_FULL);
-		}
+		let format = this.formatDate(value, this.type);
 		return h(
 			'span',
 			{
 				attrs: {
-					title: formatted
+					title: this.$date(value).toLocaleString(DateTime.DATETIME_FULL)
 				}
 			},
 			format

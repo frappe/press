@@ -41,11 +41,11 @@
 					</li>
 				</ol>
 			</div>
-			<Alert class="mt-5 w-full" v-if="manualMigration">
+			<Alert class="w-full mt-5" v-if="manualMigration">
 				Seems like your site is huge. Click
 				<a
 					@click="openMigrationRequestWindow()"
-					class="border-b border-orange-700 cursor-pointer"
+					class="border-b border-yellow-700 cursor-pointer"
 					>here</a
 				>
 				to schedule a migration with us.
@@ -130,7 +130,7 @@
 					</ol>
 				</div>
 				<Alert
-					class="mt-5 w-full"
+					class="w-full mt-5"
 					v-if="
 						errorContains('Your site exceeds the limits for this operation')
 					"
@@ -138,7 +138,7 @@
 					Seems like your site is huge. Click
 					<a
 						@click="openMigrationRequestWindow()"
-						class="border-b border-orange-700 cursor-pointer"
+						class="border-b border-yellow-700 cursor-pointer"
 						>here</a
 					>
 					to schedule a migration with us.

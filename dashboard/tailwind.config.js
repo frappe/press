@@ -25,7 +25,7 @@ module.exports = {
 				40: '10rem'
 			},
 			borderColor: theme => ({
-				default: theme('colors.gray.200')
+				DEFAULT: theme('colors.gray.200')
 			}),
 			colors: {
 				brand: '#2490EF',
@@ -46,79 +46,44 @@ module.exports = {
 				gray: {
 					'50': '#F9FAFA',
 					'100': '#F4F5F6',
-					'200': '#EEF0F2',
-					'300': '#E2E6E9',
-					'400': '#C8CFD5',
-					'500': '#A6B1B9',
-					'600': '#74808B',
-					'700': '#4C5A67',
-					'800': '#313B44',
-					'900': '#192734'
+					'200': '#EBEEF0',
+					'300': '#DCE0E3',
+					'400': '#C0C6CC',
+					'500': '#98A1A9',
+					'600': '#687178',
+					'700': '#505A62',
+					'800': '#333C44',
+					'900': '#1F272E'
+				},
+				purple: {
+					'900': '#44427B',
+					'800': '#5552BC',
+					'700': '#6461D6',
+					'600': '#807DDE',
+					'500': '#928EF5',
+					'400': '#B7B6FC',
+					'300': '#D6D5F6',
+					'200': '#E8E8F7',
+					'100': '#F2F2FD',
+					'50': '#F8F8FC'
 				}
 			}
 		},
-		customForms: theme => ({
-			default: {
-				input: {
-					borderRadius: theme('borderRadius.md'),
-					backgroundColor: theme('colors.gray.100'),
-					borderWidth: '0',
-					fontSize: theme('fontSize.base'),
-					paddingTop: theme('spacing.1'),
-					paddingBottom: theme('spacing.1'),
-					lineHeight: theme('spacing.5'),
-					'&::placeholder': {
-						color: theme('colors.gray.700'),
-						opacity: '1'
-					},
-					'&:focus': {
-						outline: 'none',
-						backgroundColor: theme('colors.gray.200'),
-						boxShadow: theme('boxShadow.none')
-					}
-				},
-				textarea: {
-					borderRadius: theme('borderRadius.md'),
-					backgroundColor: theme('colors.gray.100'),
-					borderWidth: '0',
-					fontSize: theme('fontSize.base'),
-					paddingTop: theme('spacing.1'),
-					paddingBottom: theme('spacing.1'),
-					lineHeight: theme('spacing.5'),
-					'&::placeholder': {
-						color: theme('colors.gray.700'),
-						opacity: '1'
-					},
-					'&:focus': {
-						outline: 'none',
-						backgroundColor: theme('colors.gray.200'),
-						boxShadow: theme('boxShadow.none')
-					}
-				},
-				select: {
-					borderRadius: theme('borderRadius.md'),
-					backgroundColor: theme('colors.gray.100'),
-					borderWidth: '0',
-					fontSize: theme('fontSize.base'),
-					paddingTop: theme('spacing.1'),
-					paddingBottom: theme('spacing.1'),
-					lineHeight: theme('spacing.5'),
-					'&:focus': {
-						outline: 'none',
-						backgroundColor: theme('colors.gray.200'),
-						boxShadow: theme('boxShadow.none')
-					}
-				}
-			}
-		}),
 		container: {
 			padding: {
 				xl: '5rem'
 			}
+		},
+		screens: {
+			sm: '640px',
+			md: '768px',
+			lg: '1024px',
+			xl: '1280px'
 		}
 	},
 	plugins: [
-		require('@tailwindcss/ui'),
+		// require('@tailwindcss/ui'),
+		require('@tailwindcss/forms'),
 		require('@tailwindcss/typography'),
 		plugin(function({ addUtilities, theme }) {
 			// Add your custom styles here

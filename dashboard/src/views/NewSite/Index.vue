@@ -167,8 +167,9 @@ export default {
 						files: this.selectedFiles
 					}
 				},
-				onSuccess(siteUrl) {
-					this.$router.push(`/sites/${siteUrl}/jobs`);
+				onSuccess(data) {
+					let { site, job = '' } = data;
+					this.$router.push(`/sites/${site}/jobs/${job}`);
 				},
 				validate() {
 					let canCreate =
