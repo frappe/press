@@ -6,6 +6,7 @@
  "engine": "InnoDB",
  "field_order": [
   "group",
+  "team",
   "deploy_type",
   "column_break_3",
   "source",
@@ -69,10 +70,19 @@
    "label": "Apps",
    "options": "Deploy Candidate Difference App",
    "read_only": 1
+  },
+  {
+   "fetch_from": "group.team",
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team",
+   "read_only": 1,
+   "reqd": 1
   }
  ],
  "links": [],
- "modified": "2021-01-25 15:32:45.822843",
+ "modified": "2021-02-15 11:25:01.985359",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate Difference",
@@ -92,24 +102,14 @@
   },
   {
    "create": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
    "read": 1,
-   "report": 1,
    "role": "Press Admin",
-   "share": 1,
    "write": 1
   },
   {
    "create": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
    "read": 1,
-   "report": 1,
    "role": "Press Member",
-   "share": 1,
    "write": 1
   }
  ],
