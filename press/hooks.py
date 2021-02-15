@@ -80,9 +80,11 @@ notification_config = "press.notifications.get_notification_config"
 
 permission_query_conditions = {
 	"Site": "press.press.doctype.site.site.get_permission_query_conditions",
+	"Team": "press.press.doctype.team.team.get_permission_query_conditions",
 }
 has_permission = {
 	"Site": "press.press.doctype.site.site.has_permission",
+	"Team": "press.press.doctype.team.team.has_permission",
 }
 
 # Document Events
