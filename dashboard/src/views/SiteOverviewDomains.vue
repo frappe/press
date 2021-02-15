@@ -228,7 +228,7 @@ export default {
 		confirmSetPrimary(domain) {
 			this.$confirm({
 				title: 'Set as primary',
-				message: `Setting as primary will redirect all other domains to <b>${domain}</b>. Do you want to continue?`,
+				message: `Setting as primary will make <b>${domain}</b> the primary URL for your site. Do you want to continue?`,
 				actionLabel: 'Set Primary',
 				actionType: 'primary',
 				action: closeDialog => {
