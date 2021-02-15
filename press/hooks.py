@@ -87,6 +87,7 @@ permission_query_conditions = {
 	),
 	"Release Group": "press.press.doctype.release_group.release_group.get_permission_query_conditions",
 	"Deploy Candidate": "press.press.doctype.deploy_candidate.deploy_candidate.get_permission_query_conditions",
+	"Deploy": "press.press.doctype.deploy.deploy.get_permission_query_conditions",
 }
 has_permission = {
 	"Site": "press.press.doctype.site.site.has_permission",
@@ -97,6 +98,7 @@ has_permission = {
 	"Deploy Candidate": (
 		"press.press.doctype.deploy_candidate.deploy_candidate.has_permission"
 	),
+	"Deploy": "press.press.doctype.deploy.deploy.has_permission",
 }
 
 # Document Events
