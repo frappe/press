@@ -535,3 +535,31 @@ def process_stripe_webhook(doc, method):
 	# update transaction amount, fee and exchange rate
 	invoice.update_transaction_details(charge)
 	invoice.submit()
+
+
+def get_permission_query_conditions(user):
+	from press.utils import get_current_team
+
+	if not user:
+		user = frappe.session.user
+	if frappe.session.data.user_type == "System User":
+		return ""
+
+	team = get_current_team()
+
+	return f"(`tabTeam`.`name` = {frappe.db.escape(team)})"
+
+
+def has_permission(doc, ptype, user):
+	from press.utils import get_current_team
+
+	if not user:
+		user = frappe.session.user
+	if frappe.session.data.user_type == "System User":
+		return True
+
+	team = get_current_team()
+	if doc.name == team:
+		return True
+
+	return False
