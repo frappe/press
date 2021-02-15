@@ -98,3 +98,38 @@ class AppSource(Document):
 				).insert()
 		except Exception:
 			log_error("App Release Creation Error", app=self.name)
+
+
+def get_permission_query_conditions(user):
+	from press.utils import get_current_team
+
+	if not user:
+		user = frappe.session.user
+	if frappe.session.data.user_type == "System User":
+		return ""
+
+	team = get_current_team()
+
+	return (
+		f"(`tabApp Source`.`team` = {frappe.db.escape(team)} or `tabApp Source`.`public` = 1)"
+	)
+
+
+def has_permission(doc, ptype, user):
+	from press.utils import get_current_team
+
+	if not user:
+		user = frappe.session.user
+	if frappe.session.data.user_type == "System User":
+		return True
+
+	team = get_current_team()
+	# Don't allow writing to public App Sources
+	if ptype == "write":
+		if doc.team == team:
+			return True
+	else:
+		if doc.team == team or doc.public:
+			return True
+
+	return False
