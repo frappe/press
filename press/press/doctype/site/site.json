@@ -297,7 +297,7 @@
   }
  ],
  "links": [],
- "modified": "2021-01-28 11:03:56.559449",
+ "modified": "2021-02-15 09:25:48.005907",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
@@ -317,26 +317,14 @@
   },
   {
    "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
    "read": 1,
-   "report": 1,
    "role": "Press Admin",
-   "share": 1,
    "write": 1
   },
   {
    "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
    "read": 1,
-   "report": 1,
    "role": "Press Member",
-   "share": 1,
    "write": 1
   }
  ],
