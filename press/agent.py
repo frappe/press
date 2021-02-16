@@ -107,6 +107,26 @@ class Agent:
 			site=site.name,
 		)
 
+	def rename_site(self, site, new_name: str):
+		data = {"new_name": new_name}
+		return self.create_agent_job(
+			"Rename Site",
+			f"benches/{site.bench}/sites/{site.name}/rename",
+			data,
+			bench=site.bench,
+			site=site.name,
+		)
+
+	def rename_upstream_site(self, server: str, site, new_name: str, domains: List[str]):
+		ip = frappe.db.get_value("Server", server, "ip")
+		data = {"new_name": new_name, "domains": domains}
+		return self.create_agent_job(
+			"Rename Site on Upstream",
+			f"proxy/upstreams/{ip}/sites/{site.name}/rename",
+			data,
+			site=site.name,
+		)
+
 	def new_site_from_backup(self, site):
 		apps = [app.app for app in site.apps]
 
