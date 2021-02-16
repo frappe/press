@@ -7,6 +7,7 @@ import frappe
 from frappe.model.document import Document
 from press.utils import log_error
 from frappe.model.naming import append_number_if_name_exists
+from press.overrides import get_permission_query_conditions_for_doctype
 
 
 class Deploy(Document):
@@ -71,3 +72,6 @@ def create_deploy_candidate_differences(bench):
 				candidates=candidates,
 				source=source,
 			)
+
+
+get_permission_query_conditions = get_permission_query_conditions_for_doctype("Deploy")

@@ -21,6 +21,7 @@ from press.utils import log_error
 from frappe.core.utils import find
 import docker
 from frappe.model.naming import make_autoname
+from press.overrides import get_permission_query_conditions_for_doctype
 
 
 class DeployCandidate(Document):
@@ -360,3 +361,8 @@ def desk_app(doctype, txt, searchfield, start, page_len, filters):
 		fields=["app"],
 		as_list=True,
 	)
+
+
+get_permission_query_conditions = get_permission_query_conditions_for_doctype(
+	"Deploy Candidate"
+)
