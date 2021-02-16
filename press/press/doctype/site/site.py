@@ -78,7 +78,7 @@ class Site(Document):
 
 		# set or update site.host_name
 		if self.is_new():
-			self.host_name = self._create_default_site_domain().name
+			self.host_name = self.name
 			self._update_configuration({"host_name": f"https://{self.host_name}"}, save=False)
 		elif self.has_value_changed("host_name"):
 			self._validate_host_name()
@@ -196,11 +196,12 @@ class Site(Document):
 				"retry_count": 0,
 				"dns_type": "A",
 			}
-		).insert(ignore_if_duplicate=True, ignore_links=True)
+		).insert(ignore_if_duplicate=True)
 
 	def after_insert(self):
 		# log activity
 		log_site_activity(self.name, "Create")
+		self._create_default_site_domain()
 		self.create_dns_record()
 		self.create_agent_request()
 
