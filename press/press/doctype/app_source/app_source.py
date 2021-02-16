@@ -111,7 +111,7 @@ def get_permission_query_conditions(user):
 	team = get_current_team()
 
 	return (
-		f"(`tabApp Source`.`team` = {frappe.db.escape(team)} or `tabApp Source`.`public` = 1)"
+		f"(`tabApp Source`.`team` = {frappe.db.escape(team)})"
 	)
 
 
@@ -124,12 +124,7 @@ def has_permission(doc, ptype, user):
 		return True
 
 	team = get_current_team()
-	# Don't allow writing to public App Sources
-	if ptype == "write":
-		if doc.team == team:
-			return True
-	else:
-		if doc.team == team or doc.public:
-			return True
+	if doc.team == team:
+		return True
 
 	return False
