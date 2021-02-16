@@ -114,3 +114,31 @@ def create_usage_records():
 	for name in subscriptions:
 		subscription = frappe.get_doc("Subscription", name)
 		subscription.create_usage_record()
+
+
+def get_permission_query_conditions(user):
+	from press.utils import get_current_team
+
+	if not user:
+		user = frappe.session.user
+	if frappe.session.data.user_type == "System User":
+		return ""
+
+	team = get_current_team()
+
+	return f"(`tabSubscription`.`team` = {frappe.db.escape(team)})"
+
+
+def has_permission(doc, ptype, user):
+	from press.utils import get_current_team
+
+	if not user:
+		user = frappe.session.user
+	if frappe.session.data.user_type == "System User":
+		return True
+
+	team = get_current_team()
+	if doc.team == team:
+		return True
+
+	return False

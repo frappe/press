@@ -84,6 +84,11 @@ permission_query_conditions = {
 		"press.press.doctype.site_domain.site_domain.get_permission_query_conditions"
 	),
 	"Team": "press.press.doctype.team.team.get_permission_query_conditions",
+	"Subscription": (
+		"press.press.doctype.subscription.subscription.get_permission_query_conditions"
+	),
+	"Stripe Payment Method": "press.press.doctype.stripe_payment_method.stripe_payment_method.get_permission_query_conditions",
+	"Balance Transaction": "press.press.doctype.balance_transaction.balance_transaction.get_permission_query_conditions",
 	"Invoice": "press.press.doctype.invoice.invoice.get_permission_query_conditions",
 	"App Source": (
 		"press.press.doctype.app_source.app_source.get_permission_query_conditions"
@@ -101,6 +106,13 @@ has_permission = {
 	"Site": "press.press.doctype.site.site.has_permission",
 	"Site Domain": "press.press.doctype.site_domain.site_domain.has_permission",
 	"Team": "press.press.doctype.team.team.has_permission",
+	"Subscription": "press.press.doctype.subscription.subscription.has_permission",
+	"Stripe Payment Method": (
+		"press.press.doctype.stripe_payment_method.stripe_payment_method.has_permission"
+	),
+	"Balance Transaction": (
+		"press.press.doctype.balance_transaction.balance_transaction.has_permission"
+	),
 	"Invoice": "press.press.doctype.invoice.invoice.has_permission",
 	"App Source": "press.press.doctype.app_source.app_source.has_permission",
 	"App Release": "press.press.doctype.app_release.app_release.has_permission",
