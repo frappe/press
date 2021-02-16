@@ -110,9 +110,7 @@ def get_permission_query_conditions(user):
 
 	team = get_current_team()
 
-	return (
-		f"(`tabApp Source`.`team` = {frappe.db.escape(team)})"
-	)
+	return f"(`tabApp Source`.`team` = {frappe.db.escape(team)})"
 
 
 def has_permission(doc, ptype, user):
