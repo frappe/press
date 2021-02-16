@@ -85,6 +85,34 @@ class TLSCertificate(Document):
 		self.expires_on = datetime.strptime(x509.get_notAfter().decode(), "%Y%m%d%H%M%SZ")
 
 
+def get_permission_query_conditions(user):
+	from press.utils import get_current_team
+
+	if not user:
+		user = frappe.session.user
+	if frappe.session.data.user_type == "System User":
+		return ""
+
+	team = get_current_team()
+
+	return f"(`tabTLS Certificate`.`team` = {frappe.db.escape(team)})"
+
+
+def has_permission(doc, ptype, user):
+	from press.utils import get_current_team
+
+	if not user:
+		user = frappe.session.user
+	if frappe.session.data.user_type == "System User":
+		return True
+
+	team = get_current_team()
+	if doc.team == team:
+		return True
+
+	return False
+
+
 def renew_tls_certificates():
 	pending = frappe.get_all(
 		"TLS Certificate",

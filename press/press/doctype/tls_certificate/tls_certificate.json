@@ -7,6 +7,7 @@
  "field_order": [
   "domain",
   "status",
+  "team",
   "column_break_3",
   "rsa_key_size",
   "wildcard",
@@ -118,11 +119,18 @@
    "fieldtype": "Code",
    "label": "Private Key",
    "read_only": 1
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-02-15 11:38:00.264040",
+ "modified": "2021-02-16 11:17:49.280290",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "TLS Certificate",

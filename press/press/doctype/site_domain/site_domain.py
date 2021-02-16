@@ -49,7 +49,12 @@ class SiteDomain(Document):
 
 	def create_tls_certificate(self):
 		certificate = frappe.get_doc(
-			{"doctype": "TLS Certificate", "wildcard": False, "domain": self.domain}
+			{
+				"doctype": "TLS Certificate",
+				"wildcard": False,
+				"domain": self.domain,
+				"team": self.team,
+			}
 		).insert()
 		self.tls_certificate = certificate.name
 		self.save()
