@@ -48,7 +48,8 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Team",
-   "options": "Team"
+   "options": "Team",
+   "reqd": 1
   },
   {
    "fieldname": "version",
@@ -92,7 +93,7 @@
   }
  ],
  "links": [],
- "modified": "2021-02-15 10:59:18.124919",
+ "modified": "2021-02-16 15:55:14.509804",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",
