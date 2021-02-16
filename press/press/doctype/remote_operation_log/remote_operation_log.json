@@ -28,7 +28,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-02-15 11:40:27.978008",
+ "modified": "2021-02-16 11:10:03.427047",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Remote Operation Log",
@@ -48,12 +48,10 @@
   },
   {
    "create": 1,
-   "read": 1,
    "role": "Press Admin"
   },
   {
    "create": 1,
-   "read": 1,
    "role": "Press Member"
   }
  ],
