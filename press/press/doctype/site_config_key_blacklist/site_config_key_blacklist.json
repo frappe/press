@@ -27,24 +27,12 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2020-09-18 12:06:15.772504",
- "modified_by": "gavin18d@gmail.com",
+ "modified": "2021-02-15 20:20:47.860074",
+ "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Config Key Blacklist",
  "owner": "Administrator",
  "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Press Admin",
-   "share": 1,
-   "write": 1
-  },
   {
    "create": 1,
    "delete": 1,
