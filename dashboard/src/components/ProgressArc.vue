@@ -48,7 +48,7 @@ export default {
 			if (this.percentage < 80) {
 				return 'text-yellow-500';
 			}
-			if (this.percentage <= 100) {
+			if (this.percentage >= 80) {
 				return 'text-red-500';
 			}
 		}
