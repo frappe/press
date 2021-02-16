@@ -17,7 +17,7 @@
 						<div class="flex">
 							<div class="flex-shrink-0 w-16">
 								<Badge
-									:color="{ GET: 'green', POST: 'orange' }[log.http_method]"
+									:color="{ GET: 'green', POST: 'yellow' }[log.http_method]"
 								>
 									{{ log.http_method }}
 								</Badge>

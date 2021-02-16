@@ -597,7 +597,7 @@ def send_email_for_failed_payment(invoice, sites=None):
 	email = team.user
 	payment_method = team.default_payment_method
 	last_4 = frappe.db.get_value("Stripe Payment Method", payment_method, "last_4")
-	account_update_link = frappe.utils.get_url("/dashboard/#/welcome")
+	account_update_link = frappe.utils.get_url("/dashboard/welcome")
 	subject = "Invoice Payment Failed for Frappe Cloud Subscription"
 
 	frappe.sendmail(

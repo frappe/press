@@ -14,7 +14,11 @@
 				<DescriptionList class="px-6 py-4" :items="subscriptionItems" />
 				<div
 					class="px-6 pb-4"
-					v-if="!$resources.billingDetails.loading && !paymentMethodAdded && !$account.team.erpnext_partner"
+					v-if="
+						!$resources.billingDetails.loading &&
+							!paymentMethodAdded &&
+							!$account.team.erpnext_partner
+					"
 				>
 					<Button type="primary" route="/welcome">
 						Add Billing Information
@@ -71,7 +75,7 @@
 						<Badge v-if="invoice.status == 'Paid'" color="green">
 							Paid
 						</Badge>
-						<Badge v-if="invoice.status == 'Unpaid'" color="orange">
+						<Badge v-if="invoice.status == 'Unpaid'" color="yellow">
 							Unpaid
 						</Badge>
 						<Badge v-else-if="invoice.status == 'Invoice Created'" color="blue">
@@ -146,7 +150,7 @@
 					<div class="col-span-2">
 						{{ paymentMethod.name_on_card }}
 					</div>
-					<div class="text-sm text-right text-gray-600 whitespace-no-wrap">
+					<div class="text-sm text-right text-gray-600 whitespace-nowrap">
 						Added on
 						{{
 							$date(paymentMethod.creation).toLocaleString({

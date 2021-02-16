@@ -44,7 +44,7 @@
 				</option>
 			</select>
 		</div>
-		<div class="w-full pt-6 sm:pt-10">
+		<div class="w-full pt-5">
 			<slot></slot>
 		</div>
 	</div>
@@ -59,7 +59,7 @@ export default {
 			this.$router.replace(route);
 		},
 		isTabSelected(tab) {
-			return this.$route.path.endsWith(tab.route);
+			return this.$route.path.startsWith(tab.route);
 		}
 	}
 };

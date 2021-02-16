@@ -1,15 +1,46 @@
 <template>
 	<div class="space-y-10">
-		<Section
+		<Card
 			title="Site Config"
-			description="Add and update key value pairs to your site's site_config.json"
+			subtitle="Add and update key value pairs to your site's site_config.json"
 		>
+			<template #actions>
+				<Button
+					icon-left="edit"
+					v-if="['Active', 'Broken'].includes(site.status) && !editMode"
+					@click="editMode = true"
+				>
+					Edit Config
+				</Button>
+				<Button
+					v-if="editMode"
+					:loading="$resources.siteConfig.loading"
+					@click="
+						() => {
+							$resources.siteConfig.reload().then(() => {
+								editMode = false;
+								isDirty = false;
+							});
+						}
+					"
+				>
+					Discard changes
+				</Button>
+				<Button
+					type="primary"
+					v-if="editMode"
+					@click="updateSiteConfig"
+					:loading="$resources.updateSiteConfig.loading"
+				>
+					Save changes
+				</Button>
+			</template>
 			<div class="flex space-x-4">
-				<SectionCard class="flex-shrink-0 px-6 py-6 space-y-4 md:w-2/3">
+				<div class="flex-shrink-0 w-full space-y-4 md:w-2/3">
 					<div class="space-y-4" v-if="editMode">
 						<div
 							class="grid grid-cols-5 gap-4"
-							v-for="(config, i) in site.config"
+							v-for="(config, i) in $resources.siteConfig.data"
 							:key="i"
 						>
 							<Input
@@ -48,34 +79,27 @@
 							<Button @click="addConfig" v-if="!isDirty">
 								Add Key
 							</Button>
-							<Button
-								v-else
-								@click="$resources.updateSiteConfig.submit()"
-								:loading="$resources.updateSiteConfig.loading"
-							>
-								Update Config
-							</Button>
 						</div>
 					</div>
-
 					<div v-else>
-						<Form v-bind="readOnlyFormProps" class="pointer-events-none" />
-						<div class="mt-4" v-if="['Active', 'Broken'].includes(site.status)">
-							<Button @click="editMode = !editMode">Edit Config</Button>
-						</div>
-						<div class="mt-4" v-else>
-							<ErrorMessage :error="NotAllowed"/>
-						</div>
+						<Form
+							v-if="readOnlyFormProps.fields && readOnlyFormProps.fields.length"
+							v-bind="readOnlyFormProps"
+							class="pointer-events-none"
+						/>
+						<span class="text-base text-gray-600" v-else>
+							No keys added. Click on Edit Config to add one.
+						</span>
 					</div>
-				</SectionCard>
+				</div>
 				<div
-					class="flex-1 max-w-full p-4 overflow-x-auto font-mono text-base whitespace-pre-line bg-gray-100 rounded"
+					class="flex-1 hidden max-w-full p-4 overflow-x-scroll font-mono text-base whitespace-pre-line bg-gray-100 rounded md:block"
 				>
 					<div class="mb-4">site_config.json</div>
 					<div v-html="siteConfigPreview"></div>
 				</div>
 			</div>
-		</Section>
+		</Card>
 	</div>
 </template>
 
@@ -95,9 +119,17 @@ export default {
 		};
 	},
 	resources: {
+		siteConfig() {
+			return {
+				method: 'press.api.site.site_config',
+				params: { name: this.site.name },
+				auto: true,
+				default: []
+			};
+		},
 		standardConfigKeys: 'press.api.config.standard_keys',
 		updateSiteConfig() {
-			let updatedConfig = this.site.config.map(d => {
+			let updatedConfig = this.$resources.siteConfig.data.map(d => {
 				let value = d.value;
 				if (d.type === 'Number') {
 					value = Number(d.value);
@@ -128,7 +160,7 @@ export default {
 						keys: JSON.stringify(keys)
 					});
 					if (invalidKeys?.length > 0) {
-						return `Invalid key -- ${invalidKeys.join(', ')}`;
+						return `Invalid key: ${invalidKeys.join(', ')}`;
 					}
 					for (let config of updatedConfig) {
 						if (config.type === 'JSON') {
@@ -167,11 +199,17 @@ export default {
 			};
 		},
 		addConfig() {
-			this.site.config.push({ key: '', value: '', type: 'String' });
+			this.$resources.siteConfig.data.push({
+				key: '',
+				value: '',
+				type: 'String'
+			});
 			this.isDirty = true;
 		},
 		removeConfig(config) {
-			this.site.config = this.site.config.filter(d => d !== config);
+			this.$resources.siteConfig.data = this.$resources.siteConfig.data.filter(
+				d => d !== config
+			);
 			this.isDirty = true;
 		},
 		onTypeChange(config) {
@@ -182,13 +220,21 @@ export default {
 			} else if (config.type === 'String') {
 				config.value = String(config.value);
 			}
+		},
+		updateSiteConfig() {
+			if (this.isDirty) {
+				this.$resources.updateSiteConfig.submit();
+			} else {
+				this.editMode = false;
+				this.isDirty = false;
+			}
 		}
 	},
 	computed: {
 		siteConfigPreview() {
 			let obj = {};
 
-			for (let d of this.site.config) {
+			for (let d of this.$resources.siteConfig.data) {
 				let value = d.value;
 				if (['Boolean', 'Number'].includes(d.type)) {
 					value = Number(d.value);
@@ -208,7 +254,7 @@ export default {
 				return {};
 			}
 
-			let fields = this.site.config.map(config => {
+			let fields = this.$resources.siteConfig.data.map(config => {
 				let standardKey = this.$resources.standardConfigKeys.data.find(
 					d => d.key === config.key
 				);
@@ -219,7 +265,7 @@ export default {
 			});
 
 			let values = {};
-			for (let d of this.site.config) {
+			for (let d of this.$resources.siteConfig.data) {
 				let value = d.value;
 				if (['Boolean', 'Number'].includes(d.type)) {
 					value = Number(value);
@@ -233,7 +279,7 @@ export default {
 			};
 		},
 		NotAllowed() {
-			return `Not Permitted in ${ this.site.status } mode`
+			return `Not Permitted in ${this.site.status} mode`;
 		}
 	}
 };

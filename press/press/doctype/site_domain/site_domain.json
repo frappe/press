@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_rename": 1,
  "autoname": "field:domain",
  "creation": "2020-03-17 16:35:11.520003",
  "doctype": "DocType",

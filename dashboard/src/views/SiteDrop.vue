@@ -1,14 +1,7 @@
 <template>
-	<div>
-		<Section
-			title="Drop Site"
-			description="Once you drop your site, there's no going back"
-		>
-			<Button type="danger" @click="showDialog = true">
-				Drop Site
-			</Button>
-		</Section>
-		<Dialog v-model="showDialog" title="Drop Site">
+	<div class="flex-shrink-0">
+		<slot v-bind="{ showDialog }"></slot>
+		<Dialog v-model="dialogOpen" title="Drop Site">
 			<p class="text-base">
 				Are you sure you want to drop your site? The site will be archived and
 				all of its files and Offsite Backups will be deleted. This action cannot
@@ -21,7 +14,7 @@
 			<Input type="text" class="w-full mt-4" v-model="confirmSiteName" />
 			<ErrorMessage class="mt-2" :error="$resources.dropSite.error" />
 			<div slot="actions">
-				<Button @click="showDialog = false">
+				<Button @click="dialogOpen = false">
 					Cancel
 				</Button>
 				<Button
@@ -43,7 +36,7 @@ export default {
 	props: ['site'],
 	data() {
 		return {
-			showDialog: false,
+			dialogOpen: false,
 			confirmSiteName: null
 		};
 	},
@@ -55,7 +48,7 @@ export default {
 					name: this.site.name
 				},
 				onSuccess() {
-					this.showDialog = false;
+					this.dialogOpen = false;
 					this.$router.push('/sites');
 				},
 				validate() {
@@ -64,6 +57,11 @@ export default {
 					}
 				}
 			};
+		}
+	},
+	methods: {
+		showDialog() {
+			this.dialogOpen = true;
 		}
 	}
 };
