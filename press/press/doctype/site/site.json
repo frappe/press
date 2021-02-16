@@ -134,7 +134,8 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Team",
-   "options": "Team"
+   "options": "Team",
+   "reqd": 1
   },
   {
    "collapsible": 1,
@@ -297,7 +298,7 @@
   }
  ],
  "links": [],
- "modified": "2021-02-15 09:25:48.005907",
+ "modified": "2021-02-16 15:56:28.904088",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
