@@ -99,6 +99,9 @@ def has_permission(doc, ptype, user):
 	if frappe.session.data.user_type == "System User":
 		return True
 
+	if ptype == "create":
+		return True
+
 	team = get_current_team()
 	if doc.team == team:
 		return True
