@@ -48,7 +48,8 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Team",
-   "options": "Team"
+   "options": "Team",
+   "reqd": 1
   },
   {
    "fieldname": "version",
@@ -92,7 +93,7 @@
   }
  ],
  "links": [],
- "modified": "2021-01-14 17:37:52.102002",
+ "modified": "2021-02-16 15:55:14.509804",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",
@@ -112,24 +113,14 @@
   },
   {
    "create": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
    "read": 1,
-   "report": 1,
    "role": "Press Admin",
-   "share": 1,
    "write": 1
   },
   {
    "create": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
    "read": 1,
-   "report": 1,
    "role": "Press Member",
-   "share": 1,
    "write": 1
   }
  ],

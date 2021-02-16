@@ -291,7 +291,7 @@
    "link_fieldname": "invoice"
   }
  ],
- "modified": "2020-12-08 16:49:27.892205",
+ "modified": "2021-02-15 10:04:48.589220",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",
@@ -316,14 +316,9 @@
    "amend": 1,
    "cancel": 1,
    "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
    "print": 1,
    "read": 1,
-   "report": 1,
    "role": "Press Admin",
-   "share": 1,
    "submit": 1,
    "write": 1
   }

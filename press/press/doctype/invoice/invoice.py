@@ -13,6 +13,7 @@ from datetime import datetime
 from frappe import _
 from frappe.utils import getdate, cint
 from press.telegram import Telegram
+from press.overrides import get_permission_query_conditions_for_doctype
 
 
 class Invoice(Document):
@@ -615,3 +616,6 @@ def send_email_for_failed_payment(invoice, sites=None):
 			"team": team,
 		},
 	)
+
+
+get_permission_query_conditions = get_permission_query_conditions_for_doctype("Invoice")

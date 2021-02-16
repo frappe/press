@@ -6,6 +6,7 @@
  "engine": "InnoDB",
  "field_order": [
   "group",
+  "team",
   "column_break_2",
   "candidate",
   "section_break_5",
@@ -47,10 +48,19 @@
   {
    "fieldname": "section_break_5",
    "fieldtype": "Section Break"
+  },
+  {
+   "fetch_from": "group.team",
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team",
+   "read_only": 1,
+   "reqd": 1
   }
  ],
  "links": [],
- "modified": "2021-01-25 15:18:26.330460",
+ "modified": "2021-02-15 11:16:56.826807",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy",
@@ -70,24 +80,14 @@
   },
   {
    "create": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
    "read": 1,
-   "report": 1,
    "role": "Press Admin",
-   "share": 1,
    "write": 1
   },
   {
    "create": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
    "read": 1,
-   "report": 1,
    "role": "Press Member",
-   "share": 1,
    "write": 1
   }
  ],

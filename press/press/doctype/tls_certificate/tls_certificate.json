@@ -7,6 +7,7 @@
  "field_order": [
   "domain",
   "status",
+  "team",
   "column_break_3",
   "rsa_key_size",
   "wildcard",
@@ -118,11 +119,18 @@
    "fieldtype": "Code",
    "label": "Private Key",
    "read_only": 1
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2020-09-22 10:01:53.240030",
+ "modified": "2021-02-16 11:17:49.280290",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "TLS Certificate",
@@ -143,13 +151,15 @@
   {
    "create": 1,
    "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
    "read": 1,
-   "report": 1,
    "role": "Press Admin",
-   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "role": "Press Member",
    "write": 1
   }
  ],

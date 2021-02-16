@@ -20,7 +20,7 @@ def create_test_app_source(version: str, app: App) -> AppSource:
 
 	Also creates app release without github api call.
 	"""
-	return app.add_source(version, frappe.mock("url"), "master")
+	return app.add_source(version, frappe.mock("url"), "master", "Administrator")
 
 
 class TestAppSource(unittest.TestCase):

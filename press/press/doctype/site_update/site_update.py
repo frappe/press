@@ -81,8 +81,7 @@ class SiteUpdate(Document):
 		agent = Agent(self.server)
 		site = frappe.get_doc("Site", self.site)
 		job = agent.update_site(site, self.destination_bench, self.deploy_type)
-		self.update_job = job.name
-		self.save()
+		frappe.db.set_value("Site Update", self.name, "update_job", job.name)
 
 	def have_past_updates_failed(self):
 		return frappe.db.exists(
