@@ -25,6 +25,7 @@ from press.api.site import check_dns
 from press.press.doctype.plan.plan import get_plan_config
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.utils import convert, get_client_blacklisted_keys, guess_type, log_error
+from press.overrides import get_permission_query_conditions_for_doctype
 
 
 class Site(Document):
@@ -976,29 +977,4 @@ def process_rename_site_job_update(job):
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 
 
-def get_permission_query_conditions(user):
-	from press.utils import get_current_team
-
-	if not user:
-		user = frappe.session.user
-	if frappe.session.data.user_type == "System User":
-		return ""
-
-	team = get_current_team()
-
-	return f"(`tabSite`.`team` = {frappe.db.escape(team)})"
-
-
-def has_permission(doc, ptype, user):
-	from press.utils import get_current_team
-
-	if not user:
-		user = frappe.session.user
-	if frappe.session.data.user_type == "System User":
-		return True
-
-	team = get_current_team()
-	if doc.team == team:
-		return True
-
-	return False
+get_permission_query_conditions = get_permission_query_conditions_for_doctype("Site")

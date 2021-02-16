@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 
 import frappe
 from frappe.model.document import Document
+from press.overrides import get_permission_query_conditions_for_doctype
 
 
 class BalanceTransaction(Document):
@@ -37,29 +38,6 @@ class BalanceTransaction(Document):
 		frappe.publish_realtime("balance_updated", user=self.team)
 
 
-def get_permission_query_conditions(user):
-	from press.utils import get_current_team
-
-	if not user:
-		user = frappe.session.user
-	if frappe.session.data.user_type == "System User":
-		return ""
-
-	team = get_current_team()
-
-	return f"(`tabBalance Transaction`.`team` = {frappe.db.escape(team)})"
-
-
-def has_permission(doc, ptype, user):
-	from press.utils import get_current_team
-
-	if not user:
-		user = frappe.session.user
-	if frappe.session.data.user_type == "System User":
-		return True
-
-	team = get_current_team()
-	if doc.team == team:
-		return True
-
-	return False
+get_permission_query_conditions = get_permission_query_conditions_for_doctype(
+	"Balance Transaction"
+)

@@ -108,29 +108,21 @@ permission_query_conditions = {
 	"Bench": "press.press.doctype.bench.bench.get_permission_query_conditions",
 }
 has_permission = {
-	"Site": "press.press.doctype.site.site.has_permission",
-	"Site Domain": "press.press.doctype.site_domain.site_domain.has_permission",
-	"TLS Certificate": (
-		"press.press.doctype.tls_certificate.tls_certificate.has_permission"
-	),
+	"Site": "press.overrides.has_permission",
+	"Site Domain": "press.overrides.has_permission",
+	"TLS Certificate": "press.overrides.has_permission",
 	"Team": "press.press.doctype.team.team.has_permission",
-	"Subscription": "press.press.doctype.subscription.subscription.has_permission",
-	"Stripe Payment Method": (
-		"press.press.doctype.stripe_payment_method.stripe_payment_method.has_permission"
-	),
-	"Balance Transaction": (
-		"press.press.doctype.balance_transaction.balance_transaction.has_permission"
-	),
-	"Invoice": "press.press.doctype.invoice.invoice.has_permission",
-	"App Source": "press.press.doctype.app_source.app_source.has_permission",
+	"Subscription": "press.overrides.has_permission",
+	"Stripe Payment Method": "press.overrides.has_permission",
+	"Balance Transaction": "press.overrides.has_permission",
+	"Invoice": "press.overrides.has_permission",
+	"App Source": "press.overrides.has_permission",
 	"App Release": "press.press.doctype.app_release.app_release.has_permission",
-	"Release Group": "press.press.doctype.release_group.release_group.has_permission",
-	"Deploy Candidate": (
-		"press.press.doctype.deploy_candidate.deploy_candidate.has_permission"
-	),
-	"Deploy Candidate Difference": "press.press.doctype.deploy_candidate_difference.deploy_candidate_difference.has_permission",
-	"Deploy": "press.press.doctype.deploy.deploy.has_permission",
-	"Bench": "press.press.doctype.bench.bench.has_permission",
+	"Release Group": "press.overrides.has_permission",
+	"Deploy Candidate": "press.overrides.has_permission",
+	"Deploy Candidate Difference": "press.overrides.has_permission",
+	"Deploy": "press.overrides.has_permission",
+	"Bench": "press.overrides.has_permission",
 }
 
 # Document Events

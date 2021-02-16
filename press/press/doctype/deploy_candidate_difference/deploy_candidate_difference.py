@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import frappe
 from frappe.model.document import Document
 from frappe.core.utils import find
+from press.overrides import get_permission_query_conditions_for_doctype
 
 
 class DeployCandidateDifference(Document):
@@ -86,29 +87,6 @@ class DeployCandidateDifference(Document):
 				self.deploy_type = "Migrate"
 
 
-def get_permission_query_conditions(user):
-	from press.utils import get_current_team
-
-	if not user:
-		user = frappe.session.user
-	if frappe.session.data.user_type == "System User":
-		return ""
-
-	team = get_current_team()
-
-	return f"(`tabDeploy Candidate Difference`.`team` = {frappe.db.escape(team)})"
-
-
-def has_permission(doc, ptype, user):
-	from press.utils import get_current_team
-
-	if not user:
-		user = frappe.session.user
-	if frappe.session.data.user_type == "System User":
-		return True
-
-	team = get_current_team()
-	if doc.team == team:
-		return True
-
-	return False
+get_permission_query_conditions = get_permission_query_conditions_for_doctype(
+	"Deploy Candidate Difference"
+)

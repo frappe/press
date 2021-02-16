@@ -21,6 +21,7 @@ from press.utils import log_error
 from frappe.core.utils import find
 import docker
 from frappe.model.naming import make_autoname
+from press.overrides import get_permission_query_conditions_for_doctype
 
 
 class DeployCandidate(Document):
@@ -362,29 +363,6 @@ def desk_app(doctype, txt, searchfield, start, page_len, filters):
 	)
 
 
-def get_permission_query_conditions(user):
-	from press.utils import get_current_team
-
-	if not user:
-		user = frappe.session.user
-	if frappe.session.data.user_type == "System User":
-		return ""
-
-	team = get_current_team()
-
-	return f"(`tabDeploy Candidate`.`team` = {frappe.db.escape(team)})"
-
-
-def has_permission(doc, ptype, user):
-	from press.utils import get_current_team
-
-	if not user:
-		user = frappe.session.user
-	if frappe.session.data.user_type == "System User":
-		return True
-
-	team = get_current_team()
-	if doc.team == team:
-		return True
-
-	return False
+get_permission_query_conditions = get_permission_query_conditions_for_doctype(
+	"Deploy Candidate"
+)
