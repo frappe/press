@@ -13,6 +13,7 @@ from datetime import datetime
 from frappe import _
 from frappe.utils import getdate, cint
 from press.telegram import Telegram
+from press.overrides import get_permission_query_conditions_for_doctype
 
 
 class Invoice(Document):
@@ -617,29 +618,4 @@ def send_email_for_failed_payment(invoice, sites=None):
 	)
 
 
-def get_permission_query_conditions(user):
-	from press.utils import get_current_team
-
-	if not user:
-		user = frappe.session.user
-	if frappe.session.data.user_type == "System User":
-		return ""
-
-	team = get_current_team()
-
-	return f"(`tabInvoice`.`team` = {frappe.db.escape(team)})"
-
-
-def has_permission(doc, ptype, user):
-	from press.utils import get_current_team
-
-	if not user:
-		user = frappe.session.user
-	if frappe.session.data.user_type == "System User":
-		return True
-
-	team = get_current_team()
-	if doc.team == team:
-		return True
-
-	return False
+get_permission_query_conditions = get_permission_query_conditions_for_doctype("Invoice")
