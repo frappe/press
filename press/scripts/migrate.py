@@ -581,7 +581,7 @@ def new_site(local_site):
 		site_url = site_creation_request.json()["message"]
 		print("Your site {} is being migrated ✨".format(local_site))
 		print(
-			"View your site dashboard at https://{}/dashboard/#/sites/{}".format(
+			"View your site dashboard at https://{}/dashboard/sites/{}".format(
 				remote_site, site_url
 			)
 		)
@@ -611,7 +611,7 @@ def restore_site(local_site):
 	if site_restore_request.ok:
 		print("Your site {0} is being restored on {1} ✨".format(local_site, selected_site))
 		print(
-			"View your site dashboard at https://{}/dashboard/#/sites/{}".format(
+			"View your site dashboard at https://{}/dashboard/sites/{}".format(
 				remote_site, selected_site
 			)
 		)

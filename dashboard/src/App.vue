@@ -33,6 +33,28 @@
 			</div>
 		</div>
 		<UserPrompts />
+		<Dialog
+			:title="dialog.title"
+			v-for="dialog in confirmDialogs"
+			v-model="dialog.show"
+			@close="removeConfirmDialog(dialog)"
+		>
+			<div class="prose">
+				<p class="text-base" v-html="dialog.message"></p>
+			</div>
+			<template slot="actions">
+				<Button type="secondary" @click="removeConfirmDialog(dialog)">
+					Cancel
+				</Button>
+				<Button
+					class="ml-2"
+					:type="dialog.actionType"
+					@click="onDialogAction(dialog)"
+				>
+					{{ dialog.actionLabel }}
+				</Button>
+			</template>
+		</Dialog>
 	</div>
 </template>
 <script>
@@ -50,17 +72,39 @@ export default {
 	},
 	data() {
 		return {
-			notifications: []
+			notifications: [],
+			confirmDialogs: [],
+			viewportWidth: 0
 		};
 	},
 	created() {
 		Vue.prototype.$notify = this.notify;
+		Vue.prototype.$confirm = this.confirm;
+	},
+	provide: {
+		viewportWidth: Math.max(
+			document.documentElement.clientWidth || 0,
+			window.innerWidth || 0
+		)
 	},
 	methods: {
 		notify(props) {
 			props.id = Math.floor(Math.random() * 1000 + Date.now());
 			this.notifications.push(props);
 			setTimeout(() => this.hideNotification(props.id), props.timeout || 5000);
+		},
+		confirm(dialog) {
+			dialog.show = true;
+			this.confirmDialogs.push(dialog);
+		},
+		onDialogAction(dialog) {
+			let closeDialog = () => this.removeConfirmDialog(dialog);
+			dialog.action(closeDialog);
+		},
+		removeConfirmDialog(dialog) {
+			this.confirmDialogs = this.confirmDialogs.filter(
+				_dialog => dialog !== _dialog
+			);
 		},
 		hideNotification(id) {
 			this.notifications = this.notifications.filter(props => props.id !== id);
