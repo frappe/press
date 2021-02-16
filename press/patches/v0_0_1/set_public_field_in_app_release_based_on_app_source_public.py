@@ -8,8 +8,11 @@ import frappe
 
 def execute():
 	frappe.reload_doc("press", "doctype", "app_release")
-	sources = frappe.get_all("App Source", {"public": True})
-	for source in sources:
-		frappe.db.sql(
-			"""UPDATE `tabApp Release` SET public = 1 WHERE source = %s""", (source.name)
-		)
+	frappe.db.sql(
+		"""
+		UPDATE `tabApp Release` as `release`
+		INNER JOIN `tabApp Source` as source
+		ON `release`.source = `source`.name
+		SET `release`.public = `source`.public
+	"""
+	)
