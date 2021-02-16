@@ -83,6 +83,7 @@ permission_query_conditions = {
 	"Site Domain": (
 		"press.press.doctype.site_domain.site_domain.get_permission_query_conditions"
 	),
+	"TLS Certificate": "press.press.doctype.tls_certificate.tls_certificate.get_permission_query_conditions",
 	"Team": "press.press.doctype.team.team.get_permission_query_conditions",
 	"Subscription": (
 		"press.press.doctype.subscription.subscription.get_permission_query_conditions"
@@ -105,6 +106,9 @@ permission_query_conditions = {
 has_permission = {
 	"Site": "press.press.doctype.site.site.has_permission",
 	"Site Domain": "press.press.doctype.site_domain.site_domain.has_permission",
+	"TLS Certificate": (
+		"press.press.doctype.tls_certificate.tls_certificate.has_permission"
+	),
 	"Team": "press.press.doctype.team.team.has_permission",
 	"Subscription": "press.press.doctype.subscription.subscription.has_permission",
 	"Stripe Payment Method": (
