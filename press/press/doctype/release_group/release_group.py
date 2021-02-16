@@ -124,8 +124,7 @@ def get_permission_query_conditions(user):
 	team = get_current_team()
 
 	return (
-		f"(`tabRelease Group`.`team` = {frappe.db.escape(team)} or `tabRelease"
-		" Group`.`public` = 1)"
+		f"(`tabRelease Group`.`team` = {frappe.db.escape(team)})"
 	)
 
 
@@ -138,12 +137,7 @@ def has_permission(doc, ptype, user):
 		return True
 
 	team = get_current_team()
-	# Don't allow writing to public groups
-	if ptype == "write":
-		if doc.team == team:
-			return True
-	else:
-		if doc.team == team or doc.public:
-			return True
+	if doc.team == team:
+		return True
 
 	return False
