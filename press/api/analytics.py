@@ -70,7 +70,7 @@ def daily_usage(name):
 		fields=["SUM(duration) as value", "DATE(timestamp) as date"],
 		filters={"site": name, "timestamp": (">=", frappe.utils.add_days(None, -7))},
 		group_by="date",
-		order_by="date asc"
+		order_by="date asc",
 	)
 	plan = frappe.get_cached_doc("Site", name).plan
 	plan_limit = get_plan_config(plan)["rate_limit"]["limit"]
