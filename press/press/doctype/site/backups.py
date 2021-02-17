@@ -61,7 +61,6 @@ class BackupRotationScheme:
 	) -> List[str]:
 		"""Mark backup as unavailable and return remote files to delete."""
 		remote_files_to_delete = []
-		print(offsite_backups)
 		for backup in offsite_backups:
 			remote_files = frappe.db.get_value(
 				"Site Backup",
@@ -99,18 +98,13 @@ class BackupRotationScheme:
 	@timeit
 	def cleanup(self):
 		"""Expire backups according to the rotation scheme."""
-		expired_remote_files = []
 		sites = frappe.get_all(
-			"Site",
-			filters={"status": ("!=", "Archived")},
-			fields=["name", "bench"],
-			limit=10,
-			order_by="creation",
+			"Site", filters={"status": ("!=", "Archived")}, fields=["name", "bench"],
 		)
 		for site in sites:
 			self.expire_local_backups(site)
-			expired_sites_remote_files = self.expire_offsite_backups(site)
-			expired_remote_files.extend(expired_sites_remote_files)
+		sites = [site.name for site in sites]
+		expired_remote_files = self.expire_offsite_backups(sites)
 		delete_remote_backup_objects(expired_remote_files)
 		frappe.db.commit()
 
@@ -123,18 +117,20 @@ class FIFO(BackupRotationScheme):
 			frappe.db.get_single_value("Press Settings", "offsite_backups_count") or 30
 		)
 
-	def expire_offsite_backups(self, site: Site) -> List[str]:
+	def expire_offsite_backups(self, sites: List[str]) -> List[str]:
 		offsite_expiry = self.offsite_backups_count
-		to_be_expired_backups = frappe.get_all(
-			"Site Backup",
-			filters={
-				"site": site.name,
-				"status": "Success",
-				"files_availability": "Available",
-				"offsite": True,
-			},
-			order_by="creation desc",
-		)[offsite_expiry:]
+		to_be_expired_backups = []
+		for site in sites:
+			to_be_expired_backups += frappe.get_all(
+				"Site Backup",
+				filters={
+					"site": site,
+					"status": "Success",
+					"files_availability": "Available",
+					"offsite": True,
+				},
+				order_by="creation desc",
+			)[offsite_expiry:]
 		return self._expire_and_get_remote_files(to_be_expired_backups)
 
 
@@ -154,17 +150,18 @@ class GFS(BackupRotationScheme):
 	yearly_backup_day = 1  # days of the year (1-366)
 
 	@timeit
-	def expire_offsite_backups(self, site: Site) -> List[str]:
+	def expire_offsite_backups(self, sites: List[str]) -> List[str]:
 		today = date.today()
 		oldest_daily = today - timedelta(days=self.daily)
 		oldest_weekly = today - timedelta(weeks=4)
 		oldest_monthly = today - timedelta(days=366)
 		oldest_yearly = today - timedelta(days=3653)
+		sites_sql_list = '(' + ','.join([f"\'{site}\'" for site in sites]) + ')'
 		to_be_expired_backups = frappe.db.sql(
 			f"""
 			SELECT name from `tabSite Backup`
 			WHERE
-				site="{site.name}" and
+				site in {sites_sql_list} and
 				status="Success" and
 				files_availability="Available" and
 				offsite=True and
@@ -174,7 +171,6 @@ class GFS(BackupRotationScheme):
 				(DAYOFYEAR(creation) != {self.yearly_backup_day} or creation < "{oldest_yearly}")
 			""",
 			as_dict=True,
-			debug=True,
 		)
 		# XXX: DAYOFWEEK in sql gives 1-7 for SUN-SAT in sql
 		# datetime.weekday() in python gives 0-6 for MON-SUN
