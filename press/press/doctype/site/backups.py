@@ -5,14 +5,36 @@
 from __future__ import unicode_literals
 
 import functools
+import time
 from datetime import date, datetime, timedelta
 from typing import Dict, List
+from unittest.mock import patch, Mock
 
 import frappe
 import pytz
+
 from press.press.doctype.remote_file.remote_file import delete_remote_backup_objects
 from press.press.doctype.site.site import Site
 from press.utils import log_error
+
+
+def timeit(func):
+	"""Time function without commit."""
+
+	@patch("press.press.doctype.site.backups.delete_remote_backup_objects", Mock())
+	@patch("press.press.doctype.site.backups.frappe.db.commit", Mock())
+	def wrapper(*args, **kwargs):
+		start = time.perf_counter()
+		ret = func(*args, **kwargs)
+		end = time.perf_counter()
+		print("*" * 20)
+		print("*" * 20)
+		print(f"Time taken for function {func.__name__}: {end-start}")
+		print("*" * 20)
+		print("*" * 20)
+		return ret
+
+	return wrapper
 
 
 @functools.lru_cache(maxsize=128)
@@ -33,11 +55,13 @@ class BackupRotationScheme:
 	Rotation is maintained by controlled deletion of daily backups.
 	"""
 
+	@timeit
 	def _expire_and_get_remote_files(
 		self, offsite_backups: List[Dict[str, str]]
 	) -> List[str]:
 		"""Mark backup as unavailable and return remote files to delete."""
 		remote_files_to_delete = []
+		print(offsite_backups)
 		for backup in offsite_backups:
 			remote_files = frappe.db.get_value(
 				"Site Backup",
@@ -48,6 +72,7 @@ class BackupRotationScheme:
 			frappe.db.set_value("Site Backup", backup, "files_availability", "Unavailable")
 		return remote_files_to_delete
 
+	@timeit
 	def expire_local_backups(self, site: Site):
 		expiry = keep_backups_for_(site.bench)
 		expired_local_backups = frappe.get_all(
@@ -71,11 +96,16 @@ class BackupRotationScheme:
 		"""Expire and return list of offsite backups to delete."""
 		raise NotImplementedError
 
+	@timeit
 	def cleanup(self):
 		"""Expire backups according to the rotation scheme."""
 		expired_remote_files = []
 		sites = frappe.get_all(
-			"Site", filters={"status": ("!=", "Archived")}, fields=["name", "bench"]
+			"Site",
+			filters={"status": ("!=", "Archived")},
+			fields=["name", "bench"],
+			limit=10,
+			order_by="creation",
 		)
 		for site in sites:
 			self.expire_local_backups(site)
@@ -123,6 +153,7 @@ class GFS(BackupRotationScheme):
 	monthly_backup_day = 1  # days of the month (1-31)
 	yearly_backup_day = 1  # days of the year (1-366)
 
+	@timeit
 	def expire_offsite_backups(self, site: Site) -> List[str]:
 		today = date.today()
 		oldest_daily = today - timedelta(days=self.daily)
@@ -143,11 +174,11 @@ class GFS(BackupRotationScheme):
 				(DAYOFYEAR(creation) != {self.yearly_backup_day} or creation < "{oldest_yearly}")
 			""",
 			as_dict=True,
+			debug=True,
 		)
 		# XXX: DAYOFWEEK in sql gives 1-7 for SUN-SAT in sql
 		# datetime.weekday() in python gives 0-6 for MON-SUN
 		# datetime.isoweekday() in python gives 1-7 for MON-SUN
-
 		return self._expire_and_get_remote_files(to_be_expired_backups)
 
 
@@ -214,6 +245,7 @@ def schedule():
 			log_error("Site Backup Exception", site=site)
 
 
+@timeit
 def cleanup():
 	"""Delete expired offsite backups and set statuses for old local ones."""
 
