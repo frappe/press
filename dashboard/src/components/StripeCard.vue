@@ -7,7 +7,11 @@
 			<Spinner class="w-5 h-5 text-gray-600 " />
 		</div>
 		<div :class="{ 'opacity-0': !ready }">
-			<Input label="Name on Card" v-model="billingInformation.cardHolderName" />
+			<Input
+				label="Name on Card"
+				type="text"
+				v-model="billingInformation.cardHolderName"
+			/>
 			<AddressForm
 				class="mt-4"
 				v-model="billingInformation"

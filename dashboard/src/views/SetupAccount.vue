@@ -75,7 +75,7 @@
 		v-else-if="!$resources.validateRequestKey.loading && !email"
 	>
 		Account Key <strong>{{ requestKey }}</strong> is invalid or expired.
-		<a class="font-medium text-brand" href="#/signup">Sign up</a>
+		<Link to="/signup">Sign up</Link>
 		for a new account.
 	</div>
 	<div v-else></div>

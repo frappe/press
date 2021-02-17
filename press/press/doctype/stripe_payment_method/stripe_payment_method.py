@@ -8,6 +8,7 @@ import frappe
 from frappe.model.document import Document
 from press.api.billing import get_stripe
 from frappe.contacts.address_and_contact import load_address_and_contact
+from press.overrides import get_permission_query_conditions_for_doctype
 
 
 class StripePaymentMethod(Document):
@@ -37,3 +38,8 @@ class StripePaymentMethod(Document):
 
 		stripe = get_stripe()
 		stripe.PaymentMethod.detach(self.stripe_payment_method_id)
+
+
+get_permission_query_conditions = get_permission_query_conditions_for_doctype(
+	"Stripe Payment Method"
+)

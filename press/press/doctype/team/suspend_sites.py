@@ -26,10 +26,11 @@ def execute():
 	for d in teams_with_total_usage:
 		total_usage = d.total_usage
 		team = frappe.get_doc("Team", d.team)
-		total_usage_limit = get_total_free_usage_limit(team)
 
-		if team.get_balance() > 0:
-			return
+		if team.free_account or not total_usage or team.get_balance() > 0:
+			continue
+
+		total_usage_limit = get_total_free_usage_limit(team)
 
 		# if total usage has crossed the allotted free credits, suspend their sites
 		if total_usage > total_usage_limit:
@@ -41,7 +42,7 @@ def suspend_sites_and_send_email(team):
 	# send email
 	if sites:
 		email = team.user
-		account_update_link = frappe.utils.get_url("/dashboard/#/welcome")
+		account_update_link = frappe.utils.get_url("/dashboard/welcome")
 		frappe.sendmail(
 			recipients=email,
 			subject="Your sites have been suspended on Frappe Cloud",

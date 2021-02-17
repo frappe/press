@@ -61,6 +61,10 @@ base_template_map = {
 
 update_website_context = ["press.overrides.update_website_context"]
 
+website_route_rules = [
+	{"from_route": "/dashboard/<path:app_path>", "to_route": "dashboard"},
+]
+
 # Installation
 # ------------
 
@@ -80,10 +84,46 @@ notification_config = "press.notifications.get_notification_config"
 
 permission_query_conditions = {
 	"Site": "press.press.doctype.site.site.get_permission_query_conditions",
+	"Site Domain": (
+		"press.press.doctype.site_domain.site_domain.get_permission_query_conditions"
+	),
+	"TLS Certificate": "press.press.doctype.tls_certificate.tls_certificate.get_permission_query_conditions",
+	"Team": "press.press.doctype.team.team.get_permission_query_conditions",
+	"Subscription": (
+		"press.press.doctype.subscription.subscription.get_permission_query_conditions"
+	),
+	"Stripe Payment Method": "press.press.doctype.stripe_payment_method.stripe_payment_method.get_permission_query_conditions",
+	"Balance Transaction": "press.press.doctype.balance_transaction.balance_transaction.get_permission_query_conditions",
+	"Invoice": "press.press.doctype.invoice.invoice.get_permission_query_conditions",
+	"App Source": (
+		"press.press.doctype.app_source.app_source.get_permission_query_conditions"
+	),
+	"App Release": (
+		"press.press.doctype.app_release.app_release.get_permission_query_conditions"
+	),
+	"Release Group": "press.press.doctype.release_group.release_group.get_permission_query_conditions",
+	"Deploy Candidate": "press.press.doctype.deploy_candidate.deploy_candidate.get_permission_query_conditions",
+	"Deploy Candidate Difference": "press.press.doctype.deploy_candidate_difference.deploy_candidate_difference.get_permission_query_conditions",
+	"Deploy": "press.press.doctype.deploy.deploy.get_permission_query_conditions",
+	"Bench": "press.press.doctype.bench.bench.get_permission_query_conditions",
 }
-# has_permission = {
-# 	"Site": "press.press.doctype.site.site.has_permission",
-# }
+has_permission = {
+	"Site": "press.overrides.has_permission",
+	"Site Domain": "press.overrides.has_permission",
+	"TLS Certificate": "press.overrides.has_permission",
+	"Team": "press.press.doctype.team.team.has_permission",
+	"Subscription": "press.overrides.has_permission",
+	"Stripe Payment Method": "press.overrides.has_permission",
+	"Balance Transaction": "press.overrides.has_permission",
+	"Invoice": "press.overrides.has_permission",
+	"App Source": "press.overrides.has_permission",
+	"App Release": "press.press.doctype.app_release.app_release.has_permission",
+	"Release Group": "press.overrides.has_permission",
+	"Deploy Candidate": "press.overrides.has_permission",
+	"Deploy Candidate Difference": "press.overrides.has_permission",
+	"Deploy": "press.overrides.has_permission",
+	"Bench": "press.overrides.has_permission",
+}
 
 # Document Events
 # ---------------

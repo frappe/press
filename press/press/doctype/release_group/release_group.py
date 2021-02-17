@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 
 import frappe
 from frappe.model.document import Document
+from press.overrides import get_permission_query_conditions_for_doctype
 
 
 class ReleaseGroup(Document):
@@ -111,3 +112,8 @@ def new_release_group(title, version, apps, team=None):
 		}
 	).insert()
 	return group
+
+
+get_permission_query_conditions = get_permission_query_conditions_for_doctype(
+	"Release Group"
+)

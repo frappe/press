@@ -48,7 +48,12 @@
 						>
 							{{ step.description }}
 						</div>
-						<div class="mt-3" v-if="step.skippable && !isStepSkipped(step) && !isStepCompleted(step)">
+						<div
+							class="mt-3"
+							v-if="
+								step.skippable && !isStepSkipped(step) && !isStepCompleted(step)
+							"
+						>
 							<Button
 								@click.stop="
 									$resources.skipOnboardingStep.fetch({
@@ -118,7 +123,6 @@ export default {
 		}
 	},
 	data() {
-		let team = this.$account.team?.name || '';
 		return {
 			showAddCardDialog: false,
 			showTransferCreditsDialog: false,
@@ -162,14 +166,18 @@ export default {
 						click,
 						skippable:
 							d.step_name === 'Add Billing Information' &&
-							$account.team.erpnext_partner
+							this.$account.team.erpnext_partner
 					};
 				});
 		},
 		isNextStep(step) {
 			let stepIndex = this.steps.indexOf(step);
 			let prevStep = this.steps[stepIndex - 1];
-			if (prevStep && ['Completed', 'Skipped'].includes(prevStep.status) && step.status == 'Pending') {
+			if (
+				prevStep &&
+				['Completed', 'Skipped'].includes(prevStep.status) &&
+				step.status == 'Pending'
+			) {
 				return true;
 			}
 			return false;

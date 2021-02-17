@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_rename": 1,
  "autoname": "field:domain",
  "creation": "2020-03-17 16:35:11.520003",
  "doctype": "DocType",
@@ -8,6 +9,7 @@
  "field_order": [
   "status",
   "site",
+  "team",
   "domain",
   "ssl",
   "dns_type",
@@ -84,10 +86,19 @@
    "fieldname": "redirect_to_primary",
    "fieldtype": "Check",
    "label": "Redirect To Primary"
+  },
+  {
+   "fetch_from": "site.team",
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team",
+   "read_only": 1,
+   "reqd": 1
   }
  ],
  "links": [],
- "modified": "2020-09-23 12:22:22.066298",
+ "modified": "2021-02-15 20:09:39.409924",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Domain",
@@ -107,26 +118,14 @@
   },
   {
    "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
    "read": 1,
-   "report": 1,
    "role": "Press Admin",
-   "share": 1,
    "write": 1
   },
   {
    "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
    "read": 1,
-   "report": 1,
    "role": "Press Member",
-   "share": 1,
    "write": 1
   }
  ],

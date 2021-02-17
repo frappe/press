@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import frappe
 from frappe.utils import cint
 from frappe.handler import is_whitelisted
+from functools import partial
 
 
 @frappe.whitelist(allow_guest=True)
@@ -88,3 +89,38 @@ def update_website_context(context):
 		and not frappe.session.data.user_type == "System User"
 	):
 		raise frappe.DoesNotExistError
+
+
+def has_permission(doc, ptype, user):
+	from press.utils import get_current_team
+
+	if not user:
+		user = frappe.session.user
+	if frappe.session.data.user_type == "System User":
+		return True
+
+	if ptype == "create":
+		return True
+
+	team = get_current_team()
+	if doc.team == team:
+		return True
+
+	return False
+
+
+def get_permission_query_conditions_for_doctype_and_user(doctype, user):
+	from press.utils import get_current_team
+
+	if not user:
+		user = frappe.session.user
+	if frappe.session.data.user_type == "System User":
+		return ""
+
+	team = get_current_team()
+
+	return f"(`tab{doctype}`.`team` = {frappe.db.escape(team)})"
+
+
+def get_permission_query_conditions_for_doctype(doctype):
+	return partial(get_permission_query_conditions_for_doctype_and_user, doctype)

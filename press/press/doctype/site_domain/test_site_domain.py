@@ -4,12 +4,16 @@
 from __future__ import unicode_literals
 
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, call, patch
 
 import frappe
 
 from press.agent import Agent
-from press.press.doctype.site.site import site_cleanup_after_archive
+from press.press.doctype.agent_job.agent_job import AgentJob
+from press.press.doctype.site.site import (
+	process_rename_site_job_update,
+	site_cleanup_after_archive,
+)
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.site_domain.site_domain import SiteDomain
 from press.press.doctype.tls_certificate.tls_certificate import TLSCertificate
@@ -32,7 +36,7 @@ def create_test_site_domain(
 		).insert(ignore_if_duplicate=True)
 
 
-@patch.object(Agent, "create_agent_job", new=Mock(return_value={"job": 1}))
+@patch.object(AgentJob, "after_insert", new=Mock())
 class TestSiteDomain(unittest.TestCase):
 	"""Tests for Site Domain Document methods."""
 
@@ -182,15 +186,12 @@ class TestSiteDomain(unittest.TestCase):
 		site_domain = create_test_site_domain(site.name, "hellohello.com")
 
 		site.archive()
-		site_cleanup_after_archive(site.name)
-		self.assertFalse(frappe.db.exists("Site Domain", {"site": site.name}))
-
-		# delete ops are not rolled back
-		frappe.delete_doc("Site", site.name, force=True)
-		frappe.delete_doc("Site Domain", site.name, force=True)
-		frappe.delete_doc("Site Domain", site_domain.name, force=True)
-
-		frappe.db.commit()
+		with patch("press.press.doctype.site.site.frappe.delete_doc") as mock_frappe_del:
+			site_cleanup_after_archive(site.name)
+		mock_frappe_del.assert_has_calls(
+			[call("Site Domain", site.name), call("Site Domain", site_domain.name)],
+			any_order=True,
+		)
 
 	def test_tls_certificate_isnt_created_for_default_domain(self):
 		"""Ensure TLS Certificate isn't created for default domain."""
@@ -226,3 +227,39 @@ class TestSiteDomain(unittest.TestCase):
 		with patch.object(SiteDomain, "create_remove_host_agent_request") as mock_remove_host:
 			def_domain.on_trash()
 		mock_remove_host.assert_called()
+
+	def test_domains_other_than_default_get_sent_for_rename(self):
+		"""Ensure site domains are sent for rename."""
+		site = create_test_site(self.site_subdomain)
+		site_domain1 = create_test_site_domain(site.name, "sitedomain1.com")
+		site_domain2 = create_test_site_domain(site.name, "sitedomain2.com")
+		new_name = "new-name.fc.dev"
+		with patch.object(Agent, "rename_upstream_site") as mock_rename_upstream_site:
+			site.rename(new_name)
+		args, kwargs = mock_rename_upstream_site.call_args
+		from collections import Counter
+
+		self.assertEqual(Counter(args[-1]), Counter([site_domain1.name, site_domain2.name]))
+
+	def test_site_rename_doesnt_update_host_name_for_custom_domain(self):
+		"""Ensure site configuration isn't updated after rename when custom domain is host_name."""
+		site = create_test_site("old-name")
+		site_domain1 = create_test_site_domain(site.name, "sitedomain1.com")
+		site.set_host_name(site_domain1.name)
+		new_name = "new-name.fc.dev"
+		site.rename(new_name)
+
+		rename_job = frappe.get_last_doc("Agent Job", {"job_type": "Rename Site"})
+		rename_upstream_job = frappe.get_last_doc(
+			"Agent Job", {"job_type": "Rename Site on Upstream"}
+		)
+		rename_job.status = "Success"
+		rename_upstream_job.status = "Success"
+		rename_job.save()
+		rename_upstream_job.save()
+
+		process_rename_site_job_update(rename_job)
+		site = frappe.get_doc("Site", new_name)
+		if site.configuration[0].key == "host_name":
+			config_host = site.configuration[0].value
+		self.assertEqual(config_host, f"https://{site_domain1.name}")

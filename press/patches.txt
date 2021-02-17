@@ -61,3 +61,6 @@ press.patches.v0_0_1.rename_workers_to_background_workers
 press.patches.v0_0_1.set_release_in_bench_app
 press.patches.v0_0_1.set_app_title_in_deploy_candidate_app
 press.patches.v0_0_1.set_release_group_in_site
+press.patches.v0_0_1.set_public_field_in_app_release_based_on_app_source_public
+press.patches.v0_0_1.set_team_field_for_permission_checks
+press.patches.v0_0_1.set_team_field_in_tls_certificate_based_on_domain_team
