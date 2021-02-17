@@ -29,7 +29,10 @@
 		<div v-if="step == 'Setting up Stripe'" class="flex justify-center mt-8">
 			<Spinner class="w-4 h-4 text-gray-600" />
 		</div>
-		<ErrorMessage class="mt-2" :error="$resources.createPaymentIntent.error || errorMessage" />
+		<ErrorMessage
+			class="mt-2"
+			:error="$resources.createPaymentIntent.error || errorMessage"
+		/>
 		<template slot="actions">
 			<div class="flex justify-between w-full">
 				<StripeLogo />

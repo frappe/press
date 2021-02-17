@@ -25,13 +25,18 @@ from press.api.site import check_dns
 from press.press.doctype.plan.plan import get_plan_config
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.utils import convert, get_client_blacklisted_keys, guess_type, log_error
+from press.overrides import get_permission_query_conditions_for_doctype
 
 
 class Site(Document):
-	def autoname(self):
+	def _get_site_name(self, subdomain: str):
+		"""Get full site domain name given subdomain."""
 		if not self.domain:
 			self.domain = frappe.db.get_single_value("Press Settings", "domain")
-		self.name = f"{self.subdomain}.{self.domain}"
+		return f"{subdomain}.{self.domain}"
+
+	def autoname(self):
+		self.name = self._get_site_name(self.subdomain)
 
 	def validate(self):
 		# validate site name
@@ -74,7 +79,7 @@ class Site(Document):
 
 		# set or update site.host_name
 		if self.is_new():
-			self.host_name = self._create_default_site_domain().name
+			self.host_name = self.name
 			self._update_configuration({"host_name": f"https://{self.host_name}"}, save=False)
 		elif self.has_value_changed("host_name"):
 			self._validate_host_name()
@@ -103,6 +108,26 @@ class Site(Document):
 			self.disable_subscription()
 		if self.status == "Active":
 			self.enable_subscription()
+
+		if self.status not in ["Pending", "Archived", "Suspended"] and self.has_value_changed(
+			"subdomain"
+		):
+			self.rename(self._get_site_name(self.subdomain))
+
+	def rename_upstream(self, new_name: str):
+		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
+		agent = Agent(proxy_server, server_type="Proxy Server")
+		site_domains = frappe.get_all(
+			"Site Domain", {"site": self.name, "name": ("!=", self.name)}, pluck="name"
+		)
+		agent.rename_upstream_site(self.server, self, new_name, site_domains)
+
+	def rename(self, new_name: str):
+		agent = Agent(self.server)
+		agent.rename_site(self, new_name)
+		self.rename_upstream(new_name)
+		self.status = "Pending"
+		self.save()
 
 	def update_config_preview(self):
 		"""Regenrates site.config on each site.validate from the site.configuration child table data"""
@@ -172,11 +197,12 @@ class Site(Document):
 				"retry_count": 0,
 				"dns_type": "A",
 			}
-		).insert(ignore_if_duplicate=True, ignore_links=True)
+		).insert(ignore_if_duplicate=True)
 
 	def after_insert(self):
 		# log activity
 		log_site_activity(self.name, "Create")
+		self._create_default_site_domain()
 		self.create_dns_record()
 		self.create_agent_request()
 
@@ -916,14 +942,39 @@ def process_migrate_site_job_update(job):
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 
 
-def get_permission_query_conditions(user):
-	from press.utils import get_current_team
+def process_rename_site_job_update(job):
+	other_job_type = {
+		"Rename Site": "Rename Site on Upstream",
+		"Rename Site on Upstream": "Rename Site",
+	}[job.job_type]
 
-	if not user:
-		user = frappe.session.user
-	if frappe.session.data.user_type == "System User":
-		return ""
+	first = job.status
+	second = frappe.get_all(
+		"Agent Job",
+		fields=["status"],
+		filters={"job_type": other_job_type, "site": job.site},
+	)[0].status
 
-	team = get_current_team()
+	if "Success" == first == second:
+		data = json.loads(job.request_data)
+		new_name = data["new_name"]
+		site = frappe.get_doc("Site", job.site)
+		if site.host_name == job.site:
+			site._update_configuration({"host_name": f"https://{new_name}"})
+		frappe.rename_doc("Site", job.site, new_name)
+		frappe.rename_doc("Site Domain", job.site, new_name)
+		job.site = new_name
+		updated_status = "Active"
+	elif "Failure" in (first, second):
+		updated_status = "Broken"
+	elif "Running" in (first, second):
+		updated_status = "Updating"
+	else:
+		updated_status = "Pending"
 
-	return f"(`tabSite`.`team` = {frappe.db.escape(team)})"
+	site_status = frappe.get_value("Site", job.site, "status")
+	if updated_status != site_status:
+		frappe.db.set_value("Site", job.site, "status", updated_status)
+
+
+get_permission_query_conditions = get_permission_query_conditions_for_doctype("Site")

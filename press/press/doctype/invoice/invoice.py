@@ -13,6 +13,7 @@ from datetime import datetime
 from frappe import _
 from frappe.utils import getdate, cint
 from press.telegram import Telegram
+from press.overrides import get_permission_query_conditions_for_doctype
 
 
 class Invoice(Document):
@@ -104,6 +105,7 @@ class Invoice(Document):
 		self.db_set(
 			{"stripe_invoice_id": invoice["id"], "status": "Invoice Created"}, commit=True
 		)
+		self.reload()
 
 	def finalize_stripe_invoice(self):
 		stripe = get_stripe()
@@ -114,18 +116,18 @@ class Invoice(Document):
 			return
 
 		if self.period_start and self.period_end and self.is_new():
-			intersecting_invoices = frappe.db.sql(
+			query = (
 				f"select `name` from `tabInvoice` where team = '{self.team}' and"
-				f" docstatus < 2 and '{self.period_start}' between `period_start` and"
+				f" docstatus < 2 and ('{self.period_start}' between `period_start` and"
 				f" `period_end` or '{self.period_end}' between `period_start` and"
-				" `period_end`",
-				as_list=True,
+				" `period_end`)"
 			)
+
+			intersecting_invoices = [x[0] for x in frappe.db.sql(query, as_list=True,)]
 
 			if intersecting_invoices:
 				frappe.throw(
-					"There are invoices with intersecting periods:"
-					f" {', '.join(*intersecting_invoices)}",
+					f"There are invoices with intersecting periods:{', '.join(intersecting_invoices)}",
 					frappe.DuplicateEntryError,
 				)
 
@@ -568,11 +570,15 @@ def process_stripe_webhook(doc, method):
 		)
 		invoice.save()
 
-		if team.erpnext_partner:
+		if team.free_account:
+			return
+
+		elif team.erpnext_partner:
 			# dont suspend partner sites, send alert on telegram
 			telegram = Telegram()
 			telegram.send(f"Failed Invoice Payment of Partner: {team.name}")
 			send_email_for_failed_payment(invoice)
+
 		else:
 			sites = None
 			if attempt_count > 1:
@@ -592,7 +598,7 @@ def send_email_for_failed_payment(invoice, sites=None):
 	email = team.user
 	payment_method = team.default_payment_method
 	last_4 = frappe.db.get_value("Stripe Payment Method", payment_method, "last_4")
-	account_update_link = frappe.utils.get_url("/dashboard/#/welcome")
+	account_update_link = frappe.utils.get_url("/dashboard/welcome")
 	subject = "Invoice Payment Failed for Frappe Cloud Subscription"
 
 	frappe.sendmail(
@@ -610,3 +616,6 @@ def send_email_for_failed_payment(invoice, sites=None):
 			"team": team,
 		},
 	)
+
+
+get_permission_query_conditions = get_permission_query_conditions_for_doctype("Invoice")

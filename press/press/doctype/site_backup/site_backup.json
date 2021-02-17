@@ -205,7 +205,7 @@
   }
  ],
  "links": [],
- "modified": "2020-11-20 18:16:03.970599",
+ "modified": "2021-02-15 20:24:56.861817",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Backup",
@@ -225,28 +225,11 @@
   },
   {
    "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "if_owner": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Press Admin",
-   "share": 1,
-   "write": 1
+   "role": "Press Admin"
   },
   {
    "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Press Member",
-   "share": 1,
-   "write": 1
+   "role": "Press Member"
   }
  ],
  "sort_field": "modified",

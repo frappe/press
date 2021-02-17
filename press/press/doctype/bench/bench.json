@@ -11,6 +11,7 @@
   "cluster",
   "column_break_3",
   "group",
+  "team",
   "candidate",
   "docker_image",
   "section_break_6",
@@ -157,10 +158,19 @@
    "options": "Cluster",
    "read_only": 1,
    "reqd": 1
+  },
+  {
+   "fetch_from": "group.team",
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team",
+   "read_only": 1,
+   "reqd": 1
   }
  ],
  "links": [],
- "modified": "2021-01-22 10:03:12.340143",
+ "modified": "2021-02-15 11:20:56.202537",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",
@@ -180,24 +190,14 @@
   },
   {
    "create": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
    "read": 1,
-   "report": 1,
    "role": "Press Admin",
-   "share": 1,
    "write": 1
   },
   {
    "create": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
    "read": 1,
-   "report": 1,
    "role": "Press Member",
-   "share": 1,
    "write": 1
   }
  ],

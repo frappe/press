@@ -64,7 +64,7 @@ class Payment(Document):
 		email = team.user
 		payment_method = team.default_payment_method
 		last_4 = frappe.db.get_value("Stripe Payment Method", payment_method, "last_4")
-		account_update_link = frappe.utils.get_url("/dashboard/#/welcome")
+		account_update_link = frappe.utils.get_url("/dashboard/welcome")
 
 		frappe.sendmail(
 			recipients=email,

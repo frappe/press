@@ -23,7 +23,7 @@
 	</div>
 </template>
 <script>
-import SitePlansTable from '@/views/partials/SitePlansTable';
+import SitePlansTable from '@/components/SitePlansTable';
 export default {
 	name: 'Plans',
 	props: ['options', 'selectedPlan'],

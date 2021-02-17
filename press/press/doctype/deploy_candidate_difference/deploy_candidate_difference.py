@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import frappe
 from frappe.model.document import Document
 from frappe.core.utils import find
+from press.overrides import get_permission_query_conditions_for_doctype
 
 
 class DeployCandidateDifference(Document):
@@ -84,3 +85,8 @@ class DeployCandidateDifference(Document):
 
 			if difference.deploy_type == "Migrate":
 				self.deploy_type = "Migrate"
+
+
+get_permission_query_conditions = get_permission_query_conditions_for_doctype(
+	"Deploy Candidate Difference"
+)

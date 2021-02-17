@@ -11,6 +11,8 @@ from press.agent import Agent
 from press.utils import log_error
 from frappe.model.naming import append_number_if_name_exists
 
+from press.overrides import get_permission_query_conditions_for_doctype
+
 
 class Bench(Document):
 	def autoname(self):
@@ -260,3 +262,6 @@ def sync_bench(name):
 		frappe.db.commit()
 	except Exception:
 		log_error("Bench Sync Error", bench=bench.name)
+
+
+get_permission_query_conditions = get_permission_query_conditions_for_doctype("Bench")

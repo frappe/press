@@ -198,11 +198,13 @@ class Team(Document):
 			}
 		)
 		address_doc.save()
+		address_doc.reload()
 
 		self.billing_name = billing_details.billing_name or self.billing_name
 		self.billing_address = address_doc.name
 		self.save()
 		self.reload()
+
 		self.update_billing_details_on_stripe(address_doc)
 		self.update_billing_details_on_frappeio()
 		self.update_billing_details_on_draft_invoices()
@@ -218,8 +220,11 @@ class Team(Document):
 	def update_billing_details_on_frappeio(self):
 		try:
 			frappeio_client = get_frappe_io_connection()
-		except FrappeioServerNotSet:
-			return
+		except FrappeioServerNotSet as e:
+			if frappe.conf.developer_mode:
+				return
+			else:
+				raise e
 
 		previous_version = self.get_doc_before_save()
 
@@ -310,6 +315,7 @@ class Team(Document):
 				"due_date",
 				"payment_date",
 				"currency",
+				"invoice_pdf",
 			],
 			order_by="due_date desc",
 		)
@@ -317,7 +323,7 @@ class Team(Document):
 		print_format = frappe.get_meta("Invoice").default_print_format
 		for invoice in invoices:
 			invoice.formatted_total = frappe.utils.fmt_money(invoice.total, 2, invoice.currency)
-			if invoice.currency == "USD":
+			if invoice.currency == "USD" and not invoice.invoice_pdf:
 				invoice.invoice_pdf = frappe.utils.get_url(
 					f"/api/method/frappe.utils.print_format.download_pdf?doctype=Invoice&name={invoice.name}&format={print_format}&no_letterhead=0"
 				)
@@ -529,3 +535,31 @@ def process_stripe_webhook(doc, method):
 	# update transaction amount, fee and exchange rate
 	invoice.update_transaction_details(charge)
 	invoice.submit()
+
+
+def get_permission_query_conditions(user):
+	from press.utils import get_current_team
+
+	if not user:
+		user = frappe.session.user
+	if frappe.session.data.user_type == "System User":
+		return ""
+
+	team = get_current_team()
+
+	return f"(`tabTeam`.`name` = {frappe.db.escape(team)})"
+
+
+def has_permission(doc, ptype, user):
+	from press.utils import get_current_team
+
+	if not user:
+		user = frappe.session.user
+	if frappe.session.data.user_type == "System User":
+		return True
+
+	team = get_current_team()
+	if doc.name == team:
+		return True
+
+	return False

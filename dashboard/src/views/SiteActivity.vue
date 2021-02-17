@@ -1,39 +1,27 @@
 <template>
-	<div>
-		<Section
+	<div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+		<Card
 			title="Site Activity"
-			description="Log of activities performed on your site"
+			subtitle="Log of activities performed on your site"
 		>
-			<SectionCard>
-				<div
-					class="px-6 py-3 text-base hover:bg-gray-50"
+			<div class="divide-y">
+				<ListItem
 					v-for="a in activities.data"
 					:key="a.creation"
+					:title="`${a.action} by ${a.owner}`"
+					:description="getDescription(a)"
+				/>
+			</div>
+			<div class="my-2" v-if="!$resources.activities.lastPageEmpty">
+				<Button
+					:loading="$resources.activities.loading"
+					loadingText="Fetching..."
+					@click="pageStart += 20"
 				>
-					<div>
-						{{ a.action }} <span class="text-gray-800">by {{ a.owner }}</span>
-					</div>
-					<div class="mb-1 text-sm text-gray-800" v-if="a.reason">
-						<span class="font-semibold">Reason:</span>
-						{{ a.reason }}
-					</div>
-					<div class="text-sm text-gray-600">
-						<FormatDate>
-							{{ a.creation }}
-						</FormatDate>
-					</div>
-				</div>
-				<div class="px-6 my-2" v-if="!$resources.activities.lastPageEmpty">
-					<Button
-						:loading="$resources.activities.loading"
-						loadingText="Fetching..."
-						@click="pageStart += 20"
-					>
-						Load more
-					</Button>
-				</div>
-			</SectionCard>
-		</Section>
+					Load more
+				</Button>
+			</div>
+		</Card>
 	</div>
 </template>
 
@@ -59,6 +47,15 @@ export default {
 		return {
 			pageStart: 0
 		};
+	},
+	methods: {
+		getDescription(activity) {
+			let description = this.formatDate(activity.creation);
+			if (activity.reason) {
+				description = `Reason: ${activity.reason}` + '\n' + description;
+			}
+			return description;
+		}
 	}
 };
 </script>

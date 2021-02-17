@@ -1,7 +1,5 @@
 <template>
-	<div
-		class="flex flex-col items-center p-10 text-base bg-white rounded-md"
-	>
+	<div class="flex flex-col items-center p-10 text-base bg-white rounded-md">
 		<GreenCheckIcon class="w-8 h-8" />
 		<h2 class="mt-4 text-lg font-medium text-gray-900">
 			{{ title }}

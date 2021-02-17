@@ -72,7 +72,7 @@ export default class ResourceManager {
 }
 
 class Resource {
-	constructor(vm, options = {}, initialValue) {
+	constructor(vm, options = {}) {
 		if (typeof options == 'string') {
 			options = { method: options, auto: true };
 		}
@@ -83,10 +83,10 @@ class Resource {
 		}
 		this._vm = vm;
 		this.method = options.method;
-		this.update(options, initialValue);
+		this.update(options);
 	}
 
-	update(options, initialValue) {
+	update(options) {
 		if (typeof options == 'string') {
 			options = { method: options, auto: true };
 		}
@@ -95,6 +95,7 @@ class Resource {
 				'[Resource Manager]: method cannot change for the same resource'
 			);
 		}
+		this.options = options;
 		// params
 		this.params = options.params || null;
 		this.auto = options.auto || false;
@@ -116,18 +117,14 @@ class Resource {
 			}
 		}
 
-		// response
-		this.data = initialValue || options.default || null;
-		this.error = null;
-		this.loading = false;
-		this.lastLoaded = null;
-		this.lastPageEmpty = false;
+		this.reset();
 	}
 
 	async fetch(params) {
 		if (!this.condition()) return;
 
 		this.loading = true;
+		this.currentParams = params || this.params;
 
 		if (this.validate) {
 			let message = await this.validate();
@@ -139,7 +136,7 @@ class Resource {
 		}
 
 		try {
-			let data = await call(this.method, params || this.params);
+			let data = await call(this.method, this.currentParams);
 			if (Array.isArray(data) && this.paged) {
 				this.lastPageEmpty = data.length === 0;
 				this.data = [].concat(this.data || [], data);
@@ -152,14 +149,24 @@ class Resource {
 		}
 		this.lastLoaded = new Date();
 		this.loading = false;
+		this.currentParams = null;
 	}
 
 	reload() {
 		return this.fetch();
 	}
 
-	submit() {
-		return this.fetch();
+	submit(params) {
+		return this.fetch(params);
+	}
+
+	reset() {
+		this.data = this.options.default || null;
+		this.error = null;
+		this.loading = false;
+		this.lastLoaded = null;
+		this.lastPageEmpty = false;
+		this.currentParams = null;
 	}
 
 	cancel() {}

@@ -10,6 +10,7 @@ from press.api.github import get_access_token
 from press.utils import log_error
 import requests
 from frappe.model.naming import make_autoname
+from press.overrides import get_permission_query_conditions_for_doctype
 
 
 class AppSource(Document):
@@ -98,3 +99,8 @@ class AppSource(Document):
 				).insert()
 		except Exception:
 			log_error("App Release Creation Error", app=self.name)
+
+
+get_permission_query_conditions = get_permission_query_conditions_for_doctype(
+	"App Source"
+)
