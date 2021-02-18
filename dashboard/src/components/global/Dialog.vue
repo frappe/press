@@ -1,9 +1,9 @@
 <template>
 	<Modal :show="show" @change="handleChange" :dismissable="dismissable">
-		<div class="px-4 pt-5 pb-4 bg-white sm:p-6 sm:pb-4">
+		<div class="px-4 pb-4 bg-white sm:px-6 sm:pb-4">
 			<div class="sm:flex sm:items-start">
-				<div class="relative w-full mt-3 sm:mt-0 sm:text-left">
-					<div class="mb-4">
+				<div class="relative w-full sm:text-left">
+					<div class="sticky top-0 py-4 bg-white">
 						<h3 class="text-xl font-medium leading-6 text-gray-900">
 							{{ title }}
 						</h3>
@@ -22,7 +22,7 @@
 			</div>
 		</div>
 		<div
-			class="flex items-center justify-end p-4 sm:px-6 sm:py-4"
+			class="sticky bottom-0 flex items-center justify-end p-4 bg-white sm:px-6 sm:py-4"
 			v-if="$slots.actions"
 		>
 			<slot name="actions"></slot>

@@ -2,7 +2,7 @@
 	<portal to="modals">
 		<div
 			v-show="show"
-			class="fixed inset-x-0 bottom-0 px-4 pb-4 sm:inset-0 sm:flex sm:items-center sm:justify-center"
+			class="fixed inset-0 flex items-center justify-center px-4 py-4"
 		>
 			<div
 				v-show="show"
@@ -14,7 +14,8 @@
 
 			<div
 				v-show="show"
-				class="overflow-hidden transition-all transform bg-white rounded-lg shadow-xl sm:max-w-lg sm:w-full"
+				class="w-full overflow-auto transition-all transform bg-white rounded-lg shadow-xl sm:max-w-lg"
+				style="max-height: 95vh;"
 			>
 				<slot></slot>
 			</div>
