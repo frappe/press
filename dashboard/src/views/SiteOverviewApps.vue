@@ -50,7 +50,7 @@
 					</div>
 					<Button
 						class="ml-auto"
-						@click="installApp(app.name)"
+						@click="installApp(app.app)"
 						:loading="$resources.installApp.loading && appToInstall == app.name"
 					>
 						Install
