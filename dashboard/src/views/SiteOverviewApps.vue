@@ -13,19 +13,22 @@
 			</Button>
 		</template>
 		<div class="divide-y">
-			<div class="flex py-3" v-for="app in installedApps" :key="app.name">
+			<div
+				class="flex items-center py-3"
+				v-for="app in installedApps"
+				:key="app.name"
+			>
 				<div class="w-1/3 text-base font-medium">
 					{{ app.title }}
 				</div>
 				<div class="text-base text-gray-700">
 					{{ app.repository_owner }}:{{ app.branch }}
 				</div>
-				<Link
-					:to="`${app.repository_url}/tree/${app.branch}`"
-					class="inline-flex ml-auto text-base"
-				>
-					Visit Repo →
-				</Link>
+				<Dropdown class="ml-auto" :items="dropdownItems(app)" right>
+					<template v-slot="{ toggleDropdown }">
+						<Button icon="more-horizontal" @click="toggleDropdown()" />
+					</template>
+				</Dropdown>
 			</div>
 		</div>
 
@@ -89,12 +92,45 @@ export default {
 					this.$emit('app-installed');
 				}
 			};
+		},
+		uninstallApp: {
+			method: 'press.api.site.uninstall_app',
+			onSuccess() {
+				this.$emit('app-uninstalled');
+			}
 		}
 	},
 	methods: {
 		installApp(app) {
 			this.appToInstall = app;
 			this.$resources.installApp.submit();
+		},
+		dropdownItems(app) {
+			return [
+				app.app != 'frappe' && {
+					label: 'Remove App',
+					action: () => this.confirmRemoveApp(app)
+				},
+				{
+					label: 'Visit Repo',
+					action: () =>
+						window.open(`${app.repository_url}/tree/${app.branch}`, '_blank')
+				}
+			].filter(Boolean);
+		},
+		confirmRemoveApp(app) {
+			this.$confirm({
+				title: 'Remove App',
+				message: `Are you sure you want to uninstall app ${app.title} from site?`,
+				actionLabel: 'Remove App',
+				actionType: 'danger',
+				action(closeDialog) {
+					closeDialog();
+					this.$resources.uninstallApp.submit({
+						app: app.app
+					});
+				}
+			});
 		}
 	}
 };
