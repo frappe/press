@@ -30,12 +30,17 @@ class TLSCertificate(Document):
 		self.obtain_certificate()
 
 	def obtain_certificate(self):
-		user, team = frappe.session.user, get_current_team()
+		user, session_data, team, = (
+			frappe.session.user,
+			frappe.session.data,
+			get_current_team(),
+		)
 		frappe.set_user(team)
 		frappe.enqueue_doc(
 			self.doctype, self.name, "_obtain_certificate", enqueue_after_commit=True
 		)
 		frappe.set_user(user)
+		frappe.session.data = session_data
 
 	def _obtain_certificate(self):
 		try:
