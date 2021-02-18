@@ -1,4 +1,7 @@
 import { DateTime } from 'luxon';
+import resolveConfig from 'tailwindcss/resolveConfig';
+import config from '@/../tailwind.config.js';
+let { theme } = resolveConfig(config);
 
 let utils = {
 	methods: {
@@ -41,6 +44,11 @@ let utils = {
 				' ' +
 				sizes[i + current]
 			);
+		}
+	},
+	computed: {
+		$theme() {
+			return theme;
 		}
 	}
 };
