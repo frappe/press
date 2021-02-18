@@ -27,8 +27,6 @@
 <script>
 import { DateTime } from 'luxon';
 import { Chart } from 'frappe-charts/dist/frappe-charts.esm.js';
-import resolveConfig from 'tailwindcss/resolveConfig';
-let { theme } = resolveConfig('../../tailwind.config.js');
 
 export default {
 	name: 'CPUUsage',
@@ -77,7 +75,7 @@ export default {
 						: null
 				},
 				type: 'line',
-				colors: [theme.colors.purple[500]],
+				colors: [this.$theme.colors.purple[500]],
 				axisOptions: {
 					xIsSeries: true,
 					shortenYAxisNumbers: 1
