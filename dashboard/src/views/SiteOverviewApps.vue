@@ -93,7 +93,7 @@ export default {
 				}
 			};
 		},
-		installApp: {
+		uninstallApp: {
 			method: 'press.api.site.uninstall_app',
 			onSuccess() {
 				this.$emit('app-uninstalled');
