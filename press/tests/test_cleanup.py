@@ -56,7 +56,7 @@ class TestGFS(unittest.TestCase):
 		newer_backup = create_test_site_backup(site.name, newer)
 
 		gfs = GFS()
-		gfs.expire_offsite_backups([site.name])
+		gfs.expire_offsite_backups()
 
 		limit_backup.reload()
 		older_backup.reload()
@@ -94,7 +94,7 @@ class TestGFS(unittest.TestCase):
 		newer_backup = create_test_site_backup(site.name, newer)
 
 		gfs = GFS()
-		gfs.expire_offsite_backups([site.name])
+		gfs.expire_offsite_backups()
 
 		limit_backup.reload()
 		older_backup.reload()
@@ -131,7 +131,7 @@ class TestGFS(unittest.TestCase):
 		newer_backup = create_test_site_backup(site.name, newer)
 
 		gfs = GFS()
-		gfs.expire_offsite_backups([site.name])
+		gfs.expire_offsite_backups()
 
 		limit_backup.reload()
 		older_backup.reload()
@@ -168,7 +168,7 @@ class TestGFS(unittest.TestCase):
 		newer_backup = create_test_site_backup(site.name, newer)
 
 		gfs = GFS()
-		gfs.expire_offsite_backups([site.name])
+		gfs.expire_offsite_backups()
 
 		limit_backup.reload()
 		older_backup.reload()
@@ -228,7 +228,7 @@ class TestFIFO(unittest.TestCase):
 		old = create_test_site_backup(site.name, date.today() - timedelta(1))
 		new = create_test_site_backup(site.name)
 
-		fifo.expire_offsite_backups([site.name])
+		fifo.expire_offsite_backups()
 
 		older.reload()
 		old.reload()
