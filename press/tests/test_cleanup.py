@@ -298,3 +298,37 @@ class TestBackupRotationScheme(unittest.TestCase):
 		cleanup_backups()
 		mock_GFS.assert_called_once()
 		mock_FIFO.assert_not_called()
+
+	@patch("press.press.doctype.site.backups.delete_remote_backup_objects")
+	@patch("press.press.doctype.site.backups.frappe.db.commit")
+	def test_local_backups_are_expired(
+		self, mock_frappe_commit, mock_del_remote_backup_objects
+	):
+		"""
+		Ensure onsite backups are marked unavailable.
+
+		Check backups older than 24hrs marked unavailable
+		"""
+		site = create_test_site("testsubdomain")
+		site2 = create_test_site("testsubdomain2")
+
+		backup_1_1 = create_test_site_backup(
+			site.name, date.today() - timedelta(1), offsite=False
+		)
+		backup_1_2 = create_test_site_backup(site.name)
+		backup_2_1 = create_test_site_backup(
+			site2.name, date.today() - timedelta(2), offsite=False
+		)
+		backup_2_2 = create_test_site_backup(site2.name)
+
+		GFS().expire_local_backups()
+
+		backup_1_1.reload()
+		backup_1_2.reload()
+		backup_2_1.reload()
+		backup_2_2.reload()
+
+		self.assertEqual(backup_1_1.files_availability, "Unavailable")
+		self.assertEqual(backup_1_2.files_availability, "Available")
+		self.assertEqual(backup_2_1.files_availability, "Unavailable")
+		self.assertEqual(backup_2_2.files_availability, "Available")
