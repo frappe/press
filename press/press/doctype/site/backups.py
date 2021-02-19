@@ -97,7 +97,7 @@ class BackupRotationScheme:
 			or 24
 		)
 
-	def expire_offsite_backups(self, site: Site) -> List[str]:
+	def expire_offsite_backups(self) -> List[str]:
 		"""Expire and return list of offsite backups to delete."""
 		raise NotImplementedError
 
@@ -118,9 +118,10 @@ class FIFO(BackupRotationScheme):
 			frappe.db.get_single_value("Press Settings", "offsite_backups_count") or 30
 		)
 
-	def expire_offsite_backups(self, sites: List[str]) -> List[str]:
+	def expire_offsite_backups(self) -> List[str]:
 		offsite_expiry = self.offsite_backups_count
 		to_be_expired_backups = []
+		sites = frappe.get_all("Site", {"status": ("!=", "Archived")}, pluck="name")
 		for site in sites:
 			to_be_expired_backups += frappe.get_all(
 				"Site Backup",
