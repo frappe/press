@@ -13,7 +13,6 @@ import frappe
 import pytz
 
 from press.press.doctype.remote_file.remote_file import delete_remote_backup_objects
-from press.press.doctype.site.site import Site
 from press.utils import log_error
 
 
