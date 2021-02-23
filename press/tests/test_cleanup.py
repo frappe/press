@@ -1,14 +1,16 @@
+import json
 import unittest
 from datetime import date, timedelta
 from unittest.mock import Mock, patch
 
 import frappe
 
-from press.press.doctype.site.backups import FIFO, GFS, cleanup as cleanup_backups
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.press_settings.test_press_settings import (
 	create_test_press_settings,
 )
+from press.press.doctype.site.backups import FIFO, GFS
+from press.press.doctype.site.backups import cleanup as cleanup_backups
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.site_backup.test_site_backup import create_test_site_backup
 
@@ -329,6 +331,39 @@ class TestBackupRotationScheme(unittest.TestCase):
 		backup_2_2.reload()
 
 		self.assertEqual(backup_1_1.files_availability, "Unavailable")
+		self.assertEqual(backup_1_2.files_availability, "Available")
+		self.assertEqual(backup_2_1.files_availability, "Unavailable")
+		self.assertEqual(backup_2_2.files_availability, "Available")
+
+	@patch("press.press.doctype.site.backups.delete_remote_backup_objects")
+	@patch("press.press.doctype.site.backups.frappe.db.commit")
+	def test_local_backups_with_different_bench_configs_expire_sites(
+		self, mock_frappe_commit, mock_del_remote_backup_objects
+	):
+		"""Ensure onsite backups are cleanup respecting bench config."""
+		site = create_test_site("testsubdomain")
+		site2 = create_test_site("testsubdomain2")
+
+		config = json.dumps({"keep_backups_for_hours": 50})
+		frappe.db.set_value("Bench", site.bench, "config", config)
+
+		backup_1_1 = create_test_site_backup(
+			site.name, date.today() - timedelta(1), offsite=False
+		)
+		backup_1_2 = create_test_site_backup(site.name)
+		backup_2_1 = create_test_site_backup(
+			site2.name, date.today() - timedelta(2), offsite=False
+		)
+		backup_2_2 = create_test_site_backup(site2.name)
+
+		GFS().expire_local_backups()
+
+		backup_1_1.reload()
+		backup_1_2.reload()
+		backup_2_1.reload()
+		backup_2_2.reload()
+
+		self.assertEqual(backup_1_1.files_availability, "Available")
 		self.assertEqual(backup_1_2.files_availability, "Available")
 		self.assertEqual(backup_2_1.files_availability, "Unavailable")
 		self.assertEqual(backup_2_2.files_availability, "Available")
