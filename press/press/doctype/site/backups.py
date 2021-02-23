@@ -6,8 +6,9 @@ from __future__ import unicode_literals
 
 import time
 from datetime import date, datetime, timedelta
-from typing import Dict, List
-from unittest.mock import patch, Mock
+from itertools import groupby
+from typing import Dict, List, Tuple
+from unittest.mock import Mock, patch
 
 import frappe
 import pytz
@@ -61,18 +62,26 @@ class BackupRotationScheme:
 	@timeit
 	def expire_local_backups(self):
 		"""Mark local backups deleted by FF as unavailable."""
-		benches = frappe.get_all(
-			"Bench", filters={"status": ("!=", "Archived")}, pluck="name"
+		sites_with_config: List[Tuple[str, str]] = frappe.db.sql(
+			"""
+						SELECT tabSite.name, tabBench.config
+						FROM tabSite
+						JOIN tabBench ON tabSite.bench=tabBench.name
+						WHERE tabSite.status != "Archived"
+						ORDER BY tabBench.config
+			""",
 		)
-		for bench in benches:
-			expiry = self.keep_backups_for_(bench)
-			self._expire_backups_of_site_in_bench(bench, expiry)
 
-	@timeit
-	def _expire_backups_of_site_in_bench(self, bench: str, expiry: int):
-		sites = frappe.get_all(
-			"Site", filters={"bench": bench, "status": ("!=", "Archived")}, pluck="name"
-		)
+		for config, site_confs in groupby(sites_with_config, lambda t: t[1]):
+			sites = []
+			for site_conf in list(site_confs):
+				sites.append(site_conf[0])
+			self._expire_backups_of_site_in_bench(sites, self._get_expiry(config))
+
+	def _get_expiry(self, config: str):
+		return frappe.parse_json(config or "{}").keep_backups_for_hours or 24
+
+	def _expire_backups_of_site_in_bench(self, sites: List[str], expiry: int):
 		if sites:
 			frappe.db.set_value(
 				"Site Backup",
@@ -86,15 +95,6 @@ class BackupRotationScheme:
 				"files_availability",
 				"Unavailable",
 			)
-
-	def keep_backups_for_(self, bench: str) -> int:
-		"""Get no. of hours for which backups are kept on site."""
-		return (
-			frappe.parse_json(
-				frappe.db.get_value("Bench", bench, "config") or "{}"
-			).keep_backups_for_hours
-			or 24
-		)
 
 	def expire_offsite_backups(self) -> List[str]:
 		"""Expire and return list of offsite backups to delete."""
