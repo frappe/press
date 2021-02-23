@@ -145,7 +145,8 @@ class Resource {
 			}
 			this.emit('Success', this.data);
 		} catch (error) {
-			this.setError(error.messages.join('\n'));
+			let errorMessages = error.messages || ['Internal Server Error'];
+			this.setError(errorMessages.join('\n'));
 		}
 		this.lastLoaded = new Date();
 		this.loading = false;
