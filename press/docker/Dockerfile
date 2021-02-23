@@ -68,6 +68,10 @@ RUN git clone --progress --depth 1 https://github.com/frappe/fonts.git /tmp/font
   `#stage-pre-fonts`
 
 
+# Set max_allowed_packet to 512 MB for mysqldump
+RUN echo "[mysqldump]\nmax_allowed_packet              = 512M" > /etc/mysql/conf.d/mysqldump.cnf
+
+
 RUN useradd -ms /bin/bash frappe
 USER frappe
 WORKDIR /home/frappe
