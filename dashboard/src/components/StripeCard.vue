@@ -40,8 +40,6 @@
 import AddressForm from '@/components/AddressForm';
 import StripeLogo from '@/components/StripeLogo';
 import { loadStripe } from '@stripe/stripe-js';
-import resolveConfig from 'tailwindcss/resolveConfig';
-import config from '@/../tailwind.config.js';
 
 export default {
 	name: 'StripeCard',
@@ -83,7 +81,7 @@ export default {
 			this.setupIntent = setup_intent;
 			this.stripe = await loadStripe(publishable_key);
 			this.elements = this.stripe.elements();
-			let { theme } = resolveConfig(config);
+			let theme = this.$theme;
 			let style = {
 				base: {
 					color: theme.colors.black,
