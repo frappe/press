@@ -4,10 +4,11 @@
 
 from __future__ import unicode_literals
 
+import functools
 import time
 from datetime import date, datetime, timedelta
 from itertools import groupby
-from typing import Dict, List, Tuple
+from typing import Dict, List
 from unittest.mock import Mock, patch
 
 import frappe
@@ -62,7 +63,7 @@ class BackupRotationScheme:
 	@timeit
 	def expire_local_backups(self):
 		"""Mark local backups deleted by FF as unavailable."""
-		sites_with_config: List[Tuple[str, str]] = frappe.db.sql(
+		sites_with_config = frappe.db.sql(
 			"""
 						SELECT tabSite.name, tabBench.config
 						FROM tabSite
@@ -70,14 +71,18 @@ class BackupRotationScheme:
 						WHERE tabSite.status != "Archived"
 						ORDER BY tabBench.config
 			""",
+			as_dict=True,
 		)
+		for d in sites_with_config:
+			d.config = self._get_expiry(d.config)
 
-		for config, site_confs in groupby(sites_with_config, lambda t: t[1]):
+		for config, site_confs in groupby(sites_with_config, lambda d: d.config):
 			sites = []
 			for site_conf in list(site_confs):
-				sites.append(site_conf[0])
-			self._expire_backups_of_site_in_bench(sites, self._get_expiry(config))
+				sites.append(site_conf.name)
+			self._expire_backups_of_site_in_bench(sites, config)
 
+	@functools.lru_cache(maxsize=128)
 	def _get_expiry(self, config: str):
 		return frappe.parse_json(config or "{}").keep_backups_for_hours or 24
 
