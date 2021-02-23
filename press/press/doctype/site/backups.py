@@ -106,7 +106,6 @@ class BackupRotationScheme:
 		self.expire_local_backups()
 		expired_remote_files = self.expire_offsite_backups()
 		delete_remote_backup_objects(expired_remote_files)
-		frappe.db.commit()
 
 
 class FIFO(BackupRotationScheme):
@@ -253,3 +252,4 @@ def cleanup():
 	elif scheme == "Grandfather-father-son":
 		rotation = GFS()
 	rotation.cleanup()
+	frappe.db.commit()
