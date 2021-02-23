@@ -90,10 +90,7 @@ export default {
 			let values = data.map(d => d.value / 1000000);
 
 			return {
-				labels: data.map(d => ({
-					date: d.date,
-					toString: () => DateTime.fromSQL(d.date).toFormat('d MMM')
-				})),
+				labels: this.formatDate(data),
 				datasets: [{ values }],
 				// show daily limit marker if usage crosses 50%
 				yMarkers: values.some(value => value > plan_limit / 2)
@@ -106,14 +103,7 @@ export default {
 			if (!requestCount) return;
 
 			return {
-				labels: requestCount.map(d => {
-					return {
-						timestamp: d.timestamp,
-						toString() {
-							return DateTime.fromSQL(d.timestamp).toFormat('d MMM');
-						}
-					};
-				}),
+				labels: this.formatDate(requestCount),
 				datasets: [{ values: requestCount.map(d => d.value) }]
 			};
 		},
@@ -122,14 +112,7 @@ export default {
 			if (!requestCpuTime) return;
 
 			return {
-				labels: requestCpuTime.map(d => {
-					return {
-						timestamp: d.timestamp,
-						toString() {
-							return DateTime.fromSQL(d.timestamp).toFormat('d MMM');
-						}
-					};
-				}),
+				labels: this.formatDate(requestCpuTime),
 				datasets: [{ values: requestCpuTime.map(d => d.value / 1000000) }]
 			};
 		},
@@ -138,14 +121,7 @@ export default {
 			if (!jobCount) return;
 
 			return {
-				labels: jobCount.map(d => {
-					return {
-						timestamp: d.timestamp,
-						toString() {
-							return DateTime.fromSQL(d.timestamp).toFormat('d MMM');
-						}
-					};
-				}),
+				labels: this.formatDate(jobCount),
 				datasets: [{ values: jobCount.map(d => d.value) }]
 			};
 		},
@@ -154,14 +130,7 @@ export default {
 			if (!jobCpuTime) return;
 
 			return {
-				labels: jobCpuTime.map(d => {
-					return {
-						timestamp: d.timestamp,
-						toString() {
-							return DateTime.fromSQL(d.timestamp).toFormat('d MMM');
-						}
-					};
-				}),
+				labels: this.formatDate(jobCpuTime),
 				datasets: [{ values: jobCpuTime.map(d => d.value / 1000000) }]
 			};
 		}
@@ -184,6 +153,12 @@ export default {
 					formatTooltipY: yFormatter
 				}
 			};
+		},
+		formatDate(data) {
+			return data.map(d => ({
+				date: d.date,
+				toString: () => DateTime.fromSQL(d.date).toFormat('d MMM')
+			}));
 		}
 	}
 };
