@@ -24,6 +24,9 @@ module.exports = {
 			minWidth: {
 				40: '10rem'
 			},
+			maxHeight: {
+				52: '13rem'
+			},
 			borderColor: theme => ({
 				DEFAULT: theme('colors.gray.200')
 			}),
