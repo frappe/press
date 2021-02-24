@@ -15,9 +15,10 @@ export default {
 				import(/* webpackChunkName: "account" */ '../views/AccountTeam.vue')
 		},
 		{
-			path: 'billing',
+			path: 'billing/:invoiceName?',
 			component: () =>
-				import(/* webpackChunkName: "account" */ '../views/AccountBilling.vue')
+				import(/* webpackChunkName: "account" */ '../views/AccountBilling.vue'),
+			props: true
 		}
 	]
 };

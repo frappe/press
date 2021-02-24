@@ -284,7 +284,7 @@ class Team(Document):
 		self.allocate_free_credits()
 
 	def get_payment_methods(self):
-		payment_methods = frappe.db.get_all(
+		return frappe.db.get_all(
 			"Stripe Payment Method",
 			{"team": self.name},
 			[
@@ -296,9 +296,8 @@ class Team(Document):
 				"is_default",
 				"creation",
 			],
+			order_by="creation desc"
 		)
-		if payment_methods:
-			return payment_methods
 
 	def get_past_invoices(self):
 		invoices = frappe.db.get_all(
@@ -309,6 +308,7 @@ class Team(Document):
 				"total",
 				"amount_due",
 				"status",
+				"type",
 				"stripe_invoice_url",
 				"period_start",
 				"period_end",

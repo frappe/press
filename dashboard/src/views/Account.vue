@@ -1,9 +1,9 @@
 <template>
-	<div>
+	<div class="mt-8">
 		<div class="px-4 sm:px-8" v-if="$account.user">
-			<div class="py-8">
+			<div class="pb-3">
 				<div>
-					<h1 class="text-2xl font-bold">Account Settings</h1>
+					<h1 class="text-3xl font-bold">Settings</h1>
 					<div class="mt-2 text-base text-gray-600">
 						<span>
 							{{ $account.user.name }}
@@ -47,9 +47,9 @@ export default {
 	},
 	data: () => ({
 		tabs: [
-			{ label: 'Profile', route: 'profile' },
-			{ label: 'Team', route: 'team' },
-			{ label: 'Billing', route: 'billing' }
+			{ label: 'Profile', route: '/account/profile' },
+			{ label: 'Team', route: '/account/team' },
+			{ label: 'Billing', route: '/account/billing' }
 		]
 	}),
 	activated() {
