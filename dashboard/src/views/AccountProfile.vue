@@ -1,78 +1,88 @@
 <template>
-	<div>
-		<Section title="Profile" description="Your profile information">
-			<div class="w-full mt-6 sm:w-1/2">
-				<div>
-					<span class="block mb-2 text-sm leading-4 text-gray-700">Photo</span>
-					<div class="flex items-center mt-2">
-						<Avatar
-							size="lg"
-							:label="account.user.first_name"
-							:imageURL="account.user.user_image"
-						/>
-						<FileUploader
-							@success="onProfilePhotoChange"
-							fileTypes="image/*"
-							:upload-args="{
-								doctype: 'User',
-								docname: $account.user.name,
-								method: 'press.api.account.update_profile_picture'
-							}"
-						>
-							<template
-								v-slot="{ openFileSelector, uploading, progress, error }"
+	<Card title="Profile" subtitle="Your profile information">
+		<div class="flex items-center">
+			<div class="relative">
+				<Avatar
+					size="lg"
+					:label="$account.user.first_name"
+					:imageURL="$account.user.user_image"
+				/>
+				<FileUploader
+					@success="onProfilePhotoChange"
+					fileTypes="image/*"
+					:upload-args="{
+						doctype: 'User',
+						docname: $account.user.name,
+						method: 'press.api.account.update_profile_picture'
+					}"
+				>
+					<template v-slot="{ openFileSelector, uploading, progress, error }">
+						<div class="ml-4">
+							<button
+								@click="openFileSelector()"
+								class="absolute inset-0 grid w-full text-xs font-semibold text-white bg-black rounded-full opacity-0 focus:outline-none focus:opacity-50 hover:opacity-50 place-items-center"
+								:class="{ 'opacity-50': uploading }"
 							>
-								<div class="ml-4">
-									<Button :loading="uploading" @click="openFileSelector()">
-										<span v-if="uploading">Uploading {{ progress }}%</span>
-										<span v-else>Change</span>
-									</Button>
-									<ErrorMessage class="mt-1" :error="error" />
-								</div>
-							</template>
-						</FileUploader>
-					</div>
-				</div>
-				<div class="grid grid-cols-1 gap-4 mt-4 sm:grid-cols-2">
-					<Input
-						label="First Name"
-						type="text"
-						v-model="account.user.first_name"
-					/>
-					<Input
-						label="Last Name"
-						type="text"
-						v-model="account.user.last_name"
-					/>
-				</div>
+								<span v-if="uploading">{{ progress }}%</span>
+								<span v-else>Edit</span>
+							</button>
+						</div>
+					</template>
+				</FileUploader>
+			</div>
+			<div class="ml-4">
+				<h3 class="text-lg font-semibold">
+					{{ $account.user.first_name }} {{ $account.user.last_name }}
+				</h3>
+				<p class="text-sm text-gray-600">{{ $account.user.email }}</p>
+			</div>
+			<div class="ml-auto">
+				<Button icon-left="edit" @click="showProfileEditDialog = true">
+					Edit
+				</Button>
+			</div>
+		</div>
+		<Dialog title="Update Profile Information" v-model="showProfileEditDialog">
+			<div class="grid grid-cols-1 gap-4 mt-4 sm:grid-cols-2">
 				<Input
-					class="mt-4"
-					label="Email Address"
-					type="email"
-					v-model="account.user.email"
+					label="First Name"
+					type="text"
+					v-model="$account.user.first_name"
+				/>
+				<Input
+					label="Last Name"
+					type="text"
+					v-model="$account.user.last_name"
 				/>
 			</div>
-		</Section>
-		<div class="py-4">
-			<ErrorMessage class="mb-4" :error="$resources.updateProfile.error" />
-			<Button
-				type="primary"
-				:loading="$resources.updateProfile.loading"
-				loadingText="Saving..."
-				@click="$resources.updateProfile.submit()"
-			>
-				Save changes
-			</Button>
-		</div>
-	</div>
+			<Input
+				class="mt-4"
+				label="Email Address"
+				type="email"
+				v-model="$account.user.email"
+			/>
+			<ErrorMessage class="mt-4" :error="$resources.updateProfile.error" />
+
+			<template #actions>
+				<div class="space-x-2">
+					<Button @click="showProfileEditDialog = false">Cancel</Button>
+					<Button
+						type="primary"
+						:loading="$resources.updateProfile.loading"
+						loadingText="Saving..."
+						@click="$resources.updateProfile.submit()"
+					>
+						Save changes
+					</Button>
+				</div>
+			</template>
+		</Dialog>
+	</Card>
 </template>
-
 <script>
-import FileUploader from '@/components/FileUploader';
-
+import FileUploader from '@/components/FileUploader.vue';
 export default {
 	name: 'AccountProfile',
-	props: ['account'],
 	components: {
 		FileUploader
 	},
@@ -87,10 +97,16 @@ export default {
 					email
 				},
 				onSuccess() {
+					this.showProfileEditDialog = false;
 					this.notifySuccess();
 				}
 			};
 		}
+	},
+	data() {
+		return {
+			showProfileEditDialog: false
+		};
 	},
 	methods: {
 		onProfilePhotoChange() {

@@ -28,10 +28,7 @@
 		</div>
 		<div class="px-4 sm:px-8">
 			<Tabs class="pb-32" :tabs="tabs">
-				<router-view
-					v-if="$account.user"
-					v-bind="{ account: $account }"
-				></router-view>
+				<router-view v-if="$account.user"></router-view>
 			</Tabs>
 		</div>
 	</div>
@@ -47,9 +44,8 @@ export default {
 	},
 	data: () => ({
 		tabs: [
-			{ label: 'Profile', route: '/account/profile' },
-			{ label: 'Team', route: '/account/team' },
-			{ label: 'Billing', route: '/account/billing' }
+			{ label: 'Profile & Team', route: '/account/profile' },
+			{ label: 'Billing & Payments', route: '/account/billing' }
 		]
 	}),
 	activated() {
