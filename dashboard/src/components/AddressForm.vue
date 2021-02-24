@@ -67,6 +67,7 @@ export default {
 			handler(value) {
 				if (value === 'India') {
 					this.$resources.indianStates.fetch();
+					this.update('state', '');
 				}
 			},
 			immediate: true
@@ -116,6 +117,13 @@ export default {
 		fields() {
 			return [
 				{
+					fieldtype: 'Select',
+					label: 'Country',
+					fieldname: 'country',
+					options: this.countryList,
+					required: 1
+				},
+				{
 					fieldtype: 'Data',
 					label: 'Address',
 					fieldname: 'address',
@@ -130,7 +138,7 @@ export default {
 					},
 					{
 						fieldtype: this.address.country === 'India' ? 'Select' : 'Data',
-						label: 'State',
+						label: 'State / Province / Region',
 						fieldname: 'state',
 						required: 1,
 						options: this.address.country === 'India' ? this.indianStates : null
@@ -141,14 +149,7 @@ export default {
 						fieldname: 'postal_code',
 						required: 1
 					}
-				],
-				{
-					fieldtype: 'Select',
-					label: 'Country',
-					fieldname: 'country',
-					options: this.countryList,
-					required: 1
-				}
+				]
 			];
 		}
 	}

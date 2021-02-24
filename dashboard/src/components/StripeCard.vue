@@ -7,7 +7,18 @@
 			<Spinner class="w-5 h-5 text-gray-600 " />
 		</div>
 		<div :class="{ 'opacity-0': !ready }">
+			<label class="block">
+				<span class="text-sm leading-4 text-gray-700">
+					Credit or Debit Card
+				</span>
+				<div
+					class="block w-full py-2 pl-3 mt-2 form-input"
+					ref="card-element"
+				></div>
+				<ErrorMessage class="mt-1" :error="cardErrorMessage" />
+			</label>
 			<Input
+				class="mt-4"
 				label="Name on Card"
 				type="text"
 				v-model="billingInformation.cardHolderName"
@@ -17,18 +28,10 @@
 				v-model="billingInformation"
 				ref="address-form"
 			/>
-
-			<label class="block mt-4">
-				<span class="text-sm leading-4 text-gray-700">
-					Credit or Debit Card
-				</span>
-				<div class="block w-full py-2 mt-2 form-input" ref="card-element"></div>
-				<ErrorMessage class="mt-1" :error="cardErrorMessage" />
-			</label>
 			<ErrorMessage class="mt-2" :error="errorMessage" />
 			<div class="flex items-center justify-between mt-6">
 				<Button type="primary" @click="submit" :loading="addingCard">
-					Authorize Card for Payments
+					Save Card
 				</Button>
 				<StripeLogo />
 			</div>
