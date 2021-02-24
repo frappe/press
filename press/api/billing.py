@@ -53,6 +53,7 @@ def past_invoices():
 @frappe.whitelist()
 def details():
 	team = get_current_team(True)
+	address = None
 	if team.billing_address:
 		address = frappe.get_doc("Address", team.billing_address)
 		address_parts = [
@@ -69,7 +70,7 @@ def details():
 	return {
 		"billing_name": team.billing_name,
 		"billing_address": billing_address,
-		"gstin": address.gstin,
+		"gstin": address.gstin if address else None,
 	}
 
 

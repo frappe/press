@@ -14,7 +14,7 @@
 		<p class="text-base text-gray-600 mt-1.5" v-if="subtitle">
 			{{ subtitle }}
 		</p>
-		<div class="flex-auto mt-4 overflow-auto">
+		<div class="flex-auto mt-4 overflow-auto" v-if="$slots['default']">
 			<slot></slot>
 		</div>
 	</div>

@@ -1,8 +1,5 @@
 <template>
-	<Card
-		title="Payment methods"
-		subtitle="Cards you have added for automatic billing"
-	>
+	<Card title="Payment methods" :subtitle="subtitle">
 		<template #actions>
 			<Button @click="showAddCardDialog = true">
 				Add Card
@@ -66,6 +63,14 @@ export default {
 		return {
 			showAddCardDialog: false
 		};
+	},
+	computed: {
+		subtitle() {
+			if (this.paymentMethods.loading || this.paymentMethods.data?.length > 0) {
+				return 'Cards you have added for automatic billing';
+			}
+			return "You haven't added any cards yet";
+		}
 	},
 	methods: {
 		dropdownItems(card) {

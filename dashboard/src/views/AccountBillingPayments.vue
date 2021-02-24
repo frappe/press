@@ -1,10 +1,10 @@
 <template>
 	<Card
 		title="Billing history"
-		subtitle="History of your invoice payments"
+		:subtitle="subtitle"
 		v-if="!invoiceName && pastInvoices.data"
 	>
-		<div class="divide-y">
+		<div class="divide-y" v-if="pastInvoices.data && pastInvoices.data.length">
 			<div
 				class="grid items-center grid-cols-3 py-4 text-base text-gray-600 gap-x-8 md:grid-cols-5"
 			>
@@ -88,6 +88,14 @@ export default {
 	},
 	resources: {
 		pastInvoices: 'press.api.billing.past_invoices'
+	},
+	computed: {
+		subtitle() {
+			if (this.pastInvoices.loading || this.pastInvoices.data.length > 0) {
+				return 'History of your invoice payments';
+			}
+			return 'No invoices have been generated yet';
+		}
 	},
 	methods: {
 		getStatusBadgeProps(invoice) {
