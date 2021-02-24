@@ -81,9 +81,8 @@ class BackupRotationScheme:
 		"""Expire and return list of offsite backups to delete."""
 		raise NotImplementedError
 
-	def cleanup(self):
+	def cleanup_offsite(self):
 		"""Expire backups according to the rotation scheme."""
-		self.expire_local_backups()
 		expired_remote_files = self.expire_offsite_backups()
 		delete_remote_backup_objects(expired_remote_files)
 
@@ -220,9 +219,8 @@ def schedule():
 			log_error("Site Backup Exception", site=site)
 
 
-def cleanup():
-	"""Delete expired offsite backups and set statuses for old local ones."""
-
+def cleanup_offsite():
+	"""Delete expired (based on policy) offsite backups and mark em as Unavailable."""
 	scheme = (
 		frappe.db.get_single_value("Press Settings", "backup_rotation_scheme") or "FIFO"
 	)
@@ -230,5 +228,12 @@ def cleanup():
 		rotation = FIFO()
 	elif scheme == "Grandfather-father-son":
 		rotation = GFS()
-	rotation.cleanup()
+	rotation.cleanup_offsite()
+	frappe.db.commit()
+
+
+def cleanup_local():
+	"""Mark expired onsite backups as Unavailable."""
+	brs = BackupRotationScheme()
+	brs.expire_local_backups()
 	frappe.db.commit()

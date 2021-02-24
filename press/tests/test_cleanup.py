@@ -10,7 +10,7 @@ from press.press.doctype.press_settings.test_press_settings import (
 	create_test_press_settings,
 )
 from press.press.doctype.site.backups import FIFO, GFS
-from press.press.doctype.site.backups import cleanup as cleanup_backups
+from press.press.doctype.site.backups import cleanup_offsite
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.site_backup.test_site_backup import create_test_site_backup
 
@@ -188,7 +188,7 @@ class TestGFS(unittest.TestCase):
 		"""
 		Ensure delete_remote_backup_objects is called when backup is to be deleted.
 
-		(db commit call inside GFS.cleanup is mocked so tests don't break)
+		(db commit call inside GFS.cleanup_offsite is mocked so tests don't break)
 		"""
 		site = create_test_site("testsubdomain")
 		site2 = create_test_site("testsubdomain2")
@@ -207,7 +207,7 @@ class TestGFS(unittest.TestCase):
 		create_test_site_backup(site.name, newer)
 		create_test_site_backup(site2.name, newer)
 		gfs = GFS()
-		gfs.cleanup()
+		gfs.cleanup_offsite()
 		mock_del_remote_backup_objects.assert_called_once()
 		args, kwargs = mock_del_remote_backup_objects.call_args
 		self.assertEqual(
@@ -248,7 +248,7 @@ class TestFIFO(unittest.TestCase):
 		"""
 		Ensure delete_remote_backup_objects is called when backup is to be deleted.
 
-		(db commit call inside GFS.cleanup is mocked so tests don't break)
+		(db commit call inside GFS.cleanup_offsite is mocked so tests don't break)
 		"""
 		site = create_test_site("testsubdomain")
 		site2 = create_test_site("testsubdomain2")
@@ -261,7 +261,7 @@ class TestFIFO(unittest.TestCase):
 		create_test_site_backup(site2.name, date.today() - timedelta(1))
 		create_test_site_backup(site2.name)
 
-		fifo.cleanup()
+		fifo.cleanup_offsite()
 		mock_del_remote_backup_objects.assert_called_once()
 		args = mock_del_remote_backup_objects.call_args[0]
 		self.assertEqual(
@@ -288,7 +288,7 @@ class TestBackupRotationScheme(unittest.TestCase):
 		press_settings = create_test_press_settings()
 		press_settings.backup_rotation_scheme = "FIFO"
 		press_settings.save()
-		cleanup_backups()
+		cleanup_offsite()
 		mock_FIFO.assert_called_once()
 		mock_GFS.assert_not_called()
 
@@ -297,7 +297,7 @@ class TestBackupRotationScheme(unittest.TestCase):
 
 		press_settings.backup_rotation_scheme = "Grandfather-father-son"
 		press_settings.save()
-		cleanup_backups()
+		cleanup_offsite()
 		mock_GFS.assert_called_once()
 		mock_FIFO.assert_not_called()
 
@@ -340,7 +340,7 @@ class TestBackupRotationScheme(unittest.TestCase):
 	def test_local_backups_with_different_bench_configs_expire_sites(
 		self, mock_frappe_commit, mock_del_remote_backup_objects
 	):
-		"""Ensure onsite backups are cleanup respecting bench config."""
+		"""Ensure onsite backups are cleaned up respecting bench config."""
 		site = create_test_site("testsubdomain")
 		site2 = create_test_site("testsubdomain2")
 
