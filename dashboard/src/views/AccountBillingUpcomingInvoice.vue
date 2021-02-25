@@ -1,5 +1,5 @@
 <template>
-	<Card title="Upcoming Invoice Summary" :subtitle="invoicePeriod">
+	<Card title="Upcoming Invoice Summary" :subtitle="subtitle">
 		<InvoiceUsageTable :invoiceDoc="invoiceDoc" />
 	</Card>
 </template>
@@ -12,9 +12,9 @@ export default {
 		InvoiceUsageTable
 	},
 	computed: {
-		invoicePeriod() {
+		subtitle() {
 			if (!this.invoiceDoc) {
-				return '';
+				return 'No upcoming invoice';
 			}
 			let start = this.$date(this.invoiceDoc.period_start);
 			let end = this.$date(this.invoiceDoc.period_end);

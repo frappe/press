@@ -4,19 +4,19 @@
 			title="Usage"
 			subtitle="Amount so far based on the usage of your sites"
 		>
-			<div class="flex flex-col h-full">
-				<div class="flex" v-if="upcomingInvoice">
+			<div class="flex flex-col h-full" v-if="!$resources.upcomingInvoice.loading">
+				<div class="flex">
 					<PlanIcon />
 					<div class="ml-4">
 						<div class="text-4xl font-semibold ">
-							{{ upcomingInvoice.formatted.total }}
+							{{ upcomingInvoice ? upcomingInvoice.formatted.total : '0.00' }}
 						</div>
-						<div class="text-base text-gray-700">
+						<div class="text-base text-gray-700" v-if="upcomingInvoice">
 							{{ dateShort(upcomingInvoice.period_start) }}
 							→
 							{{ dateShort(upcomingInvoice.period_end) }}
 						</div>
-						<div class="flex items-center mt-2 text-sm">
+						<div class="flex items-center mt-2 text-sm" v-if="paymentDate">
 							<FeatherIcon
 								name="calendar"
 								class="inline-block w-3 h-3 text-gray-600"
@@ -129,6 +129,9 @@ export default {
 			return this.$resources.upcomingInvoice.data?.available_credits;
 		},
 		paymentDate() {
+			if (!this.upcomingInvoice) {
+				return ''
+			}
 			let endDate = this.$date(this.upcomingInvoice.period_end);
 			let paymentDate = endDate.plus({ days: 1 });
 			return paymentDate.toLocaleString({
