@@ -150,7 +150,10 @@ scheduler_events = {
 		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
 		"press.press.doctype.invoice.invoice.submit_invoices",
 	],
-	"hourly": ["press.press.doctype.app.app.poll_new_releases"],
+	"hourly": [
+		"press.press.doctype.app.app.poll_new_releases",
+		"press.press.doctype.site.backups.cleanup_local",
+	],
 	"hourly_long": [
 		"press.press.doctype.bench.bench.archive_obsolete_benches",
 		"press.press.doctype.bench.bench.scale_workers",
@@ -161,7 +164,7 @@ scheduler_events = {
 	"cron": {
 		"0 3 * * *": ["press.press.doctype.remote_file.remote_file.poll_file_statuses"],
 		"0 4 * * *": [
-			"press.press.doctype.site.backups.cleanup",
+			"press.press.doctype.site.backups.cleanup_offsite",
 			"press.press.cleanup.unlink_remote_files_from_site",
 		],
 		"* * * * * 0/5": ["press.press.doctype.agent_job.agent_job.poll_pending_jobs"],
