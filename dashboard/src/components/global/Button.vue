@@ -100,7 +100,9 @@ export default {
 					'bg-gray-100 hover:bg-gray-200 text-gray-900 focus:shadow-outline-gray':
 						this.type === 'secondary',
 					'bg-red-500 hover:bg-red-400 text-white focus:shadow-outline-red':
-						this.type === 'danger'
+						this.type === 'danger',
+					'bg-white text-gray-900 shadow focus:ring focus:ring-gray-400':
+						this.type === 'white'
 				}
 			];
 		},

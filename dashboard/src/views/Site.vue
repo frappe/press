@@ -131,7 +131,7 @@ export default {
 		routeToGeneral() {
 			if (this.$route.matched.length === 1) {
 				let path = this.$route.fullPath;
-				let tab = 'overview';
+				let tab = ['Pending', 'Installing'].includes(this.site.status)  ? 'jobs' : 'overview';
 				this.$router.replace(`${path}/${tab}`);
 			}
 		}
@@ -172,6 +172,7 @@ export default {
 					'Jobs',
 					'Logs'
 				],
+				Installing: ['Jobs'],
 				Pending: ['Jobs'],
 				Broken: [
 					'Overview',
