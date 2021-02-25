@@ -29,22 +29,33 @@ def get_publishable_key_and_setup_intent():
 
 
 @frappe.whitelist()
-def info():
-	team = get_current_team()
-	team_doc = frappe.get_doc("Team", team)
-	invoice = team_doc.get_upcoming_invoice()
-	currency = team_doc.currency
+def upcoming_invoice():
+	team = get_current_team(True)
+	invoice = team.get_upcoming_invoice()
 
 	if invoice:
 		upcoming_invoice = invoice.as_dict()
-		upcoming_invoice.formatted_total = invoice.get_formatted("total")
+		upcoming_invoice.formatted = make_formatted_doc(invoice, ["Currency"])
 	else:
 		upcoming_invoice = None
 
-	past_invoices = team_doc.get_past_invoices()
+	return {
+		"upcoming_invoice": upcoming_invoice,
+		"available_credits": fmt_money(team.get_balance(), 2, team.currency),
+	}
 
-	if team_doc.billing_address:
-		address = frappe.get_doc("Address", team_doc.billing_address)
+
+@frappe.whitelist()
+def past_invoices():
+	return get_current_team(True).get_past_invoices()
+
+
+@frappe.whitelist()
+def details():
+	team = get_current_team(True)
+	address = None
+	if team.billing_address:
+		address = frappe.get_doc("Address", team.billing_address)
 		address_parts = [
 			address.address_line1,
 			address.city,
@@ -57,11 +68,9 @@ def info():
 		billing_address = ""
 
 	return {
-		"upcoming_invoice": upcoming_invoice,
-		"past_invoices": past_invoices,
+		"billing_name": team.billing_name,
 		"billing_address": billing_address,
-		"payment_method": team_doc.default_payment_method,
-		"available_credits": fmt_money(team_doc.get_balance(), 2, currency),
+		"gstin": address.gstin if address else None,
 	}
 
 
@@ -144,6 +153,22 @@ def create_payment_intent_for_buying_credits(amount):
 def get_payment_methods():
 	team = get_current_team()
 	return frappe.get_doc("Team", team).get_payment_methods()
+
+
+@frappe.whitelist()
+def set_as_default(name):
+	payment_method = frappe.get_doc(
+		"Stripe Payment Method", {"name": name, "team": get_current_team()}
+	)
+	payment_method.set_default()
+
+
+@frappe.whitelist()
+def remove_payment_method(name):
+	payment_method = frappe.get_doc(
+		"Stripe Payment Method", {"name": name, "team": get_current_team()}
+	)
+	payment_method.delete()
 
 
 @frappe.whitelist()
