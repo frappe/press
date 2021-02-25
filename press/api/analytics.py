@@ -2,9 +2,11 @@
 # MIT License. See license.txt
 
 from __future__ import unicode_literals
+
+import frappe
+
 from press.api.site import protected
 from press.press.doctype.plan.plan import get_plan_config
-import frappe
 
 
 @frappe.whitelist()
