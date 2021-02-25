@@ -76,14 +76,14 @@
 			<TransferCreditsDialog
 				v-if="showTransferCreditsDialog"
 				:show.sync="showTransferCreditsDialog"
-				@success="upcomingInvoice.reload()"
+				@success="$resources.upcomingInvoice.reload()"
 			/>
 
 			<PrepaidCreditsDialog
 				v-if="showPrepaidCreditsDialog"
 				:show.sync="showPrepaidCreditsDialog"
 				:minimum-amount="$account.team.currency == 'INR' ? 800 : 10"
-				@success="upcomingInvoice.reload()"
+				@success="$resources.upcomingInvoice.reload()"
 			/>
 		</Card>
 		<AccountBillingUpcomingInvoice
