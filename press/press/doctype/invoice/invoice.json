@@ -93,6 +93,7 @@
    "options": "currency"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "amount_due",
    "fieldtype": "Currency",
    "label": "Amount Due",
@@ -203,6 +204,7 @@
    "label": "Payment Attempt Date"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "applied_credits",
    "fieldtype": "Currency",
    "label": "Applied Credits",
@@ -215,6 +217,7 @@
    "label": "Frappe Invoice"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "credit_allocations",
    "fieldtype": "Table",
    "label": "Credit Allocations",
@@ -291,7 +294,7 @@
    "link_fieldname": "invoice"
   }
  ],
- "modified": "2020-12-08 16:49:27.892205",
+ "modified": "2021-02-23 14:24:26.971508",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",
