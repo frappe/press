@@ -134,3 +134,38 @@ class AppRelease(Document):
 				}
 			)
 			difference.insert()
+
+
+def get_permission_query_conditions(user):
+	from press.utils import get_current_team
+
+	if not user:
+		user = frappe.session.user
+
+	user_type = frappe.db.get_value("User", user, "user_type", cache=True)
+	if user_type == "System User":
+		return ""
+
+	team = get_current_team()
+
+	return (
+		f"(`tabApp Release`.`team` = {frappe.db.escape(team)} or `tabApp"
+		" Release`.`public` = 1)"
+	)
+
+
+def has_permission(doc, ptype, user):
+	from press.utils import get_current_team
+
+	if not user:
+		user = frappe.session.user
+
+	user_type = frappe.db.get_value("User", user, "user_type", cache=True)
+	if user_type == "System User":
+		return True
+
+	team = get_current_team()
+	if doc.public or doc.team == team:
+		return True
+
+	return False

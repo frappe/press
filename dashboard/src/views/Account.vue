@@ -1,9 +1,9 @@
 <template>
-	<div>
+	<div class="mt-8">
 		<div class="px-4 sm:px-8" v-if="$account.user">
-			<div class="py-8">
+			<div class="pb-3">
 				<div>
-					<h1 class="text-2xl font-bold">Account Settings</h1>
+					<h1 class="text-3xl font-bold">Settings</h1>
 					<div class="mt-2 text-base text-gray-600">
 						<span>
 							{{ $account.user.name }}
@@ -28,10 +28,7 @@
 		</div>
 		<div class="px-4 sm:px-8">
 			<Tabs class="pb-32" :tabs="tabs">
-				<router-view
-					v-if="$account.user"
-					v-bind="{ account: $account }"
-				></router-view>
+				<router-view v-if="$account.user"></router-view>
 			</Tabs>
 		</div>
 	</div>
@@ -47,9 +44,8 @@ export default {
 	},
 	data: () => ({
 		tabs: [
-			{ label: 'Profile', route: 'profile' },
-			{ label: 'Team', route: 'team' },
-			{ label: 'Billing', route: 'billing' }
+			{ label: 'Profile & Team', route: '/account/profile' },
+			{ label: 'Billing & Payments', route: '/account/billing' }
 		]
 	}),
 	activated() {

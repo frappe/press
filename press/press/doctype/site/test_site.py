@@ -41,6 +41,7 @@ def create_test_site(subdomain: str, new: bool = False) -> Site:
 			"subdomain": subdomain,
 			"server": server.name,
 			"bench": bench.name,
+			"team": "Administrator",
 			"plan": plan.name,
 			"apps": [{"app": app.name}],
 			"admin_password": "admin",

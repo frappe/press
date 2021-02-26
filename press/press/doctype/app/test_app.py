@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import frappe
 import unittest
 from press.press.doctype.app.app import new_app
+from press.press.doctype.team.test_team import create_test_team
 
 
 def create_test_app(name: str = "frappe", title: str = "Frappe Framework"):
@@ -20,7 +21,10 @@ class TestApp(unittest.TestCase):
 		self.assertEqual(app.frappe, True)
 
 		source = app.add_source(
-			"Version 12", "https://github.com/frappe/frappe", "version-12"
+			"Version 12",
+			"https://github.com/frappe/frappe",
+			"version-12",
+			create_test_team().name,
 		)
 		self.assertEqual(source.repository, "frappe")
 		self.assertEqual(source.repository_owner, "frappe")
@@ -33,7 +37,10 @@ class TestApp(unittest.TestCase):
 		self.assertEqual(app.frappe, False)
 
 		source = app.add_source(
-			"Version 12", "https://github.com/frappe/erpnext", "version-12"
+			"Version 12",
+			"https://github.com/frappe/erpnext",
+			"version-12",
+			create_test_team().name,
 		)
 		self.assertEqual(source.repository, "erpnext")
 		self.assertEqual(source.repository_owner, "frappe")
@@ -45,10 +52,16 @@ class TestApp(unittest.TestCase):
 		app = new_app("frappe", "Frappe Framework")
 
 		source_1 = app.add_source(
-			"Version 12", "https://github.com/frappe/frappe", "version-12"
+			"Version 12",
+			"https://github.com/frappe/frappe",
+			"version-12",
+			create_test_team().name,
 		)
 		source_2 = app.add_source(
-			"Version 13", "https://github.com/frappe/frappe", "version-13"
+			"Version 13",
+			"https://github.com/frappe/frappe",
+			"version-13",
+			create_test_team().name,
 		)
 		self.assertEqual(source_1.branch, "version-12")
 		self.assertEqual(len(source_1.versions), 1)
@@ -62,14 +75,20 @@ class TestApp(unittest.TestCase):
 		app = new_app("erpnext_documentation", "ERPNext Documentation")
 
 		source_1 = app.add_source(
-			"Version 12", "https://github.com/frappe/erpnext_documentation", "master"
+			"Version 12",
+			"https://github.com/frappe/erpnext_documentation",
+			"master",
+			create_test_team().name,
 		)
 		self.assertEqual(source_1.branch, "master")
 		self.assertEqual(len(source_1.versions), 1)
 		self.assertEqual(source_1.versions[0].version, "Version 12")
 
 		source_2 = app.add_source(
-			"Version 13", "https://github.com/frappe/erpnext_documentation", "master"
+			"Version 13",
+			"https://github.com/frappe/erpnext_documentation",
+			"master",
+			create_test_team().name,
 		)
 
 		self.assertEqual(source_1.name, source_2.name)
@@ -80,14 +99,20 @@ class TestApp(unittest.TestCase):
 	def test_create_app_add_second_source_after_insert(self):
 		app = new_app("frappe", "Frappe Framework")
 		source_1 = app.add_source(
-			"Version 12", "https://github.com/frappe/frappe", "version-12"
+			"Version 12",
+			"https://github.com/frappe/frappe",
+			"version-12",
+			create_test_team().name,
 		)
 		self.assertEqual(source_1.branch, "version-12")
 		self.assertEqual(len(source_1.versions), 1)
 		self.assertEqual(source_1.versions[0].version, "Version 12")
 
 		source_2 = app.add_source(
-			"Version 13", "https://github.com/frappe/frappe", "version-13"
+			"Version 13",
+			"https://github.com/frappe/frappe",
+			"version-13",
+			create_test_team().name,
 		)
 		self.assertEqual(source_1.branch, "version-12")
 		self.assertEqual(len(source_1.versions), 1)

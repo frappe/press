@@ -8,6 +8,7 @@ import frappe
 from frappe.model.document import Document
 from press.api.billing import get_stripe
 from frappe.contacts.address_and_contact import load_address_and_contact
+from press.overrides import get_permission_query_conditions_for_doctype
 
 
 class StripePaymentMethod(Document):
@@ -31,9 +32,21 @@ class StripePaymentMethod(Document):
 		self.save()
 		frappe.db.set_value("Team", self.team, "default_payment_method", self.name)
 
+	def on_trash(self):
+		payment_methods = frappe.db.get_all(
+			"Stripe Payment Method", filters={"team": self.team}, limit=2
+		)
+		if len(payment_methods) == 1:
+			frappe.throw("Cannot delete the only payment method")
+
 	def after_delete(self):
 		if self.is_default:
 			frappe.throw("Cannot delete default payment method")
 
 		stripe = get_stripe()
 		stripe.PaymentMethod.detach(self.stripe_payment_method_id)
+
+
+get_permission_query_conditions = get_permission_query_conditions_for_doctype(
+	"Stripe Payment Method"
+)

@@ -25,6 +25,7 @@ from press.api.site import check_dns
 from press.press.doctype.plan.plan import get_plan_config
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.utils import convert, get_client_blacklisted_keys, guess_type, log_error
+from press.overrides import get_permission_query_conditions_for_doctype
 
 
 class Site(Document):
@@ -78,7 +79,7 @@ class Site(Document):
 
 		# set or update site.host_name
 		if self.is_new():
-			self.host_name = self._create_default_site_domain().name
+			self.host_name = self.name
 			self._update_configuration({"host_name": f"https://{self.host_name}"}, save=False)
 		elif self.has_value_changed("host_name"):
 			self._validate_host_name()
@@ -196,11 +197,12 @@ class Site(Document):
 				"retry_count": 0,
 				"dns_type": "A",
 			}
-		).insert(ignore_if_duplicate=True, ignore_links=True)
+		).insert(ignore_if_duplicate=True)
 
 	def after_insert(self):
 		# log activity
 		log_site_activity(self.name, "Create")
+		self._create_default_site_domain()
 		self.create_dns_record()
 		self.create_agent_request()
 
@@ -954,14 +956,9 @@ def process_rename_site_job_update(job):
 	)[0].status
 
 	if "Success" == first == second:
-		data = json.loads(job.request_data)
-		new_name = data["new_name"]
-		site = frappe.get_doc("Site", job.site)
-		if site.host_name == job.site:
-			site._update_configuration({"host_name": f"https://{new_name}"})
-		frappe.rename_doc("Site", job.site, new_name)
-		frappe.rename_doc("Site Domain", job.site, new_name)
-		job.site = new_name
+		update_records_for_rename(job)
+		# update job obj with new name
+		job.reload()
 		updated_status = "Active"
 	elif "Failure" in (first, second):
 		updated_status = "Broken"
@@ -975,14 +972,19 @@ def process_rename_site_job_update(job):
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 
 
-def get_permission_query_conditions(user):
-	from press.utils import get_current_team
+def update_records_for_rename(job):
+	"""Update press records for successful site rename."""
+	data = json.loads(job.request_data)
+	new_name = data["new_name"]
 
-	if not user:
-		user = frappe.session.user
-	if frappe.session.data.user_type == "System User":
-		return ""
+	site = frappe.get_doc("Site", job.site)
+	if site.host_name == job.site:
+		# Host name already updated in f server, no need to create another job
+		site._update_configuration({"host_name": f"https://{new_name}"})
+		site.db_set("host_name", new_name)
 
-	team = get_current_team()
+	frappe.rename_doc("Site", job.site, new_name)
+	frappe.rename_doc("Site Domain", job.site, new_name)
 
-	return f"(`tabSite`.`team` = {frappe.db.escape(team)})"
+
+get_permission_query_conditions = get_permission_query_conditions_for_doctype("Site")
