@@ -1,0 +1,97 @@
+{
+ "actions": [],
+ "autoname": "format:deleted-team-{####}@deleted.com",
+ "creation": "2021-02-11 18:39:37.910757",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "team",
+  "column_break_2",
+  "status",
+  "section_break_4",
+  "team_disabled",
+  "stripe_data_deleted",
+  "frappeio_data_deleted",
+  "data_anonymized"
+ ],
+ "fields": [
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Team",
+   "options": "Team",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Pending Verification\nProcessing Deletion\nDeleted",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_4",
+   "fieldtype": "Section Break",
+   "label": "Deletion Checklist"
+  },
+  {
+   "default": "0",
+   "fieldname": "team_disabled",
+   "fieldtype": "Check",
+   "label": "Team Disabled",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "stripe_data_deleted",
+   "fieldtype": "Check",
+   "label": "Stripe Data Deleted",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "frappeio_data_deleted",
+   "fieldtype": "Check",
+   "label": "Frappe.io Data Deleted",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "data_anonymized",
+   "fieldtype": "Check",
+   "label": "Data Anonymized",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2021-02-13 12:08:27.005125",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Team Deletion Request",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}
