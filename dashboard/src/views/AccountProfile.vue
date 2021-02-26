@@ -43,7 +43,7 @@
 			</div>
 		</div>
 		<Dialog title="Update Profile Information" v-model="showProfileEditDialog">
-			<div class="grid grid-cols-1 gap-4 mt-4 sm:grid-cols-2">
+			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 				<Input
 					label="First Name"
 					type="text"
@@ -55,12 +55,6 @@
 					v-model="$account.user.last_name"
 				/>
 			</div>
-			<Input
-				class="mt-4"
-				label="Email Address"
-				type="email"
-				v-model="$account.user.email"
-			/>
 			<ErrorMessage class="mt-4" :error="$resources.updateProfile.error" />
 
 			<template #actions>
