@@ -171,3 +171,10 @@ override_whitelisted_methods = {"upload_file": "press.overrides.upload_file"}
 # }
 
 on_session_creation = "press.overrides.on_session_creation"
+
+
+# Data Deletion Privacy Docs
+
+user_data_fields = [
+	{"doctype": "Team", "strict": True},
+]
