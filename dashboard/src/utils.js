@@ -1,4 +1,7 @@
 import { DateTime } from 'luxon';
+import resolveConfig from 'tailwindcss/resolveConfig';
+import config from '@/../tailwind.config.js';
+let { theme } = resolveConfig(config);
 
 let utils = {
 	methods: {
@@ -12,7 +15,9 @@ let utils = {
 			// assuming all dates on the server are stored in our timezone
 			let serverDatesTimezone = 'Asia/Kolkata';
 			let localZone = DateTime.local().zoneName;
-			return DateTime.fromSQL(date, { zone: serverDatesTimezone }).setZone(localZone);
+			return DateTime.fromSQL(date, { zone: serverDatesTimezone }).setZone(
+				localZone
+			);
 		},
 		round(number, precision) {
 			let multiplier = Math.pow(10, precision || 0);
@@ -41,6 +46,11 @@ let utils = {
 				' ' +
 				sizes[i + current]
 			);
+		}
+	},
+	computed: {
+		$theme() {
+			return theme;
 		}
 	}
 };

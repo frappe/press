@@ -21,6 +21,8 @@ from press.utils import log_error
 from frappe.core.utils import find
 import docker
 from frappe.model.naming import make_autoname
+from press.overrides import get_permission_query_conditions_for_doctype
+from press.utils import get_current_team
 
 
 class DeployCandidate(Document):
@@ -36,18 +38,34 @@ class DeployCandidate(Document):
 		self.status = "Pending"
 		self.add_build_steps()
 		self.save()
+		user, session_data, team, = (
+			frappe.session.user,
+			frappe.session.data,
+			get_current_team(),
+		)
+		frappe.set_user(team)
 		frappe.enqueue_doc(
 			self.doctype, self.name, "_build", timeout=1200, enqueue_after_commit=True
 		)
+		frappe.set_user(user)
+		frappe.session.data = session_data
 		frappe.db.commit()
 
 	def build_and_deploy(self):
 		self.status = "Pending"
 		self.add_build_steps()
 		self.save()
+		user, session_data, team, = (
+			frappe.session.user,
+			frappe.session.data,
+			get_current_team(),
+		)
+		frappe.set_user(team)
 		frappe.enqueue_doc(
 			self.doctype, self.name, "_build_and_deploy", timeout=1200, enqueue_after_commit=True
 		)
+		frappe.set_user(user)
+		frappe.session.data = session_data
 		frappe.db.commit()
 
 	def _build_and_deploy(self):
@@ -360,3 +378,8 @@ def desk_app(doctype, txt, searchfield, start, page_len, filters):
 		fields=["app"],
 		as_list=True,
 	)
+
+
+get_permission_query_conditions = get_permission_query_conditions_for_doctype(
+	"Deploy Candidate"
+)

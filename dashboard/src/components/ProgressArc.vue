@@ -39,7 +39,11 @@ export default {
 			if (isNaN(this.percentage)) {
 				return halfCircumference;
 			}
-			return halfCircumference - (this.percentage / 100) * halfCircumference;
+			let percentage = this.percentage;
+			if (percentage > 100) {
+				percentage = 100;
+			}
+			return halfCircumference - (percentage / 100) * halfCircumference;
 		},
 		colorClass() {
 			if (this.percentage < 60) {
@@ -48,7 +52,7 @@ export default {
 			if (this.percentage < 80) {
 				return 'text-yellow-500';
 			}
-			if (this.percentage <= 100) {
+			if (this.percentage >= 80) {
 				return 'text-red-500';
 			}
 		}

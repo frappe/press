@@ -7,6 +7,8 @@ from __future__ import unicode_literals
 import frappe
 from frappe.model.document import Document
 
+from press.overrides import get_permission_query_conditions_for_doctype
+
 
 class Subscription(Document):
 	def validate(self):
@@ -114,3 +116,8 @@ def create_usage_records():
 	for name in subscriptions:
 		subscription = frappe.get_doc("Subscription", name)
 		subscription.create_usage_record()
+
+
+get_permission_query_conditions = get_permission_query_conditions_for_doctype(
+	"Subscription"
+)

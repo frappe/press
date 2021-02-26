@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 
 import frappe
 from frappe.model.document import Document
+from press.overrides import get_permission_query_conditions_for_doctype
 
 
 class BalanceTransaction(Document):
@@ -35,3 +36,8 @@ class BalanceTransaction(Document):
 
 	def on_submit(self):
 		frappe.publish_realtime("balance_updated", user=self.team)
+
+
+get_permission_query_conditions = get_permission_query_conditions_for_doctype(
+	"Balance Transaction"
+)

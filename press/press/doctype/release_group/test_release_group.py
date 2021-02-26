@@ -34,6 +34,7 @@ def create_test_release_group(app: str) -> ReleaseGroup:
 			"version": frappe_version.name,
 			"enabled": True,
 			"title": f"Test ReleaseGroup {frappe.mock('name')}",
+			"team": "Administrator",
 		}
 	)
 	app_source = create_test_app_source(release_group.version, app)

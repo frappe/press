@@ -445,16 +445,10 @@ def available_apps(name):
 	installed_apps = [app.app for app in site.apps]
 
 	bench = frappe.get_doc("Bench", site.bench)
-	bench_apps = {}
-	for app in bench.apps:
-		app_team, app_public = frappe.db.get_value(
-			"App Source", app.source, ["team", "public"]
-		)
-		if app_public or app_team == team:
-			bench_apps[app.app] = app.idx
+	bench_sources = [app.source for app in bench.apps]
 
-	available_apps = list(filter(lambda x: x not in installed_apps, bench_apps.keys()))
-	available_apps = frappe.get_all(
+	available_sources = []
+	sources = frappe.get_all(
 		"App Source",
 		fields=[
 			"name",
@@ -466,9 +460,13 @@ def available_apps(name):
 			"public",
 			"app_title as title",
 		],
-		filters={"name": ("in", available_apps)},
+		filters={"name": ("in", bench_sources)},
 	)
-	return sorted(available_apps, key=lambda x: bench_apps[x.name])
+	for source in sources:
+		if (source.app not in installed_apps) and (source.public or source.team == team):
+			available_sources.append(source)
+
+	return sorted(available_sources, key=lambda x: bench_sources.index(x.name))
 
 
 @frappe.whitelist()

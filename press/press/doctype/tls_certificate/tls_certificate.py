@@ -15,7 +15,8 @@ import frappe
 from frappe.model.document import Document
 from press.api.site import check_dns_cname_a
 from press.runner import Ansible
-from press.utils import log_error
+from press.utils import log_error, get_current_team
+from press.overrides import get_permission_query_conditions_for_doctype
 
 
 class TLSCertificate(Document):
@@ -29,9 +30,17 @@ class TLSCertificate(Document):
 		self.obtain_certificate()
 
 	def obtain_certificate(self):
+		user, session_data, team, = (
+			frappe.session.user,
+			frappe.session.data,
+			get_current_team(),
+		)
+		frappe.set_user(team)
 		frappe.enqueue_doc(
 			self.doctype, self.name, "_obtain_certificate", enqueue_after_commit=True
 		)
+		frappe.set_user(user)
+		frappe.session.data = session_data
 
 	def _obtain_certificate(self):
 		try:
@@ -83,6 +92,11 @@ class TLSCertificate(Document):
 		).decode()
 		self.issued_on = datetime.strptime(x509.get_notBefore().decode(), "%Y%m%d%H%M%SZ")
 		self.expires_on = datetime.strptime(x509.get_notAfter().decode(), "%Y%m%d%H%M%SZ")
+
+
+get_permission_query_conditions = get_permission_query_conditions_for_doctype(
+	"TLS Certificate"
+)
 
 
 def renew_tls_certificates():

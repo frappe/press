@@ -266,20 +266,17 @@ def get_user_for_reset_password_key(key):
 
 
 @frappe.whitelist()
-def add_team_member(team, email):
+def add_team_member(email):
 	frappe.utils.validate_email_address(email, True)
 
-	team_doc = frappe.get_doc("Team", team)
-	if team_doc.user != frappe.session.user:
-		frappe.throw(_("Only Team Owner can add other members"), frappe.PermissionError)
-
+	team = get_current_team(True)
 	frappe.get_doc(
 		{
 			"doctype": "Account Request",
-			"team": team,
+			"team": team.name,
 			"email": email,
 			"role": "Press Member",
-			"invited_by": team_doc.user,
+			"invited_by": team.user,
 		}
 	).insert()
 

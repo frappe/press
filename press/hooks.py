@@ -84,10 +84,46 @@ notification_config = "press.notifications.get_notification_config"
 
 permission_query_conditions = {
 	"Site": "press.press.doctype.site.site.get_permission_query_conditions",
+	"Site Domain": (
+		"press.press.doctype.site_domain.site_domain.get_permission_query_conditions"
+	),
+	"TLS Certificate": "press.press.doctype.tls_certificate.tls_certificate.get_permission_query_conditions",
+	"Team": "press.press.doctype.team.team.get_permission_query_conditions",
+	"Subscription": (
+		"press.press.doctype.subscription.subscription.get_permission_query_conditions"
+	),
+	"Stripe Payment Method": "press.press.doctype.stripe_payment_method.stripe_payment_method.get_permission_query_conditions",
+	"Balance Transaction": "press.press.doctype.balance_transaction.balance_transaction.get_permission_query_conditions",
+	"Invoice": "press.press.doctype.invoice.invoice.get_permission_query_conditions",
+	"App Source": (
+		"press.press.doctype.app_source.app_source.get_permission_query_conditions"
+	),
+	"App Release": (
+		"press.press.doctype.app_release.app_release.get_permission_query_conditions"
+	),
+	"Release Group": "press.press.doctype.release_group.release_group.get_permission_query_conditions",
+	"Deploy Candidate": "press.press.doctype.deploy_candidate.deploy_candidate.get_permission_query_conditions",
+	"Deploy Candidate Difference": "press.press.doctype.deploy_candidate_difference.deploy_candidate_difference.get_permission_query_conditions",
+	"Deploy": "press.press.doctype.deploy.deploy.get_permission_query_conditions",
+	"Bench": "press.press.doctype.bench.bench.get_permission_query_conditions",
 }
-# has_permission = {
-# 	"Site": "press.press.doctype.site.site.has_permission",
-# }
+has_permission = {
+	"Site": "press.overrides.has_permission",
+	"Site Domain": "press.overrides.has_permission",
+	"TLS Certificate": "press.overrides.has_permission",
+	"Team": "press.press.doctype.team.team.has_permission",
+	"Subscription": "press.overrides.has_permission",
+	"Stripe Payment Method": "press.overrides.has_permission",
+	"Balance Transaction": "press.overrides.has_permission",
+	"Invoice": "press.overrides.has_permission",
+	"App Source": "press.overrides.has_permission",
+	"App Release": "press.press.doctype.app_release.app_release.has_permission",
+	"Release Group": "press.overrides.has_permission",
+	"Deploy Candidate": "press.overrides.has_permission",
+	"Deploy Candidate Difference": "press.overrides.has_permission",
+	"Deploy": "press.overrides.has_permission",
+	"Bench": "press.overrides.has_permission",
+}
 
 # Document Events
 # ---------------
@@ -115,7 +151,10 @@ scheduler_events = {
 		"press.press.doctype.invoice.invoice.update_unpaid_invoices",
 		"press.press.doctype.invoice.invoice.submit_invoices",
 	],
-	"hourly": ["press.press.doctype.app.app.poll_new_releases"],
+	"hourly": [
+		"press.press.doctype.app.app.poll_new_releases",
+		"press.press.doctype.site.backups.cleanup_local",
+	],
 	"hourly_long": [
 		"press.press.doctype.bench.bench.archive_obsolete_benches",
 		"press.press.doctype.bench.bench.scale_workers",
@@ -126,7 +165,7 @@ scheduler_events = {
 	"cron": {
 		"0 3 * * *": ["press.press.doctype.remote_file.remote_file.poll_file_statuses"],
 		"0 4 * * *": [
-			"press.press.doctype.site.backups.cleanup",
+			"press.press.doctype.site.backups.cleanup_offsite",
 			"press.press.cleanup.unlink_remote_files_from_site",
 		],
 		"* * * * * 0/5": ["press.press.doctype.agent_job.agent_job.poll_pending_jobs"],

@@ -1,5 +1,5 @@
 <template>
-	<component :is="promptComponent" :message="promptMessage" />
+	<component :is="promptComponent" :message="promptMessage" v-model="show" />
 </template>
 
 <script>
@@ -19,18 +19,25 @@ export default {
 			}
 		}
 	},
+	data() {
+		return {
+			show: true
+		};
+	},
 	computed: {
 		promptComponent() {
 			let data = this.$resources.prompts.data;
 			if (data) {
 				return data[0];
 			}
+			return null;
 		},
 		promptMessage() {
 			let data = this.$resources.prompts.data;
 			if (data) {
 				return data[1];
 			}
+			return null;
 		}
 	}
 };

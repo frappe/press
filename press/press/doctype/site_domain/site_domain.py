@@ -9,6 +9,8 @@ from frappe.model.document import Document
 
 from press.agent import Agent
 
+from press.overrides import get_permission_query_conditions_for_doctype
+
 
 class SiteDomain(Document):
 	def after_insert(self):
@@ -49,7 +51,12 @@ class SiteDomain(Document):
 
 	def create_tls_certificate(self):
 		certificate = frappe.get_doc(
-			{"doctype": "TLS Certificate", "wildcard": False, "domain": self.domain}
+			{
+				"doctype": "TLS Certificate",
+				"wildcard": False,
+				"domain": self.domain,
+				"team": self.team,
+			}
 		).insert()
 		self.tls_certificate = certificate.name
 		self.save()
@@ -126,3 +133,8 @@ def process_new_host_job_update(job):
 		frappe.db.set_value("Site Domain", job.host, "status", updated_status)
 		if updated_status == "Active":
 			frappe.get_doc("Site", job.site).add_domain_to_config(job.host)
+
+
+get_permission_query_conditions = get_permission_query_conditions_for_doctype(
+	"Site Domain"
+)

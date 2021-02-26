@@ -40,6 +40,7 @@ class PressSettings(Document):
 			enabled_events=[
 				"payment_intent.requires_action",
 				"payment_intent.payment_failed",
+				"payment_intent.succeeded",
 				"payment_method.attached",
 				"invoice.payment_action_required",
 				"invoice.payment_succeeded",

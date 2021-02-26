@@ -98,10 +98,14 @@ export default {
 			return null;
 		},
 		dropdownItems() {
+			let items = this.items
+				.filter(Boolean)
+				.filter(d => (d.condition ? d.condition() : true));
+
 			if (this.sortedGroups) {
 				let itemsByGroup = {};
 
-				for (let item of this.items) {
+				for (let item of items) {
 					let group = item.group || '';
 					itemsByGroup[group] = itemsByGroup[group] || [];
 					itemsByGroup[group].push(item);
@@ -128,7 +132,7 @@ export default {
 				return items;
 			}
 
-			return this.items.map((d, i) => {
+			return items.filter(Boolean).map((d, i) => {
 				d.index = i;
 				return d;
 			});
