@@ -25,6 +25,10 @@ class Invoice(Document):
 		self.validate_amount()
 
 	def before_submit(self):
+		if self.status != "Paid":
+			frappe.throw("Invoice must be Paid to be submitted")
+
+	def finalize_invoice(self):
 		if self.type == "Prepaid Credits":
 			return
 
@@ -41,7 +45,7 @@ class Invoice(Document):
 			frappe.db.rollback()
 
 			msg = "<pre><code>" + frappe.get_traceback() + "</pre></code>"
-			self.add_comment("Comment", _("Submit Failed") + "<br><br>" + msg)
+			self.add_comment("Comment", _("Stripe Invoice Creation Failed") + "<br><br>" + msg)
 			frappe.db.commit()
 
 			raise
@@ -102,10 +106,9 @@ class Invoice(Document):
 			auto_advance=True,
 			idempotency_key=f"create_invoice_{self.name}",
 		)
-		self.db_set(
-			{"stripe_invoice_id": invoice["id"], "status": "Invoice Created"}, commit=True
-		)
-		self.reload()
+		self.stripe_invoice_id = invoice["id"]
+		self.status = "Invoice Created"
+		self.save()
 
 	def finalize_stripe_invoice(self):
 		stripe = get_stripe()
@@ -476,7 +479,7 @@ class Invoice(Document):
 			stripe.Invoice.void_invoice(self.stripe_invoice_id)
 
 
-def submit_invoices():
+def finalize_draft_invoices():
 	"""This method will run every day and submit the invoices whose period end was the previous day"""
 
 	# get draft invoices whose period has ended before
@@ -488,16 +491,17 @@ def submit_invoices():
 	)
 	for name in invoices:
 		invoice = frappe.get_doc("Invoice", name)
-		submit_invoice(invoice)
+		finalize_draft_invoice(invoice)
 
 
-def submit_invoice(invoice):
+def finalize_draft_invoice(invoice):
 	try:
-		invoice.submit()
+		invoice.finalize_invoice()
 		frappe.db.commit()
 	except Exception:
 		frappe.db.rollback()
-		log_error("Invoice Submit Failed", invoice=invoice.name)
+		msg = "<pre><code>" + frappe.get_traceback() + "</pre></code>"
+		invoice.add_comment(text="Finalize Invoice Failed" + "<br><br>" + msg)
 
 	try:
 		invoice.create_next()
@@ -546,10 +550,13 @@ def process_stripe_webhook(doc, method):
 			}
 		)
 		invoice.save()
+		invoice.reload()
 
 		# update transaction amount, fee and exchange rate
 		if stripe_invoice.get("charge"):
 			invoice.update_transaction_details(stripe_invoice.get("charge"))
+
+		invoice.submit()
 
 		# unsuspend sites
 		team.unsuspend_sites(
