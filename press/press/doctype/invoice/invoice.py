@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 
 import frappe
 from frappe.model.document import Document
+from frappe.utils.data import fmt_money
 from press.api.billing import get_stripe
 from press.utils.billing import get_frappe_io_connection
 from press.utils import log_error
@@ -50,6 +51,11 @@ class Invoice(Document):
 
 			raise
 
+		self.save()
+
+		if self.status == "Paid":
+			self.submit()
+
 	def after_submit(self):
 		self.create_invoice_on_frappeio()
 
@@ -80,16 +86,36 @@ class Invoice(Document):
 			)
 
 	def create_stripe_invoice(self):
+		stripe = get_stripe()
+
 		if self.type == "Prepaid Credits":
 			return
-		if self.stripe_invoice_id:
+
+		if self.status == "Paid":
 			return
+
+		if self.stripe_invoice_id:
+			invoice = stripe.Invoice.retrieve(self.stripe_invoice_id)
+			stripe_invoice_total = convert_stripe_money(invoice.total)
+			if self.amount_due == stripe_invoice_total:
+				# return if an invoice with the same amount is already created
+				return
+			else:
+				# if the amount is changed, void the stripe invoice and create a new one
+				stripe.Invoice.void_invoice(self.stripe_invoice_id)
+				formatted_amount = fmt_money(stripe_invoice_total, currency=self.currency)
+				self.add_comment(
+					text=(
+						f"Stripe Invoice {self.stripe_invoice_id} of amount {formatted_amount} voided."
+					)
+				)
+				self.stripe_invoice_id = ""
+				self.stripe_invoice_url = ""
+
 		if self.amount_due <= 0:
 			return
 
-		stripe = get_stripe()
 		customer_id = frappe.db.get_value("Team", self.team, "stripe_customer_id")
-
 		start = getdate(self.period_start)
 		end = getdate(self.period_end)
 		period_string = f"{start.strftime('%b %d')} - {end.strftime('%b %d')} {end.year}"
@@ -98,13 +124,9 @@ class Invoice(Document):
 			description=f"Frappe Cloud Subscription ({period_string})",
 			amount=int(self.amount_due * 100),
 			currency=self.currency.lower(),
-			idempotency_key=f"create_invoiceitem_{self.name}",
 		)
 		invoice = stripe.Invoice.create(
-			customer=customer_id,
-			collection_method="charge_automatically",
-			auto_advance=True,
-			idempotency_key=f"create_invoice_{self.name}",
+			customer=customer_id, collection_method="charge_automatically", auto_advance=True,
 		)
 		self.stripe_invoice_id = invoice["id"]
 		self.status = "Invoice Created"
@@ -263,6 +285,9 @@ class Invoice(Document):
 		if balance == 0:
 			return
 
+		# cancel applied credits to re-apply available credits
+		self.cancel_applied_credits()
+
 		unallocated_balances = frappe.db.get_all(
 			"Balance Transaction",
 			filters={"team": self.team, "type": "Adjustment", "unallocated_amount": (">", 0)},
@@ -307,6 +332,24 @@ class Invoice(Document):
 
 		self.applied_credits = total_allocated
 		self.amount_due = self.total - self.applied_credits
+
+	def cancel_applied_credits(self):
+		for row in self.credit_allocations:
+			doc = frappe.get_doc(
+				doctype="Balance Transaction",
+				type="Adjustment",
+				source=row.source,
+				team=self.team,
+				amount=row.amount,
+				description=(
+					f"Reverse amount {row.get_formatted('amount')} of {row.transaction}"
+					f" from invoice {self.name}"
+				),
+			).insert()
+			doc.submit()
+			self.remove(row)
+			self.applied_credits -= row.amount
+		self.save()
 
 	def create_next(self):
 		# the next invoice's period starts after this invoice ends
