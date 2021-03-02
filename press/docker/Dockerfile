@@ -13,6 +13,7 @@ ENV DEBIAN_FRONTEND noninteractive
 RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   && apt-get install --yes --no-install-suggests --no-install-recommends \
   # Essentials
+  build-essential \
   git \
   mariadb-client \
   pv \
@@ -48,6 +49,7 @@ RUN --mount=type=cache,target=/var/cache/apt add-apt-repository ppa:deadsnakes/p
   python${PYTHON_VERSION} \
   python3-virtualenv \
   python3-pip \
+  python3.7-dev \
   && rm -rf /var/lib/apt/lists/* \
   `#stage-pre-python`
 
