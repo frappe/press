@@ -91,5 +91,22 @@ frappe.ui.form.on('Invoice', {
 				"Stripe Invoice"
 			);
 		}
+
+		if (frm.doc.docstatus === 0) {
+			let btn = frm.add_custom_button(
+				"Finalize Invoice",
+				() => frappe.confirm(
+					"This action will apply credits (if applicable) and generate a Stripe invoice if the amount due is greater than 0. " +
+					"If a Stripe invoice was generated already, it will be voided and a new one will be generated. Continue?",
+					() => frm.call({
+						doc: frm.doc,
+						method: "finalize_invoice",
+						btn,
+					}).then(() => {
+						frm.refresh()
+					})
+				)
+			);
+		}
 	},
 });
