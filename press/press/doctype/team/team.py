@@ -23,7 +23,6 @@ class Team(Document):
 
 	def validate(self):
 		self.validate_duplicate_members()
-
 		self.set_team_currency()
 		self.set_default_user()
 		self.set_billing_name()
@@ -43,47 +42,34 @@ class Team(Document):
 		if not self.currency and self.country:
 			self.currency = "INR" if self.country == "India" else "USD"
 
+	def get_user_list(self):
+		return [row.user for row in self.team_members]
+
+	def get_users_only_in_this_team(self):
+		return [
+			user
+			for user in self.get_user_list()
+			if not frappe.db.exists("Team Member", {"user": user, "parent": ("!=", self.name)})
+		]
+
 	def validate_disabled_team(self):
+		# disable all users if they dont have their own team
 		if not self.enabled:
-			team_members = [row.user for row in self.team_members]
-			members_only_in_this_team = [
-				user
-				for user in team_members
-				if not frappe.db.exists("Team Member", {"user": user, "parent": ("!=", self.name)})
-			]
-
-			# disable all users if they dont have their own team
-			for user in members_only_in_this_team:
+			for user in self.get_users_only_in_this_team():
 				user_doc = frappe.get_doc("User", user)
 				user_doc.enabled = False
 				user_doc.save()
 
 	def validate_duplicate_members(self):
-
-		self.set_team_currency()
-		self.set_default_user()
-		self.set_billing_name()
-
-		self.validate_onboarding()
-		self.validate_disabled_team()
-
-	def set_billing_name(self):
-			team_members = [row.user for row in self.team_members]
-			members_only_in_this_team = [
-				user
-				for user in team_members
-				if not frappe.db.exists("Team Member", {"user": user, "parent": ("!=", self.name)})
-			]
-
-			# disable all users if they dont have their own team
-			for user in members_only_in_this_team:
-				user_doc = frappe.get_doc("User", user)
-				user_doc.enabled = False
-				user_doc.save()
+		# disable all users if they dont have their own team
+		for user in self.get_users_only_in_this_team():
+			user_doc = frappe.get_doc("User", user)
+			user_doc.enabled = False
+			user_doc.save()
 
 	def validate_duplicate_members(self):
-		team_members = [row.user for row in self.team_members]
-		duplicate_members = [m for m in team_members if team_members.count(m) > 1]
+		team_users = self.get_user_list()
+		duplicate_members = [m for m in team_users if team_users.count(m) > 1]
 		duplicate_members = list(set(duplicate_members))
 		if duplicate_members:
 			frappe.throw(
@@ -203,8 +189,7 @@ class Team(Document):
 		self.save(ignore_permissions=True)
 
 	def has_member(self, user):
-		users = [row.user for row in self.team_members]
-		return user in users
+		return user in self.get_user_list()
 
 	def is_defaulter(self) -> bool:
 		if self.free_account:
