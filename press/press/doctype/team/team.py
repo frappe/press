@@ -331,7 +331,7 @@ class Team(Document):
 				"is_default",
 				"creation",
 			],
-			order_by="creation desc"
+			order_by="creation desc",
 		)
 
 	def get_past_invoices(self):

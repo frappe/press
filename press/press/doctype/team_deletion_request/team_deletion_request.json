@@ -28,8 +28,9 @@
   {
    "fieldname": "status",
    "fieldtype": "Select",
+   "in_list_view": 1,
    "label": "Status",
-   "options": "Pending Verification\nProcessing Deletion\nDeleted",
+   "options": "Pending Verification\nDeletion Verified\nProcessing Deletion\nDeleted",
    "read_only": 1
   },
   {
@@ -72,7 +73,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-02-13 12:08:27.005125",
+ "modified": "2021-03-02 20:55:48.291643",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team Deletion Request",
