@@ -112,7 +112,9 @@ def delete_team(team):
 	def respond_as_web_page(key):
 		frappe.respond_as_web_page(*responses[key][0], **responses[key][1])
 
-	if not verify_request():
+	if verify_request():
+		frappe.set_user("Administrator")
+	else:
 		return respond_as_web_page("invalid")
 
 	try:
@@ -123,8 +125,8 @@ def delete_team(team):
 	if doc.status != "Pending Verification":
 		return respond_as_web_page("expired")
 
-	doc.status = "Processing Deletion"
-	doc.save(ignore_permissions=True)
+	doc.status = "Deletion Verified"
+	doc.save()
 	frappe.db.commit()
 
 	return respond_as_web_page("confirmed")
