@@ -353,7 +353,7 @@ def all():
 	)
 	benches_with_updates = set(benches_with_available_update())
 	for site in sites:
-		if site.bench in benches_with_updates:
+		if site.bench in benches_with_updates and should_try_update(site):
 			site.update_available = True
 
 	return sites
