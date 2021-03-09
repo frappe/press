@@ -30,6 +30,21 @@ class Team(Document):
 		self.validate_onboarding()
 		self.validate_disabled_team()
 
+	def delete(self, force=False, workflow=False):
+		if force:
+			return super().delete()
+
+		if workflow:
+			return frappe.get_doc(
+				{"doctype": "Team Deletion Request", "team": self.name}
+			).insert()
+
+		frappe.throw(
+			f"You are only deleting the Team Document for {self.name}. To continue to"
+			" do so, pass force=True with this call. Else, pass workflow=True to raise"
+			" a Team Deletion Request to trigger complete team deletion process."
+		)
+
 	def set_billing_name(self):
 		if not self.billing_name:
 			self.billing_name = frappe.utils.get_fullname(self.name)
