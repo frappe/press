@@ -14,6 +14,25 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 		super().__init__(*args, **kwargs)
 		self.email = self.team
 
+	def before_insert(self):
+		self.validate_duplicate_request()
+
+	def after_insert(self):
+		url = self.generate_url_for_confirmation()
+
+		frappe.sendmail(
+			recipients=self.email,
+			subject="Account Deletion Request",
+			template="delete_team_confirmation",
+			args={"team": self.team, "link": url},
+			header=["Account Deletion Request", "green"],
+		)
+
+	def validate(self):
+		self.validate_sites_states()
+		self.finalize_pending_invoices()
+		self.validate_outstanding_invoices()
+
 	def dont_throw(foo):
 		def pass_exception(self):
 			try:
@@ -42,25 +61,6 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 	@property
 	def team_doc(self):
 		return frappe.get_cached_doc("Team", self.team)
-
-	def before_insert(self):
-		self.validate_duplicate_request()
-
-	def after_insert(self):
-		url = self.generate_url_for_confirmation()
-
-		frappe.sendmail(
-			recipients=self.email,
-			subject="Account Deletion Request",
-			template="delete_team_confirmation",
-			args={"team": self.team, "link": url},
-			header=["Account Deletion Request", "green"],
-		)
-
-	def validate(self):
-		self.validate_sites_states()
-		self.finalize_pending_invoices()
-		self.validate_outstanding_invoices()
 
 	def rename_team_on_data_deletion(self):
 		if (
