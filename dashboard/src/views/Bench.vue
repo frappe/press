@@ -3,7 +3,7 @@
 		<div class="px-4 sm:px-8" v-if="bench">
 			<div class="py-8">
 				<div class="text-base text-gray-700">
-					<router-link to="/benches" class="hover:text-gray-800">
+					<router-link to="/sites" class="hover:text-gray-800">
 						← Back to Benches
 					</router-link>
 				</div>
