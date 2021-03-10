@@ -63,10 +63,10 @@
 									:href="`https://${site.name}`"
 									target="_blank"
 									class="inline-flex items-baseline text-sm text-blue-500 hover:underline"
-									>Visit Site<FeatherIcon
-										name="external-link"
-										class="w-3 h-3 ml-1"
-									/>
+									@click.stop
+								>
+									Visit Site
+									<FeatherIcon name="external-link" class="w-3 h-3 ml-1" />
 								</a>
 							</span>
 						</router-link>
