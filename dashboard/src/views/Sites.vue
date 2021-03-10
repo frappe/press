@@ -1,5 +1,5 @@
 <template>
-	<div class="mt-8">
+	<div class="pb-20 mt-8">
 		<div class="px-4 sm:px-8">
 			<div
 				class="p-24 text-center"
