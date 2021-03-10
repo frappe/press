@@ -13,7 +13,7 @@
 				</Button>
 			</div>
 			<div class="space-y-8" v-else>
-				<div v-for="group in $resources.groups.data" :key="group.name">
+				<div v-for="group in groups" :key="group.name">
 					<PageHeader class="mb-2 -mx-4 sm:-mx-8">
 						<h2 slot="title">
 							{{ getGroupTitle(group) }}
@@ -33,10 +33,10 @@
 							</Button>
 						</div>
 					</PageHeader>
-					<template v-if="getSites(group).length">
+					<template v-if="group.sites.length">
 						<router-link
 							class="grid items-center grid-cols-2 gap-12 py-4 text-base border-b md:grid-cols-4 hover:bg-gray-50 focus:outline-none focus:shadow-outline"
-							v-for="site in getSites(group)"
+							v-for="site in group.sites"
 							:key="site.name"
 							:to="'/sites/' + site.name"
 						>
@@ -89,6 +89,28 @@ export default {
 	mounted() {
 		this.setupSocketListener();
 	},
+	computed: {
+		groups() {
+			if (!this.$resources.groups.data) return [];
+
+			let sharedBench = {
+				name: 'shared-bench',
+				title: 'Shared Bench',
+				public: true,
+				sites: []
+			};
+			this.$resources.groups.data
+				.filter(group => group.public)
+				.forEach(group => {
+					sharedBench.sites = sharedBench.sites.concat(group.sites);
+				});
+
+			return [
+				sharedBench,
+				...this.$resources.groups.data.filter(group => !group.public)
+			];
+		}
+	},
 	methods: {
 		setupSocketListener() {
 			if (this._socketSetup) return;
@@ -121,14 +143,7 @@ export default {
 			if (privateBenches.length === 0) {
 				return 'Sites';
 			}
-			return group.public ? 'Shared Bench' : group.title;
-		},
-		getSites(group) {
-			let sites = [];
-			group.benches.forEach(bench => {
-				sites = sites.concat(bench.sites);
-			});
-			return sites;
+			return group.title;
 		},
 		relativeDate(dateString) {
 			return dateString;
