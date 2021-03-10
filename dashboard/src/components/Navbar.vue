@@ -143,15 +143,15 @@ export default {
 					route: '/sites'
 				},
 				{
-					label: 'Benches',
-					route: '/benches'
-				},
-				{
 					label: 'Settings',
 					route: '/account'
 				}
 			],
 			dropdownItems: [
+				{
+					label: 'New Bench',
+					action: () => this.$router.push('/benches/new')
+				},
 				{
 					label: 'Settings',
 					action: () => this.$router.push('/account')
