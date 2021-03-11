@@ -127,6 +127,7 @@ export default {
 				action: closeDialog => {
 					closeDialog();
 					this.$resources.uninstallApp.submit({
+						name: this.site.name,
 						app: app.app
 					});
 				}
