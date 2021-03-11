@@ -383,6 +383,7 @@ def all():
 	for group in groups:
 		group.benches = [bench for bench in benches if bench.group == group.name]
 
+		group.sites = []
 		for bench in group.benches:
 			group.sites = [site for site in sites if site.bench == bench.name]
 
