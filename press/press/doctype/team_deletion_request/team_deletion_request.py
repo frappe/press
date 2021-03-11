@@ -77,7 +77,9 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 		):
 			return
 
-		frappe.throw("You need to be a Team owner to request account deletion", exc=frappe.PermissionError)
+		frappe.throw(
+			"You need to be a Team owner to request account deletion", exc=frappe.PermissionError
+		)
 
 	def validate_duplicate_request(self):
 		if frappe.db.exists(self.doctype, {"team": self.team}):
@@ -215,7 +217,7 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 
 	def validate_outstanding_invoices(self):
 		if self.team_doc.is_defaulter():
-			frappe.throw(f"You have Unpaid Invoices. Clear them to delete your account")
+			frappe.throw("You have Unpaid Invoices. Clear them to delete your account")
 
 
 def process_team_deletion_requests():
