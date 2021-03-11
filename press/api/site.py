@@ -385,7 +385,7 @@ def all():
 
 		group.sites = []
 		for bench in group.benches:
-			group.sites = [site for site in sites if site.bench == bench.name]
+			group.sites += [site for site in sites if site.bench == bench.name]
 
 	return groups
 
