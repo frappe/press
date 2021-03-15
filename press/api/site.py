@@ -353,10 +353,41 @@ def all():
 	)
 	benches_with_updates = set(benches_with_available_update())
 	for site in sites:
-		if site.bench in benches_with_updates:
+		if site.bench in benches_with_updates and should_try_update(site):
 			site.update_available = True
 
-	return sites
+	benches = frappe.db.get_all(
+		"Bench",
+		fields=["name", "group"],
+		filters={"name": ("in", set([site.bench for site in sites]))},
+	)
+
+	public_groups = frappe.db.get_all(
+		"Release Group",
+		fields=["name", "title", "creation", "version", "team", "public"],
+		filters={
+			"enabled": True,
+			"name": ("in", set([bench.group for bench in benches])),
+			"public": True,
+		},
+		order_by="creation desc",
+	)
+	private_groups = frappe.db.get_all(
+		"Release Group",
+		fields=["name", "title", "creation", "version", "team", "public"],
+		filters={"enabled": True, "team": get_current_team(), "public": False,},
+		order_by="creation desc",
+	)
+	groups = public_groups + private_groups
+
+	for group in groups:
+		group.benches = [bench for bench in benches if bench.group == group.name]
+
+		group.sites = []
+		for bench in group.benches:
+			group.sites += [site for site in sites if site.bench == bench.name]
+
+	return groups
 
 
 @frappe.whitelist()
@@ -445,16 +476,10 @@ def available_apps(name):
 	installed_apps = [app.app for app in site.apps]
 
 	bench = frappe.get_doc("Bench", site.bench)
-	bench_apps = {}
-	for app in bench.apps:
-		app_team, app_public = frappe.db.get_value(
-			"App Source", app.source, ["team", "public"]
-		)
-		if app_public or app_team == team:
-			bench_apps[app.app] = app.idx
+	bench_sources = [app.source for app in bench.apps]
 
-	available_apps = list(filter(lambda x: x not in installed_apps, bench_apps.keys()))
-	available_apps = frappe.get_all(
+	available_sources = []
+	sources = frappe.get_all(
 		"App Source",
 		fields=[
 			"name",
@@ -466,9 +491,13 @@ def available_apps(name):
 			"public",
 			"app_title as title",
 		],
-		filters={"name": ("in", available_apps)},
+		filters={"name": ("in", bench_sources)},
 	)
-	return sorted(available_apps, key=lambda x: bench_apps[x.name])
+	for source in sources:
+		if (source.app not in installed_apps) and (source.public or source.team == team):
+			available_sources.append(source)
+
+	return sorted(available_sources, key=lambda x: bench_sources.index(x.name))
 
 
 @frappe.whitelist()

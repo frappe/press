@@ -1,14 +1,16 @@
+import json
 import unittest
 from datetime import date, timedelta
 from unittest.mock import Mock, patch
 
 import frappe
 
-from press.press.doctype.site.backups import FIFO, GFS, cleanup as cleanup_backups
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.press_settings.test_press_settings import (
 	create_test_press_settings,
 )
+from press.press.doctype.site.backups import FIFO, GFS
+from press.press.doctype.site.backups import cleanup_offsite
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.site_backup.test_site_backup import create_test_site_backup
 
@@ -56,7 +58,7 @@ class TestGFS(unittest.TestCase):
 		newer_backup = create_test_site_backup(site.name, newer)
 
 		gfs = GFS()
-		gfs.expire_offsite_backups(site)
+		gfs.expire_offsite_backups()
 
 		limit_backup.reload()
 		older_backup.reload()
@@ -94,7 +96,7 @@ class TestGFS(unittest.TestCase):
 		newer_backup = create_test_site_backup(site.name, newer)
 
 		gfs = GFS()
-		gfs.expire_offsite_backups(site)
+		gfs.expire_offsite_backups()
 
 		limit_backup.reload()
 		older_backup.reload()
@@ -131,7 +133,7 @@ class TestGFS(unittest.TestCase):
 		newer_backup = create_test_site_backup(site.name, newer)
 
 		gfs = GFS()
-		gfs.expire_offsite_backups(site)
+		gfs.expire_offsite_backups()
 
 		limit_backup.reload()
 		older_backup.reload()
@@ -168,7 +170,7 @@ class TestGFS(unittest.TestCase):
 		newer_backup = create_test_site_backup(site.name, newer)
 
 		gfs = GFS()
-		gfs.expire_offsite_backups(site)
+		gfs.expire_offsite_backups()
 
 		limit_backup.reload()
 		older_backup.reload()
@@ -186,7 +188,7 @@ class TestGFS(unittest.TestCase):
 		"""
 		Ensure delete_remote_backup_objects is called when backup is to be deleted.
 
-		(db commit call inside GFS.cleanup is mocked so tests don't break)
+		(db commit call inside GFS.cleanup_offsite is mocked so tests don't break)
 		"""
 		site = create_test_site("testsubdomain")
 		site2 = create_test_site("testsubdomain2")
@@ -205,7 +207,7 @@ class TestGFS(unittest.TestCase):
 		create_test_site_backup(site.name, newer)
 		create_test_site_backup(site2.name, newer)
 		gfs = GFS()
-		gfs.cleanup()
+		gfs.cleanup_offsite()
 		mock_del_remote_backup_objects.assert_called_once()
 		args, kwargs = mock_del_remote_backup_objects.call_args
 		self.assertEqual(
@@ -228,7 +230,7 @@ class TestFIFO(unittest.TestCase):
 		old = create_test_site_backup(site.name, date.today() - timedelta(1))
 		new = create_test_site_backup(site.name)
 
-		fifo.expire_offsite_backups(site)
+		fifo.expire_offsite_backups()
 
 		older.reload()
 		old.reload()
@@ -246,7 +248,7 @@ class TestFIFO(unittest.TestCase):
 		"""
 		Ensure delete_remote_backup_objects is called when backup is to be deleted.
 
-		(db commit call inside GFS.cleanup is mocked so tests don't break)
+		(db commit call inside GFS.cleanup_offsite is mocked so tests don't break)
 		"""
 		site = create_test_site("testsubdomain")
 		site2 = create_test_site("testsubdomain2")
@@ -259,7 +261,7 @@ class TestFIFO(unittest.TestCase):
 		create_test_site_backup(site2.name, date.today() - timedelta(1))
 		create_test_site_backup(site2.name)
 
-		fifo.cleanup()
+		fifo.cleanup_offsite()
 		mock_del_remote_backup_objects.assert_called_once()
 		args = mock_del_remote_backup_objects.call_args[0]
 		self.assertEqual(
@@ -286,7 +288,7 @@ class TestBackupRotationScheme(unittest.TestCase):
 		press_settings = create_test_press_settings()
 		press_settings.backup_rotation_scheme = "FIFO"
 		press_settings.save()
-		cleanup_backups()
+		cleanup_offsite()
 		mock_FIFO.assert_called_once()
 		mock_GFS.assert_not_called()
 
@@ -295,6 +297,73 @@ class TestBackupRotationScheme(unittest.TestCase):
 
 		press_settings.backup_rotation_scheme = "Grandfather-father-son"
 		press_settings.save()
-		cleanup_backups()
+		cleanup_offsite()
 		mock_GFS.assert_called_once()
 		mock_FIFO.assert_not_called()
+
+	@patch("press.press.doctype.site.backups.delete_remote_backup_objects")
+	@patch("press.press.doctype.site.backups.frappe.db.commit")
+	def test_local_backups_are_expired(
+		self, mock_frappe_commit, mock_del_remote_backup_objects
+	):
+		"""
+		Ensure onsite backups are marked unavailable.
+
+		Check backups older than 24hrs marked unavailable
+		"""
+		site = create_test_site("testsubdomain")
+		site2 = create_test_site("testsubdomain2")
+
+		backup_1_1 = create_test_site_backup(
+			site.name, date.today() - timedelta(1), offsite=False
+		)
+		backup_1_2 = create_test_site_backup(site.name)
+		backup_2_1 = create_test_site_backup(
+			site2.name, date.today() - timedelta(2), offsite=False
+		)
+		backup_2_2 = create_test_site_backup(site2.name)
+
+		GFS().expire_local_backups()
+
+		backup_1_1.reload()
+		backup_1_2.reload()
+		backup_2_1.reload()
+		backup_2_2.reload()
+
+		self.assertEqual(backup_1_1.files_availability, "Unavailable")
+		self.assertEqual(backup_1_2.files_availability, "Available")
+		self.assertEqual(backup_2_1.files_availability, "Unavailable")
+		self.assertEqual(backup_2_2.files_availability, "Available")
+
+	@patch("press.press.doctype.site.backups.delete_remote_backup_objects")
+	@patch("press.press.doctype.site.backups.frappe.db.commit")
+	def test_local_backups_with_different_bench_configs_expire_sites(
+		self, mock_frappe_commit, mock_del_remote_backup_objects
+	):
+		"""Ensure onsite backups are cleaned up respecting bench config."""
+		site = create_test_site("testsubdomain")
+		site2 = create_test_site("testsubdomain2")
+
+		config = json.dumps({"keep_backups_for_hours": 50})
+		frappe.db.set_value("Bench", site.bench, "config", config)
+
+		backup_1_1 = create_test_site_backup(
+			site.name, date.today() - timedelta(1), offsite=False
+		)
+		backup_1_2 = create_test_site_backup(site.name)
+		backup_2_1 = create_test_site_backup(
+			site2.name, date.today() - timedelta(2), offsite=False
+		)
+		backup_2_2 = create_test_site_backup(site2.name)
+
+		GFS().expire_local_backups()
+
+		backup_1_1.reload()
+		backup_1_2.reload()
+		backup_2_1.reload()
+		backup_2_2.reload()
+
+		self.assertEqual(backup_1_1.files_availability, "Available")
+		self.assertEqual(backup_1_2.files_availability, "Available")
+		self.assertEqual(backup_2_1.files_availability, "Unavailable")
+		self.assertEqual(backup_2_2.files_availability, "Available")

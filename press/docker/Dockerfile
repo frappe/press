@@ -13,6 +13,7 @@ ENV DEBIAN_FRONTEND noninteractive
 RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   && apt-get install --yes --no-install-suggests --no-install-recommends \
   # Essentials
+  build-essential \
   git \
   mariadb-client \
   pv \
@@ -48,6 +49,7 @@ RUN --mount=type=cache,target=/var/cache/apt add-apt-repository ppa:deadsnakes/p
   python${PYTHON_VERSION} \
   python3-virtualenv \
   python3-pip \
+  python3.7-dev \
   && rm -rf /var/lib/apt/lists/* \
   `#stage-pre-python`
 
@@ -66,6 +68,10 @@ RUN git clone --progress --depth 1 https://github.com/frappe/fonts.git /tmp/font
   && rm -rf /tmp/fonts \
   && fc-cache -fv \
   `#stage-pre-fonts`
+
+
+# Set max_allowed_packet to 512 MB for mysqldump
+RUN echo "[mysqldump]\nmax_allowed_packet              = 512M" > /etc/mysql/conf.d/mysqldump.cnf
 
 
 RUN useradd -ms /bin/bash frappe

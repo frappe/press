@@ -23,7 +23,7 @@
 			<span class="text-sm leading-4 text-gray-700">
 				Credit or Debit Card
 			</span>
-			<div class="block w-full py-2 mt-2 form-input" ref="card-element"></div>
+			<div class="block w-full py-2 pl-3 mt-2 form-input" ref="card-element"></div>
 			<ErrorMessage class="mt-1" :error="cardErrorMessage" />
 		</label>
 		<div v-if="step == 'Setting up Stripe'" class="flex justify-center mt-8">
@@ -65,8 +65,6 @@
 <script>
 import StripeLogo from '@/components/StripeLogo';
 import { loadStripe } from '@stripe/stripe-js';
-import resolveConfig from 'tailwindcss/resolveConfig';
-import config from '@/../tailwind.config.js';
 
 export default {
 	name: 'PrepaidCreditsDialog',
@@ -109,7 +107,7 @@ export default {
 					this.clientSecret = client_secret;
 					this.stripe = await loadStripe(publishable_key);
 					this.elements = this.stripe.elements();
-					let { theme } = resolveConfig(config);
+					let theme = this.$theme;
 					let style = {
 						base: {
 							color: theme.colors.black,

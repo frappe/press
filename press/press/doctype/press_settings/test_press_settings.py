@@ -13,7 +13,7 @@ def create_test_press_settings():
 		{
 			"doctype": "Press Settings",
 			"domain": "fc.dev",
-			"bench_configuration": "JSON",
+			"bench_configuration": "{}",
 			"dns_provider": "AWS Route 53",
 			"rsa_key_size": "2048",
 		}

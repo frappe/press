@@ -6,24 +6,13 @@ from __future__ import unicode_literals
 
 import functools
 from datetime import date, datetime, timedelta
+from itertools import groupby
 from typing import Dict, List
 
 import frappe
 import pytz
 from press.press.doctype.remote_file.remote_file import delete_remote_backup_objects
-from press.press.doctype.site.site import Site
 from press.utils import log_error
-
-
-@functools.lru_cache(maxsize=128)
-def keep_backups_for_(bench: str) -> int:
-	"""Get no. of hours for which backups are kept on site."""
-	return (
-		frappe.parse_json(
-			frappe.db.get_value("Bench", bench, "config") or "{}"
-		).keep_backups_for_hours
-		or 24
-	)
 
 
 class BackupRotationScheme:
@@ -48,41 +37,54 @@ class BackupRotationScheme:
 			frappe.db.set_value("Site Backup", backup, "files_availability", "Unavailable")
 		return remote_files_to_delete
 
-	def expire_local_backups(self, site: Site):
-		expiry = keep_backups_for_(site.bench)
-		expired_local_backups = frappe.get_all(
-			"Site Backup",
-			filters={
-				"site": site.name,
-				"status": "Success",
-				"files_availability": "Available",
-				"offsite": False,
-				"creation": ("<", datetime.now() - timedelta(hours=expiry)),
-			},
-			pluck="name",
+	def expire_local_backups(self):
+		"""Mark local backups deleted by FF as unavailable."""
+		sites_with_config = frappe.db.sql(
+			"""
+						SELECT tabSite.name, tabBench.config
+						FROM tabSite
+						JOIN tabBench ON tabSite.bench=tabBench.name
+						WHERE tabSite.status != "Archived"
+						ORDER BY tabBench.config
+			""",
+			as_dict=True,
 		)
+		for d in sites_with_config:
+			d.config = self._get_expiry(d.config)
 
-		for local_backup in expired_local_backups:
-			# we're assuming each Frappe site does it's work as per conf and marking them
-			# as available
-			frappe.db.set_value("Site Backup", local_backup, "files_availability", "Unavailable")
+		for config, site_confs in groupby(sites_with_config, lambda d: d.config):
+			sites = []
+			for site_conf in list(site_confs):
+				sites.append(site_conf.name)
+			self._expire_backups_of_site_in_bench(sites, config)
 
-	def expire_offsite_backups(self, site: Site) -> List[str]:
+	@functools.lru_cache(maxsize=128)
+	def _get_expiry(self, config: str):
+		return frappe.parse_json(config or "{}").keep_backups_for_hours or 24
+
+	def _expire_backups_of_site_in_bench(self, sites: List[str], expiry: int):
+		if sites:
+			frappe.db.set_value(
+				"Site Backup",
+				{
+					"site": ("in", sites),
+					"status": "Success",
+					"files_availability": "Available",
+					"offsite": False,
+					"creation": ("<", datetime.now() - timedelta(hours=expiry)),
+				},
+				"files_availability",
+				"Unavailable",
+			)
+
+	def expire_offsite_backups(self) -> List[str]:
 		"""Expire and return list of offsite backups to delete."""
 		raise NotImplementedError
 
-	def cleanup(self):
+	def cleanup_offsite(self):
 		"""Expire backups according to the rotation scheme."""
-		expired_remote_files = []
-		sites = frappe.get_all(
-			"Site", filters={"status": ("!=", "Archived")}, fields=["name", "bench"]
-		)
-		for site in sites:
-			self.expire_local_backups(site)
-			expired_sites_remote_files = self.expire_offsite_backups(site)
-			expired_remote_files.extend(expired_sites_remote_files)
+		expired_remote_files = self.expire_offsite_backups()
 		delete_remote_backup_objects(expired_remote_files)
-		frappe.db.commit()
 
 
 class FIFO(BackupRotationScheme):
@@ -93,18 +95,21 @@ class FIFO(BackupRotationScheme):
 			frappe.db.get_single_value("Press Settings", "offsite_backups_count") or 30
 		)
 
-	def expire_offsite_backups(self, site: Site) -> List[str]:
+	def expire_offsite_backups(self) -> List[str]:
 		offsite_expiry = self.offsite_backups_count
-		to_be_expired_backups = frappe.get_all(
-			"Site Backup",
-			filters={
-				"site": site.name,
-				"status": "Success",
-				"files_availability": "Available",
-				"offsite": True,
-			},
-			order_by="creation desc",
-		)[offsite_expiry:]
+		to_be_expired_backups = []
+		sites = frappe.get_all("Site", {"status": ("!=", "Archived")}, pluck="name")
+		for site in sites:
+			to_be_expired_backups += frappe.get_all(
+				"Site Backup",
+				filters={
+					"site": site,
+					"status": "Success",
+					"files_availability": "Available",
+					"offsite": True,
+				},
+				order_by="creation desc",
+			)[offsite_expiry:]
 		return self._expire_and_get_remote_files(to_be_expired_backups)
 
 
@@ -123,7 +128,7 @@ class GFS(BackupRotationScheme):
 	monthly_backup_day = 1  # days of the month (1-31)
 	yearly_backup_day = 1  # days of the year (1-366)
 
-	def expire_offsite_backups(self, site: Site) -> List[str]:
+	def expire_offsite_backups(self) -> List[str]:
 		today = date.today()
 		oldest_daily = today - timedelta(days=self.daily)
 		oldest_weekly = today - timedelta(weeks=4)
@@ -133,7 +138,7 @@ class GFS(BackupRotationScheme):
 			f"""
 			SELECT name from `tabSite Backup`
 			WHERE
-				site="{site.name}" and
+				site in (select name from tabSite where status != "Archived") and
 				status="Success" and
 				files_availability="Available" and
 				offsite=True and
@@ -214,9 +219,8 @@ def schedule():
 			log_error("Site Backup Exception", site=site)
 
 
-def cleanup():
-	"""Delete expired offsite backups and set statuses for old local ones."""
-
+def cleanup_offsite():
+	"""Delete expired (based on policy) offsite backups and mark em as Unavailable."""
 	scheme = (
 		frappe.db.get_single_value("Press Settings", "backup_rotation_scheme") or "FIFO"
 	)
@@ -224,4 +228,12 @@ def cleanup():
 		rotation = FIFO()
 	elif scheme == "Grandfather-father-son":
 		rotation = GFS()
-	rotation.cleanup()
+	rotation.cleanup_offsite()
+	frappe.db.commit()
+
+
+def cleanup_local():
+	"""Mark expired onsite backups as Unavailable."""
+	brs = BackupRotationScheme()
+	brs.expire_local_backups()
+	frappe.db.commit()
