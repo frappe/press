@@ -8,17 +8,23 @@
   "status",
   "hostname",
   "domain",
-  "cluster",
-  "is_server_setup",
   "column_break_3",
+  "cluster",
+  "provider",
+  "is_server_setup",
+  "section_break_8",
   "ip",
+  "column_break_10",
   "private_ip",
+  "private_mac_address",
+  "private_vlan_id",
   "agent_section",
   "agent_password",
   "ssh_section",
-  "root_public_key",
-  "column_break_10",
-  "frappe_public_key"
+  "frappe_user_password",
+  "frappe_public_key",
+  "column_break_18",
+  "root_public_key"
  ],
  "fields": [
   {
@@ -40,7 +46,7 @@
    "fieldname": "agent_password",
    "fieldtype": "Password",
    "label": "Agent Password",
-   "reqd": 1
+   "set_only_once": 1
   },
   {
    "default": "Pending",
@@ -97,22 +103,66 @@
    "in_standard_filter": 1,
    "label": "Cluster",
    "options": "Cluster",
-   "reqd": 1
+   "read_only": 1
   },
   {
    "fieldname": "hostname",
    "fieldtype": "Data",
    "label": "Hostname",
-   "reqd": 1
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "domain",
    "fieldtype": "Data",
-   "label": "Domain"
+   "label": "Domain",
+   "read_only": 1,
+   "set_only_once": 1
+  },
+  {
+   "default": "Generic",
+   "fieldname": "provider",
+   "fieldtype": "Select",
+   "label": "Provider",
+   "options": "Generic\nScaleway",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "section_break_8",
+   "fieldtype": "Section Break",
+   "label": "Networking"
+  },
+  {
+   "depends_on": "eval: doc.provider === \"Scaleway\"",
+   "fieldname": "private_mac_address",
+   "fieldtype": "Data",
+   "label": "Private Mac Address",
+   "mandatory_depends_on": "eval: doc.provider === \"Scaleway\"",
+   "set_only_once": 1
+  },
+  {
+   "depends_on": "eval: doc.provider === \"Scaleway\"",
+   "fieldname": "private_vlan_id",
+   "fieldtype": "Data",
+   "label": "Private VLAN ID",
+   "mandatory_depends_on": "eval: doc.provider === \"Scaleway\"",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "column_break_18",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval: doc.provider === \"Scaleway\"",
+   "fieldname": "frappe_user_password",
+   "fieldtype": "Password",
+   "label": "Frappe User Password",
+   "mandatory_depends_on": "eval: doc.provider === \"Scaleway\"",
+   "set_only_once": 1
   }
  ],
  "links": [],
- "modified": "2021-01-25 15:24:48.383902",
+ "modified": "2021-02-11 10:59:06.538478",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",
