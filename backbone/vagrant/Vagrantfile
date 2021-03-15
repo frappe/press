@@ -1,5 +1,6 @@
 Vagrant.configure("2") do |config|
     config.vm.box = "backbone"
+    # config.vm.box = "scaleway"
     config.vm.synced_folder ".", "/vagrant", disabled: true
 
     # This let's us access all guests with their names from host and other guests
@@ -96,5 +97,22 @@ Vagrant.configure("2") do |config|
         registry.vm.network "private_network", ip: "10.0.4.101", netmask: "255.255.0.0"
         registry.vm.network "private_network", ip: "10.1.4.101", netmask: "255.255.0.0"
     end
-    
+
+
+    config.vm.define "sn1.frappe.dev" do |sn1|
+        sn1.vm.hostname = "sn1.frappe.dev"
+        sn1.vm.network "private_network", ip: "10.2.0.101", netmask: "255.255.0.0"
+        sn1.vm.network "private_network", ip: "10.3.0.101", netmask: "255.255.0.0", auto_config: false
+    end
+
+    config.vm.define "sf1.frappe.dev" do |sf1|
+        sf1.vm.hostname = "sf1.frappe.dev"
+        sf1.vm.network "private_network", ip: "10.2.1.101", netmask: "255.255.0.0"
+        sf1.vm.network "private_network", ip: "10.3.1.101", netmask: "255.255.0.0", auto_config: false
+        sf1.vm.provider :libvirt do |libvirt|
+            libvirt.cpus = 2
+            libvirt.memory = 4096
+        end
+    end
+
 end
