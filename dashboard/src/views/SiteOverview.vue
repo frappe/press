@@ -27,6 +27,7 @@
 				:site="site"
 				:installedApps="overview.data.installed_apps"
 				@app-installed="$resources.overview.reload()"
+				@app-uninstalled="$resources.overview.reload()"
 			/>
 			<SiteOverviewDomains :site="site" />
 		</div>

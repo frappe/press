@@ -96,7 +96,9 @@ def has_permission(doc, ptype, user):
 
 	if not user:
 		user = frappe.session.user
-	if frappe.session.data.user_type == "System User":
+
+	user_type = frappe.db.get_value("User", user, "user_type", cache=True)
+	if user_type == "System User":
 		return True
 
 	if ptype == "create":
@@ -114,7 +116,9 @@ def get_permission_query_conditions_for_doctype_and_user(doctype, user):
 
 	if not user:
 		user = frappe.session.user
-	if frappe.session.data.user_type == "System User":
+
+	user_type = frappe.db.get_value("User", user, "user_type", cache=True)
+	if user_type == "System User":
 		return ""
 
 	team = get_current_team()

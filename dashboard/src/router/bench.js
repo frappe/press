@@ -1,11 +1,5 @@
 export default [
 	{
-		path: '/benches',
-		name: 'Benches',
-		component: () =>
-			import(/* webpackChunkName: "benches" */ '../views/Benches.vue')
-	},
-	{
 		path: '/benches/new',
 		name: 'NewBench',
 		component: () =>

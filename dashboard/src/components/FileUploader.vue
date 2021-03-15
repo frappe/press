@@ -46,7 +46,8 @@ export default {
 	},
 	computed: {
 		progress() {
-			return Math.floor((this.uploaded / this.total) * 100);
+			let value = Math.floor((this.uploaded / this.total) * 100);
+			return isNaN(value) ? 0 : value;
 		},
 		success() {
 			return this.finishedUploading && !this.error;

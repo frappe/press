@@ -1,65 +1,56 @@
 <template>
 	<div class="space-y-4">
-		<div>
-			<label class="flex items-baseline space-x-2" for="">
-				<div class="text-base font-medium">Showing analytics of last</div>
-				<select class="form-select" v-model="period">
-					<option
-						v-for="o in periodOptions"
-						:value="o"
-						:selected="period === o"
-						:key="o"
-					>
-						{{ o }}
-					</option>
-				</select>
-			</label>
-		</div>
-		<div class="grid grid-cols-1 gap-5 sm:grid-cols-2" v-if="analytics">
+		<ErrorMessage :error="$resources.analytics.error" />
+		<div
+			class="grid grid-cols-1 gap-5 sm:grid-cols-2"
+			v-if="$resources.analytics.data"
+		>
 			<Card title="Usage Counter">
-				<div ref="usage-counter"></div>
+				<FrappeChart
+					type="line"
+					:data="usageCounterData"
+					:colors="[$theme.colors.purple[500]]"
+					:options="getChartOptions(d => d + ' seconds')"
+				/>
 			</Card>
 
-			<Card title="Uptime">
-				<div>
-					<div class="mt-8" v-for="type in uptimeTypes" :key="type.key">
-						<div class="flex justify-between h-4">
-							<div
-								v-for="d in analytics.uptime"
-								:key="d.timestamp"
-								style="width: 2px;"
-								:class="[
-									d[type.key] === undefined
-										? 'bg-white'
-										: d[type.key] === 1
-										? 'bg-green-500'
-										: d[type.key] === 0
-										? 'bg-red-500'
-										: 'bg-yellow-500'
-								]"
-							></div>
-						</div>
-						<div class="flex justify-between mt-2 text-sm">
-							<span>
-								{{ type.label }}
-							</span>
-						</div>
-					</div>
-				</div>
-			</Card>
+			<SiteAnalyticsUptime
+				:data="$resources.analytics.data.uptime"
+				:colors="[$theme.colors.blue[500]]"
+			/>
 
 			<Card title="Requests">
-				<div ref="requests-per-minute"></div>
+				<FrappeChart
+					type="line"
+					:data="requestCountData"
+					:options="getChartOptions(d => d + ' requests')"
+					:colors="[$theme.colors.green[500]]"
+				/>
 			</Card>
 
 			<Card title="CPU Usage">
-				<div ref="requests-cpu-usage"></div>
+				<FrappeChart
+					type="line"
+					:data="requestTimeData"
+					:options="getChartOptions(d => d + ' s')"
+					:colors="[$theme.colors.yellow[500]]"
+				/>
 			</Card>
 			<Card title="Background Jobs">
-				<div ref="jobs-per-minute"></div>
+				<FrappeChart
+					type="line"
+					:data="jobCountData"
+					:options="getChartOptions(d => d + ' jobs')"
+					:colors="[$theme.colors.red[500]]"
+				/>
 			</Card>
 			<Card title="Background Jobs CPU Usage">
-				<div ref="jobs-cpu-usage"></div>
+				<FrappeChart
+					type="line"
+					:data="jobTimeData"
+					:options="getChartOptions(d => d + ' s')"
+					:colors="[$theme.colors.blue[500]]"
+				/>
 			</Card>
 		</div>
 	</div>
@@ -67,223 +58,107 @@
 
 <script>
 import { DateTime } from 'luxon';
-import { Chart } from 'frappe-charts/dist/frappe-charts.esm.js';
+import FrappeChart from '@/components/FrappeChart.vue';
+import SiteAnalyticsUptime from './SiteAnalyticsUptime.vue';
 
 export default {
 	name: 'SiteAnalytics',
 	props: ['site'],
-	data() {
-		return {
-			analytics: null,
-			period: '1 hour',
-			periodOptions: ['1 hour', '6 hours', '24 hours', '7 days'],
-			uptimeTypes: [
-				{ key: 'web', label: 'Web' },
-				{ key: 'scheduler', label: 'Scheduler' }
-				// { key: 'socketio', label: 'SocketIO' }
-			]
-		};
+	components: {
+		FrappeChart,
+		SiteAnalyticsUptime
 	},
-	watch: {
-		period() {
-			this.refreshCharts();
+	resources: {
+		analytics() {
+			let localTimezone = DateTime.local().zoneName;
+			return {
+				method: 'press.api.analytics.get',
+				params: {
+					name: this.site.name,
+					timezone: localTimezone
+				},
+				auto: true
+			};
 		}
 	},
-	mounted() {
-		this.refreshCharts();
+	computed: {
+		usageCounterData() {
+			let data = this.$resources.analytics.data?.usage_counter;
+			if (!data) return;
+
+			let plan_limit = this.$resources.analytics.data.plan_limit;
+			let values = data.map(d => d.value / 1000000);
+
+			return {
+				labels: this.formatDate(data),
+				datasets: [{ values }],
+				// show daily limit marker if usage crosses 50%
+				yMarkers: values.some(value => value > plan_limit / 2)
+					? [{ label: 'Daily CPU Time Limit', value: plan_limit }]
+					: null
+			};
+		},
+		requestCountData() {
+			let requestCount = this.$resources.analytics.data?.request_count;
+			if (!requestCount) return;
+
+			return {
+				labels: this.formatDate(requestCount),
+				datasets: [{ values: requestCount.map(d => d.value) }]
+			};
+		},
+		requestTimeData() {
+			let requestCpuTime = this.$resources.analytics.data?.request_cpu_time;
+			if (!requestCpuTime) return;
+
+			return {
+				labels: this.formatDate(requestCpuTime),
+				datasets: [{ values: requestCpuTime.map(d => d.value / 1000000) }]
+			};
+		},
+		jobCountData() {
+			let jobCount = this.$resources.analytics.data?.job_count;
+			if (!jobCount) return;
+
+			return {
+				labels: this.formatDate(jobCount),
+				datasets: [{ values: jobCount.map(d => d.value) }]
+			};
+		},
+		jobTimeData() {
+			let jobCpuTime = this.$resources.analytics.data?.job_cpu_time;
+			if (!jobCpuTime) return;
+
+			return {
+				labels: this.formatDate(jobCpuTime),
+				datasets: [{ values: jobCpuTime.map(d => d.value / 1000000) }]
+			};
+		}
 	},
 	methods: {
-		async fetchAnalytics() {
-			this.analytics = await this.$call('press.api.analytics.get', {
-				name: this.site.name,
-				period: this.period
-			});
-		},
-		async refreshCharts() {
-			await this.fetchAnalytics();
-			this.makeRequestsPerSecondChart();
-			this.makeJobsPerSecondChart();
-			this.makeCPUUsageChart();
-			this.makeJobCPUUsageChart();
-			this.makeUsageCounterChart();
-		},
-		makeRequestsPerSecondChart() {
-			new Chart(this.$refs['requests-per-minute'], {
-				data: {
-					labels: this.analytics.request_count.map(d => {
-						return {
-							timestamp: d.timestamp,
-							toString() {
-								return DateTime.fromSQL(d.timestamp).toFormat('hh:mm a');
-							}
-						};
-					}),
-					datasets: [{ values: this.analytics.request_count.map(d => d.value) }]
-				},
-				type: 'line',
-				colors: ['red'],
+		getChartOptions(yFormatter) {
+			return {
 				axisOptions: {
 					xIsSeries: true,
 					shortenYAxisNumbers: 1
 				},
 				lineOptions: {
 					hideDots: true,
-					spline: true
+					regionFill: true
 				},
 				tooltipOptions: {
 					formatTooltipX: d => {
-						return DateTime.fromSQL(d.timestamp).toFormat('dd-MM-yyyy hh:mm a');
+						return DateTime.fromSQL(d.date).toLocaleString(DateTime.DATE_MED);
 					},
-					formatTooltipY: d => d + ' requests'
+					formatTooltipY: yFormatter
 				}
-			});
+			};
 		},
-		makeJobsPerSecondChart() {
-			new Chart(this.$refs['jobs-per-minute'], {
-				data: {
-					labels: this.analytics.job_count.map(d => {
-						return {
-							timestamp: d.timestamp,
-							toString() {
-								return DateTime.fromSQL(d.timestamp).toFormat('hh:mm a');
-							}
-						};
-					}),
-					datasets: [{ values: this.analytics.job_count.map(d => d.value) }]
-				},
-				type: 'line',
-				colors: ['red'],
-				axisOptions: {
-					xIsSeries: true,
-					shortenYAxisNumbers: 1
-				},
-				lineOptions: {
-					hideDots: true,
-					spline: true
-				},
-				tooltipOptions: {
-					formatTooltipX: d => {
-						return DateTime.fromSQL(d.timestamp).toFormat('dd-MM-yyyy hh:mm a');
-					},
-					formatTooltipY: d => d + ' jobs'
-				}
-			});
-		},
-		makeCPUUsageChart() {
-			new Chart(this.$refs['requests-cpu-usage'], {
-				data: {
-					labels: this.analytics.request_cpu_time.map(d => {
-						return {
-							timestamp: d.timestamp,
-							toString() {
-								return DateTime.fromSQL(d.timestamp).toFormat('hh:mm a');
-							}
-						};
-					}),
-					datasets: [
-						{
-							values: this.analytics.request_cpu_time.map(
-								d => d.value / 1000000
-							)
-						}
-					]
-				},
-				type: 'line',
-				colors: ['blue'],
-				axisOptions: {
-					xIsSeries: true,
-					shortenYAxisNumbers: 1
-				},
-				lineOptions: {
-					hideDots: true,
-					spline: true
-				},
-				tooltipOptions: {
-					formatTooltipX: d => {
-						return DateTime.fromSQL(d.timestamp).toFormat('dd-MM-yyyy hh:mm a');
-					},
-					formatTooltipY: d => {
-						return d + ' s';
-					}
-				}
-			});
-		},
-		makeJobCPUUsageChart() {
-			new Chart(this.$refs['jobs-cpu-usage'], {
-				data: {
-					labels: this.analytics.job_cpu_time.map(d => {
-						return {
-							timestamp: d.timestamp,
-							toString() {
-								return DateTime.fromSQL(d.timestamp).toFormat('hh:mm a');
-							}
-						};
-					}),
-					datasets: [
-						{
-							values: this.analytics.job_cpu_time.map(d => d.value / 1000000)
-						}
-					]
-				},
-				type: 'line',
-				colors: ['blue'],
-				axisOptions: {
-					xIsSeries: true,
-					shortenYAxisNumbers: 1
-				},
-				lineOptions: {
-					hideDots: true,
-					spline: true
-				},
-				tooltipOptions: {
-					formatTooltipX: d => {
-						return DateTime.fromSQL(d.timestamp).toFormat('dd-MM-yyyy hh:mm a');
-					},
-					formatTooltipY: d => {
-						return d + 's';
-					}
-				}
-			});
-		},
-		makeUsageCounterChart() {
-			new Chart(this.$refs['usage-counter'], {
-				data: {
-					labels: this.analytics.usage_counter.map(d => {
-						return {
-							timestamp: d.timestamp,
-							toString() {
-								return DateTime.fromSQL(d.timestamp).toFormat('hh:mm a');
-							}
-						};
-					}),
-					datasets: [
-						{
-							values: this.analytics.usage_counter.map(d => d.value / 1000000)
-						}
-					],
-					yMarkers: [
-						{ label: 'Daily CPU Time Limit', value: this.analytics.plan_limit }
-					]
-				},
-				type: 'line',
-				colors: ['blue'],
-				axisOptions: {
-					xIsSeries: true,
-					shortenYAxisNumbers: 1
-				},
-				lineOptions: {
-					hideDots: true,
-					spline: true
-				},
-				tooltipOptions: {
-					formatTooltipX: d => {
-						return DateTime.fromSQL(d.timestamp).toFormat('dd-MM-yyyy hh:mm a');
-					},
-					formatTooltipY: d => {
-						return d + ' s';
-					}
-				}
-			});
+		formatDate(data) {
+			return data.map(d => ({
+				date: d.date,
+				toString: () => DateTime.fromSQL(d.date).toFormat('d MMM')
+			}));
 		}
 	}
 };

@@ -1,5 +1,9 @@
 <template>
-	<Dialog title="Update Billing Details" v-model="show">
+	<Dialog
+		title="Update Billing Details"
+		:show="show"
+		@change="value => $emit('change', value)"
+	>
 		<p class="text-base" v-if="message">
 			{{ message }}
 		</p>
@@ -31,13 +35,16 @@ import AddressForm from '@/components/AddressForm';
 
 export default {
 	name: 'UpdateBillingDetails',
-	props: ['message'],
+	props: ['message', 'show'],
+	model: {
+		prop: 'show',
+		event: 'change'
+	},
 	components: {
 		AddressForm
 	},
 	data() {
 		return {
-			show: true,
 			billingInformation: {
 				address: '',
 				city: '',
@@ -61,7 +68,7 @@ export default {
 						state: billingInformation.state,
 						postal_code: billingInformation.pincode,
 						country: billingInformation.country,
-						gstin: billingInformation.gstin,
+						gstin: billingInformation.gstin == 'Not Applicable' ? '' : billingInformation.gstin,
 						billing_name: billingInformation.billing_name
 					});
 				}
@@ -74,7 +81,7 @@ export default {
 					billing_details: this.billingInformation
 				},
 				onSuccess() {
-					this.show = false;
+					this.$emit('change', false);
 					this.$notify({
 						title: 'Address updated successfully!'
 					});

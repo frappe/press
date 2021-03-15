@@ -284,7 +284,7 @@ class Team(Document):
 		self.allocate_free_credits()
 
 	def get_payment_methods(self):
-		payment_methods = frappe.db.get_all(
+		return frappe.db.get_all(
 			"Stripe Payment Method",
 			{"team": self.name},
 			[
@@ -296,9 +296,8 @@ class Team(Document):
 				"is_default",
 				"creation",
 			],
+			order_by="creation desc"
 		)
-		if payment_methods:
-			return payment_methods
 
 	def get_past_invoices(self):
 		invoices = frappe.db.get_all(
@@ -309,6 +308,7 @@ class Team(Document):
 				"total",
 				"amount_due",
 				"status",
+				"type",
 				"stripe_invoice_url",
 				"period_start",
 				"period_end",
@@ -320,13 +320,8 @@ class Team(Document):
 			order_by="due_date desc",
 		)
 
-		print_format = frappe.get_meta("Invoice").default_print_format
 		for invoice in invoices:
 			invoice.formatted_total = frappe.utils.fmt_money(invoice.total, 2, invoice.currency)
-			if invoice.currency == "USD" and not invoice.invoice_pdf:
-				invoice.invoice_pdf = frappe.utils.get_url(
-					f"/api/method/frappe.utils.print_format.download_pdf?doctype=Invoice&name={invoice.name}&format={print_format}&no_letterhead=0"
-				)
 		return invoices
 
 	def allocate_credit_amount(self, amount, source, remark=None):
@@ -542,7 +537,9 @@ def get_permission_query_conditions(user):
 
 	if not user:
 		user = frappe.session.user
-	if frappe.session.data.user_type == "System User":
+
+	user_type = frappe.db.get_value("User", user, "user_type", cache=True)
+	if user_type == "System User":
 		return ""
 
 	team = get_current_team()
@@ -555,7 +552,9 @@ def has_permission(doc, ptype, user):
 
 	if not user:
 		user = frappe.session.user
-	if frappe.session.data.user_type == "System User":
+
+	user_type = frappe.db.get_value("User", user, "user_type", cache=True)
+	if user_type == "System User":
 		return True
 
 	team = get_current_team()
