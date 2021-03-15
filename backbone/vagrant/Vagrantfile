@@ -98,6 +98,20 @@ Vagrant.configure("2") do |config|
         registry.vm.network "private_network", ip: "10.1.4.101", netmask: "255.255.0.0"
     end
 
+    # Logs Server = Logstash + Kibana
+    config.vm.define "logs.frappe.dev" do |logs|
+        logs.vm.hostname = "logs.frappe.dev"
+        logs.vm.network "private_network", ip: "10.0.4.102", netmask: "255.255.0.0"
+        logs.vm.network "private_network", ip: "10.1.4.102", netmask: "255.255.0.0"
+    end
+
+    # Uptime Server = Prometheus + Grafana
+    config.vm.define "monitor.frappe.dev" do |uptime|
+        uptime.vm.hostname = "uptime.frappe.dev"
+        uptime.vm.network "private_network", ip: "10.0.4.103", netmask: "255.255.0.0"
+        uptime.vm.network "private_network", ip: "10.1.4.103", netmask: "255.255.0.0"
+    end
+
 
     config.vm.define "sn1.frappe.dev" do |sn1|
         sn1.vm.hostname = "sn1.frappe.dev"
