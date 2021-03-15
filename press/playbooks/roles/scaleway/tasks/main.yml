@@ -1,0 +1,29 @@
+---
+- name: Copy Authorized Keys from frappe to root User
+  copy:
+    src: files/sudoers
+    dest: /etc/sudoers.d/frappe
+    remote_src: yes
+
+- name: Create Netplan Configuration File
+  template:
+    src: netplan.yml
+    dest: /etc/netplan/99-press.yml
+
+- name: Generate Netplan Configuration
+  shell: netplan generate
+
+- name: Apply Netplan Configuration
+  shell: netplan
+
+- name: Disable Password Authentication
+  lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: "^PasswordAuthentication"
+    line: "PasswordAuthentication no"
+    state: present
+
+- name: Reload SSHD
+  service:
+    name: sshd
+    state: reloaded
