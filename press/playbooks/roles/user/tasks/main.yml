@@ -2,10 +2,10 @@
 - name: Create Frappe User
   user:
     name: frappe
-    groups:
-      - sudo
+    password: "!"
+    password_lock: yes
     shell: /bin/bash
-    append: yes
+    append: no
     uid: 1000
     generate_ssh_key: yes
 
