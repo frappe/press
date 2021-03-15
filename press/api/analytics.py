@@ -35,16 +35,12 @@ def get(name, timezone):
 	plan_limit = get_plan_config(plan)["rate_limit"]["limit"]
 	return {
 		"usage_counter": usage_data,
-		"request_count": [
-			{"value": r.request_count, "date": r.date} for r in request_data
-		],
+		"request_count": [{"value": r.request_count, "date": r.date} for r in request_data],
 		"request_cpu_time": [
 			{"value": r.request_duration, "date": r.date} for r in request_data
 		],
 		"job_count": [{"value": r.job_count, "date": r.date} for r in job_data],
-		"job_cpu_time": [
-			{"value": r.job_duration * 1000, "date": r.date} for r in job_data
-		],
+		"job_cpu_time": [{"value": r.job_duration * 1000, "date": r.date} for r in job_data],
 		"uptime": (uptime_data + [{}] * 60)[:60],
 		"plan_limit": plan_limit,
 	}
