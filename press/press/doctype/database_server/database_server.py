@@ -50,7 +50,7 @@ class DatabaseServer(Document):
 				variables={
 					"server": self.name,
 					"workers": "2",
-					"password": agent_password,
+					"agent_password": agent_password,
 					"private_ip": self.private_ip,
 					"server_id": self.server_id,
 					"mariadb_root_password": mariadb_root_password,

@@ -44,7 +44,7 @@ class ProxyServer(Document):
 					"server": self.name,
 					"workers": 1,
 					"domain": domain,
-					"password": agent_password,
+					"agent_password": agent_password,
 					"certificate_private_key": certificate.private_key,
 					"certificate_full_chain": certificate.full_chain,
 					"certificate_intermediate_chain": certificate.intermediate_chain,
