@@ -39,6 +39,29 @@ class BaseServer(Document):
 		agent = Agent(self.name)
 		return agent.update()
 
+	def prepare_scaleway_server(self):
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_prepare_scaleway_server", queue="long", timeout=1200
+		)
+
+	def _prepare_scaleway_server(self):
+		if self.provider == "Scaleway":
+			frappe_user_password = self.get_password("frappe_user_password")
+			try:
+				ansible = Ansible(
+					playbook="scaleway.yml",
+					server=self,
+					user="frappe",
+					variables={
+						"ansible_become_password": frappe_user_password,
+						"private_ip": self.private_ip,
+						"private_mac_address": self.private_mac_address,
+						"private_vlan_id": self.private_vlan_id,
+					},
+				)
+				ansible.run()
+			except Exception:
+				log_error("Server Preparation Exception - Scaleway", server=self.as_dict())
 
 	def setup_server(self):
 		self.status = "Installing"
