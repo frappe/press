@@ -4,16 +4,23 @@
 
 from __future__ import unicode_literals
 import frappe
-from frappe.model.document import Document
+from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
 from press.utils import log_error
 
 
-class RegistryServer(Document):
-	def autoname(self):
-		if not self.domain:
-			self.domain = frappe.db.get_single_value("Press Settings", "domain")
-		self.name = f"{self.hostname}.{self.domain}"
+class RegistryServer(BaseServer):
+	def validate(self):
+		self.validate_registry_username()
+		self.validate_registry_password()
+
+	def validate_registry_password(self):
+		if not self.registry_password:
+			self.registry_password = frappe.generate_hash(length=32)
+
+	def validate_registry_username(self):
+		if not self.registry_username:
+			self.registry_username = "frappe"
 
 	def _setup_server(self):
 		certificate_name = frappe.db.get_value(
@@ -45,22 +52,3 @@ class RegistryServer(Document):
 			self.status = "Broken"
 			log_error("Registry Server Setup Exception", server=self.as_dict())
 		self.save()
-
-	def setup_server(self):
-		self.status = "Installing"
-		self.save()
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_setup_server", queue="long", timeout=1200
-		)
-
-	def ping_ansible(self):
-		try:
-			ansible = Ansible(playbook="ping.yml", server=self)
-			ansible.run()
-		except Exception:
-			log_error("Registry Server Ping Exception", server=self.as_dict())
-
-	def on_trash(self):
-		plays = frappe.get_all("Ansible Play", filters={"server": self.name})
-		for play in plays:
-			frappe.delete_doc("Ansible Play", play.name)
