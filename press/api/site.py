@@ -47,6 +47,7 @@ def protected(doctype):
 @frappe.whitelist()
 def new(site):
 	team = get_current_team(get_doc=True)
+	files = site.get("files", {})
 	bench = frappe.db.sql(
 		"""
 	SELECT
@@ -76,10 +77,10 @@ def new(site):
 			"team": team.name,
 			"free": team.free_account,
 			"subscription_plan": plan,
-			"remote_config_file": site["files"].get("config"),
-			"remote_database_file": site["files"].get("database"),
-			"remote_public_file": site["files"].get("public"),
-			"remote_private_file": site["files"].get("private"),
+			"remote_config_file": files.get("config"),
+			"remote_database_file": files.get("database"),
+			"remote_public_file": files.get("public"),
+			"remote_private_file": files.get("private"),
 		},
 	).insert(ignore_permissions=True)
 	if not team.free_account:
