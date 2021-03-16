@@ -10,7 +10,12 @@
   "email",
   "role",
   "invited_by",
-  "ip_address"
+  "ip_address",
+  "country",
+  "first_name",
+  "last_name",
+  "phone_number",
+  "subdomain"
  ],
  "fields": [
   {
@@ -42,12 +47,37 @@
    "fieldname": "ip_address",
    "fieldtype": "Data",
    "label": "IP Address"
+  },
+  {
+   "fieldname": "country",
+   "fieldtype": "Data",
+   "label": "Country"
+  },
+  {
+   "fieldname": "first_name",
+   "fieldtype": "Data",
+   "label": "First Name"
+  },
+  {
+   "fieldname": "last_name",
+   "fieldtype": "Data",
+   "label": "Last Name"
+  },
+  {
+   "fieldname": "phone_number",
+   "fieldtype": "Data",
+   "label": "Phone Number"
+  },
+  {
+   "fieldname": "subdomain",
+   "fieldtype": "Data",
+   "label": "Subdomain"
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-02-15 10:45:50.580419",
+ "modified": "2021-03-16 15:44:07.345069",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",

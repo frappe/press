@@ -134,7 +134,7 @@ def get_account_request_from_key(key):
 			"request_key": key,
 			"creation": (">", datetime.now() - timedelta(seconds=minutes * 60)),
 		},
-		fields=["name", "email", "team", "role"],
+		fields=["*"],
 		order_by="creation desc",
 		limit=1,
 	)
