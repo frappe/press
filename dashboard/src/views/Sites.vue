@@ -1,17 +1,9 @@
 <template>
-	<div class="pt-4">
-		<PageHeader>
-			<h1 slot="title">Sites</h1>
-			<div class="flex items-center" slot="actions">
-				<Button route="/sites/new" type="primary" iconLeft="plus">
-					New Site
-				</Button>
-			</div>
-		</PageHeader>
-		<div class="px-4 py-4 sm:px-8">
+	<div class="pb-20 mt-8">
+		<div class="px-4 sm:px-8">
 			<div
 				class="p-24 text-center"
-				v-if="$resources.sites.data && $resources.sites.data.length === 0"
+				v-if="$resources.groups.data && $resources.groups.data.length === 0"
 			>
 				<div class="text-xl text-gray-800">
 					You haven't created any sites yet.
@@ -20,51 +12,69 @@
 					Create your first Site
 				</Button>
 			</div>
-			<div v-else>
-				<div
-					class="grid items-center grid-cols-2 gap-12 py-4 text-sm text-gray-600 border-b md:grid-cols-4"
-				>
-					<span>Site Name</span>
-					<span class="text-right md:text-center">Status</span>
-					<span class="hidden text-right md:inline">Active Since</span>
-					<span class="hidden md:inline"></span>
+			<div class="space-y-8" v-else>
+				<div v-for="group in groups" :key="group.name">
+					<PageHeader class="mb-2 -mx-4 sm:-mx-8">
+						<h2 slot="title">
+							{{ getGroupTitle(group) }}
+						</h2>
+						<div class="flex items-center space-x-2" slot="actions">
+							<Button v-if="!group.public" :route="`/benches/${group.name}`">
+								Manage Bench
+							</Button>
+							<Button
+								:route="
+									`/sites/new${!group.public ? `?bench=${group.name}` : ''}`
+								"
+								type="primary"
+								iconLeft="plus"
+							>
+								New Site
+							</Button>
+						</div>
+					</PageHeader>
+					<template v-if="group.sites.length">
+						<router-link
+							class="grid items-center grid-cols-2 gap-12 py-4 text-base border-b md:grid-cols-4 hover:bg-gray-50 focus:outline-none focus:shadow-outline"
+							v-for="site in group.sites"
+							:key="site.name"
+							:to="'/sites/' + site.name"
+						>
+							<span class="">{{ site.name }}</span>
+							<span class="text-right md:text-center">
+								<Badge v-bind="siteStatus(site)" />
+							</span>
+							<FormatDate class="hidden text-right md:block" type="relative">
+								{{ site.creation }}
+							</FormatDate>
+							<span class="hidden text-right md:inline">
+								<Badge
+									v-if="
+										(site.status === 'Active' ||
+											site.status === 'Inactive' ||
+											site.status === 'Suspended') &&
+											site.update_available
+									"
+									:status="'Update Available'"
+									class="mr-4"
+								/>
+								<a
+									v-if="site.status === 'Active' || site.status === 'Updating'"
+									:href="`https://${site.name}`"
+									target="_blank"
+									class="inline-flex items-baseline text-sm text-blue-500 hover:underline"
+									@click.stop
+								>
+									Visit Site
+									<FeatherIcon name="external-link" class="w-3 h-3 ml-1" />
+								</a>
+							</span>
+						</router-link>
+					</template>
+					<div class="text-base text-gray-600" v-else>
+						No sites in this bench
+					</div>
 				</div>
-				<router-link
-					class="grid items-center grid-cols-2 gap-12 py-4 text-base border-b md:grid-cols-4 hover:bg-gray-50 focus:outline-none focus:shadow-outline"
-					v-for="site in $resources.sites.data"
-					:key="site.name"
-					:to="'/sites/' + site.name"
-				>
-					<span class="">{{ site.name }}</span>
-					<span class="text-right md:text-center">
-						<Badge v-bind="siteStatus(site)" />
-					</span>
-					<FormatDate class="hidden text-right md:block" type="relative">
-						{{ site.creation }}
-					</FormatDate>
-					<span class="hidden text-right md:inline">
-						<Badge
-							v-if="
-								(site.status === 'Active' ||
-									site.status === 'Inactive' ||
-									site.status === 'Suspended') &&
-									site.update_available
-							"
-							:status="'Update Available'"
-							class="mr-4"
-						/>
-						<a
-							v-if="site.status === 'Active' || site.status === 'Updating'"
-							:href="`https://${site.name}`"
-							target="_blank"
-							class="inline-flex items-baseline text-sm text-blue-500 hover:underline"
-							>Visit Site<FeatherIcon
-								name="external-link"
-								class="w-3 h-3 ml-1"
-							/>
-						</a>
-					</span>
-				</router-link>
 			</div>
 		</div>
 	</div>
@@ -74,10 +84,32 @@
 export default {
 	name: 'Sites',
 	resources: {
-		sites: 'press.api.site.all'
+		groups: 'press.api.site.all'
 	},
 	mounted() {
 		this.setupSocketListener();
+	},
+	computed: {
+		groups() {
+			if (!this.$resources.groups.data) return [];
+
+			let sharedBench = {
+				name: 'shared-bench',
+				title: 'Shared Bench',
+				public: true,
+				sites: []
+			};
+			this.$resources.groups.data
+				.filter(group => group.public)
+				.forEach(group => {
+					sharedBench.sites = sharedBench.sites.concat(group.sites);
+				});
+
+			return [
+				sharedBench,
+				...this.$resources.groups.data.filter(group => !group.public)
+			];
+		}
 	},
 	methods: {
 		setupSocketListener() {
@@ -87,7 +119,7 @@ export default {
 			this.$socket.on('agent_job_update', data => {
 				if (data.name === 'New Site' || data.name === 'New Site from Backup') {
 					if (data.status === 'Success') {
-						this.$resources.sites.reload();
+						this.$resources.groups.reload();
 						this.$notify({
 							title: 'Site creation complete!',
 							message: 'Login to your site and complete the setup wizard',
@@ -100,9 +132,18 @@ export default {
 
 			this.$socket.on('list_update', ({ doctype }) => {
 				if (doctype === 'Site') {
-					this.$resources.sites.reload();
+					this.$resources.groups.reload();
 				}
 			});
+		},
+		getGroupTitle(group) {
+			let privateBenches = (this.$resources.groups.data || []).filter(
+				group => !group.public
+			);
+			if (privateBenches.length === 0) {
+				return 'Sites';
+			}
+			return group.title;
 		},
 		relativeDate(dateString) {
 			return dateString;
