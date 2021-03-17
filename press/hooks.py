@@ -148,7 +148,7 @@ scheduler_events = {
 		"press.press.cleanup.remove_logs",
 		"press.press.doctype.team.suspend_sites.execute",
 		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
-		"press.press.doctype.invoice.invoice.submit_invoices",
+		"press.press.doctype.invoice.invoice.finalize_draft_invoices",
 	],
 	"hourly": [
 		"press.press.doctype.app.app.poll_new_releases",

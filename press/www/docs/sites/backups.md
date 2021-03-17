@@ -28,3 +28,27 @@ You can also trigger a manual backup operation for your site anytime from the
 **Backups** tab by clicking on the **Schedule Backup with Files** button.
 
 The job will be queued and it will take a few minutes to complete.
+
+## Backup Rotation
+
+### Offsite
+
+The offsite backups on Frappe Cloud are rotated in a scheme known as
+Grandfather-father-son. This is done to store backups efficiently.
+With the current scheme, for every day we store:
+
+- 7 daily backups
+- 4 weekly backups
+- 12 monthly backups
+- 10 yearly backups
+
+If the current day is Jan 13, then the backups available will be like so:
+
+![Offsite Backups](/assets/press/images/docs/calendar.png)
+
+(Monthly and yearly backups before December 2020 not shown in picture)  
+
+- Weekly backups are taken every Sunday
+- Monthly backups taken every 1st day of the month
+- Yearly backups taken every 1st day of the year
+

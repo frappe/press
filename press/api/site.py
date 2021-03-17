@@ -353,10 +353,41 @@ def all():
 	)
 	benches_with_updates = set(benches_with_available_update())
 	for site in sites:
-		if site.bench in benches_with_updates:
+		if site.bench in benches_with_updates and should_try_update(site):
 			site.update_available = True
 
-	return sites
+	benches = frappe.db.get_all(
+		"Bench",
+		fields=["name", "group"],
+		filters={"name": ("in", set([site.bench for site in sites]))},
+	)
+
+	public_groups = frappe.db.get_all(
+		"Release Group",
+		fields=["name", "title", "creation", "version", "team", "public"],
+		filters={
+			"enabled": True,
+			"name": ("in", set([bench.group for bench in benches])),
+			"public": True,
+		},
+		order_by="creation desc",
+	)
+	private_groups = frappe.db.get_all(
+		"Release Group",
+		fields=["name", "title", "creation", "version", "team", "public"],
+		filters={"enabled": True, "team": get_current_team(), "public": False,},
+		order_by="creation desc",
+	)
+	groups = public_groups + private_groups
+
+	for group in groups:
+		group.benches = [bench for bench in benches if bench.group == group.name]
+
+		group.sites = []
+		for bench in group.benches:
+			group.sites += [site for site in sites if site.bench == bench.name]
+
+	return groups
 
 
 @frappe.whitelist()
