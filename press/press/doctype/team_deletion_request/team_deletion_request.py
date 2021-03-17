@@ -46,6 +46,20 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 	def before_insert(self):
 		self.validate_duplicate_request()
 
+	def after_insert(self):
+		url = self.generate_url_for_confirmation()
+
+		frappe.sendmail(
+			recipients=self.email,
+			subject="Account Deletion Request",
+			template="delete_team_confirmation",
+			args={
+				"team": self.team,
+				"link": url,
+			},
+			header=["Account Deletion Request", "green"],
+		)
+
 	def validate(self):
 		self.validate_sites_states()
 		self.validate_outstanding_invoices()

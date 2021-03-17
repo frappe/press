@@ -90,6 +90,15 @@ def setup_account(
 	frappe.local.login_manager.login_as(email)
 
 
+@frappe.whitelist()
+def request_team_deletion():
+	team = get_current_team()
+	doc = frappe.get_doc(
+		{"doctype": "Team Deletion Request", "team": team}
+	).insert()
+	return doc.name
+
+
 @frappe.whitelist(allow_guest=True)
 def delete_team(team):
 	from frappe.utils.verified_command import verify_request
