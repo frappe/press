@@ -234,9 +234,6 @@ class Invoice(Document):
 			else:
 				row.amount = row.quantity * row.rate
 
-			if row.type == "Balance Transaction":
-				row.description = "Prepaid Credits"
-
 	def validate_amount(self):
 		total = 0
 		for item in self.items:
@@ -272,9 +269,8 @@ class Invoice(Document):
 		# sort by ascending for FIFO
 		unallocated_balances.reverse()
 
-		total_allocated = cint(self.applied_credits or 0)
-		due = cint(self.amount_due or self.total)
-
+		total_allocated = 0
+		due = self.total
 		for balance in unallocated_balances:
 			if due == 0:
 				break
@@ -485,12 +481,12 @@ def submit_invoices():
 
 	# get draft invoices whose period has ended before
 	today = frappe.utils.today()
-	draft_invoices = frappe.db.get_all(
+	invoices = frappe.db.get_all(
 		"Invoice",
 		{"status": "Draft", "period_end": ("<", today), "total": (">", 0)},
 		pluck="name",
 	)
-	for name in draft_invoices:
+	for name in invoices:
 		invoice = frappe.get_doc("Invoice", name)
 		submit_invoice(invoice)
 
@@ -510,36 +506,6 @@ def submit_invoice(invoice):
 		log_error(
 			"Invoice creation for next month failed", invoice=invoice.name,
 		)
-
-
-def update_unpaid_invoices():
-	"""This function will run everyday and consume credits if they exist against Unpaid invoices
-
-	Use Case: Customer adds credits to their account after invoices have already been submitted
-	"""
-
-	today = frappe.utils.today()
-	unpaid_invoices = frappe.db.get_all(
-		"Invoice",
-		{"status": "Unpaid", "period_end": ("<", today), "total": (">", 0)},
-		pluck="name",
-	)
-
-	for name in unpaid_invoices:
-		invoice = frappe.get_doc("Invoice", name)
-		update_invoice(invoice)
-
-
-def update_invoice(invoice):
-	try:
-		invoice.apply_credit_balance()
-		if invoice.amount_due == 0:
-			invoice.status = "Paid"
-		invoice.save()
-		frappe.db.commit()
-	except Exception:
-		frappe.db.rollback()
-		log_error("Invoice Update Failed", invoice=invoice.name)
 
 
 def process_stripe_webhook(doc, method):

@@ -191,17 +191,13 @@ class Team(Document):
 	def has_member(self, user):
 		return user in self.get_user_list()
 
-	def is_defaulter(self) -> bool:
+	def is_defaulter(self):
 		if self.free_account:
-			return False
+			return
 
-		try:
-			last_invoice = frappe.get_last_doc(
-				"Invoice", filters={"docstatus": 1, "team": self.name}
-			)
-		except frappe.DoesNotExistError:
-			return False
-
+		last_invoice = frappe.get_last_doc(
+			"Invoice", filters={"docstatus": 1, "team": self.name}
+		)
 		return last_invoice.status == "Unpaid"
 
 	def create_stripe_customer(self):
