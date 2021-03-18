@@ -5,30 +5,12 @@
 from __future__ import unicode_literals
 
 import frappe
-from frappe.model.document import Document
-from press.press.doctype.agent_job.agent_job import Agent
+from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
 from press.utils import log_error
 
 
-class ProxyServer(Document):
-	def autoname(self):
-		if not self.domain:
-			self.domain = frappe.db.get_single_value("Press Settings", "domain")
-		self.name = f"{self.hostname}.{self.domain}"
-
-	def validate(self):
-		if self.is_new() and not self.cluster:
-			self.cluster = frappe.db.get_value("Cluster", {"default": True})
-
-	def ping_agent(self):
-		agent = Agent(self.name, server_type="Proxy Server")
-		return agent.ping()
-
-	def update_agent(self):
-		agent = Agent(self.name, server_type="Proxy Server")
-		return agent.update()
-
+class ProxyServer(BaseServer):
 	def _setup_server(self):
 		agent_password = self.get_password("agent_password")
 		domain = frappe.db.get_value("Press Settings", "Press Settings", "domain")
@@ -44,7 +26,7 @@ class ProxyServer(Document):
 					"server": self.name,
 					"workers": 1,
 					"domain": domain,
-					"password": agent_password,
+					"agent_password": agent_password,
 					"certificate_private_key": certificate.private_key,
 					"certificate_full_chain": certificate.full_chain,
 					"certificate_intermediate_chain": certificate.intermediate_chain,
@@ -61,17 +43,3 @@ class ProxyServer(Document):
 			self.status = "Broken"
 			log_error("Proxy Server Setup Exception", server=self.as_dict())
 		self.save()
-
-	def setup_server(self):
-		self.status = "Installing"
-		self.save()
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_setup_server", queue="long", timeout=1200
-		)
-
-	def ping_ansible(self):
-		try:
-			ansible = Ansible(playbook="ping.yml", server=self)
-			ansible.run()
-		except Exception:
-			log_error("Proxy Server Ping Exception", server=self.as_dict())

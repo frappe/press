@@ -26,10 +26,14 @@ def setup():
 
 @hypervisor.command()
 @click.option("--size", default=16384, type=int)
-def build(size):
+@click.option("--scaleway", is_flag=True)
+def build(size, scaleway):
 	shell = Shell()
 	hypervisor = Hypervisor(shell=shell)
-	hypervisor.build(size=size)
+	if scaleway:
+		hypervisor.build_scaleway(size=size)
+	else:
+		hypervisor.build(size=size)
 
 
 @hypervisor.command()
