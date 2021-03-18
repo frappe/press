@@ -17,7 +17,7 @@ class PressSettings(Document):
 
 	def _obtain_root_domain_tls_certificate(self):
 		try:
-			certificate = frappe.get_doc(
+			frappe.get_doc(
 				{
 					"doctype": "TLS Certificate",
 					"wildcard": True,
@@ -25,8 +25,6 @@ class PressSettings(Document):
 					"rsa_key_size": self.rsa_key_size,
 				}
 			).insert()
-			self.wildcard_tls_certificate = certificate.name
-			self.save()
 		except Exception:
 			log_error("Root Domain TLS Exception")
 

@@ -16,13 +16,10 @@
   "lets_encrypt_section",
   "certbot_directory",
   "webroot_directory",
+  "rsa_key_size",
   "column_break_15",
   "eff_registration_email",
   "use_staging_ca",
-  "tls_section",
-  "rsa_key_size",
-  "column_break_11",
-  "wildcard_tls_certificate",
   "backbone_section",
   "backbone_directory",
   "column_break_20",
@@ -159,10 +156,6 @@
    "label": "EFF Registration Email"
   },
   {
-   "fieldname": "column_break_11",
-   "fieldtype": "Column Break"
-  },
-  {
    "fieldname": "webroot_directory",
    "fieldtype": "Data",
    "label": "Webroot Directory"
@@ -171,18 +164,6 @@
    "fieldname": "certbot_directory",
    "fieldtype": "Data",
    "label": "Certbot Directory"
-  },
-  {
-   "collapsible": 1,
-   "fieldname": "tls_section",
-   "fieldtype": "Section Break",
-   "label": "TLS"
-  },
-  {
-   "fieldname": "wildcard_tls_certificate",
-   "fieldtype": "Link",
-   "label": "Wildcard TLS Certificate",
-   "options": "TLS Certificate"
   },
   {
    "fieldname": "stripe_account",
@@ -628,7 +609,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2021-02-01 17:45:38.860817",
+ "modified": "2021-03-18 10:55:21.857736",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
