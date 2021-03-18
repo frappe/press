@@ -144,7 +144,7 @@ class AnsibleCallback(CallbackBase):
 
 
 class Ansible:
-	def __init__(self, server, playbook, variables=None):
+	def __init__(self, server, playbook, user="root", variables=None):
 		self.patch()
 		self.server = server
 		self.playbook = playbook
@@ -158,7 +158,7 @@ class Ansible:
 			connection="ssh",
 			# This is the only way to pass variables that preserves newlines
 			extra_vars=[f"{key}='{value}'" for key, value in self.variables.items()],
-			remote_user="root",
+			remote_user=user,
 			start_at_task=None,
 			syntax=False,
 			verbosity=3,

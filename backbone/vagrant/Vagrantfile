@@ -1,5 +1,6 @@
 Vagrant.configure("2") do |config|
     config.vm.box = "backbone"
+    # config.vm.box = "scaleway"
     config.vm.synced_folder ".", "/vagrant", disabled: true
 
     # This let's us access all guests with their names from host and other guests
@@ -29,12 +30,16 @@ Vagrant.configure("2") do |config|
 
     # We'll start IPs from x.x.x.101
 
+    # Default Cluster
+
+    # Reverse Proxy Server
     config.vm.define "n1.local.frappe.dev" do |n1|
         n1.vm.hostname = "n1.local.frappe.dev"
         n1.vm.network "private_network", ip: "10.0.1.101", netmask: "255.255.0.0"
         n1.vm.network "private_network", ip: "10.1.1.101", netmask: "255.255.0.0"
     end
 
+    # Primary App Server
     config.vm.define "f1.local.frappe.dev" do |f1|
         f1.vm.hostname = "f1.local.frappe.dev"
         f1.vm.network "private_network", ip: "10.0.2.101", netmask: "255.255.0.0"
@@ -45,6 +50,7 @@ Vagrant.configure("2") do |config|
         end
     end
 
+    # Replica of f1
     config.vm.define "f2.local.frappe.dev" do |f2|
         f2.vm.hostname = "f2.local.frappe.dev"
         f2.vm.network "private_network", ip: "10.0.2.102", netmask: "255.255.0.0"
@@ -55,6 +61,7 @@ Vagrant.configure("2") do |config|
         end
     end
 
+    # Primary DB Server
     config.vm.define "m1.local.frappe.dev" do |m1|
         m1.vm.hostname = "m1.local.frappe.dev"
         m1.vm.network "private_network", ip: "10.0.3.101", netmask: "255.255.0.0"
@@ -65,6 +72,7 @@ Vagrant.configure("2") do |config|
         end
     end
 
+    # Replica of m1
     config.vm.define "m2.local.frappe.dev" do |m2|
         m2.vm.hostname = "m2.local.frappe.dev"
         m2.vm.network "private_network", ip: "10.0.3.102", netmask: "255.255.0.0"
@@ -75,12 +83,51 @@ Vagrant.configure("2") do |config|
         end
     end
 
-    # Additional Hosts
+    # # Secondary Cluster
+    # config.vm.define "n2.frappe.dev" do |n2|
+    #     n2.vm.hostname = "n2.frappe.dev"
+    #     n2.vm.network "private_network", ip: "10.0.1.102", netmask: "255.255.0.0"
+    #     n2.vm.network "private_network", ip: "10.1.1.102", netmask: "255.255.0.0"
+    # end
+
+    # Additional Hosts.
+
     # Docker Registry
     config.vm.define "registry.local.frappe.dev" do |registry|
         registry.vm.hostname = "registry.local.frappe.dev"
         registry.vm.network "private_network", ip: "10.0.4.101", netmask: "255.255.0.0"
         registry.vm.network "private_network", ip: "10.1.4.101", netmask: "255.255.0.0"
+    end
+
+    # Logs Server = Logstash + Kibana
+    config.vm.define "logs.local.frappe.dev" do |logs|
+        logs.vm.hostname = "logs.local.frappe.dev"
+        logs.vm.network "private_network", ip: "10.0.4.102", netmask: "255.255.0.0"
+        logs.vm.network "private_network", ip: "10.1.4.102", netmask: "255.255.0.0"
+    end
+
+    # Uptime Server = Prometheus + Grafana
+    config.vm.define "monitor.local.frappe.dev" do |uptime|
+        uptime.vm.hostname = "uptime.local.frappe.dev"
+        uptime.vm.network "private_network", ip: "10.0.4.103", netmask: "255.255.0.0"
+        uptime.vm.network "private_network", ip: "10.1.4.103", netmask: "255.255.0.0"
+    end
+
+
+    config.vm.define "sn1.local.frappe.dev" do |sn1|
+        sn1.vm.hostname = "sn1.local.frappe.dev"
+        sn1.vm.network "private_network", ip: "10.2.0.101", netmask: "255.255.0.0"
+        sn1.vm.network "private_network", ip: "10.3.0.101", netmask: "255.255.0.0", auto_config: false
+    end
+
+    config.vm.define "sf1.local.frappe.dev" do |sf1|
+        sf1.vm.hostname = "sf1.local.frappe.dev"
+        sf1.vm.network "private_network", ip: "10.2.1.101", netmask: "255.255.0.0"
+        sf1.vm.network "private_network", ip: "10.3.1.101", netmask: "255.255.0.0", auto_config: false
+        sf1.vm.provider :libvirt do |libvirt|
+            libvirt.cpus = 2
+            libvirt.memory = 4096
+        end
     end
 
 end

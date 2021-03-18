@@ -145,6 +145,7 @@ backbone/packer/builds/
 backbone/packer/scratch/
 backbone/packer/images/
 backbone/packer/cloud-init.img
+backbone/packer/cloud-init-scaleway.img
 
 # marketplace
 press/public/css/marketplace.css

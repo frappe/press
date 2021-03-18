@@ -19,7 +19,7 @@
       "qemuargs": [
         [
           "-fda",
-          "{{template_dir}}/cloud-init.img"
+          "{{template_dir}}/cloud-init-scaleway.img"
         ]
       ],
       "shutdown_command": "echo 'vagrant' | sudo -S shutdown -P now",
@@ -27,12 +27,12 @@
       "ssh_username": "vagrant",
       "type": "qemu",
       "use_backing_file": false,
-      "vm_name": "backbone"
+      "vm_name": "scaleway"
     }
   ],
   "post-processors": [
     {
-      "output": "{{template_dir}}/builds/backbone.box",
+      "output": "{{template_dir}}/builds/scaleway.box",
       "type": "vagrant"
     }
   ],
@@ -42,6 +42,7 @@
       "expect_disconnect": true,
       "scripts": [
         "{{template_dir}}/scripts/sshd.sh",
+        "{{template_dir}}/scripts/scaleway-sshd.sh",
         "{{template_dir}}/scripts/networking.sh",
         "{{template_dir}}/scripts/update.sh",
         "{{template_dir}}/scripts/cleanup.sh",

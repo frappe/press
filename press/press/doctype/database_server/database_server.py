@@ -4,19 +4,22 @@
 
 from __future__ import unicode_literals
 import frappe
-from frappe.model.document import Document
-from press.agent import Agent
+from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
 from press.utils import log_error
 
 
-class DatabaseServer(Document):
-	def autoname(self):
-		if not self.domain:
-			self.domain = frappe.db.get_single_value("Press Settings", "domain")
-		self.name = f"{self.hostname}.{self.domain}"
-
+class DatabaseServer(BaseServer):
 	def validate(self):
+		super().validate()
+		self.validate_mariadb_root_password()
+		self.validate_server_id()
+
+	def validate_mariadb_root_password(self):
+		if not self.mariadb_root_password:
+			self.mariadb_root_password = frappe.generate_hash(length=16)
+
+	def validate_server_id(self):
 		if self.is_new() and not self.server_id:
 			server_ids = frappe.get_all(
 				"Database Server", fields=["server_id"], pluck="server_id"
@@ -25,16 +28,6 @@ class DatabaseServer(Document):
 				self.server_id = max(server_ids or []) + 1
 			else:
 				self.server_id = 1
-		if self.is_new() and not self.cluster:
-			self.cluster = frappe.db.get_value("Cluster", {"default": True})
-
-	def ping_agent(self):
-		agent = Agent(self.name, server_type=self.doctype)
-		return agent.ping()
-
-	def update_agent(self):
-		agent = Agent(self.name, server_type=self.doctype)
-		return agent.update()
 
 	def _setup_server(self):
 		agent_password = self.get_password("agent_password")
@@ -50,7 +43,7 @@ class DatabaseServer(Document):
 				variables={
 					"server": self.name,
 					"workers": "2",
-					"password": agent_password,
+					"agent_password": agent_password,
 					"private_ip": self.private_ip,
 					"server_id": self.server_id,
 					"mariadb_root_password": mariadb_root_password,
@@ -70,13 +63,6 @@ class DatabaseServer(Document):
 			self.status = "Broken"
 			log_error("Database Server Setup Exception", server=self.as_dict())
 		self.save()
-
-	def setup_server(self):
-		self.status = "Installing"
-		self.save()
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_setup_server", queue="long", timeout=1200
-		)
 
 	def _setup_primary(self, secondary):
 		mariadb_root_password = self.get_password("mariadb_root_password")
@@ -178,14 +164,6 @@ class DatabaseServer(Document):
 		frappe.enqueue_doc(
 			self.doctype, self.name, "_trigger_failover", queue="long", timeout=1200
 		)
-
-	def ping_ansible(self):
-		try:
-			ansible = Ansible(playbook="ping.yml", server=self)
-			ansible.run()
-
-		except Exception:
-			log_error("Database Server Ping Exception", server=self.as_dict())
 
 	def _convert_from_frappe_server(self):
 		mariadb_root_password = self.get_password("mariadb_root_password")
