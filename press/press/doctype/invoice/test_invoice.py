@@ -34,7 +34,7 @@ class TestInvoice(unittest.TestCase):
 		self.assertEqual(invoice.total, 60)
 
 		with patch.object(invoice, "create_stripe_invoice", return_value=None):
-			invoice.submit()
+			invoice.finalize_invoice()
 
 		self.assertEqual(invoice.amount_due, 60)
 
@@ -94,7 +94,7 @@ class TestInvoice(unittest.TestCase):
 		invoice.reload()
 
 		with patch.object(invoice, "create_stripe_invoice", return_value=None):
-			invoice.submit()
+			invoice.finalize_invoice()
 
 		self.assertEqual(team.get_balance(), 0)
 		self.assertEqual(invoice.total, 60)
@@ -125,7 +125,7 @@ class TestInvoice(unittest.TestCase):
 		invoice.reload()
 
 		with patch.object(invoice, "create_stripe_invoice", return_value=None):
-			invoice.submit()
+			invoice.finalize_invoice()
 
 		self.assertEqual(team.get_balance(), 10)
 		self.assertEqual(invoice.total, 60)
@@ -155,7 +155,7 @@ class TestInvoice(unittest.TestCase):
 		self.assertEqual(team.get_balance(), 1100)
 
 		with patch.object(invoice, "create_stripe_invoice", return_value=None):
-			invoice.submit()
+			invoice.finalize_invoice()
 
 		self.assertEqual(invoice.total, 600)
 		self.assertEqual(team.get_balance(), 1100 - 600)
@@ -180,7 +180,7 @@ class TestInvoice(unittest.TestCase):
 		).insert()
 
 		with patch.object(invoice2, "create_stripe_invoice", return_value=None):
-			invoice2.submit()
+			invoice2.finalize_invoice()
 		invoice2.reload()
 
 		self.assertEqual(invoice2.total, 700)
@@ -213,7 +213,7 @@ class TestInvoice(unittest.TestCase):
 		).insert()
 
 		with patch.object(invoice, "create_stripe_invoice", return_value=None):
-			invoice.submit()
+			invoice.finalize_invoice()
 
 		self.assertEqual(invoice.total, 600)
 		self.assertEqual(team.get_balance(), 1100 - 600)
