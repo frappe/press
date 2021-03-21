@@ -374,7 +374,7 @@ def all():
 	private_groups = frappe.db.get_all(
 		"Release Group",
 		fields=["name", "title", "creation", "version", "team", "public"],
-		filters={"enabled": True, "team": get_current_team(), "public": False,},
+		filters={"enabled": True, "team": get_current_team(), "public": False},
 		order_by="creation desc",
 	)
 	groups = public_groups + private_groups
