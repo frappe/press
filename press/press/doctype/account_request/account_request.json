@@ -8,6 +8,7 @@
   "request_key",
   "team",
   "email",
+  "erpnext",
   "role",
   "invited_by",
   "ip_address",
@@ -15,7 +16,12 @@
   "first_name",
   "last_name",
   "phone_number",
-  "subdomain"
+  "subdomain",
+  "domain",
+  "users",
+  "company",
+  "designation",
+  "referral_source"
  ],
  "fields": [
   {
@@ -72,12 +78,43 @@
    "fieldname": "subdomain",
    "fieldtype": "Data",
    "label": "Subdomain"
+  },
+  {
+   "default": "0",
+   "fieldname": "erpnext",
+   "fieldtype": "Check",
+   "label": "ERPNext"
+  },
+  {
+   "fieldname": "domain",
+   "fieldtype": "Data",
+   "label": "Domain"
+  },
+  {
+   "fieldname": "users",
+   "fieldtype": "Int",
+   "label": "Users"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Data",
+   "label": "Company"
+  },
+  {
+   "fieldname": "designation",
+   "fieldtype": "Data",
+   "label": "Designation"
+  },
+  {
+   "fieldname": "referral_source",
+   "fieldtype": "Data",
+   "label": "Referral Source"
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-03-16 15:44:07.345069",
+ "modified": "2021-03-18 15:16:30.062962",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",
