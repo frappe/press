@@ -21,7 +21,7 @@
 				<div>
 					<div>
 						{{
-							$date(invoice.due_date).toLocaleString({
+							$date(invoice.date).toLocaleString({
 								month: 'long',
 								day: 'numeric',
 								year: 'numeric'
@@ -47,6 +47,9 @@
 					</Link>
 					<span v-if="invoice.type === 'Prepaid Credits'">
 						Prepaid Credits
+					</span>
+					<span v-if="invoice.type === 'Transferred Credits'">
+						Transferred Credits
 					</span>
 				</span>
 				<span class="hidden md:inline">{{ invoice.formatted_total }}</span>
@@ -87,7 +90,7 @@ export default {
 		InvoiceUsageCard
 	},
 	resources: {
-		pastInvoices: 'press.api.billing.past_invoices'
+		pastInvoices: 'press.api.billing.invoices_and_payments'
 	},
 	computed: {
 		subtitle() {
