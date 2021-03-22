@@ -352,7 +352,11 @@ class Team(Document):
 	def get_past_invoices(self):
 		invoices = frappe.db.get_all(
 			"Invoice",
-			filters={"team": self.name, "status": ("!=", "Draft"), "docstatus": 1},
+			filters={
+				"team": self.name,
+				"status": ("not in", ("Draft", "Refunded")),
+				"docstatus": ("!=", 2),
+			},
 			fields=[
 				"name",
 				"total",
@@ -366,6 +370,7 @@ class Team(Document):
 				"payment_date",
 				"currency",
 				"invoice_pdf",
+				"due_date as date",
 			],
 			order_by="due_date desc",
 		)
