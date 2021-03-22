@@ -68,6 +68,7 @@ def invoices_and_payments():
 
 	for d in credit_transfers:
 		d.formatted_total = frappe.utils.fmt_money(d.amount, 2, d.currency)
+		d.status = "Transferred"
 
 	def sort_key(item):
 		if isinstance(item.date, datetime.datetime):
