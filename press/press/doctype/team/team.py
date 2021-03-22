@@ -320,6 +320,7 @@ class Team(Document):
 				"payment_date",
 				"currency",
 				"invoice_pdf",
+				"due_date as date",
 			],
 			order_by="due_date desc",
 		)
