@@ -82,8 +82,7 @@ def new(site):
 			"remote_private_file": site["files"].get("private"),
 		},
 	).insert(ignore_permissions=True)
-	if not team.free_account:
-		site.create_subscription(plan)
+	site.create_subscription(plan)
 	return {
 		"site": site.name,
 		"job": frappe.db.get_value(
@@ -375,7 +374,7 @@ def all():
 	private_groups = frappe.db.get_all(
 		"Release Group",
 		fields=["name", "title", "creation", "version", "team", "public"],
-		filters={"enabled": True, "team": get_current_team(), "public": False,},
+		filters={"enabled": True, "team": get_current_team(), "public": False},
 		order_by="creation desc",
 	)
 	groups = public_groups + private_groups
