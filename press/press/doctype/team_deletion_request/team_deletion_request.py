@@ -53,15 +53,13 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 			recipients=self.email,
 			subject="Account Deletion Request",
 			template="delete_team_confirmation",
-			args={
-				"team": self.team,
-				"link": url,
-			},
+			args={"team": self.team, "link": url},
 			header=["Account Deletion Request", "green"],
 		)
 
 	def validate(self):
 		self.validate_sites_states()
+		self.finalize_pending_invoices()
 		self.validate_outstanding_invoices()
 
 	def rename_team_on_data_deletion(self):
@@ -195,6 +193,16 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 				f"Team {self.team} has {len(non_archived_sites)} sites. Drop them"
 				" before you can delete your account"
 			)
+
+	def finalize_pending_invoices(self):
+		pending_invoices = frappe.get_all(
+			"Invoice",
+			filters={"team": self.team},
+			or_filters={"docstatus": 1, "status": "Draft"},
+			pluck="name",
+		)
+		for invoice in pending_invoices:
+			frappe.get_doc("Invoice", invoice).finalize_invoice()
 
 	def validate_outstanding_invoices(self):
 		if self.team_doc.is_defaulter():
