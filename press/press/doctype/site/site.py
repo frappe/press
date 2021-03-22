@@ -41,7 +41,7 @@ class Site(Document):
 	def validate(self):
 		self.validate_site_name()
 		self.set_site_admin_password()
-		self.validate_site_creation(self)
+		self.validate_site_creation()
 		self.validate_installed_apps()
 		self.validate_host_name()
 		self.validate_site_config()
