@@ -93,9 +93,7 @@ def setup_account(
 @frappe.whitelist()
 def request_team_deletion():
 	team = get_current_team()
-	doc = frappe.get_doc(
-		{"doctype": "Team Deletion Request", "team": team}
-	).insert()
+	doc = frappe.get_doc({"doctype": "Team Deletion Request", "team": team}).insert()
 	return doc.name
 
 
@@ -109,7 +107,11 @@ def delete_team(team):
 			{"indicator_color": "red"},
 		],
 		"confirmed": [
-			("Confirmed", f"The process for deletion of your team {team} has been initiated.",),
+			(
+				"Confirmed",
+				f"The process for deletion of your team {team} has been initiated."
+				" Sorry to see you go :(",
+			),
 			{"indicator_color": "green"},
 		],
 		"expired": [
