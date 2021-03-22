@@ -15,6 +15,7 @@
 				<span></span>
 			</div>
 			<div
+				:key="invoice.name"
 				v-for="invoice in pastInvoices.data"
 				class="grid items-center grid-cols-3 py-4 text-base text-gray-900 gap-x-8 md:grid-cols-5"
 			>
