@@ -96,10 +96,8 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 			if not self.stripe_data_deleted:
 				self.delete_stripe_customer()
 			if (
-				True
-				or (self.team_disabled and self.frappeio_data_deleted and self.stripe_data_deleted)
-				and not self.data_anonymized
-			):
+				self.team_disabled and self.frappeio_data_deleted and self.stripe_data_deleted
+			) and not self.data_anonymized:
 				self.delete_data_on_press()
 			self.finish_up()
 
