@@ -208,7 +208,7 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 		pending_invoices = frappe.get_all(
 			"Invoice",
 			filters={"team": self.team},
-			or_filters={"docstatus": 1, "status": "Draft"},
+			or_filters={"docstatus": 0, "status": "Draft"},
 			pluck="name",
 		)
 		for invoice in pending_invoices:

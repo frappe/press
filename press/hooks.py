@@ -150,6 +150,9 @@ scheduler_events = {
 		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
 		"press.press.doctype.invoice.invoice.finalize_draft_invoices",
 	],
+	"daily_long": [
+		"press.press.doctype.team_deletion_request.team_deletion_request.process_team_deletion_requests",
+	],
 	"hourly": [
 		"press.press.doctype.app.app.poll_new_releases",
 		"press.press.doctype.site.backups.cleanup_local",
@@ -175,7 +178,6 @@ scheduler_events = {
 		],
 		"0 */6 * * *": [
 			"press.press.doctype.server.server.cleanup_unused_files",
-			"press.press.doctype.team_deletion_request.team_deletion_request.process_team_deletion_requests",
 		],
 		"30 * * * *": ["press.press.doctype.agent_job.agent_job.suspend_sites"],
 		"*/15 * * * *": ["press.press.doctype.site_update.site_update.schedule_updates"],
