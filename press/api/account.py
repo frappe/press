@@ -90,6 +90,59 @@ def setup_account(
 	frappe.local.login_manager.login_as(email)
 
 
+@frappe.whitelist()
+def request_team_deletion():
+	team = get_current_team()
+	doc = frappe.get_doc({"doctype": "Team Deletion Request", "team": team}).insert()
+	return doc.name
+
+
+@frappe.whitelist(allow_guest=True)
+def delete_team(team):
+	from frappe.utils.verified_command import verify_request
+
+	responses = {
+		"invalid": [
+			("Link Invalid", "This link is invalid or expired.",),
+			{"indicator_color": "red"},
+		],
+		"confirmed": [
+			(
+				"Confirmed",
+				f"The process for deletion of your team {team} has been initiated."
+				" Sorry to see you go :(",
+			),
+			{"indicator_color": "green"},
+		],
+		"expired": [
+			("Link Expired", "This link has already been activated for verification."),
+			{"indicator_color": "red"},
+		],
+	}
+
+	def respond_as_web_page(key):
+		frappe.respond_as_web_page(*responses[key][0], **responses[key][1])
+
+	if verify_request() or frappe.flags.in_test:
+		frappe.set_user("Administrator")
+	else:
+		return respond_as_web_page("invalid")
+
+	try:
+		doc = frappe.get_last_doc("Team Deletion Request", {"team": team})
+	except frappe.DoesNotExistError:
+		return respond_as_web_page("invalid")
+
+	if doc.status != "Pending Verification":
+		return respond_as_web_page("expired")
+
+	doc.status = "Deletion Verified"
+	doc.save()
+	frappe.db.commit()
+
+	return respond_as_web_page("confirmed")
+
+
 @frappe.whitelist(allow_guest=True)
 def get_email_from_request_key(key):
 	account_request = get_account_request_from_key(key)
