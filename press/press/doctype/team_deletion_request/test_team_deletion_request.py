@@ -3,13 +3,16 @@
 # See license.txt
 from __future__ import unicode_literals
 
-import frappe
+import os
 import unittest
+
+import frappe
+import requests
 from press.press.doctype.team.test_team import create_test_team
 from press.press.doctype.team_deletion_request.team_deletion_request import (
 	TeamDeletionRequest,
 )
-import requests
+
 
 class TestTeamDeletionRequest(unittest.TestCase):
 	@classmethod
@@ -21,7 +24,9 @@ class TestTeamDeletionRequest(unittest.TestCase):
 	def team_deletion_request(self):
 		if not getattr(self, "_tdr", None):
 			try:
-				self._tdr = frappe.get_last_doc("Team Deletion Request", filters={"team": self.team.name})
+				self._tdr = frappe.get_last_doc(
+					"Team Deletion Request", filters={"team": self.team.name}
+				)
 			except frappe.DoesNotExistError:
 				self._tdr = self.team.delete(workflow=True)
 		return self._tdr
@@ -35,11 +40,24 @@ class TestTeamDeletionRequest(unittest.TestCase):
 
 	def test_url_for_verification(self):
 		deletion_url = self.team_deletion_request.generate_url_for_confirmation()
-		self.assertTrue(deletion_url.startswith(frappe.utils.get_url("/api/method/press.api.account.delete_team")))
+		self.assertTrue(
+			deletion_url.startswith(
+				frappe.utils.get_url("/api/method/press.api.account.delete_team")
+			)
+		)
 
 	def test_team_deletion_api(self):
 		deletion_url = self.team_deletion_request.generate_url_for_confirmation()
+
+		# need a commit so that the request makes sense
+		if os.environ.get("CI"):
+			frappe.db.commit()
+
 		res = requests.get(deletion_url)
 		self.assertTrue(res.ok)
+
+		if os.environ.get("CI"):
+			frappe.db.commit()
+
 		self.team_deletion_request.reload()
 		self.assertEqual(self.team_deletion_request.status, "Deletion Verified")
