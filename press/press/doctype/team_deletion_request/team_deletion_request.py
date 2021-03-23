@@ -73,10 +73,11 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 
 	def validate_team_owner(self):
 		if (
-			self.team_doc.user != frappe.session.user
-			or "System Manager" not in frappe.get_roles()
+			self.team_doc.user == frappe.session.user or "System Manager" in frappe.get_roles()
 		):
-			frappe.throw("You need to be a Team owner to request account deletion")
+			return
+
+		frappe.throw("You need to be a Team owner to request account deletion", exc=frappe.PermissionError)
 
 	def validate_duplicate_request(self):
 		if frappe.db.exists(self.doctype, {"team": self.team}):
