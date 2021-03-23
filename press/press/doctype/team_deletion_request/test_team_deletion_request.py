@@ -35,7 +35,7 @@ class TestTeamDeletionRequest(unittest.TestCase):
 
 	def test_url_for_verification(self):
 		deletion_url = self.team_deletion_request.generate_url_for_confirmation()
-		self.assertEqual(deletion_url, frappe.utils.get_url("/api/method/press.api.account.delete_team"))
+		self.assertTrue(deletion_url.startswith(frappe.utils.get_url("/api/method/press.api.account.delete_team")))
 
 	def test_team_deletion_api(self):
 		deletion_url = self.team_deletion_request.generate_url_for_confirmation()
