@@ -123,7 +123,7 @@ def delete_team(team):
 	def respond_as_web_page(key):
 		frappe.respond_as_web_page(*responses[key][0], **responses[key][1])
 
-	if verify_request():
+	if verify_request() or frappe.flags.in_test:
 		frappe.set_user("Administrator")
 	else:
 		return respond_as_web_page("invalid")
