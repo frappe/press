@@ -76,13 +76,6 @@ class Team(Document):
 				user_doc.save()
 
 	def validate_duplicate_members(self):
-		# disable all users if they dont have their own team
-		for user in self.get_users_only_in_this_team():
-			user_doc = frappe.get_doc("User", user)
-			user_doc.enabled = False
-			user_doc.save()
-
-	def validate_duplicate_members(self):
 		team_users = self.get_user_list()
 		duplicate_members = [m for m in team_users if team_users.count(m) > 1]
 		duplicate_members = list(set(duplicate_members))
@@ -212,7 +205,7 @@ class Team(Document):
 
 		try:
 			last_invoice = frappe.get_last_doc(
-				"Invoice", filters={"docstatus": 1, "team": self.name}
+				"Invoice", filters={"docstatus": 0, "team": self.name}
 			)
 		except frappe.DoesNotExistError:
 			return False
