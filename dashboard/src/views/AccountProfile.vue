@@ -99,8 +99,7 @@ export default {
 	},
 	data() {
 		return {
-			showProfileEditDialog: false,
-			showTeamDeletionDialog: false
+			showProfileEditDialog: false
 		};
 	},
 	methods: {
