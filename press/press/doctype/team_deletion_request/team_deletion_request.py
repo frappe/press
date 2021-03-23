@@ -27,6 +27,7 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 			template="delete_team_confirmation",
 			args={"team": self.team, "link": url},
 			header=["Account Deletion Request", "green"],
+			now=True,
 		)
 
 	def validate(self):
