@@ -173,7 +173,10 @@ scheduler_events = {
 			"press.press.doctype.agent_job.agent_job.collect_site_uptime",
 			"press.press.doctype.agent_job.agent_job.report_site_downtime",
 		],
-		"0 */6 * * *": ["press.press.doctype.server.server.cleanup_unused_files"],
+		"0 */6 * * *": [
+			"press.press.doctype.server.server.cleanup_unused_files",
+			"press.press.doctype.team_deletion_request.team_deletion_request.process_team_deletion_requests",
+		],
 		"30 * * * *": ["press.press.doctype.agent_job.agent_job.suspend_sites"],
 		"*/15 * * * *": ["press.press.doctype.site_update.site_update.schedule_updates"],
 		"15,45 * * * *": [
@@ -209,3 +212,10 @@ override_whitelisted_methods = {"upload_file": "press.overrides.upload_file"}
 # }
 
 on_session_creation = "press.overrides.on_session_creation"
+
+
+# Data Deletion Privacy Docs
+
+user_data_fields = [
+	{"doctype": "Team", "strict": True},
+]

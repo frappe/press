@@ -3,6 +3,7 @@
 		<AccountProfile />
 		<AccountTeam />
 		<AccountMembers />
+		<AccountActions />
 	</div>
 </template>
 
@@ -10,11 +11,13 @@
 import AccountProfile from './AccountProfile.vue';
 import AccountTeam from './AccountTeam.vue';
 import AccountMembers from './AccountMembers.vue';
+import AccountActions from './AccountActions.vue';
 
 export default {
 	name: 'AccountProfileTeam',
 	props: ['account'],
 	components: {
+		AccountActions,
 		AccountProfile,
 		AccountTeam,
 		AccountMembers
