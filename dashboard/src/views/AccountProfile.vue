@@ -42,25 +42,6 @@
 				</Button>
 			</div>
 		</div>
-		<div class="pt-2">
-			<Button @click="showTeamDeletionDialog = true">
-				<span class="text-red-600">Delete Account</span>
-			</Button>
-		</div>
-		<Dialog title="Delete Team" v-model="showTeamDeletionDialog">
-			<div>
-				With this, all of your and your team members' personal data will be deleted.
-			By proceeding with this, you will delete the accounts of the members in your team, if they aren't a part of any other team.
-			</div>
-			<Button
-				class="ml-3"
-				type="danger"
-				@click="$resources.deleteTeam.submit()"
-				:loading="$resources.deleteTeam.loading"
-			>
-				Delete Account
-			</Button>
-		</Dialog>
 		<Dialog title="Update Profile Information" v-model="showProfileEditDialog">
 			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 				<Input
@@ -114,14 +95,6 @@ export default {
 					this.notifySuccess();
 				}
 			};
-		},
-		deleteTeam() {
-			return {
-				method: 'press.api.account.request_team_deletion',
-				onSuccess() {
-					this.notifySuccess();
-				}
-			}
 		}
 	},
 	data() {
