@@ -1,9 +1,14 @@
 <template>
 	<Card title="Team Actions" subtitle="Actions available for your team">
 		<div class="flex items-center justify-between py-3">
-			<h3 class="text-base font-medium text-gray-900">
-				Account Deletion
-			</h3>
+			<div>
+				<h3 class="text-base font-medium text-gray-900">
+					Delete Account
+				</h3>
+				<div class="mt-1 text-base text-gray-600 whitespace-pre-line">
+					Delete your account and personal data
+				</div>
+			</div>
 			<div class="ml-auto">
 				<Button @click="showTeamDeletionDialog = true">
 					<span class="text-red-600">Delete</span>
