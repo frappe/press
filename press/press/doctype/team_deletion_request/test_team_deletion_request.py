@@ -5,8 +5,6 @@ from __future__ import unicode_literals
 
 import frappe
 import unittest
-import validators
-from frappe.model.document import Document
 from press.press.doctype.team.test_team import create_test_team
 from press.press.doctype.team_deletion_request.team_deletion_request import (
 	TeamDeletionRequest,
@@ -29,7 +27,7 @@ class TestTeamDeletionRequest(unittest.TestCase):
 		return self._tdr
 
 	def test_team_doc_deletion_raise(self):
-		self.assertRaises(self.team.delete, frappe.ValidationError)
+		self.assertRaises(frappe.ValidationError, self.team.delete)
 
 	def test_team_doc_deletion(self):
 		self.assertIsInstance(self.team_deletion_request, TeamDeletionRequest)
@@ -37,7 +35,7 @@ class TestTeamDeletionRequest(unittest.TestCase):
 
 	def test_url_for_verification(self):
 		deletion_url = self.team_deletion_request.generate_url_for_confirmation()
-		self.assertTrue(validators.url(deletion_url))
+		self.assertEqual(deletion_url, frappe.utils.get_url("/api/method/press.api.account.delete_team"))
 
 	def test_team_deletion_api(self):
 		deletion_url = self.team_deletion_request.generate_url_for_confirmation()
