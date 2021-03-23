@@ -15,6 +15,7 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 		self.email = self.team
 
 	def before_insert(self):
+		self.validate_team_owner()
 		self.validate_duplicate_request()
 
 	def after_insert(self):
@@ -69,6 +70,10 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 			and frappe.db.exists("Team", self.team)
 		):
 			frappe.rename_doc("Team", self.team, self.name)
+
+	def validate_team_owner(self):
+		if self.team_doc.user != frappe.session.user or "Frappe Cloud Operations" not in frappe.get_roles():
+			frappe.throw("You need to be a Team owner to request account deletion")
 
 	def validate_duplicate_request(self):
 		if frappe.db.exists(self.doctype, {"team": self.team}):
