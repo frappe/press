@@ -464,6 +464,7 @@ class Site(Document):
 			"files_availability",
 			"Unavailable",
 		)
+		self.disable_subscription()
 
 	def delete_offsite_backups(self):
 		from press.press.doctype.remote_file.remote_file import delete_remote_backup_objects
