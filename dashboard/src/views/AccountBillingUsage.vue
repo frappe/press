@@ -133,8 +133,7 @@ export default {
 				return ''
 			}
 			let endDate = this.$date(this.upcomingInvoice.period_end);
-			let paymentDate = endDate.plus({ days: 1 });
-			return paymentDate.toLocaleString({
+			return endDate.toLocaleString({
 				month: 'short',
 				day: 'numeric',
 				year: 'numeric'
