@@ -13,7 +13,6 @@
   "interval",
   "price_usd",
   "price_inr",
-  "period",
   "features_section",
   "cpu_time_per_day",
   "max_database_usage",
@@ -63,12 +62,6 @@
    "fieldtype": "Int",
    "in_list_view": 1,
    "label": "CPU Time Per Day"
-  },
-  {
-   "fieldname": "period",
-   "fieldtype": "Int",
-   "label": "Period (Days)",
-   "reqd": 1
   },
   {
    "default": "0",
@@ -132,7 +125,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2020-11-10 11:03:52.336592",
+ "modified": "2021-03-24 18:31:11.501326",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Plan",

@@ -20,7 +20,6 @@ class TestSubscription(unittest.TestCase):
 			interval="Daily",
 			price_usd=30,
 			price_inr=30,
-			period=30,
 		).insert()
 
 		subscription = frappe.get_doc(
@@ -57,7 +56,6 @@ class TestSubscription(unittest.TestCase):
 			interval="Daily",
 			price_usd=30,
 			price_inr=30,
-			period=30,
 		).insert()
 
 		subscription = frappe.get_doc(

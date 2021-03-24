@@ -12,7 +12,14 @@ from press.utils import human_readable
 
 
 class Plan(Document):
+	@property
+	def period(self):
+		return frappe.utils.get_last_day(None).day
+
 	def validate(self):
+		self.set_space_limit_conversion_values()
+
+	def set_space_limit_conversion_values(self):
 		readable_mapped_fields = {
 			"max_database_usage": "_max_database_usage",
 			"max_storage_usage": "_max_storage_usage",
