@@ -523,14 +523,12 @@ class Invoice(Document):
 
 
 def finalize_draft_invoices():
-	"""This method will run every day and submit the invoices whose period end was the previous day"""
+	"""Runs every day and submits the invoices whose period end is today"""
 
-	# get draft invoices whose period has ended before
+	# get draft invoices whose period is ending today
 	today = frappe.utils.today()
 	invoices = frappe.db.get_all(
-		"Invoice",
-		{"status": "Draft", "period_end": ("<", today), "total": (">", 0)},
-		pluck="name",
+		"Invoice", {"status": "Draft", "period_end": today, "total": (">", 0)}, pluck="name",
 	)
 	for name in invoices:
 		invoice = frappe.get_doc("Invoice", name)
