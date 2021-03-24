@@ -148,7 +148,6 @@ scheduler_events = {
 		"press.press.cleanup.remove_logs",
 		"press.press.doctype.team.suspend_sites.execute",
 		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
-		"press.press.doctype.invoice.invoice.finalize_draft_invoices",
 	],
 	"daily_long": [
 		"press.press.doctype.team_deletion_request.team_deletion_request.process_team_deletion_requests",
@@ -165,6 +164,7 @@ scheduler_events = {
 		"press.press.doctype.bench.bench.sync_benches",
 	],
 	"cron": {
+		"0 18 * * *": ["press.press.doctype.invoice.invoice.finalize_draft_invoices"],
 		"0 3 * * *": ["press.press.doctype.remote_file.remote_file.poll_file_statuses"],
 		"0 4 * * *": [
 			"press.press.doctype.site.backups.cleanup_offsite",
@@ -176,9 +176,7 @@ scheduler_events = {
 			"press.press.doctype.agent_job.agent_job.collect_site_uptime",
 			"press.press.doctype.agent_job.agent_job.report_site_downtime",
 		],
-		"0 */6 * * *": [
-			"press.press.doctype.server.server.cleanup_unused_files",
-		],
+		"0 */6 * * *": ["press.press.doctype.server.server.cleanup_unused_files"],
 		"30 * * * *": ["press.press.doctype.agent_job.agent_job.suspend_sites"],
 		"*/15 * * * *": ["press.press.doctype.site_update.site_update.schedule_updates"],
 		"15,45 * * * *": [
