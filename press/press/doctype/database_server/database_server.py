@@ -32,7 +32,9 @@ class DatabaseServer(BaseServer):
 	def _setup_server(self):
 		agent_password = self.get_password("agent_password")
 		mariadb_root_password = self.get_password("mariadb_root_password")
-		certificate_name = frappe.db.get_value("TLS Certificate", {"wildcard": True, "domain": self.domain}, "name")
+		certificate_name = frappe.db.get_value(
+			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
+		)
 		certificate = frappe.get_doc("TLS Certificate", certificate_name)
 		try:
 			ansible = Ansible(
