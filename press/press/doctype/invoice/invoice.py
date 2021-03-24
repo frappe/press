@@ -33,6 +33,9 @@ class Invoice(Document):
 		if self.type == "Prepaid Credits":
 			return
 
+		# set as unpaid by default
+		self.status = 'Unpaid'
+
 		self.amount_due = self.total
 		self.apply_credit_balance()
 		if self.amount_due == 0:
