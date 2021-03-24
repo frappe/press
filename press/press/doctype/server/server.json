@@ -160,8 +160,9 @@
   },
   {
    "fieldname": "domain",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "label": "Domain",
+   "options": "Root Domain",
    "read_only": 1,
    "set_only_once": 1
   },
@@ -227,7 +228,7 @@
   }
  ],
  "links": [],
- "modified": "2021-02-11 11:28:34.765613",
+ "modified": "2021-03-24 09:36:47.220551",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

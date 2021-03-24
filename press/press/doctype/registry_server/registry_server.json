@@ -48,8 +48,9 @@
   },
   {
    "fieldname": "domain",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "label": "Domain",
+   "options": "Root Domain",
    "read_only": 1,
    "set_only_once": 1
   },
@@ -169,7 +170,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2021-02-17 19:55:05.547552",
+ "modified": "2021-03-24 09:38:12.151562",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Registry Server",

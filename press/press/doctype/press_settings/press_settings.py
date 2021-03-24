@@ -6,28 +6,12 @@ from __future__ import unicode_literals
 
 import frappe
 from frappe.model.document import Document
-from press.utils import log_error
+
 from press.api.billing import get_stripe
 from frappe.utils import get_url
 
 
 class PressSettings(Document):
-	def obtain_root_domain_tls_certificate(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_obtain_root_domain_tls_certificate")
-
-	def _obtain_root_domain_tls_certificate(self):
-		try:
-			frappe.get_doc(
-				{
-					"doctype": "TLS Certificate",
-					"wildcard": True,
-					"domain": self.domain,
-					"rsa_key_size": self.rsa_key_size,
-				}
-			).insert()
-		except Exception:
-			log_error("Root Domain TLS Exception")
-
 	def create_stripe_webhook(self):
 		stripe = get_stripe()
 		url = frappe.utils.get_url(

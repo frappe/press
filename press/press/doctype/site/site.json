@@ -241,8 +241,9 @@
   },
   {
    "fieldname": "domain",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "label": "Domain",
+   "options": "Root Domain",
    "set_only_once": 1
   },
   {
@@ -298,7 +299,7 @@
   }
  ],
  "links": [],
- "modified": "2021-02-16 15:56:28.904088",
+ "modified": "2021-03-24 09:37:49.343840",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
