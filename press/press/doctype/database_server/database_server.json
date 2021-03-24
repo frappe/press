@@ -163,8 +163,9 @@
   },
   {
    "fieldname": "domain",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "label": "Domain",
+   "options": "Root Domain",
    "read_only": 1
   },
   {
@@ -215,7 +216,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-02-11 11:38:10.197337",
+ "modified": "2021-03-24 09:38:05.465247",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

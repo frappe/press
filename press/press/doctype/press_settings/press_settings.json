@@ -8,11 +8,6 @@
   "domain",
   "bench_configuration",
   "trial_sites_count",
-  "dns_section",
-  "dns_provider",
-  "column_break_6",
-  "aws_access_key_id",
-  "aws_secret_access_key",
   "lets_encrypt_section",
   "certbot_directory",
   "webroot_directory",
@@ -110,37 +105,10 @@
   },
   {
    "fieldname": "domain",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "label": "Domain",
+   "options": "Root Domain",
    "reqd": 1
-  },
-  {
-   "collapsible": 1,
-   "fieldname": "dns_section",
-   "fieldtype": "Section Break",
-   "label": "DNS"
-  },
-  {
-   "fieldname": "aws_access_key_id",
-   "fieldtype": "Data",
-   "label": "AWS Access Key ID"
-  },
-  {
-   "fieldname": "aws_secret_access_key",
-   "fieldtype": "Password",
-   "label": "AWS Secret Access Key"
-  },
-  {
-   "default": "AWS Route 53",
-   "fieldname": "dns_provider",
-   "fieldtype": "Select",
-   "label": "DNS Provider",
-   "options": "AWS Route 53",
-   "reqd": 1
-  },
-  {
-   "fieldname": "column_break_6",
-   "fieldtype": "Column Break"
   },
   {
    "default": "2048",
@@ -609,7 +577,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2021-03-18 10:55:21.857736",
+ "modified": "2021-03-24 09:28:51.686130",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
