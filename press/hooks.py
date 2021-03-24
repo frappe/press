@@ -70,7 +70,7 @@ website_route_rules = [
 
 # before_install = "press.install.before_install"
 after_install = "press.install.after_install"
-after_migrate = "press.api.account.clear_country_list_cache"
+after_migrate = ["press.api.account.clear_country_list_cache", "press.sanity.checks"]
 
 # Desk Notifications
 # ------------------
@@ -176,9 +176,7 @@ scheduler_events = {
 			"press.press.doctype.agent_job.agent_job.collect_site_uptime",
 			"press.press.doctype.agent_job.agent_job.report_site_downtime",
 		],
-		"0 */6 * * *": [
-			"press.press.doctype.server.server.cleanup_unused_files",
-		],
+		"0 */6 * * *": ["press.press.doctype.server.server.cleanup_unused_files"],
 		"30 * * * *": ["press.press.doctype.agent_job.agent_job.suspend_sites"],
 		"*/15 * * * *": ["press.press.doctype.site_update.site_update.schedule_updates"],
 		"15,45 * * * *": [
