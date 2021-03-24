@@ -35,6 +35,9 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 		self.finalize_pending_invoices()
 		self.validate_outstanding_invoices()
 
+	def on_update(self):
+		self.finish_up()
+
 	def dont_throw(foo):
 		def pass_exception(self):
 			try:
