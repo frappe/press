@@ -23,7 +23,9 @@ class RegistryServer(BaseServer):
 			self.registry_username = "frappe"
 
 	def _setup_server(self):
-		certificate_name = frappe.db.get_value("TLS Certificate", {"wildcard": True, "domain": self.domain}, "name")
+		certificate_name = frappe.db.get_value(
+			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
+		)
 		certificate = frappe.get_doc("TLS Certificate", certificate_name)
 		try:
 			ansible = Ansible(
