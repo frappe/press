@@ -80,7 +80,7 @@ jobs:
         - if [ $TYPE == "server" ]; then sed -i 's/socketio:/# socketio:/g' Procfile; fi
         - if [ $TYPE == "server" ]; then sed -i 's/redis_socketio:/# redis_socketio:/g' Procfile; fi
 
-        - bench get-app press $TRAVIS_BUILD_DIR
+        - bench get-app press $TRAVIS_BUILD_DIR --skip-assets
         - bench start &
         - bench --site test_site reinstall --yes
 

@@ -82,8 +82,7 @@ def new(site):
 			"remote_private_file": site["files"].get("private"),
 		},
 	).insert(ignore_permissions=True)
-	if not team.free_account:
-		site.create_subscription(plan)
+	site.create_subscription(plan)
 	return {
 		"site": site.name,
 		"job": frappe.db.get_value(

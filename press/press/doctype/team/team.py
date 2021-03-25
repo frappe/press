@@ -22,28 +22,68 @@ class Team(Document):
 		load_address_and_contact(self)
 
 	def validate(self):
-		# validate duplicate team members
-		team_members = [row.user for row in self.team_members]
-		duplicate_members = [m for m in team_members if team_members.count(m) > 1]
+		self.validate_duplicate_members()
+		self.set_team_currency()
+		self.set_default_user()
+		self.set_billing_name()
+
+		self.validate_onboarding()
+		self.validate_disabled_team()
+
+	def delete(self, force=False, workflow=False):
+		if force:
+			return super().delete()
+
+		if workflow:
+			return frappe.get_doc(
+				{"doctype": "Team Deletion Request", "team": self.name}
+			).insert()
+
+		frappe.throw(
+			f"You are only deleting the Team Document for {self.name}. To continue to"
+			" do so, pass force=True with this call. Else, pass workflow=True to raise"
+			" a Team Deletion Request to trigger complete team deletion process."
+		)
+
+	def set_billing_name(self):
+		if not self.billing_name:
+			self.billing_name = frappe.utils.get_fullname(self.name)
+
+	def set_default_user(self):
+		if not self.user and self.team_members:
+			self.user = self.team_members[0].user
+
+	def set_team_currency(self):
+		if not self.currency and self.country:
+			self.currency = "INR" if self.country == "India" else "USD"
+
+	def get_user_list(self):
+		return [row.user for row in self.team_members]
+
+	def get_users_only_in_this_team(self):
+		return [
+			user
+			for user in self.get_user_list()
+			if not frappe.db.exists("Team Member", {"user": user, "parent": ("!=", self.name)})
+		]
+
+	def validate_disabled_team(self):
+		# disable all users if they dont have their own team
+		if not self.enabled:
+			for user in self.get_users_only_in_this_team():
+				user_doc = frappe.get_doc("User", user)
+				user_doc.enabled = False
+				user_doc.save()
+
+	def validate_duplicate_members(self):
+		team_users = self.get_user_list()
+		duplicate_members = [m for m in team_users if team_users.count(m) > 1]
 		duplicate_members = list(set(duplicate_members))
 		if duplicate_members:
 			frappe.throw(
 				_("Duplicate Team Members: {0}").format(", ".join(duplicate_members)),
 				frappe.DuplicateEntryError,
 			)
-
-		if not self.currency and self.country:
-			self.currency = "INR" if self.country == "India" else "USD"
-
-		# set default user
-		if not self.user and self.team_members:
-			self.user = self.team_members[0].user
-
-		# set billing name
-		if not self.billing_name:
-			self.billing_name = frappe.utils.get_fullname(self.name)
-
-		self.validate_onboarding()
 
 	def validate_onboarding(self):
 		if self.is_new():
@@ -157,16 +197,19 @@ class Team(Document):
 		self.save(ignore_permissions=True)
 
 	def has_member(self, user):
-		users = [row.user for row in self.team_members]
-		return user in users
+		return user in self.get_user_list()
 
 	def is_defaulter(self):
 		if self.free_account:
-			return
+			return False
 
-		last_invoice = frappe.get_last_doc(
-			"Invoice", filters={"docstatus": 1, "team": self.name}
-		)
+		try:
+			last_invoice = frappe.get_last_doc(
+				"Invoice", filters={"docstatus": 0, "team": self.name}
+			)
+		except frappe.DoesNotExistError:
+			return False
+
 		return last_invoice.status == "Unpaid"
 
 	def create_stripe_customer(self):
@@ -296,13 +339,17 @@ class Team(Document):
 				"is_default",
 				"creation",
 			],
-			order_by="creation desc"
+			order_by="creation desc",
 		)
 
 	def get_past_invoices(self):
 		invoices = frappe.db.get_all(
 			"Invoice",
-			filters={"team": self.name, "status": ("!=", "Draft"), "docstatus": 1},
+			filters={
+				"team": self.name,
+				"status": ("not in", ("Draft", "Refunded")),
+				"docstatus": ("!=", 2),
+			},
 			fields=[
 				"name",
 				"total",
@@ -316,6 +363,7 @@ class Team(Document):
 				"payment_date",
 				"currency",
 				"invoice_pdf",
+				"due_date as date",
 			],
 			order_by="due_date desc",
 		)

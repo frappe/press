@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_rename": 1,
  "autoname": "Prompt",
  "creation": "2020-02-27 16:19:51.675782",
  "doctype": "DocType",
@@ -203,7 +204,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2021-02-15 09:12:54.971131",
+ "modified": "2021-02-26 17:49:48.092045",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

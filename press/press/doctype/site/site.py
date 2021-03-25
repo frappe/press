@@ -39,7 +39,14 @@ class Site(Document):
 		self.name = self._get_site_name(self.subdomain)
 
 	def validate(self):
-		# validate site name
+		self.validate_site_name()
+		self.set_site_admin_password()
+		self.validate_site_creation()
+		self.validate_installed_apps()
+		self.validate_host_name()
+		self.validate_site_config()
+
+	def validate_site_name(self):
 		site_regex = r"^[a-z0-9][a-z0-9-]*[a-z0-9]$"
 		if len(self.subdomain) < 5:
 			frappe.throw("Subdomain too short. Use 5 or more characters")
@@ -51,10 +58,12 @@ class Site(Document):
 				" characters, numbers and hyphens"
 			)
 
+	def set_site_admin_password(self):
 		# set site.admin_password if doesn't exist
 		if not self.admin_password:
 			self.admin_password = frappe.generate_hash(length=16)
 
+	def validate_site_creation(self):
 		# validate site creation and initialize site.config
 		if self.is_new() and frappe.session.user != "Administrator":
 			self.can_create_site()
@@ -64,6 +73,7 @@ class Site(Document):
 
 			self._update_configuration(get_plan_config(self.subscription_plan), save=False)
 
+	def validate_installed_apps(self):
 		# validate apps to be installed on site
 		apps = frappe.get_doc("Bench", self.bench).apps
 		for app in self.apps:
@@ -77,6 +87,7 @@ class Site(Document):
 		if len(apps) != len(set(apps)):
 			frappe.throw("Can't install same app twice.")
 
+	def validate_host_name(self):
 		# set or update site.host_name
 		if self.is_new():
 			self.host_name = self.name
@@ -84,6 +95,7 @@ class Site(Document):
 		elif self.has_value_changed("host_name"):
 			self._validate_host_name()
 
+	def validate_site_config(self):
 		# update site._keys_removed_in_last_update value
 		old_keys = json.loads(self.config)
 		new_keys = [x.key for x in self.configuration]
@@ -452,6 +464,7 @@ class Site(Document):
 			"files_availability",
 			"Unavailable",
 		)
+		self.disable_subscription()
 
 	def delete_offsite_backups(self):
 		from press.press.doctype.remote_file.remote_file import delete_remote_backup_objects

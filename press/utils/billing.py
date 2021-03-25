@@ -56,9 +56,8 @@ def get_erpnext_com_connection():
 
 	# TODO: Remove password authentication when API Key Authentication bug is fixed
 	press_settings = frappe.get_single("Press Settings")
-	erpnext_password = frappe.utils.password.get_decrypted_password(
-		"Press Settings", "Press Settings", fieldname="erpnext_password"
-	)
+	erpnext_password = press_settings.get_password("erpnext_password")
+
 	if not (
 		press_settings.erpnext_username and press_settings.erpnext_url and erpnext_password
 	):
