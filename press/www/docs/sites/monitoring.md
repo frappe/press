@@ -25,6 +25,7 @@ The **Analytics** tabs shows six charts:
 Analytics are only available after Setup Wizard is completed. Uptime status is
 collected every minute.
 
+<!--
 ## Request Logs
 
 The **Request Logs** tab shows every web request that was made to your site. You
@@ -33,6 +34,7 @@ where the request was made, the CPU Time it took to to serve that request and
 the response length.
 
 [![Request Logs](/assets/press/images/docs/request-logs.png)](/assets/press/images/docs/request-logs.png)
+-->
 
 ## Site Logs
 
