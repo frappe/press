@@ -34,7 +34,7 @@ class Invoice(Document):
 			return
 
 		# set as unpaid by default
-		self.status = 'Unpaid'
+		self.status = "Unpaid"
 
 		self.amount_due = self.total
 		self.apply_credit_balance()
