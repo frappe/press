@@ -19,7 +19,10 @@
 							{{ getGroupTitle(group) }}
 						</h2>
 						<div class="flex items-center space-x-2" slot="actions">
-							<Button v-if="!group.public" :route="`/benches/${group.name}`">
+							<Button
+								v-if="!group.public && group.owned_by_team"
+								:route="`/benches/${group.name}`"
+							>
 								Manage Bench
 							</Button>
 							<Button
@@ -28,6 +31,7 @@
 								"
 								type="primary"
 								iconLeft="plus"
+								v-if="group.public || (!group.public && group.owned_by_team)"
 							>
 								New Site
 							</Button>
