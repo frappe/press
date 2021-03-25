@@ -32,6 +32,7 @@ class TestSubscription(unittest.TestCase):
 
 		today = frappe.utils.getdate()
 		tomorrow = frappe.utils.add_days(today, 1)
+		desired_value = plan.get_price_per_day("INR") * 2
 
 		with patch.object(frappe.utils, "today", return_value=today):
 			subscription.create_usage_record()
@@ -43,7 +44,7 @@ class TestSubscription(unittest.TestCase):
 			subscription.create_usage_record()
 
 		invoice = frappe.get_doc("Invoice", {"team": email, "status": "Draft"})
-		self.assertEqual(invoice.total, 2)
+		self.assertEqual(invoice.total, desired_value)
 
 	def test_subscription_for_non_chargeable_document(self):
 		email = "testuser@example.com"
