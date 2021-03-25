@@ -12,7 +12,7 @@ On the site page, go to the **Backups** tab. Here you will see the list of
 backups that were taken of your site. Every backup consists of a database
 backup, public files backup and private files backup.
 
-[![Offsite Backups](/assets/press/images/docs/backups.png)](/assets/press/images/docs/backups.png)
+[![Offsite Backups](/assets/press/images/docs/site-backups.png)](/assets/press/images/docs/site-backups.png)
 
 ## Offsite Backups
 
@@ -44,9 +44,9 @@ With the current scheme, for every day we store:
 
 If the current day is Jan 13, then the backups available will be like so:
 
-![Offsite Backups](/assets/press/images/docs/calendar.png)
+[![Offsite Backups - Calendar](/assets/press/images/docs/calendar.png)](/assets/press/images/docs/calendar.png)
 
-(Monthly and yearly backups before December 2020 not shown in picture)  
+(Monthly and yearly backups before December 2020 not shown in picture)
 
 - Weekly backups are taken every Sunday
 - Monthly backups taken every 1st day of the month
