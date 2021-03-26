@@ -6,8 +6,10 @@
  "engine": "InnoDB",
  "field_order": [
   "domain",
-  "bench_configuration",
+  "column_break_2",
   "trial_sites_count",
+  "section_break_4",
+  "bench_configuration",
   "lets_encrypt_section",
   "certbot_directory",
   "webroot_directory",
@@ -15,11 +17,6 @@
   "column_break_15",
   "eff_registration_email",
   "use_staging_ca",
-  "backbone_section",
-  "backbone_directory",
-  "column_break_20",
-  "backbone_intermediate_ca",
-  "use_backbone_ca",
   "stripe_settings_section",
   "stripe_account",
   "create_stripe_plans",
@@ -107,8 +104,7 @@
    "fieldname": "domain",
    "fieldtype": "Link",
    "label": "Domain",
-   "options": "Root Domain",
-   "reqd": 1
+   "options": "Root Domain"
   },
   {
    "default": "2048",
@@ -426,45 +422,18 @@
    "label": "Product Documentation"
   },
   {
-   "fieldname": "backbone_intermediate_ca",
-   "fieldtype": "Link",
-   "label": "Backbone Intermediate CA",
-   "options": "Certificate Authority"
-  },
-  {
    "collapsible": 1,
    "fieldname": "lets_encrypt_section",
    "fieldtype": "Section Break",
    "label": "Let's Encrypt"
   },
   {
-   "collapsible": 1,
-   "fieldname": "backbone_section",
-   "fieldtype": "Section Break",
-   "label": "Backbone"
-  },
-  {
-   "fieldname": "backbone_directory",
-   "fieldtype": "Data",
-   "label": "Backbone Directory"
-  },
-  {
    "fieldname": "column_break_15",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "column_break_20",
    "fieldtype": "Column Break"
   },
   {
    "fieldname": "column_break_38",
    "fieldtype": "Column Break"
-  },
-  {
-   "default": "0",
-   "fieldname": "use_backbone_ca",
-   "fieldtype": "Check",
-   "label": "Use Backbone CA"
   },
   {
    "collapsible": 1,
@@ -573,11 +542,20 @@
    "fieldname": "create_stripe_plans",
    "fieldtype": "Button",
    "label": "Create Stripe Plans"
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_4",
+   "fieldtype": "Section Break",
+   "hide_border": 1
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2021-03-24 09:28:51.686130",
+ "modified": "2021-03-25 08:15:22.273277",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
