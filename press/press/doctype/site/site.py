@@ -17,7 +17,7 @@ from frappe.core.utils import find
 from frappe.frappeclient import FrappeClient
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
-from frappe.utils import cint, convert_utc_to_user_timezone, cstr
+from frappe.utils import cint, convert_utc_to_user_timezone, cstr, get_datetime
 from frappe.utils.password import get_decrypted_password
 
 from press.agent import Agent
@@ -797,11 +797,13 @@ class Site(Document):
 		)
 
 	def can_charge_for_subscription(self):
+		today = frappe.utils.getdate()
 		return (
 			self.status == "Active"
 			and self.team
 			and self.team != "Administrator"
 			and not self.free
+			and today > get_datetime(self.trial_end_date)
 		)
 
 	def _create_initial_site_plan_change(self, plan):
