@@ -207,7 +207,7 @@ class Site(Document):
 		self.create_agent_request()
 
 	def create_dns_record(self):
-		default_cluster = frappe.db.get_value("Cluster", {"default": True})
+		default_cluster = frappe.db.get_value("Root Domain", self.domain, "default_cluster")
 		if self.cluster == default_cluster:
 			return
 		proxy_server = frappe.get_value("Server", self.server, "proxy_server")
