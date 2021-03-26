@@ -163,9 +163,6 @@ class LetsEncrypt(BaseCA):
 		self.webroot_directory = settings.webroot_directory
 		self.eff_registration_email = settings.eff_registration_email
 
-		self.aws_access_key_id = settings.aws_access_key_id
-		self.aws_secret_access_key = settings.get_password("aws_secret_access_key")
-
 		# Staging CA provides certificates that are signed by an untrusted root CA
 		# Only use to test certificate procurement/installation flows.
 		# Reference: https://letsencrypt.org/docs/staging-environment/
@@ -183,11 +180,12 @@ class LetsEncrypt(BaseCA):
 			self._obtain_naked()
 
 	def _obtain_wildcard(self):
+		domain = frappe.get_doc("Root Domain", self.domain[2:])
 		environment = os.environ
 		environment.update(
 			{
-				"AWS_ACCESS_KEY_ID": self.aws_access_key_id,
-				"AWS_SECRET_ACCESS_KEY": self.aws_secret_access_key,
+				"AWS_ACCESS_KEY_ID": domain.aws_access_key_id,
+				"AWS_SECRET_ACCESS_KEY": domain.get_password("aws_secret_access_key"),
 			}
 		)
 		self.run(self._certbot_command(), environment=environment)
