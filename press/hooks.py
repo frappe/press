@@ -70,7 +70,7 @@ website_route_rules = [
 
 # before_install = "press.install.before_install"
 after_install = "press.install.after_install"
-after_migrate = "press.api.account.clear_country_list_cache"
+after_migrate = ["press.api.account.clear_country_list_cache", "press.sanity.checks"]
 
 # Desk Notifications
 # ------------------
