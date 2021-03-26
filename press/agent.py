@@ -63,7 +63,7 @@ class Agent:
 			"mariadb_root_password": get_decrypted_password(
 				"Server", site.server, "mariadb_root_password"
 			),
-			"admin_password": get_decrypted_password("Site", site.name, "admin_password"),
+			"admin_password": site.get_password("admin_password"),
 		}
 
 		return self.create_agent_job(
@@ -75,7 +75,7 @@ class Agent:
 			"mariadb_root_password": get_decrypted_password(
 				"Server", site.server, "mariadb_root_password"
 			),
-			"admin_password": get_decrypted_password("Site", site.name, "admin_password"),
+			"admin_password": site.get_password("admin_password"),
 		}
 
 		return self.create_agent_job(
@@ -93,7 +93,7 @@ class Agent:
 			"mariadb_root_password": get_decrypted_password(
 				"Server", site.server, "mariadb_root_password"
 			),
-			"admin_password": get_decrypted_password("Site", site.name, "admin_password"),
+			"admin_password": site.get_password("admin_password"),
 			"database": frappe.get_doc("Remote File", site.remote_database_file).download_link,
 			"public": frappe.get_doc("Remote File", site.remote_public_file).download_link,
 			"private": frappe.get_doc("Remote File", site.remote_private_file).download_link,
@@ -152,7 +152,7 @@ class Agent:
 			"mariadb_root_password": get_decrypted_password(
 				"Server", site.server, "mariadb_root_password"
 			),
-			"admin_password": get_decrypted_password("Site", site.name, "admin_password"),
+			"admin_password": site.get_password("admin_password"),
 			"site_config": sanitized_site_config(site),
 			"database": frappe.get_doc("Remote File", site.remote_database_file).download_link,
 			"public": frappe.get_doc("Remote File", site.remote_public_file).download_link,
@@ -258,9 +258,7 @@ class Agent:
 			if settings.aws_s3_bucket:
 				auth = {
 					"ACCESS_KEY": settings.offsite_backups_access_key_id,
-					"SECRET_KEY": get_decrypted_password(
-						"Press Settings", "Press Settings", "offsite_backups_secret_access_key"
-					),
+					"SECRET_KEY": settings.get_password("offsite_backups_secret_access_key"),
 				}
 				data.update(
 					{"offsite": {"bucket": settings.aws_s3_bucket, "auth": auth, "path": backups_path}}
