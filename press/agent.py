@@ -313,6 +313,11 @@ class Agent:
 			"Add Host to Proxy", "proxy/hosts", data, host=domain.domain, site=domain.site,
 		)
 
+	def setup_wildcard_hosts(self, wildcards):
+		return self.create_agent_job(
+			"Add Wildcard Hosts to Proxy", "proxy/wildcards", wildcards,
+		)
+
 	def setup_redirects(self, site: str, domains: List[str], target: str):
 		data = {"domains": domains, "target": target}
 		return self.create_agent_job(
