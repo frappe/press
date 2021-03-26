@@ -6,8 +6,9 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "dns_provider",
+  "default_cluster",
   "column_break_4",
+  "dns_provider",
   "aws_access_key_id",
   "aws_secret_access_key"
  ],
@@ -36,6 +37,13 @@
    "fieldname": "aws_secret_access_key",
    "fieldtype": "Password",
    "label": "AWS Secret Access Key",
+   "reqd": 1
+  },
+  {
+   "fieldname": "default_cluster",
+   "fieldtype": "Link",
+   "label": "Default Cluster",
+   "options": "Cluster",
    "reqd": 1
   }
  ],
@@ -72,7 +80,7 @@
    "link_fieldname": "domain"
   }
  ],
- "modified": "2021-03-24 09:33:00.441332",
+ "modified": "2021-03-25 11:42:01.377832",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Root Domain",

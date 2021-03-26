@@ -5,19 +5,8 @@
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
- "field_order": [
-  "default"
- ],
- "fields": [
-  {
-   "default": "0",
-   "fieldname": "default",
-   "fieldtype": "Check",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Default"
-  }
- ],
+ "field_order": [],
+ "fields": [],
  "index_web_pages_for_search": 1,
  "links": [
   {
@@ -36,7 +25,7 @@
    "link_fieldname": "cluster"
   }
  ],
- "modified": "2021-01-18 15:13:13.917712",
+ "modified": "2021-03-25 11:43:28.409324",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",
