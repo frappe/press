@@ -1,18 +1,5 @@
 {
- "actions": [
-  {
-   "action": "build",
-   "action_type": "Server Action",
-   "group": "Actions",
-   "label": "Build"
-  },
-  {
-   "action": "build_and_deploy",
-   "action_type": "Server Action",
-   "group": "Actions",
-   "label": "Build and Deploy"
-  }
- ],
+ "actions": [],
  "creation": "2020-01-13 16:21:04.051415",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -170,7 +157,7 @@
   }
  ],
  "links": [],
- "modified": "2021-02-15 11:12:45.514305",
+ "modified": "2021-03-25 10:45:52.791968",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",
