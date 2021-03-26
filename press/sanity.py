@@ -23,7 +23,9 @@ def checks():
 
 	print("Running sanity checks...")
 
-	initialize_webdriver()
+	if not initialize_webdriver():
+		return
+
 	test_browser_assets()
 	test_signup_flow()
 
@@ -35,13 +37,14 @@ def initialize_webdriver():
 			f"Chromedriver not found at {CHROMEDRIVER_PATH}. Skipping Browser Assets Test...",
 			fg="yellow",
 		)
-		return
+		return False
 
 	global chrome
 
 	options = Options()
 	options.headless = True
 	chrome = webdriver.Chrome(CHROMEDRIVER_PATH, options=options)
+	return True
 
 
 def test_browser_assets():
