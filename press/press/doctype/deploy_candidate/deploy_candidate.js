@@ -8,6 +8,18 @@ frappe.ui.form.on('Deploy Candidate', {
 				"query": "press.press.doctype.deploy_candidate.deploy_candidate.desk_app",
 				"filters": { 'release_group': doc.group }
 			}
-		}
+		};
+
+		[
+			[__('Build'), 'build'],
+			[__('Build and Deploy'), 'build_and_deploy']
+		].forEach(([label, method]) => {
+			frm.add_custom_button(
+				label,
+				() => { frm.call(method).then((r) => frm.refresh()) },
+				__('Actions')
+			);
+		});
+
 	}
 });
