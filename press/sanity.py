@@ -23,11 +23,14 @@ def checks():
 
 	print("Running sanity checks...")
 
-	if not initialize_webdriver():
+	try:
+		if not initialize_webdriver():
+			return
+		test_browser_assets()
+		test_signup_flow()
+	except Exception as e:
+		click.secho(f"An error occurred: {e}", fg="yellow")
 		return
-
-	test_browser_assets()
-	test_signup_flow()
 
 
 def initialize_webdriver():
@@ -42,7 +45,10 @@ def initialize_webdriver():
 	global chrome
 
 	options = Options()
-	options.headless = True
+	options.add_argument('--headless')
+	options.add_argument('--no-sandbox')
+	options.add_argument('--disable-dev-shm-usage')
+	options.add_argument('--disable-setuid-sandbox')
 	chrome = webdriver.Chrome(CHROMEDRIVER_PATH, options=options)
 	return True
 
