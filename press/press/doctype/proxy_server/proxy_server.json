@@ -24,7 +24,9 @@
   "frappe_user_password",
   "frappe_public_key",
   "column_break_18",
-  "root_public_key"
+  "root_public_key",
+  "section_break_21",
+  "domains"
  ],
  "fields": [
   {
@@ -160,10 +162,20 @@
    "label": "Frappe User Password",
    "mandatory_depends_on": "eval: doc.provider === \"Scaleway\"",
    "set_only_once": 1
+  },
+  {
+   "fieldname": "section_break_21",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "domains",
+   "fieldtype": "Table",
+   "label": "Domains",
+   "options": "Proxy Server Domain"
   }
  ],
  "links": [],
- "modified": "2021-03-24 09:37:54.270339",
+ "modified": "2021-03-24 10:38:02.059743",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",
