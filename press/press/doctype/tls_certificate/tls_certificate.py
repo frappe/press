@@ -177,10 +177,25 @@ class LetsEncrypt(BaseCA):
 		if self.wildcard:
 			self._obtain_wildcard()
 		else:
-			self._obtain_naked()
+			if frappe.conf.developer_mode:
+				self._obtain_naked_with_dns()
+			else:
+				self._obtain_naked()
 
 	def _obtain_wildcard(self):
 		domain = frappe.get_doc("Root Domain", self.domain[2:])
+		environment = os.environ
+		environment.update(
+			{
+				"AWS_ACCESS_KEY_ID": domain.aws_access_key_id,
+				"AWS_SECRET_ACCESS_KEY": domain.get_password("aws_secret_access_key"),
+			}
+		)
+		self.run(self._certbot_command(), environment=environment)
+
+	def _obtain_naked_with_dns(self):
+		domain = frappe.get_all("Root Domain", pluck="name", limit=1)[0]
+		domain = frappe.get_doc("Root Domain", domain)
 		environment = os.environ
 		environment.update(
 			{
@@ -196,7 +211,7 @@ class LetsEncrypt(BaseCA):
 		self.run(self._certbot_command())
 
 	def _certbot_command(self):
-		if self.wildcard:
+		if self.wildcard or frappe.conf.developer_mode:
 			plugin = "--dns-route53"
 		else:
 			plugin = f"--webroot --webroot-path {self.webroot_directory}"
