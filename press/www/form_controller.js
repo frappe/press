@@ -74,13 +74,15 @@ class FormController {
 	}
 
 	get_form_values($form) {
-		let values = $form.serializeArray();
+		let $inputs = $form.find('input[name], select[name], textarea[name]');
 		let obj = {};
-		values.forEach((d) => {
-			obj[d.name] = d.value;
-		});
-		$form.find('input:checkbox').map(function () {
-			obj[this.name] = this.checked;
+		$inputs.each((i, el) => {
+			let $input = $(el);
+			let value = $input.val();
+			if ($input.is(':checkbox')) {
+				value = $input.is(':checked');
+			}
+			obj[$input.prop('name')] = value;
 		});
 		return obj;
 	}
