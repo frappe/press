@@ -37,6 +37,13 @@
   args:
     chdir: /home/frappe/agent
 
+- name: Create Agent NGINX Configuration Directory
+  become: yes
+  become_user: frappe
+  file:
+    dest: /home/frappe/agent/nginx
+    state: directory
+
 - name: Setup Agent Authentication
   become: yes
   become_user: frappe
@@ -65,13 +72,6 @@
   command: /home/frappe/agent/env/bin/agent setup supervisor
   args:
     chdir: /home/frappe/agent
-
-- name: Create Agent NGINX Configuration Directory
-  become: yes
-  become_user: frappe
-  file:
-    dest: /home/frappe/agent/nginx
-    state: directory
 
 - name: Create NGINX Root Configuration File
   become: yes

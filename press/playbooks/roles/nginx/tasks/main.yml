@@ -4,6 +4,7 @@
     pkg:
       - nginx
       - nginx-extras
+      - apache2-utils
     state: present
 
 - name: Remove Default Enabled NGINX Virtual Host
