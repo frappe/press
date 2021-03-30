@@ -42,7 +42,7 @@
 		get_site_status()
 			.then(site => {
 				if (site.status != 'Active') {
-					setTimeout(poll_site_status, 1000)
+					setTimeout(poll_site_status, 2000)
 				} else {
 					get_site_url_and_sid().then(site => {
 						window.open(`${site.url}/app?sid=${site.sid}`, '_self');

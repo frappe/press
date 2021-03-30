@@ -18,7 +18,7 @@
   "phone_number",
   "subdomain",
   "domain",
-  "users",
+  "no_of_employees",
   "company",
   "designation",
   "referral_source"
@@ -91,11 +91,6 @@
    "label": "Domain"
   },
   {
-   "fieldname": "users",
-   "fieldtype": "Int",
-   "label": "Users"
-  },
-  {
    "fieldname": "company",
    "fieldtype": "Data",
    "label": "Company"
@@ -109,12 +104,17 @@
    "fieldname": "referral_source",
    "fieldtype": "Data",
    "label": "Referral Source"
+  },
+  {
+   "fieldname": "no_of_employees",
+   "fieldtype": "Data",
+   "label": "Number of employees"
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-03-18 15:16:30.062962",
+ "modified": "2021-03-30 12:51:23.023667",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",
