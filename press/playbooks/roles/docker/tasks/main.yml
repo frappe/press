@@ -43,6 +43,16 @@
       - docker
     append: true
 
+- name: Setup Docker Metrics
+  template:
+    src: daemon.json
+    dest: /etc/docker/daemon.json
+
+- name: Restart Docker Daemon
+  systemd:
+    name: docker
+    state: restarted
+
 - name: Initialize Docker Swarm
   command: docker swarm init --advertise-addr {{ private_ip }}
 
