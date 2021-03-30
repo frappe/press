@@ -58,7 +58,6 @@ class ProxyServer(BaseServer):
 
 	def _setup_server(self):
 		agent_password = self.get_password("agent_password")
-		domain = frappe.db.get_value("Press Settings", "Press Settings", "domain")
 		certificate_name = frappe.db.get_value(
 			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
 		)
@@ -70,7 +69,7 @@ class ProxyServer(BaseServer):
 				variables={
 					"server": self.name,
 					"workers": 1,
-					"domain": domain,
+					"domain": self.domain,
 					"agent_password": agent_password,
 					"certificate_private_key": certificate.private_key,
 					"certificate_full_chain": certificate.full_chain,
