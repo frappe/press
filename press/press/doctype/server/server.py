@@ -32,11 +32,11 @@ class BaseServer(Document):
 			self.agent_password = frappe.generate_hash(length=32)
 
 	def ping_agent(self):
-		agent = Agent(self.name)
+		agent = Agent(self.name, self.doctype)
 		return agent.ping()
 
 	def update_agent(self):
-		agent = Agent(self.name)
+		agent = Agent(self.name, self.doctype)
 		return agent.update()
 
 	def prepare_scaleway_server(self):
