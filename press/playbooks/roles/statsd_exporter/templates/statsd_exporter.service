@@ -1,0 +1,14 @@
+[Unit]
+Description=Prometheus StatsD Exporter
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/opt/statsd_exporter/statsd_exporter --web.listen-address=127.0.0.1:9102 --statsd.listen-udp={{ private_ip }}:9125 --statsd.listen-tcp={{ private_ip }}:9125 --statsd.mapping-config /opt/statsd_exporter/config.yml
+SyslogIdentifier=statsd_exporter
+Restart=always
+RestartSec=1
+StartLimitInterval=0
+
+[Install]
+WantedBy=multi-user.target

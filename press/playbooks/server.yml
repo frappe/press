@@ -3,7 +3,7 @@
   hosts: all
   become: yes
   become_user: root
-  gather_facts: no
+  gather_facts: yes
   roles:
     - role: essentials
     - role: user
@@ -13,3 +13,4 @@
     - role: docker
     - role: node_exporter
     - role: cadvisor
+    - role: statsd_exporter

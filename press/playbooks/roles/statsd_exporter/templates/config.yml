@@ -1,0 +1,32 @@
+mappings:
+  - match: "*.gunicorn.request.status.*"
+    name: gunicorn_request_status
+    help: HTTP response code
+    labels:
+      status: "$2"
+      job: "$1"
+
+  - match: "*.gunicorn.requests"
+    name: gunicorn_requests
+    help: Number of HTTP requests
+    labels:
+      job: "$1"
+
+  - match: "*.gunicorn.request.duration"
+    name: gunicorn_request_duration
+    help: HTTP request duration in milliseconds
+    labels:
+      job: "$1"
+
+  - match: "*.gunicorn.workers"
+    name: gunicorn_workers
+    help: Number of workers managed by the arbiter
+    labels:
+      job: "$1"
+
+  - match: "*.gunicorn.log.*"
+    name: gunicorn_log
+    help: Number of log messages
+    labels:
+      level: "$2"
+      job: "$1"
