@@ -5,6 +5,18 @@
 import frappe
 from frappe.model.document import Document
 
+from press.telegram_utils import Telegram
+
 
 class AuditLog(Document):
-	pass
+	def after_insert(self):
+		if self.status == "Failure":
+			self.notify()
+
+	def notify(self):
+		domain = frappe.get_value("Press Settings", "Press Settings", "domain")
+		message = f"""*FAILED AUDIT*
+		[{self.type}]({domain}{self.get_url()})
+		"""
+		telegram = Telegram()
+		telegram.send(message)
