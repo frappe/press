@@ -10,4 +10,5 @@
     - role: nginx
     - role: docker
     - role: registry
+    - role: node_exporter
     - role: cadvisor

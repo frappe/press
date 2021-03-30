@@ -11,4 +11,5 @@
     - role: agent
     - role: bench
     - role: docker
+    - role: node_exporter
     - role: cadvisor
