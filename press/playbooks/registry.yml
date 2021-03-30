@@ -8,6 +8,7 @@
     - role: essentials
     - role: user
     - role: nginx
+    - role: agent
     - role: docker
     - role: registry
     - role: node_exporter
