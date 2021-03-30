@@ -10,3 +10,4 @@
     - role: nginx
     - role: agent
     - role: proxy
+    - role: node_exporter

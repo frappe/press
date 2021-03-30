@@ -10,3 +10,4 @@
     - role: mariadb
     - role: nginx
     - role: agent
+    - role: node_exporter
