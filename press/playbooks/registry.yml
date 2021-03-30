@@ -10,3 +10,4 @@
     - role: nginx
     - role: docker
     - role: registry
+    - role: cadvisor

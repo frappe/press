@@ -1,0 +1,28 @@
+---
+- name: Create cAdvisor Directory
+  file:
+    path: /opt/cadvisor
+    state: directory
+    mode: 0755
+
+- name: Download cAdvisor Binary
+  get_url:
+    url: https://github.com/google/cadvisor/releases/download/v0.37.5/cadvisor
+    checksum: sha256:0becc44bc1f4bdf82485b1136897b421604c474a2cf7c1106fd2c032cbf6f5cb
+    dest: /opt/cadvisor/cadvisor
+    mode: 0755
+
+- name: Create cAdvisor Systemd Service File
+  template:
+    src: cadvisor.service
+    dest: /etc/systemd/system/cadvisor.service
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Restart cAdvisor Service
+  systemd:
+    daemon_reload: true
+    name: cadvisor
+    enabled: yes
+    state: restarted
