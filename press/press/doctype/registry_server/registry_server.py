@@ -11,6 +11,7 @@ from press.utils import log_error
 
 class RegistryServer(BaseServer):
 	def validate(self):
+		self.validate_agent_password()
 		self.validate_registry_username()
 		self.validate_registry_password()
 
@@ -23,6 +24,7 @@ class RegistryServer(BaseServer):
 			self.registry_username = "frappe"
 
 	def _setup_server(self):
+		agent_password = self.get_password("agent_password")
 		certificate_name = frappe.db.get_value(
 			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
 		)
@@ -33,6 +35,9 @@ class RegistryServer(BaseServer):
 				server=self,
 				variables={
 					"server": self.name,
+					"workers": 1,
+					"domain": self.domain,
+					"agent_password": agent_password,
 					"private_ip": self.private_ip,
 					"registry_username": self.registry_username,
 					"registry_password": self.get_password("registry_password"),

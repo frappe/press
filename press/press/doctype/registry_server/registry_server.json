@@ -17,6 +17,8 @@
   "private_ip",
   "private_mac_address",
   "private_vlan_id",
+  "agent_section",
+  "agent_password",
   "registry_section",
   "registry_username",
   "column_break_10",
@@ -162,6 +164,16 @@
    "label": "Private VLAN ID",
    "mandatory_depends_on": "eval: doc.provider === \"Scaleway\"",
    "set_only_once": 1
+  },
+  {
+   "fieldname": "agent_section",
+   "fieldtype": "Section Break",
+   "label": "Agent"
+  },
+  {
+   "fieldname": "agent_password",
+   "fieldtype": "Password",
+   "label": "Agent Password"
   }
  ],
  "links": [
@@ -170,7 +182,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2021-03-24 09:38:12.151562",
+ "modified": "2021-03-30 15:36:45.109884",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Registry Server",
