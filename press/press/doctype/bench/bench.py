@@ -59,6 +59,7 @@ class Bench(Document):
 		)
 		self.config = json.dumps(config, indent=4)
 
+		server_private_ip = frappe.db.get_value("Server", self.server, "private_ip")
 		bench_config = {
 			"docker_image": self.docker_image,
 			"web_port": 18000 + self.port_offset,
@@ -66,6 +67,7 @@ class Bench(Document):
 			"gunicorn_workers": self.gunicorn_workers,
 			"background_workers": self.background_workers,
 			"http_timeout": 120,
+			"statsd_host": f"{server_private_ip}:9125",
 		}
 		self.bench_config = json.dumps(bench_config, indent=4)
 
@@ -163,6 +165,7 @@ def process_archive_bench_job_update(job):
 
 
 def archive_obsolete_benches():
+	return
 	benches = frappe.get_all(
 		"Bench", fields=["name", "candidate"], filters={"status": "Active"}
 	)
