@@ -58,8 +58,16 @@
 				</div>
 				<div class="form-row">
 					<div class="form-group col">
-						<label for="users">Number of Users</label>
-						<input type="number" class="form-control" id="users" name="users">
+						<label for="no_of_employees">Number of employees</label>
+						<select id="no_of_employees" name="no_of_employees" class="custom-select">
+							<option selected disabled></option>
+							<option>1 - 10</option>
+							<option>11 - 50</option>
+							<option>51 - 200</option>
+							<option>201 - 500</option>
+							<option>501 - 1000</option>
+							<option>1000+</option>
+						</select>
 					</div>
 					<div class="form-group col">
 						<label for="designation">Your Designation</label>
@@ -129,18 +137,6 @@
 				return "This cannot be blank";
 			}
 		},
-		users: (value) => {
-			let minimum_user_count = 20;
-			if (value < minimum_user_count) {
-				return (
-					"Number of users must be atleast " +
-					minimum_user_count
-				);
-			}
-			if (value > 100000) {
-				return "Number of users must be less than 100000";
-			}
-		},
 		company: (value) => {
 			if (!value) {
 				return "Company Name cannot be blank";
@@ -156,6 +152,11 @@
 				return "Referral source cannot be blank";
 			}
 		},
+		no_of_employees: (value) => {
+			if (!value) {
+				return 'Please select a value';
+			}
+		}
 	};
 
 	function regional_settings($form, values) {
@@ -164,7 +165,7 @@
 
 	function business_settings($form, values) {
 		Object.assign(form_values, values);
-		return call('press.api.central.setup_account', { key }, $form)
+		return call('press.api.central.setup_account', { key, business_data: form_values }, $form)
 			.then(() => {
 				window.location.href = '/prepare-site?key=' + key;
 			});
