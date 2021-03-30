@@ -1,0 +1,219 @@
+{
+ "actions": [],
+ "creation": "2021-03-30 16:42:06.785344",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "status",
+  "hostname",
+  "domain",
+  "column_break_4",
+  "provider",
+  "is_server_setup",
+  "networking_section",
+  "ip",
+  "column_break_9",
+  "private_ip",
+  "private_mac_address",
+  "private_vlan_id",
+  "agent_section",
+  "agent_password",
+  "registry_section",
+  "prometheus_username",
+  "column_break_10",
+  "prometheus_password",
+  "grafana_section",
+  "grafana_password",
+  "ssh_section",
+  "frappe_user_password",
+  "frappe_public_key",
+  "column_break_20",
+  "root_public_key"
+ ],
+ "fields": [
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Pending\nInstalling\nActive\nBroken\nArchived",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "hostname",
+   "fieldtype": "Data",
+   "label": "Hostname",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "domain",
+   "fieldtype": "Link",
+   "label": "Domain",
+   "options": "Root Domain",
+   "read_only": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Generic",
+   "fieldname": "provider",
+   "fieldtype": "Select",
+   "label": "Provider",
+   "options": "Generic\nScaleway",
+   "set_only_once": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_server_setup",
+   "fieldtype": "Check",
+   "label": "Server Setup",
+   "read_only": 1
+  },
+  {
+   "fieldname": "networking_section",
+   "fieldtype": "Section Break",
+   "label": "Networking"
+  },
+  {
+   "fieldname": "ip",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "IP",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "column_break_9",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "private_ip",
+   "fieldtype": "Data",
+   "label": "Private IP",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "depends_on": "eval: doc.provider === \"Scaleway\"",
+   "fieldname": "private_mac_address",
+   "fieldtype": "Data",
+   "label": "Private Mac Address",
+   "mandatory_depends_on": "eval: doc.provider === \"Scaleway\"",
+   "set_only_once": 1
+  },
+  {
+   "depends_on": "eval: doc.provider === \"Scaleway\"",
+   "fieldname": "private_vlan_id",
+   "fieldtype": "Data",
+   "label": "Private VLAN ID",
+   "mandatory_depends_on": "eval: doc.provider === \"Scaleway\"",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "agent_section",
+   "fieldtype": "Section Break",
+   "label": "Agent"
+  },
+  {
+   "fieldname": "agent_password",
+   "fieldtype": "Password",
+   "label": "Agent Password"
+  },
+  {
+   "fieldname": "registry_section",
+   "fieldtype": "Section Break",
+   "label": "Prometheus"
+  },
+  {
+   "fieldname": "prometheus_username",
+   "fieldtype": "Data",
+   "label": "Prometheus Username",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "column_break_10",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "prometheus_password",
+   "fieldtype": "Password",
+   "label": "Prometheus Password",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "grafana_section",
+   "fieldtype": "Section Break",
+   "label": "Grafana"
+  },
+  {
+   "fieldname": "grafana_password",
+   "fieldtype": "Password",
+   "label": "Grafana Password"
+  },
+  {
+   "fieldname": "ssh_section",
+   "fieldtype": "Section Break",
+   "label": "SSH"
+  },
+  {
+   "depends_on": "eval: doc.provider === \"Scaleway\"",
+   "fieldname": "frappe_user_password",
+   "fieldtype": "Password",
+   "label": "Frappe User Password",
+   "mandatory_depends_on": "eval: doc.provider === \"Scaleway\"",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "frappe_public_key",
+   "fieldtype": "Code",
+   "label": "Frappe Public Key",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_20",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "root_public_key",
+   "fieldtype": "Code",
+   "label": "Root Public Key",
+   "read_only": 1
+  }
+ ],
+ "links": [
+  {
+   "link_doctype": "Ansible Play",
+   "link_fieldname": "server"
+  }
+ ],
+ "modified": "2021-03-30 16:42:06.785344",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Monitoring Server",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}
