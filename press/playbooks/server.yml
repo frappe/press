@@ -11,3 +11,4 @@
     - role: agent
     - role: bench
     - role: docker
+    - role: cadvisor
