@@ -7,6 +7,73 @@
       - apache2-utils
     state: present
 
+- name: Setup NGINX Source Repository
+  copy:
+    content: "deb-src http://nginx.org/packages/mainline/ubuntu/ {{ ansible_distribution_release }} nginx"
+    dest: /etc/apt/sources.list.d/nginx.list
+
+- name: Add NGINX Repository Key
+  apt_key:
+    url: https://nginx.org/keys/nginx_signing.key
+    state: present
+
+- name: Update APT Cache
+  apt:
+    update_cache: yes
+
+- name: Install NGINX Build Dependencies
+  apt:
+    pkg:
+      - nginx
+    state: build-dep
+
+- name: Extract NGINX Version
+  shell: "nginx -v 2>&1 | grep -oP '[\\d.]*'"
+  register: nginx_version
+
+- name: Create NGINX Source Directory
+  file:
+    dest: /opt/nginx
+    state: directory
+
+- name: Download NGINX Source Archive
+  unarchive:
+    src: http://nginx.org/download/nginx-{{ nginx_version.stdout }}.tar.gz
+    dest: /opt/nginx
+    remote_src: yes
+
+- name: Clone NGINX VTS Module Repository
+  git:
+    repo: https://github.com/vozlt/nginx-module-vts
+    dest: /opt/nginx-modules/nginx-module-vts
+
+- name: Extract NGINX Compile Flags
+  shell: "nginx -V 2>&1 | grep -oP '\\--with-[-\\w]* '  | tr '\\n' ' '"
+  register: nginx_compile_flags
+
+- name: Configure NGINX Modules
+  shell: "./configure {{ nginx_compile_flags.stdout }} --add-dynamic-module=/opt/nginx-modules/nginx-module-vts"
+  args:
+    chdir: "/opt/nginx/nginx-{{ nginx_version.stdout }}"
+
+- name: Compile NGINX modules
+  shell: "make modules"
+  args:
+    chdir: "/opt/nginx/nginx-{{ nginx_version.stdout }}"
+
+- name: Copy NGINX VTS Module Shared Object File
+  copy:
+    src: "/opt/nginx/nginx-{{ nginx_version.stdout }}/objs/ngx_http_vhost_traffic_status_module.so"
+    dest: /usr/lib/nginx/modules
+    remote_src: yes
+
+- name: Create VTS Database File
+  file:
+    path: /var/log/nginx/vts.db
+    state: touch
+    owner: www-data
+    group: www-data
+
 - name: Remove Default Enabled NGINX Virtual Host
   file:
     path: /etc/nginx/sites-enabled/default
