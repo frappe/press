@@ -11,3 +11,4 @@
     - role: nginx
     - role: agent
     - role: node_exporter
+    - role: mysqld_exporter
