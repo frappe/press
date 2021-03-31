@@ -379,22 +379,20 @@ class Team(Document):
 		why = ""
 		allow = (True, "")
 
-		return allow
+		if self.free_account:
+			return allow
 
-		# if self.free_account:
-		# 	return allow
+		if self.is_partner_and_has_enough_credits():
+			return allow
+		else:
+			why = "Cannot create site due to insufficient credits"
 
-		# if self.is_partner_and_has_enough_credits():
-		# 	return allow
-		# else:
-		# 	why = "Cannot create site due to insufficient credits"
+		if self.default_payment_method:
+			return allow
+		else:
+			why = "Cannot create site without adding a card"
 
-		# if self.default_payment_method:
-		# 	return allow
-		# else:
-		# 	why = "Cannot create site without adding a card"
-
-		# return (False, why)
+		return (False, why)
 
 	def get_onboarding(self):
 		valid_steps = [step for step in self.onboarding if step.status != "Not Applicable"]

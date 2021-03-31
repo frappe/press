@@ -17,25 +17,37 @@ class AccountRequest(Document):
 			self.request_key = random_string(32)
 
 		self.ip_address = frappe.local.request_ip
+		self.send_verification_email()
 
-		url = get_url("/dashboard/setup-account/" + self.request_key)
+	def send_verification_email(self):
+		url = self.get_verification_url()
+
 		if frappe.conf.developer_mode:
-			print()
-			print(f"Setup account URL for {self.email}:")
+			print(f"\nSetup account URL for {self.email}:")
 			print(url)
 			print()
+			return
 
-		subject = "Verify your account"
-		template = "verify_account"
-		if self.invited_by and self.role != "Press Admin":
-			subject = f"You are invited by {self.invited_by} to join Frappe Cloud"
-			template = "invite_team_member"
+		if self.erpnext:
+			subject = "Set Up Your ERPNext Account"
+			template = "erpnext_verify_account"
+		else:
+			subject = "Verify your account"
+			template = "verify_account"
 
-		if not frappe.conf.developer_mode:
-			frappe.sendmail(
-				recipients=self.email,
-				subject=subject,
-				template=template,
-				args={"link": url},
-				now=True,
-			)
+			if self.invited_by and self.role != "Press Admin":
+				subject = f"You are invited by {self.invited_by} to join Frappe Cloud"
+				template = "invite_team_member"
+
+		frappe.sendmail(
+			recipients=self.email,
+			subject=subject,
+			template=template,
+			args={"link": url},
+			now=True,
+		)
+
+	def get_verification_url(self):
+		if self.erpnext:
+			return get_url(f"/setup-account?key={self.request_key}")
+		return get_url(f"/dashboard/setup-account/{self.request_key}")
