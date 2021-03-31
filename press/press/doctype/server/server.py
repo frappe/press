@@ -70,6 +70,27 @@ class BaseServer(Document):
 			self.doctype, self.name, "_setup_server", queue="long", timeout=1200
 		)
 
+	def install_nginx(self):
+		self.status = "Installing"
+		self.save()
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_install_nginx", queue="long", timeout=1200
+		)
+
+	def _install_nginx(self):
+		try:
+			ansible = Ansible(playbook="nginx.yml", server=self,)
+			play = ansible.run()
+			self.reload()
+			if play.status == "Success":
+				self.status = "Active"
+			else:
+				self.status = "Broken"
+		except Exception:
+			self.status = "Broken"
+			log_error("NGINX Install Exception", server=self.as_dict())
+		self.save()
+
 	def ping_ansible(self):
 		try:
 			ansible = Ansible(playbook="ping.yml", server=self)
