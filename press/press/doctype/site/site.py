@@ -230,7 +230,7 @@ class Site(Document):
 				aws_access_key_id=domain.aws_access_key_id,
 				aws_secret_access_key=domain.get_password("aws_secret_access_key"),
 			)
-			hosted_zone = client.list_hosted_zones_by_name(DNSName=domain)["HostedZones"][0][
+			hosted_zone = client.list_hosted_zones_by_name(DNSName=domain.domain)["HostedZones"][0][
 				"Id"
 			]
 			client.change_resource_record_sets(
@@ -252,7 +252,7 @@ class Site(Document):
 		except Exception:
 			log_error(
 				"Route 53 Record Creation Error",
-				domain=domain,
+				domain=domain.domain,
 				site=self.name,
 				proxy_server=proxy_server,
 			)
