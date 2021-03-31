@@ -1,0 +1,15 @@
+[Unit]
+Description=cAdvisor Server
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/opt/cadvisor/cadvisor -listen_ip 127.0.0.1 --port 9338
+
+SyslogIdentifier=cadvisor
+Restart=always
+RestartSec=1
+StartLimitInterval=0
+
+[Install]
+WantedBy=multi-user.target

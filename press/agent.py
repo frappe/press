@@ -56,14 +56,15 @@ class Agent:
 
 	def new_site(self, site):
 		apps = [app.app for app in site.apps]
+		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
 		data = {
 			"config": json.loads(site.config),
 			"apps": apps,
 			"name": site.name,
 			"mariadb_root_password": get_decrypted_password(
-				"Server", site.server, "mariadb_root_password"
+				"Database Server", database_server, "mariadb_root_password"
 			),
-			"admin_password": get_decrypted_password("Site", site.name, "admin_password"),
+			"admin_password": site.get_password("admin_password"),
 		}
 
 		return self.create_agent_job(
@@ -71,11 +72,12 @@ class Agent:
 		)
 
 	def reinstall_site(self, site):
+		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
 		data = {
 			"mariadb_root_password": get_decrypted_password(
-				"Server", site.server, "mariadb_root_password"
+				"Database Server", database_server, "mariadb_root_password"
 			),
-			"admin_password": get_decrypted_password("Site", site.name, "admin_password"),
+			"admin_password": site.get_password("admin_password"),
 		}
 
 		return self.create_agent_job(
@@ -88,12 +90,13 @@ class Agent:
 
 	def restore_site(self, site):
 		apps = [app.app for app in site.apps]
+		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
 		data = {
 			"apps": apps,
 			"mariadb_root_password": get_decrypted_password(
-				"Server", site.server, "mariadb_root_password"
+				"Database Server", database_server, "mariadb_root_password"
 			),
-			"admin_password": get_decrypted_password("Site", site.name, "admin_password"),
+			"admin_password": site.get_password("admin_password"),
 			"database": frappe.get_doc("Remote File", site.remote_database_file).download_link,
 			"public": frappe.get_doc("Remote File", site.remote_public_file).download_link,
 			"private": frappe.get_doc("Remote File", site.remote_private_file).download_link,
@@ -145,14 +148,15 @@ class Agent:
 
 			return json.dumps(sanitized_config)
 
+		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
 		data = {
 			"config": json.loads(site.config),
 			"apps": apps,
 			"name": site.name,
 			"mariadb_root_password": get_decrypted_password(
-				"Server", site.server, "mariadb_root_password"
+				"Database Server", database_server, "mariadb_root_password"
 			),
-			"admin_password": get_decrypted_password("Site", site.name, "admin_password"),
+			"admin_password": site.get_password("admin_password"),
 			"site_config": sanitized_site_config(site),
 			"database": frappe.get_doc("Remote File", site.remote_database_file).download_link,
 			"public": frappe.get_doc("Remote File", site.remote_public_file).download_link,
@@ -237,8 +241,12 @@ class Agent:
 		)
 
 	def archive_site(self, site):
-		password = get_decrypted_password("Server", site.server, "mariadb_root_password")
-		data = {"mariadb_root_password": password}
+		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
+		data = {
+			"mariadb_root_password": get_decrypted_password(
+				"Database Server", database_server, "mariadb_root_password"
+			),
+		}
 
 		return self.create_agent_job(
 			"Archive Site",
@@ -258,9 +266,7 @@ class Agent:
 			if settings.aws_s3_bucket:
 				auth = {
 					"ACCESS_KEY": settings.offsite_backups_access_key_id,
-					"SECRET_KEY": get_decrypted_password(
-						"Press Settings", "Press Settings", "offsite_backups_secret_access_key"
-					),
+					"SECRET_KEY": settings.get_password("offsite_backups_secret_access_key"),
 				}
 				data.update(
 					{"offsite": {"bucket": settings.aws_s3_bucket, "auth": auth, "path": backups_path}}
@@ -311,6 +317,11 @@ class Agent:
 		}
 		return self.create_agent_job(
 			"Add Host to Proxy", "proxy/hosts", data, host=domain.domain, site=domain.site,
+		)
+
+	def setup_wildcard_hosts(self, wildcards):
+		return self.create_agent_job(
+			"Add Wildcard Hosts to Proxy", "proxy/wildcards", wildcards,
 		)
 
 	def setup_redirects(self, site: str, domains: List[str], target: str):

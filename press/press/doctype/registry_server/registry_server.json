@@ -8,19 +8,26 @@
   "status",
   "hostname",
   "domain",
+  "column_break_4",
+  "provider",
   "is_server_setup",
-  "column_break_3",
+  "networking_section",
   "ip",
+  "column_break_9",
   "private_ip",
+  "private_mac_address",
+  "private_vlan_id",
+  "agent_section",
+  "agent_password",
   "registry_section",
   "registry_username",
   "column_break_10",
   "registry_password",
-  "reverse_proxy_section",
   "ssh_section",
-  "root_public_key",
+  "frappe_user_password",
+  "frappe_public_key",
   "column_break_20",
-  "frappe_public_key"
+  "root_public_key"
  ],
  "fields": [
   {
@@ -43,8 +50,10 @@
   },
   {
    "fieldname": "domain",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "label": "Domain",
+   "options": "Root Domain",
+   "read_only": 1,
    "set_only_once": 1
   },
   {
@@ -53,10 +62,6 @@
    "fieldtype": "Check",
    "label": "Server Setup",
    "read_only": 1
-  },
-  {
-   "fieldname": "column_break_3",
-   "fieldtype": "Column Break"
   },
   {
    "fieldname": "ip",
@@ -82,18 +87,13 @@
    "fieldname": "registry_username",
    "fieldtype": "Data",
    "label": "Registry Username",
-   "reqd": 1
+   "set_only_once": 1
   },
   {
    "fieldname": "registry_password",
    "fieldtype": "Password",
    "label": "Registry Password",
-   "reqd": 1
-  },
-  {
-   "fieldname": "reverse_proxy_section",
-   "fieldtype": "Section Break",
-   "label": "Reverse Proxy"
+   "set_only_once": 1
   },
   {
    "fieldname": "ssh_section",
@@ -119,6 +119,61 @@
   {
    "fieldname": "column_break_10",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Generic",
+   "fieldname": "provider",
+   "fieldtype": "Select",
+   "label": "Provider",
+   "options": "Generic\nScaleway",
+   "set_only_once": 1
+  },
+  {
+   "depends_on": "eval: doc.provider === \"Scaleway\"",
+   "fieldname": "frappe_user_password",
+   "fieldtype": "Password",
+   "label": "Frappe User Password",
+   "mandatory_depends_on": "eval: doc.provider === \"Scaleway\"",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "networking_section",
+   "fieldtype": "Section Break",
+   "label": "Networking"
+  },
+  {
+   "fieldname": "column_break_9",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval: doc.provider === \"Scaleway\"",
+   "fieldname": "private_mac_address",
+   "fieldtype": "Data",
+   "label": "Private Mac Address",
+   "mandatory_depends_on": "eval: doc.provider === \"Scaleway\"",
+   "set_only_once": 1
+  },
+  {
+   "depends_on": "eval: doc.provider === \"Scaleway\"",
+   "fieldname": "private_vlan_id",
+   "fieldtype": "Data",
+   "label": "Private VLAN ID",
+   "mandatory_depends_on": "eval: doc.provider === \"Scaleway\"",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "agent_section",
+   "fieldtype": "Section Break",
+   "label": "Agent"
+  },
+  {
+   "fieldname": "agent_password",
+   "fieldtype": "Password",
+   "label": "Agent Password"
   }
  ],
  "links": [
@@ -127,7 +182,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2021-01-04 18:57:10.909243",
+ "modified": "2021-03-30 15:36:45.109884",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Registry Server",

@@ -9,6 +9,7 @@ import frappe
 
 def after_install():
 	create_administrator_team()
+	create_default_cluster()
 
 
 def create_administrator_team():
@@ -23,3 +24,8 @@ def create_administrator_team():
 		}
 	)
 	administrator_team.insert()
+
+
+def create_default_cluster():
+	default_cluster = frappe.get_doc({"doctype": "Cluster", "name": "Default"})
+	default_cluster.insert()

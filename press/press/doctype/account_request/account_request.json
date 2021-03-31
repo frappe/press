@@ -8,9 +8,20 @@
   "request_key",
   "team",
   "email",
+  "erpnext",
   "role",
   "invited_by",
-  "ip_address"
+  "ip_address",
+  "country",
+  "first_name",
+  "last_name",
+  "phone_number",
+  "subdomain",
+  "domain",
+  "no_of_employees",
+  "company",
+  "designation",
+  "referral_source"
  ],
  "fields": [
   {
@@ -42,12 +53,68 @@
    "fieldname": "ip_address",
    "fieldtype": "Data",
    "label": "IP Address"
+  },
+  {
+   "fieldname": "country",
+   "fieldtype": "Data",
+   "label": "Country"
+  },
+  {
+   "fieldname": "first_name",
+   "fieldtype": "Data",
+   "label": "First Name"
+  },
+  {
+   "fieldname": "last_name",
+   "fieldtype": "Data",
+   "label": "Last Name"
+  },
+  {
+   "fieldname": "phone_number",
+   "fieldtype": "Data",
+   "label": "Phone Number"
+  },
+  {
+   "fieldname": "subdomain",
+   "fieldtype": "Data",
+   "label": "Subdomain"
+  },
+  {
+   "default": "0",
+   "fieldname": "erpnext",
+   "fieldtype": "Check",
+   "label": "ERPNext"
+  },
+  {
+   "fieldname": "domain",
+   "fieldtype": "Data",
+   "label": "Domain"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Data",
+   "label": "Company"
+  },
+  {
+   "fieldname": "designation",
+   "fieldtype": "Data",
+   "label": "Designation"
+  },
+  {
+   "fieldname": "referral_source",
+   "fieldtype": "Data",
+   "label": "Referral Source"
+  },
+  {
+   "fieldname": "no_of_employees",
+   "fieldtype": "Data",
+   "label": "Number of employees"
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-02-15 10:45:50.580419",
+ "modified": "2021-03-30 12:51:23.023667",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",

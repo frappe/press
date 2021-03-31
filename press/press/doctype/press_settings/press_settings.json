@@ -6,28 +6,17 @@
  "engine": "InnoDB",
  "field_order": [
   "domain",
-  "bench_configuration",
+  "cluster",
   "trial_sites_count",
-  "dns_section",
-  "dns_provider",
-  "column_break_6",
-  "aws_access_key_id",
-  "aws_secret_access_key",
+  "column_break_2",
+  "bench_configuration",
   "lets_encrypt_section",
   "certbot_directory",
   "webroot_directory",
+  "rsa_key_size",
   "column_break_15",
   "eff_registration_email",
   "use_staging_ca",
-  "tls_section",
-  "rsa_key_size",
-  "column_break_11",
-  "wildcard_tls_certificate",
-  "backbone_section",
-  "backbone_directory",
-  "column_break_20",
-  "backbone_intermediate_ca",
-  "use_backbone_ca",
   "stripe_settings_section",
   "stripe_account",
   "create_stripe_plans",
@@ -99,7 +88,14 @@
   "product_documentation_section",
   "publish_docs",
   "storage_and_disk_limits_section",
-  "enforce_storage_limits"
+  "enforce_storage_limits",
+  "erpnext_signups_section",
+  "erpnext_domain",
+  "erpnext_cluster",
+  "erpnext_plan",
+  "erpnext_group",
+  "column_break_89",
+  "erpnext_apps"
  ],
  "fields": [
   {
@@ -113,37 +109,9 @@
   },
   {
    "fieldname": "domain",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "label": "Domain",
-   "reqd": 1
-  },
-  {
-   "collapsible": 1,
-   "fieldname": "dns_section",
-   "fieldtype": "Section Break",
-   "label": "DNS"
-  },
-  {
-   "fieldname": "aws_access_key_id",
-   "fieldtype": "Data",
-   "label": "AWS Access Key ID"
-  },
-  {
-   "fieldname": "aws_secret_access_key",
-   "fieldtype": "Password",
-   "label": "AWS Secret Access Key"
-  },
-  {
-   "default": "AWS Route 53",
-   "fieldname": "dns_provider",
-   "fieldtype": "Select",
-   "label": "DNS Provider",
-   "options": "AWS Route 53",
-   "reqd": 1
-  },
-  {
-   "fieldname": "column_break_6",
-   "fieldtype": "Column Break"
+   "options": "Root Domain"
   },
   {
    "default": "2048",
@@ -159,10 +127,6 @@
    "label": "EFF Registration Email"
   },
   {
-   "fieldname": "column_break_11",
-   "fieldtype": "Column Break"
-  },
-  {
    "fieldname": "webroot_directory",
    "fieldtype": "Data",
    "label": "Webroot Directory"
@@ -171,18 +135,6 @@
    "fieldname": "certbot_directory",
    "fieldtype": "Data",
    "label": "Certbot Directory"
-  },
-  {
-   "collapsible": 1,
-   "fieldname": "tls_section",
-   "fieldtype": "Section Break",
-   "label": "TLS"
-  },
-  {
-   "fieldname": "wildcard_tls_certificate",
-   "fieldtype": "Link",
-   "label": "Wildcard TLS Certificate",
-   "options": "TLS Certificate"
   },
   {
    "fieldname": "stripe_account",
@@ -477,45 +429,18 @@
    "label": "Product Documentation"
   },
   {
-   "fieldname": "backbone_intermediate_ca",
-   "fieldtype": "Link",
-   "label": "Backbone Intermediate CA",
-   "options": "Certificate Authority"
-  },
-  {
    "collapsible": 1,
    "fieldname": "lets_encrypt_section",
    "fieldtype": "Section Break",
    "label": "Let's Encrypt"
   },
   {
-   "collapsible": 1,
-   "fieldname": "backbone_section",
-   "fieldtype": "Section Break",
-   "label": "Backbone"
-  },
-  {
-   "fieldname": "backbone_directory",
-   "fieldtype": "Data",
-   "label": "Backbone Directory"
-  },
-  {
    "fieldname": "column_break_15",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "column_break_20",
    "fieldtype": "Column Break"
   },
   {
    "fieldname": "column_break_38",
    "fieldtype": "Column Break"
-  },
-  {
-   "default": "0",
-   "fieldname": "use_backbone_ca",
-   "fieldtype": "Check",
-   "label": "Use Backbone CA"
   },
   {
    "collapsible": 1,
@@ -624,11 +549,63 @@
    "fieldname": "create_stripe_plans",
    "fieldtype": "Button",
    "label": "Create Stripe Plans"
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "erpnext_signups_section",
+   "fieldtype": "Section Break",
+   "label": "ERPNext Signups"
+  },
+  {
+   "fieldname": "erpnext_domain",
+   "fieldtype": "Link",
+   "label": "ERPNext Domain",
+   "options": "Root Domain"
+  },
+  {
+   "fieldname": "erpnext_plan",
+   "fieldtype": "Link",
+   "label": "ERPNext Plan",
+   "options": "Plan"
+  },
+  {
+   "fieldname": "erpnext_apps",
+   "fieldtype": "Table",
+   "label": "ERPNext Apps",
+   "options": "ERPNext App"
+  },
+  {
+   "fieldname": "erpnext_group",
+   "fieldtype": "Link",
+   "label": "ERPNext Group",
+   "options": "Release Group"
+  },
+  {
+   "fieldname": "column_break_89",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "erpnext_domain.default_cluster",
+   "fetch_if_empty": 1,
+   "fieldname": "erpnext_cluster",
+   "fieldtype": "Link",
+   "label": "ERPNext Cluster",
+   "options": "Cluster"
+  },
+  {
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "label": "Cluster",
+   "options": "Cluster"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2021-02-01 17:45:38.860817",
+ "modified": "2021-03-31 12:32:57.977476",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
