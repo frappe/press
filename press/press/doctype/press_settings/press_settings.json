@@ -6,9 +6,9 @@
  "engine": "InnoDB",
  "field_order": [
   "domain",
-  "column_break_2",
+  "cluster",
   "trial_sites_count",
-  "section_break_4",
+  "column_break_2",
   "bench_configuration",
   "lets_encrypt_section",
   "certbot_directory",
@@ -88,7 +88,14 @@
   "product_documentation_section",
   "publish_docs",
   "storage_and_disk_limits_section",
-  "enforce_storage_limits"
+  "enforce_storage_limits",
+  "erpnext_signups_section",
+  "erpnext_domain",
+  "erpnext_cluster",
+  "erpnext_plan",
+  "erpnext_group",
+  "column_break_89",
+  "erpnext_apps"
  ],
  "fields": [
   {
@@ -548,14 +555,57 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "section_break_4",
+   "collapsible": 1,
+   "fieldname": "erpnext_signups_section",
    "fieldtype": "Section Break",
-   "hide_border": 1
+   "label": "ERPNext Signups"
+  },
+  {
+   "fieldname": "erpnext_domain",
+   "fieldtype": "Link",
+   "label": "ERPNext Domain",
+   "options": "Root Domain"
+  },
+  {
+   "fieldname": "erpnext_plan",
+   "fieldtype": "Link",
+   "label": "ERPNext Plan",
+   "options": "Plan"
+  },
+  {
+   "fieldname": "erpnext_apps",
+   "fieldtype": "Table",
+   "label": "ERPNext Apps",
+   "options": "ERPNext App"
+  },
+  {
+   "fieldname": "erpnext_group",
+   "fieldtype": "Link",
+   "label": "ERPNext Group",
+   "options": "Release Group"
+  },
+  {
+   "fieldname": "column_break_89",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "erpnext_domain.default_cluster",
+   "fetch_if_empty": 1,
+   "fieldname": "erpnext_cluster",
+   "fieldtype": "Link",
+   "label": "ERPNext Cluster",
+   "options": "Cluster"
+  },
+  {
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "label": "Cluster",
+   "options": "Cluster"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2021-03-25 08:15:22.273277",
+ "modified": "2021-03-31 12:32:57.977476",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

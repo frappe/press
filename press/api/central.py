@@ -2,9 +2,8 @@
 # MIT License. See license.txt
 
 from __future__ import unicode_literals
-from press.press.doctype.site.erpnext_site import ERPNextSite, ERPNEXT_DOMAIN
+from press.press.doctype.site.erpnext_site import ERPNextSite, get_erpnext_domain
 import frappe
-from frappe import _
 from frappe.geo.country_info import get_country_timezone_info
 from press.api.account import get_account_request_from_key
 from press.utils.billing import get_erpnext_com_connection
@@ -90,7 +89,7 @@ def get_site_status(key):
 
 	site = frappe.db.get_value(
 		"Site",
-		{"subdomain": account_request.subdomain, "domain": ERPNEXT_DOMAIN},
+		{"subdomain": account_request.subdomain, "domain": get_erpnext_domain()},
 		["status", "subdomain"],
 		as_dict=1,
 	)
@@ -104,7 +103,7 @@ def get_site_url_and_sid(key):
 		frappe.throw("Invalid or Expired Key")
 
 	name = frappe.db.get_value(
-		"Site", {"subdomain": account_request.subdomain, "domain": ERPNEXT_DOMAIN},
+		"Site", {"subdomain": account_request.subdomain, "domain": get_erpnext_domain()},
 	)
 	site = frappe.get_doc("Site", name)
 	return {
@@ -123,7 +122,9 @@ def check_subdomain_availability(subdomain):
 	if result:
 		return False
 
-	exists = frappe.db.exists("Site", {"subdomain": subdomain, "domain": ERPNEXT_DOMAIN})
+	exists = frappe.db.exists(
+		"Site", {"subdomain": subdomain, "domain": get_erpnext_domain()}
+	)
 	if exists:
 		return False
 
