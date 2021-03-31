@@ -16,6 +16,8 @@ from frappe.utils import getdate, cint
 from press.telegram import Telegram
 from press.overrides import get_permission_query_conditions_for_doctype
 
+from frappe.utils import get_url_to_form
+
 
 class Invoice(Document):
 	def validate(self):
@@ -627,7 +629,13 @@ def process_stripe_webhook(doc, method):
 		elif team.erpnext_partner:
 			# dont suspend partner sites, send alert on telegram
 			telegram = Telegram()
-			telegram.send(f"Failed Invoice Payment of Partner: {team.name}")
+			team_url = get_url_to_form("Team", team.name)
+			invoice_url = get_url_to_form("Invoice", invoice.name)
+			telegram.send(
+				f"Failed Invoice Payment [{invoice.name}]({invoice_url}) of Partner:"
+				f" [{team.name}]({team_url})"
+			)
+
 			send_email_for_failed_payment(invoice)
 
 		else:
