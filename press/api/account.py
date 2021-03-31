@@ -134,12 +134,12 @@ def get_account_request_from_key(key):
 			"request_key": key,
 			"creation": (">", datetime.now() - timedelta(seconds=minutes * 60)),
 		},
-		fields=["*"],
+		pluck="name",
 		order_by="creation desc",
 		limit=1,
 	)
 	if result:
-		return result[0]
+		return frappe.get_doc("Account Request", result[0])
 
 
 @frappe.whitelist()
