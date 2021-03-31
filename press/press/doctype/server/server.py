@@ -23,7 +23,7 @@ class BaseServer(Document):
 
 	def validate_cluster(self):
 		if not self.cluster:
-			self.cluster = frappe.db.get_value("Cluster", {"default": True})
+			self.cluster = frappe.db.get_value("Root Domain", self.domain, "default_cluster")
 		if not self.cluster:
 			frappe.throw("Default Cluster not found", frappe.ValidationError)
 
