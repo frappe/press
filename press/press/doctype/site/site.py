@@ -813,7 +813,9 @@ class Site(Document):
 			and self.team
 			and self.team != "Administrator"
 			and not self.free
-			and today > get_datetime(self.trial_end_date)
+			and (
+				today > get_datetime(self.trial_end_date).date() if self.trial_end_date else True
+			)
 		)
 
 	def _create_initial_site_plan_change(self, plan):
