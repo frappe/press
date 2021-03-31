@@ -19,6 +19,6 @@ Jobs show a history of actions performed on your site.
    stuck, or has failed.
 1. Some successful jobs will show the command line output when the job was run.
 
-   [![Jobs](/assets/press/images/docs/jobs.png)](/assets/press/images/docs/jobs.png)
+   [![Jobs](/assets/press/images/docs/site-jobs.png)](/assets/press/images/docs/site-jobs.png)
 3. Some failed jobs will show a trace.
 

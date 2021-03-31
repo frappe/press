@@ -24,6 +24,8 @@ class UsageRecord(Document):
 
 	def update_usage_in_invoice(self):
 		team = frappe.get_doc("Team", self.team)
+		if team.free_account:
+			return
 		invoice = team.get_upcoming_invoice()
 		if not invoice:
 			invoice = team.create_upcoming_invoice()

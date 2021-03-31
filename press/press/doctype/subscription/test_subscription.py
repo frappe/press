@@ -20,7 +20,6 @@ class TestSubscription(unittest.TestCase):
 			interval="Daily",
 			price_usd=30,
 			price_inr=30,
-			period=30,
 		).insert()
 
 		subscription = frappe.get_doc(
@@ -33,6 +32,7 @@ class TestSubscription(unittest.TestCase):
 
 		today = frappe.utils.getdate()
 		tomorrow = frappe.utils.add_days(today, 1)
+		desired_value = plan.get_price_per_day("INR") * 2
 
 		with patch.object(frappe.utils, "today", return_value=today):
 			subscription.create_usage_record()
@@ -44,7 +44,7 @@ class TestSubscription(unittest.TestCase):
 			subscription.create_usage_record()
 
 		invoice = frappe.get_doc("Invoice", {"team": email, "status": "Draft"})
-		self.assertEqual(invoice.total, 2)
+		self.assertEqual(invoice.total, desired_value)
 
 	def test_subscription_for_non_chargeable_document(self):
 		email = "testuser@example.com"
@@ -57,7 +57,6 @@ class TestSubscription(unittest.TestCase):
 			interval="Daily",
 			price_usd=30,
 			price_inr=30,
-			period=30,
 		).insert()
 
 		subscription = frappe.get_doc(
@@ -78,6 +77,51 @@ class TestSubscription(unittest.TestCase):
 			# shouldn't create a usage record
 			usage_record = subscription.create_usage_record()
 			self.assertTrue(usage_record is None)
+
+	def test_site_in_trial(self):
+		email = "testuser@example.com"
+		team = frappe.get_doc(doctype="Team", name=email, country="India", enabled=1).insert()
+		team.create_upcoming_invoice()
+
+		two_days_after = frappe.utils.add_days(None, 2)
+		site = frappe.get_doc(
+			doctype="Site", subdomain="testsubdomain", trial_end_date=two_days_after
+		)
+		site.flags.ignore_links = True
+		site.db_insert()
+
+		plan = frappe.get_doc(
+			doctype="Plan",
+			name="Plan-10",
+			document_type="Site",
+			interval="Daily",
+			price_usd=30,
+			price_inr=30,
+			period=30,
+		).insert()
+
+		subscription = frappe.get_doc(
+			doctype="Subscription",
+			team=team.name,
+			document_type="Site",
+			document_name=site.name,
+			plan=plan.name,
+		).insert()
+
+		today = frappe.utils.getdate()
+		tomorrow = frappe.utils.add_days(today, 1)
+
+		with patch.object(frappe.utils, "today", return_value=today):
+			# shouldn't create a usage record as site is in trial
+			subscription.create_usage_record()
+
+		# time travel to tomorrow
+		with patch.object(frappe.utils, "today", return_value=tomorrow):
+			# shouldn't create a usage record as site is in trial
+			subscription.create_usage_record()
+
+		invoice = frappe.get_doc("Invoice", {"team": email, "status": "Draft"})
+		self.assertEqual(invoice.total, 0)
 
 	def tearDown(self):
 		frappe.db.rollback()

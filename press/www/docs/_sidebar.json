@@ -12,12 +12,24 @@
     "group_title": "Sites",
     "group_items": [
       {
+        "title": "Migrate an existing site",
+        "route": "/docs/sites/migrate-an-existing-site"
+      },
+      {
         "title": "Creating a new site",
         "route": "/docs/sites/creating-a-new-site"
       },
       {
-        "title": "Migrate an existing site",
-        "route": "/docs/sites/migrate-an-existing-site"
+        "title": "Custom Domains",
+        "route": "/docs/sites/custom-domains"
+      },
+      {
+        "title": "Site Config",
+        "route": "/docs/sites/site-config"
+      },
+      {
+        "title": "Delete Site",
+        "route": "/docs/sites/delete-site"
       },
       {
         "title": "Monitoring",
@@ -28,16 +40,8 @@
         "route": "/docs/sites/backups"
       },
       {
-        "title": "Site Config",
-        "route": "/docs/sites/site-config"
-      },
-      {
-        "title": "Custom Domains",
-        "route": "/docs/sites/custom-domains"
-      },
-      {
-        "title": "Delete Site",
-        "route": "/docs/sites/delete-site"
+        "title": "Activity",
+        "route": "/docs/sites/activity"
       },
       {
         "title": "Jobs",
@@ -51,6 +55,10 @@
       {
         "title": "Plans",
         "route": "/docs/billing/plans"
+      },
+      {
+        "title": "Billing Cycle",
+        "route": "/docs/billing/billing-cycle"
       },
       {
         "title": "Bill Payments",

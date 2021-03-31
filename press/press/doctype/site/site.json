@@ -286,20 +286,20 @@
    "reqd": 1
   },
   {
-   "fieldname": "column_break_15",
-   "fieldtype": "Column Break"
-  },
-  {
    "fieldname": "column_break_29",
    "fieldtype": "Column Break"
   },
   {
    "fieldname": "column_break_34",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_15",
+   "fieldtype": "Column Break"
   }
  ],
  "links": [],
- "modified": "2021-03-24 09:37:49.343840",
+ "modified": "2021-03-31 13:04:14.505499",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

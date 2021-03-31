@@ -66,3 +66,4 @@ press.patches.v0_0_1.set_team_field_for_permission_checks
 press.patches.v0_0_1.set_team_field_in_tls_certificate_based_on_domain_team
 press.patches.v0_0_1.create_root_domain_from_press_settings
 press.patches.v0_0_1.set_cluster_in_press_settings
+press.patches.v0_0_1.remove_period_from_plan
