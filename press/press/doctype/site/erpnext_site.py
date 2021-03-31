@@ -2,42 +2,45 @@
 # Proprietary License. See license.txt
 
 from __future__ import unicode_literals
-from press.utils import get_current_team
 from press.press.doctype.site.site import Site
 import frappe
-
-# TODO: change back to "erpnext.com"
-ERPNEXT_DOMAIN = "frappe.cloud"
-# ERPNEXT_APPS = ["frappe", "erpnext", "erpnext_support"]
-ERPNEXT_APPS = ["frappe", "erpnext"]
-ERPNEXT_PLAN = "Free"
-# ERPNEXT_PLAN = "USD 25"
 
 
 class ERPNextSite(Site):
 	def __init__(self, subdomain, team):
-		# TODO: remove hardcoding
-		group = "bench-0001"
-
 		super().__init__(
 			{
 				"doctype": "Site",
 				"subdomain": subdomain,
-				"domain": ERPNEXT_DOMAIN,
-				"bench": self.get_bench(group),
-				"apps": [{"app": app} for app in ERPNEXT_APPS],
+				"domain": get_erpnext_domain(),
+				"bench": self.get_bench(),
+				"apps": [{"app": app} for app in get_erpnext_apps()],
 				"team": team.name,
 				"free": team.free_account,
-				"subscription_plan": ERPNEXT_PLAN,
-				"trial_end_date": frappe.utils.add_date(None, 14)
+				"subscription_plan": get_erpnext_plan(),
+				"trial_end_date": frappe.utils.add_days(None, 14),
 			}
 		)
 
 	def after_insert(self):
 		super().after_insert()
-		self.create_subscription(ERPNEXT_PLAN)
+		self.create_subscription(get_erpnext_plan())
 
-	def get_bench(self, release_group):
+	def get_bench(self):
+		domain = get_erpnext_domain()
+		cluster = get_erpnext_cluster()
+
+		proxy_servers = frappe.get_all(
+			"Proxy Server",
+			[
+				["status", "=", "Active"],
+				["cluster", "=", cluster],
+				["Proxy Server Domain", "domain", "=", domain],
+			],
+			pluck="name",
+		)
+		release_group = get_erpnext_group()
+		frappe.get_all()
 		query = """
 			SELECT
 				bench.name
@@ -48,12 +51,32 @@ class ERPNextSite(Site):
 			ON
 				bench.server = server.name
 			WHERE
-				bench.status = "Active" AND bench.group = %s
+				server.proxy_server in %s AND bench.status = "Active" AND bench.group = %s
 			ORDER BY
 				server.use_for_new_sites DESC, bench.creation DESC
 			LIMIT 1
 		"""
-		return frappe.db.sql(query, [release_group], as_dict=True)[0].name
+		return frappe.db.sql(query, [proxy_servers, release_group], as_dict=True)[0].name
 
 	def can_create_site(self):
 		return True
+
+
+def get_erpnext_domain():
+	return frappe.db.get_single_value("Press Settings", "erpnext_domain")
+
+
+def get_erpnext_plan():
+	return frappe.db.get_single_value("Press Settings", "erpnext_plan")
+
+
+def get_erpnext_group():
+	return frappe.db.get_single_value("Press Settings", "erpnext_group")
+
+
+def get_erpnext_cluster():
+	return frappe.db.get_single_value("Press Settings", "erpnext_cluster")
+
+
+def get_erpnext_apps():
+	return [app.app for app in frappe.get_single("Press Settings").erpnext_apps]

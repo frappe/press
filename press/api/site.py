@@ -48,6 +48,19 @@ def protected(doctype):
 def new(site):
 	team = get_current_team(get_doc=True)
 	files = site.get("files", {})
+
+	domain = frappe.db.get_single_value("Press Settings", "domain")
+	cluster = frappe.db.get_single_value("Press Settings", "cluster")
+	proxy_servers = frappe.get_all(
+		"Proxy Server",
+		[
+			["status", "=", "Active"],
+			["cluster", "=", cluster],
+			["Proxy Server Domain", "domain", "=", domain],
+		],
+		pluck="name",
+	)
+
 	bench = frappe.db.sql(
 		"""
 	SELECT
@@ -59,12 +72,12 @@ def new(site):
 	ON
 		bench.server = server.name
 	WHERE
-		bench.status = "Active" AND bench.group = %s
+		server.proxy_server in %s AND bench.status = "Active" AND bench.group = %s
 	ORDER BY
 		server.use_for_new_sites DESC, bench.creation DESC
 	LIMIT 1
 	""",
-		(site["group"],),
+		(proxy_servers, site["group"]),
 		as_dict=True,
 	)[0].name
 	plan = site["plan"]
