@@ -22,4 +22,4 @@ For e.g.
 1. Enter values in the corresponding input field.
 1. Click on **Update Configuration**.
 
-[![Offsite Backups](/assets/press/images/docs/site-config.png)](/assets/press/images/docs/site-config.png)
+[![Site Config](/assets/press/images/docs/site-config.png)](/assets/press/images/docs/site-config.png)

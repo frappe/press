@@ -228,17 +228,18 @@ def is_site_in_deploy_hours(site):
 
 
 def process_update_site_job_update(job):
-	updated_status = {
-		"Pending": "Pending",
-		"Running": "Running",
-		"Success": "Success",
-		"Failure": "Failure",
-	}[job.status]
+	updated_status = job.status
 	site_update = frappe.get_all(
 		"Site Update",
 		fields=["name", "status", "destination_bench"],
 		filters={"update_job": job.name},
-	)[0]
+	)
+
+	if not site_update:
+		return
+
+	site_update = site_update[0]
+
 	if updated_status != site_update.status:
 		site_bench = frappe.db.get_value("Site", job.site, "bench")
 		move_site_step_status = frappe.db.get_value(
