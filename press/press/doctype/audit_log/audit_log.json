@@ -5,32 +5,35 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "type",
+  "audit_type",
   "status",
   "output"
  ],
  "fields": [
   {
-   "fieldname": "type",
-   "fieldtype": "Select",
-   "label": "Type",
-   "options": "Check bench field of sites\nRestore Offsite Backup of Site"
-  },
-  {
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "Success\nFailure"
+   "options": "Success\nFailure",
+   "read_only": 1
   },
   {
    "fieldname": "output",
    "fieldtype": "Code",
-   "label": "Output"
+   "label": "Output",
+   "read_only": 1
+  },
+  {
+   "fieldname": "audit_type",
+   "fieldtype": "Select",
+   "label": "Audit Type",
+   "options": "Bench Field Check\nBackup Record Check\nRestore Offsite Backup of Site",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-03-16 18:38:56.046915",
+ "modified": "2021-03-31 16:56:28.340437",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Audit Log",
