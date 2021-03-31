@@ -12,6 +12,9 @@ from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.bench.test_bench import create_test_bench
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.plan.test_plan import create_test_plan
+from press.press.doctype.database_server.test_database_server import (
+	create_test_database_server,
+)
 from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
@@ -23,7 +26,8 @@ from press.press.doctype.site.site import Site, process_rename_site_job_update
 def create_test_site(subdomain: str, new: bool = False) -> Site:
 	"""Create test Site doc."""
 	proxy_server = create_test_proxy_server()
-	server = create_test_server(proxy_server.name)
+	database_server = create_test_database_server()
+	server = create_test_server(proxy_server.name, database_server.name)
 	app = create_test_app()
 
 	release_group = create_test_release_group(app)
