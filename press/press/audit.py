@@ -1,5 +1,6 @@
 """Functions for automated audit of frappe cloud systems."""
 import pprint
+from datetime import timedelta
 
 import frappe
 
@@ -38,3 +39,16 @@ class BenchFieldCheck(Audit):
 						"Sites on server only": list(sites_in_server.difference(sites_in_press)),
 					}
 		self.log(log, status)
+
+
+class BackupRecordCheck(Audit):
+	"""Check if backup records for each site is created in regular intervals."""
+
+	def __init__(self):
+		sites_with_no_recent_backup = []
+		for site in frappe.get_all("Site", {"status": "Active"}, pluck="name"):
+			if not frappe.db.exists(
+				"Site Backup",
+				{"site": site, "owner": "Administrator", "creation": ("<", timedelta(hours=24))},
+			):
+				sites_with_no_recent_backup.append(site)
