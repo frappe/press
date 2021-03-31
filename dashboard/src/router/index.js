@@ -6,6 +6,7 @@ import Home from '../views/Home.vue';
 
 import siteRoutes from './site';
 import benchRoutes from './bench';
+import appRoutes from './apps';
 import accountRoute from './account';
 import authRoutes from './auth';
 
@@ -26,6 +27,7 @@ const routes = [
 	...authRoutes,
 	...siteRoutes,
 	...benchRoutes,
+	...appRoutes,
 	accountRoute
 ];
 

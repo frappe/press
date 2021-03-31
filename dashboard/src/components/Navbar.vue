@@ -17,6 +17,7 @@
 								v-slot="{ href, route, navigate, isActive, isExactActive }"
 							>
 								<a
+									v-if="!item.hide || $account.team && $account.team.app_publisher"
 									:class="[
 										(item.route == '/'
 										? isExactActive
@@ -141,6 +142,11 @@ export default {
 				{
 					label: 'Sites',
 					route: '/sites'
+				},
+				{
+					label: 'Apps',
+					route: '/apps',
+					hide: true
 				},
 				{
 					label: 'Settings',
