@@ -40,7 +40,6 @@ class ERPNextSite(Site):
 			pluck="name",
 		)
 		release_group = get_erpnext_group()
-		frappe.get_all()
 		query = """
 			SELECT
 				bench.name
