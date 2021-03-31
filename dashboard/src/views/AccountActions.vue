@@ -1,25 +1,64 @@
 <template>
 	<Card title="Team Actions" subtitle="Actions available for your team">
-		<div class="flex items-center justify-between py-3">
-			<div>
-				<h3 class="text-base font-medium text-gray-900">
-					Delete Account
-				</h3>
-				<div class="mt-1 text-base text-gray-600 whitespace-pre-line">
-					Delete your account and personal data
-				</div>
-			</div>
-			<div class="ml-auto">
+		<ListItem
+			title="Become a Publisher"
+			description="Register to publish your apps on Marketplace"
+		>
+			<template #actions>
+				<Button
+					@click="showVendorTerms = true"
+					v-if="!$account.team.app_publisher"
+				>
+					<span class="text-sm">
+						Sign Up
+					</span>
+				</Button>
+				<Badge color="blue" v-else>Signed Up</Badge>
+			</template>
+		</ListItem>
+
+		<ListItem
+			title="Delete Account"
+			description="Delete your account and personal data"
+			v-if="$account.team"
+		>
+			<template #actions>
 				<Button @click="showTeamDeletionDialog = true">
 					<span class="text-red-600">Delete</span>
 				</Button>
-			</div>
-		</div>
+			</template>
+		</ListItem>
+
+		<Dialog title="Become a Publisher" v-model="showVendorTerms">
+			<p class="text-base">
+				By accepting this, you agree to have read and accepted all of
+				<u
+					><a href="/marketplace/terms" target="_blank"
+						>Frappe Cloud Marketplace's terms and conditions.</a
+					></u
+				>
+			</p>
+			<ErrorMessage class="mt-2" :error="$resources.signupVendor.error" />
+
+			<template slot="actions">
+				<Button class="ml-3" @click="showVendorTerms = false">
+					Cancel
+				</Button>
+				<Button
+					class="ml-3"
+					type="primary"
+					@click="$resources.signupVendor.submit()"
+					:loading="$resources.signupVendor.loading"
+				>
+					Accept Terms and Conditions
+				</Button>
+			</template>
+		</Dialog>
+
 		<Dialog title="Delete Team" v-model="showTeamDeletionDialog">
 			<p class="text-base">
-				With this, all of your and your team members' personal data will be
-				deleted. By proceeding with this, you will delete the accounts of the
-				members in your team, if they aren't a part of any other team.
+				By proceeding with this, you will delete the accounts of the members in
+				your team.
 			</p>
 			<ErrorMessage class="mt-2" :error="$resources.deleteTeam.error" />
 
@@ -40,40 +79,68 @@
 	</Card>
 </template>
 <script>
+import Badge from '../components/global/Badge.vue';
 export default {
+	components: { Badge },
 	name: 'AccountActions',
 	resources: {
 		deleteTeam() {
 			return {
 				method: 'press.api.account.request_team_deletion',
 				onSuccess() {
-					this.notifySuccess();
+					this.notifySuccess({
+						title: 'Deletion request recorded',
+						message: 'Verify request from email to start the process'
+					});
 					this.showTeamDeletionDialog = false;
 				},
 				onError() {
-					this.notifyFailure();
+					this.notifyFailure({
+						title: 'Deletion request not recorded',
+						message:
+							this.$resources.deleteTeam.error == 'Internal Server Error'
+								? 'An error occured. Please contact Support'
+								: ''
+					});
+				}
+			};
+		},
+		signupVendor() {
+			return {
+				method: 'press.api.marketplace.signup',
+				onSuccess() {
+					this.notifySuccess({
+						title: 'Signed up as Publisher',
+						message: 'Get started from your apps tab'
+					});
+					this.showVendorTerms = false;
+					this.$account.fetchAccount();
+				},
+				onError() {
+					this.notifyFailure({
+						title: 'Something went wrong'
+					});
 				}
 			};
 		}
 	},
 	data() {
 		return {
-			showTeamDeletionDialog: false
+			showTeamDeletionDialog: false,
+			showVendorTerms: false
 		};
 	},
 	methods: {
-		notifySuccess() {
+		notifySuccess(kwargs) {
 			this.$notify({
-				title: 'Deletion request recorded',
-				message: 'Verify request from email to start the process',
+				...kwargs,
 				icon: 'check',
 				color: 'green'
 			});
 		},
-		notifyFailure() {
+		notifyFailure(kwargs) {
 			this.$notify({
-				title: 'Deletion request not recorded',
-				message: this.$resources.deleteTeam.error == 'Internal Server Error' ? 'An error occured. Please contact Support' : '',
+				...kwargs,
 				icon: 'check',
 				color: 'red'
 			});
