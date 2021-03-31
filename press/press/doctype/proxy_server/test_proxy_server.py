@@ -5,22 +5,23 @@ from __future__ import unicode_literals
 
 import frappe
 import unittest
-from press.press.doctype.cluster.test_cluster import create_test_cluster
+from press.press.doctype.press_settings.test_press_settings import (
+	create_test_press_settings,
+)
 
 
 def create_test_proxy_server():
 	"""Create test Proxy Server doc"""
-	cluster = create_test_cluster()
+	create_test_press_settings()
 	return frappe.get_doc(
 		{
 			"doctype": "Proxy Server",
 			"status": "Active",
 			"ip": frappe.mock("ipv4"),
 			"private_ip": frappe.mock("ipv4_private"),
-			"name": frappe.mock("domain_name"),
 			"agent_password": frappe.mock("password"),
 			"hostname": "n",
-			"cluster": cluster.name,
+			"cluster": "Default",
 		}
 	).insert(ignore_if_duplicate=True)
 

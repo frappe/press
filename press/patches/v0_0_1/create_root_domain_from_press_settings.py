@@ -9,7 +9,11 @@ import frappe
 def execute():
 	frappe.reload_doc("press", "doctype", "root_domain")
 	press_settings = frappe.get_doc("Press Settings", "Press Settings")
-	if not frappe.db.exists("Root Domain", press_settings.domain):
+	if (
+		press_settings.domain
+		and press_settings.aws_secret_access_key
+		and not frappe.db.exists("Root Domain", press_settings.domain)
+	):
 		frappe.get_doc(
 			{
 				"doctype": "Root Domain",
