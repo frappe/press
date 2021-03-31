@@ -8,15 +8,26 @@ from press.agent import Agent
 
 
 class Audit:
-	"""Base class for all types of Audit."""
+	"""
+	Base class for all types of Audit.
 
-	def log(self, output, status="Success"):
+	`audit_type` member variable needs to be set to log
+	"""
 		output = pprint.pformat(output)
-		frappe.get_doc({"doctype": "Audit Log", "output": output, "status": status}).insert()
+		frappe.get_doc(
+			{
+				"doctype": "Audit Log",
+				"output": output,
+				"status": status,
+				"audit_type": self.audit_type,
+			}
+		).insert()
 
 
 class BenchFieldCheck(Audit):
 	"""Audit to check fields of site in press are correct."""
+
+	audit_type = "Bench Field Check"
 
 	def __init__(self):
 		servers = frappe.get_all("Server", pluck="name")
@@ -42,13 +53,19 @@ class BenchFieldCheck(Audit):
 
 
 class BackupRecordCheck(Audit):
-	"""Check if backup records for each site is created in regular intervals."""
+	"""Check if latest automated backup records for sites are created."""
+
+	audit_type = "Backup Record Check"
+	interval = 24  # At least 1 automated backup a day
 
 	def __init__(self):
-		sites_with_no_recent_backup = []
+		log = {}
+		status = "Success"
 		for site in frappe.get_all("Site", {"status": "Active"}, pluck="name"):
 			if not frappe.db.exists(
 				"Site Backup",
 				{"site": site, "owner": "Administrator", "creation": ("<", timedelta(hours=24))},
 			):
-				sites_with_no_recent_backup.append(site)
+				status = "Failure"
+				log[f"Sites with no backup in {self.interval} hrs"].append(site)
+		self.log(log, status)

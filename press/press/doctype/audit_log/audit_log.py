@@ -16,7 +16,7 @@ class AuditLog(Document):
 	def notify(self):
 		domain = frappe.get_value("Press Settings", "Press Settings", "domain")
 		message = f"""*FAILED AUDIT*
-		[{self.type}]({domain}{self.get_url()})
+		[{self.audit_type}]({domain}{self.get_url()})
 		"""
 		telegram = Telegram()
 		telegram.send(message)
