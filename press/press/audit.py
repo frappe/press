@@ -11,7 +11,7 @@ class Audit:
 
 	def log(self, output, status="Success"):
 		output = pprint.pformat(output)
-		frappe.get_doc({"doctype": "Audit Log", "output": output}).insert()
+		frappe.get_doc({"doctype": "Audit Log", "output": output, "status": status}).insert()
 
 
 class BenchFieldCheck(Audit):
