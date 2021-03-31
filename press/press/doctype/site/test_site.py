@@ -23,7 +23,7 @@ from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.site.site import Site, process_rename_site_job_update
 
 
-def create_test_site(subdomain: str, new: bool = False) -> Site:
+def create_test_site(subdomain: str = "testsubdomain", new: bool = False) -> Site:
 	"""Create test Site doc."""
 	proxy_server = create_test_proxy_server()
 	database_server = create_test_database_server()
