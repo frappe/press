@@ -5,35 +5,61 @@
 from __future__ import unicode_literals
 
 import frappe
-from frappe.model.document import Document
-from press.press.doctype.agent_job.agent_job import Agent
+from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
+from press.agent import Agent
 from press.utils import log_error
+from frappe.utils import unique
 
 
-class ProxyServer(Document):
-	def autoname(self):
-		if not self.domain:
-			self.domain = frappe.db.get_single_value("Press Settings", "domain")
-		self.name = f"{self.hostname}.{self.domain}"
-
+class ProxyServer(BaseServer):
 	def validate(self):
-		if self.is_new() and not self.cluster:
-			self.cluster = frappe.db.get_value("Cluster", {"default": True})
+		super().validate()
+		self.validate_domains()
 
-	def ping_agent(self):
-		agent = Agent(self.name, server_type="Proxy Server")
-		return agent.ping()
+	def validate_domains(self):
+		domains = [row.domain for row in self.domains]
+		# Always include self.domain in the domains child table
+		# Remove duplicates
+		domains = unique([self.domain] + domains)
+		self.domains = []
+		for domain in domains:
+			if not frappe.db.exists(
+				"TLS Certificate", {"wildcard": True, "status": "Active", "domain": domain}
+			):
+				frappe.throw(f"Valid wildcard TLS Certificate not found for {domain}")
+			self.append("domains", {"domain": domain})
 
-	def update_agent(self):
+	def get_wildcard_domains(self):
+		wildcard_domains = []
+		for domain in self.domains:
+			if domain.domain == self.domain:
+				continue
+			certificate_name = frappe.db.get_value(
+				"TLS Certificate", {"wildcard": True, "domain": domain.domain}, "name"
+			)
+			certificate = frappe.get_doc("TLS Certificate", certificate_name)
+			wildcard_domains.append(
+				{
+					"domain": domain.domain,
+					"certificate": {
+						"privkey.pem": certificate.private_key,
+						"fullchain.pem": certificate.full_chain,
+						"chain.pem": certificate.intermediate_chain,
+					},
+				}
+			)
+		return wildcard_domains
+
+	def setup_wildcard_hosts(self):
 		agent = Agent(self.name, server_type="Proxy Server")
-		return agent.update()
+		wildcards = self.get_wildcard_domains()
+		agent.setup_wildcard_hosts(wildcards)
 
 	def _setup_server(self):
 		agent_password = self.get_password("agent_password")
-		domain = frappe.db.get_value("Press Settings", "Press Settings", "domain")
 		certificate_name = frappe.db.get_value(
-			"Press Settings", "Press Settings", "wildcard_tls_certificate"
+			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
 		)
 		certificate = frappe.get_doc("TLS Certificate", certificate_name)
 		try:
@@ -43,8 +69,8 @@ class ProxyServer(Document):
 				variables={
 					"server": self.name,
 					"workers": 1,
-					"domain": domain,
-					"password": agent_password,
+					"domain": self.domain,
+					"agent_password": agent_password,
 					"certificate_private_key": certificate.private_key,
 					"certificate_full_chain": certificate.full_chain,
 					"certificate_intermediate_chain": certificate.intermediate_chain,
@@ -61,17 +87,3 @@ class ProxyServer(Document):
 			self.status = "Broken"
 			log_error("Proxy Server Setup Exception", server=self.as_dict())
 		self.save()
-
-	def setup_server(self):
-		self.status = "Installing"
-		self.save()
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_setup_server", queue="long", timeout=1200
-		)
-
-	def ping_ansible(self):
-		try:
-			ansible = Ansible(playbook="ping.yml", server=self)
-			ansible.run()
-		except Exception:
-			log_error("Proxy Server Ping Exception", server=self.as_dict())

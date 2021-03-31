@@ -8,13 +8,16 @@
   "status",
   "hostname",
   "domain",
+  "column_break_4",
   "cluster",
+  "provider",
   "is_server_setup",
-  "column_break_3",
+  "networking_section",
   "ip",
+  "column_break_3",
   "private_ip",
-  "mariadb_section",
-  "mariadb_root_password",
+  "private_mac_address",
+  "private_vlan_id",
   "agent_section",
   "agent_password",
   "reverse_proxy_section",
@@ -23,12 +26,11 @@
   "is_upstream_setup",
   "database_section",
   "database_server",
-  "column_break_16",
-  "is_database_client_setup",
   "ssh_section",
-  "root_public_key",
-  "column_break_20",
+  "frappe_user_password",
   "frappe_public_key",
+  "column_break_20",
+  "root_public_key",
   "section_break_22",
   "use_for_new_benches",
   "column_break_26",
@@ -44,16 +46,11 @@
    "set_only_once": 1
   },
   {
-   "fieldname": "mariadb_root_password",
-   "fieldtype": "Password",
-   "label": "MariaDB Root Password",
-   "reqd": 1
-  },
-  {
    "fieldname": "proxy_server",
    "fieldtype": "Link",
    "label": "Proxy Server",
-   "options": "Proxy Server"
+   "options": "Proxy Server",
+   "reqd": 1
   },
   {
    "fieldname": "private_ip",
@@ -66,18 +63,12 @@
    "fieldname": "agent_password",
    "fieldtype": "Password",
    "label": "Agent Password",
-   "reqd": 1
+   "set_only_once": 1
   },
   {
    "fieldname": "agent_section",
    "fieldtype": "Section Break",
    "label": "Agent"
-  },
-  {
-   "fieldname": "mariadb_section",
-   "fieldtype": "Section Break",
-   "label": "MariaDB",
-   "set_only_once": 1
   },
   {
    "default": "0",
@@ -126,14 +117,8 @@
    "fieldname": "database_server",
    "fieldtype": "Link",
    "label": "Database Server",
-   "options": "Database Server"
-  },
-  {
-   "default": "0",
-   "fieldname": "is_database_client_setup",
-   "fieldtype": "Check",
-   "label": "Database Client Setup",
-   "read_only": 1
+   "options": "Database Server",
+   "reqd": 1
   },
   {
    "fieldname": "ssh_section",
@@ -151,10 +136,6 @@
    "fieldtype": "Code",
    "label": "Frappe Public Key",
    "read_only": 1
-  },
-  {
-   "fieldname": "column_break_16",
-   "fieldtype": "Column Break"
   },
   {
    "fieldname": "column_break_20",
@@ -179,8 +160,10 @@
   },
   {
    "fieldname": "domain",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "label": "Domain",
+   "options": "Root Domain",
+   "read_only": 1,
    "set_only_once": 1
   },
   {
@@ -200,11 +183,52 @@
    "in_standard_filter": 1,
    "label": "Cluster",
    "options": "Cluster",
-   "reqd": 1
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "networking_section",
+   "fieldtype": "Section Break",
+   "label": "Networking"
+  },
+  {
+   "depends_on": "eval: doc.provider === \"Scaleway\"",
+   "fieldname": "private_mac_address",
+   "fieldtype": "Data",
+   "label": "Private Mac Address",
+   "mandatory_depends_on": "eval: doc.provider === \"Scaleway\"",
+   "set_only_once": 1
+  },
+  {
+   "depends_on": "eval: doc.provider === \"Scaleway\"",
+   "fieldname": "private_vlan_id",
+   "fieldtype": "Data",
+   "label": "Private VLAN ID",
+   "mandatory_depends_on": "eval: doc.provider === \"Scaleway\"",
+   "set_only_once": 1
+  },
+  {
+   "default": "Generic",
+   "fieldname": "provider",
+   "fieldtype": "Select",
+   "label": "Provider",
+   "options": "Generic\nScaleway",
+   "set_only_once": 1
+  },
+  {
+   "depends_on": "eval: doc.provider === \"Scaleway\"",
+   "fieldname": "frappe_user_password",
+   "fieldtype": "Password",
+   "label": "Frappe User Password",
+   "mandatory_depends_on": "eval: doc.provider === \"Scaleway\"",
+   "set_only_once": 1
   }
  ],
  "links": [],
- "modified": "2021-01-18 15:15:48.497838",
+ "modified": "2021-03-24 09:36:47.220551",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

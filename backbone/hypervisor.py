@@ -29,6 +29,25 @@ class Hypervisor:
 		if add.returncode:
 			raise Exception(f"Cannot add box {box}")
 
+	def build_scaleway(self, size):
+		cloud_init_yml = str(
+			Path(__file__).parent.joinpath("packer", "cloud-init-scaleway.yml")
+		)
+		cloud_init_image = str(
+			Path(__file__).parent.joinpath("packer", "cloud-init-scaleway.img")
+		)
+		self.shell.execute(f"cloud-localds {cloud_init_image} {cloud_init_yml}")
+
+		packer_template = str(Path(__file__).parent.joinpath("packer", "scaleway.json"))
+		packer = self.shell.execute(f"packer build -var 'disk_size={size}' {packer_template}")
+		if packer.returncode:
+			raise Exception("Build Failed")
+
+		box = str(Path(__file__).parent.joinpath("packer", "builds", "scaleway.box"))
+		add = self.shell.execute(f"vagrant box add {box} --name scaleway --force")
+		if add.returncode:
+			raise Exception(f"Cannot add box {box}")
+
 	def up(self):
 		vagrant = self.shell.execute("vagrant init backbone")
 		vagrant = self.shell.execute("vagrant up --provider=libvirt")

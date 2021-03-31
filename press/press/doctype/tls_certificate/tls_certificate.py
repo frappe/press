@@ -45,11 +45,7 @@ class TLSCertificate(Document):
 	def _obtain_certificate(self):
 		try:
 			settings = frappe.get_doc("Press Settings", "Press Settings")
-			if frappe.conf.developer_mode and settings.use_backbone_ca:
-				ca_class = Backbone
-			else:
-				ca_class = LetsEncrypt
-			ca = ca_class(settings)
+			ca = LetsEncrypt(settings)
 			(
 				self.certificate,
 				self.full_chain,
@@ -167,9 +163,6 @@ class LetsEncrypt(BaseCA):
 		self.webroot_directory = settings.webroot_directory
 		self.eff_registration_email = settings.eff_registration_email
 
-		self.aws_access_key_id = settings.aws_access_key_id
-		self.aws_secret_access_key = settings.get_password("aws_secret_access_key")
-
 		# Staging CA provides certificates that are signed by an untrusted root CA
 		# Only use to test certificate procurement/installation flows.
 		# Reference: https://letsencrypt.org/docs/staging-environment/
@@ -184,14 +177,30 @@ class LetsEncrypt(BaseCA):
 		if self.wildcard:
 			self._obtain_wildcard()
 		else:
-			self._obtain_naked()
+			if frappe.conf.developer_mode:
+				self._obtain_naked_with_dns()
+			else:
+				self._obtain_naked()
 
 	def _obtain_wildcard(self):
+		domain = frappe.get_doc("Root Domain", self.domain[2:])
 		environment = os.environ
 		environment.update(
 			{
-				"AWS_ACCESS_KEY_ID": self.aws_access_key_id,
-				"AWS_SECRET_ACCESS_KEY": self.aws_secret_access_key,
+				"AWS_ACCESS_KEY_ID": domain.aws_access_key_id,
+				"AWS_SECRET_ACCESS_KEY": domain.get_password("aws_secret_access_key"),
+			}
+		)
+		self.run(self._certbot_command(), environment=environment)
+
+	def _obtain_naked_with_dns(self):
+		domain = frappe.get_all("Root Domain", pluck="name", limit=1)[0]
+		domain = frappe.get_doc("Root Domain", domain)
+		environment = os.environ
+		environment.update(
+			{
+				"AWS_ACCESS_KEY_ID": domain.aws_access_key_id,
+				"AWS_SECRET_ACCESS_KEY": domain.get_password("aws_secret_access_key"),
 			}
 		)
 		self.run(self._certbot_command(), environment=environment)
@@ -202,7 +211,7 @@ class LetsEncrypt(BaseCA):
 		self.run(self._certbot_command())
 
 	def _certbot_command(self):
-		if self.wildcard:
+		if self.wildcard or frappe.conf.developer_mode:
 			plugin = "--dns-route53"
 		else:
 			plugin = f"--webroot --webroot-path {self.webroot_directory}"
@@ -244,92 +253,3 @@ class LetsEncrypt(BaseCA):
 	@property
 	def private_key_file(self):
 		return os.path.join(self.directory, "live", self.domain, "privkey.pem")
-
-
-class Backbone(BaseCA):
-	def __init__(self, settings):
-		super().__init__(settings)
-		ca = settings.backbone_intermediate_ca
-		self.ca = frappe.get_doc("Certificate Authority", ca)
-
-	def run(self, command):
-		try:
-			subprocess.check_output(shlex.split(command), stderr=subprocess.STDOUT)
-		except Exception as e:
-			log_error("Backbone CA Exception", command=command, output=e.output.decode())
-			raise e
-
-	def _obtain(self):
-		self.directory = os.path.join(self.ca.directory, "..", self.domain)
-		if not os.path.exists(self.directory):
-			os.mkdir(self.directory)
-
-		template = "press/press/doctype/tls_certificate/server.conf"
-		with open(self.openssl_config_file, "w") as f:
-			openssl_config = frappe.render_template(template, {"doc": self}, is_path=True)
-			f.write(openssl_config)
-
-		self.generate_private_key()
-		self.generate_certificate_signing_request()
-		self.sign_certificate_signing_request()
-		self.generate_intermediate_chain_certificate()
-		self.generate_full_chain_certificate()
-
-	def generate_private_key(self):
-		self.run(f"openssl genrsa -out {self.private_key_file} {self.rsa_key_size}")
-		os.chmod(self.private_key_file, 400)
-
-	def generate_certificate_signing_request(self):
-		self.run(
-			f"openssl req -new -config {self.openssl_config_file} -key"
-			f" {self.private_key_file} -out {self.certificate_signing_request_file}"
-		)
-		os.chmod(self.certificate_signing_request_file, 444)
-
-	def sign_certificate_signing_request(self):
-		self.run(
-			"openssl ca -batch -notext -config"
-			f" {self.ca.openssl_config_file} -extensions server_cert -in"
-			f" {self.certificate_signing_request_file} -out {self.certificate_file}"
-		)
-		os.chmod(self.certificate_file, 444)
-
-	def generate_intermediate_chain_certificate(self):
-		with open(self.ca.certificate_file) as f:
-			ca_certificate = f.read()
-		with open(self.intermediate_chain_file, "w") as f:
-			f.write(ca_certificate)
-		os.chmod(self.intermediate_chain_file, 444)
-
-	def generate_full_chain_certificate(self):
-		with open(self.certificate_file) as f:
-			fullchain = f.read()
-		with open(self.intermediate_chain_file) as f:
-			fullchain += f.read()
-		with open(self.full_chain_file, "w") as f:
-			f.write(fullchain)
-		os.chmod(self.full_chain_file, 444)
-
-	@property
-	def openssl_config_file(self):
-		return os.path.join(self.directory, "openssl.conf")
-
-	@property
-	def certificate_signing_request_file(self):
-		return os.path.join(self.directory, "csr.pem")
-
-	@property
-	def certificate_file(self):
-		return os.path.join(self.directory, "cert.pem")
-
-	@property
-	def full_chain_file(self):
-		return os.path.join(self.directory, "fullchain.pem")
-
-	@property
-	def intermediate_chain_file(self):
-		return os.path.join(self.directory, "chain.pem")
-
-	@property
-	def private_key_file(self):
-		return os.path.join(self.directory, "key.pem")

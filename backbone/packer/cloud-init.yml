@@ -10,7 +10,6 @@ users:
 
   - name: vagrant
     gecos: Vagrant
-    groups: sudoers
     lock_passwd: false
     passwd: $6$rounds=4096$GytYXpLxIgl5SZ$C3zfa5zfD66lfm/TEgtlAVYbl3IjEK9ZAND4qnI7fXGWGhqUFl7m2DD25VjimMfqH3SepUBTUwuyiubwpTUtc/
     shell: /usr/bin/bash

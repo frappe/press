@@ -8,6 +8,7 @@ frappe.ui.form.on('Proxy Server', {
 			[__('Ping Ansible'), "ping_ansible", true],
 			[__('Update Agent'), "update_agent", true, frm.doc.is_server_setup],
 			[__('Setup Server'), "setup_server", true, !frm.doc.is_server_setup],
+			[__('Setup Wildcard Hosts'), "setup_wildcard_hosts", true, frm.doc.is_server_setup],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === "undefined" || condition) {
 				frm.add_custom_button(

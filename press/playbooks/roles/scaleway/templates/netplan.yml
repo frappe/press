@@ -1,0 +1,12 @@
+network:
+  version: 2
+  ethernets:
+    private:
+      match:
+        macaddress: "{{ private_mac_address }}"
+  vlans:
+    private.{{ private_vlan_id }}:
+      id: "{{ private_vlan_id }}"
+      link: private
+      addresses:
+        - "{{ private_ip }}/16"

@@ -20,6 +20,7 @@
   "billing",
   "team",
   "free",
+  "column_break_15",
   "trial_end_date",
   "section_break_6",
   "apps",
@@ -241,8 +242,9 @@
   },
   {
    "fieldname": "domain",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "label": "Domain",
+   "options": "Root Domain",
    "set_only_once": 1
   },
   {
@@ -293,13 +295,17 @@
    "fieldtype": "Column Break"
   },
   {
+   "fieldname": "column_break_15",
+   "fieldtype": "Column Break"
+  },
+  {
    "fieldname": "trial_end_date",
    "fieldtype": "Date",
    "label": "Trial End Date"
   }
  ],
  "links": [],
- "modified": "2021-03-26 17:59:01.106313",
+ "modified": "2021-03-31 13:11:19.454437",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

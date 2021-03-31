@@ -21,6 +21,7 @@ export default new Vue({
 	},
 	methods: {
 		async login(email, password) {
+			localStorage.removeItem('current_team');
 			let res = await this.$call('login', {
 				usr: email,
 				pwd: password

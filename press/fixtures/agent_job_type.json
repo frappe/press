@@ -1159,5 +1159,36 @@
     "step_name": "Reload NGINX"
    }
   ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2021-03-25 22:42:47.808999",
+  "name": "Add Wildcard Hosts to Proxy",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "request_method": "POST",
+  "request_path": "/proxy/wildcards",
+  "steps": [
+   {
+    "parent": "Add Wildcard Hosts to Proxy",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Add Wildcard Hosts to Proxy"
+   },
+   {
+    "parent": "Add Wildcard Hosts to Proxy",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Generate NGINX Configuration"
+   },
+   {
+    "parent": "Add Wildcard Hosts to Proxy",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
+   }
+  ]
  }
 ]

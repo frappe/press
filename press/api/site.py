@@ -47,6 +47,20 @@ def protected(doctype):
 @frappe.whitelist()
 def new(site):
 	team = get_current_team(get_doc=True)
+	files = site.get("files", {})
+
+	domain = frappe.db.get_single_value("Press Settings", "domain")
+	cluster = frappe.db.get_single_value("Press Settings", "cluster")
+	proxy_servers = frappe.get_all(
+		"Proxy Server",
+		[
+			["status", "=", "Active"],
+			["cluster", "=", cluster],
+			["Proxy Server Domain", "domain", "=", domain],
+		],
+		pluck="name",
+	)
+
 	bench = frappe.db.sql(
 		"""
 	SELECT
@@ -58,12 +72,12 @@ def new(site):
 	ON
 		bench.server = server.name
 	WHERE
-		bench.status = "Active" AND bench.group = %s
+		server.proxy_server in %s AND bench.status = "Active" AND bench.group = %s
 	ORDER BY
 		server.use_for_new_sites DESC, bench.creation DESC
 	LIMIT 1
 	""",
-		(site["group"],),
+		(proxy_servers, site["group"]),
 		as_dict=True,
 	)[0].name
 	plan = site["plan"]
@@ -76,10 +90,10 @@ def new(site):
 			"team": team.name,
 			"free": team.free_account,
 			"subscription_plan": plan,
-			"remote_config_file": site["files"].get("config"),
-			"remote_database_file": site["files"].get("database"),
-			"remote_public_file": site["files"].get("public"),
-			"remote_private_file": site["files"].get("private"),
+			"remote_config_file": files.get("config"),
+			"remote_database_file": files.get("database"),
+			"remote_public_file": files.get("public"),
+			"remote_private_file": files.get("private"),
 		},
 	).insert(ignore_permissions=True)
 	site.create_subscription(plan)

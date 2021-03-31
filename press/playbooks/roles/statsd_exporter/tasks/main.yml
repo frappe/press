@@ -1,0 +1,45 @@
+---
+- name: Create StatsD Exporter Directory
+  file:
+    path: /opt/statsd_exporter
+    state: directory
+    mode: 0755
+
+- name: Download StatsD Exporter Archive
+  unarchive:
+    src: https://github.com/prometheus/statsd_exporter/releases/download/v0.20.1/statsd_exporter-0.20.1.linux-amd64.tar.gz
+    dest: /tmp
+    remote_src: yes
+  check_mode: false
+
+- name: Copy StatsD Exporter Binary
+  copy:
+    src: /tmp/statsd_exporter-0.20.1.linux-amd64/statsd_exporter
+    dest: /opt/statsd_exporter/statsd_exporter
+    remote_src: yes
+    mode: 0755
+    owner: root
+    group: root
+
+- name: Create StatsD Mapping Config File
+  template:
+    src: config.yml
+    dest: /opt/statsd_exporter/config.yml
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Create StatsD Exporter Systemd Service File
+  template:
+    src: statsd_exporter.service
+    dest: /etc/systemd/system/statsd_exporter.service
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Restart StatsD Exporter Service
+  systemd:
+    daemon_reload: true
+    name: statsd_exporter
+    enabled: yes
+    state: restarted

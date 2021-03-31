@@ -1,0 +1,105 @@
+{
+ "actions": [],
+ "autoname": "Prompt",
+ "creation": "2021-03-24 09:04:21.555295",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "default_cluster",
+  "column_break_4",
+  "dns_provider",
+  "aws_access_key_id",
+  "aws_secret_access_key"
+ ],
+ "fields": [
+  {
+   "default": "AWS Route 53",
+   "fieldname": "dns_provider",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "DNS Provider",
+   "options": "AWS Route 53",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "aws_access_key_id",
+   "fieldtype": "Data",
+   "label": "AWS Access Key ID",
+   "reqd": 1
+  },
+  {
+   "fieldname": "aws_secret_access_key",
+   "fieldtype": "Password",
+   "label": "AWS Secret Access Key",
+   "reqd": 1
+  },
+  {
+   "fieldname": "default_cluster",
+   "fieldtype": "Link",
+   "label": "Default Cluster",
+   "options": "Cluster",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [
+  {
+   "group": "Linked Documents",
+   "link_doctype": "TLS Certificate",
+   "link_fieldname": "domain"
+  },
+  {
+   "group": "Linked Documents",
+   "link_doctype": "Site",
+   "link_fieldname": "domain"
+  },
+  {
+   "group": "Servers",
+   "link_doctype": "Server",
+   "link_fieldname": "domain"
+  },
+  {
+   "group": "Servers",
+   "link_doctype": "Proxy Server",
+   "link_fieldname": "domain"
+  },
+  {
+   "group": "Servers",
+   "link_doctype": "Database Server",
+   "link_fieldname": "domain"
+  },
+  {
+   "group": "Servers",
+   "link_doctype": "Registry Server",
+   "link_fieldname": "domain"
+  }
+ ],
+ "modified": "2021-03-25 11:42:01.377832",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Root Domain",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}
