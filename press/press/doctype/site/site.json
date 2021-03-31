@@ -19,8 +19,9 @@
   "group",
   "billing",
   "team",
-  "column_break_15",
   "free",
+  "column_break_15",
+  "trial_end_date",
   "section_break_6",
   "apps",
   "configuration_section",
@@ -296,10 +297,15 @@
   {
    "fieldname": "column_break_15",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "trial_end_date",
+   "fieldtype": "Date",
+   "label": "Trial End Date"
   }
  ],
  "links": [],
- "modified": "2021-03-31 13:04:14.505499",
+ "modified": "2021-03-31 13:11:19.454437",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
