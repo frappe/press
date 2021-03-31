@@ -3,6 +3,30 @@
 
 from __future__ import unicode_literals
 import frappe
+from press.utils import get_current_team
+
+
+@frappe.whitelist()
+def signup():
+	team = get_current_team(get_doc=True)
+	team.app_publisher = True
+	team.save()
+
+
+@frappe.whitelist()
+def apps():
+	return frappe.get_list(
+		"App",
+		fields=[
+			"title",
+			"public",
+			"url",
+			"name",
+			"team",
+		],
+		filters={"enabled": True, "team": get_current_team(), "frappe": False},
+		order_by="creation desc",
+	)
 
 
 @frappe.whitelist()
