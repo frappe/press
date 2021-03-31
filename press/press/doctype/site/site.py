@@ -219,19 +219,16 @@ class Site(Document):
 		self.create_agent_request()
 
 	def create_dns_record(self):
-		default_cluster = frappe.db.get_value("Root Domain", self.domain, "default_cluster")
-		if self.cluster == default_cluster:
+		domain = frappe.get_doc("Root Domain", self.domain)
+		if self.cluster == domain.default_cluster:
 			return
 		proxy_server = frappe.get_value("Server", self.server, "proxy_server")
-		domain = frappe.db.get_single_value("Press Settings", "domain")
 
 		try:
 			client = boto3.client(
 				"route53",
-				aws_access_key_id=frappe.db.get_single_value("Press Settings", "aws_access_key_id"),
-				aws_secret_access_key=get_decrypted_password(
-					"Press Settings", "Press Settings", "aws_secret_access_key"
-				),
+				aws_access_key_id=domain.aws_access_key_id,
+				aws_secret_access_key=domain.get_password("aws_secret_access_key"),
 			)
 			hosted_zone = client.list_hosted_zones_by_name(DNSName=domain)["HostedZones"][0][
 				"Id"
