@@ -11,7 +11,7 @@ def execute():
 	frappe.reload_doc("press", "doctype", "press_settings")
 	frappe.clear_cache()
 	press_settings = frappe.get_doc("Press Settings", "Press Settings")
-	if not press_settings.get('cluster'):
+	if not press_settings.get("cluster"):
 		press_settings.cluster = frappe.db.get_value(
 			"Root Domain", press_settings.domain, "default_cluster"
 		)
