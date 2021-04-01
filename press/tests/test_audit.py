@@ -31,3 +31,30 @@ class TestBackupRecordCheck(TestAudit):
 			"Audit Log", {"audit_type": BackupRecordCheck.audit_type}
 		)
 		self.assertEqual(audit_log.status, "Failure")
+
+	def test_audit_succeeds_when_backup_in_interval_exists(self):
+		create_test_press_settings()
+		site = create_test_site()
+		create_test_site_backup(
+			site.name, creation=datetime.now() - timedelta(hours=BackupRecordCheck.interval - 1)
+		)
+		BackupRecordCheck()
+		audit_log = frappe.get_last_doc(
+			"Audit Log", {"audit_type": BackupRecordCheck.audit_type}
+		)
+		self.assertEqual(audit_log.status, "Success")
+
+	def test_audit_log_is_created(self):
+		create_test_press_settings()
+		site = create_test_site()
+		create_test_site_backup(
+			site.name, creation=datetime.now() - timedelta(hours=BackupRecordCheck.interval + 0)
+		)
+		audit_logs_before = frappe.db.count(
+			"Audit Log", {"audit_type": BackupRecordCheck.audit_type}
+		)
+		BackupRecordCheck()
+		audit_logs_after = frappe.db.count(
+			"Audit Log", {"audit_type": BackupRecordCheck.audit_type}
+		)
+		self.assertGreater(audit_logs_after, audit_logs_before)
