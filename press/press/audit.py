@@ -1,6 +1,6 @@
 """Functions for automated audit of frappe cloud systems."""
 import pprint
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 import frappe
 
@@ -13,6 +13,8 @@ class Audit:
 
 	`audit_type` member variable needs to be set to log
 	"""
+
+	def log(self, output, status="Success"):
 		output = pprint.pformat(output)
 		frappe.get_doc(
 			{
@@ -57,15 +59,20 @@ class BackupRecordCheck(Audit):
 
 	audit_type = "Backup Record Check"
 	interval = 24  # At least 1 automated backup a day
+	site_list_key = f"Sites with no backup in {interval} hrs"
 
 	def __init__(self):
-		log = {}
+		log = {self.site_list_key: []}
 		status = "Success"
 		for site in frappe.get_all("Site", {"status": "Active"}, pluck="name"):
 			if not frappe.db.exists(
 				"Site Backup",
-				{"site": site, "owner": "Administrator", "creation": ("<", timedelta(hours=24))},
+				{
+					"site": site,
+					"owner": "Administrator",
+					"creation": (">=", datetime.now() - timedelta(hours=self.interval)),
+				},
 			):
 				status = "Failure"
-				log[f"Sites with no backup in {self.interval} hrs"].append(site)
+				log[self.site_list_key].append(site)
 		self.log(log, status)
