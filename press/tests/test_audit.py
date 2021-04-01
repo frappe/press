@@ -20,14 +20,14 @@ class TestAudit(unittest.TestCase):
 
 
 class TestBackupRecordCheck(TestAudit):
-	def test_audit_log_will_fail_on_irregular_backup(self):
+	def test_audit_will_fail_on_backup_older_than_interval(self):
 		create_test_press_settings()
-		interval = frappe.db.get_single_value("Press Settings", "backup_interval") or 6
 		site = create_test_site()
-		backup_1 = create_test_site_backup(site.name)
-		backup_2 = create_test_site_backup(
-			site.name, creation=datetime.now() - timedelta(hours=interval)
+		create_test_site_backup(
+			site.name, creation=datetime.now() - timedelta(hours=BackupRecordCheck.interval + 1)
 		)
 		BackupRecordCheck()
-		audit_log = frappe.get_last_doc("Audit Log")
-		self.assertEqual(audit_log.status, "Success")
+		audit_log = frappe.get_last_doc(
+			"Audit Log", {"audit_type": BackupRecordCheck.audit_type}
+		)
+		self.assertEqual(audit_log.status, "Failure")
