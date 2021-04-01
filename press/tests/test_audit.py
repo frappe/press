@@ -1,19 +1,19 @@
 import unittest
-
 from datetime import datetime, timedelta
+from unittest.mock import Mock, patch
+
 import frappe
 
-from press.press.doctype.site_backup.test_site_backup import create_test_site_backup
-from press.press.doctype.site.test_site import create_test_site
+from press.press.audit import BackupRecordCheck
 from press.press.doctype.press_settings.test_press_settings import (
 	create_test_press_settings,
 )
-from press.press.audit import BackupRecordCheck
+from press.press.doctype.site.test_site import create_test_site
+from press.press.doctype.site_backup.test_site_backup import create_test_site_backup
+from press.telegram_utils import Telegram
 
 
-# TODO: patch telegram send on this class<31-03-21, Balamurali M> #
-
-
+@patch.object(Telegram, "send", new=Mock())
 class TestAudit(unittest.TestCase):
 	def tearDown(self):
 		frappe.db.rollback()
