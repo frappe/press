@@ -165,7 +165,6 @@ def process_archive_bench_job_update(job):
 
 
 def archive_obsolete_benches():
-	return
 	benches = frappe.get_all(
 		"Bench", fields=["name", "candidate"], filters={"status": "Active"}
 	)
