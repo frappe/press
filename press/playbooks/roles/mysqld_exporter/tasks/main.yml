@@ -10,7 +10,6 @@
     src: https://github.com/prometheus/mysqld_exporter/releases/download/v0.12.1/mysqld_exporter-0.12.1.linux-amd64.tar.gz
     dest: /tmp
     remote_src: yes
-  check_mode: false
 
 - name: Copy MySQL Exporter Binary
   copy:
