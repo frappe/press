@@ -30,7 +30,8 @@
     state: reloaded
 
 - name: Remove BIND
-  pkg:
-    - bind9
-  state: absent
-  autoremove: yes
+  apt:
+    pkg:
+      - bind9
+    state: absent
+    autoremove: yes
