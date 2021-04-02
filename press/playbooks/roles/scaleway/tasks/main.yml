@@ -1,20 +1,21 @@
 ---
 - name: Copy Authorized Keys from frappe to root User
   copy:
-    src: files/sudoers
-    dest: /etc/sudoers.d/frappe
+    src: /home/frappe/.ssh/authorized_keys
+    dest: /root/.ssh/authorized_keys
+    mode: 0600
     remote_src: yes
 
 - name: Create Netplan Configuration File
   template:
-    src: netplan.yml
-    dest: /etc/netplan/99-press.yml
+    src: netplan.yaml
+    dest: /etc/netplan/99-press.yaml
 
 - name: Generate Netplan Configuration
   shell: netplan generate
 
 - name: Apply Netplan Configuration
-  shell: netplan
+  shell: netplan apply
 
 - name: Disable Password Authentication
   lineinfile:
