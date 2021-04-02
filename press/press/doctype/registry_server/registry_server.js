@@ -5,6 +5,8 @@ frappe.ui.form.on('Registry Server', {
 	refresh: function (frm) {
 		[
 			[__('Ping Ansible'), "ping_ansible", true],
+			[__('Ping Ansible Scaleway'), "ping_ansible_scaleway", true],
+			[__('Prepare Scaleway Server'), "prepare_scaleway_server", true, !frm.doc.is_server_setup && !frm.doc.provider === "Scaleway"],
 			[__('Setup Server'), "setup_server", true, !frm.doc.is_server_setup],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === "undefined" || condition) {
