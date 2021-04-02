@@ -8,7 +8,7 @@ frappe.ui.form.on('Server', {
 			[__('Ping Ansible'), "ping_ansible", true],
 			[__('Ping Ansible Scaleway'), "ping_ansible_scaleway", true],
 			[__('Update Agent'), "update_agent", true, frm.doc.is_server_setup],
-			[__('Prepare Scaleway Server'), "prepare_scaleway_server", true, !frm.doc.is_server_setup && !frm.doc.provider === "Scaleway"],
+			[__('Prepare Scaleway Server'), "prepare_scaleway_server", true, !frm.doc.is_server_setup && frm.doc.provider === "Scaleway"],
 			[__('Setup Server'), "setup_server", true, !frm.doc.is_server_setup],
 			[__('Add to Proxy'), "add_upstream_to_proxy", true, frm.doc.is_server_setup && !frm.doc.is_upstream_setup],
 		].forEach(([label, method, confirm, condition]) => {
