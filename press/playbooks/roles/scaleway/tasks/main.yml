@@ -28,3 +28,9 @@
   service:
     name: sshd
     state: reloaded
+
+- name: Remove BIND
+  pkg:
+    - bind9
+  state: absent
+  autoremove: yes
