@@ -1,8 +1,8 @@
 ```
 docker run -it -p 127.0.0.1:8021:8080 \
-    -v "/home/frappe/clones:/home/coder/project:ro" \
+    -v "/home/frappe/repos:/home/coder/project:ro" \
     --env PASSWORD=3ZRoh4XT7MhscBAn2dcdDMQWt8HoWpZF \
-    --rm --name codeserver \
+    -d --name codeserver --restart=always \
     codercom/code-server:latest \
     --disable-telemetry --proxy-domain code.staging.frappe.cloud --verbose /home/coder/project
 ```
