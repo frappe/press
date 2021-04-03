@@ -104,6 +104,10 @@ Vagrant.configure("2") do |config|
         logs.vm.hostname = "logs.local.frappe.dev"
         logs.vm.network "private_network", ip: "10.0.4.102", netmask: "255.255.0.0"
         logs.vm.network "private_network", ip: "10.1.4.102", netmask: "255.255.0.0"
+        logs.vm.provider :libvirt do |libvirt|
+            libvirt.cpus = 2
+            libvirt.memory = 4096
+        end
     end
 
     # Uptime Server = Prometheus + Grafana
