@@ -98,6 +98,13 @@ class BaseServer(Document):
 		except Exception:
 			log_error("Server Ping Exception", server=self.as_dict())
 
+	def fetch_keys(self):
+		try:
+			ansible = Ansible(playbook="keys.yml", server=self)
+			ansible.run()
+		except Exception:
+			log_error("Server Key Fetch Exception", server=self.as_dict())	
+
 	def cleanup_unused_files(self):
 		agent = Agent(self.name, self.doctype)
 		agent.cleanup_unused_files()
