@@ -26,6 +26,11 @@
   "is_upstream_setup",
   "database_section",
   "database_server",
+  "replication",
+  "is_primary",
+  "is_replication_setup",
+  "column_break_24",
+  "primary",
   "ssh_section",
   "frappe_user_password",
   "frappe_public_key",
@@ -225,10 +230,41 @@
    "label": "Frappe User Password",
    "mandatory_depends_on": "eval: doc.provider === \"Scaleway\"",
    "set_only_once": 1
+  },
+  {
+   "fieldname": "replication",
+   "fieldtype": "Section Break",
+   "label": "Replication"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_primary",
+   "fieldtype": "Check",
+   "label": "Is Primary"
+  },
+  {
+   "fieldname": "column_break_24",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval: !doc.is_primary",
+   "fieldname": "primary",
+   "fieldtype": "Link",
+   "label": "Primary",
+   "mandatory_depends_on": "eval: !doc.is_primary",
+   "options": "Server"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval: !doc.is_primary",
+   "fieldname": "is_replication_setup",
+   "fieldtype": "Check",
+   "label": "Is Replication Setup",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2021-03-24 09:36:47.220551",
+ "modified": "2021-04-02 23:12:02.963418",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
