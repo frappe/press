@@ -197,10 +197,3 @@ class DatabaseServer(BaseServer):
 		frappe.enqueue_doc(
 			self.doctype, self.name, "_convert_from_frappe_server", queue="long", timeout=1200
 		)
-
-	def fetch_keys(self):
-		try:
-			ansible = Ansible(playbook="keys.yml", server=self)
-			ansible.run()
-		except Exception:
-			log_error("Database Server Key Fetch Exception", server=self.as_dict())
