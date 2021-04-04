@@ -31,14 +31,17 @@ class BaseServer(Document):
 		if not self.agent_password:
 			self.agent_password = frappe.generate_hash(length=32)
 
+	@frappe.whitelist()
 	def ping_agent(self):
 		agent = Agent(self.name, self.doctype)
 		return agent.ping()
 
+	@frappe.whitelist()
 	def update_agent(self):
 		agent = Agent(self.name, self.doctype)
 		return agent.update()
 
+	@frappe.whitelist()
 	def prepare_scaleway_server(self):
 		frappe.enqueue_doc(
 			self.doctype, self.name, "_prepare_scaleway_server", queue="long", timeout=1200
@@ -63,6 +66,7 @@ class BaseServer(Document):
 			except Exception:
 				log_error("Server Preparation Exception - Scaleway", server=self.as_dict())
 
+	@frappe.whitelist()
 	def setup_server(self):
 		self.status = "Installing"
 		self.save()
@@ -70,6 +74,7 @@ class BaseServer(Document):
 			self.doctype, self.name, "_setup_server", queue="long", timeout=1200
 		)
 
+	@frappe.whitelist()
 	def install_nginx(self):
 		self.status = "Installing"
 		self.save()
@@ -91,6 +96,7 @@ class BaseServer(Document):
 			log_error("NGINX Install Exception", server=self.as_dict())
 		self.save()
 
+	@frappe.whitelist()
 	def ping_ansible(self):
 		try:
 			ansible = Ansible(playbook="ping.yml", server=self)
@@ -98,6 +104,7 @@ class BaseServer(Document):
 		except Exception:
 			log_error("Server Ping Exception", server=self.as_dict())
 
+	@frappe.whitelist()
 	def fetch_keys(self):
 		try:
 			ansible = Ansible(playbook="keys.yml", server=self)
@@ -127,6 +134,7 @@ class Server(BaseServer):
 				bench.database_server = self.database_server
 				bench.save()
 
+	@frappe.whitelist()
 	def add_upstream_to_proxy(self):
 		agent = Agent(self.proxy_server, server_type="Proxy Server")
 		agent.new_server(self.name)
@@ -163,6 +171,7 @@ class Server(BaseServer):
 			log_error("Server Setup Exception", server=self.as_dict())
 		self.save()
 
+	@frappe.whitelist()
 	def setup_replication(self):
 		self.status = "Installing"
 		self.save()
