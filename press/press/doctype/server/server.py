@@ -156,6 +156,65 @@ class Server(BaseServer):
 			log_error("Server Setup Exception", server=self.as_dict())
 		self.save()
 
+	def setup_replication(self):
+		self.status = "Installing"
+		self.save()
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_setup_replication", queue="long", timeout=1200
+		)
+
+	def _setup_replication(self):
+		self._setup_secondary()
+		if self.status == "Active":
+			primary = frappe.get_doc("Server", self.primary)
+			primary._setup_primary(self.name)
+			if primary.status == "Active":
+				self.is_replication_setup = True
+				self.save()
+
+	def _setup_primary(self, secondary):
+		secondary_private_ip = frappe.db.get_value('Server', secondary, "private_ip")
+		try:
+			ansible = Ansible(
+				playbook="primary_app.yml",
+				server=self,
+				variables={
+					"secondary_private_ip": secondary_private_ip,
+				},
+			)
+			play = ansible.run()
+			self.reload()
+			if play.status == "Success":
+				self.status = "Active"
+			else:
+				self.status = "Broken"
+		except Exception:
+			self.status = "Broken"
+			log_error("Primary Server Setup Exception", server=self.as_dict())
+		self.save()
+
+	def _setup_secondary(self):
+		primary_public_key = frappe.db.get_value('Server', self.primary, "frappe_public_key")
+		try:
+			ansible = Ansible(
+				playbook="secondary_app.yml",
+				server=self,
+				variables={
+					"primary_public_key": primary_public_key
+				}
+			)
+			play = ansible.run()
+			self.reload()
+
+			if play.status == "Success":
+				self.status = 'Active'
+			else:
+				self.status = "Broken"
+		except Exception:
+			self.status = "Broken"
+			log_error("Secondary Server Setup Exception", server=self.as_dict())
+		self.save()
+
 
 def process_new_server_job_update(job):
 	if job.status == "Success":
