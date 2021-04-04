@@ -1190,5 +1190,30 @@
     "step_name": "Reload NGINX"
    }
   ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2021-04-04 12:27:30.772719",
+  "name": "Clear Cache",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "request_method": "DELETE",
+  "request_path": "/benches/{bench}/sites/{site}/cache",
+  "steps": [
+   {
+    "parent": "Clear Cache",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Clear Cache"
+   },
+   {
+    "parent": "Clear Cache",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Clear Website Cache"
+   }
+  ]
  }
 ]
