@@ -98,6 +98,7 @@ class Bench(Document):
 		agent = Agent(self.server)
 		agent.new_bench(self)
 
+	@frappe.whitelist()
 	def archive(self):
 		unarchived_sites = frappe.db.exists(
 			"Site", {"bench": self.name, "status": ("!=", "Archived")}
@@ -107,6 +108,7 @@ class Bench(Document):
 		agent = Agent(self.server)
 		agent.archive_bench(self)
 
+	@frappe.whitelist()
 	def sync_info(self):
 		"""Initiates a Job to update Site Usage, site.config.encryption_key and timezone details for all sites on Bench."""
 		try:

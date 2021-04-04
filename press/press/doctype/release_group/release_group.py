@@ -70,6 +70,7 @@ class ReleaseGroup(Document):
 			if servers_for_new_bench:
 				self.append("servers", {"server": servers_for_new_bench[0].name})
 
+	@frappe.whitelist()
 	def create_deploy_candidate(self):
 		if not self.enabled:
 			return

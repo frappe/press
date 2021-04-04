@@ -34,6 +34,7 @@ class DeployCandidate(Document):
 	def after_insert(self):
 		return
 
+	@frappe.whitelist()
 	def build(self):
 		self.status = "Pending"
 		self.add_build_steps()
@@ -51,6 +52,7 @@ class DeployCandidate(Document):
 		frappe.session.data = session_data
 		frappe.db.commit()
 
+	@frappe.whitelist()
 	def build_and_deploy(self):
 		self.status = "Pending"
 		self.add_build_steps()
