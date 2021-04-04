@@ -110,7 +110,7 @@ class BaseServer(Document):
 			ansible = Ansible(playbook="keys.yml", server=self)
 			ansible.run()
 		except Exception:
-			log_error("Server Key Fetch Exception", server=self.as_dict())	
+			log_error("Server Key Fetch Exception", server=self.as_dict())
 
 	def cleanup_unused_files(self):
 		agent = Agent(self.name, self.doctype)
@@ -189,14 +189,12 @@ class Server(BaseServer):
 				self.save()
 
 	def _setup_primary(self, secondary):
-		secondary_private_ip = frappe.db.get_value('Server', secondary, "private_ip")
+		secondary_private_ip = frappe.db.get_value("Server", secondary, "private_ip")
 		try:
 			ansible = Ansible(
 				playbook="primary_app.yml",
 				server=self,
-				variables={
-					"secondary_private_ip": secondary_private_ip,
-				},
+				variables={"secondary_private_ip": secondary_private_ip},
 			)
 			play = ansible.run()
 			self.reload()
@@ -210,20 +208,18 @@ class Server(BaseServer):
 		self.save()
 
 	def _setup_secondary(self):
-		primary_public_key = frappe.db.get_value('Server', self.primary, "frappe_public_key")
+		primary_public_key = frappe.db.get_value("Server", self.primary, "frappe_public_key")
 		try:
 			ansible = Ansible(
 				playbook="secondary_app.yml",
 				server=self,
-				variables={
-					"primary_public_key": primary_public_key
-				}
+				variables={"primary_public_key": primary_public_key},
 			)
 			play = ansible.run()
 			self.reload()
 
 			if play.status == "Success":
-				self.status = 'Active'
+				self.status = "Active"
 			else:
 				self.status = "Broken"
 		except Exception:
