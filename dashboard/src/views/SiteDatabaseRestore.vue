@@ -36,6 +36,19 @@
 					</span>
 				</Button>
 			</div>
+			<div class="flex items-center justify-between py-3">
+				<div>
+					<h3 class="text-lg">Clear Cache</h3>
+					<p class="mt-1 text-base text-gray-600">
+						Clear your site's cache.
+					</p>
+				</div>
+				<Button @click="confirmClearCache">
+					<span class="text-red-600">
+						Clear Cache
+					</span>
+				</Button>
+			</div>
 		</div>
 
 		<Dialog title="Restore" v-model="showRestoreDialog">
@@ -130,6 +143,23 @@ export default {
 					}, 1000);
 				}
 			};
+		},
+		clearCache() {
+			return {
+				method: 'press.api.site.clear_cache',
+				params: {
+					name: this.site.name
+				},
+				onSuccess() {
+					this.$router.push({
+						name: 'SiteOverview',
+						params: { site: this.site.name }
+					});
+					setTimeout(() => {
+						window.location.reload();
+					}, 1000);
+				}
+			};
 		}
 	},
 	methods: {
@@ -158,6 +188,21 @@ export default {
 				actionType: 'danger',
 				action: closeDialog => {
 					this.$resources.migrateDatabase.submit();
+					closeDialog();
+				}
+			});
+		},
+		confirmClearCache() {
+			this.$confirm({
+				title: 'Clear Cache',
+				message: `
+					<b>bench clear-cache</b> and <b>bench clear-website-cache</b> commands will be executed on your site. Are you sure
+					you want to run these command?
+				`,
+				actionLabel: 'Clear Cache',
+				actionType: 'danger',
+				action: closeDialog => {
+					this.$resources.clearCache.submit();
 					closeDialog();
 				}
 			});

@@ -18,7 +18,8 @@
    "label": "Site",
    "options": "Site",
    "read_only": 1,
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "action",
@@ -26,9 +27,10 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Action",
-   "options": "Activate Site\nAdd Domain\nArchive\nBackup\nCreate\nDeactivate Site\nInstall App\nLogin as Administrator\nMigrate\nReinstall\nRestore\nSuspend Site\nUninstall App\nUnsuspend Site\nUpdate\nUpdate Configuration\nDrop Offsite Backups",
+   "options": "Activate Site\nAdd Domain\nArchive\nBackup\nCreate\nClear Cache\nDeactivate Site\nInstall App\nLogin as Administrator\nMigrate\nReinstall\nRestore\nSuspend Site\nUninstall App\nUnsuspend Site\nUpdate\nUpdate Configuration\nDrop Offsite Backups",
    "read_only": 1,
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "reason",
@@ -38,7 +40,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-02-15 20:24:34.210769",
+ "modified": "2021-04-04 12:19:34.617366",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Activity",
