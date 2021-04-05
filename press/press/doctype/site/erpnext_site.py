@@ -7,35 +7,30 @@ import frappe
 
 
 class ERPNextSite(Site):
-	def __init__(self, subdomain, team):
-		super().__init__(
-			{
-				"doctype": "Site",
-				"subdomain": subdomain,
-				"domain": get_erpnext_domain(),
-				"bench": get_erpnext_bench(),
-				"apps": [{"app": app} for app in get_erpnext_apps()],
-				"team": team.name,
-				"free": team.free_account,
-				"subscription_plan": get_erpnext_plan(),
-				"trial_end_date": frappe.utils.add_days(None, 14),
-			}
-		)
+	def __init__(self, account_request=None):
+		if account_request:
+			super().__init__(
+				{
+					"doctype": "Site",
+					"subdomain": account_request.subdomain,
+					"domain": get_erpnext_domain(),
+					"bench": get_erpnext_bench(),
+					"apps": [{"app": app} for app in get_erpnext_apps()],
+					"team": "Administrator",
+					"account_request": account_request.name,
+					"subscription_plan": get_erpnext_plan(),
+					"trial_end_date": frappe.utils.add_days(None, 14),
+				}
+			)
 
-	def prepare_pooled_site(self, pooled_site, subdomain, team):
+	def rename_pooled_site(self, pooled_site, account_request):
 		site = frappe.get_doc("Site", pooled_site)
-		site.subdomain = subdomain
+		site.subdomain = account_request.subdomain
 		site.is_standby = False
-		site.team = team.name
-		site.free = team.free_account
+		site.account_request = account_request.name
 		site.subscription_plan = get_erpnext_plan()
 		site.trial_end_date = frappe.utils.add_days(None, 14)
-		site.save()
-		site.create_subscription(get_erpnext_plan())
-
-	def after_insert(self):
-		super().after_insert()
-		self.create_subscription(get_erpnext_plan())
+		site.save(ignore_permissions=True)
 
 	def can_create_site(self):
 		return True
