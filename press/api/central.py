@@ -7,6 +7,7 @@ import frappe
 from frappe.geo.country_info import get_country_timezone_info
 from press.api.account import get_account_request_from_key
 from press.utils.billing import get_erpnext_com_connection
+from press.press.doctype.site.erpnext_site import get_erpnext_plan
 from press.press.doctype.site.pool import get as get_pooled_site
 
 
@@ -102,7 +103,7 @@ def setup_account(key, business_data=None):
 
 	site_name = frappe.db.get_value("Site", {"account_request": account_request.name})
 	site = frappe.get_doc("Site", site_name)
-	site.setup_erpnext()
+	site.create_subscription(get_erpnext_plan())
 	return site.name
 
 
@@ -117,7 +118,6 @@ def get_site_status(key):
 		{
 			"subdomain": account_request.subdomain,
 			"domain": get_erpnext_domain(),
-			"is_erpnext_setup": True,
 		},
 		["status", "subdomain"],
 		as_dict=1,
@@ -146,13 +146,13 @@ def get_site_url_and_sid(key):
 
 @frappe.whitelist(allow_guest=True)
 def check_subdomain_availability(subdomain):
-	# erpnext_com = get_erpnext_com_connection()
+	erpnext_com = get_erpnext_com_connection()
 
-	# result = erpnext_com.post_api(
-	# 	"central.www.signup.check_subdomain_availability", {"subdomain": subdomain}
-	# )
-	# if result:
-	# 	return False
+	result = erpnext_com.post_api(
+		"central.www.signup.check_subdomain_availability", {"subdomain": subdomain}
+	)
+	if result:
+		return False
 
 	exists = frappe.db.exists(
 		"Site", {"subdomain": subdomain, "domain": get_erpnext_domain()}
