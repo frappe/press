@@ -190,6 +190,16 @@ class Agent:
 			site=site.name,
 		)
 
+	def setup_erpnext(self, site, user, config):
+		data = {"user": user, "config": config}
+		return self.create_agent_job(
+			"Setup ERPNext",
+			f"benches/{site.bench}/sites/{site.name}/erpnext",
+			data,
+			bench=site.bench,
+			site=site.name,
+		)
+
 	def migrate_site(self, site):
 		return self.create_agent_job(
 			"Migrate Site",

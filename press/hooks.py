@@ -162,6 +162,7 @@ scheduler_events = {
 		"press.press.doctype.site.backups.schedule",
 		"press.press.doctype.subscription.subscription.create_usage_records",
 		"press.press.doctype.bench.bench.sync_benches",
+		"press.press.doctype.site.pool.create",
 	],
 	"cron": {
 		"0 18 * * *": ["press.press.doctype.invoice.invoice.finalize_draft_invoices"],

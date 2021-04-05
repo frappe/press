@@ -42,22 +42,26 @@
 		get_site_status()
 			.then(site => {
 				if (site.status != 'Active') {
-					setTimeout(poll_site_status, 2000)
+					setTimeout(poll_site_status, 1000)
 				} else {
 					get_site_url_and_sid().then(site => {
-						window.open(`${site.url}/app?sid=${site.sid}`, '_self');
+						window.open(`${site.url}/desk?sid=${site.sid}`, '_self');
 					});
 				}
 			});
 	}
 
 	function get_site_status() {
-		return frappe.call('press.api.central.get_site_status', { key })
+		return frappe.call('press.api.central.get_site_status', {
+				key
+			})
 			.then(r => r.message);
 	}
 
 	function get_site_url_and_sid() {
-		return frappe.call('press.api.central.get_site_url_and_sid', { key })
+		return frappe.call('press.api.central.get_site_url_and_sid', {
+				key
+			})
 			.then(r => r.message);
 	}
 </script>

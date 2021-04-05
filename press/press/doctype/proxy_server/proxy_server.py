@@ -51,6 +51,7 @@ class ProxyServer(BaseServer):
 			)
 		return wildcard_domains
 
+	@frappe.whitelist()
 	def setup_wildcard_hosts(self):
 		agent = Agent(self.name, server_type="Proxy Server")
 		wildcards = self.get_wildcard_domains()

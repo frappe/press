@@ -31,14 +31,17 @@ class BaseServer(Document):
 		if not self.agent_password:
 			self.agent_password = frappe.generate_hash(length=32)
 
+	@frappe.whitelist()
 	def ping_agent(self):
 		agent = Agent(self.name, self.doctype)
 		return agent.ping()
 
+	@frappe.whitelist()
 	def update_agent(self):
 		agent = Agent(self.name, self.doctype)
 		return agent.update()
 
+	@frappe.whitelist()
 	def prepare_scaleway_server(self):
 		frappe.enqueue_doc(
 			self.doctype, self.name, "_prepare_scaleway_server", queue="long", timeout=1200
@@ -63,6 +66,7 @@ class BaseServer(Document):
 			except Exception:
 				log_error("Server Preparation Exception - Scaleway", server=self.as_dict())
 
+	@frappe.whitelist()
 	def setup_server(self):
 		self.status = "Installing"
 		self.save()
@@ -70,6 +74,7 @@ class BaseServer(Document):
 			self.doctype, self.name, "_setup_server", queue="long", timeout=1200
 		)
 
+	@frappe.whitelist()
 	def install_nginx(self):
 		self.status = "Installing"
 		self.save()
@@ -91,6 +96,7 @@ class BaseServer(Document):
 			log_error("NGINX Install Exception", server=self.as_dict())
 		self.save()
 
+	@frappe.whitelist()
 	def ping_ansible(self):
 		try:
 			ansible = Ansible(playbook="ping.yml", server=self)
@@ -98,6 +104,15 @@ class BaseServer(Document):
 		except Exception:
 			log_error("Server Ping Exception", server=self.as_dict())
 
+	@frappe.whitelist()
+	def fetch_keys(self):
+		try:
+			ansible = Ansible(playbook="keys.yml", server=self)
+			ansible.run()
+		except Exception:
+			log_error("Server Key Fetch Exception", server=self.as_dict())
+
+	@frappe.whitelist()
 	def ping_ansible_scaleway(self):
 		try:
 			ansible = Ansible(
@@ -132,6 +147,7 @@ class Server(BaseServer):
 				bench.database_server = self.database_server
 				bench.save()
 
+	@frappe.whitelist()
 	def add_upstream_to_proxy(self):
 		agent = Agent(self.proxy_server, server_type="Proxy Server")
 		agent.new_server(self.name)
@@ -166,6 +182,62 @@ class Server(BaseServer):
 		except Exception:
 			self.status = "Broken"
 			log_error("Server Setup Exception", server=self.as_dict())
+		self.save()
+
+	@frappe.whitelist()
+	def setup_replication(self):
+		self.status = "Installing"
+		self.save()
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_setup_replication", queue="long", timeout=1200
+		)
+
+	def _setup_replication(self):
+		self._setup_secondary()
+		if self.status == "Active":
+			primary = frappe.get_doc("Server", self.primary)
+			primary._setup_primary(self.name)
+			if primary.status == "Active":
+				self.is_replication_setup = True
+				self.save()
+
+	def _setup_primary(self, secondary):
+		secondary_private_ip = frappe.db.get_value("Server", secondary, "private_ip")
+		try:
+			ansible = Ansible(
+				playbook="primary_app.yml",
+				server=self,
+				variables={"secondary_private_ip": secondary_private_ip},
+			)
+			play = ansible.run()
+			self.reload()
+			if play.status == "Success":
+				self.status = "Active"
+			else:
+				self.status = "Broken"
+		except Exception:
+			self.status = "Broken"
+			log_error("Primary Server Setup Exception", server=self.as_dict())
+		self.save()
+
+	def _setup_secondary(self):
+		primary_public_key = frappe.db.get_value("Server", self.primary, "frappe_public_key")
+		try:
+			ansible = Ansible(
+				playbook="secondary_app.yml",
+				server=self,
+				variables={"primary_public_key": primary_public_key},
+			)
+			play = ansible.run()
+			self.reload()
+
+			if play.status == "Success":
+				self.status = "Active"
+			else:
+				self.status = "Broken"
+		except Exception:
+			self.status = "Broken"
+			log_error("Secondary Server Setup Exception", server=self.as_dict())
 		self.save()
 
 

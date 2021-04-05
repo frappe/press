@@ -70,6 +70,7 @@ class AgentJob(Document):
 			)
 			doc.insert()
 
+	@frappe.whitelist()
 	def retry(self):
 		job = frappe.get_doc(
 			{
@@ -365,6 +366,9 @@ def process_job_updates(job_name):
 			process_reinstall_site_job_update,
 			process_rename_site_job_update,
 		)
+		from press.press.doctype.site.erpnext_site import (
+			process_setup_erpnext_site_job_update,
+		)
 		from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
 		from press.press.doctype.site_domain.site_domain import process_new_host_job_update
 		from press.press.doctype.site_update.site_update import (
@@ -416,6 +420,8 @@ def process_job_updates(job_name):
 			process_rename_site_job_update(job)
 		elif job.job_type == "Rename Site on Upstream":
 			process_rename_site_job_update(job)
+		elif job.job_type == "Setup ERPNext":
+			process_setup_erpnext_site_job_update(job)
 
 	except Exception as e:
 		log_error("Agent Job Callback Exception", job=job.as_dict())

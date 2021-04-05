@@ -10,7 +10,6 @@
     src: https://github.com/prometheus/node_exporter/releases/download/v1.1.2/node_exporter-1.1.2.linux-amd64.tar.gz
     dest: /tmp
     remote_src: yes
-  check_mode: false
 
 - name: Copy Node Exporter Binary
   copy:

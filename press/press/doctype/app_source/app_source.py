@@ -63,6 +63,7 @@ class AppSource(Document):
 		_, self.repository_owner, self.repository = self.repository_url.rsplit("/", 2)
 		# self.create_release()
 
+	@frappe.whitelist()
 	def create_release(self):
 		try:
 			token = None

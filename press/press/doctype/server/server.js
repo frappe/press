@@ -11,6 +11,8 @@ frappe.ui.form.on('Server', {
 			[__('Prepare Scaleway Server'), "prepare_scaleway_server", true, !frm.doc.is_server_setup && frm.doc.provider === "Scaleway"],
 			[__('Setup Server'), "setup_server", true, !frm.doc.is_server_setup],
 			[__('Add to Proxy'), "add_upstream_to_proxy", true, frm.doc.is_server_setup && !frm.doc.is_upstream_setup],
+			[__('Setup Replication'), "setup_replication", true, frm.doc.is_server_setup && !frm.doc.is_primary && !frm.doc.is_replication_setup],
+			[__('Fetch Keys'), "fetch_keys", false, frm.doc.is_server_setup && (!frm.doc.frappe_public_key || !frm.doc.root_public_key)],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === "undefined" || condition) {
 				frm.add_custom_button(
