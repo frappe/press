@@ -18,7 +18,7 @@ class AuditLog(Document):
 		message = f"""*FAILED AUDIT*
 		[{self.audit_type}]({domain}{self.get_url()})
 		```
-		{self.output}
+		{self.log}
 		```
 		"""
 		telegram = Telegram()
