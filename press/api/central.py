@@ -7,6 +7,7 @@ import frappe
 from frappe.geo.country_info import get_country_timezone_info
 from press.api.account import get_account_request_from_key
 from press.utils.billing import get_erpnext_com_connection
+from press.press.doctype.site.pool import get as get_pooled_site
 
 
 @frappe.whitelist(allow_guest=True)
@@ -17,7 +18,7 @@ def account_request(subdomain, email, first_name, last_name, phone_number, count
 	if not check_subdomain_availability(subdomain):
 		frappe.throw(f"Subdomain {subdomain} is already taken")
 
-	frappe.get_doc(
+	account_request = frappe.get_doc(
 		{
 			"doctype": "Account Request",
 			"erpnext": True,
@@ -30,6 +31,20 @@ def account_request(subdomain, email, first_name, last_name, phone_number, count
 			"subdomain": subdomain,
 		}
 	).insert(ignore_permissions=True)
+
+	current_user = frappe.session.user
+	frappe.set_user("Administrator")
+
+	try:
+		pooled_site = get_pooled_site()
+		if pooled_site:
+			# Rename a standby site
+			ERPNextSite().rename_pooled_site(pooled_site, account_request)
+		else:
+			# Create a new site if pooled sites aren't available
+			ERPNextSite(account_request).insert(ignore_permissions=True)
+	finally:
+		frappe.set_user(current_user)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -44,7 +59,16 @@ def setup_account(key, business_data=None):
 	if isinstance(business_data, dict):
 		business_data = {
 			key: business_data.get(key)
-			for key in ["domain", "no_of_employees", "company", "designation", "referral_source"]
+			for key in [
+				"domain",
+				"no_of_employees",
+				"company",
+				"designation",
+				"referral_source",
+				"timezone",
+				"language",
+				"currency",
+			]
 		}
 
 	account_request.update(business_data)
@@ -76,8 +100,9 @@ def setup_account(key, business_data=None):
 	frappe.set_user(team_doc.user)
 	frappe.local.login_manager.login_as(team_doc.user)
 
-	# create site
-	site = ERPNextSite(subdomain=account_request.subdomain, team=team_doc).insert()
+	site_name = frappe.db.get_value("Site", {"account_request": account_request.name})
+	site = frappe.get_doc("Site", site_name)
+	site.setup_erpnext()
 	return site.name
 
 
@@ -89,11 +114,18 @@ def get_site_status(key):
 
 	site = frappe.db.get_value(
 		"Site",
-		{"subdomain": account_request.subdomain, "domain": get_erpnext_domain()},
+		{
+			"subdomain": account_request.subdomain,
+			"domain": get_erpnext_domain(),
+			"is_erpnext_setup": True,
+		},
 		["status", "subdomain"],
 		as_dict=1,
 	)
-	return site
+	if site:
+		return site
+	else:
+		return {"status": "Pending"}
 
 
 @frappe.whitelist(allow_guest=True)
@@ -114,13 +146,13 @@ def get_site_url_and_sid(key):
 
 @frappe.whitelist(allow_guest=True)
 def check_subdomain_availability(subdomain):
-	erpnext_com = get_erpnext_com_connection()
+	# erpnext_com = get_erpnext_com_connection()
 
-	result = erpnext_com.post_api(
-		"central.www.signup.check_subdomain_availability", {"subdomain": subdomain}
-	)
-	if result:
-		return False
+	# result = erpnext_com.post_api(
+	# 	"central.www.signup.check_subdomain_availability", {"subdomain": subdomain}
+	# )
+	# if result:
+	# 	return False
 
 	exists = frappe.db.exists(
 		"Site", {"subdomain": subdomain, "domain": get_erpnext_domain()}

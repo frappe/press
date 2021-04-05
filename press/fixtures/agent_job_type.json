@@ -1194,6 +1194,31 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
+  "modified": "2021-04-05 16:24:05.014172",
+  "name": "Setup ERPNext",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "request_method": "POST",
+  "request_path": "/benches/{site.bench}/sites/{site.name}/erpnext",
+  "steps": [
+   {
+    "parent": "Setup ERPNext",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Create User"
+   },
+   {
+    "parent": "Setup ERPNext",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Update ERPNext Configuration"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
   "modified": "2021-04-04 12:27:30.772719",
   "name": "Clear Cache",
   "parent": null,

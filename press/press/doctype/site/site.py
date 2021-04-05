@@ -271,6 +271,7 @@ class Site(Document):
 		agent = Agent(server.proxy_server, server_type="Proxy Server")
 		agent.new_upstream_site(self.server, self.name)
 
+	@frappe.whitelist()
 	def reinstall(self):
 		log_site_activity(self.name, "Reinstall")
 		agent = Agent(self.server)
@@ -278,6 +279,7 @@ class Site(Document):
 		self.status = "Pending"
 		self.save()
 
+	@frappe.whitelist()
 	def migrate(self):
 		log_site_activity(self.name, "Migrate")
 		agent = Agent(self.server)
@@ -285,11 +287,13 @@ class Site(Document):
 		self.status = "Pending"
 		self.save()
 
+	@frappe.whitelist()
 	def clear_cache(self):
 		log_site_activity(self.name, "Clear Cache")
 		agent = Agent(self.server)
 		agent.clear_site_cache(self)
 
+	@frappe.whitelist()
 	def restore_site(self):
 		if not frappe.get_doc("Remote File", self.remote_database_file).exists():
 			raise Exception(
@@ -302,6 +306,7 @@ class Site(Document):
 		self.status = "Pending"
 		self.save()
 
+	@frappe.whitelist()
 	def backup(self, with_files=False, offsite=False):
 		return frappe.get_doc(
 			{
@@ -312,6 +317,7 @@ class Site(Document):
 			}
 		).insert()
 
+	@frappe.whitelist()
 	def schedule_update(self):
 		log_site_activity(self.name, "Update")
 		self.status_before_update = self.status
@@ -443,6 +449,7 @@ class Site(Document):
 		site_domain = frappe.get_doc("Site Domain", domain)
 		site_domain.remove_redirect()
 
+	@frappe.whitelist()
 	def archive(self):
 		log_site_activity(self.name, "Archive")
 		agent = Agent(self.server)
@@ -751,24 +758,28 @@ class Site(Document):
 			) * 100
 			self.unsuspend(reason="Plan Upgraded")
 
+	@frappe.whitelist()
 	def deactivate(self):
 		log_site_activity(self.name, "Deactivate Site")
 		self.status = "Inactive"
 		self.update_site_config({"maintenance_mode": 1})
 		self.update_site_status_on_proxy("deactivated")
 
+	@frappe.whitelist()
 	def activate(self):
 		log_site_activity(self.name, "Activate Site")
 		self.status = "Active"
 		self.update_site_config({"maintenance_mode": 0})
 		self.update_site_status_on_proxy("activated")
 
+	@frappe.whitelist()
 	def suspend(self, reason=None):
 		log_site_activity(self.name, "Suspend Site", reason)
 		self.status = "Suspended"
 		self.update_site_config({"maintenance_mode": 1})
 		self.update_site_status_on_proxy("suspended")
 
+	@frappe.whitelist()
 	def unsuspend(self, reason=None):
 		log_site_activity(self.name, "Unsuspend Site", reason)
 		self.status = "Active"
@@ -795,6 +806,26 @@ class Site(Document):
 			doc.increment_failed_attempt()
 			doc.add_comment(text=f"<pre><code>{frappe.get_traceback()}</code></pre>")
 		return doc
+
+	def setup_erpnext(self):
+		account_request = frappe.get_doc("Account Request", self.account_request)
+		agent = Agent(self.server)
+		user = {
+			"email": account_request.email,
+			"first_name": account_request.first_name,
+			"last_name": account_request.last_name,
+		}
+		config = {
+			"setup_config": {
+				"country": account_request.country,
+				"timezone": account_request.timezone,
+				"domain": account_request.domain,
+				"currency": account_request.currency,
+				"language": account_request.language,
+				"company": account_request.company,
+			}
+		}
+		agent.setup_erpnext(self, user, config)
 
 	@property
 	def subscription(self):
@@ -883,6 +914,9 @@ def process_new_site_job_update(job):
 
 	if "Success" == first == second:
 		updated_status = "Active"
+		from press.press.doctype.site.pool import create as create_pooled_sites
+
+		create_pooled_sites()
 	elif "Failure" in (first, second):
 		updated_status = "Broken"
 	elif "Running" in (first, second):
@@ -979,6 +1013,10 @@ def process_rename_site_job_update(job):
 		# update job obj with new name
 		job.reload()
 		updated_status = "Active"
+		from press.press.doctype.site.pool import create as create_pooled_sites
+
+		create_pooled_sites()
+
 	elif "Failure" in (first, second):
 		updated_status = "Broken"
 	elif "Running" in (first, second):
