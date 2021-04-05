@@ -95,7 +95,12 @@
   "erpnext_plan",
   "erpnext_group",
   "column_break_89",
-  "erpnext_apps"
+  "erpnext_apps",
+  "erpnext_site_pool_section",
+  "enable_site_pooling",
+  "standby_pool_size",
+  "column_break_95",
+  "standby_queue_size"
  ],
  "fields": [
   {
@@ -601,11 +606,39 @@
    "fieldtype": "Link",
    "label": "Cluster",
    "options": "Cluster"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "erpnext_site_pool_section",
+   "fieldtype": "Section Break",
+   "label": "ERPNext Site Pool"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_site_pooling",
+   "fieldtype": "Check",
+   "label": "Enable Site Pooling"
+  },
+  {
+   "default": "5",
+   "fieldname": "standby_pool_size",
+   "fieldtype": "Int",
+   "label": "Standby Pool Size"
+  },
+  {
+   "fieldname": "column_break_95",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "standby_queue_size",
+   "fieldtype": "Int",
+   "label": "Standby Queue Size"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2021-03-31 12:32:57.977476",
+ "modified": "2021-04-05 08:59:26.048234",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
