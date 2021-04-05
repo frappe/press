@@ -17,7 +17,11 @@
   "section_break_7",
   "apps",
   "section_break_10",
-  "servers"
+  "servers",
+  "bench_configuration_section",
+  "common_site_config",
+  "column_break_14",
+  "bench_config"
  ],
  "fields": [
   {
@@ -90,10 +94,31 @@
    "label": "Apps",
    "options": "Release Group App",
    "reqd": 1
+  },
+  {
+   "fieldname": "bench_configuration_section",
+   "fieldtype": "Section Break",
+   "label": "Bench Configuration"
+  },
+  {
+   "default": "{}",
+   "fieldname": "common_site_config",
+   "fieldtype": "Code",
+   "label": "Common Site Config"
+  },
+  {
+   "default": "{}",
+   "fieldname": "bench_config",
+   "fieldtype": "Code",
+   "label": "Bench Config"
+  },
+  {
+   "fieldname": "column_break_14",
+   "fieldtype": "Column Break"
   }
  ],
  "links": [],
- "modified": "2021-02-16 15:55:14.509804",
+ "modified": "2021-04-05 16:17:39.340481",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",

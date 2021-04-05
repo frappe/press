@@ -44,19 +44,27 @@ class Bench(Document):
 			self.port_offset = self.get_unused_port_offset()
 
 		db_host = frappe.db.get_value("Database Server", self.database_server, "private_ip")
-		config = frappe.db.get_single_value("Press Settings", "bench_configuration")
-		config = json.loads(config)
-		config.update(
-			{
-				"db_host": db_host,
-				"monitor": True,
-				"redis_cache": "redis://redis-cache:6379",
-				"redis_queue": "redis://redis-queue:6379",
-				"redis_socketio": "redis://redis-socketio:6379",
-				"socketio_port": 9000,
-				"webserver_port": 8000,
-			}
+		config = {
+			"db_host": db_host,
+			"monitor": True,
+			"redis_cache": "redis://redis-cache:6379",
+			"redis_queue": "redis://redis-queue:6379",
+			"redis_socketio": "redis://redis-socketio:6379",
+			"socketio_port": 9000,
+			"webserver_port": 8000,
+		}
+		press_settings_common_site_config = frappe.db.get_single_value(
+			"Press Settings", "bench_configuration"
 		)
+		if press_settings_common_site_config:
+			config.update(json.loads(press_settings_common_site_config))
+
+		release_group_common_site_config = frappe.db.get_value(
+			"Release Group", self.group, "common_site_config"
+		)
+		if release_group_common_site_config:
+			config.update(json.loads(release_group_common_site_config))
+
 		self.config = json.dumps(config, indent=4)
 
 		server_private_ip = frappe.db.get_value("Server", self.server, "private_ip")
@@ -69,6 +77,13 @@ class Bench(Document):
 			"http_timeout": 120,
 			"statsd_host": f"{server_private_ip}:9125",
 		}
+
+		release_group_bench_config = frappe.db.get_value(
+			"Release Group", self.group, "bench_config"
+		)
+		if release_group_bench_config:
+			bench_config.update(json.loads(release_group_bench_config))
+
 		self.bench_config = json.dumps(bench_config, indent=4)
 
 	def get_unused_port_offset(self):
