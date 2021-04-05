@@ -7,7 +7,7 @@
  "field_order": [
   "audit_type",
   "status",
-  "output"
+  "log"
  ],
  "fields": [
   {
@@ -18,22 +18,22 @@
    "read_only": 1
   },
   {
-   "fieldname": "output",
-   "fieldtype": "Code",
-   "label": "Output",
-   "read_only": 1
-  },
-  {
    "fieldname": "audit_type",
    "fieldtype": "Select",
    "label": "Audit Type",
-   "options": "Bench Field Check\nBackup Record Check\nRestore Offsite Backup of Site",
+   "options": "Bench Field Check\nBackup Record Check\nOffsite Backup Check\nRestore Offsite Backup of Site",
+   "read_only": 1
+  },
+  {
+   "fieldname": "log",
+   "fieldtype": "Code",
+   "label": "Log",
    "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-03-31 16:56:28.340437",
+ "modified": "2021-04-05 16:44:45.079157",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Audit Log",
