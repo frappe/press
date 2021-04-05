@@ -22,6 +22,8 @@
   "free",
   "column_break_15",
   "is_standby",
+  "account_request",
+  "is_erpnext_setup",
   "trial_end_date",
   "section_break_6",
   "apps",
@@ -309,10 +311,22 @@
    "fieldname": "is_standby",
    "fieldtype": "Check",
    "label": "Is Standby"
+  },
+  {
+   "fieldname": "account_request",
+   "fieldtype": "Link",
+   "label": "Account Request",
+   "options": "Account Request"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_erpnext_setup",
+   "fieldtype": "Check",
+   "label": "Is ERPNext Setup"
   }
  ],
  "links": [],
- "modified": "2021-04-05 09:16:58.408728",
+ "modified": "2021-04-05 12:48:16.356320",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
