@@ -18,7 +18,7 @@ def account_request(subdomain, email, first_name, last_name, phone_number, count
 	if not check_subdomain_availability(subdomain):
 		frappe.throw(f"Subdomain {subdomain} is already taken")
 
-	frappe.get_doc(
+	account_request = frappe.get_doc(
 		{
 			"doctype": "Account Request",
 			"erpnext": True,
@@ -31,6 +31,20 @@ def account_request(subdomain, email, first_name, last_name, phone_number, count
 			"subdomain": subdomain,
 		}
 	).insert(ignore_permissions=True)
+
+	current_user = frappe.session.user
+	frappe.set_user("Administrator")
+
+	try:
+		pooled_site = get_pooled_site()
+		if pooled_site:
+			# Rename a standby site
+			ERPNextSite().rename_pooled_site(pooled_site, account_request)
+		else:
+			# Create a new site if pooled sites aren't available
+			ERPNextSite(account_request).insert(ignore_permissions=True)
+	finally:
+		frappe.set_user(current_user)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -77,16 +91,8 @@ def setup_account(key, business_data=None):
 	frappe.set_user(team_doc.user)
 	frappe.local.login_manager.login_as(team_doc.user)
 
-	pooled_site = get_pooled_site()
-	if pooled_site:
-		# Rename a standby site
-		site = ERPNextSite().prepare_pooled_site(
-			pooled_site=pooled_site, subdomain=account_request.subdomain, team=team_doc
-		)
-		return site._get_site_name(account_request.subdomain)
-	else:
-		# create site
-		site = ERPNextSite(subdomain=account_request.subdomain, team=team_doc).insert()
+	site_name = frappe.db.get_value("Site", {"account_request": account_request.name})
+	site = frappe.get_doc("Site", site_name)
 	return site.name
 
 
