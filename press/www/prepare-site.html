@@ -45,7 +45,7 @@
 					setTimeout(poll_site_status, 2000)
 				} else {
 					get_site_url_and_sid().then(site => {
-						window.open(`${site.url}/app?sid=${site.sid}`, '_self');
+						window.open(`${site.url}/desk?sid=${site.sid}`, '_self');
 					});
 				}
 			});
