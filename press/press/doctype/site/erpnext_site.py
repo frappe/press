@@ -13,7 +13,7 @@ class ERPNextSite(Site):
 				"doctype": "Site",
 				"subdomain": subdomain,
 				"domain": get_erpnext_domain(),
-				"bench": self.get_bench(),
+				"bench": get_erpnext_bench(),
 				"apps": [{"app": app} for app in get_erpnext_apps()],
 				"team": team.name,
 				"free": team.free_account,
@@ -22,43 +22,55 @@ class ERPNextSite(Site):
 			}
 		)
 
+	def prepare_pooled_site(self, pooled_site, subdomain, team):
+		site = frappe.get_doc("Site", pooled_site)
+		site.subdomain = subdomain
+		site.is_standby = False
+		site.team = team.name
+		site.free = team.free_account
+		site.subscription_plan = get_erpnext_plan()
+		site.trial_end_date = frappe.utils.add_days(None, 14)
+		site.save()
+		site.create_subscription(get_erpnext_plan())
+
 	def after_insert(self):
 		super().after_insert()
 		self.create_subscription(get_erpnext_plan())
 
-	def get_bench(self):
-		domain = get_erpnext_domain()
-		cluster = get_erpnext_cluster()
-
-		proxy_servers = frappe.get_all(
-			"Proxy Server",
-			[
-				["status", "=", "Active"],
-				["cluster", "=", cluster],
-				["Proxy Server Domain", "domain", "=", domain],
-			],
-			pluck="name",
-		)
-		release_group = get_erpnext_group()
-		query = """
-			SELECT
-				bench.name
-			FROM
-				tabBench bench
-			LEFT JOIN
-				tabServer server
-			ON
-				bench.server = server.name
-			WHERE
-				server.proxy_server in %s AND bench.status = "Active" AND bench.group = %s
-			ORDER BY
-				server.use_for_new_sites DESC, bench.creation DESC
-			LIMIT 1
-		"""
-		return frappe.db.sql(query, [proxy_servers, release_group], as_dict=True)[0].name
-
 	def can_create_site(self):
 		return True
+
+
+def get_erpnext_bench():
+	domain = get_erpnext_domain()
+	cluster = get_erpnext_cluster()
+
+	proxy_servers = frappe.get_all(
+		"Proxy Server",
+		[
+			["status", "=", "Active"],
+			["cluster", "=", cluster],
+			["Proxy Server Domain", "domain", "=", domain],
+		],
+		pluck="name",
+	)
+	release_group = get_erpnext_group()
+	query = """
+		SELECT
+			bench.name
+		FROM
+			tabBench bench
+		LEFT JOIN
+			tabServer server
+		ON
+			bench.server = server.name
+		WHERE
+			server.proxy_server in %s AND bench.status = "Active" AND bench.group = %s
+		ORDER BY
+			server.use_for_new_sites DESC, bench.creation DESC
+		LIMIT 1
+	"""
+	return frappe.db.sql(query, [proxy_servers, release_group], as_dict=True)[0].name
 
 
 def get_erpnext_domain():

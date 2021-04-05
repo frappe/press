@@ -21,6 +21,7 @@
   "team",
   "free",
   "column_break_15",
+  "is_standby",
   "trial_end_date",
   "section_break_6",
   "apps",
@@ -302,10 +303,16 @@
    "fieldname": "trial_end_date",
    "fieldtype": "Date",
    "label": "Trial End Date"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_standby",
+   "fieldtype": "Check",
+   "label": "Is Standby"
   }
  ],
  "links": [],
- "modified": "2021-03-31 13:11:19.454437",
+ "modified": "2021-04-05 09:16:58.408728",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
