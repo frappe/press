@@ -91,3 +91,8 @@ def get_erpnext_cluster():
 
 def get_erpnext_apps():
 	return [app.app for app in frappe.get_single("Press Settings").erpnext_apps]
+
+
+def process_setup_erpnext_site_job_update(job):
+	if job.status == "Success":
+		frappe.db.set_value("Site", job.site, "is_erpnext_setup", True)

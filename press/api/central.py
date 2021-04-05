@@ -59,7 +59,16 @@ def setup_account(key, business_data=None):
 	if isinstance(business_data, dict):
 		business_data = {
 			key: business_data.get(key)
-			for key in ["domain", "no_of_employees", "company", "designation", "referral_source"]
+			for key in [
+				"domain",
+				"no_of_employees",
+				"company",
+				"designation",
+				"referral_source",
+				"timezone",
+				"language",
+				"currency",
+			]
 		}
 
 	account_request.update(business_data)
@@ -93,6 +102,7 @@ def setup_account(key, business_data=None):
 
 	site_name = frappe.db.get_value("Site", {"account_request": account_request.name})
 	site = frappe.get_doc("Site", site_name)
+	site.setup_erpnext()
 	return site.name
 
 
@@ -104,11 +114,18 @@ def get_site_status(key):
 
 	site = frappe.db.get_value(
 		"Site",
-		{"subdomain": account_request.subdomain, "domain": get_erpnext_domain()},
+		{
+			"subdomain": account_request.subdomain,
+			"domain": get_erpnext_domain(),
+			"is_erpnext_setup": True,
+		},
 		["status", "subdomain"],
 		as_dict=1,
 	)
-	return site
+	if site:
+		return site
+	else:
+		return {"status": "Pending"}
 
 
 @frappe.whitelist(allow_guest=True)
