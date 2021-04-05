@@ -12,6 +12,7 @@ from frappe.utils import get_url
 
 
 class PressSettings(Document):
+	@frappe.whitelist()
 	def create_stripe_webhook(self):
 		stripe = get_stripe()
 		url = frappe.utils.get_url(
@@ -35,6 +36,7 @@ class PressSettings(Document):
 		self.flags.ignore_mandatory = True
 		self.save()
 
+	@frappe.whitelist()
 	def get_github_app_manifest(self):
 		if frappe.conf.developer_mode:
 			app_name = f"Frappe Cloud {frappe.generate_hash(length=6).upper()}"
