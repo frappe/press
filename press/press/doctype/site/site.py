@@ -801,6 +801,26 @@ class Site(Document):
 			doc.add_comment(text=f"<pre><code>{frappe.get_traceback()}</code></pre>")
 		return doc
 
+	def setup_erpnext(self):
+		account_request = frappe.get_doc("Account Request", self.account_request)
+		agent = Agent(self.server)
+		user = {
+			"email": account_request.email,
+			"first_name": account_request.first_name,
+			"last_name": account_request.last_name,
+		}
+		config = {
+			"setup_config": {
+				"country": account_request.country,
+				"timezone": account_request.timezone,
+				"domain": account_request.domain,
+				"currency": account_request.currency,
+				"language": account_request.language,
+				"company": account_request.company,
+			}
+		}
+		agent.setup_erpnext(self, user, config)
+
 	@property
 	def subscription(self):
 		name = frappe.db.get_value(

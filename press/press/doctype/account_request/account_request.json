@@ -21,7 +21,10 @@
   "no_of_employees",
   "company",
   "designation",
-  "referral_source"
+  "referral_source",
+  "timezone",
+  "language",
+  "currency"
  ],
  "fields": [
   {
@@ -109,12 +112,27 @@
    "fieldname": "no_of_employees",
    "fieldtype": "Data",
    "label": "Number of employees"
+  },
+  {
+   "fieldname": "timezone",
+   "fieldtype": "Data",
+   "label": "Timezone"
+  },
+  {
+   "fieldname": "language",
+   "fieldtype": "Data",
+   "label": "Language"
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Data",
+   "label": "Currency"
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-03-30 12:51:23.023667",
+ "modified": "2021-04-05 15:12:57.039710",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",
