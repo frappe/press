@@ -4,10 +4,11 @@ from unittest.mock import Mock, patch
 
 import frappe
 
-from press.press.audit import BackupRecordCheck
+from press.press.audit import BackupRecordCheck, OffsiteBackupCheck
 from press.press.doctype.press_settings.test_press_settings import (
 	create_test_press_settings,
 )
+from press.press.doctype.remote_file.test_remote_file import create_test_remote_file
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.site_backup.test_site_backup import create_test_site_backup
 from press.telegram_utils import Telegram
@@ -58,3 +59,46 @@ class TestBackupRecordCheck(TestAudit):
 			"Audit Log", {"audit_type": BackupRecordCheck.audit_type}
 		)
 		self.assertGreater(audit_logs_after, audit_logs_before)
+
+
+class TestOffsiteBackupCheck(TestAudit):
+	def test_audit_succeeds_when_all_remote_files_are_in_remote(self):
+		create_test_press_settings()
+		site = create_test_site()
+		site_backup = create_test_site_backup(site.name)
+		frappe.db.set_value(
+			"Remote File", site_backup.remote_database_file, "file_path", "remote_file1"
+		)
+		frappe.db.set_value(
+			"Remote File", site_backup.remote_public_file, "file_path", "remote_file2"
+		)
+		frappe.db.set_value(
+			"Remote File", site_backup.remote_private_file, "file_path", "remote_file3"
+		)
+		with patch.object(
+			OffsiteBackupCheck,
+			"_get_all_files_in_s3",
+			new=lambda x: ["remote_file1", "remote_file2", "remote_file3"],
+		):
+			OffsiteBackupCheck()
+		audit_log = frappe.get_last_doc(
+			"Audit Log", {"audit_type": OffsiteBackupCheck.audit_type}
+		)
+		self.assertEqual(audit_log.status, "Success")
+
+	def test_audit_fails_when_all_remote_files_not_in_remote(self):
+		create_test_press_settings()
+		site = create_test_site()
+		# 3 remote files are created here
+		site_backup = create_test_site_backup(site.name)
+		frappe.db.set_value(
+			"Remote File", site_backup.remote_database_file, "file_path", "remote_file1"
+		)
+		with patch.object(
+			OffsiteBackupCheck, "_get_all_files_in_s3", new=lambda x: ["remote_file1"],
+		):
+			OffsiteBackupCheck()
+		audit_log = frappe.get_last_doc(
+			"Audit Log", {"audit_type": OffsiteBackupCheck.audit_type}
+		)
+		self.assertEqual(audit_log.status, "Failure")
