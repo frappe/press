@@ -70,6 +70,7 @@ class AgentJob(Document):
 			)
 			doc.insert()
 
+	@frappe.whitelist()
 	def retry(self):
 		job = frappe.get_doc(
 			{
