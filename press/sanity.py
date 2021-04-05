@@ -12,7 +12,7 @@ from urllib.parse import urlsplit, urlunsplit
 CHROMEDRIVER_PATH = os.path.expanduser("~/chromedriver")
 
 try:
-	WEBSITE = frappe.utils.get_site_url(frappe.local.site)
+	WEBSITE = frappe.utils.get_url()
 except Exception:
 	WEBSITE = "https://frappecloud.com"
 

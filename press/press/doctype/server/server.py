@@ -112,6 +112,19 @@ class BaseServer(Document):
 		except Exception:
 			log_error("Server Key Fetch Exception", server=self.as_dict())
 
+	@frappe.whitelist()
+	def ping_ansible_scaleway(self):
+		try:
+			ansible = Ansible(
+				playbook="ping.yml",
+				server=self,
+				user="frappe",
+				variables={"ansible_become_password": self.get_password("frappe_user_password")},
+			)
+			ansible.run()
+		except Exception:
+			log_error("Scaleway Server Ping Exception", server=self.as_dict())
+
 	def cleanup_unused_files(self):
 		agent = Agent(self.name, self.doctype)
 		agent.cleanup_unused_files()

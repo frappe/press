@@ -631,6 +631,12 @@ def migrate(name):
 
 @frappe.whitelist()
 @protected("Site")
+def clear_cache(name):
+	frappe.get_doc("Site", name).clear_cache()
+
+
+@frappe.whitelist()
+@protected("Site")
 def restore(name, files):
 	site = frappe.get_doc("Site", name)
 	site.remote_database_file = files["database"]

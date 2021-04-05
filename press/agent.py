@@ -208,6 +208,15 @@ class Agent:
 			site=site.name,
 		)
 
+	def clear_site_cache(self, site):
+		return self.create_agent_job(
+			"Clear Cache",
+			f"benches/{site.bench}/sites/{site.name}/cache",
+			method="DELETE",
+			bench=site.bench,
+			site=site.name,
+		)
+
 	def update_site(self, site, target, deploy_type):
 		activate = site.status_before_update == "Active"
 		data = {"target": target, "activate": activate}

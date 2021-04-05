@@ -50,6 +50,7 @@ frappe.ui.form.on('Site', {
 			[__('Migrate'), 'migrate'],
 			[__('Reinstall'), 'reinstall'],
 			[__('Restore'), 'restore_site'],
+			[__('Clear Cache'), 'clear_cache'],
 			[__('Update'), 'schedule_update'],
 			[__('Deactivate'), 'deactivate'],
 			[__('Activate'), 'activate'],
