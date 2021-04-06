@@ -177,3 +177,18 @@ def options_for_regional_data(key):
 	data.update(get_country_timezone_info())
 
 	return data
+
+@frappe.whitelist(allow_guest=True)
+def get_sid_for_login(site_url, user):
+	if not frappe.db.exists('Team', user):
+		return
+
+	from urllib.parse import urlparse
+	parsed_url = urlparse(site_url)
+	site_name = parsed_url.netloc
+
+	if not frappe.db.exists('Site', {'name': site_name, 'team': user}):
+		return
+
+	frappe.local.login_manager.login_as(user)
+	return frappe.session.sid
