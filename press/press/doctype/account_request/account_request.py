@@ -49,5 +49,5 @@ class AccountRequest(Document):
 
 	def get_verification_url(self):
 		if self.erpnext:
-			return get_url(f"/setup-account?key={self.request_key}")
+			return f"https://cloud.erpnext.com/setup-account?key={self.request_key}"
 		return get_url(f"/dashboard/setup-account/{self.request_key}")
