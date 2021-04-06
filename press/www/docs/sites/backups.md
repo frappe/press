@@ -44,7 +44,9 @@ With the current scheme, for every day we store:
 
 If the current day is Jan 13, then the backups available will be like so:
 
-[![Offsite Backups - Calendar](/assets/press/images/docs/calendar.png)](/assets/press/images/docs/calendar.png)
+[![Backups Example - December](/assets/press/images/docs/brs-december.png)](/assets/press/images/docs/brs-december.png)
+
+[![Backups Example - January](/assets/press/images/docs/brs-january.png)](/assets/press/images/docs/brs-january.png)
 
 (Monthly and yearly backups before December 2020 not shown in picture)
 
