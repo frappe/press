@@ -107,6 +107,8 @@ def setup_account(key, business_data=None):
 
 	site_name = frappe.db.get_value("Site", {"account_request": account_request.name})
 	site = frappe.get_doc("Site", site_name)
+	site.team = team_doc.name
+	site.save()
 	site.create_subscription(get_erpnext_plan())
 	return site.name
 
