@@ -226,6 +226,7 @@ class Site(Document):
 		proxy_server = frappe.get_value("Server", self.server, "proxy_server")
 
 		try:
+			site_name = self._get_site_name(self.subdomain)
 			client = boto3.client(
 				"route53",
 				aws_access_key_id=domain.aws_access_key_id,
@@ -240,7 +241,7 @@ class Site(Document):
 						{
 							"Action": "UPSERT",
 							"ResourceRecordSet": {
-								"Name": self.name,
+								"Name": site_name,
 								"Type": "CNAME",
 								"TTL": 60,
 								"ResourceRecords": [{"Value": proxy_server}],
@@ -254,7 +255,7 @@ class Site(Document):
 			log_error(
 				"Route 53 Record Creation Error",
 				domain=domain.name,
-				site=self.name,
+				site=site_name,
 				proxy_server=proxy_server,
 			)
 
