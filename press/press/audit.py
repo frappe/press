@@ -106,11 +106,11 @@ class OffsiteBackupCheck(Audit):
 			JOIN
 				`tabSite Backup` site_backup
 			ON
-				site_backup.site=remote_file.site
+				site_backup.site = remote_file.site
 			WHERE
-				site_backup.status="Success" and
-				site_backup.files_availability="Available" and
-				site_backup.offsite=True
+				site_backup.status = "Success" and
+				site_backup.files_availability = "Available" and
+				site_backup.offsite = True
 			""",
 			as_dict=True,
 		)
