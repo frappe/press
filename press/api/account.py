@@ -114,7 +114,7 @@ def send_login_link(email):
 		recipients=email,
 		template="one_time_login_link",
 		args={"link": link, "minutes": minutes},
-		now=True
+		now=True,
 	)
 
 
