@@ -60,10 +60,10 @@ class BackupRecordCheck(Audit):
 
 	audit_type = "Backup Record Check"
 	interval = 24  # At least 1 automated backup a day
-	site_list_key = f"Sites with no backup in {interval} hrs"
+	list_key = f"Sites with no backup in {interval} hrs"
 
 	def __init__(self):
-		log = {self.site_list_key: []}
+		log = {self.list_key: []}
 		status = "Success"
 		for site in frappe.get_all("Site", {"status": "Active"}, pluck="name"):
 			if not frappe.db.exists(
@@ -75,7 +75,7 @@ class BackupRecordCheck(Audit):
 				},
 			):
 				status = "Failure"
-				log[self.site_list_key].append(site)
+				log[self.list_key].append(site)
 		self.log(log, status)
 
 
@@ -83,7 +83,7 @@ class OffsiteBackupCheck(Audit):
 	"""Check if files for offsite backup exists on the offsite backup provider."""
 
 	audit_type = "Offsite Backup Check"
-	list_key = "Offsite Backup Remote File unavailable in remote"
+	list_key = "Offsite Backup Remote Files unavailable in remote"
 
 	def _get_all_files_in_s3(self) -> List[str]:
 		all_files = []
