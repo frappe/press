@@ -11,6 +11,7 @@
 			{%- if frappe.form_dict.key -%}
 			<div class="alert alert-primary form-alert-info small" style="display: none;" role="alert"></div>
 			<div class="alert alert-danger form-alert-error small" style="display: none;" role="alert"></div>
+			{#
 			<!-- 3. Regional Settings -->
 			<form class="form-step" data-step="1" data-action="regional_settings">
 				<div class="form-group">
@@ -50,8 +51,9 @@
 					<button type="submit" class="ml-4 btn btn-primary btn-step-3">Next</button>
 				</div>
 			</form>
+			#}
 			<!-- 4. Business Settings -->
-			<form class="form-step" data-step="2" data-action="business_settings">
+			<form class="form-step" data-step="1" data-action="business_settings">
 				<div class="form-group">
 					<label for="company_name">Company Name</label>
 					<input type="text" class="form-control" id="company_name" name="company">
