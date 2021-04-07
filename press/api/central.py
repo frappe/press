@@ -56,6 +56,8 @@ def setup_account(key, business_data=None):
 	if not account_request:
 		frappe.throw("Invalid or Expired Key")
 
+	frappe.set_user("Administrator")
+
 	if business_data:
 		business_data = frappe.parse_json(business_data)
 
