@@ -288,7 +288,7 @@ class Site(Document):
 		self.save()
 
 	@frappe.whitelist()
-	def clear_cache(self):
+	def clear_site_cache(self):
 		log_site_activity(self.name, "Clear Cache")
 		agent = Agent(self.server)
 		agent.clear_site_cache(self)

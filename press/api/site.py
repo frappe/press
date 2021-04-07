@@ -632,7 +632,7 @@ def migrate(name):
 @frappe.whitelist()
 @protected("Site")
 def clear_cache(name):
-	frappe.get_doc("Site", name).clear_cache()
+	frappe.get_doc("Site", name).clear_site_cache()
 
 
 @frappe.whitelist()
