@@ -149,10 +149,6 @@ export default {
 			],
 			dropdownItems: [
 				{
-					label: 'New Bench',
-					action: () => this.$router.push('/benches/new')
-				},
-				{
 					label: 'Settings',
 					action: () => this.$router.push('/account')
 				},
