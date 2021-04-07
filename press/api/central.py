@@ -34,6 +34,7 @@ def account_request(subdomain, email, first_name, last_name, phone_number, count
 	).insert(ignore_permissions=True)
 
 	current_user = frappe.session.user
+	current_session_data = frappe.session.data
 	frappe.set_user("Administrator")
 
 	try:
@@ -46,6 +47,7 @@ def account_request(subdomain, email, first_name, last_name, phone_number, count
 			ERPNextSite(account_request).insert(ignore_permissions=True)
 	finally:
 		frappe.set_user(current_user)
+		frappe.session.data = current_session_data
 
 
 @frappe.whitelist(allow_guest=True)
