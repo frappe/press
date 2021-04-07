@@ -135,6 +135,7 @@ class Site(Document):
 		agent.rename_upstream_site(self.server, self, new_name, site_domains)
 
 	def rename(self, new_name: str):
+		self.create_dns_record()
 		agent = Agent(self.server)
 		agent.rename_site(self, new_name)
 		self.rename_upstream(new_name)
