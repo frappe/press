@@ -15,11 +15,12 @@ class AuditLog(Document):
 
 	def notify(self):
 		domain = frappe.get_value("Press Settings", "Press Settings", "domain")
-		message = f"""*FAILED AUDIT*
-		[{self.audit_type}]({domain}{self.get_url()})
-		```
-		{self.log}
-		```
-		"""
+		message = f"""
+*FAILED AUDIT*
+[{self.audit_type}]({domain}{self.get_url()})
+```
+{self.log}
+```
+"""
 		telegram = Telegram()
 		telegram.send(message)
