@@ -90,6 +90,52 @@ def setup_account(
 	frappe.local.login_manager.login_as(email)
 
 
+@frappe.whitelist(allow_guest=True)
+def send_login_link(email):
+	if not frappe.db.exists("User", email):
+		frappe.throw("No registered account with this email address")
+
+	key = frappe.generate_hash("Login Link", 20)
+	minutes = 10
+	frappe.cache().set_value(
+		f"one_time_login_key:{key}", email, expires_in_sec=minutes * 60
+	)
+
+	link = get_url(f"/api/method/press.api.account.login_using_key?key={key}")
+
+	if frappe.conf.developer_mode:
+		print()
+		print(f"One time login link for {email}")
+		print(link)
+		print()
+
+	frappe.sendmail(
+		subject="Login to Frappe Cloud",
+		recipients=email,
+		template="one_time_login_link",
+		args={"link": link, "minutes": minutes},
+	)
+
+
+@frappe.whitelist(allow_guest=True)
+def login_using_key(key):
+	cache_key = f"one_time_login_key:{key}"
+	email = frappe.cache().get_value(cache_key)
+
+	if email:
+		frappe.cache().delete_value(cache_key)
+		frappe.local.login_manager.login_as(email)
+		frappe.response.type = "redirect"
+		frappe.response.location = "/dashboard"
+	else:
+		frappe.respond_as_web_page(
+			_("Not Permitted"),
+			_("The link you trying to login is invalid or expired."),
+			http_status_code=403,
+			indicator_color="red",
+		)
+
+
 @frappe.whitelist()
 def request_team_deletion():
 	team = get_current_team()

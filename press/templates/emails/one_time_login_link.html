@@ -1,0 +1,18 @@
+{% import "templates/emails/macros.html" as utils %}
+{% extends "templates/emails/base.html" %}
+
+{% block content %}
+
+<td class="text-base leading-6 text-gray-900">
+    <div class="p-8 bg-white from-markdown">
+        <p>Hello,</p>
+        <strong>
+            Click on the following button to login to your Frappe Cloud dashboard. This link will expire in {{ minutes }} minutes.
+        </strong>
+        {{ utils.button('Login', link, true) }}
+        {{ utils.separator() }}
+        {{ utils.signature() }}
+    </div>
+</td>
+
+{% endblock %}
