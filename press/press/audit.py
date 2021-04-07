@@ -64,19 +64,31 @@ class BackupRecordCheck(Audit):
 
 	def __init__(self):
 		log = {self.list_key: []}
-		status = "Success"
-		for site in frappe.get_all("Site", {"status": "Active"}, pluck="name"):
-			if not frappe.db.exists(
-				"Site Backup",
-				{
-					"site": site,
-					"owner": "Administrator",
-					"creation": (">=", datetime.now() - timedelta(hours=self.interval)),
-				},
-			):
-				status = "Failure"
-				log[self.list_key].append(site)
-		self.log(log, status)
+		interval_hrs_ago = datetime.now() - timedelta(hours=self.interval)
+		tuples = frappe.db.sql(
+			f"""
+				SELECT
+					site.name
+				FROM
+					`tabSite Backup` site_backup
+				JOIN
+					`tabSite` site
+				ON
+					site_backup.site = site.name
+				WHERE
+					site.status = "Active" and
+					site_backup.owner = "Administrator" and
+					site_backup.creation >= "{interval_hrs_ago}"
+			"""
+		)
+		sites_with_backup_in_interval = set([t[0] for t in tuples])
+		all_sites = set(frappe.get_all("Site", {"status": "Active"}, pluck="name"))
+		sites_without_backups = all_sites.difference(sites_with_backup_in_interval)
+		if sites_without_backups:
+			log[self.list_key] = list(sites_without_backups)
+			self.log(log, "Failure")
+		else:
+			self.log(log, "Success")
 
 
 class OffsiteBackupCheck(Audit):
