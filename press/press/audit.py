@@ -15,7 +15,7 @@ class Audit:
 	`audit_type` member variable needs to be set to log
 	"""
 
-	def log(self, log, status="Success"):
+	def log(self, log, status):
 		log = pprint.pformat(log)
 		frappe.get_doc(
 			{
