@@ -115,10 +115,7 @@ def get_site_status(key):
 
 	site = frappe.db.get_value(
 		"Site",
-		{
-			"subdomain": account_request.subdomain,
-			"domain": get_erpnext_domain(),
-		},
+		{"subdomain": account_request.subdomain, "domain": get_erpnext_domain()},
 		["status", "subdomain"],
 		as_dict=1,
 	)
