@@ -915,9 +915,6 @@ def process_new_site_job_update(job):
 
 	if "Success" == first == second:
 		updated_status = "Active"
-		from press.press.doctype.site.pool import create as create_pooled_sites
-
-		create_pooled_sites()
 	elif "Failure" in (first, second):
 		updated_status = "Broken"
 	elif "Running" in (first, second):
