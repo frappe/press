@@ -127,7 +127,7 @@ def get_site_status(key):
 		return {"status": "Pending"}
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def get_site_url_and_sid(key):
 	account_request = get_account_request_from_key(key)
 	if not account_request:
