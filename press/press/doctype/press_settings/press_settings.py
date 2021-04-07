@@ -10,7 +10,6 @@ from frappe.model.document import Document
 from frappe.utils import get_url
 
 from press.api.billing import get_stripe
-from press.utils import log_error
 
 
 class PressSettings(Document):

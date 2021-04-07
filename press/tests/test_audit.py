@@ -8,7 +8,6 @@ from press.press.audit import BackupRecordCheck, OffsiteBackupCheck
 from press.press.doctype.press_settings.test_press_settings import (
 	create_test_press_settings,
 )
-from press.press.doctype.remote_file.test_remote_file import create_test_remote_file
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.site_backup.test_site_backup import create_test_site_backup
 from press.telegram_utils import Telegram
