@@ -90,7 +90,7 @@ class OffsiteBackupCheck(Audit):
 		settings = frappe.get_single("Press Settings")
 		s3 = settings.boto3_offsite_backup_session.resource("s3")
 		for s3_object in s3.Bucket(settings.aws_s3_bucket).objects.all():
-			all_files += s3_object.key
+			all_files.append(s3_object.key)
 		return all_files
 
 	def __init__(self):
