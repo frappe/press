@@ -53,18 +53,14 @@ def new(site):
 	cluster = frappe.db.get_single_value("Press Settings", "cluster")
 	proxy_servers = frappe.get_all(
 		"Proxy Server",
-		[
-			["status", "=", "Active"],
-			["cluster", "=", cluster],
-			["Proxy Server Domain", "domain", "=", domain],
-		],
+		[["status", "=", "Active"], ["Proxy Server Domain", "domain", "=", domain]],
 		pluck="name",
 	)
 
 	bench = frappe.db.sql(
 		"""
 	SELECT
-		bench.name
+		bench.name, bench.cluster = %s as in_primary_cluster
 	FROM
 		tabBench bench
 	LEFT JOIN
@@ -74,10 +70,10 @@ def new(site):
 	WHERE
 		server.proxy_server in %s AND bench.status = "Active" AND bench.group = %s
 	ORDER BY
-		server.use_for_new_sites DESC, bench.creation DESC
+		in_primary_cluster DESC, server.use_for_new_sites DESC, bench.creation DESC
 	LIMIT 1
 	""",
-		(proxy_servers, site["group"]),
+		(cluster, proxy_servers, site["group"]),
 		as_dict=True,
 	)[0].name
 	plan = site["plan"]
