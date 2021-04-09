@@ -31,6 +31,7 @@ class Invoice(Document):
 		if self.status != "Paid":
 			frappe.throw("Invoice must be Paid to be submitted")
 
+	@frappe.whitelist()
 	def finalize_invoice(self):
 		if self.type == "Prepaid Credits":
 			return
@@ -369,6 +370,7 @@ class Invoice(Document):
 			f"/api/method/frappe.utils.print_format.download_pdf?doctype=Invoice&name={self.name}&format={print_format}&no_letterhead=0"
 		)
 
+	@frappe.whitelist()
 	def create_invoice_on_frappeio(self):
 		if self.flags.skip_frappe_invoice:
 			return
@@ -407,6 +409,7 @@ class Invoice(Document):
 				text="Failed to create invoice on frappe.io" + "<br><br>" + traceback
 			)
 
+	@frappe.whitelist()
 	def fetch_invoice_pdf(self):
 		if self.frappe_invoice:
 			client = self.get_frappeio_connection()
