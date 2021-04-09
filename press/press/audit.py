@@ -134,3 +134,10 @@ class OffsiteBackupCheck(Audit):
 				status = "Failure"
 				log[self.list_key].append(remote_file)
 		self.log(log, status)
+
+
+def all():
+	"""Run all audits available"""
+	BenchFieldCheck()
+	BackupRecordCheck()
+	OffsiteBackupCheck()

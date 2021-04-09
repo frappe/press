@@ -151,6 +151,7 @@ scheduler_events = {
 	],
 	"daily_long": [
 		"press.press.doctype.team_deletion_request.team_deletion_request.process_team_deletion_requests",
+		"press.press.audit.all",
 	],
 	"hourly": [
 		"press.press.doctype.app.app.poll_new_releases",
