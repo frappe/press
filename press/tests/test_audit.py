@@ -20,9 +20,13 @@ class TestAudit(unittest.TestCase):
 
 
 class TestBackupRecordCheck(TestAudit):
-	def test_audit_will_fail_on_backup_older_than_interval(self):
+	older_than_interval = datetime.now() - timedelta(
+		hours=(BackupRecordCheck.interval + 2)
+	)
+
+	def test_audit_will_fail_if_backup_older_than_interval(self):
 		create_test_press_settings()
-		site = create_test_site()
+		site = create_test_site(creation=self.older_than_interval)
 		create_test_site_backup(
 			site.name, creation=datetime.now() - timedelta(hours=BackupRecordCheck.interval + 1)
 		)
@@ -34,7 +38,8 @@ class TestBackupRecordCheck(TestAudit):
 
 	def test_audit_succeeds_when_backup_in_interval_exists(self):
 		create_test_press_settings()
-		site = create_test_site()
+		site = create_test_site(creation=self.older_than_interval)
+
 		create_test_site_backup(
 			site.name, creation=datetime.now() - timedelta(hours=BackupRecordCheck.interval - 1)
 		)
@@ -46,7 +51,7 @@ class TestBackupRecordCheck(TestAudit):
 
 	def test_audit_log_is_created(self):
 		create_test_press_settings()
-		site = create_test_site()
+		site = create_test_site(creation=self.older_than_interval)
 		create_test_site_backup(
 			site.name, creation=datetime.now() - timedelta(hours=BackupRecordCheck.interval + 0)
 		)
@@ -58,6 +63,17 @@ class TestBackupRecordCheck(TestAudit):
 			"Audit Log", {"audit_type": BackupRecordCheck.audit_type}
 		)
 		self.assertGreater(audit_logs_after, audit_logs_before)
+
+	def test_sites_created_within_interval_are_ignored(self):
+		create_test_press_settings()
+		create_test_site()
+		# no backup
+		BackupRecordCheck()
+
+		audit_log = frappe.get_last_doc(
+			"Audit Log", {"audit_type": BackupRecordCheck.audit_type}
+		)
+		self.assertEqual(audit_log.status, "Success")
 
 
 class TestOffsiteBackupCheck(TestAudit):

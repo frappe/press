@@ -22,8 +22,14 @@ from press.press.doctype.release_group.test_release_group import (
 from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.site.site import Site, process_rename_site_job_update
 
+from datetime import datetime
 
-def create_test_site(subdomain: str = "testsubdomain", new: bool = False) -> Site:
+
+def create_test_site(
+	subdomain: str = "testsubdomain",
+	new: bool = False,
+	creation: datetime = datetime.now(),
+) -> Site:
 	"""Create test Site doc."""
 	proxy_server = create_test_proxy_server()
 	database_server = create_test_database_server()
@@ -49,6 +55,7 @@ def create_test_site(subdomain: str = "testsubdomain", new: bool = False) -> Sit
 			"plan": plan.name,
 			"apps": [{"app": app.name}],
 			"admin_password": "admin",
+			"creation": creation,
 		}
 	).insert(ignore_if_duplicate=True)
 
