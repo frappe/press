@@ -19,7 +19,7 @@ from frappe.utils import (
 )
 
 from press.agent import Agent
-from press.telegram import Telegram
+from press.telegram_utils import Telegram
 from press.utils import log_error
 
 
