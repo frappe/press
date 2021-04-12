@@ -107,7 +107,6 @@ def setup_account(key, business_data=None):
 	site = frappe.get_doc("Site", site_name)
 	site.team = team_doc.name
 	site.save()
-	site.create_subscription(get_erpnext_plan())
 
 	frappe.set_user(team_doc.user)
 	frappe.local.login_manager.login_as(team_doc.user)

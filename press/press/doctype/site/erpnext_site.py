@@ -31,7 +31,7 @@ class ERPNextSite(Site):
 		self.account_request = account_request.name
 		self.trial_end_date = frappe.utils.add_days(None, 14)
 		self.save(ignore_permissions=True)
-		self.change_plan(account_request.plan)
+		self.create_subscription(account_request.plan)
 
 	def can_change_plan(self):
 		return True
