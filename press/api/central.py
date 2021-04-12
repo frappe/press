@@ -108,6 +108,11 @@ def setup_account(key, business_data=None):
 	site.team = team_doc.name
 	site.save()
 
+	subscription = site.subscription
+	if subscription:
+		subscription.team = team_doc.name
+		subscription.save()
+
 	frappe.set_user(team_doc.user)
 	frappe.local.login_manager.login_as(team_doc.user)
 
