@@ -28,9 +28,12 @@ class ERPNextSite(Site):
 		site.subdomain = account_request.subdomain
 		site.is_standby = False
 		site.account_request = account_request.name
-		site.subscription_plan = account_request.plan
 		site.trial_end_date = frappe.utils.add_days(None, 14)
 		site.save(ignore_permissions=True)
+		self.change_plan(account_request.plan)
+
+	def can_change_plan(self):
+		return True
 
 	def can_create_site(self):
 		return True
