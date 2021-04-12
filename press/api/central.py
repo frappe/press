@@ -42,7 +42,7 @@ def account_request(subdomain, plan, email, first_name, last_name, phone_number,
 		pooled_site = get_pooled_site()
 		if pooled_site:
 			# Rename a standby site
-			ERPNextSite().rename_pooled_site(pooled_site, account_request)
+			ERPNextSite(site=pooled_site).rename_pooled_site(account_request)
 		else:
 			# Create a new site if pooled sites aren't available
 			ERPNextSite(account_request).insert(ignore_permissions=True)
