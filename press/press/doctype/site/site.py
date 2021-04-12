@@ -288,6 +288,14 @@ class Site(Document):
 		self.save()
 
 	@frappe.whitelist()
+	def restore_tables(self):
+		self.status_before_update = self.status
+		agent = Agent(self.server)
+		agent.restore_site_tables(self)
+		self.status = "Pending"
+		self.save()
+
+	@frappe.whitelist()
 	def clear_site_cache(self):
 		log_site_activity(self.name, "Clear Cache")
 		agent = Agent(self.server)
@@ -1046,6 +1054,22 @@ def update_records_for_rename(job):
 
 	frappe.rename_doc("Site", job.site, new_name)
 	frappe.rename_doc("Site Domain", job.site, new_name)
+
+
+def process_restore_tables_job_update(job):
+	updated_status = {
+		"Pending": "Pending",
+		"Running": "Updating",
+		"Success": "Active",
+		"Failure": "Broken",
+	}[job.status]
+
+	site_status = frappe.get_value("Site", job.site, "status")
+	if updated_status != site_status:
+		if updated_status == "Active":
+			frappe.get_doc("Site", job.site).reset_previous_status()
+		else:
+			frappe.db.set_value("Site", job.site, "status", updated_status)
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Site")

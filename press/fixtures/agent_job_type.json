@@ -1240,5 +1240,30 @@
     "step_name": "Clear Website Cache"
    }
   ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2021-04-12 22:01:07.809393",
+  "name": "Restore Site Tables",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/sites/{site}/update/migrate/restore",
+  "steps": [
+   {
+    "parent": "Restore Site Tables",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Restore Site Tables"
+   },
+   {
+    "parent": "Restore Site Tables",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Disable Maintenance Mode"
+   }
+  ]
  }
 ]
