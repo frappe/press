@@ -365,6 +365,7 @@ def process_job_updates(job_name):
 			process_new_site_job_update,
 			process_reinstall_site_job_update,
 			process_rename_site_job_update,
+			process_restore_tables_job_update,
 		)
 		from press.press.doctype.site.erpnext_site import (
 			process_setup_erpnext_site_job_update,
@@ -422,6 +423,8 @@ def process_job_updates(job_name):
 			process_rename_site_job_update(job)
 		elif job.job_type == "Setup ERPNext":
 			process_setup_erpnext_site_job_update(job)
+		elif job.job_type == "Restore Site Tables":
+			process_restore_tables_job_update(job)
 
 	except Exception as e:
 		log_error("Agent Job Callback Exception", job=job.as_dict())

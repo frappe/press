@@ -228,6 +228,17 @@ class Agent:
 			site=site.name,
 		)
 
+	def restore_site_tables(self, site):
+		activate = site.status_before_update == "Active"
+		data = {"activate": activate}
+		return self.create_agent_job(
+			"Restore Site Tables",
+			f"benches/{site.bench}/sites/{site.name}/update/migrate/restore",
+			data,
+			bench=site.bench,
+			site=site.name,
+		)
+
 	def update_site_recover_move(self, site, target, deploy_type, activate):
 		data = {"target": target, "activate": activate}
 		return self.create_agent_job(
