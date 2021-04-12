@@ -856,7 +856,7 @@ class Site(Document):
 
 	def get_plan_config(self, plan=None):
 		if not plan:
-			plan = self.subscription_plan or self.plan
+			plan = self.subscription_plan if hasattr(self, "subscription_plan") else self.plan
 		if not plan:
 			return {}
 		return get_plan_config(plan)
