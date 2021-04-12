@@ -18,7 +18,7 @@ class ERPNextSite(Site):
 					"apps": [{"app": app} for app in get_erpnext_apps()],
 					"team": "Administrator",
 					"account_request": account_request.name,
-					"subscription_plan": get_erpnext_plan(),
+					"subscription_plan": account_request.plan,
 					"trial_end_date": frappe.utils.add_days(None, 14),
 				}
 			)
@@ -28,7 +28,7 @@ class ERPNextSite(Site):
 		site.subdomain = account_request.subdomain
 		site.is_standby = False
 		site.account_request = account_request.name
-		site.subscription_plan = get_erpnext_plan()
+		site.subscription_plan = account_request.plan
 		site.trial_end_date = frappe.utils.add_days(None, 14)
 		site.save(ignore_permissions=True)
 

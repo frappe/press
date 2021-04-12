@@ -8,23 +8,24 @@
   "request_key",
   "team",
   "email",
-  "erpnext",
+  "column_break_4",
   "role",
   "invited_by",
   "ip_address",
-  "country",
+  "section_break_8",
+  "erpnext",
+  "subdomain",
+  "plan",
   "first_name",
   "last_name",
   "phone_number",
-  "subdomain",
-  "domain",
+  "country",
+  "column_break_14",
   "no_of_employees",
   "company",
   "designation",
-  "referral_source",
-  "timezone",
-  "language",
-  "currency"
+  "referrer_data",
+  "referral_source"
  ],
  "fields": [
   {
@@ -86,12 +87,8 @@
    "default": "0",
    "fieldname": "erpnext",
    "fieldtype": "Check",
+   "hidden": 1,
    "label": "ERPNext"
-  },
-  {
-   "fieldname": "domain",
-   "fieldtype": "Data",
-   "label": "Domain"
   },
   {
    "fieldname": "company",
@@ -114,25 +111,34 @@
    "label": "Number of employees"
   },
   {
-   "fieldname": "timezone",
-   "fieldtype": "Data",
-   "label": "Timezone"
+   "fieldname": "section_break_8",
+   "fieldtype": "Section Break",
+   "label": "ERPNext Sign Up"
   },
   {
-   "fieldname": "language",
-   "fieldtype": "Data",
-   "label": "Language"
+   "fieldname": "column_break_14",
+   "fieldtype": "Column Break"
   },
   {
-   "fieldname": "currency",
-   "fieldtype": "Data",
-   "label": "Currency"
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "referrer_data",
+   "fieldtype": "Section Break",
+   "label": "Referrer Data"
+  },
+  {
+   "fieldname": "plan",
+   "fieldtype": "Link",
+   "label": "Plan",
+   "options": "Plan"
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-04-05 15:12:57.039710",
+ "modified": "2021-04-12 12:39:35.642323",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",
