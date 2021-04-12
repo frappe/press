@@ -28,6 +28,15 @@
 					<small class="form-text"></small>
 				</div>
 
+				<div class="form-group">
+					<label for="plan">Plan</label>
+					<select id="plan" class="custom-select" name="plan">
+						{%- for plan in plans -%}
+						<option value="{{ plan.name }}">{{ plan.plan_title }}</option>
+						{%- endfor -%}
+					</select>
+				</div>
+
 				<div class="form-row">
 					<div class="form-group col-12 col-sm-6">
 						<label for="first_name">First Name</label>
@@ -75,7 +84,8 @@
 				</div>
 				<div class="form-group">
 					<p>
-						By clicking on <b>Create Account</b>, you accept our <a href="https://erpnext.com/terms" target="_blank">Terms</a>
+						By clicking on <b>Create Account</b>, you accept our <a href="https://erpnext.com/terms"
+							target="_blank">Terms</a>
 						and </span><a href="https://erpnext.com/privacy" target="_blank">Privacy Policy</a>.
 					</p>
 				</div>
@@ -123,6 +133,11 @@
 			}
 			if (!/^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(value)) {
 				return "Site name should contain lowercase alphabets, numbers, and hyphens";
+			}
+		},
+		plan: (value) => {
+			if (!value) {
+				return 'Please select a plan';
 			}
 		},
 		phone_number: (value) => {
