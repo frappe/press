@@ -30,6 +30,7 @@ class ERPNextSite(Site):
 		self.is_standby = False
 		self.account_request = account_request.name
 		self.trial_end_date = frappe.utils.add_days(None, 14)
+		self._update_configuration(self.get_plan_config(account_request.plan), save=False)
 		self.save(ignore_permissions=True)
 		self.create_subscription(account_request.plan)
 
