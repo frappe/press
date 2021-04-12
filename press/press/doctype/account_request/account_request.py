@@ -19,6 +19,7 @@ class AccountRequest(Document):
 		self.ip_address = frappe.local.request_ip
 		self.send_verification_email()
 
+	@frappe.whitelist()
 	def send_verification_email(self):
 		url = self.get_verification_url()
 
