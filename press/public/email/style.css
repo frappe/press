@@ -71,7 +71,7 @@
 		font-size: theme("fontSize.sm") !important;
 	}
 
-	a {
+	a:not(.btn) {
 		color: theme('colors.blue.600') !important;
 		text-decoration: underline !important;
 	}
