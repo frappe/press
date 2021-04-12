@@ -41,10 +41,14 @@ class Site(Document):
 	def validate(self):
 		self.validate_site_name()
 		self.set_site_admin_password()
-		self.validate_site_creation()
 		self.validate_installed_apps()
 		self.validate_host_name()
 		self.validate_site_config()
+
+	def before_insert(self):
+		self.validate_site_creation()
+		# initialize site.config based on plan
+		self._update_configuration(self.get_plan_config(), save=False)
 
 	def validate_site_name(self):
 		site_regex = r"^[a-z0-9][a-z0-9-]*[a-z0-9]$"
@@ -64,14 +68,8 @@ class Site(Document):
 			self.admin_password = frappe.generate_hash(length=16)
 
 	def validate_site_creation(self):
-		# validate site creation and initialize site.config
-		if self.is_new() and frappe.session.user != "Administrator":
+		if frappe.session.user != "Administrator":
 			self.can_create_site()
-
-			if not self.subscription_plan:
-				frappe.throw("Cannot create site without plan")
-
-			self._update_configuration(get_plan_config(self.subscription_plan), save=False)
 
 	def validate_installed_apps(self):
 		# validate apps to be installed on site
@@ -728,7 +726,7 @@ class Site(Document):
 
 	def change_plan(self, plan):
 		self.can_change_plan()
-		plan_config = get_plan_config(plan)
+		plan_config = self.get_plan_config(plan)
 		self.update_site_config(plan_config)
 		frappe.get_doc(
 			{
@@ -855,6 +853,13 @@ class Site(Document):
 				today > get_datetime(self.trial_end_date).date() if self.trial_end_date else True
 			)
 		)
+
+	def get_plan_config(self, plan=None):
+		if not plan:
+			plan = self.subscription_plan or self.plan
+		if not plan:
+			return {}
+		return get_plan_config(plan)
 
 	def _create_initial_site_plan_change(self, plan):
 		frappe.get_doc(

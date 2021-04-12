@@ -45,7 +45,6 @@ class SitePool:
 					"domain": domain,
 					"is_standby": True,
 					"team": "Administrator",
-					"subscription_plan": get_erpnext_plan(),
 					"bench": bench,
 					"apps": [{"app": app} for app in apps],
 				}
