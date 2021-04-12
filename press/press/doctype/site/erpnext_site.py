@@ -7,8 +7,10 @@ import frappe
 
 
 class ERPNextSite(Site):
-	def __init__(self, account_request=None):
-		if account_request:
+	def __init__(self, site=None, account_request=None):
+		if site:
+			super().__init__("Site", site)
+		elif account_request:
 			super().__init__(
 				{
 					"doctype": "Site",
@@ -23,13 +25,12 @@ class ERPNextSite(Site):
 				}
 			)
 
-	def rename_pooled_site(self, pooled_site, account_request):
-		site = frappe.get_doc("Site", pooled_site)
-		site.subdomain = account_request.subdomain
-		site.is_standby = False
-		site.account_request = account_request.name
-		site.trial_end_date = frappe.utils.add_days(None, 14)
-		site.save(ignore_permissions=True)
+	def rename_pooled_site(self, account_request):
+		self.subdomain = account_request.subdomain
+		self.is_standby = False
+		self.account_request = account_request.name
+		self.trial_end_date = frappe.utils.add_days(None, 14)
+		self.save(ignore_permissions=True)
 		self.change_plan(account_request.plan)
 
 	def can_change_plan(self):
