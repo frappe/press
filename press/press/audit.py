@@ -1,5 +1,5 @@
 """Functions for automated audit of frappe cloud systems."""
-import pprint
+import json
 from datetime import datetime, timedelta
 from typing import List
 
@@ -15,12 +15,11 @@ class Audit:
 	`audit_type` member variable needs to be set to log
 	"""
 
-	def log(self, log, status):
-		log = pprint.pformat(log)
+	def log(self, log: dict, status: str):
 		frappe.get_doc(
 			{
 				"doctype": "Audit Log",
-				"log": log,
+				"log": json.dumps(log, indent=2),
 				"status": status,
 				"audit_type": self.audit_type,
 			}
