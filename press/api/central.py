@@ -66,14 +66,11 @@ def setup_account(key, business_data=None):
 		business_data = {
 			key: business_data.get(key)
 			for key in [
-				"domain",
+				"industry",
 				"no_of_employees",
 				"company",
 				"designation",
-				"referral_source",
-				"timezone",
-				"language",
-				"currency",
+				"referral_source"
 			]
 		}
 

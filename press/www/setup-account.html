@@ -58,6 +58,19 @@
 					<label for="company_name">Company Name</label>
 					<input type="text" class="form-control" id="company_name" name="company">
 				</div>
+				<div class="form-group">
+					<label for="industry">Industry</label>
+					<select id="industry" name="industry" class="custom-select">
+						<option selected disabled></option>
+						<option>Distribution</option>
+						<option>Manufacturing</option>
+						<option>Retail</option>
+						<option>Education</option>
+						<option>Services</option>
+						<option>Agriculture</option>
+						<option>Non Profit</option>
+					</select>
+				</div>
 				<div class="form-row">
 					<div class="form-group col">
 						<label for="no_of_employees">Number of employees</label>
@@ -142,6 +155,11 @@
 		company: (value) => {
 			if (!value) {
 				return "Company Name cannot be blank";
+			}
+		},
+		industry: (value) => {
+			if (!value) {
+				return "Please select an industry";
 			}
 		},
 		designation: (value) => {
