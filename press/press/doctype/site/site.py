@@ -642,7 +642,8 @@ class Site(Document):
 		value = conn.get_value("System Settings", "setup_complete", "System Settings")
 		if value:
 			setup_complete = cint(value["setup_complete"])
-			self.db_set("setup_wizard_complete", setup_complete)
+			self.setup_wizard_complete = setup_complete
+			self.save()
 			return setup_complete
 
 	def _set_configuration(self, config):
