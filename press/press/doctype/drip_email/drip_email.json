@@ -1,0 +1,234 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "drip_email.####",
+ "creation": "2016-02-29 04:37:05.108042",
+ "doctype": "DocType",
+ "document_type": "Setup",
+ "engine": "InnoDB",
+ "field_order": [
+  "enabled",
+  "email_type",
+  "subject",
+  "column_break_7",
+  "send_by_consultant",
+  "sender_name",
+  "sender",
+  "reply_to",
+  "pre_header",
+  "section_break_9",
+  "message",
+  "section_break_4",
+  "send_after",
+  "send_after_payment",
+  "minimum_activation_level",
+  "maximum_activation_level",
+  "column_break_2",
+  "distribution",
+  "manufacturing",
+  "retail",
+  "services",
+  "education",
+  "healthcare",
+  "non_profit",
+  "other",
+  "section_break_25",
+  "module_setup_guide"
+ ],
+ "fields": [
+  {
+   "default": "0",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "default": "Drip",
+   "fieldname": "email_type",
+   "fieldtype": "Select",
+   "label": "Email Type",
+   "options": "Drip\nSign Up\nSubscription Activation\nWhitepaper Feedback\nOnboarding"
+  },
+  {
+   "fieldname": "subject",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Subject",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_7",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "send_by_consultant",
+   "fieldtype": "Check",
+   "label": "Send By Consultant"
+  },
+  {
+   "fieldname": "sender_name",
+   "fieldtype": "Data",
+   "label": "Sender Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "sender",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Sender",
+   "options": "Email",
+   "reqd": 1
+  },
+  {
+   "fieldname": "reply_to",
+   "fieldtype": "Data",
+   "label": "Reply To",
+   "options": "Email"
+  },
+  {
+   "fieldname": "section_break_9",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "message",
+   "fieldtype": "Text Editor",
+   "in_list_view": 1,
+   "label": "Message",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_4",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "send_after",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Send After (Days)",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "send_after_payment",
+   "fieldtype": "Check",
+   "label": "Send After Payment"
+  },
+  {
+   "description": "1-7",
+   "fieldname": "minimum_activation_level",
+   "fieldtype": "Int",
+   "label": "Minimum Activation Level"
+  },
+  {
+   "description": "1-7",
+   "fieldname": "maximum_activation_level",
+   "fieldtype": "Int",
+   "label": "Maximum Activation Level"
+  },
+  {
+   "default": "(1-7)",
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "distribution",
+   "fieldtype": "Check",
+   "label": "Distribution"
+  },
+  {
+   "default": "0",
+   "fieldname": "manufacturing",
+   "fieldtype": "Check",
+   "label": "Manufacturing"
+  },
+  {
+   "default": "0",
+   "fieldname": "retail",
+   "fieldtype": "Check",
+   "label": "Retail"
+  },
+  {
+   "default": "0",
+   "fieldname": "services",
+   "fieldtype": "Check",
+   "label": "Services"
+  },
+  {
+   "default": "0",
+   "fieldname": "education",
+   "fieldtype": "Check",
+   "label": "Education"
+  },
+  {
+   "default": "0",
+   "fieldname": "healthcare",
+   "fieldtype": "Check",
+   "label": "Healthcare"
+  },
+  {
+   "default": "0",
+   "fieldname": "non_profit",
+   "fieldtype": "Check",
+   "label": "Non Profit"
+  },
+  {
+   "default": "0",
+   "fieldname": "other",
+   "fieldtype": "Check",
+   "label": "Other"
+  },
+  {
+   "fieldname": "pre_header",
+   "fieldtype": "Data",
+   "label": "Pre Header"
+  },
+  {
+   "fieldname": "section_break_25",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "module_setup_guide",
+   "fieldtype": "Table",
+   "label": "Module Setup Guide",
+   "options": "Module Setup Guide"
+  }
+ ],
+ "icon": "icon-envelope",
+ "links": [],
+ "modified": "2020-06-30 22:35:23.251288",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Drip Email",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Consultant",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "ASC",
+ "title_field": "subject"
+}
