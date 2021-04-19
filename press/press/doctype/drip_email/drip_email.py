@@ -3,10 +3,14 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
+
+from datetime import date, timedelta
+from typing import List
+
 import frappe
 from frappe.model.document import Document
 from frappe.utils.make_random import get_random
-from datetime import datetime, date, timedelta
+
 from press.utils import log_error
 
 
@@ -15,6 +19,7 @@ class DripEmail(Document):
 		if self.email_type in ["Drip", "Sign Up"] and site_name:
 			self.send_drip_email(site_name)
 
+		# TODO:  <19-04-21, Balamurali M> #
 		# elif self.email_type == "Whitepaper Feedback" and lead:
 		# 	self._consultant = frappe.get_doc("ERPNext Consultant", lead.consultant)
 		# 	self.sender = self._consultant.email
@@ -23,15 +28,15 @@ class DripEmail(Document):
 
 	def send_drip_email(self, site_name):
 		site = frappe.get_doc("Site", site_name)
-
 		# TODO:  <15-04-21, Balamurali M> #
 		# if self.email_type == "Drip" and site.status != "Installed":
 		# 	# failed site?
 		# 	return
 
-		if not self.send_after_payment and site.subscription_status == "Paid":
-			# customer has paid, don't send drip :-)
-			return
+		# TODO:  <19-04-21, Balamurali M> #
+		# if not self.send_after_payment and site.subscription_status == "Paid":
+		# customer has paid, don't send drip :-)
+		# return
 
 		# TODO:  <15-04-21, Balamurali M> #
 		# if self.maximum_activation_level and site.activation > self.maximum_activation_level:
@@ -44,14 +49,14 @@ class DripEmail(Document):
 			return
 
 		# TODO:  <15-04-21, Balamurali M> #
-		self.select_consultant(site)
+		# self.select_consultant(site)
 
 		self.send_mail(
 			args=dict(
 				full_name=account_request.full_name,
 				email=account_request.email,
 				domain=site.name,
-				consultant=self._consultant,
+				# consultant=self._consultant,
 				site=site,
 				account_request=account_request,
 			),
@@ -66,7 +71,7 @@ class DripEmail(Document):
 		if self.pre_header:
 			message = (
 				frappe.render_template(
-					"central/bench_central/doctype/drip_email/templates/pre_header.html",
+					"press/press/doctype/drip_email/templates/pre_header.html",
 					{"pre_header": self.pre_header},
 					is_path=True,
 				)
@@ -78,13 +83,13 @@ class DripEmail(Document):
 			subject=self.subject,
 			recipients=[recipient],
 			message=message,
-			sender="{0} <{1}>".format(self.sender_name, self.sender),
+			sender=f"{self.sender_name} <{self.sender}>",
 			reply_to=self.reply_to,
 			reference_doctype="Drip Email",
 			reference_name=self.name,
 			unsubscribe_message="Don't send me help messages",
 			# TODO:  <15-04-21, Balamurali M> #
-			attachments=self.get_setup_guides(args.get("site", "")),
+			# attachments=self.get_setup_guides(args.get("site", "")),
 		)
 
 	def select_consultant(self, site):
@@ -118,20 +123,9 @@ class DripEmail(Document):
 
 		return attachments
 
-
-def send_drip_emails():
-	"""
-	Send drip emails to all sites that need to be created
-	"""
-
-	drip_emails = frappe.db.get_all(
-		"Drip Email", {"enabled": 1, "email_type": ("in", ("Drip", "Onboarding"))}
-	)
-
-	for drip_email_name in drip_emails:
-		drip_email = frappe.get_doc("Drip Email", drip_email_name)
-
-		signup_date = date.today() - timedelta(days=drip_email.send_after)
+	@property
+	def sites_to_send_mail(self) -> List:
+		signup_date = date.today() - timedelta(days=self.send_after)
 		sites = frappe.db.sql(
 			f"""
 				SELECT site.name
@@ -147,10 +141,22 @@ def send_drip_emails():
 			"""
 		)
 		sites = [t[0] for t in sites]
-		# get all sites need to be sent emails today
-		for site in sites:
-			if site.account_request:
-				if drip_email.email_type == "Onboarding":
-					drip_email.send(site.name)
-			else:
-				drip_email.send(site.name)
+		return sites
+
+	def send_to_sites(self):
+		for site in self.sites_to_send_mail:
+			self.send(site.name)
+			# TODO: only send `Onboarding` mails to partners <19-04-21, Balamurali M> #
+
+
+def send_drip_emails():
+	"""
+	Send drip emails to all sites that need to be created
+	"""
+
+	drip_emails = frappe.db.get_all(
+		"Drip Email", {"enabled": 1, "email_type": ("in", ("Drip", "Onboarding"))}
+	)
+	for drip_email_name in drip_emails:
+		drip_email = frappe.get_doc("Drip Email", drip_email_name)
+		drip_email.send_to_sites()
