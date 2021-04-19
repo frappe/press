@@ -27,7 +27,8 @@
   "industry",
   "country",
   "referrer_data",
-  "referral_source"
+  "referral_source",
+  "url_args"
  ],
  "fields": [
   {
@@ -145,12 +146,19 @@
    "fieldname": "no_of_users",
    "fieldtype": "Int",
    "label": "Number of Users"
+  },
+  {
+   "fieldname": "url_args",
+   "fieldtype": "Code",
+   "label": "URL Args",
+   "options": "JSON",
+   "read_only": 1
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-04-19 11:23:05.957837",
+ "modified": "2021-04-19 18:09:38.663675",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",
