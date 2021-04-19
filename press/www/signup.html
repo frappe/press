@@ -150,6 +150,10 @@
 	};
 
 	function submit_account_request($form, values) {
+		let url_args = frappe.utils.get_query_params();
+		if (Object.keys(url_args)) {
+			values.url_args = url_args;
+		}
 		return call('press.api.central.account_request', values, $form)
 			.then(() => {
 				$('h1').hide();

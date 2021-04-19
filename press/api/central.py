@@ -12,7 +12,7 @@ from press.press.doctype.site.pool import get as get_pooled_site
 
 
 @frappe.whitelist(allow_guest=True)
-def account_request(subdomain, email, first_name, last_name, phone_number, country):
+def account_request(subdomain, email, first_name, last_name, phone_number, country, url_args=None):
 	email = email.strip().lower()
 	frappe.utils.validate_email_address(email, True)
 
@@ -30,6 +30,7 @@ def account_request(subdomain, email, first_name, last_name, phone_number, count
 			"last_name": last_name,
 			"phone_number": phone_number,
 			"country": country,
+			"url_args": url_args
 		}
 	).insert(ignore_permissions=True)
 
@@ -44,7 +45,7 @@ def account_request(subdomain, email, first_name, last_name, phone_number, count
 			ERPNextSite(site=pooled_site).rename_pooled_site(account_request)
 		else:
 			# Create a new site if pooled sites aren't available
-			ERPNextSite(account_request).insert(ignore_permissions=True)
+			ERPNextSite(account_request=account_request).insert(ignore_permissions=True)
 	finally:
 		frappe.set_user(current_user)
 		frappe.session.data = current_session_data
