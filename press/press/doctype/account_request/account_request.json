@@ -21,6 +21,7 @@
   "phone_number",
   "column_break_14",
   "company",
+  "no_of_users",
   "no_of_employees",
   "designation",
   "industry",
@@ -139,12 +140,17 @@
    "fieldname": "industry",
    "fieldtype": "Data",
    "label": "Industry"
+  },
+  {
+   "fieldname": "no_of_users",
+   "fieldtype": "Int",
+   "label": "Number of Users"
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-04-15 12:26:58.544837",
+ "modified": "2021-04-19 11:23:05.957837",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",

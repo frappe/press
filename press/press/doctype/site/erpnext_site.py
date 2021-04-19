@@ -20,7 +20,7 @@ class ERPNextSite(Site):
 					"apps": [{"app": app} for app in get_erpnext_apps()],
 					"team": "Administrator",
 					"account_request": account_request.name,
-					"subscription_plan": account_request.plan,
+					"subscription_plan": get_erpnext_plan(),
 					"trial_end_date": frappe.utils.add_days(None, 14),
 				}
 			)
@@ -30,9 +30,10 @@ class ERPNextSite(Site):
 		self.is_standby = False
 		self.account_request = account_request.name
 		self.trial_end_date = frappe.utils.add_days(None, 14)
-		self._update_configuration(self.get_plan_config(account_request.plan), save=False)
+		plan = get_erpnext_plan()
+		self._update_configuration(self.get_plan_config(plan), save=False)
 		self.save(ignore_permissions=True)
-		self.create_subscription(account_request.plan)
+		self.create_subscription(plan)
 
 	def can_change_plan(self):
 		return True
