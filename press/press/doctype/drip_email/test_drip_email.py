@@ -3,6 +3,7 @@
 # See license.txt
 from __future__ import unicode_literals
 
+from datetime import date, timedelta
 import unittest
 
 import frappe
@@ -40,3 +41,10 @@ class TestDripEmail(unittest.TestCase):
 		site2.save()
 		create_test_site("site3")
 		self.assertEqual(drip_email.sites_to_send_mail, [site.name])
+
+	def test_older_site_isnt_selected(self):
+		drip_email = create_test_drip_email(0)
+		site = create_test_site("site1", creation=date.today() - timedelta(1))
+		site.account_request = create_test_account_request("site1").name
+		site.save()
+		self.assertNotEqual(drip_email.sites_to_send_mail, [site.name])
