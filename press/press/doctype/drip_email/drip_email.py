@@ -49,14 +49,17 @@ class DripEmail(Document):
 			return
 
 		# TODO:  <15-04-21, Balamurali M> #
-		# self.select_consultant(site)
+		# if self.send_by_consultant:
+			# self.select_consultant(site)
+		# else
+		self._consultant = ""
 
 		self.send_mail(
 			args=dict(
 				full_name=account_request.full_name,
 				email=account_request.email,
 				domain=site.name,
-				# consultant=self._consultant,
+				consultant=self._consultant,
 				site=site,
 				account_request=account_request,
 			),
@@ -94,19 +97,14 @@ class DripEmail(Document):
 
 	def select_consultant(self, site):
 		"""Select random ERPNext Consultant to send email"""
-		if self.send_by_consultant:
-			if not site.erpnext_consultant:
-				# set a random consultant for the site for the first time
-				site.erpnext_consultant = get_random("ERPNext Consultant", dict(active=1))
-				frappe.db.set_value(
-					"Site", site.name, "erpnext_consultant", site.erpnext_consultant
-				)
+		if not site.erpnext_consultant:
+			# set a random consultant for the site for the first time
+			site.erpnext_consultant = get_random("ERPNext Consultant", dict(active=1))
+			frappe.db.set_value("Site", site.name, "erpnext_consultant", site.erpnext_consultant)
 
-			self._consultant = frappe.get_doc("ERPNext Consultant", site.erpnext_consultant)
-			self.sender = self._consultant.email
-			self.sender_name = self._consultant.full_name
-		else:
-			self._consultant = None
+		self._consultant = frappe.get_doc("ERPNext Consultant", site.erpnext_consultant)
+		self.sender = self._consultant.email
+		self.sender_name = self._consultant.full_name
 
 	def get_setup_guides(self, site):
 		if not site:
