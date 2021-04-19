@@ -145,15 +145,12 @@ class DripEmail(Document):
 
 	def send_to_sites(self):
 		for site in self.sites_to_send_mail:
-			self.send(site.name)
+			self.send(site)
 			# TODO: only send `Onboarding` mails to partners <19-04-21, Balamurali M> #
 
 
 def send_drip_emails():
-	"""
-	Send drip emails to all sites that need to be created
-	"""
-
+	"""Send out enabled drip emails."""
 	drip_emails = frappe.db.get_all(
 		"Drip Email", {"enabled": 1, "email_type": ("in", ("Drip", "Onboarding"))}
 	)
