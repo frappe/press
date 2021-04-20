@@ -28,10 +28,8 @@ class DripEmail(Document):
 
 	def send_drip_email(self, site_name):
 		site = frappe.get_doc("Site", site_name)
-		# TODO:  <15-04-21, Balamurali M> #
-		# if self.email_type == "Drip" and site.status != "Installed":
-		# 	# failed site?
-		# 	return
+		if self.email_type == "Drip" and site.status in ["Pending", "Broken"]:
+			return
 
 		# TODO:  <19-04-21, Balamurali M> #
 		# if not self.send_after_payment and site.subscription_status == "Paid":
