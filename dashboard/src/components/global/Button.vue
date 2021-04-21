@@ -6,9 +6,8 @@
 		v-on="$listeners"
 		:disabled="isDisabled"
 	>
-		<FeatherIcon v-if="iconLeft" :name="iconLeft" class="w-4 h-4 mr-1.5" />
 		<svg
-			v-else-if="loading"
+			v-if="loading"
 			class="w-3 h-3 mr-2 -ml-1 animate-spin"
 			:class="{
 				'text-white': type == 'primary',
@@ -33,6 +32,7 @@
 				d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
 			></path>
 		</svg>
+		<FeatherIcon v-else-if="iconLeft" :name="iconLeft" class="w-4 h-4 mr-1.5" />
 		<template v-if="loading && loadingText">
 			{{ loadingText }}
 		</template>
