@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_import": 1,
  "autoname": "field:user",
  "creation": "2019-01-23 14:20:56.285285",
  "doctype": "DocType",
@@ -39,7 +40,7 @@
   }
  ],
  "links": [],
- "modified": "2021-04-19 12:29:39.548800",
+ "modified": "2021-04-21 18:08:19.750497",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "ERPNext Consultant",

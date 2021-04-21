@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_import": 1,
  "autoname": "field:region_name",
  "creation": "2018-04-26 17:21:09.034956",
  "doctype": "DocType",
@@ -26,7 +27,7 @@
   }
  ],
  "links": [],
- "modified": "2019-12-30 15:33:18.118873",
+ "modified": "2021-04-21 18:08:37.953188",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Region",

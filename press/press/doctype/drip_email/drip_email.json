@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_import": 1,
  "allow_rename": 1,
  "autoname": "drip_email.####",
  "creation": "2016-02-29 04:37:05.108042",
@@ -197,7 +198,7 @@
  ],
  "icon": "icon-envelope",
  "links": [],
- "modified": "2020-06-30 22:35:23.251288",
+ "modified": "2021-04-21 18:07:57.066903",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Drip Email",
