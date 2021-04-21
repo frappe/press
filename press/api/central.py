@@ -184,3 +184,8 @@ def options_for_regional_data(key):
 	data.update(get_country_timezone_info())
 
 	return data
+
+
+@frappe.whitelist(allow_guest=True)
+def get_trial_end_date(site):
+	return frappe.db.get_value("Site", site, "trial_end_date")
