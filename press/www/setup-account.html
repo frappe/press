@@ -60,15 +60,34 @@
 				</div>
 				<div class="form-row">
 					<div class="form-group col">
+						<label for="no_of_users">Number of Users</label>
+						<input type="number" id="no_of_users" name="no_of_users" class="form-control" min="1" max="100000" required>
+					</div>
+					<div class="form-group col">
+						<label for="industry">Industry</label>
+						<select id="industry" name="industry" class="custom-select">
+							<option selected disabled></option>
+							<option>Distribution</option>
+							<option>Manufacturing</option>
+							<option>Retail</option>
+							<option>Education</option>
+							<option>Services</option>
+							<option>Agriculture</option>
+							<option>Non Profit</option>
+						</select>
+					</div>
+				</div>
+				<div class="form-row">
+					<div class="form-group col">
 						<label for="no_of_employees">Number of employees</label>
 						<select id="no_of_employees" name="no_of_employees" class="custom-select">
 							<option selected disabled></option>
-							<option>1 - 10</option>
-							<option>11 - 50</option>
-							<option>51 - 200</option>
-							<option>201 - 500</option>
-							<option>501 - 1000</option>
-							<option>1000+</option>
+							<option value="1-10">1 - 10</option>
+							<option value="11-50">11 - 50</option>
+							<option value="51-200">51 - 200</option>
+							<option value="201-500">201 - 500</option>
+							<option value="501-1000">501 - 1000</option>
+							<option value="1000+">1000+</option>
 						</select>
 					</div>
 					<div class="form-group col">
@@ -93,11 +112,11 @@
 					<label for="source">Where did you hear about ERPNext?</label>
 					<select id="source" class="custom-select" name="referral_source">
 						<option></option>
-						<option value='LinkedIn'>LinkedIn</option>
-						<option value='Twitter'>Twitter</option>
-						<option value='Recommended by a friend/colleague'>Recommended by a friend/colleague</option>
-						<option value='Blogs/Reviews'>Blogs/Reviews</option>
-						<option value='Others'>Others</option>
+						<option>Social media</option>
+						<option>Google Search</option>
+						<option>Recommended by a friend/colleague</option>
+						<option>ERPNext Blog</option>
+						<option>Online reviews (like Capterra/G2)</option>
 					</select>
 				</div>
 				<div class="mt-8 d-flex justify-content-between">
@@ -144,6 +163,11 @@
 				return "Company Name cannot be blank";
 			}
 		},
+		industry: (value) => {
+			if (!value) {
+				return "Please select an industry";
+			}
+		},
 		designation: (value) => {
 			if (!value) {
 				return "Designation cannot be blank";
@@ -151,14 +175,19 @@
 		},
 		referral_source: (value) => {
 			if (!value) {
-				return "Referral source cannot be blank";
+				return "Please select a value";
 			}
 		},
 		no_of_employees: (value) => {
 			if (!value) {
 				return 'Please select a value';
 			}
-		}
+		},
+		no_of_users: (value) => {
+			if (isNaN(value)) {
+				return 'Please enter a valid number';
+			}
+		},
 	};
 
 	function regional_settings($form, values) {

@@ -19,13 +19,16 @@
   "first_name",
   "last_name",
   "phone_number",
-  "country",
   "column_break_14",
-  "no_of_employees",
   "company",
+  "no_of_users",
+  "no_of_employees",
   "designation",
+  "industry",
+  "country",
   "referrer_data",
-  "referral_source"
+  "referral_source",
+  "url_args"
  ],
  "fields": [
   {
@@ -133,12 +136,29 @@
    "fieldtype": "Link",
    "label": "Plan",
    "options": "Plan"
+  },
+  {
+   "fieldname": "industry",
+   "fieldtype": "Data",
+   "label": "Industry"
+  },
+  {
+   "fieldname": "no_of_users",
+   "fieldtype": "Int",
+   "label": "Number of Users"
+  },
+  {
+   "fieldname": "url_args",
+   "fieldtype": "Code",
+   "label": "URL Args",
+   "options": "JSON",
+   "read_only": 1
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-04-12 12:39:35.642323",
+ "modified": "2021-04-19 18:09:38.663675",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",

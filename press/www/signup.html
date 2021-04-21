@@ -28,18 +28,6 @@
 					<small class="form-text"></small>
 				</div>
 
-				<div class="form-group">
-					<label for="plan">Plan</label>
-					<select id="plan" class="custom-select" name="plan">
-						{%- for plan in plans -%}
-						<option value="{{ plan.name }}">{{ plan.plan_title }}</option>
-						{%- endfor -%}
-					</select>
-					<small class="form-text text-muted">
-						Learn more about <a href="/pricing">plans</a>
-					</small>
-				</div>
-
 				<div class="form-row">
 					<div class="form-group col-12 col-md-6">
 						<label for="first_name">First Name</label>
@@ -162,6 +150,10 @@
 	};
 
 	function submit_account_request($form, values) {
+		let url_args = frappe.utils.get_query_params();
+		if (Object.keys(url_args)) {
+			values.url_args = url_args;
+		}
 		return call('press.api.central.account_request', values, $form)
 			.then(() => {
 				$('h1').hide();
