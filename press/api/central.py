@@ -2,17 +2,22 @@
 # Proprietary License. See license.txt
 
 from __future__ import unicode_literals
+
 from press.press.doctype.site.erpnext_site import ERPNextSite, get_erpnext_domain
 import frappe
 from frappe.geo.country_info import get_country_timezone_info
+from frappe.utils.data import get_url
 from press.api.account import get_account_request_from_key
 from press.utils.billing import get_erpnext_com_connection
 from press.press.doctype.site.erpnext_site import get_erpnext_plan
 from press.press.doctype.site.pool import get as get_pooled_site
 
 
+
 @frappe.whitelist(allow_guest=True)
-def account_request(subdomain, email, first_name, last_name, phone_number, country, url_args=None):
+def account_request(
+	subdomain, email, first_name, last_name, phone_number, country, url_args=None
+):
 	email = email.strip().lower()
 	frappe.utils.validate_email_address(email, True)
 
@@ -30,7 +35,7 @@ def account_request(subdomain, email, first_name, last_name, phone_number, count
 			"last_name": last_name,
 			"phone_number": phone_number,
 			"country": country,
-			"url_args": url_args
+			"url_args": url_args,
 		}
 	).insert(ignore_permissions=True)
 
@@ -71,7 +76,7 @@ def setup_account(key, business_data=None):
 				"industry",
 				"no_of_users",
 				"designation",
-				"referral_source"
+				"referral_source",
 			]
 		}
 
@@ -189,3 +194,15 @@ def options_for_regional_data(key):
 @frappe.whitelist(allow_guest=True)
 def get_trial_end_date(site):
 	return frappe.db.get_value("Site", site, "trial_end_date")
+
+
+@frappe.whitelist(allow_guest=True)
+def send_login_link(site):
+	if not frappe.db.exists("Site", site):
+		frappe.throw("Invalid site")
+
+	from press.api.account import send_login_link as send_link
+	# send link to site owner
+	email = frappe.db.get_value("Site", site, "team")
+	send_link(email)
+	return email
