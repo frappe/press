@@ -5,7 +5,7 @@
 from __future__ import unicode_literals
 
 from datetime import date, timedelta
-from typing import List
+from typing import Dict, List
 
 import frappe
 from frappe.model.document import Document
@@ -48,7 +48,7 @@ class DripEmail(Document):
 
 		# TODO:  <15-04-21, Balamurali M> #
 		# if self.send_by_consultant:
-			# self.select_consultant(site)
+		# self.select_consultant(site)
 		# else
 		self._consultant = ""
 
@@ -89,8 +89,7 @@ class DripEmail(Document):
 			reference_doctype="Drip Email",
 			reference_name=self.name,
 			unsubscribe_message="Don't send me help messages",
-			# TODO:  <15-04-21, Balamurali M> #
-			# attachments=self.get_setup_guides(args.get("site", "")),
+			attachments=self.get_setup_guides(args.get("account_request", "")),
 		)
 
 	def select_consultant(self, site):
@@ -104,13 +103,13 @@ class DripEmail(Document):
 		self.sender = self._consultant.email
 		self.sender_name = self._consultant.full_name
 
-	def get_setup_guides(self, site):
-		if not site:
+	def get_setup_guides(self, account_request) -> List[Dict[str, str]]:
+		if not account_request:
 			return []
 
 		attachments = []
 		for guide in self.module_setup_guide:
-			if site.domain == guide.domain:
+			if account_request.industry == guide.industry:
 				attachments.append(
 					frappe.db.get_value(
 						"File", {"file_url": guide.setup_guide}, ["name as fid"], as_dict=1
@@ -120,7 +119,7 @@ class DripEmail(Document):
 		return attachments
 
 	@property
-	def sites_to_send_mail(self) -> List:
+	def sites_to_send_mail(self):
 		signup_date = date.today() - timedelta(days=self.send_after)
 		sites = frappe.db.sql(
 			f"""
