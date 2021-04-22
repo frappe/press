@@ -1,0 +1,78 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "autoname": "field:user",
+ "creation": "2019-01-23 14:20:56.285285",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "user",
+  "active",
+  "column_break_4",
+  "territories"
+ ],
+ "fields": [
+  {
+   "default": "1",
+   "fieldname": "active",
+   "fieldtype": "Check",
+   "label": "Active"
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "territories",
+   "fieldtype": "Table MultiSelect",
+   "label": "Territories",
+   "options": "ERPNext Consultant Region"
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "User",
+   "options": "User",
+   "reqd": 1,
+   "unique": 1
+  }
+ ],
+ "links": [],
+ "modified": "2021-04-21 18:08:19.750497",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "ERPNext Consultant",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Consultant",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

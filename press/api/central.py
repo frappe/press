@@ -13,7 +13,6 @@ from press.press.doctype.site.erpnext_site import get_erpnext_plan
 from press.press.doctype.site.pool import get as get_pooled_site
 
 
-
 @frappe.whitelist(allow_guest=True)
 def account_request(
 	subdomain, email, first_name, last_name, phone_number, country, url_args=None
@@ -202,6 +201,7 @@ def send_login_link(site):
 		frappe.throw("Invalid site")
 
 	from press.api.account import send_login_link as send_link
+
 	# send link to site owner
 	email = frappe.db.get_value("Site", site, "team")
 	send_link(email)
