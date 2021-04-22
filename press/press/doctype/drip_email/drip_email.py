@@ -24,7 +24,7 @@ class DripEmail(Document):
 		# 	self._consultant = frappe.get_doc("ERPNext Consultant", lead.consultant)
 		# 	self.sender = self._consultant.email
 		# 	self.sender_name = self._consultant.full_name
-		# 	self.send_mail(args=lead, recipient=lead.email)
+		# 	self.send_mail(context=lead, recipient=lead.email)
 
 	def send_drip_email(self, site_name):
 		site = frappe.get_doc("Site", site_name)
@@ -52,7 +52,7 @@ class DripEmail(Document):
 			consultant = ""
 
 		self.send_mail(
-			args=dict(
+			context=dict(
 				full_name=account_request.full_name,
 				email=account_request.email,
 				domain=site.name,
@@ -63,9 +63,9 @@ class DripEmail(Document):
 			recipient=account_request.email,
 		)
 
-	def send_mail(self, args, recipient):
+	def send_mail(self, context, recipient):
 		# build the message
-		message = frappe.render_template(self.message, args)
+		message = frappe.render_template(self.message, context)
 
 		# prepend preheader text to the start of the message
 		if self.pre_header:
@@ -88,7 +88,7 @@ class DripEmail(Document):
 			reference_doctype="Drip Email",
 			reference_name=self.name,
 			unsubscribe_message="Don't send me help messages",
-			attachments=self.get_setup_guides(args.get("account_request", "")),
+			attachments=self.get_setup_guides(context.get("account_request", "")),
 		)
 
 	def select_consultant(self, site) -> str:
