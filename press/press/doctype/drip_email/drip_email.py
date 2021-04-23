@@ -31,10 +31,8 @@ class DripEmail(Document):
 		if self.email_type == "Drip" and site.status in ["Pending", "Broken"]:
 			return
 
-		# TODO:  <19-04-21, Balamurali M> #
-		# if not self.send_after_payment and site.subscription_status == "Paid":
-		# customer has paid, don't send drip :-)
-		# return
+		if not self.send_after_payment and site.has_paid:
+			return
 
 		# TODO:  <15-04-21, Balamurali M> #
 		# if self.maximum_activation_level and site.activation > self.maximum_activation_level:
@@ -125,6 +123,7 @@ class DripEmail(Document):
 	@property
 	def sites_to_send_mail(self):
 		signup_date = date.today() - timedelta(days=self.send_after)
+		# TODO: simpler filter with domain field same as erpnext domain in settings or stick with this for getting account_request in one go
 		sites = frappe.db.sql(
 			f"""
 				SELECT site.name
