@@ -893,17 +893,19 @@ class Site(Document):
 	@property
 	def has_paid(self) -> bool:
 		"""Has the site been paid for by customer."""
-		site_invoices = frappe.get_all(
+		invoice_items = frappe.get_all(
 			"Invoice Item",
 			{"document_type": self.doctype, "document_name": self.name, "Amount": (">", 0)},
-			pluck="parent"
+			pluck="parent",
 		)
-		last_month_last_date = frappe.utils.get_last_day(date.today() - timedelta(month=1))
+		today = date.today()
+		today_last_month = today.replace(month=today.month - 1)
+		last_month_last_date = frappe.utils.get_last_day(today_last_month)
 		return frappe.db.exists(
 			"Invoice",
 			{
 				"status": "Paid",
-				"name": ("in", site_invoices),
+				"name": ("in", invoice_items or ["NULL"]),
 				"period_end": (">=", last_month_last_date),
 				# this month's or last month's invoice has been paid for
 			},
