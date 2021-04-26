@@ -270,14 +270,15 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 
 
 def process_team_deletion_requests():
+	# order in desc since deleting press data takes the most time
 	doctype = "Team Deletion Request"
-	for name in frappe.get_all(
+	deletion_requests = frappe.get_all(
 		doctype,
 		filters={"status": ("in", ["Deletion Verified", "Processing Deletion"])},
 		pluck="name",
-	):
+		order_by="creation desc",
+	)
+	for name in deletion_requests:
 		tdr = frappe.get_doc(doctype, name)
-		tdr.status = "Processing Deletion"
 		tdr.delete_team_data()
-		tdr.reload()
-		tdr.save()
+		frappe.db.commit()
