@@ -2,6 +2,20 @@
 	<div class="space-y-5">
 		<AlertSiteActivation :site="site" />
 		<AlertSiteUpdate :site="site" />
+		<Alert title="Trial" v-if="isInTrial && $account.needsCard">
+			Your trial ends {{ $date(site.trial_end_date).toRelative() }} after which your site will get suspended.
+			Add your billing information to avoid suspension.
+
+			<template #actions>
+				<Button class="whitespace-nowrap" route="/welcome" type="primary">
+					Add Billing Information
+				</Button>
+			</template>
+		</Alert>
+		<Alert title="Trial" v-if="isInTrial && $account.hasBillingInfo">
+			Your trial ends {{ $date(site.trial_end_date).toRelative() }} after which your site will get suspended.
+			Select a plan from the Plan section below to avoid suspension.
+		</Alert>
 		<Alert title="Attention Required" v-if="limitExceeded">
 			Your site has exceeded the allowed usage for your plan. Upgrade your plan
 			now.
@@ -79,6 +93,9 @@ export default {
 			if (!(this.site && this.$resources.overview.data)) return false;
 			let usage = this.$resources.overview.data.plan.usage_in_percent;
 			return [usage.cpu, usage.database, usage.disk].some(x => x > 100);
+		},
+		isInTrial() {
+			return this.site?.trial_end_date;
 		}
 	}
 };
