@@ -121,7 +121,7 @@ class DripEmail(Document):
 		return attachments
 
 	@property
-	def sites_to_send_mail(self):
+	def sites_to_mail(self):
 		signup_date = date.today() - timedelta(days=self.send_after)
 		# TODO: simpler filter with domain field same as erpnext domain in settings or stick with this for getting account_request in one go
 		sites = frappe.db.sql(
@@ -142,7 +142,7 @@ class DripEmail(Document):
 		return sites
 
 	def send_to_sites(self):
-		for site in self.sites_to_send_mail:
+		for site in self.sites_to_mail:
 			self.send(site)
 			# TODO: only send `Onboarding` mails to partners <19-04-21, Balamurali M> #
 
