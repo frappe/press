@@ -94,6 +94,7 @@ def setup_account(key, business_data=None):
 				"user": email,
 				"country": account_request.country,
 				"enabled": 1,
+				"via_erpnext": 1,
 			}
 		)
 		team_doc.insert(ignore_permissions=True, ignore_links=True)

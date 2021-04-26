@@ -8,11 +8,12 @@
 		</p>
 		<div class="mt-4">
 			<Alert class="mb-4" v-if="showAlert">
-				You have not added your billing information.
-				<router-link to="/welcome" class="border-b border-yellow-500">
-					Add your billing information
-				</router-link>
-				to create sites.
+				<span>
+					You have not added your billing information.
+				</span>
+				<template #actions>
+					<Button class="whitespace-nowrap" route="/welcome" type="primary">Add Billing Information</Button>
+				</template>
 			</Alert>
 			<SitePlansTable
 				:plans="options.plans"

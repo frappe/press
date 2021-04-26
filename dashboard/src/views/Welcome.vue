@@ -137,6 +137,7 @@ export default {
 				.filter(d => d.status !== 'Not Applicable')
 				.map(d => {
 					let icon = {
+						'Create Account': '',
 						'Create Team': '',
 						'Add Billing Information': 'credit-card',
 						'Transfer Credits': 'dollar-sign',
@@ -144,9 +145,11 @@ export default {
 					}[d.step_name];
 
 					let description = {
-						'Create Team': `Your team ${this.$account.team?.name} has been created.`,
-						'Add Billing Information':
-							"After adding your billing information you will get a free $25 credit. Sites you create will use your free credits first.",
+						'Create Account': `Your account ${this.$account.team?.name} has been created.`,
+						'Create Team': `Your account ${this.$account.team?.name} has been created.`,
+						'Add Billing Information': this.$account.team.via_erpnext
+							? 'You need to add your billing information for automatic subscription. After that you can select a plan for your ERPNext site.'
+							: 'After adding your billing information you will get a free $25 credit. Sites you create will use your free credits first.',
 						'Transfer Credits':
 							'As an ERPNext Partner, you have the privilege to use your ERPNext.com credits for creating Frappe Cloud sites.',
 						'Create Site':

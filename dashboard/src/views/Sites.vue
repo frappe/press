@@ -165,6 +165,10 @@ export default {
 				color = 'yellow';
 				status = 'Attention Required';
 			}
+			if (site.trial_end_date) {
+				color = 'yellow';
+				status = 'Trial';
+			}
 			return {
 				status,
 				color

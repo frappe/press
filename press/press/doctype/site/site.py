@@ -746,8 +746,13 @@ class Site(Document):
 				"to_plan": plan,
 			}
 		).insert()
+
 		if self.status == "Suspended":
 			self.unsuspend_if_applicable()
+
+		if self.trial_end_date:
+			self.trial_end_date = ""
+			self.save()
 
 	def unsuspend_if_applicable(self):
 		try:

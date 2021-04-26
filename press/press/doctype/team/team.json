@@ -11,6 +11,7 @@
   "user",
   "erpnext_partner",
   "free_account",
+  "via_erpnext",
   "section_break_6",
   "team_members",
   "subscription_details_section",
@@ -160,6 +161,14 @@
    "fieldname": "billing_name",
    "fieldtype": "Data",
    "label": "Billing Name"
+  },
+  {
+   "default": "0",
+   "description": "Enabled if this account was created via the ERPNext signup form",
+   "fieldname": "via_erpnext",
+   "fieldtype": "Check",
+   "label": "Via ERPNext",
+   "read_only": 1
   }
  ],
  "links": [
@@ -204,7 +213,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2021-02-26 17:49:48.092045",
+ "modified": "2021-04-23 14:21:55.536816",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

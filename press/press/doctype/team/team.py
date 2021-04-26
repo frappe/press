@@ -95,15 +95,24 @@ class Team(Document):
 				step.status = "Skipped"
 
 	def initialize_onboarding_steps(self):
-		self.set(
-			"onboarding",
-			[
-				{"step_name": "Create Team", "status": "Completed"},
-				{"step_name": "Add Billing Information", "status": "Pending"},
-				{"step_name": "Transfer Credits", "status": "Not Applicable"},
-				{"step_name": "Create Site", "status": "Pending"},
-			],
-		)
+		if self.via_erpnext:
+			self.set(
+				"onboarding",
+				[
+					{"step_name": "Create Account", "status": "Completed"},
+					{"step_name": "Add Billing Information", "status": "Pending"},
+				],
+			)
+		else:
+			self.set(
+				"onboarding",
+				[
+					{"step_name": "Create Account", "status": "Completed"},
+					{"step_name": "Add Billing Information", "status": "Pending"},
+					{"step_name": "Transfer Credits", "status": "Not Applicable"},
+					{"step_name": "Create Site", "status": "Pending"},
+				],
+			)
 
 	def update_onboarding(self, step_name, status):
 		def get_step(step_name):
@@ -166,6 +175,11 @@ class Team(Document):
 		self.update_onboarding("Transfer Credits", "Pending")
 
 	def allocate_free_credits(self):
+		if self.via_erpnext:
+			# dont allocate free credits for signups via erpnext
+			# since they get a 14 day free trial site
+			return
+
 		if not self.free_credits_allocated:
 			# allocate free credits on signup
 			credits_field = "free_credits_inr" if self.currency == "INR" else "free_credits_usd"

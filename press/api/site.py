@@ -356,6 +356,7 @@ def all():
 			"current_cpu_usage",
 			"current_database_usage",
 			"current_disk_usage",
+			"trial_end_date"
 		],
 		filters={"team": get_current_team(), "status": ("!=", "Archived")},
 		order_by="creation desc",
@@ -415,6 +416,7 @@ def get(name):
 	return {
 		"name": site.name,
 		"status": site.status,
+		"trial_end_date": site.trial_end_date,
 		"setup_wizard_complete": site.setup_wizard_complete,
 		"update_available": update_available,
 	}
