@@ -132,7 +132,7 @@ class DripEmail(Document):
 				JOIN
 					`tabAccount Request` account_request
 				ON
-					account_request.subdomain = site.subdomain
+					site.account_request = account_request.name
 				WHERE
 					account_request.erpnext = True and
 					DATE(site.creation) = "{signup_date}"
