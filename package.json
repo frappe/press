@@ -2,7 +2,8 @@
 	"name": "press",
 	"private": true,
 	"scripts": {
-		"watch": "cd dashboard && yarn serve",
+		"dev": "cd dashboard && yarn dev",
+		"watch": "yarn dev",
 		"build": "NODE_ENV=production yarn run build-all",
 		"build-all": "yarn run build-app && yarn run build-email-css && yarn run build-marketplace-css && yarn run fix-precache-manifest",
 		"build-app": "cd dashboard && yarn build",
