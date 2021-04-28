@@ -4,7 +4,7 @@
 
 from __future__ import unicode_literals
 
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 from typing import Dict, List
 
 import frappe
@@ -153,11 +153,13 @@ def send_drip_emails():
 
 def send_welcome_email():
 	"""Send welcome email to sites created in last 15 minutes."""
-	welcome_email = frappe.get_doc("Drip Email", "drip_email0008")
+	welcome_email = frappe.get_last_doc(
+		"Drip Email", filters={"enabled": 1, "email_type": "Sign Up"}
+	)
 	sites_in_last_15_mins = frappe.get_all(
 		"Site",
 		{
-			**{"creation": (">", frappe.utils.add_to_date(None, minutes=-15)},
+			**{"creation": (">", frappe.utils.add_to_date(None, minutes=-15))},
 			**welcome_email.common_site_filters,
 		},
 	)
