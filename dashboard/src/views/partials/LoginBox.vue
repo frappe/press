@@ -17,7 +17,7 @@
 </template>
 
 <script>
-import FrappeCloudLogo from '@/components/FrappeCloudLogo';
+import FrappeCloudLogo from '@/components/FrappeCloudLogo.vue';
 export default {
 	name: 'LoginBox',
 	props: ['title'],

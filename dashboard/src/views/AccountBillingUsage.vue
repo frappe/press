@@ -101,8 +101,8 @@ export default {
 	components: {
 		PlanIcon,
 		AccountBillingUpcomingInvoice,
-		TransferCreditsDialog: () => import('@/components/TransferCreditsDialog'),
-		PrepaidCreditsDialog: () => import('@/components/PrepaidCreditsDialog')
+		TransferCreditsDialog: () => import('@/components/TransferCreditsDialog.vue'),
+		PrepaidCreditsDialog: () => import('@/components/PrepaidCreditsDialog.vue')
 	},
 	resources: {
 		upcomingInvoice: 'press.api.billing.upcoming_invoice'

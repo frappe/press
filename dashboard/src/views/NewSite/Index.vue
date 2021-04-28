@@ -86,11 +86,11 @@
 </template>
 
 <script>
-import Steps from '@/components/Steps';
-import Hostname from './Hostname';
-import Apps from './Apps';
-import Restore from './Restore';
-import Plans from './Plans';
+import Steps from '@/components/Steps.vue';
+import Hostname from './Hostname.vue';
+import Apps from './Apps.vue';
+import Restore from './Restore.vue';
+import Plans from './Plans.vue';
 
 export default {
 	name: 'NewSite',

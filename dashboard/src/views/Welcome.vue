@@ -94,8 +94,8 @@
 export default {
 	name: 'Welcome',
 	components: {
-		StripeCard: () => import('@/components/StripeCard'),
-		TransferCreditsDialog: () => import('@/components/TransferCreditsDialog')
+		StripeCard: () => import('@/components/StripeCard.vue'),
+		TransferCreditsDialog: () => import('@/components/TransferCreditsDialog.vue')
 	},
 	resources: {
 		skipOnboardingStep() {
