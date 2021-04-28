@@ -15,7 +15,7 @@
 	</div>
 </template>
 <script>
-import FileUploader from '@/components/FileUploader';
+import FileUploader from '@/components/FileUploader.vue';
 
 export default {
 	name: 'AvatarUploader',
