@@ -4,14 +4,12 @@
 
 from __future__ import unicode_literals
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from typing import Dict, List
 
 import frappe
 from frappe.model.document import Document
 from frappe.utils.make_random import get_random
-
-from press.utils import log_error
 
 
 class DripEmail(Document):
@@ -118,28 +116,27 @@ class DripEmail(Document):
 		return attachments
 
 	@property
-	def sites_to_send(self):
-		signup_date = date.today() - timedelta(days=self.send_after)
-		# TODO: simpler filter with domain field same as erpnext domain in settings or stick with this for getting account_request in one go
-		sites = frappe.db.sql(
-			f"""
-				SELECT site.name
-				FROM
-					tabSite site
-				JOIN
-					`tabAccount Request` account_request
-				ON
-					site.account_request = account_request.name
-				WHERE
-					account_request.erpnext = True and
-					DATE(site.creation) = "{signup_date}"
-			"""
+	def common_site_filters(self) -> Dict:
+		"""Common filters to get erpnext sites to send mail."""
+		erpnext_domain = frappe.get_value(
+			"Press Settings", "Press Settings", "erpnext_domain"
 		)
-		sites = [t[0] for t in sites]
+		return {
+			"domain": erpnext_domain,
+			"status": "Active",
+			"account_request": ("is", "set"),
+		}
+
+	@property
+	def sites_to_send_drip(self):
+		signup_date = date.today() - timedelta(days=self.send_after)
+		sites = frappe.get_all(
+			"Site", {**{"creation": signup_date}, **self.common_site_filters}
+		)
 		return sites
 
 	def send_to_sites(self):
-		for site in self.sites_to_send:
+		for site in self.sites_to_send_drip:
 			self.send(site)
 			# TODO: only send `Onboarding` mails to partners <19-04-21, Balamurali M> #
 
@@ -152,3 +149,17 @@ def send_drip_emails():
 	for drip_email_name in drip_emails:
 		drip_email = frappe.get_doc("Drip Email", drip_email_name)
 		drip_email.send_to_sites()
+
+
+def send_welcome_email():
+	"""Send welcome email to sites created in last 15 minutes."""
+	welcome_email = frappe.get_doc("Drip Email", "drip_email0008")
+	sites_in_last_15_mins = frappe.get_all(
+		"Site",
+		{
+			**{"creation": (">", frappe.utils.add_to_date(None, minutes=-15)},
+			**welcome_email.common_site_filters,
+		},
+	)
+	for site in sites_in_last_15_mins:
+		welcome_email.send(site)
