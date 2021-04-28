@@ -12,7 +12,7 @@ from press.utils.billing import get_frappe_io_connection
 from press.utils import log_error
 from datetime import datetime
 from frappe import _
-from frappe.utils import getdate, cint
+from frappe.utils import getdate, cint, today
 from press.telegram_utils import Telegram
 from press.overrides import get_permission_query_conditions_for_doctype
 
@@ -60,6 +60,7 @@ class Invoice(Document):
 		self.save()
 
 		if self.status == "Paid":
+			self.period_end = today()
 			self.submit()
 
 	def after_submit(self):
