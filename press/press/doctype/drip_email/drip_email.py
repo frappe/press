@@ -116,23 +116,25 @@ class DripEmail(Document):
 		return attachments
 
 	@property
-	def common_site_filters(self) -> Dict:
-		"""Common filters to get erpnext sites to send mail."""
-		erpnext_domain = frappe.get_value(
-			"Press Settings", "Press Settings", "erpnext_domain"
-		)
-		return {
-			"domain": erpnext_domain,
-			"status": "Active",
-			"account_request": ("is", "set"),
-		}
-
-	@property
 	def sites_to_send_drip(self):
 		signup_date = date.today() - timedelta(days=self.send_after)
-		sites = frappe.get_all(
-			"Site", {**{"creation": signup_date}, **self.common_site_filters}
+		sites = frappe.db.sql(
+			f"""
+				SELECT
+					site.name
+				FROM
+					tabSite site
+				JOIN
+					`tabAccount Request` account_request
+				ON
+					site.account_request = account_request.name
+				WHERE
+					account_request.erpnext = True and
+					site.status = "Active" and
+					DATE(account_request.creation) = "{signup_date}"
+			"""
 		)
+		sites = [t[0] for t in sites]
 		return sites
 
 	def send_to_sites(self):
@@ -156,12 +158,23 @@ def send_welcome_email():
 	welcome_email = frappe.get_last_doc(
 		"Drip Email", filters={"enabled": 1, "email_type": "Sign Up"}
 	)
-	sites_in_last_15_mins = frappe.get_all(
-		"Site",
-		{
-			**{"creation": (">", frappe.utils.add_to_date(None, minutes=-15))},
-			**welcome_email.common_site_filters,
-		},
+	_15_mins_ago = frappe.utils.add_to_date(None, minutes=-15)
+	tuples = frappe.db.sql(
+		f"""
+			SELECT
+				site.name
+			FROM
+				tabSite site
+			JOIN
+				`tabAccount Request` account_request
+			ON
+				site.account_request = account_request.name
+			WHERE
+				account_request.erpnext = True and
+				site.status = "Active" and
+				account_request.creation > "{_15_mins_ago}"
+		"""
 	)
+	sites_in_last_15_mins = [t[0] for t in tuples]
 	for site in sites_in_last_15_mins:
 		welcome_email.send(site)
