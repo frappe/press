@@ -21,6 +21,7 @@ class ERPNextSite(Site):
 					"team": "Administrator",
 					"account_request": account_request.name,
 					"subscription_plan": get_erpnext_plan(),
+					"erpnext_consultant": get_erpnext_consultant(account_request.country),
 					"trial_end_date": frappe.utils.add_days(None, 14),
 				}
 			)
@@ -32,6 +33,7 @@ class ERPNextSite(Site):
 		self.trial_end_date = frappe.utils.add_days(None, 14)
 		plan = get_erpnext_plan()
 		self._update_configuration(self.get_plan_config(plan), save=False)
+		self.erpnext_consultant = get_erpnext_consultant(account_request.country)
 		self.save(ignore_permissions=True)
 		self.create_subscription(plan)
 
@@ -97,3 +99,30 @@ def get_erpnext_apps():
 def process_setup_erpnext_site_job_update(job):
 	if job.status == "Success":
 		frappe.db.set_value("Site", job.site, "is_erpnext_setup", True)
+
+
+def set_erpnext_consultant(country):
+	region = frappe.db.get_value("Country", self.country, "region")
+	self.erpnext_consultant = self.get_erpnext_consultant(region)
+	frappe.db.set_value("Region", region, "last_allocated_to", self.erpnext_consultant)
+
+	def get_erpnext_consultant(self, region):
+		erpnext_consultants = frappe.db.sql_list(''' select parent from `tabERPNext Consultant Region`
+			where territory = %s ''', region)
+
+		erpnext_consultants = frappe.get_all("ERPNext Consultant", filters={"active": 1,
+			"name": ['in', erpnext_consultants]})
+
+		if not erpnext_consultants:
+			return ''
+
+		if len(erpnext_consultants) > 1:
+			region_details = frappe.get_cached_doc("Region", region)
+
+			erpnext_consultants = [consultant.name for consultant in erpnext_consultants
+				if consultant.name!= region_details.last_allocated_to]
+		else:
+			erpnext_consultants = [erpnext_consultants[0].name]
+
+		return erpnext_consultants[0]
+
