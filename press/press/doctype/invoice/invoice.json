@@ -84,7 +84,7 @@
    "fieldtype": "Select",
    "label": "Status",
    "no_copy": 1,
-   "options": "Draft\nInvoice Created\nUnpaid\nPaid\nRefunded"
+   "options": "Draft\nInvoice Created\nUnpaid\nPaid\nRefunded\nUncollectible"
   },
   {
    "fieldname": "total",
@@ -310,7 +310,7 @@
    "link_fieldname": "invoice"
   }
  ],
- "modified": "2021-03-02 19:00:51.063448",
+ "modified": "2021-04-30 12:31:01.440953",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",

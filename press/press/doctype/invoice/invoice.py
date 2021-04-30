@@ -624,7 +624,7 @@ def process_stripe_webhook(doc, method):
 			{
 				"payment_attempt_count": attempt_count,
 				"payment_attempt_date": attempt_date,
-				"status": "Unpaid",
+				"status": "Unpaid" if attempt_count < 5 else "Uncollectible",
 			}
 		)
 		invoice.save()
