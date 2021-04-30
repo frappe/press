@@ -288,7 +288,7 @@ class Invoice(Document):
 
 	def apply_credit_balance(self):
 		balance = frappe.get_cached_doc("Team", self.team).get_balance()
-		if balance == 0:
+		if balance <= 0:
 			return
 
 		# cancel applied credits to re-apply available credits
