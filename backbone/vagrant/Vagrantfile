@@ -110,10 +110,10 @@ Vagrant.configure("2") do |config|
     end
 
     # Uptime Server = Prometheus + Grafana
-    config.vm.define "monitor.local.frappe.dev" do |uptime|
-        uptime.vm.hostname = "monitor.local.frappe.dev"
-        uptime.vm.network "private_network", ip: "10.0.4.103", netmask: "255.255.0.0"
-        uptime.vm.network "private_network", ip: "10.1.4.103", netmask: "255.255.0.0"
+    config.vm.define "monitor.local.frappe.dev" do |monitor|
+        monitor.vm.hostname = "monitor.local.frappe.dev"
+        monitor.vm.network "private_network", ip: "10.0.4.103", netmask: "255.255.0.0"
+        monitor.vm.network "private_network", ip: "10.1.4.103", netmask: "255.255.0.0"
     end
 
 
