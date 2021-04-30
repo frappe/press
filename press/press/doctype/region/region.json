@@ -21,13 +21,14 @@
   },
   {
    "fieldname": "last_allocated_to",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "label": "Last Allocated To",
+   "options": "ERPNext Consultant",
    "read_only": 1
   }
  ],
  "links": [],
- "modified": "2021-04-21 18:08:37.953188",
+ "modified": "2021-04-30 13:05:32.560491",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Region",
