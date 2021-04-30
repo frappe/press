@@ -60,7 +60,6 @@ class Invoice(Document):
 		self.save()
 
 		if self.status == "Paid":
-			self.period_end = today()
 			self.submit()
 
 	def after_submit(self):
