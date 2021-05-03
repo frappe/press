@@ -13,7 +13,9 @@
   "team_disabled",
   "stripe_data_deleted",
   "frappeio_data_deleted",
-  "data_anonymized"
+  "data_anonymized",
+  "deletion_steps",
+  "users_anonymized"
  ],
  "fields": [
   {
@@ -69,11 +71,23 @@
    "fieldtype": "Check",
    "label": "Data Anonymized",
    "read_only": 1
+  },
+  {
+   "fieldname": "deletion_steps",
+   "fieldtype": "Table",
+   "label": "Data Anonymization Steps",
+   "options": "Personal Data Deletion Step"
+  },
+  {
+   "fieldname": "users_anonymized",
+   "fieldtype": "Table",
+   "label": "Users Anonymized",
+   "options": "Team Member Deletion Request"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-03-02 20:55:48.291643",
+ "modified": "2021-04-26 13:13:50.519109",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team Deletion Request",
