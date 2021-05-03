@@ -150,10 +150,7 @@ scheduler_events = {
 		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
 		"press.press.doctype.drip_email.drip_email.send_drip_emails",
 	],
-	"daily_long": [
-		"press.press.doctype.team_deletion_request.team_deletion_request.process_team_deletion_requests",
-		"press.press.audit.all",
-	],
+	"daily_long": ["press.press.audit.all"],
 	"hourly": [
 		"press.press.doctype.app.app.poll_new_releases",
 		"press.press.doctype.site.backups.cleanup_local",
@@ -188,6 +185,9 @@ scheduler_events = {
 		"15,45 * * * *": [
 			"press.press.doctype.site.site_usages.update_cpu_usages",
 			"press.press.doctype.site.site_usages.update_disk_usages",
+		],
+		"15 2,4 * * *": [
+			"press.press.doctype.team_deletion_request.team_deletion_request.process_team_deletion_requests",
 		],
 	},
 }
