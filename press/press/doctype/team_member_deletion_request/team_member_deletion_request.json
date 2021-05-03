@@ -1,0 +1,46 @@
+{
+ "actions": [],
+ "creation": "2021-04-26 13:13:13.385392",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "team_member",
+  "anon_team_member",
+  "deletion_status"
+ ],
+ "fields": [
+  {
+   "fieldname": "team_member",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Team Member",
+   "options": "User"
+  },
+  {
+   "fieldname": "deletion_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Deletion Status",
+   "options": "Pending\nDeleted"
+  },
+  {
+   "fieldname": "anon_team_member",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Anonymized Link"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2021-04-26 16:08:26.691639",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Team Member Deletion Request",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}
