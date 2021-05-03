@@ -142,7 +142,7 @@ export default {
 		},
 		getGroupTitle(group) {
 			let privateBenches = (this.$resources.groups.data || []).filter(
-				group => !group.public
+				group => group.owned_by_team
 			);
 			if (privateBenches.length === 0) {
 				return 'Sites';
