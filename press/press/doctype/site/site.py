@@ -748,6 +748,7 @@ class Site(Document):
 		).insert()
 
 		if self.status == "Suspended":
+			self.reload()
 			self.unsuspend_if_applicable()
 
 		if self.trial_end_date:
