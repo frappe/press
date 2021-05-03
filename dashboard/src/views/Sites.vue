@@ -104,14 +104,14 @@ export default {
 				sites: []
 			};
 			this.$resources.groups.data
-				.filter(group => group.public)
+				.filter(group => !group.owned_by_team)
 				.forEach(group => {
 					sharedBench.sites = sharedBench.sites.concat(group.sites);
 				});
 
 			return [
 				sharedBench,
-				...this.$resources.groups.data.filter(group => !group.public)
+				...this.$resources.groups.data.filter(group => group.owned_by_team)
 			];
 		}
 	},
