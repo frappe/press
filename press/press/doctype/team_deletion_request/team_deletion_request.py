@@ -10,10 +10,20 @@ from frappe.website.doctype.personal_data_deletion_request.personal_data_deletio
 from frappe.core.utils import find
 
 
+def handle_exception(self):
+	frappe.db.rollback()
+	traceback = f"<br><br><pre><code>{frappe.get_traceback()}</pre></code>"
+	self.add_comment(text=f"Failure occurred during Data Deletion:{traceback}")
+	frappe.db.commit()
+
+
 class TeamDeletionRequest(PersonalDataDeletionRequest):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self.email = self.team
+		# turn off data deletions in partial content for the sake of sanity
+		self.full_match_privacy_docs += self.partial_privacy_docs
+		self.partial_privacy_docs = []
 
 	def before_insert(self):
 		self.validate_team_owner()
@@ -42,28 +52,12 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 	def on_update(self):
 		self.finish_up()
 
-	def dont_throw(foo):
-		def pass_exception(self):
-			try:
-				foo(self)
-			except Exception:
-				frappe.db.rollback()
-
-				traceback = f"<br><br><pre><code>{frappe.get_traceback()}</pre></code>"
-				self.add_comment(text=f"Failure occurred during Data Deletion:{traceback}")
-
-				frappe.db.commit()
-
-		return pass_exception
-
-	def commit_after_execute(foo):
+	def handle_exc(foo):
 		def after_execute(self):
 			try:
 				foo(self)
 			except Exception:
-				pass
-			else:
-				frappe.db.commit()
+				handle_exception(self)
 
 		return after_execute
 
@@ -131,18 +125,15 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 
 		return url
 
-	@dont_throw
-	@commit_after_execute
+	@handle_exc
 	def disable_team(self):
 		team = self.team_doc
 		team.enabled = False
 		team.save()
-		self.team_disabled = True
-		self.save()
+		self.db_set("team_disabled", True, commit=True)
 		self.reload()
 
-	@dont_throw
-	@commit_after_execute
+	@handle_exc
 	def delete_stripe_customer(self):
 		from press.api.billing import get_stripe
 
@@ -156,12 +147,10 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 				raise e
 
 		team.db_set("stripe_customer_id", False)
-		self.stripe_data_deleted = True
-		self.save()
+		self.db_set("stripe_data_deleted", True, commit=True)
 		self.reload()
 
-	@dont_throw
-	@commit_after_execute
+	@handle_exc
 	def delete_data_on_frappeio(self):
 		"""Anonymize data on frappe.io"""
 		from press.utils.billing import get_frappe_io_connection
@@ -173,8 +162,7 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 		if not response.ok:
 			response.raise_for_status()
 
-		self.frappeio_data_deleted = True
-		self.save()
+		self.db_set("frappeio_data_deleted", True, commit=True)
 		self.reload()
 
 	def set_users_anonymized(self):
@@ -201,47 +189,39 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 				{"team_member": now, "anon_team_member": then, "deletion_status": "Pending"},
 			)
 
-		self.save()
+		self.db_update()
+		self.update_children()
 		frappe.db.commit()
 		self.reload()
 
-	@dont_throw
-	@commit_after_execute
+	@handle_exc
 	def delete_data_on_press(self):
-		deleted = True
-
 		if not self.users_anonymized:
 			self.set_users_anonymized()
 
 		def is_deletion_pending(email):
 			return find(
 				self.users_anonymized,
-				lambda x: x["team_member"] == email and x["deletion_status"] == "Pending",
+				lambda x: x.get("team_member") == email and x.get("deletion_status") == "Pending",
 			)
 
 		for user in self.users_anonymized:
-			now = user["team_member"]
-			then = user["anon_team_member"]
+			now = user.get("team_member")
+			then = user.get("anon_team_member")
 
 			if is_deletion_pending(now):
-				el = find(self.users_anonymized, lambda x: x["team_member"] == now)
+				el = find(self.users_anonymized, lambda x: x.get("team_member") == now)
+				self._anonymize_data(now, then, commit=True)
 				self.users_anonymized.remove(el)
+				self.append(
+					"users_anonymized",
+					{"team_member": then, "anon_team_member": then, "deletion_status": "Deleted"},
+				)
+				self.db_update()
+				self.update_children()
+				frappe.db.commit()
 
-				try:
-					self._anonymize_data(now, then, commit=True)
-					self.append(
-						"users_anonymized",
-						{"team_member": then, "anon_team_member": then, "deletion_status": "Deleted"},
-					)
-					self.save()
-					frappe.db.commit()
-				except Exception:
-					frappe.db.rollback()
-					self.append("users_anonymized", el)
-					self.save()
-					deleted = False
-
-		self.db_set("data_anonymized", deleted, commit=True)
+		self.db_set("data_anonymized", True, commit=True)
 		self.reload()
 
 	def validate_sites_states(self):
