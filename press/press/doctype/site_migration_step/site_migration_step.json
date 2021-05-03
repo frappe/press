@@ -1,0 +1,37 @@
+{
+ "actions": [],
+ "creation": "2021-05-03 13:57:25.931529",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "step_type",
+  "step_name"
+ ],
+ "fields": [
+  {
+   "fieldname": "step_type",
+   "fieldtype": "Link",
+   "label": "Step Type",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "step_name",
+   "fieldtype": "Dynamic Link",
+   "label": "Step Name",
+   "options": "step_type"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2021-05-03 13:57:31.873593",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Site Migration Step",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

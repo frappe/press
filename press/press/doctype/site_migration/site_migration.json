@@ -16,7 +16,9 @@
   "source_cluster",
   "column_break_5",
   "destination_server",
-  "destination_cluster"
+  "destination_cluster",
+  "section_break_13",
+  "steps"
  ],
  "fields": [
   {
@@ -114,11 +116,22 @@
   {
    "fieldname": "section_break_5",
    "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "section_break_13",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "steps",
+   "fieldtype": "Table",
+   "label": "Steps",
+   "options": "Site Migration Step",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-01-19 15:48:46.184896",
+ "modified": "2021-05-03 14:03:00.599408",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Migration",
