@@ -11,8 +11,6 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils.make_random import get_random
 
-from press.utils import log_error
-
 
 class DripEmail(Document):
 	def send(self, site_name=None, lead=None):
@@ -39,10 +37,7 @@ class DripEmail(Document):
 		# 	# user is already activated, quit
 		# 	return
 
-		account_request = frappe.get_doc("Account Request", {"subdomain": site.subdomain})
-		if not account_request:
-			log_error("Account Request not found", message=f"{site.name}")
-			return
+		account_request = frappe.get_doc("Account Request", site.account_request)
 
 		if self.send_by_consultant:
 			consultant = self.select_consultant(site)
@@ -121,28 +116,29 @@ class DripEmail(Document):
 		return attachments
 
 	@property
-	def sites_to_send_mail(self):
+	def sites_to_send_drip(self):
 		signup_date = date.today() - timedelta(days=self.send_after)
-		# TODO: simpler filter with domain field same as erpnext domain in settings or stick with this for getting account_request in one go
 		sites = frappe.db.sql(
 			f"""
-				SELECT site.name
+				SELECT
+					site.name
 				FROM
 					tabSite site
 				JOIN
 					`tabAccount Request` account_request
 				ON
-					account_request.subdomain = site.subdomain
+					site.account_request = account_request.name
 				WHERE
 					account_request.erpnext = True and
-					DATE(site.creation) = "{signup_date}"
+					site.status = "Active" and
+					DATE(account_request.creation) = "{signup_date}"
 			"""
 		)
 		sites = [t[0] for t in sites]
 		return sites
 
 	def send_to_sites(self):
-		for site in self.sites_to_send_mail:
+		for site in self.sites_to_send_drip:
 			self.send(site)
 			# TODO: only send `Onboarding` mails to partners <19-04-21, Balamurali M> #
 
@@ -155,3 +151,30 @@ def send_drip_emails():
 	for drip_email_name in drip_emails:
 		drip_email = frappe.get_doc("Drip Email", drip_email_name)
 		drip_email.send_to_sites()
+
+
+def send_welcome_email():
+	"""Send welcome email to sites created in last 15 minutes."""
+	welcome_email = frappe.get_last_doc(
+		"Drip Email", filters={"enabled": 1, "email_type": "Sign Up"}
+	)
+	_15_mins_ago = frappe.utils.add_to_date(None, minutes=-15)
+	tuples = frappe.db.sql(
+		f"""
+			SELECT
+				site.name
+			FROM
+				tabSite site
+			JOIN
+				`tabAccount Request` account_request
+			ON
+				site.account_request = account_request.name
+			WHERE
+				account_request.erpnext = True and
+				site.status = "Active" and
+				account_request.creation > "{_15_mins_ago}"
+		"""
+	)
+	sites_in_last_15_mins = [t[0] for t in tuples]
+	for site in sites_in_last_15_mins:
+		welcome_email.send(site)

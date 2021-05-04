@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 
 import frappe
 from frappe.model.document import Document
+from press.utils import log_error
 
 
 class UsageRecord(Document):
@@ -17,7 +18,10 @@ class UsageRecord(Document):
 			self.time = frappe.utils.nowtime()
 
 	def on_submit(self):
-		self.update_usage_in_invoice()
+		try:
+			self.update_usage_in_invoice()
+		except:
+			log_error(title="Usage Record Invoice Update Error", name=self.name)
 
 	def on_cancel(self):
 		self.remove_usage_from_invoice()

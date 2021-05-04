@@ -6,7 +6,7 @@ from __future__ import unicode_literals
 
 import frappe
 from frappe.model.document import Document
-
+from press.utils import log_error
 from press.overrides import get_permission_query_conditions_for_doctype
 
 
@@ -115,7 +115,10 @@ def create_usage_records():
 	)
 	for name in subscriptions:
 		subscription = frappe.get_doc("Subscription", name)
-		subscription.create_usage_record()
+		try:
+			subscription.create_usage_record()
+		except:
+			log_error(title="Create Usage Record Error", name=name)
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype(

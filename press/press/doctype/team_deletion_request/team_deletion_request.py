@@ -7,18 +7,32 @@ from frappe.utils.verified_command import get_signed_params
 from frappe.website.doctype.personal_data_deletion_request.personal_data_deletion_request import (
 	PersonalDataDeletionRequest,
 )
+from frappe.core.utils import find
+
+
+def handle_exception(self):
+	frappe.db.rollback()
+	traceback = f"<br><br><pre><code>{frappe.get_traceback()}</pre></code>"
+	self.add_comment(text=f"Failure occurred during Data Deletion:{traceback}")
+	frappe.db.commit()
 
 
 class TeamDeletionRequest(PersonalDataDeletionRequest):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self.email = self.team
+		# turn off data deletions in partial content for the sake of sanity
+		self.full_match_privacy_docs += self.partial_privacy_docs
+		self.partial_privacy_docs = []
 
 	def before_insert(self):
 		self.validate_team_owner()
 		self.validate_duplicate_request()
 
 	def after_insert(self):
+		self.add_deletion_steps()
+		self.set_users_anonymized()
+
 		url = self.generate_url_for_confirmation()
 
 		frappe.sendmail(
@@ -38,28 +52,12 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 	def on_update(self):
 		self.finish_up()
 
-	def dont_throw(foo):
-		def pass_exception(self):
-			try:
-				foo(self)
-			except Exception:
-				frappe.db.rollback()
-
-				traceback = f"<br><br><pre><code>{frappe.get_traceback()}</pre></code>"
-				self.add_comment(text=f"Failure occurred during Data Deletion:{traceback}")
-
-				frappe.db.commit()
-
-		return pass_exception
-
-	def commit_after_execute(foo):
+	def handle_exc(foo):
 		def after_execute(self):
 			try:
 				foo(self)
 			except Exception:
-				pass
-			else:
-				frappe.db.commit()
+				handle_exception(self)
 
 		return after_execute
 
@@ -92,18 +90,18 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 			)
 
 	def delete_team_data(self):
-		if self.status == "Processing Deletion":
-			if not self.team_disabled:
-				self.disable_team()
-			if not self.frappeio_data_deleted:
-				self.delete_data_on_frappeio()
-			if not self.stripe_data_deleted:
-				self.delete_stripe_customer()
-			if (
-				self.team_disabled and self.frappeio_data_deleted and self.stripe_data_deleted
-			) and not self.data_anonymized:
-				self.delete_data_on_press()
-			self.finish_up()
+		self.db_set("status", "Processing Deletion")
+		if not self.team_disabled:
+			self.disable_team()
+		if not self.frappeio_data_deleted:
+			self.delete_data_on_frappeio()
+		if not self.stripe_data_deleted:
+			self.delete_stripe_customer()
+		if (
+			self.team_disabled and self.frappeio_data_deleted and self.stripe_data_deleted
+		) and not self.data_anonymized:
+			self.delete_data_on_press()
+		self.finish_up()
 
 	def finish_up(self):
 		if (
@@ -112,10 +110,10 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 			and self.stripe_data_deleted
 			and self.data_anonymized
 		):
-			self.status = "Deleted"
-			self.save()
-			self.reload()
+			self.db_set("status", "Deleted")
 			self.rename_team_on_data_deletion()
+			frappe.db.commit()
+			self.reload()
 
 	def generate_url_for_confirmation(self):
 		params = get_signed_params({"team": self.team})
@@ -127,17 +125,15 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 
 		return url
 
-	@dont_throw
-	@commit_after_execute
+	@handle_exc
 	def disable_team(self):
 		team = self.team_doc
 		team.enabled = False
 		team.save()
-		self.team_disabled = True
-		self.save()
+		self.db_set("team_disabled", True, commit=True)
+		self.reload()
 
-	@dont_throw
-	@commit_after_execute
+	@handle_exc
 	def delete_stripe_customer(self):
 		from press.api.billing import get_stripe
 
@@ -151,11 +147,10 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 				raise e
 
 		team.db_set("stripe_customer_id", False)
-		self.stripe_data_deleted = True
-		self.save()
+		self.db_set("stripe_data_deleted", True, commit=True)
+		self.reload()
 
-	@dont_throw
-	@commit_after_execute
+	@handle_exc
 	def delete_data_on_frappeio(self):
 		"""Anonymize data on frappe.io"""
 		from press.utils.billing import get_frappe_io_connection
@@ -167,13 +162,14 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 		if not response.ok:
 			response.raise_for_status()
 
-		self.frappeio_data_deleted = True
-		self.save()
+		self.db_set("frappeio_data_deleted", True, commit=True)
+		self.reload()
 
-	@dont_throw
-	@commit_after_execute
-	def delete_data_on_press(self):
-		# 1. rename team and team members to whatever else
+	def set_users_anonymized(self):
+		def numerate_email(x, i):
+			user_email, domain = x.split("@")
+			return f"{user_email}-{i + 1}@{domain}"
+
 		team_members = [row.user for row in self.team_doc.team_members]
 		members_only_in_this_team = [
 			user
@@ -183,19 +179,50 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 			)
 		]
 
-		def numerate_email(x, i):
-			user_email, domain = x.split("@")
-			return f"{user_email}-{i + 1}@{domain}"
-
 		renamed_dict = {
 			x: numerate_email(self.name, i) for i, x in enumerate(members_only_in_this_team)
 		}
 
 		for now, then in renamed_dict.items():
-			self._anonymize_data(now, then)
+			self.append(
+				"users_anonymized",
+				{"team_member": now, "anon_team_member": then, "deletion_status": "Pending"},
+			)
 
-		self.data_anonymized = True
-		self.save()
+		self.db_update()
+		self.update_children()
+		frappe.db.commit()
+		self.reload()
+
+	@handle_exc
+	def delete_data_on_press(self):
+		if not self.users_anonymized:
+			self.set_users_anonymized()
+
+		def is_deletion_pending(email):
+			return find(
+				self.users_anonymized,
+				lambda x: x.get("team_member") == email and x.get("deletion_status") == "Pending",
+			)
+
+		for user in self.users_anonymized:
+			now = user.get("team_member")
+			then = user.get("anon_team_member")
+
+			if is_deletion_pending(now):
+				el = find(self.users_anonymized, lambda x: x.get("team_member") == now)
+				self._anonymize_data(now, then, commit=True)
+				self.users_anonymized.remove(el)
+				self.append(
+					"users_anonymized",
+					{"team_member": then, "anon_team_member": then, "deletion_status": "Deleted"},
+				)
+				self.db_update()
+				self.update_children()
+				frappe.db.commit()
+
+		self.db_set("data_anonymized", True, commit=True)
+		self.reload()
 
 	def validate_sites_states(self):
 		non_archived_sites = frappe.get_all(
@@ -223,14 +250,15 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 
 
 def process_team_deletion_requests():
+	# order in desc since deleting press data takes the most time
 	doctype = "Team Deletion Request"
-	for name in frappe.get_all(
+	deletion_requests = frappe.get_all(
 		doctype,
 		filters={"status": ("in", ["Deletion Verified", "Processing Deletion"])},
 		pluck="name",
-	):
+		order_by="creation desc",
+	)
+	for name in deletion_requests:
 		tdr = frappe.get_doc(doctype, name)
-		tdr.status = "Processing Deletion"
 		tdr.delete_team_data()
-		tdr.reload()
-		tdr.save()
+		frappe.db.commit()

@@ -12,7 +12,7 @@ from press.utils.billing import get_frappe_io_connection
 from press.utils import log_error
 from datetime import datetime
 from frappe import _
-from frappe.utils import getdate, cint
+from frappe.utils import getdate, cint, today
 from press.telegram_utils import Telegram
 from press.overrides import get_permission_query_conditions_for_doctype
 
@@ -288,7 +288,7 @@ class Invoice(Document):
 
 	def apply_credit_balance(self):
 		balance = frappe.get_cached_doc("Team", self.team).get_balance()
-		if balance == 0:
+		if balance <= 0:
 			return
 
 		# cancel applied credits to re-apply available credits
@@ -531,12 +531,14 @@ class Invoice(Document):
 
 
 def finalize_draft_invoices():
-	"""Runs every day and submits the invoices whose period end is today"""
+	"""Runs every day and submits the invoices whose period ends today or has ended before"""
 
-	# get draft invoices whose period is ending today
+	# get draft invoices whose period has ended or ends today
 	today = frappe.utils.today()
 	invoices = frappe.db.get_all(
-		"Invoice", {"status": "Draft", "period_end": today, "total": (">", 0)}, pluck="name",
+		"Invoice",
+		{"status": "Draft", "period_end": ("<=", today), "total": (">", 0)},
+		pluck="name",
 	)
 	for name in invoices:
 		invoice = frappe.get_doc("Invoice", name)
@@ -621,7 +623,7 @@ def process_stripe_webhook(doc, method):
 			{
 				"payment_attempt_count": attempt_count,
 				"payment_attempt_date": attempt_date,
-				"status": "Unpaid",
+				"status": "Unpaid" if attempt_count < 5 else "Uncollectible",
 			}
 		)
 		invoice.save()
