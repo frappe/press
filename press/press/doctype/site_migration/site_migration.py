@@ -44,43 +44,36 @@ class SiteMigration(Document):
 			self.add_steps_for_in_cluster_migration()
 		# TODO: add simpler steps for in bench migration <03-05-21, Balamurali M> #
 
-	def wait_for_started_steps(self) -> bool:
+	def wait_for_job(self, job: AgentJob) -> bool:
 		"""
-		Wait for async steps and return True if successful.
+		Wait for async agent job and return True if successful.
 
 		CAN go on forever!
+		- Update steps when status changes
 		"""
-		steps = []
 		while True:
-			# XXX assuming changes in agent job status reflect here
-			steps = frappe.get_all(
-				"Site Migration Step",
-				{
-					"parent": self.name,
-					"step_name": ("is", "set"),
-					"status": ("in", ["Pending", "Running"]),
-				},
-				"*",
-			)
-			print(steps)
-			# TODO: confirm order of steps <04-05-21, Balamurali M> #
-			if not steps:
-				break
 			sleep(6)
-
-		for step in steps:
-			if step.status == "Failure":
-				return False
-		return True
+			job.reload()
+			self.steps[-1].status = job.status
+			if job.status == "Success":
+				ret = True
+				break
+			elif job.status == "Failure":
+				ret = False
+				break
+			self.save()
+		return ret
 
 	def sequential_step(func):
 		"""Create child table entry and wait for result."""
+
 		@functools.wraps(func)
-		def wrapper(self, *args, **kwargs) -> AgentJob:
-			ret = func(self, *args, **kwargs)
-			self.append("steps", {"step_type": ret.doctype, "step_name": ret.name})
+		def wrapper(self, *args, **kwargs) -> bool:
+			job = func(self, *args, **kwargs)
+			self.append("steps", {"step_type": job.doctype, "step_name": job.name})
 			self.save()
-			return self.wait_for_started_steps()
+			return self.wait_for_job(job)
+
 		return wrapper
 
 	def add_steps_for_inter_cluster_migration(self):
