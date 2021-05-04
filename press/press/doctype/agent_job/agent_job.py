@@ -12,11 +12,7 @@ import frappe
 import requests
 from frappe.core.utils import find
 from frappe.model.document import Document
-from frappe.utils import (
-	convert_utc_to_user_timezone,
-	get_url_to_form,
-	pretty_date,
-)
+from frappe.utils import convert_utc_to_user_timezone, get_url_to_form, pretty_date
 
 from press.agent import Agent
 from press.telegram_utils import Telegram
@@ -358,6 +354,9 @@ def process_job_updates(job_name):
 			process_new_bench_job_update,
 		)
 		from press.press.doctype.server.server import process_new_server_job_update
+		from press.press.doctype.site.erpnext_site import (
+			process_setup_erpnext_site_job_update,
+		)
 		from press.press.doctype.site.site import (
 			process_archive_site_job_update,
 			process_install_app_site_job_update,
@@ -366,9 +365,6 @@ def process_job_updates(job_name):
 			process_reinstall_site_job_update,
 			process_rename_site_job_update,
 			process_restore_tables_job_update,
-		)
-		from press.press.doctype.site.erpnext_site import (
-			process_setup_erpnext_site_job_update,
 		)
 		from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
 		from press.press.doctype.site_domain.site_domain import process_new_host_job_update
