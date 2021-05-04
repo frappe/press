@@ -4,9 +4,6 @@
 
 from __future__ import unicode_literals
 
-import functools
-from time import sleep
-
 import frappe
 from frappe.model.document import Document
 
@@ -14,15 +11,19 @@ from press.agent import Agent
 from press.press.doctype.agent_job.agent_job import AgentJob
 
 
+def get_existing_migration(site: str):
+	"""Return ongoing Site Migration for site if it exists."""
+	return frappe.db.exists("Site Migration", {"site": "self.site"})
+
+
 class SiteMigration(Document):
 	def validate(self):
-		self.check_existing()
+		if get_existing_migration(self.site):
+			frappe.throw("Ongoing Site Migration for that site exists.")
 		self.set_migration_type()
 
-	def check_existing(self):
-		"""Throw err if running/pending migration job for the same site exists."""
-		# TODO:  <03-05-21, Balamurali M> #
-		pass
+	def after_insert(self):
+		self.add_steps()
 
 	def set_migration_type(self):
 		if self.source_cluster != self.destination_cluster:
@@ -33,70 +34,61 @@ class SiteMigration(Document):
 			migration_type = "Bench"
 		self.migration_type = migration_type
 
-	def after_insert(self):
-		self.add_steps()
-
 	def add_steps(self):
 		"""Populate steps child table with steps for migration."""
 		if self.migration_type == "Cluster":
 			self.add_steps_for_inter_cluster_migration()
 		else:
 			self.add_steps_for_in_cluster_migration()
-		# TODO: add simpler steps for in bench migration <03-05-21, Balamurali M> #
+		self.run_next_step()
+		# TODO: Call site update for bench only migration with popup with link to site update job
 
-	def wait_for_job(self, job: AgentJob) -> bool:
-		"""
-		Wait for async agent job and return True if successful.
+	@property
+	def next_step(self) -> str:
+		for step in self.steps:
+			if step.status == "Pending":
+				return step
 
-		CAN go on forever!
-		- Update steps when status changes
-		"""
-		while True:
-			sleep(6)
-			job.reload()
-			self.steps[-1].status = job.status
-			if job.status == "Success":
-				ret = True
-				break
-			elif job.status == "Failure":
-				ret = False
-				break
-			self.save()
-		return ret
+	def run_next_step(self):
+		next_method = self.next_step.method
+		if not next_method:
+			self.succeed()
+			return
+		job = getattr(self, next_method)
+		self.next_step.step_name = job(self)
+		self.save()
 
-	def sequential_step(func):
-		"""Create child table entry and wait for result."""
+	def update_step_status(self, status: str):
+		self.next_step.status = status
+		self.save()
 
-		@functools.wraps(func)
-		def wrapper(self, *args, **kwargs) -> bool:
-			job = func(self, *args, **kwargs)
-			self.append("steps", {"step_type": job.doctype, "step_name": job.name})
-			self.save()
-			return self.wait_for_job(job)
+	def fail(self):
+		self.status = "Failure"
+		self.save()
 
-		return wrapper
+	def succeed(self):
+		self.status = "Success"
+		self.save()
 
 	def add_steps_for_inter_cluster_migration(self):
-		(
-			self.backup_source_site()
-			and self.remove_site_from_source_proxy()
-			and self.restore_site_on_destination()
-			and self.archive_site_on_source()  # without rename and other process archive job
-			and self.update_site_record_fields()
-		)  # update press values for site
+		steps = [
+			{"step_type": "Agent Job", "method_name": "backup_source_site"},
+			{"step_type": "Agent Job", "method_name": "remove_site_from_source_proxy"},
+			{"step_type": "Agent Job", "method_name": "restore_site_on_destination"},
+			{"step_type": "Agent Job", "method_name": "archive_site_on_source"},
+			# without rename
+			{"step_type": "Data", "method_name": "update_site_record_fields"},
+		]
+		for step in steps:
+			self.append("steps", step)
 		# TODO: domains <03-05-21, Balamurali M> #
 		# DNS record
 		# might be automatically handled?
 
-	@sequential_step
 	def backup_source_site(self) -> AgentJob:
 		agent = Agent(self.source_server)
 		site = frappe.get_doc("Site", self.site)
 		return agent.backup_site(site, with_files=True, offsite=True)
-
-	# def deactivate_on_source_proxy(self):
-	# 	site = frappe.get_doc("Site", self.site)
-	# 	return site.update_site_status_on_proxy()
 
 	def restore_site_on_destination(self):
 		agent = Agent(self.destination_server)
@@ -123,3 +115,11 @@ class SiteMigration(Document):
 		site.bench = self.destination_bench
 		site.server = self.destination_server
 		site.save()
+
+
+def process_site_migration_job_update(job, site_migration: SiteMigration):
+	site_migration.update_step_status(job.status)
+	if job.status == "Success":
+		site_migration.run_next_step()
+	elif job.status == "Failure":
+		site_migration.fail()

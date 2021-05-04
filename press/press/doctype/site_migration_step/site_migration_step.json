@@ -7,33 +7,45 @@
  "field_order": [
   "step_type",
   "step_name",
-  "status"
+  "status",
+  "method_name"
  ],
  "fields": [
   {
    "fieldname": "step_type",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Step Type",
-   "options": "DocType"
+   "options": "DocType",
+   "reqd": 1
   },
   {
    "fieldname": "step_name",
    "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
    "label": "Step Name",
    "options": "step_type"
   },
   {
-   "fetch_from": "step_name.status",
+   "default": "Pending",
    "fieldname": "status",
    "fieldtype": "Select",
+   "in_list_view": 1,
    "label": "Status",
-   "options": "Pending\nRunning\nSuccess\nFailure"
+   "options": "Pending\nRunning\nSuccess\nFailure",
+   "reqd": 1
+  },
+  {
+   "fieldname": "method_name",
+   "fieldtype": "Data",
+   "label": "Method Name",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2021-05-04 07:48:09.821709",
+ "modified": "2021-05-04 19:24:54.003299",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Migration Step",
