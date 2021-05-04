@@ -7,6 +7,7 @@ import frappe
 from frappe.utils import cint
 from frappe.handler import is_whitelisted
 from functools import partial
+from frappe.core.doctype.user.user import User
 
 
 @frappe.whitelist(allow_guest=True)
@@ -128,3 +129,47 @@ def get_permission_query_conditions_for_doctype_and_user(doctype, user):
 
 def get_permission_query_conditions_for_doctype(doctype):
 	return partial(get_permission_query_conditions_for_doctype_and_user, doctype)
+
+
+class CustomUser(User):
+	def after_rename(self, old_name, new_name, merge=False):
+		"""
+		Changes:
+			- Excluding update operations on MyISAM tables
+		"""
+		myisam_tables = frappe.db.sql_list(
+			"""SELECT
+			TABLE_NAME FROM information_schema.TABLES
+		WHERE
+			ENGINE='MyISAM'
+		AND TABLE_SCHEMA NOT IN ('mysql','information_schema','performance_schema')
+		"""
+		)
+		tables = [x for x in frappe.db.get_tables() if x not in myisam_tables]
+
+		for tab in tables:
+			desc = frappe.db.get_table_columns_description(tab)
+			has_fields = []
+			for d in desc:
+				if d.get("name") in ["owner", "modified_by"]:
+					has_fields.append(d.get("name"))
+			for field in has_fields:
+				frappe.db.sql(
+					"""UPDATE `%s`
+					SET `%s` = %s
+					WHERE `%s` = %s"""
+					% (tab, field, "%s", field, "%s"),
+					(new_name, old_name),
+				)
+
+		for dt in ["Chat Profile", "Notification Settings"]:
+			if frappe.db.exists(dt, old_name):
+				frappe.rename_doc(dt, old_name, new_name, force=True, show_alert=False)
+
+		# set email
+		frappe.db.sql(
+			"""UPDATE `tabUser`
+			SET email = %s
+			WHERE name = %s""",
+			(new_name, new_name),
+		)
