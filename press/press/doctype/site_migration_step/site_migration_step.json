@@ -6,7 +6,8 @@
  "engine": "InnoDB",
  "field_order": [
   "step_type",
-  "step_name"
+  "step_name",
+  "status"
  ],
  "fields": [
   {
@@ -20,12 +21,19 @@
    "fieldtype": "Dynamic Link",
    "label": "Step Name",
    "options": "step_type"
+  },
+  {
+   "fetch_from": "step_name.status",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Pending\nRunning\nSuccess\nFailure"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2021-05-03 13:57:31.873593",
+ "modified": "2021-05-04 07:48:09.821709",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Migration Step",

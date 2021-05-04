@@ -4,6 +4,9 @@
 
 from __future__ import unicode_literals
 
+import functools
+from time import sleep
+
 import frappe
 from frappe.model.document import Document
 
@@ -41,20 +44,62 @@ class SiteMigration(Document):
 			self.add_steps_for_in_cluster_migration()
 		# TODO: add simpler steps for in bench migration <03-05-21, Balamurali M> #
 
+	def wait_for_started_steps(self) -> bool:
+		"""
+		Wait for async steps and return True if successful.
+
+		CAN go on forever!
+		"""
+		steps = []
+		while True:
+			# XXX assuming changes in agent job status reflect here
+			steps = frappe.get_all(
+				"Site Migration Step",
+				{
+					"parent": self.name,
+					"step_name": ("is", "set"),
+					"status": ("in", ["Pending", "Running"]),
+				},
+				"*",
+			)
+			print(steps)
+			# TODO: confirm order of steps <04-05-21, Balamurali M> #
+			if not steps:
+				break
+			sleep(6)
+
+		for step in steps:
+			if step.status == "Failure":
+				return False
+		return True
+
+	def sequential_step(func):
+		"""Create child table entry and wait for result."""
+		@functools.wraps(func)
+		def wrapper(self, *args, **kwargs) -> AgentJob:
+			ret = func(self, *args, **kwargs)
+			self.append("steps", {"step_type": ret.doctype, "step_name": ret.name})
+			self.save()
+			return self.wait_for_started_steps()
+		return wrapper
+
 	def add_steps_for_inter_cluster_migration(self):
-		self.backup_source_site()
-		self.remove_site_from_source_proxy()
-		self.restore_site_on_destination()
-		self.archive_site_on_source()
-		# without rename and other process archive job
-		self.update_site_record_fields()  # update press values for site
+		(
+			self.backup_source_site()
+			and self.remove_site_from_source_proxy()
+			and self.restore_site_on_destination()
+			and self.archive_site_on_source()  # without rename and other process archive job
+			and self.update_site_record_fields()
+		)  # update press values for site
 		# TODO: domains <03-05-21, Balamurali M> #
 		# DNS record
 		# might be automatically handled?
 
+	@sequential_step
 	def backup_source_site(self) -> AgentJob:
 		agent = Agent(self.source_server)
-		return agent.backup_site(self.site, with_files=True, offsite=True)
+		site = frappe.get_doc("Site", self.site)
+		return agent.backup_site(site, with_files=True, offsite=True)
 
 	# def deactivate_on_source_proxy(self):
 	# 	site = frappe.get_doc("Site", self.site)
@@ -64,7 +109,7 @@ class SiteMigration(Document):
 		agent = Agent(self.destination_server)
 		agent.new_site_from_backup(self)
 		# TODO: block process new site <03-05-21, Balamurali M> #
-		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
+		proxy_server = frappe.db.get_value("Server", self.source_server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
 		return agent.new_upstream_site(self.destination_server, self.site)
 
@@ -79,10 +124,9 @@ class SiteMigration(Document):
 		return agent.archive_site(self.site)
 		# TODO: maybe remove domains here <03-05-21, Balamurali M> #
 		# TODO: block rename of records <03-05-21, Balamurali M> #
-	
+
 	def update_site_record_fields(self):
 		site = frappe.get_doc("Site", self.site)
 		site.bench = self.destination_bench
 		site.server = self.destination_server
 		site.save()
-
