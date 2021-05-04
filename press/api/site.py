@@ -346,6 +346,7 @@ def get_plans():
 
 @frappe.whitelist()
 def all():
+	team = get_current_team()
 	sites = frappe.get_list(
 		"Site",
 		fields=[
@@ -356,9 +357,9 @@ def all():
 			"current_cpu_usage",
 			"current_database_usage",
 			"current_disk_usage",
-			"trial_end_date"
+			"trial_end_date",
 		],
-		filters={"team": get_current_team(), "status": ("!=", "Archived")},
+		filters={"team": team, "status": ("!=", "Archived")},
 		order_by="creation desc",
 	)
 	benches_with_updates = set(benches_with_available_update())
@@ -385,7 +386,7 @@ def all():
 		fields=["name", "title", "creation", "version", "team", "public"],
 		filters={
 			"enabled": True,
-			"team": get_current_team(),
+			"team": team,
 			"public": False,
 			"name": ("not in", set([bench.group for bench in benches])),
 		},
@@ -396,7 +397,7 @@ def all():
 
 	for group in groups:
 		group.benches = [bench for bench in benches if bench.group == group.name]
-		group.owned_by_team = get_current_team() == group.team
+		group.owned_by_team = team == group.team
 
 		group.sites = []
 		for bench in group.benches:
