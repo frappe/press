@@ -47,8 +47,15 @@ class ERPNextConsultant(Document):
 
 	@classmethod
 	def get_one_for_country(cls, country: str) -> str:
-		"""Get next consultant for a country in round robin fashion."""
-		region = frappe.db.get_value("Country", country, "region")
-		erpnext_consultant = cls._get_one_for_region(region)
-		frappe.db.set_value("Region", region, "last_allocated_to", erpnext_consultant)
-		return erpnext_consultant
+		"""
+		Try to get next consultant for a country in round robin fashion.
+
+		Return blank if none.
+		"""
+		try:
+			region = frappe.db.get_value("Country", country, "region")
+			erpnext_consultant = cls._get_one_for_region(region)
+			frappe.db.set_value("Region", region, "last_allocated_to", erpnext_consultant)
+			return erpnext_consultant
+		except Exception:
+			return ""
