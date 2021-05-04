@@ -155,6 +155,7 @@ class Team(Document):
 			if self.has_value_changed("billing_name"):
 				self.update_billing_details_on_frappeio()
 
+	@frappe.whitelist()
 	def impersonate(self, member, reason):
 		user = frappe.db.get_value("Team Member", member, "user")
 		impersonation = frappe.get_doc(
