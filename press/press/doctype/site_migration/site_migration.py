@@ -8,7 +8,6 @@ import frappe
 from frappe.model.document import Document
 
 from press.agent import Agent
-from press.press.doctype.agent_job.agent_job import AgentJob
 
 
 def get_existing_migration(site: str):
@@ -54,8 +53,8 @@ class SiteMigration(Document):
 		if not next_method:
 			self.succeed()
 			return
-		job = getattr(self, next_method)
-		self.next_step.step_name = job(self)
+		method = getattr(self, next_method)
+		self.next_step.step_name = method(self)
 		self.save()
 
 	def update_step_status(self, status: str):
@@ -85,7 +84,7 @@ class SiteMigration(Document):
 		# DNS record
 		# might be automatically handled?
 
-	def backup_source_site(self) -> AgentJob:
+	def backup_source_site(self):
 		agent = Agent(self.source_server)
 		site = frappe.get_doc("Site", self.site)
 		return agent.backup_site(site, with_files=True, offsite=True)
@@ -93,7 +92,6 @@ class SiteMigration(Document):
 	def restore_site_on_destination(self):
 		agent = Agent(self.destination_server)
 		agent.new_site_from_backup(self)
-		# TODO: block process new site <03-05-21, Balamurali M> #
 		proxy_server = frappe.db.get_value("Server", self.source_server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
 		return agent.new_upstream_site(self.destination_server, self.site)
@@ -101,14 +99,12 @@ class SiteMigration(Document):
 	def remove_site_from_source_proxy(self):
 		proxy_server = frappe.db.get_value("Server", self.source_server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
-		# TODO: block process archive site job update <03-05-21, Balamurali M> #
 		return agent.remove_upstream_site()
 
 	def archive_site_on_source(self):
 		agent = Agent(self.server)
 		return agent.archive_site(self.site)
 		# TODO: maybe remove domains here <03-05-21, Balamurali M> #
-		# TODO: block rename of records <03-05-21, Balamurali M> #
 
 	def update_site_record_fields(self):
 		site = frappe.get_doc("Site", self.site)

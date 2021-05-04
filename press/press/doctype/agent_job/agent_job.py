@@ -17,6 +17,10 @@ from frappe.utils import convert_utc_to_user_timezone, get_url_to_form, pretty_d
 from press.agent import Agent
 from press.telegram_utils import Telegram
 from press.utils import log_error
+from press.press.doctype.site_migration.site_migration import (
+	get_existing_migration,
+	process_site_migration_job_update,
+)
 
 
 class AgentJob(Document):
@@ -373,7 +377,10 @@ def process_job_updates(job_name):
 			process_update_site_recover_job_update,
 		)
 
-		if job.job_type == "Add Upstream to Proxy":
+		site_migration = get_existing_migration(job.site)
+		if site_migration:
+			process_site_migration_job_update(job)
+		elif job.job_type == "Add Upstream to Proxy":
 			process_new_server_job_update(job)
 		elif job.job_type == "New Bench":
 			process_new_bench_job_update(job)
