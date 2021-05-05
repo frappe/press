@@ -49,7 +49,7 @@
 </template>
 
 <script>
-import Popover from '../Popover';
+import Popover from '../Popover.vue';
 import uniq from 'lodash/uniq';
 
 export default {

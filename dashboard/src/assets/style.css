@@ -1,5 +1,5 @@
 @import './Inter/inter.css';
-@import '~frappe-charts/dist/frappe-charts.min.css';
+@import 'frappe-charts/dist/frappe-charts.min.css';
 
 @tailwind base;
 @tailwind components;

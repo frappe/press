@@ -1,14 +1,8 @@
 import Vue from 'vue';
+let components = import.meta.globEager('./*.vue');
 
-const requireComponent = require.context('./', true, /\w+\.(vue)$/);
-
-requireComponent.keys().forEach(fileName => {
-	const componentConfig = requireComponent(fileName);
-
-	let match = fileName.match(/\.\/(\w+).vue/);
-	let [, componentName] = match || [];
-
-	if (componentName) {
-		Vue.component(componentName, componentConfig.default || componentConfig);
-	}
-});
+for (let path in components) {
+	let component = components[path];
+	let name = path.replace('./', '').replace('.vue', '');
+	Vue.component(name, component.default || component);
+}

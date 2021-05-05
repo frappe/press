@@ -1,7 +1,5 @@
 import { DateTime } from 'luxon';
-import resolveConfig from 'tailwindcss/resolveConfig';
-import config from '@/../tailwind.config.js';
-let { theme } = resolveConfig(config);
+import theme from '../tailwind.theme.json';
 
 let utils = {
 	methods: {

@@ -24,7 +24,7 @@
 	</div>
 </template>
 <script>
-import SitePlansTable from '@/components/SitePlansTable';
+import SitePlansTable from '@/components/SitePlansTable.vue';
 export default {
 	name: 'Plans',
 	props: ['options', 'selectedPlan'],

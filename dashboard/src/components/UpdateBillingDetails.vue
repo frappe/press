@@ -31,7 +31,7 @@
 </template>
 
 <script>
-import AddressForm from '@/components/AddressForm';
+import AddressForm from '@/components/AddressForm.vue';
 
 export default {
 	name: 'UpdateBillingDetails',
