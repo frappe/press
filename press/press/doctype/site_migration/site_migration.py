@@ -173,7 +173,7 @@ class SiteMigration(Document):
 		return agent.new_site_from_backup(site)
 
 	def restore_site_on_destination_proxy(self):
-		proxy_server = frappe.db.get_value("Server", self.source_server, "proxy_server")
+		proxy_server = frappe.db.get_value("Server", self.destination_server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
 		return agent.new_upstream_site(self.destination_server, self.site)
 
