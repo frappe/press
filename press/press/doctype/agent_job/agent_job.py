@@ -18,7 +18,7 @@ from press.agent import Agent
 from press.telegram_utils import Telegram
 from press.utils import log_error
 from press.press.doctype.site_migration.site_migration import (
-	get_existing_migration,
+	get_ongoing_migration,
 	process_site_migration_job_update,
 )
 
@@ -377,7 +377,7 @@ def process_job_updates(job_name):
 			process_update_site_recover_job_update,
 		)
 
-		site_migration = get_existing_migration(job.site)
+		site_migration = get_ongoing_migration(job.site)
 		if site_migration:
 			process_site_migration_job_update(job, site_migration)
 		elif job.job_type == "Add Upstream to Proxy":

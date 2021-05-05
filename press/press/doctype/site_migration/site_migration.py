@@ -13,9 +13,11 @@ from press.press.doctype.site_backup.site_backup import process_backup_site_job_
 from press.utils import log_error
 
 
-def get_existing_migration(site: str):
-	"""Return ongoing Site Migration for site if it exists."""
-	return frappe.db.exists("Site Migration", {"site": site})
+def get_ongoing_migration(site: str):
+	"""Return ongoing Site Migration for site."""
+	return frappe.db.exists(
+		"Site Migration", {"site": site, "status": ("in", ["Pending", "Running"])}
+	)
 
 
 class SiteMigration(Document):
@@ -23,7 +25,7 @@ class SiteMigration(Document):
 		self.set_migration_type()
 
 	def before_insert(self):
-		if get_existing_migration(self.site):
+		if get_ongoing_migration(self.site):
 			frappe.throw("Ongoing Site Migration for that site exists.")
 		self.check_for_existing_agent_jobs()
 
