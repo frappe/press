@@ -5,6 +5,7 @@
 from __future__ import unicode_literals
 
 import frappe
+from frappe.core.utils import find
 from frappe.model.document import Document
 
 from press.agent import Agent
@@ -49,9 +50,8 @@ class SiteMigration(Document):
 
 	@property
 	def next_step(self):
-		for step in self.steps:
-			if step.status == "Pending":
-				return step
+		"""Get next step to execute or update."""
+		return find(self.steps, lambda step: step.status in ["Pending", "Running"])
 
 	def run_next_step(self):
 		next_method: str = self.next_step.method_name
