@@ -71,6 +71,7 @@ class SiteMigration(Document):
 		if not next_method:
 			self.succeed()
 			return
+
 		method = getattr(self, next_method)
 		self.next_step.step_name = method().name
 		self.save()
@@ -166,7 +167,10 @@ class SiteMigration(Document):
 		site.remote_database_file = backup.remote_database_file
 		site.remote_public_file = backup.remote_public_file
 		site.remote_private_file = backup.remote_private_file
-		agent.new_site_from_backup(site)
+		site.bench = self.destination_bench
+		site.cluster = self.destination_cluster
+		site.create_dns_record()
+		return agent.new_site_from_backup(site)
 
 	def restore_site_on_destination_proxy(self):
 		proxy_server = frappe.db.get_value("Server", self.source_server, "proxy_server")
