@@ -148,6 +148,7 @@ class SiteMigration(Document):
 	def backup_source_site(self):
 		site = frappe.get_doc("Site", self.site)
 		backup = site.backup(with_files=True, offsite=True)
+		backup.reload()
 		job = frappe.get_doc("Agent Job", backup.job)
 		return job
 
@@ -179,6 +180,8 @@ class SiteMigration(Document):
 		site.server = self.destination_server
 		site.save()
 
+	def activate_site_on_destination(self):
+		raise NotImplementedError
 
 def process_required_job_callbacks(job):
 	if job.job_type == "Backup Site":
@@ -195,4 +198,4 @@ def process_site_migration_job_update(job, site_migration_name: str):
 		elif job.status == "Failure":
 			site_migration.fail()
 	else:
-		log_error("Extra Job found during Site Migration", job.name)
+		log_error("Extra Job found during Site Migration", job=job)
