@@ -37,10 +37,15 @@ class SiteMigration(Document):
 		"""Populate steps child table with steps for migration."""
 		if self.migration_type == "Cluster":
 			self.add_steps_for_inter_cluster_migration()
-		else:
+		elif self.migration_type == "Server":
 			self.add_steps_for_in_cluster_migration()
+		else:
+			# TODO: Call site update for bench only migration with popup with link to site update job
+			raise NotImplementedError
 		self.run_next_step()
-		# TODO: Call site update for bench only migration with popup with link to site update job
+
+	def add_steps_for_in_cluster_migration(self):
+		raise NotImplementedError
 
 	@property
 	def next_step(self) -> str:
