@@ -209,17 +209,29 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 			now = user.get("team_member")
 			then = user.get("anon_team_member")
 
-			if is_deletion_pending(now):
-				el = find(self.users_anonymized, lambda x: x.get("team_member") == now)
+			if now == then and is_deletion_pending(now):
+				# user has been anonymized. set status as deleted
+				pass
+			elif is_deletion_pending(now):
 				self._anonymize_data(now, then, commit=True)
-				self.users_anonymized.remove(el)
+			else:
+				continue
+
+			try:
+				self.users_anonymized = filter(
+					lambda x: (x.get("team_member") != now) and (x.get("anon_team_member") != then),
+					self.users_anonymized,
+				)
 				self.append(
 					"users_anonymized",
 					{"team_member": then, "anon_team_member": then, "deletion_status": "Deleted"},
 				)
 				self.db_update()
 				self.update_children()
-				frappe.db.commit()
+			except Exception:
+				handle_exception(self)
+
+			frappe.db.commit()
 
 		self.db_set("data_anonymized", True, commit=True)
 		self.reload()
@@ -259,6 +271,9 @@ def process_team_deletion_requests():
 		order_by="creation desc",
 	)
 	for name in deletion_requests:
-		tdr = frappe.get_doc(doctype, name)
-		tdr.delete_team_data()
-		frappe.db.commit()
+		try:
+			tdr = frappe.get_doc(doctype, name)
+			tdr.delete_team_data()
+			frappe.db.commit()
+		except Exception:
+			continue
