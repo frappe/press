@@ -97,12 +97,22 @@ class SiteMigration(Document):
 			},
 			{
 				"step_type": "Agent Job",
-				"method_name": self.remove_site_from_source_proxy.__name__,
+				"method_name": self.backup_source_site.__name__,
 				"status": "Pending",
 			},
 			{
 				"step_type": "Agent Job",
-				"method_name": self.restore_site_on_destination.__name__,
+				"method_name": self.restore_site_on_destination_server.__name__,
+				"status": "Pending",
+			},
+			{
+				"step_type": "Agent Job",
+				"method_name": self.restore_site_on_destination_proxy.__name__,
+				"status": "Pending",
+			},
+			{
+				"step_type": "Agent Job",
+				"method_name": self.remove_site_from_source_proxy.__name__,
 				"status": "Pending",
 			},
 			{
@@ -110,12 +120,16 @@ class SiteMigration(Document):
 				"method_name": self.archive_site_on_source.__name__,
 				"status": "Pending",
 			},
-			# # without rename
 			# {
 			# 	"step_type": "Data",
 			# 	"method_name": self.update_site_record_fields.__name__,
 			# 	"status": "Pending",
 			# },
+			{
+				"step_type": "Agent Job",
+				"method_name": self.activate_site_on_destination.__name__,
+				"status": "Pending",
+			},
 		]
 		for step in steps:
 			self.append("steps", step)
@@ -139,9 +153,14 @@ class SiteMigration(Document):
 		job = frappe.get_doc("Agent Job", backup.job)
 		return job
 
-	def restore_site_on_destination(self):
+	# TODO: handle site config <05-05-21, Balamurali M> #
+
+	def restore_site_on_destination_server(self):
 		agent = Agent(self.destination_server)
-		agent.new_site_from_backup(self)
+		site = frappe.get_doc("Site", self.site)
+		agent.new_site_from_backup(site)
+
+	def restore_site_on_destination_proxy(self):
 		proxy_server = frappe.db.get_value("Server", self.source_server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
 		return agent.new_upstream_site(self.destination_server, self.site)
