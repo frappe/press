@@ -73,10 +73,9 @@ class SiteMigration(Document):
 		self.next_step.step_name = method().name
 		self.save()
 
-	def update_step_status(self, job):
-		if job.name == self.next_step.step_name:
-			self.next_step.status = job.status
-			self.save()
+	def update_next_step_status(self, job):
+		self.next_step.status = job.status
+		self.save()
 
 	def fail(self):
 		# TODO: mark pending steps as skipped <05-05-21, Balamurali M> #
@@ -200,7 +199,7 @@ def process_site_migration_job_update(job, site_migration_name: str):
 	site_migration = frappe.get_doc("Site Migration", site_migration_name)
 	if job.name == site_migration.next_step.step_name:
 		process_required_job_callbacks(job)
-		site_migration.update_step_status(job)
+		site_migration.update_next_step_status(job)
 		if job.status == "Success":
 			site_migration.run_next_step()
 		elif job.status == "Failure":
