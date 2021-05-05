@@ -704,7 +704,7 @@ class Site(Document):
 			self._set_configuration(config)
 		else:
 			self._update_configuration(config)
-		Agent(self.server).update_site_config(self)
+		return Agent(self.server).update_site_config(self)
 
 	def update_site(self):
 		log_site_activity(self.name, "Update")

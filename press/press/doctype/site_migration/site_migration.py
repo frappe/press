@@ -92,7 +92,7 @@ class SiteMigration(Document):
 		steps = [
 			{
 				"step_type": "Agent Job",
-				"method_name": self.backup_source_site.__name__,
+				"method_name": self.deactivate_site_on_source_server.__name__,
 				"status": "Pending",
 			},
 			{
@@ -122,6 +122,16 @@ class SiteMigration(Document):
 		# TODO: domains <03-05-21, Balamurali M> #
 		# DNS record
 		# might be automatically handled?
+
+	def deactivate_site_on_source_server(self):
+		site = frappe.get_doc("Site", self.site)
+		site.status = "Inactive"
+		site.save()
+		return site.update_site_config({"maintenance_mode": 1})
+
+	def deactivate_site_on_source_proxy(self):
+		site = frappe.get_doc("Site", self.site)
+		return site.update_site_status_on_proxy("deactivated")
 
 	def backup_source_site(self):
 		site = frappe.get_doc("Site", self.site)
