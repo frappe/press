@@ -48,18 +48,18 @@ class SiteMigration(Document):
 		raise NotImplementedError
 
 	@property
-	def next_step(self) -> str:
+	def next_step(self):
 		for step in self.steps:
 			if step.status == "Pending":
 				return step
 
 	def run_next_step(self):
-		next_method = self.next_step.method
+		next_method: str = self.next_step.method_name
 		if not next_method:
 			self.succeed()
 			return
 		method = getattr(self, next_method)
-		self.next_step.step_name = method(self)
+		self.next_step.step_name = method().name
 		self.save()
 
 	def update_step_status(self, status: str):
