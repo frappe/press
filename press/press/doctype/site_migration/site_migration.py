@@ -9,6 +9,7 @@ from frappe.core.utils import find
 from frappe.model.document import Document
 
 from press.agent import Agent
+from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
 from press.utils import log_error
 
 
@@ -74,9 +75,10 @@ class SiteMigration(Document):
 		self.next_step.step_name = method().name
 		self.save()
 
-	def update_step_status(self, status: str):
-		self.next_step.status = status
-		self.save()
+	def update_step_status(self, job):
+		if job.name == self.next_step.step_name:
+			self.next_step.status = job.status
+			self.save()
 
 	def fail(self):
 		self.status = "Failure"
@@ -122,9 +124,10 @@ class SiteMigration(Document):
 		# might be automatically handled?
 
 	def backup_source_site(self):
-		agent = Agent(self.source_server)
 		site = frappe.get_doc("Site", self.site)
-		return agent.backup_site(site, with_files=True, offsite=True)
+		backup = site.backup(with_files=True, offsite=True)
+		job = frappe.get_doc("Agent Job", backup.job)
+		return job
 
 	def restore_site_on_destination(self):
 		agent = Agent(self.destination_server)
@@ -150,9 +153,19 @@ class SiteMigration(Document):
 		site.save()
 
 
-def process_site_migration_job_update(job, site_migration: SiteMigration):
-	site_migration.update_step_status(job.status)
-	if job.status == "Success":
-		site_migration.run_next_step()
-	elif job.status == "Failure":
-		site_migration.fail()
+def process_required_job_callbacks(job):
+	if job.job_type == "Backup Site":
+		process_backup_site_job_update(job)
+
+
+def process_site_migration_job_update(job, site_migration_name: str):
+	site_migration = frappe.get_doc("Site Migration", site_migration_name)
+	if job.name == site_migration.next_step.step_name:
+		process_required_job_callbacks(job)
+		site_migration.update_step_status(job)
+		if job.status == "Success":
+			site_migration.run_next_step()
+		elif job.status == "Failure":
+			site_migration.fail()
+	else:
+		log_error("Extra Job found during Site Migration", job.name)
