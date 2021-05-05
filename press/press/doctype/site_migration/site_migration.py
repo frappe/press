@@ -76,12 +76,32 @@ class SiteMigration(Document):
 
 	def add_steps_for_inter_cluster_migration(self):
 		steps = [
-			{"step_type": "Agent Job", "method_name": "backup_source_site"},
-			{"step_type": "Agent Job", "method_name": "remove_site_from_source_proxy"},
-			{"step_type": "Agent Job", "method_name": "restore_site_on_destination"},
-			{"step_type": "Agent Job", "method_name": "archive_site_on_source"},
-			# without rename
-			{"step_type": "Data", "method_name": "update_site_record_fields"},
+			{
+				"step_type": "Agent Job",
+				"method_name": self.backup_source_site.__name__,
+				"status": "Pending",
+			},
+			{
+				"step_type": "Agent Job",
+				"method_name": self.remove_site_from_source_proxy.__name__,
+				"status": "Pending",
+			},
+			{
+				"step_type": "Agent Job",
+				"method_name": self.restore_site_on_destination.__name__,
+				"status": "Pending",
+			},
+			{
+				"step_type": "Agent Job",
+				"method_name": self.archive_site_on_source.__name__,
+				"status": "Pending",
+			},
+			# # without rename
+			# {
+			# 	"step_type": "Data",
+			# 	"method_name": self.update_site_record_fields.__name__,
+			# 	"status": "Pending",
+			# },
 		]
 		for step in steps:
 			self.append("steps", step)
