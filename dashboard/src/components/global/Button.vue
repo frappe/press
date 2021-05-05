@@ -46,7 +46,7 @@
 	</button>
 </template>
 <script>
-import FeatherIcon from './FeatherIcon';
+import FeatherIcon from './FeatherIcon.vue';
 
 export default {
 	name: 'Button',

@@ -62,7 +62,7 @@
 	</Card>
 </template>
 <script>
-import SitePlansTable from '@/components/SitePlansTable';
+import SitePlansTable from '@/components/SitePlansTable.vue';
 import ProgressArc from '@/components/ProgressArc.vue';
 import PlanIcon from '@/components/PlanIcon.vue';
 

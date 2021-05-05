@@ -49,9 +49,9 @@
 </template>
 
 <script>
-import AlertSiteActivation from '@/components/AlertSiteActivation';
-import AlertSiteUpdate from '@/components/AlertSiteUpdate';
-import SiteOverviewCPUUsage from './SiteOverviewCPUUsage';
+import AlertSiteActivation from '@/components/AlertSiteActivation.vue';
+import AlertSiteUpdate from '@/components/AlertSiteUpdate.vue';
+import SiteOverviewCPUUsage from './SiteOverviewCPUUsage.vue';
 import SiteOverviewRecentActivity from './SiteOverviewRecentActivity.vue';
 import SiteOverviewPlan from './SiteOverviewPlan.vue';
 import SiteOverviewInfo from './SiteOverviewInfo.vue';

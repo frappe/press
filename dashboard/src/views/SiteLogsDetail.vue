@@ -40,7 +40,7 @@
 	</CardDetails>
 </template>
 <script>
-import CardDetails from '@/components/CardDetails';
+import CardDetails from '@/components/CardDetails.vue';
 export default {
 	name: 'SiteLogsDetail',
 	props: ['site', 'logName'],
