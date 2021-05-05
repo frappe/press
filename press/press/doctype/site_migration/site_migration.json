@@ -11,6 +11,7 @@
   "column_break_3",
   "source_bench",
   "destination_bench",
+  "backup",
   "section_break_5",
   "source_server",
   "source_cluster",
@@ -127,11 +128,18 @@
    "label": "Steps",
    "options": "Site Migration Step",
    "read_only": 1
+  },
+  {
+   "fieldname": "backup",
+   "fieldtype": "Link",
+   "label": "Backup",
+   "options": "Site Backup",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-05-03 14:03:00.599408",
+ "modified": "2021-05-05 19:26:15.778218",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Migration",

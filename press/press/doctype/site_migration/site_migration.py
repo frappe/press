@@ -79,6 +79,7 @@ class SiteMigration(Document):
 			self.save()
 
 	def fail(self):
+		# TODO: mark pending steps as skipped <05-05-21, Balamurali M> #
 		self.status = "Failure"
 		self.save()
 
@@ -147,16 +148,23 @@ class SiteMigration(Document):
 
 	def backup_source_site(self):
 		site = frappe.get_doc("Site", self.site)
+
 		backup = site.backup(with_files=True, offsite=True)
 		backup.reload()
-		job = frappe.get_doc("Agent Job", backup.job)
-		return job
+		self.backup = backup.name
+		self.save()
+
+		return frappe.get_doc("Agent Job", backup.job)
 
 	# TODO: handle site config <05-05-21, Balamurali M> #
 
 	def restore_site_on_destination_server(self):
 		agent = Agent(self.destination_server)
 		site = frappe.get_doc("Site", self.site)
+		backup = frappe.get_doc("Site Backup", self.backup)
+		site.remote_database_file = backup.remote_database_file
+		site.remote_public_file = backup.remote_public_file
+		site.remote_private_file = backup.remote_private_file
 		agent.new_site_from_backup(site)
 
 	def restore_site_on_destination_proxy(self):
