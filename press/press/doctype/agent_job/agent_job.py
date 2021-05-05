@@ -379,7 +379,7 @@ def process_job_updates(job_name):
 
 		site_migration = get_existing_migration(job.site)
 		if site_migration:
-			process_site_migration_job_update(job, site_migration.name)
+			process_site_migration_job_update(job, site_migration)
 		elif job.job_type == "Add Upstream to Proxy":
 			process_new_server_job_update(job)
 		elif job.job_type == "New Bench":
