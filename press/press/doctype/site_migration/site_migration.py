@@ -9,6 +9,7 @@ from frappe.core.utils import find
 from frappe.model.document import Document
 
 from press.agent import Agent
+from press.utils import log_error
 
 
 def get_existing_migration(site: str):
@@ -22,8 +23,19 @@ class SiteMigration(Document):
 			frappe.throw("Ongoing Site Migration for that site exists.")
 		self.set_migration_type()
 
+	def before_insert(self):
+		self.check_for_existing_agent_jobs(self.site)
+
 	def after_insert(self):
 		self.add_steps()
+
+	def check_for_existing_agent_jobs(self):
+		existing_agent_job = frappe.db.exists(
+			"Agent Job", {"status": ("in", ["Pending", "Running"]), "site": self.site}
+		)
+		if existing_agent_job:
+			url = frappe.utils.get_url_to_form("Agent Job", existing_agent_job.name)
+			frappe.throw(f"Ongoing Agent Job for site exists {url}")
 
 	def set_migration_type(self):
 		if self.source_cluster != self.destination_cluster:
