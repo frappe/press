@@ -4,7 +4,7 @@
 			<h3 class="text-base font-medium text-gray-900">
 				{{ title }}
 			</h3>
-			<div class="mt-1 text-base text-gray-600 whitespace-pre-line">
+			<div class="mt-1 text-base text-gray-600">
 				{{ description }}
 			</div>
 		</div>
