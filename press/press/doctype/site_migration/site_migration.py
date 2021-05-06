@@ -200,9 +200,9 @@ class SiteMigration(Document):
 	def update_site_record_fields(self):
 		"""Update fields of original Site record"""
 		site = frappe.get_doc("Site", self.site)
-		site.bench = self.destination_bench
-		site.server = self.destination_server
-		site.save()
+		site.db_set("bench", self.destination_bench)
+		site.db_set("server", self.destination_server)
+		site.db_set("cluster", self.destination_cluster)
 		self.update_next_step_status("Success")
 		self.run_next_step()
 
