@@ -2,75 +2,63 @@ export default [
 	{
 		path: '/sites',
 		name: 'Sites',
-		component: () =>
-			import(/* webpackChunkName: "sites" */ '../views/Sites.vue')
+		component: () => import('../views/Sites.vue')
 	},
 	{
 		path: '/sites/new',
 		name: 'NewSite',
-		component: () =>
-			import(/* webpackChunkName: "newsite" */ '../views/NewSite/Index.vue'),
+		component: () => import('../views/NewSite/Index.vue'),
 		props: true
 	},
 	{
 		path: '/sites/:siteName',
 		name: 'Site',
-		component: () => import(/* webpackChunkName: "site" */ '../views/Site.vue'),
+		component: () => import('../views/Site.vue'),
 		props: true,
 		children: [
 			{
 				name: 'SiteOverview',
 				path: 'overview',
-				component: () =>
-					import(/* webpackChunkName: "site" */ '../views/SiteOverview.vue')
+				component: () => import('../views/SiteOverview.vue')
 			},
 			{
 				path: 'installing',
-				component: () =>
-					import(/* webpackChunkName: "site" */ '../views/SiteInstalling.vue')
+				component: () => import('../views/SiteInstalling.vue')
 			},
 			{
 				path: 'analytics',
-				component: () =>
-					import(/* webpackChunkName: "site" */ '../views/SiteAnalytics.vue')
+				component: () => import('../views/SiteCharts.vue')
 			},
 			{
 				path: 'database',
-				component: () =>
-					import(/* webpackChunkName: "site" */ '../views/SiteDatabase.vue')
+				component: () => import('../views/SiteDatabase.vue')
 			},
 			{
 				path: 'site-config',
-				component: () =>
-					import(/* webpackChunkName: "site" */ '../views/SiteConfig.vue')
+				component: () => import('../views/SiteConfig.vue')
 			},
 			{
 				path: 'console',
-				component: () =>
-					import(/* webpackChunkName: "site" */ '../views/SiteConsole.vue')
+				component: () => import('../views/SiteConsole.vue')
 			},
 			{
 				path: 'activity',
-				component: () =>
-					import(/* webpackChunkName: "site" */ '../views/SiteActivity.vue'),
+				component: () => import('../views/SiteActivity.vue'),
 				props: true
 			},
 			{
 				path: 'jobs/:jobName?',
-				component: () =>
-					import(/* webpackChunkName: "site" */ '../views/SiteJobs.vue'),
+				component: () => import('../views/SiteJobs.vue'),
 				props: true
 			},
 			{
 				path: 'logs/:logName?',
-				component: () =>
-					import(/* webpackChunkName: "site" */ '../views/SiteLogs.vue'),
+				component: () => import('../views/SiteLogs.vue'),
 				props: true
 			},
 			{
 				path: 'request-logs',
-				component: () =>
-					import(/* webpackChunkName: "site" */ '../views/SiteRequestLogs.vue'),
+				component: () => import('../views/SiteRequestLogs.vue'),
 				props: true
 			}
 		]
