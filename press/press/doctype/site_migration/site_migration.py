@@ -76,8 +76,8 @@ class SiteMigration(Document):
 		self.next_step.step_job = method().name
 		self.save()
 
-	def update_next_step_status(self, job):
-		self.next_step.status = job.status
+	def update_next_step_status(self, status: str):
+		self.next_step.status = status
 		self.save()
 
 	def fail(self):
@@ -131,12 +131,14 @@ class SiteMigration(Document):
 				"method_name": self.activate_site_on_destination.__name__,
 				"status": "Pending",
 			},
+			{
+				"step_title": self.activate_site_on_destination_proxy.__doc__,
+				"method_name": self.activate_site_on_destination_proxy.__name__,
+				"status": "Pending",
+			},
 		]
 		for step in steps:
 			self.append("steps", step)
-		# TODO: domains <03-05-21, Balamurali M> #
-		# DNS record
-		# might be automatically handled?
 
 	def deactivate_site_on_source_server(self):
 		"""Deactivate site on source server"""
@@ -195,13 +197,25 @@ class SiteMigration(Document):
 		# TODO: maybe remove domains here <03-05-21, Balamurali M> #
 
 	def update_site_record_fields(self):
+		"""Update fields of original Site record"""
 		site = frappe.get_doc("Site", self.site)
 		site.bench = self.destination_bench
 		site.server = self.destination_server
 		site.save()
+		self.update_next_step_status("Success")
+		self.run_next_step()
 
 	def activate_site_on_destination(self):
-		raise NotImplementedError
+		"""Activate site on destination server"""
+		site = frappe.get_doc("Site", self.site)
+		site.status = "Active"
+		site.save()
+		return site.update_site_config({"maintenance_mode": 0})
+
+	def activate_site_on_destination_proxy(self):
+		"""Activate site on destination proxy"""
+		site = frappe.get_doc("Site", self.site)
+		return site.update_site_status_on_proxy("activated")
 
 
 def process_required_job_callbacks(job):
@@ -213,7 +227,7 @@ def process_site_migration_job_update(job, site_migration_name: str):
 	site_migration = frappe.get_doc("Site Migration", site_migration_name)
 	if job.name == site_migration.next_step.step_job:
 		process_required_job_callbacks(job)
-		site_migration.update_next_step_status(job)
+		site_migration.update_next_step_status(job.status)
 		if job.status == "Success":
 			site_migration.run_next_step()
 		elif job.status == "Failure":
