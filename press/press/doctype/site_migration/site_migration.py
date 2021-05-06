@@ -188,12 +188,13 @@ class SiteMigration(Document):
 		"""Remove site from source proxy"""
 		proxy_server = frappe.db.get_value("Server", self.source_server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
-		return agent.remove_upstream_site()
+		return agent.remove_upstream_site(self.source_server, self.site)
 
 	def archive_site_on_source(self):
 		"""Archive site on source"""
-		agent = Agent(self.server)
-		return agent.archive_site(self.site)
+		agent = Agent(self.source_server)
+		site = frappe.get_doc("Site", self.site)
+		return agent.archive_site(site)
 		# TODO: maybe remove domains here <03-05-21, Balamurali M> #
 
 	def update_site_record_fields(self):
@@ -233,4 +234,4 @@ def process_site_migration_job_update(job, site_migration_name: str):
 		elif job.status == "Failure":
 			site_migration.fail()
 	else:
-		log_error("Extra Job found during Site Migration", job=job)
+		log_error("Extra Job found during Site Migration", job=job.as_dict())
