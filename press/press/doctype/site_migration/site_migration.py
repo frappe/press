@@ -73,7 +73,7 @@ class SiteMigration(Document):
 			return
 
 		method = getattr(self, next_method)
-		self.next_step.step_name = method().name
+		self.next_step.step_job = method().name
 		self.save()
 
 	def update_next_step_status(self, job):
@@ -92,42 +92,42 @@ class SiteMigration(Document):
 	def add_steps_for_inter_cluster_migration(self):
 		steps = [
 			{
-				"step_type": "Agent Job",
+				"step_title": self.deactivate_site_on_source_server.__doc__,
 				"method_name": self.deactivate_site_on_source_server.__name__,
 				"status": "Pending",
 			},
 			{
-				"step_type": "Agent Job",
+				"step_title": self.backup_source_site.__doc__,
 				"method_name": self.backup_source_site.__name__,
 				"status": "Pending",
 			},
 			{
-				"step_type": "Agent Job",
+				"step_title": self.restore_site_on_destination_server.__doc__,
 				"method_name": self.restore_site_on_destination_server.__name__,
 				"status": "Pending",
 			},
 			{
-				"step_type": "Agent Job",
+				"step_title": self.restore_site_on_destination_proxy.__doc__,
 				"method_name": self.restore_site_on_destination_proxy.__name__,
 				"status": "Pending",
 			},
 			{
-				"step_type": "Agent Job",
+				"step_title": self.remove_site_from_source_proxy.__doc__,
 				"method_name": self.remove_site_from_source_proxy.__name__,
 				"status": "Pending",
 			},
 			{
-				"step_type": "Agent Job",
+				"step_title": self.archive_site_on_source.__doc__,
 				"method_name": self.archive_site_on_source.__name__,
 				"status": "Pending",
 			},
-			# {
-			# 	"step_type": "Data",
-			# 	"method_name": self.update_site_record_fields.__name__,
-			# 	"status": "Pending",
-			# },
 			{
-				"step_type": "Agent Job",
+				"step_title": self.update_site_record_fields.__doc__,
+				"method_name": self.update_site_record_fields.__name__,
+				"status": "Pending",
+			},
+			{
+				"step_title": self.activate_site_on_destination.__doc__,
 				"method_name": self.activate_site_on_destination.__name__,
 				"status": "Pending",
 			},
@@ -139,16 +139,19 @@ class SiteMigration(Document):
 		# might be automatically handled?
 
 	def deactivate_site_on_source_server(self):
+		"""Deactivate site on source server"""
 		site = frappe.get_doc("Site", self.site)
 		site.status = "Inactive"
 		site.save()
 		return site.update_site_config({"maintenance_mode": 1})
 
 	def deactivate_site_on_source_proxy(self):
+		"""Deactivate site on source proxy"""
 		site = frappe.get_doc("Site", self.site)
 		return site.update_site_status_on_proxy("deactivated")
 
 	def backup_source_site(self):
+		"""Backup site on source"""
 		site = frappe.get_doc("Site", self.site)
 
 		backup = site.backup(with_files=True, offsite=True)
@@ -161,6 +164,7 @@ class SiteMigration(Document):
 	# TODO: handle site config <05-05-21, Balamurali M> #
 
 	def restore_site_on_destination_server(self):
+		"""Restore site on destination app server"""
 		agent = Agent(self.destination_server)
 		site = frappe.get_doc("Site", self.site)
 		backup = frappe.get_doc("Site Backup", self.backup)
@@ -173,16 +177,19 @@ class SiteMigration(Document):
 		return agent.new_site_from_backup(site)
 
 	def restore_site_on_destination_proxy(self):
+		"""Restore site on destination proxy"""
 		proxy_server = frappe.db.get_value("Server", self.destination_server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
 		return agent.new_upstream_site(self.destination_server, self.site)
 
 	def remove_site_from_source_proxy(self):
+		"""Remove site from source proxy"""
 		proxy_server = frappe.db.get_value("Server", self.source_server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
 		return agent.remove_upstream_site()
 
 	def archive_site_on_source(self):
+		"""Archive site on source"""
 		agent = Agent(self.server)
 		return agent.archive_site(self.site)
 		# TODO: maybe remove domains here <03-05-21, Balamurali M> #
@@ -196,6 +203,7 @@ class SiteMigration(Document):
 	def activate_site_on_destination(self):
 		raise NotImplementedError
 
+
 def process_required_job_callbacks(job):
 	if job.job_type == "Backup Site":
 		process_backup_site_job_update(job)
@@ -203,7 +211,7 @@ def process_required_job_callbacks(job):
 
 def process_site_migration_job_update(job, site_migration_name: str):
 	site_migration = frappe.get_doc("Site Migration", site_migration_name)
-	if job.name == site_migration.next_step.step_name:
+	if job.name == site_migration.next_step.step_job:
 		process_required_job_callbacks(job)
 		site_migration.update_next_step_status(job)
 		if job.status == "Success":
