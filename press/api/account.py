@@ -227,7 +227,7 @@ def set_country(country):
 
 def get_account_request_from_key(key):
 	"""Find Account Request using `key` in the past 30 minutes"""
-	minutes = 60
+	minutes = 60 * 4
 	result = frappe.db.get_all(
 		"Account Request",
 		filters={
