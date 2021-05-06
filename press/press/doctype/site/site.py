@@ -459,8 +459,8 @@ class Site(Document):
 		site_domain.remove_redirect()
 
 	@frappe.whitelist()
-	def archive(self):
-		log_site_activity(self.name, "Archive")
+	def archive(self, reason=None):
+		log_site_activity(self.name, "Archive", reason)
 		agent = Agent(self.server)
 		self.status = "Pending"
 		self.save()
