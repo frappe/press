@@ -226,13 +226,13 @@ def set_country(country):
 
 
 def get_account_request_from_key(key):
-	"""Find Account Request using `key` in the past 30 minutes"""
-	minutes = 60 * 4
+	"""Find Account Request using `key` in the past 4 hours"""
+	hours = 4
 	result = frappe.db.get_all(
 		"Account Request",
 		filters={
 			"request_key": key,
-			"creation": (">", datetime.now() - timedelta(seconds=minutes * 60)),
+			"creation": (">", frappe.utils.add_to_date(None, hours=-hours)),
 		},
 		pluck="name",
 		order_by="creation desc",
