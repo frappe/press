@@ -73,7 +73,10 @@ class SiteMigration(Document):
 			return
 
 		method = getattr(self, next_method)
-		self.next_step.step_job = method().name
+		try:
+			self.next_step.step_job = method().name
+		except Exception:
+			pass
 		self.save()
 
 	def update_next_step_status(self, status: str):
