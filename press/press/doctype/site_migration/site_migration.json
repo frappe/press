@@ -33,6 +33,7 @@
   },
   {
    "fetch_from": "site.bench",
+   "fetch_if_empty": 1,
    "fieldname": "source_bench",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -44,6 +45,7 @@
   },
   {
    "fetch_from": "site.server",
+   "fetch_if_empty": 1,
    "fieldname": "source_server",
    "fieldtype": "Link",
    "label": "Source Server",
@@ -53,6 +55,7 @@
   },
   {
    "fetch_from": "site.cluster",
+   "fetch_if_empty": 1,
    "fieldname": "source_cluster",
    "fieldtype": "Link",
    "label": "Source Cluster",
@@ -139,7 +142,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-05-05 19:26:15.778218",
+ "modified": "2021-05-07 18:40:57.765077",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Migration",
