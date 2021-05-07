@@ -134,17 +134,12 @@ class SiteMigration(Document):
 				"method_name": self.activate_site_on_destination.__name__,
 				"status": "Pending",
 			},
-			{
-				"step_title": self.activate_site_on_destination_proxy.__doc__,
-				"method_name": self.activate_site_on_destination_proxy.__name__,
-				"status": "Pending",
-			},
 		]
 		for step in steps:
 			self.append("steps", step)
 
 	def deactivate_site_on_source_server(self):
-		"""Deactivate site on source server"""
+		"""Deactivate site on source"""
 		site = frappe.get_doc("Site", self.site)
 		site.status = "Inactive"
 		site.save()
@@ -169,7 +164,7 @@ class SiteMigration(Document):
 	# TODO: handle site config <05-05-21, Balamurali M> #
 
 	def restore_site_on_destination_server(self):
-		"""Restore site on destination app server"""
+		"""Restore site on destination"""
 		agent = Agent(self.destination_server)
 		site = frappe.get_doc("Site", self.site)
 		backup = frappe.get_doc("Site Backup", self.backup)
@@ -201,7 +196,7 @@ class SiteMigration(Document):
 		# TODO: maybe remove domains here <03-05-21, Balamurali M> #
 
 	def update_site_record_fields(self):
-		"""Update fields of original Site record"""
+		"""Update fields of original site record"""
 		site = frappe.get_doc("Site", self.site)
 		site.db_set("bench", self.destination_bench)
 		site.db_set("server", self.destination_server)
@@ -210,7 +205,7 @@ class SiteMigration(Document):
 		self.run_next_step()
 
 	def activate_site_on_destination(self):
-		"""Activate site on destination server"""
+		"""Activate site on destination"""
 		site = frappe.get_doc("Site", self.site)
 		site.status = "Active"
 		site.save()
