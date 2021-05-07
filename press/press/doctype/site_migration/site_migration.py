@@ -21,13 +21,11 @@ def get_ongoing_migration(site: str):
 
 
 class SiteMigration(Document):
-	def validate(self):
-		self.set_migration_type()
-
 	def before_insert(self):
 		if get_ongoing_migration(self.site):
 			frappe.throw("Ongoing Site Migration for that site exists.")
 		self.check_for_existing_agent_jobs()
+		self.set_migration_type()
 
 	def after_insert(self):
 		self.add_steps()
