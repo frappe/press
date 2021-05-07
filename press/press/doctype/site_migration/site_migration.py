@@ -171,6 +171,7 @@ class SiteMigration(Document):
 		site.remote_private_file = backup.remote_private_file
 		site.bench = self.destination_bench
 		site.cluster = self.destination_cluster
+		site.server = self.destination_server
 		site.create_dns_record()
 		return agent.new_site_from_backup(site)
 

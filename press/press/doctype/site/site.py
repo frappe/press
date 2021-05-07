@@ -219,6 +219,7 @@ class Site(Document):
 		self.create_agent_request()
 
 	def create_dns_record(self):
+		"""Check if site needs dns records and creates one."""
 		domain = frappe.get_doc("Root Domain", self.domain)
 		if self.cluster == domain.default_cluster:
 			return
