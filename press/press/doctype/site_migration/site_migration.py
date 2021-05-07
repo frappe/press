@@ -67,11 +67,11 @@ class SiteMigration(Document):
 		return find(self.steps, lambda step: step.status in ["Pending", "Running"])
 
 	def run_next_step(self):
-		next_method: str = self.next_step.method_name
-		if not next_method:
+		next_step = self.next_step
+		if not next_step:
 			self.succeed()
 			return
-
+		next_method: str = next_step.method_name
 		method = getattr(self, next_method)
 		try:
 			self.next_step.step_job = method().name
