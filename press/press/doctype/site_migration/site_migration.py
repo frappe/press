@@ -64,13 +64,17 @@ class SiteMigration(Document):
 		"""Get next step to execute or update."""
 		return find(self.steps, lambda step: step.status in ["Pending", "Running"])
 
+	@frappe.whitelist()
 	def run_next_step(self):
+		self.status = "Running"
+
 		next_step = self.next_step
 		if not next_step:
 			self.succeed()
 			return
 		next_method: str = next_step.method_name
 		method = getattr(self, next_method)
+
 		try:
 			self.next_step.step_job = method().name
 		except Exception:
