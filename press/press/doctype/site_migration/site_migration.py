@@ -48,16 +48,13 @@ class SiteMigration(Document):
 	def add_steps(self):
 		"""Populate steps child table with steps for migration."""
 		if self.migration_type == "Cluster":
-			self.add_steps_for_inter_cluster_migration()
+			self.add_steps_for_cluster_migration()
 		elif self.migration_type == "Server":
-			self.add_steps_for_in_cluster_migration()
+			self.add_steps_for_server_migration()
 		else:
 			# TODO: Call site update for bench only migration with popup with link to site update job
 			raise NotImplementedError
 		self.run_next_step()
-
-	def add_steps_for_in_cluster_migration(self):
-		raise NotImplementedError
 
 	@property
 	def next_step(self):
@@ -86,7 +83,6 @@ class SiteMigration(Document):
 		self.save()
 
 	def fail(self):
-		# TODO: mark pending steps as skipped <05-05-21, Balamurali M> #
 		self.status = "Failure"
 		self.save()
 
@@ -94,7 +90,7 @@ class SiteMigration(Document):
 		self.status = "Success"
 		self.save()
 
-	def add_steps_for_inter_cluster_migration(self):
+	def add_steps_for_cluster_migration(self):
 		steps = [
 			{
 				"step_title": self.deactivate_site_on_source_server.__doc__,
@@ -140,6 +136,52 @@ class SiteMigration(Document):
 		for step in steps:
 			self.append("steps", step)
 
+	def add_steps_for_server_migration(self):
+		steps = [
+			{
+				"step_title": self.deactivate_site_on_source_server.__doc__,
+				"method_name": self.deactivate_site_on_source_server.__name__,
+				"status": "Pending",
+			},
+			{
+				"step_title": self.backup_source_site.__doc__,
+				"method_name": self.backup_source_site.__name__,
+				"status": "Pending",
+			},
+			{
+				"step_title": self.archive_site_on_source.__doc__,
+				"method_name": self.archive_site_on_source.__name__,
+				"status": "Pending",
+			},
+			{
+				"step_title": self.remove_site_from_source_proxy.__doc__,
+				"method_name": self.remove_site_from_source_proxy.__name__,
+				"status": "Pending",
+			},
+			{
+				"step_title": self.restore_site_on_destination_server.__doc__,
+				"method_name": self.restore_site_on_destination_server.__name__,
+				"status": "Pending",
+			},
+			{
+				"step_title": self.restore_site_on_destination_proxy.__doc__,
+				"method_name": self.restore_site_on_destination_proxy.__name__,
+				"status": "Pending",
+			},
+			{
+				"step_title": self.update_site_record_fields.__doc__,
+				"method_name": self.update_site_record_fields.__name__,
+				"status": "Pending",
+			},
+			{
+				"step_title": self.activate_site_on_destination.__doc__,
+				"method_name": self.activate_site_on_destination.__name__,
+				"status": "Pending",
+			},
+		]
+		for step in steps:
+			self.append("steps", step)
+
 	def deactivate_site_on_source_server(self):
 		"""Deactivate site on source"""
 		site = frappe.get_doc("Site", self.site)
@@ -162,8 +204,6 @@ class SiteMigration(Document):
 		self.save()
 
 		return frappe.get_doc("Agent Job", backup.job)
-
-	# TODO: handle site config <05-05-21, Balamurali M> #
 
 	def restore_site_on_destination_server(self):
 		"""Restore site on destination"""
