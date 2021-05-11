@@ -54,7 +54,78 @@ class SiteMigration(Document):
 		else:
 			# TODO: Call site update for bench only migration with popup with link to site update job
 			raise NotImplementedError
+		self.add_steps_for_domains()
 		self.run_next_step()
+
+	def remove_domain_hosts_from_source(self):
+		"""Remove domain hosts from source"""
+		domains = frappe.get_all("Site Domain", {"site": self.site}, pluck="name")
+
+		proxy_server = frappe.db.get_value("Server", self.source_server, "proxy_server")
+		agent = Agent(proxy_server, server_type="Proxy Server")
+
+		for domain in domains:
+			site_domain = frappe.get_doc("Site Domain", domain)
+			agent.remove_host(site_domain)
+
+	def _add_remove_host_from_source_proxy_step(self, domain: str):
+		step = {
+			"step_title": f"Remove host {domain} from source proxy",
+			"status": "Pending",
+			"method_name": self.remove_host_from_source_proxy.__name__,
+			"method_arg": domain,
+		}
+		self.append("steps", step)
+
+	def _add_add_host_to_destination_proxy_step(self, domain: str):
+		step = {
+			"step_title": f"add host {domain} to destination proxy",
+			"status": "Pending",
+			"method_name": self.add_host_to_destination_proxy.__name__,
+			"method_arg": domain,
+		}
+		self.append("steps", step)
+
+	def add_host_to_destination_proxy(self, domain):
+		site_domain = frappe.get_doc("Site Domain", domain)
+		proxy_server = frappe.db.get_value("Server", self.destination_server, "proxy_server")
+		agent = Agent(proxy_server, server_type="Proxy Server")
+		agent.new_host(site_domain)
+
+	def remove_host_from_source_proxy(self, domain):
+		site_domain = frappe.get_doc("Site Domain", domain)
+		proxy_server = frappe.db.get_value("Server", self.destination_server, "proxy_server")
+		agent = Agent(proxy_server, server_type="Proxy Server")
+		agent.remove_host(site_domain)
+
+	def _add_setup_redirects_step(self):
+		step = {
+			"step_title": self.setup_redirects.__doc__,
+			"status": "Pending",
+			"method_name": self.setup_redirects.__name__,
+		}
+		self.append("steps", step)
+
+	def setup_redirects(self):
+		"""Setup redirects of site in proxy"""
+		site = frappe.get_doc("Site", self.site)
+		ret = site._update_redirects_for_all_site_domains()
+		if ret:
+			# could be no jobs
+			return ret
+		self.update_next_step_status("Success")
+		self.run_next_step()
+
+	def add_steps_for_domains(self):
+		domains = frappe.get_all("Site Domain", {"site": self.site}, pluck="name")
+		for domain in domains:
+			site_domain = frappe.get_doc("Site Domain", domain)
+			if site_domain.default:
+				continue
+			self._add_remove_host_from_source_proxy_step(domain)
+			self._add_add_host_to_destination_proxy_step(domain)
+		if len(domains) > 1:
+			self._add_setup_redirects_step()
 
 	@property
 	def next_step(self):
@@ -70,10 +141,15 @@ class SiteMigration(Document):
 			self.succeed()
 			return
 		next_method: str = next_step.method_name
+		# right now only single argument possible
+		method_arg: str = next_step.method_arg
 		method = getattr(self, next_method)
 
 		try:
-			self.next_step.step_job = method().name
+			if method_arg:
+				self.next_step.step_job = method(method_arg).name
+			else:
+				self.next_step.step_job = method().name
 		except Exception:
 			pass
 		self.save()
@@ -236,7 +312,6 @@ class SiteMigration(Document):
 		agent = Agent(self.source_server)
 		site = frappe.get_doc("Site", self.site)
 		return agent.archive_site(site)
-		# TODO: maybe remove domains here <03-05-21, Balamurali M> #
 
 	def update_site_record_fields(self):
 		"""Update fields of original site record"""

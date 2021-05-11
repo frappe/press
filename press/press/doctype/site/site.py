@@ -429,7 +429,7 @@ class Site(Document):
 	def _update_redirects_for_all_site_domains(self):
 		domains = self._get_redirected_domains()
 		if domains:
-			self.set_redirects_in_proxy(domains)
+			return self.set_redirects_in_proxy(domains)
 
 	def _remove_redirects_for_all_site_domains(self):
 		domains = self._get_redirected_domains()
@@ -440,7 +440,7 @@ class Site(Document):
 		target = self.host_name
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
-		agent.setup_redirects(self.name, domains, target)
+		return agent.setup_redirects(self.name, domains, target)
 
 	def unset_redirects_in_proxy(self, domains: List[str]):
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
