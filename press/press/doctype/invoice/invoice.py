@@ -138,6 +138,7 @@ class Invoice(Document):
 		self.status = "Invoice Created"
 		self.save()
 
+	@frappe.whitelist()
 	def finalize_stripe_invoice(self):
 		stripe = get_stripe()
 		stripe.Invoice.finalize_invoice(self.stripe_invoice_id)
@@ -467,6 +468,7 @@ class Invoice(Document):
 			self.save()
 			return True
 
+	@frappe.whitelist()
 	def refund(self, reason):
 		stripe = get_stripe()
 		charge = None
@@ -520,6 +522,7 @@ class Invoice(Document):
 		)
 		self.db_set("status", "Paid")
 
+	@frappe.whitelist()
 	def change_stripe_invoice_status(self, status):
 		stripe = get_stripe()
 		if status == "Paid":
