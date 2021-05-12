@@ -42,6 +42,7 @@ class TLSCertificate(Document):
 		frappe.set_user(user)
 		frappe.session.data = session_data
 
+	@frappe.whitelist()
 	def _obtain_certificate(self):
 		try:
 			settings = frappe.get_doc("Press Settings", "Press Settings")
