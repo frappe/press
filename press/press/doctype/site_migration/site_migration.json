@@ -129,8 +129,7 @@
    "fieldname": "steps",
    "fieldtype": "Table",
    "label": "Steps",
-   "options": "Site Migration Step",
-   "read_only": 1
+   "options": "Site Migration Step"
   },
   {
    "fieldname": "backup",
@@ -142,7 +141,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-05-07 18:40:57.765077",
+ "modified": "2021-05-11 15:10:07.530080",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Migration",

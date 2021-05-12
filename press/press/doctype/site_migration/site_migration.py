@@ -79,7 +79,7 @@ class SiteMigration(Document):
 
 	def _add_add_host_to_destination_proxy_step(self, domain: str):
 		step = {
-			"step_title": f"add host {domain} to destination proxy",
+			"step_title": f"Add host {domain} to destination proxy",
 			"status": "Pending",
 			"method_name": self.add_host_to_destination_proxy.__name__,
 			"method_arg": domain,
@@ -90,13 +90,13 @@ class SiteMigration(Document):
 		site_domain = frappe.get_doc("Site Domain", domain)
 		proxy_server = frappe.db.get_value("Server", self.destination_server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
-		agent.new_host(site_domain)
+		return agent.new_host(site_domain)
 
 	def remove_host_from_source_proxy(self, domain):
 		site_domain = frappe.get_doc("Site Domain", domain)
-		proxy_server = frappe.db.get_value("Server", self.destination_server, "proxy_server")
+		proxy_server = frappe.db.get_value("Server", self.source_server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
-		agent.remove_host(site_domain)
+		return agent.remove_host(site_domain)
 
 	def _add_setup_redirects_step(self):
 		step = {
@@ -113,7 +113,7 @@ class SiteMigration(Document):
 		if ret:
 			# could be no jobs
 			return ret
-		self.update_next_step_status("Success")
+		self.update_next_step_status("Skipped")
 		self.run_next_step()
 
 	def add_steps_for_domains(self):
