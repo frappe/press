@@ -49,12 +49,12 @@ class SiteMigration(Document):
 		"""Populate steps child table with steps for migration."""
 		if self.migration_type == "Cluster":
 			self.add_steps_for_cluster_migration()
+			self.add_steps_for_domains()
 		elif self.migration_type == "Server":
 			self.add_steps_for_server_migration()
 		else:
 			# TODO: Call site update for bench only migration with popup with link to site update job
 			raise NotImplementedError
-		self.add_steps_for_domains()
 		self.run_next_step()
 
 	def remove_domain_hosts_from_source(self):
