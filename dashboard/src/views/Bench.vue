@@ -1,15 +1,26 @@
 <template>
-	<div>
+	<div class="mt-10">
 		<div class="px-4 sm:px-8" v-if="bench">
-			<div class="py-8">
+			<div class="pb-3">
 				<div class="text-base text-gray-700">
 					<router-link to="/sites" class="hover:text-gray-800">
 						← Back to Benches
 					</router-link>
 				</div>
-				<div class="flex items-center mt-2">
-					<h1 class="text-2xl font-bold">{{ bench.title }}</h1>
-					<Badge class="ml-4" :status="bench.status">{{ bench.status }}</Badge>
+				<div
+					class="flex flex-col space-y-3 md:space-y-0 md:justify-between md:flex-row md:items-baseline"
+				>
+					<div class="flex items-center mt-2">
+						<h1 class="text-2xl font-bold">{{ bench.title }}</h1>
+						<Badge class="ml-4" :status="bench.status">
+							{{ bench.status }}
+						</Badge>
+					</div>
+					<div v-if="bench.status == 'Active'">
+						<Button icon-left="plus" :route="'/sites/new?bench=' + bench.name">
+							New Site
+						</Button>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -43,12 +54,21 @@ export default {
 	},
 	activated() {
 		this.routeToGeneral();
+		this.$socket.on('list_update', this.onSocketUpdate);
+	},
+	deactivated() {
+		this.$socket.off('list_update', this.onSocketUpdate);
 	},
 	methods: {
+		onSocketUpdate({ doctype, name }) {
+			if (doctype == 'Release Group' && name == this.bench.name) {
+				this.$resources.bench.reload();
+			}
+		},
 		routeToGeneral() {
 			if (this.$route.matched.length === 1) {
 				let path = this.$route.fullPath;
-				let tab = 'general';
+				let tab = 'overview';
 				this.$router.replace(`${path}/${tab}`);
 			}
 		}
@@ -60,10 +80,9 @@ export default {
 		tabs() {
 			let tabRoute = subRoute => `/benches/${this.benchName}/${subRoute}`;
 			let tabs = [
-				{ label: 'General', route: 'general' },
-				{ label: 'Apps', route: 'apps' },
+				{ label: 'Overview', route: 'overview' },
 				{ label: 'Deploys', route: 'deploys' },
-				{ label: 'Jobs', route: 'Jobs' }
+				{ label: 'Jobs', route: 'jobs' }
 			];
 			if (this.bench) {
 				return tabs.map(tab => {
