@@ -21,13 +21,14 @@ let utils = {
 			let multiplier = Math.pow(10, precision || 0);
 			return Math.round(number * multiplier) / multiplier;
 		},
-		formatDate(value, type = 'full') {
+		formatDate(value, type = 'DATETIME_FULL') {
 			let datetime = this.$date(value);
 			let format = value;
 			if (type === 'relative') {
 				format = datetime.toRelative();
-			} else if (type === 'full') {
-				format = datetime.toLocaleString(DateTime.DATETIME_FULL);
+			} else {
+				let formatOptions = DateTime[type];
+				format = datetime.toLocaleString(formatOptions);
 			}
 			return format;
 		},
