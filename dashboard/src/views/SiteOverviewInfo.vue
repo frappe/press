@@ -18,12 +18,7 @@
 					<div class="text-right">
 						<div class="text-base text-gray-600">Created On</div>
 						<div class="text-base font-medium text-gray-900">
-							{{
-								$date(info.created_on).toLocaleString({
-									month: 'long',
-									day: 'numeric'
-								})
-							}}
+							{{ formatDate(info.created_on, 'DATE_FULL') }}
 						</div>
 					</div>
 					<div v-if="info.last_deployed" class="text-right">
