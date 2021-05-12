@@ -105,7 +105,7 @@
 <script>
 import CardDetails from '@/components/CardDetails.vue';
 export default {
-	name: 'SiteJobsDetail',
+	name: 'JobsDetail',
 	props: ['jobName'],
 	components: { CardDetails },
 	inject: ['viewportWidth'],
