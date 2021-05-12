@@ -14,7 +14,13 @@
 		<p class="text-base text-gray-600 mt-1.5" v-if="subtitle">
 			{{ subtitle }}
 		</p>
-		<div class="flex-auto mt-4 overflow-auto" v-if="$slots['default']">
+		<div
+			v-if="loading"
+			class="flex flex-col items-center justify-center flex-auto mt-4 rounded-md"
+		>
+			<Loading />
+		</div>
+		<div class="flex-auto mt-4 overflow-auto" v-else-if="$slots['default']">
 			<slot></slot>
 		</div>
 	</div>
@@ -22,6 +28,6 @@
 <script>
 export default {
 	name: 'Card',
-	props: ['title', 'subtitle']
+	props: ['title', 'subtitle', 'loading']
 };
 </script>

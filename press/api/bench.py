@@ -152,6 +152,67 @@ def apps(name):
 
 @frappe.whitelist()
 @protected("Release Group")
+def remove_app(name, app):
+	release_group = frappe.get_doc("Release Group", name)
+	for app in release_group.apps:
+		if app.app == app:
+			release_group.remove(app)
+			break
+	release_group.save()
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def versions(name):
+	deployed_versions = frappe.db.get_all(
+		"Bench",
+		fields=["name", "status"],
+		filters={"group": name, "status": ("!=", "Archived")},
+		order_by="creation desc",
+	)
+	for version in deployed_versions:
+		version.sites_count = frappe.db.count(
+			"Site", {"bench": version.name, "status": ("!=", "Active")}
+		)
+		version.apps = frappe.db.get_all(
+			"Bench App", {"parent": version.name}, ["name", "app", "hash", "source"]
+		)
+		for app in version.apps:
+			app.update(
+				frappe.db.get_value(
+					"App Source",
+					app.source,
+					["branch", "repository", "repository_owner", "repository_url"],
+					as_dict=1,
+				)
+			)
+			app.tag = frappe.db.get_value(
+				"App Tag",
+				{
+					"repository": app.repository,
+					"repository_owner": app.repository_owner,
+					"hash": app.hash,
+				},
+				"tag",
+			)
+
+		version.deployed_on = frappe.db.get_value(
+			"Agent Job",
+			{"bench": version.name, "job_type": "New Bench", "status": "Success"},
+			"end",
+		)
+
+	return deployed_versions
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def sites(name, version):
+	return frappe.db.get_all("Site", {"status": "Active", "group": name, "bench": version})
+
+
+@frappe.whitelist()
+@protected("Release Group")
 def candidates(name):
 	candidates = frappe.get_all(
 		"Deploy Candidate",
@@ -211,13 +272,14 @@ def deploy(name):
 
 @frappe.whitelist()
 @protected("Release Group")
-def jobs(name):
+def jobs(name, start=0):
 	benches = frappe.get_all("Bench", {"group": name}, pluck="name")
 	if benches:
 		jobs = frappe.get_all(
 			"Agent Job",
 			fields=["name", "job_type", "creation", "status", "start", "end", "duration"],
 			filters={"bench": ("in", benches)},
+			start=start,
 			limit=10,
 		)
 	else:
@@ -248,3 +310,9 @@ def running_jobs(name):
 		filters={"status": ("in", ("Pending", "Running")), "bench": ("in", benches)},
 	)
 	return [job_detail(job.name) for job in jobs]
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def recent_deploys(name):
+	return frappe.db.get_all("Deploy", {"group": name}, ["name", "creation"])

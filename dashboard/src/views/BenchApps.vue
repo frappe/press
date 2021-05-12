@@ -3,11 +3,11 @@
 		<Section title="Apps" :description="'Apps installed on your bench'">
 			<SectionCard>
 				<div
-					class="px-6 py-3 hover:bg-gray-50 items-center"
+					class="items-center px-6 py-3 hover:bg-gray-50"
 					v-for="app in apps"
 					:key="app.app"
 				>
-					<div class="font-semibold text-brand text-base">
+					<div class="text-base font-semibold text-brand">
 						{{ app.title }}
 					</div>
 
