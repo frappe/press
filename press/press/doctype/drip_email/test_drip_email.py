@@ -45,6 +45,8 @@ class TestDripEmail(unittest.TestCase):
 	def test_older_site_isnt_selected(self):
 		drip_email = create_test_drip_email(0)
 		site = create_test_site("site1")
-		site.account_request = create_test_account_request("site1", creation=date.today() - timedelta(1)).name
+		site.account_request = create_test_account_request(
+			"site1", creation=date.today() - timedelta(1)
+		).name
 		site.save()
 		self.assertNotEqual(drip_email.sites_to_send_drip, [site.name])
