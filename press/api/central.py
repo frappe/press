@@ -6,10 +6,8 @@ from __future__ import unicode_literals
 from press.press.doctype.site.erpnext_site import ERPNextSite, get_erpnext_domain
 import frappe
 from frappe.geo.country_info import get_country_timezone_info
-from frappe.utils.data import get_url
 from press.api.account import get_account_request_from_key
 from press.utils.billing import get_erpnext_com_connection
-from press.press.doctype.site.erpnext_site import get_erpnext_plan
 from press.press.doctype.site.pool import get as get_pooled_site
 
 

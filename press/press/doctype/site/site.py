@@ -7,7 +7,7 @@ from __future__ import unicode_literals
 import json
 import re
 from collections import defaultdict
-from datetime import date, timedelta
+from datetime import date
 from typing import Dict, List
 
 import boto3

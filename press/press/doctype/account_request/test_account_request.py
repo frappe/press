@@ -4,7 +4,7 @@
 from __future__ import unicode_literals
 
 import unittest
-from datetime import date, datetime
+from datetime import datetime
 
 import frappe
 
