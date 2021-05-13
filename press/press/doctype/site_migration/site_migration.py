@@ -351,3 +351,7 @@ def process_site_migration_job_update(job, site_migration_name: str):
 			site_migration.fail()
 	else:
 		log_error("Extra Job found during Site Migration", job=job.as_dict())
+
+
+def on_doctype_update():
+	frappe.db.add_index("Site Migration", ["site"])
