@@ -224,7 +224,18 @@ class Site(Document):
 		if self.cluster == domain.default_cluster:
 			return
 		proxy_server = frappe.get_value("Server", self.server, "proxy_server")
+		self._change_dns_record("UPSERT", domain, proxy_server)
 
+	def remove_dns_record(self, domain: Document, proxy_server: str):
+		"""Removes dns record of site pointing to proxy."""
+		self._change_dns_record("DELETE", domain, proxy_server)
+
+	def _change_dns_record(self, method: str, domain: Document, proxy_server: str):
+		"""
+		Change dns record of site
+
+		method: CREATE | DELETE | UPSERT
+		"""
 		try:
 			site_name = self._get_site_name(self.subdomain)
 			client = boto3.client(
@@ -239,7 +250,7 @@ class Site(Document):
 				ChangeBatch={
 					"Changes": [
 						{
-							"Action": "UPSERT",
+							"Action": method,
 							"ResourceRecordSet": {
 								"Name": site_name,
 								"Type": "CNAME",
