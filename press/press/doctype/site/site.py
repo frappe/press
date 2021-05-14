@@ -7,7 +7,7 @@ from __future__ import unicode_literals
 import json
 import re
 from collections import defaultdict
-from datetime import date, timedelta
+from datetime import date
 from typing import Dict, List
 
 import boto3
@@ -219,11 +219,23 @@ class Site(Document):
 		self.create_agent_request()
 
 	def create_dns_record(self):
+		"""Check if site needs dns records and creates one."""
 		domain = frappe.get_doc("Root Domain", self.domain)
 		if self.cluster == domain.default_cluster:
 			return
 		proxy_server = frappe.get_value("Server", self.server, "proxy_server")
+		self._change_dns_record("UPSERT", domain, proxy_server)
 
+	def remove_dns_record(self, domain: Document, proxy_server: str):
+		"""Remove dns record of site pointing to proxy."""
+		self._change_dns_record("DELETE", domain, proxy_server)
+
+	def _change_dns_record(self, method: str, domain: Document, proxy_server: str):
+		"""
+		Change dns record of site
+
+		method: CREATE | DELETE | UPSERT
+		"""
 		try:
 			site_name = self._get_site_name(self.subdomain)
 			client = boto3.client(
@@ -238,7 +250,7 @@ class Site(Document):
 				ChangeBatch={
 					"Changes": [
 						{
-							"Action": "UPSERT",
+							"Action": method,
 							"ResourceRecordSet": {
 								"Name": site_name,
 								"Type": "CNAME",
@@ -428,7 +440,7 @@ class Site(Document):
 	def _update_redirects_for_all_site_domains(self):
 		domains = self._get_redirected_domains()
 		if domains:
-			self.set_redirects_in_proxy(domains)
+			return self.set_redirects_in_proxy(domains)
 
 	def _remove_redirects_for_all_site_domains(self):
 		domains = self._get_redirected_domains()
@@ -439,7 +451,7 @@ class Site(Document):
 		target = self.host_name
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
-		agent.setup_redirects(self.name, domains, target)
+		return agent.setup_redirects(self.name, domains, target)
 
 	def unset_redirects_in_proxy(self, domains: List[str]):
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
@@ -704,7 +716,7 @@ class Site(Document):
 			self._set_configuration(config)
 		else:
 			self._update_configuration(config)
-		Agent(self.server).update_site_config(self)
+		return Agent(self.server).update_site_config(self)
 
 	def update_site(self):
 		log_site_activity(self.name, "Update")

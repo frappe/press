@@ -135,7 +135,7 @@ class CustomUser(User):
 	def after_rename(self, old_name, new_name, merge=False):
 		"""
 		Changes:
-			- Excluding update operations on MyISAM tables
+		- Excluding update operations on MyISAM tables
 		"""
 		myisam_tables = frappe.db.sql_list(
 			"""SELECT
