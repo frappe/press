@@ -145,13 +145,10 @@ class SiteMigration(Document):
 		method_arg: str = next_step.method_arg
 		method = getattr(self, next_method)
 
-		try:
-			if method_arg:
-				self.next_step.step_job = method(method_arg).name
-			else:
-				self.next_step.step_job = method().name
-		except Exception:
-			pass
+		if method_arg:
+			next_step.step_job = getattr(method(method_arg), "name", None)
+		else:
+			next_step.step_job = getattr(method(), "name", None)
 		self.save()
 
 	def update_next_step_status(self, status: str):
@@ -351,7 +348,10 @@ def process_site_migration_job_update(job, site_migration_name: str):
 		process_required_job_callbacks(job)
 		site_migration.update_next_step_status(job.status)
 		if job.status == "Success":
-			site_migration.run_next_step()
+			try:
+				site_migration.run_next_step()
+			except Exception:
+				log_error("Site Migration Step Error")
 		elif job.status == "Failure":
 			site_migration.fail()
 	else:
