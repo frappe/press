@@ -292,11 +292,12 @@ class SiteMigration(Document):
 		site.bench = self.destination_bench
 		site.cluster = self.destination_cluster
 		site.server = self.destination_server
-		site.create_dns_record()
-		if self.migration_type == "cluster":
-			domain = frappe.get_doc("Root Domain", self.domain)
+		if self.migration_type == "Cluster":
+			site.create_dns_record()
+			domain = frappe.get_doc("Root Domain", site.domain)
 			if self.destination_cluster == domain.default_cluster:
-				site.remove_dns_record()
+				source_proxy = frappe.db.get_value("Server", self.source_server, "proxy_server")
+				site.remove_dns_record(domain, source_proxy)
 		return agent.new_site_from_backup(site)
 
 	def restore_site_on_destination_proxy(self):
