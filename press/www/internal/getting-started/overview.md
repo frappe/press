@@ -4,4 +4,10 @@ title: Overview - Getting Started
 
 # Frappe Cloud Internal Docs
 
-Start with [Local Infrastructure Setup](/internal/infrastructure/overview).
+## Local Dev Setup
+
+[Local Setup Guide](/internal/getting-started/local_dev_setuo)
+
+## Local Infra Setup
+
+[Local Infrastructure Setup](/internal/infrastructure/overview).
