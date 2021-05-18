@@ -68,3 +68,4 @@ press.patches.v0_0_1.create_root_domain_from_press_settings
 press.patches.v0_0_1.set_cluster_in_press_settings
 press.patches.v0_0_1.remove_period_from_plan
 press.patches.v0_0_1.add_site_index_to_site_migration
+press.patches.v0_0_1.set_dependencies_in_release_group
