@@ -21,7 +21,9 @@
   "bench_configuration_section",
   "common_site_config",
   "column_break_14",
-  "bench_config"
+  "bench_config",
+  "section_break_16",
+  "dependencies"
  ],
  "fields": [
   {
@@ -115,10 +117,21 @@
   {
    "fieldname": "column_break_14",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "dependencies",
+   "fieldtype": "Table",
+   "label": "Dependencies",
+   "options": "Release Group Dependency"
+  },
+  {
+   "fieldname": "section_break_16",
+   "fieldtype": "Section Break",
+   "label": "Dependencies"
   }
  ],
  "links": [],
- "modified": "2021-04-05 16:17:39.340481",
+ "modified": "2021-05-18 18:39:53.050440",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",
