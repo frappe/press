@@ -6,6 +6,8 @@ title: "Guide: Local Development Enviroment Setup"
 
 This guide shows you how to setup your development machine for Frappe Cloud development. By the end of this guide, you will have a replica of the FC production environment.
 
+> “Patience is bitter, but its fruit is sweet.” – Aristotle
+
 ## Introduction
 
 `f` servers: These host your benches (`f` is for Frappe Apps)
@@ -66,17 +68,74 @@ Go to the AWS Console (again, credentials are in Frappe Assets), navigate to `Ro
 
 The other 3 records will be for f1, n1 and m1 respectively. Use the IP address from the previous step. You can have a look at other such records if you get confused at any point.
 
+Now, make sure you can `ssh` (as `root`) into all the three servers using thier domain names. For example:
+
+```bash
+> ssh root@f1.h.fc.frappe.dev
+```
+
 ## Press Frappe App
 
 On your computer, `get-app` press using this [GitHub URL](https://github.com/frappe/press). Now, create a new site and install `press` on this site.
 
-Run the site and login as admin.
+Run the site and login as admin. (Login ID and password are `admininstrator` and `admin` respectively)
 
 ## Press Settings
 
+### Create a `Root Domain`
+
+Navigate to `Root Domain List` (AwesomeBar to rescue!) and create a new document. Fill up the details as below:
+
+Name: `<your-domain-name>`, e.g. `h.fc.frappe.dev`
+Default CLuster: `Default`
+AWS Access Key ID: Get from `AWS Console`
+AWS Secret Access Key: Get from `AWS Console`
+
+Save it.
+
+Open `Press Settings` now. Now, set the `Domain` to the root domain you created in the previous step and cluster to `Default`.
+
+Now, there is going to be a lot of back and forth between your terminal and `Press Settings`, so sit tight.
+
 ### Let's Encrypt
 
+Scroll down and expand the `Let's Encrypt` section. Before entering the details here, you have to create two directories on your local computer (it is better to place this at user level, e.g. `/home/<user>/`):
+
+1. `.certbot` -> directory
+2. `webroot` -> directory, inside the .certbot directory
+
+Now, fill the `Certbot Directory` and `Webroot Directory` with the absolute path of the above two newly created directories respectively. Leave out other fields as it is. You can enter your email if you want.
+
+Save the settings.
+
 ### Docker
+
+Now, Scroll down to `Docker Registry` section.
+
+Fill in the fields as given below:
+
+`Docker Registry URL`: registry.digitalocean.com/staging-frappe-cloud
+
+`Docker Registry Namespace`: Any name you like, e.g. `hussain-staging`
+
+`Docker Registry Username`: Get from Digital Ocean account or contact `@kawaiideku`
+
+`Docker Registry Password`: Get from Digital Ocean account or contact `@kawaiideku`
+
+Again, save the settings and scroll down to `Docker Build` section.
+
+Go to your terminal and `cd` into your `bench` directory. Create two directories here:
+
+1. `.clones`
+2. `.docker-builds`
+
+Go back to the `Press Settings`and paste the absolute paths of the above two directories to the `Clone Directory` and `Build Directory` respectively. Leave the other field empty and save the settings.
+
+Sometimes, there is an issue while uploading a docker image in the background and you have to manually `push` it to registry. For that case, you have to login to digital ocean registry through docker before pushing. You can do this by running this command:
+
+```bash
+> docker login -u <do-registry-user-id> -p <do-password> registry.digitalocean.com
+```
 
 ## Setting up Proxy server (`n` server)
 
