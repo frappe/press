@@ -6,8 +6,8 @@ import frappe
 
 
 def execute():
-	frappe.reload_doctype("Release Group Dependency")
-	frappe.reload_doctype("Release Group")
+	frappe.reload_doc("press", "doctype", "release_group_dependency")
+	frappe.reload_doc("press", "doctype", "release_group")
 
 	for name in frappe.db.get_all("Release Group", pluck="name"):
 		release_group = frappe.get_doc("Release Group", name)
