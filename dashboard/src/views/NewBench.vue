@@ -39,44 +39,12 @@
 						These apps will be available for sites on your bench. You can also
 						add apps to your bench later.
 					</p>
-					<div class="mt-4 space-y-3">
-						<button
-							class="block w-full px-4 py-3 text-left border rounded-md shadow cursor-pointer focus:outline-none focus:ring-2"
-							:class="
-								isAppSelected(app.name)
-									? 'ring-2 ring-blue-500 bg-blue-50'
-									: 'hover:border-blue-300 cursor-pointer'
-							"
-							v-for="app in selectedVersion.apps"
-							:key="app.name"
-							@click="toggleApp(app.name)"
-						>
-							<div
-								class="flex items-center justify-between ml-1 text-base text-left"
-							>
-								<div>
-									<div class="font-semibold">
-										{{ app.title }}
-									</div>
-									<div class="text-gray-700">
-										{{ app.source.repository_owner }}/{{
-											app.source.repository
-										}}
-									</div>
-								</div>
-								<Dropdown :items="dropdownItems(app)" right>
-									<template v-slot="{ toggleDropdown }">
-										<Button
-											type="white"
-											@click.stop="toggleDropdown()"
-											icon-right="chevron-down"
-										>
-											<span>{{ app.source.branch }}</span>
-										</Button>
-									</template>
-								</Dropdown>
-							</div>
-						</button>
+					<div class="mt-4">
+						<AppSourceSelector
+							:apps="selectedVersion.apps"
+							:value.sync="selectedApps"
+							:multiple="true"
+						/>
 					</div>
 				</div>
 				<div>
@@ -96,9 +64,13 @@
 
 <script>
 import WizardCard from '@/components/WizardCard.vue';
+import AppSourceSelector from '@/components/AppSourceSelector.vue';
 export default {
-	components: { WizardCard },
 	name: 'NewBench',
+	components: {
+		WizardCard,
+		AppSourceSelector
+	},
 	data() {
 		return {
 			benchTitle: null,
@@ -128,7 +100,10 @@ export default {
 					bench: {
 						title: this.benchTitle,
 						version: this.selectedVersionName,
-						apps: this.selectedApps
+						apps: this.selectedApps.map(app => ({
+							name: app.app,
+							source: app.source.name
+						}))
 					}
 				},
 				validate() {
@@ -148,41 +123,24 @@ export default {
 			};
 		}
 	},
-	methods: {
-		dropdownItems(app) {
-			return app.sources.map(source => ({
-				label: `${source.repository_owner}/${source.repository}:${source.branch}`,
-				action: () => this.selectSource(app, source)
-			}));
-		},
-		selectSource(app, source) {
-			app.source = source;
-			if (!this.isAppSelected(app.name)) {
-				this.toggleApp(app.name);
-			}
-		},
-		isAppSelected(name) {
-			return Boolean(this.selectedApps.find(app => app.name == name));
-		},
-		toggleApp(name) {
-			let selectedApps = this.selectedVersion.apps.filter(app => {
-				if (app.name == 'frappe') {
-					return true;
-				} else if (app.name == name) {
-					return !this.isAppSelected(app.name);
-				}
-				return this.isAppSelected(app.name);
-			});
-			this.selectedApps = selectedApps.map(app => ({
-				name: app.name,
-				source: app.source.name
-			}));
-		}
-	},
 	watch: {
 		selectedVersionName() {
-			this.selectedApps = [];
-			this.toggleApp('frappe');
+			this.$nextTick(() => {
+				let frappeApp = this.getFrappeApp(this.selectedVersion.apps);
+				this.selectedApps = [{ app: frappeApp.name, source: frappeApp.source }];
+			});
+		},
+		selectedApps(newVal, oldVal) {
+			// dont remove frappe app
+			let hasFrappe = newVal.find(app => app.app === 'frappe');
+			if (!hasFrappe && oldVal) {
+				this.selectedApps = oldVal;
+			}
+		}
+	},
+	methods: {
+		getFrappeApp(apps) {
+			return apps.find(app => app.name === 'frappe');
 		}
 	},
 	computed: {

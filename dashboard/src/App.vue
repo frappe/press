@@ -17,8 +17,8 @@
 				</div>
 			</div>
 		</div>
-		<portal-target name="popovers" multiple></portal-target>
 		<portal-target name="modals" multiple></portal-target>
+		<portal-target name="popovers" multiple></portal-target>
 		<NotificationToasts />
 		<UserPrompts />
 		<ConfirmDialogs />

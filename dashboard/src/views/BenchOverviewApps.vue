@@ -37,31 +37,28 @@
 			</div>
 		</div>
 		<Dialog title="Add apps to your bench" v-model="showAddAppDialog">
-			<div class="divide-y">
-				<ListItem
-					v-for="app in installableApps.data"
-					:key="app.name"
-					:title="app.title"
-					:subtitle="
-						`${app.source.repository_owner}/${app.source.repository}:${app.source.branch}`
+			<AppSourceSelector
+				class="pt-1"
+				:apps="installableApps.data"
+				:value.sync="selectedApp"
+				:multiple="false"
+			/>
+			<template #actions>
+				<Button
+					type="primary"
+					v-if="selectedApp"
+					:loading="addApp.loading"
+					@click="
+						addApp.submit({
+							name: bench.name,
+							source: selectedApp.source.name,
+							app: selectedApp.app
+						})
 					"
 				>
-					<template #actions>
-						<Button
-							:loading="addApp.loading && addApp.currentParams.app == app.name"
-							@click="
-								addApp.submit({
-									name: bench.name,
-									source: app.source.name,
-									app: app.name
-								})
-							"
-						>
-							Add App
-						</Button>
-					</template>
-				</ListItem>
-			</div>
+					Add {{ selectedApp.app }}
+				</Button>
+			</template>
 			<p class="mt-4 text-base" @click="showAddAppDialog = false">
 				Don't find your app here?
 				<Link :to="`/benches/${bench.name}/apps/new`">
@@ -72,11 +69,16 @@
 	</Card>
 </template>
 <script>
+import AppSourceSelector from '@/components/AppSourceSelector.vue';
 export default {
 	name: 'BenchOverviewApps',
+	components: {
+		AppSourceSelector
+	},
 	props: ['bench'],
 	data() {
 		return {
+			selectedApp: null,
 			showAddAppDialog: false
 		};
 	},
