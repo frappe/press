@@ -125,14 +125,19 @@ class Invoice(Document):
 		start = getdate(self.period_start)
 		end = getdate(self.period_end)
 		period_string = f"{start.strftime('%b %d')} - {end.strftime('%b %d')} {end.year}"
+		amount = int(self.amount_due * 100)
 		stripe.InvoiceItem.create(
 			customer=customer_id,
 			description=f"Frappe Cloud Subscription ({period_string})",
-			amount=int(self.amount_due * 100),
+			amount=amount,
 			currency=self.currency.lower(),
+			idempotency_key=f"invoiceitem:{self.name}:{amount}",
 		)
 		invoice = stripe.Invoice.create(
-			customer=customer_id, collection_method="charge_automatically", auto_advance=True,
+			customer=customer_id,
+			collection_method="charge_automatically",
+			auto_advance=True,
+			idempotency_key=f"invoice:{self.name}:{amount}",
 		)
 		self.stripe_invoice_id = invoice["id"]
 		self.status = "Invoice Created"
