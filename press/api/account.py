@@ -10,7 +10,6 @@ from frappe.website.render import build_response
 from frappe.core.doctype.user.user import update_password
 from press.press.doctype.team.team import get_team_members
 from press.utils import get_country_info, get_current_team
-from datetime import datetime, timedelta
 
 
 @frappe.whitelist(allow_guest=True)

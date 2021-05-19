@@ -117,7 +117,7 @@ def create_usage_records():
 		subscription = frappe.get_doc("Subscription", name)
 		try:
 			subscription.create_usage_record()
-		except:
+		except Exception:
 			log_error(title="Create Usage Record Error", name=name)
 
 

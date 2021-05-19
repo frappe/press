@@ -12,7 +12,7 @@ from press.utils.billing import get_frappe_io_connection
 from press.utils import log_error
 from datetime import datetime
 from frappe import _
-from frappe.utils import getdate, cint, today
+from frappe.utils import getdate, cint
 from press.telegram_utils import Telegram
 from press.overrides import get_permission_query_conditions_for_doctype
 
@@ -138,6 +138,7 @@ class Invoice(Document):
 		self.status = "Invoice Created"
 		self.save()
 
+	@frappe.whitelist()
 	def finalize_stripe_invoice(self):
 		stripe = get_stripe()
 		stripe.Invoice.finalize_invoice(self.stripe_invoice_id)
@@ -467,6 +468,7 @@ class Invoice(Document):
 			self.save()
 			return True
 
+	@frappe.whitelist()
 	def refund(self, reason):
 		stripe = get_stripe()
 		charge = None
@@ -520,6 +522,7 @@ class Invoice(Document):
 		)
 		self.db_set("status", "Paid")
 
+	@frappe.whitelist()
 	def change_stripe_invoice_status(self, status):
 		stripe = get_stripe()
 		if status == "Paid":

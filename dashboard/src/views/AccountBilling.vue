@@ -1,7 +1,8 @@
 <template>
 	<div class="space-y-5">
 		<Alert title="Account Setup" v-if="!$account.team.default_payment_method">
-			You haven't added your billing information yet. Add it to start creating sites.
+			You haven't added your billing information yet. Add it to start creating
+			sites.
 			<template #actions>
 				<Button type="primary" route="/welcome">Add Billing Information</Button>
 			</template>
@@ -14,6 +15,7 @@
 				class="col-span-1 md:col-span-2"
 				:invoice-name="invoiceName"
 			/>
+			<AccountBillingCreditBalance class="col-span-1 md:col-span-2" />
 		</div>
 	</div>
 </template>
@@ -23,6 +25,7 @@ import AccountBillingUsage from './AccountBillingUsage.vue';
 import AccountBillingDetails from './AccountBillingDetails.vue';
 import AccountBillingCards from './AccountBillingCards.vue';
 import AccountBillingPayments from './AccountBillingPayments.vue';
+import AccountBillingCreditBalance from './AccountBillingCreditBalance.vue';
 
 export default {
 	name: 'AccountBilling',
@@ -31,7 +34,8 @@ export default {
 		AccountBillingUsage,
 		AccountBillingDetails,
 		AccountBillingCards,
-		AccountBillingPayments
+		AccountBillingPayments,
+		AccountBillingCreditBalance
 	}
 };
 </script>

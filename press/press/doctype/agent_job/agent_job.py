@@ -12,15 +12,15 @@ import frappe
 import requests
 from frappe.core.utils import find
 from frappe.model.document import Document
-from frappe.utils import (
-	convert_utc_to_user_timezone,
-	get_url_to_form,
-	pretty_date,
-)
+from frappe.utils import convert_utc_to_user_timezone, get_url_to_form, pretty_date
 
 from press.agent import Agent
 from press.telegram_utils import Telegram
 from press.utils import log_error
+from press.press.doctype.site_migration.site_migration import (
+	get_ongoing_migration,
+	process_site_migration_job_update,
+)
 
 
 class AgentJob(Document):
@@ -358,6 +358,9 @@ def process_job_updates(job_name):
 			process_new_bench_job_update,
 		)
 		from press.press.doctype.server.server import process_new_server_job_update
+		from press.press.doctype.site.erpnext_site import (
+			process_setup_erpnext_site_job_update,
+		)
 		from press.press.doctype.site.site import (
 			process_archive_site_job_update,
 			process_install_app_site_job_update,
@@ -367,9 +370,6 @@ def process_job_updates(job_name):
 			process_rename_site_job_update,
 			process_restore_tables_job_update,
 		)
-		from press.press.doctype.site.erpnext_site import (
-			process_setup_erpnext_site_job_update,
-		)
 		from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
 		from press.press.doctype.site_domain.site_domain import process_new_host_job_update
 		from press.press.doctype.site_update.site_update import (
@@ -377,7 +377,10 @@ def process_job_updates(job_name):
 			process_update_site_recover_job_update,
 		)
 
-		if job.job_type == "Add Upstream to Proxy":
+		site_migration = get_ongoing_migration(job.site)
+		if site_migration:
+			process_site_migration_job_update(job, site_migration)
+		elif job.job_type == "Add Upstream to Proxy":
 			process_new_server_job_update(job)
 		elif job.job_type == "New Bench":
 			process_new_bench_job_update(job)
