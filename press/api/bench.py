@@ -354,4 +354,10 @@ def running_jobs(name):
 @frappe.whitelist()
 @protected("Release Group")
 def recent_deploys(name):
-	return frappe.db.get_all("Deploy", {"group": name}, ["name", "creation"])
+	return frappe.get_all(
+		"Deploy Candidate",
+		["name", "creation"],
+		{"group": name, "status": ("!=", "Draft")},
+		order_by="creation desc",
+		limit=3,
+	)
