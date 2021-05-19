@@ -3,34 +3,33 @@
 		title="Versions"
 		subtitle="Deployed versions of your bench"
 		:loading="versions.loading"
+		v-if="versions.data && versions.data.length"
 	>
 		<div class="divide-y">
-			<div
-				class="flex py-3"
+			<ListItem
 				v-for="version in versions.data"
 				:key="version.name"
+				:title="version.name"
+				:subtitle="
+					version.deployed_on &&
+						formatDate(version.deployed_on, 'DATETIME_FULL')
+				"
 			>
-				<div>
-					<div class="text-base font-medium">
-						{{ version.name }}
+				<template #actions>
+					<div class="flex items-center space-x-2">
+						<Badge v-if="version.status != 'Active'" :status="version.status" />
+						<Badge v-else color="green">
+							{{ version.sites_count }}
+							{{ $plural(version.sites_count, 'site', 'sites') }}
+						</Badge>
+						<Dropdown class="ml-auto" :items="dropdownItems(version)" right>
+							<template v-slot="{ toggleDropdown }">
+								<Button icon="more-horizontal" @click="toggleDropdown()" />
+							</template>
+						</Dropdown>
 					</div>
-					<div class="text-base text-gray-700">
-						{{ formatDate(version.deployed_on, 'DATETIME_FULL') }}
-					</div>
-				</div>
-				<div class="ml-8">
-					<Badge v-if="version.status != 'Active'" :status="version.status" />
-					<Badge v-else color="green">
-						{{ version.sites_count }}
-						{{ $plural(version.sites_count, 'site', 'sites') }}
-					</Badge>
-				</div>
-				<Dropdown class="ml-auto" :items="dropdownItems(version)" right>
-					<template v-slot="{ toggleDropdown }">
-						<Button icon="more-horizontal" @click="toggleDropdown()" />
-					</template>
-				</Dropdown>
-			</div>
+				</template>
+			</ListItem>
 		</div>
 		<Dialog :title="sitesDialogTitle" v-model="showSites">
 			<Loading v-if="sitesInVersion.loading" />
@@ -52,21 +51,22 @@
 		>
 			<div class="divide-y" v-if="selectedVersion">
 				<div
-					class="flex py-3"
+					class="flex items-center py-3"
 					v-for="app in selectedVersion.apps"
 					:key="app.app"
 				>
-					<div class="w-1/3 text-base font-medium">
+					<div class="text-base font-medium">
 						{{ app.repository_owner }}/{{ app.app }}
 					</div>
-					<div class="w-1/3 text-base">
-						{{ app.tag || app.hash.substr(0, 7) }}
-					</div>
-					<div class="w-1/3 text-base text-right">
-						<Link :to="`${app.repository_url}/commit/${app.hash}`">
-							Open Commit →
-						</Link>
-					</div>
+					<a
+						class="block ml-2 cursor-pointer"
+						:href="`${app.repository_url}/commit/${app.hash}`"
+						target="_blank"
+					>
+						<Badge class="cursor-pointer hover:text-blue-500" color="blue">
+							{{ app.tag || app.hash.substr(0, 7) }}
+						</Badge>
+					</a>
 				</div>
 			</div>
 		</Dialog>

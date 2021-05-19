@@ -3,6 +3,7 @@
 		title="Recent deploys"
 		subtitle="History of deploys on your bench"
 		:loading="recentDeploys.loading"
+		v-if="recentDeploys.data && recentDeploys.data.length"
 	>
 		<template #actions>
 			<router-link

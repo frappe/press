@@ -82,17 +82,21 @@ def installations(token):
 		"Accept": "application/vnd.github.machine-man-preview+json",
 	}
 	response = requests.get("https://api.github.com/user/installations", headers=headers)
+	data = response.json()
 	installations = []
-	for installation in response.json()["installations"]:
-		installations.append(
-			{
-				"id": installation["id"],
-				"login": installation["account"]["login"],
-				"url": installation["html_url"],
-				"image": installation["account"]["avatar_url"],
-				"repos": repositories(installation["id"], token),
-			}
-		)
+	if response.ok:
+		for installation in data["installations"]:
+			installations.append(
+				{
+					"id": installation["id"],
+					"login": installation["account"]["login"],
+					"url": installation["html_url"],
+					"image": installation["account"]["avatar_url"],
+					"repos": repositories(installation["id"], token),
+				}
+			)
+	else:
+		frappe.throw(data.get("message") or "An error occured")
 
 	return installations
 
@@ -129,11 +133,18 @@ def repository(installation, owner, name):
 	repo = requests.get(
 		f"https://api.github.com/repos/{owner}/{name}", headers=headers,
 	).json()
-	repo["branches"] = requests.get(
+
+	response = requests.get(
 		f"https://api.github.com/repos/{owner}/{name}/branches",
 		params={"per_page": 100},
 		headers=headers,
-	).json()
+	)
+	if response.ok:
+		branches = response.json()
+	else:
+		branches = []
+	repo["branches"] = branches
+
 	return repo
 
 

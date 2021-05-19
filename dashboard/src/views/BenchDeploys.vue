@@ -1,207 +1,87 @@
 <template>
 	<div>
-		<Section
+		<CardWithDetails
 			title="Deploys"
-			:description="
+			:subtitle="
 				candidates.length ? 'Deploys on your bench' : 'No deploys on your bench'
 			"
 		>
-			<div class="flex" v-if="candidates.length">
-				<div
-					class="w-full py-4 overflow-auto text-base border rounded-md sm:w-1/3 sm:rounded-r-none"
-					:class="{ 'hidden sm:block': selectedCandidate }"
+			<div>
+				<router-link
+					v-for="candidate in candidates"
+					class="block px-2.5 rounded-md cursor-pointer"
+					:class="
+						selectedCandidate && selectedCandidate.name === candidate.name
+							? 'bg-gray-100'
+							: 'hover:bg-gray-50'
+					"
+					:key="candidate.name"
+					:to="`/benches/${bench.name}/deploys/${candidate.name}`"
 				>
-					<router-link
-						class="block px-6 py-3 cursor-pointer"
-						:class="
-							selectedCandidate && selectedCandidate.name === candidate.name
-								? 'bg-gray-100'
-								: 'hover:bg-gray-50'
+					<ListItem
+						:title="
+							`Deploy on ${formatDate(candidate.creation, 'DATETIME_SHORT')}`
 						"
-						v-for="candidate in candidates"
-						:key="candidate.name"
-						:to="`/benches/${bench.name}/deploys/${candidate.name}`"
+						:subtitle="itemSubtitle(candidate)"
 					>
-						Deploy on
-						<FormatDate>
-							{{ candidate.creation }}
-						</FormatDate>
-					</router-link>
-				</div>
-				<div class="w-full sm:w-2/3" v-if="selectedCandidate">
-					<router-link
-						:to="`/benches/${bench.name}/deploys`"
-						class="flex items-center py-4 -mt-4 sm:hidden"
+						<template #actions>
+							<Badge v-if="candidate.status != 'Success'" color="yellow">
+								{{ candidate.status }}
+							</Badge>
+						</template>
+					</ListItem>
+					<div class="border-b"></div>
+				</router-link>
+				<div class="py-3" v-if="!$resources.candidates.lastPageEmpty">
+					<Button
+						:loading="$resources.candidates.loading"
+						loadingText="Loading..."
+						@click="pageStart += 10"
 					>
-						<FeatherIcon name="arrow-left" class="w-4 h-4" />
-						<span class="ml-2">
-							Select another Deploy
-						</span>
-					</router-link>
-					<div class="min-h-full">
-						<div class="pb-6 -mx-4 bg-black sm:mx-0">
-							<div class="px-6 py-4 mb-2 border-b border-gray-900">
-								<div class="text-sm font-semibold text-white">
-									Build Log
-								</div>
-								<div
-									class="text-xs text-gray-500"
-									v-if="selectedCandidate.status === 'Success'"
-								>
-									Completed
-									<FormatDate type="relative">
-										{{ selectedCandidate.build_end }}
-									</FormatDate>
-									in {{ formatDuration(selectedCandidate.build_duration) }}
-								</div>
-							</div>
-							<details
-								class="px-6 text-white cursor-pointer"
-								v-for="step in selectedCandidate.build_steps"
-								:key="step.idx"
-							>
-								<summary
-									class="flex items-center py-2 text-xs text-gray-600 focus:outline-none"
-								>
-									<span class="ml-1">
-										<Spinner
-											v-if="step.status === 'Running'"
-											class="w-3 h-3 text-gray-500"
-										/>
-										<FeatherIcon
-											v-else-if="step.status === 'Success'"
-											name="check"
-											:stroke-width="3"
-											class="w-3 h-3 text-green-500"
-										/>
-										<FeatherIcon
-											v-else-if="step.status === 'Failure'"
-											name="x"
-											:stroke-width="3"
-											class="w-3 h-3 text-red-500"
-										/>
-									</span>
-									<span class="ml-2 font-semibold text-white flex-grow">
-										{{ step.stage }} - {{ step.step }}
-									</span>
-									<div
-										v-if="
-											step.status === 'Success' || step.status === 'Failure'
-										"
-									>
-										<div
-											class="text-gray-300"
-											v-if="step.cached && !step.duration"
-										>
-											Cached
-										</div>
-										<div class="text-gray-300" v-else>
-											{{ step.duration }}<span class="pl-0.5">s</span>
-										</div>
-									</div>
-								</summary>
-								<div class="px-6 font-mono text-xs text-blue-200">
-									<pre class="whitespace-pre-wrap">{{ step.command }}</pre>
-								</div>
-								<div class="px-6 font-mono text-xs text-gray-200">
-									<pre class="whitespace-pre-wrap">{{ step.output }}</pre>
-								</div>
-							</details>
-						</div>
-						<div class="bg-black sm:mx-0 -mt-2">
-							<div
-								class="px-6 py-4 border-t border-gray-900"
-								v-for="job in selectedCandidate.jobs"
-								:key="job.name"
-							>
-								<router-link
-									:to="`/benches/${bench.name}/jobs/${job.name}`"
-									class="flex items-center justify-between"
-								>
-									<div>
-										<div class="text-sm font-semibold text-white">
-											Deploy Log
-										</div>
-										<div
-											class="text-xs text-gray-500"
-											v-if="job.status === 'Success'"
-										>
-											Completed
-											<FormatDate type="relative">
-												{{ job.end }}
-											</FormatDate>
-											in {{ formatDuration(job.duration) }}
-										</div>
-										<div class="text-xs text-gray-500" v-else>
-											{{ job.status }}
-										</div>
-									</div>
-									<FeatherIcon
-										name="external-link"
-										class="w-3 h-3 ml-1"
-										color="white"
-									/>
-								</router-link>
-							</div>
-						</div>
-					</div>
+						Load more
+					</Button>
 				</div>
 			</div>
-		</Section>
+			<template #details>
+				<StepsDetail
+					:showDetails="selectedCandidate"
+					:loading="$resources.selectedCandidate.loading"
+					:steps="getSteps(selectedCandidate)"
+					title="Build Log"
+					:subtitle="subtitle"
+				/>
+			</template>
+		</CardWithDetails>
 	</div>
 </template>
 
 <script>
+import CardWithDetails from '@/components/CardWithDetails.vue';
+import StepsDetail from './StepsDetail.vue';
 export default {
 	name: 'BenchDeploys',
 	props: ['bench', 'candidateName'],
-	watch: {
-		candidateName(value) {
-			if (value) {
-				this.$resources.selectedCandidate.reload();
-			}
-		}
+	components: {
+		CardWithDetails,
+		StepsDetail
 	},
-	mounted() {
-		if (this.candidateName) {
-			this.$resources.selectedCandidate.reload();
-			this.setupSocket();
-		}
-	},
-	methods: {
-		formatDuration(duration) {
-			return duration.split('.')[0];
-		},
-		setupSocket() {
-			if (this._socketSetup) return;
-			this._socketSetup = true;
-
-			this.$socket.on('list_update', ({ doctype, name }) => {
-				if (
-					doctype === 'Deploy Candidate' &&
-					name === this.selectedCandidate.name
-				) {
-					this.$resources.selectedCandidate.reload();
-				}
-			});
-		}
+	data() {
+		return {
+			pageStart: 0
+		};
 	},
 	resources: {
 		candidates() {
 			return {
 				method: 'press.api.bench.candidates',
 				params: {
-					name: this.bench.name
+					name: this.bench.name,
+					start: this.pageStart
 				},
 				auto: true,
-				default: [],
-				onSuccess(candidates) {
-					if (candidates && !this.candidateName) {
-						this.$router.push(
-							`/benches/${this.bench.name}/deploys/${candidates[0].name}`
-						);
-					}
-				}
+				paged: true,
+				keepData: true,
+				default: []
 			};
 		},
 		selectedCandidate() {
@@ -210,13 +90,112 @@ export default {
 				params: {
 					name: this.candidateName
 				},
-				auto: false
+				validate() {
+					if (!this.candidateName) {
+						return 'Select a candidate first';
+					}
+				},
+				auto: true
 			};
+		}
+	},
+	mounted() {
+		if (this.candidateName && this.selectedCandidate?.status != 'Success') {
+			this.$socket.on(`bench_deploy:${this.candidateName}:steps`, this.onSteps);
+			this.$socket.on(
+				`bench_deploy:${this.candidateName}:finished`,
+				this.onStopped
+			);
+		}
+	},
+	destroyed() {
+		this.$socket.off(`bench_deploy:${this.candidateName}:steps`, this.onSteps);
+		this.$socket.off(
+			`bench_deploy:${this.candidateName}:finished`,
+			this.onStopped
+		);
+	},
+	methods: {
+		onSteps(data) {
+			this.$resources.selectedCandidate.data.build_steps = data.steps;
+		},
+		onStopped() {
+			this.$resources.candidates.reset();
+			this.$resources.candidates.reload();
+			this.$resources.selectedCandidate.reload();
+		},
+		getSteps(candidate) {
+			if (!candidate) return [];
+			let steps = candidate.build_steps.map(step => {
+				let name = step.stage + ' - ' + step.step;
+				let output =
+					step.command || step.output
+						? `${step.command || ''}\n${step.output || ''}`
+						: '';
+				let duration = ['Success', 'Failure'].includes(step.status)
+					? step.cached
+						? 'Cached'
+						: `${step.duration} s`
+					: null;
+				return {
+					name,
+					output,
+					status: step.status,
+					duration,
+					completed: step.status == 'Success',
+					running: step.status == 'Running'
+				};
+			});
+
+			let bench = this.bench;
+			let jobs = candidate.jobs.map(job => {
+				return {
+					name: `Deploy ${job.bench}`,
+					output:
+						job.status == 'Success'
+							? `Deploy completed in ${job.duration.split('.')[0]}`
+							: null,
+					status: job.status,
+					completed: job.status == 'Success',
+					running: ['Pending', 'Running'].includes(job.status),
+					action: {
+						render(h) {
+							return h(
+								'Link',
+								{
+									props: { to: `/benches/${bench.name}/jobs/${job.name}` },
+									class: 'text-sm'
+								},
+								'Job →'
+							);
+						}
+					}
+				};
+			});
+			return [...steps, ...jobs];
+		},
+		itemSubtitle(candidate) {
+			return ['frappe', ...candidate.apps.filter(d => d !== 'frappe')].join(
+				', '
+			);
 		}
 	},
 	computed: {
 		selectedCandidate() {
 			return this.$resources.selectedCandidate.data;
+		},
+		subtitle() {
+			if (
+				this.selectedCandidate &&
+				this.selectedCandidate.status == 'Success'
+			) {
+				let when = this.formatDate(
+					this.selectedCandidate.build_end,
+					'relative'
+				);
+				let duration = this.selectedCandidate.build_duration.split('.')[0];
+				return `Completed ${when} in ${duration}`;
+			}
 		},
 		candidates() {
 			return this.$resources.candidates.data;

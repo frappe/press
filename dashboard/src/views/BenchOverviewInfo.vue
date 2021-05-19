@@ -3,7 +3,7 @@
 		<div class="divide-y">
 			<div class="flex items-center justify-between py-3">
 				<div>
-					<div class="text-base text-gray-600">Name</div>
+					<div class="text-base text-gray-600">Title</div>
 					<div class="text-base font-medium text-gray-900">
 						{{ bench.title }}
 					</div>
@@ -64,8 +64,6 @@ export default {
 				},
 				onSuccess() {
 					this.showEditTitleDialog = false;
-					console.log(this.benchResources());
-					// .bench.reload();
 				}
 			};
 		}

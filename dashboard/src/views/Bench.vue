@@ -62,7 +62,7 @@ export default {
 	methods: {
 		onSocketUpdate({ doctype, name }) {
 			if (doctype == 'Release Group' && name == this.bench.name) {
-				this.$resources.bench.reload();
+				this.reloadBench();
 			}
 		},
 		routeToGeneral() {
@@ -70,6 +70,13 @@ export default {
 				let path = this.$route.fullPath;
 				let tab = 'overview';
 				this.$router.replace(`${path}/${tab}`);
+			}
+		},
+		reloadBench() {
+			// reload if not loaded in last 1 second
+			let seconds = 1;
+			if (new Date() - this.$resources.bench.lastLoaded > 1000 * seconds) {
+				this.$resources.bench.reload();
 			}
 		}
 	},

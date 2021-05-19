@@ -8,13 +8,14 @@
 			update now?
 		</span>
 		<span v-else>
-			Your bench is not deployed yet. Would you like to deploy now?
+			Your bench is not deployed yet. You can add more apps to your bench before
+			deploying. If you want to deploy now, click on Deploy.
 		</span>
 		<template #actions>
 			<Button
 				type="primary"
 				@click="$resources.deploy.submit()"
-				:disabled="$resources.deploy.loading"
+				:loading="$resources.deploy.loading"
 			>
 				Deploy
 			</Button>
