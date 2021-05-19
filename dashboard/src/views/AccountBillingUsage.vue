@@ -57,17 +57,6 @@
 					</div>
 				</div>
 			</div>
-			<div
-				v-if="
-					!loading &&
-						!$account.team.default_payment_method &&
-						!$account.team.erpnext_partner
-				"
-			>
-				<Button type="primary" route="/welcome">
-					Add Billing Information
-				</Button>
-			</div>
 
 			<div class="py-20 text-center" v-if="loading">
 				<Button :loading="true" loadingText="Loading" />
