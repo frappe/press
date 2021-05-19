@@ -83,6 +83,7 @@ class Resource {
 		}
 		this._vm = vm;
 		this.method = options.method;
+		this.delay = options.delay || 0;
 		this.update(options);
 	}
 
@@ -137,6 +138,10 @@ class Resource {
 
 		try {
 			let data = await call(this.method, this.currentParams);
+			if (this.delay) {
+				// artificial delay
+				await new Promise(resolve => setTimeout(resolve, this.delay * 1000));
+			}
 			if (Array.isArray(data) && this.paged) {
 				this.lastPageEmpty = data.length === 0;
 				this.data = [].concat(this.data || [], data);

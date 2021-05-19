@@ -3,10 +3,11 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
+from collections import OrderedDict
 import frappe
-from press.utils import get_current_team
+from press.utils import get_current_team, unique
 from press.api.site import protected
-from frappe.core.utils import find_all
+from frappe.core.utils import find, find_all
 from press.press.doctype.release_group.release_group import new_release_group
 from press.press.doctype.agent_job.agent_job import job_detail
 
@@ -14,6 +15,9 @@ from press.press.doctype.agent_job.agent_job import job_detail
 @frappe.whitelist()
 def new(bench):
 	team = get_current_team()
+	if exists(bench["title"]):
+		frappe.throw("A bench exists with the same name")
+
 	apps = [{"app": app["name"], "source": app["source"]} for app in bench["apps"]]
 	group = new_release_group(bench["title"], bench["version"], apps, team)
 	return group.name
@@ -79,6 +83,7 @@ def options():
 		"""
 	SELECT
 		version.name as version,
+		version.status as status,
 		source.name as source, source.app, source.repository_url, source.repository, source.repository_owner, source.branch,
 		source.app_title as title, source.frappe
 	FROM
@@ -100,11 +105,11 @@ def options():
 		as_dict=True,
 	)
 
-	version_list = frappe.utils.unique([row.version for row in rows])
+	version_list = unique(rows, lambda x: x.version)
 	versions = []
-	for version in version_list:
-		version_dict = {"name": version}
-		version_rows = find_all(rows, lambda x: x.version == version)
+	for d in version_list:
+		version_dict = {"name": d.version, "status": d.status}
+		version_rows = find_all(rows, lambda x: x.version == d.version)
 		app_list = frappe.utils.unique([row.app for row in version_rows])
 		for app in app_list:
 			app_rows = find_all(version_rows, lambda x: x.app == app)
@@ -132,6 +137,13 @@ def options():
 def apps(name):
 	group = frappe.get_doc("Release Group", name)
 	apps = []
+	deployed_apps = frappe.db.get_all(
+		"Bench",
+		filters={"group": group.name, "status": ("!=", "Archived")},
+		fields=["`tabBench App`.app"],
+		pluck="app",
+	)
+	deployed_apps = unique(deployed_apps)
 	for app in group.apps:
 		source = frappe.get_doc("App Source", app.source)
 		app = frappe.get_doc("App", app.app)
@@ -145,9 +157,28 @@ def apps(name):
 				"repository_url": source.repository_url,
 				"repository": source.repository,
 				"repository_owner": source.repository_owner,
+				"deployed": app.name in deployed_apps,
 			}
 		)
 	return apps
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def installable_apps(name):
+	release_group = frappe.get_doc("Release Group", name)
+	installed_apps = [app.app for app in release_group.apps]
+	versions = options()["versions"]
+	version = find(versions, lambda x: x["name"] == release_group.version)
+	apps = version["apps"] if version else []
+	return [app for app in apps if app["name"] not in installed_apps]
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def add_app(name, source, app):
+	release_group = frappe.get_doc("Release Group", name)
+	release_group.add_app(frappe._dict(name=source, app=app))
 
 
 @frappe.whitelist()
@@ -213,15 +244,23 @@ def sites(name, version):
 
 @frappe.whitelist()
 @protected("Release Group")
-def candidates(name):
-	candidates = frappe.get_all(
+def candidates(name, start=0):
+	result = frappe.get_all(
 		"Deploy Candidate",
-		["name", "creation", "status"],
+		["name", "creation", "status", "`tabDeploy Candidate App`.app"],
 		{"group": name, "status": ("!=", "Draft")},
 		order_by="creation desc",
-		limit=20,
+		start=start,
+		limit=10,
 	)
-	return candidates
+	candidates = OrderedDict()
+	for d in result:
+		candidates.setdefault(d.name, {})
+		candidates[d.name].update(d)
+		candidates[d.name].setdefault("apps", [])
+		candidates[d.name]["apps"].append(d.app)
+
+	return candidates.values()
 
 
 @frappe.whitelist()
@@ -234,7 +273,7 @@ def candidate(name):
 		for bench in deploy.benches:
 			job = frappe.get_all(
 				"Agent Job",
-				["name", "status", "end", "duration"],
+				["name", "status", "end", "duration", "bench"],
 				{"bench": bench.bench, "job_type": "New Bench"},
 				limit=1,
 			)[0]
