@@ -139,6 +139,27 @@ Sometimes, there is an issue while uploading a docker image in the background an
 
 ## Setting up Proxy server (`n` server)
 
+Go to the `Proxy Server` list and click `+ Add Proxy Server`. Fill in the details as given below:
+
+Hostname: `n1` (`n2`, `n3`, if you want to create more Proxy servers)
+
+IP: IP Address of the `n` server.
+Private IP: Private (internal) IP Address of the `n` server. Can be found in `Hetzner` console.
+
+Agent Password: Choose a password and remember it. This will be used to access the `agent`.
+
+Click on save.
+
+Now, click on the `Actions` dropdown button, which is located next to the `Save` button and click on `Setup Server`. The server should go in `Installing` state.
+
+This will setup the server. We use `Ansible` to automate the infrastructure, so, once you click on the `Setup Server` button, `Ansible Play`s will be created and run in the background to setup the server (install necessary software, perform essential configuration changes and more). Each `Ansible Play` document creates a number of `Ansible Task`, which is an individual task that will be carried out to setup the server.
+
+Navigate to `Ansible Task List` and you should see some tasks which will have a particular status. For example, `success` means the task completed successfully and `running` means the task is currently running. You should confirm that all the tasks are eventually `success`ful.
+
+After some time, when the tasks have completed to run, the `Proxy Server` will go to `Active` state.
+
+If there is any error (for example, if the `Proxy Server` goes into `Broken` state) or a task keeps running forever, go to the `Error Log List` and you will most probably find a log that corresponds to the task and more information on why it failed.
+
 ## Setting up App server (`f` server)
 
 ## Setting up DB server (`m` server)
