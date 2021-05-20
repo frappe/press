@@ -1,6 +1,14 @@
 <template>
 	<WizardCard v-if="options">
-		<h1 class="mb-6 text-2xl font-bold text-center">Create a New Site</h1>
+		<div class="mb-6 text-center ">
+			<h1 class="text-2xl font-bold">
+				Create a new site
+			</h1>
+			<p v-if="benchTitle" class="text-base text-gray-700">
+				Site will be created on bench
+				<span class="font-medium">{{ benchTitle }}</span>
+			</p>
+		</div>
 		<Steps :steps="steps">
 			<template
 				v-slot="{
@@ -102,6 +110,7 @@ export default {
 			subdomainValid: false,
 			options: null,
 			privateBench: false,
+			benchTitle: null,
 			selectedApps: [],
 			selectedGroup: null,
 			selectedFiles: {
@@ -146,6 +155,7 @@ export default {
 		if (this.$route.query.bench) {
 			this.privateBench = true;
 			this.selectedGroup = this.$route.query.bench;
+			this.benchTitle = this.$route.query.benchTitle;
 			this.$router.replace({});
 		}
 	},
@@ -182,7 +192,6 @@ export default {
 		}
 	},
 	methods: {
-		canCreateSite() {},
 		disablePlan(plan) {
 			if (this.options.free_account) {
 				return false;

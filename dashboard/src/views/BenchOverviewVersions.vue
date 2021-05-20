@@ -11,16 +11,20 @@
 				:key="version.name"
 				:title="version.name"
 				:subtitle="
-					version.deployed_on &&
-						formatDate(version.deployed_on, 'DATETIME_FULL')
+					// prettier-ignore
+					version.status == 'Broken'
+						? 'Contact support to resolve this issue'
+						: version.deployed_on
+							? formatDate(version.deployed_on, 'DATETIME_FULL')
+							: null
 				"
 			>
 				<template #actions>
 					<div class="flex items-center space-x-2">
 						<Badge v-if="version.status != 'Active'" :status="version.status" />
 						<Badge v-else color="green">
-							{{ version.sites_count }}
-							{{ $plural(version.sites_count, 'site', 'sites') }}
+							{{ version.sites.length }}
+							{{ $plural(version.sites.length, 'site', 'sites') }}
 						</Badge>
 						<Dropdown class="ml-auto" :items="dropdownItems(version)" right>
 							<template v-slot="{ toggleDropdown }">
@@ -32,11 +36,10 @@
 			</ListItem>
 		</div>
 		<Dialog :title="sitesDialogTitle" v-model="showSites">
-			<Loading v-if="sitesInVersion.loading" />
-			<div class="divide-y" v-else @click="showSites = false">
+			<div class="divide-y" @click="showSites = false">
 				<router-link
 					class="block py-3 text-base hover:bg-gray-50 focus:outline-none focus:shadow-outline"
-					v-for="site in sitesInVersion.data"
+					v-for="site in sitesInDialog"
 					:key="site.name"
 					:to="'/sites/' + site.name"
 				>
@@ -79,7 +82,8 @@ export default {
 	data() {
 		return {
 			selectedVersion: null,
-			showSites: false
+			showSites: false,
+			sitesInDialog: []
 		};
 	},
 	resources: {
@@ -88,11 +92,6 @@ export default {
 				method: 'press.api.bench.versions',
 				params: { name: this.bench.name },
 				auto: true
-			};
-		},
-		sitesInVersion() {
-			return {
-				method: 'press.api.bench.sites'
 			};
 		}
 	},
@@ -103,10 +102,7 @@ export default {
 					label: 'Show sites',
 					action: () => {
 						this.showSites = true;
-						this.$resources.sitesInVersion.fetch({
-							name: this.bench.name,
-							version: version.name
-						});
+						this.sitesInDialog = version.sites;
 					}
 				},
 				{
@@ -118,7 +114,7 @@ export default {
 			];
 		},
 		benchDescription(version) {
-			return `${version.status} · ${version.sites_count} sites`;
+			return `${version.status} · ${version.sites.length} sites`;
 		}
 	},
 	computed: {
@@ -126,17 +122,8 @@ export default {
 			return Boolean(this.selectedVersion);
 		},
 		sitesDialogTitle() {
-			if (this.sitesInVersion.loading) {
-				return 'Sites';
-			}
-			if (this.sitesInVersion.data) {
-				let sites = this.$plural(
-					this.sitesInVersion.data.length,
-					'site',
-					'sites'
-				);
-				return `${this.sitesInVersion.data.length} ${sites} on this version`;
-			}
+			let sites = this.$plural(this.sitesInDialog.length, 'site', 'sites');
+			return `${this.sitesInDialog.length} ${sites} on this version`;
 		}
 	}
 };

@@ -17,7 +17,12 @@
 						</Badge>
 					</div>
 					<div v-if="bench.status == 'Active'">
-						<Button icon-left="plus" :route="'/sites/new?bench=' + bench.name">
+						<Button
+							icon-left="plus"
+							:route="
+								`/sites/new?bench=${bench.name}&benchTitle=${bench.title}`
+							"
+						>
 							New Site
 						</Button>
 					</div>

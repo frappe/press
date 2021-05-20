@@ -7,7 +7,7 @@
 		<template #actions>
 			<Button
 				@click="
-					installableApps.fetch();
+					!installableApps.data ? installableApps.fetch() : null;
 					showAddAppDialog = true;
 				"
 			>
@@ -28,6 +28,9 @@
 				</div>
 				<div class="flex ml-auto space-x-2">
 					<Badge v-if="!app.deployed" color="yellow">Not Deployed</Badge>
+					<Badge v-if="app.update_available" color="blue">
+						Update Available
+					</Badge>
 					<Dropdown :items="dropdownItems(app)" right>
 						<template v-slot="{ toggleDropdown }">
 							<Button icon="more-horizontal" @click="toggleDropdown()" />
@@ -37,7 +40,9 @@
 			</div>
 		</div>
 		<Dialog title="Add apps to your bench" v-model="showAddAppDialog">
+			<Loading class="py-2" v-if="installableApps.loading" />
 			<AppSourceSelector
+				v-else
 				class="pt-1"
 				:apps="installableApps.data"
 				:value.sync="selectedApp"

@@ -12,21 +12,47 @@
 			deploying. If you want to deploy now, click on Deploy.
 		</span>
 		<template #actions>
-			<Button
-				type="primary"
-				@click="$resources.deploy.submit()"
-				:loading="$resources.deploy.loading"
-			>
-				Deploy
+			<Button type="primary" @click="showDeployDialog = true">
+				Show Updates
 			</Button>
 		</template>
+		<Dialog title="Following updates are available" v-model="showDeployDialog">
+			<AppUpdates :apps="deployInformation.apps" />
+			<template #actions>
+				<Button
+					type="primary"
+					@click="$resources.deploy.submit()"
+					:loading="$resources.deploy.loading"
+				>
+					Deploy
+				</Button>
+			</template>
+		</Dialog>
 	</Alert>
 </template>
 <script>
+import AppUpdates from './AppUpdates.vue';
 export default {
 	name: 'AlertBenchUpdate',
 	props: ['bench'],
+	components: {
+		AppUpdates
+	},
+	data() {
+		return {
+			showDeployDialog: false
+		};
+	},
 	resources: {
+		deployInformation() {
+			return {
+				method: 'press.api.bench.deploy_information',
+				params: {
+					name: this.bench.name
+				},
+				auto: true
+			};
+		},
 		deploy() {
 			return {
 				method: 'press.api.bench.deploy',
@@ -41,10 +67,15 @@ export default {
 	},
 	computed: {
 		show() {
-			return (
-				['Awaiting Deploy', 'Active'].includes(this.bench.status) &&
-				this.bench.update_available
-			);
+			if (this.deployInformation) {
+				return (
+					this.deployInformation.update_available &&
+					['Awaiting Deploy', 'Active'].includes(this.bench.status)
+				);
+			}
+		},
+		deployInformation() {
+			return this.$resources.deployInformation.data;
 		}
 	}
 };

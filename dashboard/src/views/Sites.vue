@@ -27,11 +27,15 @@
 							</Button>
 							<Button
 								:route="
-									`/sites/new${!group.public ? `?bench=${group.name}` : ''}`
+									`/sites/new${
+										!group.public
+											? `?bench=${group.name}&benchTitle=${group.title}`
+											: ''
+									}`
 								"
 								type="primary"
 								iconLeft="plus"
-								v-if="group.public || (!group.public && group.owned_by_team)"
+								v-if="showNewSiteButton(group)"
 							>
 								New Site
 							</Button>
@@ -148,6 +152,10 @@ export default {
 				return 'Sites';
 			}
 			return group.title;
+		},
+		showNewSiteButton(group) {
+			if (group.status != 'Active') return false;
+			return group.public || group.owned_by_team;
 		},
 		relativeDate(dateString) {
 			return dateString;

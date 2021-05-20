@@ -18,17 +18,30 @@
 				v-for="app in installedApps"
 				:key="app.name"
 			>
-				<div class="w-1/3 text-base font-medium">
-					{{ app.title }}
+				<div class="w-2/3">
+					<div class="text-base font-medium ">
+						{{ app.title }}
+					</div>
+					<div class="mt-1 text-base text-gray-700">
+						{{ app.repository_owner }}/{{ app.repository }}:{{ app.branch }}
+					</div>
 				</div>
-				<div class="text-base text-gray-700">
-					{{ app.repository_owner }}:{{ app.branch }}
+				<div class="flex items-center ml-auto space-x-2">
+					<a
+						class="block cursor-pointer"
+						:href="`${app.repository_url}/commit/${app.hash}`"
+						target="_blank"
+					>
+						<Badge class="cursor-pointer hover:text-blue-500" color="blue">
+							{{ app.tag || app.hash.substr(0, 7) }}
+						</Badge>
+					</a>
+					<Dropdown :items="dropdownItems(app)" right>
+						<template v-slot="{ toggleDropdown }">
+							<Button icon="more-horizontal" @click="toggleDropdown()" />
+						</template>
+					</Dropdown>
 				</div>
-				<Dropdown class="ml-auto" :items="dropdownItems(app)" right>
-					<template v-slot="{ toggleDropdown }">
-						<Button icon="more-horizontal" @click="toggleDropdown()" />
-					</template>
-				</Dropdown>
 			</div>
 		</div>
 
