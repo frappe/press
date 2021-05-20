@@ -343,28 +343,34 @@ class DeployCandidate(Document):
 		self.save()
 		frappe.db.commit()
 
-		settings = frappe.db.get_value(
-			"Press Settings",
-			None,
-			["docker_registry_url", "docker_registry_username", "docker_registry_password"],
-			as_dict=True,
-		)
+		try:
+			settings = frappe.db.get_value(
+				"Press Settings",
+				None,
+				["docker_registry_url", "docker_registry_username", "docker_registry_password"],
+				as_dict=True,
+			)
 
-		client = docker.from_env()
-		client.login(
-			registry=settings.docker_registry_url,
-			username=settings.docker_registry_username,
-			password=settings.docker_registry_password,
-		)
+			client = docker.from_env()
+			client.login(
+				registry=settings.docker_registry_url,
+				username=settings.docker_registry_username,
+				password=settings.docker_registry_password,
+			)
 
-		client.images.push(self.docker_image_repository, self.docker_image_tag)
+			client.images.push(self.docker_image_repository, self.docker_image_tag)
 
-		end_time = now()
-		step.duration = frappe.utils.rounded((end_time - start_time).total_seconds(), 1)
-		step.status = "Success"
+			end_time = now()
+			step.duration = frappe.utils.rounded((end_time - start_time).total_seconds(), 1)
+			step.status = "Success"
 
-		self.save()
-		frappe.db.commit()
+			self.save()
+			frappe.db.commit()
+		except Exception:
+			step.status = "Failure"
+			self.save()
+			frappe.db.commit()
+			raise
 
 	def create_deploy(self):
 		try:
