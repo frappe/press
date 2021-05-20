@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import frappe
 from frappe.model.document import Document
 from frappe.utils import random_string, get_url
+from press.utils import log_error
 
 
 class AccountRequest(Document):
@@ -18,6 +19,17 @@ class AccountRequest(Document):
 
 		self.ip_address = frappe.local.request_ip
 		self.send_verification_email()
+
+	def too_many_requests_with_field(self, field_name, limits):
+		key = getattr(self, field_name)
+		for allowed_count, kwargs in limits:
+			count = frappe.db.count(
+				self.doctype,
+				{field_name: key, "creation": (">", frappe.utils.add_to_date(None, **kwargs))},
+			)
+			if count > allowed_count:
+				return True
+		return False
 
 	@frappe.whitelist()
 	def send_verification_email(self):
