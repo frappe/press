@@ -27,19 +27,14 @@ def new(bench):
 @protected("Release Group")
 def get(name):
 	group = frappe.get_doc("Release Group", name)
-	most_recent_candidate = frappe.get_all(
-		"Deploy Candidate", ["status"], {"group": name}, limit=1, order_by="creation desc"
-	)[0]
 	active_benches = frappe.get_all(
 		"Bench", {"group": name, "status": "Active"}, limit=1, order_by="creation desc"
 	)
-	update_available = most_recent_candidate.status == "Draft"
 	return {
 		"name": group.name,
 		"title": group.title,
 		"version": group.version,
 		"status": "Active" if active_benches else "Awaiting Deploy",
-		"update_available": update_available,
 		"last_updated": group.modified,
 		"creation": group.creation,
 	}
@@ -144,10 +139,14 @@ def apps(name):
 		pluck="app",
 	)
 	deployed_apps = unique(deployed_apps)
+	updates = deploy_information(name)
+
 	for app in group.apps:
 		source = frappe.get_doc("App Source", app.source)
 		app = frappe.get_doc("App", app.app)
-
+		update_available = find(
+			updates.apps, lambda x: x["app"] == app.name and x["update_available"]
+		)
 		apps.append(
 			{
 				"name": app.name,
@@ -158,6 +157,7 @@ def apps(name):
 				"repository": source.repository,
 				"repository_owner": source.repository_owner,
 				"deployed": app.name in deployed_apps,
+				"update_available": bool(update_available),
 			}
 		)
 	return apps
@@ -202,8 +202,8 @@ def versions(name):
 		order_by="creation desc",
 	)
 	for version in deployed_versions:
-		version.sites_count = frappe.db.count(
-			"Site", {"bench": version.name, "status": ("!=", "Active")}
+		version.sites = frappe.db.get_all(
+			"Site", {"status": ("!=", "Archived"), "group": name, "bench": version.name}
 		)
 		version.apps = frappe.db.get_all(
 			"Bench App", {"parent": version.name}, ["name", "app", "hash", "source"]
@@ -217,15 +217,7 @@ def versions(name):
 					as_dict=1,
 				)
 			)
-			app.tag = frappe.db.get_value(
-				"App Tag",
-				{
-					"repository": app.repository,
-					"repository_owner": app.repository_owner,
-					"hash": app.hash,
-				},
-				"tag",
-			)
+			app.tag = get_app_tag(app.repository, app.repository_owner, app.hash)
 
 		version.deployed_on = frappe.db.get_value(
 			"Agent Job",
@@ -234,12 +226,6 @@ def versions(name):
 		)
 
 	return deployed_versions
-
-
-@frappe.whitelist()
-@protected("Release Group")
-def sites(name, version):
-	return frappe.db.get_all("Site", {"status": "Active", "group": name, "bench": version})
 
 
 @frappe.whitelist()
@@ -294,6 +280,55 @@ def candidate(name):
 
 
 @frappe.whitelist()
+@protected("Release Group")
+def deploy_information(name):
+	out = frappe._dict(update_available=False)
+	last_deploy_candidate = frappe.get_last_doc(
+		"Deploy Candidate", {"group": name, "status": "Draft"}
+	)
+	if not last_deploy_candidate:
+		return out
+
+	last_deployed_bench = frappe.get_last_doc("Bench", {"group": name, "status": "Active"})
+	out.apps = get_updates_between_current_and_next_apps(
+		last_deployed_bench.apps, last_deploy_candidate.apps
+	)
+	out.update_available = any([app["update_available"] for app in out.apps])
+	return out
+
+
+def get_updates_between_current_and_next_apps(current_apps, next_apps):
+	apps = []
+	for app in next_apps:
+		bench_app = find(current_apps, lambda x: x.app == app.app)
+		current_hash = bench_app.hash if bench_app else None
+		source = frappe.get_doc("App Source", app.source)
+		current_tag = (
+			get_app_tag(source.repository, source.repository_owner, current_hash)
+			if current_hash
+			else None
+		)
+		next_hash = app.hash
+		apps.append(
+			{
+				"title": app.title,
+				"app": app.app,
+				"repository": source.repository,
+				"repository_owner": source.repository_owner,
+				"repository_url": source.repository_url,
+				"branch": source.branch,
+				"current_hash": current_hash,
+				"current_tag": current_tag,
+				"next_hash": next_hash,
+				"next_tag": get_app_tag(source.repository, source.repository_owner, next_hash),
+				"update_available": not current_hash or current_hash != next_hash,
+			}
+		)
+	return apps
+
+
+@frappe.whitelist()
+@protected("Release Group")
 def deploy(name):
 	candidate = frappe.get_all(
 		"Deploy Candidate",
@@ -360,4 +395,12 @@ def recent_deploys(name):
 		{"group": name, "status": ("!=", "Draft")},
 		order_by="creation desc",
 		limit=3,
+	)
+
+
+def get_app_tag(repository, repository_owner, hash):
+	return frappe.db.get_value(
+		"App Tag",
+		{"repository": repository, "repository_owner": repository_owner, "hash": hash},
+		"tag",
 	)

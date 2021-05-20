@@ -166,7 +166,7 @@ export default {
 									props: { to: `/benches/${bench.name}/jobs/${job.name}` },
 									class: 'text-sm'
 								},
-								'Job →'
+								'Job Log →'
 							);
 						}
 					}

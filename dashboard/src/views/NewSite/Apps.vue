@@ -23,50 +23,52 @@
 				Choose apps to install on your site. You can select apps published on
 				marketplace or your private apps.
 			</p>
-			<div class="mt-4">
-				<h3 class="sr-only">Marketplace Apps</h3>
-				<div
-					class="grid grid-cols-2 gap-4 px-2 py-2 mt-4 -mx-2 overflow-y-auto max-h-56"
-				>
-					<SelectableCard
-						v-for="marketplaceApp in marketplaceApps"
-						:key="marketplaceApp.app.app"
-						@click.native="toggleApp(marketplaceApp.app)"
-						:title="marketplaceApp.title"
-						:image="marketplaceApp.image"
-						:selected="selectedApps.includes(marketplaceApp.app.app)"
+			<div class="mt-4 space-y-4">
+				<div v-if="marketplaceApps.length">
+					<h3 class="sr-only">Marketplace Apps</h3>
+					<div
+						class="grid grid-cols-2 gap-4 px-2 py-2 mt-4 -mx-2 overflow-y-auto max-h-56"
 					>
-						<a
-							slot="secondary-content"
-							class="inline-block text-sm leading-snug text-blue-600"
-							:href="'/' + marketplaceApp.route"
-							target="_blank"
-							@click.stop
+						<SelectableCard
+							v-for="marketplaceApp in marketplaceApps"
+							:key="marketplaceApp.app.app"
+							@click.native="toggleApp(marketplaceApp.app)"
+							:title="marketplaceApp.title"
+							:image="marketplaceApp.image"
+							:selected="selectedApps.includes(marketplaceApp.app.app)"
 						>
-							Details
-						</a>
-					</SelectableCard>
-					<div class="h-1 py-4" v-if="marketplaceApps.length > 4"></div>
+							<a
+								slot="secondary-content"
+								class="inline-block text-sm leading-snug text-blue-600"
+								:href="'/' + marketplaceApp.route"
+								target="_blank"
+								@click.stop
+							>
+								Details
+							</a>
+						</SelectableCard>
+						<div class="h-1 py-4" v-if="marketplaceApps.length > 4"></div>
+					</div>
 				</div>
-			</div>
-			<div class="mt-4" v-if="privateApps.length > 0">
-				<h3 class="text-sm font-medium">
-					Your Private Apps
-				</h3>
-				<div
-					class="grid grid-cols-2 gap-4 px-2 py-2 -mx-2 overflow-y-auto mt- max-h-56"
-				>
-					<SelectableCard
-						v-for="app in privateApps"
-						:key="app.app"
-						@click.native="toggleApp(app)"
-						:selected="selectedApps.includes(app.app)"
-						:title="app.app_title"
+				<div v-if="privateApps.length > 0">
+					<h3 class="text-sm font-medium">
+						Your Private Apps
+					</h3>
+					<div
+						class="grid grid-cols-2 gap-4 px-2 py-2 -mx-2 overflow-y-auto mt- max-h-56"
 					>
-						<div slot="secondary-content" class="text-base text-gray-700">
-							{{ app.repository_owner }}:{{ app.branch }}
-						</div>
-					</SelectableCard>
+						<SelectableCard
+							v-for="app in privateApps"
+							:key="app.app"
+							@click.native="toggleApp(app)"
+							:selected="selectedApps.includes(app.app)"
+							:title="app.app_title"
+						>
+							<div slot="secondary-content" class="text-base text-gray-700">
+								{{ app.repository_owner }}:{{ app.branch }}
+							</div>
+						</SelectableCard>
+					</div>
 				</div>
 			</div>
 		</div>

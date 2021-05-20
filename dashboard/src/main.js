@@ -5,12 +5,14 @@ import router from './router';
 
 Vue.config.productionTip = false;
 Vue.config.errorHandler = (error, vm) => {
-	vm.$notify({
-		icon: 'x',
-		title: 'An error occurred',
-		message: error.messages?.join('\n'),
-		color: 'red'
-	});
+	if (vm) {
+		vm.$notify({
+			icon: 'x',
+			title: 'An error occurred',
+			message: error.messages?.join('\n'),
+			color: 'red'
+		});
+	}
 	console.error(error);
 };
 
