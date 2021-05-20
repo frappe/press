@@ -146,9 +146,9 @@ Hostname: `n1` (`n2`, `n3`, if you want to create more Proxy servers)
 IP: IP Address of the `n` server.
 Private IP: Private (internal) IP Address of the `n` server. Can be found in `Hetzner` console.
 
-Agent Password: Choose a password and remember it. This will be used to access the `agent`.
-
 Click on save.
+
+> Note: The agent password will be set automatically for you.
 
 Now, click on the `Actions` dropdown button, which is located next to the `Save` button and click on `Setup Server`. The server should go in `Installing` state.
 
@@ -160,8 +160,49 @@ After some time, when the tasks have completed to run, the `Proxy Server` will g
 
 If there is any error (for example, if the `Proxy Server` goes into `Broken` state) or a task keeps running forever, go to the `Error Log List` and you will most probably find a log that corresponds to the task and more information on why it failed.
 
-## Setting up App server (`f` server)
-
 ## Setting up DB server (`m` server)
 
+In this section, we will move on to create a `Database Server`. Go to the `Database Server List` and create a new document. Fill in the fields as given below:
+
+Hostname: `m1`
+IP: External IP address of the `m` server
+Private IP: Internal IP address of the `m` server
+
+MariaDB Root Password: Create a password, this will be the `root` password of the MariaDB database that will be installed on this server.
+
+Now, you have to follow the same steps as for the proxy server. Save the document and do setup server. Once this server is setup, you can move on to setting up the `f` server.
+
+## Setting up App server (`f` server)
+
+In the proxy server section, we created and set up the `Proxy Server` which sits in the front and forwards traffic to various `f` servers. Now, `f` servers are where the benches (along with the sites) are present. The databases are on different `m` servers and the sites hosted in the `f` servers use those databases.
+
+Go to the `Server List` and add a new server document. Fill in the details as given below:
+
+Hostname: `f1`
+Cluster: `Default`
+
+IP: External IP address of `f` server
+Private IP: Internal IP address of `f` server
+
+Proxy Server: Select the `Proxy Server` which we created in a previous section.
+Database Server: Select the `Database Server` which we created in the previous section.
+
+Leave other fields as they are.
+
+Now, again the same process: save and setup!
+
+## Creating Your First Site
+
+### Creating a Release Group
+
+### Creating an App
+
+### Building and Deploying
+
+### Bench creation, Site creation and ...other problems
+
 ## Resolving issues
+
+## Conclusion
+
+If you made till here, well done and be proud of yourself. Now, its time to build awesome things. Good Luck with your journey on Frappe Cloud.
