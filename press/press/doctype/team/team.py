@@ -413,7 +413,8 @@ class Team(Document):
 		customer_object = stripe.Customer.retrieve(self.stripe_customer_id)
 		balance = (customer_object["balance"] * -1) / 100
 		return balance
-
+	
+	@frappe.whitelist()
 	def get_balance(self):
 		res = frappe.db.get_all(
 			"Balance Transaction",
