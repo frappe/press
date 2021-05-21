@@ -144,7 +144,7 @@ def apps(name):
 	for app in group.apps:
 		source = frappe.get_doc("App Source", app.source)
 		app = frappe.get_doc("App", app.app)
-		update_available = find(
+		update_available = updates["update_available"] and find(
 			updates.apps, lambda x: x["app"] == app.name and x["update_available"]
 		)
 		apps.append(
@@ -290,6 +290,8 @@ def deploy_information(name):
 		return out
 
 	last_deployed_bench = get_last_doc("Bench", {"group": name, "status": "Active"})
+	if not last_deployed_bench:
+		return out
 	out.apps = get_updates_between_current_and_next_apps(
 		last_deployed_bench.apps, last_deploy_candidate.apps
 	)
