@@ -26,9 +26,9 @@
 				<div class="text-base text-gray-700">
 					{{ app.repository_owner }}:{{ app.branch }}
 				</div>
-				<div class="flex ml-auto space-x-2">
+				<div class="flex items-center ml-auto space-x-2">
 					<Badge v-if="!app.deployed" color="yellow">Not Deployed</Badge>
-					<Badge v-if="app.update_available" color="blue">
+					<Badge v-if="app.update_available && app.deployed" color="blue">
 						Update Available
 					</Badge>
 					<Dropdown :items="dropdownItems(app)" right>

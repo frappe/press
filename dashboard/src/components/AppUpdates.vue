@@ -18,7 +18,8 @@
 							{{ deployFrom(app) }}
 						</Badge>
 					</a>
-					<FeatherIcon name="arrow-right" class="w-4" />
+					<FeatherIcon v-if="deployFrom(app)" name="arrow-right" class="w-4" />
+					<Badge color="green" v-else>First Deploy</Badge>
 					<a
 						class="block cursor-pointer"
 						:href="`${app.repository_url}/commit/${app.next_hash}`"
