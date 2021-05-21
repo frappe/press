@@ -394,7 +394,8 @@ def all():
 	)
 
 	groups = groups_with_sites + empty_private_groups
-
+	shared_bench = frappe._dict(name="shared", shared=True, status="Active", sites=[])
+	private_benches = []
 	for group in groups:
 		group.benches = [bench for bench in benches if bench.group == group.name]
 		group.owned_by_team = team == group.team
@@ -408,7 +409,12 @@ def all():
 		for bench in group.benches:
 			group.sites += [site for site in sites if site.bench == bench.name]
 
-	return groups
+		if group.public and not group.owned_by_team:
+			shared_bench.sites += group.sites
+		else:
+			private_benches.append(group)
+
+	return [shared_bench] + private_benches
 
 
 @frappe.whitelist()
