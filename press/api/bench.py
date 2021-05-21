@@ -290,10 +290,8 @@ def deploy_information(name):
 		return out
 
 	last_deployed_bench = get_last_doc("Bench", {"group": name, "status": "Active"})
-	if not last_deployed_bench:
-		return out
 	out.apps = get_updates_between_current_and_next_apps(
-		last_deployed_bench.apps, last_deploy_candidate.apps
+		last_deployed_bench.apps if last_deployed_bench else [], last_deploy_candidate.apps
 	)
 	out.update_available = any([app["update_available"] for app in out.apps])
 	return out
