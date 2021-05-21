@@ -5,7 +5,7 @@
 from __future__ import unicode_literals
 from collections import OrderedDict
 import frappe
-from press.utils import get_current_team, unique
+from press.utils import get_current_team, get_last_doc, unique
 from press.api.site import protected
 from frappe.core.utils import find, find_all
 from press.press.doctype.release_group.release_group import new_release_group
@@ -283,13 +283,13 @@ def candidate(name):
 @protected("Release Group")
 def deploy_information(name):
 	out = frappe._dict(update_available=False)
-	last_deploy_candidate = frappe.get_last_doc(
+	last_deploy_candidate = get_last_doc(
 		"Deploy Candidate", {"group": name, "status": "Draft"}
 	)
 	if not last_deploy_candidate:
 		return out
 
-	last_deployed_bench = frappe.get_last_doc("Bench", {"group": name, "status": "Active"})
+	last_deployed_bench = get_last_doc("Bench", {"group": name, "status": "Active"})
 	out.apps = get_updates_between_current_and_next_apps(
 		last_deployed_bench.apps, last_deploy_candidate.apps
 	)
