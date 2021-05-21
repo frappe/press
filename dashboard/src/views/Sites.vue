@@ -105,6 +105,7 @@ export default {
 				name: 'shared-bench',
 				title: 'Shared Bench',
 				public: true,
+				status: 'Active',
 				sites: []
 			};
 			this.$resources.groups.data
