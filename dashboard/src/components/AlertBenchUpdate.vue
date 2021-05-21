@@ -13,7 +13,7 @@
 		</span>
 		<template #actions>
 			<Button type="primary" @click="showDeployDialog = true">
-				Show Updates
+				Show updates
 			</Button>
 		</template>
 		<Dialog title="Following updates are available" v-model="showDeployDialog">
