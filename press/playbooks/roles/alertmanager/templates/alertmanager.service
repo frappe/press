@@ -1,0 +1,27 @@
+[Unit]
+Description=Prometheus Alertmanager
+After=network-online.target
+
+[Service]
+Type=simple
+User=frappe
+Group=frappe
+
+PIDFile=/var/run/alertmanager.pid
+ExecReload=/bin/kill -HUP $MAINPID
+
+ExecStart=/home/frappe/alertmanager/alertmanager \
+  --config.file=/home/frappe/alertmanager/alertmanager.yml \
+  --storage.path=/home/frappe/alertmanager/data \
+  --web.listen-address=127.0.0.1:9093 \
+  --web.external-url=https://{{ server }}/alertmanager
+
+
+SyslogIdentifier=alertmanager
+Restart=always
+RestartSec=1
+StartLimitInterval=0
+
+
+[Install]
+WantedBy=multi-user.target
