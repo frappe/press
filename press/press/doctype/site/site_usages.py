@@ -1,7 +1,7 @@
 import frappe
-from frappe.utils import cint
 import functools
 from press.press.doctype.plan.plan import get_plan_config
+from press.api.analytics import get_current_cpu_usage
 
 
 @functools.lru_cache(maxsize=128)
@@ -25,18 +25,7 @@ def get_config(plan):
 
 
 def get_cpu_counter(site):
-	temp_cpu_counter = frappe.get_all(
-		"Site Request Log",
-		fields=["counter"],
-		filters={"site": site},
-		order_by="timestamp desc",
-		pluck="counter",
-		limit=1,
-	)
-	if temp_cpu_counter:
-		cpu_usage = cint(temp_cpu_counter[0])
-	else:
-		cpu_usage = 0
+	cpu_usage = get_current_cpu_usage(site)
 	return cpu_usage
 
 
