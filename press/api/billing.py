@@ -79,6 +79,28 @@ def invoices_and_payments():
 
 
 @frappe.whitelist()
+def balances():
+	team = get_current_team()
+	has_bought_credits = frappe.db.get_all(
+		"Balance Transaction",
+		filters={"source": ("in", ("Prepaid Credits", "Transferred Credits")), "team": team},
+		limit=1,
+	)
+	if not has_bought_credits:
+		return []
+
+	data = frappe.db.get_all(
+		"Balance Transaction", filters={"team": team}, fields=["*"], order_by="creation desc"
+	)
+	for d in data:
+		d.formatted = dict(
+			amount=fmt_money(d.amount, 2, d.currency),
+			ending_balance=fmt_money(d.ending_balance, 2, d.currency),
+		)
+	return data
+
+
+@frappe.whitelist()
 def details():
 	team = get_current_team(True)
 	address = None

@@ -17,7 +17,8 @@
 					<div class="space-x-3">
 						<Button
 							v-if="site.status == 'Active'"
-							@click="loginAsAdministrator(siteName)"
+							@click="$resources.loginAsAdmin.submit()"
+							:loading="$resources.loginAsAdmin.loading"
 							icon-left="external-link"
 						>
 							Login as Administrator
@@ -42,7 +43,8 @@
 </template>
 
 <script>
-import Tabs from '@/components/Tabs';
+import Tabs from '@/components/Tabs.vue';
+import { loginAsAdmin } from '@/controllers/loginAsAdmin';
 
 export default {
 	name: 'Site',
@@ -76,12 +78,10 @@ export default {
 						.catch(() => (this.site.setup_wizard_complete = false));
 				}
 			};
+		},
+		loginAsAdmin() {
+			return loginAsAdmin(this.siteName);
 		}
-	},
-	provide() {
-		return {
-			loginAsAdministrator: this.loginAsAdministrator
-		};
 	},
 	activated() {
 		this.setupAgentJobUpdate();
@@ -94,20 +94,16 @@ export default {
 		}
 
 		if (this.site?.status === 'Active') {
-			this.$socket.on('list_update', ({ doctype, name }) => {
-				if (doctype === 'Site' && name === this.siteName) {
-					this.$resources.site.reload();
-				}
-			});
+			this.$socket.on('list_update', this.onSocketUpdate);
 		}
 	},
+	deactivated() {
+		this.$socket.off('list_update', this.onSocketUpdate);
+	},
 	methods: {
-		async loginAsAdministrator(siteName) {
-			let sid = await this.$call('press.api.site.login', {
-				name: siteName
-			});
-			if (sid) {
-				window.open(`https://${siteName}/desk?sid=${sid}`, '_blank');
+		onSocketUpdate({ doctype, name }) {
+			if (doctype === 'Site' && name === this.siteName) {
+				this.$resources.site.reload();
 			}
 		},
 		setupAgentJobUpdate() {
@@ -131,7 +127,9 @@ export default {
 		routeToGeneral() {
 			if (this.$route.matched.length === 1) {
 				let path = this.$route.fullPath;
-				let tab = ['Pending', 'Installing'].includes(this.site.status)  ? 'jobs' : 'overview';
+				let tab = ['Pending', 'Installing'].includes(this.site.status)
+					? 'jobs'
+					: 'overview';
 				this.$router.replace(`${path}/${tab}`);
 			}
 		}

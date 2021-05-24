@@ -48,6 +48,9 @@
 			</div>
 		</div>
 	</div>
+	<div class="text-center" v-else>
+		<Button :loading="true">Loading</Button>
+	</div>
 </template>
 
 <script>

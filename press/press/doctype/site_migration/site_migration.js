@@ -2,7 +2,28 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on('Site Migration', {
-	// refresh: function(frm) {
-
-	// }
+	refresh: function (frm) {
+		frm.set_query('source_bench', () => {
+			return {
+				filters: {
+					status: 'Active',
+				},
+			};
+		});
+		frm.set_query('destination_bench', () => {
+			return {
+				filters: {
+					status: 'Active',
+				},
+			};
+		});
+		if (frm.doc.status == 'Failure') {
+			frm.add_custom_button(__('Continue'), () => {
+				frappe.confirm(
+					'Are you sure you want to continue from next Pending step?',
+					() => frm.call('run_next_step')
+				);
+			});
+		}
+	},
 });

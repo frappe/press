@@ -37,5 +37,18 @@ export default new Vue({
 			localStorage.setItem('current_team', team);
 			window.location.reload();
 		}
+	},
+	computed: {
+		needsCard() {
+			return !this.hasBillingInfo;
+		},
+		hasBillingInfo() {
+			if (!this.team) return true;
+			return (
+				this.team.default_payment_method ||
+				this.team.erpnext_partner ||
+				this.team.free_account
+			);
+		}
 	}
 });

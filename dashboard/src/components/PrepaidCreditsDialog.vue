@@ -63,7 +63,7 @@
 	</Dialog>
 </template>
 <script>
-import StripeLogo from '@/components/StripeLogo';
+import StripeLogo from '@/components/StripeLogo.vue';
 import { loadStripe } from '@stripe/stripe-js';
 
 export default {

@@ -7,6 +7,7 @@ from __future__ import unicode_literals
 import json
 import re
 from collections import defaultdict
+from datetime import date
 from typing import Dict, List
 
 import boto3
@@ -218,11 +219,23 @@ class Site(Document):
 		self.create_agent_request()
 
 	def create_dns_record(self):
+		"""Check if site needs dns records and creates one."""
 		domain = frappe.get_doc("Root Domain", self.domain)
 		if self.cluster == domain.default_cluster:
 			return
 		proxy_server = frappe.get_value("Server", self.server, "proxy_server")
+		self._change_dns_record("UPSERT", domain, proxy_server)
 
+	def remove_dns_record(self, domain: Document, proxy_server: str):
+		"""Remove dns record of site pointing to proxy."""
+		self._change_dns_record("DELETE", domain, proxy_server)
+
+	def _change_dns_record(self, method: str, domain: Document, proxy_server: str):
+		"""
+		Change dns record of site
+
+		method: CREATE | DELETE | UPSERT
+		"""
 		try:
 			site_name = self._get_site_name(self.subdomain)
 			client = boto3.client(
@@ -237,7 +250,7 @@ class Site(Document):
 				ChangeBatch={
 					"Changes": [
 						{
-							"Action": "UPSERT",
+							"Action": method,
 							"ResourceRecordSet": {
 								"Name": site_name,
 								"Type": "CNAME",
@@ -427,7 +440,7 @@ class Site(Document):
 	def _update_redirects_for_all_site_domains(self):
 		domains = self._get_redirected_domains()
 		if domains:
-			self.set_redirects_in_proxy(domains)
+			return self.set_redirects_in_proxy(domains)
 
 	def _remove_redirects_for_all_site_domains(self):
 		domains = self._get_redirected_domains()
@@ -438,7 +451,7 @@ class Site(Document):
 		target = self.host_name
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
-		agent.setup_redirects(self.name, domains, target)
+		return agent.setup_redirects(self.name, domains, target)
 
 	def unset_redirects_in_proxy(self, domains: List[str]):
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
@@ -458,8 +471,8 @@ class Site(Document):
 		site_domain.remove_redirect()
 
 	@frappe.whitelist()
-	def archive(self):
-		log_site_activity(self.name, "Archive")
+	def archive(self, reason=None):
+		log_site_activity(self.name, "Archive", reason)
 		agent = Agent(self.server)
 		self.status = "Pending"
 		self.save()
@@ -703,7 +716,7 @@ class Site(Document):
 			self._set_configuration(config)
 		else:
 			self._update_configuration(config)
-		Agent(self.server).update_site_config(self)
+		return Agent(self.server).update_site_config(self)
 
 	def update_site(self):
 		log_site_activity(self.name, "Update")
@@ -745,8 +758,14 @@ class Site(Document):
 				"to_plan": plan,
 			}
 		).insert()
+
 		if self.status == "Suspended":
+			self.reload()
 			self.unsuspend_if_applicable()
+
+		if self.trial_end_date:
+			self.trial_end_date = ""
+			self.save()
 
 	def unsuspend_if_applicable(self):
 		try:
@@ -888,6 +907,27 @@ class Site(Document):
 
 	def get_server_log(self, log):
 		return Agent(self.server).get(f"benches/{self.bench}/sites/{self.name}/logs/{log}")
+
+	@property
+	def has_paid(self) -> bool:
+		"""Has the site been paid for by customer."""
+		invoice_items = frappe.get_all(
+			"Invoice Item",
+			{"document_type": self.doctype, "document_name": self.name, "Amount": (">", 0)},
+			pluck="parent",
+		)
+		today = date.today()
+		today_last_month = today.replace(month=today.month - 1)
+		last_month_last_date = frappe.utils.get_last_day(today_last_month)
+		return frappe.db.exists(
+			"Invoice",
+			{
+				"status": "Paid",
+				"name": ("in", invoice_items or ["NULL"]),
+				"period_end": (">=", last_month_last_date),
+				# this month's or last month's invoice has been paid for
+			},
+		)
 
 
 def site_cleanup_after_archive(site):

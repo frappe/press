@@ -71,7 +71,7 @@
 </template>
 
 <script>
-import FileUploader from '@/components/FileUploader';
+import FileUploader from '@/components/FileUploader.vue';
 import BackupFilesUploader from '@/components/BackupFilesUploader.vue';
 
 export default {

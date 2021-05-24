@@ -1,100 +1,103 @@
 <template>
-	<div class="mt-5">
-		<div class="px-8" v-if="options">
-			<div
-				class="p-8 mx-auto mb-20 space-y-8 border rounded-lg shadow-md"
-				style="width: 650px"
-			>
-				<h1 class="mb-6 text-2xl font-bold text-center">Create a New Site</h1>
-				<Steps :steps="steps">
-					<template
-						v-slot="{
-							active: activeStep,
-							next,
-							previous,
-							hasPrevious,
-							hasNext
-						}"
-					>
-						<div class="mt-8"></div>
-						<Hostname
-							:options="options"
-							v-show="activeStep.name === 'Hostname'"
-							v-model="subdomain"
-							@error="error => (subdomainValid = !Boolean(error))"
-						/>
-						<Apps
-							:options="options"
-							v-show="activeStep.name === 'Apps'"
-							:privateBench="privateBench"
-							:selectedApps.sync="selectedApps"
-							:selectedGroup.sync="selectedGroup"
-						/>
-						<Restore
-							:options="options"
-							:selectedFiles.sync="selectedFiles"
-							v-show="activeStep.name == 'Restore'"
-						/>
-						<Plans
-							:selectedPlan.sync="selectedPlan"
-							:options="options"
-							v-show="activeStep.name === 'Plan'"
-						/>
-						<div class="mt-4">
-							<ErrorMessage :error="$resources.newSite.error" />
-							<div class="flex justify-between">
-								<Button
-									@click="previous"
-									:class="{
-										'opacity-0 pointer-events-none': !hasPrevious
-									}"
-								>
-									Back
-								</Button>
-								<Button
-									v-show="activeStep.name !== 'Restore' || wantsToRestore"
-									type="primary"
-									@click="next"
-									:class="{
-										'opacity-0 pointer-events-none': !hasNext
-									}"
-								>
-									Next
-								</Button>
-								<Button
-									v-show="!wantsToRestore && activeStep.name === 'Restore'"
-									type="primary"
-									@click="next"
-								>
-									Skip
-								</Button>
-								<Button
-									v-show="!hasNext"
-									type="primary"
-									@click="$resources.newSite.submit()"
-									:loading="$resources.newSite.loading"
-								>
-									Create Site
-								</Button>
-							</div>
-						</div>
-					</template>
-				</Steps>
-			</div>
+	<WizardCard v-if="options">
+		<div class="mb-6 text-center ">
+			<h1 class="text-2xl font-bold">
+				Create a new site
+			</h1>
+			<p v-if="benchTitle" class="text-base text-gray-700">
+				Site will be created on bench
+				<span class="font-medium">{{ benchTitle }}</span>
+			</p>
 		</div>
-	</div>
+		<Steps :steps="steps">
+			<template
+				v-slot="{
+					active: activeStep,
+					next,
+					previous,
+					hasPrevious,
+					hasNext
+				}"
+			>
+				<div class="mt-8"></div>
+				<Hostname
+					:options="options"
+					v-show="activeStep.name === 'Hostname'"
+					v-model="subdomain"
+					@error="error => (subdomainValid = !Boolean(error))"
+				/>
+				<Apps
+					:options="options"
+					v-show="activeStep.name === 'Apps'"
+					:privateBench="privateBench"
+					:selectedApps.sync="selectedApps"
+					:selectedGroup.sync="selectedGroup"
+				/>
+				<Restore
+					:options="options"
+					:selectedFiles.sync="selectedFiles"
+					v-show="activeStep.name == 'Restore'"
+				/>
+				<Plans
+					:selectedPlan.sync="selectedPlan"
+					:options="options"
+					v-show="activeStep.name === 'Plan'"
+				/>
+				<div class="mt-4">
+					<ErrorMessage :error="$resources.newSite.error" />
+					<div class="flex justify-between">
+						<Button
+							@click="previous"
+							:class="{
+								'opacity-0 pointer-events-none': !hasPrevious
+							}"
+						>
+							Back
+						</Button>
+						<Button
+							v-show="activeStep.name !== 'Restore' || wantsToRestore"
+							type="primary"
+							@click="next"
+							:class="{
+								'opacity-0 pointer-events-none': !hasNext
+							}"
+						>
+							Next
+						</Button>
+						<Button
+							v-show="!wantsToRestore && activeStep.name === 'Restore'"
+							type="primary"
+							@click="next"
+						>
+							Skip
+						</Button>
+						<Button
+							v-show="!hasNext"
+							type="primary"
+							@click="$resources.newSite.submit()"
+							:loading="$resources.newSite.loading"
+						>
+							Create Site
+						</Button>
+					</div>
+				</div>
+			</template>
+		</Steps>
+	</WizardCard>
 </template>
 
 <script>
-import Steps from '@/components/Steps';
-import Hostname from './Hostname';
-import Apps from './Apps';
-import Restore from './Restore';
-import Plans from './Plans';
+import WizardCard from '@/components/WizardCard.vue';
+import Steps from '@/components/Steps.vue';
+import Hostname from './Hostname.vue';
+import Apps from './Apps.vue';
+import Restore from './Restore.vue';
+import Plans from './Plans.vue';
 
 export default {
 	name: 'NewSite',
 	components: {
+		WizardCard,
 		Steps,
 		Hostname,
 		Apps,
@@ -107,6 +110,7 @@ export default {
 			subdomainValid: false,
 			options: null,
 			privateBench: false,
+			benchTitle: null,
 			selectedApps: [],
 			selectedGroup: null,
 			selectedFiles: {
@@ -151,6 +155,7 @@ export default {
 		if (this.$route.query.bench) {
 			this.privateBench = true;
 			this.selectedGroup = this.$route.query.bench;
+			this.benchTitle = this.$route.query.benchTitle;
 			this.$router.replace({});
 		}
 	},
@@ -187,7 +192,6 @@ export default {
 		}
 	},
 	methods: {
-		canCreateSite() {},
 		disablePlan(plan) {
 			if (this.options.free_account) {
 				return false;

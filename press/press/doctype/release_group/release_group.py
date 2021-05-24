@@ -8,6 +8,13 @@ import frappe
 from frappe.model.document import Document
 from press.overrides import get_permission_query_conditions_for_doctype
 
+DEFAULT_DEPENDENCIES = [
+	{"dependency": "NVM_VERSION", "version": "0.36.0"},
+	{"dependency": "NODE_VERSION", "version": "14.4.0"},
+	{"dependency": "PYTHON_VERSION", "version": "3.7"},
+	{"dependency": "WKHTMLTOPDF_VERSION", "version": "0.12.5"},
+]
+
 
 class ReleaseGroup(Document):
 	def validate(self):
@@ -16,6 +23,7 @@ class ReleaseGroup(Document):
 		self.validate_duplicate_app()
 		self.validate_app_versions()
 		self.validate_servers()
+		self.validate_dependencies()
 
 	def on_trash(self):
 		candidates = frappe.get_all("Deploy Candidate", {"group": self.name})
@@ -71,6 +79,11 @@ class ReleaseGroup(Document):
 				self.append("servers", {"server": servers_for_new_bench[0].name})
 
 	@frappe.whitelist()
+	def validate_dependencies(self):
+		if not hasattr(self, 'dependencies') or not self.dependencies:
+			self.extend('dependencies', DEFAULT_DEPENDENCIES)
+
+	@frappe.whitelist()
 	def create_deploy_candidate(self):
 		if not self.enabled:
 			return
@@ -93,8 +106,16 @@ class ReleaseGroup(Document):
 						"hash": release.hash,
 					}
 				)
+		dependencies = [
+			{"dependency": d.dependency, "version": d.version} for d in self.dependencies
+		]
 		frappe.get_doc(
-			{"doctype": "Deploy Candidate", "group": self.name, "apps": apps}
+			{
+				"doctype": "Deploy Candidate",
+				"group": self.name,
+				"apps": apps,
+				"dependencies": dependencies,
+			}
 		).insert()
 
 	def add_app(self, source):

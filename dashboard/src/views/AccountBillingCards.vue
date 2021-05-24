@@ -57,7 +57,7 @@ export default {
 		}
 	},
 	components: {
-		StripeCard: () => import('@/components/StripeCard')
+		StripeCard: () => import('@/components/StripeCard.vue')
 	},
 	data() {
 		return {

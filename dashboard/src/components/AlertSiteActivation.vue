@@ -8,16 +8,25 @@
 			collected only after setup is complete.
 		</span>
 		<template #actions>
-			<Button type="primary" @click="loginAsAdministrator(site.name)">
+			<Button
+				type="primary"
+				@click="loginAsAdmin.submit()"
+				:loading="loginAsAdmin.loading"
+			>
 				Login
 			</Button>
 		</template>
 	</Alert>
 </template>
 <script>
+import { loginAsAdmin } from '@/controllers/loginAsAdmin';
 export default {
 	name: 'AlertSiteActivation',
 	props: ['site'],
-	inject: ['loginAsAdministrator']
+	resources: {
+		loginAsAdmin() {
+			return loginAsAdmin(this.site.name);
+		}
+	}
 };
 </script>

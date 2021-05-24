@@ -1,10 +1,14 @@
 # syntax = docker/dockerfile:experimental
 FROM ubuntu:20.04
 
+{% for d in doc.dependencies %}
+ENV {{ d.dependency }} {{ d.version }}
+{% else %}
 ENV NVM_VERSION 0.36.0
-ENV NODE_VERSION 12.19.0
+ENV NODE_VERSION 14.4.0
 ENV PYTHON_VERSION 3.7
 ENV WKHTMLTOPDF_VERSION 0.12.5
+{% endfor %}
 
 ENV LANG C.UTF-8
 ENV DEBIAN_FRONTEND noninteractive

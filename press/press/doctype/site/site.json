@@ -25,6 +25,7 @@
   "account_request",
   "is_erpnext_setup",
   "trial_end_date",
+  "erpnext_consultant",
   "section_break_6",
   "apps",
   "configuration_section",
@@ -323,10 +324,16 @@
    "fieldname": "is_erpnext_setup",
    "fieldtype": "Check",
    "label": "Is ERPNext Setup"
+  },
+  {
+   "fieldname": "erpnext_consultant",
+   "fieldtype": "Link",
+   "label": "ERPNext Consultant",
+   "options": "ERPNext Consultant"
   }
  ],
  "links": [],
- "modified": "2021-04-05 12:48:16.356320",
+ "modified": "2021-04-22 07:35:11.993048",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
