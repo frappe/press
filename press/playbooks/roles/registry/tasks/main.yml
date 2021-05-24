@@ -41,3 +41,10 @@
   command: "htpasswd -Bbc registry.htpasswd {{ registry_username }} {{ registry_password }}"
   args:
     chdir: /home/frappe/registry
+
+- name: Setup NGINX for Registry
+  become: yes
+  become_user: frappe
+  command: /home/frappe/agent/env/bin/agent setup registry
+  args:
+    chdir: /home/frappe/agent
