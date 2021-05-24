@@ -1,0 +1,17 @@
+---
+- name: Install Kibana
+  apt:
+    name: kibana
+    state: present
+
+- name: Setup Kibana
+  template:
+    src: kibana.yml
+    dest: /etc/kibana/kibana.yml
+
+- name: Restart Kibana Daemon
+  systemd:
+    name: kibana
+    daemon_reload: true
+    enabled: yes
+    state: restarted
