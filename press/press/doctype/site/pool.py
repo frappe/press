@@ -11,7 +11,6 @@ from press.press.doctype.site.erpnext_site import (
 	get_erpnext_bench,
 	get_erpnext_apps,
 	get_erpnext_domain,
-	get_erpnext_plan,
 )
 
 

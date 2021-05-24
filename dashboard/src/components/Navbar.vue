@@ -18,7 +18,9 @@
 							>
 								<a
 									:class="[
-										(item.route == '/'
+										(item.highlight
+										? item.highlight(route)
+										: item.route == '/'
 										? isExactActive
 										: isActive)
 											? 'bg-blue-50 text-blue-500'
@@ -139,8 +141,11 @@ export default {
 			mobileMenuOpen: false,
 			items: [
 				{
-					label: 'Sites',
-					route: '/sites'
+					label: 'Dashboard',
+					route: '/sites',
+					highlight: () => {
+						return this.$route.fullPath.endsWith('/sites');
+					}
 				},
 				{
 					label: 'Settings',

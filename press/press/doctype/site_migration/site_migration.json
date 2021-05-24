@@ -11,12 +11,15 @@
   "column_break_3",
   "source_bench",
   "destination_bench",
+  "backup",
   "section_break_5",
   "source_server",
   "source_cluster",
   "column_break_5",
   "destination_server",
-  "destination_cluster"
+  "destination_cluster",
+  "section_break_13",
+  "steps"
  ],
  "fields": [
   {
@@ -30,6 +33,7 @@
   },
   {
    "fetch_from": "site.bench",
+   "fetch_if_empty": 1,
    "fieldname": "source_bench",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -41,6 +45,7 @@
   },
   {
    "fetch_from": "site.server",
+   "fetch_if_empty": 1,
    "fieldname": "source_server",
    "fieldtype": "Link",
    "label": "Source Server",
@@ -50,6 +55,7 @@
   },
   {
    "fetch_from": "site.cluster",
+   "fetch_if_empty": 1,
    "fieldname": "source_cluster",
    "fieldtype": "Link",
    "label": "Source Cluster",
@@ -114,11 +120,28 @@
   {
    "fieldname": "section_break_5",
    "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "section_break_13",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "steps",
+   "fieldtype": "Table",
+   "label": "Steps",
+   "options": "Site Migration Step"
+  },
+  {
+   "fieldname": "backup",
+   "fieldtype": "Link",
+   "label": "Backup",
+   "options": "Site Backup",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-01-19 15:48:46.184896",
+ "modified": "2021-05-11 15:10:07.530080",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Migration",

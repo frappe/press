@@ -11,6 +11,7 @@
   "team",
   "section_break_4",
   "apps",
+  "dependencies",
   "section_break_6",
   "build_start",
   "build_end",
@@ -154,10 +155,18 @@
    "options": "Team",
    "read_only": 1,
    "reqd": 1
+  },
+  {
+   "fieldname": "dependencies",
+   "fieldtype": "Table",
+   "label": "Dependencies",
+   "options": "Deploy Candidate Dependency",
+   "read_only": 1,
+   "reqd": 1
   }
  ],
  "links": [],
- "modified": "2021-03-25 10:45:52.791968",
+ "modified": "2021-05-18 18:29:50.658162",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",

@@ -77,7 +77,7 @@
 </template>
 
 <script>
-import DescriptionList from '@/components/DescriptionList';
+import DescriptionList from '@/components/DescriptionList.vue';
 
 export default {
 	name: 'SiteRequestLogs',

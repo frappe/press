@@ -2,6 +2,20 @@
 	<div class="space-y-5">
 		<AlertSiteActivation :site="site" />
 		<AlertSiteUpdate :site="site" />
+		<Alert title="Trial" v-if="isInTrial && $account.needsCard">
+			Your trial ends {{ trialEndsInDaysText }} after which your site will get
+			suspended. Add your billing information to avoid suspension.
+
+			<template #actions>
+				<Button class="whitespace-nowrap" route="/welcome" type="primary">
+					Add Billing Information
+				</Button>
+			</template>
+		</Alert>
+		<Alert title="Trial" v-if="isInTrial && $account.hasBillingInfo">
+			Your trial ends {{ trialEndsInDaysText }} after which your site will get
+			suspended. Select a plan from the Plan section below to avoid suspension.
+		</Alert>
 		<Alert title="Attention Required" v-if="limitExceeded">
 			Your site has exceeded the allowed usage for your plan. Upgrade your plan
 			now.
@@ -35,14 +49,15 @@
 </template>
 
 <script>
-import AlertSiteActivation from '@/components/AlertSiteActivation';
-import AlertSiteUpdate from '@/components/AlertSiteUpdate';
-import SiteOverviewCPUUsage from './SiteOverviewCPUUsage';
+import AlertSiteActivation from '@/components/AlertSiteActivation.vue';
+import AlertSiteUpdate from '@/components/AlertSiteUpdate.vue';
+import SiteOverviewCPUUsage from './SiteOverviewCPUUsage.vue';
 import SiteOverviewRecentActivity from './SiteOverviewRecentActivity.vue';
 import SiteOverviewPlan from './SiteOverviewPlan.vue';
 import SiteOverviewInfo from './SiteOverviewInfo.vue';
 import SiteOverviewApps from './SiteOverviewApps.vue';
 import SiteOverviewDomains from './SiteOverviewDomains.vue';
+import { DateTime } from 'luxon';
 
 export default {
 	name: 'SiteOverview',
@@ -79,6 +94,23 @@ export default {
 			if (!(this.site && this.$resources.overview.data)) return false;
 			let usage = this.$resources.overview.data.plan.usage_in_percent;
 			return [usage.cpu, usage.database, usage.disk].some(x => x > 100);
+		},
+		isInTrial() {
+			return this.site?.trial_end_date;
+		},
+		trialEndsInDaysText() {
+			if (!this.site?.trial_end_date) {
+				return 0;
+			}
+			let diff = this.$date(this.site.trial_end_date)
+				.diff(DateTime.local(), ['days'])
+				.toObject();
+
+			let days = diff.days;
+			if (days > 1) {
+				return `in ${Math.floor(days)} days`;
+			}
+			return 'in a day';
 		}
 	}
 };

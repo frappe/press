@@ -17,16 +17,16 @@
 				</div>
 			</div>
 		</div>
-		<portal-target name="popovers" multiple></portal-target>
 		<portal-target name="modals" multiple></portal-target>
+		<portal-target name="popovers" multiple></portal-target>
 		<NotificationToasts />
 		<UserPrompts />
 		<ConfirmDialogs />
 	</div>
 </template>
 <script>
-import Navbar from '@/components/Navbar';
-import UserPrompts from '@/views/UserPrompts';
+import Navbar from '@/components/Navbar.vue';
+import UserPrompts from '@/views/UserPrompts.vue';
 import ConfirmDialogs from './components/ConfirmDialogs.vue';
 import NotificationToasts from './components/NotificationToasts.vue';
 

@@ -30,7 +30,7 @@
 export default {
 	name: 'AccountBillingDetails',
 	components: {
-		UpdateBillingDetails: () => import('@/components/UpdateBillingDetails')
+		UpdateBillingDetails: () => import('@/components/UpdateBillingDetails.vue')
 	},
 	resources: {
 		billingDetails: 'press.api.billing.details'

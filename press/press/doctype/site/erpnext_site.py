@@ -2,12 +2,16 @@
 # Proprietary License. See license.txt
 
 from __future__ import unicode_literals
-from press.press.doctype.site.site import Site
+
 import frappe
+
+from press.press.doctype.account_request.account_request import AccountRequest
+from press.press.doctype.erpnext_consultant.erpnext_consultant import ERPNextConsultant
+from press.press.doctype.site.site import Site
 
 
 class ERPNextSite(Site):
-	def __init__(self, site=None, account_request=None):
+	def __init__(self, site=None, account_request: AccountRequest = None):
 		if site:
 			super().__init__("Site", site)
 		elif account_request:
@@ -20,7 +24,10 @@ class ERPNextSite(Site):
 					"apps": [{"app": app} for app in get_erpnext_apps()],
 					"team": "Administrator",
 					"account_request": account_request.name,
-					"subscription_plan": account_request.plan,
+					"subscription_plan": get_erpnext_plan(),
+					"erpnext_consultant": ERPNextConsultant.get_one_for_country(
+						account_request.country
+					),
 					"trial_end_date": frappe.utils.add_days(None, 14),
 				}
 			)
@@ -30,9 +37,13 @@ class ERPNextSite(Site):
 		self.is_standby = False
 		self.account_request = account_request.name
 		self.trial_end_date = frappe.utils.add_days(None, 14)
-		self._update_configuration(self.get_plan_config(account_request.plan), save=False)
+		plan = get_erpnext_plan()
+		self._update_configuration(self.get_plan_config(plan), save=False)
+		self.erpnext_consultant = ERPNextConsultant.get_one_for_country(
+			account_request.country
+		)
 		self.save(ignore_permissions=True)
-		self.create_subscription(account_request.plan)
+		self.create_subscription(plan)
 
 	def can_change_plan(self):
 		return True

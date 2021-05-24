@@ -6,7 +6,7 @@
 export default {
 	name: 'UserPrompts',
 	components: {
-		UpdateBillingDetails: () => import('@/components/UpdateBillingDetails')
+		UpdateBillingDetails: () => import('@/components/UpdateBillingDetails.vue')
 	},
 	resources: {
 		prompts: {

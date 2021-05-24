@@ -2,18 +2,18 @@
 # Proprietary License. See license.txt
 
 from __future__ import unicode_literals
+
 from press.press.doctype.site.erpnext_site import ERPNextSite, get_erpnext_domain
 import frappe
 from frappe.geo.country_info import get_country_timezone_info
 from press.api.account import get_account_request_from_key
 from press.utils.billing import get_erpnext_com_connection
-from press.press.doctype.site.erpnext_site import get_erpnext_plan
 from press.press.doctype.site.pool import get as get_pooled_site
 
 
 @frappe.whitelist(allow_guest=True)
 def account_request(
-	subdomain, plan, email, first_name, last_name, phone_number, country
+	subdomain, email, first_name, last_name, phone_number, country, url_args=None
 ):
 	email = email.strip().lower()
 	frappe.utils.validate_email_address(email, True)
@@ -26,13 +26,13 @@ def account_request(
 			"doctype": "Account Request",
 			"erpnext": True,
 			"subdomain": subdomain,
-			"plan": plan,
 			"email": email,
 			"role": "Press Admin",
 			"first_name": first_name,
 			"last_name": last_name,
 			"phone_number": phone_number,
 			"country": country,
+			"url_args": url_args,
 		}
 	).insert(ignore_permissions=True)
 
@@ -47,7 +47,7 @@ def account_request(
 			ERPNextSite(site=pooled_site).rename_pooled_site(account_request)
 		else:
 			# Create a new site if pooled sites aren't available
-			ERPNextSite(account_request).insert(ignore_permissions=True)
+			ERPNextSite(account_request=account_request).insert(ignore_permissions=True)
 	finally:
 		frappe.set_user(current_user)
 		frappe.session.data = current_session_data
@@ -68,9 +68,10 @@ def setup_account(key, business_data=None):
 		business_data = {
 			key: business_data.get(key)
 			for key in [
-				"industry",
-				"no_of_employees",
 				"company",
+				"no_of_employees",
+				"industry",
+				"no_of_users",
 				"designation",
 				"referral_source",
 			]
@@ -91,6 +92,7 @@ def setup_account(key, business_data=None):
 				"user": email,
 				"country": account_request.country,
 				"enabled": 1,
+				"via_erpnext": 1,
 			}
 		)
 		team_doc.insert(ignore_permissions=True, ignore_links=True)
@@ -185,3 +187,21 @@ def options_for_regional_data(key):
 	data.update(get_country_timezone_info())
 
 	return data
+
+
+@frappe.whitelist(allow_guest=True)
+def get_trial_end_date(site):
+	return frappe.db.get_value("Site", site, "trial_end_date")
+
+
+@frappe.whitelist(allow_guest=True)
+def send_login_link(site):
+	if not frappe.db.exists("Site", site):
+		frappe.throw("Invalid site")
+
+	from press.api.account import send_login_link as send_link
+
+	# send link to site owner
+	email = frappe.db.get_value("Site", site, "team")
+	send_link(email)
+	return email

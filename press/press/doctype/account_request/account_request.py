@@ -52,3 +52,7 @@ class AccountRequest(Document):
 		if self.erpnext:
 			return get_url(f"/setup-account?key={self.request_key}")
 		return get_url(f"/dashboard/setup-account/{self.request_key}")
+
+	@property
+	def full_name(self):
+		return self.first_name + " " + self.last_name

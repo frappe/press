@@ -10,7 +10,6 @@ from frappe.website.render import build_response
 from frappe.core.doctype.user.user import update_password
 from press.press.doctype.team.team import get_team_members
 from press.utils import get_country_info, get_current_team
-from datetime import datetime, timedelta
 
 
 @frappe.whitelist(allow_guest=True)
@@ -226,13 +225,13 @@ def set_country(country):
 
 
 def get_account_request_from_key(key):
-	"""Find Account Request using `key` in the past 30 minutes"""
-	minutes = 30
+	"""Find Account Request using `key` in the past 4 hours"""
+	hours = 4
 	result = frappe.db.get_all(
 		"Account Request",
 		filters={
 			"request_key": key,
-			"creation": (">", datetime.now() - timedelta(seconds=minutes * 60)),
+			"creation": (">", frappe.utils.add_to_date(None, hours=-hours)),
 		},
 		pluck="name",
 		order_by="creation desc",

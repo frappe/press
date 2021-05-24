@@ -125,19 +125,25 @@ class Invoice(Document):
 		start = getdate(self.period_start)
 		end = getdate(self.period_end)
 		period_string = f"{start.strftime('%b %d')} - {end.strftime('%b %d')} {end.year}"
+		amount = int(self.amount_due * 100)
 		stripe.InvoiceItem.create(
 			customer=customer_id,
 			description=f"Frappe Cloud Subscription ({period_string})",
-			amount=int(self.amount_due * 100),
+			amount=amount,
 			currency=self.currency.lower(),
+			idempotency_key=f"invoiceitem:{self.name}:{amount}",
 		)
 		invoice = stripe.Invoice.create(
-			customer=customer_id, collection_method="charge_automatically", auto_advance=True,
+			customer=customer_id,
+			collection_method="charge_automatically",
+			auto_advance=True,
+			idempotency_key=f"invoice:{self.name}:{amount}",
 		)
 		self.stripe_invoice_id = invoice["id"]
 		self.status = "Invoice Created"
 		self.save()
 
+	@frappe.whitelist()
 	def finalize_stripe_invoice(self):
 		stripe = get_stripe()
 		stripe.Invoice.finalize_invoice(self.stripe_invoice_id)
@@ -288,7 +294,7 @@ class Invoice(Document):
 
 	def apply_credit_balance(self):
 		balance = frappe.get_cached_doc("Team", self.team).get_balance()
-		if balance == 0:
+		if balance <= 0:
 			return
 
 		# cancel applied credits to re-apply available credits
@@ -467,6 +473,7 @@ class Invoice(Document):
 			self.save()
 			return True
 
+	@frappe.whitelist()
 	def refund(self, reason):
 		stripe = get_stripe()
 		charge = None
@@ -520,6 +527,7 @@ class Invoice(Document):
 		)
 		self.db_set("status", "Paid")
 
+	@frappe.whitelist()
 	def change_stripe_invoice_status(self, status):
 		stripe = get_stripe()
 		if status == "Paid":
@@ -531,12 +539,14 @@ class Invoice(Document):
 
 
 def finalize_draft_invoices():
-	"""Runs every day and submits the invoices whose period end is today"""
+	"""Runs every day and submits the invoices whose period ends today or has ended before"""
 
-	# get draft invoices whose period is ending today
+	# get draft invoices whose period has ended or ends today
 	today = frappe.utils.today()
 	invoices = frappe.db.get_all(
-		"Invoice", {"status": "Draft", "period_end": today, "total": (">", 0)}, pluck="name",
+		"Invoice",
+		{"status": "Draft", "period_end": ("<=", today), "total": (">", 0)},
+		pluck="name",
 	)
 	for name in invoices:
 		invoice = frappe.get_doc("Invoice", name)
@@ -621,7 +631,7 @@ def process_stripe_webhook(doc, method):
 			{
 				"payment_attempt_count": attempt_count,
 				"payment_attempt_date": attempt_date,
-				"status": "Unpaid",
+				"status": "Unpaid" if attempt_count < 5 else "Uncollectible",
 			}
 		)
 		invoice.save()

@@ -196,8 +196,8 @@
 	</div>
 </template>
 <script>
-import FileUploader from '@/components/FileUploader';
-import Form from '@/components/Form';
+import FileUploader from '@/components/FileUploader.vue';
+import Form from '@/components/Form.vue';
 import { DateTime } from 'luxon';
 
 export default {
