@@ -66,6 +66,15 @@ class ProxyServer(BaseServer):
 		monitoring_password = frappe.get_doc("Cluster", self.cluster).get_password(
 			"monitoring_password"
 		)
+
+		log_server = frappe.db.get_single_value("Press Settings", "log_server")
+		if log_server:
+			kibana_password = frappe.get_doc("Log Server", log_server).get_password(
+				"kibana_password"
+			)
+		else:
+			kibana_password = None
+
 		try:
 			ansible = Ansible(
 				playbook="proxy.yml",
@@ -76,6 +85,8 @@ class ProxyServer(BaseServer):
 					"domain": self.domain,
 					"agent_password": agent_password,
 					"monitoring_password": monitoring_password,
+					"log_server": log_server,
+					"kibana_password": kibana_password,
 					"certificate_private_key": certificate.private_key,
 					"certificate_full_chain": certificate.full_chain,
 					"certificate_intermediate_chain": certificate.intermediate_chain,
