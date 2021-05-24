@@ -171,6 +171,7 @@ class RemoteFile(Document):
 	def download_link(self):
 		return self.get_download_link()
 
+	@frappe.whitelist()
 	def exists(self):
 		self.db_set("status", "Available")
 
@@ -187,6 +188,7 @@ class RemoteFile(Document):
 				self.db_set("status", "Unavailable")
 				return False
 
+	@frappe.whitelist()
 	def delete_remote_object(self):
 		self.db_set("status", "Unavailable")
 		return self.s3_client.delete_object(
@@ -197,6 +199,7 @@ class RemoteFile(Document):
 	def on_trash(self):
 		self.delete_remote_object()
 
+	@frappe.whitelist()
 	def get_download_link(self):
 		return self.url or self.s3_client.generate_presigned_url(
 			"get_object",
