@@ -278,6 +278,7 @@ def options_for_new():
 					"name",
 					"app",
 					"repository_url",
+					"repository",
 					"repository_owner",
 					"branch",
 					"team",
