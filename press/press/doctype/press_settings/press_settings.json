@@ -100,7 +100,12 @@
   "enable_site_pooling",
   "standby_pool_size",
   "column_break_95",
+  "standby_queue_size",
+  "monitoring_section",
+  "monitor_server",
   "monitor_token",
+  "column_break_100",
+  "log_server"
  ],
  "fields": [
   {
@@ -636,6 +641,28 @@
    "label": "Standby Queue Size"
   },
   {
+   "collapsible": 1,
+   "fieldname": "monitoring_section",
+   "fieldtype": "Section Break",
+   "label": "Monitoring"
+  },
+  {
+   "fieldname": "log_server",
+   "fieldtype": "Link",
+   "label": "Log Server",
+   "options": "Log Server"
+  },
+  {
+   "fieldname": "column_break_100",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "monitor_server",
+   "fieldtype": "Link",
+   "label": "Monitor Server",
+   "options": "Monitor Server"
+  },
+  {
    "fieldname": "monitor_token",
    "fieldtype": "Data",
    "label": "Monitor Token"
@@ -643,7 +670,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2021-04-05 08:59:26.048234",
+ "modified": "2021-05-24 12:23:39.573409",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
