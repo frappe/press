@@ -39,6 +39,15 @@ class DatabaseServer(BaseServer):
 		monitoring_password = frappe.get_doc("Cluster", self.cluster).get_password(
 			"monitoring_password"
 		)
+
+		log_server = frappe.db.get_single_value("Press Settings", "log_server")
+		if log_server:
+			kibana_password = frappe.get_doc("Log Server", log_server).get_password(
+				"kibana_password"
+			)
+		else:
+			kibana_password = None
+
 		try:
 			ansible = Ansible(
 				playbook="database.yml",
@@ -48,6 +57,8 @@ class DatabaseServer(BaseServer):
 					"workers": "2",
 					"agent_password": agent_password,
 					"monitoring_password": monitoring_password,
+					"log_server": log_server,
+					"kibana_password": kibana_password,
 					"private_ip": self.private_ip,
 					"server_id": self.server_id,
 					"mariadb_root_password": mariadb_root_password,
