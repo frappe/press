@@ -5,21 +5,13 @@
 from __future__ import unicode_literals
 
 import json
-from datetime import datetime, timedelta
 from itertools import groupby
 
 import frappe
-import requests
 from frappe.core.utils import find
 from frappe.model.document import Document
-from frappe.utils import (
-	convert_utc_to_user_timezone,
-	get_url_to_form,
-	pretty_date,
-)
 
 from press.agent import Agent
-from press.telegram_utils import Telegram
 from press.utils import log_error
 
 
@@ -138,102 +130,6 @@ def publish_update(job):
 	message = job_detail(job)
 	job_owner = frappe.db.get_value("Agent Job", job, "owner")
 	frappe.publish_realtime(event="agent_job_update", message=message, user=job_owner)
-
-
-def collect_site_uptime():
-	benches = frappe.get_all(
-		"Bench", fields=["name", "server"], filters={"status": "Active"},
-	)
-	online_sites = frappe.get_all("Site", filters={"status": "Active"})
-	online_sites = set(site.name for site in online_sites)
-	for bench in benches:
-		try:
-			agent = Agent(bench.server)
-			bench_status = agent.fetch_bench_status(bench.name)
-			if not bench_status:
-				continue
-			for site, status in bench_status["sites"].items():
-				if site in online_sites:
-					doc = {
-						"doctype": "Site Uptime Log",
-						"site": site,
-						"web": status["web"],
-						"scheduler": status["scheduler"],
-						"timestamp": bench_status["timestamp"],
-					}
-					frappe.get_doc(doc).db_insert()
-			frappe.db.commit()
-		except Exception:
-			log_error("Agent Uptime Collection Exception", bench=bench, status=bench_status)
-
-
-def report_site_downtime():
-	# Report sites that are offline for at least last two minutes
-	# Also report how long they have been offline if possible
-	now = datetime.utcnow()
-	offline_site_logs = frappe.get_all(
-		"Site Uptime Log",
-		fields=["site", "count(site) as count"],
-		filters={"web": "False", "timestamp": (">", now - timedelta(minutes=2))},
-		group_by="site",
-		ignore_ifnull=True,
-	)
-	offline_sites = set(log.site for log in offline_site_logs if log.count >= 2)
-	if offline_sites:
-		last_online_logs = frappe.get_all(
-			"Site Uptime Log",
-			fields=["site", "max(timestamp) as last_online"],
-			filters={"site": ("in", offline_sites), "web": True},
-			group_by="site",
-		)
-		last_online_map = {log.site: log.last_online for log in last_online_logs}
-		sites = []
-		for site in offline_sites:
-			last_request = frappe.get_all(
-				"Site Request Log",
-				fields=["status_code"],
-				filters={"site": site},
-				order_by="timestamp desc",
-				limit=1,
-			)
-			if last_request and last_request[0].status_code == "429":
-				continue
-			try:
-				if requests.get(f"https://{site}").status_code == 429:
-					continue
-			except Exception:
-				pass
-
-			last_online = last_online_map.get(site)
-			if last_online:
-				timestamp = convert_utc_to_user_timezone(last_online).replace(tzinfo=None)
-				human = pretty_date(timestamp)
-			else:
-				timestamp = datetime.min
-				human = "Forever"
-			sites.append(
-				{
-					"site": site,
-					"human": human,
-					"timestamp": timestamp,
-					"url": get_url_to_form("Site", site),
-				}
-			)
-
-		if not sites:
-			return
-
-		template = """*CRITICAL* - {{sites | len}} Sites offline
-
-{% for site in sites -%}
-	{{ site.human }} - [{{ site.site }}]({{ site.url }})
-{% endfor %}
-"""
-		message = frappe.render_template(
-			template, {"sites": sorted(sites, key=lambda x: x["timestamp"])}
-		)
-		telegram = Telegram()
-		telegram.send(message)
 
 
 def suspend_sites():
