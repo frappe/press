@@ -33,9 +33,10 @@ export default {
 	props: ['site'],
 	resources: {
 		requestCounter() {
+			let localTimezone = DateTime.local().zoneName;
 			return {
 				method: 'press.api.analytics.daily_usage',
-				params: { name: this.site.name },
+				params: { name: this.site.name, timezone: localTimezone },
 				default: { data: [], plan_limit: 0 },
 				onSuccess(data) {
 					if (data.data.length > 0) {
