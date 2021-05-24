@@ -7,5 +7,5 @@ from __future__ import unicode_literals
 import unittest
 
 
-class TestMonitoringServer(unittest.TestCase):
+class TestMonitorServer(unittest.TestCase):
 	pass

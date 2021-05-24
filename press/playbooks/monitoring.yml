@@ -1,5 +1,5 @@
 ---
-- name: Setup Monitoring Server
+- name: Setup Monitor Server
   hosts: all
   become: yes
   become_user: root
@@ -10,3 +10,7 @@
     - role: nginx
     - role: agent
     - role: node_exporter
+    - role: prometheus
+    - role: alertmanager
+    - role: blackbox_exporter
+    - role: grafana

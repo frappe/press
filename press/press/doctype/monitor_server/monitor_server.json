@@ -19,17 +19,15 @@
   "private_vlan_id",
   "agent_section",
   "agent_password",
-  "registry_section",
-  "prometheus_username",
-  "column_break_10",
-  "prometheus_password",
   "grafana_section",
   "grafana_password",
   "ssh_section",
   "frappe_user_password",
   "frappe_public_key",
   "column_break_20",
-  "root_public_key"
+  "root_public_key",
+  "monitoring_section",
+  "monitoring_password"
  ],
  "fields": [
   {
@@ -125,27 +123,7 @@
   {
    "fieldname": "agent_password",
    "fieldtype": "Password",
-   "label": "Agent Password"
-  },
-  {
-   "fieldname": "registry_section",
-   "fieldtype": "Section Break",
-   "label": "Prometheus"
-  },
-  {
-   "fieldname": "prometheus_username",
-   "fieldtype": "Data",
-   "label": "Prometheus Username",
-   "set_only_once": 1
-  },
-  {
-   "fieldname": "column_break_10",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "prometheus_password",
-   "fieldtype": "Password",
-   "label": "Prometheus Password",
+   "label": "Agent Password",
    "set_only_once": 1
   },
   {
@@ -156,7 +134,8 @@
   {
    "fieldname": "grafana_password",
    "fieldtype": "Password",
-   "label": "Grafana Password"
+   "label": "Grafana Password",
+   "set_only_once": 1
   },
   {
    "fieldname": "ssh_section",
@@ -186,6 +165,18 @@
    "fieldtype": "Code",
    "label": "Root Public Key",
    "read_only": 1
+  },
+  {
+   "fieldname": "monitoring_section",
+   "fieldtype": "Section Break",
+   "label": "Monitoring",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "monitoring_password",
+   "fieldtype": "Password",
+   "label": "Monitoring Password",
+   "set_only_once": 1
   }
  ],
  "links": [
@@ -194,10 +185,10 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2021-03-30 16:42:06.785344",
+ "modified": "2021-05-03 09:41:07.498277",
  "modified_by": "Administrator",
  "module": "Press",
- "name": "Monitoring Server",
+ "name": "Monitor Server",
  "owner": "Administrator",
  "permissions": [
   {
