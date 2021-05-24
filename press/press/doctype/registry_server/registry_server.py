@@ -14,6 +14,7 @@ class RegistryServer(BaseServer):
 		self.validate_agent_password()
 		self.validate_registry_username()
 		self.validate_registry_password()
+		self.validate_monitoring_password()
 
 	def validate_registry_password(self):
 		if not self.registry_password:
@@ -23,8 +24,13 @@ class RegistryServer(BaseServer):
 		if not self.registry_username:
 			self.registry_username = "frappe"
 
+	def validate_monitoring_password(self):
+		if not self.monitoring_password:
+			self.monitoring_password = frappe.generate_hash()
+
 	def _setup_server(self):
 		agent_password = self.get_password("agent_password")
+		monitoring_password = self.get_password("monitoring_password")
 		certificate_name = frappe.db.get_value(
 			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
 		)
@@ -38,6 +44,7 @@ class RegistryServer(BaseServer):
 					"workers": 1,
 					"domain": self.domain,
 					"agent_password": agent_password,
+					"monitoring_password": monitoring_password,
 					"private_ip": self.private_ip,
 					"registry_username": self.registry_username,
 					"registry_password": self.get_password("registry_password"),

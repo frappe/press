@@ -27,7 +27,9 @@
   "frappe_user_password",
   "frappe_public_key",
   "column_break_20",
-  "root_public_key"
+  "root_public_key",
+  "monitoring_section",
+  "monitoring_password"
  ],
  "fields": [
   {
@@ -174,6 +176,17 @@
    "fieldname": "agent_password",
    "fieldtype": "Password",
    "label": "Agent Password"
+  },
+  {
+   "fieldname": "monitoring_section",
+   "fieldtype": "Section Break",
+   "label": "Monitoring"
+  },
+  {
+   "fieldname": "monitoring_password",
+   "fieldtype": "Password",
+   "label": "Monitoring Password",
+   "set_only_once": 1
   }
  ],
  "links": [
@@ -182,7 +195,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2021-03-30 15:36:45.109884",
+ "modified": "2021-05-03 08:51:12.206932",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Registry Server",
