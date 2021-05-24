@@ -1,0 +1,76 @@
+---
+- name: Create Grafana Directories
+  become: yes
+  become_user: frappe
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: 0755
+  with_items:
+    - /home/frappe/grafana
+    - /home/frappe/grafana/provisioning
+    - /home/frappe/grafana/provisioning/datasources
+    - /home/frappe/grafana/provisioning/dashboards
+    - /home/frappe/grafana/logs
+    - /home/frappe/grafana/data
+    - /home/frappe/grafana/data/dashboards
+    - /home/frappe/grafana/data/plugins
+
+- name: Download Grafana Archive
+  become: yes
+  become_user: frappe
+  unarchive:
+    src: https://dl.grafana.com/oss/release/grafana-7.5.4.linux-amd64.tar.gz
+    dest: /tmp
+    remote_src: yes
+
+- name: Copy Grafana Directories
+  become: yes
+  become_user: frappe
+  copy:
+    src: "/tmp/grafana-7.5.4/{{ item }}/"
+    dest: "/home/frappe/grafana/{{ item }}/"
+    mode: 0755
+    remote_src: yes
+  with_items:
+    - bin
+    - conf
+    - plugins-bundled
+    - public
+    - scripts
+
+- name: Provision Prometheus Datasource
+  become: yes
+  become_user: frappe
+  template:
+    src: prometheus.yml
+    dest: /home/frappe/grafana/provisioning/datasources/prometheus.yml
+    mode: 0640
+
+- name: Configure Grafana
+  become: yes
+  become_user: frappe
+  template:
+    src: grafana.ini
+    dest: /home/frappe/grafana/grafana.ini
+    mode: 0640
+
+- name: Create Grafana Systemd Service File
+  template:
+    src: grafana.service
+    dest: /etc/systemd/system/grafana.service
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Restart Grafana Service
+  systemd:
+    daemon_reload: true
+    name: grafana
+    enabled: yes
+    state: restarted
+
+- name: Setup Grafana Authentication
+  become: yes
+  become_user: frappe
+  command: "htpasswd -Bbc /home/frappe/agent/nginx/grafana.htpasswd frappe {{ grafana_password }}"

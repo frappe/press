@@ -1,0 +1,26 @@
+[Unit]
+Description=Grafana
+After=network-online.target
+
+[Service]
+User=frappe
+Group=frappe
+Type=simple
+
+PIDFile=/var/run/grafana.pid
+ExecReload=/bin/kill -HUP $MAINPID
+
+WorkingDirectory=/home/frappe/grafana
+ExecStart=/home/frappe/grafana/bin/grafana-server \
+    --config=/home/frappe/grafana/grafana.ini \
+    cfg:default.paths.logs=/home/frappe/grafana/logs \
+    cfg:default.paths.data=/home/frappe/grafana/data \
+    cfg:default.paths.plugins=/home/frappe/grafana/plugins \
+    cfg:default.paths.provisioning=/home/frappe/grafana/provisioning  
+
+SyslogIdentifier=grafana
+Restart=always
+
+
+[Install]
+WantedBy=multi-user.target
