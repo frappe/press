@@ -13,3 +13,4 @@
     - role: filebeat
     - role: elasticsearch
     - role: kibana
+    - role: filebeat_elasticsearch
