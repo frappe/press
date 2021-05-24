@@ -1,0 +1,29 @@
+[Unit]
+Description=Prometheus
+After=network-online.target
+
+[Service]
+Type=simple
+User=frappe
+Group=frappe
+
+PIDFile=/var/run/prometheus.pid
+ExecReload=/bin/kill -HUP $MAINPID
+
+ExecStart=/home/frappe/prometheus/prometheus \
+  --config.file=/home/frappe/prometheus/prometheus.yml \
+  --storage.tsdb.path=/home/frappe/prometheus/data \
+  --storage.tsdb.retention.time=30d \
+  --web.console.libraries=/home/frappe/prometheus/console_libraries \
+  --web.console.templates=/home/frappe/prometheus/consoles \
+  --web.listen-address=127.0.0.1:9090 \
+  --web.external-url=https://{{ server }}/prometheus
+
+SyslogIdentifier=prometheus
+Restart=always
+RestartSec=1
+StartLimitInterval=0
+
+
+[Install]
+WantedBy=multi-user.target
