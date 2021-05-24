@@ -2,7 +2,7 @@
 	<button
 		class="px-4 py-2 text-left border border-gray-100 rounded-lg shadow cursor-pointer focus:outline-none"
 		:class="
-			selected ? 'border-blue-500 shadow-outline-blue' : 'hover:border-gray-300'
+			selected ? 'bg-blue-50 ring-2 ring-blue-500' : 'hover:border-gray-300'
 		"
 	>
 		<div class="flex items-center">

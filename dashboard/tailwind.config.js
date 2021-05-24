@@ -19,7 +19,8 @@ module.exports = {
 				'6xl': '28px'
 			},
 			width: {
-				112: '28rem'
+				112: '28rem',
+				wizard: '650px'
 			},
 			minWidth: {
 				40: '10rem'

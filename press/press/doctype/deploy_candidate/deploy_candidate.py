@@ -131,6 +131,16 @@ class DeployCandidate(Document):
 					"step": step,
 				},
 			)
+		self.append(
+			"build_steps",
+			{
+				"status": "Pending",
+				"stage_slug": "upload",
+				"step_slug": "upload",
+				"stage": "Upload",
+				"step": "Docker Image",
+			},
+		)
 		self.save()
 
 	def _prepare_build_directory(self):
@@ -326,21 +336,41 @@ class DeployCandidate(Document):
 			raise subprocess.CalledProcessError(return_code, command)
 
 	def _push_docker_image(self):
-		settings = frappe.db.get_value(
-			"Press Settings",
-			None,
-			["docker_registry_url", "docker_registry_username", "docker_registry_password"],
-			as_dict=True,
-		)
+		step = find(self.build_steps, lambda x: x.stage_slug == "upload")
+		step.status = "Running"
+		start_time = now()
+		# publish progress
+		self.save()
+		frappe.db.commit()
 
-		client = docker.from_env()
-		client.login(
-			registry=settings.docker_registry_url,
-			username=settings.docker_registry_username,
-			password=settings.docker_registry_password,
-		)
+		try:
+			settings = frappe.db.get_value(
+				"Press Settings",
+				None,
+				["docker_registry_url", "docker_registry_username", "docker_registry_password"],
+				as_dict=True,
+			)
 
-		client.images.push(self.docker_image_repository, self.docker_image_tag)
+			client = docker.from_env()
+			client.login(
+				registry=settings.docker_registry_url,
+				username=settings.docker_registry_username,
+				password=settings.docker_registry_password,
+			)
+
+			client.images.push(self.docker_image_repository, self.docker_image_tag)
+
+			end_time = now()
+			step.duration = frappe.utils.rounded((end_time - start_time).total_seconds(), 1)
+			step.status = "Success"
+
+			self.save()
+			frappe.db.commit()
+		except Exception:
+			step.status = "Failure"
+			self.save()
+			frappe.db.commit()
+			raise
 
 	def create_deploy(self):
 		try:
@@ -363,6 +393,14 @@ class DeployCandidate(Document):
 			deploy_doc.insert()
 		except Exception:
 			log_error("Deploy Creation Error", candidate=self.name)
+
+	def on_update(self):
+		if self.status == "Running":
+			frappe.publish_realtime(
+				f"bench_deploy:{self.name}:steps", {"steps": self.build_steps}
+			)
+		else:
+			frappe.publish_realtime(f"bench_deploy:{self.name}:finished")
 
 
 def ansi_escape(text):

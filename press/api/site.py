@@ -278,6 +278,7 @@ def options_for_new():
 					"name",
 					"app",
 					"repository_url",
+					"repository",
 					"repository_owner",
 					"branch",
 					"team",
@@ -369,7 +370,7 @@ def all():
 
 	benches = frappe.db.get_all(
 		"Bench",
-		fields=["name", "group"],
+		fields=["name", "status", "group"],
 		filters={"name": ("in", set([site.bench for site in sites]))},
 	)
 
@@ -394,33 +395,86 @@ def all():
 	)
 
 	groups = groups_with_sites + empty_private_groups
-
+	shared_bench = frappe._dict(name="shared", shared=True, status="Active", sites=[])
+	private_benches = []
 	for group in groups:
 		group.benches = [bench for bench in benches if bench.group == group.name]
 		group.owned_by_team = team == group.team
+		group.status = (
+			"Active"
+			if frappe.get_all("Bench", {"group": group.name, "status": "Active"}, limit=1)
+			else "Awaiting Deploy"
+		)
 
 		group.sites = []
 		for bench in group.benches:
 			group.sites += [site for site in sites if site.bench == bench.name]
 
-	return groups
+		if group.public and not group.owned_by_team:
+			shared_bench.sites += group.sites
+		else:
+			private_benches.append(group)
+
+	return [shared_bench] + private_benches
 
 
 @frappe.whitelist()
 @protected("Site")
 def get(name):
 	site = frappe.get_doc("Site", name)
-	update_available = (
-		site.bench in benches_with_available_update()
-	) and should_try_update(site)
-
 	return {
 		"name": site.name,
 		"status": site.status,
 		"trial_end_date": site.trial_end_date,
 		"setup_wizard_complete": site.setup_wizard_complete,
-		"update_available": update_available,
 	}
+
+
+@frappe.whitelist()
+@protected("Site")
+def check_for_updates(name):
+	site = frappe.get_doc("Site", name)
+	out = frappe._dict()
+	out.update_available = site.bench in benches_with_available_update()
+	if not out.update_available:
+		return out
+
+	bench = frappe.get_doc("Bench", site.bench)
+	source = bench.candidate
+	destinations = frappe.get_all(
+		"Deploy Candidate Difference",
+		filters={"source": source},
+		limit=1,
+		pluck="destination",
+	)
+	if not destinations:
+		out.update_available = False
+		return out
+
+	destination = destinations[0]
+	site_update_log = frappe.db.exists(
+		"Site Update",
+		{
+			"site": site.name,
+			"source_candidate": source,
+			"destination_candidate": destination,
+			"cause_of_failure_is_resolved": False,
+		},
+	)
+	if site_update_log:
+		# update already attempted but it failed for some reason
+		out.update_available = False
+		return out
+
+	destination_candidate = frappe.get_doc("Deploy Candidate", destination)
+
+	from press.api.bench import get_updates_between_current_and_next_apps
+
+	out.apps = get_updates_between_current_and_next_apps(
+		bench.apps, destination_candidate.apps
+	)
+	out.update_available = any([app["update_available"] for app in out.apps])
+	return out
 
 
 @frappe.whitelist()
@@ -460,15 +514,15 @@ def overview(name):
 
 def get_installed_apps(site):
 	installed_apps = [app.app for app in site.apps]
-	bench_sources = {}
-	installed_sources = []
 	bench = frappe.get_doc("Bench", site.bench)
-	bench_sources = [app.source for app in bench.apps]
+	installed_bench_apps = [app for app in bench.apps if app.app in installed_apps]
+
 	sources = frappe.get_all(
 		"App Source",
 		fields=[
 			"name",
 			"app",
+			"repository",
 			"repository_url",
 			"repository_owner",
 			"branch",
@@ -476,13 +530,25 @@ def get_installed_apps(site):
 			"public",
 			"app_title as title",
 		],
-		filters={"name": ("in", bench_sources)},
+		filters={"name": ("in", [d.source for d in installed_bench_apps])},
 	)
-	for source in sources:
-		if source.app in installed_apps:
-			installed_sources.append(source)
 
-	return sorted(installed_sources, key=lambda x: bench_sources.index(x.name))
+	installed_apps = []
+	for app in installed_bench_apps:
+		app_source = find(sources, lambda x: x.name == app.source)
+		app_source.hash = app.hash
+		app_source.tag = frappe.db.get_value(
+			"App Tag",
+			{
+				"repository": app_source.repository,
+				"repository_owner": app_source.repository_owner,
+				"hash": app_source.hash,
+			},
+			"tag",
+		)
+		installed_apps.append(app_source)
+
+	return installed_apps
 
 
 @frappe.whitelist()
