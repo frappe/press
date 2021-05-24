@@ -145,7 +145,6 @@ doc_events = {
 
 scheduler_events = {
 	"daily": [
-		"press.press.cleanup.remove_logs",
 		"press.press.doctype.team.suspend_sites.execute",
 		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
 	],
@@ -173,11 +172,6 @@ scheduler_events = {
 			"press.press.cleanup.unlink_remote_files_from_site",
 		],
 		"* * * * * 0/5": ["press.press.doctype.agent_job.agent_job.poll_pending_jobs"],
-		"* * * * * 0/60": [
-			"press.press.doctype.site.analytics.collect",
-			"press.press.doctype.agent_job.agent_job.collect_site_uptime",
-			"press.press.doctype.agent_job.agent_job.report_site_downtime",
-		],
 		"0 */6 * * *": ["press.press.doctype.server.server.cleanup_unused_files"],
 		"30 * * * *": ["press.press.doctype.agent_job.agent_job.suspend_sites"],
 		"*/15 * * * *": ["press.press.doctype.site_update.site_update.schedule_updates"],
