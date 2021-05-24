@@ -12,7 +12,9 @@ from press.press.doctype.site.pool import get as get_pooled_site
 
 
 @frappe.whitelist(allow_guest=True)
-def account_request(subdomain, plan, email, first_name, last_name, phone_number, country):
+def account_request(
+	subdomain, plan, email, first_name, last_name, phone_number, country
+):
 	email = email.strip().lower()
 	frappe.utils.validate_email_address(email, True)
 
@@ -70,7 +72,7 @@ def setup_account(key, business_data=None):
 				"no_of_employees",
 				"company",
 				"designation",
-				"referral_source"
+				"referral_source",
 			]
 		}
 
