@@ -1,178 +1,201 @@
 <template>
 	<div class="pb-20 mt-8">
 		<div class="px-4 sm:px-8">
-			<div
-				class="p-24 text-center"
-				v-if="$resources.groups.data && $resources.groups.data.length === 0"
-			>
-				<div class="text-xl text-gray-800">
-					You haven't created any sites yet.
+			<h1 class="sr-only">Dashboard</h1>
+			<div class="flex flex-col sm:space-x-4 sm:flex-row">
+				<div class="sm:w-2/12" v-if="multipleBenches">
+					<Input
+						class="mb-4 sm:hidden"
+						type="select"
+						:value="bench || 'shared'"
+						:options="
+							benches.map(d => ({
+								label: benchTitle(d),
+								value: d.name
+							}))
+						"
+						@change="value => changeBench(value)"
+					/>
+
+					<div class="hidden space-y-1 sm:block">
+						<router-link
+							v-for="currentBench in benches"
+							:key="currentBench.name"
+							class="block px-3 py-2 text-base rounded-md hover:bg-gray-100"
+							:class="
+								(!bench && currentBench.shared) || bench === currentBench.name
+									? 'bg-gray-100'
+									: ''
+							"
+							:to="
+								currentBench.shared ? '/sites' : `/${currentBench.name}/sites`
+							"
+						>
+							{{ benchTitle(currentBench) }}
+						</router-link>
+					</div>
 				</div>
-				<Button route="/sites/new" class="mt-10" type="primary">
-					Create your first Site
-				</Button>
-			</div>
-			<div class="space-y-8" v-else>
-				<div v-for="group in groups" :key="group.name">
-					<PageHeader class="mb-2 -mx-4 sm:-mx-8">
-						<h2 slot="title">
-							{{ getGroupTitle(group) }}
-						</h2>
-						<div class="flex items-center space-x-2" slot="actions">
+				<div class="flex-1" v-if="activeBench">
+					<div class="flex items-center justify-between">
+						<div>
+							<h2 class="font-bold">
+								{{ activeBench.shared ? 'Sites' : activeBench.title }}
+							</h2>
+							<p v-if="benches" class="text-base text-gray-700">
+								{{ sitesSubtitle(activeBench) }}
+							</p>
+						</div>
+						<div class="flex items-center space-x-2">
 							<Button
-								v-if="!group.public && group.owned_by_team"
-								:route="`/benches/${group.name}`"
+								v-if="activeBench.owned_by_team"
+								:route="`/benches/${activeBench.name}`"
+								icon-left="tool"
 							>
 								Manage Bench
 							</Button>
 							<Button
 								:route="
-									`/sites/new${!group.public ? `?bench=${group.name}` : ''}`
+									`/sites/new${
+										activeBench.owned_by_team
+											? `?bench=${activeBench.name}&benchTitle=${activeBench.title}`
+											: ''
+									}`
 								"
 								type="primary"
 								iconLeft="plus"
-								v-if="group.public || (!group.public && group.owned_by_team)"
+								v-if="showNewSiteButton(activeBench)"
 							>
 								New Site
 							</Button>
 						</div>
-					</PageHeader>
-					<template v-if="group.sites.length">
-						<router-link
-							class="grid items-center grid-cols-2 gap-12 py-4 text-base border-b md:grid-cols-4 hover:bg-gray-50 focus:outline-none focus:shadow-outline"
-							v-for="site in group.sites"
-							:key="site.name"
-							:to="'/sites/' + site.name"
-						>
-							<span class="">{{ site.name }}</span>
-							<span class="text-right md:text-center">
-								<Badge v-bind="siteStatus(site)" />
-							</span>
-							<FormatDate class="hidden text-right md:block" type="relative">
-								{{ site.creation }}
-							</FormatDate>
-							<span class="hidden text-right md:inline">
-								<Badge
-									v-if="
-										(site.status === 'Active' ||
-											site.status === 'Inactive' ||
-											site.status === 'Suspended') &&
-											site.update_available
-									"
-									:status="'Update Available'"
-									class="mr-4"
-								/>
-								<a
-									v-if="site.status === 'Active' || site.status === 'Updating'"
-									:href="`https://${site.name}`"
-									target="_blank"
-									class="inline-flex items-baseline text-sm text-blue-500 hover:underline"
-									@click.stop
-								>
-									Visit Site
-									<FeatherIcon name="external-link" class="w-3 h-3 ml-1" />
-								</a>
-							</span>
-						</router-link>
-					</template>
-					<div class="text-base text-gray-600" v-else>
-						No sites in this bench
+					</div>
+					<SiteList
+						class="mt-4"
+						:sites="activeBench.sites"
+						v-if="!$resources.benches.loading"
+					/>
+					<div class="px-4 py-3 mt-4 rounded-md bg-gray-50" v-else>
+						<Loading />
 					</div>
 				</div>
 			</div>
 		</div>
 	</div>
 </template>
-
 <script>
+import SiteList from './SiteList.vue';
 export default {
 	name: 'Sites',
+	props: ['bench'],
+	components: {
+		SiteList
+	},
 	resources: {
-		groups: 'press.api.site.all'
-	},
-	mounted() {
-		this.setupSocketListener();
-	},
-	computed: {
-		groups() {
-			if (!this.$resources.groups.data) return [];
-
-			let sharedBench = {
-				name: 'shared-bench',
-				title: 'Shared Bench',
-				public: true,
-				sites: []
-			};
-			this.$resources.groups.data
-				.filter(group => !group.owned_by_team)
-				.forEach(group => {
-					sharedBench.sites = sharedBench.sites.concat(group.sites);
-				});
-
-			return [
-				sharedBench,
-				...this.$resources.groups.data.filter(group => group.owned_by_team)
-			];
+		benches: {
+			method: 'press.api.site.all',
+			auto: true
 		}
 	},
+	mounted() {
+		this.$socket.on('agent_job_update', this.onAgentJobUpdate);
+		this.$socket.on('list_update', this.onSiteUpdate);
+	},
+	destroyed() {
+		this.$socket.off('agent_job_update', this.onAgentJobUpdate);
+		this.$socket.off('list_update', this.onSiteUpdate);
+	},
 	methods: {
-		setupSocketListener() {
-			if (this._socketSetup) return;
-			this._socketSetup = true;
-
-			this.$socket.on('agent_job_update', data => {
-				if (data.name === 'New Site' || data.name === 'New Site from Backup') {
-					if (data.status === 'Success') {
-						this.$resources.groups.reload();
-						this.$notify({
-							title: 'Site creation complete!',
-							message: 'Login to your site and complete the setup wizard',
-							icon: 'check',
-							color: 'green'
-						});
-					}
-				}
-			});
-
-			this.$socket.on('list_update', ({ doctype }) => {
-				if (doctype === 'Site') {
-					this.$resources.groups.reload();
-				}
-			});
-		},
-		getGroupTitle(group) {
-			let privateBenches = (this.$resources.groups.data || []).filter(
-				group => group.owned_by_team
-			);
-			if (privateBenches.length === 0) {
-				return 'Sites';
+		onAgentJobUpdate(data) {
+			if (!(data.name === 'New Site' || data.name === 'New Site from Backup'))
+				return;
+			if (data.status === 'Success') {
+				this.reload();
+				this.$notify({
+					title: 'Site creation complete!',
+					message: 'Login to your site and complete the setup wizard',
+					icon: 'check',
+					color: 'green'
+				});
 			}
-			return group.title;
 		},
-		relativeDate(dateString) {
-			return dateString;
-		},
-		siteStatus(site) {
-			let status = site.status;
-			let color;
-			let usage = Math.max(
-				site.current_cpu_usage,
-				site.current_database_usage,
-				site.current_disk_usage
-			);
-
-			if (usage && usage >= 80 && status == 'Active') {
-				color = 'yellow';
-				status = 'Attention Required';
+		onSiteUpdate({ doctype }) {
+			if (doctype === 'Site') {
+				this.reload();
 			}
-			if (site.trial_end_date) {
-				color = 'yellow';
-				status = 'Trial';
+		},
+		reload() {
+			// refresh if not reloaded in the last 1 second
+			if (new Date() - this.$resources.benches.lastLoaded > 1000) {
+				this.$resources.benches.reload();
+			}
+		},
+		benchTitle(bench) {
+			if (bench.shared) {
+				return 'Shared Bench';
+			}
+			return bench.title || bench.name;
+		},
+		sitesSubtitle(bench) {
+			let parts = [
+				`${bench.sites.length} ${this.$plural(
+					bench.sites.length,
+					'site',
+					'sites'
+				)}`
+			];
+
+			let activeSites = bench.sites.filter(site => site.status == 'Active');
+			if (activeSites.length) {
+				parts.push(`${activeSites.length} active`);
+			}
+
+			let brokenSites = bench.sites.filter(site => site.status == 'Broken');
+			if (brokenSites.length) {
+				parts.push(`${brokenSites.length} broken`);
+			}
+
+			return parts.join(' · ');
+		},
+		showNewSiteButton(bench) {
+			if (bench.status != 'Active') return false;
+			return bench.shared || bench.owned_by_team;
+		},
+		changeBench(benchName) {
+			let bench = this.benches.find(_bench => _bench.name === benchName);
+			if (bench) {
+				this.$router.replace(bench.shared ? '/sites' : `/${bench.name}/sites`);
+			}
+		}
+	},
+	computed: {
+		activeBench() {
+			if (this.benches) {
+				if (this.bench) {
+					return this.benches.find(bench => bench.name === this.bench);
+				}
+				return this.benches[0];
 			}
 			return {
-				status,
-				color
+				shared: true,
+				sites: []
 			};
+		},
+		benches() {
+			if (this.$resources.benches.data) {
+				return this.$resources.benches.data;
+			}
+			return null;
+		},
+		sharedBench() {
+			if (this.benches) {
+				return this.benches[0];
+			}
+			return null;
+		},
+		multipleBenches() {
+			if (this.$resources.benches.data) {
+				return this.$resources.benches.data.length > 1;
+			}
 		}
 	}
 };

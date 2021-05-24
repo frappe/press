@@ -2,37 +2,31 @@ export default [
 	{
 		path: '/benches/new',
 		name: 'NewBench',
-		component: () =>
-			import(/* webpackChunkName: "newbench" */ '../views/NewBench.vue'),
+		component: () => import('../views/NewBench.vue'),
 		props: true
 	},
 	{
 		path: '/benches/:benchName',
 		name: 'Bench',
-		component: () =>
-			import(/* webpackChunkName: "bench" */ '../views/Bench.vue'),
+		component: () => import('../views/Bench.vue'),
 		props: true,
 		children: [
 			{
-				path: 'general',
-				component: () =>
-					import(/* webpackChunkName: "bench" */ '../views/BenchGeneral.vue')
+				path: 'overview',
+				component: () => import('../views/BenchOverview.vue')
 			},
 			{
 				path: 'apps',
-				component: () =>
-					import(/* webpackChunkName: "bench" */ '../views/BenchApps.vue')
+				component: () => import('../views/BenchApps.vue')
 			},
 			{
 				path: 'deploys/:candidateName?',
-				component: () =>
-					import(/* webpackChunkName: "bench" */ '../views/BenchDeploys.vue'),
+				component: () => import('../views/BenchDeploys.vue'),
 				props: true
 			},
 			{
 				path: 'jobs/:jobName?',
-				component: () =>
-					import(/* webpackChunkName: "bench" */ '../views/BenchJobs.vue'),
+				component: () => import('../views/BenchJobs.vue'),
 				props: true
 			}
 		]
@@ -40,8 +34,7 @@ export default [
 	{
 		path: '/benches/:benchName/apps/new',
 		name: 'NewApp',
-		component: () =>
-			import(/* webpackChunkName: "bench" */ '../views/NewApp.vue'),
+		component: () => import('../views/NewApp.vue'),
 		props: true
 	}
 ];

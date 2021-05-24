@@ -94,14 +94,18 @@ export default {
 		}
 
 		if (this.site?.status === 'Active') {
-			this.$socket.on('list_update', ({ doctype, name }) => {
-				if (doctype === 'Site' && name === this.siteName) {
-					this.$resources.site.reload();
-				}
-			});
+			this.$socket.on('list_update', this.onSocketUpdate);
 		}
 	},
+	deactivated() {
+		this.$socket.off('list_update', this.onSocketUpdate);
+	},
 	methods: {
+		onSocketUpdate({ doctype, name }) {
+			if (doctype === 'Site' && name === this.siteName) {
+				this.$resources.site.reload();
+			}
+		},
 		setupAgentJobUpdate() {
 			if (this._agentJobUpdateSet) return;
 			this._agentJobUpdateSet = true;

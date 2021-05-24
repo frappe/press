@@ -1,20 +1,15 @@
 <template>
 	<Card title="Team Actions" subtitle="Actions available for your team">
-		<div class="flex items-center justify-between py-3">
-			<div>
-				<h3 class="text-base font-medium text-gray-900">
-					Delete Account
-				</h3>
-				<div class="mt-1 text-base text-gray-600 whitespace-pre-line">
-					Delete your account and personal data
-				</div>
-			</div>
-			<div class="ml-auto">
+		<ListItem
+			title="Delete Account"
+			subtitle="Delete your account and personal data"
+		>
+			<template #actions>
 				<Button @click="showTeamDeletionDialog = true">
 					<span class="text-red-600">Delete</span>
 				</Button>
-			</div>
-		</div>
+			</template>
+		</ListItem>
 		<Dialog title="Delete Team" v-model="showTeamDeletionDialog">
 			<p class="text-base">
 				With this, all of your and your team members' personal data will be
@@ -73,7 +68,10 @@ export default {
 		notifyFailure() {
 			this.$notify({
 				title: 'Deletion request not recorded',
-				message: this.$resources.deleteTeam.error == 'Internal Server Error' ? 'An error occured. Please contact Support' : '',
+				message:
+					this.$resources.deleteTeam.error == 'Internal Server Error'
+						? 'An error occured. Please contact Support'
+						: '',
 				icon: 'check',
 				color: 'red'
 			});

@@ -5,6 +5,12 @@ export default [
 		component: () => import('../views/Sites.vue')
 	},
 	{
+		path: '/:bench/sites',
+		name: 'BenchSites',
+		component: () => import('../views/Sites.vue'),
+		props: true
+	},
+	{
 		path: '/sites/new',
 		name: 'NewSite',
 		component: () => import('../views/NewSite/Index.vue'),

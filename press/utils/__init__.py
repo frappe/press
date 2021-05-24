@@ -89,6 +89,14 @@ def get_country_info():
 	return frappe.cache().hget("ip_country_map", ip, generator=_get_country_info)
 
 
+def get_last_doc(*args, **kwargs):
+	"""Wrapper around frappe.get_last_doc but does not throw"""
+	try:
+		return frappe.get_last_doc(*args, **kwargs)
+	except Exception:
+		return None
+
+
 def cache(seconds: int, maxsize: int = 128, typed: bool = False):
 	def wrapper_cache(func):
 		func = functools.lru_cache(maxsize=maxsize, typed=typed)(func)
@@ -329,3 +337,21 @@ def convert(string):
 	if isinstance(string, (dict, list)):
 		return json.dumps(string)
 	return string
+
+
+def unique(seq, unique_by=None):
+	"""Remove duplicates from a list based on an expression
+	Usage:
+	        unique([{'x': 1, 'y': 2}, {'x': 1, 'y': 2}], lambda d: d['x'])
+	        # output: [{'x': 1, 'y': 2}]
+	"""
+
+	unique_by = unique_by or (lambda x: x)
+	out = []
+	seen = set()
+	for d in seq:
+		unique_key = unique_by(d)
+		if unique_key not in seen:
+			out.append(d)
+			seen.add(unique_key)
+	return out
