@@ -36,6 +36,9 @@ class DatabaseServer(BaseServer):
 			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
 		)
 		certificate = frappe.get_doc("TLS Certificate", certificate_name)
+		monitoring_password = frappe.get_doc("Cluster", self.cluster).get_password(
+			"monitoring_password"
+		)
 		try:
 			ansible = Ansible(
 				playbook="database.yml",
@@ -44,6 +47,7 @@ class DatabaseServer(BaseServer):
 					"server": self.name,
 					"workers": "2",
 					"agent_password": agent_password,
+					"monitoring_password": monitoring_password,
 					"private_ip": self.private_ip,
 					"server_id": self.server_id,
 					"mariadb_root_password": mariadb_root_password,
