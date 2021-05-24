@@ -1,0 +1,117 @@
+---
+- name: Create Prometheus Directories
+  become: yes
+  become_user: frappe
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: 0755
+  with_items:
+    - /home/frappe/prometheus
+    - /home/frappe/prometheus/data
+    - /home/frappe/prometheus/rules
+    - /home/frappe/prometheus/file_sd
+
+- name: Download Prometheus Archive
+  become: yes
+  become_user: frappe
+  unarchive:
+    src: https://github.com/prometheus/prometheus/releases/download/v2.26.0/prometheus-2.26.0.linux-amd64.tar.gz
+    dest: /tmp
+    remote_src: yes
+
+- name: Copy Prometheus Console Templates
+  become: yes
+  become_user: frappe
+  copy:
+    src: "/tmp/prometheus-2.26.0.linux-amd64/{{ item }}/"
+    dest: "/home/frappe/prometheus/{{ item }}/"
+    mode: 0755
+    remote_src: yes
+  with_items:
+    - console_libraries
+    - consoles
+
+- name: Copy Prometheus and Promtool Binaries
+  become: yes
+  become_user: frappe
+  copy:
+    src: "/tmp/prometheus-2.26.0.linux-amd64/{{ item }}"
+    dest: "/home/frappe/prometheus/{{ item }}"
+    mode: 0755
+    remote_src: yes
+  with_items:
+    - prometheus
+    - promtool
+
+- name: Setup Prometheus Alerting Rules File
+  become: yes
+  become_user: frappe
+  template:
+    src: alert.rules
+    dest: /home/frappe/prometheus/rules/default.rules
+    mode: 0600
+    validate: "/home/frappe/prometheus/promtool check rules %s"
+
+- name: Configure Prometheus Service Discovery for Monitor Server
+  become: yes
+  become_user: frappe
+  template:
+    src: self.yml
+    dest: /home/frappe/prometheus/file_sd/self.yml
+    force: true
+    mode: 0600
+
+- name: Set JSON Variables
+  set_fact:
+    registries: "{{ registries_json | from_json }}"
+    clusters: "{{ clusters_json | from_json }}"
+
+- name: Configure Prometheus Service Discovery for Registries
+  become: yes
+  become_user: frappe
+  template:
+    src: registry.yml
+    dest: /home/frappe/prometheus/file_sd/registry.{{ item.name }}.yml
+    force: true
+    mode: 0600
+  loop: "{{ registries }}"
+
+- name: Configure Prometheus
+  become: yes
+  become_user: frappe
+  template:
+    src: prometheus.yml
+    dest: /home/frappe/prometheus/prometheus.yml
+    force: true
+    mode: 0600
+    validate: "/home/frappe/prometheus/promtool check config %s"
+
+- name: Create Prometheus Systemd Service File
+  template:
+    src: prometheus.service
+    dest: /etc/systemd/system/prometheus.service
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Restart Prometheus Service
+  systemd:
+    daemon_reload: true
+    name: prometheus
+    enabled: yes
+    state: restarted
+
+- name: Setup Agent Based Discovery
+  become: yes
+  become_user: frappe
+  command: "/home/frappe/agent/env/bin/agent setup monitor --url {{ press_url }} --token {{ monitor_token }}"
+  args:
+    chdir: /home/frappe/agent
+
+- name: Setup Cronjob for Agent Based Discovery
+  become: yes
+  become_user: frappe
+  cron:
+    name: agent discovery
+    job: cd /home/frappe/agent && /home/frappe/agent/env/bin/agent discover

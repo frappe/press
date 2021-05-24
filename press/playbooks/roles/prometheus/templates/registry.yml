@@ -1,0 +1,29 @@
+- targets:
+    - "{{ item.name }}"
+  labels:
+    job: node
+    __metrics_path__: /metrics/node
+
+- targets:
+    - "{{ item.name }}"
+  labels:
+    job: nginx
+    __metrics_path__: /metrics/nginx
+
+- targets:
+    - "{{ item.name }}"
+  labels:
+    job: cadvisor
+    __metrics_path__: /metrics/cadvisor
+
+- targets:
+    - "{{ item.name }}"
+  labels:
+    job: docker
+    __metrics_path__: /metrics/docker
+
+- targets:
+    - "{{ item.name }}"
+  labels:
+    job: registry
+    __metrics_path__: /metrics/registry
