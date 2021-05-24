@@ -24,30 +24,42 @@
 				marketplace or your private apps.
 			</p>
 			<div class="mt-4 space-y-4">
-				<div v-if="marketplaceApps.length">
+				<div v-if="publicApps.length">
 					<h3 class="sr-only">Marketplace Apps</h3>
 					<div
 						class="grid grid-cols-2 gap-4 px-2 py-2 mt-4 -mx-2 overflow-y-auto max-h-56"
 					>
 						<SelectableCard
-							v-for="marketplaceApp in marketplaceApps"
-							:key="marketplaceApp.app.app"
-							@click.native="toggleApp(marketplaceApp.app)"
-							:title="marketplaceApp.title"
-							:image="marketplaceApp.image"
-							:selected="selectedApps.includes(marketplaceApp.app.app)"
+							v-for="publicApp in publicApps"
+							:key="publicApp.app"
+							@click.native="toggleApp(publicApp)"
+							:title="
+								publicApp.marketplace
+									? publicApp.marketplace.title
+									: publicApp.app_title
+							"
+							:image="
+								publicApp.marketplace ? publicApp.marketplace.image : null
+							"
+							:selected="selectedApps.includes(publicApp.app)"
+							v-show="!publicApp.frappe"
 						>
-							<a
-								slot="secondary-content"
-								class="inline-block text-sm leading-snug text-blue-600"
-								:href="'/' + marketplaceApp.route"
-								target="_blank"
-								@click.stop
-							>
-								Details
-							</a>
+							<template #secondary-content>
+								<a
+									v-if="publicApp.marketplace"
+									class="inline-block text-sm leading-snug text-blue-600"
+									:href="'/' + publicApp.marketplace.route"
+									target="_blank"
+									@click.stop
+								>
+									Details
+								</a>
+								<span class="text-sm leading-snug text-gray-700" v-else>
+									{{ publicApp.repository_owner }}/{{ publicApp.repository }}
+								</span>
+							</template>
 						</SelectableCard>
-						<div class="h-1 py-4" v-if="marketplaceApps.length > 4"></div>
+						<div class="h-1 py-4" v-if="publicApps.length > 4"></div>
 					</div>
 				</div>
 				<div v-if="privateApps.length > 0">
@@ -88,21 +100,16 @@ export default {
 		};
 	},
 	computed: {
-		privateApps() {
-			return this.apps.filter(app => !app.public);
-		},
-		marketplaceApps() {
+		publicApps() {
 			return this.apps
 				.filter(app => app.public)
 				.map(app => {
-					let options = this.options.marketplace_apps[app.app];
-					if (!options) {
-						return false;
-					}
-					options.app = app;
-					return options;
-				})
-				.filter(Boolean);
+					app.marketplace = this.options.marketplace_apps[app.app] || null;
+					return app;
+				});
+		},
+		privateApps() {
+			return this.apps.filter(app => !app.public);
 		},
 		apps() {
 			if (!this.options || !this.selectedVersion || !this.selectedGroup)
