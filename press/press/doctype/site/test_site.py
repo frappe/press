@@ -3,26 +3,27 @@
 # See license.txt
 from __future__ import unicode_literals
 
+import json
 import unittest
+from datetime import datetime
 from unittest.mock import Mock, patch
 
 import frappe
+from frappe.core.utils import find
 
 from press.press.doctype.agent_job.agent_job import AgentJob
-from press.press.doctype.bench.test_bench import create_test_bench
 from press.press.doctype.app.test_app import create_test_app
-from press.press.doctype.plan.test_plan import create_test_plan
+from press.press.doctype.bench.test_bench import create_test_bench
 from press.press.doctype.database_server.test_database_server import (
 	create_test_database_server,
 )
+from press.press.doctype.plan.test_plan import create_test_plan
 from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
 from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.site.site import Site, process_rename_site_job_update
-
-from datetime import datetime
 
 
 def create_test_site(
@@ -243,3 +244,40 @@ class TestSite(unittest.TestCase):
 		process_rename_site_job_update(rename_job)
 		job_count_after = frappe.db.count("Agent Job")
 		self.assertEqual(job_count_before, job_count_after)
+
+	def test_add_domain_to_config_adds_domains_key_to_site_configuration(self):
+		site = create_test_site("testsubdomain")
+		domain = "prod.frappe.dev"
+
+		site.add_domain_to_config(domain)
+		site.reload()
+
+		domains = site.get_config_value_for_key("domains")
+		self.assertIn(domain, domains)
+
+	def test_add_domain_to_config_updates_config_for_existing_domains_key(self):
+		site = create_test_site("testsubdomain")
+		domain = "prod.frappe.dev"
+		domain_2 = "prod2.frappe.dev"
+		site._update_configuration({"domains": [domain]})
+
+		site.add_domain_to_config(domain_2)
+		site.reload()
+
+		domains = site.get_config_value_for_key("domains")
+		self.assertIn(domain, domains)
+		self.assertIn(domain_2, domains)
+
+	def test_add_remove_domain_from_config_updates_domains_key(self):
+		site = create_test_site("testsubdomain")
+		domain = "prod.frappe.dev"
+		domain_2 = "prod2.frappe.dev"
+		site._update_configuration({"domains": [domain, domain_2]})
+
+		site.remove_domain_from_config(domain)
+		site.reload()
+
+		domains = site.get_config_value_for_key("domains")
+		site.get_config_value_for_key("hostname")
+		self.assertNotIn(domain, domains)
+		self.assertIn(domain_2, domains)
