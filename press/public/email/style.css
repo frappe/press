@@ -71,9 +71,14 @@
 		font-size: theme("fontSize.sm") !important;
 	}
 
-	a:not(.btn) {
+	a {
 		color: theme('colors.blue.600') !important;
 		text-decoration: underline !important;
+	}
+
+	a.btn {
+		color: inherit;
+		text-decoration: none;
 	}
 }
 
