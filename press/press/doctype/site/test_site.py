@@ -3,13 +3,11 @@
 # See license.txt
 from __future__ import unicode_literals
 
-import json
 import unittest
 from datetime import datetime
 from unittest.mock import Mock, patch
 
 import frappe
-from frappe.core.utils import find
 
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app

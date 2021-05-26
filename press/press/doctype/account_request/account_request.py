@@ -6,7 +6,6 @@ from __future__ import unicode_literals
 import frappe
 from frappe.model.document import Document
 from frappe.utils import random_string, get_url
-from press.utils import log_error
 
 
 class AccountRequest(Document):
