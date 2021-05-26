@@ -278,6 +278,5 @@ class TestSite(unittest.TestCase):
 		site.reload()
 
 		domains = site.get_config_value_for_key("domains")
-		site.get_config_value_for_key("hostname")
 		self.assertNotIn(domain, domains)
 		self.assertIn(domain_2, domains)
