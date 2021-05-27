@@ -193,15 +193,44 @@ Now, again the same process: save and setup!
 
 ## Creating Your First Site
 
-### Creating a Release Group
-
 ### Creating an App
 
-### Building and Deploying
+The first step is to create an App that will ultimately be installed on our site. The first app in any release group must be `frappe` (Frappe Framework), the name is case sensitive. Navigate to `App List` page and click on `'+ Add new App'` button on the top-right corner. Fill in the details as below:
 
-### Bench creation, Site creation and ...other problems
+![New App](/assets/press/images/internal/setup/new_app.png)
+
+### Create App Source
+
+Now, we need to create an App source for this app. Navigate to `App Source` list page, create a new document and fill in the details as below:
+
+![New App](/assets/press/images/internal/setup/new_app_source.png)
+
+### Creating a Release Group
+
+Navigate to the `Release Group` list and create a new release group. The details to be filled are shown in the screenshot below.
+
+![New App](/assets/press/images/internal/setup/new_release_group.png)
+
+Select the app source that you created in the previous step. Click save.
+
+Once you save the release group document, a `Deploy Candidate` is automatically created for this release group. In fact, a deploy candidate is created any time you make changes to the `Release Group`.
+
+![New App](/assets/press/images/internal/setup/release_group_saved.png)
+
+Click on the `Deploy Candidate` chip and this will take you to the `Deploy Candidate` page which is filtered for the current `Release Group`. Select the `Deploy Candidate` (are named like `bench-xxx`) that was created latest. You should only have one if you never created a release group before. Now, click on `Actions` and then `Build and Deploy`.
+
+![New App](/assets/press/images/internal/setup/deploy_candidate.png)
+
+This will build the docker image for this bench, upload it to the digital ocean image registry and also deploy it to your `f` server.
+
+You can click on `Visit Dashboard` link on the top-left corner to view the progress of the build and deploy step.
+
+Once the image is deployed, you can go the benches list and you will find a new bench there. This was created using the `Deploy Candidate`. Now, you can go ahead and create as many sites you want. You can do this either via the dashboad or the desk.
 
 ## Resolving issues
+
+One of the issues that you may get into is not being able to obtain a TLS Certificate for the root domain. If that is the case, you have to manually call (via `console`) the `_obtain_certificate` method on the `TLS Certificate Document` that was created for the `Root Domain` document that we created in the initial part of this guide.
+
 
 ## Conclusion
 
