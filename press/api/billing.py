@@ -55,27 +55,7 @@ def past_invoices():
 def invoices_and_payments():
 	team = get_current_team(True)
 	invoices = team.get_past_invoices()
-	credit_transfers = frappe.db.get_all(
-		"Balance Transaction",
-		{
-			"team": team.name,
-			"docstatus": 1,
-			"type": "Adjustment",
-			"source": "Transferred Credits",
-		},
-		["name", "source as type", "amount", "description", "currency", "creation as date"],
-	)
-
-	for d in credit_transfers:
-		d.formatted_total = frappe.utils.fmt_money(d.amount, 2, d.currency)
-		d.status = "Transferred"
-
-	def sort_key(item):
-		if isinstance(item.date, datetime.datetime):
-			return item.date.date()
-		return item.date
-
-	return sorted(invoices + credit_transfers, key=sort_key, reverse=True)
+	return invoices
 
 
 @frappe.whitelist()
