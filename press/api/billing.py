@@ -63,14 +63,21 @@ def balances():
 	team = get_current_team()
 	has_bought_credits = frappe.db.get_all(
 		"Balance Transaction",
-		filters={"source": ("in", ("Prepaid Credits", "Transferred Credits")), "team": team},
+		filters={
+			"source": ("in", ("Prepaid Credits", "Transferred Credits")),
+			"team": team,
+			"docstatus": 1,
+		},
 		limit=1,
 	)
 	if not has_bought_credits:
 		return []
 
 	data = frappe.db.get_all(
-		"Balance Transaction", filters={"team": team}, fields=["*"], order_by="creation desc"
+		"Balance Transaction",
+		filters={"team": team, "docstatus": 1},
+		fields=["*"],
+		order_by="creation desc",
 	)
 	for d in data:
 		d.formatted = dict(
