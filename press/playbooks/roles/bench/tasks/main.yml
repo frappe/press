@@ -17,3 +17,9 @@
   file:
     dest: /home/frappe/benches
     state: directory
+
+- name: Install MariaDB Client
+  apt:
+    pkg:
+      - mariadb-client
+    state: present
