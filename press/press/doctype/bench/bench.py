@@ -159,6 +159,24 @@ class Bench(Document):
 		for site, info in data.items():
 			frappe.get_doc("Site", site).sync_info(info)
 
+	@frappe.whitelist()
+	def update_all_sites(self):
+		sites = frappe.get_all(
+			"Site",
+			{"bench": self.name, "status": ("in", ("Active", "Inactive", "Suspended"))},
+			pluck="name",
+		)
+		for site in sites:
+			try:
+				site = frappe.get_doc("Site", site)
+				site.schedule_update()
+				frappe.db.commit()
+			except Exception:
+				import traceback
+
+				traceback.print_exc()
+				frappe.db.rollback()
+
 
 def process_new_bench_job_update(job):
 	bench_status = frappe.get_value("Bench", job.bench, "status")
