@@ -71,6 +71,10 @@
 				</Link>
 			</p>
 		</Dialog>
+
+		<Dialog title="Change branch for <App-name>" v-model="showChangeBranchDialog">
+
+		</Dialog>
 	</Card>
 </template>
 <script>
@@ -84,7 +88,8 @@ export default {
 	data() {
 		return {
 			selectedApp: null,
-			showAddAppDialog: false
+			showAddAppDialog: false,
+			showChangeBranchDialog: false
 		};
 	},
 	resources: {
@@ -126,6 +131,10 @@ export default {
 					label: 'Remove App',
 					action: () => this.confirmRemoveApp(app),
 					condition: () => app.name != 'frappe'
+				},
+				{
+					label: 'Change Branch',
+					action: () => this.showChangeBranchDialog = true
 				},
 				{
 					label: 'Visit Repo',
