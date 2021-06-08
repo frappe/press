@@ -103,3 +103,14 @@ class ProxyServer(BaseServer):
 			self.status = "Broken"
 			log_error("Proxy Server Setup Exception", server=self.as_dict())
 		self.save()
+
+	def _install_exporters(self):
+		try:
+			ansible = Ansible(
+				playbook="proxy_exporters.yml",
+				server=self,
+				variables={"private_ip": self.private_ip},
+			)
+			ansible.run()
+		except Exception:
+			log_error("Exporters Install Exception", server=self.as_dict())

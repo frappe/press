@@ -215,3 +215,18 @@ class DatabaseServer(BaseServer):
 		frappe.enqueue_doc(
 			self.doctype, self.name, "_convert_from_frappe_server", queue="long", timeout=1200
 		)
+
+	def _install_exporters(self):
+		mariadb_root_password = self.get_password("mariadb_root_password")
+		try:
+			ansible = Ansible(
+				playbook="database_exporters.yml",
+				server=self,
+				variables={
+					"private_ip": self.private_ip,
+					"mariadb_root_password": mariadb_root_password,
+				},
+			)
+			ansible.run()
+		except Exception:
+			log_error("Exporters Install Exception", server=self.as_dict())
