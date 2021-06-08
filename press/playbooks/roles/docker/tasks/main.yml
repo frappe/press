@@ -53,9 +53,6 @@
     name: docker
     state: restarted
 
-- name: Initialize Docker Swarm
-  command: docker swarm init --advertise-addr {{ private_ip }}
-
 - name: Get Docker Info
   command: docker info
 
