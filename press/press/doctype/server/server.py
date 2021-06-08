@@ -126,6 +126,12 @@ class BaseServer(Document):
 			log_error("Filebeat Install Exception", server=self.as_dict())
 
 	@frappe.whitelist()
+	def install_exporters(self):
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_install_exporters", queue="long", timeout=1200
+		)
+
+	@frappe.whitelist()
 	def ping_ansible(self):
 		try:
 			ansible = Ansible(playbook="ping.yml", server=self)
@@ -282,6 +288,17 @@ class Server(BaseServer):
 			self.status = "Broken"
 			log_error("Secondary Server Setup Exception", server=self.as_dict())
 		self.save()
+
+	def _install_exporters(self):
+		try:
+			ansible = Ansible(
+				playbook="server_exporters.yml",
+				server=self,
+				variables={"private_ip": self.private_ip},
+			)
+			ansible.run()
+		except Exception:
+			log_error("Exporters Install Exception", server=self.as_dict())
 
 
 def process_new_server_job_update(job):
