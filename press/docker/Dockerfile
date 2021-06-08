@@ -13,6 +13,9 @@ ENV WKHTMLTOPDF_VERSION 0.12.5
 ENV LANG C.UTF-8
 ENV DEBIAN_FRONTEND noninteractive
 
+ENV OPENBLAS_NUM_THREADS 1
+ENV MKL_NUM_THREADS 1
+
 # Install essential packages
 RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   && apt-get install --yes --no-install-suggests --no-install-recommends \
