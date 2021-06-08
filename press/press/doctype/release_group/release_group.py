@@ -71,7 +71,7 @@ class ReleaseGroup(Document):
 				frappe.throw(
 					"Servers can be added only once", frappe.ValidationError,
 				)
-		else:
+		elif self.is_new():
 			servers_for_new_bench = frappe.get_all(
 				"Server", {"status": "Active", "use_for_new_benches": True}, limit=1
 			)
