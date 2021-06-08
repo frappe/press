@@ -17,7 +17,7 @@ def targets(token):
 	sites = frappe.get_all(
 		"Site",
 		["name", "bench"],
-		{"status": ("not in", ("Archived", "Suspended", "Inactive"))},
+		{"status": ("not in", ("Archived", "Suspended", "Inactive", "Broken"))},
 		order_by="bench, name",
 	)
 
