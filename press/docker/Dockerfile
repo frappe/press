@@ -137,6 +137,5 @@ COPY --chown=frappe:frappe config /home/frappe/frappe-bench/config
 
 COPY --chown=frappe:frappe common_site_config.json /home/frappe/frappe-bench/sites/common_site_config.json
 
-VOLUME ["/home/frappe/frappe-bench/sites", "/home/frappe/frappe-bench/logs"]
 EXPOSE 8000
 CMD ["/bin/bash"]
