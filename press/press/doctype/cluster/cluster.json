@@ -18,8 +18,7 @@
   {
    "fieldname": "monitoring_password",
    "fieldtype": "Password",
-   "label": "Monitoring Password",
-   "set_only_once": 1
+   "label": "Monitoring Password"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -40,7 +39,7 @@
    "link_fieldname": "cluster"
   }
  ],
- "modified": "2021-05-02 10:51:16.267656",
+ "modified": "2021-06-08 11:20:32.175869",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",
