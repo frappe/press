@@ -116,6 +116,7 @@ RUN mkdir -p apps logs sites config/pids
 # Create virtual environment for bench
 RUN virtualenv -p python${PYTHON_VERSION} env `#stage-bench-env`
 
+COPY --chown=frappe:frappe common_site_config.json /home/frappe/frappe-bench/sites/common_site_config.json
 
 # Install Frappe app
 COPY --chown=frappe:frappe apps/frappe /home/frappe/frappe-bench/apps/frappe
@@ -134,8 +135,6 @@ RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 echo "N\nY\n
 {% endfor %}
 
 COPY --chown=frappe:frappe config /home/frappe/frappe-bench/config
-
-COPY --chown=frappe:frappe common_site_config.json /home/frappe/frappe-bench/sites/common_site_config.json
 
 EXPOSE 8000 9000
 CMD ["supervisord"]
