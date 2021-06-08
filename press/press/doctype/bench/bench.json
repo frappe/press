@@ -21,6 +21,7 @@
   "gunicorn_workers",
   "port_offset",
   "auto_scale_workers",
+  "is_single_container",
   "column_break_11",
   "config",
   "bench_config"
@@ -167,10 +168,17 @@
    "options": "Team",
    "read_only": 1,
    "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_single_container",
+   "fieldtype": "Check",
+   "label": "Is Single Container",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2021-02-15 11:20:56.202537",
+ "modified": "2021-06-07 08:14:43.416549",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",

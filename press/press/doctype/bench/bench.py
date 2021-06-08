@@ -27,6 +27,7 @@ class Bench(Document):
 			self.candidate = candidate.name
 		candidate = frappe.get_doc("Deploy Candidate", self.candidate)
 		self.docker_image = candidate.docker_image
+		self.is_single_container = candidate.is_single_container
 
 		if not self.apps:
 			for release in candidate.apps:
@@ -53,6 +54,15 @@ class Bench(Document):
 			"socketio_port": 9000,
 			"webserver_port": 8000,
 		}
+		if self.is_single_container:
+			config.update(
+				{
+					"redis_cache": "redis://localhost:13000",
+					"redis_queue": "redis://localhost:11000",
+					"redis_socketio": "redis://localhost:12000",
+				}
+			)
+
 		press_settings_common_site_config = frappe.db.get_single_value(
 			"Press Settings", "bench_configuration"
 		)
@@ -77,6 +87,8 @@ class Bench(Document):
 			"http_timeout": 120,
 			"statsd_host": f"{server_private_ip}:9125",
 		}
+		if self.is_single_container:
+			bench_config.update({"single_container": True})
 
 		release_group_bench_config = frappe.db.get_value(
 			"Release Group", self.group, "bench_config"

@@ -80,6 +80,7 @@ class DeployCandidate(Document):
 	def _build(self):
 		self.status = "Running"
 		self.build_start = now()
+		self.is_single_container = True
 		self.save()
 		frappe.db.commit()
 
