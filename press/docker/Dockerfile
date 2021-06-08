@@ -23,6 +23,7 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   pv \
   ntp \
   wget \
+  supervisor \
   # Dependencies for SSH access
   openssh-server \
   nano \
@@ -45,6 +46,7 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   && rm -rf /var/lib/apt/lists/* \
   `#stage-pre-essentials`
 
+COPY --chown=root:root supervisord.conf /etc/supervisor/supervisord.conf
 
 # Install Python from DeadSnakes PPA
 RUN --mount=type=cache,target=/var/cache/apt add-apt-repository ppa:deadsnakes/ppa \
