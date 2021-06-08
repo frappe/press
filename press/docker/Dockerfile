@@ -24,6 +24,7 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   ntp \
   wget \
   supervisor \
+  redis-server \
   # Dependencies for SSH access
   openssh-server \
   nano \
@@ -132,6 +133,7 @@ RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 echo "N\nY\n
 {% endif %}
 {% endfor %}
 
+COPY --chown=frappe:frappe config /home/frappe/frappe-bench/config
 
 COPY --chown=frappe:frappe common_site_config.json /home/frappe/frappe-bench/sites/common_site_config.json
 
