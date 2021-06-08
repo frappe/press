@@ -1,4 +1,8 @@
 ---
+- name: Update APT Cache
+  apt:
+    update_cache: yes
+
 - name: Install Filebeat Dependencies
   apt:
     state: present

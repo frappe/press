@@ -97,6 +97,35 @@ class BaseServer(Document):
 		self.save()
 
 	@frappe.whitelist()
+	def install_filebeat(self):
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_install_filebeat", queue="long", timeout=1200
+		)
+
+	def _install_filebeat(self):
+		log_server = frappe.db.get_single_value("Press Settings", "log_server")
+		if log_server:
+			kibana_password = frappe.get_doc("Log Server", log_server).get_password(
+				"kibana_password"
+			)
+		else:
+			kibana_password = None
+
+		try:
+			ansible = Ansible(
+				playbook="filebeat.yml",
+				server=self,
+				variables={
+					"server": self.name,
+					"log_server": log_server,
+					"kibana_password": kibana_password,
+				},
+			)
+			ansible.run()
+		except Exception:
+			log_error("Filebeat Install Exception", server=self.as_dict())
+
+	@frappe.whitelist()
 	def ping_ansible(self):
 		try:
 			ansible = Ansible(playbook="ping.yml", server=self)
