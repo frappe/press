@@ -43,7 +43,8 @@ class PrometheusAlertRule(Document):
 		rules = yaml.dump(self.get_rules())
 		routes = yaml.dump(self.get_routes())
 
-		agent = Agent("monitor.local.frappe.dev", "Monitor Server")
+		monitoring_server = frappe.db.get_single_value("Press Settings", "monitor_server")
+		agent = Agent(monitoring_server, "Monitor Server")
 		agent.update_monitor_rules(rules, routes)
 
 	def get_rules(self):
