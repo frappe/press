@@ -420,7 +420,8 @@ def change_branch(name, app, to_branch):
 		filters={
 			"repository_url": current_app_source.repository_url,
 			"branch": to_branch
-		}
+		},
+		limit=1
 	)
 
 	if required_app_source:
