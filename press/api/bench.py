@@ -407,13 +407,13 @@ def get_app_tag(repository, repository_owner, hash):
 
 @frappe.whitelist()
 @protected("Release Group")
-def change_branch(bench_name, target_app, to_branch):
-	'''Switch to `to_branch` for `target_app` in release group `bench_name`'''
-	current_app_source = get_current_app_source(bench_name, target_app)
+def change_branch(name, app, to_branch):
+	'''Switch to `to_branch` for `app` in release group `name`'''
+	current_app_source = get_current_app_source(name, app)
 
 	# Already on that branch
 	if current_app_source.branch == to_branch:
-		return
+		frappe.throw(f"App already on branch {to_branch}!")
 
 	required_app_source = frappe.get_all(
 		"App Source", 
@@ -434,13 +434,13 @@ def change_branch(bench_name, target_app, to_branch):
 		)[0]
 
 		required_app_source = create_app_source(
-			target_app, 
+			app, 
 			current_app_source.repository_url, 
 			to_branch, 
 			version
 		)
 	
-	set_app_source_in_release_group(bench_name, target_app, required_app_source.name)
+	set_app_source_in_release_group(name, app, required_app_source.name)
 
 def get_current_app_source(release_group, app):
 	source = frappe.get_all(
