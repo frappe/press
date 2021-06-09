@@ -434,7 +434,7 @@ def change_branch(bench_name, target_app, to_branch):
 	else:
 		version = frappe.get_all("App Source Version", 
 			filters={
-				"parent": current_app_source
+				"parent": current_app_source.name
 			},
 			pluck="version"
 		)[0]
