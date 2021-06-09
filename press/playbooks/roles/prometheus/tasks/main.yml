@@ -44,15 +44,6 @@
     - prometheus
     - promtool
 
-- name: Setup Prometheus Alerting Rules File
-  become: yes
-  become_user: frappe
-  template:
-    src: alert.rules
-    dest: /home/frappe/prometheus/rules/default.rules
-    mode: 0600
-    validate: "/home/frappe/prometheus/promtool check rules %s"
-
 - name: Configure Prometheus Service Discovery for Monitor Server
   become: yes
   become_user: frappe
