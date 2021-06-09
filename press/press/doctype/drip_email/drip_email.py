@@ -60,28 +60,18 @@ class DripEmail(Document):
 		# build the message
 		message = frappe.render_template(self.message, context)
 
-		# prepend preheader text to the start of the message
-		if self.pre_header:
-			message = (
-				frappe.render_template(
-					"press/press/doctype/drip_email/templates/pre_header.html",
-					{"pre_header": self.pre_header},
-					is_path=True,
-				)
-				+ message
-			)
-
 		# add to queue
 		frappe.sendmail(
 			subject=self.subject,
 			recipients=[recipient],
-			message=message,
 			sender=f"{self.sender_name} <{self.sender}>",
 			reply_to=self.reply_to,
 			reference_doctype="Drip Email",
 			reference_name=self.name,
 			unsubscribe_message="Don't send me help messages",
 			attachments=self.get_setup_guides(context.get("account_request", "")),
+			template="drip_email",
+			args={"message": message},
 		)
 
 	def select_consultant(self, site) -> str:
