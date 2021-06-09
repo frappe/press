@@ -51,6 +51,14 @@ export default {
 				method: 'press.api.site.update',
 				params: {
 					name: this.site.name
+				},
+				onSuccess() {
+					this.showUpdatesDialog = false;
+					this.$notify({
+						title: 'Site update scheduled successfully!',
+						icon: 'check',
+						color: 'green'
+					});
 				}
 			};
 		}
