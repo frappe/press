@@ -409,22 +409,16 @@ def get_app_tag(repository, repository_owner, hash):
 @protected("Release Group")
 def change_branch(bench_name, target_app, to_branch):
 	'''Switch to `to_branch` for `target_app` in release group `bench_name`'''
-	current_app_source = frappe.get_all(
-		"Release Group App",
-		filters={
-			"parent": bench_name,
-			"app": target_app
-		},
-		pluck="source"
-	)[0]
+	current_app_source = get_current_app_source(bench_name, target_app)
 
-	current_app_source = frappe.get_doc("App Source", current_app_source)
-	current_repo_url = current_app_source.repository_url
+	# Already on that branch
+	if current_app_source.branch == to_branch:
+		return
 
 	required_app_source = frappe.get_all(
 		"App Source", 
 		filters={
-			"repository_url": current_repo_url,
+			"repository_url": current_app_source.repository_url,
 			"branch": to_branch
 		}
 	)
@@ -442,6 +436,23 @@ def change_branch(bench_name, target_app, to_branch):
 		required_app_source = create_app_source(target_app, current_repo_url, to_branch, version)
 	
 	set_app_source_in_release_group(bench_name, target_app, required_app_source.name)
+
+def get_current_app_source(release_group, app):
+	source = frappe.get_all(
+		"Release Group App",
+		filters={
+			"parent": release_group,
+			"app": app
+		},
+		pluck="source"
+	)
+
+	if source:
+		source = source[0]
+	else:
+		raise frappe.ValidationError("Release group app does not exist!")
+
+	return frappe.get_doc("App Source", source)
 
 def create_app_source(app, repository_url, branch, version):
 	team = get_current_team()
