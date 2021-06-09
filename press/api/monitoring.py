@@ -48,9 +48,10 @@ def targets(token):
 	for cluster in clusters:
 		cluster["jobs"] = {}
 
-	for server_type, servers in servers.items():
-		for server in servers:
-			for job in job_map[server_type]:
-				cluster["jobs"].setdefault(job, []).append(server.name)
+		for server_type, server_type_servers in servers.items():
+			for server in server_type_servers:
+				if server.cluster == cluster.name:
+					for job in job_map[server_type]:
+						cluster["jobs"].setdefault(job, []).append(server.name)
 
 	return {"benches": benches, "clusters": clusters}
