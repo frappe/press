@@ -441,19 +441,7 @@ def change_branch(bench_name, target_app, to_branch):
 
 		required_app_source = create_app_source(target_app, current_repo_url, to_branch, version)
 	
-	# Change app source in release group
-	bench = frappe.get_doc(
-		"Release Group", 
-		bench_name
-	)
-
-	for app in bench.apps:
-		if app.app == target_app:
-			app.source = required_app_source.name
-			app.save()
-			break
-		
-	bench.save()
+	set_app_source_in_release_group(bench_name, target_app, required_app_source.name)
 
 def create_app_source(app, repository_url, branch, version):
 	team = get_current_team()
@@ -470,3 +458,18 @@ def create_app_source(app, repository_url, branch, version):
 	required_app_source.save()
 
 	return required_app_source
+	
+def set_app_source_in_release_group(name, target_app, source):
+	'''Set `target_app`'s source in release group to `source`'''
+	bench = frappe.get_doc(
+		"Release Group", 
+		name
+	)
+
+	for app in bench.apps:
+		if app.app == target_app:
+			app.source = source
+			app.save()
+			break
+		
+	bench.save()
