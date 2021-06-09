@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 
 import frappe
 from itertools import groupby
+from press.utils import log_error
 
 
 @frappe.whitelist(allow_guest=True)
@@ -55,3 +56,23 @@ def targets(token):
 						cluster["jobs"].setdefault(job, []).append(server.name)
 
 	return {"benches": benches, "clusters": clusters}
+
+
+@frappe.whitelist(allow_guest=True, xss_safe=True)
+def alert(*args, **kwargs):
+	try:
+		user = frappe.session.user
+		frappe.set_user("Administrator")
+
+		doc = frappe.get_doc(
+			{
+				"doctype": "Alertmanager Webhook Log",
+				"payload": frappe.request.get_data().decode(),
+			}
+		)
+		doc.insert()
+	except Exception:
+		log_error("Alertmanager Webhook Error", args=args, kwargs=kwargs)
+		raise Exception
+	finally:
+		frappe.set_user(user)
