@@ -6,7 +6,7 @@ global:
   evaluation_interval: 15s
 
 rule_files:
-  - /home/frappe/prometheus/rules/*.rules
+  - /home/frappe/prometheus/rules/*.yml
 
 alerting:
   alertmanagers:
