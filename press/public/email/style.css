@@ -3,7 +3,7 @@
 @tailwind components;
 
 .from-markdown {
-	color: theme("colors.gray.700");
+	color: theme('colors.gray.700');
 	line-height: 1.625;
 
 	> * + * {
@@ -42,7 +42,7 @@
 
 	b,
 	strong {
-		color: theme("colors.gray.800") !important;
+		color: theme('colors.gray.800') !important;
 	}
 
 	h1,
@@ -51,30 +51,45 @@
 	h4,
 	h5,
 	h6 {
-		color: theme("colors.gray.900") !important;
-		font-weight: theme("fontWeight.semibold") !important;
+		color: theme('colors.gray.900') !important;
+		font-weight: theme('fontWeight.semibold') !important;
 	}
 
 	h1 {
-		font-size: theme("fontSize.xl") !important;
+		font-size: theme('fontSize.xl') !important;
 	}
 
 	h2 {
-		font-size: theme("fontSize.lg") !important;
+		font-size: theme('fontSize.lg') !important;
 	}
 
 	h3 {
-		font-size: theme("fontSize.base") !important;
+		font-size: theme('fontSize.base') !important;
 	}
 
 	h4 {
-		font-size: theme("fontSize.sm") !important;
+		font-size: theme('fontSize.sm') !important;
 	}
 
-	a:not(.btn) {
-		color: theme('colors.blue.600') !important;
-		text-decoration: underline !important;
+	a {
+		@apply text-blue-600 underline;
 	}
+}
+
+.button {
+	@apply bg-gray-200 rounded;
+}
+
+.button-primary {
+	@apply bg-blue-500;
+}
+
+.button a {
+	@apply block px-4 py-2 text-base font-semibold leading-normal text-gray-900 no-underline bg-gray-200;
+}
+
+.button-primary a {
+	@apply text-white bg-blue-500;
 }
 
 /* purgecss end ignore */

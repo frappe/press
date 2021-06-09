@@ -1,0 +1,12 @@
+{% extends "templates/emails/base.html" %}
+
+  {% block content %}
+    <td class="text-base leading-6 text-gray-900">
+    	<div class="p-8 bg-white">
+        	<div class="from-markdown">
+        		{{ message }}
+          </div>
+    	</div>
+    </td>
+  {% endblock %}
+
