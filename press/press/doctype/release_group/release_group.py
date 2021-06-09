@@ -7,6 +7,7 @@ from __future__ import unicode_literals
 import frappe
 from frappe.model.document import Document
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.app_source.app_source import create_app_source
 
 DEFAULT_DEPENDENCIES = [
 	{"dependency": "NVM_VERSION", "version": "0.36.0"},
@@ -122,6 +123,66 @@ class ReleaseGroup(Document):
 		self.append("apps", {"source": source.name, "app": source.app})
 		self.save()
 
+	def change_app_branch(self, app, to_branch):
+		current_app_source = self.get_current_app_source(app)
+
+		# Already on that branch
+		if current_app_source.branch == to_branch:
+			frappe.throw(f"App already on branch {to_branch}!")
+
+		required_app_source = frappe.get_all(
+			"App Source", 
+			filters={
+				"repository_url": current_app_source.repository_url,
+				"branch": to_branch
+			},
+			limit=1
+		)
+
+		if required_app_source:
+			required_app_source = required_app_source[0]
+		else:
+			version = frappe.get_all("App Source Version", 
+				filters={
+					"parent": current_app_source.name
+				},
+				pluck="version"
+			)[0]
+
+			required_app_source = create_app_source(
+				app, 
+				current_app_source.repository_url, 
+				to_branch, 
+				version
+			)
+		
+		self.set_app_source(app, required_app_source.name)
+
+	def get_current_app_source(self, app):
+		source = frappe.get_all(
+			"Release Group App",
+			filters={
+				"parent": self.name,
+				"app": app
+			},
+			pluck="source"
+		)
+
+		if source:
+			source = source[0]
+		else:
+			raise frappe.ValidationError("Release group app does not exist!")
+
+		return frappe.get_doc("App Source", source)
+	
+	def set_app_source(self, target_app, source):
+		'''Set `target_app`'s source in release group to `source`'''
+		for app in self.apps:
+			if app.app == target_app:
+				app.source = source
+				app.save()
+				break
+		self.save()
 
 def new_release_group(title, version, apps, team=None):
 	group = frappe.get_doc(

@@ -7,7 +7,7 @@ from __future__ import unicode_literals
 import frappe
 from frappe.model.document import Document
 from press.api.github import get_access_token
-from press.utils import log_error
+from press.utils import log_error, get_current_team
 import requests
 from frappe.model.naming import make_autoname
 from press.overrides import get_permission_query_conditions_for_doctype
@@ -100,6 +100,22 @@ class AppSource(Document):
 				).insert()
 		except Exception:
 			log_error("App Release Creation Error", app=self.name)
+
+def create_app_source(app, repository_url, branch, version):
+	team = get_current_team()
+
+	app_source = frappe.get_doc({
+		"doctype": "App Source",
+		"app": app,
+		"repository_url": repository_url,
+		"branch": branch,
+		"team": team,
+		"versions": [{"version": version}]
+	})
+
+	app_source.save()
+
+	return app_source
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype(
