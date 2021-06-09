@@ -433,7 +433,12 @@ def change_branch(bench_name, target_app, to_branch):
 			pluck="version"
 		)[0]
 
-		required_app_source = create_app_source(target_app, current_repo_url, to_branch, version)
+		required_app_source = create_app_source(
+			target_app, 
+			current_app_source.repository_url, 
+			to_branch, 
+			version
+		)
 	
 	set_app_source_in_release_group(bench_name, target_app, required_app_source.name)
 
