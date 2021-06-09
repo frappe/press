@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 
 import json
 from itertools import groupby
+import random
 
 import frappe
 from frappe.core.utils import find
@@ -166,8 +167,11 @@ def poll_pending_jobs():
 	for server, server_jobs in groupby(pending_jobs, lambda x: x.server):
 		server_jobs = list(server_jobs)
 		agent = Agent(server_jobs[0].server, server_type=server_jobs[0].server_type)
+
 		pending_ids = [j.job_id for j in server_jobs]
-		polled_jobs = agent.get_jobs_status(pending_ids)
+		random_pending_ids = random.choices(pending_ids, k=100)
+		polled_jobs = agent.get_jobs_status(random_pending_ids)
+
 		for polled_job in polled_jobs:
 			job = find(server_jobs, lambda x: x.job_id == polled_job["id"])
 			try:
