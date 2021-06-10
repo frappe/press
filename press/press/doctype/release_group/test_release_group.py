@@ -2,6 +2,7 @@
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
 from __future__ import unicode_literals
+from press.press.doctype.app.test_app import create_test_app
 
 import unittest
 from unittest.mock import patch
@@ -156,3 +157,9 @@ class TestReleaseGroup(unittest.TestCase):
 			[{"app": source.app, "source": source.name}],
 			team="Administrator",
 		)
+	
+	def test_branch_change_already_on_branch(self):
+		app = create_test_app()
+		rg = create_test_release_group(app)
+		with self.assertRaises(frappe.ValidationError):
+			rg.change_app_branch("frappe", "master")
