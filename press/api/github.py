@@ -44,7 +44,7 @@ def get_jwt_token():
 	expiry = now + timedelta(minutes=9)
 	payload = {"iat": int(now.timestamp()), "exp": int(expiry.timestamp()), "iss": app_id}
 	token = jwt.encode(payload, key.encode(), algorithm="RS256")
-	return token.decode()
+	return token
 
 
 def get_access_token(install):
