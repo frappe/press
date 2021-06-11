@@ -163,3 +163,24 @@ class TestReleaseGroup(unittest.TestCase):
 		rg = create_test_release_group(app)
 		with self.assertRaises(frappe.ValidationError):
 			rg.change_app_branch("frappe", "master")
+
+	def test_branch_change_app_source_exists(self):
+		app = create_test_app()
+		rg = create_test_release_group(app)
+
+		current_app_source = frappe.get_doc("App Source", rg.apps[0].source)
+		app_source = create_test_app_source(
+			current_app_source.versions[0].version,
+			app,
+			current_app_source.repository_url,
+			"develop"
+		)
+
+		rg.change_app_branch(app.name, "develop")
+		rg.reload()
+
+		# Source must be set to the available `app_source` for `app`
+		self.assertEqual(rg.apps[0].source, app_source.name)
+
+	def test_branch_change_app_source_does_not_exist(self):
+		pass
