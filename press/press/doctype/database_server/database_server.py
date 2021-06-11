@@ -218,6 +218,9 @@ class DatabaseServer(BaseServer):
 
 	def _install_exporters(self):
 		mariadb_root_password = self.get_password("mariadb_root_password")
+		monitoring_password = frappe.get_doc("Cluster", self.cluster).get_password(
+			"monitoring_password"
+		)
 		try:
 			ansible = Ansible(
 				playbook="database_exporters.yml",
@@ -225,6 +228,7 @@ class DatabaseServer(BaseServer):
 				variables={
 					"private_ip": self.private_ip,
 					"mariadb_root_password": mariadb_root_password,
+					"monitoring_password": monitoring_password,
 				},
 			)
 			ansible.run()
