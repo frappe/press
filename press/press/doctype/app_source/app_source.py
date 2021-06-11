@@ -101,7 +101,7 @@ class AppSource(Document):
 		except Exception:
 			log_error("App Release Creation Error", app=self.name)
 
-def create_app_source(app, repository_url, branch, version):
+def create_app_source(app: str, repository_url: str, branch: str, version: str) -> AppSource:
 	team = get_current_team()
 
 	app_source = frappe.get_doc({

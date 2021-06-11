@@ -8,7 +8,7 @@ import frappe
 from press.utils import get_current_team, get_last_doc, unique
 from press.api.site import protected
 from frappe.core.utils import find, find_all
-from press.press.doctype.release_group.release_group import new_release_group
+from press.press.doctype.release_group.release_group import ReleaseGroup, new_release_group
 from press.press.doctype.agent_job.agent_job import job_detail
 
 
@@ -407,7 +407,7 @@ def get_app_tag(repository, repository_owner, hash):
 
 @frappe.whitelist()
 @protected("Release Group")
-def change_branch(name, app, to_branch):
+def change_branch(name: str, app: str, to_branch: str):
 	'''Switch to `to_branch` for `app` in release group `name`'''
-	rg = frappe.get_doc("Release Group", name)
+	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
 	rg.change_app_branch(app, to_branch)
