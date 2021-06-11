@@ -7,7 +7,7 @@ from __future__ import unicode_literals
 import frappe
 from frappe.model.document import Document
 from press.overrides import get_permission_query_conditions_for_doctype
-from press.press.doctype.app_source.app_source import create_app_source
+from press.press.doctype.app_source.app_source import AppSource, create_app_source
 
 DEFAULT_DEPENDENCIES = [
 	{"dependency": "NVM_VERSION", "version": "0.36.0"},
@@ -123,7 +123,7 @@ class ReleaseGroup(Document):
 		self.append("apps", {"source": source.name, "app": source.app})
 		self.save()
 
-	def change_app_branch(self, app, to_branch):
+	def change_app_branch(self, app: str, to_branch: str) -> None:
 		current_app_source = self.get_current_app_source(app)
 
 		# Already on that branch
@@ -155,10 +155,10 @@ class ReleaseGroup(Document):
 				to_branch, 
 				version
 			)
-		
+
 		self.set_app_source(app, required_app_source.name)
 
-	def get_current_app_source(self, app):
+	def get_current_app_source(self, app: str) -> AppSource:
 		source = frappe.get_all(
 			"Release Group App",
 			filters={
@@ -175,7 +175,7 @@ class ReleaseGroup(Document):
 
 		return frappe.get_doc("App Source", source)
 	
-	def set_app_source(self, target_app, source):
+	def set_app_source(self, target_app: str, source: str) -> None:
 		'''Set `target_app`'s source in release group to `source`'''
 		for app in self.apps:
 			if app.app == target_app:
