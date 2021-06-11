@@ -6,3 +6,4 @@
   gather_facts: yes
   roles:
     - role: node_exporter
+    - role: monitoring_password

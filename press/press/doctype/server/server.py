@@ -290,11 +290,17 @@ class Server(BaseServer):
 		self.save()
 
 	def _install_exporters(self):
+		monitoring_password = frappe.get_doc("Cluster", self.cluster).get_password(
+			"monitoring_password"
+		)
 		try:
 			ansible = Ansible(
 				playbook="server_exporters.yml",
 				server=self,
-				variables={"private_ip": self.private_ip},
+				variables={
+					"private_ip": self.private_ip,
+					"monitoring_password": monitoring_password,
+				},
 			)
 			ansible.run()
 		except Exception:
