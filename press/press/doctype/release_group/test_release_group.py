@@ -183,4 +183,24 @@ class TestReleaseGroup(unittest.TestCase):
 		self.assertEqual(rg.apps[0].source, app_source.name)
 
 	def test_branch_change_app_source_does_not_exist(self):
-		pass
+		app = create_test_app()
+		rg = create_test_release_group(app)
+		previous_app_source = frappe.get_doc("App Source", rg.apps[0].source)
+
+		rg.change_app_branch(app.name, "develop")
+		rg.reload()
+
+		new_app_source = frappe.get_doc("App Source", rg.apps[0].source)
+		self.assertEqual(new_app_source.branch, "develop")
+		self.assertEqual(
+			new_app_source.versions[0].version,
+			previous_app_source.versions[0].version
+		)
+		self.assertEqual(
+			new_app_source.repository_url,
+			previous_app_source.repository_url
+		)
+		self.assertEqual(
+			new_app_source.app,
+			app.name
+		)
