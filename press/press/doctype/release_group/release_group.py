@@ -80,8 +80,8 @@ class ReleaseGroup(Document):
 
 	@frappe.whitelist()
 	def validate_dependencies(self):
-		if not hasattr(self, 'dependencies') or not self.dependencies:
-			self.extend('dependencies', DEFAULT_DEPENDENCIES)
+		if not hasattr(self, "dependencies") or not self.dependencies:
+			self.extend("dependencies", DEFAULT_DEPENDENCIES)
 
 	@frappe.whitelist()
 	def create_deploy_candidate(self):
