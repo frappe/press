@@ -1,0 +1,146 @@
+{
+ "actions": [],
+ "creation": "2021-05-25 12:20:51.312501",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "status",
+  "alert",
+  "severity",
+  "column_break_3",
+  "external_url",
+  "truncated_alerts",
+  "combined_alerts",
+  "section_break_6",
+  "group_labels",
+  "group_key",
+  "column_break_8",
+  "common_labels",
+  "section_break_10",
+  "payload"
+ ],
+ "fields": [
+  {
+   "fieldname": "payload",
+   "fieldtype": "Code",
+   "label": "Payload",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Firing\nResolved",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "group_key",
+   "fieldtype": "Code",
+   "label": "Group Key",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "external_url",
+   "fieldtype": "Data",
+   "label": "External URL",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "truncated_alerts",
+   "fieldtype": "Int",
+   "label": "Truncated Alerts",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_6",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "group_labels",
+   "fieldtype": "Code",
+   "label": "Group Labels",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_8",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "common_labels",
+   "fieldtype": "Code",
+   "label": "Common Labels",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_10",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "combined_alerts",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Combined Alerts",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "default": "Critical",
+   "fieldname": "severity",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Severity",
+   "options": "Critical\nWarning\nInformation",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "alert",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Alert",
+   "options": "Prometheus Alert Rule",
+   "read_only": 1,
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2021-06-09 13:58:25.722766",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Alertmanager Webhook Log",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}

@@ -1,7 +1,7 @@
 <template>
 	<Card title="Uptime">
 		<div class="mt-8" v-for="type in uptimeTypes" :key="type.key">
-			<div class="flex justify-between h-4">
+			<div class="flex justify-between h-8">
 				<div
 					v-for="d in data"
 					:key="d.timestamp"
@@ -17,11 +17,6 @@
 					]"
 				></div>
 			</div>
-			<div class="flex justify-between mt-2 text-sm">
-				<span>
-					{{ type.label }}
-				</span>
-			</div>
 		</div>
 	</Card>
 </template>
@@ -31,11 +26,7 @@ export default {
 	props: ['data'],
 	computed: {
 		uptimeTypes() {
-			return [
-				{ key: 'web', label: 'Web' },
-				{ key: 'scheduler', label: 'Scheduler' }
-				// { key: 'socketio', label: 'SocketIO' }
-			];
+			return [{ key: 'value', label: 'Web' }];
 		}
 	}
 };

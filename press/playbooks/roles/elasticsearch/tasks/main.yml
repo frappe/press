@@ -1,0 +1,24 @@
+---
+- name: Install Elasticsearch
+  apt:
+    name: elasticsearch
+    state: present
+
+- name: Restart Elasticsearch Daemon
+  systemd:
+    name: elasticsearch
+    daemon_reload: true
+    enabled: yes
+    state: restarted
+
+- name: Setup Elasticsearch Authentication
+  become: yes
+  become_user: frappe
+  command: "htpasswd -Bbc /home/frappe/agent/nginx/kibana.htpasswd frappe {{ kibana_password }}"
+
+- name: Setup NGINX for Elasticsearch
+  become: yes
+  become_user: frappe
+  command: /home/frappe/agent/env/bin/agent setup log
+  args:
+    chdir: /home/frappe/agent

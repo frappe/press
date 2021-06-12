@@ -1,0 +1,10 @@
+---
+- name: Setup Database Exporters
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: yes
+  roles:
+    - role: node_exporter
+    - role: mysqld_exporter
+    - role: monitoring_password

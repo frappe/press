@@ -6,7 +6,7 @@ frappe.ui.form.on('Database Server', {
 		[
 			[__('Ping Agent'), "ping_agent", false, frm.doc.is_server_setup],
 			[__('Ping Ansible'), "ping_ansible", true],
-			[__('Ping Ansible Scaleway'), "ping_ansible_scaleway", true],
+			[__('Ping Ansible Scaleway'), "ping_ansible_scaleway", true, frm.doc.provider === "Scaleway"],
 			[__('Update Agent'), "update_agent", true, frm.doc.is_server_setup],
 			[__('Fetch Keys'), "fetch_keys", true, frm.doc.is_server_setup && (!frm.doc.frappe_public_key || !frm.doc.root_public_key)],
 			[__('Prepare Scaleway Server'), "prepare_scaleway_server", true, !frm.doc.is_server_setup && frm.doc.provider === "Scaleway"],

@@ -214,9 +214,11 @@ def schedule():
 				)
 
 				frappe.get_doc("Site", site.name).backup(with_files=with_files, offsite=offsite)
+				frappe.db.commit()
 
 		except Exception:
 			log_error("Site Backup Exception", site=site)
+			frappe.db.rollback()
 
 
 def cleanup_offsite():

@@ -1,0 +1,21 @@
+{
+    "processors": [
+        {
+            "json": {
+                "field": "message",
+                "target_field": "json",
+                "ignore_failure": true
+            }
+        },
+        {
+            "date": {
+                "field": "json.timestamp",
+                "formats": [
+                    "yyyy-MM-dd HH:mm:ss.SSSSSS"
+                ],
+                "target_field": "@timestamp",
+                "ignore_failure": true
+            }
+        }
+    ]
+}

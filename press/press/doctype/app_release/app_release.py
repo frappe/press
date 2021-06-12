@@ -39,6 +39,7 @@ class AppRelease(Document):
 			group = frappe.get_doc("Release Group", group_app.parent)
 			group.create_deploy_candidate()
 
+	@frappe.whitelist()
 	def clone(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_clone")
 

@@ -342,8 +342,8 @@ def convert(string):
 def unique(seq, unique_by=None):
 	"""Remove duplicates from a list based on an expression
 	Usage:
-	        unique([{'x': 1, 'y': 2}, {'x': 1, 'y': 2}], lambda d: d['x'])
-	        # output: [{'x': 1, 'y': 2}]
+	unique([{'x': 1, 'y': 2}, {'x': 1, 'y': 2}], lambda d: d['x'])
+	# output: [{'x': 1, 'y': 2}]
 	"""
 
 	unique_by = unique_by or (lambda x: x)

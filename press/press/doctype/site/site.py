@@ -948,15 +948,8 @@ class Site(Document):
 
 
 def site_cleanup_after_archive(site):
-	delete_logs(site)
 	delete_site_domains(site)
 	release_name(site)
-
-
-def delete_logs(site):
-	frappe.db.delete("Site Job Log", {"site": site})
-	frappe.db.delete("Site Request Log", {"site": site})
-	frappe.db.delete("Site Uptime Log", {"site": site})
 
 
 def delete_site_domains(site):

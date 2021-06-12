@@ -1,0 +1,21 @@
+- name: Setup Filebeat Indexes
+  command: filebeat setup -e -E setup.ilm.overwrite=true -E 'output.elasticsearch.hosts=["localhost:9200"]' -E output.elasticsearch.path="/" -E output.elasticsearch.protocol=http --index-management
+
+- name: Setup Filebeat Ingest Pipelines
+  command: filebeat setup -e --pipelines --modules nginx,system,mysql
+
+- name: Setup Filebeat Dashboards
+  command: filebeat setup -e --dashboards
+
+- name: Setup Monitor Ingest Pipeline
+  uri:
+    url: http://localhost:9200/_ingest/pipeline/monitor
+    method: PUT
+    body: "{{ lookup('file', 'monitor.json') }}"
+    body_format: json
+
+- name: Disable Filebeat Service
+  systemd:
+    name: filebeat
+    enabled: no
+    state: stopped

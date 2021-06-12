@@ -1,0 +1,173 @@
+{
+ "actions": [],
+ "autoname": "Prompt",
+ "creation": "2021-05-26 19:54:21.999890",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "severity",
+  "for",
+  "column_break_2",
+  "description",
+  "section_break_4",
+  "expression",
+  "column_break_6",
+  "labels",
+  "annotations",
+  "routing_section",
+  "group_wait",
+  "group_interval",
+  "repeat_interval",
+  "column_break_19",
+  "group_by",
+  "preview_section",
+  "alert_preview",
+  "column_break_21",
+  "route_preview"
+ ],
+ "fields": [
+  {
+   "fieldname": "for",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "For",
+   "reqd": 1
+  },
+  {
+   "fieldname": "expression",
+   "fieldtype": "Code",
+   "in_list_view": 1,
+   "label": "Expression",
+   "reqd": 1
+  },
+  {
+   "default": "{}",
+   "fieldname": "annotations",
+   "fieldtype": "Code",
+   "label": "Annotations",
+   "reqd": 1
+  },
+  {
+   "default": "Critical",
+   "fieldname": "severity",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Severity",
+   "options": "Critical\nWarning\nInformation",
+   "reqd": 1
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Data",
+   "label": "Description",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_4",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_6",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "{}",
+   "fieldname": "labels",
+   "fieldtype": "Code",
+   "label": "Labels",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "routing_section",
+   "fieldtype": "Section Break",
+   "label": "Routing"
+  },
+  {
+   "default": "1m",
+   "fieldname": "group_wait",
+   "fieldtype": "Data",
+   "label": "Group Wait",
+   "reqd": 1
+  },
+  {
+   "default": "5m",
+   "fieldname": "group_interval",
+   "fieldtype": "Data",
+   "label": "Group Interval",
+   "reqd": 1
+  },
+  {
+   "default": "1h",
+   "fieldname": "repeat_interval",
+   "fieldtype": "Data",
+   "label": "Repeat Interval",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_19",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "[\"alertname\"]",
+   "fieldname": "group_by",
+   "fieldtype": "Code",
+   "label": "Group By",
+   "reqd": 1
+  },
+  {
+   "fieldname": "preview_section",
+   "fieldtype": "Section Break",
+   "label": "Preview"
+  },
+  {
+   "fieldname": "alert_preview",
+   "fieldtype": "Code",
+   "label": "Alert Preview",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_21",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "route_preview",
+   "fieldtype": "Code",
+   "label": "Route Preview",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [
+  {
+   "link_doctype": "Alertmanager Webhook Log",
+   "link_fieldname": "alert"
+  }
+ ],
+ "modified": "2021-06-09 13:47:54.283546",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Prometheus Alert Rule",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}
