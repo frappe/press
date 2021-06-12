@@ -283,9 +283,7 @@ def candidate(name):
 @protected("Release Group")
 def deploy_information(name):
 	out = frappe._dict(update_available=False)
-	last_deploy_candidate = get_last_doc(
-		"Deploy Candidate", {"group": name}
-	)
+	last_deploy_candidate = get_last_doc("Deploy Candidate", {"group": name})
 
 	if not (last_deploy_candidate and last_deploy_candidate.status == "Draft"):
 		return out
