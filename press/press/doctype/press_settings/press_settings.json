@@ -104,6 +104,7 @@
   "monitoring_section",
   "monitor_server",
   "monitor_token",
+  "telegram_alert_chat_id",
   "column_break_100",
   "log_server"
  ],
@@ -666,11 +667,16 @@
    "fieldname": "monitor_token",
    "fieldtype": "Data",
    "label": "Monitor Token"
+  },
+  {
+   "fieldname": "telegram_alert_chat_id",
+   "fieldtype": "Data",
+   "label": "Telegram Alert Chat ID"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2021-05-24 12:23:39.573409",
+ "modified": "2021-06-12 12:37:11.565962",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
