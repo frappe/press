@@ -14,3 +14,4 @@
     - role: node_exporter
     - role: cadvisor
     - role: statsd_exporter
+    - role: filebeat

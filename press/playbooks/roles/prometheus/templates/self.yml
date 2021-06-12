@@ -1,0 +1,35 @@
+- targets:
+    - "{{ server }}"
+  labels:
+    job: node
+    __metrics_path__: /metrics/node
+
+- targets:
+    - "{{ server }}"
+  labels:
+    job: nginx
+    __metrics_path__: /metrics/nginx
+
+- targets:
+    - "{{ server }}"
+  labels:
+    job: prometheus
+    __metrics_path__: /metrics/prometheus
+
+- targets:
+    - "{{ server }}"
+  labels:
+    job: alertmanager
+    __metrics_path__: /metrics/alertmanager
+
+- targets:
+    - "{{ server }}"
+  labels:
+    job: blackbox
+    __metrics_path__: /metrics/blackbox
+
+- targets:
+    - "{{ server }}"
+  labels:
+    job: grafana
+    __metrics_path__: /metrics/grafana

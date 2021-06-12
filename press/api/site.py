@@ -14,7 +14,7 @@ from botocore.exceptions import ClientError
 import frappe
 from frappe.core.utils import find
 from frappe.desk.doctype.tag.tag import add_tag
-from frappe.utils import cint, flt, time_diff_in_hours
+from frappe.utils import flt, time_diff_in_hours
 from frappe.utils.password import get_decrypted_password
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.remote_file.remote_file import get_remote_key
@@ -224,19 +224,6 @@ def activities(name, start=0):
 			activity.action = "Site created"
 
 	return activities
-
-
-@frappe.whitelist()
-@protected("Site")
-def request_logs(name, start=0):
-	logs = frappe.get_all(
-		"Site Request Log",
-		fields=["*"],
-		filters={"site": name, "url": ("!=", "/api/method/ping")},
-		start=start,
-		limit=20,
-	)
-	return logs
 
 
 @frappe.whitelist()
@@ -586,23 +573,13 @@ def available_apps(name):
 @frappe.whitelist()
 @protected("Site")
 def current_plan(name):
+	from press.api.analytics import get_current_cpu_usage
+
 	site = frappe.get_doc("Site", name)
 	plan = frappe.get_doc("Plan", site.plan)
-	result = frappe.get_all(
-		"Site Request Log",
-		fields=["reset", "counter"],
-		filters={"site": name},
-		order_by="timestamp desc",
-		limit=1,
-	)
-	if result:
-		result = result[0]
-		# cpu usage in microseconds
-		total_cpu_usage = cint(result.counter)
-		# convert into hours
-		total_cpu_usage_hours = flt(total_cpu_usage / (3.6 * (10 ** 9)), 5)
-	else:
-		total_cpu_usage_hours = 0
+
+	result = get_current_cpu_usage(name)
+	total_cpu_usage_hours = flt(result / (3.6 * (10 ** 9)), 5)
 
 	usage = frappe.get_all(
 		"Site Usage",

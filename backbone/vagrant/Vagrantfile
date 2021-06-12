@@ -13,6 +13,7 @@ Vagrant.configure("2") do |config|
         # VMs with little disk space may fail to boot
         libvirt.machine_virtual_size = 16
         libvirt.cpus = 1
+        libvirt.cpu_mode = "host-passthrough"
         libvirt.memory = 512
     end
 
@@ -98,22 +99,25 @@ Vagrant.configure("2") do |config|
         registry.vm.network "private_network", ip: "10.1.4.101", netmask: "255.255.0.0"
     end
 
-    # Logs Server = Logstash + Kibana
-    config.vm.define "logs.local.frappe.dev" do |logs|
-        logs.vm.hostname = "logs.local.frappe.dev"
-        logs.vm.network "private_network", ip: "10.0.4.102", netmask: "255.255.0.0"
-        logs.vm.network "private_network", ip: "10.1.4.102", netmask: "255.255.0.0"
-        logs.vm.provider :libvirt do |libvirt|
+    # Log Server = ElasticSearch + Logstash + Kibana
+    config.vm.define "log.local.frappe.dev" do |log|
+        log.vm.hostname = "log.local.frappe.dev"
+        log.vm.network "private_network", ip: "10.0.4.102", netmask: "255.255.0.0"
+        log.vm.network "private_network", ip: "10.1.4.102", netmask: "255.255.0.0"
+        log.vm.provider :libvirt do |libvirt|
             libvirt.cpus = 2
             libvirt.memory = 4096
         end
     end
 
     # Uptime Server = Prometheus + Grafana
-    config.vm.define "monitor.local.frappe.dev" do |uptime|
-        uptime.vm.hostname = "monitor.local.frappe.dev"
-        uptime.vm.network "private_network", ip: "10.0.4.103", netmask: "255.255.0.0"
-        uptime.vm.network "private_network", ip: "10.1.4.103", netmask: "255.255.0.0"
+    config.vm.define "monitor.local.frappe.dev" do |monitor|
+        monitor.vm.hostname = "monitor.local.frappe.dev"
+        monitor.vm.network "private_network", ip: "10.0.4.103", netmask: "255.255.0.0"
+        monitor.vm.network "private_network", ip: "10.1.4.103", netmask: "255.255.0.0"
+        monitor.vm.provider :libvirt do |libvirt|
+            libvirt.memory = 1024
+        end
     end
 
 

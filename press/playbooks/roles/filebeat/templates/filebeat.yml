@@ -1,0 +1,45 @@
+######################## Filebeat Configuration ############################
+
+# ========================== Filebeat global options ===========================
+
+filebeat.config:
+  inputs:
+    enabled: true
+    path: ${path.config}/inputs.d/*.yml
+    reload:
+      enabled: true
+      period: 10s
+  modules:
+    enabled: true
+    path: ${path.config}/modules.d/*.yml
+    reload:
+      enabled: true
+      period: 10s
+
+# ================================== General ===================================
+
+name: "{{ server }}"
+
+# ================================== Outputs ===================================
+
+output.elasticsearch:
+  enabled: true
+  hosts: ["https://{{ log_server }}:443"]
+
+  compression_level: 0
+  protocol: "https"
+
+  username: "frappe"
+  password: "{{ kibana_password }}"
+
+  path: "/elasticsearch"
+
+  ssl.enabled: true
+  ssl.verification_mode: strict
+  ssl.supported_protocols: [TLSv1.3]
+
+# ================================== Logging ===================================
+
+logging.to_files: true
+logging.files:
+  path: /var/log/filebeat

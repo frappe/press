@@ -13,6 +13,9 @@ ENV WKHTMLTOPDF_VERSION 0.12.5
 ENV LANG C.UTF-8
 ENV DEBIAN_FRONTEND noninteractive
 
+ENV OPENBLAS_NUM_THREADS 1
+ENV MKL_NUM_THREADS 1
+
 # Install essential packages
 RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   && apt-get install --yes --no-install-suggests --no-install-recommends \
@@ -23,6 +26,8 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   pv \
   ntp \
   wget \
+  supervisor \
+  redis-server \
   # Dependencies for SSH access
   openssh-server \
   nano \
@@ -45,6 +50,7 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   && rm -rf /var/lib/apt/lists/* \
   `#stage-pre-essentials`
 
+COPY --chown=root:root supervisord.conf /etc/supervisor/supervisord.conf
 
 # Install Python from DeadSnakes PPA
 RUN --mount=type=cache,target=/var/cache/apt add-apt-repository ppa:deadsnakes/ppa \
@@ -113,6 +119,7 @@ RUN mkdir -p apps logs sites config/pids
 # Create virtual environment for bench
 RUN virtualenv -p python${PYTHON_VERSION} env `#stage-bench-env`
 
+COPY --chown=frappe:frappe common_site_config.json /home/frappe/frappe-bench/sites/common_site_config.json
 
 # Install Frappe app
 COPY --chown=frappe:frappe apps/frappe /home/frappe/frappe-bench/apps/frappe
@@ -130,9 +137,7 @@ RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 echo "N\nY\n
 {% endif %}
 {% endfor %}
 
+COPY --chown=frappe:frappe config /home/frappe/frappe-bench/config
 
-COPY --chown=frappe:frappe common_site_config.json /home/frappe/frappe-bench/sites/common_site_config.json
-
-VOLUME ["/home/frappe/frappe-bench/sites", "/home/frappe/frappe-bench/logs"]
-EXPOSE 8000
-CMD ["/bin/bash"]
+EXPOSE 8000 9000
+CMD ["supervisord"]

@@ -14,7 +14,6 @@
       - libcrypto++-dev
       - libssl-dev
       - ntp
-      - postfix
       - python3-dev
       - python3-pip
       - virtualenv

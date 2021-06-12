@@ -505,6 +505,11 @@ class Agent:
 		).insert()
 		return job
 
+	def update_monitor_rules(self, rules, routes):
+		data = {"rules": rules, "routes": routes}
+		status = self.post("monitor/rules", data=data)
+		return status
+
 	def get_job_status(self, id):
 		status = self.get(f"jobs/{id}")
 		return status

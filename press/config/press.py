@@ -43,14 +43,6 @@ def get_data():
 			],
 		},
 		{
-			"label": _("Analytics"),
-			"items": [
-				{"type": "doctype", "name": "Site Uptime Log"},
-				{"type": "doctype", "name": "Site Job Log"},
-				{"type": "doctype", "name": "Site Request Log"},
-			],
-		},
-		{
 			"label": _("Deploy"),
 			"items": [
 				{"type": "doctype", "name": "Site Deploy"},

@@ -190,8 +190,10 @@ def schedule_updates():
 			site = frappe.get_doc("Site", site.name)
 			site.schedule_update()
 			update_triggered_count += 1
+			frappe.db.commit()
 		except Exception:
 			log_error("Site Update Exception", site=site)
+			frappe.db.rollback()
 
 
 def should_try_update(site):

@@ -1,0 +1,44 @@
+---
+- name: Create Blackbox Exporter Directory
+  file:
+    path: /opt/blackbox_exporter
+    state: directory
+    mode: 0755
+
+- name: Download Blackbox Exporter Archive
+  unarchive:
+    src: https://github.com/prometheus/blackbox_exporter/releases/download/v0.18.0/blackbox_exporter-0.18.0.linux-amd64.tar.gz
+    dest: /tmp
+    remote_src: yes
+
+- name: Copy Blackbox Exporter Binary
+  copy:
+    src: /tmp/blackbox_exporter-0.18.0.linux-amd64/blackbox_exporter
+    dest: /opt/blackbox_exporter/blackbox_exporter
+    remote_src: yes
+    mode: 0755
+    owner: root
+    group: root
+
+- name: Configure Blackbox Exporter Modules
+  template:
+    src: blackbox.yml
+    dest: /opt/blackbox_exporter/blackbox.yml
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Create Blackbox Exporter Systemd Service File
+  template:
+    src: blackbox_exporter.service
+    dest: /etc/systemd/system/blackbox_exporter.service
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Restart Blackbox Exporter Service
+  systemd:
+    daemon_reload: true
+    name: blackbox_exporter
+    enabled: yes
+    state: restarted

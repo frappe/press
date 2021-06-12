@@ -97,6 +97,41 @@ class BaseServer(Document):
 		self.save()
 
 	@frappe.whitelist()
+	def install_filebeat(self):
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_install_filebeat", queue="long", timeout=1200
+		)
+
+	def _install_filebeat(self):
+		log_server = frappe.db.get_single_value("Press Settings", "log_server")
+		if log_server:
+			kibana_password = frappe.get_doc("Log Server", log_server).get_password(
+				"kibana_password"
+			)
+		else:
+			kibana_password = None
+
+		try:
+			ansible = Ansible(
+				playbook="filebeat.yml",
+				server=self,
+				variables={
+					"server": self.name,
+					"log_server": log_server,
+					"kibana_password": kibana_password,
+				},
+			)
+			ansible.run()
+		except Exception:
+			log_error("Filebeat Install Exception", server=self.as_dict())
+
+	@frappe.whitelist()
+	def install_exporters(self):
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_install_exporters", queue="long", timeout=1200
+		)
+
+	@frappe.whitelist()
 	def ping_ansible(self):
 		try:
 			ansible = Ansible(playbook="ping.yml", server=self)
@@ -158,6 +193,17 @@ class Server(BaseServer):
 			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
 		)
 		certificate = frappe.get_doc("TLS Certificate", certificate_name)
+		monitoring_password = frappe.get_doc("Cluster", self.cluster).get_password(
+			"monitoring_password"
+		)
+		log_server = frappe.db.get_single_value("Press Settings", "log_server")
+		if log_server:
+			kibana_password = frappe.get_doc("Log Server", log_server).get_password(
+				"kibana_password"
+			)
+		else:
+			kibana_password = None
+
 		try:
 			ansible = Ansible(
 				playbook="server.yml",
@@ -167,6 +213,9 @@ class Server(BaseServer):
 					"private_ip": self.private_ip,
 					"workers": "2",
 					"agent_password": agent_password,
+					"monitoring_password": monitoring_password,
+					"log_server": log_server,
+					"kibana_password": kibana_password,
 					"certificate_private_key": certificate.private_key,
 					"certificate_full_chain": certificate.full_chain,
 					"certificate_intermediate_chain": certificate.intermediate_chain,
@@ -239,6 +288,23 @@ class Server(BaseServer):
 			self.status = "Broken"
 			log_error("Secondary Server Setup Exception", server=self.as_dict())
 		self.save()
+
+	def _install_exporters(self):
+		monitoring_password = frappe.get_doc("Cluster", self.cluster).get_password(
+			"monitoring_password"
+		)
+		try:
+			ansible = Ansible(
+				playbook="server_exporters.yml",
+				server=self,
+				variables={
+					"private_ip": self.private_ip,
+					"monitoring_password": monitoring_password,
+				},
+			)
+			ansible.run()
+		except Exception:
+			log_error("Exporters Install Exception", server=self.as_dict())
 
 
 def process_new_server_job_update(job):

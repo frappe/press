@@ -15,16 +15,6 @@ def get_data():
 				"label": _("Related Documents"),
 				"items": ["Site Domain", "Site Activity", "Site Plan Change"],
 			},
-			{
-				"label": _("Logs"),
-				"items": [
-					"Agent Job",
-					"Site Backup",
-					"Site Update",
-					"Site Uptime Log",
-					"Site Job Log",
-					"Site Request Log",
-				],
-			},
+			{"label": _("Logs"), "items": ["Agent Job", "Site Backup", "Site Update"]},
 		],
 	}

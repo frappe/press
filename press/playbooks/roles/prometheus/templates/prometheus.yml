@@ -1,0 +1,84 @@
+#jinja2:block_start_string:'##', block_end_string:'##', trim_blocks: False
+
+global:
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  evaluation_interval: 15s
+
+rule_files:
+  - /home/frappe/prometheus/rules/*.yml
+
+alerting:
+  alertmanagers:
+    - scheme: https
+      path_prefix: /alertmanager
+      static_configs:
+        - targets: ["{{ server }}"]
+      basic_auth:
+        username: frappe
+        password: "{{ grafana_password }}"
+
+scrape_configs:
+  - job_name: self
+    scrape_interval: 1m
+    scheme: https
+    basic_auth:
+      username: frappe
+      password: "{{ monitoring_password }}"
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+    file_sd_configs:
+      - files:
+          - /home/frappe/prometheus/file_sd/self.yml
+
+  - job_name: site
+    scrape_interval: 1m
+    metrics_path: /blackbox/probe
+    scheme: https
+    params:
+      module: [http_2xx]
+    basic_auth:
+      username: frappe
+      password: "{{ grafana_password }}"
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+        regex: "https://(.*)/api/method/ping"
+      - target_label: __address__
+        replacement: "{{ server }}"
+    file_sd_configs:
+      - files:
+          - /home/frappe/prometheus/file_sd/sites.yml
+
+  ## for registry in registries ##
+  - job_name: "{{ registry.name }}"
+    scrape_interval: 1m
+    scheme: https
+    basic_auth:
+      username: frappe
+      password: "{{ registry.monitoring_password }}"
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+    file_sd_configs:
+      - files:
+          - "/home/frappe/prometheus/file_sd/registry.{{ registry.name }}.yml"
+  ## endfor ##
+
+  ## for cluster in clusters ##
+  - job_name: "cluster.{{ cluster.name }}"
+    scrape_interval: 1m
+    scheme: https
+    basic_auth:
+      username: frappe
+      password: "{{ cluster.monitoring_password }}"
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+    file_sd_configs:
+      - files:
+          - "/home/frappe/prometheus/file_sd/cluster.{{ cluster.name }}.yml"
+  ## endfor ##

@@ -1,0 +1,30 @@
+---
+- name: Set JSON Variables
+  set_fact:
+    registries: "{{ registries_json | from_json }}"
+    clusters: "{{ clusters_json | from_json }}"
+
+- name: Configure Prometheus Service Discovery for Registries
+  become: yes
+  become_user: frappe
+  template:
+    src: ../../prometheus/templates/registry.yml
+    dest: /home/frappe/prometheus/file_sd/registry.{{ item.name }}.yml
+    force: true
+    mode: 0600
+  loop: "{{ registries }}"
+
+- name: Configure Prometheus
+  become: yes
+  become_user: frappe
+  template:
+    src: ../../prometheus/templates/prometheus.yml
+    dest: /home/frappe/prometheus/prometheus.yml
+    force: true
+    mode: 0600
+    validate: "/home/frappe/prometheus/promtool check config %s"
+
+- name: Reload Prometheus Service
+  systemd:
+    name: prometheus
+    state: reloaded

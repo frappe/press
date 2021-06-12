@@ -1,10 +1,4 @@
 ---
-- name: Install Ansible Docker Stack Module Dependencies
-  pip:
-    name:
-      - pyyaml
-      - jsondiff
-
 - name: Create Registry Directory
   become: yes
   become_user: frappe
@@ -19,21 +13,11 @@
     dest: /home/frappe/registry/data
     state: directory
 
-- name: Create Registry Compose File
-  become: yes
-  become_user: frappe
-  template:
-    src: docker-compose.yml
-    dest: /home/frappe/registry/docker-compose.yml
+- name: Start Docker Registry
+  script: files/registry.sh
 
-- name: Deploy Registry Stack
-  become: yes
-  become_user: frappe
-  docker_stack:
-    state: present
-    name: registry
-    compose:
-      - /home/frappe/registry/docker-compose.yml
+- name: Start Docker Registry UI
+  script: files/registry-ui.sh
 
 - name: Setup Registry Authentication
   become: yes
@@ -41,3 +25,10 @@
   command: "htpasswd -Bbc registry.htpasswd {{ registry_username }} {{ registry_password }}"
   args:
     chdir: /home/frappe/registry
+
+- name: Setup NGINX for Registry
+  become: yes
+  become_user: frappe
+  command: /home/frappe/agent/env/bin/agent setup registry
+  args:
+    chdir: /home/frappe/agent
