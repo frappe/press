@@ -284,9 +284,10 @@ def candidate(name):
 def deploy_information(name):
 	out = frappe._dict(update_available=False)
 	last_deploy_candidate = get_last_doc(
-		"Deploy Candidate", {"group": name, "status": "Draft"}
+		"Deploy Candidate", {"group": name}
 	)
-	if not last_deploy_candidate:
+
+	if not (last_deploy_candidate and last_deploy_candidate.status == "Draft"):
 		return out
 
 	last_deployed_bench = get_last_doc("Bench", {"group": name, "status": "Active"})
