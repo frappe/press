@@ -56,7 +56,7 @@
 - name: Update Number of Maximum Watches
   sysctl:
     name: fs.inotify.max_user_watches
-    value: "{{ file_count.stdout | string }}"
+    value: "{{ [file_count.stdout|int, 1048576] | max }}"
     state: present
 
 - name: Restart Lsyncd service
