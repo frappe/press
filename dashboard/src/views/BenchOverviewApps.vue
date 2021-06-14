@@ -72,8 +72,11 @@
 			</p>
 		</Dialog>
 
-		<Dialog title="Change branch for <App-name>" v-model="showChangeBranchDialog">
-
+		<Dialog v-if="this.appToChangeBranchOf" :title="`Change branch for ${this.appToChangeBranchOf}`" v-model="showChangeBranchDialog">
+			<div>
+				<p> Bench name: {{bench.name}} </p>
+				<p> App name: {{ this.appToChangeBranchOf.name }} </p>
+			</div>
 		</Dialog>
 	</Card>
 </template>
@@ -89,7 +92,8 @@ export default {
 		return {
 			selectedApp: null,
 			showAddAppDialog: false,
-			showChangeBranchDialog: false
+			showChangeBranchDialog: false,
+			appToChangeBranchOf: null
 		};
 	},
 	resources: {
@@ -134,7 +138,10 @@ export default {
 				},
 				{
 					label: 'Change Branch',
-					action: () => this.showChangeBranchDialog = true
+					action: () => {
+						this.appToChangeBranchOf = app;
+						this.showChangeBranchDialog = true;
+					}
 				},
 				{
 					label: 'Visit Repo',

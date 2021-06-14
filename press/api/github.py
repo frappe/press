@@ -200,3 +200,23 @@ def app(installation, owner, repository, branch):
 					title = match.group(1)
 				break
 	return {"name": app_name, "title": title}
+
+@frappe.whitelist()
+def branches(installation, owner, name):
+	token = get_access_token(installation)
+	headers = {
+		"Authorization": f"token {token}",
+	}
+
+	response = requests.get(
+		f"https://api.github.com/repos/{owner}/{name}/branches",
+		params={"per_page": 100},
+		headers=headers,
+	)
+
+	if response.ok:
+		branches = response.json()
+	else:
+		branches = []
+	
+	return branches
