@@ -7,6 +7,7 @@ from collections import OrderedDict
 import frappe
 from press.utils import get_current_team, get_last_doc, unique
 from press.api.site import protected
+from press.api.github import branches
 from frappe.core.utils import find, find_all
 from press.press.doctype.release_group.release_group import ReleaseGroup, new_release_group
 from press.press.doctype.agent_job.agent_job import job_detail
@@ -411,3 +412,20 @@ def change_branch(name: str, app: str, to_branch: str):
 	'''Switch to `to_branch` for `app` in release group `name`'''
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
 	rg.change_app_branch(app, to_branch)
+
+@frappe.whitelist()
+@protected("Release Group")
+def branch_list(name: str, app: str):
+	''''''
+	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
+	app_source = rg.get_current_app_source(app)
+	
+	installation_id = app_source.github_installation_id
+	repo_owner = app_source.repository_owner
+	repo_name = app_source.repository
+	
+	return branches(
+		installation_id,
+		repo_owner,
+		repo_name
+	)
