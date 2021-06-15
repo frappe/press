@@ -418,7 +418,7 @@ def change_branch(name: str, app: str, to_branch: str):
 def branch_list(name: str, app: str):
 	''''''
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
-	app_source = rg.get_current_app_source(app)
+	app_source = rg.get_app_source(app)
 	
 	installation_id = app_source.github_installation_id
 	repo_owner = app_source.repository_owner

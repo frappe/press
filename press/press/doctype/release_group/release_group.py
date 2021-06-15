@@ -124,7 +124,7 @@ class ReleaseGroup(Document):
 		self.save()
 
 	def change_app_branch(self, app: str, to_branch: str) -> None:
-		current_app_source = self.get_current_app_source(app)
+		current_app_source = self.get_app_source(app)
 
 		# Already on that branch
 		if current_app_source.branch == to_branch:
@@ -158,7 +158,7 @@ class ReleaseGroup(Document):
 
 		self.set_app_source(app, required_app_source.name)
 
-	def get_current_app_source(self, app: str) -> AppSource:
+	def get_app_source(self, app: str) -> AppSource:
 		source = frappe.get_all(
 			"Release Group App",
 			filters={
