@@ -120,6 +120,7 @@ RUN mkdir -p apps logs sites config/pids
 RUN virtualenv -p python${PYTHON_VERSION} env `#stage-bench-env`
 
 COPY --chown=frappe:frappe common_site_config.json /home/frappe/frappe-bench/sites/common_site_config.json
+RUN git config --global advice.detachedHead false
 
 # Install Frappe app
 RUN echo '["build"]' > .bench.cmd
