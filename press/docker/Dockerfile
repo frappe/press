@@ -124,7 +124,7 @@ RUN git config --global advice.detachedHead false
 
 # Install Frappe app
 RUN echo '["build"]' > .bench.cmd
-RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 --mount=type=bind,target=/home/frappe/context bench get-app frappe `#stage-apps-frappe`
+RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 --mount=type=bind,target=/home/frappe/context bench get-app /home/frappe/context/apps/frappe `#stage-apps-frappe`
 RUN rm .bench.cmd
 
 # Install other apps
