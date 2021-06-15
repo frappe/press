@@ -72,10 +72,20 @@
 			</p>
 		</Dialog>
 
-		<Dialog v-if="this.appToChangeBranchOf" :title="`Change branch for ${this.appToChangeBranchOf}`" v-model="showChangeBranchDialog">
+		<Dialog v-if="appToChangeBranchOf" :title="`Change branch for ${appToChangeBranchOf.title}`" v-model="showChangeBranchDialog">
 			<div>
-				<p> Bench name: {{bench.name}} </p>
-				<p> App name: {{ this.appToChangeBranchOf.name }} </p>
+				<Badge v-if="this.$resources.branches.loading" color="yellow">Loading...</Badge>
+				<Dropdown v-else class="mt-5" :items="branchList()">
+					<template v-slot="{ toggleDropdown }">
+						<Button
+						type="white"
+						@click="toggleDropdown()"
+						icon-right="chevron-down"
+						>
+							{{ appToChangeBranchOf.branch }}
+						</Button>
+					</template>
+				</Dropdown>
 			</div>
 		</Dialog>
 	</Card>
@@ -126,6 +136,15 @@ export default {
 			return {
 				method: 'press.api.bench.remove_app'
 			};
+		},
+		branches() {
+			return {
+				method: 'press.api.bench.branch_list',
+				params: {
+					name: this.bench.name,
+					app: this.appToChangeBranchOf?.name
+				}
+			};
 		}
 	},
 	methods: {
@@ -141,6 +160,7 @@ export default {
 					action: () => {
 						this.appToChangeBranchOf = app;
 						this.showChangeBranchDialog = true;
+						this.$resources.branches.fetch();
 					}
 				},
 				{
@@ -163,6 +183,17 @@ export default {
 						app: app.name
 					});
 				}
+			});
+		},
+		branchList() {
+			if (this.$resources.branches.loading || !this.$resources.branches.data) {
+				return [];
+			}
+			return (this.$resources.branches.data || []).map(d => {
+				return {
+					label: d.name,
+					action: () => this.$emit('update:selectedBranch', d.name)
+				};
 			});
 		}
 	}
