@@ -164,8 +164,15 @@ def check_subdomain_availability(subdomain):
 	if result:
 		return False
 
-	exists = frappe.db.exists(
-		"Site", {"subdomain": subdomain, "domain": get_erpnext_domain()}
+	exists = bool(
+		frappe.db.exists(
+			"Site",
+			{
+				"subdomain": subdomain,
+				"domain": get_erpnext_domain(),
+				"status": ("!=", "Archived"),
+			},
+		)
 	)
 	if exists:
 		return False
