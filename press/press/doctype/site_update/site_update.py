@@ -182,8 +182,11 @@ def schedule_updates():
 	# Shuffle sites list, to achieve this
 	random.shuffle(sites)
 
+	benches = {}
 	update_triggered_count = 0
 	for site in sites:
+		if site.bench in benches:
+			continue
 		if update_triggered_count > queue_size:
 			break
 		try:
@@ -191,6 +194,7 @@ def schedule_updates():
 			site.schedule_update()
 			update_triggered_count += 1
 			frappe.db.commit()
+			benches[site.bench] = True
 		except Exception:
 			log_error("Site Update Exception", site=site)
 			frappe.db.rollback()
