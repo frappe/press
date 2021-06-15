@@ -53,6 +53,7 @@ class Bench(Document):
 			"redis_socketio": "redis://redis-socketio:6379",
 			"socketio_port": 9000,
 			"webserver_port": 8000,
+			"restart_supervisor_on_update": True,
 		}
 		if self.is_single_container:
 			config.update(
