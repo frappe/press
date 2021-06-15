@@ -122,6 +122,8 @@ RUN virtualenv -p python${PYTHON_VERSION} env `#stage-bench-env`
 COPY --chown=frappe:frappe common_site_config.json /home/frappe/frappe-bench/sites/common_site_config.json
 RUN git config --global advice.detachedHead false
 
+ENV PYTHONUNBUFFERED 1
+
 # Install Frappe app
 RUN echo '["build"]' > .bench.cmd
 RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 --mount=type=bind,target=/home/frappe/context bench get-app /home/frappe/context/apps/frappe `#stage-apps-frappe`
