@@ -156,6 +156,9 @@ class ReleaseGroup(Document):
 				version
 			)
 
+			required_app_source.github_installation_id = current_app_source.github_installation_id
+			required_app_source.save()
+
 		self.set_app_source(app, required_app_source.name)
 
 	def get_app_source(self, app: str) -> AppSource:
