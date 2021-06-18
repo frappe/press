@@ -72,20 +72,14 @@
 			</p>
 		</Dialog>
 
-		<Dialog v-if="appToChangeBranchOf" :title="`Change branch for ${appToChangeBranchOf.title}`" v-model="showChangeBranchDialog">
+		<Dialog v-if="appToChangeBranchOf" :title="`Change branch for ${appToChangeBranchOf.title}`" v-model="appToChangeBranchOf">
 			<div>
 				<Badge v-if="this.$resources.branches.loading" color="yellow">Loading...</Badge>
-				<Dropdown v-else class="mt-5" :items="branchList()">
-					<template v-slot="{ toggleDropdown }">
-						<Button
-						type="white"
-						@click="toggleDropdown()"
-						icon-right="chevron-down"
-						>
-							{{ appToChangeBranchOf.branch }}
-						</Button>
-					</template>
-				</Dropdown>
+				<select  v-else class="block w-full form-select" v-model="selectedBranch">
+					<option v-for="option in branchList()" :key="option.label">
+						{{ option.label }}
+					</option>
+				</select>
 			</div>
 		</Dialog>
 	</Card>
@@ -102,8 +96,8 @@ export default {
 		return {
 			selectedApp: null,
 			showAddAppDialog: false,
-			showChangeBranchDialog: false,
-			appToChangeBranchOf: null
+			appToChangeBranchOf: null,
+			selectedBranch: null
 		};
 	},
 	resources: {
@@ -159,7 +153,7 @@ export default {
 					label: 'Change Branch',
 					action: () => {
 						this.appToChangeBranchOf = app;
-						this.showChangeBranchDialog = true;
+						this.selectedBranch = app.branch;
 						this.$resources.branches.fetch();
 					}
 				},
@@ -191,8 +185,7 @@ export default {
 			}
 			return (this.$resources.branches.data || []).map(d => {
 				return {
-					label: d.name,
-					action: () => this.$emit('update:selectedBranch', d.name)
+					label: d.name
 				};
 			});
 		}
