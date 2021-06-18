@@ -76,8 +76,8 @@
 			<div>
 				<Badge v-if="this.$resources.branches.loading" color="yellow">Loading...</Badge>
 				<select  v-else class="block w-full form-select" v-model="selectedBranch">
-					<option v-for="option in branchList()" :key="option.label">
-						{{ option.label }}
+					<option v-for="branch in branchList()" :key="branch">
+						{{ branch }}
 					</option>
 				</select>
 			</div>
@@ -183,10 +183,8 @@ export default {
 			if (this.$resources.branches.loading || !this.$resources.branches.data) {
 				return [];
 			}
-			return (this.$resources.branches.data || []).map(d => {
-				return {
-					label: d.name
-				};
+			return this.$resources.branches.data.map(d => {
+				return d.name;
 			});
 		}
 	}
