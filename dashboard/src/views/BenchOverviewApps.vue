@@ -72,14 +72,31 @@
 			</p>
 		</Dialog>
 
-		<Dialog v-if="appToChangeBranchOf" :title="`Change branch for ${appToChangeBranchOf.title}`" v-model="appToChangeBranchOf">
+		<Dialog
+			v-if="appToChangeBranchOf"
+			:title="`Change branch for ${appToChangeBranchOf.title}`"
+			v-model="appToChangeBranchOf"
+		>
 			<div>
-				<Badge v-if="this.$resources.branches.loading" color="yellow">Loading...</Badge>
-				<select  v-else class="block w-full form-select" v-model="selectedBranch">
-					<option v-for="branch in branchList()" :key="branch">
-						{{ branch }}
-					</option>
-				</select>
+				<Badge v-if="this.$resources.branches.loading" color="yellow"
+					>Loading...</Badge
+				>
+				<div v-else>
+					<select class="block w-full form-select" v-model="selectedBranch">
+						<option v-for="branch in branchList()" :key="branch">
+							{{ branch }}
+						</option>
+					</select>
+					<Button
+						class="mt-3"
+						type="primary"
+						:loading="this.$resources.changeBranch.loading"
+						:disabled="selectedBranch == appToChangeBranchOf.branch"
+						@click="changeBranch()"
+					>
+						Change Branch
+					</Button>
+				</div>
 			</div>
 		</Dialog>
 	</Card>
@@ -139,6 +156,14 @@ export default {
 					app: this.appToChangeBranchOf?.name
 				}
 			};
+		},
+		changeBranch() {
+			return {
+				method: 'press.api.bench.change_branch',
+				onSuccess() {
+					this.appToChangeBranchOf = null;
+				}
+			};
 		}
 	},
 	methods: {
@@ -185,6 +210,13 @@ export default {
 			}
 			return this.$resources.branches.data.map(d => {
 				return d.name;
+			});
+		},
+		changeBranch() {
+			this.$resources.changeBranch.submit({
+				name: this.bench.name,
+				app: this.appToChangeBranchOf?.name,
+				to_branch: this.selectedBranch
 			});
 		}
 	}
