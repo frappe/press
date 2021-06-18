@@ -213,9 +213,8 @@ export default {
 			if (this.$resources.branches.loading || !this.$resources.branches.data) {
 				return [];
 			}
-			return this.$resources.branches.data.map(d => {
-				return d.name;
-			});
+			
+			return this.$resources.branches.data.map(d => d.name);
 		},
 		changeBranch() {
 			this.$resources.changeBranch.submit({

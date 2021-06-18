@@ -306,9 +306,11 @@ def get_updates_between_current_and_next_apps(current_apps, next_apps):
 		source = frappe.get_doc("App Source", app.source)
 
 		will_branch_change = False
+		current_branch = source.branch
 		if bench_app:
 			current_source = frappe.get_doc("App Source", bench_app.source)
 			will_branch_change = not (current_source.branch == source.branch)
+			current_branch = current_source.branch
 
 		current_tag = (
 			get_app_tag(source.repository, source.repository_owner, current_hash)
@@ -329,6 +331,7 @@ def get_updates_between_current_and_next_apps(current_apps, next_apps):
 				"next_hash": next_hash,
 				"next_tag": get_app_tag(source.repository, source.repository_owner, next_hash),
 				"will_branch_change": will_branch_change,
+				"current_branch": current_branch,
 				"update_available": not current_hash or current_hash != next_hash,
 			}
 		)
