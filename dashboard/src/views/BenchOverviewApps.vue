@@ -162,12 +162,12 @@ export default {
 				method: 'press.api.bench.change_branch',
 				onSuccess() {
 					this.appToChangeBranchOf = null;
-					this.apps.fetch();
 					this.$notify({
 						title: 'Branch changed successfully!',
 						icon: 'check',
 						color: 'green'
 					});
+					window.location.reload();
 				}
 			};
 		}
