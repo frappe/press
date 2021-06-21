@@ -162,6 +162,7 @@ export default {
 				method: 'press.api.bench.change_branch',
 				onSuccess() {
 					this.appToChangeBranchOf = null;
+					this.apps.fetch();
 					this.$notify({
 						title: 'Branch changed successfully!',
 						icon: 'check',
@@ -213,7 +214,7 @@ export default {
 			if (this.$resources.branches.loading || !this.$resources.branches.data) {
 				return [];
 			}
-			
+
 			return this.$resources.branches.data.map(d => d.name);
 		},
 		changeBranch() {
