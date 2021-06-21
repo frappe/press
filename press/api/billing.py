@@ -1,11 +1,9 @@
 # Copyright (c) 2020, Frappe Technologies Pvt. Ltd. and Contributors
 # MIT License. See license.txt
 
-from __future__ import unicode_literals
-
+import frappe
 import re
 
-import frappe
 from frappe.utils import flt, fmt_money
 from press.utils import get_current_team
 from press.utils.billing import (

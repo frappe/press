@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
-from __future__ import unicode_literals
 
-from datetime import datetime, timedelta
 import frappe
-from pathlib import Path
-from press.utils import get_current_team, log_error
 import requests
 import jwt
 import re
+
+from press.utils import get_current_team, log_error
+from datetime import datetime, timedelta
 from base64 import b64decode
+from pathlib import Path
 
 
 @frappe.whitelist(allow_guest=True, xss_safe=True)

@@ -1,10 +1,9 @@
 # Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and Contributors
 # MIT License. See license.txt
 
-from __future__ import unicode_literals
+import frappe
 
 from press.press.doctype.site.erpnext_site import ERPNextSite, get_erpnext_domain
-import frappe
 from frappe.geo.country_info import get_country_timezone_info
 from press.api.account import get_account_request_from_key
 from press.utils.billing import get_erpnext_com_connection

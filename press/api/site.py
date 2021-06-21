@@ -2,16 +2,13 @@
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
 
-from __future__ import unicode_literals
-
+import frappe
 import json
-
 import dns.resolver
 import wrapt
+
 from boto3 import client
 from botocore.exceptions import ClientError
-
-import frappe
 from frappe.core.utils import find
 from frappe.desk.doctype.tag.tag import add_tag
 from frappe.utils import flt, time_diff_in_hours
