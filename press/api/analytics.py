@@ -169,5 +169,5 @@ def get_current_cpu_usage(site):
 	response = requests.post(url, json=query, auth=("frappe", password)).json()
 	hits = response["hits"]["hits"]
 	if hits:
-		return hits[0]["_source"]["json"]["request"]["counter"]
+		return hits[0]["_source"]["json"]["request"].get("counter", 0)
 	return 0
