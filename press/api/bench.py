@@ -426,7 +426,7 @@ def change_branch(name: str, app: str, to_branch: str):
 @frappe.whitelist()
 @protected("Release Group")
 def branch_list(name: str, app: str):
-	''''''
+	'''Return a list of git branches available for the `app`'''
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
 	app_source = rg.get_app_source(app)
 	
