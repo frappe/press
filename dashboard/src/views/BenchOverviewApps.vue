@@ -159,11 +159,7 @@ export default {
 				},
 				onError() {
 					this.appToChangeBranchOf = null;
-					this.$notify({
-						title: 'Error fetching branch list',
-						color: 'red',
-						icon: 'x'
-					});
+					this.notifyError('Error fetching branch list');
 				}
 			};
 		},
@@ -178,6 +174,10 @@ export default {
 						color: 'green'
 					});
 					window.location.reload();
+				},
+				onError() {
+					this.appToChangeBranchOf = null;
+					this.notifyError('Error changing branch for app');
 				}
 			};
 		}
@@ -232,6 +232,13 @@ export default {
 				name: this.bench.name,
 				app: this.appToChangeBranchOf?.name,
 				to_branch: this.selectedBranch
+			});
+		},
+		notifyError(msg) {
+			this.$notify({
+				title: msg,
+				color: 'red',
+				icon: 'x'
 			});
 		}
 	}
