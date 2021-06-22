@@ -148,7 +148,9 @@ export default {
 				},
 				tooltipOptions: {
 					formatTooltipX: d => {
-						return DateTime.fromSQL(d.date).toLocaleString(DateTime.DATE_MED);
+						return DateTime.fromSQL(d.date).toLocaleString(
+							DateTime.DATETIME_MED
+						);
 					},
 					formatTooltipY: yFormatter
 				}

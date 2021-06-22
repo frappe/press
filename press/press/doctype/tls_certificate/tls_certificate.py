@@ -29,6 +29,7 @@ class TLSCertificate(Document):
 	def after_insert(self):
 		self.obtain_certificate()
 
+	@frappe.whitelist()
 	def obtain_certificate(self):
 		user, session_data, team, = (
 			frappe.session.user,

@@ -72,7 +72,7 @@ class ReleaseGroup(Document):
 				frappe.throw(
 					"Servers can be added only once", frappe.ValidationError,
 				)
-		else:
+		elif self.is_new():
 			servers_for_new_bench = frappe.get_all(
 				"Server", {"status": "Active", "use_for_new_benches": True}, limit=1
 			)
@@ -81,8 +81,8 @@ class ReleaseGroup(Document):
 
 	@frappe.whitelist()
 	def validate_dependencies(self):
-		if not hasattr(self, 'dependencies') or not self.dependencies:
-			self.extend('dependencies', DEFAULT_DEPENDENCIES)
+		if not hasattr(self, "dependencies") or not self.dependencies:
+			self.extend("dependencies", DEFAULT_DEPENDENCIES)
 
 	@frappe.whitelist()
 	def create_deploy_candidate(self):

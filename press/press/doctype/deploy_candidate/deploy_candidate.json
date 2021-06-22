@@ -6,6 +6,7 @@
  "engine": "InnoDB",
  "field_order": [
   "status",
+  "is_single_container",
   "column_break_2",
   "group",
   "team",
@@ -163,10 +164,17 @@
    "options": "Deploy Candidate Dependency",
    "read_only": 1,
    "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_single_container",
+   "fieldtype": "Check",
+   "label": "Is Single Container",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2021-05-18 18:29:50.658162",
+ "modified": "2021-06-07 08:14:52.486387",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",

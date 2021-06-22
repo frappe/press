@@ -203,6 +203,7 @@ class TestSiteDomain(unittest.TestCase):
 		"""Ensure remove host agent job is created when site domain is deleted."""
 		site = create_test_site(self.site_subdomain)
 		site_domain = create_test_site_domain(site.name, "hellohello.com")
+		site.add_domain_to_config(site_domain.name)
 
 		with patch.object(SiteDomain, "create_remove_host_agent_request") as mock_remove_host:
 			site_domain.on_trash()
@@ -220,6 +221,8 @@ class TestSiteDomain(unittest.TestCase):
 		site.set_host_name(site_domain.name)
 
 		with patch.object(SiteDomain, "create_remove_host_agent_request") as mock_remove_host:
+			# fake archive
+			site.db_set("status", "Archived")
 			def_domain.on_trash()
 		mock_remove_host.assert_not_called()
 

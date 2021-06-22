@@ -5,11 +5,11 @@
       "cpus": "2",
       "disk_image": true,
       "disk_size": "{{user `disk_size`}}",
-      "iso_checksum": "36403f9562949545e2a6c38d4b840008acae674e20b67a67f4facba610b82aec",
+      "iso_checksum": "04aabbbd5964161286bd2a55314a80d1fce6568a788ea2a7150b758e25f29930",
       "iso_urls": [
         "{{template_dir}}/images/ubuntu-20.04-server-cloudimg-amd64.img",
-        "{{template_dir}}/images/02b24c4cf15cb4f576c262aa4efa6bca3c64c620.img",
-        "https://cloud-images.ubuntu.com/releases/focal/release-20201210/ubuntu-20.04-server-cloudimg-amd64.img"
+        "{{template_dir}}/images/e3e0cf8271ca03dccd897df79c437e40dab9ac5c.img",
+        "https://cloud-images.ubuntu.com/releases/focal/release-20210429/ubuntu-20.04-server-cloudimg-amd64.img"
       ],
       "iso_target_path": "{{template_dir}}/images",
       "iso_target_extension": "img",

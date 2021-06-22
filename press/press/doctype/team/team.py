@@ -171,6 +171,7 @@ class Team(Document):
 		impersonation.save()
 		frappe.local.login_manager.login_as(user)
 
+	@frappe.whitelist()
 	def enable_erpnext_partner_privileges(self):
 		self.erpnext_partner = 1
 		self.update_onboarding("Transfer Credits", "Pending")
@@ -465,6 +466,7 @@ class Team(Document):
 			"complete": all(step.status in ["Completed", "Skipped"] for step in valid_steps),
 		}
 
+	@frappe.whitelist()
 	def suspend_sites(self, reason=None):
 		sites_to_suspend = self.get_sites_to_suspend()
 		for site in sites_to_suspend:
@@ -478,6 +480,7 @@ class Team(Document):
 			pluck="name",
 		)
 
+	@frappe.whitelist()
 	def unsuspend_sites(self, reason=None):
 		suspended_sites = [
 			d.name for d in frappe.db.get_all("Site", {"team": self.name, "status": "Suspended"})

@@ -1,0 +1,65 @@
+---
+- name: Create Alertmanager Directories
+  become: yes
+  become_user: frappe
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: 0755
+  with_items:
+    - /home/frappe/alertmanager
+    - /home/frappe/alertmanager/data
+    - /home/frappe/.config/amtool
+
+- name: Download Alertmanager Archive
+  become: yes
+  become_user: frappe
+  unarchive:
+    src: https://github.com/prometheus/alertmanager/releases/download/v0.22.2/alertmanager-0.22.2.linux-amd64.tar.gz
+    dest: /tmp
+    remote_src: yes
+
+- name: Copy Alertmanager and Amtool Binaries
+  become: yes
+  become_user: frappe
+  copy:
+    src: "/tmp/alertmanager-0.22.2.linux-amd64/{{ item }}"
+    dest: "/home/frappe/alertmanager/{{ item }}"
+    mode: 0755
+    remote_src: yes
+  with_items:
+    - alertmanager
+    - amtool
+
+- name: Create Amtool Config
+  become: yes
+  become_user: frappe
+  template:
+    src: amtool.yml
+    dest: /home/frappe/.config/amtool/config.yml
+    mode: 0644
+
+- name: Configure Alertmanager
+  become: yes
+  become_user: frappe
+  template:
+    src: alertmanager.yml
+    dest: /home/frappe/alertmanager/alertmanager.yml
+    force: true
+    mode: 0600
+    validate: "/home/frappe/alertmanager/amtool check-config %s"
+
+- name: Create Alertmanager Systemd Service File
+  template:
+    src: alertmanager.service
+    dest: /etc/systemd/system/alertmanager.service
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Restart Alertmanager Service
+  systemd:
+    daemon_reload: true
+    name: alertmanager
+    enabled: yes
+    state: restarted
