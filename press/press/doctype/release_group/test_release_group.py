@@ -1,14 +1,12 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
-from __future__ import unicode_literals
-from press.press.doctype.app.test_app import create_test_app
 
 import unittest
-from unittest.mock import patch
-
 import frappe
 
+from unittest.mock import patch
+from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.app.app import App, new_app
 from press.press.doctype.app_source.app_source import AppSource
@@ -157,7 +155,7 @@ class TestReleaseGroup(unittest.TestCase):
 			[{"app": source.app, "source": source.name}],
 			team="Administrator",
 		)
-	
+
 	def test_branch_change_already_on_branch(self):
 		app = create_test_app()
 		rg = create_test_release_group(app)
@@ -173,7 +171,7 @@ class TestReleaseGroup(unittest.TestCase):
 			current_app_source.versions[0].version,
 			app,
 			current_app_source.repository_url,
-			"develop"
+			"develop",
 		)
 
 		rg.change_app_branch(app.name, "develop")
@@ -193,14 +191,7 @@ class TestReleaseGroup(unittest.TestCase):
 		new_app_source = frappe.get_doc("App Source", rg.apps[0].source)
 		self.assertEqual(new_app_source.branch, "develop")
 		self.assertEqual(
-			new_app_source.versions[0].version,
-			previous_app_source.versions[0].version
+			new_app_source.versions[0].version, previous_app_source.versions[0].version
 		)
-		self.assertEqual(
-			new_app_source.repository_url,
-			previous_app_source.repository_url
-		)
-		self.assertEqual(
-			new_app_source.app,
-			app.name
-		)
+		self.assertEqual(new_app_source.repository_url, previous_app_source.repository_url)
+		self.assertEqual(new_app_source.app, app.name)

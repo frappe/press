@@ -9,7 +9,10 @@ from press.utils import get_current_team, get_last_doc, unique
 from press.api.site import protected
 from press.api.github import branches
 from frappe.core.utils import find, find_all
-from press.press.doctype.release_group.release_group import ReleaseGroup, new_release_group
+from press.press.doctype.release_group.release_group import (
+	ReleaseGroup,
+	new_release_group,
+)
 from press.press.doctype.agent_job.agent_job import job_detail
 
 
@@ -415,26 +418,24 @@ def get_app_tag(repository, repository_owner, hash):
 		"tag",
 	)
 
+
 @frappe.whitelist()
 @protected("Release Group")
 def change_branch(name: str, app: str, to_branch: str):
-	'''Switch to `to_branch` for `app` in release group `name`'''
+	"""Switch to `to_branch` for `app` in release group `name`"""
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
 	rg.change_app_branch(app, to_branch)
+
 
 @frappe.whitelist()
 @protected("Release Group")
 def branch_list(name: str, app: str):
-	'''Return a list of git branches available for the `app`'''
+	"""Return a list of git branches available for the `app`"""
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
 	app_source = rg.get_app_source(app)
-	
+
 	installation_id = app_source.github_installation_id
 	repo_owner = app_source.repository_owner
 	repo_name = app_source.repository
-	
-	return branches(
-		installation_id,
-		repo_owner,
-		repo_name
-	)
+
+	return branches(installation_id, repo_owner, repo_name)
