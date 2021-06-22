@@ -201,6 +201,7 @@ def app(installation, owner, repository, branch):
 				break
 	return {"name": app_name, "title": title}
 
+
 @frappe.whitelist()
 def branches(installation, owner, name):
 	if installation:
@@ -225,5 +226,5 @@ def branches(installation, owner, name):
 		branches = response.json()
 	else:
 		frappe.throw("Error fetching branch list from GitHub")
-	
+
 	return branches
