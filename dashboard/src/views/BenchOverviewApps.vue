@@ -83,6 +83,9 @@
 					:loading="true"
 					loadingText="Loading..."
 				></Button>
+				<div v-else-if="$resources.branches.error">
+					<ErrorMessage class="mt-2" :error="$resources.branches.error" />
+				</div>
 				<div v-else>
 					<select class="block w-full form-select" v-model="selectedBranch">
 						<option v-for="branch in branchList()" :key="branch">
@@ -156,10 +159,6 @@ export default {
 				params: {
 					name: this.bench.name,
 					app: this.appToChangeBranchOf?.name
-				},
-				onError() {
-					this.appToChangeBranchOf = null;
-					this.notifyError('Error fetching branch list');
 				}
 			};
 		},
@@ -167,12 +166,6 @@ export default {
 			return {
 				method: 'press.api.bench.change_branch',
 				onSuccess() {
-					this.appToChangeBranchOf = null;
-					this.$notify({
-						title: 'Branch changed successfully!',
-						icon: 'check',
-						color: 'green'
-					});
 					window.location.reload();
 				},
 				onError() {
