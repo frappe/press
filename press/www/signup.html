@@ -126,12 +126,21 @@
 				return "Site name should contain lowercase alphabets, numbers, and hyphens";
 			}
 		},
-		plan: (value) => {
+		first_name: value => {
 			if (!value) {
-				return 'Please select a plan';
+				return 'First Name is required'
+			}
+		},
+		last_name: value => {
+			if (!value) {
+				return 'Last Name is required'
 			}
 		},
 		phone_number: (value) => {
+			if (!value) {
+				return 'Phone Number is required'
+			}
+
 			let regExp = /[a-zA-Z]/g;
 			if (regExp.test(value)) {
 				return "Phone number cannot contain alphabets";

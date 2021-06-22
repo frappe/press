@@ -1,0 +1,68 @@
+---
+- name: Update APT Cache
+  apt:
+    update_cache: yes
+
+- name: Install Filebeat Dependencies
+  apt:
+    state: present
+    force: yes
+    pkg:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - software-properties-common
+
+- name: Add Elasticsearch Repository Key
+  apt_key:
+    url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+    state: present
+
+- name: Add Elasticsearch Repository
+  apt_repository:
+    repo: deb https://artifacts.elastic.co/packages/7.x/apt stable main
+    state: present
+    update_cache: true
+
+- name: Install Filebeat
+  apt:
+    name: filebeat
+    state: present
+
+- name: Setup Filebeat
+  template:
+    src: filebeat.yml
+    dest: /etc/filebeat/filebeat.yml
+
+- name: Enable Filebeat Modules
+  command: filebeat modules enable nginx mysql system
+
+- name: Setup Filebeat Modules
+  template:
+    src: "modules.d/{{ item }}.yml"
+    dest: "/etc/filebeat/modules.d/{{ item }}.yml"
+  loop:
+    - "mysql"
+    - "system"
+    - "nginx"
+
+- name: Create Filebeat Modules Directory
+  file:
+    dest: /etc/filebeat/inputs.d
+    state: directory
+
+- name: Setup Filebeat Inputs
+  template:
+    src: "inputs.d/{{ item }}.yml"
+    dest: "/etc/filebeat/inputs.d/{{ item }}.yml"
+  loop:
+    - "all"
+    - "containers"
+    - "monitor"
+
+- name: Restart Filebeat Daemon
+  systemd:
+    name: filebeat
+    daemon_reload: true
+    enabled: yes
+    state: restarted

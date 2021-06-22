@@ -4,7 +4,13 @@
 
 from __future__ import unicode_literals
 from frappe.model.document import Document
+import frappe
 
 
 class Cluster(Document):
-	pass
+	def validate(self):
+		self.validate_monitoring_password()
+
+	def validate_monitoring_password(self):
+		if not self.monitoring_password:
+			self.monitoring_password = frappe.generate_hash()

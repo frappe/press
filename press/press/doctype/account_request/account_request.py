@@ -17,6 +17,8 @@ class AccountRequest(Document):
 			self.request_key = random_string(32)
 
 		self.ip_address = frappe.local.request_ip
+
+	def after_insert(self):
 		self.send_verification_email()
 
 	def too_many_requests_with_field(self, field_name, limits):

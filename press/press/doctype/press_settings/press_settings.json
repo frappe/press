@@ -100,7 +100,13 @@
   "enable_site_pooling",
   "standby_pool_size",
   "column_break_95",
-  "standby_queue_size"
+  "standby_queue_size",
+  "monitoring_section",
+  "monitor_server",
+  "monitor_token",
+  "telegram_alert_chat_id",
+  "column_break_100",
+  "log_server"
  ],
  "fields": [
   {
@@ -634,11 +640,43 @@
    "fieldname": "standby_queue_size",
    "fieldtype": "Int",
    "label": "Standby Queue Size"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "monitoring_section",
+   "fieldtype": "Section Break",
+   "label": "Monitoring"
+  },
+  {
+   "fieldname": "log_server",
+   "fieldtype": "Link",
+   "label": "Log Server",
+   "options": "Log Server"
+  },
+  {
+   "fieldname": "column_break_100",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "monitor_server",
+   "fieldtype": "Link",
+   "label": "Monitor Server",
+   "options": "Monitor Server"
+  },
+  {
+   "fieldname": "monitor_token",
+   "fieldtype": "Data",
+   "label": "Monitor Token"
+  },
+  {
+   "fieldname": "telegram_alert_chat_id",
+   "fieldtype": "Data",
+   "label": "Telegram Alert Chat ID"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2021-04-05 08:59:26.048234",
+ "modified": "2021-06-12 12:37:11.565962",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

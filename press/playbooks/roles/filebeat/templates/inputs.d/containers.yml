@@ -1,0 +1,5 @@
+- type: container
+  enabled: false
+  paths:
+    - /var/lib/docker/containers/*/*.log
+  stream: all

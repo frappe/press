@@ -99,7 +99,8 @@ class SiteDomain(Document):
 			self.create_remove_host_agent_request()
 		elif self.redirect_to_primary:
 			self.create_remove_host_agent_request()
-		self.remove_domain_from_site_config()
+		if self.status == "Active":
+			self.remove_domain_from_site_config()
 
 	def after_delete(self):
 		self.delete_tls_certificate()

@@ -1,0 +1,4 @@
+- type: log
+  enabled: true
+  paths:
+    - /var/log/*.log

@@ -1,4 +1,9 @@
 {
+    "experimental": true,
+    "icc": false,
+    "iptables": true,
+    "live-restore": true,
     "metrics-addr": "127.0.0.1:9323",
-    "experimental": true
+    "no-new-privileges": true,
+    "userland-proxy": false
 }

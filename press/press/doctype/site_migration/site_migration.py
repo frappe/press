@@ -201,8 +201,8 @@ class SiteMigration(Document):
 				"status": "Pending",
 			},
 			{
-				"step_title": self.activate_site_on_destination.__doc__,
-				"method_name": self.activate_site_on_destination.__name__,
+				"step_title": self.reset_site_status_on_destination.__doc__,
+				"method_name": self.reset_site_status_on_destination.__name__,
 				"status": "Pending",
 			},
 		]
@@ -247,8 +247,8 @@ class SiteMigration(Document):
 				"status": "Pending",
 			},
 			{
-				"step_title": self.activate_site_on_destination.__doc__,
-				"method_name": self.activate_site_on_destination.__name__,
+				"step_title": self.reset_site_status_on_destination.__doc__,
+				"method_name": self.reset_site_status_on_destination.__name__,
 				"status": "Pending",
 			},
 		]
@@ -258,6 +258,7 @@ class SiteMigration(Document):
 	def deactivate_site_on_source_server(self):
 		"""Deactivate site on source"""
 		site = frappe.get_doc("Site", self.site)
+		site.status_before_update = site.status
 		site.status = "Inactive"
 		site.save()
 		return site.update_site_config({"maintenance_mode": 1})
@@ -324,12 +325,19 @@ class SiteMigration(Document):
 		self.update_next_step_status("Success")
 		self.run_next_step()
 
-	def activate_site_on_destination(self):
-		"""Activate site on destination"""
+	def reset_site_status_on_destination(self):
+		"""Reset site status on destination"""
 		site = frappe.get_doc("Site", self.site)
-		site.status = "Active"
+		if site.status_before_update in ["Inactive", "Suspended"]:
+			self.update_next_step_status("Skipped")
+			self.run_next_step()
+			job = None
+		else:
+			job = site.update_site_config({"maintenance_mode": 0})
+		site.status = site.status_before_update
+		site.status_before_update = None
 		site.save()
-		return site.update_site_config({"maintenance_mode": 0})
+		return job
 
 	def activate_site_on_destination_proxy(self):
 		"""Activate site on destination proxy"""

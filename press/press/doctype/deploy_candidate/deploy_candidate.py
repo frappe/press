@@ -80,6 +80,7 @@ class DeployCandidate(Document):
 	def _build(self):
 		self.status = "Running"
 		self.build_start = now()
+		self.is_single_container = True
 		self.save()
 		frappe.db.commit()
 
@@ -203,10 +204,16 @@ class DeployCandidate(Document):
 			content = frappe.render_template(dockerfile_template, {"doc": self}, is_path=True)
 			f.write(content)
 
-		shutil.copy(
-			os.path.join(frappe.get_app_path("press", "docker"), "common_site_config.json"),
-			self.build_directory,
-		)
+		for target in ["common_site_config.json", "supervisord.conf"]:
+			shutil.copy(
+				os.path.join(frappe.get_app_path("press", "docker"), target), self.build_directory,
+			)
+
+		for target in ["config"]:
+			shutil.copytree(
+				os.path.join(frappe.get_app_path("press", "docker"), target),
+				os.path.join(self.build_directory, target),
+			)
 
 	def _run_docker_build(self):
 		environment = os.environ

@@ -1,0 +1,11 @@
+---
+- name: Setup Server Exporters
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: yes
+  roles:
+    - role: node_exporter
+    - role: cadvisor
+    - role: statsd_exporter
+    - role: monitoring_password

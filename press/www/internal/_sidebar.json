@@ -54,5 +54,14 @@
         "route": "/internal/servers/database-failover"
       }
     ]
+  },
+  {
+    "group_title": "Bench",
+    "group_items": [
+      {
+        "title": "Build a Bench",
+        "route": "/internal/bench/overview"
+      }
+    ]
   }
 ]
