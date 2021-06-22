@@ -78,9 +78,11 @@
 			v-model="appToChangeBranchOf"
 		>
 			<div>
-				<Badge v-if="this.$resources.branches.loading" color="yellow"
-					>Loading...</Badge
-				>
+				<Button
+					v-if="$resources.branches.loading"
+					:loading="true"
+					loadingText="Loading..."
+				></Button>
 				<div v-else>
 					<select class="block w-full form-select" v-model="selectedBranch">
 						<option v-for="branch in branchList()" :key="branch">
