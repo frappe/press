@@ -2,14 +2,13 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
-from __future__ import unicode_literals
-
 import frappe
+import requests
+
 from frappe.model.document import Document
+from frappe.model.naming import make_autoname
 from press.api.github import get_access_token
 from press.utils import log_error, get_current_team
-import requests
-from frappe.model.naming import make_autoname
 from press.overrides import get_permission_query_conditions_for_doctype
 
 
