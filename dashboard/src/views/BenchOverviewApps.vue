@@ -156,6 +156,14 @@ export default {
 				params: {
 					name: this.bench.name,
 					app: this.appToChangeBranchOf?.name
+				},
+				onError() {
+					this.appToChangeBranchOf = null;
+					this.$notify({
+						title: 'Error fetching branch list',
+						color: 'red',
+						icon: 'x'
+					});
 				}
 			};
 		},
