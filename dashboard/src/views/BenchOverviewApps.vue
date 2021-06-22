@@ -196,7 +196,8 @@ export default {
 						this.appToChangeBranchOf = app;
 						this.selectedBranch = app.branch;
 						this.$resources.branches.fetch();
-					}
+					},
+					condition: () => app.name != 'frappe'
 				},
 				{
 					label: 'Visit Repo',
