@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
-from __future__ import unicode_literals
 
-from datetime import datetime, timedelta
 import frappe
-from pathlib import Path
-from press.utils import get_current_team, log_error
 import requests
 import jwt
 import re
+
+from datetime import datetime, timedelta
+from pathlib import Path
+from press.utils import get_current_team, log_error
 from base64 import b64decode
 
 
@@ -203,10 +203,17 @@ def app(installation, owner, repository, branch):
 
 @frappe.whitelist()
 def branches(installation, owner, name):
-	token = get_access_token(installation)
-	headers = {
-		"Authorization": f"token {token}",
-	}
+	if installation:
+		token = get_access_token(installation)
+	else:
+		token = frappe.get_value("Press Settings", None, "github_access_token")
+
+	if token:
+		headers = {
+			"Authorization": f"token {token}",
+		}
+	else:
+		headers = {}
 
 	response = requests.get(
 		f"https://api.github.com/repos/{owner}/{name}/branches",
@@ -217,6 +224,6 @@ def branches(installation, owner, name):
 	if response.ok:
 		branches = response.json()
 	else:
-		branches = []
+		frappe.throw("Error fetching branch list from GitHub")
 	
 	return branches
