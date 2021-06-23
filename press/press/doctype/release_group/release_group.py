@@ -161,7 +161,7 @@ class ReleaseGroup(Document):
 		if source:
 			source = source[0]
 		else:
-			raise frappe.ValidationError("Release group app does not exist!")
+			frappe.throw("Release group app does not exist!")
 
 		return frappe.get_doc("App Source", source)
 
