@@ -311,7 +311,7 @@ def get_updates_between_current_and_next_apps(current_apps, next_apps):
 		current_branch = source.branch
 		if bench_app:
 			current_source = frappe.get_doc("App Source", bench_app.source)
-			will_branch_change = not (current_source.branch == source.branch)
+			will_branch_change = current_source.branch != source.branch
 			current_branch = current_source.branch
 
 		current_tag = (

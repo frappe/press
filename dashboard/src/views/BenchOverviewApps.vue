@@ -155,11 +155,7 @@ export default {
 		},
 		branches() {
 			return {
-				method: 'press.api.bench.branch_list',
-				params: {
-					name: this.bench.name,
-					app: this.appToChangeBranchOf?.name
-				}
+				method: 'press.api.bench.branch_list'
 			};
 		},
 		changeBranch() {
@@ -188,7 +184,10 @@ export default {
 					action: () => {
 						this.appToChangeBranchOf = app;
 						this.selectedBranch = app.branch;
-						this.$resources.branches.fetch();
+						this.$resources.branches.submit({
+							name: this.bench.name,
+							app: this.appToChangeBranchOf.name
+						});
 					},
 					condition: () => app.name != 'frappe'
 				},
@@ -224,7 +223,7 @@ export default {
 		changeBranch() {
 			this.$resources.changeBranch.submit({
 				name: this.bench.name,
-				app: this.appToChangeBranchOf?.name,
+				app: this.appToChangeBranchOf.name,
 				to_branch: this.selectedBranch
 			});
 		},
