@@ -32,15 +32,6 @@ class Team(Document):
 		self.validate_onboarding()
 		self.validate_disabled_team()
 
-	def after_insert(self):
-		self.create_stripe_customer()
-
-		# TODO: confirm the if cases <22-06-21, Balamurali M> #
-		if not self.via_erpnext:
-			self.create_upcoming_invoice()
-			if self.has_partner_account_on_erpnext_com():
-				self.enable_erpnext_partner_privileges()
-
 	def delete(self, force=False, workflow=False):
 		if force:
 			return super().delete()
@@ -83,6 +74,13 @@ class Team(Document):
 		team.insert(ignore_permissions=True, ignore_links=True)
 		team.append("team_members", {"user": user.name})
 		team.save(ignore_permissions=True)
+
+		team.create_stripe_customer()
+
+		if not team.via_erpnext:
+			team.create_upcoming_invoice()
+			if team.has_partner_account_on_erpnext_com():
+				team.enable_erpnext_partner_privileges()
 
 		return team
 
