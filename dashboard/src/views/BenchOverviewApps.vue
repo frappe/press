@@ -72,54 +72,24 @@
 			</p>
 		</Dialog>
 
-		<Dialog
-			v-if="appToChangeBranchOf"
-			:title="`Change branch for ${appToChangeBranchOf.title}`"
-			v-model="appToChangeBranchOf"
-		>
-			<div>
-				<Button
-					v-if="$resources.branches.loading"
-					:loading="true"
-					loadingText="Loading..."
-				></Button>
-				<div v-else-if="$resources.branches.error">
-					<ErrorMessage class="mt-2" :error="$resources.branches.error" />
-				</div>
-				<div v-else>
-					<select class="block w-full form-select" v-model="selectedBranch">
-						<option v-for="branch in branchList()" :key="branch">
-							{{ branch }}
-						</option>
-					</select>
-					<Button
-						class="mt-3"
-						type="primary"
-						:loading="this.$resources.changeBranch.loading"
-						:disabled="selectedBranch == appToChangeBranchOf.branch"
-						@click="changeBranch()"
-					>
-						Change Branch
-					</Button>
-				</div>
-			</div>
-		</Dialog>
+		<ChangeAppBranchDialog :bench="bench.name" :app="appToChangeBranchOf" />
 	</Card>
 </template>
 <script>
 import AppSourceSelector from '@/components/AppSourceSelector.vue';
+import ChangeAppBranchDialog from '@/components/ChangeAppBranchDialog.vue';
 export default {
 	name: 'BenchOverviewApps',
 	components: {
-		AppSourceSelector
+		AppSourceSelector,
+		ChangeAppBranchDialog
 	},
 	props: ['bench'],
 	data() {
 		return {
 			selectedApp: null,
 			showAddAppDialog: false,
-			appToChangeBranchOf: null,
-			selectedBranch: null
+			appToChangeBranchOf: null
 		};
 	},
 	resources: {
@@ -152,23 +122,6 @@ export default {
 			return {
 				method: 'press.api.bench.remove_app'
 			};
-		},
-		branches() {
-			return {
-				method: 'press.api.bench.branch_list'
-			};
-		},
-		changeBranch() {
-			return {
-				method: 'press.api.bench.change_branch',
-				onSuccess() {
-					window.location.reload();
-				},
-				onError() {
-					this.appToChangeBranchOf = null;
-					this.notifyError('Error changing branch for app');
-				}
-			};
 		}
 	},
 	methods: {
@@ -183,11 +136,6 @@ export default {
 					label: 'Change Branch',
 					action: () => {
 						this.appToChangeBranchOf = app;
-						this.selectedBranch = app.branch;
-						this.$resources.branches.submit({
-							name: this.bench.name,
-							app: this.appToChangeBranchOf.name
-						});
 					},
 					condition: () => app.name != 'frappe'
 				},
@@ -211,27 +159,6 @@ export default {
 						app: app.name
 					});
 				}
-			});
-		},
-		branchList() {
-			if (this.$resources.branches.loading || !this.$resources.branches.data) {
-				return [];
-			}
-
-			return this.$resources.branches.data.map(d => d.name);
-		},
-		changeBranch() {
-			this.$resources.changeBranch.submit({
-				name: this.bench.name,
-				app: this.appToChangeBranchOf.name,
-				to_branch: this.selectedBranch
-			});
-		},
-		notifyError(msg) {
-			this.$notify({
-				title: msg,
-				color: 'red',
-				icon: 'x'
 			});
 		}
 	}
