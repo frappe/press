@@ -5,7 +5,7 @@
 from __future__ import unicode_literals
 import frappe
 from frappe import _
-from frappe.website.utils import build_response
+from frappe.website.render import build_response
 from frappe.core.doctype.user.user import update_password
 from frappe.utils import get_url, random_string
 
