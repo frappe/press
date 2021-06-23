@@ -16,6 +16,8 @@ from press.utils.billing import (
 )
 from press.exceptions import FrappeioServerNotSet
 
+from press.press.doctype.account_request.account_request import AccountRequest
+
 
 class Team(Document):
 	def onload(self):
@@ -29,6 +31,15 @@ class Team(Document):
 
 		self.validate_onboarding()
 		self.validate_disabled_team()
+
+	def after_insert(self):
+		self.create_stripe_customer()
+
+		# TODO: confirm the if cases <22-06-21, Balamurali M> #
+		if not self.via_erpnext:
+			self.create_upcoming_invoice()
+			if self.has_partner_account_on_erpnext_com():
+				self.enable_erpnext_partner_privileges()
 
 	def delete(self, force=False, workflow=False):
 		if force:
@@ -44,6 +55,59 @@ class Team(Document):
 			" do so, pass force=True with this call. Else, pass workflow=True to raise"
 			" a Team Deletion Request to trigger complete team deletion process."
 		)
+
+	@classmethod
+	def create_new(
+		cls,
+		account_request: AccountRequest,
+		first_name: str,
+		last_name: str,
+		password: str = None,
+		country: str = None,
+		via_erpnext: bool = False,
+	):
+		"""Create new team along with user (user created first)."""
+		team = frappe.get_doc(
+			{
+				"doctype": "Team",
+				"name": account_request.team,
+				"user": account_request.email,
+				"country": country,
+				"enabled": 1,
+				"via_erpnext": via_erpnext,
+			}
+		)
+		user = team.create_user(
+			first_name, last_name, account_request.email, password, account_request.role
+		)
+		team.insert(ignore_permissions=True, ignore_links=True)
+		team.append("team_members", {"user": user.name})
+		team.save(ignore_permissions=True)
+
+		return team
+
+	@staticmethod
+	def create_user(first_name=None, last_name=None, email=None, password=None, role=None):
+		user = frappe.new_doc("User")
+		user.first_name = first_name
+		user.last_name = last_name
+		user.email = email
+		user.owner = email
+		user.new_password = password
+		user.append_roles(role)
+		user.flags.no_welcome_mail = True
+		user.save(ignore_permissions=True)
+		return user
+
+	def create_user_for_member(
+		self, first_name=None, last_name=None, email=None, password=None, role=None
+	):
+		user = frappe.db.get_value("User", email, ["name"], as_dict=True)
+		if not user:
+			self.create_user(first_name, last_name, email, password, role)
+
+		self.append("team_members", {"user": user.name})
+		self.save(ignore_permissions=True)
 
 	def set_billing_name(self):
 		if not self.billing_name:
@@ -192,25 +256,6 @@ class Team(Document):
 			self.free_credits_allocated = 1
 			self.save()
 			self.reload()
-
-	def create_user_for_member(
-		self, first_name=None, last_name=None, email=None, password=None, role=None
-	):
-		user = frappe.db.get_value("User", email, ["name"], as_dict=True)
-		if not user:
-			user = frappe.new_doc("User")
-			user.first_name = first_name
-			user.last_name = last_name
-			user.email = email
-			user.owner = email
-			user.new_password = password
-			user.append_roles(role)
-			user.flags.no_welcome_mail = True
-			user.save(ignore_permissions=True)
-
-		self.append("team_members", {"user": user.name})
-
-		self.save(ignore_permissions=True)
 
 	def has_member(self, user):
 		return user in self.get_user_list()
