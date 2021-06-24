@@ -1,14 +1,14 @@
 # Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and Contributors
 # Proprietary License. See license.txt
 
-from __future__ import unicode_literals
-
-from press.press.doctype.site.erpnext_site import ERPNextSite, get_erpnext_domain
 import frappe
 from frappe.geo.country_info import get_country_timezone_info
+
 from press.api.account import get_account_request_from_key
-from press.utils.billing import get_erpnext_com_connection
+from press.press.doctype.site.erpnext_site import ERPNextSite, get_erpnext_domain
 from press.press.doctype.site.pool import get as get_pooled_site
+from press.press.doctype.team.team import Team
+from press.utils.billing import get_erpnext_com_connection
 
 
 @frappe.whitelist(allow_guest=True)
@@ -80,27 +80,16 @@ def setup_account(key, business_data=None):
 	account_request.update(business_data)
 	account_request.save(ignore_permissions=True)
 
-	team = account_request.team
 	email = account_request.email
-	role = account_request.role
 
 	if not frappe.db.exists("Team", email):
-		team_doc = frappe.get_doc(
-			{
-				"doctype": "Team",
-				"name": team,
-				"user": email,
-				"country": account_request.country,
-				"enabled": 1,
-				"via_erpnext": 1,
-			}
+		team_doc = Team.create_new(
+			account_request,
+			account_request.first_name,
+			account_request.last_name,
+			country=account_request.country,
+			via_erpnext=True,
 		)
-		team_doc.insert(ignore_permissions=True, ignore_links=True)
-
-		team_doc.create_user_for_member(
-			account_request.first_name, account_request.last_name, email, role=role
-		)
-		team_doc.create_stripe_customer()
 	else:
 		team_doc = frappe.get_doc("Team", email)
 
