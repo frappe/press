@@ -2,13 +2,12 @@
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
 
-from __future__ import unicode_literals
 import frappe
+
 from frappe import _
-from frappe.website.render import build_response
+from frappe.website.utils import build_response
 from frappe.core.doctype.user.user import update_password
 from frappe.utils import get_url, random_string
-
 from press.press.doctype.team.team import Team, get_team_members
 from press.utils import get_country_info, get_current_team
 
