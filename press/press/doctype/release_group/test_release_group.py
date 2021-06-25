@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
-from __future__ import unicode_literals
 
 import unittest
-from unittest.mock import patch
-
 import frappe
 
+from unittest.mock import patch
+from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
-from press.press.doctype.app.app import new_app
+from press.press.doctype.app.app import App, new_app
 from press.press.doctype.app_source.app_source import AppSource
 from press.press.doctype.app_source.test_app_source import create_test_app_source
 from press.press.doctype.frappe_version.test_frappe_version import (
@@ -21,7 +20,7 @@ from press.press.doctype.release_group.release_group import (
 )
 
 
-def create_test_release_group(app: str) -> ReleaseGroup:
+def create_test_release_group(app: App) -> ReleaseGroup:
 	"""
 	Create Release Group doc.
 
@@ -156,3 +155,43 @@ class TestReleaseGroup(unittest.TestCase):
 			[{"app": source.app, "source": source.name}],
 			team="Administrator",
 		)
+
+	def test_branch_change_already_on_branch(self):
+		app = create_test_app()
+		rg = create_test_release_group(app)
+		with self.assertRaises(frappe.ValidationError):
+			rg.change_app_branch("frappe", "master")
+
+	def test_branch_change_app_source_exists(self):
+		app = create_test_app()
+		rg = create_test_release_group(app)
+
+		current_app_source = frappe.get_doc("App Source", rg.apps[0].source)
+		app_source = create_test_app_source(
+			current_app_source.versions[0].version,
+			app,
+			current_app_source.repository_url,
+			"develop",
+		)
+
+		rg.change_app_branch(app.name, "develop")
+		rg.reload()
+
+		# Source must be set to the available `app_source` for `app`
+		self.assertEqual(rg.apps[0].source, app_source.name)
+
+	def test_branch_change_app_source_does_not_exist(self):
+		app = create_test_app()
+		rg = create_test_release_group(app)
+		previous_app_source = frappe.get_doc("App Source", rg.apps[0].source)
+
+		rg.change_app_branch(app.name, "develop")
+		rg.reload()
+
+		new_app_source = frappe.get_doc("App Source", rg.apps[0].source)
+		self.assertEqual(new_app_source.branch, "develop")
+		self.assertEqual(
+			new_app_source.versions[0].version, previous_app_source.versions[0].version
+		)
+		self.assertEqual(new_app_source.repository_url, previous_app_source.repository_url)
+		self.assertEqual(new_app_source.app, app.name)

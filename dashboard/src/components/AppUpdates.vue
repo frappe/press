@@ -40,11 +40,19 @@ export default {
 	props: ['apps'],
 	methods: {
 		deployFrom(app) {
+			if (app.will_branch_change) {
+				return app.current_branch;
+			}
+
 			return app.current_hash
 				? app.current_tag || app.current_hash.slice(0, 7)
 				: null;
 		},
 		deployTo(app) {
+			if (app.will_branch_change) {
+				return app.branch;
+			}
+			
 			return app.next_tag || app.next_hash.slice(0, 7);
 		}
 	},
