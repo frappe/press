@@ -9,7 +9,9 @@ from unittest.mock import patch
 import frappe
 
 
-def create_test_plan(document_type: str):
+def create_test_plan(
+	document_type: str, price_usd: float = 10.0, price_inr: float = 750.0
+):
 	"""Create test Plan doc."""
 	name = frappe.mock("name")
 	return frappe.get_doc(
@@ -17,8 +19,9 @@ def create_test_plan(document_type: str):
 			"name": f"Test 10 dollar plan {name}",
 			"doctype": "Plan",
 			"document_type": document_type,
-			"price_inr": 750.0,
-			"price_usd": 10.0,
+			"price_inr": price_inr,
+			"price_usd": price_usd,
+			"cpu_time_per_day": 100
 		}
 	).insert(ignore_if_duplicate=True)
 
