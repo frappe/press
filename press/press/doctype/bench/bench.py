@@ -178,6 +178,31 @@ class Bench(Document):
 				traceback.print_exc()
 				frappe.db.rollback()
 
+	@property
+	def work_load(self) -> float:
+		"""
+		Score representing load on the bench put on by sites.
+
+		(sum of plans) / 10
+		Because plan price gives a number representing the "size" of a site
+		more or less accurately.
+		"""
+		return frappe.db.sql_list(
+			f"""
+			SELECT SUM(plan.price_usd) / 10
+			FROM tabSite site
+
+			JOIN tabSubscription subscription
+			ON site.name = subscription.document_name
+
+			JOIN tabPlan plan
+			ON subscription.plan = plan.name
+
+			WHERE site.bench = "{self.name}"
+				AND site.status != "Archived"
+				"""
+		)[0]
+
 
 def process_new_bench_job_update(job):
 	bench_status = frappe.get_value("Bench", job.bench, "status")
@@ -266,16 +291,17 @@ def scale_workers():
 		filters={"status": "Active", "auto_scale_workers": True},
 	)
 	for bench in benches:
-		site_count = frappe.db.count("Site", {"bench": bench.name, "status": "Active"})
-		if site_count <= 25:
+		work_load = bench.work_load
+
+		if work_load <= 25:
 			background_workers, gunicorn_workers = 1, 2
-		elif site_count <= 50:
+		elif work_load <= 50:
 			background_workers, gunicorn_workers = 2, 4
-		elif site_count <= 75:
+		elif work_load <= 75:
 			background_workers, gunicorn_workers = 3, 6
-		elif site_count <= 100:
+		elif work_load <= 100:
 			background_workers, gunicorn_workers = 4, 8
-		elif site_count <= 150:
+		elif work_load <= 150:
 			background_workers, gunicorn_workers = 6, 8
 		else:
 			background_workers, gunicorn_workers = 8, 8
