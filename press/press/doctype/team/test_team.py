@@ -26,7 +26,9 @@ class TestTeam(unittest.TestCase):
 	def test_create_new_method_works(self):
 		account_request = create_test_account_request("testsubdomain")
 		team_count_before = frappe.db.count("Team")
-		with patch.object(Team, "create_stripe_customer"):
+		with patch.object(Team, "create_stripe_customer"), patch.object(
+			Team, "has_partner_account_on_erpnext_com"
+		):
 			Team.create_new(
 				account_request, "first name", "last name", "test@email.com", country="India"
 			)
@@ -35,7 +37,9 @@ class TestTeam(unittest.TestCase):
 
 	def test_new_team_has_correct_billing_name(self):
 		account_request = create_test_account_request("testsubdomain")
-		with patch.object(Team, "create_stripe_customer"):
+		with patch.object(Team, "create_stripe_customer"), patch.object(
+			Team, "has_partner_account_on_erpnext_com"
+		):
 			team = Team.create_new(
 				account_request, "first name", "last name", "test@email.com", country="India"
 			)

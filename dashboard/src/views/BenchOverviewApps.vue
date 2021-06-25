@@ -71,20 +71,25 @@
 				</Link>
 			</p>
 		</Dialog>
+
+		<ChangeAppBranchDialog :bench="bench.name" :app="appToChangeBranchOf" />
 	</Card>
 </template>
 <script>
 import AppSourceSelector from '@/components/AppSourceSelector.vue';
+import ChangeAppBranchDialog from '@/components/ChangeAppBranchDialog.vue';
 export default {
 	name: 'BenchOverviewApps',
 	components: {
-		AppSourceSelector
+		AppSourceSelector,
+		ChangeAppBranchDialog
 	},
 	props: ['bench'],
 	data() {
 		return {
 			selectedApp: null,
-			showAddAppDialog: false
+			showAddAppDialog: false,
+			appToChangeBranchOf: null
 		};
 	},
 	resources: {
@@ -125,6 +130,13 @@ export default {
 				{
 					label: 'Remove App',
 					action: () => this.confirmRemoveApp(app),
+					condition: () => app.name != 'frappe'
+				},
+				{
+					label: 'Change Branch',
+					action: () => {
+						this.appToChangeBranchOf = app;
+					},
 					condition: () => app.name != 'frappe'
 				},
 				{

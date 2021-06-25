@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
-from __future__ import unicode_literals
 
 import unittest
-
 import frappe
 
 from press.press.doctype.app_source.app_source import AppSource
