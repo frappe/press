@@ -185,14 +185,12 @@ class Bench(Document):
 		"""
 		Score representing load on the bench put on by sites.
 
-		= sum of plans / 10
-
-		Because plan price gives a number representing the "size" of a site
-		more or less accurately.
+		= sum of cpu time per day
 		"""
 		return frappe.db.sql_list(
+			# minimum plan is taken as 10
 			f"""
-			SELECT SUM(plan.price_usd) / 10
+			SELECT SUM(plan.cpu_time_per_day)
 			FROM tabSite site
 
 			JOIN tabSubscription subscription
