@@ -4,14 +4,16 @@
 
 from __future__ import unicode_literals
 
+import json
+from typing import List
+
 import frappe
 from frappe.model.document import Document
-import json
-from press.agent import Agent
-from press.utils import log_error
 from frappe.model.naming import append_number_if_name_exists
 
+from press.agent import Agent
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.utils import log_error
 
 
 class Bench(Document):
@@ -183,7 +185,8 @@ class Bench(Document):
 		"""
 		Score representing load on the bench put on by sites.
 
-		(sum of plans) / 10
+		= sum of plans / 10
+
 		Because plan price gives a number representing the "size" of a site
 		more or less accurately.
 		"""
@@ -285,7 +288,7 @@ def archive_obsolete_benches():
 def scale_workers():
 	# This method only operates on one bench at a time to avoid command collision
 	# TODO: Fix this in agent. Lock commands that can't be run simultaneously
-	benches = frappe.get_all(
+	benches: List[Bench] = frappe.get_all(
 		"Bench",
 		fields=["name", "candidate", "background_workers", "gunicorn_workers"],
 		filters={"status": "Active", "auto_scale_workers": True},
