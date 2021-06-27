@@ -200,7 +200,7 @@ class Bench(Document):
 			ON subscription.plan = plan.name
 
 			WHERE site.bench = "{self.name}"
-				AND site.status != "Archived"
+				AND site.status = "Active"
 				"""
 		)[0]
 
@@ -294,18 +294,22 @@ def scale_workers():
 	for bench in benches:
 		work_load = bench.work_load
 
-		if work_load <= 25:
+		if work_load <= 5:
 			background_workers, gunicorn_workers = 1, 2
-		elif work_load <= 50:
+		elif work_load <= 10:
 			background_workers, gunicorn_workers = 2, 4
-		elif work_load <= 75:
+		elif work_load <= 20:
 			background_workers, gunicorn_workers = 3, 6
-		elif work_load <= 100:
+		elif work_load <= 50:
 			background_workers, gunicorn_workers = 4, 8
-		elif work_load <= 150:
+		elif work_load <= 100:
 			background_workers, gunicorn_workers = 6, 8
-		else:
+		elif work_load <= 250:
 			background_workers, gunicorn_workers = 8, 8
+		elif work_load <= 500:
+			background_workers, gunicorn_workers = 8, 16
+		else:
+			background_workers, gunicorn_workers = 16, 32
 
 		if (bench.background_workers, bench.gunicorn_workers) != (
 			background_workers,
