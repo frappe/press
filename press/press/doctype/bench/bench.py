@@ -294,11 +294,11 @@ def scale_workers():
 	for bench in benches:
 		work_load = bench.work_load
 
-		if work_load <= 5:
+		if work_load <= 10:
 			background_workers, gunicorn_workers = 1, 2
-		elif work_load <= 10:
-			background_workers, gunicorn_workers = 2, 4
 		elif work_load <= 20:
+			background_workers, gunicorn_workers = 2, 4
+		elif work_load <= 30:
 			background_workers, gunicorn_workers = 3, 6
 		elif work_load <= 50:
 			background_workers, gunicorn_workers = 4, 8
