@@ -10,7 +10,10 @@ import frappe
 
 
 def create_test_plan(
-	document_type: str, price_usd: float = 10.0, price_inr: float = 750.0
+	document_type: str,
+	price_usd: float = 10.0,
+	price_inr: float = 750.0,
+	cpu_time: int = 1,
 ):
 	"""Create test Plan doc."""
 	name = frappe.mock("name")
@@ -21,7 +24,7 @@ def create_test_plan(
 			"document_type": document_type,
 			"price_inr": price_inr,
 			"price_usd": price_usd,
-			"cpu_time_per_day": 100
+			"cpu_time_per_day": cpu_time,
 		}
 	).insert(ignore_if_duplicate=True)
 
