@@ -2,16 +2,13 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
-from __future__ import unicode_literals
-
+import frappe
 import functools
 import json
-from datetime import datetime, timedelta
-from urllib.parse import urljoin
-
 import requests
 
-import frappe
+from datetime import datetime, timedelta
+from urllib.parse import urljoin
 
 
 def log_error(title, **kwargs):
@@ -224,13 +221,9 @@ class RemoteFrappeSite:
 			return
 
 		# check if database is > 500MiB and show alert
-		database_size_in_mb = (
-			float(
-				requests.head(self.backup_links["database"]).headers.get("Content-Length", 999)
-			)
-			/ 1024
-			* 2
-		)
+		database_size_in_mb = float(
+			requests.head(self.backup_links["database"]).headers.get("Content-Length", 999)
+		) / (1024 ** 2)
 
 		if database_size_in_mb > 500:
 			frappe.throw(
