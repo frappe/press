@@ -2,16 +2,13 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
-from __future__ import unicode_literals
-
+import frappe
 import functools
 import json
-from datetime import datetime, timedelta
-from urllib.parse import urljoin
-
 import requests
 
-import frappe
+from datetime import datetime, timedelta
+from urllib.parse import urljoin
 
 
 def log_error(title, **kwargs):
