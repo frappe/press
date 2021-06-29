@@ -4,14 +4,16 @@
 
 from __future__ import unicode_literals
 
+import json
+from typing import List
+
 import frappe
 from frappe.model.document import Document
-import json
-from press.agent import Agent
-from press.utils import log_error
 from frappe.model.naming import append_number_if_name_exists
 
+from press.agent import Agent
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.utils import log_error
 
 
 class Bench(Document):
@@ -178,6 +180,30 @@ class Bench(Document):
 				traceback.print_exc()
 				frappe.db.rollback()
 
+	@property
+	def work_load(self) -> float:
+		"""
+		Score representing load on the bench put on by sites.
+
+		= sum of cpu time per day
+		"""
+		return frappe.db.sql_list(
+			# minimum plan is taken as 10
+			f"""
+			SELECT SUM(plan.cpu_time_per_day)
+			FROM tabSite site
+
+			JOIN tabSubscription subscription
+			ON site.name = subscription.document_name
+
+			JOIN tabPlan plan
+			ON subscription.plan = plan.name
+
+			WHERE site.bench = "{self.name}"
+				AND site.status = "Active"
+				"""
+		)[0]
+
 
 def process_new_bench_job_update(job):
 	bench_status = frappe.get_value("Bench", job.bench, "status")
@@ -260,25 +286,30 @@ def archive_obsolete_benches():
 def scale_workers():
 	# This method only operates on one bench at a time to avoid command collision
 	# TODO: Fix this in agent. Lock commands that can't be run simultaneously
-	benches = frappe.get_all(
+	benches: List[Bench] = frappe.get_all(
 		"Bench",
 		fields=["name", "candidate", "background_workers", "gunicorn_workers"],
 		filters={"status": "Active", "auto_scale_workers": True},
 	)
 	for bench in benches:
-		site_count = frappe.db.count("Site", {"bench": bench.name, "status": "Active"})
-		if site_count <= 25:
+		work_load = bench.work_load
+
+		if work_load <= 10:
 			background_workers, gunicorn_workers = 1, 2
-		elif site_count <= 50:
+		elif work_load <= 20:
 			background_workers, gunicorn_workers = 2, 4
-		elif site_count <= 75:
+		elif work_load <= 30:
 			background_workers, gunicorn_workers = 3, 6
-		elif site_count <= 100:
+		elif work_load <= 50:
 			background_workers, gunicorn_workers = 4, 8
-		elif site_count <= 150:
-			background_workers, gunicorn_workers = 6, 8
+		elif work_load <= 100:
+			background_workers, gunicorn_workers = 6, 12
+		elif work_load <= 250:
+			background_workers, gunicorn_workers = 8, 16
+		elif work_load <= 500:
+			background_workers, gunicorn_workers = 16, 32
 		else:
-			background_workers, gunicorn_workers = 8, 8
+			background_workers, gunicorn_workers = 24, 48
 
 		if (bench.background_workers, bench.gunicorn_workers) != (
 			background_workers,
