@@ -8,6 +8,21 @@ import unittest
 from unittest.mock import patch
 
 
+def create_test_subscription(
+	document_name: str, plan: str, team: str, document_type: str = "Site"
+):
+
+	return frappe.get_doc(
+		{
+			"doctype": "Subscription",
+			"document_type": document_type,
+			"document_name": document_name,
+			"team": team,
+			"plan": plan,
+		}
+	).insert(ignore_if_duplicate=True)
+
+
 class TestSubscription(unittest.TestCase):
 	def test_subscription_daily(self):
 		email = "testuser@example.com"
