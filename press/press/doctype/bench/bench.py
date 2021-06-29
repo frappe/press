@@ -303,13 +303,13 @@ def scale_workers():
 		elif work_load <= 50:
 			background_workers, gunicorn_workers = 4, 8
 		elif work_load <= 100:
-			background_workers, gunicorn_workers = 6, 8
+			background_workers, gunicorn_workers = 6, 12
 		elif work_load <= 250:
-			background_workers, gunicorn_workers = 8, 8
-		elif work_load <= 500:
 			background_workers, gunicorn_workers = 8, 16
-		else:
+		elif work_load <= 500:
 			background_workers, gunicorn_workers = 16, 32
+		else:
+			background_workers, gunicorn_workers = 24, 48
 
 		if (bench.background_workers, bench.gunicorn_workers) != (
 			background_workers,
