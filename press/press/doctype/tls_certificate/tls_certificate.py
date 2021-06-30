@@ -70,7 +70,7 @@ class TLSCertificate(Document):
 	def _update_secondary_wildcard_domains(self):
 		"""Install secondary wildcard domains on proxies."""
 		proxies = frappe.get_all(
-			"Proxy Server", {"status": "Active", "domain": ("!=", self.domain)}
+			"Proxy Server Domain", {"domain": self.domain}, pluck="parent"
 		)
 		for proxy_name in proxies:
 			proxy = frappe.get_doc("Proxy Server", proxy_name)
