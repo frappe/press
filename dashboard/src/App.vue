@@ -9,7 +9,7 @@
 					<Navbar v-if="$auth.isLoggedIn" />
 					<div class="container mx-auto">
 						<keep-alive
-							:include="['Sites', 'Benches', 'Site', 'Bench', 'Account']"
+							:include="['Sites', 'Benches', 'Site', 'Bench', 'Developer', 'Account']"
 						>
 							<router-view />
 						</keep-alive>
