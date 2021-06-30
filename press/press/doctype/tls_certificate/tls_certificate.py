@@ -68,11 +68,21 @@ class TLSCertificate(Document):
 			self._update_secondary_wildcard_domains()
 
 	def _update_secondary_wildcard_domains(self):
-		"""Install secondary wildcard domains on proxies."""
-		proxies = frappe.get_all(
+		"""
+		Install secondary wildcard domains on proxies.
+
+		Skip install on servers using the same domain for it's own hostname.
+		"""
+		proxies_containing_domain = frappe.get_all(
 			"Proxy Server Domain", {"domain": self.domain}, pluck="parent"
 		)
-		for proxy_name in proxies:
+		proxies_using_domain = frappe.get_all(
+			"Proxy Server", {"domain": self.domain}, pluck="name"
+		)
+		proxies_containing_domain = list(
+			set(proxies_containing_domain).difference(set(proxies_using_domain))
+		)
+		for proxy_name in proxies_containing_domain:
 			proxy = frappe.get_doc("Proxy Server", proxy_name)
 			proxy.setup_wildcard_hosts()
 
