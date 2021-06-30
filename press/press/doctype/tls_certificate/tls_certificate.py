@@ -79,9 +79,7 @@ class TLSCertificate(Document):
 		proxies_using_domain = frappe.get_all(
 			"Proxy Server", {"domain": self.domain}, pluck="name"
 		)
-		proxies_containing_domain = list(
-			set(proxies_containing_domain).difference(set(proxies_using_domain))
-		)
+		proxies_containing_domain = set(proxies_containing_domain) - set(proxies_using_domain)
 		for proxy_name in proxies_containing_domain:
 			proxy = frappe.get_doc("Proxy Server", proxy_name)
 			proxy.setup_wildcard_hosts()
