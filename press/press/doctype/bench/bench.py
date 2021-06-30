@@ -5,7 +5,6 @@
 from __future__ import unicode_literals
 
 import json
-from typing import List
 
 import frappe
 from frappe.model.document import Document
@@ -286,12 +285,11 @@ def archive_obsolete_benches():
 def scale_workers():
 	# This method only operates on one bench at a time to avoid command collision
 	# TODO: Fix this in agent. Lock commands that can't be run simultaneously
-	benches: List[Bench] = frappe.get_all(
-		"Bench",
-		fields=["name", "candidate", "background_workers", "gunicorn_workers"],
-		filters={"status": "Active", "auto_scale_workers": True},
+	benches = frappe.get_all(
+		"Bench", filters={"status": "Active", "auto_scale_workers": True}, pluck="name"
 	)
-	for bench in benches:
+	for bench_name in benches:
+		bench = frappe.get_doc("Bench", bench_name)
 		work_load = bench.work_load
 
 		if work_load <= 10:
