@@ -201,7 +201,7 @@ class Bench(Document):
 			WHERE site.bench = "{self.name}"
 				AND site.status = "Active"
 				"""
-		)[0]
+		)[0] or 0
 
 
 def process_new_bench_job_update(job):
