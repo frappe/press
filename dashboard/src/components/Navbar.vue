@@ -148,6 +148,13 @@ export default {
 					}
 				},
 				{
+					label: 'Developer',
+					route: '/developer',
+					highlight: () => {
+						return this.$route.fullPath.endsWith('/developer');
+					}
+				},
+				{
 					label: 'Settings',
 					route: '/account'
 				}
