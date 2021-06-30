@@ -13,6 +13,7 @@
   "column_break_3",
   "category",
   "status",
+  "developer",
   "published",
   "section_break_5",
   "description",
@@ -128,6 +129,13 @@
   {
    "fieldname": "column_break_16",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "developer",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Developer",
+   "options": "Team"
   }
  ],
  "has_web_view": 1,
@@ -135,7 +143,7 @@
  "index_web_pages_for_search": 1,
  "is_published_field": "published",
  "links": [],
- "modified": "2021-01-27 16:08:25.548722",
+ "modified": "2021-06-30 14:04:10.094936",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Marketplace App",
