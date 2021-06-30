@@ -8,6 +8,7 @@ import siteRoutes from './site';
 import benchRoutes from './bench';
 import accountRoute from './account';
 import authRoutes from './auth';
+import developerRoutes from './developer';
 
 Vue.use(VueRouter);
 
@@ -26,6 +27,7 @@ const routes = [
 	...authRoutes,
 	...siteRoutes,
 	...benchRoutes,
+	...developerRoutes,
 	accountRoute
 ];
 
