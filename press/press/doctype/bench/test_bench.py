@@ -9,7 +9,7 @@ from unittest.mock import Mock, patch
 import frappe
 
 from press.press.doctype.agent_job.agent_job import AgentJob
-from press.press.doctype.bench.bench import Bench
+from press.press.doctype.bench.bench import Bench, scale_workers
 from press.press.doctype.plan.test_plan import create_test_plan
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.subscription.test_subscription import create_test_subscription
@@ -57,3 +57,12 @@ class TestBench(unittest.TestCase):
 		self.assertGreater(bench2.work_load, bench1.work_load)
 		self.assertGreater(bench4.work_load, bench3.work_load)
 		self.assertGreater(bench4.work_load, bench2.work_load)
+
+	def test_workers_get_allocated(self):
+		bench = self._create_bench_with_n_sites_with_cpu_time(3, 5)
+		workers_before = (bench.background_workers, bench.gunicorn_workers)  # 1, 2
+		scale_workers()
+		bench.reload()
+		workers_after = (bench.background_workers, bench.gunicorn_workers)
+		self.assertGreater(workers_after[1], workers_before[1])
+		self.assertGreater(workers_after[0], workers_before[0])
