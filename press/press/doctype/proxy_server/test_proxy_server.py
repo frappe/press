@@ -2,15 +2,23 @@
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
 from __future__ import unicode_literals
+from press.press.doctype.proxy_server.proxy_server import ProxyServer
+
+import unittest
+from typing import Dict, List
+from unittest.mock import Mock, patch
 
 import frappe
-import unittest
+
 from press.press.doctype.press_settings.test_press_settings import (
 	create_test_press_settings,
 )
 
 
-def create_test_proxy_server():
+@patch.object(ProxyServer, "validate", new=Mock())
+def create_test_proxy_server(
+	hostname: str = "n", domain: str = "fc.dev", domains: List[Dict[str, str]] = []
+):
 	"""Create test Proxy Server doc"""
 	create_test_press_settings()
 	return frappe.get_doc(
@@ -20,8 +28,10 @@ def create_test_proxy_server():
 			"ip": frappe.mock("ipv4"),
 			"private_ip": frappe.mock("ipv4_private"),
 			"agent_password": frappe.mock("password"),
-			"hostname": "n",
+			"hostname": hostname,
 			"cluster": "Default",
+			"domain": domain,
+			"domains": domains,
 		}
 	).insert(ignore_if_duplicate=True)
 
