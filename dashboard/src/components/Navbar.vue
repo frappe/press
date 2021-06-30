@@ -169,7 +169,7 @@ export default {
 					label: 'Developer',
 					route: '/developer',
 					highlight: () => {
-						return this.$route.fullPath.endsWith('/developer');
+						return this.$route.fullPath.includes('/developer');
 					},
 					condition: () => this.$account.team?.is_developer
 				},
