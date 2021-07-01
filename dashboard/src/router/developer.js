@@ -30,11 +30,12 @@ export default [
 			{
 				name: 'DeveloperAppOverview',
 				path: 'overview',
-				component: () => import('../views/SiteOverview.vue')
+				component: () => import('../views/DeveloperAppOverview.vue')
 			},
 			{
+				name: 'DeveloperAppAnalytics',
 				path: 'analytics',
-				component: () => import('../views/SiteCharts.vue')
+				component: () => import('../views/DeveloperAppAnalytics.vue')
 			}
 		]
 	}

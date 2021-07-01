@@ -62,6 +62,23 @@ export default {
 			};
 		}
 	},
+	activated() {
+		if (this.app) {
+			this.routeToGeneral();
+		} else {
+			this.$resources.app.once('onSuccess', () => {
+				this.routeToGeneral();
+			});
+		}
+	},
+	methods: {
+		routeToGeneral() {
+			if (this.$route.matched.length === 1) {
+				let path = this.$route.fullPath;
+				this.$router.replace(`${path}/overview`);
+			}
+		}
+	},
 	computed: {
 		app() {
 			return this.$resources.app.data;
