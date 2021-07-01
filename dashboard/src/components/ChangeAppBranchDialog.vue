@@ -3,6 +3,7 @@
 		v-if="app"
 		:show="bench && app"
 		:title="`Change branch for ${app.title}`"
+		v-on:close="dialogClosed"
 	>
 		<div>
 			<Button
@@ -86,6 +87,10 @@ export default {
 				app: this.app.name,
 				to_branch: this.selectedBranch
 			});
+		},
+		dialogClosed() {
+			this.$emit('update:app', null);
+			this.$resources.changeBranch.reset();
 		}
 	}
 };
