@@ -13,7 +13,7 @@ def get_apps():
 	apps = frappe.get_all(
 		"Marketplace App",
 		fields=["name", "title", "image", "app", "status", "description"],
-		filters={"developer": team},
+		filters={"team": team},
 	)
 
 	return apps
