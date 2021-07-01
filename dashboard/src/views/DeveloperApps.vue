@@ -43,7 +43,7 @@ export default {
 	},
 	methods: {
 		routeToAppPage(appName) {
-			this.$router.replace('/developer/profile');
+			this.$router.push(`/developer/apps/${appName}`);
 		}
 	}
 };

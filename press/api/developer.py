@@ -17,3 +17,10 @@ def get_apps():
 	)
 
 	return apps
+
+
+@frappe.whitelist()
+def get_app(name):
+	"""Return the `Marketplace App` document with name"""
+	app = frappe.get_doc("Marketplace App", name)
+	return app
