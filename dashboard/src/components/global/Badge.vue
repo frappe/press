@@ -25,7 +25,8 @@ export default {
 					Installing: 'yellow',
 					Rejected: 'red',
 					'Update Available': 'blue',
-					'Awaiting Approval': 'yellow'
+					'Awaiting Approval': 'yellow',
+					Published: 'green'
 				}[this.status];
 			}
 			return {
