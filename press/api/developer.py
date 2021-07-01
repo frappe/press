@@ -11,7 +11,9 @@ def get_apps():
 	"""Return list of apps developed by the current team"""
 	team = get_current_team()
 	apps = frappe.get_all(
-		"Marketplace App", fields=["title", "name"], filters={"developer": team}
+		"Marketplace App",
+		fields=["name", "title", "image", "app", "status", "description"],
+		filters={"developer": team},
 	)
 
 	return apps
