@@ -2,8 +2,11 @@
 	<div class="mt-8">
 		<div class="px-4 sm:px-8">
 			<div class="pb-3">
-				<div>
+				<div class="flex items-center justify-between">
 					<h1 class="text-3xl font-bold">Manage Apps</h1>
+					<Button route="/dashboard" type="primary" iconLeft="plus">
+						Create App
+					</Button>
 				</div>
 			</div>
 		</div>
@@ -30,14 +33,14 @@ export default {
 			{ label: 'Profile', route: '/developer/profile' }
 		]
 	}),
-    activated() {
+	activated() {
 		if (this.$route.matched.length === 1) {
 			let path = this.$route.fullPath;
 			this.$router.replace(`${path}/apps`);
 		}
 	},
 	beforeRouteUpdate(to, from, next) {
-        console.log(to, from, next);
+		console.log(to, from, next);
 		if (to.path == '/developer') {
 			next('/developer/apps');
 		} else {
