@@ -12,9 +12,10 @@
 					:title="app.title"
 					:key="app.name"
 					:image="app.image"
+					@click.native="routeToAppPage(app.name)"
 				>
 					<template #secondary-content>
-						<span class="text-base">
+						<span class="text-base text-gray-600">
 							{{ app.description }}
 						</span>
 					</template>
@@ -38,6 +39,11 @@ export default {
 				method: 'press.api.developer.get_apps',
 				auto: true
 			};
+		}
+	},
+	methods: {
+		routeToAppPage(appName) {
+			this.$router.replace('/developer/profile');
 		}
 	}
 };
