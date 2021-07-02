@@ -11,7 +11,7 @@ import frappe
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.bench.bench import Bench, scale_workers
 from press.press.doctype.plan.test_plan import create_test_plan
-from press.press.doctype.site.test_site import create_test_site
+from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.subscription.test_subscription import create_test_subscription
 
 
@@ -66,3 +66,6 @@ class TestBench(unittest.TestCase):
 		workers_after = (bench.background_workers, bench.gunicorn_workers)
 		self.assertGreater(workers_after[1], workers_before[1])
 		self.assertGreater(workers_after[0], workers_before[0])
+
+	def test_benches_with_no_sites_are_handled(self):
+		create_test_bench()
