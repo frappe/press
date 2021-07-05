@@ -17,9 +17,9 @@ frappe.ui.form.on('Deploy Candidate', {
 
 		[
 			[__('Build'), 'build'],
-			[__('Deploy to Staging'), 'deploy_to_staging']
-			[__('Promote to Production'), 'promote_to_production']
-			[__('Deploy to Production'), 'deploy_to_production']
+			[__('Deploy to Staging'), 'deploy_to_staging'],
+			[__('Promote to Production'), 'promote_to_production'],
+			[__('Deploy to Production'), 'deploy_to_production'],
 		].forEach(([label, method]) => {
 			frm.add_custom_button(
 				label,
