@@ -24,3 +24,30 @@ def get_app(name):
 	"""Return the `Marketplace App` document with name"""
 	app = frappe.get_doc("Marketplace App", name)
 	return app
+
+
+@frappe.whitelist()
+def update_app_image():
+	app_name = frappe.form_dict.docname
+	_file = frappe.get_doc(
+		{
+			"doctype": "File",
+			"attached_to_doctype": "Marketplace App",
+			"attached_to_name": app_name,
+			"attached_to_field": "image",
+			"folder": "Home/Attachments",
+			"file_name": frappe.local.uploaded_filename,
+			"is_private": 0,
+			"content": frappe.local.uploaded_file,
+		}
+	)
+	_file.save(ignore_permissions=True)
+	frappe.db.set_value("Marketplace App", app_name, "image", _file.file_url)
+
+
+@frappe.whitelist()
+def update_app_profile(name, title):
+	app = frappe.get_doc("Marketplace App", name)
+	app.title = title
+	app.save(ignore_permissions=True)
+	return app
