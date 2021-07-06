@@ -72,7 +72,7 @@
 			</p>
 		</Dialog>
 
-		<ChangeAppBranchDialog :bench="bench.name" :app="appToChangeBranchOf" />
+		<ChangeAppBranchDialog :bench="bench.name" :app.sync="appToChangeBranchOf" />
 	</Card>
 </template>
 <script>
