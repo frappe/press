@@ -85,27 +85,32 @@
   {
    "fieldname": "website",
    "fieldtype": "Data",
-   "label": "Website"
+   "label": "Website",
+   "options": "URL"
   },
   {
    "fieldname": "support",
    "fieldtype": "Data",
-   "label": "Support"
+   "label": "Support",
+   "options": "URL"
   },
   {
    "fieldname": "privacy_policy",
    "fieldtype": "Data",
-   "label": "Privacy Policy"
+   "label": "Privacy Policy",
+   "options": "URL"
   },
   {
    "fieldname": "documentation",
    "fieldtype": "Data",
-   "label": "Documentation"
+   "label": "Documentation",
+   "options": "URL"
   },
   {
    "fieldname": "terms_of_service",
    "fieldtype": "Data",
-   "label": "Terms of Service"
+   "label": "Terms of Service",
+   "options": "URL"
   },
   {
    "fieldname": "route",
@@ -143,7 +148,7 @@
  "index_web_pages_for_search": 1,
  "is_published_field": "published",
  "links": [],
- "modified": "2021-07-01 19:33:41.334025",
+ "modified": "2021-07-06 23:40:40.877600",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Marketplace App",
