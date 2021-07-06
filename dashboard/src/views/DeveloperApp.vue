@@ -15,14 +15,13 @@
 						<Badge class="ml-4" :status="app.status">{{ app.status }}</Badge>
 					</div>
 					<div class="space-x-3">
-						<!-- <Button
-							v-if="site.status == 'Active'"
-							@click="$resources.loginAsAdmin.submit()"
-							:loading="$resources.loginAsAdmin.loading"
+						<Button
+							v-if="app.status == 'Published'"
+							:link="`https://frappecloud.com/${app.route}`"
 							icon-left="external-link"
 						>
-							Login as Administrator
-						</Button> -->
+							View in Marketplace
+						</Button>
 						<!-- <Button
 							v-if="site.status === 'Active' || site.status === 'Updating'"
 							:link="`https://${site.name}`"
