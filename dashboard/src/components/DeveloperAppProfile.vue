@@ -31,7 +31,7 @@
 				<h3 class="text-lg font-semibold">
 					{{ app.title }}
 				</h3>
-				<p class="text-sm text-gray-600">{{ app.name }}</p>
+				<p class="text-sm text-gray-600">{{ app.category }}</p>
 			</div>
 			<div class="ml-auto">
 				<Button icon-left="edit" @click="showAppProfileEditDialog = true">
@@ -41,8 +41,18 @@
 		</div>
 
 		<Dialog title="Update App Profile" v-model="showAppProfileEditDialog">
-			<div>
+			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 				<Input label="App Title" type="text" v-model="app.title" />
+				<div>
+					<span class="block mb-2 text-sm leading-4 text-gray-700">
+						Category
+					</span>
+					<select class="block w-full form-select" v-model="app.category">
+						<option v-for="category in categories" :key="category">
+							{{ category }}
+						</option>
+					</select>
+				</div>
 			</div>
 
 			<ErrorMessage class="mt-4" :error="$resources.updateAppProfile.error" />
@@ -76,14 +86,21 @@ export default {
 		FileUploader
 	},
 	resources: {
+		categories() {
+			return {
+				method: 'press.api.developer.categories',
+				auto: true
+			};
+		},
 		updateAppProfile() {
-			let { name, title } = this.app;
+			let { name, title, category } = this.app;
 
 			return {
 				method: 'press.api.developer.update_app_profile',
 				params: {
 					name,
-					title
+					title,
+					category
 				},
 				onSuccess() {
 					this.showAppProfileEditDialog = false;
@@ -109,6 +126,18 @@ export default {
 		return {
 			showAppProfileEditDialog: false
 		};
+	},
+	computed: {
+		categories() {
+			if (
+				this.$resources.categories.loading ||
+				!this.$resources.categories.data
+			) {
+				return [];
+			}
+
+			return this.$resources.categories.data;
+		}
 	}
 };
 </script>
