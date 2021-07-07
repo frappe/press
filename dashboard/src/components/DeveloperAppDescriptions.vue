@@ -25,6 +25,12 @@
 					v-if="app.description"
 					v-html="descriptionHTML"
 				></div>
+				<Dialog class="bg-gradient-blue" title="Update App Description" v-model="showEditDescriptionDialog">
+					<div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+						<Input :rows="30" type="textarea" v-model="app.long_description"></Input>
+						<div class="prose" v-html="descriptionHTML"></div>
+					</div>
+				</Dialog>
 			</div>
 		</div>
 	</Card>
