@@ -42,7 +42,10 @@ def update_app_image():
 		}
 	)
 	_file.save(ignore_permissions=True)
-	frappe.db.set_value("Marketplace App", app_name, "image", _file.file_url)
+	file_url = _file.file_url
+	frappe.db.set_value("Marketplace App", app_name, "image", file_url)
+
+	return file_url
 
 
 @frappe.whitelist()
