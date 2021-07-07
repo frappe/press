@@ -3,11 +3,14 @@
 # For license information, please see license.txt
 
 import frappe
+
+from typing import Dict, List
 from press.utils import get_current_team
+from press.press.doctype.marketplace_app.marketplace_app import MarketplaceApp
 
 
 @frappe.whitelist()
-def get_apps():
+def get_apps() -> List[Dict]:
 	"""Return list of apps developed by the current team"""
 	team = get_current_team()
 	apps = frappe.get_all(
@@ -20,14 +23,14 @@ def get_apps():
 
 
 @frappe.whitelist()
-def get_app(name):
+def get_app(name: str) -> MarketplaceApp:
 	"""Return the `Marketplace App` document with name"""
-	app = frappe.get_doc("Marketplace App", name)
+	app: MarketplaceApp = frappe.get_doc("Marketplace App", name)
 	return app
 
 
 @frappe.whitelist()
-def update_app_image():
+def update_app_image() -> str:
 	"""Handles App Image Upload"""
 	app_name = frappe.form_dict.docname
 	_file = frappe.get_doc(
@@ -50,9 +53,9 @@ def update_app_image():
 
 
 @frappe.whitelist()
-def update_app_profile(name, title, category):
+def update_app_profile(name: str, title: str, category: str) -> MarketplaceApp:
 	"""Update `title` and `category`"""
-	app = frappe.get_doc("Marketplace App", name)
+	app: MarketplaceApp = frappe.get_doc("Marketplace App", name)
 	app.title = title
 	app.category = category
 	app.save(ignore_permissions=True)
@@ -61,15 +64,15 @@ def update_app_profile(name, title, category):
 
 
 @frappe.whitelist()
-def update_app_links(name, links):
+def update_app_links(name: str, links: Dict) -> None:
 	"""Update links related to app"""
-	app = frappe.get_doc("Marketplace App", name)
+	app: MarketplaceApp = frappe.get_doc("Marketplace App", name)
 	app.update(links)
 	app.save(ignore_permissions=True)
 
 
 @frappe.whitelist()
-def categories():
+def categories() -> List[str]:
 	"""Return a list of Marketplace App Categories"""
 	categories = frappe.get_all("Marketplace App Category", pluck="name")
 	return categories
