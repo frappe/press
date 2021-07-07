@@ -28,6 +28,7 @@ def get_app(name):
 
 @frappe.whitelist()
 def update_app_image():
+	"""Handles App Image Upload"""
 	app_name = frappe.form_dict.docname
 	_file = frappe.get_doc(
 		{
@@ -50,15 +51,18 @@ def update_app_image():
 
 @frappe.whitelist()
 def update_app_profile(name, title, category):
+	"""Update `title` and `category`"""
 	app = frappe.get_doc("Marketplace App", name)
 	app.title = title
 	app.category = category
 	app.save(ignore_permissions=True)
+
 	return app
 
 
 @frappe.whitelist()
 def update_app_links(name, links):
+	"""Update links related to app"""
 	app = frappe.get_doc("Marketplace App", name)
 	app.update(links)
 	app.save(ignore_permissions=True)
@@ -66,5 +70,6 @@ def update_app_links(name, links):
 
 @frappe.whitelist()
 def categories():
+	"""Return a list of Marketplace App Categories"""
 	categories = frappe.get_all("Marketplace App Category", pluck="name")
 	return categories
