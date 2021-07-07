@@ -1,6 +1,6 @@
 <template>
 	<Card
-		class="col-span-2"
+		class="md:col-span-2"
 		title="App Descriptions"
 		subtitle="Details about your app"
 	>
