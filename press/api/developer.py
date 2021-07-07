@@ -54,3 +54,10 @@ def update_app_profile(name, title):
 	app.title = title
 	app.save(ignore_permissions=True)
 	return app
+
+
+@frappe.whitelist()
+def update_app_links(name, links):
+	app = frappe.get_doc("Marketplace App", name)
+	app.update(links)
+	app.save(ignore_permissions=True)
