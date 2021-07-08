@@ -76,3 +76,11 @@ def categories() -> List[str]:
 	"""Return a list of Marketplace App Categories"""
 	categories = frappe.get_all("Marketplace App Category", pluck="name")
 	return categories
+
+
+@frappe.whitelist()
+def update_app_summary(name: str, summary: str) -> None:
+	"""Update the `description` of Marketplace App `name`"""
+	app: MarketplaceApp = frappe.get_doc("Marketplace App", name)
+	app.description = summary
+	app.save(ignore_permissions=True)
