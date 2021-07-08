@@ -84,3 +84,11 @@ def update_app_summary(name: str, summary: str) -> None:
 	app: MarketplaceApp = frappe.get_doc("Marketplace App", name)
 	app.description = summary
 	app.save(ignore_permissions=True)
+
+
+@frappe.whitelist()
+def update_app_description(name: str, description: str) -> None:
+	"""Update the `long_description` of Marketplace App `name`"""
+	app: MarketplaceApp = frappe.get_doc("Marketplace App", name)
+	app.long_description = description
+	app.save(ignore_permissions=True)
