@@ -36,6 +36,11 @@ export default [
 				name: 'DeveloperAppAnalytics',
 				path: 'analytics',
 				component: () => import('../views/DeveloperAppAnalytics.vue')
+			},
+			{
+				name: 'DeveloperAppDeployment',
+				path: 'deployment',
+				component: () => import('../views/DeveloperAppDeployment.vue')
 			}
 		]
 	}
