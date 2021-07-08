@@ -10,7 +10,7 @@
 					</div>
 					<button
 						v-if="dismissable"
-						class="absolute top-0 right-0"
+						class="absolute top-0 right-0 mt-3"
 						@click="handleChange(false)"
 					>
 						<FeatherIcon name="x" class="w-4 h-4" />
