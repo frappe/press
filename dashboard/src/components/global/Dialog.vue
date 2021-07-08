@@ -1,5 +1,5 @@
 <template>
-	<Modal :show="show" @change="handleChange" :dismissable="dismissable">
+	<Modal :show="show" @change="handleChange" :dismissable="dismissable" :full="full">
 		<div class="px-4 pb-4 bg-white sm:px-6 sm:pb-4">
 			<div class="sm:flex sm:items-start">
 				<div class="relative w-full sm:text-left">
@@ -38,7 +38,7 @@ export default {
 		prop: 'show',
 		event: 'change'
 	},
-	props: ['title', 'show', 'dismissable'],
+	props: ['title', 'show', 'dismissable', 'full'],
 	components: {
 		Modal
 	},
