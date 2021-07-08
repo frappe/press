@@ -50,6 +50,8 @@
 				<Dialog
 					title="Update App Description"
 					v-model="showEditDescriptionDialog"
+					:dismissable="true"
+					:full="true"
 				>
 					<div class="grid grid-cols-1 gap-5 md:grid-cols-2">
 						<Input
@@ -59,6 +61,16 @@
 						></Input>
 						<div class="prose" v-html="descriptionHTML"></div>
 					</div>
+					<template #actions>
+						<Button
+							type="primary"
+							:loading="$resources.updateAppDescription.loading"
+							loadingText="Saving..."
+							@click="$resources.updateAppDescription.submit()"
+						>
+							Save Changes
+						</Button>
+					</template>
 				</Dialog>
 			</div>
 		</div>
@@ -81,15 +93,30 @@ export default {
 	},
 	resources: {
 		updateAppSummary() {
+			let { name, description } = this.app;
 			return {
 				method: 'press.api.developer.update_app_summary',
 				params: {
-					name: this.app.name,
-					summary: this.app.description
+					name,
+					summary: description
 				},
 				onSuccess() {
 					this.notifySuccess('App Summary Updated!');
 					this.showEditSummaryDialog = false;
+				}
+			};
+		},
+		updateAppDescription() {
+			let { name, long_description } = this.app;
+			return {
+				method: 'press.api.developer.update_app_description',
+				params: {
+					name,
+					description: long_description
+				},
+				onSuccess() {
+					this.notifySuccess('App Description Updated!');
+					this.showEditDescriptionDialog = false;
 				}
 			};
 		}
