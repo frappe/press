@@ -403,7 +403,7 @@ class DeployCandidate(Document):
 	def create_deploy(self, staging: bool):
 		deploy_doc = frappe.db.exists("Deploy", {"group": self.group, "candidate": self.name})
 		if staging:
-			servers = frappe.get_all("Server", {"staging": True, "use_for_new_benches": True})
+			servers = frappe.get_all("Server", {"staging": True}, pluck="name")
 			if not servers:
 				frappe.log_error(title="Staging Server for new benches not found")
 		else:
