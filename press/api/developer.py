@@ -2,12 +2,16 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
+from shutil import ignore_patterns
 import frappe
 
 from typing import Dict, List
 from press.utils import get_current_team, get_last_doc
 from press.press.doctype.marketplace_app.marketplace_app import MarketplaceApp
 from press.press.doctype.app_release.app_release import AppRelease
+from press.press.doctype.app_release_approval_request.app_release_approval_request import (
+	AppReleaseApprovalRequest,
+)
 
 
 @frappe.whitelist()
@@ -107,3 +111,8 @@ def releases(app: str) -> List[AppRelease]:
 def latest_published_release(app: str) -> AppRelease:
 	"""Return the latest app release with `published` status"""
 	return get_last_doc("App Release", {"app": app, "status": "Published"})
+
+
+@frappe.whitelist()
+def create_approval_request(marketplace_app: str, app_release: str):
+	AppReleaseApprovalRequest.create(marketplace_app, app_release)
