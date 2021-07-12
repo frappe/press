@@ -117,3 +117,22 @@ def latest_published_release(app: str) -> AppRelease:
 def create_approval_request(marketplace_app: str, app_release: str):
 	"""Create a new Approval Request for given `app_release`"""
 	AppReleaseApprovalRequest.create(marketplace_app, app_release)
+
+
+@frappe.whitelist()
+def cancel_approval_request(marketplace_app: str, app_release: str):
+	"""Cancel Approval Request for given `app_release`"""
+	approval_requests = frappe.get_all(
+		"App Release Approval Request",
+		filters={"marketplace_app": marketplace_app, "app_release": app_release},
+		pluck="name",
+	)
+
+	if len(approval_requests) == 0:
+		frappe.throw("No approval request exists for the given app release")
+
+	approval_request: AppReleaseApprovalRequest = frappe.get_doc(
+		"App Release Approval Request", approval_requests[0]
+	)
+
+	approval_request.cancel()
