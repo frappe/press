@@ -1,7 +1,6 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
-from shutil import ignore_patterns
 import frappe
 
 from frappe.model.document import Document
@@ -10,13 +9,17 @@ from press.press.doctype.app_release.app_release import AppRelease
 
 
 class AppReleaseApprovalRequest(Document):
-	@classmethod
-	def create(cls, marketplace_app: str, app_release: str):
+	@staticmethod
+	def create(marketplace_app: str, app_release: str):
 		"""Create a new `App Release Approval Request`"""
-		request: cls = frappe.new_doc("App Release Approval Request")
+		request = frappe.new_doc("App Release Approval Request")
 		request.marketplace_app = marketplace_app
 		request.app_release = app_release
 		request.save(ignore_permissions=True)
+
+	def cancel(self):
+		self.status = "Cancelled"
+		self.save(ignore_permissions=True)
 
 	def autoname(self):
 		app = self.marketplace_app
@@ -24,16 +27,19 @@ class AppReleaseApprovalRequest(Document):
 		self.name = make_autoname(series)
 
 	def validate(self):
-		self.request_already_exists()
 		self.update_release_status()
+
+	def before_insert(self):
+		self.request_already_exists()
 
 	def request_already_exists(self):
 		requests = frappe.get_all(
-			"App Release Approval Request", filters={"app_release": self.app_release}
+			"App Release Approval Request",
+			filters={"app_release": self.app_release, "status": ("!=", "Cancelled")},
 		)
 
 		if len(requests) > 0:
-			frappe.throw("A request for this app release has been already created!")
+			frappe.throw("An active request for this app release already exists!")
 
 	def update_release_status(self):
 		release: AppRelease = frappe.get_doc("App Release", self.app_release)
@@ -42,6 +48,10 @@ class AppReleaseApprovalRequest(Document):
 
 	def on_update(self):
 		old_doc = self.get_doc_before_save()
+
+		if old_doc is None:
+			return
+
 		status_updated = old_doc.status != self.status
 
 		release = frappe.get_doc("App Release", self.app_release)
