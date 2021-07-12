@@ -9,6 +9,13 @@ from press.press.doctype.app_release.app_release import AppRelease
 
 
 class AppReleaseApprovalRequest(Document):
+	@classmethod
+	def create(cls, marketplace_app: str, app_release: str):
+		request: cls = frappe.new_doc("App Release Approval Request")
+		request.marketplace_app = marketplace_app
+		request.app_release = app_release
+		request.save(ignore_permissions=True)
+
 	def autoname(self):
 		app = self.marketplace_app
 		series = f"REQ-{app}-.#####"
@@ -16,13 +23,6 @@ class AppReleaseApprovalRequest(Document):
 
 	def validate(self):
 		self.update_release_status()
-
-	@classmethod
-	def create(cls, marketplace_app: str, app_release: str):
-		request: cls = frappe.new_doc("App Release Approval Request")
-		request.marketplace_app = marketplace_app
-		request.app_release = app_release
-		request.save(ignore_permissions=True)
 
 	def update_release_status(self):
 		release: AppRelease = frappe.get_doc("App Release", self.app_release)
