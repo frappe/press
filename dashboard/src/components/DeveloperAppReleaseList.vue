@@ -1,56 +1,49 @@
 <template>
-	<div class="bg-white shadow overflow-hidden sm:rounded-md">
-		<ul class="divide-y divide-gray-200">
-			<li v-for="release in releasesList" :key="release.hash">
-				<div href="#" class="block">
-					<div class="px-4 py-4 sm:px-6">
-						<div class="flex items-center justify-between">
-							<p class="text-base font-medium text-blue-600 truncate max-w-md">
-								{{ release.message }}
-							</p>
-							<div class="ml-2 flex-shrink-0 flex">
-								<Badge :status="release.status || 'Draft'" />
-							</div>
-							<Button
-								v-if="release.status != 'Awaiting Approval'"
-								type="primary"
-								:disabled="
-									['Published', 'Rejected'].includes(release.status) ||
-										release.author == 'Faris'
-								"
-								>Publish</Button
-							>
-							<Button v-else type="secondary">Cancel</Button>
-						</div>
-						<div class="mt-2 sm:flex sm:justify-between">
-							<div class="sm:flex">
-								<a
-									href="#"
-									class="flex items-center text-sm text-blue-500 font-semibold"
-								>
-									{{ release.hash.slice(0, 6) }}
-								</a>
-								<p
-									class="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 sm:ml-6"
-								>
-									by
-									{{ release.author }}
-								</p>
-							</div>
-							<div class="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
-								<p>
-									{{ ' ' }}
-									<time :datetime="release.creation">{{
-										release.creation
-									}}</time>
-								</p>
-							</div>
-						</div>
-					</div>
-				</div>
-			</li>
-		</ul>
-	</div>
+	<Card>
+		<div class="divide-y">
+			<div
+				class="grid items-center grid-cols-3 py-4 text-base text-gray-600 gap-x-8 md:grid-cols-6"
+			>
+				<span class="md:col-span-2">Commit Message</span>
+				<span class="hidden md:inline">Hash</span>
+				<span class="hidden md:inline">Author</span>
+				<span>Status</span>
+				<span></span>
+			</div>
+
+			<div
+				v-for="release in releasesList"
+				:key="release.name"
+				class="grid items-center grid-cols-3 py-4 text-base text-gray-900 gap-x-8 md:grid-cols-6"
+			>
+				<p
+					class="md:col-span-2 text-base font-medium text-gray-700 truncate max-w-md"
+				>
+					{{ release.message }}
+				</p>
+				<a class="hidden md:inline text-blue-600 font-bold" href="#">
+					{{ release.hash.slice(0, 6) }}
+				</a>
+				<span class="hidden md:inline text-gray-600">
+					{{ release.author }}
+				</span>
+				<span>
+					<Badge
+						:status="
+							release.status || (Math.random() > 0.5 ? 'Draft' : 'Published')
+						"
+					></Badge>
+				</span>
+				<span v-if="Math.random() > 0.5">
+					<Button type="primary">Publish</Button>
+				</span>
+				<span v-else-if="Math.random() > 0.7">
+					<Button type="secondary">Cancel</Button>
+				</span>
+				<span v-else></span>
+			</div>
+		</div>
+	</Card>
 </template>
 
 <script>
