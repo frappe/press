@@ -7,6 +7,7 @@ import frappe
 from typing import Dict, List
 from press.utils import get_current_team
 from press.press.doctype.marketplace_app.marketplace_app import MarketplaceApp
+from press.press.doctype.app_release.app_release import AppRelease
 
 
 @frappe.whitelist()
@@ -92,3 +93,8 @@ def update_app_description(name: str, description: str) -> None:
 	app: MarketplaceApp = frappe.get_doc("Marketplace App", name)
 	app.long_description = description
 	app.save(ignore_permissions=True)
+
+
+@frappe.whitelist()
+def releases(app: str) -> List[AppRelease]:
+	return frappe.get_all("App Release", filters={"app": app}, fields="*")
