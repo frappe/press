@@ -115,4 +115,5 @@ def latest_published_release(app: str) -> AppRelease:
 
 @frappe.whitelist()
 def create_approval_request(marketplace_app: str, app_release: str):
+	"""Create a new Approval Request for given `app_release`"""
 	AppReleaseApprovalRequest.create(marketplace_app, app_release)
