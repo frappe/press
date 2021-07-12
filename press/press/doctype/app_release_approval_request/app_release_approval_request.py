@@ -24,7 +24,16 @@ class AppReleaseApprovalRequest(Document):
 		self.name = make_autoname(series)
 
 	def validate(self):
+		self.request_already_exists()
 		self.update_release_status()
+
+	def request_already_exists(self):
+		requests = frappe.get_all(
+			"App Release Approval Request", filters={"app_release": self.app_release}
+		)
+
+		if len(requests) > 0:
+			frappe.throw("A request for this app release has been already created!")
 
 	def update_release_status(self):
 		release: AppRelease = frappe.get_doc("App Release", self.app_release)
