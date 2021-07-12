@@ -1,5 +1,5 @@
 <template>
-	<Card>
+	<Card title="Your App Releases" subtitle="Created each time you push to GitHub">
 		<div class="divide-y">
 			<div
 				class="grid items-center grid-cols-3 py-4 text-base text-gray-600 gap-x-8 md:grid-cols-6"
