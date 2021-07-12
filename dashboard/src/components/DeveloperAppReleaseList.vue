@@ -39,10 +39,17 @@
 							$date(release.creation) > latestPublishedOn
 					"
 				>
-					<Button type="primary">Publish</Button>
+					<Button
+						:loading="$resources.createApprovalRequest.loading"
+						type="primary"
+						@click="createApprovalRequest(release.name)"
+						>Publish</Button
+					>
 				</span>
 				<span v-else-if="release.status == 'Awaiting Approval'">
-					<Button type="secondary">Cancel</Button>
+					<Button type="secondary" @click="cancelApprovalRequest(release.name)"
+						>Cancel</Button
+					>
 				</span>
 				<span v-else></span>
 			</div>
@@ -76,6 +83,46 @@ export default {
 				},
 				auto: true
 			};
+		},
+		createApprovalRequest() {
+			return {
+				method: 'press.api.developer.create_approval_request'
+			};
+		},
+		cancelApprovalRequest() {
+			return {
+				method: 'press.api.developer.cancel_approval_request'
+			};
+		}
+	},
+	methods: {
+		createApprovalRequest(appRelease) {
+			let { app } = this.app;
+			this.$resources.createApprovalRequest.submit({
+				marketplace_app: app,
+				app_release: appRelease
+			});
+
+			for (let release of this.releasesList) {
+				if (release.name == appRelease) {
+					release.status = 'Awaiting Approval';
+					break;
+				}
+			}
+		},
+		cancelApprovalRequest(appRelease) {
+			let { app } = this.app;
+			this.$resources.cancelApprovalRequest.submit({
+				marketplace_app: app,
+				app_release: appRelease
+			});
+
+			for (let release of this.releasesList) {
+				if (release.name == appRelease) {
+					release.status = 'Draft';
+					break;
+				}
+			}
 		}
 	},
 	computed: {
