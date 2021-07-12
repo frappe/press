@@ -1,5 +1,8 @@
 <template>
-	<Card title="Your App Releases" subtitle="Created each time you push to GitHub">
+	<Card
+		title="Your App Releases"
+		subtitle="Created each time you push to GitHub"
+	>
 		<div class="divide-y">
 			<div
 				class="grid items-center grid-cols-3 py-4 text-base text-gray-600 gap-x-8 md:grid-cols-6"
@@ -28,16 +31,17 @@
 					{{ release.author }}
 				</span>
 				<span>
-					<Badge
-						:status="
-							release.status || (Math.random() > 0.5 ? 'Draft' : 'Published')
-						"
-					></Badge>
+					<Badge :status="release.status"></Badge>
 				</span>
-				<span v-if="Math.random() > 0.5">
+				<span
+					v-if="
+						release.status == 'Draft' &&
+							$date(release.creation) > latestPublishedOn
+					"
+				>
 					<Button type="primary">Publish</Button>
 				</span>
-				<span v-else-if="Math.random() > 0.7">
+				<span v-else-if="release.status == 'Awaiting Approval'">
 					<Button type="secondary">Cancel</Button>
 				</span>
 				<span v-else></span>
@@ -63,6 +67,15 @@ export default {
 				},
 				auto: true
 			};
+		},
+		latestPublished() {
+			return {
+				method: 'press.api.developer.latest_published_release',
+				params: {
+					app: 'frappe' // TODO: Change after testing
+				},
+				auto: true
+			};
 		}
 	},
 	computed: {
@@ -72,6 +85,15 @@ export default {
 			}
 
 			return this.$resources.releases.data;
+		},
+
+		latestPublishedOn() {
+			if (
+				this.$resources.latestPublished.data &&
+				!this.$resources.latestPublished.loading
+			) {
+				return this.$date(this.$resources.latestPublished.data.creation);
+			}
 		}
 	}
 };
