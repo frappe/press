@@ -5,7 +5,7 @@
 import frappe
 
 from typing import Dict, List
-from press.utils import get_current_team
+from press.utils import get_current_team, get_last_doc
 from press.press.doctype.marketplace_app.marketplace_app import MarketplaceApp
 from press.press.doctype.app_release.app_release import AppRelease
 
@@ -97,4 +97,13 @@ def update_app_description(name: str, description: str) -> None:
 
 @frappe.whitelist()
 def releases(app: str) -> List[AppRelease]:
-	return frappe.get_all("App Release", filters={"app": app}, fields="*")
+	"""Return list of App Releases for this `app` in order of creation time"""
+	return frappe.get_all(
+		"App Release", filters={"app": app}, fields="*", order_by="creation desc"
+	)
+
+
+@frappe.whitelist()
+def latest_published_release(app: str) -> AppRelease:
+	"""Return the latest app release with `published` status"""
+	return get_last_doc("App Release", {"app": app, "status": "Published"})
