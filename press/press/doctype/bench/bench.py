@@ -186,9 +186,10 @@ class Bench(Document):
 
 		= sum of cpu time per day
 		"""
-		return frappe.db.sql_list(
-			# minimum plan is taken as 10
-			f"""
+		return (
+			frappe.db.sql_list(
+				# minimum plan is taken as 10
+				f"""
 			SELECT SUM(plan.cpu_time_per_day)
 			FROM tabSite site
 
@@ -201,7 +202,9 @@ class Bench(Document):
 			WHERE site.bench = "{self.name}"
 				AND site.status = "Active"
 				"""
-		)[0] or 0
+			)[0]
+			or 0
+		)
 
 
 def process_new_bench_job_update(job):
