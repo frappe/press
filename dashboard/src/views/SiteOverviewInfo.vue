@@ -38,24 +38,6 @@
 				</div>
 			</div>
 			<ListItem
-				v-if="site.status == 'Active'"
-				title="Deactivate Site"
-				description="The site will go inactive and billing will be paused"
-			>
-				<Button slot="actions" @click="onDeactivateClick" class="flex-shrink-0">
-					Deactivate Site
-				</Button>
-			</ListItem>
-			<ListItem
-				v-if="site.status == 'Inactive'"
-				title="Activate Site"
-				description="The site will become active again and billing will resume"
-			>
-				<Button slot="actions" @click="onActivateClick" class="flex-shrink-0">
-					Activate Site
-				</Button>
-			</ListItem>
-			<ListItem
 				v-if="site.status !== 'Pending'"
 				title="Drop Site"
 				description="Once you drop site your site, there is no going back"
@@ -76,49 +58,8 @@ import SiteDrop from './SiteDrop.vue';
 export default {
 	name: 'SiteOverviewInfo',
 	props: ['site', 'info'],
-	components: { SiteDrop },
-	methods: {
-		onDeactivateClick() {
-			this.$confirm({
-				title: 'Deactivate Site',
-				message: `
-					Are you sure you want to deactivate this site? The site will go in an inactive state.
-					It won't be accessible and background jobs won't run. We will also not charge you for it.
-					<p>Note: This feature will be discontinued from August 1, 2021.<p>
-				`,
-				actionLabel: 'Deactivate',
-				actionType: 'danger',
-				action: () => this.deactivate()
-			});
-		},
-		onActivateClick() {
-			this.$confirm({
-				title: 'Activate Site',
-				message: 'Are you sure you want to activate this site?',
-				actionLabel: 'Activate',
-				actionType: 'primary',
-				action: () => this.activate()
-			});
-		},
-		deactivate() {
-			return this.$call('press.api.site.deactivate', {
-				name: this.site.name
-			}).then(() => {
-				setTimeout(() => window.location.reload(), 1000);
-			});
-		},
-		activate() {
-			this.$call('press.api.site.activate', {
-				name: this.site.name
-			});
-			this.$notify({
-				title: 'Site activated successfully!',
-				message: 'You can now access your site',
-				icon: 'check',
-				color: 'green'
-			});
-			setTimeout(() => window.location.reload(), 1000);
-		}
+	components: {
+		SiteDrop
 	}
 };
 </script>

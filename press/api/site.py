@@ -638,18 +638,6 @@ def change_plan(name, plan):
 
 @frappe.whitelist()
 @protected("Site")
-def deactivate(name):
-	frappe.get_doc("Site", name).deactivate()
-
-
-@frappe.whitelist()
-@protected("Site")
-def activate(name):
-	frappe.get_doc("Site", name).activate()
-
-
-@frappe.whitelist()
-@protected("Site")
 def login(name):
 	return frappe.get_doc("Site", name).login()
 
