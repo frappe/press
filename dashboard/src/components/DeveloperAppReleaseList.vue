@@ -24,7 +24,11 @@
 				>
 					{{ release.message }}
 				</p>
-				<a class="hidden md:inline text-blue-600 font-bold" href="#">
+				<a
+					:href="`${release.source.repository_url}/commit/${release.hash}`"
+					target="_blank"
+					class="hidden md:inline text-blue-700 font-bold hover:text-blue-500"
+				>
 					{{ release.hash.slice(0, 6) }}
 				</a>
 				<span class="hidden md:inline text-gray-600">
