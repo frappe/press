@@ -2,6 +2,37 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
+  "modified": "2021-06-16 20:39:50.568363",
+  "name": "Rename Upstream",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "request_method": "POST",
+  "request_path": "/proxy/upstreams/{ip}/rename",
+  "steps": [
+   {
+    "parent": "Rename Upstream",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Rename Upstream Directory"
+   },
+   {
+    "parent": "Rename Upstream",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Generate NGINX Configuration"
+   },
+   {
+    "parent": "Rename Upstream",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
   "modified": "2021-01-27 10:42:40.678534",
   "name": "Rename Site",
   "parent": null,
