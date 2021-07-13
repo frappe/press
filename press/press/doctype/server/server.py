@@ -31,6 +31,13 @@ class BaseServer(Document):
 		if not self.agent_password:
 			self.agent_password = frappe.generate_hash(length=32)
 
+	def get_agent_repository_url(self):
+		settings = frappe.get_single("Press Settings")
+		repository_owner = settings.agent_repository_owner or "frappe"
+		token = settings.agent_github_access_token
+		url = f"https://x-access-token:{token}@github.com/{repository_owner}/agent"
+		return url
+
 	@frappe.whitelist()
 	def ping_agent(self):
 		agent = Agent(self.name, self.doctype)
@@ -140,6 +147,18 @@ class BaseServer(Document):
 			log_error("Server Ping Exception", server=self.as_dict())
 
 	@frappe.whitelist()
+	def update_agent_ansible(self):
+		try:
+			ansible = Ansible(
+				playbook="update_agent.yml",
+				variables={"agent_repository_url": self.get_agent_repository_url()},
+				server=self,
+			)
+			ansible.run()
+		except Exception:
+			log_error("Agent Update Exception", server=self.as_dict())
+
+	@frappe.whitelist()
 	def fetch_keys(self):
 		try:
 			ansible = Ansible(playbook="keys.yml", server=self)
@@ -189,6 +208,7 @@ class Server(BaseServer):
 
 	def _setup_server(self):
 		agent_password = self.get_password("agent_password")
+		agent_repository_url = self.get_agent_repository_url()
 		certificate_name = frappe.db.get_value(
 			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
 		)
@@ -213,6 +233,7 @@ class Server(BaseServer):
 					"private_ip": self.private_ip,
 					"workers": "2",
 					"agent_password": agent_password,
+					"agent_repository_url": agent_repository_url,
 					"monitoring_password": monitoring_password,
 					"log_server": log_server,
 					"kibana_password": kibana_password,

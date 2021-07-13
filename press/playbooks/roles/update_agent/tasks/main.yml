@@ -1,0 +1,14 @@
+---
+- name: Update Agent Repository
+  become: yes
+  become_user: frappe
+  command: "git remote set-url upstream {{ agent_repository_url }}"
+  args:
+    chdir: /home/frappe/agent/repo
+
+- name: Update Agent
+  become: yes
+  become_user: frappe
+  command: /home/frappe/agent/env/bin/agent update
+  args:
+    chdir: /home/frappe/agent
