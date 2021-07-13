@@ -77,6 +77,7 @@ export default {
 			}));
 		},
 		selectSource(app, source) {
+			app.source = source;
 			if (this.multiple) {
 				let selectedApps = this.value.map(_app => {
 					if (app.name === _app.app) {
