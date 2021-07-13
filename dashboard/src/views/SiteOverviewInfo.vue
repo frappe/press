@@ -81,8 +81,11 @@ export default {
 		onDeactivateClick() {
 			this.$confirm({
 				title: 'Deactivate Site',
-				message:
-					"Are you sure you want to deactivate this site? The site will go in an inactive state. It won't be accessible and background jobs won't run. We will also not charge you for it.",
+				message: `
+					Are you sure you want to deactivate this site? The site will go in an inactive state.
+					It won't be accessible and background jobs won't run. We will also not charge you for it.
+					<p>Note: This feature will be discontinued from August 1, 2021.<p>
+				`,
 				actionLabel: 'Deactivate',
 				actionType: 'danger',
 				action: () => this.deactivate()
