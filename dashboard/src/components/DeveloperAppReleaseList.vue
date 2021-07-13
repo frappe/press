@@ -86,12 +86,18 @@ export default {
 		},
 		createApprovalRequest() {
 			return {
-				method: 'press.api.developer.create_approval_request'
+				method: 'press.api.developer.create_approval_request',
+				onSuccess() {
+					this.$resources.releases.submit();
+				}
 			};
 		},
 		cancelApprovalRequest() {
 			return {
-				method: 'press.api.developer.cancel_approval_request'
+				method: 'press.api.developer.cancel_approval_request',
+				onSuccess() {
+					this.$resources.releases.submit();
+				}
 			};
 		}
 	},
@@ -102,13 +108,6 @@ export default {
 				marketplace_app: app,
 				app_release: appRelease
 			});
-
-			for (let release of this.releasesList) {
-				if (release.name == appRelease) {
-					release.status = 'Awaiting Approval';
-					break;
-				}
-			}
 		},
 		cancelApprovalRequest(appRelease) {
 			let { app } = this.app;
@@ -116,13 +115,6 @@ export default {
 				marketplace_app: app,
 				app_release: appRelease
 			});
-
-			for (let release of this.releasesList) {
-				if (release.name == appRelease) {
-					release.status = 'Draft';
-					break;
-				}
-			}
 		}
 	},
 	computed: {
