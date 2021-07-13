@@ -28,6 +28,7 @@ class MonitorServer(BaseServer):
 
 	def _setup_server(self):
 		agent_password = self.get_password("agent_password")
+		agent_repository_url = self.get_agent_repository_url()
 		monitoring_password = self.get_password("monitoring_password")
 		certificate_name = frappe.db.get_value(
 			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
@@ -64,6 +65,7 @@ class MonitorServer(BaseServer):
 					"workers": 1,
 					"domain": self.domain,
 					"agent_password": agent_password,
+					"agent_repository_url": agent_repository_url,
 					"monitor": True,
 					"monitoring_password": monitoring_password,
 					"press_url": press_url,

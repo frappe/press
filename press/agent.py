@@ -530,7 +530,8 @@ class Agent:
 		return status
 
 	def update(self):
-		return self.post("update")
+		url = frappe.get_doc(self.server_type, self.server).get_agent_repository_url()
+		return self.post("update", data={"url": url})
 
 	def ping(self):
 		return self.get("ping")["message"]
