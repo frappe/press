@@ -37,11 +37,20 @@
 			</template>
 		</Dialog>
 		<div class="divide-y" v-if="app">
-			<ListItem title="Website" :description="app.website" />
-			<ListItem title="Support" :description="app.support" />
-			<ListItem title="Documentation" :description="app.documentation" />
-			<ListItem title="Privacy Policy" :description="app.privacy_policy" />
-			<ListItem title="Terms of Service" :description="app.terms_of_service" />
+			<ListItem title="Website" :description="app.website || 'N/A'" />
+			<ListItem title="Support" :description="app.support || 'N/A'" />
+			<ListItem
+				title="Documentation"
+				:description="app.documentation || 'N/A'"
+			/>
+			<ListItem
+				title="Privacy Policy"
+				:description="app.privacy_policy || 'N/A'"
+			/>
+			<ListItem
+				title="Terms of Service"
+				:description="app.terms_of_service || 'N/A'"
+			/>
 		</div>
 	</Card>
 </template>
