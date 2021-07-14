@@ -2,10 +2,10 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
-from shutil import ignore_patterns
 import frappe
 
 from typing import Dict, List
+from press.api.site import protected
 from press.utils import get_current_team, get_last_doc
 from press.press.doctype.marketplace_app.marketplace_app import MarketplaceApp
 from press.press.doctype.app_release.app_release import AppRelease
@@ -28,6 +28,7 @@ def get_apps() -> List[Dict]:
 
 
 @frappe.whitelist()
+@protected("Marketplace App")
 def get_app(name: str) -> MarketplaceApp:
 	"""Return the `Marketplace App` document with name"""
 	app: MarketplaceApp = frappe.get_doc("Marketplace App", name)
