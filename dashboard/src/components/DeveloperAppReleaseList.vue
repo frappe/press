@@ -78,6 +78,11 @@
 				</p>
 			</Dialog>
 		</div>
+		<div class="py-3 flex justify-center">
+			<Button @click="pageStart += 15" v-if="!$resources.releases.lastPageEmpty"
+				>Load More</Button
+			>
+		</div>
 	</Card>
 </template>
 
@@ -90,6 +95,7 @@ export default {
 	},
 	data() {
 		return {
+			pageStart: 0,
 			showRejectionFeedbackDialog: false,
 			rejectionFeedback: ''
 		};
@@ -100,9 +106,12 @@ export default {
 			return {
 				method: 'press.api.developer.releases',
 				params: {
-					app: 'frappe' // TODO: Change after testing
+					app: 'frappe',
+					start: this.pageStart
 				},
-				auto: true
+				auto: true,
+				paged: true,
+				keepData: true
 			};
 		},
 		latestApproved() {
@@ -118,6 +127,8 @@ export default {
 			return {
 				method: 'press.api.developer.create_approval_request',
 				onSuccess() {
+					this.pageStart = 0;
+					this.$resources.releases.reset();
 					this.$resources.releases.submit();
 				}
 			};
@@ -126,6 +137,8 @@ export default {
 			return {
 				method: 'press.api.developer.cancel_approval_request',
 				onSuccess() {
+					this.pageStart = 0;
+					this.$resources.releases.reset();
 					this.$resources.releases.submit();
 				}
 			};
