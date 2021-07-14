@@ -60,7 +60,7 @@ class AppReleaseApprovalRequest(Document):
 			release.status = "Rejected"
 			self.notifty_publisher()
 		elif status_updated and self.status == "Approved":
-			release.status = "Published"
+			release.status = "Approved"
 			self.notifty_publisher()
 		elif status_updated and self.status == "Cancelled":
 			release.status = "Draft"

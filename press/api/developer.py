@@ -115,9 +115,9 @@ def releases(app: str) -> List[Dict]:
 
 
 @frappe.whitelist()
-def latest_published_release(app: str) -> AppRelease:
-	"""Return the latest app release with `published` status"""
-	return get_last_doc("App Release", {"app": app, "status": "Published"})
+def latest_approved_release(app: str) -> AppRelease:
+	"""Return the latest app release with `approved` status"""
+	return get_last_doc("App Release", {"app": app, "status": "Approved"})
 
 
 @frappe.whitelist()

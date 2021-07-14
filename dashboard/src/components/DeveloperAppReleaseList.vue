@@ -40,7 +40,7 @@
 				<span
 					v-if="
 						release.status == 'Draft' &&
-							$date(release.creation) > latestPublishedOn
+							$date(release.creation) > latestApprovedOn
 					"
 				>
 					<Button
@@ -79,9 +79,9 @@ export default {
 				auto: true
 			};
 		},
-		latestPublished() {
+		latestApproved() {
 			return {
-				method: 'press.api.developer.latest_published_release',
+				method: 'press.api.developer.latest_approved_release',
 				params: {
 					app: 'frappe' // TODO: Change after testing
 				},
@@ -130,12 +130,12 @@ export default {
 			return this.$resources.releases.data;
 		},
 
-		latestPublishedOn() {
+		latestApprovedOn() {
 			if (
-				this.$resources.latestPublished.data &&
-				!this.$resources.latestPublished.loading
+				this.$resources.latestApproved.data &&
+				!this.$resources.latestApproved.loading
 			) {
-				return this.$date(this.$resources.latestPublished.data.creation);
+				return this.$date(this.$resources.latestApproved.data.creation);
 			}
 		}
 	}

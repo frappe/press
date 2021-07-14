@@ -26,7 +26,8 @@ export default {
 					Rejected: 'red',
 					'Update Available': 'blue',
 					'Awaiting Approval': 'yellow',
-					Published: 'green'
+					Published: 'green',
+					Approved: 'green'
 				}[this.status];
 			}
 			return {
