@@ -108,8 +108,16 @@ def releases(app: str) -> List[Dict]:
 	)
 
 	for release in app_releases:
+		# Attach app source doc
 		app_source = frappe.get_doc("App Source", release.source)
 		release.source = app_source
+
+		# Attach rejection feedback (if any)
+		try:
+			feedback = reason_for_rejection(release.name)
+		except frappe.ValidationError:
+			feedback = ""
+		release.reason_for_rejection = feedback
 
 	return app_releases
 
@@ -127,12 +135,30 @@ def create_approval_request(marketplace_app: str, app_release: str):
 
 
 @frappe.whitelist()
-def cancel_approval_request(marketplace_app: str, app_release: str):
+def cancel_approval_request(app_release: str):
 	"""Cancel Approval Request for given `app_release`"""
+	get_latest_approval_request(app_release).cancel()
+
+
+@frappe.whitelist()
+def reason_for_rejection(app_release: str) -> str:
+	"""Return feedback given on a `Rejected` approval request"""
+	approval_request = get_latest_approval_request(app_release)
+	app_release = frappe.get_doc("App Release", app_release)
+
+	if app_release.status != "Rejected":
+		frappe.throw("The request for the given app release was not rejected!")
+
+	return approval_request.reason_for_rejection
+
+
+def get_latest_approval_request(app_release: str):
+	"""Return Approval request for the given `app_release`, throws if not found"""
 	approval_requests = frappe.get_all(
 		"App Release Approval Request",
-		filters={"marketplace_app": marketplace_app, "app_release": app_release},
+		filters={"app_release": app_release},
 		pluck="name",
+		order_by="creation desc",
 	)
 
 	if len(approval_requests) == 0:
@@ -142,4 +168,4 @@ def cancel_approval_request(marketplace_app: str, app_release: str):
 		"App Release Approval Request", approval_requests[0]
 	)
 
-	approval_request.cancel()
+	return approval_request

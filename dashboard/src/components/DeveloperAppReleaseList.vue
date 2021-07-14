@@ -35,7 +35,10 @@
 					{{ release.author }}
 				</span>
 				<span>
-					<Badge :status="release.status"></Badge>
+					<Badge
+						v-if="release.status != 'Draft'"
+						:status="release.status"
+					></Badge>
 				</span>
 				<span
 					v-if="
@@ -55,8 +58,25 @@
 						>Cancel</Button
 					>
 				</span>
+				<span v-else-if="release.status == 'Rejected'">
+					<Button type="secondary" @click="showFeedback(release)"
+						>View Feedback</Button
+					>
+				</span>
 				<span v-else></span>
 			</div>
+			<Dialog
+				title="Reason for Rejection"
+				:dismissable="true"
+				v-model="showRejectionFeedbackDialog"
+			>
+				<p class="my-2 text-gray-600 text-base">
+					The following feedback was given by our team:
+				</p>
+				<p class="">
+					{{ rejectionFeedback }}
+				</p>
+			</Dialog>
 		</div>
 	</Card>
 </template>
@@ -67,6 +87,12 @@ export default {
 		app: {
 			type: Object
 		}
+	},
+	data() {
+		return {
+			showRejectionFeedbackDialog: false,
+			rejectionFeedback: ''
+		};
 	},
 	resources: {
 		releases() {
@@ -119,6 +145,10 @@ export default {
 				marketplace_app: app,
 				app_release: appRelease
 			});
+		},
+		showFeedback(appRelease) {
+			this.showRejectionFeedbackDialog = true;
+			this.rejectionFeedback = appRelease.reason_for_rejection;
 		}
 	},
 	computed: {
