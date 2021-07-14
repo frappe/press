@@ -8,7 +8,7 @@
 				class="grid items-center grid-cols-3 py-4 text-base text-gray-600 gap-x-8 md:grid-cols-6"
 			>
 				<span class="md:col-span-2">Commit Message</span>
-				<span class="hidden md:inline">Hash</span>
+				<span class="hidden md:inline">Tag</span>
 				<span class="hidden md:inline">Author</span>
 				<span>Status</span>
 				<span></span>
@@ -29,7 +29,7 @@
 					target="_blank"
 					class="hidden md:inline text-blue-700 font-bold hover:text-blue-500"
 				>
-					{{ release.hash.slice(0, 6) }}
+					{{ release.tag || release.hash.slice(0, 6) }}
 				</a>
 				<span class="hidden md:inline text-gray-600">
 					{{ release.author }}
