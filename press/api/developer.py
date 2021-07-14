@@ -5,6 +5,7 @@
 import frappe
 
 from typing import Dict, List
+from press.api.bench import get_app_tag
 from press.api.site import protected
 from press.utils import get_current_team, get_last_doc
 from press.press.doctype.marketplace_app.marketplace_app import MarketplaceApp
@@ -118,6 +119,11 @@ def releases(app: str) -> List[Dict]:
 		except frappe.ValidationError:
 			feedback = ""
 		release.reason_for_rejection = feedback
+
+		# Attach release tag
+		release.tag = get_app_tag(
+			app_source.repository, app_source.repository_owner, release.hash
+		)
 
 	return app_releases
 
