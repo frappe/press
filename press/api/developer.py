@@ -102,10 +102,15 @@ def update_app_description(name: str, description: str) -> None:
 
 
 @frappe.whitelist()
-def releases(app: str) -> List[Dict]:
+def releases(app: str, start: int = 0) -> List[Dict]:
 	"""Return list of App Releases for this `app` in order of creation time"""
 	app_releases = frappe.get_all(
-		"App Release", filters={"app": app}, fields="*", order_by="creation desc"
+		"App Release",
+		filters={"app": app},
+		fields="*",
+		order_by="creation desc",
+		start=start,
+		limit=15,
 	)
 
 	for release in app_releases:
