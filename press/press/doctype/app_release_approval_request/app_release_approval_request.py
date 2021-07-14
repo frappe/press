@@ -26,11 +26,9 @@ class AppReleaseApprovalRequest(Document):
 		series = f"REQ-{app}-.#####"
 		self.name = make_autoname(series)
 
-	def validate(self):
-		self.update_release_status()
-
 	def before_insert(self):
 		self.request_already_exists()
+		self.update_release_status()
 
 	def request_already_exists(self):
 		requests = frappe.get_all(
