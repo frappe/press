@@ -127,9 +127,7 @@ export default {
 			return {
 				method: 'press.api.developer.create_approval_request',
 				onSuccess() {
-					this.pageStart = 0;
-					this.$resources.releases.reset();
-					this.$resources.releases.submit();
+					this.resetReleaseListState();
 				}
 			};
 		},
@@ -137,9 +135,7 @@ export default {
 			return {
 				method: 'press.api.developer.cancel_approval_request',
 				onSuccess() {
-					this.pageStart = 0;
-					this.$resources.releases.reset();
-					this.$resources.releases.submit();
+					this.resetReleaseListState();
 				}
 			};
 		}
@@ -158,6 +154,11 @@ export default {
 				marketplace_app: app,
 				app_release: appRelease
 			});
+		},
+		resetReleaseListState() {
+			this.pageStart = 0;
+			this.$resources.releases.reset();
+			this.$resources.releases.submit();
 		},
 		showFeedback(appRelease) {
 			this.showRejectionFeedbackDialog = true;
