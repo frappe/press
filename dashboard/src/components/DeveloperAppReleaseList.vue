@@ -49,12 +49,12 @@
 					<Button
 						:loading="$resources.createApprovalRequest.loading"
 						type="primary"
-						@click="createApprovalRequest(release.name)"
+						@click="confirmApprovalRequest(release.name)"
 						>Publish</Button
 					>
 				</span>
 				<span v-else-if="release.status == 'Awaiting Approval'">
-					<Button type="secondary" @click="cancelApprovalRequest(release.name)"
+					<Button type="secondary" @click="confirmCancelRequest(release.name)"
 						>Cancel</Button
 					>
 				</span>
@@ -163,6 +163,32 @@ export default {
 		showFeedback(appRelease) {
 			this.showRejectionFeedbackDialog = true;
 			this.rejectionFeedback = appRelease.reason_for_rejection;
+		},
+		confirmApprovalRequest(appRelease) {
+			this.$confirm({
+				title: 'Publish Release',
+				message:
+					'Are you sure you want to <b>publish this release</b> to marketplace? <br> <br>Upon confirmation, this release will be submitted for approval from our team.',
+				actionLabel: 'Publish',
+				actionType: 'primary',
+				action: closeDialog => {
+					closeDialog();
+					this.createApprovalRequest(appRelease);
+				}
+			});
+		},
+		confirmCancelRequest(appRelease) {
+			this.$confirm({
+				title: 'Cancel Release Approval Request',
+				message:
+					'Are you sure you want to <b>cancel</b> the publish request for this release?',
+				actionLabel: 'Proceed',
+				actionType: 'danger',
+				action: closeDialog => {
+					closeDialog();
+					this.cancelApprovalRequest(appRelease);
+				}
+			});
 		}
 	},
 	computed: {
