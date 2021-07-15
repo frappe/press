@@ -89,13 +89,22 @@ class ReleaseGroup(Document):
 			return
 		apps = []
 		for app in self.apps:
+			app_release_filters = {"app": app.app, "source": app.source}
+
+			marketplace_app = frappe.get_all(
+				"Marketplace App", filters={"app": app.app}, limit=1,
+			)
+			if marketplace_app:
+				app_release_filters["status"] = "Approved"
+
 			release = frappe.get_all(
 				"App Release",
 				fields=["name", "source", "app", "hash"],
-				filters={"app": app.app, "source": app.source},
+				filters=app_release_filters,
 				order_by="creation desc",
 				limit=1,
 			)
+
 			if release:
 				release = release[0]
 				apps.append(
