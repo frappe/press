@@ -2,6 +2,7 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
+from press.press.doctype import release_group
 import frappe
 
 from frappe.model.document import Document
@@ -91,10 +92,12 @@ class ReleaseGroup(Document):
 		for app in self.apps:
 			app_release_filters = {"app": app.app, "source": app.source}
 
+			# If the app is a marketplace app 
+			# & the release group is `public` (shared bench)
 			marketplace_app = frappe.get_all(
 				"Marketplace App", filters={"app": app.app}, limit=1,
 			)
-			if marketplace_app:
+			if marketplace_app and release_group.public:
 				app_release_filters["status"] = "Approved"
 
 			release = frappe.get_all(
