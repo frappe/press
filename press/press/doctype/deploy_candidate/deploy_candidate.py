@@ -5,6 +5,7 @@
 from __future__ import unicode_literals
 
 import os
+from press.press.doctype.server.server import Server
 import re
 import shlex
 import shutil
@@ -66,7 +67,7 @@ class DeployCandidate(Document):
 	def deploy_to_production(self):
 		self.build_and_deploy()
 
-	def build_and_deploy(self, staging=False):
+	def build_and_deploy(self, staging: bool = False):
 		self.status = "Pending"
 		self.add_build_steps()
 		self.save()
@@ -88,10 +89,11 @@ class DeployCandidate(Document):
 		frappe.session.data = session_data
 		frappe.db.commit()
 
-	def _build_and_deploy(self, staging):
+	def _build_and_deploy(self, staging: bool):
 		self._build()
 		self._deploy(staging)
 
+	@frappe.whitelist()
 	def _deploy(self, staging):
 		try:
 			self.create_deploy(staging)
@@ -403,7 +405,7 @@ class DeployCandidate(Document):
 	def create_deploy(self, staging: bool):
 		deploy_doc = frappe.db.exists("Deploy", {"group": self.group, "candidate": self.name})
 		if staging:
-			servers = frappe.get_all("Server", {"staging": True}, pluck="name")
+			servers = [Server.get_one_staging()]
 			if not servers:
 				frappe.log_error(title="Staging Server for new benches not found")
 		else:

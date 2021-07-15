@@ -1,6 +1,7 @@
 """Functions for automated audit of frappe cloud systems."""
 import json
 from datetime import datetime, timedelta
+from press.press.doctype.server.server import Server
 from typing import List
 
 import frappe
@@ -32,7 +33,7 @@ class BenchFieldCheck(Audit):
 	audit_type = "Bench Field Check"
 
 	def __init__(self):
-		servers = frappe.get_all("Server", pluck="name")
+		servers = Server.get_all_prod()
 		log = {}
 		status = "Success"
 		for server in servers:
