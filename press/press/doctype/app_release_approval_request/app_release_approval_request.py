@@ -28,6 +28,7 @@ class AppReleaseApprovalRequest(Document):
 
 	def before_insert(self):
 		self.request_already_exists()
+		self.another_request_awaiting_approval()
 		self.update_release_status()
 
 	def request_already_exists(self):
@@ -38,6 +39,15 @@ class AppReleaseApprovalRequest(Document):
 
 		if len(requests) > 0:
 			frappe.throw("An active request for this app release already exists!")
+
+	def another_request_awaiting_approval(self):
+		requests = frappe.get_all(
+			"App Release Approval Request",
+			filters={"marketplace_app": self.marketplace_app, "status": "Open"},
+		)
+
+		if len(requests) > 0:
+			frappe.throw("A previous release is already awaiting approval!")
 
 	def update_release_status(self):
 		release: AppRelease = frappe.get_doc("App Release", self.app_release)
@@ -66,7 +76,18 @@ class AppReleaseApprovalRequest(Document):
 		release.save(ignore_permissions=True)
 
 	def notifty_publisher(self):
-		if self.status == "Rejected":
-			print("Hey, your app was Rejected. Work hard!")
-		elif self.status == "Approved":
-			print("Congratz! Your app release was approved and is published now!")
+		publisher_email = ""  # From team
+		publisher_name = ""  # From team
+		commit_link = ""  # Will come from app source
+
+		# frappe.sendmail(
+		# 	[publisher_email],
+		# 	subject="Update on App release publish request",
+		# 	args={
+		# 		"subject": f"Hello, {publisher_name}",
+		# 		"status": self.status,
+		# 		"rejection_reason": self.reason_for_rejection,
+		# 		"commit_link": commit_link,
+		# 	},
+		# 	template="app_approval_request_update",
+		# )
