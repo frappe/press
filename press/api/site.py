@@ -210,13 +210,20 @@ def domains(name):
 
 
 @frappe.whitelist()
-def activities(name, start=0):
-	activities = frappe.get_all(
-		"Site Activity",
-		fields=["action", "reason", "creation", "owner"],
-		filters={"site": name},
-		start=start,
-		limit=20,
+def activities(name, start=0, limit=20):
+	# get all site activity except Backup by Administrator
+	activities = frappe.db.sql(
+		"""
+		SELECT action, reason, creation, owner
+		FROM `tabSite Activity`
+		WHERE site = %(site)s
+		AND (action != 'Backup' or owner != 'Administrator')
+		ORDER BY creation desc
+		LIMIT %(limit)s
+		OFFSET %(start)s
+	""",
+		values={"site": name, "limit": limit, "start": start},
+		as_dict=1,
 	)
 
 	for activity in activities:
@@ -470,13 +477,7 @@ def overview(name):
 	site = frappe.get_cached_doc("Site", name)
 
 	return {
-		"recent_activity": frappe.db.get_all(
-			"Site Activity",
-			fields="*",
-			filters={"site": name},
-			order_by="creation desc",
-			limit=3,
-		),
+		"recent_activity": activities(name, limit=3),
 		"plan": current_plan(name),
 		"info": {
 			"created_by": frappe.db.get_value(
