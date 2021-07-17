@@ -55,9 +55,21 @@ class Invoice(Document):
 			self.create_stripe_invoice()
 		except Exception:
 			frappe.db.rollback()
+			self.reload()
 
+			# log the traceback as comment
 			msg = "<pre><code>" + frappe.get_traceback() + "</pre></code>"
 			self.add_comment("Comment", _("Stripe Invoice Creation Failed") + "<br><br>" + msg)
+
+			if not self.stripe_invoice_id:
+				# if stripe invoice was created, find it and set it
+				# so that we avoid scenarios where Stripe Invoice was created but not set in Frappe Cloud
+				stripe_invoice_id = self.find_stripe_invoice()
+				if stripe_invoice_id:
+					self.stripe_invoice_id = stripe_invoice_id
+					self.status = "Invoice Created"
+					self.save()
+
 			frappe.db.commit()
 
 			raise
@@ -103,6 +115,15 @@ class Invoice(Document):
 			return
 
 		if self.status == "Paid":
+			# void an existing invoice if payment was done via credits
+			if self.stripe_invoice_id:
+				stripe.Invoice.void_invoice(self.stripe_invoice_id)
+				self.add_comment(
+					text=(
+						f"Stripe Invoice {self.stripe_invoice_id} voided because"
+						" payment is done via credits."
+					)
+				)
 			return
 
 		if self.stripe_invoice_id:
@@ -127,13 +148,10 @@ class Invoice(Document):
 			return
 
 		customer_id = frappe.db.get_value("Team", self.team, "stripe_customer_id")
-		start = getdate(self.period_start)
-		end = getdate(self.period_end)
-		period_string = f"{start.strftime('%b %d')} - {end.strftime('%b %d')} {end.year}"
 		amount = int(self.amount_due * 100)
 		stripe.InvoiceItem.create(
 			customer=customer_id,
-			description=f"Frappe Cloud Subscription ({period_string})",
+			description=self.get_stripe_invoice_item_description(),
 			amount=amount,
 			currency=self.currency.lower(),
 			idempotency_key=f"invoiceitem:{self.name}:{amount}",
@@ -147,6 +165,22 @@ class Invoice(Document):
 		self.stripe_invoice_id = invoice["id"]
 		self.status = "Invoice Created"
 		self.save()
+
+	def find_stripe_invoice(self):
+		stripe = get_stripe()
+		invoices = stripe.Invoice.list(
+			customer=frappe.db.get_value("Team", self.team, "stripe_customer_id")
+		)
+		description = self.get_stripe_invoice_item_description()
+		for invoice in invoices.data:
+			if invoice.lines.data[0].description == description and invoice.status != "void":
+				return invoice["id"]
+
+	def get_stripe_invoice_item_description(self):
+		start = getdate(self.period_start)
+		end = getdate(self.period_end)
+		period_string = f"{start.strftime('%b %d')} - {end.strftime('%b %d')} {end.year}"
+		return f"Frappe Cloud Subscription ({period_string})"
 
 	@frappe.whitelist()
 	def finalize_stripe_invoice(self):
