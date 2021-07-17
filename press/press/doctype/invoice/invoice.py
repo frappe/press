@@ -28,12 +28,17 @@ class Invoice(Document):
 		self.validate_amount()
 
 	def before_submit(self):
-		if self.status != "Paid":
+		if self.total > 0 and self.status != "Paid":
 			frappe.throw("Invoice must be Paid to be submitted")
 
 	@frappe.whitelist()
 	def finalize_invoice(self):
 		if self.type == "Prepaid Credits":
+			return
+
+		if self.total == 0:
+			self.status = "Empty"
+			self.submit()
 			return
 
 		# set as unpaid by default
