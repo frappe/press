@@ -115,7 +115,8 @@ class Invoice(Document):
 				stripe.Invoice.void_invoice(self.stripe_invoice_id)
 				self.add_comment(
 					text=(
-						f"Stripe Invoice {self.stripe_invoice_id} voided because payment is done via credits."
+						f"Stripe Invoice {self.stripe_invoice_id} voided because"
+						" payment is done via credits."
 					)
 				)
 			return
@@ -162,10 +163,12 @@ class Invoice(Document):
 
 	def find_stripe_invoice(self):
 		stripe = get_stripe()
-		invoices = stripe.Invoice.list(customer=frappe.db.get_value("Team", self.team, "stripe_customer_id"))
+		invoices = stripe.Invoice.list(
+			customer=frappe.db.get_value("Team", self.team, "stripe_customer_id")
+		)
 		description = self.get_stripe_invoice_item_description()
 		for invoice in invoices.data:
-			if invoice.lines.data[0].description == description and invoice.status != 'void':
+			if invoice.lines.data[0].description == description and invoice.status != "void":
 				return invoice["id"]
 
 	def get_stripe_invoice_item_description(self):
