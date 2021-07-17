@@ -55,7 +55,7 @@ class Invoice(Document):
 			# log the traceback as comment
 			msg = "<pre><code>" + frappe.get_traceback() + "</pre></code>"
 			self.add_comment("Comment", _("Stripe Invoice Creation Failed") + "<br><br>" + msg)
-			
+
 			if not self.stripe_invoice_id:
 				# if stripe invoice was created, find it and set it
 				# so that we avoid scenarios where Stripe Invoice was created but not set in Frappe Cloud
@@ -165,7 +165,7 @@ class Invoice(Document):
 		invoices = stripe.Invoice.list(customer=frappe.db.get_value("Team", self.team, "stripe_customer_id"))
 		description = self.get_stripe_invoice_item_description()
 		for invoice in invoices.data:
-			if invoice.lines.data[0].description == description:
+			if invoice.lines.data[0].description == description and invoice.status != 'void':
 				return invoice["id"]
 
 	def get_stripe_invoice_item_description(self):
