@@ -50,18 +50,20 @@ class Invoice(Document):
 			self.create_stripe_invoice()
 		except Exception:
 			frappe.db.rollback()
+			self.reload()
 
 			# log the traceback as comment
 			msg = "<pre><code>" + frappe.get_traceback() + "</pre></code>"
 			self.add_comment("Comment", _("Stripe Invoice Creation Failed") + "<br><br>" + msg)
-
-			# if stripe invoice was created, find it and set it
-			# so that we avoid scenarios where Stripe Invoice was created but not set in Frappe Cloud
-			stripe_invoice_id = self.find_stripe_invoice()
-			if stripe_invoice_id:
-				self.stripe_invoice_id = stripe_invoice_id
-				self.status = "Invoice Created"
-				self.save()
+			
+			if not self.stripe_invoice_id:
+				# if stripe invoice was created, find it and set it
+				# so that we avoid scenarios where Stripe Invoice was created but not set in Frappe Cloud
+				stripe_invoice_id = self.find_stripe_invoice()
+				if stripe_invoice_id:
+					self.stripe_invoice_id = stripe_invoice_id
+					self.status = "Invoice Created"
+					self.save()
 
 			frappe.db.commit()
 
