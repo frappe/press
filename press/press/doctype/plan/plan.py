@@ -50,4 +50,6 @@ class Plan(Document):
 
 def get_plan_config(name):
 	cpu_time = frappe.db.get_value("Plan", name, "cpu_time_per_day")
-	return {"rate_limit": {"limit": cpu_time * 3600, "window": 86400}}
+	if cpu_time > 0:
+		return {"rate_limit": {"limit": cpu_time * 3600, "window": 86400}}
+	return {}

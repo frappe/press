@@ -879,14 +879,6 @@ class Site(Document):
 		)
 		return frappe.get_doc("Subscription", name) if name else None
 
-	@property
-	def plan(self):
-		return frappe.db.get_value(
-			"Subscription",
-			filters={"document_type": "Site", "document_name": self.name},
-			fieldname="plan",
-		)
-
 	def can_charge_for_subscription(self):
 		today = frappe.utils.getdate()
 		return (
