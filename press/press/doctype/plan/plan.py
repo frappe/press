@@ -16,23 +16,6 @@ class Plan(Document):
 	def period(self):
 		return frappe.utils.get_last_day(None).day
 
-	def validate(self):
-		self.set_space_limit_conversion_values()
-
-	def set_space_limit_conversion_values(self):
-		readable_mapped_fields = {
-			"max_database_usage": "_max_database_usage",
-			"max_storage_usage": "_max_storage_usage",
-		}
-
-		if not self.period:
-			frappe.throw("Period must be greater than 0")
-
-		for real, readable in readable_mapped_fields.items():
-			num = self.get(real)
-			if num:
-				setattr(self, readable, human_readable(num))
-
 	def get_price_per_day(self, currency):
 		price = self.price_inr if currency == "INR" else self.price_usd
 		price_per_day = rounded(price / self.period, 2)
