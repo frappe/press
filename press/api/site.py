@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 
 import json
 
+
 import dns.resolver
 import wrapt
 from boto3 import client
@@ -22,12 +23,12 @@ from press.press.doctype.site_update.site_update import (
 	benches_with_available_update,
 	should_try_update,
 )
+from press.press.doctype.plan.plan import Plan
 from press.utils import (
 	get_current_team,
 	log_error,
 	get_frappe_backups,
 	get_client_blacklisted_keys,
-	group_children_in_result,
 )
 
 
@@ -318,31 +319,7 @@ def options_for_new():
 
 @frappe.whitelist()
 def get_plans():
-	filters = {"enabled": True, "document_type": "Site"}
-
-	plans = frappe.db.get_all(
-		"Plan",
-		fields=[
-			"name",
-			"plan_title",
-			"price_usd",
-			"price_inr",
-			"cpu_time_per_day",
-			"max_storage_usage",
-			"max_database_usage",
-			"`tabHas Role`.role",
-		],
-		filters=filters,
-		order_by="price_usd asc",
-	)
-	plans = group_children_in_result(plans, {"role": "roles"})
-
-	out = []
-	for plan in plans:
-		if frappe.utils.has_common(plan["roles"], frappe.get_roles()):
-			plan.pop("roles", "")
-			out.append(plan)
-	return out
+	return Plan.get_plans("Site")
 
 
 @frappe.whitelist()

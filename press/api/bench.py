@@ -14,6 +14,7 @@ from press.press.doctype.release_group.release_group import (
 	new_release_group,
 )
 from press.press.doctype.agent_job.agent_job import job_detail
+from press.press.doctype.plan.plan import Plan
 
 
 @frappe.whitelist()
@@ -23,7 +24,7 @@ def new(bench):
 		frappe.throw("A bench exists with the same name")
 
 	apps = [{"app": app["name"], "source": app["source"]} for app in bench["apps"]]
-	group = new_release_group(bench["title"], bench["version"], apps, team)
+	group = new_release_group(bench["title"], bench["version"], apps, team, bench["plan"])
 	return group.name
 
 
@@ -127,6 +128,7 @@ def options():
 		versions.append(version_dict)
 	options = {
 		"versions": versions,
+		"plans": Plan.get_plans("Release Group"),
 	}
 	return options
 

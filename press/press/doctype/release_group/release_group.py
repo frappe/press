@@ -175,7 +175,7 @@ class ReleaseGroup(Document):
 		self.save()
 
 
-def new_release_group(title, version, apps, team=None):
+def new_release_group(title, version, apps, team=None, plan=None):
 	group = frappe.get_doc(
 		{
 			"doctype": "Release Group",
@@ -185,6 +185,14 @@ def new_release_group(title, version, apps, team=None):
 			"team": team,
 		}
 	).insert()
+	if plan:
+		frappe.get_doc(
+			doctype="Subscription",
+			team=team,
+			plan=plan,
+			document_type="Release Group",
+			document_name=group.name,
+		).insert(ignore_permissions=True)
 	return group
 
 

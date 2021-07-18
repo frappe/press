@@ -8,7 +8,7 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import rounded
 
-from press.utils import human_readable
+from press.utils import group_children_in_result
 
 
 class Plan(Document):
@@ -29,6 +29,25 @@ class Plan(Document):
 
 		if interval == "Monthly":
 			return rounded(price_per_day * 30)
+
+	@staticmethod
+	def get_plans(document_type):
+		filters = {"enabled": True, "document_type": document_type}
+
+		plans = frappe.db.get_all(
+			"Plan",
+			fields=["*", "`tabHas Role`.role"],
+			filters=filters,
+			order_by="price_usd asc",
+		)
+		plans = group_children_in_result(plans, {"role": "roles"})
+
+		out = []
+		for plan in plans:
+			if frappe.utils.has_common(plan["roles"], frappe.get_roles()):
+				plan.pop("roles", "")
+				out.append(plan)
+		return out
 
 
 def get_plan_config(name):

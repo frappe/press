@@ -48,6 +48,21 @@
 					</div>
 				</div>
 				<div>
+					<label class="text-lg font-semibold">
+						Choose a plan
+					</label>
+					<p class="text-base text-gray-700">
+						Select a plan based on the type of usage you are expecting on your
+						bench.
+					</p>
+					<div class="mt-4">
+						<TableOptionSelector
+							v-bind="benchPlanOptions"
+							v-model="selectedPlan"
+						/>
+					</div>
+				</div>
+				<div>
 					<ErrorMessage class="mb-2" :error="$resources.createBench.error" />
 					<Button
 						type="primary"
@@ -65,17 +80,20 @@
 <script>
 import WizardCard from '@/components/WizardCard.vue';
 import AppSourceSelector from '@/components/AppSourceSelector.vue';
+import TableOptionSelector from '../components/TableOptionSelector.vue';
 export default {
 	name: 'NewBench',
 	components: {
 		WizardCard,
-		AppSourceSelector
+		AppSourceSelector,
+		TableOptionSelector
 	},
 	data() {
 		return {
 			benchTitle: null,
 			selectedVersionName: null,
-			selectedApps: []
+			selectedApps: [],
+			selectedPlan: null
 		};
 	},
 	resources: {
@@ -83,7 +101,8 @@ export default {
 			return {
 				method: 'press.api.bench.options',
 				default: {
-					versions: []
+					versions: [],
+					plans: []
 				},
 				auto: true,
 				onSuccess(options) {
@@ -103,7 +122,8 @@ export default {
 						apps: this.selectedApps.map(app => ({
 							name: app.app,
 							source: app.source.name
-						}))
+						})),
+						plan: this.selectedPlan?.name
 					}
 				},
 				validate() {
@@ -115,6 +135,9 @@ export default {
 					}
 					if (this.selectedApps.length < 1) {
 						return 'Select atleast one app to create bench';
+					}
+					if (!this.selectedPlan) {
+						return 'Please choose a plan';
 					}
 				},
 				onSuccess(benchName) {
@@ -157,6 +180,20 @@ export default {
 				label: `${v.name} (${v.status})`,
 				value: v.name
 			}));
+		},
+		benchPlanOptions() {
+			let plans = this.options ? this.options.plans : [];
+			plans = plans.map(plan => {
+				let title = this.$planTitle(plan);
+				return {
+					...plan,
+					title: `${title} /mo`
+				};
+			});
+			return {
+				header: [{ label: 'Plan', fieldname: 'title' }],
+				options: plans
+			};
 		}
 	}
 };
