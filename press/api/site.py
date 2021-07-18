@@ -27,6 +27,7 @@ from press.utils import (
 	log_error,
 	get_frappe_backups,
 	get_client_blacklisted_keys,
+	group_children_in_result,
 )
 
 
@@ -317,11 +318,9 @@ def options_for_new():
 
 @frappe.whitelist()
 def get_plans():
-	filters = {"enabled": True, "document_type": "Site", "price_usd": (">", 0)}
-	if frappe.local.dev_server:
-		del filters["price_usd"]
+	filters = {"enabled": True, "document_type": "Site"}
 
-	return frappe.db.get_all(
+	plans = frappe.db.get_all(
 		"Plan",
 		fields=[
 			"name",
@@ -331,10 +330,19 @@ def get_plans():
 			"cpu_time_per_day",
 			"max_storage_usage",
 			"max_database_usage",
+			"`tabHas Role`.role",
 		],
 		filters=filters,
 		order_by="price_usd asc",
 	)
+	plans = group_children_in_result(plans, {"role": "roles"})
+
+	out = []
+	for plan in plans:
+		if frappe.utils.has_common(plan["roles"], frappe.get_roles()):
+			plan.pop("roles", "")
+			out.append(plan)
+	return out
 
 
 @frappe.whitelist()
