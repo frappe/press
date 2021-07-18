@@ -49,9 +49,9 @@ export default async function call(method, args) {
 			exception = error.exc;
 			try {
 				exception = JSON.parse(exception)[0];
+				console.log(exception);
 				// eslint-disable-next-line no-empty
 			} catch (e) {}
-			errorParts.push(exception);
 		}
 		let e = new Error(errorParts.join('\n'));
 		e.exc_type = error.exc_type;
@@ -69,7 +69,9 @@ export default async function call(method, args) {
 		});
 		e.messages = e.messages.filter(Boolean);
 		if (!e.messages.length) {
-			e.messages = error._error_message ? [error._error_message] : ['Internal Server Error'];
+			e.messages = error._error_message
+				? [error._error_message]
+				: ['Internal Server Error'];
 		}
 		updateState(this, null, e.messages.join('\n'));
 
