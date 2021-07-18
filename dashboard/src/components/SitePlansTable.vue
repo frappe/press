@@ -38,7 +38,7 @@
 			</div>
 			<div class="w-1/4 text-gray-900" :class="{ 'opacity-25': plan.disabled }">
 				{{ plan.cpu_time_per_day }}
-				{{ $plural(plan.concurrent_users, 'hour', 'hours') }} / day
+				{{ $plural(plan.cpu_time_per_day, 'hour', 'hours') }} / day
 			</div>
 			<div class="w-1/4 text-gray-900" :class="{ 'opacity-25': plan.disabled }">
 				{{ formatBytes(plan.max_database_usage, 0, 2) }}

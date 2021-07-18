@@ -8,20 +8,17 @@
  "engine": "InnoDB",
  "field_order": [
   "enabled",
+  "section_break_2",
   "document_type",
   "plan_title",
   "interval",
+  "column_break_5",
   "price_usd",
   "price_inr",
   "features_section",
   "cpu_time_per_day",
   "max_database_usage",
   "max_storage_usage",
-  "concurrent_users",
-  "column_break_12",
-  "trial_period",
-  "_max_database_usage",
-  "_max_storage_usage",
   "offsite_backups"
  ],
  "fields": [
@@ -53,21 +50,10 @@
    "reqd": 1
   },
   {
-   "fieldname": "concurrent_users",
-   "fieldtype": "Int",
-   "label": "Concurrent Users"
-  },
-  {
    "fieldname": "cpu_time_per_day",
    "fieldtype": "Int",
    "in_list_view": 1,
    "label": "CPU Time Per Day"
-  },
-  {
-   "default": "0",
-   "fieldname": "trial_period",
-   "fieldtype": "Int",
-   "label": "Trial Period (Days)"
   },
   {
    "fieldname": "document_type",
@@ -83,9 +69,10 @@
    "options": "Daily\nMonthly"
   },
   {
+   "depends_on": "eval:doc.document_type == 'Site'",
    "fieldname": "features_section",
    "fieldtype": "Section Break",
-   "label": "Features"
+   "label": "Site Features"
   },
   {
    "default": "0",
@@ -105,27 +92,17 @@
    "label": "Max Storage Usage (MiB)"
   },
   {
-   "fieldname": "_max_database_usage",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Max Database Usage (Readable)",
-   "read_only": 1
-  },
-  {
-   "fieldname": "_max_storage_usage",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Max Storage Usage (Readable)",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_12",
+   "fieldname": "column_break_5",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_2",
+   "fieldtype": "Section Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-03-24 18:31:11.501326",
+ "modified": "2021-07-18 12:50:41.614387",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Plan",
