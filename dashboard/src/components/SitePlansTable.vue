@@ -32,9 +32,9 @@
 			</div>
 			<div class="w-1/4 text-gray-900" :class="{ 'opacity-25': plan.disabled }">
 				<span class="font-semibold">
-					{{ plan.plan_title }}
+					{{ $planTitle(plan) }}
 				</span>
-				<span> /mo</span>
+				<span v-if="plan.price_usd > 0"> /mo</span>
 			</div>
 			<div class="w-1/4 text-gray-900" :class="{ 'opacity-25': plan.disabled }">
 				{{ plan.cpu_time_per_day }}
