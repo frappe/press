@@ -577,7 +577,7 @@ def current_plan(name):
 	from press.api.analytics import get_current_cpu_usage
 
 	site = frappe.get_doc("Site", name)
-	plan = frappe.get_doc("Plan", site.plan)
+	plan = frappe.get_doc("Plan", site.plan) if site.plan else None
 
 	result = get_current_cpu_usage(name)
 	total_cpu_usage_hours = flt(result / (3.6 * (10 ** 9)), 5)
@@ -606,8 +606,8 @@ def current_plan(name):
 		"current_plan": plan,
 		"total_cpu_usage_hours": total_cpu_usage_hours,
 		"hours_until_reset": hours_left_today,
-		"max_database_usage": plan.max_database_usage,
-		"max_storage_usage": plan.max_storage_usage,
+		"max_database_usage": plan.max_database_usage if plan else None,
+		"max_storage_usage": plan.max_storage_usage if plan else None,
 		"total_database_usage": total_database_usage,
 		"total_storage_usage": total_storage_usage,
 		"usage_in_percent": {
