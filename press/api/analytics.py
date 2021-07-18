@@ -55,7 +55,7 @@ def daily_usage(name, timezone):
 
 	return {
 		"data": [{"value": r.max, "date": r.date} for r in request_data],
-		"plan_limit": get_plan_config(plan)["rate_limit"]["limit"],
+		"plan_limit": get_plan_config(plan)["rate_limit"]["limit"] if plan else 0,
 	}
 
 

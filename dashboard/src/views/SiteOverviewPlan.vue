@@ -2,6 +2,7 @@
 	<Card
 		title="Plan"
 		subtitle="Upgrade or downgrade your plan based on your usage"
+		v-if="plan.current_plan"
 	>
 		<template #actions>
 			<Button
