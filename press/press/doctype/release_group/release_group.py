@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
-
-from press.press.doctype import release_group
 import frappe
 
 from frappe.model.document import Document
@@ -97,7 +95,7 @@ class ReleaseGroup(Document):
 			marketplace_app = frappe.get_all(
 				"Marketplace App", filters={"app": app.app}, limit=1,
 			)
-			if marketplace_app and release_group.public:
+			if marketplace_app and self.public:
 				app_release_filters["status"] = "Approved"
 
 			release = frappe.get_all(
