@@ -6,12 +6,16 @@
 		<template #actions>
 			<!-- TODO: Change '>=' to '>' -->
 			<select
-				v-if="versions.length > 1"
+				v-if="sources.length >= 1"
 				class="block form-select"
-				v-model="selectedVersion"
+				v-model="selectedSource"
 			>
-				<option v-for="version in versions" :key="version">
-					{{ version }}
+				<option
+					v-for="source in sources"
+					:key="source.source"
+					:value="source.source"
+				>
+					{{ source.version }}
 				</option>
 			</select>
 		</template>
@@ -110,11 +114,11 @@ export default {
 			pageStart: 0,
 			showRejectionFeedbackDialog: false,
 			rejectionFeedback: '',
-			selectedVersion: null
+			selectedSource: null
 		};
 	},
 	created() {
-		this.selectedVersion = this.versions[0];
+		this.selectedSource = this.sources[0].source;
 	},
 	resources: {
 		releases() {
@@ -225,8 +229,8 @@ export default {
 			}
 		},
 
-		versions() {
-			return this.app.sources.map(source => source.version);
+		sources() {
+			return this.app.sources;
 		}
 	}
 };
