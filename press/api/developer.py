@@ -8,6 +8,7 @@ from typing import Dict, List
 from press.api.bench import get_app_tag
 from press.api.site import protected
 from press.utils import get_current_team, get_last_doc
+from press.press.doctype.app_source.app_source import AppSource
 from press.press.doctype.marketplace_app.marketplace_app import MarketplaceApp
 from press.press.doctype.app_release.app_release import AppRelease
 from press.press.doctype.app_release_approval_request.app_release_approval_request import (
@@ -132,6 +133,12 @@ def releases(app: str, source: str, start: int = 0) -> List[Dict]:
 		)
 
 	return app_releases
+
+
+@frappe.whitelist()
+def get_app_source(name: str) -> AppSource:
+	"""Return `App Source` document having `name`"""
+	return frappe.get_doc("App Source", name)
 
 
 @frappe.whitelist()
