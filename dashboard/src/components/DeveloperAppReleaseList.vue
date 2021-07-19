@@ -23,7 +23,13 @@
 				</p>
 			</div>
 		</template>
-		<div class="divide-y">
+
+		<div v-if="releasesList.length === 0">
+			<p class="mt-3 text-gray-600 text-center text-lg">
+				No app releases have been created for this version.
+			</p>
+		</div>
+		<div v-else class="divide-y">
 			<div
 				class="grid items-center grid-cols-3 py-4 text-base text-gray-600 gap-x-8 md:grid-cols-6"
 			>
