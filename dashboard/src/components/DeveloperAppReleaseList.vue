@@ -3,6 +3,18 @@
 		title="Your App Releases"
 		subtitle="Created each time you push to GitHub"
 	>
+		<template #actions>
+			<!-- TODO: Change '>=' to '>' -->
+			<select
+				v-if="versions.length > 1"
+				class="block form-select"
+				v-model="selectedVersion"
+			>
+				<option v-for="version in versions" :key="version">
+					{{ version }}
+				</option>
+			</select>
+		</template>
 		<div class="divide-y">
 			<div
 				class="grid items-center grid-cols-3 py-4 text-base text-gray-600 gap-x-8 md:grid-cols-6"
@@ -97,8 +109,12 @@ export default {
 		return {
 			pageStart: 0,
 			showRejectionFeedbackDialog: false,
-			rejectionFeedback: ''
+			rejectionFeedback: '',
+			selectedVersion: null
 		};
+	},
+	created() {
+		this.selectedVersion = this.versions[0];
 	},
 	resources: {
 		releases() {
@@ -207,6 +223,10 @@ export default {
 			) {
 				return this.$date(this.$resources.latestApproved.data.creation);
 			}
+		},
+
+		versions() {
+			return this.app.sources.map(source => source.version);
 		}
 	}
 };
