@@ -116,10 +116,6 @@ def releases(app: str, source: str, start: int = 0) -> List[Dict]:
 	)
 
 	for release in app_releases:
-		# Attach app source doc
-		app_source = frappe.get_doc("App Source", release.source)
-		release.source = app_source
-
 		# Attach rejection feedback (if any)
 		try:
 			feedback = reason_for_rejection(release.name)
@@ -128,6 +124,7 @@ def releases(app: str, source: str, start: int = 0) -> List[Dict]:
 		release.reason_for_rejection = feedback
 
 		# Attach release tag
+		app_source = frappe.get_doc("App Source", release.source)
 		release.tag = get_app_tag(
 			app_source.repository, app_source.repository_owner, release.hash
 		)

@@ -45,7 +45,7 @@
 					{{ release.message }}
 				</p>
 				<a
-					:href="`${release.source.repository_url}/commit/${release.hash}`"
+					:href="getCommitUrl(release.hash)"
 					target="_blank"
 					class="hidden md:inline text-blue-700 font-bold hover:text-blue-500"
 				>
@@ -226,6 +226,9 @@ export default {
 					this.cancelApprovalRequest(appRelease);
 				}
 			});
+		},
+		getCommitUrl(releaseHash) {
+			return `${this.repoUrl}/commit/${releaseHash}`;
 		}
 	},
 	computed: {
@@ -258,6 +261,17 @@ export default {
 			}
 
 			return this.$resources.appSource.data.branch;
+		},
+
+		repoUrl() {
+			if (
+				this.$resources.appSource.loading ||
+				!this.$resources.appSource.data
+			) {
+				return '';
+			}
+
+			return this.$resources.appSource.data.repository_url;
 		}
 	},
 	watch: {
