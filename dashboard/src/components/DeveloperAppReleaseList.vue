@@ -127,9 +127,9 @@ export default {
 				method: 'press.api.developer.releases',
 				params: {
 					app: 'frappe',
-					start: this.pageStart
+					start: this.pageStart,
+					source: this.selectedSource
 				},
-				auto: true,
 				paged: true,
 				keepData: true
 			};
@@ -231,6 +231,13 @@ export default {
 
 		sources() {
 			return this.app.sources;
+		}
+	},
+	watch: {
+		selectedSource(value) {
+			if (value) {
+				this.resetReleaseListState();
+			}
 		}
 	}
 };
