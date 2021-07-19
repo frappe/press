@@ -1,23 +1,27 @@
 <template>
-	<Card
-		title="Your App Releases"
-		subtitle="Created each time you push to GitHub"
-	>
+	<Card title="Your App Releases">
 		<template #actions>
 			<!-- TODO: Change '>=' to '>' -->
-			<select
-				v-if="sources.length >= 1"
-				class="block form-select"
-				v-model="selectedSource"
-			>
-				<option
-					v-for="source in sources"
-					:key="source.source"
-					:value="source.source"
+			<div class="flex flex-col items-end">
+				<select
+					v-if="sources.length > 1"
+					class="block form-select text-right mb-2"
+					v-model="selectedSource"
 				>
-					{{ source.version }}
-				</option>
-			</select>
+					<option
+						v-for="source in sources"
+						:key="source.source"
+						:value="source.source"
+					>
+						{{ source.version }}
+					</option>
+				</select>
+
+				<p class="text-base text-gray-700">
+					<span class="font-semibold">{{ currentBranch }}</span>
+					branch
+				</p>
+			</div>
 		</template>
 		<div class="divide-y">
 			<div
@@ -95,7 +99,12 @@
 			</Dialog>
 		</div>
 		<div class="py-3 flex justify-center">
-			<Button @click="pageStart += 15" v-if="!$resources.releases.lastPageEmpty"
+			<Button
+				@click="
+					pageStart += 15;
+					$resources.releases.fetch();
+				"
+				v-if="!$resources.releases.lastPageEmpty"
 				>Load More</Button
 			>
 		</div>
@@ -132,6 +141,14 @@ export default {
 				},
 				paged: true,
 				keepData: true
+			};
+		},
+		appSource() {
+			return {
+				method: 'press.api.developer.get_app_source',
+				params: {
+					name: this.selectedSource
+				}
 			};
 		},
 		latestApproved() {
@@ -213,7 +230,7 @@ export default {
 	},
 	computed: {
 		releasesList() {
-			if (!this.$resources.releases.data || this.$resources.releases.loading) {
+			if (!this.$resources.releases.data) {
 				return [];
 			}
 
@@ -231,12 +248,23 @@ export default {
 
 		sources() {
 			return this.app.sources;
+		},
+
+		currentBranch() {
+			if (this.$resources.appSource.loading) {
+				return 'Loading...';
+			} else if (!this.$resources.appSource.data) {
+				return '';
+			}
+
+			return this.$resources.appSource.data.branch;
 		}
 	},
 	watch: {
 		selectedSource(value) {
 			if (value) {
 				this.resetReleaseListState();
+				this.$resources.appSource.submit();
 			}
 		}
 	}
