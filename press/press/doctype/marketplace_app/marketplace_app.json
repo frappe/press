@@ -16,6 +16,7 @@
   "team",
   "published",
   "section_break_5",
+  "sources",
   "description",
   "long_description",
   "links_section",
@@ -141,6 +142,12 @@
    "in_standard_filter": 1,
    "label": "Team",
    "options": "Team"
+  },
+  {
+   "fieldname": "sources",
+   "fieldtype": "Table",
+   "label": "Sources",
+   "options": "Marketplace App Version"
   }
  ],
  "has_web_view": 1,
@@ -148,7 +155,7 @@
  "index_web_pages_for_search": 1,
  "is_published_field": "published",
  "links": [],
- "modified": "2021-07-06 23:40:40.877600",
+ "modified": "2021-07-19 12:17:43.734262",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Marketplace App",
