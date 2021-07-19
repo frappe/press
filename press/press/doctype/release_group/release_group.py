@@ -2,7 +2,9 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 import frappe
+import hashlib
 
+from typing import List, Dict
 from frappe.model.document import Document
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app_source.app_source import AppSource, create_app_source
@@ -86,12 +88,15 @@ class ReleaseGroup(Document):
 	def create_deploy_candidate(self):
 		if not self.enabled:
 			return
+
 		apps = []
 		for app in self.apps:
 			app_release_filters = {"app": app.app, "source": app.source}
 
-			# If the app is a marketplace app 
+			# If the app is a `marketplace app`
 			# & the release group is `public` (shared bench)
+			# To fetch only the latest `approved` release
+			# to be part of a deploy candidate for a public bench
 			marketplace_app = frappe.get_all(
 				"Marketplace App", filters={"app": app.app}, limit=1,
 			)
@@ -116,6 +121,7 @@ class ReleaseGroup(Document):
 						"hash": release.hash,
 					}
 				)
+
 		dependencies = [
 			{"dependency": d.dependency, "version": d.version} for d in self.dependencies
 		]
