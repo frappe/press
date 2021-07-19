@@ -66,30 +66,33 @@
 						:status="release.status"
 					></Badge>
 				</span>
-				<span
-					v-if="
-						release.status == 'Draft' &&
-							$date(release.creation) > latestApprovedOn
-					"
-				>
+				<span class="text-right">
 					<Button
+						v-if="
+							release.status == 'Draft' &&
+								$date(release.creation) > latestApprovedOn
+						"
 						:loading="$resources.createApprovalRequest.loading"
 						type="primary"
 						@click="confirmApprovalRequest(release.name)"
-						>Publish</Button
 					>
-				</span>
-				<span v-else-if="release.status == 'Awaiting Approval'">
-					<Button type="secondary" @click="confirmCancelRequest(release.name)"
+						Publish
+					</Button>
+
+					<Button
+						v-else-if="release.status == 'Awaiting Approval'"
+						type="secondary"
+						@click="confirmCancelRequest(release.name)"
 						>Cancel</Button
 					>
-				</span>
-				<span v-else-if="release.status == 'Rejected'">
-					<Button type="secondary" @click="showFeedback(release)"
+
+					<Button
+						v-else-if="release.status == 'Rejected'"
+						type="secondary"
+						@click="showFeedback(release)"
 						>View Feedback</Button
 					>
 				</span>
-				<span v-else></span>
 			</div>
 			<Dialog
 				title="Reason for Rejection"
