@@ -415,15 +415,16 @@ class DeployCandidate(Document):
 		if deploy_doc or not servers:
 			return
 
-		return self._create_deploy(servers)
+		return self._create_deploy(servers, staging)
 
-	def _create_deploy(self, servers: List[str]):
+	def _create_deploy(self, servers: List[str], staging):
 		return frappe.get_doc(
 			{
 				"doctype": "Deploy",
 				"group": self.group,
 				"candidate": self.name,
 				"benches": [{"server": server} for server in servers],
+				"staging": staging
 			}
 		).insert()
 
