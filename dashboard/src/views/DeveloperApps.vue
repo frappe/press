@@ -6,7 +6,7 @@
 			loadingText="Loading..."
 		></Button>
 		<div v-else>
-			<div class="grid grid-cols-3">
+			<div class="grid gap-4 grid-cols-1 md:grid-cols-3 ">
 				<SelectableCard
 					v-for="app in $resources.apps.data"
 					:title="app.title"
