@@ -1,8 +1,11 @@
 <template>
 	<Card
 		title="Plan"
-		subtitle="Upgrade or downgrade your plan based on your usage"
-		v-if="plan.current_plan"
+		:subtitle="
+			site.status == 'Suspended'
+				? 'Set a plan to activate your suspended site'
+				: 'Upgrade or downgrade your plan based on your usage'
+		"
 	>
 		<template #actions>
 			<Button
@@ -14,10 +17,10 @@
 					}
 				"
 			>
-				Change Plan
+				{{ site.status == 'Suspended' ? 'Set Plan' : 'Change Plan' }}
 			</Button>
 		</template>
-		<div class="flex p-5 rounded-lg bg-gray-50">
+		<div class="flex p-5 rounded-lg bg-gray-50" v-if="plan.current_plan">
 			<PlanIcon />
 			<div class="ml-4">
 				<h4 class="text-4xl font-semibold text-gray-900">
@@ -33,7 +36,7 @@
 				</p>
 			</div>
 		</div>
-		<div class="grid grid-cols-3 gap-12 mt-4">
+		<div class="grid grid-cols-3 gap-12 mt-4" v-if="plan.current_plan">
 			<div v-for="d in usage" :key="d.label">
 				<ProgressArc :percentage="d.percentage" />
 				<div class="mt-2 text-base font-medium text-gray-900">
@@ -117,23 +120,39 @@ export default {
 			let price_field = india ? 'price_inr' : 'price_usd';
 			let price = plan.current_plan[price_field];
 			return price > 0 ? `${currency}${price}` : plan.current_plan.plan_title;
+		},
+
+		belowCurrentUsage(plan) {
+			return (
+				this.plan.total_storage_usage > plan.max_storage_usage ||
+				this.plan.total_database_usage > plan.max_database_usage
+			);
 		}
 	},
 	computed: {
 		plans() {
-			return this.$resources.plans.data.map(plan => {
+			let processedPlans = this.$resources.plans.data.map(plan => {
+				if (this.belowCurrentUsage(plan)) {
+					plan.disabled = true;
+				}
+
+				if (this.site.status === 'Suspended') {
+					return plan;
+				}
+
+				// If this `plan` is currently in use
 				if (this.plan.current_plan.name === plan.name) {
 					plan.disabled = true;
 				}
 
-				if (
-					this.plan.total_storage_usage > plan.max_storage_usage ||
-					this.plan.total_database_usage > plan.max_database_usage
-				) {
-					plan.disabled = true;
-				}
 				return plan;
 			});
+
+			if (this.site.status === 'Suspended') {
+				processedPlans = processedPlans.filter(p => !p.disabled);
+			}
+
+			return processedPlans;
 		},
 		usage() {
 			let f = value => {
