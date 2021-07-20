@@ -17,7 +17,7 @@
 					</option>
 				</select>
 
-				<p class="text-base text-gray-700">
+				<p class="text-base text-gray-600">
 					<span class="font-semibold">{{ currentBranch }}</span>
 					branch
 				</p>
@@ -263,13 +263,15 @@ export default {
 		},
 
 		currentBranch() {
-			if (this.$resources.appSource.loading) {
-				return 'Loading...';
-			} else if (!this.$resources.appSource.data) {
+			if (
+				this.$resources.appSource.loading ||
+				!this.$resources.appSource.data
+			) {
 				return '';
 			}
 
-			return this.$resources.appSource.data.branch;
+			let { repository, branch } = this.$resources.appSource.data;
+			return `${repository}:${branch}`;
 		},
 
 		repoUrl() {
