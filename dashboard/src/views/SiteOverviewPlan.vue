@@ -20,7 +20,8 @@
 				{{ site.status == 'Suspended' ? 'Set Plan' : 'Change Plan' }}
 			</Button>
 		</template>
-		<div class="flex p-5 rounded-lg bg-gray-50" v-if="plan.current_plan">
+
+		<div v-if="plan.current_plan" class="flex p-5 rounded-lg bg-gray-50">
 			<PlanIcon />
 			<div class="ml-4">
 				<h4 class="text-4xl font-semibold text-gray-900">
@@ -36,7 +37,13 @@
 				</p>
 			</div>
 		</div>
-		<div class="grid grid-cols-3 gap-12 mt-4" v-if="plan.current_plan">
+		<div v-else class="flex p-5 rounded-lg bg-gray-50">
+			<div>
+				<h4 class="font-semibold text-gray-600">No Plan Set</h4>
+			</div>
+		</div>
+
+		<div v-if="plan.current_plan" class="grid grid-cols-3 gap-12 mt-4">
 			<div v-for="d in usage" :key="d.label">
 				<ProgressArc :percentage="d.percentage" />
 				<div class="mt-2 text-base font-medium text-gray-900">
@@ -44,6 +51,14 @@
 					{{
 						isNaN(d.percentage) ? '' : `(${Number(d.percentage).toFixed(1)}%)`
 					}}
+				</div>
+				<div class="mt-1 text-xs text-gray-600">{{ d.value }}</div>
+			</div>
+		</div>
+		<div v-else class="grid grid-cols-3 gap-12 mt-4 ml-2">
+			<div v-for="d in usage" :key="d.label">
+				<div class="text-base font-medium text-gray-900">
+					{{ d.label }}
 				</div>
 				<div class="mt-1 text-xs text-gray-600">{{ d.value }}</div>
 			</div>
@@ -155,9 +170,27 @@ export default {
 			return processedPlans;
 		},
 		usage() {
+			if (this.site.status === 'Suspended') {
+				return [
+					{
+						label: 'CPU',
+						value: `${this.plan.total_cpu_usage_hours} hours`
+					},
+					{
+						label: 'Database',
+						value: `${this.plan.total_cpu_usage_hours} MiB`
+					},
+					{
+						label: 'Storage',
+						value: `${this.plan.total_storage_usage} MiB`
+					}
+				];
+			}
+
 			let f = value => {
 				return this.formatBytes(value, 0, 2);
 			};
+
 			return [
 				{
 					label: 'CPU',
