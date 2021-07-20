@@ -6,6 +6,7 @@
 				? 'Set a plan to activate your suspended site'
 				: 'Upgrade or downgrade your plan based on your usage'
 		"
+		v-if="site.status != 'Inactive'"
 	>
 		<template #actions>
 			<Button
