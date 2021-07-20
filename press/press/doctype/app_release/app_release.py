@@ -6,7 +6,6 @@ import os
 import shlex
 import shutil
 import subprocess
-import json
 import frappe
 
 from frappe.model.document import Document
