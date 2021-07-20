@@ -19,12 +19,11 @@
 
 				<p class="text-base text-gray-600">
 					<span class="font-semibold">{{ currentBranch }}</span>
-					branch
 				</p>
 			</div>
 		</template>
 
-		<div v-if="releasesList.length === 0">
+		<div v-if="releasesList.length === 0 && !$resources.releases.loading">
 			<p class="mt-3 text-gray-600 text-center text-lg">
 				No app releases have been created for this version.
 			</p>
@@ -114,6 +113,8 @@
 					$resources.releases.fetch();
 				"
 				v-if="!$resources.releases.lastPageEmpty"
+				:loading="$resources.releases.loading"
+				loadingText="Loading..."
 				>Load More</Button
 			>
 		</div>
@@ -137,6 +138,9 @@ export default {
 	},
 	created() {
 		this.selectedSource = this.sources[0].source;
+	},
+	mounted() {
+		this.$socket.on('new_app_release_created', this.onNewReleaseCreated);
 	},
 	resources: {
 		releases() {
@@ -238,6 +242,11 @@ export default {
 		},
 		getCommitUrl(releaseHash) {
 			return `${this.repoUrl}/commit/${releaseHash}`;
+		},
+		onNewReleaseCreated(data) {
+			if (data.source == this.selectedSource) {
+				this.resetReleaseListState();
+			}
 		}
 	},
 	computed: {
