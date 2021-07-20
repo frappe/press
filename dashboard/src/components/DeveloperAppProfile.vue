@@ -39,6 +39,19 @@
 				</Button>
 			</div>
 		</div>
+		<div class="mt-5">
+			<p class="text-lg font-semibold">Published Versions</p>
+		</div>
+		<div class="divide-y" v-if="app">
+			<ListItem
+				v-for="version in publishedVersions"
+				:key="version.version"
+				:title="version.version"
+				:description="
+					`${version.repository_owner}/${version.repository}:${version.branch}`
+				"
+			/>
+		</div>
 
 		<Dialog title="Update App Profile" v-model="showAppProfileEditDialog">
 			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -108,6 +121,15 @@ export default {
 					this.notifySuccess();
 				}
 			};
+		},
+		publishedVersions() {
+			return {
+				method: 'press.api.developer.published_versions',
+				params: {
+					name: this.app.name
+				},
+				auto: true
+			};
 		}
 	},
 	methods: {
@@ -137,6 +159,16 @@ export default {
 			}
 
 			return this.$resources.categories.data;
+		},
+		publishedVersions() {
+			if (
+				this.$resources.publishedVersions.loading ||
+				!this.$resources.publishedVersions.data
+			) {
+				return [];
+			}
+
+			return this.$resources.publishedVersions.data;
 		}
 	}
 };

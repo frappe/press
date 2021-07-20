@@ -38,6 +38,27 @@ def get_app(name: str) -> MarketplaceApp:
 
 
 @frappe.whitelist()
+@protected("Marketplace App")
+def published_versions(name: str) -> List[Dict]:
+	""""""
+	app: MarketplaceApp = frappe.get_doc("Marketplace App", name)
+
+	versions = []
+	for source in app.sources:
+		app_source = frappe.get_doc("App Source", source.source)
+		version = {
+			"version": source.version,
+			"repository_url": app_source.repository_url,
+			"repository": app_source.repository,
+			"branch": app_source.branch,
+			"repository_owner": app_source.repository_owner,
+		}
+		versions.append(version)
+
+	return versions
+
+
+@frappe.whitelist()
 def update_app_image() -> str:
 	"""Handles App Image Upload"""
 	app_name = frappe.form_dict.docname
