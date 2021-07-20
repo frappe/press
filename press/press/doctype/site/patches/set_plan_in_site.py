@@ -1,12 +1,12 @@
 # Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and Contributors
 # Proprietary License. See license.txt
-
-from __future__ import unicode_literals
 import frappe
 
 
 def execute():
 	# set plan in all non-archived sites that have active subscription
+	frappe.reload_doctype("Site")
+	
 	frappe.db.sql('''
 		UPDATE
 			tabSite s
