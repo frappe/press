@@ -20,7 +20,7 @@ def create_test_root_domain(name: str):
 			"name": name,
 			"default_cluster": create_test_cluster().name,
 			"aws_access_key_id": "a",
-			"aws_secret_access_key": "b"
+			"aws_secret_access_key": "b",
 		}
 	).insert(ignore_if_duplicate=True)
 
