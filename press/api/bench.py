@@ -438,4 +438,31 @@ def branch_list(name: str, app: str):
 	repo_owner = app_source.repository_owner
 	repo_name = app_source.repository
 
+	marketplace_app = frappe.get_all(
+		"Marketplace App", filters={"app": app}, pluck="name", limit=1
+	)
+
+	if marketplace_app and (not is_of_current_team(marketplace_app[0])):
+		branch_set = set()
+		marketplace_app = frappe.get_doc("Marketplace App", marketplace_app[0])
+
+		for marketplace_app_source in marketplace_app.sources:
+			app_source = frappe.get_doc("App Source", marketplace_app_source.source)
+			branch_set.add(app_source.branch)
+
+		# Also, append public source branches
+		public_app_sources = frappe.get_all(
+			"App Source", filters={"app": app, "public": True}, pluck="branch"
+		)
+		branch_set.update(public_app_sources)
+
+		return sorted([{"name": b} for b in branch_set])
+
 	return branches(installation_id, repo_owner, repo_name)
+
+
+def is_of_current_team(app: str):
+	current_team = get_current_team()
+	marketplace_app = frappe.get_doc("Marketplace App", app)
+
+	return marketplace_app.team == current_team
