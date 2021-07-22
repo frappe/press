@@ -404,7 +404,7 @@ class DeployCandidate(Document):
 			raise
 
 	def create_deploy(self, staging: bool):
-		deploy_doc = frappe.db.exists("Deploy", {"group": self.group, "candidate": self.name})
+		deploy_doc = None
 		if staging:
 			servers = [Server.get_one_staging()]
 			if not servers:
@@ -412,6 +412,9 @@ class DeployCandidate(Document):
 		else:
 			servers = frappe.get_doc("Release Group", self.group).servers
 			servers = [server.server for server in servers]
+			deploy_doc = frappe.db.exists(
+				"Deploy", {"group": self.group, "candidate": self.name, "staging": False}
+			)
 
 		if deploy_doc or not servers:
 			return
