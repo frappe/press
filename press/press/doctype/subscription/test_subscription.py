@@ -3,9 +3,12 @@
 # See license.txt
 from __future__ import unicode_literals
 
-import frappe
 import unittest
 from unittest.mock import patch
+
+import frappe
+
+from press.press.doctype.site.test_site import create_test_site
 
 
 def create_test_subscription(
@@ -99,11 +102,9 @@ class TestSubscription(unittest.TestCase):
 		team.create_upcoming_invoice()
 
 		two_days_after = frappe.utils.add_days(None, 2)
-		site = frappe.get_doc(
-			doctype="Site", subdomain="testsubdomain", trial_end_date=two_days_after
-		)
-		site.flags.ignore_links = True
-		site.db_insert()
+		site = create_test_site()
+		site.trial_end_date = two_days_after
+		site.save()
 
 		plan = frappe.get_doc(
 			doctype="Plan",
