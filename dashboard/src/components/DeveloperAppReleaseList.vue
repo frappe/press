@@ -72,7 +72,7 @@
 								$date(release.creation) > latestApprovedOn
 						"
 						:loading="$resources.createApprovalRequest.loading"
-						type="primary"
+						type="secondary"
 						@click="confirmApprovalRequest(release.name)"
 					>
 						Publish
