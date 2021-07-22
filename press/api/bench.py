@@ -4,6 +4,7 @@
 
 import frappe
 
+from typing import List, Dict
 from collections import OrderedDict
 from press.utils import get_current_team, get_last_doc, unique
 from press.api.site import protected
@@ -429,7 +430,7 @@ def change_branch(name: str, app: str, to_branch: str):
 
 @frappe.whitelist()
 @protected("Release Group")
-def branch_list(name: str, app: str):
+def branch_list(name: str, app: str) -> List[Dict]:
 	"""Return a list of git branches available for the `app`"""
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
 	app_source = rg.get_app_source(app)
@@ -443,25 +444,30 @@ def branch_list(name: str, app: str):
 	)
 
 	if marketplace_app and (not is_of_current_team(marketplace_app[0])):
-		branch_set = set()
-		marketplace_app = frappe.get_doc("Marketplace App", marketplace_app[0])
-
-		for marketplace_app_source in marketplace_app.sources:
-			app_source = frappe.get_doc("App Source", marketplace_app_source.source)
-			branch_set.add(app_source.branch)
-
-		# Also, append public source branches
-		public_app_sources = frappe.get_all(
-			"App Source", filters={"app": app, "public": True}, pluck="branch"
-		)
-		branch_set.update(public_app_sources)
-
-		return sorted([{"name": b} for b in branch_set])
+		return get_branches_for_marketplace_app(app, marketplace_app[0])
 
 	return branches(installation_id, repo_owner, repo_name)
 
 
+def get_branches_for_marketplace_app(app: str, marketplace_app: str) -> List[Dict]:
+	branch_set = set()
+	marketplace_app = frappe.get_doc("Marketplace App", marketplace_app)
+
+	for marketplace_app_source in marketplace_app.sources:
+		app_source = frappe.get_doc("App Source", marketplace_app_source.source)
+		branch_set.add(app_source.branch)
+
+	# Also, append public source branches
+	public_app_sources = frappe.get_all(
+		"App Source", filters={"app": app, "public": True}, pluck="branch"
+	)
+	branch_set.update(public_app_sources)
+
+	return sorted([{"name": b} for b in branch_set])
+
+
 def is_of_current_team(app: str):
+	"""Does the Marketplace App `app` belong to current team"""
 	current_team = get_current_team()
 	marketplace_app = frappe.get_doc("Marketplace App", app)
 
