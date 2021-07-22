@@ -39,7 +39,7 @@ export default [
 			},
 			{
 				name: 'DeveloperAppDeployment',
-				path: 'deployment',
+				path: 'releases',
 				component: () => import('../views/DeveloperAppDeployment.vue')
 			}
 		]

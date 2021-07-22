@@ -86,8 +86,7 @@ export default {
 			let tabRoute = subRoute => `/developer/apps/${this.appName}/${subRoute}`;
 			let tabs = [
 				{ label: 'Overview', route: 'overview' },
-				{ label: 'Analytics', route: 'analytics' },
-				{ label: 'Releases', route: 'deployment' }
+				{ label: 'Releases', route: 'releases' }
 			];
 
 			return tabs.map(tab => {

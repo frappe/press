@@ -52,7 +52,6 @@ export default {
 	data: () => ({
 		tabs: [
 			{ label: 'My Apps', route: '/developer/apps' },
-			{ label: 'Profile', route: '/developer/profile' }
 		],
 		showAppCreationDialog: false
 	}),
@@ -63,7 +62,6 @@ export default {
 		}
 	},
 	beforeRouteUpdate(to, from, next) {
-		console.log(to, from, next);
 		if (to.path == '/developer') {
 			next('/developer/apps');
 		} else {
