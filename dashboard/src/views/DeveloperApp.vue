@@ -22,13 +22,6 @@
 						>
 							View in Marketplace
 						</Button>
-						<!-- <Button
-							v-if="site.status === 'Active' || site.status === 'Updating'"
-							:link="`https://${site.name}`"
-							icon-left="external-link"
-						>
-							Visit Site
-						</Button> -->
 					</div>
 				</div>
 			</div>
