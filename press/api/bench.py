@@ -463,7 +463,8 @@ def get_branches_for_marketplace_app(app: str, marketplace_app: str) -> List[Dic
 	)
 	branch_set.update(public_app_sources)
 
-	return sorted([{"name": b} for b in branch_set])
+	branch_list = sorted(list(branch_set))
+	return [{"name": b} for b in branch_list]
 
 
 def is_of_current_team(app: str):
