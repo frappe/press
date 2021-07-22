@@ -60,8 +60,9 @@ class DeployCandidate(Document):
 
 	@frappe.whitelist()
 	def promote_to_production(self):
-		# TODO: figure out if staging deploy exists and just create benches on server instead. Maybe logic should go in Deploy record <02-07-21, Balamurali M> #
-		raise NotImplementedError()
+		if not self.staged:
+			frappe.throw("Cannot promote unstaged candidate to production")
+		self._deploy()
 
 	@frappe.whitelist()
 	def deploy_to_production(self):
@@ -94,7 +95,7 @@ class DeployCandidate(Document):
 		self._deploy(staging)
 
 	@frappe.whitelist()
-	def _deploy(self, staging):
+	def _deploy(self, staging=False):
 		try:
 			self.create_deploy(staging)
 		except Exception:
@@ -418,15 +419,18 @@ class DeployCandidate(Document):
 		return self._create_deploy(servers, staging)
 
 	def _create_deploy(self, servers: List[str], staging):
-		return frappe.get_doc(
+		deploy = frappe.get_doc(
 			{
 				"doctype": "Deploy",
 				"group": self.group,
 				"candidate": self.name,
 				"benches": [{"server": server} for server in servers],
-				"staging": staging
+				"staging": staging,
 			}
 		).insert()
+		if staging:
+			self.staged = True
+		return deploy
 
 	def on_update(self):
 		if self.status == "Running":
