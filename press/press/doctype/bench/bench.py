@@ -217,6 +217,9 @@ def process_new_bench_job_update(job):
 	if updated_status != bench_status:
 		frappe.db.set_value("Bench", job.bench, "status", updated_status)
 		if updated_status == "Active":
+			staging = frappe.get_value("Bench", job.bench, "staging")
+			if staging:
+				StagingSite(job.bench).insert()
 			frappe.enqueue(
 				"press.press.doctype.bench.bench.archive_obsolete_benches",
 				enqueue_after_commit=True,
