@@ -12,6 +12,7 @@ from frappe.model.naming import append_number_if_name_exists
 
 from press.agent import Agent
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.site.staging_site import StagingSite
 from press.utils import log_error
 
 
