@@ -481,7 +481,7 @@ def get_branches_for_marketplace_app(
 	return [{"name": b} for b in branch_list]
 
 
-def belongs_to_current_team(app: str):
+def belongs_to_current_team(app: str) -> bool:
 	"""Does the Marketplace App `app` belong to current team"""
 	current_team = get_current_team()
 	marketplace_app = frappe.get_doc("Marketplace App", app)
