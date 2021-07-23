@@ -432,7 +432,7 @@ class DeployCandidate(Document):
 			}
 		).insert()
 		if staging:
-			self.staged = True
+			self.db_set("staged", True)
 		return deploy
 
 	def on_update(self):
