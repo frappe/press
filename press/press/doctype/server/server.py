@@ -312,7 +312,7 @@ class Server(BaseServer):
 	def get_all_prod(cls, **kwargs) -> List[str]:
 		"""Active prod servers."""
 		return frappe.get_all(
-			"Server", {"status": "Active", "staging": False}, pluck="name", **kwargs
+			"Server", {"status": "Active"}, pluck="name", **kwargs
 		)
 
 	@classmethod
@@ -330,7 +330,7 @@ class Server(BaseServer):
 	def get_prod_for_new_bench(cls) -> Union[str, None]:
 		servers = frappe.get_all(
 			"Server",
-			{"status": "Active", "staging": False, "use_for_new_benches": True},
+			{"status": "Active", "use_for_new_benches": True},
 			pluck="name",
 			limit=1,
 		)
