@@ -351,21 +351,22 @@ def unique(seq, unique_by=None):
 
 
 def group_children_in_result(result, child_field_map):
-	'''Usage:
-	result = [
-		{'name': 'test1', 'full_name': 'Faris Ansari', role: 'System Manager'},
-		{'name': 'test1', 'full_name': 'Faris Ansari', role: 'Press Admin'},
-		{'name': 'test2', 'full_name': 'Aditya Hase', role: 'Press Admin'},
-		{'name': 'test2', 'full_name': 'Aditya Hase', role: 'Press Member'},
+	"""Usage:
+	result =
+	[
+	{'name': 'test1', 'full_name': 'Faris Ansari', role: 'System Manager'},
+	{'name': 'test1', 'full_name': 'Faris Ansari', role: 'Press Admin'},
+	{'name': 'test2', 'full_name': 'Aditya Hase', role: 'Press Admin'},
+	{'name': 'test2', 'full_name': 'Aditya Hase', role: 'Press Member'},
 	]
 
 	out = group_children_in_result(result, {'role': 'roles'})
 	print(out)
 	[
-		{'name': 'test1', 'full_name': 'Faris Ansari', roles: ['System Manager', 'Press Admin']},
-		{'name': 'test2', 'full_name': 'Aditya Hase', roles: ['Press Admin', 'Press Member']},
+	{'name': 'test1', 'full_name': 'Faris Ansari', roles: ['System Manager', 'Press Admin']},
+	{'name': 'test2', 'full_name': 'Aditya Hase', roles: ['Press Admin', 'Press Member']},
 	]
-	'''
+	"""
 	out = {}
 	for d in result:
 		out[d.name] = out.get(d.name) or d

@@ -8,8 +8,6 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import rounded
 
-from press.utils import human_readable
-
 
 class Plan(Document):
 	@property
