@@ -2,6 +2,7 @@
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
 
+from press.press.doctype.app_source.app_source import AppSource
 import frappe
 
 from typing import List, Dict
@@ -444,12 +445,14 @@ def branch_list(name: str, app: str) -> List[Dict]:
 	)
 
 	if marketplace_app and (not belongs_to_current_team(marketplace_app[0])):
-		return get_branches_for_marketplace_app(app, marketplace_app[0])
+		return get_branches_for_marketplace_app(app, marketplace_app[0], app_source)
 
 	return branches(installation_id, repo_owner, repo_name)
 
 
-def get_branches_for_marketplace_app(app: str, marketplace_app: str) -> List[Dict]:
+def get_branches_for_marketplace_app(
+	app: str, marketplace_app: str, app_source: AppSource
+) -> List[Dict]:
 	branch_set = set()
 	marketplace_app = frappe.get_doc("Marketplace App", marketplace_app)
 
@@ -458,8 +461,18 @@ def get_branches_for_marketplace_app(app: str, marketplace_app: str) -> List[Dic
 		branch_set.add(app_source.branch)
 
 	# Also, append public source branches
+	repo_owner = app_source.repository_owner
+	repo_name = app_source.repository
+
 	public_app_sources = frappe.get_all(
-		"App Source", filters={"app": app, "public": True}, pluck="branch"
+		"App Source",
+		filters={
+			"app": app,
+			"repository_owner": repo_owner,
+			"repository": repo_name,
+			"public": True,
+		},
+		pluck="branch",
 	)
 	branch_set.update(public_app_sources)
 
