@@ -63,11 +63,12 @@
    "default": "0",
    "fieldname": "staging",
    "fieldtype": "Check",
+   "in_standard_filter": 1,
    "label": "Staging"
   }
  ],
  "links": [],
- "modified": "2021-07-02 10:08:10.427491",
+ "modified": "2021-07-23 10:34:15.747070",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy",

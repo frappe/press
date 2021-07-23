@@ -177,11 +177,13 @@
    "default": "0",
    "fieldname": "staged",
    "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Staged"
   }
  ],
  "links": [],
- "modified": "2021-07-22 06:55:48.313799",
+ "modified": "2021-07-23 10:34:45.618253",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",
