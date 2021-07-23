@@ -453,6 +453,7 @@ def branch_list(name: str, app: str) -> List[Dict]:
 def get_branches_for_marketplace_app(
 	app: str, marketplace_app: str, app_source: AppSource
 ) -> List[Dict]:
+	"""Return list of branches allowed for this `marketplace` app"""
 	branch_set = set()
 	marketplace_app = frappe.get_doc("Marketplace App", marketplace_app)
 
