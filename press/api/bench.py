@@ -2,7 +2,6 @@
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
 
-from press.press.doctype.app_source.app_source import AppSource
 import frappe
 
 from typing import List, Dict
@@ -11,6 +10,7 @@ from press.utils import get_current_team, get_last_doc, unique
 from press.api.site import protected
 from press.api.github import branches
 from frappe.core.utils import find, find_all
+from press.press.doctype.app_source.app_source import AppSource
 from press.press.doctype.release_group.release_group import (
 	ReleaseGroup,
 	new_release_group,
