@@ -24,7 +24,7 @@ class Subscription(Document):
 			doc.plan = self.plan
 			doc.save()
 		if not self.enabled and doc.plan:
-			doc.plan = ''
+			doc.plan = ""
 			doc.save()
 
 	def enable(self):

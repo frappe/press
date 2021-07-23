@@ -2,14 +2,16 @@
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
 from __future__ import unicode_literals
+
+import unittest
 from unittest.mock import patch
+
+import frappe
+
 from press.press.doctype.account_request.test_account_request import (
 	create_test_account_request,
 )
 from press.press.doctype.team.team import Team
-
-import frappe
-import unittest
 
 
 def create_test_team(email: str = frappe.mock("email")):
@@ -44,3 +46,14 @@ class TestTeam(unittest.TestCase):
 				account_request, "first name", "last name", "test@email.com", country="India"
 			)
 		self.assertEqual(team.billing_name, "first name last name")
+
+	def test_create_user_for_member_adds_team_member(self):
+		# create system manager to pass mandatory site requirement
+		Team.create_user("sys_mgr", email="testuser1@gmail.com", role="System Manager")
+
+		team = create_test_team()
+		email = "testuser@frappe.cloud"
+		team.create_user_for_member("test", "user", "testuser@frappe.cloud")
+		self.assertTrue(
+			team.has_member(email)
+		)  # kinda dumb because we assume has_member method is correct
