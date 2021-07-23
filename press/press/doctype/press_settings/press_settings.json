@@ -688,6 +688,7 @@
    "options": "Plan"
   },
   {
+   "default": "24",
    "fieldname": "staging_expiry",
    "fieldtype": "Int",
    "label": "Staging Expiry"
@@ -695,7 +696,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2021-07-23 10:16:47.031087",
+ "modified": "2021-07-23 10:55:01.375278",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
