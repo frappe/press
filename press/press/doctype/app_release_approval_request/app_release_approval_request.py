@@ -76,18 +76,21 @@ class AppReleaseApprovalRequest(Document):
 		release.save(ignore_permissions=True)
 
 	def notifty_publisher(self):
-		publisher_email = ""  # From team
-		publisher_name = ""  # From team
-		commit_link = ""  # Will come from app source
+		marketplace_app = frappe.get_doc("Marketplace App", self.marketplace_app)
+		app_release = frappe.get_doc("App Release", self.app_release)
+		app_source = app_release.get_source()
 
-		# frappe.sendmail(
-		# 	[publisher_email],
-		# 	subject="Update on App release publish request",
-		# 	args={
-		# 		"subject": f"Hello, {publisher_name}",
-		# 		"status": self.status,
-		# 		"rejection_reason": self.reason_for_rejection,
-		# 		"commit_link": commit_link,
-		# 	},
-		# 	template="app_approval_request_update",
-		# )
+		publisher_email = marketplace_app.team
+		commit_link = f"{app_source.repository_url}/commit/{app_release.hash}"
+
+		frappe.sendmail(
+			[publisher_email],
+			subject="Update on App release publish request",
+			args={
+				"subject": f"With reference to your marketplace app: {self.marketplace_app}",
+				"status": self.status,
+				"rejection_reason": self.reason_for_rejection,
+				"commit_link": commit_link,
+			},
+			template="app_approval_request_update",
+		)
