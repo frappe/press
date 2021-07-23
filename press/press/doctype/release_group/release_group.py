@@ -2,9 +2,7 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 import frappe
-import hashlib
 
-from typing import List, Dict
 from frappe.model.document import Document
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app_source.app_source import AppSource, create_app_source
