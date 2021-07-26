@@ -3,6 +3,7 @@
 # For license information, please see license.txt
 import frappe
 
+from typing import List
 from frappe.model.document import Document
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app_source.app_source import AppSource, create_app_source
@@ -187,6 +188,14 @@ class ReleaseGroup(Document):
 				app.save()
 				break
 		self.save()
+
+	def get_marketplace_app_sources(self) -> List[str]:
+		marketplace_app_sources = []
+		for app in self.apps:
+			if app.source in frappe.get_all("Marketplace App Version", pluck="source"):
+				marketplace_app_sources.append(app.source)
+
+		return marketplace_app_sources
 
 
 def new_release_group(title, version, apps, team=None):
