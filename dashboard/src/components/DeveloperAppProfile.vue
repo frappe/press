@@ -2,7 +2,11 @@
 	<Card title="App Profile" subtitle="Your app's primary profile">
 		<div class="flex items-center">
 			<div class="relative">
-				<Avatar size="lg" :label="`${app.title} Logo`" :imageURL="app.image" />
+				<Avatar
+					size="lg"
+					:label="`${app.title} Logo`"
+					:imageURL="profileImageUrl"
+				/>
 				<FileUploader
 					@success="onAppImageChange"
 					fileTypes="image/*"
@@ -130,10 +134,19 @@ export default {
 				},
 				auto: true
 			};
+		},
+		profileImageUrl() {
+			return {
+				method: 'press.api.developer.profile_image_url',
+				params: {
+					app: this.app.name
+				}
+			};
 		}
 	},
 	methods: {
 		onAppImageChange() {
+			this.$resources.profileImageUrl.submit();
 			this.notifySuccess();
 		},
 		notifySuccess() {
@@ -169,6 +182,13 @@ export default {
 			}
 
 			return this.$resources.publishedVersions.data;
+		},
+		profileImageUrl() {
+			if (!this.$resources.profileImageUrl.data) {
+				return this.app.image;
+			}
+
+			return this.$resources.profileImageUrl.data;
 		}
 	}
 };

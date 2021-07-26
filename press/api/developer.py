@@ -59,6 +59,11 @@ def published_versions(name: str) -> List[Dict]:
 
 
 @frappe.whitelist()
+def profile_image_url(app: str) -> str:
+	return frappe.db.get_value("Marketplace App", app, "image")
+
+
+@frappe.whitelist()
 def update_app_image() -> str:
 	"""Handles App Image Upload"""
 	app_name = frappe.form_dict.docname
