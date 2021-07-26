@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2020, Frappe and contributors
+# Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
 import os
@@ -11,6 +11,7 @@ import docker
 import dockerfile
 import subprocess
 
+from typing import List
 from subprocess import Popen
 from press.utils import log_error
 from frappe.core.utils import find
@@ -18,7 +19,9 @@ from press.utils import get_current_team
 from frappe.model.document import Document
 from frappe.utils import now_datetime as now
 from frappe.model.naming import make_autoname
+from press.press.doctype.app_release.app_release import AppRelease
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.release_group.release_group import ReleaseGroup
 
 
 class DeployCandidate(Document):
@@ -29,6 +32,21 @@ class DeployCandidate(Document):
 
 	def after_insert(self):
 		return
+
+	def get_unpublished_marketplace_releases(self) -> List[AppRelease]:
+		rg: ReleaseGroup = frappe.get_doc("Release Group", self.group)
+		marketplace_app_sources = rg.get_marketplace_app_sources()
+
+		if not marketplace_app_sources:
+			return []
+
+		dc_app_releases = frappe.get_all(
+			"Deploy Candidate App", filters={"parent": self.name}, pluck="release"
+		)
+		dc_app_releases = [frappe.get_doc("App Release", r) for r in dc_app_releases]
+		unpublished_releases = [r for r in dc_app_releases if r.status != "Published"]
+
+		return unpublished_releases
 
 	@frappe.whitelist()
 	def build(self):

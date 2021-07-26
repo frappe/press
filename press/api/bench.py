@@ -16,6 +16,7 @@ from press.press.doctype.release_group.release_group import (
 	new_release_group,
 )
 from press.press.doctype.agent_job.agent_job import job_detail
+from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 
 
 @frappe.whitelist()
@@ -289,7 +290,12 @@ def candidate(name):
 @protected("Release Group")
 def deploy_information(name):
 	out = frappe._dict(update_available=False)
-	last_deploy_candidate = get_last_doc("Deploy Candidate", {"group": name})
+	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
+
+	if rg.public:
+		last_deploy_candidate = get_last_doc("Deploy Candidate", {"group": name})
+	else:
+		last_deploy_candidate = get_last_deploy_candidate(name)
 
 	if not (last_deploy_candidate and last_deploy_candidate.status == "Draft"):
 		return out
@@ -345,16 +351,21 @@ def get_updates_between_current_and_next_apps(current_apps, next_apps):
 @frappe.whitelist()
 @protected("Release Group")
 def deploy(name):
-	candidate = frappe.get_all(
-		"Deploy Candidate",
-		["name", "status"],
-		{"group": name},
-		limit=1,
-		order_by="creation desc",
-	)[0]
-	if candidate.status != "Draft":
-		return
-	candidate = frappe.get_doc("Deploy Candidate", candidate.name)
+	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
+	if rg.public:
+		candidate = frappe.get_all(
+			"Deploy Candidate",
+			["name", "status"],
+			{"group": name},
+			limit=1,
+			order_by="creation desc",
+		)[0]
+		if candidate.status != "Draft":
+			return
+		candidate = frappe.get_doc("Deploy Candidate", candidate.name)
+	else:
+		candidate = get_last_deploy_candidate(name)
+
 	candidate.build_and_deploy()
 	return candidate.name
 
@@ -487,3 +498,32 @@ def belongs_to_current_team(app: str) -> bool:
 	marketplace_app = frappe.get_doc("Marketplace App", app)
 
 	return marketplace_app.team == current_team
+
+
+def get_last_deploy_candidate(name) -> DeployCandidate:
+	dc_filters = {"group": name, "status": "Draft"}
+	last_deployed_bench = get_last_doc("Bench", {"group": name, "status": "Active"})
+	if last_deployed_bench:
+		dc_filters["creation"] = (">", last_deployed_bench.creation)
+
+	deploy_candidates = frappe.get_all(
+		"Deploy Candidate", filters=dc_filters, order_by="creation desc", pluck="name"
+	)
+	deploy_candidates = [
+		frappe.get_doc("Deploy Candidate", dc) for dc in deploy_candidates
+	]
+	for dc in deploy_candidates:
+		releases = dc.get_unpublished_marketplace_releases()
+		if not releases:
+			# There is no unpublished release in
+			# this Deploy Candidate
+			return dc
+
+		for release in releases:
+			source = release.get_source()
+			app_team = frappe.db.get_value("Marketplace App", source.app, "team")
+			if get_current_team() != app_team:
+				break
+		else:
+			# Marketplace Apps belong to this team
+			return dc
