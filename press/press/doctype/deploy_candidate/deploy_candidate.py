@@ -2,27 +2,23 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
-from __future__ import unicode_literals
-
 import os
 import re
 import shlex
 import shutil
-import subprocess
-from subprocess import Popen
-
-# import json
-
-import dockerfile
 import frappe
-from frappe.model.document import Document
-from frappe.utils import now_datetime as now
+import docker
+import dockerfile
+import subprocess
+
+from subprocess import Popen
 from press.utils import log_error
 from frappe.core.utils import find
-import docker
+from press.utils import get_current_team
+from frappe.model.document import Document
+from frappe.utils import now_datetime as now
 from frappe.model.naming import make_autoname
 from press.overrides import get_permission_query_conditions_for_doctype
-from press.utils import get_current_team
 
 
 class DeployCandidate(Document):
