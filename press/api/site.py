@@ -473,7 +473,13 @@ def check_for_updates(name):
 	out.apps = get_updates_between_current_and_next_apps(
 		bench.apps, destination_candidate.apps
 	)
-	out.update_available = any([app["update_available"] for app in out.apps])
+
+	# Filter for this site
+	site_apps = [app.app for app in site.apps]
+	out.apps = [a for a in out.apps if (a["app"] in site_apps)]
+
+	out.update_available = any(a["update_available"] for a in out.apps)
+
 	return out
 
 
