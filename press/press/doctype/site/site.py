@@ -665,10 +665,8 @@ class Site(Document):
 		if self.setup_wizard_complete:
 			return True
 
-		password = get_decrypted_password("Site", self.name, "admin_password")
-		conn = FrappeClient(
-			f"https://{self.name}", username="Administrator", password=password
-		)
+		sid = self.get_login_sid()
+		conn = FrappeClient(f"https://{self.name}?sid={sid}")
 		value = conn.get_value("System Settings", "setup_complete", "System Settings")
 		if value:
 			setup_complete = cint(value["setup_complete"])
