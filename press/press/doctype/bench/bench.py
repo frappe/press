@@ -5,13 +5,15 @@
 from __future__ import unicode_literals
 
 import json
+from datetime import datetime, timedelta
 
 import frappe
 from frappe.model.document import Document
-from frappe.model.naming import append_number_if_name_exists
+from frappe.model.naming import append_number_if_name_exists, make_autoname
 
 from press.agent import Agent
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.site.site import Site
 from press.utils import log_error
 
 
@@ -207,15 +209,47 @@ class Bench(Document):
 		)
 
 
-def create_staging_site_if_needed(bench: Bench):
-	if not bench.staging:
-		return
-	from press.press.doctype.site.staging_site import StagingSite
+class StagingSite(Site):
+	def __init__(self, bench: Bench):
+		plan = frappe.db.get_value("Press Settings", None, "staging_plan")
+		if not plan:
+			frappe.throw("Staging plan not set in settings")
+			log_error(title="Staging plan not set in settings")
+		super().__init__(
+			{
+				"doctype": "Site",
+				"subdomain": make_autoname("staging-.########"),
+				"staging": True,
+				"bench": bench.name,
+				"apps": [{"app": app.app} for app in bench.apps],
+				"team": "Administrator",
+				"subscription_plan": plan,
+			}
+		)
 
-	try:
-		StagingSite(bench).insert()
-	except Exception as e:
-		log_error("Staging Site creation error", e)
+	@classmethod
+	def archive_expired(cls):
+		expiry = frappe.db.get_value("Press Settings", None, "staging_expiry") or 24
+		sites = frappe.get_all(
+			"Site",
+			{"staging": True, "created_on": ("<", datetime.now() - timedelta(hours=expiry))},
+		)
+		for site_name in sites:
+			site = frappe.doc("Site", site_name)
+			site.archive()
+
+	@classmethod
+	def create_if_needed(cls, bench: Bench):
+		if not bench.staging:
+			return
+		try:
+			cls(bench).insert()
+		except Exception as e:
+			log_error("Staging Site creation error", e)
+
+
+def archive_staging_sites():
+	StagingSite.archive_expired()
 
 
 def process_new_bench_job_update(job):
@@ -231,7 +265,7 @@ def process_new_bench_job_update(job):
 	if updated_status != bench.status:
 		frappe.db.set_value("Bench", job.bench, "status", updated_status)
 		if updated_status == "Active":
-			create_staging_site_if_needed(bench)
+			StagingSite.create_if_needed(bench)
 			frappe.enqueue(
 				"press.press.doctype.bench.bench.archive_obsolete_benches",
 				enqueue_after_commit=True,
