@@ -1,5 +1,12 @@
 <template>
-	<Card title="Restore, Migrate & Reset">
+	<Card
+		title="Restore, Migrate & Reset"
+		:subtitle="
+			site.status === 'Suspended'
+				? 'Activate the site to enable these actions'
+				: ''
+		"
+	>
 		<div class="divide-y">
 			<div class="flex items-center justify-between py-3">
 				<div>
