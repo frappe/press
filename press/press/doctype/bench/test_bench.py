@@ -66,6 +66,3 @@ class TestBench(unittest.TestCase):
 		workers_after = (bench.background_workers, bench.gunicorn_workers)
 		self.assertGreater(workers_after[1], workers_before[1])
 		self.assertGreater(workers_after[0], workers_before[0])
-
-	def test_benches_with_no_sites_are_handled(self):
-		create_test_bench()
