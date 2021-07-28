@@ -12,7 +12,6 @@ from frappe.model.naming import append_number_if_name_exists
 
 from press.agent import Agent
 from press.overrides import get_permission_query_conditions_for_doctype
-from press.press.doctype.site.staging_site import StagingSite
 from press.utils import log_error
 
 
@@ -208,8 +207,19 @@ class Bench(Document):
 		)
 
 
+def create_staging_site_if_needed(bench: Bench):
+	if not bench.staging:
+		return
+	from press.press.doctype.site.staging_site import StagingSite
+
+	try:
+		StagingSite(bench).insert()
+	except Exception as e:
+		log_error("Staging Site creation error", e)
+
+
 def process_new_bench_job_update(job):
-	bench_status = frappe.get_value("Bench", job.bench, "status")
+	bench = frappe.get_doc("Bench", job.bench)
 
 	updated_status = {
 		"Pending": "Pending",
@@ -218,12 +228,10 @@ def process_new_bench_job_update(job):
 		"Failure": "Broken",
 	}[job.status]
 
-	if updated_status != bench_status:
+	if updated_status != bench.status:
 		frappe.db.set_value("Bench", job.bench, "status", updated_status)
 		if updated_status == "Active":
-			staging = frappe.get_value("Bench", job.bench, "staging")
-			if staging:
-				StagingSite(job.bench).insert()
+			create_staging_site_if_needed(bench)
 			frappe.enqueue(
 				"press.press.doctype.bench.bench.archive_obsolete_benches",
 				enqueue_after_commit=True,

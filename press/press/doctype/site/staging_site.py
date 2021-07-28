@@ -9,12 +9,12 @@ import frappe
 from frappe.model.naming import make_autoname
 
 from press.press.doctype.site.site import Site
+from press.press.doctype.bench.bench import Bench
 from press.utils import log_error
 
 
 class StagingSite(Site):
-	def __init__(self, bench_name: str):
-		bench = frappe.get_doc("Bench", bench_name)
+	def __init__(self, bench: Bench):
 		plan = frappe.db.get_value("Press Settings", None, "staging_plan")
 		if not plan:
 			frappe.throw("Staging plan not set in settings")
@@ -24,7 +24,7 @@ class StagingSite(Site):
 				"doctype": "Site",
 				"subdomain": make_autoname("staging-.########"),
 				"staging": True,
-				"bench": bench_name,
+				"bench": bench.name,
 				"apps": [{"app": app.app} for app in bench.apps],
 				"team": "Administrator",
 				"subscription_plan": plan,

@@ -56,6 +56,7 @@ class DeployCandidate(Document):
 
 	@frappe.whitelist()
 	def deploy_to_staging(self):
+		"""Deploy a bench on staging server and also create a staging site."""
 		self.build_and_deploy(staging=True)
 
 	@frappe.whitelist()
