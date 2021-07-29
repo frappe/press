@@ -1,0 +1,30 @@
+{% import "templates/emails/macros.html" as utils %}
+{% extends "templates/emails/base.html" %}
+
+{% block content %}
+
+<td class="text-base leading-6 text-gray-900">
+    <div class="p-8 bg-white from-markdown">
+        <p>Hello,</p>
+        <p>We have received a login attempt with the following code:</p>
+        <p class="text-lg font-bold">{{ code }}</p>
+        <p>
+            Click on the following button to login to your Frappe Cloud dashboard. This link will expire in
+            {{ minutes }} minutes.
+        </p>
+        {{ utils.button('Login', link, true) }}
+        <p>Or copy and paste this URL into a new tab of your browser:</p>
+        <p>
+            <a href="{{ link }}">
+                {{ link }}
+            </a>
+        </p>
+        <p>
+            If you didn't attempt to log in but received this email, please ignore this email.
+        </p>
+        {{ utils.separator() }}
+        {{ utils.signature() }}
+    </div>
+</td>
+
+{% endblock %}

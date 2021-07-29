@@ -10,6 +10,15 @@ export default [
 		props: true
 	},
 	{
+		path: '/login-email',
+		name: 'Login Email',
+		component: () => import('../views/LoginEmail.vue'),
+		meta: {
+			isLoginPage: true
+		},
+		props: true
+	},
+	{
 		path: '/signup',
 		name: 'Signup',
 		component: () =>

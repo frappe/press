@@ -56,31 +56,37 @@ def upload_file():
 		return ret
 
 
-def on_session_creation():
+def on_login():
 	from press.utils import get_default_team_for_user
 
-	if (
-		not frappe.db.exists("Team", frappe.session.user)
-		and frappe.session.data.user_type == "System User"
-	):
+	if hasattr(frappe.local, "login_manager"):
+		user = frappe.local.login_manager.user
+	else:
+		user = frappe.session.user
+
+	if not frappe.db.exists("Team", user):
+		return
+	if frappe.session.data.user_type == "System User":
 		return
 
-	onboarding_complete = frappe.cache().hget("onboarding_complete", frappe.session.user)
-	team = get_default_team_for_user(frappe.session.user)
+	onboarding_complete = frappe.cache().hget("onboarding_complete", user)
+	team = get_default_team_for_user(user)
 	if not onboarding_complete:
 		onboarding = frappe.get_doc("Team", team).get_onboarding()
 		onboarding_complete = onboarding["complete"]
 
 		if onboarding_complete:
 			# cache if onboarding is complete
-			frappe.cache().hset("onboarding_complete", frappe.session.user, True)
+			frappe.cache().hset("onboarding_complete", user, True)
 
 	route = "/sites" if onboarding_complete else "/welcome"
 	frappe.local.cookie_manager.set_cookie("current_team", team)
 	frappe.local.response.update({"dashboard_route": route})
 
+
 def on_logout():
 	frappe.local.cookie_manager.delete_cookie("current_team")
+
 
 def update_website_context(context):
 	if frappe.request.path.startswith("/docs") and not frappe.db.get_single_value(

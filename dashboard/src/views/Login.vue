@@ -31,6 +31,11 @@
 				<router-link v-else to="/login/forgot">
 					Forgot Password
 				</router-link>
+				<div>
+					<router-link to="/login-email">
+						Login using Email
+					</router-link>
+				</div>
 			</div>
 			<ErrorMessage :error="errorMessage" class="mt-4" />
 			<Button

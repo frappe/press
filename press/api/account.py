@@ -127,6 +127,47 @@ def login_using_key(key):
 		)
 
 
+@frappe.whitelist(allow_guest=True)
+def send_verification_link(email):
+	user_login = frappe.get_doc(doctype="User Login", email=email).insert(
+		ignore_permissions=True
+	)
+	return user_login.code
+
+
+@frappe.whitelist(allow_guest=True)
+def verify_email_login(token):
+	try:
+		user_login = frappe.get_doc(
+			"User Login",
+			{"token": token, "status": "Attempted", "expires_on": (">", frappe.utils.now())},
+		)
+		user_login.verify()
+		frappe.respond_as_web_page(
+			"Verification Successful", "You have been authenticated successfully."
+		)
+	except frappe.DoesNotExistError:
+		frappe.respond_as_web_page(
+			_("Not Permitted"),
+			_("The link using which you are trying to login is invalid or expired."),
+			http_status_code=403,
+			indicator_color="red",
+		)
+
+
+@frappe.whitelist(allow_guest=True)
+def login_via_email(code):
+	try:
+		user_login = frappe.get_doc(
+			"User Login",
+			{"code": code, "status": "Verified", "expires_on": (">", frappe.utils.now())},
+		)
+		user_login.login()
+		return "success"
+	except frappe.DoesNotExistError:
+		return "failure"
+
+
 @frappe.whitelist()
 def request_team_deletion():
 	team = get_current_team()
@@ -338,10 +379,7 @@ def switch_team(team):
 	)
 	user_is_system_user = frappe.session.data.user_type == "System User"
 	if user_is_part_of_team or user_is_system_user:
-		return {
-			"team": frappe.get_doc("Team", team),
-			"team_members": get_team_members(team),
-		}
+		frappe.local.cookie_manager.set_cookie("current_team", team)
 
 
 @frappe.whitelist()
