@@ -8,7 +8,10 @@
 		"
 	>
 		<template #actions>
-			<Button @click="showDialog = true">
+			<Button
+				@click="showDialog = true"
+				:disabled="site.status === 'Suspended'"
+			>
 				Add Domain
 			</Button>
 		</template>
