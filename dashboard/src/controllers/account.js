@@ -31,10 +31,7 @@ export default new Vue({
 			if (team === this.team.name) {
 				return;
 			}
-			let result = await this.$call('press.api.account.switch_team', { team });
-			this.team = result.team;
-			this.team_members = result.team_members;
-			localStorage.setItem('current_team', team);
+			await this.$call('press.api.account.switch_team', { team });
 			window.location.reload();
 		}
 	},

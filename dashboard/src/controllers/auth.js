@@ -21,21 +21,18 @@ export default new Vue({
 	},
 	methods: {
 		async login(email, password) {
-			localStorage.removeItem('current_team');
 			let res = await this.$call('login', {
 				usr: email,
 				pwd: password
 			});
 			if (res) {
 				await this.$account.fetchAccount();
-				localStorage.setItem('current_team', this.$account.team.name);
 				this.isLoggedIn = true;
 				return res;
 			}
 			return false;
 		},
 		async logout() {
-			localStorage.removeItem('current_team');
 			await this.$call('logout');
 			window.location.reload();
 		},

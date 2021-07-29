@@ -8,7 +8,7 @@ import json
 import requests
 
 from datetime import datetime, timedelta
-from urllib.parse import urljoin
+from urllib.parse import urljoin, unquote
 
 
 def log_error(title, **kwargs):
@@ -21,17 +21,20 @@ def log_error(title, **kwargs):
 def get_current_team(get_doc=False):
 	if not hasattr(frappe.local, "request"):
 		# if this is not a request, send the current user as default team
-		return frappe.get_doc("Team", frappe.session.user) if get_doc else frappe.session.user
+		default_team = get_default_team_for_user(frappe.session.user)
+		return frappe.get_doc("Team", default_team) if get_doc else default_team
 
 	user_is_system_user = frappe.session.data.user_type == "System User"
-	# get team passed via request header
-	team = frappe.get_request_header("X-Press-Team")
+	# get team passed via request
+	team = unquote(
+		frappe.local.request.cookies.get("current_team", "")
+	) or frappe.get_request_header("X-Press-Team")
 
 	if not team:
-		# if team is not passed via header, get the first team that this user is part of
-		team = frappe.db.get_value(
-			"Team Member", {"parenttype": "Team", "user": frappe.session.user}, "parent"
-		)
+		# if team is not passed via request, get the default team
+		team = get_default_team_for_user(frappe.session.user)
+		# set the current team in cookie
+		frappe.local.cookie_manager.set_cookie("current_team", team)
 
 	if not frappe.db.exists("Team", team):
 		frappe.throw("Invalid Team", frappe.PermissionError)

@@ -66,8 +66,8 @@ def on_session_creation():
 		return
 
 	onboarding_complete = frappe.cache().hget("onboarding_complete", frappe.session.user)
+	team = get_default_team_for_user(frappe.session.user)
 	if not onboarding_complete:
-		team = get_default_team_for_user(frappe.session.user)
 		onboarding = frappe.get_doc("Team", team).get_onboarding()
 		onboarding_complete = onboarding["complete"]
 
@@ -76,8 +76,11 @@ def on_session_creation():
 			frappe.cache().hset("onboarding_complete", frappe.session.user, True)
 
 	route = "/sites" if onboarding_complete else "/welcome"
+	frappe.local.cookie_manager.set_cookie("current_team", team)
 	frappe.local.response.update({"dashboard_route": route})
 
+def on_logout():
+	frappe.local.cookie_manager.delete_cookie("current_team")
 
 def update_website_context(context):
 	if frappe.request.path.startswith("/docs") and not frappe.db.get_single_value(
