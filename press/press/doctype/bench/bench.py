@@ -245,7 +245,7 @@ class StagingSite(Site):
 		try:
 			cls(bench).insert()
 		except Exception as e:
-			log_error("Staging Site creation error", e)
+			log_error("Staging Site creation error", exception=e)
 
 
 def archive_staging_sites():
