@@ -23,6 +23,7 @@
   "free",
   "column_break_15",
   "is_standby",
+  "staging",
   "account_request",
   "is_erpnext_setup",
   "trial_end_date",
@@ -338,6 +339,12 @@
    "label": "Plan",
    "options": "Plan",
    "read_only": 1
+  },
+ 	{
+   "default": "0",
+   "fieldname": "staging",
+   "fieldtype": "Check",
+   "label": "Staging"
   }
  ],
  "links": [
@@ -387,7 +394,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2021-07-15 18:21:31.018976",
+ "modified": "2021-07-15 18:30:30.719328",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
