@@ -10,6 +10,8 @@ from press.agent import Agent
 from press.runner import Ansible
 from press.utils import log_error
 
+from typing import List, Union
+
 
 class BaseServer(Document):
 	def autoname(self):
@@ -305,6 +307,30 @@ class Server(BaseServer):
 			ansible.run()
 		except Exception:
 			log_error("Exporters Install Exception", server=self.as_dict())
+
+	@classmethod
+	def get_all_prod(cls, **kwargs) -> List[str]:
+		"""Active prod servers."""
+		return frappe.get_all("Server", {"status": "Active"}, pluck="name", **kwargs)
+
+	@classmethod
+	def get_all_staging(cls, **kwargs) -> List[str]:
+		"""Active staging servers."""
+		return frappe.get_all(
+			"Server", {"status": "Active", "staging": True}, pluck="name", **kwargs
+		)
+
+	@classmethod
+	def get_one_staging(cls) -> str:
+		return cls.get_all_staging(limit=1)[0]
+
+	@classmethod
+	def get_prod_for_new_bench(cls) -> Union[str, None]:
+		servers = frappe.get_all(
+			"Server", {"status": "Active", "use_for_new_benches": True}, pluck="name", limit=1,
+		)
+		if servers:
+			return servers[0]
 
 
 def process_new_server_job_update(job):

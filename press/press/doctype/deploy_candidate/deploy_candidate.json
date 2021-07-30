@@ -7,6 +7,7 @@
  "field_order": [
   "status",
   "is_single_container",
+  "staged",
   "column_break_2",
   "group",
   "team",
@@ -171,10 +172,18 @@
    "fieldtype": "Check",
    "label": "Is Single Container",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "staged",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Staged"
   }
  ],
  "links": [],
- "modified": "2021-06-07 08:14:52.486387",
+ "modified": "2021-07-23 10:34:45.618253",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",

@@ -10,19 +10,21 @@ import shlex
 import shutil
 import subprocess
 from subprocess import Popen
+from typing import List
 
-# import json
-
+import docker
 import dockerfile
 import frappe
-from frappe.model.document import Document
-from frappe.utils import now_datetime as now
-from press.utils import log_error
 from frappe.core.utils import find
-import docker
+from frappe.model.document import Document
 from frappe.model.naming import make_autoname
+from frappe.utils import now_datetime as now
+
 from press.overrides import get_permission_query_conditions_for_doctype
-from press.utils import get_current_team
+from press.press.doctype.server.server import Server
+from press.utils import get_current_team, log_error
+
+# import json
 
 
 class DeployCandidate(Document):
@@ -53,7 +55,21 @@ class DeployCandidate(Document):
 		frappe.db.commit()
 
 	@frappe.whitelist()
-	def build_and_deploy(self):
+	def deploy_to_staging(self):
+		"""Deploy a bench on staging server and also create a staging site."""
+		self.build_and_deploy(staging=True)
+
+	@frappe.whitelist()
+	def promote_to_production(self):
+		if not self.staged:
+			frappe.throw("Cannot promote unstaged candidate to production")
+		self._deploy()
+
+	@frappe.whitelist()
+	def deploy_to_production(self):
+		self.build_and_deploy()
+
+	def build_and_deploy(self, staging: bool = False):
 		self.status = "Pending"
 		self.add_build_steps()
 		self.save()
@@ -64,18 +80,27 @@ class DeployCandidate(Document):
 		)
 		frappe.set_user(team)
 		frappe.enqueue_doc(
-			self.doctype, self.name, "_build_and_deploy", timeout=1200, enqueue_after_commit=True
+			self.doctype,
+			self.name,
+			"_build_and_deploy",
+			timeout=1200,
+			enqueue_after_commit=True,
+			staging=staging,
 		)
 		frappe.set_user(user)
 		frappe.session.data = session_data
 		frappe.db.commit()
 
-	def _build_and_deploy(self):
+	def _build_and_deploy(self, staging: bool):
 		self._build()
-		self._deploy()
+		self._deploy(staging)
 
-	def _deploy(self):
-		self.create_deploy()
+	@frappe.whitelist()
+	def _deploy(self, staging=False):
+		try:
+			self.create_deploy(staging)
+		except Exception:
+			log_error("Deploy Creation Error", candidate=self.name)
 
 	def _build(self):
 		self.status = "Running"
@@ -379,27 +404,37 @@ class DeployCandidate(Document):
 			frappe.db.commit()
 			raise
 
-	def create_deploy(self):
-		try:
-			deploy_doc = frappe.db.exists(
-				"Deploy", {"group": self.group, "candidate": self.name}
-			)
+	def create_deploy(self, staging: bool):
+		deploy_doc = None
+		if staging:
+			servers = [Server.get_one_staging()]
+			if not servers:
+				frappe.log_error(title="Staging Server for new benches not found")
+		else:
 			servers = frappe.get_doc("Release Group", self.group).servers
-
-			if deploy_doc or not servers:
-				return
-
-			deploy_doc = frappe.get_doc(
-				{
-					"doctype": "Deploy",
-					"group": self.group,
-					"candidate": self.name,
-					"benches": [{"server": server.server} for server in servers],
-				}
+			servers = [server.server for server in servers]
+			deploy_doc = frappe.db.exists(
+				"Deploy", {"group": self.group, "candidate": self.name, "staging": False}
 			)
-			deploy_doc.insert()
-		except Exception:
-			log_error("Deploy Creation Error", candidate=self.name)
+
+		if deploy_doc or not servers:
+			return
+
+		return self._create_deploy(servers, staging)
+
+	def _create_deploy(self, servers: List[str], staging):
+		deploy = frappe.get_doc(
+			{
+				"doctype": "Deploy",
+				"group": self.group,
+				"candidate": self.name,
+				"benches": [{"server": server} for server in servers],
+				"staging": staging,
+			}
+		).insert()
+		if staging:
+			self.db_set("staged", True)
+		return deploy
 
 	def on_update(self):
 		if self.status == "Running":
