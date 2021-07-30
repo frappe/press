@@ -5,7 +5,6 @@
 from __future__ import unicode_literals
 
 import os
-from press.press.doctype.server.server import Server
 import re
 import shlex
 import shutil
@@ -22,6 +21,7 @@ from frappe.model.naming import make_autoname
 from frappe.utils import now_datetime as now
 
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.server.server import Server
 from press.utils import get_current_team, log_error
 
 # import json

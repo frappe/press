@@ -10,7 +10,7 @@ from press.agent import Agent
 from press.runner import Ansible
 from press.utils import log_error
 
-from typing import Dict, List, Union
+from typing import List, Union
 
 
 class BaseServer(Document):
@@ -311,9 +311,7 @@ class Server(BaseServer):
 	@classmethod
 	def get_all_prod(cls, **kwargs) -> List[str]:
 		"""Active prod servers."""
-		return frappe.get_all(
-			"Server", {"status": "Active"}, pluck="name", **kwargs
-		)
+		return frappe.get_all("Server", {"status": "Active"}, pluck="name", **kwargs)
 
 	@classmethod
 	def get_all_staging(cls, **kwargs) -> List[str]:
@@ -329,10 +327,7 @@ class Server(BaseServer):
 	@classmethod
 	def get_prod_for_new_bench(cls) -> Union[str, None]:
 		servers = frappe.get_all(
-			"Server",
-			{"status": "Active", "use_for_new_benches": True},
-			pluck="name",
-			limit=1,
+			"Server", {"status": "Active", "use_for_new_benches": True}, pluck="name", limit=1,
 		)
 		if servers:
 			return servers[0]
