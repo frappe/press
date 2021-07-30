@@ -21,9 +21,17 @@ class TestStagingSite(unittest.TestCase):
 		frappe.db.rollback()
 
 	def test_create_staging_site(self):
-		bench = create_test_bench()
-		site = StagingSite(bench.name).insert()
+		bench = create_test_bench()  # also creates press settings
+		frappe.db.set_value(
+			"Press Settings", None, "staging_plan", create_test_plan("Site").name
+		)
+		count_before = frappe.db.count("Site")
+
+		site = StagingSite(bench).insert()
+
 		self.assertTrue(site.staging)
+		count_after = frappe.db.count("Site")
+		self.assertEqual(count_after - count_before, 1)
 
 
 @patch.object(AgentJob, "after_insert", new=Mock())
