@@ -16,14 +16,17 @@ frappe.ui.form.on('Deploy Candidate', {
 		};
 
 		[
-			[__('Build'), 'build'],
-			[__('Build and Deploy'), 'build_and_deploy']
-		].forEach(([label, method]) => {
-			frm.add_custom_button(
-				label,
-				() => { frm.call(method).then((r) => frm.refresh()) },
-				__('Actions')
-			);
+			[__('Build'), 'build', true],
+			[__('Deploy to Staging'), 'deploy_to_staging', true],
+			[__('Promote to Production'), 'promote_to_production', frm.doc.staged],
+			[__('Deploy to Production (build and deploy)'), 'deploy_to_production', true],
+		].forEach(([label, method, show]) => {
+			if (show)
+				frm.add_custom_button(
+					label,
+					() => { frm.call(method).then((r) => frm.refresh()) },
+					__('Actions')
+				);
 		});
 
 	}

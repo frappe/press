@@ -20,6 +20,7 @@ def create_test_press_settings():
 				"domain": "fc.dev",
 				"wildcard": True,
 				"status": "Active",
+				"rsa_key_size": 2048,
 			}
 		).db_insert()
 

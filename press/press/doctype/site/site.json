@@ -19,9 +19,11 @@
   "group",
   "billing",
   "team",
+  "plan",
   "free",
   "column_break_15",
   "is_standby",
+  "staging",
   "account_request",
   "is_erpnext_setup",
   "trial_end_date",
@@ -330,10 +332,69 @@
    "fieldtype": "Link",
    "label": "ERPNext Consultant",
    "options": "ERPNext Consultant"
+  },
+  {
+   "fieldname": "plan",
+   "fieldtype": "Link",
+   "label": "Plan",
+   "options": "Plan",
+   "read_only": 1
+  },
+ 	{
+   "default": "0",
+   "fieldname": "staging",
+   "fieldtype": "Check",
+   "label": "Staging"
   }
  ],
- "links": [],
- "modified": "2021-04-22 07:35:11.993048",
+ "links": [
+  {
+   "group": "Usage",
+   "link_doctype": "Site Usage",
+   "link_fieldname": "site"
+  },
+  {
+   "group": "Usage",
+   "link_doctype": "Remote File",
+   "link_fieldname": "site"
+  },
+  {
+   "group": "Related Documents",
+   "link_doctype": "Site Domain",
+   "link_fieldname": "site"
+  },
+  {
+   "group": "Related Documents",
+   "link_doctype": "Site Activity",
+   "link_fieldname": "site"
+  },
+  {
+   "group": "Related Documents",
+   "link_doctype": "Site Plan Change",
+   "link_fieldname": "site"
+  },
+  {
+   "group": "Related Documents",
+   "link_doctype": "Subscription",
+   "link_fieldname": "document_name"
+  },
+  {
+   "group": "Logs",
+   "link_doctype": "Agent Job",
+   "link_fieldname": "site"
+  },
+  {
+   "group": "Logs",
+   "link_doctype": "Site Backup",
+   "link_fieldname": "site"
+  },
+  {
+   "group": "Logs",
+   "link_doctype": "Site Update",
+   "link_fieldname": "site"
+  }
+ ],
+ "modified": "2021-07-15 18:30:30.719328",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

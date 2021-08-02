@@ -27,6 +27,7 @@ from press.utils import (
 	log_error,
 	get_frappe_backups,
 	get_client_blacklisted_keys,
+	group_children_in_result,
 )
 
 
@@ -210,13 +211,20 @@ def domains(name):
 
 
 @frappe.whitelist()
-def activities(name, start=0):
-	activities = frappe.get_all(
-		"Site Activity",
-		fields=["action", "reason", "creation", "owner"],
-		filters={"site": name},
-		start=start,
-		limit=20,
+def activities(name, start=0, limit=20):
+	# get all site activity except Backup by Administrator
+	activities = frappe.db.sql(
+		"""
+		SELECT action, reason, creation, owner
+		FROM `tabSite Activity`
+		WHERE site = %(site)s
+		AND (action != 'Backup' or owner != 'Administrator')
+		ORDER BY creation desc
+		LIMIT %(limit)s
+		OFFSET %(start)s
+	""",
+		values={"site": name, "limit": limit, "start": start},
+		as_dict=1,
 	)
 
 	for activity in activities:
@@ -310,26 +318,31 @@ def options_for_new():
 
 @frappe.whitelist()
 def get_plans():
-	filters = {"enabled": True, "document_type": "Site", "price_usd": (">", 0)}
-	if frappe.local.dev_server:
-		del filters["price_usd"]
+	filters = {"enabled": True, "document_type": "Site"}
 
-	return frappe.db.get_all(
+	plans = frappe.db.get_all(
 		"Plan",
 		fields=[
 			"name",
 			"plan_title",
 			"price_usd",
 			"price_inr",
-			"concurrent_users",
 			"cpu_time_per_day",
-			"trial_period",
 			"max_storage_usage",
 			"max_database_usage",
+			"`tabHas Role`.role",
 		],
 		filters=filters,
 		order_by="price_usd asc",
 	)
+	plans = group_children_in_result(plans, {"role": "roles"})
+
+	out = []
+	for plan in plans:
+		if frappe.utils.has_common(plan["roles"], frappe.get_roles()):
+			plan.pop("roles", "")
+			out.append(plan)
+	return out
 
 
 @frappe.whitelist()
@@ -460,7 +473,13 @@ def check_for_updates(name):
 	out.apps = get_updates_between_current_and_next_apps(
 		bench.apps, destination_candidate.apps
 	)
-	out.update_available = any([app["update_available"] for app in out.apps])
+
+	# Filter for this site
+	site_apps = [app.app for app in site.apps]
+	out.apps = [a for a in out.apps if (a["app"] in site_apps)]
+
+	out.update_available = any(a["update_available"] for a in out.apps)
+
 	return out
 
 
@@ -470,13 +489,7 @@ def overview(name):
 	site = frappe.get_cached_doc("Site", name)
 
 	return {
-		"recent_activity": frappe.db.get_all(
-			"Site Activity",
-			fields="*",
-			filters={"site": name},
-			order_by="creation desc",
-			limit=3,
-		),
+		"recent_activity": activities(name, limit=3),
 		"plan": current_plan(name),
 		"info": {
 			"created_by": frappe.db.get_value(
@@ -576,7 +589,7 @@ def current_plan(name):
 	from press.api.analytics import get_current_cpu_usage
 
 	site = frappe.get_doc("Site", name)
-	plan = frappe.get_doc("Plan", site.plan)
+	plan = frappe.get_doc("Plan", site.plan) if site.plan else None
 
 	result = get_current_cpu_usage(name)
 	total_cpu_usage_hours = flt(result / (3.6 * (10 ** 9)), 5)
@@ -605,8 +618,8 @@ def current_plan(name):
 		"current_plan": plan,
 		"total_cpu_usage_hours": total_cpu_usage_hours,
 		"hours_until_reset": hours_left_today,
-		"max_database_usage": plan.max_database_usage,
-		"max_storage_usage": plan.max_storage_usage,
+		"max_database_usage": plan.max_database_usage if plan else None,
+		"max_storage_usage": plan.max_storage_usage if plan else None,
 		"total_database_usage": total_database_usage,
 		"total_storage_usage": total_storage_usage,
 		"usage_in_percent": {
