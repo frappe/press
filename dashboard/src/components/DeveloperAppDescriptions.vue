@@ -61,6 +61,12 @@
 						></Input>
 						<div class="prose" v-html="descriptionHTML"></div>
 					</div>
+
+					<ErrorMessage
+						class="mt-4"
+						:error="$resources.updateAppDescription.error"
+					/>
+
 					<template #actions>
 						<Button
 							type="primary"

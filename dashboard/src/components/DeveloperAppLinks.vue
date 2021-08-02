@@ -20,7 +20,7 @@
 				/>
 			</div>
 
-			<ErrorMessage class="mt-4" :error="null" />
+			<ErrorMessage class="mt-4" :error="$resources.updateAppLinks.error" />
 
 			<template #actions>
 				<div class="space-x-2">
