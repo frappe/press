@@ -1,7 +1,6 @@
 <template>
 	<Card title="Your App Releases">
 		<template #actions>
-			<!-- TODO: Change '>=' to '>' -->
 			<div class="flex flex-col items-end">
 				<select
 					v-if="sources.length > 1"
@@ -148,7 +147,7 @@ export default {
 			return {
 				method: 'press.api.developer.releases',
 				params: {
-					app: 'frappe',
+					app,
 					start: this.pageStart,
 					source: this.selectedSource
 				},
@@ -165,10 +164,11 @@ export default {
 			};
 		},
 		latestApproved() {
+			let { app } = this.app;
 			return {
 				method: 'press.api.developer.latest_approved_release',
 				params: {
-					app: 'frappe' // TODO: Change after testing
+					app
 				},
 				auto: true
 			};
@@ -178,6 +178,9 @@ export default {
 				method: 'press.api.developer.create_approval_request',
 				onSuccess() {
 					this.resetReleaseListState();
+				},
+				onError() {
+					this.showRequestError();
 				}
 			};
 		},
@@ -214,11 +217,33 @@ export default {
 			this.showRejectionFeedbackDialog = true;
 			this.rejectionFeedback = appRelease.reason_for_rejection;
 		},
+		showRequestError() {
+			const requestAlreadyExists = this.$resources.createApprovalRequest.error
+				.toLowerCase()
+				.includes('already awaiting');
+
+			if (requestAlreadyExists) {
+				// A request already exists
+				this.$confirm({
+					title: requestAlreadyExists
+						? 'A request already exists'
+						: 'An error occured',
+					message: requestAlreadyExists
+						? 'Please cancel the previous request before creating a new one.'
+						: this.$resources.createApprovalRequest.error,
+					actionLabel: 'OK',
+					actionType: 'primary',
+					action: closeDialog => {
+						closeDialog();
+					}
+				});
+			}
+		},
 		confirmApprovalRequest(appRelease) {
 			this.$confirm({
 				title: 'Publish Release',
 				message:
-					'Are you sure you want to <b>publish this release</b> to marketplace? <br> <br>Upon confirmation, this release will be submitted for approval from our team.',
+					'Are you sure you want to <strong>publish this release</strong> to marketplace? <br> <br>Upon confirmation, this release will be submitted for approval from our team.',
 				actionLabel: 'Publish',
 				actionType: 'primary',
 				action: closeDialog => {
@@ -231,7 +256,7 @@ export default {
 			this.$confirm({
 				title: 'Cancel Release Approval Request',
 				message:
-					'Are you sure you want to <b>cancel</b> the publish request for this release?',
+					'Are you sure you want to <strong>cancel</strong> the publish request for this release?',
 				actionLabel: 'Proceed',
 				actionType: 'danger',
 				action: closeDialog => {
