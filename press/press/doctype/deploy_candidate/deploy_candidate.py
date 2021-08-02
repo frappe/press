@@ -18,9 +18,10 @@ from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 from frappe.utils import now_datetime as now
 
-from press.overrides import get_permission_query_conditions_for_doctype
-from press.press.doctype.server.server import Server
 from press.utils import get_current_team, log_error
+from press.press.doctype.server.server import Server
+from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.release_group.release_group import ReleaseGroup
 
 
 class DeployCandidate(Document):
@@ -52,7 +53,7 @@ class DeployCandidate(Document):
 			filters={"name": ("in", dc_app_releases), "status": ("!=", "Approved")},
 			pluck="name",
 		)
-		
+
 		return unpublished_releases
 
 	@frappe.whitelist()
