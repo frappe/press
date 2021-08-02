@@ -1,7 +1,12 @@
 <template>
 	<Card
 		title="Plan"
-		subtitle="Upgrade or downgrade your plan based on your usage"
+		:subtitle="
+			site.status == 'Suspended'
+				? 'Set a plan to activate your suspended site'
+				: 'Upgrade or downgrade your plan based on your usage'
+		"
+		v-if="site.status != 'Inactive'"
 	>
 		<template #actions>
 			<Button
@@ -13,15 +18,18 @@
 					}
 				"
 			>
-				Change Plan
+				{{ site.status == 'Suspended' ? 'Set Plan' : 'Change Plan' }}
 			</Button>
 		</template>
-		<div class="flex p-5 rounded-lg bg-gray-50">
+
+		<div v-if="plan.current_plan" class="flex p-5 rounded-lg bg-gray-50">
 			<PlanIcon />
 			<div class="ml-4">
 				<h4 class="text-4xl font-semibold text-gray-900">
-					${{ plan.current_plan.price_usd }}
-					<span class="text-lg">/mo</span>
+					{{ $planTitle(plan.current_plan) }}
+					<span v-if="plan.current_plan.price_usd > 0" class="text-lg">
+						/mo
+					</span>
 				</h4>
 				<p class="text-base text-gray-700">
 					{{ plan.current_plan.cpu_time_per_day }}
@@ -30,7 +38,13 @@
 				</p>
 			</div>
 		</div>
-		<div class="grid grid-cols-3 gap-12 mt-4">
+		<div v-else class="flex p-5 rounded-lg bg-gray-50">
+			<div>
+				<h4 class="font-semibold text-gray-600">No Plan Set</h4>
+			</div>
+		</div>
+
+		<div v-if="plan.current_plan" class="grid grid-cols-3 gap-12 mt-4">
 			<div v-for="d in usage" :key="d.label">
 				<ProgressArc :percentage="d.percentage" />
 				<div class="mt-2 text-base font-medium text-gray-900">
@@ -38,6 +52,14 @@
 					{{
 						isNaN(d.percentage) ? '' : `(${Number(d.percentage).toFixed(1)}%)`
 					}}
+				</div>
+				<div class="mt-1 text-xs text-gray-600">{{ d.value }}</div>
+			</div>
+		</div>
+		<div v-else class="grid grid-cols-3 gap-12 mt-4 ml-2">
+			<div v-for="d in usage" :key="d.label">
+				<div class="text-base font-medium text-gray-900">
+					{{ d.label }}
 				</div>
 				<div class="mt-1 text-xs text-gray-600">{{ d.value }}</div>
 			</div>
@@ -53,6 +75,7 @@
 				<Button
 					class="ml-2"
 					type="primary"
+					:loading="$resources.changePlan.loading"
 					@click="$resources.changePlan.submit()"
 				>
 					Submit
@@ -106,26 +129,69 @@ export default {
 			};
 		}
 	},
+	methods: {
+		plan_title(plan) {
+			let india = this.$account.team.country == 'India';
+			let currency = india ? '₹' : '$';
+			let price_field = india ? 'price_inr' : 'price_usd';
+			let price = plan.current_plan[price_field];
+			return price > 0 ? `${currency}${price}` : plan.current_plan.plan_title;
+		},
+
+		belowCurrentUsage(plan) {
+			return (
+				this.plan.total_storage_usage > plan.max_storage_usage ||
+				this.plan.total_database_usage > plan.max_database_usage
+			);
+		}
+	},
 	computed: {
 		plans() {
-			return this.$resources.plans.data.map(plan => {
+			let processedPlans = this.$resources.plans.data.map(plan => {
+				if (this.belowCurrentUsage(plan)) {
+					plan.disabled = true;
+				}
+
+				if (this.site.status === 'Suspended') {
+					return plan;
+				}
+
+				// If this `plan` is currently in use
 				if (this.plan.current_plan.name === plan.name) {
 					plan.disabled = true;
 				}
 
-				if (
-					this.plan.total_storage_usage > plan.max_storage_usage ||
-					this.plan.total_database_usage > plan.max_database_usage
-				) {
-					plan.disabled = true;
-				}
 				return plan;
 			});
+
+			if (this.site.status === 'Suspended') {
+				processedPlans = processedPlans.filter(p => !p.disabled);
+			}
+
+			return processedPlans;
 		},
 		usage() {
+			if (this.site.status === 'Suspended') {
+				return [
+					{
+						label: 'CPU',
+						value: `${this.plan.total_cpu_usage_hours} hours`
+					},
+					{
+						label: 'Database',
+						value: `${this.plan.total_cpu_usage_hours} MiB`
+					},
+					{
+						label: 'Storage',
+						value: `${this.plan.total_storage_usage} MiB`
+					}
+				];
+			}
+
 			let f = value => {
 				return this.formatBytes(value, 0, 2);
 			};
+
 			return [
 				{
 					label: 'CPU',

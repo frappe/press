@@ -348,3 +348,30 @@ def unique(seq, unique_by=None):
 			out.append(d)
 			seen.add(unique_key)
 	return out
+
+
+def group_children_in_result(result, child_field_map):
+	"""Usage:
+	result =
+	[
+	{'name': 'test1', 'full_name': 'Faris Ansari', role: 'System Manager'},
+	{'name': 'test1', 'full_name': 'Faris Ansari', role: 'Press Admin'},
+	{'name': 'test2', 'full_name': 'Aditya Hase', role: 'Press Admin'},
+	{'name': 'test2', 'full_name': 'Aditya Hase', role: 'Press Member'},
+	]
+
+	out = group_children_in_result(result, {'role': 'roles'})
+	print(out)
+	[
+	{'name': 'test1', 'full_name': 'Faris Ansari', roles: ['System Manager', 'Press Admin']},
+	{'name': 'test2', 'full_name': 'Aditya Hase', roles: ['Press Admin', 'Press Member']},
+	]
+	"""
+	out = {}
+	for d in result:
+		out[d.name] = out.get(d.name) or d
+		for child_field, target in child_field_map.items():
+			out[d.name][target] = out[d.name].get(target) or []
+			out[d.name][target].append(d.get(child_field))
+			out[d.name].pop(child_field, "")
+	return out.values()

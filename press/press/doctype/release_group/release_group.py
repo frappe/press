@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
+
 import frappe
 
 from typing import List
 from frappe.model.document import Document
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.server.server import Server
 from press.press.doctype.app_source.app_source import AppSource, create_app_source
 
 DEFAULT_DEPENDENCIES = [
@@ -72,11 +74,9 @@ class ReleaseGroup(Document):
 					"Servers can be added only once", frappe.ValidationError,
 				)
 		elif self.is_new():
-			servers_for_new_bench = frappe.get_all(
-				"Server", {"status": "Active", "use_for_new_benches": True}, limit=1
-			)
-			if servers_for_new_bench:
-				self.append("servers", {"server": servers_for_new_bench[0].name})
+			server_for_new_bench = Server.get_prod_for_new_bench()
+			if server_for_new_bench:
+				self.append("servers", {"server": server_for_new_bench})
 
 	@frappe.whitelist()
 	def validate_dependencies(self):

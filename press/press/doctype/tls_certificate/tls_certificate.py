@@ -9,14 +9,14 @@ import shlex
 import subprocess
 from datetime import datetime
 
-import OpenSSL
-
 import frappe
+import OpenSSL
 from frappe.model.document import Document
+
 from press.api.site import check_dns_cname_a
-from press.runner import Ansible
-from press.utils import log_error, get_current_team
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.runner import Ansible
+from press.utils import get_current_team, log_error
 
 
 class TLSCertificate(Document):
@@ -63,13 +63,30 @@ class TLSCertificate(Document):
 			log_error("TLS Certificate Exception", certificate=self.name)
 		self.save()
 		self.trigger_site_domain_callback()
-		self.trigger_server_tls_setup_callback()
+		if self.wildcard:
+			self.trigger_server_tls_setup_callback()
+			self._update_secondary_wildcard_domains()
+
+	def _update_secondary_wildcard_domains(self):
+		"""
+		Install secondary wildcard domains on proxies.
+
+		Skip install on servers using the same domain for it's own hostname.
+		"""
+		proxies_containing_domain = frappe.get_all(
+			"Proxy Server Domain", {"domain": self.domain}, pluck="parent"
+		)
+		proxies_using_domain = frappe.get_all(
+			"Proxy Server", {"domain": self.domain}, pluck="name"
+		)
+		proxies_containing_domain = set(proxies_containing_domain) - set(proxies_using_domain)
+		for proxy_name in proxies_containing_domain:
+			proxy = frappe.get_doc("Proxy Server", proxy_name)
+			proxy.setup_wildcard_hosts()
 
 	def trigger_server_tls_setup_callback(self):
-		if not self.wildcard:
-			return
-
 		server_doctypes = ["Proxy Server", "Server", "Database Server"]
+
 		for server_doctype in server_doctypes:
 			servers = frappe.get_all(
 				server_doctype, {"status": "Active", "name": ("like", f"%.{self.domain}")}

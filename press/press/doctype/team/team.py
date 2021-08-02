@@ -102,7 +102,7 @@ class Team(Document):
 	):
 		user = frappe.db.get_value("User", email, ["name"], as_dict=True)
 		if not user:
-			self.create_user(first_name, last_name, email, password, role)
+			user = self.create_user(first_name, last_name, email, password, role)
 
 		self.append("team_members", {"user": user.name})
 		self.save(ignore_permissions=True)

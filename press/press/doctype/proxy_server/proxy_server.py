@@ -34,6 +34,7 @@ class ProxyServer(BaseServer):
 		wildcard_domains = []
 		for domain in self.domains:
 			if domain.domain == self.domain:
+				# self.domain certs are symlinks
 				continue
 			certificate_name = frappe.db.get_value(
 				"TLS Certificate", {"wildcard": True, "domain": domain.domain}, "name"

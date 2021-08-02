@@ -39,7 +39,8 @@
   "section_break_22",
   "use_for_new_benches",
   "column_break_26",
-  "use_for_new_sites"
+  "use_for_new_sites",
+  "staging"
  ],
  "fields": [
   {
@@ -261,10 +262,16 @@
    "fieldtype": "Check",
    "label": "Is Replication Setup",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "staging",
+   "fieldtype": "Check",
+   "label": "Staging"
   }
  ],
  "links": [],
- "modified": "2021-04-02 23:12:02.963418",
+ "modified": "2021-06-30 09:44:55.577185",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
