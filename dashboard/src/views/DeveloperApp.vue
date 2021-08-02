@@ -17,7 +17,7 @@
 					<div class="space-x-3">
 						<Button
 							v-if="app.status == 'Published'"
-							:link="`https://frappecloud.com/${app.route}`"
+							:link="`https://frappecloud.com/marketplace/apps/${app.name}`"
 							icon-left="external-link"
 						>
 							View in Marketplace
