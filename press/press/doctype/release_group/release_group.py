@@ -91,17 +91,6 @@ class ReleaseGroup(Document):
 		apps = []
 		for app in self.apps:
 			app_release_filters = {"app": app.app, "source": app.source}
-
-			# If the app is a `marketplace app`
-			# & the release group is `public` (shared bench)
-			# To fetch only the latest `approved` release
-			# to be part of a deploy candidate for a public bench
-			marketplace_app = frappe.get_all(
-				"Marketplace App", filters={"app": app.app}, limit=1,
-			)
-			if marketplace_app and self.public:
-				app_release_filters["status"] = "Approved"
-
 			release = frappe.get_all(
 				"App Release",
 				fields=["name", "source", "app", "hash"],
@@ -190,10 +179,10 @@ class ReleaseGroup(Document):
 		self.save()
 
 	def get_marketplace_app_sources(self) -> List[str]:
-		marketplace_app_sources = []
-		for app in self.apps:
-			if app.source in frappe.get_all("Marketplace App Version", pluck="source"):
-				marketplace_app_sources.append(app.source)
+		all_marketplace_sources = frappe.get_all("Marketplace App Version", pluck="source")
+		marketplace_app_sources = [
+			app.source for app in self.apps if app.source in all_marketplace_sources
+		]
 
 		return marketplace_app_sources
 
