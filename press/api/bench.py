@@ -292,12 +292,8 @@ def deploy_information(name):
 	out = frappe._dict(update_available=False)
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
 
-	if rg.public:
-		last_deploy_candidate = get_last_doc("Deploy Candidate", {"group": name})
-	else:
-		last_deploy_candidate = get_last_deploy_candidate(name)
-
-	if not (last_deploy_candidate and last_deploy_candidate.status == "Draft"):
+	last_deploy_candidate = get_last_deploy_candidate(rg)
+	if not last_deploy_candidate:
 		return out
 
 	last_deployed_bench = get_last_doc("Bench", {"group": name, "status": "Active"})
@@ -352,21 +348,9 @@ def get_updates_between_current_and_next_apps(current_apps, next_apps):
 @protected("Release Group")
 def deploy(name):
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
-	if rg.public:
-		candidate = frappe.get_all(
-			"Deploy Candidate",
-			["name", "status"],
-			{"group": name},
-			limit=1,
-			order_by="creation desc",
-		)[0]
-		if candidate.status != "Draft":
-			return
-		candidate = frappe.get_doc("Deploy Candidate", candidate.name)
-	else:
-		candidate = get_last_deploy_candidate(name)
-
+	candidate = get_last_deploy_candidate(rg)
 	candidate.build_and_deploy()
+
 	return candidate.name
 
 
@@ -500,9 +484,12 @@ def belongs_to_current_team(app: str) -> bool:
 	return marketplace_app.team == current_team
 
 
-def get_last_deploy_candidate(name) -> DeployCandidate:
-	dc_filters = {"group": name, "status": "Draft"}
-	last_deployed_bench = get_last_doc("Bench", {"group": name, "status": "Active"})
+def get_last_deploy_candidate(release_group: ReleaseGroup) -> DeployCandidate:
+	"""Get the latest valid deploy candidate for this `release_group`"""
+	dc_filters = {"group": release_group.name, "status": "Draft"}
+	last_deployed_bench = get_last_doc(
+		"Bench", {"group": release_group.name, "status": "Active"}
+	)
 	if last_deployed_bench:
 		dc_filters["creation"] = (">", last_deployed_bench.creation)
 
@@ -512,6 +499,9 @@ def get_last_deploy_candidate(name) -> DeployCandidate:
 	deploy_candidates = [
 		frappe.get_doc("Deploy Candidate", dc) for dc in deploy_candidates
 	]
+
+	current_team = get_current_team()
+
 	for dc in deploy_candidates:
 		releases = dc.get_unpublished_marketplace_releases()
 		if not releases:
@@ -519,10 +509,15 @@ def get_last_deploy_candidate(name) -> DeployCandidate:
 			# this Deploy Candidate
 			return dc
 
+		# If public release group,
+		# try next deploy candidate
+		if release_group.public:
+			continue
+
 		for release in releases:
-			source = release.get_source()
+			source = frappe.get_doc("App Release", release).get_source()
 			app_team = frappe.db.get_value("Marketplace App", source.app, "team")
-			if get_current_team() != app_team:
+			if current_team != app_team:
 				break
 		else:
 			# Marketplace Apps belong to this team

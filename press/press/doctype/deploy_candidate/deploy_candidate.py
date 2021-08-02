@@ -33,19 +33,27 @@ class DeployCandidate(Document):
 	def after_insert(self):
 		return
 
-	def get_unpublished_marketplace_releases(self) -> List[AppRelease]:
+	def get_unpublished_marketplace_releases(self) -> List[str]:
 		rg: ReleaseGroup = frappe.get_doc("Release Group", self.group)
 		marketplace_app_sources = rg.get_marketplace_app_sources()
 
 		if not marketplace_app_sources:
 			return []
 
+		# Marketplace App Releases in this deploy candidate
 		dc_app_releases = frappe.get_all(
-			"Deploy Candidate App", filters={"parent": self.name}, pluck="release"
+			"Deploy Candidate App",
+			filters={"parent": self.name, "source": ("in", marketplace_app_sources)},
+			pluck="release",
 		)
-		dc_app_releases = [frappe.get_doc("App Release", r) for r in dc_app_releases]
-		unpublished_releases = [r for r in dc_app_releases if r.status != "Published"]
 
+		# Unapproved app releases for marketplace apps
+		unpublished_releases = frappe.get_all(
+			"App Release",
+			filters={"name": ("in", dc_app_releases), "status": ("!=", "Approved")},
+			pluck="name",
+		)
+		
 		return unpublished_releases
 
 	@frappe.whitelist()
