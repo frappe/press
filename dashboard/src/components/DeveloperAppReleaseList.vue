@@ -22,7 +22,13 @@
 			</div>
 		</template>
 
-		<div v-if="releasesList.length === 0 && !$resources.releases.loading">
+		<div v-if="!sources.length">
+			<p class="mt-3 text-gray-600 text-center text-lg">
+				No published source exist for this app. Please contact support to
+				publish a version of this app.
+			</p>
+		</div>
+		<div v-else-if="releasesList.length === 0 && !$resources.releases.loading">
 			<p class="mt-3 text-gray-600 text-center text-lg">
 				No app releases have been created for this version.
 			</p>
@@ -104,18 +110,19 @@
 					{{ rejectionFeedback }}
 				</p>
 			</Dialog>
-		</div>
-		<div class="py-3 flex justify-center">
-			<Button
-				@click="
-					pageStart += 15;
-					$resources.releases.fetch();
-				"
-				v-if="!$resources.releases.lastPageEmpty"
-				:loading="$resources.releases.loading"
-				loadingText="Loading..."
-				>Load More</Button
-			>
+
+			<div class="py-3 flex justify-center">
+				<Button
+					@click="
+						pageStart += 15;
+						$resources.releases.fetch();
+					"
+					v-if="!$resources.releases.lastPageEmpty"
+					:loading="$resources.releases.loading"
+					loadingText="Loading..."
+					>Load More</Button
+				>
+			</div>
 		</div>
 	</Card>
 </template>
@@ -136,7 +143,9 @@ export default {
 		};
 	},
 	created() {
-		this.selectedSource = this.sources[0].source;
+		if (this.sources.length > 0) {
+			this.selectedSource = this.sources[0].source;
+		}
 	},
 	mounted() {
 		this.$socket.on('new_app_release_created', this.onNewReleaseCreated);
