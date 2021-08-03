@@ -139,19 +139,6 @@ export default {
 	data() {
 		return {
 			mobileMenuOpen: false,
-			items: [
-				{
-					label: 'Dashboard',
-					route: '/sites',
-					highlight: () => {
-						return this.$route.fullPath.endsWith('/sites');
-					}
-				},
-				{
-					label: 'Settings',
-					route: '/account'
-				}
-			],
 			dropdownItems: [
 				{
 					label: 'Settings',
@@ -167,6 +154,31 @@ export default {
 				}
 			]
 		};
+	},
+	computed: {
+		items() {
+			return [
+				{
+					label: 'Dashboard',
+					route: '/sites',
+					highlight: () => {
+						return this.$route.fullPath.endsWith('/sites');
+					}
+				},
+				{
+					label: 'Developer',
+					route: '/developer',
+					highlight: () => {
+						return this.$route.fullPath.includes('/developer');
+					},
+					condition: () => this.$account.team?.is_developer
+				},
+				{
+					label: 'Settings',
+					route: '/account'
+				}
+			].filter(d => (d.condition ? d.condition() : true));
+		}
 	}
 };
 </script>

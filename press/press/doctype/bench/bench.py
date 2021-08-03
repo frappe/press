@@ -2,12 +2,11 @@
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
 
-from __future__ import unicode_literals
-
 import json
 from datetime import datetime, timedelta
 
 import frappe
+
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists, make_autoname
 
@@ -18,6 +17,21 @@ from press.utils import log_error
 
 
 class Bench(Document):
+	@staticmethod
+	def with_sites(name: str):
+		bench = frappe.get_doc("Bench", name)
+		sites = frappe.get_all("Site", filters={"bench": name}, pluck="name")
+		bench.sites = [frappe.get_doc("Site", s) for s in sites]
+
+		return bench
+
+	@staticmethod
+	def all_with_sites(fields=None, filters=None):
+		benches = frappe.get_all("Bench", filters=filters, fields=fields, pluck="name")
+		benches = [Bench.with_sites(b) for b in benches]
+
+		return benches
+
 	def autoname(self):
 		server_name = frappe.db.get_value("Server", self.server, "hostname")
 		candidate_name = self.candidate[7:]
