@@ -62,6 +62,8 @@
    "fetch_from": "marketplace_app.app",
    "fieldname": "app",
    "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "App",
    "options": "App",
    "read_only": 1
@@ -80,7 +82,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-07-13 17:09:54.439773",
+ "modified": "2021-08-03 16:22:53.811775",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Release Approval Request",
