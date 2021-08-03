@@ -9,6 +9,7 @@
  "field_order": [
   "enabled",
   "user",
+  "is_developer",
   "erpnext_partner",
   "free_account",
   "via_erpnext",
@@ -169,6 +170,14 @@
    "fieldtype": "Check",
    "label": "Via ERPNext",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "A developer creates app(s) for the marketplace",
+   "fieldname": "is_developer",
+   "fieldtype": "Check",
+   "in_standard_filter": 1,
+   "label": "Is Developer"
   }
  ],
  "links": [
@@ -213,7 +222,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2021-04-23 14:21:55.536816",
+ "modified": "2021-06-30 12:39:52.267978",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

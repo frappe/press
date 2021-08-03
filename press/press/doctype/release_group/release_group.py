@@ -2,11 +2,12 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
-from press.press.doctype.server.server import Server
 import frappe
 
+from typing import List
 from frappe.model.document import Document
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.server.server import Server
 from press.press.doctype.app_source.app_source import AppSource, create_app_source
 
 DEFAULT_DEPENDENCIES = [
@@ -86,15 +87,18 @@ class ReleaseGroup(Document):
 	def create_deploy_candidate(self):
 		if not self.enabled:
 			return
+
 		apps = []
 		for app in self.apps:
+			app_release_filters = {"app": app.app, "source": app.source}
 			release = frappe.get_all(
 				"App Release",
 				fields=["name", "source", "app", "hash"],
-				filters={"app": app.app, "source": app.source},
+				filters=app_release_filters,
 				order_by="creation desc",
 				limit=1,
 			)
+
 			if release:
 				release = release[0]
 				apps.append(
@@ -105,6 +109,7 @@ class ReleaseGroup(Document):
 						"hash": release.hash,
 					}
 				)
+
 		dependencies = [
 			{"dependency": d.dependency, "version": d.version} for d in self.dependencies
 		]
@@ -172,6 +177,14 @@ class ReleaseGroup(Document):
 				app.save()
 				break
 		self.save()
+
+	def get_marketplace_app_sources(self) -> List[str]:
+		all_marketplace_sources = frappe.get_all("Marketplace App Version", pluck="source")
+		marketplace_app_sources = [
+			app.source for app in self.apps if app.source in all_marketplace_sources
+		]
+
+		return marketplace_app_sources
 
 
 def new_release_group(title, version, apps, team=None):

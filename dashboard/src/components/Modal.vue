@@ -14,7 +14,8 @@
 
 			<div
 				v-show="show"
-				class="w-full overflow-auto transition-all transform bg-white rounded-lg shadow-xl sm:max-w-lg"
+				class="w-full overflow-auto transition-all transform bg-white rounded-lg shadow-xl"
+				:class="!full ? 'sm:max-w-lg' : ''"
 				style="max-height: 95vh;"
 			>
 				<slot></slot>
@@ -38,6 +39,10 @@ export default {
 		dismissable: {
 			type: Boolean,
 			default: true
+		},
+		full: {
+			type: Boolean,
+			default: false
 		}
 	},
 	created() {

@@ -1,30 +1,27 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2020, Frappe and contributors
+# Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
-
-from __future__ import unicode_literals
 
 import os
 import re
 import shlex
 import shutil
-import subprocess
-from subprocess import Popen
-from typing import List
-
+import frappe
 import docker
 import dockerfile
-import frappe
+import subprocess
+
+from subprocess import Popen
+from typing import List
 from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 from frappe.utils import now_datetime as now
 
-from press.overrides import get_permission_query_conditions_for_doctype
-from press.press.doctype.server.server import Server
 from press.utils import get_current_team, log_error
-
-# import json
+from press.press.doctype.server.server import Server
+from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.release_group.release_group import ReleaseGroup
 
 
 class DeployCandidate(Document):
@@ -35,6 +32,29 @@ class DeployCandidate(Document):
 
 	def after_insert(self):
 		return
+
+	def get_unpublished_marketplace_releases(self) -> List[str]:
+		rg: ReleaseGroup = frappe.get_doc("Release Group", self.group)
+		marketplace_app_sources = rg.get_marketplace_app_sources()
+
+		if not marketplace_app_sources:
+			return []
+
+		# Marketplace App Releases in this deploy candidate
+		dc_app_releases = frappe.get_all(
+			"Deploy Candidate App",
+			filters={"parent": self.name, "source": ("in", marketplace_app_sources)},
+			pluck="release",
+		)
+
+		# Unapproved app releases for marketplace apps
+		unpublished_releases = frappe.get_all(
+			"App Release",
+			filters={"name": ("in", dc_app_releases), "status": ("!=", "Approved")},
+			pluck="name",
+		)
+
+		return unpublished_releases
 
 	@frappe.whitelist()
 	def build(self):

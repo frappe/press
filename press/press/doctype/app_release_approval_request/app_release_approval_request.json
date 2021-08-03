@@ -1,0 +1,106 @@
+{
+ "actions": [],
+ "creation": "2021-07-12 16:17:54.427902",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "marketplace_app",
+  "team",
+  "status",
+  "column_break_4",
+  "app_release",
+  "app",
+  "approved_by",
+  "section_break_8",
+  "reason_for_rejection"
+ ],
+ "fields": [
+  {
+   "fieldname": "marketplace_app",
+   "fieldtype": "Link",
+   "label": "Marketplace App",
+   "options": "Marketplace App",
+   "reqd": 1
+  },
+  {
+   "allow_in_quick_entry": 1,
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Open\nCancelled\nApproved\nRejected",
+   "reqd": 1
+  },
+  {
+   "fieldname": "app_release",
+   "fieldtype": "Link",
+   "label": "App Release",
+   "options": "App Release",
+   "reqd": 1
+  },
+  {
+   "fieldname": "approved_by",
+   "fieldtype": "Link",
+   "label": "Approved By",
+   "options": "User"
+  },
+  {
+   "fetch_from": "marketplace_app.team",
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "marketplace_app.app",
+   "fieldname": "app",
+   "fieldtype": "Link",
+   "label": "App",
+   "options": "App",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.status==\"Rejected\"",
+   "fieldname": "reason_for_rejection",
+   "fieldtype": "Text",
+   "label": "Reason For Rejection",
+   "mandatory_depends_on": "eval:doc.status==\"Rejected\""
+  },
+  {
+   "fieldname": "section_break_8",
+   "fieldtype": "Section Break"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2021-07-13 17:09:54.439773",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "App Release Approval Request",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "track_seen": 1
+}

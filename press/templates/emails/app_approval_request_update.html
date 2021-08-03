@@ -1,0 +1,29 @@
+{% import "templates/emails/macros.html" as utils %}
+{% extends "templates/emails/base.html" %}
+
+{% block content %}
+
+<td class="text-base leading-6 text-gray-900">
+    <div class="p-8 bg-white">
+        <p class="mb-4 font-bold">
+            {%- if subject -%}
+            {{ subject }}
+            {%- endif -%}
+        </p>
+
+        <p>
+            {%- if status == 'Rejected' -%}
+            Unfortunately, your approval request for <a href="{{ commit_link }}">app release</a> has been rejected.
+            The reason for rejection:
+            {{ rejection_reason }}
+            {%- endif -%}
+
+            {%- if status == 'Approved' -%}
+            Hurray! Your approval request for <a href="{{ commit_link }}">app release</a> has been accepted and this release will be
+            published in the Marketplace.
+            {%- endif -%}
+        </p>
+    </div>
+</td>
+
+{% endblock %}
