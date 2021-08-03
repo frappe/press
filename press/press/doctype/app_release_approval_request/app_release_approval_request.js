@@ -2,7 +2,7 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on('App Release Approval Request', {
-	// refresh: function(frm) {
-
-	// }
+	status(frm) {
+		frm.set_value('approved_by', frappe.session.user);
+	},
 });
