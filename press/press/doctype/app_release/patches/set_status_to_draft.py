@@ -9,9 +9,9 @@ def execute():
 
 	frappe.db.sql(
 		"""
-		UPDATE 
+		UPDATE
 			`tabApp Release`
-		SET 
+		SET
 			status = 'Draft'
 		WHERE
 			IFNULL(status, '') = ''
