@@ -72,11 +72,11 @@
 				</span>
 				<span class="text-right">
 					<Button
-						v-if="
-							release.status == 'Draft' &&
-								$date(release.creation) > latestApprovedOn
+						v-if="isPublishable(release)"
+						:loading="
+							$resources.createApprovalRequest.loading ||
+								$resources.latestApproved.loading
 						"
-						:loading="$resources.createApprovalRequest.loading"
 						type="secondary"
 						@click="confirmApprovalRequest(release.name)"
 					>
@@ -173,11 +173,10 @@ export default {
 			};
 		},
 		latestApproved() {
-			let { app } = this.app;
 			return {
 				method: 'press.api.developer.latest_approved_release',
 				params: {
-					app
+					source: this.selectedSource
 				},
 				auto: true
 			};
@@ -203,6 +202,13 @@ export default {
 		}
 	},
 	methods: {
+		isPublishable(release) {
+			return (
+				release.status == 'Draft' &&
+				(!this.latestApprovedOn ||
+					this.$date(release.creation) > this.latestApprovedOn)
+			);
+		},
 		createApprovalRequest(appRelease) {
 			let { app } = this.app;
 			this.$resources.createApprovalRequest.submit({
