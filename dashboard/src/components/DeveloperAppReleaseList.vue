@@ -106,9 +106,7 @@
 				<p class="my-2 text-gray-600 text-base">
 					The following feedback was given by our team:
 				</p>
-				<p class="">
-					{{ rejectionFeedback }}
-				</p>
+				<div class="prose text-lg" v-html="rejectionFeedback"></div>
 			</Dialog>
 
 			<div class="py-3 flex justify-center">
