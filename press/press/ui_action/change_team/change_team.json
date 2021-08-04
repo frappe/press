@@ -1,0 +1,16 @@
+{
+ "creation": "2021-08-04 20:15:03.269824",
+ "docstatus": 0,
+ "doctype": "UI Action",
+ "idx": 0,
+ "label": "Change Team",
+ "modified": "2021-08-04 20:15:03.269824",
+ "modified_by": "faris@erpnext.com",
+ "name": "Change Team",
+ "owner": "faris@erpnext.com",
+ "roles": [
+  {
+   "role": "System Manager"
+  }
+ ]
+}

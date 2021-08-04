@@ -4,6 +4,9 @@
 			title="Team"
 			subtitle="Teams you are part of and the current active team"
 		>
+			<template #actions>
+				<ChangeTeamButton />
+			</template>
 			<div class="divide-y">
 				<ListItem v-for="team in teams" :title="team" :key="team">
 					<template #actions>
@@ -25,8 +28,12 @@
 </template>
 
 <script>
+import ChangeTeamButton from '../components/ChangeTeamButton.vue';
 export default {
 	name: 'AccountTeam',
+	components: {
+		ChangeTeamButton
+	},
 	computed: {
 		teams() {
 			let current_team = this.$account.team.name;

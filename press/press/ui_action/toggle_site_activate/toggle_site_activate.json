@@ -1,0 +1,16 @@
+{
+ "creation": "2021-08-04 19:48:23.185658",
+ "docstatus": 0,
+ "doctype": "UI Action",
+ "idx": 0,
+ "label": "Toggle Site Activate",
+ "modified": "2021-08-04 19:51:28.746895",
+ "modified_by": "faris@erpnext.com",
+ "name": "Toggle Site Activate",
+ "owner": "faris@erpnext.com",
+ "roles": [
+  {
+   "role": "System Manager"
+  }
+ ]
+}
