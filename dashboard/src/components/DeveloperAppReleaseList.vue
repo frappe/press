@@ -146,7 +146,8 @@ export default {
 		}
 	},
 	mounted() {
-		this.$socket.on('new_app_release_created', this.onNewReleaseCreated);
+		this.$socket.on('new_app_release_created', this.releaseStateUpdate);
+		this.$socket.on('request_status_changed', this.releaseStateUpdate);
 	},
 	resources: {
 		releases() {
@@ -281,8 +282,8 @@ export default {
 		getCommitUrl(releaseHash) {
 			return `${this.repoUrl}/commit/${releaseHash}`;
 		},
-		onNewReleaseCreated(data) {
-			if (data.source == this.selectedSource) {
+		releaseStateUpdate(data) {
+			if (this.selectedSource && data.source == this.selectedSource) {
 				this.resetReleaseListState();
 			}
 		}
