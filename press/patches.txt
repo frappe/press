@@ -72,3 +72,4 @@ press.patches.v0_0_1.set_dependencies_in_release_group
 press.patches.v0_0_1.set_monitoring_password_in_cluster
 press.patches.v0_0_1.add_domains_in_site_config_preview
 press.press.doctype.site.patches.set_plan_in_site
+press.press.doctype.app_release.patches.set_status_to_draft

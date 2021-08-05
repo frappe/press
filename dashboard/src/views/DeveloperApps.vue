@@ -5,6 +5,15 @@
 			:loading="true"
 			loadingText="Loading..."
 		></Button>
+		<ErrorMessage
+			v-else-if="!$resources.apps.data"
+			:error="$resources.apps.error"
+		/>
+		<div v-else-if="$resources.apps.data.length < 1">
+			<p class="text-gray-600 text-lg">
+				You have not published any app on our Marketplace.
+			</p>
+		</div>
 		<div v-else>
 			<div class="grid gap-4 grid-cols-1 md:grid-cols-3 ">
 				<SelectableCard

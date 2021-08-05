@@ -62,6 +62,8 @@
    "fetch_from": "marketplace_app.app",
    "fieldname": "app",
    "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "App",
    "options": "App",
    "read_only": 1
@@ -69,7 +71,7 @@
   {
    "depends_on": "eval:doc.status==\"Rejected\"",
    "fieldname": "reason_for_rejection",
-   "fieldtype": "Text",
+   "fieldtype": "Text Editor",
    "label": "Reason For Rejection",
    "mandatory_depends_on": "eval:doc.status==\"Rejected\""
   },
@@ -80,7 +82,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-07-13 17:09:54.439773",
+ "modified": "2021-08-04 13:55:35.611792",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Release Approval Request",

@@ -22,7 +22,13 @@
 			</div>
 		</template>
 
-		<div v-if="releasesList.length === 0 && !$resources.releases.loading">
+		<div v-if="!sources.length">
+			<p class="mt-3 text-gray-600 text-center text-lg">
+				No published source exist for this app. Please contact support to
+				publish a version of this app.
+			</p>
+		</div>
+		<div v-else-if="releasesList.length === 0 && !$resources.releases.loading">
 			<p class="mt-3 text-gray-600 text-center text-lg">
 				No app releases have been created for this version.
 			</p>
@@ -66,11 +72,11 @@
 				</span>
 				<span class="text-right">
 					<Button
-						v-if="
-							release.status == 'Draft' &&
-								$date(release.creation) > latestApprovedOn
+						v-if="isPublishable(release)"
+						:loading="
+							$resources.createApprovalRequest.loading ||
+								$resources.latestApproved.loading
 						"
-						:loading="$resources.createApprovalRequest.loading"
 						type="secondary"
 						@click="confirmApprovalRequest(release.name)"
 					>
@@ -100,22 +106,21 @@
 				<p class="my-2 text-gray-600 text-base">
 					The following feedback was given by our team:
 				</p>
-				<p class="">
-					{{ rejectionFeedback }}
-				</p>
+				<div class="prose text-lg" v-html="rejectionFeedback"></div>
 			</Dialog>
-		</div>
-		<div class="py-3 flex justify-center">
-			<Button
-				@click="
-					pageStart += 15;
-					$resources.releases.fetch();
-				"
-				v-if="!$resources.releases.lastPageEmpty"
-				:loading="$resources.releases.loading"
-				loadingText="Loading..."
-				>Load More</Button
-			>
+
+			<div class="py-3 flex justify-center">
+				<Button
+					@click="
+						pageStart += 15;
+						$resources.releases.fetch();
+					"
+					v-if="!$resources.releases.lastPageEmpty"
+					:loading="$resources.releases.loading"
+					loadingText="Loading..."
+					>Load More</Button
+				>
+			</div>
 		</div>
 	</Card>
 </template>
@@ -136,10 +141,13 @@ export default {
 		};
 	},
 	created() {
-		this.selectedSource = this.sources[0].source;
+		if (this.sources.length > 0) {
+			this.selectedSource = this.sources[0].source;
+		}
 	},
 	mounted() {
-		this.$socket.on('new_app_release_created', this.onNewReleaseCreated);
+		this.$socket.on('new_app_release_created', this.releaseStateUpdate);
+		this.$socket.on('request_status_changed', this.releaseStateUpdate);
 	},
 	resources: {
 		releases() {
@@ -164,11 +172,10 @@ export default {
 			};
 		},
 		latestApproved() {
-			let { app } = this.app;
 			return {
 				method: 'press.api.developer.latest_approved_release',
 				params: {
-					app
+					source: this.selectedSource
 				},
 				auto: true
 			};
@@ -194,6 +201,13 @@ export default {
 		}
 	},
 	methods: {
+		isPublishable(release) {
+			return (
+				release.status == 'Draft' &&
+				(!this.latestApprovedOn ||
+					this.$date(release.creation) > this.latestApprovedOn)
+			);
+		},
 		createApprovalRequest(appRelease) {
 			let { app } = this.app;
 			this.$resources.createApprovalRequest.submit({
@@ -268,8 +282,8 @@ export default {
 		getCommitUrl(releaseHash) {
 			return `${this.repoUrl}/commit/${releaseHash}`;
 		},
-		onNewReleaseCreated(data) {
-			if (data.source == this.selectedSource) {
+		releaseStateUpdate(data) {
+			if (this.selectedSource && data.source == this.selectedSource) {
 				this.resetReleaseListState();
 			}
 		}

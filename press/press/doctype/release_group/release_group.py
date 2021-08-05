@@ -32,6 +32,11 @@ class ReleaseGroup(Document):
 		for candidate in candidates:
 			frappe.delete_doc("Deploy Candidate", candidate.name)
 
+	def after_insert(self):
+		# First time, create an extra
+		# deploy candidate with latest approved releases
+		self.create_deploy_candidate(approved_releases_only=True)
+
 	def on_update(self):
 		self.create_deploy_candidate()
 
@@ -84,13 +89,17 @@ class ReleaseGroup(Document):
 			self.extend("dependencies", DEFAULT_DEPENDENCIES)
 
 	@frappe.whitelist()
-	def create_deploy_candidate(self):
+	def create_deploy_candidate(self, approved_releases_only=False):
 		if not self.enabled:
 			return
 
+		marketplace_sources = self.get_marketplace_app_sources()
 		apps = []
 		for app in self.apps:
 			app_release_filters = {"app": app.app, "source": app.source}
+			if approved_releases_only and (app.source in marketplace_sources):
+				app_release_filters["status"] = "Approved"
+
 			release = frappe.get_all(
 				"App Release",
 				fields=["name", "source", "app", "hash"],
