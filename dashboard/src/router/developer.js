@@ -22,6 +22,12 @@ export default [
 		]
 	},
 	{
+		path: '/developer/apps/new',
+		name: 'NewDeveloperApp',
+		component: () => import('../views/NewApp.vue'),
+		props: true
+	},
+	{
 		path: '/developer/apps/:appName',
 		name: 'DeveloperApp',
 		component: () => import('../views/DeveloperApp.vue'),
