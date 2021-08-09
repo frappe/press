@@ -7,29 +7,53 @@
 					<Button
 						type="primary"
 						iconLeft="plus"
-						@click="showAppCreationDialog = true"
+						@click="
+							!appOptions.data ? appOptions.fetch() : null;
+							showAddAppDialog = true;
+						"
 					>
-						Create App
+						Add App
 					</Button>
 				</div>
 			</div>
 		</div>
 
 		<Dialog
-			title="Want to submit another app?"
+			title="Add App to Marketplace"
 			:dismissable="true"
-			v-model="showAppCreationDialog"
+			v-model="showAddAppDialog"
 		>
-			<p class="text-lg">
-				Please
-				<a
-					class="text-blue-500 hover:text-blue-700"
-					href="/support/tickets"
-					target="_blank"
-					>raise a support ticket</a
+			<Loading class="py-2" v-if="appOptions.loading" />
+			<AppSourceSelector
+				v-else-if="appOptions.data && appOptions.data.length > 0"
+				class="mt-1"
+				:apps="availableApps"
+				:value.sync="selectedApp"
+				:multiple="false"
+			/>
+			<p v-else class="text-base">No app sources available.</p>
+			<template #actions>
+				<Button
+					type="primary"
+					class="ml-2"
+					v-if="selectedApp"
+					:loading="addMarketplaceApp.loading"
+					@click="
+						addMarketplaceApp.submit({
+							source: selectedApp.source.name,
+							app: selectedApp.app
+						})
+					"
 				>
-				with the necessary information to submit an app to marketplace. We will
-				guide you from there!
+					Add {{ selectedApp.app }}
+				</Button>
+			</template>
+
+			<p class="mt-4 text-base" @click="showAddAppDialog = false">
+				Don't find your app here?
+				<Link :to="`/developer/apps/new`">
+					Add from GitHub
+				</Link>
 			</p>
 		</Dialog>
 
@@ -43,18 +67,40 @@
 
 <script>
 import Tabs from '@/components/Tabs.vue';
+import AppSourceSelector from '@/components/AppSourceSelector.vue';
 
 export default {
 	name: 'Developer',
 	components: {
-		Tabs
+		Tabs,
+		AppSourceSelector
 	},
 	data: () => ({
-		tabs: [
-			{ label: 'My Apps', route: '/developer/apps' },
-		],
-		showAppCreationDialog: false
+		tabs: [{ label: 'My Apps', route: '/developer/apps' }],
+		showAddAppDialog: false,
+		selectedApp: null
 	}),
+	resources: {
+		appOptions() {
+			return {
+				method: 'press.api.developer.options_for_marketplace_app'
+			};
+		},
+		addMarketplaceApp() {
+			return {
+				method: 'press.api.developer.add_app',
+				onSuccess(appName) {
+					this.showAddAppDialog = false;
+					window.location.reload();
+				}
+			};
+		}
+	},
+	computed: {
+		availableApps() {
+			return this.appOptions.data;
+		}
+	},
 	activated() {
 		if (this.$route.matched.length === 1) {
 			let path = this.$route.fullPath;

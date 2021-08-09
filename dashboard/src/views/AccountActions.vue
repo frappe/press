@@ -1,5 +1,16 @@
 <template>
 	<Card title="Team Actions" subtitle="Actions available for your team">
+		<!-- TODO: Edit Events -->
+		<ListItem
+			title="Become Marketplace Developer"
+			subtitle="Become a marketplace app publisher"
+		>
+			<template #actions>
+				<Button @click="showTeamDeletionDialog = true">
+					<span>Become Publisher</span>
+				</Button>
+			</template>
+		</ListItem>
 		<ListItem
 			title="Delete Account"
 			subtitle="Delete your account and personal data"

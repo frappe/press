@@ -3,7 +3,9 @@
 		<div class="mb-6 text-center ">
 			<h1 class="text-2xl font-bold">Add a New App</h1>
 			<p class="text-base text-gray-700">
-				Add an app to your bench
+				{{
+					benchName ? 'Add an app to your bench' : 'Add an app to marketplace'
+				}}
 			</p>
 		</div>
 		<div class="flex justify-center">
@@ -66,7 +68,7 @@
 						@click="addApp.submit()"
 						:loading="addApp.loading"
 					>
-						Add app to bench
+						{{ benchName ? 'Add app to bench' : 'Add app to marketplace' }}
 					</Button>
 				</div>
 			</div>
@@ -128,7 +130,9 @@ export default {
 		},
 		addApp() {
 			return {
-				method: 'press.api.app.new',
+				method: this.benchName
+					? 'press.api.app.new'
+					: 'press.api.developer.new_app',
 				params: {
 					app: {
 						name: this.validatedApp?.name,
@@ -140,7 +144,11 @@ export default {
 					}
 				},
 				onSuccess() {
-					this.$router.push(`/benches/${this.benchName}`);
+					if (this.benchName) {
+						this.$router.push(`/benches/${this.benchName}`);
+					} else {
+						this.$router.push('/developer/apps');
+					}
 				}
 			};
 		}

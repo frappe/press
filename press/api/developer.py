@@ -4,16 +4,25 @@
 
 import frappe
 
+from frappe.core.utils import find
 from typing import Dict, List
-from press.api.bench import get_app_tag
+from press.api.bench import get_app_tag, options
 from press.api.site import protected
-from press.utils import get_current_team, get_last_doc
+from press.utils import get_current_team, get_last_doc, unique
 from press.press.doctype.app_source.app_source import AppSource
 from press.press.doctype.marketplace_app.marketplace_app import MarketplaceApp
 from press.press.doctype.app_release.app_release import AppRelease
 from press.press.doctype.app_release_approval_request.app_release_approval_request import (
 	AppReleaseApprovalRequest,
 )
+
+
+@frappe.whitelist()
+def become_developer():
+	current_team = get_current_team()
+	team = frappe.get_doc("Team", current_team)
+	team.is_developer = True
+	team.save()
 
 
 @frappe.whitelist()
@@ -211,3 +220,120 @@ def get_latest_approval_request(app_release: str):
 	)
 
 	return approval_request
+
+
+@frappe.whitelist()
+def options_for_marketplace_app() -> Dict[str, Dict]:
+	""""""
+	# Get versions (along with apps and associated sources)
+	# which belong to the current team
+	versions = options(only_by_current_team=False)["versions"]
+
+	filtered_apps = []
+
+	for version in versions:
+		# Remove Frappe Framework
+		version["apps"] = [app for app in version["apps"] if app["name"] != "frappe"]
+
+		for app in version["apps"]:
+			if not is_on_marketplace(app["name"]):
+				for source in app["sources"]:
+					source["version"] = version["name"]
+				filtered_apps.append(app)
+
+			else:
+				marketplace_app = frappe.get_doc("Marketplace App", app["name"])
+				marketplace_versions = [v.version for v in marketplace_app.sources]
+
+				if version["name"] not in marketplace_versions:
+					for source in app["sources"]:
+						source["version"] = version["name"]
+					filtered_apps.append(app)
+
+	aggregated_sources = {}
+
+	for app in filtered_apps:
+		aggregated_sources.setdefault(app["name"], []).extend(app["sources"])
+		# Remove duplicate sources
+		aggregated_sources[app["name"]] = unique(
+			aggregated_sources[app["name"]], lambda x: x["name"]
+		)
+
+	marketplace_options = []
+	for app_name, sources in aggregated_sources.items():
+		app = find(filtered_apps, lambda x: x["name"] == app_name)
+		marketplace_options.append(
+			{
+				"name": app_name,
+				"sources": sources,
+				"source": app["source"],
+				"title": app["title"],
+			}
+		)
+
+	return marketplace_options
+
+
+def is_on_marketplace(app: str) -> bool:
+	"""Returns `True` if this `app` is on marketplace else `False`"""
+	return frappe.db.exists("Marketplace App", app)
+
+
+@frappe.whitelist()
+def new_app(app: Dict):
+	name = app["name"]
+	team = get_current_team()
+
+	if frappe.db.exists("App", name):
+		app_doc = frappe.get_doc("App", name)
+	else:
+		app_doc = new_app(name, app["title"])
+
+	source = app_doc.add_source(
+		app["version"],
+		app["repository_url"],
+		app["branch"],
+		team,
+		app["github_installation_id"],
+	)
+
+	return add_app(source.name, app_doc.name)
+
+
+@frappe.whitelist()
+def add_app(source: str, app: str):
+	if not is_on_marketplace(app):
+		supported_versions = frappe.get_all(
+			"App Source Version", filters={"parent": source}, pluck="version"
+		)
+		marketplace_app = frappe.get_doc(
+			doctype="Marketplace App",
+			app=app,
+			team=get_current_team(),
+			description="Please add a short description about your app here...",
+			sources=[{"version": v, "source": source} for v in supported_versions],
+		).insert()
+
+	else:
+		marketplace_app = frappe.get_doc("Marketplace App", app)
+
+		if marketplace_app.team != get_current_team():
+			frappe.throw("Marketplace App exists and is owned by some other team!")
+
+		# Versions on marketplace
+		versions = [v.version for v in marketplace_app.sources]
+
+		app_source = frappe.get_doc("App Source", source)
+		# Versions on this app `source`
+		app_source_versions = [v.version for v in app_source.versions]
+
+		version_difference = set(app_source_versions) - set(versions)
+		if version_difference:
+			# App source contains version not yet in marketplace
+			for version in version_difference:
+				marketplace_app.append("sources", {"source": source, "version": version})
+				marketplace_app.save()
+		else:
+			frappe.throw("A marketplace app already exists with the given versions!")
+
+	return marketplace_app.name
