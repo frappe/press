@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 from . import __version__ as app_version
+from press.api.account import get_frappe_io_auth_url
 
 app_name = "press"
 app_title = "Press"
@@ -63,6 +64,10 @@ update_website_context = ["press.overrides.update_website_context"]
 
 website_route_rules = [
 	{"from_route": "/dashboard/<path:app_path>", "to_route": "dashboard"},
+]
+
+website_redirects = [
+	{"source": "/f-login", "target": get_frappe_io_auth_url() or ""},
 ]
 
 email_css = ["/assets/press/css/email.css"]
