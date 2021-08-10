@@ -62,6 +62,18 @@
 					>
 						Validate App
 					</Button>
+					<select
+						class="my-2 form-select block mr-2"
+						v-if="validatedApp && !benchName"
+						v-model="selectedVersion"
+					>
+						<option
+							v-for="v in ['Version 13', 'Version 12', 'Nightly']"
+							:key="v"
+							:value="v"
+							>{{ v }}</option
+						>
+					</select>
 					<Button
 						type="primary"
 						v-if="validatedApp"
@@ -81,6 +93,7 @@ import GreenCheckIcon from '@/components/global/GreenCheckIcon.vue';
 import NewAppRepositories from './NewAppRepositories.vue';
 import ErrorMessage from '@/components/global/ErrorMessage.vue';
 import WizardCard from '@/components/WizardCard.vue';
+
 export default {
 	name: 'NewApp',
 	components: {
@@ -94,7 +107,8 @@ export default {
 		return {
 			selectedRepo: null,
 			selectedInstallation: null,
-			selectedBranch: null
+			selectedBranch: null,
+			selectedVersion: 'Version 13'
 		};
 	},
 	resources: {
@@ -140,7 +154,8 @@ export default {
 						group: this.benchName,
 						repository_url: this.selectedRepo?.url,
 						branch: this.selectedBranch,
-						github_installation_id: this.selectedInstallation?.id
+						github_installation_id: this.selectedInstallation?.id,
+						version: this.selectedVersion
 					}
 				},
 				onSuccess() {
