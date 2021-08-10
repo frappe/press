@@ -9,6 +9,7 @@ from typing import Dict, List
 from press.api.bench import get_app_tag, options
 from press.api.site import protected
 from press.utils import get_current_team, get_last_doc, unique
+from press.press.doctype.app.app import new_app as new_app_doc
 from press.press.doctype.app_source.app_source import AppSource
 from press.press.doctype.marketplace_app.marketplace_app import MarketplaceApp
 from press.press.doctype.app_release.app_release import AppRelease
@@ -227,7 +228,7 @@ def options_for_marketplace_app() -> Dict[str, Dict]:
 	""""""
 	# Get versions (along with apps and associated sources)
 	# which belong to the current team
-	versions = options(only_by_current_team=False)["versions"]
+	versions = options(only_by_current_team=True)["versions"]
 
 	filtered_apps = []
 
@@ -287,7 +288,7 @@ def new_app(app: Dict):
 	if frappe.db.exists("App", name):
 		app_doc = frappe.get_doc("App", name)
 	else:
-		app_doc = new_app(name, app["title"])
+		app_doc = new_app_doc(name, app["title"])
 
 	source = app_doc.add_source(
 		app["version"],
