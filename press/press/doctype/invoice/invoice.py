@@ -76,7 +76,7 @@ class Invoice(Document):
 		if self.status == "Paid":
 			self.submit()
 
-	def after_submit(self):
+	def on_submit(self):
 		self.create_invoice_on_frappeio()
 
 	def on_update_after_submit(self):
