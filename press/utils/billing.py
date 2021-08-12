@@ -130,9 +130,11 @@ def get_setup_intent(team):
 
 
 def get_stripe():
+	from frappe.utils.password import get_decrypted_password
+
 	if not hasattr(frappe.local, "press_stripe_object"):
 		stripe_account = frappe.db.get_single_value("Press Settings", "stripe_account")
-		secret_key = frappe.utils.password.get_decrypted_password(
+		secret_key = get_decrypted_password(
 			"Stripe Settings", stripe_account, "secret_key", raise_exception=False
 		)
 
@@ -145,3 +147,7 @@ def get_stripe():
 		frappe.local.press_stripe_object = stripe
 
 	return frappe.local.press_stripe_object
+
+
+def convert_stripe_money(amount):
+	return amount / 100

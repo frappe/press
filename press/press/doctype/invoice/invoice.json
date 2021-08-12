@@ -28,6 +28,7 @@
   "column_break_15",
   "total",
   "applied_credits",
+  "free_credits",
   "amount_due",
   "amount_paid",
   "section_break_15",
@@ -295,6 +296,12 @@
    "fieldtype": "Data",
    "label": "Stripe Payment Intent ID",
    "no_copy": 1
+  },
+  {
+   "fieldname": "free_credits",
+   "fieldtype": "Currency",
+   "label": "Free Credits",
+   "options": "currency"
   }
  ],
  "is_submittable": 1,
@@ -310,7 +317,7 @@
    "link_fieldname": "invoice"
   }
  ],
- "modified": "2021-07-17 12:38:21.448518",
+ "modified": "2021-08-12 12:32:17.474642",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",

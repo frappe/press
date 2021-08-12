@@ -8,15 +8,12 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils.data import fmt_money
 from press.api.billing import get_stripe
-from press.utils.billing import get_frappe_io_connection
+from press.utils.billing import get_frappe_io_connection, convert_stripe_money
 from press.utils import log_error
-from datetime import datetime
 from frappe import _
 from frappe.utils import getdate, cint
-from press.telegram_utils import Telegram
-from press.overrides import get_permission_query_conditions_for_doctype
 
-from frappe.utils import get_url_to_form
+from press.overrides import get_permission_query_conditions_for_doctype
 
 
 class Invoice(Document):
@@ -26,6 +23,7 @@ class Invoice(Document):
 		self.validate_duplicate()
 		self.validate_items()
 		self.validate_amount()
+		self.compute_free_credits()
 
 	def before_submit(self):
 		if self.total > 0 and self.status != "Paid":
@@ -79,7 +77,7 @@ class Invoice(Document):
 		if self.status == "Paid":
 			self.submit()
 
-	def after_submit(self):
+	def on_submit(self):
 		self.create_invoice_on_frappeio()
 
 	def on_update_after_submit(self):
@@ -315,6 +313,11 @@ class Invoice(Document):
 		for item in self.items:
 			total += item.amount
 		self.total = total
+
+	def compute_free_credits(self):
+		self.free_credits = sum(
+			[d.amount for d in self.credit_allocations if d.source == "Free Credits"]
+		)
 
 	def on_cancel(self):
 		# make reverse entries for credit allocations
@@ -608,125 +611,6 @@ def finalize_draft_invoice(invoice):
 		log_error(
 			"Invoice creation for next month failed", invoice=invoice.name,
 		)
-
-
-def process_stripe_webhook(doc, method):
-	"""This method runs after a Stripe Webhook Log is created"""
-	if doc.event_type not in [
-		"invoice.payment_succeeded",
-		"invoice.payment_failed",
-		"invoice.finalized",
-	]:
-		return
-
-	event = frappe.parse_json(doc.payload)
-	stripe_invoice = event["data"]["object"]
-	invoice = frappe.get_doc(
-		"Invoice", {"stripe_invoice_id": stripe_invoice["id"]}, for_update=True
-	)
-	team = frappe.get_doc("Team", invoice.team)
-
-	if doc.event_type == "invoice.finalized":
-		invoice.update(
-			{
-				"amount_paid": stripe_invoice["amount_paid"] / 100,
-				"stripe_invoice_url": stripe_invoice["hosted_invoice_url"],
-				"status": "Paid" if stripe_invoice["status"] == "paid" else "Unpaid",
-			}
-		)
-		invoice.save()
-
-	elif doc.event_type == "invoice.payment_succeeded":
-		invoice.update(
-			{
-				"payment_date": datetime.fromtimestamp(
-					stripe_invoice["status_transitions"]["paid_at"]
-				),
-				"status": "Paid",
-				"amount_paid": stripe_invoice["amount_paid"] / 100,
-				"stripe_invoice_url": stripe_invoice["hosted_invoice_url"],
-			}
-		)
-		invoice.save()
-		invoice.reload()
-
-		# update transaction amount, fee and exchange rate
-		if stripe_invoice.get("charge"):
-			invoice.update_transaction_details(stripe_invoice.get("charge"))
-
-		invoice.submit()
-
-		# unsuspend sites
-		team.unsuspend_sites(
-			reason=f"Unsuspending sites because of successful payment of {invoice.name}"
-		)
-
-	elif doc.event_type == "invoice.payment_failed":
-		attempt_date = stripe_invoice.get("webhooks_delivered_at")
-		if attempt_date:
-			attempt_date = datetime.fromtimestamp(attempt_date)
-		attempt_count = stripe_invoice.get("attempt_count")
-		invoice.update(
-			{
-				"payment_attempt_count": attempt_count,
-				"payment_attempt_date": attempt_date,
-				"status": "Unpaid" if attempt_count < 5 else "Uncollectible",
-			}
-		)
-		invoice.save()
-
-		if team.free_account:
-			return
-
-		elif team.erpnext_partner:
-			# dont suspend partner sites, send alert on telegram
-			telegram = Telegram()
-			team_url = get_url_to_form("Team", team.name)
-			invoice_url = get_url_to_form("Invoice", invoice.name)
-			telegram.send(
-				f"Failed Invoice Payment [{invoice.name}]({invoice_url}) of Partner:"
-				f" [{team.name}]({team_url})"
-			)
-
-			send_email_for_failed_payment(invoice)
-
-		else:
-			sites = None
-			if attempt_count > 1:
-				# suspend sites
-				sites = team.suspend_sites(
-					reason=f"Suspending sites because of failed payment of {invoice.name}"
-				)
-			send_email_for_failed_payment(invoice, sites)
-
-
-def convert_stripe_money(amount):
-	return amount / 100
-
-
-def send_email_for_failed_payment(invoice, sites=None):
-	team = frappe.get_doc("Team", invoice.team)
-	email = team.user
-	payment_method = team.default_payment_method
-	last_4 = frappe.db.get_value("Stripe Payment Method", payment_method, "last_4")
-	account_update_link = frappe.utils.get_url("/dashboard/welcome")
-	subject = "Invoice Payment Failed for Frappe Cloud Subscription"
-
-	frappe.sendmail(
-		recipients=email,
-		subject=subject,
-		template="payment_failed_partner" if team.erpnext_partner else "payment_failed",
-		args={
-			"subject": subject,
-			"payment_link": invoice.stripe_invoice_url,
-			"amount": invoice.get_formatted("amount_due"),
-			"account_update_link": account_update_link,
-			"last_4": last_4 or "",
-			"card_not_added": not payment_method,
-			"sites": sites,
-			"team": team,
-		},
-	)
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Invoice")
