@@ -16,9 +16,11 @@ def start_ngrok_and_set_webhook(context):
 	frappe.connect()
 
 	port = frappe.conf.http_port or frappe.conf.webserver_port
-	public_url = ngrok.connect(port=port, options={"host_header": site})
-	print(f"Public URL: {public_url}")
-	print("Inspect logs at http://localhost:4040")
+	tunnel = ngrok.connect(port, host_header=site)
+	public_url = tunnel.public_url
+	print()
+	print(f"{public_url} -> http://{site}:{port}")
+	print(f"Inspect logs at {tunnel.api_url}")
 
 	stripe = get_stripe()
 	url = f"{public_url}/api/method/press.press.doctype.stripe_webhook_log.stripe_webhook_log.stripe_webhook_handler"
