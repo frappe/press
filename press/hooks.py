@@ -134,7 +134,7 @@ has_permission = {
 doc_events = {
 	"Stripe Webhook Log": {
 		"after_insert": [
-			"press.press.doctype.invoice.invoice.process_stripe_webhook",
+			"press.press.doctype.invoice.stripe_webhook_handler.handle_stripe_invoice_webhook_events",
 			"press.press.doctype.team.team.process_stripe_webhook",
 		],
 	},
