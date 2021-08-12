@@ -4,6 +4,7 @@
 from __future__ import unicode_literals
 import frappe
 
+
 # this should probably be run via server scripts
 def execute():
 	"""Mark invoices that are unpaid for more than 6 months as Uncollectible"""
