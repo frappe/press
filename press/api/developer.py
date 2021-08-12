@@ -24,6 +24,7 @@ def get_apps() -> List[Dict]:
 		"Marketplace App",
 		fields=["name", "title", "image", "app", "status", "description"],
 		filters={"team": team},
+		order_by="title"
 	)
 
 	return apps
