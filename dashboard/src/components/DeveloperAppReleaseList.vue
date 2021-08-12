@@ -103,9 +103,6 @@
 				:dismissable="true"
 				v-model="showRejectionFeedbackDialog"
 			>
-				<p class="my-2 text-gray-600 text-base">
-					The following feedback was given by our team:
-				</p>
 				<div class="prose text-lg" v-html="rejectionFeedback"></div>
 			</Dialog>
 
