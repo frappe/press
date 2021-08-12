@@ -23,6 +23,7 @@ class Invoice(Document):
 		self.validate_duplicate()
 		self.validate_items()
 		self.validate_amount()
+		self.compute_free_credits()
 
 	def before_submit(self):
 		if self.total > 0 and self.status != "Paid":
@@ -312,6 +313,11 @@ class Invoice(Document):
 		for item in self.items:
 			total += item.amount
 		self.total = total
+
+	def compute_free_credits(self):
+		self.free_credits = sum(
+			[d.amount for d in self.credit_allocations if d.source == "Free Credits"]
+		)
 
 	def on_cancel(self):
 		# make reverse entries for credit allocations
