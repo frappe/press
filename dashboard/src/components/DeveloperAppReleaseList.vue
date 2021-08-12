@@ -1,5 +1,5 @@
 <template>
-	<Card title="Your App Releases">
+	<Card title="App Releases">
 		<template #actions>
 			<div class="flex flex-col items-end">
 				<select
