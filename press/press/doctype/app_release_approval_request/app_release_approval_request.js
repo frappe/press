@@ -3,7 +3,7 @@
 
 frappe.ui.form.on('App Release Approval Request', {
 	refresh(frm) {
-		if (frm.doc.status != 'Approved') {
+		if (['Open', 'Rejected'].includes(frm.doc.status)) {
 			frm.add_custom_button('Approve Request', () => {
 				frm.set_value('status', 'Approved');
 				frm.save();
@@ -11,6 +11,6 @@ frappe.ui.form.on('App Release Approval Request', {
 		}
 	},
 	status(frm) {
-		frm.set_value('approved_by', frappe.session.user);
+		frm.set_value('reviewed_by', frappe.session.user);
 	},
 });
