@@ -15,32 +15,25 @@
 			</p>
 		</div>
 		<div v-else>
-			<div class="grid gap-4 grid-cols-1 md:grid-cols-3 ">
-				<SelectableCard
-					v-for="app in $resources.apps.data"
-					:title="app.title"
-					:key="app.name"
-					:image="app.image"
+			<div class="grid gap-4 grid-cols-1 md:grid-cols-3">
+				<DeveloperAppCard
 					@click.native="routeToAppPage(app.name)"
-				>
-					<template #secondary-content>
-						<span class="text-base text-gray-600">
-							{{ app.description }}
-						</span>
-					</template>
-				</SelectableCard>
+					v-for="app in $resources.apps.data"
+					:key="app.name"
+					:app="app"
+				/>
 			</div>
 		</div>
 	</div>
 </template>
 
 <script>
-import SelectableCard from '@/components/SelectableCard.vue';
+import DeveloperAppCard from '@/components/DeveloperAppCard.vue';
 
 export default {
 	name: 'DeveloperApps',
 	components: {
-		SelectableCard
+		DeveloperAppCard
 	},
 	resources: {
 		apps() {
