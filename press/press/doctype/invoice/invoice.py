@@ -586,9 +586,7 @@ def finalize_draft_invoices():
 	# get draft invoices whose period has ended or ends today
 	today = frappe.utils.today()
 	invoices = frappe.db.get_all(
-		"Invoice",
-		{"status": "Draft", "period_end": ("<=", today), "total": (">", 0)},
-		pluck="name",
+		"Invoice", {"status": "Draft", "period_end": ("<=", today)}, pluck="name",
 	)
 	for name in invoices:
 		invoice = frappe.get_doc("Invoice", name)
