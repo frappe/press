@@ -33,8 +33,14 @@ def get_apps() -> List[Dict]:
 @frappe.whitelist()
 @protected("Marketplace App")
 def get_app(name: str) -> MarketplaceApp:
-	"""Return the `Marketplace App` document with name"""
-	app: MarketplaceApp = frappe.get_doc("Marketplace App", name)
+	"""Return the `Marketplace App` document with the give `name`"""
+	app: MarketplaceApp = frappe.get_doc("Marketplace App", name).as_dict()
+
+	# Attach source documents to marketplace sources
+	for source in app.sources:
+		source_doc = frappe.get_doc("App Source", source.source)
+		source.source_doc = source_doc
+
 	return app
 
 
@@ -53,6 +59,7 @@ def published_versions(name: str) -> List[Dict]:
 			"repository": app_source.repository,
 			"branch": app_source.branch,
 			"repository_owner": app_source.repository_owner,
+			"source": source.source
 		}
 		versions.append(version)
 
