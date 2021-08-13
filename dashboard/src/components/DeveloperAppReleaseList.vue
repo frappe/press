@@ -1,27 +1,5 @@
 <template>
 	<Card title="App Releases">
-		<template #actions>
-			<div class="flex flex-col items-end">
-				<select
-					v-if="sources.length > 1"
-					class="block form-select text-right mb-2"
-					v-model="selectedSource"
-				>
-					<option
-						v-for="source in sources"
-						:key="source.source"
-						:value="source.source"
-					>
-						{{ source.version }}
-					</option>
-				</select>
-
-				<p class="text-base text-gray-600">
-					<span class="font-semibold">{{ currentBranch }}</span>
-				</p>
-			</div>
-		</template>
-
 		<div v-if="!sources.length">
 			<p class="mt-3 text-gray-600 text-center text-lg">
 				No published source exist for this app. Please contact support to
@@ -33,90 +11,115 @@
 				No app releases have been created for this version.
 			</p>
 		</div>
-		<div v-else class="divide-y">
-			<div
-				class="grid items-center grid-cols-3 py-4 text-base text-gray-600 gap-x-8 md:grid-cols-6"
-			>
-				<span class="md:col-span-2">Commit Message</span>
-				<span class="hidden md:inline">Tag</span>
-				<span class="hidden md:inline">Author</span>
-				<span>Status</span>
-				<span></span>
-			</div>
+		<div v-else>
+			<div>
+				<div class="flex flex-row items-baseline">
+					<select
+						v-if="sources.length >= 1"
+						class="inline-block form-select mb-2"
+						v-model="selectedSource"
+					>
+						<option
+							v-for="source in sources"
+							:key="source.source"
+							:value="source.source"
+						>
+							{{
+								`${source.source_doc.repository}:${source.source_doc.branch}`
+							}}
+						</option>
+					</select>
 
-			<div
-				v-for="release in releasesList"
-				:key="release.name"
-				class="grid items-center grid-cols-3 py-4 text-base text-gray-900 gap-x-8 md:grid-cols-6"
-			>
-				<p
-					class="md:col-span-2 text-base font-medium text-gray-700 truncate max-w-md"
+					<p class="ml-2 text-base text-gray-600">
+						<span class="font-semibold">{{ selectedVersion }}</span>
+					</p>
+				</div>
+			</div>
+			<div class="divide-y">
+				<div
+					class="grid items-center grid-cols-3 py-4 text-base text-gray-600 gap-x-8 md:grid-cols-6"
 				>
-					{{ release.message }}
-				</p>
-				<a
-					:href="getCommitUrl(release.hash)"
-					target="_blank"
-					class="hidden md:inline text-blue-700 font-bold hover:text-blue-500"
+					<span class="md:col-span-2">Commit Message</span>
+					<span class="hidden md:inline">Tag</span>
+					<span class="hidden md:inline">Author</span>
+					<span>Status</span>
+					<span></span>
+				</div>
+
+				<div
+					v-for="release in releasesList"
+					:key="release.name"
+					class="grid items-center grid-cols-3 py-4 text-base text-gray-900 gap-x-8 md:grid-cols-6"
 				>
-					{{ release.tag || release.hash.slice(0, 6) }}
-				</a>
-				<span class="hidden md:inline text-gray-600">
-					{{ release.author }}
-				</span>
-				<span>
-					<Badge
-						v-if="release.status != 'Draft'"
-						:status="release.status"
-					></Badge>
-				</span>
-				<span class="text-right">
+					<p
+						class="md:col-span-2 text-base font-medium text-gray-700 truncate max-w-md"
+					>
+						{{ release.message }}
+					</p>
+					<a
+						:href="getCommitUrl(release.hash)"
+						target="_blank"
+						class="hidden md:inline text-blue-700 font-bold hover:text-blue-500"
+					>
+						{{ release.tag || release.hash.slice(0, 6) }}
+					</a>
+					<span class="hidden md:inline text-gray-600">
+						{{ release.author }}
+					</span>
+					<span>
+						<Badge
+							v-if="release.status != 'Draft'"
+							:status="release.status"
+						></Badge>
+					</span>
+					<span class="text-right">
+						<Button
+							v-if="isPublishable(release)"
+							:loading="
+								$resources.createApprovalRequest.loading ||
+									$resources.latestApproved.loading
+							"
+							type="secondary"
+							@click="confirmApprovalRequest(release.name)"
+						>
+							Publish
+						</Button>
+
+						<Button
+							v-else-if="release.status == 'Awaiting Approval'"
+							type="secondary"
+							@click="confirmCancelRequest(release.name)"
+							>Cancel</Button
+						>
+
+						<Button
+							v-else-if="release.status == 'Rejected'"
+							type="secondary"
+							@click="showFeedback(release)"
+							>View Feedback</Button
+						>
+					</span>
+				</div>
+				<Dialog
+					title="Reason for Rejection"
+					:dismissable="true"
+					v-model="showRejectionFeedbackDialog"
+				>
+					<div class="prose text-lg" v-html="rejectionFeedback"></div>
+				</Dialog>
+
+				<div class="py-3 flex justify-center">
 					<Button
-						v-if="isPublishable(release)"
-						:loading="
-							$resources.createApprovalRequest.loading ||
-								$resources.latestApproved.loading
+						@click="
+							pageStart += 15;
+							$resources.releases.fetch();
 						"
-						type="secondary"
-						@click="confirmApprovalRequest(release.name)"
+						v-if="!$resources.releases.lastPageEmpty"
+						:loading="$resources.releases.loading"
+						loadingText="Loading..."
+						>Load More</Button
 					>
-						Publish
-					</Button>
-
-					<Button
-						v-else-if="release.status == 'Awaiting Approval'"
-						type="secondary"
-						@click="confirmCancelRequest(release.name)"
-						>Cancel</Button
-					>
-
-					<Button
-						v-else-if="release.status == 'Rejected'"
-						type="secondary"
-						@click="showFeedback(release)"
-						>View Feedback</Button
-					>
-				</span>
-			</div>
-			<Dialog
-				title="Reason for Rejection"
-				:dismissable="true"
-				v-model="showRejectionFeedbackDialog"
-			>
-				<div class="prose text-lg" v-html="rejectionFeedback"></div>
-			</Dialog>
-
-			<div class="py-3 flex justify-center">
-				<Button
-					@click="
-						pageStart += 15;
-						$resources.releases.fetch();
-					"
-					v-if="!$resources.releases.lastPageEmpty"
-					:loading="$resources.releases.loading"
-					loadingText="Loading..."
-					>Load More</Button
-				>
+				</div>
 			</div>
 		</div>
 	</Card>
@@ -307,16 +310,11 @@ export default {
 			return this.app.sources;
 		},
 
-		currentBranch() {
-			if (
-				this.$resources.appSource.loading ||
-				!this.$resources.appSource.data
-			) {
-				return '';
+		selectedVersion() {
+			if (this.selectedSource) {
+				return this.app.sources.find(x => x.source == this.selectedSource)
+					.version;
 			}
-
-			let { repository, branch } = this.$resources.appSource.data;
-			return `${repository}:${branch}`;
 		},
 
 		repoUrl() {
