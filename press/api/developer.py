@@ -41,7 +41,7 @@ def get_app(name: str) -> MarketplaceApp:
 @frappe.whitelist()
 @protected("Marketplace App")
 def published_versions(name: str) -> List[Dict]:
-	""""""
+	"""Return the versions published on marketplace"""
 	app: MarketplaceApp = frappe.get_doc("Marketplace App", name)
 
 	versions = []
@@ -61,6 +61,7 @@ def published_versions(name: str) -> List[Dict]:
 
 @frappe.whitelist()
 def profile_image_url(app: str) -> str:
+	"""Return the URL of the profile image for this marketplace `app`"""
 	return frappe.db.get_value("Marketplace App", app, "image")
 
 
