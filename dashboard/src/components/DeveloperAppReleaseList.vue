@@ -15,8 +15,8 @@
 			<div>
 				<div class="flex flex-row items-baseline">
 					<select
-						v-if="sources.length >= 1"
-						class="inline-block form-select mb-2"
+						v-if="sources.length > 1"
+						class="inline-block form-select mb-2 mr-2"
 						v-model="selectedSource"
 					>
 						<option
@@ -30,7 +30,7 @@
 						</option>
 					</select>
 
-					<p class="ml-2 text-base text-gray-600">
+					<p class="text-base text-gray-600">
 						<span class="font-semibold">{{ selectedVersion }}</span>
 					</p>
 				</div>
