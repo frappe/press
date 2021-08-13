@@ -48,12 +48,10 @@
 		</div>
 		<div class="divide-y" v-if="app">
 			<ListItem
-				v-for="version in publishedVersions"
-				:key="version.version"
-				:title="version.version"
-				:description="
-					`${version.repository_owner}/${version.repository}:${version.branch}`
-				"
+				v-for="source in app.sources"
+				:key="source.source"
+				:title="source.version"
+				:description="branchUri(source.source_information)"
 			/>
 		</div>
 
@@ -126,15 +124,6 @@ export default {
 				}
 			};
 		},
-		publishedVersions() {
-			return {
-				method: 'press.api.developer.published_versions',
-				params: {
-					name: this.app.name
-				},
-				auto: true
-			};
-		},
 		profileImageUrl() {
 			return {
 				method: 'press.api.developer.profile_image_url',
@@ -148,6 +137,9 @@ export default {
 		onAppImageChange() {
 			this.$resources.profileImageUrl.submit();
 			this.notifySuccess();
+		},
+		branchUri(source) {
+			return `${source.repository_owner}/${source.repository}:${source.branch}`;
 		},
 		notifySuccess() {
 			this.$notify({
@@ -172,16 +164,6 @@ export default {
 			}
 
 			return this.$resources.categories.data;
-		},
-		publishedVersions() {
-			if (
-				this.$resources.publishedVersions.loading ||
-				!this.$resources.publishedVersions.data
-			) {
-				return [];
-			}
-
-			return this.$resources.publishedVersions.data;
 		},
 		profileImageUrl() {
 			if (!this.$resources.profileImageUrl.data) {

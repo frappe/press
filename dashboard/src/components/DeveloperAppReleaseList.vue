@@ -25,7 +25,7 @@
 							:value="source.source"
 						>
 							{{
-								`${source.source_doc.repository}:${source.source_doc.branch}`
+								`${source.source_information.repository}:${source.source_information.branch}`
 							}}
 						</option>
 					</select>
