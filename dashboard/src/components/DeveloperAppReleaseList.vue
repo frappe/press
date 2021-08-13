@@ -257,7 +257,7 @@ export default {
 			this.$confirm({
 				title: 'Publish Release',
 				message:
-					'Are you sure you want to <strong>publish this release</strong> to marketplace? <br> <br>Upon confirmation, this release will be submitted for approval from our team.',
+					'Are you sure you want to publish this release to marketplace? Upon confirmation, the release will be sent for approval by the review team.',
 				actionLabel: 'Publish',
 				actionType: 'primary',
 				action: closeDialog => {
