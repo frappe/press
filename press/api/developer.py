@@ -39,7 +39,7 @@ def get_app(name: str) -> MarketplaceApp:
 	# Attach source documents to marketplace sources
 	for source in app.sources:
 		source_doc = frappe.get_doc("App Source", source.source)
-		source.source_doc = source_doc
+		source.source_information = source_doc
 
 	return app
 
