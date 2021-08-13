@@ -108,7 +108,7 @@
 					<div class="prose text-lg" v-html="rejectionFeedback"></div>
 				</Dialog>
 
-				<div class="py-3 flex justify-center">
+				<div class="py-3">
 					<Button
 						@click="
 							pageStart += 15;
