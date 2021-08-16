@@ -20,10 +20,10 @@ from press.press.doctype.app_release_approval_request.app_release_approval_reque
 
 @frappe.whitelist()
 def become_developer():
-	current_team = get_current_team()
-	team = frappe.get_doc("Team", current_team)
-	team.is_developer = True
-	team.save()
+	"""Turn on marketplace developer mode for current team"""
+	current_team = get_current_team(get_doc=True)
+	current_team.is_developer = True
+	current_team.save()
 
 
 @frappe.whitelist()

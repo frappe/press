@@ -1,13 +1,5 @@
 <template>
-	<WizardCard>
-		<div class="mb-6 text-center ">
-			<h1 class="text-2xl font-bold">Add a New App</h1>
-			<p class="text-base text-gray-700">
-				{{
-					benchName ? 'Add an app to your bench' : 'Add an app to marketplace'
-				}}
-			</p>
-		</div>
+	<div>
 		<div class="flex justify-center">
 			<Loading v-if="$resources.options.loading" />
 			<div v-if="needsAuthorization">
@@ -62,53 +54,29 @@
 					>
 						Validate App
 					</Button>
-					<select
-						class="my-2 form-select block mr-2"
-						v-if="validatedApp && !benchName"
-						v-model="selectedVersion"
-					>
-						<option
-							v-for="v in ['Version 13', 'Version 12', 'Nightly']"
-							:key="v"
-							:value="v"
-							>{{ v }}</option
-						>
-					</select>
-					<Button
-						type="primary"
-						v-if="validatedApp"
-						@click="addApp.submit()"
-						:loading="addApp.loading"
-					>
-						{{ benchName ? 'Add app to bench' : 'Add app to marketplace' }}
-					</Button>
 				</div>
 			</div>
 		</div>
-	</WizardCard>
+	</div>
 </template>
 
 <script>
 import GreenCheckIcon from '@/components/global/GreenCheckIcon.vue';
 import NewAppRepositories from './NewAppRepositories.vue';
 import ErrorMessage from '@/components/global/ErrorMessage.vue';
-import WizardCard from '@/components/WizardCard.vue';
 
 export default {
-	name: 'NewApp',
+	name: 'SelectAppFromGithub',
 	components: {
 		NewAppRepositories,
 		GreenCheckIcon,
-		ErrorMessage,
-		WizardCard
+		ErrorMessage
 	},
-	props: ['benchName'],
 	data() {
 		return {
 			selectedRepo: null,
 			selectedInstallation: null,
-			selectedBranch: null,
-			selectedVersion: 'Version 13'
+			selectedBranch: null
 		};
 	},
 	resources: {
@@ -139,30 +107,17 @@ export default {
 			};
 			return {
 				method: 'press.api.github.app',
-				params
-			};
-		},
-		addApp() {
-			return {
-				method: this.benchName
-					? 'press.api.app.new'
-					: 'press.api.developer.new_app',
-				params: {
-					app: {
-						name: this.validatedApp?.name,
-						title: this.validatedApp?.title,
-						group: this.benchName,
-						repository_url: this.selectedRepo?.url,
-						branch: this.selectedBranch,
-						github_installation_id: this.selectedInstallation?.id,
-						version: this.selectedVersion
-					}
-				},
-				onSuccess() {
-					if (this.benchName) {
-						this.$router.push(`/benches/${this.benchName}`);
-					} else {
-						this.$router.push('/developer/apps');
+				params,
+				onSuccess(data) {
+					if (data) {
+						const app = {
+							name: this.validatedApp?.name,
+							title: this.validatedApp?.title,
+							repository_url: this.selectedRepo?.url,
+							branch: this.selectedBranch,
+							github_installation_id: this.selectedInstallation?.id
+						};
+						this.$emit('onSelect', app);
 					}
 				}
 			};
