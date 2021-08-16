@@ -23,8 +23,8 @@ export default [
 	},
 	{
 		path: '/developer/apps/new',
-		name: 'NewDeveloperApp',
-		component: () => import('../views/NewApp.vue'),
+		name: 'NewMarketplaceApp',
+		component: () => import('../views/NewMarketplaceApp.vue'),
 		props: true
 	},
 	{

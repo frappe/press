@@ -33,8 +33,8 @@ export default [
 	},
 	{
 		path: '/benches/:benchName/apps/new',
-		name: 'NewApp',
-		component: () => import('../views/NewApp.vue'),
+		name: 'NewBenchApp',
+		component: () => import('../views/NewBenchApp.vue'),
 		props: true
 	}
 ];
