@@ -69,7 +69,7 @@ export default {
 	resources: {
 		updateAppLinks() {
 			return {
-				method: 'press.api.developer.update_app_links',
+				method: 'press.api.marketplace.update_app_links',
 				params: {
 					name: this.app.name,
 					links: {

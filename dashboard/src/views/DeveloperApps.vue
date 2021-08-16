@@ -45,7 +45,7 @@ export default {
 	resources: {
 		apps() {
 			return {
-				method: 'press.api.developer.get_apps',
+				method: 'press.api.marketplace.get_apps',
 				auto: true
 			};
 		}

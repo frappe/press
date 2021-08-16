@@ -83,12 +83,12 @@ export default {
 	resources: {
 		appOptions() {
 			return {
-				method: 'press.api.developer.options_for_marketplace_app'
+				method: 'press.api.marketplace.options_for_marketplace_app'
 			};
 		},
 		addMarketplaceApp() {
 			return {
-				method: 'press.api.developer.add_app',
+				method: 'press.api.marketplace.add_app',
 				onSuccess(appName) {
 					this.showAddAppDialog = false;
 					window.location.reload();

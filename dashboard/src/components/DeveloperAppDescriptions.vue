@@ -101,7 +101,7 @@ export default {
 		updateAppSummary() {
 			let { name, description } = this.app;
 			return {
-				method: 'press.api.developer.update_app_summary',
+				method: 'press.api.marketplace.update_app_summary',
 				params: {
 					name,
 					summary: description
@@ -115,7 +115,7 @@ export default {
 		updateAppDescription() {
 			let { name, long_description } = this.app;
 			return {
-				method: 'press.api.developer.update_app_description',
+				method: 'press.api.marketplace.update_app_description',
 				params: {
 					name,
 					description: long_description

@@ -153,7 +153,7 @@ export default {
 		releases() {
 			let { app } = this.app;
 			return {
-				method: 'press.api.developer.releases',
+				method: 'press.api.marketplace.releases',
 				params: {
 					app,
 					start: this.pageStart,
@@ -165,7 +165,7 @@ export default {
 		},
 		appSource() {
 			return {
-				method: 'press.api.developer.get_app_source',
+				method: 'press.api.marketplace.get_app_source',
 				params: {
 					name: this.selectedSource
 				}
@@ -173,7 +173,7 @@ export default {
 		},
 		latestApproved() {
 			return {
-				method: 'press.api.developer.latest_approved_release',
+				method: 'press.api.marketplace.latest_approved_release',
 				params: {
 					source: this.selectedSource
 				},
@@ -182,7 +182,7 @@ export default {
 		},
 		createApprovalRequest() {
 			return {
-				method: 'press.api.developer.create_approval_request',
+				method: 'press.api.marketplace.create_approval_request',
 				onSuccess() {
 					this.resetReleaseListState();
 				},
@@ -193,7 +193,7 @@ export default {
 		},
 		cancelApprovalRequest() {
 			return {
-				method: 'press.api.developer.cancel_approval_request',
+				method: 'press.api.marketplace.cancel_approval_request',
 				onSuccess() {
 					this.resetReleaseListState();
 				}
