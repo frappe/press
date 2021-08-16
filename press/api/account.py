@@ -3,9 +3,11 @@
 # For license information, please see license.txt
 
 from typing import Union
+
 import frappe
 from frappe import _
 from frappe.core.doctype.user.user import update_password
+from frappe.exceptions import DoesNotExistError
 from frappe.utils import get_url, random_string
 from frappe.utils.oauth import get_oauth2_authorize_url, get_oauth_keys
 from frappe.website.utils import build_response
@@ -422,9 +424,12 @@ def redirect_to(location):
 def get_frappe_io_auth_url() -> Union[str, None]:
 	"""Get auth url for oauth login with frappe.io."""
 
-	provider = frappe.get_last_doc(
-		"Social Login Key", filters={"enable_social_login": 1, "provider_name": "Frappe"}
-	)
+	try:
+		provider = frappe.get_last_doc(
+			"Social Login Key", filters={"enable_social_login": 1, "provider_name": "Frappe"}
+		)
+	except DoesNotExistError:
+		return
 
 	if (
 		get_oauth_keys(provider.name)
