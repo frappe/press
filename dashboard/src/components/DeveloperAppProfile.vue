@@ -13,7 +13,7 @@
 					:upload-args="{
 						doctype: 'Marketplace App',
 						docname: app.name,
-						method: 'press.api.developer.update_app_image'
+						method: 'press.api.marketplace.update_app_image'
 					}"
 				>
 					<template v-slot="{ openFileSelector, uploading, progress, error }">
@@ -105,7 +105,7 @@ export default {
 	resources: {
 		categories() {
 			return {
-				method: 'press.api.developer.categories',
+				method: 'press.api.marketplace.categories',
 				auto: true
 			};
 		},
@@ -113,7 +113,7 @@ export default {
 			let { name, title, category } = this.app;
 
 			return {
-				method: 'press.api.developer.update_app_profile',
+				method: 'press.api.marketplace.update_app_profile',
 				params: {
 					name,
 					title,
@@ -128,7 +128,7 @@ export default {
 		},
 		publishedVersions() {
 			return {
-				method: 'press.api.developer.published_versions',
+				method: 'press.api.marketplace.published_versions',
 				params: {
 					name: this.app.name
 				},
@@ -137,7 +137,7 @@ export default {
 		},
 		profileImageUrl() {
 			return {
-				method: 'press.api.developer.profile_image_url',
+				method: 'press.api.marketplace.profile_image_url',
 				params: {
 					app: this.app.name
 				}

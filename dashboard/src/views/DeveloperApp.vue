@@ -46,7 +46,7 @@ export default {
 	resources: {
 		app() {
 			return {
-				method: 'press.api.developer.get_app',
+				method: 'press.api.marketplace.get_app',
 				params: {
 					name: this.appName
 				},
