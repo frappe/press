@@ -10,7 +10,8 @@
 				v-if="image"
 				:src="image"
 				:alt="title"
-				class="w-10 h-10 mr-4 rounded-full"
+				class="w-10 h-10 mr-4"
+				:class="[fullCircleImage ? 'rounded-full' : 'rounded-lg']"
 			/>
 			<div class="my-1">
 				<h3 class="text-lg font-bold text-gray-900">
@@ -24,6 +25,6 @@
 <script>
 export default {
 	name: 'SelectableCard',
-	props: ['selected', 'title', 'image']
+	props: ['selected', 'title', 'image', 'fullCircleImage']
 };
 </script>

@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2020, Frappe and contributors
+# Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
-from __future__ import unicode_literals
-
-import requests
 import frappe
+import requests
+
 from base64 import b64decode
 from frappe.website.website_generator import WebsiteGenerator
 from press.api.github import get_access_token
@@ -24,6 +23,23 @@ class MarketplaceApp(WebsiteGenerator):
 
 	def validate(self):
 		self.published = self.status == "Published"
+		self.validate_sources()
+
+	def validate_sources(self):
+		for source in self.sources:
+			app_source = frappe.get_doc("App Source", source.source)
+
+			if app_source.app != self.app:
+				frappe.throw(
+					f"App Source {frappe.bold(source.source)} does not belong to this app!"
+				)
+
+			app_source_versions = [v.version for v in app_source.versions]
+			if source.version not in app_source_versions:
+				frappe.throw(
+					f"App Source {frappe.bold(source.source)} does not contain"
+					f" version: {frappe.bold(source.version)}"
+				)
 
 	def get_app_source(self):
 		return frappe.get_doc("App Source", {"app": self.app})

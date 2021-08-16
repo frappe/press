@@ -1,48 +1,40 @@
 {
  "actions": [],
- "creation": "2020-07-18 17:32:27.992764",
+ "creation": "2021-07-19 12:11:08.469343",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "site",
-  "plan",
-  "days_active"
+  "version",
+  "source"
  ],
  "fields": [
   {
-   "fieldname": "site",
+   "fieldname": "version",
    "fieldtype": "Link",
    "in_list_view": 1,
-   "label": "Site",
-   "options": "Site",
+   "label": "Version",
+   "options": "Frappe Version",
    "reqd": 1
   },
   {
-   "fieldname": "plan",
+   "fieldname": "source",
    "fieldtype": "Link",
    "in_list_view": 1,
-   "label": "Plan",
-   "options": "Plan",
-   "reqd": 1
-  },
-  {
-   "fieldname": "days_active",
-   "fieldtype": "Float",
-   "in_list_view": 1,
-   "label": "Days Active",
+   "label": "Source",
+   "options": "App Source",
    "reqd": 1
   }
  ],
+ "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2020-07-18 17:32:42.964389",
+ "modified": "2021-07-19 12:11:08.469343",
  "modified_by": "Administrator",
  "module": "Press",
- "name": "Invoice Site Usage",
+ "name": "Marketplace App Version",
  "owner": "Administrator",
  "permissions": [],
- "quick_entry": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
  "track_changes": 1

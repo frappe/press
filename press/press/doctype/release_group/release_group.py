@@ -4,8 +4,10 @@
 
 import frappe
 
+from typing import List
 from frappe.model.document import Document
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.server.server import Server
 from press.press.doctype.app_source.app_source import AppSource, create_app_source
 
 DEFAULT_DEPENDENCIES = [
@@ -29,6 +31,11 @@ class ReleaseGroup(Document):
 		candidates = frappe.get_all("Deploy Candidate", {"group": self.name})
 		for candidate in candidates:
 			frappe.delete_doc("Deploy Candidate", candidate.name)
+
+	def after_insert(self):
+		# First time, create an extra
+		# deploy candidate with latest approved releases
+		self.create_deploy_candidate(approved_releases_only=True)
 
 	def on_update(self):
 		self.create_deploy_candidate()
@@ -72,11 +79,9 @@ class ReleaseGroup(Document):
 					"Servers can be added only once", frappe.ValidationError,
 				)
 		elif self.is_new():
-			servers_for_new_bench = frappe.get_all(
-				"Server", {"status": "Active", "use_for_new_benches": True}, limit=1
-			)
-			if servers_for_new_bench:
-				self.append("servers", {"server": servers_for_new_bench[0].name})
+			server_for_new_bench = Server.get_prod_for_new_bench()
+			if server_for_new_bench:
+				self.append("servers", {"server": server_for_new_bench})
 
 	@frappe.whitelist()
 	def validate_dependencies(self):
@@ -84,18 +89,25 @@ class ReleaseGroup(Document):
 			self.extend("dependencies", DEFAULT_DEPENDENCIES)
 
 	@frappe.whitelist()
-	def create_deploy_candidate(self):
+	def create_deploy_candidate(self, approved_releases_only=False):
 		if not self.enabled:
 			return
+
+		marketplace_sources = self.get_marketplace_app_sources()
 		apps = []
 		for app in self.apps:
+			app_release_filters = {"app": app.app, "source": app.source}
+			if approved_releases_only and (app.source in marketplace_sources):
+				app_release_filters["status"] = "Approved"
+
 			release = frappe.get_all(
 				"App Release",
 				fields=["name", "source", "app", "hash"],
-				filters={"app": app.app, "source": app.source},
+				filters=app_release_filters,
 				order_by="creation desc",
 				limit=1,
 			)
+
 			if release:
 				release = release[0]
 				apps.append(
@@ -106,6 +118,7 @@ class ReleaseGroup(Document):
 						"hash": release.hash,
 					}
 				)
+
 		dependencies = [
 			{"dependency": d.dependency, "version": d.version} for d in self.dependencies
 		]
@@ -173,6 +186,14 @@ class ReleaseGroup(Document):
 				app.save()
 				break
 		self.save()
+
+	def get_marketplace_app_sources(self) -> List[str]:
+		all_marketplace_sources = frappe.get_all("Marketplace App Version", pluck="source")
+		marketplace_app_sources = [
+			app.source for app in self.apps if app.source in all_marketplace_sources
+		]
+
+		return marketplace_app_sources
 
 
 def new_release_group(title, version, apps, team=None):

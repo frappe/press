@@ -49,15 +49,17 @@ frappe.ui.form.on('Invoice', {
 
 		if (frm.doc.status == 'Invoice Created') {
 			let btn = frm.add_custom_button(
-				"Finalize",
+				"Finalize Invoice",
 				() => {
-					frm.call({
-						doc: frm.doc,
-						method: "finalize_stripe_invoice",
-						btn,
-					}).then(r => frm.refresh())
+					frappe.confirm('This action will finalize the Stripe Invoice and charge the customer\'s card. Continue?', () => {
+						frm.call({
+							doc: frm.doc,
+							method: "finalize_stripe_invoice",
+							btn,
+						}).then(r => frm.refresh())
+					})
 				},
-				'Stripe Invoice'
+				"Stripe Invoice"
 			);
 		}
 

@@ -2,20 +2,36 @@
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
 
-from __future__ import unicode_literals
-
 import json
+from datetime import datetime, timedelta
 
 import frappe
+
 from frappe.model.document import Document
-from frappe.model.naming import append_number_if_name_exists
+from frappe.model.naming import append_number_if_name_exists, make_autoname
 
 from press.agent import Agent
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.site.site import Site
 from press.utils import log_error
 
 
 class Bench(Document):
+	@staticmethod
+	def with_sites(name: str):
+		bench = frappe.get_doc("Bench", name)
+		sites = frappe.get_all("Site", filters={"bench": name}, pluck="name")
+		bench.sites = [frappe.get_doc("Site", s) for s in sites]
+
+		return bench
+
+	@staticmethod
+	def all_with_sites(fields=None, filters=None):
+		benches = frappe.get_all("Bench", filters=filters, fields=fields, pluck="name")
+		benches = [Bench.with_sites(b) for b in benches]
+
+		return benches
+
 	def autoname(self):
 		server_name = frappe.db.get_value("Server", self.server, "hostname")
 		candidate_name = self.candidate[7:]
@@ -207,8 +223,51 @@ class Bench(Document):
 		)
 
 
+class StagingSite(Site):
+	def __init__(self, bench: Bench):
+		plan = frappe.db.get_value("Press Settings", None, "staging_plan")
+		if not plan:
+			frappe.throw("Staging plan not set in settings")
+			log_error(title="Staging plan not set in settings")
+		super().__init__(
+			{
+				"doctype": "Site",
+				"subdomain": make_autoname("staging-.########"),
+				"staging": True,
+				"bench": bench.name,
+				"apps": [{"app": app.app} for app in bench.apps],
+				"team": "Administrator",
+				"subscription_plan": plan,
+			}
+		)
+
+	@classmethod
+	def archive_expired(cls):
+		expiry = frappe.db.get_value("Press Settings", None, "staging_expiry") or 24
+		sites = frappe.get_all(
+			"Site",
+			{"staging": True, "created_on": ("<", datetime.now() - timedelta(hours=expiry))},
+		)
+		for site_name in sites:
+			site = frappe.doc("Site", site_name)
+			site.archive()
+
+	@classmethod
+	def create_if_needed(cls, bench: Bench):
+		if not bench.staging:
+			return
+		try:
+			cls(bench).insert()
+		except Exception as e:
+			log_error("Staging Site creation error", exception=e)
+
+
+def archive_staging_sites():
+	StagingSite.archive_expired()
+
+
 def process_new_bench_job_update(job):
-	bench_status = frappe.get_value("Bench", job.bench, "status")
+	bench = frappe.get_doc("Bench", job.bench)
 
 	updated_status = {
 		"Pending": "Pending",
@@ -217,9 +276,10 @@ def process_new_bench_job_update(job):
 		"Failure": "Broken",
 	}[job.status]
 
-	if updated_status != bench_status:
+	if updated_status != bench.status:
 		frappe.db.set_value("Bench", job.bench, "status", updated_status)
 		if updated_status == "Active":
+			StagingSite.create_if_needed(bench)
 			frappe.enqueue(
 				"press.press.doctype.bench.bench.archive_obsolete_benches",
 				enqueue_after_commit=True,

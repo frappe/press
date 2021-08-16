@@ -45,6 +45,13 @@ let utils = {
 				' ' +
 				sizes[i + current]
 			);
+		},
+		$planTitle(plan) {
+			let india = this.$account.team.country == 'India';
+			let currency = india ? '₹' : '$';
+			let price_field = india ? 'price_inr' : 'price_usd';
+			let price = plan[price_field];
+			return price > 0 ? `${currency}${price}` : plan.plan_title;
 		}
 	},
 	computed: {

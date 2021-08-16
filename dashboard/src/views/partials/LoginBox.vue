@@ -2,7 +2,10 @@
 	<div class="h-full pt-4 sm:pt-16">
 		<div>
 			<div class="flex">
-				<FrappeCloudLogo class="w-auto h-4 mx-auto" />
+				<FrappeCloudLogo
+					class="w-auto h-4 mx-auto"
+					v-on:dblclick.native="redirect"
+				/>
 			</div>
 			<div
 				class="px-4 py-8 mx-auto bg-white sm:mt-6 sm:w-0112 sm:w-96 sm:px-10 sm:rounded-lg sm:shadow-xl"
@@ -23,6 +26,12 @@ export default {
 	props: ['title'],
 	components: {
 		FrappeCloudLogo
+	},
+	methods: {
+		redirect() {
+			this.$router.push('/f-login');
+			this.$router.go()
+		}
 	}
 };
 </script>

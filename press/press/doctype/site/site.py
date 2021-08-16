@@ -665,10 +665,8 @@ class Site(Document):
 		if self.setup_wizard_complete:
 			return True
 
-		password = get_decrypted_password("Site", self.name, "admin_password")
-		conn = FrappeClient(
-			f"https://{self.name}", username="Administrator", password=password
-		)
+		sid = self.get_login_sid()
+		conn = FrappeClient(f"https://{self.name}?sid={sid}")
 		value = conn.get_value("System Settings", "setup_complete", "System Settings")
 		if value:
 			setup_complete = cint(value["setup_complete"])
@@ -781,6 +779,7 @@ class Site(Document):
 			self.unsuspend_if_applicable()
 
 		if self.trial_end_date:
+			self.reload()
 			self.trial_end_date = ""
 			self.save()
 
@@ -793,9 +792,17 @@ class Site(Document):
 			# site in that case. team.unsuspend_sites should handle that, then.
 			return
 
-		disk_usage = usage.public + usage.private
+		plan = self.plan
+		# get plan from subscription
+		if not plan:
+			subscription = self.subscription
+			if not subscription:
+				return
+			plan = subscription.plan
+
 		plan = frappe.get_doc("Plan", self.plan)
 
+		disk_usage = usage.public + usage.private
 		if usage.database < plan.max_database_usage and disk_usage < plan.max_storage_usage:
 			self.current_database_usage = (usage.database / plan.max_database_usage) * 100
 			self.current_disk_usage = (
@@ -878,14 +885,6 @@ class Site(Document):
 			"Subscription", {"document_type": "Site", "document_name": self.name},
 		)
 		return frappe.get_doc("Subscription", name) if name else None
-
-	@property
-	def plan(self):
-		return frappe.db.get_value(
-			"Subscription",
-			filters={"document_type": "Site", "document_name": self.name},
-			fieldname="plan",
-		)
 
 	def can_charge_for_subscription(self):
 		today = frappe.utils.getdate()
