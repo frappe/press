@@ -19,11 +19,22 @@ from press.press.doctype.app_release_approval_request.app_release_approval_reque
 
 
 @frappe.whitelist()
-def become_developer():
+def become_publisher():
 	"""Turn on marketplace developer mode for current team"""
 	current_team = get_current_team(get_doc=True)
 	current_team.is_developer = True
 	current_team.save()
+
+
+@frappe.whitelist()
+def developer_toggle_allowed():
+	"""Feature flag to allow display of developer account toggle"""
+	# Already a developer
+	current_team = get_current_team(get_doc=True)
+	if current_team.is_developer:
+		return False
+
+	return frappe.db.get_value("Press Settings", None, "allow_developer_account") == "1"
 
 
 @frappe.whitelist()

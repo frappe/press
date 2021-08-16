@@ -109,7 +109,9 @@
   "monitor_token",
   "telegram_alert_chat_id",
   "column_break_100",
-  "log_server"
+  "log_server",
+  "marketplace_settings_section",
+  "allow_developer_account"
  ],
  "fields": [
   {
@@ -692,11 +694,23 @@
    "fieldname": "staging_expiry",
    "fieldtype": "Int",
    "label": "Staging Expiry"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "marketplace_settings_section",
+   "fieldtype": "Section Break",
+   "label": "Marketplace Settings"
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_developer_account",
+   "fieldtype": "Check",
+   "label": "Allow Developer Account from Dashboard"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2021-08-05 15:51:27.619992",
+ "modified": "2021-08-16 16:53:56.218440",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
