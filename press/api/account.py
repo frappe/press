@@ -2,12 +2,16 @@
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
 
-import frappe
+from typing import Union
 
+import frappe
 from frappe import _
-from frappe.website.utils import build_response
 from frappe.core.doctype.user.user import update_password
+from frappe.exceptions import DoesNotExistError
 from frappe.utils import get_url, random_string
+from frappe.utils.oauth import get_oauth2_authorize_url, get_oauth_keys
+from frappe.website.utils import build_response
+
 from press.press.doctype.team.team import Team, get_team_members
 from press.utils import get_country_info, get_current_team
 
@@ -415,3 +419,22 @@ def redirect_to(location):
 		301,
 		{"Location": location, "Cache-Control": "no-store, no-cache, must-revalidate"},
 	)
+
+
+def get_frappe_io_auth_url() -> Union[str, None]:
+	"""Get auth url for oauth login with frappe.io."""
+
+	try:
+		provider = frappe.get_last_doc(
+			"Social Login Key", filters={"enable_social_login": 1, "provider_name": "Frappe"}
+		)
+	except DoesNotExistError:
+		return
+
+	if (
+		get_oauth_keys(provider.name)
+		and provider.get_password("client_secret")
+		and provider.client_id
+		and provider.base_url
+	):
+		return get_oauth2_authorize_url(provider.name, redirect_to="")
