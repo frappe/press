@@ -2,16 +2,17 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
-from __future__ import unicode_literals
 import os
 import shlex
 import shutil
 import subprocess
 import frappe
+
 from frappe.model.document import Document
+from frappe.model.naming import make_autoname
 from press.api.github import get_access_token
 from press.utils import log_error
-from frappe.model.naming import make_autoname
+from press.press.doctype.app_source.app_source import AppSource
 
 
 class AppRelease(Document):
@@ -21,8 +22,18 @@ class AppRelease(Document):
 		self.name = make_autoname(series)
 
 	def after_insert(self):
+		self.publish_created()
 		self.create_deploy_candidates()
 		self.create_release_differences()
+
+	def publish_created(self):
+		frappe.publish_realtime(
+			event="new_app_release_created", message={"source": self.source}
+		)
+
+	def get_source(self) -> AppSource:
+		"""Return the `App Source` associated with this `App Release`"""
+		return frappe.get_doc("App Source", self.source)
 
 	def create_deploy_candidates(self):
 		candidates = frappe.get_all(

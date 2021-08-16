@@ -14,6 +14,19 @@ class Subscription(Document):
 	def validate(self):
 		self.validate_duplicate()
 
+	def on_update(self):
+		doc = self.get_subscribed_document()
+		plan_field = doc.meta.get_field("plan")
+		if not (plan_field and plan_field.options == "Plan"):
+			return
+
+		if self.enabled and doc.plan != self.plan:
+			doc.plan = self.plan
+			doc.save()
+		if not self.enabled and doc.plan:
+			doc.plan = ""
+			doc.save()
+
 	def enable(self):
 		self.enabled = True
 		self.save()

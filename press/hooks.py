@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 from . import __version__ as app_version
+from press.api.account import get_frappe_io_auth_url
 
 app_name = "press"
 app_title = "Press"
@@ -63,6 +64,11 @@ update_website_context = ["press.overrides.update_website_context"]
 
 website_route_rules = [
 	{"from_route": "/dashboard/<path:app_path>", "to_route": "dashboard"},
+]
+
+website_redirects = [
+	{"source": "/dashboard/f-login", "target": get_frappe_io_auth_url() or "/"},
+	{"source": "/f-login", "target": "/dashboard/f-login"},
 ]
 
 email_css = ["/assets/press/css/email.css"]
@@ -134,7 +140,7 @@ has_permission = {
 doc_events = {
 	"Stripe Webhook Log": {
 		"after_insert": [
-			"press.press.doctype.invoice.invoice.process_stripe_webhook",
+			"press.press.doctype.invoice.stripe_webhook_handler.handle_stripe_invoice_webhook_events",
 			"press.press.doctype.team.team.process_stripe_webhook",
 		],
 	},
@@ -158,6 +164,7 @@ scheduler_events = {
 	],
 	"hourly_long": [
 		"press.press.doctype.bench.bench.archive_obsolete_benches",
+		"press.press.doctype.bench.bench.archive_staging_sites",
 		"press.press.doctype.bench.bench.scale_workers",
 		"press.press.doctype.site.backups.schedule",
 		"press.press.doctype.subscription.subscription.create_usage_records",

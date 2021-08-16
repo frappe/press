@@ -43,6 +43,7 @@
 							"
 							:selected="selectedApps.includes(publicApp.app)"
 							v-show="!publicApp.frappe"
+							fullCircleImage
 						>
 							<template #secondary-content>
 								<a
@@ -75,6 +76,7 @@
 							@click.native="toggleApp(app)"
 							:selected="selectedApps.includes(app.app)"
 							:title="app.app_title"
+							fullCircleImage
 						>
 							<div slot="secondary-content" class="text-base text-gray-700">
 								{{ app.repository_owner }}:{{ app.branch }}

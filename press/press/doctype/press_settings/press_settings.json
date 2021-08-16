@@ -96,6 +96,9 @@
   "erpnext_group",
   "column_break_89",
   "erpnext_apps",
+  "staging_sites_section",
+  "staging_plan",
+  "staging_expiry",
   "erpnext_site_pool_section",
   "enable_site_pooling",
   "standby_pool_size",
@@ -697,11 +700,28 @@
    "fieldname": "agent_repository_owner",
    "fieldtype": "Data",
    "label": "Agent Repository Owner"
+  },
+  {
+   "fieldname": "staging_sites_section",
+   "fieldtype": "Section Break",
+   "label": "Staging Sites"
+  },
+  {
+   "fieldname": "staging_plan",
+   "fieldtype": "Link",
+   "label": "Staging Plan",
+   "options": "Plan"
+  },
+  {
+   "default": "24",
+   "fieldname": "staging_expiry",
+   "fieldtype": "Int",
+   "label": "Staging Expiry"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2021-07-13 20:20:09.492082",
+ "modified": "2021-08-16 14:57:17.922203",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

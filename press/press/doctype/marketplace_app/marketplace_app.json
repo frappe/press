@@ -13,8 +13,10 @@
   "column_break_3",
   "category",
   "status",
+  "team",
   "published",
   "section_break_5",
+  "sources",
   "description",
   "long_description",
   "links_section",
@@ -84,27 +86,32 @@
   {
    "fieldname": "website",
    "fieldtype": "Data",
-   "label": "Website"
+   "label": "Website",
+   "options": "URL"
   },
   {
    "fieldname": "support",
    "fieldtype": "Data",
-   "label": "Support"
+   "label": "Support",
+   "options": "URL"
   },
   {
    "fieldname": "privacy_policy",
    "fieldtype": "Data",
-   "label": "Privacy Policy"
+   "label": "Privacy Policy",
+   "options": "URL"
   },
   {
    "fieldname": "documentation",
    "fieldtype": "Data",
-   "label": "Documentation"
+   "label": "Documentation",
+   "options": "URL"
   },
   {
    "fieldname": "terms_of_service",
    "fieldtype": "Data",
-   "label": "Terms of Service"
+   "label": "Terms of Service",
+   "options": "URL"
   },
   {
    "fieldname": "route",
@@ -128,6 +135,19 @@
   {
    "fieldname": "column_break_16",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Team",
+   "options": "Team"
+  },
+  {
+   "fieldname": "sources",
+   "fieldtype": "Table",
+   "label": "Sources",
+   "options": "Marketplace App Version"
   }
  ],
  "has_web_view": 1,
@@ -135,7 +155,7 @@
  "index_web_pages_for_search": 1,
  "is_published_field": "published",
  "links": [],
- "modified": "2021-01-27 16:08:25.548722",
+ "modified": "2021-07-19 12:17:43.734262",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Marketplace App",

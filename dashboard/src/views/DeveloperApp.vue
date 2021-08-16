@@ -1,0 +1,94 @@
+<template>
+	<div class="mt-10">
+		<div class="px-4 sm:px-8" v-if="app">
+			<div class="pb-3">
+				<div class="text-base text-gray-700">
+					<router-link to="/developer/apps" class="hover:text-gray-800">
+						← Back to Apps
+					</router-link>
+				</div>
+				<div
+					class="flex flex-col space-y-3 md:space-y-0 md:justify-between md:flex-row md:items-baseline"
+				>
+					<div class="flex items-center mt-2">
+						<h1 class="text-2xl font-bold">{{ app.title }}</h1>
+						<Badge class="ml-4" :status="app.status">{{ app.status }}</Badge>
+					</div>
+					<div class="space-x-3">
+						<Button
+							v-if="app.status == 'Published'"
+							:link="`/marketplace/apps/${app.name}`"
+							icon-left="external-link"
+						>
+							View in Marketplace
+						</Button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="px-4 sm:px-8" v-if="app">
+			<Tabs class="pb-8" :tabs="tabs">
+				<router-view v-bind="{ app }"></router-view>
+			</Tabs>
+		</div>
+	</div>
+</template>
+
+<script>
+import Tabs from '@/components/Tabs.vue';
+
+export default {
+	name: 'DeveloperApp',
+	props: ['appName'],
+	components: {
+		Tabs
+	},
+	resources: {
+		app() {
+			return {
+				method: 'press.api.developer.get_app',
+				params: {
+					name: this.appName
+				},
+				auto: true
+			};
+		}
+	},
+	activated() {
+		if (this.app) {
+			this.routeToGeneral();
+		} else {
+			this.$resources.app.once('onSuccess', () => {
+				this.routeToGeneral();
+			});
+		}
+	},
+	methods: {
+		routeToGeneral() {
+			if (this.$route.matched.length === 1) {
+				let path = this.$route.fullPath;
+				this.$router.replace(`${path}/overview`);
+			}
+		}
+	},
+	computed: {
+		app() {
+			return this.$resources.app.data;
+		},
+		tabs() {
+			let tabRoute = subRoute => `/developer/apps/${this.appName}/${subRoute}`;
+			let tabs = [
+				{ label: 'Overview', route: 'overview' },
+				{ label: 'Releases', route: 'releases' }
+			];
+
+			return tabs.map(tab => {
+				return {
+					...tab,
+					route: tabRoute(tab.route)
+				};
+			});
+		}
+	}
+};
+</script>

@@ -1,5 +1,12 @@
 <template>
-	<Card title="Restore, Migrate & Reset">
+	<Card
+		title="Restore, Migrate & Reset"
+		:subtitle="
+			site.status === 'Suspended'
+				? 'Activate the site to enable these actions'
+				: ''
+		"
+	>
 		<div class="divide-y">
 			<div class="flex items-center justify-between py-3">
 				<div>
@@ -8,7 +15,10 @@
 						Restore your database using a previous backup
 					</p>
 				</div>
-				<Button @click="showRestoreDialog = true">
+				<Button
+					:disabled="site.status === 'Suspended'"
+					@click="showRestoreDialog = true"
+				>
 					Restore Database
 				</Button>
 			</div>
@@ -19,7 +29,7 @@
 						Run bench migrate command on your database.
 					</p>
 				</div>
-				<Button @click="confirmMigrate">
+				<Button :disabled="site.status === 'Suspended'" @click="confirmMigrate">
 					Migrate Database
 				</Button>
 			</div>
@@ -30,7 +40,7 @@
 						Reset your database to a clean state.
 					</p>
 				</div>
-				<Button @click="confirmReset">
+				<Button :disabled="site.status === 'Suspended'" @click="confirmReset">
 					<span class="text-red-600">
 						Reset Database
 					</span>
@@ -43,7 +53,10 @@
 						Clear your site's cache.
 					</p>
 				</div>
-				<Button @click="confirmClearCache">
+				<Button
+					:disabled="site.status === 'Suspended'"
+					@click="confirmClearCache"
+				>
 					<span class="text-red-600">
 						Clear Cache
 					</span>

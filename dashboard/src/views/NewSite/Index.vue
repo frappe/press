@@ -205,9 +205,6 @@ export default {
 			if (this.options.disable_site_creation) {
 				return true;
 			}
-			if (plan.trial_period) {
-				return false;
-			}
 			return true;
 		}
 	},

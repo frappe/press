@@ -22,16 +22,22 @@ from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.site.site import Site, process_rename_site_job_update
 
 
-def create_test_bench(release_group: str, server: str):
+def create_test_bench():
 	"""
 	Create test Bench doc.
 
 	API call to agent will be faked when creating the doc.
 	"""
+	proxy_server = create_test_proxy_server()
+	database_server = create_test_database_server()
+	server = create_test_server(proxy_server.name, database_server.name)
+
+	app = create_test_app()
+	release_group = create_test_release_group(app)
+
 	name = frappe.mock("name")
-	candidate = frappe.get_last_doc("Deploy Candidate", {"group": release_group})
-	candidate.docker_image = frappe.mock("url")
-	candidate.save()
+	candidate = frappe.get_last_doc("Deploy Candidate", {"group": release_group.name})
+	candidate.db_set("docker_image", frappe.mock("url"))
 	return frappe.get_doc(
 		{
 			"name": f"Test Bench{name}",
@@ -39,9 +45,9 @@ def create_test_bench(release_group: str, server: str):
 			"status": "Active",
 			"background_workers": 1,
 			"gunicorn_workers": 2,
-			"group": release_group,
+			"group": release_group.name,
 			"candidate": candidate.name,
-			"server": server,
+			"server": server.name,
 		}
 	).insert(ignore_if_duplicate=True)
 
@@ -52,16 +58,15 @@ def create_test_site(
 	creation: datetime = datetime.now(),
 	bench: str = None,
 ) -> Site:
-	"""Create test Site doc."""
-	proxy_server = create_test_proxy_server()
-	database_server = create_test_database_server()
-	server = create_test_server(proxy_server.name, database_server.name)
+	"""Create test Site doc.
 
-	app = create_test_app()
-
+	Installs all apps present in bench.
+	"""
 	if not bench:
-		release_group = create_test_release_group(app)
-		bench = create_test_bench(release_group.name, server.name).name
+		bench = create_test_bench()
+	else:
+		bench = frappe.get_doc("Bench", bench)
+	group = frappe.get_doc("Release Group", bench.group)
 
 	status = "Pending" if new else "Active"
 	# on_update checks won't be triggered if not Active
@@ -71,10 +76,10 @@ def create_test_site(
 			"doctype": "Site",
 			"status": status,
 			"subdomain": subdomain,
-			"server": server.name,
-			"bench": bench,
+			"server": bench.server,
+			"bench": bench.name,
 			"team": "Administrator",
-			"apps": [{"app": app.name}],
+			"apps": [{"app": app.app} for app in group.apps],
 			"admin_password": "admin",
 			"creation": creation,
 		}
