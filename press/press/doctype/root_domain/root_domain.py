@@ -3,8 +3,12 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
+from functools import cached_property
+
+import boto3
 import frappe
 from frappe.model.document import Document
+
 from press.utils import log_error
 
 
@@ -33,3 +37,17 @@ class RootDomain(Document):
 			).insert()
 		except Exception:
 			log_error("Root Domain TLS Certificate Exception")
+
+	@cached_property
+	def boto3_client(self):
+		return boto3.client(
+			"route53",
+			aws_access_key_id=self.aws_access_key_id,
+			aws_secret_access_key=self.get_password("aws_secret_access_key"),
+		)
+
+	@property
+	def hosted_zone(self):
+		return self.boto3_client.list_hosted_zones_by_name(DNSName=self.name)[
+			"HostedZones"
+		][0]["Id"]

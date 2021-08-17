@@ -5,40 +5,14 @@
 from __future__ import unicode_literals
 
 import frappe
-import boto3
 from press.utils import log_error
 
 DOMAIN_NAME = "erpnext.com"
 PROXY_SERVER = "n2.frappe.cloud"
 
-
-def get_active_domains():
-	return frappe.get_all(
-		"Site", {"status": ("!=", "Archived"), "domain": DOMAIN_NAME}, pluck="name"
-	)
-
-
-def get_dns_record_pages():
-	try:
-		domain = frappe.get_doc("Root Domain", DOMAIN_NAME)
-		client = boto3.client(
-			"route53",
-			aws_access_key_id=domain.aws_access_key_id,
-			aws_secret_access_key=domain.get_password("aws_secret_access_key"),
-		)
-		hosted_zone = client.list_hosted_zones_by_name(DNSName=domain.name)["HostedZones"][0][
-			"Id"
-		]
-		paginator = client.get_paginator("list_resource_record_sets")
-		return paginator.paginate(
-			PaginationConfig={"MaxItems": 1000, "PageSize": 300, "StartingToken": "0"},
-			HostedZoneId=hosted_zone.split("/")[-1],
-		)
-	except Exception:
-		log_error(
-			"Route 53 Pagination Error", domain=domain.name,
-		)
-
+# get dns records
+# collect domain from dns record not in active
+# delete dns records
 
 def cleanup():
 	for page in get_dns_record_pages():
@@ -58,6 +32,26 @@ def cleanup():
 			delete_dns_records(to_delete)
 
 
+def get_active_domains():
+	return frappe.get_all(
+		"Site", {"status": ("!=", "Archived"), "domain": DOMAIN_NAME}, pluck="name"
+	)
+
+
+def get_dns_record_pages():
+	try:
+		domain = frappe.get_doc("Root Domain", DOMAIN_NAME)
+		paginator = domain.boto3_client.get_paginator("list_resource_record_sets")
+		return paginator.paginate(
+			PaginationConfig={"MaxItems": 1000, "PageSize": 300, "StartingToken": "0"},
+			HostedZoneId=domain.hosted_zone.split("/")[-1],
+		)
+	except Exception:
+		log_error(
+			"Route 53 Pagination Error", domain=domain.name,
+		)
+
+
 def delete_dns_records(records):
 	try:
 		changes = []
@@ -75,17 +69,10 @@ def delete_dns_records(records):
 			)
 
 		domain = frappe.get_doc("Root Domain", DOMAIN_NAME)
-		client = boto3.client(
-			"route53",
-			aws_access_key_id=domain.aws_access_key_id,
-			aws_secret_access_key=domain.get_password("aws_secret_access_key"),
+		domain.boto3_client.change_resource_record_sets(
+			ChangeBatch={"Changes": changes}, HostedZoneId=domain.hosted_zone,
 		)
-		hosted_zone = client.list_hosted_zones_by_name(DNSName=domain.name)["HostedZones"][0][
-			"Id"
-		]
-		client.change_resource_record_sets(
-			ChangeBatch={"Changes": changes}, HostedZoneId=hosted_zone,
-		)
+
 	except Exception:
 		log_error(
 			"Route 53 Record Deletion Error", domain=domain.name,
