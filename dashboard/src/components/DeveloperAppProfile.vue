@@ -2,11 +2,7 @@
 	<Card title="App Profile" subtitle="Your app's primary profile">
 		<div class="flex items-center">
 			<div class="relative">
-				<Avatar
-					size="lg"
-					:label="`${app.title} Logo`"
-					:imageURL="profileImageUrl"
-				/>
+				<Avatar size="lg" :label="app.title" :imageURL="profileImageUrl" />
 				<FileUploader
 					@success="onAppImageChange"
 					fileTypes="image/*"

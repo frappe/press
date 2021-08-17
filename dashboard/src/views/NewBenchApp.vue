@@ -9,6 +9,8 @@
 
 		<SelectAppFromGithub @onSelect="d => (app = d)" />
 
+		<ErrorMessage :error="$resourceErrors" />
+
 		<Button v-if="app" @click="this.$resources.addApp.submit()"
 			>Add to bench</Button
 		>

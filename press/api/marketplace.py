@@ -38,6 +38,12 @@ def developer_toggle_allowed():
 
 
 @frappe.whitelist()
+def frappe_versions():
+	"""Return a list of Frappe Version names"""
+	return frappe.get_all("Frappe Version", pluck="name", order_by="name desc")
+
+
+@frappe.whitelist()
 def get_apps() -> List[Dict]:
 	"""Return list of apps developed by the current team"""
 	team = get_current_team()
