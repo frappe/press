@@ -11,7 +11,7 @@
   "column_break_4",
   "app_release",
   "app",
-  "approved_by",
+  "reviewed_by",
   "section_break_8",
   "reason_for_rejection"
  ],
@@ -21,7 +21,8 @@
    "fieldtype": "Link",
    "label": "Marketplace App",
    "options": "Marketplace App",
-   "reqd": 1
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "allow_in_quick_entry": 1,
@@ -38,13 +39,8 @@
    "fieldtype": "Link",
    "label": "App Release",
    "options": "App Release",
-   "reqd": 1
-  },
-  {
-   "fieldname": "approved_by",
-   "fieldtype": "Link",
-   "label": "Approved By",
-   "options": "User"
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "fetch_from": "marketplace_app.team",
@@ -78,11 +74,18 @@
   {
    "fieldname": "section_break_8",
    "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "reviewed_by",
+   "fieldtype": "Link",
+   "label": "Reviewed By",
+   "options": "User",
+   "set_only_once": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-08-04 13:55:35.611792",
+ "modified": "2021-08-12 15:22:54.520839",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Release Approval Request",
