@@ -79,8 +79,7 @@
    "fieldname": "reviewed_by",
    "fieldtype": "Link",
    "label": "Reviewed By",
-   "options": "User",
-   "set_only_once": 1
+   "options": "User"
   }
  ],
  "index_web_pages_for_search": 1,

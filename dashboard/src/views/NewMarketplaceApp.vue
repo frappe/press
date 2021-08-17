@@ -9,9 +9,29 @@
 
 		<SelectAppFromGithub @onSelect="d => (app = d)" />
 
-		<Button v-if="app" @click="this.$resources.addApp.submit()"
-			>Add to marketplace</Button
-		>
+		<div v-if="app">
+			<label class="text-base mb-3" for="version-select"
+				>Compatible Frappe Version</label
+			>
+			<select
+				id="version-select"
+				class="block form-select mb-4"
+				v-model="version"
+			>
+				<option v-for="version in versionList" :key="version">
+					{{ version }}
+				</option>
+			</select>
+
+			<ErrorMessage class="mb-3" :error="$resourceErrors" />
+
+			<Button
+				:loading="$resources.addApp.loading"
+				@click="$resources.addApp.submit()"
+				type="primary"
+				>Add to marketplace</Button
+			>
+		</div>
 	</WizardCard>
 </template>
 
@@ -32,6 +52,17 @@ export default {
 		};
 	},
 	resources: {
+		frappeVersions() {
+			return {
+				method: 'press.api.marketplace.frappe_versions',
+				auto: true,
+				onSuccess(data) {
+					if (data) {
+						this.version = data[0];
+					}
+				}
+			};
+		},
 		addApp() {
 			return {
 				method: 'press.api.marketplace.new_app',
@@ -49,6 +80,17 @@ export default {
 					this.$router.push(`/developer/apps/${this.app.name}`);
 				}
 			};
+		}
+	},
+	computed: {
+		versionList() {
+			if (
+				!this.$resources.frappeVersions.data ||
+				this.$resources.frappeVersions.loading
+			) {
+				return [];
+			}
+			return this.$resources.frappeVersions.data;
 		}
 	}
 };

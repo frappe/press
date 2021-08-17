@@ -111,8 +111,8 @@ export default {
 				onSuccess(data) {
 					if (data) {
 						const app = {
-							name: this.validatedApp?.name,
-							title: this.validatedApp?.title,
+							name: data.name,
+							title: data.title,
 							repository_url: this.selectedRepo?.url,
 							branch: this.selectedBranch,
 							github_installation_id: this.selectedInstallation?.id
