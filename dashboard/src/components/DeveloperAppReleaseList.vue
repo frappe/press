@@ -226,6 +226,9 @@ export default {
 			this.pageStart = 0;
 			this.$resources.releases.reset();
 			this.$resources.releases.submit();
+
+			// Re-fetch latest approved
+			this.$resources.latestApproved.fetch();
 		},
 		showFeedback(appRelease) {
 			this.showRejectionFeedbackDialog = true;
