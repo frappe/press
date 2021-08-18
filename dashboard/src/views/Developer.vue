@@ -49,6 +49,8 @@
 				</Button>
 			</template>
 
+			<ErrorMessage class="mt-2" :error="$resourceErrors" />
+
 			<p class="mt-4 text-base" @click="showAddAppDialog = false">
 				Don't find your app here?
 				<Link :to="`/developer/apps/new`">
@@ -89,7 +91,7 @@ export default {
 		addMarketplaceApp() {
 			return {
 				method: 'press.api.marketplace.add_app',
-				onSuccess(appName) {
+				onSuccess() {
 					this.showAddAppDialog = false;
 					window.location.reload();
 				}

@@ -343,7 +343,9 @@ def add_app(source: str, app: str):
 		marketplace_app = frappe.get_doc("Marketplace App", app)
 
 		if marketplace_app.team != get_current_team():
-			frappe.throw("Marketplace App exists and is owned by some other team!")
+			frappe.throw(
+				f"The app {marketplace_app.name} already exists and is owned by some other team."
+			)
 
 		# Versions on marketplace
 		versions = [v.version for v in marketplace_app.sources]
