@@ -2,7 +2,12 @@
 	<Card title="App Profile" subtitle="Your app's primary profile">
 		<div class="flex items-center">
 			<div class="relative">
-				<Avatar size="lg" :label="app.title" :imageURL="profileImageUrl" />
+				<Avatar
+					size="lg"
+					shape="square"
+					:label="app.title"
+					:imageURL="profileImageUrl"
+				/>
 				<FileUploader
 					@success="onAppImageChange"
 					fileTypes="image/*"
@@ -16,7 +21,7 @@
 						<div class="ml-4">
 							<button
 								@click="openFileSelector()"
-								class="absolute inset-0 grid w-full text-xs font-semibold text-white bg-black rounded-full opacity-0 focus:outline-none focus:opacity-50 hover:opacity-50 place-items-center"
+								class="absolute inset-0 grid w-full text-xs font-semibold text-white bg-black rounded-lg opacity-0 focus:outline-none focus:opacity-50 hover:opacity-50 place-items-center"
 								:class="{ 'opacity-50': uploading }"
 							>
 								<span v-if="uploading">{{ progress }}%</span>
