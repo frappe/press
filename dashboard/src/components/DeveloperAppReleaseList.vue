@@ -59,7 +59,7 @@
 					<a
 						:href="getCommitUrl(release.hash)"
 						target="_blank"
-						class="hidden md:inline text-blue-700 font-bold hover:text-blue-500"
+						class="hidden md:inline text-blue-700 font-mono hover:text-blue-500"
 					>
 						{{ release.tag || release.hash.slice(0, 6) }}
 					</a>
