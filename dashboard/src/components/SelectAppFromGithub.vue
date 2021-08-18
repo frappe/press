@@ -41,11 +41,10 @@
 							<GreenCheckIcon class="w-4 mr-2" />
 							Found {{ validatedApp.title }} ({{ validatedApp.name }})
 						</div>
-						<ErrorMessage v-else error="Not a valid frappe application" />
 					</div>
 				</div>
-				<div class="flex items-center mt-4">
-					<ErrorMessage :error="$resourceErrors" />
+				<div>
+					<ErrorMessage class="mb-2" :error="$resourceErrors" />
 					<Button
 						type="primary"
 						v-if="selectedRepo && selectedBranch && !validatedApp"
@@ -119,6 +118,10 @@ export default {
 						};
 						this.$emit('onSelect', app);
 					}
+				},
+				onError() {
+					// Invalid Frappe App
+					this.$emit('onSelect', null);
 				}
 			};
 		}
@@ -145,6 +148,7 @@ export default {
 				this.$resources.validateApp.loading ||
 				!this.$resources.validateApp.data
 			) {
+				this.$emit('onSelect', null);
 				return null;
 			}
 			if (
@@ -153,6 +157,8 @@ export default {
 			) {
 				return this.$resources.validateApp.data;
 			}
+
+			this.$emit('onSelect', null);
 			return null;
 		}
 	}

@@ -187,7 +187,7 @@ def app(installation, owner, repository, branch):
 	title = None
 	if "setup.py" in tree and "requirements.txt" in tree:
 		for directory, files in tree.items():
-			if files and "hooks.py" in files and "patches.txt" in files:
+			if files and ("hooks.py" in files) and ("patches.txt" in files):
 				app_name = directory
 				hooks = requests.get(
 					f"https://api.github.com/repos/{owner}/{repository}/contents/{app_name}/hooks.py",
@@ -199,6 +199,10 @@ def app(installation, owner, repository, branch):
 				if match:
 					title = match.group(1)
 				break
+
+	if not (app_name and title):
+		frappe.throw("Not a valid Frappe App!")
+
 	return {"name": app_name, "title": title}
 
 
