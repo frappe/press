@@ -4,6 +4,7 @@
 
 from __future__ import unicode_literals
 from functools import cached_property
+from typing import Iterable, List
 
 import boto3
 import frappe
@@ -48,6 +49,70 @@ class RootDomain(Document):
 
 	@property
 	def hosted_zone(self):
-		return self.boto3_client.list_hosted_zones_by_name(DNSName=self.name)[
-			"HostedZones"
-		][0]["Id"]
+		return self.boto3_client.list_hosted_zones_by_name(DNSName=self.name)["HostedZones"][
+			0
+		]["Id"]
+
+	def get_dns_record_pages(self) -> Iterable:
+		try:
+			paginator = self.boto3_client.get_paginator("list_resource_record_sets")
+			return paginator.paginate(
+				PaginationConfig={"MaxItems": 1000, "PageSize": 300, "StartingToken": "0"},
+				HostedZoneId=self.hosted_zone.split("/")[-1],
+			)
+		except Exception:
+			log_error(
+				"Route 53 Pagination Error", domain=self.name,
+			)
+
+	def delete_dns_records(self, records: List[str], proxy: str):
+		try:
+			changes = []
+			for record in records:
+				changes.append(
+					{
+						"Action": "DELETE",
+						"ResourceRecordSet": {
+							"Name": record,
+							"Type": "CNAME",
+							"TTL": 60,
+							"ResourceRecords": [{"Value": proxy}],
+						},
+					}
+				)
+
+			self.boto3_client.change_resource_record_sets(
+				ChangeBatch={"Changes": changes}, HostedZoneId=self.hosted_zone,
+			)
+
+		except Exception:
+			log_error("Route 53 Record Deletion Error", domain=self.name, proxy=proxy)
+
+	def get_active_domains(self):
+		return frappe.get_all(
+			"Site", {"status": ("!=", "Archived"), "domain": self.name}, pluck="name"
+		)
+
+	def remove_unused_cname_records(self, proxy: str):
+		for page in self.get_dns_record_pages():
+			to_delete = []
+
+			frappe.db.commit()
+			active = self.get_active_domains()
+
+			for record in page["ResourceRecordSets"]:
+				if record["Type"] == "CNAME" and record["ResourceRecords"][0]["Value"] == proxy:
+					domain = record["Name"].strip(".")
+					if domain not in active:
+						to_delete.append(domain)
+			if to_delete:
+				self.delete_dns_records(to_delete, proxy)
+
+
+def cleanup_cname_records():
+	domains = frappe.get_all("Root Domain", pluck="name")
+	proxies = frappe.get_all("Proxy Server", pluck="name")
+	for proxy in proxies:
+		for domain_name in domains:
+			domain = frappe.get_doc("Root Domain", domain_name)
+			domain.remove_unused_cname_records(proxy)
