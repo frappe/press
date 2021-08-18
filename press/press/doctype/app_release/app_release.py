@@ -35,6 +35,10 @@ class AppRelease(Document):
 		"""Return the `App Source` associated with this `App Release`"""
 		return frappe.get_doc("App Source", self.source)
 
+	def get_commit_link(self) -> str:
+		"""Return the commit URL for this app release"""
+		return f"{self.get_source().repository_url}/commit/{self.hash}"
+
 	def create_deploy_candidates(self):
 		candidates = frappe.get_all(
 			"Deploy Candidate App",
