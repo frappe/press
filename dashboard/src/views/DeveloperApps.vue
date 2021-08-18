@@ -35,11 +35,13 @@ export default {
 	components: {
 		DeveloperAppCard
 	},
+	activated() {
+		this.$resources.apps.fetch();
+	},
 	resources: {
 		apps() {
 			return {
-				method: 'press.api.marketplace.get_apps',
-				auto: true
+				method: 'press.api.marketplace.get_apps'
 			};
 		}
 	},
