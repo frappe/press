@@ -6,6 +6,7 @@ import frappe
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 from press.press.doctype.app_release.app_release import AppRelease
+from press.press.doctype.marketplace_app.marketplace_app import MarketplaceApp
 
 
 class AppReleaseApprovalRequest(Document):
@@ -65,10 +66,10 @@ class AppReleaseApprovalRequest(Document):
 
 		if status_updated and self.status == "Rejected":
 			release.status = "Rejected"
-			self.notifty_publisher()
+			self.notify_publisher()
 		elif status_updated and self.status == "Approved":
 			release.status = "Approved"
-			self.notifty_publisher()
+			self.notify_publisher()
 		elif status_updated and self.status == "Cancelled":
 			release.status = "Draft"
 
@@ -81,22 +82,22 @@ class AppReleaseApprovalRequest(Document):
 	def publish_status_change(self, source):
 		frappe.publish_realtime(event="request_status_changed", message={"source": source})
 
-	def notifty_publisher(self):
-		marketplace_app = frappe.get_doc("Marketplace App", self.marketplace_app)
-		app_release = frappe.get_doc("App Release", self.app_release)
-		app_source = app_release.get_source()
-
+	def notify_publisher(self):
+		marketplace_app: MarketplaceApp = frappe.get_doc(
+			"Marketplace App", self.marketplace_app
+		)
+		app_release: AppRelease = frappe.get_doc("App Release", self.app_release)
 		publisher_email = marketplace_app.team
-		commit_link = f"{app_source.repository_url}/commit/{app_release.hash}"
 
 		frappe.sendmail(
 			[publisher_email],
-			subject="Update on App release publish request",
+			subject=f"Frappe Cloud Marketplace: {self.marketplace_app}",
 			args={
-				"subject": f"With reference to your marketplace app: {self.marketplace_app}",
+				"subject": "Update on your app release publish request",
 				"status": self.status,
 				"rejection_reason": self.reason_for_rejection,
-				"commit_link": commit_link,
+				"commit_link": app_release.get_commit_link(),
+				"commit_message": app_release.message,
 			},
 			template="app_approval_request_update",
 		)

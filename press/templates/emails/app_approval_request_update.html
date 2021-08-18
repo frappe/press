@@ -13,14 +13,16 @@
 
         <p>
             {%- if status == 'Rejected' -%}
-            Unfortunately, your approval request for <a class="text-blue-500" href="{{ commit_link }}">this</a> app
+            Unfortunately, your approval request for <a class="text-blue-500" href="{{ commit_link }}">{{ commit_message
+                }}</a> app
             release has been rejected.
             The reason for rejection:
             {{ rejection_reason }}
             {%- endif -%}
 
             {%- if status == 'Approved' -%}
-            Hurray! Your approval request for <a class="text-blue-500" href="{{ commit_link }}">this</a> app release has
+            Hurray! Your approval request for <a class="text-blue-500" href="{{ commit_link }}">{{ commit_message }}</a>
+            app release has
             been accepted and this release will be
             published in the Marketplace.
             {%- endif -%}
