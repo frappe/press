@@ -62,10 +62,21 @@ def get_apps() -> List[Dict]:
 def get_app(name: str) -> Dict:
 	"""Return the `Marketplace App` document with name"""
 	app = frappe.get_doc("Marketplace App", name).as_dict()
-	# Attach source documents to marketplace sources
+	deploy_info = deploy_information(name)
+
+	# Attach sources information to marketplace sources
 	for source in app.sources:
-		source_doc = frappe.get_doc("App Source", source.source)
-		source.source_information = source_doc
+		source_information = frappe.get_doc("App Source", source.source).as_dict()
+
+		# Set deployment status
+		if source.source in deploy_info["deployed"]:
+			source_information.status = "Deployed"
+		elif source.source in deploy_info["awaiting_deploy"]:
+			source_information.status = "Awaiting Deploy"
+		else:
+			source_information.status = "Not Published"
+
+		source.source_information = source_information
 
 	return app
 

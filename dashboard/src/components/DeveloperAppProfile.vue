@@ -53,7 +53,11 @@
 				:key="source.version"
 				:title="source.version"
 				:description="branchUri(source.source_information)"
-			/>
+			>
+				<template #actions>
+					<Badge :status="source.source_information.status" />
+				</template>
+			</ListItem>
 		</div>
 
 		<Dialog title="Update App Profile" v-model="showAppProfileEditDialog">
