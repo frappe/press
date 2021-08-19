@@ -18,9 +18,10 @@ class MarketplaceApp(WebsiteGenerator):
 
 	def before_insert(self):
 		self.long_description = self.fetch_readme()
+		self.set_route()
 
 	def set_route(self):
-		self.route = "marketplace/apps/" + cleanup_page_name(self.title)
+		self.route = "marketplace/apps/" + cleanup_page_name(self.app)
 
 	def validate(self):
 		self.published = self.status == "Published"
