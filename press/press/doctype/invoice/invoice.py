@@ -430,14 +430,22 @@ class Invoice(Document):
 			return
 
 		try:
+			team = frappe.get_doc("Team", self.team)
+			address = (
+				frappe.get_doc("Address", team.billing_address) if team.billing_address else None
+			)
 			client = self.get_frappeio_connection()
 			response = client.session.post(
 				f"{client.url}/api/method/create-fc-invoice",
-				data={"invoice": frappe.as_json(self)},
+				data={
+					"team": team.as_json(),
+					"address": address.as_json(),
+					"invoice": self.as_json(),
+				},
 			)
 			if response.ok:
 				res = response.json()
-				invoice = res["message"]
+				invoice = res.get("message")
 
 				if invoice:
 					self.frappe_invoice = invoice
