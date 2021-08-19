@@ -122,7 +122,8 @@
    "default": "0",
    "fieldname": "published",
    "fieldtype": "Check",
-   "label": "Published"
+   "label": "Published",
+   "read_only": 1
   },
   {
    "fieldname": "app",
@@ -155,7 +156,7 @@
  "index_web_pages_for_search": 1,
  "is_published_field": "published",
  "links": [],
- "modified": "2021-07-19 12:17:43.734262",
+ "modified": "2021-08-19 19:37:37.914421",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Marketplace App",
