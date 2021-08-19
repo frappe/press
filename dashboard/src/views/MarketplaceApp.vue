@@ -3,7 +3,7 @@
 		<div class="px-4 sm:px-8" v-if="app">
 			<div class="pb-3">
 				<div class="text-base text-gray-700">
-					<router-link to="/developer/apps" class="hover:text-gray-800">
+					<router-link to="/marketplace/apps" class="hover:text-gray-800">
 						← Back to Apps
 					</router-link>
 				</div>
@@ -38,7 +38,7 @@
 import Tabs from '@/components/Tabs.vue';
 
 export default {
-	name: 'DeveloperApp',
+	name: 'MarketplaceApp',
 	props: ['appName'],
 	components: {
 		Tabs
@@ -76,7 +76,8 @@ export default {
 			return this.$resources.app.data;
 		},
 		tabs() {
-			let tabRoute = subRoute => `/developer/apps/${this.appName}/${subRoute}`;
+			let tabRoute = subRoute =>
+				`/marketplace/apps/${this.appName}/${subRoute}`;
 			let tabs = [
 				{ label: 'Overview', route: 'overview' },
 				{ label: 'Releases', route: 'releases' }

@@ -87,7 +87,7 @@
 import MarkdownIt from 'markdown-it';
 
 export default {
-	name: 'DeveloperAppDescriptions',
+	name: 'MarketplaceAppDescriptions',
 	props: {
 		app: Object
 	},
