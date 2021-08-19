@@ -424,7 +424,7 @@ class Invoice(Document):
 			return
 		if self.status != "Paid":
 			return
-		if self.amount_due == 0:
+		if self.amount_paid == 0:
 			return
 		if self.frappe_invoice:
 			return
