@@ -98,7 +98,7 @@
 import FileUploader from '@/components/FileUploader.vue';
 
 export default {
-	name: 'DeveloperAppProfile',
+	name: 'MarketplaceAppProfile',
 	props: {
 		app: Object
 	},

@@ -53,7 +53,7 @@
 
 			<p class="mt-4 text-base" @click="showAddAppDialog = false">
 				Don't find your app here?
-				<Link :to="`/developer/apps/new`">
+				<Link :to="`/marketplace/apps/new`">
 					Add from GitHub
 				</Link>
 			</p>
@@ -72,13 +72,13 @@ import Tabs from '@/components/Tabs.vue';
 import AppSourceSelector from '@/components/AppSourceSelector.vue';
 
 export default {
-	name: 'Developer',
+	name: 'Marketplace',
 	components: {
 		Tabs,
 		AppSourceSelector
 	},
 	data: () => ({
-		tabs: [{ label: 'My Apps', route: '/developer/apps' }],
+		tabs: [{ label: 'My Apps', route: '/marketplace/apps' }],
 		showAddAppDialog: false,
 		selectedApp: null
 	}),
@@ -110,8 +110,8 @@ export default {
 		}
 	},
 	beforeRouteUpdate(to, from, next) {
-		if (to.path == '/developer') {
-			next('/developer/apps');
+		if (to.path == '/marketplace') {
+			next('/marketplace/apps');
 		} else {
 			next();
 		}

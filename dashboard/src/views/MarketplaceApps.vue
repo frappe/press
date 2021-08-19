@@ -16,7 +16,7 @@
 		</div>
 		<div v-else>
 			<div class="grid gap-4 grid-cols-1 md:grid-cols-3">
-				<DeveloperAppCard
+				<MarketplaceAppCard
 					@click.native="routeToAppPage(app.name)"
 					v-for="app in $resources.apps.data"
 					:key="app.name"
@@ -28,12 +28,12 @@
 </template>
 
 <script>
-import DeveloperAppCard from '@/components/DeveloperAppCard.vue';
+import MarketplaceAppCard from '@/components/MarketplaceAppCard.vue';
 
 export default {
-	name: 'DeveloperApps',
+	name: 'MarketplaceApps',
 	components: {
-		DeveloperAppCard
+		MarketplaceAppCard
 	},
 	activated() {
 		this.$resources.apps.fetch();
@@ -48,7 +48,7 @@ export default {
 	},
 	methods: {
 		routeToAppPage(appName) {
-			this.$router.push(`/developer/apps/${appName}`);
+			this.$router.push(`/marketplace/apps/${appName}`);
 		}
 	}
 };

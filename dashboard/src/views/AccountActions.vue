@@ -77,7 +77,7 @@ export default {
 			return {
 				method: 'press.api.marketplace.become_publisher',
 				onSuccess() {
-					this.$router.push('/developer');
+					this.$router.push('/marketplace');
 				}
 			};
 		}

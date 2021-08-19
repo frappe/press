@@ -57,7 +57,7 @@
 
 <script>
 export default {
-	name: 'DeveloperAppLinks',
+	name: 'MarketplaceAppLinks',
 	props: {
 		app: Object
 	},

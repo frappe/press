@@ -97,7 +97,7 @@ class AppReleaseApprovalRequest(Document):
 				"status": self.status,
 				"rejection_reason": self.reason_for_rejection,
 				"commit_message": app_release.message,
-				"releases_link": f"{frappe.local.site}/dashboard/developer/apps/{self.marketplace_app}/releases",
+				"releases_link": f"{frappe.local.site}/dashboard/marketplace/apps/{self.marketplace_app}/releases",
 			},
 			template="app_approval_request_update",
 		)

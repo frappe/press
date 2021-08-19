@@ -77,7 +77,7 @@ export default {
 					}
 				},
 				onSuccess() {
-					this.$router.push(`/developer/apps/${this.app.name}`);
+					this.$router.push(`/marketplace/apps/${this.app.name}`);
 				}
 			};
 		}

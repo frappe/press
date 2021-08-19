@@ -4,6 +4,6 @@
 
 <script>
 export default {
-	name: 'DeveloperAppAnalytics'
+	name: 'MarketplaceAppAnalytics'
 };
 </script>

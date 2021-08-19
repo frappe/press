@@ -166,10 +166,10 @@ export default {
 					}
 				},
 				{
-					label: 'Developer',
-					route: '/developer',
+					label: 'Marketplace',
+					route: '/marketplace',
 					highlight: () => {
-						return this.$route.fullPath.includes('/developer');
+						return this.$route.fullPath.includes('/marketplace');
 					},
 					condition: () => this.$account.team?.is_developer
 				},
