@@ -1,5 +1,24 @@
 <template>
 	<Card title="App Releases">
+		<div v-if="sources.length">
+			<div class="flex flex-row items-baseline">
+				<select
+					v-if="sources.length > 1"
+					class="inline-block form-select mb-2"
+					v-model="selectedSource"
+				>
+					<option
+						v-for="source in sources"
+						:key="source.source"
+						:value="source.source"
+					>
+						{{
+							`${source.source_information.repository}:${source.source_information.branch}`
+						}}
+					</option>
+				</select>
+			</div>
+		</div>
 		<div v-if="!sources.length">
 			<p class="mt-3 text-gray-600 text-center text-lg">
 				No published source exist for this app. Please contact support to
@@ -11,30 +30,8 @@
 				No app releases have been created for this version.
 			</p>
 		</div>
-		<div v-else>
-			<div>
-				<div class="flex flex-row items-baseline">
-					<select
-						v-if="sources.length > 1"
-						class="inline-block form-select mb-2 mr-2"
-						v-model="selectedSource"
-					>
-						<option
-							v-for="source in sources"
-							:key="source.source"
-							:value="source.source"
-						>
-							{{
-								`${source.source_information.repository}:${source.source_information.branch}`
-							}}
-						</option>
-					</select>
 
-					<p class="text-base text-gray-600">
-						<span class="font-semibold">{{ selectedVersion }}</span>
-					</p>
-				</div>
-			</div>
+		<div v-else>
 			<div class="divide-y">
 				<div
 					class="grid items-center grid-cols-3 py-4 text-base text-gray-600 gap-x-8 md:grid-cols-6"
@@ -308,18 +305,16 @@ export default {
 				return this.$date(this.$resources.latestApproved.data.creation);
 			}
 		},
-
 		sources() {
-			return this.app.sources;
-		},
-
-		selectedVersion() {
-			if (this.selectedSource) {
-				return this.app.sources.find(x => x.source == this.selectedSource)
-					.version;
+			// Return only the unique sources
+			let tempArray = [];
+			for (let source of this.app.sources) {
+				if (!tempArray.find(x => x.source === source.source)) {
+					tempArray.push(source);
+				}
 			}
+			return tempArray;
 		},
-
 		repoUrl() {
 			if (
 				this.$resources.appSource.loading ||
