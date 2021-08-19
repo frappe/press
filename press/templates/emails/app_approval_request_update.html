@@ -13,7 +13,7 @@
 
         <p>
             {%- if status == 'Rejected' -%}
-            Unfortunately, your approval request for <a class="text-blue-500" href="{{ commit_link }}">'{{
+            Unfortunately, your approval request for <a class="text-blue-500" href="{{ releases_link }}">'{{
                 commit_message
                 }}'</a> app
             release has been rejected.
@@ -22,7 +22,7 @@
             {%- endif -%}
 
             {%- if status == 'Approved' -%}
-            Hurray! Your approval request for <a class="text-blue-500" href="{{ commit_link }}">'{{ commit_message
+            Hurray! Your approval request for <a class="text-blue-500" href="{{ releases_link }}">'{{ commit_message
                 }}'</a>
             app release has
             been accepted and this release will be
