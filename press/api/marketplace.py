@@ -67,15 +67,7 @@ def get_app(name: str) -> Dict:
 	# Attach sources information to marketplace sources
 	for source in app.sources:
 		source_information = frappe.get_doc("App Source", source.source).as_dict()
-
-		# Set deployment status
-		if source.source in deploy_info["deployed"]:
-			source_information.status = "Deployed"
-		elif source.source in deploy_info["awaiting_deploy"]:
-			source_information.status = "Awaiting Deploy"
-		else:
-			source_information.status = "Not Published"
-
+		source_information.status = deploy_info.get(source.version)
 		source.source_information = source_information
 
 	return app

@@ -18,7 +18,7 @@
 						class="absolute top-0 right-0"
 						@click="handleChange(false)"
 					>
-						<FeatherIcon name="x" class="w-4 h-4 mt-2" />
+						<FeatherIcon name="x" class="w-4 h-4 mt-4" />
 					</button>
 					<div class="leading-5 text-gray-800">
 						<slot></slot>
