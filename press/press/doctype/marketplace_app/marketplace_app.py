@@ -105,11 +105,11 @@ class MarketplaceApp(WebsiteGenerator):
 		"""Return the deploy information this marketplace app"""
 		# Public Release Groups, Benches
 		# Is on release group, but not on bench -> awaiting deploy
-		sources_awaiting_deploy = []
-		deployed_sources = []
+		deploy_info = {}
 
 		for source in self.sources:
 			version = source.version
+			deploy_info[version] = "Not Deployed"
 
 			release_groups = frappe.get_all(
 				"Release Group", filters={"public": 1, "version": version}, pluck="name"
@@ -127,10 +127,10 @@ class MarketplaceApp(WebsiteGenerator):
 					sources_on_bench = [a.source for a in latest_active_bench.apps]
 					if source.source in sources_on_bench:
 						# Is deployed on a bench
-						deployed_sources.append(source.source)
+						deploy_info[version] = "Deployed"
 
-				if (source.source in sources_on_rg) and (source.source not in deployed_sources):
+				if (source.source in sources_on_rg) and (deploy_info[version] != "Deployed"):
 					# Added to release group, but not yet deployed to a bench
-					sources_awaiting_deploy.append(source.source)
+					deploy_info[version] = "Awaiting Deploy"
 
-		return {"deployed": deployed_sources, "awaiting_deploy": sources_awaiting_deploy}
+		return deploy_info
