@@ -50,7 +50,7 @@
 		<div class="divide-y" v-if="app">
 			<ListItem
 				v-for="source in app.sources"
-				:key="source.source"
+				:key="source.version"
 				:title="source.version"
 				:description="branchUri(source.source_information)"
 			/>
