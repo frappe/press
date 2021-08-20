@@ -156,6 +156,7 @@ scheduler_events = {
 		"press.press.doctype.team.suspend_sites.execute",
 		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
 		"press.press.doctype.drip_email.drip_email.send_drip_emails",
+		"press.press.doctype.root_domain.root_domain.cleanup_cname_records",
 	],
 	"daily_long": ["press.press.audit.all"],
 	"hourly": [
