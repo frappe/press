@@ -4,7 +4,7 @@
 			<div class="flex items-center justify-between h-16 px-4 sm:px-8">
 				<div class="flex items-center">
 					<div class="flex-shrink-0">
-						<router-link to="/sites">
+						<router-link to="/">
 							<FrappeCloudLogo class="w-auto h-4" />
 						</router-link>
 					</div>
