@@ -47,7 +47,6 @@ class Site(Document):
 		self.validate_site_config()
 
 	def before_insert(self):
-		self.validate_site_creation()
 		# initialize site.config based on plan
 		self._update_configuration(self.get_plan_config(), save=False)
 
@@ -67,10 +66,6 @@ class Site(Document):
 		# set site.admin_password if doesn't exist
 		if not self.admin_password:
 			self.admin_password = frappe.generate_hash(length=16)
-
-	def validate_site_creation(self):
-		if frappe.session.user != "Administrator":
-			self.can_create_site()
 
 	def validate_installed_apps(self):
 		# validate apps to be installed on site
@@ -189,14 +184,6 @@ class Site(Document):
 		agent.uninstall_app_site(self, app_doc.app)
 		self.status = "Pending"
 		self.save()
-
-	def can_create_site(self):
-		if self.team:
-			# validate site creation for team
-			team = frappe.get_doc("Team", self.team)
-			[allow_creation, why] = team.can_create_site()
-			if not allow_creation:
-				frappe.throw(why)
 
 	def _create_default_site_domain(self):
 		"""Create Site Domain with Site name."""
