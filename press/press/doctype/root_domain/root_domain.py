@@ -3,6 +3,8 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
+from datetime import datetime, timedelta
+import json
 from typing import Iterable, List
 
 import boto3
@@ -88,10 +90,22 @@ class RootDomain(Document):
 		except Exception:
 			log_error("Route 53 Record Deletion Error", domain=self.name, proxy=proxy)
 
+	def get_sites_being_renamed(self):
+		# get sites renamed in Server but doc not renamed in press
+		last_hour = datetime.now() - timedelta(hours=1)  # very large bound just to be safe
+		renaming_sites = frappe.get_all(
+			"Agent Job",
+			{"job_type": "Rename Site", "creation": (">=", last_hour)},
+			pluck="request_data",
+		)
+		return [json.loads(d_str)["new_name"] for d_str in renaming_sites]
+
 	def get_active_domains(self):
-		return frappe.get_all(
+		active_sites = frappe.get_all(
 			"Site", {"status": ("!=", "Archived"), "domain": self.name}, pluck="name"
 		)
+		active_sites.extend(self.get_sites_being_renamed())
+		return active_sites
 
 	def remove_unused_cname_records(self, proxy: str):
 		for page in self.get_dns_record_pages():
