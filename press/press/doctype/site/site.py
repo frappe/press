@@ -732,8 +732,9 @@ class Site(Document):
 
 		if self.has_value_changed("team"):
 			subscription = self.subscription
-			subscription.team = self.team
-			subscription.save()
+			if subscription:
+				subscription.team = self.team
+				subscription.save()
 
 	def enable_subscription(self):
 		subscription = self.subscription
