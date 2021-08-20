@@ -475,7 +475,7 @@ def overview(name):
 		"recent_activity": activities(name, limit=3),
 		"plan": current_plan(name),
 		"info": {
-			"created_by": frappe.db.get_value(
+			"owner": frappe.db.get_value(
 				"User", site.team, ["first_name", "last_name", "user_image"], as_dict=True
 			),
 			"created_on": site.creation,
