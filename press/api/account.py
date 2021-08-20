@@ -254,7 +254,7 @@ def get():
 		"team_members": get_team_members(team),
 		"teams": list(set(teams)),
 		"onboarding": team_doc.get_onboarding(),
-		"balance": team_doc.get_balance()
+		"balance": team_doc.get_balance(),
 	}
 
 
