@@ -40,8 +40,9 @@ class RootDomain(Document):
 		except Exception:
 			log_error("Root Domain TLS Certificate Exception")
 
+	@property
 	def boto3_client(self):
-		if not self._boto3_client:
+		if not hasattr(self, "_boto3_client"):
 			self._boto3_client = boto3.client(
 				"route53",
 				aws_access_key_id=self.aws_access_key_id,
