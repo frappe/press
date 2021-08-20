@@ -10,7 +10,7 @@
 			<p>
 				Your account
 				<span class="font-semibold">{{ $account.team.name }}</span> has been
-				created
+				created.
 			</p>
 
 			<div
