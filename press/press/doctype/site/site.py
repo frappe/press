@@ -110,10 +110,7 @@ class Site(Document):
 			self._update_redirects_for_all_site_domains()
 			frappe.db.set_value("Site Domain", self.host_name, "redirect_to_primary", False)
 
-		if self.status in ["Inactive", "Archived", "Suspended"]:
-			self.disable_subscription()
-		if self.status == "Active":
-			self.enable_subscription()
+		self.update_subscription()
 
 		if self.status not in ["Pending", "Archived", "Suspended"] and self.has_value_changed(
 			"subdomain"
@@ -726,6 +723,17 @@ class Site(Document):
 	def create_subscription(self, plan):
 		# create a site plan change log
 		self._create_initial_site_plan_change(plan)
+
+	def update_subscription(self):
+		if self.status in ["Inactive", "Archived", "Suspended"]:
+			self.disable_subscription()
+		if self.status == "Active":
+			self.enable_subscription()
+
+		if self.has_value_changed("team"):
+			subscription = self.subscription
+			subscription.team = self.team
+			subscription.save()
 
 	def enable_subscription(self):
 		subscription = self.subscription
