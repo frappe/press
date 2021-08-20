@@ -1,0 +1,60 @@
+<template>
+	<Dialog
+		title="Change Payment Mode"
+		:show="show"
+		@change="$emit('change', $event)"
+	>
+		<Input
+			label="Select Payment Mode"
+			type="select"
+			:options="['Card', 'Prepaid Credits']"
+			v-model="$account.team.payment_mode"
+		/>
+		<p class="mt-2 text-base text-gray-600">
+			{{ paymentModeDescription }}
+		</p>
+		<ErrorMessage class="mt-2" :error="$resources.changePaymentMode.error" />
+		<template #actions>
+			<Button
+				type="primary"
+				class="mt-2"
+				@click="$resources.changePaymentMode.submit()"
+				:loading="$resources.changePaymentMode.loading"
+			>
+				Change
+			</Button>
+		</template>
+	</Dialog>
+</template>
+<script>
+export default {
+	name: 'ChangePaymentModeDialog',
+	props: ['show'],
+	model: {
+		prop: 'show',
+		event: 'change'
+	},
+	resources: {
+		changePaymentMode() {
+			return {
+				method: 'press.api.billing.change_payment_mode',
+				params: {
+					mode: this.$account.team.payment_mode
+				},
+				onSuccess() {
+					this.$emit('change', false);
+					this.$resources.changePaymentMode.reset();
+				}
+			};
+		}
+	},
+	computed: {
+		paymentModeDescription() {
+			return {
+				Card: `You card will be charged for monthly subscription`,
+				'Prepaid Credits': `You will be charged from your account balance for monthly subscription`
+			}[this.$account.team.payment_mode];
+		}
+	}
+};
+</script>

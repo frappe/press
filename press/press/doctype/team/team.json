@@ -19,6 +19,7 @@
   "stripe_customer_id",
   "country",
   "currency",
+  "payment_mode",
   "default_payment_method",
   "billing_name",
   "billing_address",
@@ -178,6 +179,12 @@
    "fieldtype": "Check",
    "in_standard_filter": 1,
    "label": "Is Developer"
+  },
+  {
+   "fieldname": "payment_mode",
+   "fieldtype": "Select",
+   "label": "Payment Mode",
+   "options": "\nCard\nPrepaid Credits"
   }
  ],
  "links": [
@@ -222,7 +229,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2021-06-30 12:39:52.267978",
+ "modified": "2021-08-19 14:33:06.996829",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

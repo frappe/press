@@ -193,19 +193,7 @@ export default {
 	},
 	methods: {
 		disablePlan(plan) {
-			if (this.options.free_account) {
-				return false;
-			}
-			if (this.options.allow_partner) {
-				return false;
-			}
-			if (this.options.has_card) {
-				return false;
-			}
-			if (this.options.disable_site_creation) {
-				return true;
-			}
-			return true;
+			return !this.$account.hasBillingInfo;
 		}
 	},
 	computed: {

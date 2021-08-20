@@ -4,7 +4,16 @@
 			title="Usage"
 			subtitle="Amount so far based on the usage of your sites"
 		>
-			<div class="flex flex-col h-full" v-if="!$resources.upcomingInvoice.loading">
+			<template #actions>
+				<Button @click="showChangeModeDialog = true">
+					Change Payment Mode
+				</Button>
+				<ChangePaymentModeDialog v-model="showChangeModeDialog" />
+			</template>
+			<div
+				class="flex flex-col h-full"
+				v-if="!$resources.upcomingInvoice.loading"
+			>
 				<div class="flex">
 					<PlanIcon />
 					<div class="ml-4">
@@ -16,19 +25,8 @@
 							→
 							{{ dateShort(upcomingInvoice.period_end) }}
 						</div>
-						<div class="flex items-center mt-2 text-sm" v-if="paymentDate">
-							<FeatherIcon
-								name="calendar"
-								class="inline-block w-3 h-3 text-gray-600"
-							/>
-							<p>
-								<span class="text-gray-500 ml-1.5">
-									Next Payment
-								</span>
-								<span class="text-gray-700">
-									{{ paymentDate }}
-								</span>
-							</p>
+						<div class="mt-2 text-base text-gray-600">
+							{{ paymentModeDescription }}
 						</div>
 					</div>
 				</div>
@@ -90,8 +88,11 @@ export default {
 	components: {
 		PlanIcon,
 		AccountBillingUpcomingInvoice,
-		TransferCreditsDialog: () => import('@/components/TransferCreditsDialog.vue'),
-		PrepaidCreditsDialog: () => import('@/components/PrepaidCreditsDialog.vue')
+		TransferCreditsDialog: () =>
+			import('@/components/TransferCreditsDialog.vue'),
+		PrepaidCreditsDialog: () => import('@/components/PrepaidCreditsDialog.vue'),
+		ChangePaymentModeDialog: () =>
+			import('@/components/ChangePaymentModeDialog.vue')
 	},
 	resources: {
 		upcomingInvoice: 'press.api.billing.upcoming_invoice'
@@ -99,7 +100,8 @@ export default {
 	data() {
 		return {
 			showTransferCreditsDialog: false,
-			showPrepaidCreditsDialog: false
+			showPrepaidCreditsDialog: false,
+			showChangeModeDialog: false
 		};
 	},
 	mounted() {
@@ -119,7 +121,7 @@ export default {
 		},
 		paymentDate() {
 			if (!this.upcomingInvoice) {
-				return ''
+				return '';
 			}
 			let endDate = this.$date(this.upcomingInvoice.period_end);
 			return endDate.toLocaleString({
@@ -127,6 +129,12 @@ export default {
 				day: 'numeric',
 				year: 'numeric'
 			});
+		},
+		paymentModeDescription() {
+			return {
+				Card: `You card will be charged on ${this.paymentDate}.`,
+				'Prepaid Credits': `You will be charged from your account balance on ${this.paymentDate}.`
+			}[this.$account.team.payment_mode];
 		},
 		loading() {
 			return this.$resources.upcomingInvoice.loading;
