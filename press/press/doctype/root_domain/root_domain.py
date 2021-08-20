@@ -3,7 +3,6 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
-from functools import cached_property
 from typing import Iterable, List
 
 import boto3
@@ -39,13 +38,14 @@ class RootDomain(Document):
 		except Exception:
 			log_error("Root Domain TLS Certificate Exception")
 
-	@cached_property
 	def boto3_client(self):
-		return boto3.client(
-			"route53",
-			aws_access_key_id=self.aws_access_key_id,
-			aws_secret_access_key=self.get_password("aws_secret_access_key"),
-		)
+		if not self._boto3_client:
+			self._boto3_client = boto3.client(
+				"route53",
+				aws_access_key_id=self.aws_access_key_id,
+				aws_secret_access_key=self.get_password("aws_secret_access_key"),
+			)
+		return self._boto3_client
 
 	@property
 	def hosted_zone(self):
