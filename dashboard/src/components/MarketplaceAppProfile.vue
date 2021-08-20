@@ -4,7 +4,8 @@
 			<div class="relative">
 				<Avatar
 					size="lg"
-					:label="`${app.title} Logo`"
+					shape="square"
+					:label="app.title"
 					:imageURL="profileImageUrl"
 				/>
 				<FileUploader
@@ -13,14 +14,14 @@
 					:upload-args="{
 						doctype: 'Marketplace App',
 						docname: app.name,
-						method: 'press.api.developer.update_app_image'
+						method: 'press.api.marketplace.update_app_image'
 					}"
 				>
 					<template v-slot="{ openFileSelector, uploading, progress, error }">
 						<div class="ml-4">
 							<button
 								@click="openFileSelector()"
-								class="absolute inset-0 grid w-full text-xs font-semibold text-white bg-black rounded-full opacity-0 focus:outline-none focus:opacity-50 hover:opacity-50 place-items-center"
+								class="absolute inset-0 grid w-full text-xs font-semibold text-white bg-black rounded-lg opacity-0 focus:outline-none focus:opacity-50 hover:opacity-50 place-items-center"
 								:class="{ 'opacity-50': uploading }"
 							>
 								<span v-if="uploading">{{ progress }}%</span>
@@ -48,13 +49,15 @@
 		</div>
 		<div class="divide-y" v-if="app">
 			<ListItem
-				v-for="version in publishedVersions"
-				:key="version.version"
-				:title="version.version"
-				:description="
-					`${version.repository_owner}/${version.repository}:${version.branch}`
-				"
-			/>
+				v-for="source in app.sources"
+				:key="source.version"
+				:title="source.version"
+				:description="branchUri(source.source_information)"
+			>
+				<template #actions>
+					<Badge :status="source.source_information.status" />
+				</template>
+			</ListItem>
 		</div>
 
 		<Dialog title="Update App Profile" v-model="showAppProfileEditDialog">
@@ -95,7 +98,7 @@
 import FileUploader from '@/components/FileUploader.vue';
 
 export default {
-	name: 'DeveloperAppProfile',
+	name: 'MarketplaceAppProfile',
 	props: {
 		app: Object
 	},
@@ -105,7 +108,7 @@ export default {
 	resources: {
 		categories() {
 			return {
-				method: 'press.api.developer.categories',
+				method: 'press.api.marketplace.categories',
 				auto: true
 			};
 		},
@@ -113,7 +116,7 @@ export default {
 			let { name, title, category } = this.app;
 
 			return {
-				method: 'press.api.developer.update_app_profile',
+				method: 'press.api.marketplace.update_app_profile',
 				params: {
 					name,
 					title,
@@ -126,18 +129,9 @@ export default {
 				}
 			};
 		},
-		publishedVersions() {
-			return {
-				method: 'press.api.developer.published_versions',
-				params: {
-					name: this.app.name
-				},
-				auto: true
-			};
-		},
 		profileImageUrl() {
 			return {
-				method: 'press.api.developer.profile_image_url',
+				method: 'press.api.marketplace.profile_image_url',
 				params: {
 					app: this.app.name
 				}
@@ -148,6 +142,9 @@ export default {
 		onAppImageChange() {
 			this.$resources.profileImageUrl.submit();
 			this.notifySuccess();
+		},
+		branchUri(source) {
+			return `${source.repository_owner}/${source.repository}:${source.branch}`;
 		},
 		notifySuccess() {
 			this.$notify({
@@ -172,16 +169,6 @@ export default {
 			}
 
 			return this.$resources.categories.data;
-		},
-		publishedVersions() {
-			if (
-				this.$resources.publishedVersions.loading ||
-				!this.$resources.publishedVersions.data
-			) {
-				return [];
-			}
-
-			return this.$resources.publishedVersions.data;
 		},
 		profileImageUrl() {
 			if (!this.$resources.profileImageUrl.data) {

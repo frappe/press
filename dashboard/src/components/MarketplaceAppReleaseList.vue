@@ -1,10 +1,10 @@
 <template>
-	<Card title="Your App Releases">
-		<template #actions>
-			<div class="flex flex-col items-end">
+	<Card title="App Releases">
+		<div v-if="sources.length">
+			<div class="flex flex-row items-baseline">
 				<select
 					v-if="sources.length > 1"
-					class="block form-select text-right mb-2"
+					class="inline-block form-select mb-2"
 					v-model="selectedSource"
 				>
 					<option
@@ -12,16 +12,13 @@
 						:key="source.source"
 						:value="source.source"
 					>
-						{{ source.version }}
+						{{
+							`${source.source_information.repository}:${source.source_information.branch}`
+						}}
 					</option>
 				</select>
-
-				<p class="text-base text-gray-600">
-					<span class="font-semibold">{{ currentBranch }}</span>
-				</p>
 			</div>
-		</template>
-
+		</div>
 		<div v-if="!sources.length">
 			<p class="mt-3 text-gray-600 text-center text-lg">
 				No published source exist for this app. Please contact support to
@@ -33,93 +30,93 @@
 				No app releases have been created for this version.
 			</p>
 		</div>
-		<div v-else class="divide-y">
-			<div
-				class="grid items-center grid-cols-3 py-4 text-base text-gray-600 gap-x-8 md:grid-cols-6"
-			>
-				<span class="md:col-span-2">Commit Message</span>
-				<span class="hidden md:inline">Tag</span>
-				<span class="hidden md:inline">Author</span>
-				<span>Status</span>
-				<span></span>
-			</div>
 
-			<div
-				v-for="release in releasesList"
-				:key="release.name"
-				class="grid items-center grid-cols-3 py-4 text-base text-gray-900 gap-x-8 md:grid-cols-6"
-			>
-				<p
-					class="md:col-span-2 text-base font-medium text-gray-700 truncate max-w-md"
+		<div v-else>
+			<div class="divide-y">
+				<div
+					class="grid items-center grid-cols-3 py-4 text-base text-gray-600 gap-x-8 md:grid-cols-6"
 				>
-					{{ release.message }}
-				</p>
-				<a
-					:href="getCommitUrl(release.hash)"
-					target="_blank"
-					class="hidden md:inline text-blue-700 font-bold hover:text-blue-500"
+					<span class="md:col-span-2">Commit Message</span>
+					<span class="hidden md:inline">Tag</span>
+					<span class="hidden md:inline">Author</span>
+					<span>Status</span>
+					<span></span>
+				</div>
+
+				<div
+					v-for="release in releasesList"
+					:key="release.name"
+					class="grid items-center grid-cols-3 py-4 text-base text-gray-900 gap-x-8 md:grid-cols-6"
 				>
-					{{ release.tag || release.hash.slice(0, 6) }}
-				</a>
-				<span class="hidden md:inline text-gray-600">
-					{{ release.author }}
-				</span>
-				<span>
-					<Badge
-						v-if="release.status != 'Draft'"
-						:status="release.status"
-					></Badge>
-				</span>
-				<span class="text-right">
+					<p
+						class="md:col-span-2 text-base font-medium text-gray-700 truncate max-w-md"
+					>
+						{{ release.message }}
+					</p>
+					<a
+						:href="getCommitUrl(release.hash)"
+						target="_blank"
+						class="hidden md:inline text-blue-700 font-mono hover:text-blue-500"
+					>
+						{{ release.tag || release.hash.slice(0, 6) }}
+					</a>
+					<span class="hidden md:inline text-gray-600">
+						{{ release.author }}
+					</span>
+					<span>
+						<Badge
+							v-if="release.status != 'Draft'"
+							:status="release.status"
+						></Badge>
+					</span>
+					<span class="text-right">
+						<Button
+							v-if="isPublishable(release)"
+							:loading="
+								$resources.createApprovalRequest.loading ||
+									$resources.latestApproved.loading
+							"
+							type="secondary"
+							@click="confirmApprovalRequest(release.name)"
+						>
+							Publish
+						</Button>
+
+						<Button
+							v-else-if="release.status == 'Awaiting Approval'"
+							type="secondary"
+							@click="confirmCancelRequest(release.name)"
+							>Cancel</Button
+						>
+
+						<Button
+							v-else-if="release.status == 'Rejected'"
+							type="secondary"
+							@click="showFeedback(release)"
+							>View Feedback</Button
+						>
+					</span>
+				</div>
+				<Dialog
+					title="Reason for Rejection"
+					:dismissable="true"
+					v-model="showRejectionFeedbackDialog"
+				>
+					<div class="prose text-lg" v-html="rejectionFeedback"></div>
+				</Dialog>
+
+				<div class="py-3">
 					<Button
-						v-if="isPublishable(release)"
-						:loading="
-							$resources.createApprovalRequest.loading ||
-								$resources.latestApproved.loading
+						@click="
+							pageStart += 15;
+							$resources.releases.fetch();
 						"
-						type="secondary"
-						@click="confirmApprovalRequest(release.name)"
+						v-if="!$resources.releases.lastPageEmpty"
+						:loading="$resources.releases.loading"
+						loadingText="Loading..."
+						>Load More</Button
 					>
-						Publish
-					</Button>
-
-					<Button
-						v-else-if="release.status == 'Awaiting Approval'"
-						type="secondary"
-						@click="confirmCancelRequest(release.name)"
-						>Cancel</Button
-					>
-
-					<Button
-						v-else-if="release.status == 'Rejected'"
-						type="secondary"
-						@click="showFeedback(release)"
-						>View Feedback</Button
-					>
-				</span>
-			</div>
-			<Dialog
-				title="Reason for Rejection"
-				:dismissable="true"
-				v-model="showRejectionFeedbackDialog"
-			>
-				<p class="my-2 text-gray-600 text-base">
-					The following feedback was given by our team:
-				</p>
-				<div class="prose text-lg" v-html="rejectionFeedback"></div>
-			</Dialog>
-
-			<div class="py-3 flex justify-center">
-				<Button
-					@click="
-						pageStart += 15;
-						$resources.releases.fetch();
-					"
-					v-if="!$resources.releases.lastPageEmpty"
-					:loading="$resources.releases.loading"
-					loadingText="Loading..."
-					>Load More</Button
-				>
+				</div>
 			</div>
 		</div>
 	</Card>
@@ -153,7 +150,7 @@ export default {
 		releases() {
 			let { app } = this.app;
 			return {
-				method: 'press.api.developer.releases',
+				method: 'press.api.marketplace.releases',
 				params: {
 					app,
 					start: this.pageStart,
@@ -165,7 +162,7 @@ export default {
 		},
 		appSource() {
 			return {
-				method: 'press.api.developer.get_app_source',
+				method: 'press.api.marketplace.get_app_source',
 				params: {
 					name: this.selectedSource
 				}
@@ -173,7 +170,7 @@ export default {
 		},
 		latestApproved() {
 			return {
-				method: 'press.api.developer.latest_approved_release',
+				method: 'press.api.marketplace.latest_approved_release',
 				params: {
 					source: this.selectedSource
 				},
@@ -182,7 +179,7 @@ export default {
 		},
 		createApprovalRequest() {
 			return {
-				method: 'press.api.developer.create_approval_request',
+				method: 'press.api.marketplace.create_approval_request',
 				onSuccess() {
 					this.resetReleaseListState();
 				},
@@ -193,7 +190,7 @@ export default {
 		},
 		cancelApprovalRequest() {
 			return {
-				method: 'press.api.developer.cancel_approval_request',
+				method: 'press.api.marketplace.cancel_approval_request',
 				onSuccess() {
 					this.resetReleaseListState();
 				}
@@ -226,6 +223,9 @@ export default {
 			this.pageStart = 0;
 			this.$resources.releases.reset();
 			this.$resources.releases.submit();
+
+			// Re-fetch latest approved
+			this.$resources.latestApproved.fetch();
 		},
 		showFeedback(appRelease) {
 			this.showRejectionFeedbackDialog = true;
@@ -257,7 +257,7 @@ export default {
 			this.$confirm({
 				title: 'Publish Release',
 				message:
-					'Are you sure you want to <strong>publish this release</strong> to marketplace? <br> <br>Upon confirmation, this release will be submitted for approval from our team.',
+					'Are you sure you want to publish this release to marketplace? Upon confirmation, the release will be sent for approval by the review team.',
 				actionLabel: 'Publish',
 				actionType: 'primary',
 				action: closeDialog => {
@@ -305,23 +305,16 @@ export default {
 				return this.$date(this.$resources.latestApproved.data.creation);
 			}
 		},
-
 		sources() {
-			return this.app.sources;
-		},
-
-		currentBranch() {
-			if (
-				this.$resources.appSource.loading ||
-				!this.$resources.appSource.data
-			) {
-				return '';
+			// Return only the unique sources
+			let tempArray = [];
+			for (let source of this.app.sources) {
+				if (!tempArray.find(x => x.source === source.source)) {
+					tempArray.push(source);
+				}
 			}
-
-			let { repository, branch } = this.$resources.appSource.data;
-			return `${repository}:${branch}`;
+			return tempArray;
 		},
-
 		repoUrl() {
 			if (
 				this.$resources.appSource.loading ||

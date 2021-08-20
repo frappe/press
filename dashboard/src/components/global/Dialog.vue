@@ -1,5 +1,10 @@
 <template>
-	<Modal :show="show" @change="handleChange" :dismissable="dismissable" :full="full">
+	<Modal
+		:show="show"
+		@change="handleChange"
+		:dismissable="dismissable"
+		:full="full"
+	>
 		<div class="px-4 pb-4 bg-white sm:px-6 sm:pb-4">
 			<div class="sm:flex sm:items-start">
 				<div class="relative w-full sm:text-left">
@@ -10,10 +15,10 @@
 					</div>
 					<button
 						v-if="dismissable"
-						class="absolute top-0 right-0 mt-3"
+						class="absolute top-0 right-0"
 						@click="handleChange(false)"
 					>
-						<FeatherIcon name="x" class="w-4 h-4" />
+						<FeatherIcon name="x" class="w-4 h-4 mt-4" />
 					</button>
 					<div class="leading-5 text-gray-800">
 						<slot></slot>
