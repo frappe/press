@@ -708,3 +708,16 @@ def has_permission(doc, ptype, user):
 		return True
 
 	return False
+
+
+def validate_site_creation(doc, method):
+	if frappe.session.user == "Administrator":
+		return
+	if not doc.team:
+		return
+
+	# validate site creation for team
+	team = frappe.get_doc("Team", doc.team)
+	[allow_creation, why] = team.can_create_site()
+	if not allow_creation:
+		frappe.throw(why)
