@@ -503,15 +503,15 @@ class Team(Document):
 
 		if self.payment_mode == "Prepaid Credits":
 			if self.get_balance() > 0:
-			return allow
-		else:
+				return allow
+			else:
 				why = "Cannot create site due to insufficient balance"
 
 		if self.payment_mode == "Card":
-		if self.default_payment_method:
-			return allow
-		else:
-			why = "Cannot create site without adding a card"
+			if self.default_payment_method:
+				return allow
+			else:
+				why = "Cannot create site without adding a card"
 
 		return (False, why)
 
