@@ -32,6 +32,12 @@ class StripePaymentMethod(Document):
 		self.save()
 		frappe.db.set_value("Team", self.team, "default_payment_method", self.name)
 
+	def on_trash(self):
+		if self.is_default:
+			team = frappe.get_doc("Team", self.team)
+			team.default_payment_method = None
+			team.save()
+
 	def after_delete(self):
 		stripe = get_stripe()
 		stripe.PaymentMethod.detach(self.stripe_payment_method_id)
