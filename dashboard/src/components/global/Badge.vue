@@ -26,8 +26,10 @@ export default {
 					Rejected: 'red',
 					'Update Available': 'blue',
 					'Awaiting Approval': 'yellow',
+					'Awaiting Deploy': 'yellow',
 					Published: 'green',
-					Approved: 'green'
+					Approved: 'green',
+					Deployed: 'green'
 				}[this.status];
 			}
 			return {

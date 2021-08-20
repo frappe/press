@@ -79,10 +79,15 @@ def exists(title):
 
 
 @frappe.whitelist()
-def options():
+def options(only_by_current_team=False):
+	or_conditions = ""
+	# Also, include other public sources
+	if not only_by_current_team:
+		or_conditions = "OR source.public = 1"
+
 	team = get_current_team()
 	rows = frappe.db.sql(
-		"""
+		f"""
 	SELECT
 		version.name as version,
 		version.status as status,
@@ -100,7 +105,7 @@ def options():
 		source_version.version = version.name
 	WHERE
 		version.public = 1 AND
-		(source.team = %(team)s OR source.public = 1)
+		(source.team = %(team)s {or_conditions})
 	ORDER BY source.creation
 	""",
 		{"team": team},

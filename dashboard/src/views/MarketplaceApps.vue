@@ -15,44 +15,40 @@
 			</p>
 		</div>
 		<div v-else>
-			<div class="grid gap-4 grid-cols-1 md:grid-cols-3 ">
-				<SelectableCard
-					v-for="app in $resources.apps.data"
-					:title="app.title"
-					:key="app.name"
-					:image="app.image"
+			<div class="grid gap-4 grid-cols-1 md:grid-cols-3">
+				<MarketplaceAppCard
 					@click.native="routeToAppPage(app.name)"
-				>
-					<template #secondary-content>
-						<span class="text-base text-gray-600">
-							{{ app.description }}
-						</span>
-					</template>
-				</SelectableCard>
+					v-for="app in $resources.apps.data"
+					:key="app.name"
+					:app="app"
+				/>
 			</div>
 		</div>
 	</div>
 </template>
 
 <script>
-import SelectableCard from '@/components/SelectableCard.vue';
+import MarketplaceAppCard from '@/components/MarketplaceAppCard.vue';
 
 export default {
-	name: 'DeveloperApps',
+	name: 'MarketplaceApps',
 	components: {
-		SelectableCard
+		MarketplaceAppCard
+	},
+	activated() {
+		this.$resources.apps.fetch();
 	},
 	resources: {
 		apps() {
 			return {
-				method: 'press.api.developer.get_apps',
+				method: 'press.api.marketplace.get_apps',
 				auto: true
 			};
 		}
 	},
 	methods: {
 		routeToAppPage(appName) {
-			this.$router.push(`/developer/apps/${appName}`);
+			this.$router.push(`/marketplace/apps/${appName}`);
 		}
 	}
 };

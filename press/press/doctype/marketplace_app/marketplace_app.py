@@ -6,9 +6,10 @@ import frappe
 import requests
 
 from base64 import b64decode
-from frappe.website.website_generator import WebsiteGenerator
+from press.utils import get_last_doc
 from press.api.github import get_access_token
 from frappe.website.utils import cleanup_page_name
+from frappe.website.website_generator import WebsiteGenerator
 
 
 class MarketplaceApp(WebsiteGenerator):
@@ -17,9 +18,10 @@ class MarketplaceApp(WebsiteGenerator):
 
 	def before_insert(self):
 		self.long_description = self.fetch_readme()
+		self.set_route()
 
 	def set_route(self):
-		self.route = "marketplace/apps/" + cleanup_page_name(self.title)
+		self.route = "marketplace/apps/" + cleanup_page_name(self.app)
 
 	def validate(self):
 		self.published = self.status == "Published"
@@ -99,3 +101,37 @@ class MarketplaceApp(WebsiteGenerator):
 			group["frappe"] = frappe_source
 			group["version"] = group_doc.version
 		context.groups = groups
+
+	def get_deploy_information(self):
+		"""Return the deploy information this marketplace app"""
+		# Public Release Groups, Benches
+		# Is on release group, but not on bench -> awaiting deploy
+		deploy_info = {}
+
+		for source in self.sources:
+			version = source.version
+			deploy_info[version] = "Not Deployed"
+
+			release_groups = frappe.get_all(
+				"Release Group", filters={"public": 1, "version": version}, pluck="name"
+			)
+
+			for rg_name in release_groups:
+				release_group = frappe.get_doc("Release Group", rg_name)
+				sources_on_rg = [a.source for a in release_group.apps]
+
+				latest_active_bench = get_last_doc(
+					"Bench", filters={"status": "Active", "group": rg_name}
+				)
+
+				if latest_active_bench:
+					sources_on_bench = [a.source for a in latest_active_bench.apps]
+					if source.source in sources_on_bench:
+						# Is deployed on a bench
+						deploy_info[version] = "Deployed"
+
+				if (source.source in sources_on_rg) and (deploy_info[version] != "Deployed"):
+					# Added to release group, but not yet deployed to a bench
+					deploy_info[version] = "Awaiting Deploy"
+
+		return deploy_info
