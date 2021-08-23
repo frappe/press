@@ -11,7 +11,10 @@
 
 		<ErrorMessage :error="$resourceErrors" />
 
-		<Button v-if="app" @click="this.$resources.addApp.submit()"
+		<Button
+			v-if="app"
+			:loading="$resources.addApp.loading"
+			@click="$resources.addApp.submit()"
 			>Add to bench</Button
 		>
 	</WizardCard>
