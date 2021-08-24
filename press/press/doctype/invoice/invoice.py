@@ -186,7 +186,7 @@ class Invoice(Document):
 		stripe.Invoice.finalize_invoice(self.stripe_invoice_id)
 
 	def validate_duplicate(self):
-		if self.type == "Prepaid Credits":
+		if self.type != "Subscription":
 			return
 
 		if self.period_start and self.period_end and self.is_new():
@@ -519,7 +519,7 @@ class Invoice(Document):
 	def refund(self, reason):
 		stripe = get_stripe()
 		charge = None
-		if self.type == "Subscription":
+		if self.type in ["Subscription", "Service"]:
 			stripe_invoice = stripe.Invoice.retrieve(self.stripe_invoice_id)
 			charge = stripe_invoice.charge
 		elif self.type == "Prepaid Credits":
