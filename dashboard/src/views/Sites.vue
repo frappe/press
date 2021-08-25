@@ -4,7 +4,7 @@
 			<h1 class="sr-only">Dashboard</h1>
 			<div v-if="benches == null">
 				<div class="flex items-center flex-1 py-4 focus:outline-none">
-					<h2 class="text-xl font-semibold">
+					<h2 class="text-lg font-semibold">
 						Sites
 					</h2>
 				</div>
@@ -28,7 +28,7 @@
 								class="flex items-center flex-1 py-4 text-left focus:outline-none"
 								@click="multipleBenches ? toggleSitesShown(bench) : null"
 							>
-								<h2 class="text-xl font-semibold">
+								<h2 class="text-lg font-semibold">
 									{{ bench.shared ? 'Sites' : bench.title }}
 								</h2>
 								<FeatherIcon
