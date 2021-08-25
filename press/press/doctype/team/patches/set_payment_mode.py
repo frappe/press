@@ -17,13 +17,14 @@ def execute():
 
 	frappe.db.sql(
 		"""
-		UPDATE tabTeam
-		SET payment_mode = 'Prepaid Credits'
-		WHERE IFNULL(payment_mode, '') == ''
-		AND name in (
-			SELECT team
-			FROM `tabBalance Transaction`
-			WHERE source in ('Prepaid Credits', 'Transferred Credits')
-		)
+		UPDATE tabTeam t
+		LEFT JOIN
+			`tabBalance Transaction` b on t.name = b.team
+			AND b.source in ('Prepaid Credits', 'Transferred Credits')
+		SET
+			t.payment_mode = 'Prepaid Credits'
+		WHERE
+			IFNULL(t.payment_mode, '') = ''
+			AND b.source in ('Prepaid Credits', 'Transferred Credits')
 		"""
 	)
