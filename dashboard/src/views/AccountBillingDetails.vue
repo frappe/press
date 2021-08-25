@@ -22,7 +22,11 @@
 				title="Billing Address"
 				:description="billingDetails.data.billing_address || 'Not set'"
 			/>
-			<ListItem title="Tax ID" :description="billingDetails.data.gstin || 'Not set'" />
+			<ListItem
+				v-if="$account.team.country == 'India'"
+				title="Tax ID"
+				:description="billingDetails.data.gstin || 'Not set'"
+			/>
 		</div>
 	</Card>
 </template>
