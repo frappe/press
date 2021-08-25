@@ -79,7 +79,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-02-15 20:27:42.208979",
+ "modified": "2021-08-20 16:16:40.273163",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Stripe Payment Method",
@@ -106,6 +106,7 @@
   }
  ],
  "quick_entry": 1,
+ "search_fields": "team, name_on_card, last_4, expiry_month, expiry_year",
  "sort_field": "modified",
  "sort_order": "DESC",
  "track_changes": 1

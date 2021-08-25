@@ -49,6 +49,12 @@ class Invoice(Document):
 
 		self.update_item_descriptions()
 
+		if self.payment_mode == "Prepaid Credits" and self.amount_due > 0:
+			frappe.throw(
+				"Not enough credits for this invoice. Change payment mode to Card to"
+				" pay using Stripe."
+			)
+
 		try:
 			self.create_stripe_invoice()
 		except Exception:
@@ -107,6 +113,9 @@ class Invoice(Document):
 			)
 
 	def create_stripe_invoice(self):
+		if self.payment_mode != "Card":
+			return
+
 		stripe = get_stripe()
 
 		if self.type == "Prepaid Credits":
@@ -210,7 +219,10 @@ class Invoice(Document):
 			"Team", self.team, "billing_name"
 		) or frappe.utils.get_fullname(self.team)
 		self.customer_email = self.team
-		self.currency = frappe.db.get_value("Team", self.team, "currency")
+		team = frappe.db.get_value("Team", self.team, ["currency", "payment_mode"], as_dict=1)
+		self.currency = team.currency
+		if not self.payment_mode:
+			self.payment_mode = team.payment_mode
 		if not self.currency:
 			frappe.throw(
 				f"Cannot create Invoice because Currency is not set in Team {self.team}"
@@ -424,20 +436,28 @@ class Invoice(Document):
 			return
 		if self.status != "Paid":
 			return
-		if self.amount_due == 0:
+		if self.amount_paid == 0:
 			return
 		if self.frappe_invoice:
 			return
 
 		try:
+			team = frappe.get_doc("Team", self.team)
+			address = (
+				frappe.get_doc("Address", team.billing_address) if team.billing_address else None
+			)
 			client = self.get_frappeio_connection()
 			response = client.session.post(
 				f"{client.url}/api/method/create-fc-invoice",
-				data={"invoice": frappe.as_json(self)},
+				data={
+					"team": team.as_json(),
+					"address": address.as_json(),
+					"invoice": self.as_json(),
+				},
 			)
 			if response.ok:
 				res = response.json()
-				invoice = res["message"]
+				invoice = res.get("message")
 
 				if invoice:
 					self.frappe_invoice = invoice
@@ -586,9 +606,7 @@ def finalize_draft_invoices():
 	# get draft invoices whose period has ended or ends today
 	today = frappe.utils.today()
 	invoices = frappe.db.get_all(
-		"Invoice",
-		{"status": "Draft", "period_end": ("<=", today), "total": (">", 0)},
-		pluck="name",
+		"Invoice", {"status": "Draft", "period_end": ("<=", today)}, pluck="name",
 	)
 	for name in invoices:
 		invoice = frappe.get_doc("Invoice", name)

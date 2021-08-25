@@ -21,8 +21,7 @@ const routes = [
 	{
 		path: '/welcome',
 		name: 'Welcome',
-		component: () =>
-			import(/* webpackChunkName: "sites" */ '../views/Welcome.vue')
+		component: () => import('../views/Welcome.vue')
 	},
 	...authRoutes,
 	...siteRoutes,

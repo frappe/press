@@ -248,12 +248,13 @@ def get():
 	teams = [
 		d.parent for d in frappe.db.get_all("Team Member", {"user": user}, ["parent"])
 	]
-	teams = list(set(teams))
 	return {
 		"user": frappe.get_doc("User", user),
 		"team": team_doc,
 		"team_members": get_team_members(team),
-		"teams": teams,
+		"teams": list(set(teams)),
+		"onboarding": team_doc.get_onboarding(),
+		"balance": team_doc.get_balance(),
 	}
 
 

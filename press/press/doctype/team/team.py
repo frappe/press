@@ -147,6 +147,26 @@ class Team(Document):
 				frappe.DuplicateEntryError,
 			)
 
+	def validate_payment_mode(self):
+		if self.has_value_changed("payment_mode"):
+			if self.payment_mode == "Card":
+				if frappe.db.count("Stripe Payment Method", {"team": self.name}) == 0:
+					frappe.throw("No card added")
+			if self.payment_mode == "Prepaid Credits":
+				if self.get_balance() <= 0:
+					frappe.throw("Account does not have sufficient balance")
+
+		if not self.is_new() and not self.default_payment_method:
+			# if default payment method is unset
+			# then set the is_default field for Stripe Payment Method to 0
+			payment_methods = frappe.db.get_list(
+				"Stripe Payment Method", {"team": self.name, "is_default": 1}
+			)
+			for pm in payment_methods:
+				doc = frappe.get_doc("Stripe Payment Method", pm.name)
+				doc.is_default = 0
+				doc.save()
+
 	def validate_onboarding(self):
 		if self.is_new():
 			self.initialize_onboarding_steps()
@@ -201,16 +221,7 @@ class Team(Document):
 		self.save()
 
 	def on_update(self):
-		if not self.is_new() and not self.default_payment_method:
-			# if default payment method is unset
-			# then set the is_default field for Stripe Payment Method to 0
-			payment_methods = frappe.db.get_list(
-				"Stripe Payment Method", {"team": self.name, "is_default": 1}
-			)
-			for pm in payment_methods:
-				doc = frappe.get_doc("Stripe Payment Method", pm.name)
-				doc.is_default = 0
-				doc.save()
+		self.validate_payment_mode()
 
 		if not self.is_new() and self.billing_name:
 			self.load_doc_before_save()
@@ -490,23 +501,48 @@ class Team(Document):
 		if self.free_account:
 			return allow
 
-		if self.is_partner_and_has_enough_credits():
-			return allow
-		else:
-			why = "Cannot create site due to insufficient credits"
+		if self.payment_mode == "Prepaid Credits":
+			if self.get_balance() > 0:
+				return allow
+			else:
+				why = "Cannot create site due to insufficient balance"
 
-		if self.default_payment_method:
-			return allow
-		else:
-			why = "Cannot create site without adding a card"
+		if self.payment_mode == "Card":
+			if self.default_payment_method:
+				return allow
+			else:
+				why = "Cannot create site without adding a card"
 
 		return (False, why)
 
 	def get_onboarding(self):
-		valid_steps = [step for step in self.onboarding if step.status != "Not Applicable"]
+		billing_setup = bool(
+			self.payment_mode in ["Card", "Prepaid Credits"]
+			and (self.default_payment_method or self.get_balance() > 0)
+			and self.billing_address
+		)
+		site_created = frappe.db.count("Site", {"team": self.name}) > 0
+
+		if self.via_erpnext:
+			erpnext_domain = frappe.db.get_single_value("Press Settings", "erpnext_domain")
+			erpnext_site = frappe.db.get_value(
+				"Site",
+				{"domain": erpnext_domain, "team": self.name, "status": ("!=", "Archived")},
+				["name", "plan"],
+				as_dict=1,
+			)
+			erpnext_site_plan_set = erpnext_site and erpnext_site.plan != "ERPNext Trial"
+		else:
+			erpnext_site = None
+			erpnext_site_plan_set = True
+
 		return {
-			"steps": self.onboarding,
-			"complete": all(step.status in ["Completed", "Skipped"] for step in valid_steps),
+			"account_created": True,
+			"billing_setup": billing_setup,
+			"erpnext_site": erpnext_site,
+			"erpnext_site_plan_set": erpnext_site_plan_set,
+			"site_created": site_created,
+			"complete": billing_setup and site_created and erpnext_site_plan_set,
 		}
 
 	@frappe.whitelist()
@@ -672,3 +708,16 @@ def has_permission(doc, ptype, user):
 		return True
 
 	return False
+
+
+def validate_site_creation(doc, method):
+	if frappe.session.user == "Administrator":
+		return
+	if not doc.team:
+		return
+
+	# validate site creation for team
+	team = frappe.get_doc("Team", doc.team)
+	[allow_creation, why] = team.can_create_site()
+	if not allow_creation:
+		frappe.throw(why)
