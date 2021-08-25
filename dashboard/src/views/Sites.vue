@@ -1,81 +1,94 @@
 <template>
-	<div class="pb-20 mt-8">
+	<div class="pt-8 pb-20">
 		<div class="px-4 sm:px-8">
 			<h1 class="sr-only">Dashboard</h1>
-			<div class="flex flex-col sm:space-x-4 sm:flex-row">
-				<div class="sm:w-2/12" v-if="multipleBenches">
-					<Input
-						class="mb-4 sm:hidden"
-						type="select"
-						:value="bench || 'shared'"
-						:options="
-							benches.map(d => ({
-								label: benchTitle(d),
-								value: d.name
-							}))
-						"
-						@change="value => changeBench(value)"
-					/>
-
-					<div class="hidden space-y-1 sm:block">
-						<router-link
-							v-for="currentBench in benches"
-							:key="currentBench.name"
-							class="block px-3 py-2 text-base rounded-md hover:bg-gray-100"
-							:class="
-								(!bench && currentBench.shared) || bench === currentBench.name
-									? 'bg-gray-100'
-									: ''
-							"
-							:to="
-								currentBench.shared ? '/sites' : `/${currentBench.name}/sites`
-							"
-						>
-							{{ benchTitle(currentBench) }}
-						</router-link>
-					</div>
+			<div v-if="benches == null">
+				<div class="flex items-center flex-1 py-4 focus:outline-none">
+					<h2 class="text-xl font-semibold">
+						Sites
+					</h2>
 				</div>
-				<div class="flex-1" v-if="activeBench">
-					<div class="flex items-center justify-between">
-						<div>
-							<h2 class="font-bold">
-								{{ activeBench.shared ? 'Sites' : activeBench.title }}
-							</h2>
-							<p v-if="benches" class="text-base text-gray-700">
-								{{ sitesSubtitle(activeBench) }}
-							</p>
-						</div>
-						<div class="flex items-center space-x-2">
-							<Button
-								v-if="activeBench.owned_by_team"
-								:route="`/benches/${activeBench.name}`"
-								icon-left="tool"
+				<div class="px-4 py-3 rounded-md bg-gray-50">
+					<Loading />
+				</div>
+			</div>
+			<div v-else>
+				<div
+					v-for="(bench, i) in benches"
+					:key="bench.name"
+					class="flex flex-col sm:space-x-4 sm:flex-row"
+					:class="{
+						'border-b': i < benches.length - 1 && !isSitesShown(bench),
+						'mb-4': isSitesShown(bench)
+					}"
+				>
+					<div class="flex-1">
+						<div class="flex items-center justify-between">
+							<button
+								class="flex items-center flex-1 py-4 text-left focus:outline-none"
+								@click="multipleBenches ? toggleSitesShown(bench) : null"
 							>
-								Manage Bench
-							</Button>
-							<Button
-								:route="
-									`/sites/new${
-										activeBench.owned_by_team
-											? `?bench=${activeBench.name}&benchTitle=${activeBench.title}`
-											: ''
-									}`
-								"
-								type="primary"
-								iconLeft="plus"
-								v-if="showNewSiteButton(activeBench)"
-							>
-								New Site
-							</Button>
+								<h2 class="text-xl font-semibold">
+									{{ bench.shared ? 'Sites' : bench.title }}
+								</h2>
+								<FeatherIcon
+									v-if="multipleBenches"
+									:name="isSitesShown(bench) ? 'chevron-down' : 'chevron-right'"
+									class="w-4 h-4 ml-1 mt-0.5"
+								/>
+							</button>
+							<div class="flex items-center space-x-2">
+								<p
+									v-if="benches"
+									class="hidden text-base text-gray-700 sm:block"
+								>
+									{{ sitesSubtitle(bench) }}
+								</p>
+								<Badge
+									class="hidden sm:block"
+									v-if="!bench.shared && bench.owned_by_team"
+								>
+									Private
+								</Badge>
+								<Button
+									v-if="bench.owned_by_team"
+									:route="`/benches/${bench.name}`"
+									icon="tool"
+								>
+								</Button>
+								<Button
+									:route="
+										`/sites/new${
+											bench.owned_by_team
+												? `?bench=${bench.name}&benchTitle=${bench.title}`
+												: ''
+										}`
+									"
+									type="primary"
+									iconLeft="plus"
+									v-if="showNewSiteButton(bench)"
+									class="hidden sm:inline-flex"
+								>
+									New Site
+								</Button>
+								<Button
+									:route="
+										`/sites/new${
+											bench.owned_by_team
+												? `?bench=${bench.name}&benchTitle=${bench.title}`
+												: ''
+										}`
+									"
+									type="primary"
+									icon="plus"
+									v-if="showNewSiteButton(bench)"
+									class="sm:hidden"
+								>
+									New Site
+								</Button>
+							</div>
 						</div>
-					</div>
-					<SiteList
-						class="mt-4"
-						:sites="activeBench.sites"
-						v-if="!$resources.benches.loading"
-					/>
-					<div class="px-4 py-3 mt-4 rounded-md bg-gray-50" v-else>
-						<Loading />
+						<SiteList :sites="bench.sites" v-show="isSitesShown(bench)" />
 					</div>
 				</div>
 			</div>
@@ -90,10 +103,24 @@ export default {
 	components: {
 		SiteList
 	},
+	data() {
+		return {
+			sitesShown: {}
+		};
+	},
 	resources: {
 		benches: {
 			method: 'press.api.site.all',
-			auto: true
+			auto: true,
+			onSuccess(data) {
+				if (data && data.length) {
+					for (let bench of data) {
+						if (!(bench.name in this.sitesShown)) {
+							this.$set(this.sitesShown, bench.name, Boolean(bench.shared));
+						}
+					}
+				}
+			}
 		}
 	},
 	mounted() {
@@ -129,66 +156,42 @@ export default {
 				this.$resources.benches.reload();
 			}
 		},
-		benchTitle(bench) {
-			if (bench.shared) {
-				return 'Shared Bench';
-			}
-			return bench.title || bench.name;
-		},
 		sitesSubtitle(bench) {
-			let parts = [
-				`${bench.sites.length} ${this.$plural(
-					bench.sites.length,
-					'site',
-					'sites'
-				)}`
-			];
+			let parts = [];
 
-			let activeSites = bench.sites.filter(site => site.status == 'Active');
-			if (activeSites.length) {
-				parts.push(`${activeSites.length} active`);
+			if (bench.sites.length > 0) {
+				parts.push(
+					`${bench.sites.length} ${this.$plural(
+						bench.sites.length,
+						'site',
+						'sites'
+					)}`
+				);
 			}
 
-			let brokenSites = bench.sites.filter(site => site.status == 'Broken');
-			if (brokenSites.length) {
-				parts.push(`${brokenSites.length} broken`);
+			if (bench.version) {
+				parts.push(bench.version);
 			}
 
 			return parts.join(' · ');
 		},
+		isSitesShown(bench) {
+			return this.sitesShown[bench.name];
+		},
+		toggleSitesShown(bench) {
+			this.sitesShown[bench.name] = !this.sitesShown[bench.name];
+		},
 		showNewSiteButton(bench) {
 			if (bench.status != 'Active') return false;
-			return bench.shared || bench.owned_by_team;
-		},
-		changeBench(benchName) {
-			let bench = this.benches.find(_bench => _bench.name === benchName);
-			if (bench) {
-				this.$router.replace(bench.shared ? '/sites' : `/${bench.name}/sites`);
-			}
+			return (
+				(bench.shared || bench.owned_by_team) && this.sitesShown[bench.name]
+			);
 		}
 	},
 	computed: {
-		activeBench() {
-			if (this.benches) {
-				if (this.bench) {
-					return this.benches.find(bench => bench.name === this.bench);
-				}
-				return this.benches[0];
-			}
-			return {
-				shared: true,
-				sites: []
-			};
-		},
 		benches() {
 			if (this.$resources.benches.data) {
 				return this.$resources.benches.data;
-			}
-			return null;
-		},
-		sharedBench() {
-			if (this.benches) {
-				return this.benches[0];
 			}
 			return null;
 		},
