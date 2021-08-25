@@ -1,6 +1,6 @@
 <template>
 	<div class="sm:py-1 sm:border sm:border-gray-100 sm:rounded-md sm:shadow sm:px-2">
-		<div class="px-2 py-2 text-base text-gray-600" v-if="sites.length === 0">
+		<div class="py-2 text-base text-gray-600 sm:px-2" v-if="sites.length === 0">
 			No sites in this bench
 		</div>
 		<div class="py-2" v-for="(site, index) in sites" :key="site.name">
