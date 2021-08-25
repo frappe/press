@@ -25,6 +25,7 @@
   "payment_date",
   "payment_attempt_count",
   "payment_attempt_date",
+  "payment_mode",
   "column_break_15",
   "total",
   "applied_credits",
@@ -302,6 +303,12 @@
    "fieldtype": "Currency",
    "label": "Free Credits",
    "options": "currency"
+  },
+  {
+   "fieldname": "payment_mode",
+   "fieldtype": "Select",
+   "label": "Payment Mode",
+   "options": "\nCard\nPrepaid Credits\nNEFT"
   }
  ],
  "is_submittable": 1,
@@ -317,7 +324,7 @@
    "link_fieldname": "invoice"
   }
  ],
- "modified": "2021-08-24 11:57:09.739304",
+ "modified": "2021-08-24 19:10:38.068242",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",

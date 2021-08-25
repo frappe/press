@@ -5,9 +5,12 @@
 				<div>
 					<h1 class="text-3xl font-bold">Settings</h1>
 					<div class="mt-2 text-base text-gray-600">
-						<span>
-							{{ $account.user.name }}
+						<span v-if="$account.team.name != $account.user.name">
+							Team: {{ $account.team.name }} &middot;
+							<!-- prettier-ignore -->
+							Member: {{ $account.user.name }}
 						</span>
+						<span v-else>{{ $account.team.name }}</span>
 						<template v-if="$account.team.erpnext_partner">
 							&middot;
 							<span>ERPNext Partner</span>
@@ -18,7 +21,8 @@
 							{{
 								$date($account.team.creation).toLocaleString({
 									month: 'short',
-									day: 'numeric'
+									day: 'numeric',
+									year: 'numeric'
 								})
 							}}
 						</span>
