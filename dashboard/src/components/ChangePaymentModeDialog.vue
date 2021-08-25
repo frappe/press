@@ -8,7 +8,7 @@
 			label="Select Payment Mode"
 			type="select"
 			:options="['Card', 'Prepaid Credits']"
-			v-model="$account.team.payment_mode"
+			v-model="paymentMode"
 		/>
 		<p class="mt-2 text-base text-gray-600">
 			{{ paymentModeDescription }}
@@ -34,16 +34,36 @@ export default {
 		prop: 'show',
 		event: 'change'
 	},
+	data() {
+		return {
+			paymentMode: this.$account.team.payment_mode
+		};
+	},
+	watch: {
+		show(value) {
+			if (!value) {
+				this.paymentMode = this.$account.team.payment_mode;
+			}
+		}
+	},
 	resources: {
 		changePaymentMode() {
 			return {
 				method: 'press.api.billing.change_payment_mode',
 				params: {
-					mode: this.$account.team.payment_mode
+					mode: this.paymentMode
 				},
 				onSuccess() {
 					this.$emit('change', false);
 					this.$resources.changePaymentMode.reset();
+				},
+				validate() {
+					if (
+						this.paymentMode == 'Card' &&
+						!this.$account.team.default_payment_method
+					) {
+						return 'Please add a card first from Payment methods section';
+					}
 				}
 			};
 		}
@@ -51,9 +71,9 @@ export default {
 	computed: {
 		paymentModeDescription() {
 			return {
-				Card: `You card will be charged for monthly subscription`,
+				Card: `Your card will be charged for monthly subscription`,
 				'Prepaid Credits': `You will be charged from your account balance for monthly subscription`
-			}[this.$account.team.payment_mode];
+			}[this.paymentMode];
 		}
 	}
 };

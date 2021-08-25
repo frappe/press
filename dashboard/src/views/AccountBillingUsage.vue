@@ -131,10 +131,23 @@ export default {
 			});
 		},
 		paymentModeDescription() {
-			return {
-				Card: `You card will be charged on ${this.paymentDate}.`,
-				'Prepaid Credits': `You will be charged from your account balance on ${this.paymentDate}.`
-			}[this.$account.team.payment_mode];
+			let payment_mode = this.$account.team.payment_mode;
+			let balance = this.$account.balance;
+			if (payment_mode === 'Card') {
+				if (!this.upcomingInvoice || balance <= 0) {
+					return `Your card will be charged on ${this.paymentDate}.`;
+				} else if (balance >= this.upcomingInvoice.total) {
+					return `Your account balance will be charged on ${this.paymentDate}.`;
+				} else if (balance > 0) {
+					return `Your account balance will be charged and then the remaining balance will be charged from your card on ${this.paymentDate}.`;
+				} else {
+					return `Your card will be charged on ${this.paymentDate}.`;
+				}
+			}
+			if (payment_mode === 'Prepaid Credits') {
+				return `You will be charged from your account balance on ${this.paymentDate}.`;
+			}
+			return '';
 		},
 		loading() {
 			return this.$resources.upcomingInvoice.loading;
