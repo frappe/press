@@ -28,8 +28,7 @@
   "address_html",
   "custom_apps_section",
   "github_access_token",
-  "feature_flags_section",
-  "enable_prepaid_credits"
+  "feature_flags_section"
  ],
  "fields": [
   {
@@ -135,12 +134,6 @@
    "label": "Feature Flags"
   },
   {
-   "default": "0",
-   "fieldname": "enable_prepaid_credits",
-   "fieldtype": "Check",
-   "label": "Enable Prepaid Credits"
-  },
-  {
    "fieldname": "custom_apps_section",
    "fieldtype": "Section Break",
    "label": "Custom Apps"
@@ -215,7 +208,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2021-08-26 11:32:09.180481",
+ "modified": "2021-08-26 11:34:41.694982",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
