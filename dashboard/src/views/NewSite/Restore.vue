@@ -42,6 +42,7 @@
 			</Alert>
 			<BackupFilesUploader
 				class="mt-6"
+				:backupFiles="selectedFiles"
 				@update:backupFiles="files => $emit('update:selectedFiles', files)"
 			/>
 		</div>

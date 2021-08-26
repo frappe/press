@@ -8,7 +8,7 @@
 				:type="file.type"
 				@success="onFileUpload(file, $event)"
 				:fileValidator="f => databaseBackupChecker(f, file.type)"
-				:s3="false"
+				:s3="true"
 			>
 				<template
 					v-slot="{
@@ -101,9 +101,9 @@ export default {
 		};
 	},
 	methods: {
-		onFileUpload(file, fileurl) {
+		onFileUpload(file, data) {
 			let backupFiles = Object.assign({}, this.backupFiles);
-			backupFiles[file.type] = fileurl;
+			backupFiles[file.type] = data;
 			this.$emit('update:backupFiles', backupFiles);
 		},
 		async databaseBackupChecker(file, type) {
