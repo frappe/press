@@ -28,8 +28,6 @@
   "address_html",
   "custom_apps_section",
   "github_access_token",
-  "onboarding_section",
-  "onboarding",
   "feature_flags_section",
   "enable_prepaid_credits"
  ],
@@ -132,18 +130,6 @@
    "label": "GitHub Access Token"
   },
   {
-   "collapsible": 1,
-   "fieldname": "onboarding_section",
-   "fieldtype": "Section Break",
-   "label": "Onboarding"
-  },
-  {
-   "fieldname": "onboarding",
-   "fieldtype": "Table",
-   "label": "Onboarding Steps",
-   "options": "Team Onboarding"
-  },
-  {
    "fieldname": "feature_flags_section",
    "fieldtype": "Section Break",
    "label": "Feature Flags"
@@ -229,7 +215,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2021-08-19 14:33:06.996829",
+ "modified": "2021-08-26 11:32:09.180481",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

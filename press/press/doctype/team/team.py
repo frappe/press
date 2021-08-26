@@ -28,8 +28,6 @@ class Team(Document):
 		self.set_team_currency()
 		self.set_default_user()
 		self.set_billing_name()
-
-		self.validate_onboarding()
 		self.validate_disabled_team()
 
 	def delete(self, force=False, workflow=False):
@@ -167,59 +165,6 @@ class Team(Document):
 				doc.is_default = 0
 				doc.save()
 
-	def validate_onboarding(self):
-		if self.is_new():
-			self.initialize_onboarding_steps()
-			return
-
-		for step in self.onboarding:
-			if self.free_account:
-				step.status = "Skipped"
-
-	def initialize_onboarding_steps(self):
-		if self.via_erpnext:
-			self.set(
-				"onboarding",
-				[
-					{"step_name": "Create Account", "status": "Completed"},
-					{"step_name": "Add Billing Information", "status": "Pending"},
-				],
-			)
-		else:
-			self.set(
-				"onboarding",
-				[
-					{"step_name": "Create Account", "status": "Completed"},
-					{"step_name": "Add Billing Information", "status": "Pending"},
-					{"step_name": "Transfer Credits", "status": "Not Applicable"},
-					{"step_name": "Create Site", "status": "Pending"},
-				],
-			)
-
-	def update_onboarding(self, step_name, status):
-		def get_step(step_name):
-			for step in self.onboarding:
-				if step.step_name == step_name:
-					return step
-
-		step = get_step(step_name)
-		step.status = status
-		if (
-			step_name == "Add Billing Information"
-			and status == "Completed"
-			and self.erpnext_partner
-		):
-			get_step("Transfer Credits").status = "Skipped"
-
-		if (
-			step_name == "Add Billing Information"
-			and status == "Skipped"
-			and not self.erpnext_partner
-		):
-			frappe.throw("Cannot skip this step")
-
-		self.save()
-
 	def on_update(self):
 		self.validate_payment_mode()
 
@@ -247,7 +192,6 @@ class Team(Document):
 	@frappe.whitelist()
 	def enable_erpnext_partner_privileges(self):
 		self.erpnext_partner = 1
-		self.update_onboarding("Transfer Credits", "Pending")
 
 	def allocate_free_credits(self):
 		if self.via_erpnext:
@@ -622,13 +566,6 @@ def get_team_members(team):
 def get_default_team(user):
 	if frappe.db.exists("Team", user):
 		return user
-
-
-def update_site_onboarding(site, method):
-	if site.team:
-		team = frappe.get_doc("Team", site.team)
-		if not team.get_onboarding()["complete"]:
-			team.update_onboarding("Create Site", "Completed")
 
 
 def process_stripe_webhook(doc, method):

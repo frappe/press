@@ -146,12 +146,6 @@ def transfer_partner_credits(amount):
 		),
 	)
 
-	if (team_doc.currency == "INR" and amount == 1000) or (
-		team_doc.currency == "USD" and amount == 10
-	):
-		# via onboarding
-		team_doc.update_onboarding("Transfer Credits", "Completed")
-
 
 @frappe.whitelist()
 def get_available_partner_credits():
@@ -259,7 +253,6 @@ def setup_intent_success(setup_intent, address=None):
 	if address:
 		address = frappe._dict(address)
 		team.update_billing_details(address)
-	team.update_onboarding("Add Billing Information", "Completed")
 
 
 @frappe.whitelist()
