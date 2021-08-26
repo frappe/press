@@ -173,9 +173,8 @@ def is_backup_hour(hour: int) -> bool:
 def schedule():
 	"""Schedule backups for all Active sites based on their local timezones. Also trigger offsite backups once a day."""
 
-	# TODO: don't get standby sites <26-08-21, Balamurali M> #
 	sites = frappe.get_all(
-		"Site", fields=["name", "timezone"], filters={"status": "Active"},
+		"Site", fields=["name", "timezone"], filters={"status": "Active", "standby": "False"},
 	)
 	plans_without_offsite_backups = frappe.get_all(
 		"Plan", filters={"offsite_backups": 0}, pluck="name"
