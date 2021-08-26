@@ -1,5 +1,9 @@
 <template>
-	<CardWithDetails title="Versions" subtitle="Deployed versions of your bench">
+	<CardWithDetails
+		title="Versions"
+		subtitle="Deployed versions of your bench"
+		:showDetails="selectedVersion"
+	>
 		<div>
 			<router-link
 				v-for="v in $resources.versions.data"
@@ -37,9 +41,32 @@
 			/>
 		</div>
 		<template #details>
-			<div class="w-2/3 px-6 py-5 space-y-4 border-l" v-if="selectedVersion">
+			<div
+				class="w-full px-6 py-5 space-y-4 border-l md:w-2/3"
+				v-if="selectedVersion"
+			>
 				<section>
-					<h4 class="text-lg font-semibold">Sites</h4>
+					<div class="flex items-center">
+						<Button
+							class="mr-3 md:hidden"
+							@click="$router.back()"
+							icon="chevron-left"
+						/>
+						<div>
+							<h4 class="text-lg font-medium">{{ selectedVersion.name }}</h4>
+							<p class="mt-1 text-sm text-gray-600">
+								{{
+									selectedVersion.deployed_on
+										? `Deployed on ${formatDate(
+												selectedVersion.deployed_on,
+												'DATETIME_SHORT'
+										  )}`
+										: ''
+								}}
+							</p>
+						</div>
+					</div>
+					<h5 class="mt-4 text-lg font-semibold">Sites</h5>
 					<div class="mt-2">
 						<SiteList
 							class="sm:border-gray-200 sm:shadow-none"
@@ -48,8 +75,8 @@
 					</div>
 				</section>
 				<section>
-					<h4 class="text-lg font-semibold">Apps</h4>
-					<div class="px-4 py-2 mt-2 border divide-y rounded-lg">
+					<h5 class="text-lg font-semibold">Apps</h5>
+					<div class="py-2 mt-2 divide-y rounded-lg sm:border sm:px-4">
 						<ListItem
 							v-for="app in selectedVersion.apps"
 							:key="app.app"
@@ -89,6 +116,7 @@ export default {
 		SiteList,
 		CardWithDetails
 	},
+	inject: ['viewportWidth'],
 	resources: {
 		versions() {
 			return {
@@ -96,7 +124,11 @@ export default {
 				params: { name: this.bench.name },
 				auto: true,
 				onSuccess() {
-					if (!this.version && this.versions.data.length > 0) {
+					if (
+						!this.version &&
+						this.versions.data.length > 0 &&
+						this.viewportWidth > 768
+					) {
 						this.$router.replace(this.getRoute(this.versions.data[0]));
 					}
 				}
