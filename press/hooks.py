@@ -145,9 +145,7 @@ doc_events = {
 		],
 	},
 	"Address": {"validate": "press.api.billing.validate_gst"},
-	"Site": {
-		"before_insert": "press.press.doctype.team.team.validate_site_creation"
-	},
+	"Site": {"before_insert": "press.press.doctype.team.team.validate_site_creation"},
 }
 
 # Scheduled Tasks
