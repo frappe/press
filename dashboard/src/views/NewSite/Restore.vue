@@ -6,23 +6,18 @@
 		<p class="text-base text-gray-700">
 			Restore an existing site from backup files or directly from site url.
 		</p>
-		<div class="flex mt-4 space-x-8">
-			<button
+		<div class="grid grid-cols-2 gap-6 mt-4">
+			<Button
 				v-for="tab in [
 					{ name: 'Upload Backups', key: 'backup' },
 					{ name: 'Migrate from Site URL', key: 'siteUrl' }
 				]"
 				:key="tab.key"
-				class="block px-1 py-4 text-base font-medium leading-none truncate border-b focus:outline-none"
-				:class="
-					restoreFrom === tab.key
-						? 'border-brand text-gray-900'
-						: 'text-gray-600 hover:text-gray-900 border-transparent'
-				"
+				:type="restoreFrom === tab.key ? 'primary' : 'secondary'"
 				@click="restoreFrom = tab.key"
 			>
 				{{ tab.name }}
-			</button>
+			</Button>
 		</div>
 		<div v-if="restoreFrom === 'backup'">
 			<div
@@ -42,76 +37,13 @@
 				</ol>
 			</div>
 			<Alert class="w-full mt-5" v-if="manualMigration">
-				Seems like your site is huge. Click
-				<a
-					@click="openMigrationRequestWindow()"
-					class="border-b border-yellow-700 cursor-pointer"
-					>here</a
-				>
-				to schedule a migration with us.
+				Seems like your site is huge. Open a support ticket mentioning that you
+				want to restore a backup and it's size and we'll take it from there.
 			</Alert>
-			<div class="grid grid-cols-3 gap-4 mt-6">
-				<FileUploader
-					v-for="file in files"
-					:fileTypes="file.ext"
-					:key="file.type"
-					:type="file.type"
-					:s3="true"
-					@success="onFileUpload(file, $event)"
-					@failure="showAlert()"
-					:upload-args="{
-						method: 'press.api.site.upload_backup',
-						type: file.type
-					}"
-				>
-					<template
-						v-slot="{
-							file: fileObj,
-							uploading,
-							progress,
-							message,
-							error,
-							success,
-							openFileSelector
-						}"
-					>
-						<button
-							class="w-full h-full px-4 py-6 border rounded-md focus:outline-none focus:shadow-outline hover:border-blue-400"
-							:class="success ? 'bg-blue-50 border-blue-500' : ''"
-							@click="openFileSelector()"
-							:disabled="uploading"
-						>
-							<FeatherIcon
-								:name="success ? 'check' : file.icon"
-								class="inline-block w-5 h-5 text-gray-700"
-							/>
-							<div
-								class="mt-3 text-base font-semibold leading-none text-gray-800"
-							>
-								{{ file.title }}
-							</div>
-							<div
-								class="mt-2 text-xs leading-snug text-gray-700"
-								v-if="fileObj"
-							>
-								{{ fileObj.name }}
-							</div>
-							<div class="text-base" v-if="progress && progress !== 100">
-								{{ progress }} %
-							</div>
-							<div class="mt-2 text-sm text-red-600" v-if="error">
-								{{ error }}
-							</div>
-							<div
-								class="mt-2 text-xs text-gray-500"
-								v-if="!(progress || error) || message"
-							>
-								{{ message || 'Click to upload' }}
-							</div>
-						</button>
-					</template>
-				</FileUploader>
-			</div>
+			<BackupFilesUploader
+				class="mt-6"
+				@update:backupFiles="files => $emit('update:selectedFiles', files)"
+			/>
 		</div>
 		<div v-if="restoreFrom === 'siteUrl'">
 			<div class="mt-6">
@@ -135,13 +67,9 @@
 						errorContains('Your site exceeds the limits for this operation')
 					"
 				>
-					Seems like your site is huge. Click
-					<a
-						@click="openMigrationRequestWindow()"
-						class="border-b border-yellow-700 cursor-pointer"
-						>here</a
-					>
-					to schedule a migration with us.
+					Seems like your site is huge. Open a support ticket mentioning that
+					you want to restore a backup and it's size and we'll take it from
+					there.
 				</Alert>
 				<Form
 					class="mt-6"
@@ -198,6 +126,7 @@
 <script>
 import FileUploader from '@/components/FileUploader.vue';
 import Form from '@/components/Form.vue';
+import BackupFilesUploader from '@/components/BackupFilesUploader.vue';
 import { DateTime } from 'luxon';
 
 export default {
@@ -205,11 +134,12 @@ export default {
 	props: ['options', 'selectedFiles', 'manualMigration'],
 	components: {
 		FileUploader,
-		Form
+		Form,
+		BackupFilesUploader
 	},
 	data() {
 		return {
-			restoreFrom: 'backup',
+			restoreFrom: null,
 			files: [
 				{
 					icon: 'database',
@@ -273,13 +203,6 @@ export default {
 		}
 	},
 	methods: {
-		onFileUpload(file, fileurl) {
-			this.uploadedFiles[file.type] = fileurl;
-			this.$emit('update:selectedFiles', this.uploadedFiles);
-		},
-		openMigrationRequestWindow() {
-			window.open('https://frappe.cloud/migration-request', '_blank');
-		},
 		showAlert() {
 			this.manualMigration = true;
 		},
