@@ -881,7 +881,7 @@ def multipart_exit(file, id, action, parts=None):
 			"Press Settings", "remote_access_key_id"
 		),
 		aws_secret_access_key=get_decrypted_password(
-			"Press Settings", "Press Settings", "remote_secret_access_key"
+			"Press Settings", "Press Settings", "remote_secret_access_key", raise_exception=False
 		),
 		region_name="ap-south-1",
 	)
