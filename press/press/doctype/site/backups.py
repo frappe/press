@@ -174,7 +174,9 @@ def schedule():
 	"""Schedule backups for all Active sites based on their local timezones. Also trigger offsite backups once a day."""
 
 	sites = frappe.get_all(
-		"Site", fields=["name", "timezone"], filters={"status": "Active", "standby": "False"},
+		"Site",
+		fields=["name", "timezone"],
+		filters={"status": "Active", "is_standby": "False"},
 	)
 	plans_without_offsite_backups = frappe.get_all(
 		"Plan", filters={"offsite_backups": 0}, pluck="name"
