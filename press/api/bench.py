@@ -357,7 +357,13 @@ def get_updates_between_current_and_next_apps(current_apps, next_apps):
 @frappe.whitelist()
 @protected("Release Group")
 def deploy(name):
+	team = get_current_team()
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
+	if rg.team != team:
+		frappe.throw(
+			"Bench can only be deployed by the bench owner", exc=frappe.PermissionError
+		)
+
 	candidate = get_last_deploy_candidate(rg)
 	candidate.build_and_deploy()
 
