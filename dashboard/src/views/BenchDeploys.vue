@@ -5,6 +5,7 @@
 			:subtitle="
 				candidates.length ? 'Deploys on your bench' : 'No deploys on your bench'
 			"
+			:show-details="selectedCandidate"
 		>
 			<div>
 				<router-link

@@ -410,12 +410,17 @@ def all():
 @frappe.whitelist()
 @protected("Site")
 def get(name):
+	team = get_current_team()
 	site = frappe.get_doc("Site", name)
+	group_team = frappe.db.get_value("Release Group", site.group, "team")
+	group_name = site.group if group_team == team else None
+
 	return {
 		"name": site.name,
 		"status": site.status,
 		"trial_end_date": site.trial_end_date,
 		"setup_wizard_complete": site.setup_wizard_complete,
+		"group": group_name,
 	}
 
 

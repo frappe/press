@@ -215,10 +215,15 @@ def versions(name):
 	)
 	for version in deployed_versions:
 		version.sites = frappe.db.get_all(
-			"Site", {"status": ("!=", "Archived"), "group": name, "bench": version.name}
+			"Site",
+			{"status": ("!=", "Archived"), "group": name, "bench": version.name},
+			["name", "status"],
 		)
 		version.apps = frappe.db.get_all(
-			"Bench App", {"parent": version.name}, ["name", "app", "hash", "source"]
+			"Bench App",
+			{"parent": version.name},
+			["name", "app", "hash", "source"],
+			order_by="idx",
 		)
 		for app in version.apps:
 			app.update(
