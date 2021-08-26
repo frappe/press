@@ -48,7 +48,10 @@ export default {
 		},
 		steps() {
 			if (!this.job) return;
-			return this.job.steps.map(step => {
+			let steps = this.runningJob?.steps
+				? this.runningJob.steps
+				: this.job.steps;
+			return steps.map(step => {
 				return {
 					name: step.step_name,
 					status: step.status,
