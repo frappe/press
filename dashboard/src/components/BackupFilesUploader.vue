@@ -1,56 +1,60 @@
 <template>
-	<div class="grid grid-cols-3 gap-4">
-		<FileUploader
-			v-for="file in files"
-			:fileTypes="file.ext"
-			:key="file.type"
-			:type="file.type"
-			@success="onFileUpload(file, $event)"
-			:upload-args="{
-				method: 'press.api.site.upload_backup',
-				type: file.type
-			}"
-			:s3="true"
-		>
-			<template
-				v-slot="{
-					file: fileObj,
-					uploading,
-					progress,
-					message,
-					error,
-					success,
-					openFileSelector
-				}"
+	<div>
+		<div class="mt-2 space-y-2">
+			<FileUploader
+				v-for="file in files"
+				:fileTypes="file.ext"
+				:key="file.type"
+				:type="file.type"
+				@success="onFileUpload(file, $event)"
+				:fileValidator="f => databaseBackupChecker(f, file.type)"
+				:s3="true"
 			>
-				<button
-					class="w-full h-full px-4 py-6 border border-transparent rounded-md bg-gray-50 focus:outline-none focus:shadow-outline hover:border-blue-300 hover:bg-white"
-					:class="success ? 'bg-blue-50 border-blue-500' : ''"
-					@click="openFileSelector()"
-					:disabled="uploading"
+				<template
+					v-slot="{
+						file: fileObj,
+						uploading,
+						progress,
+						error,
+						success,
+						openFileSelector
+					}"
 				>
-					<div class="inline-block" v-html="file.icon"></div>
-					<div class="mt-3 text-sm font-medium leading-none text-gray-800">
-						{{ file.title }}
-					</div>
-					<div class="mt-2 text-xs leading-snug text-gray-700" v-if="fileObj">
-						{{ fileObj.name }}
-					</div>
-					<div class="text-base" v-if="progress && progress !== 100">
-						{{ progress }} %
-					</div>
-					<div class="mt-2 text-sm text-red-600" v-if="error">
-						{{ error }}
-					</div>
-					<div
-						class="mt-1 text-xs text-gray-600"
-						v-if="!(progress || error) || message"
+					<ListItem
+						class="border-b"
+						:title="fileObj ? fileObj.name : file.title"
 					>
-						{{ message || 'Click to upload' }}
-					</div>
-				</button>
-			</template>
-		</FileUploader>
+						<template #subtitle>
+							<span
+								class="text-base"
+								:class="error ? 'text-red-500' : 'text-gray-600'"
+							>
+								{{
+									uploading
+										? `Uploading ${progress}%`
+										: success
+										? formatBytes(fileObj.size)
+										: error
+										? error
+										: file.description
+								}}
+							</span>
+						</template>
+						<template #actions>
+							<Button
+								:loading="uploading"
+								loadingText="Uploading..."
+								@click="openFileSelector()"
+								v-if="!success"
+							>
+								Upload
+							</Button>
+							<GreenCheckIcon class="w-5" v-if="success" />
+						</template>
+					</ListItem>
+				</template>
+			</FileUploader>
+		</div>
 	</div>
 </template>
 <script>
@@ -69,6 +73,8 @@ export default {
 					type: 'database',
 					ext: 'application/x-gzip',
 					title: 'Database Backup',
+					description:
+						'Upload the database backup file. Usually file name ends in .sql.gz',
 					file: null
 				},
 				{
@@ -77,6 +83,8 @@ export default {
 					type: 'public',
 					ext: 'application/x-tar',
 					title: 'Public Files',
+					description:
+						'Upload the public files backup. Usually file name ends in -files.tar',
 					file: null
 				},
 				{
@@ -85,16 +93,38 @@ export default {
 					type: 'private',
 					ext: 'application/x-tar',
 					title: 'Private Files',
+					description:
+						'Upload the private files backup. Usually file name ends in -private-files.tar',
 					file: null
 				}
 			]
 		};
 	},
 	methods: {
-		onFileUpload(file, fileurl) {
+		onFileUpload(file, data) {
 			let backupFiles = Object.assign({}, this.backupFiles);
-			backupFiles[file.type] = fileurl;
+			backupFiles[file.type] = data;
 			this.$emit('update:backupFiles', backupFiles);
+		},
+		async databaseBackupChecker(file, type) {
+			if (file.size > 524 * 1000 * 1000) {
+				throw new Error('File size too large, max limit is 500MB');
+			}
+			if (type === 'database') {
+				if (!file.name.endsWith('.sql.gz')) {
+					throw new Error(
+						'Database backup file should end with the name "database.sql.gz"'
+					);
+				}
+				if (file.type != 'application/x-gzip') {
+					throw new Error('Invalid database backup file');
+				}
+			}
+			if (['public', 'private'].includes(type)) {
+				if (file.type != 'application/x-tar') {
+					throw new Error(`Invalid ${type} files backup file`);
+				}
+			}
 		}
 	}
 };
