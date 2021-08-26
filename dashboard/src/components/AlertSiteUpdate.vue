@@ -17,7 +17,7 @@
 					@click="$resources.scheduleUpdate.fetch()"
 					:loading="$resources.scheduleUpdate.loading"
 				>
-					Schedule update
+					Update now
 				</Button>
 			</template>
 		</Dialog>
