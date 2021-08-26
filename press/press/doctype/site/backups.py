@@ -156,9 +156,24 @@ class GFS(BackupRotationScheme):
 		return self._expire_and_get_remote_files(to_be_expired_backups)
 
 
+def is_backup_hour(hour: int) -> bool:
+	"""hour: 0-23
+
+	Returns true if backup is supposed to be taken at this hour
+	"""
+	interval: int = (
+		frappe.get_cached_value("Press Settings", "Press Settings", "backup_interval") or 6
+	)
+	backup_offset: int = (
+		frappe.get_cached_value("Press Settings", "Press Settings", "backup_offset") or 0
+	)
+	return (hour + backup_offset) % interval == 0
+
+
 def schedule():
 	"""Schedule backups for all Active sites based on their local timezones. Also trigger offsite backups once a day."""
 
+	# TODO: don't get standby sites <26-08-21, Balamurali M> #
 	sites = frappe.get_all(
 		"Site", fields=["name", "timezone"], filters={"status": "Active"},
 	)
@@ -172,7 +187,6 @@ def schedule():
 			pluck="document_name",
 		)
 	)
-	interval = frappe.db.get_single_value("Press Settings", "backup_interval") or 6
 	offsite_setup = any(
 		frappe.db.get_value(
 			"Press Settings",
@@ -188,7 +202,7 @@ def schedule():
 			site_timezone = pytz.timezone(timezone)
 			site_time = server_time.astimezone(site_timezone)
 
-			if site_time.hour % interval == 0:
+			if is_backup_hour(site_time.hour):
 				today = site_time.date()
 				common_filters = {
 					"creation": ("between", [today, today]),
