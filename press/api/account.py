@@ -350,18 +350,6 @@ def switch_team(team):
 
 
 @frappe.whitelist()
-def onboarding():
-	team = get_current_team()
-	return frappe.get_doc("Team", team).get_onboarding()
-
-
-@frappe.whitelist()
-def skip_onboarding_step(step_name):
-	team = get_current_team(True)
-	team.update_onboarding(step_name, "Skipped")
-
-
-@frappe.whitelist()
 def get_billing_information():
 	team = get_current_team(True)
 	if team.billing_address:
