@@ -42,12 +42,19 @@ class AppReleaseApprovalRequest(Document):
 			frappe.throw("An active request for this app release already exists!")
 
 	def another_request_awaiting_approval(self):
-		requests = frappe.get_all(
+		request_source = frappe.db.get_value("App Release", self.app_release, "source")
+
+		releases_awaiting_approval = frappe.get_all(
 			"App Release Approval Request",
 			filters={"marketplace_app": self.marketplace_app, "status": "Open"},
+			pluck="app_release",
 		)
+		sources_awaiting_approval = [
+			frappe.db.get_value("App Release", r, "source") for r in releases_awaiting_approval
+		]
 
-		if len(requests) > 0:
+		# A request for this source is already open
+		if request_source in sources_awaiting_approval:
 			frappe.throw("A previous release is already awaiting approval!")
 
 	def update_release_status(self):
