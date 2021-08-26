@@ -75,6 +75,7 @@
   "auto_update_queue_size",
   "backups_section",
   "backup_interval",
+  "backup_offset",
   "remote_files_section",
   "remote_uploads_bucket",
   "remote_link_expiry",
@@ -109,9 +110,7 @@
   "monitor_token",
   "telegram_alert_chat_id",
   "column_break_100",
-  "log_server",
-  "marketplace_settings_section",
-  "allow_developer_account"
+  "log_server"
  ],
  "fields": [
   {
@@ -696,21 +695,15 @@
    "label": "Staging Expiry"
   },
   {
-   "collapsible": 1,
-   "fieldname": "marketplace_settings_section",
-   "fieldtype": "Section Break",
-   "label": "Marketplace Settings"
-  },
-  {
    "default": "0",
-   "fieldname": "allow_developer_account",
-   "fieldtype": "Check",
-   "label": "Allow Developer Account from Dashboard"
+   "fieldname": "backup_offset",
+   "fieldtype": "Int",
+   "label": "Backup Offset"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2021-08-16 16:53:56.218440",
+ "modified": "2021-08-26 11:33:49.366006",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
