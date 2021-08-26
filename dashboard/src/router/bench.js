@@ -20,6 +20,11 @@ export default [
 				component: () => import('../views/BenchApps.vue')
 			},
 			{
+				path: 'sites/:version?',
+				component: () => import('../views/BenchSites.vue'),
+				props: true
+			},
+			{
 				path: 'deploys/:candidateName?',
 				component: () => import('../views/BenchDeploys.vue'),
 				props: true

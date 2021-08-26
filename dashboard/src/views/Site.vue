@@ -16,6 +16,13 @@
 					</div>
 					<div class="space-x-3">
 						<Button
+							v-if="site.group"
+							icon-left="tool"
+							:route="`/benches/${site.group}`"
+						>
+							Manage Bench
+						</Button>
+						<Button
 							v-if="site.status == 'Active'"
 							@click="$resources.loginAsAdmin.submit()"
 							:loading="$resources.loginAsAdmin.loading"
