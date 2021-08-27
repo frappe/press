@@ -28,7 +28,8 @@
   "country",
   "referrer_data",
   "referral_source",
-  "url_args"
+  "url_args",
+  "agreed_to_partner_consent"
  ],
  "fields": [
   {
@@ -153,12 +154,18 @@
    "label": "URL Args",
    "options": "JSON",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "agreed_to_partner_consent",
+   "fieldtype": "Check",
+   "label": "Agreed to Partner Consent"
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-04-19 18:09:38.663675",
+ "modified": "2021-08-27 16:13:04.899462",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",
