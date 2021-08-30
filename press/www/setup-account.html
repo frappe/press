@@ -11,48 +11,7 @@
 			{%- if frappe.form_dict.key -%}
 			<div class="alert alert-primary form-alert-info small" style="display: none;" role="alert"></div>
 			<div class="alert alert-danger form-alert-error small" style="display: none;" role="alert"></div>
-			{#
-			<!-- 3. Regional Settings -->
-			<form class="form-step" data-step="1" data-action="regional_settings">
-				<div class="form-group">
-					<label for="country">Country</label>
-					<input class="form-control" name="country" id="country" type="text" disabled />
-				</div>
-				<div class="form-group">
-					<label for="domain">What does your organization do?</label>
-					<select id="domain" class="custom-select" name="domain">
-						<option value=""></option>
-						<option value="Services">Services</option>
-						<option value="Retail">Retail</option>
-						<option value="Manufacturing">Manufacturing</option>
-						<option value="Distribution">Distribution</option>
-						<option value="Education">Education</option>
-						<option value="Agriculture">Agriculture</option>
-						<option value="Healthcare">Healthcare</option>
-						<option value="Non Profit">Non Profit</option>
-					</select>
-				</div>
-				<div class="form-row">
-					<div class="form-group col">
-						<label for="currency">Currency</label>
-						<select id="currency" class="custom-select" name="currency"></select>
-					</div>
-					<div class="form-group col">
-						<label for="language">Language</label>
-						<select id="language" class="custom-select" name="language"></select>
-					</div>
-				</div>
-				<div class="form-group">
-					<label for="timezone">Timezone</label>
-					<select id="timezone" class="custom-select" name="timezone"></select>
-				</div>
-				<div class="mt-8 d-flex justify-content-between">
-					<div></div>
-					<button type="submit" class="ml-4 btn btn-primary btn-step-3">Next</button>
-				</div>
-			</form>
-			#}
-			<!-- 4. Business Settings -->
+			<!-- Business Settings -->
 			<form class="form-step" data-step="1" data-action="business_settings">
 				<div class="form-group">
 					<label for="company_name">Company Name</label>
@@ -121,7 +80,7 @@
 				</div>
 				<div class="form-group">
 					<input type="checkbox" name="agreed_to_partner_consent" id="agreed_to_partner_consent">
-					<label for="agreed_to_partner_consent">I am okay if my details are shared with local certified Partner</label>
+					<label class="d-inline" for="agreed_to_partner_consent">I am okay if my details are shared with local certified Partner</label>
 				</div>
 				<div class="mt-8 d-flex justify-content-between">
 					<div></div>
