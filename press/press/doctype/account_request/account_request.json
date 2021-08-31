@@ -26,10 +26,10 @@
   "designation",
   "industry",
   "country",
+  "agreed_to_partner_consent",
   "referrer_data",
   "referral_source",
-  "url_args",
-  "agreed_to_partner_consent"
+  "url_args"
  ],
  "fields": [
   {
@@ -159,13 +159,14 @@
    "default": "0",
    "fieldname": "agreed_to_partner_consent",
    "fieldtype": "Check",
-   "label": "Agreed to Partner Consent"
+   "label": "Agreed to Partner Consent",
+   "read_only": 1
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-08-27 16:13:04.899462",
+ "modified": "2021-08-31 19:11:19.951231",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",
