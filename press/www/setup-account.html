@@ -5,7 +5,8 @@
 <h1>Set Up Your Account</h1>
 
 
-<div class="mx-auto form-container col-xl-5 col-lg-6 col-md-7 col-sm-9" id="user-signup-verify" data-validators="field_validators">
+<div class="mx-auto form-container col-xl-5 col-lg-6 col-md-7 col-sm-9" id="user-signup-verify"
+	data-validators="field_validators">
 	<div class="card">
 		<div class="card-body">
 			{%- if frappe.form_dict.key -%}
@@ -20,7 +21,8 @@
 				<div class="form-row">
 					<div class="form-group col">
 						<label for="no_of_users">Number of Users</label>
-						<input type="number" id="no_of_users" name="no_of_users" class="form-control" min="1" max="100000" required>
+						<input type="number" id="no_of_users" name="no_of_users" class="form-control" min="1"
+							max="100000" required>
 					</div>
 					<div class="form-group col">
 						<label for="industry">Industry</label>
@@ -79,8 +81,9 @@
 					</select>
 				</div>
 				<div class="form-group">
-					<input type="checkbox" name="agreed_to_partner_consent" id="agreed_to_partner_consent">
-					<label class="d-inline" for="agreed_to_partner_consent">I am okay if my details are shared with local certified Partner</label>
+					<input type="checkbox" name="agreed_to_partner_consent" id="agreed_to_partner_consent" checked>
+					<label class="d-inline" for="agreed_to_partner_consent">I am okay if my details are shared with
+						local certified Partner</label>
 				</div>
 				<div class="mt-8 d-flex justify-content-between">
 					<div></div>
