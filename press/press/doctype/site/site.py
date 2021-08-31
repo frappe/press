@@ -941,6 +941,14 @@ class Site(Document):
 			},
 		)
 
+	@classmethod
+	def get_sites_for_backup(cls) -> List[Dict[str, str]]:
+		return frappe.get_all(
+			"Site",
+			fields=["name", "timezone"],
+			filters={"status": "Active", "is_standby": "False"},
+		)
+
 
 def site_cleanup_after_archive(site):
 	delete_site_domains(site)

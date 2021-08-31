@@ -3,6 +3,8 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
+from typing import List
+from press.press.doctype.plan.plan import Plan
 
 import frappe
 from frappe.model.document import Document
@@ -117,6 +119,15 @@ class Subscription(Document):
 		if not hasattr(self, "_subscribed_document"):
 			self._subscribed_document = frappe.get_doc(self.document_type, self.document_name)
 		return self._subscribed_document
+
+	@classmethod
+	def get_sites_without_offsite_backups(cls, plans) -> List[str]:
+		plans = Plan.get_ones_without_offsite_backups()
+		return frappe.get_all(
+			"Subscription",
+			filters={"document_type": "Site", "plan": ("in", plans)},
+			pluck="document_name",
+		)
 
 
 def create_usage_records():

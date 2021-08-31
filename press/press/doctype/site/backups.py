@@ -7,6 +7,8 @@ from __future__ import unicode_literals
 import functools
 from datetime import date, datetime, timedelta
 from itertools import groupby
+from press.press.doctype.subscription.subscription import Subscription
+from press.press.doctype.site.site import Site
 from typing import Dict, List
 
 import frappe
@@ -172,22 +174,9 @@ def is_backup_hour(hour: int) -> bool:
 
 def schedule():
 	"""Schedule backups for all Active sites based on their local timezones. Also trigger offsite backups once a day."""
+	sites = Site.get_sites_for_backup()
+	sites_without_offsite_backups = Subscription.get_sites_without_offsite_backups()
 
-	sites = frappe.get_all(
-		"Site",
-		fields=["name", "timezone"],
-		filters={"status": "Active", "is_standby": "False"},
-	)
-	plans_without_offsite_backups = frappe.get_all(
-		"Plan", filters={"offsite_backups": 0}, pluck="name"
-	)
-	sites_without_offsite_backups = set(
-		frappe.get_all(
-			"Subscription",
-			filters={"document_type": "Site", "plan": ("in", plans_without_offsite_backups)},
-			pluck="document_name",
-		)
-	)
 	offsite_setup = any(
 		frappe.db.get_value(
 			"Press Settings",

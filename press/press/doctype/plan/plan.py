@@ -3,6 +3,7 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
+from typing import List
 
 import frappe
 from frappe.model.document import Document
@@ -27,6 +28,10 @@ class Plan(Document):
 
 		if interval == "Monthly":
 			return rounded(price_per_day * 30)
+
+	@classmethod
+	def get_ones_without_offsite_backups(cls) -> List[str]:
+		return frappe.get_all("Plan", filters={"offsite_backups": False}, pluck="name")
 
 
 def get_plan_config(name):
