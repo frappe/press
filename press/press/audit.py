@@ -84,7 +84,9 @@ class BackupRecordCheck(Audit):
 		sites_with_backup_in_interval = set([t[0] for t in tuples])
 		all_sites = set(
 			frappe.get_all(
-				"Site", {"status": "Active", "creation": ("<=", interval_hrs_ago)}, pluck="name"
+				"Site",
+				{"status": "Active", "creation": ("<=", interval_hrs_ago), "is_standby": False},
+				pluck="name",
 			)
 		)
 		sites_without_backups = all_sites.difference(sites_with_backup_in_interval)
