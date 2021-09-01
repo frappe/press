@@ -19,8 +19,9 @@
 			<div>
 				<div class="mb-1">
 					{{ breadcrumbs([
-						{ 'label': 'Apps', 'url': '/marketplace' },
-						{ 'label': category.name, 'url': '' },
+					{ 'label': 'Apps', 'url': '/marketplace' },
+					{ 'label': category.name, 'url': '' },
+					{ 'label': app.title, 'url': '' }
 					]) }}
 				</div>
 				<h1 class="text-4xl font-bold text-gray-900 sm:text-6xl"> {{ app.title }} </h1>
@@ -46,7 +47,8 @@
 					<ul class="mt-2 space-y-1 text-base">
 						{%- for group in groups -%}
 						<li class="">
-							{{ link(group.version, group.frappe.repository_url + '/tree/' + group.frappe.branch, blank=True) }}
+							{{ link(group.version, group.frappe.repository_url + '/tree/' + group.frappe.branch,
+							blank=True) }}
 						</li>
 						{%- endfor -%}
 					</ul>
@@ -55,10 +57,10 @@
 					<h5 class="text-base text-gray-600">Links</h5>
 					<ul class="mt-2 space-y-1 text-base">
 						{%- for label, value in ({
-							'Support': app.support,
-							'Documentation': app.documentation,
-							'Privacy Policy': app.privacy_policy,
-							'Terms of Service': app.terms_of_service
+						'Support': app.support,
+						'Documentation': app.documentation,
+						'Privacy Policy': app.privacy_policy,
+						'Terms of Service': app.terms_of_service
 						}).items() -%}
 						{%- if value -%}
 						<li class="">{{ link(label, value) }}</li>
