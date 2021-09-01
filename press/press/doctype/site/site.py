@@ -788,15 +788,15 @@ class Site(Document):
 			# site in that case. team.unsuspend_sites should handle that, then.
 			return
 
-		plan = self.plan
+		plan_name = self.plan
 		# get plan from subscription
-		if not plan:
+		if not plan_name:
 			subscription = self.subscription
 			if not subscription:
 				return
-			plan = subscription.plan
+			plan_name = subscription.plan
 
-		plan = frappe.get_doc("Plan", self.plan)
+		plan = frappe.get_doc("Plan", plan_name)
 
 		disk_usage = usage.public + usage.private
 		if usage.database < plan.max_database_usage and disk_usage < plan.max_storage_usage:
