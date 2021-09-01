@@ -404,6 +404,7 @@ def all():
 		else:
 			private_benches.append(group)
 
+	private_benches = sorted(private_benches, key=lambda x: x.title)
 	return [shared_bench] + private_benches
 
 
