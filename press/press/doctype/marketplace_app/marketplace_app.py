@@ -45,9 +45,13 @@ class MarketplaceApp(WebsiteGenerator):
 				)
 
 	def validate_number_of_screenshots(self):
-		# TODO: Replace 6 with a configurable value in Press Settings
-		if len(self.screenshots) > 6:
-			frappe.throw("You cannot add more than 6 screenshots for an app.")
+		max_allowed_screenshots = frappe.db.get_single_value(
+			"Press Settings", "max_allowed_screenshots"
+		)
+		if len(self.screenshots) > max_allowed_screenshots:
+			frappe.throw(
+				f"You cannot add more than {max_allowed_screenshots} screenshots for an app."
+			)
 
 	def get_app_source(self):
 		return frappe.get_doc("App Source", {"app": self.app})
