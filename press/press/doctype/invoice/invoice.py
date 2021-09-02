@@ -601,15 +601,29 @@ class Invoice(Document):
 
 
 def finalize_draft_invoices():
-	"""Runs every day and submits the invoices whose period ends today or has ended before"""
+	"""
+	- Runs every hour
+	- Processes 500 invoices at a time
+	- Finalizes the invoices whose
+	  - period ends today and time is 6PM or later
+	  - period has ended before
+	"""
 
 	# get draft invoices whose period has ended or ends today
 	today = frappe.utils.today()
 	invoices = frappe.db.get_all(
-		"Invoice", {"status": "Draft", "period_end": ("<=", today)}, pluck="name",
+		"Invoice",
+		filters={"status": "Draft", "type": "Subscription", "period_end": ("<=", today)},
+		pluck="name",
+		limit=500,
 	)
+	current_time = frappe.utils.get_datetime().time()
+	today = frappe.utils.getdate()
 	for name in invoices:
 		invoice = frappe.get_doc("Invoice", name)
+		# don't finalize if invoice ends today and time is before 6 PM
+		if invoice.period_end == today and current_time.hour < 18:
+			continue
 		finalize_draft_invoice(invoice)
 
 
