@@ -110,7 +110,10 @@
   "monitor_token",
   "telegram_alert_chat_id",
   "column_break_100",
-  "log_server"
+  "log_server",
+  "marketplace_settings_section",
+  "allow_developer_account",
+  "max_allowed_screenshots"
  ],
  "fields": [
   {
@@ -699,11 +702,30 @@
    "fieldname": "backup_offset",
    "fieldtype": "Int",
    "label": "Backup Offset"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "marketplace_settings_section",
+   "fieldtype": "Section Break",
+   "label": "Marketplace Settings"
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_developer_account",
+   "fieldtype": "Check",
+   "label": "Allow Developer Account from Dashboard"
+  },
+  {
+   "default": "6",
+   "fieldname": "max_allowed_screenshots",
+   "fieldtype": "Int",
+   "label": "Max number of Allowed Screenshots",
+   "non_negative": 1
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2021-08-26 11:33:49.366006",
+ "modified": "2021-09-02 19:27:23.424212",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

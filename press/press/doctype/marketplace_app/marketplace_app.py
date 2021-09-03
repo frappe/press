@@ -26,6 +26,7 @@ class MarketplaceApp(WebsiteGenerator):
 	def validate(self):
 		self.published = self.status == "Published"
 		self.validate_sources()
+		self.validate_number_of_screenshots()
 
 	def validate_sources(self):
 		for source in self.sources:
@@ -42,6 +43,15 @@ class MarketplaceApp(WebsiteGenerator):
 					f"App Source {frappe.bold(source.source)} does not contain"
 					f" version: {frappe.bold(source.version)}"
 				)
+
+	def validate_number_of_screenshots(self):
+		max_allowed_screenshots = frappe.db.get_single_value(
+			"Press Settings", "max_allowed_screenshots"
+		)
+		if len(self.screenshots) > max_allowed_screenshots:
+			frappe.throw(
+				f"You cannot add more than {max_allowed_screenshots} screenshots for an app."
+			)
 
 	def get_app_source(self):
 		return frappe.get_doc("App Source", {"app": self.app})
