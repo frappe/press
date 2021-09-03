@@ -52,12 +52,6 @@
 					</div>
 				</div>
 				<div>
-					<h5 class="text-base text-gray-900 font-semibold">Website</h5>
-					<ul class="mt-2 space-y-1 text-base">
-						<li class="">{{ link(app.website, app.website) }}</li>
-					</ul>
-				</div>
-				<div>
 					<h5 class="text-base text-gray-900 font-semibold">Supported Versions</h5>
 					<ul class="mt-2 space-y-1 text-base">
 						{%- for group in groups -%}
@@ -70,49 +64,23 @@
 				</div>
 				<div>
 					<h5 class="text-base text-gray-900 font-semibold">Learn more & Support</h5>
-					<!-- <ul class="mt-2 space-y-1 text-base">
-						{%- for label, value in ({
-						'Support': app.support,
-						'Documentation': app.documentation,
-						'Privacy Policy': app.privacy_policy,
-						'Terms of Service': app.terms_of_service
-						}).items() -%}
-						{%- if value -%}
-						<li class="">{{ link(label, value) }}</li>
+					<ul class="mt-2 flex flex-col space-y-3">
+						{%- for label, icon, href in [
+						('Visit Website', 'external-link', app.website),
+						('Support', 'life-buoy', app.support),
+						('Documentaion', 'file-text', app.documentation),
+						('Privacy Policy', 'lock', app.privacy_policy),
+						('Terms of Service', 'shield', app.terms_of_service)
+						] -%}
+						{%- if href -%}
+						<li>
+							<a class="flex flex-row space-x-1 text-gray-600 hover:text-gray-800" href="{{ href }}">
+								<i class="w-4 h-4" data-feather="{{ icon }}"></i>
+								<span class="text-base">{{ label }}</span>
+							</a>
+						</li>
 						{%- endif -%}
 						{%- endfor -%}
-					</ul> -->
-					<ul class="mt-2 flex flex-col space-y-3">
-						<li>
-							<a class="flex flex-row space-x-1 text-gray-600 hover:text-gray-800" href="#">
-								<i class="w-4 h-4" data-feather="external-link"></i>
-								<span class="text-base">Visit Website</span>
-							</a>
-						</li>
-						<li>
-							<a class="flex flex-row space-x-1 text-gray-600 hover:text-gray-800" href="#">
-								<i class="w-4 h-4" data-feather="life-buoy"></i>
-								<span class="text-base">Support</span>
-							</a>
-						</li>
-						<li>
-							<a class="flex flex-row space-x-1 text-gray-600 hover:text-gray-800" href="#">
-								<i class="w-4 h-4" data-feather="file-text"></i>
-								<span class="text-base">Documentation</span>
-							</a>
-						</li>
-						<li>
-							<a class="flex flex-row space-x-1 text-gray-600 hover:text-gray-800" href="#">
-								<i class="w-4 h-4" data-feather="lock"></i>
-								<span class="text-base">Privacy Policy</span>
-							</a>
-						</li>
-						<li>
-							<a class="flex flex-row space-x-1 text-gray-600 hover:text-gray-800" href="#">
-								<i class="w-4 h-4" data-feather="shield"></i>
-								<span class="text-base">Terms of Service</span>
-							</a>
-						</li>
 					</ul>
 				</div>
 			</div>
