@@ -164,19 +164,13 @@ class GFS(BackupRotationScheme):
 class ScheduledBackupJob:
 	"""Represents Scheduled Backup Job that takes backup for all active sites."""
 
-	def is_backup_hour(hour: int) -> bool:
+	def is_backup_hour(self, hour: int) -> bool:
 		"""
 		hour: 0-23
 
 		Return true if backup is supposed to be taken at this hour
 		"""
-		interval: int = (
-			frappe.get_cached_value("Press Settings", "Press Settings", "backup_interval") or 6
-		)
-		backup_offset: int = (
-			frappe.get_cached_value("Press Settings", "Press Settings", "backup_offset") or 0
-		)
-		return (hour + backup_offset) % interval == 0
+		return (hour + self.backup_offset) % self.interval == 0
 
 	def take_offsite(self, site: str, day: datetime.date) -> bool:
 		return (
@@ -189,6 +183,13 @@ class ScheduledBackupJob:
 		self.sites = Site.get_sites_for_backup()
 		self.sites_without_offsite_backups = Subscription.get_sites_without_offsite_backups()
 		self.offsite_setup = PressSettings.is_offsite_setup()
+
+		self.interval: int = (
+			frappe.get_cached_value("Press Settings", "Press Settings", "backup_interval") or 6
+		)
+		self.backup_offset: int = (
+			frappe.get_cached_value("Press Settings", "Press Settings", "backup_offset") or 0
+		)
 
 	def get_site_time(self, site: Dict[str, str]) -> datetime:
 		server_time = datetime.now()
