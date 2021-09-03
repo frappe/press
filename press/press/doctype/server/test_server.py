@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import unittest
 
 import frappe
+from frappe.model.naming import make_autoname
 from press.press.doctype.database_server.test_database_server import (
 	create_test_database_server,
 )
@@ -15,7 +16,9 @@ from press.press.doctype.press_settings.test_press_settings import (
 from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
 
 
-def create_test_server(proxy_server, database_server):
+def create_test_server(
+	proxy_server, database_server
+):
 	"""Create test Server doc."""
 	return frappe.get_doc(
 		{
@@ -27,9 +30,9 @@ def create_test_server(proxy_server, database_server):
 			"private_ip": frappe.mock("ipv4_private"),
 			"domain": "fc.dev",
 			"agent_password": frappe.mock("password"),
-			"hostname": "f",
+			"hostname": make_autoname("f-.####"),
 		}
-	).insert(ignore_if_duplicate=True)
+	).insert()
 
 
 class TestServer(unittest.TestCase):
