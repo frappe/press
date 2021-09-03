@@ -52,17 +52,6 @@
 					</div>
 				</div>
 				<div>
-					<h5 class="text-base text-gray-900 font-semibold">Supported Versions</h5>
-					<ul class="mt-2 space-y-1 text-base">
-						{%- for group in groups -%}
-						<li class="">
-							{{ link(group.version, group.frappe.repository_url + '/tree/' + group.frappe.branch,
-							blank=True) }}
-						</li>
-						{%- endfor -%}
-					</ul>
-				</div>
-				<div>
 					<h5 class="text-base text-gray-900 font-semibold">Learn more & Support</h5>
 					<ul class="mt-2 flex flex-col space-y-3">
 						{%- for label, icon, href in [
@@ -83,12 +72,28 @@
 						{%- endfor -%}
 					</ul>
 				</div>
+				<div>
+					<h5 class="text-base text-gray-900 font-semibold">Publisher</h5>
+					<!-- TODO: Replace with the publisher data (to be modeled) -->
+					<a class="text-blue-500 text-base hover:text-blue-700" href="mailto:{{ app.team }}">{{ app.team
+						}}</a>
+				</div>
+				<div>
+					<h5 class="text-base text-gray-900 font-semibold">Supported Versions</h5>
+					<ul class="mt-2 space-y-1 text-base text-gray-600">
+						{%- for group in groups -%}
+						<li>
+							{{ link(group.version, group.frappe.repository_url + '/tree/' + group.frappe.branch,
+							blank=True) }}
+						</li>
+						{%- endfor -%}
+					</ul>
+				</div>
 			</div>
 
 			<div class="w-full pl-8 pb-8 prose-sm prose text-gray-900 sm:w-3/5">
 				{{ frappe.utils.md_to_html(app.long_description) }}
 			</div>
-
 		</div>
 	</div>
 </div>
