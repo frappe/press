@@ -1,10 +1,10 @@
 {% macro button(label, link, kind='default', as='a', type='button') %}
 {%- set classes = resolve_class([
-	'inline-flex items-center justify-center px-3 py-1 text-base leading-5 rounded-md focus:outline-none',
-	{
-		'text-white bg-gradient-blue hover:bg-gradient-none hover:bg-blue-500 focus:shadow-outline-blue': kind == 'primary',
-		'bg-gray-50 hover:bg-gray-100 text-gray-900 focus:shadow-outline-gray': kind == 'default',
-	}
+'inline-flex items-center justify-center px-3 py-1 text-base leading-5 rounded-md focus:outline-none',
+{
+'text-white bg-gradient-blue hover:bg-gradient-none hover:bg-blue-500 focus:shadow-outline-blue': kind == 'primary',
+'bg-gray-50 hover:bg-gray-100 text-gray-900 focus:shadow-outline-gray': kind == 'default',
+}
 ]) -%}
 {%- if as == 'a' -%}
 <a class="{{ classes }}" href="{{ link }}">{{ label }}</a>
@@ -14,7 +14,7 @@
 {% endmacro %}
 
 {% macro link(label, url, class, blank=False) %}
-<a class="text-gray-800 hover:text-blue-500 {{ resolve_class(class) }}" href="{{ url | abs_url }}" {% if blank %}
+<a class="text-gray-600 hover:text-blue-500 {{ resolve_class(class) }}" href="{{ url | abs_url }}" {% if blank %}
 	target="_blank" {% endif %}>{{ label }}</a>
 {% endmacro %}
 
@@ -22,14 +22,14 @@
 <nav class="flex items-center text-sm font-medium leading-5">
 	{%- for item in items -%}
 	<a href="{{ item.url }}"
-		class="text-gray-600 transition duration-150 ease-in-out hover:text-gray-700 focus:outline-none focus:underline">
+		class="text-base {% if not loop.last %} text-gray-900 {% else %} text-gray-500 {% endif %} transition duration-150 ease-in-out {% if not loop.last %} hover:text-gray-600 {% endif %} focus:outline-none focus:underline">
 		{{ item.label }}
 	</a>
+
 	{%- if not loop.last -%}
-	<svg class="flex-shrink-0 w-5 h-5 mx-2 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-		<path fill-rule="evenodd"
-			d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-			clip-rule="evenodd"></path>
+	<svg class="flex-shrink-0 mx-2" xmlns="http://www.w3.org/2000/svg" width="6" height="8" viewBox="0 0 6 8"
+		fill="none">
+		<path d="M1.25 7.5L4.75 4L1.25 0.5" stroke="#1F272E" stroke-linecap="round" stroke-linejoin="round" />
 	</svg>
 	{%- endif -%}
 	{%- endfor -%}
