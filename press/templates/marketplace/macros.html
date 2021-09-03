@@ -22,7 +22,7 @@
 <nav class="flex items-center text-sm font-medium leading-5">
 	{%- for item in items -%}
 	<a href="{{ item.url }}"
-		class="text-base {% if not loop.last %} text-gray-900 {% else %} text-gray-500 {% endif %} transition duration-150 ease-in-out {% if not loop.last %} hover:text-gray-600 {% endif %} focus:outline-none focus:underline">
+		class="text-base {% if not loop.last %} text-gray-900 {% else %} text-gray-500 {% endif %} {% if not loop.last %} hover:text-gray-600 {% endif %} focus:outline-none focus:underline">
 		{{ item.label }}
 	</a>
 
