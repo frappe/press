@@ -73,3 +73,13 @@ class PressSettings(Document):
 			),
 			region_name="ap-south-1",
 		)
+
+	@classmethod
+	def is_offsite_setup(cls):
+		return any(
+			frappe.db.get_value(
+				"Press Settings",
+				"Press Settings",
+				["aws_s3_bucket", "offsite_backups_access_key_id"],
+			)
+		)
