@@ -14,7 +14,7 @@
 {% endmacro %}
 
 {% macro link(label, url, class, blank=False) %}
-<a class="text-gray-800 hover:text-blue-500 {{ resolve_class(class) }}" href="{{ url | abs_url }}" {% if blank %}
+<a class="text-gray-600 hover:text-blue-500 {{ resolve_class(class) }}" href="{{ url | abs_url }}" {% if blank %}
 	target="_blank" {% endif %}>{{ label }}</a>
 {% endmacro %}
 
