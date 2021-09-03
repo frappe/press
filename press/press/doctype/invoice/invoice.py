@@ -605,8 +605,8 @@ def finalize_draft_invoices():
 	- Runs every hour
 	- Processes 500 invoices at a time
 	- Finalizes the invoices whose
-		- period ends today and time is 6PM or later
-		- period has ended before
+	- period ends today and time is 6PM or later
+	- period has ended before
 	"""
 
 	# get draft invoices whose period has ended or ends today
