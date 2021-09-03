@@ -7,7 +7,7 @@ from __future__ import unicode_literals
 import json
 import re
 from collections import defaultdict
-from datetime import date
+from datetime import date, datetime, timedelta
 from typing import Any, Dict, List
 
 import boto3
@@ -942,11 +942,36 @@ class Site(Document):
 		)
 
 	@classmethod
-	def get_sites_for_backup(cls) -> List[Dict[str, str]]:
-		return frappe.get_all(
-			"Site",
-			fields=["name", "timezone"],
-			filters={"status": "Active", "is_standby": "False"},
+	def get_sites_for_backup(cls, interval: int, limit: int = 100):
+		print(frappe.db.sql(
+			f"""
+			SELECT site.name, site.timezone, site.server
+			FROM tabSite site
+			JOIN `tabSite Backup` site_backup
+			ON site_backup.site = site.name
+
+			GROUP BY site.name
+
+			WHERE
+				COUNT(
+					CASE
+					WHEN
+						site_backup.creation >= "{datetime.now() - timedelta(hours=interval)}"
+					THEN
+						1
+					END
+					) > 0
+
+				site_backup.files_availability = True and
+
+				site.status = "Active" and
+				site.is_standby = False and
+
+			LIMIT {limit}
+			"""
+			# TODO: ORDER BY with LIMIT wont' work maybe rotate server with group by too <03-09-21, Balamurali M> #
+			, debug=True
+		)
 		)
 
 
