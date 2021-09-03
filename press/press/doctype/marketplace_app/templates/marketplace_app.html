@@ -1,5 +1,5 @@
 {% extends "templates/marketplace/base.html" %}
-{%- from "templates/marketplace/macros.html" import button, link, breadcrumbs -%}
+{%- from "templates/marketplace/macros.html" import button, link, breadcrumbs, badge -%}
 
 {%- block body -%}
 <div>
@@ -116,9 +116,3 @@
 </div>
 {% endmacro %}
 
-{% macro badge(title) %}
-<span
-	class="inline-block px-3 py-1 text-sm text-blue-500 rounded-md cursor-default bg-blue-50">
-	{{ title }}
-</span>
-{% endmacro %}
