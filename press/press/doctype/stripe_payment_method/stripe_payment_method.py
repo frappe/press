@@ -33,10 +33,30 @@ class StripePaymentMethod(Document):
 		frappe.db.set_value("Team", self.team, "default_payment_method", self.name)
 
 	def on_trash(self):
+		self.remove_address_links()
 		if self.is_default:
 			team = frappe.get_doc("Team", self.team)
 			team.default_payment_method = None
 			team.save()
+
+	def remove_address_links(self):
+		address_links = frappe.db.get_all(
+			"Dynamic Link",
+			{"link_doctype": "Stripe Payment Method", "link_name": self.name},
+			pluck="parent",
+		)
+		address_links = list(set(address_links))
+		for address in address_links:
+			found = False
+			doc = frappe.get_doc("Address", address)
+			for link in doc.links:
+				print(link)
+				if link.link_doctype == "Stripe Payment Method" and link.link_name == self.name:
+					found = True
+					doc.remove(link)
+			if found:
+				print(doc)
+				doc.save()
 
 	def after_delete(self):
 		stripe = get_stripe()
