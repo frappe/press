@@ -38,6 +38,8 @@ module.exports = {
 		flexGrow: false,
 		flexShrink: false,
 		flexWrap: false,
+		backgroundOpacity: false,
+		textOpacity: false
 	},
 	variants: {
 		alignContent: ['responsive'],
