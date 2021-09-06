@@ -146,12 +146,6 @@ def transfer_partner_credits(amount):
 		),
 	)
 
-	if (team_doc.currency == "INR" and amount == 1000) or (
-		team_doc.currency == "USD" and amount == 10
-	):
-		# via onboarding
-		team_doc.update_onboarding("Transfer Credits", "Completed")
-
 
 @frappe.whitelist()
 def get_available_partner_credits():
@@ -208,6 +202,32 @@ def remove_payment_method(name):
 
 
 @frappe.whitelist()
+def change_payment_mode(mode):
+	team = get_current_team(get_doc=True)
+	team.payment_mode = mode
+	team.save()
+
+
+@frappe.whitelist()
+def prepaid_credits_via_onboarding():
+	"""When prepaid credits are bought, the balance is not immediately reflected.
+	This method will check balance every second and then set payment_mode"""
+	from time import sleep
+
+	team = get_current_team(get_doc=True)
+
+	seconds = 0
+	# block until balance is updated
+	while team.get_balance() == 0 or seconds > 20:
+		seconds += 1
+		sleep(1)
+		frappe.db.rollback()
+
+	team.payment_mode = "Prepaid Credits"
+	team.save()
+
+
+@frappe.whitelist()
 def get_invoice_usage(invoice):
 	team = get_current_team()
 	# apply team filter for safety
@@ -225,15 +245,14 @@ def after_card_add():
 
 
 @frappe.whitelist()
-def setup_intent_success(setup_intent, address):
+def setup_intent_success(setup_intent, address=None):
 	setup_intent = frappe._dict(setup_intent)
-	address = frappe._dict(address)
-
 	team = get_current_team(True)
 	clear_setup_intent()
 	team.create_payment_method(setup_intent.payment_method, set_default=True)
-	team.update_billing_details(address)
-	team.update_onboarding("Add Billing Information", "Completed")
+	if address:
+		address = frappe._dict(address)
+		team.update_billing_details(address)
 
 
 @frappe.whitelist()

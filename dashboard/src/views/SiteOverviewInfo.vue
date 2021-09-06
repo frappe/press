@@ -3,16 +3,16 @@
 		<div class="divide-y">
 			<div class="flex items-center py-3">
 				<Avatar
-					v-if="info.created_by"
-					:imageURL="info.created_by.user_image"
-					:label="info.created_by.first_name"
+					v-if="info.owner"
+					:imageURL="info.owner.user_image"
+					:label="info.owner.first_name"
 				/>
 				<div class="flex items-center justify-between flex-1 ml-3">
 					<div>
-						<div class="text-base text-gray-600">Created By</div>
+						<div class="text-base text-gray-600">Owned By</div>
 						<div class="text-base font-medium text-gray-900">
-							{{ info.created_by.first_name }}
-							{{ info.created_by.last_name }}
+							{{ info.owner.first_name }}
+							{{ info.owner.last_name }}
 						</div>
 					</div>
 					<div class="text-right">

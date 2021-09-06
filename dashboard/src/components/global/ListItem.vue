@@ -4,8 +4,13 @@
 			<h3 class="text-base font-medium text-gray-900">
 				{{ title }}
 			</h3>
-			<div class="mt-1 text-base text-gray-600" v-if="subtitle || description">
-				{{ subtitle || description }}
+			<div class="mt-1" v-if="subtitle || description || $slots.subtitle">
+				<template v-if="subtitle || description">
+					<span class="text-base text-gray-600">
+						{{ subtitle || description }}
+					</span>
+				</template>
+				<slot v-if="$slots.subtitle" name="subtitle" />
 			</div>
 		</div>
 		<slot name="actions"></slot>

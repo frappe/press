@@ -6,9 +6,10 @@ import frappe
 import requests
 
 from base64 import b64decode
-from frappe.website.website_generator import WebsiteGenerator
+from press.utils import get_last_doc
 from press.api.github import get_access_token
 from frappe.website.utils import cleanup_page_name
+from frappe.website.website_generator import WebsiteGenerator
 
 
 class MarketplaceApp(WebsiteGenerator):
@@ -17,13 +18,15 @@ class MarketplaceApp(WebsiteGenerator):
 
 	def before_insert(self):
 		self.long_description = self.fetch_readme()
+		self.set_route()
 
 	def set_route(self):
-		self.route = "marketplace/apps/" + cleanup_page_name(self.title)
+		self.route = "marketplace/apps/" + cleanup_page_name(self.app)
 
 	def validate(self):
 		self.published = self.status == "Published"
 		self.validate_sources()
+		self.validate_number_of_screenshots()
 
 	def validate_sources(self):
 		for source in self.sources:
@@ -40,6 +43,15 @@ class MarketplaceApp(WebsiteGenerator):
 					f"App Source {frappe.bold(source.source)} does not contain"
 					f" version: {frappe.bold(source.version)}"
 				)
+
+	def validate_number_of_screenshots(self):
+		max_allowed_screenshots = frappe.db.get_single_value(
+			"Press Settings", "max_allowed_screenshots"
+		)
+		if len(self.screenshots) > max_allowed_screenshots:
+			frappe.throw(
+				f"You cannot add more than {max_allowed_screenshots} screenshots for an app."
+			)
 
 	def get_app_source(self):
 		return frappe.get_doc("App Source", {"app": self.app})
@@ -99,3 +111,37 @@ class MarketplaceApp(WebsiteGenerator):
 			group["frappe"] = frappe_source
 			group["version"] = group_doc.version
 		context.groups = groups
+
+	def get_deploy_information(self):
+		"""Return the deploy information this marketplace app"""
+		# Public Release Groups, Benches
+		# Is on release group, but not on bench -> awaiting deploy
+		deploy_info = {}
+
+		for source in self.sources:
+			version = source.version
+			deploy_info[version] = "Not Deployed"
+
+			release_groups = frappe.get_all(
+				"Release Group", filters={"public": 1, "version": version}, pluck="name"
+			)
+
+			for rg_name in release_groups:
+				release_group = frappe.get_doc("Release Group", rg_name)
+				sources_on_rg = [a.source for a in release_group.apps]
+
+				latest_active_bench = get_last_doc(
+					"Bench", filters={"status": "Active", "group": rg_name}
+				)
+
+				if latest_active_bench:
+					sources_on_bench = [a.source for a in latest_active_bench.apps]
+					if source.source in sources_on_bench:
+						# Is deployed on a bench
+						deploy_info[version] = "Deployed"
+
+				if (source.source in sources_on_rg) and (deploy_info[version] != "Deployed"):
+					# Added to release group, but not yet deployed to a bench
+					deploy_info[version] = "Awaiting Deploy"
+
+		return deploy_info

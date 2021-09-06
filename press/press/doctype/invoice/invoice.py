@@ -49,6 +49,12 @@ class Invoice(Document):
 
 		self.update_item_descriptions()
 
+		if self.payment_mode == "Prepaid Credits" and self.amount_due > 0:
+			frappe.throw(
+				"Not enough credits for this invoice. Change payment mode to Card to"
+				" pay using Stripe."
+			)
+
 		try:
 			self.create_stripe_invoice()
 		except Exception:
@@ -107,6 +113,9 @@ class Invoice(Document):
 			)
 
 	def create_stripe_invoice(self):
+		if self.payment_mode != "Card":
+			return
+
 		stripe = get_stripe()
 
 		if self.type == "Prepaid Credits":
@@ -186,7 +195,7 @@ class Invoice(Document):
 		stripe.Invoice.finalize_invoice(self.stripe_invoice_id)
 
 	def validate_duplicate(self):
-		if self.type == "Prepaid Credits":
+		if self.type != "Subscription":
 			return
 
 		if self.period_start and self.period_end and self.is_new():
@@ -210,7 +219,10 @@ class Invoice(Document):
 			"Team", self.team, "billing_name"
 		) or frappe.utils.get_fullname(self.team)
 		self.customer_email = self.team
-		self.currency = frappe.db.get_value("Team", self.team, "currency")
+		team = frappe.db.get_value("Team", self.team, ["currency", "payment_mode"], as_dict=1)
+		self.currency = team.currency
+		if not self.payment_mode:
+			self.payment_mode = team.payment_mode
 		if not self.currency:
 			frappe.throw(
 				f"Cannot create Invoice because Currency is not set in Team {self.team}"
@@ -229,7 +241,7 @@ class Invoice(Document):
 
 	def update_item_descriptions(self):
 		for item in self.items:
-			if item.document_type == "Site":
+			if not item.description and item.document_type == "Site" and item.plan:
 				site_name = item.document_name.split(".archived")[0]
 				plan = frappe.get_cached_value("Plan", item.plan, "plan_title")
 				how_many_days = f"{cint(item.quantity)} day{'s' if item.quantity > 1 else ''}"
@@ -424,20 +436,28 @@ class Invoice(Document):
 			return
 		if self.status != "Paid":
 			return
-		if self.amount_due == 0:
+		if self.amount_paid == 0:
 			return
 		if self.frappe_invoice:
 			return
 
 		try:
+			team = frappe.get_doc("Team", self.team)
+			address = (
+				frappe.get_doc("Address", team.billing_address) if team.billing_address else None
+			)
 			client = self.get_frappeio_connection()
 			response = client.session.post(
 				f"{client.url}/api/method/create-fc-invoice",
-				data={"invoice": frappe.as_json(self)},
+				data={
+					"team": team.as_json(),
+					"address": address.as_json(),
+					"invoice": self.as_json(),
+				},
 			)
 			if response.ok:
 				res = response.json()
-				invoice = res["message"]
+				invoice = res.get("message")
 
 				if invoice:
 					self.frappe_invoice = invoice
@@ -519,7 +539,7 @@ class Invoice(Document):
 	def refund(self, reason):
 		stripe = get_stripe()
 		charge = None
-		if self.type == "Subscription":
+		if self.type in ["Subscription", "Service"]:
 			stripe_invoice = stripe.Invoice.retrieve(self.stripe_invoice_id)
 			charge = stripe_invoice.charge
 		elif self.type == "Prepaid Credits":
@@ -581,17 +601,29 @@ class Invoice(Document):
 
 
 def finalize_draft_invoices():
-	"""Runs every day and submits the invoices whose period ends today or has ended before"""
+	"""
+	- Runs every hour
+	- Processes 500 invoices at a time
+	- Finalizes the invoices whose
+	- period ends today and time is 6PM or later
+	- period has ended before
+	"""
 
 	# get draft invoices whose period has ended or ends today
 	today = frappe.utils.today()
 	invoices = frappe.db.get_all(
 		"Invoice",
-		{"status": "Draft", "period_end": ("<=", today), "total": (">", 0)},
+		filters={"status": "Draft", "type": "Subscription", "period_end": ("<=", today)},
 		pluck="name",
+		limit=500,
 	)
+	current_time = frappe.utils.get_datetime().time()
+	today = frappe.utils.getdate()
 	for name in invoices:
 		invoice = frappe.get_doc("Invoice", name)
+		# don't finalize if invoice ends today and time is before 6 PM
+		if invoice.period_end == today and current_time.hour < 18:
+			continue
 		finalize_draft_invoice(invoice)
 
 

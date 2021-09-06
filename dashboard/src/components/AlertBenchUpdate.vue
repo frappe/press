@@ -18,6 +18,7 @@
 		</template>
 		<Dialog title="Following updates are available" v-model="showDeployDialog">
 			<AppUpdates :apps="deployInformation.apps" />
+			<ErrorMessage class="mt-2" :error="$resources.deploy.error" />
 			<template #actions>
 				<Button
 					type="primary"

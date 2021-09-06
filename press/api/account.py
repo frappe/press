@@ -248,12 +248,13 @@ def get():
 	teams = [
 		d.parent for d in frappe.db.get_all("Team Member", {"user": user}, ["parent"])
 	]
-	teams = list(set(teams))
 	return {
 		"user": frappe.get_doc("User", user),
 		"team": team_doc,
 		"team_members": get_team_members(team),
-		"teams": teams,
+		"teams": list(set(teams)),
+		"onboarding": team_doc.get_onboarding(),
+		"balance": team_doc.get_balance(),
 	}
 
 
@@ -346,18 +347,6 @@ def switch_team(team):
 			"team": frappe.get_doc("Team", team),
 			"team_members": get_team_members(team),
 		}
-
-
-@frappe.whitelist()
-def onboarding():
-	team = get_current_team()
-	return frappe.get_doc("Team", team).get_onboarding()
-
-
-@frappe.whitelist()
-def skip_onboarding_step(step_name):
-	team = get_current_team(True)
-	team.update_onboarding(step_name, "Skipped")
 
 
 @frappe.whitelist()

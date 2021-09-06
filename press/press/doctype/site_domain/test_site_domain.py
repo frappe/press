@@ -266,3 +266,13 @@ class TestSiteDomain(unittest.TestCase):
 		if site.configuration[0].key == "host_name":
 			config_host = site.configuration[0].value
 		self.assertEqual(config_host, f"https://{site_domain1.name}")
+
+	def test_primary_domain_cannot_be_deleted(self):
+		site = create_test_site("old-name")
+		site_domain = create_test_site_domain(site.name, "sitedomain1.com")
+		site.add_domain_to_config(site_domain.name)
+
+		site.set_host_name(site_domain.name)
+
+		self.assertRaises(frappe.exceptions.LinkExistsError, site_domain.delete)
+		self.assertTrue(frappe.db.exists("Site Domain", {"name": site_domain.name}))

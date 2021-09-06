@@ -1,10 +1,10 @@
 <template>
-	<div class="overflow-hidden rounded-full" :class="sizeClasses">
+	<div class="overflow-hidden" :class="styleClasses">
 		<img
 			v-if="imageURL"
 			:src="imageURL"
 			class="object-cover"
-			:class="sizeClasses"
+			:class="styleClasses"
 		/>
 		<div
 			v-else
@@ -17,6 +17,8 @@
 </template>
 
 <script>
+const validShapes = ['square', 'circle'];
+
 export default {
 	name: 'Avatar',
 	props: {
@@ -24,15 +26,35 @@ export default {
 		label: String,
 		size: {
 			default: 'md'
+		},
+		shape: {
+			default: 'circle',
+			validator(value) {
+				const valid = validShapes.includes(value);
+				if (!valid) {
+					console.warn(
+						`shape property for <Avatar /> must be one of `,
+						validShapes
+					);
+				}
+				return valid;
+			}
 		}
 	},
 	computed: {
-		sizeClasses() {
-			return {
+		styleClasses() {
+			const sizeClasses = {
 				sm: 'w-4 h-4',
 				md: 'w-8 h-8',
 				lg: 'w-12 h-12'
 			}[this.size];
+
+			const shapeClass = {
+				circle: 'rounded-full',
+				square: 'rounded-lg'
+			}[this.shape];
+
+			return `${shapeClass} ${sizeClasses}`;
 		}
 	}
 };

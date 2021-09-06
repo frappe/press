@@ -346,8 +346,6 @@ def archive_obsolete_benches():
 
 
 def scale_workers():
-	# This method only operates on one bench at a time to avoid command collision
-	# TODO: Fix this in agent. Lock commands that can't be run simultaneously
 	benches = frappe.get_all(
 		"Bench", filters={"status": "Active", "auto_scale_workers": True}, pluck="name"
 	)
@@ -382,7 +380,6 @@ def scale_workers():
 				gunicorn_workers,
 			)
 			bench.save()
-			return
 
 
 def sync_benches():

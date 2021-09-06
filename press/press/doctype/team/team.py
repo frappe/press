@@ -28,8 +28,6 @@ class Team(Document):
 		self.set_team_currency()
 		self.set_default_user()
 		self.set_billing_name()
-
-		self.validate_onboarding()
 		self.validate_disabled_team()
 
 	def delete(self, force=False, workflow=False):
@@ -147,60 +145,15 @@ class Team(Document):
 				frappe.DuplicateEntryError,
 			)
 
-	def validate_onboarding(self):
-		if self.is_new():
-			self.initialize_onboarding_steps()
-			return
+	def validate_payment_mode(self):
+		if self.has_value_changed("payment_mode"):
+			if self.payment_mode == "Card":
+				if frappe.db.count("Stripe Payment Method", {"team": self.name}) == 0:
+					frappe.throw("No card added")
+			if self.payment_mode == "Prepaid Credits":
+				if self.get_balance() <= 0:
+					frappe.throw("Account does not have sufficient balance")
 
-		for step in self.onboarding:
-			if self.free_account:
-				step.status = "Skipped"
-
-	def initialize_onboarding_steps(self):
-		if self.via_erpnext:
-			self.set(
-				"onboarding",
-				[
-					{"step_name": "Create Account", "status": "Completed"},
-					{"step_name": "Add Billing Information", "status": "Pending"},
-				],
-			)
-		else:
-			self.set(
-				"onboarding",
-				[
-					{"step_name": "Create Account", "status": "Completed"},
-					{"step_name": "Add Billing Information", "status": "Pending"},
-					{"step_name": "Transfer Credits", "status": "Not Applicable"},
-					{"step_name": "Create Site", "status": "Pending"},
-				],
-			)
-
-	def update_onboarding(self, step_name, status):
-		def get_step(step_name):
-			for step in self.onboarding:
-				if step.step_name == step_name:
-					return step
-
-		step = get_step(step_name)
-		step.status = status
-		if (
-			step_name == "Add Billing Information"
-			and status == "Completed"
-			and self.erpnext_partner
-		):
-			get_step("Transfer Credits").status = "Skipped"
-
-		if (
-			step_name == "Add Billing Information"
-			and status == "Skipped"
-			and not self.erpnext_partner
-		):
-			frappe.throw("Cannot skip this step")
-
-		self.save()
-
-	def on_update(self):
 		if not self.is_new() and not self.default_payment_method:
 			# if default payment method is unset
 			# then set the is_default field for Stripe Payment Method to 0
@@ -211,6 +164,9 @@ class Team(Document):
 				doc = frappe.get_doc("Stripe Payment Method", pm.name)
 				doc.is_default = 0
 				doc.save()
+
+	def on_update(self):
+		self.validate_payment_mode()
 
 		if not self.is_new() and self.billing_name:
 			self.load_doc_before_save()
@@ -236,7 +192,6 @@ class Team(Document):
 	@frappe.whitelist()
 	def enable_erpnext_partner_privileges(self):
 		self.erpnext_partner = 1
-		self.update_onboarding("Transfer Credits", "Pending")
 
 	def allocate_free_credits(self):
 		if self.via_erpnext:
@@ -490,23 +445,48 @@ class Team(Document):
 		if self.free_account:
 			return allow
 
-		if self.is_partner_and_has_enough_credits():
-			return allow
-		else:
-			why = "Cannot create site due to insufficient credits"
+		if self.payment_mode == "Prepaid Credits":
+			if self.get_balance() > 0:
+				return allow
+			else:
+				why = "Cannot create site due to insufficient balance"
 
-		if self.default_payment_method:
-			return allow
-		else:
-			why = "Cannot create site without adding a card"
+		if self.payment_mode == "Card":
+			if self.default_payment_method:
+				return allow
+			else:
+				why = "Cannot create site without adding a card"
 
 		return (False, why)
 
 	def get_onboarding(self):
-		valid_steps = [step for step in self.onboarding if step.status != "Not Applicable"]
+		billing_setup = bool(
+			self.payment_mode in ["Card", "Prepaid Credits"]
+			and (self.default_payment_method or self.get_balance() > 0)
+			and self.billing_address
+		)
+		site_created = frappe.db.count("Site", {"team": self.name}) > 0
+
+		if self.via_erpnext:
+			erpnext_domain = frappe.db.get_single_value("Press Settings", "erpnext_domain")
+			erpnext_site = frappe.db.get_value(
+				"Site",
+				{"domain": erpnext_domain, "team": self.name, "status": ("!=", "Archived")},
+				["name", "plan"],
+				as_dict=1,
+			)
+			erpnext_site_plan_set = erpnext_site and erpnext_site.plan != "ERPNext Trial"
+		else:
+			erpnext_site = None
+			erpnext_site_plan_set = True
+
 		return {
-			"steps": self.onboarding,
-			"complete": all(step.status in ["Completed", "Skipped"] for step in valid_steps),
+			"account_created": True,
+			"billing_setup": billing_setup,
+			"erpnext_site": erpnext_site,
+			"erpnext_site_plan_set": erpnext_site_plan_set,
+			"site_created": site_created,
+			"complete": billing_setup and site_created and erpnext_site_plan_set,
 		}
 
 	@frappe.whitelist()
@@ -588,13 +568,6 @@ def get_default_team(user):
 		return user
 
 
-def update_site_onboarding(site, method):
-	if site.team:
-		team = frappe.get_doc("Team", site.team)
-		if not team.get_onboarding()["complete"]:
-			team.update_onboarding("Create Site", "Completed")
-
-
 def process_stripe_webhook(doc, method):
 	"""This method runs after a Stripe Webhook Log is created"""
 	from datetime import datetime
@@ -672,3 +645,16 @@ def has_permission(doc, ptype, user):
 		return True
 
 	return False
+
+
+def validate_site_creation(doc, method):
+	if frappe.session.user == "Administrator":
+		return
+	if not doc.team:
+		return
+
+	# validate site creation for team
+	team = frappe.get_doc("Team", doc.team)
+	[allow_creation, why] = team.can_create_site()
+	if not allow_creation:
+		frappe.throw(why)

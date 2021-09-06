@@ -94,6 +94,11 @@ class SiteDomain(Document):
 			self.create_tls_certificate()
 
 	def on_trash(self):
+		if self.domain == frappe.db.get_value("Site", self.site, "host_name"):
+			frappe.throw(
+				msg="Primary domain cannot be deleted", exc=frappe.exceptions.LinkExistsError
+			)
+
 		self.disavow_agent_jobs()
 		if not self.default:
 			self.create_remove_host_agent_request()
