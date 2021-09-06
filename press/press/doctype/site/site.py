@@ -942,36 +942,32 @@ class Site(Document):
 		)
 
 	@classmethod
-	def get_sites_for_backup(cls, interval: int, limit: int = 100):
-		print(frappe.db.sql(
-			f"""
-			SELECT site.name, site.timezone, site.server
-			FROM tabSite site
-			JOIN `tabSite Backup` site_backup
-			ON site_backup.site = site.name
-
-			GROUP BY site.name
-
-			WHERE
-				COUNT(
-					CASE
-					WHEN
-						site_backup.creation >= "{datetime.now() - timedelta(hours=interval)}"
-					THEN
-						1
-					END
-					) > 0
-
-				site_backup.files_availability = True and
-
-				site.status = "Active" and
-				site.is_standby = False and
-
-			LIMIT {limit}
-			"""
-			# TODO: ORDER BY with LIMIT wont' work maybe rotate server with group by too <03-09-21, Balamurali M> #
-			, debug=True
+	def get_sites_for_backup(cls, interval: int):
+		sites = cls.get_sites_without_backup_in_interval(interval)
+		return frappe.get_all(
+			"Site", {"name": ("in", sites)}, ["name", "timezone", "server"], order_by="server"
 		)
+
+	@classmethod
+	def get_sites_without_backup_in_interval(cls, interval: int) -> List[str]:
+		"""Return active sites that haven't had backup taken in interval hours."""
+		interval_hrs_ago = datetime.now() - timedelta(hours=interval)
+		all_sites = set(
+			frappe.get_all(
+				"Site",
+				{"status": "Active", "creation": ("<=", interval_hrs_ago), "is_standby": False},
+				pluck="name",
+			)
+		)
+		return list(all_sites - set(cls.get_sites_with_backup_in_interval(interval_hrs_ago)))
+		# TODO: query using creation time of account request for actual new sites <03-09-21, Balamurali M> #
+
+	@classmethod
+	def get_sites_with_backup_in_interval(cls, interval_hrs_ago) -> List[str]:
+		return frappe.get_all(
+			"Site Backup",
+			{"creation": (">=", {interval_hrs_ago}), "owner": "Administrator"},
+			pluck="site",
 		)
 
 
