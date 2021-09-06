@@ -79,10 +79,15 @@ def exists(title):
 
 
 @frappe.whitelist()
-def options():
+def options(only_by_current_team=False):
+	or_conditions = ""
+	# Also, include other public sources
+	if not only_by_current_team:
+		or_conditions = "OR source.public = 1"
+
 	team = get_current_team()
 	rows = frappe.db.sql(
-		"""
+		f"""
 	SELECT
 		version.name as version,
 		version.status as status,
@@ -100,7 +105,7 @@ def options():
 		source_version.version = version.name
 	WHERE
 		version.public = 1 AND
-		(source.team = %(team)s OR source.public = 1)
+		(source.team = %(team)s {or_conditions})
 	ORDER BY source.creation
 	""",
 		{"team": team},
@@ -210,10 +215,15 @@ def versions(name):
 	)
 	for version in deployed_versions:
 		version.sites = frappe.db.get_all(
-			"Site", {"status": ("!=", "Archived"), "group": name, "bench": version.name}
+			"Site",
+			{"status": ("!=", "Archived"), "group": name, "bench": version.name},
+			["name", "status"],
 		)
 		version.apps = frappe.db.get_all(
-			"Bench App", {"parent": version.name}, ["name", "app", "hash", "source"]
+			"Bench App",
+			{"parent": version.name},
+			["name", "app", "hash", "source"],
+			order_by="idx",
 		)
 		for app in version.apps:
 			app.update(
@@ -347,7 +357,13 @@ def get_updates_between_current_and_next_apps(current_apps, next_apps):
 @frappe.whitelist()
 @protected("Release Group")
 def deploy(name):
+	team = get_current_team()
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
+	if rg.team != team:
+		frappe.throw(
+			"Bench can only be deployed by the bench owner", exc=frappe.PermissionError
+		)
+
 	candidate = get_last_deploy_candidate(rg)
 	candidate.build_and_deploy()
 

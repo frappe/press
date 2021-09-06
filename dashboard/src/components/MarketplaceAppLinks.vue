@@ -1,7 +1,7 @@
 <template>
 	<Card title="Links" subtitle="Will be shown in marketplace">
 		<template #actions>
-			<Button @click="showEditLinksDialog = true">Edit Links</Button>
+			<Button icon-left="edit" @click="showEditLinksDialog = true">Edit</Button>
 		</template>
 		<Dialog title="Update Links for App" v-model="showEditLinksDialog">
 			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -57,7 +57,7 @@
 
 <script>
 export default {
-	name: 'DeveloperAppLinks',
+	name: 'MarketplaceAppLinks',
 	props: {
 		app: Object
 	},
@@ -69,7 +69,7 @@ export default {
 	resources: {
 		updateAppLinks() {
 			return {
-				method: 'press.api.developer.update_app_links',
+				method: 'press.api.marketplace.update_app_links',
 				params: {
 					name: this.app.name,
 					links: {

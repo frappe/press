@@ -11,7 +11,10 @@ from typing import Dict, List
 
 import frappe
 import pytz
+
 from press.press.doctype.remote_file.remote_file import delete_remote_backup_objects
+from press.press.doctype.site.site import Site
+from press.press.doctype.subscription.subscription import Subscription
 from press.utils import log_error
 
 
@@ -156,23 +159,25 @@ class GFS(BackupRotationScheme):
 		return self._expire_and_get_remote_files(to_be_expired_backups)
 
 
+def is_backup_hour(hour: int) -> bool:
+	"""hour: 0-23
+
+	Returns true if backup is supposed to be taken at this hour
+	"""
+	interval: int = (
+		frappe.get_cached_value("Press Settings", "Press Settings", "backup_interval") or 6
+	)
+	backup_offset: int = (
+		frappe.get_cached_value("Press Settings", "Press Settings", "backup_offset") or 0
+	)
+	return (hour + backup_offset) % interval == 0
+
+
 def schedule():
 	"""Schedule backups for all Active sites based on their local timezones. Also trigger offsite backups once a day."""
+	sites = Site.get_sites_for_backup()
+	sites_without_offsite_backups = Subscription.get_sites_without_offsite_backups()
 
-	sites = frappe.get_all(
-		"Site", fields=["name", "timezone"], filters={"status": "Active"},
-	)
-	plans_without_offsite_backups = frappe.get_all(
-		"Plan", filters={"offsite_backups": 0}, pluck="name"
-	)
-	sites_without_offsite_backups = set(
-		frappe.get_all(
-			"Subscription",
-			filters={"document_type": "Site", "plan": ("in", plans_without_offsite_backups)},
-			pluck="document_name",
-		)
-	)
-	interval = frappe.db.get_single_value("Press Settings", "backup_interval") or 6
 	offsite_setup = any(
 		frappe.db.get_value(
 			"Press Settings",
@@ -188,7 +193,7 @@ def schedule():
 			site_timezone = pytz.timezone(timezone)
 			site_time = server_time.astimezone(site_timezone)
 
-			if site_time.hour % interval == 0:
+			if is_backup_hour(site_time.hour):
 				today = site_time.date()
 				common_filters = {
 					"creation": ("between", [today, today]),

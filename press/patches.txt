@@ -76,3 +76,4 @@ press.press.doctype.site.patches.set_plan_in_site
 press.press.doctype.app_release.patches.set_status_to_draft
 press.patches.v0_0_4.remove_legacy_billing_doctypes
 # press.press.doctype.invoice.patches.set_free_credits # 2021-08-11 run via run-patch command
+press.press.doctype.team.patches.set_payment_mode

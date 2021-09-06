@@ -75,6 +75,7 @@
   "auto_update_queue_size",
   "backups_section",
   "backup_interval",
+  "backup_offset",
   "remote_files_section",
   "remote_uploads_bucket",
   "remote_link_expiry",
@@ -113,7 +114,10 @@
   "agent_section",
   "agent_repository_owner",
   "column_break_105",
-  "agent_github_access_token"
+  "agent_github_access_token",
+  "marketplace_settings_section",
+  "allow_developer_account",
+  "max_allowed_screenshots"
  ],
  "fields": [
   {
@@ -717,11 +721,36 @@
    "fieldname": "staging_expiry",
    "fieldtype": "Int",
    "label": "Staging Expiry"
+  },
+  {
+   "default": "0",
+   "fieldname": "backup_offset",
+   "fieldtype": "Int",
+   "label": "Backup Offset"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "marketplace_settings_section",
+   "fieldtype": "Section Break",
+   "label": "Marketplace Settings"
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_developer_account",
+   "fieldtype": "Check",
+   "label": "Allow Developer Account from Dashboard"
+  },
+  {
+   "default": "6",
+   "fieldname": "max_allowed_screenshots",
+   "fieldtype": "Int",
+   "label": "Max number of Allowed Screenshots",
+   "non_negative": 1
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2021-08-16 14:57:17.922203",
+ "modified": "2021-09-06 18:11:27.650043",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

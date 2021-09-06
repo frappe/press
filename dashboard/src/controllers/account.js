@@ -6,7 +6,10 @@ export default new Vue({
 		return {
 			user: null,
 			team: null,
-			teams: []
+			teams: [],
+			team_members: [],
+			onboarding: null,
+			balance: 0
 		};
 	},
 	created() {
@@ -22,6 +25,8 @@ export default new Vue({
 			this.team = result.team;
 			this.teams = result.teams;
 			this.team_members = result.team_members;
+			this.onboarding = result.onboarding;
+			this.balance = result.balance;
 		},
 		hasRole(role) {
 			let roles = this.user.roles.map(d => d.role);
@@ -43,12 +48,22 @@ export default new Vue({
 			return !this.hasBillingInfo;
 		},
 		hasBillingInfo() {
-			if (!this.team) return true;
-			return (
-				this.team.default_payment_method ||
-				this.team.erpnext_partner ||
-				this.team.free_account
-			);
+			if (!this.team) {
+				return true;
+			}
+			if (this.team.free_account) {
+				return true;
+			}
+			if (this.team.erpnext_partner) {
+				return true;
+			}
+			if (this.team.payment_mode == 'Card') {
+				return this.team.default_payment_method;
+			}
+			if (this.team.payment_mode == 'Prepaid Credits') {
+				return this.balance > 0;
+			}
+			return false;
 		}
 	}
 });

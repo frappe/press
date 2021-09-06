@@ -8,7 +8,7 @@ import siteRoutes from './site';
 import benchRoutes from './bench';
 import accountRoute from './account';
 import authRoutes from './auth';
-import developerRoutes from './developer';
+import marketplaceRoutes from './marketplace';
 
 Vue.use(VueRouter);
 
@@ -21,13 +21,12 @@ const routes = [
 	{
 		path: '/welcome',
 		name: 'Welcome',
-		component: () =>
-			import(/* webpackChunkName: "sites" */ '../views/Welcome.vue')
+		component: () => import('../views/Welcome.vue')
 	},
 	...authRoutes,
 	...siteRoutes,
 	...benchRoutes,
-	...developerRoutes,
+	...marketplaceRoutes,
 	accountRoute
 ];
 

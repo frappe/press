@@ -145,7 +145,7 @@ doc_events = {
 		],
 	},
 	"Address": {"validate": "press.api.billing.validate_gst"},
-	"Site": {"after_insert": "press.press.doctype.team.team.update_site_onboarding"},
+	"Site": {"before_insert": "press.press.doctype.team.team.validate_site_creation"},
 }
 
 # Scheduled Tasks
@@ -156,6 +156,7 @@ scheduler_events = {
 		"press.press.doctype.team.suspend_sites.execute",
 		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
 		"press.press.doctype.drip_email.drip_email.send_drip_emails",
+		"press.press.doctype.root_domain.root_domain.cleanup_cname_records",
 	],
 	"daily_long": ["press.press.audit.all"],
 	"hourly": [
@@ -170,9 +171,9 @@ scheduler_events = {
 		"press.press.doctype.subscription.subscription.create_usage_records",
 		"press.press.doctype.bench.bench.sync_benches",
 		"press.press.doctype.site.pool.create",
+		"press.press.doctype.invoice.invoice.finalize_draft_invoices",
 	],
 	"cron": {
-		"0 18 * * *": ["press.press.doctype.invoice.invoice.finalize_draft_invoices"],
 		"0 3 * * *": ["press.press.doctype.remote_file.remote_file.poll_file_statuses"],
 		"0 4 * * *": [
 			"press.press.doctype.site.backups.cleanup_offsite",

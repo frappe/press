@@ -24,6 +24,7 @@
 				v-model="billingInformation.cardHolderName"
 			/>
 			<AddressForm
+				v-if="!withoutAddress"
 				class="mt-4"
 				v-model="billingInformation"
 				ref="address-form"
@@ -46,6 +47,7 @@ import { loadStripe } from '@stripe/stripe-js';
 
 export default {
 	name: 'StripeCard',
+	props: ['withoutAddress'],
 	components: {
 		AddressForm,
 		StripeLogo
@@ -73,7 +75,20 @@ export default {
 		this.billingInformation.cardHolderName = fullname;
 	},
 	resources: {
-		countryList: 'press.api.account.country_list'
+		countryList: 'press.api.account.country_list',
+		billingAddress: {
+			method: 'press.api.account.get_billing_information',
+			auto: true,
+			onSuccess(data) {
+				if (data) {
+					this.billingInformation.address = data.address_line1;
+					this.billingInformation.city = data.city;
+					this.billingInformation.state = data.state;
+					this.billingInformation.country = data.country;
+					this.billingInformation.postal_code = data.pincode;
+				}
+			}
+		}
 	},
 	methods: {
 		async setupCard() {
@@ -120,7 +135,10 @@ export default {
 		async submit() {
 			this.addingCard = true;
 
-			let message = await this.$refs['address-form'].validateValues();
+			let message;
+			if (!this.withoutAddress) {
+				message = await this.$refs['address-form'].validateValues();
+			}
 			if (message) {
 				this.errorMessage = message;
 				this.addingCard = false;
@@ -160,7 +178,7 @@ export default {
 					try {
 						await this.$call('press.api.billing.setup_intent_success', {
 							setup_intent: setupIntent,
-							address: this.billingInformation
+							address: this.withoutAddress ? null : this.billingInformation
 						});
 						this.addingCard = false;
 						this.$emit('complete');

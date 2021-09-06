@@ -13,18 +13,28 @@
 
         <p>
             {%- if status == 'Rejected' -%}
-            Unfortunately, your approval request for <a class="text-blue-500" href="{{ commit_link }}">this</a> app
+            Unfortunately, your approval request for <a class="text-blue-500" href="{{ releases_link }}">'{{
+                commit_message
+                }}'</a> app
             release has been rejected.
             The reason for rejection:
             {{ rejection_reason }}
             {%- endif -%}
 
             {%- if status == 'Approved' -%}
-            Hurray! Your approval request for <a class="text-blue-500" href="{{ commit_link }}">this</a> app release has
+            Hurray! Your approval request for <a class="text-blue-500" href="{{ releases_link }}">'{{ commit_message
+                }}'</a>
+            app release has
             been accepted and this release will be
             published in the Marketplace.
             {%- endif -%}
         </p>
+
+        {%- if status == 'Approved' -%}
+        <p class="text-base mt-5">
+            Note: Once approved, it might take upto a week for a release to be deployed on marketplace.
+        </p>
+        {%- endif -%}
     </div>
 </td>
 

@@ -74,6 +74,7 @@ def setup_account(key, business_data=None):
 				"no_of_users",
 				"designation",
 				"referral_source",
+				"agreed_to_partner_consent",
 			]
 		}
 

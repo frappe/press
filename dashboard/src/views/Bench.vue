@@ -93,6 +93,7 @@ export default {
 			let tabRoute = subRoute => `/benches/${this.benchName}/${subRoute}`;
 			let tabs = [
 				{ label: 'Overview', route: 'overview' },
+				{ label: 'Sites', route: 'sites' },
 				{ label: 'Deploys', route: 'deploys' },
 				{ label: 'Jobs', route: 'jobs' }
 			];

@@ -19,6 +19,7 @@
   "stripe_customer_id",
   "country",
   "currency",
+  "payment_mode",
   "default_payment_method",
   "billing_name",
   "billing_address",
@@ -27,10 +28,7 @@
   "address_html",
   "custom_apps_section",
   "github_access_token",
-  "onboarding_section",
-  "onboarding",
-  "feature_flags_section",
-  "enable_prepaid_credits"
+  "feature_flags_section"
  ],
  "fields": [
   {
@@ -131,27 +129,9 @@
    "label": "GitHub Access Token"
   },
   {
-   "collapsible": 1,
-   "fieldname": "onboarding_section",
-   "fieldtype": "Section Break",
-   "label": "Onboarding"
-  },
-  {
-   "fieldname": "onboarding",
-   "fieldtype": "Table",
-   "label": "Onboarding Steps",
-   "options": "Team Onboarding"
-  },
-  {
    "fieldname": "feature_flags_section",
    "fieldtype": "Section Break",
    "label": "Feature Flags"
-  },
-  {
-   "default": "0",
-   "fieldname": "enable_prepaid_credits",
-   "fieldtype": "Check",
-   "label": "Enable Prepaid Credits"
   },
   {
    "fieldname": "custom_apps_section",
@@ -178,6 +158,12 @@
    "fieldtype": "Check",
    "in_standard_filter": 1,
    "label": "Is Developer"
+  },
+  {
+   "fieldname": "payment_mode",
+   "fieldtype": "Select",
+   "label": "Payment Mode",
+   "options": "\nCard\nPrepaid Credits"
   }
  ],
  "links": [
@@ -222,7 +208,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2021-06-30 12:39:52.267978",
+ "modified": "2021-08-26 11:34:41.694982",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

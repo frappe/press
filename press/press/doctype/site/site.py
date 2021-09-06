@@ -47,7 +47,6 @@ class Site(Document):
 		self.validate_site_config()
 
 	def before_insert(self):
-		self.validate_site_creation()
 		# initialize site.config based on plan
 		self._update_configuration(self.get_plan_config(), save=False)
 
@@ -67,10 +66,6 @@ class Site(Document):
 		# set site.admin_password if doesn't exist
 		if not self.admin_password:
 			self.admin_password = frappe.generate_hash(length=16)
-
-	def validate_site_creation(self):
-		if frappe.session.user != "Administrator":
-			self.can_create_site()
 
 	def validate_installed_apps(self):
 		# validate apps to be installed on site
@@ -115,10 +110,7 @@ class Site(Document):
 			self._update_redirects_for_all_site_domains()
 			frappe.db.set_value("Site Domain", self.host_name, "redirect_to_primary", False)
 
-		if self.status in ["Inactive", "Archived", "Suspended"]:
-			self.disable_subscription()
-		if self.status == "Active":
-			self.enable_subscription()
+		self.update_subscription()
 
 		if self.status not in ["Pending", "Archived", "Suspended"] and self.has_value_changed(
 			"subdomain"
@@ -189,14 +181,6 @@ class Site(Document):
 		agent.uninstall_app_site(self, app_doc.app)
 		self.status = "Pending"
 		self.save()
-
-	def can_create_site(self):
-		if self.team:
-			# validate site creation for team
-			team = frappe.get_doc("Team", self.team)
-			[allow_creation, why] = team.can_create_site()
-			if not allow_creation:
-				frappe.throw(why)
 
 	def _create_default_site_domain(self):
 		"""Create Site Domain with Site name."""
@@ -740,6 +724,18 @@ class Site(Document):
 		# create a site plan change log
 		self._create_initial_site_plan_change(plan)
 
+	def update_subscription(self):
+		if self.status in ["Inactive", "Archived", "Suspended"]:
+			self.disable_subscription()
+		if self.status == "Active":
+			self.enable_subscription()
+
+		if self.has_value_changed("team"):
+			subscription = self.subscription
+			if subscription:
+				subscription.team = self.team
+				subscription.save()
+
 	def enable_subscription(self):
 		subscription = self.subscription
 		if subscription:
@@ -792,15 +788,15 @@ class Site(Document):
 			# site in that case. team.unsuspend_sites should handle that, then.
 			return
 
-		plan = self.plan
+		plan_name = self.plan
 		# get plan from subscription
-		if not plan:
+		if not plan_name:
 			subscription = self.subscription
 			if not subscription:
 				return
-			plan = subscription.plan
+			plan_name = subscription.plan
 
-		plan = frappe.get_doc("Plan", self.plan)
+		plan = frappe.get_doc("Plan", plan_name)
 
 		disk_usage = usage.public + usage.private
 		if usage.database < plan.max_database_usage and disk_usage < plan.max_storage_usage:
@@ -943,6 +939,14 @@ class Site(Document):
 				"period_end": (">=", last_month_last_date),
 				# this month's or last month's invoice has been paid for
 			},
+		)
+
+	@classmethod
+	def get_sites_for_backup(cls) -> List[Dict[str, str]]:
+		return frappe.get_all(
+			"Site",
+			fields=["name", "timezone"],
+			filters={"status": "Active", "is_standby": "False"},
 		)
 
 

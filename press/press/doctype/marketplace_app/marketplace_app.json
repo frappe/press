@@ -18,6 +18,9 @@
   "section_break_5",
   "sources",
   "description",
+  "app_screenshots_section",
+  "screenshots",
+  "section_break_15",
   "long_description",
   "links_section",
   "website",
@@ -122,7 +125,8 @@
    "default": "0",
    "fieldname": "published",
    "fieldtype": "Check",
-   "label": "Published"
+   "label": "Published",
+   "read_only": 1
   },
   {
    "fieldname": "app",
@@ -148,6 +152,21 @@
    "fieldtype": "Table",
    "label": "Sources",
    "options": "Marketplace App Version"
+  },
+  {
+   "fieldname": "app_screenshots_section",
+   "fieldtype": "Section Break",
+   "label": "App Screenshots"
+  },
+  {
+   "fieldname": "screenshots",
+   "fieldtype": "Table",
+   "label": "Screenshots",
+   "options": "Marketplace App Screenshot"
+  },
+  {
+   "fieldname": "section_break_15",
+   "fieldtype": "Section Break"
   }
  ],
  "has_web_view": 1,
@@ -155,7 +174,7 @@
  "index_web_pages_for_search": 1,
  "is_published_field": "published",
  "links": [],
- "modified": "2021-07-19 12:17:43.734262",
+ "modified": "2021-09-02 12:54:10.190740",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Marketplace App",

@@ -33,16 +33,32 @@ class StripePaymentMethod(Document):
 		frappe.db.set_value("Team", self.team, "default_payment_method", self.name)
 
 	def on_trash(self):
-		payment_methods = frappe.db.get_all(
-			"Stripe Payment Method", filters={"team": self.team}, limit=2
+		self.remove_address_links()
+		if self.is_default:
+			team = frappe.get_doc("Team", self.team)
+			team.default_payment_method = None
+			team.save()
+
+	def remove_address_links(self):
+		address_links = frappe.db.get_all(
+			"Dynamic Link",
+			{"link_doctype": "Stripe Payment Method", "link_name": self.name},
+			pluck="parent",
 		)
-		if len(payment_methods) == 1:
-			frappe.throw("Cannot delete the only payment method")
+		address_links = list(set(address_links))
+		for address in address_links:
+			found = False
+			doc = frappe.get_doc("Address", address)
+			for link in doc.links:
+				print(link)
+				if link.link_doctype == "Stripe Payment Method" and link.link_name == self.name:
+					found = True
+					doc.remove(link)
+			if found:
+				print(doc)
+				doc.save()
 
 	def after_delete(self):
-		if self.is_default:
-			frappe.throw("Cannot delete default payment method")
-
 		stripe = get_stripe()
 		stripe.PaymentMethod.detach(self.stripe_payment_method_id)
 

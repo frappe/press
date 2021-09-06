@@ -297,20 +297,9 @@ def options_for_new():
 	)
 
 	domain = frappe.db.get_value("Press Settings", "Press Settings", ["domain"])
-
-	team_doc = frappe.get_doc("Team", team)
-	# disable site creation if card not added
-	disable_site_creation = (
-		not team_doc.default_payment_method and not team_doc.erpnext_partner
-	)
-	allow_partner = team_doc.is_partner_and_has_enough_credits()
 	return {
 		"domain": domain,
 		"plans": get_plans(),
-		"has_card": team_doc.default_payment_method,
-		"free_account": team_doc.free_account,
-		"allow_partner": allow_partner,
-		"disable_site_creation": disable_site_creation,
 		"marketplace_apps": {row.app: row for row in marketplace_apps},
 		"versions": deployed_versions,
 	}
@@ -415,18 +404,24 @@ def all():
 		else:
 			private_benches.append(group)
 
+	private_benches = sorted(private_benches, key=lambda x: x.title)
 	return [shared_bench] + private_benches
 
 
 @frappe.whitelist()
 @protected("Site")
 def get(name):
+	team = get_current_team()
 	site = frappe.get_doc("Site", name)
+	group_team = frappe.db.get_value("Release Group", site.group, "team")
+	group_name = site.group if group_team == team else None
+
 	return {
 		"name": site.name,
 		"status": site.status,
 		"trial_end_date": site.trial_end_date,
 		"setup_wizard_complete": site.setup_wizard_complete,
+		"group": group_name,
 	}
 
 
@@ -473,13 +468,7 @@ def check_for_updates(name):
 	out.apps = get_updates_between_current_and_next_apps(
 		bench.apps, destination_candidate.apps
 	)
-
-	# Filter for this site
-	site_apps = [app.app for app in site.apps]
-	out.apps = [a for a in out.apps if (a["app"] in site_apps)]
-
-	out.update_available = any(a["update_available"] for a in out.apps)
-
+	out.update_available = any([app["update_available"] for app in out.apps])
 	return out
 
 
@@ -492,7 +481,7 @@ def overview(name):
 		"recent_activity": activities(name, limit=3),
 		"plan": current_plan(name),
 		"info": {
-			"created_by": frappe.db.get_value(
+			"owner": frappe.db.get_value(
 				"User", site.team, ["first_name", "last_name", "user_image"], as_dict=True
 			),
 			"created_on": site.creation,
@@ -893,7 +882,7 @@ def multipart_exit(file, id, action, parts=None):
 			"Press Settings", "remote_access_key_id"
 		),
 		aws_secret_access_key=get_decrypted_password(
-			"Press Settings", "Press Settings", "remote_secret_access_key"
+			"Press Settings", "Press Settings", "remote_secret_access_key", raise_exception=False
 		),
 		region_name="ap-south-1",
 	)

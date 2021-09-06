@@ -1,5 +1,17 @@
 <template>
 	<Card title="Team Actions" subtitle="Actions available for your team">
+		<!-- TODO: Edit Events -->
+		<ListItem
+			title="Become Marketplace Developer"
+			subtitle="Become a marketplace app publisher"
+			v-if="showBecomePublisherButton"
+		>
+			<template #actions>
+				<Button @click="confirmPublisherAccount()">
+					<span>Become a Publisher</span>
+				</Button>
+			</template>
+		</ListItem>
 		<ListItem
 			title="Delete Account"
 			subtitle="Delete your account and personal data"
@@ -49,11 +61,31 @@ export default {
 					this.notifyFailure();
 				}
 			};
+		},
+		isDeveloperAccountAllowed() {
+			return {
+				method: 'press.api.marketplace.developer_toggle_allowed',
+				auto: true,
+				onSuccess(data) {
+					if (data) {
+						this.showBecomePublisherButton = true;
+					}
+				}
+			};
+		},
+		becomePublisher() {
+			return {
+				method: 'press.api.marketplace.become_publisher',
+				onSuccess() {
+					this.$router.push('/marketplace');
+				}
+			};
 		}
 	},
 	data() {
 		return {
-			showTeamDeletionDialog: false
+			showTeamDeletionDialog: false,
+			showBecomePublisherButton: false
 		};
 	},
 	methods: {
@@ -74,6 +106,19 @@ export default {
 						: '',
 				icon: 'check',
 				color: 'red'
+			});
+		},
+		confirmPublisherAccount() {
+			this.$confirm({
+				title: 'Become a marketplace app developer?',
+				message:
+					'You will be able to publish apps to our Marketplace upon confirmation.',
+				actionLabel: 'Yes',
+				actionType: 'primary',
+				action: closeDialog => {
+					this.$resources.becomePublisher.submit();
+					closeDialog();
+				}
 			});
 		}
 	}

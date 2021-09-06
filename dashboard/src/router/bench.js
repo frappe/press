@@ -20,6 +20,11 @@ export default [
 				component: () => import('../views/BenchApps.vue')
 			},
 			{
+				path: 'sites/:version?',
+				component: () => import('../views/BenchSites.vue'),
+				props: true
+			},
+			{
 				path: 'deploys/:candidateName?',
 				component: () => import('../views/BenchDeploys.vue'),
 				props: true
@@ -33,8 +38,8 @@ export default [
 	},
 	{
 		path: '/benches/:benchName/apps/new',
-		name: 'NewApp',
-		component: () => import('../views/NewApp.vue'),
+		name: 'NewBenchApp',
+		component: () => import('../views/NewBenchApp.vue'),
 		props: true
 	}
 ];
