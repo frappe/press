@@ -241,7 +241,7 @@ class Invoice(Document):
 
 	def update_item_descriptions(self):
 		for item in self.items:
-			if item.document_type == "Site":
+			if not item.description and item.document_type == "Site" and item.plan:
 				site_name = item.document_name.split(".archived")[0]
 				plan = frappe.get_cached_value("Plan", item.plan, "plan_title")
 				how_many_days = f"{cint(item.quantity)} day{'s' if item.quantity > 1 else ''}"
