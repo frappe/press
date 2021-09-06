@@ -1,23 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
 
-<head>
-	<meta charset="UTF-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-	<title>Marketplace: Frappe Cloud</title>
-	<link rel="stylesheet" href="/assets/press/css/marketplace.css" />
-</head>
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		{% include "templates/includes/meta_block.html" %}
+		<title>Frappe Cloud Marketplace</title>
+		<link rel="stylesheet" href="/assets/press/css/marketplace.css" />
+		<link rel="shortcut icon" href="/assets/press/dashboard/favicon.png" type="image/x-icon">
+	</head>
 
-<body class="antialiased">
-	{% include "templates/marketplace/navbar.html" %}
-	<div class="container mx-auto">
-		{%- block body -%} {%- endblock -%}
-	</div>
-</body>
+	<body class="antialiased">
+		{% include "templates/marketplace/navbar.html" %}
+		<div class="container mx-auto">
+			{%- block body -%} {%- endblock -%}
+		</div>
+	</body>
 
-<script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
-<script>
-	feather.replace();
-</script>
+	<script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+	<script>
+		feather.replace();
+	</script>
 
 </html>

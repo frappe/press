@@ -14,3 +14,8 @@ def get_context(context):
 		order_by="creation asc",
 		fields=["*"],
 	)
+	context.metatags = {
+		'title': 'Frappe Cloud Marketplace',
+		'description': 'One Click Apps for your Frappe Sites',
+		'og:type': 'website'
+	}
