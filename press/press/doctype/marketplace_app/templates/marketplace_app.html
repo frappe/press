@@ -12,34 +12,17 @@
 			]) }}
 		</div>
 
-		<div class="flex pt-4 pb-8 space-x-4 sm:space-x-10">
+		<div class="flex flex-col pt-4 pb-8 md:flex-row md:space-x-10">
 			{{ sidebar() }}
 			{{ main() }}
-		</div>
-
-		<div class="flex flex-col-reverse items-center pb-8 sm:space-x-8 sm:flex-row sm:pb-0 sm:items-start">
-			<div class="grid self-start grid-cols-2 gap-x-4 gap-y-8 sm:space-y-8 sm:block">
-
-			</div>
-
-
 		</div>
 	</div>
 </div>
 {%- endblock -%}
 
 {% macro sidebar() %}
-<div class="w-44 space-y-9">
-	<div class="w-24 h-24 sm:w-44 sm:h-44">
-		{%- if app.image -%}
-		<img class="object-cover border border-gray-200 rounded-lg"
-			src="{{ app.image }}" alt="{{ app.title }}">
-		{%- else -%}
-		<div class="flex items-center justify-center text-gray-500 bg-gray-100 border border-gray-200 rounded-lg">
-			{{ app.title[0].upper() }}
-		</div>
-		{%- endif -%}
-	</div>
+<div class="order-1 w-full md:order-none md:w-2/12 space-y-9">
+	{{ app_image(app, 'hidden md:block') }}
 	<div>
 		<h5 class="text-xl font-semibold text-gray-900">Category</h5>
 		<div class="mt-2">
@@ -69,12 +52,14 @@
 			{%- endfor -%}
 		</ul>
 	</div>
+	{#
 	<div>
 		<h5 class="text-xl font-semibold text-gray-900">Publisher</h5>
 		<!-- TODO: Replace with the publisher data (to be modeled) -->
 		<a class="text-base text-blue-500 hover:text-blue-700" href="mailto:{{ app.team }}">{{ app.team
 			}}</a>
 	</div>
+	#}
 	<div>
 		<h5 class="text-xl font-semibold text-gray-900">Supported Versions</h5>
 		<ul class="mt-2 space-y-1 text-base text-gray-600">
@@ -91,28 +76,46 @@
 
 
 {% macro main() %}
-<div class="w-full">
-	<div class="flex flex-row items-center justify-between">
-		<h1 class="mb-2 text-4xl font-semibold text-gray-900 sm:text-5xl"> {{ app.title }} </h1>
-		<div>
-			{{ button('Install Now', '/dashboard/sites/new', 'primary') }}
+<div class="w-full border-b md:w-10/12 md:border-b-0">
+	<div class="flex flex-row items-center">
+		<div class="mr-2">
+			{{ app_image(app, 'md:hidden') }}
 		</div>
+		<h1 class="mb-2 text-4xl font-semibold text-gray-900 md:text-5xl"> {{ app.title }} </h1>
 	</div>
-	<p class="text-base text-gray-700">
+	<p class="mt-2 text-base text-gray-700 md:mt-0">
 		{{ app.description }}
 	</p>
+	<div class="mt-2">
+		{{ button('Install Now', '/dashboard/sites/new', 'primary') }}
+	</div>
+	{%- if app.screenshots -%}
 	<div class="flex mt-6 space-x-4 overflow-y-auto">
 		{%- for image in app.screenshots -%}
 		<div class="flex-shrink-0 overflow-hidden border rounded-md h-60 w-80">
 			<a href="{{ image.image }}">
-				<img class="object-cover w-full h-full" src="{{ image.image }}" alt="{{ image.caption }}" />
+				<img class="object-cover w-full h-full" src="{{ image.image }}" alt="{{ image.caption or '' }}" />
 			</a>
 		</div>
 		{%- endfor -%}
 	</div>
+	{%- endif -%}
 	<div class="w-full pb-8 mt-6 prose-sm prose text-gray-900">
 		{{ frappe.utils.md_to_html(app.long_description) }}
 	</div>
 </div>
 {% endmacro %}
 
+
+{% macro app_image(app, class='') %}
+<div class="w-12 h-12 md:w-24 md:h-24 lg:w-44 lg:h-44 {{ class }}">
+	{%- if app.image -%}
+	<img class="object-cover border border-gray-200 rounded-lg"
+		src="{{ app.image }}" alt="{{ app.title }}">
+	{%- else -%}
+	<div class="flex items-center justify-center text-gray-500 bg-gray-100 border border-gray-200 rounded-lg">
+		{{ app.title[0].upper() }}
+	</div>
+	{%- endif -%}
+</div>
+{% endmacro %}
