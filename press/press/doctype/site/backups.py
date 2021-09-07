@@ -191,8 +191,6 @@ class ScheduledBackupJob:
 			frappe.get_cached_value("Press Settings", "Press Settings", "backup_limit") or 100
 		)
 
-		self.sites = Site.get_sites_for_backup(self.interval)
-		self.sites_without_offsite = Subscription.get_sites_without_offsite_backups()
 		self.offsite_setup = PressSettings.is_offsite_setup()
 		self.server_time = datetime.now()
 
@@ -223,6 +221,8 @@ class ScheduledBackupJob:
 
 	def start(self):
 		"""Schedule backups for all Active sites based on their local timezones. Also trigger offsite backups once a day."""
+		self.sites = Site.get_sites_for_backup(self.interval)
+		self.sites_without_offsite = Subscription.get_sites_without_offsite_backups()
 		limit = min(len(self.sites), self.limit)
 		sites_by_server = []
 		for server, sites in groupby(self.sites, lambda d: d.server):  # group by server

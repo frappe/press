@@ -1,13 +1,12 @@
-from press.press.doctype.site_backup.test_site_backup import create_test_site_backup
-from press.press.doctype.site.test_site import create_test_site
 import unittest
-from datetime import date, timedelta
+from datetime import datetime, timedelta
 from unittest.mock import MagicMock, Mock, patch
 
 import frappe
 
 from press.press.doctype.agent_job.agent_job import AgentJob
-from press.press.doctype.site.backups import ScheduledBackupJob, start
+from press.press.doctype.site.backups import ScheduledBackupJob
+from press.press.doctype.site.test_site import create_test_site
 
 
 @patch("press.press.doctype.site.backups.frappe.db.commit", new=MagicMock)
@@ -32,13 +31,14 @@ class TestScheduledBackupJob(unittest.TestCase):
 		new=lambda self, x, y: True,  # take offsite anyway
 	)
 	def test_offsite_taken_once_per_day(self):
-		site = create_test_site()
+		job = ScheduledBackupJob()
+		site = create_test_site(creation=datetime.now() - timedelta(hours=job.interval + 1))
 		offsite_count_before = self._offsite_count(site.name)
-		start()
+		job.start()
 		offsite_count_after = self._offsite_count(site.name)
 		self.assertGreater(offsite_count_after, offsite_count_before)
 		offsite_count_before = self._offsite_count(site.name)
-		start()
+		job.start()
 		offsite_count_after = self._offsite_count(site.name)
 		self.assertEqual(offsite_count_after, offsite_count_before)
 
@@ -46,15 +46,13 @@ class TestScheduledBackupJob(unittest.TestCase):
 		ScheduledBackupJob, "is_backup_hour", new=lambda self, x: True,  # always backup hour
 	)
 	def test_with_files_taken_once_per_day(self):
-		site = create_test_site()
+		job = ScheduledBackupJob()
+		site = create_test_site(creation=datetime.now() - timedelta(hours=job.interval + 1))
 		offsite_count_before = self._with_files_count(site.name)
-		start()
+		job.start()
 		offsite_count_after = self._with_files_count(site.name)
 		self.assertGreater(offsite_count_after, offsite_count_before)
 		offsite_count_before = self._with_files_count(site.name)
-		start()
+		job.start()
 		offsite_count_after = self._with_files_count(site.name)
 		self.assertEqual(offsite_count_after, offsite_count_before)
-
-	def test_only_get_sites_without_backups_in_interval_hour(self):
-		pass
