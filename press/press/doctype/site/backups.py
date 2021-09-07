@@ -173,13 +173,6 @@ class ScheduledBackupJob:
 		"""
 		return (hour + self.offset) % self.interval == 0
 
-	def take_offsite(self, site: str, day: datetime.date) -> bool:
-		return (
-			self.offsite_setup
-			and site not in self.sites_without_offsite
-			and not SiteBackup.offsite_backup_exists(site.name, day)
-		)
-
 	def __init__(self):
 		self.interval: int = (
 			frappe.get_cached_value("Press Settings", "Press Settings", "backup_interval") or 6
@@ -193,6 +186,15 @@ class ScheduledBackupJob:
 
 		self.offsite_setup = PressSettings.is_offsite_setup()
 		self.server_time = datetime.now()
+		self.sites = Site.get_sites_for_backup(self.interval)
+		self.sites_without_offsite = Subscription.get_sites_without_offsite_backups()
+
+	def take_offsite(self, site: str, day: datetime.date) -> bool:
+		return (
+			self.offsite_setup
+			and site not in self.sites_without_offsite
+			and not SiteBackup.offsite_backup_exists(site.name, day)
+		)
 
 	def get_site_time(self, site: Dict[str, str]) -> datetime:
 		timezone = site.timezone or "Asia/Kolkata"
@@ -221,8 +223,6 @@ class ScheduledBackupJob:
 
 	def start(self):
 		"""Schedule backups for all Active sites based on their local timezones. Also trigger offsite backups once a day."""
-		self.sites = Site.get_sites_for_backup(self.interval)
-		self.sites_without_offsite = Subscription.get_sites_without_offsite_backups()
 		limit = min(len(self.sites), self.limit)
 		sites_by_server = []
 		for server, sites in groupby(self.sites, lambda d: d.server):  # group by server
