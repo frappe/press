@@ -261,7 +261,7 @@ class ScheduledBackupJob:
 			frappe.db.rollback()
 
 
-def start():
+def schedule():
 	scheduled_backup_job = ScheduledBackupJob()
 	scheduled_backup_job.start()
 
