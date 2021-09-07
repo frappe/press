@@ -27,6 +27,7 @@ class Cluster(Document):
 				cidr_block = str(block)
 				if cidr_block not in existing_blocks:
 					self.cidr_block = cidr_block
+					self.subnet_cidr_block = cidr_block
 					break
 		if not self.cidr_block:
 			frappe.throw("No CIDR block available", frappe.ValidationError)
@@ -56,4 +57,16 @@ class Cluster(Document):
 		)
 		self.aws_vpc_id = response["Vpc"]["VpcId"]
 
+		response = client.create_subnet(
+			TagSpecifications=[
+				{
+					"ResourceType": "subnet",
+					"Tags": [{"Key": "Name", "Value": f"Frappe Cloud - {self.name} - Public Subnet"},],
+				},
+			],
+			AvailabilityZone=self.availability_zone,
+			VpcId=self.aws_vpc_id,
+			CidrBlock=self.subnet_cidr_block,
+		)
+		self.aws_subnet_id = response["Subnet"]["SubnetId"]
 		self.save()
