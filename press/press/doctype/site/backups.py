@@ -194,12 +194,12 @@ class ScheduledBackupJob:
 		self.sites = Site.get_sites_for_backup(self.interval)
 		self.sites_without_offsite = Subscription.get_sites_without_offsite_backups()
 		self.offsite_setup = PressSettings.is_offsite_setup()
+		self.server_time = datetime.now()
 
 	def get_site_time(self, site: Dict[str, str]) -> datetime:
-		server_time = datetime.now()
 		timezone = site.timezone or "Asia/Kolkata"
 		site_timezone = pytz.timezone(timezone)
-		return server_time.astimezone(site_timezone)
+		return self.server_time.astimezone(site_timezone)
 
 	class ModifiableCycle:
 		def __init__(self, items=()):
@@ -232,15 +232,17 @@ class ScheduledBackupJob:
 		for server, sites in sites_by_server_cycle:
 			try:
 				site = next(sites)
-				self.backup(site)
+				while not self.backup(site):
+					site = next(sites)
 			except StopIteration:
-				sites_by_server_cycle.delete_next()
+				sites_by_server_cycle.delete_next()  # skip sites for this server
 				continue
 			limit -= 1
 			if limit <= 0:
 				break
 
-	def backup(self, site):
+	def backup(self, site) -> bool:
+		"""Return true if backup was taken."""
 		try:
 			site_time = self.get_site_time(site)
 			if self.is_backup_hour(site_time.hour):
@@ -251,6 +253,8 @@ class ScheduledBackupJob:
 
 				frappe.get_doc("Site", site.name).backup(with_files=with_files, offsite=offsite)
 				frappe.db.commit()
+				return True
+			return False
 
 		except Exception:
 			log_error("Site Backup Exception", site=site)
