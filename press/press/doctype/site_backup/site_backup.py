@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 
 import json
 from datetime import datetime, timedelta
+from typing import Dict
 
 import frappe
 from frappe.desk.doctype.tag.tag import add_tag
@@ -37,6 +38,23 @@ class SiteBackup(Document):
 	def after_delete(self):
 		if self.job:
 			frappe.delete_doc_if_exists("Agent Job", self.job)
+
+	@classmethod
+	def offsite_backup_exists(cls, site: str, day: datetime.date) -> bool:
+		return cls.backup_exists(site, day, {"offsite": True})
+
+	@classmethod
+	def backup_exists(cls, site: str, day: datetime.date, filters: Dict):
+		base_filters = {
+			"creation": ("between", [day, day]),
+			"site": site,
+			"status": "Success",
+		}
+		return frappe.db.exists("Site Backup", {**base_filters, **filters})
+
+	@classmethod
+	def file_backup_exists(cls, site: str, day: datetime.date) -> bool:
+		return cls.backup_exists(site, day, {"with_files": True})
 
 
 def track_offsite_backups(

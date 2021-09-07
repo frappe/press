@@ -5,6 +5,7 @@
 from __future__ import unicode_literals
 
 import functools
+from collections import deque
 from datetime import date, datetime, timedelta
 from itertools import groupby
 from typing import Dict, List
@@ -12,8 +13,10 @@ from typing import Dict, List
 import frappe
 import pytz
 
+from press.press.doctype.press_settings.press_settings import PressSettings
 from press.press.doctype.remote_file.remote_file import delete_remote_backup_objects
 from press.press.doctype.site.site import Site
+from press.press.doctype.site_backup.site_backup import SiteBackup
 from press.press.doctype.subscription.subscription import Subscription
 from press.utils import log_error
 
@@ -159,71 +162,108 @@ class GFS(BackupRotationScheme):
 		return self._expire_and_get_remote_files(to_be_expired_backups)
 
 
-def is_backup_hour(hour: int) -> bool:
-	"""hour: 0-23
+class ScheduledBackupJob:
+	"""Represents Scheduled Backup Job that takes backup for all active sites."""
 
-	Returns true if backup is supposed to be taken at this hour
-	"""
-	interval: int = (
-		frappe.get_cached_value("Press Settings", "Press Settings", "backup_interval") or 6
-	)
-	backup_offset: int = (
-		frappe.get_cached_value("Press Settings", "Press Settings", "backup_offset") or 0
-	)
-	return (hour + backup_offset) % interval == 0
+	def is_backup_hour(self, hour: int) -> bool:
+		"""
+		hour: 0-23
 
+		Return true if backup is supposed to be taken at this hour
+		"""
+		return (hour + self.offset) % self.interval == 0
 
-def schedule():
-	"""Schedule backups for all Active sites based on their local timezones. Also trigger offsite backups once a day."""
-	sites = Site.get_sites_for_backup()
-	sites_without_offsite_backups = Subscription.get_sites_without_offsite_backups()
-
-	offsite_setup = any(
-		frappe.db.get_value(
-			"Press Settings",
-			"Press Settings",
-			["aws_s3_bucket", "offsite_backups_access_key_id"],
+	def __init__(self):
+		self.interval: int = (
+			frappe.get_cached_value("Press Settings", "Press Settings", "backup_interval") or 6
 		)
-	)
+		self.offset: int = (
+			frappe.get_cached_value("Press Settings", "Press Settings", "backup_offset") or 0
+		)
+		self.limit = (
+			frappe.get_cached_value("Press Settings", "Press Settings", "backup_limit") or 100
+		)
 
-	for site in sites:
+		self.offsite_setup = PressSettings.is_offsite_setup()
+		self.server_time = datetime.now()
+		self.sites = Site.get_sites_for_backup(self.interval)
+		self.sites_without_offsite = Subscription.get_sites_without_offsite_backups()
+
+	def take_offsite(self, site: str, day: datetime.date) -> bool:
+		return (
+			self.offsite_setup
+			and site not in self.sites_without_offsite
+			and not SiteBackup.offsite_backup_exists(site.name, day)
+		)
+
+	def get_site_time(self, site: Dict[str, str]) -> datetime:
+		timezone = site.timezone or "Asia/Kolkata"
+		site_timezone = pytz.timezone(timezone)
+		return self.server_time.astimezone(site_timezone)
+
+	class ModifiableCycle:
+		def __init__(self, items=()):
+			self.deque = deque(items)
+
+		def __iter__(self):
+			return self
+
+		def __next__(self):
+			if not self.deque:
+				raise StopIteration
+			item = self.deque.popleft()
+			self.deque.append(item)
+			return item
+
+		def delete_next(self):
+			self.deque.popleft()
+
+		def delete_prev(self):
+			self.deque.pop()
+
+	def start(self):
+		"""Schedule backups for all Active sites based on their local timezones. Also trigger offsite backups once a day."""
+		limit = min(len(self.sites), self.limit)
+		sites_by_server = []
+		for server, sites in groupby(self.sites, lambda d: d.server):  # group by server
+			sites_by_server.append((server, iter(list(sites))))
+
+		sites_by_server_cycle = self.ModifiableCycle(sites_by_server)
+		for server, sites in sites_by_server_cycle:
+			try:
+				site = next(sites)
+				while not self.backup(site):
+					site = next(sites)
+			except StopIteration:
+				sites_by_server_cycle.delete_next()  # skip sites for this server
+				continue
+			limit -= 1
+			if limit <= 0:
+				break
+
+	def backup(self, site) -> bool:
+		"""Return true if backup was taken."""
 		try:
-			server_time = datetime.now()
-			timezone = site.timezone or "Asia/Kolkata"
-			site_timezone = pytz.timezone(timezone)
-			site_time = server_time.astimezone(site_timezone)
+			site_time = self.get_site_time(site)
+			if self.is_backup_hour(site_time.hour):
+				today_at_site = site_time.date()
 
-			if is_backup_hour(site_time.hour):
-				today = site_time.date()
-				common_filters = {
-					"creation": ("between", [today, today]),
-					"site": site.name,
-					"status": "Success",
-				}
-				offsite = (
-					offsite_setup
-					and site.name not in sites_without_offsite_backups
-					and not frappe.get_all(
-						"Site Backup",
-						fields=["count(*) as total"],
-						filters={**common_filters, "offsite": 1},
-					)[0]["total"]
-				)
-				with_files = (
-					not frappe.get_all(
-						"Site Backup",
-						fields=["count(*) as total"],
-						filters={**common_filters, "with_files": 1},
-					)[0]["total"]
-					or offsite
-				)
+				offsite = self.take_offsite(site, today_at_site)
+				with_files = offsite or not SiteBackup.file_backup_exists(site.name, today_at_site)
 
 				frappe.get_doc("Site", site.name).backup(with_files=with_files, offsite=offsite)
 				frappe.db.commit()
+				return True
+			return False
 
 		except Exception:
 			log_error("Site Backup Exception", site=site)
 			frappe.db.rollback()
+
+
+def schedule():
+	scheduled_backup_job = ScheduledBackupJob()
+	scheduled_backup_job.start()
 
 
 def cleanup_offsite():
