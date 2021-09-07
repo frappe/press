@@ -7,18 +7,116 @@
  "engine": "InnoDB",
  "field_order": [
   "description",
-  "monitoring_password"
+  "column_break_2",
+  "monitoring_password",
+  "provisioning_section",
+  "cloud_provider",
+  "region",
+  "availability_zone",
+  "column_break_5",
+  "aws_access_key_id",
+  "aws_secret_access_key",
+  "networking_section",
+  "cidr_block",
+  "subnet_cidr_block",
+  "column_break_12",
+  "aws_vpc_id",
+  "aws_subnet_id"
  ],
  "fields": [
   {
    "fieldname": "description",
-   "fieldtype": "Text",
+   "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Description"
   },
   {
    "fieldname": "monitoring_password",
    "fieldtype": "Password",
    "label": "Monitoring Password"
+  },
+  {
+   "default": "Generic",
+   "fieldname": "cloud_provider",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Cloud Provider",
+   "options": "AWS EC2\nGeneric",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.cloud_provider === \"AWS EC2\"",
+   "fieldname": "aws_access_key_id",
+   "fieldtype": "Data",
+   "label": "AWS Access Key ID",
+   "mandatory_depends_on": "eval:doc.cloud_provider === \"AWS EC2\""
+  },
+  {
+   "depends_on": "eval:doc.cloud_provider === \"AWS EC2\"",
+   "fieldname": "aws_secret_access_key",
+   "fieldtype": "Password",
+   "label": "AWS Secret Access Key",
+   "mandatory_depends_on": "eval:doc.cloud_provider === \"AWS EC2\""
+  },
+  {
+   "fieldname": "provisioning_section",
+   "fieldtype": "Section Break",
+   "label": "Provisioning"
+  },
+  {
+   "fieldname": "column_break_5",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.cloud_provider === \"AWS EC2\"",
+   "fieldname": "region",
+   "fieldtype": "Data",
+   "label": "Region",
+   "mandatory_depends_on": "eval:doc.cloud_provider === \"AWS EC2\""
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "cidr_block",
+   "fieldtype": "Data",
+   "label": "CIDR Block",
+   "read_only": 1
+  },
+  {
+   "fieldname": "networking_section",
+   "fieldtype": "Section Break",
+   "label": "Networking"
+  },
+  {
+   "fieldname": "column_break_12",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "aws_vpc_id",
+   "fieldtype": "Data",
+   "label": "AWS VPC ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "subnet_cidr_block",
+   "fieldtype": "Data",
+   "label": "Subnet CIDR Block",
+   "read_only": 1
+  },
+  {
+   "fieldname": "aws_subnet_id",
+   "fieldtype": "Data",
+   "label": "AWS Subnet ID",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.cloud_provider === \"AWS EC2\"",
+   "fieldname": "availability_zone",
+   "fieldtype": "Data",
+   "label": "Availability Zone",
+   "mandatory_depends_on": "eval:doc.cloud_provider === \"AWS EC2\""
   }
  ],
  "index_web_pages_for_search": 1,
@@ -39,10 +137,11 @@
    "link_fieldname": "cluster"
   }
  ],
- "modified": "2021-06-08 11:20:32.175869",
+ "modified": "2021-09-07 18:41:53.205324",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",
+ "naming_rule": "Set by user",
  "owner": "Administrator",
  "permissions": [
   {
