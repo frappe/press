@@ -16,9 +16,7 @@ from press.press.doctype.press_settings.test_press_settings import (
 from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
 
 
-def create_test_server(
-	proxy_server, database_server
-):
+def create_test_server(proxy_server, database_server):
 	"""Create test Server doc."""
 	return frappe.get_doc(
 		{
