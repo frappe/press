@@ -966,7 +966,7 @@ class Site(Document):
 	def get_sites_with_backup_in_interval(cls, interval_hrs_ago) -> List[str]:
 		return frappe.get_all(
 			"Site Backup",
-			{"creation": (">=", {interval_hrs_ago}), "owner": "Administrator"},
+			{"creation": (">=", interval_hrs_ago), "owner": "Administrator"},
 			pluck="site",
 		)
 
