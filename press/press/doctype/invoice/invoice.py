@@ -241,7 +241,7 @@ class Invoice(Document):
 
 	def update_item_descriptions(self):
 		for item in self.items:
-			if item.document_type == "Site":
+			if not item.description and item.document_type == "Site" and item.plan:
 				site_name = item.document_name.split(".archived")[0]
 				plan = frappe.get_cached_value("Plan", item.plan, "plan_title")
 				how_many_days = f"{cint(item.quantity)} day{'s' if item.quantity > 1 else ''}"
@@ -605,8 +605,8 @@ def finalize_draft_invoices():
 	- Runs every hour
 	- Processes 500 invoices at a time
 	- Finalizes the invoices whose
-	  - period ends today and time is 6PM or later
-	  - period has ended before
+	- period ends today and time is 6PM or later
+	- period has ended before
 	"""
 
 	# get draft invoices whose period has ended or ends today

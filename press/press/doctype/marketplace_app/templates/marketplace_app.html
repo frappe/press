@@ -1,73 +1,121 @@
 {% extends "templates/marketplace/base.html" %}
-{%- from "templates/marketplace/macros.html" import button, link, breadcrumbs -%}
+{%- from "templates/marketplace/macros.html" import button, link, breadcrumbs, badge -%}
 
 {%- block body -%}
-<div class="px-4 sm:px-8">
-	<div>
-		<div class="flex items-center py-8 space-x-4 sm:space-x-8 sm:py-14">
-			<div class="flex-shrink-0">
-				{%- if app.image -%}
-				<img class="object-cover w-24 h-24 border border-gray-200 rounded-full sm:w-32 sm:h-32"
-					src="{{ app.image }}" alt="{{ app.title }}">
-				{%- else -%}
-				<div class="flex items-center justify-center w-24 h-24 text-gray-500 bg-gray-100 border border-gray-200 rounded-full sm:w-32 sm:h-32"
-					style="font-size: 4rem;">
-					{{ app.title[0].upper() }}
-				</div>
-				{%- endif -%}
-			</div>
-			<div>
-				<div class="mb-1">
-					{{ breadcrumbs([
-						{ 'label': 'Apps', 'url': '/marketplace' },
-						{ 'label': category.name, 'url': '' },
-					]) }}
-				</div>
-				<h1 class="text-4xl font-bold text-gray-900 sm:text-6xl"> {{ app.title }} </h1>
-				<p class="text-base text-gray-700 sm:text-xl">{{ app.description }}</p>
-				<div class="mt-4">
-					{{ button('Install Now', '/dashboard/sites/new', 'primary') }}
-				</div>
-			</div>
+<div>
+	<div class="px-4 sm:px-8">
+		<div class="mt-5">
+			{{ breadcrumbs([
+			{ 'label': 'Apps', 'url': '/marketplace' },
+			{ 'label': category.name, 'url': '' },
+			{ 'label': app.title, 'url': '' }
+			]) }}
 		</div>
-		<div class="flex flex-col pb-32 sm:flex-row">
-			<div class="w-full pb-8 prose-sm prose text-gray-900 sm:w-3/5">
-				{{ frappe.utils.md_to_html(app.long_description) }}
-			</div>
-			<div class="grid w-full grid-cols-2 pl-0 gap-x-4 gap-y-8 sm:space-y-8 sm:block sm:pl-24 sm:w-2/5">
-				<div>
-					<h5 class="text-base text-gray-600">Website</h5>
-					<ul class="mt-2 space-y-1 text-base">
-						<li class="">{{ link(app.website, app.website) }}</li>
-					</ul>
-				</div>
-				<div>
-					<h5 class="text-base text-gray-600">Supported Versions</h5>
-					<ul class="mt-2 space-y-1 text-base">
-						{%- for group in groups -%}
-						<li class="">
-							{{ link(group.version, group.frappe.repository_url + '/tree/' + group.frappe.branch, blank=True) }}
-						</li>
-						{%- endfor -%}
-					</ul>
-				</div>
-				<div>
-					<h5 class="text-base text-gray-600">Links</h5>
-					<ul class="mt-2 space-y-1 text-base">
-						{%- for label, value in ({
-							'Support': app.support,
-							'Documentation': app.documentation,
-							'Privacy Policy': app.privacy_policy,
-							'Terms of Service': app.terms_of_service
-						}).items() -%}
-						{%- if value -%}
-						<li class="">{{ link(label, value) }}</li>
-						{%- endif -%}
-						{%- endfor -%}
-					</ul>
-				</div>
-			</div>
+
+		<div class="flex flex-col pt-4 pb-8 md:flex-row md:space-x-10">
+			{{ sidebar() }}
+			{{ main() }}
 		</div>
 	</div>
 </div>
 {%- endblock -%}
+
+{% macro sidebar() %}
+<div class="order-1 w-full md:order-none md:w-2/12 space-y-9">
+	{{ app_image(app, 'hidden md:block') }}
+	<div>
+		<h5 class="text-xl font-semibold text-gray-900">Category</h5>
+		<div class="mt-2">
+			<!-- Hard-coded for now -->
+			{{ badge('Free') }}
+			{{ badge(app.category) }}
+		</div>
+	</div>
+	<div>
+		<h5 class="text-xl font-semibold text-gray-900">Learn more & Support</h5>
+		<ul class="flex flex-col mt-2 space-y-3">
+			{%- for label, icon, href in [
+			('Visit Website', 'external-link', app.website),
+			('Support', 'life-buoy', app.support),
+			('Documentaion', 'file-text', app.documentation),
+			('Privacy Policy', 'lock', app.privacy_policy),
+			('Terms of Service', 'shield', app.terms_of_service)
+			] -%}
+			{%- if href -%}
+			<li>
+				<a class="flex flex-row space-x-1 text-gray-600 hover:text-gray-800" href="{{ href }}">
+					<i class="w-4 h-4" data-feather="{{ icon }}"></i>
+					<span class="text-base">{{ label }}</span>
+				</a>
+			</li>
+			{%- endif -%}
+			{%- endfor -%}
+		</ul>
+	</div>
+	{#
+	<div>
+		<h5 class="text-xl font-semibold text-gray-900">Publisher</h5>
+		<!-- TODO: Replace with the publisher data (to be modeled) -->
+		<a class="text-base text-blue-500 hover:text-blue-700" href="mailto:{{ app.team }}">{{ app.team
+			}}</a>
+	</div>
+	#}
+	<div>
+		<h5 class="text-xl font-semibold text-gray-900">Supported Versions</h5>
+		<ul class="mt-2 space-y-1 text-base text-gray-600">
+			{%- for group in groups -%}
+			<li>
+				{{ link(group.version, group.frappe.repository_url + '/tree/' + group.frappe.branch,
+				blank=True) }}
+			</li>
+			{%- endfor -%}
+		</ul>
+	</div>
+</div>
+{% endmacro %}
+
+
+{% macro main() %}
+<div class="w-full border-b md:w-10/12 md:border-b-0">
+	<div class="flex flex-row items-center">
+		<div class="mr-2">
+			{{ app_image(app, 'md:hidden') }}
+		</div>
+		<h1 class="mb-2 text-4xl font-semibold text-gray-900 md:text-5xl"> {{ app.title }} </h1>
+	</div>
+	<p class="mt-2 text-base text-gray-700 md:mt-0">
+		{{ app.description }}
+	</p>
+	<div class="mt-2">
+		{{ button('Install Now', '/dashboard/sites/new', 'primary') }}
+	</div>
+	{%- if app.screenshots -%}
+	<div class="flex mt-6 space-x-4 overflow-y-auto">
+		{%- for image in app.screenshots -%}
+		<div class="flex-shrink-0 overflow-hidden border rounded-md h-60 w-80">
+			<a href="{{ image.image }}">
+				<img class="object-cover w-full h-full" src="{{ image.image }}" alt="{{ image.caption or '' }}" />
+			</a>
+		</div>
+		{%- endfor -%}
+	</div>
+	{%- endif -%}
+	<div class="w-full pb-8 mt-6 prose-sm prose text-gray-900">
+		{{ frappe.utils.md_to_html(app.long_description) }}
+	</div>
+</div>
+{% endmacro %}
+
+
+{% macro app_image(app, class='') %}
+<div class="w-12 h-12 md:w-24 md:h-24 lg:w-44 lg:h-44 {{ class }}">
+	{%- if app.image -%}
+	<img class="object-cover border border-gray-200 rounded-lg"
+		src="{{ app.image }}" alt="{{ app.title }}">
+	{%- else -%}
+	<div class="flex items-center justify-center text-gray-500 bg-gray-100 border border-gray-200 rounded-lg">
+		{{ app.title[0].upper() }}
+	</div>
+	{%- endif -%}
+</div>
+{% endmacro %}
