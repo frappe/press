@@ -5,14 +5,15 @@
 from __future__ import unicode_literals
 
 import functools
+from collections import deque
 from datetime import date, datetime, timedelta
 from itertools import groupby
-from press.press.doctype.press_settings.press_settings import PressSettings
 from typing import Dict, List
 
 import frappe
 import pytz
 
+from press.press.doctype.press_settings.press_settings import PressSettings
 from press.press.doctype.remote_file.remote_file import delete_remote_backup_objects
 from press.press.doctype.site.site import Site
 from press.press.doctype.site_backup.site_backup import SiteBackup
@@ -170,26 +171,29 @@ class ScheduledBackupJob:
 
 		Return true if backup is supposed to be taken at this hour
 		"""
-		return (hour + self.backup_offset) % self.interval == 0
+		return (hour + self.offset) % self.interval == 0
 
 	def take_offsite(self, site: str, day: datetime.date) -> bool:
 		return (
 			self.offsite_setup
-			and site not in self.sites_without_offsite_backups
+			and site not in self.sites_without_offsite
 			and not SiteBackup.offsite_backup_exists(site.name, day)
 		)
 
 	def __init__(self):
-		self.sites = Site.get_sites_for_backup()
-		self.sites_without_offsite_backups = Subscription.get_sites_without_offsite_backups()
-		self.offsite_setup = PressSettings.is_offsite_setup()
-
 		self.interval: int = (
 			frappe.get_cached_value("Press Settings", "Press Settings", "backup_interval") or 6
 		)
-		self.backup_offset: int = (
+		self.offset: int = (
 			frappe.get_cached_value("Press Settings", "Press Settings", "backup_offset") or 0
 		)
+		self.limit = (
+			frappe.get_cached_value("Press Settings", "Press Settings", "backup_limit") or 100
+		)
+
+		self.sites = Site.get_sites_for_backup(self.interval)
+		self.sites_without_offsite = Subscription.get_sites_without_offsite_backups()
+		self.offsite_setup = PressSettings.is_offsite_setup()
 
 	def get_site_time(self, site: Dict[str, str]) -> datetime:
 		server_time = datetime.now()
@@ -197,23 +201,60 @@ class ScheduledBackupJob:
 		site_timezone = pytz.timezone(timezone)
 		return server_time.astimezone(site_timezone)
 
+	class ModifiableCycle:
+		def __init__(self, items=()):
+			self.deque = deque(items)
+
+		def __iter__(self):
+			return self
+
+		def __next__(self):
+			if not self.deque:
+				raise StopIteration
+			item = self.deque.popleft()
+			self.deque.append(item)
+			return item
+
+		def delete_next(self):
+			self.deque.popleft()
+
+		def delete_prev(self):
+			self.deque.pop()
+
 	def start(self):
 		"""Schedule backups for all Active sites based on their local timezones. Also trigger offsite backups once a day."""
-		for site in self.sites:
+		limit = min(len(self.sites), self.limit)
+		sites_by_server = []
+		for server, sites in groupby(self.sites, lambda d: d.server):  # group by server
+			sites_by_server.append((server, iter(list(sites))))
+
+		sites_by_server_cycle = self.ModifiableCycle(sites_by_server)
+		for server, sites in sites_by_server_cycle:
 			try:
-				site_time = self.get_site_time(site)
-				if self.is_backup_hour(site_time.hour):
-					today_at_site = site_time.date()
+				site = next(sites)
+				self.backup(site)
+			except StopIteration:
+				sites_by_server_cycle.delete_next()
+				continue
+			limit -= 1
+			if limit <= 0:
+				break
 
-					offsite = self.take_offsite(site, today_at_site)
-					with_files = offsite or not SiteBackup.file_backup_exists(site.name, today_at_site)
+	def backup(self, site):
+		try:
+			site_time = self.get_site_time(site)
+			if self.is_backup_hour(site_time.hour):
+				today_at_site = site_time.date()
 
-					frappe.get_doc("Site", site.name).backup(with_files=with_files, offsite=offsite)
-					frappe.db.commit()
+				offsite = self.take_offsite(site, today_at_site)
+				with_files = offsite or not SiteBackup.file_backup_exists(site.name, today_at_site)
 
-			except Exception:
-				log_error("Site Backup Exception", site=site)
-				frappe.db.rollback()
+				frappe.get_doc("Site", site.name).backup(with_files=with_files, offsite=offsite)
+				frappe.db.commit()
+
+		except Exception:
+			log_error("Site Backup Exception", site=site)
+			frappe.db.rollback()
 
 
 def start():
