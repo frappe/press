@@ -421,9 +421,9 @@ def get_frappe_io_auth_url() -> Union[str, None]:
 		return
 
 	if (
-		get_oauth_keys(provider.name)
-		and provider.get_password("client_secret")
+		provider.base_url
 		and provider.client_id
-		and provider.base_url
+		and get_oauth_keys(provider.name)
+		and provider.get_password("client_secret")
 	):
 		return get_oauth2_authorize_url(provider.name, redirect_to="")

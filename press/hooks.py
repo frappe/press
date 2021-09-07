@@ -167,7 +167,6 @@ scheduler_events = {
 		"press.press.doctype.bench.bench.archive_obsolete_benches",
 		"press.press.doctype.bench.bench.archive_staging_sites",
 		"press.press.doctype.bench.bench.scale_workers",
-		"press.press.doctype.site.backups.schedule",
 		"press.press.doctype.subscription.subscription.create_usage_records",
 		"press.press.doctype.bench.bench.sync_benches",
 		"press.press.doctype.site.pool.create",
@@ -185,6 +184,7 @@ scheduler_events = {
 		"*/15 * * * *": [
 			"press.press.doctype.site_update.site_update.schedule_updates",
 			"press.press.doctype.drip_email.drip_email.send_welcome_email",
+			"press.press.doctype.site.backups.schedule",
 		],
 		"15,45 * * * *": [
 			"press.press.doctype.site.site_usages.update_cpu_usages",
