@@ -70,6 +70,39 @@ class Cluster(Document):
 		)
 		self.aws_subnet_id = response["Subnet"]["SubnetId"]
 
+		response = client.create_internet_gateway(
+			TagSpecifications=[
+				{
+					"ResourceType": "internet-gateway",
+					"Tags": [
+						{"Key": "Name", "Value": f"Frappe Cloud - {self.name} - Internet Gateway"},
+					],
+				},
+			],
+		)
+
+		self.aws_internet_gateway_id = response["InternetGateway"]["InternetGatewayId"]
+
+		client.attach_internet_gateway(
+			InternetGatewayId=self.aws_internet_gateway_id, VpcId=self.aws_vpc_id
+		)
+
+		response = client.describe_route_tables(
+			Filters=[{"Name": "vpc-id", "Values": [self.aws_vpc_id]}],
+		)
+		self.aws_route_table_id = response["RouteTables"][0]["RouteTableId"]
+
+		client.create_route(
+			DestinationCidrBlock="0.0.0.0/0",
+			GatewayId=self.aws_internet_gateway_id,
+			RouteTableId=self.aws_route_table_id,
+		)
+
+		client.create_tags(
+			Resources=[self.aws_route_table_id],
+			Tags=[{"Key": "Name", "Value": f"Frappe Cloud - {self.name} - Route Table"}],
+		)
+
 		response = client.create_security_group(
 			GroupName=f"Frappe Cloud - {self.name} - Security Group",
 			Description="Allow Everything",
