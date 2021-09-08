@@ -50,7 +50,7 @@ class Cluster(Document):
 			TagSpecifications=[
 				{
 					"ResourceType": "vpc",
-					"Tags": [{"Key": "Name", "Value": f"Frappe Cloud - {self.name}"},],
+					"Tags": [{"Key": "Name", "Value": f"Frappe Cloud - {self.name}"}],
 				},
 			],
 			CidrBlock=self.cidr_block,
@@ -61,7 +61,7 @@ class Cluster(Document):
 			TagSpecifications=[
 				{
 					"ResourceType": "subnet",
-					"Tags": [{"Key": "Name", "Value": f"Frappe Cloud - {self.name} - Public Subnet"},],
+					"Tags": [{"Key": "Name", "Value": f"Frappe Cloud - {self.name} - Public Subnet"}],
 				},
 			],
 			AvailabilityZone=self.availability_zone,
