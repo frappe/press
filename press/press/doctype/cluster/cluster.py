@@ -103,6 +103,15 @@ class Cluster(Document):
 			Tags=[{"Key": "Name", "Value": f"Frappe Cloud - {self.name} - Route Table"}],
 		)
 
+		response = client.describe_network_acls(
+			Filters=[{"Name": "vpc-id", "Values": [self.aws_vpc_id]}],
+		)
+		self.aws_network_acl_id = response["NetworkAcls"][0]["NetworkAclId"]
+		client.create_tags(
+			Resources=[self.aws_network_acl_id],
+			Tags=[{"Key": "Name", "Value": f"Frappe Cloud - {self.name} - Network ACL"}],
+		)
+
 		response = client.create_security_group(
 			GroupName=f"Frappe Cloud - {self.name} - Security Group",
 			Description="Allow Everything",

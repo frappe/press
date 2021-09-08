@@ -21,7 +21,10 @@
   "subnet_cidr_block",
   "column_break_12",
   "aws_vpc_id",
-  "aws_subnet_id"
+  "aws_subnet_id",
+  "aws_security_group_id",
+  "aws_network_acl_id",
+  "aws_route_table_id"
  ],
  "fields": [
   {
@@ -68,6 +71,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "default": "ap-south-1",
    "depends_on": "eval:doc.cloud_provider === \"AWS EC2\"",
    "fieldname": "region",
    "fieldtype": "Data",
@@ -112,11 +116,30 @@
    "read_only": 1
   },
   {
+   "default": "ap-south-1a",
    "depends_on": "eval:doc.cloud_provider === \"AWS EC2\"",
    "fieldname": "availability_zone",
    "fieldtype": "Data",
    "label": "Availability Zone",
    "mandatory_depends_on": "eval:doc.cloud_provider === \"AWS EC2\""
+  },
+  {
+   "fieldname": "aws_security_group_id",
+   "fieldtype": "Data",
+   "label": "AWS Security Group ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "aws_network_acl_id",
+   "fieldtype": "Data",
+   "label": "AWS Network ACL ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "aws_route_table_id",
+   "fieldtype": "Data",
+   "label": "AWS Route Table ID",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -137,7 +160,7 @@
    "link_fieldname": "cluster"
   }
  ],
- "modified": "2021-09-07 18:41:53.205324",
+ "modified": "2021-09-08 15:01:58.279073",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",
