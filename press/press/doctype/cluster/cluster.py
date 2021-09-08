@@ -69,4 +69,50 @@ class Cluster(Document):
 			CidrBlock=self.subnet_cidr_block,
 		)
 		self.aws_subnet_id = response["Subnet"]["SubnetId"]
+
+		response = client.create_security_group(
+			GroupName=f"Frappe Cloud - {self.name} - Security Group",
+			Description="Allow Everything",
+			VpcId=self.aws_vpc_id,
+			TagSpecifications=[
+				{
+					"ResourceType": "security-group",
+					"Tags": [
+						{"Key": "Name", "Value": f"Frappe Cloud - {self.name} - Security Group"},
+					],
+				},
+			],
+		)
+		self.aws_security_group_id = response["GroupId"]
+
+		client.authorize_security_group_ingress(
+			GroupId=self.aws_security_group_id,
+			IpPermissions=[
+				{
+					"FromPort": 80,
+					"IpProtocol": "tcp",
+					"IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": "HTTP from anywhere"}],
+					"ToPort": 80,
+				},
+				{
+					"FromPort": 443,
+					"IpProtocol": "tcp",
+					"IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": "HTTPS from anywhere"}],
+					"ToPort": 443,
+				},
+				{
+					"FromPort": 22,
+					"IpProtocol": "tcp",
+					"IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": "SSH from anywhere"}],
+					"ToPort": 22,
+				},
+				{
+					"FromPort": -1,
+					"IpProtocol": "icmp",
+					"IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": "ICMP from anywhere"}],
+					"ToPort": -1,
+				},
+			],
+		)
+
 		self.save()
