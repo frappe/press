@@ -135,3 +135,7 @@ class MonitorServer(BaseServer):
 			ansible.run()
 		except Exception:
 			log_error("Monitoring Server Setup Exception", server=self.as_dict())
+
+	@frappe.whitelist()
+	def show_grafana_password(self):
+		return self.get_password("grafana_password")
