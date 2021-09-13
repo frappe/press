@@ -96,7 +96,6 @@ export default {
 				auto: Boolean(this.dateValue),
 				paged: true,
 				keepData: true,
-				delay: 3,
 				default: []
 			};
 		}
