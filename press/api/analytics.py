@@ -196,7 +196,8 @@ def request_logs(name, timezone, date, sort=None, start=0):
 					{"match_phrase": {"json.transaction_type": "request"}},
 					{"match_phrase": {"json.site": name}},
 					{"range": {"@timestamp": {"gt": f"{date}||-1d/d", "lte": f"{date}||/d"}}},
-				]
+				],
+				"must_not": [{"match_phrase": {"json.request.path": "/api/method/ping"}}],
 			}
 		},
 		"sort": sort_value,
