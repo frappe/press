@@ -121,7 +121,7 @@ class Subscription(Document):
 		return self._subscribed_document
 
 	@classmethod
-	def get_sites_without_offsite_backups(cls, plans) -> List[str]:
+	def get_sites_without_offsite_backups(cls) -> List[str]:
 		plans = Plan.get_ones_without_offsite_backups()
 		return frappe.get_all(
 			"Subscription",

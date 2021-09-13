@@ -7,7 +7,7 @@ from __future__ import unicode_literals
 import json
 import re
 from collections import defaultdict
-from datetime import date
+from datetime import date, datetime, timedelta
 from typing import Any, Dict, List
 
 import boto3
@@ -942,11 +942,32 @@ class Site(Document):
 		)
 
 	@classmethod
-	def get_sites_for_backup(cls) -> List[Dict[str, str]]:
+	def get_sites_for_backup(cls, interval: int):
+		sites = cls.get_sites_without_backup_in_interval(interval)
 		return frappe.get_all(
-			"Site",
-			fields=["name", "timezone"],
-			filters={"status": "Active", "is_standby": "False"},
+			"Site", {"name": ("in", sites)}, ["name", "timezone", "server"], order_by="server"
+		)
+
+	@classmethod
+	def get_sites_without_backup_in_interval(cls, interval: int) -> List[str]:
+		"""Return active sites that haven't had backup taken in interval hours."""
+		interval_hrs_ago = datetime.now() - timedelta(hours=interval)
+		all_sites = set(
+			frappe.get_all(
+				"Site",
+				{"status": "Active", "creation": ("<=", interval_hrs_ago), "is_standby": False},
+				pluck="name",
+			)
+		)
+		return list(all_sites - set(cls.get_sites_with_backup_in_interval(interval_hrs_ago)))
+		# TODO: query using creation time of account request for actual new sites <03-09-21, Balamurali M> #
+
+	@classmethod
+	def get_sites_with_backup_in_interval(cls, interval_hrs_ago) -> List[str]:
+		return frappe.get_all(
+			"Site Backup",
+			{"creation": (">=", interval_hrs_ago), "owner": "Administrator"},
+			pluck="site",
 		)
 
 
