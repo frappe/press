@@ -2,6 +2,7 @@ import json
 
 import wrapt
 from ansible import context
+from ansible import constants
 from ansible.executor.playbook_executor import PlaybookExecutor
 from ansible.executor.task_executor import TaskExecutor
 from ansible.inventory.manager import InventoryManager
@@ -152,6 +153,7 @@ class Ansible:
 		self.host = server.ip
 		self.variables = variables or {}
 
+		constants.HOST_KEY_CHECKING = False
 		context.CLIARGS = ImmutableDict(
 			become_method="sudo",
 			check=False,
