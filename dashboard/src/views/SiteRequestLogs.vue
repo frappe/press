@@ -1,108 +1,129 @@
 <template>
-	<div>
-		<Section
-			title="Request Logs"
-			description="This is a log of web requests on your site."
-		>
-			<SectionCard class="md:w-2/3">
-				<div
-					class="text-base cursor-pointer"
-					v-for="log in requestLogs.data"
-					:key="log.name"
-					@click="showDetailsForLog = showDetailsForLog === log ? null : log"
-				>
-					<div
-						class="flex items-center justify-between px-6 py-3 hover:bg-gray-50"
-					>
-						<div class="flex">
-							<div class="flex-shrink-0 w-16">
-								<Badge
-									:color="{ GET: 'green', POST: 'yellow' }[log.http_method]"
-								>
-									{{ log.http_method }}
-								</Badge>
-							</div>
-
-							<div class="inline-block pr-2 font-mono break-all">
-								{{ log.url }}
-							</div>
-						</div>
-						<div class="flex flex-shrink-0">
-							<FormatDate>{{ log.timestamp }}</FormatDate>
-							<FeatherIcon
-								:name="
-									showDetailsForLog === log ? 'chevron-up' : 'chevron-down'
-								"
-								class="w-4 h-4 ml-2"
-							/>
-						</div>
-					</div>
-					<div class="px-6">
-						<DescriptionList
-							class="py-4 pl-16"
-							v-show="showDetailsForLog === log"
-							:items="[
-								{
-									label: 'Status Code',
-									value: log.status_code
-								},
-								{
-									label: 'IP',
-									value: log.ip
-								},
-								{
-									label: 'Duration',
-									value: `${log.duration / 1000} ms`
-								},
-								{
-									label: 'Length',
-									value: formatBytes(log.length)
-								}
-							]"
-						/>
-					</div>
+	<Card title="Request Logs">
+		<template #actions>
+			<Input type="select" :options="sortOptions" v-model="sort" />
+			<Input type="select" :options="dateOptions" v-model="whichDate" />
+			<Input type="date" v-if="whichDate === 'Custom'" v-model="date" />
+		</template>
+		<div class="divide-y">
+			<div class="flex items-center py-2 text-base text-gray-600">
+				<div class="w-2/12">Time</div>
+				<div class="w-1/12">Method</div>
+				<div class="w-5/12">Path</div>
+				<div class="w-2/12">Status Code</div>
+				<div class="w-2/12">CPU Time (seconds)</div>
+			</div>
+			<div
+				class="flex items-center py-2 text-base"
+				v-for="log in requestLogs.data"
+				:key="log.uuid"
+			>
+				<div class="w-2/12">
+					{{ formatDate(log.timestamp, 'TIME_24_WITH_SHORT_OFFSET') }}
 				</div>
-				<div class="px-6 my-2" v-if="!$resources.requestLogs.lastPageEmpty">
-					<Button
-						:loading="$resources.requestLogs.loading"
-						loadingText="Fetching..."
-						@click="pageStart += 20"
-					>
-						Load more
-					</Button>
+				<div class="w-1/12">
+					<Badge>{{ log.request.method }}</Badge>
 				</div>
-			</SectionCard>
-		</Section>
-	</div>
+				<div class="w-5/12 pr-2 break-words">{{ log.request.path }}</div>
+				<div class="w-2/12">{{ log.request.status_code }}</div>
+				<div class="w-2/12">{{ $formatCPUTime(log.duration) }}</div>
+			</div>
+			<div
+				class="px-2 py-2 text-base text-gray-600"
+				v-if="
+					$resources.requestLogs.loading &&
+						$resources.requestLogs.data.length == 0
+				"
+			>
+				<Loading />
+			</div>
+			<div
+				class="py-2 text-base text-gray-600"
+				v-if="
+					!$resources.requestLogs.loading &&
+						$resources.requestLogs.data.length == 0
+				"
+			>
+				No data
+			</div>
+			<Button
+				v-if="$resources.requestLogs.data && $resources.requestLogs.data.length"
+				:loading="$resources.requestLogs.loading"
+				loadingText="Loading..."
+				@click="start += 10"
+			>
+				Load more
+			</Button>
+		</div>
+	</Card>
 </template>
 
 <script>
-import DescriptionList from '@/components/DescriptionList.vue';
+import { DateTime } from 'luxon';
 
 export default {
 	name: 'SiteRequestLogs',
 	props: ['site'],
-	components: {
-		DescriptionList
-	},
 	data() {
 		return {
-			showDetailsForLog: null,
-			pageStart: 0
+			whichDate: 'Today',
+			date: null,
+			sort: 'CPU Time (Descending)',
+			start: 0
 		};
+	},
+	watch: {
+		sort(value) {
+			this.reset();
+		},
+		dateValue(value, old) {
+			if (value && value != old) {
+				this.reset();
+			}
+		}
 	},
 	resources: {
 		requestLogs() {
 			return {
-				method: 'press.api.site.request_logs',
+				method: 'press.api.analytics.request_logs',
 				params: {
 					name: this.site.name,
-					start: this.pageStart
+					timezone: DateTime.local().zoneName,
+					date: this.dateValue,
+					sort: this.sort,
+					start: this.start
 				},
-				auto: true,
+				auto: Boolean(this.dateValue),
 				paged: true,
-				keepData: true
+				keepData: true,
+				delay: 3,
+				default: []
 			};
+		}
+	},
+	methods: {
+		reset() {
+			this.$resources.requestLogs.reset();
+			this.start = 0;
+		}
+	},
+	computed: {
+		dateValue() {
+			if (this.whichDate === 'Today') {
+				return DateTime.local().toISODate();
+			} else if (this.whichDate === 'Yesterday') {
+				return DateTime.local()
+					.minus({ days: 1 })
+					.toISODate();
+			} else if (this.whichDate === 'Custom') {
+				return this.date;
+			}
+		},
+		dateOptions() {
+			return ['Today', 'Yesterday', 'Custom'];
+		},
+		sortOptions() {
+			return ['Time (Ascending)', 'Time (Descending)', 'CPU Time (Descending)'];
 		}
 	}
 };

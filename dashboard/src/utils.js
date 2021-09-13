@@ -46,6 +46,9 @@ let utils = {
 				sizes[i + current]
 			);
 		},
+		$formatCPUTime(duration) {
+			return duration / 1000000;
+		},
 		$planTitle(plan) {
 			let india = this.$account.team.country == 'India';
 			let currency = india ? '₹' : '$';
