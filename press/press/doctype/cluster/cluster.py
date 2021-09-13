@@ -149,6 +149,14 @@ class Cluster(Document):
 					"ToPort": 22,
 				},
 				{
+					"FromPort": 3306,
+					"IpProtocol": "tcp",
+					"IpRanges": [
+						{"CidrIp": self.subnet_cidr_block, "Description": "MariaDB from private network"}
+					],
+					"ToPort": 3306,
+				},
+				{
 					"FromPort": -1,
 					"IpProtocol": "icmp",
 					"IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": "ICMP from anywhere"}],
