@@ -6,6 +6,14 @@
 			v-if="$resources.analytics.data"
 		>
 			<Card title="Usage Counter">
+				<template #actions>
+					<router-link
+						class="text-base text-blue-500 hover:text-blue-600"
+						:to="`/sites/${site.name}/request-logs`"
+					>
+						View detailed logs →
+					</router-link>
+				</template>
 				<FrappeChart
 					type="line"
 					:data="usageCounterData"
