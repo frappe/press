@@ -172,17 +172,20 @@ class BaseServer(Document):
 			log_error("Server Key Fetch Exception", server=self.as_dict())
 
 	@frappe.whitelist()
-	def ping_ansible_scaleway(self):
+	def ping_ansible_unprepared(self):
 		try:
-			ansible = Ansible(
-				playbook="ping.yml",
-				server=self,
-				user="frappe",
-				variables={"ansible_become_password": self.get_password("frappe_user_password")},
-			)
+			if self.provider == "Scaleway":
+				ansible = Ansible(
+					playbook="ping.yml",
+					server=self,
+					user="frappe",
+					variables={"ansible_become_password": self.get_password("frappe_user_password")},
+				)
+			elif self.provider == "AWS EC2":
+				ansible = Ansible(playbook="ping.yml", server=self, user="ubuntu",)
 			ansible.run()
 		except Exception:
-			log_error("Scaleway Server Ping Exception", server=self.as_dict())
+			log_error("Unprepared Server Ping Exception", server=self.as_dict())
 
 	def cleanup_unused_files(self):
 		agent = Agent(self.name, self.doctype)
