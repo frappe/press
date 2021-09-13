@@ -51,15 +51,15 @@ class BaseServer(Document):
 		return agent.update()
 
 	@frappe.whitelist()
-	def prepare_scaleway_server(self):
+	def prepare_server(self):
 		frappe.enqueue_doc(
-			self.doctype, self.name, "_prepare_scaleway_server", queue="long", timeout=1200
+			self.doctype, self.name, "_prepare_server", queue="long", timeout=1200
 		)
 
-	def _prepare_scaleway_server(self):
-		if self.provider == "Scaleway":
-			frappe_user_password = self.get_password("frappe_user_password")
-			try:
+	def _prepare_server(self):
+		try:
+			if self.provider == "Scaleway":
+				frappe_user_password = self.get_password("frappe_user_password")
 				ansible = Ansible(
 					playbook="scaleway.yml",
 					server=self,
@@ -71,9 +71,12 @@ class BaseServer(Document):
 						"private_vlan_id": self.private_vlan_id,
 					},
 				)
-				ansible.run()
-			except Exception:
-				log_error("Server Preparation Exception - Scaleway", server=self.as_dict())
+			elif self.provider == "AWS EC2":
+				ansible = Ansible(playbook="aws.yml", server=self, user="ubuntu")
+
+			ansible.run()
+		except Exception:
+			log_error("Server Preparation Exception", server=self.as_dict())
 
 	@frappe.whitelist()
 	def setup_server(self):
