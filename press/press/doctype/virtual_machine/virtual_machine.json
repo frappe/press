@@ -78,19 +78,16 @@
   },
   {
    "fieldname": "machine_image",
-   "fieldtype": "Select",
+   "fieldtype": "Data",
    "label": "Machine Image",
-   "options": "ami-0c1a7f89451184c8b",
    "reqd": 1,
    "set_only_once": 1
   },
   {
-   "default": "t3.nano",
    "fieldname": "machine_type",
-   "fieldtype": "Select",
+   "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Machine Type",
-   "options": "t3.nano\nt3.micro\nt3.small\nt3.medium",
    "reqd": 1,
    "set_only_once": 1
   },
@@ -186,7 +183,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-09-13 16:49:53.038313",
+ "modified": "2021-09-14 17:15:09.614819",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",

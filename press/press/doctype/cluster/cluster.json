@@ -76,7 +76,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "default": "ap-south-1",
    "depends_on": "eval:doc.cloud_provider === \"AWS EC2\"",
    "fieldname": "region",
    "fieldtype": "Data",
@@ -122,7 +121,6 @@
    "read_only": 1
   },
   {
-   "default": "ap-south-1a",
    "depends_on": "eval:doc.cloud_provider === \"AWS EC2\"",
    "fieldname": "availability_zone",
    "fieldtype": "Data",
@@ -176,7 +174,7 @@
    "link_fieldname": "cluster"
   }
  ],
- "modified": "2021-09-13 16:44:46.551125",
+ "modified": "2021-09-14 17:15:45.490338",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",
