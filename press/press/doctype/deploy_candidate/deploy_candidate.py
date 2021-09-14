@@ -227,7 +227,7 @@ class DeployCandidate(Document):
 				step.status = "Running"
 				start_time = now()
 
-				self.save()
+				self.save(ignore_version=True)
 				frappe.db.commit()
 
 				release = frappe.get_doc("App Release", app.release)
@@ -242,7 +242,7 @@ class DeployCandidate(Document):
 			target = os.path.join(self.build_directory, "apps", app.app)
 			shutil.copytree(source, target)
 
-			self.save()
+			self.save(ignore_version=True)
 			frappe.db.commit()
 
 		dockerfile = os.path.join(self.build_directory, "Dockerfile")
@@ -360,7 +360,7 @@ class DeployCandidate(Document):
 				# Publish Progress
 				if (now() - last_update).total_seconds() > 1:
 					self.build_output = "".join(lines)
-					self.save()
+					self.save(ignore_version=True)
 					frappe.db.commit()
 
 					last_update = now()
@@ -433,7 +433,7 @@ class DeployCandidate(Document):
 
 				if (now() - last_update).total_seconds() > 1:
 					step.output = "\n".join(ll["output"] for ll in output)
-					self.save()
+					self.save(ignore_version=True)
 					frappe.db.commit()
 					last_update = now()
 
