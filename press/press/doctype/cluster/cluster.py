@@ -165,4 +165,15 @@ class Cluster(Document):
 			],
 		)
 
+		try:
+			# We don't care if the key already exists in this region
+			response = client.import_key_pair(
+				KeyName=self.ssh_key,
+				PublicKeyMaterial=frappe.db.get_value("SSH Key", self.ssh_key, "public_key"),
+				TagSpecifications=[
+					{"ResourceType": "key-pair", "Tags": [{"Key": "Name", "Value": self.ssh_key},]},
+				],
+			)
+		except Exception:
+			pass
 		self.save()

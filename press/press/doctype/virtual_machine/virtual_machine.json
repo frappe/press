@@ -17,6 +17,7 @@
   "aws_instance_id",
   "column_break_8",
   "machine_type",
+  "ssh_key",
   "networking_section",
   "aws_subnet_id",
   "private_ip_address",
@@ -26,7 +27,6 @@
   "public_dns_name",
   "private_dns_name",
   "security_section",
-  "ssh_key",
   "column_break_18",
   "aws_security_group_id"
  ],
@@ -132,12 +132,13 @@
    "label": "Security"
   },
   {
+   "fetch_from": "cluster.ssh_key",
    "fieldname": "ssh_key",
    "fieldtype": "Link",
    "label": "SSH Key",
    "options": "SSH Key",
-   "reqd": 1,
-   "set_only_once": 1
+   "read_only": 1,
+   "reqd": 1
   },
   {
    "fieldname": "column_break_18",
@@ -185,7 +186,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-09-09 17:46:03.656101",
+ "modified": "2021-09-13 16:49:53.038313",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",
