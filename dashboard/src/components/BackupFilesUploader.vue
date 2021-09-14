@@ -107,8 +107,8 @@ export default {
 			this.$emit('update:backupFiles', backupFiles);
 		},
 		async databaseBackupChecker(file, type) {
-			if (file.size > 524 * 1000 * 1000) {
-				throw new Error('File size too large, max limit is 500MB');
+			if (file.size > 5000 * 1000 * 1000) {
+				throw new Error('File size too large, max limit is 5GB');
 			}
 			if (type === 'database') {
 				if (!file.name.endsWith('.sql.gz')) {
