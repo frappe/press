@@ -725,7 +725,7 @@ class Site(Document):
 		self._create_initial_site_plan_change(plan)
 
 	def update_subscription(self):
-		if self.status == "Archived":
+		if self.status in ["Archived", "Broken"]:
 			self.disable_subscription()
 		else:
 			self.enable_subscription()
@@ -885,7 +885,7 @@ class Site(Document):
 	def can_charge_for_subscription(self):
 		today = frappe.utils.getdate()
 		return (
-			self.status != "Archived"
+			self.status not in ["Archived", "Broken"]
 			and self.team
 			and self.team != "Administrator"
 			and not self.free
