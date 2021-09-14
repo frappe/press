@@ -137,12 +137,13 @@ class DeployCandidate(Document):
 		except Exception:
 			log_error("Deploy Candidate Build Exception", name=self.name)
 			self.status = "Failure"
+			raise
 		else:
 			self.status = "Success"
-
-		self.build_end = now()
-		self.build_duration = self.build_end - self.build_start
-		self.save()
+		finally:
+			self.build_end = now()
+			self.build_duration = self.build_end - self.build_start
+			self.save()
 
 	def add_build_steps(self):
 		if self.build_steps:
