@@ -40,7 +40,7 @@
 			<ListItem
 				v-if="site.status == 'Active'"
 				title="Deactivate Site"
-				description="The site will go inactive and billing will be paused"
+				description="The site will go inactive and won't be publicly accessible"
 			>
 				<Button slot="actions" @click="onDeactivateClick" class="flex-shrink-0">
 					Deactivate Site
@@ -49,7 +49,7 @@
 			<ListItem
 				v-if="site.status == 'Inactive'"
 				title="Activate Site"
-				description="The site will become active again and billing will resume"
+				description="The site will become active and will be accessible"
 			>
 				<Button slot="actions" @click="onActivateClick" class="flex-shrink-0">
 					Activate Site
@@ -83,8 +83,7 @@ export default {
 				title: 'Deactivate Site',
 				message: `
 					Are you sure you want to deactivate this site? The site will go in an inactive state.
-					It won't be accessible and background jobs won't run. We will also not charge you for it.
-					<p>Note: This feature will be discontinued from August 1, 2021.<p>
+					It won't be accessible and background jobs won't run. You will still be charged for it.
 				`,
 				actionLabel: 'Deactivate',
 				actionType: 'danger',
