@@ -171,7 +171,7 @@ class Cluster(Document):
 				KeyName=self.ssh_key,
 				PublicKeyMaterial=frappe.db.get_value("SSH Key", self.ssh_key, "public_key"),
 				TagSpecifications=[
-					{"ResourceType": "key-pair", "Tags": [{"Key": "Name", "Value": self.ssh_key},]},
+					{"ResourceType": "key-pair", "Tags": [{"Key": "Name", "Value": self.ssh_key}]},
 				],
 			)
 		except Exception:
