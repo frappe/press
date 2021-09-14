@@ -126,14 +126,14 @@ ENV PYTHONUNBUFFERED 1
 
 # Install Frappe app
 RUN echo '["build"]' > .bench.cmd
-RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 --mount=type=bind,target=/home/frappe/context bench get-app /home/frappe/context/apps/frappe `#stage-apps-frappe`
+RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 --mount=type=bind,source=apps/frappe,target=/home/frappe/context/apps/frappe bench get-app /home/frappe/context/apps/frappe `#stage-apps-frappe`
 RUN rm .bench.cmd
 
 # Install other apps
 {% for app in doc.apps %}
 {% if app.app != "frappe" %}
 
-RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 --mount=type=bind,target=/home/frappe/context bench get-app /home/frappe/context/apps/{{ app.app }} `#stage-apps-{{ app.app }}`
+RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} bench get-app /home/frappe/context/apps/{{ app.app }} `#stage-apps-{{ app.app }}`
 
 {% endif %}
 {% endfor %}
