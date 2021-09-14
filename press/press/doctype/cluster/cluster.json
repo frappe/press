@@ -16,6 +16,7 @@
   "column_break_5",
   "aws_access_key_id",
   "aws_secret_access_key",
+  "ssh_key",
   "networking_section",
   "cidr_block",
   "subnet_cidr_block",
@@ -36,7 +37,8 @@
   {
    "fieldname": "monitoring_password",
    "fieldtype": "Password",
-   "label": "Monitoring Password"
+   "label": "Monitoring Password",
+   "set_only_once": 1
   },
   {
    "default": "Generic",
@@ -45,21 +47,24 @@
    "in_list_view": 1,
    "label": "Cloud Provider",
    "options": "AWS EC2\nGeneric",
-   "reqd": 1
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "depends_on": "eval:doc.cloud_provider === \"AWS EC2\"",
    "fieldname": "aws_access_key_id",
    "fieldtype": "Data",
    "label": "AWS Access Key ID",
-   "mandatory_depends_on": "eval:doc.cloud_provider === \"AWS EC2\""
+   "mandatory_depends_on": "eval:doc.cloud_provider === \"AWS EC2\"",
+   "set_only_once": 1
   },
   {
    "depends_on": "eval:doc.cloud_provider === \"AWS EC2\"",
    "fieldname": "aws_secret_access_key",
    "fieldtype": "Password",
    "label": "AWS Secret Access Key",
-   "mandatory_depends_on": "eval:doc.cloud_provider === \"AWS EC2\""
+   "mandatory_depends_on": "eval:doc.cloud_provider === \"AWS EC2\"",
+   "set_only_once": 1
   },
   {
    "fieldname": "provisioning_section",
@@ -76,7 +81,8 @@
    "fieldname": "region",
    "fieldtype": "Data",
    "label": "Region",
-   "mandatory_depends_on": "eval:doc.cloud_provider === \"AWS EC2\""
+   "mandatory_depends_on": "eval:doc.cloud_provider === \"AWS EC2\"",
+   "set_only_once": 1
   },
   {
    "fieldname": "column_break_2",
@@ -121,7 +127,8 @@
    "fieldname": "availability_zone",
    "fieldtype": "Data",
    "label": "Availability Zone",
-   "mandatory_depends_on": "eval:doc.cloud_provider === \"AWS EC2\""
+   "mandatory_depends_on": "eval:doc.cloud_provider === \"AWS EC2\"",
+   "set_only_once": 1
   },
   {
    "fieldname": "aws_security_group_id",
@@ -140,6 +147,15 @@
    "fieldtype": "Data",
    "label": "AWS Route Table ID",
    "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.cloud_provider === \"AWS EC2\"",
+   "fieldname": "ssh_key",
+   "fieldtype": "Link",
+   "label": "SSH Key",
+   "mandatory_depends_on": "eval:doc.cloud_provider === \"AWS EC2\"",
+   "options": "SSH Key",
+   "set_only_once": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -160,7 +176,7 @@
    "link_fieldname": "cluster"
   }
  ],
- "modified": "2021-09-08 15:01:58.279073",
+ "modified": "2021-09-13 16:44:46.551125",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",
