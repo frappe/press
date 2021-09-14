@@ -10,6 +10,7 @@ import frappe
 import docker
 import dockerfile
 import subprocess
+import json
 
 from subprocess import Popen
 from typing import List
@@ -411,9 +412,33 @@ class DeployCandidate(Document):
 				password=settings.docker_registry_password,
 			)
 
-			client.images.push(self.docker_image_repository, self.docker_image_tag)
+			step.output = ""
+			output = []
+			last_update = now()
+
+			for line in client.images.push(
+				self.docker_image_repository, self.docker_image_tag, stream=True
+			):
+				line = json.loads(line.decode().strip())
+				if "id" not in line:
+					continue
+
+				line_output = f'{line["id"]}: {line["status"]} {line.get("progress", "")}'
+
+				existing = find(output, lambda x: x["id"] == line["id"])
+				if existing:
+					existing["output"] = line_output
+				else:
+					output.append({"id": line["id"], "output": line_output})
+
+				if (now() - last_update).total_seconds() > 1:
+					step.output = "\n".join(ll["output"] for ll in output)
+					self.save()
+					frappe.db.commit()
+					last_update = now()
 
 			end_time = now()
+			step.output = "\n".join(ll["output"] for ll in output)
 			step.duration = frappe.utils.rounded((end_time - start_time).total_seconds(), 1)
 			step.status = "Success"
 
