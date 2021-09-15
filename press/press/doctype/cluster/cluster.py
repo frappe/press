@@ -15,7 +15,8 @@ class Cluster(Document):
 		self.validate_cidr_block()
 
 	def after_insert(self):
-		self.provision()
+		if self.cloud_provider == "AWS EC2":
+			self.provision_on_aws_ec2()
 
 	def validate_cidr_block(self):
 		if not self.cidr_block:
@@ -36,7 +37,7 @@ class Cluster(Document):
 		if not self.monitoring_password:
 			self.monitoring_password = frappe.generate_hash()
 
-	def provision(self):
+	def provision_on_aws_ec2(self):
 		client = boto3.client(
 			"ec2",
 			region_name=self.region,
