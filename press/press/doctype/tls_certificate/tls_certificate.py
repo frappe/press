@@ -85,7 +85,13 @@ class TLSCertificate(Document):
 			proxy.setup_wildcard_hosts()
 
 	def trigger_server_tls_setup_callback(self):
-		server_doctypes = ["Proxy Server", "Server", "Database Server"]
+		server_doctypes = [
+			"Proxy Server",
+			"Server",
+			"Database Server",
+			"Log Server",
+			"Monitor Server",
+		]
 
 		for server_doctype in server_doctypes:
 			servers = frappe.get_all(
