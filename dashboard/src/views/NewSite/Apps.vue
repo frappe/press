@@ -171,7 +171,7 @@ export default {
 		},
 		selectedGroup() {
 			this.$emit('update:selectedApps', ['frappe']);
-			if (this.regionOptions.length === 1) {
+			if (this.regionOptions.length > 0) {
 				this.$emit('update:selectedRegion', this.regionOptions[0].value);
 			}
 		}
