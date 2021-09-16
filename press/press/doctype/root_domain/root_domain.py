@@ -52,9 +52,8 @@ class RootDomain(Document):
 
 	@property
 	def hosted_zone(self):
-		return self.boto3_client.list_hosted_zones_by_name(DNSName=self.name)["HostedZones"][
-			0
-		]["Id"]
+		zones = self.boto3_client.list_hosted_zones_by_name()["HostedZones"]
+		return find(reversed(zones), lambda x: self.name.endswith(x["Name"][:-1]))["Id"]
 
 	def get_dns_record_pages(self) -> Iterable:
 		try:
