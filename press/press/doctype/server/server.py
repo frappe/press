@@ -51,7 +51,7 @@ class BaseServer(Document):
 							"ResourceRecordSet": {
 								"Name": self.name,
 								"Type": "A",
-								"TTL": 300,
+								"TTL": 3600,
 								"ResourceRecords": [{"Value": self.ip}],
 							},
 						}
