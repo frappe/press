@@ -3,10 +3,12 @@
 		:show-popup="isShown"
 		:hide-arrow="true"
 		:placement="right ? 'bottom-end' : 'bottom-start'"
+		@init="updateTargetWidth"
 	>
 		<div
 			slot="target"
 			class="h-full"
+			ref="target"
 			v-on-outside-click="() => (isShown = false)"
 		>
 			<slot
@@ -16,7 +18,11 @@
 				:selectHighlightedItem="selectHighlightedItem"
 			></slot>
 		</div>
-		<div slot="content" class="z-10 w-full bg-white rounded-md min-w-40">
+		<div
+			slot="content"
+			class="z-10 rounded-md w-fullbg-white min-w-40"
+			:style="{ width: dropdownWidthFull ? targetWidth + 'px' : undefined }"
+		>
 			<div class="p-1 overflow-auto text-sm max-h-64">
 				<div v-if="isLoading" class="p-2 text-gray-600">
 					{{ _('Loading...') }}
@@ -70,6 +76,10 @@ export default {
 		isLoading: {
 			type: Boolean,
 			default: false
+		},
+		dropdownWidthFull: {
+			type: Boolean,
+			default: false
 		}
 	},
 	components: {
@@ -77,6 +87,7 @@ export default {
 	},
 	data() {
 		return {
+			targetWidth: undefined,
 			isShown: false,
 			highlightedIndex: -1
 		};
@@ -185,6 +196,11 @@ export default {
 			let highlightedElement = this.$refs.items[this.highlightedIndex];
 			highlightedElement &&
 				highlightedElement.scrollIntoView({ block: 'nearest' });
+		},
+		updateTargetWidth() {
+			this.$nextTick(() => {
+				this.targetWidth = this.$refs.target.clientWidth;
+			});
 		}
 	}
 };

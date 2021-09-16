@@ -28,6 +28,7 @@ from press.utils import (
 	get_frappe_backups,
 	get_client_blacklisted_keys,
 	group_children_in_result,
+	unique,
 )
 
 
@@ -51,7 +52,9 @@ def new(site):
 	files = site.get("files", {})
 
 	domain = frappe.db.get_single_value("Press Settings", "domain")
-	cluster = frappe.db.get_single_value("Press Settings", "cluster")
+	cluster = site.get("cluster") or frappe.db.get_single_value(
+		"Press Settings", "cluster"
+	)
 	proxy_servers = frappe.get_all(
 		"Proxy Server",
 		[["status", "=", "Active"], ["Proxy Server Domain", "domain", "=", domain]],
@@ -285,6 +288,15 @@ def options_for_new():
 				or_filters={"public": True, "team": team},
 			)
 			group["apps"] = sorted(app_sources, key=lambda x: bench_apps.index(x.name))
+
+			cluster_names = unique(
+				frappe.db.get_all("Bench", filters={"candidate": bench.candidate}, pluck="cluster")
+			)
+			group["clusters"] = frappe.db.get_all(
+				"Cluster",
+				filters={"name": ("in", cluster_names), "public": True},
+				fields=["name", "title", "image"],
+			)
 			version.setdefault("groups", []).append(group)
 			apps.update([source.app for source in app_sources])
 		if version.get("groups"):
