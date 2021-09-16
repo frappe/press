@@ -9,8 +9,10 @@ from frappe.model.document import Document
 from press.agent import Agent
 from press.runner import Ansible
 from press.utils import log_error
+from frappe.core.utils import find
 
 from typing import List, Union
+import boto3
 
 
 class BaseServer(Document):
@@ -22,6 +24,45 @@ class BaseServer(Document):
 	def validate(self):
 		self.validate_cluster()
 		self.validate_agent_password()
+
+	def after_insert(self):
+		self.create_dns_record()
+
+	def create_dns_record(self):
+		try:
+			domain = frappe.get_doc("Root Domain", self.domain)
+			client = boto3.client(
+				"route53",
+				aws_access_key_id=domain.aws_access_key_id,
+				aws_secret_access_key=domain.get_password("aws_secret_access_key"),
+			)
+			zones = client.list_hosted_zones_by_name()["HostedZones"]
+			# list_hosted_zones_by_name returns a lexicographically ordered list of zones
+			# i.e. x.example.com comes after example.com
+			# Name field has a trailing dot
+			hosted_zone = find(reversed(zones), lambda x: domain.name.endswith(x["Name"][:-1]))[
+				"Id"
+			]
+			client.change_resource_record_sets(
+				ChangeBatch={
+					"Changes": [
+						{
+							"Action": "UPSERT",
+							"ResourceRecordSet": {
+								"Name": self.name,
+								"Type": "A",
+								"TTL": 300,
+								"ResourceRecords": [{"Value": self.ip}],
+							},
+						}
+					]
+				},
+				HostedZoneId=hosted_zone,
+			)
+		except Exception:
+			log_error(
+				"Route 53 Record Creation Error", domain=domain.name, server=self.name,
+			)
 
 	def validate_cluster(self):
 		if not self.cluster:
