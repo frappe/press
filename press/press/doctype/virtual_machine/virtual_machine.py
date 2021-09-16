@@ -52,7 +52,7 @@ class VirtualMachine(Document):
 					"SubnetId": self.aws_subnet_id,
 				},
 			],
-			# DisableApiTermination=True,
+			DisableApiTermination=True,
 			InstanceInitiatedShutdownBehavior="stop",
 			TagSpecifications=[
 				{
