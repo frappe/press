@@ -26,7 +26,7 @@ class VirtualMachine(Document):
 					"DeviceName": "/dev/sda1",
 					"Ebs": {
 						"DeleteOnTermination": True,
-						"VolumeSize": 8,  # This in GB. Fucking AWS!
+						"VolumeSize": self.disk_size,  # This in GB. Fucking AWS!
 						"VolumeType": "gp2",
 					},
 				},
