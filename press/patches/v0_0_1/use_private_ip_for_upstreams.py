@@ -12,7 +12,7 @@ AGENT_GITHUB_ACCESS_TOKEN = ""
 
 
 def execute():
-	settings = frappe.get_single_doc("Press Settings")
+	settings = frappe.get_doc("Press Settings", "Press Settings")
 	settings.agent_repository_owner = "frappe"
 
 	if not AGENT_GITHUB_ACCESS_TOKEN:
