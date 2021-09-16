@@ -112,6 +112,10 @@
   "telegram_alert_chat_id",
   "column_break_100",
   "log_server",
+  "agent_section",
+  "agent_repository_owner",
+  "column_break_105",
+  "agent_github_access_token",
   "marketplace_settings_section",
   "allow_developer_account",
   "max_allowed_screenshots"
@@ -143,7 +147,8 @@
   {
    "fieldname": "eff_registration_email",
    "fieldtype": "Data",
-   "label": "EFF Registration Email"
+   "label": "EFF Registration Email",
+   "reqd": 1
   },
   {
    "fieldname": "webroot_directory",
@@ -153,7 +158,8 @@
   {
    "fieldname": "certbot_directory",
    "fieldtype": "Data",
-   "label": "Certbot Directory"
+   "label": "Certbot Directory",
+   "reqd": 1
   },
   {
    "fieldname": "stripe_account",
@@ -682,6 +688,27 @@
    "label": "Telegram Alert Chat ID"
   },
   {
+   "collapsible": 1,
+   "fieldname": "agent_section",
+   "fieldtype": "Section Break",
+   "label": "Agent"
+  },
+  {
+   "fieldname": "column_break_105",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "agent_github_access_token",
+   "fieldtype": "Data",
+   "label": "Agent GitHub Access Token"
+  },
+  {
+   "default": "frappe",
+   "fieldname": "agent_repository_owner",
+   "fieldtype": "Data",
+   "label": "Agent Repository Owner"
+  },
+  {
    "fieldname": "staging_sites_section",
    "fieldtype": "Section Break",
    "label": "Staging Sites"
@@ -709,8 +736,8 @@
    "fieldname": "backup_limit",
    "fieldtype": "Int",
    "label": "Backup Limit"
-	},
-	{
+  },
+  {
    "collapsible": 1,
    "fieldname": "marketplace_settings_section",
    "fieldtype": "Section Break",
@@ -732,7 +759,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2021-09-07 07:21:48.653733",
+ "modified": "2021-09-16 09:29:14.158162",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

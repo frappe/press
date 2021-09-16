@@ -43,15 +43,19 @@
     group: root
     mode: 0644
 
+- name: Set Open Files Count Limit for MariaDB
+  lineinfile:
+    dest: /lib/systemd/system/mariadb.service
+    regexp: '^LimitNOFILE(\s*)=(\s*)\d+'
+    line: "LimitNOFILE = infinity"
+    insertafter: '\[Service\]'
+    state: present
+
 - name: Restart MariaDB Service
-  service:
+  systemd:
+    daemon_reload: true
     name: mysql
     state: restarted
-
-- name: Start MariaDB Service and Enable at Boot
-  service:
-    name: mysql
-    state: started
     enabled: yes
 
 - name: Set MariaDB root Password

@@ -88,13 +88,17 @@ class AppRelease(Document):
 		if not os.path.exists(app_directory):
 			os.mkdir(app_directory)
 
-		self.clone_directory = os.path.join(clone_directory, self.app, self.hash[:10])
+		source_directory = os.path.join(app_directory, self.source)
+		if not os.path.exists(source_directory):
+			os.mkdir(source_directory)
+
+		self.clone_directory = os.path.join(
+			clone_directory, self.app, self.source, self.hash[:10]
+		)
 		if not os.path.exists(self.clone_directory):
 			os.mkdir(self.clone_directory)
 
-		code_server_url = (
-			f"{code_server}/?folder=/home/coder/project/{self.app}/{self.hash[:10]}"
-		)
+		code_server_url = f"{code_server}/?folder=/home/coder/project/{self.app}/{self.source}/{self.hash[:10]}"
 		self.code_server_url = code_server_url
 
 	def _clone_repo(self):

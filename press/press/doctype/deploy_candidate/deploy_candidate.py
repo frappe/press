@@ -10,6 +10,7 @@ import frappe
 import docker
 import dockerfile
 import subprocess
+import json
 
 from subprocess import Popen
 from typing import List
@@ -137,12 +138,13 @@ class DeployCandidate(Document):
 		except Exception:
 			log_error("Deploy Candidate Build Exception", name=self.name)
 			self.status = "Failure"
+			raise
 		else:
 			self.status = "Success"
-
-		self.build_end = now()
-		self.build_duration = self.build_end - self.build_start
-		self.save()
+		finally:
+			self.build_end = now()
+			self.build_duration = self.build_end - self.build_start
+			self.save()
 
 	def add_build_steps(self):
 		if self.build_steps:
@@ -225,7 +227,7 @@ class DeployCandidate(Document):
 				step.status = "Running"
 				start_time = now()
 
-				self.save()
+				self.save(ignore_version=True)
 				frappe.db.commit()
 
 				release = frappe.get_doc("App Release", app.release)
@@ -240,7 +242,7 @@ class DeployCandidate(Document):
 			target = os.path.join(self.build_directory, "apps", app.app)
 			shutil.copytree(source, target)
 
-			self.save()
+			self.save(ignore_version=True)
 			frappe.db.commit()
 
 		dockerfile = os.path.join(self.build_directory, "Dockerfile")
@@ -358,7 +360,7 @@ class DeployCandidate(Document):
 				# Publish Progress
 				if (now() - last_update).total_seconds() > 1:
 					self.build_output = "".join(lines)
-					self.save()
+					self.save(ignore_version=True)
 					frappe.db.commit()
 
 					last_update = now()
@@ -410,9 +412,33 @@ class DeployCandidate(Document):
 				password=settings.docker_registry_password,
 			)
 
-			client.images.push(self.docker_image_repository, self.docker_image_tag)
+			step.output = ""
+			output = []
+			last_update = now()
+
+			for line in client.images.push(
+				self.docker_image_repository, self.docker_image_tag, stream=True
+			):
+				line = json.loads(line.decode().strip())
+				if "id" not in line:
+					continue
+
+				line_output = f'{line["id"]}: {line["status"]} {line.get("progress", "")}'
+
+				existing = find(output, lambda x: x["id"] == line["id"])
+				if existing:
+					existing["output"] = line_output
+				else:
+					output.append({"id": line["id"], "output": line_output})
+
+				if (now() - last_update).total_seconds() > 1:
+					step.output = "\n".join(ll["output"] for ll in output)
+					self.save(ignore_version=True)
+					frappe.db.commit()
+					last_update = now()
 
 			end_time = now()
+			step.output = "\n".join(ll["output"] for ll in output)
 			step.duration = frappe.utils.rounded((end_time - start_time).total_seconds(), 1)
 			step.status = "Success"
 

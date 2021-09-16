@@ -9,8 +9,10 @@ from frappe.model.document import Document
 from press.agent import Agent
 from press.runner import Ansible
 from press.utils import log_error
+from frappe.core.utils import find
 
 from typing import List, Union
+import boto3
 
 
 class BaseServer(Document):
@@ -23,6 +25,45 @@ class BaseServer(Document):
 		self.validate_cluster()
 		self.validate_agent_password()
 
+	def after_insert(self):
+		self.create_dns_record()
+
+	def create_dns_record(self):
+		try:
+			domain = frappe.get_doc("Root Domain", self.domain)
+			client = boto3.client(
+				"route53",
+				aws_access_key_id=domain.aws_access_key_id,
+				aws_secret_access_key=domain.get_password("aws_secret_access_key"),
+			)
+			zones = client.list_hosted_zones_by_name()["HostedZones"]
+			# list_hosted_zones_by_name returns a lexicographically ordered list of zones
+			# i.e. x.example.com comes after example.com
+			# Name field has a trailing dot
+			hosted_zone = find(reversed(zones), lambda x: domain.name.endswith(x["Name"][:-1]))[
+				"Id"
+			]
+			client.change_resource_record_sets(
+				ChangeBatch={
+					"Changes": [
+						{
+							"Action": "UPSERT",
+							"ResourceRecordSet": {
+								"Name": self.name,
+								"Type": "A",
+								"TTL": 3600,
+								"ResourceRecords": [{"Value": self.ip}],
+							},
+						}
+					]
+				},
+				HostedZoneId=hosted_zone,
+			)
+		except Exception:
+			log_error(
+				"Route 53 Record Creation Error", domain=domain.name, server=self.name,
+			)
+
 	def validate_cluster(self):
 		if not self.cluster:
 			self.cluster = frappe.db.get_value("Root Domain", self.domain, "default_cluster")
@@ -32,6 +73,13 @@ class BaseServer(Document):
 	def validate_agent_password(self):
 		if not self.agent_password:
 			self.agent_password = frappe.generate_hash(length=32)
+
+	def get_agent_repository_url(self):
+		settings = frappe.get_single("Press Settings")
+		repository_owner = settings.agent_repository_owner or "frappe"
+		token = settings.agent_github_access_token
+		url = f"https://x-access-token:{token}@github.com/{repository_owner}/agent"
+		return url
 
 	@frappe.whitelist()
 	def ping_agent(self):
@@ -44,15 +92,15 @@ class BaseServer(Document):
 		return agent.update()
 
 	@frappe.whitelist()
-	def prepare_scaleway_server(self):
+	def prepare_server(self):
 		frappe.enqueue_doc(
-			self.doctype, self.name, "_prepare_scaleway_server", queue="long", timeout=1200
+			self.doctype, self.name, "_prepare_server", queue="long", timeout=1200
 		)
 
-	def _prepare_scaleway_server(self):
-		if self.provider == "Scaleway":
-			frappe_user_password = self.get_password("frappe_user_password")
-			try:
+	def _prepare_server(self):
+		try:
+			if self.provider == "Scaleway":
+				frappe_user_password = self.get_password("frappe_user_password")
 				ansible = Ansible(
 					playbook="scaleway.yml",
 					server=self,
@@ -64,9 +112,12 @@ class BaseServer(Document):
 						"private_vlan_id": self.private_vlan_id,
 					},
 				)
-				ansible.run()
-			except Exception:
-				log_error("Server Preparation Exception - Scaleway", server=self.as_dict())
+			elif self.provider == "AWS EC2":
+				ansible = Ansible(playbook="aws.yml", server=self, user="ubuntu")
+
+			ansible.run()
+		except Exception:
+			log_error("Server Preparation Exception", server=self.as_dict())
 
 	@frappe.whitelist()
 	def setup_server(self):
@@ -142,6 +193,18 @@ class BaseServer(Document):
 			log_error("Server Ping Exception", server=self.as_dict())
 
 	@frappe.whitelist()
+	def update_agent_ansible(self):
+		try:
+			ansible = Ansible(
+				playbook="update_agent.yml",
+				variables={"agent_repository_url": self.get_agent_repository_url()},
+				server=self,
+			)
+			ansible.run()
+		except Exception:
+			log_error("Agent Update Exception", server=self.as_dict())
+
+	@frappe.whitelist()
 	def fetch_keys(self):
 		try:
 			ansible = Ansible(playbook="keys.yml", server=self)
@@ -150,17 +213,20 @@ class BaseServer(Document):
 			log_error("Server Key Fetch Exception", server=self.as_dict())
 
 	@frappe.whitelist()
-	def ping_ansible_scaleway(self):
+	def ping_ansible_unprepared(self):
 		try:
-			ansible = Ansible(
-				playbook="ping.yml",
-				server=self,
-				user="frappe",
-				variables={"ansible_become_password": self.get_password("frappe_user_password")},
-			)
+			if self.provider == "Scaleway":
+				ansible = Ansible(
+					playbook="ping.yml",
+					server=self,
+					user="frappe",
+					variables={"ansible_become_password": self.get_password("frappe_user_password")},
+				)
+			elif self.provider == "AWS EC2":
+				ansible = Ansible(playbook="ping.yml", server=self, user="ubuntu",)
 			ansible.run()
 		except Exception:
-			log_error("Scaleway Server Ping Exception", server=self.as_dict())
+			log_error("Unprepared Server Ping Exception", server=self.as_dict())
 
 	def cleanup_unused_files(self):
 		agent = Agent(self.name, self.doctype)
@@ -191,6 +257,7 @@ class Server(BaseServer):
 
 	def _setup_server(self):
 		agent_password = self.get_password("agent_password")
+		agent_repository_url = self.get_agent_repository_url()
 		certificate_name = frappe.db.get_value(
 			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
 		)
@@ -215,6 +282,7 @@ class Server(BaseServer):
 					"private_ip": self.private_ip,
 					"workers": "2",
 					"agent_password": agent_password,
+					"agent_repository_url": agent_repository_url,
 					"monitoring_password": monitoring_password,
 					"log_server": log_server,
 					"kibana_password": kibana_password,

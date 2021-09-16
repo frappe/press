@@ -10,6 +10,7 @@
   "domain",
   "column_break_4",
   "provider",
+  "virtual_machine",
   "is_server_setup",
   "networking_section",
   "ip",
@@ -65,7 +66,7 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "Generic\nScaleway",
+   "options": "Generic\nScaleway\nAWS EC2",
    "set_only_once": 1
   },
   {
@@ -81,6 +82,7 @@
    "label": "Networking"
   },
   {
+   "fetch_from": "virtual_machine.public_ip_address",
    "fieldname": "ip",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -93,6 +95,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "fetch_from": "virtual_machine.private_ip_address",
    "fieldname": "private_ip",
    "fieldtype": "Data",
    "label": "Private IP",
@@ -177,6 +180,14 @@
    "fieldtype": "Password",
    "label": "Monitoring Password",
    "set_only_once": 1
+  },
+  {
+   "depends_on": "eval:doc.provider === \"AWS EC2\"",
+   "fieldname": "virtual_machine",
+   "fieldtype": "Link",
+   "label": "Virtual Machine",
+   "mandatory_depends_on": "eval:doc.provider === \"AWS EC2\"",
+   "options": "Virtual Machine"
   }
  ],
  "links": [
@@ -185,7 +196,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2021-05-03 09:41:07.498277",
+ "modified": "2021-09-14 17:11:10.067850",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Monitor Server",

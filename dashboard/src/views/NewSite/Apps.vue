@@ -15,6 +15,21 @@
 				/>
 			</div>
 		</div>
+		<div v-if="regionOptions.length > 0">
+			<h2 class="text-lg font-semibold">
+				Select Region
+			</h2>
+			<p class="text-base text-gray-700">
+				Select the datacenter region where your site should be created
+			</p>
+			<div class="mt-4">
+				<RichSelect
+					:value="selectedRegion"
+					@change="$emit('update:selectedRegion', $event)"
+					:options="regionOptions"
+				/>
+			</div>
+		</div>
 		<div>
 			<h2 class="text-lg font-semibold">
 				Select apps to install
@@ -90,12 +105,21 @@
 </template>
 <script>
 import SelectableCard from '@/components/SelectableCard.vue';
+import RichSelect from '@/components/RichSelect.vue';
+
 export default {
 	components: {
-		SelectableCard
+		SelectableCard,
+		RichSelect
 	},
 	name: 'Apps',
-	props: ['options', 'selectedApps', 'selectedGroup', 'privateBench'],
+	props: [
+		'options',
+		'selectedApps',
+		'selectedGroup',
+		'privateBench',
+		'selectedRegion'
+	],
 	data: function() {
 		return {
 			selectedVersion: null
@@ -114,16 +138,8 @@ export default {
 			return this.apps.filter(app => !app.public);
 		},
 		apps() {
-			if (!this.options || !this.selectedVersion || !this.selectedGroup)
-				return [];
-
-			let selectedVersion = this.options.versions.find(
-				v => v.name == this.selectedVersion
-			);
-			let group = selectedVersion.groups.find(
-				g => g.name == this.selectedGroup
-			);
-			return group.apps;
+			let group = this.getSelectedGroup();
+			return group ? group.apps : [];
 		},
 		groupOptions() {
 			if (!this.options || !this.selectedVersion) return [];
@@ -134,6 +150,16 @@ export default {
 		},
 		versionOptions() {
 			return this.options.versions.map(group => group.name);
+		},
+		regionOptions() {
+			let group = this.getSelectedGroup();
+			return group
+				? group.clusters.map(d => ({
+						label: d.title,
+						value: d.name,
+						image: d.image
+				  }))
+				: [];
 		}
 	},
 	watch: {
@@ -145,6 +171,9 @@ export default {
 		},
 		selectedGroup() {
 			this.$emit('update:selectedApps', ['frappe']);
+			if (this.regionOptions.length > 0) {
+				this.$emit('update:selectedRegion', this.regionOptions[0].value);
+			}
 		}
 	},
 	async mounted() {
@@ -168,6 +197,18 @@ export default {
 					this.selectedApps.filter(a => a !== app.app)
 				);
 			}
+		},
+		getSelectedGroup() {
+			if (!this.options || !this.selectedVersion || !this.selectedGroup) {
+				return null;
+			}
+			let selectedVersion = this.options.versions.find(
+				v => v.name == this.selectedVersion
+			);
+			let group = selectedVersion.groups.find(
+				g => g.name == this.selectedGroup
+			);
+			return group;
 		}
 	}
 };
