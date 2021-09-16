@@ -171,3 +171,46 @@ def get_current_cpu_usage(site):
 	if hits:
 		return hits[0]["_source"]["json"]["request"].get("counter", 0)
 	return 0
+
+
+@frappe.whitelist()
+@protected("Site")
+def request_logs(name, timezone, date, sort=None, start=0):
+	log_server = frappe.db.get_single_value("Press Settings", "log_server")
+	if not log_server:
+		return []
+
+	url = f"https://{log_server}/elasticsearch/filebeat-*/_search"
+	password = get_decrypted_password("Log Server", log_server, "kibana_password")
+
+	sort_value = {
+		"Time (Ascending)": {"@timestamp": "asc"},
+		"Time (Descending)": {"@timestamp": "desc"},
+		"CPU Time (Descending)": {"json.duration": "desc"},
+	}[sort or "CPU Time (Descending)"]
+
+	query = {
+		"query": {
+			"bool": {
+				"filter": [
+					{"match_phrase": {"json.transaction_type": "request"}},
+					{"match_phrase": {"json.site": name}},
+					{"range": {"@timestamp": {"gt": f"{date}||-1d/d", "lte": f"{date}||/d"}}},
+				],
+				"must_not": [{"match_phrase": {"json.request.path": "/api/method/ping"}}],
+			}
+		},
+		"sort": sort_value,
+		"from": start,
+		"size": 10,
+	}
+
+	response = requests.post(url, json=query, auth=("frappe", password)).json()
+	out = []
+	for d in response["hits"]["hits"]:
+		data = d["_source"]["json"]
+		data["timestamp"] = convert_utc_to_timezone(
+			frappe.utils.get_datetime(data["timestamp"]).replace(tzinfo=None), timezone
+		)
+		out.append(data)
+	return out
