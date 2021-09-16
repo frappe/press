@@ -11,6 +11,7 @@
   "column_break_3",
   "cluster",
   "provider",
+  "virtual_machine",
   "is_server_setup",
   "section_break_8",
   "ip",
@@ -30,6 +31,7 @@
  ],
  "fields": [
   {
+   "fetch_from": "virtual_machine.public_ip_address",
    "fieldname": "ip",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -38,6 +40,7 @@
    "set_only_once": 1
   },
   {
+   "fetch_from": "virtual_machine.private_ip_address",
    "fieldname": "private_ip",
    "fieldtype": "Data",
    "label": "Private IP",
@@ -105,7 +108,7 @@
    "in_standard_filter": 1,
    "label": "Cluster",
    "options": "Cluster",
-   "read_only": 1
+   "set_only_once": 1
   },
   {
    "fieldname": "hostname",
@@ -127,7 +130,7 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "Generic\nScaleway",
+   "options": "Generic\nScaleway\nAWS EC2",
    "set_only_once": 1
   },
   {
@@ -172,10 +175,18 @@
    "fieldtype": "Table",
    "label": "Domains",
    "options": "Proxy Server Domain"
+  },
+  {
+   "depends_on": "eval: doc.provider === \"AWS EC2\"",
+   "fieldname": "virtual_machine",
+   "fieldtype": "Link",
+   "label": "Virtual Machine",
+   "mandatory_depends_on": "eval: doc.provider === \"AWS EC2\"",
+   "options": "Virtual Machine"
   }
  ],
  "links": [],
- "modified": "2021-03-24 10:38:02.059743",
+ "modified": "2021-09-09 10:30:22.481235",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",

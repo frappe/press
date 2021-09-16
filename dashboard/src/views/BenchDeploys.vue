@@ -131,7 +131,7 @@ export default {
 				let name = step.stage + ' - ' + step.step;
 				let output =
 					step.command || step.output
-						? `${step.command || ''}\n${step.output || ''}`
+						? `${step.command || ''}\n${step.output || ''}`.trim()
 						: '';
 				let duration = ['Success', 'Failure'].includes(step.status)
 					? step.cached

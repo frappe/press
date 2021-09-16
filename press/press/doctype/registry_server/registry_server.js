@@ -5,8 +5,8 @@ frappe.ui.form.on('Registry Server', {
 	refresh: function (frm) {
 		[
 			[__('Ping Ansible'), "ping_ansible", true],
-			[__('Ping Ansible Scaleway'), "ping_ansible_scaleway", true, frm.doc.provider === "Scaleway"],
-			[__('Prepare Scaleway Server'), "prepare_scaleway_server", true, !frm.doc.is_server_setup && frm.doc.provider === "Scaleway"],
+			[__('Ping Ansible Unprepared'), "ping_ansible_unprepared", true],
+			[__('Prepare Server'), "prepare_server", true, !frm.doc.is_server_setup],
 			[__('Setup Server'), "setup_server", true, !frm.doc.is_server_setup],
 			[__('Fetch Keys'), "fetch_keys", false, frm.doc.is_server_setup && (!frm.doc.frappe_public_key || !frm.doc.root_public_key)],
 		].forEach(([label, method, confirm, condition]) => {

@@ -98,6 +98,7 @@ export default {
 			} else {
 				this.popper.update();
 			}
+			this.$emit('init');
 		},
 		togglePopover(flag) {
 			if (flag == null) {

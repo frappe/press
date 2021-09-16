@@ -24,6 +24,7 @@ class LogServer(BaseServer):
 
 	def _setup_server(self):
 		agent_password = self.get_password("agent_password")
+		agent_repository_url = self.get_agent_repository_url()
 		kibana_password = self.get_password("kibana_password")
 		monitoring_password = self.get_password("monitoring_password")
 		certificate_name = frappe.db.get_value(
@@ -40,6 +41,7 @@ class LogServer(BaseServer):
 					"domain": self.domain,
 					"log_server": self.name,
 					"agent_password": agent_password,
+					"agent_repository_url": agent_repository_url,
 					"kibana_password": kibana_password,
 					"monitoring_password": monitoring_password,
 					"private_ip": self.private_ip,

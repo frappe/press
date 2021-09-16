@@ -11,6 +11,7 @@
   "column_break_4",
   "cluster",
   "provider",
+  "virtual_machine",
   "is_server_setup",
   "networking_section",
   "ip",
@@ -44,6 +45,7 @@
  ],
  "fields": [
   {
+   "fetch_from": "virtual_machine.public_ip_address",
    "fieldname": "ip",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -59,6 +61,7 @@
    "reqd": 1
   },
   {
+   "fetch_from": "virtual_machine.private_ip_address",
    "fieldname": "private_ip",
    "fieldtype": "Data",
    "label": "Private IP",
@@ -189,7 +192,7 @@
    "in_standard_filter": 1,
    "label": "Cluster",
    "options": "Cluster",
-   "read_only": 1
+   "set_only_once": 1
   },
   {
    "fieldname": "column_break_4",
@@ -221,7 +224,7 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "Generic\nScaleway",
+   "options": "Generic\nScaleway\nAWS EC2",
    "set_only_once": 1
   },
   {
@@ -268,10 +271,18 @@
    "fieldname": "staging",
    "fieldtype": "Check",
    "label": "Staging"
+  },
+  {
+   "depends_on": "eval:doc.provider == \"AWS EC2\"",
+   "fieldname": "virtual_machine",
+   "fieldtype": "Link",
+   "label": "Virtual Machine",
+   "mandatory_depends_on": "eval:doc.provider == \"AWS EC2\"",
+   "options": "Virtual Machine"
   }
  ],
  "links": [],
- "modified": "2021-06-30 09:44:55.577185",
+ "modified": "2021-09-09 16:39:48.068288",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

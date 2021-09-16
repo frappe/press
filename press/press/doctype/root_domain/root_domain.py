@@ -10,6 +10,7 @@ from typing import Iterable, List
 import boto3
 import frappe
 from frappe.model.document import Document
+from frappe.core.utils import find
 
 from press.utils import log_error
 
@@ -52,9 +53,8 @@ class RootDomain(Document):
 
 	@property
 	def hosted_zone(self):
-		return self.boto3_client.list_hosted_zones_by_name(DNSName=self.name)["HostedZones"][
-			0
-		]["Id"]
+		zones = self.boto3_client.list_hosted_zones_by_name()["HostedZones"]
+		return find(reversed(zones), lambda x: self.name.endswith(x["Name"][:-1]))["Id"]
 
 	def get_dns_record_pages(self) -> Iterable:
 		try:
@@ -76,9 +76,9 @@ class RootDomain(Document):
 					{
 						"Action": "DELETE",
 						"ResourceRecordSet": {
-							"Name": record,
+							"Name": record["name"],
 							"Type": "CNAME",
-							"TTL": 60,
+							"TTL": record["ttl"],
 							"ResourceRecords": [{"Value": proxy}],
 						},
 					}
@@ -119,7 +119,7 @@ class RootDomain(Document):
 				if record["Type"] == "CNAME" and record["ResourceRecords"][0]["Value"] == proxy:
 					domain = record["Name"].strip(".")
 					if domain not in active:
-						to_delete.append(domain)
+						to_delete.append({"name": domain, "ttl": record["TTL"]})
 			if to_delete:
 				self.delete_dns_records(to_delete, proxy)
 

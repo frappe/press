@@ -1,0 +1,215 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2021-09-06 18:18:49.887153",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "cluster",
+  "status",
+  "column_break_3",
+  "cloud_provider",
+  "region",
+  "availability_zone",
+  "section_break_5",
+  "machine_type",
+  "disk_size",
+  "aws_instance_id",
+  "column_break_8",
+  "machine_image",
+  "ssh_key",
+  "networking_section",
+  "aws_subnet_id",
+  "private_ip_address",
+  "public_ip_address",
+  "column_break_15",
+  "subnet_cidr_block",
+  "public_dns_name",
+  "private_dns_name",
+  "security_section",
+  "column_break_18",
+  "aws_security_group_id"
+ ],
+ "fields": [
+  {
+   "fetch_from": "cluster.cloud_provider",
+   "fieldname": "cloud_provider",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Cloud Provider",
+   "options": "\nAWS EC2",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fetch_from": "cluster.region",
+   "fieldname": "region",
+   "fieldtype": "Data",
+   "label": "Region",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fetch_from": "cluster.availability_zone",
+   "fieldname": "availability_zone",
+   "fieldtype": "Data",
+   "label": "Availability Zone",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "label": "Cluster",
+   "options": "Cluster",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "section_break_5",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_8",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "machine_image",
+   "fieldtype": "Data",
+   "label": "Machine Image",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "machine_type",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Machine Type",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "aws_instance_id",
+   "fieldtype": "Data",
+   "label": "AWS Instance ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "networking_section",
+   "fieldtype": "Section Break",
+   "label": "Networking"
+  },
+  {
+   "fetch_from": "cluster.aws_subnet_id",
+   "fieldname": "aws_subnet_id",
+   "fieldtype": "Data",
+   "label": "AWS Subnet ID",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "cluster.subnet_cidr_block",
+   "fieldname": "subnet_cidr_block",
+   "fieldtype": "Data",
+   "label": "Subnet CIDR Block",
+   "read_only": 1
+  },
+  {
+   "fieldname": "private_ip_address",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Private IP Address",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "security_section",
+   "fieldtype": "Section Break",
+   "label": "Security"
+  },
+  {
+   "fetch_from": "cluster.ssh_key",
+   "fieldname": "ssh_key",
+   "fieldtype": "Link",
+   "label": "SSH Key",
+   "options": "SSH Key",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_18",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "cluster.aws_security_group_id",
+   "fieldname": "aws_security_group_id",
+   "fieldtype": "Data",
+   "label": "AWS Security Group ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "public_ip_address",
+   "fieldtype": "Data",
+   "label": "Public IP Address",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_15",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "public_dns_name",
+   "fieldtype": "Data",
+   "label": "Public DNS Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "private_dns_name",
+   "fieldtype": "Data",
+   "label": "Private DNS Name",
+   "read_only": 1
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Pending\nRunning\nStopped\nTerminated",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "default": "8",
+   "fieldname": "disk_size",
+   "fieldtype": "Int",
+   "label": "Disk Size",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2021-09-15 17:23:57.522123",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Virtual Machine",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

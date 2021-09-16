@@ -3,7 +3,7 @@
   become: yes
   become_user: frappe
   git:
-    repo: "https://adityahase:uqknfFYBrziJ4kohumR8YhcKjyhYRmJe@github.com:/frappe/agent"
+    repo: "{{ agent_repository_url }}"
     dest: /home/frappe/agent/repo
     remote: upstream
 

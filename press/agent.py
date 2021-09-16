@@ -121,11 +121,11 @@ class Agent:
 		)
 
 	def rename_upstream_site(self, server: str, site, new_name: str, domains: List[str]):
-		ip = frappe.db.get_value("Server", server, "ip")
+		private_ip = frappe.db.get_value("Server", server, "private_ip")
 		data = {"new_name": new_name, "domains": domains}
 		return self.create_agent_job(
 			"Rename Site on Upstream",
-			f"proxy/upstreams/{ip}/sites/{site.name}/rename",
+			f"proxy/upstreams/{private_ip}/sites/{site.name}/rename",
 			data,
 			site=site.name,
 		)
@@ -379,28 +379,36 @@ class Agent:
 		)
 
 	def new_server(self, server):
-		ip = frappe.db.get_value("Server", server, "ip")
-		data = {"name": ip}
+		private_ip = frappe.db.get_value("Server", server, "private_ip")
+		data = {"name": private_ip}
 		return self.create_agent_job(
 			"Add Upstream to Proxy", "proxy/upstreams", data, upstream=server
 		)
 
-	def new_upstream_site(self, server, site):
+	def update_upstream_private_ip(self, server):
 		ip = frappe.db.get_value("Server", server, "ip")
+		private_ip = frappe.db.get_value("Server", server, "private_ip")
+		data = {"name": private_ip}
+		return self.create_agent_job(
+			"Rename Upstream", f"proxy/upstreams/{ip}/rename", data, upstream=server
+		)
+
+	def new_upstream_site(self, server, site):
+		private_ip = frappe.db.get_value("Server", server, "private_ip")
 		data = {"name": site}
 		return self.create_agent_job(
 			"Add Site to Upstream",
-			f"proxy/upstreams/{ip}/sites",
+			f"proxy/upstreams/{private_ip}/sites",
 			data,
 			site=site,
 			upstream=server,
 		)
 
 	def remove_upstream_site(self, server, site):
-		ip = frappe.db.get_value("Server", server, "ip")
+		private_ip = frappe.db.get_value("Server", server, "private_ip")
 		return self.create_agent_job(
 			"Remove Site from Upstream",
-			f"proxy/upstreams/{ip}/sites/{site}",
+			f"proxy/upstreams/{private_ip}/sites/{site}",
 			method="DELETE",
 			site=site,
 			upstream=server,
@@ -408,10 +416,10 @@ class Agent:
 
 	def update_site_status(self, server, site, status):
 		data = {"status": status}
-		ip = frappe.db.get_value("Server", server, "ip")
+		private_ip = frappe.db.get_value("Server", server, "private_ip")
 		return self.create_agent_job(
 			"Update Site Status",
-			f"proxy/upstreams/{ip}/sites/{site}/status",
+			f"proxy/upstreams/{private_ip}/sites/{site}/status",
 			data=data,
 			site=site,
 			upstream=server,
@@ -530,7 +538,8 @@ class Agent:
 		return status
 
 	def update(self):
-		return self.post("update")
+		url = frappe.get_doc(self.server_type, self.server).get_agent_repository_url()
+		return self.post("update", data={"url": url})
 
 	def ping(self):
 		return self.get("ping")["message"]

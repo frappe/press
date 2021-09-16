@@ -60,6 +60,7 @@ class ProxyServer(BaseServer):
 
 	def _setup_server(self):
 		agent_password = self.get_password("agent_password")
+		agent_repository_url = self.get_agent_repository_url()
 		certificate_name = frappe.db.get_value(
 			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
 		)
@@ -85,6 +86,7 @@ class ProxyServer(BaseServer):
 					"workers": 1,
 					"domain": self.domain,
 					"agent_password": agent_password,
+					"agent_repository_url": agent_repository_url,
 					"monitoring_password": monitoring_password,
 					"log_server": log_server,
 					"kibana_password": kibana_password,

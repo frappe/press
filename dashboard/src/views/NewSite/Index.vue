@@ -32,6 +32,7 @@
 					:privateBench="privateBench"
 					:selectedApps.sync="selectedApps"
 					:selectedGroup.sync="selectedGroup"
+					:selectedRegion.sync="selectedRegion"
 				/>
 				<Restore
 					:options="options"
@@ -43,6 +44,7 @@
 					:options="options"
 					v-show="activeStep.name === 'Plan'"
 				/>
+				<ErrorMessage :error="validationMessage" />
 				<div class="mt-4">
 					<ErrorMessage :error="$resources.newSite.error" />
 					<div class="flex justify-between">
@@ -113,12 +115,14 @@ export default {
 			benchTitle: null,
 			selectedApps: [],
 			selectedGroup: null,
+			selectedRegion: null,
 			selectedFiles: {
 				database: null,
 				public: null,
 				private: null
 			},
 			selectedPlan: null,
+			validationMessage: null,
 			steps: [
 				{
 					name: 'Hostname',
@@ -127,7 +131,17 @@ export default {
 					}
 				},
 				{
-					name: 'Apps'
+					name: 'Apps',
+					validate: () => {
+						if (this.privateBench) return true;
+						if (!this.selectedRegion) {
+							this.validationMessage = 'Please select the region';
+							return false;
+						} else {
+							this.validationMessage = null;
+						}
+						return true;
+					}
 				},
 				{
 					name: 'Restore'
@@ -168,6 +182,7 @@ export default {
 						name: this.subdomain,
 						apps: this.selectedApps,
 						group: this.selectedGroup,
+						cluster: this.selectedRegion,
 						plan: this.selectedPlan ? this.selectedPlan.name : null,
 						files: this.selectedFiles
 					}
