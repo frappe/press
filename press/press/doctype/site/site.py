@@ -227,9 +227,10 @@ class Site(Document):
 				aws_access_key_id=domain.aws_access_key_id,
 				aws_secret_access_key=domain.get_password("aws_secret_access_key"),
 			)
-			hosted_zone = client.list_hosted_zones_by_name(DNSName=domain.name)["HostedZones"][
-				0
-			]["Id"]
+			zones = client.list_hosted_zones_by_name()["HostedZones"]
+			hosted_zone = find(reversed(zones), lambda x: domain.name.endswith(x["Name"][:-1]))[
+				"Id"
+			]
 			client.change_resource_record_sets(
 				ChangeBatch={
 					"Changes": [
