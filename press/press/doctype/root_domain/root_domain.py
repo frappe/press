@@ -10,6 +10,7 @@ from typing import Iterable, List
 import boto3
 import frappe
 from frappe.model.document import Document
+from frappe.core.utils import find
 
 from press.utils import log_error
 
@@ -75,9 +76,9 @@ class RootDomain(Document):
 					{
 						"Action": "DELETE",
 						"ResourceRecordSet": {
-							"Name": record,
+							"Name": record["name"],
 							"Type": "CNAME",
-							"TTL": 60,
+							"TTL": record["ttl"],
 							"ResourceRecords": [{"Value": proxy}],
 						},
 					}
@@ -118,7 +119,7 @@ class RootDomain(Document):
 				if record["Type"] == "CNAME" and record["ResourceRecords"][0]["Value"] == proxy:
 					domain = record["Name"].strip(".")
 					if domain not in active:
-						to_delete.append(domain)
+						to_delete.append({"name": domain, "ttl": record["TTL"]})
 			if to_delete:
 				self.delete_dns_records(to_delete, proxy)
 
