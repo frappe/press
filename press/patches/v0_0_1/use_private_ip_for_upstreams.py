@@ -8,17 +8,11 @@ from press.agent import Agent
 from frappe.utils.fixtures import sync_fixtures
 
 
-AGENT_GITHUB_ACCESS_TOKEN = ""
-
-
 def execute():
 	settings = frappe.get_doc("Press Settings", "Press Settings")
 	settings.agent_repository_owner = "frappe"
 
-	if not AGENT_GITHUB_ACCESS_TOKEN:
-		raise ValueError("GitHub Access Token not found")
-
-	settings.agent_github_access_token = AGENT_GITHUB_ACCESS_TOKEN
+	settings.agent_github_access_token = input("GitHub Access Token: ")
 	settings.save()
 
 	sync_fixtures("press")
