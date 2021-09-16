@@ -133,6 +133,7 @@ export default {
 				{
 					name: 'Apps',
 					validate: () => {
+						if (this.privateBench) return true;
 						if (!this.selectedRegion) {
 							this.validationMessage = 'Please select the region';
 							return false;
