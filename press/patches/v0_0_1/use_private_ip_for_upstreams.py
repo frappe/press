@@ -5,9 +5,11 @@ from __future__ import unicode_literals
 
 import frappe
 from press.agent import Agent
+from frappe.utils.fixtures import sync_fixtures
 
 
 def execute():
+	sync_fixtures("press")
 	servers = frappe.get_all(
 		"Server", {"is_upstream_setup": True, "status": "Active"}, ["name", "proxy_server"],
 	)
