@@ -23,9 +23,12 @@ def execute():
 
 	sync_fixtures("press")
 
-	servers = frappe.get_all("Server", {"is_upstream_setup": True, "status": "Active"})
+	servers = frappe.get_all(
+		"Server", {"is_upstream_setup": True, "status": "Active"}, ["name", "proxy_server"]
+	)
 	for server in servers:
-		server = frappe.get_doc("Proxy Server", server.name)
-		server.update_agent_ansible()
+		proxy_server = frappe.get_doc("Proxy Server", server.proxy_server)
+		proxy_server.update_agent_ansible()
+
 		agent = Agent(server.proxy_server, "Proxy Server")
 		agent.update_upstream_private_ip(server.name)
