@@ -44,6 +44,7 @@
 					:options="options"
 					v-show="activeStep.name === 'Plan'"
 				/>
+				<ErrorMessage :error="validationMessage" />
 				<div class="mt-4">
 					<ErrorMessage :error="$resources.newSite.error" />
 					<div class="flex justify-between">
@@ -121,6 +122,7 @@ export default {
 				private: null
 			},
 			selectedPlan: null,
+			validationMessage: null,
 			steps: [
 				{
 					name: 'Hostname',
@@ -129,7 +131,16 @@ export default {
 					}
 				},
 				{
-					name: 'Apps'
+					name: 'Apps',
+					validate: () => {
+						if (!this.selectedRegion) {
+							this.validationMessage = 'Please select the region';
+							return false;
+						} else {
+							this.validationMessage = null;
+						}
+						return true;
+					}
 				},
 				{
 					name: 'Restore'

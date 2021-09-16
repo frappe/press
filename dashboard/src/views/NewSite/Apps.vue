@@ -27,7 +27,6 @@
 					:value="selectedRegion"
 					@change="$emit('update:selectedRegion', $event)"
 					:options="regionOptions"
-					placeholder="Select Region"
 				/>
 			</div>
 		</div>

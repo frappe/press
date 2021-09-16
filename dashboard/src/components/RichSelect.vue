@@ -13,7 +13,9 @@
 						:alt="selectedOption.label"
 					/>
 					<span v-if="value">{{ selectedOption.label }}</span>
-					<span v-else="value" class="text-gray-700">{{ placeholder }}</span>
+					<span v-else-if="placeholder" class="text-gray-700">
+						{{ placeholder }}
+					</span>
 				</div>
 
 				<svg
@@ -48,24 +50,29 @@ export default {
 				return {
 					...d,
 					action: () => this.$emit('change', d.value),
-					component: {
-						render: h => {
-							return h(
-								'div',
-								{
-									class: 'flex items-center'
-								},
-								[
-									d.image
-										? h('img', { class: 'h-4 mr-2', attrs: { src: d.image } })
-										: null,
-									h('span', d.label)
-								]
-							);
-						}
-					}
+					component: this.getDropdownItemComponent(d)
 				};
 			});
+		}
+	},
+	methods: {
+		getDropdownItemComponent(option) {
+			return {
+				render: h => {
+					return h(
+						'div',
+						{
+							class: 'flex items-center'
+						},
+						[
+							option.image
+								? h('img', { class: 'h-4 mr-2', attrs: { src: option.image } })
+								: null,
+							h('span', option.label)
+						]
+					);
+				}
+			};
 		}
 	}
 };
