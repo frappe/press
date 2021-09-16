@@ -58,6 +58,8 @@ class Cluster(Document):
 		)
 		self.aws_vpc_id = response["Vpc"]["VpcId"]
 
+		client.modify_vpc_attribute(VpcId=self.aws_vpc_id, EnableDnsHostnames={"Value": True})
+
 		response = client.create_subnet(
 			TagSpecifications=[
 				{
