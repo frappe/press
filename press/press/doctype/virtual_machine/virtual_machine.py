@@ -8,6 +8,10 @@ from frappe.model.document import Document
 
 
 class VirtualMachine(Document):
+	def validate(self):
+		if not self.machine_image:
+			self.machine_image = self.get_latest_ubuntu_image()
+
 	def after_insert(self):
 		self.provision()
 
@@ -72,6 +76,18 @@ class VirtualMachine(Document):
 			"terminated": "Terminated",
 		}
 
+	def get_latest_ubuntu_image(self):
+		cluster = frappe.get_doc("Cluster", self.cluster)
+		client = boto3.client(
+			"ssm",
+			region_name=self.region,
+			aws_access_key_id=cluster.aws_access_key_id,
+			aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
+		)
+
+		return client.get_parameter(
+			Name="/aws/service/canonical/ubuntu/server/20.04/stable/current/amd64/hvm/ebs-gp2/ami-id"
+		)["Parameter"]["Value"]
 
 
 @frappe.whitelist()
