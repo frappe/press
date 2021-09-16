@@ -15,7 +15,7 @@
 				/>
 			</div>
 		</div>
-		<div v-if="!this.privateBench">
+		<div v-if="regionOptions.length > 0">
 			<h2 class="text-lg font-semibold">
 				Select Region
 			</h2>
@@ -171,6 +171,9 @@ export default {
 		},
 		selectedGroup() {
 			this.$emit('update:selectedApps', ['frappe']);
+			if (this.regionOptions.length === 1) {
+				this.$emit('update:selectedRegion', this.regionOptions[0].value);
+			}
 		}
 	},
 	async mounted() {
