@@ -13,7 +13,7 @@
   "region",
   "availability_zone",
   "section_break_5",
-  "machine_image",
+  "disk_size",
   "aws_instance_id",
   "column_break_8",
   "machine_type",
@@ -179,6 +179,13 @@
    "options": "Pending\nRunning\nStopped\nTerminated",
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "default": "8",
+   "fieldname": "disk_size",
+   "fieldtype": "Int",
+   "label": "Disk Size",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
