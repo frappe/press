@@ -6,6 +6,9 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "title",
+  "image",
+  "public",
   "description",
   "monitoring_password"
  ],
@@ -19,8 +22,26 @@
    "fieldname": "monitoring_password",
    "fieldtype": "Password",
    "label": "Monitoring Password"
+  },
+  {
+   "default": "0",
+   "description": "Show in New Site/New Bench selection",
+   "fieldname": "public",
+   "fieldtype": "Check",
+   "label": "Public"
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title"
+  },
+  {
+   "fieldname": "image",
+   "fieldtype": "Attach Image",
+   "label": "Image"
   }
  ],
+ "image_field": "image",
  "index_web_pages_for_search": 1,
  "links": [
   {
@@ -39,10 +60,11 @@
    "link_fieldname": "cluster"
   }
  ],
- "modified": "2021-06-08 11:20:32.175869",
+ "modified": "2021-09-16 15:38:43.752163",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",
+ "naming_rule": "Set by user",
  "owner": "Administrator",
  "permissions": [
   {

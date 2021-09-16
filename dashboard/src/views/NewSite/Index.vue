@@ -32,6 +32,7 @@
 					:privateBench="privateBench"
 					:selectedApps.sync="selectedApps"
 					:selectedGroup.sync="selectedGroup"
+					:selectedRegion.sync="selectedRegion"
 				/>
 				<Restore
 					:options="options"
@@ -113,6 +114,7 @@ export default {
 			benchTitle: null,
 			selectedApps: [],
 			selectedGroup: null,
+			selectedRegion: null,
 			selectedFiles: {
 				database: null,
 				public: null,
@@ -168,6 +170,7 @@ export default {
 						name: this.subdomain,
 						apps: this.selectedApps,
 						group: this.selectedGroup,
+						cluster: this.selectedRegion,
 						plan: this.selectedPlan ? this.selectedPlan.name : null,
 						files: this.selectedFiles
 					}
