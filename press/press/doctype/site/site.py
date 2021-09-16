@@ -239,7 +239,7 @@ class Site(Document):
 							"ResourceRecordSet": {
 								"Name": site_name,
 								"Type": "CNAME",
-								"TTL": 60,
+								"TTL": 600,
 								"ResourceRecords": [{"Value": proxy_server}],
 							},
 						}
