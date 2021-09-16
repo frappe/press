@@ -73,6 +73,8 @@ class VirtualMachine(Document):
 		}
 
 
+
+@frappe.whitelist()
 def poll_pending_machines():
 	machines = frappe.get_all("Virtual Machine", {"status": "Pending"})
 	for machine in machines:
