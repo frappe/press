@@ -26,7 +26,9 @@ def new(bench):
 		frappe.throw("A bench exists with the same name")
 
 	apps = [{"app": app["name"], "source": app["source"]} for app in bench["apps"]]
-	group = new_release_group(bench["title"], bench["version"], apps, team)
+	group = new_release_group(
+		bench["title"], bench["version"], apps, team, bench["cluster"]
+	)
 	return group.name
 
 
@@ -133,9 +135,16 @@ def options(only_by_current_team=False):
 			app_dict["source"] = app_dict["sources"][0]
 			version_dict.setdefault("apps", []).append(app_dict)
 		versions.append(version_dict)
-	options = {
-		"versions": versions,
-	}
+
+	cluster_names = unique(
+		frappe.db.get_all("Server", filters={"status": "Active"}, pluck="cluster")
+	)
+	clusters = frappe.db.get_all(
+		"Cluster",
+		filters={"name": ("in", cluster_names), "public": True},
+		fields=["name", "title", "image"],
+	)
+	options = {"versions": versions, "clusters": clusters}
 	return options
 
 

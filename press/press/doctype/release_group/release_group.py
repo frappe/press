@@ -196,13 +196,21 @@ class ReleaseGroup(Document):
 		return marketplace_app_sources
 
 
-def new_release_group(title, version, apps, team=None):
+def new_release_group(title, version, apps, team=None, cluster=None):
+	if cluster:
+		server = frappe.get_all(
+			"Server", {"status": "Active", "cluster": cluster}, pluck="name", limit=1,
+		)[0]
+		servers = [{"server": server}]
+	else:
+		servers = []
 	group = frappe.get_doc(
 		{
 			"doctype": "Release Group",
 			"title": title,
 			"version": version,
 			"apps": apps,
+			"servers": servers,
 			"team": team,
 		}
 	).insert()
