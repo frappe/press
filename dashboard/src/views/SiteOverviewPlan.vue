@@ -171,6 +171,10 @@ export default {
 			return processedPlans;
 		},
 		usage() {
+			let f = value => {
+				return this.formatBytes(value, 0, 2);
+			};
+
 			if (this.site.status === 'Suspended') {
 				return [
 					{
@@ -179,19 +183,14 @@ export default {
 					},
 					{
 						label: 'Database',
-						value: `${this.plan.total_cpu_usage_hours} MiB`
+						value: f(this.plan.total_database_usage)
 					},
 					{
 						label: 'Storage',
-						value: `${this.plan.total_storage_usage} MiB`
+						value: f(this.plan.total_storage_usage)
 					}
 				];
 			}
-
-			let f = value => {
-				return this.formatBytes(value, 0, 2);
-			};
-
 			return [
 				{
 					label: 'CPU',
@@ -209,7 +208,7 @@ export default {
 				},
 				{
 					label: 'Database',
-					value: `${this.plan.total_database_usage} / ${f(
+					value: `${f(this.plan.total_database_usage)} / ${f(
 						this.plan.current_plan.max_database_usage
 					)}`,
 					percentage:
@@ -219,7 +218,7 @@ export default {
 				},
 				{
 					label: 'Storage',
-					value: `${this.plan.total_storage_usage} / ${f(
+					value: `${f(this.plan.total_storage_usage)} / ${f(
 						this.plan.current_plan.max_storage_usage
 					)}`,
 					percentage:
