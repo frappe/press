@@ -26,7 +26,7 @@
 					<div class="mt-4">
 						<RichSelect
 							:value="selectedRegion"
-							@change="$emit('update:selectedRegion', $event)"
+							@change="selectedRegion = $event"
 							:options="regionOptions"
 						/>
 					</div>
