@@ -16,6 +16,21 @@
 					</p>
 					<Input class="mt-4" type="text" v-model="benchTitle" />
 				</div>
+				<div v-if="regionOptions.length > 0">
+					<h2 class="text-lg font-semibold">
+						Select Region
+					</h2>
+					<p class="text-base text-gray-700">
+						Select the datacenter region where your bench should be created
+					</p>
+					<div class="mt-4">
+						<RichSelect
+							:value="selectedRegion"
+							@change="$emit('update:selectedRegion', $event)"
+							:options="regionOptions"
+						/>
+					</div>
+				</div>
 				<div>
 					<label class="text-lg font-semibold">
 						Select a Frappe version
@@ -65,17 +80,20 @@
 <script>
 import WizardCard from '@/components/WizardCard.vue';
 import AppSourceSelector from '@/components/AppSourceSelector.vue';
+import RichSelect from '@/components/RichSelect.vue';
 export default {
 	name: 'NewBench',
 	components: {
 		WizardCard,
-		AppSourceSelector
+		AppSourceSelector,
+		RichSelect
 	},
 	data() {
 		return {
 			benchTitle: null,
 			selectedVersionName: null,
-			selectedApps: []
+			selectedApps: [],
+			selectedRegion: null
 		};
 	},
 	resources: {
@@ -83,13 +101,15 @@ export default {
 			return {
 				method: 'press.api.bench.options',
 				default: {
-					versions: []
+					versions: [],
+					clusters: []
 				},
 				auto: true,
 				onSuccess(options) {
 					if (!this.selectedVersionName) {
 						this.selectedVersionName = options.versions[0].name;
 					}
+					this.selectedRegion = this.options.clusters[0].name;
 				}
 			};
 		},
@@ -100,6 +120,7 @@ export default {
 					bench: {
 						title: this.benchTitle,
 						version: this.selectedVersionName,
+						cluster: this.selectedRegion,
 						apps: this.selectedApps.map(app => ({
 							name: app.app,
 							source: app.source.name
@@ -156,6 +177,13 @@ export default {
 			return this.options.versions.map(v => ({
 				label: `${v.name} (${v.status})`,
 				value: v.name
+			}));
+		},
+		regionOptions() {
+			return this.options.clusters.map(d => ({
+				label: d.title,
+				value: d.name,
+				image: d.image
 			}));
 		}
 	}
