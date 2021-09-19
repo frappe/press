@@ -12,3 +12,4 @@
     - role: proxy
     - role: node_exporter
     - role: filebeat
+    - role: clamav
