@@ -17,6 +17,12 @@ export default [
 		props: true
 	},
 	{
+		path: '/:bench/new',
+		name: 'NewBenchSite',
+		component: () => import('../views/NewSite/Index.vue'),
+		props: true
+	},
+	{
 		path: '/sites/:siteName',
 		name: 'Site',
 		component: () => import('../views/Site.vue'),

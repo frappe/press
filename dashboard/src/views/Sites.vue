@@ -58,11 +58,7 @@
 								</Button>
 								<Button
 									:route="
-										`/sites/new${
-											bench.owned_by_team
-												? `?bench=${bench.name}&benchTitle=${bench.title}`
-												: ''
-										}`
+										bench.owned_by_team ? `/${bench.name}/new` : '/sites/new'
 									"
 									type="primary"
 									iconLeft="plus"
