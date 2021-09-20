@@ -89,6 +89,7 @@
 </template>
 
 <script>
+import { DateTime } from 'luxon';
 import WizardCard from '@/components/WizardCard.vue';
 import Steps from '@/components/Steps.vue';
 import Hostname from './Hostname.vue';
@@ -98,6 +99,7 @@ import Plans from './Plans.vue';
 
 export default {
 	name: 'NewSite',
+	props: ['bench'],
 	components: {
 		WizardCard,
 		Steps,
@@ -155,10 +157,9 @@ export default {
 	async mounted() {
 		this.options = await this.$call('press.api.site.options_for_new');
 		this.options.plans = this.options.plans.map(plan => {
-			plan.disabled = this.disablePlan(plan);
+			plan.disabled = !this.$account.hasBillingInfo;
 			return plan;
 		});
-
 		if (this.$route.query.domain) {
 			let domain = this.$route.query.domain.split('.');
 			if (domain) {
@@ -166,11 +167,28 @@ export default {
 			}
 			this.$router.replace({});
 		}
-		if (this.$route.query.bench) {
+		if (this.bench) {
 			this.privateBench = true;
-			this.selectedGroup = this.$route.query.bench;
-			this.benchTitle = this.$route.query.benchTitle;
-			this.$router.replace({});
+			this.selectedGroup = this.bench;
+			this.benchTitle = this.bench;
+			let { title, creation } = await this.$call('frappe.client.get_value', {
+				doctype: 'Release Group',
+				name: this.bench,
+				fieldname: JSON.stringify(['title', 'creation'])
+			});
+			this.benchTitle = title;
+
+			// poor man's bench paywall
+			// this will disable creation of $10 sites on private benches
+			// wanted to avoid adding a new field, so doing this with a date check :)
+			let benchCreation = DateTime.fromSQL(creation);
+			let paywalledBenchDate = DateTime.fromSQL('2021-09-21 00:00:00');
+			let isPaywalledBench = benchCreation > paywalledBenchDate;
+			if (isPaywalledBench && $account.user.user_type != 'System User') {
+				this.options.plans = this.options.plans.filter(
+					plan => plan.price_usd >= 25
+				);
+			}
 		}
 	},
 	resources: {
@@ -204,11 +222,6 @@ export default {
 					}
 				}
 			};
-		}
-	},
-	methods: {
-		disablePlan(plan) {
-			return !this.$account.hasBillingInfo;
 		}
 	},
 	computed: {
