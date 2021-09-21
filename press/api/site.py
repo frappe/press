@@ -704,9 +704,9 @@ def restore(name, files):
 
 @frappe.whitelist()
 def exists(subdomain):
-	return bool(
-		frappe.db.exists("Site", {"subdomain": subdomain, "status": ("!=", "Archived")})
-	)
+	from press.press.doctype.site.site import Site
+
+	return Site.exists(subdomain)
 
 
 @frappe.whitelist()
