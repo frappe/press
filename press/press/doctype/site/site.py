@@ -971,6 +971,14 @@ class Site(Document):
 			pluck="site",
 		)
 
+	@classmethod
+	def exists(cls, subdomain) -> bool:
+		"""Check if subdomain is available"""
+		return bool(
+			frappe.db.exists("Blocked Domain", {"name": subdomain})
+			or frappe.db.exists("Site", {"subdomain": subdomain, "status": ("!=", "Archived")})
+		)
+
 
 def site_cleanup_after_archive(site):
 	delete_site_domains(site)
