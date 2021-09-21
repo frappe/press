@@ -40,6 +40,7 @@ class AppRelease(Document):
 		return f"{self.get_source().repository_url}/commit/{self.hash}"
 
 	def create_deploy_candidates(self):
+		# Ignore if already created
 		candidates = frappe.get_all(
 			"Deploy Candidate App",
 			fields=["parent"],
@@ -48,11 +49,11 @@ class AppRelease(Document):
 		if candidates:
 			return
 
-		for group_app in frappe.get_all(
-			"Release Group App", fields=["parent"], filters={"app": self.app},
-		):
-			group = frappe.get_doc("Release Group", group_app.parent)
-			group.create_deploy_candidate()
+		# for group_app in frappe.get_all(
+		# 	"Release Group App", fields=["parent"], filters={"app": self.app},
+		# ):
+		# 	group = frappe.get_doc("Release Group", group_app.parent)
+		# 	group.create_deploy_candidate()
 
 	@frappe.whitelist()
 	def clone(self):
