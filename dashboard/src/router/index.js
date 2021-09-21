@@ -24,8 +24,8 @@ const routes = [
 		component: () => import('../views/Welcome.vue')
 	},
 	...authRoutes,
-	...siteRoutes,
 	...benchRoutes,
+	...siteRoutes,
 	...marketplaceRoutes,
 	accountRoute
 ];
