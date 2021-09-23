@@ -345,16 +345,13 @@ def get_updates_between_current_and_next_apps(current_apps, rg_name: str):
 		else:
 			latest_app_release = get_last_doc("App Release", {"source": app.source})
 		
+		# No release exists for this source
 		if not latest_app_release:
 			continue
 
 		bench_app = find(current_apps, lambda x: x.app == app.app)
 
-		# Handle the case when the app is first time install
-		# i.e. bench_app is None
-
-		print("bench_app", bench_app)
-		print("latest_app_release", latest_app_release)
+		
 		upcoming_release = (
 			latest_app_release.name if latest_app_release else bench_app.release
 		)
@@ -367,6 +364,7 @@ def get_updates_between_current_and_next_apps(current_apps, rg_name: str):
 					"source": app.source,
 					"release": upcoming_release,
 					"hash": upcoming_hash,
+					"title": app.title
 				}
 			)
 		)
