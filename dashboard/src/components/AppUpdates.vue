@@ -1,12 +1,14 @@
 <template>
-	<div class="divide-y">
-		<ListItem
+	<div class="divide-y mt-2 space-y-2">
+		<SelectableCard
+			class="w-full"
 			v-for="app in appsWithUpdates"
-			:title="app.title"
-			:subtitle="`${app.repository_owner}/${app.repository}:${app.branch}`"
 			:key="app.app"
+			@click.native="toggleApp(app)"
+			:title="app.title"
+			:selected="selectedApps.includes(app.app)"
 		>
-			<template #actions>
+			<template #secondary-content>
 				<div class="flex items-center space-x-1">
 					<a
 						v-if="deployFrom(app)"
@@ -31,13 +33,27 @@
 					</a>
 				</div>
 			</template>
-		</ListItem>
+		</SelectableCard>
 	</div>
 </template>
 <script>
+import SelectableCard from '@/components/SelectableCard.vue';
+
 export default {
 	name: 'AppUpdates',
 	props: ['apps'],
+	components: {
+		SelectableCard
+	},
+	data() {
+		return {
+			selectedApps: []
+		};
+	},
+	mounted() {
+		// Select all apps by default
+		this.selectedApps = this.appsWithUpdates.map(app => app.app);
+	},
 	methods: {
 		deployFrom(app) {
 			if (app.will_branch_change) {
@@ -52,8 +68,17 @@ export default {
 			if (app.will_branch_change) {
 				return app.branch;
 			}
-			
+
 			return app.next_tag || app.next_hash.slice(0, 7);
+		},
+		toggleApp(app) {
+			if (!this.selectedApps.includes(app.app)) {
+				this.selectedApps.push(app.app);
+				this.$emit('update:selectedApps', this.selectedApps);
+			} else {
+				this.selectedApps = this.selectedApps.filter(a => a !== app.app);
+				this.$emit('update:selectedApps', this.selectedApps);
+			}
 		}
 	},
 	computed: {
