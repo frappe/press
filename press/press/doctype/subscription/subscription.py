@@ -37,6 +37,7 @@ class Subscription(Document):
 		self.enabled = False
 		self.save()
 
+	@frappe.whitelist()
 	def create_usage_record(self):
 		cannot_charge = not self.can_charge_for_subscription()
 		if cannot_charge:
