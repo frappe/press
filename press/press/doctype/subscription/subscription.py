@@ -142,7 +142,9 @@ def create_usage_records():
 		subscription = frappe.get_doc("Subscription", name)
 		try:
 			subscription.create_usage_record()
+			frappe.db.commit()
 		except Exception:
+			frappe.db.rollback()
 			log_error(title="Create Usage Record Error", name=name)
 
 
