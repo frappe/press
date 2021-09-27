@@ -53,6 +53,7 @@ export default {
 	mounted() {
 		// Select all apps by default
 		this.selectedApps = this.appsWithUpdates.map(app => app.app);
+		this.$emit('update:selectedApps', this.selectedApps);
 	},
 	methods: {
 		deployFrom(app) {

@@ -59,12 +59,12 @@ export default {
 			};
 		},
 		deploy() {
-			console.log('deploy()');
-
 			let appsToIgnore = [];
 			if (this.deployInformation) {
-				appsToIgnore = this.deployInformation.apps.filter(
-					app => app.update_available && !this.selectedApps.includes(app.app)
+				appsToIgnore = Array(
+					this.deployInformation.apps.filter(
+						app => app.update_available && !this.selectedApps.includes(app.app)
+					)
 				);
 			}
 
@@ -73,6 +73,11 @@ export default {
 				params: {
 					name: this.bench.name,
 					apps_to_ignore: appsToIgnore
+				},
+				validate() {
+					if (this.selectedApps.length === 0) {
+						return 'You must select atleast 1 app to proceed with update.';
+					}
 				},
 				onSuccess(candidate) {
 					this.$router.push(`/benches/${this.bench.name}/deploys/${candidate}`);
