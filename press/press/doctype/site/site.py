@@ -500,7 +500,7 @@ class Site(Document):
 
 	@frappe.whitelist()
 	def cleanup_after_archive(self):
-		site_cleanup_after_archive(self)
+		site_cleanup_after_archive(self.name)
 
 	def delete_offsite_backups(self):
 		from press.press.doctype.remote_file.remote_file import delete_remote_backup_objects
