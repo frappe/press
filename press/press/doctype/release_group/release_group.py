@@ -37,8 +37,9 @@ class ReleaseGroup(Document):
 		# deploy candidate with latest approved releases
 		self.create_deploy_candidate(approved_releases_only=True)
 
-	def on_update(self):
-		self.create_deploy_candidate()
+	# It's done on the fly now
+	# def on_update(self):
+	# 	self.create_deploy_candidate()
 
 	def validate_title(self):
 		if frappe.get_all(
@@ -130,21 +131,6 @@ class ReleaseGroup(Document):
 				"dependencies": dependencies,
 			}
 		).insert()
-
-	@frappe.whitelist()
-	def create_deploy_candidate_with_apps(self, apps_to_update):
-		if not self.enabled:
-			return
-
-		apps = []
-		for app in self.apps:
-			# For each release group app
-			# -> It is in apps_to_update
-				# -> The hash to which they want to update
-				# -> Add to the `apps` list
-			# -> It is not in apps_to_update
-				# -> 
-			pass
 
 	def add_app(self, source):
 		self.append("apps", {"source": source.name, "app": source.app})
