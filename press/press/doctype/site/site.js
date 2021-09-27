@@ -47,6 +47,7 @@ frappe.ui.form.on('Site', {
 		});
 		[
 			[__('Archive'), 'archive'],
+			[__('Cleanup after Archive'), 'cleanup_after_archive'],
 			[__('Migrate'), 'migrate'],
 			[__('Reinstall'), 'reinstall'],
 			[__('Restore'), 'restore_site'],
