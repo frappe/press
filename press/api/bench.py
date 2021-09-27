@@ -421,6 +421,12 @@ def deploy(name, apps_to_ignore=[]):
 			"Bench can only be deployed by the bench owner", exc=frappe.PermissionError
 		)
 
+	# Throw if a deploy is already in progress
+	last_deploy_candidate = get_last_doc("Deploy Candidate", {"group": name})
+
+	if last_deploy_candidate.status == "Running":
+		frappe.throw("A deploy for this bench is already on progress")
+
 	# Get the deploy information for apps
 	# that have updates available
 	apps_deploy_info = deploy_information(name).apps
