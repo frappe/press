@@ -430,10 +430,12 @@ def deploy(name, apps_to_ignore=[]):
 	# Get the deploy information for apps
 	# that have updates available
 	apps_deploy_info = deploy_information(name).apps
+
 	app_updates = [
 		app
 		for app in apps_deploy_info
-		if app["update_available"] and (app["app"] not in apps_to_ignore)
+		if app["update_available"]
+		and (not find(apps_to_ignore, lambda x: x["app"] == app["app"]))
 	]
 
 	apps = []
