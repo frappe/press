@@ -353,6 +353,7 @@ def get_updates_between_current_and_next_apps(current_apps, rg_name: str):
 				"branch": source.branch,
 				"current_hash": current_hash,
 				"current_tag": current_tag,
+				"current_release": bench_app.release if bench_app else None,
 				"next_release": app.release,
 				"next_hash": next_hash,
 				"next_tag": get_app_tag(source.repository, source.repository_owner, next_hash),
@@ -425,7 +426,7 @@ def deploy(name, apps_to_ignore=[]):
 	last_deploy_candidate = get_last_doc("Deploy Candidate", {"group": name})
 
 	if last_deploy_candidate.status == "Running":
-		frappe.throw("A deploy for this bench is already on progress")
+		frappe.throw("A deploy for this bench is already in progress")
 
 	# Get the deploy information for apps
 	# that have updates available
@@ -448,6 +449,25 @@ def deploy(name, apps_to_ignore=[]):
 				"hash": update["next_hash"],
 			}
 		)
+
+	# The apps that are in the release group
+	# Not updated or ignored
+	untouched_apps = [
+		a for a in rg.apps if not find(app_updates, lambda x: x["app"] == a.app)
+	]
+	last_deployed_bench = get_last_doc("Bench", {"group": name, "status": "Active"})
+
+	if last_deployed_bench:
+		for app in untouched_apps:
+			update = find(last_deployed_bench.apps, lambda x: x.app == app.app)
+			apps.append(
+				{
+					"release": update.release,
+					"source": update.source,
+					"app": update.app,
+					"hash": update.hash,
+				}
+			)
 
 	dependencies = [
 		{"dependency": d.dependency, "version": d.version} for d in rg.dependencies
