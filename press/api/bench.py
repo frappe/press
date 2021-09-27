@@ -6,16 +6,16 @@ import frappe
 
 from typing import List, Dict
 from collections import OrderedDict
-from press.utils import get_current_team, get_last_doc, unique
 from press.api.site import protected
 from press.api.github import branches
 from frappe.core.utils import find, find_all
+from press.press.doctype.agent_job.agent_job import job_detail
+from press.utils import get_current_team, get_last_doc, unique
 from press.press.doctype.app_source.app_source import AppSource
 from press.press.doctype.release_group.release_group import (
 	ReleaseGroup,
 	new_release_group,
 )
-from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 
 
@@ -615,4 +615,3 @@ def belongs_to_current_team(app: str) -> bool:
 	marketplace_app = frappe.get_doc("Marketplace App", app)
 
 	return marketplace_app.team == current_team
-
