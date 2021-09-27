@@ -6,8 +6,8 @@ import frappe
 
 from typing import List
 from frappe.model.document import Document
-from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.server.server import Server
+from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app_source.app_source import AppSource, create_app_source
 
 DEFAULT_DEPENDENCIES = [

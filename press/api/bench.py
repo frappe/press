@@ -415,18 +415,27 @@ def get_next_apps(rg: ReleaseGroup, current_apps):
 @frappe.whitelist()
 @protected("Release Group")
 def deploy(name, apps_to_ignore=[]):
+	# Throw if a deploy is already in progress
+	last_deploy_candidate = get_last_doc("Deploy Candidate", {"group": name})
+
+	if last_deploy_candidate.status == "Running":
+		frappe.throw("A deploy for this bench is already in progress")
+
+	candidate = create_deploy_candidate(name, apps_to_ignore)
+	candidate.build_and_deploy()
+
+	return candidate.name
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def create_deploy_candidate(name, apps_to_ignore=[]):
 	team = get_current_team()
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
 	if rg.team != team:
 		frappe.throw(
 			"Bench can only be deployed by the bench owner", exc=frappe.PermissionError
 		)
-
-	# Throw if a deploy is already in progress
-	last_deploy_candidate = get_last_doc("Deploy Candidate", {"group": name})
-
-	if last_deploy_candidate.status == "Running":
-		frappe.throw("A deploy for this bench is already in progress")
 
 	# Get the deploy information for apps
 	# that have updates available
@@ -482,9 +491,8 @@ def deploy(name, apps_to_ignore=[]):
 			"dependencies": dependencies,
 		}
 	).insert()
-	candidate.build_and_deploy()
 
-	return candidate.name
+	return candidate
 
 
 @frappe.whitelist()
