@@ -85,6 +85,16 @@ export default {
 		appsWithUpdates() {
 			return this.apps.filter(app => app.update_available);
 		}
+	},
+	watch: {
+		selectedApps(apps) {
+			// Hardcoded for now, need a better way
+			// to manage such dependencies (#TODO)
+			// If updating ERPNext, must update Frappe with it
+			if (apps.includes('erpnext') && !apps.includes('frappe')) {
+				apps.push('frappe');
+			}
+		}
 	}
 };
 </script>
