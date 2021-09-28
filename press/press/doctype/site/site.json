@@ -17,6 +17,7 @@
   "admin_password",
   "setup_wizard_complete",
   "group",
+  "skip_auto_updates",
   "billing",
   "team",
   "plan",
@@ -340,11 +341,17 @@
    "options": "Plan",
    "read_only": 1
   },
- 	{
+  {
    "default": "0",
    "fieldname": "staging",
    "fieldtype": "Check",
    "label": "Staging"
+  },
+  {
+   "default": "0",
+   "fieldname": "skip_auto_updates",
+   "fieldtype": "Check",
+   "label": "Skip Auto Updates"
   }
  ],
  "links": [
@@ -394,7 +401,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2021-07-15 18:30:30.719328",
+ "modified": "2021-09-28 11:40:46.460922",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

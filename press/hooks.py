@@ -9,7 +9,7 @@ app_publisher = "Frappe"
 app_description = "Managed Frappe Hosting"
 app_icon = "octicon octicon-rocket"
 app_color = "grey"
-app_email = "aditya@erpnext.com"
+app_email = "aditya@frappe.io"
 app_license = "Proprietary"
 version = app_version
 
