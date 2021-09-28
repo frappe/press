@@ -311,7 +311,7 @@ def deploy_information(name):
 	out = frappe._dict(update_available=False)
 
 	last_deployed_bench = get_last_doc("Bench", {"group": name, "status": "Active"})
-	out.apps = get_updates_between_current_and_next_apps(
+	out.apps = get_app_updates(
 		last_deployed_bench.apps if last_deployed_bench else [], name
 	)
 	out.update_available = any([app["update_available"] for app in out.apps])
@@ -319,7 +319,7 @@ def deploy_information(name):
 	return out
 
 
-def get_updates_between_current_and_next_apps(current_apps, rg_name: str):
+def get_app_updates(current_apps, rg_name: str):
 	rg: ReleaseGroup = frappe.get_doc("Release Group", rg_name)
 	next_apps = get_next_apps(rg, current_apps)
 

@@ -2,17 +2,14 @@
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
 
-from __future__ import unicode_literals
-
 import json
-
-import dns.resolver
 import wrapt
-from boto3 import client
-from botocore.exceptions import ClientError
-
 import frappe
+import dns.resolver
+
+from boto3 import client
 from frappe.core.utils import find
+from botocore.exceptions import ClientError
 from frappe.desk.doctype.tag.tag import add_tag
 from frappe.utils import flt, time_diff_in_hours
 from frappe.utils.password import get_decrypted_password
@@ -475,13 +472,53 @@ def check_for_updates(name):
 
 	destination_candidate = frappe.get_doc("Deploy Candidate", destination)
 
-	from press.api.bench import get_updates_between_current_and_next_apps
-
 	out.apps = get_updates_between_current_and_next_apps(
 		bench.apps, destination_candidate.apps
 	)
 	out.update_available = any([app["update_available"] for app in out.apps])
 	return out
+
+
+def get_updates_between_current_and_next_apps(current_apps, next_apps):
+	from press.api.bench import get_app_tag
+
+	apps = []
+	for app in next_apps:
+		bench_app = find(current_apps, lambda x: x.app == app.app)
+		current_hash = bench_app.hash if bench_app else None
+		source = frappe.get_doc("App Source", app.source)
+
+		will_branch_change = False
+		current_branch = source.branch
+		if bench_app:
+			current_source = frappe.get_doc("App Source", bench_app.source)
+			will_branch_change = current_source.branch != source.branch
+			current_branch = current_source.branch
+
+		current_tag = (
+			get_app_tag(source.repository, source.repository_owner, current_hash)
+			if current_hash
+			else None
+		)
+		next_hash = app.hash
+		apps.append(
+			{
+				"title": app.title,
+				"app": app.app,
+				"repository": source.repository,
+				"repository_owner": source.repository_owner,
+				"repository_url": source.repository_url,
+				"branch": source.branch,
+				"current_hash": current_hash,
+				"current_tag": current_tag,
+				"next_hash": next_hash,
+				"next_tag": get_app_tag(source.repository, source.repository_owner, next_hash),
+				"will_branch_change": will_branch_change,
+				"current_branch": current_branch,
+				"update_available": not current_hash or current_hash != next_hash,
+			}
+		)
+	return apps
 
 
 @frappe.whitelist()
