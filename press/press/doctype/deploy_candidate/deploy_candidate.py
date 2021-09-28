@@ -10,7 +10,6 @@ import frappe
 import docker
 import dockerfile
 import subprocess
-import json
 
 from subprocess import Popen
 from typing import List
@@ -417,10 +416,9 @@ class DeployCandidate(Document):
 			last_update = now()
 
 			for line in client.images.push(
-				self.docker_image_repository, self.docker_image_tag, stream=True
+				self.docker_image_repository, self.docker_image_tag, stream=True, decode=True
 			):
-				line = json.loads(line.decode().strip())
-				if "id" not in line:
+				if "id" not in line.keys():
 					continue
 
 				line_output = f'{line["id"]}: {line["status"]} {line.get("progress", "")}'
