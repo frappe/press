@@ -17,7 +17,10 @@
 			</Button>
 		</template>
 		<Dialog title="Following updates are available" v-model="showDeployDialog">
-			<AppUpdates :apps="deployInformation.apps" />
+			<AppUpdates
+				:apps="deployInformation.apps"
+				:selectedApps.sync="selectedApps"
+			/>
 			<ErrorMessage class="mt-2" :error="$resources.deploy.error" />
 			<template #actions>
 				<Button
@@ -41,7 +44,8 @@ export default {
 	},
 	data() {
 		return {
-			showDeployDialog: false
+			showDeployDialog: false,
+			selectedApps: []
 		};
 	},
 	resources: {
@@ -55,10 +59,25 @@ export default {
 			};
 		},
 		deploy() {
+			let appsToIgnore = [];
+			if (this.deployInformation) {
+				appsToIgnore = Array(
+					this.deployInformation.apps.filter(
+						app => app.update_available && !this.selectedApps.includes(app.app)
+					)
+				);
+			}
+
 			return {
 				method: 'press.api.bench.deploy',
 				params: {
-					name: this.bench.name
+					name: this.bench.name,
+					apps_to_ignore: appsToIgnore
+				},
+				validate() {
+					if (this.selectedApps.length === 0) {
+						return 'You must select atleast 1 app to proceed with update.';
+					}
 				},
 				onSuccess(candidate) {
 					this.$router.push(`/benches/${this.bench.name}/deploys/${candidate}`);
@@ -77,6 +96,15 @@ export default {
 		},
 		deployInformation() {
 			return this.$resources.deployInformation.data;
+		}
+	},
+	// DEBUG ONLY
+	watch: {
+		selectedApps() {
+			const appsToIgnore = this.deployInformation.apps.filter(
+				app => app.update_available && !this.selectedApps.includes(app.app)
+			);
+			console.log(appsToIgnore);
 		}
 	}
 };

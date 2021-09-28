@@ -6,16 +6,16 @@ import frappe
 
 from typing import List, Dict
 from collections import OrderedDict
-from press.utils import get_current_team, get_last_doc, unique
 from press.api.site import protected
 from press.api.github import branches
 from frappe.core.utils import find, find_all
+from press.press.doctype.agent_job.agent_job import job_detail
+from press.utils import get_current_team, get_last_doc, unique
 from press.press.doctype.app_source.app_source import AppSource
 from press.press.doctype.release_group.release_group import (
 	ReleaseGroup,
 	new_release_group,
 )
-from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 
 
@@ -309,21 +309,20 @@ def candidate(name):
 @protected("Release Group")
 def deploy_information(name):
 	out = frappe._dict(update_available=False)
-	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
-
-	last_deploy_candidate = get_last_deploy_candidate(rg)
-	if not last_deploy_candidate:
-		return out
 
 	last_deployed_bench = get_last_doc("Bench", {"group": name, "status": "Active"})
 	out.apps = get_updates_between_current_and_next_apps(
-		last_deployed_bench.apps if last_deployed_bench else [], last_deploy_candidate.apps
+		last_deployed_bench.apps if last_deployed_bench else [], name
 	)
 	out.update_available = any([app["update_available"] for app in out.apps])
+
 	return out
 
 
-def get_updates_between_current_and_next_apps(current_apps, next_apps):
+def get_updates_between_current_and_next_apps(current_apps, rg_name: str):
+	rg: ReleaseGroup = frappe.get_doc("Release Group", rg_name)
+	next_apps = get_next_apps(rg, current_apps)
+
 	apps = []
 	for app in next_apps:
 		bench_app = find(current_apps, lambda x: x.app == app.app)
@@ -347,12 +346,15 @@ def get_updates_between_current_and_next_apps(current_apps, next_apps):
 			{
 				"title": app.title,
 				"app": app.app,
+				"source": source.name,
 				"repository": source.repository,
 				"repository_owner": source.repository_owner,
 				"repository_url": source.repository_url,
 				"branch": source.branch,
 				"current_hash": current_hash,
 				"current_tag": current_tag,
+				"current_release": bench_app.release if bench_app else None,
+				"next_release": app.release,
 				"next_hash": next_hash,
 				"next_tag": get_app_tag(source.repository, source.repository_owner, next_hash),
 				"will_branch_change": will_branch_change,
@@ -363,20 +365,137 @@ def get_updates_between_current_and_next_apps(current_apps, next_apps):
 	return apps
 
 
+def get_next_apps(rg: ReleaseGroup, current_apps):
+	marketplace_app_sources = rg.get_marketplace_app_sources()
+	current_team = get_current_team()
+	only_approved_for_sources = [
+		source
+		for source in marketplace_app_sources
+		if frappe.db.get_value("App Source", source, "team") != current_team
+	]
+
+	next_apps = []
+	for app in rg.apps:
+		# TODO: Optimize using get_value, maybe?
+		latest_app_release = None
+
+		if app.source in only_approved_for_sources:
+			latest_app_release = get_last_doc(
+				"App Release", {"source": app.source, "status": "Approved"}
+			)
+		else:
+			latest_app_release = get_last_doc("App Release", {"source": app.source})
+
+		# No release exists for this source
+		if not latest_app_release:
+			continue
+
+		bench_app = find(current_apps, lambda x: x.app == app.app)
+
+		upcoming_release = (
+			latest_app_release.name if latest_app_release else bench_app.release
+		)
+		upcoming_hash = latest_app_release.hash if latest_app_release else bench_app.hash
+
+		next_apps.append(
+			frappe._dict(
+				{
+					"app": app.app,
+					"source": app.source,
+					"release": upcoming_release,
+					"hash": upcoming_hash,
+					"title": app.title,
+				}
+			)
+		)
+
+	return next_apps
+
+
 @frappe.whitelist()
 @protected("Release Group")
-def deploy(name):
+def deploy(name, apps_to_ignore=[]):
 	team = get_current_team()
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
+
 	if rg.team != team:
 		frappe.throw(
 			"Bench can only be deployed by the bench owner", exc=frappe.PermissionError
 		)
 
-	candidate = get_last_deploy_candidate(rg)
+	# Throw if a deploy is already in progress
+	last_deploy_candidate = get_last_doc("Deploy Candidate", {"group": name})
+
+	if last_deploy_candidate.status == "Running":
+		frappe.throw("A deploy for this bench is already in progress")
+
+	candidate = create_deploy_candidate(name, apps_to_ignore)
 	candidate.build_and_deploy()
 
 	return candidate.name
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def create_deploy_candidate(name, apps_to_ignore=[]):
+	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
+
+	# Get the deploy information for apps
+	# that have updates available
+	apps_deploy_info = deploy_information(name).apps
+
+	app_updates = [
+		app
+		for app in apps_deploy_info
+		if app["update_available"]
+		and (not find(apps_to_ignore, lambda x: x["app"] == app["app"]))
+	]
+
+	apps = []
+	for update in app_updates:
+		apps.append(
+			{
+				"release": update["next_release"],
+				"source": update["source"],
+				"app": update["app"],
+				"hash": update["next_hash"],
+			}
+		)
+
+	# The apps that are in the release group
+	# Not updated or ignored
+	untouched_apps = [
+		a for a in rg.apps if not find(app_updates, lambda x: x["app"] == a.app)
+	]
+	last_deployed_bench = get_last_doc("Bench", {"group": name, "status": "Active"})
+
+	if last_deployed_bench:
+		for app in untouched_apps:
+			update = find(last_deployed_bench.apps, lambda x: x.app == app.app)
+			apps.append(
+				{
+					"release": update.release,
+					"source": update.source,
+					"app": update.app,
+					"hash": update.hash,
+				}
+			)
+
+	dependencies = [
+		{"dependency": d.dependency, "version": d.version} for d in rg.dependencies
+	]
+
+	# Create and deploy the DC
+	candidate: DeployCandidate = frappe.get_doc(
+		{
+			"doctype": "Deploy Candidate",
+			"group": rg.name,
+			"apps": apps,
+			"dependencies": dependencies,
+		}
+	).insert()
+
+	return candidate
 
 
 @frappe.whitelist()
@@ -507,43 +626,3 @@ def belongs_to_current_team(app: str) -> bool:
 	marketplace_app = frappe.get_doc("Marketplace App", app)
 
 	return marketplace_app.team == current_team
-
-
-def get_last_deploy_candidate(release_group: ReleaseGroup) -> DeployCandidate:
-	"""Get the latest valid deploy candidate for this `release_group`"""
-	dc_filters = {"group": release_group.name, "status": "Draft"}
-	last_deployed_bench = get_last_doc(
-		"Bench", {"group": release_group.name, "status": "Active"}
-	)
-	if last_deployed_bench:
-		dc_filters["creation"] = (">", last_deployed_bench.creation)
-
-	deploy_candidates = frappe.get_all(
-		"Deploy Candidate", filters=dc_filters, order_by="creation desc", pluck="name"
-	)
-	deploy_candidates = [
-		frappe.get_doc("Deploy Candidate", dc) for dc in deploy_candidates
-	]
-
-	current_team = get_current_team()
-
-	for dc in deploy_candidates:
-		releases = dc.get_unpublished_marketplace_releases()
-		if not releases:
-			# There is no unpublished release in
-			# this Deploy Candidate
-			return dc
-
-		# If public release group,
-		# try next deploy candidate
-		if release_group.public:
-			continue
-
-		for release in releases:
-			source = frappe.get_doc("App Release", release).get_source()
-			app_team = frappe.db.get_value("Marketplace App", source.app, "team")
-			if current_team != app_team:
-				break
-		else:
-			# Marketplace Apps belong to this team
-			return dc

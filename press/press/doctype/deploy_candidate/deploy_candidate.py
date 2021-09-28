@@ -4,20 +4,20 @@
 
 import os
 import re
+import json
 import shlex
 import shutil
 import frappe
 import docker
 import dockerfile
 import subprocess
-import json
 
-from subprocess import Popen
 from typing import List
+from subprocess import Popen
 from frappe.core.utils import find
 from frappe.model.document import Document
-from frappe.model.naming import make_autoname
 from frappe.utils import now_datetime as now
+from frappe.model.naming import make_autoname
 
 from press.utils import get_current_team, log_error
 from press.press.doctype.server.server import Server
