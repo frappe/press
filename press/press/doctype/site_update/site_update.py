@@ -160,7 +160,7 @@ def sites_with_available_update():
 			"status": ("in", ("Active", "Inactive", "Suspended")),
 			"bench": ("in", benches),
 		},
-		fields=["name", "timezone", "bench", "status"],
+		fields=["name", "timezone", "bench", "status", "skip_auto_updates"],
 	)
 	return sites
 
