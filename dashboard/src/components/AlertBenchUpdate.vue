@@ -17,7 +17,7 @@
 			</Button>
 		</template>
 		<Dialog title="Following updates are available" v-model="showDeployDialog">
-			<AppUpdates
+			<BenchAppUpdates
 				:apps="deployInformation.apps"
 				:selectedApps.sync="selectedApps"
 			/>
@@ -35,12 +35,12 @@
 	</Alert>
 </template>
 <script>
-import AppUpdates from './AppUpdates.vue';
+import BenchAppUpdates from './BenchAppUpdates.vue';
 export default {
 	name: 'AlertBenchUpdate',
 	props: ['bench'],
 	components: {
-		AppUpdates
+		BenchAppUpdates
 	},
 	data() {
 		return {
@@ -96,15 +96,6 @@ export default {
 		},
 		deployInformation() {
 			return this.$resources.deployInformation.data;
-		}
-	},
-	// DEBUG ONLY
-	watch: {
-		selectedApps() {
-			const appsToIgnore = this.deployInformation.apps.filter(
-				app => app.update_available && !this.selectedApps.includes(app.app)
-			);
-			console.log(appsToIgnore);
 		}
 	}
 };
