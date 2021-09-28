@@ -9,6 +9,7 @@
 		<input
 			v-if="['text', 'number', 'checkbox', 'email', 'password', 'date'].includes(type)"
 			class="placeholder-gray-500"
+			ref="input"
 			:class="[
 				{
 					'block w-full form-input': type != 'checkbox',
@@ -21,11 +22,13 @@
 			:placeholder="placeholder"
 			v-bind="$attrs"
 			@blur="$emit('blur', $event)"
+			@focus="$emit('focus', $event)"
 			v-model="inputVal"
 		/>
 		<textarea
 			v-if="type === 'textarea'"
 			:class="['block w-full resize-none form-textarea', inputClass]"
+			ref="input"
 			v-model="inputVal"
 			:disabled="disabled"
 			v-bind="$attrs"
@@ -34,6 +37,7 @@
 		></textarea>
 		<select
 			class="block w-full form-select"
+			ref="input"
 			v-model="inputVal"
 			v-if="type === 'select'"
 			:disabled="disabled"
@@ -101,6 +105,14 @@ export default {
 		},
 		placeholder: {
 			type: String
+		}
+	},
+	methods: {
+		focus() {
+			this.$refs.input.focus()
+		},
+		blur() {
+			this.$refs.input.blur()
 		}
 	},
 	computed: {
