@@ -7,7 +7,11 @@
 			{{ label }}
 		</span>
 		<input
-			v-if="['text', 'number', 'checkbox', 'email', 'password', 'date'].includes(type)"
+			v-if="
+				['text', 'number', 'checkbox', 'email', 'password', 'date'].includes(
+					type
+				)
+			"
 			class="placeholder-gray-500"
 			ref="input"
 			:class="[
@@ -109,10 +113,10 @@ export default {
 	},
 	methods: {
 		focus() {
-			this.$refs.input.focus()
+			this.$refs.input.focus();
 		},
 		blur() {
-			this.$refs.input.blur()
+			this.$refs.input.blur();
 		}
 	},
 	computed: {

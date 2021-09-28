@@ -20,7 +20,7 @@
 					toggleDropdown(false);
 				"
 				:value="searchText"
-				@change="log"
+				@change="onInput"
 				placeholder="Search sites (/)"
 			/>
 		</template>
@@ -81,7 +81,7 @@ export default {
 		navigateSite(siteName) {
 			this.$router.push(`/sites/${siteName}/overview`);
 		},
-		log(val) {
+		onInput(val) {
 			if (val.target) {
 				// this.searchText = ""
 				this.$refs.search.blur();
