@@ -10,7 +10,7 @@
 			</Button>
 		</template>
 		<Dialog title="Updates available" v-model="showUpdatesDialog">
-			<AppUpdates :apps="updateInformation.apps" />
+			<SiteAppUpdates :apps="updateInformation.apps" />
 			<template #actions>
 				<Button
 					type="primary"
@@ -24,12 +24,12 @@
 	</Alert>
 </template>
 <script>
-import AppUpdates from './AppUpdates.vue';
+import SiteAppUpdates from './SiteAppUpdates.vue';
 export default {
 	name: 'AlertSiteUpdate',
 	props: ['site'],
 	components: {
-		AppUpdates
+		SiteAppUpdates
 	},
 	data() {
 		return {
