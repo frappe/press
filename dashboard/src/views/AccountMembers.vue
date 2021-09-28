@@ -34,8 +34,6 @@
 				label="Enter the email address of your teammate to invite them."
 				type="text"
 				class="mt-4"
-				v-model="memberEmail"
-				required
 			/>
 			<ErrorMessage :error="addMember.error" />
 

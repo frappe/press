@@ -22,10 +22,14 @@
 						>
 							Manage Bench
 						</Button>
+						<!-- TODO: 
+							- change on click to popup function this.confirm style 
+							- if user is team member / site owner then don't show popup
+						-->
 						<Button
 							v-if="site.status == 'Active'"
-							@click="$resources.loginAsAdmin.submit()"
 							:loading="$resources.loginAsAdmin.loading"
+							@click="reasonToLoginAsAdminPopup()"
 							icon-left="external-link"
 						>
 							Login as Administrator
@@ -139,7 +143,21 @@ export default {
 					: 'overview';
 				this.$router.replace(`${path}/${tab}`);
 			}
-		}
+		},
+		reasonToLoginAsAdminPopup() {
+			this.$confirm({
+				title: 'Login as Admin?',
+				message:
+					'Please write the reason for login as admin in this site',
+				actionLabel: 'Login',
+				textBox: true,
+				action: closeDialog => {
+					this.$resources.loginAsAdmin.submit()
+					console.log('login as adminiatrator')
+					closeDialog();
+				}
+			});
+		},
 	},
 	computed: {
 		site() {
