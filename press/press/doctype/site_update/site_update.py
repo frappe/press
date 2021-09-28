@@ -175,6 +175,7 @@ def schedule_updates():
 		return
 
 	sites = sites_with_available_update()
+	sites = list(filter(should_not_skip_auto_updates, sites))
 	sites = list(filter(is_site_in_deploy_hours, sites))
 	sites = list(filter(should_try_update, sites))
 
@@ -198,6 +199,10 @@ def schedule_updates():
 		except Exception:
 			log_error("Site Update Exception", site=site)
 			frappe.db.rollback()
+
+
+def should_not_skip_auto_updates(site):
+	return not site.skip_auto_updates
 
 
 def should_try_update(site):
