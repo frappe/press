@@ -28,7 +28,17 @@ frappe.ui.form.on('Release Group', {
 								name: frm.doc.name,
 							},
 						})
-						.then((r) => frm.refresh());
+						.then(({ message }) => {
+							frappe.msgprint({
+								title: __('New Deploy Candidate Created'),
+								indicator: 'green',
+								message: __(
+									`New <a href="/app/deploy-candidate/${message.name}">Deploy Candidate</a> for this bench was created successfully.`
+								),
+							});
+
+							frm.refresh();
+						});
 				},
 				__('Actions')
 			);
