@@ -146,15 +146,27 @@ export default {
 		},
 		reasonToLoginAsAdminPopup() {
 			this.$confirm({
-				title: 'Login as Admin?',
+				title: 'Login as Administrator',
 				message:
-					'Please write the reason for login as admin in this site',
+					'State the reason you need to login this site as an administrator.',
 				actionLabel: 'Login',
 				textBox: true,
-				action: closeDialog => {
-					this.$resources.loginAsAdmin.submit()
-					console.log('login as adminiatrator')
-					closeDialog();
+				action: (closeDialog, textBoxInput) => {
+					let reason = textBoxInput; 
+					if (textBoxInput != null) {
+						this.$resources.loginAsAdmin.submit({
+							name: this.siteName,
+							reason: reason
+						})
+						console.log('login as adminiatrator')
+						closeDialog();
+					} else {
+						this.$notify({
+							title: 'Reason field should not be empty',
+							color: 'red',
+							icon: 'x'
+						});
+					}
 				}
 			});
 		},
