@@ -6,6 +6,7 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "enabled",
   "is_ab_test",
   "percentage_for_cohort_a"
  ],
@@ -24,11 +25,17 @@
    "label": "Percentage for Cohort A",
    "mandatory_depends_on": "eval:doc.is_ab_test==1",
    "non_negative": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-09-28 23:06:45.310476",
+ "modified": "2021-09-29 11:58:32.376807",
  "modified_by": "Administrator",
  "module": "Experimental",
  "name": "Feature Experiment",
