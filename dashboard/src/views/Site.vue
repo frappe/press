@@ -23,7 +23,6 @@
 							Manage Bench
 						</Button>
 						<!-- TODO: 
-							- change on click to popup function this.confirm style 
 							- if user is team member / site owner then don't show popup
 						-->
 						<Button
@@ -145,19 +144,23 @@ export default {
 			}
 		},
 		reasonToLoginAsAdminPopup() {
+			if (this.$account.team.name == this.site.team) {
+				return this.$resources.loginAsAdmin.submit({
+					name: this.siteName
+				});
+			}
 			this.$confirm({
 				title: 'Login as Administrator',
-				message:
-					'State the reason to login to as administrator.',
+				message: 'State the reason to login to as administrator.',
 				actionLabel: 'Login',
 				textBox: true,
 				action: (closeDialog, textBoxInput) => {
-					let reason = textBoxInput; 
-					if (textBoxInput != null) {
+					let reason = textBoxInput;
+					if (textBoxInput !== null) {
 						this.$resources.loginAsAdmin.submit({
 							name: this.siteName,
 							reason: reason
-						})
+						});
 						closeDialog();
 					} else {
 						this.$notify({
@@ -168,7 +171,7 @@ export default {
 					}
 				}
 			});
-		},
+		}
 	},
 	computed: {
 		site() {
