@@ -18,9 +18,10 @@
 				@keydown.enter="
 					selectHighlightedItem();
 					toggleDropdown(false);
+					$refs.search.blur();
 				"
 				:value="searchText"
-				@change="onInput"
+				@input="val => (searchText = val)"
 				placeholder="Search sites (/)"
 			/>
 		</template>
@@ -80,14 +81,6 @@ export default {
 		},
 		navigateSite(siteName) {
 			this.$router.push(`/sites/${siteName}/overview`);
-		},
-		onInput(val) {
-			if (val.target) {
-				// this.searchText = ""
-				this.$refs.search.blur();
-				return;
-			}
-			this.searchText = val;
 		}
 	}
 };
