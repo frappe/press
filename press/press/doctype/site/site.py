@@ -527,7 +527,7 @@ class Site(Document):
 		return delete_remote_backup_objects(sites_remote_files)
 
 	def login(self, reason = None):
-		if(reason is not None):
+		if reason:
 			# TODO: need to fix and test if the email thing is working.
 			frappe.sendmail(
 				recipients=self.team,
