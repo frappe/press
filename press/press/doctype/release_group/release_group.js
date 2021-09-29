@@ -24,6 +24,7 @@ frappe.ui.form.on('Release Group', {
 					frm
 						.call({
 							method,
+							freeze: true,
 							args: {
 								name: frm.doc.name,
 							},

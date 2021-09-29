@@ -496,7 +496,7 @@ def check_for_updates(name):
 
 
 def get_updates_between_current_and_next_apps(current_apps, next_apps):
-	from press.api.bench import get_app_tag
+	from press.utils import get_app_tag
 
 	apps = []
 	for app in next_apps:
