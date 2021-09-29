@@ -148,7 +148,7 @@ export default {
 			this.$confirm({
 				title: 'Login as Administrator',
 				message:
-					'State the reason you need to login this site as an administrator.',
+					'State the reason to login to as administrator.',
 				actionLabel: 'Login',
 				textBox: true,
 				action: (closeDialog, textBoxInput) => {
@@ -158,7 +158,6 @@ export default {
 							name: this.siteName,
 							reason: reason
 						})
-						console.log('login as adminiatrator')
 						closeDialog();
 					} else {
 						this.$notify({
