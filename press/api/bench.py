@@ -10,13 +10,12 @@ from press.api.site import protected
 from press.api.github import branches
 from frappe.core.utils import find, find_all
 from press.press.doctype.agent_job.agent_job import job_detail
-from press.utils import get_current_team, get_last_doc, unique
+from press.utils import get_current_team, get_last_doc, unique, get_app_tag
 from press.press.doctype.app_source.app_source import AppSource
 from press.press.doctype.release_group.release_group import (
 	ReleaseGroup,
 	new_release_group,
 )
-from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 
 
 @frappe.whitelist()
@@ -308,108 +307,8 @@ def candidate(name):
 @frappe.whitelist()
 @protected("Release Group")
 def deploy_information(name):
-	out = frappe._dict(update_available=False)
-
-	last_deployed_bench = get_last_doc("Bench", {"group": name, "status": "Active"})
-	out.apps = get_app_updates(
-		last_deployed_bench.apps if last_deployed_bench else [], name
-	)
-	out.update_available = any([app["update_available"] for app in out.apps])
-
-	return out
-
-
-def get_app_updates(current_apps, rg_name: str):
-	rg: ReleaseGroup = frappe.get_doc("Release Group", rg_name)
-	next_apps = get_next_apps(rg, current_apps)
-
-	apps = []
-	for app in next_apps:
-		bench_app = find(current_apps, lambda x: x.app == app.app)
-		current_hash = bench_app.hash if bench_app else None
-		source = frappe.get_doc("App Source", app.source)
-
-		will_branch_change = False
-		current_branch = source.branch
-		if bench_app:
-			current_source = frappe.get_doc("App Source", bench_app.source)
-			will_branch_change = current_source.branch != source.branch
-			current_branch = current_source.branch
-
-		current_tag = (
-			get_app_tag(source.repository, source.repository_owner, current_hash)
-			if current_hash
-			else None
-		)
-		next_hash = app.hash
-		apps.append(
-			{
-				"title": app.title,
-				"app": app.app,
-				"source": source.name,
-				"repository": source.repository,
-				"repository_owner": source.repository_owner,
-				"repository_url": source.repository_url,
-				"branch": source.branch,
-				"current_hash": current_hash,
-				"current_tag": current_tag,
-				"current_release": bench_app.release if bench_app else None,
-				"next_release": app.release,
-				"next_hash": next_hash,
-				"next_tag": get_app_tag(source.repository, source.repository_owner, next_hash),
-				"will_branch_change": will_branch_change,
-				"current_branch": current_branch,
-				"update_available": not current_hash or current_hash != next_hash,
-			}
-		)
-	return apps
-
-
-def get_next_apps(rg: ReleaseGroup, current_apps):
-	marketplace_app_sources = rg.get_marketplace_app_sources()
-	current_team = get_current_team()
-	only_approved_for_sources = [
-		source
-		for source in marketplace_app_sources
-		if frappe.db.get_value("App Source", source, "team") != current_team
-	]
-
-	next_apps = []
-	for app in rg.apps:
-		# TODO: Optimize using get_value, maybe?
-		latest_app_release = None
-
-		if app.source in only_approved_for_sources:
-			latest_app_release = get_last_doc(
-				"App Release", {"source": app.source, "status": "Approved"}
-			)
-		else:
-			latest_app_release = get_last_doc("App Release", {"source": app.source})
-
-		# No release exists for this source
-		if not latest_app_release:
-			continue
-
-		bench_app = find(current_apps, lambda x: x.app == app.app)
-
-		upcoming_release = (
-			latest_app_release.name if latest_app_release else bench_app.release
-		)
-		upcoming_hash = latest_app_release.hash if latest_app_release else bench_app.hash
-
-		next_apps.append(
-			frappe._dict(
-				{
-					"app": app.app,
-					"source": app.source,
-					"release": upcoming_release,
-					"hash": upcoming_hash,
-					"title": app.title,
-				}
-			)
-		)
-
-	return next_apps
+	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
+	return rg.deploy_information()
 
 
 @frappe.whitelist()
@@ -429,7 +328,7 @@ def deploy(name, apps_to_ignore=[]):
 	if last_deploy_candidate.status == "Running":
 		frappe.throw("A deploy for this bench is already in progress")
 
-	candidate = create_deploy_candidate(name, apps_to_ignore)
+	candidate = rg.create_deploy_candidate(apps_to_ignore)
 	candidate.build_and_deploy()
 
 	return candidate.name
@@ -439,61 +338,7 @@ def deploy(name, apps_to_ignore=[]):
 @protected("Release Group")
 def create_deploy_candidate(name, apps_to_ignore=[]):
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
-
-	# Get the deploy information for apps
-	# that have updates available
-	apps_deploy_info = deploy_information(name).apps
-
-	app_updates = [
-		app
-		for app in apps_deploy_info
-		if app["update_available"]
-		and (not find(apps_to_ignore, lambda x: x["app"] == app["app"]))
-	]
-
-	apps = []
-	for update in app_updates:
-		apps.append(
-			{
-				"release": update["next_release"],
-				"source": update["source"],
-				"app": update["app"],
-				"hash": update["next_hash"],
-			}
-		)
-
-	# The apps that are in the release group
-	# Not updated or ignored
-	untouched_apps = [
-		a for a in rg.apps if not find(app_updates, lambda x: x["app"] == a.app)
-	]
-	last_deployed_bench = get_last_doc("Bench", {"group": name, "status": "Active"})
-
-	if last_deployed_bench:
-		for app in untouched_apps:
-			update = find(last_deployed_bench.apps, lambda x: x.app == app.app)
-			apps.append(
-				{
-					"release": update.release,
-					"source": update.source,
-					"app": update.app,
-					"hash": update.hash,
-				}
-			)
-
-	dependencies = [
-		{"dependency": d.dependency, "version": d.version} for d in rg.dependencies
-	]
-
-	# Create and deploy the DC
-	candidate: DeployCandidate = frappe.get_doc(
-		{
-			"doctype": "Deploy Candidate",
-			"group": rg.name,
-			"apps": apps,
-			"dependencies": dependencies,
-		}
-	).insert()
+	candidate = rg.create_deploy_candidate(apps_to_ignore)
 
 	return candidate
 
@@ -549,14 +394,6 @@ def recent_deploys(name):
 		{"group": name, "status": ("!=", "Draft")},
 		order_by="creation desc",
 		limit=3,
-	)
-
-
-def get_app_tag(repository, repository_owner, hash):
-	return frappe.db.get_value(
-		"App Tag",
-		{"repository": repository, "repository_owner": repository_owner, "hash": hash},
-		"tag",
 	)
 
 
