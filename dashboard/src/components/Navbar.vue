@@ -38,6 +38,7 @@
 				</div>
 				<div class="hidden md:block">
 					<div class="flex items-center">
+						<SiteSearch class="mr-5"/>
 						<Button icon-left="life-buoy" link="/support">Support</Button>
 						<div class="relative ml-3">
 							<div>
@@ -131,10 +132,12 @@
 
 <script>
 import FrappeCloudLogo from '@/components/FrappeCloudLogo.vue';
+import SiteSearch from '@/components/SiteSearch.vue';
 
 export default {
 	components: {
-		FrappeCloudLogo
+		FrappeCloudLogo,
+		SiteSearch
 	},
 	data() {
 		return {

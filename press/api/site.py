@@ -984,3 +984,11 @@ def get_backup_links(url, email, password):
 		)
 
 	return remote_files
+
+
+@frappe.whitelist()
+def search_list():
+	team = get_current_team()
+	sites = frappe.get_list("Site", filters={"status": ("!=", "Archived"), "team": team})
+
+	return sites
