@@ -50,6 +50,11 @@ frappe.ui.form.on('Team', {
 			},
 			'Actions'
 		);
+
+		frm.add_custom_button('Impersonate Team', () => {
+			let team = frm.doc.name;
+			window.open(`/dashboard/impersonate/${team}`);
+		});
 	},
 
 });

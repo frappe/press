@@ -41,5 +41,11 @@ export default [
 		meta: {
 			isLoginPage: true
 		}
+	},
+	{
+		path: '/impersonate/:team',
+		name: 'Impersonate Team',
+		component: () => import('../views/ImpersonateTeam.vue'),
+		props: true
 	}
 ];
