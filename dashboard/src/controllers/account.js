@@ -32,7 +32,7 @@ export default new Vue({
 			let roles = this.user.roles.map(d => d.role);
 			return roles.includes(role);
 		},
-		async switchToTeam(team) {
+		async switchTeam(team) {
 			if (team === this.team.name) {
 				return;
 			}
@@ -40,6 +40,9 @@ export default new Vue({
 			this.team = result.team;
 			this.team_members = result.team_members;
 			localStorage.setItem('current_team', team);
+		},
+		async switchToTeam(team) {
+			await this.switchTeam(team);
 			window.location.reload();
 		}
 	},
