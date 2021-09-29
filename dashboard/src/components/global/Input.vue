@@ -25,33 +25,33 @@
 			:disabled="disabled"
 			:placeholder="placeholder"
 			v-bind="$attrs"
-			@blur="$emit('blur', $event)"
-			@focus="$emit('focus', $event)"
-			v-model="inputVal"
+			v-on="inputListeners"
+			:value="value"
 		/>
 		<textarea
 			v-if="type === 'textarea'"
 			:class="['block w-full resize-none form-textarea', inputClass]"
 			ref="input"
-			v-model="inputVal"
+			:value="value"
 			:disabled="disabled"
 			v-bind="$attrs"
+			v-on="inputListeners"
 			:rows="rows || 3"
 			@blur="$emit('blur', $event)"
 		></textarea>
 		<select
 			class="block w-full form-select"
 			ref="input"
-			v-model="inputVal"
 			v-if="type === 'select'"
 			:disabled="disabled"
+			v-on="inputListeners"
 		>
 			<option
 				v-for="option in selectOptions"
 				:key="option.value"
 				:value="option.value"
 				:disabled="!option.value"
-				:selected="inputVal === option.value"
+				:selected="value === option.value"
 			>
 				{{ option.label }}
 			</option>
@@ -120,14 +120,15 @@ export default {
 		}
 	},
 	computed: {
-		inputVal: {
-			get() {
-				return this.value;
-			},
-			set(val) {
-				this.$emit('input', val);
-				this.$emit('change', val);
-			}
+		inputListeners() {
+			return Object.assign({}, this.$listeners, {
+				input: e => {
+					this.$emit('input', e.target.value);
+				},
+				change: e => {
+					this.$emit('change', e.target.value);
+				}
+			});
 		},
 		selectOptions() {
 			return this.options.map(option => {
