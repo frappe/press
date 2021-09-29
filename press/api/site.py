@@ -315,7 +315,7 @@ def options_for_new():
 
 
 @frappe.whitelist()
-def get_plans():
+def get_plans(name=None):
 	filters = {"enabled": True, "document_type": "Site"}
 
 	plans = frappe.db.get_all(
@@ -335,8 +335,24 @@ def get_plans():
 	)
 	plans = group_children_in_result(plans, {"role": "roles"})
 
+	if name:
+		team = get_current_team()
+		release_group_name = frappe.db.get_value("Site", name, "group")
+		release_group = frappe.get_doc("Release Group", release_group_name)
+		is_private_bench = release_group.team == team and not release_group.public
+		# poor man's bench paywall
+		# this will not allow creation of $10 sites on private benches
+		# wanted to avoid adding a new field, so doing this with a date check :)
+		# TODO: find a better way to do paywalls
+		paywall_date = frappe.utils.get_datetime("2021-09-21 00:00:00")
+		is_paywalled_bench = is_private_bench and release_group.creation > paywall_date
+	else:
+		is_paywalled_bench = False
+
 	out = []
 	for plan in plans:
+		if is_paywalled_bench and plan.price_usd == 10:
+			continue
 		if frappe.utils.has_common(plan["roles"], frappe.get_roles()):
 			plan.pop("roles", "")
 			out.append(plan)
