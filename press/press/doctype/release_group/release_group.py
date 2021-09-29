@@ -132,12 +132,24 @@ class ReleaseGroup(Document):
 			{"dependency": d.dependency, "version": d.version} for d in self.dependencies
 		]
 
+		# Rearrange Apps to match release group ordering
+		sorted_apps = []
+
+		for app in self.apps:
+			dc_app = find(apps, lambda x: x["app"] == app.app)
+			if dc_app:
+				sorted_apps.append(dc_app)
+
+		for app in apps:
+			if not find(sorted_apps, lambda x: x["app"] == app["app"]):
+				sorted_apps.append(app)
+
 		# Create and deploy the DC
 		candidate = frappe.get_doc(
 			{
 				"doctype": "Deploy Candidate",
 				"group": self.name,
-				"apps": apps,
+				"apps": sorted_apps,
 				"dependencies": dependencies,
 			}
 		).insert()
