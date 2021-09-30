@@ -287,7 +287,7 @@ class DeployCandidate(Document):
 		self.docker_image_tag = self.name
 		self.docker_image = f"{self.docker_image_repository}:{self.docker_image_tag}"
 
-		result = self.run(f"docker build -t {self.docker_image} .", environment)
+		result = self.run(f"docker buildx build --platform linux/amd64 -t {self.docker_image} .", environment)
 		self._parse_docker_build_result(result)
 
 	def _parse_docker_build_result(self, result):
@@ -417,10 +417,9 @@ class DeployCandidate(Document):
 			last_update = now()
 
 			for line in client.images.push(
-				self.docker_image_repository, self.docker_image_tag, stream=True
+				self.docker_image_repository, self.docker_image_tag, stream=True, decode=True
 			):
-				line = json.loads(line.decode().strip())
-				if "id" not in line:
+				if "id" not in line.keys():
 					continue
 
 				line_output = f'{line["id"]}: {line["status"]} {line.get("progress", "")}'
