@@ -33,6 +33,7 @@
 					:selectedApps.sync="selectedApps"
 					:selectedGroup.sync="selectedGroup"
 					:selectedRegion.sync="selectedRegion"
+					:shareDetailsConsent.sync="shareDetailsConsent"
 				/>
 				<Restore
 					:options="options"
@@ -124,6 +125,7 @@ export default {
 				private: null
 			},
 			selectedPlan: null,
+			shareDetailsConsent: false,
 			validationMessage: null,
 			steps: [
 				{
@@ -202,7 +204,8 @@ export default {
 						group: this.selectedGroup,
 						cluster: this.selectedRegion,
 						plan: this.selectedPlan ? this.selectedPlan.name : null,
-						files: this.selectedFiles
+						files: this.selectedFiles,
+						share_details_consent: this.shareDetailsConsent
 					}
 				},
 				onSuccess(data) {
