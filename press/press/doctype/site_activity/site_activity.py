@@ -15,7 +15,7 @@ class SiteActivity(Document):
 			frappe.sendmail(
 				recipients=[recipient],
 				# TODO: update recipient for email to use custom recipient configured in team <29-09-21, Balamurali M> #
-				subject="Attempt to login as administrator to site",
+				subject="Administrator login to your site",
 				template="admin_login",
 				args={"site": self.site, "user": self.owner, "reason": self.reason},
 				reference_doctype=self.doctype,

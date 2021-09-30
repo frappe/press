@@ -151,7 +151,8 @@ export default {
 			}
 			this.$confirm({
 				title: 'Login as Administrator',
-				message: 'State the reason to login to as administrator.',
+				message:
+					'Please enter reason for this login. Site owner will be notified of this action.',
 				actionLabel: 'Login',
 				textBox: true,
 				action: (closeDialog, textBoxInput) => {
