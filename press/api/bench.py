@@ -205,10 +205,30 @@ def add_app(name, source, app):
 @protected("Release Group")
 def remove_app(name, app):
 	release_group = frappe.get_doc("Release Group", name)
+
+	# Sites on this release group
+	sites = frappe.get_all(
+		"Site", filters={"group": name, "status": ("!=", "Archived")}, pluck="name"
+	)
+
+	site_apps = frappe.get_all(
+		"Site App", filters={"parent": ("in", sites), "app": app}, limit=1
+	)
+
+	if site_apps:
+		frappe.throw(
+			f"Cannot remove this app, {frappe.bold(app)} is already installed on a site."
+		)
+
+	app_doc_to_remove = None
 	for app in release_group.apps:
 		if app.app == app:
-			release_group.remove(app)
+			app_doc_to_remove = app
 			break
+
+	if app_doc_to_remove:
+		release_group.remove(app_doc_to_remove)
+
 	release_group.save()
 
 
