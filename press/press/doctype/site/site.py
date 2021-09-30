@@ -527,17 +527,7 @@ class Site(Document):
 		return delete_remote_backup_objects(sites_remote_files)
 
 	def login(self, reason=None):
-		if reason:
-			# TODO: need to fix and test if the email thing is working.
-			frappe.sendmail(
-				recipients=self.team,
-				subject="Attempt to login as administrator to site",
-				template=reason,
-				args={"link": url},  # TODO: should add an url?
-				now=True,
-			)
-
-		log_site_activity(self.name, "Login as Administrator")
+		log_site_activity(self.name, "Login as Administrator", reason=reason)
 		return self.get_login_sid()
 
 	def get_login_sid(self):
