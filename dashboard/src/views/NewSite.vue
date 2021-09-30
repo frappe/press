@@ -33,6 +33,7 @@
 					:selectedApps.sync="selectedApps"
 					:selectedGroup.sync="selectedGroup"
 					:selectedRegion.sync="selectedRegion"
+					:shareDetailsConsent.sync="shareDetailsConsent"
 				/>
 				<Restore
 					:options="options"
@@ -92,10 +93,10 @@
 import { DateTime } from 'luxon';
 import WizardCard from '@/components/WizardCard.vue';
 import Steps from '@/components/Steps.vue';
-import Hostname from './Hostname.vue';
-import Apps from './Apps.vue';
-import Restore from './Restore.vue';
-import Plans from './Plans.vue';
+import Hostname from './NewSiteHostname.vue';
+import Apps from './NewSiteApps.vue';
+import Restore from './NewSiteRestore.vue';
+import Plans from './NewSitePlans.vue';
 
 export default {
 	name: 'NewSite',
@@ -124,6 +125,7 @@ export default {
 				private: null
 			},
 			selectedPlan: null,
+			shareDetailsConsent: false,
 			validationMessage: null,
 			steps: [
 				{
@@ -202,7 +204,8 @@ export default {
 						group: this.selectedGroup,
 						cluster: this.selectedRegion,
 						plan: this.selectedPlan ? this.selectedPlan.name : null,
-						files: this.selectedFiles
+						files: this.selectedFiles,
+						share_details_consent: this.shareDetailsConsent
 					}
 				},
 				onSuccess(data) {

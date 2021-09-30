@@ -117,16 +117,23 @@ export default {
 		},
 		blur() {
 			this.$refs.input.blur();
+		},
+		getInputValue(e) {
+			let value = e.target.value;
+			if (this.type == 'checkbox') {
+				value = e.target.checked;
+			}
+			return value;
 		}
 	},
 	computed: {
 		inputListeners() {
 			return Object.assign({}, this.$listeners, {
 				input: e => {
-					this.$emit('input', e.target.value);
+					this.$emit('input', this.getInputValue(e));
 				},
 				change: e => {
-					this.$emit('change', e.target.value);
+					this.$emit('change', this.getInputValue(e));
 				}
 			});
 		},
