@@ -47,6 +47,7 @@ def protected(doctype):
 def new(site):
 	team = get_current_team(get_doc=True)
 	files = site.get("files", {})
+	share_details_consent = site.get("share_details_consent")
 
 	domain = frappe.db.get_single_value("Press Settings", "domain")
 	cluster = site.get("cluster") or frappe.db.get_single_value(
@@ -94,6 +95,12 @@ def new(site):
 		},
 	).insert(ignore_permissions=True)
 	site.create_subscription(plan)
+
+	if share_details_consent:
+		frappe.get_doc(doctype="Partner Lead", team=team.name, site=site.name).insert(
+			ignore_permissions=True
+		)
+
 	return {
 		"site": site.name,
 		"job": frappe.db.get_value(
