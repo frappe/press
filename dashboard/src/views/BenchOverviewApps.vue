@@ -36,6 +36,8 @@
 				</template>
 			</ListItem>
 		</div>
+		
+		<ErrorMessage :error="this.$resources.removeApp.error" />
 
 		<Dialog title="Add apps to your bench" v-model="showAddAppDialog">
 			<Loading class="py-2" v-if="installableApps.loading" />
@@ -154,11 +156,11 @@ export default {
 				actionLabel: 'Remove App',
 				actionType: 'danger',
 				action: closeDialog => {
-					closeDialog();
 					this.$resources.removeApp.submit({
 						name: this.bench.name,
 						app: app.name
 					});
+					closeDialog();
 				}
 			});
 		}
