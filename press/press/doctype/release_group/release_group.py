@@ -119,14 +119,16 @@ class ReleaseGroup(Document):
 		if last_deployed_bench:
 			for app in untouched_apps:
 				update = find(last_deployed_bench.apps, lambda x: x.app == app.app)
-				apps.append(
-					{
-						"release": update.release,
-						"source": update.source,
-						"app": update.app,
-						"hash": update.hash,
-					}
-				)
+
+				if update:
+					apps.append(
+						{
+							"release": update.release,
+							"source": update.source,
+							"app": update.app,
+							"hash": update.hash,
+						}
+					)
 
 		dependencies = [
 			{"dependency": d.dependency, "version": d.version} for d in self.dependencies
