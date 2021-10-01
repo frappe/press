@@ -8,6 +8,7 @@ from typing import List, Dict
 from collections import OrderedDict
 from press.api.site import protected
 from press.api.github import branches
+from frappe.utils import comma_and
 from frappe.core.utils import find, find_all
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.utils import get_current_team, get_last_doc, unique, get_app_tag
@@ -212,12 +213,14 @@ def remove_app(name, app):
 	)
 
 	site_apps = frappe.get_all(
-		"Site App", filters={"parent": ("in", sites), "app": app}, limit=1
+		"Site App", filters={"parent": ("in", sites), "app": app}, fields=["parent"]
 	)
 
 	if site_apps:
+		installed_on_sites = ", ".join(frappe.bold(site_app.parent) for site_app in site_apps)
 		frappe.throw(
-			f"Cannot remove this app, {frappe.bold(app)} is already installed on a site."
+			f"Cannot remove this app, {frappe.bold(app)} is already installed on the"
+			f" site(s): {comma_and(installed_on_sites)}"
 		)
 
 	app_doc_to_remove = None
