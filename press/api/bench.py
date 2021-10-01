@@ -217,18 +217,15 @@ def remove_app(name, app):
 	)
 
 	if site_apps:
-		installed_on_sites = ", ".join(frappe.bold(site_app.parent) for site_app in site_apps)
+		installed_on_sites = ", ".join(
+			frappe.bold(site_app["parent"]) for site_app in site_apps
+		)
 		frappe.throw(
 			f"Cannot remove this app, {frappe.bold(app)} is already installed on the"
-			f" site(s): {comma_and(installed_on_sites)}"
+			f" site(s): {comma_and(installed_on_sites, add_quotes=False)}"
 		)
 
-	app_doc_to_remove = None
-	for app in release_group.apps:
-		if app.app == app:
-			app_doc_to_remove = app
-			break
-
+	app_doc_to_remove = find(release_group.apps, lambda x: x.app == app)
 	if app_doc_to_remove:
 		release_group.remove(app_doc_to_remove)
 
