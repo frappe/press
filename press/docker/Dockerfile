@@ -47,6 +47,10 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   libxrender1 \
   xfonts-75dpi \
   xfonts-base \
+  # pycups dependencies
+  gcc \
+  libcups2-dev \
+  python3-dev \
   && rm -rf /var/lib/apt/lists/* \
   `#stage-pre-essentials`
 
