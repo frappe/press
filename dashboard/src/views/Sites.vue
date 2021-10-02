@@ -2,6 +2,17 @@
 	<div class="pt-8 pb-20">
 		<div class="px-4 sm:px-8">
 			<h1 class="sr-only">Dashboard</h1>
+			<div v-if="!$account.team.enabled">
+				<Alert title="Your account is disabled">
+					Enable your account to start creating sites
+
+					<template #actions>
+						<Button type="primary" route="/account/profile">
+							Enable Account
+						</Button>
+					</template>
+				</Alert>
+			</div>
 			<div v-if="benches == null">
 				<div class="flex items-center flex-1 py-4 focus:outline-none">
 					<h2 class="text-lg font-semibold">
@@ -178,6 +189,7 @@ export default {
 			this.sitesShown[bench.name] = !this.sitesShown[bench.name];
 		},
 		showNewSiteButton(bench) {
+			if (!this.$account.team.enabled) return false;
 			if (bench.status != 'Active') return false;
 			return (
 				(bench.shared || bench.owned_by_team) && this.sitesShown[bench.name]
