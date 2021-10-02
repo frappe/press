@@ -39,6 +39,11 @@ class Invoice(Document):
 			self.submit()
 			return
 
+		team_enabled = frappe.db.get_value("Team", self.team, "enabled")
+		if not team_enabled:
+			self.add_comment("Info", "Skipping finalize invoice because team is disabled")
+			return
+
 		# set as unpaid by default
 		self.status = "Unpaid"
 
