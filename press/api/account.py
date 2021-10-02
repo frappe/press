@@ -132,6 +132,17 @@ def login_using_key(key):
 
 
 @frappe.whitelist()
+def disable_account():
+	team = get_current_team(get_doc=True)
+	team.disable_account()
+
+@frappe.whitelist()
+def enable_account():
+	team = get_current_team(get_doc=True)
+	team.enable_account()
+
+
+@frappe.whitelist()
 def request_team_deletion():
 	team = get_current_team()
 	doc = frappe.get_doc({"doctype": "Team Deletion Request", "team": team}).insert()
