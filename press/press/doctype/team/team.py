@@ -28,7 +28,6 @@ class Team(Document):
 		self.set_team_currency()
 		self.set_default_user()
 		self.set_billing_name()
-		self.validate_disabled_team()
 
 	def delete(self, force=False, workflow=False):
 		if force:
@@ -138,14 +137,6 @@ class Team(Document):
 			for user in self.get_user_list()
 			if not frappe.db.exists("Team Member", {"user": user, "parent": ("!=", self.name)})
 		]
-
-	def validate_disabled_team(self):
-		# disable all users if they dont have their own team
-		if not self.enabled:
-			for user in self.get_users_only_in_this_team():
-				user_doc = frappe.get_doc("User", user)
-				user_doc.enabled = False
-				user_doc.save()
 
 	def validate_duplicate_members(self):
 		team_users = self.get_user_list()
