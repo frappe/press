@@ -36,8 +36,9 @@
 				</template>
 			</ListItem>
 		</div>
-		
+
 		<ErrorMessage :error="this.$resources.removeApp.error" />
+		<ErrorMessage :error="this.$resources.fetchLatestAppUpdate.error" />
 
 		<Dialog title="Add apps to your bench" v-model="showAddAppDialog">
 			<Loading class="py-2" v-if="installableApps.loading" />
@@ -113,6 +114,14 @@ export default {
 				}
 			};
 		},
+		fetchLatestAppUpdate() {
+			return {
+				method: 'press.api.bench.fetch_latest_app_update',
+				onSuccess() {
+					window.location.reload();
+				}
+			};
+		},
 		addApp() {
 			return {
 				method: 'press.api.bench.add_app',
@@ -131,6 +140,10 @@ export default {
 		dropdownItems(app) {
 			return [
 				{
+					label: 'Fetch Latest Update',
+					action: () => this.fetchLatestUpdate(app)
+				},
+				{
 					label: 'Remove App',
 					action: () => this.confirmRemoveApp(app),
 					condition: () => app.name != 'frappe'
@@ -148,6 +161,12 @@ export default {
 						window.open(`${app.repository_url}/tree/${app.branch}`, '_blank')
 				}
 			].filter(Boolean);
+		},
+		fetchLatestUpdate(app) {
+			this.$resources.fetchLatestAppUpdate.submit({
+				name: this.bench.name,
+				app: app.name
+			});
 		},
 		confirmRemoveApp(app) {
 			this.$confirm({

@@ -197,6 +197,14 @@ def installable_apps(name):
 
 @frappe.whitelist()
 @protected("Release Group")
+def fetch_latest_app_update(name, app):
+	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
+	app_source = rg.get_app_source(app)
+	app_source.create_release()
+
+
+@frappe.whitelist()
+@protected("Release Group")
 def add_app(name, source, app):
 	release_group = frappe.get_doc("Release Group", name)
 	release_group.add_app(frappe._dict(name=source, app=app))
@@ -221,7 +229,7 @@ def remove_app(name, app):
 			frappe.bold(site_app["parent"]) for site_app in site_apps
 		)
 		frappe.throw(
-			f"Cannot remove this app, {frappe.bold(app)} is already installed on the"
+			"Cannot remove this app, it is already installed on the"
 			f" site(s): {comma_and(installed_on_sites, add_quotes=False)}"
 		)
 
