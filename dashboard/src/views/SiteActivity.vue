@@ -50,10 +50,11 @@ export default {
 	},
 	methods: {
 		getDescription(activity) {
-			let description = this.formatDate(activity.creation);
+			let description = '';
 			if (activity.reason) {
-				description = `Reason: ${activity.reason}` + '\n' + description;
+				description += `Reason: ${activity.reason}\n`;
 			}
+			description += this.formatDate(activity.creation);
 			return description;
 		}
 	}

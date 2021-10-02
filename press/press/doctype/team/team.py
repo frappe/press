@@ -45,6 +45,18 @@ class Team(Document):
 			" a Team Deletion Request to trigger complete team deletion process."
 		)
 
+	def disable_account(self):
+		self.suspend_sites("Account disabled")
+		self.enabled = False
+		self.save()
+		self.add_comment("Info", "disabled account")
+
+	def enable_account(self):
+		self.unsuspend_sites("Account enabled")
+		self.enabled = True
+		self.save()
+		self.add_comment("Info", "enabled account")
+
 	@classmethod
 	def create_new(
 		cls,

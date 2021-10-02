@@ -20,13 +20,16 @@ from press.press.doctype.release_group.release_group import (
 
 @frappe.whitelist()
 def new(bench):
-	team = get_current_team()
+	team = get_current_team(get_doc=True)
+	if not team.enabled:
+		frappe.throw("You cannot create a new bench because your account is disabled")
+
 	if exists(bench["title"]):
 		frappe.throw("A bench exists with the same name")
 
 	apps = [{"app": app["name"], "source": app["source"]} for app in bench["apps"]]
 	group = new_release_group(
-		bench["title"], bench["version"], apps, team, bench["cluster"]
+		bench["title"], bench["version"], apps, team.name, bench["cluster"]
 	)
 	return group.name
 

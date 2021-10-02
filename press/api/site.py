@@ -46,6 +46,9 @@ def protected(doctype):
 @frappe.whitelist()
 def new(site):
 	team = get_current_team(get_doc=True)
+	if not team.enabled:
+		frappe.throw("You cannot create a new site because your account is disabled")
+
 	files = site.get("files", {})
 	share_details_consent = site.get("share_details_consent")
 
