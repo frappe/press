@@ -213,7 +213,7 @@ def add_app(name, source, app):
 @frappe.whitelist()
 @protected("Release Group")
 def remove_app(name, app):
-	release_group = frappe.get_doc("Release Group", name)
+	release_group: ReleaseGroup = frappe.get_doc("Release Group", name)
 
 	# Sites on this release group
 	sites = frappe.get_all(
