@@ -134,6 +134,21 @@ class ReleaseGroup(Document):
 			{"dependency": d.dependency, "version": d.version} for d in self.dependencies
 		]
 
+		apps = self.get_sorted_based_on_rg_apps(apps)
+
+		# Create and deploy the DC
+		candidate = frappe.get_doc(
+			{
+				"doctype": "Deploy Candidate",
+				"group": self.name,
+				"apps": apps,
+				"dependencies": dependencies,
+			}
+		).insert()
+
+		return candidate
+
+	def get_sorted_based_on_rg_apps(self, apps):
 		# Rearrange Apps to match release group ordering
 		sorted_apps = []
 
@@ -146,17 +161,7 @@ class ReleaseGroup(Document):
 			if not find(sorted_apps, lambda x: x["app"] == app["app"]):
 				sorted_apps.append(app)
 
-		# Create and deploy the DC
-		candidate = frappe.get_doc(
-			{
-				"doctype": "Deploy Candidate",
-				"group": self.name,
-				"apps": sorted_apps,
-				"dependencies": dependencies,
-			}
-		).insert()
-
-		return candidate
+		return sorted_apps
 
 	def deploy_information(self):
 		out = frappe._dict(update_available=False)
