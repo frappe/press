@@ -1,0 +1,5 @@
+---
+ssh_maxsessions: 10
+sshd:
+    clientalivecountmax: 3
+    clientaliveinterval: 300
