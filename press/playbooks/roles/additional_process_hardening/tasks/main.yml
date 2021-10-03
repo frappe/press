@@ -1,0 +1,14 @@
+---
+- name: Ensure address space layout randomization (ASLR) is enabled
+  sysctl:
+    name: kernel.randomize_va_space
+    value: '2'
+    state: present
+    reload: yes
+    sysctl_set: yes
+    ignoreerrors: yes
+
+- name: Ensure prelink is disabled
+  package:
+    name: prelink
+    state: absent
