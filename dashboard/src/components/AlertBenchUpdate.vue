@@ -20,6 +20,7 @@
 			<BenchAppUpdates
 				:apps="deployInformation.apps"
 				:selectedApps.sync="selectedApps"
+				:removedApps="deployInformation.removed_apps"
 			/>
 			<ErrorMessage class="mt-2" :error="$resources.deploy.error" />
 			<template #actions>

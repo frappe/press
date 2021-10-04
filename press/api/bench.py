@@ -8,6 +8,7 @@ from typing import List, Dict
 from collections import OrderedDict
 from press.api.site import protected
 from press.api.github import branches
+from frappe.utils import comma_and
 from frappe.core.utils import find, find_all
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.utils import get_current_team, get_last_doc, unique, get_app_tag
@@ -199,6 +200,14 @@ def installable_apps(name):
 
 @frappe.whitelist()
 @protected("Release Group")
+def fetch_latest_app_update(name, app):
+	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
+	app_source = rg.get_app_source(app)
+	app_source.create_release()
+
+
+@frappe.whitelist()
+@protected("Release Group")
 def add_app(name, source, app):
 	release_group = frappe.get_doc("Release Group", name)
 	release_group.add_app(frappe._dict(name=source, app=app))
@@ -207,11 +216,30 @@ def add_app(name, source, app):
 @frappe.whitelist()
 @protected("Release Group")
 def remove_app(name, app):
-	release_group = frappe.get_doc("Release Group", name)
-	for app in release_group.apps:
-		if app.app == app:
-			release_group.remove(app)
-			break
+	release_group: ReleaseGroup = frappe.get_doc("Release Group", name)
+
+	# Sites on this release group
+	sites = frappe.get_all(
+		"Site", filters={"group": name, "status": ("!=", "Archived")}, pluck="name"
+	)
+
+	site_apps = frappe.get_all(
+		"Site App", filters={"parent": ("in", sites), "app": app}, fields=["parent"]
+	)
+
+	if site_apps:
+		installed_on_sites = ", ".join(
+			frappe.bold(site_app["parent"]) for site_app in site_apps
+		)
+		frappe.throw(
+			"Cannot remove this app, it is already installed on the"
+			f" site(s): {comma_and(installed_on_sites, add_quotes=False)}"
+		)
+
+	app_doc_to_remove = find(release_group.apps, lambda x: x.app == app)
+	if app_doc_to_remove:
+		release_group.remove(app_doc_to_remove)
+
 	release_group.save()
 
 
