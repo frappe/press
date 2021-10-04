@@ -37,7 +37,6 @@
 			</ListItem>
 		</div>
 
-		<ErrorMessage :error="this.$resources.removeApp.error" />
 		<ErrorMessage :error="this.$resources.fetchLatestAppUpdate.error" />
 
 		<Dialog title="Add apps to your bench" v-model="showAddAppDialog">
@@ -174,12 +173,12 @@ export default {
 				message: `Are you sure you want to remove app ${app.name} from this bench?`,
 				actionLabel: 'Remove App',
 				actionType: 'danger',
-				action: closeDialog => {
+				resource: this.$resources.removeApp,
+				action: _ => {
 					this.$resources.removeApp.submit({
 						name: this.bench.name,
 						app: app.name
 					});
-					closeDialog();
 				}
 			});
 		}
