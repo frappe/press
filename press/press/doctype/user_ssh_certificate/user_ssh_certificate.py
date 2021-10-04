@@ -52,7 +52,7 @@ class UserSSHCertificate(Document):
 			frappe.throw("Could not guess the key type. Please check your public key.")
 
 		# write the public key to a /tmp file
-		with open('/tmp/id_{0}-{1}.pub'.format(self.key_type, self.name), 'w') as public_key:
+		with open(f'/tmp/id_{self.key_type}-{self.name}.pub', 'w') as public_key:
 			public_key.write(self.ssh_public_key)
 			public_key.flush()
 
@@ -65,8 +65,7 @@ class UserSSHCertificate(Document):
 		except subprocess.CalledProcessError:
 			frappe.throw("Failed to generate a certificate for the specified key. Please try again.")
 		return
-		process = subprocess.Popen(shlex.split('ssh-keygen -Lf /tmp/id_{0}-{1}-cert.pub'.format(self.key_type, self.name)),
-								   stdout=subprocess.PIPE)
+		process = subprocess.Popen(shlex.split(f'ssh-keygen -Lf /tmp/id_{self.key_type}-{self.name}-cert.pub'), stdout=subprocess.PIPE)
 		self.certificate_details= safe_decode(process.communicate()[0])
 		# extract the time for until when the key is active
 		regex = re.compile("Valid:.*\n")
