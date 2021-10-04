@@ -119,19 +119,36 @@ class ReleaseGroup(Document):
 		if last_deployed_bench:
 			for app in untouched_apps:
 				update = find(last_deployed_bench.apps, lambda x: x.app == app.app)
-				apps.append(
-					{
-						"release": update.release,
-						"source": update.source,
-						"app": update.app,
-						"hash": update.hash,
-					}
-				)
+
+				if update:
+					apps.append(
+						{
+							"release": update.release,
+							"source": update.source,
+							"app": update.app,
+							"hash": update.hash,
+						}
+					)
 
 		dependencies = [
 			{"dependency": d.dependency, "version": d.version} for d in self.dependencies
 		]
 
+		apps = self.get_sorted_based_on_rg_apps(apps)
+
+		# Create and deploy the DC
+		candidate = frappe.get_doc(
+			{
+				"doctype": "Deploy Candidate",
+				"group": self.name,
+				"apps": apps,
+				"dependencies": dependencies,
+			}
+		).insert()
+
+		return candidate
+
+	def get_sorted_based_on_rg_apps(self, apps):
 		# Rearrange Apps to match release group ordering
 		sorted_apps = []
 
@@ -144,17 +161,7 @@ class ReleaseGroup(Document):
 			if not find(sorted_apps, lambda x: x["app"] == app["app"]):
 				sorted_apps.append(app)
 
-		# Create and deploy the DC
-		candidate = frappe.get_doc(
-			{
-				"doctype": "Deploy Candidate",
-				"group": self.name,
-				"apps": sorted_apps,
-				"dependencies": dependencies,
-			}
-		).insert()
-
-		return candidate
+		return sorted_apps
 
 	def deploy_information(self):
 		out = frappe._dict(update_available=False)
@@ -163,7 +170,10 @@ class ReleaseGroup(Document):
 		out.apps = self.get_app_updates(
 			last_deployed_bench.apps if last_deployed_bench else []
 		)
-		out.update_available = any([app["update_available"] for app in out.apps])
+		out.removed_apps = self.get_removed_apps()
+		out.update_available = any([app["update_available"] for app in out.apps]) or (
+			out.removed_apps > 0
+		)
 
 		return out
 
@@ -256,6 +266,19 @@ class ReleaseGroup(Document):
 			)
 
 		return next_apps
+
+	def get_removed_apps(self):
+		# Apps that were removed from the release group
+		# but were in the last deployed bench
+		removed_apps = []
+		bench_apps = get_last_doc("Bench", {"group": self.name, "status": "Active"}).apps
+
+		for bench_app in bench_apps:
+			if not find(self.apps, lambda rg_app: rg_app.app == bench_app.app):
+				app_title = frappe.db.get_value("App", bench_app.app, "title")
+				removed_apps.append({"name": bench_app.app, "title": app_title})
+
+		return removed_apps
 
 	def add_app(self, source):
 		self.append("apps", {"source": source.name, "app": source.app})
