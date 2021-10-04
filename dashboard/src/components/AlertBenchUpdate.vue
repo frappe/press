@@ -76,7 +76,10 @@ export default {
 					apps_to_ignore: appsToIgnore
 				},
 				validate() {
-					if (this.selectedApps.length === 0) {
+					if (
+						this.selectedApps.length === 0 &&
+						this.deployInformation.removed_apps.length === 0
+					) {
 						return 'You must select atleast 1 app to proceed with update.';
 					}
 				},
