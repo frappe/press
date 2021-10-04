@@ -1,9 +1,10 @@
 <template>
 	<button
 		class="w-full px-4 py-2 flex flex-row border border-gray-100 shadow justify-between rounded-lg items-center focus:outline-none"
-		:class="
-			selected || uninstall ? 'ring-2 ring-blue-500' : 'hover:border-gray-300'
-		"
+		:class="[
+			selected || uninstall ? 'ring-2 ring-blue-500' : '',
+			selectable ? 'hover:border-gray-300' : 'cursor-default'
+		]"
 	>
 		<h3 class="text-lg font-medium text-gray-900">
 			{{ app.title }}
@@ -40,7 +41,7 @@
 <script>
 export default {
 	name: 'AppUpdateCard',
-	props: ['app', 'selected', 'uninstall'],
+	props: ['app', 'selectable', 'selected', 'uninstall'],
 	methods: {
 		deployFrom(app) {
 			if (app.will_branch_change) {

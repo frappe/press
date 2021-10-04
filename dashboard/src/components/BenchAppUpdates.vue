@@ -7,6 +7,7 @@
 			:app="app"
 			:selected="selectedApps.includes(app.app)"
 			:uninstall="false"
+			:selectable="true"
 		/>
 		<AppUpdateCard
 			v-for="app in removedApps"
