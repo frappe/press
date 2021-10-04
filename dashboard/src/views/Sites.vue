@@ -38,14 +38,11 @@
 								/>
 							</button>
 							<div class="flex items-center space-x-2">
-								<p
-									v-if="benches"
-									class="hidden text-base text-gray-700 sm:block"
-								>
+								<p v-if="benches" class="hidden text-sm text-gray-700 sm:block">
 									{{ sitesSubtitle(bench) }}
 								</p>
 								<Badge
-									class="hidden sm:block"
+									class="hidden text-sm sm:block"
 									v-if="!bench.shared && bench.owned_by_team"
 								>
 									Private
