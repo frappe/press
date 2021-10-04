@@ -59,7 +59,16 @@ export default {
 			// Hardcoded for now, need a better way
 			// to manage such dependencies (#TODO)
 			// If updating ERPNext, must update Frappe with it
-			if (apps.includes('erpnext') && !apps.includes('frappe')) {
+
+			let frappeUpdateAvailable =
+				this.apps.filter(app => app.update_available && app.app == 'frappe')
+					.length !== 0;
+
+			if (
+				apps.includes('erpnext') &&
+				!apps.includes('frappe') &&
+				frappeUpdateAvailable
+			) {
 				apps.push('frappe');
 			}
 		}
