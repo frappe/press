@@ -271,12 +271,16 @@ class ReleaseGroup(Document):
 		# Apps that were removed from the release group
 		# but were in the last deployed bench
 		removed_apps = []
-		bench_apps = get_last_doc("Bench", {"group": self.name, "status": "Active"}).apps
 
-		for bench_app in bench_apps:
-			if not find(self.apps, lambda rg_app: rg_app.app == bench_app.app):
-				app_title = frappe.db.get_value("App", bench_app.app, "title")
-				removed_apps.append({"name": bench_app.app, "title": app_title})
+		latest_bench = get_last_doc("Bench", {"group": self.name, "status": "Active"})
+
+		if latest_bench:
+			bench_apps = latest_bench.apps
+
+			for bench_app in bench_apps:
+				if not find(self.apps, lambda rg_app: rg_app.app == bench_app.app):
+					app_title = frappe.db.get_value("App", bench_app.app, "title")
+					removed_apps.append({"name": bench_app.app, "title": app_title})
 
 		return removed_apps
 

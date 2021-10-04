@@ -356,7 +356,7 @@ def deploy(name, apps_to_ignore=[]):
 	# Throw if a deploy is already in progress
 	last_deploy_candidate = get_last_doc("Deploy Candidate", {"group": name})
 
-	if last_deploy_candidate.status == "Running":
+	if last_deploy_candidate and last_deploy_candidate.status == "Running":
 		frappe.throw("A deploy for this bench is already in progress")
 
 	candidate = rg.create_deploy_candidate(apps_to_ignore)
