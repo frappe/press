@@ -275,7 +275,8 @@ class ReleaseGroup(Document):
 
 		for bench_app in bench_apps:
 			if not find(self.apps, lambda rg_app: rg_app.app == bench_app.app):
-				removed_apps.append(frappe.db.get_value("App", bench_app.app, "title"))
+				app_title = frappe.db.get_value("App", bench_app.app, "title")
+				removed_apps.append({"name": bench_app.app, "title": app_title})
 
 		return removed_apps
 
