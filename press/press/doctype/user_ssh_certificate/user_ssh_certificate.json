@@ -8,11 +8,12 @@
   "all_server_access",
   "is_self_hosted",
   "column_break_2",
+  "server_type",
   "access_server",
   "customer_name",
   "reason",
   "section_break_2",
-  "user",
+  "team",
   "validity",
   "column_break_4",
   "valid_until",
@@ -26,7 +27,7 @@
  ],
  "fields": [
   {
-   "fetch_from": "user.ssh_public_key",
+   "fetch_from": "team.ssh_public_key",
    "fieldname": "ssh_public_key",
    "fieldtype": "Code",
    "label": "SSH Public Key",
@@ -39,11 +40,17 @@
    "options": "3h\n6h\n12h\n1d\n7d"
   },
   {
+   "fieldname": "server_type",
+   "fieldtype": "Select",
+   "label": "Server Type",
+   "options": "Server\nProxy Server\nDatabase Server"
+  },
+  {
    "depends_on": "eval:!doc.all_server_access",
    "fieldname": "access_server",
-   "fieldtype": "Link",
+   "fieldtype": "Dynamic Link",
    "label": "Access Server",
-   "options": "Server"
+   "options": "server_type"
   },
   {
    "default": "0",
@@ -69,10 +76,10 @@
    "read_only": 1
   },
   {
-   "fieldname": "user",
+   "fieldname": "team",
    "fieldtype": "Link",
-   "label": "User",
-   "options": "User",
+   "label": "Team",
+   "options": "Team",
    "reqd": 1
   },
   {
@@ -138,9 +145,9 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2021-05-24 19:57:16.349799",
+ "modified": "2021-10-04 21:05:46.349799",
  "modified_by": "Administrator",
- "module": "Bench Central",
+ "module": "Press",
  "name": "User SSH Certificate",
  "owner": "Administrator",
  "permissions": [

@@ -18,7 +18,7 @@ import subprocess
 class UserSSHCertificate(Document):
 	def validate(self):
 		if not self.ssh_public_key:
-			frappe.throw("Please make sure that a valid public key has been added to your profile.")
+			frappe.throw("Please make sure that a valid public key has been added in team doc.")
 
 		# check if the ssh key is valid
 		try:
@@ -32,7 +32,7 @@ class UserSSHCertificate(Document):
 
 		# check if there is an existing valid certificate for the server
 		if frappe.get_all("User SSH Certificate", {
-			'user': self.user,
+			'team': self.team,
 			'valid_until': ['>', frappe.utils.now()],
 			'access_server': self.access_server,
 			'all_server_access': self.all_server_access,
