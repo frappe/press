@@ -172,7 +172,7 @@ class ReleaseGroup(Document):
 		)
 		out.removed_apps = self.get_removed_apps()
 		out.update_available = any([app["update_available"] for app in out.apps]) or (
-			out.removed_apps > 0
+			len(out.removed_apps) > 0
 		)
 
 		return out
