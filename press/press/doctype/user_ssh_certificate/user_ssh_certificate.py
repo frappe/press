@@ -26,17 +26,11 @@ class UserSSHCertificate(Document):
 		except binascii.Error:
 			frappe.throw("Please ensure that the attached text is a valid public key")
 
-		if self.all_server_access:
-			self.access_server = None
-			self.is_self_hosted = 0
-
 		# check if there is an existing valid certificate for the server
 		if frappe.get_all("User SSH Certificate", {
 			'team': self.team,
 			'valid_until': ['>', frappe.utils.now()],
 			'access_server': self.access_server,
-			'all_server_access': self.all_server_access,
-			'is_self_hosted': self.is_self_hosted,
 			'docstatus': 1
 		}):
 			frappe.throw("A valid certificate already exists.")
@@ -62,34 +56,23 @@ class UserSSHCertificate(Document):
 			public_key.write(self.ssh_public_key)
 			public_key.flush()
 
-		# TODO: unneccessary block <04-10-21, Balamurali M> #
-		if self.all_server_access:
-			principal = "all-servers"
-		elif self.is_self_hosted:
-			principal = "gateway.erpnext.com"
-		elif not frappe.get_value("Server", self.access_server, "allow_ssh"):
-			principal = frappe.get_value("Proxy Server", {'proxy_type': 'Default'})
-		else:
-			principal = self.access_server
+		principal = self.access_server
 
 		# try generating a certificate for the /tmp key.
 		try:
-			command = 'ssh-keygen -s ca -I {name} -n {principal} -V +{validity} /tmp/id_{key_type}-{name}.pub'
-			subprocess.check_output(shlex.split(command.format(
-				name=self.name, principal=principal, key_type=self.key_type, validity=self.validity
-			)), cwd="/etc/ssh")
+			command = f'ssh-keygen -s ca -I {self.name} -n {principal} -V +{self.validity} /tmp/id_{self.key_type}-{self.name}.pub'
+			subprocess.check_output(shlex.split(command), cwd="/etc/ssh")
 		except subprocess.CalledProcessError:
 			frappe.throw("Failed to generate a certificate for the specified key. Please try again.")
-
+		return
 		process = subprocess.Popen(shlex.split('ssh-keygen -Lf /tmp/id_{0}-{1}-cert.pub'.format(self.key_type, self.name)),
-					stdout=subprocess.PIPE)
+								   stdout=subprocess.PIPE)
 		self.certificate_details= safe_decode(process.communicate()[0])
 		# extract the time for until when the key is active
 		regex = re.compile("Valid:.*\n")
 		self.valid_until = regex.findall(self.certificate_details)[0].strip().split()[-1]
 		self.ssh_certificate = read_certificate(self.key_type, self.name)
-		if not self.all_server_access:
-			self.ssh_command = get_ssh_command(self.name)
+		self.ssh_command = get_ssh_command(self.name)
 
 
 	def before_cancel(self):

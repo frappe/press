@@ -5,12 +5,10 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "all_server_access",
-  "is_self_hosted",
-  "column_break_2",
   "server_type",
   "access_server",
   "customer_name",
+  "column_break_1",
   "reason",
   "section_break_2",
   "team",
@@ -51,13 +49,6 @@
    "fieldtype": "Dynamic Link",
    "label": "Access Server",
    "options": "server_type"
-  },
-  {
-   "default": "0",
-   "fieldname": "all_server_access",
-   "fieldtype": "Check",
-   "in_list_view": 1,
-   "label": "Allow Access to All Servers"
   },
   {
    "fieldname": "amended_from",
@@ -101,10 +92,6 @@
    "fieldtype": "Section Break"
   },
   {
-   "fieldname": "column_break_2",
-   "fieldtype": "Column Break"
-  },
-  {
    "fieldname": "valid_until",
    "fieldtype": "Datetime",
    "in_list_view": 1,
@@ -116,13 +103,6 @@
    "fieldtype": "Code",
    "label": "SSH Certificate",
    "read_only": 1
-  },
-  {
-   "default": "0",
-   "depends_on": "eval:!(doc.all_server_access);",
-   "fieldname": "is_self_hosted",
-   "fieldtype": "Check",
-   "label": "Is Self Hosted"
   },
   {
    "fieldname": "ssh_command",
@@ -140,12 +120,16 @@
    "fieldname": "reason",
    "fieldtype": "Small Text",
    "label": "Reason"
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2021-10-04 21:05:46.349799",
+ "modified": "2021-10-04 22:37:04.848530",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "User SSH Certificate",
@@ -168,6 +152,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
- "title_field": "user",
+ "title_field": "team",
  "track_changes": 1
 }
