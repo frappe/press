@@ -34,6 +34,22 @@
 				</div>
 			</template>
 		</SelectableCard>
+
+		<div v-if="removedApps.length">
+			<SelectableCard
+				v-for="app in removedApps"
+				:key="app"
+				class="w-full"
+				:title="app"
+				:selected="true"
+			>
+				<template #secondary-content>
+					<div class="flex items-center">
+						<Badge color="red">Will Be Uninstalled</Badge>
+					</div>
+				</template>
+			</SelectableCard>
+		</div>
 	</div>
 </template>
 <script>
@@ -41,7 +57,7 @@ import SelectableCard from '@/components/SelectableCard.vue';
 
 export default {
 	name: 'BenchAppUpdates',
-	props: ['apps'],
+	props: ['apps', 'removedApps'],
 	components: {
 		SelectableCard
 	},

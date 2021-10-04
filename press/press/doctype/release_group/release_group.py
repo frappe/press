@@ -170,7 +170,10 @@ class ReleaseGroup(Document):
 		out.apps = self.get_app_updates(
 			last_deployed_bench.apps if last_deployed_bench else []
 		)
-		out.update_available = any([app["update_available"] for app in out.apps])
+		out.removed_apps = self.get_removed_apps()
+		out.update_available = any([app["update_available"] for app in out.apps]) or (
+			out.removed_apps > 0
+		)
 
 		return out
 
@@ -263,6 +266,18 @@ class ReleaseGroup(Document):
 			)
 
 		return next_apps
+
+	def get_removed_apps(self):
+		# Apps that were removed from the release group
+		# but were in the last deployed bench
+		removed_apps = []
+		bench_apps = get_last_doc("Bench", {"group": self.name, "status": "Active"}).apps
+
+		for bench_app in bench_apps:
+			if not find(self.apps, lambda rg_app: rg_app.app == bench_app.app):
+				removed_apps.append(frappe.db.get_value("App", bench_app.app, "title"))
+
+		return removed_apps
 
 	def add_app(self, source):
 		self.append("apps", {"source": source.name, "app": source.app})
