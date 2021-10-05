@@ -530,8 +530,8 @@ class Site(Document):
 
 		return delete_remote_backup_objects(sites_remote_files)
 
-	def login(self):
-		log_site_activity(self.name, "Login as Administrator")
+	def login(self, reason=None):
+		log_site_activity(self.name, "Login as Administrator", reason=reason)
 		return self.get_login_sid()
 
 	def get_login_sid(self):
