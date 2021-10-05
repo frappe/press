@@ -457,6 +457,7 @@ def get(name):
 		"trial_end_date": site.trial_end_date,
 		"setup_wizard_complete": site.setup_wizard_complete,
 		"group": group_name,
+		"team": site.team
 	}
 
 
@@ -714,8 +715,8 @@ def activate(name):
 
 @frappe.whitelist()
 @protected("Site")
-def login(name):
-	return frappe.get_doc("Site", name).login()
+def login(name, reason=None):
+	return frappe.get_doc("Site", name).login(reason)
 
 
 @frappe.whitelist()
