@@ -94,8 +94,6 @@ def read_certificate(key_type, docname):
 		except Exception:
 			pass
 
-		return
-
 
 @frappe.whitelist()
 def get_ssh_command(docname):
