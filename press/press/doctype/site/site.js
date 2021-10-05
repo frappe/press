@@ -97,6 +97,7 @@ frappe.ui.form.on('Site', {
 
 function show_site_activation_block(frm) {
     var wrapper = frm.get_field("site_activation_block").$wrapper;
+    wrapper.empty();
     wrapper.append(`
         <div class="alert alert-info">
             <div class="items-start px-4 md:px-5 py-3.5 text-base rounded-md flex">
