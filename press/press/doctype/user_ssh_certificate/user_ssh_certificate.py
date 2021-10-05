@@ -71,7 +71,6 @@ class UserSSHCertificate(Document):
 			frappe.throw(
 				"Failed to generate a certificate for the specified key. Please try again."
 			)
-		return
 		process = subprocess.Popen(
 			shlex.split(f"ssh-keygen -Lf /tmp/id_{self.key_type}-{self.name}-cert.pub"),
 			stdout=subprocess.PIPE,
