@@ -1,0 +1,13 @@
+---
+- name: Apply Hardening Rules
+  hosts: all
+  become: yes
+  become_user: root
+  roles:
+    - role: gpg_config
+    - role: aide
+    - role: additional_process_hardening
+    - role: warning_banners
+    - role: auditd
+    - role: sshd_hardening
+    - role: pam
