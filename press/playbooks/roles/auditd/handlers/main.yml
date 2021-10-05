@@ -1,0 +1,8 @@
+---
+- name: restart auditd
+  command: /sbin/service auditd restart
+  changed_when: no
+  check_mode: no
+  failed_when: no
+  args:
+      warn: no
