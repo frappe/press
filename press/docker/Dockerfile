@@ -35,6 +35,11 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   # Dependencies for adding Python PPA
   software-properties-common \
   gnupg \
+  # weasyprint dependencies
+  libpango-1.0-0 \
+  libharfbuzz0b \
+  libpangoft2-1.0-0 \
+  libpangocairo-1.0-0 \
   # wkhtmltopdf dependencies
   ca-certificates \
   fontconfig \
