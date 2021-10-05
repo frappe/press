@@ -6,6 +6,52 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "overview_tab_break",
+  "site_activation_block",
+  "daily_usage_section",
+  "daily_usage_block",
+  "recent_activity_section",
+  "recent_activity_block",
+  "plan_section",
+  "plan_block",
+  "site_info_section",
+  "site_info_block",
+  "apps_section",
+  "apps_block",
+  "domains_section",
+  "domain_block",
+  "analytics_tab_break",
+  "usage_counter_section",
+  "usage_counter_block",
+  "uptime_section",
+  "uptime_block",
+  "requests_section",
+  "requests_block",
+  "cpu_usage_section",
+  "cpu_usage_block",
+  "background_jobs_section",
+  "background_jobs_block",
+  "background_jobs_cpu_usage_section",
+  "background_jobs_cpu_usage_block",
+  "backup_and_restore_tab_break",
+  "backups_section",
+  "backups_block",
+  "restore_migrate_and_reset_section",
+  "restore_migrate_and_reset_block",
+  "site_config_tab_break",
+  "site_config_section",
+  "site_config_block",
+  "jobs_tab_break",
+  "jobs_section",
+  "jobs_block",
+  "logs_tab_break",
+  "logs_section",
+  "logs_block",
+  "activity_tab_break",
+  "activity_section",
+  "activity_block",
+  "settings_tab_break",
+  "team",
   "subdomain",
   "domain",
   "status",
@@ -15,11 +61,10 @@
   "cluster",
   "column_break_3",
   "admin_password",
-  "setup_wizard_complete",
   "group",
   "skip_auto_updates",
   "billing",
-  "team",
+  "setup_wizard_complete",
   "plan",
   "free",
   "column_break_15",
@@ -352,6 +397,250 @@
    "fieldname": "skip_auto_updates",
    "fieldtype": "Check",
    "label": "Skip Auto Updates"
+  },
+  {
+   "fieldname": "overview_tab_break",
+   "fieldtype": "Tab Break",
+   "label": "Overview"
+  },
+  {
+   "fieldname": "analytics_tab_break",
+   "fieldtype": "Tab Break",
+   "label": "Analytics"
+  },
+  {
+   "fieldname": "backup_and_restore_tab_break",
+   "fieldtype": "Tab Break",
+   "label": "Backup & Restore"
+  },
+  {
+   "fieldname": "site_config_tab_break",
+   "fieldtype": "Tab Break",
+   "label": "Site Config"
+  },
+  {
+   "fieldname": "jobs_tab_break",
+   "fieldtype": "Tab Break",
+   "label": "Jobs"
+  },
+  {
+   "fieldname": "logs_tab_break",
+   "fieldtype": "Tab Break",
+   "label": "Logs"
+  },
+  {
+   "fieldname": "activity_tab_break",
+   "fieldtype": "Tab Break",
+   "label": "Activity"
+  },
+  {
+   "fieldname": "daily_usage_block",
+   "fieldtype": "HTML",
+   "label": "Daily Usage Block",
+   "options": "DAILY USAGE WILL COME HERE"
+  },
+  {
+   "fieldname": "recent_activity_block",
+   "fieldtype": "HTML",
+   "label": "Recent Activity Block",
+   "options": "RECENT ACTIVITY WILL COME HERE"
+  },
+  {
+   "fieldname": "site_info_block",
+   "fieldtype": "HTML",
+   "label": "Site Info Block",
+   "options": "INFO WILL COME HERE"
+  },
+  {
+   "fieldname": "daily_usage_section",
+   "fieldtype": "Section Break",
+   "label": "Daily Usage"
+  },
+  {
+   "fieldname": "recent_activity_section",
+   "fieldtype": "Section Break",
+   "label": "Recent Activity"
+  },
+  {
+   "fieldname": "plan_section",
+   "fieldtype": "Section Break",
+   "label": "Plan"
+  },
+  {
+   "fieldname": "plan_block",
+   "fieldtype": "HTML",
+   "label": "Plan Block",
+   "options": "PLAN WILL COME HERE"
+  },
+  {
+   "fieldname": "site_info_section",
+   "fieldtype": "Section Break",
+   "label": "Site Info"
+  },
+  {
+   "fieldname": "apps_section",
+   "fieldtype": "Section Break",
+   "label": "Apps"
+  },
+  {
+   "fieldname": "apps_block",
+   "fieldtype": "HTML",
+   "label": "Apps Block",
+   "options": "APPS WILL COME HERE"
+  },
+  {
+   "fieldname": "domains_section",
+   "fieldtype": "Section Break",
+   "label": "Domains"
+  },
+  {
+   "fieldname": "domain_block",
+   "fieldtype": "HTML",
+   "label": "Domains Block",
+   "options": "DOMAINS WILL COME HERE"
+  },
+  {
+   "fieldname": "site_activation_block",
+   "fieldtype": "HTML",
+   "label": "Site Activation Block",
+   "options": "<strong>Site Activation</strong> Please login and complete the setup wizard on your site. Analytics will be collected only after setup is complete.\n<button type=\"primary\">\nLogin\n</button>"
+  },
+  {
+   "fieldname": "usage_counter_section",
+   "fieldtype": "Section Break",
+   "label": "Usage Counter"
+  },
+  {
+   "fieldname": "usage_counter_block",
+   "fieldtype": "HTML",
+   "label": "Usage Counter Block",
+   "options": "USAGE COUNTER WILL COME HERE"
+  },
+  {
+   "fieldname": "uptime_section",
+   "fieldtype": "Section Break",
+   "label": "Uptime"
+  },
+  {
+   "fieldname": "uptime_block",
+   "fieldtype": "HTML",
+   "label": "Uptime Block",
+   "options": "UPTIME WILL COME HERE"
+  },
+  {
+   "fieldname": "requests_section",
+   "fieldtype": "Section Break",
+   "label": "Requests"
+  },
+  {
+   "fieldname": "requests_block",
+   "fieldtype": "HTML",
+   "label": "Requests Block",
+   "options": "REQUESTS WILL COME HERE"
+  },
+  {
+   "fieldname": "cpu_usage_section",
+   "fieldtype": "Section Break",
+   "label": "Cpu Usage"
+  },
+  {
+   "fieldname": "cpu_usage_block",
+   "fieldtype": "HTML",
+   "label": "Cpu Usage Block",
+   "options": "CPU USAGE WILL COME HERE"
+  },
+  {
+   "fieldname": "background_jobs_section",
+   "fieldtype": "Section Break",
+   "label": "Background Jobs"
+  },
+  {
+   "fieldname": "background_jobs_block",
+   "fieldtype": "HTML",
+   "label": "Background Jobs Block",
+   "options": "BACKGROUND JOBS WILL COME HERE"
+  },
+  {
+   "fieldname": "background_jobs_cpu_usage_section",
+   "fieldtype": "Section Break",
+   "label": "Background Jobs Cpu Usage"
+  },
+  {
+   "fieldname": "background_jobs_cpu_usage_block",
+   "fieldtype": "HTML",
+   "label": "Background Jobs Cpu Usage Block",
+   "options": "BACKGROUND JOBS CPU USAGE WILL COME HERE"
+  },
+  {
+   "fieldname": "backups_section",
+   "fieldtype": "Section Break",
+   "label": "Backups"
+  },
+  {
+   "fieldname": "backups_block",
+   "fieldtype": "HTML",
+   "label": "Backups Block",
+   "options": "BACKUPS WILL COME HERE"
+  },
+  {
+   "fieldname": "restore_migrate_and_reset_section",
+   "fieldtype": "Section Break",
+   "label": "Restore, Migrate & Reset"
+  },
+  {
+   "fieldname": "restore_migrate_and_reset_block",
+   "fieldtype": "HTML",
+   "label": "Restore, Migrate & Reset Block",
+   "options": "RESTORE, MIGRATE & RESET WILL COME HERE"
+  },
+  {
+   "fieldname": "site_config_section",
+   "fieldtype": "Section Break",
+   "label": "Site Config"
+  },
+  {
+   "fieldname": "site_config_block",
+   "fieldtype": "HTML",
+   "label": "Site Config Block",
+   "options": "SITE CONFIG WILL COME HERE"
+  },
+  {
+   "fieldname": "jobs_section",
+   "fieldtype": "Section Break",
+   "label": "Jobs"
+  },
+  {
+   "fieldname": "jobs_block",
+   "fieldtype": "HTML",
+   "label": "Jobs Block",
+   "options": "JOBS WILL COME HERE"
+  },
+  {
+   "fieldname": "logs_section",
+   "fieldtype": "Section Break",
+   "label": "Logs"
+  },
+  {
+   "fieldname": "logs_block",
+   "fieldtype": "HTML",
+   "label": "Logs Block",
+   "options": "LOGS WILL COME HERE"
+  },
+  {
+   "fieldname": "activity_section",
+   "fieldtype": "Section Break",
+   "label": "Activity"
+  },
+  {
+   "fieldname": "activity_block",
+   "fieldtype": "HTML",
+   "label": "Activity Block",
+   "options": "ACTIVITY WILL COME HERE"
+  },
+  {
+   "fieldname": "settings_tab_break",
+   "fieldtype": "Tab Break",
+   "label": "Settings"
   }
  ],
  "links": [
@@ -401,7 +690,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2021-09-28 11:40:46.460922",
+ "modified": "2021-10-05 16:20:03.042436",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
