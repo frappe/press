@@ -19,6 +19,11 @@ frappe.ui.form.on('Site', {
 				},
 			};
 		});
+        if(frm.get_field("setup_wizard_complete")) {
+            show_site_activation_block(frm)
+        } else {
+            // TODO: hide site_activation_block
+        }
 	},
 	refresh: function (frm) {
 		frm.dashboard.set_headline_alert(
@@ -89,3 +94,29 @@ frappe.ui.form.on('Site', {
 		frm.toggle_enable(['host_name'], frm.doc.status === 'Active');
 	},
 });
+
+function show_site_activation_block(frm) {
+    var wrapper = frm.get_field("site_activation_block").$wrapper;
+    wrapper.append(`
+        <div class="alert alert-info">
+            <div class="items-start px-4 md:px-5 py-3.5 text-base rounded-md flex">
+                <div class="w-full ml-2">
+                    <div class="flex flex-col md:items-baseline md:flex-row">
+                        <div>
+                            <strong class="mr-2">
+                                Site Activation
+                            </strong>
+                            <span>
+                                Please login and complete the setup wizard on your site. Analytics will be collected only after setup is complete.
+                            </span>
+                            <span class="ml-5">
+                                <button class="btn btn-primary">Login</button>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `);
+}
+
