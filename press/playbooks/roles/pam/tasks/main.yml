@@ -1,0 +1,84 @@
+---
+- name: Install latest libpam-modules
+  apt:
+    name: libpam-modules
+    state: latest
+    update_cache: yes
+
+- name: Install PAM module to perform password quality checking
+  package:
+    name: libpam-pwquality
+    state: present
+
+- name: Ensure password creation requirements are configured
+  lineinfile:
+    state: present
+    path: /etc/security/pwquality.conf
+    regexp: '^{{ item.key }}'
+    line: '{{ item.key }} = {{ item.value }}'
+  with_items:
+      - { key: 'minlen', value: '14' }
+      - { key: 'minclass', value: '4' }
+
+- name: 5.4.2 | L1 | PATCH | Ensure lockout for failed password attempts is configured
+  block:
+    - name: Add key value pairs in faillock config
+      lineinfile:
+        state: present
+        path: /etc/security/faillock.conf
+        regexp: '^{{ item.key }}'
+        line: '{{ item.key }} = {{ item.value }}'
+      with_items:
+          - { key: 'deny', value: '{{ pam_faillock.attempts }}' }
+          - { key: 'unlock_time', value: '{{ pam_faillock.unlock_time }}' }
+          - { key: 'fail_interval', value: '{{ pam_faillock.fail_interval }}' }
+
+    - name: Add fail_for_root setting in faillock config
+      lineinfile:
+        state: present
+        path: /etc/security/faillock.conf
+        regexp: '^even_deny_root'
+        line: "{{ pam_faillock.fail_for_root | ternary('even_deny_root','') }}"
+
+    - name: Add default, deny count, and unlock times for preauth
+      lineinfile:
+        path: /etc/pam.d/common-auth
+        state: present
+        line: "auth\trequired\tpam_faillock.so preauth audit silent" 
+        insertafter: '^#?auth ?'
+
+    - name: Add success and default settings to pam_unix.so
+      lineinfile:
+        path: /etc/pam.d/common-auth
+        state: present
+        line: "auth\t[success=1 default=bad]\tpam_unix.so"
+        insertafter: '^#?auth ?'
+        backup: yes
+
+    - name: Add default, deny count, and unlock times for authfail
+      lineinfile:
+        path: /etc/pam.d/common-auth
+        state: present
+        line: "auth\t[default=die]\tpam_faillock.so authfail audit"
+        insertafter: '^#?auth ?'
+
+    - name: Add deny count and unlock times to authsucc
+      lineinfile:
+        path: /etc/pam.d/common-auth
+        state: present
+        line: "auth\tsufficient\tpam_faillock.so authsucc audit"
+        insertafter: '^#?auth ?'
+
+- name: "5.4.3 | L1 | PATCH | Ensure password hashing algorithm is SHA-512 | add sha512 settings"
+  lineinfile:
+    path: /etc/pam.d/common-password
+    state: present
+    line: "password\tsufficient\tpam_unix.so {{ pam_faillock.pwhash }} shadow nullok try_first_pass use_authtok"
+    insertafter: '^#?password ?'
+
+- name: "5.4.4 | L1 | PATCH | Ensure password reuse is limited | add remember settings"
+  lineinfile:
+    path: /etc/pam.d/common-password
+    state: present
+    line: "password\trequired\tpam_pwhistory.so remember={{ pam_faillock.remember }}"
+    insertafter: '^#?password ?'

@@ -1,0 +1,23 @@
+---
+- name: Install AIDE
+  package:
+    name:
+      - aide
+      - aide-common
+    state: present
+
+- name: Update AIDE config to speed it up
+  copy:
+    src: 99_aide_root.j2
+    dest: /etc/aide/aide.conf.d/99_aide_root
+    owner: root
+    group: root
+    mode: 0644
+    backup: yes
+
+- name: Ensure AIDE is started
+  shell: aideinit -y --force
+  args:
+      creates: /var/lib/aide/aide.db
+  changed_when: no
+  failed_when: no
