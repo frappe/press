@@ -502,8 +502,7 @@
   {
    "fieldname": "site_activation_block",
    "fieldtype": "HTML",
-   "label": "Site Activation Block",
-   "options": "<strong>Site Activation</strong> Please login and complete the setup wizard on your site. Analytics will be collected only after setup is complete.\n<button type=\"primary\">\nLogin\n</button>"
+   "label": "Site Activation Block"
   },
   {
    "fieldname": "usage_counter_section",
@@ -690,7 +689,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2021-10-05 16:20:03.042436",
+ "modified": "2021-10-05 23:59:56.510793",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
