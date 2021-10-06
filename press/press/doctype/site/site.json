@@ -436,8 +436,7 @@
   {
    "fieldname": "daily_usage_block",
    "fieldtype": "HTML",
-   "label": "Daily Usage Block",
-   "options": "DAILY USAGE WILL COME HERE"
+   "label": "Daily Usage Block"
   },
   {
    "fieldname": "recent_activity_block",
@@ -689,7 +688,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2021-10-05 23:59:56.510793",
+ "modified": "2021-10-06 08:22:28.662129",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
