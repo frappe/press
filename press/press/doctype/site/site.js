@@ -26,6 +26,7 @@ frappe.ui.form.on('Site', {
         }
 
         show_daily_usage_chart(frm);
+        show_recent_activity(frm);
 	},
 	refresh: function (frm) {
 		frm.dashboard.set_headline_alert(
@@ -151,9 +152,44 @@ function show_daily_usage_chart (frm) {
     });
 }
 
+function show_recent_activity(frm) {
+    let site_name = frm.doc.name;
+
+    var wrapper = frm.get_field("recent_activity_block").$wrapper;
+    wrapper.empty();
+
+    wrapper.append(`
+        <span>
+            History of recent activities performed on your site
+        </span>
+    `)
+
+    frappe.call({
+        method: "press.api.site.overview",
+        args: {
+            name: site_name
+         },
+         callback: function(r) {
+            let recent_activity = r.message.recent_activity;
+            populate_recent_activity_list(wrapper, recent_activity);
+         }
+    });
+}
+
 function populate_daily_usage_chart(wrapper, data) {
     // TODO: make a chart
     for (let i = 0; i < data.length; i++) {
         wrapper.append(`<li> data: ` + data[i].date + ' max: '+ data[i].max + `</li>`);
+    }
+}
+
+function populate_recent_activity_list(wrapper, recent_activity) {
+    for(let i = 0; i < recent_activity.length; i++) {
+        wrapper.append(`
+            <li> ` + recent_activity[i].action +
+            " by " + recent_activity[i].owner +
+            " | " + recent_activity[i].creation +
+            ` </li>
+        `);
     }
 }
