@@ -441,8 +441,7 @@
   {
    "fieldname": "recent_activity_block",
    "fieldtype": "HTML",
-   "label": "Recent Activity Block",
-   "options": "RECENT ACTIVITY WILL COME HERE"
+   "label": "Recent Activity Block"
   },
   {
    "fieldname": "site_info_block",
@@ -688,7 +687,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2021-10-06 08:22:28.662129",
+ "modified": "2021-10-06 09:42:38.243101",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
