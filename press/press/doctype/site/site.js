@@ -20,10 +20,12 @@ frappe.ui.form.on('Site', {
 			};
 		});
         if(frm.get_field("setup_wizard_complete")) {
-            show_site_activation_block(frm)
+            show_site_activation_block(frm);
         } else {
             // TODO: hide site_activation_block
         }
+
+        show_daily_usage_chart(frm);
 	},
 	refresh: function (frm) {
 		frm.dashboard.set_headline_alert(
@@ -121,3 +123,37 @@ function show_site_activation_block(frm) {
     `);
 }
 
+function show_daily_usage_chart (frm) {
+    let site_name = frm.doc.name;
+    let local_timezone = moment.tz.guess();
+
+    var wrapper = frm.get_field("daily_usage_block").$wrapper;
+    wrapper.empty();
+
+    frappe.call({
+        method: "press.api.analytics.daily_usage",
+        args: {
+            name: site_name,
+            timezone: local_timezone
+         },
+         callback: function(r) {
+            let data = r.message.data;
+            if(data.length > 0) {
+                populate_daily_usage_chart(wrapper, data);
+            } else {
+                wrapper.append(`
+                    <div class="my-3">
+                        No data yet
+                    </div>
+                `)
+            }
+         }
+    });
+}
+
+function populate_daily_usage_chart(wrapper, data) {
+    // TODO: make a chart
+    for (let i = 0; i < data.length; i++) {
+        wrapper.append(`<li> data: ` + data[i].date + ' max: '+ data[i].max + `</li>`);
+    }
+}
