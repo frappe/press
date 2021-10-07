@@ -38,6 +38,9 @@ frappe.ui.form.on('Site', {
         // Backups & restore blocks
         show_site_backups(frm);
         show_restore_migrate_and_reset_block(frm);
+
+        // Site config tab blocks
+        show_site_config_block(frm);
 	},
 	refresh: function (frm) {
 		frm.dashboard.set_headline_alert(
@@ -460,6 +463,56 @@ function show_restore_migrate_and_reset_block(frm) {
             </div>
         </div>
     `)
+}
+
+function show_site_config_block(frm) {
+    let site_name = frm.doc.name;
+
+    var wrapper = frm.get_field("site_config_block").$wrapper;
+    wrapper.empty();
+
+    frappe.call({
+        method: "press.api.site.site_config",
+        args: {
+            name: site_name
+        },
+        callback: function(r) {
+            let site_config_elements = r.message;
+            wrapper.append(`
+                <div>
+                    <span class="mr-3">
+                        Add and update key value pairs to your site's site_config.json
+                    </span>
+                    <button class="mb-3">
+                        Edit Config
+                    </button></br>
+                    <span class="config-not-available"></span>
+					<div class="mb-2">
+					    site_config.json
+                    </div>
+					<div>
+					    { <span class="config-data"> </span></br> }
+					</div>
+				</div>
+            `);
+            if (site_config_elements.length === 0) {
+                let config_not_available_span = wrapper.find(".config-not-available");
+                config_not_available_span.append(`
+                    No keys added. Click on Edit Config to add one.
+                `);
+            }
+
+            let config_data_span = wrapper.find(".config-data");
+            for(var i = 0; i < site_config_elements.length; i++) {
+                config_data_span.append(`
+                    </br>
+                    <span>
+                        ` + site_config_elements[i].value + `,
+                    </span>
+                `);
+            }
+        }
+    });
 }
 
 function populate_daily_usage_chart(wrapper, data) {
