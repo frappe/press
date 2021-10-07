@@ -3,9 +3,20 @@
 
 frappe.ui.form.on('Release Group', {
 	onload(frm) {
-		show_data(frm, 'press.api.bench.versions', version_template, 'bench_versions_block');
+		show_data(
+			frm,
+			'press.api.bench.versions',
+			version_template,
+			'bench_versions_block'
+		);
 		show_data(frm, 'press.api.bench.apps', app_template, 'apps_list_block');
-		show_data(frm, 'press.api.bench.recent_deploys', deploy_template, 'recent_deploys_block');
+		show_data(
+			frm,
+			'press.api.bench.recent_deploys',
+			deploy_template,
+			'recent_deploys_block'
+		);
+		show_data(frm, 'press.api.bench.versions', sites_template, 'sites_block');
 		frm.doc.created_on = frm.doc.apps[0].creation;
 
 		if (frm.is_new()) {
@@ -60,8 +71,9 @@ let version_template = (data) => {
 			<p>${data.name}</p> 
 			<span class="indicator-pill green">${data.sites.length} sites</span>
 		</div>
+		<hr>
 	`;
-}
+};
 
 let app_template = (data) => {
 	return `
@@ -70,15 +82,46 @@ let app_template = (data) => {
 			<p>${data.repository_owner}/${data.repository}:${data.branch}</p>	
 		</div>
 	`;
-}
+};
 
 let deploy_template = (data) => {
+	let date = new Date(data.creation);
+
+	let month = date.toLocaleString('default', { month: 'long' });
+
 	return `
 		<div class="d-flex flex-column justify-between">
-			<p>${data.creation}</p>
+			<p>
+			Deployed on ${date.getDate()} ${month} ${date.getFullYear()}, ${date.getHours()}:${date.getMinutes()} GMT+5:30
+			</p>
 		</div>
+		<hr>
 	`;
-}
+};
+
+let sites_template = (data) => {
+	let bench_name = data.name;
+	let sites = data.sites;
+	let template = '';
+
+	for (let site of sites) {
+		template += `
+			<div class="d-flex flex-row justify-between">
+				<p class="list-row-col ellipsis list-subject level">${site.name}
+				<p class="list-row-col ellipsis hidden-xs">${bench_name}</p>
+				<div class="list-row-col ellipsis hidden-xs">
+					<p class="indicator-pill ${
+						site.status === 'Active' ? 'green' : 'red'
+					} ellipsis">${site.status}</p>
+				</div>
+				<button class="btn btn-outline-primary ellipsis">Visit Site</button>
+			</div>
+			<hr>
+		`;
+	}
+
+	return template;
+};
 
 // render function
 function show_data(frm, method, template, block) {
