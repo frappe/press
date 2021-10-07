@@ -30,6 +30,12 @@ class Team(Document):
 		self.set_billing_name()
 		self.validate_notify_email()
 
+	def after_insert(self):
+		if self.notify_email == 'admin@example.com':
+			self.notify_email = self.name
+		self.validate_notify_email()
+		self.save()
+
 	def delete(self, force=False, workflow=False):
 		if force:
 			return super().delete()
@@ -170,7 +176,8 @@ class Team(Document):
 				doc.save()
 
 	def validate_notify_email(self):
-		frappe.utils.validate_email_address(self.notify_email, True)
+		if self.notify_email:
+			frappe.utils.validate_email_address(self.notify_email, True)
 
 	def on_update(self):
 		self.validate_payment_mode()
