@@ -37,6 +37,7 @@ frappe.ui.form.on('Site', {
 
         // Backups & restore blocks
         show_site_backups(frm);
+        show_restore_migrate_and_reset_block(frm);
 	},
 	refresh: function (frm) {
 		frm.dashboard.set_headline_alert(
@@ -377,7 +378,6 @@ function show_site_backups(frm) {
             name: site_name
         },
         callback: function(r) {
-            console.log(r);
             wrapper.append(`
                 <span class="mr-4">
                     Backups are enabled and are scheduled to run every six hours.
@@ -396,6 +396,70 @@ function show_site_backups(frm) {
             }
         }
     });
+}
+
+function show_restore_migrate_and_reset_block(frm) {
+    let site_name = frm.doc.name;
+
+    var wrapper = frm.get_field("restore_migrate_and_reset_block").$wrapper;
+    wrapper.empty();
+
+    wrapper.append(`
+        <div>
+            <div class"mb-2>
+                <strong>
+                    Restore
+                </strong></br>
+                <div>
+                    <span class="mr-3">
+                        Restore your database using a previous backup
+                    </span>
+                    <button>
+                        Restore Database
+                    </button>
+                </div>
+            </div>
+            <div class"mb-2>
+                <strong>
+                    Migrate
+                </strong>
+                <div>
+                    <span class="mr-3">
+                        Run bench migrate command on your database.
+                    </span>
+                    <button>
+                        Migrate Database
+                    </button>
+                </div>
+            </div>
+            <div class"mb-4>
+                <strong>
+                    Reset
+                </strong>
+                <div>
+                    <span class="mr-3">
+                        Reset your database to a clean state.
+                    </span>
+                    <button>
+                        Reset Database
+                    </button>
+                </div>
+            </div>
+            <div class"mb-2>
+                <strong>
+                    Clear Cache
+                </strong>
+                <div>
+                    <span class="mr-3">
+                        Clear your site's cache.
+                    </span>
+                    <button>
+                        Clear Cache
+                    </button>
+                </div>
+            </div>
+        </div>
+    `)
 }
 
 function populate_daily_usage_chart(wrapper, data) {
