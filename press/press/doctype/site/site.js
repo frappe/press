@@ -27,6 +27,8 @@ frappe.ui.form.on('Site', {
 
         show_daily_usage_chart(frm);
         show_recent_activity(frm);
+        show_site_plane(frm);
+        show_site_info(frm);
 	},
 	refresh: function (frm) {
 		frm.dashboard.set_headline_alert(
@@ -124,7 +126,7 @@ function show_site_activation_block(frm) {
     `);
 }
 
-function show_daily_usage_chart (frm) {
+function show_daily_usage_chart(frm) {
     let site_name = frm.doc.name;
     let local_timezone = moment.tz.guess();
 
@@ -173,6 +175,93 @@ function show_recent_activity(frm) {
             let recent_activity = r.message.recent_activity;
             populate_recent_activity_list(wrapper, recent_activity);
          }
+    });
+}
+
+function show_site_plane(frm) {
+    let site_name = frm.doc.name;
+
+    var wrapper = frm.get_field("plan_block").$wrapper;
+    wrapper.empty();
+
+    frappe.call({
+        method: "press.api.site.get_plans",
+        args: {
+            name: site_name
+        },
+        callback: function(r) {
+            let data = r.message;
+            console.log(r);
+            if(data.length > 0) {
+
+            } else {
+                wrapper.append(`
+                    <div>
+                        Plan not set yet
+                    </div>
+                `);
+            }
+        }
+    });
+}
+
+function show_site_info(frm) {
+    let site_name = frm.doc.name;
+
+    var wrapper = frm.get_field("site_info_block").$wrapper;
+    wrapper.empty();
+
+    frappe.call({
+        method: "press.api.site.overview",
+        args: {
+            name: site_name
+        },
+        callback: function(r) {
+            console.log(r);
+            if(r.message.info) {
+                var info = r.message.info;
+                wrapper.append(`
+                    <div>
+                        <span>
+                            General information about your site
+                        </span>
+                        <div class="mt-3">
+                            <span class="my-2 mr-2">
+                                ` + "Owned By: " + info.owner.first_name + `
+                            </span>
+                            <span class="m-2">
+                                ` + "Created On: " + info.created_on + `
+                            </span>
+                            <span class="m-2">
+                                ` + "Last Deployed: " + info.last_deployed + `
+                            </span>
+                        </div>
+                        <div class="mt-3">
+                            <strong>
+                                Deactivate Site
+                            </strong> </br>
+                            <span class="mr-3">
+                                The site will go inactive and won't be publicly accessible
+                            </span>
+                            <button>
+                                Deactivate Site
+                            </button>
+                        </div>
+                        <div class="mt-3">
+                            <strong>
+                                Drop Site
+                            </strong> </br>
+                            <span class="mr-3">
+                                Once you drop site your site, there is no going back
+                            </span>
+                            <button>
+                                Drop Site
+                            </button>
+                        </div>
+                    </div>
+                `)
+            }
+        }
     });
 }
 
