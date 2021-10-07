@@ -446,8 +446,7 @@
   {
    "fieldname": "site_info_block",
    "fieldtype": "HTML",
-   "label": "Site Info Block",
-   "options": "INFO WILL COME HERE"
+   "label": "Site Info Block"
   },
   {
    "fieldname": "daily_usage_section",
@@ -467,8 +466,7 @@
   {
    "fieldname": "plan_block",
    "fieldtype": "HTML",
-   "label": "Plan Block",
-   "options": "PLAN WILL COME HERE"
+   "label": "Plan Block"
   },
   {
    "fieldname": "site_info_section",
@@ -640,6 +638,7 @@
    "label": "Settings"
   }
  ],
+ "hide_toolbar": 1,
  "links": [
   {
    "group": "Usage",
@@ -687,7 +686,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2021-10-06 09:42:38.243101",
+ "modified": "2021-10-07 07:34:49.172221",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
