@@ -552,8 +552,7 @@
   {
    "fieldname": "restore_migrate_and_reset_block",
    "fieldtype": "HTML",
-   "label": "Restore, Migrate & Reset Block",
-   "options": "RESTORE, MIGRATE & RESET WILL COME HERE"
+   "label": "Restore, Migrate & Reset Block"
   },
   {
    "fieldname": "site_config_section",
@@ -683,7 +682,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2021-10-07 09:17:45.493833",
+ "modified": "2021-10-07 09:27:48.370844",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
