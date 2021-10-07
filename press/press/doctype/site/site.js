@@ -29,6 +29,7 @@ frappe.ui.form.on('Site', {
         show_recent_activity(frm);
         show_site_plane(frm);
         show_site_info(frm);
+        show_site_apps(frm);
 	},
 	refresh: function (frm) {
 		frm.dashboard.set_headline_alert(
@@ -191,7 +192,6 @@ function show_site_plane(frm) {
         },
         callback: function(r) {
             let data = r.message;
-            console.log(r);
             if(data.length > 0) {
 
             } else {
@@ -217,7 +217,6 @@ function show_site_info(frm) {
             name: site_name
         },
         callback: function(r) {
-            console.log(r);
             if(r.message.info) {
                 var info = r.message.info;
                 wrapper.append(`
@@ -260,6 +259,55 @@ function show_site_info(frm) {
                         </div>
                     </div>
                 `)
+            }
+        }
+    });
+}
+
+function show_site_apps(frm) {
+    let site_name = frm.doc.name;
+
+    var wrapper = frm.get_field("site_apps_block").$wrapper;
+    wrapper.empty();
+
+    frappe.call({
+        method: "press.api.site.overview",
+        args: {
+            name: site_name
+        },
+        callback: function(r) {
+            console.log(r);
+            let installed_apps = r.message.installed_apps;
+            wrapper.append(`
+                <span class="mr-4">
+                    Apps installed on your site
+                </span>
+                <button class="mb-2">
+                    Add App
+                </button>
+            `);
+            if(installed_apps.length > 0) {
+                for(var i = 0; i < installed_apps.length; i++){
+                    wrapper.append(`
+                        <li>
+                            <span class="mr-3">
+                                ` + installed_apps[i].title + `
+                            </span>
+                            <span class="mr-3">
+                                ` + installed_apps[i].repository + "/" + installed_apps[i].branch + `
+                            </span>
+                            <span class="mr-3">
+                                ` + installed_apps[i].hash.substring(0,7) + `
+                            </span>
+                        </li>
+                    `)
+                }
+            } else {
+                wrapper.append(`
+                    <div>
+                        No apps installed
+                    </div>
+                `);
             }
         }
     });
