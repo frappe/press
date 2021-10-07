@@ -7,8 +7,21 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "overview_tab_break",
+  "bench_info_section",
   "title",
   "version",
+  "created_on",
+  "versions_section_break",
+  "bench_versions_block",
+  "apps_section_break",
+  "apps_list_block",
+  "recent_deploys_section",
+  "recent_deploys_block",
+  "sites_tab_break",
+  "deploys_tab_break",
+  "jobs_tab_break",
+  "settings_tab_break",
   "column_break_4",
   "team",
   "enabled",
@@ -64,6 +77,7 @@
    "in_standard_filter": 1,
    "label": "Version",
    "options": "Frappe Version",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -128,13 +142,81 @@
    "fieldname": "section_break_16",
    "fieldtype": "Section Break",
    "label": "Dependencies"
+  },
+  {
+   "fieldname": "settings_tab_break",
+   "fieldtype": "Tab Break",
+   "label": "Settings"
+  },
+  {
+   "fieldname": "overview_tab_break",
+   "fieldtype": "Tab Break",
+   "label": "Overview"
+  },
+  {
+   "fieldname": "sites_tab_break",
+   "fieldtype": "Tab Break",
+   "label": "Sites"
+  },
+  {
+   "fieldname": "deploys_tab_break",
+   "fieldtype": "Tab Break",
+   "label": "Deploys"
+  },
+  {
+   "fieldname": "jobs_tab_break",
+   "fieldtype": "Tab Break",
+   "label": "Jobs"
+  },
+  {
+   "fieldname": "bench_info_section",
+   "fieldtype": "Section Break",
+   "label": "Bench info"
+  },
+  {
+   "fieldname": "created_on",
+   "fieldtype": "Date",
+   "label": "Created on",
+   "read_only": 1
+  },
+  {
+   "fieldname": "versions_section_break",
+   "fieldtype": "Section Break",
+   "label": "Versions"
+  },
+  {
+   "fieldname": "apps_section_break",
+   "fieldtype": "Section Break",
+   "label": "Apps"
+  },
+  {
+   "fieldname": "recent_deploys_section",
+   "fieldtype": "Section Break",
+   "label": "Recent deploys"
+  },
+  {
+   "fieldname": "bench_versions_block",
+   "fieldtype": "HTML",
+   "label": "Bench Versions"
+  },
+  {
+   "fieldname": "apps_list_block",
+   "fieldtype": "HTML",
+   "label": "Apps"
+  },
+  {
+   "fieldname": "recent_deploys_block",
+   "fieldtype": "HTML",
+   "label": "Recent Deploys List"
   }
  ],
+ "hide_toolbar": 1,
  "links": [],
- "modified": "2021-05-18 18:39:53.050440",
+ "modified": "2021-10-06 22:33:40.126647",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {

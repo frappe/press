@@ -3,6 +3,11 @@
 
 frappe.ui.form.on('Release Group', {
 	onload(frm) {
+		show_data(frm, 'press.api.bench.versions', version_template, 'bench_versions_block');
+		show_data(frm, 'press.api.bench.apps', app_template, 'apps_list_block');
+		show_data(frm, 'press.api.bench.recent_deploys', deploy_template, 'recent_deploys_block');
+		frm.doc.created_on = frm.doc.apps[0].creation;
+
 		if (frm.is_new()) {
 			frm.call('validate_dependencies');
 		}
@@ -47,3 +52,52 @@ frappe.ui.form.on('Release Group', {
 		frm.set_df_property('dependencies', 'cannot_add_rows', 1);
 	},
 });
+
+// custom html
+let version_template = (data) => {
+	return `
+		<div class="d-flex flex-row justify-between">
+			<p>${data.name}</p> 
+			<span class="indicator-pill green">${data.sites.length} sites</span>
+		</div>
+	`;
+}
+
+let app_template = (data) => {
+	return `
+		<div class="d-flex flex-column justify-between">
+			<h5>${data.name}</h5>
+			<p>${data.repository_owner}/${data.repository}:${data.branch}</p>	
+		</div>
+	`;
+}
+
+let deploy_template = (data) => {
+	return `
+		<div class="d-flex flex-column justify-between">
+			<p>${data.creation}</p>
+		</div>
+	`;
+}
+
+// render function
+function show_data(frm, method, template, block) {
+	let html = '';
+
+	frappe
+		.call({
+			method: method,
+			args: {
+				name: frm.docname,
+			},
+		})
+		.then((res) => {
+			for (let data of res.message) {
+				html += template(data);
+			}
+
+			var wrapper = frm.get_field(block).$wrapper;
+			wrapper.empty();
+			wrapper.append(`${html}`);
+		});
+}
