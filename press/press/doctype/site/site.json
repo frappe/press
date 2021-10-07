@@ -486,8 +486,7 @@
   {
    "fieldname": "usage_counter_block",
    "fieldtype": "HTML",
-   "label": "Usage Counter Block",
-   "options": "USAGE COUNTER WILL COME HERE"
+   "label": "Usage Counter Block"
   },
   {
    "fieldname": "uptime_section",
@@ -497,8 +496,7 @@
   {
    "fieldname": "uptime_block",
    "fieldtype": "HTML",
-   "label": "Uptime Block",
-   "options": "UPTIME WILL COME HERE"
+   "label": "Uptime Block"
   },
   {
    "fieldname": "requests_section",
@@ -508,8 +506,7 @@
   {
    "fieldname": "requests_block",
    "fieldtype": "HTML",
-   "label": "Requests Block",
-   "options": "REQUESTS WILL COME HERE"
+   "label": "Requests Block"
   },
   {
    "fieldname": "cpu_usage_section",
@@ -519,8 +516,7 @@
   {
    "fieldname": "cpu_usage_block",
    "fieldtype": "HTML",
-   "label": "Cpu Usage Block",
-   "options": "CPU USAGE WILL COME HERE"
+   "label": "Cpu Usage Block"
   },
   {
    "fieldname": "background_jobs_section",
@@ -530,8 +526,7 @@
   {
    "fieldname": "background_jobs_block",
    "fieldtype": "HTML",
-   "label": "Background Jobs Block",
-   "options": "BACKGROUND JOBS WILL COME HERE"
+   "label": "Background Jobs Block"
   },
   {
    "fieldname": "background_jobs_cpu_usage_section",
@@ -541,8 +536,7 @@
   {
    "fieldname": "background_jobs_cpu_usage_block",
    "fieldtype": "HTML",
-   "label": "Background Jobs Cpu Usage Block",
-   "options": "BACKGROUND JOBS CPU USAGE WILL COME HERE"
+   "label": "Background Jobs Cpu Usage Block"
   },
   {
    "fieldname": "restore_migrate_and_reset_section",
@@ -681,7 +675,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2021-10-07 09:41:24.377779",
+ "modified": "2021-10-08 02:36:05.419385",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
