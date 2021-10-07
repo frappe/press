@@ -25,12 +25,18 @@ frappe.ui.form.on('Site', {
             // TODO: hide site_activation_block
         }
 
+        // Overview tab blocks
         show_daily_usage_chart(frm);
         show_recent_activity(frm);
         show_site_plane(frm);
         show_site_info(frm);
         show_site_apps(frm);
         show_site_domains(frm);
+
+        // Analytics tab blocks
+
+        // Backups & restore blocks
+        show_site_backups(frm);
 	},
 	refresh: function (frm) {
 		frm.dashboard.set_headline_alert(
@@ -277,7 +283,6 @@ function show_site_apps(frm) {
             name: site_name
         },
         callback: function(r) {
-            console.log(r);
             let installed_apps = r.message.installed_apps;
             wrapper.append(`
                 <span class="mr-4">
@@ -327,7 +332,6 @@ function show_site_domains(frm) {
             name: site_name
         },
         callback: function(r) {
-            console.log(r);
             let domains = r.message.domains;
             wrapper.append(`
                 <span class="mr-4">
@@ -355,6 +359,39 @@ function show_site_domains(frm) {
                     <div>
                         Not yet set
                     </div>
+                `);
+            }
+        }
+    });
+}
+
+function show_site_backups(frm) {
+    let site_name = frm.doc.name;
+
+    var wrapper = frm.get_field("site_backups_block").$wrapper;
+    wrapper.empty();
+
+    frappe.call({
+        method: "press.api.site.backups",
+        args: {
+            name: site_name
+        },
+        callback: function(r) {
+            console.log(r);
+            wrapper.append(`
+                <span class="mr-4">
+                    Backups are enabled and are scheduled to run every six hours.
+                </span>
+                <button class="mb-2">
+                    Schedule a backup now
+                </button>
+            `);
+            let backups = r.message;
+            for(var i = 0; i < backups.length; i++) {
+                wrapper.append(`
+                    <li>
+                        ` + "Backup on: " + backups[i].creation + `
+                    </li>
                 `);
             }
         }

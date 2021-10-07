@@ -34,8 +34,8 @@
   "background_jobs_cpu_usage_section",
   "background_jobs_cpu_usage_block",
   "backup_and_restore_tab_break",
-  "backups_section",
-  "backups_block",
+  "site_backups_section",
+  "site_backups_block",
   "restore_migrate_and_reset_section",
   "restore_migrate_and_reset_block",
   "site_config_tab_break",
@@ -545,17 +545,6 @@
    "options": "BACKGROUND JOBS CPU USAGE WILL COME HERE"
   },
   {
-   "fieldname": "backups_section",
-   "fieldtype": "Section Break",
-   "label": "Backups"
-  },
-  {
-   "fieldname": "backups_block",
-   "fieldtype": "HTML",
-   "label": "Backups Block",
-   "options": "BACKUPS WILL COME HERE"
-  },
-  {
    "fieldname": "restore_migrate_and_reset_section",
    "fieldtype": "Section Break",
    "label": "Restore, Migrate & Reset"
@@ -634,6 +623,16 @@
    "fieldname": "site_domain_block",
    "fieldtype": "HTML",
    "label": "Domains Block"
+  },
+  {
+   "fieldname": "site_backups_section",
+   "fieldtype": "Section Break",
+   "label": "Backups"
+  },
+  {
+   "fieldname": "site_backups_block",
+   "fieldtype": "HTML",
+   "label": "Backups Block"
   }
  ],
  "hide_toolbar": 1,
@@ -684,7 +683,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2021-10-07 08:38:01.542644",
+ "modified": "2021-10-07 09:17:45.493833",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
