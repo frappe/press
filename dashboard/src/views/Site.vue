@@ -157,7 +157,7 @@ export default {
 				textBox: true,
 				action: (closeDialog, textBoxInput) => {
 					let reason = textBoxInput;
-					if (textBoxInput !== null) {
+					if (textBoxInput.length === 0 || !textBoxInput.trim()) {
 						this.$resources.loginAsAdmin.submit({
 							name: this.siteName,
 							reason: reason
