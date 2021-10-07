@@ -3,6 +3,33 @@
 
 frappe.ui.form.on('Site', {
 	onload: function (frm) {
+        if(frm.get_field("setup_wizard_complete")) {
+            show_block(frm, 'site_activation_block', site_activation);
+        }
+
+        // Overview
+        show_data(frm, daily_usage, 'daily_usage_block', 'press.api.analytics.daily_usage', {name: frm.docname, timezone: moment.tz.guess()});
+        show_data(frm, recent_activity, 'recent_activity_block', 'press.api.site.overview');
+        show_data(frm, site_plan, 'plan_block', 'press.api.site.get_plans');
+        show_data(frm, site_info, 'site_info_block', 'press.api.site.overview');
+        show_data(frm, site_apps, 'site_apps_block', 'press.api.site.overview');
+        show_data(frm, site_domain, 'site_domain_block', 'press.api.site.overview');
+
+        // Analytics
+        show_data(frm, usage_counter, 'usage_counter_block', 'press.api.analytics.daily_usage', {name: frm.docname, timezone: moment.tz.guess()});
+        show_data(frm, uptime, 'uptime_block', 'press.api.analytics.daily_usage', {name: frm.docname, timezone: moment.tz.guess()});
+        show_data(frm, requests, 'requests_block', 'press.api.analytics.daily_usage', {name: frm.docname, timezone: moment.tz.guess()});
+        show_data(frm, cpu_usage, 'cpu_usage_block', 'press.api.analytics.daily_usage', {name: frm.docname, timezone: moment.tz.guess()});
+        show_data(frm, background_jobs, 'background_jobs_block', 'press.api.analytics.daily_usage', {name: frm.docname, timezone: moment.tz.guess()});
+        show_data(frm, background_jobs_cpu_usage, 'background_jobs_cpu_usage_block', 'press.api.analytics.daily_usage', {name: frm.docname, timezone: moment.tz.guess()});
+
+        // Backups & Restore
+        show_data(frm, site_backups, 'site_backups_block', 'press.api.site.backups');
+        show_block(frm, 'restore_migrate_and_reset_block', restore_migrate_and_reset);
+
+        // Site Config
+        show_data(frm, site_config, 'site_config_block', 'press.api.site.site_config');
+
 		frm.set_query('bench', function () {
 			return {
 				filters: {
@@ -19,28 +46,6 @@ frappe.ui.form.on('Site', {
 				},
 			};
 		});
-        if(frm.get_field("setup_wizard_complete")) {
-            show_site_activation_block(frm);
-        } else {
-            // TODO: hide site_activation_block
-        }
-
-        // Overview tab blocks
-        show_daily_usage_chart(frm);
-        show_recent_activity(frm);
-        show_site_plane(frm);
-        show_site_info(frm);
-        show_site_apps(frm);
-        show_site_domains(frm);
-
-        // Analytics tab blocks
-
-        // Backups & restore blocks
-        show_site_backups(frm);
-        show_restore_migrate_and_reset_block(frm);
-
-        // Site config tab blocks
-        show_site_config_block(frm);
 	},
 	refresh: function (frm) {
 		frm.dashboard.set_headline_alert(
@@ -112,423 +117,358 @@ frappe.ui.form.on('Site', {
 	},
 });
 
-function show_site_activation_block(frm) {
-    var wrapper = frm.get_field("site_activation_block").$wrapper;
-    wrapper.empty();
-    wrapper.append(`
-        <div class="alert alert-info">
-            <div class="items-start px-4 md:px-5 py-3.5 text-base rounded-md flex">
-                <div class="w-full ml-2">
-                    <div class="flex flex-col md:items-baseline md:flex-row">
+// custom html
+
+let site_activation = `
+    <div class="flex flex-row justify-between align-items-center">
+        <div class="d-flex flex-row">
+            <strong class="mr-3">Site Activation</strong>
+            <p>Please login and complete the setup wizard on your site. Analytics will be collected only after setup is complete.</p>
+        </div>
+        <button class="btn btn-primary">
+            Login
+        </button>
+    </div>
+`;
+
+let daily_usage = (message) => {
+    let data = message.data;
+    if(data.length > 0) {
+        return `
+            <div class="">
+                Daily Usage: ${data}
+            </div>
+        `;
+    } else {
+        return `
+            <div class="d-flex justify-content-center">
+                <p class="m-3 mb-4">No data yet</p>
+            </div>
+        `;
+    }
+};
+
+let recent_activity = (message) => {
+    let recent_activity = message.recent_activity;
+    return create_html(recent_activity, (activity) => {
+        return `
+            <div class="d-flex flex-column justify-between mb-2">
+                <h5>${activity.action} by ${activity.owner}</h5>
+                <p>${activity.creation}</p>	
+            </div>
+        `;
+    });
+}
+
+let site_plan = (message) => {
+    if(message.length > 0) {
+        return `
+            <div class="">
+                Plan: ${message}
+            </div>
+        `;
+    } else {
+        return `
+            <div class="d-flex justify-content-center">
+                <p class="m-3 mb-4">No plan</p>
+            </div>
+        `;
+    }
+}
+
+let site_info = (message) => {
+    let info = message.info; 
+    return `
+        <div class="d-flex flex-row">
+            <div class="d-flex flex-column w-50 mr-4">
+            ` 
+                + standard_field_html('Site owner', info.owner.first_name) 
+                + standard_field_html('Created on', info.created_on)
+                + standard_field_html('Last deploy', info.last_deploy) 
+                +
+            `
+            </div>
+            <div class="d-flex flex-column w-50">
+            `
+                + standard_action_html('Deactivate Site', "The site will go inactive and won't be publicly accessible") 
+                + standard_action_html('Drop Site', "Once you drop site your site, there is no going back", 'danger') 
+                +
+            `
+            </div>
+        </div>
+    `;
+}
+
+let site_apps = (message) => {
+    let installed_apps = message.installed_apps;
+    return `
+        <div class="d-flex flex-column">
+            <div class="d-flex flex-row">
+                <p>Apps installed on your site</p>
+                <button class="btn btn-light ml-auto mb-4">Add App</button>
+            </div>
+            `
+                + create_html(installed_apps, (app) => {
+                    return `
+                        <div class="d-flex flex-row justify-between mb-2">
+                            <div class="d-flex flex-column">
+                                <h5>${app.title}</h5>
+                                <p>${app.app + '/' + app.repository + ':' + app.branch}</p>
+                            </div>
+                            <div>
+                                <p class="indicator-pill blue">${app.hash.substring(0,7)}</p>
+                            </div>
+                        </div>
+                    `
+                })
+                +
+            `
+        </div>
+    `;
+}
+
+let site_domain = (message) => {
+    let domains = message.domains;
+    return `
+        <div class="d-flex flex-column">
+            <div class="d-flex flex-row">
+                <p>Domains pointing to your site</p>
+                <button class="btn btn-light ml-auto mb-4">Add Domain</button>
+            </div>
+            `
+                + create_html(domains, (domain) => {
+                    return `
+                        <div class="d-flex flex-row justify-between mb-2">
+                            <div class="d-flex flex-column">
+                                <p>${domain.domain}</p>
+                            </div>
+                            <div>
+                                <p class="indicator-pill green">${domain.primary ? "Primary": ""}</p>
+                            </div>
+                        </div>
+                    `
+                })
+                +
+            `
+        </div>
+    `;
+}
+
+let usage_counter = (message) => {
+    let data = message.data;
+    if(data.length > 0) {
+        return `
+            <div class="">
+                Daily Usage: ${data}
+            </div>
+        `;
+    } else {
+        return `
+            <div class="d-flex justify-content-center">
+                <p class="m-3 mb-4">No data yet</p>
+            </div>
+        `;
+    }
+};
+
+let uptime = (message) => {
+    let data = message.data;
+    if(data.length > 0) {
+        return `
+            <div class="">
+                Daily Usage: ${data}
+            </div>
+        `;
+    } else {
+        return `
+            <div class="d-flex justify-content-center">
+                <p class="m-3 mb-4">No data yet</p>
+            </div>
+        `;
+    }
+};
+
+let requests = (message) => {
+    let data = message.data;
+    if(data.length > 0) {
+        return `
+            <div class="">
+                Daily Usage: ${data}
+            </div>
+        `;
+    } else {
+        return `
+            <div class="d-flex justify-content-center">
+                <p class="m-3 mb-4">No data yet</p>
+            </div>
+        `;
+    }
+};
+
+let cpu_usage = (message) => {
+    let data = message.data;
+    if(data.length > 0) {
+        return `
+            <div class="">
+                Daily Usage: ${data}
+            </div>
+        `;
+    } else {
+        return `
+            <div class="d-flex justify-content-center">
+                <p class="m-3 mb-4">No data yet</p>
+            </div>
+        `;
+    }
+};
+
+let background_jobs = (message) => {
+    let data = message.data;
+    if(data.length > 0) {
+        return `
+            <div class="">
+                Daily Usage: ${data}
+            </div>
+        `;
+    } else {
+        return `
+            <div class="d-flex justify-content-center">
+                <p class="m-3 mb-4">No data yet</p>
+            </div>
+        `;
+    }
+};
+
+let background_jobs_cpu_usage = (message) => {
+    let data = message.data;
+    if(data.length > 0) {
+        return `
+            <div class="">
+                Daily Usage: ${data}
+            </div>
+        `;
+    } else {
+        return `
+            <div class="d-flex justify-content-center">
+                <p class="m-3 mb-4">No data yet</p>
+            </div>
+        `;
+    }
+};
+
+let site_backups = (message) => {
+    let backups = message;
+    return `
+        <div class="d-flex flex-column">
+            <div class="d-flex flex-row">
+                <p>Backups are enabled and are scheduled to run every six hours.</p>
+                <button class="btn btn-light ml-auto mb-4">Schedule a backup now</button>
+            </div>
+            `
+                + create_html(backups, (backup) => {
+                    return `
                         <div>
-                            <strong class="mr-2">
-                                Site Activation
-                            </strong>
-                            <span>
-                                Please login and complete the setup wizard on your site. Analytics will be collected only after setup is complete.
-                            </span>
-                            <span class="ml-5">
-                                <button class="btn btn-primary">Login</button>
-                            </span>
+                            <p>Backup on ${backup.creation}</p>
                         </div>
-                    </div>
+                    `;
+                })
+                +
+            `
+        </div>
+    `;
+}
+
+let restore_migrate_and_reset = `
+    <div class="d-flex flex-column">
+        `
+            + standard_action_html('Restore', 'Restore your database using a previous backup', 'light', 'Restore Database')
+            + standard_action_html('Migrate', 'Run bench migrate command on your database.', 'light', 'Migrate Database')
+            + standard_action_html('Reset', 'Reset your database to a clean state.', 'danger', 'Reset Database')
+            + standard_action_html('Clear Cache', "Clear your site's cache", 'danger')
+            +
+        `
+    </div>
+`;
+
+let site_config = (message) => {
+    console.log(message);
+    let configs = message;
+    return `
+        <div class="d-flex flex-column">
+            <div class="d-flex flex-row justify-between">
+                <span>Add and update key value pairs to your site's site_config.json</span>
+                <button class="btn btn-light">Edit Config</button>
+            </div>
+            <div class="d-flex flex-row justify-between">
+                <div class="control-value like-disabled-input w-50">
+                    <pre> site_config.js {`
+                        + create_html(configs, (config) => {
+                            return `
+                                <p>${config}</p>
+                            `;
+                        })
+                        +
+                    `}</pre>
                 </div>
             </div>
         </div>
-    `);
+    `;
 }
 
-function show_daily_usage_chart(frm) {
-    let site_name = frm.doc.name;
-    let local_timezone = moment.tz.guess();
-
-    var wrapper = frm.get_field("daily_usage_block").$wrapper;
-    wrapper.empty();
-
-    frappe.call({
-        method: "press.api.analytics.daily_usage",
-        args: {
-            name: site_name,
-            timezone: local_timezone
-         },
-         callback: function(r) {
-            let data = r.message.data;
-            if(data.length > 0) {
-                populate_daily_usage_chart(wrapper, data);
-            } else {
-                wrapper.append(`
-                    <div class="my-3">
-                        No data yet
-                    </div>
-                `)
-            }
-         }
-    });
-}
-
-function show_recent_activity(frm) {
-    let site_name = frm.doc.name;
-
-    var wrapper = frm.get_field("recent_activity_block").$wrapper;
-    wrapper.empty();
-
-    wrapper.append(`
-        <span>
-            History of recent activities performed on your site
-        </span>
-    `)
-
-    frappe.call({
-        method: "press.api.site.overview",
-        args: {
-            name: site_name
-         },
-         callback: function(r) {
-            let recent_activity = r.message.recent_activity;
-            populate_recent_activity_list(wrapper, recent_activity);
-         }
-    });
-}
-
-function show_site_plane(frm) {
-    let site_name = frm.doc.name;
-
-    var wrapper = frm.get_field("plan_block").$wrapper;
-    wrapper.empty();
-
-    frappe.call({
-        method: "press.api.site.get_plans",
-        args: {
-            name: site_name
-        },
-        callback: function(r) {
-            let data = r.message;
-            if(data.length > 0) {
-
-            } else {
-                wrapper.append(`
-                    <div>
-                        Plan not set yet
-                    </div>
-                `);
-            }
-        }
-    });
-}
-
-function show_site_info(frm) {
-    let site_name = frm.doc.name;
-
-    var wrapper = frm.get_field("site_info_block").$wrapper;
-    wrapper.empty();
-
-    frappe.call({
-        method: "press.api.site.overview",
-        args: {
-            name: site_name
-        },
-        callback: function(r) {
-            if(r.message.info) {
-                var info = r.message.info;
-                wrapper.append(`
-                    <div>
-                        <span>
-                            General information about your site
-                        </span>
-                        <div class="mt-3">
-                            <span class="my-2 mr-2">
-                                ` + "Owned By: " + info.owner.first_name + `
-                            </span>
-                            <span class="m-2">
-                                ` + "Created On: " + info.created_on + `
-                            </span>
-                            <span class="m-2">
-                                ` + "Last Deployed: " + info.last_deployed + `
-                            </span>
-                        </div>
-                        <div class="mt-3">
-                            <strong>
-                                Deactivate Site
-                            </strong> </br>
-                            <span class="mr-3">
-                                The site will go inactive and won't be publicly accessible
-                            </span>
-                            <button>
-                                Deactivate Site
-                            </button>
-                        </div>
-                        <div class="mt-3">
-                            <strong>
-                                Drop Site
-                            </strong> </br>
-                            <span class="mr-3">
-                                Once you drop site your site, there is no going back
-                            </span>
-                            <button>
-                                Drop Site
-                            </button>
-                        </div>
-                    </div>
-                `)
-            }
-        }
-    });
-}
-
-function show_site_apps(frm) {
-    let site_name = frm.doc.name;
-
-    var wrapper = frm.get_field("site_apps_block").$wrapper;
-    wrapper.empty();
-
-    frappe.call({
-        method: "press.api.site.overview",
-        args: {
-            name: site_name
-        },
-        callback: function(r) {
-            let installed_apps = r.message.installed_apps;
-            wrapper.append(`
-                <span class="mr-4">
-                    Apps installed on your site
-                </span>
-                <button class="mb-2">
-                    Add App
-                </button>
-            `);
-            if(installed_apps.length > 0) {
-                for(var i = 0; i < installed_apps.length; i++){
-                    wrapper.append(`
-                        <li>
-                            <span class="mr-3">
-                                ` + installed_apps[i].title + `
-                            </span>
-                            <span class="mr-3">
-                                ` + installed_apps[i].repository + "/" + installed_apps[i].branch + `
-                            </span>
-                            <span class="mr-3">
-                                ` + installed_apps[i].hash.substring(0,7) + `
-                            </span>
-                        </li>
-                    `)
-                }
-            } else {
-                wrapper.append(`
-                    <div>
-                        No apps installed
-                    </div>
-                `);
-            }
-        }
-    });
-}
-
-function show_site_domains(frm) {
-
-    let site_name = frm.doc.name;
-
-    var wrapper = frm.get_field("site_domain_block").$wrapper;
-    wrapper.empty();
-
-    frappe.call({
-        method: "press.api.site.overview",
-        args: {
-            name: site_name
-        },
-        callback: function(r) {
-            let domains = r.message.domains;
-            wrapper.append(`
-                <span class="mr-4">
-                    Domains pointing to your site
-                </span>
-                <button class="mb-2">
-                    Add Domain
-                </button>
-            `);
-            if(domains.length > 0) {
-                for(var i = 0; i < domains.length; i++){
-                    wrapper.append(`
-                        <li>
-                            <span class="mr-3">
-                                ` + domains[i].domain + `
-                            </span>
-                            <span class="mr-3">
-                                ` + "primary: " + domains[i].primary +  `
-                            </span>
-                        </li>
-                    `)
-                }
-            } else {
-                wrapper.append(`
-                    <div>
-                        Not yet set
-                    </div>
-                `);
-            }
-        }
-    });
-}
-
-function show_site_backups(frm) {
-    let site_name = frm.doc.name;
-
-    var wrapper = frm.get_field("site_backups_block").$wrapper;
-    wrapper.empty();
-
-    frappe.call({
-        method: "press.api.site.backups",
-        args: {
-            name: site_name
-        },
-        callback: function(r) {
-            wrapper.append(`
-                <span class="mr-4">
-                    Backups are enabled and are scheduled to run every six hours.
-                </span>
-                <button class="mb-2">
-                    Schedule a backup now
-                </button>
-            `);
-            let backups = r.message;
-            for(var i = 0; i < backups.length; i++) {
-                wrapper.append(`
-                    <li>
-                        ` + "Backup on: " + backups[i].creation + `
-                    </li>
-                `);
-            }
-        }
-    });
-}
-
-function show_restore_migrate_and_reset_block(frm) {
-    let site_name = frm.doc.name;
-
-    var wrapper = frm.get_field("restore_migrate_and_reset_block").$wrapper;
-    wrapper.empty();
-
-    wrapper.append(`
-        <div>
-            <div class"mb-2>
-                <strong>
-                    Restore
-                </strong></br>
-                <div>
-                    <span class="mr-3">
-                        Restore your database using a previous backup
-                    </span>
-                    <button>
-                        Restore Database
-                    </button>
-                </div>
+// render function
+function standard_field_html(title, value) {
+    if(!value) {
+        value = "";
+    }
+    return `
+        <div class="d-flex flex-column mb-3">
+            <div class="clearfix">
+                <label class="control-label">${title}</label>
             </div>
-            <div class"mb-2>
-                <strong>
-                    Migrate
-                </strong>
-                <div>
-                    <span class="mr-3">
-                        Run bench migrate command on your database.
-                    </span>
-                    <button>
-                        Migrate Database
-                    </button>
-                </div>
-            </div>
-            <div class"mb-4>
-                <strong>
-                    Reset
-                </strong>
-                <div>
-                    <span class="mr-3">
-                        Reset your database to a clean state.
-                    </span>
-                    <button>
-                        Reset Database
-                    </button>
-                </div>
-            </div>
-            <div class"mb-2>
-                <strong>
-                    Clear Cache
-                </strong>
-                <div>
-                    <span class="mr-3">
-                        Clear your site's cache.
-                    </span>
-                    <button>
-                        Clear Cache
-                    </button>
+            <div class="control-input-wrapper">
+                <div class="control-value like-disabled-input bold">
+                    <span>${value}</span>
                 </div>
             </div>
         </div>
-    `)
+    `;
 }
 
-function show_site_config_block(frm) {
-    let site_name = frm.doc.name;
+function standard_action_html(title, message, action_type = 'light', action = title) {
+    return `
+        <div class="d-flex flex-column mb-3">
+            <span class="font-weight-bold">${title}</span>
+            <div class="d-flex flex-row justify-between mt-2">
+                <p>${message}</p>
+                <button class="btn btn-` + action_type + `">${action}</button>
+            </div>
+        </div>
+    `;
+}
 
-    var wrapper = frm.get_field("site_config_block").$wrapper;
+function create_html(data, template) {  // TODO: change name
+    var html = '';
+
+    for(let d of data) {
+        html += template(d);
+    }
+    
+    return html;
+}
+
+function show_data(frm, template, block, method, args = {name: frm.docname}) {
+	frappe
+		.call({
+            method: method,
+            args: args
+        })
+		.then((res) => {
+            show_block(frm, block, template(res.message));
+		});
+}
+
+function show_block(frm, block, html) {
+    let wrapper = frm.get_field(block).$wrapper;
     wrapper.empty();
-
-    frappe.call({
-        method: "press.api.site.site_config",
-        args: {
-            name: site_name
-        },
-        callback: function(r) {
-            let site_config_elements = r.message;
-            wrapper.append(`
-                <div>
-                    <span class="mr-3">
-                        Add and update key value pairs to your site's site_config.json
-                    </span>
-                    <button class="mb-3">
-                        Edit Config
-                    </button></br>
-                    <span class="config-not-available"></span>
-					<div class="mb-2">
-					    site_config.json
-                    </div>
-					<div>
-					    { <span class="config-data"> </span></br> }
-					</div>
-				</div>
-            `);
-            if (site_config_elements.length === 0) {
-                let config_not_available_span = wrapper.find(".config-not-available");
-                config_not_available_span.append(`
-                    No keys added. Click on Edit Config to add one.
-                `);
-            }
-
-            let config_data_span = wrapper.find(".config-data");
-            for(var i = 0; i < site_config_elements.length; i++) {
-                config_data_span.append(`
-                    </br>
-                    <span>
-                        ` + site_config_elements[i].value + `,
-                    </span>
-                `);
-            }
-        }
-    });
-}
-
-function populate_daily_usage_chart(wrapper, data) {
-    // TODO: make a chart
-    for (let i = 0; i < data.length; i++) {
-        wrapper.append(`<li> data: ` + data[i].date + ' max: '+ data[i].max + `</li>`);
-    }
-}
-
-function populate_recent_activity_list(wrapper, recent_activity) {
-    for(let i = 0; i < recent_activity.length; i++) {
-        wrapper.append(`
-            <li> ` + recent_activity[i].action +
-            " by " + recent_activity[i].owner +
-            " | " + recent_activity[i].creation +
-            ` </li>
-        `);
-    }
+    wrapper.append(`${html}`);
 }
