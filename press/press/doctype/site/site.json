@@ -18,8 +18,8 @@
   "site_info_block",
   "site_apps_section",
   "site_apps_block",
-  "domains_section",
-  "domain_block",
+  "site_domains_section",
+  "site_domain_block",
   "analytics_tab_break",
   "usage_counter_section",
   "usage_counter_block",
@@ -474,17 +474,6 @@
    "label": "Site Info"
   },
   {
-   "fieldname": "domains_section",
-   "fieldtype": "Section Break",
-   "label": "Domains"
-  },
-  {
-   "fieldname": "domain_block",
-   "fieldtype": "HTML",
-   "label": "Domains Block",
-   "options": "DOMAINS WILL COME HERE"
-  },
-  {
    "fieldname": "site_activation_block",
    "fieldtype": "HTML",
    "label": "Site Activation Block"
@@ -635,6 +624,16 @@
    "fieldname": "site_apps_block",
    "fieldtype": "HTML",
    "label": "Apps Block"
+  },
+  {
+   "fieldname": "site_domains_section",
+   "fieldtype": "Section Break",
+   "label": "Domains"
+  },
+  {
+   "fieldname": "site_domain_block",
+   "fieldtype": "HTML",
+   "label": "Domains Block"
   }
  ],
  "hide_toolbar": 1,
@@ -685,7 +684,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2021-10-07 07:59:37.021592",
+ "modified": "2021-10-07 08:38:01.542644",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

@@ -30,6 +30,7 @@ frappe.ui.form.on('Site', {
         show_site_plane(frm);
         show_site_info(frm);
         show_site_apps(frm);
+        show_site_domains(frm);
 	},
 	refresh: function (frm) {
 		frm.dashboard.set_headline_alert(
@@ -306,6 +307,53 @@ function show_site_apps(frm) {
                 wrapper.append(`
                     <div>
                         No apps installed
+                    </div>
+                `);
+            }
+        }
+    });
+}
+
+function show_site_domains(frm) {
+
+    let site_name = frm.doc.name;
+
+    var wrapper = frm.get_field("site_domain_block").$wrapper;
+    wrapper.empty();
+
+    frappe.call({
+        method: "press.api.site.overview",
+        args: {
+            name: site_name
+        },
+        callback: function(r) {
+            console.log(r);
+            let domains = r.message.domains;
+            wrapper.append(`
+                <span class="mr-4">
+                    Domains pointing to your site
+                </span>
+                <button class="mb-2">
+                    Add Domain
+                </button>
+            `);
+            if(domains.length > 0) {
+                for(var i = 0; i < domains.length; i++){
+                    wrapper.append(`
+                        <li>
+                            <span class="mr-3">
+                                ` + domains[i].domain + `
+                            </span>
+                            <span class="mr-3">
+                                ` + "primary: " + domains[i].primary +  `
+                            </span>
+                        </li>
+                    `)
+                }
+            } else {
+                wrapper.append(`
+                    <div>
+                        Not yet set
                     </div>
                 `);
             }
