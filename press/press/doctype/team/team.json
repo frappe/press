@@ -14,6 +14,7 @@
   "free_account",
   "via_erpnext",
   "section_break_6",
+  "notify_email",
   "team_members",
   "subscription_details_section",
   "stripe_customer_id",
@@ -164,6 +165,11 @@
    "fieldtype": "Select",
    "label": "Payment Mode",
    "options": "\nCard\nPrepaid Credits"
+  },
+  {
+   "fieldname": "notify_email",
+   "fieldtype": "Data",
+   "label": "Notify Email"
   }
  ],
  "links": [
@@ -208,10 +214,11 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2021-08-26 11:34:41.694982",
+ "modified": "2021-10-07 14:43:45.110097",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
+ "naming_rule": "Set by user",
  "owner": "Administrator",
  "permissions": [
   {
