@@ -16,8 +16,8 @@
   "plan_block",
   "site_info_section",
   "site_info_block",
-  "apps_section",
-  "apps_block",
+  "site_apps_section",
+  "site_apps_block",
   "domains_section",
   "domain_block",
   "analytics_tab_break",
@@ -474,17 +474,6 @@
    "label": "Site Info"
   },
   {
-   "fieldname": "apps_section",
-   "fieldtype": "Section Break",
-   "label": "Apps"
-  },
-  {
-   "fieldname": "apps_block",
-   "fieldtype": "HTML",
-   "label": "Apps Block",
-   "options": "APPS WILL COME HERE"
-  },
-  {
    "fieldname": "domains_section",
    "fieldtype": "Section Break",
    "label": "Domains"
@@ -636,6 +625,16 @@
    "fieldname": "settings_tab_break",
    "fieldtype": "Tab Break",
    "label": "Settings"
+  },
+  {
+   "fieldname": "site_apps_section",
+   "fieldtype": "Section Break",
+   "label": "Apps"
+  },
+  {
+   "fieldname": "site_apps_block",
+   "fieldtype": "HTML",
+   "label": "Apps Block"
   }
  ],
  "hide_toolbar": 1,
@@ -686,7 +685,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2021-10-07 07:34:49.172221",
+ "modified": "2021-10-07 07:59:37.021592",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
