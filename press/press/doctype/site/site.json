@@ -562,8 +562,7 @@
   {
    "fieldname": "site_config_block",
    "fieldtype": "HTML",
-   "label": "Site Config Block",
-   "options": "SITE CONFIG WILL COME HERE"
+   "label": "Site Config Block"
   },
   {
    "fieldname": "jobs_section",
@@ -682,7 +681,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2021-10-07 09:27:48.370844",
+ "modified": "2021-10-07 09:41:24.377779",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
