@@ -423,7 +423,7 @@ let site_jobs = (message) => {
     var focused_job = 0;
     return `
         <div class="d-flex flex-row">
-            <div class="d-flex flex-column w-25 mr-5">
+            <div class="d-flex flex-column w-25 mr-3">
                 <span class="mb-4">History of jobs that ran on your site</span>
                 `
                     + iterate_list(logs, (log) => {
@@ -449,7 +449,8 @@ let site_jobs = (message) => {
                     +
                 `
             </div>
-            <div class="d-flex flex-column">
+            <div style="border-left:0.2px solid #DFDAD9"></div>
+            <div class="d-flex flex-column ml-3">
                     <h5>${logs[focused_job].job_type}</h5>
                     <span>Completed in ${logs[focused_job].duration}</span>
             </div>
@@ -488,7 +489,7 @@ function standard_action_with_title_and_message(title, message, action_type = 'l
     `;
 }
 
-function iterate_list(data, template) {  // TODO: change name
+function iterate_list(data, template) {
     var html = '';
 
     for(let d of data) {
