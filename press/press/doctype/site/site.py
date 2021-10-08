@@ -106,7 +106,8 @@ class Site(Document):
 		# 	Agent(self.server).update_site_config(self)
 
 	def validate_notify_email(self):
-		frappe.utils.validate_email_address(self.notify_email, True)
+		if self.notify_email:
+			frappe.utils.validate_email_address(self.notify_email, True)
 
 	def on_update(self):
 		if self.status == "Active" and self.has_value_changed("host_name"):
