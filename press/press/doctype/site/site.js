@@ -153,7 +153,7 @@ let daily_usage = (message) => {
 
 let recent_activity = (message) => {
     let recent_activity = message.recent_activity;
-    return create_html(recent_activity, (activity) => {
+    return iterate_list(recent_activity, (activity) => {
         return `
             <div class="d-flex flex-column justify-between mb-2">
                 <h5>${activity.action} by ${activity.owner}</h5>
@@ -185,16 +185,16 @@ let site_info = (message) => {
         <div class="d-flex flex-row">
             <div class="d-flex flex-column w-50 mr-4">
             ` 
-                + standard_field_html('Site owner', info.owner.first_name) 
-                + standard_field_html('Created on', info.created_on)
-                + standard_field_html('Last deploy', info.last_deploy) 
+                + standard_input_with_title('Site owner', info.owner.first_name) 
+                + standard_input_with_title('Created on', info.created_on)
+                + standard_input_with_title('Last deploy', info.last_deploy) 
                 +
             `
             </div>
             <div class="d-flex flex-column w-50">
             `
-                + standard_action_html('Deactivate Site', "The site will go inactive and won't be publicly accessible") 
-                + standard_action_html('Drop Site', "Once you drop site your site, there is no going back", 'danger') 
+                + standard_action_with_title_and_message('Deactivate Site', "The site will go inactive and won't be publicly accessible") 
+                + standard_action_with_title_and_message('Drop Site', "Once you drop site your site, there is no going back", 'danger') 
                 +
             `
             </div>
@@ -211,7 +211,7 @@ let site_apps = (message) => {
                 <button class="btn btn-light ml-auto mb-4">Add App</button>
             </div>
             `
-                + create_html(installed_apps, (app) => {
+                + iterate_list(installed_apps, (app) => {
                     return `
                         <div class="d-flex flex-row justify-between mb-2">
                             <div class="d-flex flex-column">
@@ -239,7 +239,7 @@ let site_domain = (message) => {
                 <button class="btn btn-light ml-auto mb-4">Add Domain</button>
             </div>
             `
-                + create_html(domains, (domain) => {
+                + iterate_list(domains, (domain) => {
                     return `
                         <div class="d-flex flex-row justify-between mb-2">
                             <div class="d-flex flex-column">
@@ -368,7 +368,7 @@ let site_backups = (message) => {
                 <button class="btn btn-light ml-auto mb-4">Schedule a backup now</button>
             </div>
             `
-                + create_html(backups, (backup) => {
+                + iterate_list(backups, (backup) => {
                     return `
                         <div>
                             <p>Backup on ${backup.creation}</p>
@@ -384,10 +384,10 @@ let site_backups = (message) => {
 let restore_migrate_and_reset = `
     <div class="d-flex flex-column">
         `
-            + standard_action_html('Restore', 'Restore your database using a previous backup', 'light', 'Restore Database')
-            + standard_action_html('Migrate', 'Run bench migrate command on your database.', 'light', 'Migrate Database')
-            + standard_action_html('Reset', 'Reset your database to a clean state.', 'danger', 'Reset Database')
-            + standard_action_html('Clear Cache', "Clear your site's cache", 'danger')
+            + standard_action_with_title_and_message('Restore', 'Restore your database using a previous backup', 'light', 'Restore Database')
+            + standard_action_with_title_and_message('Migrate', 'Run bench migrate command on your database.', 'light', 'Migrate Database')
+            + standard_action_with_title_and_message('Reset', 'Reset your database to a clean state.', 'danger', 'Reset Database')
+            + standard_action_with_title_and_message('Clear Cache', "Clear your site's cache", 'danger')
             +
         `
     </div>
@@ -404,7 +404,7 @@ let site_config = (message) => {
             <div class="d-flex flex-row justify-between">
                 <div class="control-value like-disabled-input w-50">
                     <pre> site_config.js {`
-                        + create_html(configs, (config) => {
+                        + iterate_list(configs, (config) => {
                             return `
                                 <p>${config}</p>
                             `;
@@ -426,7 +426,7 @@ let site_jobs = (message) => {
             <div class="d-flex flex-column w-25 mr-5">
                 <span class="mb-4">History of jobs that ran on your site</span>
                 `
-                    + create_html(logs, (log) => {
+                    + iterate_list(logs, (log) => {
                         var pill_color = "";
                         if(log.status == "Success") {
                             pill_color = "green";
@@ -458,7 +458,7 @@ let site_jobs = (message) => {
 }
 
 // render function
-function standard_field_html(title, value) {
+function standard_input_with_title(title, value, restricted = true) {
     if(!value) {
         value = "";
     }
@@ -476,7 +476,7 @@ function standard_field_html(title, value) {
     `;
 }
 
-function standard_action_html(title, message, action_type = 'light', action = title) {
+function standard_action_with_title_and_message(title, message, action_type = 'light', action = title) {
     return `
         <div class="d-flex flex-column mb-3">
             <span class="font-weight-bold">${title}</span>
@@ -488,7 +488,7 @@ function standard_action_html(title, message, action_type = 'light', action = ti
     `;
 }
 
-function create_html(data, template) {  // TODO: change name
+function iterate_list(data, template) {  // TODO: change name
     var html = '';
 
     for(let d of data) {
