@@ -4,19 +4,18 @@
 
 from __future__ import unicode_literals
 
+from typing import List
+
 import frappe
 from frappe import _
 from frappe.contacts.address_and_contact import load_address_and_contact
 from frappe.model.document import Document
 from frappe.utils import get_fullname
-from press.utils.billing import (
-	get_erpnext_com_connection,
-	get_frappe_io_connection,
-	get_stripe,
-)
-from press.exceptions import FrappeioServerNotSet
 
+from press.exceptions import FrappeioServerNotSet
 from press.press.doctype.account_request.account_request import AccountRequest
+from press.utils.billing import (get_erpnext_com_connection,
+                                 get_frappe_io_connection, get_stripe)
 
 
 class Team(Document):
@@ -547,6 +546,16 @@ class Team(Document):
 	def create_upcoming_invoice(self):
 		today = frappe.utils.today()
 		return frappe.get_doc(doctype="Invoice", team=self.name, period_start=today).insert()
+
+	def notify_with_email(self, recipients: List[str], **kwargs):
+		if not self.send_notifications:
+			return
+		if not recipients:
+			recipients = [self.notify_email]
+
+		frappe.sendmail(
+			recipients=recipients, **kwargs,
+		)
 
 
 def get_team_members(team):
