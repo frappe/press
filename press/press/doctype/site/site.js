@@ -155,13 +155,6 @@ let recent_activity = (message) => {
     let recent_activity = message.recent_activity;
     return iterate_list(recent_activity, (activity) => {
         return standard_title_with_message_and_tag(activity.action + ' by ' + activity.owner, activity.creation);
-        
-        // `
-        //     <div class="d-flex flex-column justify-between mb-2">
-        //         <h5>${activity.action} by ${activity.owner}</h5>
-        //         <p>${activity.creation}</p>	
-        //     </div>
-        // `;
     });
 }
 
@@ -212,12 +205,14 @@ let site_apps = (message) => {
                 <p>Apps installed on your site</p>
                 <button class="btn btn-light ml-auto mb-4">Add App</button>
             </div>
-            `
-                + iterate_list(installed_apps, (app) => {
-                    return standard_title_with_message_and_tag(app.title, app.app + '/' + app.repository + ':' + app.branch, app.hash.substring(0,7), "indicator-pill blue");
-                })
-                +
-            `
+            <div>
+                `
+                    + iterate_list(installed_apps, (app) => {
+                        return standard_title_with_message_and_tag(app.title, app.app + '/' + app.repository + ':' + app.branch, app.hash.substring(0,7), "indicator-pill blue");
+                    })
+                    +
+                `
+            </div>
         </div>
     `;
 }
@@ -230,12 +225,14 @@ let site_domain = (message) => {
                 <p>Domains pointing to your site</p>
                 <button class="btn btn-light ml-auto mb-4">Add Domain</button>
             </div>
-            `
-                + iterate_list(domains, (domain) => {
-                    return standard_title_with_message_and_tag(null, domain.domain, domain.primary ? "Primary": "", "indicator-pill green")
-                })
-                +
-            `
+            <div>
+                `
+                    + iterate_list(domains, (domain) => {
+                        return standard_title_with_message_and_tag(null, domain.domain, domain.primary ? "Primary": "", "indicator-pill green")
+                    })
+                    +
+                `
+            </div>
         </div>
     `;
 }
@@ -350,12 +347,14 @@ let site_backups = (message) => {
                 <p>Backups are enabled and are scheduled to run every six hours.</p>
                 <button class="btn btn-light ml-auto mb-4">Schedule a backup now</button>
             </div>
-            `
-                + iterate_list(backups, (backup) => {
-                    return standard_title_with_message_and_tag(null, backup.creation);
-                })
-                +
-            `
+            <div>
+                `
+                    + iterate_list(backups, (backup) => {
+                        return standard_title_with_message_and_tag(null, backup.creation);
+                    })
+                    +
+                `
+            </div>
         </div>
     `;
 }
@@ -404,19 +403,21 @@ let site_jobs = (message) => {
         <div class="d-flex flex-row">
             <div class="d-flex flex-column w-25 mr-3">
                 <span class="mb-4">History of jobs that ran on your site</span>
-                `
-                    + iterate_list(logs, (log) => {
-                        var pill_color = "";
-                        if(log.status == "Success") {
-                            pill_color = "green";
-                        } else if(log.status == "Undelivered") {
-                            pill_color = "gray"
-                        }
+                <div>
+                    `
+                        + iterate_list(logs, (log) => {
+                            var pill_color = "";
+                            if(log.status == "Success") {
+                                pill_color = "green";
+                            } else if(log.status == "Undelivered") {
+                                pill_color = "gray"
+                            }
 
-                        return standard_title_with_message_and_tag(log.job_type, log.creation, log.status, "indicator-pill " + pill_color);
-                    })
-                    +
-                `
+                            return standard_title_with_message_and_tag(log.job_type, log.creation, log.status, "indicator-pill " + pill_color);
+                        })
+                        +
+                    `
+                </div>
             </div>
             <div style="border-left:0.2px solid #DFDAD9"></div>
             <div class="d-flex flex-column ml-3">
@@ -460,12 +461,12 @@ function standard_action_with_title_and_message(title, message, action_type = 'l
 
 function standard_title_with_message_and_tag(title, message, tag, tag_type = "") {
     return `
-        <div class="d-flex flex-row justify-between mb-2">
+        <div class="d-flex flex-column">
             <div class="d-flex flex-column">
                 <h5>${title ? title : ""}</h5>
-                <p>${message ? message : ""}</p>
             </div>
-            <div>
+            <div class="d-flex flex-row justify-between">
+                <p>${message ? message : ""}</p>
                 <p class="${tag_type}">${tag ? tag : ""}</p>
             </div>
         </div>
@@ -475,10 +476,10 @@ function standard_title_with_message_and_tag(title, message, tag, tag_type = "")
 function iterate_list(data, template) {
     var html = '';
 
-    for(let d of data) {
-        html += template(d);
+    for(var i = 0; i < data.length; i++) {
+        html += template(data[i]);
+        if(i != data.length -1 ) html += '<hr class="mt-1">';
     }
-    
     return html;
 }
 
