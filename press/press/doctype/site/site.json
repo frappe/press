@@ -48,7 +48,9 @@
   "remote_database_file",
   "column_break_34",
   "remote_private_file",
-  "remote_public_file"
+  "remote_public_file",
+  "notifications_section",
+  "notify_email"
  ],
  "fields": [
   {
@@ -352,6 +354,20 @@
    "fieldname": "skip_auto_updates",
    "fieldtype": "Check",
    "label": "Skip Auto Updates"
+  },
+  {
+   "default": "0",
+   "fetch_from": "team.notify_email",
+   "fetch_if_empty": 1,
+   "fieldname": "notify_email",
+   "fieldtype": "Data",
+   "label": "Notify Email"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "notifications_section",
+   "fieldtype": "Section Break",
+   "label": "Notifications"
   }
  ],
  "links": [
@@ -401,7 +417,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2021-09-28 11:40:46.460922",
+ "modified": "2021-10-07 14:53:39.875646",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
