@@ -566,8 +566,7 @@
   {
    "fieldname": "jobs_block",
    "fieldtype": "HTML",
-   "label": "Jobs Block",
-   "options": "JOBS WILL COME HERE"
+   "label": "Jobs Block"
   },
   {
    "fieldname": "logs_section",
@@ -675,7 +674,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2021-10-08 02:36:05.419385",
+ "modified": "2021-10-08 08:37:43.635712",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
