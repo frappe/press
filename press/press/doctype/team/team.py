@@ -31,9 +31,8 @@ class Team(Document):
 		self.validate_notify_email()
 
 	def after_insert(self):
-		if self.notify_email == 'admin@example.com':
+		if self.send_notifications:
 			self.notify_email = self.name
-		self.validate_notify_email()
 		self.save()
 
 	def delete(self, force=False, workflow=False):
