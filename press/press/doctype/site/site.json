@@ -576,8 +576,7 @@
   {
    "fieldname": "logs_block",
    "fieldtype": "HTML",
-   "label": "Logs Block",
-   "options": "LOGS WILL COME HERE"
+   "label": "Logs Block"
   },
   {
    "fieldname": "activity_section",
@@ -587,8 +586,7 @@
   {
    "fieldname": "activity_block",
    "fieldtype": "HTML",
-   "label": "Activity Block",
-   "options": "ACTIVITY WILL COME HERE"
+   "label": "Activity Block"
   },
   {
    "fieldname": "settings_tab_break",
@@ -674,7 +672,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2021-10-08 08:37:43.635712",
+ "modified": "2021-10-08 19:21:41.129031",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
