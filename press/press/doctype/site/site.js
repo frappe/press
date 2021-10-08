@@ -33,6 +33,9 @@ frappe.ui.form.on('Site', {
         // Jobs
         show_data(frm, site_jobs, 'jobs_block', 'press.api.site.jobs');
 
+        // Logs
+        show_data(frm, site_logs, 'logs_block', 'press.api.site.logs');
+
         // Activity
         show_data(frm, site_activity, 'activity_block', 'press.api.site.activities');
 
@@ -399,12 +402,44 @@ let site_config = (message) => {
 }
 
 let site_jobs = (message) => {
-    let logs = message;
+    let jobs = message;
     var focused_job = 0;
     return `
         <div class="d-flex flex-row">
             <div class="d-flex flex-column w-25 mr-4">
                 <span class="mb-4">History of jobs that ran on your site</span>
+                <div>
+                    `
+                        + iterate_list(jobs, (job) => {
+                            var pill_color = "";
+                            if(job.status == "Success") {
+                                pill_color = "green";
+                            } else if(job.status == "Undelivered") {
+                                pill_color = "gray"
+                            }
+
+                            return standard_title_with_message_and_tag(job.job_type, job.creation, job.status, "indicator-pill " + pill_color);
+                        })
+                        +
+                    `
+                </div>
+            </div>
+            <div style="border-left:0.2px solid #DFDAD9"></div>
+            <div class="d-flex flex-column ml-3">
+                    <h5>${jobs[focused_job].job_type}</h5>
+                    <span>Completed in ${jobs[focused_job].duration}</span>
+            </div>
+        </div>
+    `;
+}
+
+let site_logs = (message) => {
+    let logs = message;
+    var focused_job = 0;
+    return `
+        <div class="d-flex flex-row">
+            <div class="d-flex flex-column w-25 mr-4">
+                <span class="mb-4">Available Logs for your site</span>
                 <div>
                     `
                         + iterate_list(logs, (log) => {
@@ -415,7 +450,7 @@ let site_jobs = (message) => {
                                 pill_color = "gray"
                             }
 
-                            return standard_title_with_message_and_tag(log.job_type, log.creation, log.status, "indicator-pill " + pill_color);
+                            return standard_title_with_message_and_tag(log.name, log.created);
                         })
                         +
                     `
@@ -423,8 +458,7 @@ let site_jobs = (message) => {
             </div>
             <div style="border-left:0.2px solid #DFDAD9"></div>
             <div class="d-flex flex-column ml-3">
-                    <h5>${logs[focused_job].job_type}</h5>
-                    <span>Completed in ${logs[focused_job].duration}</span>
+                    <h5>${logs[focused_job].name}</h5>
             </div>
         </div>
     `;
@@ -432,7 +466,6 @@ let site_jobs = (message) => {
 
 let site_activity = (message) => {
     let activities = message;
-    console.log(activities);
     return `
         <div class="d-flex flex-row">
             <div class="d-flex flex-column w-50 mr-4">
