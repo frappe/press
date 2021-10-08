@@ -30,6 +30,9 @@ frappe.ui.form.on('Site', {
         // Site Config
         show_data(frm, site_config, 'site_config_block', 'press.api.site.site_config');
 
+        // Jobs
+        show_data(frm, site_jobs, 'jobs_block', 'press.api.site.jobs');
+
 		frm.set_query('bench', function () {
 			return {
 				filters: {
@@ -391,7 +394,6 @@ let restore_migrate_and_reset = `
 `;
 
 let site_config = (message) => {
-    console.log(message);
     let configs = message;
     return `
         <div class="d-flex flex-column">
@@ -410,6 +412,46 @@ let site_config = (message) => {
                         +
                     `}</pre>
                 </div>
+            </div>
+        </div>
+    `;
+}
+
+let site_jobs = (message) => {
+    console.log(message);
+    let logs = message;
+    var focused_job = 0;
+    return `
+        <div class="d-flex flex-row">
+            <div class="d-flex flex-column w-25 mr-5">
+                <span class="mb-4">History of jobs that ran on your site</span>
+                `
+                    + create_html(logs, (log) => {
+                        var pill_color = "";
+                        if(log.status == "Success") {
+                            pill_color = "green";
+                        } else if(log.status == "Undelivered") {
+                            pill_color = "gray"
+                        }
+
+                        return `
+                            <div class="d-flex flex-row mb-3 justify-between">
+                                <div class="d-flex flex-column">
+                                    <h5>${log.job_type}</h5>
+                                    <span>${log.creation}</span>
+                                </div>
+                                <div>
+                                    <span class="indicator-pill ${pill_color}">${log.status}</span>
+                                </div>
+                            </div>
+                        `;
+                    })
+                    +
+                `
+            </div>
+            <div class="d-flex flex-column">
+                    <h5>${logs[focused_job].job_type}</h5>
+                    <span>Completed in ${logs[focused_job].duration}</span>
             </div>
         </div>
     `;
