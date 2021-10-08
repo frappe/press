@@ -152,12 +152,12 @@ export default {
 			this.$confirm({
 				title: 'Login as Administrator',
 				message:
-					'Please enter reason for this login. Site owner will be notified of this action.',
+					'Please enter reason for this login.',
 				actionLabel: 'Login',
 				textBox: true,
 				action: (closeDialog, textBoxInput) => {
 					let reason = textBoxInput;
-					if (textBoxInput !== null) {
+					if (textBoxInput.length === 0 || !textBoxInput.trim()) {
 						this.$resources.loginAsAdmin.submit({
 							name: this.siteName,
 							reason: reason

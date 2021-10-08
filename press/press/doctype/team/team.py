@@ -28,6 +28,12 @@ class Team(Document):
 		self.set_team_currency()
 		self.set_default_user()
 		self.set_billing_name()
+		self.validate_notify_email()
+
+	def after_insert(self):
+		if self.send_notifications:
+			self.notify_email = self.name
+		self.save()
 
 	def delete(self, force=False, workflow=False):
 		if force:
@@ -167,6 +173,10 @@ class Team(Document):
 				doc = frappe.get_doc("Stripe Payment Method", pm.name)
 				doc.is_default = 0
 				doc.save()
+
+	def validate_notify_email(self):
+		if self.notify_email:
+			frappe.utils.validate_email_address(self.notify_email, True)
 
 	def on_update(self):
 		self.validate_payment_mode()
