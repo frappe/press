@@ -154,12 +154,14 @@ let daily_usage = (message) => {
 let recent_activity = (message) => {
     let recent_activity = message.recent_activity;
     return iterate_list(recent_activity, (activity) => {
-        return `
-            <div class="d-flex flex-column justify-between mb-2">
-                <h5>${activity.action} by ${activity.owner}</h5>
-                <p>${activity.creation}</p>	
-            </div>
-        `;
+        return standard_title_with_message_and_tag(activity.action + ' by ' + activity.owner, activity.creation);
+        
+        // `
+        //     <div class="d-flex flex-column justify-between mb-2">
+        //         <h5>${activity.action} by ${activity.owner}</h5>
+        //         <p>${activity.creation}</p>	
+        //     </div>
+        // `;
     });
 }
 
@@ -212,17 +214,7 @@ let site_apps = (message) => {
             </div>
             `
                 + iterate_list(installed_apps, (app) => {
-                    return `
-                        <div class="d-flex flex-row justify-between mb-2">
-                            <div class="d-flex flex-column">
-                                <h5>${app.title}</h5>
-                                <p>${app.app + '/' + app.repository + ':' + app.branch}</p>
-                            </div>
-                            <div>
-                                <p class="indicator-pill blue">${app.hash.substring(0,7)}</p>
-                            </div>
-                        </div>
-                    `
+                    return standard_title_with_message_and_tag(app.title, app.app + '/' + app.repository + ':' + app.branch, app.hash.substring(0,7), "indicator-pill blue");
                 })
                 +
             `
@@ -240,16 +232,7 @@ let site_domain = (message) => {
             </div>
             `
                 + iterate_list(domains, (domain) => {
-                    return `
-                        <div class="d-flex flex-row justify-between mb-2">
-                            <div class="d-flex flex-column">
-                                <p>${domain.domain}</p>
-                            </div>
-                            <div>
-                                <p class="indicator-pill green">${domain.primary ? "Primary": ""}</p>
-                            </div>
-                        </div>
-                    `
+                    return standard_title_with_message_and_tag(null, domain.domain, domain.primary ? "Primary": "", "indicator-pill green")
                 })
                 +
             `
@@ -369,11 +352,7 @@ let site_backups = (message) => {
             </div>
             `
                 + iterate_list(backups, (backup) => {
-                    return `
-                        <div>
-                            <p>Backup on ${backup.creation}</p>
-                        </div>
-                    `;
+                    return standard_title_with_message_and_tag(null, backup.creation);
                 })
                 +
             `
@@ -434,17 +413,7 @@ let site_jobs = (message) => {
                             pill_color = "gray"
                         }
 
-                        return `
-                            <div class="d-flex flex-row mb-3 justify-between">
-                                <div class="d-flex flex-column">
-                                    <h5>${log.job_type}</h5>
-                                    <span>${log.creation}</span>
-                                </div>
-                                <div>
-                                    <span class="indicator-pill ${pill_color}">${log.status}</span>
-                                </div>
-                            </div>
-                        `;
+                        return standard_title_with_message_and_tag(log.job_type, log.creation, log.status, "indicator-pill " + pill_color);
                     })
                     +
                 `
@@ -458,7 +427,7 @@ let site_jobs = (message) => {
     `;
 }
 
-// render function
+// render components
 function standard_input_with_title(title, value, restricted = true) {
     if(!value) {
         value = "";
@@ -484,6 +453,20 @@ function standard_action_with_title_and_message(title, message, action_type = 'l
             <div class="d-flex flex-row justify-between mt-2">
                 <p>${message}</p>
                 <button class="btn btn-` + action_type + `">${action}</button>
+            </div>
+        </div>
+    `;
+}
+
+function standard_title_with_message_and_tag(title, message, tag, tag_type = "") {
+    return `
+        <div class="d-flex flex-row justify-between mb-2">
+            <div class="d-flex flex-column">
+                <h5>${title ? title : ""}</h5>
+                <p>${message ? message : ""}</p>
+            </div>
+            <div>
+                <p class="${tag_type}">${tag ? tag : ""}</p>
             </div>
         </div>
     `;
