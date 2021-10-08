@@ -33,6 +33,9 @@ frappe.ui.form.on('Site', {
         // Jobs
         show_data(frm, site_jobs, 'jobs_block', 'press.api.site.jobs');
 
+        // Activity
+        show_data(frm, site_activity, 'activity_block', 'press.api.site.activities');
+
 		frm.set_query('bench', function () {
 			return {
 				filters: {
@@ -396,12 +399,11 @@ let site_config = (message) => {
 }
 
 let site_jobs = (message) => {
-    console.log(message);
     let logs = message;
     var focused_job = 0;
     return `
         <div class="d-flex flex-row">
-            <div class="d-flex flex-column w-25 mr-3">
+            <div class="d-flex flex-column w-25 mr-4">
                 <span class="mb-4">History of jobs that ran on your site</span>
                 <div>
                     `
@@ -424,6 +426,27 @@ let site_jobs = (message) => {
                     <h5>${logs[focused_job].job_type}</h5>
                     <span>Completed in ${logs[focused_job].duration}</span>
             </div>
+        </div>
+    `;
+}
+
+let site_activity = (message) => {
+    let activities = message;
+    console.log(activities);
+    return `
+        <div class="d-flex flex-row">
+            <div class="d-flex flex-column w-50 mr-4">
+                <span class="mb-4">History of jobs that ran on your site</span>
+                <div>
+                    `
+                        + iterate_list(activities, (activity) => {
+                            return standard_title_with_message_and_tag(activity.action + ' by ' + activity.owner, activity.creation);
+                        })
+                        +
+                    `
+                </div>
+            </div>
+            <div style="border-left:0.2px solid #DFDAD9"></div>
         </div>
     `;
 }
