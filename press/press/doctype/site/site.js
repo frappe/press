@@ -153,22 +153,18 @@ let site_activation = (events) => {
 
 let daily_usage = (message) => {
     let data = message.data;
-    html = ``;
     if(data.length > 0) {
-        html =  `
+        return `
             <div class="">
                 Daily Usage: ${data}
             </div>
         `;
     } else {
-        html =  `
+        return `
             <div class="d-flex justify-content-center">
                 <p class="m-3 mb-4">No data yet</p>
             </div>
         `;
-    }
-    return {
-        html: html
     }
 };
 
@@ -560,13 +556,6 @@ let site_logs = (message) => {
                 <div>
                     `
                         + iterate_list(logs, (log) => {
-                            var pill_color = "";
-                            if(log.status == "Success") {
-                                pill_color = "green";
-                            } else if(log.status == "Undelivered") {
-                                pill_color = "gray"
-                            }
-
                             return standard_title_with_message_and_tag(log.name, log.created);
                         })
                         +
