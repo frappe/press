@@ -25,7 +25,7 @@ frappe.ui.form.on('Site', {
 
         // Backups & Restore
         show_data(frm, site_backups, 'site_backups_block', 'press.api.site.backups');
-        show_block(frm, 'restore_migrate_and_reset_block', restore_migrate_and_reset);
+        show_block_with_events(frm, 'restore_migrate_and_reset_block', restore_migrate_and_reset);
 
         // Site Config
         show_data(frm, site_config, 'site_config_block', 'press.api.site.site_config');
@@ -142,18 +142,22 @@ let site_activation = `
 
 let daily_usage = (message) => {
     let data = message.data;
+    html = ``;
     if(data.length > 0) {
-        return `
+        html =  `
             <div class="">
                 Daily Usage: ${data}
             </div>
         `;
     } else {
-        return `
+        html =  `
             <div class="d-flex justify-content-center">
                 <p class="m-3 mb-4">No data yet</p>
             </div>
         `;
+    }
+    return {
+        html: html
     }
 };
 
@@ -180,13 +184,13 @@ let site_plan = (message) => {
     }
 }
 
-let site_info = (message) => {
-    let info = message.info; 
+let site_info = (message, events) => {
+    let info = message.info;
     return `
         <div class="d-flex flex-row">
             <div class="d-flex flex-column w-50 mr-4">
             ` 
-                + standard_input_with_title('Site owner', info.owner.first_name) 
+                + standard_input_with_title('Site owner', info.owner.first_name)
                 + standard_input_with_title('Created on', info.created_on)
                 + standard_input_with_title('Last deploy', info.last_deploy) 
                 +
@@ -194,8 +198,25 @@ let site_info = (message) => {
             </div>
             <div class="d-flex flex-column w-50">
             `
-                + standard_action_with_title_and_message('Deactivate Site', "The site will go inactive and won't be publicly accessible") 
-                + standard_action_with_title_and_message('Drop Site', "Once you drop site your site, there is no going back", 'danger') 
+                + standard_action_with_title_and_message({
+                    title: 'Deactivate Site',
+                    message: "The site will go inactive and won't be publicly accessible",
+                    btn_name: 'deactivate-site',
+                    events: events,
+                    action: () => {
+                        frappe.msgprint(__('Deactivate Site'));
+                    }
+                })
+                + standard_action_with_title_and_message({
+                    title: 'Drop Site',
+                    message: "Once you drop site your site, there is no going back",
+                    btn_name: 'drop-site',
+                    btn_type: 'danger',
+                    events: events,
+                    action: () => {
+                        frappe.msgprint(__('Drop Site'));
+                    }
+                })
                 +
             `
             </div>
@@ -365,17 +386,59 @@ let site_backups = (message) => {
     `;
 }
 
-let restore_migrate_and_reset = `
-    <div class="d-flex flex-column">
-        `
-            + standard_action_with_title_and_message('Restore', 'Restore your database using a previous backup', 'light', 'Restore Database')
-            + standard_action_with_title_and_message('Migrate', 'Run bench migrate command on your database.', 'light', 'Migrate Database')
-            + standard_action_with_title_and_message('Reset', 'Reset your database to a clean state.', 'danger', 'Reset Database')
-            + standard_action_with_title_and_message('Clear Cache', "Clear your site's cache", 'danger')
-            +
-        `
-    </div>
-`;
+let restore_migrate_and_reset = (events) => {
+    return `
+        <div class="d-flex flex-column">
+            `
+                + standard_action_with_title_and_message({
+                    title: 'Restore',
+                    message: "Restore your database using a previous backup",
+                    btn_name: 'restore-database',
+                    btn_title: 'Restore Database',
+                    btn_type: 'light',
+                    events: events,
+                    action: () => {
+                        frappe.msgprint(__('Restore Database'));
+                    }
+                })
+                + standard_action_with_title_and_message({
+                    title: 'Migrate',
+                    message: "Run bench migrate command on your database.",
+                    btn_name: 'migrate-database',
+                    btn_title: 'Migrate Database',
+                    btn_type: 'light',
+                    events: events,
+                    action: () => {
+                        frappe.msgprint(__('Migrate Database'));
+                    }
+                })
+                + standard_action_with_title_and_message({
+                    title: 'Reset',
+                    message: "Reset your database to a clean state.",
+                    btn_name: 'reset-database',
+                    btn_title: 'Reset Database',
+                    btn_type: 'danger',
+                    events: events,
+                    action: () => {
+                        frappe.msgprint(__('Reset Database'));
+                    }
+                })
+                + standard_action_with_title_and_message({
+                    title: 'Clear Cache',
+                    message: "Clear your site's cache",
+                    btn_name: 'clear-cache',
+                    btn_title: 'Clear Cache',
+                    btn_type: 'danger',
+                    events: events,
+                    action: () => {
+                        frappe.msgprint(__('Clear Cache'));
+                    }
+                })
+                +
+            `
+        </div>
+    `;
+}
 
 let site_config = (message) => {
     let configs = message;
@@ -469,7 +532,7 @@ let site_activity = (message) => {
     return `
         <div class="d-flex flex-row">
             <div class="d-flex flex-column w-50 mr-4">
-                <span class="mb-4">History of jobs that ran on your site</span>
+                <span class="mb-4">Log of activities performed on your site</span>
                 <div>
                     `
                         + iterate_list(activities, (activity) => {
@@ -503,13 +566,22 @@ function standard_input_with_title(title, value, restricted = true) {
     `;
 }
 
-function standard_action_with_title_and_message(title, message, action_type = 'light', action = title) {
+function standard_action_with_title_and_message({title, message, btn_type = 'light', btn_name, btn_title = title, events, action}) {
     return `
         <div class="d-flex flex-column mb-3">
             <span class="font-weight-bold">${title}</span>
             <div class="d-flex flex-row justify-between mt-2">
                 <p>${message}</p>
-                <button class="btn btn-` + action_type + `">${action}</button>
+                `
+                    + standard_button({
+                        name: btn_name,
+                        title: btn_title,
+                        tag: 'btn-' + btn_type,
+                        events: events,
+                        onclick: action
+                    })
+                    +
+                `
             </div>
         </div>
     `;
@@ -529,29 +601,48 @@ function standard_title_with_message_and_tag(title, message, tag, tag_type = "")
     `;
 }
 
+function standard_button({name, title, tag, events = [], onclick = () => {frappe.msgprint(__('Button click'))}}) {
+    events.push({name: name, action: onclick});
+    return `
+        <button class="${name} btn ${tag}">
+            <span>${title}</span>
+        </button>
+    `;
+}
+
 function iterate_list(data, template) {
     var html = '';
 
     for(var i = 0; i < data.length; i++) {
         html += template(data[i]);
-        if(i != data.length -1 ) html += '<hr class="mt-1">';
+        if(i != data.length - 1 ) html += '<hr class="mt-1">';
     }
     return html;
 }
 
 function show_data(frm, template, block, method, args = {name: frm.docname}) {
-	frappe
+	let events = [];
+    frappe
 		.call({
             method: method,
             args: args
         })
 		.then((res) => {
-            show_block(frm, block, template(res.message));
+            show_block(frm, block, template(res.message, events), events);
 		});
 }
 
-function show_block(frm, block, html) {
+function show_block_with_events(frm, block, html) {
+    let events = [];
+    show_block(frm, block, html(events), events)
+}
+
+function show_block(frm, block, html, events = []) {
     let wrapper = frm.get_field(block).$wrapper;
     wrapper.empty();
     wrapper.append(`${html}`);
+
+    for(let event of events) {
+        wrapper.find("." + event.name).on('click', event.action);
+    }
 }
