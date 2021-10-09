@@ -4,7 +4,7 @@
 frappe.ui.form.on('Site', {
 	onload: function (frm) {
         if(frm.get_field("setup_wizard_complete")) {
-            show_block(frm, 'site_activation_block', site_activation);
+            show_block_with_events(frm, 'site_activation_block', site_activation);
         }
 
         // Overview
@@ -128,17 +128,28 @@ frappe.ui.form.on('Site', {
 
 // custom html
 
-let site_activation = `
-    <div class="flex flex-row justify-between align-items-center">
-        <div class="d-flex flex-row">
-            <strong class="mr-3">Site Activation</strong>
-            <p>Please login and complete the setup wizard on your site. Analytics will be collected only after setup is complete.</p>
+let site_activation = (events) => {
+    return `
+        <div class="flex flex-row justify-between align-items-center">
+            <div class="d-flex flex-row">
+                <strong class="mr-3">Site Activation</strong>
+                <p>Please login and complete the setup wizard on your site. Analytics will be collected only after setup is complete.</p>
+            </div>
+            `
+                + standard_button({
+                    name: 'login',
+                    title: 'Login',
+                    tag: 'btn-primary',
+                    events: events,
+                    onclick: () => {
+                        frappe.msgprint(__('Login'));
+                    }
+                })
+                +
+            `
         </div>
-        <button class="btn btn-primary">
-            Login
-        </button>
-    </div>
-`;
+    `;
+}
 
 let daily_usage = (message) => {
     let data = message.data;
@@ -224,13 +235,24 @@ let site_info = (message, events) => {
     `;
 }
 
-let site_apps = (message) => {
+let site_apps = (message, events) => {
     let installed_apps = message.installed_apps;
     return `
         <div class="d-flex flex-column">
             <div class="d-flex flex-row">
                 <p>Apps installed on your site</p>
-                <button class="btn btn-light ml-auto mb-4">Add App</button>
+                `
+                    + standard_button({
+                        name: 'add-app',
+                        title: 'Add App',
+                        tag: 'btn-light ml-auto mb-4',
+                        events: events,
+                        onclick: () => {
+                            frappe.msgprint(__('Add App'));
+                        }
+                    })
+                    +
+                `
             </div>
             <div>
                 `
@@ -244,13 +266,24 @@ let site_apps = (message) => {
     `;
 }
 
-let site_domain = (message) => {
+let site_domain = (message, events) => {
     let domains = message.domains;
     return `
         <div class="d-flex flex-column">
             <div class="d-flex flex-row">
                 <p>Domains pointing to your site</p>
-                <button class="btn btn-light ml-auto mb-4">Add Domain</button>
+                `
+                    + standard_button({
+                        name: 'add-domain',
+                        title: 'Add Domain',
+                        tag: 'btn-light ml-auto mb-4',
+                        events: events,
+                        onclick: () => {
+                            frappe.msgprint(__('Add Domain'));
+                        }
+                    })
+                    +
+                `
             </div>
             <div>
                 `
@@ -366,13 +399,24 @@ let background_jobs_cpu_usage = (message) => {
     }
 };
 
-let site_backups = (message) => {
+let site_backups = (message, events) => {
     let backups = message;
     return `
         <div class="d-flex flex-column">
             <div class="d-flex flex-row">
                 <p>Backups are enabled and are scheduled to run every six hours.</p>
-                <button class="btn btn-light ml-auto mb-4">Schedule a backup now</button>
+                `
+                    + standard_button({
+                        name: 'schedule-backup-now',
+                        title: 'Schedule a backup now',
+                        tag: 'btn-light ml-auto mb-4',
+                        events: events,
+                        onclick: () => {
+                            frappe.msgprint(__('Schedule a backup now'));
+                        }
+                    })
+                    +
+                `
             </div>
             <div>
                 `
@@ -440,13 +484,23 @@ let restore_migrate_and_reset = (events) => {
     `;
 }
 
-let site_config = (message) => {
+let site_config = (message, events) => {
     let configs = message;
     return `
         <div class="d-flex flex-column">
             <div class="d-flex flex-row justify-between">
                 <span>Add and update key value pairs to your site's site_config.json</span>
-                <button class="btn btn-light">Edit Config</button>
+                `
+                    + standard_button({
+                        name: 'edit-config',
+                        title: 'Edit Config',
+                        events: events,
+                        onclick: () => {
+                            frappe.msgprint(__('Edit Config'));
+                        }
+                    })
+                    +
+                `
             </div>
             <div class="d-flex flex-row justify-between">
                 <div class="control-value like-disabled-input w-50">
@@ -601,7 +655,7 @@ function standard_title_with_message_and_tag(title, message, tag, tag_type = "")
     `;
 }
 
-function standard_button({name, title, tag, events = [], onclick = () => {frappe.msgprint(__('Button click'))}}) {
+function standard_button({name, title, tag = 'btn-light', events = [], onclick = () => {frappe.msgprint(__('Button click'))}}) {
     events.push({name: name, action: onclick});
     return `
         <button class="${name} btn ${tag}">
