@@ -53,8 +53,10 @@ class UserSSHCertificate(Document):
 		if not self.key_type:
 			frappe.throw("Could not guess the key type. Please check your public key.")
 
+		tmp_pub_file_prefix = f"/tmp/id_{self.key_type}-{self.name}"
+		tmp_pub_file = tmp_pub_file_prefix + ".pub"
 		# write the public key to a /tmp file
-		with open(f"/tmp/id_{self.key_type}-{self.name}.pub", "w") as public_key:
+		with open(tmp_pub_file, "w") as public_key:
 			public_key.write(self.ssh_public_key)
 			public_key.flush()
 
@@ -63,8 +65,7 @@ class UserSSHCertificate(Document):
 		# try generating a certificate for the /tmp key.
 		try:
 			command = (
-				f"ssh-keygen -s ca -I {self.name} -n {principal} -V +{self.validity}"
-				f" /tmp/id_{self.key_type}-{self.name}.pub"
+				f"ssh-keygen -s ca -I {self.name} -n {principal} -V +{self.validity} {tmp_pub_file}"
 			)
 			subprocess.check_output(shlex.split(command), cwd="/etc/ssh")
 		except subprocess.CalledProcessError:
@@ -72,7 +73,7 @@ class UserSSHCertificate(Document):
 				"Failed to generate a certificate for the specified key. Please try again."
 			)
 		process = subprocess.Popen(
-			shlex.split(f"ssh-keygen -Lf /tmp/id_{self.key_type}-{self.name}-cert.pub"),
+			shlex.split(f"ssh-keygen -Lf {tmp_pub_file_prefix}-cert.pub"),
 			stdout=subprocess.PIPE,
 		)
 		self.certificate_details = safe_decode(process.communicate()[0])
