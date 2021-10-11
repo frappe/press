@@ -2,15 +2,15 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
+import re
+import jwt
 import frappe
 import requests
-import jwt
-import re
 
-from datetime import datetime, timedelta
 from pathlib import Path
-from press.utils import get_current_team, log_error
 from base64 import b64decode
+from datetime import datetime, timedelta
+from press.utils import get_current_team, log_error
 
 
 @frappe.whitelist(allow_guest=True, xss_safe=True)
