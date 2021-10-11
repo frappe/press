@@ -1,6 +1,9 @@
 import frappe
 
 from frappe.utils import comma_and
+from press.experimental.doctype.feature_traction.feature_traction import (
+	log_feature_traction,
+)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -10,24 +13,21 @@ def deploy():
 	apps = args.get("apps")
 	source = args.get("source")
 
-	validate_app_list(apps)
+	log_data = f"""
+Quick Deploy Method\n
+Apps to be installed: {apps}
+"""
+	log_feature_traction(
+		title="Try on FC Button",
+		source=source,
+		log=log_data,
+		path=getattr(frappe.request, "full_path", "NOTFOUND"),
+	)
 
-	# TODO (WIP):
-	# 	1. Check if all apps are valid (fn<validate_app_list>)
-	# 	2. Append the "fc_quick_site" custom app (does not exist yet)
-	# 	3. Create a new site and set browser cookies (or maybe localStorage)
-	# 		a. Check out: frappe.local.cookie_manager.set_cookie
-	# 		b. Check out: Site "sid" etc.
-	# 		c. Mark the site 'Quick deploy' (flag in doctype?)
-	# [TBD]
-
-	if source:
-		log_traction_source(source)
-
-	return {"apps": apps.split(","), "source": source}
+	redirect_to_home()
 
 
-def validate_app_list(apps):
+def validate_app_list(apps: str):
 	if not apps:
 		frappe.throw("Param 'apps' is required!")
 
@@ -43,5 +43,7 @@ def validate_app_list(apps):
 		)
 
 
-def log_traction_source(source):
-	pass
+def redirect_to_home():
+	frappe.local.response["type"] = "redirect"
+	frappe.local.response["location"] = "/"
+	frappe.db.commit()
