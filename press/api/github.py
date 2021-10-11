@@ -185,6 +185,8 @@ def app(installation, owner, repository, branch):
 	tree = _generate_files_tree(contents["tree"])
 	app_name = None
 	title = None
+	reason_for_invalidation = ""
+
 	if "setup.py" in tree and "requirements.txt" in tree:
 		for directory, files in tree.items():
 			if files and ("hooks.py" in files) and ("patches.txt" in files):
@@ -199,9 +201,19 @@ def app(installation, owner, repository, branch):
 				if match:
 					title = match.group(1)
 				break
+			else:
+				reason_for_invalidation = (
+					f"Files {frappe.bold('hooks.py or patches.txt')} does not exist"
+					f" inside {directory}/{directory} directory."
+				)
+	else:
+		reason_for_invalidation = (
+			f"Files {frappe.bold('setup.py or requirements.txt')} does not exist in app"
+			" directory."
+		)
 
 	if not (app_name and title):
-		frappe.throw("Not a valid Frappe App!")
+		frappe.throw(f"Not a valid Frappe App! {reason_for_invalidation}")
 
 	return {"name": app_name, "title": title}
 
