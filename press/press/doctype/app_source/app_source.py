@@ -5,6 +5,7 @@
 import frappe
 import requests
 
+from typing import List
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 from press.api.github import get_access_token
@@ -102,7 +103,7 @@ class AppSource(Document):
 
 
 def create_app_source(
-	app: str, repository_url: str, branch: str, version: str
+	app: str, repository_url: str, branch: str, versions: List[str]
 ) -> AppSource:
 	team = get_current_team()
 
@@ -113,7 +114,7 @@ def create_app_source(
 			"repository_url": repository_url,
 			"branch": branch,
 			"team": team,
-			"versions": [{"version": version}],
+			"versions": [{"version": version} for version in versions],
 		}
 	)
 
