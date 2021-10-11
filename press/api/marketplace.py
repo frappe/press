@@ -4,15 +4,15 @@
 
 import frappe
 
-from frappe.core.utils import find
 from typing import Dict, List
+from frappe.core.utils import find
 from press.api.bench import options
 from press.api.site import protected
-from press.utils import get_current_team, get_last_doc, unique, get_app_tag
 from press.press.doctype.app.app import new_app as new_app_doc
 from press.press.doctype.app_source.app_source import AppSource
-from press.press.doctype.marketplace_app.marketplace_app import MarketplaceApp
 from press.press.doctype.app_release.app_release import AppRelease
+from press.utils import get_current_team, get_last_doc, unique, get_app_tag
+from press.press.doctype.marketplace_app.marketplace_app import MarketplaceApp
 from press.press.doctype.app_release_approval_request.app_release_approval_request import (
 	AppReleaseApprovalRequest,
 )
