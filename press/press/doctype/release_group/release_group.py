@@ -304,12 +304,12 @@ class ReleaseGroup(Document):
 		if required_app_source:
 			required_app_source = required_app_source[0]
 		else:
-			version = frappe.get_all(
+			versions = frappe.get_all(
 				"App Source Version", filters={"parent": current_app_source.name}, pluck="version"
-			)[0]
+			)
 
 			required_app_source = create_app_source(
-				app, current_app_source.repository_url, to_branch, version
+				app, current_app_source.repository_url, to_branch, versions
 			)
 
 			required_app_source.github_installation_id = (

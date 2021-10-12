@@ -50,7 +50,6 @@
 				v-for="option in selectOptions"
 				:key="option.value"
 				:value="option.value"
-				:disabled="!option.value"
 				:selected="value === option.value"
 			>
 				{{ option.label }}

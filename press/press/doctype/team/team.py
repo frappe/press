@@ -4,6 +4,8 @@
 
 from __future__ import unicode_literals
 
+from typing import List
+
 import frappe
 from frappe import _
 from frappe.contacts.address_and_contact import load_address_and_contact
@@ -12,11 +14,8 @@ from frappe.utils import get_fullname
 
 from press.exceptions import FrappeioServerNotSet
 from press.press.doctype.account_request.account_request import AccountRequest
-from press.utils.billing import (
-	get_erpnext_com_connection,
-	get_frappe_io_connection,
-	get_stripe,
-)
+from press.utils.billing import (get_erpnext_com_connection,
+                                 get_frappe_io_connection, get_stripe)
 
 
 class Team(Document):
@@ -28,7 +27,12 @@ class Team(Document):
 		self.set_team_currency()
 		self.set_default_user()
 		self.set_billing_name()
-		self.validate_disabled_team()
+		self.validate_notify_email()
+
+	def after_insert(self):
+		if self.send_notifications:
+			self.notify_email = self.name
+		self.save()
 
 	def delete(self, force=False, workflow=False):
 		if force:
@@ -168,6 +172,10 @@ class Team(Document):
 				doc = frappe.get_doc("Stripe Payment Method", pm.name)
 				doc.is_default = 0
 				doc.save()
+
+	def validate_notify_email(self):
+		if self.notify_email:
+			frappe.utils.validate_email_address(self.notify_email, True)
 
 	def on_update(self):
 		self.validate_payment_mode()
@@ -538,6 +546,16 @@ class Team(Document):
 	def create_upcoming_invoice(self):
 		today = frappe.utils.today()
 		return frappe.get_doc(doctype="Invoice", team=self.name, period_start=today).insert()
+
+	def notify_with_email(self, recipients: List[str], **kwargs):
+		if not self.send_notifications:
+			return
+		if not recipients:
+			recipients = [self.notify_email]
+
+		frappe.sendmail(
+			recipients=recipients, **kwargs,
+		)
 
 
 def get_team_members(team):
