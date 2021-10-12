@@ -31,14 +31,6 @@ class Team(Document):
 		self.set_default_user()
 		self.set_billing_name()
 		self.validate_disabled_team()
-		self.generate_ssh_fingerprint()
-
-	def generate_ssh_fingerprint(self):
-		if self.ssh_public_key:
-			ssh_key_b64 = base64.b64decode(self.ssh_public_key.strip().split()[1])
-			sha256_sum = hashlib.sha256()
-			sha256_sum.update(ssh_key_b64)
-			self.ssh_fingerprint = safe_decode(base64.b64encode(sha256_sum.digest()))
 
 	def delete(self, force=False, workflow=False):
 		if force:
