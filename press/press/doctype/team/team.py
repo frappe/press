@@ -3,22 +3,20 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
-import base64
-import hashlib
 
 import frappe
-from frappe import _, safe_decode
+from frappe import _
 from frappe.contacts.address_and_contact import load_address_and_contact
 from frappe.model.document import Document
 from frappe.utils import get_fullname
+
+from press.exceptions import FrappeioServerNotSet
+from press.press.doctype.account_request.account_request import AccountRequest
 from press.utils.billing import (
 	get_erpnext_com_connection,
 	get_frappe_io_connection,
 	get_stripe,
 )
-from press.exceptions import FrappeioServerNotSet
-
-from press.press.doctype.account_request.account_request import AccountRequest
 
 
 class Team(Document):
