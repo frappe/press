@@ -1,0 +1,167 @@
+{
+ "actions": [],
+ "creation": "2019-07-10 16:04:46.784120",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "all_servers",
+  "server_type",
+  "access_server",
+  "column_break_1",
+  "reason",
+  "section_break_2",
+  "user",
+  "user_ssh_key",
+  "validity",
+  "column_break_4",
+  "valid_until",
+  "ssh_fingerprint",
+  "section_break_8",
+  "ssh_public_key",
+  "amended_from",
+  "certificate_details",
+  "ssh_certificate",
+  "ssh_command"
+ ],
+ "fields": [
+  {
+   "fetch_from": "user_ssh_key.ssh_public_key",
+   "fieldname": "ssh_public_key",
+   "fieldtype": "Code",
+   "label": "SSH Public Key",
+   "read_only": 1
+  },
+  {
+   "fieldname": "validity",
+   "fieldtype": "Select",
+   "label": "Validity",
+   "options": "3h\n6h\n12h\n1d\n7d"
+  },
+  {
+   "depends_on": "eval:!doc.all_servers",
+   "fieldname": "server_type",
+   "fieldtype": "Select",
+   "label": "Server Type",
+   "options": "Server\nProxy Server\nDatabase Server"
+  },
+  {
+   "depends_on": "eval:!doc.all_servers",
+   "fieldname": "access_server",
+   "fieldtype": "Dynamic Link",
+   "label": "Access Server",
+   "options": "server_type"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "User SSH Certificate",
+   "print_hide": 1,
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:!(doc.__islocal)",
+   "fieldname": "ssh_fingerprint",
+   "fieldtype": "Data",
+   "label": "SSH Fingerprint",
+   "read_only": 1
+  },
+  {
+   "fieldname": "certificate_details",
+   "fieldtype": "Code",
+   "label": "Certificate Details",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_2",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_8",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "valid_until",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Valid Until",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ssh_certificate",
+   "fieldtype": "Code",
+   "label": "SSH Certificate",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ssh_command",
+   "fieldtype": "Code",
+   "label": "SSH Command",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Small Text",
+   "label": "Reason",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "User",
+   "options": "User",
+   "reqd": 1
+  },
+  {
+   "fieldname": "user_ssh_key",
+   "fieldtype": "Link",
+   "label": "User SSH Key",
+   "options": "User SSH Key",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "all_servers",
+   "fieldtype": "Check",
+   "label": "All Servers"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2021-10-12 16:11:54.356262",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "User SSH Certificate",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "title_field": "user",
+ "track_changes": 1
+}

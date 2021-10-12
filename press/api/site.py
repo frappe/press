@@ -457,7 +457,7 @@ def get(name):
 		"trial_end_date": site.trial_end_date,
 		"setup_wizard_complete": site.setup_wizard_complete,
 		"group": group_name,
-		"team": site.team
+		"team": site.team,
 	}
 
 
