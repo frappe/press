@@ -7,6 +7,7 @@ from __future__ import unicode_literals
 import base64
 import binascii
 import hashlib
+from press.utils import log_error
 import re
 import shlex
 import subprocess
@@ -27,11 +28,11 @@ class UserSSHCertificate(Document):
 		except binascii.Error:
 			frappe.throw("Please ensure that the attached text is a valid public key")
 
-		# check if there is an existing valid certificate for the server
+	def before_insert(self):
 		if frappe.get_all(
 			"User SSH Certificate",
 			{
-				"team": self.team,
+				"user": self.user,
 				"valid_until": [">", frappe.utils.now()],
 				"access_server": self.access_server,
 				"docstatus": 1,
@@ -68,7 +69,8 @@ class UserSSHCertificate(Document):
 				f"ssh-keygen -s ca -I {self.name} -n {principal} -V +{self.validity} {tmp_pub_file}"
 			)
 			subprocess.check_output(shlex.split(command), cwd="/etc/ssh")
-		except subprocess.CalledProcessError:
+		except subprocess.CalledProcessError as e:
+			log_error("SSH Certificate Generation Error", exception=e)
 			frappe.throw(
 				"Failed to generate a certificate for the specified key. Please try again."
 			)
@@ -100,30 +102,13 @@ def read_certificate(key_type, docname):
 def get_ssh_command(docname):
 	ssh_port = 22
 	ssh_user = "frappe"
-	certificate_doc = frappe.get_doc("User SSH Certificate", docname)
+	certificate = frappe.get_doc("User SSH Certificate", docname)
+	server = certificate.access_server
 
-	if certificate_doc.ssh_command:
-		return certificate_doc.ssh_command
+	if certificate.ssh_command:
+		return certificate.ssh_command
 
-	if not certificate_doc.from_doctype == "Self Hosted Service":
-		# the default port that we use at frappe is 2332
-		ssh_port = 2332
-		server = certificate_doc.access_server
-	else:
-		server_url, ip_address, server_port, server_user = frappe.db.get_value(
-			"Self Hosted Service",
-			certificate_doc.access_server,
-			["server_url", "ip_address", "ssh_port", "ssh_username"],
-		)
-		server = server_url if server_url else ip_address
-		ssh_port = server_port if server_port else ssh_port
-		ssh_user = server_user if server_user else ssh_user
-
-	ssh_command = "ssh {server} -p {ssh_port} -l {ssh_user}".format(
-		server=server, ssh_port=ssh_port, ssh_user=ssh_user
-	)
-
-	return ssh_command
+	return f"ssh {server} -p {ssh_port} -l {ssh_user}"
 
 
 def set_user_ssh_key(user, ssh_public_key):

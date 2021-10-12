@@ -7,11 +7,11 @@
  "field_order": [
   "server_type",
   "access_server",
-  "customer_name",
   "column_break_1",
   "reason",
   "section_break_2",
-  "team",
+  "user",
+  "user_ssh_key",
   "validity",
   "column_break_4",
   "valid_until",
@@ -25,7 +25,7 @@
  ],
  "fields": [
   {
-   "fetch_from": "team.ssh_public_key",
+   "fetch_from": "user_ssh_key.ssh_public_key",
    "fieldname": "ssh_public_key",
    "fieldtype": "Code",
    "label": "SSH Public Key",
@@ -67,13 +67,6 @@
    "read_only": 1
   },
   {
-   "fieldname": "team",
-   "fieldtype": "Link",
-   "label": "Team",
-   "options": "Team",
-   "reqd": 1
-  },
-  {
    "fieldname": "certificate_details",
    "fieldtype": "Code",
    "label": "Certificate Details",
@@ -111,25 +104,34 @@
    "read_only": 1
   },
   {
-   "depends_on": "eval:doc.is_self_hosted",
-   "fieldname": "customer_name",
-   "fieldtype": "Data",
-   "label": "Customer Name"
-  },
-  {
    "fieldname": "reason",
    "fieldtype": "Small Text",
-   "label": "Reason"
+   "label": "Reason",
+   "reqd": 1
   },
   {
    "fieldname": "column_break_1",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "User",
+   "options": "User",
+   "reqd": 1
+  },
+  {
+   "fieldname": "user_ssh_key",
+   "fieldtype": "Link",
+   "label": "User SSH Key",
+   "options": "User SSH Key",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2021-10-04 22:37:04.848530",
+ "modified": "2021-10-12 09:23:35.583246",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "User SSH Certificate",
@@ -152,6 +154,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
- "title_field": "team",
+ "title_field": "user",
  "track_changes": 1
 }
