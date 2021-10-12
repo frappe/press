@@ -5,6 +5,7 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "all_servers",
   "server_type",
   "access_server",
   "column_break_1",
@@ -38,13 +39,14 @@
    "options": "3h\n6h\n12h\n1d\n7d"
   },
   {
+   "depends_on": "eval:!doc.all_servers",
    "fieldname": "server_type",
    "fieldtype": "Select",
    "label": "Server Type",
    "options": "Server\nProxy Server\nDatabase Server"
   },
   {
-   "depends_on": "eval:!doc.all_server_access",
+   "depends_on": "eval:!doc.all_servers",
    "fieldname": "access_server",
    "fieldtype": "Dynamic Link",
    "label": "Access Server",
@@ -126,12 +128,18 @@
    "label": "User SSH Key",
    "options": "User SSH Key",
    "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "all_servers",
+   "fieldtype": "Check",
+   "label": "All Servers"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2021-10-12 09:23:35.583246",
+ "modified": "2021-10-12 16:11:54.356262",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "User SSH Certificate",

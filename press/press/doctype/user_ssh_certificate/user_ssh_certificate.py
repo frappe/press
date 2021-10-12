@@ -35,6 +35,7 @@ class UserSSHCertificate(Document):
 				"user": self.user,
 				"valid_until": [">", frappe.utils.now()],
 				"access_server": self.access_server,
+				"all_servers": self.all_servers,
 				"docstatus": 1,
 			},
 		):
@@ -61,7 +62,10 @@ class UserSSHCertificate(Document):
 			public_key.write(self.ssh_public_key)
 			public_key.flush()
 
-		principal = self.access_server
+		if self.all_servers:
+			principal = "all-servers"
+		else:
+			principal = self.access_server
 
 		# try generating a certificate for the /tmp key.
 		try:
