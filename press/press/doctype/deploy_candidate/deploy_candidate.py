@@ -4,7 +4,6 @@
 
 import os
 import re
-import json
 import shlex
 import shutil
 import frappe
