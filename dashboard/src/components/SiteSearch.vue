@@ -22,7 +22,7 @@
 				"
 				:value="searchText"
 				@input="val => (searchText = val)"
-				placeholder="Search sites (/)"
+				placeholder="Search sites (Ctrl + /)"
 			/>
 		</template>
 	</Dropdown>
@@ -37,7 +37,7 @@ export default {
 	},
 	mounted() {
 		document.addEventListener('keydown', e => {
-			if (e.key === '/') {
+			if (e.key === '/' && e.ctrlKey) {
 				e.preventDefault();
 				this.searchText = '';
 				this.$refs.search.focus();
