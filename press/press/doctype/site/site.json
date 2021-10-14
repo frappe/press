@@ -15,6 +15,10 @@
   "plan_section",
   "plan_block",
   "site_info_section",
+  "site_owner",
+  "created_on",
+  "last_deployed",
+  "column_break_13",
   "site_info_block",
   "site_apps_section",
   "site_apps_block",
@@ -616,6 +620,29 @@
    "fieldname": "site_backups_block",
    "fieldtype": "HTML",
    "label": "Backups Block"
+  },
+  {
+   "fetch_from": "team.user",
+   "fieldname": "site_owner",
+   "fieldtype": "Data",
+   "label": "Site Owner",
+   "read_only": 1
+  },
+  {
+   "fieldname": "created_on",
+   "fieldtype": "Data",
+   "label": "Created On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_deployed",
+   "fieldtype": "Data",
+   "label": "Last Deployed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_13",
+   "fieldtype": "Column Break"
   }
  ],
  "hide_toolbar": 1,
@@ -666,7 +693,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2021-10-14 16:50:32.393676",
+ "modified": "2021-10-15 00:25:44.697038",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

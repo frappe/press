@@ -10,7 +10,6 @@ frappe.ui.form.on('Site', {
         // Overview
         // show_data(frm, daily_usage, 'daily_usage_block', 'press.api.analytics.daily_usage', {name: frm.docname, timezone: moment.tz.guess()});
         // show_data(frm, site_plan, 'plan_block', 'press.api.site.get_plans');
-        // show_data(frm, site_info, 'site_info_block', 'press.api.site.overview');
 
         // Analytics
         show_data(frm, usage_counter, 'usage_counter_block', 'press.api.analytics.daily_usage', {name: frm.docname, timezone: moment.tz.guess()});
@@ -55,6 +54,7 @@ frappe.ui.form.on('Site', {
                     tag_type: 'indicator-pill blue'
                 };
             });
+
             let domains = remap(res.message.domains, (d) => {
                 return {
                     message: d.domain,
@@ -68,7 +68,32 @@ frappe.ui.form.on('Site', {
                 'data': recent_activities, 
                 'template': title_with_message_and_tag_template
             });            
-           
+
+            // Site Info
+            frm.set_value('created_on', frm.doc['creation']);
+            frm.set_value('last_deployed', frm.doc['creation']);        // TODO: get the actual value
+            new ActionBlock(frm.get_field('site_info_block').$wrapper, {
+                'title': 'Deactivate Site',
+                'description': "The site will go inactive and won't be publicly accessible",
+                'button': {
+                    'title': 'Deactivate Site',
+                    'onclick': () => {
+                        frappe.msgprint(__('Deactivate Site'));
+                    }
+                }
+            });
+            new ActionBlock(frm.get_field('site_info_block').$wrapper, {
+                'title': 'Drop Site',
+                'description': "Once you drop site your site, there is no going back",
+                'button': {
+                    'title': 'Drop Site',
+                    'onclick': () => {
+                        frappe.msgprint(__('Drop Site'));
+                    },
+                    'tag': 'danger'
+                }
+            });
+
             // Apps
             new SectionHead(frm.get_field('site_apps_block').$wrapper, {
                 'title': 'Apps', 
@@ -249,46 +274,6 @@ let site_plan = (message) => {
             </div>
         `;
     }
-}
-
-let site_info = (message, events) => {
-    let info = message.info;
-    return `
-        <div class="d-flex flex-row">
-            <div class="d-flex flex-column w-50 mr-4">
-            ` 
-                + standard_input_with_title('Site owner', info.owner.first_name)
-                + standard_input_with_title('Created on', info.created_on)
-                + standard_input_with_title('Last deploy', info.last_deploy) 
-                +
-            `
-            </div>
-            <div class="d-flex flex-column w-50">
-            `
-                + standard_action_with_title_and_message({
-                    title: 'Deactivate Site',
-                    message: "The site will go inactive and won't be publicly accessible",
-                    btn_name: 'deactivate-site',
-                    events: events,
-                    action: () => {
-                        frappe.msgprint(__('Deactivate Site'));
-                    }
-                })
-                + standard_action_with_title_and_message({
-                    title: 'Drop Site',
-                    message: "Once you drop site your site, there is no going back",
-                    btn_name: 'drop-site',
-                    btn_type: 'danger',
-                    events: events,
-                    action: () => {
-                        frappe.msgprint(__('Drop Site'));
-                    }
-                })
-                +
-            `
-            </div>
-        </div>
-    `;
 }
 
 let usage_counter = (message) => {
@@ -688,6 +673,7 @@ function show_block(frm, block, html, events = []) {
     }
 }
 
+// templates
 function title_with_message_and_tag_template(data) {
     let title = data.title || '';
     let message = data.message || '';
@@ -705,6 +691,35 @@ function title_with_message_and_tag_template(data) {
             </div>
         </div>
     `;
+}
+
+// components
+class ActionBlock {
+    constructor(parent, df) {
+        this.parent = parent;
+        this.df = df || {};
+
+        this.make();
+    }
+
+    make () {
+        this.wrapper = $(`<div class="d-flex flex-row justify-between mb-3">`).appendTo(this.parent);
+        this.wrapper.append(`
+            <div>
+                <div class="mb-2">
+                    <span class="font-weight-bold">${this.df.title || ""}</span>
+                </div>
+                <p>${this.df.description || ""}</p>
+            </div>
+            <div class="d-flex align-items-center">
+                <button class="btn btn-${this.df.button.tag || "light"}">
+                    <span>${this.df.button.title || ""}</span>
+                </button>
+            </div>
+        `);
+
+        //TODO: handle button onclick event
+    }
 }
 
 class SectionHead {
@@ -779,6 +794,7 @@ class ListComponent {
     }
 }
 
+// util functions
 function remap(data, data_template) {
     let new_data = [];
     for(let d of data) {
