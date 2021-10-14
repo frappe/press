@@ -70,7 +70,7 @@ def get_data(filters):
 			get_datetime(filters.stop_datetime).astimezone(pytz.utc)
 		),
 		"search_pattern": filters.pattern,
-		"max_lines": filters.max_lines or 100,
+		"max_lines": filters.max_lines or 4000,
 	}
 	rows = agent.post(f"database/binary/logs/{filters.file}", data=data)
 	for row in rows:
