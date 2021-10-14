@@ -14,8 +14,11 @@ from frappe.utils import get_fullname
 
 from press.exceptions import FrappeioServerNotSet
 from press.press.doctype.account_request.account_request import AccountRequest
-from press.utils.billing import (get_erpnext_com_connection,
-                                 get_frappe_io_connection, get_stripe)
+from press.utils.billing import (
+	get_erpnext_com_connection,
+	get_frappe_io_connection,
+	get_stripe,
+)
 
 
 class Team(Document):
