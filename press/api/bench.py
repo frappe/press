@@ -385,6 +385,7 @@ def jobs(name, start=0):
 			filters={"bench": ("in", benches)},
 			start=start,
 			limit=10,
+			ignore_ifnull=True,
 		)
 	else:
 		jobs = []
