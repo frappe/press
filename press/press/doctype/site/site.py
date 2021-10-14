@@ -978,6 +978,7 @@ class Site(Document):
 			"Site Backup",
 			{"creation": (">=", interval_hrs_ago), "owner": "Administrator"},
 			pluck="site",
+			ignore_ifnull=True,
 		)
 
 	@classmethod
