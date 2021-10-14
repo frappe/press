@@ -5,7 +5,12 @@ import frappe
 import pytz
 import sqlparse
 from press.agent import Agent
-from frappe.utils import get_datetime, convert_utc_to_user_timezone, get_datetime_str
+from frappe.utils import (
+	get_datetime,
+	convert_utc_to_user_timezone,
+	get_datetime_str,
+	get_time_zone,
+)
 
 
 def execute(filters=None):
@@ -61,20 +66,23 @@ def get_data(filters):
 	database_server = frappe.db.get_value("Server", server, "database_server")
 	agent = Agent(database_server, "Database Server")
 
+	def convert_user_timezone_to_utc(datetime):
+		timezone = pytz.timezone(get_time_zone())
+		datetime = get_datetime(datetime)
+		return get_datetime_str(timezone.localize(datetime).astimezone(pytz.utc))
+
 	data = {
 		"database": filters.database,
-		"start_datetime": get_datetime_str(
-			get_datetime(filters.start_datetime).astimezone(pytz.utc)
-		),
-		"stop_datetime": get_datetime_str(
-			get_datetime(filters.stop_datetime).astimezone(pytz.utc)
-		),
+		"start_datetime": convert_user_timezone_to_utc(filters.start_datetime),
+		"stop_datetime": convert_user_timezone_to_utc(filters.stop_datetime),
 		"search_pattern": filters.pattern,
 		"max_lines": filters.max_lines or 4000,
 	}
 	rows = agent.post(f"database/binary/logs/{filters.file}", data=data)
 	for row in rows:
-		row["query"] = sqlparse.format(row["query"].strip(), keyword_case="upper", reindent=True)
+		row["query"] = sqlparse.format(
+			row["query"].strip(), keyword_case="upper", reindent=True
+		)
 		row["timestamp"] = get_datetime_str(
 			convert_utc_to_user_timezone(get_datetime(row["timestamp"]))
 		)
