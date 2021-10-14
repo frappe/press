@@ -11,6 +11,7 @@ from frappe.utils import (
 	get_datetime_str,
 	get_time_zone,
 )
+from frappe.core.doctype.access_log.access_log import make_access_log
 
 
 def execute(filters=None):
@@ -18,6 +19,15 @@ def execute(filters=None):
 	filters.database = frappe.get_doc("Site", filters.site).fetch_info()["config"][
 		"db_name"
 	]
+
+	make_access_log(
+		doctype="Site",
+		document=filters.site,
+		file_type="Binary Log",
+		report_name="Binary Log Browser",
+		filters=filters,
+	)
+
 	data = get_data(filters)
 
 	columns = [
