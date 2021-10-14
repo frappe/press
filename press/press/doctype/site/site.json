@@ -454,6 +454,7 @@
    "label": "Daily Usage"
   },
   {
+   "columns": 2,
    "fieldname": "recent_activity_section",
    "fieldtype": "Section Break",
    "label": "Recent Activity"
@@ -672,7 +673,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2021-10-08 19:21:41.129031",
+ "modified": "2021-10-13 19:01:03.553478",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

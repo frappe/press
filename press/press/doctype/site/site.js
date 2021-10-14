@@ -9,10 +9,10 @@ frappe.ui.form.on('Site', {
 
         // Overview
         show_data(frm, daily_usage, 'daily_usage_block', 'press.api.analytics.daily_usage', {name: frm.docname, timezone: moment.tz.guess()});
-        show_data(frm, recent_activity, 'recent_activity_block', 'press.api.site.overview');
+        // show_data(frm, recent_activity, 'recent_activity_block', 'press.api.site.overview');
         show_data(frm, site_plan, 'plan_block', 'press.api.site.get_plans');
         show_data(frm, site_info, 'site_info_block', 'press.api.site.overview');
-        show_data(frm, site_apps, 'site_apps_block', 'press.api.site.overview');
+        // show_data(frm, site_apps, 'site_apps_block', 'press.api.site.overview');
         show_data(frm, site_domain, 'site_domain_block', 'press.api.site.overview');
 
         // Analytics
@@ -38,6 +38,35 @@ frappe.ui.form.on('Site', {
 
         // Activity
         show_data(frm, site_activity, 'activity_block', 'press.api.site.activities');
+
+        frappe.call({
+            method: 'press.api.site.overview',
+            args: {name: frm.docname, limit: 3}
+        }).then((res) => {
+            let recent_activities = res.message.recent_activity;
+            let installed_apps = res.message.installed_apps;
+            
+            var recent_activities_data = [];
+            for(var ra of recent_activities) {
+                recent_activities_data.push({
+                    title: ra.action + ' by ' + ra.owner,
+                    message: ra.creation
+                })
+            }
+            
+            var installed_apps_data = [];
+            for(var ia of installed_apps) {
+                installed_apps_data.push({
+                    title: ia.title,
+                    message: ia.repository + '/' + ia.repository + ':' + ia.branch,
+                    tag: ia.hash.substring(0,7),
+                    tag_type: 'indicator-pill blue'
+                })
+            }
+
+            new ListComponent(frm.get_field('recent_activity_block').$wrapper, {'data': recent_activities_data, 'template': title_with_message_and_tag_template});            
+            new ListComponent(frm.get_field('site_apps_block').$wrapper, {'data': installed_apps_data, 'template': title_with_message_and_tag_template});
+        })
 
 		frm.set_query('bench', function () {
 			return {
@@ -688,4 +717,56 @@ function show_block(frm, block, html, events = []) {
     for(let event of events) {
         wrapper.find("." + event.name).on('click', event.action);
     }
+}
+
+function title_with_message_and_tag_template(data) {
+    let title = data.title || '';
+    let message = data.message || '';
+    let tag = data.tag || '';
+    let tag_type = data.tag_type || '';
+
+    return `
+        <div class="d-flex flex-column">
+            <div class="d-flex flex-column">
+                <h5>${title || ""}</h5>
+            </div>
+            <div class="d-flex flex-row justify-between">
+                <p>${message || ""}</p>
+                <p class="${tag_type}">${tag || ""}</p>
+            </div>
+        </div>
+    `;
+}
+
+class ListComponent {
+    constructor(parent, df) {
+        this.parent = parent;
+        this.df = df || {};
+
+        this.make();
+    }
+
+    make() {
+        this.wrapper = $(`<div class="form-column">`).appendTo(this.parent);
+
+        let html = iterate_list(this.df.data, this.df.template);
+        this.wrapper.append(`${html}`);
+    }
+
+    iterate_list(data, template) {
+        var html = '';
+    
+        for(var i = 0; i < data.length; i++) {
+            html += template(data[i]);
+            if(i != data.length - 1 ) html += '<hr class="mt-1">';
+        }
+        return html;
+    }
+}
+
+async function get_data(method) {
+    return frappe.call({
+            method: method,
+            args: args
+        });
 }
