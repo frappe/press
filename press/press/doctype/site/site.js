@@ -2,14 +2,10 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on('Site', {
-	onload: function (frm) {
+	onload: async function (frm) {
         if(frm.get_field("setup_wizard_complete")) {
             show_block_with_events(frm, 'site_activation_block', site_activation);
         }
-
-        // Overview
-        // show_data(frm, daily_usage, 'daily_usage_block', 'press.api.analytics.daily_usage', {name: frm.docname, timezone: moment.tz.guess()});
-        // show_data(frm, site_plan, 'plan_block', 'press.api.site.get_plans');
 
         // Analytics
         show_data(frm, usage_counter, 'usage_counter_block', 'press.api.analytics.daily_usage', {name: frm.docname, timezone: moment.tz.guess()});
@@ -20,7 +16,7 @@ frappe.ui.form.on('Site', {
         show_data(frm, background_jobs_cpu_usage, 'background_jobs_cpu_usage_block', 'press.api.analytics.daily_usage', {name: frm.docname, timezone: moment.tz.guess()});
 
         // Backups & Restore
-        show_data(frm, site_backups, 'site_backups_block', 'press.api.site.backups');
+        // show_data(frm, site_backups, 'site_backups_block', 'press.api.site.backups');
         show_block_with_events(frm, 'restore_migrate_and_reset_block', restore_migrate_and_reset);
 
         // Site Config
@@ -35,101 +31,143 @@ frappe.ui.form.on('Site', {
         // Activity
         show_data(frm, site_activity, 'activity_block', 'press.api.site.activities');
 
-        frappe.call({
+        // data fetch
+        let overview_res = await frappe.call({
             method: 'press.api.site.overview',
             args: {name: frm.docname}
-        }).then((res) => {
-            let recent_activities = remap(res.message.recent_activity, (d) => {
-                return {
-                    title: d.action + ' by ' + d.owner,
-                    message: d.creation
-                };
-            });
-
-            let installed_apps = remap(res.message.installed_apps, (d) => {
-                return {
-                    title: d.title,
-                    message: d.repository + '/' + d.repository + ':' + d.branch,
-                    tag: d.hash.substring(0,7),
-                    tag_type: 'indicator-pill blue'
-                };
-            });
-
-            let domains = remap(res.message.domains, (d) => {
-                return {
-                    message: d.domain,
-                    tag: d.primary || "",
-                    tag_type: 'indicator-pill green'
-                };
-            });
-
-            // Recent Activity
-            new ListComponent(frm.get_field('recent_activity_block').$wrapper, {
-                'data': recent_activities, 
-                'template': title_with_message_and_tag_template
-            });            
-
-            // Site Info
-            frm.set_value('created_on', frm.doc['creation']);
-            frm.set_value('last_deployed', frm.doc['creation']);        // TODO: get the actual value
-            new ActionBlock(frm.get_field('site_info_block').$wrapper, {
-                'title': 'Deactivate Site',
-                'description': "The site will go inactive and won't be publicly accessible",
-                'button': {
-                    'title': 'Deactivate Site',
-                    'onclick': () => {
-                        frappe.msgprint(__('Deactivate Site'));
-                    }
-                }
-            });
-            new ActionBlock(frm.get_field('site_info_block').$wrapper, {
-                'title': 'Drop Site',
-                'description': "Once you drop site your site, there is no going back",
-                'button': {
-                    'title': 'Drop Site',
-                    'onclick': () => {
-                        frappe.msgprint(__('Drop Site'));
-                    },
-                    'tag': 'danger'
-                }
-            });
-
-            // Apps
-            new SectionHead(frm.get_field('site_apps_block').$wrapper, {
-                'title': 'Apps', 
-                'button': {
-                    'title': 'Add App', 
-                    'onclick': () => {
-                        frappe.msgprint(__('Add App'));
-                    }
-                }
-            });
-            new SectionDescription(frm.get_field('site_apps_block').$wrapper, {
-                'description': 'Apps installed on your site'
-            });
-            new ListComponent(frm.get_field('site_apps_block').$wrapper, {
-                'data': installed_apps, 
-                'template': title_with_message_and_tag_template
-            });
-
-            // Domains
-            new SectionHead(frm.get_field('site_domain_block').$wrapper, {
-                'title': 'Domains', 
-                'button': {
-                    'title': 'Add Domain', 
-                    'onclick': () => {
-                        frappe.msgprint(__('Add Domain'))
-                    }
-                }
-            });
-            new SectionDescription(frm.get_field('site_domain_block').$wrapper, {
-                'description': 'Domains pointing to your site'
-            });
-            new ListComponent(frm.get_field('site_domain_block').$wrapper, {
-                'data': domains, 
-                'template': title_with_message_and_tag_template
-            });
         })
+        let backups_res = await frappe.call({
+            method: 'press.api.site.backups',
+            args: {name: frm.docname}
+        })
+
+        let recent_activities = remap(overview_res.message.recent_activity, (d) => {
+            return {
+                title: d.action + ' by ' + d.owner,
+                message: d.creation
+            };
+        });
+
+        let installed_apps = remap(overview_res.message.installed_apps, (d) => {
+            return {
+                title: d.title,
+                message: d.repository + '/' + d.repository + ':' + d.branch,
+                tag: d.hash.substring(0,7),
+                tag_type: 'indicator-pill blue'
+            };
+        });
+
+        let domains = remap(overview_res.message.domains, (d) => {
+            return {
+                message: d.domain,
+                tag: d.primary || "",
+                tag_type: 'indicator-pill green'
+            };
+        });
+
+        let backups = remap(backups_res.message, (d) => {
+            return {
+                message: d.creation
+            }
+        })
+
+        // Overview 
+
+        // > Recent Activity
+        new ListComponent(frm.get_field('recent_activity_block').$wrapper, {
+            'data': recent_activities, 
+            'template': title_with_message_and_tag_template
+        });            
+
+        // > Site Info
+        frm.set_value('created_on', frm.doc['creation']);
+        frm.set_value('last_deployed', frm.doc['creation']);        // TODO: get the actual value
+        new ActionBlock(frm.get_field('site_info_block').$wrapper, {
+            'title': 'Deactivate Site',
+            'description': "The site will go inactive and won't be publicly accessible",
+            'button': {
+                'title': 'Deactivate Site',
+                'onclick': () => {
+                    frappe.msgprint(__('Deactivate Site'));
+                }
+            }
+        });
+        new ActionBlock(frm.get_field('site_info_block').$wrapper, {
+            'title': 'Drop Site',
+            'description': "Once you drop site your site, there is no going back",
+            'button': {
+                'title': 'Drop Site',
+                'onclick': () => {
+                    frappe.msgprint(__('Drop Site'));
+                },
+                'tag': 'danger'
+            }
+        });
+
+        // > Apps
+        new SectionHead(frm.get_field('site_apps_block').$wrapper, {
+            'title': 'Apps', 
+            'button': {
+                'title': 'Add App', 
+                'onclick': () => {
+                    frappe.msgprint(__('Add App'));
+                }
+            }
+        });
+        new SectionDescription(frm.get_field('site_apps_block').$wrapper, {
+            'description': 'Apps installed on your site'
+        });
+        new ListComponent(frm.get_field('site_apps_block').$wrapper, {
+            'data': installed_apps, 
+            'template': title_with_message_and_tag_template
+        });
+
+        // > Domains
+        new SectionHead(frm.get_field('site_domain_block').$wrapper, {
+            'title': 'Domains', 
+            'button': {
+                'title': 'Add Domain', 
+                'onclick': () => {
+                    frappe.msgprint(__('Add Domain'))
+                }
+            }
+        });
+        new SectionDescription(frm.get_field('site_domain_block').$wrapper, {
+            'description': 'Domains pointing to your site'
+        });
+        new ListComponent(frm.get_field('site_domain_block').$wrapper, {
+            'data': domains, 
+            'template': title_with_message_and_tag_template
+        });
+
+        // Analytics
+
+        // Backup & Restore
+
+        // Backup
+        new SectionHead(frm.get_field('site_backups_block').$wrapper, {
+            'title': 'Backup',
+            'button': {
+                'title': 'Schedule a Backup',
+                'onclick': () => {
+                    frappe.msgprint(__('Schedule a Backup'));
+                }
+            }
+        })
+        new ListComponent(frm.get_field('site_backups_block').$wrapper, {
+            'data': backups,
+            'template': title_with_message_and_tag_template
+        })
+
+        // Site Config
+
+        // Jobs
+
+        // Logs
+
+        // Activity
+
+        // Settings
 
 		frm.set_query('bench', function () {
 			return {
