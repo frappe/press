@@ -596,8 +596,7 @@
   },
   {
    "fieldname": "site_apps_section",
-   "fieldtype": "Section Break",
-   "label": "Apps"
+   "fieldtype": "Section Break"
   },
   {
    "fieldname": "site_apps_block",
@@ -606,8 +605,7 @@
   },
   {
    "fieldname": "site_domains_section",
-   "fieldtype": "Section Break",
-   "label": "Domains"
+   "fieldtype": "Section Break"
   },
   {
    "fieldname": "site_domain_block",
@@ -673,7 +671,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2021-10-13 19:01:03.553478",
+ "modified": "2021-10-14 16:27:33.446834",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
