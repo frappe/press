@@ -50,21 +50,21 @@ export default {
 						value:
 							total_installs.toString() +
 							' ' +
-							(total_installs > 1 ? 'Sites' : 'Site')
+							(total_installs == 1 ? 'Sites' : 'Site')
 					},
 					{
-						title: 'Number of active Sites with this App',
+						title: 'Active Sites with this App',
 						value:
 							num_installs_active_sites.toString() +
 							' ' +
-							(num_installs_active_sites > 1 ? 'Sites' : 'Site')
+							(num_installs_active_sites == 1 ? 'Site' : 'Sites')
 					},
 					{
-						title: 'Number of active Benches with this App',
+						title: 'Active Benches with this App',
 						value:
 							num_installs_active_benches.toString() +
 							' ' +
-							(num_installs_active_benches > 1 ? 'Benches' : 'Bench')
+							(num_installs_active_benches == 1 ? 'Bench' : 'Benches')
 					}
 				];
 			}
