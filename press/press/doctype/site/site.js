@@ -15,10 +15,6 @@ frappe.ui.form.on('Site', {
         show_data(frm, background_jobs, 'background_jobs_block', 'press.api.analytics.daily_usage', {name: frm.docname, timezone: moment.tz.guess()});
         show_data(frm, background_jobs_cpu_usage, 'background_jobs_cpu_usage_block', 'press.api.analytics.daily_usage', {name: frm.docname, timezone: moment.tz.guess()});
 
-        // Backups & Restore
-        // show_data(frm, site_backups, 'site_backups_block', 'press.api.site.backups');
-        show_block_with_events(frm, 'restore_migrate_and_reset_block', restore_migrate_and_reset);
-
         // Site Config
         show_data(frm, site_config, 'site_config_block', 'press.api.site.site_config');
 
@@ -71,15 +67,15 @@ frappe.ui.form.on('Site', {
             }
         })
 
-        // Overview 
+        // tab: Overview 
 
-        // > Recent Activity
+        // sec: Recent Activity
         new ListComponent(frm.get_field('recent_activity_block').$wrapper, {
             'data': recent_activities, 
             'template': title_with_message_and_tag_template
         });            
 
-        // > Site Info
+        // sec: Site Info
         frm.set_value('created_on', frm.doc['creation']);
         frm.set_value('last_deployed', frm.doc['creation']);        // TODO: get the actual value
         new ActionBlock(frm.get_field('site_info_block').$wrapper, {
@@ -104,7 +100,7 @@ frappe.ui.form.on('Site', {
             }
         });
 
-        // > Apps
+        // sec: Apps
         new SectionHead(frm.get_field('site_apps_block').$wrapper, {
             'title': 'Apps', 
             'button': {
@@ -122,7 +118,7 @@ frappe.ui.form.on('Site', {
             'template': title_with_message_and_tag_template
         });
 
-        // > Domains
+        // sec: Domains
         new SectionHead(frm.get_field('site_domain_block').$wrapper, {
             'title': 'Domains', 
             'button': {
@@ -140,11 +136,11 @@ frappe.ui.form.on('Site', {
             'template': title_with_message_and_tag_template
         });
 
-        // Analytics
+        // tab: Analytics
 
-        // Backup & Restore
+        // tab: Backup & Restore
 
-        // Backup
+        // sec: Backup
         new SectionHead(frm.get_field('site_backups_block').$wrapper, {
             'title': 'Backup',
             'button': {
@@ -159,15 +155,58 @@ frappe.ui.form.on('Site', {
             'template': title_with_message_and_tag_template
         })
 
-        // Site Config
+        // sec: Restore, Migrate and Reset
+        new ActionBlock(frm.get_field('restore_migrate_and_reset_block').$wrapper, {
+            'title': 'Restore',
+            'description': "Restore your database using a previous backup",
+            'button': {
+                'title': 'Restore Database',
+                'onclick': () => {
+                    frappe.msgprint(__('Restore Database'));
+                }
+            }
+        });
+        new ActionBlock(frm.get_field('restore_migrate_and_reset_block').$wrapper, {
+            'title': 'Migrate',
+            'description': "Run bench migrate command on your database",
+            'button': {
+                'title': 'Migrate Database',
+                'onclick': () => {
+                    frappe.msgprint(__('Migrate Database'));
+                }
+            }
+        });
+        new ActionBlock(frm.get_field('restore_migrate_and_reset_block').$wrapper, {
+            'title': 'Reset',
+            'description': "Reset your database to a clean state",
+            'button': {
+                'title': 'Reset Database',
+                'onclick': () => {
+                    frappe.msgprint(__('Reset Database'));
+                },
+                'tag': 'danger'
+            }
+        });
+        new ActionBlock(frm.get_field('restore_migrate_and_reset_block').$wrapper, {
+            'title': 'Clear Cache',
+            'description': "Clear your site's cache",
+            'button': {
+                'title': 'Clear Cache',
+                'onclick': () => {
+                    frappe.msgprint(__('Clear Cache'));
+                }
+            }
+        });
 
-        // Jobs
+        // tab: Site Config
 
-        // Logs
+        // tab: Jobs
 
-        // Activity
+        // tab: Logs
 
-        // Settings
+        // tab: Activity
+
+        // tab: Settings
 
 		frm.set_query('bench', function () {
 			return {
@@ -415,91 +454,6 @@ let background_jobs_cpu_usage = (message) => {
         `;
     }
 };
-
-let site_backups = (message, events) => {
-    let backups = message;
-    return `
-        <div class="d-flex flex-column">
-            <div class="d-flex flex-row">
-                <p>Backups are enabled and are scheduled to run every six hours.</p>
-                `
-                    + standard_button({
-                        name: 'schedule-backup-now',
-                        title: 'Schedule a backup now',
-                        tag: 'btn-light ml-auto mb-4',
-                        events: events,
-                        onclick: () => {
-                            frappe.msgprint(__('Schedule a backup now'));
-                        }
-                    })
-                    +
-                `
-            </div>
-            <div>
-                `
-                    + iterate_list(backups, (backup) => {
-                        return standard_title_with_message_and_tag(null, backup.creation);
-                    })
-                    +
-                `
-            </div>
-        </div>
-    `;
-}
-
-let restore_migrate_and_reset = (events) => {
-    return `
-        <div class="d-flex flex-column">
-            `
-                + standard_action_with_title_and_message({
-                    title: 'Restore',
-                    message: "Restore your database using a previous backup",
-                    btn_name: 'restore-database',
-                    btn_title: 'Restore Database',
-                    btn_type: 'light',
-                    events: events,
-                    action: () => {
-                        frappe.msgprint(__('Restore Database'));
-                    }
-                })
-                + standard_action_with_title_and_message({
-                    title: 'Migrate',
-                    message: "Run bench migrate command on your database.",
-                    btn_name: 'migrate-database',
-                    btn_title: 'Migrate Database',
-                    btn_type: 'light',
-                    events: events,
-                    action: () => {
-                        frappe.msgprint(__('Migrate Database'));
-                    }
-                })
-                + standard_action_with_title_and_message({
-                    title: 'Reset',
-                    message: "Reset your database to a clean state.",
-                    btn_name: 'reset-database',
-                    btn_title: 'Reset Database',
-                    btn_type: 'danger',
-                    events: events,
-                    action: () => {
-                        frappe.msgprint(__('Reset Database'));
-                    }
-                })
-                + standard_action_with_title_and_message({
-                    title: 'Clear Cache',
-                    message: "Clear your site's cache",
-                    btn_name: 'clear-cache',
-                    btn_title: 'Clear Cache',
-                    btn_type: 'danger',
-                    events: events,
-                    action: () => {
-                        frappe.msgprint(__('Clear Cache'));
-                    }
-                })
-                +
-            `
-        </div>
-    `;
-}
 
 let site_config = (message, events) => {
     let configs = message;
