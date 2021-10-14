@@ -551,8 +551,7 @@
   },
   {
    "fieldname": "site_config_section",
-   "fieldtype": "Section Break",
-   "label": "Site Config"
+   "fieldtype": "Section Break"
   },
   {
    "fieldname": "site_config_block",
@@ -561,8 +560,7 @@
   },
   {
    "fieldname": "jobs_section",
-   "fieldtype": "Section Break",
-   "label": "Jobs"
+   "fieldtype": "Section Break"
   },
   {
    "fieldname": "jobs_block",
@@ -571,8 +569,7 @@
   },
   {
    "fieldname": "logs_section",
-   "fieldtype": "Section Break",
-   "label": "Logs"
+   "fieldtype": "Section Break"
   },
   {
    "fieldname": "logs_block",
@@ -581,8 +578,7 @@
   },
   {
    "fieldname": "activity_section",
-   "fieldtype": "Section Break",
-   "label": "Activity"
+   "fieldtype": "Section Break"
   },
   {
    "fieldname": "activity_block",
@@ -614,8 +610,7 @@
   },
   {
    "fieldname": "site_backups_section",
-   "fieldtype": "Section Break",
-   "label": "Backups"
+   "fieldtype": "Section Break"
   },
   {
    "fieldname": "site_backups_block",
@@ -671,7 +666,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2021-10-14 16:27:33.446834",
+ "modified": "2021-10-14 16:50:32.393676",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
