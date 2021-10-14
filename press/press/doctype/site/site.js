@@ -15,18 +15,6 @@ frappe.ui.form.on('Site', {
         show_data(frm, background_jobs, 'background_jobs_block', 'press.api.analytics.daily_usage', {name: frm.docname, timezone: moment.tz.guess()});
         show_data(frm, background_jobs_cpu_usage, 'background_jobs_cpu_usage_block', 'press.api.analytics.daily_usage', {name: frm.docname, timezone: moment.tz.guess()});
 
-        // Site Config
-        show_data(frm, site_config, 'site_config_block', 'press.api.site.site_config');
-
-        // Jobs
-        show_data(frm, site_jobs, 'jobs_block', 'press.api.site.jobs');
-
-        // Logs
-        show_data(frm, site_logs, 'logs_block', 'press.api.site.logs');
-
-        // Activity
-        show_data(frm, site_activity, 'activity_block', 'press.api.site.activities');
-
         // data fetch
         let overview_res = await frappe.call({
             method: 'press.api.site.overview',
@@ -36,6 +24,19 @@ frappe.ui.form.on('Site', {
             method: 'press.api.site.backups',
             args: {name: frm.docname}
         })
+        let jobs_res = await frappe.call({
+            method: 'press.api.site.jobs',
+            args: {name: frm.docname}
+        })
+        let logs_res = await frappe.call({
+            method: 'press.api.site.logs',
+            args: {name: frm.docname}
+        })
+        let activities_res = await frappe.call({
+            method: 'press.api.site.activities',
+            args: {name: frm.docname}
+        })
+
 
         let recent_activities = remap(overview_res.message.recent_activity, (d) => {
             return {
@@ -64,6 +65,29 @@ frappe.ui.form.on('Site', {
         let backups = remap(backups_res.message, (d) => {
             return {
                 message: d.creation
+            }
+        })
+
+        let jobs = remap(jobs_res.message, (d) => {
+            return {
+                'title': d.job_type,
+                'message': d.creation,
+                'tag': d.status,
+                'tag_type': "indicator-pill green" 
+            }
+        })
+
+        let logs = remap(logs_res.message, (d) => {
+            return {
+                'title': d.name,
+                'message': d.creation,
+            }
+        })
+
+        let activities = remap(activities_res.message, (d) => {
+            return {
+                'title': d.action + ' by ' + d.owner,
+                'message': d.creation
             }
         })
 
@@ -200,11 +224,58 @@ frappe.ui.form.on('Site', {
 
         // tab: Site Config
 
+        // sec: Site Config
+        new SectionHead(frm.get_field('site_config_block').$wrapper, {
+            'title': 'Site Config',
+            'button': {
+                'title': 'Edit Config',
+                'onclick': () => {
+                    frappe.msgprint(__('Edit Config'));
+                }
+            }
+        });
+
         // tab: Jobs
+
+        // sec: Jobs
+        new SectionHead(frm.get_field('jobs_block').$wrapper, {
+            'title': 'Jobs'
+        });
+        new SectionDescription(frm.get_field('jobs_block').$wrapper, {
+            'description': 'History of jobs that ran on your site'
+        });
+        new ListComponent(frm.get_field('jobs_block').$wrapper, {
+            'data': jobs,
+            'template': title_with_message_and_tag_template
+        })
 
         // tab: Logs
 
+        // sec: Logs
+        new SectionHead(frm.get_field('logs_block').$wrapper, {
+            'title': 'Logs'
+        });
+        new SectionDescription(frm.get_field('logs_block').$wrapper, {
+            'description': 'Available Logs for your site'
+        });
+        new ListComponent(frm.get_field('logs_block').$wrapper, {
+            'data': logs,
+            'template': title_with_message_and_tag_template
+        })
+
         // tab: Activity
+
+        // sec: Activity
+        new SectionHead(frm.get_field('activity_block').$wrapper, {
+            'title': 'Activity'
+        });
+        new SectionDescription(frm.get_field('activity_block').$wrapper, {
+            'description': 'Log of activities performed on your site'
+        });
+        new ListComponent(frm.get_field('activity_block').$wrapper, {
+            'data': activities,
+            'template': title_with_message_and_tag_template
+        })
 
         // tab: Settings
 
@@ -485,82 +556,6 @@ let site_config = (message, events) => {
                     `}</pre>
                 </div>
             </div>
-        </div>
-    `;
-}
-
-let site_jobs = (message) => {
-    let jobs = message;
-    var focused_job = 0;
-    return `
-        <div class="d-flex flex-row">
-            <div class="d-flex flex-column w-25 mr-4">
-                <span class="mb-4">History of jobs that ran on your site</span>
-                <div>
-                    `
-                        + iterate_list(jobs, (job) => {
-                            var pill_color = "";
-                            if(job.status == "Success") {
-                                pill_color = "green";
-                            } else if(job.status == "Undelivered") {
-                                pill_color = "gray"
-                            }
-
-                            return standard_title_with_message_and_tag(job.job_type, job.creation, job.status, "indicator-pill " + pill_color);
-                        })
-                        +
-                    `
-                </div>
-            </div>
-            <div style="border-left:0.2px solid #DFDAD9"></div>
-            <div class="d-flex flex-column ml-3">
-                    <h5>${jobs[focused_job].job_type}</h5>
-                    <span>Completed in ${jobs[focused_job].duration}</span>
-            </div>
-        </div>
-    `;
-}
-
-let site_logs = (message) => {
-    let logs = message;
-    var focused_job = 0;
-    return `
-        <div class="d-flex flex-row">
-            <div class="d-flex flex-column w-25 mr-4">
-                <span class="mb-4">Available Logs for your site</span>
-                <div>
-                    `
-                        + iterate_list(logs, (log) => {
-                            return standard_title_with_message_and_tag(log.name, log.created);
-                        })
-                        +
-                    `
-                </div>
-            </div>
-            <div style="border-left:0.2px solid #DFDAD9"></div>
-            <div class="d-flex flex-column ml-3">
-                    <h5>${logs[focused_job].name}</h5>
-            </div>
-        </div>
-    `;
-}
-
-let site_activity = (message) => {
-    let activities = message;
-    return `
-        <div class="d-flex flex-row">
-            <div class="d-flex flex-column w-50 mr-4">
-                <span class="mb-4">Log of activities performed on your site</span>
-                <div>
-                    `
-                        + iterate_list(activities, (activity) => {
-                            return standard_title_with_message_and_tag(activity.action + ' by ' + activity.owner, activity.creation);
-                        })
-                        +
-                    `
-                </div>
-            </div>
-            <div style="border-left:0.2px solid #DFDAD9"></div>
         </div>
     `;
 }
