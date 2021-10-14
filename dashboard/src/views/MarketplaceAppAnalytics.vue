@@ -1,24 +1,12 @@
 <template>
 	<div class="sm:grid sm:grid-cols-2">
 		<Card title="Installs">
-			<div class="divide-y" v-if="this.$resources.analytics.data">
+			<div class="divide-y" v-if="analytics">
 				<ListItem
-					title="Total Site Installs"
-					:description="`${this.$resources.analytics.data.total_installs}`"
-				>
-				</ListItem>
-				<ListItem
-					title="Number of active Sites with this App"
-					:description="
-						`${this.$resources.analytics.data.num_installs_active_sites}`
-					"
-				>
-				</ListItem>
-				<ListItem
-					title="Number of active Benches with this App"
-					:description="
-						`${this.$resources.analytics.data.num_installs_active_benches}`
-					"
+					v-for="stat in analytics"
+					:key="stat.title"
+					:title="stat.title"
+					:description="stat.value"
 				>
 				</ListItem>
 			</div>
@@ -41,6 +29,45 @@ export default {
 					name: this.app.app
 				}
 			};
+		}
+	},
+	computed: {
+		analytics() {
+			if (
+				!this.$resources.analytics.loading &&
+				this.$resources.analytics.data
+			) {
+				const analyticsData = this.$resources.analytics.data;
+				const {
+					total_installs,
+					num_installs_active_sites,
+					num_installs_active_benches
+				} = analyticsData;
+
+				return [
+					{
+						title: 'Total Installs',
+						value:
+							total_installs.toString() +
+							' ' +
+							(total_installs > 1 ? 'Sites' : 'Site')
+					},
+					{
+						title: 'Number of active Sites with this App',
+						value:
+							num_installs_active_sites.toString() +
+							' ' +
+							(num_installs_active_sites > 1 ? 'Sites' : 'Site')
+					},
+					{
+						title: 'Number of active Benches with this App',
+						value:
+							num_installs_active_benches.toString() +
+							' ' +
+							(num_installs_active_benches > 1 ? 'Benches' : 'Bench')
+					}
+				];
+			}
 		}
 	}
 };
