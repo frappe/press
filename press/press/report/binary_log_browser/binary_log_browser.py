@@ -80,9 +80,10 @@ def get_data(filters):
 	}
 	rows = agent.post(f"database/binary/logs/{filters.file}", data=data)
 	for row in rows:
-		row["query"] = sqlparse.format(
-			row["query"].strip(), keyword_case="upper", reindent=True
-		)
+		if filters.format_queries:
+			row["query"] = sqlparse.format(
+				row["query"].strip(), keyword_case="upper", reindent=True
+			)
 		row["timestamp"] = get_datetime_str(
 			convert_utc_to_user_timezone(get_datetime(row["timestamp"]))
 		)

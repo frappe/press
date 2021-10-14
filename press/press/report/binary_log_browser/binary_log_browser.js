@@ -47,6 +47,11 @@ frappe.query_reports["Binary Log Browser"] = {
 			default: ".*",
 			reqd: 1,
 		},
+		{
+			fieldname: "format_queries",
+			label: __("Format Queries"),
+			fieldtype: "Check",
+		},
 	],
 };
 
