@@ -9,11 +9,8 @@ frappe.ui.form.on('Site', {
 
         // Overview
         show_data(frm, daily_usage, 'daily_usage_block', 'press.api.analytics.daily_usage', {name: frm.docname, timezone: moment.tz.guess()});
-        // show_data(frm, recent_activity, 'recent_activity_block', 'press.api.site.overview');
         show_data(frm, site_plan, 'plan_block', 'press.api.site.get_plans');
         show_data(frm, site_info, 'site_info_block', 'press.api.site.overview');
-        // show_data(frm, site_apps, 'site_apps_block', 'press.api.site.overview');
-        show_data(frm, site_domain, 'site_domain_block', 'press.api.site.overview');
 
         // Analytics
         show_data(frm, usage_counter, 'usage_counter_block', 'press.api.analytics.daily_usage', {name: frm.docname, timezone: moment.tz.guess()});
@@ -45,6 +42,7 @@ frappe.ui.form.on('Site', {
         }).then((res) => {
             let recent_activities = res.message.recent_activity;
             let installed_apps = res.message.installed_apps;
+            let domains = res.message.domains;
             
             var recent_activities_data = [];
             for(var ra of recent_activities) {
@@ -64,8 +62,27 @@ frappe.ui.form.on('Site', {
                 })
             }
 
+            var domains_data = [];
+            for(var d of domains) {
+                domains_data.push({
+                    message: d.domain,
+                    tag: d.primary || "",
+                    tag_type: 'indicator-pill green'
+                })
+            }
+
+            // Recent activity
             new ListComponent(frm.get_field('recent_activity_block').$wrapper, {'data': recent_activities_data, 'template': title_with_message_and_tag_template});            
+           
+            // Apps
+            new SectionHead(frm.get_field('site_apps_block').$wrapper, {'title': 'Apps', 'button': {'title': 'Add App', 'onclick': () => {frappe.msgprint(__('Add App'))}}});
+            new SectionDescription(frm.get_field('site_apps_block').$wrapper, {'description': 'Apps installed on your site'});
             new ListComponent(frm.get_field('site_apps_block').$wrapper, {'data': installed_apps_data, 'template': title_with_message_and_tag_template});
+
+            // Domains
+            new SectionHead(frm.get_field('site_domain_block').$wrapper, {'title': 'Domains', 'button': {'title': 'Add Domain', 'onclick': () => {frappe.msgprint(__('Add Domain'))}}});
+            new SectionDescription(frm.get_field('site_domain_block').$wrapper, {'description': 'Domains pointing to your site'});
+            new ListComponent(frm.get_field('site_domain_block').$wrapper, {'data': domains_data, 'template': title_with_message_and_tag_template});
         })
 
 		frm.set_query('bench', function () {
@@ -197,13 +214,6 @@ let daily_usage = (message) => {
     }
 };
 
-let recent_activity = (message) => {
-    let recent_activity = message.recent_activity;
-    return iterate_list(recent_activity, (activity) => {
-        return standard_title_with_message_and_tag(activity.action + ' by ' + activity.owner, activity.creation);
-    });
-}
-
 let site_plan = (message) => {
     if(message.length > 0) {
         return `
@@ -255,68 +265,6 @@ let site_info = (message, events) => {
                 })
                 +
             `
-            </div>
-        </div>
-    `;
-}
-
-let site_apps = (message, events) => {
-    let installed_apps = message.installed_apps;
-    return `
-        <div class="d-flex flex-column">
-            <div class="d-flex flex-row">
-                <p>Apps installed on your site</p>
-                `
-                    + standard_button({
-                        name: 'add-app',
-                        title: 'Add App',
-                        tag: 'btn-light ml-auto mb-4',
-                        events: events,
-                        onclick: () => {
-                            frappe.msgprint(__('Add App'));
-                        }
-                    })
-                    +
-                `
-            </div>
-            <div>
-                `
-                    + iterate_list(installed_apps, (app) => {
-                        return standard_title_with_message_and_tag(app.title, app.app + '/' + app.repository + ':' + app.branch, app.hash.substring(0,7), "indicator-pill blue");
-                    })
-                    +
-                `
-            </div>
-        </div>
-    `;
-}
-
-let site_domain = (message, events) => {
-    let domains = message.domains;
-    return `
-        <div class="d-flex flex-column">
-            <div class="d-flex flex-row">
-                <p>Domains pointing to your site</p>
-                `
-                    + standard_button({
-                        name: 'add-domain',
-                        title: 'Add Domain',
-                        tag: 'btn-light ml-auto mb-4',
-                        events: events,
-                        onclick: () => {
-                            frappe.msgprint(__('Add Domain'));
-                        }
-                    })
-                    +
-                `
-            </div>
-            <div>
-                `
-                    + iterate_list(domains, (domain) => {
-                        return standard_title_with_message_and_tag(null, domain.domain, domain.primary ? "Primary": "", "indicator-pill green")
-                    })
-                    +
-                `
             </div>
         </div>
     `;
@@ -738,6 +686,52 @@ function title_with_message_and_tag_template(data) {
     `;
 }
 
+class SectionHead {
+    constructor(parent, df) {
+        this.parent = parent;
+        this.df = df || {};
+
+        this.make();
+    }
+
+    make() {
+        this.wrapper = $(`<div class="d-flex flex-row justify-between mb-${this.df.button ? '2': '3'}">`).appendTo(this.parent);
+        if (this.df.title) {
+            this.wrapper.append(`
+                <div class="head-title">
+                    ${this.df.title || ""}
+                </div>
+            `);
+        }
+        if (this.df.button) {
+            this.wrapper.append(`
+                <button class="btn btn-${this.df.button.tag || "light"}">
+                    <span>${this.df.button.title || ""}</span>
+                </button
+            `)
+        }
+        // TODO: add button onclick trigger
+    }
+}
+
+class SectionDescription {
+    constructor(parent, df) {
+        this.parent = parent;
+        this.df = df || {};
+
+        this.make();
+    }
+
+    make() {
+        this.wrapper = $(`<div class="section-description d-flex flex-column">`).appendTo(this.parent);
+        this.wrapper.append(`
+            <div class="d-flex flex-row mb-4">
+                <p>${this.df.description || ""}</p>
+            </div>
+        `);
+    }
+}
+
 class ListComponent {
     constructor(parent, df) {
         this.parent = parent;
@@ -747,7 +741,7 @@ class ListComponent {
     }
 
     make() {
-        this.wrapper = $(`<div class="form-column">`).appendTo(this.parent);
+        this.wrapper = $(`<div class="list-component">`).appendTo(this.parent);
 
         let html = iterate_list(this.df.data, this.df.template);
         this.wrapper.append(`${html}`);
@@ -762,11 +756,4 @@ class ListComponent {
         }
         return html;
     }
-}
-
-async function get_data(method) {
-    return frappe.call({
-            method: method,
-            args: args
-        });
 }
