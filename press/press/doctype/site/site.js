@@ -8,9 +8,9 @@ frappe.ui.form.on('Site', {
         }
 
         // Overview
-        show_data(frm, daily_usage, 'daily_usage_block', 'press.api.analytics.daily_usage', {name: frm.docname, timezone: moment.tz.guess()});
-        show_data(frm, site_plan, 'plan_block', 'press.api.site.get_plans');
-        show_data(frm, site_info, 'site_info_block', 'press.api.site.overview');
+        // show_data(frm, daily_usage, 'daily_usage_block', 'press.api.analytics.daily_usage', {name: frm.docname, timezone: moment.tz.guess()});
+        // show_data(frm, site_plan, 'plan_block', 'press.api.site.get_plans');
+        // show_data(frm, site_info, 'site_info_block', 'press.api.site.overview');
 
         // Analytics
         show_data(frm, usage_counter, 'usage_counter_block', 'press.api.analytics.daily_usage', {name: frm.docname, timezone: moment.tz.guess()});
@@ -38,51 +38,72 @@ frappe.ui.form.on('Site', {
 
         frappe.call({
             method: 'press.api.site.overview',
-            args: {name: frm.docname, limit: 3}
+            args: {name: frm.docname}
         }).then((res) => {
-            let recent_activities = res.message.recent_activity;
-            let installed_apps = res.message.installed_apps;
-            let domains = res.message.domains;
-            
-            var recent_activities_data = [];
-            for(var ra of recent_activities) {
-                recent_activities_data.push({
-                    title: ra.action + ' by ' + ra.owner,
-                    message: ra.creation
-                })
-            }
-            
-            var installed_apps_data = [];
-            for(var ia of installed_apps) {
-                installed_apps_data.push({
-                    title: ia.title,
-                    message: ia.repository + '/' + ia.repository + ':' + ia.branch,
-                    tag: ia.hash.substring(0,7),
-                    tag_type: 'indicator-pill blue'
-                })
-            }
+            let recent_activities = remap(res.message.recent_activity, (d) => {
+                return {
+                    title: d.action + ' by ' + d.owner,
+                    message: d.creation
+                };
+            });
 
-            var domains_data = [];
-            for(var d of domains) {
-                domains_data.push({
+            let installed_apps = remap(res.message.installed_apps, (d) => {
+                return {
+                    title: d.title,
+                    message: d.repository + '/' + d.repository + ':' + d.branch,
+                    tag: d.hash.substring(0,7),
+                    tag_type: 'indicator-pill blue'
+                };
+            });
+            let domains = remap(res.message.domains, (d) => {
+                return {
                     message: d.domain,
                     tag: d.primary || "",
                     tag_type: 'indicator-pill green'
-                })
-            }
+                };
+            });
 
-            // Recent activity
-            new ListComponent(frm.get_field('recent_activity_block').$wrapper, {'data': recent_activities_data, 'template': title_with_message_and_tag_template});            
+            // Recent Activity
+            new ListComponent(frm.get_field('recent_activity_block').$wrapper, {
+                'data': recent_activities, 
+                'template': title_with_message_and_tag_template
+            });            
            
             // Apps
-            new SectionHead(frm.get_field('site_apps_block').$wrapper, {'title': 'Apps', 'button': {'title': 'Add App', 'onclick': () => {frappe.msgprint(__('Add App'))}}});
-            new SectionDescription(frm.get_field('site_apps_block').$wrapper, {'description': 'Apps installed on your site'});
-            new ListComponent(frm.get_field('site_apps_block').$wrapper, {'data': installed_apps_data, 'template': title_with_message_and_tag_template});
+            new SectionHead(frm.get_field('site_apps_block').$wrapper, {
+                'title': 'Apps', 
+                'button': {
+                    'title': 'Add App', 
+                    'onclick': () => {
+                        frappe.msgprint(__('Add App'));
+                    }
+                }
+            });
+            new SectionDescription(frm.get_field('site_apps_block').$wrapper, {
+                'description': 'Apps installed on your site'
+            });
+            new ListComponent(frm.get_field('site_apps_block').$wrapper, {
+                'data': installed_apps, 
+                'template': title_with_message_and_tag_template
+            });
 
             // Domains
-            new SectionHead(frm.get_field('site_domain_block').$wrapper, {'title': 'Domains', 'button': {'title': 'Add Domain', 'onclick': () => {frappe.msgprint(__('Add Domain'))}}});
-            new SectionDescription(frm.get_field('site_domain_block').$wrapper, {'description': 'Domains pointing to your site'});
-            new ListComponent(frm.get_field('site_domain_block').$wrapper, {'data': domains_data, 'template': title_with_message_and_tag_template});
+            new SectionHead(frm.get_field('site_domain_block').$wrapper, {
+                'title': 'Domains', 
+                'button': {
+                    'title': 'Add Domain', 
+                    'onclick': () => {
+                        frappe.msgprint(__('Add Domain'))
+                    }
+                }
+            });
+            new SectionDescription(frm.get_field('site_domain_block').$wrapper, {
+                'description': 'Domains pointing to your site'
+            });
+            new ListComponent(frm.get_field('site_domain_block').$wrapper, {
+                'data': domains, 
+                'template': title_with_message_and_tag_template
+            });
         })
 
 		frm.set_query('bench', function () {
@@ -756,4 +777,12 @@ class ListComponent {
         }
         return html;
     }
+}
+
+function remap(data, data_template) {
+    let new_data = [];
+    for(let d of data) {
+        new_data.push(data_template(d));
+    }
+    return new_data;
 }
