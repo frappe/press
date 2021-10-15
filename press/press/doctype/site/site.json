@@ -44,7 +44,8 @@
   "restore_migrate_and_reset_block",
   "site_config_tab_break",
   "site_config_section",
-  "site_config_block",
+  "site_config_json",
+  "column_break_40",
   "jobs_tab_break",
   "jobs_section",
   "jobs_block",
@@ -555,12 +556,8 @@
   },
   {
    "fieldname": "site_config_section",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "site_config_block",
-   "fieldtype": "HTML",
-   "label": "Site Config Block"
+   "fieldtype": "Section Break",
+   "label": "Site Config"
   },
   {
    "fieldname": "jobs_section",
@@ -643,6 +640,15 @@
   {
    "fieldname": "column_break_13",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "site_config_json",
+   "fieldtype": "HTML Editor",
+   "label": "site_config.json"
+  },
+  {
+   "fieldname": "column_break_40",
+   "fieldtype": "Column Break"
   }
  ],
  "hide_toolbar": 1,
@@ -693,7 +699,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2021-10-15 02:20:17.682406",
+ "modified": "2021-10-15 11:01:20.084978",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
