@@ -27,13 +27,13 @@ frappe.ui.form.on('Site', {
         });
 
 
+        // data remaps
         let recent_activities = remap(overview_res.message.recent_activity, (d) => {
             return {
                 title: d.action + ' by ' + d.owner,
                 message: d.creation
             };
         });
-
         let installed_apps = remap(overview_res.message.installed_apps, (d) => {
             return {
                 title: d.title,
@@ -42,7 +42,6 @@ frappe.ui.form.on('Site', {
                 tag_type: 'indicator-pill blue'
             };
         });
-
         let domains = remap(overview_res.message.domains, (d) => {
             return {
                 message: d.domain,
@@ -50,13 +49,11 @@ frappe.ui.form.on('Site', {
                 tag_type: 'indicator-pill green'
             };
         });
-
         let backups = remap(backups_res.message, (d) => {
             return {
                 message: d.creation
             }
         });
-
         let jobs = remap(jobs_res.message, (d) => {
             return {
                 'title': d.job_type,
@@ -65,14 +62,12 @@ frappe.ui.form.on('Site', {
                 'tag_type': "indicator-pill green" 
             }
         });
-
         let logs = remap(logs_res.message, (d) => {
             return {
                 'title': d.name,
                 'message': d.creation,
             }
         });
-
         let activities = remap(activities_res.message, (d) => {
             return {
                 'title': d.action + ' by ' + d.owner,
@@ -80,6 +75,8 @@ frappe.ui.form.on('Site', {
             }
         });
 
+        // render
+        
         // tab: Overview 
 
         // sec: Recent Activity
@@ -211,19 +208,6 @@ frappe.ui.form.on('Site', {
             }
         });
 
-        // tab: Site Config
-
-        // sec: Site Config
-        new SectionHead(frm.get_field('site_config_block').$wrapper, {
-            'title': 'Site Config',
-            'button': {
-                'title': 'Edit Config',
-                'onclick': () => {
-                    frappe.msgprint(__('Edit Config'));
-                }
-            }
-        });
-
         // tab: Jobs
 
         // sec: Jobs
@@ -267,6 +251,8 @@ frappe.ui.form.on('Site', {
         });
 
         // tab: Settings
+
+        console.log(frm.get_field('site_config_json').value);
 
 		frm.set_query('bench', function () {
 			return {
