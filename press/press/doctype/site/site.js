@@ -3,39 +3,28 @@
 
 frappe.ui.form.on('Site', {
 	onload: async function (frm) {
-        if(frm.get_field("setup_wizard_complete")) {
-            show_block_with_events(frm, 'site_activation_block', site_activation);
-        }
-
-        // Analytics
-        show_data(frm, usage_counter, 'usage_counter_block', 'press.api.analytics.daily_usage', {name: frm.docname, timezone: moment.tz.guess()});
-        show_data(frm, uptime, 'uptime_block', 'press.api.analytics.daily_usage', {name: frm.docname, timezone: moment.tz.guess()});
-        show_data(frm, requests, 'requests_block', 'press.api.analytics.daily_usage', {name: frm.docname, timezone: moment.tz.guess()});
-        show_data(frm, cpu_usage, 'cpu_usage_block', 'press.api.analytics.daily_usage', {name: frm.docname, timezone: moment.tz.guess()});
-        show_data(frm, background_jobs, 'background_jobs_block', 'press.api.analytics.daily_usage', {name: frm.docname, timezone: moment.tz.guess()});
-        show_data(frm, background_jobs_cpu_usage, 'background_jobs_cpu_usage_block', 'press.api.analytics.daily_usage', {name: frm.docname, timezone: moment.tz.guess()});
 
         // data fetch
         let overview_res = await frappe.call({
             method: 'press.api.site.overview',
             args: {name: frm.docname}
-        })
+        });
         let backups_res = await frappe.call({
             method: 'press.api.site.backups',
             args: {name: frm.docname}
-        })
+        });
         let jobs_res = await frappe.call({
             method: 'press.api.site.jobs',
             args: {name: frm.docname}
-        })
+        });
         let logs_res = await frappe.call({
             method: 'press.api.site.logs',
             args: {name: frm.docname}
-        })
+        });
         let activities_res = await frappe.call({
             method: 'press.api.site.activities',
             args: {name: frm.docname}
-        })
+        });
 
 
         let recent_activities = remap(overview_res.message.recent_activity, (d) => {
@@ -66,7 +55,7 @@ frappe.ui.form.on('Site', {
             return {
                 message: d.creation
             }
-        })
+        });
 
         let jobs = remap(jobs_res.message, (d) => {
             return {
@@ -75,21 +64,21 @@ frappe.ui.form.on('Site', {
                 'tag': d.status,
                 'tag_type': "indicator-pill green" 
             }
-        })
+        });
 
         let logs = remap(logs_res.message, (d) => {
             return {
                 'title': d.name,
                 'message': d.creation,
             }
-        })
+        });
 
         let activities = remap(activities_res.message, (d) => {
             return {
                 'title': d.action + ' by ' + d.owner,
                 'message': d.creation
             }
-        })
+        });
 
         // tab: Overview 
 
@@ -173,11 +162,11 @@ frappe.ui.form.on('Site', {
                     frappe.msgprint(__('Schedule a Backup'));
                 }
             }
-        })
+        });
         new ListComponent(frm.get_field('site_backups_block').$wrapper, {
             'data': backups,
             'template': title_with_message_and_tag_template
-        })
+        });
 
         // sec: Restore, Migrate and Reset
         new ActionBlock(frm.get_field('restore_migrate_and_reset_block').$wrapper, {
@@ -247,7 +236,7 @@ frappe.ui.form.on('Site', {
         new ListComponent(frm.get_field('jobs_block').$wrapper, {
             'data': jobs,
             'template': title_with_message_and_tag_template
-        })
+        });
 
         // tab: Logs
 
@@ -261,7 +250,7 @@ frappe.ui.form.on('Site', {
         new ListComponent(frm.get_field('logs_block').$wrapper, {
             'data': logs,
             'template': title_with_message_and_tag_template
-        })
+        });
 
         // tab: Activity
 
@@ -275,7 +264,7 @@ frappe.ui.form.on('Site', {
         new ListComponent(frm.get_field('activity_block').$wrapper, {
             'data': activities,
             'template': title_with_message_and_tag_template
-        })
+        });
 
         // tab: Settings
 
@@ -365,300 +354,6 @@ frappe.ui.form.on('Site', {
 		frm.toggle_enable(['host_name'], frm.doc.status === 'Active');
 	},
 });
-
-// custom html
-
-let site_activation = (events) => {
-    return `
-        <div class="flex flex-row justify-between align-items-center">
-            <div class="d-flex flex-row">
-                <strong class="mr-3">Site Activation</strong>
-                <p>Please login and complete the setup wizard on your site. Analytics will be collected only after setup is complete.</p>
-            </div>
-            `
-                + standard_button({
-                    name: 'login',
-                    title: 'Login',
-                    tag: 'btn-primary',
-                    events: events,
-                    onclick: () => {
-                        frappe.msgprint(__('Login'));
-                    }
-                })
-                +
-            `
-        </div>
-    `;
-}
-
-let daily_usage = (message) => {
-    let data = message.data;
-    if(data.length > 0) {
-        return `
-            <div class="">
-                Daily Usage: ${data}
-            </div>
-        `;
-    } else {
-        return `
-            <div class="d-flex justify-content-center">
-                <p class="m-3 mb-4">No data yet</p>
-            </div>
-        `;
-    }
-};
-
-let site_plan = (message) => {
-    if(message.length > 0) {
-        return `
-            <div class="">
-                Plan: ${message}
-            </div>
-        `;
-    } else {
-        return `
-            <div class="d-flex justify-content-center">
-                <p class="m-3 mb-4">No plan</p>
-            </div>
-        `;
-    }
-}
-
-let usage_counter = (message) => {
-    let data = message.data;
-    if(data.length > 0) {
-        return `
-            <div class="">
-                Daily Usage: ${data}
-            </div>
-        `;
-    } else {
-        return `
-            <div class="d-flex justify-content-center">
-                <p class="m-3 mb-4">No data yet</p>
-            </div>
-        `;
-    }
-};
-
-let uptime = (message) => {
-    let data = message.data;
-    if(data.length > 0) {
-        return `
-            <div class="">
-                Daily Usage: ${data}
-            </div>
-        `;
-    } else {
-        return `
-            <div class="d-flex justify-content-center">
-                <p class="m-3 mb-4">No data yet</p>
-            </div>
-        `;
-    }
-};
-
-let requests = (message) => {
-    let data = message.data;
-    if(data.length > 0) {
-        return `
-            <div class="">
-                Daily Usage: ${data}
-            </div>
-        `;
-    } else {
-        return `
-            <div class="d-flex justify-content-center">
-                <p class="m-3 mb-4">No data yet</p>
-            </div>
-        `;
-    }
-};
-
-let cpu_usage = (message) => {
-    let data = message.data;
-    if(data.length > 0) {
-        return `
-            <div class="">
-                Daily Usage: ${data}
-            </div>
-        `;
-    } else {
-        return `
-            <div class="d-flex justify-content-center">
-                <p class="m-3 mb-4">No data yet</p>
-            </div>
-        `;
-    }
-};
-
-let background_jobs = (message) => {
-    let data = message.data;
-    if(data.length > 0) {
-        return `
-            <div class="">
-                Daily Usage: ${data}
-            </div>
-        `;
-    } else {
-        return `
-            <div class="d-flex justify-content-center">
-                <p class="m-3 mb-4">No data yet</p>
-            </div>
-        `;
-    }
-};
-
-let background_jobs_cpu_usage = (message) => {
-    let data = message.data;
-    if(data.length > 0) {
-        return `
-            <div class="">
-                Daily Usage: ${data}
-            </div>
-        `;
-    } else {
-        return `
-            <div class="d-flex justify-content-center">
-                <p class="m-3 mb-4">No data yet</p>
-            </div>
-        `;
-    }
-};
-
-let site_config = (message, events) => {
-    let configs = message;
-    return `
-        <div class="d-flex flex-column">
-            <div class="d-flex flex-row justify-between">
-                <span>Add and update key value pairs to your site's site_config.json</span>
-                `
-                    + standard_button({
-                        name: 'edit-config',
-                        title: 'Edit Config',
-                        events: events,
-                        onclick: () => {
-                            frappe.msgprint(__('Edit Config'));
-                        }
-                    })
-                    +
-                `
-            </div>
-            <div class="d-flex flex-row justify-between">
-                <div class="control-value like-disabled-input w-50">
-                    <pre> site_config.js {`
-                        + iterate_list(configs, (config) => {
-                            return `
-                                <p>${config}</p>
-                            `;
-                        })
-                        +
-                    `}</pre>
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-// render components
-function standard_input_with_title(title, value, restricted = true) {
-    if(!value) {
-        value = "";
-    }
-    return `
-        <div class="d-flex flex-column mb-3">
-            <div class="clearfix">
-                <label class="control-label">${title}</label>
-            </div>
-            <div class="control-input-wrapper">
-                <div class="control-value like-disabled-input bold">
-                    <span>${value}</span>
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-function standard_action_with_title_and_message({title, message, btn_type = 'light', btn_name, btn_title = title, events, action}) {
-    return `
-        <div class="d-flex flex-column mb-3">
-            <span class="font-weight-bold">${title}</span>
-            <div class="d-flex flex-row justify-between mt-2">
-                <p>${message}</p>
-                `
-                    + standard_button({
-                        name: btn_name,
-                        title: btn_title,
-                        tag: 'btn-' + btn_type,
-                        events: events,
-                        onclick: action
-                    })
-                    +
-                `
-            </div>
-        </div>
-    `;
-}
-
-function standard_title_with_message_and_tag(title, message, tag, tag_type = "") {
-    return `
-        <div class="d-flex flex-column">
-            <div class="d-flex flex-column">
-                <h5>${title ? title : ""}</h5>
-            </div>
-            <div class="d-flex flex-row justify-between">
-                <p>${message ? message : ""}</p>
-                <p class="${tag_type}">${tag ? tag : ""}</p>
-            </div>
-        </div>
-    `;
-}
-
-function standard_button({name, title, tag = 'btn-light', events = [], onclick = () => {frappe.msgprint(__('Button click'))}}) {
-    events.push({name: name, action: onclick});
-    return `
-        <button class="${name} btn ${tag}">
-            <span>${title}</span>
-        </button>
-    `;
-}
-
-function iterate_list(data, template) {
-    var html = '';
-
-    for(var i = 0; i < data.length; i++) {
-        html += template(data[i]);
-        if(i != data.length - 1 ) html += '<hr class="mt-1">';
-    }
-    return html;
-}
-
-function show_data(frm, template, block, method, args = {name: frm.docname}) {
-	let events = [];
-    frappe
-		.call({
-            method: method,
-            args: args
-        })
-		.then((res) => {
-            show_block(frm, block, template(res.message, events), events);
-		});
-}
-
-function show_block_with_events(frm, block, html) {
-    let events = [];
-    show_block(frm, block, html(events), events)
-}
-
-function show_block(frm, block, html, events = []) {
-    let wrapper = frm.get_field(block).$wrapper;
-    wrapper.empty();
-    wrapper.append(`${html}`);
-
-    for(let event of events) {
-        wrapper.find("." + event.name).on('click', event.action);
-    }
-}
 
 // templates
 function title_with_message_and_tag_template(data) {
@@ -766,7 +461,7 @@ class ListComponent {
     make() {
         this.wrapper = $(`<div class="list-component">`).appendTo(this.parent);
 
-        let html = iterate_list(this.df.data, this.df.template);
+        let html = this.iterate_list(this.df.data, this.df.template);
         this.wrapper.append(`${html}`);
     }
 
