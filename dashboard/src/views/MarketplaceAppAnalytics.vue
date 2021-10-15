@@ -10,6 +10,10 @@
 				>
 				</ListItem>
 			</div>
+
+			<div class="py-10 text-center" v-if="$resources.analytics.loading">
+				<Button :loading="true">Loading</Button>
+			</div>
 		</Card>
 	</div>
 </template>
