@@ -145,3 +145,27 @@ class MarketplaceApp(WebsiteGenerator):
 					deploy_info[version] = "Awaiting Deploy"
 
 		return deploy_info
+
+	def get_analytics(self):
+		app_name = self.app
+		site_names = frappe.get_all("Site App", filters={"app": app_name}, pluck="parent")
+
+		total_installs = len(site_names)
+		num_installs_active_sites = (
+			frappe.db.count("Site", filters={"name": ("in", site_names), "status": "Active"})
+			if site_names
+			else 0
+		)
+
+		bench_names = frappe.get_all("Bench App", filters={"app": app_name}, pluck="parent")
+		num_installs_active_benches = (
+			frappe.db.count("Bench", filters={"name": ("in", bench_names), "status": "Active"})
+			if bench_names
+			else 0
+		)
+
+		return {
+			"total_installs": total_installs,
+			"num_installs_active_sites": num_installs_active_sites,
+			"num_installs_active_benches": num_installs_active_benches,
+		}
