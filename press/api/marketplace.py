@@ -380,20 +380,5 @@ def add_app(source: str, app: str):
 @frappe.whitelist()
 @protected("Marketplace App")
 def analytics(name: str):
-	app_name = frappe.db.get_value("Marketplace App", name, "app")
-	site_names = frappe.get_all("Site App", filters={"app": app_name}, pluck="parent")
-
-	total_installs = len(site_names)
-	num_installs_active_sites = frappe.db.count(
-		"Site", filters={"name": ("in", site_names), "status": "Active"}
-	)
-
-	bench_names = frappe.get_all("Bench App", filters={"app": app_name}, pluck="parent")
-	num_installs_active_benches = frappe.db.count(
-		"Bench", filters={"name": ("in", bench_names), "status": "Active"}
-	)
-	return {
-		"total_installs": total_installs,
-		"num_installs_active_sites": num_installs_active_sites,
-		"num_installs_active_benches": num_installs_active_benches,
-	}
+	marketplace_app_doc: MarketplaceApp = frappe.get_doc("Marketplace App", name)
+	return marketplace_app_doc.get_analytics()
