@@ -375,3 +375,10 @@ def add_app(source: str, app: str):
 			frappe.throw("A marketplace app already exists with the given versions!")
 
 	return marketplace_app.name
+
+
+@frappe.whitelist()
+@protected("Marketplace App")
+def analytics(name: str):
+	marketplace_app_doc: MarketplaceApp = frappe.get_doc("Marketplace App", name)
+	return marketplace_app_doc.get_analytics()
