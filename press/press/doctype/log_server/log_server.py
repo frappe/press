@@ -61,3 +61,7 @@ class LogServer(BaseServer):
 			self.status = "Broken"
 			log_error("Log Server Setup Exception", server=self.as_dict())
 		self.save()
+
+	@frappe.whitelist()
+	def show_kibana_password(self):
+		return self.get_password("kibana_password")
