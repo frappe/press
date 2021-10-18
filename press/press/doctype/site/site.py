@@ -1,32 +1,31 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2019, Frappe and contributors
+# Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
-from __future__ import unicode_literals
-
-import json
 import re
-from collections import defaultdict
-from datetime import date, datetime, timedelta
-from typing import Any, Dict, List
-
+import json
 import boto3
-import dateutil.parser
 import frappe
 import requests
+import dateutil.parser
+
+from typing import Any, Dict, List
+from collections import defaultdict
+from datetime import date, datetime, timedelta
+
 from frappe.core.utils import find
-from frappe.frappeclient import FrappeClient
 from frappe.model.document import Document
+from frappe.frappeclient import FrappeClient
+from frappe.utils.password import get_decrypted_password
 from frappe.model.naming import append_number_if_name_exists
 from frappe.utils import cint, convert_utc_to_user_timezone, cstr, get_datetime
-from frappe.utils.password import get_decrypted_password
 
 from press.agent import Agent
 from press.api.site import check_dns
 from press.press.doctype.plan.plan import get_plan_config
+from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.utils import convert, get_client_blacklisted_keys, guess_type, log_error
-from press.overrides import get_permission_query_conditions_for_doctype
 
 
 class Site(Document):
