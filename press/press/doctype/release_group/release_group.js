@@ -1,6 +1,8 @@
 // Copyright (c) 2020, Frappe and contributors
 // For license information, please see license.txt
 
+frappe.require('assets/press/js/ListComponent.js')
+
 frappe.ui.form.on('Release Group', {
 	onload(frm) {
 		show_data(
@@ -71,7 +73,6 @@ let version_template = (data) => {
 			<p>${data.name}</p> 
 			<span class="indicator-pill green">${data.sites.length} sites</span>
 		</div>
-		<hr>
 	`;
 };
 
@@ -95,7 +96,6 @@ let deploy_template = (data) => {
 			Deployed on ${date.getDate()} ${month} ${date.getFullYear()}, ${date.getHours()}:${date.getMinutes()} GMT+5:30
 			</p>
 		</div>
-		<hr>
 	`;
 };
 
@@ -125,22 +125,15 @@ let sites_template = (data) => {
 
 // render function
 function show_data(frm, method, template, block) {
-	let html = '';
-
-	frappe
-		.call({
-			method: method,
-			args: {
-				name: frm.docname,
-			},
-		})
-		.then((res) => {
-			for (let data of res.message) {
-				html += template(data);
-			}
-
-			var wrapper = frm.get_field(block).$wrapper;
-			wrapper.empty();
-			wrapper.append(`${html}`);
-		});
+	frappe.call({
+		method: method,
+		args: {
+			name: frm.docname,
+		},
+	}).then((res) => {
+		new ListComponent(frm.get_field(block).$wrapper, {
+            'data': res.message, 
+            'template': template
+        });    
+	})
 }

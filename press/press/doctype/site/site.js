@@ -1,6 +1,11 @@
 // Copyright (c) 2019, Frappe and contributors
 // For license information, please see license.txt
 
+frappe.require('assets/press/js/ListComponent.js')
+frappe.require('assets/press/js/SectionHead.js')
+frappe.require('assets/press/js/SectionDescription.js')
+frappe.require('assets/press/js/ActionBlock.js')
+
 frappe.ui.form.on('Site', {
 	onload: async function (frm) {
 
@@ -361,106 +366,7 @@ function title_with_message_and_tag_template(data) {
     `;
 }
 
-// components
-class ActionBlock {
-    constructor(parent, df) {
-        this.parent = parent;
-        this.df = df || {};
 
-        this.make();
-    }
-
-    make () {
-        this.wrapper = $(`<div class="d-flex flex-row justify-between mb-3">`).appendTo(this.parent);
-        this.wrapper.append(`
-            <div>
-                <div class="mb-2">
-                    <span class="font-weight-bold">${this.df.title || ""}</span>
-                </div>
-                <p>${this.df.description || ""}</p>
-            </div>
-            <div class="d-flex align-items-center">
-                <button class="btn btn-${this.df.button.tag || "light"}">
-                    <span>${this.df.button.title || ""}</span>
-                </button>
-            </div>
-        `);
-
-        //TODO: handle button onclick event
-    }
-}
-
-class SectionHead {
-    constructor(parent, df) {
-        this.parent = parent;
-        this.df = df || {};
-
-        this.make();
-    }
-
-    make() {
-        this.wrapper = $(`<div class="d-flex flex-row justify-between mb-${this.df.button ? '2': '3'}">`).appendTo(this.parent);
-        if (this.df.title) {
-            this.wrapper.append(`
-                <div class="head-title">
-                    ${this.df.title || ""}
-                </div>
-            `);
-        }
-        if (this.df.button) {
-            this.wrapper.append(`
-                <button class="btn btn-${this.df.button.tag || "light"}">
-                    <span>${this.df.button.title || ""}</span>
-                </button
-            `)
-        }
-        // TODO: add button onclick trigger
-    }
-}
-
-class SectionDescription {
-    constructor(parent, df) {
-        this.parent = parent;
-        this.df = df || {};
-
-        this.make();
-    }
-
-    make() {
-        this.wrapper = $(`<div class="section-description d-flex flex-column">`).appendTo(this.parent);
-        this.wrapper.append(`
-            <div class="d-flex flex-row mb-4">
-                <p>${this.df.description || ""}</p>
-            </div>
-        `);
-    }
-}
-
-class ListComponent {
-    constructor(parent, df) {
-        this.parent = parent;
-        this.df = df || {};
-
-        this.make();
-    }
-
-    make() {
-        this.wrapper = $(`<div class="list-component">`).appendTo(this.parent);
-
-        let html = this.iterate_list(this.df.data, this.df.template);
-        this.wrapper.append(`${html}`);
-    }
-
-    iterate_list(data, template) {
-        var html = '';
-    
-        for(var i = 0; i < data.length; i++) {
-            html += template(data[i]);
-            if(i != data.length - 1 ) html += '<hr class="mt-1">';
-        }
-        return html;
-    }
-}
 
 // util functions
 function remap(data, data_template) {
