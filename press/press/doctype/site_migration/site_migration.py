@@ -260,8 +260,7 @@ class SiteMigration(Document):
 		site = frappe.get_doc("Site", self.site)
 		site.status_before_update = site.status
 		site.status = "Inactive"
-		site.save()
-		return site.update_site_config({"maintenance_mode": 1})
+		return site.update_site_config({"maintenance_mode": 1})  # saves doc
 
 	def deactivate_site_on_source_proxy(self):
 		"""Deactivate site on source proxy"""
@@ -334,6 +333,7 @@ class SiteMigration(Document):
 			job = None
 		else:
 			job = site.update_site_config({"maintenance_mode": 0})
+		site.reload()
 		site.status = site.status_before_update
 		site.status_before_update = None
 		site.save()
