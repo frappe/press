@@ -282,10 +282,10 @@ class Site(Document):
 		self.save()
 
 	@frappe.whitelist()
-	def migrate(self):
+	def migrate(self, skip_failing_patches=False):
 		log_site_activity(self.name, "Migrate")
 		agent = Agent(self.server)
-		agent.migrate_site(self)
+		agent.migrate_site(self, skip_failing_patches=skip_failing_patches)
 		self.status = "Pending"
 		self.save()
 

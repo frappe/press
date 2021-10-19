@@ -85,6 +85,15 @@ class AgentJob(Document):
 		).insert()
 		return job
 
+	@frappe.whitelist()
+	def retry_skip_failing_patches(self):
+		# Add the skip flag and update request data
+		updated_request_data = json.loads(self.request_data) if self.request_data else {}
+		updated_request_data["skip_failing_patches"] = True
+		self.request_data = json.dumps(updated_request_data, indent=4, sort_keys=True)
+
+		return self.retry()
+
 	def on_trash(self):
 		steps = frappe.get_all("Agent Job Step", filters={"agent_job": self.name})
 		for step in steps:
