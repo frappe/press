@@ -20,6 +20,21 @@ from press.press.doctype.site_backup.site_backup import SiteBackup
 from press.press.doctype.subscription.subscription import Subscription
 from press.utils import log_error
 
+from functools import wraps
+from time import time
+
+
+def timing(f):
+	@wraps(f)
+	def wrap(*args, **kw):
+		ts = time()
+		result = f(*args, **kw)
+		te = time()
+		print(f"Took {te-ts}s")
+		return result
+
+	return wrap
+
 
 class BackupRotationScheme:
 	"""
@@ -222,6 +237,7 @@ class ScheduledBackupJob:
 		def delete_prev(self):
 			self.deque.pop()
 
+	@timing
 	def start(self):
 		"""Schedule backups for all Active sites based on their local timezones. Also trigger offsite backups once a day."""
 		limit = min(len(self.sites), self.limit)
