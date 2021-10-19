@@ -60,7 +60,7 @@ class RootDomain(Document):
 		try:
 			paginator = self.boto3_client.get_paginator("list_resource_record_sets")
 			return paginator.paginate(
-				PaginationConfig={"MaxItems": 1000, "PageSize": 300, "StartingToken": "0"},
+				PaginationConfig={"MaxItems": 5000, "PageSize": 300, "StartingToken": "0"},
 				HostedZoneId=self.hosted_zone.split("/")[-1],
 			)
 		except Exception:
