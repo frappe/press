@@ -9,10 +9,27 @@ frappe.ui.form.on('Agent Job', {
 		);
 
 		frm.add_custom_button(__('Retry'), () => {
-			frappe.confirm(
-				`Are you sure you want to retry this job?`,
-				() => frm.call("retry").then((result) => frappe.msgprint(frappe.utils.get_form_link('Agent Job', result.message.name, true)))
+			frappe.confirm(`Are you sure you want to retry this job?`, () =>
+				frm
+					.call('retry')
+					.then((result) =>
+						frappe.msgprint(
+							frappe.utils.get_form_link('Agent Job', result.message.name, true)
+						)
+					)
 			);
 		});
-	}
+
+		if (['Update Site Migrate', 'Migrate Site'].includes(frm.doc.job_type)) {
+			frm.add_custom_button('Run by Skipping Failing Patches', () => {
+				frm
+					.call('retry_skip_failing_patches')
+					.then((result) =>
+						frappe.msgprint(
+							frappe.utils.get_form_link('Agent Job', result.message.name, true)
+						)
+					);
+			});
+		}
+	},
 });
