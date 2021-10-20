@@ -1,7 +1,3 @@
-function clear_block(wrapper) {
-    wrapper.html('');
-}
-
 class DetailedListComponent {
 	constructor(parent, df) {
 		this.parent = parent;
@@ -15,7 +11,7 @@ class DetailedListComponent {
         
         let brief_section = $(`<div class="brief-section d-flex flex-column w-25 mr-4">`).appendTo(this.wrapper);
         $(`<div style="border-left:0.1px solid #DFDAD9">`).appendTo(this.wrapper);
-        let detailed_section = $(`<div class="detailed-section d-flex flex-column ml-4">`).appendTo(this.wrapper);
+        let detailed_section = $(`<div class="detailed-section d-flex flex-column w-75 ml-4">`).appendTo(this.wrapper);
 
         new SectionHead(brief_section, this.df);
         new SectionHead(detailed_section, {

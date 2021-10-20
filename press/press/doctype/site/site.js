@@ -5,6 +5,7 @@ frappe.require('assets/press/js/ListComponent.js')
 frappe.require('assets/press/js/SectionHead.js')
 frappe.require('assets/press/js/ActionBlock.js')
 frappe.require('assets/press/js/DetailedListComponent.js')
+frappe.require('assets/press/js/utils.js')
 
 frappe.ui.form.on('Site', {
 	onload: async function (frm) {
@@ -364,12 +365,3 @@ frappe.ui.form.on('Site', {
 		frm.toggle_enable(['host_name'], frm.doc.status === 'Active');
 	},
 });
-
-// util functions
-function remap(data, data_template) {
-    let new_data = [];
-    for(let d of data) {
-        new_data.push(data_template(d));
-    }
-    return new_data;
-}
