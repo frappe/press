@@ -43,9 +43,10 @@
   "restore_migrate_and_reset_section",
   "restore_migrate_and_reset_block",
   "site_config_tab_break",
-  "site_config_section",
-  "site_config_json",
-  "column_break_40",
+  "configuration_section",
+  "host_name",
+  "config",
+  "configuration",
   "jobs_tab_break",
   "jobs_section",
   "jobs_block",
@@ -81,10 +82,6 @@
   "erpnext_consultant",
   "section_break_6",
   "apps",
-  "configuration_section",
-  "host_name",
-  "config",
-  "configuration",
   "_keys_removed_in_last_update",
   "_site_usages",
   "current_cpu_usage",
@@ -174,7 +171,7 @@
    "fieldtype": "Section Break",
    "hide_days": 1,
    "hide_seconds": 1,
-   "label": "Configuration"
+   "label": "Site Config"
   },
   {
    "fieldname": "subdomain",
@@ -555,11 +552,6 @@
    "label": "Restore, Migrate & Reset Block"
   },
   {
-   "fieldname": "site_config_section",
-   "fieldtype": "Section Break",
-   "label": "Site Config"
-  },
-  {
    "fieldname": "jobs_section",
    "fieldtype": "Section Break"
   },
@@ -640,15 +632,6 @@
   {
    "fieldname": "column_break_13",
    "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "site_config_json",
-   "fieldtype": "HTML Editor",
-   "label": "site_config.json"
-  },
-  {
-   "fieldname": "column_break_40",
-   "fieldtype": "Column Break"
   }
  ],
  "hide_toolbar": 1,
@@ -699,7 +682,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2021-10-15 11:01:20.084978",
+ "modified": "2021-10-20 19:25:38.269001",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

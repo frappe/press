@@ -3,8 +3,8 @@
 
 frappe.require('assets/press/js/ListComponent.js')
 frappe.require('assets/press/js/SectionHead.js')
-frappe.require('assets/press/js/SectionDescription.js')
 frappe.require('assets/press/js/ActionBlock.js')
+frappe.require('assets/press/js/DetailedListComponent.js')
 
 frappe.ui.form.on('Site', {
 	onload: async function (frm) {
@@ -64,7 +64,11 @@ frappe.ui.form.on('Site', {
                 'title': d.job_type,
                 'message': d.creation,
                 'tag': d.status,
-                'tag_type': "indicator-pill green" 
+                'tag_type': "indicator-pill green",
+                'name': d.name,
+                'type': d.job_type,
+                'duration': d.duration,
+                'start': d.start
             }
         });
         let logs = remap(logs_res.message, (d) => {
@@ -118,15 +122,13 @@ frappe.ui.form.on('Site', {
         // sec: Apps
         new SectionHead(frm.get_field('site_apps_block').$wrapper, {
             'title': 'Apps', 
+            'description': 'Apps installed on your site',
             'button': {
                 'title': 'Add App', 
                 'onclick': () => {
                     frappe.msgprint(__('Add App'));
                 }
             }
-        });
-        new SectionDescription(frm.get_field('site_apps_block').$wrapper, {
-            'description': 'Apps installed on your site'
         });
         new ListComponent(frm.get_field('site_apps_block').$wrapper, {
             'data': installed_apps, 
@@ -136,15 +138,13 @@ frappe.ui.form.on('Site', {
         // sec: Domains
         new SectionHead(frm.get_field('site_domain_block').$wrapper, {
             'title': 'Domains', 
+            'description': 'Domains pointing to your site',
             'button': {
                 'title': 'Add Domain', 
                 'onclick': () => {
                     frappe.msgprint(__('Add Domain'))
                 }
             }
-        });
-        new SectionDescription(frm.get_field('site_domain_block').$wrapper, {
-            'description': 'Domains pointing to your site'
         });
         new ListComponent(frm.get_field('site_domain_block').$wrapper, {
             'data': domains, 
@@ -216,48 +216,67 @@ frappe.ui.form.on('Site', {
         // tab: Jobs
 
         // sec: Jobs
-        new SectionHead(frm.get_field('jobs_block').$wrapper, {
-            'title': 'Jobs'
-        });
-        new SectionDescription(frm.get_field('jobs_block').$wrapper, {
-            'description': 'History of jobs that ran on your site'
-        });
-        new ListComponent(frm.get_field('jobs_block').$wrapper, {
+
+        new DetailedListComponent(frm.get_field('jobs_block').$wrapper, {
+            'title': 'Jobs',
+            'description': 'History of jobs that ran on your site',
             'data': jobs,
-            'template': title_with_message_and_tag_template
+            'template': title_with_message_and_tag_template,
+            'onclick': async (index, wrapper) => {
+                let job_steps = await frappe.db.get_list('Agent Job Step', {
+                    filters: {'agent_job': ['in', jobs[index].name]},
+                    fields: ['step_name', 'duration', 'output', 'status'],
+                    order_by: 'creation'
+                });
+                job_steps = remap(job_steps, (d) => {
+                    return {
+                        'message': d.step_name
+                    }
+                })
+                
+                new SectionHead(wrapper, {
+                    'title': jobs[index].type,
+                    'description': 'Created on ' + jobs[index].start + ' executed in ' + jobs[index].duration
+                });
+                new ListComponent(wrapper, {
+                    'data': job_steps,
+                    'template': title_with_message_and_tag_template
+                });
+            }
         });
 
         // tab: Logs
 
-        // sec: Logs
-        new SectionHead(frm.get_field('logs_block').$wrapper, {
-            'title': 'Logs'
-        });
-        new SectionDescription(frm.get_field('logs_block').$wrapper, {
-            'description': 'Available Logs for your site'
-        });
-        new ListComponent(frm.get_field('logs_block').$wrapper, {
+        new DetailedListComponent(frm.get_field('logs_block').$wrapper, {
+            'title': 'Logs',
+            'description': 'Available Logs for your site',
             'data': logs,
-            'template': title_with_message_and_tag_template
+            'template': title_with_message_and_tag_template,
+            'onclick': (index, wrapper) => {
+                new SectionHead(wrapper, {
+                    'title': 'Index: ' + index
+                });
+            }
         });
 
         // tab: Activity
 
         // sec: Activity
-        new SectionHead(frm.get_field('activity_block').$wrapper, {
-            'title': 'Activity'
-        });
-        new SectionDescription(frm.get_field('activity_block').$wrapper, {
-            'description': 'Log of activities performed on your site'
-        });
-        new ListComponent(frm.get_field('activity_block').$wrapper, {
+
+        new DetailedListComponent(frm.get_field('activity_block').$wrapper, {
+            'title': 'Activity',
+            'description': 'Log of activities performed on your site',
             'data': activities,
-            'template': title_with_message_and_tag_template
+            'template': title_with_message_and_tag_template,
+            'onclick': (index, wrapper) => {
+                new SectionHead(wrapper, {
+                    'title': 'Index: ' + index
+                });
+            }
         });
+        
 
         // tab: Settings
-
-        console.log(frm.get_field('site_config_json').value);
 
 		frm.set_query('bench', function () {
 			return {
@@ -277,20 +296,20 @@ frappe.ui.form.on('Site', {
 		});
 	},
 	refresh: function (frm) {
-		frm.dashboard.set_headline_alert(
-			`<div class="container-fluid">
-				<div class="row">
-					<div class="col-sm-4">CPU Usage: ${frm.doc.current_cpu_usage}%</div>
-					<div class="col-sm-4">Database Usage: ${frm.doc.current_database_usage}%</div>
-					<div class="col-sm-4">Disk Usage: ${frm.doc.current_disk_usage}%</div>
-				</div>
-			</div>`
-		);
-		frm.add_web_link(`https://${frm.doc.name}`, __('Visit Site'));
-		frm.add_web_link(
-			`/dashboard/sites/${frm.doc.name}`,
-			__('Visit Dashboard')
-		);
+		// frm.dashboard.set_headline_alert(
+		// 	`<div class="container-fluid">
+		// 		<div class="row">
+		// 			<div class="col-sm-4">CPU Usage: ${frm.doc.current_cpu_usage}%</div>
+		// 			<div class="col-sm-4">Database Usage: ${frm.doc.current_database_usage}%</div>
+		// 			<div class="col-sm-4">Disk Usage: ${frm.doc.current_disk_usage}%</div>
+		// 		</div>
+		// 	</div>`
+		// );
+		// frm.add_web_link(`https://${frm.doc.name}`, __('Visit Site'));
+		// frm.add_web_link(
+		// 	`/dashboard/sites/${frm.doc.name}`,
+		// 	__('Visit Dashboard')
+		// );
 
 		[
 			[__('Backup'), 'backup'],
@@ -345,28 +364,6 @@ frappe.ui.form.on('Site', {
 		frm.toggle_enable(['host_name'], frm.doc.status === 'Active');
 	},
 });
-
-// templates
-function title_with_message_and_tag_template(data) {
-    let title = data.title || '';
-    let message = data.message || '';
-    let tag = data.tag || '';
-    let tag_type = data.tag_type || '';
-
-    return `
-        <div class="d-flex flex-column">
-            <div class="d-flex flex-column">
-                <h5>${title || ""}</h5>
-            </div>
-            <div class="d-flex flex-row justify-between">
-                <p>${message || ""}</p>
-                <p class="${tag_type}">${tag || ""}</p>
-            </div>
-        </div>
-    `;
-}
-
-
 
 // util functions
 function remap(data, data_template) {
