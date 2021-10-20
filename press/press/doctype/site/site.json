@@ -356,9 +356,6 @@
    "label": "Skip Auto Updates"
   },
   {
-   "default": "0",
-   "fetch_from": "team.notify_email",
-   "fetch_if_empty": 1,
    "fieldname": "notify_email",
    "fieldtype": "Data",
    "label": "Notify Email"
@@ -417,7 +414,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2021-10-07 14:53:39.875646",
+ "modified": "2021-10-20 10:16:45.831443",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
