@@ -3,6 +3,7 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
+from datetime import datetime
 
 import frappe
 from frappe.core.utils import find
@@ -29,6 +30,14 @@ class SiteMigration(Document):
 
 	def after_insert(self):
 		self.add_steps()
+		self.save()
+		if not self.scheduled_time:
+			self.start()
+
+	def start(self):
+		self.db_set("status", "Pending")
+		frappe.db.commit()
+		self.run_next_step()
 
 	def check_for_existing_agent_jobs(self):
 		if frappe.db.exists(
@@ -55,7 +64,6 @@ class SiteMigration(Document):
 		else:
 			# TODO: Call site update for bench only migration with popup with link to site update job
 			raise NotImplementedError
-		self.run_next_step()
 
 	def remove_domain_hosts_from_source(self):
 		"""Remove domain hosts from source"""
@@ -364,6 +372,15 @@ def process_site_migration_job_update(job, site_migration_name: str):
 			site_migration.fail()
 	else:
 		log_error("Extra Job found during Site Migration", job=job.as_dict())
+
+
+def run_scheduled_migrations():
+	migrations = frappe.get_all(
+		"Site Migration", {"scheduled_time": ("<=", datetime.now()), "status": "Scheduled"}
+	)
+	for migration in migrations:
+		site_migration = frappe.get_doc("Site Migration", migration)
+		site_migration.start()
 
 
 def on_doctype_update():
