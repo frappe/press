@@ -1,25 +1,52 @@
 class ListComponent {
-    constructor(parent, df) {
-        this.parent = parent;
-        this.df = df || {};
+	constructor(parent, df) {
+		this.parent = parent;
+		this.df = df || {};
 
-        this.make();
-    }
+		this.make();
+	}
 
-    make() {
-        this.wrapper = $(`<div class="list-component">`).appendTo(this.parent);
+	make() {
+		this.wrapper = $(`<div class="list-component">`).appendTo(this.parent);
+		this.iterate_list(
+			this.wrapper,
+			this.df.data,
+			this.df.template,
+			this.df.onclick
+		);
+	}
 
-        let html = this.iterate_list(this.df.data, this.df.template);
-        this.wrapper.append(`${html}`);
-    }
+	iterate_list(parent, data, template) {
+		for (var i = 0; i < data.length; i++) {
+			let list_row = $(`<div id="${i}" class="item-row">`).appendTo(parent);
+			data[i].last = (i == data.length - 1);
+			list_row.append(template(data[i]));
+			if (this.df.onclick) {
+				$(list_row).on('click', () => {
+					this.df.onclick(list_row[0].id); // TODO pass index
+				});
+			}
+		}
+	}
+}
+// list component templates
 
-    iterate_list(data, template) {
-        var html = '';
-    
-        for(var i = 0; i < data.length; i++) {
-            html += template(data[i]);
-            if(i != data.length - 1 ) html += '<hr class="mt-1">';
-        }
-        return html;
-    }
+function title_with_message_and_tag_template(data) {
+	let title = data.title || '';
+	let message = data.message || '';
+	let tag = data.tag || '';
+	let tag_type = data.tag_type || '';
+
+	return `
+        <div class="d-flex flex-column">
+            <div class="d-flex flex-column">
+                <h5>${title || ''}</h5>
+            </div>
+            <div class="d-flex flex-row justify-between">
+                <p>${message || ''}</p>
+                <p class="${tag_type}">${tag || ''}</p>
+            </div>
+        </div>
+		${data.last ? ``: `<hr>`}
+    `;
 }

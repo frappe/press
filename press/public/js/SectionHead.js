@@ -1,27 +1,39 @@
 class SectionHead {
-    constructor(parent, df) {
-        this.parent = parent;
-        this.df = df || {};
+	constructor(parent, df) {
+		this.parent = parent;
+		this.df = df || {};
 
-        this.make();
-    }
+		this.make();
+	}
 
-    make() {
-        this.wrapper = $(`<div class="d-flex flex-row justify-between mb-${this.df.button ? '2': '3'}">`).appendTo(this.parent);
-        if (this.df.title) {
-            this.wrapper.append(`
+	make() {
+		this.wrapper = $(`<div class="d-flex flex-column">`).appendTo(this.parent);
+		let header_section = $(
+			`<div class="d-flex flex-row justify-between mb-${
+				this.df.button ? '2' : '3'
+			}">`
+		).appendTo(this.wrapper);
+		if (this.df.title) {
+			header_section.append(`
                 <div class="head-title">
-                    ${this.df.title || ""}
+                    ${this.df.title || ''}
                 </div>
             `);
-        }
-        if (this.df.button) {
-            this.wrapper.append(`
-                <button class="btn btn-${this.df.button.tag || "light"}">
-                    <span>${this.df.button.title || ""}</span>
+		}
+		if (this.df.button) {
+			header_section.append(`
+                <button class="btn btn-${this.df.button.tag || 'light'}">
+                    <span>${this.df.button.title || ''}</span>
                 </button
-            `)
-        }
-        // TODO: add button onclick trigger
-    }
+            `);
+		}
+		if (this.df.description) {
+			this.wrapper.append(`
+                <div class="d-flex flex-row mb-4">
+                    <p>${this.df.description || ''}</p>
+                </div>
+            `);
+		}
+		// TODO: add button onclick trigger
+	}
 }
