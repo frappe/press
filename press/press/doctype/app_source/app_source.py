@@ -93,6 +93,7 @@ class AppSource(Document):
 						"app": self.app,
 						"source": self.name,
 						"hash": hash,
+						"team": self.team,
 						"message": branch["commit"]["commit"]["message"],
 						"author": branch["commit"]["commit"]["author"]["name"],
 						"deployable": bool(is_first_release),
