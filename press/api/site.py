@@ -95,6 +95,7 @@ def new(site):
 			"remote_database_file": files.get("database"),
 			"remote_public_file": files.get("public"),
 			"remote_private_file": files.get("private"),
+			"skip_failing_patches": site.get("skip_failing_patches", False),
 		},
 	).insert(ignore_permissions=True)
 	site.create_subscription(plan)
