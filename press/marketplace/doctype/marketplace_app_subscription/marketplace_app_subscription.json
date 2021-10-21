@@ -28,7 +28,8 @@
    "fieldname": "plan",
    "fieldtype": "Link",
    "label": "Plan",
-   "options": "Plan"
+   "options": "Plan",
+   "reqd": 1
   },
   {
    "default": "Inactive",
@@ -61,7 +62,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-10-21 01:10:25.233143",
+ "modified": "2021-10-21 10:49:26.587956",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "Marketplace App Subscription",
