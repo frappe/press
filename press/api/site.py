@@ -746,8 +746,8 @@ def reinstall(name):
 
 @frappe.whitelist()
 @protected("Site")
-def migrate(name):
-	frappe.get_doc("Site", name).migrate()
+def migrate(name, skip_failing_patches=False):
+	frappe.get_doc("Site", name).migrate(skip_failing_patches=skip_failing_patches)
 
 
 @frappe.whitelist()
