@@ -11,6 +11,7 @@
 		</template>
 		<Dialog title="Updates available" v-model="showUpdatesDialog">
 			<SiteAppUpdates :apps="updateInformation.apps" />
+			<ErrorMessage class="mt-1" :error="$resources.scheduleUpdate.error" />
 			<template #actions>
 				<Button
 					type="primary"
