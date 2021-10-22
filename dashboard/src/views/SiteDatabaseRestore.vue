@@ -101,7 +101,8 @@ export default {
 				database: null,
 				public: null,
 				private: null
-			}
+			},
+			wantToSkipFailingPatches: false
 		};
 	},
 	resources: {
@@ -200,7 +201,10 @@ export default {
 				actionLabel: 'Migrate',
 				actionType: 'danger',
 				action: closeDialog => {
-					this.$resources.migrateDatabase.submit();
+					this.$resources.migrateDatabase.submit({
+						name: this.site.name,
+						skip_failing_patches: this.wantToSkipFailingPatches
+					});
 					closeDialog();
 				}
 			});
