@@ -758,13 +758,13 @@ def clear_cache(name):
 
 @frappe.whitelist()
 @protected("Site")
-def restore(name, files):
+def restore(name, files, skip_failing_patches=False):
 	site = frappe.get_doc("Site", name)
 	site.remote_database_file = files["database"]
 	site.remote_public_file = files["public"]
 	site.remote_private_file = files["private"]
 	site.save()
-	site.restore_site()
+	site.restore_site(skip_failing_patches=skip_failing_patches)
 
 
 @frappe.whitelist()

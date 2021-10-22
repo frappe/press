@@ -69,6 +69,25 @@
 				<p class="text-base">Restore your database using a previous backup.</p>
 				<BackupFilesUploader :backupFiles.sync="selectedFiles" />
 			</div>
+			<div class="mt-3">
+				<!-- Skip Failing Checkbox -->
+				<input
+					id="skip-failing"
+					type="checkbox"
+					class="
+				h-4
+				w-4
+				text-blue-600
+				focus:ring-blue-500
+				border-gray-300
+				rounded
+			"
+					v-model="wantToSkipFailingPatches"
+				/>
+				<label for="skip-failing" class="ml-2 text-sm text-gray-900">
+					Skip failing patches (if any patch fails)
+				</label>
+			</div>
 			<ErrorMessage class="mt-2" :error="$resources.restoreBackup.error" />
 			<template #actions>
 				<Button
@@ -111,7 +130,8 @@ export default {
 				method: 'press.api.site.restore',
 				params: {
 					name: this.site.name,
-					files: this.selectedFiles
+					files: this.selectedFiles,
+					skip_failing_patches: this.wantToSkipFailingPatches
 				},
 				validate() {
 					if (!this.filesUploaded) {
