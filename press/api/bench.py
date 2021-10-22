@@ -256,7 +256,7 @@ def versions(name):
 		version.sites = frappe.db.get_all(
 			"Site",
 			{"status": ("!=", "Archived"), "group": name, "bench": version.name},
-			["name", "status"],
+			["name", "status", "creation"],
 		)
 		version.apps = frappe.db.get_all(
 			"Bench App",
