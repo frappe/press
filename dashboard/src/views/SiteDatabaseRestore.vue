@@ -29,7 +29,10 @@
 						Run bench migrate command on your database.
 					</p>
 				</div>
-				<Button :disabled="site.status === 'Suspended'" @click="confirmMigrate">
+				<Button
+					:disabled="site.status === 'Suspended'"
+					@click="showMigrateDialog = true"
+				>
 					Migrate Database
 				</Button>
 			</div>
@@ -63,6 +66,53 @@
 				</Button>
 			</div>
 		</div>
+
+		<Dialog
+			title="Migrate Database"
+			v-model="showMigrateDialog"
+			:dismissable="true"
+			@close="
+				() => {
+					$resources.migrateDatabase.reset();
+					wantToSkipFailingPatches = false;
+				}
+			"
+		>
+			<p class="text-base">
+				<b>bench migrate</b> command will be executed on your database. Are you
+				sure you want to run this command? We recommend that you download a
+				database backup before continuing.
+			</p>
+			<ErrorMessage class="mt-2" :error="$resources.migrateDatabase.error" />
+			<div class="mt-2">
+				<!-- Skip Failing Checkbox -->
+				<input
+					id="skip-failing"
+					type="checkbox"
+					class="
+				h-4
+				w-4
+				text-blue-600
+				focus:ring-blue-500
+				border-gray-300
+				rounded
+			"
+					v-model="wantToSkipFailingPatches"
+				/>
+				<label for="skip-failing" class="ml-2 text-sm text-gray-900">
+					Skip failing patches (if any patch fails)
+				</label>
+			</div>
+			<template #actions>
+				<Button
+					type="danger"
+					:loading="$resources.migrateDatabase.loading"
+					@click="migrateDatabase"
+				>
+					Migrate
+				</Button>
+			</template>
+		</Dialog>
 
 		<Dialog title="Restore" v-model="showRestoreDialog">
 			<div class="space-y-4">
@@ -115,6 +165,7 @@ export default {
 	props: ['site'],
 	data() {
 		return {
+			showMigrateDialog: false,
 			showRestoreDialog: false,
 			selectedFiles: {
 				database: null,
@@ -210,23 +261,10 @@ export default {
 				}
 			});
 		},
-		confirmMigrate() {
-			this.$confirm({
-				title: 'Migrate Database',
-				message: `
-					<b>bench migrate</b> command will be executed on your database. Are you sure
-					you want to run this command?
-					We recommend that you download a database backup before continuing.
-				`,
-				actionLabel: 'Migrate',
-				actionType: 'danger',
-				action: closeDialog => {
-					this.$resources.migrateDatabase.submit({
-						name: this.site.name,
-						skip_failing_patches: this.wantToSkipFailingPatches
-					});
-					closeDialog();
-				}
+		migrateDatabase() {
+			this.$resources.migrateDatabase.submit({
+				name: this.site.name,
+				skip_failing_patches: this.wantToSkipFailingPatches
 			});
 		},
 		confirmClearCache() {
