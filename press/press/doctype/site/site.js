@@ -5,6 +5,7 @@ frappe.require('assets/press/js/ListComponent.js')
 frappe.require('assets/press/js/SectionHead.js')
 frappe.require('assets/press/js/ActionBlock.js')
 frappe.require('assets/press/js/DetailedListComponent.js')
+frappe.require('assets/press/js/ChartComponent.js')
 frappe.require('assets/press/js/utils.js')
 
 frappe.ui.form.on('Site', {
@@ -15,6 +16,17 @@ frappe.ui.form.on('Site', {
             method: 'press.api.site.overview',
             args: {name: frm.docname}
         });
+        let analytics_res = {message: ''};
+        if (location.hostname === 'frappecloud.com' || 
+        location.hostname === 'staging.frappe.cloud') { // TODO: this is just a hack, need to find a better way
+            analytics_res = await frappe.call({
+                method: 'press.api.analytics.get',
+                args: {
+                    name: frm.docname,
+                    timezone: moment.tz.guess()
+                },
+            });
+        }
         let backups_res = await frappe.call({
             method: 'press.api.site.backups',
             args: {name: frm.docname}
@@ -31,7 +43,6 @@ frappe.ui.form.on('Site', {
             method: 'press.api.site.activities',
             args: {name: frm.docname}
         });
-
 
         // data remaps
         let recent_activities = remap(overview_res.message.recent_activity, (d) => {
@@ -84,12 +95,41 @@ frappe.ui.form.on('Site', {
                 'message': d.creation
             }
         });
-
+        
+        let daily_usage_chart_data = analytics_res.message.daily_usage || '';
+        let usage_counter_chart_data = analytics_res.message.usage_counter || '';
+        let uptime_chart_data = analytics_res.message.uptime || '';
+        let request_count_chart_data = analytics_res.message.request_count || '';
+        let cpu_usage_chart_data = analytics_res.message.request_cpu_time || '';
+        let background_jobs_chart_data = analytics_res.message.job_count || '';
+        let background_jobs_cpu_usage_chart_data = analytics_res.message.job_cpu_time || '';
+        
         // render
         
         // tab: Overview 
+        new ChartComponent(frm.get_field('daily_usage_block').$wrapper, {
+            'title': 'Daily Usage',
+            'data': daily_usage_chart_data,
+            'type': 'line',
+            'button': {
+                'title': 'All analytics',
+                'onclick': () => {
+
+                }
+            },
+            'colors': ['purple']
+        });
 
         // sec: Recent Activity
+        new SectionHead(frm.get_field('recent_activity_block').$wrapper, {
+            'title': 'Recent Activity',
+            'button': {
+                'title': 'All activity',
+                'onclick': () => {
+
+                }
+            }
+        })
         new ListComponent(frm.get_field('recent_activity_block').$wrapper, {
             'data': recent_activities, 
             'template': title_with_message_and_tag_template
@@ -154,6 +194,53 @@ frappe.ui.form.on('Site', {
 
         // tab: Analytics
 
+        new ChartComponent(frm.get_field('usage_counter_block').$wrapper, {
+            'title': 'Usage Counter',
+            'data': usage_counter_chart_data,
+            'type': 'line',
+            'colors': ['blue'],
+            'button': {
+                'title': 'View all logs',
+                'onclick': () => {
+
+                }
+            }
+        });
+
+        new ChartComponent(frm.get_field('uptime_block').$wrapper, {
+            'title': 'Uptime',
+            'data': uptime_chart_data,
+            'type': 'bar',
+            'colors': ['green', 'red']
+        });
+
+        new ChartComponent(frm.get_field('requests_block').$wrapper, {
+            'title': 'Requests',
+            'data': request_count_chart_data,
+            'type': 'line',
+            'colors': ['green']
+        });
+
+        new ChartComponent(frm.get_field('cpu_usage_block').$wrapper, {
+            'title': 'CPU Usage',
+            'data': cpu_usage_chart_data,
+            'type': 'line',
+            'colors': ['green']
+        });
+
+        new ChartComponent(frm.get_field('background_jobs_block').$wrapper, {
+            'title': 'Background Jobs',
+            'data': background_jobs_chart_data,
+            'type': 'line',
+            'colors': ['green']
+        });
+
+        new ChartComponent(frm.get_field('background_jobs_cpu_usage_block').$wrapper, {
+            'title': 'Background Jobs CPU Usage',
+            'data': background_jobs_cpu_usage_chart_data,
+            'type': 'line',
+            'colors': ['green']
+        });
         // tab: Backup & Restore
 
         // sec: Backup
@@ -241,7 +328,10 @@ frappe.ui.form.on('Site', {
                 });
                 new ListComponent(wrapper, {
                     'data': job_steps,
-                    'template': title_with_message_and_tag_template
+                    'template': title_with_message_and_tag_template,
+                    'onclick': () => {
+                        frappe.msgprint(__('Hello There'));
+                    }
                 });
             }
         });

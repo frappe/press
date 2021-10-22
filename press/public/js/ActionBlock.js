@@ -11,7 +11,7 @@ class ActionBlock {
         this.wrapper.append(`
             <div>
                 <div class="mb-2">
-                    <span class="font-weight-bold">${this.df.title || ""}</span>
+                    <h5 class="">${this.df.title || ""}</h5>
                 </div>
                 <p>${this.df.description || ""}</p>
             </div>

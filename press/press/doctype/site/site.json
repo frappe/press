@@ -452,14 +452,12 @@
   },
   {
    "fieldname": "daily_usage_section",
-   "fieldtype": "Section Break",
-   "label": "Daily Usage"
+   "fieldtype": "Section Break"
   },
   {
    "columns": 2,
    "fieldname": "recent_activity_section",
-   "fieldtype": "Section Break",
-   "label": "Recent Activity"
+   "fieldtype": "Section Break"
   },
   {
    "fieldname": "plan_section",
@@ -483,8 +481,7 @@
   },
   {
    "fieldname": "usage_counter_section",
-   "fieldtype": "Section Break",
-   "label": "Usage Counter"
+   "fieldtype": "Section Break"
   },
   {
    "fieldname": "usage_counter_block",
@@ -493,8 +490,7 @@
   },
   {
    "fieldname": "uptime_section",
-   "fieldtype": "Section Break",
-   "label": "Uptime"
+   "fieldtype": "Section Break"
   },
   {
    "fieldname": "uptime_block",
@@ -503,8 +499,7 @@
   },
   {
    "fieldname": "requests_section",
-   "fieldtype": "Section Break",
-   "label": "Requests"
+   "fieldtype": "Section Break"
   },
   {
    "fieldname": "requests_block",
@@ -513,8 +508,7 @@
   },
   {
    "fieldname": "cpu_usage_section",
-   "fieldtype": "Section Break",
-   "label": "Cpu Usage"
+   "fieldtype": "Section Break"
   },
   {
    "fieldname": "cpu_usage_block",
@@ -523,8 +517,7 @@
   },
   {
    "fieldname": "background_jobs_section",
-   "fieldtype": "Section Break",
-   "label": "Background Jobs"
+   "fieldtype": "Section Break"
   },
   {
    "fieldname": "background_jobs_block",
@@ -533,8 +526,7 @@
   },
   {
    "fieldname": "background_jobs_cpu_usage_section",
-   "fieldtype": "Section Break",
-   "label": "Background Jobs Cpu Usage"
+   "fieldtype": "Section Break"
   },
   {
    "fieldname": "background_jobs_cpu_usage_block",
@@ -682,7 +674,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2021-10-20 19:25:38.269001",
+ "modified": "2021-10-21 19:51:02.885430",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
