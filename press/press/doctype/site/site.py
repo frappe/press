@@ -304,7 +304,7 @@ class Site(Document):
 		agent.clear_site_cache(self)
 
 	@frappe.whitelist()
-	def restore_site(self):
+	def restore_site(self, skip_failing_patches=False):
 		if not frappe.get_doc("Remote File", self.remote_database_file).exists():
 			raise Exception(
 				"Remote File {0} is unavailable on S3".format(self.remote_database_file)
@@ -312,7 +312,7 @@ class Site(Document):
 
 		log_site_activity(self.name, "Restore")
 		agent = Agent(self.server)
-		agent.restore_site(self)
+		agent.restore_site(self, skip_failing_patches=skip_failing_patches)
 		self.status = "Pending"
 		self.save()
 
