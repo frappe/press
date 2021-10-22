@@ -171,7 +171,8 @@ class ScheduledBackupJob:
 
 		Return true if backup is supposed to be taken at this hour
 		"""
-		return (hour + self.offset) % self.interval == 0
+		# return (hour + self.offset) % self.interval == 0
+		return True
 
 	def __init__(self):
 		self.interval: int = (
