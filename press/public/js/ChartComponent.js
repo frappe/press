@@ -19,13 +19,13 @@ class ChartComponent {
                 for(let value of this.df.data.datasets[0].values) {
                     var bar;
                     if(value === undefined) {
-                        bar = `<div class="bg-light m-1 float-left" style="height: 100px; width: 5px">`;
+                        bar = `<div class="bg-light m-1 float-left" style="height: 100px; width: 3px">`;
                     } else if (value === 1) {
-                        bar = `<div class="bg-success m-1 float-left" style="height: 100px; width: 5px">`;
+                        bar = `<div class="bg-success m-1 float-left" style="height: 100px; width: 3px">`;
                     } else if (value === 0) {
-                        bar = `<div class="bg-danger m-1 float-left" style="height: 100px; width: 5px">`;
+                        bar = `<div class="bg-danger m-1 float-left" style="height: 100px; width: 3px">`;
                     } else {
-                        bar = `<div class="bg-warning m-1 float-left" style="height: 100px; width: 5px">`;
+                        bar = `<div class="bg-warning m-1 float-left" style="height: 100px; width: 3px">`;
                     }
                     mixed_bar_section.append($(bar));
                 }
