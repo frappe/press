@@ -244,7 +244,7 @@ frappe.ui.form.on('Site', {
             'title': 'Usage Counter',
             'data': chart_data,
             'type': 'line',
-            'colors': ['blue'],
+            'colors': ['purple'],
             'button': {
                 'title': 'View all logs',
                 'onclick': () => {
@@ -263,8 +263,7 @@ frappe.ui.form.on('Site', {
         new ChartComponent(frm.get_field('uptime_block').$wrapper, {
             'title': 'Uptime',
             'data': chart_data,
-            'type': 'mixed-bars',
-            'colors': ['green']
+            'type': 'mixed-bars'
         });
 
         chart_data = '';
@@ -292,7 +291,7 @@ frappe.ui.form.on('Site', {
             'title': 'CPU Usage',
             'data': chart_data,
             'type': 'line',
-            'colors': ['orange']
+            'colors': ['yello']
         });
 
         chart_data = '';
@@ -306,7 +305,7 @@ frappe.ui.form.on('Site', {
             'title': 'Background Jobs',
             'data': chart_data,
             'type': 'line',
-            'colors': ['green']
+            'colors': ['red']
         });
 
         chart_data = '';
@@ -320,7 +319,7 @@ frappe.ui.form.on('Site', {
             'title': 'Background Jobs CPU Usage',
             'data': chart_data,
             'type': 'line',
-            'colors': ['red']
+            'colors': ['blue']
         });
         // tab: Backup & Restore
 
