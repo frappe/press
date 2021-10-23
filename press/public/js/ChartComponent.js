@@ -15,17 +15,17 @@ class ChartComponent {
 		let chart_section = $(`<div class="chart">`).appendTo(this.wrapper);
         if(this.df.data) {
             if(this.df.type === 'mixed-bars') {
-                let mixed_bar_section = $(`<div class="">`).appendTo(chart_section);
+                let mixed_bar_section = $(`<div class="mixed-bars mt-4">`).appendTo(chart_section);
                 for(let value of this.df.data.datasets[0].values) {
                     var bar;
                     if(value === undefined) {
-                        bar = `<div class="bg-light m-1 float-left" style="height: 100px; width: 3px">`;
+                        bar = `<div class="bg-light m-1 float-left" style="height: 40px; width: 2px">`;
                     } else if (value === 1) {
-                        bar = `<div class="bg-success m-1 float-left" style="height: 100px; width: 3px">`;
+                        bar = `<div class="bg-success m-1 float-left" style="height: 40px; width: 2px">`;
                     } else if (value === 0) {
-                        bar = `<div class="bg-danger m-1 float-left" style="height: 100px; width: 3px">`;
+                        bar = `<div class="bg-danger m-1 float-left" style="height: 40px; width: 2px">`;
                     } else {
-                        bar = `<div class="bg-warning m-1 float-left" style="height: 100px; width: 3px">`;
+                        bar = `<div class="bg-warning m-1 float-left" style="height: 40px; width: 2px">`;
                     }
                     mixed_bar_section.append($(bar));
                 }

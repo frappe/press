@@ -539,3 +539,10 @@ frappe.ui.form.on('Site', {
 		frm.toggle_enable(['host_name'], frm.doc.status === 'Active');
 	},
 });
+
+function format_date(data) {
+    let value = data.map(d => {
+        return d.date
+    });
+    return value; 
+}
