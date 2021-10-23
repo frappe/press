@@ -88,13 +88,15 @@ frappe.ui.form.on('Site', {
                 'name': d.name,
                 'type': d.job_type,
                 'duration': d.duration,
-                'start': d.start
+                'start': d.start,
+                'output': d.output
             }
         });
         let logs = remap(logs_res.message, (d) => {
             return {
                 'title': d.name,
                 'message': d.creation,
+                'line': d.line
             }
         });
         let activities = remap(activities_res.message, (d) => {
@@ -420,7 +422,8 @@ frappe.ui.form.on('Site', {
                 });
                 job_steps = remap(job_steps, (d) => {
                     return {
-                        'message': d.step_name
+                        'title': d.step_name,
+                        'message': d.output || 'No output'
                     }
                 })
                 
@@ -445,9 +448,28 @@ frappe.ui.form.on('Site', {
             'description': 'Available Logs for your site',
             'data': logs,
             'template': title_with_message_and_tag_template,
-            'onclick': (index, wrapper) => {
+            'onclick': async (index, wrapper) => {
+                let log = await frappe.call({
+                    method: 'press.api.site.log',
+                    args: {
+                        name: frm.docname,
+                        log: logs[index].title
+                    }
+                });
+                
                 new SectionHead(wrapper, {
-                    'title': 'Index: ' + index
+                    'title': logs[index].title
+                });
+                
+                var log_lines = log.message[logs[index].title].split('\n');
+                log_lines = remap(log_lines, (d) => {
+                    return {
+                        message: d
+                    }
+                });
+                new ListComponent(wrapper, {
+                    'data': log_lines,
+                    'template': title_with_message_and_tag_template
                 });
             }
         });
@@ -456,17 +478,15 @@ frappe.ui.form.on('Site', {
 
         // sec: Activity
 
-        new DetailedListComponent(frm.get_field('activity_block').$wrapper, {
+        new SectionHead(frm.get_field('activity_block').$wrapper, {
             'title': 'Activity',
-            'description': 'Log of activities performed on your site',
+            'description': 'Log of activities performed on your site'
+        })
+
+        new ListComponent(frm.get_field('activity_block').$wrapper, {
             'data': activities,
-            'template': title_with_message_and_tag_template,
-            'onclick': (index, wrapper) => {
-                new SectionHead(wrapper, {
-                    'title': 'Index: ' + index
-                });
-            }
-        });
+            'template': title_with_message_and_tag_template
+        })
         
 
         // tab: Settings
