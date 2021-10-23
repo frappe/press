@@ -8,8 +8,6 @@ class ChartComponent {
 
 	make() {
 		this.wrapper = $(`<div class="chart-component">`).appendTo(this.parent);
-        
-        this.df.description = !this.df.data ? 'No data' : '';     
         new SectionHead(this.wrapper, this.df);
         
 		let chart_section = $(`<div class="chart">`).appendTo(this.wrapper);
@@ -37,6 +35,18 @@ class ChartComponent {
                     colors: this.df.colors,
                 });
             }
+        } else {
+            chart_section.append(`
+                <table style="height: 250px"> 
+                    <tbody>
+                        <tr>
+                            <td/>
+                            <td class="align-middle text-center w-100 pb-4">No data yet</td>
+                            <td/>
+                        </tr>
+                    </tbody>
+                </table>
+            `);
         }
 	}
 }
