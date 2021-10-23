@@ -17,6 +17,7 @@ frappe.ui.form.on('Site', {
             args: {name: frm.docname}
         });
         let analytics_res = {message: ''};
+        let daily_usage_res = {message: ''};
         if (location.hostname === 'frappecloud.com' || 
         location.hostname === 'staging.frappe.cloud') { // TODO: this is just a hack, need to find a better way
             analytics_res = await frappe.call({
@@ -26,6 +27,13 @@ frappe.ui.form.on('Site', {
                     timezone: moment.tz.guess()
                 },
             });
+            daily_usage_res = await frappe.call({
+                method: 'press.api.analytics.daily_usage',
+                args: {
+                    name: frm.docname,
+                    timezone: moment.tz.guess()
+                }                
+            })
         }
         let backups_res = await frappe.call({
             method: 'press.api.site.backups',
@@ -96,20 +104,46 @@ frappe.ui.form.on('Site', {
             }
         });
         
-        let daily_usage_chart_data = analytics_res.message.daily_usage || '';
-        let usage_counter_chart_data = analytics_res.message.usage_counter || '';
-        let uptime_chart_data = analytics_res.message.uptime || '';
-        let request_count_chart_data = analytics_res.message.request_count || '';
-        let cpu_usage_chart_data = analytics_res.message.request_cpu_time || '';
-        let background_jobs_chart_data = analytics_res.message.job_count || '';
-        let background_jobs_cpu_usage_chart_data = analytics_res.message.job_cpu_time || '';
-        
+        let daily_usage_data = daily_usage_res.message || '';
+        let usage_counter_data = analytics_res.message.usage_counter || '';
+        let uptime_data = analytics_res.message.uptime || '';
+        let request_count_data = analytics_res.message.request_count || '';
+        let request_cpu_time_data = analytics_res.message.request_cpu_time || '';
+        let job_count_data = analytics_res.message.job_count || '';
+        let job_cpu_time_data = analytics_res.message.job_cpu_time || '';
+
         // render
         
-        // tab: Overview 
+        // // tab: Overview 
+        var data = '';
+        var plan_limit = '';
+        var values = '';
+
+        var chart_data = '';
+
+        if(daily_usage_data) {
+            data, plan_limit = daily_usage_data;
+            values = data.map(d => d.value / 1000000);
+
+            chart_data = {
+                'labels': data.map(d => {
+                    return {
+                        date: d.date,
+                        toString() {
+                            return d.date;
+                        }
+                    };
+                }),
+                'datasets': [{ values }],
+                // show daily limit marker if usage crosses 50%
+                'yMarkers': values.some(value => value > plan_limit / 2)
+                    ? [{ label: 'Daily CPU Time Limit', value: plan_limit }]
+                    : null
+            }
+        }
         new ChartComponent(frm.get_field('daily_usage_block').$wrapper, {
             'title': 'Daily Usage',
-            'data': daily_usage_chart_data,
+            'data': chart_data,
             'type': 'line',
             'button': {
                 'title': 'All analytics',
@@ -117,7 +151,7 @@ frappe.ui.form.on('Site', {
 
                 }
             },
-            'colors': ['purple']
+            'colors': ['blue']
         });
 
         // sec: Recent Activity
@@ -192,11 +226,23 @@ frappe.ui.form.on('Site', {
             'template': title_with_message_and_tag_template
         });
 
-        // tab: Analytics
+        // tab Anlytics
+        chart_data = '';
+        if(usage_counter_data) {
+            values = usage_counter_data.map(d => d.value / 1000000);
 
+            chart_data = {
+                'labels': format_date(data),
+                'datasets': [{ values }],
+				// show daily limit marker if usage crosses 50%
+				'yMarkers': values.some(value => value > plan_limit / 2)
+					? [{ label: 'Daily CPU Time Limit', value: plan_limit }]
+					: null
+            }
+        }
         new ChartComponent(frm.get_field('usage_counter_block').$wrapper, {
             'title': 'Usage Counter',
-            'data': usage_counter_chart_data,
+            'data': chart_data,
             'type': 'line',
             'colors': ['blue'],
             'button': {
@@ -207,39 +253,74 @@ frappe.ui.form.on('Site', {
             }
         });
 
+        chart_data = '';
+        if(uptime_data) {
+            chart_data = {
+                labels: format_date(uptime_data),
+				datasets: [{ values: uptime_data.map(d => d.value) }]
+            }
+        }
         new ChartComponent(frm.get_field('uptime_block').$wrapper, {
             'title': 'Uptime',
-            'data': uptime_chart_data,
-            'type': 'bar',
-            'colors': ['green', 'red']
+            'data': chart_data,
+            'type': 'mixed-bars',
+            'colors': ['green']
         });
 
+        chart_data = '';
+        if(request_count_data) {
+            chart_data = {
+				labels: format_date(request_count_data),
+				datasets: [{ values: request_count_data.map(d => d.value) }]
+            }
+        }
         new ChartComponent(frm.get_field('requests_block').$wrapper, {
             'title': 'Requests',
-            'data': request_count_chart_data,
+            'data': chart_data,
             'type': 'line',
             'colors': ['green']
         });
 
+        chart_data = '';
+        if(request_cpu_time_data) {
+            chart_data = {
+                labels: format_date(request_cpu_time_data),
+				datasets: [{ values: request_cpu_time_data.map(d => d.value / 1000000) }]
+            }
+        }
         new ChartComponent(frm.get_field('cpu_usage_block').$wrapper, {
             'title': 'CPU Usage',
-            'data': cpu_usage_chart_data,
+            'data': chart_data,
             'type': 'line',
-            'colors': ['green']
+            'colors': ['orange']
         });
 
+        chart_data = '';
+        if(job_count_data) {
+            chart_data = {
+                labels: format_date(job_count_data),
+				datasets: [{ values: job_count_data.map(d => d.value) }]
+            }
+        }
         new ChartComponent(frm.get_field('background_jobs_block').$wrapper, {
             'title': 'Background Jobs',
-            'data': background_jobs_chart_data,
+            'data': chart_data,
             'type': 'line',
             'colors': ['green']
         });
 
+        chart_data = '';
+        if(job_cpu_time_data) {
+            chart_data = {
+                labels: format_date(job_cpu_time_data),
+				datasets: [{ values: job_cpu_time_data.map(d => d.value / 1000000) }]
+            }
+        }
         new ChartComponent(frm.get_field('background_jobs_cpu_usage_block').$wrapper, {
             'title': 'Background Jobs CPU Usage',
-            'data': background_jobs_cpu_usage_chart_data,
+            'data': chart_data,
             'type': 'line',
-            'colors': ['green']
+            'colors': ['red']
         });
         // tab: Backup & Restore
 
