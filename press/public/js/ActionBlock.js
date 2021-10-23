@@ -15,12 +15,20 @@ class ActionBlock {
                 </div>
                 <p>${this.df.description || ""}</p>
             </div>
-            <div class="d-flex align-items-center">
-                <button class="btn btn-${this.df.button.tag || "light"}">
-                    <span>${this.df.button.title || ""}</span>
-                </button>
-            </div>
         `);
+
+        let action_button = $(`<div class="action-button d-flex align-items-center">`).appendTo(this.wrapper);
+        action_button.append(`
+            <button class="btn btn-${this.df.button.tag || "light"}">
+                    <span>${this.df.button.title || ""}</span>
+            </button>
+        `);
+
+        if (this.df.button.onclick) {
+            $(action_button).on('click', () => {
+                this.df.button.onclick();
+            });
+        }
 
         //TODO: handle button onclick event
     }
