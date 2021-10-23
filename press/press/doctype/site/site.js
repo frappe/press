@@ -149,7 +149,7 @@ frappe.ui.form.on('Site', {
             'button': {
                 'title': 'All analytics',
                 'onclick': () => {
-
+                    frm.scroll_to_field('usage_counter_block');
                 }
             },
             'colors': ['blue']
@@ -161,7 +161,7 @@ frappe.ui.form.on('Site', {
             'button': {
                 'title': 'All activity',
                 'onclick': () => {
-
+                    frm.scroll_to_field('activity_block');
                 }
             }
         })
@@ -179,7 +179,10 @@ frappe.ui.form.on('Site', {
             'button': {
                 'title': 'Deactivate Site',
                 'onclick': () => {
-                    frappe.msgprint(__('Deactivate Site'));
+                    frappe.confirm(
+                        `Are you sure you want to deactivate this site?`,
+                        () => frm.call('deactivate').then((r) => frm.refresh())
+                    );
                 }
             }
         });
@@ -189,7 +192,10 @@ frappe.ui.form.on('Site', {
             'button': {
                 'title': 'Drop Site',
                 'onclick': () => {
-                    frappe.msgprint(__('Drop Site'));
+                    frappe.confirm(
+                        `Are you sure you want to drop this site?`,
+                        () => frm.call('archive').then((r) => frm.refresh())
+                    );
                 },
                 'tag': 'danger'
             }
@@ -247,9 +253,9 @@ frappe.ui.form.on('Site', {
             'type': 'line',
             'colors': ['purple'],
             'button': {
-                'title': 'View all logs',
+                'title': 'View detailed logs',
                 'onclick': () => {
-
+                    frm.scroll_to_field('logs_block');
                 }
             }
         });
@@ -330,7 +336,7 @@ frappe.ui.form.on('Site', {
             'button': {
                 'title': 'Schedule a Backup',
                 'onclick': () => {
-                    frappe.msgprint(__('Schedule a Backup'));
+                    frm.call('backup').then((r) => frm.refresh());
                 }
             }
         });
@@ -349,7 +355,10 @@ frappe.ui.form.on('Site', {
             'button': {
                 'title': 'Restore Database',
                 'onclick': () => {
-                    frappe.msgprint(__('Restore Database'));
+					frappe.confirm(
+						`Are you sure you want to restore this site?`,
+						() => frm.call('restore_site').then((r) => frm.refresh())
+					);
                 }
             }
         });
@@ -359,7 +368,10 @@ frappe.ui.form.on('Site', {
             'button': {
                 'title': 'Migrate Database',
                 'onclick': () => {
-                    frappe.msgprint(__('Migrate Database'));
+					frappe.confirm(
+						`Are you sure you want to migrate this site?`,
+						() => frm.call('migrate').then((r) => frm.refresh())
+					);
                 }
             }
         });
@@ -369,7 +381,10 @@ frappe.ui.form.on('Site', {
             'button': {
                 'title': 'Reset Database',
                 'onclick': () => {
-                    frappe.msgprint(__('Reset Database'));
+					frappe.confirm(
+						`Are you sure you want to reset this site?`,
+						() => frm.call('reinstall').then((r) => frm.refresh())
+					);
                 },
                 'tag': 'danger'
             }
@@ -380,7 +395,10 @@ frappe.ui.form.on('Site', {
             'button': {
                 'title': 'Clear Cache',
                 'onclick': () => {
-                    frappe.msgprint(__('Clear Cache'));
+					frappe.confirm(
+						`Are you sure you want to clear the cache of this site?`,
+						() => frm.call('clear_cache').then((r) => frm.refresh())
+					);
                 }
             }
         });
