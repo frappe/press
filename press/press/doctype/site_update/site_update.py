@@ -2,16 +2,15 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
-from __future__ import unicode_literals
-
+import pytz
 import random
 import frappe
-from datetime import datetime
-from frappe.model.document import Document
-from frappe.core.utils import find
-import pytz
+
 from press.agent import Agent
+from datetime import datetime
 from press.utils import log_error
+from frappe.core.utils import find
+from frappe.model.document import Document
 
 
 class SiteUpdate(Document):
