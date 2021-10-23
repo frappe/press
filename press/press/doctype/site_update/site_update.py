@@ -131,7 +131,7 @@ def trigger_recovery_job(site_update_name):
 
 
 def benches_with_available_update():
-	data = frappe.db.sql(
+	source_benches_info = frappe.db.sql(
 		"""
 		SELECT sb.name AS source_bench, sb.candidate AS source_candidate, sb.server AS server, dcd.destination AS destination_candidate
 		FROM `tabBench` sb, `tabDeploy Candidate Difference` dcd
@@ -140,24 +140,27 @@ def benches_with_available_update():
 		as_dict=True,
 	)
 
-	d_candidates = list(set(d["destination_candidate"] for d in data))
+	destination_candidates = list(
+		set(d["destination_candidate"] for d in source_benches_info)
+	)
 
-	data2 = frappe.get_all(
+	destination_benches_info = frappe.get_all(
 		"Bench",
-		filters={"status": "Active", "candidate": ("in", d_candidates)},
+		filters={"status": "Active", "candidate": ("in", destination_candidates)},
 		fields=["candidate AS destination_candidate", "name AS destination_bench", "server",],
 	)
 
 	updates_available_for_benches = []
-
-	for bench in data:
-		magic = find(
-			data2,
-			lambda x: x["destination_candidate"] == bench.destination_candidate
-			and x["server"] == bench.server,
+	for bench in source_benches_info:
+		destination_bench_exists = find(
+			destination_benches_info,
+			lambda x: (
+				x["destination_candidate"] == bench.destination_candidate
+				and x["server"] == bench.server
+			),
 		)
 
-		if magic:
+		if destination_bench_exists:
 			updates_available_for_benches.append(bench)
 
 	return list(set([bench.source_bench for bench in updates_available_for_benches]))
