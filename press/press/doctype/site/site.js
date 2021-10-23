@@ -122,7 +122,8 @@ frappe.ui.form.on('Site', {
         var chart_data = '';
 
         if(daily_usage_data) {
-            data, plan_limit = daily_usage_data;
+			data = daily_usage_data.data;
+			plan_limit = daily_usage_data.plan_limit;
             values = data.map(d => d.value / 1000000);
 
             chart_data = {
