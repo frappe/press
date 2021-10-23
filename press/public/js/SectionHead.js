@@ -21,11 +21,18 @@ class SectionHead {
             `);
 		}
 		if (this.df.button) {
-			header_section.append(`
+			let action_button = $(`<div class="action-button d-flex align-items-center">`).appendTo(header_section);
+			action_button.append(`
                 <button class="btn btn-${this.df.button.tag || 'light'}">
                     <span>${this.df.button.title || ''}</span>
                 </button
             `);
+			
+			if (this.df.button.onclick) {
+				$(action_button).on('click', () => {
+					this.df.button.onclick();
+				});
+			}
 		}
 		if (this.df.description) {
 			this.wrapper.append(`
