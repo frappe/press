@@ -290,6 +290,35 @@ class Site(Document):
 		self.save()
 
 	@frappe.whitelist()
+	def last_migrate_failed(self):
+		"""Returns `True` if the last site update's(`Migrate` deploy type) migrate site job step failed, `False` otherwise"""
+
+		site_update = frappe.get_all(
+			"Site Update",
+			filters={"site": self.name},
+			fields=["status", "update_job", "deploy_type"],
+			limit=1,
+			order_by="creation desc",
+		)
+
+		if not (site_update and site_update[0].deploy_type == "Migrate"):
+			return False
+		site_update = site_update[0]
+
+		if site_update.status == "Recovered":
+			migrate_site_step = frappe.get_all(
+				"Agent Job Step",
+				filters={"step_name": "Migrate Site", "agent_job": site_update.update_job},
+				fields=["status"],
+				limit=1,
+			)
+
+			if migrate_site_step and migrate_site_step[0].status == "Failure":
+				return True
+
+		return False
+
+	@frappe.whitelist()
 	def restore_tables(self):
 		self.status_before_update = self.status
 		agent = Agent(self.server)
