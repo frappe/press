@@ -340,6 +340,9 @@ frappe.ui.form.on('Site', {
         });
 
         // sec: Restore, Migrate and Reset
+        new SectionHead(frm.get_field('restore_migrate_and_reset_block').$wrapper, {
+            'title': 'Restore Migrate & Reset'
+        });
         new ActionBlock(frm.get_field('restore_migrate_and_reset_block').$wrapper, {
             'title': 'Restore',
             'description': "Restore your database using a previous backup",
