@@ -11,6 +11,26 @@
 		</template>
 		<Dialog title="Updates available" v-model="showUpdatesDialog">
 			<SiteAppUpdates :apps="updateInformation.apps" />
+			<div class="mt-4" v-if="lastMigrateFailed">
+				<!-- Skip Failing Checkbox -->
+				<input
+					id="skip-failing"
+					type="checkbox"
+					class="
+				h-4
+				w-4
+				text-blue-600
+				focus:ring-blue-500
+				border-gray-300
+				rounded
+			"
+					v-model="wantToSkipFailingPatches"
+				/>
+				<label for="skip-failing" class="ml-1 text-sm text-gray-900">
+					We noticed your <strong>last site migrate failed</strong>. Update by
+					skipping failing patches?
+				</label>
+			</div>
 			<ErrorMessage class="mt-1" :error="$resources.scheduleUpdate.error" />
 			<template #actions>
 				<Button
@@ -34,7 +54,8 @@ export default {
 	},
 	data() {
 		return {
-			showUpdatesDialog: false
+			showUpdatesDialog: false,
+			wantToSkipFailingPatches: false
 		};
 	},
 	resources: {
@@ -47,11 +68,21 @@ export default {
 				auto: true
 			};
 		},
+		lastMigrateFailed() {
+			return {
+				method: 'press.api.site.last_migrate_failed',
+				params: {
+					name: this.site.name
+				},
+				auto: true
+			};
+		},
 		scheduleUpdate() {
 			return {
 				method: 'press.api.site.update',
 				params: {
-					name: this.site.name
+					name: this.site.name,
+					skip_failing_patches: this.wantToSkipFailingPatches
 				},
 				onSuccess() {
 					this.showUpdatesDialog = false;
@@ -75,6 +106,9 @@ export default {
 		},
 		updateInformation() {
 			return this.$resources.updateInformation.data;
+		},
+		lastMigrateFailed() {
+			return this.$resources.lastMigrateFailed.data;
 		}
 	}
 };

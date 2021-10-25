@@ -16,7 +16,10 @@
 				Show updates
 			</Button>
 		</template>
-		<Dialog title="Following updates are available" v-model="showDeployDialog">
+		<Dialog
+			title="Select the apps you want to update"
+			v-model="showDeployDialog"
+		>
 			<BenchAppUpdates
 				:apps="deployInformation.apps"
 				:selectedApps.sync="selectedApps"
