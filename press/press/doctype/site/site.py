@@ -357,12 +357,18 @@ class Site(Document):
 		).insert()
 
 	@frappe.whitelist()
-	def schedule_update(self):
+	def schedule_update(self, skip_failing_patches=False):
 		log_site_activity(self.name, "Update")
 		self.status_before_update = self.status
 		self.status = "Pending"
 		self.save()
-		frappe.get_doc({"doctype": "Site Update", "site": self.name}).insert()
+		frappe.get_doc(
+			{
+				"doctype": "Site Update",
+				"site": self.name,
+				"skipped_failing_patches": skip_failing_patches,
+			}
+		).insert()
 
 	def reset_previous_status(self):
 		self.status = self.status_before_update
