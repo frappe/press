@@ -357,9 +357,6 @@
    "label": "Skip Auto Updates"
   },
   {
-   "default": "0",
-   "fetch_from": "team.notify_email",
-   "fetch_if_empty": 1,
    "fieldname": "notify_email",
    "fieldtype": "Data",
    "label": "Notify Email"

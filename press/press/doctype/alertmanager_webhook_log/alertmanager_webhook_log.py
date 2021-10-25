@@ -5,6 +5,7 @@ import frappe
 import json
 from frappe.model.document import Document
 from press.telegram_utils import Telegram
+from frappe.utils import get_url_to_form
 
 
 TELEGRAM_NOTIFICATION_TEMPLATE = """
@@ -14,7 +15,7 @@ TELEGRAM_NOTIFICATION_TEMPLATE = """
 
 Instances:
 {%- for instance in instances %}
-	- {{ instance }}
+	- [{{ instance["name"] }}]({{ instance["link"] }}) [→]({{ instance["name"] }})
 {%- endfor %}
 
 {% if labels -%}
@@ -44,7 +45,15 @@ class AlertmanagerWebhookLog(Document):
 		self.group_labels = json.dumps(self.parsed["groupLabels"], indent=2, sort_keys=True)
 		self.common_labels = json.dumps(self.parsed["commonLabels"], indent=2, sort_keys=True)
 
-		self.instances = [alert["labels"]["instance"] for alert in self.parsed["alerts"]]
+		self.instances = [
+			{
+				"name": alert["labels"]["instance"],
+				"doctype": alert["labels"].get(
+					"doctype", self.guess_doctype(alert["labels"]["instance"])
+				),
+			}
+			for alert in self.parsed["alerts"][:20]
+		]
 		self.payload = json.dumps(self.parsed, indent=2, sort_keys=True)
 
 		self.send_telegram_notification()
@@ -56,10 +65,29 @@ class AlertmanagerWebhookLog(Document):
 		labels = self.parsed["groupLabels"]
 		labels.pop("alertname", None)
 
-		context.update({"instances": self.instances[:100], "labels": labels, "rule": rule})
+		for instance in self.instances:
+			if instance["doctype"]:
+				instance["link"] = get_url_to_form(instance["doctype"], instance["name"])
+
+		context.update({"instances": self.instances, "labels": labels, "rule": rule})
 		message = frappe.render_template(TELEGRAM_NOTIFICATION_TEMPLATE, context)
 
 		return message
+
+	def guess_doctype(self, name):
+		doctypes = [
+			"Site",
+			"Bench",
+			"Server",
+			"Proxy Server",
+			"Database Server",
+			"Monitor Server",
+			"Log Server",
+			"Registry Server",
+		]
+		for doctype in doctypes:
+			if frappe.db.exists(doctype, name):
+				return doctype
 
 	def send_telegram_notification(self):
 		message = self.generate_telegram_message()

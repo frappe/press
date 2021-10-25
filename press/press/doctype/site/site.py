@@ -44,11 +44,12 @@ class Site(Document):
 		self.validate_installed_apps()
 		self.validate_host_name()
 		self.validate_site_config()
-		self.validate_notify_email()
 
 	def before_insert(self):
 		# initialize site.config based on plan
 		self._update_configuration(self.get_plan_config(), save=False)
+		if not self.notify_email:
+			self.notify_email = frappe.db.get_value("Team", self.team, "notify_email")
 
 	def validate_site_name(self):
 		site_regex = r"^[a-z0-9][a-z0-9-]*[a-z0-9]$"
@@ -103,10 +104,6 @@ class Site(Document):
 		# create an agent request if config has been updated
 		# if not self.is_new() and self.has_value_changed("config"):
 		# 	Agent(self.server).update_site_config(self)
-
-	def validate_notify_email(self):
-		if self.notify_email:
-			frappe.utils.validate_email_address(self.notify_email, True)
 
 	def on_update(self):
 		if self.status == "Active" and self.has_value_changed("host_name"):

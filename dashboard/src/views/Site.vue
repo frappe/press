@@ -22,9 +22,6 @@
 						>
 							Manage Bench
 						</Button>
-						<!-- TODO: 
-							- if user is team member / site owner then don't show popup
-						-->
 						<Button
 							v-if="site.status == 'Active'"
 							:loading="$resources.loginAsAdmin.loading"
@@ -151,13 +148,12 @@ export default {
 			}
 			this.$confirm({
 				title: 'Login as Administrator',
-				message:
-					'Please enter reason for this login.',
+				message: 'Please enter reason for this login.',
 				actionLabel: 'Login',
 				textBox: true,
 				action: (closeDialog, textBoxInput) => {
 					let reason = textBoxInput;
-					if (textBoxInput.length === 0 || !textBoxInput.trim()) {
+					if (textBoxInput.trim()) {
 						this.$resources.loginAsAdmin.submit({
 							name: this.siteName,
 							reason: reason
