@@ -31,6 +31,7 @@
 					skipping failing patches?
 				</label>
 			</div>
+			<ErrorMessage class="mt-1" :error="$resources.scheduleUpdate.error" />
 			<template #actions>
 				<Button
 					type="primary"

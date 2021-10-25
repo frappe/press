@@ -400,6 +400,12 @@ class Server(BaseServer):
 		if servers:
 			return servers[0]
 
+	@frappe.whitelist()
+	def reboot(self):
+		if self.provider == "AWS EC2":
+			virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
+			virtual_machine.reboot()
+
 
 def process_new_server_job_update(job):
 	if job.status == "Success":

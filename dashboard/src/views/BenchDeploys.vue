@@ -26,7 +26,10 @@
 						:subtitle="itemSubtitle(candidate)"
 					>
 						<template #actions>
-							<Badge v-if="candidate.status != 'Success'" color="yellow">
+							<Badge
+								v-if="candidate.status != 'Success'"
+								:status="candidate.status"
+							>
 								{{ candidate.status }}
 							</Badge>
 						</template>
