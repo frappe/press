@@ -79,7 +79,12 @@ class SiteUpdate(Document):
 	def create_agent_request(self):
 		agent = Agent(self.server)
 		site = frappe.get_doc("Site", self.site)
-		job = agent.update_site(site, self.destination_bench, self.deploy_type)
+		job = agent.update_site(
+			site,
+			self.destination_bench,
+			self.deploy_type,
+			skip_failing_patches=self.skipped_failing_patches,
+		)
 		frappe.db.set_value("Site Update", self.name, "update_job", job.name)
 
 	def have_past_updates_failed(self):
