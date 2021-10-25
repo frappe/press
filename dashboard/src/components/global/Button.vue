@@ -68,12 +68,17 @@ export default {
 		link: {
 			type: String,
 			default: null
+		},
+		size: {
+			type: String,
+			default: null
 		}
 	},
 	computed: {
 		buttonClasses() {
 			return [
-				'inline-flex items-center justify-center text-base leading-5 rounded-md focus:outline-none',
+				'inline-flex items-center justify-center leading-5 rounded-md focus:outline-none',
+				this.size == 'small' ? 'text-sm' : 'text-base',
 				this.icon ? 'p-1.5' : 'px-3 py-1',
 				{
 					'opacity-50 cursor-not-allowed pointer-events-none': this.isDisabled,
