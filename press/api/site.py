@@ -95,6 +95,7 @@ def new(site):
 			"remote_database_file": files.get("database"),
 			"remote_public_file": files.get("public"),
 			"remote_private_file": files.get("private"),
+			"skip_failing_patches": site.get("skip_failing_patches", False),
 		},
 	).insert(ignore_permissions=True)
 	site.create_subscription(plan)
@@ -721,8 +722,16 @@ def login(name, reason=None):
 
 @frappe.whitelist()
 @protected("Site")
-def update(name):
-	return frappe.get_doc("Site", name).schedule_update()
+def update(name, skip_failing_patches=False):
+	return frappe.get_doc("Site", name).schedule_update(
+		skip_failing_patches=skip_failing_patches
+	)
+
+
+@frappe.whitelist()
+@protected("Site")
+def last_migrate_failed(name):
+	return frappe.get_doc("Site", name).last_migrate_failed()
 
 
 @frappe.whitelist()
@@ -745,8 +754,8 @@ def reinstall(name):
 
 @frappe.whitelist()
 @protected("Site")
-def migrate(name):
-	frappe.get_doc("Site", name).migrate()
+def migrate(name, skip_failing_patches=False):
+	frappe.get_doc("Site", name).migrate(skip_failing_patches=skip_failing_patches)
 
 
 @frappe.whitelist()
@@ -757,13 +766,13 @@ def clear_cache(name):
 
 @frappe.whitelist()
 @protected("Site")
-def restore(name, files):
+def restore(name, files, skip_failing_patches=False):
 	site = frappe.get_doc("Site", name)
 	site.remote_database_file = files["database"]
 	site.remote_public_file = files["public"]
 	site.remote_private_file = files["private"]
 	site.save()
-	site.restore_site()
+	site.restore_site(skip_failing_patches=skip_failing_patches)
 
 
 @frappe.whitelist()

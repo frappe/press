@@ -122,6 +122,26 @@
 				</Button>
 			</div>
 		</div>
+
+		<div class="mt-3" v-if="['backup', 'siteUrl'].includes(restoreFrom)">
+			<!-- Skip Failing Checkbox -->
+			<input
+				id="skip-failing"
+				type="checkbox"
+				class="
+				h-4
+				w-4
+				text-blue-600
+				focus:ring-blue-500
+				border-gray-300
+				rounded
+			"
+				v-model="wantToSkipFailingPatches"
+			/>
+			<label for="skip-failing" class="ml-2 text-sm text-gray-900">
+				Skip failing patches (if any patch fails)
+			</label>
+		</div>
 	</div>
 </template>
 <script>
@@ -132,7 +152,7 @@ import { DateTime } from 'luxon';
 
 export default {
 	name: 'Restore',
-	props: ['options', 'selectedFiles', 'manualMigration'],
+	props: ['options', 'selectedFiles', 'manualMigration', 'skipFailingPatches'],
 	components: {
 		FileUploader,
 		Form,
@@ -174,7 +194,8 @@ export default {
 				email: '',
 				password: ''
 			},
-			errorMessage: null
+			errorMessage: null,
+			wantToSkipFailingPatches: false
 		};
 	},
 	resources: {
@@ -236,6 +257,11 @@ export default {
 					timestamp: formatted
 				};
 			});
+		}
+	},
+	watch: {
+		wantToSkipFailingPatches(value) {
+			this.$emit('update:skipFailingPatches', value);
 		}
 	}
 };

@@ -44,6 +44,7 @@
   "timezone",
   "column_break_29",
   "remote_files",
+  "skip_failing_patches",
   "remote_config_file",
   "remote_database_file",
   "column_break_34",
@@ -365,6 +366,14 @@
    "fieldname": "notifications_section",
    "fieldtype": "Section Break",
    "label": "Notifications"
+  },
+  {
+   "default": "0",
+   "description": "Only used while first restore",
+   "fieldname": "skip_failing_patches",
+   "fieldtype": "Check",
+   "label": "Skip Failing Patches",
+   "read_only": 1
   }
  ],
  "links": [
@@ -414,7 +423,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2021-10-20 10:16:45.831443",
+ "modified": "2021-10-21 22:30:36.754191",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

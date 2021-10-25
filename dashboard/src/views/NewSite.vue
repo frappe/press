@@ -38,6 +38,7 @@
 				<Restore
 					:options="options"
 					:selectedFiles.sync="selectedFiles"
+					:skipFailingPatches.sync="skipFailingPatches"
 					v-show="activeStep.name == 'Restore'"
 				/>
 				<Plans
@@ -124,6 +125,7 @@ export default {
 				public: null,
 				private: null
 			},
+			skipFailingPatches: false,
 			selectedPlan: null,
 			shareDetailsConsent: false,
 			validationMessage: null,
@@ -205,7 +207,8 @@ export default {
 						cluster: this.selectedRegion,
 						plan: this.selectedPlan ? this.selectedPlan.name : null,
 						files: this.selectedFiles,
-						share_details_consent: this.shareDetailsConsent
+						share_details_consent: this.shareDetailsConsent,
+						skip_failing_patches: this.skipFailingPatches
 					}
 				},
 				onSuccess(data) {

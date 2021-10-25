@@ -1,19 +1,16 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2020, Frappe and contributors
+# Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
-from __future__ import unicode_literals
-
 import json
-from itertools import groupby
+import frappe
 import random
 
-import frappe
+from press.agent import Agent
+from itertools import groupby
+from press.utils import log_error
 from frappe.core.utils import find
 from frappe.model.document import Document
-
-from press.agent import Agent
-from press.utils import log_error
 from press.press.doctype.site_migration.site_migration import (
 	get_ongoing_migration,
 	process_site_migration_job_update,
@@ -87,6 +84,15 @@ class AgentJob(Document):
 			}
 		).insert()
 		return job
+
+	@frappe.whitelist()
+	def retry_skip_failing_patches(self):
+		# Add the skip flag and update request data
+		updated_request_data = json.loads(self.request_data) if self.request_data else {}
+		updated_request_data["skip_failing_patches"] = True
+		self.request_data = json.dumps(updated_request_data, indent=4, sort_keys=True)
+
+		return self.retry()
 
 	def on_trash(self):
 		steps = frappe.get_all("Agent Job Step", filters={"agent_job": self.name})
