@@ -722,8 +722,16 @@ def login(name, reason=None):
 
 @frappe.whitelist()
 @protected("Site")
-def update(name):
-	return frappe.get_doc("Site", name).schedule_update()
+def update(name, skip_failing_patches=False):
+	return frappe.get_doc("Site", name).schedule_update(
+		skip_failing_patches=skip_failing_patches
+	)
+
+
+@frappe.whitelist()
+@protected("Site")
+def last_migrate_failed(name):
+	return frappe.get_doc("Site", name).last_migrate_failed()
 
 
 @frappe.whitelist()
