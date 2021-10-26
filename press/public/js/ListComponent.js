@@ -18,7 +18,8 @@ class ListComponent {
 
 	iterate_list(parent, data, template) {
 		for (var i = 0; i < data.length; i++) {
-			let list_row = $(`<div id="${i}" class="item-row">`).appendTo(parent);
+			let cursor_style = (this.df.onclick ? 'cursor: pointer;' : '');
+			let list_row = $(`<div id="${i}" class="item-row hover-shadow" style="${cursor_style}">`).appendTo(parent);
 			data[i].last = (i == data.length - 1);
 			list_row.append(template(data[i]));
 			if (this.df.onclick) {
