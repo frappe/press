@@ -23,3 +23,20 @@ function format_date_time(date_time, show_date=false, show_time=false) {
 
     return formated_date_time;
 }
+
+function format_chart_date(data) {
+    return remap(data, (d) => {
+        if(d.date) {
+            return {
+                date: format_date_time(d.date, 1),
+                toString() {
+                    return format_date_time(d.date, 1);
+                }
+            }
+        } else {
+            return {
+                date: ''
+            }
+        }
+    })
+}

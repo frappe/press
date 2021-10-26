@@ -6,6 +6,7 @@ frappe.require('assets/press/js/SectionHead.js')
 frappe.require('assets/press/js/ActionBlock.js')
 frappe.require('assets/press/js/DetailedListComponent.js')
 frappe.require('assets/press/js/ChartComponent.js')
+frappe.require('assets/press/js/LoadingComponent.js')
 frappe.require('assets/press/js/utils.js')
 
 frappe.ui.form.on('Site', {
@@ -213,14 +214,7 @@ frappe.ui.form.on('Site', {
             values = data.map(d => d.value / 1000000);
 
             chart_data = {
-                'labels': data.map(d => {
-                    return {
-                        date: format_date_time(d.date, 1),
-                        toString() {
-                            return d.date;
-                        }
-                    };
-                }),
+                labels: format_chart_date(data),
                 'datasets': [{ values }],
                 // show daily limit marker if usage crosses 50%
                 'yMarkers': values.some(value => value > plan_limit / 2)
@@ -330,7 +324,7 @@ frappe.ui.form.on('Site', {
             values = usage_counter_data.map(d => d.value / 1000000);
 
             chart_data = {
-                'labels': format_date_time(data, 1),
+                'labels': format_chart_date(data),
                 'datasets': [{ values }],
 				// show daily limit marker if usage crosses 50%
 				'yMarkers': values.some(value => value > plan_limit / 2)
@@ -355,7 +349,7 @@ frappe.ui.form.on('Site', {
         chart_data = '';
         if(uptime_data) {
             chart_data = {
-                labels: format_date_time(uptime_data, 1),
+                labels: format_chart_date(uptime_data),
 				datasets: [{ values: uptime_data.map(d => d.value) }]
             }
         }
@@ -369,7 +363,7 @@ frappe.ui.form.on('Site', {
         chart_data = '';
         if(request_count_data) {
             chart_data = {
-				labels: format_date_time(request_count_data, 1),
+                labels: format_chart_date(request_count_data),
 				datasets: [{ values: request_count_data.map(d => d.value) }]
             }
         }
@@ -384,7 +378,7 @@ frappe.ui.form.on('Site', {
         chart_data = '';
         if(request_cpu_time_data) {
             chart_data = {
-                labels: format_date_time(request_cpu_time_data, 1),
+                labels: format_chart_date(request_cpu_time_data),
 				datasets: [{ values: request_cpu_time_data.map(d => d.value / 1000000) }]
             }
         }
@@ -399,7 +393,7 @@ frappe.ui.form.on('Site', {
         chart_data = '';
         if(job_count_data) {
             chart_data = {
-                labels: format_date_time(job_count_data, 1),
+                labels: format_chart_date(job_count_data),
 				datasets: [{ values: job_count_data.map(d => d.value) }]
             }
         }
@@ -414,7 +408,7 @@ frappe.ui.form.on('Site', {
         chart_data = '';
         if(job_cpu_time_data) {
             chart_data = {
-                labels: format_date_time(job_cpu_time_data, 1),
+                labels: format_chart_date(job_cpu_time_data),
 				datasets: [{ values: job_cpu_time_data.map(d => d.value / 1000000) }]
             }
         }
@@ -591,10 +585,3 @@ frappe.ui.form.on('Site', {
         // tab: Settings
 	},
 });
-
-function format_date(data) {
-    let value = data.map(d => {
-        return d.date
-    });
-    return value; 
-}
