@@ -18,9 +18,11 @@ class ListComponent {
 
 	iterate_list(parent, data, template) {
 		for (var i = 0; i < data.length; i++) {
-			let cursor_style = (this.df.onclick ? 'cursor: pointer;' : '');
-			let list_row = $(`<div id="${i}" class="item-row hover-shadow" style="${cursor_style}">`).appendTo(parent);
-			data[i].last = (i == data.length - 1);
+			let cursor_style = this.df.onclick ? 'cursor: pointer;' : '';
+			let list_row = $(
+				`<div id="${i}" class="item-row hover-shadow" style="${cursor_style}">`
+			).appendTo(parent);
+			data[i].last = i == data.length - 1;
 			list_row.append(template(data[i]));
 			if (this.df.onclick) {
 				$(list_row).on('click', () => {
@@ -48,6 +50,16 @@ function title_with_message_and_tag_template(data) {
                 <p class="${tag_type}">${tag || ''}</p>
             </div>
         </div>
-		${data.last ? ``: `<hr>`}
+		${data.last ? `` : `<hr>`}
     `;
 }
+let log_template = (data) => `
+	<div>
+		<strong>${data.step_title}</strong>
+		<br>
+		<div class="mt-3 p-2 card bg-light text-dark border-0 rounded-sm">
+			<span style="white-space: pre-line">${data.step_detail}</span>
+		</div>
+	</div>	
+	<br>
+`;
