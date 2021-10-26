@@ -6,7 +6,7 @@ frappe.require('assets/press/js/SectionHead.js')
 frappe.require('assets/press/js/ActionBlock.js')
 frappe.require('assets/press/js/DetailedListComponent.js')
 frappe.require('assets/press/js/ChartComponent.js')
-frappe.require('assets/press/js/LoadingComponent.js')
+frappe.require('assets/press/js/AwaitedComponent.js')
 frappe.require('assets/press/js/utils.js')
 
 frappe.ui.form.on('Site', {
@@ -124,10 +124,6 @@ frappe.ui.form.on('Site', {
             method: 'press.api.site.backups',
             args: {name: frm.docname}
         });
-        let jobs_res = await frappe.call({
-            method: 'press.api.site.jobs',
-            args: {name: frm.docname}
-        });
         let logs_res = await frappe.call({
             method: 'press.api.site.logs',
             args: {name: frm.docname}
@@ -162,19 +158,6 @@ frappe.ui.form.on('Site', {
         let backups = remap(backups_res.message, (d) => {
             return {
                 message: format_date_time(d.creation, 1, 1)
-            }
-        });
-        let jobs = remap(jobs_res.message, (d) => {
-            return {
-                'title': d.job_type,
-                'message': format_date_time(d.creation, 1, 1),
-                'tag': d.status,
-                'tag_type': "indicator-pill green",
-                'name': d.name,
-                'type': d.job_type,
-                'duration': d.duration,
-                'start': d.start,
-                'output': d.output
             }
         });
         let logs = remap(logs_res.message, (d) => {
@@ -501,40 +484,61 @@ frappe.ui.form.on('Site', {
         // sec: Jobs
 
         clear_block(frm, 'jobs_block');
-        new DetailedListComponent(frm.get_field('jobs_block').$wrapper, {
-            'title': 'Jobs',
-            'description': 'History of jobs that ran on your site',
-            'data': jobs,
-            'template': title_with_message_and_tag_template,
-            'onclick': async (index, wrapper) => {
-                new LoadingComponent(wrapper, {
-                    promise: frappe.db.get_list('Agent Job Step', {
-                        filters: {'agent_job': ['in', jobs[index].name]},
-                        fields: ['step_name', 'duration', 'output', 'status'],
-                        order_by: 'creation'
-                    }),
-                    onload: (job_steps) => {
-                        job_steps = remap(job_steps, (d) => {
-                            return {
-                                'title': d.step_name,
-                                'message': d.output || 'No output'
-                            }
+        new AwaitedComponent(frm.get_field('jobs_block').$wrapper, {
+            promise: frappe.call({
+                method: 'press.api.site.jobs',
+                args: {name: frm.docname}
+            }),
+            onload: (jobs_res) => {
+                let jobs = remap(jobs_res.message, (d) => {
+                    return {
+                        'title': d.job_type,
+                        'message': format_date_time(d.creation, 1, 1),
+                        'tag': d.status,
+                        'tag_type': "indicator-pill green",
+                        'name': d.name,
+                        'type': d.job_type,
+                        'duration': d.duration,
+                        'start': d.start,
+                        'output': d.output
+                    }
+                });
+                new DetailedListComponent(frm.get_field('jobs_block').$wrapper, {
+                    'title': 'Jobs',
+                    'description': 'History of jobs that ran on your site',
+                    'data': jobs,
+                    'template': title_with_message_and_tag_template,
+                    'onclick': async (index, wrapper) => {
+                        new AwaitedComponent(wrapper, {
+                            promise: frappe.db.get_list('Agent Job Step', {
+                                filters: {'agent_job': ['in', jobs[index].name]},
+                                fields: ['step_name', 'duration', 'output', 'status'],
+                                order_by: 'creation'
+                            }),
+                            onload: (job_steps) => {
+                                job_steps = remap(job_steps, (d) => {
+                                    return {
+                                        'title': d.step_name,
+                                        'message': d.output || 'No output'
+                                    }
+                                })
+                                new SectionHead(wrapper, {
+                                    'title': jobs[index].type,
+                                    'description': 'Created on ' + format_date_time(jobs[index].start, 1, 1) + ' executed in ' + jobs[index].duration
+                                });
+                                new ListComponent(wrapper, {
+                                    'data': job_steps,
+                                    'template': title_with_message_and_tag_template,
+                                    'onclick': () => {
+                                        frappe.msgprint(__('Hello There'));
+                                    }
+                                });
+                            },
                         })
-                        new SectionHead(wrapper, {
-                            'title': jobs[index].type,
-                            'description': 'Created on ' + format_date_time(jobs[index].start, 1, 1) + ' executed in ' + jobs[index].duration
-                        });
-                        new ListComponent(wrapper, {
-                            'data': job_steps,
-                            'template': title_with_message_and_tag_template,
-                            'onclick': () => {
-                                frappe.msgprint(__('Hello There'));
-                            }
-                        });
-                    },
-                })
+                    }
+                });
             }
-        });
+        })
 
         // tab: Logs
 
@@ -545,7 +549,7 @@ frappe.ui.form.on('Site', {
             'data': logs,
             'template': title_with_message_and_tag_template,
             'onclick': async (index, wrapper) => {
-                new LoadingComponent(wrapper, {
+                new AwaitedComponent(wrapper, {
                     'promise': frappe.call({
                         method: 'press.api.site.log',
                         args: {

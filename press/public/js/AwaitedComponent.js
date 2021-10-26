@@ -1,4 +1,4 @@
-class LoadingComponent {
+class AwaitedComponent {
     constructor(parent, df) {
         this.parent = parent;
 		this.df = df || {};
