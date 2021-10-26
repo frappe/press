@@ -13,7 +13,6 @@
   "title",
   "version",
   "created_on",
-  "section_col_column",
   "versions_section_break",
   "bench_versions_block",
   "apps_section_break",
@@ -25,6 +24,7 @@
   "deploys_tab_break",
   "deploys_section_block",
   "jobs_tab_break",
+  "jobs_block",
   "settings_tab_break",
   "column_break_4",
   "team",
@@ -229,14 +229,14 @@
    "label": "Deploys"
   },
   {
-   "fieldname": "section_col_column",
-   "fieldtype": "Column Break",
-   "label": "Section col"
+   "fieldname": "jobs_block",
+   "fieldtype": "HTML",
+   "label": "Jobs"
   }
  ],
  "hide_toolbar": 1,
  "links": [],
- "modified": "2021-10-07 23:07:41.174325",
+ "modified": "2021-10-26 18:27:12.412970",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",
