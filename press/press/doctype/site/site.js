@@ -140,7 +140,7 @@ frappe.ui.form.on('Site', {
         let recent_activities = remap(overview_res.message.recent_activity, (d) => {
             return {
                 title: d.action + ' by ' + d.owner,
-                message: d.creation
+                message: format_date_time(d.creation, 1, 1)
             };
         });
         let installed_apps = remap(overview_res.message.installed_apps, (d) => {
@@ -160,13 +160,13 @@ frappe.ui.form.on('Site', {
         });
         let backups = remap(backups_res.message, (d) => {
             return {
-                message: d.creation
+                message: format_date_time(d.creation, 1, 1)
             }
         });
         let jobs = remap(jobs_res.message, (d) => {
             return {
                 'title': d.job_type,
-                'message': d.creation,
+                'message': format_date_time(d.creation, 1, 1),
                 'tag': d.status,
                 'tag_type': "indicator-pill green",
                 'name': d.name,
@@ -179,14 +179,14 @@ frappe.ui.form.on('Site', {
         let logs = remap(logs_res.message, (d) => {
             return {
                 'title': d.name,
-                'message': d.creation,
+                'message': format_date_time(d.created, 1, 1),
                 'line': d.line
             }
         });
         let activities = remap(activities_res.message, (d) => {
             return {
                 'title': d.action + ' by ' + d.owner,
-                'message': d.creation
+                'message': format_date_time(d.creation, 1, 1)
             }
         });
         
@@ -215,7 +215,7 @@ frappe.ui.form.on('Site', {
             chart_data = {
                 'labels': data.map(d => {
                     return {
-                        date: d.date,
+                        date: format_date_time(d.date, 1),
                         toString() {
                             return d.date;
                         }
@@ -260,8 +260,8 @@ frappe.ui.form.on('Site', {
 
         // sec: Site Info
         clear_block(frm, 'site_info_block');
-        frm.set_value('created_on', frm.doc['creation']);
-        frm.set_value('last_deployed', frm.doc['creation']);        // TODO: get the actual value
+        frm.set_value('created_on', format_date_time(frm.doc['creation'], 1));
+        frm.set_value('last_deployed', format_date_time(frm.doc['creation'], 1));        // TODO: get the actual value
         new ActionBlock(frm.get_field('site_info_block').$wrapper, {
             'title': 'Deactivate Site',
             'description': "The site will go inactive and won't be publicly accessible",
@@ -330,7 +330,7 @@ frappe.ui.form.on('Site', {
             values = usage_counter_data.map(d => d.value / 1000000);
 
             chart_data = {
-                'labels': format_date(data),
+                'labels': format_date_time(data, 1),
                 'datasets': [{ values }],
 				// show daily limit marker if usage crosses 50%
 				'yMarkers': values.some(value => value > plan_limit / 2)
@@ -355,7 +355,7 @@ frappe.ui.form.on('Site', {
         chart_data = '';
         if(uptime_data) {
             chart_data = {
-                labels: format_date(uptime_data),
+                labels: format_date_time(uptime_data, 1),
 				datasets: [{ values: uptime_data.map(d => d.value) }]
             }
         }
@@ -369,7 +369,7 @@ frappe.ui.form.on('Site', {
         chart_data = '';
         if(request_count_data) {
             chart_data = {
-				labels: format_date(request_count_data),
+				labels: format_date_time(request_count_data, 1),
 				datasets: [{ values: request_count_data.map(d => d.value) }]
             }
         }
@@ -384,7 +384,7 @@ frappe.ui.form.on('Site', {
         chart_data = '';
         if(request_cpu_time_data) {
             chart_data = {
-                labels: format_date(request_cpu_time_data),
+                labels: format_date_time(request_cpu_time_data, 1),
 				datasets: [{ values: request_cpu_time_data.map(d => d.value / 1000000) }]
             }
         }
@@ -399,7 +399,7 @@ frappe.ui.form.on('Site', {
         chart_data = '';
         if(job_count_data) {
             chart_data = {
-                labels: format_date(job_count_data),
+                labels: format_date_time(job_count_data, 1),
 				datasets: [{ values: job_count_data.map(d => d.value) }]
             }
         }
@@ -414,7 +414,7 @@ frappe.ui.form.on('Site', {
         chart_data = '';
         if(job_cpu_time_data) {
             chart_data = {
-                labels: format_date(job_cpu_time_data),
+                labels: format_date_time(job_cpu_time_data, 1),
 				datasets: [{ values: job_cpu_time_data.map(d => d.value / 1000000) }]
             }
         }
@@ -527,7 +527,7 @@ frappe.ui.form.on('Site', {
                 
                 new SectionHead(wrapper, {
                     'title': jobs[index].type,
-                    'description': 'Created on ' + jobs[index].start + ' executed in ' + jobs[index].duration
+                    'description': 'Created on ' + format_date_time(jobs[index].start, 1, 1) + ' executed in ' + jobs[index].duration
                 });
                 new ListComponent(wrapper, {
                     'data': job_steps,

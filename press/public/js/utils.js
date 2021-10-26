@@ -14,9 +14,12 @@ function remap(data, data_template) {
     return new_data;
 }
 
-function format_date(data) {
-    let value = data.map(d => {
-        return d.date
-    });
-    return value; 
+function format_date_time(date_time, show_date=false, show_time=false) {
+    var formated_date_time = '';
+    var [date, full_time] = date_time.split(' ');
+    var time = full_time.split('.')[0];
+    if(show_date) formated_date_time += date
+    if(show_time) formated_date_time += (`, ${time}`);
+
+    return formated_date_time;
 }
