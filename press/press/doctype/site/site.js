@@ -10,6 +10,90 @@ frappe.require('assets/press/js/utils.js')
 
 frappe.ui.form.on('Site', {
 	onload: async function (frm) {
+		frm.set_query('bench', function () {
+			return {
+				filters: {
+					server: frm.doc.server,
+					status: 'Active',
+				},
+			};
+		});
+		frm.set_query('host_name', () => {
+			return {
+				filters: {
+					site: frm.doc.name,
+					status: 'Active'
+				},
+			};
+		});
+	},
+	refresh: async function (frm) {
+		// frm.dashboard.set_headline_alert(
+		// 	`<div class="container-fluid">
+		// 		<div class="row">
+		// 			<div class="col-sm-4">CPU Usage: ${frm.doc.current_cpu_usage}%</div>
+		// 			<div class="col-sm-4">Database Usage: ${frm.doc.current_database_usage}%</div>
+		// 			<div class="col-sm-4">Disk Usage: ${frm.doc.current_disk_usage}%</div>
+		// 		</div>
+		// 	</div>`
+		// );
+		// frm.add_web_link(`https://${frm.doc.name}`, __('Visit Site'));
+		// frm.add_web_link(
+		// 	`/dashboard/sites/${frm.doc.name}`,
+		// 	__('Visit Dashboard')
+		// );
+
+		[
+			[__('Backup'), 'backup'],
+		].forEach(([label, method]) => {
+			frm.add_custom_button(
+				label,
+				() => { frm.call(method).then((r) => frm.refresh()) },
+				__('Actions')
+			);
+		});
+		[
+			[__('Archive'), 'archive'],
+			[__('Cleanup after Archive'), 'cleanup_after_archive'],
+			[__('Migrate'), 'migrate'],
+			[__('Reinstall'), 'reinstall'],
+			[__('Restore'), 'restore_site'],
+			[__('Restore Tables'), 'restore_tables'],
+			[__('Clear Cache'), 'clear_cache'],
+			[__('Update'), 'schedule_update'],
+			[__('Deactivate'), 'deactivate'],
+			[__('Activate'), 'activate'],
+		].forEach(([label, method]) => {
+			frm.add_custom_button(
+				label,
+				() => {
+					frappe.confirm(
+						`Are you sure you want to ${label.toLowerCase()} this site?`,
+						() => frm.call(method).then((r) => frm.refresh())
+					);
+				},
+				__('Actions')
+			);
+		});
+		[
+			[__('Suspend'), 'suspend'],
+			[__('Unsuspend'), 'unsuspend'],
+		].forEach(([label, method]) => {
+			frm.add_custom_button(
+				label,
+				() => {
+					frappe.prompt(
+						{ fieldtype: 'Data', label: 'Reason', fieldname: 'reason', reqd: 1 },
+						({ reason }) => {
+							frm.call(method, { reason }).then((r) => frm.refresh());
+						},
+						__('Provide Reason')
+					);
+				},
+				__('Actions')
+			);
+		});
+		frm.toggle_enable(['host_name'], frm.doc.status === 'Active');
 
         // data fetch
         let overview_res = await frappe.call({
@@ -120,11 +204,11 @@ frappe.ui.form.on('Site', {
         var data = '';
         var plan_limit = '';
         var values = '';
-
+        
         var chart_data = '';
-
+        
         if(daily_usage_data) {
-			data = daily_usage_data.data;
+            data = daily_usage_data.data;
 			plan_limit = daily_usage_data.plan_limit;
             values = data.map(d => d.value / 1000000);
 
@@ -144,6 +228,7 @@ frappe.ui.form.on('Site', {
                     : null
             }
         }
+        clear_block(frm, 'daily_usage_block');
         new ChartComponent(frm.get_field('daily_usage_block').$wrapper, {
             'title': 'Daily Usage',
             'data': chart_data,
@@ -158,6 +243,7 @@ frappe.ui.form.on('Site', {
         });
 
         // sec: Recent Activity
+        clear_block(frm, 'recent_activity_block');
         new SectionHead(frm.get_field('recent_activity_block').$wrapper, {
             'title': 'Recent Activity',
             'button': {
@@ -173,6 +259,7 @@ frappe.ui.form.on('Site', {
         });            
 
         // sec: Site Info
+        clear_block(frm, 'site_info_block');
         frm.set_value('created_on', frm.doc['creation']);
         frm.set_value('last_deployed', frm.doc['creation']);        // TODO: get the actual value
         new ActionBlock(frm.get_field('site_info_block').$wrapper, {
@@ -204,6 +291,7 @@ frappe.ui.form.on('Site', {
         });
 
         // sec: Apps
+        clear_block(frm, 'site_apps_block');
         new SectionHead(frm.get_field('site_apps_block').$wrapper, {
             'title': 'Apps', 
             'description': 'Apps installed on your site',
@@ -220,6 +308,7 @@ frappe.ui.form.on('Site', {
         });
 
         // sec: Domains
+        clear_block(frm, 'site_domain_block');
         new SectionHead(frm.get_field('site_domain_block').$wrapper, {
             'title': 'Domains', 
             'description': 'Domains pointing to your site',
@@ -249,6 +338,7 @@ frappe.ui.form.on('Site', {
 					: null
             }
         }
+        clear_block(frm, 'usage_counter_block');
         new ChartComponent(frm.get_field('usage_counter_block').$wrapper, {
             'title': 'Usage Counter',
             'data': chart_data,
@@ -269,6 +359,7 @@ frappe.ui.form.on('Site', {
 				datasets: [{ values: uptime_data.map(d => d.value) }]
             }
         }
+        clear_block(frm, 'uptime_block');
         new ChartComponent(frm.get_field('uptime_block').$wrapper, {
             'title': 'Uptime',
             'data': chart_data,
@@ -282,6 +373,7 @@ frappe.ui.form.on('Site', {
 				datasets: [{ values: request_count_data.map(d => d.value) }]
             }
         }
+        clear_block(frm, 'requests_block');
         new ChartComponent(frm.get_field('requests_block').$wrapper, {
             'title': 'Requests',
             'data': chart_data,
@@ -296,6 +388,7 @@ frappe.ui.form.on('Site', {
 				datasets: [{ values: request_cpu_time_data.map(d => d.value / 1000000) }]
             }
         }
+        clear_block(frm, 'cpu_usage_block');
         new ChartComponent(frm.get_field('cpu_usage_block').$wrapper, {
             'title': 'CPU Usage',
             'data': chart_data,
@@ -310,6 +403,7 @@ frappe.ui.form.on('Site', {
 				datasets: [{ values: job_count_data.map(d => d.value) }]
             }
         }
+        clear_block(frm, 'background_jobs_block');
         new ChartComponent(frm.get_field('background_jobs_block').$wrapper, {
             'title': 'Background Jobs',
             'data': chart_data,
@@ -324,6 +418,7 @@ frappe.ui.form.on('Site', {
 				datasets: [{ values: job_cpu_time_data.map(d => d.value / 1000000) }]
             }
         }
+        clear_block(frm, 'background_jobs_cpu_usage_block');
         new ChartComponent(frm.get_field('background_jobs_cpu_usage_block').$wrapper, {
             'title': 'Background Jobs CPU Usage',
             'data': chart_data,
@@ -333,6 +428,7 @@ frappe.ui.form.on('Site', {
         // tab: Backup & Restore
 
         // sec: Backup
+        clear_block(frm, 'site_backups_block');
         new SectionHead(frm.get_field('site_backups_block').$wrapper, {
             'title': 'Backup',
             'button': {
@@ -348,6 +444,7 @@ frappe.ui.form.on('Site', {
         });
 
         // sec: Restore, Migrate and Reset
+        clear_block(frm, 'restore_migrate_and_reset_block');
         new SectionHead(frm.get_field('restore_migrate_and_reset_block').$wrapper, {
             'title': 'Restore Migrate & Reset'
         });
@@ -409,6 +506,7 @@ frappe.ui.form.on('Site', {
 
         // sec: Jobs
 
+        clear_block(frm, 'jobs_block');
         new DetailedListComponent(frm.get_field('jobs_block').$wrapper, {
             'title': 'Jobs',
             'description': 'History of jobs that ran on your site',
@@ -443,6 +541,7 @@ frappe.ui.form.on('Site', {
 
         // tab: Logs
 
+        clear_block(frm, 'logs_block');
         new DetailedListComponent(frm.get_field('logs_block').$wrapper, {
             'title': 'Logs',
             'description': 'Available Logs for your site',
@@ -478,6 +577,7 @@ frappe.ui.form.on('Site', {
 
         // sec: Activity
 
+        clear_block(frm, 'activity_block');
         new SectionHead(frm.get_field('activity_block').$wrapper, {
             'title': 'Activity',
             'description': 'Log of activities performed on your site'
@@ -488,93 +588,7 @@ frappe.ui.form.on('Site', {
             'template': title_with_message_and_tag_template
         })
         
-
         // tab: Settings
-
-		frm.set_query('bench', function () {
-			return {
-				filters: {
-					server: frm.doc.server,
-					status: 'Active',
-				},
-			};
-		});
-		frm.set_query('host_name', () => {
-			return {
-				filters: {
-					site: frm.doc.name,
-					status: 'Active'
-				},
-			};
-		});
-	},
-	refresh: function (frm) {
-		// frm.dashboard.set_headline_alert(
-		// 	`<div class="container-fluid">
-		// 		<div class="row">
-		// 			<div class="col-sm-4">CPU Usage: ${frm.doc.current_cpu_usage}%</div>
-		// 			<div class="col-sm-4">Database Usage: ${frm.doc.current_database_usage}%</div>
-		// 			<div class="col-sm-4">Disk Usage: ${frm.doc.current_disk_usage}%</div>
-		// 		</div>
-		// 	</div>`
-		// );
-		// frm.add_web_link(`https://${frm.doc.name}`, __('Visit Site'));
-		// frm.add_web_link(
-		// 	`/dashboard/sites/${frm.doc.name}`,
-		// 	__('Visit Dashboard')
-		// );
-
-		[
-			[__('Backup'), 'backup'],
-		].forEach(([label, method]) => {
-			frm.add_custom_button(
-				label,
-				() => { frm.call(method).then((r) => frm.refresh()) },
-				__('Actions')
-			);
-		});
-		[
-			[__('Archive'), 'archive'],
-			[__('Cleanup after Archive'), 'cleanup_after_archive'],
-			[__('Migrate'), 'migrate'],
-			[__('Reinstall'), 'reinstall'],
-			[__('Restore'), 'restore_site'],
-			[__('Restore Tables'), 'restore_tables'],
-			[__('Clear Cache'), 'clear_cache'],
-			[__('Update'), 'schedule_update'],
-			[__('Deactivate'), 'deactivate'],
-			[__('Activate'), 'activate'],
-		].forEach(([label, method]) => {
-			frm.add_custom_button(
-				label,
-				() => {
-					frappe.confirm(
-						`Are you sure you want to ${label.toLowerCase()} this site?`,
-						() => frm.call(method).then((r) => frm.refresh())
-					);
-				},
-				__('Actions')
-			);
-		});
-		[
-			[__('Suspend'), 'suspend'],
-			[__('Unsuspend'), 'unsuspend'],
-		].forEach(([label, method]) => {
-			frm.add_custom_button(
-				label,
-				() => {
-					frappe.prompt(
-						{ fieldtype: 'Data', label: 'Reason', fieldname: 'reason', reqd: 1 },
-						({ reason }) => {
-							frm.call(method, { reason }).then((r) => frm.refresh());
-						},
-						__('Provide Reason')
-					);
-				},
-				__('Actions')
-			);
-		});
-		frm.toggle_enable(['host_name'], frm.doc.status === 'Active');
 	},
 });
 

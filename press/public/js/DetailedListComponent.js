@@ -21,7 +21,7 @@ class DetailedListComponent {
             'data': this.df.data,
             'template': this.df.template,
             'onclick': (index) => {
-                clear_block(detailed_section);
+                clear_wrapper(detailed_section);
                 this.df.onclick(index, detailed_section);
             }
         });
