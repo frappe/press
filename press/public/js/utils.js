@@ -1,4 +1,8 @@
-function clear_block(wrapper) {
+function clear_block(frm, block) {
+    clear_wrapper(frm.get_field(block).$wrapper);
+}
+
+function clear_wrapper(wrapper) {
     wrapper.html('');
 }
 
