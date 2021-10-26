@@ -507,29 +507,32 @@ frappe.ui.form.on('Site', {
             'data': jobs,
             'template': title_with_message_and_tag_template,
             'onclick': async (index, wrapper) => {
-                let job_steps = await frappe.db.get_list('Agent Job Step', {
-                    filters: {'agent_job': ['in', jobs[index].name]},
-                    fields: ['step_name', 'duration', 'output', 'status'],
-                    order_by: 'creation'
-                });
-                job_steps = remap(job_steps, (d) => {
-                    return {
-                        'title': d.step_name,
-                        'message': d.output || 'No output'
-                    }
+                new LoadingComponent(wrapper, {
+                    promise: frappe.db.get_list('Agent Job Step', {
+                        filters: {'agent_job': ['in', jobs[index].name]},
+                        fields: ['step_name', 'duration', 'output', 'status'],
+                        order_by: 'creation'
+                    }),
+                    onload: (job_steps) => {
+                        job_steps = remap(job_steps, (d) => {
+                            return {
+                                'title': d.step_name,
+                                'message': d.output || 'No output'
+                            }
+                        })
+                        new SectionHead(wrapper, {
+                            'title': jobs[index].type,
+                            'description': 'Created on ' + format_date_time(jobs[index].start, 1, 1) + ' executed in ' + jobs[index].duration
+                        });
+                        new ListComponent(wrapper, {
+                            'data': job_steps,
+                            'template': title_with_message_and_tag_template,
+                            'onclick': () => {
+                                frappe.msgprint(__('Hello There'));
+                            }
+                        });
+                    },
                 })
-                
-                new SectionHead(wrapper, {
-                    'title': jobs[index].type,
-                    'description': 'Created on ' + format_date_time(jobs[index].start, 1, 1) + ' executed in ' + jobs[index].duration
-                });
-                new ListComponent(wrapper, {
-                    'data': job_steps,
-                    'template': title_with_message_and_tag_template,
-                    'onclick': () => {
-                        frappe.msgprint(__('Hello There'));
-                    }
-                });
             }
         });
 
@@ -542,28 +545,31 @@ frappe.ui.form.on('Site', {
             'data': logs,
             'template': title_with_message_and_tag_template,
             'onclick': async (index, wrapper) => {
-                let log = await frappe.call({
-                    method: 'press.api.site.log',
-                    args: {
-                        name: frm.docname,
-                        log: logs[index].title
+                new LoadingComponent(wrapper, {
+                    'promise': frappe.call({
+                        method: 'press.api.site.log',
+                        args: {
+                            name: frm.docname,
+                            log: logs[index].title
+                        }
+                    }),
+                    'onload': (log) => {
+                        new SectionHead(wrapper, {
+                            'title': logs[index].title
+                        });
+                        
+                        var log_lines = log.message[logs[index].title].split('\n');
+                        log_lines = remap(log_lines, (d) => {
+                            return {
+                                message: d
+                            }
+                        });
+                        new ListComponent(wrapper, {
+                            'data': log_lines,
+                            'template': title_with_message_and_tag_template
+                        });
                     }
-                });
-                
-                new SectionHead(wrapper, {
-                    'title': logs[index].title
-                });
-                
-                var log_lines = log.message[logs[index].title].split('\n');
-                log_lines = remap(log_lines, (d) => {
-                    return {
-                        message: d
-                    }
-                });
-                new ListComponent(wrapper, {
-                    'data': log_lines,
-                    'template': title_with_message_and_tag_template
-                });
+                })
             }
         });
 
