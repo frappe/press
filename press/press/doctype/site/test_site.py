@@ -36,7 +36,7 @@ def create_test_bench():
 	release_group = create_test_release_group(app)
 
 	name = frappe.mock("name")
-	candidate = frappe.get_last_doc("Deploy Candidate", {"group": release_group.name})
+	candidate = release_group.create_deploy_candidate()
 	candidate.db_set("docker_image", frappe.mock("url"))
 	return frappe.get_doc(
 		{
