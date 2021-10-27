@@ -49,7 +49,7 @@ frappe.ui.form.on('Release Group', {
 		});
 		let recent_deploys = remap(recent_deploys_res.message, (d) => {
 			return {
-				message: 'Deployed On ' + d.creation,
+				message: 'Deployed On ' + format_date_time(d.creation, 1, 1),
 			};
 		});
 		let sites = remap(versions_res.message, (d) => {
@@ -60,7 +60,7 @@ frappe.ui.form.on('Release Group', {
 		});
 		let deploys_log = remap(deploys_log_res.message, (d) => {
 			return {
-				title: "Deploy on " + d.creation,
+				title: "Deploy on " + format_date_time(d.creation, 1, 1),
 				message: d.apps, // break this array into string
 				tag: d.status,
 				tag_type: "indicator-pill green",
