@@ -252,7 +252,7 @@ class ScheduledBackupJob:
 				while not self.backup(site):
 					site = next(sites)
 			except StopIteration:
-				sites_by_server_cycle.delete_next()  # skip sites for this server
+				sites_by_server_cycle.delete_prev()  # skip sites for this server
 				continue
 			limit -= 1
 			if limit <= 0:
