@@ -7,7 +7,6 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "connections_tab_break",
   "overview_tab_break",
   "bench_info_and_versions_section",
   "bench_info_block",
@@ -200,11 +199,6 @@
    "label": "Sites"
   },
   {
-   "fieldname": "connections_tab_break",
-   "fieldtype": "Tab Break",
-   "label": "Connections"
-  },
-  {
    "fieldname": "deploys_section_block",
    "fieldtype": "HTML",
    "label": "Deploys"
@@ -237,7 +231,7 @@
  ],
  "hide_toolbar": 1,
  "links": [],
- "modified": "2021-10-27 11:01:09.640330",
+ "modified": "2021-10-27 12:07:43.257285",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",
