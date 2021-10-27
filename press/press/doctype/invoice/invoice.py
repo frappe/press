@@ -476,10 +476,20 @@ class Invoice(Document):
 				self.add_comment(
 					text="Failed to create invoice on frappe.io" + "<br><br>" + str(soup.find("pre"))
 				)
+
+				log_error(
+					"Frappe.io Invoice Creation Error",
+					data={"invoice": self.name, "frappe_io_response": response.text},
+				)
 		except Exception:
 			traceback = "<pre><code>" + frappe.get_traceback() + "</pre></code>"
 			self.add_comment(
 				text="Failed to create invoice on frappe.io" + "<br><br>" + traceback
+			)
+
+			log_error(
+				"Frappe.io Invoice Creation Error",
+				data={"invoice": self.name, "traceback": traceback},
 			)
 
 	@frappe.whitelist()
