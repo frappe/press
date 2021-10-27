@@ -14,15 +14,15 @@ function remap(data, data_template) {
     return new_data;
 }
 
-function format_date_time(date_time, show_date=false, show_time=false) {
-    var formated_date_time = '';
-    var [date, full_time] = date_time.split(' ');
-    var time = full_time.split('.')[0];
-    if(show_date) formated_date_time += date
-    if(show_time) formated_date_time += (`, ${time}`);
+// function format_date_time(date_time, show_date=false, show_time=false) {
+//     var formated_date_time = '';
+//     var [date, full_time] = date_time.split(' ');
+//     var time = full_time.split('.')[0];
+//     if(show_date) formated_date_time += date
+//     if(show_time) formated_date_time += (`, ${time}`);
 
-    return formated_date_time;
-}
+//     return formated_date_time;
+// }
 
 function format_chart_date(data) {
     return remap(data, (d) => {
@@ -39,4 +39,18 @@ function format_chart_date(data) {
             }
         }
     })
+}
+
+function format_date_time(date_time, show_date=false, show_time=false) {
+    date_time = new Date(date_time);
+    let year = date_time.getFullYear();
+    let month = date_time.toLocaleString('default', { month: 'long' });
+    let date = date_time.getDate();
+    let hours = date_time.getHours();
+    let minutes = date_time.getMinutes();
+
+    let render_date = show_date ? `${date} ${month} ${year}` : ``
+    render_date += show_time ? (show_date ? `, ` : ``) + `${hours}:${minutes} GMT+5:30`: ``
+
+    return render_date;
 }
