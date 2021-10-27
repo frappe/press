@@ -9,15 +9,16 @@
  "field_order": [
   "connections_tab_break",
   "overview_tab_break",
-  "bench_info_section",
+  "bench_info_and_versions_section",
+  "bench_info_block",
   "title",
   "version",
   "created_on",
-  "versions_section_break",
+  "column_break_8",
   "bench_versions_block",
-  "apps_section_break",
+  "apps_and_deploys_section_break",
   "apps_list_block",
-  "recent_deploys_section",
+  "column_break_12",
   "recent_deploys_block",
   "sites_tab_break",
   "sites_block",
@@ -173,30 +174,10 @@
    "label": "Jobs"
   },
   {
-   "fieldname": "bench_info_section",
-   "fieldtype": "Section Break",
-   "label": "Bench info"
-  },
-  {
    "fieldname": "created_on",
    "fieldtype": "Date",
    "label": "Created on",
    "read_only": 1
-  },
-  {
-   "fieldname": "versions_section_break",
-   "fieldtype": "Section Break",
-   "label": "Versions"
-  },
-  {
-   "fieldname": "apps_section_break",
-   "fieldtype": "Section Break",
-   "label": "Apps"
-  },
-  {
-   "fieldname": "recent_deploys_section",
-   "fieldtype": "Section Break",
-   "label": "Recent deploys"
   },
   {
    "fieldname": "bench_versions_block",
@@ -232,11 +213,31 @@
    "fieldname": "jobs_block",
    "fieldtype": "HTML",
    "label": "Jobs"
+  },
+  {
+   "fieldname": "bench_info_and_versions_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "bench_info_block",
+   "fieldtype": "HTML"
+  },
+  {
+   "fieldname": "column_break_8",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "apps_and_deploys_section_break",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_12",
+   "fieldtype": "Column Break"
   }
  ],
  "hide_toolbar": 1,
  "links": [],
- "modified": "2021-10-26 18:27:12.412970",
+ "modified": "2021-10-27 11:01:09.640330",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",

@@ -34,18 +34,22 @@ frappe.ui.form.on('Release Group', {
 		// data remaps
 		let versions = remap(versions_res.message, (d) => {
 			return {
-				name: d.name,
-				length: d.sites.length,
+				message: d.name,
+				tag: d.sites.length ? `${d.sites.length} sites`: 'Broken',
+				tag_type: d.sites.length ? 'indicator-pill green' : 'indicator-pill red'
 			};
 		});
 		let apps = remap(apps_res.message, (d) => {
-			return {
-				data: d,
-			};
+            return {
+                title: d.title,
+                message: d.repository + '/' + d.repository + ':' + d.branch,
+                tag: d.update_available ? 'Update Availabe' : d.hash.substring(0,7),
+                tag_type: 'indicator-pill blue'
+            };
 		});
 		let recent_deploys = remap(recent_deploys_res.message, (d) => {
 			return {
-				data: d,
+				message: 'Deployed On ' + d.creation,
 			};
 		});
 		let sites = remap(versions_res.message, (d) => {
@@ -76,17 +80,54 @@ frappe.ui.form.on('Release Group', {
 		})
 
 		// sec: Overview
+		new SectionHead(frm.get_field('bench_info_block').$wrapper, {
+			title: 'Bench Info',
+			description: 'General information about your bench'
+		})
+
+		new SectionHead(frm.get_field('bench_versions_block').$wrapper, {
+			title: 'Versions',
+			description:'Deployed versions of your bench',
+			button: {
+				title: 'View versions',
+				onclick: () => {
+					frappe.msgprint(__('View verions'));
+				}
+			}
+		})
 		new ListComponent(frm.get_field('bench_versions_block').$wrapper, {
 			data: versions,
-			template: version_template,
+			template: title_with_message_and_tag_template,
 		});
+
+		new SectionHead(frm.get_field('apps_list_block').$wrapper, {
+			title: 'Apps',
+			description: 'Apps available on your bench',
+			button: {
+				title: 'Add App',
+				onclick: () => {
+					frappe.msgprint(__('Add App'));
+				}
+			}
+		})
 		new ListComponent(frm.get_field('apps_list_block').$wrapper, {
 			data: apps,
-			template: app_template,
+			template: title_with_message_and_tag_template,
 		});
+
+		new SectionHead(frm.get_field('recent_deploys_block').$wrapper, {
+			title: 'Deploys',
+			description: 'History of deploys on your bench',
+			button: {
+				title: 'View deploys',
+				onclick: () => {
+					frappe.msgprint(__('View deploys'));
+				}
+			}
+		})
 		new ListComponent(frm.get_field('recent_deploys_block').$wrapper, {
 			data: recent_deploys,
-			template: deploys_template,
+			template: title_with_message_and_tag_template,
 		});
 
 		// sec: Sites
@@ -116,8 +157,8 @@ frappe.ui.form.on('Release Group', {
 
 				let deploy_lines = remap(steps.message.build_steps, (d) => {
 					return {
-						step_title: d.stage + " - " + d.step,
-						step_detail: d.output == "" || d.output == undefined ? "No output" : d.output
+						title: d.stage + " - " + d.step,
+						message: d.output == "" || d.output == undefined ? "No output" : d.output
 					}
 				});
 
@@ -149,8 +190,8 @@ frappe.ui.form.on('Release Group', {
 
 				let job_lines = remap(steps.message.steps, (d) => {
 					return {
-						step_title: d.step_name,
-						step_detail: d.output ? d.output : "No output"
+						title: d.step_name,
+						message: d.output ? d.output : "No output"
 					}
 				});
 
@@ -209,37 +250,6 @@ frappe.ui.form.on('Release Group', {
 });
 
 // custom templates
-let version_template = (data) => {
-	return `
-		<div class="d-flex flex-row justify-between">
-			<p>${data.name}</p> 
-			<span class="indicator-pill green">${data.length} sites</span>
-		</div>
-	`;
-};
-
-let app_template = (data) => {
-	return `
-		<div class="d-flex flex-column justify-between">
-			<h5>${data.data.name}</h5>
-			<p>${data.data.repository_owner}/${data.data.repository}:${data.data.branch}</p>	
-		</div>
-	`;
-};
-
-let deploys_template = (data) => {
-	let date = new Date(data.data.creation);
-
-	let month = date.toLocaleString('default', { month: 'long' });
-
-	return `
-		<div class="d-flex flex-column justify-between">
-			<p>
-			Deployed on ${date.getDate()} ${month} ${date.getFullYear()}, ${date.getHours()}:${date.getMinutes()} GMT+5:30
-			</p>
-		</div>
-	`;
-};
 
 let sites_template = (data) => {
 	let template = '';
