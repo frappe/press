@@ -53,13 +53,44 @@ function title_with_message_and_tag_template(data) {
 		${data.last ? `` : `<hr>`}
     `;
 }
-let log_template = (data) => `
-	<div>
-		<strong>${data.step_title}</strong>
-		<br>
+let title_with_text_area_template = (data) => `
+	<div class="mb-4">
+		<h5>${data.title || ''}</h5>
 		<div class="mt-3 p-2 card bg-light text-dark border-0 rounded-sm">
-			<span style="white-space: pre-line">${data.step_detail}</span>
+			<span style="white-space: pre-line">${data.message || ''}</span>
 		</div>
 	</div>	
-	<br>
 `;
+
+// not used just kept for reference purpose
+let version_template = (data) => {
+	return `
+		<div class="d-flex flex-row justify-between">
+			<p>${data.name}</p> 
+			<span class="indicator-pill green">${data.length} sites</span>
+		</div>
+	`;
+};
+
+let app_template = (data) => {
+	return `
+		<div class="d-flex flex-column justify-between">
+			<h5>${data.data.name}</h5>
+			<p>${data.data.repository_owner}/${data.data.repository}:${data.data.branch}</p>	
+		</div>
+	`;
+};
+
+let deploys_template = (data) => {
+	let date = new Date(data.data.creation);
+
+	let month = date.toLocaleString('default', { month: 'long' });
+
+	return `
+		<div class="d-flex flex-column justify-between">
+			<p>
+			Deployed on ${date.getDate()} ${month} ${date.getFullYear()}, ${date.getHours()}:${date.getMinutes()} GMT+5:30
+			</p>
+		</div>
+	`;
+};

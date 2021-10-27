@@ -123,7 +123,7 @@ frappe.ui.form.on('Release Group', {
 
 				new ListComponent(wrapper, {
 					data: deploy_lines,
-					template: log_template
+					template: title_with_text_area_template
 				})
 			}
 		})
@@ -156,7 +156,7 @@ frappe.ui.form.on('Release Group', {
 
 				new ListComponent(wrapper, {
 					data: job_lines,
-					template: log_template
+					template: title_with_text_area_template
 				})
 			}
 		})
