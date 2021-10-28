@@ -1,5 +1,8 @@
+import re
 import frappe
 import stripe
+
+from frappe import _
 from frappe.utils import fmt_money
 from press.utils import get_current_team
 from press.exceptions import CentralServerNotSet, FrappeioServerNotSet
@@ -45,6 +48,11 @@ states_with_tin = {
 	"Uttarakhand": "05",
 	"West Bengal": "19",
 }
+
+GSTIN_FORMAT = re.compile(
+	"^[0-9]{2}[A-Z]{4}[0-9A-Z]{1}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}[1-9A-Z]{1}[0-9A-Z]{1}$"
+)
+GSTIN_UIN_FORMAT = re.compile("^[0-9]{4}[A-Z]{3}[0-9]{5}[0-9A-Z]{3}")
 
 
 def format_stripe_money(amount, currency):
@@ -153,3 +161,92 @@ def get_stripe():
 
 def convert_stripe_money(amount):
 	return amount / 100
+
+
+def validate_gstin_for_india(doc):
+	if hasattr(doc, "gst_state") and doc.gst_state:
+		doc.gst_state_number = states_with_tin[doc.gst_state]
+	if not hasattr(doc, "gstin") or not doc.gstin:
+		return
+
+	gst_category = []
+
+	if len(doc.links):
+		link_doctype = doc.links[0].get("link_doctype")
+		link_name = doc.links[0].get("link_name")
+
+		if link_doctype in ["Customer", "Supplier"]:
+			gst_category = frappe.db.get_value(
+				link_doctype, {"name": link_name}, ["gst_category"]
+			)
+
+	doc.gstin = doc.gstin.upper().strip()
+	if not doc.gstin or doc.gstin == "NA":
+		return
+
+	if len(doc.gstin) != 15:
+		frappe.throw(_("A GSTIN must have 15 characters."), title=_("Invalid GSTIN"))
+
+	if gst_category and gst_category == "UIN Holders":
+		if not GSTIN_UIN_FORMAT.match(doc.gstin):
+			frappe.throw(
+				_(
+					"The input you've entered doesn't match the GSTIN format for UIN"
+					" Holders or Non-Resident OIDAR Service Providers"
+				),
+				title=_("Invalid GSTIN"),
+			)
+	else:
+		if not GSTIN_FORMAT.match(doc.gstin):
+			frappe.throw(
+				_("The input you've entered doesn't match the format of GSTIN."),
+				title=_("Invalid GSTIN"),
+			)
+
+		validate_gstin_check_digit(doc.gstin)
+		set_gst_state_and_state_number(doc)
+
+		if not doc.gst_state:
+			frappe.throw(_("Please enter GST state"), title=_("Invalid State"))
+
+		if doc.gst_state_number != doc.gstin[:2]:
+			frappe.throw(
+				_("First 2 digits of GSTIN should match with State number {0}.").format(
+					doc.gst_state_number
+				),
+				title=_("Invalid GSTIN"),
+			)
+
+
+def validate_gstin_check_digit(gstin, label="GSTIN"):
+	""" Function to validate the check digit of the GSTIN."""
+	factor = 1
+	total = 0
+	code_point_chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	mod = len(code_point_chars)
+	input_chars = gstin[:-1]
+	for char in input_chars:
+		digit = factor * code_point_chars.find(char)
+		digit = (digit // mod) + (digit % mod)
+		total += digit
+		factor = 2 if factor == 1 else 1
+	if gstin[-1] != code_point_chars[((mod - (total % mod)) % mod)]:
+		frappe.throw(
+			_(
+				"""Invalid {0}! The check digit validation has failed. Please ensure you've typed the {0} correctly."""
+			).format(label)
+		)
+
+
+def set_gst_state_and_state_number(doc):
+	if not doc.gst_state:
+		if not doc.state:
+			return
+		state = doc.state.lower()
+		states_lowercase = {s.lower(): s for s in states_with_tin.keys()}
+		if state in states_lowercase:
+			doc.gst_state = states_lowercase[state]
+		else:
+			return
+
+	doc.gst_state_number = states_with_tin[doc.gst_state]
