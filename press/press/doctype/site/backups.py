@@ -240,12 +240,15 @@ class ScheduledBackupJob:
 	@timing
 	def start(self):
 		"""Schedule backups for all Active sites based on their local timezones. Also trigger offsite backups once a day."""
-		limit = min(len(self.sites), self.limit)
 		sites_by_server = []
 		for server, sites in groupby(self.sites, lambda d: d.server):  # group by server
 			sites_by_server.append((server, iter(list(sites))))
 
 		sites_by_server_cycle = self.ModifiableCycle(sites_by_server)
+		self._take_backups_in_round_robin(sites_by_server_cycle)
+
+	def _take_backups_in_round_robin(self, sites_by_server_cycle: ModifiableCycle):
+		limit = min(len(self.sites), self.limit)
 		for server, sites in sites_by_server_cycle:
 			try:
 				site = next(sites)
