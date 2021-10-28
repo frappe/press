@@ -26,7 +26,7 @@ class TestScheduledBackupJob(unittest.TestCase):
 		self.interval = 6
 		frappe.db.set_value("Press Settings", "Press Settings", "backup_interval", 6)
 
-	def create_site_requiring_backup(self, **kwargs):
+	def _create_site_requiring_backup(self, **kwargs):
 		interval_hrs_ago = datetime.now() - timedelta(hours=self.interval + 1)
 		return create_test_site(creation=interval_hrs_ago, **kwargs)
 
@@ -39,7 +39,7 @@ class TestScheduledBackupJob(unittest.TestCase):
 		new=lambda self, x, y: True,  # take offsite anyway
 	)
 	def test_offsite_taken_once_per_day(self):
-		site = self.create_site_requiring_backup()
+		site = self._create_site_requiring_backup()
 		job = ScheduledBackupJob()
 		offsite_count_before = self._offsite_count(site.name)
 		job.start()
@@ -54,7 +54,7 @@ class TestScheduledBackupJob(unittest.TestCase):
 		ScheduledBackupJob, "is_backup_hour", new=lambda self, x: True,  # always backup hour
 	)
 	def test_with_files_taken_once_per_day(self):
-		site = self.create_site_requiring_backup()
+		site = self._create_site_requiring_backup()
 		job = ScheduledBackupJob()
 		offsite_count_before = self._with_files_count(site.name)
 		job.start()
@@ -66,10 +66,10 @@ class TestScheduledBackupJob(unittest.TestCase):
 		self.assertEqual(offsite_count_after, offsite_count_before)
 
 	def _create_x_sites_on_1_bench(self, x):
-		site = self.create_site_requiring_backup()
+		site = self._create_site_requiring_backup()
 		bench = site.bench
 		for i in range(x - 1):
-			self.create_site_requiring_backup(bench=bench)
+			self._create_site_requiring_backup(bench=bench)
 
 	def test_limit_number_of_sites_backed_up(self):
 		self._create_x_sites_on_1_bench(1)
