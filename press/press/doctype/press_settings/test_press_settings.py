@@ -42,7 +42,7 @@ def create_test_press_settings():
 			"bench_configuration": "{}",
 			"rsa_key_size": "2048",
 			"certbot_directory": ".certbot",
-			"eff_registration_email": frappe.mock("email")
+			"eff_registration_email": frappe.mock("email"),
 		}
 	).insert()
 	return settings
