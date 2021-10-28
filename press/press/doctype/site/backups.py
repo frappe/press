@@ -241,7 +241,7 @@ class ScheduledBackupJob:
 	def start(self):
 		"""Schedule backups for all Active sites based on their local timezones. Also trigger offsite backups once a day."""
 		sites_by_server = []
-		for server, sites in groupby(self.sites, lambda d: d.server):  # group by server
+		for server, sites in groupby(self.sites, lambda d: d.server):
 			sites_by_server.append((server, iter(list(sites))))
 
 		sites_by_server_cycle = self.ModifiableCycle(sites_by_server)
@@ -255,7 +255,7 @@ class ScheduledBackupJob:
 				while not self.backup(site):
 					site = next(sites)
 			except StopIteration:
-				sites_by_server_cycle.delete_prev()  # skip sites for this server
+				sites_by_server_cycle.delete_prev()  # no more sites in this server
 				continue
 			limit -= 1
 			if limit <= 0:
