@@ -141,7 +141,7 @@ def benches_with_available_update():
 		SELECT sb.name AS source_bench, sb.candidate AS source_candidate, sb.server AS server, dcd.destination AS destination_candidate
 		FROM `tabBench` sb, `tabDeploy Candidate Difference` dcd
 		WHERE sb.status = 'Active' AND sb.candidate = dcd.source
-    """,
+		""",
 		as_dict=True,
 	)
 
@@ -152,7 +152,7 @@ def benches_with_available_update():
 	destination_benches_info = frappe.get_all(
 		"Bench",
 		filters={"status": "Active", "candidate": ("in", destination_candidates)},
-		fields=["candidate AS destination_candidate", "name AS destination_bench", "server",],
+		fields=["candidate AS destination_candidate", "name AS destination_bench", "server"],
 	)
 
 	updates_available_for_benches = []
