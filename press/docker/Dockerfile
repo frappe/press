@@ -127,6 +127,7 @@ RUN mkdir -p apps logs sites config/pids
 
 # Create virtual environment for bench
 RUN virtualenv -p python${PYTHON_VERSION} env `#stage-bench-env`
+RUN env/bin/pip install --upgrade pip
 
 COPY --chown=frappe:frappe common_site_config.json /home/frappe/frappe-bench/sites/common_site_config.json
 RUN git config --global advice.detachedHead false
