@@ -118,7 +118,10 @@
   "agent_github_access_token",
   "marketplace_settings_section",
   "allow_developer_account",
-  "max_allowed_screenshots"
+  "max_allowed_screenshots",
+  "mailgun_settings_section",
+  "mailgun_api_key",
+  "root_domain"
  ],
  "fields": [
   {
@@ -755,11 +758,26 @@
    "fieldtype": "Int",
    "label": "Max number of Allowed Screenshots",
    "non_negative": 1
+  },
+  {
+   "fieldname": "mailgun_settings_section",
+   "fieldtype": "Section Break",
+   "label": "Mailgun Settings"
+  },
+  {
+   "fieldname": "root_domain",
+   "fieldtype": "Data",
+   "label": "Root Domain"
+  },
+  {
+   "fieldname": "mailgun_api_key",
+   "fieldtype": "Data",
+   "label": "Api Key"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2021-09-16 09:29:14.158162",
+ "modified": "2021-10-28 13:18:21.031024",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
