@@ -4,5 +4,6 @@
 # import frappe
 import unittest
 
+
 class TestQMailLog(unittest.TestCase):
 	pass
