@@ -112,3 +112,4 @@ def event_log(**data):
 	).insert(ignore_permissions=True)
 
 	# ToDo: send a request to client app ?
+	return "Successful", 200
