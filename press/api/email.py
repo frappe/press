@@ -29,7 +29,7 @@ def validate_plan(team, site):
 		first_day = date.strftime("%Y-%m-01")
 
 		count = frappe.db.count(
-			"QMail Log", filters={"site": site, "status": "Sent", "date": [">=", first_day]}
+			"QMail Log", filters={"site": site, "status": "delivered", "date": [">=", first_day]}
 		)
 
 		if count < int(active[0]):
@@ -105,9 +105,9 @@ def event_log(**data):
 			"sender": headers["from"],
 			"recipient": headers["to"],
 			"subject": headers["subject"],
-			"site": headers["user-variables"]["site_name"],
+			"site": event_data["user-variables"]["site_name"],
 			"status": event_data["event"],
-			"log": f"{event_data['log_level']}: {event_data['delivery-status']['message']}",
+			"log": event_data["event"],
 		}
 	).insert(ignore_permissions=True)
 

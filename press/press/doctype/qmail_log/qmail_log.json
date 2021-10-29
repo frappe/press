@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "field:site",
+ "autoname": "QMLOG.#####",
  "creation": "2021-10-24 09:26:16.759715",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -25,6 +25,7 @@
   {
    "fieldname": "sender",
    "fieldtype": "Data",
+   "ignore_xss_filter": 1,
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "sender"
@@ -32,10 +33,9 @@
   {
    "default": "Pending",
    "fieldname": "status",
-   "fieldtype": "Select",
+   "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "status",
-   "options": "Pending\nSent\nFailed"
+   "label": "status"
   },
   {
    "fieldname": "recipient",
@@ -63,11 +63,11 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-10-28 12:42:10.980725",
+ "modified": "2021-10-29 22:49:23.708652",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "QMail Log",
- "naming_rule": "By fieldname",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {
