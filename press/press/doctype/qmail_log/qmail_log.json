@@ -1,0 +1,89 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:site",
+ "creation": "2021-10-24 09:26:16.759715",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "site",
+  "date",
+  "sender",
+  "recipient",
+  "subject",
+  "status",
+  "log"
+ ],
+ "fields": [
+  {
+   "fieldname": "site",
+   "fieldtype": "Data",
+   "label": "site",
+   "unique": 1
+  },
+  {
+   "fieldname": "sender",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "sender"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "status",
+   "options": "Pending\nSent\nFailed"
+  },
+  {
+   "fieldname": "recipient",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "recipient"
+  },
+  {
+   "fieldname": "subject",
+   "fieldtype": "Data",
+   "label": "subject"
+  },
+  {
+   "fieldname": "log",
+   "fieldtype": "Text",
+   "label": "log"
+  },
+  {
+   "default": "Today",
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2021-10-28 12:42:10.980725",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "QMail Log",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}
