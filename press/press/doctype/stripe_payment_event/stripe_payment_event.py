@@ -76,27 +76,31 @@ class StripePaymentEvent(Document):
 			}
 		)
 		invoice.save()
+		self.suspend_sites_if_applicable(attempt_count)
 
-		if self.team.free_account:
+
+	def suspend_sites_if_applicable(self, attempt_count):
+		team = frappe.get_doc("Team", self.team)
+		if team.free_account:
 			return
 
-		elif self.team.erpnext_partner:
+		elif team.erpnext_partner:
 			# dont suspend partner sites, send alert on telegram
 			telegram = Telegram()
-			team_url = get_url_to_form("Team", self.team.name)
-			invoice_url = get_url_to_form("Invoice", invoice.name)
+			team_url = get_url_to_form("Team", team.name)
+			invoice_url = get_url_to_form("Invoice", self.invoice)
 			telegram.send(
-				f"Failed Invoice Payment [{invoice.name}]({invoice_url}) of"
-				f" Partner: [{self.team.name}]({team_url})"
+				f"Failed Invoice Payment [{self.invoice}]({invoice_url}) of"
+				f" Partner: [{team.name}]({team_url})"
 			)
 
-			send_email_for_failed_payment(invoice)
+			send_email_for_failed_payment(self.invoice)
 
 		else:
 			sites = None
 			if attempt_count > 1:
 				# suspend sites
-				sites = self.team.suspend_sites(
-					reason=f"Suspending sites because of failed payment of {invoice.name}"
+				sites = team.suspend_sites(
+					reason=f"Suspending sites because of failed payment of {self.invoice}"
 				)
-			send_email_for_failed_payment(invoice, sites)
+			send_email_for_failed_payment(self.invoice, sites)
