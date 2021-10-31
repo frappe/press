@@ -3,6 +3,7 @@
 
 import frappe
 
+from press.utils import log_error
 
 EVENT_TYPE_MAP = {
 	"invoice.finalized": "Finalized",
@@ -33,17 +34,20 @@ class StripeInvoiceWebhookHandler:
 		elif event_type == "invoice.finalized" and stripe_invoice["status"] == "paid":
 			payment_status = "Paid"
 			
-
-		frappe.get_doc({
-			"doctype": "Stripe Payment Event",
-			"invoice": self.invoice.name,
-			"team": self.invoice.team,
-			"event_type": EVENT_TYPE_MAP[event_type],
-			"payment_status": payment_status,
-			"stripe_invoice_object": frappe.as_json(stripe_invoice),
-			"stripe_invoice_id": stripe_invoice["id"]
-		}).insert()
-
+		try:
+			frappe.get_doc({
+				"doctype": "Stripe Payment Event",
+				"invoice": self.invoice.name,
+				"team": self.invoice.team,
+				"event_type": EVENT_TYPE_MAP[event_type],
+				"payment_status": payment_status,
+				"stripe_invoice_object": frappe.as_json(stripe_invoice),
+				"stripe_invoice_id": stripe_invoice["id"]
+			}).insert()
+		except Exception:
+			log_error("Stripe Payment Event Error", event=event)
+			raise
 
 def handle_stripe_invoice_webhook_events(doc, method):
 	StripeInvoiceWebhookHandler(webhook_log=doc).process()
+
