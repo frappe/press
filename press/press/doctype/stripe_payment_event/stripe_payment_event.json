@@ -9,7 +9,8 @@
   "invoice",
   "team",
   "event_type",
-  "payment_status"
+  "payment_status",
+  "stripe_invoice_object"
  ],
  "fields": [
   {
@@ -37,11 +38,16 @@
    "fieldtype": "Select",
    "label": "Payment Status",
    "options": "Paid\nUnpaid"
+  },
+  {
+   "fieldname": "stripe_invoice_object",
+   "fieldtype": "Long Text",
+   "label": "Stripe Invoice Object"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-10-31 12:05:38.633463",
+ "modified": "2021-10-31 12:41:17.569302",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Stripe Payment Event",
