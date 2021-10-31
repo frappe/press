@@ -9,6 +9,12 @@ from press.telegram_utils import Telegram
 from frappe.utils import get_url_to_form
 
 
+EVENT_TYPE_MAP = {
+	"invoice.finalized": "Finalized",
+	"invoice.payment_succeeded": "Succeeded",
+	"invoice.payment_failed": "Failed"
+}
+
 class StripeInvoiceWebhookHandler:
 	"""This class handles Stripe Invoice Webhook Events"""
 
@@ -31,13 +37,29 @@ class StripeInvoiceWebhookHandler:
 			"Invoice", {"stripe_invoice_id": self.stripe_invoice["id"]}, for_update=True
 		)
 		self.team = frappe.get_doc("Team", self.invoice.team)
+		event_type = self.webhook_log.event_type
 
-		if self.webhook_log.event_type == "invoice.finalized":
+		if event_type == "invoice.finalized":
 			self.handle_finalized()
-		elif self.webhook_log.event_type == "invoice.payment_succeeded":
+		elif event_type == "invoice.payment_succeeded":
 			self.handle_payment_succeeded()
-		elif self.webhook_log.event_type == "invoice.payment_failed":
+		elif event_type == "invoice.payment_failed":
 			self.handle_payment_failed()
+
+		payment_status = "Unpaid"
+		if event_type == "invoice.payment_succeeded":
+			payment_status = "Paid"
+		elif event_type == "invoice.finalized" and self.stripe_invoice["status"] == "paid":
+			payment_status = "Paid"
+			
+
+		frappe.get_doc({
+			"doctype": "Stripe Payment Event",
+			"invoice": self.invoice.name,
+			"team": self.invoice.team,
+			"event_type": EVENT_TYPE_MAP[event_type],
+			"payment_status": payment_status
+		}).insert()
 
 	def handle_finalized(self):
 		self.invoice.update(
