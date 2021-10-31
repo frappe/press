@@ -16,6 +16,8 @@
   {
    "fieldname": "invoice",
    "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Invoice",
    "options": "Invoice"
   },
@@ -29,6 +31,7 @@
    "fieldname": "event_type",
    "fieldtype": "Select",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Event Type",
    "options": "Finalized\nFailed\nSucceeded",
    "reqd": 1
@@ -36,18 +39,20 @@
   {
    "fieldname": "payment_status",
    "fieldtype": "Select",
+   "in_list_view": 1,
    "label": "Payment Status",
    "options": "Paid\nUnpaid"
   },
   {
    "fieldname": "stripe_invoice_object",
    "fieldtype": "Long Text",
-   "label": "Stripe Invoice Object"
+   "label": "Stripe Invoice Object",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-10-31 12:41:17.569302",
+ "modified": "2021-10-31 13:36:02.338246",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Stripe Payment Event",
@@ -68,5 +73,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "title_field": "invoice",
  "track_changes": 1
 }
