@@ -10,7 +10,8 @@
   "team",
   "event_type",
   "payment_status",
-  "stripe_invoice_object"
+  "stripe_invoice_object",
+  "stripe_invoice_id"
  ],
  "fields": [
   {
@@ -45,14 +46,19 @@
   },
   {
    "fieldname": "stripe_invoice_object",
-   "fieldtype": "Long Text",
+   "fieldtype": "Code",
    "label": "Stripe Invoice Object",
    "read_only": 1
+  },
+  {
+   "fieldname": "stripe_invoice_id",
+   "fieldtype": "Data",
+   "label": "Stripe Invoice Id"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-10-31 13:36:02.338246",
+ "modified": "2021-10-31 15:29:13.658976",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Stripe Payment Event",

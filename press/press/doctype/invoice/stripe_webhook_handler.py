@@ -40,7 +40,8 @@ class StripeInvoiceWebhookHandler:
 			"team": self.invoice.team,
 			"event_type": EVENT_TYPE_MAP[event_type],
 			"payment_status": payment_status,
-			"stripe_invoice_object": frappe.as_json(stripe_invoice)
+			"stripe_invoice_object": frappe.as_json(stripe_invoice),
+			"stripe_invoice_id": stripe_invoice["id"]
 		}).insert()
 
 
