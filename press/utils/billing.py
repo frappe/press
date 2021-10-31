@@ -156,6 +156,7 @@ def convert_stripe_money(amount):
 
 
 def send_email_for_failed_payment(invoice, sites=None):
+	invoice = frappe.get_doc("Invoice", invoice)
 	team = frappe.get_doc("Team", invoice.team)
 	email = team.user
 	payment_method = team.default_payment_method
