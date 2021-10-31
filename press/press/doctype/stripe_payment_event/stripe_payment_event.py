@@ -4,10 +4,9 @@
 import frappe
 
 from datetime import datetime
-from frappe.utils import get_url_to_form
-from press.telegram_utils import Telegram
 from frappe.model.document import Document
 from press.utils.billing import convert_stripe_money
+
 
 class StripePaymentEvent(Document):
 	def after_insert(self):
@@ -17,7 +16,7 @@ class StripePaymentEvent(Document):
 			self.handle_payment_succeeded()
 		elif self.event_type == "Failed":
 			self.handle_payment_failed()
-	
+
 	def handle_finalized(self):
 		invoice = frappe.get_doc("Invoice", self.invoice, for_update=True)
 		stripe_invoice = frappe.parse_json(self.stripe_invoice_object)
@@ -76,4 +75,3 @@ class StripePaymentEvent(Document):
 			}
 		)
 		invoice.save()
-
