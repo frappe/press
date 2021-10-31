@@ -7,7 +7,7 @@ from datetime import datetime
 from frappe.utils import get_url_to_form
 from press.telegram_utils import Telegram
 from frappe.model.document import Document
-from press.utils.billing import convert_stripe_money, send_email_for_failed_payment
+from press.utils.billing import convert_stripe_money
 
 class StripePaymentEvent(Document):
 	def after_insert(self):
@@ -76,31 +76,4 @@ class StripePaymentEvent(Document):
 			}
 		)
 		invoice.save()
-		self.suspend_sites_if_applicable(attempt_count)
 
-
-	def suspend_sites_if_applicable(self, attempt_count):
-		team = frappe.get_doc("Team", self.team)
-		if team.free_account:
-			return
-
-		elif team.erpnext_partner:
-			# dont suspend partner sites, send alert on telegram
-			telegram = Telegram()
-			team_url = get_url_to_form("Team", team.name)
-			invoice_url = get_url_to_form("Invoice", self.invoice)
-			telegram.send(
-				f"Failed Invoice Payment [{self.invoice}]({invoice_url}) of"
-				f" Partner: [{team.name}]({team_url})"
-			)
-
-			send_email_for_failed_payment(self.invoice)
-
-		else:
-			sites = None
-			if attempt_count > 1:
-				# suspend sites
-				sites = team.suspend_sites(
-					reason=f"Suspending sites because of failed payment of {self.invoice}"
-				)
-			send_email_for_failed_payment(self.invoice, sites)
