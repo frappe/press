@@ -78,8 +78,8 @@
 {% macro main() %}
 <div class="w-full border-b md:w-10/12 md:border-b-0">
 	<div class="flex flex-row items-center">
-		<div class="mr-2">
-			{{ app_image(app, 'md:hidden') }}
+		<div class="mr-2 md:hidden">
+			{{ app_image(app) }}
 		</div>
 		<h1 class="mb-2 text-4xl font-semibold text-gray-900 md:text-5xl"> {{ app.title }} </h1>
 	</div>
