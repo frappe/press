@@ -3,6 +3,7 @@
 # For license information, please see license.txt
 
 import frappe
+import secrets
 import json
 import requests
 from datetime import datetime
@@ -80,7 +81,7 @@ def send_mail(**data):
 			for file_name, bin_data in files.items():
 				attachments.append(("attachment", (file_name, bin_data)))
 
-		return requests.post(
+		response = requests.post(
 			f"https://api.mailgun.net/v3/{domain}/messages",
 			auth=("api", f"{api_key}"),
 			files=attachments,
@@ -93,6 +94,10 @@ def send_mail(**data):
 			},
 		)
 
+		return "Successful"
+	else:
+		return "Error"
+
 
 @frappe.whitelist(allow_guest=True)
 def event_log(**data):
@@ -102,6 +107,7 @@ def event_log(**data):
 	frappe.get_doc(
 		{
 			"doctype": "QMail Log",
+			"unique_token": secrets.token_hex(25),
 			"sender": headers["from"],
 			"recipient": headers["to"],
 			"subject": headers["subject"],
