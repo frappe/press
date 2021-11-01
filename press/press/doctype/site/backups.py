@@ -205,10 +205,10 @@ class ScheduledBackupJob:
 		self.sites = Site.get_sites_for_backup(self.interval)
 		self.sites_without_offsite = Subscription.get_sites_without_offsite_backups()
 
-	def take_offsite(self, site: str, day: datetime.date) -> bool:
+	def take_offsite(self, site: frappe._dict, day: datetime.date) -> bool:
 		return (
 			self.offsite_setup
-			and site not in self.sites_without_offsite
+			and site.name not in self.sites_without_offsite
 			and not SiteBackup.offsite_backup_exists(site.name, day)
 		)
 
