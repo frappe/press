@@ -4,9 +4,9 @@
 			No sites in this bench
 		</div>
 		<div class="py-2" v-for="(site, index) in sites" :key="site.name">
-			<router-link
-				:to="`/sites/${site.name}`"
-				class="block pt-2 rounded-md sm:px-2 hover:bg-gray-50"
+			<div
+				@click="goToDeskSite(site)"
+				class="block pt-2 rounded-md sm:px-2 hover:bg-gray-50 cursor-pointer"
 			>
 				<div class="flex items-center justify-between sm:justify-start">
 					<div class="text-base sm:w-4/12">
@@ -35,7 +35,7 @@
 					class="pt-2 transform translate-y-2"
 					:class="{ 'border-b': index < sites.length - 1 }"
 				/>
-			</router-link>
+			</div>
 		</div>
 	</div>
 </template>
@@ -69,6 +69,13 @@ export default {
 				color,
 				status
 			};
+		},
+		goToDeskSite(site) {
+			console.log('here');
+			let host_name = window.location.host;
+			let host_name_prefix = ['frappecloud.com', 'staging.frappe.cloud'].includes(host_name) ? 'https://' : 'http://';
+			host_name = host_name_prefix + host_name;
+			window.location.href = `${host_name}/app/site/${site.name}`;
 		}
 	}
 };

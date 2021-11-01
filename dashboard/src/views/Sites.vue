@@ -52,7 +52,7 @@
 								</Badge>
 								<Button
 									v-if="bench.owned_by_team"
-									:route="`/benches/${bench.name}`"
+									@click="goToDeskBench(bench)"
 									icon="tool"
 								>
 								</Button>
@@ -182,6 +182,12 @@ export default {
 			return (
 				(bench.shared || bench.owned_by_team) && this.sitesShown[bench.name]
 			);
+		},
+		goToDeskBench(bench) {
+			let host_name = window.location.host;
+			let host_name_prefix = ['frappecloud.com', 'staging.frappe.cloud'].includes(host_name) ? 'https://' : 'http://';
+			host_name = host_name_prefix + host_name;
+			window.location.href = `${host_name}/app/release-group/${bench.name}`;
 		}
 	},
 	computed: {
