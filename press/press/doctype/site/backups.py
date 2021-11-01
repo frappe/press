@@ -266,10 +266,10 @@ class ScheduledBackupJob:
 		try:
 			site_time = self.get_site_time(site)
 			if self.is_backup_hour(site_time.hour):
-				today_at_site = site_time.date()
+				today = date.today()
 
-				offsite = self.take_offsite(site, today_at_site)
-				with_files = offsite or not SiteBackup.file_backup_exists(site.name, today_at_site)
+				offsite = self.take_offsite(site, today)
+				with_files = offsite or not SiteBackup.file_backup_exists(site.name, today)
 
 				frappe.get_doc("Site", site.name).backup(with_files=with_files, offsite=offsite)
 				frappe.db.commit()
