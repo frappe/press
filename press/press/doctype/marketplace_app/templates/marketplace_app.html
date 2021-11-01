@@ -63,10 +63,15 @@
 	<div>
 		<h5 class="text-xl font-semibold text-gray-900">Supported Versions</h5>
 		<ul class="mt-2 space-y-1 text-base text-gray-600">
-			{%- for group in groups -%}
+			{%- for supported_version in supported_versions -%}
 			<li>
-				{{ link(group.version, group.frappe.repository_url + '/tree/' + group.frappe.branch,
-				blank=True) }}
+				{%- if supported_version.app_source.public -%}
+				{{ link(supported_version.version, supported_version.app_source.repository_url + '/tree/' +
+				supported_version.app_source.branch, blank=True) }}
+				{%- else -%}
+				{{ link(supported_version.version, supported_version.frappe.repository_url + '/tree/' +
+				supported_version.frappe.branch, blank=True) }}
+				{%- endif -%}
 			</li>
 			{%- endfor -%}
 		</ul>
@@ -110,8 +115,7 @@
 {% macro app_image(app, class='') %}
 <div class="w-12 h-12 md:w-24 md:h-24 lg:w-44 lg:h-44 {{ class }}">
 	{%- if app.image -%}
-	<img class="object-cover border border-gray-200 rounded-lg"
-		src="{{ app.image }}" alt="{{ app.title }}">
+	<img class="object-cover border border-gray-200 rounded-lg" src="{{ app.image }}" alt="{{ app.title }}">
 	{%- else -%}
 	<div class="flex items-center justify-center text-gray-500 bg-gray-100 border border-gray-200 rounded-lg">
 		{{ app.title[0].upper() }}
