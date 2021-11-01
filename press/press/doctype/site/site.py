@@ -343,6 +343,7 @@ class Site(Document):
 				log_error("Site Status Fetch Error", site=self.name)
 		self.save()
 
+	@frappe.whitelist()
 	def add_domain(self, domain):
 		domain = domain.lower()
 		if check_dns(self.name, domain):
