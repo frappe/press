@@ -151,8 +151,8 @@ frappe.ui.form.on('Site', {
         let domains = remap(overview_res.message.domains, (d) => {
             return {
                 message: d.domain,
-                tag: d.primary || "",
-                tag_type: 'indicator-pill green'
+                tag: d.primary ? "primary" : "",
+                tag_type: d.primary ? 'indicator-pill green': ""
             };
         });
         let backups = remap(backups_res.message, (d) => {
@@ -291,8 +291,29 @@ frappe.ui.form.on('Site', {
             'description': 'Domains pointing to your site',
             'button': {
                 'title': 'Add Domain', 
-                'onclick': () => {
-                    frappe.msgprint(__('Add Domain'))
+                'onclick': async () => {
+                    let d = new frappe.ui.Dialog({
+                        title: 'Add Domain',
+                        fields: [
+                            {
+                                label: 'Domain Name ( eg: www.example.com )',
+                                fieldname: 'domain',
+                                fieldtype: 'Data'
+                            }
+                        ],
+                        primary_action_label: 'Varify DNS',
+                        primary_action(values) {
+                            d.hide();
+                            if(values['domain']) {
+                                let domain = values['domain']
+                                console.log(domain);
+                                frm.call('add_domain', { domain }).then((r) => frm.refresh());
+                            } else {
+                                frappe.throw(__('Domain cannot be empty'));
+                            }
+                        }
+                    });
+                    d.show();
                 }
             }
         });
@@ -528,7 +549,7 @@ frappe.ui.form.on('Site', {
                                 });
                                 new ListComponent(wrapper, {
                                     'data': job_steps,
-                                    'template': title_with_message_and_tag_template,
+                                    'template': title_with_text_area_template,
                                     'onclick': () => {
                                         frappe.msgprint(__('Hello There'));
                                     }
@@ -570,7 +591,7 @@ frappe.ui.form.on('Site', {
                         });
                         new ListComponent(wrapper, {
                             'data': log_lines,
-                            'template': title_with_message_and_tag_template
+                            'template': title_with_text_area_template
                         });
                     }
                 })
