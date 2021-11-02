@@ -8,8 +8,45 @@ frappe.require('assets/press/js/SectionHead.js')
 
 
 frappe.ui.form.on('Release Group', {
-	onload: async function (frm) {
-		// data fetch
+	refresh: async function(frm) {
+		frm.add_web_link(
+			`/dashboard/benches/${frm.doc.name}`,
+			__('Visit Dashboard')
+		);
+		[
+			[
+				__('Create Deploy Candidate'),
+				'press.api.bench.create_deploy_candidate',
+			],
+		].forEach(([label, method]) => {
+			frm.add_custom_button(
+				label,
+				() => {
+					frm
+						.call({
+							method,
+							freeze: true,
+							args: {
+								name: frm.doc.name,
+							},
+						})
+						.then(({ message }) => {
+							frappe.msgprint({
+								title: __('New Deploy Candidate Created'),
+								indicator: 'green',
+								message: __(
+									`New <a href="/app/deploy-candidate/${message.name}">Deploy Candidate</a> for this bench was created successfully.`
+								),
+							});
+
+							frm.refresh();
+						});
+				},
+				__('Actions')
+			);
+		});
+		frm.set_df_property('dependencies', 'cannot_add_rows', 1);
+		
 		let versions_res = await frappe.call({
 			method: 'press.api.bench.versions',
 			args: { name: frm.docname },
@@ -91,11 +128,13 @@ frappe.ui.form.on('Release Group', {
 		})
 
 		// sec: Overview
+		clear_block(frm, 'bench_info_block');
 		new SectionHead(frm.get_field('bench_info_block').$wrapper, {
 			title: 'Bench Info',
 			description: 'General information about your bench'
 		})
 
+		clear_block(frm, 'bench_versions_block');
 		new SectionHead(frm.get_field('bench_versions_block').$wrapper, {
 			title: 'Versions',
 			description:'Deployed versions of your bench',
@@ -111,14 +150,52 @@ frappe.ui.form.on('Release Group', {
 			template: title_with_message_and_tag_template,
 		});
 
+		clear_block(frm, 'apps_list_block');
 		new SectionHead(frm.get_field('apps_list_block').$wrapper, {
 			title: 'Apps',
 			description: 'Apps available on your bench',
 			button: {
 				title: 'Add App',
-				onclick: () => {
-					frappe.msgprint(__('Add App'));
-				}
+				onclick: async () => {
+					let bench = frm.get_doc();
+                    const bench_apps = bench.apps.map((app) => app.source);
+
+					new frappe.ui.form.MultiSelectDialog({
+						doctype: "App Source",
+						target: frm,
+						setters: {
+
+						},
+						add_filters_group: 0,
+						get_query() {
+							return {
+								filters: { name: ['not in', bench_apps] }
+							}
+						},
+						async action(selections) {
+							console.log(selections);
+							// add the app sources to the release group
+							for(let i = 0; i < selections.length; i++) {
+								let app_source = await frappe.db.get_doc("App Source", selections[i]);
+								console.log(app_source);
+								// Add the selected app to bench using api
+								await frappe.call({
+									method: 'press.api.app.new',
+									args: {
+										app: {
+											name: app_source?.name,
+											title: app_source?.app_title,
+											repository_url: app_source?.repository_url,
+											branch: app_source?.branch,
+											github_installation_id: app_source?.github_installation_id,
+											group: bench.name
+										}
+									}
+								})
+							}
+						}
+					});
+                }
 			}
 		})
 		new ListComponent(frm.get_field('apps_list_block').$wrapper, {
@@ -126,6 +203,7 @@ frappe.ui.form.on('Release Group', {
 			template: title_with_message_and_tag_template,
 		});
 
+		clear_block(frm, 'recent_deploys_block');
 		new SectionHead(frm.get_field('recent_deploys_block').$wrapper, {
 			title: 'Deploys',
 			description: 'History of deploys on your bench',
@@ -142,6 +220,7 @@ frappe.ui.form.on('Release Group', {
 		});
 
 		// sec: Sites
+		clear_block(frm, 'sites_block');
 		new ListComponent(frm.get_field('sites_block').$wrapper, {
 			data: sites,
 			template: title_with_sub_text_tag_and_button_template,
@@ -155,6 +234,7 @@ frappe.ui.form.on('Release Group', {
 		});
 
 		// sec: Deploys
+		clear_block(frm, 'deploys_section_block');
 		new DetailedListComponent(frm.get_field('deploys_section_block').$wrapper, {
 			title: 'Deploys',
 			description: 'Deploys on your bench',
@@ -188,6 +268,7 @@ frappe.ui.form.on('Release Group', {
 		})
 
 		// sec: Jobs
+		clear_block(frm, 'jobs_block');
 		new DetailedListComponent(frm.get_field('jobs_block').$wrapper, {
 			title: 'Jobs',
 			description: 'History of jobs that ran on your bench',
@@ -225,44 +306,5 @@ frappe.ui.form.on('Release Group', {
 		if (frm.is_new()) {
 			frm.call('validate_dependencies');
 		}
-	},
-	refresh: function (frm) {
-		frm.add_web_link(
-			`/dashboard/benches/${frm.doc.name}`,
-			__('Visit Dashboard')
-		);
-		[
-			[
-				__('Create Deploy Candidate'),
-				'press.api.bench.create_deploy_candidate',
-			],
-		].forEach(([label, method]) => {
-			frm.add_custom_button(
-				label,
-				() => {
-					frm
-						.call({
-							method,
-							freeze: true,
-							args: {
-								name: frm.doc.name,
-							},
-						})
-						.then(({ message }) => {
-							frappe.msgprint({
-								title: __('New Deploy Candidate Created'),
-								indicator: 'green',
-								message: __(
-									`New <a href="/app/deploy-candidate/${message.name}">Deploy Candidate</a> for this bench was created successfully.`
-								),
-							});
-
-							frm.refresh();
-						});
-				},
-				__('Actions')
-			);
-		});
-		frm.set_df_property('dependencies', 'cannot_add_rows', 1);
 	},
 });
