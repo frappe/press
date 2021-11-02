@@ -130,6 +130,9 @@ class MarketplaceApp(WebsiteGenerator):
 				)
 			)
 
+		# Sort based on version
+		supported_versions.sort(key=lambda x: x.version, reverse=True)
+
 		context.supported_versions = supported_versions
 
 	def get_deploy_information(self):
