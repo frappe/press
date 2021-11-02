@@ -2,18 +2,17 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
-from __future__ import unicode_literals
-
 import frappe
-from frappe.model.document import Document
+
+from frappe import _
+from press.utils import log_error
+from frappe.utils import getdate, cint
 from frappe.utils.data import fmt_money
 from press.api.billing import get_stripe
-from press.utils.billing import get_frappe_io_connection, convert_stripe_money
-from press.utils import log_error
-from frappe import _
-from frappe.utils import getdate, cint
+from frappe.model.document import Document
 
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.utils.billing import get_frappe_io_connection, convert_stripe_money
 
 
 class Invoice(Document):

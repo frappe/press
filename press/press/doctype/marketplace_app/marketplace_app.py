@@ -95,22 +95,42 @@ class MarketplaceApp(WebsiteGenerator):
 		if self.category:
 			context.category = frappe.get_doc("Marketplace App Category", self.category)
 
-		groups = frappe.db.get_all(
-			"Release Group",
-			filters=[
-				["Release Group", "enabled", "=", 1],
-				["Release Group", "public", "=", 1],
-				["Release Group App", "app", "=", self.app],
-			],
+		supported_versions = []
+		public_rgs = frappe.get_all(
+			"Release Group", filters={"public": True}, fields=["version", "name"]
 		)
-		for group in groups:
-			group_doc = frappe.get_doc("Release Group", group.name)
+
+		unique_public_rgs = {}
+		for rg in public_rgs:
+			if rg.version not in unique_public_rgs:
+				unique_public_rgs[rg.version] = rg.name
+
+		for source in self.sources:
+			if source.version not in unique_public_rgs:
+				continue
+
+			frappe_source_name = frappe.get_doc(
+				"Release Group App", {"app": "frappe", "parent": unique_public_rgs[source.version]}
+			).source
 			frappe_source = frappe.db.get_value(
-				"App Source", group_doc.apps[0].source, ["repository_url", "branch"], as_dict=True
+				"App Source", frappe_source_name, ["repository_url", "branch"], as_dict=True
 			)
-			group["frappe"] = frappe_source
-			group["version"] = group_doc.version
-		context.groups = groups
+
+			app_source = frappe.db.get_value(
+				"App Source", source.source, ["repository_url", "branch", "public"], as_dict=True
+			)
+
+			supported_versions.append(
+				frappe._dict(
+					{
+						"version": source.version,
+						"app_source": app_source,
+						"frappe_source": frappe_source,
+					}
+				)
+			)
+
+		context.supported_versions = supported_versions
 
 	def get_deploy_information(self):
 		"""Return the deploy information this marketplace app"""
