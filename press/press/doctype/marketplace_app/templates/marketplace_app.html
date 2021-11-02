@@ -7,7 +7,6 @@
 		<div class="mt-5">
 			{{ breadcrumbs([
 			{ 'label': 'Apps', 'url': '/marketplace' },
-			{ 'label': category.name, 'url': '' },
 			{ 'label': app.title, 'url': '' }
 			]) }}
 		</div>
@@ -63,10 +62,15 @@
 	<div>
 		<h5 class="text-xl font-semibold text-gray-900">Supported Versions</h5>
 		<ul class="mt-2 space-y-1 text-base text-gray-600">
-			{%- for group in groups -%}
+			{%- for supported_version in supported_versions -%}
 			<li>
-				{{ link(group.version, group.frappe.repository_url + '/tree/' + group.frappe.branch,
-				blank=True) }}
+				{%- if supported_version.app_source.public -%}
+				{{ link(supported_version.version, supported_version.app_source.repository_url + '/tree/' +
+				supported_version.app_source.branch, blank=True) }}
+				{%- else -%}
+				{{ link(supported_version.version, supported_version.frappe.repository_url + '/tree/' +
+				supported_version.frappe.branch, blank=True) }}
+				{%- endif -%}
 			</li>
 			{%- endfor -%}
 		</ul>
@@ -78,8 +82,8 @@
 {% macro main() %}
 <div class="w-full border-b md:w-10/12 md:border-b-0">
 	<div class="flex flex-row items-center">
-		<div class="mr-2">
-			{{ app_image(app, 'md:hidden') }}
+		<div class="mr-2 md:hidden">
+			{{ app_image(app) }}
 		</div>
 		<h1 class="mb-2 text-4xl font-semibold text-gray-900 md:text-5xl"> {{ app.title }} </h1>
 	</div>
@@ -110,8 +114,7 @@
 {% macro app_image(app, class='') %}
 <div class="w-12 h-12 md:w-24 md:h-24 lg:w-44 lg:h-44 {{ class }}">
 	{%- if app.image -%}
-	<img class="object-cover border border-gray-200 rounded-lg"
-		src="{{ app.image }}" alt="{{ app.title }}">
+	<img class="object-cover border border-gray-200 rounded-lg" src="{{ app.image }}" alt="{{ app.title }}">
 	{%- else -%}
 	<div class="flex items-center justify-center text-gray-500 bg-gray-100 border border-gray-200 rounded-lg">
 		{{ app.title[0].upper() }}

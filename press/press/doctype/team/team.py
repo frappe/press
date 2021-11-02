@@ -2,17 +2,16 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
-from __future__ import unicode_literals
-
-from typing import List
-
 import frappe
-from frappe import _
-from frappe.contacts.address_and_contact import load_address_and_contact
-from frappe.model.document import Document
-from frappe.utils import get_fullname
 
+from frappe import _
+from typing import List
+from frappe.utils import get_fullname
+from frappe.utils import get_url_to_form
+from press.telegram_utils import Telegram
+from frappe.model.document import Document
 from press.exceptions import FrappeioServerNotSet
+from frappe.contacts.address_and_contact import load_address_and_contact
 from press.press.doctype.account_request.account_request import AccountRequest
 from press.utils.billing import (
 	get_erpnext_com_connection,
@@ -552,6 +551,41 @@ class Team(Document):
 
 		frappe.sendmail(
 			recipients=recipients, **kwargs,
+		)
+
+	@frappe.whitelist()
+	def send_telegram_alert_for_failed_payment(self, invoice):
+		telegram = Telegram()
+		team_url = get_url_to_form("Team", self.name)
+		invoice_url = get_url_to_form("Invoice", invoice)
+		telegram.send(
+			f"Failed Invoice Payment [{invoice}]({invoice_url}) of"
+			f" Partner: [{self.name}]({team_url})"
+		)
+
+	@frappe.whitelist()
+	def send_email_for_failed_payment(self, invoice, sites=None):
+		invoice = frappe.get_doc("Invoice", invoice)
+		email = self.user
+		payment_method = self.default_payment_method
+		last_4 = frappe.db.get_value("Stripe Payment Method", payment_method, "last_4")
+		account_update_link = frappe.utils.get_url("/dashboard/welcome")
+		subject = "Invoice Payment Failed for Frappe Cloud Subscription"
+
+		frappe.sendmail(
+			recipients=email,
+			subject=subject,
+			template="payment_failed_partner" if self.erpnext_partner else "payment_failed",
+			args={
+				"subject": subject,
+				"payment_link": invoice.stripe_invoice_url,
+				"amount": invoice.get_formatted("amount_due"),
+				"account_update_link": account_update_link,
+				"last_4": last_4 or "",
+				"card_not_added": not payment_method,
+				"sites": sites,
+				"team": self,
+			},
 		)
 
 
