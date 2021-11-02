@@ -237,7 +237,6 @@ class ScheduledBackupJob:
 		def delete_prev(self):
 			self.deque.pop()
 
-	@timing
 	def start(self):
 		"""Schedule backups for all Active sites based on their local timezones. Also trigger offsite backups once a day."""
 		sites_by_server = []
