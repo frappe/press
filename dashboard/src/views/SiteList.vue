@@ -71,7 +71,6 @@ export default {
 			};
 		},
 		goToDeskSite(site) {
-			console.log('here');
 			let host_name = window.location.host;
 			let host_name_prefix = ['frappecloud.com', 'staging.frappe.cloud'].includes(host_name) ? 'https://' : 'http://';
 			host_name = host_name_prefix + host_name;
