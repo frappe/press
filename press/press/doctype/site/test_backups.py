@@ -86,42 +86,16 @@ class TestScheduledBackupJob(unittest.TestCase):
 
 		job.limit = limit
 		job.start()
+		sites_for_backup = [site.name for site in job.sites]
+		frappe.db.set_value(
+			"Site Backup",
+			{"site": ("in", sites_for_backup)},
+			"status",
+			"Success",  # fake succesful backup
+		)
 
 		job = ScheduledBackupJob()
 		sites_num_new = len(job.sites)
 
 		self.assertLess(sites_num_new, sites_num_old)
 		self.assertEqual(sites_num_old - sites_num_new, limit)
-
-	def test_site_with_no_backup_in_past_interval_shows_up_for_backup(self):
-		site_1 = self._create_site_requiring_backup()
-		site_2 = self._create_site_requiring_backup()
-		create_test_site_backup(
-			site_2.name, creation=self._interval_hrs_ago() + timedelta(hours=1)
-		)
-
-		job = ScheduledBackupJob()
-		sites_for_backup = [site.name for site in job.sites]
-
-		self.assertIn(site_1.name, sites_for_backup)
-		self.assertNotIn(site_2.name, sites_for_backup)
-
-	def test_sites_with_offsite_backup_today_doesnt_show_up(self):
-		site_1 = self._create_site_requiring_backup()
-		create_test_site_backup(
-			site_1.name,
-			offsite=False,
-			creation=date.today()
-		)
-		site_2 = self._create_site_requiring_backup()
-		create_test_site_backup(site_2.name, offsite=True, creation=date.today())
-
-		job = ScheduledBackupJob()
-		sites_for_backup = [site.name for site in job.sites]
-
-		self.assertIn(site_1.name, sites_for_backup)
-		self.assertIn(site_2.name, sites_for_backup)
-		for site in job.sites:
-			if site.name == site_2.name:
-				self.assertEqual(site.offsite, 0)
-
