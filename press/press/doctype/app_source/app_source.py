@@ -5,6 +5,7 @@
 import frappe
 import requests
 
+from typing import List
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 from press.api.github import get_access_token
@@ -64,6 +65,7 @@ class AppSource(Document):
 
 	@frappe.whitelist()
 	def create_release(self):
+		github_response = None
 		try:
 			token = None
 			if self.github_installation_id:
@@ -77,10 +79,13 @@ class AppSource(Document):
 				}
 			else:
 				headers = {}
-			branch = requests.get(
+
+			github_response = requests.get(
 				f"https://api.github.com/repos/{self.repository_owner}/{self.repository}/branches/{self.branch}",
 				headers=headers,
-			).json()
+			)
+
+			branch = github_response.json()
 			hash = branch["commit"]["sha"]
 			if not frappe.db.exists(
 				"App Release", {"app": self.app, "source": self.name, "hash": hash},
@@ -92,17 +97,21 @@ class AppSource(Document):
 						"app": self.app,
 						"source": self.name,
 						"hash": hash,
+						"team": self.team,
 						"message": branch["commit"]["commit"]["message"],
 						"author": branch["commit"]["commit"]["author"]["name"],
 						"deployable": bool(is_first_release),
 					}
 				).insert()
 		except Exception:
-			log_error("App Release Creation Error", app=self.name)
+			github_response = github_response.text if github_response else None
+			log_error(
+				"App Release Creation Error", app=self.name, github_response=github_response
+			)
 
 
 def create_app_source(
-	app: str, repository_url: str, branch: str, version: str
+	app: str, repository_url: str, branch: str, versions: List[str]
 ) -> AppSource:
 	team = get_current_team()
 
@@ -113,7 +122,7 @@ def create_app_source(
 			"repository_url": repository_url,
 			"branch": branch,
 			"team": team,
-			"versions": [{"version": version}],
+			"versions": [{"version": version} for version in versions],
 		}
 	)
 

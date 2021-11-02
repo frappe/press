@@ -57,7 +57,7 @@
 											? 'x'
 											: step.status === 'Skipped'
 												? 'minus'
-												: 'slash'
+												: 'clock'
 								"
 								:class="{
 									'text-green-500': step.completed,

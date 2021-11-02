@@ -5,13 +5,14 @@
 import frappe
 
 from typing import List, Dict
+from frappe.utils import comma_and
 from collections import OrderedDict
 from press.api.site import protected
 from press.api.github import branches
 from frappe.core.utils import find, find_all
 from press.press.doctype.agent_job.agent_job import job_detail
-from press.utils import get_current_team, get_last_doc, unique, get_app_tag
 from press.press.doctype.app_source.app_source import AppSource
+from press.utils import get_current_team, get_last_doc, unique, get_app_tag
 from press.press.doctype.release_group.release_group import (
 	ReleaseGroup,
 	new_release_group,
@@ -20,13 +21,16 @@ from press.press.doctype.release_group.release_group import (
 
 @frappe.whitelist()
 def new(bench):
-	team = get_current_team()
+	team = get_current_team(get_doc=True)
+	if not team.enabled:
+		frappe.throw("You cannot create a new bench because your account is disabled")
+
 	if exists(bench["title"]):
 		frappe.throw("A bench exists with the same name")
 
 	apps = [{"app": app["name"], "source": app["source"]} for app in bench["apps"]]
 	group = new_release_group(
-		bench["title"], bench["version"], apps, team, bench["cluster"]
+		bench["title"], bench["version"], apps, team.name, bench["cluster"]
 	)
 	return group.name
 
@@ -196,6 +200,14 @@ def installable_apps(name):
 
 @frappe.whitelist()
 @protected("Release Group")
+def fetch_latest_app_update(name, app):
+	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
+	app_source = rg.get_app_source(app)
+	app_source.create_release()
+
+
+@frappe.whitelist()
+@protected("Release Group")
 def add_app(name, source, app):
 	release_group = frappe.get_doc("Release Group", name)
 	release_group.add_app(frappe._dict(name=source, app=app))
@@ -204,11 +216,30 @@ def add_app(name, source, app):
 @frappe.whitelist()
 @protected("Release Group")
 def remove_app(name, app):
-	release_group = frappe.get_doc("Release Group", name)
-	for app in release_group.apps:
-		if app.app == app:
-			release_group.remove(app)
-			break
+	release_group: ReleaseGroup = frappe.get_doc("Release Group", name)
+
+	# Sites on this release group
+	sites = frappe.get_all(
+		"Site", filters={"group": name, "status": ("!=", "Archived")}, pluck="name"
+	)
+
+	site_apps = frappe.get_all(
+		"Site App", filters={"parent": ("in", sites), "app": app}, fields=["parent"]
+	)
+
+	if site_apps:
+		installed_on_sites = ", ".join(
+			frappe.bold(site_app["parent"]) for site_app in site_apps
+		)
+		frappe.throw(
+			"Cannot remove this app, it is already installed on the"
+			f" site(s): {comma_and(installed_on_sites, add_quotes=False)}"
+		)
+
+	app_doc_to_remove = find(release_group.apps, lambda x: x.app == app)
+	if app_doc_to_remove:
+		release_group.remove(app_doc_to_remove)
+
 	release_group.save()
 
 
@@ -225,7 +256,7 @@ def versions(name):
 		version.sites = frappe.db.get_all(
 			"Site",
 			{"status": ("!=", "Archived"), "group": name, "bench": version.name},
-			["name", "status"],
+			["name", "status", "creation"],
 		)
 		version.apps = frappe.db.get_all(
 			"Bench App",
@@ -325,7 +356,7 @@ def deploy(name, apps_to_ignore=[]):
 	# Throw if a deploy is already in progress
 	last_deploy_candidate = get_last_doc("Deploy Candidate", {"group": name})
 
-	if last_deploy_candidate.status == "Running":
+	if last_deploy_candidate and last_deploy_candidate.status == "Running":
 		frappe.throw("A deploy for this bench is already in progress")
 
 	candidate = rg.create_deploy_candidate(apps_to_ignore)
@@ -354,6 +385,7 @@ def jobs(name, start=0):
 			filters={"bench": ("in", benches)},
 			start=start,
 			limit=10,
+			ignore_ifnull=True,
 		)
 	else:
 		jobs = []

@@ -1,0 +1,156 @@
+---
+- name: Ensure auditd is installed
+  package:
+      name: auditd
+      state: present
+  notify: restart auditd
+
+- name: "Ensure auditd service is enabled and running"
+  service:
+    name: auditd
+    state: started
+    enabled: yes
+
+- name: "Ensure audit log storage size is configured"
+  lineinfile:
+    dest: /etc/audit/auditd.conf
+    regexp: "^max_log_file( |=)"
+    line: "max_log_file = 10"
+    state: present
+  notify: restart auditd
+
+- name: "Ensure audit logs are not automatically deleted"
+  lineinfile:
+    dest: /etc/audit/auditd.conf
+    regexp: "^max_log_file_action"
+    line: "max_log_file_action = {{ auditd['max_log_file_action'] }}"
+    state: present
+  notify: restart auditd
+
+- name: "Ensure system is disabled when audit logs are full"
+  lineinfile:
+    dest: /etc/audit/auditd.conf
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    state: present
+  with_items:
+    - { regexp: '^space_left_action', line: "space_left_action = {{ auditd['space_left_action'] }}" }
+    - { regexp: '^action_mail_acct', line: "action_mail_acct = {{ auditd['action_mail_acct'] }}" }
+    - { regexp: '^admin_space_left_action', line: "admin_space_left_action = {{ auditd['admin_space_left_action'] }}" }
+  notify: restart auditd
+
+- name: "Ensure events that modify date and time information are collected"
+  template:
+    src: time_change.rules.j2
+    dest: /etc/audit/rules.d/time_change.rules
+    owner: root
+    group: root
+    mode: 0600
+  notify: restart auditd
+
+- name: "Ensure events that modify user/group information are collected"
+  template:
+    src: identity.rules.j2
+    dest: /etc/audit/rules.d/identity.rules
+    owner: root
+    group: root
+    mode: 0600
+  notify: restart auditd
+
+- name: "Ensure events that modify the system's network environment are collected"
+  template:
+    src: system_local.rules.j2
+    dest: /etc/audit/rules.d/system_local.rules
+    owner: root
+    group: root
+    mode: 0600
+  notify: restart auditd
+
+- name: "Ensure events that modify the system's Mandatory Access Controls are collected"
+  template:
+    src: MAC_policy.rules.j2
+    dest: /etc/audit/rules.d/MAC_policy.rules
+    owner: root
+    group: root
+    mode: 0600
+  notify: restart auditd
+
+- name: "Ensure login and logout events are collected"
+  template:
+    src: logins.rules.j2
+    dest: /etc/audit/rules.d/logins.rules
+    owner: root
+    group: root
+    mode: 0600
+  notify: restart auditd
+
+- name: "Ensure discretionary access control permission modification events are collected"
+  template:
+    src: perm_mod.rules.j2
+    dest: /etc/audit/rules.d/perm_mod.rules
+    owner: root
+    group: root
+    mode: 0600
+  notify: restart auditd
+
+- name: "Ensure unsuccessful unauthorized file access attempts are collected"
+  template:
+    src: access.rules.j2
+    dest: /etc/audit/rules.d/access.rules
+    owner: root
+    group: root
+    mode: 0600
+  notify: restart auditd
+
+- name: "Ensure use of privileged commands is collected"
+  block:
+    - name: "| AUDIT | Ensure use of privileged commands is collected"
+      shell: for i in  $(df | grep '^/dev' | awk '{ print $NF }'); do find $i -xdev -type f -perm -4000 -o -type f -perm -2000 2>/dev/null; done
+      register: priv_procs
+      changed_when: no
+      check_mode: no
+
+    - name: "| PATCH | Ensure use of privileged commands is collected"
+      template:
+          src: priv_commands.rules.j2
+          dest: /etc/audit/rules.d/priv_commands.rules
+          owner: root
+          group: root
+          mode: 0600
+      notify: restart auditd
+
+- name: "Ensure file deletion events by users are collected"
+  template:
+    src: deletion.rules.j2
+    dest: /etc/audit/rules.d/deletion.rules
+    owner: root
+    group: root
+    mode: 0600
+  notify: restart auditd
+
+- name: "Ensure changes to system administration scope (sudoers) is collected"
+  template:
+    src: scope.rules.j2
+    dest: /etc/audit/rules.d/scope.rules
+    owner: root
+    group: root
+    mode: 0600
+  notify: restart auditd
+
+- name: "Ensure system administrator command executions (sudo) are collected"
+  template:
+    src: actions.rules.j2
+    dest: /etc/audit/rules.d/actions.rules
+    owner: root
+    group: root
+    mode: 0600
+  notify: restart auditd
+
+- name: "Ensure the audit configuration is immutable"
+  template:
+    src: 99_finalize.rules.j2
+    dest: /etc/audit/rules.d/99_finalize.rules
+    owner: root
+    group: root
+    mode: 0600
+  notify: restart auditd

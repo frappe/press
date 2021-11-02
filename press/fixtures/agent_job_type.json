@@ -989,7 +989,7 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-07-30 12:39:21.236716",
+  "modified": "2021-10-14 09:27:02.587048",
   "name": "Cleanup Unused Files",
   "parent": null,
   "parentfield": null,
@@ -1008,6 +1008,12 @@
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Remove Temporary Files"
+   },
+   {
+    "parent": "Cleanup Unused Files",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Remove Unused Docker Artefacts"
    }
   ]
  },

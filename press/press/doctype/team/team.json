@@ -15,6 +15,10 @@
   "via_erpnext",
   "section_break_6",
   "team_members",
+  "section_break_9",
+  "send_notifications",
+  "column_break_9",
+  "notify_email",
   "subscription_details_section",
   "stripe_customer_id",
   "country",
@@ -164,6 +168,29 @@
    "fieldtype": "Select",
    "label": "Payment Mode",
    "options": "\nCard\nPrepaid Credits"
+  },
+  {
+   "depends_on": "eval:doc.send_notifications;",
+   "fetch_from": "user.email",
+   "fetch_if_empty": 1,
+   "fieldname": "notify_email",
+   "fieldtype": "Data",
+   "label": "Notify Email",
+   "mandatory_depends_on": "eval:doc.send_notifications;"
+  },
+  {
+   "fieldname": "column_break_9",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_9",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "send_notifications",
+   "fieldtype": "Check",
+   "label": "Send Notifications"
   }
  ],
  "links": [
@@ -208,7 +235,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2021-08-26 11:34:41.694982",
+ "modified": "2021-10-08 10:25:56.640088",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

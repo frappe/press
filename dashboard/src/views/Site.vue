@@ -24,8 +24,8 @@
 						</Button>
 						<Button
 							v-if="site.status == 'Active'"
-							@click="$resources.loginAsAdmin.submit()"
 							:loading="$resources.loginAsAdmin.loading"
+							@click="reasonToLoginAsAdminPopup()"
 							icon-left="external-link"
 						>
 							Login as Administrator
@@ -139,6 +139,35 @@ export default {
 					: 'overview';
 				this.$router.replace(`${path}/${tab}`);
 			}
+		},
+		reasonToLoginAsAdminPopup() {
+			if (this.$account.team.name == this.site.team) {
+				return this.$resources.loginAsAdmin.submit({
+					name: this.siteName
+				});
+			}
+			this.$confirm({
+				title: 'Login as Administrator',
+				message: 'Please enter reason for this login.',
+				actionLabel: 'Login',
+				textBox: true,
+				action: (closeDialog, textBoxInput) => {
+					let reason = textBoxInput;
+					if (textBoxInput.trim()) {
+						this.$resources.loginAsAdmin.submit({
+							name: this.siteName,
+							reason: reason
+						});
+						closeDialog();
+					} else {
+						this.$notify({
+							title: 'Reason field should not be empty',
+							color: 'red',
+							icon: 'x'
+						});
+					}
+				}
+			});
 		}
 	},
 	computed: {

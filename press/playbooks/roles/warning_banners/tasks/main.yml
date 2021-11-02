@@ -1,0 +1,56 @@
+---
+- name: "Ensure message of the day is configured properly"
+  copy:
+      src: motd.j2
+      dest: /etc/motd
+      owner: root
+      group: root
+      mode: 0644
+
+- name: "Ensure local login warning banner is configured properly"
+  copy:
+      src: issue.j2
+      dest: /etc/issue
+      owner: root
+      group: root
+      mode: 0644
+
+- name: "Ensure remote login warning banner is configured properly"
+  copy:
+      src: issue.j2
+      dest: /etc/issue.net
+      owner: root
+      group: root
+      mode: 0644
+
+- name: "Ensure remote login warning banner is configured for ssh"
+  copy:
+      src: issue.j2
+      dest: /etc/login.warn
+      owner: root
+      group: root
+      mode: 0644
+
+- name: "Ensure permissions on /etc/motd are configured"
+  file:
+      dest: /etc/motd
+      state: file
+      owner: root
+      group: root
+      mode: 0644
+
+- name: "Ensure permissions on /etc/issue are configured"
+  file:
+      dest: /etc/issue
+      state: file
+      owner: root
+      group: root
+      mode: 0644
+
+- name: "Ensure permissions on /etc/issue.net are configured"
+  file:
+      dest: /etc/issue.net
+      state: file
+      owner: root
+      group: root
+      mode: 0644

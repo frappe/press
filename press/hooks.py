@@ -67,6 +67,11 @@ website_route_rules = [
 ]
 
 website_redirects = [
+	{
+		"source": r"/deploy(.*)",
+		"target": r"/api/method/press.api.quick_site.deploy\1",
+		"match_with_query_string": True,
+	},
 	{"source": "/dashboard/f-login", "target": get_frappe_io_auth_url() or "/"},
 	{"source": "/f-login", "target": "/dashboard/f-login"},
 ]
@@ -162,6 +167,7 @@ scheduler_events = {
 	"hourly": [
 		"press.press.doctype.app.app.poll_new_releases",
 		"press.press.doctype.site.backups.cleanup_local",
+		"press.press.doctype.site_migration.site_migration.run_scheduled_migrations",
 	],
 	"hourly_long": [
 		"press.press.doctype.bench.bench.archive_obsolete_benches",

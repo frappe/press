@@ -152,9 +152,10 @@
   {
    "allow_on_submit": 1,
    "fieldname": "stripe_invoice_url",
-   "fieldtype": "Data",
+   "fieldtype": "Text",
    "label": "Stripe Invoice URL",
-   "no_copy": 1
+   "no_copy": 1,
+   "read_only": 1
   },
   {
    "fetch_from": "team.currency",
@@ -324,10 +325,11 @@
    "link_fieldname": "invoice"
   }
  ],
- "modified": "2021-08-24 19:10:38.068242",
+ "modified": "2021-11-01 15:46:55.690036",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {

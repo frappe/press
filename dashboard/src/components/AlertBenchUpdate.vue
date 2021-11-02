@@ -16,10 +16,14 @@
 				Show updates
 			</Button>
 		</template>
-		<Dialog title="Following updates are available" v-model="showDeployDialog">
+		<Dialog
+			title="Select the apps you want to update"
+			v-model="showDeployDialog"
+		>
 			<BenchAppUpdates
 				:apps="deployInformation.apps"
 				:selectedApps.sync="selectedApps"
+				:removedApps="deployInformation.removed_apps"
 			/>
 			<ErrorMessage class="mt-2" :error="$resources.deploy.error" />
 			<template #actions>
@@ -75,7 +79,10 @@ export default {
 					apps_to_ignore: appsToIgnore
 				},
 				validate() {
-					if (this.selectedApps.length === 0) {
+					if (
+						this.selectedApps.length === 0 &&
+						this.deployInformation.removed_apps.length === 0
+					) {
 						return 'You must select atleast 1 app to proceed with update.';
 					}
 				},

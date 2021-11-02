@@ -13,3 +13,4 @@
     - role: node_exporter
     - role: mysqld_exporter
     - role: filebeat
+    - role: clamav
