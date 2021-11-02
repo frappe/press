@@ -52,12 +52,23 @@ frappe.ui.form.on('Release Group', {
 				message: 'Deployed On ' + format_date_time(d.creation, 1, 1),
 			};
 		});
-		let sites = remap(versions_res.message, (d) => {
-			return {
-				sites: d.sites,
-				bench_name: d.name,
-			};
-		});
+		let sites = []
+		remap(versions_res.message, (d1) => {
+			remap(d1.sites, (d2) => {
+				sites.push ({
+					title: d2.name,
+					sub_text: d1.name,
+					tag: d2.status,
+					tag_type: "indicator-pill " + (d2.status === 'Active' ? 'green' : 'red'),
+					button: {
+						title: 'Visit Site',
+						onclick: () => {
+							frappe.msgprint(__('Visiting Site...'));
+						}
+					},
+				}); 
+			})
+		})
 		let deploys_log = remap(deploys_log_res.message, (d) => {
 			return {
 				title: "Deploy on " + format_date_time(d.creation, 1, 1),
@@ -91,7 +102,7 @@ frappe.ui.form.on('Release Group', {
 			button: {
 				title: 'View versions',
 				onclick: () => {
-					frappe.msgprint(__('View verions'));
+                    frm.scroll_to_field('sites_block');
 				}
 			}
 		})
@@ -121,7 +132,7 @@ frappe.ui.form.on('Release Group', {
 			button: {
 				title: 'View deploys',
 				onclick: () => {
-					frappe.msgprint(__('View deploys'));
+                    frm.scroll_to_field('deploys_section_block');
 				}
 			}
 		})
@@ -133,7 +144,14 @@ frappe.ui.form.on('Release Group', {
 		// sec: Sites
 		new ListComponent(frm.get_field('sites_block').$wrapper, {
 			data: sites,
-			template: sites_template,
+			template: title_with_sub_text_tag_and_button_template,
+			onclick: (i) => {
+				// TODO: use frm methods for this redirects
+				let host_name = window.location.host;
+				let host_name_prefix = ['frappecloud.com', 'staging.frappe.cloud'].includes(host_name) ? 'https://' : 'http://';
+				host_name = host_name_prefix + host_name;
+				window.location.href = `${host_name}/app/site/${sites[i].title}`;	
+			},
 		});
 
 		// sec: Deploys
@@ -248,29 +266,3 @@ frappe.ui.form.on('Release Group', {
 		frm.set_df_property('dependencies', 'cannot_add_rows', 1);
 	},
 });
-
-// custom templates
-
-let sites_template = (data) => {
-	let template = '';
-
-	for (let site of data.sites) {
-		template += `
-			<div class="d-flex flex-row justify-between">
-				<p class="list-row-col ellipsis list-subject level">${site.name}
-				<p class="list-row-col ellipsis hidden-xs">${data.bench_name}</p>
-				<div class="list-row-col ellipsis hidden-xs">
-					<p class="indicator-pill ${
-						site.status === 'Active' ? 'green' : 'red'
-					} ellipsis">${site.status}</p>
-				</div>
-				<button class="btn btn-outline-primary ellipsis" onclick="navigate">
-					Visit Site
-				</button>
-			</div>
-			<hr>
-		`;
-	}
-
-	return template;
-};
