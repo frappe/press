@@ -80,7 +80,7 @@ frappe.ui.form.on('Release Group', {
             return {
                 title: d.title,
                 message: d.repository + '/' + d.repository + ':' + d.branch,
-                tag: d.update_available ? 'Update Availabe' : d.hash.substring(0,7),
+                tag: d.update_available ? 'Update Availabe' : (d.hash ? d.hash.substring(0,7) : ""),
                 tag_type: 'indicator-pill blue'
             };
 		});
@@ -157,40 +157,46 @@ frappe.ui.form.on('Release Group', {
 			button: {
 				title: 'Add App',
 				onclick: async () => {
-					let bench = frm.get_doc();
-                    const bench_apps = bench.apps.map((app) => app.source);
-
+					let res = await frappe.call({
+						method: 'press.api.bench.installable_apps',
+						args: {
+							name: frm.docname
+						}
+					})
+					let installable_apps = res.message;
+					let app_sources = [];
+					for (let i = 0; i < installable_apps.length; i++) {
+						for(let j = 0; j < installable_apps[i].sources.length; j++) {
+							app_sources.push(installable_apps[i].sources[j].name)
+						}
+					}
 					new frappe.ui.form.MultiSelectDialog({
 						doctype: "App Source",
 						target: frm,
 						setters: {
-
+							app: null,
+							branch: null,
 						},
 						add_filters_group: 0,
 						get_query() {
 							return {
-								filters: { name: ['not in', bench_apps] }
+								filters: { name: ['in', app_sources] }
 							}
 						},
 						async action(selections) {
-							console.log(selections);
 							// add the app sources to the release group
 							for(let i = 0; i < selections.length; i++) {
 								let app_source = await frappe.db.get_doc("App Source", selections[i]);
-								console.log(app_source);
 								// Add the selected app to bench using api
-								await frappe.call({
-									method: 'press.api.app.new',
+								frappe.call({
+									method: 'press.api.bench.add_app',
 									args: {
-										app: {
-											name: app_source?.name,
-											title: app_source?.app_title,
-											repository_url: app_source?.repository_url,
-											branch: app_source?.branch,
-											github_installation_id: app_source?.github_installation_id,
-											group: bench.name
-										}
+										name: frm.docname,
+										source: app_source.name,
+										app: app_source.app
 									}
+								}).then((res) => {
+									window.location.reload();
 								})
 							}
 						}
