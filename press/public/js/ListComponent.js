@@ -53,6 +53,23 @@ function title_with_message_and_tag_template(data) {
 		${data.last ? `` : `<hr>`}
     `;
 }
+
+function title_with_sub_text_tag_and_button_template(data) {
+	return `
+		<div class="d-flex flex-row justify-between">
+			<p class="list-row-col ellipsis list-subject level">${data.title || ""}
+			<p class="list-row-col ellipsis hidden-xs">${data.sub_text || ""}</p>
+			<div class="list-row-col ellipsis hidden-xs">
+				<p class="${data.tag_type}" ellipsis">${data.tag}</p>
+			</div>
+			<button class="btn btn-outline-primary ellipsis">
+				${data.button.title}
+			</button>
+		</div>
+		${data.last ? `` : `<hr>`}
+	`;
+}
+
 let title_with_text_area_template = (data) => `
 	<div class="mb-4">
 		<h5>${data.title || ''}</h5>
@@ -62,35 +79,27 @@ let title_with_text_area_template = (data) => `
 	</div>	
 `;
 
-// not used just kept for reference purpose
-let version_template = (data) => {
-	return `
-		<div class="d-flex flex-row justify-between">
-			<p>${data.name}</p> 
-			<span class="indicator-pill green">${data.length} sites</span>
-		</div>
-	`;
-};
+// let sites_template = (data) => {
+// 	let template = '';
 
-let app_template = (data) => {
-	return `
-		<div class="d-flex flex-column justify-between">
-			<h5>${data.data.name}</h5>
-			<p>${data.data.repository_owner}/${data.data.repository}:${data.data.branch}</p>	
-		</div>
-	`;
-};
+// 	for (let site of data.sites) {
+// 		template += `
+// 			<div class="d-flex flex-row justify-between">
+// 				<p class="list-row-col ellipsis list-subject level">${site.name}
+// 				<p class="list-row-col ellipsis hidden-xs">${data.bench_name}</p>
+// 				<div class="list-row-col ellipsis hidden-xs">
+// 					<p class="indicator-pill ${
+// 						site.status === 'Active' ? 'green' : 'red'
+// 					} ellipsis">${site.status}</p>
+// 				</div>
+// 				<button class="btn btn-outline-primary ellipsis" onclick="navigate">
+// 					Visit Site
+// 				</button>
+// 			</div>
+// 			<hr>
+// 		`;
+// 	}
 
-let deploys_template = (data) => {
-	let date = new Date(data.data.creation);
+// 	return template;
+// };
 
-	let month = date.toLocaleString('default', { month: 'long' });
-
-	return `
-		<div class="d-flex flex-column justify-between">
-			<p>
-			Deployed on ${date.getDate()} ${month} ${date.getFullYear()}, ${date.getHours()}:${date.getMinutes()} GMT+5:30
-			</p>
-		</div>
-	`;
-};
