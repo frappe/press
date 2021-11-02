@@ -108,7 +108,7 @@ class MarketplaceApp(WebsiteGenerator):
 		for source in self.sources:
 			if source.version not in unique_public_rgs:
 				continue
-			
+
 			frappe_source_name = frappe.get_doc(
 				"Release Group App", {"app": "frappe", "parent": unique_public_rgs[source.version]}
 			).source
