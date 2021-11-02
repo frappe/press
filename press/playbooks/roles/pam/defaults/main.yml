@@ -1,0 +1,8 @@
+---
+pam_faillock:
+    attempts: 5
+    fail_interval: 900
+    unlock_time: 900
+    fail_for_root: no
+    remember: 5
+    pwhash: sha512

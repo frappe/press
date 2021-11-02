@@ -48,7 +48,7 @@
 					<Input
 						label="Select payment mode"
 						type="select"
-						:options="['Card', 'Prepaid Credits']"
+						:options="['', 'Card', 'Prepaid Credits']"
 						v-model="paymentMode"
 					/>
 					<p class="mt-2 text-base text-gray-600">

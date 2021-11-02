@@ -38,7 +38,7 @@
 				</div>
 				<div class="hidden md:block">
 					<div class="flex items-center">
-						<SiteSearch class="mr-5"/>
+						<SiteSearch class="mr-5" />
 						<Button icon-left="life-buoy" link="/support">Support</Button>
 						<div class="relative ml-3">
 							<div>
@@ -173,7 +173,7 @@ export default {
 					}
 				},
 				{
-					label: 'Marketplace',
+					label: 'My Apps',
 					route: '/marketplace',
 					highlight: () => {
 						return this.$route.fullPath.includes('/marketplace');

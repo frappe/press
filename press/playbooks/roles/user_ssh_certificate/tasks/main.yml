@@ -1,0 +1,47 @@
+---
+- name: Setup ca public key to verify signed certificates
+  block:
+    - name: Setup certificate-authority key file
+      get_url:
+        url: "https://frappecloud.com/files/ca.pub"
+        dest: /etc/ssh/ca.pub
+
+    - name: Set key file permissions to 0644
+      file:
+        path: /etc/ssh/ca.pub
+        owner: root
+        group: root
+        mode: 0644
+
+- name: Setup authorized principals for certificate authority
+  block:
+    - name: Create auth_principals directory
+      file:
+        path: /etc/ssh/auth_principals
+        owner: root
+        group: root
+        state: directory
+
+    - name: Set authorized principals for frappe
+      copy:
+        dest: /etc/ssh/auth_principals/frappe
+        content: |
+          all-servers
+          {{ inventory_hostname }}
+
+
+    - name: Add certificate authority key location to sshd_config
+      lineinfile:
+        state: present
+        path: /etc/ssh/sshd_config
+        backup: yes
+        line: "{{ item }}"
+        insertafter: EOF
+      with_items:
+        - "TrustedUserCAKeys /etc/ssh/ca.pub"
+        - "AuthorizedPrincipalsFile /etc/ssh/auth_principals/%u"
+
+- name: Restart sshd service
+  service:
+    name: sshd
+    state: reloaded

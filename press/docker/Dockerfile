@@ -35,6 +35,11 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   # Dependencies for adding Python PPA
   software-properties-common \
   gnupg \
+  # weasyprint dependencies
+  libpango-1.0-0 \
+  libharfbuzz0b \
+  libpangoft2-1.0-0 \
+  libpangocairo-1.0-0 \
   # wkhtmltopdf dependencies
   ca-certificates \
   fontconfig \
@@ -47,6 +52,10 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   libxrender1 \
   xfonts-75dpi \
   xfonts-base \
+  # pycups dependencies
+  gcc \
+  libcups2-dev \
+  python3-dev \
   && rm -rf /var/lib/apt/lists/* \
   `#stage-pre-essentials`
 

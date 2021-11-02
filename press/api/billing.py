@@ -1,11 +1,8 @@
 # Copyright (c) 2020, Frappe Technologies Pvt. Ltd. and Contributors
 # Proprietary License. See license.txt
 
-from __future__ import unicode_literals
-
-import re
-
 import frappe
+
 from frappe.utils import flt, fmt_money
 from press.utils import get_current_team
 from press.utils.billing import (
@@ -16,6 +13,8 @@ from press.utils.billing import (
 	get_stripe,
 	make_formatted_doc,
 	states_with_tin,
+	validate_gstin_check_digit,
+	GSTIN_FORMAT,
 )
 
 
@@ -275,10 +274,7 @@ def validate_gst(address, method=None):
 		frappe.throw("GSTIN is required for Indian customers.")
 
 	if address.gstin and address.gstin != "Not Applicable":
-		pattern = re.compile(
-			"^[0-9]{2}[A-Z]{4}[0-9A-Z]{1}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}[1-9A-Z]{1}[0-9A-Z]{1}$"
-		)
-		if not pattern.match(address.gstin):
+		if not GSTIN_FORMAT.match(address.gstin):
 			frappe.throw(
 				"Invalid GSTIN. The input you've entered does not match the format of GSTIN."
 			)
@@ -286,3 +282,5 @@ def validate_gst(address, method=None):
 		tin_code = states_with_tin[address.state]
 		if not address.gstin.startswith(tin_code):
 			frappe.throw(f"GSTIN must start with {tin_code} for {address.state}.")
+
+	validate_gstin_check_digit(address.gstin)

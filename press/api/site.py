@@ -46,6 +46,9 @@ def protected(doctype):
 @frappe.whitelist()
 def new(site):
 	team = get_current_team(get_doc=True)
+	if not team.enabled:
+		frappe.throw("You cannot create a new site because your account is disabled")
+
 	files = site.get("files", {})
 	share_details_consent = site.get("share_details_consent")
 
@@ -92,6 +95,7 @@ def new(site):
 			"remote_database_file": files.get("database"),
 			"remote_public_file": files.get("public"),
 			"remote_private_file": files.get("private"),
+			"skip_failing_patches": site.get("skip_failing_patches", False),
 		},
 	).insert(ignore_permissions=True)
 	site.create_subscription(plan)
@@ -454,6 +458,7 @@ def get(name):
 		"trial_end_date": site.trial_end_date,
 		"setup_wizard_complete": site.setup_wizard_complete,
 		"group": group_name,
+		"team": site.team,
 	}
 
 
@@ -711,14 +716,22 @@ def activate(name):
 
 @frappe.whitelist()
 @protected("Site")
-def login(name):
-	return frappe.get_doc("Site", name).login()
+def login(name, reason=None):
+	return frappe.get_doc("Site", name).login(reason)
 
 
 @frappe.whitelist()
 @protected("Site")
-def update(name):
-	return frappe.get_doc("Site", name).schedule_update()
+def update(name, skip_failing_patches=False):
+	return frappe.get_doc("Site", name).schedule_update(
+		skip_failing_patches=skip_failing_patches
+	)
+
+
+@frappe.whitelist()
+@protected("Site")
+def last_migrate_failed(name):
+	return frappe.get_doc("Site", name).last_migrate_failed()
 
 
 @frappe.whitelist()
@@ -741,8 +754,8 @@ def reinstall(name):
 
 @frappe.whitelist()
 @protected("Site")
-def migrate(name):
-	frappe.get_doc("Site", name).migrate()
+def migrate(name, skip_failing_patches=False):
+	frappe.get_doc("Site", name).migrate(skip_failing_patches=skip_failing_patches)
 
 
 @frappe.whitelist()
@@ -753,13 +766,13 @@ def clear_cache(name):
 
 @frappe.whitelist()
 @protected("Site")
-def restore(name, files):
+def restore(name, files, skip_failing_patches=False):
 	site = frappe.get_doc("Site", name)
 	site.remote_database_file = files["database"]
 	site.remote_public_file = files["public"]
 	site.remote_private_file = files["private"]
 	site.save()
-	site.restore_site()
+	site.restore_site(skip_failing_patches=skip_failing_patches)
 
 
 @frappe.whitelist()

@@ -8,6 +8,7 @@ from datetime import datetime
 from unittest.mock import Mock, patch
 
 import frappe
+from frappe.model.naming import make_autoname
 
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
@@ -36,7 +37,7 @@ def create_test_bench():
 	release_group = create_test_release_group(app)
 
 	name = frappe.mock("name")
-	candidate = frappe.get_last_doc("Deploy Candidate", {"group": release_group.name})
+	candidate = release_group.create_deploy_candidate()
 	candidate.db_set("docker_image", frappe.mock("url"))
 	return frappe.get_doc(
 		{
@@ -53,7 +54,7 @@ def create_test_bench():
 
 
 def create_test_site(
-	subdomain: str = "testsubdomain",
+	subdomain: str = "",
 	new: bool = False,
 	creation: datetime = datetime.now(),
 	bench: str = None,
@@ -62,6 +63,8 @@ def create_test_site(
 
 	Installs all apps present in bench.
 	"""
+	if not subdomain:
+		subdomain = make_autoname("test-site-.#####")
 	if not bench:
 		bench = create_test_bench()
 	else:

@@ -27,7 +27,6 @@ def create_test_proxy_server(
 			"status": "Active",
 			"ip": frappe.mock("ipv4"),
 			"private_ip": frappe.mock("ipv4_private"),
-			"agent_password": frappe.mock("password"),
 			"hostname": hostname,
 			"cluster": "Default",
 			"domain": domain,

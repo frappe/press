@@ -1,0 +1,83 @@
+---
+
+- name: "Ensure SSH X11 forwarding is disabled"
+  lineinfile:
+      state: present
+      dest: /etc/ssh/sshd_config
+      regexp: "^#X11Forwarding|^X11Forwarding"
+      line: 'X11Forwarding no'
+  notify:
+      - restart sshd
+
+- name: " Ensure SSH MaxAuthTries is set to 4 or less"
+  lineinfile:
+      state: present
+      dest: /etc/ssh/sshd_config
+      regexp: '^(#)?MaxAuthTries \d'
+      line: 'MaxAuthTries 6'
+  notify:
+      - restart sshd
+
+- name: "Ensure SSH PermitEmptyPasswords is disabled"
+  lineinfile:
+      state: present
+      dest: /etc/ssh/sshd_config
+      regexp: "^#PermitEmptyPasswords|^PermitEmptyPasswords"
+      line: 'PermitEmptyPasswords no'
+  notify:
+      - restart sshd
+
+- name: "Ensure SSH PermitUserEnvironment is disabled"
+  lineinfile:
+      state: present
+      dest: /etc/ssh/sshd_config
+      regexp: "^#PermitUserEnvironment|^PermitUserEnvironment"
+      line: 'PermitUserEnvironment no'
+  notify:
+      - restart sshd
+
+- name: "Ensure SSH Idle Timeout Interval is configured"
+  block:
+    - name: "Ensure SSH Idle Timeout Interval is configured | Add line in sshd_config for ClientAliveInterval"
+      lineinfile:
+          state: present
+          dest: /etc/ssh/sshd_config
+          regexp: '^ClientAliveInterval'
+          line: "ClientAliveInterval {{ sshd['clientaliveinterval'] }}"
+      notify:
+          - restart sshd
+
+    - name: "Ensure SSH Idle Timeout Interval is configured | Ensure SSH ClientAliveCountMax set to <= 3"
+      lineinfile:
+          state: present
+          dest: /etc/ssh/sshd_config
+          regexp: '^ClientAliveCountMax'
+          line: "ClientAliveCountMax {{ sshd['clientalivecountmax'] }}"
+      notify:
+          - restart sshd
+
+- name: "Ensure SSH warning banner is configured"
+  lineinfile:
+    state: present
+    dest: /etc/ssh/sshd_config
+    regexp: '^Banner'
+    line: "Banner /etc/login.warn"
+  notify: restart sshd
+
+- name: "Ensure SSH MaxStartups is configured"
+  lineinfile:
+      state: present
+      dest: /etc/ssh/sshd_config
+      regexp: "^#MaxStartups|^MaxStartups"
+      line: 'MaxStartups 10:30:60'
+  notify:
+      - restart sshd
+
+- name: "Ensure SSH MaxSessions is limited"
+  lineinfile:
+      state: present
+      dest: /etc/ssh/sshd_config
+      regexp: "^#MaxSessions|^MaxSessions"
+      line: 'MaxSessions {{ ssh_maxsessions }}'
+  notify:
+      - restart sshd

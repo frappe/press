@@ -1,0 +1,61 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2021-10-12 08:32:12.861562",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "user",
+  "ssh_public_key",
+  "ssh_fingerprint"
+ ],
+ "fields": [
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "User",
+   "options": "User",
+   "reqd": 1
+  },
+  {
+   "fieldname": "ssh_public_key",
+   "fieldtype": "Code",
+   "label": "SSH Public Key",
+   "reqd": 1
+  },
+  {
+   "fieldname": "ssh_fingerprint",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "SSH Fingerprint",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2021-10-12 08:45:43.143283",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "User SSH Key",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "title_field": "user",
+ "track_changes": 1
+}

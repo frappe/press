@@ -92,11 +92,14 @@
   "timezone",
   "column_break_29",
   "remote_files",
+  "skip_failing_patches",
   "remote_config_file",
   "remote_database_file",
   "column_break_34",
   "remote_private_file",
-  "remote_public_file"
+  "remote_public_file",
+  "notifications_section",
+  "notify_email"
  ],
  "fields": [
   {
@@ -628,6 +631,25 @@
   {
    "fieldname": "column_break_51",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "notify_email",
+   "fieldtype": "Data",
+   "label": "Notify Email"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "notifications_section",
+   "fieldtype": "Section Break",
+   "label": "Notifications"
+  },
+  {
+   "default": "0",
+   "description": "Only used while first restore",
+   "fieldname": "skip_failing_patches",
+   "fieldtype": "Check",
+   "label": "Skip Failing Patches",
+   "read_only": 1
   }
  ],
  "hide_toolbar": 1,
@@ -678,7 +700,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2021-10-24 02:36:51.769339",
+ "modified": "2021-10-25 02:36:51.769339",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
