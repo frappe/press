@@ -8,6 +8,7 @@
  "engine": "InnoDB",
  "field_order": [
   "overview_tab_break",
+  "update_alert_block",
   "bench_info_and_versions_section",
   "bench_info_block",
   "title",
@@ -227,11 +228,15 @@
   {
    "fieldname": "column_break_12",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "update_alert_block",
+   "fieldtype": "HTML"
   }
  ],
  "hide_toolbar": 1,
  "links": [],
- "modified": "2021-10-27 12:07:43.257285",
+ "modified": "2021-11-03 04:39:56.916053",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",

@@ -5,6 +5,7 @@ frappe.require('assets/press/js/ListComponent.js');
 frappe.require('assets/press/js/utils.js');
 frappe.require('assets/press/js/DetailedListComponent.js')
 frappe.require('assets/press/js/SectionHead.js')
+frappe.require('assets/press/js/ActionBlock.js')
 
 
 frappe.ui.form.on('Release Group', {
@@ -128,6 +129,19 @@ frappe.ui.form.on('Release Group', {
 		})
 
 		// sec: Overview
+		clear_block(frm, 'update_alert_block');
+		new ActionBlock(frm.get_field('update_alert_block').$wrapper, {
+			'title': 'Update Available',
+			'description': 'A new update is available for your bench. Would you like to deploy the update now?',
+			'button': {
+				'title': 'Show updates',
+				'onclick': () => {
+
+				},
+				'tag': 'primary'
+			}
+		})
+
 		clear_block(frm, 'bench_info_block');
 		new SectionHead(frm.get_field('bench_info_block').$wrapper, {
 			title: 'Bench Info',
