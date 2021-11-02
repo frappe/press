@@ -283,4 +283,4 @@ def validate_gst(address, method=None):
 		if not address.gstin.startswith(tin_code):
 			frappe.throw(f"GSTIN must start with {tin_code} for {address.state}.")
 
-	validate_gstin_check_digit(address.gstin)
+		validate_gstin_check_digit(address.gstin)
