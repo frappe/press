@@ -185,6 +185,32 @@ frappe.ui.form.on('Site', {
         // render
         
         // // tab: Overview 
+        clear_block(frm, 'site_activation_block');
+		new ActionBlock(frm.get_field('site_activation_block').$wrapper, {
+			'title': 'Site Activation',
+			'description': 'Please login and complete the setup wizard on your site. Analytics will be collected only after setup is complete',
+			'button': {
+				'title': 'Login',
+				'onclick': () => {
+
+				},
+				'tag': 'primary'
+			}
+		})
+
+        clear_block(frm, 'update_alert_block');
+		new ActionBlock(frm.get_field('update_alert_block').$wrapper, {
+			'title': 'Update Available',
+			'description': 'A new update is available for your site. Would you like to update your site now?',
+			'button': {
+				'title': 'Show updates',
+				'onclick': () => {
+
+				},
+				'tag': 'primary'
+			}
+		})
+
         var data = '';
         var plan_limit = '';
         var values = '';
@@ -549,10 +575,7 @@ frappe.ui.form.on('Site', {
                                 });
                                 new ListComponent(wrapper, {
                                     'data': job_steps,
-                                    'template': title_with_text_area_template,
-                                    'onclick': () => {
-                                        frappe.msgprint(__('Hello There'));
-                                    }
+                                    'template': title_with_text_area_template
                                 });
                             },
                         })

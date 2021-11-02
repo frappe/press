@@ -7,7 +7,10 @@
  "engine": "InnoDB",
  "field_order": [
   "overview_tab_break",
+  "site_activation_section",
   "site_activation_block",
+  "update_alert_section",
+  "update_alert_block",
   "daily_usage_section",
   "daily_usage_block",
   "column_break_5",
@@ -475,8 +478,7 @@
   },
   {
    "fieldname": "site_activation_block",
-   "fieldtype": "HTML",
-   "label": "Site Activation Block"
+   "fieldtype": "HTML"
   },
   {
    "fieldname": "usage_counter_section",
@@ -650,6 +652,18 @@
    "fieldtype": "Check",
    "label": "Skip Failing Patches",
    "read_only": 1
+  },
+  {
+   "fieldname": "update_alert_block",
+   "fieldtype": "HTML"
+  },
+  {
+   "fieldname": "site_activation_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "update_alert_section",
+   "fieldtype": "Section Break"
   }
  ],
  "hide_toolbar": 1,
@@ -700,7 +714,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2021-10-25 02:36:51.769339",
+ "modified": "2021-11-03 04:53:07.694638",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
