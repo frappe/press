@@ -1,7 +1,6 @@
 # Copyright (c) 2020, Frappe Technologies Pvt. Ltd. and Contributors
 # Proprietary License. See license.txt
 
-import re
 import frappe
 
 from frappe.utils import flt, fmt_money
