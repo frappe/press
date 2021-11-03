@@ -11,7 +11,6 @@ import dateutil.parser
 
 from typing import Any, Dict, List
 from collections import defaultdict
-from datetime import date, datetime, timedelta
 
 from frappe.core.utils import find
 from frappe.model.document import Document
@@ -969,7 +968,7 @@ class Site(Document):
 			{"document_type": self.doctype, "document_name": self.name, "Amount": (">", 0)},
 			pluck="parent",
 		)
-		today = date.today()
+		today = frappe.utils.getdate()
 		today_last_month = today.replace(month=today.month - 1)
 		last_month_last_date = frappe.utils.get_last_day(today_last_month)
 		return frappe.db.exists(
@@ -996,7 +995,7 @@ class Site(Document):
 	@classmethod
 	def get_sites_without_backup_in_interval(cls, interval: int) -> List[str]:
 		"""Return active sites that haven't had backup taken in interval hours."""
-		interval_hrs_ago = datetime.now() - timedelta(hours=interval)
+		interval_hrs_ago = frappe.utils.add_to_date(None, hours=-interval)
 		all_sites = set(
 			frappe.get_all(
 				"Site",
