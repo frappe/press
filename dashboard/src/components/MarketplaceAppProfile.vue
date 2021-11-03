@@ -1,7 +1,7 @@
 <template>
 	<Card title="App Profile" subtitle="Your app's primary profile">
 		<div class="flex items-center">
-			<div class="relative">
+			<div class="relative group">
 				<Avatar
 					size="lg"
 					shape="square"
@@ -21,11 +21,16 @@
 						<div class="ml-4">
 							<button
 								@click="openFileSelector()"
-								class="absolute inset-0 grid w-full text-xs font-semibold text-white bg-black rounded-lg opacity-0 focus:outline-none focus:opacity-50 hover:opacity-50 place-items-center"
+								class="absolute inset-0 grid w-full text-xs font-semibold text-white bg-black rounded-lg opacity-0 focus:outline-none focus:opacity-50 group-hover:opacity-50 place-items-center"
 								:class="{ 'opacity-50': uploading }"
 							>
 								<span v-if="uploading">{{ progress }}%</span>
 								<span v-else>Edit</span>
+							</button>
+							<button
+								class="absolute text-opacity-70 bottom-0 left-0 grid w-full text-xs font-semibold place-items-center bg-gray-900 text-white opacity-80 rounded-md group-hover:opacity-0"
+							>
+								<span>Edit</span>
 							</button>
 						</div>
 					</template>
