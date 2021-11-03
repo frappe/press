@@ -51,7 +51,15 @@
   "remote_private_file",
   "remote_public_file",
   "notifications_section",
-  "notify_email"
+  "notify_email",
+  "auto_updates_section",
+  "auto_update_last_triggered_on",
+  "update_trigger_frequency",
+  "update_trigger_time",
+  "column_break_51",
+  "update_on_weekday",
+  "update_end_of_month",
+  "update_on_day_of_month"
  ],
  "fields": [
   {
@@ -374,6 +382,53 @@
    "fieldtype": "Check",
    "label": "Skip Failing Patches",
    "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "auto_updates_section",
+   "fieldtype": "Section Break",
+   "label": "Auto Updates"
+  },
+  {
+   "fieldname": "auto_update_last_triggered_on",
+   "fieldtype": "Datetime",
+   "label": "Auto Update Last Triggered On"
+  },
+  {
+   "fieldname": "update_trigger_frequency",
+   "fieldtype": "Select",
+   "label": "Update Trigger Frequency",
+   "options": "Daily\nWeekly\nMonthly"
+  },
+  {
+   "default": "Sunday",
+   "depends_on": "eval:doc.update_trigger_frequency === 'Weekly'",
+   "fieldname": "update_on_weekday",
+   "fieldtype": "Select",
+   "label": "Update on Weekday",
+   "options": "Sunday\nMonday\nTuesday\nWednesday\nThursday\nFriday\nSaturday"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.update_trigger_frequency === 'Monthly'",
+   "fieldname": "update_end_of_month",
+   "fieldtype": "Check",
+   "label": "Update End of Month"
+  },
+  {
+   "depends_on": "eval:(doc.update_trigger_frequency === 'Monthly' && doc.update_end_of_month === 0)",
+   "fieldname": "update_on_day_of_month",
+   "fieldtype": "Int",
+   "label": "Update on Day of month"
+  },
+  {
+   "fieldname": "update_trigger_time",
+   "fieldtype": "Time",
+   "label": "Update Trigger Time"
+  },
+  {
+   "fieldname": "column_break_51",
+   "fieldtype": "Column Break"
   }
  ],
  "links": [
@@ -423,7 +478,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2021-10-21 22:30:36.754191",
+ "modified": "2021-11-03 06:59:33.528766",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
