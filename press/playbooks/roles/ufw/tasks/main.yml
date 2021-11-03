@@ -1,0 +1,50 @@
+---
+- name: Install ufw
+  package:
+    name: ufw
+    state: present
+
+- name: Allow ssh port 22 from everywhere
+  ufw:
+    rule: allow
+    to_port: ssh
+    proto: tcp
+
+- name: Allow https from everywhere
+  ufw:
+    rule: allow
+    to_port: https
+    proto: tcp
+
+- name: Allow http from proxy
+  ufw:
+    rule: allow
+    from_ip: "{{ proxy_private_ip }}"
+    to_port: http
+    proto: tcp
+
+- name: Allow mysql port 3306 connections
+  ufw:
+    rule: allow
+    to_port: mysql
+    proto: tcp
+
+- name: Deny incoming by default
+  ufw:
+    default: deny
+    direction: incoming
+
+- name: Allow outgoing by default
+  ufw:
+    default: allow
+    direction: outgoing
+
+- name: Enable ufw
+  ufw:
+    state: enabled
+
+- name: Ensure systemd service is enabled and running
+  service:
+    name: ufw
+    enabled: yes
+    state: started

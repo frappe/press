@@ -1,0 +1,8 @@
+---
+- name: Apply Hardening Rules
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: no
+  roles:
+    - role: ufw
