@@ -144,13 +144,13 @@ frappe.ui.form.on('Release Group', {
 		clear_block(frm, 'update_alert_block');
 		if(deploy_information.update_available && ['Awaiting Deploy', 'Active'].includes(bench.status)) {
 			new ActionBlock(frm.get_field('update_alert_block').$wrapper, {
-				'title': bench.status === 'Active' ? 'Update Available' : 'Deploy',
-				'description': bench.status === 'Active' ? 
+				title: bench.status === 'Active' ? 'Update Available' : 'Deploy',
+				description: bench.status === 'Active' ? 
 					'A new update is available for your bench. Would you like to deploy the update now?' : 
 					'Your bench is not deployed yet. You can add more apps to your bench before deploying. If you want to deploy now, click on Deploy.',
-				'button': {
-					'title': 'Show updates',
-					'onclick': async () => {
+				button: {
+					title: 'Show updates',
+					onclick: async () => {
 						let apps = [];
 						// let removed_apps = [];
 						for(let i = 0; i < deploy_information.apps.length; i++) {
@@ -198,7 +198,7 @@ frappe.ui.form.on('Release Group', {
 							}
 						});
 					},
-					'tag': 'primary'
+					tag: 'primary'
 				}
 			})
 		}

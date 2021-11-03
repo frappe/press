@@ -124,10 +124,10 @@ frappe.ui.form.on('Site', {
             method: 'press.api.site.backups',
             args: {name: frm.docname}
         });
-        let logs_res = await frappe.call({
-            method: 'press.api.site.logs',
-            args: {name: frm.docname}
-        });
+        // let logs_res = await frappe.call({
+        //     method: 'press.api.site.logs',
+        //     args: {name: frm.docname}
+        // });
         let activities_res = await frappe.call({
             method: 'press.api.site.activities',
             args: {name: frm.docname}
@@ -160,17 +160,17 @@ frappe.ui.form.on('Site', {
                 message: format_date_time(d.creation, 1, 1)
             }
         });
-        let logs = remap(logs_res.message, (d) => {
-            return {
-                'title': d.name,
-                'message': format_date_time(d.created, 1, 1),
-                'line': d.line
-            }
-        });
+        // let logs = remap(logs_res.message, (d) => {
+        //     return {
+        //         title: d.name,
+        //         message: format_date_time(d.created, 1, 1),
+        //         line: d.line
+        //     }
+        // });
         let activities = remap(activities_res.message, (d) => {
             return {
-                'title': d.action + ' by ' + d.owner,
-                'message': format_date_time(d.creation, 1, 1)
+                title: d.action + ' by ' + d.owner,
+                message: format_date_time(d.creation, 1, 1)
             }
         });
         
@@ -189,11 +189,11 @@ frappe.ui.form.on('Site', {
         clear_block(frm, 'site_activation_block');
         if(site.status === 'Active' && !site.setup_wizard_complete) {
             new ActionBlock(frm.get_field('site_activation_block').$wrapper, {
-                'title': 'Site Activation',
-                'description': 'Please login and complete the setup wizard on your site. Analytics will be collected only after setup is complete',
-                'button': {
-                    'title': 'Login',
-                    'onclick': async () => {
+                title: 'Site Activation',
+                description: 'Please login and complete the setup wizard on your site. Analytics will be collected only after setup is complete',
+                button: {
+                    title: 'Login',
+                    onclick: async () => {
                         frappe.call({
                             method: 'press.api.site.login',
                             args: { name: frm.docname }
@@ -204,7 +204,7 @@ frappe.ui.form.on('Site', {
                             }
                         })
                     },
-                    'tag': 'primary'
+                    tag: 'primary'
                 }
             })
         }
@@ -218,11 +218,11 @@ frappe.ui.form.on('Site', {
             if(update_information.update_available && 
                 ['Active', 'Inactive', 'Suspended'].includes(site.status)) {
                     new ActionBlock(frm.get_field('update_alert_block').$wrapper, {
-                        'title': 'Update Available',
-                        'description': 'A new update is available for your site. Would you like to update your site now?',
-                        'button': {
-                            'title': 'Show updates',
-                            'onclick': async () => {
+                        title: 'Update Available',
+                        description: 'A new update is available for your site. Would you like to update your site now?',
+                        button: {
+                            title: 'Show updates',
+                            onclick: async () => {
                                 frappe.call({
                                     method: 'press.api.site.update',
                                     args: {
@@ -233,7 +233,7 @@ frappe.ui.form.on('Site', {
                                     frappe.msgprint(__('Site update scheduled successfully!'))
                                 })
                             },
-                            'tag': 'primary'
+                            tag: 'primary'
                         }
                     })
                 }
@@ -252,41 +252,41 @@ frappe.ui.form.on('Site', {
 
             chart_data = {
                 labels: format_chart_date(data),
-                'datasets': [{ values }],
+                datasets: [{ values }],
                 // show daily limit marker if usage crosses 50%
-                'yMarkers': values.some(value => value > plan_limit / 2)
+                yMarkers: values.some(value => value > plan_limit / 2)
                     ? [{ label: 'Daily CPU Time Limit', value: plan_limit }]
                     : null
             }
         }
         clear_block(frm, 'daily_usage_block');
         new ChartComponent(frm.get_field('daily_usage_block').$wrapper, {
-            'title': 'Daily Usage',
-            'data': chart_data,
-            'type': 'line',
-            'button': {
-                'title': 'All analytics',
-                'onclick': () => {
+            title: 'Daily Usage',
+            data: chart_data,
+            type: 'line',
+            button: {
+                title: 'All analytics',
+                onclick: () => {
                     frm.scroll_to_field('usage_counter_block');
                 }
             },
-            'colors': ['blue']
+            colors: ['blue']
         });
 
         // sec: Recent Activity
         clear_block(frm, 'recent_activity_block');
         new SectionHead(frm.get_field('recent_activity_block').$wrapper, {
-            'title': 'Recent Activity',
-            'button': {
-                'title': 'All activity',
-                'onclick': () => {
+            title: 'Recent Activity',
+            button: {
+                title: 'All activity',
+                onclick: () => {
                     frm.scroll_to_field('activity_block');
                 }
             }
         })
         new ListComponent(frm.get_field('recent_activity_block').$wrapper, {
-            'data': recent_activities, 
-            'template': title_with_message_and_tag_template
+            data: recent_activities, 
+            template: title_with_message_and_tag_template
         });            
 
         // sec: Site Info
@@ -294,11 +294,11 @@ frappe.ui.form.on('Site', {
         frm.set_value('created_on', format_date_time(frm.doc['creation'], 1));
         frm.set_value('last_deployed', format_date_time(frm.doc['creation'], 1));        // TODO: get the actual value
         new ActionBlock(frm.get_field('site_info_block').$wrapper, {
-            'title': 'Deactivate Site',
-            'description': "The site will go inactive and won't be publicly accessible",
-            'button': {
-                'title': 'Deactivate Site',
-                'onclick': () => {
+            title: 'Deactivate Site',
+            description: "The site will go inactive and won't be publicly accessible",
+            button: {
+                title: 'Deactivate Site',
+                onclick: () => {
                     frappe.confirm(
                         `Are you sure you want to deactivate this site?`,
                         () => frm.call('deactivate').then((r) => frm.refresh())
@@ -307,28 +307,28 @@ frappe.ui.form.on('Site', {
             }
         });
         new ActionBlock(frm.get_field('site_info_block').$wrapper, {
-            'title': 'Drop Site',
-            'description': "Once you drop site your site, there is no going back",
-            'button': {
-                'title': 'Drop Site',
-                'onclick': () => {
+            title: 'Drop Site',
+            description: "Once you drop site your site, there is no going back",
+            button: {
+                title: 'Drop Site',
+                onclick: () => {
                     frappe.confirm(
                         `Are you sure you want to drop this site?`,
                         () => frm.call('archive').then((r) => frm.refresh())
                     );
                 },
-                'tag': 'danger'
+                tag: 'danger'
             }
         });
 
         // sec: Apps
         clear_block(frm, 'site_apps_block');
         new SectionHead(frm.get_field('site_apps_block').$wrapper, {
-            'title': 'Apps', 
-            'description': 'Apps installed on your site',
-            'button': {
-                'title': 'Add App', 
-                'onclick':  async () => {
+            title: 'Apps', 
+            description: 'Apps installed on your site',
+            button: {
+                title: 'Add App', 
+                onclick:  async () => {
                     let available_apps = (await frappe.call({
                         method: 'press.api.site.available_apps',
                         args: { name: frm.docname }
@@ -370,18 +370,18 @@ frappe.ui.form.on('Site', {
             }
         });
         new ListComponent(frm.get_field('site_apps_block').$wrapper, {
-            'data': installed_apps, 
-            'template': title_with_message_and_tag_template
+            data: installed_apps, 
+            template: title_with_message_and_tag_template
         });
 
         // sec: Domains
         clear_block(frm, 'site_domain_block');
         new SectionHead(frm.get_field('site_domain_block').$wrapper, {
-            'title': 'Domains', 
-            'description': 'Domains pointing to your site',
-            'button': {
-                'title': 'Add Domain', 
-                'onclick': async () => {
+            title: 'Domains', 
+            description: 'Domains pointing to your site',
+            button: {
+                title: 'Add Domain', 
+                onclick: async () => {
                     let d = new frappe.ui.Dialog({
                         title: 'Add Domain',
                         fields: [
@@ -408,8 +408,8 @@ frappe.ui.form.on('Site', {
             }
         });
         new ListComponent(frm.get_field('site_domain_block').$wrapper, {
-            'data': domains, 
-            'template': title_with_message_and_tag_template
+            data: domains, 
+            template: title_with_message_and_tag_template
         });
 
         // tab Anlytics
@@ -418,23 +418,23 @@ frappe.ui.form.on('Site', {
             values = usage_counter_data.map(d => d.value / 1000000);
 
             chart_data = {
-                'labels': format_chart_date(data),
-                'datasets': [{ values }],
+                labels: format_chart_date(data),
+                datasets: [{ values }],
 				// show daily limit marker if usage crosses 50%
-				'yMarkers': values.some(value => value > plan_limit / 2)
+				yMarkers: values.some(value => value > plan_limit / 2)
 					? [{ label: 'Daily CPU Time Limit', value: plan_limit }]
 					: null
             }
         }
         clear_block(frm, 'usage_counter_block');
         new ChartComponent(frm.get_field('usage_counter_block').$wrapper, {
-            'title': 'Usage Counter',
-            'data': chart_data,
-            'type': 'line',
-            'colors': ['purple'],
-            'button': {
-                'title': 'View detailed logs',
-                'onclick': () => {
+            title: 'Usage Counter',
+            data: chart_data,
+            type: 'line',
+            colors: ['purple'],
+            button: {
+                title: 'View detailed logs',
+                onclick: () => {
                     frm.scroll_to_field('logs_block');
                 }
             }
@@ -449,9 +449,9 @@ frappe.ui.form.on('Site', {
         }
         clear_block(frm, 'uptime_block');
         new ChartComponent(frm.get_field('uptime_block').$wrapper, {
-            'title': 'Uptime',
-            'data': chart_data,
-            'type': 'mixed-bars'
+            title: 'Uptime',
+            data: chart_data,
+            type: 'mixed-bars'
         });
 
         chart_data = '';
@@ -463,10 +463,10 @@ frappe.ui.form.on('Site', {
         }
         clear_block(frm, 'requests_block');
         new ChartComponent(frm.get_field('requests_block').$wrapper, {
-            'title': 'Requests',
-            'data': chart_data,
-            'type': 'line',
-            'colors': ['green']
+            title: 'Requests',
+            data: chart_data,
+            type: 'line',
+            colors: ['green']
         });
 
         chart_data = '';
@@ -478,10 +478,10 @@ frappe.ui.form.on('Site', {
         }
         clear_block(frm, 'cpu_usage_block');
         new ChartComponent(frm.get_field('cpu_usage_block').$wrapper, {
-            'title': 'CPU Usage',
-            'data': chart_data,
-            'type': 'line',
-            'colors': ['yello']
+            title: 'CPU Usage',
+            data: chart_data,
+            type: 'line',
+            colors: ['yellow']
         });
 
         chart_data = '';
@@ -493,10 +493,10 @@ frappe.ui.form.on('Site', {
         }
         clear_block(frm, 'background_jobs_block');
         new ChartComponent(frm.get_field('background_jobs_block').$wrapper, {
-            'title': 'Background Jobs',
-            'data': chart_data,
-            'type': 'line',
-            'colors': ['red']
+            title: 'Background Jobs',
+            data: chart_data,
+            type: 'line',
+            colors: ['red']
         });
 
         chart_data = '';
@@ -508,40 +508,40 @@ frappe.ui.form.on('Site', {
         }
         clear_block(frm, 'background_jobs_cpu_usage_block');
         new ChartComponent(frm.get_field('background_jobs_cpu_usage_block').$wrapper, {
-            'title': 'Background Jobs CPU Usage',
-            'data': chart_data,
-            'type': 'line',
-            'colors': ['blue']
+            title: 'Background Jobs CPU Usage',
+            data: chart_data,
+            type: 'line',
+            colors: ['blue']
         });
         // tab: Backup & Restore
 
         // sec: Backup
         clear_block(frm, 'site_backups_block');
         new SectionHead(frm.get_field('site_backups_block').$wrapper, {
-            'title': 'Backup',
-            'button': {
-                'title': 'Schedule a Backup',
-                'onclick': () => {
+            title: 'Backup',
+            button: {
+                title: 'Schedule a Backup',
+                onclick: () => {
                     frm.call('backup').then((r) => frm.refresh());
                 }
             }
         });
         new ListComponent(frm.get_field('site_backups_block').$wrapper, {
-            'data': backups,
-            'template': title_with_message_and_tag_template
+            data: backups,
+            template: title_with_message_and_tag_template
         });
 
         // sec: Restore, Migrate and Reset
         clear_block(frm, 'restore_migrate_and_reset_block');
         new SectionHead(frm.get_field('restore_migrate_and_reset_block').$wrapper, {
-            'title': 'Restore Migrate & Reset'
+            title: 'Restore Migrate & Reset'
         });
         new ActionBlock(frm.get_field('restore_migrate_and_reset_block').$wrapper, {
-            'title': 'Restore',
-            'description': "Restore your database using a previous backup",
-            'button': {
-                'title': 'Restore Database',
-                'onclick': () => {
+            title: 'Restore',
+            description: "Restore your database using a previous backup",
+            button: {
+                title: 'Restore Database',
+                onclick: () => {
 					frappe.confirm(
 						`Are you sure you want to restore this site?`,
 						() => frm.call('restore_site').then((r) => frm.refresh())
@@ -550,11 +550,11 @@ frappe.ui.form.on('Site', {
             }
         });
         new ActionBlock(frm.get_field('restore_migrate_and_reset_block').$wrapper, {
-            'title': 'Migrate',
-            'description': "Run bench migrate command on your database",
-            'button': {
-                'title': 'Migrate Database',
-                'onclick': () => {
+            title: 'Migrate',
+            description: "Run bench migrate command on your database",
+            button: {
+                title: 'Migrate Database',
+                onclick: () => {
 					frappe.confirm(
 						`Are you sure you want to migrate this site?`,
 						() => frm.call('migrate').then((r) => frm.refresh())
@@ -563,25 +563,25 @@ frappe.ui.form.on('Site', {
             }
         });
         new ActionBlock(frm.get_field('restore_migrate_and_reset_block').$wrapper, {
-            'title': 'Reset',
-            'description': "Reset your database to a clean state",
-            'button': {
-                'title': 'Reset Database',
-                'onclick': () => {
+            title: 'Reset',
+            description: "Reset your database to a clean state",
+            button: {
+                title: 'Reset Database',
+                onclick: () => {
 					frappe.confirm(
 						`Are you sure you want to reset this site?`,
 						() => frm.call('reinstall').then((r) => frm.refresh())
 					);
                 },
-                'tag': 'danger'
+                tag: 'danger'
             }
         });
         new ActionBlock(frm.get_field('restore_migrate_and_reset_block').$wrapper, {
-            'title': 'Clear Cache',
-            'description': "Clear your site's cache",
-            'button': {
-                'title': 'Clear Cache',
-                'onclick': () => {
+            title: 'Clear Cache',
+            description: "Clear your site's cache",
+            button: {
+                title: 'Clear Cache',
+                onclick: () => {
 					frappe.confirm(
 						`Are you sure you want to clear the cache of this site?`,
 						() => frm.call('clear_cache').then((r) => frm.refresh())
@@ -603,23 +603,23 @@ frappe.ui.form.on('Site', {
             onload: (jobs_res) => {
                 let jobs = remap(jobs_res.message, (d) => {
                     return {
-                        'title': d.job_type,
-                        'message': format_date_time(d.creation, 1, 1),
-                        'tag': d.status,
-                        'tag_type': "indicator-pill green",
-                        'name': d.name,
-                        'type': d.job_type,
-                        'duration': d.duration,
-                        'start': d.start,
-                        'output': d.output
+                        title: d.job_type,
+                        message: format_date_time(d.creation, 1, 1),
+                        tag: d.status,
+                        tag_type: "indicator-pill green",
+                        name: d.name,
+                        type: d.job_type,
+                        duration: d.duration,
+                        start: d.start,
+                        output: d.output
                     }
                 });
                 new DetailedListComponent(frm.get_field('jobs_block').$wrapper, {
-                    'title': 'Jobs',
-                    'description': 'History of jobs that ran on your site',
-                    'data': jobs,
-                    'template': title_with_message_and_tag_template,
-                    'onclick': async (index, wrapper) => {
+                    title: 'Jobs',
+                    description: 'History of jobs that ran on your site',
+                    data: jobs,
+                    template: title_with_message_and_tag_template,
+                    onclick: async (index, wrapper) => {
                         new AwaitedComponent(wrapper, {
                             promise: frappe.db.get_list('Agent Job Step', {
                                 filters: {'agent_job': ['in', jobs[index].name]},
@@ -629,17 +629,17 @@ frappe.ui.form.on('Site', {
                             onload: (job_steps) => {
                                 job_steps = remap(job_steps, (d) => {
                                     return {
-                                        'title': d.step_name,
-                                        'message': d.output || 'No output'
+                                        title: d.step_name,
+                                        message: d.output || 'No output'
                                     }
                                 })
                                 new SectionHead(wrapper, {
-                                    'title': jobs[index].type,
-                                    'description': 'Created on ' + format_date_time(jobs[index].start, 1, 1) + ' executed in ' + jobs[index].duration
+                                    title: jobs[index].type,
+                                    description: 'Created on ' + format_date_time(jobs[index].start, 1, 1) + ' executed in ' + jobs[index].duration
                                 });
                                 new ListComponent(wrapper, {
-                                    'data': job_steps,
-                                    'template': title_with_text_area_template
+                                    data: job_steps,
+                                    template: title_with_text_area_template
                                 });
                             },
                         })
@@ -650,40 +650,40 @@ frappe.ui.form.on('Site', {
 
         // tab: Logs
 
-        clear_block(frm, 'logs_block');
-        new DetailedListComponent(frm.get_field('logs_block').$wrapper, {
-            'title': 'Logs',
-            'description': 'Available Logs for your site',
-            'data': logs,
-            'template': title_with_message_and_tag_template,
-            'onclick': async (index, wrapper) => {
-                new AwaitedComponent(wrapper, {
-                    'promise': frappe.call({
-                        method: 'press.api.site.log',
-                        args: {
-                            name: frm.docname,
-                            log: logs[index].title
-                        }
-                    }),
-                    'onload': (log) => {
-                        new SectionHead(wrapper, {
-                            'title': logs[index].title
-                        });
+        // clear_block(frm, 'logs_block');
+        // new DetailedListComponent(frm.get_field('logs_block').$wrapper, {
+        //     title: 'Logs',
+        //     description: 'Available Logs for your site',
+        //     data: logs,
+        //     template: title_with_message_and_tag_template,
+        //     onclick: async (index, wrapper) => {
+        //         new AwaitedComponent(wrapper, {
+        //             'promise': frappe.call({
+        //                 method: 'press.api.site.log',
+        //                 args: {
+        //                     name: frm.docname,
+        //                     log: logs[index].title
+        //                 }
+        //             }),
+        //             'onload': (log) => {
+        //                 new SectionHead(wrapper, {
+        //                     title: logs[index].title
+        //                 });
                         
-                        var log_lines = log.message[logs[index].title].split('\n');
-                        log_lines = remap(log_lines, (d) => {
-                            return {
-                                message: d
-                            }
-                        });
-                        new ListComponent(wrapper, {
-                            'data': log_lines,
-                            'template': title_with_text_area_template
-                        });
-                    }
-                })
-            }
-        });
+        //                 var log_lines = log.message[logs[index].title].split('\n');
+        //                 log_lines = remap(log_lines, (d) => {
+        //                     return {
+        //                         message: d
+        //                     }
+        //                 });
+        //                 new ListComponent(wrapper, {
+        //                     data: log_lines,
+        //                     template: title_with_text_area_template
+        //                 });
+        //             }
+        //         })
+        //     }
+        // });
 
         // tab: Activity
 
@@ -691,13 +691,13 @@ frappe.ui.form.on('Site', {
 
         clear_block(frm, 'activity_block');
         new SectionHead(frm.get_field('activity_block').$wrapper, {
-            'title': 'Activity',
-            'description': 'Log of activities performed on your site'
+            title: 'Activity',
+            description: 'Log of activities performed on your site'
         })
 
         new ListComponent(frm.get_field('activity_block').$wrapper, {
-            'data': activities,
-            'template': title_with_message_and_tag_template
+            data: activities,
+            template: title_with_message_and_tag_template
         })
         
         // tab: Settings

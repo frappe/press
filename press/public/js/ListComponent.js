@@ -70,36 +70,14 @@ function title_with_sub_text_tag_and_button_template(data) {
 	`;
 }
 
-let title_with_text_area_template = (data) => `
-	<div class="mb-4">
-		<h5>${data.title || ''}</h5>
-		<div class="mt-3 p-2 card bg-light text-dark border-0 rounded-sm">
-			<span style="white-space: pre-line">${data.message || ''}</span>
-		</div>
-	</div>	
-`;
-
-// let sites_template = (data) => {
-// 	let template = '';
-
-// 	for (let site of data.sites) {
-// 		template += `
-// 			<div class="d-flex flex-row justify-between">
-// 				<p class="list-row-col ellipsis list-subject level">${site.name}
-// 				<p class="list-row-col ellipsis hidden-xs">${data.bench_name}</p>
-// 				<div class="list-row-col ellipsis hidden-xs">
-// 					<p class="indicator-pill ${
-// 						site.status === 'Active' ? 'green' : 'red'
-// 					} ellipsis">${site.status}</p>
-// 				</div>
-// 				<button class="btn btn-outline-primary ellipsis" onclick="navigate">
-// 					Visit Site
-// 				</button>
-// 			</div>
-// 			<hr>
-// 		`;
-// 	}
-
-// 	return template;
-// };
+function title_with_text_area_template(data) {
+	return `
+		<div class="mb-4">
+			<h5>${data.title || ''}</h5>
+			<div class="mt-3 p-2 card bg-light text-dark border-0 rounded-sm">
+				<span style="white-space: pre-line">${data.message || ''}</span>
+			</div>
+		</div>	
+	`;
+}
 
