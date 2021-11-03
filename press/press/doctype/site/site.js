@@ -124,10 +124,10 @@ frappe.ui.form.on('Site', {
             method: 'press.api.site.backups',
             args: {name: frm.docname}
         });
-        // let logs_res = await frappe.call({
-        //     method: 'press.api.site.logs',
-        //     args: {name: frm.docname}
-        // });
+        let logs_res = await frappe.call({
+            method: 'press.api.site.logs',
+            args: {name: frm.docname}
+        });
         let activities_res = await frappe.call({
             method: 'press.api.site.activities',
             args: {name: frm.docname}
@@ -160,13 +160,13 @@ frappe.ui.form.on('Site', {
                 message: format_date_time(d.creation, 1, 1)
             }
         });
-        // let logs = remap(logs_res.message, (d) => {
-        //     return {
-        //         title: d.name,
-        //         message: format_date_time(d.created, 1, 1),
-        //         line: d.line
-        //     }
-        // });
+        let logs = remap(logs_res.message, (d) => {
+            return {
+                title: d.name,
+                message: format_date_time(d.created, 1, 1),
+                line: d.line
+            }
+        });
         let activities = remap(activities_res.message, (d) => {
             return {
                 title: d.action + ' by ' + d.owner,
@@ -650,39 +650,39 @@ frappe.ui.form.on('Site', {
 
         // tab: Logs
 
-        // clear_block(frm, 'logs_block');
-        // new DetailedListComponent(frm.get_field('logs_block').$wrapper, {
-        //     title: 'Logs',
-        //     description: 'Available Logs for your site',
-        //     data: logs,
-        //     template: title_with_message_and_tag_template,
-        //     onclick: async (index, wrapper) => {
-        //         new AwaitedComponent(wrapper, {
-        //             'promise': frappe.call({
-        //                 method: 'press.api.site.log',
-        //                 args: {
-        //                     name: frm.docname,
-        //                     log: logs[index].title
-        //                 }
-        //             }),
-        //             'onload': (log) => {
-        //                 new SectionHead(wrapper, {
-        //                     title: logs[index].title
-        //                 });
+        clear_block(frm, 'logs_block');
+        new DetailedListComponent(frm.get_field('logs_block').$wrapper, {
+            title: 'Logs',
+            description: 'Available Logs for your site',
+            data: logs,
+            template: title_with_message_and_tag_template,
+            onclick: async (index, wrapper) => {
+                new AwaitedComponent(wrapper, {
+                    'promise': frappe.call({
+                        method: 'press.api.site.log',
+                        args: {
+                            name: frm.docname,
+                            log: logs[index].title
+                        }
+                    }),
+                    'onload': (log) => {
+                        new SectionHead(wrapper, {
+                            title: logs[index].title
+                        });
                         
-        //                 var log_lines = log.message[logs[index].title].split('\n');
-        //                 log_lines = remap(log_lines, (d) => {
-        //                     return {
-        //                         message: d
-        //                     }
-        //                 });
-        //                 new ListComponent(wrapper, {
-        //                     data: log_lines,
-        //                     template: title_with_text_area_template
-        //                 });
-        //             }
-        //         })
-        //     }
+                        var log_lines = log.message[logs[index].title].split('\n');
+                        log_lines = remap(log_lines, (d) => {
+                            return {
+                                message: d
+                            }
+                        });
+                        new ListComponent(wrapper, {
+                            data: log_lines,
+                            template: title_with_text_area_template
+                        });
+                    }
+                })
+            }
         // });
 
         // tab: Activity
