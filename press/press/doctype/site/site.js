@@ -38,11 +38,16 @@ frappe.ui.form.on('Site', {
 		// 		</div>
 		// 	</div>`
 		// );
-		// frm.add_web_link(`https://${frm.doc.name}`, __('Visit Site'));
-		// frm.add_web_link(
-		// 	`/dashboard/sites/${frm.doc.name}`,
-		// 	__('Visit Dashboard')
-		// );
+
+        frm.add_custom_button(__('Visit Site'), () => {
+            window.location.href = `https://${frm.doc.name}`;
+        });
+        frm.add_custom_button(__('Use Dashboard'), () => {
+            let host_name = window.location.host;
+            let host_name_prefix = ['frappecloud.com', 'staging.frappe.cloud'].includes(host_name) ? 'https://' : 'http://';
+            host_name = host_name_prefix + host_name;
+            window.location.href = `${host_name}/dashboard/sites/${frm.docname}/overview`;
+        });
 
 		[
 			[__('Backup'), 'backup'],
@@ -658,14 +663,14 @@ frappe.ui.form.on('Site', {
             template: title_with_message_and_tag_template,
             onclick: async (index, wrapper) => {
                 new AwaitedComponent(wrapper, {
-                    'promise': frappe.call({
+                    promise: frappe.call({
                         method: 'press.api.site.log',
                         args: {
                             name: frm.docname,
                             log: logs[index].title
                         }
                     }),
-                    'onload': (log) => {
+                    onload: (log) => {
                         new SectionHead(wrapper, {
                             title: logs[index].title
                         });
@@ -683,7 +688,7 @@ frappe.ui.form.on('Site', {
                     }
                 })
             }
-        // });
+        });
 
         // tab: Activity
 
