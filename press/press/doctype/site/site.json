@@ -419,7 +419,8 @@
    "depends_on": "eval:(doc.update_trigger_frequency === 'Monthly' && doc.update_end_of_month === 0)",
    "fieldname": "update_on_day_of_month",
    "fieldtype": "Int",
-   "label": "Update on Day of month"
+   "label": "Update on Day of month",
+   "non_negative": 1
   },
   {
    "fieldname": "update_trigger_time",
@@ -478,7 +479,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2021-11-03 06:59:33.528766",
+ "modified": "2021-11-03 07:05:21.749474",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
