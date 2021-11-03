@@ -1,5 +1,5 @@
 import unittest
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 from unittest.mock import MagicMock, Mock, patch
 
 import frappe
@@ -7,7 +7,6 @@ import frappe
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.site.backups import ScheduledBackupJob
 from press.press.doctype.site.test_site import create_test_site
-from press.press.doctype.site_backup.test_site_backup import create_test_site_backup
 
 
 @patch("press.press.doctype.site.backups.frappe.db.commit", new=MagicMock)
