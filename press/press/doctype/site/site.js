@@ -329,17 +329,16 @@ frappe.ui.form.on('Site', {
             'button': {
                 'title': 'Add App', 
                 'onclick':  async () => {
-                    let site = frm.get_doc();
-                    let bench = await frappe.db.get_doc("Bench", site.bench);
-                    const installed_apps = site.apps.map((app) => app.app);
-                    let available_apps = [];
-                    console.log(installed_apps);
-                    console.log(bench.apps)
-                    for(let i = 0; i < bench.apps.length; i++) {
-                        if(!installed_apps.includes(bench.apps[i].app)) available_apps.push(bench.apps[i].app);
+                    let available_apps = (await frappe.call({
+                        method: 'press.api.site.available_apps',
+                        args: { name: frm.docname }
+                    })).message;
+
+                    let apps = [];
+                    for(let i = 0; i < available_apps.length; i++) {
+                        apps.push(available_apps[i].app);
                     }
-                    console.log(available_apps);
-                    if(available_apps.length > 0) {
+                    if(apps.length > 0) {
                         new frappe.ui.form.MultiSelectDialog({
                             doctype: "App",
                             target: frm,
@@ -349,13 +348,11 @@ frappe.ui.form.on('Site', {
                             add_filters_group: 0,
                             get_query() {
                                 return {
-                                    filters: { name: ['in', available_apps] }
+                                    filters: { name: ['in', apps] }
                                 }
                             },
                             async action(selections) {
                                 for(let i = 0; i < selections.length; i++) {
-                                    // let app = await frappe.db.get_doc("App", selections[i])
-                                    // console.log(app);
                                     frappe.call({
                                         method: 'press.api.site.install_app',
                                         args: {
