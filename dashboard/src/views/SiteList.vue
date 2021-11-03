@@ -7,7 +7,7 @@
 		</div>
 		<div class="py-2" v-for="(site, index) in sites" :key="site.name">
 			<div
-				@click="goToDeskSite(site)"
+				@click="goToSite(site)"
 				class="block pt-2 rounded-md sm:px-2 hover:bg-gray-50 cursor-pointer"
 			>
 				<div class="flex items-center justify-between sm:justify-start">
@@ -72,11 +72,22 @@ export default {
 				status
 			};
 		},
-		goToDeskSite(site) {
+		goToSite(site) {
 			let host_name = window.location.host;
 			let host_name_prefix = ['frappecloud.com', 'staging.frappe.cloud'].includes(host_name) ? 'https://' : 'http://';
 			host_name = host_name_prefix + host_name;
-			window.location.href = `${host_name}/app/site/${site.name}`;
+
+			let is_system_manager = false;
+			let roles = this.$account.user.roles;
+			for(let i = 0; i < roles.length; i++) {
+				console.log(roles[i].role);
+				if(roles[i].role === "System Manager") {
+					is_system_manager = true;
+					break;
+				}
+			}
+			let redirect_path = is_system_manager ? `app/site/${site.name}` : `dashboard/sites/${site.name}/database`;
+			window.location.href = `${host_name}/${redirect_path}`;
 		}
 	}
 };
