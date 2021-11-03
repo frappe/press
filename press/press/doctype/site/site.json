@@ -53,6 +53,7 @@
   "notifications_section",
   "notify_email",
   "auto_updates_section",
+  "auto_updates_scheduled",
   "auto_update_last_triggered_on",
   "update_trigger_frequency",
   "update_trigger_time",
@@ -430,6 +431,12 @@
   {
    "fieldname": "column_break_51",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "auto_updates_scheduled",
+   "fieldtype": "Check",
+   "label": "Auto Updates Scheduled"
   }
  ],
  "links": [
@@ -479,7 +486,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2021-11-03 07:05:21.749474",
+ "modified": "2021-11-03 07:21:42.709495",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
