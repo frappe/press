@@ -5,6 +5,7 @@
 import frappe
 
 from frappe.utils import now_datetime
+from press.utils import log_error
 
 def trigger():
 	"""Will be triggered every 30 minutes"""
@@ -33,7 +34,8 @@ def trigger():
 			site_doc.auto_update_last_triggered_on = now_datetime()
 			site_doc.save()
 		except Exception:
-			pass
+			traceback = "<pre><code>" + frappe.get_traceback() + "</pre></code>"
+			log_error("Scheduled Auto Update Failed", site=site, traceback=traceback)
 
 
 def should_update_trigger(site):
