@@ -6,26 +6,27 @@ import frappe
 
 from frappe.utils import now_datetime
 from press.utils import log_error
+from frappe.utils import nowtime, get_time, get_datetime
+
 
 def trigger():
 	"""Will be triggered every 30 minutes"""
 	# Get all ["Active", "Inactive"] sites
 	# Trigger "Daily" frequency sites
 	sites_with_daily_scheduled_updates = frappe.get_all(
-		"Site", 
-		filters={
-			"status": ("in", ("Active", "Inactive")),
-			"auto_updates_scheduled": True
-		}, 
+		"Site",
+		filters={"status": ("in", ("Active", "Inactive")), "auto_updates_scheduled": True},
 		fields=[
 			"name",
 			"auto_update_last_triggered_on",
 			"update_trigger_time",
-			"update_trigger_frequency"
-		]
+			"update_trigger_frequency",
+		],
 	)
-	
-	trigger_for_sites = list(filter(sites_with_daily_scheduled_updates, should_update_trigger))
+
+	trigger_for_sites = list(
+		filter(sites_with_daily_scheduled_updates, should_update_trigger)
+	)
 
 	for site in trigger_for_sites:
 		try:
@@ -39,7 +40,9 @@ def trigger():
 
 
 def should_update_trigger(site):
-	"""Returns `True` if the site update should be triggered"""
+	"""
+	Returns `True` if the site update should be triggered.
+	"""
 	# The update has never been triggered
 	if not site.auto_update_last_triggered_on:
 		return True
@@ -53,18 +56,18 @@ def should_update_trigger(site):
 		return should_update_trigger_for_monthly(site)
 
 	return False
-	
 
-def should_update_trigger_for_daily(site):
-	# now_time = now_datetime().time()
-	# now_seconds = now_time.hour * 3600 + now_time.minute * 60 + now_time.second
-	# site.update_trigger_time.seconds
+
+def should_update_trigger_for_daily(site, current_datetime=get_datetime()):
+	"""Takes `current_datetime` to make testing easier."""
 	pass
 
 
-def should_update_trigger_for_weekly(site):
+def should_update_trigger_for_weekly(site, current_datetime=get_datetime()):
+	"""Takes `current_datetime` to make testing easier."""
 	pass
 
 
-def should_update_trigger_for_monthly(site):
+def should_update_trigger_for_monthly(site, current_datetime=get_datetime()):
+	"""Takes `current_datetime` to make testing easier."""
 	pass
