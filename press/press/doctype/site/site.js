@@ -185,18 +185,29 @@ frappe.ui.form.on('Site', {
         // render
         
         // // tab: Overview 
+        let site = frm.get_doc();
         clear_block(frm, 'site_activation_block');
-		new ActionBlock(frm.get_field('site_activation_block').$wrapper, {
-			'title': 'Site Activation',
-			'description': 'Please login and complete the setup wizard on your site. Analytics will be collected only after setup is complete',
-			'button': {
-				'title': 'Login',
-				'onclick': () => {
-
-				},
-				'tag': 'primary'
-			}
-		})
+        if(site.status === 'Active' && !site.setup_wizard_complete) {
+            new ActionBlock(frm.get_field('site_activation_block').$wrapper, {
+                'title': 'Site Activation',
+                'description': 'Please login and complete the setup wizard on your site. Analytics will be collected only after setup is complete',
+                'button': {
+                    'title': 'Login',
+                    'onclick': async () => {
+                        frappe.call({
+                            method: 'press.api.site.login',
+                            args: { name: frm.docname }
+                        }).then((sid) => {
+                            if(sid) {
+                                // TODO: this is not working need to fix it
+                				window.open(`https://${site.name}/desk?sid=${sid}`, '_blank');
+                            }
+                        })
+                    },
+                    'tag': 'primary'
+                }
+            })
+        }
 
         clear_block(frm, 'update_alert_block');
 		new ActionBlock(frm.get_field('update_alert_block').$wrapper, {
@@ -300,8 +311,47 @@ frappe.ui.form.on('Site', {
             'description': 'Apps installed on your site',
             'button': {
                 'title': 'Add App', 
-                'onclick': () => {
-                    frappe.msgprint(__('Add App'));
+                'onclick':  async () => {
+                    let site = frm.get_doc();
+                    let bench = await frappe.db.get_doc("Bench", site.bench);
+                    const installed_apps = site.apps.map((app) => app.app);
+                    let available_apps = [];
+                    console.log(installed_apps);
+                    console.log(bench.apps)
+                    for(let i = 0; i < bench.apps.length; i++) {
+                        if(!installed_apps.includes(bench.apps[i].app)) available_apps.push(bench.apps[i].app);
+                    }
+                    console.log(available_apps);
+                    if(available_apps.length > 0) {
+                        new frappe.ui.form.MultiSelectDialog({
+                            doctype: "App",
+                            target: frm,
+                            setters: {
+
+                            },
+                            add_filters_group: 0,
+                            get_query() {
+                                return {
+                                    filters: { name: ['in', available_apps] }
+                                }
+                            },
+                            async action(selections) {
+                                for(let i = 0; i < selections.length; i++) {
+                                    // let app = await frappe.db.get_doc("App", selections[i])
+                                    // console.log(app);
+                                    frappe.call({
+                                        method: 'press.api.site.install_app',
+                                        args: {
+                                            name: frm.docname,
+                                            app: selections[i]
+                                        }
+                                    })
+                                }
+                            }
+                        });
+                    } else {
+                        frappe.msgprint(__("No apps available to install"));
+                    }
                 }
             }
         });
