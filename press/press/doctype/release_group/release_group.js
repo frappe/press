@@ -129,7 +129,7 @@ frappe.ui.form.on('Release Group', {
 		})
 
 		// sec: Overview
-				let bench = (await frappe.call({
+		let bench = (await frappe.call({
 			method: 'press.api.bench.get',
 			args: {
 				name: frm.docname
