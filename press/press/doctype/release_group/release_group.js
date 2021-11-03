@@ -129,18 +129,79 @@ frappe.ui.form.on('Release Group', {
 		})
 
 		// sec: Overview
-		clear_block(frm, 'update_alert_block');
-		new ActionBlock(frm.get_field('update_alert_block').$wrapper, {
-			'title': 'Update Available',
-			'description': 'A new update is available for your bench. Would you like to deploy the update now?',
-			'button': {
-				'title': 'Show updates',
-				'onclick': () => {
-
-				},
-				'tag': 'primary'
+				let bench = (await frappe.call({
+			method: 'press.api.bench.get',
+			args: {
+				name: frm.docname
 			}
-		})
+		})).message;
+		let deploy_information = (await frappe.call({
+			method: 'press.api.bench.deploy_information',
+			args: {
+				name: bench.name
+			}
+		})).message;
+		clear_block(frm, 'update_alert_block');
+		if(deploy_information.update_available && ['Awaiting Deploy', 'Active'].includes(bench.status)) {
+			new ActionBlock(frm.get_field('update_alert_block').$wrapper, {
+				'title': bench.status === 'Active' ? 'Update Available' : 'Deploy',
+				'description': bench.status === 'Active' ? 
+					'A new update is available for your bench. Would you like to deploy the update now?' : 
+					'Your bench is not deployed yet. You can add more apps to your bench before deploying. If you want to deploy now, click on Deploy.',
+				'button': {
+					'title': 'Show updates',
+					'onclick': async () => {
+						let apps = [];
+						// let removed_apps = [];
+						for(let i = 0; i < deploy_information.apps.length; i++) {
+							if(deploy_information.apps[i].update_available) apps.push(deploy_information.apps[i].app);
+							// removed_apps.push(deploy_information.removed_apps[i].app);
+						}
+						new frappe.ui.form.MultiSelectDialog({
+							doctype: "App",
+							target: frm,
+							add_filters_group: 0,
+							setters: {
+
+							},
+							get_query() {
+								return {
+									filters: { name: ['in', apps] }
+								}
+							},
+							async action(selections) {
+								// deploy the selections
+								if (selections.length === 0 && deploy_information.removed_apps.length === 0) {
+									frappe.msgprint(__('You must select atleast 1 app to proceed with update.'))
+									return;
+								}
+								
+								let apps_to_ignore = []
+								if (deploy_information) {
+									for(let i = 0; i < deploy_information.apps.length; i++) {
+										let app = deploy_information.apps[i];
+										if(!selections.includes(app.app) && app.update_available) {
+											apps_to_ignore.push(app.app);
+										}
+									}
+								}
+								frappe.call({
+									method: 'press.api.bench.deploy',
+									args: {
+										name: bench.name,
+										apps_to_ignore: apps_to_ignore
+									}
+								}).then((ren) => {
+									window.location.reload();
+									frm.scroll_to_field('deploys_section_block');
+								})
+							}
+						});
+					},
+					'tag': 'primary'
+				}
+			})
+		}
 
 		clear_block(frm, 'bench_info_block');
 		new SectionHead(frm.get_field('bench_info_block').$wrapper, {
