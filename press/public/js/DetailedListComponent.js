@@ -15,12 +15,12 @@ class DetailedListComponent {
 
         new SectionHead(brief_section, this.df);
         new SectionHead(detailed_section, {
-            'description': 'Nothing selected'
+            description: 'Nothing selected'
         });
         new ListComponent(brief_section, {
-            'data': this.df.data,
-            'template': this.df.template,
-            'onclick': (index) => {
+            data: this.df.data,
+            template: this.df.template,
+            onclick: (index) => {
                 clear_wrapper(detailed_section);
                 this.df.onclick(index, detailed_section);
             }

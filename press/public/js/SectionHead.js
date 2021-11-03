@@ -41,6 +41,5 @@ class SectionHead {
                 </div>
             `);
 		}
-		// TODO: add button onclick trigger
 	}
 }
