@@ -11,7 +11,7 @@
 		/>
 		<div class="ml-3 w-full">
 			<div class="flex items-center justify-between">
-				<h2 class="text-xl font-bold">
+				<h2 class="text-xl text-left font-bold">
 					{{ app.title }}
 				</h2>
 				<Badge :status="app.status">{{ app.status }}</Badge>
