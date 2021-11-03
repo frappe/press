@@ -210,17 +210,34 @@ frappe.ui.form.on('Site', {
         }
 
         clear_block(frm, 'update_alert_block');
-		new ActionBlock(frm.get_field('update_alert_block').$wrapper, {
-			'title': 'Update Available',
-			'description': 'A new update is available for your site. Would you like to update your site now?',
-			'button': {
-				'title': 'Show updates',
-				'onclick': () => {
-
-				},
-				'tag': 'primary'
-			}
-		})
+        let update_information = (await frappe.call({
+            method: 'press.api.site.check_for_updates',
+            args: { name: frm.docname }
+        })).message;
+        if(update_information) {
+            if(update_information.update_available && 
+                ['Active', 'Inactive', 'Suspended'].includes(site.status)) {
+                    new ActionBlock(frm.get_field('update_alert_block').$wrapper, {
+                        'title': 'Update Available',
+                        'description': 'A new update is available for your site. Would you like to update your site now?',
+                        'button': {
+                            'title': 'Show updates',
+                            'onclick': async () => {
+                                frappe.call({
+                                    method: 'press.api.site.update',
+                                    args: {
+                                        name: frm.docname,
+                                        skip_failing_patches: false // this should be handled properly
+                                    }
+                                }).then(() => {
+                                    frappe.msgprint(__('Site update scheduled successfully!'))
+                                })
+                            },
+                            'tag': 'primary'
+                        }
+                    })
+                }
+        }
 
         var data = '';
         var plan_limit = '';
