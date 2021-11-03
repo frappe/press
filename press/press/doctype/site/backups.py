@@ -205,10 +205,10 @@ class ScheduledBackupJob:
 		self.sites = Site.get_sites_for_backup(self.interval)
 		self.sites_without_offsite = Subscription.get_sites_without_offsite_backups()
 
-	def take_offsite(self, site: str, day: datetime.date) -> bool:
+	def take_offsite(self, site: frappe._dict, day: datetime.date) -> bool:
 		return (
 			self.offsite_setup
-			and site not in self.sites_without_offsite
+			and site.name not in self.sites_without_offsite
 			and not SiteBackup.offsite_backup_exists(site.name, day)
 		)
 
@@ -237,11 +237,10 @@ class ScheduledBackupJob:
 		def delete_prev(self):
 			self.deque.pop()
 
-	@timing
 	def start(self):
 		"""Schedule backups for all Active sites based on their local timezones. Also trigger offsite backups once a day."""
 		sites_by_server = []
-		for server, sites in groupby(self.sites, lambda d: d.server):  # group by server
+		for server, sites in groupby(self.sites, lambda d: d.server):
 			sites_by_server.append((server, iter(list(sites))))
 
 		sites_by_server_cycle = self.ModifiableCycle(sites_by_server)
@@ -255,7 +254,7 @@ class ScheduledBackupJob:
 				while not self.backup(site):
 					site = next(sites)
 			except StopIteration:
-				sites_by_server_cycle.delete_prev()  # skip sites for this server
+				sites_by_server_cycle.delete_prev()  # no more sites in this server
 				continue
 			limit -= 1
 			if limit <= 0:
@@ -266,10 +265,10 @@ class ScheduledBackupJob:
 		try:
 			site_time = self.get_site_time(site)
 			if self.is_backup_hour(site_time.hour):
-				today_at_site = site_time.date()
+				today = date.today()
 
-				offsite = self.take_offsite(site, today_at_site)
-				with_files = offsite or not SiteBackup.file_backup_exists(site.name, today_at_site)
+				offsite = self.take_offsite(site, today)
+				with_files = offsite or not SiteBackup.file_backup_exists(site.name, today)
 
 				frappe.get_doc("Site", site.name).backup(with_files=with_files, offsite=offsite)
 				frappe.db.commit()
