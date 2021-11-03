@@ -6,7 +6,7 @@ from __future__ import unicode_literals
 
 import functools
 from collections import deque
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 from itertools import groupby
 from typing import Dict, List
 
@@ -92,7 +92,7 @@ class BackupRotationScheme:
 					"status": "Success",
 					"files_availability": "Available",
 					"offsite": False,
-					"creation": ("<", datetime.now() - timedelta(hours=expiry)),
+					"creation": ("<", frappe.utils.add_to_date(None, hours=-expiry)),
 				},
 				"files_availability",
 				"Unavailable",
@@ -150,7 +150,7 @@ class GFS(BackupRotationScheme):
 	yearly_backup_day = 1  # days of the year (1-366)
 
 	def expire_offsite_backups(self) -> List[str]:
-		today = date.today()
+		today = frappe.utils.getdate()
 		oldest_daily = today - timedelta(days=self.daily)
 		oldest_weekly = today - timedelta(weeks=4)
 		oldest_monthly = today - timedelta(days=366)
@@ -265,7 +265,7 @@ class ScheduledBackupJob:
 		try:
 			site_time = self.get_site_time(site)
 			if self.is_backup_hour(site_time.hour):
-				today = date.today()
+				today = frappe.utils.getdate()
 
 				offsite = self.take_offsite(site, today)
 				with_files = offsite or not SiteBackup.file_backup_exists(site.name, today)
