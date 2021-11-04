@@ -284,3 +284,18 @@ def validate_gst(address, method=None):
 			frappe.throw(f"GSTIN must start with {tin_code} for {address.state}.")
 
 		validate_gstin_check_digit(address.gstin)
+
+
+@frappe.whitelist()
+def get_latest_unpaid_invoice():
+	team = get_current_team()
+	unpaid_invoices = frappe.get_all(
+		"Invoice",
+		{"team": team, "status": "Unpaid", "payment_attempt_count": (">", 0)},
+		pluck="name",
+		order_by="creation desc",
+		limit=1,
+	)
+
+	if unpaid_invoices:
+		return frappe.get_doc("Invoice", unpaid_invoices[0])
