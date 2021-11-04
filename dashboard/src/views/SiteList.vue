@@ -73,9 +73,6 @@ export default {
 			};
 		},
 		routeToSite(site) {
-			let hostName = window.location.host;
-			let protocol = ['frappecloud.com', 'staging.frappe.cloud'].includes(hostName) ? 'https://' : 'http://';
-
 			let isSystemManager = false;
 			let roles = this.$account.user.roles;
 			for(let role of roles) {
@@ -85,7 +82,7 @@ export default {
 				}
 			}
 			let redirectPath = isSystemManager ? `app/site/${site.name}` : `dashboard/sites/${site.name}/database`;
-			window.location.href = `${protocol}${hostName}/${redirectPath}`;
+			window.location.href = `/${redirectPath}`;
 		}
 	}
 };

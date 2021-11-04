@@ -307,10 +307,7 @@ frappe.ui.form.on('Release Group', {
 			template: title_with_sub_text_tag_and_button_template,
 			onclick: (i) => {
 				// TODO: use frm methods for this redirects
-				let host_name = window.location.host;
-				let host_name_prefix = ['frappecloud.com', 'staging.frappe.cloud'].includes(host_name) ? 'https://' : 'http://';
-				host_name = host_name_prefix + host_name;
-				window.location.href = `${host_name}/app/site/${sites[i].title}`;	
+				window.location.href = `/app/site/${sites[i].title}`;	
 			},
 		});
 

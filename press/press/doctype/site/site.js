@@ -43,9 +43,7 @@ frappe.ui.form.on('Site', {
             window.location.href = `https://${frm.doc.name}`;
         });
         frm.add_custom_button(__('Use Dashboard'), () => {
-            let host_name = window.location.host;
-            let protocol = ['frappecloud.com', 'staging.frappe.cloud'].includes(host_name) ? 'https://' : 'http://';
-            window.location.href = `${protocol}${host_name}/dashboard/sites/${frm.docname}/overview`;
+            window.location.href = `/dashboard/sites/${frm.docname}/overview`;
         });
 
 		[
