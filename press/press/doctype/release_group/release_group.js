@@ -334,7 +334,7 @@ frappe.ui.form.on('Release Group', {
 				let deploy_lines = remap(steps.message.build_steps, (d) => {
 					return {
 						title: d.stage + " - " + d.step,
-						message: d.output == "" || d.output == undefined ? "No output" : d.output
+						message: d.output || "No output"
 					}
 				});
 
@@ -368,7 +368,7 @@ frappe.ui.form.on('Release Group', {
 				let job_lines = remap(steps.message.steps, (d) => {
 					return {
 						title: d.step_name,
-						message: d.output ? d.output : "No output"
+						message: d.output || "No output"
 					}
 				});
 
