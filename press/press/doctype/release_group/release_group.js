@@ -12,9 +12,8 @@ frappe.ui.form.on('Release Group', {
 	refresh: async function(frm) {
         frm.add_custom_button(__('Use Dashboard'), () => {
             let host_name = window.location.host;
-            let host_name_prefix = ['frappecloud.com', 'staging.frappe.cloud'].includes(host_name) ? 'https://' : 'http://';
-            host_name = host_name_prefix + host_name;
-            window.location.href = `${host_name}/dashboard/benches/${frm.doc.name}`;
+            let protocol = ['frappecloud.com', 'staging.frappe.cloud'].includes(host_name) ? 'https://' : 'http://';
+            window.location.href = `${protocol}${host_name}/dashboard/benches/${frm.doc.name}`;
         });
 		[
 			[
