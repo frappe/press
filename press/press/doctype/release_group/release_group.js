@@ -154,8 +154,8 @@ frappe.ui.form.on('Release Group', {
 					onclick: async () => {
 						let apps = [];
 						// let removed_apps = [];
-						for(let i = 0; i < deploy_information.apps.length; i++) {
-							if(deploy_information.apps[i].update_available) apps.push(deploy_information.apps[i].app);
+						for(let app of deploy_information.apps) {
+							if(app.update_available) apps.push(app.app);
 							// removed_apps.push(deploy_information.removed_apps[i].app);
 						}
 						new frappe.ui.form.MultiSelectDialog({
@@ -179,8 +179,7 @@ frappe.ui.form.on('Release Group', {
 								
 								let apps_to_ignore = []
 								if (deploy_information) {
-									for(let i = 0; i < deploy_information.apps.length; i++) {
-										let app = deploy_information.apps[i];
+									for(let app of deploy_information.apps) {
 										if(!selections.includes(app.app) && app.update_available) {
 											apps_to_ignore.push(app.app);
 										}
@@ -241,9 +240,9 @@ frappe.ui.form.on('Release Group', {
 					})
 					let installable_apps = res.message;
 					let app_sources = [];
-					for (let i = 0; i < installable_apps.length; i++) {
-						for(let j = 0; j < installable_apps[i].sources.length; j++) {
-							app_sources.push(installable_apps[i].sources[j].name)
+					for (let installed_app of installable_apps) {
+						for(let app_source of installed_app.sources) {
+							app_sources.push(app_source.name)
 						}
 					}
 					new frappe.ui.form.MultiSelectDialog({
@@ -261,8 +260,8 @@ frappe.ui.form.on('Release Group', {
 						},
 						async action(selections) {
 							// add the app sources to the release group
-							for(let i = 0; i < selections.length; i++) {
-								let app_source = await frappe.db.get_doc("App Source", selections[i]);
+							for(let selection of selections) {
+								let app_source = await frappe.db.get_doc("App Source", selection);
 								// Add the selected app to bench using api
 								frappe.call({
 									method: 'press.api.bench.add_app',
