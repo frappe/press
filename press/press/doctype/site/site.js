@@ -401,7 +401,6 @@ frappe.ui.form.on('Site', {
                             d.hide();
                             if(values['domain']) {
                                 let domain = values['domain']
-                                console.log(domain);
                                 frm.call('add_domain', { domain }).then((r) => frm.refresh());
                             } else {
                                 frappe.throw(__('Domain cannot be empty'));
