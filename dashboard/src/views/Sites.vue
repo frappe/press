@@ -193,9 +193,6 @@ export default {
 			);
 		},
 		routeToBench(bench) {		
-			let hostName = window.location.host;
-			let protocol = ['frappecloud.com', 'staging.frappe.cloud'].includes(hostName) ? 'https://' : 'http://';
-
 			let isSystemManager = false;
 			let roles = this.$account.user.roles;
 			for(let role of roles) {
@@ -205,7 +202,7 @@ export default {
 				}
 			}
 			let redirectPath = isSystemManager ? `app/release-group/${bench.name}` : `dashboard/benches/${bench.name}/overview`;
-			window.location.href = `${protocol}${hostName}/${redirectPath}`;
+			window.location.href = `/${redirectPath}`;
 
 		}
 	},
