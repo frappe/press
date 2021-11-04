@@ -60,7 +60,7 @@
 								</Badge>
 								<Button
 									v-if="bench.owned_by_team"
-									@click="goToBench(bench)"
+									@click="routeToBench(bench)"
 									icon="tool"
 								>
 								</Button>
@@ -192,20 +192,20 @@ export default {
 				(bench.shared || bench.owned_by_team) && this.sitesShown[bench.name]
 			);
 		},
-		goToBench(bench) {		
-			let host_name = window.location.host;
-			let protocol = ['frappecloud.com', 'staging.frappe.cloud'].includes(host_name) ? 'https://' : 'http://';
+		routeToBench(bench) {		
+			let hostName = window.location.host;
+			let protocol = ['frappecloud.com', 'staging.frappe.cloud'].includes(hostName) ? 'https://' : 'http://';
 
-			let is_system_manager = false;
+			let isSystemManager = false;
 			let roles = this.$account.user.roles;
 			for(let i = 0; i < roles.length; i++) {
 				if(roles[i].role === "System Manager") {
-					is_system_manager = true;
+					isSystemManager = true;
 					break;
 				}
 			}
-			let redirect_path = is_system_manager ? `app/release-group/${bench.name}` : `dashboard/benches/${bench.name}/overview`;
-			window.location.href = `${protocol}${host_name}/${redirect_path}`;
+			let redirectPath = isSystemManager ? `app/release-group/${bench.name}` : `dashboard/benches/${bench.name}/overview`;
+			window.location.href = `${protocol}${hostName}/${redirectPath}`;
 
 		}
 	},
