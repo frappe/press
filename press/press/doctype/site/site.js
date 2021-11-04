@@ -339,8 +339,8 @@ frappe.ui.form.on('Site', {
                     })).message;
 
                     let apps = [];
-                    for(let i = 0; i < available_apps.length; i++) {
-                        apps.push(available_apps[i].app);
+                    for(let app of available_apps) {
+                        apps.push(app);
                     }
                     if(apps.length > 0) {
                         new frappe.ui.form.MultiSelectDialog({
@@ -356,12 +356,12 @@ frappe.ui.form.on('Site', {
                                 }
                             },
                             async action(selections) {
-                                for(let i = 0; i < selections.length; i++) {
+                                for(let selection of selections) {
                                     frappe.call({
                                         method: 'press.api.site.install_app',
                                         args: {
                                             name: frm.docname,
-                                            app: selections[i]
+                                            app: selection
                                         }
                                     })
                                 }

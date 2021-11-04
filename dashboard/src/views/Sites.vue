@@ -198,8 +198,8 @@ export default {
 
 			let isSystemManager = false;
 			let roles = this.$account.user.roles;
-			for(let i = 0; i < roles.length; i++) {
-				if(roles[i].role === "System Manager") {
+			for(let role of roles) {
+				if(role.role === "System Manager") {
 					isSystemManager = true;
 					break;
 				}
