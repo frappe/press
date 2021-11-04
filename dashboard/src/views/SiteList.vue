@@ -80,7 +80,6 @@ export default {
 			let is_system_manager = false;
 			let roles = this.$account.user.roles;
 			for(let i = 0; i < roles.length; i++) {
-				console.log(roles[i].role);
 				if(roles[i].role === "System Manager") {
 					is_system_manager = true;
 					break;

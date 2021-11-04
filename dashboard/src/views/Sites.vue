@@ -200,14 +200,12 @@ export default {
 			let is_system_manager = false;
 			let roles = this.$account.user.roles;
 			for(let i = 0; i < roles.length; i++) {
-				console.log(roles[i].role);
 				if(roles[i].role === "System Manager") {
 					is_system_manager = true;
 					break;
 				}
 			}
 			let redirect_path = is_system_manager ? `app/release-group/${bench.name}` : `dashboard/benches/${bench.name}/overview`;
-			console.log(redirect_path)
 			window.location.href = `${host_name}/${redirect_path}`;
 
 		}
