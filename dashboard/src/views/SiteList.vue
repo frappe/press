@@ -74,8 +74,7 @@ export default {
 		},
 		goToSite(site) {
 			let host_name = window.location.host;
-			let host_name_prefix = ['frappecloud.com', 'staging.frappe.cloud'].includes(host_name) ? 'https://' : 'http://';
-			host_name = host_name_prefix + host_name;
+			let protocol = ['frappecloud.com', 'staging.frappe.cloud'].includes(host_name) ? 'https://' : 'http://';
 
 			let is_system_manager = false;
 			let roles = this.$account.user.roles;
@@ -86,7 +85,7 @@ export default {
 				}
 			}
 			let redirect_path = is_system_manager ? `app/site/${site.name}` : `dashboard/sites/${site.name}/database`;
-			window.location.href = `${host_name}/${redirect_path}`;
+			window.location.href = `${protocol}${host_name}/${redirect_path}`;
 		}
 	}
 };
