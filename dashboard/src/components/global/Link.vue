@@ -3,7 +3,7 @@
 		:is="isExternal ? 'a' : 'router-link'"
 		v-bind="attributes"
 		v-on="$listeners"
-		:class="no_css ? '': 'text-blue-500 cursor-pointer hover:text-blue-600'"
+		class="text-blue-500 cursor-pointer hover:text-blue-600"
 	>
 		<slot></slot>
 	</component>
@@ -11,7 +11,7 @@
 
 <script>
 export default {
-	props: ['to', 'no_css'],
+	props: ['to'],
 	computed: {
 		attributes() {
 			return {
