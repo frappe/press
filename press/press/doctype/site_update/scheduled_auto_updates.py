@@ -39,29 +39,27 @@ def trigger():
 			log_error("Scheduled Auto Update Failed", site=site, traceback=traceback)
 
 
-def should_update_trigger(site):
+def should_update_trigger(doc):
 	"""
-	Returns `True` if the site update should be triggered.
+	Returns `True` if the doc update should be triggered.
 	"""
-	# The update has never been triggered
-	if not site.auto_update_last_triggered_on:
-		return True
-
 	# Return based on the set frequency
-	if site.update_trigger_frequency == "Daily":
-		return should_update_trigger_for_daily(site)
-	elif site.update_trigger_frequency == "Weekly":
-		return should_update_trigger_for_weekly(site)
-	elif site.update_trigger_frequency == "Monthly":
-		return should_update_trigger_for_monthly(site)
+	if doc.update_trigger_frequency == "Daily":
+		return should_update_trigger_for_daily(doc)
+	elif doc.update_trigger_frequency == "Weekly":
+		return should_update_trigger_for_weekly(doc)
+	elif doc.update_trigger_frequency == "Monthly":
+		return should_update_trigger_for_monthly(doc)
 
 	return False
 
 
-def should_update_trigger_for_daily(site, current_datetime=get_datetime()):
+def should_update_trigger_for_daily(doc, current_datetime=get_datetime()):
 	"""Takes `current_datetime` to make testing easier."""
-	pass
-
+	if doc.auto_update_last_triggered_on.date() == current_datetime.date() and get_time(doc.update_trigger_time) <= get_time(doc.auto_update_last_triggered_on):
+		return False
+	elif get_time(doc.update_trigger_time) <= get_time(current_datetime):
+		return True
 
 def should_update_trigger_for_weekly(site, current_datetime=get_datetime()):
 	"""Takes `current_datetime` to make testing easier."""
