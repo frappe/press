@@ -11,9 +11,9 @@ from press.press.doctype.app.app import new_app
 
 @frappe.whitelist()
 def new(app):
-	if(type(app) == type('')):
+	if isinstance(app, str):
 		app = json.loads(app)
-	
+
 	name = app["name"]
 	team = get_current_team()
 
