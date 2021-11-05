@@ -21,6 +21,9 @@ def trigger():
 			"auto_update_last_triggered_on",
 			"update_trigger_time",
 			"update_trigger_frequency",
+			"update_on_weekday",
+			"update_end_of_month",
+			"update_on_day_of_month"
 		],
 	)
 
@@ -61,9 +64,17 @@ def should_update_trigger_for_daily(doc, current_datetime=get_datetime()):
 	elif get_time(doc.update_trigger_time) <= get_time(current_datetime):
 		return True
 
-def should_update_trigger_for_weekly(site, current_datetime=get_datetime()):
+def should_update_trigger_for_weekly(doc, current_datetime=get_datetime()):
 	"""Takes `current_datetime` to make testing easier."""
-	pass
+	if doc.update_on_weekday != current_datetime.strftime("%A"):
+		return False
+	
+	# Today is `update_on_weekday`
+	if doc.auto_update_last_triggered_on.date() == current_datetime.date() and get_time(doc.update_trigger_time) <= get_time(doc.auto_update_last_triggered_on):
+		return False
+	
+	if get_time(doc.update_trigger_time) <= get_time(current_datetime):
+		return True
 
 
 def should_update_trigger_for_monthly(site, current_datetime=get_datetime()):
