@@ -1028,3 +1028,17 @@ def search_list():
 	sites = frappe.get_list("Site", filters={"status": ("!=", "Archived"), "team": team})
 
 	return sites
+
+
+@frappe.whitelist()
+@protected("Site")
+def get_auto_update_info(name):
+	pass
+
+
+@frappe.whitelist()
+@protected("Site")
+def set_auto_update_info(name, info):
+	site_doc = frappe.get_doc("Site", name, for_update=True)
+	site_doc.update(info)
+	site_doc.save()
