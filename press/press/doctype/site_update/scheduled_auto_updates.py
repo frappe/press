@@ -24,7 +24,7 @@ def trigger():
 			"update_trigger_frequency",
 			"update_on_weekday",
 			"update_end_of_month",
-			"update_on_day_of_month"
+			"update_on_day_of_month",
 		],
 	)
 
@@ -60,26 +60,32 @@ def should_update_trigger(doc):
 
 def should_update_trigger_for_daily(doc, current_datetime=get_datetime()):
 	"""Takes `current_datetime` to make testing easier."""
-	if doc.auto_update_last_triggered_on.date() == current_datetime.date() and get_time(doc.update_trigger_time) <= get_time(doc.auto_update_last_triggered_on):
+	if doc.auto_update_last_triggered_on.date() == current_datetime.date() and get_time(
+		doc.update_trigger_time
+	) <= get_time(doc.auto_update_last_triggered_on):
 		return False
 	elif get_time(doc.update_trigger_time) <= get_time(current_datetime):
 		return True
-	
+
 	return False
+
 
 def should_update_trigger_for_weekly(doc, current_datetime=get_datetime()):
 	"""Takes `current_datetime` to make testing easier."""
 	if doc.update_on_weekday != current_datetime.strftime("%A"):
 		return False
-	
+
 	# Today is `update_on_weekday`
-	if doc.auto_update_last_triggered_on.date() == current_datetime.date() and get_time(doc.update_trigger_time) <= get_time(doc.auto_update_last_triggered_on):
+	if doc.auto_update_last_triggered_on.date() == current_datetime.date() and get_time(
+		doc.update_trigger_time
+	) <= get_time(doc.auto_update_last_triggered_on):
 		return False
-	
+
 	if get_time(doc.update_trigger_time) <= get_time(current_datetime):
 		return True
 
 	return False
+
 
 def should_update_trigger_for_monthly(doc, current_datetime=get_datetime()):
 	"""Takes `current_datetime` to make testing easier."""
@@ -88,16 +94,19 @@ def should_update_trigger_for_monthly(doc, current_datetime=get_datetime()):
 	else:
 		on_day_of_month = doc.update_on_day_of_month
 
-	if  on_day_of_month != current_datetime.day:
+	if on_day_of_month != current_datetime.day:
 		return False
 
-	if doc.auto_update_last_triggered_on.date() == current_datetime.date() and get_time(doc.update_trigger_time) <= get_time(doc.auto_update_last_triggered_on):
+	if doc.auto_update_last_triggered_on.date() == current_datetime.date() and get_time(
+		doc.update_trigger_time
+	) <= get_time(doc.auto_update_last_triggered_on):
 		return False
 
 	if get_time(doc.update_trigger_time) <= get_time(current_datetime):
 		return True
 
 	return False
+
 
 def get_last_day_of_month(year, month):
 	return monthrange(year, month)[1]
