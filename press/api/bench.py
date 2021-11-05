@@ -346,9 +346,9 @@ def deploy_information(name):
 @frappe.whitelist()
 @protected("Release Group")
 def deploy(name, apps_to_ignore=[]):
-	if(type(apps_to_ignore == type(''))):
+	if isinstance(apps_to_ignore, str):
 		apps_to_ignore = json.loads(apps_to_ignore)
-		
+
 	team = get_current_team()
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
 
