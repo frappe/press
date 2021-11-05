@@ -4,9 +4,10 @@
 
 import frappe
 
-from frappe.utils import now_datetime
+from calendar import monthrange
 from press.utils import log_error
-from frappe.utils import nowtime, get_time, get_datetime
+from frappe.utils import now_datetime
+from frappe.utils import get_time, get_datetime
 
 
 def trigger():
@@ -63,6 +64,8 @@ def should_update_trigger_for_daily(doc, current_datetime=get_datetime()):
 		return False
 	elif get_time(doc.update_trigger_time) <= get_time(current_datetime):
 		return True
+	
+	return False
 
 def should_update_trigger_for_weekly(doc, current_datetime=get_datetime()):
 	"""Takes `current_datetime` to make testing easier."""
@@ -76,7 +79,25 @@ def should_update_trigger_for_weekly(doc, current_datetime=get_datetime()):
 	if get_time(doc.update_trigger_time) <= get_time(current_datetime):
 		return True
 
+	return False
 
-def should_update_trigger_for_monthly(site, current_datetime=get_datetime()):
+def should_update_trigger_for_monthly(doc, current_datetime=get_datetime()):
 	"""Takes `current_datetime` to make testing easier."""
-	pass
+	if doc.update_end_of_month:
+		on_day_of_month = get_last_day_of_month(current_datetime.year, current_datetime.month)
+	else:
+		on_day_of_month = doc.update_on_day_of_month
+
+	if  on_day_of_month != current_datetime.day:
+		return False
+
+	if doc.auto_update_last_triggered_on.date() == current_datetime.date() and get_time(doc.update_trigger_time) <= get_time(doc.auto_update_last_triggered_on):
+		return False
+
+	if get_time(doc.update_trigger_time) <= get_time(current_datetime):
+		return True
+
+	return False
+
+def get_last_day_of_month(year, month):
+	return monthrange(year, month)[1]
