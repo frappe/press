@@ -1033,7 +1033,7 @@ def search_list():
 @frappe.whitelist()
 @protected("Site")
 def enable_auto_update(name):
-	site_doc = frappe.get_doc("Site", name, for_update=True)
+	site_doc = frappe.get_doc("Site", name)
 	if not site_doc.auto_updates_scheduled:
 		site_doc.auto_updates_scheduled = True
 		site_doc.save()

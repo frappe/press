@@ -4,7 +4,7 @@
 			<template #actions>
 				<Button icon-left="edit">Edit</Button>
 			</template>
-			<div class="space-y-4">
+			<!-- <div class="space-y-4">
 				<Input
 					type="checkbox"
 					label="Enable Site Auto Update"
@@ -41,6 +41,73 @@
 					label="Update time"
 					v-model="updateTime"
 				/>
+			</div> -->
+
+			<div
+				class="divide-y-2"
+				v-if="!$resources.getSiteAutoUpdateInfo.loading && autoUpdateEnabled"
+			>
+				<ListItem title="Trigger Frequency" :description="updateFrequency" />
+
+				<!-- For weekly updates only -->
+				<ListItem
+					v-if="updateFrequency === 'Weekly'"
+					title="Trigger on Weekday"
+					:description="weekDay"
+				/>
+
+				<ListItem title="Trigger Time" :description="updateTime" />
+
+				<!-- Last triggered At -->
+				<ListItem
+					v-if="lastTriggeredAt"
+					title="Last Triggered At"
+					:description="lastTriggeredAt"
+				/>
+				<ListItem
+					v-else
+					title="Last Triggered At"
+					description="Never triggered"
+				/>
+
+				<!-- Day of month description -->
+				<div v-if="updateFrequency === 'Monthly'">
+					<ListItem
+						v-if="!endOfMonth"
+						title="Trigger on Month day"
+						:description="monthDay.toString()"
+					/>
+					<ListItem
+						v-else
+						title="Trigger on Month day"
+						description="End of month"
+					/>
+				</div>
+			</div>
+
+			<!-- If updates are not enabled, show button -->
+			<div
+				class="py-10 text-center"
+				v-if="!$resources.getSiteAutoUpdateInfo.loading && !autoUpdateEnabled"
+			>
+				<h3 class="text-sm text-gray-800">
+					Auto updates are disabled for this site.
+				</h3>
+				<Button
+					class="mt-3"
+					type="primary"
+					@click="enableAutoUpdate"
+					:loading="this.$resources.enableAutoUpdate.loading"
+					>Enable Auto Updates</Button
+				>
+			</div>
+
+			<!-- Loading Spinner button -->
+			<div
+				v-if="$resources.getSiteAutoUpdateInfo.loading"
+				class="py-10 text-center"
+			>
+				<Button :loading="true">Loading</Button>
 			</div>
 		</Card>
 	</div>
@@ -50,24 +117,53 @@
 export default {
 	name: 'SiteAutoUpdate',
 	props: ['site'],
-	data: {
-		autoUpdateEnabled: false,
-		updateFrequency: '',
-		weekDay: 'Sunday',
-		monthDay: '',
-		endOfMonth: false,
-		updateTime: ''
+	data() {
+		return {
+			autoUpdateEnabled: null,
+			lastTriggeredAt: null,
+			updateFrequency: '',
+			weekDay: '',
+			monthDay: '',
+			endOfMonth: false,
+			updateTime: ''
+		};
 	},
 	resources: {
 		getSiteAutoUpdateInfo() {
 			return {
-				method: 'press.api.site.set_auto_update_info'
+				method: 'press.api.site.get_auto_update_info',
+				params: {
+					name: this.site.name
+				},
+				auto: true,
+				onSuccess(data) {
+					this.autoUpdateEnabled = data.auto_updates_scheduled;
+					this.updateFrequency = data.update_trigger_frequency;
+					this.weekDay = data.update_on_weekday;
+					this.endOfMonth = data.update_end_of_month;
+					this.monthDay = data.update_on_day_of_month;
+					this.lastTriggeredAt = data.auto_update_last_triggered_on;
+					this.updateTime = data.update_trigger_time;
+				}
+			};
+		},
+		enableAutoUpdate() {
+			return {
+				method: 'press.api.site.enable_auto_update',
+				params: {
+					name: this.site.name
+				},
+				onSuccess() {
+					this.$resources.getSiteAutoUpdateInfo.fetch();
+				}
 			};
 		}
 	},
-    mounted() {
-        this.autoUpdateEnabled = this.site.auto_updates_scheduled;
-    },
+	methods: {
+		enableAutoUpdate() {
+			this.$resources.enableAutoUpdate.submit();
+		}
+	},
 	computed: {
 		frequencyOptions() {
 			return ['Daily', 'Weekly', 'Monthly'];
