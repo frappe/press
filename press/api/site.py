@@ -1059,7 +1059,7 @@ def get_auto_update_info(name):
 
 @frappe.whitelist()
 @protected("Site")
-def set_auto_update_info(name, info):
+def update_auto_update_info(name, info=dict()):
 	site_doc = frappe.get_doc("Site", name, for_update=True)
 	site_doc.update(info)
 	site_doc.save()
