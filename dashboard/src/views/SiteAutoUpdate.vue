@@ -2,67 +2,35 @@
 	<div class="md:grid md:grid-cols-2">
 		<Card title="Schedule Site Auto Updates">
 			<template #actions>
-				<Button icon-left="edit">Edit</Button>
+				<Button icon-left="edit" @click="showEditDialog = true">Edit</Button>
 			</template>
-			<!-- <div class="space-y-4">
-				<Input
-					type="checkbox"
-					label="Enable Site Auto Update"
-					v-model="autoUpdateEnabled"
-				/>
-				<Input
-					type="select"
-					label="Update Frequency"
-					:options="frequencyOptions"
-					v-model="updateFrequency"
-				/>
-				<div>
-					<Input
-						type="select"
-						label="Day of the week"
-						:options="weekDayOptions"
-						v-model="weekDay"
-					/>
-				</div>
-				<Input
-					type="select"
-					:options="monthDayOptions"
-					label="Day of the month"
-					v-model="monthDay"
-				/>
-				<Input
-					type="checkbox"
-					label="Update end of month"
-					v-model="endOfMonth"
-				/>
-				<Input
-					type="select"
-					:options="timeOptions"
-					label="Update time"
-					v-model="updateTime"
-				/>
-			</div> -->
 
 			<div
 				class="divide-y-2"
 				v-if="!$resources.getSiteAutoUpdateInfo.loading && autoUpdateEnabled"
 			>
-				<ListItem title="Trigger Frequency" :description="updateFrequency" />
+				<ListItem
+					title="Trigger Frequency"
+					:description="siteAutoUpdateInfo.update_trigger_frequency"
+				/>
 
 				<!-- For weekly updates only -->
 				<ListItem
-					v-if="updateFrequency === 'Weekly'"
+					v-if="siteAutoUpdateInfo.update_trigger_frequency === 'Weekly'"
 					title="Trigger on Weekday"
-					:description="weekDay"
+					:description="siteAutoUpdateInfo.update_on_weekday"
 				/>
 
-				<ListItem title="Trigger Time" :description="updateTime" />
+				<ListItem
+					title="Trigger Time"
+					:description="siteAutoUpdateInfo.update_trigger_time"
+				/>
 
 				<!-- Last triggered At -->
 				<ListItem
-					v-if="lastTriggeredAt"
+					v-if="siteAutoUpdateInfo.auto_update_last_triggered_on"
 					title="Last Triggered At"
-					:description="lastTriggeredAt"
+					:description="siteAutoUpdateInfo.auto_update_last_triggered_on"
 				/>
 				<ListItem
 					v-else
@@ -71,11 +39,11 @@
 				/>
 
 				<!-- Day of month description -->
-				<div v-if="updateFrequency === 'Monthly'">
+				<div v-if="siteAutoUpdateInfo.update_trigger_frequency === 'Monthly'">
 					<ListItem
-						v-if="!endOfMonth"
+						v-if="!siteAutoUpdateInfo.update_end_of_month"
 						title="Trigger on Month day"
-						:description="monthDay.toString()"
+						:description="siteAutoUpdateInfo.update_on_day_of_month.toString()"
 					/>
 					<ListItem
 						v-else
@@ -109,6 +77,60 @@
 			>
 				<Button :loading="true">Loading</Button>
 			</div>
+
+			<Dialog title="Schedule Auto Updates" v-model="showEditDialog">
+				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+					<Input
+						type="select"
+						label="Update Frequency"
+						:options="frequencyOptions"
+						v-model="updateFrequency"
+					/>
+
+					<Input
+						type="select"
+						:options="timeOptions"
+						label="Update time"
+						v-model="updateTime"
+					/>
+
+					<Input
+						v-if="updateFrequency === 'Weekly'"
+						type="select"
+						label="Day of the week"
+						:options="weekDayOptions"
+						v-model="weekDay"
+					/>
+
+					<Input
+						v-if="updateFrequency === 'Monthly'"
+						type="select"
+						:options="monthDayOptions"
+						label="Day of the month"
+						v-model="monthDay"
+					/>
+					<Input
+						v-if="updateFrequency === 'Monthly'"
+						type="checkbox"
+						label="Update end of month"
+						v-model="endOfMonth"
+					/>
+				</div>
+				<ErrorMessage
+					class="mt-4"
+					:error="$resources.updateAutoUpdateInfo.error"
+				/>
+				<template #actions>
+					<Button
+						type="primary"
+						:loading="$resources.updateAutoUpdateInfo.loading"
+						loadingText="Saving..."
+						@click="$resources.updateAutoUpdateInfo.submit()"
+					>
+						Save changes
+					</Button>
+				</template>
+			</Dialog>
 		</Card>
 	</div>
 </template>
@@ -125,7 +147,8 @@ export default {
 			weekDay: '',
 			monthDay: '',
 			endOfMonth: false,
-			updateTime: ''
+			updateTime: '',
+			showEditDialog: false
 		};
 	},
 	resources: {
@@ -157,6 +180,19 @@ export default {
 					this.$resources.getSiteAutoUpdateInfo.fetch();
 				}
 			};
+		},
+		updateAutoUpdateInfo() {
+			return {
+				method: 'press.api.site.update_auto_update_info',
+				params: {
+					name: this.site.name,
+					info: {}
+				},
+				onSuccess(data) {
+					this.showEditDialog = false;
+					this.$resources.getSiteAutoUpdateInfo.fetch();
+				}
+			};
 		}
 	},
 	methods: {
@@ -165,6 +201,14 @@ export default {
 		}
 	},
 	computed: {
+		siteAutoUpdateInfo() {
+			if (
+				!this.$resources.getSiteAutoUpdateInfo.loading &&
+				this.$resources.getSiteAutoUpdateInfo.data
+			) {
+				return this.$resources.getSiteAutoUpdateInfo.data;
+			}
+		},
 		frequencyOptions() {
 			return ['Daily', 'Weekly', 'Monthly'];
 		},
