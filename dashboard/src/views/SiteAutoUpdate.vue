@@ -23,7 +23,9 @@
 
 				<ListItem
 					title="Trigger Time"
-					:description="siteAutoUpdateInfo.update_trigger_time"
+					:description="
+						getFormattedTime(siteAutoUpdateInfo.update_trigger_time)
+					"
 				/>
 
 				<!-- Last triggered At -->
@@ -113,6 +115,7 @@
 						v-if="updateFrequency === 'Monthly'"
 						type="checkbox"
 						label="Update end of month"
+						:checked="endOfMonth"
 						v-model="endOfMonth"
 					/>
 				</div>
@@ -166,7 +169,7 @@ export default {
 					this.endOfMonth = data.update_end_of_month;
 					this.monthDay = data.update_on_day_of_month;
 					this.lastTriggeredAt = data.auto_update_last_triggered_on;
-					this.updateTime = data.update_trigger_time;
+					this.updateTime = this.getFormattedTime(data.update_trigger_time);
 				}
 			};
 		},
@@ -186,9 +189,17 @@ export default {
 				method: 'press.api.site.update_auto_update_info',
 				params: {
 					name: this.site.name,
-					info: {}
+					info: {
+						auto_updates_scheduled: this.autoUpdateEnabled,
+						update_trigger_frequency: this.updateFrequency,
+						update_on_weekday: this.weekDay,
+						update_end_of_month: this.endOfMonth,
+						update_on_day_of_month: this.monthDay,
+						auto_update_last_triggered_on: this.lastTriggeredAt,
+						update_trigger_time: this.updateTime
+					}
 				},
-				onSuccess(data) {
+				onSuccess() {
 					this.showEditDialog = false;
 					this.$resources.getSiteAutoUpdateInfo.fetch();
 				}
@@ -198,6 +209,10 @@ export default {
 	methods: {
 		enableAutoUpdate() {
 			this.$resources.enableAutoUpdate.submit();
+		},
+		getFormattedTime(timeStringFromServer) {
+			let timeParts = timeStringFromServer.split(':').slice(0, 2);
+			return timeParts[0].padStart(2, '0') + ':' + timeParts[1];
 		}
 	},
 	computed: {
