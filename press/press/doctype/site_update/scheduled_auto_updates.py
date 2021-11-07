@@ -12,7 +12,7 @@ from frappe.utils import get_time, get_datetime
 
 def trigger():
 	"""Will be triggered every 30 minutes"""
-	# Get all ["Active", "Inactive"] sites 
+	# Get all ["Active", "Inactive"] sites
 	# with auto updates scheduled
 	sites_with_scheduled_updates = frappe.get_all(
 		"Site",
@@ -74,9 +74,13 @@ def should_update_trigger(doc):
 
 def should_update_trigger_for_daily(doc, current_datetime=get_datetime()):
 	"""Takes `current_datetime` to make testing easier."""
-	if doc.auto_update_last_triggered_on.date() == current_datetime.date() and get_time(
-		doc.update_trigger_time
-	) <= get_time(doc.auto_update_last_triggered_on):
+	auto_update_last_triggered_on = doc.auto_update_last_triggered_on
+
+	if (
+		auto_update_last_triggered_on
+		and auto_update_last_triggered_on.date() == current_datetime.date()
+		and get_time(doc.update_trigger_time) <= get_time(auto_update_last_triggered_on)
+	):
 		return False
 	elif get_time(doc.update_trigger_time) <= get_time(current_datetime):
 		return True
@@ -89,10 +93,14 @@ def should_update_trigger_for_weekly(doc, current_datetime=get_datetime()):
 	if doc.update_on_weekday != current_datetime.strftime("%A"):
 		return False
 
+	auto_update_last_triggered_on = doc.auto_update_last_triggered_on
+
 	# Today is `update_on_weekday`
-	if doc.auto_update_last_triggered_on.date() == current_datetime.date() and get_time(
-		doc.update_trigger_time
-	) <= get_time(doc.auto_update_last_triggered_on):
+	if (
+		auto_update_last_triggered_on
+		and auto_update_last_triggered_on.date() == current_datetime.date()
+		and get_time(doc.update_trigger_time) <= get_time(auto_update_last_triggered_on)
+	):
 		return False
 
 	if get_time(doc.update_trigger_time) <= get_time(current_datetime):
@@ -111,9 +119,13 @@ def should_update_trigger_for_monthly(doc, current_datetime=get_datetime()):
 	if on_day_of_month != current_datetime.day:
 		return False
 
-	if doc.auto_update_last_triggered_on.date() == current_datetime.date() and get_time(
-		doc.update_trigger_time
-	) <= get_time(doc.auto_update_last_triggered_on):
+	auto_update_last_triggered_on = doc.auto_update_last_triggered_on
+
+	if (
+		auto_update_last_triggered_on
+		and auto_update_last_triggered_on.date() == current_datetime.date()
+		and get_time(doc.update_trigger_time) <= get_time(auto_update_last_triggered_on)
+	):
 		return False
 
 	if get_time(doc.update_trigger_time) <= get_time(current_datetime):
