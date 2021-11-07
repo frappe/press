@@ -14,7 +14,7 @@ def trigger():
 	"""Will be triggered every 30 minutes"""
 	# Get all ["Active", "Inactive"] sites
 	# Trigger "Daily" frequency sites
-	sites_with_daily_scheduled_updates = frappe.get_all(
+	sites_with_scheduled_updates = frappe.get_all(
 		"Site",
 		filters={"status": ("in", ("Active", "Inactive")), "auto_updates_scheduled": True},
 		fields=[
@@ -29,7 +29,7 @@ def trigger():
 	)
 
 	trigger_for_sites = list(
-		filter(sites_with_daily_scheduled_updates, should_update_trigger)
+		filter(sites_with_scheduled_updates, should_update_trigger)
 	)
 
 	for site in trigger_for_sites:
