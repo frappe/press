@@ -2,7 +2,12 @@
 	<div class="md:grid md:grid-cols-2">
 		<Card title="Schedule Site Auto Updates">
 			<template #actions>
-				<Button icon-left="edit" @click="showEditDialog = true">Edit</Button>
+				<Button
+					v-if="!$resources.getSiteAutoUpdateInfo.loading && autoUpdateEnabled"
+					icon-left="edit"
+					@click="showEditDialog = true"
+					>Edit</Button
+				>
 			</template>
 
 			<div
