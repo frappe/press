@@ -88,34 +88,6 @@ class TestScheduledAutoUpdates(TestCase):
 				should_update_trigger_for_monthly(frappe._dict(obj), obj["current_datetime"]), obj
 			)
 
-	def test_false_last_triggered_is_none(self):
-		TEST_DATA_DAILY_FALSE_WITH_NONE = list(
-			map(set_last_triggered_to_none, TEST_DATA_DAILY_FALSE)
-		)
-
-		TEST_DATA_WEEKLY_FALSE_WITH_NONE = list(
-			map(set_last_triggered_to_none, TEST_DATA_WEEKLY_FALSE)
-		)
-
-		TEST_DATA_MONTHLY_FALSE_WITH_NONE = list(
-			map(set_last_triggered_to_none, TEST_DATA_MONTHLY_FALSE)
-		)
-
-		for obj in TEST_DATA_DAILY_FALSE_WITH_NONE:
-			self.assertFalse(
-				should_update_trigger_for_daily(frappe._dict(obj), obj["current_datetime"]), obj
-			)
-
-		for obj in TEST_DATA_WEEKLY_FALSE_WITH_NONE:
-			self.assertFalse(
-				should_update_trigger_for_weekly(frappe._dict(obj), obj["current_datetime"]), obj
-			)
-
-		for obj in TEST_DATA_MONTHLY_FALSE_WITH_NONE:
-			self.assertFalse(
-				should_update_trigger_for_monthly(frappe._dict(obj), obj["current_datetime"]), obj
-			)
-
 
 def set_last_triggered_to_none(obj):
 	obj_copy = dict(obj)
