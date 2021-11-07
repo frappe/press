@@ -211,6 +211,7 @@ export default {
 			this.$resources.enableAutoUpdate.submit();
 		},
 		getFormattedTime(timeStringFromServer) {
+			// E.g. "8:19:00" --> "08:19"
 			let timeParts = timeStringFromServer.split(':').slice(0, 2);
 			return timeParts[0].padStart(2, '0') + ':' + timeParts[1];
 		}
