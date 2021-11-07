@@ -1041,6 +1041,15 @@ def enable_auto_update(name):
 
 @frappe.whitelist()
 @protected("Site")
+def disable_auto_update(name):
+	site_doc = frappe.get_doc("Site", name)
+	if site_doc.auto_updates_scheduled:
+		site_doc.auto_updates_scheduled = False
+		site_doc.save()
+
+
+@frappe.whitelist()
+@protected("Site")
 def get_auto_update_info(name):
 	site_doc = frappe.get_doc("Site", name)
 
