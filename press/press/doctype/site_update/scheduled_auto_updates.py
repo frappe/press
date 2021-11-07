@@ -28,11 +28,18 @@ def trigger():
 		],
 	)
 
-	trigger_for_sites = list(
-		filter(sites_with_scheduled_updates, should_update_trigger)
-	)
+	trigger_for_sites = list(filter(sites_with_scheduled_updates, should_update_trigger))
 
 	for site in trigger_for_sites:
+		auto_update_log = frappe.get_doc(
+			{
+				"doctype": "Scheduled Auto Update Log",
+				"document_type": "Site",
+				"document_name": site.name,
+				"status": "Success",
+			}
+		)
+
 		try:
 			site_doc = frappe.get_doc("Site", site.name)
 			site_doc.schedule_update()
@@ -40,7 +47,14 @@ def trigger():
 			site_doc.save()
 		except Exception:
 			traceback = "<pre><code>" + frappe.get_traceback() + "</pre></code>"
+
+			# Update log doc
+			auto_update_log.status = "Failed"
+			auto_update_log.error = traceback
+
 			log_error("Scheduled Auto Update Failed", site=site, traceback=traceback)
+		finally:
+			auto_update_log.insert(ignore_permissions=True)
 
 
 def should_update_trigger(doc):
