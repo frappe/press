@@ -109,7 +109,7 @@
 						type="select"
 						:options="monthDayOptions"
 						label="Day of the month"
-						v-model="monthDay"
+						v-model.number="monthDay"
 					/>
 					<Input
 						v-if="updateFrequency === 'Monthly'"
