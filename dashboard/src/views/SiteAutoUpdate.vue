@@ -68,6 +68,7 @@
 					type="primary"
 					@click="enableAutoUpdate"
 					:loading="this.$resources.enableAutoUpdate.loading"
+					loadingText="Enabling"
 					>Enable Auto Updates</Button
 				>
 			</div>
@@ -81,6 +82,17 @@
 			</div>
 
 			<Dialog title="Schedule Auto Updates" v-model="showEditDialog">
+				<!-- Disable Button -->
+				<Button
+					class="mb-4"
+					type="danger"
+					@click="disableAutoUpdate"
+					:loading="$resources.disableAutoUpdate.loading"
+					loadingText="Disabling"
+					>Disable Auto Updates</Button
+				>
+
+				<!-- Edit From -->
 				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 					<Input
 						type="select"
@@ -121,6 +133,11 @@
 				</div>
 				<ErrorMessage
 					class="mt-4"
+					:error="$resources.disableAutoUpdate.error"
+				/>
+
+				<ErrorMessage
+					class="mt-4"
 					:error="$resources.updateAutoUpdateInfo.error"
 				/>
 				<template #actions>
@@ -134,6 +151,12 @@
 					</Button>
 				</template>
 			</Dialog>
+
+			<h4 class="mt-2 text-base text-gray-600">
+				<strong>Note:</strong> All times are in UTC.
+			</h4>
+
+			<ErrorMessage class="mt-4" :error="$resources.enableAutoUpdate.error" />
 		</Card>
 	</div>
 </template>
@@ -184,6 +207,18 @@ export default {
 				}
 			};
 		},
+		disableAutoUpdate() {
+			return {
+				method: 'press.api.site.disable_auto_update',
+				params: {
+					name: this.site.name
+				},
+				onSuccess() {
+					this.showEditDialog = false;
+					this.$resources.getSiteAutoUpdateInfo.fetch();
+				}
+			};
+		},
 		updateAutoUpdateInfo() {
 			return {
 				method: 'press.api.site.update_auto_update_info',
@@ -209,6 +244,9 @@ export default {
 	methods: {
 		enableAutoUpdate() {
 			this.$resources.enableAutoUpdate.submit();
+		},
+		disableAutoUpdate() {
+			this.$resources.disableAutoUpdate.submit();
 		},
 		getFormattedTime(timeStringFromServer) {
 			// E.g. "8:19:00" --> "08:19"
