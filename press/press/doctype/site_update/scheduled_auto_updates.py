@@ -8,6 +8,7 @@ from calendar import monthrange
 from press.utils import log_error
 from frappe.utils import now_datetime
 from frappe.utils import get_time, get_datetime
+from press.press.doctype.site_update.site_update import benches_with_available_update
 
 
 def trigger():
@@ -16,7 +17,14 @@ def trigger():
 	# with auto updates scheduled
 	sites_with_scheduled_updates = frappe.get_all(
 		"Site",
-		filters={"status": ("in", ("Active", "Inactive")), "auto_updates_scheduled": True},
+		filters={
+			"status": ("in", ("Active", "Inactive")),
+			"auto_updates_scheduled": True,
+			"bench": (
+				"in",
+				benches_with_available_update(),  # An update should be available for this site
+			),
+		},
 		fields=[
 			"name",
 			"auto_update_last_triggered_on",
