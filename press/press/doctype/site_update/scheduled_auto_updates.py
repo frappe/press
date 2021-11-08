@@ -48,6 +48,9 @@ def trigger():
 			}
 		)
 
+		# Set the frequency details in log
+		set_schedule_details(auto_update_log, site)
+
 		try:
 			site_doc = frappe.get_doc("Site", site.name)
 			site_doc.schedule_update()
@@ -144,3 +147,14 @@ def should_update_trigger_for_monthly(doc, current_datetime=get_datetime()):
 
 def get_last_day_of_month(year, month):
 	return monthrange(year, month)[1]
+
+
+def set_schedule_details(update_log_doc, doc):
+	update_log_doc.was_scheduled_for_frequency = doc.update_trigger_frequency
+	update_log_doc.was_scheduled_for_time = doc.update_trigger_time
+
+	if doc.update_trigger_frequency == "Weekly":
+		update_log_doc.was_scheduled_for_day = doc.update_on_weekday
+	elif doc.update_trigger_frequency == "Monthly":
+		update_log_doc.was_scheduled_for_month_day = str(doc.update_on_day_of_month)
+		update_log_doc.was_scheduled_for_month_end = doc.update_end_of_month
