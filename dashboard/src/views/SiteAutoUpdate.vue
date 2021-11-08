@@ -16,7 +16,9 @@
 			>
 				<ListItem
 					title="Trigger Frequency"
-					:description="siteAutoUpdateInfo.update_trigger_frequency"
+					:description="
+						siteAutoUpdateInfo.update_trigger_frequency || 'Not Set'
+					"
 				/>
 
 				<!-- For weekly updates only -->
@@ -29,7 +31,8 @@
 				<ListItem
 					title="Trigger Time"
 					:description="
-						getFormattedTime(siteAutoUpdateInfo.update_trigger_time)
+						getFormattedTime(siteAutoUpdateInfo.update_trigger_time) ||
+							'Not Set'
 					"
 				/>
 
@@ -254,6 +257,9 @@ export default {
 			this.$resources.disableAutoUpdate.submit();
 		},
 		getFormattedTime(timeStringFromServer) {
+			if (!timeStringFromServer) {
+				return;
+			}
 			// E.g. "8:19:00" --> "08:19"
 			let timeParts = timeStringFromServer.split(':').slice(0, 2);
 			return timeParts[0].padStart(2, '0') + ':' + timeParts[1];
