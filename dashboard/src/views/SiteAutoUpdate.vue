@@ -1,6 +1,6 @@
 <template>
 	<div class="md:grid md:grid-cols-2">
-		<Card title="Schedule Site Auto Updates">
+		<Card title="Auto Update">
 			<template #actions>
 				<Button
 					v-if="!$resources.getSiteAutoUpdateInfo.loading && autoUpdateEnabled"
@@ -15,7 +15,7 @@
 				v-if="!$resources.getSiteAutoUpdateInfo.loading && autoUpdateEnabled"
 			>
 				<ListItem
-					title="Trigger Frequency"
+					title="Update cycle"
 					:description="
 						siteAutoUpdateInfo.update_trigger_frequency || 'Not Set'
 					"
@@ -24,43 +24,43 @@
 				<!-- For weekly updates only -->
 				<ListItem
 					v-if="siteAutoUpdateInfo.update_trigger_frequency === 'Weekly'"
-					title="Trigger on Weekday"
+					title="On day of the week"
 					:description="siteAutoUpdateInfo.update_on_weekday"
 				/>
 
 				<ListItem
-					title="Trigger Time"
+					title="Update time"
 					:description="
 						getFormattedTime(siteAutoUpdateInfo.update_trigger_time) ||
 							'Not Set'
 					"
 				/>
 
-				<!-- Last triggered At -->
-				<ListItem
-					v-if="siteAutoUpdateInfo.auto_update_last_triggered_on"
-					title="Last Triggered At"
-					:description="siteAutoUpdateInfo.auto_update_last_triggered_on"
-				/>
-				<ListItem
-					v-else
-					title="Last Triggered At"
-					description="Never triggered"
-				/>
-
 				<!-- Day of month description -->
 				<div v-if="siteAutoUpdateInfo.update_trigger_frequency === 'Monthly'">
 					<ListItem
 						v-if="!siteAutoUpdateInfo.update_end_of_month"
-						title="Trigger on Month day"
+						title="On day of the month"
 						:description="siteAutoUpdateInfo.update_on_day_of_month.toString()"
 					/>
 					<ListItem
 						v-else
-						title="Trigger on Month day"
-						description="End of month"
+						title="On day of the month"
+						description="End of the month"
 					/>
 				</div>
+
+				<!-- Last triggered At -->
+				<ListItem
+					v-if="siteAutoUpdateInfo.auto_update_last_triggered_on"
+					title="Last updated on"
+					:description="siteAutoUpdateInfo.auto_update_last_triggered_on"
+				/>
+				<ListItem
+					v-else
+					title="Last updated on"
+					description="Never triggered"
+				/>
 			</div>
 
 			<!-- If updates are not enabled, show button -->
