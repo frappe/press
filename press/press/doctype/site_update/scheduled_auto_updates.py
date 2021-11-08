@@ -36,7 +36,7 @@ def trigger():
 		],
 	)
 
-	trigger_for_sites = list(filter(sites_with_scheduled_updates, should_update_trigger))
+	trigger_for_sites = list(filter(should_update_trigger, sites_with_scheduled_updates))
 
 	for site in trigger_for_sites:
 		auto_update_log = frappe.get_doc(
