@@ -1,171 +1,183 @@
 <template>
-	<div class="md:grid md:grid-cols-2">
-		<Card title="Auto Update">
-			<template #actions>
-				<Button
-					v-if="!$resources.getSiteAutoUpdateInfo.loading && autoUpdateEnabled"
-					icon-left="edit"
-					@click="showEditDialog = true"
-					>Edit</Button
-				>
-			</template>
-
-			<div
-				class="divide-y-2"
-				v-if="!$resources.getSiteAutoUpdateInfo.loading && autoUpdateEnabled"
-			>
-				<ListItem
-					title="Update cycle"
-					:description="
-						siteAutoUpdateInfo.update_trigger_frequency || 'Not Set'
-					"
-				/>
-
-				<!-- For weekly updates only -->
-				<ListItem
-					v-if="siteAutoUpdateInfo.update_trigger_frequency === 'Weekly'"
-					title="On day of the week"
-					:description="siteAutoUpdateInfo.update_on_weekday"
-				/>
-
-				<ListItem
-					title="Update time"
-					:description="
-						getFormattedTime(siteAutoUpdateInfo.update_trigger_time) ||
-							'Not Set'
-					"
-				/>
-
-				<!-- Day of month description -->
-				<div v-if="siteAutoUpdateInfo.update_trigger_frequency === 'Monthly'">
-					<ListItem
-						v-if="!siteAutoUpdateInfo.update_end_of_month"
-						title="On day of the month"
-						:description="siteAutoUpdateInfo.update_on_day_of_month.toString()"
-					/>
-					<ListItem
-						v-else
-						title="On day of the month"
-						description="End of the month"
-					/>
-				</div>
-
-				<!-- Last triggered At -->
-				<ListItem
-					v-if="siteAutoUpdateInfo.auto_update_last_triggered_on"
-					title="Last updated on"
-					:description="siteAutoUpdateInfo.auto_update_last_triggered_on"
-				/>
-				<ListItem
-					v-else
-					title="Last updated on"
-					description="Never triggered"
-				/>
-			</div>
-
-			<!-- If updates are not enabled, show button -->
-			<div
-				class="py-10 text-center"
-				v-if="!$resources.getSiteAutoUpdateInfo.loading && !autoUpdateEnabled"
-			>
-				<h3 class="text-sm text-gray-800">
-					Auto updates are disabled for this site.
-				</h3>
-				<Button
-					class="mt-3"
-					type="primary"
-					@click="enableAutoUpdate"
-					:loading="this.$resources.enableAutoUpdate.loading"
-					loadingText="Enabling"
-					>Enable Auto Updates</Button
-				>
-			</div>
-
-			<!-- Loading Spinner button -->
-			<div
-				v-if="$resources.getSiteAutoUpdateInfo.loading"
-				class="py-10 text-center"
-			>
-				<Button :loading="true">Loading</Button>
-			</div>
-
-			<Dialog title="Schedule Auto Updates" v-model="showEditDialog">
-				<!-- Disable Button -->
-				<Button
-					class="mb-4"
-					type="danger"
-					@click="disableAutoUpdate"
-					:loading="$resources.disableAutoUpdate.loading"
-					loadingText="Disabling"
-					>Disable Auto Updates</Button
-				>
-
-				<!-- Edit From -->
-				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-					<Input
-						type="select"
-						label="Update Frequency"
-						:options="frequencyOptions"
-						v-model="updateFrequency"
-					/>
-
-					<Input
-						type="select"
-						:options="timeOptions"
-						label="Update time"
-						v-model="updateTime"
-					/>
-
-					<Input
-						v-if="updateFrequency === 'Weekly'"
-						type="select"
-						label="Day of the week"
-						:options="weekDayOptions"
-						v-model="weekDay"
-					/>
-
-					<Input
-						v-if="updateFrequency === 'Monthly'"
-						type="select"
-						:options="monthDayOptions"
-						label="Day of the month"
-						v-model.number="monthDay"
-					/>
-					<Input
-						v-if="updateFrequency === 'Monthly'"
-						type="checkbox"
-						label="Update end of month"
-						:checked="endOfMonth"
-						v-model="endOfMonth"
-					/>
-				</div>
-				<ErrorMessage
-					class="mt-4"
-					:error="$resources.disableAutoUpdate.error"
-				/>
-
-				<ErrorMessage
-					class="mt-4"
-					:error="$resources.updateAutoUpdateInfo.error"
-				/>
+	<div>
+		<div v-if="!$resources.getSiteAutoUpdateInfo.loading && !autoUpdateEnabled">
+			<Alert title="Auto updates are disabled for this site.">
 				<template #actions>
 					<Button
 						type="primary"
-						:loading="$resources.updateAutoUpdateInfo.loading"
-						loadingText="Saving..."
-						@click="$resources.updateAutoUpdateInfo.submit()"
+						@click="enableAutoUpdate"
+						:loading="$resources.enableAutoUpdate.loading"
+						loadingText="Enabling"
+						>Enable</Button
 					>
-						Save changes
-					</Button>
 				</template>
-			</Dialog>
+			</Alert>
+		</div>
+		<div v-else class="md:grid md:grid-cols-2">
+			<Card title="Auto Update">
+				<template
+					#actions
+					v-if="!$resources.getSiteAutoUpdateInfo.loading && autoUpdateEnabled"
+				>
+					<!-- Disable Button -->
+					<Button
+						@click="disableAutoUpdate"
+						:loading="$resources.disableAutoUpdate.loading"
+						loadingText="Disabling"
+						>Disable Auto Updates</Button
+					>
+					<Button icon-left="edit" @click="showEditDialog = true">Edit</Button>
+				</template>
 
-			<h4 class="mt-2 text-base text-gray-600">
-				<strong>Note:</strong> All times are in IST (UTC + 5:30 hours).
-			</h4>
+				<div
+					class="divide-y-2"
+					v-if="!$resources.getSiteAutoUpdateInfo.loading && autoUpdateEnabled"
+				>
+					<ListItem
+						title="Update cycle"
+						:description="
+							siteAutoUpdateInfo.update_trigger_frequency || 'Not Set'
+						"
+					/>
 
-			<ErrorMessage class="mt-4" :error="$resources.enableAutoUpdate.error" />
-		</Card>
+					<!-- For weekly updates only -->
+					<ListItem
+						v-if="siteAutoUpdateInfo.update_trigger_frequency === 'Weekly'"
+						title="On day of the week"
+						:description="siteAutoUpdateInfo.update_on_weekday"
+					/>
+
+					<ListItem
+						title="Update time"
+						:description="
+							getFormattedTime(siteAutoUpdateInfo.update_trigger_time) ||
+								'Not Set'
+						"
+					/>
+
+					<!-- Day of month description -->
+					<div v-if="siteAutoUpdateInfo.update_trigger_frequency === 'Monthly'">
+						<ListItem
+							v-if="!siteAutoUpdateInfo.update_end_of_month"
+							title="On day of the month"
+							:description="
+								siteAutoUpdateInfo.update_on_day_of_month.toString()
+							"
+						/>
+						<ListItem
+							v-else
+							title="On day of the month"
+							description="End of the month"
+						/>
+					</div>
+
+					<!-- Last triggered At -->
+					<ListItem
+						v-if="siteAutoUpdateInfo.auto_update_last_triggered_on"
+						title="Last updated on"
+						:description="siteAutoUpdateInfo.auto_update_last_triggered_on"
+					/>
+					<ListItem
+						v-else
+						title="Last updated on"
+						description="Never triggered"
+					/>
+				</div>
+
+				<!-- If updates are not enabled, show button -->
+				<div
+					class="py-10 text-center"
+					v-if="!$resources.getSiteAutoUpdateInfo.loading && !autoUpdateEnabled"
+				>
+					<h3 class="text-sm text-gray-800">
+						Auto updates are disabled for this site.
+					</h3>
+					<Button
+						class="mt-3"
+						type="primary"
+						@click="enableAutoUpdate"
+						:loading="this.$resources.enableAutoUpdate.loading"
+						loadingText="Enabling"
+						>Enable Auto Updates</Button
+					>
+				</div>
+
+				<!-- Loading Spinner button -->
+				<div
+					v-if="$resources.getSiteAutoUpdateInfo.loading"
+					class="py-10 text-center"
+				>
+					<Button :loading="true">Loading</Button>
+				</div>
+
+				<Dialog title="Schedule Auto Updates" v-model="showEditDialog">
+					<!-- Edit From -->
+					<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+						<Input
+							type="select"
+							label="Update Frequency"
+							:options="frequencyOptions"
+							v-model="updateFrequency"
+						/>
+
+						<Input
+							type="select"
+							:options="timeOptions"
+							label="Update time"
+							v-model="updateTime"
+						/>
+
+						<Input
+							v-if="updateFrequency === 'Weekly'"
+							type="select"
+							label="Day of the week"
+							:options="weekDayOptions"
+							v-model="weekDay"
+						/>
+
+						<Input
+							v-if="updateFrequency === 'Monthly'"
+							type="select"
+							:options="monthDayOptions"
+							label="Day of the month"
+							v-model.number="monthDay"
+						/>
+						<Input
+							v-if="updateFrequency === 'Monthly'"
+							type="checkbox"
+							label="Update end of month"
+							:checked="endOfMonth"
+							v-model="endOfMonth"
+						/>
+					</div>
+					<ErrorMessage
+						class="mt-4"
+						:error="$resources.disableAutoUpdate.error"
+					/>
+
+					<ErrorMessage
+						class="mt-4"
+						:error="$resources.updateAutoUpdateInfo.error"
+					/>
+					<template #actions>
+						<Button
+							type="primary"
+							:loading="$resources.updateAutoUpdateInfo.loading"
+							loadingText="Saving..."
+							@click="$resources.updateAutoUpdateInfo.submit()"
+						>
+							Save changes
+						</Button>
+					</template>
+				</Dialog>
+
+				<h4 class="mt-2 text-base text-gray-600">
+					<strong>Note:</strong> All times are in IST (UTC + 5:30 hours).
+				</h4>
+
+				<ErrorMessage class="mt-4" :error="$resources.enableAutoUpdate.error" />
+			</Card>
+		</div>
 	</div>
 </template>
 
