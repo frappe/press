@@ -161,7 +161,7 @@
 			</Dialog>
 
 			<h4 class="mt-2 text-base text-gray-600">
-				<strong>Note:</strong> All times are in UTC.
+				<strong>Note:</strong> All times are in IST (UTC + 5:30 hours).
 			</h4>
 
 			<ErrorMessage class="mt-4" :error="$resources.enableAutoUpdate.error" />
