@@ -43,6 +43,7 @@ class Site(Document):
 		self.validate_installed_apps()
 		self.validate_host_name()
 		self.validate_site_config()
+		self.validate_auto_update_fields()
 
 	def before_insert(self):
 		# initialize site.config based on plan
@@ -103,6 +104,11 @@ class Site(Document):
 		# create an agent request if config has been updated
 		# if not self.is_new() and self.has_value_changed("config"):
 		# 	Agent(self.server).update_site_config(self)
+
+	def validate_auto_update_fields(self):
+		# Validate day of month
+		if not (1 <= self.update_on_day_of_month <= 31):
+			frappe.throw("Day of the month must be between 1 and 31 (included)!")
 
 	def on_update(self):
 		if self.status == "Active" and self.has_value_changed("host_name"):

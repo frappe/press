@@ -192,6 +192,7 @@ scheduler_events = {
 			"press.press.doctype.drip_email.drip_email.send_welcome_email",
 			"press.press.doctype.site.backups.schedule",
 		],
+		"*/30 * * * *": ["press.press.doctype.site_update.scheduled_auto_updates.trigger"],
 		"15,45 * * * *": [
 			"press.press.doctype.site.site_usages.update_cpu_usages",
 			"press.press.doctype.site.site_usages.update_disk_usages",
