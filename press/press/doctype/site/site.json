@@ -396,6 +396,7 @@
    "label": "Auto Update Last Triggered On"
   },
   {
+   "default": "Daily",
    "fieldname": "update_trigger_frequency",
    "fieldtype": "Select",
    "label": "Update Trigger Frequency",
@@ -425,6 +426,7 @@
    "non_negative": 1
   },
   {
+   "default": "15:30:00",
    "fieldname": "update_trigger_time",
    "fieldtype": "Time",
    "label": "Update Trigger Time"
@@ -487,7 +489,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2021-11-03 12:23:43.728836",
+ "modified": "2021-11-08 07:17:16.903390",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
