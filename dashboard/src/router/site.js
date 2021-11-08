@@ -72,6 +72,11 @@ export default [
 				path: 'request-logs',
 				component: () => import('../views/SiteRequestLogs.vue'),
 				props: true
+			},
+			{
+				path: 'auto-update',
+				component: () => import('../views/SiteAutoUpdate.vue'),
+				props: true
 			}
 		]
 	}
