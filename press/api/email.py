@@ -18,7 +18,7 @@ def validate_plan(team, site):
 	"""
 	check if subscription exists and if it's active
 	"""
-	# ToDo: Authentication
+	# ToDo: first_day should be the day subscription was enabled
 	active = frappe.db.get_all(
 		"QMail Subscription",
 		pluck="emails",
@@ -39,10 +39,37 @@ def validate_plan(team, site):
 	return False
 
 
-@frappe.whitelist(allow_guest=True)
-def change_subscription(**data):
-	# ToDo: delete/disable previous plan create and enable new plan
+def can_change_plan():
+	# ToDo:
+	# check unpaid invoices
+	# check if card is added and have enough balance
 	pass
+
+
+@frappe.whitelist(allow_guest=True)
+def change_plan(**data):
+	can_change_plan()
+	current_plan = frappe.db.get_all(
+		"QMail Subscription",
+		filters={"team": data["team"], "site": data["site"], "enabled": 1},
+	)
+
+	if current_plan:
+		doc = frappe.get_doc("QMail Subscription", current_plan[0]["name"])
+		doc.plan = data["plan"]
+		doc.save(ignore_permissions=True)
+		frappe.db.commit()
+	else:
+		frappe.get_doc(
+			{
+				"doctype": "QMail Subscription",
+				"team": data["team"],
+				"site": data["site"],
+				"plan": data["plan"],
+				"enabled": 1,
+			}
+		).insert(ignore_permissions=True)
+	return "Successful", 200
 
 
 @frappe.whitelist(allow_guest=True)
@@ -117,5 +144,4 @@ def event_log(**data):
 		}
 	).insert(ignore_permissions=True)
 
-	# ToDo: send a request to client app ?
 	return "Successful", 200
