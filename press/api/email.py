@@ -108,7 +108,7 @@ def send_mail(**data):
 			for file_name, bin_data in files.items():
 				attachments.append(("attachment", (file_name, bin_data)))
 
-		response = requests.post(
+		requests.post(
 			f"https://api.mailgun.net/v3/{domain}/messages",
 			auth=("api", f"{api_key}"),
 			files=attachments,
