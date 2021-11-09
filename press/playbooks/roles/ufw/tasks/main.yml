@@ -16,18 +16,27 @@
     to_port: https
     proto: tcp
 
+- name: Allow http from everywhere for proxy
+  ufw:
+    rule: allow
+    to_port: http
+    proto: tcp
+  when: is_proxy_server|bool
+
 - name: Allow http from proxy
   ufw:
     rule: allow
     from_ip: "{{ proxy_private_ip }}"
     to_port: http
     proto: tcp
+  when: is_server|bool and proxy_private_ip is defined
 
 - name: Allow mysql port 3306 connections
   ufw:
     rule: allow
     to_port: mysql
     proto: tcp
+  when: is_database_server|bool
 
 - name: Deny incoming by default
   ufw:
