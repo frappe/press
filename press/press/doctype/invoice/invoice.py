@@ -47,6 +47,11 @@ class Invoice(Document):
 		self.status = "Unpaid"
 
 		self.amount_due = self.total
+
+		if self.payment_mode == "Partner Credits":
+			self.apply_partner_credits()
+			return
+
 		self.apply_credit_balance()
 		if self.amount_due == 0:
 			self.status = "Paid"
@@ -349,6 +354,36 @@ class Invoice(Document):
 			)
 			doc.insert()
 			doc.submit()
+
+	def apply_partner_credits(self):
+		team = frappe.get_cached_doc("Team", self.team)
+
+		if not team.erpnext_partner:
+			frappe.throw(f"{self.team} is not a partner account. Cannot apply partner credits.")
+
+		client = self.get_frappeio_connection()
+		response = client.session.post(
+			f"{client.url}/api/method/consume_credits_against_fc_invoice",
+			data={
+				"invoice": self.as_json(),
+			},
+		)
+
+		if response.ok:
+			res = response.json()
+			partner_order = res.get("message")
+
+			if partner_order:
+				self.frappe_partner_order = partner_order
+				self.amount_paid = self.amount_due
+				self.status = "Paid"
+				self.save()
+				self.submit()
+		else:
+			self.add_comment(
+				text="Failed to pay via Partner credits" + "<br><br>" + response.text
+			)
+		
 
 	def apply_credit_balance(self):
 		balance = frappe.get_cached_doc("Team", self.team).get_balance()
