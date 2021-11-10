@@ -338,7 +338,7 @@ frappe.ui.form.on('Site', {
 
                     let apps = [];
                     for(let app of available_apps) {
-                        apps.push(app);
+                        apps.push(app.app);
                     }
                     if(apps.length > 0) {
                         new frappe.ui.form.MultiSelectDialog({
@@ -361,6 +361,8 @@ frappe.ui.form.on('Site', {
                                             name: frm.docname,
                                             app: selection
                                         }
+                                    }).then(() => {
+                                        window.location.reload();
                                     })
                                 }
                             }

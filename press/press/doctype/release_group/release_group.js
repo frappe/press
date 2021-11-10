@@ -270,7 +270,7 @@ frappe.ui.form.on('Release Group', {
 										source: app_source.name,
 										app: app_source.app
 									}
-								}).then((res) => {
+								}).then(() => {
 									window.location.reload();
 								})
 							}
