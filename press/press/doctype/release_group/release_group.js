@@ -74,7 +74,7 @@ frappe.ui.form.on('Release Group', {
 		let versions = remap(versions_res.message, (d) => {
 			return {
 				message: d.name,
-				tag: d.sites.length ? `${d.sites.length} sites`: 'Broken',
+				tag: `${d.sites.length} sites`,
 				tag_type: d.sites.length ? 'indicator-pill green' : 'indicator-pill red'
 			};
 		});
@@ -109,21 +109,29 @@ frappe.ui.form.on('Release Group', {
 			})
 		})
 		let deploys_log = remap(deploys_log_res.message, (d) => {
+			let tag_color = '';
+			if(d.status === 'Pending') tag_color = 'orange';
+			if(d.status === 'Failure') tag_color = 'red';
+			if(d.status === 'Undelivered') tag_color = 'gray';
 			return {
 				title: "Deploy on " + format_date_time(d.creation, 1, 1),
 				message: d.apps, // break this array into string
-				tag: d.status,
-				tag_type: "indicator-pill green",
+				tag: d.status === 'Success' ? '' : d.status,
+				tag_type: `${ d.status === 'Success' ? '' : ('indicator-pill ' + tag_color)}`,
 				name: d.name,
 				type: d.name
 			}
 		});
 		let jobs_log = remap(jobs_log_res.message, (d) => {
+			let tag_color = '';
+			if(d.status === 'Pending') tag_color = 'orange';
+			if(d.status === 'Failure') tag_color = 'red';
+			if(d.status === 'Undelivered') tag_color = 'gray';
 			return {
 				title: d.job_type,
 				message: d.end,
-				tag: d.status,
-				tag_type: "indicator-pill green",
+				tag: d.status === 'Success' ? '' : d.status,
+				tag_type: `${ d.status === 'Success' ? '' : ('indicator-pill ' + tag_color)}`,
 				name: d.name,
 				type: d.name
 			}

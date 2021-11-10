@@ -607,11 +607,15 @@ frappe.ui.form.on('Site', {
             }),
             onload: (jobs_res) => {
                 let jobs = remap(jobs_res.message, (d) => {
+                    let tag_color = '';
+                    if(d.status === 'Pending') tag_color = 'orange';
+                    if(d.status === 'Failure') tag_color = 'red';
+                    if(d.status === 'Undelivered') tag_color = 'gray';
                     return {
                         title: d.job_type,
                         message: format_date_time(d.creation, 1, 1),
-                        tag: d.status,
-                        tag_type: "indicator-pill green",
+                        tag: d.status === 'Success' ? '' : d.status,
+                        tag_type: `${ d.status === 'Success' ? '' : ('indicator-pill ' + tag_color)}`,        
                         name: d.name,
                         type: d.job_type,
                         duration: d.duration,
