@@ -14,7 +14,7 @@ class ReferralBonus(Document):
 			return
 
 		# Team hasn't spent any money yet
-		if not self.team_has_spent():
+		if not team_has_spent(self.for_team):
 			self.add_comment(
 				text="Cannot credit referral bonus. The team hasn't spent any money yet."
 			)
@@ -32,12 +32,24 @@ class ReferralBonus(Document):
 		self.save()
 		self.reload()
 
-	def team_has_spent(self):
-		"""Has the `for_team` spent any money yet (stripe)"""
-		return (
-			frappe.db.count(
-				"Invoice",
-				filters={"team": self.for_team, "status": "Paid", "transaction_amount": (">", 0)},
-			)
-			> 0
+
+def team_has_spent(team):
+	"""Has the `for_team` spent any money yet (stripe)"""
+	return (
+		frappe.db.count(
+			"Invoice", filters={"team": team, "status": "Paid", "transaction_amount": (">", 0)},
 		)
+		> 0
+	)
+
+
+def credit_referral_bonuses():
+	unallocated_referral_bonuses = frappe.get_all(
+		"Referral Bonus",
+		filters={"credits_allocated": False},
+		fields=["name", "for_team", "referred_by"],
+	)
+
+	for rb in unallocated_referral_bonuses:
+		if team_has_spent(rb.for_team):
+			frappe.get_doc("Referral Bonus", rb.name).allocate_credits()
