@@ -11,7 +11,6 @@ import dateutil.parser
 
 from typing import Any, Dict, List
 from collections import defaultdict
-from datetime import date, datetime, timedelta
 
 from frappe.core.utils import find
 from frappe.model.document import Document
@@ -44,6 +43,7 @@ class Site(Document):
 		self.validate_installed_apps()
 		self.validate_host_name()
 		self.validate_site_config()
+		self.validate_auto_update_fields()
 
 	def before_insert(self):
 		# initialize site.config based on plan
@@ -104,6 +104,11 @@ class Site(Document):
 		# create an agent request if config has been updated
 		# if not self.is_new() and self.has_value_changed("config"):
 		# 	Agent(self.server).update_site_config(self)
+
+	def validate_auto_update_fields(self):
+		# Validate day of month
+		if not (1 <= self.update_on_day_of_month <= 31):
+			frappe.throw("Day of the month must be between 1 and 31 (included)!")
 
 	def on_update(self):
 		if self.status == "Active" and self.has_value_changed("host_name"):
@@ -970,7 +975,7 @@ class Site(Document):
 			{"document_type": self.doctype, "document_name": self.name, "Amount": (">", 0)},
 			pluck="parent",
 		)
-		today = date.today()
+		today = frappe.utils.getdate()
 		today_last_month = today.replace(month=today.month - 1)
 		last_month_last_date = frappe.utils.get_last_day(today_last_month)
 		return frappe.db.exists(
@@ -987,13 +992,17 @@ class Site(Document):
 	def get_sites_for_backup(cls, interval: int):
 		sites = cls.get_sites_without_backup_in_interval(interval)
 		return frappe.get_all(
-			"Site", {"name": ("in", sites)}, ["name", "timezone", "server"], order_by="server"
+			"Site",
+			{"name": ("in", sites)},
+			["name", "timezone", "server"],
+			order_by="server",
+			ignore_ifnull=True,
 		)
 
 	@classmethod
 	def get_sites_without_backup_in_interval(cls, interval: int) -> List[str]:
 		"""Return active sites that haven't had backup taken in interval hours."""
-		interval_hrs_ago = datetime.now() - timedelta(hours=interval)
+		interval_hrs_ago = frappe.utils.add_to_date(None, hours=-interval)
 		all_sites = set(
 			frappe.get_all(
 				"Site",
@@ -1008,7 +1017,11 @@ class Site(Document):
 	def get_sites_with_backup_in_interval(cls, interval_hrs_ago) -> List[str]:
 		return frappe.get_all(
 			"Site Backup",
-			{"creation": (">=", interval_hrs_ago), "owner": "Administrator"},
+			{
+				"creation": (">=", interval_hrs_ago),
+				"status": "Success",
+				"owner": "Administrator",
+			},
 			pluck="site",
 			ignore_ifnull=True,
 		)

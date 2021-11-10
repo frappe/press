@@ -200,6 +200,7 @@ class Team(Document):
 	@frappe.whitelist()
 	def enable_erpnext_partner_privileges(self):
 		self.erpnext_partner = 1
+		self.save(ignore_permissions=True)
 
 	def allocate_free_credits(self):
 		if self.via_erpnext:

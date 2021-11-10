@@ -13,6 +13,20 @@
 					</template>
 				</Alert>
 			</div>
+			<div v-if="showUnpaidInvoiceAlert">
+				<Alert title="Your last invoice payment has failed.">
+					Pay now for uninterrupted services.
+					<template #actions>
+						<Button
+							icon-left="external-link"
+							type="primary"
+							:link="latestUnpaidStripeUrl"
+						>
+							Pay now
+						</Button>
+					</template>
+				</Alert>
+			</div>
 			<div v-if="benches == null">
 				<div class="flex items-center flex-1 py-4 focus:outline-none">
 					<h2 class="text-lg font-semibold">
@@ -125,6 +139,10 @@ export default {
 					}
 				}
 			}
+		},
+		latestUnpaidInvoice: {
+			method: 'press.api.billing.get_latest_unpaid_invoice',
+			auto: true
 		}
 	},
 	mounted() {
@@ -216,6 +234,19 @@ export default {
 		multipleBenches() {
 			if (this.$resources.benches.data) {
 				return this.$resources.benches.data.length > 1;
+			}
+		},
+		showUnpaidInvoiceAlert() {
+			if (!this.latestUnpaidInvoiceStripeUrl) {
+				return;
+			}
+			return !(
+				this.$account.team.erpnext_partner || this.$account.team.free_account
+			);
+		},
+		latestUnpaidInvoiceStripeUrl() {
+			if (this.$resources.latestUnpaidInvoice.data) {
+				return this.$resources.latestUnpaidInvoice.data.stripe_invoice_url;
 			}
 		}
 	}

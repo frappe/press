@@ -6,7 +6,7 @@ from __future__ import unicode_literals
 
 import functools
 from collections import deque
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 from itertools import groupby
 from typing import Dict, List
 
@@ -92,7 +92,7 @@ class BackupRotationScheme:
 					"status": "Success",
 					"files_availability": "Available",
 					"offsite": False,
-					"creation": ("<", datetime.now() - timedelta(hours=expiry)),
+					"creation": ("<", frappe.utils.add_to_date(None, hours=-expiry)),
 				},
 				"files_availability",
 				"Unavailable",
@@ -150,7 +150,7 @@ class GFS(BackupRotationScheme):
 	yearly_backup_day = 1  # days of the year (1-366)
 
 	def expire_offsite_backups(self) -> List[str]:
-		today = date.today()
+		today = frappe.utils.getdate()
 		oldest_daily = today - timedelta(days=self.daily)
 		oldest_weekly = today - timedelta(weeks=4)
 		oldest_monthly = today - timedelta(days=366)
@@ -205,10 +205,10 @@ class ScheduledBackupJob:
 		self.sites = Site.get_sites_for_backup(self.interval)
 		self.sites_without_offsite = Subscription.get_sites_without_offsite_backups()
 
-	def take_offsite(self, site: str, day: datetime.date) -> bool:
+	def take_offsite(self, site: frappe._dict, day: datetime.date) -> bool:
 		return (
 			self.offsite_setup
-			and site not in self.sites_without_offsite
+			and site.name not in self.sites_without_offsite
 			and not SiteBackup.offsite_backup_exists(site.name, day)
 		)
 
@@ -237,11 +237,10 @@ class ScheduledBackupJob:
 		def delete_prev(self):
 			self.deque.pop()
 
-	@timing
 	def start(self):
 		"""Schedule backups for all Active sites based on their local timezones. Also trigger offsite backups once a day."""
 		sites_by_server = []
-		for server, sites in groupby(self.sites, lambda d: d.server):  # group by server
+		for server, sites in groupby(self.sites, lambda d: d.server):
 			sites_by_server.append((server, iter(list(sites))))
 
 		sites_by_server_cycle = self.ModifiableCycle(sites_by_server)
@@ -255,7 +254,7 @@ class ScheduledBackupJob:
 				while not self.backup(site):
 					site = next(sites)
 			except StopIteration:
-				sites_by_server_cycle.delete_prev()  # skip sites for this server
+				sites_by_server_cycle.delete_prev()  # no more sites in this server
 				continue
 			limit -= 1
 			if limit <= 0:
@@ -266,10 +265,10 @@ class ScheduledBackupJob:
 		try:
 			site_time = self.get_site_time(site)
 			if self.is_backup_hour(site_time.hour):
-				today_at_site = site_time.date()
+				today = frappe.utils.getdate()
 
-				offsite = self.take_offsite(site, today_at_site)
-				with_files = offsite or not SiteBackup.file_backup_exists(site.name, today_at_site)
+				offsite = self.take_offsite(site, today)
+				with_files = offsite or not SiteBackup.file_backup_exists(site.name, today)
 
 				frappe.get_doc("Site", site.name).backup(with_files=with_files, offsite=offsite)
 				frappe.db.commit()
