@@ -34,6 +34,16 @@ class Team(Document):
 		if not self.notify_email:
 			self.notify_email = self.name
 
+		if not self.referrer_id:
+			self.set_referrer_id()
+
+	def set_referrer_id(self):
+		from hashlib import blake2b
+
+		h = blake2b(digest_size=4)
+		h.update(self.name.encode())
+		self.referrer_id = h.hexdigest()
+
 	def delete(self, force=False, workflow=False):
 		if force:
 			return super().delete()
