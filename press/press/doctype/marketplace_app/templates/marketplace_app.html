@@ -68,8 +68,8 @@
 				{{ link(supported_version.version, supported_version.app_source.repository_url + '/tree/' +
 				supported_version.app_source.branch, blank=True) }}
 				{%- else -%}
-				{{ link(supported_version.version, supported_version.frappe.repository_url + '/tree/' +
-				supported_version.frappe.branch, blank=True) }}
+				{{ link(supported_version.version, supported_version.frappe_source.repository_url + '/tree/' +
+				supported_version.frappe_source.branch, blank=True) }}
 				{%- endif -%}
 			</li>
 			{%- endfor -%}
