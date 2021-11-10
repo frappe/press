@@ -1,0 +1,57 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2021-11-10 12:24:19.654513",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "for_team",
+  "referred_by",
+  "credits_allocated"
+ ],
+ "fields": [
+  {
+   "fieldname": "for_team",
+   "fieldtype": "Link",
+   "label": "For Team",
+   "options": "Team"
+  },
+  {
+   "fieldname": "referred_by",
+   "fieldtype": "Link",
+   "label": "Referred By",
+   "options": "Team"
+  },
+  {
+   "default": "0",
+   "fieldname": "credits_allocated",
+   "fieldtype": "Check",
+   "label": "Credits Allocated"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2021-11-10 12:24:19.654513",
+ "modified_by": "Administrator",
+ "module": "Experimental",
+ "name": "Referral Bonus",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}
