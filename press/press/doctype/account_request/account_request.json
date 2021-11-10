@@ -29,7 +29,8 @@
   "agreed_to_partner_consent",
   "referrer_data",
   "referral_source",
-  "url_args"
+  "url_args",
+  "referrer_id"
  ],
  "fields": [
   {
@@ -161,12 +162,17 @@
    "fieldtype": "Check",
    "label": "Agreed to Partner Consent",
    "read_only": 1
+  },
+  {
+   "fieldname": "referrer_id",
+   "fieldtype": "Data",
+   "label": "Referrer ID"
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-08-31 19:11:19.951231",
+ "modified": "2021-11-10 07:15:01.451538",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",
