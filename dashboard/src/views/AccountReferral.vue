@@ -15,7 +15,11 @@
 			</div>
 			<h3 class="text-base text-gray-700">
 				When someone sign's up using the above link and makes their first
-				payment, you <strong>get 25$ in Frappe Cloud Credits</strong>!
+				payment, you
+				<strong
+					>get {{ $account.team.country == 'India' ? '1800₹' : '25$' }} in
+					Frappe Cloud Credits</strong
+				>!
 			</h3>
 		</div>
 	</Card>
