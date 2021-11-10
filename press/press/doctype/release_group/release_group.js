@@ -79,11 +79,13 @@ frappe.ui.form.on('Release Group', {
 			};
 		});
 		let apps = remap(apps_res.message, (d) => {
+			let tag = d.update_available ? 'Update Availabe' : (d.hash ? d.hash.substring(0,7) : "")
+			let tag_type = tag ? 'indicator-pill blue' : '' 
             return {
                 title: d.title,
                 message: d.repository + '/' + d.repository + ':' + d.branch,
-                tag: d.update_available ? 'Update Availabe' : (d.hash ? d.hash.substring(0,7) : ""),
-                tag_type: 'indicator-pill blue'
+                tag: tag,
+                tag_type: tag_type
             };
 		});
 		let recent_deploys = remap(recent_deploys_res.message, (d) => {
