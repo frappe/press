@@ -33,7 +33,7 @@
   "custom_apps_section",
   "github_access_token",
   "feature_flags_section",
-  "referral_id"
+  "referrer_id"
  ],
  "fields": [
   {
@@ -194,9 +194,9 @@
    "label": "Send Notifications"
   },
   {
-   "fieldname": "referral_id",
+   "fieldname": "referrer_id",
    "fieldtype": "Data",
-   "label": "Referral ID"
+   "label": "Referrer ID"
   }
  ],
  "links": [
@@ -241,7 +241,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2021-11-10 13:59:29.386237",
+ "modified": "2021-11-10 14:02:29.854914",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
