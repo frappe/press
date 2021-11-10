@@ -105,22 +105,24 @@ frappe.ui.form.on('Site', {
         });
         let analytics_res = {message: ''};
         let daily_usage_res = {message: ''};
-        if (location.hostname === 'frappecloud.com' || 
-        location.hostname === 'staging.frappe.cloud') { // TODO: this is just a hack, need to find a better way
-            analytics_res = await frappe.call({
-                method: 'press.api.analytics.get',
-                args: {
-                    name: frm.docname,
-                    timezone: moment.tz.guess()
-                },
-            });
-            daily_usage_res = await frappe.call({
-                method: 'press.api.analytics.daily_usage',
-                args: {
-                    name: frm.docname,
-                    timezone: moment.tz.guess()
-                }                
-            })
+        if (frm.doc.status === 'Active') {
+            if (location.hostname === 'frappecloud.com' || 
+            location.hostname === 'staging.frappe.cloud') { // TODO: this is just a hack, need to find a better way
+                analytics_res = await frappe.call({
+                    method: 'press.api.analytics.get',
+                    args: {
+                        name: frm.docname,
+                        timezone: moment.tz.guess()
+                    },
+                });
+                daily_usage_res = await frappe.call({
+                    method: 'press.api.analytics.daily_usage',
+                    args: {
+                        name: frm.docname,
+                        timezone: moment.tz.guess()
+                    }                
+                })
+            }
         }
         let backups_res = await frappe.call({
             method: 'press.api.site.backups',
