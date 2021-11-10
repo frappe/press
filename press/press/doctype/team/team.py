@@ -6,6 +6,7 @@ import frappe
 
 from frappe import _
 from typing import List
+from hashlib import blake2b
 from frappe.utils import get_fullname
 from frappe.utils import get_url_to_form
 from press.telegram_utils import Telegram
@@ -38,8 +39,6 @@ class Team(Document):
 			self.set_referrer_id()
 
 	def set_referrer_id(self):
-		from hashlib import blake2b
-
 		h = blake2b(digest_size=4)
 		h.update(self.name.encode())
 		self.referrer_id = h.hexdigest()
