@@ -91,6 +91,9 @@ class Team(Document):
 
 		team.create_stripe_customer()
 
+		if account_request.referrer_id:
+			team.create_referral_bonus(account_request.referrer_id)
+
 		if not team.via_erpnext:
 			team.create_upcoming_invoice()
 			if team.has_partner_account_on_erpnext_com():
@@ -218,6 +221,13 @@ class Team(Document):
 			self.free_credits_allocated = 1
 			self.save()
 			self.reload()
+
+	def create_referral_bonus(self, referrer_id):
+		# Get team name with this this referrer id
+		referrer_team = frappe.db.get_value("Team", {"referrer_id": referrer_id})
+		frappe.get_doc(
+			{"doctype": "Referral Bonus", "for_team": self.name, "referred_by": referrer_team,}
+		).insert(ignore_permissions=True)
 
 	def has_member(self, user):
 		return user in self.get_user_list()
