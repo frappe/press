@@ -52,4 +52,7 @@ def credit_referral_bonuses():
 
 	for rb in unallocated_referral_bonuses:
 		if team_has_spent(rb.for_team):
-			frappe.get_doc("Referral Bonus", rb.name).allocate_credits()
+			try:
+				frappe.get_doc("Referral Bonus", rb.name).allocate_credits()
+			except Exception:
+				pass
