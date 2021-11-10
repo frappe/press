@@ -15,24 +15,31 @@
    "fieldname": "for_team",
    "fieldtype": "Link",
    "label": "For Team",
-   "options": "Team"
+   "options": "Team",
+   "read_only": 1
   },
   {
    "fieldname": "referred_by",
    "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Referred By",
-   "options": "Team"
+   "options": "Team",
+   "read_only": 1
   },
   {
    "default": "0",
    "fieldname": "credits_allocated",
    "fieldtype": "Check",
-   "label": "Credits Allocated"
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Credits Allocated",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-11-10 12:24:19.654513",
+ "modified": "2021-11-11 00:10:21.936375",
  "modified_by": "Administrator",
  "module": "Experimental",
  "name": "Referral Bonus",
@@ -53,5 +60,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "title_field": "referred_by",
  "track_changes": 1
 }
