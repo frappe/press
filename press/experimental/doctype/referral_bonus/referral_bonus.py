@@ -15,6 +15,9 @@ class ReferralBonus(Document):
 
 		# Team hasn't spent any money yet
 		if not self.team_has_spent():
+			self.add_comment(
+				text="Cannot credit referral bonus. The team hasn't spent any money yet."
+			)
 			return
 
 		team = frappe.get_doc("Team", self.referred_by)
