@@ -110,7 +110,7 @@ frappe.ui.form.on('Release Group', {
 		})
 		let deploys_log = remap(deploys_log_res.message, (d) => {
 			let tag_color = '';
-			if(d.status === 'Pending') tag_color = 'orange';
+			if(d.status === 'Pending') tag_color = 'yellow';
 			if(d.status === 'Failure') tag_color = 'red';
 			if(d.status === 'Undelivered') tag_color = 'gray';
 			return {
@@ -124,7 +124,7 @@ frappe.ui.form.on('Release Group', {
 		});
 		let jobs_log = remap(jobs_log_res.message, (d) => {
 			let tag_color = '';
-			if(d.status === 'Pending') tag_color = 'orange';
+			if(d.status === 'Pending') tag_color = 'yellow';
 			if(d.status === 'Failure') tag_color = 'red';
 			if(d.status === 'Undelivered') tag_color = 'gray';
 			return {
