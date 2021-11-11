@@ -4,6 +4,7 @@
 
 import frappe
 
+import json
 from typing import List, Dict
 from frappe.utils import comma_and
 from collections import OrderedDict
@@ -345,6 +346,9 @@ def deploy_information(name):
 @frappe.whitelist()
 @protected("Release Group")
 def deploy(name, apps_to_ignore=[]):
+	if isinstance(apps_to_ignore, str):
+		apps_to_ignore = json.loads(apps_to_ignore)
+
 	team = get_current_team()
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
 

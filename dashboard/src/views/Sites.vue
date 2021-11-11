@@ -74,7 +74,7 @@
 								</Badge>
 								<Button
 									v-if="bench.owned_by_team"
-									:route="`/benches/${bench.name}`"
+									@click="routeToBench(bench)"
 									icon="tool"
 								>
 								</Button>
@@ -209,6 +209,19 @@ export default {
 			return (
 				(bench.shared || bench.owned_by_team) && this.sitesShown[bench.name]
 			);
+		},
+		routeToBench(bench) {		
+			let isSystemManager = false;
+			let roles = this.$account.user.roles;
+			for(let role of roles) {
+				if(role.role === "System Manager") {
+					isSystemManager = true;
+					break;
+				}
+			}
+			let redirectPath = isSystemManager ? `app/release-group/${bench.name}` : `dashboard/benches/${bench.name}/overview`;
+			window.location.href = `/${redirectPath}`;
+
 		}
 	},
 	computed: {
