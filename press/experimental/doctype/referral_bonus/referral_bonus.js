@@ -4,10 +4,16 @@
 frappe.ui.form.on('Referral Bonus', {
 	refresh: function (frm) {
 		if (!frm.doc.credits_allocated) {
-			frm.add_custom_button('Allocate Credits', () => {
-				frm.call('allocate_credits').then(() => {
-					frm.refresh();
-				});
+			let btn = frm.add_custom_button('Allocate Credits', () => {
+				frm
+					.call({
+						doc: frm.doc,
+						method: 'allocate_credits',
+						btn,
+					})
+					.then(() => {
+						frm.refresh();
+					});
 			});
 		}
 	},
