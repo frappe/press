@@ -14,11 +14,10 @@
 				<Button icon="copy" @click="copyReferralLink" />
 			</div>
 			<h3 class="text-base text-gray-700">
-				When someone sign's up using the above link and makes their first
-				payment, you
+				When someone sign's up using the above link and spents atleast
+				{{ creditAmountInTeamCurrency }} on Frappe Cloud, you
 				<strong
-					>get {{ $account.team.country == 'India' ? '1800₹' : '25$' }} in
-					Frappe Cloud Credits</strong
+					>get {{ creditAmountInTeamCurrency }} in Frappe Cloud Credits</strong
 				>!
 			</h3>
 		</div>
@@ -45,6 +44,9 @@ export default {
 				return `${location.origin}/dashboard/signup?referrer=${this.$account.team.referrer_id}`;
 			}
 			return '';
+		},
+		creditAmountInTeamCurrency() {
+			return this.$account.team.country == 'India' ? '1800₹' : '25$';
 		}
 	}
 };

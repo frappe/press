@@ -33,14 +33,21 @@ class ReferralBonus(Document):
 		self.reload()
 
 
-def team_has_spent(team):
-	"""Has the `for_team` spent any money yet (stripe)"""
-	return (
-		frappe.db.count(
-			"Invoice", filters={"team": team, "status": "Paid", "transaction_amount": (">", 0)},
+def team_has_spent(team, usd_amount=25.0, inr_amount=1800.0):
+	"""Has the team spent atleast the given amount yet (on stripe)"""
+	team_currency = frappe.db.get_value("Team", team, "currency")
+	total_paid = sum(
+		frappe.db.get_all(
+			"Invoice",
+			filters={"team": team, "status": "Paid", "transaction_amount": (">", 0)},
+			pluck="transaction_amount",
 		)
-		> 0
 	)
+
+	if team_currency == "INR":
+		return total_paid >= inr_amount
+
+	return total_paid >= usd_amount
 
 
 def credit_referral_bonuses():
