@@ -235,7 +235,7 @@ class Team(Document):
 		# Get team name with this this referrer id
 		referrer_team = frappe.db.get_value("Team", {"referrer_id": referrer_id})
 		frappe.get_doc(
-			{"doctype": "Referral Bonus", "for_team": self.name, "referred_by": referrer_team,}
+			{"doctype": "Referral Bonus", "for_team": self.name, "referred_by": referrer_team}
 		).insert(ignore_permissions=True)
 
 	def has_member(self, user):
