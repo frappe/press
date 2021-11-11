@@ -17,7 +17,7 @@ from press.utils import get_country_info, get_current_team
 
 
 @frappe.whitelist(allow_guest=True)
-def signup(email):
+def signup(email, referrer=None):
 	frappe.utils.validate_email_address(email, True)
 
 	current_user = frappe.session.user
@@ -32,7 +32,12 @@ def signup(email):
 		frappe.throw(_("Account {0} is already registered").format(email))
 	else:
 		frappe.get_doc(
-			{"doctype": "Account Request", "email": email, "role": "Press Admin"}
+			{
+				"doctype": "Account Request",
+				"email": email,
+				"role": "Press Admin",
+				"referrer_id": referrer,
+			}
 		).insert()
 
 	frappe.set_user(current_user)
