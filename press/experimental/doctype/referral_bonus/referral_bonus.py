@@ -32,6 +32,7 @@ class ReferralBonus(Document):
 		self.save()
 		self.reload()
 
+
 # TODO: Remove hardcoded values and add fields in Press Settings
 def team_has_spent(team, usd_amount=25.0, inr_amount=1800.0):
 	"""Has the team spent atleast the given amount yet (on stripe)"""
