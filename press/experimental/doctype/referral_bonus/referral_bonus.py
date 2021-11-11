@@ -13,9 +13,11 @@ class ReferralBonus(Document):
 		if self.credits_allocated:
 			return
 
-		# Team hasn't spent any money yet
+		# Team hasn't spent 25$/1800INR money yet
 		if not team_has_spent(self.for_team):
-			self.add_comment(text="Cannot credit referral bonus. The team hasn't spent 25$ yet.")
+			self.add_comment(
+				text="Cannot credit referral bonus. The team hasn't spent 25$/1800INR yet."
+			)
 			return
 
 		team = frappe.get_doc("Team", self.referred_by)
@@ -30,7 +32,7 @@ class ReferralBonus(Document):
 		self.save()
 		self.reload()
 
-
+# TODO: Remove hardcoded values and add fields in Press Settings
 def team_has_spent(team, usd_amount=25.0, inr_amount=1800.0):
 	"""Has the team spent atleast the given amount yet (on stripe)"""
 	team_currency = frappe.db.get_value("Team", team, "currency")
