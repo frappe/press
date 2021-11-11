@@ -101,6 +101,7 @@
         "column_break_34",
         "remote_private_file",
         "remote_public_file",
+        "remote_partial_backup_file",
         "notifications_section",
         "notify_email",
         "auto_updates_section",
@@ -778,9 +779,15 @@
             "group": "Logs",
             "link_doctype": "Site Update",
             "link_fieldname": "site"
+        },
+        {
+            "fieldname": "remote_partial_backup_file",
+            "fieldtype": "Link",
+            "label": "Remote Partial Backup File",
+            "options": "Remote File"
         }
     ],
-    "modified": "2021-11-09 07:17:16.903390",
+    "modified": "2021-11-11 19:17:16.903390",
     "modified_by": "Administrator",
     "module": "Press",
     "name": "Site",

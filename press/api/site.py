@@ -776,6 +776,15 @@ def restore(name, files, skip_failing_patches=False):
 
 
 @frappe.whitelist()
+@protected("Site")
+def partial_restore(name, files, skip_failing_patches=False):
+	site = frappe.get_doc("Site", name)
+	site.remote_partial_backup_file = files["database"]
+	site.save()
+	site.partial_restore_site(skip_failing_patches=skip_failing_patches)
+
+
+@frappe.whitelist()
 def exists(subdomain):
 	from press.press.doctype.site.site import Site
 

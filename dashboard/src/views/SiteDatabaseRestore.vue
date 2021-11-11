@@ -24,6 +24,20 @@
 			</div>
 			<div class="flex items-center justify-between py-3">
 				<div>
+					<h3 class="text-lg">Partial Restore</h3>
+					<p class="mt-1 text-base text-gray-600">
+						Perform a Partial Restore on your site.
+					</p>
+				</div>
+				<Button
+					:disabled="site.status === 'Suspended'"
+					@click="showPartialRestoreDialog = true"
+				>
+					Partial Restore
+				</Button>
+			</div>
+			<div class="flex items-center justify-between py-3">
+				<div>
 					<h3 class="text-lg">Migrate</h3>
 					<p class="mt-1 text-base text-gray-600">
 						Run bench migrate command on your database.
@@ -135,7 +149,7 @@
 					v-model="wantToSkipFailingPatches"
 				/>
 				<label for="skip-failing" class="ml-2 text-sm text-gray-900">
-					Skip failing patches (if any patch fails)
+					Skip failing patches
 				</label>
 			</div>
 			<ErrorMessage class="mt-2" :error="$resources.restoreBackup.error" />
@@ -144,6 +158,42 @@
 					type="primary"
 					:loading="$resources.restoreBackup.loading"
 					@click="$resources.restoreBackup.submit()"
+				>
+					Restore Database
+				</Button>
+			</template>
+		</Dialog>
+
+		<Dialog title="Restore" v-model="showPartialRestoreDialog">
+			<div class="space-y-4">
+				<p class="text-base">Restore a partial backup.</p>
+				<BackupFilesUploader :backupFiles.sync="selectedFiles" :databaseOnly="true"/>
+			</div>
+			<div class="mt-3">
+				<!-- Skip Failing Checkbox -->
+				<input
+					id="skip-failing"
+					type="checkbox"
+					class="
+				h-4
+				w-4
+				text-blue-600
+				focus:ring-blue-500
+				border-gray-300
+				rounded
+			"
+					v-model="wantToSkipFailingPatches"
+				/>
+				<label for="skip-failing" class="ml-2 text-sm text-gray-900">
+					Skip failing patches
+				</label>
+			</div>
+			<ErrorMessage class="mt-2" :error="$resources.partialRestoreBackup.error" />
+			<template #actions>
+				<Button
+					type="primary"
+					:loading="$resources.partialRestoreBackup.loading"
+					@click="$resources.partialRestoreBackup.submit()"
 				>
 					Restore Database
 				</Button>
@@ -167,6 +217,7 @@ export default {
 		return {
 			showMigrateDialog: false,
 			showRestoreDialog: false,
+			showPartialRestoreDialog: false,
 			selectedFiles: {
 				database: null,
 				public: null,
@@ -187,6 +238,28 @@ export default {
 				validate() {
 					if (!this.filesUploaded) {
 						return 'Please upload database, public and private files to restore.';
+					}
+				},
+				onSuccess() {
+					this.selectedFiles = {};
+					this.$router.push(`/sites/${this.site.name}/installing`);
+					setTimeout(() => {
+						window.location.reload();
+					}, 1000);
+				}
+			};
+		},
+		partialRestoreBackup() {
+			return {
+				method: 'press.api.site.partial_restore',
+				params: {
+					name: this.site.name,
+					files: this.selectedFiles,
+					skip_failing_patches: this.wantToSkipFailingPatches
+				},
+				validate() {
+					if (!this.filesUploaded) {
+						return 'Please upload a partial backup.';
 					}
 				},
 				onSuccess() {

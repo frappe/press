@@ -111,6 +111,20 @@ class Agent:
 			site=site.name,
 		)
 
+	def partial_restore_site(self, site, skip_failing_patches=False):
+		data = {
+			"database": frappe.get_doc("Remote File", site.remote_partial_backup_file).download_link,
+			"skip_failing_patches": skip_failing_patches,
+		}
+
+		return self.create_agent_job(
+			"Partial Restore Site",
+			f"benches/{site.bench}/sites/{site.name}/partial-restore",
+			data,
+			bench=site.bench,
+			site=site.name,
+		)
+
 	def rename_site(self, site, new_name: str):
 		data = {"new_name": new_name}
 		return self.create_agent_job(

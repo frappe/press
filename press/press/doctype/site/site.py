@@ -348,6 +348,19 @@ class Site(Document):
 		self.save()
 
 	@frappe.whitelist()
+	def partial_restore_site(self, skip_failing_patches=False):
+		if not frappe.get_doc("Remote File", self.remote_partial_backup_file).exists():
+			raise Exception(
+				"Remote File {0} is unavailable on S3".format(self.remote_partial_backup_file)
+			)
+
+		log_site_activity(self.name, "Partial Restore")
+		agent = Agent(self.server)
+		agent.partial_restore_site(self, skip_failing_patches=skip_failing_patches)
+		self.status = "Pending"
+		self.save()
+
+	@frappe.whitelist()
 	def backup(self, with_files=False, offsite=False):
 		return frappe.get_doc(
 			{
