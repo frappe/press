@@ -180,6 +180,7 @@ export default {
 			let tabs = [
 				{ label: 'Overview', route: 'overview' },
 				{ label: 'Analytics', route: 'analytics' },
+				{ label: 'Updates', route: 'updates' },
 				{ label: 'Backup & Restore', route: 'database' },
 				{ label: 'Site Config', route: 'site-config' },
 				{ label: 'Jobs', route: 'jobs', showRedDot: this.runningJob },
@@ -191,6 +192,7 @@ export default {
 				Active: [
 					'Overview',
 					'Analytics',
+					'Updates',
 					'Backup & Restore',
 					'Site Config',
 					'Activity',
@@ -200,6 +202,7 @@ export default {
 				],
 				Inactive: [
 					'Overview',
+					'Updates',
 					'Backup & Restore',
 					'Site Config',
 					'Activity',
@@ -216,7 +219,14 @@ export default {
 					'Jobs',
 					'Logs'
 				],
-				Suspended: ['Overview', 'Activity', 'Backup & Restore', 'Jobs', 'Plan']
+				Suspended: [
+					'Overview',
+					'Activity',
+					'Updates',
+					'Backup & Restore',
+					'Jobs',
+					'Plan'
+				]
 			};
 			if (this.site) {
 				let tabsToShow = tabsByStatus[this.site.status];

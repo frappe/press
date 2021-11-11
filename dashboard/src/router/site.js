@@ -74,7 +74,7 @@ export default [
 				props: true
 			},
 			{
-				path: 'auto-update',
+				path: 'updates',
 				component: () => import('../views/SiteAutoUpdate.vue'),
 				props: true
 			}
