@@ -62,12 +62,21 @@ export default {
 			return {
 				method: 'press.api.account.signup',
 				params: {
-					email: this.email
+					email: this.email,
+					referrer: this.getReferrerIfAny()
 				},
 				onSuccess() {
 					this.emailSent = true;
 				}
 			};
+		}
+	},
+	methods: {
+		getReferrerIfAny() {
+			const params = location.search;
+			const searchParams = new URLSearchParams(params);
+
+			return searchParams.get('referrer');
 		}
 	}
 };
