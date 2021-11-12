@@ -2,22 +2,32 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
+from datetime import datetime
 import re
 import json
+import pytz
 import boto3
 import frappe
 import requests
 import dateutil.parser
 
+from random import choice
 from typing import Any, Dict, List
 from collections import defaultdict
-
 from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.frappeclient import FrappeClient
 from frappe.utils.password import get_decrypted_password
 from frappe.model.naming import append_number_if_name_exists
-from frappe.utils import cint, convert_utc_to_user_timezone, cstr, get_datetime
+from frappe.utils import (
+	cint,
+	convert_utc_to_user_timezone,
+	cstr,
+	get_datetime,
+	get_time,
+	getdate,
+	get_time_zone,
+)
 
 from press.agent import Agent
 from press.api.site import check_dns
@@ -50,6 +60,8 @@ class Site(Document):
 		self._update_configuration(self.get_plan_config(), save=False)
 		if not self.notify_email:
 			self.notify_email = frappe.db.get_value("Team", self.team, "notify_email")
+		# Inititalze auto-update details
+		self.set_auto_update_details()
 
 	def validate_site_name(self):
 		site_regex = r"^[a-z0-9][a-z0-9-]*[a-z0-9]$"
@@ -67,6 +79,43 @@ class Site(Document):
 		# set site.admin_password if doesn't exist
 		if not self.admin_password:
 			self.admin_password = frappe.generate_hash(length=16)
+
+	def set_auto_update_details(self):
+		# Get the timezone for the team
+		team_country = frappe.db.get_value("Team", self.team, "country")
+		team_country_code = None
+
+		for key, value in pytz.country_names.items():
+			if value == team_country:
+				team_country_code = key
+				break
+
+		if not team_country_code:
+			return
+
+		team_timezone_str = pytz.country_timezones[team_country_code][0]
+		team_timezone = pytz.timezone(team_timezone_str)
+
+		# ("00:00", "00:30", ..., "05:00")
+		night_times = []
+		for i in range(6):
+			if i != 5:  # To exclude "05:30"
+				night_times.extend(("{:02}:00".format(i), "{:02}:30".format(i)))
+			else:
+				night_times.append("{:02}:00".format(i))
+
+		# Select a random night time
+		random_night_time = get_time(choice(night_times))
+
+		team_dt = team_timezone.localize(
+			datetime.combine(date=getdate(), time=random_night_time)
+		)
+
+		# Convert team's night time to system time
+		update_time = team_dt.astimezone(pytz.timezone(get_time_zone())).strftime("%H:%M")
+
+		self.update_trigger_time = update_time
+		self.auto_updates_scheduled = True
 
 	def validate_installed_apps(self):
 		# validate apps to be installed on site
