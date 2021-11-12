@@ -12,6 +12,7 @@ from frappe.utils import get_url_to_form
 from press.telegram_utils import Telegram
 from frappe.model.document import Document
 from press.exceptions import FrappeioServerNotSet
+from pytz import country_names, timezone, country_timezones
 from frappe.contacts.address_and_contact import load_address_and_contact
 from press.press.doctype.account_request.account_request import AccountRequest
 from press.utils.billing import (
@@ -639,6 +640,23 @@ def get_team_members(team):
 def get_default_team(user):
 	if frappe.db.exists("Team", user):
 		return user
+
+
+def get_team_timezone(team):
+	team_country = frappe.db.get_value("Team", team, "country")
+	team_country_code = None
+
+	for key, value in country_names.items():
+		if value == team_country:
+			team_country_code = key
+			break
+
+	if not team_country_code:
+		return
+
+	team_timezone_str = country_timezones[team_country_code][0]
+
+	return timezone(team_timezone_str)
 
 
 def process_stripe_webhook(doc, method):

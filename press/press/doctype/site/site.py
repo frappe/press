@@ -31,6 +31,7 @@ from frappe.utils import (
 
 from press.agent import Agent
 from press.api.site import check_dns
+from press.press.doctype.team.team import get_team_timezone
 from press.press.doctype.plan.plan import get_plan_config
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.site_activity.site_activity import log_site_activity
@@ -82,19 +83,7 @@ class Site(Document):
 
 	def set_auto_update_details(self):
 		# Get the timezone for the team
-		team_country = frappe.db.get_value("Team", self.team, "country")
-		team_country_code = None
-
-		for key, value in pytz.country_names.items():
-			if value == team_country:
-				team_country_code = key
-				break
-
-		if not team_country_code:
-			return
-
-		team_timezone_str = pytz.country_timezones[team_country_code][0]
-		team_timezone = pytz.timezone(team_timezone_str)
+		team_timezone = get_team_timezone(self.team)
 
 		# ("00:00", "00:30", ..., "05:00")
 		night_times = []
