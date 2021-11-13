@@ -54,7 +54,7 @@ export default {
 						value:
 							total_installs.toString() +
 							' ' +
-							(total_installs == 1 ? 'Sites' : 'Site')
+							(total_installs == 1 ? 'Site' : 'Sites')
 					},
 					{
 						title: 'Active Sites with this App',
