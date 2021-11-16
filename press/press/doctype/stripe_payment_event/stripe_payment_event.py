@@ -61,6 +61,10 @@ class StripePaymentEvent(Document):
 
 	def handle_payment_failed(self):
 		invoice = frappe.get_doc("Invoice", self.invoice, for_update=True)
+
+		if invoice.status == "Paid":
+			return
+
 		stripe_invoice = frappe.parse_json(self.stripe_invoice_object)
 
 		attempt_date = stripe_invoice.get("webhooks_delivered_at")
