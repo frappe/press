@@ -112,6 +112,12 @@ def create_usage_records():
 	)
 	for name in subscriptions:
 		subscription = frappe.get_doc("Marketplace App Subscription", name)
+
+		# For annual prepaid plans
+		plan_interval = frappe.db.get_value("Plan", subscription.plan, "interval")
+		if plan_interval == "Annually":
+			continue
+
 		try:
 			subscription.create_usage_record()
 			frappe.db.commit()
