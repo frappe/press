@@ -1,6 +1,5 @@
 {
  "actions": [],
- "allow_rename": 1,
  "autoname": "format:app-subscription-{app}-{#####}",
  "creation": "2021-10-21 01:01:26.805348",
  "doctype": "DocType",
@@ -12,7 +11,8 @@
   "status",
   "app",
   "start_date",
-  "end_date"
+  "end_date",
+  "secret_key"
  ],
  "fields": [
   {
@@ -58,11 +58,17 @@
    "fieldtype": "Date",
    "label": "End date",
    "reqd": 1
+  },
+  {
+   "fieldname": "secret_key",
+   "fieldtype": "Data",
+   "label": "Secret Key",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-10-21 10:49:26.587956",
+ "modified": "2021-11-16 12:11:48.801213",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "Marketplace App Subscription",
