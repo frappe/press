@@ -113,9 +113,7 @@ def create_usage_records():
 	for name in subscriptions:
 		subscription = frappe.get_doc("Marketplace App Subscription", name)
 
-		# For annual prepaid plans
-		plan_interval = frappe.db.get_value("Plan", subscription.plan, "interval")
-		if plan_interval == "Annually":
+		if not should_create_usage_record(subscription):
 			continue
 
 		try:
@@ -124,3 +122,17 @@ def create_usage_records():
 		except Exception:
 			frappe.db.rollback()
 			log_error(title="Marketplace App: Create Usage Record Error", name=name)
+
+
+def should_create_usage_record(subscription: MarketplaceAppSubscription):
+	# For annual prepaid plans
+	plan_interval = frappe.db.get_value("Plan", subscription.plan, "interval")
+	if plan_interval == "Annually":
+		return False
+	
+	# For non-active sites
+	site_status = frappe.db.get_value("Site", subscription.site, "status")
+	if site_status not in ("Active", "Inactive"):
+		return False
+
+	return True
