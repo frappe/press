@@ -12,7 +12,8 @@
   "app",
   "start_date",
   "end_date",
-  "secret_key"
+  "secret_key",
+  "interval"
  ],
  "fields": [
   {
@@ -64,11 +65,17 @@
    "fieldtype": "Data",
    "label": "Secret Key",
    "read_only": 1
+  },
+  {
+   "fieldname": "interval",
+   "fieldtype": "Select",
+   "label": "Interval",
+   "options": "Daily\nMonthly\nAnnually"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-11-16 12:11:48.801213",
+ "modified": "2021-11-16 13:22:12.592109",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "Marketplace App Subscription",
