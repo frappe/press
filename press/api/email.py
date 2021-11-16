@@ -116,6 +116,8 @@ def send_mail(**data):
 				"v:site_name": f"{data['site']}",
 				"from": f"{data['sender']}",
 				"to": data["recipient"],
+				"cc": data["cc"],
+				"bcc": data["bcc"],
 				"subject": data["subject"],
 				content: data["content"],
 			},
