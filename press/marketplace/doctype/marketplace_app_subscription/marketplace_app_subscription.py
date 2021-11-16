@@ -136,3 +136,41 @@ def should_create_usage_record(subscription: MarketplaceAppSubscription):
 		return False
 
 	return True
+
+def process_prepaid_marketplace_payment(event):
+	"""`event`: Stripe Event"""
+	from datetime import datetime
+
+	payment_intent = event["data"]["object"]
+	team = frappe.get_doc("Team", {"stripe_customer_id": payment_intent["customer"]})
+	amount = payment_intent["amount"] / 100
+	metadata = payment_intent.get("metadata")
+
+	invoice = frappe.get_doc(
+		doctype="Invoice",
+		team=team.name,
+		type="Service",
+		status="Paid",
+		due_date=datetime.fromtimestamp(payment_intent["created"]),
+		amount_paid=amount,
+		amount_due=amount,
+		stripe_payment_intent_id=payment_intent["id"],
+	)
+	invoice.append(
+		"items",
+		{
+			"description": "Prepaid Credits",
+			"document_type": "Marketplace App",
+			"document_name": metadata.get("app"),
+			"quantity": 1,
+			"rate": amount,
+		},
+	)
+
+	invoice.insert()
+	invoice.reload()
+	# there should only be one charge object
+	charge = payment_intent["charges"]["data"][0]["id"]
+	# update transaction amount, fee and exchange rate
+	invoice.update_transaction_details(charge)
+	invoice.submit()
