@@ -28,7 +28,9 @@
   "documentation",
   "column_break_16",
   "privacy_policy",
-  "terms_of_service"
+  "terms_of_service",
+  "pricing_details_section",
+  "available_plans"
  ],
  "fields": [
   {
@@ -167,6 +169,17 @@
   {
    "fieldname": "section_break_15",
    "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "pricing_details_section",
+   "fieldtype": "Section Break",
+   "label": "Pricing Details"
+  },
+  {
+   "fieldname": "available_plans",
+   "fieldtype": "Table",
+   "label": "Available Plans",
+   "options": "Marketplace App Plans"
   }
  ],
  "has_web_view": 1,
@@ -174,7 +187,7 @@
  "index_web_pages_for_search": 1,
  "is_published_field": "published",
  "links": [],
- "modified": "2021-09-02 12:54:10.190740",
+ "modified": "2021-11-16 20:07:16.966209",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Marketplace App",
