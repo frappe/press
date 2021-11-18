@@ -12,6 +12,7 @@ from press.press.doctype.remote_file.test_remote_file import create_test_remote_
 
 def create_test_site_backup(
 	site: str,
+	status: str = "Success",
 	creation: datetime = datetime.now(),
 	files_availability: str = "Available",
 	offsite: bool = True,
@@ -23,7 +24,7 @@ def create_test_site_backup(
 	"""
 	params_dict = {
 		"doctype": "Site Backup",
-		"status": "Success",
+		"status": status,
 		"site": site,
 		"creation": creation,
 		"files_availability": files_availability,

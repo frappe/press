@@ -308,3 +308,9 @@ class TestSite(unittest.TestCase):
 		domains = site.get_config_value_for_key("domains")
 		self.assertNotIn(domain, domains)
 		self.assertIn(domain_2, domains)
+
+	def test_sites_with_pending_backup_not_considered_for_backup(self):
+		pass
+
+	def test_sites_with_successful_backup_in_interval_not_show_up_for_backup(self):
+		pass
