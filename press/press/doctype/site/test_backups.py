@@ -107,13 +107,13 @@ class TestScheduledBackupJob(unittest.TestCase):
 		self.assertEqual(sites, [])
 
 		site_1 = self._create_site_requiring_backup()
-		create_test_site_backup(site_1.name, "Pending")
+		create_test_site_backup(site_1.name, status="Pending")
 		site_2 = self._create_site_requiring_backup()
-		create_test_site_backup(site_2.name, "Failure")
+		create_test_site_backup(site_2.name, status="Failure")
 		site_3 = self._create_site_requiring_backup()
-		create_test_site_backup(site_3.name, "Success")
+		create_test_site_backup(site_3.name, status="Success")
 		site_4 = self._create_site_requiring_backup()
-		create_test_site_backup(site_4.name, "Running")
+		create_test_site_backup(site_4.name, status="Running")
 
 		sites = Site.get_sites_for_backup(self.interval)
 		self.assertEqual(len(sites), 1)

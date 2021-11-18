@@ -12,10 +12,10 @@ from press.press.doctype.remote_file.test_remote_file import create_test_remote_
 
 def create_test_site_backup(
 	site: str,
-	status: str = "Success",
 	creation: datetime = datetime.now(),
 	files_availability: str = "Available",
 	offsite: bool = True,
+	status: str = "Success",
 ):
 	"""
 	Create test site backup doc for required timestamp.
