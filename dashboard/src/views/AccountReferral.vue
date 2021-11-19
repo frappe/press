@@ -8,10 +8,10 @@
 			<div
 				class="p-2 items-center rounded-lg flex flex-row border-2 justify-between"
 			>
-				<p class="text-sm text-gray-800 font-mono">
+				<p class="text-sm text-gray-800 font-mono overflow-hidden">
 					{{ referralLink }}
 				</p>
-				<Button icon="copy" @click="copyReferralLink" />
+				<Button class="ml-1" icon="copy" @click="copyReferralLink" />
 			</div>
 			<h3 class="text-base text-gray-700">
 				When someone sign's up using the above link and spents atleast
