@@ -114,6 +114,7 @@ def send_mail(**data):
 			files=attachments,
 			data={
 				"v:site_name": f"{data['site']}",
+				"v:message_id": f"{data['message_id']}"
 				"from": f"{data['sender']}",
 				"to": data["recipient"],
 				"cc": data["cc"],
@@ -132,6 +133,9 @@ def send_mail(**data):
 def event_log(**data):
 	event_data = data["event-data"]
 	headers = event_data["message"]["headers"]
+	status = event_data["event"]
+	site = event_data["user-variables"]["site_name"]
+	message_id = event_data["user-variables"]["message_id"]
 
 	frappe.get_doc(
 		{
@@ -140,10 +144,20 @@ def event_log(**data):
 			"sender": headers["from"],
 			"recipient": headers["to"],
 			"subject": headers["subject"],
-			"site": event_data["user-variables"]["site_name"],
-			"status": event_data["event"],
+			"site": site,
+			"status": status,
 			"log": event_data["event"],
 		}
 	).insert(ignore_permissions=True)
 
+	data = {"status": status, "message_id": message_id}
+
+	change_message_status(site, data)
+
 	return "Successful", 200
+
+
+def change_message_status(site, data):
+	url = f"https://{site}/api/method/qmail.qmail.doctype.qmail.qmail.change_message_status"
+	
+	requests.post(url, data)
