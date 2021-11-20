@@ -14,7 +14,7 @@
 				<Button icon="copy" @click="copyReferralLink" />
 			</div>
 			<h3 class="text-base text-gray-700">
-				When someone sign's up using the above link and spents atleast
+				When someone sign's up using the above link and spends at least
 				{{ creditAmountInTeamCurrency }} on Frappe Cloud, you
 				<strong
 					>get {{ creditAmountInTeamCurrency }} in Frappe Cloud Credits</strong
