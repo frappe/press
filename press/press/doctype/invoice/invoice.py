@@ -351,12 +351,12 @@ class Invoice(Document):
 			doc.submit()
 
 	def apply_credit_balance(self):
+		# cancel applied credits to re-apply available credits
+		self.cancel_applied_credits()
+
 		balance = frappe.get_cached_doc("Team", self.team).get_balance()
 		if balance <= 0:
 			return
-
-		# cancel applied credits to re-apply available credits
-		self.cancel_applied_credits()
 
 		unallocated_balances = frappe.db.get_all(
 			"Balance Transaction",
