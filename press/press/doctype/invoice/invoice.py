@@ -54,6 +54,10 @@ class Invoice(Document):
 		self.update_item_descriptions()
 
 		if self.payment_mode == "Prepaid Credits" and self.amount_due > 0:
+			self.payment_attempt_count += 1
+			self.save()
+			frappe.db.commit()
+
 			frappe.throw(
 				"Not enough credits for this invoice. Change payment mode to Card to"
 				" pay using Stripe."
@@ -617,20 +621,36 @@ class Invoice(Document):
 def finalize_draft_invoices():
 	"""
 	- Runs every hour
-	- Processes 500 invoices at a time
+	- Processes 500 + (`Prepaid Credit` mode) invoices at a time
 	- Finalizes the invoices whose
 	- period ends today and time is 6PM or later
 	- period has ended before
 	"""
 
-	# get draft invoices whose period has ended or ends today
 	today = frappe.utils.today()
-	invoices = frappe.db.get_all(
+
+	# get draft invoices whose period has ended or ends today
+	draft_invoices = frappe.db.get_all(
 		"Invoice",
 		filters={"status": "Draft", "type": "Subscription", "period_end": ("<=", today)},
 		pluck="name",
 		limit=500,
 	)
+
+	# Invoices with `Prepaid Credits` as mode and unpaid
+	unpaid_invoices_mode_prepaid_credits = frappe.db.get_all(
+		"Invoice",
+		filters={
+			"status": "Unpaid",
+			"type": "Subscription",
+			"period_end": ("<=", today),
+			"payment_mode": "Prepaid Credits",
+		},
+		pluck="name",
+	)
+
+	invoices = draft_invoices + unpaid_invoices_mode_prepaid_credits
+
 	current_time = frappe.utils.get_datetime().time()
 	today = frappe.utils.getdate()
 	for name in invoices:
@@ -649,6 +669,8 @@ def finalize_draft_invoice(invoice):
 		frappe.db.rollback()
 		msg = "<pre><code>" + frappe.get_traceback() + "</pre></code>"
 		invoice.add_comment(text="Finalize Invoice Failed" + "<br><br>" + msg)
+
+		frappe.db.commit()  # For the comment
 
 	try:
 		invoice.create_next()
