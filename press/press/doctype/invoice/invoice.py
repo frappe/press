@@ -664,12 +664,11 @@ def finalize_draft_invoices():
 def finalize_draft_invoice(invoice):
 	try:
 		invoice.finalize_invoice()
-		frappe.db.commit()
 	except Exception:
 		frappe.db.rollback()
 		msg = "<pre><code>" + frappe.get_traceback() + "</pre></code>"
 		invoice.add_comment(text="Finalize Invoice Failed" + "<br><br>" + msg)
-
+	finally:
 		frappe.db.commit()  # For the comment
 
 	try:
