@@ -39,11 +39,14 @@ frappe.ui.form.on('Site', {
 		// 	</div>`
 		// );
 
-        frm.add_custom_button(__('Visit Site'), () => {
-            window.location.href = `https://${frm.doc.name}`;
-        });
         frm.add_custom_button(__('Use Dashboard'), () => {
             window.location.href = `/dashboard/sites/${frm.docname}/overview`;
+        });
+        frm.add_custom_button(__('Login as Adminstrator'), () => {
+            
+        });
+        frm.add_custom_button(__('Visit Site'), () => {
+            window.location.href = `https://${frm.doc.name}`;
         });
 
 		[
