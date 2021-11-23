@@ -39,15 +39,21 @@ frappe.ui.form.on('Site', {
 		// 	</div>`
 		// );
         let site = frm.get_doc();
+        let account = (await frappe.call({
+            method: 'press.api.account.get'
+        })).message;
 
         frm.add_custom_button(__('Use Dashboard'), () => {
             window.location.href = `/dashboard/sites/${frm.docname}/overview`;
         });
         if (site.status === 'Active') {
+            console.log(account);
             frm.add_custom_button(__('Login as Adminstrator'), () => {
-                // TODO: if user not owner, show reason  to login as admin popup
-                // TODO: login as adminstrator
-                login_as_admin(site.name);
+                if (site.team == account.team.name) {
+                    login_as_admin(site.name);
+                } else {
+                    // TODO: show the reason popup
+                }
             });
         }
         frm.add_custom_button(__('Visit Site'), () => {
