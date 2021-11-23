@@ -104,7 +104,7 @@ frappe.ui.form.on('Site', {
             args: { name: frm.docname }
         })
         let backups_fetch = frappe.call({
-            method: 'press.api.site.overview',
+            method: 'press.api.site.backups',
             args: {name: frm.docname}
         });
         let jobs_fetch = frappe.call({
@@ -120,35 +120,28 @@ frappe.ui.form.on('Site', {
             args: {name: frm.docname}
         })
 
+        let daily_usage_fetch = Promise.resolve('empty');
+        let analytics_fetch = Promise.resolve('empty');
+
         let analytics_res = {message: ''};
-        let daily_usage_res = {message: ''};
-        if (frm.doc.status === 'Active') {
-            if (location.hostname === 'frappecloud.com' || 
-            location.hostname === 'staging.frappe.cloud') { // TODO: this is just a hack, need to find a better way
-                analytics_res = await frappe.call({
+        if (frm.doc.status === 'Active' && 
+        (location.hostname === 'frappecloud.com' || 
+        location.hostname === 'staging.frappe.cloud')) { // TODO: this is just a hack, need to find a better way
+                daily_usage_fetch = frappe.call({
+                    method: 'press.api.analytics.daily_usage',
+                    args: {
+                        name: frm.docname,
+                        timezone: moment.tz.guess()
+                    }                
+                });
+                analytics_fetch = await frappe.call({
                     method: 'press.api.analytics.get',
                     args: {
                         name: frm.docname,
                         timezone: moment.tz.guess()
                     },
                 });
-                daily_usage_res = await frappe.call({
-                    method: 'press.api.analytics.daily_usage',
-                    args: {
-                        name: frm.docname,
-                        timezone: moment.tz.guess()
-                    }                
-                })
-            }
         }
-        
-        let daily_usage_data = daily_usage_res.message || '';
-        let usage_counter_data = analytics_res.message.usage_counter || '';
-        let uptime_data = analytics_res.message.uptime || '';
-        let request_count_data = analytics_res.message.request_count || '';
-        let request_cpu_time_data = analytics_res.message.request_cpu_time || '';
-        let job_count_data = analytics_res.message.job_count || '';
-        let job_cpu_time_data = analytics_res.message.job_cpu_time || '';
 
         // // render
         
@@ -211,39 +204,42 @@ frappe.ui.form.on('Site', {
             }
         });
 
-        var data = '';
-        var plan_limit = '';
-        var values = '';
-        
-        var chart_data = '';
-        
-        if(daily_usage_data) {
-            data = daily_usage_data.data;
-			plan_limit = daily_usage_data.plan_limit;
-            values = data.map(d => d.value / 1000000);
-
-            chart_data = {
-                labels: format_chart_date(data),
-                datasets: [{ values }],
-                // show daily limit marker if usage crosses 50%
-                yMarkers: values.some(value => value > plan_limit / 2)
-                    ? [{ label: 'Daily CPU Time Limit', value: plan_limit }]
-                    : null
-            }
-        }
         clear_block(frm, 'daily_usage_block');
-        new ChartComponent(frm.get_field('daily_usage_block').$wrapper, {
-            title: 'Daily Usage',
-            data: chart_data,
-            type: 'line',
-            button: {
-                title: 'All analytics',
-                onclick: () => {
-                    frm.scroll_to_field('usage_counter_block');
+        new AwaitedComponent(frm.get_field('daily_usage_block').$wrapper, {
+            promise: daily_usage_fetch,
+            onload: (daily_usage_res) => {
+                let chart_data;
+                if(daily_usage_res != 'empty') {
+                    let daily_usage_data = daily_usage_res.message
+                    let data = daily_usage_data.data;
+                    let plan_limit = daily_usage_data.plan_limit;
+                    let values = data.map(d => d.value / 1000000);
+                    chart_data = {
+                        labels: format_chart_date(data),
+                        datasets: [{ values }],
+                        // show daily limit marker if usage crosses 50%
+                        yMarkers: values.some(value => value > plan_limit / 2)
+                            ? [{ label: 'Daily CPU Time Limit', value: plan_limit }]
+                            : null
+                    }
                 }
+                new ChartComponent(frm.get_field('daily_usage_block').$wrapper, {
+                    title: 'Daily Usage',
+                    data: chart_data,
+                    type: 'line',
+                    button: {
+                        title: 'All analytics',
+                        onclick: () => {
+                            frm.scroll_to_field('usage_counter_block');
+                        }
+                    },
+                    colors: ['blue']
+                });
             },
-            colors: ['blue']
-        });
+            onfail: (error) => {
+                console.log(error);
+            }
+        })
 
         // sec: Recent Activity
         clear_block(frm, 'recent_activity_block');
@@ -420,106 +416,160 @@ frappe.ui.form.on('Site', {
         })
 
         // tab Anlytics
-        chart_data = '';
-        if(usage_counter_data) {
-            values = usage_counter_data.map(d => d.value / 1000000);
-
-            chart_data = {
-                labels: format_chart_date(data),
-                datasets: [{ values }],
-				// show daily limit marker if usage crosses 50%
-				yMarkers: values.some(value => value > plan_limit / 2)
-					? [{ label: 'Daily CPU Time Limit', value: plan_limit }]
-					: null
-            }
-        }
         clear_block(frm, 'usage_counter_block');
-        new ChartComponent(frm.get_field('usage_counter_block').$wrapper, {
-            title: 'Usage Counter',
-            data: chart_data,
-            type: 'line',
-            colors: ['purple'],
-            button: {
-                title: 'View detailed logs',
-                onclick: () => {
-                    frm.scroll_to_field('logs_block');
+        new AwaitedComponent(frm.get_field('usage_counter_block').$wrapper, {
+            promise: analytics_fetch,
+            onload: (analytics_res) => {
+                let chart_data;
+                if(analytics_res != 'empty') {
+                    let usage_counter_data = analytics_res.message.usage_counter;
+                    let values = usage_counter_data.map(d => d.value / 1000000);
+                    chart_data = {
+                        labels: format_chart_date(data),
+                        datasets: [{ values }],
+                        // show daily limit marker if usage crosses 50%
+                        yMarkers: values.some(value => value > plan_limit / 2)
+                            ? [{ label: 'Daily CPU Time Limit', value: plan_limit }]
+                            : null
+                    }
                 }
+                new ChartComponent(frm.get_field('usage_counter_block').$wrapper, {
+                    title: 'Usage Counter',
+                    data: chart_data,
+                    type: 'line',
+                    colors: ['purple'],
+                    button: {
+                        title: 'View detailed logs',
+                        onclick: () => {
+                            frm.scroll_to_field('logs_block');
+                        }
+                    }
+                });
+            },
+            onfail: (error) => {
+                console.log(error);
             }
         });
 
-        chart_data = '';
-        if(uptime_data) {
-            chart_data = {
-                labels: format_chart_date(uptime_data),
-				datasets: [{ values: uptime_data.map(d => d.value) }]
-            }
-        }
         clear_block(frm, 'uptime_block');
-        new ChartComponent(frm.get_field('uptime_block').$wrapper, {
-            title: 'Uptime',
-            data: chart_data,
-            type: 'mixed-bars'
-        });
+        new AwaitedComponent(frm.get_field('uptime_block').$wrapper, {
+            promise: analytics_fetch,
+            onload: (analytics_res) => {
+                let chart_data;
+                if(analytics_res != 'empty') {
+                    let uptime_data = analytics_res.message.uptime;
+                    chart_data = {
+                        labels: format_chart_date(uptime_data),
+                        datasets: [{ values: uptime_data.map(d => d.value) }]
+                    }
+                }
+                new ChartComponent(frm.get_field('uptime_block').$wrapper, {
+                    title: 'Uptime',
+                    data: chart_data,
+                    type: 'mixed-bars'
+                });
+            },
+            onfail: (error) => {
+                console.log(error)
+            }         
+        })
 
-        chart_data = '';
-        if(request_count_data) {
-            chart_data = {
-                labels: format_chart_date(request_count_data),
-				datasets: [{ values: request_count_data.map(d => d.value) }]
-            }
-        }
         clear_block(frm, 'requests_block');
-        new ChartComponent(frm.get_field('requests_block').$wrapper, {
-            title: 'Requests',
-            data: chart_data,
-            type: 'line',
-            colors: ['green']
-        });
+        new AwaitedComponent(frm.get_field('requests_block').$wrapper, {
+            promise: analytics_fetch,
+            onload: (analytics_res) => {
+                let chart_data;
+                if(analytics_res != 'empty') {
+                    let request_count_data = analytics_res.message.request_count;
+                    chart_data = {
+                        labels: format_chart_date(request_count_data),
+                        datasets: [{ values: request_count_data.map(d => d.value) }]
+                    }
+                }
+                new ChartComponent(frm.get_field('requests_block').$wrapper, {
+                    title: 'Requests',
+                    data: chart_data,
+                    type: 'line',
+                    colors: ['green']
+                });
+            },
+            onfail: (error) => {
+                console.log(error)
+            }         
+        })
 
-        chart_data = '';
-        if(request_cpu_time_data) {
-            chart_data = {
-                labels: format_chart_date(request_cpu_time_data),
-				datasets: [{ values: request_cpu_time_data.map(d => d.value / 1000000) }]
-            }
-        }
         clear_block(frm, 'cpu_usage_block');
-        new ChartComponent(frm.get_field('cpu_usage_block').$wrapper, {
-            title: 'CPU Usage',
-            data: chart_data,
-            type: 'line',
-            colors: ['yellow']
-        });
+        new AwaitedComponent(frm.get_field('cpu_usage_block').$wrapper, {
+            promise: analytics_fetch,
+            onload: (analytics_res) => {
+                let chart_data;
+                if(analytics_res != 'empty') {
+                    let request_cpu_time_data = analytics_res.message.request_cpu_time;
+                    chart_data = {
+                        labels: format_chart_date(request_cpu_time_data),
+                        datasets: [{ values: request_cpu_time_data.map(d => d.value / 1000000) }]
+                    }
+                }
+                new ChartComponent(frm.get_field('cpu_usage_block').$wrapper, {
+                    title: 'CPU Usage',
+                    data: chart_data,
+                    type: 'line',
+                    colors: ['yellow']
+                });
+            },
+            onfail: (error) => {
+                console.log(error)
+            }         
+        })
 
-        chart_data = '';
-        if(job_count_data) {
-            chart_data = {
-                labels: format_chart_date(job_count_data),
-				datasets: [{ values: job_count_data.map(d => d.value) }]
-            }
-        }
         clear_block(frm, 'background_jobs_block');
-        new ChartComponent(frm.get_field('background_jobs_block').$wrapper, {
-            title: 'Background Jobs',
-            data: chart_data,
-            type: 'line',
-            colors: ['red']
-        });
-
-        chart_data = '';
-        if(job_cpu_time_data) {
-            chart_data = {
-                labels: format_chart_date(job_cpu_time_data),
-				datasets: [{ values: job_cpu_time_data.map(d => d.value / 1000000) }]
-            }
-        }
+        new AwaitedComponent(frm.get_field('background_jobs_block').$wrapper, {
+            promise: analytics_fetch,
+            onload: (analytics_res) => {
+                let chart_data;
+                if(analytics_res != 'empty') {
+                    let job_count_data = analytics_res.message.job_count;
+                    chart_data = {
+                        labels: format_chart_date(job_count_data),
+                        datasets: [{ values: job_count_data.map(d => d.value) }]
+                    }
+                }
+                new ChartComponent(frm.get_field('background_jobs_block').$wrapper, {
+                    title: 'Background Jobs',
+                    data: chart_data,
+                    type: 'line',
+                    colors: ['red']
+                });        
+            },
+            onfail: (error) => {
+                console.log(error)
+            }         
+        })
+        
         clear_block(frm, 'background_jobs_cpu_usage_block');
-        new ChartComponent(frm.get_field('background_jobs_cpu_usage_block').$wrapper, {
-            title: 'Background Jobs CPU Usage',
-            data: chart_data,
-            type: 'line',
-            colors: ['blue']
-        });
+        new AwaitedComponent(frm.get_field('background_jobs_block').$wrapper, {
+            promise: analytics_fetch,
+            onload: (analytics_res) => {
+                let chart_data;
+                if(analytics_res != 'empty') {
+                    let job_cpu_time_data = analytics_res.message.job_cpu_time;
+                    chart_data = {
+                        labels: format_chart_date(job_cpu_time_data),
+                        datasets: [{ values: job_cpu_time_data.map(d => d.value / 1000000) }]
+                    }
+                }
+                new ChartComponent(frm.get_field('background_jobs_cpu_usage_block').$wrapper, {
+                    title: 'Background Jobs CPU Usage',
+                    data: chart_data,
+                    type: 'line',
+                    colors: ['blue']
+                });
+            },
+            onfail: (error) => {
+                console.log(error)
+            }         
+        })
+
         // tab: Backup & Restore
 
         // sec: Backup
