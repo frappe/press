@@ -290,7 +290,7 @@ def versions(name):
 def candidates(name, start=0):
 	result = frappe.get_all(
 		"Deploy Candidate",
-		["name", "creation", "status", "`tabDeploy Candidate App`.app"],
+		["name", "creation", "status"],
 		{"group": name, "status": ("!=", "Draft")},
 		order_by="creation desc",
 		start=start,
@@ -300,8 +300,13 @@ def candidates(name, start=0):
 	for d in result:
 		candidates.setdefault(d.name, {})
 		candidates[d.name].update(d)
-		candidates[d.name].setdefault("apps", [])
-		candidates[d.name]["apps"].append(d.app)
+		dc_apps = frappe.get_all(
+			"Deploy Candidate App",
+			filters={"parent": d.name},
+			pluck="app",
+			order_by="creation desc",
+		)
+		candidates[d.name]["apps"] = dc_apps
 
 	return candidates.values()
 
