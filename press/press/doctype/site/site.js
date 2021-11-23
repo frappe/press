@@ -38,13 +38,18 @@ frappe.ui.form.on('Site', {
 		// 		</div>
 		// 	</div>`
 		// );
+        let site = frm.get_doc();
 
         frm.add_custom_button(__('Use Dashboard'), () => {
             window.location.href = `/dashboard/sites/${frm.docname}/overview`;
         });
-        frm.add_custom_button(__('Login as Adminstrator'), () => {
-            
-        });
+        if (site.status === 'Active') {
+            frm.add_custom_button(__('Login as Adminstrator'), () => {
+                // TODO: if user not owner, show reason  to login as admin popup
+                // TODO: login as adminstrator
+                login_as_admin(site.name);
+            });
+        }
         frm.add_custom_button(__('Visit Site'), () => {
             window.location.href = `https://${frm.doc.name}`;
         });
@@ -192,7 +197,6 @@ frappe.ui.form.on('Site', {
         // render
         
         // // tab: Overview 
-        let site = frm.get_doc();
         clear_block(frm, 'site_activation_block');
         if(site.status === 'Active' && !site.setup_wizard_complete) {
             new ActionBlock(frm.get_field('site_activation_block').$wrapper, {
@@ -715,3 +719,20 @@ frappe.ui.form.on('Site', {
         // tab: Settings
 	},
 });
+
+
+function login_as_admin(site_name) {
+    console.log(`login as admin: ${site_name}`);
+    frappe.call({
+        method: 'press.api.site.login',
+        args: {
+            name: site_name
+        }
+    }).then((sid) => {
+        if (sid) {
+            window.open(`https://${site_name}/desk?sid=${sid}`, '_blank');
+        }
+    }, (error) => {
+        frappe.throw(__(`an error occureed: ${error}`));
+    })
+}
