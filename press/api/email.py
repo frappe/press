@@ -14,81 +14,22 @@ def email_ping():
 	return "pong"
 
 
-def validate_plan(team, site):
+def validate_plan(secret_key, site):
 	"""
-	check if subscription exists and if it's active
+	check if subscription is active on marketplace and get activation date
 	"""
-	# ToDo: first_day should be the day subscription was enabled
-	active = frappe.db.get_all(
-		"QMail Subscription",
-		pluck="emails",
-		filters={"team": team, "site": site, "enabled": 1},
-	)
+	# ToDo: verify this key from marketplace
+	# ToDo: check plan activation date from marketplace
+	active = 1 if secret_key == "thissecretkey" else 0
+	# if active:
+		# count = frappe.db.count(
+			# "QMail Log", filters={"site": site, "status": "delivered", "date": [">=", plan_activation_date]}
+		# )
 
-	if active and len(active) == 1:
-		date = datetime.today().date()
-		first_day = date.strftime("%Y-%m-01")
+		# if count < int(active[0]):
+				# return True
 
-		count = frappe.db.count(
-			"QMail Log", filters={"site": site, "status": "delivered", "date": [">=", first_day]}
-		)
-
-		if count < int(active[0]):
-			return True
-
-	return False
-
-
-def can_change_plan():
-	# ToDo:
-	# check unpaid invoices
-	# check if card is added and have enough balance
-	pass
-
-
-@frappe.whitelist(allow_guest=True)
-def change_plan(**data):
-	can_change_plan()
-	current_plan = frappe.db.get_all(
-		"QMail Subscription",
-		filters={"team": data["team"], "site": data["site"], "enabled": 1},
-	)
-
-	if current_plan:
-		doc = frappe.get_doc("QMail Subscription", current_plan[0]["name"])
-		doc.plan = data["plan"]
-		doc.save(ignore_permissions=True)
-		frappe.db.commit()
-	else:
-		frappe.get_doc(
-			{
-				"doctype": "QMail Subscription",
-				"team": data["team"],
-				"site": data["site"],
-				"plan": data["plan"],
-				"enabled": 1,
-			}
-		).insert(ignore_permissions=True)
-	return "Successful", 200
-
-
-@frappe.whitelist(allow_guest=True)
-def create_subscription(**data):
-	"""
-	Testing: create subscription
-	"""
-	if data["passphrase"] == "xHupBrxg1pPvVXG5":
-		frappe.get_doc(
-			{
-				"doctype": "QMail Subscription",
-				"team": data["team"],
-				"site": data["site"],
-				"plan": "Free100",
-				"enabled": 1,
-			}
-		).insert(ignore_permissions=True)
-
-	return {"plan_name": "Free100", "emails": 100, "price": 0}
+	return True if active else False
 
 
 @frappe.whitelist(allow_guest=True)
@@ -96,7 +37,7 @@ def send_mail(**data):
 	files = frappe._dict(frappe.request.files)
 	data = json.loads(data["data"])
 
-	if validate_plan(data["team"], data["site"]):
+	if validate_plan(data["sk_qmail"], data["site"]):
 		api_key, domain = frappe.db.get_value(
 			"Press Settings", None, ["mailgun_api_key", "root_domain"]
 		)
@@ -114,7 +55,8 @@ def send_mail(**data):
 			files=attachments,
 			data={
 				"v:site_name": f"{data['site']}",
-				"v:message_id": f"{data['message_id']}"
+				"v:sk_qmail": f"{data['sk_qmail']}",
+				"v:message_id": f"{data['message_id']}",
 				"from": f"{data['sender']}",
 				"to": data["recipient"],
 				"cc": data["cc"],
@@ -125,8 +67,8 @@ def send_mail(**data):
 		)
 
 		return "Successful"
-	else:
-		return "Error"
+	
+	return "Error"
 
 
 @frappe.whitelist(allow_guest=True)
@@ -158,6 +100,8 @@ def event_log(**data):
 
 
 def change_message_status(site, data):
-	url = f"https://{site}/api/method/qmail.qmail.doctype.qmail.qmail.change_message_status"
-	
+	url = (
+		f"https://{site}/api/method/qmail.qmail.doctype.qmail.qmail.change_message_status"
+	)
+
 	requests.post(url, data)
