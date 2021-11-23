@@ -29,6 +29,7 @@
   "column_break_26",
   "free_credits_inr",
   "free_credits_usd",
+  "ngrok_auth_token",
   "erpnext_authentication",
   "erpnext_url",
   "erpnext_api_key",
@@ -755,11 +756,17 @@
    "fieldtype": "Int",
    "label": "Max number of Allowed Screenshots",
    "non_negative": 1
+  },
+  {
+   "description": "Sign up on ngrok.com to get one for free",
+   "fieldname": "ngrok_auth_token",
+   "fieldtype": "Data",
+   "label": "Ngrok Auth Token"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2021-09-16 09:29:14.158162",
+ "modified": "2021-11-21 23:05:46.997791",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

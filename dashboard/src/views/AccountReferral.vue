@@ -8,13 +8,13 @@
 			<div
 				class="p-2 items-center rounded-lg flex flex-row border-2 justify-between"
 			>
-				<p class="text-sm text-gray-800 font-mono">
+				<p class="text-sm text-gray-800 font-mono overflow-hidden">
 					{{ referralLink }}
 				</p>
 				<Button icon="copy" @click="copyReferralLink" />
 			</div>
 			<h3 class="text-base text-gray-700">
-				When someone sign's up using the above link and spents atleast
+				When someone sign's up using the above link and spends at least
 				{{ creditAmountInTeamCurrency }} on Frappe Cloud, you
 				<strong
 					>get {{ creditAmountInTeamCurrency }} in Frappe Cloud Credits</strong
@@ -46,7 +46,7 @@ export default {
 			return '';
 		},
 		creditAmountInTeamCurrency() {
-			return this.$account.team.country == 'India' ? '1800₹' : '25$';
+			return this.$account.team.country == 'India' ? '₹1800' : '$25';
 		}
 	}
 };

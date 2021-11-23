@@ -15,6 +15,7 @@ def create_test_site_backup(
 	creation: datetime = datetime.now(),
 	files_availability: str = "Available",
 	offsite: bool = True,
+	status: str = "Success",
 ):
 	"""
 	Create test site backup doc for required timestamp.
@@ -23,7 +24,7 @@ def create_test_site_backup(
 	"""
 	params_dict = {
 		"doctype": "Site Backup",
-		"status": "Success",
+		"status": status,
 		"site": site,
 		"creation": creation,
 		"files_availability": files_availability,
