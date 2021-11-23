@@ -47,12 +47,31 @@ frappe.ui.form.on('Site', {
             window.location.href = `/dashboard/sites/${frm.docname}/overview`;
         });
         if (site.status === 'Active') {
-            console.log(account);
             frm.add_custom_button(__('Login as Adminstrator'), () => {
-                if (site.team == account.team.name) {
+                if (site.team !== account.team.name) {
                     login_as_admin(site.name);
                 } else {
-                    // TODO: show the reason popup
+                    new frappe.ui.Dialog({
+                        title: 'Login as Adminstrator',
+                        fields: [
+                            {
+                                label: 'Please enter reason for this login.',
+                                fieldname: 'reason',
+                                fieldtype: 'Small Text'
+                            }
+                        ],
+                        primary_action_label: 'Login',
+                        primary_action(values) {
+                            if (values) {
+                                let reason = values.reason;
+                                console.log(reason);
+                                login_as_admin(site.name, reason);
+                            } else {
+                                frappe.throw(__('Reason fielf should not be empty'))
+                            }
+                            this.hide();
+                        }
+                    }).show();                    
                 }
             });
         }
@@ -727,18 +746,20 @@ frappe.ui.form.on('Site', {
 });
 
 
-function login_as_admin(site_name) {
+function login_as_admin(site_name, reason=null) {
     console.log(`login as admin: ${site_name}`);
     frappe.call({
         method: 'press.api.site.login',
         args: {
-            name: site_name
+            name: site_name,
+            reason: reason
         }
     }).then((sid) => {
         if (sid) {
             window.open(`https://${site_name}/desk?sid=${sid}`, '_blank');
         }
     }, (error) => {
-        frappe.throw(__(`an error occureed: ${error}`));
+        console.log(error);
+        frappe.throw(__(`An error occureed!!`));
     })
 }
