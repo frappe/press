@@ -52,7 +52,7 @@
   ufw:
     state: enabled
 
-- name: Ensure systemd service is enabled and running
+- name: Ensure ufw systemd service is enabled and running
   service:
     name: ufw
     enabled: yes
