@@ -38,6 +38,10 @@
     proto: tcp
   when: is_database_server|bool
 
+- name: Enable logging
+  ufw:
+    logging: "on"
+
 - name: Deny incoming by default
   ufw:
     default: deny
