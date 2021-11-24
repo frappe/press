@@ -20,7 +20,7 @@ def update_preferences(preferences):
 	if cookie_perms:
 		cookie_perms = json.loads(unquote(cookie_perms.value))
 
-		# If was disabled before, now enabled
+		# If was disabled before, now enabled or vice-versa
 		if cookie_perms.get("analytics") != preferences_dict.get("analytics"):
 			log_cookie_consent(preferences_dict)
 	else:
