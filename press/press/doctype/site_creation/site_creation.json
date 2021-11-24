@@ -1,0 +1,216 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2021-11-24 17:07:08.548128",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "is_private",
+  "project",
+  "subdomin_section",
+  "subdomin_block",
+  "subdomain",
+  "frappe_version_section",
+  "frappe_version_block",
+  "frappe_version",
+  "region_section",
+  "region_block",
+  "region",
+  "apps_to_install_section",
+  "apps_to_install_block",
+  "temp",
+  "public_apps_block",
+  "private_apps_block",
+  "restore_existing_site_section",
+  "restore_existing_site_block",
+  "restore_using_backup",
+  "restore_using_url",
+  "restore_using_backup_block",
+  "get_backups",
+  "restore_using_url_block",
+  "site_url",
+  "email",
+  "password",
+  "skip_failing_patches",
+  "plan_section",
+  "plan_section_block"
+ ],
+ "fields": [
+  {
+   "allow_in_quick_entry": 1,
+   "default": "0",
+   "fieldname": "is_private",
+   "fieldtype": "Check",
+   "label": "Is Private"
+  },
+  {
+   "allow_in_quick_entry": 1,
+   "depends_on": "is_private",
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "label": "Release Group",
+   "options": "Release Group"
+  },
+  {
+   "allow_in_quick_entry": 1,
+   "fieldname": "subdomain",
+   "fieldtype": "Data",
+   "label": "Subdomain"
+  },
+  {
+   "allow_in_quick_entry": 1,
+   "fieldname": "frappe_version",
+   "fieldtype": "Link",
+   "label": "Frappe Version",
+   "options": "Frappe Version"
+  },
+  {
+   "allow_in_quick_entry": 1,
+   "fieldname": "region",
+   "fieldtype": "Link",
+   "label": "Region",
+   "options": "Region"
+  },
+  {
+   "allow_in_quick_entry": 1,
+   "fieldname": "subdomin_block",
+   "fieldtype": "HTML"
+  },
+  {
+   "allow_in_quick_entry": 1,
+   "fieldname": "subdomin_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "frappe_version_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "frappe_version_block",
+   "fieldtype": "HTML"
+  },
+  {
+   "fieldname": "region_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "region_block",
+   "fieldtype": "HTML"
+  },
+  {
+   "fieldname": "apps_to_install_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "apps_to_install_block",
+   "fieldtype": "HTML"
+  },
+  {
+   "fieldname": "public_apps_block",
+   "fieldtype": "HTML"
+  },
+  {
+   "fieldname": "private_apps_block",
+   "fieldtype": "HTML"
+  },
+  {
+   "fieldname": "temp",
+   "fieldtype": "HTML"
+  },
+  {
+   "fieldname": "restore_existing_site_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "restore_existing_site_block",
+   "fieldtype": "HTML"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:!doc.restore_using_url",
+   "fieldname": "restore_using_backup",
+   "fieldtype": "Check",
+   "label": "Upload Backup"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:!doc.restore_using_backup",
+   "fieldname": "restore_using_url",
+   "fieldtype": "Check",
+   "label": "Migrate from Site URL"
+  },
+  {
+   "depends_on": "restore_using_backup",
+   "fieldname": "restore_using_backup_block",
+   "fieldtype": "HTML"
+  },
+  {
+   "depends_on": "!(restore_using_url)",
+   "fieldname": "restore_using_url_block",
+   "fieldtype": "HTML"
+  },
+  {
+   "depends_on": "restore_using_url",
+   "fieldname": "site_url",
+   "fieldtype": "Data",
+   "label": "Site URL"
+  },
+  {
+   "depends_on": "restore_using_url",
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "label": "Email"
+  },
+  {
+   "depends_on": "restore_using_url",
+   "fieldname": "password",
+   "fieldtype": "Data",
+   "label": "Password"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:(doc.restore_using_backup || doc.restore_using_url)",
+   "fieldname": "skip_failing_patches",
+   "fieldtype": "Check",
+   "label": "Skip failing patches (if any patch fails)"
+  },
+  {
+   "depends_on": "restore_using_backup",
+   "fieldname": "get_backups",
+   "fieldtype": "Button",
+   "label": "Get Backups"
+  },
+  {
+   "fieldname": "plan_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "plan_section_block",
+   "fieldtype": "HTML"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2021-11-24 21:39:55.148260",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Site Creation",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}
