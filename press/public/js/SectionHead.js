@@ -35,11 +35,17 @@ class SectionHead {
 			}
 		}
 		if (this.df.description) {
-			this.wrapper.append(`
-                <div class="d-flex flex-row mb-4">
-                    <p>${this.df.description || ''}</p>
-                </div>
-            `);
+			if(this.df.description.constructor.name !== 'Array') {
+				this.df.description = [this.df.description];
+			}
+			let description_section = $(
+				`<div class="d-flex flex-column mb-4">`
+			).appendTo(this.wrapper);
+			for(let description_line of this.df.description) {
+				description_section.append(`
+					<p>${description_line || ''}</p>
+				`);
+			}
 		}
 	}
 }
