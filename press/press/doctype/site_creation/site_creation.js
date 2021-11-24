@@ -20,7 +20,7 @@ frappe.ui.form.on('Site Creation', {
 		clear_block(frm, 'frappe_version_block');
 		new SectionHead(frm.get_field('frappe_version_block').$wrapper, {
 			title: 'Select Frappe version',
-			description: 'Select the Frappe version for your site'
+			description: 'Select a Frappe version or a Release Group for your site'
 		})
 
 		clear_block(frm, 'region_block');
