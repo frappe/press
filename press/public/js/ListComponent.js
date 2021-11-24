@@ -8,6 +8,13 @@ class ListComponent {
 
 	make() {
 		this.wrapper = $(`<div class="list-component">`).appendTo(this.parent);
+		if (this.df.description) {
+			this.wrapper.append(`
+                <div class="d-flex flex-row mb-4">
+                    <p>${this.df.description || ''}</p>
+                </div>
+            `);
+		}
 		this.iterate_list(
 			this.wrapper,
 			this.df.data,
@@ -78,6 +85,17 @@ function title_with_text_area_template(data) {
 				<span style="white-space: pre-line">${data.message || ''}</span>
 			</div>
 		</div>	
+	`;
+}
+
+function title_with_sub_text_and_check_checkbox(data) {
+	return `
+		<div class="d-flex flex-row justify-between">
+			<p class="list-row-col ellipsis list-subject level">${data.title || ""}
+			<p class="list-row-col ellipsis hidden-xs">${data.sub_text || ""}</p>
+			<input type="checkbox">
+		</div>
+		${data.last ? `` : `<hr>`}
 	`;
 }
 
