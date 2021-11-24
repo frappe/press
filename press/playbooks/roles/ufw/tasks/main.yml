@@ -31,6 +31,13 @@
     proto: tcp
   when: is_server|bool and proxy_private_ip is defined
 
+- name: Allow connections from docker bridge
+  ufw:
+    rule: allow
+    interface: docker0
+    direction: in
+  when: is_server|bool
+
 - name: Allow mysql port 3306 connections
   ufw:
     rule: allow
