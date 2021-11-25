@@ -21,7 +21,8 @@ class ListComponent {
 			this.df.template,
 			this.df.onclick,
 			this.df.selectable,
-			this.df.multiselect
+			this.df.multiselect,
+			this.df.onupdate
 		);
 	}
 
@@ -30,7 +31,7 @@ class ListComponent {
 		let selected_indices = [];
 		let prev_selected_list_row = null;
 		for (var i = 0; i < data.length; i++) {
-			let cursor_style = (this.df.onclick || this.df.selectable) ? 'cursor: pointer;' : '';
+			let cursor_style = (this.df.onclick || this.df.selectable || this.df.multiselect) ? 'cursor: pointer;' : '';
 			let list_row = $(
 				`<div id="${i}" class="item-row hover-shadow" style="${cursor_style}">`
 			).appendTo(parent);
@@ -71,9 +72,12 @@ class ListComponent {
 					if (list_row[0].id == selected_index) {
 						prev_selected_list_row = list_row;
 					}
+
+					this.df.onupdate(selected_index);
 				})
+
 			}
-			if(this.df.selectable && this.df.multiselect) {
+			if(this.df.multiselect) {
 				$(list_row).on('click', () => {
 					list_row.empty();
 					if(data[list_row[0].id].selected) {
@@ -83,7 +87,10 @@ class ListComponent {
 					}
 					data[list_row[0].id].selected = (selected_indices.includes(list_row[0].id));
 					list_row.append(template(data[list_row[0].id]));
+
+					this.df.onupdate(selected_indices);
 				})
+
 			}	
 		}
 	}
@@ -140,9 +147,9 @@ function title_with_text_area_template(data) {
 function title_with_sub_text_and_check_checkbox(data) {
 	return `
 		<div class="d-flex flex-row justify-between">
-			<p class="list-row-col ellipsis list-subject level">${data.title || ""}
+			<p class="list-row-col ellipsis list-subject level">${data.title || ""}</p>
 			<p class="list-row-col ellipsis hidden-xs">${data.sub_text || ""}</p>
-			<input type="checkbox">
+			<input type="checkbox" ${data.selected ? 'checked': ''}>
 		</div>
 		${data.last ? `` : `<hr>`}
 	`;
