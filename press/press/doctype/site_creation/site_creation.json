@@ -13,7 +13,7 @@
   "frappe_version_block",
   "private_release_group",
   "frappe_version",
-  "project",
+  "release_group",
   "region_section",
   "region_block",
   "region",
@@ -34,17 +34,11 @@
   "password",
   "skip_failing_patches",
   "plan_section",
-  "plan_section_block"
+  "plan_section_block",
+  "public_apps",
+  "private_apps"
  ],
  "fields": [
-  {
-   "allow_in_quick_entry": 1,
-   "depends_on": "private_release_group",
-   "fieldname": "project",
-   "fieldtype": "Link",
-   "label": "Release Group",
-   "options": "Release Group"
-  },
   {
    "allow_in_quick_entry": 1,
    "fieldname": "subdomain",
@@ -189,11 +183,31 @@
    "fieldname": "private_release_group",
    "fieldtype": "Check",
    "label": "Private Release Group"
+  },
+  {
+   "allow_in_quick_entry": 1,
+   "depends_on": "private_release_group",
+   "fieldname": "release_group",
+   "fieldtype": "Link",
+   "label": "Release Group",
+   "options": "Release Group"
+  },
+  {
+   "fieldname": "public_apps",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Public Apps"
+  },
+  {
+   "fieldname": "private_apps",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Private Apps"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-11-24 22:02:09.598999",
+ "modified": "2021-11-25 11:21:15.014270",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Creation",

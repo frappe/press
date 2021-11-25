@@ -35,34 +35,7 @@ frappe.ui.form.on('Site Creation', {
 			description: 'Choose apps to install on your site. You can select apps published on marketplace or your private apps.'
 		})
 
-		// TODO: fetch all public apps
-		// TODO: show a selectable list of public apps
-		clear_block(frm, 'public_apps_block');
-		let public_apps = [
-			{title: 'App 1', subtext: 'Subtext for app 1'},
-			{title: 'App 2', subtext: 'Subtext for app 2'},
-			{title: 'App 3', subtext: 'Subtext for app 3'},
-			{title: 'App 4', subtext: 'Subtext for app 4'},
-			{title: 'App 5', subtext: 'Subtext for app 5'},
-		]
-		new ListComponent(frm.get_field('public_apps_block').$wrapper, {
-			data: public_apps,
-			template: title_with_sub_text_and_check_checkbox
-		})
-
-		// TODO: fetch all private apps
-		// TODO: show a selectable list of private apps
-		clear_block(frm, 'private_apps_block');
-		let private_apps = [
-			{title: 'App 1', subtext: 'Subtext for app 1'},
-		]
-		new SectionHead(frm.get_field('private_apps_block').$wrapper, {
-			description: 'Your private apps'
-		})
-		new ListComponent(frm.get_field('private_apps_block').$wrapper, {
-			data: private_apps,
-			template: title_with_sub_text_and_check_checkbox
-		})
+		load_apps(frm);
 
 		clear_block(frm, 'restore_existing_site_block');
 		new SectionHead(frm.get_field('restore_existing_site_block').$wrapper, {
@@ -119,22 +92,90 @@ frappe.ui.form.on('Site Creation', {
 		})
 
 		clear_block(frm, 'plan_section_block');
+		let plans = await frappe.db.get_list('Plan', {
+			fields: ['name']
+		})
+		console.log(plans);
+		plans = remap(plans, (d)=> {
+			return {
+				title: d
+			}
+		})
 		new SectionHead(frm.get_field('plan_section_block').$wrapper, {
 			title: 'Choose your plan',
 			description: 'Select a plan based on the type of usage you are expecting on your site.'
 		});
-		// TODO: fetch all public apps
-		// TODO: show a selectable list of public apps
-		let plans  = [
-			{title: 'Plan 1', subtext: 'Subtext for plan 1'},
-			{title: 'Plan 1', subtext: 'Subtext for plan 2'},
-			{title: 'Plan 1', subtext: 'Subtext for plan 3'},
-			{title: 'Plan 1', subtext: 'Subtext for plan 4'},
-			{title: 'Plan 1', subtext: 'Subtext for plan 5'},
-		]
 		new ListComponent(frm.get_field('plan_section_block').$wrapper, {
 			data: plans,
 			template: title_with_sub_text_and_check_checkbox
 		})
+	},
+	release_group: async function(frm) {
+		if(frm.doc.release_group) {
+			let rb = await frappe.db.get_doc('Release Group', frm.doc.release_group);
+			frm.doc.public_apps = [];
+
+			console.log(rb);
+			for(let app of rb.apps) {
+				if(app.app != 'frappe') frm.doc.public_apps.push(app.title);
+			}
+
+			refresh_field('public_apps');
+			load_apps(frm);
+		}
+	},
+	frappe_version: async function(frm) {
+		if(frm.doc.frappe_version) {
+			let rb = (await frappe.db.get_value('Release Group', {
+				'default': '1',
+				'public': '1',
+				'version': frm.doc.frappe_version
+			}, ['name'])).message;
+	
+			console.log(rb);
+			if (Object.keys(rb).length !== 0) {
+				frm.doc.public_apps = [];
+				for(let app of rb.apps) {
+					if(app.app != 'frappe') frm.doc.public_apps.push(app.title);
+				}
+
+				refresh_field('public_apps');
+				load_apps(frm);
+			} else {
+				frappe.msgprint(__('There is no public Release Group for this frappe version'))
+			}
+		}
 	}
 });
+
+function load_apps(frm) {
+	let public_apps = frm.doc.public_apps;
+	let private_apps = frm.doc.private_apps;
+
+	clear_block(frm, 'public_apps_block');
+	if(public_apps) {
+		public_apps = remap(public_apps, (d) => {
+			return {
+				title: d
+			}
+		})
+		new ListComponent(frm.get_field('public_apps_block').$wrapper, {
+			data: public_apps,
+			template: title_with_sub_text_and_check_checkbox
+		})
+	}
+
+	clear_block(frm, 'private_apps_block');
+	if(private_apps) {
+		private_apps = [
+			{title: 'App 1', subtext: 'Subtext for app 1'},
+		]
+		new SectionHead(frm.get_field('private_apps_block').$wrapper, {
+			description: 'Your private apps'
+		})
+		new ListComponent(frm.get_field('private_apps_block').$wrapper, {
+			data: private_apps,
+			template: title_with_sub_text_and_check_checkbox
+		})
+	}
+}
