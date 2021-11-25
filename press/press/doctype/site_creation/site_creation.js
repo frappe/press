@@ -145,6 +145,25 @@ frappe.ui.form.on('Site Creation', {
 				frappe.msgprint(__('There is no public Release Group for this frappe version'))
 			}
 		}
+	},
+	subdomain: async function(frm) {
+		let subdomain = frm.doc.subdomain;
+		if(subdomain) {
+			let error = validate_subdomain(subdomain);
+			if(!error) {
+				let subdomain_taken = (await frappe.call({
+					method: 'press.api.site.exists',
+					args: {
+						subdomain: subdomain
+					}
+				})).message;
+				console.log(subdomain_taken);
+				if(subdomain_taken) {
+					error = `${subdomain} already exists.`;
+				}
+			}
+			if (error) frappe.msgprint(__(error));
+		}
 	}
 });
 
@@ -178,4 +197,20 @@ function load_apps(frm) {
 			template: title_with_sub_text_and_check_checkbox
 		})
 	}
+}
+
+function validate_subdomain(subdomain) {
+	if (!subdomain) {
+		return 'Subdomain cannot be empty';
+	}
+	if (subdomain.length < 5) {
+		return 'Subdomain too short. Use 5 or more characters';
+	}
+	if (subdomain.length > 32) {
+		return 'Subdomain too long. Use 32 or less characters';
+	}
+	if (!subdomain.match(/^[a-z0-9][a-z0-9-]*[a-z0-9]$/)) {
+		return 'Subdomain contains invalid characters. Use lowercase characters, numbers and hyphens';
+	}
+	return null;
 }
