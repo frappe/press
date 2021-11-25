@@ -19,13 +19,18 @@ class ListComponent {
 			this.wrapper,
 			this.df.data,
 			this.df.template,
-			this.df.onclick
+			this.df.onclick,
+			this.df.selectable,
+			this.df.multiselect
 		);
 	}
 
 	iterate_list(parent, data, template) {
+		let selected_index = null;
+		let selected_indices = [];
+		let prev_selected_list_row = null;
 		for (var i = 0; i < data.length; i++) {
-			let cursor_style = this.df.onclick ? 'cursor: pointer;' : '';
+			let cursor_style = (this.df.onclick || this.df.selectable) ? 'cursor: pointer;' : '';
 			let list_row = $(
 				`<div id="${i}" class="item-row hover-shadow" style="${cursor_style}">`
 			).appendTo(parent);
@@ -36,6 +41,50 @@ class ListComponent {
 					this.df.onclick(list_row[0].id); // TODO pass index
 				});
 			}
+			if (this.df.selectable && !this.df.multiselect) {
+				$(list_row).on('click', () => {
+					if (selected_index) {
+						if (selected_index == list_row[0].id){
+							selected_index = null;
+						}
+						else {
+							selected_index = list_row[0].id
+						}
+					} else {
+						selected_index = list_row[0].id;
+					}
+					
+					if (prev_selected_list_row) {
+						prev_selected_list_row.empty();
+						data[prev_selected_list_row[0].id].selected = (prev_selected_list_row[0].id == selected_index);
+						prev_selected_list_row.append(template(data[prev_selected_list_row[0].id]));
+
+						if (prev_selected_list_row[0].id != selected_index) {
+							prev_selected_list_row = null;
+						}
+					}
+
+					list_row.empty();
+					data[list_row[0].id].selected = (list_row[0].id == selected_index);
+					list_row.append(template(data[list_row[0].id]));
+
+					if (list_row[0].id == selected_index) {
+						prev_selected_list_row = list_row;
+					}
+				})
+			}
+			if(this.df.selectable && this.df.multiselect) {
+				$(list_row).on('click', () => {
+					list_row.empty();
+					if(data[list_row[0].id].selected) {
+						selected_indices.splice(selected_indices.indexOf(list_row[0].id), 1);
+					} else {
+						selected_indices.push(list_row[0].id);
+					}
+					data[list_row[0].id].selected = (selected_indices.includes(list_row[0].id));
+					list_row.append(template(data[list_row[0].id]));
+				})
+			}	
 		}
 	}
 }
