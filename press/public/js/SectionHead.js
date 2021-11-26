@@ -23,7 +23,7 @@ class SectionHead {
 		if (this.df.button) {
 			let action_button = $(`<div class="action-button d-flex align-items-center">`).appendTo(header_section);
 			action_button.append(`
-                <button class="btn btn-${this.df.button.tag || 'light'}">
+                <button class="btn btn-${this.df.button.tag} btn-sm btn-modal-${this.df.button.tag || 'light'}">
                     <span>${this.df.button.title || ''}</span>
                 </button
             `);
