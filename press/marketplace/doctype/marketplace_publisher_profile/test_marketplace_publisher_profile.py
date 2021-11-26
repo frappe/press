@@ -4,5 +4,5 @@
 # import frappe
 import unittest
 
-class TestMarketplaceDeveloperProfile(unittest.TestCase):
+class TestMarketplacePublisherProfile(unittest.TestCase):
 	pass
