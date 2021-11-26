@@ -135,6 +135,17 @@ class MarketplaceApp(WebsiteGenerator):
 
 		context.supported_versions = supported_versions
 
+		# Add publisher info
+		publisher_profile = frappe.get_all(
+			"Marketplace Publisher Profile",
+			filters={"team": self.team},
+			fields=["display_name", "contact_email"],
+			limit=1,
+		)
+
+		if publisher_profile:
+			context.publisher_profile = publisher_profile[0]
+
 	def get_deploy_information(self):
 		"""Return the deploy information this marketplace app"""
 		# Public Release Groups, Benches

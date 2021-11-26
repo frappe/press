@@ -22,6 +22,17 @@
 {% macro sidebar() %}
 <div class="order-1 w-full md:order-none md:w-2/12 space-y-9">
 	{{ app_image(app, 'hidden md:block') }}
+
+	{%- if publisher_profile -%}
+	<div>
+		<h5 class="text-xl font-semibold text-gray-900">Publisher</h5>
+		<a class="text-base text-blue-500 hover:text-blue-700"
+			href="{{ 'mailto:{}'.format(publisher_profile.contact_email) if  publisher_profile.contact_email else '#'}}">
+			{{ publisher_profile.display_name }}
+		</a>
+	</div>
+	{%- endif -%}
+
 	<div>
 		<h5 class="text-xl font-semibold text-gray-900">Category</h5>
 		<div class="mt-2">
@@ -30,6 +41,7 @@
 			{{ badge(app.category) }}
 		</div>
 	</div>
+
 	<div>
 		<h5 class="text-xl font-semibold text-gray-900">Learn more & Support</h5>
 		<ul class="flex flex-col mt-2 space-y-3">
