@@ -248,11 +248,11 @@
   },
   {
    "group": "Marketplace",
-   "link_doctype": "Marketplace Developer Profile",
+   "link_doctype": "Marketplace Publisher Profile",
    "link_fieldname": "team"
   }
  ],
- "modified": "2021-11-26 15:46:35.913759",
+ "modified": "2021-11-26 22:05:52.071652",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
