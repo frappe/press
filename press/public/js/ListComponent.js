@@ -41,17 +41,17 @@ function title_with_message_and_tag_template(data) {
 	let tag_type = data.tag_type || '';
 
 	return `
-        <div class="d-flex flex-column">
-            <div class="d-flex flex-column">
-                <h5>${title || ''}</h5>
-            </div>
-            <div class="d-flex flex-row justify-between">
-                <p>${message || ''}</p>
-                <p class="${tag_type}">${tag || ''}</p>
-            </div>
-        </div>
+		<div class="d-flex flex-column">
+			<div class="d-flex flex-column">
+				<h5>${title || ''}</h5>
+			</div>
+			<div class="d-flex flex-row justify-between">
+				<p>${message || ''}</p>
+				<p class="${tag_type}">${tag || ''}</p>
+			</div>
+		</div>
 		${data.last ? `` : `<hr>`}
-    `;
+	`;
 }
 
 function title_with_sub_text_tag_and_button_template(data) {

@@ -15,18 +15,18 @@ class SectionHead {
 		).appendTo(this.wrapper);
 		if (this.df.title) {
 			header_section.append(`
-                <div class="head-title">
-                    ${this.df.title || ''}
-                </div>
-            `);
+				<div class="head-title">
+					${this.df.title || ''}
+				</div>
+			`);
 		}
 		if (this.df.button) {
 			let action_button = $(`<div class="action-button d-flex align-items-center">`).appendTo(header_section);
 			action_button.append(`
-                <button class="btn btn-${this.df.button.tag || 'light'}">
-                    <span>${this.df.button.title || ''}</span>
-                </button
-            `);
+				<button class="btn btn-${this.df.button.tag || 'light'}">
+					<span>${this.df.button.title || ''}</span>
+				</button
+			`);
 			
 			if (this.df.button.onclick) {
 				$(action_button).on('click', () => {
@@ -36,10 +36,10 @@ class SectionHead {
 		}
 		if (this.df.description) {
 			this.wrapper.append(`
-                <div class="d-flex flex-row mb-4">
-                    <p>${this.df.description || ''}</p>
-                </div>
-            `);
+				<div class="d-flex flex-row mb-4">
+					<p>${this.df.description || ''}</p>
+				</div>
+			`);
 		}
 	}
 }
