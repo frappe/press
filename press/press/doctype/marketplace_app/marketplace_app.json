@@ -173,8 +173,14 @@
  "image_field": "image",
  "index_web_pages_for_search": 1,
  "is_published_field": "published",
- "links": [],
- "modified": "2021-09-02 12:54:10.190740",
+ "links": [
+  {
+   "group": "General",
+   "link_doctype": "App Release Approval Request",
+   "link_fieldname": "marketplace_app"
+  }
+ ],
+ "modified": "2021-11-26 15:35:47.871296",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Marketplace App",
