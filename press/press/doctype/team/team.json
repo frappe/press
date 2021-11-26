@@ -196,7 +196,8 @@
   {
    "fieldname": "referrer_id",
    "fieldtype": "Data",
-   "label": "Referrer ID"
+   "label": "Referrer ID",
+   "read_only": 1
   }
  ],
  "links": [
@@ -241,7 +242,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2021-11-10 14:02:29.854914",
+ "modified": "2021-11-26 15:33:19.707608",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
