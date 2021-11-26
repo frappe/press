@@ -10,11 +10,11 @@ frappe.require('assets/press/js/ActionBlock.js')
 
 frappe.ui.form.on('Release Group', {
 	refresh: async function(frm) {
-        frm.add_custom_button(__('Use Dashboard'), () => {
-            let host_name = window.location.host;
-            let protocol = ['frappecloud.com', 'staging.frappe.cloud'].includes(host_name) ? 'https://' : 'http://';
-            window.location.href = `${protocol}${host_name}/dashboard/benches/${frm.doc.name}`;
-        });
+		frm.add_custom_button(__('Use Dashboard'), () => {
+			let host_name = window.location.host;
+			let protocol = ['frappecloud.com', 'staging.frappe.cloud'].includes(host_name) ? 'https://' : 'http://';
+			window.location.href = `${protocol}${host_name}/dashboard/benches/${frm.doc.name}`;
+		});
 		[
 			[
 				__('Create Deploy Candidate'),
@@ -81,12 +81,12 @@ frappe.ui.form.on('Release Group', {
 		let apps = remap(apps_res.message, (d) => {
 			let tag = d.update_available ? 'Update Availabe' : (d.hash ? d.hash.substring(0,7) : "")
 			let tag_type = tag ? 'indicator-pill blue' : '' 
-            return {
-                title: d.title,
-                message: d.repository + '/' + d.repository + ':' + d.branch,
-                tag: tag,
-                tag_type: tag_type
-            };
+			return {
+				title: d.title,
+				message: d.repository + '/' + d.repository + ':' + d.branch,
+				tag: tag,
+				tag_type: tag_type
+			};
 		});
 		let recent_deploys = remap(recent_deploys_res.message, (d) => {
 			return {
@@ -226,7 +226,7 @@ frappe.ui.form.on('Release Group', {
 			button: {
 				title: 'View versions',
 				onclick: () => {
-                    frm.scroll_to_field('sites_block');
+					frm.scroll_to_field('sites_block');
 				}
 			}
 		})
@@ -286,7 +286,7 @@ frappe.ui.form.on('Release Group', {
 							}
 						}
 					});
-                }
+				}
 			}
 		})
 		new ListComponent(frm.get_field('apps_list_block').$wrapper, {
@@ -301,7 +301,7 @@ frappe.ui.form.on('Release Group', {
 			button: {
 				title: 'View deploys',
 				onclick: () => {
-                    frm.scroll_to_field('deploys_section_block');
+					frm.scroll_to_field('deploys_section_block');
 				}
 			}
 		})
