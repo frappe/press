@@ -51,6 +51,9 @@ class Site(Document):
 		if not self.notify_email:
 			self.notify_email = frappe.db.get_value("Team", self.team, "notify_email")
 
+	def before_save(self):
+		self.update_site_config([{x.key: x.value} for x in self.configuration], True)
+
 	def validate_site_name(self):
 		site_regex = r"^[a-z0-9][a-z0-9-]*[a-z0-9]$"
 		if len(self.subdomain) < 5:
@@ -749,7 +752,7 @@ class Site(Document):
 		if save:
 			self.save()
 
-	def update_site_config(self, config):
+	def update_site_config(self, config, from_desk=False):
 		"""Updates site.configuration, site.config and runs site.save which initiates an Agent Request
 		This checks for the blacklisted config keys via Frappe Validations, but not for internal usages.
 		Don't expose this directly to an external API. Pass through `press.utils.sanitize_config` or use
@@ -758,10 +761,12 @@ class Site(Document):
 		Args:
 		config (dict): Python dict for any suitable frappe.conf
 		"""
-		if isinstance(config, list):
-			self._set_configuration(config)
-		else:
-			self._update_configuration(config)
+		if not from_desk:
+			if isinstance(config, list):
+				self._set_configuration(config)
+			else:
+				self._update_configuration(config)
+		
 		return Agent(self.server).update_site_config(self)
 
 	def update_site(self):
