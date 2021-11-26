@@ -36,7 +36,9 @@
   "plan_section",
   "plan_section_block",
   "public_apps",
-  "private_apps"
+  "private_apps",
+  "selected_apps",
+  "selected_plan"
  ],
  "fields": [
   {
@@ -203,11 +205,23 @@
    "fieldtype": "Data",
    "hidden": 1,
    "label": "Private Apps"
+  },
+  {
+   "fieldname": "selected_apps",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Selected Apps"
+  },
+  {
+   "fieldname": "selected_plan",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Selected Plan"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-11-25 11:21:15.014270",
+ "modified": "2021-11-25 16:02:34.026739",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Creation",

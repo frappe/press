@@ -107,7 +107,11 @@ frappe.ui.form.on('Site Creation', {
 		});
 		new ListComponent(frm.get_field('plan_section_block').$wrapper, {
 			data: plans,
-			template: title_with_sub_text_and_check_checkbox
+			template: title_with_sub_text_and_check_checkbox,
+			selectable: true,
+			onupdate: (selection) => {
+				console.log(selection);
+			}
 		})
 	},
 	release_group: async function(frm) {
@@ -146,23 +150,13 @@ frappe.ui.form.on('Site Creation', {
 			}
 		}
 	},
-	subdomain: async function(frm) {
-		let subdomain = frm.doc.subdomain;
-		if(subdomain) {
-			let error = validate_subdomain(subdomain);
-			if(!error) {
-				let subdomain_taken = (await frappe.call({
-					method: 'press.api.site.exists',
-					args: {
-						subdomain: subdomain
-					}
-				})).message;
-				console.log(subdomain_taken);
-				if(subdomain_taken) {
-					error = `${subdomain} already exists.`;
-				}
-			}
-			if (error) frappe.msgprint(__(error));
+	before_save: async function(frm) {
+		let error = await final_validation(frm);
+		console.log(error);
+		if(!error) {
+			// create_new_site(frm);
+		} else {
+			frappe.throw(__(error));
 		}
 	}
 });
@@ -180,7 +174,17 @@ function load_apps(frm) {
 		})
 		new ListComponent(frm.get_field('public_apps_block').$wrapper, {
 			data: public_apps,
-			template: title_with_sub_text_and_check_checkbox
+			multiselect: true,
+			template: title_with_sub_text_and_check_checkbox,
+			onupdate: (selctions) => {
+				console.log(selctions);
+				let selected_apps = [];
+				for(let i of selctions) {
+					selected_apps.push(frm.doc.public_apps[i]);
+				}
+				frm.doc.selected_apps = selected_apps;
+				refresh_field('selected_apps');
+			}
 		})
 	}
 
@@ -199,7 +203,7 @@ function load_apps(frm) {
 	}
 }
 
-function validate_subdomain(subdomain) {
+async function validate_subdomain(subdomain) {
 	if (!subdomain) {
 		return 'Subdomain cannot be empty';
 	}
@@ -212,5 +216,80 @@ function validate_subdomain(subdomain) {
 	if (!subdomain.match(/^[a-z0-9][a-z0-9-]*[a-z0-9]$/)) {
 		return 'Subdomain contains invalid characters. Use lowercase characters, numbers and hyphens';
 	}
+
+	// check if the subdomain is already exists
+	let subdomain_taken = (await frappe.call({
+		method: 'press.api.site.exists',
+		args: {
+			subdomain: subdomain
+		}
+	})).message;
+
+	if(subdomain_taken) {
+		return `${subdomain} already exists.`;
+	}
+
+	return null;
+}
+
+function validate_selected_apps(apps) {
+	return null;
+}
+
+function validate_cluster(cluster) {
+	if (!cluster) return 'You should select a region';
+	return null;
+}
+
+function validate_plan(plan) {
+	if (!plan) return 'You should select a plan'
+	return null;
+}
+
+function validate_files(files) {
+	return null;
+}
+
+function validate_group(group) {
+	if(group) {
+		return null;
+	}
+	return 'You should select a Release Group or a frappe version'
+}
+
+async function create_new_site(frm) {
+	let share_details_consent = true;	// TODO: fetch from user input
+	let new_site_res = await frappe.call({
+		method: 'press.api.site.new',
+		args: {
+			name: frm.doc.subdomain,
+			apps: frm.doc.selected_apps,
+			group: frm.doc.release_group,
+			cluster: frm.doc.region,
+			plan: frm.doc.selected_plan,
+			files: frm.doc.files,
+			share_details_consent: share_details_consent,
+			skip_failing_patches: frm.doc.skip_failing_patches
+		}
+	});
+	console.log(new_site_res);
+}
+
+async function final_validation(frm) {
+	let name = frm.doc.subdomain;
+	let apps = frm.doc.selected_apps;
+	let group = frm.doc.release_group;
+	let cluster = frm.doc.region;
+	let plan = frm.doc.selected_plan;
+	let files = frm.doc.files;
+
+	let error = await validate_subdomain(name);
+	if(!error) error = validate_selected_apps(apps);
+	if(!error) error = validate_group(group);
+	if(!error) error = validate_cluster(cluster);
+	if(!error) error = validate_plan(plan);
+	if(!error) error = validate_files(files);
+	if(error) return error;
+
 	return null;
 }
