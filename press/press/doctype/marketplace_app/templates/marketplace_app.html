@@ -63,7 +63,7 @@
 			{%- endfor -%}
 		</ul>
 	</div>
-	
+
 	<div>
 		<h5 class="text-xl font-semibold text-gray-900">Supported Versions</h5>
 		<ul class="mt-2 space-y-1 text-base text-gray-600">
@@ -97,6 +97,7 @@
 	</p>
 	<div class="mt-2">
 		{{ button('Install Now', '/dashboard/sites/new', 'primary') }}
+		<span class="text-sm italic text-gray-700">({{ no_of_installs }} installs)</span>
 	</div>
 	{%- if app.screenshots -%}
 	<div class="flex mt-6 space-x-4 overflow-y-auto">
