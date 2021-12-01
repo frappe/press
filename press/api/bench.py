@@ -499,3 +499,14 @@ def belongs_to_current_team(app: str) -> bool:
 	marketplace_app = frappe.get_doc("Marketplace App", app)
 
 	return marketplace_app.team == current_team
+
+@frappe.whitelist()
+def search_list():
+	groups = frappe.get_list(
+		"Release Group",
+		fields=["name", "title"],
+		filters={"enabled": True, "team": get_current_team()},
+		order_by="creation desc",
+	)
+
+	return groups
