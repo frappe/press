@@ -211,17 +211,19 @@ export default {
 			);
 		},
 		routeToBench(bench) {		
-			let isSystemManager = false;
-			let roles = this.$account.user.roles;
-			for(let role of roles) {
-				if(role.role === "System Manager") {
-					isSystemManager = true;
-					break;
-				}
-			}
-			let redirectPath = isSystemManager ? `app/release-group/${bench.name}` : `dashboard/benches/${bench.name}/overview`;
-			window.location.href = `/${redirectPath}`;
+			// let isSystemManager = false;
+			// let roles = this.$account.user.roles;
+			// for(let role of roles) {
+			// 	if(role.role === "System Manager") {
+			// 		isSystemManager = true;
+			// 		break;
+			// 	}
+			// }
+			// let redirectPath = isSystemManager ? `app/release-group/${bench.name}` : `dashboard/benches/${bench.name}/overview`;
+			// window.location.href = `/${redirectPath}`;
 
+			let redirectPath = `dashboard/benches/${bench.name}/overview`;
+			window.location.href = `/${redirectPath}`;
 		}
 	},
 	computed: {
