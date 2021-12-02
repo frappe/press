@@ -73,15 +73,7 @@ export default {
 			};
 		},
 		routeToSite(site) {
-			let isSystemManager = false;
-			let roles = this.$account.user.roles;
-			for(let role of roles) {
-				if(role.role === "System Manager") {
-					isSystemManager = true;
-					break;
-				}
-			}
-			let redirectPath = isSystemManager ? `app/site/${site.name}` : `dashboard/sites/${site.name}/database`;
+			let redirectPath = `dashboard/sites/${site.name}/database`;
 			window.location.href = `/${redirectPath}`;
 		}
 	}
