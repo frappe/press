@@ -49,12 +49,13 @@ class UserSSHCertificate(Document):
 		sha256_sum.update(ssh_key_b64)
 		self.ssh_fingerprint = safe_decode(base64.b64encode(sha256_sum.digest()))
 
-	def before_submit(self):
+	def _set_key_type(self):
 		# extract key_type (eg: rsa, ecdsa, ed25519.) for naming convention
 		self.key_type = self.ssh_public_key.strip().split()[0].split("-")[1]
 		if not self.key_type:
 			frappe.throw("Could not guess the key type. Please check your public key.")
 
+	def before_submit(self):
 		tmp_pub_file_prefix = f"/tmp/id_{self.key_type}-{self.name}"
 		tmp_pub_file = tmp_pub_file_prefix + ".pub"
 		# write the public key to a /tmp file
@@ -83,14 +84,26 @@ class UserSSHCertificate(Document):
 			stdout=subprocess.PIPE,
 		)
 		self.certificate_details = safe_decode(process.communicate()[0])
+		self.set_output_fields()
+
+	def before_cancel(self):
+		self.delete_key("ssh_certificate")
+
+	def set_output_fields(self):
 		# extract the time for until when the key is active
 		regex = re.compile("Valid:.*\n")
 		self.valid_until = regex.findall(self.certificate_details)[0].strip().split()[-1]
 		self.ssh_certificate = read_certificate(self.key_type, self.name)
-		self.ssh_command = get_ssh_command(self.name)
+		self.generate_ssh_command(self.name)
 
-	def before_cancel(self):
-		self.delete_key("ssh_certificate")
+	def generate_ssh_command(self):
+		server = self.server
+		if not server:
+			server = "<server you want>"
+
+		ssh_port = 22
+		ssh_user = "frappe"
+		self.ssh_command = f"ssh {server} -p {ssh_port} -l {ssh_user}"
 
 
 @frappe.whitelist()
@@ -100,19 +113,6 @@ def read_certificate(key_type, docname):
 			return certificate.read()
 		except Exception:
 			pass
-
-
-@frappe.whitelist()
-def get_ssh_command(docname):
-	ssh_port = 22
-	ssh_user = "frappe"
-	certificate = frappe.get_doc("User SSH Certificate", docname)
-	server = certificate.access_server
-
-	if certificate.ssh_command:
-		return certificate.ssh_command
-
-	return f"ssh {server} -p {ssh_port} -l {ssh_user}"
 
 
 def set_user_ssh_key(user, ssh_public_key):
