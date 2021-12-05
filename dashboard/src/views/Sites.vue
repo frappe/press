@@ -157,7 +157,7 @@ export default {
 		onAgentJobUpdate(data) {
 			if (!(data.name === 'New Site' || data.name === 'New Site from Backup'))
 				return;
-			if (data.status === 'Success') {
+			if (data.status === 'Success' && data.user === this.$account.user.name) {
 				this.reload();
 				this.$notify({
 					title: 'Site creation complete!',
