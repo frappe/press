@@ -167,9 +167,19 @@ export default {
 				});
 			}
 		},
-		onSiteUpdate({ doctype }) {
-			if (doctype === 'Site') {
-				this.reload();
+		onSiteUpdate(event) {
+			// Refresh if the event affects any of the sites in the list view
+			// TODO: Listen to a more granular event than list_update
+			if (event.doctype === 'Site') {
+				let sites = this.benches
+					.map(bench => bench.sites.map(site => site.name))
+					.flat();
+				if (
+					event.user === this.$account.user.name ||
+					sites.includes(event.name)
+				) {
+					this.reload();
+				}
 			}
 		},
 		reload() {
