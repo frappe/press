@@ -20,13 +20,17 @@ export default new Vue({
 			if (document.cookie.includes('user_id=Guest;')) {
 				return;
 			}
-			let result = await call('press.api.account.get');
-			this.user = result.user;
-			this.team = result.team;
-			this.teams = result.teams;
-			this.team_members = result.team_members;
-			this.onboarding = result.onboarding;
-			this.balance = result.balance;
+			try {
+				let result = await call('press.api.account.get');
+				this.user = result.user;
+				this.team = result.team;
+				this.teams = result.teams;
+				this.team_members = result.team_members;
+				this.onboarding = result.onboarding;
+				this.balance = result.balance;
+			} catch (e) {
+				localStorage.removeItem('current_team');
+			}
 		},
 		hasRole(role) {
 			let roles = this.user.roles.map(d => d.role);
