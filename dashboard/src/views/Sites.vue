@@ -183,8 +183,11 @@ export default {
 			}
 		},
 		reload() {
-			// refresh if not reloaded in the last 1 second
-			if (new Date() - this.$resources.benches.lastLoaded > 1000) {
+			// refresh if currently not loading and have not reloaded in the last 5 seconds
+			if (
+				!this.$resources.benches.loading &&
+				new Date() - this.$resources.benches.lastLoaded > 5000
+			) {
 				this.$resources.benches.reload();
 			}
 		},
@@ -220,7 +223,7 @@ export default {
 				(bench.shared || bench.owned_by_team) && this.sitesShown[bench.name]
 			);
 		},
-		routeToBench(bench) {		
+		routeToBench(bench) {
 			let redirectPath = `dashboard/benches/${bench.name}/overview`;
 			window.location.href = `/${redirectPath}`;
 		}
