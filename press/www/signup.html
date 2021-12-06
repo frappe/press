@@ -74,11 +74,10 @@
 					</select>
 				</div>
 				<div class="form-group">
-					<p>
-						By clicking on <b>Create Account</b>, you accept our <a href="https://erpnext.com/terms"
-							target="_blank">Terms</a>
-						and </span><a href="https://erpnext.com/privacy" target="_blank">Privacy Policy</a>.
-					</p>
+					<input type="checkbox" name="user_accept_terms" id="user_accept_terms">
+					<label class="d-inline" for="user_accept_terms">
+						By clicking on <b>Create Account</b>, you accept our <a href="https://erpnext.com/terms" class="text-blue-600">Terms of Service</a> & <a href="https://erpnext.com/privacy" class="text-blue-600">Privacy Policy</a>
+					</label>
 				</div>
 				<div class="form-message text-danger"></div>
 				<div class="mt-8 d-flex justify-content-between">
@@ -156,6 +155,11 @@
 				return "Please select country";
 			}
 		},
+		user_accept_terms: (value) => {
+			if (!value) {
+				return "You need to accept our Terms of Service & Privary Policy"
+			}
+		}
 	};
 
 	function submit_account_request($form, values) {
