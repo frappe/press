@@ -505,6 +505,7 @@ def belongs_to_current_team(app: str) -> bool:
 
 	return marketplace_app.team == current_team
 
+
 @frappe.whitelist()
 def search_list():
 	groups = frappe.get_list(
