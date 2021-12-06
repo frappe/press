@@ -251,7 +251,7 @@ export default {
 		},
 		handleAddPrepaidCreditsSuccess() {
 			this.$resources.latestUnpaidInvoice.reload();
-			showPrepaidCreditsDialog = false;
+			this.showPrepaidCreditsDialog = false;
 		},
 		routeToBench(bench) {
 			let redirectPath = `dashboard/benches/${bench.name}/overview`;
