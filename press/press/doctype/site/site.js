@@ -44,7 +44,6 @@ frappe.ui.form.on('Site', {
         if (site.status === 'Active') {
             frm.add_custom_button(__('Login as Adminstrator'), () => {
                 if(account) {
-                    let account = account_res.message;
                     if (site.team === account.team.name) {
                         login_as_admin(site.name);
                     } else {
