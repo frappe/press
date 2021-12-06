@@ -69,6 +69,18 @@ def setup_account(
 
 		if not is_invitation and not country:
 			frappe.throw("Country is required")
+		
+		if not is_invitation and country:
+			# TODO: check if country is a valid country name
+			cl = country_list()
+			flag = False
+			for c in cl:
+				if country.casefold() == c.name.casefold():
+					flag = True
+					break
+			if not flag:
+				frappe.throw("Country filed should be a valid country name")
+
 
 	# if the request is authenticated, set the user to Administrator
 	frappe.set_user("Administrator")
