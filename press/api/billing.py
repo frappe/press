@@ -298,4 +298,21 @@ def get_latest_unpaid_invoice():
 	)
 
 	if unpaid_invoices:
-		return frappe.get_doc("Invoice", unpaid_invoices[0])
+		unpaid_invoice = frappe.db.get_value(
+			"Invoice",
+			unpaid_invoices[0],
+			["amount_due", "stripe_invoice_url", "payment_mode", "amount_due", "currency"],
+			as_dict=True,
+		)
+		if (
+			unpaid_invoice.payment_mode == "Prepaid Credits"
+			and team_has_balance_for_invoice(unpaid_invoice)
+		):
+			return
+
+		return unpaid_invoice
+
+
+def team_has_balance_for_invoice(prepaid_mode_invoice):
+	team = get_current_team(get_doc=True)
+	return team.get_balance() >= prepaid_mode_invoice.amount_due

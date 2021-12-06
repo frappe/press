@@ -1019,7 +1019,7 @@ class Site(Document):
 			"Site Backup",
 			{
 				"creation": (">=", interval_hrs_ago),
-				"status": "Success",
+				"status": ("!=", "Failure"),
 				"owner": "Administrator",
 			},
 			pluck="site",
