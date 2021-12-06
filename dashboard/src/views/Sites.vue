@@ -183,7 +183,7 @@ export default {
 		onAgentJobUpdate(data) {
 			if (!(data.name === 'New Site' || data.name === 'New Site from Backup'))
 				return;
-			if (data.status === 'Success') {
+			if (data.status === 'Success' && data.user === this.$account.user.name) {
 				this.reload();
 				this.$notify({
 					title: 'Site creation complete!',
@@ -193,14 +193,27 @@ export default {
 				});
 			}
 		},
-		onSiteUpdate({ doctype }) {
-			if (doctype === 'Site') {
-				this.reload();
+		onSiteUpdate(event) {
+			// Refresh if the event affects any of the sites in the list view
+			// TODO: Listen to a more granular event than list_update
+			if (event.doctype === 'Site') {
+				let sites = this.benches
+					.map(bench => bench.sites.map(site => site.name))
+					.flat();
+				if (
+					event.user === this.$account.user.name ||
+					sites.includes(event.name)
+				) {
+					this.reload();
+				}
 			}
 		},
 		reload() {
-			// refresh if not reloaded in the last 1 second
-			if (new Date() - this.$resources.benches.lastLoaded > 1000) {
+			// refresh if currently not loading and have not reloaded in the last 5 seconds
+			if (
+				!this.$resources.benches.loading &&
+				new Date() - this.$resources.benches.lastLoaded > 5000
+			) {
 				this.$resources.benches.reload();
 			}
 		},
@@ -241,17 +254,7 @@ export default {
 			showPrepaidCreditsDialog = false;
 		},
 		routeToBench(bench) {
-			let isSystemManager = false;
-			let roles = this.$account.user.roles;
-			for (let role of roles) {
-				if (role.role === 'System Manager') {
-					isSystemManager = true;
-					break;
-				}
-			}
-			let redirectPath = isSystemManager
-				? `app/release-group/${bench.name}`
-				: `dashboard/benches/${bench.name}/overview`;
+			let redirectPath = `dashboard/benches/${bench.name}/overview`;
 			window.location.href = `/${redirectPath}`;
 		}
 	},

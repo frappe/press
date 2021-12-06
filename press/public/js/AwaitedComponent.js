@@ -12,8 +12,20 @@ class AwaitedComponent {
             description: this.df.loading_message || 'Loading...'
         });
 
-        let data = await this.df.promise;
-        clear_wrapper(this.wrapper);
-        this.df.onload(data);
+        let data;
+
+        try {
+            data = await this.df.promise;
+        } catch(e) {
+            if(this.df.onfail) {
+                clear_wrapper(this.wrapper)
+                this.df.onfail(e);
+            }
+        }
+        
+        if (data) {
+            clear_wrapper(this.wrapper);
+            this.df.onload(data);
+        }
     }
 }
