@@ -7,28 +7,10 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "overview_tab_break",
-  "update_alert_block",
-  "bench_info_and_versions_section",
-  "bench_info_block",
   "title",
   "version",
-  "created_on",
-  "column_break_8",
-  "bench_versions_block",
-  "apps_and_deploys_section_break",
-  "apps_list_block",
-  "column_break_12",
-  "recent_deploys_block",
-  "sites_tab_break",
-  "sites_block",
-  "deploys_tab_break",
-  "deploys_section_block",
-  "jobs_tab_break",
-  "jobs_block",
-  "settings_tab_break",
-  "column_break_4",
   "team",
+  "column_break_4",
   "enabled",
   "default",
   "public",
@@ -84,10 +66,6 @@
    "options": "Frappe Version",
    "read_only": 1,
    "reqd": 1
-  },
-  {
-   "fieldname": "column_break_4",
-   "fieldtype": "Column Break"
   },
   {
    "fieldname": "section_break_7",
@@ -149,94 +127,13 @@
    "label": "Dependencies"
   },
   {
-   "fieldname": "settings_tab_break",
-   "fieldtype": "Tab Break",
-   "label": "Settings"
-  },
-  {
-   "fieldname": "overview_tab_break",
-   "fieldtype": "Tab Break",
-   "label": "Overview"
-  },
-  {
-   "fieldname": "sites_tab_break",
-   "fieldtype": "Tab Break",
-   "label": "Sites"
-  },
-  {
-   "fieldname": "deploys_tab_break",
-   "fieldtype": "Tab Break",
-   "label": "Deploys"
-  },
-  {
-   "fieldname": "jobs_tab_break",
-   "fieldtype": "Tab Break",
-   "label": "Jobs"
-  },
-  {
-   "fieldname": "created_on",
-   "fieldtype": "Date",
-   "label": "Created on",
-   "read_only": 1
-  },
-  {
-   "fieldname": "bench_versions_block",
-   "fieldtype": "HTML",
-   "label": "Bench Versions"
-  },
-  {
-   "fieldname": "apps_list_block",
-   "fieldtype": "HTML",
-   "label": "Apps"
-  },
-  {
-   "fieldname": "recent_deploys_block",
-   "fieldtype": "HTML",
-   "label": "Recent Deploys List"
-  },
-  {
-   "fieldname": "sites_block",
-   "fieldtype": "HTML",
-   "label": "Sites"
-  },
-  {
-   "fieldname": "deploys_section_block",
-   "fieldtype": "HTML",
-   "label": "Deploys"
-  },
-  {
-   "fieldname": "jobs_block",
-   "fieldtype": "HTML",
-   "label": "Jobs"
-  },
-  {
-   "fieldname": "bench_info_and_versions_section",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "bench_info_block",
-   "fieldtype": "HTML"
-  },
-  {
-   "fieldname": "column_break_8",
+   "fieldname": "column_break_4",
    "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "apps_and_deploys_section_break",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "column_break_12",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "update_alert_block",
-   "fieldtype": "HTML"
   }
  ],
  "hide_toolbar": 1,
  "links": [],
- "modified": "2021-11-03 04:39:56.916053",
+ "modified": "2021-12-05 10:41:26.091333",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",
