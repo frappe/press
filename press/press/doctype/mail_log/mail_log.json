@@ -74,7 +74,7 @@
  "modified": "2021-10-30 13:59:50.959573",
  "modified_by": "Administrator",
  "module": "Press",
- "name": "QMail Log",
+ "name": "Mail Log",
  "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [

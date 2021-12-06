@@ -5,5 +5,5 @@
 from frappe.model.document import Document
 
 
-class QMailSubscription(Document):
+class MailLog(Document):
 	pass
