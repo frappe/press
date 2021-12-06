@@ -3,7 +3,6 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
-from datetime import datetime
 
 import frappe
 from frappe.core.utils import find
@@ -376,7 +375,8 @@ def process_site_migration_job_update(job, site_migration_name: str):
 
 def run_scheduled_migrations():
 	migrations = frappe.get_all(
-		"Site Migration", {"scheduled_time": ("<=", datetime.now()), "status": "Scheduled"}
+		"Site Migration",
+		{"scheduled_time": ("<=", frappe.utils.now()), "status": "Scheduled"},
 	)
 	for migration in migrations:
 		site_migration = frappe.get_doc("Site Migration", migration)

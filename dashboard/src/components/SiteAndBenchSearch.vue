@@ -10,7 +10,7 @@
 		>
 			<Input
 				type="text"
-				class="w-60"
+				class="lg:w-60 md:w-40"
 				ref="search"
 				@focus="toggleDropdown()"
 				@keydown.down="highlightItemDown()"
@@ -22,7 +22,7 @@
 				"
 				:value="searchText"
 				@input="val => (searchText = val)"
-				placeholder="Search sites (Ctrl + /)"
+				placeholder="Search (Ctrl + /)"
 			/>
 		</template>
 	</Dropdown>
@@ -48,15 +48,20 @@ export default {
 		});
 	},
 	resources: {
-		searchList: {
+		allSites: {
 			method: 'press.api.site.search_list',
+			auto: true,
+			default: []
+		},
+		allBenches: {
+			method: 'press.api.bench.search_list',
 			auto: true,
 			default: []
 		}
 	},
 	methods: {
 		dropdownItems() {
-			let siteList = this.$resources.searchList.data
+			let siteList = this.$resources.allSites.data
 				.filter(d => {
 					if (!this.searchText) {
 						return true;
@@ -73,14 +78,34 @@ export default {
 				})
 				.slice(0, 5);
 
-			if (siteList.length === 0) {
+			let benchList = this.$resources.allBenches.data
+				.filter(d => {
+					if (!this.searchText) {
+						return true;
+					}
+					if (d.title.toLowerCase().includes(this.searchText.toLowerCase())) {
+						return true;
+					}
+					return false;
+				})
+				.map(d => {
+					d.label = d.title;
+					d.action = () => this.navigateBench(d.name);
+					return d;
+				})
+				.slice(0, 5);
+
+			if (siteList.length === 0 && benchList.length === 0) {
 				return [{ label: 'No results found' }];
 			} else {
-				return siteList;
+				return siteList.concat(benchList);
 			}
 		},
 		navigateSite(siteName) {
 			this.$router.push(`/sites/${siteName}/overview`);
+		},
+		navigateBench(benchName) {
+			this.$router.push(`/benches/${benchName}/overview`);
 		}
 	}
 };
