@@ -141,16 +141,6 @@ export default {
 				}
 			};
 		},
-		// TODO: use this country list for auto-complete
-		// countryList: 'press.api.account.country_list'
 	},
-	// computed: {
-	// 	countryList() {
-	// 		return (this.$resources.countryList.data || []).map(d => ({
-	// 			label: d.name,
-	// 			value: d.name
-	// 		}));
-	// 	}
-	// }
 };
 </script>
