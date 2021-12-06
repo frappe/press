@@ -71,7 +71,6 @@ def setup_account(
 			frappe.throw("Country is required")
 		
 		if not is_invitation and country:
-			# TODO: check if country is a valid country name
 			cl = country_list()
 			flag = False
 			for c in cl:
