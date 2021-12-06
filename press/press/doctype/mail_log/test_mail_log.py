@@ -5,5 +5,5 @@
 import unittest
 
 
-class TestQMailPlan(unittest.TestCase):
+class TestMailLog(unittest.TestCase):
 	pass
