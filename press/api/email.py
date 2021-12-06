@@ -6,7 +6,6 @@ import frappe
 import secrets
 import json
 import requests
-from datetime import datetime
 
 
 @frappe.whitelist(allow_guest=True)
@@ -37,7 +36,7 @@ def send_mail(**data):
 	files = frappe._dict(frappe.request.files)
 	data = json.loads(data["data"])
 
-	if validate_plan(data["sk_qmail"], data["site"]):
+	if validate_plan(data["sk_mail"], data["site"]):
 		api_key, domain = frappe.db.get_value(
 			"Press Settings", None, ["mailgun_api_key", "root_domain"]
 		)
@@ -55,7 +54,7 @@ def send_mail(**data):
 			files=attachments,
 			data={
 				"v:site_name": f"{data['site']}",
-				"v:sk_qmail": f"{data['sk_qmail']}",
+				"v:sk_mail": f"{data['sk_mail']}",
 				"v:message_id": f"{data['message_id']}",
 				"from": f"{data['sender']}",
 				"to": data["recipient"],
@@ -72,21 +71,47 @@ def send_mail(**data):
 
 
 @frappe.whitelist(allow_guest=True)
+def send_mime_mail(**data):
+	files = frappe._dict(frappe.request.files)
+	data = json.loads(data["data"])
+	api_key, domain = frappe.db.get_value(
+		"Press Settings", None, ["mailgun_api_key", "root_domain"]
+	)
+
+	resp = requests.post(
+		f"https://api.mailgun.net/v3/{domain}/messages.mime",
+		auth=("api", f"{api_key}"),
+		data={
+			"to": data["recipients"],
+			"v:sk_mail": data["sk_mail"]
+		},
+		files={"message": files['mime'].read()}
+	)
+
+	if resp.status_code == 200:
+		return "Sending"
+
+	return "Error"
+
+@frappe.whitelist(allow_guest=True)
 def event_log(**data):
 	event_data = data["event-data"]
 	headers = event_data["message"]["headers"]
+	message_id = headers["message_id"]
+	site = message_id.split('@')[1]
+	secret_key = event_data["user-variables"]["sk_mail"]
 	status = event_data["event"]
-	site = event_data["user-variables"]["site_name"]
-	message_id = event_data["user-variables"]["message_id"]
 
 	frappe.get_doc(
 		{
-			"doctype": "QMail Log",
+			"doctype": "Mail Log",
 			"unique_token": secrets.token_hex(25),
 			"sender": headers["from"],
 			"recipient": headers["to"],
 			"subject": headers["subject"],
 			"site": site,
+			"message_id": message_id,
+			"subscription_key": secret_key,
 			"status": status,
 			"log": event_data["event"],
 		}
@@ -101,7 +126,7 @@ def event_log(**data):
 
 def change_message_status(site, data):
 	url = (
-		f"https://{site}/api/method/qmail.qmail.doctype.qmail.qmail.change_message_status"
+		f"https://{site}/api/method/mail.mail.doctype.mail_settings.mail_settings.update_status"
 	)
 
 	requests.post(url, data)
