@@ -23,7 +23,7 @@ frappe.ui.form.on('Site', {
 	refresh: async function (frm) {
 
         frm.add_custom_button(__('Visit Site'), () => {
-            window.location.href = `https://${frm.doc.name}`;
+            window.open(`https://${frm.doc.name}`);
         });
         frm.add_custom_button(__('Goto Dashboard'), () => {
             window.location.href = `/dashboard/sites/${frm.docname}/overview`;

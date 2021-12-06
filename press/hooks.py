@@ -163,7 +163,10 @@ scheduler_events = {
 		"press.press.doctype.root_domain.root_domain.cleanup_cname_records",
 		"press.experimental.doctype.referral_bonus.referral_bonus.credit_referral_bonuses",
 	],
-	"daily_long": ["press.press.audit.all"],
+	"daily_long": [
+		"press.press.audit.all",
+		"press.press.doctype.invoice.invoice.finalize_unpaid_prepaid_credit_invoices",
+	],
 	"hourly": [
 		"press.press.doctype.app.app.poll_new_releases",
 		"press.press.doctype.site.backups.cleanup_local",

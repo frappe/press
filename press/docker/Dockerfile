@@ -32,6 +32,7 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   openssh-server \
   nano \
   vim \
+  less \
   # Dependencies for adding Python PPA
   software-properties-common \
   gnupg \

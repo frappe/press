@@ -10,7 +10,7 @@
 		>
 			<Input
 				type="text"
-				class="w-60"
+				class="lg:w-60 md:w-40"
 				ref="search"
 				@focus="toggleDropdown()"
 				@keydown.down="highlightItemDown()"
