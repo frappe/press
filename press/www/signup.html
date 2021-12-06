@@ -150,6 +150,18 @@
 		country: (value) => {
 			if (!value) {
 				return "Please enter country";
+			} else {
+				let all_countries = frappe.db.get_all('Country');
+				let flag = false;
+				for (let country of all_countries) {
+					if (country.name.toLowerCase() === value.toLowerCase()) {
+						flag = true;
+						break;
+					}
+				}
+				if (!flag) {
+					return "Country filed should be a valid country name";
+				}
 			}
 		},
 	};
