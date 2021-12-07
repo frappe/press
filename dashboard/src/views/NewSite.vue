@@ -48,7 +48,32 @@
 				/>
 				<ErrorMessage :error="validationMessage" />
 				<div class="mt-4">
-					<ErrorMessage :error="$resources.newSite.error" />
+					<!-- Region consent checkbox -->
+					<div class="my-6" v-if="!hasNext">
+						<input
+							id="region-consent"
+							type="checkbox"
+							class="
+								h-4
+								w-4
+								text-blue-600
+								focus:ring-blue-500
+								border-gray-300
+								rounded
+							"
+							v-model="agreedToRegionConsent"
+						/>
+						<label
+							for="region-consent"
+							class="ml-1 text-sm font-semibold text-gray-900"
+						>
+							I agree that the laws of the region selected by me shall stand
+							applicable to me and Frappe.
+						</label>
+					</div>
+
+					<ErrorMessage class="mb-4" :error="$resources.newSite.error" />
+
 					<div class="flex justify-between">
 						<Button
 							@click="previous"
@@ -155,7 +180,8 @@ export default {
 				{
 					name: 'Plan'
 				}
-			]
+			],
+			agreedToRegionConsent: false
 		};
 	},
 	async mounted() {
@@ -222,6 +248,12 @@ export default {
 						this.selectedPlan &&
 						(!this.wantsToRestore ||
 							Object.values(this.selectedFiles).every(v => v));
+
+					if (!this.agreedToRegionConsent) {
+						document.getElementById('region-consent').focus();
+
+						return 'Please agree to the above consent to create site';
+					}
 
 					if (!canCreate) {
 						return 'Cannot create site';
