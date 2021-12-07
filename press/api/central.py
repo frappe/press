@@ -3,6 +3,7 @@
 
 import frappe
 from frappe.geo.country_info import get_country_timezone_info
+from frappe.core.utils import find
 
 from press.api.account import get_account_request_from_key
 from press.press.doctype.site.erpnext_site import ERPNextSite, get_erpnext_domain
@@ -21,18 +22,10 @@ def account_request(
 	if not check_subdomain_availability(subdomain):
 		frappe.throw(f"Subdomain {subdomain} is already taken")
 
-	if country:
-		cl = frappe.db.get_all('Country')
-		flag = False
-		for c in cl:
-			if country.casefold() == c.name.casefold():
-				country = c.name
-				flag = True
-				break
-		if not flag:
-			frappe.throw("Country filed should be a valid country name")
-	else:
-		frappe.throw("Country field should not be empty")
+	all_countries = frappe.db.get_all('Country', pluck='name')
+	country = find(all_countries, lambda x: x.lower()  == country.lower())
+	if not country:
+		frappe.throw("Country filed should be a valid country name")
 
 	account_request = frappe.get_doc(
 		{
