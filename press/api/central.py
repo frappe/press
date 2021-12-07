@@ -21,6 +21,19 @@ def account_request(
 	if not check_subdomain_availability(subdomain):
 		frappe.throw(f"Subdomain {subdomain} is already taken")
 
+	if country:
+		cl = frappe.db.get_all('Country')
+		flag = False
+		for c in cl:
+			if country.casefold() == c.name.casefold():
+				country = c.name
+				flag = True
+				break
+		if not flag:
+			frappe.throw("Country filed should be a valid country name")
+	else:
+		frappe.throw("Country field should not be empty")
+
 	account_request = frappe.get_doc(
 		{
 			"doctype": "Account Request",
