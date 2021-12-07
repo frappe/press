@@ -28,7 +28,7 @@ class AppReleaseDifference(Document):
 		repo = client.get_repo(f"{source.repository_owner}/{source.repository}")
 		try:
 			diff = repo.compare(self.source_hash, self.destination_hash)
-			self.gith_diff_url = diff.html_url
+			self.github_diff_url = diff.html_url
 
 			files = [f.filename for f in diff.files]
 		except Exception:
