@@ -252,7 +252,7 @@ export default {
 					if (!this.agreedToRegionConsent) {
 						document.getElementById('region-consent').focus();
 
-						return 'Agree to the above consent to create site';
+						return 'Please agree to the above consent to create site';
 					}
 
 					if (!canCreate) {

@@ -62,6 +62,30 @@
 						/>
 					</div>
 				</div>
+				<!-- Region consent checkbox -->
+				<div class="my-6">
+					<input
+						id="region-consent"
+						type="checkbox"
+						class="
+								h-4
+								w-4
+								text-blue-600
+								focus:ring-blue-500
+								border-gray-300
+								rounded
+							"
+						v-model="agreedToRegionConsent"
+					/>
+					<label
+						for="region-consent"
+						class="ml-1 text-sm font-semibold text-gray-900"
+					>
+						I agree that the laws of the region selected by me shall stand
+						applicable to me and Frappe.
+					</label>
+				</div>
+
 				<div>
 					<ErrorMessage class="mb-2" :error="$resources.createBench.error" />
 					<Button
@@ -93,7 +117,8 @@ export default {
 			benchTitle: null,
 			selectedVersionName: null,
 			selectedApps: [],
-			selectedRegion: null
+			selectedRegion: null,
+			agreedToRegionConsent: false
 		};
 	},
 	resources: {
@@ -136,6 +161,11 @@ export default {
 					}
 					if (this.selectedApps.length < 1) {
 						return 'Select atleast one app to create bench';
+					}
+
+					if (!this.agreedToRegionConsent) {
+						document.getElementById('region-consent').focus();
+						return 'Please agree to the above consent to create bench';
 					}
 				},
 				onSuccess(benchName) {
