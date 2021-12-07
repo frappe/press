@@ -70,13 +70,12 @@ def setup_account(
 
 		if not is_invitation and not country:
 			frappe.throw("Country is required")
-		
+
 		if not is_invitation and country:
-			all_countries = frappe.db.get_all('Country', pluck='name')
-			country = find(all_countries, lambda x: x.lower()  == country.lower())
+			all_countries = frappe.db.get_all("Country", pluck="name")
+			country = find(all_countries, lambda x: x.lower() == country.lower())
 			if not country:
 				frappe.throw("Country filed should be a valid country name")
-
 
 	# if the request is authenticated, set the user to Administrator
 	frappe.set_user("Administrator")

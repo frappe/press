@@ -22,8 +22,8 @@ def account_request(
 	if not check_subdomain_availability(subdomain):
 		frappe.throw(f"Subdomain {subdomain} is already taken")
 
-	all_countries = frappe.db.get_all('Country', pluck='name')
-	country = find(all_countries, lambda x: x.lower()  == country.lower())
+	all_countries = frappe.db.get_all("Country", pluck="name")
+	country = find(all_countries, lambda x: x.lower() == country.lower())
 	if not country:
 		frappe.throw("Country filed should be a valid country name")
 
