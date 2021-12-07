@@ -53,6 +53,17 @@
 					v-model="country"
 					required
 				/>
+				<div class="mt-4 flex">
+					<input
+						type="checkbox"
+						v-model="termsAccepted"
+						class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+						required
+					/>
+					<label class="ml-1 text-sm text-gray-900">
+						By clicking on <span v-if="!isInvitation">Submit</span><span v-else>Accept</span>, you accept our <a href="https://frappecloud.com/updated-terms" class="text-blue-600">Terms of Service</a> & <a href="https://frappecloud.com/privacy" class="text-blue-600">Privacy Policy</a>
+					</label>
+				</div>
 			</div>
 			<ErrorMessage class="mt-4" :error="$resourceErrors" />
 			<Button
@@ -99,7 +110,8 @@ export default {
 			userExists: null,
 			invitationToTeam: null,
 			isInvitation: null,
-			country: null
+			country: null,
+			termsAccepted: false
 		};
 	},
 	resources: {
@@ -131,7 +143,8 @@ export default {
 					last_name: this.lastName,
 					country: this.country,
 					is_invitation: this.isInvitation,
-					user_exists: this.userExists
+					user_exists: this.userExists,
+					user_accept_terms: this.termsAccepted
 				},
 				onSuccess(res) {
 					if (res) {
