@@ -37,7 +37,7 @@
 						<Button
 							icon-left="external-link"
 							type="primary"
-							:link="latestUnpaidStripeUrl"
+							:link="latestUnpaidInvoiceStripeUrl"
 						>
 							Pay now
 						</Button>
