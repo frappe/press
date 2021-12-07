@@ -57,7 +57,7 @@
 				<div class="mt-4 flex">
 					<input
 						type="checkbox"
-						v-model="userAcceptTerms"
+						v-model="termsAccepted"
 						class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
 						required
 					/>
@@ -112,7 +112,7 @@ export default {
 			invitationToTeam: null,
 			isInvitation: null,
 			country: null,
-			userAcceptTerms: false
+			termsAccepted: false
 		};
 	},
 	resources: {
@@ -145,7 +145,7 @@ export default {
 					country: this.country,
 					is_invitation: this.isInvitation,
 					user_exists: this.userExists,
-					user_accept_terms: this.userAcceptTerms
+					user_accept_terms: this.termsAccepted
 				},
 				onSuccess(res) {
 					if (res) {
