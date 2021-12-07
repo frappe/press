@@ -1,817 +1,534 @@
 {
-    "actions": [],
-    "allow_rename": 1,
-    "creation": "2019-12-09 12:35:51.941522",
-    "doctype": "DocType",
-    "editable_grid": 1,
-    "engine": "InnoDB",
-    "field_order": [
-        "overview_tab_break",
-        "site_activation_section",
-        "site_activation_block",
-        "update_alert_section",
-        "update_alert_block",
-        "daily_usage_section",
-        "daily_usage_block",
-        "column_break_5",
-        "recent_activity_block",
-        "plan_section",
-        "plan_block",
-        "site_info_section",
-        "site_owner",
-        "created_on",
-        "last_deployed",
-        "column_break_13",
-        "site_info_block",
-        "site_apps_section",
-        "site_apps_block",
-        "column_break_17",
-        "site_domain_block",
-        "analytics_tab_break",
-        "usage_counter_section",
-        "usage_counter_block",
-        "column_break_22",
-        "uptime_block",
-        "requests_section",
-        "requests_block",
-        "column_break_26",
-        "cpu_usage_block",
-        "background_jobs_section",
-        "background_jobs_block",
-        "column_break_30",
-        "background_jobs_cpu_usage_block",
-        "backup_and_restore_tab_break",
-        "site_backups_section",
-        "site_backups_block",
-        "column_break_35",
-        "restore_migrate_and_reset_block",
-        "site_config_tab_break",
-        "configuration_section",
-        "host_name",
-        "config",
-        "configuration",
-        "jobs_tab_break",
-        "jobs_section",
-        "jobs_block",
-        "logs_tab_break",
-        "logs_section",
-        "logs_block",
-        "activity_tab_break",
-        "activity_section",
-        "activity_block",
-        "column_break_51",
-        "settings_tab_break",
-        "team",
-        "subdomain",
-        "domain",
-        "status",
-        "status_before_update",
-        "server",
-        "bench",
-        "cluster",
-        "column_break_3",
-        "admin_password",
-        "group",
-        "skip_auto_updates",
-        "billing",
-        "setup_wizard_complete",
-        "plan",
-        "free",
-        "column_break_15",
-        "is_standby",
-        "staging",
-        "account_request",
-        "is_erpnext_setup",
-        "trial_end_date",
-        "erpnext_consultant",
-        "section_break_6",
-        "apps",
-        "_keys_removed_in_last_update",
-        "_site_usages",
-        "current_cpu_usage",
-        "current_database_usage",
-        "current_disk_usage",
-        "deploy_section",
-        "timezone",
-        "column_break_29",
-        "remote_files",
-        "skip_failing_patches",
-        "remote_config_file",
-        "remote_database_file",
-        "column_break_34",
-        "remote_private_file",
-        "remote_public_file",
-        "notifications_section",
-        "notify_email",
-        "auto_updates_section",
-        "auto_updates_scheduled",
-        "auto_update_last_triggered_on",
-        "update_trigger_frequency",
-        "update_trigger_time",
-        "column_break_51",
-        "update_on_weekday",
-        "update_end_of_month",
-        "update_on_day_of_month"
-    ],
-    "fields": [
-        {
-            "fetch_from": "bench.server",
-            "fetch_if_empty": 1,
-            "fieldname": "server",
-            "fieldtype": "Link",
-            "hide_days": 1,
-            "hide_seconds": 1,
-            "in_list_view": 1,
-            "in_standard_filter": 1,
-            "label": "Server",
-            "options": "Server",
-            "reqd": 1,
-            "set_only_once": 1
-        },
-        {
-            "fieldname": "bench",
-            "fieldtype": "Link",
-            "hide_days": 1,
-            "hide_seconds": 1,
-            "in_list_view": 1,
-            "in_standard_filter": 1,
-            "label": "Bench",
-            "options": "Bench",
-            "reqd": 1,
-            "set_only_once": 1
-        },
-        {
-            "default": "Pending",
-            "fieldname": "status",
-            "fieldtype": "Select",
-            "hide_days": 1,
-            "hide_seconds": 1,
-            "in_list_view": 1,
-            "in_standard_filter": 1,
-            "label": "Status",
-            "options": "Pending\nInstalling\nUpdating\nActive\nInactive\nBroken\nArchived\nSuspended",
-            "read_only": 1,
-            "reqd": 1
-        },
-        {
-            "fieldname": "admin_password",
-            "fieldtype": "Password",
-            "hide_days": 1,
-            "hide_seconds": 1,
-            "label": "Administrator Password"
-        },
-        {
-            "fieldname": "column_break_3",
-            "fieldtype": "Column Break",
-            "hide_days": 1,
-            "hide_seconds": 1
-        },
-        {
-            "fieldname": "section_break_6",
-            "fieldtype": "Section Break",
-            "hide_days": 1,
-            "hide_seconds": 1
-        },
-        {
-            "default": "{}",
-            "fieldname": "config",
-            "fieldtype": "Code",
-            "hide_days": 1,
-            "hide_seconds": 1,
-            "label": "Preview",
-            "options": "JSON",
-            "read_only": 1
-        },
-        {
-            "fieldname": "configuration_section",
-            "fieldtype": "Section Break",
-            "hide_days": 1,
-            "hide_seconds": 1,
-            "label": "Site Config"
-        },
-        {
-            "fieldname": "subdomain",
-            "fieldtype": "Data",
-            "hide_days": 1,
-            "hide_seconds": 1,
-            "label": "Subdomain",
-            "reqd": 1
-        },
-        {
-            "fieldname": "team",
-            "fieldtype": "Link",
-            "hide_days": 1,
-            "hide_seconds": 1,
-            "in_list_view": 1,
-            "in_standard_filter": 1,
-            "label": "Team",
-            "options": "Team",
-            "reqd": 1
-        },
-        {
-            "collapsible": 1,
-            "fieldname": "deploy_section",
-            "fieldtype": "Section Break",
-            "hide_days": 1,
-            "hide_seconds": 1,
-            "label": "Deploy"
-        },
-        {
-            "fieldname": "timezone",
-            "fieldtype": "Data",
-            "hide_days": 1,
-            "hide_seconds": 1,
-            "label": "Timezone"
-        },
-        {
-            "default": "0",
-            "fieldname": "setup_wizard_complete",
-            "fieldtype": "Check",
-            "hide_days": 1,
-            "hide_seconds": 1,
-            "label": "Setup Wizard Complete",
-            "read_only": 1
-        },
-        {
-            "fieldname": "billing",
-            "fieldtype": "Section Break",
-            "hide_days": 1,
-            "hide_seconds": 1,
-            "label": "Billing"
-        },
-        {
-            "default": "0",
-            "description": "If checked, this site's usage data won't be sent to Stripe",
-            "fieldname": "free",
-            "fieldtype": "Check",
-            "hide_days": 1,
-            "hide_seconds": 1,
-            "label": "Free Site"
-        },
-        {
-            "fieldname": "host_name",
-            "fieldtype": "Data",
-            "label": "Host Name"
-        },
-        {
-            "fieldname": "status_before_update",
-            "fieldtype": "Data",
-            "hidden": 1,
-            "label": "Status Before Update"
-        },
-        {
-            "collapsible": 1,
-            "fieldname": "remote_files",
-            "fieldtype": "Section Break",
-            "label": "Remote Files"
-        },
-        {
-            "fieldname": "remote_database_file",
-            "fieldtype": "Link",
-            "label": "Remote Database File",
-            "options": "Remote File"
-        },
-        {
-            "fieldname": "remote_private_file",
-            "fieldtype": "Link",
-            "label": "Remote Private File",
-            "options": "Remote File"
-        },
-        {
-            "fieldname": "remote_public_file",
-            "fieldtype": "Link",
-            "label": "Remote Public File",
-            "options": "Remote File"
-        },
-        {
-            "fieldname": "remote_config_file",
-            "fieldtype": "Link",
-            "label": "Remote Config File",
-            "options": "Remote File"
-        },
-        {
-            "fieldname": "configuration",
-            "fieldtype": "Table",
-            "label": "Configuration",
-            "options": "Site Config"
-        },
-        {
-            "fieldname": "_keys_removed_in_last_update",
-            "fieldtype": "Data",
-            "hidden": 1,
-            "label": "Keys Removed in Last Config Change"
-        },
-        {
-            "fieldname": "apps",
-            "fieldtype": "Table",
-            "hide_days": 1,
-            "hide_seconds": 1,
-            "label": "Apps",
-            "options": "Site App",
-            "reqd": 1
-        },
-        {
-            "fieldname": "domain",
-            "fieldtype": "Link",
-            "label": "Domain",
-            "options": "Root Domain",
-            "set_only_once": 1
-        },
-        {
-            "fieldname": "_site_usages",
-            "fieldtype": "Data",
-            "hidden": 1,
-            "label": "Site Usage"
-        },
-        {
-            "fieldname": "current_cpu_usage",
-            "fieldtype": "Int",
-            "hidden": 1
-        },
-        {
-            "fieldname": "current_database_usage",
-            "fieldtype": "Int",
-            "hidden": 1
-        },
-        {
-            "fieldname": "current_disk_usage",
-            "fieldtype": "Int",
-            "hidden": 1
-        },
-        {
-            "fetch_from": "bench.cluster",
-            "fieldname": "cluster",
-            "fieldtype": "Link",
-            "label": "Cluster",
-            "options": "Cluster",
-            "read_only": 1,
-            "reqd": 1
-        },
-        {
-            "fetch_from": "bench.group",
-            "fieldname": "group",
-            "fieldtype": "Link",
-            "label": "Release Group",
-            "options": "Release Group",
-            "read_only": 1,
-            "reqd": 1
-        },
-        {
-            "fieldname": "column_break_29",
-            "fieldtype": "Column Break"
-        },
-        {
-            "fieldname": "column_break_34",
-            "fieldtype": "Column Break"
-        },
-        {
-            "fieldname": "column_break_15",
-            "fieldtype": "Column Break"
-        },
-        {
-            "fieldname": "trial_end_date",
-            "fieldtype": "Date",
-            "label": "Trial End Date"
-        },
-        {
-            "default": "0",
-            "fieldname": "is_standby",
-            "fieldtype": "Check",
-            "label": "Is Standby"
-        },
-        {
-            "fieldname": "account_request",
-            "fieldtype": "Link",
-            "label": "Account Request",
-            "options": "Account Request"
-        },
-        {
-            "default": "0",
-            "fieldname": "is_erpnext_setup",
-            "fieldtype": "Check",
-            "label": "Is ERPNext Setup"
-        },
-        {
-            "fieldname": "erpnext_consultant",
-            "fieldtype": "Link",
-            "label": "ERPNext Consultant",
-            "options": "ERPNext Consultant"
-        },
-        {
-            "fieldname": "plan",
-            "fieldtype": "Link",
-            "label": "Plan",
-            "options": "Plan",
-            "read_only": 1
-        },
-        {
-            "default": "0",
-            "fieldname": "staging",
-            "fieldtype": "Check",
-            "label": "Staging"
-        },
-        {
-            "default": "0",
-            "fieldname": "skip_auto_updates",
-            "fieldtype": "Check",
-            "label": "Skip Auto Updates"
-        },
-        {
-            "fieldname": "overview_tab_break",
-            "fieldtype": "Tab Break",
-            "label": "Overview"
-        },
-        {
-            "fieldname": "analytics_tab_break",
-            "fieldtype": "Tab Break",
-            "label": "Analytics"
-        },
-        {
-            "fieldname": "backup_and_restore_tab_break",
-            "fieldtype": "Tab Break",
-            "label": "Backup & Restore"
-        },
-        {
-            "fieldname": "site_config_tab_break",
-            "fieldtype": "Tab Break",
-            "label": "Site Config"
-        },
-        {
-            "fieldname": "jobs_tab_break",
-            "fieldtype": "Tab Break",
-            "label": "Jobs"
-        },
-        {
-            "fieldname": "logs_tab_break",
-            "fieldtype": "Tab Break",
-            "label": "Logs"
-        },
-        {
-            "fieldname": "activity_tab_break",
-            "fieldtype": "Tab Break",
-            "label": "Activity"
-        },
-        {
-            "fieldname": "daily_usage_block",
-            "fieldtype": "HTML",
-            "label": "Daily Usage Block"
-        },
-        {
-            "fieldname": "recent_activity_block",
-            "fieldtype": "HTML",
-            "label": "Recent Activity Block"
-        },
-        {
-            "fieldname": "site_info_block",
-            "fieldtype": "HTML",
-            "label": "Site Info Block"
-        },
-        {
-            "fieldname": "daily_usage_section",
-            "fieldtype": "Section Break"
-        },
-        {
-            "fieldname": "plan_section",
-            "fieldtype": "Section Break",
-            "label": "Plan"
-        },
-        {
-            "fieldname": "plan_block",
-            "fieldtype": "HTML",
-            "label": "Plan Block"
-        },
-        {
-            "fieldname": "site_info_section",
-            "fieldtype": "Section Break",
-            "label": "Site Info"
-        },
-        {
-            "fieldname": "site_activation_block",
-            "fieldtype": "HTML"
-        },
-        {
-            "fieldname": "usage_counter_section",
-            "fieldtype": "Section Break"
-        },
-        {
-            "fieldname": "usage_counter_block",
-            "fieldtype": "HTML",
-            "label": "Usage Counter Block"
-        },
-        {
-            "fieldname": "uptime_block",
-            "fieldtype": "HTML",
-            "label": "Uptime Block"
-        },
-        {
-            "fieldname": "requests_section",
-            "fieldtype": "Section Break"
-        },
-        {
-            "fieldname": "requests_block",
-            "fieldtype": "HTML",
-            "label": "Requests Block"
-        },
-        {
-            "fieldname": "cpu_usage_block",
-            "fieldtype": "HTML",
-            "label": "Cpu Usage Block"
-        },
-        {
-            "fieldname": "background_jobs_section",
-            "fieldtype": "Section Break"
-        },
-        {
-            "fieldname": "background_jobs_block",
-            "fieldtype": "HTML",
-            "label": "Background Jobs Block"
-        },
-        {
-            "fieldname": "background_jobs_cpu_usage_block",
-            "fieldtype": "HTML",
-            "label": "Background Jobs Cpu Usage Block"
-        },
-        {
-            "fieldname": "restore_migrate_and_reset_block",
-            "fieldtype": "HTML",
-            "label": "Restore, Migrate & Reset Block"
-        },
-        {
-            "fieldname": "jobs_section",
-            "fieldtype": "Section Break"
-        },
-        {
-            "fieldname": "jobs_block",
-            "fieldtype": "HTML",
-            "label": "Jobs Block"
-        },
-        {
-            "fieldname": "logs_section",
-            "fieldtype": "Section Break"
-        },
-        {
-            "fieldname": "logs_block",
-            "fieldtype": "HTML",
-            "label": "Logs Block"
-        },
-        {
-            "fieldname": "activity_section",
-            "fieldtype": "Section Break"
-        },
-        {
-            "fieldname": "activity_block",
-            "fieldtype": "HTML",
-            "label": "Activity Block"
-        },
-        {
-            "fieldname": "settings_tab_break",
-            "fieldtype": "Tab Break",
-            "label": "Settings"
-        },
-        {
-            "fieldname": "site_apps_section",
-            "fieldtype": "Section Break"
-        },
-        {
-            "fieldname": "site_apps_block",
-            "fieldtype": "HTML",
-            "label": "Apps Block"
-        },
-        {
-            "fieldname": "site_domain_block",
-            "fieldtype": "HTML",
-            "label": "Domains Block"
-        },
-        {
-            "fieldname": "site_backups_section",
-            "fieldtype": "Section Break"
-        },
-        {
-            "fieldname": "site_backups_block",
-            "fieldtype": "HTML",
-            "label": "Backups Block"
-        },
-        {
-            "fetch_from": "team.user",
-            "fieldname": "site_owner",
-            "fieldtype": "Data",
-            "label": "Site Owner",
-            "read_only": 1
-        },
-        {
-            "fieldname": "created_on",
-            "fieldtype": "Data",
-            "label": "Created On",
-            "read_only": 1
-        },
-        {
-            "fieldname": "last_deployed",
-            "fieldtype": "Data",
-            "label": "Last Deployed",
-            "read_only": 1
-        },
-        {
-            "fieldname": "column_break_13",
-            "fieldtype": "Column Break"
-        },
-        {
-            "columns": 2,
-            "fieldname": "column_break_5",
-            "fieldtype": "Column Break"
-        },
-        {
-            "fieldname": "column_break_17",
-            "fieldtype": "Column Break"
-        },
-        {
-            "fieldname": "column_break_22",
-            "fieldtype": "Column Break"
-        },
-        {
-            "fieldname": "column_break_26",
-            "fieldtype": "Column Break"
-        },
-        {
-            "fieldname": "column_break_30",
-            "fieldtype": "Column Break"
-        },
-        {
-            "fieldname": "column_break_35",
-            "fieldtype": "Column Break"
-        },
-        {
-            "fieldname": "column_break_51",
-            "fieldtype": "Column Break"
-        },
-        {
-            "fieldname": "notify_email",
-            "fieldtype": "Data",
-            "label": "Notify Email"
-        },
-        {
-            "collapsible": 1,
-            "fieldname": "notifications_section",
-            "fieldtype": "Section Break",
-            "label": "Notifications"
-        },
-        {
-            "default": "0",
-            "description": "Only used while first restore",
-            "fieldname": "skip_failing_patches",
-            "fieldtype": "Check",
-            "label": "Skip Failing Patches",
-            "read_only": 1
-        },
-        {
-            "fieldname": "update_alert_block",
-            "fieldtype": "HTML"
-        },
-        {
-            "fieldname": "site_activation_section",
-            "fieldtype": "Section Break"
-        },
-        {
-            "fieldname": "update_alert_section",
-            "fieldtype": "Section Break"
-        },
-        {
-            "collapsible": 1,
-            "fieldname": "auto_updates_section",
-            "fieldtype": "Section Break",
-            "label": "Auto Updates"
-        },
-        {
-            "fieldname": "auto_update_last_triggered_on",
-            "fieldtype": "Datetime",
-            "label": "Auto Update Last Triggered On"
-        },
-        {
-            "default": "Daily",
-            "fieldname": "update_trigger_frequency",
-            "fieldtype": "Select",
-            "label": "Update Trigger Frequency",
-            "options": "Daily\nWeekly\nMonthly"
-        },
-        {
-            "default": "Sunday",
-            "depends_on": "eval:doc.update_trigger_frequency === 'Weekly'",
-            "fieldname": "update_on_weekday",
-            "fieldtype": "Select",
-            "label": "Update on Weekday",
-            "options": "Sunday\nMonday\nTuesday\nWednesday\nThursday\nFriday\nSaturday"
-        },
-        {
-            "default": "0",
-            "depends_on": "eval:doc.update_trigger_frequency === 'Monthly'",
-            "fieldname": "update_end_of_month",
-            "fieldtype": "Check",
-            "label": "Update End of Month"
-        },
-        {
-            "default": "1",
-            "depends_on": "eval:(doc.update_trigger_frequency === 'Monthly' && doc.update_end_of_month === 0)",
-            "fieldname": "update_on_day_of_month",
-            "fieldtype": "Int",
-            "label": "Update on Day of month",
-            "non_negative": 1
-        },
-        {
-            "default": "15:30:00",
-            "fieldname": "update_trigger_time",
-            "fieldtype": "Time",
-            "label": "Update Trigger Time"
-        },
-        {
-            "fieldname": "column_break_51",
-            "fieldtype": "Column Break"
-        },
-        {
-            "default": "0",
-            "fieldname": "auto_updates_scheduled",
-            "fieldtype": "Check",
-            "label": "Auto Updates Scheduled"
-        }
-    ],
-    "hide_toolbar": 1,
-    "links": [
-        {
-            "group": "Usage",
-            "link_doctype": "Site Usage",
-            "link_fieldname": "site"
-        },
-        {
-            "group": "Usage",
-            "link_doctype": "Remote File",
-            "link_fieldname": "site"
-        },
-        {
-            "group": "Related Documents",
-            "link_doctype": "Site Domain",
-            "link_fieldname": "site"
-        },
-        {
-            "group": "Related Documents",
-            "link_doctype": "Site Activity",
-            "link_fieldname": "site"
-        },
-        {
-            "group": "Related Documents",
-            "link_doctype": "Site Plan Change",
-            "link_fieldname": "site"
-        },
-        {
-            "group": "Related Documents",
-            "link_doctype": "Subscription",
-            "link_fieldname": "document_name"
-        },
-        {
-            "group": "Logs",
-            "link_doctype": "Agent Job",
-            "link_fieldname": "site"
-        },
-        {
-            "group": "Logs",
-            "link_doctype": "Site Backup",
-            "link_fieldname": "site"
-        },
-        {
-            "group": "Logs",
-            "link_doctype": "Site Update",
-            "link_fieldname": "site"
-        }
-    ],
-    "modified": "2021-11-09 07:17:16.903390",
-    "modified_by": "Administrator",
-    "module": "Press",
-    "name": "Site",
-    "owner": "Administrator",
-    "permissions": [
-        {
-            "create": 1,
-            "delete": 1,
-            "email": 1,
-            "export": 1,
-            "print": 1,
-            "read": 1,
-            "report": 1,
-            "role": "System Manager",
-            "share": 1,
-            "write": 1
-        },
-        {
-            "create": 1,
-            "read": 1,
-            "role": "Press Admin",
-            "write": 1
-        },
-        {
-            "create": 1,
-            "read": 1,
-            "role": "Press Member",
-            "write": 1
-        }
-    ],
-    "sort_field": "creation",
-    "sort_order": "DESC",
-    "track_changes": 1
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2019-12-09 12:35:51.941522",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "host_name",
+  "team",
+  "subdomain",
+  "domain",
+  "status",
+  "status_before_update",
+  "server",
+  "bench",
+  "cluster",
+  "column_break_3",
+  "admin_password",
+  "group",
+  "skip_auto_updates",
+  "site_config_section",
+  "configuration",
+  "column_break_12",
+  "config",
+  "billing",
+  "setup_wizard_complete",
+  "plan",
+  "free",
+  "column_break_15",
+  "is_standby",
+  "staging",
+  "account_request",
+  "is_erpnext_setup",
+  "trial_end_date",
+  "erpnext_consultant",
+  "section_break_6",
+  "apps",
+  "_keys_removed_in_last_update",
+  "_site_usages",
+  "current_cpu_usage",
+  "current_database_usage",
+  "current_disk_usage",
+  "deploy_section",
+  "timezone",
+  "column_break_29",
+  "remote_files",
+  "skip_failing_patches",
+  "remote_config_file",
+  "remote_database_file",
+  "column_break_34",
+  "remote_private_file",
+  "remote_public_file",
+  "notifications_section",
+  "notify_email",
+  "auto_updates_section",
+  "auto_updates_scheduled",
+  "auto_update_last_triggered_on",
+  "update_trigger_frequency",
+  "update_trigger_time",
+  "column_break_51",
+  "update_on_weekday",
+  "update_end_of_month",
+  "update_on_day_of_month"
+ ],
+ "fields": [
+  {
+   "fetch_from": "bench.server",
+   "fetch_if_empty": 1,
+   "fieldname": "server",
+   "fieldtype": "Link",
+   "hide_days": 1,
+   "hide_seconds": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Server",
+   "options": "Server",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "bench",
+   "fieldtype": "Link",
+   "hide_days": 1,
+   "hide_seconds": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Bench",
+   "options": "Bench",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "hide_days": 1,
+   "hide_seconds": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Pending\nInstalling\nUpdating\nActive\nInactive\nBroken\nArchived\nSuspended",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "admin_password",
+   "fieldtype": "Password",
+   "hide_days": 1,
+   "hide_seconds": 1,
+   "label": "Administrator Password"
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break",
+   "hide_days": 1,
+   "hide_seconds": 1
+  },
+  {
+   "fieldname": "section_break_6",
+   "fieldtype": "Section Break",
+   "hide_days": 1,
+   "hide_seconds": 1
+  },
+  {
+   "default": "{}",
+   "fieldname": "config",
+   "fieldtype": "Code",
+   "hide_days": 1,
+   "hide_seconds": 1,
+   "label": "Preview",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "subdomain",
+   "fieldtype": "Data",
+   "hide_days": 1,
+   "hide_seconds": 1,
+   "label": "Subdomain",
+   "reqd": 1
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "hide_days": 1,
+   "hide_seconds": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Team",
+   "options": "Team",
+   "reqd": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "deploy_section",
+   "fieldtype": "Section Break",
+   "hide_days": 1,
+   "hide_seconds": 1,
+   "label": "Deploy"
+  },
+  {
+   "fieldname": "timezone",
+   "fieldtype": "Data",
+   "hide_days": 1,
+   "hide_seconds": 1,
+   "label": "Timezone"
+  },
+  {
+   "default": "0",
+   "fieldname": "setup_wizard_complete",
+   "fieldtype": "Check",
+   "hide_days": 1,
+   "hide_seconds": 1,
+   "label": "Setup Wizard Complete",
+   "read_only": 1
+  },
+  {
+   "fieldname": "billing",
+   "fieldtype": "Section Break",
+   "hide_days": 1,
+   "hide_seconds": 1,
+   "label": "Billing"
+  },
+  {
+   "default": "0",
+   "description": "If checked, this site's usage data won't be sent to Stripe",
+   "fieldname": "free",
+   "fieldtype": "Check",
+   "hide_days": 1,
+   "hide_seconds": 1,
+   "label": "Free Site"
+  },
+  {
+   "fieldname": "host_name",
+   "fieldtype": "Data",
+   "label": "Host Name"
+  },
+  {
+   "fieldname": "status_before_update",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Status Before Update"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "remote_files",
+   "fieldtype": "Section Break",
+   "label": "Remote Files"
+  },
+  {
+   "fieldname": "remote_database_file",
+   "fieldtype": "Link",
+   "label": "Remote Database File",
+   "options": "Remote File"
+  },
+  {
+   "fieldname": "remote_private_file",
+   "fieldtype": "Link",
+   "label": "Remote Private File",
+   "options": "Remote File"
+  },
+  {
+   "fieldname": "remote_public_file",
+   "fieldtype": "Link",
+   "label": "Remote Public File",
+   "options": "Remote File"
+  },
+  {
+   "fieldname": "remote_config_file",
+   "fieldtype": "Link",
+   "label": "Remote Config File",
+   "options": "Remote File"
+  },
+  {
+   "fieldname": "configuration",
+   "fieldtype": "Table",
+   "label": "Configuration",
+   "options": "Site Config"
+  },
+  {
+   "fieldname": "_keys_removed_in_last_update",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Keys Removed in Last Config Change"
+  },
+  {
+   "fieldname": "apps",
+   "fieldtype": "Table",
+   "hide_days": 1,
+   "hide_seconds": 1,
+   "label": "Apps",
+   "options": "Site App",
+   "reqd": 1
+  },
+  {
+   "fieldname": "domain",
+   "fieldtype": "Link",
+   "label": "Domain",
+   "options": "Root Domain",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "_site_usages",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Site Usage"
+  },
+  {
+   "fieldname": "current_cpu_usage",
+   "fieldtype": "Int",
+   "hidden": 1
+  },
+  {
+   "fieldname": "current_database_usage",
+   "fieldtype": "Int",
+   "hidden": 1
+  },
+  {
+   "fieldname": "current_disk_usage",
+   "fieldtype": "Int",
+   "hidden": 1
+  },
+  {
+   "fetch_from": "bench.cluster",
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "label": "Cluster",
+   "options": "Cluster",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fetch_from": "bench.group",
+   "fieldname": "group",
+   "fieldtype": "Link",
+   "label": "Release Group",
+   "options": "Release Group",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_29",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_34",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_15",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "trial_end_date",
+   "fieldtype": "Date",
+   "label": "Trial End Date"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_standby",
+   "fieldtype": "Check",
+   "label": "Is Standby"
+  },
+  {
+   "fieldname": "account_request",
+   "fieldtype": "Link",
+   "label": "Account Request",
+   "options": "Account Request"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_erpnext_setup",
+   "fieldtype": "Check",
+   "label": "Is ERPNext Setup"
+  },
+  {
+   "fieldname": "erpnext_consultant",
+   "fieldtype": "Link",
+   "label": "ERPNext Consultant",
+   "options": "ERPNext Consultant"
+  },
+  {
+   "fieldname": "plan",
+   "fieldtype": "Link",
+   "label": "Plan",
+   "options": "Plan",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "staging",
+   "fieldtype": "Check",
+   "label": "Staging"
+  },
+  {
+   "default": "0",
+   "fieldname": "skip_auto_updates",
+   "fieldtype": "Check",
+   "label": "Skip Auto Updates"
+  },
+  {
+   "fieldname": "column_break_51",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "notify_email",
+   "fieldtype": "Data",
+   "label": "Notify Email"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "notifications_section",
+   "fieldtype": "Section Break",
+   "label": "Notifications"
+  },
+  {
+   "default": "0",
+   "description": "Only used while first restore",
+   "fieldname": "skip_failing_patches",
+   "fieldtype": "Check",
+   "label": "Skip Failing Patches",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "auto_updates_section",
+   "fieldtype": "Section Break",
+   "label": "Auto Updates"
+  },
+  {
+   "fieldname": "auto_update_last_triggered_on",
+   "fieldtype": "Datetime",
+   "label": "Auto Update Last Triggered On"
+  },
+  {
+   "default": "Daily",
+   "fieldname": "update_trigger_frequency",
+   "fieldtype": "Select",
+   "label": "Update Trigger Frequency",
+   "options": "Daily\nWeekly\nMonthly"
+  },
+  {
+   "default": "Sunday",
+   "depends_on": "eval:doc.update_trigger_frequency === 'Weekly'",
+   "fieldname": "update_on_weekday",
+   "fieldtype": "Select",
+   "label": "Update on Weekday",
+   "options": "Sunday\nMonday\nTuesday\nWednesday\nThursday\nFriday\nSaturday"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.update_trigger_frequency === 'Monthly'",
+   "fieldname": "update_end_of_month",
+   "fieldtype": "Check",
+   "label": "Update End of Month"
+  },
+  {
+   "default": "1",
+   "depends_on": "eval:(doc.update_trigger_frequency === 'Monthly' && doc.update_end_of_month === 0)",
+   "fieldname": "update_on_day_of_month",
+   "fieldtype": "Int",
+   "label": "Update on Day of month",
+   "non_negative": 1
+  },
+  {
+   "default": "15:30:00",
+   "fieldname": "update_trigger_time",
+   "fieldtype": "Time",
+   "label": "Update Trigger Time"
+  },
+  {
+   "fieldname": "column_break_51",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "auto_updates_scheduled",
+   "fieldtype": "Check",
+   "label": "Auto Updates Scheduled"
+  },
+  {
+   "fieldname": "site_config_section",
+   "fieldtype": "Section Break",
+   "label": "Site Config"
+  },
+  {
+   "fieldname": "column_break_12",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "hide_toolbar": 1,
+ "links": [
+  {
+   "group": "Usage",
+   "link_doctype": "Site Usage",
+   "link_fieldname": "site"
+  },
+  {
+   "group": "Usage",
+   "link_doctype": "Remote File",
+   "link_fieldname": "site"
+  },
+  {
+   "group": "Related Documents",
+   "link_doctype": "Site Domain",
+   "link_fieldname": "site"
+  },
+  {
+   "group": "Related Documents",
+   "link_doctype": "Site Activity",
+   "link_fieldname": "site"
+  },
+  {
+   "group": "Related Documents",
+   "link_doctype": "Site Plan Change",
+   "link_fieldname": "site"
+  },
+  {
+   "group": "Related Documents",
+   "link_doctype": "Subscription",
+   "link_fieldname": "document_name"
+  },
+  {
+   "group": "Logs",
+   "link_doctype": "Agent Job",
+   "link_fieldname": "site"
+  },
+  {
+   "group": "Logs",
+   "link_doctype": "Site Backup",
+   "link_fieldname": "site"
+  },
+  {
+   "group": "Logs",
+   "link_doctype": "Site Update",
+   "link_fieldname": "site"
+  }
+ ],
+ "modified": "2021-12-05 10:26:30.834316",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Site",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "Press Admin",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "Press Member",
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "track_changes": 1
 }

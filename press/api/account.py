@@ -11,6 +11,7 @@ from frappe.exceptions import DoesNotExistError
 from frappe.utils import get_url, random_string
 from frappe.utils.oauth import get_oauth2_authorize_url, get_oauth_keys
 from frappe.website.utils import build_response
+from frappe.core.utils import find
 
 from press.press.doctype.team.team import Team, get_team_members
 from press.utils import get_country_info, get_current_team
@@ -71,8 +72,14 @@ def setup_account(
 		if not is_invitation and not country:
 			frappe.throw("Country is required")
 
-		if not accepted_user_terms:
-			frappe.throw("You need to accept our Terms of Service & Privary Policy")
+		if not is_invitation and country:
+			all_countries = frappe.db.get_all("Country", pluck="name")
+			country = find(all_countries, lambda x: x.lower() == country.lower())
+			if not country:
+				frappe.throw("Country filed should be a valid country name")
+    
+    if not accepted_user_terms:
+      frappe.throw("You need to accept our Terms of Service & Privary Policy")
 
 	# if the request is authenticated, set the user to Administrator
 	frappe.set_user("Administrator")
