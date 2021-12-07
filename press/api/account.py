@@ -52,7 +52,7 @@ def setup_account(
 	is_invitation=False,
 	country=None,
 	user_exists=False,
-	accepted_user_terms=False
+	accepted_user_terms=False,
 ):
 	account_request = get_account_request_from_key(key)
 	if not account_request:
