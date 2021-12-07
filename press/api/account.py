@@ -52,7 +52,7 @@ def setup_account(
 	is_invitation=False,
 	country=None,
 	user_exists=False,
-	user_accept_terms=False
+	accepted_user_terms=False
 ):
 	account_request = get_account_request_from_key(key)
 	if not account_request:
@@ -71,7 +71,7 @@ def setup_account(
 		if not is_invitation and not country:
 			frappe.throw("Country is required")
 
-		if not user_accept_terms:
+		if not accepted_user_terms:
 			frappe.throw("You need to accept our Terms of Service & Privary Policy")
 
 	# if the request is authenticated, set the user to Administrator
