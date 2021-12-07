@@ -131,9 +131,8 @@
    "fieldtype": "Column Break"
   }
  ],
- "hide_toolbar": 1,
  "links": [],
- "modified": "2021-12-05 10:41:26.091333",
+ "modified": "2021-12-07 21:39:10.575131",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",

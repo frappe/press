@@ -61,7 +61,8 @@
   "column_break_51",
   "update_on_weekday",
   "update_end_of_month",
-  "update_on_day_of_month"
+  "update_on_day_of_month",
+  "column_break_57"
  ],
  "fields": [
   {
@@ -447,9 +448,12 @@
   {
    "fieldname": "column_break_12",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_57",
+   "fieldtype": "Column Break"
   }
  ],
- "hide_toolbar": 1,
  "links": [
   {
    "group": "Usage",
@@ -497,7 +501,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2021-12-05 10:26:30.834316",
+ "modified": "2021-12-07 21:38:35.662512",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
