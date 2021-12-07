@@ -72,7 +72,8 @@ def setup_account(
 			frappe.throw("Country is required")
 		
 		if not is_invitation and country:
-			country = find(country_list(), lambda x: x.lower()  == country.lower())
+			all_countries = frappe.db.get_all('Country', pluck='name')
+			country = find(all_countries, lambda x: x.lower()  == country.lower())
 			if not country:
 				frappe.throw("Country filed should be a valid country name")
 
