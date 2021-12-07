@@ -64,14 +64,10 @@
 				</div>
 				<div class="form-group">
 					<label for="country">Country</label>
-					<select id="country" class="custom-select" name="country">
-						<option disabled selected>Select Country</option>
-						{%- for country in frappe.db.get_all('Country') -%}
-						<option {{ 'selected' if country_info.get('country')==country else '' }}>
-							{{ country.name }}
-						</option>
-						{%- endfor -%}
-					</select>
+					<input type="text"
+					id="country"
+					class="form-control"
+					name="country">
 				</div>
 				<div class="form-group">
 					<input type="checkbox" name="user_accept_terms" id="user_accept_terms">
@@ -152,7 +148,7 @@
 		},
 		country: (value) => {
 			if (!value) {
-				return "Please select country";
+				return "Please enter your country name";
 			}
 		},
 		user_accept_terms: (value) => {

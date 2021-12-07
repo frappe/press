@@ -47,10 +47,9 @@
 					/>
 				</template>
 				<Input
-					type="select"
+					type="text"
 					v-if="!isInvitation"
 					label="Country"
-					:options="countryList"
 					v-model="country"
 					required
 				/>
@@ -155,15 +154,6 @@ export default {
 				}
 			};
 		},
-		countryList: 'press.api.account.country_list'
 	},
-	computed: {
-		countryList() {
-			return (this.$resources.countryList.data || []).map(d => ({
-				label: d.name,
-				value: d.name
-			}));
-		}
-	}
 };
 </script>

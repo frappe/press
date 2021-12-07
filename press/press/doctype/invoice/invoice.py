@@ -621,7 +621,7 @@ class Invoice(Document):
 def finalize_draft_invoices():
 	"""
 	- Runs every hour
-	- Processes 500 + (`Prepaid Credit` mode) invoices at a time
+	- Processes 500 invoices at a time
 	- Finalizes the invoices whose
 	- period ends today and time is 6PM or later
 	- period has ended before
@@ -630,26 +630,39 @@ def finalize_draft_invoices():
 	today = frappe.utils.today()
 
 	# get draft invoices whose period has ended or ends today
-	draft_invoices = frappe.db.get_all(
+	invoices = frappe.db.get_all(
 		"Invoice",
 		filters={"status": "Draft", "type": "Subscription", "period_end": ("<=", today)},
 		pluck="name",
 		limit=500,
 	)
 
+	current_time = frappe.utils.get_datetime().time()
+	today = frappe.utils.getdate()
+	for name in invoices:
+		invoice = frappe.get_doc("Invoice", name)
+		# don't finalize if invoice ends today and time is before 6 PM
+		if invoice.period_end == today and current_time.hour < 18:
+			continue
+		finalize_draft_invoice(invoice)
+
+
+def finalize_unpaid_prepaid_credit_invoices():
+	"""Should be run daily in contrast to `finalize_draft_invoices`, which runs hourly"""
+	today = frappe.utils.today()
+
 	# Invoices with `Prepaid Credits` as mode and unpaid
-	unpaid_invoices_mode_prepaid_credits = frappe.db.get_all(
+	invoices = frappe.db.get_all(
 		"Invoice",
 		filters={
 			"status": "Unpaid",
 			"type": "Subscription",
 			"period_end": ("<=", today),
 			"payment_mode": "Prepaid Credits",
+			"payment_attempt_count": ("<=", 15),  # Try for 15 days
 		},
 		pluck="name",
 	)
-
-	invoices = draft_invoices + unpaid_invoices_mode_prepaid_credits
 
 	current_time = frappe.utils.get_datetime().time()
 	today = frappe.utils.getdate()
