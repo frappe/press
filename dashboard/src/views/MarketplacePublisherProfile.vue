@@ -86,12 +86,8 @@ export default {
 			return {
 				method: 'press.api.marketplace.get_publisher_profile_info',
 				auto: true,
-				onSuccess(d) {
-					if (d.profile_created) {
-						this.displayName = d.profile_info.display_name;
-						this.contactEmail = d.profile_info.contact_email;
-						this.website = d.profile_info.website;
-					}
+				onSuccess(data) {
+					this.setProfileInfo(data);
 				}
 			};
 		},
@@ -115,6 +111,15 @@ export default {
 					this.$resources.getPublisherProfileInfo.fetch();
 				}
 			};
+		}
+	},
+	methods: {
+		setProfileInfo(data) {
+			if (data && data.profile_created) {
+				this.displayName = data.profile_info.display_name;
+				this.contactEmail = data.profile_info.contact_email;
+				this.website = data.profile_info.website;
+			}
 		}
 	},
 	computed: {
