@@ -67,7 +67,7 @@
 							for="region-consent"
 							class="ml-1 text-sm font-semibold text-gray-900"
 						>
-							I agree that the laws of the region selected by you shall stand
+							I agree that the laws of the region selected by me shall stand
 							applicable to me and Frappe.
 						</label>
 					</div>
@@ -251,7 +251,7 @@ export default {
 
 					if (!this.agreedToRegionConsent) {
 						document.getElementById('region-consent').focus();
-						
+
 						return 'Agree to the above consent to create site';
 					}
 
