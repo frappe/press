@@ -61,7 +61,15 @@
 						required
 					/>
 					<label class="ml-1 text-sm text-gray-900">
-						By clicking on <span v-if="!isInvitation">Submit</span><span v-else>Accept</span>, you accept our <a href="https://frappecloud.com/terms" class="text-blue-600">Terms of Service</a> & <a href="https://frappecloud.com/privacy" class="text-blue-600">Privacy Policy</a>
+						By clicking on <span v-if="!isInvitation">Submit</span
+						><span v-else>Accept</span>, you accept our
+						<a href="https://frappecloud.com/terms" class="text-blue-600"
+							>Terms of Service</a
+						>
+						&
+						<a href="https://frappecloud.com/privacy" class="text-blue-600"
+							>Privacy Policy</a
+						>
 					</label>
 				</div>
 			</div>
@@ -144,7 +152,7 @@ export default {
 					country: this.country,
 					is_invitation: this.isInvitation,
 					user_exists: this.userExists,
-					user_accept_terms: this.termsAccepted
+					accepted_user_terms: this.termsAccepted
 				},
 				onSuccess(res) {
 					if (res) {
@@ -153,7 +161,7 @@ export default {
 					window.location.reload();
 				}
 			};
-		},
-	},
+		}
+	}
 };
 </script>
