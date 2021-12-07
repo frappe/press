@@ -75,6 +75,7 @@ def setup_account(
 			flag = False
 			for c in cl:
 				if country.casefold() == c.name.casefold():
+					country = c.name
 					flag = True
 					break
 			if not flag:
