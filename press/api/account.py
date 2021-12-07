@@ -11,6 +11,7 @@ from frappe.exceptions import DoesNotExistError
 from frappe.utils import get_url, random_string
 from frappe.utils.oauth import get_oauth2_authorize_url, get_oauth_keys
 from frappe.website.utils import build_response
+from frappe.core.utils import find
 
 from press.press.doctype.team.team import Team, get_team_members
 from press.utils import get_country_info, get_current_team
@@ -71,14 +72,8 @@ def setup_account(
 			frappe.throw("Country is required")
 		
 		if not is_invitation and country:
-			cl = country_list()
-			flag = False
-			for c in cl:
-				if country.casefold() == c.name.casefold():
-					country = c.name
-					flag = True
-					break
-			if not flag:
+			country = find(country_list(), lambda x: x.lower()  == country.lower())
+			if not country:
 				frappe.throw("Country filed should be a valid country name")
 
 
