@@ -14,7 +14,9 @@ from frappe.utils import get_fullname
 
 from press.exceptions import FrappeioServerNotSet
 from press.press.doctype.account_request.account_request import AccountRequest
-from press.marketplace.doctype.marketplace_app_subscription.marketplace_app_subscription import process_prepaid_marketplace_payment
+from press.marketplace.doctype.marketplace_app_subscription.marketplace_app_subscription import (
+	process_prepaid_marketplace_payment,
+)
 from press.utils.billing import (
 	get_erpnext_com_connection,
 	get_frappe_io_connection,
@@ -606,7 +608,7 @@ def process_stripe_webhook(doc, method):
 	if payment_intent.get("invoice"):
 		# ignore payment for invoice
 		return
-	
+
 	metadata = payment_intent.get("metadata")
 	payment_for = metadata.get("payment_for")
 
