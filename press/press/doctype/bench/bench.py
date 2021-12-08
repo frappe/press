@@ -138,6 +138,11 @@ class Bench(Document):
 
 	def after_insert(self):
 		self.create_agent_request()
+		frappe.enqueue(
+			"press.press.doctype.deploy.deploy.create_deploy_candidate_differences",
+			bench=self,
+			enqueue_after_commit=True,
+		)
 
 	def create_agent_request(self):
 		agent = Agent(self.server)
