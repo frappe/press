@@ -1,5 +1,7 @@
 import frappe
 
+from typing import Dict
+
 
 class InvalidSecretKeyError(Exception):
 	http_status_code = 401
@@ -31,8 +33,28 @@ class DeveloperApiHandler:
 	def get_subscription_status(self) -> str:
 		return self.app_subscription_doc.status
 
+	def get_subscription_info(self) -> Dict:
+		"""Important rule for security: Send info back carefully"""
+		app_subscription_dict = self.app_subscription_doc.as_dict()
+		fields_to_send = ["app", "status", "plan", "site", "interval", "end_date"]
 
+		filtered_dict = {
+			x: app_subscription_dict[x] for x in app_subscription_dict if x in fields_to_send
+		}
+
+		return filtered_dict
+
+
+# ------------------------------------------------------------
+# API ENDPOINTS
+# ------------------------------------------------------------
 @frappe.whitelist(allow_guest=True)
-def get_subscription_status(secret_key: str):
+def get_subscription_status(secret_key: str) -> str:
 	api_handler = DeveloperApiHandler(secret_key)
 	return api_handler.get_subscription_status()
+
+
+@frappe.whitelist(allow_guest=True)
+def get_subscription_info(secret_key: str) -> Dict:
+	api_handler = DeveloperApiHandler(secret_key)
+	return api_handler.get_subscription_info()
