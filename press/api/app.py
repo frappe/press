@@ -3,6 +3,7 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
+import json
 import frappe
 from press.utils import get_current_team
 from press.press.doctype.app.app import new_app
@@ -10,6 +11,9 @@ from press.press.doctype.app.app import new_app
 
 @frappe.whitelist()
 def new(app):
+	if isinstance(app, str):
+		app = json.loads(app)
+
 	name = app["name"]
 	team = get_current_team()
 

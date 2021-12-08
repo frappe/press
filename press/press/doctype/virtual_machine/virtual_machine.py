@@ -89,6 +89,17 @@ class VirtualMachine(Document):
 			Name="/aws/service/canonical/ubuntu/server/20.04/stable/current/amd64/hvm/ebs-gp2/ami-id"
 		)["Parameter"]["Value"]
 
+	def reboot(self):
+		cluster = frappe.get_doc("Cluster", self.cluster)
+		client = boto3.client(
+			"ec2",
+			region_name=self.region,
+			aws_access_key_id=cluster.aws_access_key_id,
+			aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
+		)
+
+		client.reboot_instances(InstanceIds=[self.aws_instance_id])
+
 
 @frappe.whitelist()
 def poll_pending_machines():

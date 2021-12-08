@@ -1,11 +1,8 @@
 # Copyright (c) 2020, Frappe Technologies Pvt. Ltd. and Contributors
 # Proprietary License. See license.txt
 
-from __future__ import unicode_literals
-
-import re
-
 import frappe
+
 from frappe.utils import flt, fmt_money
 from press.utils import get_current_team
 from press.utils.billing import (
@@ -16,6 +13,8 @@ from press.utils.billing import (
 	get_stripe,
 	make_formatted_doc,
 	states_with_tin,
+	validate_gstin_check_digit,
+	GSTIN_FORMAT,
 )
 
 
@@ -296,10 +295,7 @@ def validate_gst(address, method=None):
 		frappe.throw("GSTIN is required for Indian customers.")
 
 	if address.gstin and address.gstin != "Not Applicable":
-		pattern = re.compile(
-			"^[0-9]{2}[A-Z]{4}[0-9A-Z]{1}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}[1-9A-Z]{1}[0-9A-Z]{1}$"
-		)
-		if not pattern.match(address.gstin):
+		if not GSTIN_FORMAT.match(address.gstin):
 			frappe.throw(
 				"Invalid GSTIN. The input you've entered does not match the format of GSTIN."
 			)
@@ -307,3 +303,37 @@ def validate_gst(address, method=None):
 		tin_code = states_with_tin[address.state]
 		if not address.gstin.startswith(tin_code):
 			frappe.throw(f"GSTIN must start with {tin_code} for {address.state}.")
+
+		validate_gstin_check_digit(address.gstin)
+
+
+@frappe.whitelist()
+def get_latest_unpaid_invoice():
+	team = get_current_team()
+	unpaid_invoices = frappe.get_all(
+		"Invoice",
+		{"team": team, "status": "Unpaid", "payment_attempt_count": (">", 0)},
+		pluck="name",
+		order_by="creation desc",
+		limit=1,
+	)
+
+	if unpaid_invoices:
+		unpaid_invoice = frappe.db.get_value(
+			"Invoice",
+			unpaid_invoices[0],
+			["amount_due", "stripe_invoice_url", "payment_mode", "amount_due", "currency"],
+			as_dict=True,
+		)
+		if (
+			unpaid_invoice.payment_mode == "Prepaid Credits"
+			and team_has_balance_for_invoice(unpaid_invoice)
+		):
+			return
+
+		return unpaid_invoice
+
+
+def team_has_balance_for_invoice(prepaid_mode_invoice):
+	team = get_current_team(get_doc=True)
+	return team.get_balance() >= prepaid_mode_invoice.amount_due

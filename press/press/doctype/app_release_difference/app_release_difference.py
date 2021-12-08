@@ -26,10 +26,14 @@ class AppReleaseDifference(Document):
 
 		client = Github(github_access_token)
 		repo = client.get_repo(f"{source.repository_owner}/{source.repository}")
-		diff = repo.compare(self.source_hash, self.destination_hash)
-		self.github_diff_url = diff.html_url
+		try:
+			diff = repo.compare(self.source_hash, self.destination_hash)
+			self.github_diff_url = diff.html_url
 
-		files = [f.filename for f in diff.files]
+			files = [f.filename for f in diff.files]
+		except Exception:
+			files = ["frappe/geo/languages.json"]
+
 		if is_migrate_needed(files):
 			self.deploy_type = "Migrate"
 

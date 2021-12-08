@@ -20,21 +20,63 @@ frappe.ui.form.on('Site', {
 			};
 		});
 	},
-	refresh: function (frm) {
-		frm.dashboard.set_headline_alert(
-			`<div class="container-fluid">
-				<div class="row">
-					<div class="col-sm-4">CPU Usage: ${frm.doc.current_cpu_usage}%</div>
-					<div class="col-sm-4">Database Usage: ${frm.doc.current_database_usage}%</div>
-					<div class="col-sm-4">Disk Usage: ${frm.doc.current_disk_usage}%</div>
-				</div>
-			</div>`
-		);
-		frm.add_web_link(`https://${frm.doc.name}`, __('Visit Site'));
-		frm.add_web_link(
-			`/dashboard/sites/${frm.doc.name}`,
-			__('Visit Dashboard')
-		);
+	refresh: async function (frm) {
+		// frm.dashboard.set_headline_alert(
+		// 	`<div class="container-fluid">
+		// 		<div class="row">
+		// 			<div class="col-sm-4">CPU Usage: ${frm.doc.current_cpu_usage}%</div>
+		// 			<div class="col-sm-4">Database Usage: ${frm.doc.current_database_usage}%</div>
+		// 			<div class="col-sm-4">Disk Usage: ${frm.doc.current_disk_usage}%</div>
+		// 		</div>
+		// 	</div>`
+		// );
+        let site = frm.get_doc();
+        let account = await frappe.call({
+            method: 'press.api.account.get'
+        }).then(resp => resp.message);
+
+        frm.add_custom_button(__('Visit Site'), () => {
+            window.open(`https://${frm.doc.name}`);
+        });
+        frm.add_custom_button(__('Goto Dashboard'), () => {
+            window.location.href = `/dashboard/sites/${frm.docname}/overview`;
+        });
+        if (site.status === 'Active') {
+            frm.add_custom_button(__('Login as Adminstrator'), () => {
+                if(account) {
+                    if (site.team === account.team.name) {
+                        login_as_admin(site.name);
+                    } else {
+                        new frappe.ui.Dialog({
+                            title: 'Login as Adminstrator',
+                            fields: [
+                                {
+                                    label: 'Please enter reason for this login.',
+                                    fieldname: 'reason',
+                                    fieldtype: 'Small Text'
+                                }
+                            ],
+                            primary_action_label: 'Login',
+                            primary_action(values) {
+                                if (values) {
+                                    let reason = values.reason;
+                                    console.log(reason);
+                                    login_as_admin(site.name, reason);
+                                } else {
+                                    frappe.throw(__('Reason field should not be empty'))
+                                }
+                                this.hide();
+                            }
+                        }).show();                    
+                    }
+                } else {
+                    frappe.throw(__("could'nt retrieve account. Check Error Log for more information"));
+                }
+            });
+        }
+        frm.add_custom_button(__('Visit Site'), () => {
+            window.location.href = `https://${frm.doc.name}`;
+        });
 
 		[
 			[__('Backup'), 'backup'],
@@ -87,5 +129,22 @@ frappe.ui.form.on('Site', {
 			);
 		});
 		frm.toggle_enable(['host_name'], frm.doc.status === 'Active');
-	},
+    }
 });
+
+function login_as_admin(site_name, reason=null) {
+    frappe.call({
+        method: 'press.api.site.login',
+        args: {
+            name: site_name,
+            reason: reason
+        }
+    }).then((sid) => {
+        if (sid) {
+            window.open(`https://${site_name}/desk?sid=${sid}`, '_blank');
+        }
+    }, (error) => {
+        console.log(error);
+        frappe.throw(__(`An error occurred!!`));
+    })
+}

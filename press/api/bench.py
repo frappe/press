@@ -4,6 +4,7 @@
 
 import frappe
 
+import json
 from typing import List, Dict
 from frappe.utils import comma_and
 from collections import OrderedDict
@@ -256,7 +257,7 @@ def versions(name):
 		version.sites = frappe.db.get_all(
 			"Site",
 			{"status": ("!=", "Archived"), "group": name, "bench": version.name},
-			["name", "status"],
+			["name", "status", "creation"],
 		)
 		version.apps = frappe.db.get_all(
 			"Bench App",
@@ -289,7 +290,7 @@ def versions(name):
 def candidates(name, start=0):
 	result = frappe.get_all(
 		"Deploy Candidate",
-		["name", "creation", "status", "`tabDeploy Candidate App`.app"],
+		["name", "creation", "status"],
 		{"group": name, "status": ("!=", "Draft")},
 		order_by="creation desc",
 		start=start,
@@ -299,8 +300,13 @@ def candidates(name, start=0):
 	for d in result:
 		candidates.setdefault(d.name, {})
 		candidates[d.name].update(d)
-		candidates[d.name].setdefault("apps", [])
-		candidates[d.name]["apps"].append(d.app)
+		dc_apps = frappe.get_all(
+			"Deploy Candidate App",
+			filters={"parent": d.name},
+			pluck="app",
+			order_by="creation desc",
+		)
+		candidates[d.name]["apps"] = dc_apps
 
 	return candidates.values()
 
@@ -345,6 +351,9 @@ def deploy_information(name):
 @frappe.whitelist()
 @protected("Release Group")
 def deploy(name, apps_to_ignore=[]):
+	if isinstance(apps_to_ignore, str):
+		apps_to_ignore = json.loads(apps_to_ignore)
+
 	team = get_current_team()
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
 
@@ -495,3 +504,15 @@ def belongs_to_current_team(app: str) -> bool:
 	marketplace_app = frappe.get_doc("Marketplace App", app)
 
 	return marketplace_app.team == current_team
+
+
+@frappe.whitelist()
+def search_list():
+	groups = frappe.get_list(
+		"Release Group",
+		fields=["name", "title"],
+		filters={"enabled": True, "team": get_current_team()},
+		order_by="creation desc",
+	)
+
+	return groups

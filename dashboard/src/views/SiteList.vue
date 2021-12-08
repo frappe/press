@@ -6,9 +6,9 @@
 			No sites in this bench
 		</div>
 		<div class="py-2" v-for="(site, index) in sites" :key="site.name">
-			<router-link
-				:to="`/sites/${site.name}`"
-				class="block pt-2 rounded-md sm:px-2 hover:bg-gray-50"
+			<div
+				@click="routeToSite(site)"
+				class="block pt-2 rounded-md sm:px-2 hover:bg-gray-50 cursor-pointer"
 			>
 				<div class="flex items-center justify-between sm:justify-start">
 					<div class="text-base sm:w-4/12">
@@ -37,7 +37,7 @@
 					class="pt-2 transform translate-y-2"
 					:class="{ 'border-b': index < sites.length - 1 }"
 				/>
-			</router-link>
+			</div>
 		</div>
 	</div>
 </template>
@@ -71,6 +71,10 @@ export default {
 				color,
 				status
 			};
+		},
+		routeToSite(site) {
+			let redirectPath = `dashboard/sites/${site.name}/database`;
+			window.location.href = `/${redirectPath}`;
 		}
 	}
 };

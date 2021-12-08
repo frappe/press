@@ -29,6 +29,14 @@ class SiteMigration(Document):
 
 	def after_insert(self):
 		self.add_steps()
+		self.save()
+		if not self.scheduled_time:
+			self.start()
+
+	def start(self):
+		self.db_set("status", "Pending")
+		frappe.db.commit()
+		self.run_next_step()
 
 	def check_for_existing_agent_jobs(self):
 		if frappe.db.exists(
@@ -55,7 +63,6 @@ class SiteMigration(Document):
 		else:
 			# TODO: Call site update for bench only migration with popup with link to site update job
 			raise NotImplementedError
-		self.run_next_step()
 
 	def remove_domain_hosts_from_source(self):
 		"""Remove domain hosts from source"""
@@ -260,8 +267,7 @@ class SiteMigration(Document):
 		site = frappe.get_doc("Site", self.site)
 		site.status_before_update = site.status
 		site.status = "Inactive"
-		site.save()
-		return site.update_site_config({"maintenance_mode": 1})
+		return site.update_site_config({"maintenance_mode": 1})  # saves doc
 
 	def deactivate_site_on_source_proxy(self):
 		"""Deactivate site on source proxy"""
@@ -334,6 +340,7 @@ class SiteMigration(Document):
 			job = None
 		else:
 			job = site.update_site_config({"maintenance_mode": 0})
+		site.reload()
 		site.status = site.status_before_update
 		site.status_before_update = None
 		site.save()
@@ -364,6 +371,16 @@ def process_site_migration_job_update(job, site_migration_name: str):
 			site_migration.fail()
 	else:
 		log_error("Extra Job found during Site Migration", job=job.as_dict())
+
+
+def run_scheduled_migrations():
+	migrations = frappe.get_all(
+		"Site Migration",
+		{"scheduled_time": ("<=", frappe.utils.now()), "status": "Scheduled"},
+	)
+	for migration in migrations:
+		site_migration = frappe.get_doc("Site Migration", migration)
+		site_migration.start()
 
 
 def on_doctype_update():
