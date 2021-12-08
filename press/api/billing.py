@@ -172,7 +172,7 @@ def create_payment_intent_for_buying_credits(amount):
 		currency=team.currency.lower(),
 		customer=team.stripe_customer_id,
 		description="Prepaid Credits",
-		metadata={"payment_for": "prepaid_credits"}
+		metadata={"payment_for": "prepaid_credits"},
 	)
 	return {
 		"client_secret": intent["client_secret"],
@@ -189,7 +189,10 @@ def create_payment_intent_for_prepaid_app(amount, marketplace_app):
 		currency=team.currency.lower(),
 		customer=team.stripe_customer_id,
 		description="Prepaid Marketplace Purchase",
-		metadata={"payment_for": "prepaid_marketplace", "app": marketplace_app} # "prepaid_credits"
+		metadata={
+			"payment_for": "prepaid_marketplace",
+			"app": marketplace_app,
+		},  # "prepaid_credits"
 	)
 	return {
 		"client_secret": intent["client_secret"],

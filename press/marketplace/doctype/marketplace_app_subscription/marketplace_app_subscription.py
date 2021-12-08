@@ -4,7 +4,6 @@
 import frappe
 
 
-
 from press.utils import log_error
 from frappe.model.document import Document
 from press.press.doctype.site.site import Site
@@ -34,13 +33,13 @@ class MarketplaceAppSubscription(Document):
 			self.secret_key = h.hexdigest()
 
 	def after_insert(self):
-		#TODO: Check if this key already exists
-		#TODO: Make the config value internal
+		# TODO: Check if this key already exists
+		# TODO: Make the config value internal
 		self.set_secret_key_in_site_config()
 
 	def set_secret_key_in_site_config(self):
 		site_doc: Site = frappe.get_doc("Site", self.site)
-		
+
 		key = f"sk_{self.app}"
 		value = self.secret_key
 		config = {key: value}
@@ -50,7 +49,7 @@ class MarketplaceAppSubscription(Document):
 	def create_usage_record(self):
 		if self.is_usage_record_created():
 			return
-		
+
 		team_name = frappe.db.get_value("Site", self.site, "team")
 		team = frappe.get_cached_doc("Team", team_name)
 
@@ -73,7 +72,7 @@ class MarketplaceAppSubscription(Document):
 		usage_record.insert()
 		usage_record.submit()
 		return usage_record
-	
+
 	def is_usage_record_created(self):
 		team = frappe.db.get_value("Site", self.site, "team")
 		filters = {
@@ -97,14 +96,14 @@ class MarketplaceAppSubscription(Document):
 		result = frappe.db.get_all("Usage Record", filters=filters, limit=1)
 		return bool(result)
 
-
 	@frappe.whitelist()
 	def activate(self):
 		if self.status == "Active":
 			frappe.throw("Subscription is already active.")
-		
+
 		self.status = "Active"
 		self.save()
+
 
 def create_usage_records():
 	subscriptions = frappe.db.get_all(
@@ -129,13 +128,14 @@ def should_create_usage_record(subscription: MarketplaceAppSubscription):
 	plan_interval = frappe.db.get_value("Plan", subscription.plan, "interval")
 	if plan_interval == "Annually":
 		return False
-	
+
 	# For non-active sites
 	site_status = frappe.db.get_value("Site", subscription.site, "status")
 	if site_status not in ("Active", "Inactive"):
 		return False
 
 	return True
+
 
 def process_prepaid_marketplace_payment(event):
 	"""`event`: Stripe Event"""
