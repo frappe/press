@@ -95,6 +95,7 @@ def new(site):
 			"remote_database_file": files.get("database"),
 			"remote_public_file": files.get("public"),
 			"remote_private_file": files.get("private"),
+			"skip_failing_patches": site.get("skip_failing_patches", False),
 		},
 	).insert(ignore_permissions=True)
 	site.create_subscription(plan)
@@ -721,8 +722,16 @@ def login(name, reason=None):
 
 @frappe.whitelist()
 @protected("Site")
-def update(name):
-	return frappe.get_doc("Site", name).schedule_update()
+def update(name, skip_failing_patches=False):
+	return frappe.get_doc("Site", name).schedule_update(
+		skip_failing_patches=skip_failing_patches
+	)
+
+
+@frappe.whitelist()
+@protected("Site")
+def last_migrate_failed(name):
+	return frappe.get_doc("Site", name).last_migrate_failed()
 
 
 @frappe.whitelist()
@@ -745,8 +754,8 @@ def reinstall(name):
 
 @frappe.whitelist()
 @protected("Site")
-def migrate(name):
-	frappe.get_doc("Site", name).migrate()
+def migrate(name, skip_failing_patches=False):
+	frappe.get_doc("Site", name).migrate(skip_failing_patches=skip_failing_patches)
 
 
 @frappe.whitelist()
@@ -757,13 +766,13 @@ def clear_cache(name):
 
 @frappe.whitelist()
 @protected("Site")
-def restore(name, files):
+def restore(name, files, skip_failing_patches=False):
 	site = frappe.get_doc("Site", name)
 	site.remote_database_file = files["database"]
 	site.remote_public_file = files["public"]
 	site.remote_private_file = files["private"]
 	site.save()
-	site.restore_site()
+	site.restore_site(skip_failing_patches=skip_failing_patches)
 
 
 @frappe.whitelist()
@@ -1019,3 +1028,47 @@ def search_list():
 	sites = frappe.get_list("Site", filters={"status": ("!=", "Archived"), "team": team})
 
 	return sites
+
+
+@frappe.whitelist()
+@protected("Site")
+def enable_auto_update(name):
+	site_doc = frappe.get_doc("Site", name)
+	if not site_doc.auto_updates_scheduled:
+		site_doc.auto_updates_scheduled = True
+		site_doc.save()
+
+
+@frappe.whitelist()
+@protected("Site")
+def disable_auto_update(name):
+	site_doc = frappe.get_doc("Site", name)
+	if site_doc.auto_updates_scheduled:
+		site_doc.auto_updates_scheduled = False
+		site_doc.save()
+
+
+@frappe.whitelist()
+@protected("Site")
+def get_auto_update_info(name):
+	site_doc = frappe.get_doc("Site", name)
+
+	auto_update_info = {
+		"auto_updates_scheduled": site_doc.auto_updates_scheduled,
+		"auto_update_last_triggered_on": site_doc.auto_update_last_triggered_on,
+		"update_trigger_frequency": site_doc.update_trigger_frequency,
+		"update_trigger_time": site_doc.update_trigger_time,
+		"update_on_weekday": site_doc.update_on_weekday,
+		"update_end_of_month": site_doc.update_end_of_month,
+		"update_on_day_of_month": site_doc.update_on_day_of_month,
+	}
+
+	return auto_update_info
+
+
+@frappe.whitelist()
+@protected("Site")
+def update_auto_update_info(name, info=dict()):
+	site_doc = frappe.get_doc("Site", name, for_update=True)
+	site_doc.update(info)
+	site_doc.save()

@@ -36,7 +36,7 @@ def stripe_webhook_handler():
 				"payload": frappe.as_json(form_dict),
 				"event_type": event.type,
 			}
-		).insert()
+		).insert(ignore_if_duplicate=True)
 	except Exception:
 		frappe.db.rollback()
 		press.utils.log_error(title="Stripe Webhook Handler", stripe_event_id=form_dict.id)

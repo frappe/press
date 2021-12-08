@@ -32,7 +32,8 @@
   "address_html",
   "custom_apps_section",
   "github_access_token",
-  "feature_flags_section"
+  "feature_flags_section",
+  "referrer_id"
  ],
  "fields": [
   {
@@ -191,6 +192,12 @@
    "fieldname": "send_notifications",
    "fieldtype": "Check",
    "label": "Send Notifications"
+  },
+  {
+   "fieldname": "referrer_id",
+   "fieldtype": "Data",
+   "label": "Referrer ID",
+   "read_only": 1
   }
  ],
  "links": [
@@ -233,12 +240,23 @@
    "group": "Billing",
    "link_doctype": "Balance Transaction",
    "link_fieldname": "team"
+  },
+  {
+   "group": "Marketplace",
+   "link_doctype": "Marketplace App",
+   "link_fieldname": "team"
+  },
+  {
+   "group": "Marketplace",
+   "link_doctype": "Marketplace Publisher Profile",
+   "link_fieldname": "team"
   }
  ],
- "modified": "2021-10-08 10:25:56.640088",
+ "modified": "2021-11-26 22:05:52.071652",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
+ "naming_rule": "Set by user",
  "owner": "Administrator",
  "permissions": [
   {

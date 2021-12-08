@@ -4,6 +4,7 @@
 		<AccountTeam />
 		<AccountMembers />
 		<AccountActions />
+		<AccountReferral />
 	</div>
 </template>
 
@@ -12,6 +13,7 @@ import AccountProfile from './AccountProfile.vue';
 import AccountTeam from './AccountTeam.vue';
 import AccountMembers from './AccountMembers.vue';
 import AccountActions from './AccountActions.vue';
+import AccountReferral from './AccountReferral.vue';
 
 export default {
 	name: 'AccountProfileTeam',
@@ -20,7 +22,8 @@ export default {
 		AccountActions,
 		AccountProfile,
 		AccountTeam,
-		AccountMembers
+		AccountMembers,
+		AccountReferral
 	}
 };
 </script>

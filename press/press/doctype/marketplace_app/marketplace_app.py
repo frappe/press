@@ -102,22 +102,58 @@ class MarketplaceApp(WebsiteGenerator):
 		if self.category:
 			context.category = frappe.get_doc("Marketplace App Category", self.category)
 
-		groups = frappe.db.get_all(
-			"Release Group",
-			filters=[
-				["Release Group", "enabled", "=", 1],
-				["Release Group", "public", "=", 1],
-				["Release Group App", "app", "=", self.app],
-			],
+		supported_versions = []
+		public_rgs = frappe.get_all(
+			"Release Group", filters={"public": True}, fields=["version", "name"]
 		)
-		for group in groups:
-			group_doc = frappe.get_doc("Release Group", group.name)
+
+		unique_public_rgs = {}
+		for rg in public_rgs:
+			if rg.version not in unique_public_rgs:
+				unique_public_rgs[rg.version] = rg.name
+
+		for source in self.sources:
+			if source.version not in unique_public_rgs:
+				continue
+
+			frappe_source_name = frappe.get_doc(
+				"Release Group App", {"app": "frappe", "parent": unique_public_rgs[source.version]}
+			).source
 			frappe_source = frappe.db.get_value(
-				"App Source", group_doc.apps[0].source, ["repository_url", "branch"], as_dict=True
+				"App Source", frappe_source_name, ["repository_url", "branch"], as_dict=True
 			)
-			group["frappe"] = frappe_source
-			group["version"] = group_doc.version
-		context.groups = groups
+
+			app_source = frappe.db.get_value(
+				"App Source", source.source, ["repository_url", "branch", "public"], as_dict=True
+			)
+
+			supported_versions.append(
+				frappe._dict(
+					{
+						"version": source.version,
+						"app_source": app_source,
+						"frappe_source": frappe_source,
+					}
+				)
+			)
+
+		# Sort based on version
+		supported_versions.sort(key=lambda x: x.version, reverse=True)
+
+		context.supported_versions = supported_versions
+
+		# Add publisher info
+		publisher_profile = frappe.get_all(
+			"Marketplace Publisher Profile",
+			filters={"team": self.team},
+			fields=["display_name", "contact_email"],
+			limit=1,
+		)
+
+		if publisher_profile:
+			context.publisher_profile = publisher_profile[0]
+
+		context.no_of_installs = self.get_analytics().get("total_installs")
 
 	def get_deploy_information(self):
 		"""Return the deploy information this marketplace app"""
@@ -152,3 +188,27 @@ class MarketplaceApp(WebsiteGenerator):
 					deploy_info[version] = "Awaiting Deploy"
 
 		return deploy_info
+
+	def get_analytics(self):
+		app_name = self.app
+		site_names = frappe.get_all("Site App", filters={"app": app_name}, pluck="parent")
+
+		total_installs = len(site_names)
+		num_installs_active_sites = (
+			frappe.db.count("Site", filters={"name": ("in", site_names), "status": "Active"})
+			if site_names
+			else 0
+		)
+
+		bench_names = frappe.get_all("Bench App", filters={"app": app_name}, pluck="parent")
+		num_installs_active_benches = (
+			frappe.db.count("Bench", filters={"name": ("in", bench_names), "status": "Active"})
+			if bench_names
+			else 0
+		)
+
+		return {
+			"total_installs": total_installs,
+			"num_installs_active_sites": num_installs_active_sites,
+			"num_installs_active_benches": num_installs_active_benches,
+		}

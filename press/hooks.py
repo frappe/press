@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 from . import __version__ as app_version
 from press.api.account import get_frappe_io_auth_url
 
@@ -162,11 +161,16 @@ scheduler_events = {
 		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
 		"press.press.doctype.drip_email.drip_email.send_drip_emails",
 		"press.press.doctype.root_domain.root_domain.cleanup_cname_records",
+		"press.experimental.doctype.referral_bonus.referral_bonus.credit_referral_bonuses",
 	],
-	"daily_long": ["press.press.audit.all"],
+	"daily_long": [
+		"press.press.audit.all",
+		"press.press.doctype.invoice.invoice.finalize_unpaid_prepaid_credit_invoices",
+	],
 	"hourly": [
 		"press.press.doctype.app.app.poll_new_releases",
 		"press.press.doctype.site.backups.cleanup_local",
+		"press.press.doctype.site_migration.site_migration.run_scheduled_migrations",
 	],
 	"hourly_long": [
 		"press.press.doctype.bench.bench.archive_obsolete_benches",
@@ -192,6 +196,7 @@ scheduler_events = {
 			"press.press.doctype.drip_email.drip_email.send_welcome_email",
 			"press.press.doctype.site.backups.schedule",
 		],
+		"*/30 * * * *": ["press.press.doctype.site_update.scheduled_auto_updates.trigger"],
 		"15,45 * * * *": [
 			"press.press.doctype.site.site_usages.update_cpu_usages",
 			"press.press.doctype.site.site_usages.update_disk_usages",

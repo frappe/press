@@ -11,13 +11,14 @@ from frappe.exceptions import DoesNotExistError
 from frappe.utils import get_url, random_string
 from frappe.utils.oauth import get_oauth2_authorize_url, get_oauth_keys
 from frappe.website.utils import build_response
+from frappe.core.utils import find
 
 from press.press.doctype.team.team import Team, get_team_members
 from press.utils import get_country_info, get_current_team
 
 
 @frappe.whitelist(allow_guest=True)
-def signup(email):
+def signup(email, referrer=None):
 	frappe.utils.validate_email_address(email, True)
 
 	current_user = frappe.session.user
@@ -32,7 +33,12 @@ def signup(email):
 		frappe.throw(_("Account {0} is already registered").format(email))
 	else:
 		frappe.get_doc(
-			{"doctype": "Account Request", "email": email, "role": "Press Admin"}
+			{
+				"doctype": "Account Request",
+				"email": email,
+				"role": "Press Admin",
+				"referrer_id": referrer,
+			}
 		).insert()
 
 	frappe.set_user(current_user)
@@ -47,6 +53,7 @@ def setup_account(
 	is_invitation=False,
 	country=None,
 	user_exists=False,
+	accepted_user_terms=False,
 ):
 	account_request = get_account_request_from_key(key)
 	if not account_request:
@@ -64,6 +71,15 @@ def setup_account(
 
 		if not is_invitation and not country:
 			frappe.throw("Country is required")
+
+		if not is_invitation and country:
+			all_countries = frappe.db.get_all("Country", pluck="name")
+			country = find(all_countries, lambda x: x.lower() == country.lower())
+			if not country:
+				frappe.throw("Country filed should be a valid country name")
+
+	if not accepted_user_terms:
+		frappe.throw("You need to accept our Terms of Service & Privary Policy")
 
 	# if the request is authenticated, set the user to Administrator
 	frappe.set_user("Administrator")

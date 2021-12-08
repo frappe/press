@@ -88,7 +88,7 @@ class Agent:
 			site=site.name,
 		)
 
-	def restore_site(self, site):
+	def restore_site(self, site, skip_failing_patches=False):
 		apps = [app.app for app in site.apps]
 		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
 		data = {
@@ -100,6 +100,7 @@ class Agent:
 			"database": frappe.get_doc("Remote File", site.remote_database_file).download_link,
 			"public": frappe.get_doc("Remote File", site.remote_public_file).download_link,
 			"private": frappe.get_doc("Remote File", site.remote_private_file).download_link,
+			"skip_failing_patches": skip_failing_patches,
 		}
 
 		return self.create_agent_job(
@@ -130,7 +131,7 @@ class Agent:
 			site=site.name,
 		)
 
-	def new_site_from_backup(self, site):
+	def new_site_from_backup(self, site, skip_failing_patches=False):
 		apps = [app.app for app in site.apps]
 
 		def sanitized_site_config(site):
@@ -161,6 +162,7 @@ class Agent:
 			"database": frappe.get_doc("Remote File", site.remote_database_file).download_link,
 			"public": frappe.get_doc("Remote File", site.remote_public_file).download_link,
 			"private": frappe.get_doc("Remote File", site.remote_private_file).download_link,
+			"skip_failing_patches": skip_failing_patches,
 		}
 
 		return self.create_agent_job(
@@ -200,12 +202,14 @@ class Agent:
 			site=site.name,
 		)
 
-	def migrate_site(self, site):
+	def migrate_site(self, site, skip_failing_patches=False):
+		data = {"skip_failing_patches": skip_failing_patches}
 		return self.create_agent_job(
 			"Migrate Site",
 			f"benches/{site.bench}/sites/{site.name}/migrate",
 			bench=site.bench,
 			site=site.name,
+			data=data,
 		)
 
 	def clear_site_cache(self, site):
@@ -217,9 +221,13 @@ class Agent:
 			site=site.name,
 		)
 
-	def update_site(self, site, target, deploy_type):
+	def update_site(self, site, target, deploy_type, skip_failing_patches=False):
 		activate = site.status_before_update == "Active"
-		data = {"target": target, "activate": activate}
+		data = {
+			"target": target,
+			"activate": activate,
+			"skip_failing_patches": skip_failing_patches,
+		}
 		return self.create_agent_job(
 			f"Update Site {deploy_type}",
 			f"benches/{site.bench}/sites/{site.name}/update/{deploy_type.lower()}",

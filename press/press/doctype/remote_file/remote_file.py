@@ -107,7 +107,7 @@ def delete_remote_backup_objects(remote_files):
 		region_name="ap-south-1",
 	).Bucket(press_settings.aws_s3_bucket)
 
-	remote_files = set([x for x in remote_files if x])
+	remote_files = list(set([x for x in remote_files if x]))
 
 	if not remote_files:
 		return
