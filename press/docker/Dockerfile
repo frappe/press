@@ -27,7 +27,6 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   ntp \
   wget \
   supervisor \
-  redis-server \
   # Dependencies for SSH access
   openssh-server \
   nano \
@@ -61,6 +60,14 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   `#stage-pre-essentials`
 
 COPY --chown=root:root supervisord.conf /etc/supervisor/supervisord.conf
+
+# Install Redis from PPA
+RUN --mount=type=cache,target=/var/cache/apt add-apt-repository ppa:redislabs/redis \
+  && apt-get update \
+  && apt-get install --yes --no-install-suggests --no-install-recommends \
+  redis-server \
+  unzip \
+  && rm -rf /var/lib/apt/lists/*
 
 # Install Python from DeadSnakes PPA
 RUN --mount=type=cache,target=/var/cache/apt add-apt-repository ppa:deadsnakes/ppa \
@@ -124,7 +131,13 @@ RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 pip3 install
 
 RUN mkdir /home/frappe/frappe-bench
 WORKDIR /home/frappe/frappe-bench
-RUN mkdir -p apps logs sites config/pids
+RUN mkdir -p apps logs sites config/pids redis
+
+# Install Redisearch 2.0 from precompiled binaries
+RUN wget https://s3.amazonaws.com/redismodules/redisearch/redisearch.Linux-ubuntu20.04-x86_64.2.0.13.zip \
+  && unzip -p redisearch.Linux-ubuntu20.04-x86_64.2.0.13.zip module-enterprise.so > /home/frappe/frappe-bench/redis/redisearch.so \
+  && chmod 700 /home/frappe/frappe-bench/redis/redisearch.so \
+  && rm redisearch.Linux-ubuntu20.04-x86_64.2.0.13.zip
 
 # Create virtual environment for bench
 RUN virtualenv -p python${PYTHON_VERSION} env `#stage-bench-env`
