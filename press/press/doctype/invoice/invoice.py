@@ -659,7 +659,6 @@ def finalize_unpaid_prepaid_credit_invoices():
 			"type": "Subscription",
 			"period_end": ("<=", today),
 			"payment_mode": "Prepaid Credits",
-			"payment_attempt_count": ("<=", 15),  # Try for 15 days
 		},
 		pluck="name",
 	)
