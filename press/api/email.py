@@ -21,12 +21,12 @@ def validate_plan(secret_key, site):
 	# ToDo: check plan activation date from marketplace
 	active = 1 if secret_key == "thissecretkey" else 0
 	# if active:
-		# count = frappe.db.count(
-			# "QMail Log", filters={"site": site, "status": "delivered", "date": [">=", plan_activation_date]}
-		# )
+	# count = frappe.db.count(
+	# "QMail Log", filters={"site": site, "status": "delivered", "date": [">=", plan_activation_date]}
+	# )
 
-		# if count < int(active[0]):
-				# return True
+	# if count < int(active[0]):
+	# return True
 
 	return True if active else False
 
@@ -66,7 +66,7 @@ def send_mail(**data):
 		)
 
 		return "Successful"
-	
+
 	return "Error"
 
 
@@ -81,11 +81,8 @@ def send_mime_mail(**data):
 	resp = requests.post(
 		f"https://api.mailgun.net/v3/{domain}/messages.mime",
 		auth=("api", f"{api_key}"),
-		data={
-			"to": data["recipients"],
-			"v:sk_mail": data["sk_mail"]
-		},
-		files={"message": files['mime'].read()}
+		data={"to": data["recipients"], "v:sk_mail": data["sk_mail"]},
+		files={"message": files["mime"].read()},
 	)
 
 	if resp.status_code == 200:
@@ -93,12 +90,13 @@ def send_mime_mail(**data):
 
 	return "Error"
 
+
 @frappe.whitelist(allow_guest=True)
 def event_log(**data):
 	event_data = data["event-data"]
 	headers = event_data["message"]["headers"]
 	message_id = headers["message_id"]
-	site = message_id.split('@')[1]
+	site = message_id.split("@")[1]
 	secret_key = event_data["user-variables"]["sk_mail"]
 	status = event_data["event"]
 
@@ -125,8 +123,6 @@ def event_log(**data):
 
 
 def change_message_status(site, data):
-	url = (
-		f"https://{site}/api/method/mail.mail.doctype.mail_settings.mail_settings.update_status"
-	)
+	url = f"https://{site}/api/method/mail.mail.doctype.mail_settings.mail_settings.update_status"
 
 	requests.post(url, data)
