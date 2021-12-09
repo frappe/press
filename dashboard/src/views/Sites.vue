@@ -98,7 +98,7 @@
 								</Badge>
 								<Button
 									v-if="bench.owned_by_team"
-									@click="routeToBench(bench)"
+									:route="`/benches/${bench.name}`"
 									icon="tool"
 								>
 								</Button>
@@ -252,10 +252,6 @@ export default {
 		handleAddPrepaidCreditsSuccess() {
 			this.$resources.latestUnpaidInvoice.reload();
 			this.showPrepaidCreditsDialog = false;
-		},
-		routeToBench(bench) {
-			let redirectPath = `dashboard/benches/${bench.name}/overview`;
-			window.location.href = `/${redirectPath}`;
 		}
 	},
 	computed: {
