@@ -73,7 +73,7 @@ export default {
 			};
 		},
 		routeToSite(site) {
-			let redirectPath = `dashboard/sites/${site.name}/database`;
+			let redirectPath = `dashboard/sites/${site.name}/overview`;
 			window.location.href = `/${redirectPath}`;
 		}
 	}
