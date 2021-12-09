@@ -152,6 +152,8 @@ RUN echo '["build"]' > .bench.cmd
 RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 --mount=type=bind,source=apps/frappe,target=/home/frappe/context/apps/frappe bench get-app /home/frappe/context/apps/frappe `#stage-apps-frappe`
 RUN rm .bench.cmd
 
+RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 /home/frappe/frappe-bench/env/bin/pip install pycups==2.0.1
+
 # Install other apps
 {% for app in doc.apps %}
 {% if app.app != "frappe" %}
