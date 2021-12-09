@@ -9,6 +9,8 @@
  "field_order": [
   "unique_token",
   "site",
+  "message_id",
+  "subscription_key",
   "date",
   "sender",
   "recipient",
@@ -20,7 +22,7 @@
   {
    "fieldname": "site",
    "fieldtype": "Data",
-   "label": "site"
+   "label": "Site"
   },
   {
    "fieldname": "sender",
@@ -67,11 +69,21 @@
    "hidden": 1,
    "label": "Unique Token",
    "unique": 1
+  },
+  {
+   "fieldname": "message_id",
+   "fieldtype": "Data",
+   "label": "Message Id"
+  },
+  {
+   "fieldname": "subscription_key",
+   "fieldtype": "Data",
+   "label": "Subscription Key"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-10-30 13:59:50.959573",
+ "modified": "2021-12-09 14:12:54.127143",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Mail Log",
