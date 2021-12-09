@@ -78,17 +78,17 @@ def send_mime_mail(**data):
 		"Press Settings", None, ["mailgun_api_key", "root_domain"]
 	)
 
-	resp = requests.post(
-		f"https://api.mailgun.net/v3/{domain}/messages.mime",
-		auth=("api", f"{api_key}"),
-		data={"to": data["recipients"], "v:sk_mail": data["sk_mail"]},
-		files={"message": files["mime"].read()},
-	)
+#	resp = requests.post(
+#		f"https://api.mailgun.net/v3/{domain}/messages.mime",
+#		auth=("api", f"{api_key}"),
+#		data={"to": data["recipients"], "v:sk_mail": data["sk_mail"]},
+#		files={"message": files["mime"].read()},
+#	)
 
-	if resp.status_code == 200:
-		return "Sending"
+#	if resp.status_code == 200:
+	return "Sending"
 
-	return "Error"
+#	return "Error"
 
 
 @frappe.whitelist(allow_guest=True)
@@ -97,28 +97,26 @@ def event_log(**data):
 	headers = event_data["message"]["headers"]
 	message_id = headers["message-id"]
 	site = message_id.split("@")[1]
-	secret_key = event_data["user-variables"]["sk_mail"]
 	status = event_data["event"]
+	secret_key = event_data["user-variables"]["sk_mail"]
 
 	frappe.get_doc(
 		{
 			"doctype": "Mail Log",
 			"unique_token": secrets.token_hex(25),
+			"message_id": message_id,
 			"sender": headers["from"],
 			"recipient": headers["to"],
 			"subject": headers["subject"],
 			"site": site,
-			"message_id": message_id,
+			"status": event_data["event"],
 			"subscription_key": secret_key,
-			"status": status,
-			"log": data,
+			"log": json.dumps(data),
 		}
 	).insert(ignore_permissions=True)
-
 	frappe.db.commit()
 
 	data = {"status": status, "message_id": message_id}
-
 	change_message_status(site, data)
 
 	return "Successful", 200
