@@ -78,17 +78,17 @@ def send_mime_mail(**data):
 		"Press Settings", None, ["mailgun_api_key", "root_domain"]
 	)
 
-#	resp = requests.post(
-#		f"https://api.mailgun.net/v3/{domain}/messages.mime",
-#		auth=("api", f"{api_key}"),
-#		data={"to": data["recipients"], "v:sk_mail": data["sk_mail"]},
-#		files={"message": files["mime"].read()},
-#	)
+	resp = requests.post(
+		f"https://api.mailgun.net/v3/{domain}/messages.mime",
+		auth=("api", f"{api_key}"),
+		data={"to": data["recipients"], "v:sk_mail": data["sk_mail"]},
+		files={"message": files["mime"].read()},
+	)
 
-#	if resp.status_code == 200:
-	return "Sending"
+	if resp.status_code == 200:
+		return "Sending"
 
-#	return "Error"
+	return "Error"
 
 
 @frappe.whitelist(allow_guest=True)
