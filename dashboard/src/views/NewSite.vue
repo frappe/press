@@ -203,7 +203,7 @@ export default {
 			this.benchTitle = this.bench;
 			let { title, creation } = await this.$call('frappe.client.get_value', {
 				doctype: 'Release Group',
-				name: this.bench,
+				filters: { name: this.bench },
 				fieldname: JSON.stringify(['title', 'creation'])
 			});
 			this.benchTitle = title;
