@@ -95,7 +95,7 @@ def send_mime_mail(**data):
 def event_log(**data):
 	event_data = data["event-data"]
 	headers = event_data["message"]["headers"]
-	message_id = headers["message_id"]
+	message_id = headers["message-id"]
 	site = message_id.split("@")[1]
 	secret_key = event_data["user-variables"]["sk_mail"]
 	status = event_data["event"]
@@ -114,6 +114,8 @@ def event_log(**data):
 			"log": data,
 		}
 	).insert(ignore_permissions=True)
+
+	frappe.db.commit()
 
 	data = {"status": status, "message_id": message_id}
 
