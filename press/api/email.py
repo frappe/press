@@ -113,7 +113,7 @@ def event_log(**data):
 			"message_id": message_id,
 			"subscription_key": secret_key,
 			"status": status,
-			"log": event_data["event"],
+			"log": data,
 		}
 	).insert(ignore_permissions=True)
 
