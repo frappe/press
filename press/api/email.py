@@ -132,7 +132,8 @@ def event_log(**data):
 			f"https://{site}/api/method/mail.mail.doctype.mail_settings.mail_settings.update_status",
 			data=data,
 		)
-	except:
+	except Exception as e:
+		print(e)
 		return "Successful", 200
 
 	return "Successful", 200
