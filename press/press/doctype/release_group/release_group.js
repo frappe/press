@@ -2,12 +2,16 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on('Release Group', {
-	refresh: async function(frm) {
-        frm.add_custom_button(__('Goto Dashboard'), () => {
-            let host_name = window.location.host;
-            let protocol = ['frappecloud.com', 'staging.frappe.cloud'].includes(host_name) ? 'https://' : 'http://';
-            window.location.href = `${protocol}${host_name}/dashboard/benches/${frm.doc.name}`;
-        });
+	onload: function (frm) {
+		if (frm.is_new()) {
+			frm.call('validate_dependencies');
+		}
+	},
+	refresh: function (frm) {
+		frm.add_web_link(
+			`/dashboard/benches/${frm.doc.name}`,
+			__('Visit Dashboard')
+		);
 		[
 			[
 				__('Create Deploy Candidate'),

@@ -21,6 +21,21 @@ frappe.ui.form.on('Site', {
 		});
 	},
 	refresh: async function (frm) {
+		frm.dashboard.set_headline_alert(
+			`<div class="container-fluid">
+				<div class="row">
+					<div class="col-sm-4">CPU Usage: ${frm.doc.current_cpu_usage}%</div>
+					<div class="col-sm-4">Database Usage: ${frm.doc.current_database_usage}%</div>
+					<div class="col-sm-4">Disk Usage: ${frm.doc.current_disk_usage}%</div>
+				</div>
+			</div>`
+		);
+		frm.add_web_link(`https://${frm.doc.name}`, __('Visit Site'));
+		frm.add_web_link(
+			`/dashboard/sites/${frm.doc.name}`,
+			__('Visit Dashboard')
+		);
+
 		let site = frm.get_doc();
 		let account = await frappe.call({
 			method: 'press.api.account.get'
@@ -51,8 +66,6 @@ frappe.ui.form.on('Site', {
 									}
 									this.hide();
 								}
-							}).show();
-                        }).show();                    
 							}).show();
 						}
 					} else {
