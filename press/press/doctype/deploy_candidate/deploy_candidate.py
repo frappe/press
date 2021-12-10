@@ -307,7 +307,10 @@ class DeployCandidate(Document):
 			try:
 				# Remove step index from line
 				step_index, line = line.split(maxsplit=1)
-				step_index = int(step_index[1:])
+				try:
+					step_index = int(step_index[1:])
+				except ValueError:
+					step_index = sorted(steps)[-1]
 
 				# Parse first line and add step to steps dict
 				if step_index not in steps and line.startswith("[stage-"):
