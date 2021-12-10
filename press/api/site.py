@@ -388,6 +388,7 @@ def all():
 		],
 		filters={"team": team, "status": ("!=", "Archived")},
 		order_by="creation desc",
+		ignore_ifnull=True,
 	)
 	benches_with_updates = set(benches_with_available_update())
 	for site in sites:
@@ -426,11 +427,6 @@ def all():
 	for group in groups:
 		group.benches = [bench for bench in benches if bench.group == group.name]
 		group.owned_by_team = team == group.team
-		group.status = (
-			"Active"
-			if frappe.get_all("Bench", {"group": group.name, "status": "Active"}, limit=1)
-			else "Awaiting Deploy"
-		)
 
 		group.sites = []
 		for bench in group.benches:
