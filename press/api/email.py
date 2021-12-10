@@ -12,13 +12,15 @@ import requests
 def email_ping():
 	return "pong"
 
+
 @frappe.whitelist(allow_guest=True)
 def setup(**data):
-	if data["key"] == 'fcmailfree100':
+	if data["key"] == "fcmailfree100":
 		return {
 			"id": "postmaster@sandbox7b75d637c8164b9eac236ab5a486feae.mailgun.org",
-			"pass": "ae06ff0d9c32b9e6a4ed4163d52e982f-2ac825a1-66ef7b67"
+			"pass": "ae06ff0d9c32b9e6a4ed4163d52e982f-2ac825a1-66ef7b67",
 		}
+
 
 def validate_plan(secret_key, site):
 	"""
@@ -124,12 +126,13 @@ def event_log(**data):
 	frappe.db.commit()
 
 	data = {"status": status, "message_id": message_id}
-	change_message_status(site, data)
+
+	try:
+		requests.post(
+			f"https://{site}/api/method/mail.mail.doctype.mail_settings.mail_settings.update_status",
+			data=data,
+		)
+	except:
+		return "Successful", 200
 
 	return "Successful", 200
-
-
-def change_message_status(site, data):
-	url = f"https://{site}/api/method/mail.mail.doctype.mail_settings.mail_settings.update_status"
-
-	requests.post(url, data)
