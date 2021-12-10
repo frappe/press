@@ -134,10 +134,7 @@ WORKDIR /home/frappe/frappe-bench
 RUN mkdir -p apps logs sites config/pids redis
 
 # Install Redisearch 2.0 from precompiled binaries
-RUN wget https://s3.amazonaws.com/redismodules/redisearch/redisearch.Linux-ubuntu20.04-x86_64.2.0.13.zip \
-  && unzip -p redisearch.Linux-ubuntu20.04-x86_64.2.0.13.zip module-enterprise.so > /home/frappe/frappe-bench/redis/redisearch.so \
-  && chmod 700 /home/frappe/frappe-bench/redis/redisearch.so \
-  && rm redisearch.Linux-ubuntu20.04-x86_64.2.0.13.zip
+COPY --chown=frappe:frappe redis /home/frappe/frappe-bench/redis
 
 # Create virtual environment for bench
 RUN virtualenv -p python${PYTHON_VERSION} env `#stage-bench-env`
