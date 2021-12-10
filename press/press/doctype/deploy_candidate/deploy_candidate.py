@@ -255,7 +255,7 @@ class DeployCandidate(Document):
 				os.path.join(frappe.get_app_path("press", "docker"), target), self.build_directory,
 			)
 
-		for target in ["config"]:
+		for target in ["config", "redis"]:
 			shutil.copytree(
 				os.path.join(frappe.get_app_path("press", "docker"), target),
 				os.path.join(self.build_directory, target),
