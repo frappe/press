@@ -12,6 +12,13 @@ import requests
 def email_ping():
 	return "pong"
 
+@frappe.whitelist(allow_guest=True)
+def setup(**data):
+	if data["key"] == 'fcmailfree100':
+		return {
+			"id": "postmaster@sandbox7b75d637c8164b9eac236ab5a486feae.mailgun.org",
+			"pass": "ae06ff0d9c32b9e6a4ed4163d52e982f-2ac825a1-66ef7b67"
+		}
 
 def validate_plan(secret_key, site):
 	"""
@@ -19,7 +26,7 @@ def validate_plan(secret_key, site):
 	"""
 	# ToDo: verify this key from marketplace
 	# ToDo: check plan activation date from marketplace
-	active = 1 if secret_key == "thissecretkey" else 0
+	active = 1 if secret_key == "fcmailfree100" else 0
 	# if active:
 	# count = frappe.db.count(
 	# "QMail Log", filters={"site": site, "status": "delivered", "date": [">=", plan_activation_date]}
