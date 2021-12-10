@@ -25,7 +25,9 @@ frappe.ui.form.on('Release Group', {
 								name: frm.doc.name,
 							},
 						})
-						.then(({ message }) => {
+						.then(({
+							message
+						}) => {
 							frappe.msgprint({
 								title: __('New Deploy Candidate Created'),
 								indicator: 'green',
