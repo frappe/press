@@ -710,6 +710,7 @@
    "label": "Agent Repository Owner"
   },
   {
+   "collapsible": 1,
    "fieldname": "staging_sites_section",
    "fieldtype": "Section Break",
    "label": "Staging Sites"
@@ -766,7 +767,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2021-11-21 23:05:46.997791",
+ "modified": "2021-11-23 18:46:49.393521",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
