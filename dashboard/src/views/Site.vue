@@ -2,10 +2,14 @@
 	<div class="mt-10">
 		<div class="px-4 sm:px-8" v-if="site">
 			<div class="pb-3">
-				<div class="text-base text-gray-700">
-					<router-link to="/sites" class="hover:text-gray-800">
-						← Back to Sites
-					</router-link>
+				<div
+					class="flex flex-col space-y-3 md:space-y-0 md:justify-between md:flex-row md:items-baseline"
+				>
+					<div class="text-base text-gray-700">
+						<router-link to="/sites" class="hover:text-gray-800">
+							← Back to Sites
+						</router-link>
+					</div>
 				</div>
 				<div
 					class="flex flex-col space-y-3 md:space-y-0 md:justify-between md:flex-row md:items-baseline"
@@ -38,6 +42,20 @@
 							Visit Site
 						</Button>
 					</div>
+				</div>
+			</div>
+			<div class="flex flex-row justify-end">
+				<div
+					v-if="regionInfo"
+					class="mb-2 self-end flex flex-row items-center px-3 py-1 text-xs font-medium rounded-md cursor-default text-yellow-700 bg-yellow-50"
+				>
+					<img
+						class="h-4 mr-2"
+						:src="regionInfo.image"
+						:alt="`Flag of ${regionInfo.title}`"
+						:title="regionInfo.image"
+					/>
+					<p class="text-sm">{{ regionInfo.title }}</p>
 				</div>
 			</div>
 		</div>
@@ -173,6 +191,12 @@ export default {
 	computed: {
 		site() {
 			return this.$resources.site.data;
+		},
+
+		regionInfo() {
+			if (!this.$resources.site.loading && this.$resources.site.data) {
+				return this.$resources.site.data.server_region_info;
+			}
 		},
 
 		tabs() {
