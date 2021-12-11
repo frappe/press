@@ -7,6 +7,7 @@ import wrapt
 import frappe
 import dns.resolver
 
+from typing import Dict
 from boto3 import client
 from frappe.core.utils import find
 from botocore.exceptions import ClientError
@@ -575,6 +576,7 @@ def overview(name):
 		},
 		"installed_apps": get_installed_apps(site),
 		"domains": domains(name),
+		"server_region_info": get_server_region_info(site),
 	}
 
 
@@ -615,6 +617,11 @@ def get_installed_apps(site):
 		installed_apps.append(app_source)
 
 	return installed_apps
+
+
+def get_server_region_info(site) -> Dict:
+	"""Return a Dict with `title` and `image`"""
+	return frappe.db.get_value("Cluster", site.cluster, ["title", "image"], as_dict=True)
 
 
 @frappe.whitelist()
