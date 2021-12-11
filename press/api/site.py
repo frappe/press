@@ -460,6 +460,7 @@ def get(name):
 		"setup_wizard_complete": site.setup_wizard_complete,
 		"group": group_name,
 		"team": site.team,
+		"server_region_info": get_server_region_info(site),
 	}
 
 
@@ -576,7 +577,6 @@ def overview(name):
 		},
 		"installed_apps": get_installed_apps(site),
 		"domains": domains(name),
-		"server_region_info": get_server_region_info(site),
 	}
 
 
