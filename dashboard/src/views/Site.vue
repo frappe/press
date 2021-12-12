@@ -2,14 +2,10 @@
 	<div class="mt-10">
 		<div class="px-4 sm:px-8" v-if="site">
 			<div class="pb-3">
-				<div
-					class="flex flex-col space-y-3 md:space-y-0 md:justify-between md:flex-row md:items-baseline"
-				>
-					<div class="text-base text-gray-700">
-						<router-link to="/sites" class="hover:text-gray-800">
-							← Back to Sites
-						</router-link>
-					</div>
+				<div class="text-base text-gray-700">
+					<router-link to="/sites" class="hover:text-gray-800">
+						← Back to Sites
+					</router-link>
 				</div>
 				<div
 					class="flex flex-col space-y-3 md:space-y-0 md:justify-between md:flex-row md:items-baseline"
@@ -17,6 +13,19 @@
 					<div class="flex items-center mt-2">
 						<h1 class="text-2xl font-bold">{{ site.name }}</h1>
 						<Badge class="ml-4" :status="site.status">{{ site.status }}</Badge>
+						<div
+							v-if="regionInfo"
+							class="ml-2 self-end flex flex-row items-center px-3 py-1 text-xs font-medium rounded-md cursor-default text-yellow-700 bg-yellow-50"
+						>
+							<img
+								v-if="regionInfo.image"
+								class="h-4 mr-2"
+								:src="regionInfo.image"
+								:alt="`Flag of ${regionInfo.title}`"
+								:title="regionInfo.image"
+							/>
+							<p>{{ regionInfo.title }}</p>
+						</div>
 					</div>
 					<div class="space-x-3">
 						<Button
@@ -42,20 +51,6 @@
 							Visit Site
 						</Button>
 					</div>
-				</div>
-			</div>
-			<div class="flex flex-row justify-end">
-				<div
-					v-if="regionInfo"
-					class="mb-2 self-end flex flex-row items-center px-3 py-1 text-xs font-medium rounded-md cursor-default text-yellow-700 bg-yellow-50"
-				>
-					<img
-						class="h-4 mr-2"
-						:src="regionInfo.image"
-						:alt="`Flag of ${regionInfo.title}`"
-						:title="regionInfo.image"
-					/>
-					<p class="text-sm">{{ regionInfo.title }}</p>
 				</div>
 			</div>
 		</div>
