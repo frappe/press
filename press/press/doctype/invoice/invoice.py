@@ -49,6 +49,10 @@ class Invoice(Document):
 		self.amount_due = self.total
 
 		if self.payment_mode == "Partner Credits":
+			self.payment_attempt_count += 1
+			self.save()
+			frappe.db.commit()
+
 			self.apply_partner_credits()
 			return
 
@@ -683,14 +687,14 @@ def finalize_unpaid_prepaid_credit_invoices():
 	"""Should be run daily in contrast to `finalize_draft_invoices`, which runs hourly"""
 	today = frappe.utils.today()
 
-	# Invoices with `Prepaid Credits` as mode and unpaid
+	# Invoices with `Prepaid Credits` or `Partner Credits` as mode and unpaid
 	invoices = frappe.db.get_all(
 		"Invoice",
 		filters={
 			"status": "Unpaid",
 			"type": "Subscription",
 			"period_end": ("<=", today),
-			"payment_mode": "Prepaid Credits",
+			"payment_mode": ("in", ["Prepaid Credits", "Partner Credits"]),
 		},
 		pluck="name",
 	)
