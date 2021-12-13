@@ -59,6 +59,10 @@ class Invoice(Document):
 		self.update_item_descriptions()
 
 		if self.payment_mode == "Prepaid Credits" and self.amount_due > 0:
+			self.payment_attempt_count += 1
+			self.save()
+			frappe.db.commit()
+
 			frappe.throw(
 				"Not enough credits for this invoice. Change payment mode to Card to"
 				" pay using Stripe."
@@ -386,12 +390,12 @@ class Invoice(Document):
 		
 
 	def apply_credit_balance(self):
+		# cancel applied credits to re-apply available credits
+		self.cancel_applied_credits()
+
 		balance = frappe.get_cached_doc("Team", self.team).get_balance()
 		if balance <= 0:
 			return
-
-		# cancel applied credits to re-apply available credits
-		self.cancel_applied_credits()
 
 		unallocated_balances = frappe.db.get_all(
 			"Balance Transaction",
@@ -658,14 +662,42 @@ def finalize_draft_invoices():
 	- period has ended before
 	"""
 
-	# get draft invoices whose period has ended or ends today
 	today = frappe.utils.today()
+
+	# get draft invoices whose period has ended or ends today
 	invoices = frappe.db.get_all(
 		"Invoice",
 		filters={"status": "Draft", "type": "Subscription", "period_end": ("<=", today)},
 		pluck="name",
 		limit=500,
 	)
+
+	current_time = frappe.utils.get_datetime().time()
+	today = frappe.utils.getdate()
+	for name in invoices:
+		invoice = frappe.get_doc("Invoice", name)
+		# don't finalize if invoice ends today and time is before 6 PM
+		if invoice.period_end == today and current_time.hour < 18:
+			continue
+		finalize_draft_invoice(invoice)
+
+
+def finalize_unpaid_prepaid_credit_invoices():
+	"""Should be run daily in contrast to `finalize_draft_invoices`, which runs hourly"""
+	today = frappe.utils.today()
+
+	# Invoices with `Prepaid Credits` as mode and unpaid
+	invoices = frappe.db.get_all(
+		"Invoice",
+		filters={
+			"status": "Unpaid",
+			"type": "Subscription",
+			"period_end": ("<=", today),
+			"payment_mode": "Prepaid Credits",
+		},
+		pluck="name",
+	)
+
 	current_time = frappe.utils.get_datetime().time()
 	today = frappe.utils.getdate()
 	for name in invoices:
@@ -679,11 +711,12 @@ def finalize_draft_invoices():
 def finalize_draft_invoice(invoice):
 	try:
 		invoice.finalize_invoice()
-		frappe.db.commit()
 	except Exception:
 		frappe.db.rollback()
 		msg = "<pre><code>" + frappe.get_traceback() + "</pre></code>"
 		invoice.add_comment(text="Finalize Invoice Failed" + "<br><br>" + msg)
+	finally:
+		frappe.db.commit()  # For the comment
 
 	try:
 		invoice.create_next()

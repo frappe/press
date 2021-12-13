@@ -22,6 +22,17 @@
 {% macro sidebar() %}
 <div class="order-1 w-full md:order-none md:w-2/12 space-y-9">
 	{{ app_image(app, 'hidden md:block') }}
+
+	{%- if publisher_profile -%}
+	<div>
+		<h5 class="text-xl font-semibold text-gray-900">Publisher</h5>
+		<a class="text-base text-blue-500 hover:text-blue-700"
+			href="{{ 'mailto:{}'.format(publisher_profile.contact_email) if  publisher_profile.contact_email else '#'}}">
+			{{ publisher_profile.display_name }}
+		</a>
+	</div>
+	{%- endif -%}
+
 	<div>
 		<h5 class="text-xl font-semibold text-gray-900">Category</h5>
 		<div class="mt-2">
@@ -30,6 +41,7 @@
 			{{ badge(app.category) }}
 		</div>
 	</div>
+
 	<div>
 		<h5 class="text-xl font-semibold text-gray-900">Learn more & Support</h5>
 		<ul class="flex flex-col mt-2 space-y-3">
@@ -51,14 +63,7 @@
 			{%- endfor -%}
 		</ul>
 	</div>
-	{#
-	<div>
-		<h5 class="text-xl font-semibold text-gray-900">Publisher</h5>
-		<!-- TODO: Replace with the publisher data (to be modeled) -->
-		<a class="text-base text-blue-500 hover:text-blue-700" href="mailto:{{ app.team }}">{{ app.team
-			}}</a>
-	</div>
-	#}
+
 	<div>
 		<h5 class="text-xl font-semibold text-gray-900">Supported Versions</h5>
 		<ul class="mt-2 space-y-1 text-base text-gray-600">
@@ -68,8 +73,8 @@
 				{{ link(supported_version.version, supported_version.app_source.repository_url + '/tree/' +
 				supported_version.app_source.branch, blank=True) }}
 				{%- else -%}
-				{{ link(supported_version.version, supported_version.frappe.repository_url + '/tree/' +
-				supported_version.frappe.branch, blank=True) }}
+				{{ link(supported_version.version, supported_version.frappe_source.repository_url + '/tree/' +
+				supported_version.frappe_source.branch, blank=True) }}
 				{%- endif -%}
 			</li>
 			{%- endfor -%}
@@ -92,6 +97,7 @@
 	</p>
 	<div class="mt-2">
 		{{ button('Install Now', '/dashboard/sites/new', 'primary') }}
+		<span class="text-sm italic text-gray-700">({{ no_of_installs }} installs)</span>
 	</div>
 	{%- if app.screenshots -%}
 	<div class="flex mt-6 space-x-4 overflow-y-auto">

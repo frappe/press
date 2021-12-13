@@ -163,6 +163,7 @@ class ReleaseGroup(Document):
 
 		return sorted_apps
 
+	@frappe.whitelist()
 	def deploy_information(self):
 		out = frappe._dict(update_available=False)
 

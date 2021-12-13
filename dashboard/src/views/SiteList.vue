@@ -71,7 +71,7 @@ export default {
 				color,
 				status
 			};
-		}
+		},
 	}
 };
 </script>
