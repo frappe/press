@@ -6,6 +6,8 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "host_name",
+  "team",
   "subdomain",
   "domain",
   "status",
@@ -15,11 +17,14 @@
   "cluster",
   "column_break_3",
   "admin_password",
-  "setup_wizard_complete",
   "group",
   "skip_auto_updates",
+  "site_config_section",
+  "configuration",
+  "column_break_12",
+  "config",
   "billing",
-  "team",
+  "setup_wizard_complete",
   "plan",
   "free",
   "column_break_15",
@@ -31,10 +36,6 @@
   "erpnext_consultant",
   "section_break_6",
   "apps",
-  "configuration_section",
-  "host_name",
-  "config",
-  "configuration",
   "_keys_removed_in_last_update",
   "_site_usages",
   "current_cpu_usage",
@@ -60,7 +61,8 @@
   "column_break_51",
   "update_on_weekday",
   "update_end_of_month",
-  "update_on_day_of_month"
+  "update_on_day_of_month",
+  "column_break_57"
  ],
  "fields": [
   {
@@ -130,13 +132,6 @@
    "label": "Preview",
    "options": "JSON",
    "read_only": 1
-  },
-  {
-   "fieldname": "configuration_section",
-   "fieldtype": "Section Break",
-   "hide_days": 1,
-   "hide_seconds": 1,
-   "label": "Configuration"
   },
   {
    "fieldname": "subdomain",
@@ -366,6 +361,10 @@
    "label": "Skip Auto Updates"
   },
   {
+   "fieldname": "column_break_51",
+   "fieldtype": "Column Break"
+  },
+  {
    "fieldname": "notify_email",
    "fieldtype": "Data",
    "label": "Notify Email"
@@ -440,6 +439,19 @@
    "fieldname": "auto_updates_scheduled",
    "fieldtype": "Check",
    "label": "Auto Updates Scheduled"
+  },
+  {
+   "fieldname": "site_config_section",
+   "fieldtype": "Section Break",
+   "label": "Site Config"
+  },
+  {
+   "fieldname": "column_break_12",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_57",
+   "fieldtype": "Column Break"
   }
  ],
  "links": [
@@ -489,7 +501,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2021-11-08 07:17:16.903390",
+ "modified": "2021-12-07 21:38:35.662512",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

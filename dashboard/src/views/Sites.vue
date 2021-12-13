@@ -13,19 +13,43 @@
 					</template>
 				</Alert>
 			</div>
-			<div v-if="showUnpaidInvoiceAlert">
-				<Alert title="Your last invoice payment has failed.">
-					Pay now for uninterrupted services.
+			<div class="mb-2" v-if="showUnpaidInvoiceAlert">
+				<Alert
+					v-if="latestUnpaidInvoice.payment_mode == 'Prepaid Credits'"
+					title="Your last invoice payment has failed."
+				>
+					Please add
+					<strong>
+						{{ latestUnpaidInvoice.currency }}
+						{{ latestUnpaidInvoice.amount_due }}
+					</strong>
+					more in credits.
 					<template #actions>
+						<Button @click="showPrepaidCreditsDialog = true" type="primary">
+							Add Credits
+						</Button>
+					</template>
+				</Alert>
+
+				<Alert v-else title="Your last invoice payment has failed.">
+					Pay now for uninterrupted services.
+					<template v-if="latestUnpaidInvoiceStripeUrl" #actions>
 						<Button
 							icon-left="external-link"
 							type="primary"
-							:link="latestUnpaidStripeUrl"
+							:link="latestUnpaidInvoiceStripeUrl"
 						>
 							Pay now
 						</Button>
 					</template>
 				</Alert>
+
+				<PrepaidCreditsDialog
+					v-if="showPrepaidCreditsDialog"
+					:show.sync="showPrepaidCreditsDialog"
+					:minimum-amount="latestUnpaidInvoice.amount_due"
+					@success="handleAddPrepaidCreditsSuccess"
+				/>
 			</div>
 			<div v-if="benches == null">
 				<div class="flex items-center flex-1 py-4 focus:outline-none">
@@ -119,11 +143,13 @@ export default {
 	name: 'Sites',
 	props: ['bench'],
 	components: {
-		SiteList
+		SiteList,
+		PrepaidCreditsDialog: () => import('@/components/PrepaidCreditsDialog.vue')
 	},
 	data() {
 		return {
-			sitesShown: {}
+			sitesShown: {},
+			showPrepaidCreditsDialog: false
 		};
 	},
 	resources: {
@@ -157,7 +183,7 @@ export default {
 		onAgentJobUpdate(data) {
 			if (!(data.name === 'New Site' || data.name === 'New Site from Backup'))
 				return;
-			if (data.status === 'Success') {
+			if (data.status === 'Success' && data.user === this.$account.user.name) {
 				this.reload();
 				this.$notify({
 					title: 'Site creation complete!',
@@ -167,14 +193,27 @@ export default {
 				});
 			}
 		},
-		onSiteUpdate({ doctype }) {
-			if (doctype === 'Site') {
-				this.reload();
+		onSiteUpdate(event) {
+			// Refresh if the event affects any of the sites in the list view
+			// TODO: Listen to a more granular event than list_update
+			if (event.doctype === 'Site') {
+				let sites = this.benches
+					.map(bench => bench.sites.map(site => site.name))
+					.flat();
+				if (
+					event.user === this.$account.user.name ||
+					sites.includes(event.name)
+				) {
+					this.reload();
+				}
 			}
 		},
 		reload() {
-			// refresh if not reloaded in the last 1 second
-			if (new Date() - this.$resources.benches.lastLoaded > 1000) {
+			// refresh if currently not loading and have not reloaded in the last 5 seconds
+			if (
+				!this.$resources.benches.loading &&
+				new Date() - this.$resources.benches.lastLoaded > 5000
+			) {
 				this.$resources.benches.reload();
 			}
 		},
@@ -209,6 +248,10 @@ export default {
 			return (
 				(bench.shared || bench.owned_by_team) && this.sitesShown[bench.name]
 			);
+		},
+		handleAddPrepaidCreditsSuccess() {
+			this.$resources.latestUnpaidInvoice.reload();
+			this.showPrepaidCreditsDialog = false;
 		}
 	},
 	computed: {
@@ -224,12 +267,17 @@ export default {
 			}
 		},
 		showUnpaidInvoiceAlert() {
-			if (!this.latestUnpaidInvoiceStripeUrl) {
+			if (!this.latestUnpaidInvoice) {
 				return;
 			}
 			return !(
 				this.$account.team.erpnext_partner || this.$account.team.free_account
 			);
+		},
+		latestUnpaidInvoice() {
+			if (this.$resources.latestUnpaidInvoice.data) {
+				return this.$resources.latestUnpaidInvoice.data;
+			}
 		},
 		latestUnpaidInvoiceStripeUrl() {
 			if (this.$resources.latestUnpaidInvoice.data) {

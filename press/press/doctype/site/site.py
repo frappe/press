@@ -384,6 +384,7 @@ class Site(Document):
 				log_error("Site Status Fetch Error", site=self.name)
 		self.save()
 
+	@frappe.whitelist()
 	def add_domain(self, domain):
 		domain = domain.lower()
 		if check_dns(self.name, domain):
@@ -1018,7 +1019,7 @@ class Site(Document):
 			"Site Backup",
 			{
 				"creation": (">=", interval_hrs_ago),
-				"status": "Success",
+				"status": ("!=", "Failure"),
 				"owner": "Administrator",
 			},
 			pluck="site",

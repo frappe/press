@@ -9,8 +9,8 @@
  "field_order": [
   "title",
   "version",
-  "column_break_4",
   "team",
+  "column_break_4",
   "enabled",
   "default",
   "public",
@@ -64,11 +64,8 @@
    "in_standard_filter": 1,
    "label": "Version",
    "options": "Frappe Version",
+   "read_only": 1,
    "reqd": 1
-  },
-  {
-   "fieldname": "column_break_4",
-   "fieldtype": "Column Break"
   },
   {
    "fieldname": "section_break_7",
@@ -128,13 +125,18 @@
    "fieldname": "section_break_16",
    "fieldtype": "Section Break",
    "label": "Dependencies"
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
   }
  ],
  "links": [],
- "modified": "2021-05-18 18:39:53.050440",
+ "modified": "2021-12-07 21:39:10.575131",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {

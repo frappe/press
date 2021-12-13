@@ -6,6 +6,7 @@ import frappe
 
 from frappe import _
 from typing import List
+from hashlib import blake2b
 from frappe.utils import get_fullname
 from frappe.utils import get_url_to_form
 from press.telegram_utils import Telegram
@@ -33,6 +34,14 @@ class Team(Document):
 	def before_insert(self):
 		if not self.notify_email:
 			self.notify_email = self.name
+
+		if not self.referrer_id:
+			self.set_referrer_id()
+
+	def set_referrer_id(self):
+		h = blake2b(digest_size=4)
+		h.update(self.name.encode())
+		self.referrer_id = h.hexdigest()
 
 	def delete(self, force=False, workflow=False):
 		if force:
@@ -90,6 +99,9 @@ class Team(Document):
 		team.save(ignore_permissions=True)
 
 		team.create_stripe_customer()
+
+		if account_request.referrer_id:
+			team.create_referral_bonus(account_request.referrer_id)
 
 		if not team.via_erpnext:
 			team.create_upcoming_invoice()
@@ -218,6 +230,13 @@ class Team(Document):
 			self.free_credits_allocated = 1
 			self.save()
 			self.reload()
+
+	def create_referral_bonus(self, referrer_id):
+		# Get team name with this this referrer id
+		referrer_team = frappe.db.get_value("Team", {"referrer_id": referrer_id})
+		frappe.get_doc(
+			{"doctype": "Referral Bonus", "for_team": self.name, "referred_by": referrer_team}
+		).insert(ignore_permissions=True)
 
 	def has_member(self, user):
 		return user in self.get_user_list()

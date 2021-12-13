@@ -1,0 +1,69 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2021-11-24 14:21:26.131280",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "ip_address",
+  "agreed_to_analytics_cookies",
+  "agreed_to_functionality_cookies",
+  "agreed_to_performance_cookies"
+ ],
+ "fields": [
+  {
+   "fieldname": "ip_address",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "IP Address",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "agreed_to_analytics_cookies",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Agreed To Analytics Cookies",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "agreed_to_functionality_cookies",
+   "fieldtype": "Check",
+   "label": "Agreed To Functionality Cookies",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "agreed_to_performance_cookies",
+   "fieldtype": "Check",
+   "label": "Agreed To Performance Cookies",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2021-11-24 14:28:51.910191",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Cookie Preference Log",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "title_field": "ip_address"
+}
