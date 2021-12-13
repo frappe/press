@@ -39,10 +39,16 @@ class Team(Document):
 		if not self.referrer_id:
 			self.set_referrer_id()
 
+		self.set_partner_payment_mode()
+
 	def set_referrer_id(self):
 		h = blake2b(digest_size=4)
 		h.update(self.name.encode())
 		self.referrer_id = h.hexdigest()
+
+	def set_partner_payment_mode(self):
+		if self.erpnext_partner:
+			self.payment_mode = "Partner Credits"
 
 	def delete(self, force=False, workflow=False):
 		if force:
@@ -213,6 +219,7 @@ class Team(Document):
 	@frappe.whitelist()
 	def enable_erpnext_partner_privileges(self):
 		self.erpnext_partner = 1
+		self.payment_mode = "Partner Credits"
 		self.save(ignore_permissions=True)
 
 	def allocate_free_credits(self):
