@@ -10,6 +10,10 @@ frappe.ui.form.on('Invoice', {
 			frm.add_web_link(`https://frappe.io/desk#Form/Sales Invoice/${frm.doc.frappe_invoice}`, 'View Frappe Invoice')
 		}
 
+		if (frm.doc.frappe_partner_order) {
+			frm.add_web_link(`https://frappe.io/app/partner-order/${frm.doc.frappe_partner_order}`, 'View Frappe Partner Order')
+		}
+
 		if (frm.doc.status == "Paid" && !frm.doc.frappe_invoice) {
 			let btn = frm.add_custom_button(
 				"Create Invoice on frappe.io",
