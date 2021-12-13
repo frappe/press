@@ -368,9 +368,7 @@ class Invoice(Document):
 		client = self.get_frappeio_connection()
 		response = client.session.post(
 			f"{client.url}/api/method/consume_credits_against_fc_invoice",
-			data={
-				"invoice": self.as_json(),
-			},
+			data={"invoice": self.as_json(),},
 		)
 
 		if response.ok:
@@ -387,7 +385,6 @@ class Invoice(Document):
 			self.add_comment(
 				text="Failed to pay via Partner credits" + "<br><br>" + response.text
 			)
-		
 
 	def apply_credit_balance(self):
 		# cancel applied credits to re-apply available credits
