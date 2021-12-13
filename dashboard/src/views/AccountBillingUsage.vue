@@ -49,13 +49,19 @@
 								{{ availableCredits }}
 							</div>
 						</div>
-						<!-- Don't allow partners to add credits -->
-						<!-- TODO: Change on click to take to frappe.io -->
-						<div
-							v-if="!$account.team.erpnext_partner"
-							class="ml-auto space-x-2"
-						>
-							<Button @click="showPrepaidCreditsDialog = true" type="white">
+						<div class="ml-auto space-x-2">
+							<Button
+								v-if="!$account.team.erpnext_partner"
+								@click="showPrepaidCreditsDialog = true"
+								type="white"
+							>
+								Add Balance
+							</Button>
+							<Button
+								v-else
+								link="https://frappe.io/partners/buy_credits"
+								type="white"
+							>
 								Add Balance
 							</Button>
 						</div>
