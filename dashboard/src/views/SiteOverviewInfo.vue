@@ -83,7 +83,7 @@ export default {
 				title: 'Deactivate Site',
 				message: `
 					Are you sure you want to deactivate this site? The site will go in an inactive state.
-					It won't be accessible and background jobs won't run. You will still be charged for it.
+					It won't be accessible and background jobs won't run. You will <strong>still be charged</strong> for it.
 				`,
 				actionLabel: 'Deactivate',
 				actionType: 'danger',

@@ -1,5 +1,7 @@
 <template>
-	<div class="sm:py-1 sm:border sm:border-gray-100 sm:rounded-md sm:shadow sm:px-2">
+	<div
+		class="sm:py-1 sm:border sm:border-gray-100 sm:rounded-md sm:shadow sm:px-2"
+	>
 		<div class="py-2 text-base text-gray-600 sm:px-2" v-if="sites.length === 0">
 			No sites in this bench
 		</div>
@@ -16,7 +18,7 @@
 						<Badge class="pointer-events-none" v-bind="siteBadge(site)" />
 					</div>
 					<div class="hidden w-2/12 text-sm text-gray-600 sm:block">
-						{{ formatDate(site.creation, 'relative') }}
+						Created {{ formatDate(site.creation, 'relative') }}
 					</div>
 					<div class="hidden w-2/12 text-base text-right sm:block">
 						<Link
@@ -69,7 +71,7 @@ export default {
 				color,
 				status
 			};
-		}
+		},
 	}
 };
 </script>

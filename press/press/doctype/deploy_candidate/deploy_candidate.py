@@ -10,14 +10,13 @@ import frappe
 import docker
 import dockerfile
 import subprocess
-import json
 
-from subprocess import Popen
 from typing import List
+from subprocess import Popen
 from frappe.core.utils import find
 from frappe.model.document import Document
-from frappe.model.naming import make_autoname
 from frappe.utils import now_datetime as now
+from frappe.model.naming import make_autoname
 
 from press.utils import get_current_team, log_error
 from press.press.doctype.server.server import Server
@@ -256,7 +255,7 @@ class DeployCandidate(Document):
 				os.path.join(frappe.get_app_path("press", "docker"), target), self.build_directory,
 			)
 
-		for target in ["config"]:
+		for target in ["config", "redis"]:
 			shutil.copytree(
 				os.path.join(frappe.get_app_path("press", "docker"), target),
 				os.path.join(self.build_directory, target),
@@ -308,7 +307,10 @@ class DeployCandidate(Document):
 			try:
 				# Remove step index from line
 				step_index, line = line.split(maxsplit=1)
-				step_index = int(step_index[1:])
+				try:
+					step_index = int(step_index[1:])
+				except ValueError:
+					step_index = sorted(steps)[-1]
 
 				# Parse first line and add step to steps dict
 				if step_index not in steps and line.startswith("[stage-"):
@@ -417,10 +419,9 @@ class DeployCandidate(Document):
 			last_update = now()
 
 			for line in client.images.push(
-				self.docker_image_repository, self.docker_image_tag, stream=True
+				self.docker_image_repository, self.docker_image_tag, stream=True, decode=True
 			):
-				line = json.loads(line.decode().strip())
-				if "id" not in line:
+				if "id" not in line.keys():
 					continue
 
 				line_output = f'{line["id"]}: {line["status"]} {line.get("progress", "")}'

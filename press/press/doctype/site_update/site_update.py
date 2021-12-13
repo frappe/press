@@ -2,16 +2,15 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
-from __future__ import unicode_literals
-
+import pytz
 import random
 import frappe
-from datetime import datetime
-from frappe.model.document import Document
-from frappe.core.utils import find
-import pytz
+
 from press.agent import Agent
+from datetime import datetime
 from press.utils import log_error
+from frappe.core.utils import find
+from frappe.model.document import Document
 
 
 class SiteUpdate(Document):
@@ -67,7 +66,7 @@ class SiteUpdate(Document):
 				"An update is already pending for this site", frappe.ValidationError,
 			)
 
-		if self.have_past_updates_failed():
+		if not self.skipped_failing_patches and self.have_past_updates_failed():
 			frappe.throw(
 				f"Update from Source Candidate {self.source_candidate} to Destination"
 				f" Candidate {self.destination_candidate} has failed in the past.",
@@ -80,7 +79,12 @@ class SiteUpdate(Document):
 	def create_agent_request(self):
 		agent = Agent(self.server)
 		site = frappe.get_doc("Site", self.site)
-		job = agent.update_site(site, self.destination_bench, self.deploy_type)
+		job = agent.update_site(
+			site,
+			self.destination_bench,
+			self.deploy_type,
+			skip_failing_patches=self.skipped_failing_patches,
+		)
 		frappe.db.set_value("Site Update", self.name, "update_job", job.name)
 
 	def have_past_updates_failed(self):
@@ -132,24 +136,39 @@ def trigger_recovery_job(site_update_name):
 
 
 def benches_with_available_update():
-	active_destination_benches = frappe.get_all(
-		"Bench", filters={"status": "Active"}, fields=["candidate"],
+	source_benches_info = frappe.db.sql(
+		"""
+		SELECT sb.name AS source_bench, sb.candidate AS source_candidate, sb.server AS server, dcd.destination AS destination_candidate
+		FROM `tabBench` sb, `tabDeploy Candidate Difference` dcd
+		WHERE sb.status = 'Active' AND sb.candidate = dcd.source
+		""",
+		as_dict=True,
 	)
 
-	active_destination_candidates = list(
-		set(bench.candidate for bench in active_destination_benches)
+	destination_candidates = list(
+		set(d["destination_candidate"] for d in source_benches_info)
 	)
 
-	source_differences = frappe.get_all(
-		"Deploy Candidate Difference",
-		fields=["source"],
-		filters={"destination": ("in", active_destination_candidates)},
+	destination_benches_info = frappe.get_all(
+		"Bench",
+		filters={"status": "Active", "candidate": ("in", destination_candidates)},
+		fields=["candidate AS destination_candidate", "name AS destination_bench", "server"],
 	)
-	source_candidates = list(set(source.source for source in source_differences))
-	benches = frappe.get_all(
-		"Bench", filters={"status": "Active", "candidate": ("in", source_candidates)},
-	)
-	return list(set(bench.name for bench in benches))
+
+	updates_available_for_benches = []
+	for bench in source_benches_info:
+		destination_bench_exists = find(
+			destination_benches_info,
+			lambda x: (
+				x["destination_candidate"] == bench.destination_candidate
+				and x["server"] == bench.server
+			),
+		)
+
+		if destination_bench_exists:
+			updates_available_for_benches.append(bench)
+
+	return list(set([bench.source_bench for bench in updates_available_for_benches]))
 
 
 def sites_with_available_update():
@@ -160,7 +179,7 @@ def sites_with_available_update():
 			"status": ("in", ("Active", "Inactive", "Suspended")),
 			"bench": ("in", benches),
 		},
-		fields=["name", "timezone", "bench", "status"],
+		fields=["name", "timezone", "bench", "status", "skip_auto_updates"],
 	)
 	return sites
 
@@ -175,6 +194,7 @@ def schedule_updates():
 		return
 
 	sites = sites_with_available_update()
+	sites = list(filter(should_not_skip_auto_updates, sites))
 	sites = list(filter(is_site_in_deploy_hours, sites))
 	sites = list(filter(should_try_update, sites))
 
@@ -198,6 +218,10 @@ def schedule_updates():
 		except Exception:
 			log_error("Site Update Exception", site=site)
 			frappe.db.rollback()
+
+
+def should_not_skip_auto_updates(site):
+	return not site.skip_auto_updates
 
 
 def should_try_update(site):

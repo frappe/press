@@ -104,9 +104,14 @@ export default {
 		};
 	},
 	resources: {
-		plans: {
-			method: 'press.api.site.get_plans',
-			default: []
+		plans() {
+			return {
+				method: 'press.api.site.get_plans',
+				params: {
+					name: this.site.name
+				},
+				default: []
+			};
 		},
 		changePlan() {
 			return {

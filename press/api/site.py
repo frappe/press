@@ -2,17 +2,15 @@
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
 
-from __future__ import unicode_literals
-
 import json
-
-import dns.resolver
 import wrapt
-from boto3 import client
-from botocore.exceptions import ClientError
-
 import frappe
+import dns.resolver
+
+from typing import Dict
+from boto3 import client
 from frappe.core.utils import find
+from botocore.exceptions import ClientError
 from frappe.desk.doctype.tag.tag import add_tag
 from frappe.utils import flt, time_diff_in_hours
 from frappe.utils.password import get_decrypted_password
@@ -49,7 +47,11 @@ def protected(doctype):
 @frappe.whitelist()
 def new(site):
 	team = get_current_team(get_doc=True)
+	if not team.enabled:
+		frappe.throw("You cannot create a new site because your account is disabled")
+
 	files = site.get("files", {})
+	share_details_consent = site.get("share_details_consent")
 
 	domain = frappe.db.get_single_value("Press Settings", "domain")
 	cluster = site.get("cluster") or frappe.db.get_single_value(
@@ -94,9 +96,16 @@ def new(site):
 			"remote_database_file": files.get("database"),
 			"remote_public_file": files.get("public"),
 			"remote_private_file": files.get("private"),
+			"skip_failing_patches": site.get("skip_failing_patches", False),
 		},
 	).insert(ignore_permissions=True)
 	site.create_subscription(plan)
+
+	if share_details_consent:
+		frappe.get_doc(doctype="Partner Lead", team=team.name, site=site.name).insert(
+			ignore_permissions=True
+		)
+
 	return {
 		"site": site.name,
 		"job": frappe.db.get_value(
@@ -318,7 +327,7 @@ def options_for_new():
 
 
 @frappe.whitelist()
-def get_plans():
+def get_plans(name=None):
 	filters = {"enabled": True, "document_type": "Site"}
 
 	plans = frappe.db.get_all(
@@ -338,8 +347,24 @@ def get_plans():
 	)
 	plans = group_children_in_result(plans, {"role": "roles"})
 
+	if name:
+		team = get_current_team()
+		release_group_name = frappe.db.get_value("Site", name, "group")
+		release_group = frappe.get_doc("Release Group", release_group_name)
+		is_private_bench = release_group.team == team and not release_group.public
+		# poor man's bench paywall
+		# this will not allow creation of $10 sites on private benches
+		# wanted to avoid adding a new field, so doing this with a date check :)
+		# TODO: find a better way to do paywalls
+		paywall_date = frappe.utils.get_datetime("2021-09-21 00:00:00")
+		is_paywalled_bench = is_private_bench and release_group.creation > paywall_date
+	else:
+		is_paywalled_bench = False
+
 	out = []
 	for plan in plans:
+		if is_paywalled_bench and plan.price_usd == 10:
+			continue
 		if frappe.utils.has_common(plan["roles"], frappe.get_roles()):
 			plan.pop("roles", "")
 			out.append(plan)
@@ -363,6 +388,7 @@ def all():
 		],
 		filters={"team": team, "status": ("!=", "Archived")},
 		order_by="creation desc",
+		ignore_ifnull=True,
 	)
 	benches_with_updates = set(benches_with_available_update())
 	for site in sites:
@@ -401,11 +427,6 @@ def all():
 	for group in groups:
 		group.benches = [bench for bench in benches if bench.group == group.name]
 		group.owned_by_team = team == group.team
-		group.status = (
-			"Active"
-			if frappe.get_all("Bench", {"group": group.name, "status": "Active"}, limit=1)
-			else "Awaiting Deploy"
-		)
 
 		group.sites = []
 		for bench in group.benches:
@@ -434,6 +455,8 @@ def get(name):
 		"trial_end_date": site.trial_end_date,
 		"setup_wizard_complete": site.setup_wizard_complete,
 		"group": group_name,
+		"team": site.team,
+		"server_region_info": get_server_region_info(site),
 	}
 
 
@@ -475,13 +498,53 @@ def check_for_updates(name):
 
 	destination_candidate = frappe.get_doc("Deploy Candidate", destination)
 
-	from press.api.bench import get_updates_between_current_and_next_apps
-
 	out.apps = get_updates_between_current_and_next_apps(
 		bench.apps, destination_candidate.apps
 	)
 	out.update_available = any([app["update_available"] for app in out.apps])
 	return out
+
+
+def get_updates_between_current_and_next_apps(current_apps, next_apps):
+	from press.utils import get_app_tag
+
+	apps = []
+	for app in next_apps:
+		bench_app = find(current_apps, lambda x: x.app == app.app)
+		current_hash = bench_app.hash if bench_app else None
+		source = frappe.get_doc("App Source", app.source)
+
+		will_branch_change = False
+		current_branch = source.branch
+		if bench_app:
+			current_source = frappe.get_doc("App Source", bench_app.source)
+			will_branch_change = current_source.branch != source.branch
+			current_branch = current_source.branch
+
+		current_tag = (
+			get_app_tag(source.repository, source.repository_owner, current_hash)
+			if current_hash
+			else None
+		)
+		next_hash = app.hash
+		apps.append(
+			{
+				"title": app.title,
+				"app": app.app,
+				"repository": source.repository,
+				"repository_owner": source.repository_owner,
+				"repository_url": source.repository_url,
+				"branch": source.branch,
+				"current_hash": current_hash,
+				"current_tag": current_tag,
+				"next_hash": next_hash,
+				"next_tag": get_app_tag(source.repository, source.repository_owner, next_hash),
+				"will_branch_change": will_branch_change,
+				"current_branch": current_branch,
+				"update_available": not current_hash or current_hash != next_hash,
+			}
+		)
+	return apps
 
 
 @frappe.whitelist()
@@ -550,6 +613,11 @@ def get_installed_apps(site):
 		installed_apps.append(app_source)
 
 	return installed_apps
+
+
+def get_server_region_info(site) -> Dict:
+	"""Return a Dict with `title` and `image`"""
+	return frappe.db.get_value("Cluster", site.cluster, ["title", "image"], as_dict=True)
 
 
 @frappe.whitelist()
@@ -651,14 +719,22 @@ def activate(name):
 
 @frappe.whitelist()
 @protected("Site")
-def login(name):
-	return frappe.get_doc("Site", name).login()
+def login(name, reason=None):
+	return frappe.get_doc("Site", name).login(reason)
 
 
 @frappe.whitelist()
 @protected("Site")
-def update(name):
-	return frappe.get_doc("Site", name).schedule_update()
+def update(name, skip_failing_patches=False):
+	return frappe.get_doc("Site", name).schedule_update(
+		skip_failing_patches=skip_failing_patches
+	)
+
+
+@frappe.whitelist()
+@protected("Site")
+def last_migrate_failed(name):
+	return frappe.get_doc("Site", name).last_migrate_failed()
 
 
 @frappe.whitelist()
@@ -681,8 +757,8 @@ def reinstall(name):
 
 @frappe.whitelist()
 @protected("Site")
-def migrate(name):
-	frappe.get_doc("Site", name).migrate()
+def migrate(name, skip_failing_patches=False):
+	frappe.get_doc("Site", name).migrate(skip_failing_patches=skip_failing_patches)
 
 
 @frappe.whitelist()
@@ -693,20 +769,20 @@ def clear_cache(name):
 
 @frappe.whitelist()
 @protected("Site")
-def restore(name, files):
+def restore(name, files, skip_failing_patches=False):
 	site = frappe.get_doc("Site", name)
 	site.remote_database_file = files["database"]
 	site.remote_public_file = files["public"]
 	site.remote_private_file = files["private"]
 	site.save()
-	site.restore_site()
+	site.restore_site(skip_failing_patches=skip_failing_patches)
 
 
 @frappe.whitelist()
 def exists(subdomain):
-	return bool(
-		frappe.db.exists("Site", {"subdomain": subdomain, "status": ("!=", "Archived")})
-	)
+	from press.press.doctype.site.site import Site
+
+	return Site.exists(subdomain)
 
 
 @frappe.whitelist()
@@ -947,3 +1023,55 @@ def get_backup_links(url, email, password):
 		)
 
 	return remote_files
+
+
+@frappe.whitelist()
+def search_list():
+	team = get_current_team()
+	sites = frappe.get_list("Site", filters={"status": ("!=", "Archived"), "team": team})
+
+	return sites
+
+
+@frappe.whitelist()
+@protected("Site")
+def enable_auto_update(name):
+	site_doc = frappe.get_doc("Site", name)
+	if not site_doc.auto_updates_scheduled:
+		site_doc.auto_updates_scheduled = True
+		site_doc.save()
+
+
+@frappe.whitelist()
+@protected("Site")
+def disable_auto_update(name):
+	site_doc = frappe.get_doc("Site", name)
+	if site_doc.auto_updates_scheduled:
+		site_doc.auto_updates_scheduled = False
+		site_doc.save()
+
+
+@frappe.whitelist()
+@protected("Site")
+def get_auto_update_info(name):
+	site_doc = frappe.get_doc("Site", name)
+
+	auto_update_info = {
+		"auto_updates_scheduled": site_doc.auto_updates_scheduled,
+		"auto_update_last_triggered_on": site_doc.auto_update_last_triggered_on,
+		"update_trigger_frequency": site_doc.update_trigger_frequency,
+		"update_trigger_time": site_doc.update_trigger_time,
+		"update_on_weekday": site_doc.update_on_weekday,
+		"update_end_of_month": site_doc.update_end_of_month,
+		"update_on_day_of_month": site_doc.update_on_day_of_month,
+	}
+
+	return auto_update_info
+
+
+@frappe.whitelist()
+@protected("Site")
+def update_auto_update_info(name, info=dict()):
+	site_doc = frappe.get_doc("Site", name, for_update=True)
+	site_doc.update(info)
+	site_doc.save()

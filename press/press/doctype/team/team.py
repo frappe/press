@@ -2,21 +2,23 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
-from __future__ import unicode_literals
-
 import frappe
+
 from frappe import _
-from frappe.contacts.address_and_contact import load_address_and_contact
-from frappe.model.document import Document
+from typing import List
+from hashlib import blake2b
 from frappe.utils import get_fullname
+from frappe.utils import get_url_to_form
+from press.telegram_utils import Telegram
+from frappe.model.document import Document
+from press.exceptions import FrappeioServerNotSet
+from frappe.contacts.address_and_contact import load_address_and_contact
+from press.press.doctype.account_request.account_request import AccountRequest
 from press.utils.billing import (
 	get_erpnext_com_connection,
 	get_frappe_io_connection,
 	get_stripe,
 )
-from press.exceptions import FrappeioServerNotSet
-
-from press.press.doctype.account_request.account_request import AccountRequest
 
 
 class Team(Document):
@@ -28,7 +30,18 @@ class Team(Document):
 		self.set_team_currency()
 		self.set_default_user()
 		self.set_billing_name()
-		self.validate_disabled_team()
+
+	def before_insert(self):
+		if not self.notify_email:
+			self.notify_email = self.name
+
+		if not self.referrer_id:
+			self.set_referrer_id()
+
+	def set_referrer_id(self):
+		h = blake2b(digest_size=4)
+		h.update(self.name.encode())
+		self.referrer_id = h.hexdigest()
 
 	def delete(self, force=False, workflow=False):
 		if force:
@@ -44,6 +57,18 @@ class Team(Document):
 			" do so, pass force=True with this call. Else, pass workflow=True to raise"
 			" a Team Deletion Request to trigger complete team deletion process."
 		)
+
+	def disable_account(self):
+		self.suspend_sites("Account disabled")
+		self.enabled = False
+		self.save()
+		self.add_comment("Info", "disabled account")
+
+	def enable_account(self):
+		self.unsuspend_sites("Account enabled")
+		self.enabled = True
+		self.save()
+		self.add_comment("Info", "enabled account")
 
 	@classmethod
 	def create_new(
@@ -74,6 +99,9 @@ class Team(Document):
 		team.save(ignore_permissions=True)
 
 		team.create_stripe_customer()
+
+		if account_request.referrer_id:
+			team.create_referral_bonus(account_request.referrer_id)
 
 		if not team.via_erpnext:
 			team.create_upcoming_invoice()
@@ -126,14 +154,6 @@ class Team(Document):
 			for user in self.get_user_list()
 			if not frappe.db.exists("Team Member", {"user": user, "parent": ("!=", self.name)})
 		]
-
-	def validate_disabled_team(self):
-		# disable all users if they dont have their own team
-		if not self.enabled:
-			for user in self.get_users_only_in_this_team():
-				user_doc = frappe.get_doc("User", user)
-				user_doc.enabled = False
-				user_doc.save()
 
 	def validate_duplicate_members(self):
 		team_users = self.get_user_list()
@@ -192,6 +212,7 @@ class Team(Document):
 	@frappe.whitelist()
 	def enable_erpnext_partner_privileges(self):
 		self.erpnext_partner = 1
+		self.save(ignore_permissions=True)
 
 	def allocate_free_credits(self):
 		if self.via_erpnext:
@@ -209,6 +230,13 @@ class Team(Document):
 			self.free_credits_allocated = 1
 			self.save()
 			self.reload()
+
+	def create_referral_bonus(self, referrer_id):
+		# Get team name with this this referrer id
+		referrer_team = frappe.db.get_value("Team", {"referrer_id": referrer_id})
+		frappe.get_doc(
+			{"doctype": "Referral Bonus", "for_team": self.name, "referred_by": referrer_team}
+		).insert(ignore_permissions=True)
 
 	def has_member(self, user):
 		return user in self.get_user_list()
@@ -534,6 +562,51 @@ class Team(Document):
 	def create_upcoming_invoice(self):
 		today = frappe.utils.today()
 		return frappe.get_doc(doctype="Invoice", team=self.name, period_start=today).insert()
+
+	def notify_with_email(self, recipients: List[str], **kwargs):
+		if not self.send_notifications:
+			return
+		if not recipients:
+			recipients = [self.notify_email]
+
+		frappe.sendmail(
+			recipients=recipients, **kwargs,
+		)
+
+	@frappe.whitelist()
+	def send_telegram_alert_for_failed_payment(self, invoice):
+		telegram = Telegram()
+		team_url = get_url_to_form("Team", self.name)
+		invoice_url = get_url_to_form("Invoice", invoice)
+		telegram.send(
+			f"Failed Invoice Payment [{invoice}]({invoice_url}) of"
+			f" Partner: [{self.name}]({team_url})"
+		)
+
+	@frappe.whitelist()
+	def send_email_for_failed_payment(self, invoice, sites=None):
+		invoice = frappe.get_doc("Invoice", invoice)
+		email = self.user
+		payment_method = self.default_payment_method
+		last_4 = frappe.db.get_value("Stripe Payment Method", payment_method, "last_4")
+		account_update_link = frappe.utils.get_url("/dashboard/welcome")
+		subject = "Invoice Payment Failed for Frappe Cloud Subscription"
+
+		frappe.sendmail(
+			recipients=email,
+			subject=subject,
+			template="payment_failed_partner" if self.erpnext_partner else "payment_failed",
+			args={
+				"subject": subject,
+				"payment_link": invoice.stripe_invoice_url,
+				"amount": invoice.get_formatted("amount_due"),
+				"account_update_link": account_update_link,
+				"last_4": last_4 or "",
+				"card_not_added": not payment_method,
+				"sites": sites,
+				"team": self,
+			},
+		)
 
 
 def get_team_members(team):

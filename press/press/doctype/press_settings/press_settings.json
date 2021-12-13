@@ -29,6 +29,7 @@
   "column_break_26",
   "free_credits_inr",
   "free_credits_usd",
+  "ngrok_auth_token",
   "erpnext_authentication",
   "erpnext_url",
   "erpnext_api_key",
@@ -714,6 +715,7 @@
    "label": "Agent Repository Owner"
   },
   {
+   "collapsible": 1,
    "fieldname": "staging_sites_section",
    "fieldtype": "Section Break",
    "label": "Staging Sites"
@@ -784,12 +786,16 @@
   {
    "fieldname": "default_outgoing_pass",
    "fieldtype": "Data",
-   "label": "Default outgoing pass"
+   "label": "Default outgoing pass",
+   "description": "Sign up on ngrok.com to get one for free",
+   "fieldname": "ngrok_auth_token",
+   "fieldtype": "Data",
+   "label": "Ngrok Auth Token"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2021-12-13 10:59:58.266623",
+ "modified": "2021-11-23 18:46:49.393521",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

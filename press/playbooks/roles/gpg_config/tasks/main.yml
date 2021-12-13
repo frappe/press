@@ -1,0 +1,16 @@
+---
+- name: Ensure GPG keys are configured | Ubuntu
+  command: gpg --quiet --with-fingerprint /etc/apt/trusted.gpg
+
+- name: Ensure package manager repositories are configured
+  block:
+    - name: "List package manager repositories"
+      shell: apt list
+      changed_when: no
+      register: repolist
+
+    - name: "Display package manager repositories list"
+      debug:
+        msg:
+            - "Please check against site policy repos listed below match expected:"
+            - "{{ repolist.stdout_lines }}"

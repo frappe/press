@@ -80,7 +80,8 @@ export default {
 				`/marketplace/apps/${this.appName}/${subRoute}`;
 			let tabs = [
 				{ label: 'Overview', route: 'overview' },
-				{ label: 'Releases', route: 'releases' }
+				{ label: 'Releases', route: 'releases' },
+				{ label: 'Analytics', route: 'analytics' }
 			];
 
 			return tabs.map(tab => {

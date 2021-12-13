@@ -8,6 +8,7 @@
 				v-if="
 					$account.hasRole('Press Admin') &&
 						($account.team.default_payment_method ||
+							$account.team.payment_mode == 'Prepaid Credits' ||
 							$account.team.free_account ||
 							$account.team.erpnext_partner)
 				"

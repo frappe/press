@@ -7,7 +7,6 @@
 		<div class="mt-5">
 			{{ breadcrumbs([
 			{ 'label': 'Apps', 'url': '/marketplace' },
-			{ 'label': category.name, 'url': '' },
 			{ 'label': app.title, 'url': '' }
 			]) }}
 		</div>
@@ -23,6 +22,17 @@
 {% macro sidebar() %}
 <div class="order-1 w-full md:order-none md:w-2/12 space-y-9">
 	{{ app_image(app, 'hidden md:block') }}
+
+	{%- if publisher_profile -%}
+	<div>
+		<h5 class="text-xl font-semibold text-gray-900">Publisher</h5>
+		<a class="text-base text-blue-500 hover:text-blue-700"
+			href="{{ 'mailto:{}'.format(publisher_profile.contact_email) if  publisher_profile.contact_email else '#'}}">
+			{{ publisher_profile.display_name }}
+		</a>
+	</div>
+	{%- endif -%}
+
 	<div>
 		<h5 class="text-xl font-semibold text-gray-900">Category</h5>
 		<div class="mt-2">
@@ -31,6 +41,7 @@
 			{{ badge(app.category) }}
 		</div>
 	</div>
+
 	<div>
 		<h5 class="text-xl font-semibold text-gray-900">Learn more & Support</h5>
 		<ul class="flex flex-col mt-2 space-y-3">
@@ -52,21 +63,19 @@
 			{%- endfor -%}
 		</ul>
 	</div>
-	{#
-	<div>
-		<h5 class="text-xl font-semibold text-gray-900">Publisher</h5>
-		<!-- TODO: Replace with the publisher data (to be modeled) -->
-		<a class="text-base text-blue-500 hover:text-blue-700" href="mailto:{{ app.team }}">{{ app.team
-			}}</a>
-	</div>
-	#}
+
 	<div>
 		<h5 class="text-xl font-semibold text-gray-900">Supported Versions</h5>
 		<ul class="mt-2 space-y-1 text-base text-gray-600">
-			{%- for group in groups -%}
+			{%- for supported_version in supported_versions -%}
 			<li>
-				{{ link(group.version, group.frappe.repository_url + '/tree/' + group.frappe.branch,
-				blank=True) }}
+				{%- if supported_version.app_source.public -%}
+				{{ link(supported_version.version, supported_version.app_source.repository_url + '/tree/' +
+				supported_version.app_source.branch, blank=True) }}
+				{%- else -%}
+				{{ link(supported_version.version, supported_version.frappe_source.repository_url + '/tree/' +
+				supported_version.frappe_source.branch, blank=True) }}
+				{%- endif -%}
 			</li>
 			{%- endfor -%}
 		</ul>
@@ -78,8 +87,8 @@
 {% macro main() %}
 <div class="w-full border-b md:w-10/12 md:border-b-0">
 	<div class="flex flex-row items-center">
-		<div class="mr-2">
-			{{ app_image(app, 'md:hidden') }}
+		<div class="mr-2 md:hidden">
+			{{ app_image(app) }}
 		</div>
 		<h1 class="mb-2 text-4xl font-semibold text-gray-900 md:text-5xl"> {{ app.title }} </h1>
 	</div>
@@ -88,6 +97,7 @@
 	</p>
 	<div class="mt-2">
 		{{ button('Install Now', '/dashboard/sites/new', 'primary') }}
+		<span class="text-sm italic text-gray-700">({{ no_of_installs }} installs)</span>
 	</div>
 	{%- if app.screenshots -%}
 	<div class="flex mt-6 space-x-4 overflow-y-auto">
@@ -110,8 +120,7 @@
 {% macro app_image(app, class='') %}
 <div class="w-12 h-12 md:w-24 md:h-24 lg:w-44 lg:h-44 {{ class }}">
 	{%- if app.image -%}
-	<img class="object-cover border border-gray-200 rounded-lg"
-		src="{{ app.image }}" alt="{{ app.title }}">
+	<img class="object-cover border border-gray-200 rounded-lg" src="{{ app.image }}" alt="{{ app.title }}">
 	{%- else -%}
 	<div class="flex items-center justify-center text-gray-500 bg-gray-100 border border-gray-200 rounded-lg">
 		{{ app.title[0].upper() }}

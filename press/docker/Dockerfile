@@ -27,14 +27,19 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   ntp \
   wget \
   supervisor \
-  redis-server \
   # Dependencies for SSH access
   openssh-server \
   nano \
   vim \
+  less \
   # Dependencies for adding Python PPA
   software-properties-common \
   gnupg \
+  # weasyprint dependencies
+  libpango-1.0-0 \
+  libharfbuzz0b \
+  libpangoft2-1.0-0 \
+  libpangocairo-1.0-0 \
   # wkhtmltopdf dependencies
   ca-certificates \
   fontconfig \
@@ -47,10 +52,22 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   libxrender1 \
   xfonts-75dpi \
   xfonts-base \
+  # pycups dependencies
+  gcc \
+  libcups2-dev \
+  python3-dev \
   && rm -rf /var/lib/apt/lists/* \
   `#stage-pre-essentials`
 
 COPY --chown=root:root supervisord.conf /etc/supervisor/supervisord.conf
+
+# Install Redis from PPA
+RUN --mount=type=cache,target=/var/cache/apt add-apt-repository ppa:redislabs/redis \
+  && apt-get update \
+  && apt-get install --yes --no-install-suggests --no-install-recommends \
+  redis-server \
+  unzip \
+  && rm -rf /var/lib/apt/lists/*
 
 # Install Python from DeadSnakes PPA
 RUN --mount=type=cache,target=/var/cache/apt add-apt-repository ppa:deadsnakes/ppa \
@@ -114,7 +131,10 @@ RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 pip3 install
 
 RUN mkdir /home/frappe/frappe-bench
 WORKDIR /home/frappe/frappe-bench
-RUN mkdir -p apps logs sites config/pids
+RUN mkdir -p apps logs sites config/pids redis
+
+# Install Redisearch 2.0 from precompiled binaries
+COPY --chown=frappe:frappe redis /home/frappe/frappe-bench/redis
 
 # Create virtual environment for bench
 RUN virtualenv -p python${PYTHON_VERSION} env `#stage-bench-env`
@@ -128,6 +148,8 @@ ENV PYTHONUNBUFFERED 1
 RUN echo '["build"]' > .bench.cmd
 RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 --mount=type=bind,source=apps/frappe,target=/home/frappe/context/apps/frappe bench get-app /home/frappe/context/apps/frappe `#stage-apps-frappe`
 RUN rm .bench.cmd
+
+RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 /home/frappe/frappe-bench/env/bin/pip install pycups==2.0.1
 
 # Install other apps
 {% for app in doc.apps %}

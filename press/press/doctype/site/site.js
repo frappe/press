@@ -20,7 +20,7 @@ frappe.ui.form.on('Site', {
 			};
 		});
 	},
-	refresh: function (frm) {
+	refresh: async function (frm) {
 		frm.dashboard.set_headline_alert(
 			`<div class="container-fluid">
 				<div class="row">
@@ -36,17 +36,59 @@ frappe.ui.form.on('Site', {
 			__('Visit Dashboard')
 		);
 
+		let site = frm.get_doc();
+		let account = await frappe.call({
+			method: 'press.api.account.get'
+		}).then(resp => resp.message);
+
+		if (site.status === 'Active') {
+			frm.add_custom_button(__('Login as Adminstrator'),
+				() => {
+					if (account) {
+						if (site.team === account.team.name) {
+							login_as_admin(site.name);
+						} else {
+							new frappe.ui.Dialog({
+								title: 'Login as Adminstrator',
+								fields: [{
+									label: 'Please enter reason for this login.',
+									fieldname: 'reason',
+									fieldtype: 'Small Text'
+								}],
+								primary_action_label: 'Login',
+								primary_action(values) {
+									if (values) {
+										let reason = values.reason;
+										console.log(reason);
+										login_as_admin(site.name, reason);
+									} else {
+										frappe.throw(__('Reason field should not be empty'))
+									}
+									this.hide();
+								}
+							}).show();
+						}
+					} else {
+						frappe.throw(__("Could'nt retrieve account. Check Error Log for more information"));
+					}
+				},
+				__('Actions'));
+		}
+
 		[
 			[__('Backup'), 'backup'],
 		].forEach(([label, method]) => {
 			frm.add_custom_button(
 				label,
-				() => { frm.call(method).then((r) => frm.refresh()) },
+				() => {
+					frm.call(method).then((r) => frm.refresh())
+				},
 				__('Actions')
 			);
 		});
 		[
 			[__('Archive'), 'archive'],
+			[__('Cleanup after Archive'), 'cleanup_after_archive'],
 			[__('Migrate'), 'migrate'],
 			[__('Reinstall'), 'reinstall'],
 			[__('Restore'), 'restore_site'],
@@ -74,10 +116,18 @@ frappe.ui.form.on('Site', {
 			frm.add_custom_button(
 				label,
 				() => {
-					frappe.prompt(
-						{ fieldtype: 'Data', label: 'Reason', fieldname: 'reason', reqd: 1 },
-						({ reason }) => {
-							frm.call(method, { reason }).then((r) => frm.refresh());
+					frappe.prompt({
+						fieldtype: 'Data',
+						label: 'Reason',
+						fieldname: 'reason',
+						reqd: 1
+					},
+						({
+							reason
+						}) => {
+							frm.call(method, {
+								reason
+							}).then((r) => frm.refresh());
 						},
 						__('Provide Reason')
 					);
@@ -86,5 +136,22 @@ frappe.ui.form.on('Site', {
 			);
 		});
 		frm.toggle_enable(['host_name'], frm.doc.status === 'Active');
-	},
+	}
 });
+
+function login_as_admin(site_name, reason = null) {
+	frappe.call({
+		method: 'press.api.site.login',
+		args: {
+			name: site_name,
+			reason: reason
+		}
+	}).then((sid) => {
+		if (sid) {
+			window.open(`https://${site_name}/desk?sid=${sid}`, '_blank');
+		}
+	}, (error) => {
+		console.log(error);
+		frappe.throw(__(`An error occurred!!`));
+	})
+}

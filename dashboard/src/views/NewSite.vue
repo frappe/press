@@ -33,10 +33,12 @@
 					:selectedApps.sync="selectedApps"
 					:selectedGroup.sync="selectedGroup"
 					:selectedRegion.sync="selectedRegion"
+					:shareDetailsConsent.sync="shareDetailsConsent"
 				/>
 				<Restore
 					:options="options"
 					:selectedFiles.sync="selectedFiles"
+					:skipFailingPatches.sync="skipFailingPatches"
 					v-show="activeStep.name == 'Restore'"
 				/>
 				<Plans
@@ -46,7 +48,32 @@
 				/>
 				<ErrorMessage :error="validationMessage" />
 				<div class="mt-4">
-					<ErrorMessage :error="$resources.newSite.error" />
+					<!-- Region consent checkbox -->
+					<div class="my-6" v-if="!hasNext">
+						<input
+							id="region-consent"
+							type="checkbox"
+							class="
+								h-4
+								w-4
+								text-blue-600
+								focus:ring-blue-500
+								border-gray-300
+								rounded
+							"
+							v-model="agreedToRegionConsent"
+						/>
+						<label
+							for="region-consent"
+							class="ml-1 text-sm font-semibold text-gray-900"
+						>
+							I agree that the laws of the region selected by me shall stand
+							applicable to me and Frappe.
+						</label>
+					</div>
+
+					<ErrorMessage class="mb-4" :error="$resources.newSite.error" />
+
 					<div class="flex justify-between">
 						<Button
 							@click="previous"
@@ -89,15 +116,17 @@
 </template>
 
 <script>
+import { DateTime } from 'luxon';
 import WizardCard from '@/components/WizardCard.vue';
 import Steps from '@/components/Steps.vue';
-import Hostname from './Hostname.vue';
-import Apps from './Apps.vue';
-import Restore from './Restore.vue';
-import Plans from './Plans.vue';
+import Hostname from './NewSiteHostname.vue';
+import Apps from './NewSiteApps.vue';
+import Restore from './NewSiteRestore.vue';
+import Plans from './NewSitePlans.vue';
 
 export default {
 	name: 'NewSite',
+	props: ['bench'],
 	components: {
 		WizardCard,
 		Steps,
@@ -121,7 +150,9 @@ export default {
 				public: null,
 				private: null
 			},
+			skipFailingPatches: false,
 			selectedPlan: null,
+			shareDetailsConsent: false,
 			validationMessage: null,
 			steps: [
 				{
@@ -149,16 +180,16 @@ export default {
 				{
 					name: 'Plan'
 				}
-			]
+			],
+			agreedToRegionConsent: false
 		};
 	},
 	async mounted() {
 		this.options = await this.$call('press.api.site.options_for_new');
 		this.options.plans = this.options.plans.map(plan => {
-			plan.disabled = this.disablePlan(plan);
+			plan.disabled = !this.$account.hasBillingInfo;
 			return plan;
 		});
-
 		if (this.$route.query.domain) {
 			let domain = this.$route.query.domain.split('.');
 			if (domain) {
@@ -166,11 +197,28 @@ export default {
 			}
 			this.$router.replace({});
 		}
-		if (this.$route.query.bench) {
+		if (this.bench) {
 			this.privateBench = true;
-			this.selectedGroup = this.$route.query.bench;
-			this.benchTitle = this.$route.query.benchTitle;
-			this.$router.replace({});
+			this.selectedGroup = this.bench;
+			this.benchTitle = this.bench;
+			let { title, creation } = await this.$call('frappe.client.get_value', {
+				doctype: 'Release Group',
+				filters: { name: this.bench },
+				fieldname: JSON.stringify(['title', 'creation'])
+			});
+			this.benchTitle = title;
+
+			// poor man's bench paywall
+			// this will disable creation of $10 sites on private benches
+			// wanted to avoid adding a new field, so doing this with a date check :)
+			let benchCreation = DateTime.fromSQL(creation);
+			let paywalledBenchDate = DateTime.fromSQL('2021-09-21 00:00:00');
+			let isPaywalledBench = benchCreation > paywalledBenchDate;
+			if (isPaywalledBench && $account.user.user_type != 'System User') {
+				this.options.plans = this.options.plans.filter(
+					plan => plan.price_usd >= 25
+				);
+			}
 		}
 	},
 	resources: {
@@ -184,7 +232,9 @@ export default {
 						group: this.selectedGroup,
 						cluster: this.selectedRegion,
 						plan: this.selectedPlan ? this.selectedPlan.name : null,
-						files: this.selectedFiles
+						files: this.selectedFiles,
+						share_details_consent: this.shareDetailsConsent,
+						skip_failing_patches: this.skipFailingPatches
 					}
 				},
 				onSuccess(data) {
@@ -199,16 +249,17 @@ export default {
 						(!this.wantsToRestore ||
 							Object.values(this.selectedFiles).every(v => v));
 
+					if (!this.agreedToRegionConsent) {
+						document.getElementById('region-consent').focus();
+
+						return 'Please agree to the above consent to create site';
+					}
+
 					if (!canCreate) {
 						return 'Cannot create site';
 					}
 				}
 			};
-		}
-	},
-	methods: {
-		disablePlan(plan) {
-			return !this.$account.hasBillingInfo;
 		}
 	},
 	computed: {

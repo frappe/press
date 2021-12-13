@@ -5,9 +5,11 @@
 import frappe
 
 from typing import List
+from frappe.core.utils import find
 from frappe.model.document import Document
-from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.server.server import Server
+from press.utils import get_last_doc, get_app_tag, get_current_team
+from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app_source.app_source import AppSource, create_app_source
 
 DEFAULT_DEPENDENCIES = [
@@ -31,14 +33,6 @@ class ReleaseGroup(Document):
 		candidates = frappe.get_all("Deploy Candidate", {"group": self.name})
 		for candidate in candidates:
 			frappe.delete_doc("Deploy Candidate", candidate.name)
-
-	def after_insert(self):
-		# First time, create an extra
-		# deploy candidate with latest approved releases
-		self.create_deploy_candidate(approved_releases_only=True)
-
-	def on_update(self):
-		self.create_deploy_candidate()
 
 	def validate_title(self):
 		if frappe.get_all(
@@ -89,40 +83,61 @@ class ReleaseGroup(Document):
 			self.extend("dependencies", DEFAULT_DEPENDENCIES)
 
 	@frappe.whitelist()
-	def create_deploy_candidate(self, approved_releases_only=False):
+	def create_deploy_candidate(self, apps_to_ignore=[]):
 		if not self.enabled:
 			return
 
-		marketplace_sources = self.get_marketplace_app_sources()
-		apps = []
-		for app in self.apps:
-			app_release_filters = {"app": app.app, "source": app.source}
-			if approved_releases_only and (app.source in marketplace_sources):
-				app_release_filters["status"] = "Approved"
+		# Get the deploy information for apps
+		# that have updates available
+		apps_deploy_info = self.deploy_information().apps
 
-			release = frappe.get_all(
-				"App Release",
-				fields=["name", "source", "app", "hash"],
-				filters=app_release_filters,
-				order_by="creation desc",
-				limit=1,
+		app_updates = [
+			app
+			for app in apps_deploy_info
+			if app["update_available"]
+			and (not find(apps_to_ignore, lambda x: x["app"] == app["app"]))
+		]
+
+		apps = []
+		for update in app_updates:
+			apps.append(
+				{
+					"release": update["next_release"],
+					"source": update["source"],
+					"app": update["app"],
+					"hash": update["next_hash"],
+				}
 			)
 
-			if release:
-				release = release[0]
-				apps.append(
-					{
-						"release": release.name,
-						"source": release.source,
-						"app": release.app,
-						"hash": release.hash,
-					}
-				)
+		# The apps that are in the release group
+		# Not updated or ignored
+		untouched_apps = [
+			a for a in self.apps if not find(app_updates, lambda x: x["app"] == a.app)
+		]
+		last_deployed_bench = get_last_doc("Bench", {"group": self.name, "status": "Active"})
+
+		if last_deployed_bench:
+			for app in untouched_apps:
+				update = find(last_deployed_bench.apps, lambda x: x.app == app.app)
+
+				if update:
+					apps.append(
+						{
+							"release": update.release,
+							"source": update.source,
+							"app": update.app,
+							"hash": update.hash,
+						}
+					)
 
 		dependencies = [
 			{"dependency": d.dependency, "version": d.version} for d in self.dependencies
 		]
-		frappe.get_doc(
+
+		apps = self.get_sorted_based_on_rg_apps(apps)
+
+		# Create and deploy the DC
+		candidate = frappe.get_doc(
 			{
 				"doctype": "Deploy Candidate",
 				"group": self.name,
@@ -130,6 +145,145 @@ class ReleaseGroup(Document):
 				"dependencies": dependencies,
 			}
 		).insert()
+
+		return candidate
+
+	def get_sorted_based_on_rg_apps(self, apps):
+		# Rearrange Apps to match release group ordering
+		sorted_apps = []
+
+		for app in self.apps:
+			dc_app = find(apps, lambda x: x["app"] == app.app)
+			if dc_app:
+				sorted_apps.append(dc_app)
+
+		for app in apps:
+			if not find(sorted_apps, lambda x: x["app"] == app["app"]):
+				sorted_apps.append(app)
+
+		return sorted_apps
+
+	@frappe.whitelist()
+	def deploy_information(self):
+		out = frappe._dict(update_available=False)
+
+		last_deployed_bench = get_last_doc("Bench", {"group": self.name, "status": "Active"})
+		out.apps = self.get_app_updates(
+			last_deployed_bench.apps if last_deployed_bench else []
+		)
+		out.removed_apps = self.get_removed_apps()
+		out.update_available = any([app["update_available"] for app in out.apps]) or (
+			len(out.removed_apps) > 0
+		)
+
+		return out
+
+	def get_app_updates(self, current_apps):
+		next_apps = self.get_next_apps(current_apps)
+
+		apps = []
+		for app in next_apps:
+			bench_app = find(current_apps, lambda x: x.app == app.app)
+			current_hash = bench_app.hash if bench_app else None
+			source = frappe.get_doc("App Source", app.source)
+
+			will_branch_change = False
+			current_branch = source.branch
+			if bench_app:
+				current_source = frappe.get_doc("App Source", bench_app.source)
+				will_branch_change = current_source.branch != source.branch
+				current_branch = current_source.branch
+
+			current_tag = (
+				get_app_tag(source.repository, source.repository_owner, current_hash)
+				if current_hash
+				else None
+			)
+			next_hash = app.hash
+			apps.append(
+				{
+					"title": app.title,
+					"app": app.app,
+					"source": source.name,
+					"repository": source.repository,
+					"repository_owner": source.repository_owner,
+					"repository_url": source.repository_url,
+					"branch": source.branch,
+					"current_hash": current_hash,
+					"current_tag": current_tag,
+					"current_release": bench_app.release if bench_app else None,
+					"next_release": app.release,
+					"next_hash": next_hash,
+					"next_tag": get_app_tag(source.repository, source.repository_owner, next_hash),
+					"will_branch_change": will_branch_change,
+					"current_branch": current_branch,
+					"update_available": not current_hash or current_hash != next_hash,
+				}
+			)
+		return apps
+
+	def get_next_apps(self, current_apps):
+		marketplace_app_sources = self.get_marketplace_app_sources()
+		current_team = get_current_team()
+		only_approved_for_sources = [
+			source
+			for source in marketplace_app_sources
+			if frappe.db.get_value("App Source", source, "team") != current_team
+		]
+
+		next_apps = []
+		for app in self.apps:
+			# TODO: Optimize using get_value, maybe?
+			latest_app_release = None
+
+			if app.source in only_approved_for_sources:
+				latest_app_release = get_last_doc(
+					"App Release", {"source": app.source, "status": "Approved"}
+				)
+			else:
+				latest_app_release = get_last_doc("App Release", {"source": app.source})
+
+			# No release exists for this source
+			if not latest_app_release:
+				continue
+
+			bench_app = find(current_apps, lambda x: x.app == app.app)
+
+			upcoming_release = (
+				latest_app_release.name if latest_app_release else bench_app.release
+			)
+			upcoming_hash = latest_app_release.hash if latest_app_release else bench_app.hash
+
+			next_apps.append(
+				frappe._dict(
+					{
+						"app": app.app,
+						"source": app.source,
+						"release": upcoming_release,
+						"hash": upcoming_hash,
+						"title": app.title,
+					}
+				)
+			)
+
+		return next_apps
+
+	def get_removed_apps(self):
+		# Apps that were removed from the release group
+		# but were in the last deployed bench
+		removed_apps = []
+
+		latest_bench = get_last_doc("Bench", {"group": self.name, "status": "Active"})
+
+		if latest_bench:
+			bench_apps = latest_bench.apps
+
+			for bench_app in bench_apps:
+				if not find(self.apps, lambda rg_app: rg_app.app == bench_app.app):
+					app_title = frappe.db.get_value("App", bench_app.app, "title")
+					removed_apps.append({"name": bench_app.app, "title": app_title})
+
+		return removed_apps
 
 	def add_app(self, source):
 		self.append("apps", {"source": source.name, "app": source.app})
@@ -151,12 +305,12 @@ class ReleaseGroup(Document):
 		if required_app_source:
 			required_app_source = required_app_source[0]
 		else:
-			version = frappe.get_all(
+			versions = frappe.get_all(
 				"App Source Version", filters={"parent": current_app_source.name}, pluck="version"
-			)[0]
+			)
 
 			required_app_source = create_app_source(
-				app, current_app_source.repository_url, to_branch, version
+				app, current_app_source.repository_url, to_branch, versions
 			)
 
 			required_app_source.github_installation_id = (

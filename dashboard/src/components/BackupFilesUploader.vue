@@ -116,7 +116,7 @@ export default {
 						'Database backup file should end with the name "database.sql.gz"'
 					);
 				}
-				if (file.type != 'application/x-gzip') {
+				if (!['application/x-gzip', 'application/gzip'].includes(file.type)) {
 					throw new Error('Invalid database backup file');
 				}
 			}

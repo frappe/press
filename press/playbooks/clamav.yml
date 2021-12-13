@@ -1,0 +1,9 @@
+---
+- name: Install ClamAV
+  hosts: all
+  become_user: root
+  become_method: sudo
+  gather_facts: yes
+  roles:
+    - role: clamav
+

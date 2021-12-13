@@ -30,7 +30,7 @@
 				/>
 			</div>
 		</div>
-		<div>
+		<div v-if="publicApps.length || privateApps.length">
 			<h2 class="text-lg font-semibold">
 				Select apps to install
 			</h2>
@@ -101,6 +101,14 @@
 				</div>
 			</div>
 		</div>
+		<div v-if="selectedApps.includes('erpnext')">
+			<Input
+				type="checkbox"
+				label="I am okay if my details are shared with local certified Partner"
+				@change="val => $emit('update:shareDetailsConsent', val)"
+				:value="shareDetailsConsent"
+			/>
+		</div>
 	</div>
 </template>
 <script>
@@ -118,7 +126,8 @@ export default {
 		'selectedApps',
 		'selectedGroup',
 		'privateBench',
-		'selectedRegion'
+		'selectedRegion',
+		'shareDetailsConsent'
 	],
 	data: function() {
 		return {

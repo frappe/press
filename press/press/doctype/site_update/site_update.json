@@ -21,7 +21,8 @@
   "column_break_14",
   "update_job",
   "recover_job",
-  "cause_of_failure_is_resolved"
+  "cause_of_failure_is_resolved",
+  "skipped_failing_patches"
  ],
  "fields": [
   {
@@ -165,11 +166,18 @@
    "fieldtype": "Select",
    "label": "Difference Deploy Type",
    "options": "\nPull\nMigrate"
+  },
+  {
+   "default": "0",
+   "fieldname": "skipped_failing_patches",
+   "fieldtype": "Check",
+   "label": "Skipped Failing Patches",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-02-15 20:23:44.617155",
+ "modified": "2021-10-25 16:45:27.062194",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Update",
