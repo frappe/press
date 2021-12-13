@@ -316,3 +316,10 @@ def get_latest_unpaid_invoice():
 def team_has_balance_for_invoice(prepaid_mode_invoice):
 	team = get_current_team(get_doc=True)
 	return team.get_balance() >= prepaid_mode_invoice.amount_due
+
+
+@frappe.whitelist()
+def get_partner_credits():
+	team = get_current_team(get_doc=True)
+	available_credits = team.get_available_partner_credits()
+	return fmt_money(available_credits, 2, team.currency)
