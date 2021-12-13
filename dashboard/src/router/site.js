@@ -13,7 +13,13 @@ export default [
 	{
 		path: '/sites/new',
 		name: 'NewSite',
-		component: () => import('../views/NewSite/Index.vue'),
+		component: () => import('../views/NewSite.vue'),
+		props: true
+	},
+	{
+		path: '/:bench/new',
+		name: 'NewBenchSite',
+		component: () => import('../views/NewSite.vue'),
 		props: true
 	},
 	{
@@ -65,6 +71,11 @@ export default [
 			{
 				path: 'request-logs',
 				component: () => import('../views/SiteRequestLogs.vue'),
+				props: true
+			},
+			{
+				path: 'auto-update',
+				component: () => import('../views/SiteAutoUpdate.vue'),
 				props: true
 			}
 		]

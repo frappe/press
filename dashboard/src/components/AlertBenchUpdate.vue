@@ -16,8 +16,15 @@
 				Show updates
 			</Button>
 		</template>
-		<Dialog title="Following updates are available" v-model="showDeployDialog">
-			<AppUpdates :apps="deployInformation.apps" />
+		<Dialog
+			title="Select the apps you want to update"
+			v-model="showDeployDialog"
+		>
+			<BenchAppUpdates
+				:apps="deployInformation.apps"
+				:selectedApps.sync="selectedApps"
+				:removedApps="deployInformation.removed_apps"
+			/>
 			<ErrorMessage class="mt-2" :error="$resources.deploy.error" />
 			<template #actions>
 				<Button
@@ -32,16 +39,17 @@
 	</Alert>
 </template>
 <script>
-import AppUpdates from './AppUpdates.vue';
+import BenchAppUpdates from './BenchAppUpdates.vue';
 export default {
 	name: 'AlertBenchUpdate',
 	props: ['bench'],
 	components: {
-		AppUpdates
+		BenchAppUpdates
 	},
 	data() {
 		return {
-			showDeployDialog: false
+			showDeployDialog: false,
+			selectedApps: []
 		};
 	},
 	resources: {
@@ -55,10 +63,28 @@ export default {
 			};
 		},
 		deploy() {
+			let appsToIgnore = [];
+			if (this.deployInformation) {
+				appsToIgnore = Array(
+					this.deployInformation.apps.filter(
+						app => app.update_available && !this.selectedApps.includes(app.app)
+					)
+				);
+			}
+
 			return {
 				method: 'press.api.bench.deploy',
 				params: {
-					name: this.bench.name
+					name: this.bench.name,
+					apps_to_ignore: appsToIgnore
+				},
+				validate() {
+					if (
+						this.selectedApps.length === 0 &&
+						this.deployInformation.removed_apps.length === 0
+					) {
+						return 'You must select atleast 1 app to proceed with update.';
+					}
 				},
 				onSuccess(candidate) {
 					this.$router.push(`/benches/${this.bench.name}/deploys/${candidate}`);

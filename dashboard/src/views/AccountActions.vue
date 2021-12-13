@@ -1,5 +1,5 @@
 <template>
-	<Card title="Team Actions" subtitle="Actions available for your team">
+	<Card title="Account Actions" subtitle="Actions available for your account">
 		<!-- TODO: Edit Events -->
 		<ListItem
 			title="Become Marketplace Developer"
@@ -13,34 +13,77 @@
 			</template>
 		</ListItem>
 		<ListItem
-			title="Delete Account"
-			subtitle="Delete your account and personal data"
+			v-if="$account.team.enabled"
+			title="Disable Account"
+			subtitle="Disable your account and stop billing"
 		>
 			<template #actions>
-				<Button @click="showTeamDeletionDialog = true">
-					<span class="text-red-600">Delete</span>
+				<Button @click="showDisableAccountDialog = true">
+					<span class="text-red-600">Disable</span>
 				</Button>
 			</template>
 		</ListItem>
-		<Dialog title="Delete Team" v-model="showTeamDeletionDialog">
-			<p class="text-base">
-				With this, all of your and your team members' personal data will be
-				deleted. By proceeding with this, you will delete the accounts of the
-				members in your team, if they aren't a part of any other team.
+		<ListItem
+		v-if="!$account.team.enabled"
+			title="Enable Account"
+			subtitle="Enable your account and resume billing"
+		>
+			<template #actions>
+				<Button @click="showEnableAccountDialog = true">
+					Enable
+				</Button>
+			</template>
+		</ListItem>
+		<Dialog title="Disable Account" v-model="showDisableAccountDialog">
+			<p class="text-base prose">
+				By confirming this action:
+				<ul>
+					<li>Your account will be disabled</li>
+					<li>Your active sites will be suspended immediately and will be deleted after a week.</li>
+					<li>Your account billing will be stopped</li>
+				</ul>
+				You can enable your account later anytime. Do you want to
+				continue?
 			</p>
-			<ErrorMessage class="mt-2" :error="$resources.deleteTeam.error" />
+			<ErrorMessage class="mt-2" :error="$resources.disableAccount.error" />
 
 			<template slot="actions">
-				<Button class="ml-3" @click="showTeamDeletionDialog = false">
+				<Button @click="showDisableAccountDialog = false">
 					Cancel
 				</Button>
 				<Button
 					class="ml-3"
 					type="danger"
-					@click="$resources.deleteTeam.submit()"
-					:loading="$resources.deleteTeam.loading"
+					@click="$resources.disableAccount.submit()"
+					:loading="$resources.disableAccount.loading"
 				>
-					Delete Account
+					Disable Account
+				</Button>
+			</template>
+		</Dialog>
+		<Dialog title="Enable Account" v-model="showEnableAccountDialog">
+			<p class="text-base prose">
+				By confirming this action:
+				<ul>
+					<li>Your account will be enabled</li>
+					<li>Your suspended sites will become active</li>
+					<li>Your account billing will be resumed</li>
+				</ul>
+				Do you want to continue?
+			</p>
+			<ErrorMessage class="mt-2" :error="$resources.enableAccount.error" />
+
+			<template slot="actions">
+				<Button @click="showEnableAccountDialog = false">
+					Cancel
+				</Button>
+				<Button
+					class="ml-3"
+					type="primary"
+					@click="$resources.enableAccount.submit()"
+					:loading="$resources.enableAccount.loading"
+				>
+					Enable Account
 				</Button>
 			</template>
 		</Dialog>
@@ -50,17 +93,31 @@
 export default {
 	name: 'AccountActions',
 	resources: {
-		deleteTeam() {
-			return {
-				method: 'press.api.account.request_team_deletion',
-				onSuccess() {
-					this.notifySuccess();
-					this.showTeamDeletionDialog = false;
-				},
-				onError() {
-					this.notifyFailure();
-				}
-			};
+		disableAccount: {
+			method: 'press.api.account.disable_account',
+			onSuccess() {
+				this.$notify({
+					title: 'Account disabled',
+					message: 'Your account was disabled successfully',
+					icon: 'check',
+					color: 'green'
+				});
+				this.$account.fetchAccount();
+				this.showDisableAccountDialog = false;
+			}
+		},
+		enableAccount: {
+			method: 'press.api.account.enable_account',
+			onSuccess() {
+				this.$notify({
+					title: 'Account enabled',
+					message: 'Your account was enabled successfully',
+					icon: 'check',
+					color: 'green'
+				});
+				this.$account.fetchAccount();
+				this.showEnableAccountDialog = false;
+			}
 		},
 		isDeveloperAccountAllowed() {
 			return {
@@ -84,30 +141,12 @@ export default {
 	},
 	data() {
 		return {
-			showTeamDeletionDialog: false,
+			showDisableAccountDialog: false,
+			showEnableAccountDialog: false,
 			showBecomePublisherButton: false
 		};
 	},
 	methods: {
-		notifySuccess() {
-			this.$notify({
-				title: 'Deletion request recorded',
-				message: 'Verify request from email to start the process',
-				icon: 'check',
-				color: 'green'
-			});
-		},
-		notifyFailure() {
-			this.$notify({
-				title: 'Deletion request not recorded',
-				message:
-					this.$resources.deleteTeam.error == 'Internal Server Error'
-						? 'An error occured. Please contact Support'
-						: '',
-				icon: 'check',
-				color: 'red'
-			});
-		},
 		confirmPublisherAccount() {
 			this.$confirm({
 				title: 'Become a marketplace app developer?',

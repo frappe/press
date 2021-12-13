@@ -4,11 +4,9 @@
 			<h3 class="text-base font-medium text-gray-900">
 				{{ title }}
 			</h3>
-			<div class="mt-1" v-if="subtitle || description || $slots.subtitle">
-				<template v-if="subtitle || description">
-					<span class="text-base text-gray-600">
-						{{ subtitle || description }}
-					</span>
+			<div class="mt-1" v-if="secondaryText || $slots.subtitle">
+				<template v-if="secondaryText">
+					<span class="text-base text-gray-600" v-html="secondaryText" />
 				</template>
 				<slot v-if="$slots.subtitle" name="subtitle" />
 			</div>
@@ -19,6 +17,12 @@
 <script>
 export default {
 	name: 'ListItem',
-	props: ['title', 'subtitle', 'description']
+	props: ['title', 'subtitle', 'description'],
+	computed: {
+		secondaryText() {
+			let text = this.subtitle || this.description || '';
+			return text.replace('\n', '<br>');
+		}
+	}
 };
 </script>

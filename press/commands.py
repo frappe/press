@@ -15,6 +15,12 @@ def start_ngrok_and_set_webhook(context):
 	frappe.init(site=site)
 	frappe.connect()
 
+	# Set ngrok auth token
+	auth_token = frappe.db.get_single_value("Press Settings", "ngrok_auth_token")
+
+	if auth_token:
+		ngrok.set_auth_token(auth_token)
+
 	port = frappe.conf.http_port or frappe.conf.webserver_port
 	tunnel = ngrok.connect(port, host_header=site)
 	public_url = tunnel.public_url

@@ -1,5 +1,7 @@
+import re
 import frappe
 import stripe
+
 from frappe.utils import fmt_money
 from press.utils import get_current_team
 from press.exceptions import CentralServerNotSet, FrappeioServerNotSet
@@ -45,6 +47,10 @@ states_with_tin = {
 	"Uttarakhand": "05",
 	"West Bengal": "19",
 }
+
+GSTIN_FORMAT = re.compile(
+	"^[0-9]{2}[A-Z]{4}[0-9A-Z]{1}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}[1-9A-Z]{1}[0-9A-Z]{1}$"
+)
 
 
 def format_stripe_money(amount, currency):
@@ -153,3 +159,23 @@ def get_stripe():
 
 def convert_stripe_money(amount):
 	return amount / 100
+
+
+def validate_gstin_check_digit(gstin, label="GSTIN"):
+	""" Function to validate the check digit of the GSTIN."""
+	factor = 1
+	total = 0
+	code_point_chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	mod = len(code_point_chars)
+	input_chars = gstin[:-1]
+	for char in input_chars:
+		digit = factor * code_point_chars.find(char)
+		digit = (digit // mod) + (digit % mod)
+		total += digit
+		factor = 2 if factor == 1 else 1
+	if gstin[-1] != code_point_chars[((mod - (total % mod)) % mod)]:
+		frappe.throw(
+			"""Invalid {0}! The check digit validation has failed. Please ensure you've typed the {0} correctly.""".format(
+				label
+			)
+		)

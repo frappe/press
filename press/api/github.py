@@ -2,15 +2,15 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
+import re
+import jwt
 import frappe
 import requests
-import jwt
-import re
 
-from datetime import datetime, timedelta
 from pathlib import Path
-from press.utils import get_current_team, log_error
 from base64 import b64decode
+from datetime import datetime, timedelta
+from press.utils import get_current_team, log_error
 
 
 @frappe.whitelist(allow_guest=True, xss_safe=True)
@@ -185,6 +185,8 @@ def app(installation, owner, repository, branch):
 	tree = _generate_files_tree(contents["tree"])
 	app_name = None
 	title = None
+	reason_for_invalidation = ""
+
 	if "setup.py" in tree and "requirements.txt" in tree:
 		for directory, files in tree.items():
 			if files and ("hooks.py" in files) and ("patches.txt" in files):
@@ -199,9 +201,19 @@ def app(installation, owner, repository, branch):
 				if match:
 					title = match.group(1)
 				break
+			else:
+				reason_for_invalidation = (
+					f"Files {frappe.bold('hooks.py or patches.txt')} does not exist"
+					f" inside {directory}/{directory} directory."
+				)
+	else:
+		reason_for_invalidation = (
+			f"Files {frappe.bold('setup.py or requirements.txt')} does not exist in app"
+			" directory."
+		)
 
 	if not (app_name and title):
-		frappe.throw("Not a valid Frappe App!")
+		frappe.throw(f"Not a valid Frappe App! {reason_for_invalidation}")
 
 	return {"name": app_name, "title": title}
 

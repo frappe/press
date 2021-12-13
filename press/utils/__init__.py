@@ -51,6 +51,14 @@ def get_current_team(get_doc=False):
 	return team
 
 
+def get_app_tag(repository, repository_owner, hash):
+	return frappe.db.get_value(
+		"App Tag",
+		{"repository": repository, "repository_owner": repository_owner, "hash": hash},
+		"tag",
+	)
+
+
 def get_default_team_for_user(user):
 	"""Returns the Team if user has one, or returns the Team to which they belong"""
 	if frappe.db.exists("Team", user):

@@ -96,3 +96,10 @@
   mysql_user:
     name: ""
     state: absent
+
+- name: Add Frappe User to MySQL Group
+  user:
+    name: frappe
+    groups:
+      - mysql
+    append: true

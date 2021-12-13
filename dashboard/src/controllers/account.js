@@ -20,19 +20,23 @@ export default new Vue({
 			if (document.cookie.includes('user_id=Guest;')) {
 				return;
 			}
-			let result = await call('press.api.account.get');
-			this.user = result.user;
-			this.team = result.team;
-			this.teams = result.teams;
-			this.team_members = result.team_members;
-			this.onboarding = result.onboarding;
-			this.balance = result.balance;
+			try {
+				let result = await call('press.api.account.get');
+				this.user = result.user;
+				this.team = result.team;
+				this.teams = result.teams;
+				this.team_members = result.team_members;
+				this.onboarding = result.onboarding;
+				this.balance = result.balance;
+			} catch (e) {
+				localStorage.removeItem('current_team');
+			}
 		},
 		hasRole(role) {
 			let roles = this.user.roles.map(d => d.role);
 			return roles.includes(role);
 		},
-		async switchToTeam(team) {
+		async switchTeam(team) {
 			if (team === this.team.name) {
 				return;
 			}
@@ -40,6 +44,9 @@ export default new Vue({
 			this.team = result.team;
 			this.team_members = result.team_members;
 			localStorage.setItem('current_team', team);
+		},
+		async switchToTeam(team) {
+			await this.switchTeam(team);
 			window.location.reload();
 		}
 	},

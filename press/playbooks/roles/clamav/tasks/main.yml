@@ -1,0 +1,31 @@
+- name: Update APT Cache
+  apt:
+    update_cache: yes
+
+- name: Install ClamAV and related packages
+  apt:
+    pkg:
+      - clamav
+      - clamav-base
+    state:
+      present
+
+- name: Configure freshclam
+  replace:
+    dest: /etc/clamav/freshclam.conf
+    regexp: '^{{ item.source_name }}'
+    replace: '{{ item.target_name }}'
+  with_items:
+    - { source_name: 'Example', target_name: '#Example' }
+    - { source_name: '#UpdateLogFile', target_name: 'UpdateLogFile' }
+    - { source_name: '#DatabaseDirectory', target_name: 'DatabaseDirectory' }
+    - { source_name: '#LogTime', target_name: 'LogTime' }
+
+- name: Disable automatic update of virus definitions
+  service:
+    name: clamav-freshclam
+    state: stopped
+    enabled: no
+
+- name: Update freshclam
+  command: freshclam

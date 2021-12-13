@@ -23,7 +23,6 @@ class AppRelease(Document):
 
 	def after_insert(self):
 		self.publish_created()
-		self.create_deploy_candidates()
 		self.create_release_differences()
 
 	def publish_created(self):
@@ -38,21 +37,6 @@ class AppRelease(Document):
 	def get_commit_link(self) -> str:
 		"""Return the commit URL for this app release"""
 		return f"{self.get_source().repository_url}/commit/{self.hash}"
-
-	def create_deploy_candidates(self):
-		candidates = frappe.get_all(
-			"Deploy Candidate App",
-			fields=["parent"],
-			filters={"app": self.app, "release": self.name},
-		)
-		if candidates:
-			return
-
-		for group_app in frappe.get_all(
-			"Release Group App", fields=["parent"], filters={"app": self.app},
-		):
-			group = frappe.get_doc("Release Group", group_app.parent)
-			group.create_deploy_candidate()
 
 	@frappe.whitelist()
 	def clone(self):

@@ -167,6 +167,7 @@ class Bench(Document):
 					limit_page_length=1,
 					order_by="creation desc",
 					pluck="creation",
+					ignore_ifnull=True,
 				)[0].timestamp()
 			)
 		except IndexError:

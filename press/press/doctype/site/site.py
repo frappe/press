@@ -1,32 +1,30 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2019, Frappe and contributors
+# Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
-from __future__ import unicode_literals
-
-import json
 import re
-from collections import defaultdict
-from datetime import date, datetime, timedelta
-from typing import Any, Dict, List
-
+import json
 import boto3
-import dateutil.parser
 import frappe
 import requests
+import dateutil.parser
+
+from typing import Any, Dict, List
+from collections import defaultdict
+
 from frappe.core.utils import find
-from frappe.frappeclient import FrappeClient
 from frappe.model.document import Document
+from frappe.frappeclient import FrappeClient
+from frappe.utils.password import get_decrypted_password
 from frappe.model.naming import append_number_if_name_exists
 from frappe.utils import cint, convert_utc_to_user_timezone, cstr, get_datetime
-from frappe.utils.password import get_decrypted_password
 
 from press.agent import Agent
 from press.api.site import check_dns
 from press.press.doctype.plan.plan import get_plan_config
+from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.utils import convert, get_client_blacklisted_keys, guess_type, log_error
-from press.overrides import get_permission_query_conditions_for_doctype
 
 
 class Site(Document):
@@ -45,10 +43,13 @@ class Site(Document):
 		self.validate_installed_apps()
 		self.validate_host_name()
 		self.validate_site_config()
+		self.validate_auto_update_fields()
 
 	def before_insert(self):
 		# initialize site.config based on plan
 		self._update_configuration(self.get_plan_config(), save=False)
+		if not self.notify_email:
+			self.notify_email = frappe.db.get_value("Team", self.team, "notify_email")
 
 	def validate_site_name(self):
 		site_regex = r"^[a-z0-9][a-z0-9-]*[a-z0-9]$"
@@ -103,6 +104,11 @@ class Site(Document):
 		# create an agent request if config has been updated
 		# if not self.is_new() and self.has_value_changed("config"):
 		# 	Agent(self.server).update_site_config(self)
+
+	def validate_auto_update_fields(self):
+		# Validate day of month
+		if not (1 <= self.update_on_day_of_month <= 31):
+			frappe.throw("Day of the month must be between 1 and 31 (included)!")
 
 	def on_update(self):
 		if self.status == "Active" and self.has_value_changed("host_name"):
@@ -258,7 +264,7 @@ class Site(Document):
 	def create_agent_request(self):
 		agent = Agent(self.server)
 		if self.remote_database_file and self.remote_private_file and self.remote_public_file:
-			agent.new_site_from_backup(self)
+			agent.new_site_from_backup(self, skip_failing_patches=self.skip_failing_patches)
 		else:
 			agent.new_site(self)
 
@@ -278,12 +284,41 @@ class Site(Document):
 		self.save()
 
 	@frappe.whitelist()
-	def migrate(self):
+	def migrate(self, skip_failing_patches=False):
 		log_site_activity(self.name, "Migrate")
 		agent = Agent(self.server)
-		agent.migrate_site(self)
+		agent.migrate_site(self, skip_failing_patches=skip_failing_patches)
 		self.status = "Pending"
 		self.save()
+
+	@frappe.whitelist()
+	def last_migrate_failed(self):
+		"""Returns `True` if the last site update's(`Migrate` deploy type) migrate site job step failed, `False` otherwise"""
+
+		site_update = frappe.get_all(
+			"Site Update",
+			filters={"site": self.name},
+			fields=["status", "update_job", "deploy_type"],
+			limit=1,
+			order_by="creation desc",
+		)
+
+		if not (site_update and site_update[0].deploy_type == "Migrate"):
+			return False
+		site_update = site_update[0]
+
+		if site_update.status == "Recovered":
+			migrate_site_step = frappe.get_all(
+				"Agent Job Step",
+				filters={"step_name": "Migrate Site", "agent_job": site_update.update_job},
+				fields=["status"],
+				limit=1,
+			)
+
+			if migrate_site_step and migrate_site_step[0].status == "Failure":
+				return True
+
+		return False
 
 	@frappe.whitelist()
 	def restore_tables(self):
@@ -300,7 +335,7 @@ class Site(Document):
 		agent.clear_site_cache(self)
 
 	@frappe.whitelist()
-	def restore_site(self):
+	def restore_site(self, skip_failing_patches=False):
 		if not frappe.get_doc("Remote File", self.remote_database_file).exists():
 			raise Exception(
 				"Remote File {0} is unavailable on S3".format(self.remote_database_file)
@@ -308,7 +343,7 @@ class Site(Document):
 
 		log_site_activity(self.name, "Restore")
 		agent = Agent(self.server)
-		agent.restore_site(self)
+		agent.restore_site(self, skip_failing_patches=skip_failing_patches)
 		self.status = "Pending"
 		self.save()
 
@@ -324,12 +359,18 @@ class Site(Document):
 		).insert()
 
 	@frappe.whitelist()
-	def schedule_update(self):
+	def schedule_update(self, skip_failing_patches=False):
 		log_site_activity(self.name, "Update")
 		self.status_before_update = self.status
 		self.status = "Pending"
 		self.save()
-		frappe.get_doc({"doctype": "Site Update", "site": self.name}).insert()
+		frappe.get_doc(
+			{
+				"doctype": "Site Update",
+				"site": self.name,
+				"skipped_failing_patches": skip_failing_patches,
+			}
+		).insert()
 
 	def reset_previous_status(self):
 		self.status = self.status_before_update
@@ -343,6 +384,7 @@ class Site(Document):
 				log_error("Site Status Fetch Error", site=self.name)
 		self.save()
 
+	@frappe.whitelist()
 	def add_domain(self, domain):
 		domain = domain.lower()
 		if check_dns(self.name, domain):
@@ -498,6 +540,10 @@ class Site(Document):
 		)
 		self.disable_subscription()
 
+	@frappe.whitelist()
+	def cleanup_after_archive(self):
+		site_cleanup_after_archive(self.name)
+
 	def delete_offsite_backups(self):
 		from press.press.doctype.remote_file.remote_file import delete_remote_backup_objects
 
@@ -526,8 +572,8 @@ class Site(Document):
 
 		return delete_remote_backup_objects(sites_remote_files)
 
-	def login(self):
-		log_site_activity(self.name, "Login as Administrator")
+	def login(self, reason=None):
+		log_site_activity(self.name, "Login as Administrator", reason=reason)
 		return self.get_login_sid()
 
 	def get_login_sid(self):
@@ -726,7 +772,7 @@ class Site(Document):
 		self._create_initial_site_plan_change(plan)
 
 	def update_subscription(self):
-		if self.status in ["Archived", "Broken"]:
+		if self.status in ["Archived", "Broken", "Suspended"]:
 			self.disable_subscription()
 		else:
 			self.enable_subscription()
@@ -886,7 +932,7 @@ class Site(Document):
 	def can_charge_for_subscription(self):
 		today = frappe.utils.getdate()
 		return (
-			self.status not in ["Archived", "Broken"]
+			self.status not in ["Archived", "Broken", "Suspended"]
 			and self.team
 			and self.team != "Administrator"
 			and not self.free
@@ -929,7 +975,7 @@ class Site(Document):
 			{"document_type": self.doctype, "document_name": self.name, "Amount": (">", 0)},
 			pluck="parent",
 		)
-		today = date.today()
+		today = frappe.utils.getdate()
 		today_last_month = today.replace(month=today.month - 1)
 		last_month_last_date = frappe.utils.get_last_day(today_last_month)
 		return frappe.db.exists(
@@ -946,13 +992,17 @@ class Site(Document):
 	def get_sites_for_backup(cls, interval: int):
 		sites = cls.get_sites_without_backup_in_interval(interval)
 		return frappe.get_all(
-			"Site", {"name": ("in", sites)}, ["name", "timezone", "server"], order_by="server"
+			"Site",
+			{"name": ("in", sites)},
+			["name", "timezone", "server"],
+			order_by="server",
+			ignore_ifnull=True,
 		)
 
 	@classmethod
 	def get_sites_without_backup_in_interval(cls, interval: int) -> List[str]:
 		"""Return active sites that haven't had backup taken in interval hours."""
-		interval_hrs_ago = datetime.now() - timedelta(hours=interval)
+		interval_hrs_ago = frappe.utils.add_to_date(None, hours=-interval)
 		all_sites = set(
 			frappe.get_all(
 				"Site",
@@ -967,8 +1017,21 @@ class Site(Document):
 	def get_sites_with_backup_in_interval(cls, interval_hrs_ago) -> List[str]:
 		return frappe.get_all(
 			"Site Backup",
-			{"creation": (">=", interval_hrs_ago), "owner": "Administrator"},
+			{
+				"creation": (">=", interval_hrs_ago),
+				"status": ("!=", "Failure"),
+				"owner": "Administrator",
+			},
 			pluck="site",
+			ignore_ifnull=True,
+		)
+
+	@classmethod
+	def exists(cls, subdomain) -> bool:
+		"""Check if subdomain is available"""
+		return bool(
+			frappe.db.exists("Blocked Domain", {"name": subdomain})
+			or frappe.db.exists("Site", {"subdomain": subdomain, "status": ("!=", "Archived")})
 		)
 
 

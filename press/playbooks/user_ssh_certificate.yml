@@ -1,0 +1,6 @@
+- name: Configure server for login with ssh certificate
+  hosts: all
+  become: yes
+  become_user: root
+  roles:
+    - role: user_ssh_certificate
