@@ -16,28 +16,30 @@ def email_ping():
 @frappe.whitelist(allow_guest=True)
 def setup(**data):
 	if data["key"] == "fcmailfree100":
+		email, password = frappe.db.get_value(
+			"Press Settings", None, ["default_outgoing_id", "default_outgoing_pass"]
+		)
 		return {
-			"id": "postmaster@sandbox7b75d637c8164b9eac236ab5a486feae.mailgun.org",
-			"pass": "ae06ff0d9c32b9e6a4ed4163d52e982f-2ac825a1-66ef7b67",
+			"id": email,
+			"pass": password,
 		}
+	return {}
 
 
 def validate_plan(secret_key, site):
 	"""
 	check if subscription is active on marketplace and get activation date
 	"""
-	# ToDo: verify this key from marketplace
-	# ToDo: check plan activation date from marketplace
-	active = 1 if secret_key == "fcmailfree100" else 0
-	# if active:
-	# count = frappe.db.count(
-	# "QMail Log", filters={"site": site, "status": "delivered", "date": [">=", plan_activation_date]}
-	# )
+	# ToDo: verify this key and validate plan from marketplace
+	if secret_key == "fcmailfree100":
+		count = frappe.db.count("Mail Log", filters={"site": site, "status": "delivered"})
+		print(count)
+		if count < 100:
+			return True
+	elif secret_key == "fcmailfrappeteam$1152":
+		return True
 
-	# if count < int(active[0]):
-	# return True
-
-	return True if active else False
+	return False
 
 
 @frappe.whitelist(allow_guest=True)
@@ -83,19 +85,21 @@ def send_mail(**data):
 def send_mime_mail(**data):
 	files = frappe._dict(frappe.request.files)
 	data = json.loads(data["data"])
-	api_key, domain = frappe.db.get_value(
-		"Press Settings", None, ["mailgun_api_key", "root_domain"]
-	)
 
-	resp = requests.post(
-		f"https://api.mailgun.net/v3/{domain}/messages.mime",
-		auth=("api", f"{api_key}"),
-		data={"to": data["recipients"], "v:sk_mail": data["sk_mail"]},
-		files={"message": files["mime"].read()},
-	)
+	if validate_plan(data["sk_mail"], data["site"]):
+		api_key, domain = frappe.db.get_value(
+			"Press Settings", None, ["mailgun_api_key", "root_domain"]
+		)
 
-	if resp.status_code == 200:
-		return "Sending"
+		resp = requests.post(
+			f"https://api.mailgun.net/v3/{domain}/messages.mime",
+			auth=("api", f"{api_key}"),
+			data={"to": data["recipients"], "v:sk_mail": data["sk_mail"]},
+			files={"message": files["mime"].read()},
+		)
+
+		if resp.status_code == 200:
+			return "Sending"
 
 	return "Error"
 

@@ -121,7 +121,9 @@
   "max_allowed_screenshots",
   "mailgun_settings_section",
   "mailgun_api_key",
-  "root_domain"
+  "root_domain",
+  "default_outgoing_id",
+  "default_outgoing_pass"
  ],
  "fields": [
   {
@@ -773,11 +775,21 @@
    "fieldname": "mailgun_api_key",
    "fieldtype": "Data",
    "label": "Api Key"
+  },
+  {
+   "fieldname": "default_outgoing_id",
+   "fieldtype": "Data",
+   "label": "Default outgoing id"
+  },
+  {
+   "fieldname": "default_outgoing_pass",
+   "fieldtype": "Data",
+   "label": "Default outgoing pass"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2021-10-28 13:18:21.031024",
+ "modified": "2021-12-13 10:59:58.266623",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
