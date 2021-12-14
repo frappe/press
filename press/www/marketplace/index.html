@@ -16,16 +16,17 @@
 		<h2 class="text-4xl font-bold sr-only">Apps</h2>
 		<div class="grid grid-cols-1 gap-8 mt-8 md:grid-cols-3 lg:grid-cols-4 sm:grid-cols-2">
 			{%- for app in apps -%}
-			<a
-				href="/{{ app.route }}"
+			<a href="/{{ app.route }}"
 				class="block p-6 border border-gray-100 rounded-lg shadow cursor-pointer hover:shadow-lg focus:outline-none focus:border-blue-500 focus:shadow-outline">
-				<img
-					src="{{ app.image }}"
-					class="w-10 h-10 border border-gray-200 rounded-lg" />
+				<img src="{{ app.image }}" class="w-10 h-10 border border-gray-200 rounded-lg" />
 				<h3 class="mt-4 font-semibold">{{ app.title }}</h3>
 				<p class="mt-2 text-base text-gray-600 line-clamp">
 					{{ app.description }}
 				</p>
+				<span class="flex flex-row text-sm mt-2 text-gray-600">
+					<i class="w-4 h-4 mr-2" data-feather="download"></i>
+					<span>{{ app.total_installs }} {{ 'install' if app.total_installs == 1 else 'installs' }}</span>
+				</span>
 			</a>
 			{%- endfor -%}
 		</div>
