@@ -4,7 +4,7 @@
 			title="Usage"
 			subtitle="Amount so far based on the usage of your sites"
 		>
-			<template v-if="!$account.team.erpnext_partner" #actions>
+			<template #actions>
 				<Button @click="showChangeModeDialog = true">
 					Change Payment Mode
 				</Button>
