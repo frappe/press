@@ -477,7 +477,7 @@ class Team(Document):
 			res = response.json()
 			message = res.get("message")
 
-			if message.get("credit_balance"):
+			if message.get("credit_balance") is not None:
 				return message.get("credit_balance")
 			else:
 				error_message = message.get("error_message")
