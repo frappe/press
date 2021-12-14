@@ -9,7 +9,14 @@ frappe.ui.form.on('Team', {
 		frm.add_custom_button('Enable Partner Privileges', () =>
 			frappe.confirm(
 				`Enable ERPNext Partner Privileges for ${frm.doc.name.bold()}? They will be allowed to create sites without adding a card and can transfer credits from ERPNext.com`,
-				() => frm.call('enable_erpnext_partner_privileges')
+				() =>
+					frm.call('enable_erpnext_partner_privileges').then(() =>
+						frappe.msgprint({
+							title: 'Note: Payment mode changed to `Partner Credits`',
+							message:
+								'Please make sure existing prepaid credits are taken care of.',
+						})
+					)
 			)
 		);
 
