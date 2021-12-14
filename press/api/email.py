@@ -24,7 +24,9 @@ def setup(**data):
 			"id": email,
 			"pass": password,
 		}
-	return {}
+
+	log_error("Mail App: Invalid request key", data=data)
+	return
 
 
 def validate_plan(secret_key, site):
