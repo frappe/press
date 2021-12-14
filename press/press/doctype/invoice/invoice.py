@@ -372,7 +372,7 @@ class Invoice(Document):
 		client = self.get_frappeio_connection()
 		response = client.session.post(
 			f"{client.url}/api/method/consume_credits_against_fc_invoice",
-			data={"invoice": self.as_json(),},
+			data={"invoice": self.as_json()},
 		)
 
 		if response.ok:
@@ -482,7 +482,7 @@ class Invoice(Document):
 			return
 		if self.amount_paid == 0:
 			return
-		if self.frappe_invoice:
+		if self.frappe_invoice or self.frappe_partner_order:
 			return
 
 		try:
