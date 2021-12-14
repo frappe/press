@@ -7,7 +7,7 @@
 		<Input
 			label="Select Payment Mode"
 			type="select"
-			:options="['Card', 'Prepaid Credits']"
+			:options="paymentModeOptions"
 			v-model="paymentMode"
 		/>
 		<p class="mt-2 text-base text-gray-600">
@@ -74,6 +74,12 @@ export default {
 				Card: `Your card will be charged for monthly subscription`,
 				'Prepaid Credits': `You will be charged from your account balance for monthly subscription`
 			}[this.paymentMode];
+		},
+		paymentModeOptions() {
+			if (this.$account.team.erpnext_partner) {
+				return ['Partner Credits', 'Card', 'Prepaid Credits'];
+			}
+			return ['Card', 'Prepaid Credits'];
 		}
 	}
 };
