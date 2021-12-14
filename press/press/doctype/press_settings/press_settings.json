@@ -119,7 +119,12 @@
   "agent_github_access_token",
   "marketplace_settings_section",
   "allow_developer_account",
-  "max_allowed_screenshots"
+  "max_allowed_screenshots",
+  "mailgun_settings_section",
+  "mailgun_api_key",
+  "root_domain",
+  "default_outgoing_id",
+  "default_outgoing_pass"
  ],
  "fields": [
   {
@@ -759,15 +764,40 @@
    "non_negative": 1
   },
   {
+   "fieldname": "mailgun_settings_section",
+   "fieldtype": "Section Break",
+   "label": "Mailgun Settings"
+  },
+  {
+   "fieldname": "root_domain",
+   "fieldtype": "Data",
+   "label": "Root Domain"
+  },
+  {
+   "fieldname": "mailgun_api_key",
+   "fieldtype": "Data",
+   "label": "Api Key"
+  },
+  {
+   "fieldname": "default_outgoing_id",
+   "fieldtype": "Data",
+   "label": "Default outgoing id"
+  },
+  {
    "description": "Sign up on ngrok.com to get one for free",
    "fieldname": "ngrok_auth_token",
    "fieldtype": "Data",
    "label": "Ngrok Auth Token"
+  },
+  {
+   "fieldname": "default_outgoing_pass",
+   "fieldtype": "Data",
+   "label": "Default outgoing pass"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2021-11-23 18:46:49.393521",
+ "modified": "2021-12-13 20:31:31.892207",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
