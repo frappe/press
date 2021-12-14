@@ -6,6 +6,7 @@ import frappe
 import secrets
 import json
 import requests
+from press.utils import log_error
 
 
 @frappe.whitelist(allow_guest=True)
@@ -40,45 +41,6 @@ def validate_plan(secret_key, site):
 		return True
 
 	return False
-
-
-@frappe.whitelist(allow_guest=True)
-def send_mail(**data):
-	files = frappe._dict(frappe.request.files)
-	data = json.loads(data["data"])
-
-	if validate_plan(data["sk_mail"], data["site"]):
-		api_key, domain = frappe.db.get_value(
-			"Press Settings", None, ["mailgun_api_key", "root_domain"]
-		)
-
-		content = "html" if data["html"] else "text"
-
-		attachments = []
-		if files:
-			for file_name, bin_data in files.items():
-				attachments.append(("attachment", (file_name, bin_data)))
-
-		requests.post(
-			f"https://api.mailgun.net/v3/{domain}/messages",
-			auth=("api", f"{api_key}"),
-			files=attachments,
-			data={
-				"v:site_name": f"{data['site']}",
-				"v:sk_mail": f"{data['sk_mail']}",
-				"v:message_id": f"{data['message_id']}",
-				"from": f"{data['sender']}",
-				"to": data["recipient"],
-				"cc": data["cc"],
-				"bcc": data["bcc"],
-				"subject": data["subject"],
-				content: data["content"],
-			},
-		)
-
-		return "Successful"
-
-	return "Error"
 
 
 @frappe.whitelist(allow_guest=True)
@@ -137,7 +99,7 @@ def event_log(**data):
 			data=data,
 		)
 	except Exception as e:
-		print(e)
+		log_error("Mail App: Email status update error", data=e)
 		return "Successful", 200
 
 	return "Successful", 200
