@@ -7,6 +7,7 @@ import frappe
 from frappe import _
 from typing import List
 from hashlib import blake2b
+from press.utils import log_error
 from frappe.utils import get_fullname
 from frappe.utils import get_url_to_form
 from press.telegram_utils import Telegram
@@ -38,10 +39,16 @@ class Team(Document):
 		if not self.referrer_id:
 			self.set_referrer_id()
 
+		self.set_partner_payment_mode()
+
 	def set_referrer_id(self):
 		h = blake2b(digest_size=4)
 		h.update(self.name.encode())
 		self.referrer_id = h.hexdigest()
+
+	def set_partner_payment_mode(self):
+		if self.erpnext_partner:
+			self.payment_mode = "Partner Credits"
 
 	def delete(self, force=False, workflow=False):
 		if force:
@@ -212,6 +219,7 @@ class Team(Document):
 	@frappe.whitelist()
 	def enable_erpnext_partner_privileges(self):
 		self.erpnext_partner = 1
+		self.payment_mode = "Partner Credits"
 		self.save(ignore_permissions=True)
 
 	def allocate_free_credits(self):
@@ -453,6 +461,36 @@ class Team(Document):
 		if not res:
 			return 0
 		return res[0]
+
+	@frappe.whitelist()
+	def get_available_partner_credits(self):
+		if not self.erpnext_partner:
+			frappe.throw(f"{self.name} is not a partner account.")
+
+		client = get_frappe_io_connection()
+		response = client.session.post(
+			f"{client.url}/api/method/partner_relationship_management.api.get_partner_credit_balance",
+			data={"email": self.name},
+		)
+
+		if response.ok:
+			res = response.json()
+			message = res.get("message")
+
+			if message.get("credit_balance") is not None:
+				return message.get("credit_balance")
+			else:
+				error_message = message.get("error_message")
+				log_error("Partner Credit Fetch Error", team=self.name, error_message=error_message)
+				frappe.throw(error_message)
+
+		else:
+			log_error(
+				"Problem fetching partner credit balance from frappe.io",
+				team=self.name,
+				response=response.text,
+			)
+			frappe.throw("Problem fetching partner credit balance.")
 
 	def is_partner_and_has_enough_credits(self):
 		return self.erpnext_partner and self.get_balance() > 0
