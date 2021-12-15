@@ -180,7 +180,7 @@ export default {
 			}
 
 			if (payment_mode === 'Partner Credits') {
-				return `You will be charged from your frappe.io Parner Credits on ${this.paymentDate}.`;
+				return `You will be charged from your Partner Credits on ${this.paymentDate}.`;
 			}
 			return '';
 		},
