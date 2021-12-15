@@ -37,7 +37,7 @@
 						<div class="ml-4">
 							<div class="text-base text-gray-600">
 								{{
-									$account.team.erpnext_partner
+									$account.team.payment_mode === 'Partner Credits'
 										? 'Available Partner Credits'
 										: 'Account Balance'
 								}}
@@ -51,15 +51,15 @@
 						</div>
 						<div class="ml-auto space-x-2">
 							<Button
-								v-if="!$account.team.erpnext_partner"
-								@click="showPrepaidCreditsDialog = true"
+								v-if="$account.team.payment_mode === 'Partner Credits'"
+								link="https://frappe.io/partners/buy_credits"
 								type="white"
 							>
 								Add Balance
 							</Button>
 							<Button
 								v-else
-								link="https://frappe.io/partners/buy_credits"
+								@click="showPrepaidCreditsDialog = true"
 								type="white"
 							>
 								Add Balance
@@ -132,7 +132,7 @@ export default {
 			this.$resources.upcomingInvoice.reload()
 		);
 
-		if (this.$account.team.erpnext_partner) {
+		if (this.$account.team.payment_mode === 'Partner Credits') {
 			this.$resources.availablePartnerCredits.submit();
 		}
 	},
@@ -144,7 +144,7 @@ export default {
 			return this.$resources.upcomingInvoice.data?.upcoming_invoice;
 		},
 		availableCredits() {
-			if (this.$account.team.erpnext_partner) {
+			if (this.$account.team.payment_mode === 'Partner Credits') {
 				return this.$resources.availablePartnerCredits.data;
 			}
 
