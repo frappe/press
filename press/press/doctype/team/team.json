@@ -168,7 +168,7 @@
    "fieldname": "payment_mode",
    "fieldtype": "Select",
    "label": "Payment Mode",
-   "options": "\nCard\nPrepaid Credits"
+   "options": "\nCard\nPrepaid Credits\nPartner Credits"
   },
   {
    "depends_on": "eval:doc.send_notifications;",
