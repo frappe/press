@@ -12,10 +12,28 @@
 				>
 					<div class="flex items-center mt-2">
 						<h1 class="text-2xl font-bold">{{ site.name }}</h1>
-						<Badge class="ml-4" :status="site.status">{{ site.status }}</Badge>
+						<Badge class="hidden md:inline-block ml-4" :status="site.status">{{
+							site.status
+						}}</Badge>
 						<div
 							v-if="regionInfo"
-							class="ml-2 self-end flex flex-row items-center px-3 py-1 text-xs font-medium rounded-md cursor-default text-yellow-700 bg-yellow-50"
+							class="hidden ml-2 self-end md:flex flex-row items-center px-3 py-1 text-xs font-medium rounded-md cursor-default text-yellow-700 bg-yellow-50"
+						>
+							<img
+								v-if="regionInfo.image"
+								class="h-4 mr-2"
+								:src="regionInfo.image"
+								:alt="`Flag of ${regionInfo.title}`"
+								:title="regionInfo.image"
+							/>
+							<p>{{ regionInfo.title }}</p>
+						</div>
+					</div>
+					<div class="md:hidden self-start flex flex-row">
+						<Badge :status="site.status">{{ site.status }}</Badge>
+						<div
+							v-if="regionInfo"
+							class="ml-2 self-start flex flex-row items-center px-3 py-1 text-xs font-medium rounded-md cursor-default text-yellow-700 bg-yellow-50"
 						>
 							<img
 								v-if="regionInfo.image"
