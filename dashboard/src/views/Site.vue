@@ -12,10 +12,13 @@
 				>
 					<div class="flex items-center mt-2">
 						<h1 class="text-2xl font-bold">{{ site.name }}</h1>
-						<Badge class="ml-4" :status="site.status">{{ site.status }}</Badge>
+						<Badge class="hidden md:inline-block ml-4" :status="site.status">{{
+							site.status
+						}}</Badge>
+
 						<div
 							v-if="regionInfo"
-							class="ml-2 self-end flex flex-row items-center px-3 py-1 text-xs font-medium rounded-md cursor-default text-yellow-700 bg-yellow-50"
+							class="hidden ml-2 self-end md:flex flex-row items-center px-3 py-1 text-xs font-medium rounded-md cursor-default text-yellow-700 bg-yellow-50"
 						>
 							<img
 								v-if="regionInfo.image"
@@ -27,28 +30,43 @@
 							<p>{{ regionInfo.title }}</p>
 						</div>
 					</div>
-					<div class="space-x-3">
+					<div class="mb-10 md:hidden flex flex-row justify-between">
+						<div class="flex flex-row">
+							<Badge :status="site.status">{{ site.status }}</Badge>
+							<div
+								v-if="regionInfo"
+								class="ml-2 flex flex-row items-center px-3 py-1 text-xs font-medium rounded-md cursor-default text-yellow-700 bg-yellow-50"
+							>
+								<img
+									v-if="regionInfo.image"
+									class="h-4 mr-2"
+									:src="regionInfo.image"
+									:alt="`Flag of ${regionInfo.title}`"
+									:title="regionInfo.image"
+								/>
+								<p>{{ regionInfo.title }}</p>
+							</div>
+						</div>
+
+						<!-- Only for mobile view -->
+						<Dropdown :items="siteActions" right>
+							<template v-slot="{ toggleDropdown }">
+								<Button icon-right="chevron-down" @click="toggleDropdown()"
+									>Actions</Button
+								>
+							</template>
+						</Dropdown>
+					</div>
+
+					<div class="hidden md:flex flex-row space-x-3">
 						<Button
-							v-if="site.group"
-							icon-left="tool"
-							:route="`/benches/${site.group}`"
+							v-for="action in siteActions"
+							:key="action.label"
+							:icon-left="action.icon"
+							:loading="action.loading"
+							@click="action.action"
 						>
-							Manage Bench
-						</Button>
-						<Button
-							v-if="site.status == 'Active'"
-							:loading="$resources.loginAsAdmin.loading"
-							@click="reasonToLoginAsAdminPopup()"
-							icon-left="external-link"
-						>
-							Login as Administrator
-						</Button>
-						<Button
-							v-if="site.status === 'Active' || site.status === 'Updating'"
-							:link="`https://${site.name}`"
-							icon-left="external-link"
-						>
-							Visit Site
+							{{ action.label }}
 						</Button>
 					</div>
 				</div>
@@ -192,6 +210,29 @@ export default {
 			if (!this.$resources.site.loading && this.$resources.site.data) {
 				return this.$resources.site.data.server_region_info;
 			}
+		},
+
+		siteActions() {
+			return [
+				this.site.group && {
+					label: 'Manage Bench',
+					icon: 'tool',
+					action: () => this.$router.push(`/benches/${this.site.group}`)
+				},
+				this.site.status == 'Active' && {
+					label: 'Login As Administrator',
+					icon: 'external-link',
+					loading: this.$resources.loginAsAdmin.loading,
+					action: this.reasonToLoginAsAdminPopup // TODO: refactor, variable name doesn't make sense and also implementation could be much better
+				},
+				['Active', 'Updating'].includes(this.site.status) && {
+					label: 'Visit Site',
+					icon: 'external-link',
+					action: () => {
+						window.open(`https://${this.site.name}`, '_blank');
+					}
+				}
+			].filter(Boolean);
 		},
 
 		tabs() {
