@@ -60,26 +60,13 @@
 
 					<div class="hidden md:flex flex-row space-x-3">
 						<Button
-							v-if="site.group"
-							icon-left="tool"
-							:route="`/benches/${site.group}`"
+							v-for="action in siteActions"
+							:key="action.label"
+							:icon-left="action.icon"
+							:loading="action.loading"
+							@click="action.action"
 						>
-							Manage Bench
-						</Button>
-						<Button
-							v-if="site.status == 'Active'"
-							:loading="$resources.loginAsAdmin.loading"
-							@click="reasonToLoginAsAdminPopup()"
-							icon-left="external-link"
-						>
-							Login as Administrator
-						</Button>
-						<Button
-							v-if="site.status === 'Active' || site.status === 'Updating'"
-							:link="`https://${site.name}`"
-							icon-left="external-link"
-						>
-							Visit Site
+							{{ action.label }}
 						</Button>
 					</div>
 				</div>
@@ -229,14 +216,18 @@ export default {
 			return [
 				this.site.group && {
 					label: 'Manage Bench',
+					icon: 'tool',
 					action: () => this.$router.push(`/benches/${this.site.group}`)
 				},
 				this.site.status == 'Active' && {
 					label: 'Login As Administrator',
+					icon: 'external-link',
+					loading: this.$resources.loginAsAdmin.loading,
 					action: this.reasonToLoginAsAdminPopup // TODO: refactor, variable name doesn't make sense and also implementation could be much better
 				},
 				['Active', 'Updating'].includes(this.site.status) && {
 					label: 'Visit Site',
+					icon: 'external-link',
 					action: () => {
 						window.open(`https://${this.site.name}`, '_blank');
 					}
