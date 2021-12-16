@@ -246,8 +246,7 @@ export default {
 						this.subdomainValid &&
 						this.selectedApps.length > 0 &&
 						this.selectedPlan &&
-						(!this.wantsToRestore ||
-							Object.values(this.selectedFiles).every(v => v));
+						(!this.wantsToRestore || this.selectedFiles.database);
 
 					if (!this.agreedToRegionConsent) {
 						document.getElementById('region-consent').focus();
@@ -264,15 +263,10 @@ export default {
 	},
 	computed: {
 		wantsToRestore() {
-			let {
-				database,
-				public: publicFile,
-				private: privateFile
-			} = this.selectedFiles;
-			if (!(database && publicFile && privateFile)) {
-				return false;
+			if (this.selectedFiles.database) {
+				return true;
 			}
-			return true;
+			return false;
 		}
 	}
 };

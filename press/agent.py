@@ -91,6 +91,11 @@ class Agent:
 	def restore_site(self, site, skip_failing_patches=False):
 		apps = [app.app for app in site.apps]
 		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
+		public_link, private_link = None, None
+		if site.remote_public_file:
+			public_link = frappe.get_doc("Remote File", site.remote_public_file).download_link
+		if site.remote_private_file:
+			private_link = frappe.get_doc("Remote File", site.remote_private_file).download_link
 		data = {
 			"apps": apps,
 			"mariadb_root_password": get_decrypted_password(
@@ -98,8 +103,8 @@ class Agent:
 			),
 			"admin_password": site.get_password("admin_password"),
 			"database": frappe.get_doc("Remote File", site.remote_database_file).download_link,
-			"public": frappe.get_doc("Remote File", site.remote_public_file).download_link,
-			"private": frappe.get_doc("Remote File", site.remote_private_file).download_link,
+			"public": public_link,
+			"private": private_link,
 			"skip_failing_patches": skip_failing_patches,
 		}
 
@@ -150,6 +155,13 @@ class Agent:
 			return json.dumps(sanitized_config)
 
 		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
+		public_link, private_link = None, None
+
+		if site.remote_public_file:
+			public_link = frappe.get_doc("Remote File", site.remote_public_file).download_link
+		if site.remote_private_file:
+			private_link = frappe.get_doc("Remote File", site.remote_private_file).download_link
+
 		data = {
 			"config": json.loads(site.config),
 			"apps": apps,
@@ -160,8 +172,8 @@ class Agent:
 			"admin_password": site.get_password("admin_password"),
 			"site_config": sanitized_site_config(site),
 			"database": frappe.get_doc("Remote File", site.remote_database_file).download_link,
-			"public": frappe.get_doc("Remote File", site.remote_public_file).download_link,
-			"private": frappe.get_doc("Remote File", site.remote_private_file).download_link,
+			"public": public_link,
+			"private": private_link,
 			"skip_failing_patches": skip_failing_patches,
 		}
 
