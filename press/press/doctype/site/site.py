@@ -263,7 +263,7 @@ class Site(Document):
 
 	def create_agent_request(self):
 		agent = Agent(self.server)
-		if self.remote_database_file and self.remote_private_file and self.remote_public_file:
+		if self.remote_database_file:
 			agent.new_site_from_backup(self, skip_failing_patches=self.skip_failing_patches)
 		else:
 			agent.new_site(self)

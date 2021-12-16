@@ -285,11 +285,7 @@ export default {
 	},
 	computed: {
 		filesUploaded() {
-			return (
-				this.selectedFiles.database &&
-				this.selectedFiles.public &&
-				this.selectedFiles.private
-			);
+			return this.selectedFiles.database;
 		}
 	}
 };
