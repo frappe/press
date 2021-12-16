@@ -511,6 +511,12 @@ class Team(Document):
 		if self.free_account:
 			return allow
 
+		if self.payment_mode == "Partner Credits":
+			if self.get_available_partner_credits() > 0:
+				return allow
+			else:
+				why = "Cannot create site due to insufficient partner credits"
+
 		if self.payment_mode == "Prepaid Credits":
 			if self.get_balance() > 0:
 				return allow
