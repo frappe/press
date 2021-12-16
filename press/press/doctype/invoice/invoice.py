@@ -53,6 +53,7 @@ class Invoice(Document):
 			self.save()
 			frappe.db.commit()
 
+			self.cancel_applied_credits()
 			self.apply_partner_credits()
 			return
 
