@@ -38,7 +38,7 @@
 				</div>
 				<div class="hidden md:block">
 					<div class="flex items-center">
-						<SiteSearch class="mr-5" />
+						<SiteAndBenchSearch class="mr-5" />
 						<Button icon-left="life-buoy" link="/support">Support</Button>
 						<div class="relative ml-3">
 							<div>
@@ -116,10 +116,17 @@
 						</div>
 					</div>
 				</div>
-				<div class="px-2 mt-3">
+				<div class="px-2 mt-3 space-y-3">
+					<a
+						href="/support/tickets"
+						target="_blank"
+						class="block px-3 pt-4 text-base font-medium rounded-md focus:outline-none"
+					>
+						Support
+					</a>
 					<a
 						href="#"
-						class="block px-3 py-2 text-base font-medium rounded-md focus:outline-none"
+						class="block px-3 text-base font-medium rounded-md focus:outline-none"
 						@click.prevent="$auth.logout"
 					>
 						Logout
@@ -132,12 +139,12 @@
 
 <script>
 import FrappeCloudLogo from '@/components/FrappeCloudLogo.vue';
-import SiteSearch from '@/components/SiteSearch.vue';
+import SiteAndBenchSearch from '@/components/SiteAndBenchSearch.vue';
 
 export default {
 	components: {
 		FrappeCloudLogo,
-		SiteSearch
+		SiteAndBenchSearch
 	},
 	data() {
 		return {

@@ -6,10 +6,10 @@ export default [
 			import(/* webpackChunkName: "marketplace" */ '../views/Marketplace.vue'),
 		children: [
 			{
-				path: 'profile',
+				path: 'publisher-profile',
 				component: () =>
 					import(
-						/* webpackChunkName: "marketplace" */ '../views/MarketplaceApps.vue'
+						/* webpackChunkName: "marketplace" */ '../views/MarketplacePublisherProfile.vue'
 					)
 			},
 			{

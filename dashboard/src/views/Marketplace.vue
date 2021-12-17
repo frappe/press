@@ -78,7 +78,10 @@ export default {
 		AppSourceSelector
 	},
 	data: () => ({
-		tabs: [{ label: 'My Apps', route: '/marketplace/apps' }],
+		tabs: [
+			{ label: 'My Apps', route: '/marketplace/apps' },
+			{ label: 'Publisher Profile', route: '/marketplace/publisher-profile' }
+		],
 		showAddAppDialog: false,
 		selectedApp: null
 	}),
