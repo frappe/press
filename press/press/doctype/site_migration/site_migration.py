@@ -25,9 +25,9 @@ class SiteMigration(Document):
 		if get_ongoing_migration(self.site):
 			frappe.throw("Ongoing Site Migration for that site exists.")
 		self.check_for_existing_agent_jobs()
-		self.set_migration_type()
 
 	def after_insert(self):
+		self.set_migration_type()
 		self.add_steps()
 		self.save()
 		if not self.scheduled_time:
