@@ -194,6 +194,7 @@ scheduler_events = {
 			"press.press.doctype.site_update.site_update.schedule_updates",
 			"press.press.doctype.drip_email.drip_email.send_welcome_email",
 			"press.press.doctype.site.backups.schedule",
+			"press.press.doctype.site_migration.site_migration.run_scheduled_migrations",
 		],
 		"*/30 * * * *": ["press.press.doctype.site_update.scheduled_auto_updates.trigger"],
 		"15,45 * * * *": [
