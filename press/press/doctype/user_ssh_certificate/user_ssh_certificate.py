@@ -98,7 +98,7 @@ class UserSSHCertificate(Document):
 		self.generate_ssh_command()
 
 	def generate_ssh_command(self):
-		server = self.server
+		server = self.access_server
 		if not server:
 			server = "<server you want>"
 
