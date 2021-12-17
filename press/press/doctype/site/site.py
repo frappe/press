@@ -794,6 +794,11 @@ class Site(Document):
 			subscription.disable()
 
 	def can_change_plan(self):
+		user = frappe.session.user
+		user_type = frappe.db.get_value("User", user, "user_type", cache=True)
+		if user_type == "System User":
+			return
+
 		team = frappe.get_doc("Team", self.team)
 
 		if team.is_defaulter():
