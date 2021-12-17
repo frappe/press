@@ -171,6 +171,7 @@ def get_current_cpu_usage(site):
 		hits = response["hits"]["hits"]
 		if hits:
 			return hits[0]["_source"]["json"]["request"].get("counter", 0)
+		return 0
 	except Exception:
 		return 0
 
