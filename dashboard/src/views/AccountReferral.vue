@@ -24,18 +24,6 @@ export default {
 	components: {
 		ClickToCopyField
 	},
-	methods: {
-		copyReferralLink() {
-			const clipboard = window.navigator.clipboard;
-			clipboard.writeText(this.referralLink).then(() => {
-				this.$notify({
-					title: 'Link copied to clipboard!',
-					icon: 'check',
-					color: 'green'
-				});
-			});
-		}
-	},
 	computed: {
 		referralLink() {
 			if (this.$account.team.referrer_id) {
