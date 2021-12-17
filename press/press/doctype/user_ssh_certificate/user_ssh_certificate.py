@@ -95,7 +95,7 @@ class UserSSHCertificate(Document):
 		regex = re.compile("Valid:.*\n")
 		self.valid_until = regex.findall(self.certificate_details)[0].strip().split()[-1]
 		self.ssh_certificate = read_certificate(self.key_type, self.name)
-		self.generate_ssh_command(self.name)
+		self.generate_ssh_command()
 
 	def generate_ssh_command(self):
 		server = self.server
