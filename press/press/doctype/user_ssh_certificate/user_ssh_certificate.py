@@ -56,6 +56,7 @@ class UserSSHCertificate(Document):
 			frappe.throw("Could not guess the key type. Please check your public key.")
 
 	def before_submit(self):
+		self._set_key_type()
 		tmp_pub_file_prefix = f"/tmp/id_{self.key_type}-{self.name}"
 		tmp_pub_file = tmp_pub_file_prefix + ".pub"
 		# write the public key to a /tmp file
