@@ -809,7 +809,11 @@ class Site(Document):
 		):
 			frappe.throw("Cannot change plan because you don't have sufficient partner credits")
 
-		if not (team.default_payment_method or team.get_balance()):
+		if not (
+			team.payment_mode != "Partner Credits"
+			or team.team.default_payment_method
+			or team.get_balance()
+		):
 			frappe.throw(
 				"Cannot change plan because you haven't added a card and not have enough balance"
 			)
