@@ -25,7 +25,7 @@ def setup(**data):
 			"mail_login": "example@gmail.com",
 			"mail_password": "some_password",
 			"mail_port": 587,
-			"mail_server": "smtp.mailgun.org"
+			"mail_server": "smtp.mailgun.org",
 		}
 
 		site_doc.update_site_config(config)
