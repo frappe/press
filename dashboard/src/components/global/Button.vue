@@ -1,5 +1,29 @@
 <template>
+	<router-link
+		v-if="route"
+		v-slot="{ href, navigate }"
+		v-bind="$attrs"
+		:to="route"
+		:class="buttonClasses"
+		:disabled="isDisabled"
+	>
+		<a :href="href" @click="navigate">
+			<FeatherIcon v-if="iconLeft" :name="iconLeft" class="w-4 h-4 mr-1.5" />
+			<template v-if="loading && loadingText">
+				{{ loadingText }}
+			</template>
+			<template v-else-if="icon">
+				<FeatherIcon :name="icon" class="w-4 h-4" />
+			</template>
+			<template v-else>
+				<slot></slot>
+			</template>
+			<FeatherIcon v-if="iconRight" :name="iconRight" class="w-4 h-4 ml-2" />
+		</a>
+	</router-link>
+
 	<button
+		v-else
 		:class="buttonClasses"
 		@click="handleClick"
 		v-bind="$attrs"

@@ -60,6 +60,12 @@
 
 					<div class="hidden md:flex flex-row space-x-3">
 						<Button
+							v-if="site.group"
+							:route="`/benches/${site.group}`"
+							icon-left="tool"
+							>Manage Bench
+						</Button>
+						<Button
 							v-for="action in siteActions"
 							:key="action.label"
 							:icon-left="action.icon"
@@ -214,11 +220,6 @@ export default {
 
 		siteActions() {
 			return [
-				this.site.group && {
-					label: 'Manage Bench',
-					icon: 'tool',
-					action: () => this.$router.push(`/benches/${this.site.group}`)
-				},
 				this.site.status == 'Active' && {
 					label: 'Login As Administrator',
 					icon: 'external-link',
