@@ -811,7 +811,7 @@ class Site(Document):
 
 		if not (
 			team.payment_mode != "Partner Credits"
-			or team.team.default_payment_method
+			or team.default_payment_method
 			or team.get_balance()
 		):
 			frappe.throw(
