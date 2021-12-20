@@ -14,7 +14,7 @@
   "date",
   "sender",
   "recipient",
-  "subject",
+  "message",
   "status",
   "log"
  ],
@@ -30,7 +30,7 @@
    "ignore_xss_filter": 1,
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "sender"
+   "label": "Sender"
   },
   {
    "default": "Pending",
@@ -38,19 +38,14 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "status"
+   "label": "Status"
   },
   {
    "fieldname": "recipient",
    "fieldtype": "Data",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "recipient"
-  },
-  {
-   "fieldname": "subject",
-   "fieldtype": "Data",
-   "label": "subject"
+   "label": "Recipient"
   },
   {
    "fieldname": "log",
@@ -79,11 +74,16 @@
    "fieldname": "subscription_key",
    "fieldtype": "Data",
    "label": "Subscription Key"
+  },
+  {
+   "fieldname": "message",
+   "fieldtype": "Data",
+   "label": "Message"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-12-09 14:12:54.127143",
+ "modified": "2021-12-19 19:12:49.661569",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Mail Log",
