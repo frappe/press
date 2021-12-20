@@ -236,3 +236,46 @@ class DatabaseServer(BaseServer):
 			ansible.run()
 		except Exception:
 			log_error("Exporters Install Exception", server=self.as_dict())
+
+	@frappe.whitelist()
+	def reset_root_password(self):
+		if self.is_primary:
+			self.reset_root_password_primary()
+		else:
+			self.reset_root_password_secondary()
+
+	def reset_root_password_primary(self):
+		old_password = self.get_password("mariadb_root_password")
+		self.mariadb_root_password = frappe.generate_hash()
+		print(old_password, self.mariadb_root_password)
+		try:
+			ansible = Ansible(
+				playbook="mariadb_change_root_password.yml",
+				server=self,
+				variables={
+					"mariadb_old_root_password": old_password,
+					"mariadb_new_root_password": self.mariadb_root_password,
+				},
+			)
+			ansible.run()
+			self.save()
+		except Exception:
+			log_error("Database Server Password Reset Exception", server=self.as_dict())
+			raise
+
+	def reset_root_password_secondary(self):
+		primary = frappe.get_doc("Database Server", self.primary)
+		self.mariadb_root_password = primary.get_password("mariadb_root_password")
+		try:
+			ansible = Ansible(
+				playbook="mariadb_change_root_password_secondary.yml",
+				server=self,
+				variables={
+					"mariadb_root_password": self.mariadb_root_password,
+				},
+			)
+			ansible.run()
+			self.save()
+		except Exception:
+			log_error("Database Server Password Reset Exception", server=self.as_dict())
+			raise

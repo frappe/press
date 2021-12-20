@@ -14,6 +14,7 @@ frappe.ui.form.on('Database Server', {
 			[__('Convert From Frappe Server'), "convert_from_frappe_server", true, !frm.doc.is_server_setup],
 			[__('Setup Replication'), "setup_replication", true, frm.doc.is_server_setup && !frm.doc.is_primary && !frm.doc.is_replication_setup],
 			[__('Trigger Failover'), "trigger_failover", true, frm.doc.is_server_setup && !frm.doc.is_primary && frm.doc.is_replication_setup],
+			[__('Reset Root Password'), "reset_root_password", true, frm.doc.is_server_setup],
 			[__('Fetch Keys'), "fetch_keys", false, frm.doc.is_server_setup && (!frm.doc.frappe_public_key || !frm.doc.root_public_key)],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === "undefined" || condition) {
