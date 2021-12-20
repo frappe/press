@@ -43,14 +43,17 @@ def get_analytics(**data):
 	month = data["month"]
 	year = datetime.now().year
 	last_day = calendar.monthrange(year, int(month))[1]
+	status = data["status"]
 
 	result = frappe.get_all(
 		"Mail Log",
 		filters={
 			"subscription_key": data["key"],
+			"status": ["like", f"%{status}%"],
 			"date": ["between", [f"01-{month}-2021", f"{last_day}-{month}-2021"]],
 		},
 		fields=["date", "status", "message", "sender", "recipient"],
+		order_by="date asc",
 	)
 
 	return result
