@@ -77,6 +77,10 @@ website_redirects = [
 
 email_css = ["/assets/press/css/email.css"]
 
+jinja = {
+	"filters": ["press.press.doctype.marketplace_app.utils.number_k_format"],
+}
+
 # Installation
 # ------------
 
