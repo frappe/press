@@ -3,11 +3,10 @@
 
 import frappe
 
-from frappe.utils import flt, fmt_money
+from frappe.utils import fmt_money
 from press.utils import get_current_team
 from press.utils.billing import (
 	clear_setup_intent,
-	get_erpnext_com_connection,
 	get_publishable_key,
 	get_setup_intent,
 	get_stripe,
@@ -116,49 +115,6 @@ def get_customer_details(team):
 	return {
 		"team": team_doc,
 		"address": frappe.get_doc("Address", team_doc.billing_address),
-	}
-
-
-@frappe.whitelist()
-def transfer_partner_credits(amount):
-	team = get_current_team()
-	team_doc = frappe.get_doc("Team", team)
-	partner_email = team_doc.user
-	erpnext_com = get_erpnext_com_connection()
-
-	res = erpnext_com.post_api(
-		"central.api.consume_partner_credits",
-		{"email": partner_email, "currency": team_doc.currency, "amount": amount},
-	)
-
-	if res.get("error_message"):
-		frappe.throw(res.get("error_message"))
-
-	transferred_credits = flt(res["transferred_credits"])
-	transaction_id = res["transaction_id"]
-
-	team_doc.allocate_credit_amount(
-		transferred_credits,
-		source="Transferred Credits",
-		remark="Transferred Credits from ERPNext Cloud. Transaction ID: {0}".format(
-			transaction_id
-		),
-	)
-
-
-@frappe.whitelist()
-def get_available_partner_credits():
-	team = get_current_team()
-	team_doc = frappe.get_doc("Team", team)
-	partner_email = team_doc.user
-	erpnext_com = get_erpnext_com_connection()
-
-	available_credits = erpnext_com.post_api(
-		"central.api.get_available_partner_credits", {"email": partner_email},
-	)
-	return {
-		"value": available_credits,
-		"formatted": fmt_money(available_credits, 2, team_doc.currency),
 	}
 
 

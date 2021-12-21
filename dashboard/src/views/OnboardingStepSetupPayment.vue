@@ -48,22 +48,13 @@
 					<Input
 						label="Select payment mode"
 						type="select"
-						:options="['', 'Card', 'Prepaid Credits']"
+						:options="paymentModeOptions"
 						v-model="paymentMode"
 					/>
 					<p class="mt-2 text-base text-gray-600">
 						{{ paymentModeDescription }}
 					</p>
 				</div>
-				<Input
-					v-if="
-						$account.team.erpnext_partner && paymentMode == 'Prepaid Credits'
-					"
-					label="Buy Credits from"
-					type="select"
-					:options="['Card Payment', 'Transfer from ERPNext.com']"
-					v-model="buyCreditsFrom"
-				/>
 				<BuyPrepaidCredits
 					v-if="
 						paymentMode == 'Prepaid Credits' &&
@@ -74,20 +65,17 @@
 					@success="onPrepaidCredits"
 					@cancel="paymentMode = null"
 				/>
-				<TransferCredits
-					v-if="
-						paymentMode == 'Prepaid Credits' &&
-							buyCreditsFrom == 'Transfer from ERPNext.com'
-					"
-					:minimumAmount="minCreditsToBuy"
-					@success="onSuccess"
-					@cancel="paymentMode = null"
-				/>
 				<StripeCard
 					:withoutAddress="true"
 					v-if="paymentMode === 'Card'"
 					@complete="onSuccess"
 				/>
+				<Button
+					type="primary"
+					v-if="paymentMode == 'Partner Credits'"
+					@click="onSuccess"
+					>Save</Button
+				>
 				<Loading
 					text="Updating account balance..."
 					v-if="$resources.prepaidCredits.loading"
@@ -104,7 +92,6 @@
 import AddressForm from '../components/AddressForm.vue';
 import StripeCard from '../components/StripeCard.vue';
 import BuyPrepaidCredits from '../components/BuyPrepaidCredits.vue';
-import TransferCredits from '../components/TransferCredits.vue';
 
 export default {
 	name: 'OnboardingStepSetupPayment',
@@ -113,15 +100,12 @@ export default {
 		AddressForm,
 		StripeCard,
 		BuyPrepaidCredits,
-		TransferCredits
 	},
 	data() {
 		return {
 			showDialog: false,
 			paymentMode: null,
-			buyCreditsFrom: this.$account.team.erpnext_partner
-				? null
-				: 'Card Payment',
+			buyCreditsFrom: 'Card Payment',
 			minCreditsToBuy: this.$account.team.currency == 'INR' ? 750 : 10,
 			address: {}
 		};
@@ -190,6 +174,16 @@ export default {
 			if (this.paymentMode == 'Prepaid Credits') {
 				return 'You will be charged from your account balance at the end of every month';
 			}
+			if (this.paymentMode == 'Partner Credits') {
+				return 'You will be charged from your Partner Credit balance at the end of every month';
+			}
+		},
+		paymentModeOptions() {
+			if (this.$account.team.erpnext_partner) {
+				return ['', 'Card', 'Prepaid Credits', 'Partner Credits'];
+			}
+
+			return ['', 'Card', 'Prepaid Credits'];
 		}
 	}
 };
