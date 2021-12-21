@@ -532,11 +532,15 @@ class Team(Document):
 		return (False, why)
 
 	def get_onboarding(self):
-		billing_setup = bool(
-			self.payment_mode in ["Card", "Prepaid Credits"]
-			and (self.default_payment_method or self.get_balance() > 0)
-			and self.billing_address
-		)
+		if self.payment_mode == "Partner Credits":
+			billing_setup = True
+		else:
+			billing_setup = bool(
+				self.payment_mode in ["Card", "Prepaid Credits"]
+				and (self.default_payment_method or self.get_balance() > 0)
+				and self.billing_address
+			)
+
 		site_created = frappe.db.count("Site", {"team": self.name}) > 0
 
 		if self.via_erpnext:
