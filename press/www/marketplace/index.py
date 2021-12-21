@@ -19,7 +19,7 @@ def get_context(context):
 		app.total_installs = get_total_installs_for_app(app.name)
 
 	# For the time being, sort by number of installs
-	context.apps.sort(key=lambda x: x.total_installs)
+	context.apps.sort(key=lambda x: x.total_installs, reverse=True)
 
 	context.metatags = {
 		"title": "Frappe Cloud Marketplace",
