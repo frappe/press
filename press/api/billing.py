@@ -3,11 +3,10 @@
 
 import frappe
 
-from frappe.utils import flt, fmt_money
+from frappe.utils import fmt_money
 from press.utils import get_current_team
 from press.utils.billing import (
 	clear_setup_intent,
-	get_erpnext_com_connection,
 	get_publishable_key,
 	get_setup_intent,
 	get_stripe,
