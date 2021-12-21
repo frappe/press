@@ -112,6 +112,7 @@ class Team(Document):
 
 		if not team.via_erpnext:
 			team.create_upcoming_invoice()
+			# TODO: Partner account moved to PRM
 			if team.has_partner_account_on_erpnext_com():
 				team.enable_erpnext_partner_privileges()
 

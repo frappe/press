@@ -120,49 +120,6 @@ def get_customer_details(team):
 
 
 @frappe.whitelist()
-def transfer_partner_credits(amount):
-	team = get_current_team()
-	team_doc = frappe.get_doc("Team", team)
-	partner_email = team_doc.user
-	erpnext_com = get_erpnext_com_connection()
-
-	res = erpnext_com.post_api(
-		"central.api.consume_partner_credits",
-		{"email": partner_email, "currency": team_doc.currency, "amount": amount},
-	)
-
-	if res.get("error_message"):
-		frappe.throw(res.get("error_message"))
-
-	transferred_credits = flt(res["transferred_credits"])
-	transaction_id = res["transaction_id"]
-
-	team_doc.allocate_credit_amount(
-		transferred_credits,
-		source="Transferred Credits",
-		remark="Transferred Credits from ERPNext Cloud. Transaction ID: {0}".format(
-			transaction_id
-		),
-	)
-
-
-@frappe.whitelist()
-def get_available_partner_credits():
-	team = get_current_team()
-	team_doc = frappe.get_doc("Team", team)
-	partner_email = team_doc.user
-	erpnext_com = get_erpnext_com_connection()
-
-	available_credits = erpnext_com.post_api(
-		"central.api.get_available_partner_credits", {"email": partner_email},
-	)
-	return {
-		"value": available_credits,
-		"formatted": fmt_money(available_credits, 2, team_doc.currency),
-	}
-
-
-@frappe.whitelist()
 def create_payment_intent_for_buying_credits(amount):
 	team = get_current_team(True)
 	stripe = get_stripe()
