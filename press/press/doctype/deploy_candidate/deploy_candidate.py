@@ -68,7 +68,7 @@ class DeployCandidate(Document):
 		)
 		frappe.set_user(team)
 		frappe.enqueue_doc(
-			self.doctype, self.name, "_build", timeout=1200, enqueue_after_commit=True
+			self.doctype, self.name, "_build", timeout=2400, enqueue_after_commit=True
 		)
 		frappe.set_user(user)
 		frappe.session.data = session_data
@@ -103,7 +103,7 @@ class DeployCandidate(Document):
 			self.doctype,
 			self.name,
 			"_build_and_deploy",
-			timeout=1200,
+			timeout=2400,
 			enqueue_after_commit=True,
 			staging=staging,
 		)
