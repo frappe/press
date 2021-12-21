@@ -27,7 +27,8 @@
 				</div>
 				<span class="flex flex-row text-sm mt-2 text-gray-600">
 					<i class="w-4 h-4 mr-2" data-feather="download"></i>
-					<span>{{ app.total_installs }} {{ 'install' if app.total_installs == 1 else 'installs' }}</span>
+					<span>{{ app.total_installs | number_k_format }} {{ 'install' if app.total_installs == 1 else
+						'installs' }}</span>
 				</span>
 			</a>
 			{%- endfor -%}
