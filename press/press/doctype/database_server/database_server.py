@@ -255,6 +255,7 @@ class DatabaseServer(BaseServer):
 				variables={
 					"mariadb_old_root_password": old_password,
 					"mariadb_root_password": self.mariadb_root_password,
+					"private_ip": self.private_ip,
 				},
 			)
 			ansible.run()
@@ -270,7 +271,10 @@ class DatabaseServer(BaseServer):
 			ansible = Ansible(
 				playbook="mariadb_change_root_password_secondary.yml",
 				server=self,
-				variables={"mariadb_root_password": self.mariadb_root_password},
+				variables={
+					"mariadb_root_password": self.mariadb_root_password,
+					"private_ip": self.private_ip,
+				},
 			)
 			ansible.run()
 			self.save()
