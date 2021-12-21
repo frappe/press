@@ -73,12 +73,6 @@
 				<Button :loading="true" loadingText="Loading" />
 			</div>
 
-			<TransferCreditsDialog
-				v-if="showTransferCreditsDialog"
-				:show.sync="showTransferCreditsDialog"
-				@success="$resources.upcomingInvoice.reload()"
-			/>
-
 			<PrepaidCreditsDialog
 				v-if="showPrepaidCreditsDialog"
 				:show.sync="showPrepaidCreditsDialog"
@@ -101,8 +95,6 @@ export default {
 	components: {
 		PlanIcon,
 		AccountBillingUpcomingInvoice,
-		TransferCreditsDialog: () =>
-			import('@/components/TransferCreditsDialog.vue'),
 		PrepaidCreditsDialog: () => import('@/components/PrepaidCreditsDialog.vue'),
 		ChangePaymentModeDialog: () =>
 			import('@/components/ChangePaymentModeDialog.vue')
@@ -122,7 +114,6 @@ export default {
 	},
 	data() {
 		return {
-			showTransferCreditsDialog: false,
 			showPrepaidCreditsDialog: false,
 			showChangeModeDialog: false
 		};
