@@ -20,6 +20,8 @@
   "max_database_usage",
   "max_storage_usage",
   "offsite_backups",
+  "plan_features_section",
+  "features",
   "roles_section",
   "roles"
  ],
@@ -111,11 +113,23 @@
    "fieldtype": "Table",
    "label": "Roles",
    "options": "Has Role"
+  },
+  {
+   "depends_on": "eval:(doc.document_type == \"Marketplace App\")",
+   "fieldname": "features",
+   "fieldtype": "Table",
+   "label": "Features",
+   "options": "Plan Feature"
+  },
+  {
+   "fieldname": "plan_features_section",
+   "fieldtype": "Section Break",
+   "label": "Plan Features"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-10-21 01:11:47.517802",
+ "modified": "2021-12-22 18:53:47.465041",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Plan",
