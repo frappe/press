@@ -369,6 +369,12 @@ def add_team_member(email):
 
 
 @frappe.whitelist()
+def remove_team_member(user_email):
+	team = get_current_team(True)
+	team.remove_team_member(user_email)
+
+
+@frappe.whitelist()
 def switch_team(team):
 	user_is_part_of_team = frappe.db.exists(
 		"Team Member", {"parent": team, "user": frappe.session.user}
