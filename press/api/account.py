@@ -393,7 +393,7 @@ def leave_team(team):
 	cur_team = frappe.session.user
 
 	if team_to_leave.user == cur_team:
-		frappe.throw("Cannot leave this team as your the owner.")
+		frappe.throw("Cannot leave this team as you are the owner.")
 
 	team_to_leave.remove_team_member(cur_team)
 
