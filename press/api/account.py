@@ -388,6 +388,17 @@ def switch_team(team):
 
 
 @frappe.whitelist()
+def leave_team(team):
+	team_to_leave = frappe.get_doc("Team", team)
+	cur_team = frappe.session.user
+
+	if team_to_leave.user == cur_team:
+		frappe.throw("Cannot leave this team as your the owner.")
+
+	team_to_leave.remove_team_member(cur_team)
+
+
+@frappe.whitelist()
 def get_billing_information():
 	team = get_current_team(True)
 	if team.billing_address:
