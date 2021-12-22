@@ -148,7 +148,7 @@ class Team(Document):
 		else:
 			frappe.throw(f"Team member {frappe.bold(member)} does not exists")
 
-		self.save()
+		self.save(ignore_permissions=True)
 
 	def set_billing_name(self):
 		if not self.billing_name:
