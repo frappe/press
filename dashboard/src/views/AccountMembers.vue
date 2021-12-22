@@ -12,9 +12,9 @@
 							$account.team.free_account ||
 							$account.team.erpnext_partner)
 				"
-				@click="showAddMemberDialog = true"
+				@click="showManageMemberDialog = true"
 			>
-				Add Member
+				Manage
 			</Button>
 		</template>
 		<div class="divide-y">
@@ -30,27 +30,55 @@
 			</ListItem>
 		</div>
 
-		<Dialog title="Add Member" v-model="showAddMemberDialog">
-			<Input
-				label="Enter the email address of your teammate to invite them."
-				type="text"
-				class="mt-4"
-				v-model="memberEmail"
-				required
-			/>
-			<ErrorMessage :error="addMember.error" />
+		<Dialog title="Manage Members" v-model="showManageMemberDialog">
+			<ListItem
+				v-for="member in $account.team_members"
+				:title="`${member.first_name} ${member.last_name}`"
+				:description="member.name"
+				:key="member.name"
+			>
+				<template #actions>
+					<Button
+						v-if="getRoleBadgeProps(member).status == 'Member'"
+						class="ml-2 p-4"
+						@click="removeMember(member)"
+						:loading="removeMember.loading"
+					>
+						Remove
+					</Button>
+					<Badge v-else v-bind="getRoleBadgeProps(member)" />
+				</template>
+			</ListItem>
 
-			<div slot="actions">
-				<Button @click="showAddMemberDialog = false">
-					Cancel
-				</Button>
-				<Button
-					class="ml-2"
-					type="primary"
-					:loading="addMember.loading"
-					@click="addMember.submit({ email: memberEmail })"
-				>
-					Send Invitation
+			<div v-if="showAddMemberForm">
+				<h5 class="mt-5 text-sm font-semibold">Add Member</h5>
+				<Input
+					label="Enter the email address of your teammate to invite them."
+					type="text"
+					class="mt-2"
+					v-model="memberEmail"
+					required
+				/>
+				<ErrorMessage :error="addMember.error" />
+				<ErrorMessage :error="removeMember.error" />
+
+				<div class="mt-5 flex flex-row justify-end">
+					<Button @click="showAddMemberForm = false">
+						Cancel
+					</Button>
+					<Button
+						class="ml-2"
+						type="primary"
+						:loading="addMember.loading"
+						@click="addMember.submit({ email: memberEmail })"
+					>
+						Send Invitation
+					</Button>
+				</div>
+			</div>
+			<div v-else class="mt-5 flex flex-row justify-end">
+				<Button type="primary" @click="showAddMemberForm = true">
+					Add Member
 				</Button>
 			</div>
 		</Dialog>
@@ -61,7 +89,8 @@ export default {
 	name: 'AccountMembers',
 	data() {
 		return {
-			showAddMemberDialog: false,
+			showManageMemberDialog: false,
+			showAddMemberForm: false,
 			memberEmail: null
 		};
 	},
@@ -69,13 +98,25 @@ export default {
 		addMember: {
 			method: 'press.api.account.add_team_member',
 			onSuccess() {
-				this.showAddMemberDialog = false;
+				this.showManageMemberDialog = false;
 				this.memberEmail = null;
 				this.$notify({
 					title: 'Invite Sent!',
 					message: 'They will receive an email shortly to join your team.',
 					color: 'green',
 					icon: 'check'
+				});
+			}
+		},
+		removeMember: {
+			method: 'press.api.account.remove_team_member',
+			onSuccess() {
+				this.showManageMemberDialog = false;
+				this.$account.fetchAccount();
+				this.$notify({
+					title: 'Team member removed.',
+					icon: 'check',
+					color: 'green'
 				});
 			}
 		}
@@ -94,6 +135,17 @@ export default {
 					Member: 'gray'
 				}[role]
 			};
+		},
+		removeMember(member) {
+			this.$confirm({
+				title: 'Remove Member',
+				message: `Are you sure you want to remove ${member.first_name} ?`,
+				actionLabel: 'Remove',
+				action: closeDialog => {
+					this.$resources.removeMember.submit({ user_email: member.name });
+					closeDialog();
+				}
+			});
 		}
 	}
 };
