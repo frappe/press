@@ -676,6 +676,13 @@ class Site(Document):
 			return True
 		return False
 
+	def _sync_database_name(self, config):
+		database_name = config.get("db_name")
+		if self.database_name != database_name:
+			self.database_name = database_name
+			return True
+		return False
+
 	def sync_info(self, data=None):
 		"""Updates Site Usage, site.config and timezone details for site."""
 		if not data:
@@ -688,6 +695,7 @@ class Site(Document):
 		self._sync_usage_info(fetched_usage)
 		to_save = self._sync_config_info(fetched_config)
 		to_save |= self._sync_timezone_info(fetched_timezone)
+		to_save |= self._sync_database_name(fetched_config)
 
 		if to_save:
 			self.save()
