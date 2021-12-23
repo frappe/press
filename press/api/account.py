@@ -369,6 +369,12 @@ def add_team_member(email):
 
 
 @frappe.whitelist()
+def remove_team_member(user_email):
+	team = get_current_team(True)
+	team.remove_team_member(user_email)
+
+
+@frappe.whitelist()
 def switch_team(team):
 	user_is_part_of_team = frappe.db.exists(
 		"Team Member", {"parent": team, "user": frappe.session.user}
@@ -379,6 +385,17 @@ def switch_team(team):
 			"team": frappe.get_doc("Team", team),
 			"team_members": get_team_members(team),
 		}
+
+
+@frappe.whitelist()
+def leave_team(team):
+	team_to_leave = frappe.get_doc("Team", team)
+	cur_team = frappe.session.user
+
+	if team_to_leave.user == cur_team:
+		frappe.throw("Cannot leave this team as you are the owner.")
+
+	team_to_leave.remove_team_member(cur_team)
 
 
 @frappe.whitelist()
