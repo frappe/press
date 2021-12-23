@@ -5,6 +5,7 @@
 import frappe
 
 from frappe import _
+from frappe.core.utils import find
 from typing import List
 from hashlib import blake2b
 from press.utils import log_error
@@ -139,6 +140,15 @@ class Team(Document):
 			user = self.create_user(first_name, last_name, email, password, role)
 
 		self.append("team_members", {"user": user.name})
+		self.save(ignore_permissions=True)
+
+	def remove_team_member(self, member):
+		member_to_remove = find(self.team_members, lambda x: x.user == member)
+		if member_to_remove:
+			self.remove(member_to_remove)
+		else:
+			frappe.throw(f"Team member {frappe.bold(member)} does not exists")
+
 		self.save(ignore_permissions=True)
 
 	def set_billing_name(self):
