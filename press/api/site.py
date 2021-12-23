@@ -623,7 +623,6 @@ def get_server_region_info(site) -> Dict:
 @frappe.whitelist()
 @protected("Site")
 def available_apps(name):
-	team = get_current_team()
 	site = frappe.get_doc("Site", name)
 	installed_apps = [app.app for app in site.apps]
 
