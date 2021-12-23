@@ -646,7 +646,7 @@ def available_apps(name):
 		filters={"name": ("in", bench_sources)},
 	)
 	for source in sources:
-		if (source.app not in installed_apps) and (source.public or source.team == team):
+		if (source.app not in installed_apps):
 			available_sources.append(source)
 
 	return sorted(available_sources, key=lambda x: bench_sources.index(x.name))
