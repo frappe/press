@@ -516,3 +516,30 @@ def search_list():
 	)
 
 	return groups
+
+
+@frappe.whitelist()
+def regions(name):
+	servers = frappe.db.get_all("Release Group Server", {"parent": name}, pluck="server")
+	cluster_names = frappe.get_all("Server", {"name": ("in", servers)}, pluck="cluster")
+	clusters = frappe.get_all(
+		"Cluster", fields=["name", "title", "image"], filters={"name": ("in", cluster_names)}
+	)
+	return clusters
+
+
+@frappe.whitelist()
+def available_regions(name):
+	return frappe.get_all("Cluster", {"cloud_provider": "AWS EC2"}, pluck="name")
+
+
+@frappe.whitelist()
+def add_region(name, region):
+	release_group = frappe.get_doc("Release Group", name)
+	release_group.add_region(region)
+
+
+@frappe.whitelist()
+def remove_region(name, region):
+	release_group = frappe.get_doc("Release Group", name)
+	release_group.remove_region(region)
