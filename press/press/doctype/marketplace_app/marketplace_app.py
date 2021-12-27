@@ -27,7 +27,6 @@ class MarketplaceApp(WebsiteGenerator):
 		self.published = self.status == "Published"
 		self.validate_sources()
 		self.validate_number_of_screenshots()
-		self.validate_plans()
 
 	def validate_sources(self):
 		for source in self.sources:
@@ -53,12 +52,6 @@ class MarketplaceApp(WebsiteGenerator):
 			frappe.throw(
 				f"You cannot add more than {max_allowed_screenshots} screenshots for an app."
 			)
-
-	def validate_plans(self):
-		for plan in self.available_plans:
-			plan_for_doctype = frappe.db.get_value("Plan", plan.plan, "document_type")
-			if plan_for_doctype != "Marketplace App":
-				frappe.throw(f"Plan {frappe.bold(plan.plan)} is not a marketplace app plan!")
 
 	def get_app_source(self):
 		return frappe.get_doc("App Source", {"app": self.app})
