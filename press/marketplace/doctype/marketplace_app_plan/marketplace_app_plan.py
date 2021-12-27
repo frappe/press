@@ -12,6 +12,6 @@ class MarketplaceAppPlan(Document):
 
 	def validate_plan(self):
 		dt = frappe.db.get_value("Plan", self.plan, "doctype_name")
-		
+
 		if dt != "Marketplace App":
 			frappe.throw("The plan must be a Marketplace App plan.")
