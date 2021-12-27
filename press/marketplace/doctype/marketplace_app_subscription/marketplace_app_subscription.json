@@ -59,8 +59,7 @@
   {
    "fieldname": "end_date",
    "fieldtype": "Date",
-   "label": "End date",
-   "reqd": 1
+   "label": "End date"
   },
   {
    "fieldname": "secret_key",
@@ -77,7 +76,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-12-27 14:23:01.834654",
+ "modified": "2021-12-27 18:27:35.498630",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "Marketplace App Subscription",
