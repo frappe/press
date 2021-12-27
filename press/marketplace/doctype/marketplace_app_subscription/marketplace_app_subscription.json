@@ -29,7 +29,7 @@
    "fieldname": "plan",
    "fieldtype": "Link",
    "label": "Plan",
-   "options": "Plan",
+   "options": "Marketplace App Plan",
    "reqd": 1
   },
   {
@@ -77,7 +77,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-12-08 10:26:55.046196",
+ "modified": "2021-12-27 14:23:01.834654",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "Marketplace App Subscription",
@@ -99,6 +99,7 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "title_field": "app",
  "track_changes": 1
 }

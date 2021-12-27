@@ -11,18 +11,8 @@ from press.press.doctype.site.site import Site
 
 class MarketplaceAppSubscription(Document):
 	def validate(self):
-		self.validate_plan()
 		self.set_secret_key()
 		# TODO: Validate Duplicate subscription
-
-	def validate_plan(self):
-		doctype_for_plan = frappe.db.get_value("Plan", self.plan, "document_type")
-
-		if doctype_for_plan != "Marketplace App":
-			frappe.throw(
-				"Plan should be a Marketplace App document type plan, is"
-				f" {doctype_for_plan} instead."
-			)
 
 	def set_secret_key(self):
 		if not self.secret_key:
@@ -56,7 +46,8 @@ class MarketplaceAppSubscription(Document):
 		if not team.get_upcoming_invoice():
 			team.create_upcoming_invoice()
 
-		plan = frappe.get_cached_doc("Plan", self.plan)
+		plan_name = frappe.db.get_value("Marketplace App Plan", self.plan, "plan")
+		plan = frappe.get_cached_doc("Plan", plan_name)
 		amount = plan.get_price_for_interval(self.interval, team.currency)
 
 		usage_record = frappe.get_doc(
@@ -64,7 +55,7 @@ class MarketplaceAppSubscription(Document):
 			team=team_name,
 			document_type="Marketplace App",
 			document_name=self.app,
-			plan=plan.name,
+			plan=plan_name,
 			amount=amount,
 			subscription=self.name,
 			interval=self.interval,
@@ -75,13 +66,14 @@ class MarketplaceAppSubscription(Document):
 
 	def is_usage_record_created(self):
 		team = frappe.db.get_value("Site", self.site, "team")
+		plan_name = frappe.db.get_value("Marketplace App Plan", self.plan, "plan")
 		filters = {
 			"team": team,
 			"document_type": "Marketplace App",
 			"document_name": self.app,
 			"subscription": self.name,
 			"interval": self.interval,
-			"plan": self.plan,
+			"plan": plan_name,
 		}
 
 		if self.interval == "Daily":
@@ -125,7 +117,9 @@ def create_usage_records():
 
 def should_create_usage_record(subscription: MarketplaceAppSubscription):
 	# For annual prepaid plans
-	plan_interval = frappe.db.get_value("Plan", subscription.plan, "interval")
+	plan_name = frappe.db.get_value("Marketplace App Plan", subscription.plan, "plan")
+	plan_interval = frappe.db.get_value("Plan", plan_name, "interval")
+
 	if plan_interval == "Annually":
 		return False
 
