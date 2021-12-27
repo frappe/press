@@ -1,5 +1,5 @@
 <template>
-	<div class="flex flex-row gap-x-6">
+	<div class="mx-auto flex flex-row gap-x-6">
 		<div class="p-5 rounded-2xl shadow-lg">
 			<h4 class="text-gray-900 font-semibold text-xl">
 				₹99<span class="font-normal text-gray-600 text-base">/ Month</span>
@@ -44,6 +44,40 @@
 				<li class="flex flex-row items-center">
 					<CircularCheckIcon class="mr-2" />
 					5 GB
+				</li>
+			</ul>
+		</div>
+		<div class="p-5 rounded-2xl shadow-lg ring-2 ring-blue-500 relative">
+			<input
+				type="checkbox"
+				class="absolute
+				top-3
+				right-3
+				h-4
+				w-4
+				text-blue-500
+				focus:ring-blue-500
+				border-gray-300
+				rounded"
+				checked
+			/>
+			<h4 class="text-gray-900 font-semibold text-xl">
+				₹390<span class="font-normal text-gray-600 text-base">/ Month</span>
+			</h4>
+			<h4 class="mt-1 text-gray-600 text-base line-through">₹299</h4>
+
+			<ul class="mt-5 text-base text-gray-700 space-y-2">
+				<li class="flex flex-row items-center">
+					<CircularCheckIcon class="mr-2" />
+					40 member
+				</li>
+				<li class="flex flex-row items-center">
+					<CircularCheckIcon class="mr-2" />
+					1 year data rentention
+				</li>
+				<li class="flex flex-row items-center">
+					<CircularCheckIcon class="mr-2" />
+					Unlimited
 				</li>
 			</ul>
 		</div>
