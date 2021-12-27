@@ -12,6 +12,7 @@ from press.press.doctype.site.site import Site
 class MarketplaceAppSubscription(Document):
 	def validate(self):
 		self.set_secret_key()
+		self.validate_marketplace_app_plan()
 		# TODO: Validate Duplicate subscription
 
 	def set_secret_key(self):
@@ -21,6 +22,12 @@ class MarketplaceAppSubscription(Document):
 			h = blake2b(digest_size=20)
 			h.update(self.name.encode())
 			self.secret_key = h.hexdigest()
+
+	def validate_marketplace_app_plan(self):
+		app = frappe.db.get_value("Marketplace App Plan", self.plan, "app")
+
+		if app != self.app:
+			frappe.throw(f"Plan {self.plan} is not for app {frappe.bold(self.app)}!")
 
 	def after_insert(self):
 		# TODO: Check if this key already exists
