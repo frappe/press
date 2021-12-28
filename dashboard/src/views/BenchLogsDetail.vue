@@ -62,7 +62,7 @@ export default {
 			return this.$resources.log.data && this.$resources.log.data[this.logName];
 		},
 		logLines() {
-			if (this.log && this.logName) return this.log.split('\n');
+			if (this.log && this.logName) return this.log.split('\n').slice(-4096);
 			return [];
 		}
 	}
