@@ -31,9 +31,7 @@
 				:style="{ width: viewportWidth < 768 ? 'calc(100vw - 6rem)' : '' }"
 			>
 				<div class="overflow-x-auto">
-					<div v-for="(line, id) in logLines" :key="id">
-						{{ line }}
-					</div>
+					<pre v-for="(line, id) in logLines" :key="id">{{ line }}</pre>
 				</div>
 			</div>
 		</div>
