@@ -1,219 +1,230 @@
 {
-    "actions": [],
-    "allow_guest_to_view": 1,
-    "creation": "2020-09-02 22:57:04.696244",
-    "doctype": "DocType",
-    "editable_grid": 1,
-    "engine": "InnoDB",
-    "field_order": [
-        "image",
-        "app",
-        "title",
-        "route",
-        "column_break_3",
-        "category",
-        "status",
-        "team",
-        "published",
-        "section_break_5",
-        "sources",
-        "description",
-        "app_screenshots_section",
-        "screenshots",
-        "section_break_15",
-        "long_description",
-        "links_section",
-        "website",
-        "support",
-        "documentation",
-        "column_break_16",
-        "privacy_policy",
-        "terms_of_service",
-        "pricing_details_section",
-        "available_plans"
-    ],
-    "fields": [
-        {
-            "fieldname": "image",
-            "fieldtype": "Attach Image",
-            "hidden": 1,
-            "label": "Image"
-        },
-        {
-            "fetch_from": "app.title",
-            "fetch_if_empty": 1,
-            "fieldname": "title",
-            "fieldtype": "Data",
-            "in_list_view": 1,
-            "label": "Title",
-            "reqd": 1
-        },
-        {
-            "fieldname": "column_break_3",
-            "fieldtype": "Column Break"
-        },
-        {
-            "fieldname": "category",
-            "fieldtype": "Link",
-            "label": "Category",
-            "options": "Marketplace App Category"
-        },
-        {
-            "default": "Draft",
-            "fieldname": "status",
-            "fieldtype": "Select",
-            "in_list_view": 1,
-            "in_standard_filter": 1,
-            "label": "Status",
-            "options": "Draft\nPublished"
-        },
-        {
-            "fieldname": "section_break_5",
-            "fieldtype": "Section Break"
-        },
-        {
-            "fieldname": "description",
-            "fieldtype": "Small Text",
-            "in_list_view": 1,
-            "label": "Description",
-            "reqd": 1
-        },
-        {
-            "fieldname": "long_description",
-            "fieldtype": "Markdown Editor",
-            "label": "Long Description"
-        },
-        {
-            "fieldname": "links_section",
-            "fieldtype": "Section Break",
-            "label": "Links"
-        },
-        {
-            "fieldname": "website",
-            "fieldtype": "Data",
-            "label": "Website",
-            "options": "URL"
-        },
-        {
-            "fieldname": "support",
-            "fieldtype": "Data",
-            "label": "Support",
-            "options": "URL"
-        },
-        {
-            "fieldname": "privacy_policy",
-            "fieldtype": "Data",
-            "label": "Privacy Policy",
-            "options": "URL"
-        },
-        {
-            "fieldname": "documentation",
-            "fieldtype": "Data",
-            "label": "Documentation",
-            "options": "URL"
-        },
-        {
-            "fieldname": "terms_of_service",
-            "fieldtype": "Data",
-            "label": "Terms of Service",
-            "options": "URL"
-        },
-        {
-            "fieldname": "route",
-            "fieldtype": "Data",
-            "label": "Route"
-        },
-        {
-            "default": "0",
-            "fieldname": "published",
-            "fieldtype": "Check",
-            "label": "Published",
-            "read_only": 1
-        },
-        {
-            "fieldname": "app",
-            "fieldtype": "Link",
-            "label": "App",
-            "options": "App",
-            "reqd": 1,
-            "unique": 1
-        },
-        {
-            "fieldname": "column_break_16",
-            "fieldtype": "Column Break"
-        },
-        {
-            "fieldname": "team",
-            "fieldtype": "Link",
-            "in_standard_filter": 1,
-            "label": "Team",
-            "options": "Team"
-        },
-        {
-            "fieldname": "sources",
-            "fieldtype": "Table",
-            "label": "Sources",
-            "options": "Marketplace App Version"
-        },
-        {
-            "fieldname": "app_screenshots_section",
-            "fieldtype": "Section Break",
-            "label": "App Screenshots"
-        },
-        {
-            "fieldname": "screenshots",
-            "fieldtype": "Table",
-            "label": "Screenshots",
-            "options": "Marketplace App Screenshot"
-        },
-        {
-            "fieldname": "section_break_15",
-            "fieldtype": "Section Break"
-        },
-        {
-            "fieldname": "pricing_details_section",
-            "fieldtype": "Section Break",
-            "label": "Pricing Details"
-        },
-        {
-            "fieldname": "available_plans",
-            "fieldtype": "Table",
-            "label": "Available Plans",
-            "options": "Marketplace App Plans"
-        }
-    ],
-    "has_web_view": 1,
-    "image_field": "image",
-    "index_web_pages_for_search": 1,
-    "is_published_field": "published",
-    "links": [
-        {
-            "group": "General",
-            "link_doctype": "App Release Approval Request",
-            "link_fieldname": "marketplace_app"
-        }
-    ],
-    "modified": "2021-11-26 15:35:47.871296",
-    "modified_by": "Administrator",
-    "module": "Press",
-    "name": "Marketplace App",
-    "owner": "Administrator",
-    "permissions": [
-        {
-            "create": 1,
-            "delete": 1,
-            "email": 1,
-            "export": 1,
-            "print": 1,
-            "read": 1,
-            "report": 1,
-            "role": "System Manager",
-            "share": 1,
-            "write": 1
-        }
-    ],
-    "sort_field": "modified",
-    "sort_order": "DESC",
-    "title_field": "title",
-    "track_changes": 1
+ "actions": [],
+ "allow_guest_to_view": 1,
+ "creation": "2020-09-02 22:57:04.696244",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "image",
+  "app",
+  "title",
+  "route",
+  "column_break_3",
+  "category",
+  "status",
+  "team",
+  "published",
+  "section_break_5",
+  "sources",
+  "description",
+  "app_screenshots_section",
+  "screenshots",
+  "section_break_15",
+  "long_description",
+  "links_section",
+  "website",
+  "support",
+  "documentation",
+  "column_break_16",
+  "privacy_policy",
+  "terms_of_service",
+  "pricing_details_section",
+  "available_plans"
+ ],
+ "fields": [
+  {
+   "fieldname": "image",
+   "fieldtype": "Attach Image",
+   "hidden": 1,
+   "label": "Image"
+  },
+  {
+   "fetch_from": "app.title",
+   "fetch_if_empty": 1,
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Title",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "category",
+   "fieldtype": "Link",
+   "label": "Category",
+   "options": "Marketplace App Category"
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Draft\nPublished"
+  },
+  {
+   "fieldname": "section_break_5",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Description",
+   "reqd": 1
+  },
+  {
+   "fieldname": "long_description",
+   "fieldtype": "Markdown Editor",
+   "label": "Long Description"
+  },
+  {
+   "fieldname": "links_section",
+   "fieldtype": "Section Break",
+   "label": "Links"
+  },
+  {
+   "fieldname": "website",
+   "fieldtype": "Data",
+   "label": "Website",
+   "options": "URL"
+  },
+  {
+   "fieldname": "support",
+   "fieldtype": "Data",
+   "label": "Support",
+   "options": "URL"
+  },
+  {
+   "fieldname": "privacy_policy",
+   "fieldtype": "Data",
+   "label": "Privacy Policy",
+   "options": "URL"
+  },
+  {
+   "fieldname": "documentation",
+   "fieldtype": "Data",
+   "label": "Documentation",
+   "options": "URL"
+  },
+  {
+   "fieldname": "terms_of_service",
+   "fieldtype": "Data",
+   "label": "Terms of Service",
+   "options": "URL"
+  },
+  {
+   "fieldname": "route",
+   "fieldtype": "Data",
+   "label": "Route"
+  },
+  {
+   "default": "0",
+   "fieldname": "published",
+   "fieldtype": "Check",
+   "label": "Published",
+   "read_only": 1
+  },
+  {
+   "fieldname": "app",
+   "fieldtype": "Link",
+   "label": "App",
+   "options": "App",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "column_break_16",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Team",
+   "options": "Team"
+  },
+  {
+   "fieldname": "sources",
+   "fieldtype": "Table",
+   "label": "Sources",
+   "options": "Marketplace App Version"
+  },
+  {
+   "fieldname": "app_screenshots_section",
+   "fieldtype": "Section Break",
+   "label": "App Screenshots"
+  },
+  {
+   "fieldname": "screenshots",
+   "fieldtype": "Table",
+   "label": "Screenshots",
+   "options": "Marketplace App Screenshot"
+  },
+  {
+   "fieldname": "section_break_15",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "pricing_details_section",
+   "fieldtype": "Section Break",
+   "label": "Pricing Details"
+  },
+  {
+   "fieldname": "available_plans",
+   "fieldtype": "Table",
+   "label": "Available Plans",
+   "options": "Marketplace App Plans"
+  }
+ ],
+ "has_web_view": 1,
+ "image_field": "image",
+ "index_web_pages_for_search": 1,
+ "is_published_field": "published",
+ "links": [
+  {
+   "group": "General",
+   "link_doctype": "App Release Approval Request",
+   "link_fieldname": "marketplace_app"
+  },
+  {
+   "group": "App Subscription",
+   "link_doctype": "Marketplace App Plan",
+   "link_fieldname": "app"
+  },
+  {
+   "group": "App Subscription",
+   "link_doctype": "Marketplace App Subscription",
+   "link_fieldname": "app"
+  }
+ ],
+ "modified": "2021-12-28 13:18:12.953340",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Marketplace App",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "title",
+ "track_changes": 1
 }
