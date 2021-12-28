@@ -56,7 +56,6 @@
 				h-4
 				w-4
 				text-blue-500
-				focus:ring-blue-500
 				border-gray-300
 				rounded"
 				checked
