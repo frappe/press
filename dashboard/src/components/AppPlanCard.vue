@@ -1,7 +1,7 @@
 <template>
 	<div
 		v-if="plan"
-		class="p-5 rounded-2xl shadow-lg"
+		class="p-5 rounded-2xl shadow-lg cursor-pointer"
 		:class="[
 			popular ? 'bg-blue-100 relative' : '',
 			selected ? 'ring-2 ring-blue-500 relative' : ''
