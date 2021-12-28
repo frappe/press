@@ -382,3 +382,14 @@ def add_app(source: str, app: str):
 def analytics(name: str):
 	marketplace_app_doc: MarketplaceApp = frappe.get_doc("Marketplace App", name)
 	return marketplace_app_doc.get_analytics()
+
+
+# PAID APPS APIs
+# (might refactor later to a separate file
+#  like 'api/marketplace/billing.py')
+
+
+@frappe.whitelist()
+def get_app_plans(app: str):
+	marketplace_app: MarketplaceApp = frappe.get_doc("Marketplace App", app)
+	return marketplace_app.get_plans()
