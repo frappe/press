@@ -1,93 +1,45 @@
 <template>
 	<div class="mx-auto flex flex-row gap-x-6">
-		<div class="p-5 rounded-2xl shadow-lg">
-			<h4 class="text-gray-900 font-semibold text-xl">
-				₹99<span class="font-normal text-gray-600 text-base">/ Month</span>
-			</h4>
-			<h4 class="mt-1 text-gray-600 text-base line-through">₹299</h4>
-
-			<ul class="mt-5 text-base text-gray-700 space-y-2">
-				<li class="flex flex-row items-center">
-					<CircularCheckIcon class="mr-2" />
-					1 member
-				</li>
-				<li class="flex flex-row items-center">
-					<CircularCheckIcon class="mr-2" />
-					7 day data rentention
-				</li>
-				<li class="flex flex-row items-center">
-					<CircularCheckIcon class="mr-2" />
-					1 GB
-				</li>
-			</ul>
-		</div>
-		<div class="p-5 rounded-2xl shadow-lg bg-blue-100 relative">
-			<div
-				class="-top-3 left-1/4 absolute py-1 px-2 text-xs bg-blue-500 text-center rounded-md"
-			>
-				<h5 class="uppercase text-white font-medium">Most Popular</h5>
-			</div>
-			<h4 class="text-gray-900 font-semibold text-xl">
-				₹149<span class="font-normal text-gray-600 text-base">/ Month</span>
-			</h4>
-			<h4 class="mt-1 text-gray-600 text-base line-through">₹499</h4>
-
-			<ul class="mt-5 text-base text-gray-700 space-y-2">
-				<li class="flex flex-row items-center">
-					<CircularCheckIcon class="mr-2" />
-					12 member
-				</li>
-				<li class="flex flex-row items-center">
-					<CircularCheckIcon class="mr-2" />
-					14 day data retention
-				</li>
-				<li class="flex flex-row items-center">
-					<CircularCheckIcon class="mr-2" />
-					5 GB
-				</li>
-			</ul>
-		</div>
-		<div class="p-5 rounded-2xl shadow-lg ring-2 ring-blue-500 relative">
-			<input
-				type="checkbox"
-				class="absolute
-				top-3
-				right-3
-				h-4
-				w-4
-				text-blue-500
-				border-gray-300
-				rounded"
-				checked
-			/>
-			<h4 class="text-gray-900 font-semibold text-xl">
-				₹390<span class="font-normal text-gray-600 text-base">/ Month</span>
-			</h4>
-			<h4 class="mt-1 text-gray-600 text-base line-through">₹299</h4>
-
-			<ul class="mt-5 text-base text-gray-700 space-y-2">
-				<li class="flex flex-row items-center">
-					<CircularCheckIcon class="mr-2" />
-					40 member
-				</li>
-				<li class="flex flex-row items-center">
-					<CircularCheckIcon class="mr-2" />
-					1 year data rentention
-				</li>
-				<li class="flex flex-row items-center">
-					<CircularCheckIcon class="mr-2" />
-					Unlimited
-				</li>
-			</ul>
-		</div>
+		<AppPlanCard
+			v-for="plan in plans"
+			:plan="plan"
+			:key="plan.price"
+			:popular="plan.isMostPopular"
+			:selected="plan.selected"
+		/>
 	</div>
 </template>
 
 <script>
+import AppPlanCard from '@/components/AppPlanCard.vue';
+
 export default {
 	name: 'ChangeAppPlanCards',
+	components: {
+		AppPlanCard
+	},
 	data() {
-		return {};
+		return {
+			plans: [
+				{
+					price: '₹99',
+					discountedFrom: '₹299',
+					features: ['1 member', '7 day data retention', '1 GB']
+				},
+				{
+					price: '₹149',
+					discountedFrom: '₹499',
+					features: ['12 member', '14 day data retention', '5 GB'],
+					isMostPopular: true
+				},
+				{
+					price: '₹390',
+					discountedFrom: '₹799',
+					features: ['40 member', '1 year data retention', 'Unlimited'],
+					selected: true
+				}
+			]
+		};
 	}
 };
 </script>
