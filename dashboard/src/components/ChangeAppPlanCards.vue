@@ -5,7 +5,8 @@
 			:plan="plan"
 			:key="plan.price"
 			:popular="plan.isMostPopular"
-			:selected="plan.selected"
+			:selected="selectedPlan == plan"
+			@click.native="handleCardClick(plan)"
 		/>
 	</div>
 </template>
@@ -20,6 +21,7 @@ export default {
 	},
 	data() {
 		return {
+			selectedPlan: null,
 			plans: [
 				{
 					price: '₹99',
@@ -35,11 +37,15 @@ export default {
 				{
 					price: '₹390',
 					discountedFrom: '₹799',
-					features: ['40 member', '1 year data retention', 'Unlimited'],
-					selected: true
+					features: ['40 member', '1 year data retention', 'Unlimited']
 				}
 			]
 		};
+	},
+	methods: {
+		handleCardClick(plan) {
+			this.selectedPlan = plan;
+		}
 	}
 };
 </script>
