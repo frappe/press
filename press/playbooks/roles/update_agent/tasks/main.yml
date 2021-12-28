@@ -12,3 +12,9 @@
   command: /home/frappe/agent/env/bin/agent update
   args:
     chdir: /home/frappe/agent
+  ignore_errors: yes
+
+- name: Start Agent processes
+  supervisorctl:
+    name: "agent:"
+    state: started
