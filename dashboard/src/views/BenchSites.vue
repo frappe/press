@@ -46,7 +46,7 @@
 				v-if="selectedVersion"
 			>
 				<section>
-					<div class="flex items-center">
+					<div class="flex items-center justify-between">
 						<Button
 							class="mr-3 md:hidden"
 							@click="$router.back()"
@@ -65,6 +65,12 @@
 								}}
 							</p>
 						</div>
+						<router-link
+							class="text-base text-blue-500 hover:text-blue-600"
+							:to="`/benches/${bench.name}/logs/${selectedVersion.name}/`"
+						>
+							View Logs →
+						</router-link>
 					</div>
 					<h5 class="mt-4 text-lg font-semibold">Sites</h5>
 					<div class="mt-2">
