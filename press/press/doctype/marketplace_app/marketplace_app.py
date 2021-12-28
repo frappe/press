@@ -5,11 +5,15 @@
 import frappe
 import requests
 
+from typing import List
 from base64 import b64decode
 from press.utils import get_last_doc
 from press.api.github import get_access_token
 from frappe.website.utils import cleanup_page_name
 from frappe.website.website_generator import WebsiteGenerator
+from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
+	get_app_plan_features,
+)
 
 
 class MarketplaceApp(WebsiteGenerator):
@@ -205,3 +209,26 @@ class MarketplaceApp(WebsiteGenerator):
 			"num_installs_active_sites": num_installs_active_sites,
 			"num_installs_active_benches": num_installs_active_benches,
 		}
+
+	def get_plans(self) -> List:
+		plans = []
+
+		marketplace_app_plans = frappe.get_all(
+			"Marketplace App Plan", filters={"app": self.name}, fields=["name", "plan"]
+		)
+
+		for app_plan in marketplace_app_plans:
+			plan_data = {}
+			plan_data["name"] = app_plan.name
+
+			plan_data.update(
+				frappe.db.get_value(
+					"Plan", app_plan.plan, ["plan_title", "price_usd", "price_inr"], as_dict=True
+				)
+			)
+
+			plan_data["features"] = get_app_plan_features(app_plan.name)
+
+			plans.append(plan_data)
+
+		return plans

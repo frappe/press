@@ -42,6 +42,20 @@ export default {
 			]
 		};
 	},
+	resources: {
+		getAppPlans() {
+			return {
+				method: 'press.api.marketplace.get_app_plans',
+				params: {
+					app: 'darkify' // TODO: Replace with prop 'app'
+				},
+				auto: true,
+				onSuccess(d) {
+					console.log(d);
+				}
+			};
+		}
+	},
 	methods: {
 		handleCardClick(plan) {
 			this.selectedPlan = plan;
