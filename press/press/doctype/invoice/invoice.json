@@ -329,9 +329,14 @@
    "group": "Documents",
    "link_doctype": "Balance Transaction",
    "link_fieldname": "invoice"
+  },
+  {
+   "group": "Documents",
+   "link_doctype": "Stripe Payment Event",
+   "link_fieldname": "invoice"
   }
  ],
- "modified": "2021-11-09 14:44:46.498575",
+ "modified": "2021-12-29 15:56:52.487522",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",
@@ -366,5 +371,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }
