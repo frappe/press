@@ -231,4 +231,6 @@ class MarketplaceApp(WebsiteGenerator):
 
 			plans.append(plan_data)
 
+		plans.sort(key=lambda x: x["price_usd"])
+
 		return plans
