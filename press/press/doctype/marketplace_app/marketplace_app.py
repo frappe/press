@@ -214,18 +214,19 @@ class MarketplaceApp(WebsiteGenerator):
 		plans = []
 
 		marketplace_app_plans = frappe.get_all(
-			"Marketplace App Plan", filters={"app": self.name}, fields=["name", "plan"]
+			"Marketplace App Plan",
+			filters={"app": self.name},
+			fields=["name", "plan", "discount_percent", "marked_most_popular"],
 		)
 
 		for app_plan in marketplace_app_plans:
 			plan_data = {}
-			plan_data["name"] = app_plan.name
+			plan_data.update(app_plan)
 
-			plan_data.update(
-				frappe.db.get_value(
-					"Plan", app_plan.plan, ["plan_title", "price_usd", "price_inr"], as_dict=True
-				)
-			)
+			plan_discount_percent = app_plan.discount_percent
+			plan_data["discounted"] = plan_discount_percent > 0
+			plan_prices = get_plan_prices(app_plan.plan, plan_discount_percent)
+			plan_data.update(plan_prices)
 
 			plan_data["features"] = get_app_plan_features(app_plan.name)
 
@@ -234,3 +235,28 @@ class MarketplaceApp(WebsiteGenerator):
 		plans.sort(key=lambda x: x["price_usd"])
 
 		return plans
+
+
+def get_plan_prices(plan_name, discount_percent=0.0):
+	"""Returns plan prices after applying the discount (if applicable)"""
+	plan_prices = frappe.db.get_value(
+		"Plan", plan_name, ["plan_title", "price_usd", "price_inr"], as_dict=True
+	)
+
+	if discount_percent > 0:
+		plan_prices.price_usd_before_discount = plan_prices.price_usd
+		plan_prices.price_usd = get_price_after_discount(
+			plan_prices.price_usd, discount_percent
+		)
+
+		plan_prices.price_inr_before_discount = plan_prices.price_inr
+		plan_prices.price_inr = get_price_after_discount(
+			plan_prices.price_inr, discount_percent
+		)
+
+	return plan_prices
+
+
+def get_price_after_discount(price, discount_percent):
+	discount_amount = price * discount_percent / 100
+	return round(price - discount_amount)
