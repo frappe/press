@@ -1,13 +1,23 @@
 <template>
-	<div class="mx-auto flex flex-row gap-x-6">
-		<AppPlanCard
-			v-for="plan in plans"
-			:plan="plan"
-			:key="plan.price"
-			:popular="plan.isMostPopular"
-			:selected="selectedPlan == plan"
-			@click.native="handleCardClick(plan)"
-		/>
+	<div>
+		<ErrorMessage :error="$resources.getAppPlans.error" />
+
+		<Button
+			v-if="$resources.getAppPlans.loading"
+			:loading="true"
+			loadingText="Loading Plans..."
+		></Button>
+
+		<div v-if="plans" class="mx-auto flex flex-row gap-x-6">
+			<AppPlanCard
+				v-for="plan in plans"
+				:plan="plan"
+				:key="plan.name"
+				:popular="Boolean(plan.marked_most_popular)"
+				:selected="selectedPlan == plan"
+				@click.native="handleCardClick(plan)"
+			/>
+		</div>
 	</div>
 </template>
 
@@ -21,25 +31,7 @@ export default {
 	},
 	data() {
 		return {
-			selectedPlan: null,
-			plans: [
-				{
-					price: '₹99',
-					discountedFrom: '₹299',
-					features: ['1 member', '7 day data retention', '1 GB']
-				},
-				{
-					price: '₹149',
-					discountedFrom: '₹499',
-					features: ['12 member', '14 day data retention', '5 GB'],
-					isMostPopular: true
-				},
-				{
-					price: '₹390',
-					discountedFrom: '₹799',
-					features: ['40 member', '1 year data retention', 'Unlimited']
-				}
-			]
+			selectedPlan: null
 		};
 	},
 	resources: {
@@ -59,6 +51,16 @@ export default {
 	methods: {
 		handleCardClick(plan) {
 			this.selectedPlan = plan;
+		}
+	},
+	computed: {
+		plans() {
+			if (
+				this.$resources.getAppPlans.data &&
+				!this.$resources.getAppPlans.loading
+			) {
+				return this.$resources.getAppPlans.data;
+			}
 		}
 	}
 };
