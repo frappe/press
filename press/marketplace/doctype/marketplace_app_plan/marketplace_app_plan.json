@@ -9,7 +9,9 @@
  "field_order": [
   "app",
   "plan",
-  "features"
+  "features",
+  "discount_percent",
+  "marked_most_popular"
  ],
  "fields": [
   {
@@ -35,11 +37,22 @@
    "fieldtype": "Table",
    "label": "Features",
    "options": "Plan Feature"
+  },
+  {
+   "fieldname": "discount_percent",
+   "fieldtype": "Percent",
+   "label": "Discount Percent"
+  },
+  {
+   "default": "0",
+   "fieldname": "marked_most_popular",
+   "fieldtype": "Check",
+   "label": "Marked Most Popular"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-12-27 14:21:39.192896",
+ "modified": "2021-12-30 13:51:10.438373",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "Marketplace App Plan",
