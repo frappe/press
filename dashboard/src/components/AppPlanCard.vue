@@ -36,20 +36,13 @@
 			{{ plan.discountedFrom }}
 		</h4>
 
-		<ul class="mt-5 text-base text-gray-700 space-y-2">
-			<li
-				class="flex flex-row items-center"
-				v-for="feature in plan.features"
-				:key="feature"
-			>
-				<CircularCheckIcon class="mr-2" />
-				{{ feature }}
-			</li>
-		</ul>
+		<FeatureList class="mt-5" :features="plan.features" />
 	</div>
 </template>
 
 <script>
+import FeatureList from '@/components/FeatureList.vue';
+
 export default {
 	name: 'AppPlanCard',
 	props: {
@@ -64,6 +57,9 @@ export default {
 			type: Boolean,
 			default: false
 		}
+	},
+	components: {
+		FeatureList
 	}
 };
 </script>
