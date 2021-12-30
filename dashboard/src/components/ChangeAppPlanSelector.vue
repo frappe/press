@@ -29,10 +29,20 @@ export default {
 	components: {
 		AppPlanCard
 	},
+	props: ['currentPlan'],
+	model: {
+		prop: 'selectedPlan',
+		event: 'change'
+	},
 	data() {
 		return {
 			selectedPlan: null
 		};
+	},
+	mounted() {
+		if (this.currentPlan) {
+			// TODO: Handle already selected plan
+		}
 	},
 	resources: {
 		getAppPlans() {
@@ -41,16 +51,14 @@ export default {
 				params: {
 					app: 'darkify' // TODO: Replace with prop 'app'
 				},
-				auto: true,
-				onSuccess(d) {
-					console.log(d);
-				}
+				auto: true
 			};
 		}
 	},
 	methods: {
 		handleCardClick(plan) {
 			this.selectedPlan = plan;
+			this.$emit('change', plan);
 		}
 	},
 	computed: {
