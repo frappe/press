@@ -29,11 +29,19 @@
 		/>
 
 		<h4 class="text-gray-900 font-semibold text-xl">
-			{{ plan.price
+			{{ $planTitle(plan)
 			}}<span class="font-normal text-gray-600 text-base">/ Month</span>
 		</h4>
-		<h4 class="mt-1 text-gray-600 text-base line-through">
-			{{ plan.discountedFrom }}
+		<h4
+			v-if="plan.discounted"
+			class="mt-1 text-gray-600 text-base line-through"
+		>
+			{{
+				$planTitle({
+					price_usd: plan.price_usd_before_discount,
+					price_inr: plan.price_inr_before_discount
+				})
+			}}
 		</h4>
 
 		<FeatureList class="mt-5" :features="plan.features" />
