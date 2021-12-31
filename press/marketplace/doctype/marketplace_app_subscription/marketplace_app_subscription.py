@@ -13,7 +13,7 @@ class MarketplaceAppSubscription(Document):
 	def validate(self):
 		self.set_secret_key()
 		self.validate_marketplace_app_plan()
-		# TODO: Validate Duplicate subscription
+		self.validate_duplicate_subscription()
 
 	def set_secret_key(self):
 		if not self.secret_key:
@@ -29,6 +29,17 @@ class MarketplaceAppSubscription(Document):
 		if app != self.app:
 			frappe.throw(
 				f"Plan {self.marketplace_app_plan} is not for app {frappe.bold(self.app)}!"
+			)
+
+	def validate_duplicate_subscription(self):
+		already_exists = frappe.db.exists(
+			"Marketplace App Subscription", {"app": self.app, "site": self.site}
+		)
+
+		if already_exists:
+			frappe.throw(
+				f"Subscription for app '{frappe.bold(self.app)}' already exists for"
+				f" site '{frappe.bold(self.site)}'!"
 			)
 
 	def on_update(self):
