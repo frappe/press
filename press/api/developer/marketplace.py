@@ -36,7 +36,14 @@ class DeveloperApiHandler:
 	def get_subscription_info(self) -> Dict:
 		"""Important rule for security: Send info back carefully"""
 		app_subscription_dict = self.app_subscription_doc.as_dict()
-		fields_to_send = ["app", "status", "plan", "site", "interval", "end_date"]
+		fields_to_send = [
+			"app",
+			"status",
+			"marketplace_app_plan",
+			"site",
+			"interval",
+			"end_date",
+		]
 
 		filtered_dict = {
 			x: app_subscription_dict[x] for x in app_subscription_dict if x in fields_to_send

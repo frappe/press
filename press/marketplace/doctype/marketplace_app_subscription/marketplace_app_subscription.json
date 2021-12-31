@@ -7,13 +7,14 @@
  "engine": "InnoDB",
  "field_order": [
   "site",
-  "plan",
+  "marketplace_app_plan",
   "status",
   "app",
   "start_date",
   "end_date",
   "secret_key",
-  "interval"
+  "interval",
+  "plan"
  ],
  "fields": [
   {
@@ -26,14 +27,7 @@
    "reqd": 1
   },
   {
-   "fieldname": "plan",
-   "fieldtype": "Link",
-   "label": "Plan",
-   "options": "Marketplace App Plan",
-   "reqd": 1
-  },
-  {
-   "default": "Inactive",
+   "default": "Active",
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -72,11 +66,25 @@
    "fieldtype": "Select",
    "label": "Interval",
    "options": "Daily\nMonthly\nAnnually"
+  },
+  {
+   "fieldname": "marketplace_app_plan",
+   "fieldtype": "Link",
+   "label": "Marketplace App Plan",
+   "options": "Marketplace App Plan",
+   "reqd": 1
+  },
+  {
+   "fieldname": "plan",
+   "fieldtype": "Link",
+   "label": "Plan",
+   "options": "Plan",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-12-27 18:27:35.498630",
+ "modified": "2021-12-31 22:59:14.697464",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "Marketplace App Subscription",
