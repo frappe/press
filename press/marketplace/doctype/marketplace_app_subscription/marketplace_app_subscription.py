@@ -24,10 +24,18 @@ class MarketplaceAppSubscription(Document):
 			self.secret_key = h.hexdigest()
 
 	def validate_marketplace_app_plan(self):
-		app = frappe.db.get_value("Marketplace App Plan", self.plan, "app")
+		app = frappe.db.get_value("Marketplace App Plan", self.marketplace_app_plan, "app")
 
 		if app != self.app:
-			frappe.throw(f"Plan {self.plan} is not for app {frappe.bold(self.app)}!")
+			frappe.throw(
+				f"Plan {self.marketplace_app_plan} is not for app {frappe.bold(self.app)}!"
+			)
+
+	def on_update(self):
+		if self.has_value_changed("marketplace_app_plan"):
+			self.plan = frappe.db.get_value(
+				"Marketplace App Plan", self.marketplace_app_plan, "plan"
+			)
 
 	def after_insert(self):
 		# TODO: Check if this key already exists
@@ -53,8 +61,7 @@ class MarketplaceAppSubscription(Document):
 		if not team.get_upcoming_invoice():
 			team.create_upcoming_invoice()
 
-		plan_name = frappe.db.get_value("Marketplace App Plan", self.plan, "plan")
-		plan = frappe.get_cached_doc("Plan", plan_name)
+		plan = frappe.get_cached_doc("Plan", self.plan)
 		amount = plan.get_price_for_interval(self.interval, team.currency)
 
 		usage_record = frappe.get_doc(
@@ -62,7 +69,7 @@ class MarketplaceAppSubscription(Document):
 			team=team_name,
 			document_type="Marketplace App",
 			document_name=self.app,
-			plan=plan_name,
+			plan=self.plan,
 			amount=amount,
 			subscription=self.name,
 			interval=self.interval,
@@ -73,14 +80,13 @@ class MarketplaceAppSubscription(Document):
 
 	def is_usage_record_created(self):
 		team = frappe.db.get_value("Site", self.site, "team")
-		plan_name = frappe.db.get_value("Marketplace App Plan", self.plan, "plan")
 		filters = {
 			"team": team,
 			"document_type": "Marketplace App",
 			"document_name": self.app,
 			"subscription": self.name,
 			"interval": self.interval,
-			"plan": plan_name,
+			"plan": self.plan,
 		}
 
 		if self.interval == "Daily":
@@ -124,8 +130,7 @@ def create_usage_records():
 
 def should_create_usage_record(subscription: MarketplaceAppSubscription):
 	# For annual prepaid plans
-	plan_name = frappe.db.get_value("Marketplace App Plan", subscription.plan, "plan")
-	plan_interval = frappe.db.get_value("Plan", plan_name, "interval")
+	plan_interval = frappe.db.get_value("Plan", subscription.plan, "interval")
 
 	if plan_interval == "Annually":
 		return False
