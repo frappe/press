@@ -26,7 +26,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-01-02 00:12:06.191929",
+ "modified": "2022-01-02 00:18:02.595297",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "Developer Review Reply",
@@ -47,5 +47,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "title_field": "review"
 }
