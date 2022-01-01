@@ -5,5 +5,5 @@
 import unittest
 
 
-class TestAppUserReview(unittest.TestCase):
+class TestDeveloperReviewReply(unittest.TestCase):
 	pass
