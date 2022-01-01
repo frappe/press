@@ -41,8 +41,14 @@
   }
  ],
  "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2022-01-02 00:05:13.798578",
+ "links": [
+  {
+   "group": "General",
+   "link_doctype": "Developer Review Reply",
+   "link_fieldname": "review"
+  }
+ ],
+ "modified": "2022-01-02 00:14:53.082569",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "App User Review",
