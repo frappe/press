@@ -516,7 +516,7 @@ def search_list():
 	)
 
 	return groups
-	
+
 
 @frappe.whitelist()
 def archive(name, title):

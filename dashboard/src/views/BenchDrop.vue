@@ -3,8 +3,9 @@
 		<slot v-bind="{ showDialog }"></slot>
 		<Dialog v-model="dialogOpen" title="Drop Bench">
 			<p class="text-base">
-				Are you sure you want to drop this bench? All the sites on this bench should be dropped manually
-				before dropping the bench. This action cannot be undone.
+				Are you sure you want to drop this bench? All the sites on this bench
+				should be dropped manually before dropping the bench. This action cannot
+				be undone.
 			</p>
 			<p class="mt-4 text-base">
 				Please type
@@ -30,7 +31,7 @@
 </template>
 
 <script>
-export default{
+export default {
 	name: 'BenchDrop',
 	props: ['bench'],
 	data() {
@@ -45,12 +46,12 @@ export default{
 				method: 'press.api.bench.archive',
 				params: {
 					name: this.bench.name,
-					title: this.bench.title,
+					title: this.bench.title
 				},
 				onSuccess() {
 					this.dialogOpen = false;
 					this.$router.push('/sites');
-					this.$router.go()
+					this.$router.go();
 				},
 				validate() {
 					if (this.bench.title !== this.confirmBenchName) {
@@ -58,12 +59,12 @@ export default{
 					}
 				}
 			};
-		},
+		}
 	},
 	methods: {
 		showDialog() {
 			this.dialogOpen = true;
 		}
-	},
-}
+	}
+};
 </script>
