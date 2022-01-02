@@ -19,7 +19,7 @@
 			<ListItem
 				v-if="bench.status !== 'Awaiting Deploy'"
 				title="Drop Bench"
-				description="Once you drop bench there's no going back"
+				description="Permanently delete the bench and related data"
 			>
 				<template slot="actions">
 					<BenchDrop :bench="bench" v-slot="{ showDialog }">
