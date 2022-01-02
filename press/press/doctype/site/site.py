@@ -263,7 +263,7 @@ class Site(Document):
 
 	def create_agent_request(self):
 		agent = Agent(self.server)
-		if self.remote_database_file and self.remote_private_file and self.remote_public_file:
+		if self.remote_database_file:
 			agent.new_site_from_backup(self, skip_failing_patches=self.skip_failing_patches)
 		else:
 			agent.new_site(self)
@@ -676,6 +676,13 @@ class Site(Document):
 			return True
 		return False
 
+	def _sync_database_name(self, config):
+		database_name = config.get("db_name")
+		if self.database_name != database_name:
+			self.database_name = database_name
+			return True
+		return False
+
 	def sync_info(self, data=None):
 		"""Updates Site Usage, site.config and timezone details for site."""
 		if not data:
@@ -688,6 +695,7 @@ class Site(Document):
 		self._sync_usage_info(fetched_usage)
 		to_save = self._sync_config_info(fetched_config)
 		to_save |= self._sync_timezone_info(fetched_timezone)
+		to_save |= self._sync_database_name(fetched_config)
 
 		if to_save:
 			self.save()
@@ -794,12 +802,24 @@ class Site(Document):
 			subscription.disable()
 
 	def can_change_plan(self):
+		user = frappe.session.user
+		user_type = frappe.db.get_value("User", user, "user_type", cache=True)
+		if user_type == "System User":
+			return
+
 		team = frappe.get_doc("Team", self.team)
 
 		if team.is_defaulter():
 			frappe.throw("Cannot change plan because you have unpaid invoices")
 
-		if not (team.default_payment_method or team.get_balance()):
+		if team.payment_mode == "Partner Credits" and (
+			not team.get_available_partner_credits() > 0
+		):
+			frappe.throw("Cannot change plan because you don't have sufficient partner credits")
+
+		if team.payment_mode != "Partner Credits" and not (
+			team.default_payment_method or team.get_balance()
+		):
 			frappe.throw(
 				"Cannot change plan because you haven't added a card and not have enough balance"
 			)

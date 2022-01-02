@@ -5,14 +5,7 @@
 		subtitle="Your unique referral link"
 	>
 		<div class="space-y-4">
-			<div
-				class="p-2 items-center rounded-lg flex flex-row border-2 justify-between"
-			>
-				<p class="text-sm text-gray-800 font-mono overflow-hidden">
-					{{ referralLink }}
-				</p>
-				<Button icon="copy" @click="copyReferralLink" />
-			</div>
+			<ClickToCopyField :textContent="referralLink" />
 			<h3 class="text-base text-gray-700">
 				When someone sign's up using the above link and spends at least
 				{{ creditAmountInTeamCurrency }} on Frappe Cloud, you
@@ -24,19 +17,12 @@
 	</Card>
 </template>
 <script>
+import ClickToCopyField from '@/components/ClickToCopyField.vue';
+
 export default {
 	name: 'AccountRefferal',
-	methods: {
-		copyReferralLink() {
-			const clipboard = window.navigator.clipboard;
-			clipboard.writeText(this.referralLink).then(() => {
-				this.$notify({
-					title: 'Link copied to clipboard!',
-					icon: 'check',
-					color: 'green'
-				});
-			});
-		}
+	components: {
+		ClickToCopyField
 	},
 	computed: {
 		referralLink() {

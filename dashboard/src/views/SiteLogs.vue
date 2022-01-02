@@ -1,7 +1,7 @@
 <template>
 	<CardWithDetails
 		title="Logs"
-		subtitle="Available Logs for your site"
+		subtitle="Available logs for your site"
 		:showDetails="logName"
 	>
 		<div v-if="$resources.logs.data && $resources.logs.data.length">
@@ -14,7 +14,7 @@
 			>
 				<ListItem
 					:title="log.name"
-					:description="`${formatDate(log.modified)} - ${log.size} kB`"
+					:description="`${formatDate(log.modified) + '\n' + log.size} kB`"
 				/>
 				<div class="border-b"></div>
 			</router-link>

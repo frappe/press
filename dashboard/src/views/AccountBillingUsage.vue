@@ -35,21 +35,34 @@
 						<!-- prettier-ignore -->
 						<svg width="26" height="20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 6.5A1.5 1.5 0 012.5 5h17A1.5 1.5 0 0121 6.5v11a1.5 1.5 0 01-1.5 1.5h-17A1.5 1.5 0 011 17.5v-11z" stroke="url(#paint0_linear)" stroke-miterlimit="10"/><path d="M5 5V2.5A1.5 1.5 0 016.5 1h17A1.5 1.5 0 0125 2.5v9a1.5 1.5 0 01-1.5 1.5H21" stroke="url(#paint1_linear)" stroke-miterlimit="10"/><path d="M11 15a3 3 0 100-6 3 3 0 000 6z" stroke="url(#paint2_linear)" stroke-miterlimit="10"/><defs><linearGradient id="paint0_linear" x1="1" y1="5" x2="1" y2="19" gradientUnits="userSpaceOnUse"><stop stop-color="#2C9AF1"/><stop offset="1" stop-color="#2490EF"/></linearGradient><linearGradient id="paint1_linear" x1="5" y1="1" x2="5" y2="13" gradientUnits="userSpaceOnUse"><stop stop-color="#2C9AF1"/><stop offset="1" stop-color="#2490EF"/></linearGradient><linearGradient id="paint2_linear" x1="8" y1="9" x2="8" y2="15" gradientUnits="userSpaceOnUse"><stop stop-color="#2C9AF1"/><stop offset="1" stop-color="#2490EF"/></linearGradient></defs></svg>
 						<div class="ml-4">
-							<div class="text-base text-gray-600">Account Balance</div>
-							<div class="text-lg font-medium text-gray-900">
+							<div class="text-base text-gray-600">
+								{{
+									$account.team.payment_mode === 'Partner Credits'
+										? 'Available Partner Credits'
+										: 'Account Balance'
+								}}
+							</div>
+							<div v-if="loading || $resources.availablePartnerCredits.loading">
+								<Button :loading="true">Loading</Button>
+							</div>
+							<div v-else class="text-lg font-medium text-gray-900">
 								{{ availableCredits }}
 							</div>
 						</div>
 						<div class="ml-auto space-x-2">
-							<Button @click="showPrepaidCreditsDialog = true" type="white">
+							<Button
+								v-if="$account.team.payment_mode === 'Partner Credits'"
+								link="https://frappe.io/partners/buy_credits"
+								type="white"
+							>
 								Add Balance
 							</Button>
 							<Button
-								v-if="$account.team.erpnext_partner"
-								@click="showTransferCreditsDialog = true"
+								v-else
+								@click="showPrepaidCreditsDialog = true"
 								type="white"
 							>
-								Transfer Credits
+								Add Balance
 							</Button>
 						</div>
 					</div>
@@ -59,12 +72,6 @@
 			<div class="py-20 text-center" v-if="loading">
 				<Button :loading="true" loadingText="Loading" />
 			</div>
-
-			<TransferCreditsDialog
-				v-if="showTransferCreditsDialog"
-				:show.sync="showTransferCreditsDialog"
-				@success="$resources.upcomingInvoice.reload()"
-			/>
 
 			<PrepaidCreditsDialog
 				v-if="showPrepaidCreditsDialog"
@@ -88,18 +95,25 @@ export default {
 	components: {
 		PlanIcon,
 		AccountBillingUpcomingInvoice,
-		TransferCreditsDialog: () =>
-			import('@/components/TransferCreditsDialog.vue'),
 		PrepaidCreditsDialog: () => import('@/components/PrepaidCreditsDialog.vue'),
 		ChangePaymentModeDialog: () =>
 			import('@/components/ChangePaymentModeDialog.vue')
 	},
 	resources: {
-		upcomingInvoice: 'press.api.billing.upcoming_invoice'
+		upcomingInvoice: 'press.api.billing.upcoming_invoice',
+		availablePartnerCredits() {
+			return {
+				method: 'press.api.billing.get_partner_credits',
+				validate() {
+					if (!this.$account.team.erpnext_partner) {
+						return 'Not an ERPNext partner.';
+					}
+				}
+			};
+		}
 	},
 	data() {
 		return {
-			showTransferCreditsDialog: false,
 			showPrepaidCreditsDialog: false,
 			showChangeModeDialog: false
 		};
@@ -108,6 +122,10 @@ export default {
 		this.$socket.on('balance_updated', () =>
 			this.$resources.upcomingInvoice.reload()
 		);
+
+		if (this.$account.team.payment_mode === 'Partner Credits') {
+			this.$resources.availablePartnerCredits.submit();
+		}
 	},
 	destroyed() {
 		this.$socket.off('balance_updated');
@@ -117,6 +135,10 @@ export default {
 			return this.$resources.upcomingInvoice.data?.upcoming_invoice;
 		},
 		availableCredits() {
+			if (this.$account.team.payment_mode === 'Partner Credits') {
+				return this.$resources.availablePartnerCredits.data;
+			}
+
 			return this.$resources.upcomingInvoice.data?.available_credits;
 		},
 		paymentDate() {
@@ -146,6 +168,10 @@ export default {
 			}
 			if (payment_mode === 'Prepaid Credits') {
 				return `You will be charged from your account balance on ${this.paymentDate}.`;
+			}
+
+			if (payment_mode === 'Partner Credits') {
+				return `You will be charged from your Partner Credits on ${this.paymentDate}.`;
 			}
 			return '';
 		},
