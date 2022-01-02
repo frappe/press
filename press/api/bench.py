@@ -520,7 +520,9 @@ def search_list():
 
 @frappe.whitelist()
 def archive(name):
-	benches = frappe.get_all("Bench", filters={"group": name, "status": "Active"}, pluck="name")
+	benches = frappe.get_all(
+		"Bench", filters={"group": name, "status": "Active"}, pluck="name"
+	)
 
 	for bench in benches:
 		frappe.get_doc("Bench", bench).archive()
