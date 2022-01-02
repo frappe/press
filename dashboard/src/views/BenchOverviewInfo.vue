@@ -22,7 +22,7 @@
 				description="Once you drop bench there's no going back"
 			>
 				<template slot="actions">
-					<BenchDrop :bench='bench' v-slot="{ showDialog }">
+					<BenchDrop :bench="bench" v-slot="{ showDialog }">
 						<Button @click="showDialog">
 							<span class="text-red-600">Drop Bench</span>
 						</Button>
