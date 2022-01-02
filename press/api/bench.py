@@ -516,3 +516,16 @@ def search_list():
 	)
 
 	return groups
+	
+
+@frappe.whitelist()
+def archive(name, title):
+	benches = frappe.get_list("Bench", filters={"group": name, "status": "Active"})
+
+	for bench in benches:
+		frappe.get_doc("Bench", bench.name).archive()
+
+	group = frappe.get_doc("Release Group", name)
+	group.title = f"{title}.archived"
+	group.enabled = 0
+	group.save()
