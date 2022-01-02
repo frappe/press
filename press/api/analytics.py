@@ -146,31 +146,34 @@ def get_usage(site, type, timezone, timespan, timegrain):
 
 
 def get_current_cpu_usage(site):
-	log_server = frappe.db.get_single_value("Press Settings", "log_server")
-	if not log_server:
+	try:
+		log_server = frappe.db.get_single_value("Press Settings", "log_server")
+		if not log_server:
+			return 0
+
+		url = f"https://{log_server}/elasticsearch/filebeat-*/_search"
+		password = get_decrypted_password("Log Server", log_server, "kibana_password")
+
+		query = {
+			"query": {
+				"bool": {
+					"filter": [
+						{"match_phrase": {"json.transaction_type": "request"}},
+						{"match_phrase": {"json.site": site}},
+					]
+				}
+			},
+			"sort": {"@timestamp": "desc"},
+			"size": 1,
+		}
+
+		response = requests.post(url, json=query, auth=("frappe", password)).json()
+		hits = response["hits"]["hits"]
+		if hits:
+			return hits[0]["_source"]["json"]["request"].get("counter", 0)
 		return 0
-
-	url = f"https://{log_server}/elasticsearch/filebeat-*/_search"
-	password = get_decrypted_password("Log Server", log_server, "kibana_password")
-
-	query = {
-		"query": {
-			"bool": {
-				"filter": [
-					{"match_phrase": {"json.transaction_type": "request"}},
-					{"match_phrase": {"json.site": site}},
-				]
-			}
-		},
-		"sort": {"@timestamp": "desc"},
-		"size": 1,
-	}
-
-	response = requests.post(url, json=query, auth=("frappe", password)).json()
-	hits = response["hits"]["hits"]
-	if hits:
-		return hits[0]["_source"]["json"]["request"].get("counter", 0)
-	return 0
+	except Exception:
+		return 0
 
 
 @frappe.whitelist()

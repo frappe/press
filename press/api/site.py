@@ -7,6 +7,7 @@ import wrapt
 import frappe
 import dns.resolver
 
+from typing import Dict
 from boto3 import client
 from frappe.core.utils import find
 from botocore.exceptions import ClientError
@@ -387,6 +388,7 @@ def all():
 		],
 		filters={"team": team, "status": ("!=", "Archived")},
 		order_by="creation desc",
+		ignore_ifnull=True,
 	)
 	benches_with_updates = set(benches_with_available_update())
 	for site in sites:
@@ -425,11 +427,6 @@ def all():
 	for group in groups:
 		group.benches = [bench for bench in benches if bench.group == group.name]
 		group.owned_by_team = team == group.team
-		group.status = (
-			"Active"
-			if frappe.get_all("Bench", {"group": group.name, "status": "Active"}, limit=1)
-			else "Awaiting Deploy"
-		)
 
 		group.sites = []
 		for bench in group.benches:
@@ -459,6 +456,7 @@ def get(name):
 		"setup_wizard_complete": site.setup_wizard_complete,
 		"group": group_name,
 		"team": site.team,
+		"server_region_info": get_server_region_info(site),
 	}
 
 
@@ -617,10 +615,14 @@ def get_installed_apps(site):
 	return installed_apps
 
 
+def get_server_region_info(site) -> Dict:
+	"""Return a Dict with `title` and `image`"""
+	return frappe.db.get_value("Cluster", site.cluster, ["title", "image"], as_dict=True)
+
+
 @frappe.whitelist()
 @protected("Site")
 def available_apps(name):
-	team = get_current_team()
 	site = frappe.get_doc("Site", name)
 	installed_apps = [app.app for app in site.apps]
 
@@ -643,7 +645,7 @@ def available_apps(name):
 		filters={"name": ("in", bench_sources)},
 	)
 	for source in sources:
-		if (source.app not in installed_apps) and (source.public or source.team == team):
+		if source.app not in installed_apps:
 			available_sources.append(source)
 
 	return sorted(available_sources, key=lambda x: bench_sources.index(x.name))
@@ -772,6 +774,7 @@ def restore(name, files, skip_failing_patches=False):
 	site.remote_public_file = files["public"]
 	site.remote_private_file = files["private"]
 	site.save()
+	site.reload()
 	site.restore_site(skip_failing_patches=skip_failing_patches)
 
 

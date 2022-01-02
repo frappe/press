@@ -116,10 +116,17 @@
 						</div>
 					</div>
 				</div>
-				<div class="px-2 mt-3">
+				<div class="px-2 mt-3 space-y-3">
+					<a
+						href="/support/tickets"
+						target="_blank"
+						class="block px-3 pt-4 text-base font-medium rounded-md focus:outline-none"
+					>
+						Support
+					</a>
 					<a
 						href="#"
-						class="block px-3 py-2 text-base font-medium rounded-md focus:outline-none"
+						class="block px-3 text-base font-medium rounded-md focus:outline-none"
 						@click.prevent="$auth.logout"
 					>
 						Logout

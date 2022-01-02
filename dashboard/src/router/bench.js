@@ -30,6 +30,11 @@ export default [
 				props: true
 			},
 			{
+				path: 'logs/:instanceName/:logName?',
+				component: () => import('../views/BenchLogs.vue'),
+				props: true
+			},
+			{
 				path: 'jobs/:jobName?',
 				component: () => import('../views/BenchJobs.vue'),
 				props: true

@@ -529,3 +529,16 @@ def archive(name, title):
 	group.title = f"{title}.archived"
 	group.enabled = 0
 	group.save()
+  
+  
+@protected("Bench")
+def logs(name, bench):
+	if frappe.db.get_value("Bench", bench, "group") == name:
+		return frappe.get_doc("Bench", bench).server_logs
+
+
+@frappe.whitelist()
+@protected("Bench")
+def log(name, bench, log):
+	if frappe.db.get_value("Bench", bench, "group") == name:
+		return frappe.get_doc("Bench", bench).get_server_log(log)

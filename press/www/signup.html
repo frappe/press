@@ -4,7 +4,8 @@
 
 <h1>Create a new account</h1>
 
-<div class="mx-auto form-container col-xl-5 col-lg-6 col-md-7 col-sm-9" id="user-signup" data-validators="field_validators">
+<div class="mx-auto form-container col-xl-5 col-lg-6 col-md-7 col-sm-9" id="user-signup"
+	data-validators="field_validators">
 	<div class="card">
 		<div class="card-body">
 			<div class="alert alert-primary form-alert-info small" style="display: none;" role="alert"></div>
@@ -14,13 +15,8 @@
 				<div class="form-group">
 					<label for="subdomain">Site Name</label>
 					<div class="input-group">
-						<input type="text"
-							id="subdomain"
-							name="subdomain"
-							class="form-control"
-							placeholder="yourcompany"
-							autocomplete="off"
-							onchange="validate_subdomain(this)">
+						<input type="text" id="subdomain" name="subdomain" class="form-control"
+							placeholder="yourcompany" autocomplete="off" onchange="validate_subdomain(this)">
 						<div class="input-group-append">
 							<span class="input-group-text rounded-right">.erpnext.com</span>
 						</div>
@@ -31,48 +27,35 @@
 				<div class="form-row">
 					<div class="form-group col-12 col-md-6">
 						<label for="first_name">First Name</label>
-						<input type="text"
-							id="first_name"
-							name="first_name"
-							class="form-control"
+						<input type="text" id="first_name" name="first_name" class="form-control"
 							autocomplete="given-name">
 					</div>
 					<div class="form-group col-12 col-md-6">
 						<label for="last_name">Last Name</label>
-						<input type="text"
-							id="last_name"
-							name="last_name"
-							class="form-control"
+						<input type="text" id="last_name" name="last_name" class="form-control"
 							autocomplete="family-name">
 					</div>
 				</div>
 				<div class="form-group">
 					<label for="email">Email address</label>
-					<input type="email"
-						id="email"
-						class="form-control"
-						name="email"
-						autocomplete="email">
+					<input type="email" id="email" class="form-control" name="email" autocomplete="email">
 				</div>
 				<div class="form-group">
 					<label for="phone">Phone Number</label>
-					<input type="tel"
-						id="phone"
-						class="form-control"
-						name="phone_number"
-						autocomplete="tel">
+					<input type="tel" id="phone" class="form-control" name="phone_number" autocomplete="tel">
 				</div>
 				<div class="form-group">
 					<label for="country">Country</label>
-					<input type="text"
-					id="country"
-					class="form-control"
-					name="country">
+					<input type="text" id="country" class="form-control" name="country">
 				</div>
 				<div class="form-group">
 					<input type="checkbox" name="user_accept_terms" id="user_accept_terms">
 					<label class="d-inline" for="user_accept_terms">
-						By clicking on <b>Create Account</b>, you accept our <a href="https://frappecloud.com/terms" class="text-blue-600">Terms of Service</a> & <a href="https://frappecloud.com/privacy" class="text-blue-600">Privacy Policy</a>
+						By clicking on <b>Create Account</b>, you accept our
+						<a href="https://frappecloud.com/terms" class="text-blue-600">Terms of Service</a>,
+						<a href="https://frappecloud.com/privacy" class="text-blue-600">Privacy Policy</a>
+						&#38;
+						<a href="https://frappecloud.com/cookie-policy" class="text-blue-600">Cookie Policy.</a>
 					</label>
 				</div>
 				<div class="form-message text-danger"></div>

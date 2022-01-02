@@ -77,6 +77,10 @@ website_redirects = [
 
 email_css = ["/assets/press/css/email.css"]
 
+jinja = {
+	"filters": ["press.press.doctype.marketplace_app.utils.number_k_format"],
+}
+
 # Installation
 # ------------
 
@@ -170,7 +174,6 @@ scheduler_events = {
 	"hourly": [
 		"press.press.doctype.app.app.poll_new_releases",
 		"press.press.doctype.site.backups.cleanup_local",
-		"press.press.doctype.site_migration.site_migration.run_scheduled_migrations",
 	],
 	"hourly_long": [
 		"press.press.doctype.bench.bench.archive_obsolete_benches",
@@ -194,6 +197,7 @@ scheduler_events = {
 			"press.press.doctype.site_update.site_update.schedule_updates",
 			"press.press.doctype.drip_email.drip_email.send_welcome_email",
 			"press.press.doctype.site.backups.schedule",
+			"press.press.doctype.site_migration.site_migration.run_scheduled_migrations",
 		],
 		"*/30 * * * *": ["press.press.doctype.site_update.scheduled_auto_updates.trigger"],
 		"15,45 * * * *": [

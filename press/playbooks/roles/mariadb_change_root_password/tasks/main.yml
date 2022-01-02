@@ -1,0 +1,41 @@
+---
+- name: Delete .my.cnf MariaDB Configuration File
+  file:
+    path: /root/.my.cnf
+    state: absent
+
+- name: Change MariaDB root Password for localhost
+  mysql_user:
+    login_user: root
+    login_password: "{{ mariadb_old_root_password }}"
+    check_implicit_admin: yes
+    name: root
+    host: "{{ item }}"
+    priv: "*.*:ALL,GRANT"
+    password: "{{ mariadb_root_password }}"
+    state: present
+  with_items:
+    - localhost
+
+- name: Change MariaDB root Password for other hosts
+  mysql_user:
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+    check_implicit_admin: yes
+    name: root
+    host: "{{ item }}"
+    priv: "*.*:ALL,GRANT"
+    password: "{{ mariadb_root_password }}"
+    state: present
+  with_items:
+    - 127.0.0.1
+    - ::1
+    - "%"
+
+- name: Add .my.cnf MariaDB Configuration File
+  template:
+    src: my.cnf
+    dest: /root/.my.cnf
+    owner: root
+    group: root
+    mode: 0600
