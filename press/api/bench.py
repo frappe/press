@@ -519,18 +519,18 @@ def search_list():
 
 
 @frappe.whitelist()
-def archive(name, title):
-	benches = frappe.get_list("Bench", filters={"group": name, "status": "Active"})
+def archive(name):
+	benches = frappe.get_all("Bench", filters={"group": name, "status": "Active"}, pluck="name")
 
 	for bench in benches:
-		frappe.get_doc("Bench", bench.name).archive()
+		frappe.get_doc("Bench", bench).archive()
 
 	group = frappe.get_doc("Release Group", name)
-	group.title = f"{title}.archived"
+	group.title = f"{group.title}.archived"
 	group.enabled = 0
 	group.save()
-  
-  
+
+
 @protected("Bench")
 def logs(name, bench):
 	if frappe.db.get_value("Bench", bench, "group") == name:

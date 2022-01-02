@@ -46,7 +46,6 @@ export default {
 				method: 'press.api.bench.archive',
 				params: {
 					name: this.bench.name,
-					title: this.bench.title
 				},
 				onSuccess() {
 					this.dialogOpen = false;
