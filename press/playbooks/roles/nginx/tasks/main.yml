@@ -5,6 +5,7 @@
       - nginx
       - nginx-extras
       - apache2-utils
+      - libpcre3-dev
     state: present
 
 - name: Setup NGINX Source Repository
