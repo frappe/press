@@ -492,8 +492,7 @@ def get_emails():
 @frappe.whitelist()
 def update_emails(data):
 	data = {x["type"]: x["value"] for x in json.loads(data)}
-	team = get_current_team()
-	team_doc = frappe.get_doc("Team", team)
+	team_doc = get_current_team(get_doc=True)
 
 	for row in team_doc.communication_emails:
 		row.value = data[row.type]
