@@ -16,6 +16,19 @@
 					{{ item.value }}
 				</div>
 			</div>
+			<ListItem
+				v-if="bench.status !== 'Awaiting Deploy'"
+				title="Drop Bench"
+				description="Permanently delete the bench and related data"
+			>
+				<template slot="actions">
+					<BenchDrop :bench="bench" v-slot="{ showDialog }">
+						<Button @click="showDialog">
+							<span class="text-red-600">Drop Bench</span>
+						</Button>
+					</BenchDrop>
+				</template>
+			</ListItem>
 		</div>
 		<Dialog title="Edit Title" v-model="showEditTitleDialog">
 			<Input label="Title" type="text" v-model="benchTitle" />
@@ -38,8 +51,13 @@
 	</Card>
 </template>
 <script>
+import BenchDrop from './BenchDrop.vue';
+
 export default {
 	name: 'BenchOverviewInfo',
+	components: {
+		BenchDrop
+	},
 	props: ['bench'],
 	data() {
 		return {
