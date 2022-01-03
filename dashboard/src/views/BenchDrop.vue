@@ -50,7 +50,6 @@ export default {
 				onSuccess() {
 					this.dialogOpen = false;
 					this.$router.push('/sites');
-					this.$router.go();
 				},
 				validate() {
 					if (this.bench.title !== this.confirmBenchName) {
