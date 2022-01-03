@@ -11,6 +11,7 @@ from collections import OrderedDict
 from press.api.site import protected
 from press.api.github import branches
 from frappe.core.utils import find, find_all
+from frappe.model.naming import append_number_if_name_exists
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.app_source.app_source import AppSource
 from press.utils import get_current_team, get_last_doc, unique, get_app_tag
@@ -519,6 +520,23 @@ def search_list():
 
 
 @frappe.whitelist()
+def archive(name):
+	benches = frappe.get_all(
+		"Bench", filters={"group": name, "status": "Active"}, pluck="name"
+	)
+
+	for bench in benches:
+		frappe.get_doc("Bench", bench).archive()
+
+	group = frappe.get_doc("Release Group", name)
+	new_name = f"{group.title}.archived"
+	group.title = append_number_if_name_exists(
+		"Release Group", new_name, "title", separator="."
+	)
+	group.enabled = 0
+	group.save()
+
+
 @protected("Bench")
 def logs(name, bench):
 	if frappe.db.get_value("Bench", bench, "group") == name:
