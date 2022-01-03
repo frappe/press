@@ -9,8 +9,8 @@
 			</Button>
 		</template>
 		<ListItem
-			v-for="email in $resources.emails.data"
-			:title="email.type"
+			v-for="email in $resources.getEmails.data"
+			:title="fieldLabelMap[email.type] || email.type"
 			:description="email.value"
 			:key="email.type"
 		>
@@ -18,10 +18,14 @@
 		<Dialog title="Edit Emails" v-model="showEmailsEditDialog">
 			<div
 				class="mt-3"
-				v-for="email in $resources.emails.data"
+				v-for="email in $resources.getEmails.data"
 				:key="email.type"
 			>
-				<Input :label="email.type" type="text" v-model="email.value" />
+				<Input
+					:label="fieldLabelMap[email.type] || email.type"
+					type="text"
+					v-model="email.value"
+				/>
 			</div>
 			<ErrorMessage class="mt-2" :error="$resources.changeEmail.error" />
 			<template #actions>
@@ -39,7 +43,7 @@
 export default {
 	name: 'AccountEmails',
 	resources: {
-		emails() {
+		getEmails() {
 			return {
 				method: 'press.api.account.get_emails',
 				auto: true
@@ -49,7 +53,7 @@ export default {
 			return {
 				method: 'press.api.account.update_emails',
 				params: {
-					data: JSON.stringify(this.$resources.emails.data)
+					data: JSON.stringify(this.$resources.getEmails.data)
 				},
 				onSuccess(res) {
 					this.showEmailsEditDialog = false;
@@ -61,6 +65,14 @@ export default {
 		return {
 			showEmailsEditDialog: false
 		};
+	},
+	computed: {
+		fieldLabelMap() {
+			return {
+				invoices: 'Email to recieve Invoices',
+				notifications: 'Notifications'
+			};
+		}
 	}
 };
 </script>
