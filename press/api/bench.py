@@ -13,6 +13,7 @@ from press.api.github import branches
 from frappe.core.utils import find, find_all
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.app_source.app_source import AppSource
+from press.press.doctype.cluster.cluster import Cluster
 from press.utils import get_current_team, get_last_doc, unique, get_app_tag
 from press.press.doctype.release_group.release_group import (
 	ReleaseGroup,
@@ -140,14 +141,8 @@ def options(only_by_current_team=False):
 			version_dict.setdefault("apps", []).append(app_dict)
 		versions.append(version_dict)
 
-	cluster_names = unique(
-		frappe.db.get_all("Server", filters={"status": "Active"}, pluck="cluster")
-	)
-	clusters = frappe.db.get_all(
-		"Cluster",
-		filters={"name": ("in", cluster_names), "public": True},
-		fields=["name", "title", "image"],
-	)
+	clusters = Cluster.get_all_for_new_bench()
+
 	options = {"versions": versions, "clusters": clusters}
 	return options
 
@@ -530,7 +525,7 @@ def regions(name):
 
 @frappe.whitelist()
 def available_regions(name):
-	return frappe.get_all("Cluster", {"cloud_provider": "AWS EC2"}, pluck="name")
+	return Cluster.get_all_for_new_bench()
 
 
 @frappe.whitelist()
