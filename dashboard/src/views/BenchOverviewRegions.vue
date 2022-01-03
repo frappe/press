@@ -46,10 +46,11 @@ import RichSelect from '@/components/RichSelect.vue';
 export default {
 	name: 'BenchOverviewRegions',
 	props: ['bench'],
+	components: { RichSelect },
 	data() {
 		return {
 			selectedRegion: null,
-			showAddRegionDialog: false
+			showAddRegionDialog: false,
 		};
 	},
 	resources: {
@@ -57,16 +58,20 @@ export default {
 			return {
 				method: 'press.api.bench.regions',
 				params: {
-					name: this.bench.name
+					name: this.bench.name,
 				},
-				auto: true
+				auto: true,
 			};
 		},
 		availableRegions() {
 			return {
 				method: 'press.api.bench.available_regions',
 				params: {
-					name: this.bench.name
+					name: this.bench.name,
+				},
+				auto: true,
+				onSuccess(availableRegions) {
+					this.selectedRegion = availableRegions[0].name;
 				}
 			};
 		},
@@ -75,28 +80,28 @@ export default {
 				method: 'press.api.bench.add_region',
 				params: {
 					name: this.bench.name,
-					region: this.selectedRegion
+					region: this.selectedRegion,
 				},
 				onSuccess() {
 					window.location.reload();
-				}
+				},
 			};
 		},
 		removeRegion() {
 			return {
-				method: 'press.api.bench.remove_region'
+				method: 'press.api.bench.remove_region',
 			};
-		}
+		},
 	},
 	methods: {
 		dropdownItems(region) {
 			return [
 				{
 					label: 'Remove Region',
-					action: () => this.confirmRemoveRegion(region)
-					//condition: () => region.name != 'frregione'
+					action: () => this.confirmRemoveRegion(region),
+					//condition: () => region.name != 'frappe'
 					// TODO convert above condition to more than 1 region
-				}
+				},
 			].filter(Boolean);
 		},
 
@@ -107,24 +112,26 @@ export default {
 				actionLabel: 'Remove Region',
 				actionType: 'danger',
 				resource: this.$resources.removeRegion,
-				action: _ => {
+				action: (_) => {
 					this.$resources.removeRegion.submit({
 						name: this.bench.name,
-						region: region.name
+						region: region.name,
 					});
-				}
+				},
 			});
-		}
+		},
 	},
 	computed: {
 		regionOptions() {
-			regions = this.$resources.availableRegions().submit()
-			return regions ? regions.map(d => ({
+			let regions = this.$resources.availableRegions.data;
+			return regions
+				? regions.map((d) => ({
 						label: d.title,
 						value: d.name,
-						image: d.image
-			})) : [];
-		}
-	}
+						image: d.image,
+				  }))
+				: [];
+		},
+	},
 };
 </script>
