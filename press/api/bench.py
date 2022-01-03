@@ -514,6 +514,7 @@ def search_list():
 
 
 @frappe.whitelist()
+@protected("Release Group")
 def regions(name):
 	servers = frappe.db.get_all("Release Group Server", {"parent": name}, pluck="server")
 	cluster_names = frappe.get_all("Server", {"name": ("in", servers)}, pluck="cluster")
@@ -524,17 +525,28 @@ def regions(name):
 
 
 @frappe.whitelist()
+@protected("Release Group")
 def available_regions(name):
-	return Cluster.get_all_for_new_bench()
+	server_names = frappe.get_all("Release Group Server", {"parent": name}, pluck="server")
+	existing_regions = frappe.get_all(
+		"Server", {"name": ("in", server_names)}, pluck="cluster"
+	)
+	return frappe.get_all(
+		"Cluster",
+		fields=["name", "title", "image"],
+		filters={"name": ("not in", existing_regions)},
+	)
 
 
 @frappe.whitelist()
+@protected("Release Group")
 def add_region(name, region):
 	release_group = frappe.get_doc("Release Group", name)
 	release_group.add_region(region)
 
 
 @frappe.whitelist()
+@protected("Release Group")
 def remove_region(name, region):
 	release_group = frappe.get_doc("Release Group", name)
 	release_group.remove_region(region)
