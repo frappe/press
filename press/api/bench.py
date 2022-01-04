@@ -2,23 +2,24 @@
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
 
-import frappe
-
 import json
-from typing import List, Dict
-from frappe.utils import comma_and
 from collections import OrderedDict
-from press.api.site import protected
-from press.api.github import branches
+from typing import Dict, List
+
+import frappe
 from frappe.core.utils import find, find_all
+from frappe.utils import comma_and
+
+from press.api.github import branches
+from press.api.site import protected
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.app_source.app_source import AppSource
 from press.press.doctype.cluster.cluster import Cluster
-from press.utils import get_current_team, get_last_doc, unique, get_app_tag
 from press.press.doctype.release_group.release_group import (
 	ReleaseGroup,
 	new_release_group,
 )
+from press.utils import get_app_tag, get_current_team, get_last_doc, unique
 
 
 @frappe.whitelist()
