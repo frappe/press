@@ -357,11 +357,8 @@ class ReleaseGroup(Document):
 		return frappe.get_all("Server", {"name": ("in", servers)}, pluck="cluster")
 
 	def add_cluster(self, cluster: str):
-		try:
-			server = frappe.get_all(
-				"Server", {"use_for_new_benches": "True", "cluster": cluster}, pluck="name"
-			)[0]
-		except IndexError:
+		server = Server.get_prod_for_new_bench({"cluster": cluster})
+		if not server:
 			log_error("No suitable server for new bench")
 			frappe.throw(f"No suitable server for new bench in {cluster}")
 		self.append("servers", {"server": server, "default": False})
