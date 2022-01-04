@@ -114,8 +114,7 @@ export default {
 		},
 		showAddRegionButton() {
 			let regions = this.$resources.regions.data;
-			if (regions) return regions.length < 2;
-			else return false;
+        return regions && regions.length < 2;
 		},
 	},
 };
