@@ -49,7 +49,7 @@
 						</div>
 
 						<!-- Only for mobile view -->
-						<Dropdown :items="siteActions" right>
+						<Dropdown v-if="siteActions.length > 0" :items="siteActions" right>
 							<template v-slot="{ toggleDropdown }">
 								<Button icon-right="chevron-down" @click="toggleDropdown()"
 									>Actions</Button
