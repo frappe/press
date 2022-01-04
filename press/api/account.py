@@ -2,6 +2,7 @@
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
 
+import json
 from typing import Union
 
 import frappe
@@ -476,3 +477,23 @@ def get_frappe_io_auth_url() -> Union[str, None]:
 		and provider.get_password("client_secret")
 	):
 		return get_oauth2_authorize_url(provider.name, redirect_to="")
+
+
+@frappe.whitelist()
+def get_emails():
+	team = get_current_team()
+	data = frappe.get_all(
+		"Communication Email", filters={"parent": team}, fields=["type", "value"]
+	)
+
+	return data
+
+
+@frappe.whitelist()
+def update_emails(data):
+	data = {x["type"]: x["value"] for x in json.loads(data)}
+	team_doc = get_current_team(get_doc=True)
+
+	for row in team_doc.communication_emails:
+		row.value = data[row.type]
+		row.save()

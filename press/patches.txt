@@ -79,3 +79,4 @@ press.patches.v0_0_4.remove_legacy_billing_doctypes
 press.press.doctype.team.patches.set_payment_mode
 press.patches.v0_0_1.add_team_name_as_default_notify_email
 press.press.doctype.team.patches.set_referrer_id
+press.patches.v0_0_1.create_child_table_records_in_teams # 2022-01-04
