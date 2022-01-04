@@ -187,12 +187,11 @@ class Cluster(Document):
 		self.save()
 
 	@classmethod
-	def get_all_for_new_bench(cls) -> List[Dict[str, str]]:
+	def get_all_for_new_bench(cls, extra_filters={}) -> List[Dict[str, str]]:
 		cluster_names = unique(
 			frappe.db.get_all("Server", filters={"status": "Active"}, pluck="cluster")
 		)
+		filters = {"name": ("in", cluster_names), "public": True}
 		return frappe.db.get_all(
-			"Cluster",
-			filters={"name": ("in", cluster_names), "public": True},
-			fields=["name", "title", "image"],
+			"Cluster", filters={**filters, **extra_filters}, fields=["name", "title", "image"],
 		)
