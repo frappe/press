@@ -351,7 +351,9 @@ class ReleaseGroup(Document):
 
 	def get_clusters(self):
 		"""Get unique clusters corresponding to self.servers"""
-		servers = frappe.db.get_all("Release Group Server", {"parent": self.name}, pluck="server")
+		servers = frappe.db.get_all(
+			"Release Group Server", {"parent": self.name}, pluck="server"
+		)
 		return frappe.get_all("Server", {"name": ("in", servers)}, pluck="cluster")
 
 	def add_cluster(self, cluster: str):
