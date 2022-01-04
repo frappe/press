@@ -21,8 +21,8 @@
 				v-for="region in regions.data"
 				:key="region.name"
 				:title="region.title"
+				:image="region.image"
 			>
-				<!-- TODO: Add image<24-12-21, Balamurali M> -->
 			</ListItem>
 		</div>
 
