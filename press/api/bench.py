@@ -546,6 +546,7 @@ def add_region(name, region):
 	rg.add_cluster(region)
 
 
+@frappe.whitelist()
 def archive(name):
 	benches = frappe.get_all(
 		"Bench", filters={"group": name, "status": "Active"}, pluck="name"
