@@ -543,10 +543,3 @@ def available_regions(name):
 def add_region(name, region):
 	release_group = frappe.get_doc("Release Group", name)
 	release_group.add_cluster(region)
-
-
-@frappe.whitelist()
-@protected("Release Group")
-def remove_region(name, region):
-	release_group = frappe.get_doc("Release Group", name)
-	release_group.remove_region(region)

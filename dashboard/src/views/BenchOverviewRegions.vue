@@ -83,7 +83,8 @@ export default {
 				},
 				auto: true,
 				onSuccess(availableRegions) {
-					if (availableRegions.length) this.selectedRegion = availableRegions[0].name;
+					if (availableRegions.length)
+						this.selectedRegion = availableRegions[0].name;
 				},
 			};
 		},
@@ -98,39 +99,6 @@ export default {
 					window.location.reload();
 				},
 			};
-		},
-		removeRegion() {
-			return {
-				method: 'press.api.bench.remove_region',
-			};
-		},
-	},
-	methods: {
-		dropdownItems(region) {
-			return [
-				{
-					label: 'Remove Region',
-					action: () => this.confirmRemoveRegion(region),
-					//condition: () => region.name != 'frregione'
-					// TODO convert above condition to more than 1 region
-				},
-			].filter(Boolean);
-		},
-
-		confirmRemoveRegion(region) {
-			this.$confirm({
-				title: 'Remove Region',
-				message: `Are you sure you want to remove region ${region.name} from this bench?`,
-				actionLabel: 'Remove Region',
-				actionType: 'danger',
-				resource: this.$resources.removeRegion,
-				action: (_) => {
-					this.$resources.removeRegion.submit({
-						name: this.bench.name,
-						region: region.name,
-					});
-				},
-			});
 		},
 	},
 	computed: {
