@@ -359,6 +359,12 @@ class ReleaseGroup(Document):
 			frappe.throw(f"No suitable server for new bench in {cluster}")
 		self.append("servers", {"server": server, "default": False})
 		self.save()
+		app_update_available = self.deploy_information().update_available
+		if not app_update_available:
+			last_successful_candidate = frappe.get_last_doc(
+				"Deploy Candidate", {"status": "Success", "group": self.name}
+			)
+			last_successful_candidate._create_deploy([server])
 
 
 def new_release_group(title, version, apps, team=None, cluster=None):
