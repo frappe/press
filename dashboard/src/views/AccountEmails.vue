@@ -70,7 +70,6 @@ export default {
 		fieldLabelMap() {
 			return {
 				invoices: 'Email to recieve Invoices',
-				notifications: 'Other FrappeCloud Notifications',
 				marketplace_notifications: 'Marketplace Notifications'
 			};
 		}

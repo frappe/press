@@ -11,5 +11,4 @@ def execute():
 		team.append(
 			"communication_emails", {"type": "marketplace_notifications", "value": team.name}
 		)
-		team.append("communication_emails", {"type": "notifications", "value": team.name})
 		team.save()
