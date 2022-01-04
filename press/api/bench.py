@@ -515,10 +515,11 @@ def search_list():
 	return groups
 
 
+@frappe.whitelist()
 @protected("Release Group")
 def regions(name):
 	rg = frappe.get_doc("Release Group", name)
-	cluster_names = rg.get_clusters
+	cluster_names = rg.get_clusters()
 	clusters = frappe.get_all(
 		"Cluster", fields=["name", "title", "image"], filters={"name": ("in", cluster_names)}
 	)
@@ -529,19 +530,15 @@ def regions(name):
 @protected("Release Group")
 def available_regions(name):
 	rg = frappe.get_doc("Release Group", name)
-	existing_regions = rg.get_clusters
-	return frappe.get_all(
-		"Cluster",
-		fields=["name", "title", "image"],
-		filters={"name": ("not in", existing_regions)},
-	)
+	cluster_names = rg.get_clusters()
+	return Cluster.get_all_for_new_bench({"name": ("not in", cluster_names)})
 
 
 @frappe.whitelist()
 @protected("Release Group")
 def add_region(name, region):
 	rg = frappe.get_doc("Release Group", name)
-	if len(rg.cluster) >= 2:
+	if len(rg.get_clusters()) >= 2:
 		frappe.throw("More than 2 regions for bench not allowed")
 	rg.add_cluster(region)
 
