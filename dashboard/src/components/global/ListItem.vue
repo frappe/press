@@ -1,12 +1,12 @@
 <template>
 	<div class="flex items-center justify-between py-3">
 		<div>
-			<span class="flex justify-start">
+			<div class="flex justify-start">
 				<img class="h-4 mr-2" v-if="image" :src="image" :alt="title" />
 				<h3 class="text-base font-medium text-gray-900">
 					{{ title }}
 				</h3>
-			</span>
+			</div>
 			<div class="mt-1" v-if="secondaryText || $slots.subtitle">
 				<template v-if="secondaryText">
 					<span class="text-base text-gray-600" v-html="secondaryText" />
