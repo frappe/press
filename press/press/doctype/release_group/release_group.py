@@ -8,7 +8,7 @@ from typing import List
 from frappe.core.utils import find
 from frappe.model.document import Document
 from press.press.doctype.server.server import Server
-from press.utils import get_last_doc, get_app_tag, get_current_team
+from press.utils import get_last_doc, get_app_tag, get_current_team, log_error
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app_source.app_source import AppSource, create_app_source
 
@@ -348,6 +348,17 @@ class ReleaseGroup(Document):
 		]
 
 		return marketplace_app_sources
+
+	def add_cluster(self, cluster: str):
+		try:
+			server = frappe.get_all(
+				"Server", {"use_for_new_benches": "True", "cluster": cluster}, pluck="name"
+			)[0]
+		except IndexError:
+			log_error("No suitable server for new bench")
+			frappe.throw(f"No suitable server for new bench in {cluster}")
+		self.append("servers", {"server": server, "default": False})
+		self.save()
 
 
 def new_release_group(title, version, apps, team=None, cluster=None):

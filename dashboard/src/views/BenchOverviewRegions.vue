@@ -11,7 +11,7 @@
 					showAddRegionDialog = true;
 				"
 			>
-				Add Secondary Region
+				Add Region
 			</Button>
 		</template>
 
@@ -33,9 +33,23 @@
 
 			<RichSelect
 				:value="selectedRegion"
-				@change="$emit('update:selectedRegion', $event)"
 				:options="regionOptions"
 			/>
+			<template #actions>
+				<Button
+					type="primary"
+					v-if="selectedRegion"
+					:loading="addRegion.loading"
+					@click="
+						addRegion.submit({
+							name: bench.name,
+							region: selectedRegion
+						})
+					"
+				>
+					Add
+				</Button>
+			</template>
 		</Dialog>
 	</Card>
 </template>
@@ -99,7 +113,7 @@ export default {
 				{
 					label: 'Remove Region',
 					action: () => this.confirmRemoveRegion(region),
-					//condition: () => region.name != 'frappe'
+					//condition: () => region.name != 'frregione'
 					// TODO convert above condition to more than 1 region
 				},
 			].filter(Boolean);
