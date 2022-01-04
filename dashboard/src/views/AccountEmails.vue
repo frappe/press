@@ -9,18 +9,15 @@
 			</Button>
 		</template>
 		<ListItem
-			v-for="email in $resources.getEmails.data"
+			v-if="emailData"
+			v-for="email in emailData"
 			:title="fieldLabelMap[email.type] || email.type"
 			:description="email.value"
 			:key="email.type"
 		>
 		</ListItem>
 		<Dialog title="Edit Emails" v-model="showEmailsEditDialog">
-			<div
-				class="mt-3"
-				v-for="email in $resources.getEmails.data"
-				:key="email.type"
-			>
+			<div class="mt-3" v-for="email in emailData" :key="email.type">
 				<Input
 					:label="fieldLabelMap[email.type] || email.type"
 					type="text"
@@ -46,14 +43,17 @@ export default {
 		getEmails() {
 			return {
 				method: 'press.api.account.get_emails',
-				auto: true
+				auto: true,
+				onSuccess(res) {
+					this.emailData = res;
+				}
 			};
 		},
 		changeEmail() {
 			return {
 				method: 'press.api.account.update_emails',
 				params: {
-					data: JSON.stringify(this.$resources.getEmails.data)
+					data: JSON.stringify(this.emailData)
 				},
 				onSuccess(res) {
 					this.showEmailsEditDialog = false;
@@ -63,7 +63,8 @@ export default {
 	},
 	data() {
 		return {
-			showEmailsEditDialog: false
+			showEmailsEditDialog: false,
+			emailData: []
 		};
 	},
 	computed: {
