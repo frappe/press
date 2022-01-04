@@ -6,6 +6,7 @@
 	>
 		<template #actions>
 			<Button
+				v-if="showAddRegionButton"
 				@click="
 					!availableRegions.data ? availableRegions.fetch() : null;
 					showAddRegionDialog = true;
@@ -31,10 +32,7 @@
 		>
 			<Loading class="py-2" v-if="availableRegions.loading" />
 
-			<RichSelect
-				:value="selectedRegion"
-				:options="regionOptions"
-			/>
+			<RichSelect :value="selectedRegion" :options="regionOptions" />
 			<template #actions>
 				<Button
 					type="primary"
@@ -43,7 +41,7 @@
 					@click="
 						addRegion.submit({
 							name: bench.name,
-							region: selectedRegion
+							region: selectedRegion,
 						})
 					"
 				>
@@ -85,8 +83,8 @@ export default {
 				},
 				auto: true,
 				onSuccess(availableRegions) {
-					this.selectedRegion = availableRegions[0].name;
-				}
+					if (availableRegions.length) this.selectedRegion = availableRegions[0].name;
+				},
 			};
 		},
 		addRegion() {
@@ -137,14 +135,19 @@ export default {
 	},
 	computed: {
 		regionOptions() {
-			let regions = this.$resources.availableRegions.data;
-			return regions
-				? regions.map((d) => ({
+			let availableRegions = this.$resources.availableRegions.data;
+			return availableRegions
+				? availableRegions.map((d) => ({
 						label: d.title,
 						value: d.name,
 						image: d.image,
 				  }))
 				: [];
+		},
+		showAddRegionButton() {
+			let regions = this.$resources.regions.data;
+			if (regions) return regions.length < 2;
+			else return false;
 		},
 	},
 };
