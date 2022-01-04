@@ -91,10 +91,6 @@ export default {
 		addRegion() {
 			return {
 				method: 'press.api.bench.add_region',
-				params: {
-					name: this.bench.name,
-					region: this.selectedRegion,
-				},
 				onSuccess() {
 					window.location.reload();
 				},
