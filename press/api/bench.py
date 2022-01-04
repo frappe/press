@@ -8,6 +8,7 @@ from typing import Dict, List
 
 import frappe
 from frappe.core.utils import find, find_all
+from frappe.model.naming import append_number_if_name_exists
 from frappe.utils import comma_and
 
 from press.api.github import branches
@@ -514,7 +515,6 @@ def search_list():
 	return groups
 
 
-@frappe.whitelist()
 @protected("Release Group")
 def regions(name):
 	rg = frappe.get_doc("Release Group", name)
@@ -544,3 +544,33 @@ def add_region(name, region):
 	if len(rg.cluster) >= 2:
 		frappe.throw("More than 2 regions for bench not allowed")
 	rg.add_cluster(region)
+
+
+def archive(name):
+	benches = frappe.get_all(
+		"Bench", filters={"group": name, "status": "Active"}, pluck="name"
+	)
+
+	for bench in benches:
+		frappe.get_doc("Bench", bench).archive()
+
+	group = frappe.get_doc("Release Group", name)
+	new_name = f"{group.title}.archived"
+	group.title = append_number_if_name_exists(
+		"Release Group", new_name, "title", separator="."
+	)
+	group.enabled = 0
+	group.save()
+
+
+@protected("Bench")
+def logs(name, bench):
+	if frappe.db.get_value("Bench", bench, "group") == name:
+		return frappe.get_doc("Bench", bench).server_logs
+
+
+@frappe.whitelist()
+@protected("Bench")
+def log(name, bench, log):
+	if frappe.db.get_value("Bench", bench, "group") == name:
+		return frappe.get_doc("Bench", bench).get_server_log(log)

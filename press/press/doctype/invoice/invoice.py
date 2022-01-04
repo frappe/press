@@ -465,9 +465,20 @@ class Invoice(Document):
 	def create_next(self):
 		# the next invoice's period starts after this invoice ends
 		next_start = frappe.utils.add_days(self.period_end, 1)
-		return frappe.get_doc(
-			doctype="Invoice", team=self.team, period_start=next_start
-		).insert()
+
+		already_exists = frappe.db.exists(
+			"Invoice",
+			{
+				"team": self.team,
+				"period_start": next_start,
+				"type": "Subscription",
+			},  # Adding type 'Subscription' to ensure no other type messes with this
+		)
+
+		if not already_exists:
+			return frappe.get_doc(
+				doctype="Invoice", team=self.team, period_start=next_start
+			).insert()
 
 	def get_pdf(self):
 		print_format = self.meta.default_print_format

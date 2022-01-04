@@ -228,6 +228,13 @@ class Bench(Document):
 			or 0
 		)
 
+	@property
+	def server_logs(self):
+		return Agent(self.server).get(f"benches/{self.name}/logs")
+
+	def get_server_log(self, log):
+		return Agent(self.server).get(f"benches/{self.name}/logs/{log}")
+
 
 class StagingSite(Site):
 	def __init__(self, bench: Bench):

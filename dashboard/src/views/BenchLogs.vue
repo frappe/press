@@ -1,7 +1,7 @@
 <template>
 	<CardWithDetails
 		title="Logs"
-		subtitle="Available logs for your site"
+		:subtitle="`Available logs for ${instanceName}`"
 		:showDetails="logName"
 	>
 		<div v-if="$resources.logs.data && $resources.logs.data.length">
@@ -10,7 +10,7 @@
 				:class="logName === log.name ? 'bg-gray-100' : 'hover:bg-gray-50'"
 				v-for="log in $resources.logs.data"
 				:key="log.name"
-				:to="`/sites/${site.name}/logs/${log.name}`"
+				:to="`/benches/${bench.name}/logs/${instanceName}/${log.name}`"
 			>
 				<ListItem
 					:title="log.name"
@@ -28,23 +28,28 @@
 			<span v-else class="text-base text-gray-600">No logs</span>
 		</div>
 		<template #details>
-			<SiteLogsDetail :site="site" :logName="logName" />
+			<BenchLogsDetail
+				:bench="bench"
+				:instanceName="instanceName"
+				:logName="logName"
+			/>
 		</template>
 	</CardWithDetails>
 </template>
 
 <script>
 import CardWithDetails from '@/components/CardWithDetails.vue';
-import SiteLogsDetail from './SiteLogsDetail.vue';
+import BenchLogsDetail from './BenchLogsDetail.vue';
 export default {
-	name: 'SiteLogs',
-	props: ['site', 'logName'],
-	components: { CardWithDetails, SiteLogsDetail },
+	name: 'BenchLogs',
+	props: ['bench', 'instanceName', 'logName'],
+	components: { CardWithDetails, BenchLogsDetail },
 	resources: {
 		logs() {
+			console.log(this.bench);
 			return {
-				method: 'press.api.site.logs',
-				params: { name: this.site.name },
+				method: 'press.api.bench.logs',
+				params: { name: this.bench.name, bench: this.instanceName },
 				auto: true
 			};
 		}
