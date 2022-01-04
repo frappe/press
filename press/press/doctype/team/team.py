@@ -104,6 +104,10 @@ class Team(Document):
 		)
 		team.insert(ignore_permissions=True, ignore_links=True)
 		team.append("team_members", {"user": user.name})
+		team.append("communication_emails", {"type": "invoices", "value": user.name})
+		team.append(
+			"communication_emails", {"type": "marketplace_notifications", "value": user.name}
+		)
 		team.save(ignore_permissions=True)
 
 		team.create_stripe_customer()
