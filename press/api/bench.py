@@ -2,23 +2,25 @@
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
 
-import frappe
-
 import json
-from typing import List, Dict
-from frappe.utils import comma_and
 from collections import OrderedDict
-from press.api.site import protected
-from press.api.github import branches
+from typing import Dict, List
+
+import frappe
 from frappe.core.utils import find, find_all
 from frappe.model.naming import append_number_if_name_exists
+from frappe.utils import comma_and
+
+from press.api.github import branches
+from press.api.site import protected
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.app_source.app_source import AppSource
-from press.utils import get_current_team, get_last_doc, unique, get_app_tag
+from press.press.doctype.cluster.cluster import Cluster
 from press.press.doctype.release_group.release_group import (
 	ReleaseGroup,
 	new_release_group,
 )
+from press.utils import get_app_tag, get_current_team, get_last_doc, unique
 
 
 @frappe.whitelist()
@@ -141,14 +143,8 @@ def options(only_by_current_team=False):
 			version_dict.setdefault("apps", []).append(app_dict)
 		versions.append(version_dict)
 
-	cluster_names = unique(
-		frappe.db.get_all("Server", filters={"status": "Active"}, pluck="cluster")
-	)
-	clusters = frappe.db.get_all(
-		"Cluster",
-		filters={"name": ("in", cluster_names), "public": True},
-		fields=["name", "title", "image"],
-	)
+	clusters = Cluster.get_all_for_new_bench()
+
 	options = {"versions": versions, "clusters": clusters}
 	return options
 
@@ -519,7 +515,37 @@ def search_list():
 	return groups
 
 
+@protected("Release Group")
+def regions(name):
+	rg = frappe.get_doc("Release Group", name)
+	cluster_names = rg.get_clusters
+	clusters = frappe.get_all(
+		"Cluster", fields=["name", "title", "image"], filters={"name": ("in", cluster_names)}
+	)
+	return clusters
+
+
 @frappe.whitelist()
+@protected("Release Group")
+def available_regions(name):
+	rg = frappe.get_doc("Release Group", name)
+	existing_regions = rg.get_clusters
+	return frappe.get_all(
+		"Cluster",
+		fields=["name", "title", "image"],
+		filters={"name": ("not in", existing_regions)},
+	)
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def add_region(name, region):
+	rg = frappe.get_doc("Release Group", name)
+	if len(rg.cluster) >= 2:
+		frappe.throw("More than 2 regions for bench not allowed")
+	rg.add_cluster(region)
+
+
 def archive(name):
 	benches = frappe.get_all(
 		"Bench", filters={"group": name, "status": "Active"}, pluck="name"

@@ -3,10 +3,15 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
-from frappe.model.document import Document
-import frappe
-import boto3
+
 import ipaddress
+from typing import Dict, List
+
+import boto3
+import frappe
+from frappe.model.document import Document
+
+from press.utils import unique
 
 
 class Cluster(Document):
@@ -180,3 +185,14 @@ class Cluster(Document):
 		except Exception:
 			pass
 		self.save()
+
+	@classmethod
+	def get_all_for_new_bench(cls) -> List[Dict[str, str]]:
+		cluster_names = unique(
+			frappe.db.get_all("Server", filters={"status": "Active"}, pluck="cluster")
+		)
+		return frappe.db.get_all(
+			"Cluster",
+			filters={"name": ("in", cluster_names), "public": True},
+			fields=["name", "title", "image"],
+		)
