@@ -15,13 +15,6 @@
 				v-if="dialog.resource"
 				:error="dialog.resource.error"
 			/>
-			<Input
-				v-if="dialog.textBox"
-				type="textarea"
-				class="mt-2"
-				v-model="textBoxInput"
-				required
-			/>
 			<template slot="actions">
 				<Button type="secondary" @click="removeConfirmDialog(dialog)">
 					Cancel
@@ -45,8 +38,7 @@ export default {
 	name: 'ConfirmDialogs',
 	data() {
 		return {
-			confirmDialogs: [],
-			textBoxInput: null
+			confirmDialogs: []
 		};
 	},
 	created() {
@@ -65,7 +57,7 @@ export default {
 		},
 		onDialogAction(dialog) {
 			let closeDialog = () => this.removeConfirmDialog(dialog);
-			dialog.action(closeDialog, this.textBoxInput);
+			dialog.action(closeDialog);
 		},
 		removeConfirmDialog(dialog) {
 			this.confirmDialogs = this.confirmDialogs.filter(

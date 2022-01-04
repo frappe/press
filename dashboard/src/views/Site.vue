@@ -83,6 +83,29 @@
 				<router-view v-bind="{ site }"></router-view>
 			</Tabs>
 		</div>
+
+		<Dialog
+			title="Login As Administrator"
+			v-model="showReasonForAdminLoginDialog"
+		>
+			<Input
+				label="Reason for logging in as Administrator"
+				type="textarea"
+				v-model="reasonForAdminLogin"
+				required
+			/>
+
+			<ErrorMessage class="mt-3" :error="errorMessage" />
+
+			<template #actions>
+				<Button
+					:loading="$resources.loginAsAdmin.loading"
+					@click="proceedWithLoginAsAdmin"
+					type="primary"
+					>Proceed</Button
+				>
+			</template>
+		</Dialog>
 	</div>
 </template>
 
@@ -98,7 +121,10 @@ export default {
 	},
 	data() {
 		return {
-			runningJob: false
+			runningJob: false,
+			reasonForAdminLogin: '',
+			showReasonForAdminLoginDialog: false,
+			errorMessage: ''
 		};
 	},
 	resources: {
@@ -177,34 +203,21 @@ export default {
 				this.$router.replace(`${path}/${tab}`);
 			}
 		},
-		reasonToLoginAsAdminPopup() {
-			if (this.$account.team.name == this.site.team) {
-				return this.$resources.loginAsAdmin.submit({
-					name: this.siteName
-				});
+		proceedWithLoginAsAdmin() {
+			this.errorMessage = '';
+
+			if (!this.reasonForAdminLogin.trim()) {
+				// The input is empty
+				this.errorMessage = 'Reason is required';
+				return;
 			}
-			this.$confirm({
-				title: 'Login as Administrator',
-				message: 'Please enter reason for this login.',
-				actionLabel: 'Login',
-				textBox: true,
-				action: (closeDialog, textBoxInput) => {
-					let reason = textBoxInput;
-					if (textBoxInput.trim()) {
-						this.$resources.loginAsAdmin.submit({
-							name: this.siteName,
-							reason: reason
-						});
-						closeDialog();
-					} else {
-						this.$notify({
-							title: 'Reason field should not be empty',
-							color: 'red',
-							icon: 'x'
-						});
-					}
-				}
+
+			this.$resources.loginAsAdmin.submit({
+				name: this.siteName,
+				reason: this.reasonForAdminLogin
 			});
+
+			this.showReasonForAdminLoginDialog = false;
 		}
 	},
 	computed: {
@@ -224,7 +237,15 @@ export default {
 					label: 'Login As Administrator',
 					icon: 'external-link',
 					loading: this.$resources.loginAsAdmin.loading,
-					action: this.reasonToLoginAsAdminPopup // TODO: refactor, variable name doesn't make sense and also implementation could be much better
+					action: () => {
+						if (this.$account.team.name == this.site.team) {
+							return this.$resources.loginAsAdmin.submit({
+								name: this.siteName
+							});
+						}
+
+						this.showReasonForAdminLoginDialog = true;
+					}
 				},
 				['Active', 'Updating'].includes(this.site.status) && {
 					label: 'Visit Site',
