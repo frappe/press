@@ -45,7 +45,7 @@
 			<li class="flex flex-row justify-between items-center py-3">
 				<div class="flex flex-row self-end">
 					<!-- Replace with app icon -->
-					<div class="h-10 w-10 bg-blue-400 rounded-lg mr-3 self-center"></div>
+					<div class="h-10 w-10 bg-indigo-400 rounded-lg mr-3 self-center"></div>
 					<div class="flex flex-col">
 						<h4 class="text-gray-900 font-medium text-lg">Sentry</h4>
 						<p class="text-gray-600 text-base mt-1">Best open source ERP.</p>

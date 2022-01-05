@@ -8,6 +8,16 @@
 			loadingText="Loading Plans..."
 		></Button>
 
+		<div class="mb-8 flex flex-row items-center">
+			<!-- Replace with app icon -->
+			<div class="mr-2 h-10 w-10 rounded-lg bg-indigo-300"></div>
+
+			<div class="flex flex-col">
+				<h4 class="text-base text-gray-600">Darkify</h4>
+				<h5 class="text-xl text-gray-900 font-semibold">Choose your plans</h5>
+			</div>
+		</div>
+
 		<div v-if="plans" class="mx-auto flex flex-row gap-x-6">
 			<AppPlanCard
 				v-for="plan in plans"
