@@ -7,6 +7,9 @@ import secrets
 import json
 import requests
 from press.utils import log_error
+from press.press.doctype.site.site import Site
+import calendar
+from datetime import datetime
 
 
 @frappe.whitelist(allow_guest=True)
@@ -16,17 +19,44 @@ def email_ping():
 
 @frappe.whitelist(allow_guest=True)
 def setup(**data):
+	"""Set default keys for overriding email account validations"""
 	if data["key"] == "fcmailfree100":
-		email, password = frappe.db.get_value(
-			"Press Settings", None, ["default_outgoing_id", "default_outgoing_pass"]
-		)
-		return {
-			"id": email,
-			"pass": password,
+		site_doc: Site = frappe.get_doc("Site", data["site"])
+
+		config = {
+			"mail_login": "example@gmail.com",
+			"mail_password": "some_password",
+			"mail_port": 587,
+			"mail_server": "smtp.mailgun.org",
 		}
 
-	log_error("Mail App: Invalid request key", data=data)
+		site_doc.update_site_config(config)
+	else:
+		log_error("Mail App: Invalid request key", data=data)
+
 	return
+
+
+@frappe.whitelist(allow_guest=True)
+def get_analytics(**data):
+	"""send data for a specific month"""
+	month = data["month"]
+	year = datetime.now().year
+	last_day = calendar.monthrange(year, int(month))[1]
+	status = data["status"]
+
+	result = frappe.get_all(
+		"Mail Log",
+		filters={
+			"subscription_key": data["key"],
+			"status": ["like", f"%{status}%"],
+			"date": ["between", [f"01-{month}-2021", f"{last_day}-{month}-2021"]],
+		},
+		fields=["date", "status", "message", "sender", "recipient"],
+		order_by="date asc",
+	)
+
+	return result
 
 
 def validate_plan(secret_key, site):
@@ -84,10 +114,11 @@ def event_log(**data):
 			"message_id": message_id,
 			"sender": headers["from"],
 			"recipient": headers["to"],
-			"subject": headers["subject"],
 			"site": site,
 			"status": event_data["event"],
 			"subscription_key": secret_key,
+			"message": event_data["delivery-status"]["message"]
+			or event_data["delivery-status"]["description"],
 			"log": json.dumps(data),
 		}
 	).insert(ignore_permissions=True)
