@@ -41,7 +41,7 @@ frappe.ui.form.on('Site', {
 			method: 'press.api.account.get'
 		}).then(resp => resp.message);
 
-		if (site.status === 'Active') {
+		if (!site.status) {
 			frm.add_custom_button(__('Login as Adminstrator'),
 				() => {
 					if (account) {
