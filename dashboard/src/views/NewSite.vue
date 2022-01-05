@@ -35,6 +35,13 @@
 					:selectedRegion.sync="selectedRegion"
 					:shareDetailsConsent.sync="shareDetailsConsent"
 				/>
+
+				<div class="mb-9">
+					<ChangeAppPlanSelector
+						v-show="activeStep.name === 'Select App Plans'"
+					/>
+				</div>
+
 				<Restore
 					:options="options"
 					:selectedFiles.sync="selectedFiles"
@@ -123,6 +130,7 @@ import Hostname from './NewSiteHostname.vue';
 import Apps from './NewSiteApps.vue';
 import Restore from './NewSiteRestore.vue';
 import Plans from './NewSitePlans.vue';
+import ChangeAppPlanSelector from '@/components/ChangeAppPlanSelector.vue';
 
 export default {
 	name: 'NewSite',
@@ -133,7 +141,8 @@ export default {
 		Hostname,
 		Apps,
 		Restore,
-		Plans
+		Plans,
+		ChangeAppPlanSelector
 	},
 	data() {
 		return {
@@ -165,12 +174,18 @@ export default {
 					name: 'Apps',
 					validate: () => {
 						if (this.privateBench) return true;
-						if (!this.selectedRegion) {
-							this.validationMessage = 'Please select the region';
-							return false;
-						} else {
-							this.validationMessage = null;
-						}
+						// if (!this.selectedRegion) {
+						// 	this.validationMessage = 'Please select the region';
+						// 	return false;
+						// } else {
+						// 	this.validationMessage = null;
+						// }
+						return true;
+					}
+				},
+				{
+					name: 'Select App Plans',
+					validate: () => {
 						return true;
 					}
 				},
@@ -273,6 +288,15 @@ export default {
 				return false;
 			}
 			return true;
+		}
+	},
+	methods: {
+		addPlanSelectionStep() {
+			const appsStepIndex = this.steps.findIndex(step => step.name == 'Apps');
+
+			this.steps.splice(appsStepIndex + 1, 0, {
+				name: `Select App Plans`
+			});
 		}
 	}
 };
