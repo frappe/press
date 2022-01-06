@@ -32,7 +32,11 @@
 		>
 			<Loading class="py-2" v-if="availableRegions.loading" />
 
-			<RichSelect :value="selectedRegion" :options="regionOptions" />
+			<RichSelect
+				:value="selectedRegion"
+				@change="selectedRegion = $event"
+				:options="regionOptions"
+			/>
 			<template #actions>
 				<Button
 					type="primary"
@@ -110,7 +114,7 @@ export default {
 		},
 		showAddRegionButton() {
 			let regions = this.$resources.regions.data;
-        return regions && regions.length < 2;
+			return regions && regions.length < 2;
 		},
 	},
 };
