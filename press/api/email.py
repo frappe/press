@@ -50,7 +50,7 @@ def get_analytics(**data):
 		filters={
 			"subscription_key": data["key"],
 			"status": ["like", f"%{status}%"],
-			"date": ["between", [f"01-{month}-{year}", f"{last_day}-{month}-{year}"]],
+			"date": ["between", [f"{month}-01-{year}", f"{month}-{last_day}-{year}"]],
 		},
 		fields=["date", "status", "message", "sender", "recipient"],
 		order_by="date asc",
