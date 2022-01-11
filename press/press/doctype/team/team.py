@@ -209,11 +209,21 @@ class Team(Document):
 
 	def on_update(self):
 		self.validate_payment_mode()
+		self.update_draft_invoice_payment_mode()
 
 		if not self.is_new() and self.billing_name:
 			self.load_doc_before_save()
 			if self.has_value_changed("billing_name"):
 				self.update_billing_details_on_frappeio()
+
+	def update_draft_invoice_payment_mode(self):
+		if self.has_value_changed("payment_mode"):
+			draft_invoices = frappe.get_all(
+				"Invoice", filters={"docstatus": 0, "team": self.name}, pluck="name"
+			)
+
+			for invoice in draft_invoices:
+				frappe.db.set_value("Invoice", invoice, "payment_mode", self.payment_mode)
 
 	@frappe.whitelist()
 	def impersonate(self, member, reason):
