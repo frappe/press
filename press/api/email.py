@@ -7,7 +7,7 @@ import secrets
 import json
 import requests
 from press.utils import log_error
-from press.press.doctype.site.site import Site
+from press.api.site import update_config
 import calendar
 from datetime import datetime
 
@@ -21,16 +21,16 @@ def email_ping():
 def setup(**data):
 	"""Set default keys for overriding email account validations"""
 	if data["key"] == "fcmailfree100":
-		site_doc: Site = frappe.get_doc("Site", data["site"])
+		team = frappe.get_value("Site", data["site"], "team")
 
-		config = {
-			"mail_login": "example@gmail.com",
-			"mail_password": "some_password",
-			"mail_port": 587,
-			"mail_server": "smtp.mailgun.org",
-		}
-
-		site_doc.update_site_config(config)
+		config = [
+			{"key": "mail_login", "value": "example@gmail.com", "type": "String"},
+			{"key": "mail_password", "value": "verysecretpass", "type": "String"},
+			{"key": "mail_port", "value": 587, "type": "Number"},
+			{"key": "mail_server", "value": "smtp.gmail.com", "type": "String"},
+		]
+		frappe.set_user(team)
+		update_config(data["site"], json.dumps(config))
 	else:
 		log_error("Mail App: Invalid request key", data=data)
 
