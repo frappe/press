@@ -2,14 +2,16 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
-import frappe
 import secrets
 import json
 import requests
-from press.utils import log_error
-from press.api.site import update_config
 import calendar
 from datetime import datetime
+
+import frappe
+from press.utils import log_error
+from press.api.site import update_config
+from press.api.site import site_config
 
 
 @frappe.whitelist(allow_guest=True)
@@ -22,15 +24,20 @@ def setup(**data):
 	"""Set default keys for overriding email account validations"""
 	if data["key"] == "fcmailfree100":
 		team = frappe.get_value("Site", data["site"], "team")
+		frappe.set_user(team)
+		old_config = site_config(data["site"])
 
-		config = [
+		new_config = [
 			{"key": "mail_login", "value": "example@gmail.com", "type": "String"},
 			{"key": "mail_password", "value": "verysecretpass", "type": "String"},
 			{"key": "mail_port", "value": 587, "type": "Number"},
 			{"key": "mail_server", "value": "smtp.gmail.com", "type": "String"},
 		]
-		frappe.set_user(team)
-		update_config(data["site"], json.dumps(config))
+
+		for row in old_config:
+			new_config.append({"key": row.key, "value": row.value, "type": row.type})
+
+		update_config(data["site"], json.dumps(new_config))
 	else:
 		log_error("Mail App: Invalid request key", data=data)
 
