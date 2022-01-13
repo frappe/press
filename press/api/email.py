@@ -55,6 +55,7 @@ def get_analytics(**data):
 	result = frappe.get_all(
 		"Mail Log",
 		filters={
+			"site": data["site"],
 			"subscription_key": data["key"],
 			"status": ["like", f"%{status}%"],
 			"date": ["between", [f"{month}-01-{year}", f"{month}-{last_day}-{year}"]],
