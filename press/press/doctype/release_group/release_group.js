@@ -2,11 +2,6 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on('Release Group', {
-	onload: function (frm) {
-		if (frm.is_new()) {
-			frm.call('validate_dependencies');
-		}
-	},
 	refresh: function (frm) {
 		frm.add_web_link(
 			`/dashboard/benches/${frm.doc.name}`,
@@ -48,4 +43,10 @@ frappe.ui.form.on('Release Group', {
 		});
 		frm.set_df_property('dependencies', 'cannot_add_rows', 1);
 	},
+	version: function (frm) {
+		if (frm.is_new()) {
+			frm.clear_table("dependencies");
+			frm.call('validate_dependencies');
+		}	
+	}
 });
