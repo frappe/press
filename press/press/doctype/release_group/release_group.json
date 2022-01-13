@@ -64,7 +64,6 @@
    "in_standard_filter": 1,
    "label": "Version",
    "options": "Frappe Version",
-   "read_only": 1,
    "reqd": 1
   },
   {
@@ -132,7 +131,7 @@
   }
  ],
  "links": [],
- "modified": "2021-12-07 21:39:10.575131",
+ "modified": "2022-01-13 16:31:24.027786",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",
@@ -166,6 +165,7 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "title_field": "title",
  "track_changes": 1
 }

@@ -3,6 +3,7 @@
 # For license information, please see license.txt
 
 import frappe
+import copy
 
 from typing import List
 from frappe.core.utils import find
@@ -79,8 +80,18 @@ class ReleaseGroup(Document):
 
 	@frappe.whitelist()
 	def validate_dependencies(self):
+		# TODO: Move this to Frappe Version DocType
+		dependencies = copy.deepcopy(DEFAULT_DEPENDENCIES)
+		if self.version in ("Version 14", "Nightly"):
+			python = find(dependencies, lambda x: x["dependency"] == "PYTHON_VERSION")
+			python["version"] = "3.8"
+
+		if self.version == "Version 12":
+			node = find(dependencies, lambda x: x["dependency"] == "NODE_VERSION")
+			node["version"] = "12.19.0"
+
 		if not hasattr(self, "dependencies") or not self.dependencies:
-			self.extend("dependencies", DEFAULT_DEPENDENCIES)
+			self.extend("dependencies", dependencies)
 
 	@frappe.whitelist()
 	def create_deploy_candidate(self, apps_to_ignore=[]):
