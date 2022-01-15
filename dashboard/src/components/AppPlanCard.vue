@@ -26,6 +26,7 @@
 				border-gray-300
 				rounded"
 			checked
+			disabled
 		/>
 
 		<h4 class="text-gray-900 font-semibold text-xl">

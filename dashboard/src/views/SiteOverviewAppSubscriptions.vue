@@ -3,68 +3,71 @@
 		title="Marketplace Subscriptions"
 		subtitle="Your marketplace app subscriptions."
 	>
-		<div>
+		<Button v-if="$resources.marketplaceSubscriptions.loading" :loading="true">Loading</Button>
+
+		<div v-else-if="$resources.marketplaceSubscriptions.data">
 			<div class="divide-y">
 				<div
-					class="grid items-center grid-cols-3 py-4 text-base text-gray-600 gap-x-8 md:grid-cols-5"
+					class="grid items-center grid-cols-3 py-4 text-base text-gray-600 gap-x-8 md:grid-cols-4"
 				>
 					<span>App</span>
 					<span class="hidden md:inline">Plan</span>
 					<span>Status</span>
-					<span class="hidden md:inline">Expiry</span>
 					<span></span>
 				</div>
 
 				<div
 					v-for="subscription in marketplaceSubscriptions"
 					:key="subscription.name"
-					class="grid items-center grid-cols-3 py-4 text-base text-gray-900 gap-x-8 md:grid-cols-5"
+					class="grid items-center grid-cols-3 py-4 text-base text-gray-900 gap-x-8 md:grid-cols-4"
 				>
 					<p class="text-base font-medium text-gray-700 truncate max-w-md">
-						{{ subscription.app }}
+						{{ subscription.app_title }}
 					</p>
 					<p class="hidden md:inline text-gray-700">
-						{{ subscription.plan }}
+						{{ subscription.plan_title }}
 					</p>
 					<span>
 						<Badge :status="subscription.status"></Badge>
 					</span>
-					<span class="hidden md:inline text-gray-600">
-						{{ subscription.expiry }}
-					</span>
 					<span class="text-right">
-						<Button>{{ subscription.button_text }}</Button>
+						<Button>Change Plan</Button>
 					</span>
 				</div>
 			</div>
 		</div>
+
+		<ErrorMessage :error="$resources.marketplaceSubscriptions.error" />
 	</Card>
 </template>
 
 <script>
 export default {
 	props: ['site'],
-	data() {
-		return {
-			marketplaceSubscriptions: [
-				{
-					app: 'Frappe QMail',
-					plan: '$25 / mo (1000 emails/day)',
-					name: 'jhdfgjdf',
-					status: 'Active',
-					expiry: '10th January, 2022',
-					button_text: 'Change Plan'
+
+	resources: {
+		marketplaceSubscriptions() {
+			return {
+				method: 'press.api.marketplace.get_marketplace_subscriptions_for_site',
+				params: {
+					site: this.site.name
 				},
-				{
-					app: 'Healthcare',
-					plan: '$30 / mo (Premium Support)',
-					name: 'jhdfgjdf',
-					status: 'Expired',
-					expiry: '7th November, 2021',
-					button_text: 'Renew Plan'
-				}
-			]
-		};
+				auto: true
+			}
+		}
+	},
+	
+	computed: {
+		marketplaceSubscriptions() {
+			if (
+				this.$resources.marketplaceSubscriptions.data 
+				&& !this.$resources.marketplaceSubscriptions.loading
+			) {
+				return this.$resources.marketplaceSubscriptions.data;
+			}
+
+			return [];
+		}
 	}
 };
 </script>
