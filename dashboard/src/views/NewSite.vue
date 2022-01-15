@@ -36,10 +36,8 @@
 					:shareDetailsConsent.sync="shareDetailsConsent"
 				/>
 
-				<div class="mb-9">
-					<ChangeAppPlanSelector
-						v-show="activeStep.name === 'Select App Plans'"
-					/>
+				<div class="mb-9" v-show="activeStep.name === 'Select App Plans'">
+					<ChangeAppPlanSelector v-for="app in Object.keys(selectedAppPlans)" :key="app" :app="app" />
 				</div>
 
 				<Restore
@@ -93,7 +91,7 @@
 						<Button
 							v-show="activeStep.name !== 'Restore' || wantsToRestore"
 							type="primary"
-							@click="next"
+							@click="nextStep(activeStep, next)"
 							:class="{
 								'opacity-0 pointer-events-none': !hasNext
 							}"
@@ -103,7 +101,7 @@
 						<Button
 							v-show="!wantsToRestore && activeStep.name === 'Restore'"
 							type="primary"
-							@click="next"
+							@click="nextStep(activeStep, next)"
 						>
 							Skip
 						</Button>
@@ -184,19 +182,14 @@ export default {
 					}
 				},
 				{
-					name: 'Select App Plans',
-					validate: () => {
-						return true;
-					}
-				},
-				{
 					name: 'Restore'
 				},
 				{
 					name: 'Plan'
 				}
 			],
-			agreedToRegionConsent: false
+			agreedToRegionConsent: false,
+			selectedAppPlans: {}
 		};
 	},
 	async mounted() {
@@ -291,6 +284,25 @@ export default {
 		}
 	},
 	methods: {
+		async nextStep(activeStep, next) {
+			if (activeStep.name == "Apps") {
+				console.log("apps selected.");
+				// Go fetch app plans if any
+				this.appsWithPlans = await this.$call('press.api.marketplace.get_apps_with_plans', {
+					apps: JSON.stringify(this.selectedApps)
+				});
+
+				if (this.appsWithPlans && this.appsWithPlans.length > 0) {
+					this.addPlanSelectionStep();
+
+					for (let app of this.appsWithPlans) {
+						this.selectedAppPlans[app] = null;
+					}
+				}
+			}
+
+			next();
+		},
 		addPlanSelectionStep() {
 			const appsStepIndex = this.steps.findIndex(step => step.name == 'Apps');
 
