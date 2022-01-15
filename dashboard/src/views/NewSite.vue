@@ -36,8 +36,14 @@
 					:shareDetailsConsent.sync="shareDetailsConsent"
 				/>
 
-				<div class="mb-9" v-show="activeStep.name === 'Select App Plans'">
-					<ChangeAppPlanSelector v-for="app in Object.keys(selectedAppPlans)" :key="app" :app="app" />
+				<div v-show="activeStep.name === 'Select App Plans'">
+					<ChangeAppPlanSelector
+						v-for="app in appsWithPlans"
+						:key="app.name"
+						:app="app"
+						class="mb-9"
+						@change="plan => (selectedAppPlans[app.name] = plan)"
+					/>
 				</div>
 
 				<Restore
@@ -285,18 +291,20 @@ export default {
 	},
 	methods: {
 		async nextStep(activeStep, next) {
-			if (activeStep.name == "Apps") {
-				console.log("apps selected.");
+			if (activeStep.name == 'Apps') {
 				// Go fetch app plans if any
-				this.appsWithPlans = await this.$call('press.api.marketplace.get_apps_with_plans', {
-					apps: JSON.stringify(this.selectedApps)
-				});
+				this.appsWithPlans = await this.$call(
+					'press.api.marketplace.get_apps_with_plans',
+					{
+						apps: JSON.stringify(this.selectedApps)
+					}
+				);
 
 				if (this.appsWithPlans && this.appsWithPlans.length > 0) {
 					this.addPlanSelectionStep();
 
 					for (let app of this.appsWithPlans) {
-						this.selectedAppPlans[app] = null;
+						this.selectedAppPlans[app.name] = null;
 					}
 				}
 			}
@@ -306,9 +314,27 @@ export default {
 		addPlanSelectionStep() {
 			const appsStepIndex = this.steps.findIndex(step => step.name == 'Apps');
 
-			this.steps.splice(appsStepIndex + 1, 0, {
-				name: `Select App Plans`
-			});
+			// Only if already not present
+			const selectAppPlansIndex = this.steps.findIndex(
+				step => step.name == 'Select App Plans'
+			);
+			if (selectAppPlansIndex < 0) {
+				this.steps.splice(appsStepIndex + 1, 0, {
+					name: 'Select App Plans',
+					validate: () => {
+						for (let app of Object.keys(this.selectedAppPlans)) {
+							if (!this.selectedAppPlans[app]) {
+								this.validationMessage = `Please select a plan for ${app}`;
+								return false;
+							} else {
+								this.validationMessage = null;
+							}
+						}
+
+						return true;
+					}
+				});
+			}
 		}
 	}
 };
