@@ -3,7 +3,9 @@
 		title="Marketplace Subscriptions"
 		subtitle="Your marketplace app subscriptions."
 	>
-		<Button v-if="$resources.marketplaceSubscriptions.loading" :loading="true">Loading</Button>
+		<Button v-if="$resources.marketplaceSubscriptions.loading" :loading="true"
+			>Loading</Button
+		>
 
 		<div v-else-if="$resources.marketplaceSubscriptions.data">
 			<div class="divide-y">
@@ -25,7 +27,7 @@
 						{{ subscription.app_title }}
 					</p>
 					<p class="hidden md:inline text-gray-700">
-						{{ subscription.plan_title }}
+						{{ subscription.plan }}
 					</p>
 					<span>
 						<Badge :status="subscription.status"></Badge>
@@ -53,15 +55,15 @@ export default {
 					site: this.site.name
 				},
 				auto: true
-			}
+			};
 		}
 	},
-	
+
 	computed: {
 		marketplaceSubscriptions() {
 			if (
-				this.$resources.marketplaceSubscriptions.data 
-				&& !this.$resources.marketplaceSubscriptions.loading
+				this.$resources.marketplaceSubscriptions.data &&
+				!this.$resources.marketplaceSubscriptions.loading
 			) {
 				return this.$resources.marketplaceSubscriptions.data;
 			}
