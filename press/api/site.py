@@ -82,6 +82,9 @@ def new(site):
 		as_dict=True,
 	)[0].name
 	plan = site["plan"]
+
+	app_plans = site["selected_app_plans"]
+    
 	site = frappe.get_doc(
 		{
 			"doctype": "Site",
@@ -100,6 +103,8 @@ def new(site):
 	).insert(ignore_permissions=True)
 	site.create_subscription(plan)
 
+	create_app_subscriptions(app_plans, site.name)
+
 	if share_details_consent:
 		frappe.get_doc(doctype="Partner Lead", team=team.name, site=site.name).insert(
 			ignore_permissions=True
@@ -115,6 +120,18 @@ def new(site):
 			},
 		),
 	}
+
+
+def create_app_subscriptions(app_plans, site):
+	for app_name, plan_name in app_plans.items():
+		frappe.get_doc(
+			{
+				"doctype": "Marketplace App Subscription",
+				"marketplace_app_plan": plan_name,
+				"site": site,
+				"app": app_name,
+			}
+		).insert(ignore_permissions=True)
 
 
 @frappe.whitelist()
