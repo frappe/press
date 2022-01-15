@@ -17,6 +17,7 @@ from press.press.doctype.marketplace_app.marketplace_app import MarketplaceApp
 from press.press.doctype.app_release_approval_request.app_release_approval_request import (
 	AppReleaseApprovalRequest,
 )
+from press.press.doctype.marketplace_app.marketplace_app import get_plans_for_app
 
 
 @frappe.whitelist()
@@ -389,6 +390,29 @@ def analytics(name: str):
 # (might refactor later to a separate file
 #  like 'api/marketplace/billing.py')
 
+@frappe.whitelist()
+def get_marketplace_subscriptions_for_site(site: str):
+	subscriptions = frappe.db.get_all(
+		"Marketplace App Subscription", 
+		filters={"site": site}, 
+		fields=["name", "app", "status", "marketplace_app_plan"]
+	)
+
+	for subscription in subscriptions:
+		subscription.app_title = frappe.db.get_value(
+			"Marketplace App", 
+			subscription.app,
+			"title"
+		)
+
+		subscription.plan_title = frappe.db.get_value(
+			"Marketplace App Plan", 
+			subscription.marketplace_app_plan,
+			"plan"
+		)
+
+	return subscriptions
+
 
 @frappe.whitelist()
 def get_app_plans(app: str):
@@ -405,10 +429,15 @@ def get_apps_with_plans(apps):
 	apps_with_plans = []
 
 	# Make sure it is a marketplace app
-	m_apps = frappe.db.get_all("Marketplace App", filters={"app": ("in", apps)}, pluck="name")
+	m_apps = frappe.db.get_all(
+		"Marketplace App", 
+		filters={"app": ("in", apps)}, 
+		fields=["name", "title", "image"]
+	)
 	
 	for app in m_apps:
-		if len(frappe.get_doc("Marketplace App", app).get_plans()) > 0:
+		plans = get_plans_for_app(app.name)
+		if len(plans) > 0:
 			apps_with_plans.append(app)
 		
 	return apps_with_plans
