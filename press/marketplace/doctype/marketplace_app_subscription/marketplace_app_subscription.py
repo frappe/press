@@ -42,6 +42,13 @@ class MarketplaceAppSubscription(Document):
 				f" site '{frappe.bold(self.site)}'!"
 			)
 
+	def before_insert(self):
+		# Set plan
+		if not self.plan:
+			self.plan = frappe.db.get_value(
+				"Marketplace App Plan", self.marketplace_app_plan, "plan"
+			)
+
 	def on_update(self):
 		if self.has_value_changed("marketplace_app_plan"):
 			self.plan = frappe.db.get_value(
