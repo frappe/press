@@ -33,7 +33,9 @@
   "custom_apps_section",
   "github_access_token",
   "feature_flags_section",
-  "referrer_id"
+  "referrer_id",
+  "section_break_28",
+  "communication_emails"
  ],
  "fields": [
   {
@@ -168,7 +170,7 @@
    "fieldname": "payment_mode",
    "fieldtype": "Select",
    "label": "Payment Mode",
-   "options": "\nCard\nPrepaid Credits"
+   "options": "\nCard\nPrepaid Credits\nPartner Credits"
   },
   {
    "depends_on": "eval:doc.send_notifications;",
@@ -198,6 +200,16 @@
    "fieldtype": "Data",
    "label": "Referrer ID",
    "read_only": 1
+  },
+  {
+   "fieldname": "communication_emails",
+   "fieldtype": "Table",
+   "label": "Communication Emails",
+   "options": "Communication Email"
+  },
+  {
+   "fieldname": "section_break_28",
+   "fieldtype": "Section Break"
   }
  ],
  "links": [
@@ -252,7 +264,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2021-11-26 22:05:52.071652",
+ "modified": "2022-01-03 13:49:53.207992",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

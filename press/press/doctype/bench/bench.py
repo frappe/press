@@ -176,7 +176,12 @@ class Bench(Document):
 		agent = Agent(self.server)
 		data = agent.get_sites_info(self, since=last_synced_time)
 		for site, info in data.items():
-			frappe.get_doc("Site", site).sync_info(info)
+			try:
+				frappe.get_doc("Site", site).sync_info(info)
+				frappe.db.commit()
+			except Exception:
+				log_error("Site Sync Error", site=site, info=info)
+				frappe.db.rollback()
 
 	@frappe.whitelist()
 	def update_all_sites(self):
@@ -222,6 +227,13 @@ class Bench(Document):
 			)[0]
 			or 0
 		)
+
+	@property
+	def server_logs(self):
+		return Agent(self.server).get(f"benches/{self.name}/logs")
+
+	def get_server_log(self, log):
+		return Agent(self.server).get(f"benches/{self.name}/logs/{log}")
 
 
 class StagingSite(Site):
@@ -402,6 +414,7 @@ def sync_bench(name):
 		frappe.db.commit()
 	except Exception:
 		log_error("Bench Sync Error", bench=bench.name)
+		frappe.db.rollback()
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Bench")

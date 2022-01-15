@@ -7,7 +7,7 @@
 		<Input
 			label="Select Payment Mode"
 			type="select"
-			:options="['Card', 'Prepaid Credits']"
+			:options="paymentModeOptions"
 			v-model="paymentMode"
 		/>
 		<p class="mt-2 text-base text-gray-600">
@@ -36,7 +36,7 @@ export default {
 	},
 	data() {
 		return {
-			paymentMode: this.$account.team.payment_mode
+			paymentMode: this.$account.team.payment_mode || 'Card'
 		};
 	},
 	watch: {
@@ -72,8 +72,15 @@ export default {
 		paymentModeDescription() {
 			return {
 				Card: `Your card will be charged for monthly subscription`,
-				'Prepaid Credits': `You will be charged from your account balance for monthly subscription`
+				'Prepaid Credits': `You will be charged from your account balance for monthly subscription`,
+				'Partner Credits': `You will be charged from your partner credits on frappe.io`
 			}[this.paymentMode];
+		},
+		paymentModeOptions() {
+			if (this.$account.team.erpnext_partner) {
+				return ['Card', 'Prepaid Credits', 'Partner Credits'];
+			}
+			return ['Card', 'Prepaid Credits'];
 		}
 	}
 };

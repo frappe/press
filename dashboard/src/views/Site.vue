@@ -12,30 +12,67 @@
 				>
 					<div class="flex items-center mt-2">
 						<h1 class="text-2xl font-bold">{{ site.name }}</h1>
-						<Badge class="ml-4" :status="site.status">{{ site.status }}</Badge>
+						<Badge class="hidden md:inline-block ml-4" :status="site.status">{{
+							site.status
+						}}</Badge>
+
+						<div
+							v-if="regionInfo"
+							class="hidden ml-2 self-end md:flex flex-row items-center px-3 py-1 text-xs font-medium rounded-md cursor-default text-yellow-700 bg-yellow-50"
+						>
+							<img
+								v-if="regionInfo.image"
+								class="h-4 mr-2"
+								:src="regionInfo.image"
+								:alt="`Flag of ${regionInfo.title}`"
+								:title="regionInfo.image"
+							/>
+							<p>{{ regionInfo.title }}</p>
+						</div>
 					</div>
-					<div class="space-x-3">
+					<div class="mb-10 md:hidden flex flex-row justify-between">
+						<div class="flex flex-row">
+							<Badge :status="site.status">{{ site.status }}</Badge>
+							<div
+								v-if="regionInfo"
+								class="ml-2 flex flex-row items-center px-3 py-1 text-xs font-medium rounded-md cursor-default text-yellow-700 bg-yellow-50"
+							>
+								<img
+									v-if="regionInfo.image"
+									class="h-4 mr-2"
+									:src="regionInfo.image"
+									:alt="`Flag of ${regionInfo.title}`"
+									:title="regionInfo.image"
+								/>
+								<p>{{ regionInfo.title }}</p>
+							</div>
+						</div>
+
+						<!-- Only for mobile view -->
+						<Dropdown v-if="siteActions.length > 0" :items="siteActions" right>
+							<template v-slot="{ toggleDropdown }">
+								<Button icon-right="chevron-down" @click="toggleDropdown()"
+									>Actions</Button
+								>
+							</template>
+						</Dropdown>
+					</div>
+
+					<div class="hidden md:flex flex-row space-x-3">
 						<Button
 							v-if="site.group"
-							icon-left="tool"
 							:route="`/benches/${site.group}`"
-						>
-							Manage Bench
+							icon-left="tool"
+							>Manage Bench
 						</Button>
 						<Button
-							v-if="site.status == 'Active'"
-							:loading="$resources.loginAsAdmin.loading"
-							@click="reasonToLoginAsAdminPopup()"
-							icon-left="external-link"
+							v-for="action in siteActions"
+							:key="action.label"
+							:icon-left="action.icon"
+							:loading="action.loading"
+							@click="action.action"
 						>
-							Login as Administrator
-						</Button>
-						<Button
-							v-if="site.status === 'Active' || site.status === 'Updating'"
-							:link="`https://${site.name}`"
-							icon-left="external-link"
-						>
-							Visit Site
+							{{ action.label }}
 						</Button>
 					</div>
 				</div>
@@ -46,6 +83,29 @@
 				<router-view v-bind="{ site }"></router-view>
 			</Tabs>
 		</div>
+
+		<Dialog
+			title="Login As Administrator"
+			v-model="showReasonForAdminLoginDialog"
+		>
+			<Input
+				label="Reason for logging in as Administrator"
+				type="textarea"
+				v-model="reasonForAdminLogin"
+				required
+			/>
+
+			<ErrorMessage class="mt-3" :error="errorMessage" />
+
+			<template #actions>
+				<Button
+					:loading="$resources.loginAsAdmin.loading"
+					@click="proceedWithLoginAsAdmin"
+					type="primary"
+					>Proceed</Button
+				>
+			</template>
+		</Dialog>
 	</div>
 </template>
 
@@ -61,7 +121,10 @@ export default {
 	},
 	data() {
 		return {
-			runningJob: false
+			runningJob: false,
+			reasonForAdminLogin: '',
+			showReasonForAdminLoginDialog: false,
+			errorMessage: ''
 		};
 	},
 	resources: {
@@ -140,39 +203,58 @@ export default {
 				this.$router.replace(`${path}/${tab}`);
 			}
 		},
-		reasonToLoginAsAdminPopup() {
-			if (this.$account.team.name == this.site.team) {
-				return this.$resources.loginAsAdmin.submit({
-					name: this.siteName
-				});
+		proceedWithLoginAsAdmin() {
+			this.errorMessage = '';
+
+			if (!this.reasonForAdminLogin.trim()) {
+				// The input is empty
+				this.errorMessage = 'Reason is required';
+				return;
 			}
-			this.$confirm({
-				title: 'Login as Administrator',
-				message: 'Please enter reason for this login.',
-				actionLabel: 'Login',
-				textBox: true,
-				action: (closeDialog, textBoxInput) => {
-					let reason = textBoxInput;
-					if (textBoxInput.trim()) {
-						this.$resources.loginAsAdmin.submit({
-							name: this.siteName,
-							reason: reason
-						});
-						closeDialog();
-					} else {
-						this.$notify({
-							title: 'Reason field should not be empty',
-							color: 'red',
-							icon: 'x'
-						});
-					}
-				}
+
+			this.$resources.loginAsAdmin.submit({
+				name: this.siteName,
+				reason: this.reasonForAdminLogin
 			});
+
+			this.showReasonForAdminLoginDialog = false;
 		}
 	},
 	computed: {
 		site() {
 			return this.$resources.site.data;
+		},
+
+		regionInfo() {
+			if (!this.$resources.site.loading && this.$resources.site.data) {
+				return this.$resources.site.data.server_region_info;
+			}
+		},
+
+		siteActions() {
+			return [
+				this.site.status == 'Active' && {
+					label: 'Login As Administrator',
+					icon: 'external-link',
+					loading: this.$resources.loginAsAdmin.loading,
+					action: () => {
+						if (this.$account.team.name == this.site.team) {
+							return this.$resources.loginAsAdmin.submit({
+								name: this.siteName
+							});
+						}
+
+						this.showReasonForAdminLoginDialog = true;
+					}
+				},
+				['Active', 'Updating'].includes(this.site.status) && {
+					label: 'Visit Site',
+					icon: 'external-link',
+					action: () => {
+						window.open(`https://${this.site.name}`, '_blank');
+					}
+				}
+			].filter(Boolean);
 		},
 
 		tabs() {

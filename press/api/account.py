@@ -2,6 +2,7 @@
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
 
+import json
 from typing import Union
 
 import frappe
@@ -369,6 +370,12 @@ def add_team_member(email):
 
 
 @frappe.whitelist()
+def remove_team_member(user_email):
+	team = get_current_team(True)
+	team.remove_team_member(user_email)
+
+
+@frappe.whitelist()
 def switch_team(team):
 	user_is_part_of_team = frappe.db.exists(
 		"Team Member", {"parent": team, "user": frappe.session.user}
@@ -379,6 +386,17 @@ def switch_team(team):
 			"team": frappe.get_doc("Team", team),
 			"team_members": get_team_members(team),
 		}
+
+
+@frappe.whitelist()
+def leave_team(team):
+	team_to_leave = frappe.get_doc("Team", team)
+	cur_team = frappe.session.user
+
+	if team_to_leave.user == cur_team:
+		frappe.throw("Cannot leave this team as you are the owner.")
+
+	team_to_leave.remove_team_member(cur_team)
 
 
 @frappe.whitelist()
@@ -459,3 +477,23 @@ def get_frappe_io_auth_url() -> Union[str, None]:
 		and provider.get_password("client_secret")
 	):
 		return get_oauth2_authorize_url(provider.name, redirect_to="")
+
+
+@frappe.whitelist()
+def get_emails():
+	team = get_current_team()
+	data = frappe.get_all(
+		"Communication Email", filters={"parent": team}, fields=["type", "value"]
+	)
+
+	return data
+
+
+@frappe.whitelist()
+def update_emails(data):
+	data = {x["type"]: x["value"] for x in json.loads(data)}
+	team_doc = get_current_team(get_doc=True)
+
+	for row in team_doc.communication_emails:
+		row.value = data[row.type]
+		row.save()

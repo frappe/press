@@ -65,10 +65,15 @@
 						><span v-else>Accept</span>, you accept our
 						<a href="https://frappecloud.com/terms" class="text-blue-600"
 							>Terms of Service</a
-						>
-						&
+						>,
 						<a href="https://frappecloud.com/privacy" class="text-blue-600"
 							>Privacy Policy</a
+						>
+						&#38;
+						<a
+							href="https://frappecloud.com/cookie-policy"
+							class="text-blue-600"
+							>Cookie Policy</a
 						>
 					</label>
 				</div>

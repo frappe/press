@@ -217,7 +217,7 @@ export default {
 			this.benchTitle = this.bench;
 			let { title, creation } = await this.$call('frappe.client.get_value', {
 				doctype: 'Release Group',
-				name: this.bench,
+				filters: { name: this.bench },
 				fieldname: JSON.stringify(['title', 'creation'])
 			});
 			this.benchTitle = title;
@@ -261,8 +261,7 @@ export default {
 						this.subdomainValid &&
 						this.selectedApps.length > 0 &&
 						this.selectedPlan &&
-						(!this.wantsToRestore ||
-							Object.values(this.selectedFiles).every(v => v));
+						(!this.wantsToRestore || this.selectedFiles.database);
 
 					if (!this.agreedToRegionConsent) {
 						document.getElementById('region-consent').focus();
@@ -279,15 +278,10 @@ export default {
 	},
 	computed: {
 		wantsToRestore() {
-			let {
-				database,
-				public: publicFile,
-				private: privateFile
-			} = this.selectedFiles;
-			if (!(database && publicFile && privateFile)) {
-				return false;
+			if (this.selectedFiles.database) {
+				return true;
 			}
-			return true;
+			return false;
 		}
 	},
 	methods: {

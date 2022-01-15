@@ -139,8 +139,13 @@ class OffsiteBackupCheck(Audit):
 		self.log(log, status)
 
 
-def all():
-	"""Run all audits available"""
+def check_bench_fields():
 	BenchFieldCheck()
+
+
+def check_backup_records(arg1):
 	BackupRecordCheck()
+
+
+def check_offsite_backups(arg1):
 	OffsiteBackupCheck()

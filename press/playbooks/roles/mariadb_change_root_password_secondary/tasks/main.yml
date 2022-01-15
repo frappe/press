@@ -1,0 +1,35 @@
+---
+- name: Add .my.cnf MariaDB Configuration File
+  template:
+    src: my.cnf
+    dest: /root/.my.cnf
+    owner: root
+    group: root
+    mode: 0600
+
+- name: Stop Secondary Thread
+  mysql_replication:
+    mode: stopslave
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+
+- name: Change Primary Password
+  mysql_replication:
+    mode: changemaster
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+    master_password: "{{ mariadb_root_password }}"
+
+- name: Start MariaDB Secondary Thread
+  mysql_replication:
+    mode: startslave
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+
+- name: Check Secondary Status
+  mysql_replication:
+    mode: getslave
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+  register: secondary_status
+  failed_when: 'secondary_status["Slave_IO_Running"] == "No" or secondary_status["Slave_SQL_Running"] == "No"'

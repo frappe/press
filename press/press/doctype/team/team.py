@@ -5,8 +5,10 @@
 import frappe
 
 from frappe import _
+from frappe.core.utils import find
 from typing import List
 from hashlib import blake2b
+from press.utils import log_error
 from frappe.utils import get_fullname
 from frappe.utils import get_url_to_form
 from press.telegram_utils import Telegram
@@ -41,10 +43,16 @@ class Team(Document):
 		if not self.referrer_id:
 			self.set_referrer_id()
 
+		self.set_partner_payment_mode()
+
 	def set_referrer_id(self):
 		h = blake2b(digest_size=4)
 		h.update(self.name.encode())
 		self.referrer_id = h.hexdigest()
+
+	def set_partner_payment_mode(self):
+		if self.erpnext_partner:
+			self.payment_mode = "Partner Credits"
 
 	def delete(self, force=False, workflow=False):
 		if force:
@@ -99,6 +107,10 @@ class Team(Document):
 		)
 		team.insert(ignore_permissions=True, ignore_links=True)
 		team.append("team_members", {"user": user.name})
+		team.append("communication_emails", {"type": "invoices", "value": user.name})
+		team.append(
+			"communication_emails", {"type": "marketplace_notifications", "value": user.name}
+		)
 		team.save(ignore_permissions=True)
 
 		team.create_stripe_customer()
@@ -108,6 +120,7 @@ class Team(Document):
 
 		if not team.via_erpnext:
 			team.create_upcoming_invoice()
+			# TODO: Partner account moved to PRM
 			if team.has_partner_account_on_erpnext_com():
 				team.enable_erpnext_partner_privileges()
 
@@ -134,6 +147,15 @@ class Team(Document):
 			user = self.create_user(first_name, last_name, email, password, role)
 
 		self.append("team_members", {"user": user.name})
+		self.save(ignore_permissions=True)
+
+	def remove_team_member(self, member):
+		member_to_remove = find(self.team_members, lambda x: x.user == member)
+		if member_to_remove:
+			self.remove(member_to_remove)
+		else:
+			frappe.throw(f"Team member {frappe.bold(member)} does not exists")
+
 		self.save(ignore_permissions=True)
 
 	def set_billing_name(self):
@@ -190,11 +212,21 @@ class Team(Document):
 
 	def on_update(self):
 		self.validate_payment_mode()
+		self.update_draft_invoice_payment_mode()
 
 		if not self.is_new() and self.billing_name:
 			self.load_doc_before_save()
 			if self.has_value_changed("billing_name"):
 				self.update_billing_details_on_frappeio()
+
+	def update_draft_invoice_payment_mode(self):
+		if self.has_value_changed("payment_mode"):
+			draft_invoices = frappe.get_all(
+				"Invoice", filters={"docstatus": 0, "team": self.name}, pluck="name"
+			)
+
+			for invoice in draft_invoices:
+				frappe.db.set_value("Invoice", invoice, "payment_mode", self.payment_mode)
 
 	@frappe.whitelist()
 	def impersonate(self, member, reason):
@@ -215,6 +247,7 @@ class Team(Document):
 	@frappe.whitelist()
 	def enable_erpnext_partner_privileges(self):
 		self.erpnext_partner = 1
+		self.payment_mode = "Partner Credits"
 		self.save(ignore_permissions=True)
 
 	def allocate_free_credits(self):
@@ -457,6 +490,36 @@ class Team(Document):
 			return 0
 		return res[0]
 
+	@frappe.whitelist()
+	def get_available_partner_credits(self):
+		if not self.erpnext_partner:
+			frappe.throw(f"{self.name} is not a partner account.")
+
+		client = get_frappe_io_connection()
+		response = client.session.post(
+			f"{client.url}/api/method/partner_relationship_management.api.get_partner_credit_balance",
+			data={"email": self.name},
+		)
+
+		if response.ok:
+			res = response.json()
+			message = res.get("message")
+
+			if message.get("credit_balance") is not None:
+				return message.get("credit_balance")
+			else:
+				error_message = message.get("error_message")
+				log_error("Partner Credit Fetch Error", team=self.name, error_message=error_message)
+				frappe.throw(error_message)
+
+		else:
+			log_error(
+				"Problem fetching partner credit balance from frappe.io",
+				team=self.name,
+				response=response.text,
+			)
+			frappe.throw("Problem fetching partner credit balance.")
+
 	def is_partner_and_has_enough_credits(self):
 		return self.erpnext_partner and self.get_balance() > 0
 
@@ -476,6 +539,12 @@ class Team(Document):
 		if self.free_account:
 			return allow
 
+		if self.payment_mode == "Partner Credits":
+			if self.get_available_partner_credits() > 0:
+				return allow
+			else:
+				why = "Cannot create site due to insufficient partner credits"
+
 		if self.payment_mode == "Prepaid Credits":
 			if self.get_balance() > 0:
 				return allow
@@ -491,11 +560,15 @@ class Team(Document):
 		return (False, why)
 
 	def get_onboarding(self):
-		billing_setup = bool(
-			self.payment_mode in ["Card", "Prepaid Credits"]
-			and (self.default_payment_method or self.get_balance() > 0)
-			and self.billing_address
-		)
+		if self.payment_mode == "Partner Credits":
+			billing_setup = True
+		else:
+			billing_setup = bool(
+				self.payment_mode in ["Card", "Prepaid Credits"]
+				and (self.default_payment_method or self.get_balance() > 0)
+				and self.billing_address
+			)
+
 		site_created = frappe.db.count("Site", {"team": self.name}) > 0
 
 		if self.via_erpnext:
@@ -589,7 +662,12 @@ class Team(Document):
 	@frappe.whitelist()
 	def send_email_for_failed_payment(self, invoice, sites=None):
 		invoice = frappe.get_doc("Invoice", invoice)
-		email = self.user
+		email = (
+			frappe.db.get_value(
+				"Communication Email", {"parent": self.user, "type": "invoices"}, ["value"]
+			)
+			or self.user
+		)
 		payment_method = self.default_payment_method
 		last_4 = frappe.db.get_value("Stripe Payment Method", payment_method, "last_4")
 		account_update_link = frappe.utils.get_url("/dashboard/welcome")

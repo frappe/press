@@ -385,7 +385,6 @@ def analytics(name: str):
 	marketplace_app_doc: MarketplaceApp = frappe.get_doc("Marketplace App", name)
 	return marketplace_app_doc.get_analytics()
 
-
 # PAID APPS APIs
 # (might refactor later to a separate file
 #  like 'api/marketplace/billing.py')
@@ -436,3 +435,43 @@ def get_apps_with_plans(apps):
 			apps_with_plans.append(app)
 
 	return apps_with_plans
+
+@frappe.whitelist()
+def get_publisher_profile_info():
+	publisher_profile_info = {}
+
+	team = get_current_team()
+
+	publisher_profile_name = frappe.db.exists(
+		"Marketplace Publisher Profile", {"team": team}
+	)
+
+	if publisher_profile_name:
+		publisher_profile_info["profile_created"] = True
+		publisher_profile_info["profile_info"] = frappe.get_doc(
+			"Marketplace Publisher Profile", publisher_profile_name
+		)
+
+	return publisher_profile_info
+
+
+@frappe.whitelist()
+def update_publisher_profile(profile_data=dict()):
+	"""Update if exists, otherwise create"""
+	team = get_current_team()
+
+	publisher_profile_name = frappe.db.exists(
+		"Marketplace Publisher Profile", {"team": team}
+	)
+
+	if publisher_profile_name:
+		profile_doc = frappe.get_doc(
+			"Marketplace Publisher Profile", publisher_profile_name, for_update=True
+		)
+		profile_doc.update(profile_data)
+		profile_doc.save()
+	else:
+		profile_doc = frappe.get_doc({"doctype": "Marketplace Publisher Profile"})
+		profile_doc.team = team
+		profile_doc.update(profile_data)
+		profile_doc.insert(ignore_permissions=True)

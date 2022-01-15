@@ -3,12 +3,13 @@
 # For license information, please see license.txt
 
 import frappe
+import copy
 
 from typing import List
 from frappe.core.utils import find
 from frappe.model.document import Document
 from press.press.doctype.server.server import Server
-from press.utils import get_last_doc, get_app_tag, get_current_team
+from press.utils import get_last_doc, get_app_tag, get_current_team, log_error
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app_source.app_source import AppSource, create_app_source
 
@@ -79,8 +80,18 @@ class ReleaseGroup(Document):
 
 	@frappe.whitelist()
 	def validate_dependencies(self):
+		# TODO: Move this to Frappe Version DocType
+		dependencies = copy.deepcopy(DEFAULT_DEPENDENCIES)
+		if self.version in ("Version 14", "Nightly"):
+			python = find(dependencies, lambda x: x["dependency"] == "PYTHON_VERSION")
+			python["version"] = "3.8"
+
+		if self.version == "Version 12":
+			node = find(dependencies, lambda x: x["dependency"] == "NODE_VERSION")
+			node["version"] = "12.19.0"
+
 		if not hasattr(self, "dependencies") or not self.dependencies:
-			self.extend("dependencies", DEFAULT_DEPENDENCIES)
+			self.extend("dependencies", dependencies)
 
 	@frappe.whitelist()
 	def create_deploy_candidate(self, apps_to_ignore=[]):
@@ -348,6 +359,27 @@ class ReleaseGroup(Document):
 		]
 
 		return marketplace_app_sources
+
+	def get_clusters(self):
+		"""Get unique clusters corresponding to self.servers"""
+		servers = frappe.db.get_all(
+			"Release Group Server", {"parent": self.name}, pluck="server"
+		)
+		return frappe.get_all("Server", {"name": ("in", servers)}, pluck="cluster")
+
+	def add_cluster(self, cluster: str):
+		server = Server.get_prod_for_new_bench({"cluster": cluster})
+		if not server:
+			log_error("No suitable server for new bench")
+			frappe.throw(f"No suitable server for new bench in {cluster}")
+		self.append("servers", {"server": server, "default": False})
+		self.save()
+		app_update_available = self.deploy_information().update_available
+		if not app_update_available:
+			last_successful_candidate = frappe.get_last_doc(
+				"Deploy Candidate", {"status": "Success", "group": self.name}
+			)
+			last_successful_candidate._create_deploy([server])
 
 
 def new_release_group(title, version, apps, team=None, cluster=None):

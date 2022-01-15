@@ -2,12 +2,11 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on('Release Group', {
-	refresh: async function(frm) {
-        frm.add_custom_button(__('Goto Dashboard'), () => {
-            let host_name = window.location.host;
-            let protocol = ['frappecloud.com', 'staging.frappe.cloud'].includes(host_name) ? 'https://' : 'http://';
-            window.location.href = `${protocol}${host_name}/dashboard/benches/${frm.doc.name}`;
-        });
+	refresh: function (frm) {
+		frm.add_web_link(
+			`/dashboard/benches/${frm.doc.name}`,
+			__('Visit Dashboard')
+		);
 		[
 			[
 				__('Create Deploy Candidate'),
@@ -25,7 +24,9 @@ frappe.ui.form.on('Release Group', {
 								name: frm.doc.name,
 							},
 						})
-						.then(({ message }) => {
+						.then(({
+							message
+						}) => {
 							frappe.msgprint({
 								title: __('New Deploy Candidate Created'),
 								indicator: 'green',
@@ -42,4 +43,10 @@ frappe.ui.form.on('Release Group', {
 		});
 		frm.set_df_property('dependencies', 'cannot_add_rows', 1);
 	},
+	version: function (frm) {
+		if (frm.is_new()) {
+			frm.clear_table("dependencies");
+			frm.call('validate_dependencies');
+		}	
+	}
 });
