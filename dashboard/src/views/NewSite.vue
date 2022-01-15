@@ -42,7 +42,7 @@
 						:key="app.name"
 						:app="app"
 						class="mb-9"
-						@change="plan => (selectedAppPlans[app.name] = plan)"
+						@change="plan => (selectedAppPlans[app.name] = plan.name)"
 					/>
 				</div>
 
@@ -248,7 +248,8 @@ export default {
 						plan: this.selectedPlan ? this.selectedPlan.name : null,
 						files: this.selectedFiles,
 						share_details_consent: this.shareDetailsConsent,
-						skip_failing_patches: this.skipFailingPatches
+						skip_failing_patches: this.skipFailingPatches,
+						selected_app_plans: this.selectedAppPlans
 					}
 				},
 				onSuccess(data) {
