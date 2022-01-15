@@ -8,12 +8,17 @@
 			loadingText="Loading Plans..."
 		></Button>
 
-		<div class="mb-8 flex flex-row items-center">
-			<!-- Replace with app icon -->
-			<div class="mr-2 h-10 w-10 rounded-lg bg-indigo-300"></div>
+		<div class="mb-6 flex flex-row items-center">
+			<Avatar
+				class="mr-2"
+				size="lg"
+				shape="square"
+				:imageURL="app.image"
+				:label="app.title"
+			/>
 
 			<div class="flex flex-col">
-				<h4 class="text-base text-gray-600">Darkify</h4>
+				<h4 class="text-base text-gray-600">{{ app.title }}</h4>
 				<h5 class="text-xl text-gray-900 font-semibold">Choose your plans</h5>
 			</div>
 		</div>
@@ -59,7 +64,7 @@ export default {
 			return {
 				method: 'press.api.marketplace.get_app_plans',
 				params: {
-					app: this.app
+					app: this.app.name
 				},
 				auto: true
 			};
