@@ -2,6 +2,7 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
+import json
 import frappe
 
 from typing import Dict, List
@@ -393,3 +394,21 @@ def analytics(name: str):
 def get_app_plans(app: str):
 	marketplace_app: MarketplaceApp = frappe.get_doc("Marketplace App", app)
 	return marketplace_app.get_plans()
+
+
+@frappe.whitelist()
+def get_apps_with_plans(apps):
+
+	if isinstance(apps, str):
+		apps = json.loads(apps)
+
+	apps_with_plans = []
+
+	# Make sure it is a marketplace app
+	m_apps = frappe.db.get_all("Marketplace App", filters={"app": ("in", apps)}, pluck="name")
+	
+	for app in m_apps:
+		if len(frappe.get_doc("Marketplace App", app).get_plans()) > 0:
+			apps_with_plans.append(app)
+		
+	return apps_with_plans

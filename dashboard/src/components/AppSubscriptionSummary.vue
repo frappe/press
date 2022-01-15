@@ -1,5 +1,5 @@
 <template>
-	<div class="max-w-md">
+	<div>
 		<h3>All apps (3)</h3>
 
 		<ul class="mt-5 divide-y divide-gray-300">
@@ -8,7 +8,7 @@
 					<!-- Replace with app icon -->
 					<div class="h-10 w-10 bg-red-400 rounded-lg mr-3 self-center"></div>
 					<div class="flex flex-col">
-						<h4 class="text-gray-900 font-medium text-lg">Sentry</h4>
+						<h4 class="text-gray-900 font-medium text-lg">Frappe Mail</h4>
 						<p class="text-gray-600 text-base mt-1">Best open source ERP.</p>
 					</div>
 				</div>
@@ -30,7 +30,7 @@
 					<!-- Replace with app icon -->
 					<div class="h-10 w-10 bg-green-400 rounded-lg mr-3 self-center"></div>
 					<div class="flex flex-col">
-						<h4 class="text-gray-900 font-medium text-lg">Sentry</h4>
+						<h4 class="text-gray-900 font-medium text-lg">Darkify</h4>
 						<p class="text-gray-600 text-base mt-1">Best open source ERP.</p>
 					</div>
 				</div>
@@ -45,9 +45,11 @@
 			<li class="flex flex-row justify-between items-center py-3">
 				<div class="flex flex-row self-end">
 					<!-- Replace with app icon -->
-					<div class="h-10 w-10 bg-indigo-400 rounded-lg mr-3 self-center"></div>
+					<div
+						class="h-10 w-10 bg-indigo-400 rounded-lg mr-3 self-center"
+					></div>
 					<div class="flex flex-col">
-						<h4 class="text-gray-900 font-medium text-lg">Sentry</h4>
+						<h4 class="text-gray-900 font-medium text-lg">Frappe Healthcare</h4>
 						<p class="text-gray-600 text-base mt-1">Best open source ERP.</p>
 					</div>
 				</div>

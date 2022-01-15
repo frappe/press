@@ -39,7 +39,7 @@ export default {
 	components: {
 		AppPlanCard
 	},
-	props: ['currentPlan'],
+	props: ['app', 'currentPlan'],
 	model: {
 		prop: 'selectedPlan',
 		event: 'change'
@@ -59,7 +59,7 @@ export default {
 			return {
 				method: 'press.api.marketplace.get_app_plans',
 				params: {
-					app: 'darkify' // TODO: Replace with prop 'app'
+					app: this.app
 				},
 				auto: true
 			};
