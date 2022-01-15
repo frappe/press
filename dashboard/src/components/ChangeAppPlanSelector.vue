@@ -8,7 +8,7 @@
 			loadingText="Loading Plans..."
 		></Button>
 
-		<div class="mb-6 flex flex-row items-center">
+		<div v-if="plans" class="mb-6 flex flex-row items-center">
 			<Avatar
 				class="mr-2"
 				size="lg"
@@ -54,17 +54,22 @@ export default {
 			selectedPlan: null
 		};
 	},
-	mounted() {
-		if (this.currentPlan) {
-			// TODO: Handle already selected plan
-		}
-	},
 	resources: {
 		getAppPlans() {
 			return {
 				method: 'press.api.marketplace.get_app_plans',
 				params: {
 					app: this.app.name
+				},
+				onSuccess(plans) {
+					if (this.currentPlan) {
+						for (let plan of plans) {
+							if (plan.name === this.currentPlan) {
+								this.selectedPlan = plan;
+								break;
+							}
+						}
+					}
 				},
 				auto: true
 			};

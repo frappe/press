@@ -4,7 +4,7 @@
 		subtitle="Your marketplace app subscriptions."
 	>
 		<Button v-if="$resources.marketplaceSubscriptions.loading" :loading="true"
-			>Loading</Button
+			>Loading...</Button
 		>
 
 		<div v-else-if="$resources.marketplaceSubscriptions.data">
@@ -33,19 +33,49 @@
 						<Badge :status="subscription.status"></Badge>
 					</span>
 					<span class="text-right">
-						<Button>Change Plan</Button>
+						<Button @click="changeAppPlan(subscription)">Change Plan</Button>
 					</span>
 				</div>
 			</div>
 		</div>
 
 		<ErrorMessage :error="$resources.marketplaceSubscriptions.error" />
+
+		<Dialog v-model="showAppPlanChangeDialog" width="half" :dismissable="true">
+			<ChangeAppPlanSelector
+				@change="plan => (newAppPlan = plan.name)"
+				v-if="appToChangePlan"
+				:app="appToChangePlan"
+				:currentPlan="appToChangePlan.plan"
+			/>
+
+			<template #actions>
+				<Button
+					type="primary"
+					:loading="$resources.changePlan.loading"
+					@click="switchToNewPlan"
+					>Change Plan</Button
+				>
+			</template>
+		</Dialog>
 	</Card>
 </template>
 
 <script>
+import ChangeAppPlanSelector from '@/components/ChangeAppPlanSelector.vue';
+
 export default {
+	components: { ChangeAppPlanSelector },
 	props: ['site'],
+
+	data() {
+		return {
+			showAppPlanChangeDialog: false,
+			appToChangePlan: null,
+			newAppPlan: '',
+			currentAppPlan: ''
+		};
+	},
 
 	resources: {
 		marketplaceSubscriptions() {
@@ -56,6 +86,42 @@ export default {
 				},
 				auto: true
 			};
+		},
+
+		changePlan() {
+			return {
+				method: 'press.api.marketplace.change_app_plan',
+				onSuccess() {
+					this.showAppPlanChangeDialog = false;
+					this.$resources.marketplaceSubscriptions.fetch();
+				}
+			};
+		}
+	},
+
+	methods: {
+		changeAppPlan(subscription) {
+			this.currentAppPlan = subscription.marketplace_app_plan;
+
+			this.appToChangePlan = {
+				name: subscription.app,
+				title: subscription.app_title,
+				image: subscription.app_image,
+				plan: subscription.marketplace_app_plan,
+				subscription: subscription.name
+			};
+			this.showAppPlanChangeDialog = true;
+		},
+
+		switchToNewPlan() {
+			if (this.currentAppPlan !== this.newAppPlan) {
+				this.$resources.changePlan.submit({
+					subscription: this.appToChangePlan.subscription,
+					new_plan: this.newAppPlan
+				});
+			} else {
+				this.showAppPlanChangeDialog = false;
+			}
 		}
 	},
 

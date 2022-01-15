@@ -56,6 +56,7 @@ class MarketplaceAppSubscription(Document):
 			self.plan = frappe.db.get_value(
 				"Marketplace App Plan", self.marketplace_app_plan, "plan"
 			)
+			self.save()
 
 	def after_insert(self):
 		# TODO: Check if this key already exists
