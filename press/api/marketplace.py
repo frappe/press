@@ -400,9 +400,12 @@ def get_marketplace_subscriptions_for_site(site: str):
 	)
 
 	for subscription in subscriptions:
-		subscription.app_title = frappe.db.get_value(
-			"Marketplace App", subscription.app, "title"
+		marketplace_app_info = frappe.db.get_value(
+			"Marketplace App", subscription.app, ["title", "image"], as_dict=True
 		)
+
+		subscription.app_title = marketplace_app_info.title
+		subscription.app_image = marketplace_app_info.image
 
 	return subscriptions
 
@@ -432,6 +435,13 @@ def get_apps_with_plans(apps):
 			apps_with_plans.append(app)
 
 	return apps_with_plans
+
+
+@frappe.whitelist()
+def change_app_plan(subscription, new_plan):
+	subscription = frappe.get_doc("Marketplace App Subscription", subscription)
+	subscription.marketplace_app_plan = new_plan
+	subscription.save(ignore_permissions=True)
 
 
 @frappe.whitelist()
