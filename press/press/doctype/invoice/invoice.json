@@ -40,6 +40,7 @@
   "stripe_invoice_url",
   "frappe_invoice",
   "invoice_pdf",
+  "frappe_partner_order",
   "column_break_32",
   "transaction_amount",
   "transaction_net",
@@ -309,7 +310,12 @@
    "fieldname": "payment_mode",
    "fieldtype": "Select",
    "label": "Payment Mode",
-   "options": "\nCard\nPrepaid Credits\nNEFT"
+   "options": "\nCard\nPrepaid Credits\nNEFT\nPartner Credits"
+  },
+  {
+   "fieldname": "frappe_partner_order",
+   "fieldtype": "Data",
+   "label": "Frappe Partner Order"
   }
  ],
  "is_submittable": 1,
@@ -323,9 +329,14 @@
    "group": "Documents",
    "link_doctype": "Balance Transaction",
    "link_fieldname": "invoice"
+  },
+  {
+   "group": "Documents",
+   "link_doctype": "Stripe Payment Event",
+   "link_fieldname": "invoice"
   }
  ],
- "modified": "2021-11-01 15:46:55.690036",
+ "modified": "2021-12-29 15:56:52.487522",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",
@@ -360,5 +371,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }

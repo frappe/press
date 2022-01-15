@@ -47,6 +47,16 @@ class Invoice(Document):
 		self.status = "Unpaid"
 
 		self.amount_due = self.total
+
+		if self.payment_mode == "Partner Credits":
+			self.payment_attempt_count += 1
+			self.save()
+			frappe.db.commit()
+
+			self.cancel_applied_credits()
+			self.apply_partner_credits()
+			return
+
 		self.apply_credit_balance()
 		if self.amount_due == 0:
 			self.status = "Paid"
@@ -226,7 +236,12 @@ class Invoice(Document):
 		self.customer_name = frappe.db.get_value(
 			"Team", self.team, "billing_name"
 		) or frappe.utils.get_fullname(self.team)
-		self.customer_email = self.team
+		self.customer_email = (
+			frappe.db.get_value(
+				"Communication Email", {"parent": self.team, "type": "invoices"}, ["value"]
+			)
+			or self.team
+		)
 		team = frappe.db.get_value("Team", self.team, ["currency", "payment_mode"], as_dict=1)
 		self.currency = team.currency
 		if not self.payment_mode:
@@ -354,6 +369,33 @@ class Invoice(Document):
 			doc.insert()
 			doc.submit()
 
+	def apply_partner_credits(self):
+		team = frappe.get_cached_doc("Team", self.team)
+
+		if not team.erpnext_partner:
+			frappe.throw(f"{self.team} is not a partner account. Cannot apply partner credits.")
+
+		client = self.get_frappeio_connection()
+		response = client.session.post(
+			f"{client.url}/api/method/consume_credits_against_fc_invoice",
+			data={"invoice": self.as_json()},
+		)
+
+		if response.ok:
+			res = response.json()
+			partner_order = res.get("message")
+
+			if partner_order:
+				self.frappe_partner_order = partner_order
+				self.amount_paid = self.amount_due
+				self.status = "Paid"
+				self.save()
+				self.submit()
+		else:
+			self.add_comment(
+				text="Failed to pay via Partner credits" + "<br><br>" + response.text
+			)
+
 	def apply_credit_balance(self):
 		# cancel applied credits to re-apply available credits
 		self.cancel_applied_credits()
@@ -428,9 +470,20 @@ class Invoice(Document):
 	def create_next(self):
 		# the next invoice's period starts after this invoice ends
 		next_start = frappe.utils.add_days(self.period_end, 1)
-		return frappe.get_doc(
-			doctype="Invoice", team=self.team, period_start=next_start
-		).insert()
+
+		already_exists = frappe.db.exists(
+			"Invoice",
+			{
+				"team": self.team,
+				"period_start": next_start,
+				"type": "Subscription",
+			},  # Adding type 'Subscription' to ensure no other type messes with this
+		)
+
+		if not already_exists:
+			return frappe.get_doc(
+				doctype="Invoice", team=self.team, period_start=next_start
+			).insert()
 
 	def get_pdf(self):
 		print_format = self.meta.default_print_format
@@ -446,7 +499,7 @@ class Invoice(Document):
 			return
 		if self.amount_paid == 0:
 			return
-		if self.frappe_invoice:
+		if self.frappe_invoice or self.frappe_partner_order:
 			return
 
 		try:
@@ -651,15 +704,14 @@ def finalize_unpaid_prepaid_credit_invoices():
 	"""Should be run daily in contrast to `finalize_draft_invoices`, which runs hourly"""
 	today = frappe.utils.today()
 
-	# Invoices with `Prepaid Credits` as mode and unpaid
+	# Invoices with `Prepaid Credits` or `Partner Credits` as mode and unpaid
 	invoices = frappe.db.get_all(
 		"Invoice",
 		filters={
 			"status": "Unpaid",
 			"type": "Subscription",
 			"period_end": ("<=", today),
-			"payment_mode": "Prepaid Credits",
-			"payment_attempt_count": ("<=", 15),  # Try for 15 days
+			"payment_mode": ("in", ["Prepaid Credits", "Partner Credits"]),
 		},
 		pluck="name",
 	)

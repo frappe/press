@@ -68,7 +68,7 @@ class DeployCandidate(Document):
 		)
 		frappe.set_user(team)
 		frappe.enqueue_doc(
-			self.doctype, self.name, "_build", timeout=1200, enqueue_after_commit=True
+			self.doctype, self.name, "_build", timeout=2400, enqueue_after_commit=True
 		)
 		frappe.set_user(user)
 		frappe.session.data = session_data
@@ -103,7 +103,7 @@ class DeployCandidate(Document):
 			self.doctype,
 			self.name,
 			"_build_and_deploy",
-			timeout=1200,
+			timeout=2400,
 			enqueue_after_commit=True,
 			staging=staging,
 		)
@@ -255,7 +255,7 @@ class DeployCandidate(Document):
 				os.path.join(frappe.get_app_path("press", "docker"), target), self.build_directory,
 			)
 
-		for target in ["config"]:
+		for target in ["config", "redis"]:
 			shutil.copytree(
 				os.path.join(frappe.get_app_path("press", "docker"), target),
 				os.path.join(self.build_directory, target),
@@ -307,7 +307,10 @@ class DeployCandidate(Document):
 			try:
 				# Remove step index from line
 				step_index, line = line.split(maxsplit=1)
-				step_index = int(step_index[1:])
+				try:
+					step_index = int(step_index[1:])
+				except ValueError:
+					step_index = sorted(steps)[-1]
 
 				# Parse first line and add step to steps dict
 				if step_index not in steps and line.startswith("[stage-"):

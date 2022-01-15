@@ -6,8 +6,6 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "host_name",
-  "team",
   "subdomain",
   "domain",
   "status",
@@ -20,10 +18,13 @@
   "group",
   "skip_auto_updates",
   "site_config_section",
+  "host_name",
   "configuration",
   "column_break_12",
+  "database_name",
   "config",
   "billing",
+  "team",
   "setup_wizard_complete",
   "plan",
   "free",
@@ -61,8 +62,7 @@
   "column_break_51",
   "update_on_weekday",
   "update_end_of_month",
-  "update_on_day_of_month",
-  "column_break_57"
+  "update_on_day_of_month"
  ],
  "fields": [
   {
@@ -450,8 +450,10 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "column_break_57",
-   "fieldtype": "Column Break"
+   "fieldname": "database_name",
+   "fieldtype": "Data",
+   "label": "Database Name",
+   "read_only": 1
   }
  ],
  "links": [
@@ -501,7 +503,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2021-12-07 21:38:35.662512",
+ "modified": "2021-12-22 12:34:02.510953",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
@@ -534,5 +536,6 @@
  ],
  "sort_field": "creation",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }

@@ -78,7 +78,7 @@
    "fieldname": "mariadb_root_password",
    "fieldtype": "Password",
    "label": "MariaDB Root Password",
-   "set_only_once": 1
+   "read_only": 1
   },
   {
    "fieldname": "agent_section",
@@ -227,7 +227,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-09-09 16:34:07.778321",
+ "modified": "2021-12-20 22:46:11.841502",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
@@ -248,5 +248,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }

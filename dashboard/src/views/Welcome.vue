@@ -1,6 +1,6 @@
 <template>
 	<div class="p-8" v-if="$account.onboarding && !$account.onboarding.complete">
-		<div class="w-1/2 mx-auto mb-10">
+		<div class="lg:w-1/2 mx-auto mb-10">
 			<Card
 				title="Welcome to Frappe Cloud"
 				subtitle="To start using Frappe Cloud, complete the following steps to get your account up and running."

@@ -6,6 +6,7 @@
 			<BenchOverviewVersions :bench="bench" />
 			<BenchOverviewApps :bench="bench" />
 			<BenchOverviewRecentDeploys :bench="bench" />
+			<BenchOverviewRegions :bench="bench" />
 		</div>
 	</div>
 </template>
@@ -16,6 +17,7 @@ import BenchOverviewInfo from './BenchOverviewInfo.vue';
 import BenchOverviewRecentDeploys from './BenchOverviewRecentDeploys.vue';
 import BenchOverviewApps from './BenchOverviewApps.vue';
 import BenchOverviewVersions from './BenchOverviewVersions.vue';
+import BenchOverviewRegions from './BenchOverviewRegions.vue';
 
 export default {
 	name: 'BenchGeneral',
@@ -25,7 +27,8 @@ export default {
 		BenchOverviewInfo,
 		BenchOverviewRecentDeploys,
 		BenchOverviewApps,
-		BenchOverviewVersions
+		BenchOverviewVersions,
+		BenchOverviewRegions,
 	}
 };
 </script>

@@ -114,14 +114,14 @@ class MarketplaceApp(WebsiteGenerator):
 				continue
 
 			frappe_source_name = frappe.get_doc(
-				"Release Group App", {"app": "frappe", "parent": unique_public_rgs[source.version]}
+				"Release Group App", {"app": "frappe", "parent": unique_public_rgs[source.version]},
 			).source
 			frappe_source = frappe.db.get_value(
-				"App Source", frappe_source_name, ["repository_url", "branch"], as_dict=True
+				"App Source", frappe_source_name, ["repository_url", "branch"], as_dict=True,
 			)
 
 			app_source = frappe.db.get_value(
-				"App Source", source.source, ["repository_url", "branch", "public"], as_dict=True
+				"App Source", source.source, ["repository_url", "branch", "public"], as_dict=True,
 			)
 
 			supported_versions.append(
@@ -260,3 +260,8 @@ def get_plan_prices(plan_name, discount_percent=0.0):
 def get_price_after_discount(price, discount_percent):
 	discount_amount = price * discount_percent / 100
 	return round(price - discount_amount)
+
+def get_total_installs_for_app(app_name: str):
+	site_names = frappe.get_all("Site App", filters={"app": app_name})
+
+	return len(site_names)
