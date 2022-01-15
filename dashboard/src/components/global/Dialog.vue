@@ -3,7 +3,7 @@
 		:show="show"
 		@change="handleChange"
 		:dismissable="dismissable"
-		:full="full"
+		:width="width"
 	>
 		<div class="px-4 pb-4 bg-white sm:px-6 sm:pb-4">
 			<div class="sm:flex sm:items-start">
@@ -43,7 +43,7 @@ export default {
 		prop: 'show',
 		event: 'change'
 	},
-	props: ['title', 'show', 'dismissable', 'full'],
+	props: ['title', 'show', 'dismissable', 'width'],
 	components: {
 		Modal
 	},
