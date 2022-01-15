@@ -292,7 +292,7 @@ export default {
 	methods: {
 		async nextStep(activeStep, next) {
 			if (activeStep.name == 'Apps') {
-				// Go fetch app plans if any
+				// Fetch apps that have plans
 				this.appsWithPlans = await this.$call(
 					'press.api.marketplace.get_apps_with_plans',
 					{
@@ -306,6 +306,9 @@ export default {
 					for (let app of this.appsWithPlans) {
 						this.selectedAppPlans[app.name] = null;
 					}
+				} else {
+					this.validationMessage = null;
+					this.removePlanSelectionStepIfExists();
 				}
 			}
 
@@ -314,11 +317,10 @@ export default {
 		addPlanSelectionStep() {
 			const appsStepIndex = this.steps.findIndex(step => step.name == 'Apps');
 
-			// Only if already not present
-			const selectAppPlansIndex = this.steps.findIndex(
+			const selectAppPlansStepIndex = this.steps.findIndex(
 				step => step.name == 'Select App Plans'
 			);
-			if (selectAppPlansIndex < 0) {
+			if (selectAppPlansStepIndex < 0) {
 				this.steps.splice(appsStepIndex + 1, 0, {
 					name: 'Select App Plans',
 					validate: () => {
@@ -334,6 +336,15 @@ export default {
 						return true;
 					}
 				});
+			}
+		},
+		removePlanSelectionStepIfExists() {
+			// Only if already not present
+			const selectAppPlansStepIndex = this.steps.findIndex(
+				step => step.name == 'Select App Plans'
+			);
+			if (selectAppPlansStepIndex >= 0) {
+				this.steps.splice(selectAppPlansStepIndex, 1);
 			}
 		}
 	}
