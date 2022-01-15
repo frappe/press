@@ -211,30 +211,34 @@ class MarketplaceApp(WebsiteGenerator):
 		}
 
 	def get_plans(self) -> List:
-		plans = []
+		return get_plans_for_app(self.name)
 
-		marketplace_app_plans = frappe.get_all(
-			"Marketplace App Plan",
-			filters={"app": self.name},
-			fields=["name", "plan", "discount_percent", "marked_most_popular"],
-		)
 
-		for app_plan in marketplace_app_plans:
-			plan_data = {}
-			plan_data.update(app_plan)
+def get_plans_for_app(app_name):
+	plans = []
 
-			plan_discount_percent = app_plan.discount_percent
-			plan_data["discounted"] = plan_discount_percent > 0
-			plan_prices = get_plan_prices(app_plan.plan, plan_discount_percent)
-			plan_data.update(plan_prices)
+	marketplace_app_plans = frappe.get_all(
+		"Marketplace App Plan",
+		filters={"app": app_name},
+		fields=["name", "plan", "discount_percent", "marked_most_popular"],
+	)
 
-			plan_data["features"] = get_app_plan_features(app_plan.name)
+	for app_plan in marketplace_app_plans:
+		plan_data = {}
+		plan_data.update(app_plan)
 
-			plans.append(plan_data)
+		plan_discount_percent = app_plan.discount_percent
+		plan_data["discounted"] = plan_discount_percent > 0
+		plan_prices = get_plan_prices(app_plan.plan, plan_discount_percent)
+		plan_data.update(plan_prices)
 
-		plans.sort(key=lambda x: x["price_usd"])
+		plan_data["features"] = get_app_plan_features(app_plan.name)
 
-		return plans
+		plans.append(plan_data)
+
+	plans.sort(key=lambda x: x["price_usd"])
+
+	return plans
 
 
 def get_plan_prices(plan_name, discount_percent=0.0):
@@ -260,6 +264,7 @@ def get_plan_prices(plan_name, discount_percent=0.0):
 def get_price_after_discount(price, discount_percent):
 	discount_amount = price * discount_percent / 100
 	return round(price - discount_amount)
+
 
 def get_total_installs_for_app(app_name: str):
 	site_names = frappe.get_all("Site App", filters={"app": app_name})
