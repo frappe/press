@@ -8,7 +8,10 @@
 		>
 
 		<div v-else-if="$resources.marketplaceSubscriptions.data">
-			<div class="divide-y">
+			<div v-if="marketplaceSubscriptions.length === 0">
+				<p class="my-3 text-base text-gray-600 text-center">You don't have any marketplace subscriptions</p>
+			</div>
+			<div v-else class="divide-y">
 				<div
 					class="grid items-center grid-cols-3 py-4 text-base text-gray-600 gap-x-8 md:grid-cols-4"
 				>
