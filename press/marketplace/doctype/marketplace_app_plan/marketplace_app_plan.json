@@ -11,7 +11,8 @@
   "plan",
   "features",
   "discount_percent",
-  "marked_most_popular"
+  "marked_most_popular",
+  "is_free"
  ],
  "fields": [
   {
@@ -48,11 +49,17 @@
    "fieldname": "marked_most_popular",
    "fieldtype": "Check",
    "label": "Marked Most Popular"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_free",
+   "fieldtype": "Check",
+   "label": "Is Free"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-12-30 13:51:10.438373",
+ "modified": "2022-01-16 13:06:57.573387",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "Marketplace App Plan",
