@@ -61,7 +61,8 @@ class MarketplaceAppSubscription(Document):
 	def after_insert(self):
 		# TODO: Check if this key already exists
 		# TODO: Make the config value internal
-		self.set_secret_key_in_site_config()
+		if not self.while_site_creation:
+			self.set_secret_key_in_site_config()
 
 	def set_secret_key_in_site_config(self):
 		site_doc: Site = frappe.get_doc("Site", self.site)
