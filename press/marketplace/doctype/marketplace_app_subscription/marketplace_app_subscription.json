@@ -25,8 +25,7 @@
    "in_standard_filter": 1,
    "label": "Site",
    "options": "Site",
-   "read_only": 1,
-   "reqd": 1
+   "read_only": 1
   },
   {
    "default": "Active",
@@ -93,7 +92,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-01-16 19:29:51.669931",
+ "modified": "2022-01-16 19:39:28.245464",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "Marketplace App Subscription",
