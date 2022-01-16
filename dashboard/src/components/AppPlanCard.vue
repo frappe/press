@@ -30,8 +30,14 @@
 		/>
 
 		<h4 class="text-gray-900 font-semibold text-xl">
-			{{ $planTitle(plan)
-			}}<span class="font-normal text-gray-600 text-base">/ Month</span>
+			<span v-if="plan.is_free">
+				Free
+			</span>
+
+			<span v-else>
+				{{ $planTitle(plan)
+				}}<span class="font-normal text-gray-600 text-base">/ Month</span>
+			</span>
 		</h4>
 		<h4
 			v-if="plan.discounted"
