@@ -407,6 +407,10 @@ def get_marketplace_subscriptions_for_site(site: str):
 		subscription.app_title = marketplace_app_info.title
 		subscription.app_image = marketplace_app_info.image
 
+		subscription.plan_info = frappe.db.get_value(
+			"Plan", subscription.plan, ["price_usd", "price_inr"], as_dict=True
+		)
+
 	return subscriptions
 
 
