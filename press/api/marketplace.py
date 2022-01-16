@@ -395,7 +395,7 @@ def analytics(name: str):
 def get_marketplace_subscriptions_for_site(site: str):
 	subscriptions = frappe.db.get_all(
 		"Marketplace App Subscription",
-		filters={"site": site},
+		filters={"site": site, "status": ("!=", "Disabled")},
 		fields=["name", "app", "status", "marketplace_app_plan", "plan"],
 	)
 
