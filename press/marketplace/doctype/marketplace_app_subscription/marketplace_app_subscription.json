@@ -14,7 +14,8 @@
   "end_date",
   "secret_key",
   "interval",
-  "plan"
+  "plan",
+  "while_site_creation"
  ],
  "fields": [
   {
@@ -81,11 +82,18 @@
    "label": "Plan",
    "options": "Plan",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "while_site_creation",
+   "fieldtype": "Check",
+   "label": "While Site Creation",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-01-16 13:09:35.331199",
+ "modified": "2022-01-16 19:29:51.669931",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "Marketplace App Subscription",
