@@ -101,10 +101,25 @@ def new(site):
 			"remote_private_file": files.get("private"),
 			"skip_failing_patches": site.get("skip_failing_patches", False),
 		},
-	).insert(ignore_permissions=True)
-	site.create_subscription(plan)
+	)
 
-	create_app_subscriptions(app_plans, site.name)
+	if app_plans and len(app_plans) > 0:
+		subscription_docs = get_app_subscriptions(app_plans)
+
+		# Set the secret keys for subscription in config
+		secret_keys = {f"sk_{s.app}": s.secret_key for s in subscription_docs}
+		site.configuration = {}
+		site._update_configuration(secret_keys, save=False)
+
+	site.insert(ignore_permissions=True)
+
+	if app_plans and len(app_plans) > 0:
+		# Set site in subscription docs
+		for doc in subscription_docs:
+			doc.site = site.name
+			doc.save(ignore_permissions=True)
+
+	site.create_subscription(plan)
 
 	if share_details_consent:
 		frappe.get_doc(doctype="Partner Lead", team=team.name, site=site.name).insert(
@@ -123,16 +138,22 @@ def new(site):
 	}
 
 
-def create_app_subscriptions(app_plans, site):
+def get_app_subscriptions(app_plans):
+	subscriptions = []
+
 	for app_name, plan_name in app_plans.items():
-		frappe.get_doc(
+		new_subscription = frappe.get_doc(
 			{
 				"doctype": "Marketplace App Subscription",
 				"marketplace_app_plan": plan_name,
-				"site": site,
 				"app": app_name,
+				"while_site_creation": True,
 			}
 		).insert(ignore_permissions=True)
+
+		subscriptions.append(new_subscription)
+
+	return subscriptions
 
 
 @frappe.whitelist()
