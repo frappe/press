@@ -34,7 +34,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Active\nInactive"
+   "options": "Active\nInactive\nDisabled"
   },
   {
    "fieldname": "app",
@@ -85,7 +85,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-12-31 23:16:58.027775",
+ "modified": "2022-01-16 13:09:35.331199",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "Marketplace App Subscription",
