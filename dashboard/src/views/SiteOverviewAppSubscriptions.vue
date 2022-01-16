@@ -9,7 +9,9 @@
 
 		<div v-else-if="$resources.marketplaceSubscriptions.data">
 			<div v-if="marketplaceSubscriptions.length === 0">
-				<p class="my-3 text-base text-gray-600 text-center">You don't have any marketplace subscriptions</p>
+				<p class="my-3 text-base text-gray-600 text-center">
+					You don't have any marketplace subscriptions
+				</p>
 			</div>
 			<div v-else class="divide-y">
 				<div
@@ -105,6 +107,7 @@ export default {
 	methods: {
 		changeAppPlan(subscription) {
 			this.currentAppPlan = subscription.marketplace_app_plan;
+			this.newAppPlan = this.currentAppPlan;
 
 			this.appToChangePlan = {
 				name: subscription.app,
