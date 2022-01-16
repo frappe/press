@@ -22,7 +22,8 @@
   {
    "fieldname": "site",
    "fieldtype": "Data",
-   "label": "Site"
+   "label": "Site",
+   "read_only": 1
   },
   {
    "fieldname": "sender",
@@ -30,7 +31,8 @@
    "ignore_xss_filter": 1,
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Sender"
+   "label": "Sender",
+   "read_only": 1
   },
   {
    "default": "Pending",
@@ -38,25 +40,30 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Status"
+   "label": "Status",
+   "read_only": 1
   },
   {
    "fieldname": "recipient",
    "fieldtype": "Data",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Recipient"
+   "label": "Recipient",
+   "read_only": 1
   },
   {
    "fieldname": "log",
-   "fieldtype": "Text",
-   "label": "log"
+   "fieldtype": "Code",
+   "label": "log",
+   "options": "JSON",
+   "read_only": 1
   },
   {
    "default": "Today",
    "fieldname": "date",
    "fieldtype": "Date",
-   "label": "Date"
+   "label": "Date",
+   "read_only": 1
   },
   {
    "fieldname": "unique_token",
@@ -68,22 +75,25 @@
   {
    "fieldname": "message_id",
    "fieldtype": "Data",
-   "label": "Message Id"
+   "label": "Message Id",
+   "read_only": 1
   },
   {
    "fieldname": "subscription_key",
    "fieldtype": "Data",
-   "label": "Subscription Key"
+   "label": "Subscription Key",
+   "read_only": 1
   },
   {
    "fieldname": "message",
    "fieldtype": "Data",
-   "label": "Message"
+   "label": "Message",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-12-19 19:12:49.661569",
+ "modified": "2022-01-16 13:07:36.587086",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Mail Log",
