@@ -15,18 +15,19 @@
 			</div>
 			<div v-else class="divide-y">
 				<div
-					class="grid items-center grid-cols-3 py-4 text-base text-gray-600 gap-x-8 md:grid-cols-4"
+					class="grid items-center grid-cols-3 py-4 text-base text-gray-600 gap-x-8 md:grid-cols-5"
 				>
 					<span>App</span>
 					<span class="hidden md:inline">Plan</span>
 					<span>Status</span>
+					<span>Price</span>
 					<span></span>
 				</div>
 
 				<div
 					v-for="subscription in marketplaceSubscriptions"
 					:key="subscription.name"
-					class="grid items-center grid-cols-3 py-4 text-base text-gray-900 gap-x-8 md:grid-cols-4"
+					class="grid items-center grid-cols-3 py-4 text-base text-gray-900 gap-x-8 md:grid-cols-5"
 				>
 					<p class="text-base font-medium text-gray-700 truncate max-w-md">
 						{{ subscription.app_title }}
@@ -37,6 +38,9 @@
 					<span>
 						<Badge :status="subscription.status"></Badge>
 					</span>
+
+					<span> {{ $planTitle(subscription.plan_info) }}</span>
+
 					<span class="text-right">
 						<Button @click="changeAppPlan(subscription)">Change Plan</Button>
 					</span>
