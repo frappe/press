@@ -101,6 +101,8 @@
 							:class="{
 								'opacity-0 pointer-events-none': !hasNext
 							}"
+							:loading="loadingPlans"
+							loadingText="Loading"
 						>
 							Next
 						</Button>
@@ -195,7 +197,8 @@ export default {
 				}
 			],
 			agreedToRegionConsent: false,
-			selectedAppPlans: {}
+			selectedAppPlans: {},
+			loadingPlans: false
 		};
 	},
 	async mounted() {
@@ -287,6 +290,8 @@ export default {
 	methods: {
 		async nextStep(activeStep, next) {
 			if (activeStep.name == 'Apps') {
+				this.loadingPlans = true;
+
 				// Fetch apps that have plans
 				this.appsWithPlans = await this.$call(
 					'press.api.marketplace.get_apps_with_plans',
@@ -305,6 +310,8 @@ export default {
 					this.validationMessage = null;
 					this.removePlanSelectionStepIfExists();
 				}
+
+				this.loadingPlans = false;
 			}
 
 			next();
