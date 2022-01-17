@@ -142,9 +142,7 @@ class MarketplaceAppSubscription(Document):
 
 def create_usage_records():
 	subscriptions = frappe.db.get_all(
-		"Marketplace App Subscription",
-		filters={"status": "Active", "is_free_plan": False},
-		pluck="name",
+		"Marketplace App Subscription", filters={"status": "Active"}, pluck="name",
 	)
 	for name in subscriptions:
 		subscription = frappe.get_doc("Marketplace App Subscription", name)
@@ -161,6 +159,14 @@ def create_usage_records():
 
 
 def should_create_usage_record(subscription: MarketplaceAppSubscription):
+	# Don't create for free plans
+	is_free = frappe.db.get_value(
+		"Marketplace App Plan", subscription.marketplace_app_plan, "is_free"
+	)
+
+	if is_free:
+		return False
+
 	# For annual prepaid plans
 	plan_interval = frappe.db.get_value("Plan", subscription.plan, "interval")
 
