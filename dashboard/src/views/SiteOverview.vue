@@ -37,6 +37,7 @@
 				@plan-change="$resources.overview.reload()"
 			/>
 			<SiteOverviewInfo :site="site" :info="overview.data.info" />
+			<SiteOverviewAppSubscriptions class="md:col-span-2" :site="site" />
 			<SiteOverviewApps
 				:site="site"
 				:installedApps="overview.data.installed_apps"
@@ -57,6 +58,8 @@ import SiteOverviewPlan from './SiteOverviewPlan.vue';
 import SiteOverviewInfo from './SiteOverviewInfo.vue';
 import SiteOverviewApps from './SiteOverviewApps.vue';
 import SiteOverviewDomains from './SiteOverviewDomains.vue';
+import SiteOverviewAppSubscriptions from './SiteOverviewAppSubscriptions.vue';
+
 import { DateTime } from 'luxon';
 
 export default {
@@ -70,7 +73,8 @@ export default {
 		SiteOverviewPlan,
 		SiteOverviewInfo,
 		SiteOverviewApps,
-		SiteOverviewDomains
+		SiteOverviewDomains,
+		SiteOverviewAppSubscriptions
 	},
 	resources: {
 		overview() {

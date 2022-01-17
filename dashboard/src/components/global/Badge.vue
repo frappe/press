@@ -29,7 +29,8 @@ export default {
 					'Awaiting Deploy': 'yellow',
 					Published: 'green',
 					Approved: 'green',
-					Deployed: 'green'
+					Deployed: 'green',
+					Expired: 'red'
 				}[this.status];
 			}
 			return {

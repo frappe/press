@@ -35,6 +35,17 @@
 					:selectedRegion.sync="selectedRegion"
 					:shareDetailsConsent.sync="shareDetailsConsent"
 				/>
+
+				<div v-show="activeStep.name === 'Select App Plans'">
+					<ChangeAppPlanSelector
+						v-for="app in appsWithPlans"
+						:key="app.name"
+						:app="app"
+						class="mb-9"
+						@change="plan => (selectedAppPlans[app.name] = plan.name)"
+					/>
+				</div>
+
 				<Restore
 					:options="options"
 					:selectedFiles.sync="selectedFiles"
@@ -86,17 +97,19 @@
 						<Button
 							v-show="activeStep.name !== 'Restore' || wantsToRestore"
 							type="primary"
-							@click="next"
+							@click="nextStep(activeStep, next)"
 							:class="{
 								'opacity-0 pointer-events-none': !hasNext
 							}"
+							:loading="loadingPlans"
+							loadingText="Loading"
 						>
 							Next
 						</Button>
 						<Button
 							v-show="!wantsToRestore && activeStep.name === 'Restore'"
 							type="primary"
-							@click="next"
+							@click="nextStep(activeStep, next)"
 						>
 							Skip
 						</Button>
@@ -123,6 +136,7 @@ import Hostname from './NewSiteHostname.vue';
 import Apps from './NewSiteApps.vue';
 import Restore from './NewSiteRestore.vue';
 import Plans from './NewSitePlans.vue';
+import ChangeAppPlanSelector from '@/components/ChangeAppPlanSelector.vue';
 
 export default {
 	name: 'NewSite',
@@ -133,7 +147,8 @@ export default {
 		Hostname,
 		Apps,
 		Restore,
-		Plans
+		Plans,
+		ChangeAppPlanSelector
 	},
 	data() {
 		return {
@@ -181,7 +196,9 @@ export default {
 					name: 'Plan'
 				}
 			],
-			agreedToRegionConsent: false
+			agreedToRegionConsent: false,
+			selectedAppPlans: {},
+			loadingPlans: false
 		};
 	},
 	async mounted() {
@@ -234,7 +251,8 @@ export default {
 						plan: this.selectedPlan ? this.selectedPlan.name : null,
 						files: this.selectedFiles,
 						share_details_consent: this.shareDetailsConsent,
-						skip_failing_patches: this.skipFailingPatches
+						skip_failing_patches: this.skipFailingPatches,
+						selected_app_plans: this.selectedAppPlans
 					}
 				},
 				onSuccess(data) {
@@ -267,6 +285,69 @@ export default {
 				return true;
 			}
 			return false;
+		}
+	},
+	methods: {
+		async nextStep(activeStep, next) {
+			if (activeStep.name == 'Apps') {
+				this.loadingPlans = true;
+
+				// Fetch apps that have plans
+				this.appsWithPlans = await this.$call(
+					'press.api.marketplace.get_apps_with_plans',
+					{
+						apps: JSON.stringify(this.selectedApps)
+					}
+				);
+
+				if (this.appsWithPlans && this.appsWithPlans.length > 0) {
+					this.addPlanSelectionStep();
+
+					this.selectedAppPlans = {};
+					for (let app of this.appsWithPlans) {
+						this.selectedAppPlans[app.name] = null;
+					}
+				} else {
+					this.validationMessage = null;
+					this.removePlanSelectionStepIfExists();
+				}
+
+				this.loadingPlans = false;
+			}
+
+			next();
+		},
+		addPlanSelectionStep() {
+			const appsStepIndex = this.steps.findIndex(step => step.name == 'Apps');
+
+			const selectAppPlansStepIndex = this.steps.findIndex(
+				step => step.name == 'Select App Plans'
+			);
+			if (selectAppPlansStepIndex < 0) {
+				this.steps.splice(appsStepIndex + 1, 0, {
+					name: 'Select App Plans',
+					validate: () => {
+						for (let app of Object.keys(this.selectedAppPlans)) {
+							if (!this.selectedAppPlans[app]) {
+								this.validationMessage = `Please select a plan for ${app}`;
+								return false;
+							} else {
+								this.validationMessage = null;
+							}
+						}
+
+						return true;
+					}
+				});
+			}
+		},
+		removePlanSelectionStepIfExists() {
+			const selectAppPlansStepIndex = this.steps.findIndex(
+				step => step.name == 'Select App Plans'
+			);
+			if (selectAppPlansStepIndex >= 0) {
+				this.steps.splice(selectAppPlansStepIndex, 1);
+			}
 		}
 	}
 };

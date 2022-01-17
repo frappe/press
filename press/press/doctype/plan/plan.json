@@ -68,7 +68,7 @@
    "fieldname": "interval",
    "fieldtype": "Select",
    "label": "Interval",
-   "options": "Daily\nMonthly"
+   "options": "Daily\nMonthly\nAnnually"
   },
   {
    "depends_on": "eval:doc.document_type == 'Site'",
@@ -115,10 +115,11 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-07-18 13:31:26.214424",
+ "modified": "2021-12-27 18:16:20.114570",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Plan",
+ "naming_rule": "Set by user",
  "owner": "Administrator",
  "permissions": [
   {
@@ -155,6 +156,7 @@
  "quick_entry": 1,
  "sort_field": "price_usd",
  "sort_order": "ASC",
+ "states": [],
  "title_field": "plan_title",
  "track_changes": 1
 }

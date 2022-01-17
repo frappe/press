@@ -15,7 +15,7 @@
 			<div
 				v-show="show"
 				class="w-full overflow-auto transition-all transform bg-white rounded-lg shadow-xl"
-				:class="!full ? 'sm:max-w-lg' : ''"
+				:class="widthClasses"
 				style="max-height: 95vh;"
 			>
 				<slot></slot>
@@ -40,9 +40,8 @@ export default {
 			type: Boolean,
 			default: true
 		},
-		full: {
-			type: Boolean,
-			default: false
+		width: {
+			default: 'auto'
 		}
 	},
 	created() {
@@ -64,6 +63,17 @@ export default {
 		},
 		hide() {
 			this.$emit('change', false);
+		}
+	},
+	computed: {
+		widthClasses() {
+			if (this.width === 'auto') {
+				return ['sm:max-w-lg'];
+			} else if (this.width === 'half') {
+				return ['sm:max-w-2xl'];
+			} else {
+				return [];
+			}
 		}
 	}
 };

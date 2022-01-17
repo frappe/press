@@ -5,11 +5,15 @@
 import frappe
 import requests
 
+from typing import List
 from base64 import b64decode
 from press.utils import get_last_doc
 from press.api.github import get_access_token
 from frappe.website.utils import cleanup_page_name
 from frappe.website.website_generator import WebsiteGenerator
+from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
+	get_app_plan_features,
+)
 
 
 class MarketplaceApp(WebsiteGenerator):
@@ -206,8 +210,63 @@ class MarketplaceApp(WebsiteGenerator):
 			"num_installs_active_benches": num_installs_active_benches,
 		}
 
+	def get_plans(self) -> List:
+		return get_plans_for_app(self.name)
 
-def get_total_installs_for_app(app_name: MarketplaceApp):
+
+def get_plans_for_app(app_name):
+	plans = []
+
+	marketplace_app_plans = frappe.get_all(
+		"Marketplace App Plan",
+		filters={"app": app_name},
+		fields=["name", "plan", "discount_percent", "marked_most_popular", "is_free"],
+	)
+
+	for app_plan in marketplace_app_plans:
+		plan_data = {}
+		plan_data.update(app_plan)
+
+		plan_discount_percent = app_plan.discount_percent
+		plan_data["discounted"] = plan_discount_percent > 0
+		plan_prices = get_plan_prices(app_plan.plan, plan_discount_percent)
+		plan_data.update(plan_prices)
+
+		plan_data["features"] = get_app_plan_features(app_plan.name)
+
+		plans.append(plan_data)
+
+	plans.sort(key=lambda x: x["price_usd"])
+
+	return plans
+
+
+def get_plan_prices(plan_name, discount_percent=0.0):
+	"""Returns plan prices after applying the discount (if applicable)"""
+	plan_prices = frappe.db.get_value(
+		"Plan", plan_name, ["plan_title", "price_usd", "price_inr"], as_dict=True
+	)
+
+	if discount_percent > 0:
+		plan_prices.price_usd_before_discount = plan_prices.price_usd
+		plan_prices.price_usd = get_price_after_discount(
+			plan_prices.price_usd, discount_percent
+		)
+
+		plan_prices.price_inr_before_discount = plan_prices.price_inr
+		plan_prices.price_inr = get_price_after_discount(
+			plan_prices.price_inr, discount_percent
+		)
+
+	return plan_prices
+
+
+def get_price_after_discount(price, discount_percent):
+	discount_amount = price * discount_percent / 100
+	return round(price - discount_amount)
+
+
+def get_total_installs_for_app(app_name: str):
 	site_names = frappe.get_all("Site App", filters={"app": app_name})
 
 	return len(site_names)

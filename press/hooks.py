@@ -185,6 +185,7 @@ scheduler_events = {
 		"press.press.doctype.bench.bench.sync_benches",
 		"press.press.doctype.site.pool.create",
 		"press.press.doctype.invoice.invoice.finalize_draft_invoices",
+		"press.marketplace.doctype.marketplace_app_subscription.marketplace_app_subscription.create_usage_records",
 	],
 	"cron": {
 		"0 3 * * *": ["press.press.doctype.remote_file.remote_file.poll_file_statuses"],

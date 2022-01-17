@@ -28,7 +28,9 @@
   "documentation",
   "column_break_16",
   "privacy_policy",
-  "terms_of_service"
+  "terms_of_service",
+  "pricing_details_section",
+  "available_plans"
  ],
  "fields": [
   {
@@ -167,6 +169,17 @@
   {
    "fieldname": "section_break_15",
    "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "pricing_details_section",
+   "fieldtype": "Section Break",
+   "label": "Pricing Details"
+  },
+  {
+   "fieldname": "available_plans",
+   "fieldtype": "Table",
+   "label": "Available Plans",
+   "options": "Marketplace App Plans"
   }
  ],
  "has_web_view": 1,
@@ -178,9 +191,19 @@
    "group": "General",
    "link_doctype": "App Release Approval Request",
    "link_fieldname": "marketplace_app"
+  },
+  {
+   "group": "App Subscription",
+   "link_doctype": "Marketplace App Plan",
+   "link_fieldname": "app"
+  },
+  {
+   "group": "App Subscription",
+   "link_doctype": "Marketplace App Subscription",
+   "link_fieldname": "app"
   }
  ],
- "modified": "2021-11-26 15:35:47.871296",
+ "modified": "2021-12-28 13:18:12.953340",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Marketplace App",
@@ -201,6 +224,7 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "title_field": "title",
  "track_changes": 1
 }
