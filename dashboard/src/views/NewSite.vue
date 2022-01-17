@@ -303,6 +303,7 @@ export default {
 				if (this.appsWithPlans && this.appsWithPlans.length > 0) {
 					this.addPlanSelectionStep();
 
+					this.selectedAppPlans = {};
 					for (let app of this.appsWithPlans) {
 						this.selectedAppPlans[app.name] = null;
 					}
@@ -341,7 +342,6 @@ export default {
 			}
 		},
 		removePlanSelectionStepIfExists() {
-			// Only if already not present
 			const selectAppPlansStepIndex = this.steps.findIndex(
 				step => step.name == 'Select App Plans'
 			);
