@@ -39,7 +39,8 @@
 						<Badge :status="subscription.status"></Badge>
 					</span>
 
-					<span> {{ $planTitle(subscription.plan_info) }}</span>
+					<span v-if="subscription.is_free">Free</span>
+					<span v-else> {{ $planTitle(subscription.plan_info) }}</span>
 
 					<span class="text-right">
 						<Button @click="changeAppPlan(subscription)">Change Plan</Button>
