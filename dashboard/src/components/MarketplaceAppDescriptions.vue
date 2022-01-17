@@ -51,7 +51,7 @@
 					title="Update App Description"
 					v-model="showEditDescriptionDialog"
 					:dismissable="true"
-					:width="full"
+					width="full"
 				>
 					<div class="grid grid-cols-1 gap-5 md:grid-cols-2">
 						<Input

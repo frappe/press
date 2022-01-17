@@ -4,7 +4,7 @@
 		subtitle="Your marketplace app subscriptions."
 	>
 		<Button v-if="$resources.marketplaceSubscriptions.loading" :loading="true"
-			>Loading...</Button
+			>Loading</Button
 		>
 
 		<div v-else-if="$resources.marketplaceSubscriptions.data">
