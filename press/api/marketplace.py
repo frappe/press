@@ -2,6 +2,7 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
+import json
 import frappe
 
 from typing import Dict, List
@@ -16,6 +17,7 @@ from press.press.doctype.marketplace_app.marketplace_app import MarketplaceApp
 from press.press.doctype.app_release_approval_request.app_release_approval_request import (
 	AppReleaseApprovalRequest,
 )
+from press.press.doctype.marketplace_app.marketplace_app import get_plans_for_app
 
 
 @frappe.whitelist()
@@ -382,6 +384,72 @@ def add_app(source: str, app: str):
 def analytics(name: str):
 	marketplace_app_doc: MarketplaceApp = frappe.get_doc("Marketplace App", name)
 	return marketplace_app_doc.get_analytics()
+
+
+# PAID APPS APIs
+# (might refactor later to a separate file
+#  like 'api/marketplace/billing.py')
+
+
+@frappe.whitelist()
+def get_marketplace_subscriptions_for_site(site: str):
+	subscriptions = frappe.db.get_all(
+		"Marketplace App Subscription",
+		filters={"site": site, "status": ("!=", "Disabled")},
+		fields=["name", "app", "status", "marketplace_app_plan", "plan"],
+	)
+
+	for subscription in subscriptions:
+		marketplace_app_info = frappe.db.get_value(
+			"Marketplace App", subscription.app, ["title", "image"], as_dict=True
+		)
+
+		subscription.app_title = marketplace_app_info.title
+		subscription.app_image = marketplace_app_info.image
+
+		subscription.plan_info = frappe.db.get_value(
+			"Plan", subscription.plan, ["price_usd", "price_inr"], as_dict=True
+		)
+
+		subscription.is_free = frappe.db.get_value(
+			"Marketplace App Plan", subscription.marketplace_app_plan, "is_free"
+		)
+
+	return subscriptions
+
+
+@frappe.whitelist()
+def get_app_plans(app: str):
+	marketplace_app: MarketplaceApp = frappe.get_doc("Marketplace App", app)
+	return marketplace_app.get_plans()
+
+
+@frappe.whitelist()
+def get_apps_with_plans(apps):
+
+	if isinstance(apps, str):
+		apps = json.loads(apps)
+
+	apps_with_plans = []
+
+	# Make sure it is a marketplace app
+	m_apps = frappe.db.get_all(
+		"Marketplace App", filters={"app": ("in", apps)}, fields=["name", "title", "image"]
+	)
+
+	for app in m_apps:
+		plans = get_plans_for_app(app.name)
+		if len(plans) > 0:
+			apps_with_plans.append(app)
+
+	return apps_with_plans
+
+
+@frappe.whitelist()
+def change_app_plan(subscription, new_plan):
+	subscription = frappe.get_doc("Marketplace App Subscription", subscription)
+	subscription.marketplace_app_plan = new_plan
+	subscription.save(ignore_permissions=True)
 
 
 @frappe.whitelist()
