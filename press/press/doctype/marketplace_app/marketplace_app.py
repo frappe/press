@@ -153,6 +153,19 @@ class MarketplaceApp(WebsiteGenerator):
 		context.no_of_installs = self.get_analytics().get("total_installs")
 		context.plans = self.get_plans()
 
+	def get_user_reviews(self) -> List:
+		reviews = frappe.db.get_all(
+			"App User Review",
+			filters={"app": self.name},
+			fields=["title", "rating", "reviewer", "review", "creation"],
+		)
+
+		for review in reviews:
+			review.rating = int(review.rating * 5)
+			review.user_name = frappe.db.get_value("User", review.reviewer, "full_name")
+
+		return reviews
+
 	def get_deploy_information(self):
 		"""Return the deploy information this marketplace app"""
 		# Public Release Groups, Benches
