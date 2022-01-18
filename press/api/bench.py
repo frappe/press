@@ -562,6 +562,7 @@ def archive(name):
 	group.save()
 
 
+@frappe.whitelist()
 @protected("Bench")
 def logs(name, bench):
 	if frappe.db.get_value("Bench", bench, "group") == name:
