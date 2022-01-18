@@ -7,6 +7,7 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "title",
   "rating",
   "app",
   "reviewer",
@@ -40,6 +41,12 @@
    "fieldname": "review",
    "fieldtype": "Long Text",
    "label": "Review"
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -50,7 +57,7 @@
    "link_fieldname": "review"
   }
  ],
- "modified": "2022-01-02 00:18:48.222826",
+ "modified": "2022-01-18 08:28:31.459866",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "App User Review",
