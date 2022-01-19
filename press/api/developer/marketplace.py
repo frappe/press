@@ -39,10 +39,8 @@ class DeveloperApiHandler:
 		fields_to_send = [
 			"app",
 			"status",
-			"marketplace_app_plan",
+			"plan",
 			"site",
-			"interval",
-			"end_date",
 		]
 
 		filtered_dict = {
