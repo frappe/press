@@ -32,6 +32,7 @@
   "ngrok_auth_token",
   "razorpay_settings_section",
   "razorpay_key_id",
+  "razorpay_webhook_secret",
   "column_break_123",
   "razorpay_key_secret",
   "erpnext_authentication",
@@ -817,11 +818,16 @@
    "fieldname": "razorpay_key_secret",
    "fieldtype": "Password",
    "label": "Razorpay Key Secret"
+  },
+  {
+   "fieldname": "razorpay_webhook_secret",
+   "fieldtype": "Data",
+   "label": "Razorpay Webhook Secret"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2022-01-19 15:05:45.128347",
+ "modified": "2022-01-19 21:01:30.738537",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
