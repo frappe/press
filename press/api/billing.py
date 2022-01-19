@@ -9,6 +9,7 @@ from press.utils.billing import (
 	clear_setup_intent,
 	get_publishable_key,
 	get_setup_intent,
+	get_razorpay_client,
 	get_stripe,
 	make_formatted_doc,
 	states_with_tin,
@@ -300,3 +301,56 @@ def get_partner_credits():
 	team = get_current_team(get_doc=True)
 	available_credits = team.get_available_partner_credits()
 	return fmt_money(available_credits, 2, team.currency)
+
+
+@frappe.whitelist()
+def create_razorpay_order(amount):
+	client = get_razorpay_client()
+	team = get_current_team(get_doc=True)
+
+	data = {"amount": amount * 100, "currency": team.currency}
+	order = client.order.create(data=data)
+
+	payment_record = frappe.get_doc(
+		{"doctype": "Razorpay Payment Record", "order_id": order.get("id"), "team": team.name}
+	).insert(ignore_permissions=True)
+
+	return {
+		"order_id": order.get("id"),
+		"key_id": client.auth[0],
+		"payment_record": payment_record.name,
+	}
+
+
+@frappe.whitelist()
+def handle_razorpay_payment_success(response):
+	client = get_razorpay_client()
+	client.utility.verify_payment_signature(response)
+
+	payment_record = frappe.get_doc(
+		"Razorpay Payment Record",
+		{"order_id": response.get("razorpay_order_id")},
+		for_update=True,
+	)
+	payment_record.update(
+		{
+			"payment_id": response.get("razorpay_payment_id"),
+			"signature": response.get("razorpay_signature"),
+			"status": "Captured",
+		}
+	)
+	payment_record.save(ignore_permissions=True)
+
+
+@frappe.whitelist()
+def handle_razorpay_payment_failed(response):
+	print(response)
+
+	payment_record = frappe.get_doc(
+		"Razorpay Payment Record",
+		{"order_id": response["error"]["metadata"].get("order_id")},
+		for_update=True,
+	)
+
+	payment_record.status = "Failed"
+	payment_record.save(ignore_permissions=True)

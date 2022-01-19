@@ -77,7 +77,12 @@
 				v-if="showPrepaidCreditsDialog"
 				:show.sync="showPrepaidCreditsDialog"
 				:minimum-amount="$account.team.currency == 'INR' ? 800 : 10"
-				@success="$resources.upcomingInvoice.reload()"
+				@success="
+					() => {
+						$resources.upcomingInvoice.reload();
+						showPrepaidCreditsDialog = false;
+					}
+				"
 			/>
 		</Card>
 		<AccountBillingUpcomingInvoice
