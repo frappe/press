@@ -1,6 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "Prompt",
  "creation": "2022-01-19 15:16:25.377525",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -35,10 +36,11 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-01-19 15:16:59.147311",
+ "modified": "2022-01-19 22:51:03.279573",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Razorpay Webhook Log",
+ "naming_rule": "Set by user",
  "owner": "Administrator",
  "permissions": [
   {

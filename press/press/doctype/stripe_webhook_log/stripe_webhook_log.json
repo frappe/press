@@ -25,10 +25,11 @@
   }
  ],
  "links": [],
- "modified": "2020-04-04 14:25:26.007541",
+ "modified": "2022-01-19 22:50:30.082445",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Stripe Webhook Log",
+ "naming_rule": "Set by user",
  "owner": "Administrator",
  "permissions": [
   {
@@ -46,5 +47,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }
