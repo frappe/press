@@ -21,6 +21,11 @@
 				min="1"
 			/>
 
+			<ErrorMessage
+				class="mt-3"
+				:error="$resources.createRazorpayOrder.error"
+			/>
+
 			<div class="flex justify-between w-full mt-4">
 				<Button @click="paymentGateway = null">Go Back</Button>
 				<div>
@@ -83,6 +88,11 @@ export default {
 				},
 				onSuccess(data) {
 					this.processOrder(data);
+				},
+				validate() {
+					if (this.creditsToBuy < this.minimumAmount) {
+						return 'Amount less than minimum amount required';
+					}
 				}
 			};
 		},
