@@ -32,6 +32,9 @@ class RazorpayPaymentRecord(Document):
 			due_date=datetime.fromtimestamp(payment["created_at"]),
 			amount_paid=amount,
 			amount_due=amount,
+			razorpay_order_id=self.order_id,
+			razorpay_payment_record=self.name,
+			razorpay_payment_method=payment["method"],
 		)
 		invoice.append(
 			"items",
@@ -46,9 +49,5 @@ class RazorpayPaymentRecord(Document):
 		invoice.insert()
 		invoice.reload()
 
-		# TODO: Transform this for razorpay:
-		# # there should only be one charge object
-		# charge = payment_intent["charges"]["data"][0]["id"]
-		# # update transaction amount, fee and exchange rate
-		# invoice.update_transaction_details(charge)
-		# invoice.submit()
+		invoice.update_razorpay_transaction_details(payment)
+		invoice.submit()

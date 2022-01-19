@@ -46,7 +46,12 @@
   "transaction_net",
   "transaction_fee",
   "exchange_rate",
-  "transaction_fee_details"
+  "transaction_fee_details",
+  "razorpay_billing_section",
+  "razorpay_order_id",
+  "razorpay_payment_record",
+  "column_break_44",
+  "razorpay_payment_method"
  ],
  "fields": [
   {
@@ -316,6 +321,32 @@
    "fieldname": "frappe_partner_order",
    "fieldtype": "Data",
    "label": "Frappe Partner Order"
+  },
+  {
+   "fieldname": "razorpay_billing_section",
+   "fieldtype": "Section Break",
+   "label": "Razorpay Billing"
+  },
+  {
+   "fieldname": "razorpay_order_id",
+   "fieldtype": "Data",
+   "label": "Razorpay Order ID"
+  },
+  {
+   "fieldname": "column_break_44",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "razorpay_payment_record",
+   "fieldtype": "Link",
+   "label": "Razorpay Payment Record",
+   "options": "Razorpay Payment Record"
+  },
+  {
+   "fieldname": "razorpay_payment_method",
+   "fieldtype": "Data",
+   "label": "Razorpay Payment Method",
+   "read_only": 1
   }
  ],
  "is_submittable": 1,
@@ -336,7 +367,7 @@
    "link_fieldname": "invoice"
   }
  ],
- "modified": "2021-12-29 15:56:52.487522",
+ "modified": "2022-01-19 20:30:29.527728",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",
