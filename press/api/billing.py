@@ -344,8 +344,6 @@ def handle_razorpay_payment_success(response):
 
 @frappe.whitelist()
 def handle_razorpay_payment_failed(response):
-	print(response)
-
 	payment_record = frappe.get_doc(
 		"Razorpay Payment Record",
 		{"order_id": response["error"]["metadata"].get("order_id")},

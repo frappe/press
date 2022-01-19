@@ -26,10 +26,7 @@
 				<div>
 					<Button
 						type="primary"
-						:loading="
-							$resources.createRazorpayOrder.loading ||
-								$resources.handlePaymentSuccess.loading
-						"
+						:loading="$resources.createRazorpayOrder.loading"
 						@click="buyCreditsWithRazorpay"
 					>
 						Buy
@@ -131,7 +128,7 @@ export default {
 		},
 
 		handlePaymentSuccess(response) {
-			this.$resources.handlePaymentSuccess.submit({ response });
+			this.$emit('success');
 		},
 
 		handlePaymentFailed(response) {
