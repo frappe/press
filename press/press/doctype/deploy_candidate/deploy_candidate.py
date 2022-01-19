@@ -239,7 +239,7 @@ class DeployCandidate(Document):
 				step.status = "Success"
 
 			target = os.path.join(self.build_directory, "apps", app.app)
-			shutil.copytree(source, target, ignore_dangling_symlinks=True)
+			shutil.copytree(source, target, symlinks=True)
 
 			self.save(ignore_version=True)
 			frappe.db.commit()
@@ -259,7 +259,7 @@ class DeployCandidate(Document):
 			shutil.copytree(
 				os.path.join(frappe.get_app_path("press", "docker"), target),
 				os.path.join(self.build_directory, target),
-				ignore_dangling_symlinks=True,
+				symlinks=True,
 			)
 
 	def _run_docker_build(self):
