@@ -30,6 +30,11 @@
   "free_credits_inr",
   "free_credits_usd",
   "ngrok_auth_token",
+  "razorpay_settings_section",
+  "razorpay_key_id",
+  "razorpay_webhook_secret",
+  "column_break_123",
+  "razorpay_key_secret",
   "erpnext_authentication",
   "erpnext_url",
   "erpnext_api_key",
@@ -793,11 +798,36 @@
    "fieldname": "default_outgoing_pass",
    "fieldtype": "Data",
    "label": "Default outgoing pass"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "razorpay_settings_section",
+   "fieldtype": "Section Break",
+   "label": "Razorpay Settings"
+  },
+  {
+   "fieldname": "razorpay_key_id",
+   "fieldtype": "Data",
+   "label": "Razorpay Key ID"
+  },
+  {
+   "fieldname": "column_break_123",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "razorpay_key_secret",
+   "fieldtype": "Password",
+   "label": "Razorpay Key Secret"
+  },
+  {
+   "fieldname": "razorpay_webhook_secret",
+   "fieldtype": "Data",
+   "label": "Razorpay Webhook Secret"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2021-12-13 20:31:31.892207",
+ "modified": "2022-01-19 21:01:30.738537",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
@@ -817,5 +847,6 @@
  "quick_entry": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }

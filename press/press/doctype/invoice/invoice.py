@@ -606,6 +606,36 @@ class Invoice(Document):
 			self.save()
 			return True
 
+	def update_razorpay_transaction_details(self, payment):
+		self.transaction_amount = convert_stripe_money(payment["amount"])
+		self.transaction_net = convert_stripe_money(payment["amount"] - payment["fee"])
+		self.transaction_fee = convert_stripe_money(payment["fee"])
+
+		charges = [
+			{
+				"description": "GST",
+				"amount": convert_stripe_money(payment["tax"]),
+				"currency": payment["currency"],
+			},
+			{
+				"description": "Razorpay Fee",
+				"amount": convert_stripe_money(payment["fee"] - payment["tax"]),
+				"currency": payment["currency"],
+			},
+		]
+
+		for row in charges:
+			self.append(
+				"transaction_fee_details",
+				{
+					"description": row["description"],
+					"amount": row["amount"],
+					"currency": row["currency"].upper(),
+				},
+			)
+
+		self.save()
+
 	@frappe.whitelist()
 	def refund(self, reason):
 		stripe = get_stripe()

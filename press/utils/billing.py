@@ -1,6 +1,7 @@
 import re
 import frappe
 import stripe
+import razorpay
 
 from frappe.utils import fmt_money
 from press.utils import get_current_team
@@ -178,3 +179,23 @@ def validate_gstin_check_digit(gstin, label="GSTIN"):
 				label
 			)
 		)
+
+
+def get_razorpay_client():
+	from frappe.utils.password import get_decrypted_password
+
+	if not hasattr(frappe.local, "press_razorpay_client_object"):
+		key_id = frappe.db.get_single_value("Press Settings", "razorpay_key_id")
+		key_secret = get_decrypted_password(
+			"Press Settings", "Press Settings", "razorpay_key_secret", raise_exception=False
+		)
+
+		if not (key_id and key_secret):
+			frappe.throw(
+				"Setup razorpay via Press Settings before using"
+				" press.api.billing.get_razorpay_client"
+			)
+
+		frappe.local.press_razorpay_client_object = razorpay.Client(auth=(key_id, key_secret))
+
+	return frappe.local.press_razorpay_client_object
