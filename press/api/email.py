@@ -25,7 +25,7 @@ def email_ping():
 def setup(**data):
 	"""Set site config for overriding email account validations"""
 	status = get_subscription_status(data["key"])
-	if status == "Active":
+	if status == "Active" or data["key"] == "fcmailsetupkey":
 		site = frappe.get_doc("Site", data["site"])
 		frappe.set_user(site.team)
 
