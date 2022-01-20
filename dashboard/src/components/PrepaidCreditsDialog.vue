@@ -21,6 +21,11 @@
 				min="1"
 			/>
 
+			<p class="mt-3 text-xs">
+				<span class="font-semibold">Note</span>: If you are using Net Banking,
+				it may take upto 5 days for balance to reflect.
+			</p>
+
 			<ErrorMessage
 				class="mt-3"
 				:error="$resources.createRazorpayOrder.error"
