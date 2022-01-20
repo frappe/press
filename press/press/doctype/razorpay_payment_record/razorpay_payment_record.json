@@ -61,7 +61,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-01-19 19:42:31.182658",
+ "modified": "2022-01-20 16:34:15.352515",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Razorpay Payment Record",
@@ -82,19 +82,5 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": [
-  {
-   "color": "Green",
-   "title": "Captured"
-  },
-  {
-   "color": "Red",
-   "title": "Failed"
-  },
-  {
-   "color": "Orange",
-   "title": "Pending"
-  }
- ],
  "title_field": "order_id"
 }
