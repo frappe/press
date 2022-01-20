@@ -41,9 +41,21 @@
 		</div>
 
 		<div>
-			<div v-if="!paymentGateway">
-				<Button @click="paymentGateway = 'stripe'">Stripe</Button>
-				<Button @click="paymentGateway = 'razorpay'">Razorpay</Button>
+			<div v-if="!paymentGateway" class="grid sm:grid-cols-2 gap-1">
+				<Button
+					v-if="$account.team.currency === 'INR'"
+					@click="paymentGateway = 'razorpay'"
+					class="py-2"
+				>
+					<img
+						class="h-9 py-1"
+						src="../assets/razorpay.svg"
+						alt="Razorpay Logo"
+					/>
+				</Button>
+				<Button @click="paymentGateway = 'stripe'">
+					<img class="h-9" src="../assets/stripe.svg" alt="Stripe Logo" />
+				</Button>
 			</div>
 		</div>
 	</Dialog>
