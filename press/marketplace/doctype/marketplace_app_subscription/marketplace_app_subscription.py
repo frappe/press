@@ -27,7 +27,7 @@ class MarketplaceAppSubscription(Document):
 
 	def create_site_config_key(self):
 		if not frappe.db.exists("Site Config Key", {"key": f"sk_{self.app}"}):
-			frappe.get_doc(doctype="Site Config Key", internal=True, key="sk_darkify").insert(
+			frappe.get_doc(doctype="Site Config Key", internal=True, key=f"sk_{self.app}").insert(
 				ignore_permissions=True
 			)
 
