@@ -1,34 +1,45 @@
 {
  "actions": [],
+ "allow_rename": 1,
  "autoname": "Prompt",
- "creation": "2020-03-30 15:42:28.497505",
+ "creation": "2022-01-19 15:16:25.377525",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "event_type",
+  "event",
+  "payment_id",
   "payload"
  ],
  "fields": [
   {
-   "fieldname": "event_type",
+   "fieldname": "event",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Event Type",
-   "read_only": 1
+   "in_standard_filter": 1,
+   "label": "Event"
+  },
+  {
+   "fieldname": "payment_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Payment ID"
   },
   {
    "fieldname": "payload",
    "fieldtype": "Code",
    "label": "Payload",
+   "options": "JSON",
    "read_only": 1
   }
  ],
+ "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-01-19 22:50:30.082445",
+ "modified": "2022-01-19 22:51:03.279573",
  "modified_by": "Administrator",
  "module": "Press",
- "name": "Stripe Webhook Log",
+ "name": "Razorpay Webhook Log",
  "naming_rule": "Set by user",
  "owner": "Administrator",
  "permissions": [
@@ -48,5 +59,5 @@
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
- "track_changes": 1
+ "title_field": "event"
 }
