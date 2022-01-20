@@ -41,7 +41,7 @@
 		</div>
 
 		<div>
-			<div v-if="!paymentGateway" class="grid sm:grid-cols-2 gap-1">
+			<div v-if="!paymentGateway" class="flex flex-col space-y-2">
 				<Button
 					v-if="$account.team.currency === 'INR'"
 					@click="paymentGateway = 'razorpay'"
