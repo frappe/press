@@ -82,6 +82,10 @@ export default {
 		);
 		razorpayCheckoutJS.async = true;
 		document.head.appendChild(razorpayCheckoutJS);
+
+		if (this.$account.team.currency === 'USD') {
+			this.paymentGateway = 'stripe';
+		}
 	},
 	props: {
 		show: {
