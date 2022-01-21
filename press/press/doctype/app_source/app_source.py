@@ -104,7 +104,7 @@ class AppSource(Document):
 					}
 				).insert()
 		except Exception:
-			github_response = github_response.text if github_response else None
+			github_response = github_response.text if (github_response is not None) else None
 			log_error(
 				"App Release Creation Error", app=self.name, github_response=github_response
 			)
