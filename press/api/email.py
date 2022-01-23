@@ -16,6 +16,10 @@ from press.api.developer.marketplace import (
 )
 
 
+class PlanExpiredError(Exception):
+	http_status_code = 401
+
+
 @frappe.whitelist(allow_guest=True)
 def email_ping():
 	return "pong"
@@ -69,7 +73,7 @@ def get_analytics(**data):
 
 def validate_plan(secret_key):
 	"""
-	check if subscription is active on marketplace
+	check if subscription is active on marketplace and valid
 	#TODO: get activation date
 	"""
 	# TODO: remote this wildcard key after marketplace api and docs is up
@@ -81,7 +85,7 @@ def validate_plan(secret_key):
 	try:
 		subscription = get_subscription_info(secret_key=secret_key)
 	except Exception as e:
-		log_error("Mail App: Invalid secret key", data=e)
+		frappe.throw(e)
 
 	if subscription["status"] == "Active":
 		# TODO: add a date filter(use start date from plan)
@@ -95,6 +99,12 @@ def validate_plan(secret_key):
 		)
 		if count < plan_label_map[subscription["plan"]]:
 			return True
+		else:
+			frappe.throw(
+				"Your plan for email delivery service has expired try upgrading it from, "
+				f"https://frappecloud.com/dashboard/sites/{subscription['site']}/overview",
+				PlanExpiredError,
+			)
 
 	return False
 
