@@ -12,6 +12,9 @@
 						<h3 class="text-xl font-medium leading-6 text-gray-900">
 							{{ title }}
 						</h3>
+						<p v-if="subtitle" class="text-base text-gray-600 mt-1.5">
+							{{ subtitle }}	
+						</p>
 					</div>
 					<button
 						v-if="dismissable"
@@ -43,7 +46,7 @@ export default {
 		prop: 'show',
 		event: 'change'
 	},
-	props: ['title', 'show', 'dismissable', 'width'],
+	props: ['title', 'subtitle', 'show', 'dismissable', 'width'],
 	components: {
 		Modal
 	},
