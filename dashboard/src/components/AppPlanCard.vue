@@ -1,7 +1,7 @@
 <template>
 	<div
 		v-if="plan"
-		class="p-5 rounded-2xl shadow-lg cursor-pointer"
+		class="p-5 rounded-2xl shadow cursor-pointer border border-gray-100 hover:border-gray-300"
 		:class="[
 			popular ? 'bg-blue-100 relative' : '',
 			selected ? 'ring-2 ring-blue-500 relative' : ''
@@ -36,7 +36,7 @@
 
 			<span v-else>
 				{{ $planTitle(plan)
-				}}<span class="font-normal text-gray-600 text-base">/ Month</span>
+				}}<span class="font-normal text-gray-600 text-base"> /mo</span>
 			</span>
 		</h4>
 		<h4

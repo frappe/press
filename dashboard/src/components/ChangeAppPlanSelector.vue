@@ -18,8 +18,8 @@
 			/>
 
 			<div class="flex flex-col">
-				<h4 class="text-base text-gray-600">{{ app.title }}</h4>
-				<h5 class="text-xl text-gray-900 font-semibold">Choose your plans</h5>
+				<h4 class="text-xl text-gray-900 font-semibold">{{ app.title }}</h4>
+				<p class="text-base text-gray-600">Choose your plans</p>
 			</div>
 		</div>
 
@@ -28,7 +28,6 @@
 				v-for="plan in plans"
 				:plan="plan"
 				:key="plan.name"
-				:popular="Boolean(plan.marked_most_popular)"
 				:selected="selectedPlan == plan"
 				@click.native="handleCardClick(plan)"
 			/>
