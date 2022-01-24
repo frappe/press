@@ -3,6 +3,7 @@
 		:show="show"
 		@change="$emit('update:show', $event)"
 		title="Buy Credits"
+		:subtitle="paymentGateway ? '' : 'Choose your payment gateway'"
 	>
 		<BuyPrepaidCredits
 			v-if="paymentGateway === 'stripe'"
@@ -46,20 +47,16 @@
 		</div>
 
 		<div>
-			<div v-if="!paymentGateway" class="flex flex-col space-y-2">
+			<div v-if="!paymentGateway" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
 				<Button
 					v-if="$account.team.currency === 'INR'"
 					@click="paymentGateway = 'razorpay'"
 					class="py-2"
 				>
-					<img
-						class="h-9 py-1"
-						src="../assets/razorpay.svg"
-						alt="Razorpay Logo"
-					/>
+					<img class="w-24" src="../assets/razorpay.svg" alt="Razorpay Logo" />
 				</Button>
 				<Button @click="paymentGateway = 'stripe'">
-					<img class="h-9" src="../assets/stripe.svg" alt="Stripe Logo" />
+					<img class="w-24 h-7" src="../assets/stripe.svg" alt="Stripe Logo" />
 				</Button>
 			</div>
 		</div>
