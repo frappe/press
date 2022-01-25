@@ -15,7 +15,7 @@ Defaulters are identified based on the following conditions:
 The `execute` method is the main method which is run by the scheduler daily.
 """
 
-from __future__ import unicode_literals
+
 import frappe
 from frappe.utils.data import flt
 
