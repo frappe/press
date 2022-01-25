@@ -365,7 +365,9 @@ class ReleaseGroup(Document):
 		servers = frappe.db.get_all(
 			"Release Group Server", {"parent": self.name}, pluck="server"
 		)
-		return frappe.get_all("Server", {"name": ("in", servers)}, pluck="cluster")
+		return frappe.get_all(
+			"Server", {"name": ("in", servers)}, pluck="cluster", distinct=True
+		)
 
 	def add_cluster(self, cluster: str):
 		server = Server.get_prod_for_new_bench({"cluster": cluster})
