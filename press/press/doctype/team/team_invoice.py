@@ -1,7 +1,7 @@
 # Copyright (c) 2020, Frappe Technologies Pvt. Ltd. and Contributors
 # Proprietary License. See license.txt
 
-from __future__ import unicode_literals
+
 import frappe
 from press.utils import log_error
 from frappe.utils import getdate

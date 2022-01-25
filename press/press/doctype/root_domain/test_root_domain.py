@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2021, Frappe and Contributors
 # See license.txt
-from __future__ import unicode_literals
+
 from datetime import datetime, timedelta
 
 import json

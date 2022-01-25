@@ -2,7 +2,7 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
-from __future__ import unicode_literals
+
 import frappe
 import json
 from frappe.desk.doctype.tag.tag import add_tag
