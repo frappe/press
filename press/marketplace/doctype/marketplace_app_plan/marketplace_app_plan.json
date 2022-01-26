@@ -8,6 +8,8 @@
  "engine": "InnoDB",
  "field_order": [
   "enabled",
+  "column_break_2",
+  "is_free",
   "section_break_2",
   "app",
   "column_break_3",
@@ -15,10 +17,10 @@
   "column_break_5",
   "discount_percent",
   "plan_features_section",
+  "available_on_versions",
   "features",
   "section_break_7",
-  "marked_most_popular",
-  "is_free"
+  "marked_most_popular"
  ],
  "fields": [
   {
@@ -43,7 +45,8 @@
    "fieldname": "features",
    "fieldtype": "Table",
    "label": "Features",
-   "options": "Plan Feature"
+   "options": "Plan Feature",
+   "reqd": 1
   },
   {
    "fieldname": "discount_percent",
@@ -89,11 +92,21 @@
   {
    "fieldname": "section_break_2",
    "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "available_on_versions",
+   "fieldtype": "Table",
+   "label": "Available On Versions",
+   "options": "App Plan Version"
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-01-27 01:35:30.066678",
+ "modified": "2022-01-27 02:36:08.557228",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "Marketplace App Plan",
