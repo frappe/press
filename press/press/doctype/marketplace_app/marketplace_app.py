@@ -219,7 +219,7 @@ def get_plans_for_app(app_name):
 
 	marketplace_app_plans = frappe.get_all(
 		"Marketplace App Plan",
-		filters={"app": app_name},
+		filters={"app": app_name, "enabled": True},
 		fields=["name", "plan", "discount_percent", "marked_most_popular", "is_free"],
 	)
 
