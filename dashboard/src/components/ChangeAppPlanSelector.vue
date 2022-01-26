@@ -43,7 +43,7 @@ export default {
 	components: {
 		AppPlanCard
 	},
-	props: ['app', 'currentPlan'],
+	props: ['app', 'group', 'currentPlan'],
 	model: {
 		prop: 'selectedPlan',
 		event: 'change'
@@ -58,7 +58,8 @@ export default {
 			return {
 				method: 'press.api.marketplace.get_app_plans',
 				params: {
-					app: this.app.name
+					app: this.app.name,
+					release_group: this.group
 				},
 				onSuccess(plans) {
 					if (this.currentPlan) {
