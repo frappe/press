@@ -210,11 +210,11 @@ class MarketplaceApp(WebsiteGenerator):
 			"num_installs_active_benches": num_installs_active_benches,
 		}
 
-	def get_plans(self) -> List:
-		return get_plans_for_app(self.name)
+	def get_plans(self, frappe_version: str = None) -> List:
+		return get_plans_for_app(self.name, frappe_version)
 
 
-def get_plans_for_app(app_name):
+def get_plans_for_app(app_name, frappe_version=None):
 	plans = []
 
 	marketplace_app_plans = frappe.get_all(
@@ -224,6 +224,11 @@ def get_plans_for_app(app_name):
 	)
 
 	for app_plan in marketplace_app_plans:
+		if frappe_version and (
+			not plan_available_on_frappe_version(app_plan.name, frappe_version)
+		):
+			continue
+
 		plan_data = {}
 		plan_data.update(app_plan)
 
@@ -241,7 +246,17 @@ def get_plans_for_app(app_name):
 	return plans
 
 
-def get_plan_prices(plan_name, discount_percent=0.0):
+def plan_available_on_frappe_version(
+	marketplace_app_plan: str, frappe_version: str
+) -> bool:
+	return bool(
+		frappe.db.exists(
+			"App Plan Version", {"parent": marketplace_app_plan, "version": frappe_version}
+		)
+	)
+
+
+def get_plan_prices(plan_name: str, discount_percent: float = 0.0) -> dict:
 	"""Returns plan prices after applying the discount (if applicable)"""
 	plan_prices = frappe.db.get_value(
 		"Plan", plan_name, ["plan_title", "price_usd", "price_inr"], as_dict=True
@@ -261,12 +276,12 @@ def get_plan_prices(plan_name, discount_percent=0.0):
 	return plan_prices
 
 
-def get_price_after_discount(price, discount_percent):
+def get_price_after_discount(price: float, discount_percent: float) -> float:
 	discount_amount = price * discount_percent / 100
 	return round(price - discount_amount)
 
 
-def get_total_installs_for_app(app_name: str):
+def get_total_installs_for_app(app_name: str) -> int:
 	site_names = frappe.get_all("Site App", filters={"app": app_name})
 
 	return len(site_names)

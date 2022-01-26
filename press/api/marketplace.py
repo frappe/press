@@ -419,13 +419,18 @@ def get_marketplace_subscriptions_for_site(site: str):
 
 
 @frappe.whitelist()
-def get_app_plans(app: str):
+def get_app_plans(app: str, release_group: str = None):
 	marketplace_app: MarketplaceApp = frappe.get_doc("Marketplace App", app)
-	return marketplace_app.get_plans()
+	frappe_version = None
+
+	if release_group:
+		frappe_version = frappe.db.get_value("Release Group", release_group, "version")
+
+	return marketplace_app.get_plans(frappe_version)
 
 
 @frappe.whitelist()
-def get_apps_with_plans(apps):
+def get_apps_with_plans(apps, release_group: str = None):
 
 	if isinstance(apps, str):
 		apps = json.loads(apps)
@@ -437,8 +442,9 @@ def get_apps_with_plans(apps):
 		"Marketplace App", filters={"app": ("in", apps)}, fields=["name", "title", "image"]
 	)
 
+	frappe_version = frappe.db.get_value("Release Group", release_group, "version")
 	for app in m_apps:
-		plans = get_plans_for_app(app.name)
+		plans = get_plans_for_app(app.name, frappe_version)
 		if len(plans) > 0:
 			apps_with_plans.append(app)
 
