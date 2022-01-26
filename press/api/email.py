@@ -27,7 +27,9 @@ def email_ping():
 
 @frappe.whitelist(allow_guest=True)
 def setup(**data):
-	"""Set site config for overriding email account validations"""
+	"""
+	set site config for overriding email account validations
+	"""
 	status = get_subscription_status(data["key"])
 	if status == "Active" or data["key"] == "fcmailsetupkey":
 		site = frappe.get_doc("Site", data["site"])
@@ -50,7 +52,9 @@ def setup(**data):
 
 @frappe.whitelist(allow_guest=True)
 def get_analytics(**data):
-	"""send data for a specific month"""
+	"""
+	send data for a specific month
+	"""
 	month = data["month"]
 	year = datetime.now().year
 	last_day = calendar.monthrange(year, int(month))[1]
@@ -111,6 +115,9 @@ def validate_plan(secret_key):
 
 @frappe.whitelist(allow_guest=True)
 def send_mime_mail(**data):
+	"""
+	send api request to mailgun
+	"""
 	files = frappe._dict(frappe.request.files)
 	data = json.loads(data["data"])
 
@@ -134,6 +141,9 @@ def send_mime_mail(**data):
 
 @frappe.whitelist(allow_guest=True)
 def event_log(**data):
+	"""
+	log the webhook and forward it to site
+	"""
 	event_data = data["event-data"]
 	headers = event_data["message"]["headers"]
 	message_id = headers["message-id"]
@@ -162,7 +172,7 @@ def event_log(**data):
 
 	try:
 		requests.post(
-			f"https://{site}/api/method/mail.mail.doctype.mail_settings.mail_settings.update_status",
+			f"https://{site}/api/method/email_delivery_service.controller.update_status",
 			data=data,
 		)
 	except Exception as e:
