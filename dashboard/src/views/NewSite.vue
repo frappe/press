@@ -41,6 +41,7 @@
 						v-for="app in appsWithPlans"
 						:key="app.name"
 						:app="app"
+						:group="selectedGroup"
 						class="mb-9"
 						@change="plan => (selectedAppPlans[app.name] = plan.name)"
 					/>
@@ -296,7 +297,8 @@ export default {
 				this.appsWithPlans = await this.$call(
 					'press.api.marketplace.get_apps_with_plans',
 					{
-						apps: JSON.stringify(this.selectedApps)
+						apps: JSON.stringify(this.selectedApps),
+						release_group: this.selectedGroup
 					}
 				);
 
