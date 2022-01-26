@@ -2,7 +2,7 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
-from __future__ import unicode_literals
+
 import frappe
 from press.press.doctype.plan.plan import get_plan_config
 from press.utils import log_error

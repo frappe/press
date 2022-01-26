@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
-from __future__ import unicode_literals
+
 from press.press.doctype.root_domain.test_root_domain import create_test_root_domain
 from press.press.doctype.tls_certificate.tls_certificate import (
 	LetsEncrypt,

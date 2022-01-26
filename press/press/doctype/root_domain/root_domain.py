@@ -2,7 +2,7 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
-from __future__ import unicode_literals
+
 from datetime import datetime, timedelta
 import json
 from typing import Iterable, List
