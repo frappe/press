@@ -419,11 +419,10 @@ def get_marketplace_subscriptions_for_site(site: str):
 
 
 @frappe.whitelist()
-def get_app_plans(app: str, release_group: str = None):
+def get_app_plans(app: str, release_group: str = None, frappe_version: str = None):
 	marketplace_app: MarketplaceApp = frappe.get_doc("Marketplace App", app)
-	frappe_version = None
 
-	if release_group:
+	if (not frappe_version) and release_group:
 		frappe_version = frappe.db.get_value("Release Group", release_group, "version")
 
 	return marketplace_app.get_plans(frappe_version)

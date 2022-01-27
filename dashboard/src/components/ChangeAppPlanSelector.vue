@@ -43,7 +43,7 @@ export default {
 	components: {
 		AppPlanCard
 	},
-	props: ['app', 'group', 'currentPlan'],
+	props: ['app', 'group', 'frappeVersion', 'currentPlan'],
 	model: {
 		prop: 'selectedPlan',
 		event: 'change'
@@ -55,11 +55,17 @@ export default {
 	},
 	resources: {
 		getAppPlans() {
+			console.log({
+				app: this.app.name,
+				release_group: this.group,
+				frappe_version: this.frappeVersion
+			});
 			return {
 				method: 'press.api.marketplace.get_app_plans',
 				params: {
 					app: this.app.name,
-					release_group: this.group
+					release_group: this.group,
+					frappe_version: this.frappeVersion
 				},
 				onSuccess(plans) {
 					if (this.currentPlan) {
