@@ -27,7 +27,6 @@ try:
 	import requests
 	import click
 	from semantic_version import Version
-	from six import PY2
 	from tenacity import (
 		retry,
 		RetryError,
@@ -64,7 +63,7 @@ except ImportError:
 	)
 	from requests_toolbelt.multipart import encoder
 
-if PY2:
+if sys.version[0] == "2":
 	reload(sys)  # noqa
 	sys.setdefaultencoding("utf-8")
 
