@@ -13,15 +13,17 @@ def create_test_remote_file(
 	site: str, creation: datetime = datetime.now(), file_path: str = None
 ):
 	"""Create test remote file doc for required timestamp."""
-	return frappe.get_doc(
+	remote_file = frappe.get_doc(
 		{
 			"doctype": "Remote File",
 			"status": "Available",
 			"site": site,
-			"creation": creation,
 			"file_path": file_path,
 		}
 	).insert(ignore_if_duplicate=True)
+	remote_file.db_set("creation", creation)
+	remote_file.reload()
+	return remote_file
 
 
 class TestRemoteFile(unittest.TestCase):

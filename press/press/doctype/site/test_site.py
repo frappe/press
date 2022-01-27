@@ -74,7 +74,7 @@ def create_test_site(
 	status = "Pending" if new else "Active"
 	# on_update checks won't be triggered if not Active
 
-	return frappe.get_doc(
+	site = frappe.get_doc(
 		{
 			"doctype": "Site",
 			"status": status,
@@ -84,9 +84,11 @@ def create_test_site(
 			"team": "Administrator",
 			"apps": [{"app": app.app} for app in group.apps],
 			"admin_password": "admin",
-			"creation": creation,
 		}
-	).insert(ignore_if_duplicate=True)
+	).insert()
+	site.db_set("creation", creation)
+	site.reload()
+	return site
 
 
 @patch.object(AgentJob, "after_insert", new=Mock())

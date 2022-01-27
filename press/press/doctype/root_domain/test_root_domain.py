@@ -43,7 +43,7 @@ class TestRootDomain(unittest.TestCase):
 			create_test_proxy_server().name, create_test_database_server().name
 		)
 
-		frappe.get_doc(
+		job = frappe.get_doc(
 			{
 				"doctype": "Agent Job",
 				"job_type": "Rename Site",
@@ -51,9 +51,9 @@ class TestRootDomain(unittest.TestCase):
 				"server_type": "Server",
 				"server": server.name,
 				"request_path": "fake/rename/path",
-				"creation": creation,
 			}
 		).insert(ignore_if_duplicate=True)
+		job.db_set("creation", creation)
 
 	def test_sites_being_renamed_are_considered_active(self):
 		new_site_name = "new_site.frappe.cloud"
