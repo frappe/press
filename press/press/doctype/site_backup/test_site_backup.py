@@ -26,7 +26,6 @@ def create_test_site_backup(
 		"doctype": "Site Backup",
 		"status": status,
 		"site": site,
-		"creation": creation,
 		"files_availability": files_availability,
 		"offsite": offsite,
 	}
@@ -34,7 +33,11 @@ def create_test_site_backup(
 		params_dict["remote_public_file"] = create_test_remote_file(site, creation).name
 		params_dict["remote_private_file"] = create_test_remote_file(site, creation).name
 		params_dict["remote_database_file"] = create_test_remote_file(site, creation).name
-	return frappe.get_doc(params_dict).insert(ignore_if_duplicate=True)
+	site_backup = frappe.get_doc(params_dict).insert(ignore_if_duplicate=True)
+
+	site_backup.db_set("creation", creation)
+	site_backup.reload()
+	return site_backup
 
 
 class TestSiteBackup(unittest.TestCase):

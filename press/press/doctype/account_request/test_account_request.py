@@ -19,15 +19,17 @@ def create_test_account_request(
 	creation=datetime.now(),
 ):
 	with patch.object(AccountRequest, "send_verification_email"):
-		return frappe.get_doc(
+		account_request = frappe.get_doc(
 			{
 				"doctype": "Account Request",
 				"subdomain": subdomain,
 				"email": email,
 				"erpnext": erpnext,
-				"creation": creation,
 			}
 		).insert(ignore_if_duplicate=True)
+		account_request.db_set("creation", creation)
+		account_request.reload()
+		return account_request
 
 
 class TestAccountRequest(unittest.TestCase):
