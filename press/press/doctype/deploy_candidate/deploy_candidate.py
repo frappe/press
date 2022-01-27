@@ -305,13 +305,16 @@ class DeployCandidate(Document):
 			if not line:
 				continue
 
+			unusual_line = False
 			try:
 				# Remove step index from line
 				step_index, line = line.split(maxsplit=1)
 				try:
 					step_index = int(step_index[1:])
 				except ValueError:
+					line = step_index + " " + line
 					step_index = sorted(steps)[-1]
+					unusual_line = True
 
 				# Parse first line and add step to steps dict
 				if step_index not in steps and line.startswith("[stage-"):
@@ -354,8 +357,12 @@ class DeployCandidate(Document):
 						step.output += line[7:] + "\n"
 
 					else:
-						# Preserve additional whitespaces while splitting
-						time, _, output = line.partition(" ")
+						if unusual_line:
+							# This line doesn't contain any docker step info
+							output = line
+						else:
+							# Preserve additional whitespaces while splitting
+							time, _, output = line.partition(" ")
 						step.output += output + "\n"
 				elif line.startswith("writing image"):
 					self.docker_image_id = line.split()[2].split(":")[1]
