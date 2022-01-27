@@ -70,17 +70,22 @@ class Site(Document):
 
 	def validate_installed_apps(self):
 		# validate apps to be installed on site
-		apps = frappe.get_doc("Bench", self.bench).apps
+		bench_apps = frappe.get_doc("Bench", self.bench).apps
 		for app in self.apps:
-			if not find(apps, lambda x: x.app == app.app):
+			if not find(bench_apps, lambda x: x.app == app.app):
 				frappe.throw(f"app {app.app} is not available on Bench {self.bench}.")
 
 		if self.apps[0].app != "frappe":
 			frappe.throw("First app to be installed on site must be frappe.")
 
-		apps = [app.app for app in self.apps]
-		if len(apps) != len(set(apps)):
+		site_apps = [app.app for app in self.apps]
+		if len(site_apps) != len(set(site_apps)):
 			frappe.throw("Can't install same app twice.")
+
+		# Install apps in the same order as bench
+		if self.is_new():
+			bench_app_names = [app.app for app in bench_apps]
+			self.apps.sort(key=lambda x: bench_app_names.index(x.app))
 
 	def validate_host_name(self):
 		# set or update site.host_name
