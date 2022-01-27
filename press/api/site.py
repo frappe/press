@@ -484,7 +484,12 @@ def all():
 def get(name):
 	team = get_current_team()
 	site = frappe.get_doc("Site", name)
-	group_team = frappe.db.get_value("Release Group", site.group, "team")
+
+	rg_info = frappe.db.get_value(
+		"Release Group", site.group, ["team", "version"], as_dict=True
+	)
+	group_team = rg_info.team
+	frappe_version = rg_info.version
 	group_name = site.group if group_team == team else None
 
 	return {
@@ -494,6 +499,7 @@ def get(name):
 		"setup_wizard_complete": site.setup_wizard_complete,
 		"group": group_name,
 		"team": site.team,
+		"frappe_version": frappe_version,
 		"server_region_info": get_server_region_info(site),
 	}
 

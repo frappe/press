@@ -57,6 +57,7 @@
 				v-if="appToChangePlan"
 				:app="appToChangePlan"
 				:currentPlan="appToChangePlan.plan"
+				:frappeVersion="site.frappe_version"
 			/>
 
 			<template #actions>
