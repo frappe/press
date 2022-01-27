@@ -55,11 +55,6 @@ export default {
 	},
 	resources: {
 		getAppPlans() {
-			console.log({
-				app: this.app.name,
-				release_group: this.group,
-				frappe_version: this.frappeVersion
-			});
 			return {
 				method: 'press.api.marketplace.get_app_plans',
 				params: {

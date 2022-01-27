@@ -46,7 +46,6 @@ export default {
 	components: { CardWithDetails, BenchLogsDetail },
 	resources: {
 		logs() {
-			console.log(this.bench);
 			return {
 				method: 'press.api.bench.logs',
 				params: { name: this.bench.name, bench: this.instanceName },
