@@ -505,3 +505,10 @@ def update_emails(data):
 	for row in team_doc.communication_emails:
 		row.value = data[row.type]
 		row.save()
+
+
+@frappe.whitelist()
+def add_key(key):
+	frappe.get_doc(
+		{"doctype": "User SSH Key", "user": frappe.session.user, "ssh_public_key": key}
+	).insert()
