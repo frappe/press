@@ -101,6 +101,10 @@ class SSHCertificateAuthority(Document):
 		with open(public_key_file, "w") as f:
 			f.write(self.public_key)
 
+		known_hosts_file = os.path.join(self.build_directory, "known_hosts")
+		with open(known_hosts_file, "w") as f:
+			f.write(f"@cert-authority * {self.public_key}")
+
 		self.run(
 			"ssh-keygen -t rsa -b 4096 -N '' -f ssh_host_rsa_key", directory=self.build_directory
 		)

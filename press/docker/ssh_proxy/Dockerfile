@@ -15,6 +15,7 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update \
 RUN rm /etc/ssh/ssh_host_*
 
 COPY sshd_config /etc/ssh/sshd_config
+COPY known_hosts /etc/ssh/ssh_known_hosts
 COPY ca.pub /etc/ssh/ca.pub
 
 COPY ssh_host_rsa_key /etc/ssh/ssh_host_rsa_key
