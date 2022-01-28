@@ -27,7 +27,11 @@
   "column_break_18",
   "root_public_key",
   "section_break_21",
-  "domains"
+  "domains",
+  "ssh_proxy_section",
+  "ssh_certificate_authority",
+  "column_break_26",
+  "is_ssh_proxy_setup"
  ],
  "fields": [
   {
@@ -183,10 +187,32 @@
    "label": "Virtual Machine",
    "mandatory_depends_on": "eval: doc.provider === \"AWS EC2\"",
    "options": "Virtual Machine"
+  },
+  {
+   "fieldname": "ssh_proxy_section",
+   "fieldtype": "Section Break",
+   "label": "SSH Proxy"
+  },
+  {
+   "fieldname": "ssh_certificate_authority",
+   "fieldtype": "Link",
+   "label": "SSH Certificate Authority",
+   "options": "SSH Certificate Authority"
+  },
+  {
+   "fieldname": "column_break_26",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_ssh_proxy_setup",
+   "fieldtype": "Check",
+   "label": "Is SSH Proxy Setup",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2021-09-09 10:30:22.481235",
+ "modified": "2022-01-13 21:48:20.996109",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",
@@ -207,5 +233,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }

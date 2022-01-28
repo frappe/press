@@ -122,3 +122,36 @@ class ProxyServer(BaseServer):
 			ansible.run()
 		except Exception:
 			log_error("Exporters Install Exception", server=self.as_dict())
+
+	@frappe.whitelist()
+	def setup_ssh_proxy(self):
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_setup_ssh_proxy", queue="long", timeout=1200
+		)
+
+	def _setup_ssh_proxy(self):
+		settings = frappe.db.get_value(
+			"Press Settings",
+			None,
+			["docker_registry_url", "docker_registry_username", "docker_registry_password"],
+			as_dict=True,
+		)
+		ca = frappe.get_doc("SSH Certificate Authority", self.ssh_certificate_authority)
+		try:
+			ansible = Ansible(
+				playbook="ssh_proxy.yml",
+				server=self,
+				variables={
+					"registry_url": settings.docker_registry_url,
+					"registry_username": settings.docker_registry_username,
+					"registry_password": settings.docker_registry_password,
+					"docker_image": ca.docker_image,
+				},
+			)
+			play = ansible.run()
+			if play.status == "Success":
+				self.reload()
+				self.is_ssh_proxy_setup = True
+				self.save()
+		except Exception:
+			log_error("SSH Proxy Setup Exception", server=self.as_dict())
