@@ -129,7 +129,9 @@
   "mailgun_api_key",
   "root_domain",
   "default_outgoing_id",
-  "default_outgoing_pass"
+  "default_outgoing_pass",
+  "ssh_section",
+  "ssh_certificate_authority"
  ],
  "fields": [
   {
@@ -769,6 +771,7 @@
    "non_negative": 1
   },
   {
+   "collapsible": 1,
    "fieldname": "mailgun_settings_section",
    "fieldtype": "Section Break",
    "label": "Mailgun Settings"
@@ -823,6 +826,18 @@
    "fieldname": "razorpay_webhook_secret",
    "fieldtype": "Data",
    "label": "Razorpay Webhook Secret"
+   },
+   {
+   "collapsible": 1,
+   "fieldname": "ssh_section",
+   "fieldtype": "Section Break",
+   "label": "SSH"
+  },
+  {
+   "fieldname": "ssh_certificate_authority",
+   "fieldtype": "Link",
+   "label": "SSH Certificate Authority",
+   "options": "SSH Certificate Authority"
   }
  ],
  "issingle": 1,
