@@ -25,3 +25,17 @@ AuthorizedPrincipalsFile /etc/ssh/principals/%u
 HostKey /etc/ssh/ssh_host_rsa_key
 HostCertificate /etc/ssh/ssh_host_rsa_key-cert.pub 
 
+# UsePrivilegeSeparation sandbox
+
+AllowAgentForwarding no
+AllowTcpForwarding no
+GatewayPorts no
+X11Forwarding no
+X11UseLocalhost no
+
+PermitTTY yes
+
+PrintMotd no
+PermitUserEnvironment no
+PermitTunnel no
+
