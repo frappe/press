@@ -446,6 +446,15 @@ class Agent:
 			"Add User to Proxy", "ssh/users", data, bench=bench.name, upstream=bench.server,
 		)
 
+	def remove_ssh_user(self, bench):
+		return self.create_agent_job(
+			"Remove User from Proxy",
+			f"ssh/users/{bench.name}",
+			method="DELETE",
+			bench=bench.name,
+			upstream=bench.server,
+		)
+
 	def update_site_status(self, server, site, status):
 		data = {"status": status}
 		private_ip = frappe.db.get_value("Server", server, "private_ip")
