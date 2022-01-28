@@ -2,7 +2,7 @@
  "actions": [],
  "allow_rename": 1,
  "autoname": "Prompt",
- "creation": "2020-02-27 16:19:51.675782",
+ "creation": "2022-01-12 12:54:06.055871",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -34,6 +34,7 @@
   "github_access_token",
   "feature_flags_section",
   "referrer_id",
+  "ssh_access_enabled",
   "section_break_28",
   "communication_emails"
  ],
@@ -210,6 +211,12 @@
   {
    "fieldname": "section_break_28",
    "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "ssh_access_enabled",
+   "fieldtype": "Check",
+   "label": "SSH Access Enabled"
   }
  ],
  "links": [
@@ -264,7 +271,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2022-01-03 13:49:53.207992",
+ "modified": "2022-01-27 16:27:21.438628",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
@@ -293,5 +300,6 @@
  "quick_entry": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }
