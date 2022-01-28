@@ -1,0 +1,87 @@
+{
+ "actions": [],
+ "autoname": "Prompt",
+ "creation": "2022-01-12 12:54:04.864137",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "directory",
+  "public_key",
+  "key_fingerprint",
+  "section_break_4",
+  "docker_image",
+  "docker_image_repository",
+  "docker_image_tag"
+ ],
+ "fields": [
+  {
+   "fieldname": "directory",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Directory",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "public_key",
+   "fieldtype": "Code",
+   "label": "Public Key",
+   "read_only": 1
+  },
+  {
+   "fieldname": "key_fingerprint",
+   "fieldtype": "Code",
+   "label": "Key Fingerprint",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_4",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "docker_image",
+   "fieldtype": "Data",
+   "label": "Docker Image",
+   "read_only": 1
+  },
+  {
+   "fieldname": "docker_image_repository",
+   "fieldtype": "Data",
+   "label": "Docker Image Repository",
+   "read_only": 1
+  },
+  {
+   "fieldname": "docker_image_tag",
+   "fieldtype": "Int",
+   "label": "Docker Image Tag",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2022-01-16 13:05:32.106981",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "SSH Certificate Authority",
+ "naming_rule": "Set by user",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
