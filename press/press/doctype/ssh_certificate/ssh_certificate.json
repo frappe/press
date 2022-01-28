@@ -1,7 +1,7 @@
 {
  "actions": [],
  "autoname": "CERT-.########",
- "creation": "2022-01-18 17:48:25.292026",
+ "creation": "2022-01-28 09:43:59.917550",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -19,6 +19,7 @@
   "ssh_fingerprint",
   "section_break_8",
   "ssh_certificate_authority",
+  "ssh_certificate_authority_public_key",
   "section_break_15",
   "ssh_public_key",
   "certificate_details",
@@ -146,11 +147,18 @@
    "fieldtype": "Data",
    "label": "Key Type",
    "read_only": 1
+  },
+  {
+   "fetch_from": "ssh_certificate_authority.public_key",
+   "fieldname": "ssh_certificate_authority_public_key",
+   "fieldtype": "Code",
+   "label": "SSH Certificate Authority Public Key",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-01-20 18:07:36.627180",
+ "modified": "2022-01-28 12:57:10.196084",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "SSH Certificate",
