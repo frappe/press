@@ -283,12 +283,20 @@ def get():
 	]
 	return {
 		"user": frappe.get_doc("User", user),
+		"ssh_key": get_ssh_key(user),
 		"team": team_doc,
 		"team_members": get_team_members(team),
 		"teams": list(set(teams)),
 		"onboarding": team_doc.get_onboarding(),
 		"balance": team_doc.get_balance(),
 	}
+
+
+def get_ssh_key(user):
+	ssh_keys = frappe.get_all("User SSH Key", {"user": user})
+	if ssh_keys:
+		return frappe.get_doc("User SSH Key", ssh_keys[0])
+	return None
 
 
 @frappe.whitelist()

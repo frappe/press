@@ -6,6 +6,7 @@ export default new Vue({
 		return {
 			user: null,
 			team: null,
+			ssh_key: null,
 			teams: [],
 			team_members: [],
 			onboarding: null,
@@ -23,6 +24,7 @@ export default new Vue({
 			try {
 				let result = await call('press.api.account.get');
 				this.user = result.user;
+				this.ssh_key = result.ssh_key;
 				this.team = result.team;
 				this.teams = result.teams;
 				this.team_members = result.team_members;
