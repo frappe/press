@@ -267,6 +267,7 @@ def process_job_updates(job_name):
 		from press.press.doctype.bench.bench import (
 			process_archive_bench_job_update,
 			process_new_bench_job_update,
+			process_add_ssh_user_job_update,
 		)
 		from press.press.doctype.server.server import process_new_server_job_update
 		from press.press.doctype.site.erpnext_site import (
@@ -339,6 +340,8 @@ def process_job_updates(job_name):
 			process_setup_erpnext_site_job_update(job)
 		elif job.job_type == "Restore Site Tables":
 			process_restore_tables_job_update(job)
+		elif job.job_type == "Add User to Proxy":
+			process_add_ssh_user_job_update(job)
 
 	except Exception as e:
 		log_error("Agent Job Callback Exception", job=job.as_dict())

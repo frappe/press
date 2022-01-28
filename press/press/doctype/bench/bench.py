@@ -205,6 +205,12 @@ class Bench(Document):
 				traceback.print_exc()
 				frappe.db.rollback()
 
+	@frappe.whitelist()
+	def add_ssh_user(self):
+		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
+		agent = Agent(proxy_server, server_type="Proxy Server")
+		agent.add_ssh_user(self)
+
 	@property
 	def work_load(self) -> float:
 		"""
@@ -301,6 +307,7 @@ def process_new_bench_job_update(job):
 				"press.press.doctype.bench.bench.archive_obsolete_benches",
 				enqueue_after_commit=True,
 			)
+			frappe.get_doc("Bench", job.bench).add_ssh_user()
 
 
 def process_archive_bench_job_update(job):
@@ -315,6 +322,10 @@ def process_archive_bench_job_update(job):
 
 	if updated_status != bench_status:
 		frappe.db.set_value("Bench", job.bench, "status", updated_status)
+def process_add_ssh_user_job_update(job):
+	if job.status == "Success":
+		frappe.db.set_value("Bench", job.bench, "is_ssh_proxy_setup", True)
+
 
 
 def archive_obsolete_benches():

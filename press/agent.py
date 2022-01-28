@@ -433,6 +433,19 @@ class Agent:
 			upstream=server,
 		)
 
+	def add_ssh_user(self, bench):
+		private_ip = frappe.db.get_value("Server", bench.server, "private_ip")
+		candidate = frappe.get_doc("Deploy Candidate", bench.candidate)
+		data = {
+			"name": bench.name,
+			"principal": bench.group,
+			"ssh": {"ip": private_ip, "port": 22000 + bench.port_offset},
+			"certificate": candidate.get_certificate(),
+		}
+		return self.create_agent_job(
+			"Add User to Proxy", "ssh/users", data, bench=bench.name, upstream=bench.server,
+		)
+
 	def update_site_status(self, server, site, status):
 		data = {"status": status}
 		private_ip = frappe.db.get_value("Server", server, "private_ip")
