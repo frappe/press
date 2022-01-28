@@ -469,6 +469,15 @@ class DeployCandidate(Document):
 		ssh_directory = os.path.join(self.build_directory, "config", "ssh")
 
 		self.generate_host_keys(ca, ssh_directory)
+		self.generate_user_keys(ca, ssh_directory)
+
+		ca_public_key = os.path.join(ssh_directory, "ca.pub")
+		with open(ca_public_key, "w") as f:
+			f.write(ca.public_key)
+
+		# Generate authorized principal file
+		principals = os.path.join(ssh_directory, "principals")
+		with open(principals, "w") as f:
 			f.write(self.group)
 
 	def generate_host_keys(self, ca, ssh_directory):
@@ -483,6 +492,43 @@ class DeployCandidate(Document):
 		# Generate host Certificate
 		host_public_key_path = os.path.join(ssh_directory, "ssh_host_rsa_key.pub")
 		ca.sign(self.name, None, "always:forever", host_public_key_path, 0, host_key=True)
+
+	def generate_user_keys(self, ca, ssh_directory):
+		# Generate user keys
+		list(
+			self.run(
+				f"ssh-keygen -C {self.name} -t rsa -b 4096 -N '' -f id_rsa",
+				directory=ssh_directory,
+			)
+		)
+
+		# Generate user certificates
+		user_public_key_path = os.path.join(ssh_directory, "id_rsa.pub")
+		ca.sign(self.name, [self.group], "always:forever", user_public_key_path, 0)
+
+		user_private_key_path = os.path.join(ssh_directory, "id_rsa")
+		with open(user_private_key_path) as f:
+			self.user_private_key = f.read()
+
+		with open(user_public_key_path) as f:
+			self.user_public_key = f.read()
+
+		user_certificate_path = os.path.join(ssh_directory, "id_rsa-cert.pub")
+		with open(user_certificate_path) as f:
+			self.user_certificate = f.read()
+
+		# Remove user key files
+		os.remove(user_private_key_path)
+		os.remove(user_public_key_path)
+		os.remove(user_certificate_path)
+
+	def get_certificate(self):
+		return {
+			"id_rsa": self.user_private_key,
+			"id_rsa.pub": self.user_public_key,
+			"id_rsa-cert.pub": self.user_certificate,
+		}
+
 	def create_deploy(self, staging: bool):
 		deploy_doc = None
 		if staging:
