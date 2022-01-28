@@ -14,6 +14,7 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update \
 # Remove existing host keys
 RUN rm /etc/ssh/ssh_host_*
 
+COPY sshd_config /etc/ssh/sshd_config
 COPY ca.pub /etc/ssh/ca.pub
 
 COPY ssh_host_rsa_key /etc/ssh/ssh_host_rsa_key
@@ -21,6 +22,7 @@ COPY ssh_host_rsa_key.pub /etc/ssh/ssh_host_rsa_key.pub
 COPY ssh_host_rsa_key-cert.pub /etc/ssh/ssh_host_rsa_key-cert.pub
 
 RUN mkdir /run/sshd
+RUN mkdir /etc/ssh/principals
 
 EXPOSE 22
 VOLUME ["/home", "/etc"]
