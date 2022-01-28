@@ -1,0 +1,13 @@
+---
+- name: Create SSH Proxy Directory
+  become: yes
+  become_user: frappe
+  file:
+    dest: /home/frappe/ssh
+    state: directory
+
+- name: Login to Docker Registry
+  become: yes
+  become_user: frappe
+  command: "docker login -u {{ registry_username }} -p {{ registry_password }} {{ registry_url }}"
+

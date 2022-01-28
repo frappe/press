@@ -1,0 +1,9 @@
+---
+- name: Setup SSH Proxy
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: yes
+  roles:
+    - role: docker
+    - role: ssh_proxy
