@@ -164,6 +164,14 @@ class Cluster(Document):
 					"ToPort": 3306,
 				},
 				{
+					"FromPort": 22000,
+					"IpProtocol": "tcp",
+					"IpRanges": [
+						{"CidrIp": self.subnet_cidr_block, "Description": "SSH from private network"}
+					],
+					"ToPort": 22999,
+				},
+				{
 					"FromPort": -1,
 					"IpProtocol": "icmp",
 					"IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": "ICMP from anywhere"}],
