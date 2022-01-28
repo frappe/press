@@ -94,6 +94,17 @@ class SSHCertificateAuthority(Document):
 				self.build_directory,
 			)
 
+		public_key_file = os.path.join(self.build_directory, "ca.pub")
+		with open(public_key_file, "w") as f:
+			f.write(self.public_key)
+
+		self.run(
+			"ssh-keygen -t rsa -b 4096 -N '' -f ssh_host_rsa_key", directory=self.build_directory
+		)
+
+		host_key_path = os.path.join(self.build_directory, "ssh_host_rsa_key.pub")
+		self.sign("random", None, "always:forever", host_key_path, 0, host_key=True)
+
 	def _run_docker_build(self):
 		environment = os.environ
 		environment.update(
