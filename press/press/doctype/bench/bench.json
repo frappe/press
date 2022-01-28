@@ -23,6 +23,7 @@
   "port_offset",
   "auto_scale_workers",
   "is_single_container",
+  "is_ssh_enabled",
   "column_break_11",
   "config",
   "bench_config"
@@ -183,6 +184,13 @@
    "fieldtype": "Check",
    "in_standard_filter": 1,
    "label": "Staging"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_ssh_enabled",
+   "fieldtype": "Check",
+   "label": "Is SSH Enabled",
+   "read_only": 1
   }
  ],
  "links": [],

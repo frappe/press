@@ -45,6 +45,7 @@ class Bench(Document):
 		candidate = frappe.get_doc("Deploy Candidate", self.candidate)
 		self.docker_image = candidate.docker_image
 		self.is_single_container = candidate.is_single_container
+		self.is_ssh_enabled = candidate.is_ssh_enabled
 
 		if not self.apps:
 			for release in candidate.apps:
@@ -100,6 +101,7 @@ class Bench(Document):
 			"docker_image": self.docker_image,
 			"web_port": 18000 + self.port_offset,
 			"socketio_port": 19000 + self.port_offset,
+			"is_ssh_enabled": bool(self.is_ssh_enabled),
 			"gunicorn_workers": self.gunicorn_workers,
 			"background_workers": self.background_workers,
 			"http_timeout": 120,
