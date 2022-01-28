@@ -11,3 +11,17 @@
   become_user: frappe
   command: "docker login -u {{ registry_username }} -p {{ registry_password }} {{ registry_url }}"
 
+- name: Copy home directory from SSH Image
+  become: yes
+  become_user: frappe
+  command: "docker run --rm --net none -v /home/frappe/ssh/home:/homemount {{ docker_image }} cp -RL /home/. /homemount"
+
+- name: Copy etc directory from SSH Image
+  become: yes
+  become_user: frappe
+  command: "docker run --rm --net none -v /home/frappe/ssh/etc:/etcmount {{ docker_image }} cp -RL /etc/. /etcmount"
+
+- name: Start SSH Proxy
+  become: yes
+  become_user: frappe
+  command: "docker run -d --name ssh --restart always -p 2222:22 -v /home/frappe/ssh/etc:/etc -v /home/frappe/ssh/home:/home {{ docker_image }}"
