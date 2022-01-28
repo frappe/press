@@ -28,7 +28,11 @@
   "docker_image_tag",
   "section_break_9",
   "build_steps",
-  "build_output"
+  "build_output",
+  "ssh_section",
+  "user_public_key",
+  "user_private_key",
+  "user_certificate"
  ],
  "fields": [
   {
@@ -180,6 +184,29 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Staged"
+  },
+  {
+   "fieldname": "ssh_section",
+   "fieldtype": "Section Break",
+   "label": "SSH"
+  },
+  {
+   "fieldname": "user_public_key",
+   "fieldtype": "Code",
+   "label": "User Public Key",
+   "read_only": 1
+  },
+  {
+   "fieldname": "user_private_key",
+   "fieldtype": "Code",
+   "label": "User Private Key",
+   "read_only": 1
+  },
+  {
+   "fieldname": "user_certificate",
+   "fieldtype": "Code",
+   "label": "User Certificate",
+   "read_only": 1
   }
  ],
  "links": [],

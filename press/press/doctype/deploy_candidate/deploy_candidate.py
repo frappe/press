@@ -261,6 +261,7 @@ class DeployCandidate(Document):
 				os.path.join(self.build_directory, target),
 				symlinks=True,
 			)
+		self.generate_ssh_keys()
 
 	def _run_docker_build(self):
 		environment = os.environ
@@ -383,13 +384,13 @@ class DeployCandidate(Document):
 		self.save()
 		frappe.db.commit()
 
-	def run(self, command, environment=None):
+	def run(self, command, environment=None, directory=None):
 		process = Popen(
 			shlex.split(command),
 			stdout=subprocess.PIPE,
 			stderr=subprocess.STDOUT,
 			env=environment,
-			cwd=self.build_directory,
+			cwd=directory or self.build_directory,
 			universal_newlines=True,
 		)
 		for line in process.stdout:
@@ -459,6 +460,29 @@ class DeployCandidate(Document):
 			frappe.db.commit()
 			raise
 
+	def generate_ssh_keys(self):
+		ca = frappe.get_value("Press Settings", None, "ssh_certificate_authority")
+		if ca is None:
+			return
+
+		ca = frappe.get_doc("SSH Certificate Authority", ca)
+		ssh_directory = os.path.join(self.build_directory, "config", "ssh")
+
+		self.generate_host_keys(ca, ssh_directory)
+			f.write(self.group)
+
+	def generate_host_keys(self, ca, ssh_directory):
+		# Generate host keys
+		list(
+			self.run(
+				f"ssh-keygen -C {self.name} -t rsa -b 4096 -N '' -f ssh_host_rsa_key",
+				directory=ssh_directory,
+			)
+		)
+
+		# Generate host Certificate
+		host_public_key_path = os.path.join(ssh_directory, "ssh_host_rsa_key.pub")
+		ca.sign(self.name, None, "always:forever", host_public_key_path, 0, host_key=True)
 	def create_deploy(self, staging: bool):
 		deploy_doc = None
 		if staging:
