@@ -20,6 +20,7 @@ class SSHCertificate(Document):
 		self.validate_public_key()
 		self.validate_existing_certificates()
 		self.validate_validity()
+		self.validate_certificate_authority()
 
 	def validate_public_key(self):
 		try:
@@ -38,6 +39,17 @@ class SSHCertificate(Document):
 	def validate_validity(self):
 		if self.certificate_type == "User" and self.validity not in ("1h", "3h", "6h"):
 			frappe.throw("User certificates can only be valid for a short duration")
+
+	def validate_certificate_authority(self):
+		if not self.ssh_certificate_authority:
+			self.ssh_certificate_authority = frappe.db.get_single_value(
+				"Press Settings", "ssh_certificate_authority"
+			)
+		if not self.ssh_certificate_authority:
+			frappe.throw(
+				"SSH Certificate Authority is required to generate SSH certificates",
+				frappe.ValidationError,
+			)
 
 	def validate_existing_certificates(self):
 		if frappe.get_all(
