@@ -1,6 +1,6 @@
 {
  "actions": [],
- "creation": "2019-12-09 12:35:16.109025",
+ "creation": "2022-01-05 15:04:45.744400",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -26,7 +26,9 @@
   "is_ssh_enabled",
   "column_break_11",
   "config",
-  "bench_config"
+  "bench_config",
+  "ssh_section",
+  "is_ssh_proxy_setup"
  ],
  "fields": [
   {
@@ -191,10 +193,22 @@
    "fieldtype": "Check",
    "label": "Is SSH Enabled",
    "read_only": 1
+  },
+  {
+   "fieldname": "ssh_section",
+   "fieldtype": "Section Break",
+   "label": "SSH"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_ssh_proxy_setup",
+   "fieldtype": "Check",
+   "label": "Is SSH Proxy Setup",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2021-07-23 10:34:04.517306",
+ "modified": "2022-01-20 18:22:22.117926",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",
@@ -227,5 +241,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }

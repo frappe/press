@@ -1333,5 +1333,30 @@
     "step_name": "Add Principal to User"
    }
   ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2022-01-16 13:38:57.132558",
+  "name": "Remove User from Proxy",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "request_method": "DELETE",
+  "request_path": "/ssh/users/{user}",
+  "steps": [
+   {
+    "parent": "Remove User from Proxy",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Remove User from Proxy"
+   },
+   {
+    "parent": "Remove User from Proxy",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Remove Principal from User"
+   }
+  ]
  }
 ]
