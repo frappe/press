@@ -162,5 +162,6 @@ RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 --mount=type
 
 COPY --chown=frappe:frappe config /home/frappe/frappe-bench/config
 
-EXPOSE 8000 9000
+
+EXPOSE 8000 9000 2200
 CMD ["supervisord"]
