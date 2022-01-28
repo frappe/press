@@ -11,7 +11,7 @@ frappe.ui.form.on('Invoice', {
 		}
 		if (frm.doc.frappe_invoice) {
 			frm.add_web_link(
-				`https://frappe.io/desk#Form/Sales Invoice/${frm.doc.frappe_invoice}`,
+				`https://frappe.io/app/sales-invoice/${frm.doc.frappe_invoice}`,
 				'View Frappe Invoice'
 			);
 		}
