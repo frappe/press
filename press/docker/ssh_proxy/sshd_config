@@ -9,6 +9,15 @@ StrictModes yes
 AuthenticationMethods publickey
 PubkeyAuthentication yes
 
+PermitEmptyPasswords no
+PasswordAuthentication no
+
+ChallengeResponseAuthentication no
+KerberosAuthentication no
+GSSAPIAuthentication no
+
+UsePAM no
+
 AuthorizedKeysFile none
 TrustedUserCAKeys /etc/ssh/ca.pub
 AuthorizedPrincipalsFile /etc/ssh/principals/%u
