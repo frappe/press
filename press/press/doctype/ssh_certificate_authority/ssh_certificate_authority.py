@@ -3,13 +3,16 @@
 
 from __future__ import unicode_literals
 
+import frappe
 
 import os
 import shlex
 import shutil
 import subprocess
+import docker
 
 from frappe.model.document import Document
+from frappe.utils import cint
 
 
 class SSHCertificateAuthority(Document):
