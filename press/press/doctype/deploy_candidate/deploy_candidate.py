@@ -126,6 +126,7 @@ class DeployCandidate(Document):
 		self.status = "Running"
 		self.build_start = now()
 		self.is_single_container = True
+		self.is_ssh_enabled = True
 		self.save()
 		frappe.db.commit()
 
