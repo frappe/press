@@ -29,7 +29,8 @@ class SSHCertificateAuthority(Document):
 		).decode()
 
 	def generate_key_pair(self):
-		self.run("ssh-keygen -C ca -t rsa -b 4096 -f ca -N ''", directory=self.directory)
+		domain = frappe.db.get_value("Press Settings", None, "domain")
+		self.run(f"ssh-keygen -C ca@{domain} -t rsa -b 4096 -f ca -N ''", directory=self.directory)
 		os.chmod(self.public_key_file, 0o400)
 		os.chmod(self.private_key_file, 0o400)
 
