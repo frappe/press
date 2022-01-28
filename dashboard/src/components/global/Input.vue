@@ -30,10 +30,14 @@
 		/>
 		<textarea
 			v-if="type === 'textarea'"
-			:class="['block w-full resize-none form-textarea', inputClass]"
+			:class="[
+				'block w-full resize-none form-textarea placeholder-gray-500',
+				inputClass
+			]"
 			ref="input"
 			:value="value"
 			:disabled="disabled"
+			:placeholder="placeholder"
 			v-bind="$attrs"
 			v-on="inputListeners"
 			:rows="rows || 3"
