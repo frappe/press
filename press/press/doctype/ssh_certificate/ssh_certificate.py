@@ -19,6 +19,7 @@ class SSHCertificate(Document):
 	def validate(self):
 		self.validate_public_key()
 		self.validate_existing_certificates()
+		self.validate_validity()
 
 	def validate_public_key(self):
 		try:
@@ -37,6 +38,13 @@ class SSHCertificate(Document):
 	def validate_validity(self):
 		if self.certificate_type == "User" and self.validity not in ("1h", "3h", "6h"):
 			frappe.throw("User certificates can only be valid for a short duration")
+
+	def validate_existing_certificates(self):
+		if frappe.get_all(
+			"SSH Certificate",
+			{"user": self.user, "valid_until": [">", frappe.utils.now()], "group": self.group},
+		):
+			frappe.throw("A valid certificate already exists.")
 
 	def create_public_key_file(self):
 		with open(self.public_key_file, "w") as file:
