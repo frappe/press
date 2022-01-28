@@ -43,6 +43,22 @@ class SSHCertificateAuthority(Document):
 		if os.path.exists(self.directory):
 			shutil.rmtree(self.directory)
 
+	def sign(
+		self, identity, principals, duration, public_key_path, serial_number, host_key=False
+	):
+		if principals is None:
+			principals = []
+
+		host_flag = "-h " if host_key else ""
+		principals_argument = f"-n {','.join(principals)} " if principals else ""
+		self.run(
+			f"ssh-keygen -s ca -I {identity} {host_flag} {principals_argument}"
+			f" -z {serial_number}"
+			f" -V {duration}"
+			f" {public_key_path}",
+			directory=self.directory,
+		)
+
 	@property
 	def private_key_file(self):
 		return os.path.join(self.directory, "ca")
