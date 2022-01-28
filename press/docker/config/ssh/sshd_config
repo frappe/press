@@ -1,0 +1,8 @@
+Port 2200
+ListenAddress 0.0.0.0
+PidFile /home/frappe/frappe-bench/config/ssh/sshd.pid
+
+
+# Logging
+LogLevel VERBOSE
+
