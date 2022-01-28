@@ -6,3 +6,14 @@ PidFile /home/frappe/frappe-bench/config/ssh/sshd.pid
 # Logging
 LogLevel VERBOSE
 
+# Authentication
+PubkeyAuthentication yes
+
+PermitRootLogin no
+PasswordAuthentication no
+PermitEmptyPasswords no
+
+# Certificate
+AuthorizedKeysFile none
+TrustedUserCAKeys /home/frappe/frappe-bench/config/ssh/ca.pub
+AuthorizedPrincipalsFile /home/frappe/frappe-bench/config/ssh/principals
