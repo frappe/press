@@ -21,3 +21,17 @@ AuthorizedPrincipalsFile /home/frappe/frappe-bench/config/ssh/principals
 HostKey /home/frappe/frappe-bench/config/ssh/ssh_host_rsa_key
 HostCertificate /home/frappe/frappe-bench/config/ssh/ssh_host_rsa_key-cert.pub 
 
+# Rate Limit
+MaxStartups 10:30:100
+
+# Capability Limits
+AllowAgentForwarding no
+AllowTcpForwarding no
+GatewayPorts no
+X11Forwarding no
+X11UseLocalhost no
+PermitTunnel no
+
+# For interactive terminal
+PermitTTY yes
+
