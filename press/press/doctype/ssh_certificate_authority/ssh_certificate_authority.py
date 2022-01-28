@@ -19,6 +19,7 @@ class SSHCertificateAuthority(Document):
 		self.generate_key_pair()
 		self.extract_public_key()
 		self.extract_key_fingerprint()
+		self.save()
 
 	def setup_directory(self):
 		os.mkdir(self.directory)
