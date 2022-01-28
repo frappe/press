@@ -10,6 +10,7 @@ frappe.ui.form.on('Proxy Server', {
 			[__('Update Agent'), "update_agent", true, frm.doc.is_server_setup],
 			[__('Prepare Server'), "prepare_server", true, !frm.doc.is_server_setup],
 			[__('Setup Server'), "setup_server", true, !frm.doc.is_server_setup],
+			[__('Setup SSH Proxy'), "setup_ssh_proxy", true, (frm.doc.ssh_certificate_authority && !frm.doc.is_ssh_proxy_setup)],
 			[__('Setup Wildcard Hosts'), "setup_wildcard_hosts", true, frm.doc.is_server_setup],
 			[__('Fetch Keys'), "fetch_keys", false, frm.doc.is_server_setup && (!frm.doc.frappe_public_key || !frm.doc.root_public_key)],
 		].forEach(([label, method, confirm, condition]) => {
