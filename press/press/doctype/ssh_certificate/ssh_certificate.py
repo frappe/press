@@ -18,6 +18,7 @@ from frappe.model.document import Document
 class SSHCertificate(Document):
 	def validate(self):
 		self.validate_public_key()
+		self.validate_existing_certificates()
 
 	def validate_public_key(self):
 		try:
@@ -32,6 +33,10 @@ class SSHCertificate(Document):
 		self.key_type = self.ssh_public_key.strip().split()[0].split("-")[1]
 		if not self.key_type:
 			frappe.throw("Could not guess the key type. Please check your public key.")
+
+	def validate_validity(self):
+		if self.certificate_type == "User" and self.validity not in ("1h", "3h", "6h"):
+			frappe.throw("User certificates can only be valid for a short duration")
 
 	def create_public_key_file(self):
 		with open(self.public_key_file, "w") as file:
