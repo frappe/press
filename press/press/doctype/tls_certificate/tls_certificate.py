@@ -241,11 +241,12 @@ class LetsEncrypt(BaseCA):
 			plugin = f"--webroot --webroot-path {self.webroot_directory}"
 
 		staging = "--staging" if self.staging else ""
+		force_renewal = "--keep" if frappe.conf.developer_mode else "--force-renewal"
 
 		command = (
 			f"certbot certonly {plugin} {staging} --logs-dir"
 			f" {self.directory}/logs --work-dir {self.directory} --config-dir"
-			f" {self.directory} --force-renewal --agree-tos --eff-email --email"
+			f" {self.directory} {force_renewal} --agree-tos --eff-email --email"
 			f" {self.eff_registration_email} --staple-ocsp"
 			f" --rsa-key-size {self.rsa_key_size} --cert-name {self.domain} --domains"
 			f" {self.domain}"
