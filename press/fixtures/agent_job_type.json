@@ -1302,5 +1302,36 @@
     "step_name": "Disable Maintenance Mode"
    }
   ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2022-01-16 13:37:05.759970",
+  "name": "Add User to Proxy",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "request_method": "POST",
+  "request_path": "/ssh/users",
+  "steps": [
+   {
+    "parent": "Add User to Proxy",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Add User to Proxy"
+   },
+   {
+    "parent": "Add User to Proxy",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Add Certificate to User"
+   },
+   {
+    "parent": "Add User to Proxy",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Add Principal to User"
+   }
+  ]
  }
 ]
