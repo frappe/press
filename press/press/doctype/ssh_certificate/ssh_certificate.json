@@ -1,0 +1,178 @@
+{
+ "actions": [],
+ "autoname": "CERT-.########",
+ "creation": "2022-01-18 17:48:25.292026",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "certificate_type",
+  "column_break_2",
+  "group",
+  "section_break_2",
+  "user",
+  "user_ssh_key",
+  "validity",
+  "column_break_4",
+  "key_type",
+  "valid_until",
+  "ssh_fingerprint",
+  "section_break_8",
+  "ssh_certificate_authority",
+  "section_break_15",
+  "ssh_public_key",
+  "certificate_details",
+  "ssh_certificate",
+  "serial_number"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_2",
+   "fieldtype": "Section Break"
+  },
+  {
+   "depends_on": "eval:doc.certificate_type == \"User\"",
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "User",
+   "mandatory_depends_on": "eval:doc.certificate_type == \"User\"",
+   "options": "User",
+   "set_only_once": 1
+  },
+  {
+   "depends_on": "eval:doc.certificate_type == \"User\"",
+   "fieldname": "user_ssh_key",
+   "fieldtype": "Link",
+   "label": "User SSH Key",
+   "mandatory_depends_on": "eval:doc.certificate_type == \"User\"",
+   "options": "User SSH Key",
+   "set_only_once": 1
+  },
+  {
+   "default": "1h",
+   "fieldname": "validity",
+   "fieldtype": "Select",
+   "label": "Validity",
+   "options": "1h\n3h\n6h\n30d",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "valid_until",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Valid Until",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:!(doc.__islocal)",
+   "fieldname": "ssh_fingerprint",
+   "fieldtype": "Data",
+   "label": "SSH Fingerprint",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_8",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fetch_from": "user_ssh_key.ssh_public_key",
+   "fieldname": "ssh_public_key",
+   "fieldtype": "Code",
+   "label": "SSH Public Key",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "certificate_details",
+   "fieldtype": "Code",
+   "label": "Certificate Details",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ssh_certificate",
+   "fieldtype": "Code",
+   "label": "SSH Certificate",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.certificate_type == \"User\"",
+   "fieldname": "group",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Group",
+   "mandatory_depends_on": "eval:doc.certificate_type == \"User\"",
+   "options": "Release Group",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "certificate_type",
+   "fieldtype": "Select",
+   "label": "Certificate Type",
+   "options": "User\nHost",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "ssh_certificate_authority",
+   "fieldtype": "Link",
+   "label": "SSH Certificate Authority",
+   "options": "SSH Certificate Authority",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "section_break_15",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "serial_number",
+   "fieldtype": "Int",
+   "label": "Serial Number",
+   "read_only": 1
+  },
+  {
+   "fieldname": "key_type",
+   "fieldtype": "Data",
+   "label": "Key Type",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2022-01-20 18:07:36.627180",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "SSH Certificate",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "user",
+ "track_changes": 1
+}
