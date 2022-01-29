@@ -479,7 +479,7 @@ class DeployCandidate(Document):
 		# Generate authorized principal file
 		principals = os.path.join(ssh_directory, "principals")
 		with open(principals, "w") as f:
-			f.write(self.group)
+			f.write(f"restrict,pty {self.group}")
 
 	def generate_host_keys(self, ca, ssh_directory):
 		# Generate host keys
