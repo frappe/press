@@ -110,7 +110,9 @@ class SSHCertificateAuthority(Document):
 		)
 
 		host_key_path = os.path.join(self.build_directory, "ssh_host_rsa_key.pub")
-		self.sign("random", None, "always:forever", host_key_path, 0, host_key=True)
+
+		domain = frappe.db.get_value("Press Settings", None, "domain")
+		self.sign(domain, None, "always:forever", host_key_path, cint(self.docker_image_tag) + 1, host_key=True)
 
 	def _run_docker_build(self):
 		environment = os.environ
