@@ -30,10 +30,15 @@ HostCertificate /etc/ssh/ssh_host_rsa_key-cert.pub
 # UsePrivilegeSeparation sandbox
 
 AllowAgentForwarding no
+AllowStreamLocalForwarding no
 AllowTcpForwarding no
 GatewayPorts no
 X11Forwarding no
 X11UseLocalhost yes
+
+PermitUserRC no
+PermitListen none
+PermitOpen none
 
 PermitTTY yes
 
