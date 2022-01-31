@@ -42,6 +42,13 @@ X11Forwarding no
 X11UseLocalhost yes
 PermitTunnel no
 
+AllowStreamLocalForwarding no
+PermitUserRC no
+PermitListen none
+PermitOpen none
+PrintMotd no
+PermitUserEnvironment no
+
 # For interactive terminal
 PermitTTY yes
 
