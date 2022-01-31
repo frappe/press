@@ -1,7 +1,7 @@
 {
  "actions": [],
  "autoname": "CERT-.########",
- "creation": "2022-01-28 09:43:59.917550",
+ "creation": "2022-01-28 20:07:35.389554",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -158,7 +158,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-01-28 12:57:10.196084",
+ "modified": "2022-01-31 10:46:17.476664",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "SSH Certificate",
@@ -175,6 +175,20 @@
    "report": 1,
    "role": "System Manager",
    "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "if_owner": 1,
+   "read": 1,
+   "role": "Press Admin",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "if_owner": 1,
+   "read": 1,
+   "role": "Press Member",
    "write": 1
   }
  ],
