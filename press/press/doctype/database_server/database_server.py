@@ -247,7 +247,6 @@ class DatabaseServer(BaseServer):
 	def reset_root_password_primary(self):
 		old_password = self.get_password("mariadb_root_password")
 		self.mariadb_root_password = frappe.generate_hash()
-		print(old_password, self.mariadb_root_password)
 		try:
 			ansible = Ansible(
 				playbook="mariadb_change_root_password.yml",
