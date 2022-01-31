@@ -15,6 +15,8 @@ PasswordAuthentication no
 ChallengeResponseAuthentication no
 KerberosAuthentication no
 GSSAPIAuthentication no
+HostbasedAuthentication no
+KbdInteractiveAuthentication no
 
 UsePAM no
 

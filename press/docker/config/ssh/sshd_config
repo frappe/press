@@ -13,6 +13,16 @@ PermitRootLogin no
 PasswordAuthentication no
 PermitEmptyPasswords no
 
+AuthenticationMethods publickey
+
+ChallengeResponseAuthentication no
+KerberosAuthentication no
+GSSAPIAuthentication no
+HostbasedAuthentication no
+KbdInteractiveAuthentication no
+
+UsePAM no
+
 # Certificate
 AuthorizedKeysFile none
 TrustedUserCAKeys /home/frappe/frappe-bench/config/ssh/ca.pub
