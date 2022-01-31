@@ -10,6 +10,8 @@ LogLevel VERBOSE
 PubkeyAuthentication yes
 
 PermitRootLogin no
+StrictModes yes
+
 PasswordAuthentication no
 PermitEmptyPasswords no
 
@@ -33,6 +35,9 @@ HostCertificate /home/frappe/frappe-bench/config/ssh/ssh_host_rsa_key-cert.pub
 
 # Rate Limit
 MaxStartups 10:30:100
+LoginGraceTime 20
+MaxAuthTries 3
+MaxSessions 10
 
 # Capability Limits
 AllowAgentForwarding no

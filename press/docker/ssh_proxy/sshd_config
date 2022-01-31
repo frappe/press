@@ -47,6 +47,7 @@ PermitUserEnvironment no
 PermitTunnel no
 
 MaxAuthTries 3
+MaxSessions 10
 LoginGraceTime 20
 MaxStartups 10:30:100
 
