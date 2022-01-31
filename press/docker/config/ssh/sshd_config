@@ -1,31 +1,33 @@
-Port 2200
 ListenAddress 0.0.0.0
 PidFile /home/frappe/frappe-bench/config/ssh/sshd.pid
+Port 2200
 
 
 # Logging
 LogLevel VERBOSE
+SyslogFacility AUTH
+
 
 # Authentication
-PubkeyAuthentication yes
-
 PermitRootLogin no
 StrictModes yes
 
-PasswordAuthentication no
-PermitEmptyPasswords no
-
 AuthenticationMethods publickey
+PubkeyAuthentication yes
 
+
+# Disable Other Authentication Methods
 ChallengeResponseAuthentication no
-KerberosAuthentication no
 GSSAPIAuthentication no
 HostbasedAuthentication no
 KbdInteractiveAuthentication no
-
+KerberosAuthentication no
+PasswordAuthentication no
+PermitEmptyPasswords no
 UsePAM no
 
-# Certificate
+
+# Certificates
 AuthorizedKeysFile none
 TrustedUserCAKeys /home/frappe/frappe-bench/config/ssh/ca.pub
 AuthorizedPrincipalsFile /home/frappe/frappe-bench/config/ssh/principals
@@ -33,27 +35,33 @@ AuthorizedPrincipalsFile /home/frappe/frappe-bench/config/ssh/principals
 HostKey /home/frappe/frappe-bench/config/ssh/ssh_host_rsa_key
 HostCertificate /home/frappe/frappe-bench/config/ssh/ssh_host_rsa_key-cert.pub 
 
-# Rate Limit
-MaxStartups 10:30:100
-LoginGraceTime 20
-MaxAuthTries 3
-MaxSessions 10
 
 # Capability Limits
 AllowAgentForwarding no
-AllowTcpForwarding no
-GatewayPorts no
-X11Forwarding no
-X11UseLocalhost yes
-PermitTunnel no
-
 AllowStreamLocalForwarding no
-PermitUserRC no
+AllowTcpForwarding no
+
+GatewayPorts no
+
 PermitListen none
 PermitOpen none
-PrintMotd no
-PermitUserEnvironment no
 
-# For interactive terminal
+PermitTunnel no
+PermitUserEnvironment no
+PermitUserRC no
+
+PrintMotd no
+
+X11Forwarding no
+X11UseLocalhost yes
+
+
+# Interactive Terminal
 PermitTTY yes
 
+
+# Rate Limit
+LoginGraceTime 20
+MaxAuthTries 3
+MaxSessions 10
+MaxStartups 10:30:100

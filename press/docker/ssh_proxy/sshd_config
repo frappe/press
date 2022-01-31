@@ -1,25 +1,28 @@
 # Logging
-SyslogFacility AUTH
 LogLevel VERBOSE
+SyslogFacility AUTH
 
-# Authentication:
+
+# Authentication
 PermitRootLogin no
 StrictModes yes
 
 AuthenticationMethods publickey
 PubkeyAuthentication yes
 
-PermitEmptyPasswords no
-PasswordAuthentication no
 
+# Disable Other Authentication Methods
 ChallengeResponseAuthentication no
-KerberosAuthentication no
 GSSAPIAuthentication no
 HostbasedAuthentication no
 KbdInteractiveAuthentication no
-
+KerberosAuthentication no
+PasswordAuthentication no
+PermitEmptyPasswords no
 UsePAM no
 
+
+# Certificates
 AuthorizedKeysFile none
 TrustedUserCAKeys /etc/ssh/ca.pub
 AuthorizedPrincipalsFile /etc/ssh/principals/%u
@@ -27,27 +30,33 @@ AuthorizedPrincipalsFile /etc/ssh/principals/%u
 HostKey /etc/ssh/ssh_host_rsa_key
 HostCertificate /etc/ssh/ssh_host_rsa_key-cert.pub 
 
-# UsePrivilegeSeparation sandbox
 
+# Capability Limits
 AllowAgentForwarding no
 AllowStreamLocalForwarding no
 AllowTcpForwarding no
-GatewayPorts no
-X11Forwarding no
-X11UseLocalhost yes
 
-PermitUserRC no
+GatewayPorts no
+
 PermitListen none
 PermitOpen none
 
-PermitTTY yes
+PermitTunnel no
+PermitUserEnvironment no
+PermitUserRC no
 
 PrintMotd no
-PermitUserEnvironment no
-PermitTunnel no
 
+X11Forwarding no
+X11UseLocalhost yes
+
+
+# Interactive Terminal
+PermitTTY yes
+
+
+# Rate Limit
+LoginGraceTime 20
 MaxAuthTries 3
 MaxSessions 10
-LoginGraceTime 20
 MaxStartups 10:30:100
-
