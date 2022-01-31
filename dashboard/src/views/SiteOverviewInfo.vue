@@ -37,6 +37,31 @@
 					</div>
 				</div>
 			</div>
+
+			<ListItem
+				v-if="site.group && site.status !== 'Pending'"
+				title="Auto Update Site"
+				description="Automatically schedule site updates whenever available"
+			>
+				<template slot="actions">
+					<LoadingIndicator v-if="loading" />
+					<input
+						v-show="!loading"
+						id="auto-update-checkbox"
+						@input="changeAutoUpdateSettings"
+						type="checkbox"
+						class="
+							h-4
+							w-4
+							text-blue-600
+							focus:ring-blue-500
+							border-gray-300
+							rounded
+							mr-1
+						"
+					/>
+				</template>
+			</ListItem>
 			<ListItem
 				v-if="site.status == 'Active'"
 				title="Deactivate Site"
@@ -46,6 +71,7 @@
 					Deactivate Site
 				</Button>
 			</ListItem>
+
 			<ListItem
 				v-if="site.status == 'Inactive'"
 				title="Activate Site"
@@ -55,6 +81,7 @@
 					Activate Site
 				</Button>
 			</ListItem>
+
 			<ListItem
 				v-if="site.status !== 'Pending'"
 				title="Drop Site"
@@ -77,7 +104,30 @@ export default {
 	name: 'SiteOverviewInfo',
 	props: ['site', 'info'],
 	components: { SiteDrop },
+	data() {
+		return {
+			loading: false
+		};
+	},
+	mounted() {
+		const autoUpdateCheckbox = document.getElementById('auto-update-checkbox');
+
+		if (autoUpdateCheckbox) {
+			autoUpdateCheckbox.checked = this.info.auto_updates_enabled;
+		}
+	},
 	methods: {
+		changeAutoUpdateSettings(event) {
+			event.preventDefault();
+			this.loading = true;
+
+			return this.$call('press.api.site.change_auto_update', {
+				name: this.site.name,
+				auto_update_enabled: event.target.checked
+			}).then(() => {
+				setTimeout(() => window.location.reload(), 1000);
+			});
+		},
 		onDeactivateClick() {
 			this.$confirm({
 				title: 'Deactivate Site',
