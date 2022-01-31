@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2021-10-12 08:32:12.861562",
+ "creation": "2022-01-28 20:07:41.467888",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -35,7 +35,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-10-12 08:45:43.143283",
+ "modified": "2022-01-31 10:41:42.423892",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "User SSH Key",
@@ -52,10 +52,27 @@
    "role": "System Manager",
    "share": 1,
    "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "if_owner": 1,
+   "read": 1,
+   "role": "Press Admin",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "if_owner": 1,
+   "read": 1,
+   "role": "Press Member",
+   "write": 1
   }
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "title_field": "user",
  "track_changes": 1
 }
