@@ -39,7 +39,7 @@ AllowAgentForwarding no
 AllowTcpForwarding no
 GatewayPorts no
 X11Forwarding no
-X11UseLocalhost no
+X11UseLocalhost yes
 PermitTunnel no
 
 # For interactive terminal
