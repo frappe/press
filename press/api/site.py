@@ -614,6 +614,7 @@ def overview(name):
 				)
 				or [None]
 			)[0],
+			"auto_updates_enabled": not site.skip_auto_updates,
 		},
 		"installed_apps": get_installed_apps(site),
 		"domains": domains(name),
@@ -746,6 +747,14 @@ def current_plan(name):
 @protected("Site")
 def change_plan(name, plan):
 	frappe.get_doc("Site", name).change_plan(plan)
+
+
+@frappe.whitelist()
+@protected("Site")
+def change_auto_update(name, auto_update_enabled):
+	# Not so good, it should have been "enable_auto_updates"
+	# TODO: Make just one checkbox to track auto updates
+	return frappe.db.set_value("Site", name, "skip_auto_updates", not auto_update_enabled)
 
 
 @frappe.whitelist()
