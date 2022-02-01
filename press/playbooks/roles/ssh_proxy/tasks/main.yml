@@ -24,4 +24,4 @@
 - name: Start SSH Proxy
   become: yes
   become_user: frappe
-  command: "docker run -d --name ssh --restart always -p 2222:22 -v /home/frappe/ssh/etc:/etc -v /home/frappe/ssh/home:/home {{ docker_image }}"
+  command: "docker run -d --name ssh --restart always -p 2222:22 -v /home/frappe/ssh/etc:/etc -v /home/frappe/ssh/home:/home --hostname ssh {{ docker_image }}"
