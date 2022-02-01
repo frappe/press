@@ -40,12 +40,11 @@
   "erpnext_api_key",
   "erpnext_api_secret",
   "column_break_38",
-  "erpnext_username",
-  "erpnext_password",
   "frappeio_authentication_section",
   "frappe_url",
-  "frappe_username",
-  "frappe_password",
+  "frappeio_api_key",
+  "column_break_39",
+  "frappeio_api_secret",
   "offsite_backups_section",
   "offsite_backups_provider",
   "aws_s3_bucket",
@@ -418,16 +417,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "erpnext_username",
-   "fieldtype": "Data",
-   "label": "ERPNext Username"
-  },
-  {
-   "fieldname": "erpnext_password",
-   "fieldtype": "Password",
-   "label": "ERPNext Password"
-  },
-  {
    "depends_on": "eval:doc.backup_rotation_scheme==\"FIFO\"",
    "description": "The max number of Offsite backups that will be retained at any given time (for each site)",
    "fieldname": "offsite_backups_count",
@@ -485,16 +474,6 @@
    "fieldname": "frappeio_authentication_section",
    "fieldtype": "Section Break",
    "label": "Frappe.io Authentication"
-  },
-  {
-   "fieldname": "frappe_username",
-   "fieldtype": "Data",
-   "label": "Username"
-  },
-  {
-   "fieldname": "frappe_password",
-   "fieldtype": "Password",
-   "label": "Password"
   },
   {
    "fieldname": "frappe_url",
@@ -826,8 +805,8 @@
    "fieldname": "razorpay_webhook_secret",
    "fieldtype": "Data",
    "label": "Razorpay Webhook Secret"
-   },
-   {
+  },
+  {
    "collapsible": 1,
    "fieldname": "ssh_section",
    "fieldtype": "Section Break",
@@ -838,11 +817,25 @@
    "fieldtype": "Link",
    "label": "SSH Certificate Authority",
    "options": "SSH Certificate Authority"
+  },
+  {
+   "fieldname": "frappeio_api_key",
+   "fieldtype": "Data",
+   "label": "Frappe.io API Key"
+  },
+  {
+   "fieldname": "frappeio_api_secret",
+   "fieldtype": "Password",
+   "label": "Frappe.io API Secret"
+  },
+  {
+   "fieldname": "column_break_39",
+   "fieldtype": "Column Break"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2022-01-19 21:01:30.738537",
+ "modified": "2022-02-01 20:35:10.638749",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
