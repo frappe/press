@@ -378,6 +378,7 @@ class Invoice(Document):
 		client = self.get_frappeio_connection()
 		response = client.session.post(
 			f"{client.url}/api/method/consume_credits_against_fc_invoice",
+			headers=client.headers,
 			data={"invoice": self.as_json()},
 		)
 
@@ -510,6 +511,7 @@ class Invoice(Document):
 			client = self.get_frappeio_connection()
 			response = client.session.post(
 				f"{client.url}/api/method/create-fc-invoice",
+				headers=client.headers,
 				data={
 					"team": team.as_json(),
 					"address": address.as_json(),
@@ -559,7 +561,7 @@ class Invoice(Document):
 				"format=Frappe%20Cloud&no_letterhead=0"
 			)
 
-			with client.session.get(url, stream=True) as r:
+			with client.session.get(url, headers=client.headers, stream=True) as r:
 				r.raise_for_status()
 				ret = frappe.get_doc(
 					{
