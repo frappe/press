@@ -244,11 +244,15 @@ def remove_app(name, app):
 @frappe.whitelist()
 @protected("Release Group")
 def versions(name):
-	deployed_versions = frappe.db.get_all(
-		"Bench",
-		fields=["name", "status"],
-		filters={"group": name, "status": ("!=", "Archived")},
-		order_by="creation desc",
+	deployed_versions = frappe.db.sql(
+		"""SELECT bench.name, bench.status, bench.is_ssh_proxy_setup, server.proxy_server
+		FROM tabBench bench
+		LEFT JOIN tabServer server
+		ON server.name = bench.server
+		WHERE bench.group = %s AND bench.status != "Archived"
+		ORDER BY bench.creation DESC""",
+		(name),
+		as_dict=True,
 	)
 	for version in deployed_versions:
 		version.sites = frappe.db.get_all(
@@ -574,3 +578,38 @@ def logs(name, bench):
 def log(name, bench, log):
 	if frappe.db.get_value("Bench", bench, "group") == name:
 		return frappe.get_doc("Bench", bench).get_server_log(log)
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def certificate(name):
+	certificates = frappe.get_all(
+		"SSH Certificate",
+		{
+			"user": frappe.session.user,
+			"valid_until": [">", frappe.utils.now()],
+			"group": name,
+		},
+		pluck="name",
+		limit=1,
+	)
+	if certificates:
+		return frappe.get_doc("SSH Certificate", certificates[0])
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def generate_certificate(name):
+	user_ssh_key = frappe.get_all(
+		"User SSH Key", {"user": frappe.session.user}, pluck="name"
+	)[0]
+	return frappe.get_doc(
+		{
+			"doctype": "SSH Certificate",
+			"certificate_type": "User",
+			"group": name,
+			"user": frappe.session.user,
+			"user_ssh_key": user_ssh_key,
+			"validity": "6h",
+		}
+	).insert()

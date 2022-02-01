@@ -65,12 +65,21 @@
 								}}
 							</p>
 						</div>
-						<router-link
-							class="text-base text-blue-500 hover:text-blue-600"
-							:to="`/benches/${bench.name}/logs/${selectedVersion.name}/`"
-						>
-							View Logs →
-						</router-link>
+						<div>
+							<Button
+								v-if="$account.ssh_key && selectedVersion.is_ssh_proxy_setup"
+								@click="showSSHDialog = true"
+								class="mx-3"
+							>
+								SSH Access
+							</Button>
+							<router-link
+								class="text-base text-blue-500 hover:text-blue-600"
+								:to="`/benches/${bench.name}/logs/${selectedVersion.name}/`"
+							>
+								View Logs →
+							</router-link>
+						</div>
 					</div>
 					<h5 class="mt-4 text-lg font-semibold">Sites</h5>
 					<div class="mt-2">
@@ -110,9 +119,47 @@
 				</section>
 			</div>
 		</template>
+		<Dialog title="SSH Access" v-model="showSSHDialog">
+			<div v-if="certificate" class="space-y-2">
+				<p class="text-base">
+					Execute the following shell command to store the SSH certificate
+					locally.
+				</p>
+				<ClickToCopyField :textContent="certificateCommand" />
+				<p class="text-base pt-2">Shell command to SSH into your bench</p>
+				<ClickToCopyField :textContent="sshCommand" />
+			</div>
+			<div v-if="!certificate">
+				<p class="text-base mb-4">
+					You will need an SSH certificate to get SSH access to yout bench. This
+					certificate will work only with your public-private key pair and will
+					be valid for 6 hours.
+				</p>
+				<p class="text-base">
+					Please refer to the
+					<a href="/docs/benches/ssh" class="underline"
+						>SSH Access documentation</a
+					>
+					for more details.
+				</p>
+			</div>
+			<template #actions v-if="!certificate">
+				<Button
+					:loading="$resources.generateCertificate.loading"
+					@click="$resources.generateCertificate.fetch()"
+					type="primary"
+					>Generate SSH Certificate</Button
+				>
+			</template>
+			<ErrorMessage
+				class="mt-3"
+				:error="$resources.generateCertificate.error"
+			/>
+		</Dialog>
 	</CardWithDetails>
 </template>
 <script>
+import ClickToCopyField from '@/components/ClickToCopyField.vue';
 import CardWithDetails from '../components/CardWithDetails.vue';
 import SiteList from './SiteList.vue';
 export default {
@@ -120,9 +167,13 @@ export default {
 	props: ['bench', 'version'],
 	components: {
 		SiteList,
-		CardWithDetails
+		CardWithDetails,
+		ClickToCopyField
 	},
 	inject: ['viewportWidth'],
+	data() {
+		return { showSSHDialog: false };
+	},
 	resources: {
 		versions() {
 			return {
@@ -139,6 +190,22 @@ export default {
 					}
 				}
 			};
+		},
+		getCertificate() {
+			return {
+				method: 'press.api.bench.certificate',
+				params: { name: this.bench.name },
+				auto: true
+			};
+		},
+		generateCertificate() {
+			return {
+				method: 'press.api.bench.generate_certificate',
+				params: { name: this.bench.name },
+				onSuccess() {
+					this.$resources.getCertificate.reload();
+				}
+			};
 		}
 	},
 	methods: {
@@ -151,6 +218,25 @@ export default {
 			if (this.version && this.versions.data) {
 				return this.versions.data.find(v => v.name === this.version);
 			}
+			return null;
+		},
+		certificate() {
+			return this.$resources.getCertificate.data;
+		},
+		sshCommand() {
+			if (this.selectedVersion) {
+				return `ssh ${this.selectedVersion?.name}@${this.selectedVersion?.proxy_server} -p 2222`;
+			}
+			return null;
+		},
+		certificateCommand() {
+			let certificate = this.certificate;
+			if (certificate) {
+				return `echo '${certificate.ssh_certificate?.trim()}' > ~/.ssh/id_${
+					certificate.key_type
+				}-cert.pub`;
+			}
+			return null;
 		}
 	}
 };
