@@ -156,6 +156,12 @@ class Cluster(Document):
 					"ToPort": 22,
 				},
 				{
+					"FromPort": 2222,
+					"IpProtocol": "tcp",
+					"IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": "SSH proxy from anywhere"}],
+					"ToPort": 2222,
+				},
+				{
 					"FromPort": 3306,
 					"IpProtocol": "tcp",
 					"IpRanges": [
