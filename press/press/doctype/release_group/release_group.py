@@ -381,7 +381,7 @@ class ReleaseGroup(Document):
 			last_successful_candidate = frappe.get_last_doc(
 				"Deploy Candidate", {"status": "Success", "group": self.name}
 			)
-			last_successful_candidate._create_deploy([server])
+			last_successful_candidate._create_deploy([server], staging=False)
 
 
 def new_release_group(title, version, apps, team=None, cluster=None):
