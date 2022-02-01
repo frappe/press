@@ -1,0 +1,18 @@
+---
+- name: Show Volumes
+  command: df -hT
+
+- name: Show Block Devices
+  command: lsblk
+
+- name: Extend Partition
+  command: growpart /dev/nvme0n1 1
+
+- name: Show Modified Block Devices
+  command: lsblk
+
+- name: Extend Filesystem
+  command: resize2fs /dev/nvme0n1p1
+
+- name: Show Modified Volumes
+  command: df -h

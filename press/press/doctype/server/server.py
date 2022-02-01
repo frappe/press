@@ -236,6 +236,16 @@ class BaseServer(Document):
 		for play in plays:
 			frappe.delete_doc("Ansible Play", play.name)
 
+	@frappe.whitelist()
+	def extend_ec2_volume(self):
+		if self.provider != "AWS EC2":
+			return
+		try:
+			ansible = Ansible(playbook="extend_ec2_volume.yml", server=self)
+			ansible.run()
+		except Exception:
+			log_error("EC2 Volume Extend Exception", server=self.as_dict())
+
 
 class Server(BaseServer):
 	def on_update(self):
