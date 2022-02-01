@@ -246,6 +246,14 @@ class BaseServer(Document):
 		except Exception:
 			log_error("EC2 Volume Extend Exception", server=self.as_dict())
 
+	@frappe.whitelist()
+	def increase_disk_size(self, increment=50):
+		if self.provider != "AWS EC2":
+			return
+		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
+		virtual_machine.increase_disk_size(increment)
+		self.extend_ec2_volume()
+
 
 class Server(BaseServer):
 	def on_update(self):
