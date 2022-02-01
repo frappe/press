@@ -100,6 +100,23 @@ class VirtualMachine(Document):
 
 		client.reboot_instances(InstanceIds=[self.aws_instance_id])
 
+	def increase_disk_size(self, increment=50):
+		cluster = frappe.get_doc("Cluster", self.cluster)
+		client = boto3.client(
+			"ec2",
+			region_name=self.region,
+			aws_access_key_id=cluster.aws_access_key_id,
+			aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
+		)
+
+		response = client.describe_volumes(
+			Filters=[{"Name": "attachment.instance-id", "Values": [self.aws_instance_id]}]
+		)
+		volume = response["Volumes"][0]
+		self.disk_size = volume["Size"] + increment
+		client.modify_volume(VolumeId=volume["VolumeId"], Size=self.disk_size)
+		self.save()
+
 
 @frappe.whitelist()
 def poll_pending_machines():
