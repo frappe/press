@@ -492,7 +492,7 @@ class DeployCandidate(Document):
 
 		# Generate host Certificate
 		host_public_key_path = os.path.join(ssh_directory, "ssh_host_rsa_key.pub")
-		ca.sign(self.name, None, "always:forever", host_public_key_path, 0, host_key=True)
+		ca.sign(self.name, None, "+52w", host_public_key_path, 0, host_key=True)
 
 	def generate_user_keys(self, ca, ssh_directory):
 		# Generate user keys
@@ -505,7 +505,7 @@ class DeployCandidate(Document):
 
 		# Generate user certificates
 		user_public_key_path = os.path.join(ssh_directory, "id_rsa.pub")
-		ca.sign(self.name, [self.group], "always:forever", user_public_key_path, 0)
+		ca.sign(self.name, [self.group], "+52w", user_public_key_path, 0)
 
 		user_private_key_path = os.path.join(ssh_directory, "id_rsa")
 		with open(user_private_key_path) as f:
