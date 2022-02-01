@@ -23,8 +23,22 @@
 			>
 				<template #actions>
 					<div class="flex items-center ml-auto space-x-2">
-						<Badge v-if="!app.deployed" color="yellow">Not Deployed</Badge>
-						<Badge v-if="app.update_available && app.deployed" color="blue">
+						<Badge v-if="app.last_github_poll_failed" color="red">
+							Attention Required
+						</Badge>
+						<Badge
+							v-if="!app.last_github_poll_failed && !app.deployed"
+							color="yellow"
+							>Not Deployed</Badge
+						>
+						<Badge
+							v-if="
+								!app.last_github_poll_failed &&
+									app.update_available &&
+									app.deployed
+							"
+							color="blue"
+						>
 							Update Available
 						</Badge>
 						<Dropdown :items="dropdownItems(app)" right>

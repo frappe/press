@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2020-10-26 20:13:19.792375",
+ "creation": "2022-01-28 20:07:40.451028",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -21,7 +21,10 @@
   "column_break_11",
   "github_installation_id",
   "section_break_12",
-  "versions"
+  "versions",
+  "github_section",
+  "last_github_poll_failed",
+  "last_github_response"
  ],
  "fields": [
   {
@@ -123,11 +126,29 @@
    "fieldname": "enabled",
    "fieldtype": "Check",
    "label": "Enabled"
+  },
+  {
+   "fieldname": "github_section",
+   "fieldtype": "Section Break",
+   "label": "GitHub"
+  },
+  {
+   "default": "0",
+   "fieldname": "last_github_poll_failed",
+   "fieldtype": "Check",
+   "label": "Last GitHub Poll Failed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_github_response",
+   "fieldtype": "Code",
+   "label": "Last GitHub Response",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-02-16 15:54:58.855330",
+ "modified": "2022-02-01 18:17:14.438624",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Source",
@@ -160,6 +181,7 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "title_field": "app",
  "track_changes": 1
 }
