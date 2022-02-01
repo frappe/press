@@ -57,7 +57,7 @@ class SSHCertificateAuthority(Document):
 		host_flag = "-h " if host_key else ""
 		principals_argument = f"-n {','.join(principals)} " if principals else ""
 		self.run(
-			f"ssh-keygen -s ca -I {identity} {host_flag} {principals_argument} -z"
+			f"ssh-keygen -s ca -t rsa-sha2-512 -I {identity} {host_flag} {principals_argument} -z"
 			f" {serial_number} -O no-port-forwarding -O no-user-rc -O no-x11-forwarding"
 			f" -O no-agent-forwarding -O permit-pty -V {duration} {public_key_path}",
 			directory=self.directory,
