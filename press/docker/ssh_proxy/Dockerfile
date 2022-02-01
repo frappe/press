@@ -25,6 +25,8 @@ COPY ssh_host_rsa_key-cert.pub /etc/ssh/ssh_host_rsa_key-cert.pub
 RUN mkdir /run/sshd
 RUN mkdir /etc/ssh/principals
 
+RUN useradd -m -p '*' frappe
+
 EXPOSE 22
 VOLUME ["/home", "/etc"]
 CMD ["/usr/sbin/sshd", "-D", "-e"]
