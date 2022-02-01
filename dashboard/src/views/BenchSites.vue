@@ -131,7 +131,7 @@
 			</div>
 			<div v-if="!certificate">
 				<p class="text-base mb-4">
-					You will need an SSH certificate to get SSH access to yout bench. This
+					You will need an SSH certificate to get SSH access to your bench. This
 					certificate will work only with your public-private key pair and will
 					be valid for 6 hours.
 				</p>
