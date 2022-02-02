@@ -1,6 +1,6 @@
-{% extends "templates/marketplace/base.html" %} {%- from
-"templates/marketplace/macros.html" import button, link, breadcrumbs,
-badge_blue, badge_green -%}
+{% extends "templates/marketplace/base.html" %}
+{%- from "templates/marketplace/macros.html" import button, link, breadcrumbs, badge_blue, badge_green,
+five_star_rating -%}
 
 {%- block body -%}
 <div>
@@ -120,6 +120,64 @@ badge_blue, badge_green -%}
 		{{ frappe.utils.md_to_html(app.long_description) }}
 	</div>
 
+	<!-- App Reviews Section -->
+	<div class="max-w-4xl">
+		<div>
+			<div class="mb-9 flex flex-row justify-between">
+				<h2 class="text-2xl text-gray-900 font-bold">Customer Reviews</h2>
+				{{ button('Write a review') }}
+			</div>
+
+			<div class="pl-4 flex flex-row space-x-1 divide-opacity-95 divide-x-2">
+				<div class="text-center pr-11">
+					<h3 class="text-6xl text-gray-900 font-bold"> {{ ratings_summary.avg_rating }} </h3>
+					<p class="text-base text-gray-600">
+						{{ ratings_summary.total_num_reviews }}
+						{{ 'rating' if ratings_summary.total_num_reviews == 1 else 'ratings'}}
+					</p>
+					<div class="mt-3 mb-1 bg-gray-100 py-2 px-3 rounded-full">
+						{{ five_star_rating(ratings_summary.avg_rating) }}
+					</div>
+					<p class="text-sm text-gray-600">{{ ratings_summary.avg_rating }} out of 5</p>
+				</div>
+				<!-- Star percentages section -->
+				<div class="pl-11 space-y-2">
+					{%for i in range(5, 0, -1) %}
+					<div class="flex flex-row text-gray-600 text-sm items-center space-x-2">
+						<p>{{i}} Star</p>
+						<div class="w-28 h-1 bg-gray-200 rounded-full">
+							<div class="h-1 bg-gray-600 rounded-full"
+								style="width: {{ ratings_summary.rating_percentages[i] }}%;"></div>
+						</div>
+						<p>{{ ratings_summary.rating_percentages[i] }}%</p>
+					</div>
+					{% endfor %}
+				</div>
+			</div>
+
+			<!-- Written reviews section -->
+			<div class="mt-12 divide-y-2 divide-gray-200">
+				{% for review in user_reviews %}
+				<div class="pb-3">
+					<div class="mb-2 flex flex-row items-center">
+						<h3 class="text-gray-900 font-semibold text-lg">
+							{{ review.title }}
+						</h3>
+						<div class="ml-3">
+							{{ five_star_rating(review.rating) }}
+						</div>
+					</div>
+					<p class="text-base text-gray-900 mb-2">
+						{{ review.review }}
+					</p>
+					<div class="text-base text-gray-600">
+						{{ review.user_name }} &bull; {{ frappe.utils.pretty_date(review.creation) }}
+					</div>
+				</div>
+				{% endfor %}
+			</div>
+		</div>
+	</div>
 </div>
 {% endmacro %}
 
