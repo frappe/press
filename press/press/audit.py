@@ -33,7 +33,7 @@ class BenchFieldCheck(Audit):
 	audit_type = "Bench Field Check"
 
 	def __init__(self):
-		servers = Server.get_all_prod()
+		servers = Server.get_all_primary_prod()
 		log = {}
 		status = "Success"
 		for server in servers:

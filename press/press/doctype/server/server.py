@@ -399,6 +399,13 @@ class Server(BaseServer):
 		return frappe.get_all("Server", {"status": "Active"}, pluck="name", **kwargs)
 
 	@classmethod
+	def get_all_primary_prod(cls) -> List[str]:
+		"""Active primary prod servers."""
+		return frappe.get_all(
+			"Server", {"status": "Active", "is_primary": True}, pluck="name"
+		)
+
+	@classmethod
 	def get_all_staging(cls, **kwargs) -> List[str]:
 		"""Active staging servers."""
 		return frappe.get_all(
