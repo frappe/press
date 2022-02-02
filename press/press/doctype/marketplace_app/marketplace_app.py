@@ -154,6 +154,12 @@ class MarketplaceApp(WebsiteGenerator):
 		context.no_of_installs = self.get_analytics().get("total_installs")
 		context.plans = self.get_plans()
 
+		user_reviews = self.get_user_reviews()
+		ratings_summary = self.get_user_ratings_summary(user_reviews)
+
+		context.user_reviews = user_reviews
+		context.ratings_summary = ratings_summary
+
 	def get_user_reviews(self) -> List:
 		reviews = frappe.db.get_all(
 			"App User Review",
