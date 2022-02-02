@@ -123,13 +123,13 @@ five_star_rating -%}
 	<!-- App Reviews Section -->
 	<div class="max-w-4xl">
 		<div>
-			<div class="mb-9 flex flex-row justify-between">
+			<div class="flex flex-row justify-between" style="margin-bottom: 2.25rem;">
 				<h2 class="text-2xl text-gray-900 font-bold">Customer Reviews</h2>
 				{{ button('Write a review') }}
 			</div>
 
 			<div class="pl-4 flex flex-row space-x-1 divide-opacity-95 divide-x-2">
-				<div class="text-center pr-11">
+				<div class="text-center" style="padding-right: 2.75rem;">
 					<h3 class="text-6xl text-gray-900 font-bold"> {{ ratings_summary.avg_rating }} </h3>
 					<p class="text-base text-gray-600">
 						{{ ratings_summary.total_num_reviews }}
@@ -141,11 +141,11 @@ five_star_rating -%}
 					<p class="text-sm text-gray-600">{{ ratings_summary.avg_rating }} out of 5</p>
 				</div>
 				<!-- Star percentages section -->
-				<div class="pl-11 space-y-2">
+				<div class="space-y-2" style="padding-left: 2.75rem;">
 					{%for i in range(5, 0, -1) %}
 					<div class="flex flex-row text-gray-600 text-sm items-center space-x-2">
 						<p>{{i}} Star</p>
-						<div class="w-28 h-1 bg-gray-200 rounded-full">
+						<div class="w-28 h-1 bg-gray-200 rounded-full" style="width: 7rem;">
 							<div class="h-1 bg-gray-600 rounded-full"
 								style="width: {{ ratings_summary.rating_percentages[i] }}%;"></div>
 						</div>
@@ -159,7 +159,7 @@ five_star_rating -%}
 			<div class="mt-12 divide-y-2 divide-gray-200">
 				{% for review in user_reviews %}
 				<div class="pb-3">
-					<div class="mb-2 flex flex-row items-center">
+					<div class="mb-2 mt-3 flex flex-row items-center">
 						<h3 class="text-gray-900 font-semibold text-lg">
 							{{ review.title }}
 						</h3>
