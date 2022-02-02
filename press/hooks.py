@@ -173,10 +173,7 @@ scheduler_events = {
 		"press.press.audit.check_backup_records",
 		"press.press.doctype.invoice.invoice.finalize_unpaid_prepaid_credit_invoices",
 	],
-	"hourly": [
-		"press.press.doctype.app.app.poll_new_releases",
-		"press.press.doctype.site.backups.cleanup_local",
-	],
+	"hourly": ["press.press.doctype.site.backups.cleanup_local"],
 	"hourly_long": [
 		"press.press.doctype.bench.bench.archive_obsolete_benches",
 		"press.press.doctype.bench.bench.archive_staging_sites",
@@ -186,6 +183,7 @@ scheduler_events = {
 		"press.press.doctype.site.pool.create",
 		"press.press.doctype.invoice.invoice.finalize_draft_invoices",
 		"press.marketplace.doctype.marketplace_app_subscription.marketplace_app_subscription.create_usage_records",
+		"press.press.doctype.app.app.poll_new_releases",
 	],
 	"cron": {
 		"0 3 * * *": ["press.press.doctype.remote_file.remote_file.poll_file_statuses"],
