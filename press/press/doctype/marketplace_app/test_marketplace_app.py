@@ -2,9 +2,13 @@
 # Copyright (c) 2020, Frappe and Contributors
 # See license.txt
 
-# import frappe
+import frappe
 import unittest
-from press.press.doctype.marketplace_app.utils import number_k_format
+
+from press.press.doctype.marketplace_app.utils import (
+	number_k_format,
+	get_rating_percentage_distribution,
+)
 
 
 class TestMarketplaceApp(unittest.TestCase):
@@ -24,3 +28,23 @@ class TestMarketplaceApp(unittest.TestCase):
 
 		for input_value, expected_output in test_cases_map.items():
 			self.assertEqual(number_k_format(input_value), expected_output)
+
+	def test_rating_percentage_distribution(self):
+		test_table = [
+			{
+				"test_reviews": [{"rating": 4}, {"rating": 5}, {"rating": 1}],
+				"expected_result": {1: 33, 2: 0, 3: 0, 4: 33, 5: 33},
+			},
+			{
+				"test_reviews": [{"rating": 5}, {"rating": 5}, {"rating": 5}],
+				"expected_result": {1: 0, 2: 0, 3: 0, 4: 0, 5: 100},
+			},
+			{"test_reviews": [], "expected_result": {1: 0, 2: 0, 3: 0, 4: 0, 5: 0},},
+		]
+
+		for test_case in test_table:
+			test_reviews = test_case["test_reviews"]
+			test_reviews = [frappe._dict(r) for r in test_reviews]
+			got = get_rating_percentage_distribution(test_reviews)
+
+			self.assertDictEqual(got, test_case["expected_result"])
