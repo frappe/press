@@ -157,7 +157,9 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 
 		client = get_frappe_io_connection()
 		response = client.session.delete(
-			f"{client.url}/api/method/delete-fc-team", data={"team": self.team},
+			f"{client.url}/api/method/delete-fc-team",
+			data={"team": self.team},
+			headers=client.headers,
 		)
 		if not response.ok:
 			response.raise_for_status()

@@ -499,6 +499,7 @@ class Team(Document):
 		response = client.session.post(
 			f"{client.url}/api/method/partner_relationship_management.api.get_partner_credit_balance",
 			data={"email": self.name},
+			headers=client.headers,
 		)
 
 		if response.ok:
