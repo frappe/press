@@ -2,7 +2,7 @@
 import json
 from datetime import datetime, timedelta
 from press.press.doctype.server.server import Server
-from typing import List
+from typing import Dict, List
 
 import frappe
 
@@ -27,6 +27,11 @@ class Audit:
 		).insert()
 
 
+def get_benches_in_server(server: str) -> List[Dict]:
+	agent = Agent(server)
+	return agent.get("/benches")
+
+
 class BenchFieldCheck(Audit):
 	"""Audit to check fields of site in press are correct."""
 
@@ -37,8 +42,7 @@ class BenchFieldCheck(Audit):
 		log = {}
 		status = "Success"
 		for server in servers:
-			agent = Agent(server)
-			benches = agent.get("/benches")
+			benches = get_benches_in_server(server)
 			for bench_name, bench_desc in benches.items():
 				sites_in_server = set(bench_desc["sites"])
 				sites_in_press = set(
@@ -52,6 +56,29 @@ class BenchFieldCheck(Audit):
 						"Sites on press only": list(sites_in_press.difference(sites_in_server)),
 						"Sites on server only": list(sites_in_server.difference(sites_in_press)),
 					}
+		self.log(log, status)
+
+
+class AppServerReplicaDirsCheck(Audit):
+
+	audit_type = "App Server Replica Dirs Check"
+
+	def __init__(self):
+		log = {}
+		status = "Success"
+		replicas_and_primary = frappe.get_all(
+			"Server", {"is_replication_setup": True}, ["name", "primary"], as_list=True
+		)
+		for replica, primary in replicas_and_primary:
+			replica_benches = get_benches_in_server(replica)
+			primary_benches = get_benches_in_server(primary)
+			for bench, bench_desc in primary_benches.items():
+				sites_on_primary_only = list(
+					set(bench_desc["sites"]) - set(replica_benches[bench]["sites"])
+				)
+				if sites_on_primary_only:
+					status = "Failure"
+				log[bench] = {"Sites on primary only": sites_on_primary_only}
 		self.log(log, status)
 
 
@@ -143,9 +170,13 @@ def check_bench_fields():
 	BenchFieldCheck()
 
 
-def check_backup_records(arg1):
+def check_backup_records():
 	BackupRecordCheck()
 
 
-def check_offsite_backups(arg1):
+def check_offsite_backups():
 	OffsiteBackupCheck()
+
+
+def check_app_server_replica_benches():
+	AppServerReplicaDirsCheck()
