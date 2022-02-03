@@ -73,8 +73,14 @@ class AppServerReplicaDirsCheck(Audit):
 			replica_benches = get_benches_in_server(replica)
 			primary_benches = get_benches_in_server(primary)
 			for bench, bench_desc in primary_benches.items():
+				replica_bench_desc = replica_benches.get(bench)
+				if not replica_bench_desc:
+					status = "Failure"
+					log[bench] = {"Sites on primary only": bench_desc["sites"]}
+					continue
+
 				sites_on_primary_only = list(
-					set(bench_desc["sites"]) - set(replica_benches[bench]["sites"])
+					set(bench_desc["sites"]) - set(replica_bench_desc["sites"])
 				)
 				if sites_on_primary_only:
 					status = "Failure"
