@@ -832,7 +832,7 @@ class Site(Document):
 	def change_plan(self, plan):
 		self.can_change_plan()
 		plan_config = self.get_plan_config(plan)
-		self.update_site_config(plan_config)
+		self._update_configuration(plan_config)
 		frappe.get_doc(
 			{
 				"doctype": "Site Plan Change",
@@ -845,6 +845,9 @@ class Site(Document):
 		if self.status == "Suspended":
 			self.reload()
 			self.unsuspend_if_applicable()
+		else:
+			# trigger agent job only once
+			self.update_site_config(plan_config)
 
 		if self.trial_end_date:
 			self.reload()
