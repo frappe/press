@@ -84,7 +84,7 @@ class AppServerReplicaDirsCheck(Audit):
 				)
 				if sites_on_primary_only:
 					status = "Failure"
-				log[bench] = {"Sites on primary only": sites_on_primary_only}
+					log[bench] = {"Sites on primary only": sites_on_primary_only}
 		self.log(log, status)
 
 
