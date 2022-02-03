@@ -20,8 +20,9 @@
   {
    "fieldname": "audit_type",
    "fieldtype": "Select",
+   "in_list_view": 1,
    "label": "Audit Type",
-   "options": "Bench Field Check\nBackup Record Check\nOffsite Backup Check\nRestore Offsite Backup of Site",
+   "options": "Bench Field Check\nBackup Record Check\nOffsite Backup Check\nRestore Offsite Backup of Site\nApp Server Replica Dirs Check",
    "read_only": 1
   },
   {
@@ -33,7 +34,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-02-03 10:28:22.106940",
+ "modified": "2022-02-03 15:09:15.426004",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Audit Log",
