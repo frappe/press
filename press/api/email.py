@@ -80,10 +80,6 @@ def validate_plan(secret_key):
 	check if subscription is active on marketplace and valid
 	#TODO: get activation date
 	"""
-	# TODO: remote this wildcard key after marketplace api and docs is up
-	if secret_key == "fcmailfrappeteam$1152":
-		return True
-
 	plan_label_map = {"Mail 25$": 10000, "Mail 5$": 2000, "Mail Free": 100}
 
 	try:
