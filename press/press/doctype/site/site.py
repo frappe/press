@@ -842,8 +842,8 @@ class Site(Document):
 			}
 		).insert()
 
+		self.reload()
 		if self.status == "Suspended":
-			self.reload()
 			self.unsuspend_if_applicable()
 		else:
 			# trigger agent job only once
