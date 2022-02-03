@@ -33,7 +33,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-04-05 16:44:45.079157",
+ "modified": "2022-02-03 10:28:22.106940",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Audit Log",
@@ -54,5 +54,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }
