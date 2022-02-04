@@ -5,7 +5,7 @@
 		<div class="overflow-hidden rounded-lg shadow-xs">
 			<div class="p-4">
 				<div class="flex items-start">
-					<div class="flex-shrink-0 mr-3" v-if="icon">
+					<div class="shrink-0 mr-3" v-if="icon">
 						<div class="w-6 h-6 p-1 rounded-full" :class="iconContainerClass">
 							<FeatherIcon :name="icon" :class="iconClass" class="w-4 h-4" />
 						</div>
@@ -18,7 +18,7 @@
 							{{ message }}
 						</p>
 					</div>
-					<div class="flex items-center flex-shrink-0 h-6 ml-3">
+					<div class="flex items-center shrink-0 h-6 ml-3">
 						<button @click="$emit('dismiss', id)" class="focus:outline-none">
 							<FeatherIcon name="x" class="w-5 h-5 text-gray-800" />
 						</button>

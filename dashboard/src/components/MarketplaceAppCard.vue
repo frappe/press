@@ -3,7 +3,7 @@
 		class="flex p-3 bg-white border rounded-lg shadow self-stretch focus:outline-none hover:border-gray-300"
 	>
 		<Avatar
-			class="flex-shrink-0"
+			class="shrink-0"
 			size="lg"
 			shape="square"
 			:imageURL="app.image"

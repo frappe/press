@@ -36,7 +36,7 @@
 				</Button>
 			</template>
 			<div class="flex space-x-4">
-				<div class="flex-shrink-0 w-full space-y-4 md:w-2/3">
+				<div class="shrink-0 w-full space-y-4 md:w-2/3">
 					<div class="space-y-4" v-if="editMode">
 						<div
 							class="grid grid-cols-5 gap-4"

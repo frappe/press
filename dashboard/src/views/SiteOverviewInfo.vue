@@ -67,7 +67,7 @@
 				title="Deactivate Site"
 				description="The site will go inactive and won't be publicly accessible"
 			>
-				<Button slot="actions" @click="onDeactivateClick" class="flex-shrink-0">
+				<Button slot="actions" @click="onDeactivateClick" class="shrink-0">
 					Deactivate Site
 				</Button>
 			</ListItem>
@@ -77,7 +77,7 @@
 				title="Activate Site"
 				description="The site will become active and will be accessible"
 			>
-				<Button slot="actions" @click="onActivateClick" class="flex-shrink-0">
+				<Button slot="actions" @click="onActivateClick" class="shrink-0">
 					Activate Site
 				</Button>
 			</ListItem>
