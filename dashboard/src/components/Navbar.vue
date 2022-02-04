@@ -3,7 +3,7 @@
 		<div class="container z-10 mx-auto">
 			<div class="flex items-center justify-between h-16 px-4 sm:px-8">
 				<div class="flex items-center">
-					<div class="flex-shrink-0">
+					<div class="shrink-0">
 						<router-link to="/">
 							<FrappeCloudLogo class="w-auto h-4" />
 						</router-link>
@@ -100,7 +100,7 @@
 			</div>
 			<div class="pt-4 pb-3 border-t">
 				<div class="flex items-center px-4">
-					<div class="flex-shrink-0">
+					<div class="shrink-0">
 						<Avatar
 							v-if="$account.user"
 							:label="$account.user.first_name"

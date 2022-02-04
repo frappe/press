@@ -63,7 +63,7 @@
 					<Button
 						v-if="invoice.invoice_pdf"
 						icon-left="download"
-						class="flex-shrink-0"
+						class="shrink-0"
 						:link="invoice.invoice_pdf"
 					>
 						<span class="text-sm">Download Invoice</span>
@@ -71,7 +71,7 @@
 					<Button
 						v-if="invoice.status != 'Paid' && invoice.stripe_invoice_url"
 						icon-left="external-link"
-						class="flex-shrink-0"
+						class="shrink-0"
 						:link="invoice.stripe_invoice_url"
 					>
 						<span class="text-sm">Pay Now</span>

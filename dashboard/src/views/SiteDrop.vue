@@ -1,5 +1,5 @@
 <template>
-	<div class="flex-shrink-0">
+	<div class="shrink-0">
 		<slot v-bind="{ showDialog }"></slot>
 		<Dialog v-model="dialogOpen" title="Drop Site">
 			<p class="text-base">
