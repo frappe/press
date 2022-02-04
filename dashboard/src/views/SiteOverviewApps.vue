@@ -20,14 +20,14 @@
 				:key="app.name"
 			>
 				<div class="w-2/3">
-					<div class="text-base font-medium ">
+					<div class="text-base font-medium">
 						{{ app.title }}
 					</div>
 					<div class="mt-1 text-base text-gray-700">
 						{{ app.repository_owner }}/{{ app.repository }}:{{ app.branch }}
 					</div>
 				</div>
-				<div class="flex items-center ml-auto space-x-2">
+				<div class="ml-auto flex items-center space-x-2">
 					<a
 						class="block cursor-pointer"
 						:href="`${app.repository_url}/commit/${app.hash}`"
@@ -138,7 +138,7 @@ export default {
 				message: `Are you sure you want to uninstall app ${app.title} from site?`,
 				actionLabel: 'Remove App',
 				actionType: 'danger',
-				action: closeDialog => {
+				action: (closeDialog) => {
 					closeDialog();
 					this.$resources.uninstallApp.submit({
 						name: this.site.name,

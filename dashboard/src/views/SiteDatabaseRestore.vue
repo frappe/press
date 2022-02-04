@@ -44,25 +44,19 @@
 					</p>
 				</div>
 				<Button :disabled="site.status === 'Suspended'" @click="confirmReset">
-					<span class="text-red-600">
-						Reset Database
-					</span>
+					<span class="text-red-600"> Reset Database </span>
 				</Button>
 			</div>
 			<div class="flex items-center justify-between py-3">
 				<div>
 					<h3 class="text-lg">Clear Cache</h3>
-					<p class="mt-1 text-base text-gray-600">
-						Clear your site's cache.
-					</p>
+					<p class="mt-1 text-base text-gray-600">Clear your site's cache.</p>
 				</div>
 				<Button
 					:disabled="site.status === 'Suspended'"
 					@click="confirmClearCache"
 				>
-					<span class="text-red-600">
-						Clear Cache
-					</span>
+					<span class="text-red-600"> Clear Cache </span>
 				</Button>
 			</div>
 		</div>
@@ -89,14 +83,7 @@
 				<input
 					id="skip-failing"
 					type="checkbox"
-					class="
-				h-4
-				w-4
-				text-blue-600
-				focus:ring-blue-500
-				border-gray-300
-				rounded
-			"
+					class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
 					v-model="wantToSkipFailingPatches"
 				/>
 				<label for="skip-failing" class="ml-2 text-sm text-gray-900">
@@ -124,14 +111,7 @@
 				<input
 					id="skip-failing"
 					type="checkbox"
-					class="
-				h-4
-				w-4
-				text-blue-600
-				focus:ring-blue-500
-				border-gray-300
-				rounded
-			"
+					class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
 					v-model="wantToSkipFailingPatches"
 				/>
 				<label for="skip-failing" class="ml-2 text-sm text-gray-900">
@@ -255,7 +235,7 @@ export default {
 					'All the data from your site will be lost. Are you sure you want to reset your database?',
 				actionLabel: 'Reset',
 				actionType: 'danger',
-				action: closeDialog => {
+				action: (closeDialog) => {
 					this.$resources.resetDatabase.submit();
 					closeDialog();
 				}
@@ -276,7 +256,7 @@ export default {
 				`,
 				actionLabel: 'Clear Cache',
 				actionType: 'danger',
-				action: closeDialog => {
+				action: (closeDialog) => {
 					this.$resources.clearCache.submit();
 					closeDialog();
 				}

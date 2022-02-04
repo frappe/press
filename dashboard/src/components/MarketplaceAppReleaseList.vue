@@ -4,7 +4,7 @@
 			<div class="flex flex-row items-baseline">
 				<select
 					v-if="sources.length > 1"
-					class="inline-block form-select mb-2"
+					class="form-select mb-2 inline-block"
 					v-model="selectedSource"
 				>
 					<option
@@ -20,13 +20,13 @@
 			</div>
 		</div>
 		<div v-if="!sources.length">
-			<p class="mt-3 text-gray-600 text-center text-lg">
+			<p class="mt-3 text-center text-lg text-gray-600">
 				No published source exist for this app. Please contact support to
 				publish a version of this app.
 			</p>
 		</div>
 		<div v-else-if="releasesList.length === 0 && !$resources.releases.loading">
-			<p class="mt-3 text-gray-600 text-center text-lg">
+			<p class="mt-3 text-center text-lg text-gray-600">
 				No app releases have been created for this version.
 			</p>
 		</div>
@@ -34,7 +34,7 @@
 		<div v-else>
 			<div class="divide-y">
 				<div
-					class="grid items-center grid-cols-3 py-4 text-base text-gray-600 gap-x-8 md:grid-cols-6"
+					class="grid grid-cols-3 items-center gap-x-8 py-4 text-base text-gray-600 md:grid-cols-6"
 				>
 					<span class="md:col-span-2">Commit Message</span>
 					<span class="hidden md:inline">Tag</span>
@@ -46,21 +46,21 @@
 				<div
 					v-for="release in releasesList"
 					:key="release.name"
-					class="grid items-center grid-cols-3 py-4 text-base text-gray-900 gap-x-8 md:grid-cols-6"
+					class="grid grid-cols-3 items-center gap-x-8 py-4 text-base text-gray-900 md:grid-cols-6"
 				>
 					<p
-						class="md:col-span-2 text-base font-medium text-gray-700 truncate max-w-md"
+						class="max-w-md truncate text-base font-medium text-gray-700 md:col-span-2"
 					>
 						{{ release.message }}
 					</p>
 					<a
 						:href="getCommitUrl(release.hash)"
 						target="_blank"
-						class="hidden md:inline text-blue-700 font-mono hover:text-blue-500"
+						class="hidden font-mono text-blue-700 hover:text-blue-500 md:inline"
 					>
 						{{ release.tag || release.hash.slice(0, 6) }}
 					</a>
-					<span class="hidden md:inline text-gray-600">
+					<span class="hidden text-gray-600 md:inline">
 						{{ release.author }}
 					</span>
 					<span>
@@ -74,7 +74,7 @@
 							v-if="isPublishable(release)"
 							:loading="
 								$resources.createApprovalRequest.loading ||
-									$resources.latestApproved.loading
+								$resources.latestApproved.loading
 							"
 							type="secondary"
 							@click="confirmApprovalRequest(release.name)"
@@ -247,7 +247,7 @@ export default {
 						: this.$resources.createApprovalRequest.error,
 					actionLabel: 'OK',
 					actionType: 'primary',
-					action: closeDialog => {
+					action: (closeDialog) => {
 						closeDialog();
 					}
 				});
@@ -260,7 +260,7 @@ export default {
 					'Are you sure you want to publish this release to marketplace? Upon confirmation, the release will be sent for approval by the review team.',
 				actionLabel: 'Publish',
 				actionType: 'primary',
-				action: closeDialog => {
+				action: (closeDialog) => {
 					closeDialog();
 					this.createApprovalRequest(appRelease);
 				}
@@ -273,7 +273,7 @@ export default {
 					'Are you sure you want to <strong>cancel</strong> the publish request for this release?',
 				actionLabel: 'Proceed',
 				actionType: 'danger',
-				action: closeDialog => {
+				action: (closeDialog) => {
 					closeDialog();
 					this.cancelApprovalRequest(appRelease);
 				}
@@ -309,7 +309,7 @@ export default {
 			// Return only the unique sources
 			let tempArray = [];
 			for (let source of this.app.sources) {
-				if (!tempArray.find(x => x.source === source.source)) {
+				if (!tempArray.find((x) => x.source === source.source)) {
 					tempArray.push(source);
 				}
 			}

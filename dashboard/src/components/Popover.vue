@@ -7,7 +7,7 @@
 			<div
 				ref="popover"
 				:class="popoverClass"
-				class="bg-white rounded-md border shadow-md popover-container relative"
+				class="popover-container relative rounded-md border bg-white shadow-md"
 				v-show="isOpen"
 			>
 				<div v-if="!hideArrow" class="popover-arrow" ref="popover-arrow"></div>
@@ -53,10 +53,10 @@ export default {
 		};
 	},
 	mounted() {
-		let listener = e => {
+		let listener = (e) => {
 			let $els = [this.$refs.reference, this.$refs.popover];
 			let insideClick = $els.some(
-				$el => $el && (e.target === $el || $el.contains(e.target))
+				($el) => $el && (e.target === $el || $el.contains(e.target))
 			);
 			if (insideClick) {
 				return;

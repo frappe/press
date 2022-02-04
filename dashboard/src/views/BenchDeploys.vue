@@ -10,7 +10,7 @@
 			<div>
 				<router-link
 					v-for="candidate in candidates"
-					class="block px-2.5 rounded-md cursor-pointer"
+					class="block cursor-pointer rounded-md px-2.5"
 					:class="
 						selectedCandidate && selectedCandidate.name === candidate.name
 							? 'bg-gray-100'
@@ -20,9 +20,10 @@
 					:to="`/benches/${bench.name}/deploys/${candidate.name}`"
 				>
 					<ListItem
-						:title="
-							`Deploy on ${formatDate(candidate.creation, 'DATETIME_SHORT')}`
-						"
+						:title="`Deploy on ${formatDate(
+							candidate.creation,
+							'DATETIME_SHORT'
+						)}`"
 						:subtitle="itemSubtitle(candidate)"
 					>
 						<template #actions>
@@ -130,7 +131,7 @@ export default {
 		},
 		getSteps(candidate) {
 			if (!candidate) return [];
-			let steps = candidate.build_steps.map(step => {
+			let steps = candidate.build_steps.map((step) => {
 				let name = step.stage + ' - ' + step.step;
 				let output =
 					step.command || step.output
@@ -152,7 +153,7 @@ export default {
 			});
 
 			let bench = this.bench;
-			let jobs = candidate.jobs.map(job => {
+			let jobs = candidate.jobs.map((job) => {
 				return {
 					name: `Deploy ${job.bench}`,
 					output:
@@ -179,7 +180,7 @@ export default {
 			return [...steps, ...jobs];
 		},
 		itemSubtitle(candidate) {
-			return ['frappe', ...candidate.apps.filter(d => d !== 'frappe')].join(
+			return ['frappe', ...candidate.apps.filter((d) => d !== 'frappe')].join(
 				', '
 			);
 		}

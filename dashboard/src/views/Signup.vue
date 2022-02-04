@@ -17,22 +17,22 @@
 			<Button class="mt-6" :loading="$resources.signup.loading" type="primary">
 				Submit
 			</Button>
-			<div class="mt-10 text-center border-t">
-				<div class="transform -translate-y-1/2">
+			<div class="mt-10 border-t text-center">
+				<div class="-translate-y-1/2 transform">
 					<span
-						class="px-2 text-xs leading-8 tracking-wider text-gray-800 uppercase bg-white"
+						class="bg-white px-2 text-xs uppercase leading-8 tracking-wider text-gray-800"
 					>
 						Or
 					</span>
 				</div>
 			</div>
-			<router-link class="text-base text-center" to="/login">
+			<router-link class="text-center text-base" to="/login">
 				Already have an account? Log in.
 			</router-link>
 		</form>
 	</LoginBox>
 	<SuccessCard
-		class="mx-auto mt-20 shadow-md w-96"
+		class="mx-auto mt-20 w-96 shadow-md"
 		title="Verification Email Sent!"
 		v-else
 	>

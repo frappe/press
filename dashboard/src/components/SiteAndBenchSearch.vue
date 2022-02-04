@@ -10,7 +10,7 @@
 		>
 			<Input
 				type="text"
-				class="lg:w-60 md:w-40"
+				class="md:w-40 lg:w-60"
 				ref="search"
 				@focus="toggleDropdown()"
 				@keydown.down="highlightItemDown()"
@@ -21,7 +21,7 @@
 					$refs.search.blur();
 				"
 				:value="searchText"
-				@input="val => (searchText = val)"
+				@input="(val) => (searchText = val)"
 				placeholder="Search (Ctrl + /)"
 			/>
 		</template>
@@ -36,7 +36,7 @@ export default {
 		};
 	},
 	mounted() {
-		document.addEventListener('keydown', e => {
+		document.addEventListener('keydown', (e) => {
 			if (e.key === '/' && e.ctrlKey) {
 				e.preventDefault();
 				this.searchText = '';
@@ -62,7 +62,7 @@ export default {
 	methods: {
 		dropdownItems() {
 			let siteList = this.$resources.allSites.data
-				.filter(d => {
+				.filter((d) => {
 					if (!this.searchText) {
 						return true;
 					}
@@ -71,7 +71,7 @@ export default {
 					}
 					return false;
 				})
-				.map(d => {
+				.map((d) => {
 					d.label = d.name;
 					d.action = () => this.navigateSite(d.name);
 					return d;
@@ -79,7 +79,7 @@ export default {
 				.slice(0, 5);
 
 			let benchList = this.$resources.allBenches.data
-				.filter(d => {
+				.filter((d) => {
 					if (!this.searchText) {
 						return true;
 					}
@@ -88,7 +88,7 @@ export default {
 					}
 					return false;
 				})
-				.map(d => {
+				.map((d) => {
 					d.label = d.title;
 					d.action = () => this.navigateBench(d.name);
 					return d;

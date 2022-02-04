@@ -38,7 +38,7 @@
 		</form>
 	</LoginBox>
 	<div
-		class="px-6 mt-20 text-center"
+		class="mt-20 px-6 text-center"
 		v-else-if="!$resources.validateResetKey.loading && !email"
 	>
 		Account Key <strong>{{ requestKey }}</strong> is invalid or expired. Go back

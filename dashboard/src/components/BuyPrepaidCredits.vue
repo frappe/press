@@ -12,7 +12,7 @@
 		<label
 			class="block"
 			:class="{
-				'opacity-0 h-0.5': step != 'Add Card Details',
+				'h-0.5 opacity-0': step != 'Add Card Details',
 				'mt-4': step == 'Add Card Details'
 			}"
 		>
@@ -20,19 +20,19 @@
 				Credit or Debit Card
 			</span>
 			<div
-				class="block w-full py-2 pl-3 mt-2 form-input"
+				class="form-input mt-2 block w-full py-2 pl-3"
 				ref="card-element"
 			></div>
 			<ErrorMessage class="mt-1" :error="cardErrorMessage" />
 		</label>
-		<div v-if="step == 'Setting up Stripe'" class="flex justify-center mt-8">
-			<Spinner class="w-4 h-4 text-gray-600" />
+		<div v-if="step == 'Setting up Stripe'" class="mt-8 flex justify-center">
+			<Spinner class="h-4 w-4 text-gray-600" />
 		</div>
 		<ErrorMessage
 			class="mt-2"
 			:error="$resources.createPaymentIntent.error || errorMessage"
 		/>
-		<div class="flex justify-between w-full mt-2">
+		<div class="mt-2 flex w-full justify-between">
 			<StripeLogo />
 			<div v-if="step == 'Get Amount'">
 				<Button
@@ -44,9 +44,7 @@
 				</Button>
 			</div>
 			<div v-if="step == 'Add Card Details'">
-				<Button @click="$emit('cancel')">
-					Cancel
-				</Button>
+				<Button @click="$emit('cancel')"> Cancel </Button>
 				<Button
 					class="ml-2"
 					type="primary"
@@ -131,7 +129,7 @@ export default {
 						this.card.mount(this.$refs['card-element']);
 					});
 
-					this.card.addEventListener('change', event => {
+					this.card.addEventListener('change', (event) => {
 						this.cardErrorMessage = event.error?.message || null;
 					});
 					this.card.addEventListener('ready', () => {

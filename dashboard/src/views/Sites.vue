@@ -52,12 +52,10 @@
 				/>
 			</div>
 			<div v-if="benches == null">
-				<div class="flex items-center flex-1 py-4 focus:outline-none">
-					<h2 class="text-lg font-semibold">
-						Sites
-					</h2>
+				<div class="flex flex-1 items-center py-4 focus:outline-none">
+					<h2 class="text-lg font-semibold">Sites</h2>
 				</div>
-				<div class="px-4 py-3 rounded-md bg-gray-50">
+				<div class="rounded-md bg-gray-50 px-4 py-3">
 					<Loading />
 				</div>
 			</div>
@@ -65,7 +63,7 @@
 				<div
 					v-for="(bench, i) in benches"
 					:key="bench.name"
-					class="flex flex-col sm:space-x-4 sm:flex-row"
+					class="flex flex-col sm:flex-row sm:space-x-4"
 					:class="{
 						'border-b': i < benches.length - 1 && !isSitesShown(bench),
 						'mb-4': isSitesShown(bench)
@@ -74,7 +72,7 @@
 					<div class="flex-1">
 						<div class="flex items-center justify-between">
 							<button
-								class="flex items-center flex-1 py-4 text-left focus:outline-none"
+								class="flex flex-1 items-center py-4 text-left focus:outline-none"
 								@click="multipleBenches ? toggleSitesShown(bench) : null"
 							>
 								<h2 class="text-lg font-semibold">
@@ -83,7 +81,7 @@
 								<FeatherIcon
 									v-if="multipleBenches"
 									:name="isSitesShown(bench) ? 'chevron-down' : 'chevron-right'"
-									class="w-4 h-4 ml-1 mt-0.5"
+									class="ml-1 mt-0.5 h-4 w-4"
 								/>
 							</button>
 							<div class="flex items-center space-x-2">
@@ -114,13 +112,11 @@
 									New Site
 								</Button>
 								<Button
-									:route="
-										`/sites/new${
-											bench.owned_by_team
-												? `?bench=${bench.name}&benchTitle=${bench.title}`
-												: ''
-										}`
-									"
+									:route="`/sites/new${
+										bench.owned_by_team
+											? `?bench=${bench.name}&benchTitle=${bench.title}`
+											: ''
+									}`"
 									type="primary"
 									icon="plus"
 									v-if="showNewSiteButton(bench)"
@@ -198,7 +194,7 @@ export default {
 			// TODO: Listen to a more granular event than list_update
 			if (event.doctype === 'Site') {
 				let sites = this.benches
-					.map(bench => bench.sites.map(site => site.name))
+					.map((bench) => bench.sites.map((site) => site.name))
 					.flat();
 				if (
 					event.user === this.$account.user.name ||

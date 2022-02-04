@@ -7,10 +7,10 @@
 			<Button
 				v-if="
 					$account.hasRole('Press Admin') &&
-						($account.team.default_payment_method ||
-							$account.team.payment_mode == 'Prepaid Credits' ||
-							$account.team.free_account ||
-							$account.team.erpnext_partner)
+					($account.team.default_payment_method ||
+						$account.team.payment_mode == 'Prepaid Credits' ||
+						$account.team.free_account ||
+						$account.team.erpnext_partner)
 				"
 				@click="showManageMemberDialog = true"
 			>
@@ -63,9 +63,7 @@
 				<ErrorMessage :error="removeMember.error" />
 
 				<div class="mt-5 flex flex-row justify-end">
-					<Button @click="showAddMemberForm = false">
-						Cancel
-					</Button>
+					<Button @click="showAddMemberForm = false"> Cancel </Button>
 					<Button
 						class="ml-2"
 						type="primary"
@@ -141,7 +139,7 @@ export default {
 				title: 'Remove Member',
 				message: `Are you sure you want to remove ${member.first_name} ?`,
 				actionLabel: 'Remove',
-				action: closeDialog => {
+				action: (closeDialog) => {
 					this.$resources.removeMember.submit({ user_email: member.name });
 					closeDialog();
 				}

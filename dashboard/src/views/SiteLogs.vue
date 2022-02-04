@@ -6,7 +6,7 @@
 	>
 		<div v-if="$resources.logs.data && $resources.logs.data.length">
 			<router-link
-				class="block px-2.5 rounded-md cursor-pointer"
+				class="block cursor-pointer rounded-md px-2.5"
 				:class="logName === log.name ? 'bg-gray-100' : 'hover:bg-gray-50'"
 				v-for="log in $resources.logs.data"
 				:key="log.name"

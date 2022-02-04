@@ -51,7 +51,7 @@ export default {
 			auto: true,
 			onSuccess() {
 				let country = this.countryList.find(
-					d => d.label === this.$account.team.country
+					(d) => d.label === this.$account.team.country
 				);
 				if (country) {
 					this.update('country', country.value);
@@ -85,8 +85,8 @@ export default {
 			let is_india = country == 'India';
 			let values = this.fields
 				.flat()
-				.filter(df => df.fieldname != 'gstin' || is_india)
-				.map(df => this.address[df.fieldname]);
+				.filter((df) => df.fieldname != 'gstin' || is_india)
+				.map((df) => this.address[df.fieldname]);
 
 			if (!values.every(Boolean)) {
 				return 'Please fill required values';
@@ -103,13 +103,13 @@ export default {
 	},
 	computed: {
 		countryList() {
-			return (this.$resources.countryList.data || []).map(d => ({
+			return (this.$resources.countryList.data || []).map((d) => ({
 				label: d.name,
 				value: d.name
 			}));
 		},
 		indianStates() {
-			return (this.$resources.indianStates.data || []).map(d => ({
+			return (this.$resources.indianStates.data || []).map((d) => ({
 				label: d,
 				value: d
 			}));

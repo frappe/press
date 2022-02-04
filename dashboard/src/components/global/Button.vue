@@ -8,17 +8,17 @@
 		:disabled="isDisabled"
 	>
 		<a :href="href" @click="navigate">
-			<FeatherIcon v-if="iconLeft" :name="iconLeft" class="w-4 h-4 mr-1.5" />
+			<FeatherIcon v-if="iconLeft" :name="iconLeft" class="mr-1.5 h-4 w-4" />
 			<template v-if="loading && loadingText">
 				{{ loadingText }}
 			</template>
 			<template v-else-if="icon">
-				<FeatherIcon :name="icon" class="w-4 h-4" />
+				<FeatherIcon :name="icon" class="h-4 w-4" />
 			</template>
 			<template v-else>
 				<slot></slot>
 			</template>
-			<FeatherIcon v-if="iconRight" :name="iconRight" class="w-4 h-4 ml-2" />
+			<FeatherIcon v-if="iconRight" :name="iconRight" class="ml-2 h-4 w-4" />
 		</a>
 	</router-link>
 
@@ -38,17 +38,17 @@
 				'text-red-200': type == 'danger'
 			}"
 		/>
-		<FeatherIcon v-else-if="iconLeft" :name="iconLeft" class="w-4 h-4 mr-1.5" />
+		<FeatherIcon v-else-if="iconLeft" :name="iconLeft" class="mr-1.5 h-4 w-4" />
 		<template v-if="loading && loadingText">
 			{{ loadingText }}
 		</template>
 		<template v-else-if="icon">
-			<FeatherIcon :name="icon" class="w-4 h-4" />
+			<FeatherIcon :name="icon" class="h-4 w-4" />
 		</template>
 		<template v-else>
 			<slot></slot>
 		</template>
-		<FeatherIcon v-if="iconRight" :name="iconRight" class="w-4 h-4 ml-2" />
+		<FeatherIcon v-if="iconRight" :name="iconRight" class="ml-2 h-4 w-4" />
 	</button>
 </template>
 <script>

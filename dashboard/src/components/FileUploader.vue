@@ -80,7 +80,7 @@ export default {
 			this.uploader.on('start', () => {
 				this.uploading = true;
 			});
-			this.uploader.on('progress', data => {
+			this.uploader.on('progress', (data) => {
 				this.uploaded = data.uploaded;
 				this.total = data.total;
 			});
@@ -94,15 +94,16 @@ export default {
 			});
 			this.uploader
 				.upload(file, this.uploadArgs || {})
-				.then(data => {
+				.then((data) => {
 					this.$emit('success', data);
 				})
-				.catch(error => {
+				.catch((error) => {
 					this.uploading = false;
 					let errorMessage = 'Error Uploading File';
 					if (error._server_messages) {
-						errorMessage = JSON.parse(JSON.parse(error._server_messages)[0])
-							.message;
+						errorMessage = JSON.parse(
+							JSON.parse(error._server_messages)[0]
+						).message;
 					} else if (error.exc) {
 						errorMessage = JSON.parse(error.exc)[0]
 							.split('\n')

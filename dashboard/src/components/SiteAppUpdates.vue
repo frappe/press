@@ -1,5 +1,5 @@
 <template>
-	<div class="divide-y space-y-2">
+	<div class="space-y-2 divide-y">
 		<AppUpdateCard v-for="app in appsWithUpdates" :key="app.app" :app="app" />
 	</div>
 </template>
@@ -14,7 +14,7 @@ export default {
 	},
 	computed: {
 		appsWithUpdates() {
-			return this.apps.filter(app => app.update_available);
+			return this.apps.filter((app) => app.update_available);
 		}
 	}
 };

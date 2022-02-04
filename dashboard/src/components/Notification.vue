@@ -1,13 +1,13 @@
 <template>
 	<div
-		class="w-full max-w-sm bg-white rounded-lg shadow-lg pointer-events-auto"
+		class="pointer-events-auto w-full max-w-sm rounded-lg bg-white shadow-lg"
 	>
-		<div class="overflow-hidden rounded-lg shadow-xs">
+		<div class="shadow-xs overflow-hidden rounded-lg">
 			<div class="p-4">
 				<div class="flex items-start">
-					<div class="shrink-0 mr-3" v-if="icon">
-						<div class="w-6 h-6 p-1 rounded-full" :class="iconContainerClass">
-							<FeatherIcon :name="icon" :class="iconClass" class="w-4 h-4" />
+					<div class="mr-3 shrink-0" v-if="icon">
+						<div class="h-6 w-6 rounded-full p-1" :class="iconContainerClass">
+							<FeatherIcon :name="icon" :class="iconClass" class="h-4 w-4" />
 						</div>
 					</div>
 					<div class="flex-1">
@@ -18,9 +18,9 @@
 							{{ message }}
 						</p>
 					</div>
-					<div class="flex items-center shrink-0 h-6 ml-3">
+					<div class="ml-3 flex h-6 shrink-0 items-center">
 						<button @click="$emit('dismiss', id)" class="focus:outline-none">
-							<FeatherIcon name="x" class="w-5 h-5 text-gray-800" />
+							<FeatherIcon name="x" class="h-5 w-5 text-gray-800" />
 						</button>
 					</div>
 				</div>

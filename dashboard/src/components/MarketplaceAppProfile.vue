@@ -1,7 +1,7 @@
 <template>
 	<Card title="App Profile" subtitle="Your app's primary profile">
 		<div class="flex items-center">
-			<div class="relative group">
+			<div class="group relative">
 				<Avatar
 					size="lg"
 					shape="square"
@@ -21,14 +21,14 @@
 						<div class="ml-4">
 							<button
 								@click="openFileSelector()"
-								class="absolute inset-0 grid w-full text-xs font-semibold text-white bg-black rounded-lg opacity-0 focus:outline-none focus:opacity-50 group-hover:opacity-50 place-items-center"
+								class="absolute inset-0 grid w-full place-items-center rounded-lg bg-black text-xs font-semibold text-white opacity-0 focus:opacity-50 focus:outline-none group-hover:opacity-50"
 								:class="{ 'opacity-50': uploading }"
 							>
 								<span v-if="uploading">{{ progress }}%</span>
 								<span v-else>Edit</span>
 							</button>
 							<button
-								class="absolute text-opacity-70 bottom-0 left-0 grid w-full text-xs font-semibold place-items-center bg-gray-900 text-white opacity-80 rounded-md group-hover:opacity-0"
+								class="absolute bottom-0 left-0 grid w-full place-items-center rounded-md bg-gray-900 text-xs font-semibold text-white text-opacity-70 opacity-80 group-hover:opacity-0"
 							>
 								<span>Edit</span>
 							</button>
@@ -69,10 +69,10 @@
 			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 				<Input label="App Title" type="text" v-model="app.title" />
 				<div>
-					<span class="block mb-2 text-sm leading-4 text-gray-700">
+					<span class="mb-2 block text-sm leading-4 text-gray-700">
 						Category
 					</span>
-					<select class="block w-full form-select" v-model="app.category">
+					<select class="form-select block w-full" v-model="app.category">
 						<option v-for="category in categories" :key="category">
 							{{ category }}
 						</option>

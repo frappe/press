@@ -8,9 +8,9 @@
 					</router-link>
 				</div>
 				<div
-					class="flex flex-col space-y-3 md:space-y-0 md:justify-between md:flex-row md:items-baseline"
+					class="flex flex-col space-y-3 md:flex-row md:items-baseline md:justify-between md:space-y-0"
 				>
-					<div class="flex items-center mt-2">
+					<div class="mt-2 flex items-center">
 						<h1 class="text-2xl font-bold">{{ bench.title }}</h1>
 						<Badge class="ml-4" :status="bench.status">
 							{{ bench.status }}
@@ -85,7 +85,7 @@ export default {
 			return this.$resources.bench.data;
 		},
 		tabs() {
-			let tabRoute = subRoute => `/benches/${this.benchName}/${subRoute}`;
+			let tabRoute = (subRoute) => `/benches/${this.benchName}/${subRoute}`;
 			let tabs = [
 				{ label: 'Overview', route: 'overview' },
 				{ label: 'Sites', route: 'sites' },
@@ -93,7 +93,7 @@ export default {
 				{ label: 'Jobs', route: 'jobs' }
 			];
 			if (this.bench) {
-				return tabs.map(tab => {
+				return tabs.map((tab) => {
 					return {
 						...tab,
 						route: tabRoute(tab.route)

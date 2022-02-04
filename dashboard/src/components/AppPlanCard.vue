@@ -1,47 +1,38 @@
 <template>
 	<div
 		v-if="plan"
-		class="p-5 rounded-2xl shadow cursor-pointer border border-gray-100 hover:border-gray-300"
+		class="cursor-pointer rounded-2xl border border-gray-100 p-5 shadow hover:border-gray-300"
 		:class="[
-			popular ? 'bg-blue-100 relative' : '',
-			selected ? 'ring-2 ring-blue-500 relative' : ''
+			popular ? 'relative bg-blue-100' : '',
+			selected ? 'relative ring-2 ring-blue-500' : ''
 		]"
 	>
 		<div
 			v-if="popular"
-			class="-top-3 left-1/4 absolute py-1 px-2 text-xs bg-blue-500 text-center rounded-md"
+			class="absolute -top-3 left-1/4 rounded-md bg-blue-500 py-1 px-2 text-center text-xs"
 		>
-			<h5 class="uppercase text-white font-medium">Most Popular</h5>
+			<h5 class="font-medium uppercase text-white">Most Popular</h5>
 		</div>
 
 		<input
 			v-if="selected"
 			type="checkbox"
-			class="absolute
-				top-3
-				right-3
-				h-4
-				w-4
-				text-blue-500
-				border-gray-300
-				rounded"
+			class="absolute top-3 right-3 h-4 w-4 rounded border-gray-300 text-blue-500"
 			checked
 			disabled
 		/>
 
-		<h4 class="text-gray-900 font-semibold text-xl">
-			<span v-if="plan.is_free">
-				Free
-			</span>
+		<h4 class="text-xl font-semibold text-gray-900">
+			<span v-if="plan.is_free"> Free </span>
 
 			<span v-else>
 				{{ $planTitle(plan)
-				}}<span class="font-normal text-gray-600 text-base"> /mo</span>
+				}}<span class="text-base font-normal text-gray-600"> /mo</span>
 			</span>
 		</h4>
 		<h4
 			v-if="plan.discounted"
-			class="mt-1 text-gray-600 text-base line-through"
+			class="mt-1 text-base text-gray-600 line-through"
 		>
 			{{
 				$planTitle({

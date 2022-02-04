@@ -24,7 +24,7 @@
 				<div class="w-1/12">
 					<Badge>{{ log.request.method }}</Badge>
 				</div>
-				<div class="w-5/12 pr-2 break-words">{{ log.request.path }}</div>
+				<div class="w-5/12 break-words pr-2">{{ log.request.path }}</div>
 				<div class="w-2/12">{{ log.request.status_code }}</div>
 				<div class="w-2/12">{{ $formatCPUTime(log.duration) }}</div>
 			</div>
@@ -32,7 +32,7 @@
 				class="px-2 py-2 text-base text-gray-600"
 				v-if="
 					$resources.requestLogs.loading &&
-						$resources.requestLogs.data.length == 0
+					$resources.requestLogs.data.length == 0
 				"
 			>
 				<Loading />
@@ -41,7 +41,7 @@
 				class="py-2 text-base text-gray-600"
 				v-if="
 					!$resources.requestLogs.loading &&
-						$resources.requestLogs.data.length == 0
+					$resources.requestLogs.data.length == 0
 				"
 			>
 				No data
@@ -111,9 +111,7 @@ export default {
 			if (this.whichDate === 'Today') {
 				return DateTime.local().toISODate();
 			} else if (this.whichDate === 'Yesterday') {
-				return DateTime.local()
-					.minus({ days: 1 })
-					.toISODate();
+				return DateTime.local().minus({ days: 1 }).toISODate();
 			} else if (this.whichDate === 'Custom') {
 				return this.date;
 			}

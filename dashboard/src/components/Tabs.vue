@@ -1,7 +1,7 @@
 <template>
 	<div>
 		<div>
-			<ul class="hidden text-base border-b sm:flex">
+			<ul class="hidden border-b text-base sm:flex">
 				<router-link
 					v-for="tab in tabs"
 					:key="tab.label"
@@ -10,7 +10,7 @@
 				>
 					<li>
 						<a
-							class="relative block px-1 py-4 mr-8 font-medium leading-none truncate border-b border-transparent focus:outline-none"
+							class="relative mr-8 block truncate border-b border-transparent px-1 py-4 font-medium leading-none focus:outline-none"
 							:class="[
 								isActive
 									? 'border-brand text-gray-900'
@@ -23,7 +23,7 @@
 								{{ tab.label }}
 							</span>
 							<div
-								class="absolute right-0 w-2 h-2 bg-red-500 rounded-full top-2"
+								class="absolute right-0 top-2 h-2 w-2 rounded-full bg-red-500"
 								v-if="tab.showRedDot && !isActive"
 							></div>
 						</a>
@@ -31,8 +31,8 @@
 				</router-link>
 			</ul>
 			<select
-				class="block w-full sm:hidden form-select"
-				@change="e => changeTab(e.target.value)"
+				class="form-select block w-full sm:hidden"
+				@change="(e) => changeTab(e.target.value)"
 			>
 				<option
 					v-for="tab in tabs"

@@ -22,7 +22,7 @@
 			</div>
 			<div v-else>
 				<div
-					class="grid items-center grid-cols-2 gap-12 py-4 text-sm text-gray-600 border-b md:grid-cols-4"
+					class="grid grid-cols-2 items-center gap-12 border-b py-4 text-sm text-gray-600 md:grid-cols-4"
 				>
 					<span>Bench Name</span>
 					<span class="text-right md:text-center">Status</span>
@@ -30,7 +30,7 @@
 					<span class="hidden md:inline"></span>
 				</div>
 				<router-link
-					class="grid items-center grid-cols-2 gap-12 py-4 text-base border-b md:grid-cols-4 hover:bg-gray-50 focus:outline-none focus:shadow-outline"
+					class="focus:shadow-outline grid grid-cols-2 items-center gap-12 border-b py-4 text-base hover:bg-gray-50 focus:outline-none md:grid-cols-4"
 					v-for="bench in $resources.benches.data"
 					:key="bench.name"
 					:to="'/benches/' + bench.name"
@@ -48,7 +48,7 @@
 								(bench.status === 'Active' ||
 									bench.status === 'Inactive' ||
 									bench.status === 'Suspended') &&
-									bench.update_available
+								bench.update_available
 							"
 							:status="'Update Available'"
 							class="mr-4"

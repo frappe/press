@@ -28,9 +28,7 @@
 				<router-link v-if="forgot" to="/login">
 					I remember my password
 				</router-link>
-				<router-link v-else to="/login/forgot">
-					Forgot Password
-				</router-link>
+				<router-link v-else to="/login/forgot"> Forgot Password </router-link>
 			</div>
 			<ErrorMessage :error="errorMessage" class="mt-4" />
 			<Button
@@ -42,16 +40,16 @@
 				Submit
 			</Button>
 			<template v-if="!forgot">
-				<div class="mt-10 text-center border-t">
-					<div class="transform -translate-y-1/2">
+				<div class="mt-10 border-t text-center">
+					<div class="-translate-y-1/2 transform">
 						<span
-							class="px-2 text-xs leading-8 tracking-wider text-gray-800 uppercase bg-white"
+							class="bg-white px-2 text-xs uppercase leading-8 tracking-wider text-gray-800"
 						>
 							Or
 						</span>
 					</div>
 				</div>
-				<router-link class="text-base text-center" to="/signup">
+				<router-link class="text-center text-base" to="/signup">
 					Sign up for a new account
 				</router-link>
 			</template>

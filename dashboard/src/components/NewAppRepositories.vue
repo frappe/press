@@ -3,10 +3,10 @@
 		<div v-for="installation in options.installations" :key="installation.id">
 			<details class="cursor-pointer">
 				<summary
-					class="flex items-center w-full px-2 py-3 space-x-2 text-base rounded select-none hover:bg-gray-50"
+					class="flex w-full select-none items-center space-x-2 rounded px-2 py-3 text-base hover:bg-gray-50"
 				>
 					<img
-						class="object-cover w-6 h-6 bg-blue-100 rounded"
+						class="h-6 w-6 rounded bg-blue-100 object-cover"
 						:src="installation.image"
 						:alt="`${installation.login} image`"
 					/>
@@ -16,7 +16,7 @@
 				</summary>
 				<div class="mb-4 ml-4">
 					<button
-						class="w-full px-3 py-2 text-base text-gray-900 border-2 rounded-md focus:outline-none"
+						class="w-full rounded-md border-2 px-3 py-2 text-base text-gray-900 focus:outline-none"
 						:class="
 							selectedRepo === repo
 								? 'border-blue-500 bg-blue-50'
@@ -26,10 +26,10 @@
 						:key="repo.id"
 						@click="selectRepo(repo, installation)"
 					>
-						<div class="flex items-center w-full">
+						<div class="flex w-full items-center">
 							<FeatherIcon
 								:name="repo.private ? 'lock' : 'book'"
-								class="w-4 h-4 mr-2"
+								class="mr-2 h-4 w-4"
 							/>
 							<span class="text-lg font-medium">
 								{{ repo.name }}
@@ -39,7 +39,7 @@
 								v-if="selectedRepo === repo"
 								@click.stop="selectRepo(null, null)"
 							>
-								<FeatherIcon name="x" class="w-4 h-4" />
+								<FeatherIcon name="x" class="h-4 w-4" />
 							</button>
 						</div>
 						<div v-show="selectedRepo === repo">
@@ -92,7 +92,7 @@ export default {
 			if (this.repositoryResource.loading || !this.repositoryResource.data) {
 				return [];
 			}
-			return (this.repositoryResource.data.branches || []).map(d => {
+			return (this.repositoryResource.data.branches || []).map((d) => {
 				return {
 					label: d.name,
 					action: () => this.$emit('update:selectedBranch', d.name)

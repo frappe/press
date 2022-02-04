@@ -14,10 +14,8 @@
 		</div>
 		<div v-if="options">
 			<div v-if="options.authorized && options.installations.length > 0">
-				<div class="flex items-baseline justify-between pb-1 border-b">
-					<label class="text-lg font-semibold">
-						Select a repository
-					</label>
+				<div class="flex items-baseline justify-between border-b pb-1">
+					<label class="text-lg font-semibold"> Select a repository </label>
 					<span class="text-sm text-gray-600">
 						Don't see your organization?
 						<Link
@@ -36,9 +34,9 @@
 						:selectedInstallation.sync="selectedInstallation"
 						:selectedBranch.sync="selectedBranch"
 					/>
-					<div v-if="validateApp.data" class="mt-4 text-base text-medium">
+					<div v-if="validateApp.data" class="text-medium mt-4 text-base">
 						<div v-if="validatedApp" class="flex">
-							<GreenCheckIcon class="w-4 mr-2" />
+							<GreenCheckIcon class="mr-2 w-4" />
 							Found {{ validatedApp.title }} ({{ validatedApp.name }})
 						</div>
 					</div>
