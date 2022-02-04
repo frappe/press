@@ -11,13 +11,13 @@
 				<ChangePaymentModeDialog v-model="showChangeModeDialog" />
 			</template>
 			<div
-				class="flex flex-col h-full"
+				class="flex h-full flex-col"
 				v-if="!$resources.upcomingInvoice.loading"
 			>
 				<div class="flex">
 					<PlanIcon />
 					<div class="ml-4">
-						<div class="text-4xl font-semibold ">
+						<div class="text-4xl font-semibold">
 							{{ upcomingInvoice ? upcomingInvoice.formatted.total : '0.00' }}
 						</div>
 						<div class="text-base text-gray-700" v-if="upcomingInvoice">
@@ -30,7 +30,7 @@
 						</div>
 					</div>
 				</div>
-				<div class="p-4 mt-auto bg-gray-100 rounded" v-if="upcomingInvoice">
+				<div class="mt-auto rounded bg-gray-100 p-4" v-if="upcomingInvoice">
 					<div class="flex items-center">
 						<!-- prettier-ignore -->
 						<svg width="26" height="20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 6.5A1.5 1.5 0 012.5 5h17A1.5 1.5 0 0121 6.5v11a1.5 1.5 0 01-1.5 1.5h-17A1.5 1.5 0 011 17.5v-11z" stroke="url(#paint0_linear)" stroke-miterlimit="10"/><path d="M5 5V2.5A1.5 1.5 0 016.5 1h17A1.5 1.5 0 0125 2.5v9a1.5 1.5 0 01-1.5 1.5H21" stroke="url(#paint1_linear)" stroke-miterlimit="10"/><path d="M11 15a3 3 0 100-6 3 3 0 000 6z" stroke="url(#paint2_linear)" stroke-miterlimit="10"/><defs><linearGradient id="paint0_linear" x1="1" y1="5" x2="1" y2="19" gradientUnits="userSpaceOnUse"><stop stop-color="#2C9AF1"/><stop offset="1" stop-color="#2490EF"/></linearGradient><linearGradient id="paint1_linear" x1="5" y1="1" x2="5" y2="13" gradientUnits="userSpaceOnUse"><stop stop-color="#2C9AF1"/><stop offset="1" stop-color="#2490EF"/></linearGradient><linearGradient id="paint2_linear" x1="8" y1="9" x2="8" y2="15" gradientUnits="userSpaceOnUse"><stop stop-color="#2C9AF1"/><stop offset="1" stop-color="#2490EF"/></linearGradient></defs></svg>

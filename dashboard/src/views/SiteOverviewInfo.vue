@@ -7,7 +7,7 @@
 					:imageURL="info.owner.user_image"
 					:label="info.owner.first_name"
 				/>
-				<div class="flex items-center justify-between flex-1 ml-3">
+				<div class="ml-3 flex flex-1 items-center justify-between">
 					<div>
 						<div class="text-base text-gray-600">Owned By</div>
 						<div class="text-base font-medium text-gray-900">
@@ -22,9 +22,7 @@
 						</div>
 					</div>
 					<div v-if="info.last_deployed" class="text-right">
-						<div class="text-base text-gray-600">
-							Last Deployed
-						</div>
+						<div class="text-base text-gray-600">Last Deployed</div>
 
 						<div class="text-base font-medium text-gray-900">
 							{{
@@ -50,15 +48,7 @@
 						id="auto-update-checkbox"
 						@input="changeAutoUpdateSettings"
 						type="checkbox"
-						class="
-							h-4
-							w-4
-							text-blue-600
-							focus:ring-blue-500
-							border-gray-300
-							rounded
-							mr-1
-						"
+						class="mr-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
 					/>
 				</template>
 			</ListItem>

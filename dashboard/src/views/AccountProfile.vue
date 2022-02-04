@@ -20,7 +20,7 @@
 						<div class="ml-4">
 							<button
 								@click="openFileSelector()"
-								class="absolute inset-0 grid w-full text-xs font-semibold text-white bg-black rounded-full opacity-0 focus:outline-none focus:opacity-50 hover:opacity-50 place-items-center"
+								class="absolute inset-0 grid w-full place-items-center rounded-full bg-black text-xs font-semibold text-white opacity-0 hover:opacity-50 focus:opacity-50 focus:outline-none"
 								:class="{ 'opacity-50': uploading }"
 							>
 								<span v-if="uploading">{{ progress }}%</span>

@@ -91,13 +91,13 @@ export default {
 			if (!(this.site && this.$resources.overview.data)) return false;
 			let usage = this.$resources.overview.data.plan.usage_in_percent;
 			return [usage.cpu, usage.database, usage.disk].some(
-				x => 100 >= x && x > 80
+				(x) => 100 >= x && x > 80
 			);
 		},
 		limitExceeded() {
 			if (!(this.site && this.$resources.overview.data)) return false;
 			let usage = this.$resources.overview.data.plan.usage_in_percent;
-			return [usage.cpu, usage.database, usage.disk].some(x => x > 100);
+			return [usage.cpu, usage.database, usage.disk].some((x) => x > 100);
 		},
 		isInTrial() {
 			return this.site?.trial_end_date;

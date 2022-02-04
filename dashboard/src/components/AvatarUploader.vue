@@ -1,5 +1,5 @@
 <template>
-	<div class="flex items-center mb-4">
+	<div class="mb-4 flex items-center">
 		<Avatar size="lg" :label="label" :imageURL="image" />
 		<FileUploader @success="onChange" fileTypes="image/*">
 			<template v-slot="{ openFileSelector, uploading, progress, error }">

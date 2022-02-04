@@ -28,7 +28,7 @@ export default {
 		BenchOverviewRecentDeploys,
 		BenchOverviewApps,
 		BenchOverviewVersions,
-		BenchOverviewRegions,
+		BenchOverviewRegions
 	}
 };
 </script>

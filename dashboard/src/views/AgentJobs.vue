@@ -3,7 +3,7 @@
 		<div>
 			<router-link
 				v-for="job in $resources.jobs.data"
-				class="block px-2.5 rounded-md cursor-pointer"
+				class="block cursor-pointer rounded-md px-2.5"
 				:class="jobName === job.name ? 'bg-gray-100' : 'hover:bg-gray-50'"
 				:key="job.name"
 				:to="jobRoute(job)"
@@ -13,8 +13,8 @@
 						<Badge
 							v-if="
 								runningJob &&
-									runningJob.id == job.name &&
-									runningJob.status !== 'Success'
+								runningJob.id == job.name &&
+								runningJob.status !== 'Success'
 							"
 							:status="runningJob.status"
 						>

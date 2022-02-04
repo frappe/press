@@ -1,17 +1,17 @@
 <template>
 	<div class="space-y-3">
 		<button
-			class="block w-full px-4 py-3 text-left border rounded-md shadow cursor-pointer focus:outline-none focus:ring-2"
+			class="block w-full cursor-pointer rounded-md border px-4 py-3 text-left shadow focus:outline-none focus:ring-2"
 			:class="
 				isAppSelected(app)
-					? 'ring-2 ring-blue-500 bg-blue-50'
-					: 'hover:border-blue-300 cursor-pointer'
+					? 'bg-blue-50 ring-2 ring-blue-500'
+					: 'cursor-pointer hover:border-blue-300'
 			"
 			v-for="app in apps"
 			:key="app.name"
 			@click="toggleApp(app.name)"
 		>
-			<div class="flex items-center justify-between ml-1 text-base text-left">
+			<div class="ml-1 flex items-center justify-between text-left text-base">
 				<div>
 					<div class="font-semibold">
 						{{ app.title }}
@@ -41,10 +41,10 @@ export default {
 	props: ['apps', 'value', 'multiple'],
 	methods: {
 		toggleApp(appName) {
-			let mapApp = app => ({ app: app.name, source: app.source });
+			let mapApp = (app) => ({ app: app.name, source: app.source });
 
 			if (!this.multiple) {
-				let selectedApp = this.apps.find(app => app.name === appName);
+				let selectedApp = this.apps.find((app) => app.name === appName);
 				this.$emit('update:value', mapApp(selectedApp));
 				return;
 			}
@@ -59,7 +59,7 @@ export default {
 				selectedAppsMap[appName] = true;
 			}
 			let selectedApps = this.apps
-				.filter(app => selectedAppsMap[app.name])
+				.filter((app) => selectedAppsMap[app.name])
 				.map(mapApp);
 
 			this.$emit('update:value', selectedApps);
@@ -71,7 +71,7 @@ export default {
 			return this.value && this.value.app === app.name;
 		},
 		dropdownItems(app) {
-			return app.sources.map(source => ({
+			return app.sources.map((source) => ({
 				label: `${source.repository_owner}/${source.repository}:${source.branch}`,
 				action: () => this.selectSource(app, source)
 			}));
@@ -79,7 +79,7 @@ export default {
 		selectSource(app, source) {
 			app.source = source;
 			if (this.multiple) {
-				let selectedApps = this.value.map(_app => {
+				let selectedApps = this.value.map((_app) => {
 					if (app.name === _app.app) {
 						return {
 							app: app.name,
@@ -102,7 +102,7 @@ export default {
 			if (!this.multiple) return {};
 
 			let out = {};
-			let selectedAppNames = this.value.map(app => app.app);
+			let selectedAppNames = this.value.map((app) => app.app);
 			for (let app of this.apps) {
 				out[app.name] = selectedAppNames.includes(app.name);
 			}

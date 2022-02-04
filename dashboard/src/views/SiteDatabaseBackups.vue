@@ -30,9 +30,7 @@
 					<span v-else> Performing Backup... </span>
 				</div>
 				<div class="flex items-center space-x-2">
-					<Badge v-if="backup.offsite" color="green">
-						Offsite
-					</Badge>
+					<Badge v-if="backup.offsite" color="green"> Offsite </Badge>
 					<Dropdown :items="dropdownItems(backup)" right>
 						<template v-slot="{ toggleDropdown }">
 							<Button icon="more-horizontal" @click="toggleDropdown()" />
@@ -47,9 +45,7 @@
 				:loading="true"
 				loading-text="Loading"
 			/>
-			<span v-else>
-				No backups found
-			</span>
+			<span v-else> No backups found </span>
 		</div>
 	</Card>
 </template>
@@ -88,7 +84,7 @@ export default {
 		}
 	},
 	mounted() {
-		this.$socket.on('agent_job_update', data => {
+		this.$socket.on('agent_job_update', (data) => {
 			if (data.site === this.site.name && data.name === 'Backup Site') {
 				if (data.status === 'Success') {
 					this.$resources.backups.reload();
@@ -155,14 +151,14 @@ export default {
 							message: `Are you sure you want to restore your site to <b>${this.formatDate(backup.creation)}</b>?`,
 							actionLabel: 'Restore',
 							actionType: 'primary',
-							action: closeDialog => {
+							action: (closeDialog) => {
 								closeDialog();
 								this.restoreOffsiteBackup(backup);
 							}
 						});
 					}
 				}
-			].filter(d => (d.condition ? d.condition() : true));
+			].filter((d) => (d.condition ? d.condition() : true));
 		},
 		async downloadBackup(name, file, database_url, offsite) {
 			let link = offsite

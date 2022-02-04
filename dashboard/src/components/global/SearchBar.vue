@@ -1,10 +1,10 @@
 <template>
 	<div class="relative">
-		<div class="absolute pl-2 flex items-center inset-y-0">
-			<FeatherIcon name="search" class="w-4 h-4 text-gray-600" />
+		<div class="absolute inset-y-0 flex items-center pl-2">
+			<FeatherIcon name="search" class="h-4 w-4 text-gray-600" />
 		</div>
 		<input
-			class="rounded-md placeholder-gray-600 focus:outline-none bg-gray-200 focus:bg-gray-100 focus:shadow-outline pl-8 pr-4 py-2 text-sm leading-none"
+			class="focus:shadow-outline rounded-md bg-gray-200 py-2 pl-8 pr-4 text-sm leading-none placeholder-gray-600 focus:bg-gray-100 focus:outline-none"
 			type="search"
 			placeholder="Search"
 		/>

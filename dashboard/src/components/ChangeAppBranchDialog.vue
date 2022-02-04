@@ -13,7 +13,7 @@
 			></Button>
 
 			<div v-else>
-				<select class="block w-full form-select" v-model="selectedBranch">
+				<select class="form-select block w-full" v-model="selectedBranch">
 					<option v-for="branch in branchList()" :key="branch">
 						{{ branch }}
 					</option>
@@ -79,7 +79,7 @@ export default {
 				return [];
 			}
 
-			return this.$resources.branches.data.map(d => d.name);
+			return this.$resources.branches.data.map((d) => d.name);
 		},
 		changeBranch() {
 			this.$resources.changeBranch.submit({

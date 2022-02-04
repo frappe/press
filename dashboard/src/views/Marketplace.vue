@@ -53,9 +53,7 @@
 
 			<p class="mt-4 text-base" @click="showAddAppDialog = false">
 				Don't find your app here?
-				<Link :to="`/marketplace/apps/new`">
-					Add from GitHub
-				</Link>
+				<Link :to="`/marketplace/apps/new`"> Add from GitHub </Link>
 			</p>
 		</Dialog>
 

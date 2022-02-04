@@ -3,7 +3,7 @@
 		Please select your country
 
 		<select
-			class="block w-full mt-2 shadow form-select"
+			class="form-select mt-2 block w-full shadow"
 			v-model="country"
 			name="country"
 			autocomplete="country"
@@ -37,7 +37,7 @@ export default {
 		};
 	},
 	async mounted() {
-		this.$account.$watch('team', async team => {
+		this.$account.$watch('team', async (team) => {
 			if (team && !team.country && this.$account.hasRole('Press Admin')) {
 				await this.fetchCountries();
 				this.showDialog = true;

@@ -1,8 +1,8 @@
 <template>
 	<div
-		class="p-2 items-center rounded-lg flex flex-row border-2 justify-between"
+		class="flex flex-row items-center justify-between rounded-lg border-2 p-2"
 	>
-		<p class="text-sm text-gray-800 font-mono overflow-hidden">
+		<p class="overflow-hidden font-mono text-sm text-gray-800">
 			{{ textContent }}
 		</p>
 		<Button icon="copy" @click="copyTextContentToClipboard" />

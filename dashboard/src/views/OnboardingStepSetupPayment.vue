@@ -1,16 +1,14 @@
 <template>
 	<div>
 		<div class="flex">
-			<GreenCheckIcon class="w-5 h-5" v-if="done" />
-			<div v-else class="bg-white rounded-full">
+			<GreenCheckIcon class="h-5 w-5" v-if="done" />
+			<div v-else class="rounded-full bg-white">
 				<FeatherIcon
 					name="credit-card"
-					class="w-5 h-5 text-current text-gray-700"
+					class="h-5 w-5 text-current text-gray-700"
 				/>
 			</div>
-			<div class="ml-2 text-lg font-medium">
-				Add billing information
-			</div>
+			<div class="ml-2 text-lg font-medium">Add billing information</div>
 		</div>
 		<div class="relative pb-6 pl-7">
 			<div class="mt-1 text-sm text-gray-600">
@@ -58,8 +56,8 @@
 				<BuyPrepaidCredits
 					v-if="
 						paymentMode == 'Prepaid Credits' &&
-							buyCreditsFrom == 'Card Payment' &&
-							!$resources.prepaidCredits.loading
+						buyCreditsFrom == 'Card Payment' &&
+						!$resources.prepaidCredits.loading
 					"
 					:minimumAmount="minCreditsToBuy"
 					@success="onPrepaidCredits"
@@ -99,7 +97,7 @@ export default {
 	components: {
 		AddressForm,
 		StripeCard,
-		BuyPrepaidCredits,
+		BuyPrepaidCredits
 	},
 	data() {
 		return {

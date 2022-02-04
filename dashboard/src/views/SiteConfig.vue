@@ -36,7 +36,7 @@
 				</Button>
 			</template>
 			<div class="flex space-x-4">
-				<div class="shrink-0 w-full space-y-4 md:w-2/3">
+				<div class="w-full shrink-0 space-y-4 md:w-2/3">
 					<div class="space-y-4" v-if="editMode">
 						<div
 							class="grid grid-cols-5 gap-4"
@@ -57,7 +57,7 @@
 								:options="['String', 'Number', 'JSON', 'Boolean']"
 								@change="onTypeChange(config)"
 							/>
-							<div class="flex items-center col-span-2">
+							<div class="col-span-2 flex items-center">
 								<Input
 									class="w-full"
 									v-bind="configInputProps(config)"
@@ -67,18 +67,16 @@
 									@change="isDirty = true"
 								/>
 								<button
-									class="p-1 ml-2 rounded-md hover:bg-gray-100"
+									class="ml-2 rounded-md p-1 hover:bg-gray-100"
 									@click="removeConfig(config)"
 								>
-									<FeatherIcon name="x" class="w-5 h-5 text-gray-700" />
+									<FeatherIcon name="x" class="h-5 w-5 text-gray-700" />
 								</button>
 							</div>
 						</div>
 						<ErrorMessage :error="$resources.updateSiteConfig.error" />
 						<div class="space-x-2">
-							<Button @click="addConfig" v-if="!isDirty">
-								Add Key
-							</Button>
+							<Button @click="addConfig" v-if="!isDirty"> Add Key </Button>
 						</div>
 					</div>
 					<div v-else>
@@ -93,7 +91,7 @@
 					</div>
 				</div>
 				<div
-					class="flex-1 hidden max-w-full p-4 overflow-x-scroll font-mono text-base whitespace-pre-line bg-gray-100 rounded md:block"
+					class="hidden max-w-full flex-1 overflow-x-scroll whitespace-pre-line rounded bg-gray-100 p-4 font-mono text-base md:block"
 				>
 					<div class="mb-4">site_config.json</div>
 					<div v-html="siteConfigPreview"></div>
@@ -129,7 +127,7 @@ export default {
 		},
 		standardConfigKeys: 'press.api.config.standard_keys',
 		updateSiteConfig() {
-			let updatedConfig = this.$resources.siteConfig.data.map(d => {
+			let updatedConfig = this.$resources.siteConfig.data.map((d) => {
 				let value = d.value;
 				if (d.type === 'Number') {
 					value = Number(d.value);
@@ -152,7 +150,7 @@ export default {
 					config: JSON.stringify(updatedConfig)
 				},
 				async validate() {
-					let keys = updatedConfig.map(d => d.key);
+					let keys = updatedConfig.map((d) => d.key);
 					if (keys.length !== [...new Set(keys)].length) {
 						return 'Duplicate key';
 					}
@@ -208,7 +206,7 @@ export default {
 		},
 		removeConfig(config) {
 			this.$resources.siteConfig.data = this.$resources.siteConfig.data.filter(
-				d => d !== config
+				(d) => d !== config
 			);
 			this.isDirty = true;
 		},
@@ -254,9 +252,9 @@ export default {
 				return {};
 			}
 
-			let fields = this.$resources.siteConfig.data.map(config => {
+			let fields = this.$resources.siteConfig.data.map((config) => {
 				let standardKey = this.$resources.standardConfigKeys.data.find(
-					d => d.key === config.key
+					(d) => d.key === config.key
 				);
 				return {
 					label: standardKey?.title || config.key,

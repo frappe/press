@@ -61,7 +61,7 @@ export default {
 		},
 		removeConfirmDialog(dialog) {
 			this.confirmDialogs = this.confirmDialogs.filter(
-				_dialog => dialog !== _dialog
+				(_dialog) => dialog !== _dialog
 			);
 		}
 	}

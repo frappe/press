@@ -48,7 +48,7 @@ export default {
 		},
 		steps() {
 			if (!this.job) return;
-			return this.job.steps.map(step => {
+			return this.job.steps.map((step) => {
 				return {
 					name: step.step_name,
 					status: step.status,
@@ -78,7 +78,7 @@ export default {
 		isStepRunning(step) {
 			if (!this.runningJob) return false;
 			let runningStep = this.runningJob.steps.find(
-				s => s.name == step.step_name
+				(s) => s.name == step.step_name
 			);
 			return runningStep?.status === 'Running';
 		},

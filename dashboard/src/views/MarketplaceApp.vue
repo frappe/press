@@ -8,9 +8,9 @@
 					</router-link>
 				</div>
 				<div
-					class="flex flex-col space-y-3 md:space-y-0 md:justify-between md:flex-row md:items-baseline"
+					class="flex flex-col space-y-3 md:flex-row md:items-baseline md:justify-between md:space-y-0"
 				>
-					<div class="flex items-center mt-2">
+					<div class="mt-2 flex items-center">
 						<h1 class="text-2xl font-bold">{{ app.title }}</h1>
 						<Badge class="ml-4" :status="app.status">{{ app.status }}</Badge>
 					</div>
@@ -76,7 +76,7 @@ export default {
 			return this.$resources.app.data;
 		},
 		tabs() {
-			let tabRoute = subRoute =>
+			let tabRoute = (subRoute) =>
 				`/marketplace/apps/${this.appName}/${subRoute}`;
 			let tabs = [
 				{ label: 'Overview', route: 'overview' },
@@ -84,7 +84,7 @@ export default {
 				{ label: 'Analytics', route: 'analytics' }
 			];
 
-			return tabs.map(tab => {
+			return tabs.map((tab) => {
 				return {
 					...tab,
 					route: tabRoute(tab.route)

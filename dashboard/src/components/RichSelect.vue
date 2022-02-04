@@ -2,12 +2,12 @@
 	<Dropdown :items="dropdownOptions" :dropdown-width-full="true">
 		<template v-slot="{ toggleDropdown }">
 			<button
-				class="relative flex items-center justify-between w-full py-1 pl-3 pr-2 text-base leading-5 text-left bg-gray-100 rounded-md select focus:outline-none focus:bg-gray-200"
+				class="select relative flex w-full items-center justify-between rounded-md bg-gray-100 py-1 pl-3 pr-2 text-left text-base leading-5 focus:bg-gray-200 focus:outline-none"
 				@click="toggleDropdown()"
 			>
 				<div class="flex items-center">
 					<img
-						class="h-4 mr-2"
+						class="mr-2 h-4"
 						v-if="selectedOption && selectedOption.image"
 						:src="selectedOption.image"
 						:alt="selectedOption.label"
@@ -19,7 +19,7 @@
 				</div>
 
 				<svg
-					class="right-0 w-5 h-5"
+					class="right-0 h-5 w-5"
 					xmlns="http://www.w3.org/2000/svg"
 					fill="none"
 					viewBox="0 0 20 20"
@@ -43,10 +43,10 @@ export default {
 	computed: {
 		selectedOption() {
 			if (!this.value) return null;
-			return this.options.find(d => d.value === this.value);
+			return this.options.find((d) => d.value === this.value);
 		},
 		dropdownOptions() {
-			return this.options.map(d => {
+			return this.options.map((d) => {
 				return {
 					...d,
 					action: () => this.$emit('change', d.value),
@@ -58,7 +58,7 @@ export default {
 	methods: {
 		getDropdownItemComponent(option) {
 			return {
-				render: h => {
+				render: (h) => {
 					return h(
 						'div',
 						{

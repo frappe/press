@@ -2,11 +2,11 @@
 	<svg
 		viewBox="0 0 48 24"
 		preserveAspectRatio="xMidYMin slice"
-		class="w-12 h-12"
+		class="h-12 w-12"
 	>
 		<circle cx="24" cy="24" r="9" fill="#fff"></circle>
 		<circle
-			class="text-gray-200 stroke-current"
+			class="stroke-current text-gray-200"
 			cx="24"
 			cy="24"
 			r="9"

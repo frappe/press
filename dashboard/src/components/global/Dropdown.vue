@@ -20,10 +20,10 @@
 		</div>
 		<div
 			slot="content"
-			class="z-10 rounded-md w-fullbg-white min-w-40"
+			class="w-fullbg-white z-10 min-w-40 rounded-md"
 			:style="{ width: dropdownWidthFull ? targetWidth + 'px' : undefined }"
 		>
-			<div class="p-1 overflow-auto text-sm max-h-64">
+			<div class="max-h-64 overflow-auto p-1 text-sm">
 				<div v-if="isLoading" class="p-2 text-gray-600">
 					{{ _('Loading...') }}
 				</div>
@@ -31,14 +31,14 @@
 					<div v-for="d in dropdownItems" :key="d.label">
 						<div
 							v-if="d.isGroup"
-							class="px-2 pt-2 pb-1 text-xs font-semibold tracking-wider text-gray-500 uppercase"
+							class="px-2 pt-2 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-500"
 						>
 							{{ d.label }}
 						</div>
 						<a
 							v-else
 							ref="items"
-							class="block p-2 truncate rounded-md cursor-pointer first:mt-0"
+							class="block cursor-pointer truncate rounded-md p-2 first:mt-0"
 							:class="d.index === highlightedIndex ? 'bg-gray-100' : ''"
 							@mouseenter="highlightedIndex = d.index"
 							@mouseleave="highlightedIndex = -1"
@@ -99,7 +99,7 @@ export default {
 			}
 			let groupNames = uniq(
 				this.items
-					.map(d => d.group)
+					.map((d) => d.group)
 					.filter(Boolean)
 					.sort()
 			);
@@ -111,7 +111,7 @@ export default {
 		dropdownItems() {
 			let items = this.items
 				.filter(Boolean)
-				.filter(d => (d.condition ? d.condition() : true));
+				.filter((d) => (d.condition ? d.condition() : true));
 
 			if (this.sortedGroups) {
 				let itemsByGroup = {};
@@ -126,7 +126,7 @@ export default {
 				let i = 0;
 				for (let group of this.sortedGroups) {
 					let groupItems = itemsByGroup[group];
-					groupItems = groupItems.map(d => {
+					groupItems = groupItems.map((d) => {
 						d.index = i;
 						i++;
 						return d;

@@ -1,9 +1,7 @@
 <template>
 	<WizardCard v-if="options">
-		<div class="mb-6 text-center ">
-			<h1 class="text-2xl font-bold">
-				Create a new site
-			</h1>
+		<div class="mb-6 text-center">
+			<h1 class="text-2xl font-bold">Create a new site</h1>
 			<p v-if="benchTitle" class="text-base text-gray-700">
 				Site will be created on bench
 				<span class="font-medium">{{ benchTitle }}</span>
@@ -11,20 +9,14 @@
 		</div>
 		<Steps :steps="steps">
 			<template
-				v-slot="{
-					active: activeStep,
-					next,
-					previous,
-					hasPrevious,
-					hasNext
-				}"
+				v-slot="{ active: activeStep, next, previous, hasPrevious, hasNext }"
 			>
 				<div class="mt-8"></div>
 				<Hostname
 					:options="options"
 					v-show="activeStep.name === 'Hostname'"
 					v-model="subdomain"
-					@error="error => (subdomainValid = !Boolean(error))"
+					@error="(error) => (subdomainValid = !Boolean(error))"
 				/>
 				<Apps
 					:options="options"
@@ -43,7 +35,7 @@
 						:app="app"
 						:group="selectedGroup"
 						class="mb-9"
-						@change="plan => (selectedAppPlans[app.name] = plan.name)"
+						@change="(plan) => (selectedAppPlans[app.name] = plan.name)"
 					/>
 				</div>
 
@@ -65,14 +57,7 @@
 						<input
 							id="region-consent"
 							type="checkbox"
-							class="
-								h-4
-								w-4
-								text-blue-600
-								focus:ring-blue-500
-								border-gray-300
-								rounded
-							"
+							class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
 							v-model="agreedToRegionConsent"
 						/>
 						<label
@@ -90,7 +75,7 @@
 						<Button
 							@click="previous"
 							:class="{
-								'opacity-0 pointer-events-none': !hasPrevious
+								'pointer-events-none opacity-0': !hasPrevious
 							}"
 						>
 							Back
@@ -100,7 +85,7 @@
 							type="primary"
 							@click="nextStep(activeStep, next)"
 							:class="{
-								'opacity-0 pointer-events-none': !hasNext
+								'pointer-events-none opacity-0': !hasNext
 							}"
 							:loading="loadingPlans"
 							loadingText="Loading"
@@ -204,7 +189,7 @@ export default {
 	},
 	async mounted() {
 		this.options = await this.$call('press.api.site.options_for_new');
-		this.options.plans = this.options.plans.map(plan => {
+		this.options.plans = this.options.plans.map((plan) => {
 			plan.disabled = !this.$account.hasBillingInfo;
 			return plan;
 		});
@@ -234,7 +219,7 @@ export default {
 			let isPaywalledBench = benchCreation > paywalledBenchDate;
 			if (isPaywalledBench && $account.user.user_type != 'System User') {
 				this.options.plans = this.options.plans.filter(
-					plan => plan.price_usd >= 25
+					(plan) => plan.price_usd >= 25
 				);
 			}
 		}
@@ -320,10 +305,10 @@ export default {
 			next();
 		},
 		addPlanSelectionStep() {
-			const appsStepIndex = this.steps.findIndex(step => step.name == 'Apps');
+			const appsStepIndex = this.steps.findIndex((step) => step.name == 'Apps');
 
 			const selectAppPlansStepIndex = this.steps.findIndex(
-				step => step.name == 'Select App Plans'
+				(step) => step.name == 'Select App Plans'
 			);
 			if (selectAppPlansStepIndex < 0) {
 				this.steps.splice(appsStepIndex + 1, 0, {
@@ -345,7 +330,7 @@ export default {
 		},
 		removePlanSelectionStepIfExists() {
 			const selectAppPlansStepIndex = this.steps.findIndex(
-				step => step.name == 'Select App Plans'
+				(step) => step.name == 'Select App Plans'
 			);
 			if (selectAppPlansStepIndex >= 0) {
 				this.steps.splice(selectAppPlansStepIndex, 1);

@@ -32,7 +32,7 @@
 				:error="$resources.createRazorpayOrder.error"
 			/>
 
-			<div class="flex justify-between w-full mt-4">
+			<div class="mt-4 flex w-full justify-between">
 				<Button @click="paymentGateway = null">Go Back</Button>
 				<div>
 					<Button
@@ -47,7 +47,7 @@
 		</div>
 
 		<div>
-			<div v-if="!paymentGateway" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+			<div v-if="!paymentGateway" class="grid grid-cols-1 gap-2 sm:grid-cols-2">
 				<Button
 					v-if="$account.team.currency === 'INR'"
 					@click="paymentGateway = 'razorpay'"
@@ -56,7 +56,7 @@
 					<img class="w-24" src="../assets/razorpay.svg" alt="Razorpay Logo" />
 				</Button>
 				<Button @click="paymentGateway = 'stripe'">
-					<img class="w-24 h-7" src="../assets/stripe.svg" alt="Stripe Logo" />
+					<img class="h-7 w-24" src="../assets/stripe.svg" alt="Stripe Logo" />
 				</Button>
 			</div>
 		</div>
