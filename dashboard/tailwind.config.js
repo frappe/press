@@ -1,4 +1,5 @@
 const plugin = require('tailwindcss/plugin');
+const colors = require('tailwindcss/colors');
 
 module.exports = {
 	theme: {
@@ -32,6 +33,8 @@ module.exports = {
 				DEFAULT: theme('colors.gray.200')
 			}),
 			colors: {
+				green: colors.emerald,
+				yellow: colors.amber,
 				brand: '#2490EF',
 				'brand-100': '#f4f9ff',
 				black: '#112B42',
@@ -98,22 +101,12 @@ module.exports = {
 					)} 100%)`
 				}
 			});
-			addUtilities(
-				{
-					'.bg-gradient-none': {
-						'background-image': 'none'
-					}
-				},
-				{
-					variants: ['focus', 'hover']
+			addUtilities({
+				'.bg-gradient-none': {
+					'background-image': 'none'
 				}
-			);
+			});
 		})
 	],
-	purge: {
-		content: ['./public/index.html', './src/**/*.html', './src/**/*.vue'],
-		options: {
-			whitelistPatternsChildren: [/chart-container$/, /graph-svg-tip$/]
-		}
-	}
+	content: ['./public/index.html', './src/**/*.html', './src/**/*.vue']
 };
