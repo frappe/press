@@ -1,6 +1,7 @@
 const config = require('../../../dashboard/tailwind.config');
 
 module.exports = {
+	content: ['./press/templates/emails/*.html'],
 	important: true,
 	theme: Object.assign(config.theme, {
 		screens: {
@@ -39,7 +40,7 @@ module.exports = {
 		flexShrink: false,
 		flexWrap: false,
 		backgroundOpacity: false,
-		textOpacity: false
+		textOpacity: false,
 	},
 	variants: {
 		alignContent: ['responsive'],
