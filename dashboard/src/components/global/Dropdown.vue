@@ -99,7 +99,7 @@ export default {
 			}
 			let groupNames = uniq(
 				this.items
-					.map((d) => d.group)
+					.map(d => d.group)
 					.filter(Boolean)
 					.sort()
 			);
@@ -111,7 +111,7 @@ export default {
 		dropdownItems() {
 			let items = this.items
 				.filter(Boolean)
-				.filter((d) => (d.condition ? d.condition() : true));
+				.filter(d => (d.condition ? d.condition() : true));
 
 			if (this.sortedGroups) {
 				let itemsByGroup = {};
@@ -126,7 +126,7 @@ export default {
 				let i = 0;
 				for (let group of this.sortedGroups) {
 					let groupItems = itemsByGroup[group];
-					groupItems = groupItems.map((d) => {
+					groupItems = groupItems.map(d => {
 						d.index = i;
 						i++;
 						return d;

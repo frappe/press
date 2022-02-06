@@ -43,10 +43,10 @@ export default {
 	computed: {
 		selectedOption() {
 			if (!this.value) return null;
-			return this.options.find((d) => d.value === this.value);
+			return this.options.find(d => d.value === this.value);
 		},
 		dropdownOptions() {
-			return this.options.map((d) => {
+			return this.options.map(d => {
 				return {
 					...d,
 					action: () => this.$emit('change', d.value),
@@ -58,7 +58,7 @@ export default {
 	methods: {
 		getDropdownItemComponent(option) {
 			return {
-				render: (h) => {
+				render: h => {
 					return h(
 						'div',
 						{

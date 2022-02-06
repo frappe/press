@@ -131,7 +131,7 @@ export default {
 		},
 		getSteps(candidate) {
 			if (!candidate) return [];
-			let steps = candidate.build_steps.map((step) => {
+			let steps = candidate.build_steps.map(step => {
 				let name = step.stage + ' - ' + step.step;
 				let output =
 					step.command || step.output
@@ -153,7 +153,7 @@ export default {
 			});
 
 			let bench = this.bench;
-			let jobs = candidate.jobs.map((job) => {
+			let jobs = candidate.jobs.map(job => {
 				return {
 					name: `Deploy ${job.bench}`,
 					output:
@@ -180,7 +180,7 @@ export default {
 			return [...steps, ...jobs];
 		},
 		itemSubtitle(candidate) {
-			return ['frappe', ...candidate.apps.filter((d) => d !== 'frappe')].join(
+			return ['frappe', ...candidate.apps.filter(d => d !== 'frappe')].join(
 				', '
 			);
 		}

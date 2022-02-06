@@ -105,7 +105,7 @@ export default {
 		regionOptions() {
 			let availableRegions = this.$resources.availableRegions.data;
 			return availableRegions
-				? availableRegions.map((d) => ({
+				? availableRegions.map(d => ({
 						label: d.title,
 						value: d.name,
 						image: d.image

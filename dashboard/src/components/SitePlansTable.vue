@@ -27,7 +27,7 @@
 					type="radio"
 					class="form-radio"
 					:checked="selectedPlan === plan"
-					@change="(e) => (selectedPlan = e.target.checked ? plan : null)"
+					@change="e => (selectedPlan = e.target.checked ? plan : null)"
 				/>
 			</div>
 			<div class="w-1/4 text-gray-900" :class="{ 'opacity-25': plan.disabled }">

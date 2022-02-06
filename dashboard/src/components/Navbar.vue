@@ -191,7 +191,7 @@ export default {
 					label: 'Settings',
 					route: '/account'
 				}
-			].filter((d) => (d.condition ? d.condition() : true));
+			].filter(d => (d.condition ? d.condition() : true));
 		}
 	}
 };

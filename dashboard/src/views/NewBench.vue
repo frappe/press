@@ -133,7 +133,7 @@ export default {
 						title: this.benchTitle,
 						version: this.selectedVersionName,
 						cluster: this.selectedRegion,
-						apps: this.selectedApps.map((app) => ({
+						apps: this.selectedApps.map(app => ({
 							name: app.app,
 							source: app.source.name
 						}))
@@ -170,7 +170,7 @@ export default {
 		},
 		selectedApps(newVal, oldVal) {
 			// dont remove frappe app
-			let hasFrappe = newVal.find((app) => app.app === 'frappe');
+			let hasFrappe = newVal.find(app => app.app === 'frappe');
 			if (!hasFrappe && oldVal) {
 				this.selectedApps = oldVal;
 			}
@@ -178,7 +178,7 @@ export default {
 	},
 	methods: {
 		getFrappeApp(apps) {
-			return apps.find((app) => app.name === 'frappe');
+			return apps.find(app => app.name === 'frappe');
 		}
 	},
 	computed: {
@@ -187,17 +187,17 @@ export default {
 		},
 		selectedVersion() {
 			return this.options.versions.find(
-				(v) => v.name === this.selectedVersionName
+				v => v.name === this.selectedVersionName
 			);
 		},
 		versionOptions() {
-			return this.options.versions.map((v) => ({
+			return this.options.versions.map(v => ({
 				label: `${v.name} (${v.status})`,
 				value: v.name
 			}));
 		},
 		regionOptions() {
-			return this.options.clusters.map((d) => ({
+			return this.options.clusters.map(d => ({
 				label: d.title,
 				value: d.name,
 				image: d.image

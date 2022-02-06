@@ -18,7 +18,7 @@
 					type="line"
 					:data="usageCounterData"
 					:colors="[$theme.colors.purple[500]]"
-					:options="getChartOptions((d) => d + ' seconds')"
+					:options="getChartOptions(d => d + ' seconds')"
 				/>
 			</Card>
 
@@ -31,7 +31,7 @@
 				<FrappeChart
 					type="line"
 					:data="requestCountData"
-					:options="getChartOptions((d) => d + ' requests')"
+					:options="getChartOptions(d => d + ' requests')"
 					:colors="[$theme.colors.green[500]]"
 				/>
 			</Card>
@@ -40,7 +40,7 @@
 				<FrappeChart
 					type="line"
 					:data="requestTimeData"
-					:options="getChartOptions((d) => d + ' s')"
+					:options="getChartOptions(d => d + ' s')"
 					:colors="[$theme.colors.yellow[500]]"
 				/>
 			</Card>
@@ -48,7 +48,7 @@
 				<FrappeChart
 					type="line"
 					:data="jobCountData"
-					:options="getChartOptions((d) => d + ' jobs')"
+					:options="getChartOptions(d => d + ' jobs')"
 					:colors="[$theme.colors.red[500]]"
 				/>
 			</Card>
@@ -56,7 +56,7 @@
 				<FrappeChart
 					type="line"
 					:data="jobTimeData"
-					:options="getChartOptions((d) => d + ' s')"
+					:options="getChartOptions(d => d + ' s')"
 					:colors="[$theme.colors.blue[500]]"
 				/>
 			</Card>
@@ -95,13 +95,13 @@ export default {
 			if (!data) return;
 
 			let plan_limit = this.$resources.analytics.data.plan_limit;
-			let values = data.map((d) => d.value / 1000000);
+			let values = data.map(d => d.value / 1000000);
 
 			return {
 				labels: this.formatDate(data),
 				datasets: [{ values }],
 				// show daily limit marker if usage crosses 50%
-				yMarkers: values.some((value) => value > plan_limit / 2)
+				yMarkers: values.some(value => value > plan_limit / 2)
 					? [{ label: 'Daily CPU Time Limit', value: plan_limit }]
 					: null
 			};
@@ -112,7 +112,7 @@ export default {
 
 			return {
 				labels: this.formatDate(requestCount),
-				datasets: [{ values: requestCount.map((d) => d.value) }]
+				datasets: [{ values: requestCount.map(d => d.value) }]
 			};
 		},
 		requestTimeData() {
@@ -121,7 +121,7 @@ export default {
 
 			return {
 				labels: this.formatDate(requestCpuTime),
-				datasets: [{ values: requestCpuTime.map((d) => d.value / 1000000) }]
+				datasets: [{ values: requestCpuTime.map(d => d.value / 1000000) }]
 			};
 		},
 		jobCountData() {
@@ -130,7 +130,7 @@ export default {
 
 			return {
 				labels: this.formatDate(jobCount),
-				datasets: [{ values: jobCount.map((d) => d.value) }]
+				datasets: [{ values: jobCount.map(d => d.value) }]
 			};
 		},
 		jobTimeData() {
@@ -139,7 +139,7 @@ export default {
 
 			return {
 				labels: this.formatDate(jobCpuTime),
-				datasets: [{ values: jobCpuTime.map((d) => d.value / 1000000) }]
+				datasets: [{ values: jobCpuTime.map(d => d.value / 1000000) }]
 			};
 		}
 	},
@@ -155,7 +155,7 @@ export default {
 					regionFill: true
 				},
 				tooltipOptions: {
-					formatTooltipX: (d) => {
+					formatTooltipX: d => {
 						return DateTime.fromSQL(d.date).toLocaleString(
 							DateTime.DATETIME_MED
 						);
@@ -165,7 +165,7 @@ export default {
 			};
 		},
 		formatDate(data) {
-			return data.map((d) => ({
+			return data.map(d => ({
 				date: d.date,
 				toString: () => DateTime.fromSQL(d.date).toFormat('d MMM')
 			}));

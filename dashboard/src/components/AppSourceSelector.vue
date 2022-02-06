@@ -41,10 +41,10 @@ export default {
 	props: ['apps', 'value', 'multiple'],
 	methods: {
 		toggleApp(appName) {
-			let mapApp = (app) => ({ app: app.name, source: app.source });
+			let mapApp = app => ({ app: app.name, source: app.source });
 
 			if (!this.multiple) {
-				let selectedApp = this.apps.find((app) => app.name === appName);
+				let selectedApp = this.apps.find(app => app.name === appName);
 				this.$emit('update:value', mapApp(selectedApp));
 				return;
 			}
@@ -59,7 +59,7 @@ export default {
 				selectedAppsMap[appName] = true;
 			}
 			let selectedApps = this.apps
-				.filter((app) => selectedAppsMap[app.name])
+				.filter(app => selectedAppsMap[app.name])
 				.map(mapApp);
 
 			this.$emit('update:value', selectedApps);
@@ -71,7 +71,7 @@ export default {
 			return this.value && this.value.app === app.name;
 		},
 		dropdownItems(app) {
-			return app.sources.map((source) => ({
+			return app.sources.map(source => ({
 				label: `${source.repository_owner}/${source.repository}:${source.branch}`,
 				action: () => this.selectSource(app, source)
 			}));
@@ -79,7 +79,7 @@ export default {
 		selectSource(app, source) {
 			app.source = source;
 			if (this.multiple) {
-				let selectedApps = this.value.map((_app) => {
+				let selectedApps = this.value.map(_app => {
 					if (app.name === _app.app) {
 						return {
 							app: app.name,
@@ -102,7 +102,7 @@ export default {
 			if (!this.multiple) return {};
 
 			let out = {};
-			let selectedAppNames = this.value.map((app) => app.app);
+			let selectedAppNames = this.value.map(app => app.app);
 			for (let app of this.apps) {
 				out[app.name] = selectedAppNames.includes(app.name);
 			}

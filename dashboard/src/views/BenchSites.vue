@@ -214,7 +214,7 @@ export default {
 	computed: {
 		selectedVersion() {
 			if (this.version && this.versions.data) {
-				return this.versions.data.find((v) => v.name === this.version);
+				return this.versions.data.find(v => v.name === this.version);
 			}
 			return null;
 		},

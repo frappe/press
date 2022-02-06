@@ -76,7 +76,7 @@ export default {
 			return this.$resources.app.data;
 		},
 		tabs() {
-			let tabRoute = (subRoute) =>
+			let tabRoute = subRoute =>
 				`/marketplace/apps/${this.appName}/${subRoute}`;
 			let tabs = [
 				{ label: 'Overview', route: 'overview' },
@@ -84,7 +84,7 @@ export default {
 				{ label: 'Analytics', route: 'analytics' }
 			];
 
-			return tabs.map((tab) => {
+			return tabs.map(tab => {
 				return {
 					...tab,
 					route: tabRoute(tab.route)

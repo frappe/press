@@ -85,7 +85,7 @@ export default {
 			return this.$resources.bench.data;
 		},
 		tabs() {
-			let tabRoute = (subRoute) => `/benches/${this.benchName}/${subRoute}`;
+			let tabRoute = subRoute => `/benches/${this.benchName}/${subRoute}`;
 			let tabs = [
 				{ label: 'Overview', route: 'overview' },
 				{ label: 'Sites', route: 'sites' },
@@ -93,7 +93,7 @@ export default {
 				{ label: 'Jobs', route: 'jobs' }
 			];
 			if (this.bench) {
-				return tabs.map((tab) => {
+				return tabs.map(tab => {
 					return {
 						...tab,
 						route: tabRoute(tab.route)

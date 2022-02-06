@@ -142,7 +142,7 @@ export default {
 					this.$call('press.api.site.setup_wizard_complete', {
 						name: this.siteName
 					})
-						.then((complete) => {
+						.then(complete => {
 							this.site.setup_wizard_complete = Boolean(complete);
 						})
 						.catch(() => (this.site.setup_wizard_complete = false));
@@ -180,7 +180,7 @@ export default {
 			if (this._agentJobUpdateSet) return;
 			this._agentJobUpdateSet = true;
 
-			this.$socket.on('agent_job_update', (data) => {
+			this.$socket.on('agent_job_update', data => {
 				if (data.name === 'New Site' || data.name === 'New Site from Backup') {
 					if (data.status === 'Success' && data.site === this.siteName) {
 						setTimeout(() => {
@@ -258,7 +258,7 @@ export default {
 		},
 
 		tabs() {
-			let tabRoute = (subRoute) => `/sites/${this.siteName}/${subRoute}`;
+			let tabRoute = subRoute => `/sites/${this.siteName}/${subRoute}`;
 			let tabs = [
 				{ label: 'Overview', route: 'overview' },
 				{ label: 'Analytics', route: 'analytics' },
@@ -303,9 +303,9 @@ export default {
 			if (this.site) {
 				let tabsToShow = tabsByStatus[this.site.status];
 				if (tabsToShow?.length) {
-					tabs = tabs.filter((tab) => tabsToShow.includes(tab.label));
+					tabs = tabs.filter(tab => tabsToShow.includes(tab.label));
 				}
-				return tabs.map((tab) => {
+				return tabs.map(tab => {
 					return {
 						...tab,
 						route: tabRoute(tab.route)

@@ -97,7 +97,7 @@
 			<Input
 				type="checkbox"
 				label="I am okay if my details are shared with local certified Partner"
-				@change="(val) => $emit('update:shareDetailsConsent', val)"
+				@change="val => $emit('update:shareDetailsConsent', val)"
 				:value="shareDetailsConsent"
 			/>
 		</div>
@@ -129,14 +129,14 @@ export default {
 	computed: {
 		publicApps() {
 			return this.apps
-				.filter((app) => app.public)
-				.map((app) => {
+				.filter(app => app.public)
+				.map(app => {
 					app.marketplace = this.options.marketplace_apps[app.app] || null;
 					return app;
 				});
 		},
 		privateApps() {
-			return this.apps.filter((app) => !app.public);
+			return this.apps.filter(app => !app.public);
 		},
 		apps() {
 			let group = this.getSelectedGroup();
@@ -145,17 +145,17 @@ export default {
 		groupOptions() {
 			if (!this.options || !this.selectedVersion) return [];
 			let selectedVersion = this.options.versions.find(
-				(version) => version.name == this.selectedVersion
+				version => version.name == this.selectedVersion
 			);
-			return selectedVersion.groups.map((group) => group.name);
+			return selectedVersion.groups.map(group => group.name);
 		},
 		versionOptions() {
-			return this.options.versions.map((group) => group.name);
+			return this.options.versions.map(group => group.name);
 		},
 		regionOptions() {
 			let group = this.getSelectedGroup();
 			return group
-				? group.clusters.map((d) => ({
+				? group.clusters.map(d => ({
 						label: d.title,
 						value: d.name,
 						image: d.image
@@ -166,9 +166,7 @@ export default {
 	watch: {
 		selectedVersion(value) {
 			if (!this.privateBench) {
-				let selectedVersion = this.options.versions.find(
-					(v) => v.name == value
-				);
+				let selectedVersion = this.options.versions.find(v => v.name == value);
 				this.$emit('update:selectedGroup', selectedVersion.groups[0].name);
 			}
 		},
@@ -181,8 +179,8 @@ export default {
 	},
 	async mounted() {
 		if (this.privateBench) {
-			this.selectedVersion = this.options.versions.find((v) =>
-				v.groups.some((g) => g.name == this.selectedGroup)
+			this.selectedVersion = this.options.versions.find(v =>
+				v.groups.some(g => g.name == this.selectedGroup)
 			).name;
 			this.$emit('update:selectedApps', ['frappe']);
 		} else {
@@ -197,7 +195,7 @@ export default {
 			} else {
 				this.$emit(
 					'update:selectedApps',
-					this.selectedApps.filter((a) => a !== app.app)
+					this.selectedApps.filter(a => a !== app.app)
 				);
 			}
 		},
@@ -206,10 +204,10 @@ export default {
 				return null;
 			}
 			let selectedVersion = this.options.versions.find(
-				(v) => v.name == this.selectedVersion
+				v => v.name == this.selectedVersion
 			);
 			let group = selectedVersion.groups.find(
-				(g) => g.name == this.selectedGroup
+				g => g.name == this.selectedGroup
 			);
 			return group;
 		}

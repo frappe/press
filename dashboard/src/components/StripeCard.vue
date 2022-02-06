@@ -125,7 +125,7 @@ export default {
 			});
 			this.card.mount(this.$refs['card-element']);
 
-			this.card.addEventListener('change', (event) => {
+			this.card.addEventListener('change', event => {
 				this.cardErrorMessage = event.error?.message || null;
 			});
 			this.card.addEventListener('ready', () => {
@@ -191,7 +191,7 @@ export default {
 		},
 		getCountryCode(country) {
 			let code = this.$resources.countryList.data.find(
-				(d) => d.name === country
+				d => d.name === country
 			).code;
 			return code.toUpperCase();
 		}

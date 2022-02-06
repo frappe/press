@@ -37,9 +37,7 @@ export default {
 			setTimeout(() => this.hideNotification(props.id), props.timeout || 5000);
 		},
 		hideNotification(id) {
-			this.notifications = this.notifications.filter(
-				(props) => props.id !== id
-			);
+			this.notifications = this.notifications.filter(props => props.id !== id);
 		}
 	}
 };

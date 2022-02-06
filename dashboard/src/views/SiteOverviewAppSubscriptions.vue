@@ -53,7 +53,7 @@
 
 		<Dialog v-model="showAppPlanChangeDialog" width="half" :dismissable="true">
 			<ChangeAppPlanSelector
-				@change="(plan) => (newAppPlan = plan.name)"
+				@change="plan => (newAppPlan = plan.name)"
 				v-if="appToChangePlan"
 				:app="appToChangePlan"
 				:currentPlan="appToChangePlan.plan"

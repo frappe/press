@@ -247,7 +247,7 @@ export default {
 						: this.$resources.createApprovalRequest.error,
 					actionLabel: 'OK',
 					actionType: 'primary',
-					action: (closeDialog) => {
+					action: closeDialog => {
 						closeDialog();
 					}
 				});
@@ -260,7 +260,7 @@ export default {
 					'Are you sure you want to publish this release to marketplace? Upon confirmation, the release will be sent for approval by the review team.',
 				actionLabel: 'Publish',
 				actionType: 'primary',
-				action: (closeDialog) => {
+				action: closeDialog => {
 					closeDialog();
 					this.createApprovalRequest(appRelease);
 				}
@@ -273,7 +273,7 @@ export default {
 					'Are you sure you want to <strong>cancel</strong> the publish request for this release?',
 				actionLabel: 'Proceed',
 				actionType: 'danger',
-				action: (closeDialog) => {
+				action: closeDialog => {
 					closeDialog();
 					this.cancelApprovalRequest(appRelease);
 				}
@@ -309,7 +309,7 @@ export default {
 			// Return only the unique sources
 			let tempArray = [];
 			for (let source of this.app.sources) {
-				if (!tempArray.find((x) => x.source === source.source)) {
+				if (!tempArray.find(x => x.source === source.source)) {
 					tempArray.push(source);
 				}
 			}

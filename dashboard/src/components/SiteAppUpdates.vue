@@ -14,7 +14,7 @@ export default {
 	},
 	computed: {
 		appsWithUpdates() {
-			return this.apps.filter((app) => app.update_available);
+			return this.apps.filter(app => app.update_available);
 		}
 	}
 };

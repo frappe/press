@@ -55,11 +55,11 @@ export default {
 	methods: {
 		makeChart() {
 			let { data, plan_limit } = this.requestCounter;
-			let values = data.map((d) => d.value / 1000000);
+			let values = data.map(d => d.value / 1000000);
 
 			this.chart = new Chart(this.$refs['target'], {
 				data: {
-					labels: data.map((d) => {
+					labels: data.map(d => {
 						return {
 							date: d.date,
 							toString() {
@@ -69,7 +69,7 @@ export default {
 					}),
 					datasets: [{ values }],
 					// show daily limit marker if usage crosses 50%
-					yMarkers: values.some((value) => value > plan_limit / 2)
+					yMarkers: values.some(value => value > plan_limit / 2)
 						? [{ label: 'Daily CPU Time Limit', value: plan_limit }]
 						: null
 				},
@@ -83,10 +83,10 @@ export default {
 					hideDots: true
 				},
 				tooltipOptions: {
-					formatTooltipX: (d) => {
+					formatTooltipX: d => {
 						return DateTime.fromSQL(d.date).toLocaleString();
 					},
-					formatTooltipY: (d) => {
+					formatTooltipY: d => {
 						return this.round(d, 1) + ' sec';
 					}
 				}

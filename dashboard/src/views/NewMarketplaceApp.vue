@@ -5,7 +5,7 @@
 			<p class="text-base text-gray-700">Add an app to marketplace</p>
 		</div>
 
-		<SelectAppFromGithub @onSelect="(d) => (app = d)" />
+		<SelectAppFromGithub @onSelect="d => (app = d)" />
 
 		<div v-if="app">
 			<label class="mb-3 text-base" for="version-select"

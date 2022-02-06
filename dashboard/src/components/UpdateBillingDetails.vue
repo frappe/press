@@ -2,7 +2,7 @@
 	<Dialog
 		title="Update Billing Details"
 		:show="show"
-		@change="(value) => $emit('change', value)"
+		@change="value => $emit('change', value)"
 	>
 		<p class="text-base" v-if="message">
 			{{ message }}

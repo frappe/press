@@ -132,16 +132,16 @@ export default {
 	computed: {
 		inputListeners() {
 			return Object.assign({}, this.$listeners, {
-				input: (e) => {
+				input: e => {
 					this.$emit('input', this.getInputValue(e));
 				},
-				change: (e) => {
+				change: e => {
 					this.$emit('change', this.getInputValue(e));
 				}
 			});
 		},
 		selectOptions() {
-			return this.options.map((option) => {
+			return this.options.map(option => {
 				if (typeof option === 'string') {
 					return {
 						label: option,

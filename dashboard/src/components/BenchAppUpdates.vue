@@ -35,7 +35,7 @@ export default {
 	},
 	mounted() {
 		// Select all apps by default
-		this.selectedApps = this.appsWithUpdates.map((app) => app.app);
+		this.selectedApps = this.appsWithUpdates.map(app => app.app);
 		this.$emit('update:selectedApps', this.selectedApps);
 	},
 	methods: {
@@ -44,14 +44,14 @@ export default {
 				this.selectedApps.push(app.app);
 				this.$emit('update:selectedApps', this.selectedApps);
 			} else {
-				this.selectedApps = this.selectedApps.filter((a) => a !== app.app);
+				this.selectedApps = this.selectedApps.filter(a => a !== app.app);
 				this.$emit('update:selectedApps', this.selectedApps);
 			}
 		}
 	},
 	computed: {
 		appsWithUpdates() {
-			return this.apps.filter((app) => app.update_available);
+			return this.apps.filter(app => app.update_available);
 		}
 	},
 	watch: {
@@ -61,7 +61,7 @@ export default {
 			// If updating ERPNext, must update Frappe with it
 
 			let frappeUpdateAvailable =
-				this.apps.filter((app) => app.update_available && app.app == 'frappe')
+				this.apps.filter(app => app.update_available && app.app == 'frappe')
 					.length !== 0;
 
 			if (

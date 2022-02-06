@@ -127,7 +127,7 @@ export default {
 		},
 		standardConfigKeys: 'press.api.config.standard_keys',
 		updateSiteConfig() {
-			let updatedConfig = this.$resources.siteConfig.data.map((d) => {
+			let updatedConfig = this.$resources.siteConfig.data.map(d => {
 				let value = d.value;
 				if (d.type === 'Number') {
 					value = Number(d.value);
@@ -150,7 +150,7 @@ export default {
 					config: JSON.stringify(updatedConfig)
 				},
 				async validate() {
-					let keys = updatedConfig.map((d) => d.key);
+					let keys = updatedConfig.map(d => d.key);
 					if (keys.length !== [...new Set(keys)].length) {
 						return 'Duplicate key';
 					}
@@ -206,7 +206,7 @@ export default {
 		},
 		removeConfig(config) {
 			this.$resources.siteConfig.data = this.$resources.siteConfig.data.filter(
-				(d) => d !== config
+				d => d !== config
 			);
 			this.isDirty = true;
 		},
@@ -252,9 +252,9 @@ export default {
 				return {};
 			}
 
-			let fields = this.$resources.siteConfig.data.map((config) => {
+			let fields = this.$resources.siteConfig.data.map(config => {
 				let standardKey = this.$resources.standardConfigKeys.data.find(
-					(d) => d.key === config.key
+					d => d.key === config.key
 				);
 				return {
 					label: standardKey?.title || config.key,
