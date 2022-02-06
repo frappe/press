@@ -12,7 +12,7 @@ export default {
 		el.dataset.outsideClickIndex = instances.length;
 
 		const fn = binding.value;
-		const click = function(e) {
+		const click = function (e) {
 			onDocumentClick(e, el, fn);
 		};
 

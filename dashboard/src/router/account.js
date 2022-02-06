@@ -7,7 +7,9 @@ export default {
 		{
 			path: 'profile',
 			component: () =>
-				import(/* webpackChunkName: "account" */ '../views/AccountProfileTeam.vue')
+				import(
+					/* webpackChunkName: "account" */ '../views/AccountProfileTeam.vue'
+				)
 		},
 		{
 			path: 'billing/:invoiceName?',
