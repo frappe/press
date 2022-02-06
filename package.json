@@ -7,20 +7,17 @@
 		"build": "NODE_ENV=production yarn run build-all",
 		"build-all": "yarn run build-app && yarn run build-email-css && yarn run build-marketplace-css",
 		"build-app": "cd dashboard && yarn build",
-		"build-email-css": "yarn run postcss ./press/public/email/style.css -o ./press/public/css/email.css -c ./press/public/email/postcss.config.js",
-		"build-marketplace-css": "yarn run postcss ./press/public/marketplace/style.css -o ./press/public/css/marketplace.css -c ./press/public/marketplace/postcss.config.js",
+		"build-email-css": "npx tailwindcss -i ./press/public/email/style.css -o ./press/public/css/email.css --config ./press/public/email/tailwind.config.js",
+		"build-marketplace-css": "npx tailwindcss -i ./press/public/marketplace/style.css -o ./press/public/css/marketplace.css --config ./press/public/marketplace/tailwind.config.js",
 		"postinstall": "cd dashboard && yarn install"
 	},
 	"devDependencies": {
-		"@fullhuman/postcss-purgecss": "^2.1.0",
-		"@tailwindcss/typography": "^0.2.0",
-		"postcss-cli": "^7.1.0",
-		"postcss-nested": "4.2.3",
-		"@tailwindcss/forms": "^0.2.1",
-    	"@tailwindcss/postcss7-compat": "^2.0.2",
-		"autoprefixer": "^9",
-		"postcss": "^7",
-		"tailwindcss": "npm:@tailwindcss/postcss7-compat"
+		"@tailwindcss/forms": "^0.4.0",
+		"@tailwindcss/postcss7-compat": "^2.0.2",
+		"@tailwindcss/typography": "^0.5.1",
+		"autoprefixer": "^10.4.2",
+		"postcss": "^8.4.6",
+		"tailwindcss": "^3.0.18"
 	},
 	"dependencies": {
 		"libarchive.js": "^1.3.0",
