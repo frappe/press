@@ -46,7 +46,7 @@ export default {
 	},
 	created() {
 		if (!this.dismissable) return;
-		this.escapeListener = (e) => {
+		this.escapeListener = e => {
 			if (e.key === 'Escape') {
 				this.hide();
 			}

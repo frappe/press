@@ -138,7 +138,7 @@ export default {
 				message: `Are you sure you want to uninstall app ${app.title} from site?`,
 				actionLabel: 'Remove App',
 				actionType: 'danger',
-				action: (closeDialog) => {
+				action: closeDialog => {
 					closeDialog();
 					this.$resources.uninstallApp.submit({
 						name: this.site.name,

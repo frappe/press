@@ -7,7 +7,7 @@
 				:key="file.type"
 				:type="file.type"
 				@success="onFileUpload(file, $event)"
-				:fileValidator="(f) => databaseBackupChecker(f, file.type)"
+				:fileValidator="f => databaseBackupChecker(f, file.type)"
 				:s3="true"
 			>
 				<template

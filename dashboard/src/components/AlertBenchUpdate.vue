@@ -67,8 +67,7 @@ export default {
 			if (this.deployInformation) {
 				appsToIgnore = Array(
 					this.deployInformation.apps.filter(
-						(app) =>
-							app.update_available && !this.selectedApps.includes(app.app)
+						app => app.update_available && !this.selectedApps.includes(app.app)
 					)
 				);
 			}

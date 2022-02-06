@@ -53,10 +53,10 @@ export default {
 		};
 	},
 	mounted() {
-		let listener = (e) => {
+		let listener = e => {
 			let $els = [this.$refs.reference, this.$refs.popover];
 			let insideClick = $els.some(
-				($el) => $el && (e.target === $el || $el.contains(e.target))
+				$el => $el && (e.target === $el || $el.contains(e.target))
 			);
 			if (insideClick) {
 				return;

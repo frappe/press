@@ -37,7 +37,7 @@ export default {
 		};
 	},
 	async mounted() {
-		this.$account.$watch('team', async (team) => {
+		this.$account.$watch('team', async team => {
 			if (team && !team.country && this.$account.hasRole('Press Admin')) {
 				await this.fetchCountries();
 				this.showDialog = true;

@@ -152,7 +152,7 @@ export default {
 	},
 	computed: {
 		plans() {
-			let processedPlans = this.$resources.plans.data.map((plan) => {
+			let processedPlans = this.$resources.plans.data.map(plan => {
 				if (this.belowCurrentUsage(plan)) {
 					plan.disabled = true;
 				}
@@ -170,13 +170,13 @@ export default {
 			});
 
 			if (this.site.status === 'Suspended') {
-				processedPlans = processedPlans.filter((p) => !p.disabled);
+				processedPlans = processedPlans.filter(p => !p.disabled);
 			}
 
 			return processedPlans;
 		},
 		usage() {
-			let f = (value) => {
+			let f = value => {
 				return this.formatBytes(value, 0, 2);
 			};
 

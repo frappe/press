@@ -16,7 +16,7 @@
 					:options="options"
 					v-show="activeStep.name === 'Hostname'"
 					v-model="subdomain"
-					@error="(error) => (subdomainValid = !Boolean(error))"
+					@error="error => (subdomainValid = !Boolean(error))"
 				/>
 				<Apps
 					:options="options"
@@ -35,7 +35,7 @@
 						:app="app"
 						:group="selectedGroup"
 						class="mb-9"
-						@change="(plan) => (selectedAppPlans[app.name] = plan.name)"
+						@change="plan => (selectedAppPlans[app.name] = plan.name)"
 					/>
 				</div>
 
@@ -189,7 +189,7 @@ export default {
 	},
 	async mounted() {
 		this.options = await this.$call('press.api.site.options_for_new');
-		this.options.plans = this.options.plans.map((plan) => {
+		this.options.plans = this.options.plans.map(plan => {
 			plan.disabled = !this.$account.hasBillingInfo;
 			return plan;
 		});
@@ -219,7 +219,7 @@ export default {
 			let isPaywalledBench = benchCreation > paywalledBenchDate;
 			if (isPaywalledBench && $account.user.user_type != 'System User') {
 				this.options.plans = this.options.plans.filter(
-					(plan) => plan.price_usd >= 25
+					plan => plan.price_usd >= 25
 				);
 			}
 		}
@@ -305,10 +305,10 @@ export default {
 			next();
 		},
 		addPlanSelectionStep() {
-			const appsStepIndex = this.steps.findIndex((step) => step.name == 'Apps');
+			const appsStepIndex = this.steps.findIndex(step => step.name == 'Apps');
 
 			const selectAppPlansStepIndex = this.steps.findIndex(
-				(step) => step.name == 'Select App Plans'
+				step => step.name == 'Select App Plans'
 			);
 			if (selectAppPlansStepIndex < 0) {
 				this.steps.splice(appsStepIndex + 1, 0, {
@@ -330,7 +330,7 @@ export default {
 		},
 		removePlanSelectionStepIfExists() {
 			const selectAppPlansStepIndex = this.steps.findIndex(
-				(step) => step.name == 'Select App Plans'
+				step => step.name == 'Select App Plans'
 			);
 			if (selectAppPlansStepIndex >= 0) {
 				this.steps.splice(selectAppPlansStepIndex, 1);

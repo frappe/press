@@ -194,7 +194,7 @@ export default {
 			// TODO: Listen to a more granular event than list_update
 			if (event.doctype === 'Site') {
 				let sites = this.benches
-					.map((bench) => bench.sites.map((site) => site.name))
+					.map(bench => bench.sites.map(site => site.name))
 					.flat();
 				if (
 					event.user === this.$account.user.name ||

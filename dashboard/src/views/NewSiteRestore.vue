@@ -41,7 +41,7 @@
 			<BackupFilesUploader
 				class="mt-6"
 				:backupFiles="selectedFiles"
-				@update:backupFiles="(files) => $emit('update:selectedFiles', files)"
+				@update:backupFiles="files => $emit('update:selectedFiles', files)"
 			/>
 		</div>
 		<div v-if="restoreFrom === 'siteUrl'">
@@ -231,7 +231,7 @@ export default {
 			if (!this.$resources.getBackupLinks.data) {
 				return [];
 			}
-			return this.$resources.getBackupLinks.data.map((file) => {
+			return this.$resources.getBackupLinks.data.map(file => {
 				// Convert "20200820_124804-erpnextcom-private-files.tar" to "20200820T124804"
 				// so DateTime can parse it
 				let timestamp_string = file.file_name

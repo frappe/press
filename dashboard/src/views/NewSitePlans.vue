@@ -9,7 +9,7 @@
 			<SitePlansTable
 				:plans="options.plans"
 				:selectedPlan="selectedPlan"
-				@change="(plan) => $emit('update:selectedPlan', plan)"
+				@change="plan => $emit('update:selectedPlan', plan)"
 			/>
 		</div>
 	</div>

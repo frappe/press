@@ -92,7 +92,7 @@ export default {
 			if (this.repositoryResource.loading || !this.repositoryResource.data) {
 				return [];
 			}
-			return (this.repositoryResource.data.branches || []).map((d) => {
+			return (this.repositoryResource.data.branches || []).map(d => {
 				return {
 					label: d.name,
 					action: () => this.$emit('update:selectedBranch', d.name)

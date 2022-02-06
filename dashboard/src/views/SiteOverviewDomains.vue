@@ -209,7 +209,7 @@ export default {
 					condition: () => domain.status == 'Active' && !domain.primary,
 					action: () => this.confirmSetPrimary(domain.domain)
 				}
-			].filter((d) => (d.condition ? d.condition() : true));
+			].filter(d => (d.condition ? d.condition() : true));
 		},
 		confirmRemoveDomain(domain) {
 			this.$confirm({
@@ -217,7 +217,7 @@ export default {
 				message: `Are you sure you want to remove the domain <b>${domain}</b>?`,
 				actionLabel: 'Remove',
 				actionType: 'danger',
-				action: (closeDialog) => {
+				action: closeDialog => {
 					closeDialog();
 					this.$resources.removeDomain.submit({
 						name: this.site.name,
@@ -232,7 +232,7 @@ export default {
 				message: `Setting as primary will make <b>${domain}</b> the primary URL for your site. Do you want to continue?`,
 				actionLabel: 'Set Primary',
 				actionType: 'primary',
-				action: (closeDialog) => {
+				action: closeDialog => {
 					closeDialog();
 					this.$resources.setHostName.submit({
 						name: this.site.name,

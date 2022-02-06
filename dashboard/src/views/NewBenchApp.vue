@@ -5,7 +5,7 @@
 			<p class="text-base text-gray-700">Add an app to your bench</p>
 		</div>
 
-		<SelectAppFromGithub @onSelect="(d) => (app = d)" />
+		<SelectAppFromGithub @onSelect="d => (app = d)" />
 
 		<ErrorMessage :error="$resourceErrors" />
 

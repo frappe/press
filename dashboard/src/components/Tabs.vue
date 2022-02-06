@@ -32,7 +32,7 @@
 			</ul>
 			<select
 				class="form-select block w-full sm:hidden"
-				@change="(e) => changeTab(e.target.value)"
+				@change="e => changeTab(e.target.value)"
 			>
 				<option
 					v-for="tab in tabs"

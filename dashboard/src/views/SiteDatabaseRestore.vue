@@ -235,7 +235,7 @@ export default {
 					'All the data from your site will be lost. Are you sure you want to reset your database?',
 				actionLabel: 'Reset',
 				actionType: 'danger',
-				action: (closeDialog) => {
+				action: closeDialog => {
 					this.$resources.resetDatabase.submit();
 					closeDialog();
 				}
@@ -256,7 +256,7 @@ export default {
 				`,
 				actionLabel: 'Clear Cache',
 				actionType: 'danger',
-				action: (closeDialog) => {
+				action: closeDialog => {
 					this.$resources.clearCache.submit();
 					closeDialog();
 				}

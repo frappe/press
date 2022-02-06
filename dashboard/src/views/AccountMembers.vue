@@ -139,7 +139,7 @@ export default {
 				title: 'Remove Member',
 				message: `Are you sure you want to remove ${member.first_name} ?`,
 				actionLabel: 'Remove',
-				action: (closeDialog) => {
+				action: closeDialog => {
 					this.$resources.removeMember.submit({ user_email: member.name });
 					closeDialog();
 				}

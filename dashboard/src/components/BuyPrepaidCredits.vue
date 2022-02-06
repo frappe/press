@@ -129,7 +129,7 @@ export default {
 						this.card.mount(this.$refs['card-element']);
 					});
 
-					this.card.addEventListener('change', (event) => {
+					this.card.addEventListener('change', event => {
 						this.cardErrorMessage = event.error?.message || null;
 					});
 					this.card.addEventListener('ready', () => {

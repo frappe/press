@@ -59,7 +59,7 @@ export default {
 					return false;
 				} else {
 					this.requiredFieldNotSet = this.requiredFieldNotSet.filter(
-						(f) => f !== field
+						f => f !== field
 					);
 				}
 			}
@@ -80,8 +80,8 @@ export default {
 		},
 		getBindListeners(field) {
 			return {
-				change: (e) => this.onChange(e, field),
-				blur: (e) => this.checkRequired(field, e)
+				change: e => this.onChange(e, field),
+				blur: e => this.checkRequired(field, e)
 			};
 		},
 		getInputType(field) {

@@ -79,7 +79,7 @@ export default {
 				return [];
 			}
 
-			return this.$resources.branches.data.map((d) => d.name);
+			return this.$resources.branches.data.map(d => d.name);
 		},
 		changeBranch() {
 			this.$resources.changeBranch.submit({
