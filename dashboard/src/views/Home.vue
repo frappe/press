@@ -10,7 +10,7 @@
 					<div
 						v-for="site in sites"
 						:key="site.status"
-						class="mt-5 flex justify-between items-center text-sm"
+						class="mt-5 flex items-center justify-between text-sm"
 					>
 						<div>{{ site.status }}</div>
 						<div>{{ site.count }}</div>

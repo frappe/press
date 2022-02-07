@@ -25,9 +25,9 @@
 				</span>
 			</div>
 		</div>
-		<div class="flex-auto px-6 overflow-auto font-mono text-xs" v-if="log">
+		<div class="flex-auto overflow-auto px-6 font-mono text-xs" v-if="log">
 			<div
-				class="bg-gray-100 rounded-md px-2 py-2.5 mb-6"
+				class="mb-6 rounded-md bg-gray-100 px-2 py-2.5"
 				:style="{ width: viewportWidth < 768 ? 'calc(100vw - 6rem)' : '' }"
 			>
 				<div class="overflow-x-auto">

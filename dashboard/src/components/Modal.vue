@@ -14,9 +14,9 @@
 
 			<div
 				v-show="show"
-				class="w-full overflow-auto transition-all transform bg-white rounded-lg shadow-xl"
+				class="w-full transform overflow-auto rounded-lg bg-white shadow-xl transition-all"
 				:class="widthClasses"
-				style="max-height: 95vh;"
+				style="max-height: 95vh"
 			>
 				<slot></slot>
 			</div>

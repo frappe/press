@@ -1,17 +1,17 @@
 <template>
 	<div class="space-y-3">
 		<button
-			class="block w-full px-4 py-3 text-left border rounded-md shadow cursor-pointer focus:outline-none focus:ring-2"
+			class="block w-full cursor-pointer rounded-md border px-4 py-3 text-left shadow focus:outline-none focus:ring-2"
 			:class="
 				isAppSelected(app)
-					? 'ring-2 ring-blue-500 bg-blue-50'
-					: 'hover:border-blue-300 cursor-pointer'
+					? 'bg-blue-50 ring-2 ring-blue-500'
+					: 'cursor-pointer hover:border-blue-300'
 			"
 			v-for="app in apps"
 			:key="app.name"
 			@click="toggleApp(app.name)"
 		>
-			<div class="flex items-center justify-between ml-1 text-base text-left">
+			<div class="ml-1 flex items-center justify-between text-left text-base">
 				<div>
 					<div class="font-semibold">
 						{{ app.title }}

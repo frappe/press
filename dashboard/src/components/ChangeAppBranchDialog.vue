@@ -13,7 +13,7 @@
 			></Button>
 
 			<div v-else>
-				<select class="block w-full form-select" v-model="selectedBranch">
+				<select class="form-select block w-full" v-model="selectedBranch">
 					<option v-for="branch in branchList()" :key="branch">
 						{{ branch }}
 					</option>

@@ -68,7 +68,10 @@ export default {
 						state: billingInformation.state,
 						postal_code: billingInformation.pincode,
 						country: billingInformation.country,
-						gstin: billingInformation.gstin == 'Not Applicable' ? '' : billingInformation.gstin,
+						gstin:
+							billingInformation.gstin == 'Not Applicable'
+								? ''
+								: billingInformation.gstin,
 						billing_name: billingInformation.billing_name
 					});
 				}

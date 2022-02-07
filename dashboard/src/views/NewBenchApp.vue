@@ -1,10 +1,8 @@
 <template>
 	<WizardCard>
-		<div class="mb-6 text-center ">
+		<div class="mb-6 text-center">
 			<h1 class="text-2xl font-bold">Add a New App</h1>
-			<p class="text-base text-gray-700">
-				Add an app to your bench
-			</p>
+			<p class="text-base text-gray-700">Add an app to your bench</p>
 		</div>
 
 		<SelectAppFromGithub @onSelect="d => (app = d)" />

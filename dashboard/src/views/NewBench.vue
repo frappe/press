@@ -17,9 +17,7 @@
 					<Input class="mt-4" type="text" v-model="benchTitle" />
 				</div>
 				<div v-if="regionOptions.length > 0">
-					<h2 class="text-lg font-semibold">
-						Select Region
-					</h2>
+					<h2 class="text-lg font-semibold">Select Region</h2>
 					<p class="text-base text-gray-700">
 						Select the datacenter region where your bench should be created
 					</p>
@@ -32,9 +30,7 @@
 					</div>
 				</div>
 				<div>
-					<label class="text-lg font-semibold">
-						Select a Frappe version
-					</label>
+					<label class="text-lg font-semibold"> Select a Frappe version </label>
 					<p class="text-base text-gray-700">
 						Select a Frappe version for your bench.
 					</p>
@@ -47,9 +43,7 @@
 				</div>
 
 				<div v-if="selectedVersionName">
-					<label class="text-lg font-semibold">
-						Select apps to install
-					</label>
+					<label class="text-lg font-semibold"> Select apps to install </label>
 					<p class="text-base text-gray-700">
 						These apps will be available for sites on your bench. You can also
 						add apps to your bench later.
@@ -67,14 +61,7 @@
 					<input
 						id="region-consent"
 						type="checkbox"
-						class="
-								h-4
-								w-4
-								text-blue-600
-								focus:ring-blue-500
-								border-gray-300
-								rounded
-							"
+						class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
 						v-model="agreedToRegionConsent"
 					/>
 					<label

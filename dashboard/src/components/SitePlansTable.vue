@@ -1,7 +1,7 @@
 <template>
 	<div v-if="plans.length">
 		<div
-			class="flex px-4 py-3 text-base text-gray-800 border border-b-0 bg-gray-0 rounded-t-md"
+			class="bg-gray-0 flex rounded-t-md border border-b-0 px-4 py-3 text-base text-gray-800"
 		>
 			<div class="w-10"></div>
 			<div class="w-1/4">Plan</div>
@@ -10,11 +10,11 @@
 			<div class="w-1/4">Disk</div>
 		</div>
 		<div
-			class="flex px-4 py-3 text-base text-left border border-b-0 cursor-pointer focus-within:shadow-outline"
+			class="focus-within:shadow-outline flex cursor-pointer border border-b-0 px-4 py-3 text-left text-base"
 			:class="[
 				selectedPlan === plan ? 'bg-blue-50' : 'hover:bg-blue-50',
 				{
-					'border-b rounded-b-md': i === plans.length - 1,
+					'rounded-b-md border-b': i === plans.length - 1,
 					'pointer-events-none': plan.disabled
 				}
 			]"
@@ -22,7 +22,7 @@
 			:key="plan.name"
 			@click="$emit('change', plan)"
 		>
-			<div class="flex items-center w-10">
+			<div class="flex w-10 items-center">
 				<input
 					type="radio"
 					class="form-radio"

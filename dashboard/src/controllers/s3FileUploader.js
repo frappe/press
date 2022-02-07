@@ -81,10 +81,10 @@ export default class S3FileUploader {
 							xhr.responseText,
 							'text/xml'
 						);
-						let code = xmlDoc.getElementsByTagName('Code')[0].childNodes[0]
-							.nodeValue;
-						let message = xmlDoc.getElementsByTagName('Message')[0]
-							.childNodes[0].nodeValue;
+						let code =
+							xmlDoc.getElementsByTagName('Code')[0].childNodes[0].nodeValue;
+						let message =
+							xmlDoc.getElementsByTagName('Message')[0].childNodes[0].nodeValue;
 						console.error(`${code}: ${message}`);
 						error = xhr.responseText;
 					}

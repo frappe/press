@@ -1,21 +1,19 @@
 <template>
 	<WizardCard>
-		<div class="mb-6 text-center ">
+		<div class="mb-6 text-center">
 			<h1 class="text-2xl font-bold">Add a New App</h1>
-			<p class="text-base text-gray-700">
-				Add an app to marketplace
-			</p>
+			<p class="text-base text-gray-700">Add an app to marketplace</p>
 		</div>
 
 		<SelectAppFromGithub @onSelect="d => (app = d)" />
 
 		<div v-if="app">
-			<label class="text-base mb-3" for="version-select"
+			<label class="mb-3 text-base" for="version-select"
 				>Compatible Frappe Version</label
 			>
 			<select
 				id="version-select"
-				class="block form-select mb-4"
+				class="form-select mb-4 block"
 				v-model="version"
 			>
 				<option v-for="version in versionList" :key="version">

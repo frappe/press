@@ -101,8 +101,9 @@ export default {
 					this.uploading = false;
 					let errorMessage = 'Error Uploading File';
 					if (error._server_messages) {
-						errorMessage = JSON.parse(JSON.parse(error._server_messages)[0])
-							.message;
+						errorMessage = JSON.parse(
+							JSON.parse(error._server_messages)[0]
+						).message;
 					} else if (error.exc) {
 						errorMessage = JSON.parse(error.exc)[0]
 							.split('\n')

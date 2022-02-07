@@ -18,7 +18,7 @@
 			/>
 
 			<div class="flex flex-col">
-				<h4 class="text-xl text-gray-900 font-semibold">{{ app.title }}</h4>
+				<h4 class="text-xl font-semibold text-gray-900">{{ app.title }}</h4>
 				<p class="text-base text-gray-600">Choose your plans</p>
 			</div>
 		</div>

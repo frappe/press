@@ -1,9 +1,7 @@
 <template>
 	<Card title="Payment methods" :subtitle="subtitle">
 		<template #actions>
-			<Button @click="showAddCardDialog = true">
-				Add Card
-			</Button>
+			<Button @click="showAddCardDialog = true"> Add Card </Button>
 			<Dialog title="Add new card" v-model="showAddCardDialog">
 				<StripeCard
 					class="mb-1"
@@ -15,9 +13,9 @@
 				/>
 			</Dialog>
 		</template>
-		<div class="space-y-3 max-h-52">
+		<div class="max-h-52 space-y-3">
 			<div
-				class="flex items-center justify-between p-5 border rounded-lg"
+				class="flex items-center justify-between rounded-lg border p-5"
 				v-for="card in paymentMethods.data"
 				:key="card.name"
 			>

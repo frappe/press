@@ -6,7 +6,7 @@
 	>
 		<div class="divide-y">
 			<div
-				class="grid items-center grid-cols-4 py-4 text-base text-gray-600 gap-x-8 md:grid-cols-5"
+				class="grid grid-cols-4 items-center gap-x-8 py-4 text-base text-gray-600 md:grid-cols-5"
 			>
 				<span class="hidden md:inline">Date</span>
 				<span class="col-span-2 md:col-span-1">Description</span>
@@ -15,18 +15,18 @@
 				<span></span>
 			</div>
 			<div
-				class="grid items-center grid-cols-4 py-4 text-base text-gray-900 gap-x-8 md:grid-cols-5"
+				class="grid grid-cols-4 items-center gap-x-8 py-4 text-base text-gray-900 md:grid-cols-5"
 				v-for="d in balances.data"
 				:key="d.name"
 			>
 				<div class="hidden md:block">
 					{{ formatDate(d) }}
 				</div>
-				<div class="col-span-2 text-gray-700 md:col-span-1 whitespace-nowrap">
+				<div class="col-span-2 whitespace-nowrap text-gray-700 md:col-span-1">
 					<div>{{ d.amount < 0 ? d.type : d.source }}</div>
 					<div class="md:hidden">{{ formatDate(d) }}</div>
 				</div>
-				<div class="text-gray-700 whitespace-nowrap">
+				<div class="whitespace-nowrap text-gray-700">
 					{{ d.formatted.amount }}
 				</div>
 				<div class="whitespace-nowrap">{{ d.formatted.ending_balance }}</div>

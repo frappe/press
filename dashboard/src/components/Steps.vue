@@ -4,7 +4,7 @@
 			<div class="flex space-x-8">
 				<div class="relative" v-for="(step, index) in steps" :key="step.name">
 					<div
-						class="z-10 flex items-center justify-center w-5 h-5 bg-white border border-gray-400 rounded-full"
+						class="z-10 flex h-5 w-5 items-center justify-center rounded-full border border-gray-400 bg-white"
 						:class="{
 							'bg-blue-500 text-white': isStepCompleted(step),
 							'border-blue-500': isStepCurrent(step) || isStepCompleted(step)
@@ -13,16 +13,16 @@
 						<FeatherIcon
 							v-if="isStepCompleted(step)"
 							name="check"
-							class="w-3 h-3"
+							class="h-3 w-3"
 							:stroke-width="3"
 						/>
 						<div
-							class="w-1.5 h-1.5 bg-blue-500 rounded-full"
+							class="h-1.5 w-1.5 rounded-full bg-blue-500"
 							v-if="isStepCurrent(step)"
 						></div>
 					</div>
 					<div
-						class="absolute w-8 transform -translate-x-8 -translate-y-1/2 border-t border-gray-400 top-1/2"
+						class="absolute top-1/2 w-8 -translate-x-8 -translate-y-1/2 transform border-t border-gray-400"
 						:class="{
 							'border-blue-500': isStepCompleted(step) || isStepCurrent(step)
 						}"

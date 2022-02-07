@@ -1,6 +1,6 @@
 <template>
 	<button
-		class="px-4 py-2 text-left border border-gray-100 rounded-lg shadow cursor-pointer focus:outline-none"
+		class="cursor-pointer rounded-lg border border-gray-100 px-4 py-2 text-left shadow focus:outline-none"
 		:class="
 			selected ? 'bg-blue-50 ring-2 ring-blue-500' : 'hover:border-gray-300'
 		"
@@ -10,7 +10,7 @@
 				v-if="image"
 				:src="image"
 				:alt="title"
-				class="w-10 h-10 mr-4"
+				class="mr-4 h-10 w-10"
 				:class="[fullCircleImage ? 'rounded-full' : 'rounded-lg']"
 			/>
 			<div class="my-1">

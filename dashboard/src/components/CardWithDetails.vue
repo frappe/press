@@ -1,9 +1,9 @@
 <template>
-	<div class="flex flex-col border rounded-lg shadow md:flex-row">
+	<div class="flex flex-col rounded-lg border shadow md:flex-row">
 		<Card
 			:title="title"
 			:subtitle="subtitle"
-			class="w-full border-none rounded-none shadow-none md:w-1/3"
+			class="w-full rounded-none border-none shadow-none md:w-1/3"
 			:class="{ 'hidden md:flex': showDetails }"
 			:style="{ height: viewportWidth > 768 ? 'calc(100vh - 16rem)' : null }"
 		>

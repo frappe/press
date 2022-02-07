@@ -1,15 +1,15 @@
 <template>
-	<nav class="bg-white border-b">
+	<nav class="border-b bg-white">
 		<div class="container z-10 mx-auto">
-			<div class="flex items-center justify-between h-16 px-4 sm:px-8">
+			<div class="flex h-16 items-center justify-between px-4 sm:px-8">
 				<div class="flex items-center">
-					<div class="flex-shrink-0">
+					<div class="shrink-0">
 						<router-link to="/">
-							<FrappeCloudLogo class="w-auto h-4" />
+							<FrappeCloudLogo class="h-4 w-auto" />
 						</router-link>
 					</div>
 					<div class="hidden md:block">
-						<div class="flex items-baseline ml-10 space-x-4">
+						<div class="ml-10 flex items-baseline space-x-4">
 							<router-link
 								v-for="item in items"
 								:key="item.label"
@@ -18,17 +18,19 @@
 							>
 								<a
 									:class="[
-										(item.highlight
-										? item.highlight(route)
-										: item.route == '/'
-										? isExactActive
-										: isActive)
+										(
+											item.highlight
+												? item.highlight(route)
+												: item.route == '/'
+												? isExactActive
+												: isActive
+										)
 											? 'bg-blue-50 text-blue-500'
 											: 'text-gray-900 hover:bg-gray-50'
 									]"
 									:href="href"
 									@click="navigate"
-									class="px-3 py-2 text-sm font-medium rounded-md focus:outline-none"
+									class="rounded-md px-3 py-2 text-sm font-medium focus:outline-none"
 								>
 									{{ item.label }}
 								</a>
@@ -45,7 +47,7 @@
 								<Dropdown :items="dropdownItems" right>
 									<template v-slot="{ toggleDropdown }">
 										<button
-											class="flex items-center max-w-xs text-sm text-white rounded-full focus:outline-none focus:shadow-solid"
+											class="focus:shadow-solid flex max-w-xs items-center rounded-full text-sm text-white focus:outline-none"
 											id="user-menu"
 											aria-label="User menu"
 											aria-haspopup="true"
@@ -63,13 +65,13 @@
 						</div>
 					</div>
 				</div>
-				<div class="flex -mr-2 md:hidden">
+				<div class="-mr-2 flex md:hidden">
 					<button
-						class="inline-flex items-center justify-center p-2 text-gray-700 rounded-md focus:outline-none focus:shadow-outline-gray"
+						class="focus:shadow-outline-gray inline-flex items-center justify-center rounded-md p-2 text-gray-700 focus:outline-none"
 						@click="mobileMenuOpen = !mobileMenuOpen"
 					>
-						<FeatherIcon v-if="!mobileMenuOpen" name="menu" class="w-6 h-6" />
-						<FeatherIcon v-else name="x" class="w-6 h-6" />
+						<FeatherIcon v-if="!mobileMenuOpen" name="menu" class="h-6 w-6" />
+						<FeatherIcon v-else name="x" class="h-6 w-6" />
 					</button>
 				</div>
 			</div>
@@ -84,23 +86,21 @@
 				>
 					<a
 						:class="[
-							(item.route == '/'
-							? isExactActive
-							: isActive)
-								? 'bg-blue-50 text-blue-500 bg-white'
+							(item.route == '/' ? isExactActive : isActive)
+								? 'bg-blue-50 bg-white text-blue-500'
 								: 'text-gray-900 hover:bg-gray-50'
 						]"
 						:href="href"
 						@click="navigate"
-						class="block px-3 py-2 text-sm font-medium rounded-md focus:outline-none"
+						class="block rounded-md px-3 py-2 text-sm font-medium focus:outline-none"
 					>
 						{{ item.label }}
 					</a>
 				</router-link>
 			</div>
-			<div class="pt-4 pb-3 border-t">
+			<div class="border-t pt-4 pb-3">
 				<div class="flex items-center px-4">
-					<div class="flex-shrink-0">
+					<div class="shrink-0">
 						<Avatar
 							v-if="$account.user"
 							:label="$account.user.first_name"
@@ -116,17 +116,17 @@
 						</div>
 					</div>
 				</div>
-				<div class="px-2 mt-3 space-y-3">
+				<div class="mt-3 space-y-3 px-2">
 					<a
 						href="/support/tickets"
 						target="_blank"
-						class="block px-3 pt-4 text-base font-medium rounded-md focus:outline-none"
+						class="block rounded-md px-3 pt-4 text-base font-medium focus:outline-none"
 					>
 						Support
 					</a>
 					<a
 						href="#"
-						class="block px-3 text-base font-medium rounded-md focus:outline-none"
+						class="block rounded-md px-3 text-base font-medium focus:outline-none"
 						@click.prevent="$auth.logout"
 					>
 						Logout

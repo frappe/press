@@ -2,9 +2,9 @@
 	<div class="relative">
 		<div
 			v-if="!ready"
-			class="absolute transform -translate-x-1/2 -translate-y-8 top-1/2 left-1/2"
+			class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-8 transform"
 		>
-			<Spinner class="w-5 h-5 text-gray-600 " />
+			<Spinner class="h-5 w-5 text-gray-600" />
 		</div>
 		<div :class="{ 'opacity-0': !ready }">
 			<label class="block">
@@ -12,7 +12,7 @@
 					Credit or Debit Card
 				</span>
 				<div
-					class="block w-full py-2 pl-3 mt-2 form-input"
+					class="form-input mt-2 block w-full py-2 pl-3"
 					ref="card-element"
 				></div>
 				<ErrorMessage class="mt-1" :error="cardErrorMessage" />
@@ -30,7 +30,7 @@
 				ref="address-form"
 			/>
 			<ErrorMessage class="mt-2" :error="errorMessage" />
-			<div class="flex items-center justify-between mt-6">
+			<div class="mt-6 flex items-center justify-between">
 				<Button type="primary" @click="submit" :loading="addingCard">
 					Save Card
 				</Button>
@@ -190,8 +190,9 @@ export default {
 			}
 		},
 		getCountryCode(country) {
-			let code = this.$resources.countryList.data.find(d => d.name === country)
-				.code;
+			let code = this.$resources.countryList.data.find(
+				d => d.name === country
+			).code;
 			return code.toUpperCase();
 		}
 	}

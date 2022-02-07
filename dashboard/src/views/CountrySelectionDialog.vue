@@ -3,7 +3,7 @@
 		Please select your country
 
 		<select
-			class="block w-full mt-2 shadow form-select"
+			class="form-select mt-2 block w-full shadow"
 			v-model="country"
 			name="country"
 			autocomplete="country"

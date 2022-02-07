@@ -2,7 +2,7 @@
 	<div class="flex items-center justify-between py-3">
 		<div>
 			<div class="flex justify-start">
-				<img class="h-4 mr-2" v-if="image" :src="image" :alt="title" />
+				<img class="mr-2 h-4" v-if="image" :src="image" :alt="title" />
 				<h3 class="text-base font-medium text-gray-900">
 					{{ title }}
 				</h3>
@@ -25,7 +25,7 @@ export default {
 		secondaryText() {
 			let text = this.subtitle || this.description || '';
 			return text.replace('\n', '<br>');
-		},
-	},
+		}
+	}
 };
 </script>

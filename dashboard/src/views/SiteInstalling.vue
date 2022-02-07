@@ -10,9 +10,9 @@
 				class="flex items-center px-6 py-2 text-base"
 				:key="step.name"
 			>
-				<div class="w-4 h-4 text-gray-800">
+				<div class="h-4 w-4 text-gray-800">
 					<FeatherIcon
-						class="w-4 h-4"
+						class="h-4 w-4"
 						:class="{ spin: step.status === 'Running' }"
 						:name="iconMap[step.status]"
 					/>

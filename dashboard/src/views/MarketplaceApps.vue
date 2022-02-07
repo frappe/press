@@ -10,12 +10,12 @@
 			:error="$resources.apps.error"
 		/>
 		<div v-else-if="$resources.apps.data.length < 1">
-			<p class="text-gray-600 text-lg">
+			<p class="text-lg text-gray-600">
 				You have not published any app on our Marketplace.
 			</p>
 		</div>
 		<div v-else>
-			<div class="grid gap-4 grid-cols-1 md:grid-cols-3">
+			<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
 				<MarketplaceAppCard
 					@click.native="routeToAppPage(app.name)"
 					v-for="app in $resources.apps.data"

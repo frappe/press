@@ -7,7 +7,7 @@
 		<div>
 			<router-link
 				v-for="v in $resources.versions.data"
-				class="block px-2.5 rounded-md cursor-pointer"
+				class="block cursor-pointer rounded-md px-2.5"
 				:class="
 					selectedVersion && v.name === selectedVersion.name
 						? 'bg-gray-100'
@@ -42,7 +42,7 @@
 		</div>
 		<template #details>
 			<div
-				class="w-full px-6 py-5 space-y-4 border-l md:w-2/3"
+				class="w-full space-y-4 border-l px-6 py-5 md:w-2/3"
 				v-if="selectedVersion"
 			>
 				<section>
@@ -91,18 +91,16 @@
 				</section>
 				<section>
 					<h5 class="text-lg font-semibold">Apps</h5>
-					<div class="py-2 mt-2 divide-y rounded-lg sm:border sm:px-4">
+					<div class="mt-2 divide-y rounded-lg py-2 sm:border sm:px-4">
 						<ListItem
 							v-for="app in selectedVersion.apps"
 							:key="app.app"
 							:title="app.app"
-							:subtitle="
-								`${app.repository_owner}/${app.repository}:${app.branch}`
-							"
+							:subtitle="`${app.repository_owner}/${app.repository}:${app.branch}`"
 						>
 							<template #actions>
 								<a
-									class="block ml-2 cursor-pointer"
+									class="ml-2 block cursor-pointer"
 									:href="`${app.repository_url}/commit/${app.hash}`"
 									target="_blank"
 								>
@@ -126,11 +124,11 @@
 					locally.
 				</p>
 				<ClickToCopyField :textContent="certificateCommand" />
-				<p class="text-base pt-2">Shell command to SSH into your bench</p>
+				<p class="pt-2 text-base">Shell command to SSH into your bench</p>
 				<ClickToCopyField :textContent="sshCommand" />
 			</div>
 			<div v-if="!certificate">
-				<p class="text-base mb-4">
+				<p class="mb-4 text-base">
 					You will need an SSH certificate to get SSH access to your bench. This
 					certificate will work only with your public-private key pair and will
 					be valid for 6 hours.

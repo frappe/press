@@ -10,7 +10,7 @@
 			<div>
 				<router-link
 					v-for="candidate in candidates"
-					class="block px-2.5 rounded-md cursor-pointer"
+					class="block cursor-pointer rounded-md px-2.5"
 					:class="
 						selectedCandidate && selectedCandidate.name === candidate.name
 							? 'bg-gray-100'
@@ -20,9 +20,10 @@
 					:to="`/benches/${bench.name}/deploys/${candidate.name}`"
 				>
 					<ListItem
-						:title="
-							`Deploy on ${formatDate(candidate.creation, 'DATETIME_SHORT')}`
-						"
+						:title="`Deploy on ${formatDate(
+							candidate.creation,
+							'DATETIME_SHORT'
+						)}`"
 						:subtitle="itemSubtitle(candidate)"
 					>
 						<template #actions>

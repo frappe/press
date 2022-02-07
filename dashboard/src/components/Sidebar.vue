@@ -1,7 +1,7 @@
 <template>
 	<div>
 		<div
-			class="flex flex-col justify-between block h-full px-2 pb-2 text-sm bg-gray-100"
+			class="block flex h-full flex-col justify-between bg-gray-100 px-2 pb-2 text-sm"
 		>
 			<div>
 				<div class="flex px-2 py-4">
@@ -16,12 +16,10 @@
 					v-slot="{ href, route, navigate, isActive, isExactActive }"
 				>
 					<a
-						class="flex items-center px-3 py-2 mt-1 rounded-lg cursor-pointer hover:bg-white"
+						class="mt-1 flex cursor-pointer items-center rounded-lg px-3 py-2 hover:bg-white"
 						:class="[
-							(item.route == '/'
-							? isExactActive
-							: isActive)
-								? 'text-blue-500 bg-white'
+							(item.route == '/' ? isExactActive : isActive)
+								? 'bg-white text-blue-500'
 								: 'text-gray-900'
 						]"
 						:href="href"
@@ -37,7 +35,7 @@
 				v-slot="{ href, route, navigate, isActive }"
 			>
 				<a
-					class="inline-flex items-start px-2 py-3 rounded-md"
+					class="inline-flex items-start rounded-md px-2 py-3"
 					:class="isActive ? 'bg-white' : 'hover:bg-gray-300'"
 					:href="href"
 				>
@@ -50,9 +48,7 @@
 							{{ $account.user.first_name }}
 							{{ $account.user.last_name }}
 						</div>
-						<div class="text-xs" @click.prevent="$auth.logout">
-							Logout
-						</div>
+						<div class="text-xs" @click.prevent="$auth.logout">Logout</div>
 					</div>
 				</a>
 			</router-link>
