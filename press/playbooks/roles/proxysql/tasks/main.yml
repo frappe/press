@@ -6,6 +6,27 @@
     dest: /home/frappe/proxysql
     state: directory
 
+- name: Copy ProxySQL TLS (Private Key)
+  copy:
+    src: /home/frappe/agent/tls/privkey.pem
+    dest: /home/frappe/proxysql/proxysql-key.pem
+    mode: 0600
+    remote_src: yes
+
+- name: Copy ProxySQL TLS (CA Certificate)
+  copy:
+    src: /home/frappe/agent/tls/chain.pem
+    dest: /home/frappe/proxysql/proxysql-ca.pem
+    mode: 0600
+    remote_src: yes
+
+- name: Copy ProxySQL TLS (Server Certificate)
+  copy:
+    src: /home/frappe/agent/tls/fullchain.pem
+    dest: /home/frappe/proxysql/proxysql-cert.pem
+    mode: 0600
+    remote_src: yes
+
 - name: Create ProxySQL config
   template:
     src: proxysql.cnf

@@ -32,5 +32,7 @@ mysql_variables=
 	commands_stats=true
 	sessions_sort=true
 
+	have_ssl=true
+
 }
 
