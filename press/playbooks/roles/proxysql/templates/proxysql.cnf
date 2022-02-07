@@ -5,6 +5,8 @@ admin_variables=
 {
 	admin_credentials="frappe:{{ proxysql_admin_password }}"
 	mysql_ifaces="0.0.0.0:6032"
+	hash_passwords=true
+
 	restapi_enabled=true
 	prometheus_memory_metrics_interval=60
 }
