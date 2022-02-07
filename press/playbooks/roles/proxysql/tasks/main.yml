@@ -1,0 +1,19 @@
+---
+- name: Create ProxySQL Directory
+  become: yes
+  become_user: frappe
+  file:
+    dest: /home/frappe/proxysql
+    state: directory
+
+- name: Create ProxySQL config
+  template:
+    src: proxysql.cnf
+    dest: /home/frappe/proxysql/proxysql.cnf
+    mode: 0644
+
+- name: Start ProxySQL
+  become: yes
+  become_user: frappe
+  command: "docker run -d --name proxysql --hostname proxysql --restart always -p 3306:6033 -p 127.0.0.1:6032:6032 -v /home/frappe/proxysql:/var/lib/proxysql -v /home/frappe/proxysql/proxysql.cnf:/etc/proxysql.cnf proxysql/proxysql:2.3.2"
+
