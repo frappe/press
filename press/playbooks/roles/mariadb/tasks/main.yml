@@ -103,3 +103,14 @@
     groups:
       - mysql
     append: true
+
+- name: Create Monitor User
+  mysql_user:
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+    check_implicit_admin: yes
+    name: monitor
+    host: "%"
+    priv: "sys.*:SELECT"
+    password: "monitor"
+    state: present
