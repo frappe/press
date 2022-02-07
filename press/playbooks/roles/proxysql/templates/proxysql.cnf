@@ -52,5 +52,6 @@ mysql_variables=
 	default_query_timeout=300000
 	max_transaction_time=1200000
 	wait_timeout=300000
+	default_sql_safe_updates="ON"
 }
 
