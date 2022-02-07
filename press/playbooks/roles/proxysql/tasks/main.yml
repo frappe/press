@@ -38,4 +38,24 @@
   become_user: frappe
   command: "docker run -d --name proxysql --hostname proxysql --restart always -p 3306:6033 -p 127.0.0.1:6032:6032 -p 127.0.0.1:6070:6070 -v /home/frappe/proxysql:/var/lib/proxysql -v /home/frappe/proxysql/proxysql.cnf:/etc/proxysql.cnf proxysql/proxysql:2.3.2"
 
+- name: Update APT Cache
+  apt:
+    update_cache: yes
 
+- name: Install MariaDB Client
+  apt:
+    pkg:
+      - mariadb-client
+      - python3-mysqldb
+    state: present
+
+- name: Enable ProxySQL Auditing
+  mysql_query:
+    login_user: frappe
+    login_password: "{{ proxysql_admin_password }}"
+    login_host: 127.0.0.1
+    login_port: 6032
+    query:
+      - INSERT INTO mysql_query_rules(active, match_digest, log) VALUES (1, '.', 1);
+      - LOAD MYSQL QUERY RULES TO RUNTIME;
+      - SAVE MYSQL QUERY RULES TO DISK;
