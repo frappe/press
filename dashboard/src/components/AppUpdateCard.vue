@@ -2,7 +2,7 @@
 	<button
 		class="flex w-full flex-row items-center justify-between rounded-lg border border-gray-100 px-4 py-2 shadow focus:outline-none"
 		:class="[
-			selected || uninstall ? 'ring-2 ring-blue-500' : '',
+			selected || uninstall ? 'ring-2 ring-inset ring-blue-500' : '',
 			selectable ? 'hover:border-gray-300' : 'cursor-default'
 		]"
 	>
