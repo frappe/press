@@ -97,17 +97,21 @@ frappe.ui.form.on('Site', {
 			[__('Update'), 'schedule_update'],
 			[__('Deactivate'), 'deactivate'],
 			[__('Activate'), 'activate'],
-		].forEach(([label, method]) => {
-			frm.add_custom_button(
-				label,
-				() => {
-					frappe.confirm(
-						`Are you sure you want to ${label.toLowerCase()} this site?`,
-						() => frm.call(method).then((r) => frm.refresh())
-					);
-				},
-				__('Actions')
-			);
+			[__('Enable Database Access'), 'enable_database_access', !frm.doc.is_database_access_enabled],
+			[__('Disable Database Access'), 'disable_database_access', frm.doc.is_database_access_enabled],
+		].forEach(([label, method, condition]) => {
+			if (typeof condition === "undefined" || condition){	
+				frm.add_custom_button(
+					label,
+					() => {
+						frappe.confirm(
+							`Are you sure you want to ${label.toLowerCase()} this site?`,
+							() => frm.call(method).then((r) => frm.refresh())
+						);
+					},
+					__('Actions')
+				);
+			}
 		});
 		[
 			[__('Suspend'), 'suspend'],

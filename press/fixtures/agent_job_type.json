@@ -1358,5 +1358,43 @@
     "step_name": "Remove Principal from User"
    }
   ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2022-02-07 12:43:09.605095",
+  "name": "Add User to ProxySQL",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "request_method": "POST",
+  "request_path": "/proxysql/users",
+  "steps": [
+   {
+    "parent": "Add User to ProxySQL",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Add User to ProxySQL"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2022-02-07 12:43:46.446468",
+  "name": "Remove User from ProxySQL",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "request_method": "DELETE",
+  "request_path": "/proxysql/users/{username}",
+  "steps": [
+   {
+    "parent": "Remove User from ProxySQL",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Remove User from ProxySQL"
+   }
+  ]
  }
 ]

@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2019-12-09 12:35:51.941522",
+ "creation": "2022-01-28 20:07:35.878461",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -62,7 +62,10 @@
   "column_break_51",
   "update_on_weekday",
   "update_end_of_month",
-  "update_on_day_of_month"
+  "update_on_day_of_month",
+  "column_break_58",
+  "database_section",
+  "is_database_access_enabled"
  ],
  "fields": [
   {
@@ -454,6 +457,23 @@
    "fieldtype": "Data",
    "label": "Database Name",
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_58",
+   "fieldtype": "Column Break"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "database_section",
+   "fieldtype": "Section Break",
+   "label": "Database"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_database_access_enabled",
+   "fieldtype": "Check",
+   "label": "Is Database Access Enabled",
+   "read_only": 1
   }
  ],
  "links": [
@@ -503,7 +523,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2021-12-22 12:34:02.510953",
+ "modified": "2022-02-07 14:45:12.093982",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
