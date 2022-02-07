@@ -2,7 +2,12 @@ const plugin = require('tailwindcss/plugin');
 const colors = require('tailwindcss/colors');
 
 module.exports = {
-	content: ['./public/index.html', './src/**/*.html', './src/**/*.vue'],
+	content: [
+		'./public/index.html',
+		'./src/**/*.html',
+		'./src/**/*.vue',
+		'./src/assets/*.css'
+	],
 	theme: {
 		extend: {
 			fontFamily: {
