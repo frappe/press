@@ -52,10 +52,10 @@ class BenchFieldCheck(Audit):
 				)
 				if sites_in_press != sites_in_server:
 					status = "Failure"
-					log[bench_name] = {
-						"Sites on press only": list(sites_in_press.difference(sites_in_server)),
-						"Sites on server only": list(sites_in_server.difference(sites_in_press)),
-					}
+					if sites_on_press_only := list(sites_in_press - sites_in_server):
+						log[bench_name].update({"Sites on press only": sites_on_press_only})
+					if sites_on_server_only := list(sites_in_server - sites_in_press):
+						log[bench_name].update({"Sites on server only": sites_on_server_only})
 		self.log(log, status)
 
 
