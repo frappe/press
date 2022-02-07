@@ -4,7 +4,7 @@
 		class="cursor-pointer rounded-2xl border border-gray-100 p-5 shadow hover:border-gray-300"
 		:class="[
 			popular ? 'relative bg-blue-100' : '',
-			selected ? 'relative ring-2 ring-blue-500' : ''
+			selected ? 'relative ring-2 ring-inset ring-blue-500' : ''
 		]"
 	>
 		<div
