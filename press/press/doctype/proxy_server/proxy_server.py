@@ -161,6 +161,12 @@ class ProxyServer(BaseServer):
 		except Exception:
 			log_error("SSH Proxy Setup Exception", server=self.as_dict())
 
+	@frappe.whitelist()
+	def setup_proxysql(self):
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_setup_proxysql", queue="long", timeout=1200
+		)
+
 	def _setup_proxysql(self):
 		try:
 			ansible = Ansible(
