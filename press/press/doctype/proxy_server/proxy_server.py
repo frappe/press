@@ -15,6 +15,7 @@ class ProxyServer(BaseServer):
 	def validate(self):
 		super().validate()
 		self.validate_domains()
+		self.validate_proxysql_admin_password()
 
 	def validate_domains(self):
 		domains = [row.domain for row in self.domains]
@@ -28,6 +29,10 @@ class ProxyServer(BaseServer):
 			):
 				frappe.throw(f"Valid wildcard TLS Certificate not found for {domain}")
 			self.append("domains", {"domain": domain})
+
+	def validate_proxysql_admin_password(self):
+		if not self.proxysql_admin_password:
+			self.proxysql_admin_password = frappe.generate_hash(length=32)
 
 	def get_wildcard_domains(self):
 		wildcard_domains = []
@@ -155,3 +160,18 @@ class ProxyServer(BaseServer):
 				self.save()
 		except Exception:
 			log_error("SSH Proxy Setup Exception", server=self.as_dict())
+
+	def _setup_proxysql(self):
+		try:
+			ansible = Ansible(
+				playbook="proxysql.yml",
+				server=self,
+				variables={"proxysql_admin_password": self.get_password("proxysql_admin_password")},
+			)
+			play = ansible.run()
+			if play.status == "Success":
+				self.reload()
+				self.is_proxysql_setup = True
+				self.save()
+		except Exception:
+			log_error("ProxySQL Setup Exception", server=self.as_dict())
