@@ -41,5 +41,9 @@ mysql_variables=
 	auditlog_filename="/var/lib/proxysql/audit.log"
 	auditlog_filesize=104857600
 
+	eventslog_filename="/var/lib/proxysql/events.log"
+	eventslog_filesize=104857600
+	eventslog_format=2
+	eventslog_default_log=true
 }
 
