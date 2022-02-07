@@ -45,5 +45,12 @@ mysql_variables=
 	eventslog_filesize=104857600
 	eventslog_format=2
 	eventslog_default_log=true
+
+	poll_timeout=2000
+	max_connections=2048
+	default_query_delay=0
+	default_query_timeout=300000
+	max_transaction_time=1200000
+	wait_timeout=300000
 }
 
