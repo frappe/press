@@ -59,3 +59,10 @@
       - INSERT INTO mysql_query_rules(active, match_digest, log) VALUES (1, '.', 1);
       - LOAD MYSQL QUERY RULES TO RUNTIME;
       - SAVE MYSQL QUERY RULES TO DISK;
+
+- name: Setup Agent ProxySQL
+  become: yes
+  become_user: frappe
+  command: "/home/frappe/agent/env/bin/agent setup proxysql --password {{ proxysql_admin_password }}"
+  args:
+    chdir: /home/frappe/agent
