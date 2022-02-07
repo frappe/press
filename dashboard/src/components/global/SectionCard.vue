@@ -1,5 +1,5 @@
 <template>
-	<div class="w-full py-2 border rounded shadow sm:w-2/3 md:w-1/2">
+	<div class="w-full rounded border py-2 shadow sm:w-2/3 md:w-1/2">
 		<slot />
 	</div>
 </template>

@@ -1,6 +1,6 @@
 <template>
 	<div
-		class="fixed inset-0 flex items-start justify-end px-4 py-6 pointer-events-none sm:p-6"
+		class="pointer-events-none fixed inset-0 flex items-start justify-end px-4 py-6 sm:p-6"
 	>
 		<div>
 			<Notification

@@ -22,7 +22,7 @@
 				:subtitle="`${app.repository_owner}/${app.repository}:${app.branch}`"
 			>
 				<template #actions>
-					<div class="flex items-center ml-auto space-x-2">
+					<div class="ml-auto flex items-center space-x-2">
 						<Badge v-if="app.last_github_poll_failed" color="red">
 							Attention Required
 						</Badge>
@@ -34,8 +34,8 @@
 						<Badge
 							v-if="
 								!app.last_github_poll_failed &&
-									app.update_available &&
-									app.deployed
+								app.update_available &&
+								app.deployed
 							"
 							color="blue"
 						>
@@ -80,9 +80,7 @@
 			</template>
 			<p class="mt-4 text-base" @click="showAddAppDialog = false">
 				Don't find your app here?
-				<Link :to="`/benches/${bench.name}/apps/new`">
-					Add from GitHub
-				</Link>
+				<Link :to="`/benches/${bench.name}/apps/new`"> Add from GitHub </Link>
 			</p>
 		</Dialog>
 

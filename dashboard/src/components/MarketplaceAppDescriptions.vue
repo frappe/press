@@ -43,7 +43,7 @@
 					</template>
 				</ListItem>
 				<div
-					class="mt-1 prose text-gray-600"
+					class="prose mt-1 text-gray-600"
 					v-if="app.description"
 					v-html="descriptionHTML"
 				></div>

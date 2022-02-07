@@ -30,9 +30,7 @@
 					<span v-else> Performing Backup... </span>
 				</div>
 				<div class="flex items-center space-x-2">
-					<Badge v-if="backup.offsite" color="green">
-						Offsite
-					</Badge>
+					<Badge v-if="backup.offsite" color="green"> Offsite </Badge>
 					<Dropdown :items="dropdownItems(backup)" right>
 						<template v-slot="{ toggleDropdown }">
 							<Button icon="more-horizontal" @click="toggleDropdown()" />
@@ -47,9 +45,7 @@
 				:loading="true"
 				loading-text="Loading"
 			/>
-			<span v-else>
-				No backups found
-			</span>
+			<span v-else> No backups found </span>
 		</div>
 	</Card>
 </template>

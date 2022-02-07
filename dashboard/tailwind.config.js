@@ -1,6 +1,8 @@
 const plugin = require('tailwindcss/plugin');
+const colors = require('tailwindcss/colors');
 
 module.exports = {
+	content: ['./public/index.html', './src/**/*.html', './src/**/*.vue'],
 	theme: {
 		extend: {
 			fontFamily: {
@@ -32,44 +34,46 @@ module.exports = {
 				DEFAULT: theme('colors.gray.200')
 			}),
 			colors: {
+				green: colors.emerald,
+				yellow: colors.amber,
 				brand: '#2490EF',
 				'brand-100': '#f4f9ff',
 				black: '#112B42',
 				blue: {
-					'50': '#F0F8FE',
-					'100': '#D3E9FC',
-					'200': '#A7D3F9',
-					'300': '#7CBCF5',
-					'400': '#50A6F2',
-					'500': '#2490EF',
-					'600': '#1579D0',
-					'700': '#1366AE',
-					'800': '#154875',
-					'900': '#1A4469'
+					50: '#F0F8FE',
+					100: '#D3E9FC',
+					200: '#A7D3F9',
+					300: '#7CBCF5',
+					400: '#50A6F2',
+					500: '#2490EF',
+					600: '#1579D0',
+					700: '#1366AE',
+					800: '#154875',
+					900: '#1A4469'
 				},
 				gray: {
-					'50': '#F9FAFA',
-					'100': '#F4F5F6',
-					'200': '#EBEEF0',
-					'300': '#DCE0E3',
-					'400': '#C0C6CC',
-					'500': '#98A1A9',
-					'600': '#687178',
-					'700': '#505A62',
-					'800': '#333C44',
-					'900': '#1F272E'
+					50: '#F9FAFA',
+					100: '#F4F5F6',
+					200: '#EBEEF0',
+					300: '#DCE0E3',
+					400: '#C0C6CC',
+					500: '#98A1A9',
+					600: '#687178',
+					700: '#505A62',
+					800: '#333C44',
+					900: '#1F272E'
 				},
 				purple: {
-					'900': '#44427B',
-					'800': '#5552BC',
-					'700': '#6461D6',
-					'600': '#807DDE',
-					'500': '#928EF5',
-					'400': '#B7B6FC',
-					'300': '#D6D5F6',
-					'200': '#E8E8F7',
-					'100': '#F2F2FD',
-					'50': '#F8F8FC'
+					900: '#44427B',
+					800: '#5552BC',
+					700: '#6461D6',
+					600: '#807DDE',
+					500: '#928EF5',
+					400: '#B7B6FC',
+					300: '#D6D5F6',
+					200: '#E8E8F7',
+					100: '#F2F2FD',
+					50: '#F8F8FC'
 				}
 			}
 		},
@@ -86,10 +90,9 @@ module.exports = {
 		}
 	},
 	plugins: [
-		// require('@tailwindcss/ui'),
 		require('@tailwindcss/forms'),
 		require('@tailwindcss/typography'),
-		plugin(function({ addUtilities, theme }) {
+		plugin(function ({ addUtilities, theme }) {
 			// Add your custom styles here
 			addUtilities({
 				'.bg-gradient-blue': {
@@ -98,22 +101,11 @@ module.exports = {
 					)} 100%)`
 				}
 			});
-			addUtilities(
-				{
-					'.bg-gradient-none': {
-						'background-image': 'none'
-					}
-				},
-				{
-					variants: ['focus', 'hover']
+			addUtilities({
+				'.bg-gradient-none': {
+					'background-image': 'none'
 				}
-			);
+			});
 		})
-	],
-	purge: {
-		content: ['./public/index.html', './src/**/*.html', './src/**/*.vue'],
-		options: {
-			whitelistPatternsChildren: [/chart-container$/, /graph-svg-tip$/]
-		}
-	}
+	]
 };

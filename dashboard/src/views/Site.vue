@@ -8,21 +8,21 @@
 					</router-link>
 				</div>
 				<div
-					class="flex flex-col space-y-3 md:space-y-0 md:justify-between md:flex-row md:items-baseline"
+					class="flex flex-col space-y-3 md:flex-row md:items-baseline md:justify-between md:space-y-0"
 				>
-					<div class="flex items-center mt-2">
+					<div class="mt-2 flex items-center">
 						<h1 class="text-2xl font-bold">{{ site.name }}</h1>
-						<Badge class="hidden md:inline-block ml-4" :status="site.status">{{
+						<Badge class="ml-4 hidden md:inline-block" :status="site.status">{{
 							site.status
 						}}</Badge>
 
 						<div
 							v-if="regionInfo"
-							class="hidden ml-2 self-end md:flex flex-row items-center px-3 py-1 text-xs font-medium rounded-md cursor-default text-yellow-700 bg-yellow-50"
+							class="ml-2 hidden cursor-default flex-row items-center self-end rounded-md bg-yellow-50 px-3 py-1 text-xs font-medium text-yellow-700 md:flex"
 						>
 							<img
 								v-if="regionInfo.image"
-								class="h-4 mr-2"
+								class="mr-2 h-4"
 								:src="regionInfo.image"
 								:alt="`Flag of ${regionInfo.title}`"
 								:title="regionInfo.image"
@@ -30,16 +30,16 @@
 							<p>{{ regionInfo.title }}</p>
 						</div>
 					</div>
-					<div class="mb-10 md:hidden flex flex-row justify-between">
+					<div class="mb-10 flex flex-row justify-between md:hidden">
 						<div class="flex flex-row">
 							<Badge :status="site.status">{{ site.status }}</Badge>
 							<div
 								v-if="regionInfo"
-								class="ml-2 flex flex-row items-center px-3 py-1 text-xs font-medium rounded-md cursor-default text-yellow-700 bg-yellow-50"
+								class="ml-2 flex cursor-default flex-row items-center rounded-md bg-yellow-50 px-3 py-1 text-xs font-medium text-yellow-700"
 							>
 								<img
 									v-if="regionInfo.image"
-									class="h-4 mr-2"
+									class="mr-2 h-4"
 									:src="regionInfo.image"
 									:alt="`Flag of ${regionInfo.title}`"
 									:title="regionInfo.image"
@@ -58,7 +58,7 @@
 						</Dropdown>
 					</div>
 
-					<div class="hidden md:flex flex-row space-x-3">
+					<div class="hidden flex-row space-x-3 md:flex">
 						<Button
 							v-if="site.group"
 							:route="`/benches/${site.group}`"

@@ -1,5 +1,5 @@
 <template>
-	<div class="divide-y mt-2 space-y-2">
+	<div class="mt-2 space-y-2 divide-y">
 		<AppUpdateCard
 			v-for="app in appsWithUpdates"
 			:key="app.app"

@@ -57,7 +57,7 @@
 					<input
 						type="checkbox"
 						v-model="termsAccepted"
-						class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+						class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
 						required
 					/>
 					<label class="ml-1 text-sm text-gray-900">
@@ -84,17 +84,13 @@
 				type="primary"
 				:loading="$resources.setupAccount.loading"
 			>
-				<span v-if="!isInvitation">
-					Submit
-				</span>
-				<span v-else>
-					Accept
-				</span>
+				<span v-if="!isInvitation"> Submit </span>
+				<span v-else> Accept </span>
 			</Button>
 		</form>
 	</LoginBox>
 	<div
-		class="px-6 mt-20 text-center"
+		class="mt-20 px-6 text-center"
 		v-else-if="!$resources.validateRequestKey.loading && !email"
 	>
 		Account Key <strong>{{ requestKey }}</strong> is invalid or expired.

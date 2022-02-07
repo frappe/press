@@ -9,13 +9,13 @@
 
 		<div v-else-if="$resources.marketplaceSubscriptions.data">
 			<div v-if="marketplaceSubscriptions.length === 0">
-				<p class="my-3 text-base text-gray-600 text-center">
+				<p class="my-3 text-center text-base text-gray-600">
 					You don't have any marketplace subscriptions
 				</p>
 			</div>
 			<div v-else class="divide-y">
 				<div
-					class="grid items-center grid-cols-3 py-4 text-base text-gray-600 gap-x-8 md:grid-cols-5"
+					class="grid grid-cols-3 items-center gap-x-8 py-4 text-base text-gray-600 md:grid-cols-5"
 				>
 					<span>App</span>
 					<span class="hidden md:inline">Plan</span>
@@ -27,12 +27,12 @@
 				<div
 					v-for="subscription in marketplaceSubscriptions"
 					:key="subscription.name"
-					class="grid items-center grid-cols-3 py-4 text-base text-gray-900 gap-x-8 md:grid-cols-5"
+					class="grid grid-cols-3 items-center gap-x-8 py-4 text-base text-gray-900 md:grid-cols-5"
 				>
-					<p class="text-base font-medium text-gray-700 truncate max-w-md">
+					<p class="max-w-md truncate text-base font-medium text-gray-700">
 						{{ subscription.app_title }}
 					</p>
-					<p class="hidden md:inline text-gray-700">
+					<p class="hidden text-gray-700 md:inline">
 						{{ subscription.plan }}
 					</p>
 					<span>

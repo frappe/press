@@ -1,5 +1,5 @@
 <template>
-	<div class="flex items-center justify-between px-4 bg-white sm:px-8">
+	<div class="flex items-center justify-between bg-white px-4 sm:px-8">
 		<div class="text-3xl font-bold">
 			<slot name="title" />
 		</div>

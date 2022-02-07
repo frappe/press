@@ -3,12 +3,12 @@
 		<div>
 			<div class="flex">
 				<FrappeCloudLogo
-					class="w-auto h-4 mx-auto"
+					class="mx-auto h-4 w-auto"
 					v-on:dblclick.native="redirect"
 				/>
 			</div>
 			<div
-				class="px-4 py-8 mx-auto bg-white sm:mt-6 sm:w-0112 sm:w-96 sm:px-10 sm:rounded-lg sm:shadow-xl"
+				class="sm:w-0112 mx-auto bg-white px-4 py-8 sm:mt-6 sm:w-96 sm:rounded-lg sm:px-10 sm:shadow-xl"
 			>
 				<div class="mb-6 text-center">
 					<span class="text-lg">{{ title }}</span>
@@ -30,7 +30,7 @@ export default {
 	methods: {
 		redirect() {
 			this.$router.push('/f-login');
-			this.$router.go()
+			this.$router.go();
 		}
 	}
 };

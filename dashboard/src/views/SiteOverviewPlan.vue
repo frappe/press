@@ -22,7 +22,7 @@
 			</Button>
 		</template>
 
-		<div v-if="plan.current_plan" class="flex p-5 rounded-lg bg-gray-50">
+		<div v-if="plan.current_plan" class="flex rounded-lg bg-gray-50 p-5">
 			<PlanIcon />
 			<div class="ml-4">
 				<h4 class="text-4xl font-semibold text-gray-900">
@@ -38,13 +38,13 @@
 				</p>
 			</div>
 		</div>
-		<div v-else class="flex p-5 rounded-lg bg-gray-50">
+		<div v-else class="flex rounded-lg bg-gray-50 p-5">
 			<div>
 				<h4 class="font-semibold text-gray-600">No Plan Set</h4>
 			</div>
 		</div>
 
-		<div v-if="plan.current_plan" class="grid grid-cols-3 gap-12 mt-4">
+		<div v-if="plan.current_plan" class="mt-4 grid grid-cols-3 gap-12">
 			<div v-for="d in usage" :key="d.label">
 				<ProgressArc :percentage="d.percentage" />
 				<div class="mt-2 text-base font-medium text-gray-900">
@@ -56,7 +56,7 @@
 				<div class="mt-1 text-xs text-gray-600">{{ d.value }}</div>
 			</div>
 		</div>
-		<div v-else class="grid grid-cols-3 gap-12 mt-4 ml-2">
+		<div v-else class="mt-4 ml-2 grid grid-cols-3 gap-12">
 			<div v-for="d in usage" :key="d.label">
 				<div class="text-base font-medium text-gray-900">
 					{{ d.label }}

@@ -30,7 +30,7 @@
 							</a>
 							<span v-else>{{ d.domain }}</span>
 						</div>
-						<div class="flex items-center ml-auto space-x-2">
+						<div class="ml-auto flex items-center space-x-2">
 							<Badge
 								v-if="d.status != 'Active' || d.primary"
 								:status="d.status"
@@ -52,7 +52,7 @@
 							<Button
 								v-if="
 									$resources.removeDomain.loading &&
-										$resources.removeDomain.currentParams.domain == d.domain
+									$resources.removeDomain.currentParams.domain == d.domain
 								"
 								:loading="true"
 							>
@@ -90,14 +90,14 @@
 				<p class="flex text-base" v-if="dnsVerified === false">
 					<FeatherIcon
 						name="x"
-						class="w-5 h-5 p-1 mr-2 text-red-500 bg-red-100 rounded-full"
+						class="mr-2 h-5 w-5 rounded-full bg-red-100 p-1 text-red-500"
 					/>
 					DNS Verification Failed
 				</p>
 				<p class="flex text-base" v-if="dnsVerified === true">
 					<FeatherIcon
 						name="check"
-						class="w-5 h-5 p-1 mr-2 text-green-500 bg-green-100 rounded-full"
+						class="mr-2 h-5 w-5 rounded-full bg-green-100 p-1 text-green-500"
 					/>
 					DNS records successfully verified. Click on Add Domain.
 				</p>
@@ -107,9 +107,7 @@
 			</div>
 
 			<div slot="actions">
-				<Button @click="showDialog = false">
-					Cancel
-				</Button>
+				<Button @click="showDialog = false"> Cancel </Button>
 				<Button
 					v-if="!dnsVerified"
 					class="ml-3"

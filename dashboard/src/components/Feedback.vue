@@ -12,7 +12,7 @@
 					new features work on next.
 				</p>
 				<textarea
-					class="w-full resize-none form-textarea"
+					class="form-textarea w-full resize-none"
 					rows="4"
 					placeholder="Your feedback"
 					v-model="message"

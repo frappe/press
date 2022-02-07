@@ -6,7 +6,7 @@
 	>
 		<div class="divide-y" v-if="pastInvoices.data && pastInvoices.data.length">
 			<div
-				class="grid items-center grid-cols-3 py-4 text-base text-gray-600 gap-x-8 md:grid-cols-5"
+				class="grid grid-cols-3 items-center gap-x-8 py-4 text-base text-gray-600 md:grid-cols-5"
 			>
 				<span>Date</span>
 				<span class="hidden md:inline">Description</span>
@@ -17,7 +17,7 @@
 			<div
 				:key="invoice.name"
 				v-for="invoice in pastInvoices.data"
-				class="grid items-center grid-cols-3 py-4 text-base text-gray-900 gap-x-8 md:grid-cols-5"
+				class="grid grid-cols-3 items-center gap-x-8 py-4 text-base text-gray-900 md:grid-cols-5"
 			>
 				<div>
 					<div>
@@ -63,7 +63,7 @@
 					<Button
 						v-if="invoice.invoice_pdf"
 						icon-left="download"
-						class="flex-shrink-0"
+						class="shrink-0"
 						:link="invoice.invoice_pdf"
 					>
 						<span class="text-sm">Download Invoice</span>
@@ -71,7 +71,7 @@
 					<Button
 						v-if="invoice.status != 'Paid' && invoice.stripe_invoice_url"
 						icon-left="external-link"
-						class="flex-shrink-0"
+						class="shrink-0"
 						:link="invoice.stripe_invoice_url"
 					>
 						<span class="text-sm">Pay Now</span>

@@ -1,11 +1,11 @@
 <template>
 	<Card title="Uptime">
 		<div class="mt-8" v-for="type in uptimeTypes" :key="type.key">
-			<div class="flex justify-between h-8">
+			<div class="flex h-8 justify-between">
 				<div
 					v-for="d in data"
 					:key="d.timestamp"
-					style="width: 2px;"
+					style="width: 2px"
 					:class="[
 						d[type.key] === undefined
 							? 'bg-white'

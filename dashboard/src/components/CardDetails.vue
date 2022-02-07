@@ -1,6 +1,6 @@
 <template>
 	<div
-		class="flex-col w-full min-h-full md:border-l md:w-2/3"
+		class="min-h-full w-full flex-col md:w-2/3 md:border-l"
 		:class="showDetails ? 'flex' : 'hidden md:flex'"
 		:style="{ height: 'calc(100vh - 16rem)' }"
 	>

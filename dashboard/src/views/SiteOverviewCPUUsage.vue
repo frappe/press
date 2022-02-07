@@ -18,9 +18,7 @@
 				:loading="true"
 				loading-text="Loading"
 			/>
-			<span v-else>
-				No data yet
-			</span>
+			<span v-else> No data yet </span>
 		</div>
 	</Card>
 </template>

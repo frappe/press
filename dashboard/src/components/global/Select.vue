@@ -2,19 +2,19 @@
 	<label class="block">
 		<span
 			v-if="label"
-			class="inline-block mb-2 text-sm leading-4 text-gray-700"
+			class="mb-2 inline-block text-sm leading-4 text-gray-700"
 		>
 			{{ label }}
 		</span>
 		<input
 			v-if="type !== 'select'"
-			class="block w-full form-input"
+			class="form-input block w-full"
 			:class="inputClass"
 			:type="type || 'text'"
 			v-bind="$attrs"
 			v-model="inputVal"
 		/>
-		<select class="block w-full form-select" v-model="inputVal" v-else>
+		<select class="form-select block w-full" v-model="inputVal" v-else>
 			<option v-for="option in options" :key="option">
 				{{ option }}
 			</option>

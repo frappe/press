@@ -5,10 +5,10 @@
 		v-if="$account.team.ssh_access_enabled"
 	>
 		<div v-if="$account.ssh_key">
-			<p class="text-sm text-gray-800 font-mono">
+			<p class="font-mono text-sm text-gray-800">
 				SHA256:{{ $account.ssh_key.ssh_fingerprint }}
 			</p>
-			<div class="text-base text-gray-700 mt-2">
+			<div class="mt-2 text-base text-gray-700">
 				Added on
 				{{
 					$date($account.ssh_key.creation).toLocaleString({

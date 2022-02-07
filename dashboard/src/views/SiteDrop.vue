@@ -1,5 +1,5 @@
 <template>
-	<div class="flex-shrink-0">
+	<div class="shrink-0">
 		<slot v-bind="{ showDialog }"></slot>
 		<Dialog v-model="dialogOpen" title="Drop Site">
 			<p class="text-base">
@@ -11,12 +11,10 @@
 				Please type
 				<span class="font-semibold">{{ site.name }}</span> to confirm.
 			</p>
-			<Input type="text" class="w-full mt-4" v-model="confirmSiteName" />
+			<Input type="text" class="mt-4 w-full" v-model="confirmSiteName" />
 			<ErrorMessage class="mt-2" :error="$resources.dropSite.error" />
 			<div slot="actions">
-				<Button @click="dialogOpen = false">
-					Cancel
-				</Button>
+				<Button @click="dialogOpen = false"> Cancel </Button>
 				<Button
 					class="ml-3"
 					type="danger"

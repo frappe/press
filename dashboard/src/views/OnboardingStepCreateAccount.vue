@@ -1,12 +1,10 @@
 <template>
 	<div>
 		<div class="flex">
-			<GreenCheckIcon class="w-5 h-5" />
-			<div class="ml-2 text-lg font-medium">
-				Create account
-			</div>
+			<GreenCheckIcon class="h-5 w-5" />
+			<div class="ml-2 text-lg font-medium">Create account</div>
 		</div>
-		<div class="relative pb-6 mt-1 text-sm text-gray-600 pl-7">
+		<div class="relative mt-1 pb-6 pl-7 text-sm text-gray-600">
 			<p>
 				Your account
 				<span class="font-semibold">{{ $account.team.name }}</span> has been

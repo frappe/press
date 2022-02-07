@@ -1,21 +1,19 @@
 <template>
 	<div>
-		<label class="text-lg font-semibold">
-			Choose a hostname
-		</label>
+		<label class="text-lg font-semibold"> Choose a hostname </label>
 		<p class="text-base text-gray-700">
 			Give your site a unique name. It can only contain alphanumeric characters
 			and dashes.
 		</p>
-		<div class="flex mt-4">
+		<div class="mt-4 flex">
 			<input
-				class="z-10 w-full rounded-r-none form-input "
+				class="form-input z-10 w-full rounded-r-none"
 				type="text"
 				:value="subdomain"
 				placeholder="subdomain"
 				@change="subdomainChange"
 			/>
-			<div class="flex items-center px-4 text-base bg-gray-100 rounded-r">
+			<div class="flex items-center rounded-r bg-gray-100 px-4 text-base">
 				.{{ options.domain }}
 			</div>
 		</div>

@@ -51,7 +51,7 @@
 						title="Update time"
 						:description="
 							getFormattedTime(siteAutoUpdateInfo.update_trigger_time) ||
-								'Not Set'
+							'Not Set'
 						"
 					/>
 

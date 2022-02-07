@@ -1,9 +1,7 @@
 <template>
 	<div class="space-y-6">
 		<div v-if="!this.privateBench">
-			<h2 class="text-lg font-semibold">
-				Select Frappe version
-			</h2>
+			<h2 class="text-lg font-semibold">Select Frappe version</h2>
 			<p class="text-base text-gray-700">
 				Select the Frappe version for your site
 			</p>
@@ -16,9 +14,7 @@
 			</div>
 		</div>
 		<div v-if="regionOptions.length > 0">
-			<h2 class="text-lg font-semibold">
-				Select Region
-			</h2>
+			<h2 class="text-lg font-semibold">Select Region</h2>
 			<p class="text-base text-gray-700">
 				Select the datacenter region where your site should be created
 			</p>
@@ -31,9 +27,7 @@
 			</div>
 		</div>
 		<div v-if="publicApps.length || privateApps.length">
-			<h2 class="text-lg font-semibold">
-				Select apps to install
-			</h2>
+			<h2 class="text-lg font-semibold">Select apps to install</h2>
 			<p class="text-base text-gray-700">
 				Choose apps to install on your site. You can select apps published on
 				marketplace or your private apps.
@@ -42,7 +36,7 @@
 				<div v-if="publicApps.length">
 					<h3 class="sr-only">Marketplace Apps</h3>
 					<div
-						class="grid grid-cols-2 gap-4 px-2 py-2 mt-4 -mx-2 overflow-y-auto max-h-56"
+						class="-mx-2 mt-4 grid max-h-56 grid-cols-2 gap-4 overflow-y-auto px-2 py-2"
 					>
 						<SelectableCard
 							v-for="publicApp in publicApps"
@@ -79,11 +73,9 @@
 					</div>
 				</div>
 				<div v-if="privateApps.length > 0">
-					<h3 class="text-sm font-medium">
-						Your Private Apps
-					</h3>
+					<h3 class="text-sm font-medium">Your Private Apps</h3>
 					<div
-						class="grid grid-cols-2 gap-4 px-2 py-2 -mx-2 overflow-y-auto mt- max-h-56"
+						class="mt- -mx-2 grid max-h-56 grid-cols-2 gap-4 overflow-y-auto px-2 py-2"
 					>
 						<SelectableCard
 							v-for="app in privateApps"
@@ -129,7 +121,7 @@ export default {
 		'selectedRegion',
 		'shareDetailsConsent'
 	],
-	data: function() {
+	data: function () {
 		return {
 			selectedVersion: null
 		};

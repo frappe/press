@@ -1,12 +1,10 @@
 <template>
 	<div>
-		<label class="text-lg font-semibold">
-			Restore an existing site
-		</label>
+		<label class="text-lg font-semibold"> Restore an existing site </label>
 		<p class="text-base text-gray-700">
 			Restore an existing site from backup files or directly from site url.
 		</p>
-		<div class="grid grid-cols-2 gap-6 mt-4">
+		<div class="mt-4 grid grid-cols-2 gap-6">
 			<Button
 				v-for="tab in [
 					{ name: 'Upload Backups', key: 'backup' },
@@ -21,9 +19,9 @@
 		</div>
 		<div v-if="restoreFrom === 'backup'">
 			<div
-				class="px-4 py-3 mt-6 text-sm text-gray-700 border border-gray-300 rounded-md"
+				class="mt-6 rounded-md border border-gray-300 px-4 py-3 text-sm text-gray-700"
 			>
-				<ol class="pl-4 list-decimal">
+				<ol class="list-decimal pl-4">
 					<li>Login to your site.</li>
 					<li>From the Download Backups page, download the latest backup.</li>
 					<li>
@@ -36,7 +34,7 @@
 					</li>
 				</ol>
 			</div>
-			<Alert class="w-full mt-5" v-if="manualMigration">
+			<Alert class="mt-5 w-full" v-if="manualMigration">
 				Seems like your site is huge. Open a support ticket mentioning that you
 				want to restore a backup and it's size and we'll take it from there.
 			</Alert>
@@ -49,9 +47,9 @@
 		<div v-if="restoreFrom === 'siteUrl'">
 			<div class="mt-6">
 				<div
-					class="px-4 py-3 text-sm text-gray-700 border border-gray-300 rounded-md"
+					class="rounded-md border border-gray-300 px-4 py-3 text-sm text-gray-700"
 				>
-					<ol class="pl-4 list-decimal">
+					<ol class="list-decimal pl-4">
 						<li>Login to your site.</li>
 						<li>
 							From the Download Backups page, click on Download Files Backup.
@@ -63,7 +61,7 @@
 					</ol>
 				</div>
 				<Alert
-					class="w-full mt-5"
+					class="mt-5 w-full"
 					v-if="
 						errorContains('Your site exceeds the limits for this operation')
 					"
@@ -128,14 +126,7 @@
 			<input
 				id="skip-failing"
 				type="checkbox"
-				class="
-				h-4
-				w-4
-				text-blue-600
-				focus:ring-blue-500
-				border-gray-300
-				rounded
-			"
+				class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
 				v-model="wantToSkipFailingPatches"
 			/>
 			<label for="skip-failing" class="ml-2 text-sm text-gray-900">

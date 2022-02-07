@@ -2,7 +2,7 @@
 	<label :class="type == 'checkbox' ? 'flex' : 'block'">
 		<span
 			v-if="label && type != 'checkbox'"
-			class="block mb-2 text-sm leading-4 text-gray-700"
+			class="mb-2 block text-sm leading-4 text-gray-700"
 		>
 			{{ label }}
 		</span>
@@ -16,7 +16,7 @@
 			ref="input"
 			:class="[
 				{
-					'block w-full form-input': type != 'checkbox',
+					'form-input block w-full': type != 'checkbox',
 					'form-checkbox': type == 'checkbox'
 				},
 				inputClass
@@ -31,7 +31,7 @@
 		<textarea
 			v-if="type === 'textarea'"
 			:class="[
-				'block w-full resize-none form-textarea placeholder-gray-500',
+				'form-textarea block w-full resize-none placeholder-gray-500',
 				inputClass
 			]"
 			ref="input"
@@ -44,7 +44,7 @@
 			@blur="$emit('blur', $event)"
 		></textarea>
 		<select
-			class="block w-full form-select"
+			class="form-select block w-full"
 			ref="input"
 			v-if="type === 'select'"
 			:disabled="disabled"
@@ -61,7 +61,7 @@
 		</select>
 		<span
 			v-if="label && type == 'checkbox'"
-			class="inline-block ml-2 text-base leading-4"
+			class="ml-2 inline-block text-base leading-4"
 		>
 			{{ label }}
 		</span>
