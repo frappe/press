@@ -36,5 +36,6 @@
 - name: Start ProxySQL
   become: yes
   become_user: frappe
-  command: "docker run -d --name proxysql --hostname proxysql --restart always -p 3306:6033 -p 127.0.0.1:6032:6032 -v /home/frappe/proxysql:/var/lib/proxysql -v /home/frappe/proxysql/proxysql.cnf:/etc/proxysql.cnf proxysql/proxysql:2.3.2"
+  command: "docker run -d --name proxysql --hostname proxysql --restart always -p 3306:6033 -p 127.0.0.1:6032:6032 -p 127.0.0.1:6070:6070 -v /home/frappe/proxysql:/var/lib/proxysql -v /home/frappe/proxysql/proxysql.cnf:/etc/proxysql.cnf proxysql/proxysql:2.3.2"
+
 
