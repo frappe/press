@@ -455,6 +455,25 @@ class Agent:
 			upstream=bench.server,
 		)
 
+	def add_proxysql_user(self, site, username, password, database_server):
+		data = {
+			"username": username,
+			"password": password,
+			"database": username,
+			"backend": {"ip": database_server.private_ip, "id": database_server.server_id},
+		}
+		return self.create_agent_job(
+			"Add User to ProxySQL", "proxysql/users", data, site=site.name
+		)
+
+	def remove_proxysql_user(self, site, username):
+		return self.create_agent_job(
+			"Remove User from ProxySQL",
+			f"proxysql/users/{username}",
+			method="DELETE",
+			site=site.name,
+		)
+
 	def update_site_status(self, server, site, status):
 		data = {"status": status}
 		private_ip = frappe.db.get_value("Server", server, "private_ip")

@@ -988,6 +988,28 @@ class Site(Document):
 			}
 		).insert(ignore_permissions=True)
 
+	@frappe.whitelist()
+	def enable_database_access(self):
+		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
+		agent = Agent(proxy_server, server_type="Proxy Server")
+
+		config = self.fetch_info()["config"]
+
+		database_server_name = frappe.db.get_value("Server", self.server, "database_server")
+		database_server = frappe.get_doc("Database Server", database_server_name)
+
+		agent.add_proxysql_user(
+			self, config["db_name"], config["db_password"], database_server
+		)
+
+	@frappe.whitelist()
+	def disable_database_access(self):
+		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
+		agent = Agent(proxy_server, server_type="Proxy Server")
+
+		config = self.fetch_info()["config"]
+		agent.remove_proxysql_user(self, config["db_name"])
+
 	@property
 	def server_logs(self):
 		return Agent(self.server).get(f"benches/{self.bench}/sites/{self.name}/logs")
@@ -1206,6 +1228,16 @@ def process_rename_site_job_update(job):
 	site_status = frappe.get_value("Site", job.site, "status")
 	if updated_status != site_status:
 		frappe.db.set_value("Site", job.site, "status", updated_status)
+
+
+def process_add_proxysql_user_job_update(job):
+	if job.status == "Success":
+		frappe.db.set_value("Site", job.site, "is_database_access_enabled", True)
+
+
+def process_remove_proxysql_user_job_update(job):
+	if job.status == "Success":
+		frappe.db.set_value("Site", job.site, "is_database_access_enabled", False)
 
 
 def update_records_for_rename(job):

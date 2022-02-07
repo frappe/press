@@ -282,6 +282,8 @@ def process_job_updates(job_name):
 			process_reinstall_site_job_update,
 			process_rename_site_job_update,
 			process_restore_tables_job_update,
+			process_add_proxysql_user_job_update,
+			process_remove_proxysql_user_job_update,
 		)
 		from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
 		from press.press.doctype.site_domain.site_domain import process_new_host_job_update
@@ -345,6 +347,10 @@ def process_job_updates(job_name):
 			process_add_ssh_user_job_update(job)
 		elif job.job_type == "Remove User from Proxy":
 			process_remove_ssh_user_job_update(job)
+		elif job.job_type == "Add User to ProxySQL":
+			process_add_proxysql_user_job_update(job)
+		elif job.job_type == "Remove User from ProxySQL":
+			process_remove_proxysql_user_job_update(job)
 
 	except Exception as e:
 		log_error("Agent Job Callback Exception", job=job.as_dict())
