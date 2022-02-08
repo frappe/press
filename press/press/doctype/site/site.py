@@ -998,7 +998,7 @@ class Site(Document):
 		database_server_name = frappe.db.get_value("Server", self.server, "database_server")
 		database_server = frappe.get_doc("Database Server", database_server_name)
 
-		agent.add_proxysql_user(
+		return agent.add_proxysql_user(
 			self, config["db_name"], config["db_password"], database_server
 		)
 
@@ -1008,7 +1008,7 @@ class Site(Document):
 		agent = Agent(proxy_server, server_type="Proxy Server")
 
 		config = self.fetch_info()["config"]
-		agent.remove_proxysql_user(self, config["db_name"])
+		return agent.remove_proxysql_user(self, config["db_name"])
 
 	@frappe.whitelist()
 	def get_database_credentials(self):
