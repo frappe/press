@@ -1,7 +1,7 @@
 {
  "actions": [],
  "autoname": "Prompt",
- "creation": "2021-01-18 14:53:26.146948",
+ "creation": "2022-01-28 20:07:41.240327",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -27,6 +27,7 @@
   "aws_vpc_id",
   "aws_subnet_id",
   "aws_security_group_id",
+  "aws_proxy_security_group_id",
   "aws_network_acl_id",
   "aws_route_table_id"
  ],
@@ -174,6 +175,12 @@
    "fieldname": "image",
    "fieldtype": "Attach Image",
    "label": "Image"
+  },
+  {
+   "fieldname": "aws_proxy_security_group_id",
+   "fieldtype": "Data",
+   "label": "AWS Proxy Security Group ID",
+   "read_only": 1
   }
  ],
  "image_field": "image",
@@ -195,7 +202,7 @@
    "link_fieldname": "cluster"
   }
  ],
- "modified": "2021-09-16 15:40:43.752163",
+ "modified": "2022-02-08 16:59:18.836427",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",
@@ -217,5 +224,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }

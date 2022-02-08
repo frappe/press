@@ -156,12 +156,6 @@ class Cluster(Document):
 					"ToPort": 22,
 				},
 				{
-					"FromPort": 2222,
-					"IpProtocol": "tcp",
-					"IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": "SSH proxy from anywhere"}],
-					"ToPort": 2222,
-				},
-				{
 					"FromPort": 3306,
 					"IpProtocol": "tcp",
 					"IpRanges": [
@@ -185,6 +179,7 @@ class Cluster(Document):
 				},
 			],
 		)
+		self.create_proxy_security_group()
 
 		try:
 			# We don't care if the key already exists in this region
@@ -198,6 +193,46 @@ class Cluster(Document):
 		except Exception:
 			pass
 		self.save()
+
+	def create_proxy_security_group(self):
+		client = boto3.client(
+			"ec2",
+			region_name=self.region,
+			aws_access_key_id=self.aws_access_key_id,
+			aws_secret_access_key=self.get_password("aws_secret_access_key"),
+		)
+		response = client.create_security_group(
+			GroupName=f"Frappe Cloud - {self.name} - Proxy - Security Group",
+			Description="Allow Everything on Proxy",
+			VpcId=self.aws_vpc_id,
+			TagSpecifications=[
+				{
+					"ResourceType": "security-group",
+					"Tags": [
+						{"Key": "Name", "Value": f"Frappe Cloud - {self.name} - Proxy - Security Group"},
+					],
+				},
+			],
+		)
+		self.aws_proxy_security_group_id = response["GroupId"]
+
+		client.authorize_security_group_ingress(
+			GroupId=self.aws_proxy_security_group_id,
+			IpPermissions=[
+				{
+					"FromPort": 2222,
+					"IpProtocol": "tcp",
+					"IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": "SSH proxy from anywhere"}],
+					"ToPort": 2222,
+				},
+				{
+					"FromPort": 3306,
+					"IpProtocol": "tcp",
+					"IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": "MariaDB from anywhere"}],
+					"ToPort": 3306,
+				},
+			],
+		)
 
 	@classmethod
 	def get_all_for_new_bench(cls, extra_filters={}) -> List[Dict[str, str]]:
