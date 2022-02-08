@@ -67,6 +67,7 @@
 						</div>
 						<div>
 							<Button
+								icon-left="hard-drive"
 								v-if="$account.ssh_key && selectedVersion.is_ssh_proxy_setup"
 								@click="showSSHDialog = true"
 								class="mx-3"
