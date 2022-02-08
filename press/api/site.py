@@ -705,7 +705,7 @@ def current_plan(name):
 	plan = frappe.get_doc("Plan", site.plan) if site.plan else None
 
 	result = get_current_cpu_usage(name)
-	total_cpu_usage_hours = flt(result / (3.6 * (10**9)), 5)
+	total_cpu_usage_hours = flt(result / (3.6 * (10 ** 9)), 5)
 
 	usage = frappe.get_all(
 		"Site Usage",
@@ -1128,3 +1128,42 @@ def update_auto_update_info(name, info=dict()):
 	site_doc = frappe.get_doc("Site", name, for_update=True)
 	site_doc.update(info)
 	site_doc.save()
+
+
+@frappe.whitelist()
+@protected("Site")
+def get_database_access_info(name):
+	db_access_info = frappe._dict({})
+
+	is_db_access_enabled = frappe.db.get_value("Site", name, "is_database_access_enabled")
+	db_access_info.is_database_access_enabled = is_db_access_enabled
+
+	if not is_db_access_enabled:
+		# Nothing more we can return here
+		return db_access_info
+
+	site_doc = frappe.get_doc("Site", name)
+	db_access_info.credentials = site_doc.get_database_credentials()
+
+	return db_access_info
+
+
+@frappe.whitelist()
+@protected("Site")
+def enable_database_access(name):
+	site_doc = frappe.get_doc("Site", name)
+	enable_access_job = site_doc.enable_database_access()
+	return enable_access_job.name
+
+
+@frappe.whitelist()
+@protected("Site")
+def disable_database_access(name):
+	site_doc = frappe.get_doc("Site", name)
+	disable_access_job = site_doc.disable_database_access()
+	return disable_access_job.name
+
+
+@frappe.whitelist()
+def get_job_status(job_name):
+	return {"status": frappe.db.get_value("Agent Job", job_name, "status")}
