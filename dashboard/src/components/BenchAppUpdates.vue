@@ -3,7 +3,7 @@
 		<AppUpdateCard
 			v-for="app in appsWithUpdates"
 			:key="app.app"
-			@click.native="toggleApp(app)"
+			@click.native.self="toggleApp(app)"
 			:app="app"
 			:selected="selectedApps.includes(app.app)"
 			:uninstall="false"
