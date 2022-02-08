@@ -155,7 +155,7 @@ Username: ${r.message.username}
 
 Password: ${r.message.password}
 
-\`\`\`\nmysql -u ${r.message.username} -p${r.message.password} -h ${r.message.host} -P ${r.message.port} --ssl --ssl-verify-server-cert ${r.message.database}\n\`\`\``;
+\`\`\`\nmysql -u ${r.message.username} -p${r.message.password} -h ${r.message.host} -P ${r.message.port} --ssl --ssl-verify-server-cert\n\`\`\``;
 
 					frappe.msgprint(frappe.markdown(message), "Database Credentials");
 				}),
