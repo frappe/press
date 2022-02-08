@@ -140,6 +140,28 @@ frappe.ui.form.on('Site', {
 			);
 		});
 		frm.toggle_enable(['host_name'], frm.doc.status === 'Active');
+
+		if (frm.doc.is_database_access_enabled) {
+			frm.add_custom_button(
+				__('Show Database Credentials'),
+				() => frm.call("get_database_credentials").then((r) => {
+					let message = `Host: ${r.message.host}
+
+Port: ${r.message.port}
+
+Database: ${r.message.database}
+
+Username: ${r.message.username}
+
+Password: ${r.message.password}
+
+\`\`\`\nmysql -u ${r.message.username} -p${r.message.password} -h ${r.message.host} -P ${r.message.port} --ssl --ssl-verify-server-cert ${r.message.database}\n\`\`\``;
+
+					frappe.msgprint(frappe.markdown(message), "Database Credentials");
+				}),
+				__('Actions')
+			);
+		}
 	}
 });
 

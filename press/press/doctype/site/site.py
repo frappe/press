@@ -1010,6 +1010,19 @@ class Site(Document):
 		config = self.fetch_info()["config"]
 		agent.remove_proxysql_user(self, config["db_name"])
 
+	@frappe.whitelist()
+	def get_database_credentials(self):
+		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
+		config = self.fetch_info()["config"]
+
+		return {
+			"host": proxy_server,
+			"port": 3306,
+			"database": config["db_name"],
+			"username": config["db_name"],
+			"password": config["db_password"],
+		}
+
 	@property
 	def server_logs(self):
 		return Agent(self.server).get(f"benches/{self.bench}/sites/{self.name}/logs")
