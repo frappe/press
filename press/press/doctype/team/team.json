@@ -2,7 +2,7 @@
  "actions": [],
  "allow_rename": 1,
  "autoname": "Prompt",
- "creation": "2022-01-12 12:54:06.055871",
+ "creation": "2022-01-28 20:07:37.989538",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -35,6 +35,7 @@
   "feature_flags_section",
   "referrer_id",
   "ssh_access_enabled",
+  "database_access_enabled",
   "section_break_28",
   "communication_emails"
  ],
@@ -217,6 +218,12 @@
    "fieldname": "ssh_access_enabled",
    "fieldtype": "Check",
    "label": "SSH Access Enabled"
+  },
+  {
+   "default": "0",
+   "fieldname": "database_access_enabled",
+   "fieldtype": "Check",
+   "label": "Database Access Enabled"
   }
  ],
  "links": [
@@ -271,7 +278,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2022-01-27 16:27:21.438628",
+ "modified": "2022-02-08 16:45:36.269199",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
