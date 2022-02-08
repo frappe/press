@@ -10,7 +10,7 @@ from frappe.utils.fixtures import sync_fixtures
 def execute():
 	sync_fixtures("press")
 	domains = frappe.get_all(
-		"Site Domain", fields=["site", "domain", "name"], filters={"status": "Active"},
+		"Site Domain", fields=["site", "domain", "name"], filters={"status": "Active"}
 	)
 
 	for domain in domains:

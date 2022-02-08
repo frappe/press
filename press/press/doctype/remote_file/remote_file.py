@@ -124,11 +124,11 @@ def delete_remote_backup_objects(remote_files):
 		response = s3.delete_objects(Delete={"Objects": objects})
 		response = pprint.pformat(response)
 		frappe.get_doc(
-			doctype="Remote Operation Log", operation_type="Delete Files", response=response,
+			doctype="Remote Operation Log", operation_type="Delete Files", response=response
 		).insert()
 
 	frappe.db.set_value(
-		"Remote File", {"name": ("in", remote_files)}, "status", "Unavailable",
+		"Remote File", {"name": ("in", remote_files)}, "status", "Unavailable"
 	)
 
 	return remote_files

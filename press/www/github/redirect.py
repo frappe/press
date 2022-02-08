@@ -15,7 +15,7 @@ def get_context(context):
 			headers = {"Accept": "application/vnd.github.v3+json"}
 			response = frappe._dict(
 				requests.post(
-					f"https://api.github.com/app-manifests/{code}/conversions", headers=headers,
+					f"https://api.github.com/app-manifests/{code}/conversions", headers=headers
 				).json()
 			)
 

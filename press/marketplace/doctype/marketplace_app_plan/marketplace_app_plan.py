@@ -20,7 +20,7 @@ class MarketplaceAppPlan(Document):
 
 def get_app_plan_features(app_plan: str) -> List[str]:
 	features = frappe.get_all(
-		"Plan Feature", filters={"parent": app_plan}, pluck="description", order_by="idx",
+		"Plan Feature", filters={"parent": app_plan}, pluck="description", order_by="idx"
 	)
 
 	return features

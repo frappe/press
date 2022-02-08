@@ -40,7 +40,7 @@ def create_balance_transactions_for_team(name):
 	print(f"Creating Balance Transactions for {team.name}")
 
 	response = stripe.Customer.list_balance_transactions(
-		team.stripe_customer_id, limit=100,
+		team.stripe_customer_id, limit=100
 	)
 	transactions = response.data
 	transactions.reverse()

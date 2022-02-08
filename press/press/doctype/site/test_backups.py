@@ -19,10 +19,10 @@ class TestScheduledBackupJob(unittest.TestCase):
 		frappe.db.rollback()
 
 	def _offsite_count(self, site: str):
-		return frappe.db.count("Site Backup", {"site": site, "offsite": True},)
+		return frappe.db.count("Site Backup", {"site": site, "offsite": True})
 
 	def _with_files_count(self, site: str):
-		return frappe.db.count("Site Backup", {"site": site, "with_files": True},)
+		return frappe.db.count("Site Backup", {"site": site, "with_files": True})
 
 	def setUp(self):
 		self.interval = 6
@@ -37,7 +37,7 @@ class TestScheduledBackupJob(unittest.TestCase):
 		)
 
 	@patch.object(
-		ScheduledBackupJob, "is_backup_hour", new=lambda self, x: True,  # always backup hour
+		ScheduledBackupJob, "is_backup_hour", new=lambda self, x: True  # always backup hour
 	)
 	@patch.object(
 		ScheduledBackupJob,
@@ -57,7 +57,7 @@ class TestScheduledBackupJob(unittest.TestCase):
 		self.assertEqual(offsite_count_after, offsite_count_before)
 
 	@patch.object(
-		ScheduledBackupJob, "is_backup_hour", new=lambda self, x: True,  # always backup hour
+		ScheduledBackupJob, "is_backup_hour", new=lambda self, x: True  # always backup hour
 	)
 	def test_with_files_taken_once_per_day(self):
 		site = self._create_site_requiring_backup()

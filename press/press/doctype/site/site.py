@@ -465,7 +465,7 @@ class Site(Document):
 		status = frappe.get_value("Site Domain", domain, "status")
 		if status != "Active":
 			frappe.throw(
-				msg="Only active domains can be primary", exc=frappe.LinkValidationError,
+				msg="Only active domains can be primary", exc=frappe.LinkValidationError
 			)
 
 	def _validate_host_name(self):
@@ -953,7 +953,7 @@ class Site(Document):
 	@property
 	def subscription(self):
 		name = frappe.db.get_value(
-			"Subscription", {"document_type": "Site", "document_name": self.name},
+			"Subscription", {"document_type": "Site", "document_name": self.name}
 		)
 		return frappe.get_doc("Subscription", name) if name else None
 

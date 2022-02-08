@@ -62,9 +62,7 @@ class SiteUpdate(Document):
 			)
 
 		if self.has_pending_updates():
-			frappe.throw(
-				"An update is already pending for this site", frappe.ValidationError,
-			)
+			frappe.throw("An update is already pending for this site", frappe.ValidationError)
 
 		if not self.skipped_failing_patches and self.have_past_updates_failed():
 			frappe.throw(

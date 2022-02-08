@@ -206,5 +206,5 @@ class Cluster(Document):
 		)
 		filters = {"name": ("in", cluster_names), "public": True}
 		return frappe.db.get_all(
-			"Cluster", filters={**filters, **extra_filters}, fields=["name", "title", "image"],
+			"Cluster", filters={**filters, **extra_filters}, fields=["name", "title", "image"]
 		)

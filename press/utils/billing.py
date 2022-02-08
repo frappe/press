@@ -94,7 +94,7 @@ def get_frappe_io_connection():
 		frappe.throw("Frappe.io URL not set up in Press Settings", exc=FrappeioServerNotSet)
 
 	frappe.local.press_frappeio_conn = FrappeClient(
-		press_settings.frappe_url, api_key=frappe_api_key, api_secret=frappe_api_secret,
+		press_settings.frappe_url, api_key=frappe_api_key, api_secret=frappe_api_secret
 	)
 
 	return get_frappe_io_connection()
@@ -164,7 +164,7 @@ def convert_stripe_money(amount):
 
 
 def validate_gstin_check_digit(gstin, label="GSTIN"):
-	""" Function to validate the check digit of the GSTIN."""
+	"""Function to validate the check digit of the GSTIN."""
 	factor = 1
 	total = 0
 	code_point_chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"

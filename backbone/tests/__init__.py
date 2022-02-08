@@ -9,7 +9,7 @@ from coverage import Coverage
 
 def run_tests():
 	coverage = Coverage(
-		source=[str(Path(__file__).parent.parent)], omit=["*/tests/*"], branch=True,
+		source=[str(Path(__file__).parent.parent)], omit=["*/tests/*"], branch=True
 	)
 	coverage.start()
 	unittest.main(module=None, argv=["", "discover", "-s", "backbone"], exit=False)

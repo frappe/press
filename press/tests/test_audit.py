@@ -110,7 +110,7 @@ class TestOffsiteBackupCheck(TestAudit):
 			"Remote File", site_backup.remote_database_file, "file_path", "remote_file1"
 		)
 		with patch.object(
-			OffsiteBackupCheck, "_get_all_files_in_s3", new=lambda x: ["remote_file1"],
+			OffsiteBackupCheck, "_get_all_files_in_s3", new=lambda x: ["remote_file1"]
 		):
 			OffsiteBackupCheck()
 		audit_log = frappe.get_last_doc(

@@ -15,7 +15,7 @@ class AppReleaseDifference(Document):
 	def validate(self):
 		if self.source_release == self.destination_release:
 			frappe.throw(
-				"Destination Release must be different from Source Release", frappe.ValidationError,
+				"Destination Release must be different from Source Release", frappe.ValidationError
 			)
 
 		source = frappe.get_doc("App Source", self.source)

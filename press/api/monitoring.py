@@ -15,7 +15,7 @@ def targets(token):
 		return
 
 	sites = frappe.get_all(
-		"Site", ["name", "bench"], {"status": "Active"}, order_by="bench, name",
+		"Site", ["name", "bench"], {"status": "Active"}, order_by="bench, name"
 	)
 
 	benches = []

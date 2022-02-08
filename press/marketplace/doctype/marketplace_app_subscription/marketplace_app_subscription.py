@@ -142,7 +142,7 @@ class MarketplaceAppSubscription(Document):
 
 def create_usage_records():
 	subscriptions = frappe.db.get_all(
-		"Marketplace App Subscription", filters={"status": "Active"}, pluck="name",
+		"Marketplace App Subscription", filters={"status": "Active"}, pluck="name"
 	)
 	for name in subscriptions:
 		subscription = frappe.get_doc("Marketplace App Subscription", name)

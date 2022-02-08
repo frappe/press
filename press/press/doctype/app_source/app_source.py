@@ -54,7 +54,7 @@ class AppSource(Document):
 		for row in self.versions:
 			if row.version in versions:
 				frappe.throw(
-					f"Version {row.version} can be added only once", frappe.ValidationError,
+					f"Version {row.version} can be added only once", frappe.ValidationError
 				)
 			versions.add(row.version)
 
@@ -88,7 +88,7 @@ class AppSource(Document):
 			branch = github_response.json()
 			hash = branch["commit"]["sha"]
 			if not frappe.db.exists(
-				"App Release", {"app": self.app, "source": self.name, "hash": hash},
+				"App Release", {"app": self.app, "source": self.name, "hash": hash}
 			):
 				is_first_release = 0  # frappe.db.count("App Release", {"app": self.name}) == 0
 				frappe.get_doc(

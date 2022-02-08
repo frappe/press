@@ -141,7 +141,7 @@ def get_site_url_and_sid(key):
 		frappe.throw("Invalid or Expired Key")
 
 	name = frappe.db.get_value(
-		"Site", {"subdomain": account_request.subdomain, "domain": get_erpnext_domain()},
+		"Site", {"subdomain": account_request.subdomain, "domain": get_erpnext_domain()}
 	)
 	site = frappe.get_doc("Site", name)
 	return {

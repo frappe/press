@@ -216,7 +216,7 @@ class DeployCandidate(Document):
 				"App Release", app.release, ["clone_directory", "cloned"]
 			)
 			step = find(
-				self.build_steps, lambda x: x.stage_slug == "clone" and x.step_slug == app.app,
+				self.build_steps, lambda x: x.stage_slug == "clone" and x.step_slug == app.app
 			)
 			step.command = f"git clone {app.app}"
 
@@ -253,7 +253,7 @@ class DeployCandidate(Document):
 
 		for target in ["common_site_config.json", "supervisord.conf"]:
 			shutil.copy(
-				os.path.join(frappe.get_app_path("press", "docker"), target), self.build_directory,
+				os.path.join(frappe.get_app_path("press", "docker"), target), self.build_directory
 			)
 
 		for target in ["config", "redis"]:

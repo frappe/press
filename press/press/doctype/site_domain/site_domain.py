@@ -32,7 +32,7 @@ class SiteDomain(Document):
 		target = site.host_name
 		if target == self.name:
 			frappe.throw(
-				"Primary domain can't be redirected.", exc=frappe.exceptions.ValidationError,
+				"Primary domain can't be redirected.", exc=frappe.exceptions.ValidationError
 			)
 		site.set_redirects_in_proxy([self.name])
 

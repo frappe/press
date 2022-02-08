@@ -177,7 +177,7 @@ def delete_team(team):
 
 	responses = {
 		"invalid": [
-			("Link Invalid", "This link is invalid or expired.",),
+			("Link Invalid", "This link is invalid or expired."),
 			{"indicator_color": "red"},
 		],
 		"confirmed": [
