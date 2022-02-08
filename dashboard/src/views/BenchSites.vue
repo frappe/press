@@ -119,14 +119,25 @@
 			</div>
 		</template>
 		<Dialog title="SSH Access" v-model="showSSHDialog">
-			<div v-if="certificate" class="space-y-2">
-				<p class="text-base">
-					Execute the following shell command to store the SSH certificate
-					locally.
-				</p>
-				<ClickToCopyField :textContent="certificateCommand" />
-				<p class="pt-2 text-base">Shell command to SSH into your bench</p>
-				<ClickToCopyField :textContent="sshCommand" />
+			<div v-if="certificate" class="space-y-4">
+				<div class="space-y-2">
+					<h4 class="text-base font-semibold text-gray-700">Step 1</h4>
+					<div class="space-y-1">
+						<p class="text-base">
+							Execute the following shell command to store the SSH certificate
+							locally.
+						</p>
+						<ClickToCopyField :textContent="certificateCommand" />
+					</div>
+				</div>
+
+				<div class="space-y-2">
+					<h4 class="text-base font-semibold text-gray-700">Step 2</h4>
+					<div class="space-y-1">
+						<p class="text-base">Shell command to SSH into your bench</p>
+						<ClickToCopyField :textContent="sshCommand" />
+					</div>
+				</div>
 			</div>
 			<div v-if="!certificate">
 				<p class="mb-4 text-base">
