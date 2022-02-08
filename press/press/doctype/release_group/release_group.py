@@ -319,7 +319,7 @@ class ReleaseGroup(Document):
 			required_app_source = create_app_source(
 				app, current_app_source.repository_url, to_branch, versions
 			)
-
+			required_app_source.reload()
 			required_app_source.github_installation_id = (
 				current_app_source.github_installation_id
 			)
