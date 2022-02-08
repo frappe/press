@@ -17,7 +17,11 @@
 				:href="`${app.repository_url}/commit/${app.current_hash}`"
 				target="_blank"
 			>
-				<Badge class="cursor-pointer hover:text-blue-500" color="blue">
+				<Badge
+					class="cursor-pointer hover:text-blue-500"
+					color="blue"
+					clickable="true"
+				>
 					{{ deployFrom(app) }}
 				</Badge>
 			</a>
@@ -28,7 +32,11 @@
 				:href="`${app.repository_url}/commit/${app.next_hash}`"
 				target="_blank"
 			>
-				<Badge class="cursor-pointer hover:text-blue-500" color="blue">
+				<Badge
+					class="cursor-pointer hover:text-blue-500"
+					color="blue"
+					clickable="true"
+				>
 					{{ deployTo(app) }}
 				</Badge>
 			</a>

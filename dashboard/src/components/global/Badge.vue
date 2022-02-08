@@ -1,6 +1,6 @@
 <template>
 	<span
-		class="inline-block cursor-default rounded-md px-3 py-1 text-xs font-medium"
+		class="inline-block rounded-md px-3 py-1 text-xs font-medium"
 		:class="classes"
 	>
 		<slot>{{ status }}</slot>
@@ -9,7 +9,7 @@
 <script>
 export default {
 	name: 'Badge',
-	props: ['color', 'status'],
+	props: ['color', 'status', 'clickable'],
 	computed: {
 		classes() {
 			let color = this.color;
@@ -33,13 +33,17 @@ export default {
 					Expired: 'red'
 				}[this.status];
 			}
-			return {
+			let cssClasses = {
 				gray: 'text-gray-700 bg-gray-50',
 				green: 'text-green-700 bg-green-50',
 				red: 'text-red-700 bg-red-50',
 				yellow: 'text-yellow-700 bg-yellow-50',
 				blue: 'text-blue-700 bg-blue-50'
 			}[color || 'gray'];
+			cssClasses += ' ';
+			cssClasses += this.clickable ? 'cursor-pointer' : 'cursor-default';
+
+			return cssClasses;
 		}
 	}
 };
