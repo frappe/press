@@ -85,6 +85,6 @@ class Shell:
 	def execute(self, command, directory=None):
 		directory = directory or self.directory
 		process = subprocess.run(
-			command, check=False, stderr=subprocess.STDOUT, cwd=directory, shell=True, text=True,
+			command, check=False, stderr=subprocess.STDOUT, cwd=directory, shell=True, text=True
 		)
 		return process

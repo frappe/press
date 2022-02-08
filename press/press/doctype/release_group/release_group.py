@@ -52,9 +52,7 @@ class ReleaseGroup(Document):
 		for app in self.apps:
 			app_name = app.app
 			if app_name in apps:
-				frappe.throw(
-					f"App {app.app} can be added only once", frappe.ValidationError,
-				)
+				frappe.throw(f"App {app.app} can be added only once", frappe.ValidationError)
 			apps.add(app_name)
 
 	def validate_app_versions(self):
@@ -63,16 +61,14 @@ class ReleaseGroup(Document):
 			source = frappe.get_doc("App Source", app.source)
 			if all(row.version != self.version for row in source.versions):
 				frappe.throw(
-					f"App Source {app.source} version is not {self.version}", frappe.ValidationError,
+					f"App Source {app.source} version is not {self.version}", frappe.ValidationError
 				)
 
 	def validate_servers(self):
 		if self.servers:
 			servers = set(server.server for server in self.servers)
 			if len(servers) != len(self.servers):
-				frappe.throw(
-					"Servers can be added only once", frappe.ValidationError,
-				)
+				frappe.throw("Servers can be added only once", frappe.ValidationError)
 		elif self.is_new():
 			server_for_new_bench = Server.get_prod_for_new_bench()
 			if server_for_new_bench:
@@ -387,7 +383,7 @@ class ReleaseGroup(Document):
 def new_release_group(title, version, apps, team=None, cluster=None):
 	if cluster:
 		server = frappe.get_all(
-			"Server", {"status": "Active", "cluster": cluster}, pluck="name", limit=1,
+			"Server", {"status": "Active", "cluster": cluster}, pluck="name", limit=1
 		)[0]
 		servers = [{"server": server}]
 	else:

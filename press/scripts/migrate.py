@@ -102,7 +102,7 @@ def upload_backup_file(file_type, file_name, file_path):
 	from math import ceil
 
 	K = 1024
-	M = K ** 2
+	M = K**2
 
 	max_size = (
 		100  # in M: Max Size for multipart uploads - break down big files in `n` MB parts
@@ -660,8 +660,8 @@ def frappecloud_migrator(local_site):
 	remote_link_url = "{}://{}/api/method/press.api.site.get_upload_link".format(
 		scheme, remote_site
 	)
-	register_remote_url = (
-		"{}://{}/api/method/press.api.site.uploaded_backup_info".format(scheme, remote_site)
+	register_remote_url = "{}://{}/api/method/press.api.site.uploaded_backup_info".format(
+		scheme, remote_site
 	)
 	options_url = "{}://{}/api/method/press.api.site.options_for_new".format(
 		scheme, remote_site

@@ -33,7 +33,7 @@ def obtain_access_token(code, team):
 		data = {"client_id": client_id, "client_secret": client_secret, "code": code}
 		headers = {"Accept": "application/json"}
 		response = requests.post(
-			"https://github.com/login/oauth/access_token", data=data, headers=headers,
+			"https://github.com/login/oauth/access_token", data=data, headers=headers
 		).json()
 		frappe.db.set_value("Team", team, "github_access_token", response["access_token"])
 	except Exception:

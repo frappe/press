@@ -64,9 +64,7 @@ class RootDomain(Document):
 				HostedZoneId=self.hosted_zone.split("/")[-1],
 			)
 		except Exception:
-			log_error(
-				"Route 53 Pagination Error", domain=self.name,
-			)
+			log_error("Route 53 Pagination Error", domain=self.name)
 
 	def delete_dns_records(self, records: List[str], proxy: str):
 		try:
@@ -85,7 +83,7 @@ class RootDomain(Document):
 				)
 
 			self.boto3_client.change_resource_record_sets(
-				ChangeBatch={"Changes": changes}, HostedZoneId=self.hosted_zone,
+				ChangeBatch={"Changes": changes}, HostedZoneId=self.hosted_zone
 			)
 
 		except Exception:

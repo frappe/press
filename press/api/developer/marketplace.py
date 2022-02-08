@@ -15,7 +15,7 @@ class DeveloperApiHandler:
 	def validate_secret_key(self):
 		"""Validate secret_key and set app subscription name and doc"""
 		app_subscription_name = frappe.db.exists(
-			"Marketplace App Subscription", {"secret_key": self.secret_key},
+			"Marketplace App Subscription", {"secret_key": self.secret_key}
 		)
 
 		if not app_subscription_name:

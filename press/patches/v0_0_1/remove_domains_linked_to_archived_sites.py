@@ -8,7 +8,7 @@ import frappe
 
 def execute():
 	domains = frappe.get_all(
-		"Site Domain", filters={"status": "Active", "site": ("like", "%.archived%")},
+		"Site Domain", filters={"status": "Active", "site": ("like", "%.archived%")}
 	)
 	for domain in domains:
 		frappe.delete_doc("Site Domain", domain.name)

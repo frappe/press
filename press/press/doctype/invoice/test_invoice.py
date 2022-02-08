@@ -291,7 +291,7 @@ class TestInvoice(unittest.TestCase):
 		self.assertEqual(team.get_balance(), 0)
 
 		with open(
-			Path(__file__).parent / "fixtures/stripe_payment_intent_succeeded_webhook.json", "r",
+			Path(__file__).parent / "fixtures/stripe_payment_intent_succeeded_webhook.json", "r"
 		) as payload:
 			doc = frappe._dict(
 				{"event_type": "payment_intent.succeeded", "payload": payload.read()}

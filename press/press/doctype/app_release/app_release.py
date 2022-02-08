@@ -95,7 +95,7 @@ class AppRelease(Document):
 		self.output = ""
 		self.output += self.run("git init")
 		self.output += self.run(f"git checkout -b {source.branch}")
-		self.output += self.run(f"git remote add origin {url}",)
+		self.output += self.run(f"git remote add origin {url}")
 		self.output += self.run("git config credential.helper ''")
 		self.output += self.run(f"git fetch --depth 1 origin {self.hash}")
 		self.output += self.run(f"git checkout {self.hash}")
@@ -107,7 +107,7 @@ class AppRelease(Document):
 
 	def create_release_differences(self):
 		releases = frappe.get_all(
-			"App Release", {"app": self.app, "source": self.source, "name": ("!=", self.name)},
+			"App Release", {"app": self.app, "source": self.source, "name": ("!=", self.name)}
 		)
 		releases = frappe.db.sql(
 			"""

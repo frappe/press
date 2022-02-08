@@ -646,9 +646,7 @@ class Team(Document):
 		if not recipients:
 			recipients = [self.notify_email]
 
-		frappe.sendmail(
-			recipients=recipients, **kwargs,
-		)
+		frappe.sendmail(recipients=recipients, **kwargs)
 
 	@frappe.whitelist()
 	def send_telegram_alert_for_failed_payment(self, invoice):

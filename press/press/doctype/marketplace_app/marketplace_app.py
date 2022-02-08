@@ -114,14 +114,14 @@ class MarketplaceApp(WebsiteGenerator):
 				continue
 
 			frappe_source_name = frappe.get_doc(
-				"Release Group App", {"app": "frappe", "parent": unique_public_rgs[source.version]},
+				"Release Group App", {"app": "frappe", "parent": unique_public_rgs[source.version]}
 			).source
 			frappe_source = frappe.db.get_value(
-				"App Source", frappe_source_name, ["repository_url", "branch"], as_dict=True,
+				"App Source", frappe_source_name, ["repository_url", "branch"], as_dict=True
 			)
 
 			app_source = frappe.db.get_value(
-				"App Source", source.source, ["repository_url", "branch", "public"], as_dict=True,
+				"App Source", source.source, ["repository_url", "branch", "public"], as_dict=True
 			)
 
 			supported_versions.append(

@@ -210,9 +210,7 @@ class TestGFS(unittest.TestCase):
 		gfs.cleanup_offsite()
 		mock_del_remote_backup_objects.assert_called_once()
 		args, kwargs = mock_del_remote_backup_objects.call_args
-		self.assertEqual(
-			len(args[0]), 3 * 2, msg=mock_del_remote_backup_objects.call_args,
-		)
+		self.assertEqual(len(args[0]), 3 * 2, msg=mock_del_remote_backup_objects.call_args)
 
 
 class TestFIFO(unittest.TestCase):
@@ -264,9 +262,7 @@ class TestFIFO(unittest.TestCase):
 		fifo.cleanup_offsite()
 		mock_del_remote_backup_objects.assert_called_once()
 		args = mock_del_remote_backup_objects.call_args[0]
-		self.assertEqual(
-			len(args[0]), 3 * 2, msg=mock_del_remote_backup_objects.call_args,
-		)
+		self.assertEqual(len(args[0]), 3 * 2, msg=mock_del_remote_backup_objects.call_args)
 
 	def test_press_setting_updates_new_object(self):
 		"""Ensure updating press settings updates new FIFO objects."""

@@ -50,7 +50,7 @@ class Agent:
 			"common_site_config": json.loads(bench.config),
 		}
 		return self.create_agent_job(
-			"Update Bench Configuration", f"benches/{bench.name}/config", data, bench=bench.name,
+			"Update Bench Configuration", f"benches/{bench.name}/config", data, bench=bench.name
 		)
 
 	def new_site(self, site):
@@ -67,7 +67,7 @@ class Agent:
 		}
 
 		return self.create_agent_job(
-			"New Site", f"benches/{site.bench}/sites", data, bench=site.bench, site=site.name,
+			"New Site", f"benches/{site.bench}/sites", data, bench=site.bench, site=site.name
 		)
 
 	def reinstall_site(self, site):
@@ -365,18 +365,18 @@ class Agent:
 			},
 		}
 		return self.create_agent_job(
-			"Add Host to Proxy", "proxy/hosts", data, host=domain.domain, site=domain.site,
+			"Add Host to Proxy", "proxy/hosts", data, host=domain.domain, site=domain.site
 		)
 
 	def setup_wildcard_hosts(self, wildcards):
 		return self.create_agent_job(
-			"Add Wildcard Hosts to Proxy", "proxy/wildcards", wildcards,
+			"Add Wildcard Hosts to Proxy", "proxy/wildcards", wildcards
 		)
 
 	def setup_redirects(self, site: str, domains: List[str], target: str):
 		data = {"domains": domains, "target": target}
 		return self.create_agent_job(
-			"Setup Redirects on Hosts", "proxy/hosts/redirects", data, site=site,
+			"Setup Redirects on Hosts", "proxy/hosts/redirects", data, site=site
 		)
 
 	def remove_redirects(self, site: str, domains: List[str]):
@@ -443,7 +443,7 @@ class Agent:
 			"certificate": candidate.get_certificate(),
 		}
 		return self.create_agent_job(
-			"Add User to Proxy", "ssh/users", data, bench=bench.name, upstream=bench.server,
+			"Add User to Proxy", "ssh/users", data, bench=bench.name, upstream=bench.server
 		)
 
 	def remove_ssh_user(self, bench):

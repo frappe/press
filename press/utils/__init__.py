@@ -231,7 +231,7 @@ class RemoteFrappeSite:
 		# check if database is > 500MiB and show alert
 		database_size_in_mb = float(
 			requests.head(self.backup_links["database"]).headers.get("Content-Length", 999)
-		) / (1024 ** 2)
+		) / (1024**2)
 
 		if database_size_in_mb > 500:
 			frappe.throw(

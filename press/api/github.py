@@ -54,7 +54,7 @@ def get_access_token(install):
 		"Accept": "application/vnd.github.machine-man-preview+json",
 	}
 	response = requests.post(
-		f"https://api.github.com/app/installations/{install}/access_tokens", headers=headers,
+		f"https://api.github.com/app/installations/{install}/access_tokens", headers=headers
 	).json()
 	return response["token"]
 
@@ -131,7 +131,7 @@ def repository(installation, owner, name):
 		"Authorization": f"token {token}",
 	}
 	repo = requests.get(
-		f"https://api.github.com/repos/{owner}/{name}", headers=headers,
+		f"https://api.github.com/repos/{owner}/{name}", headers=headers
 	).json()
 
 	response = requests.get(

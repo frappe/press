@@ -224,7 +224,7 @@ class Invoice(Document):
 				" `period_end`)"
 			)
 
-			intersecting_invoices = [x[0] for x in frappe.db.sql(query, as_list=True,)]
+			intersecting_invoices = [x[0] for x in frappe.db.sql(query, as_list=True)]
 
 			if intersecting_invoices:
 				frappe.throw(
@@ -555,8 +555,7 @@ class Invoice(Document):
 		if self.frappe_invoice:
 			client = self.get_frappeio_connection()
 			url = (
-				client.url
-				+ "/api/method/frappe.utils.print_format.download_pdf?"
+				client.url + "/api/method/frappe.utils.print_format.download_pdf?"
 				f"doctype=Sales%20Invoice&name={self.frappe_invoice}&"
 				"format=Frappe%20Cloud&no_letterhead=0"
 			)
@@ -772,9 +771,7 @@ def finalize_draft_invoice(invoice):
 		invoice.create_next()
 	except Exception:
 		frappe.db.rollback()
-		log_error(
-			"Invoice creation for next month failed", invoice=invoice.name,
-		)
+		log_error("Invoice creation for next month failed", invoice=invoice.name)
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Invoice")

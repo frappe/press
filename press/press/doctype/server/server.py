@@ -59,9 +59,7 @@ class BaseServer(Document):
 				HostedZoneId=hosted_zone,
 			)
 		except Exception:
-			log_error(
-				"Route 53 Record Creation Error", domain=domain.name, server=self.name,
-			)
+			log_error("Route 53 Record Creation Error", domain=domain.name, server=self.name)
 
 	def validate_cluster(self):
 		if not self.cluster:
@@ -136,7 +134,7 @@ class BaseServer(Document):
 
 	def _install_nginx(self):
 		try:
-			ansible = Ansible(playbook="nginx.yml", server=self,)
+			ansible = Ansible(playbook="nginx.yml", server=self)
 			play = ansible.run()
 			self.reload()
 			if play.status == "Success":
@@ -222,7 +220,7 @@ class BaseServer(Document):
 					variables={"ansible_become_password": self.get_password("frappe_user_password")},
 				)
 			elif self.provider == "AWS EC2":
-				ansible = Ansible(playbook="ping.yml", server=self, user="ubuntu",)
+				ansible = Ansible(playbook="ping.yml", server=self, user="ubuntu")
 			ansible.run()
 		except Exception:
 			log_error("Unprepared Server Ping Exception", server=self.as_dict())
@@ -420,7 +418,7 @@ class Server(BaseServer):
 	def get_prod_for_new_bench(cls, extra_filters={}) -> Union[str, None]:
 		filters = {"status": "Active", "use_for_new_benches": True}
 		servers = frappe.get_all(
-			"Server", {**filters, **extra_filters}, pluck="name", limit=1,
+			"Server", {**filters, **extra_filters}, pluck="name", limit=1
 		)
 		if servers:
 			return servers[0]
