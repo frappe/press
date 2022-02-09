@@ -481,12 +481,10 @@ def check_app_compat(available_group):
 
 @add_line_after
 def filter_apps(versions):
-	render_group_table(versions)
-
 	while True:
 		version_index = click.prompt("Select Version Number", type=int) - 1
 		try:
-			if version_index == -1:
+			if version_index < 0:
 				raise IndexError
 			selected_group = versions[version_index]["groups"][0]
 		except IndexError:
@@ -557,6 +555,7 @@ def new_site(local_site):
 	plan = choose_plan(site_options["plans"])
 
 	versions = site_options["versions"]
+	render_group_table(versions)
 	selected_group, filtered_apps = filter_apps(versions)
 	files_uploaded = upload_backup(local_site)
 
