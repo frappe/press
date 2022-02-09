@@ -383,7 +383,10 @@ class ReleaseGroup(Document):
 def new_release_group(title, version, apps, team=None, cluster=None):
 	if cluster:
 		server = frappe.get_all(
-			"Server", {"status": "Active", "cluster": cluster}, pluck="name", limit=1
+			"Server",
+			{"status": "Active", "cluster": cluster, "use_for_new_benches": True},
+			pluck="name",
+			limit=1,
 		)[0]
 		servers = [{"server": server}]
 	else:
