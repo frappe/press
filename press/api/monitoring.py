@@ -38,7 +38,7 @@ def targets(token):
 	)
 	clusters = frappe.get_all("Cluster")
 	job_map = {
-		"proxy": ["node", "nginx"],
+		"proxy": ["node", "nginx", "proxysql"],
 		"app": ["node", "nginx", "docker", "cadvisor", "gunicorn"],
 		"database": ["node", "mariadb"],
 	}
