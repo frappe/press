@@ -84,7 +84,7 @@ def new(site):
 	)[0].name
 	plan = site["plan"]
 
-	app_plans = site["selected_app_plans"]
+	app_plans = site.get("selected_app_plans")
 
 	site = frappe.get_doc(
 		{
