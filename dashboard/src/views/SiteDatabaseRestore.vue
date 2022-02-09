@@ -59,6 +59,14 @@
 					<span class="text-red-600"> Clear Cache </span>
 				</Button>
 			</div>
+			<div
+				class="flex items-center justify-between py-3"
+				v-if="$account.team.database_access_enabled"
+			>
+				<Button type="primary" @click="showDatabaseAccessDialog = true">
+					Access Database</Button
+				>
+			</div>
 		</div>
 
 		<Dialog
@@ -129,24 +137,33 @@
 				</Button>
 			</template>
 		</Dialog>
+
+		<DatabaseAccessDialog
+			v-if="showDatabaseAccessDialog"
+			:site="site.name"
+			:show.sync="showDatabaseAccessDialog"
+		/>
 	</Card>
 </template>
 
 <script>
 import FileUploader from '@/components/FileUploader.vue';
 import BackupFilesUploader from '@/components/BackupFilesUploader.vue';
+import DatabaseAccessDialog from './DatabaseAccessDialog.vue';
 
 export default {
 	name: 'SiteDatabase',
 	components: {
 		FileUploader,
-		BackupFilesUploader
+		BackupFilesUploader,
+		DatabaseAccessDialog
 	},
 	props: ['site'],
 	data() {
 		return {
 			showMigrateDialog: false,
 			showRestoreDialog: false,
+			showDatabaseAccessDialog: false,
 			selectedFiles: {
 				database: null,
 				public: null,
