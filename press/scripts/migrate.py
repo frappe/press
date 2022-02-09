@@ -13,29 +13,30 @@ import tempfile
 # imports - module imports
 import frappe
 import frappe.utils.backups
-from frappe.utils.backups import BackupGenerator
+from frappe.core.utils import find
 from frappe.utils import get_installed_apps_info, update_progress_bar
-from frappe.utils.commands import add_line_after, add_line_before, render_table
+from frappe.utils.backups import BackupGenerator
 from frappe.utils.change_log import get_versions
+from frappe.utils.commands import add_line_after, add_line_before, render_table
 
 # third party imports
 
 try:
 	print("Setting Up requirements...")
 	# imports - third party imports
+	import click
 	import html2text
 	import requests
-	import click
+	from requests_toolbelt.multipart import encoder
 	from semantic_version import Version
 	from tenacity import (
-		retry,
 		RetryError,
-		stop_after_attempt,
-		wait_fixed,
+		retry,
 		retry_if_exception_type,
 		retry_unless_exception_type,
+		stop_after_attempt,
+		wait_fixed,
 	)
-	from requests_toolbelt.multipart import encoder
 except ImportError:
 	dependencies = [
 		"tenacity",
@@ -49,19 +50,19 @@ except ImportError:
 		"{} -m pip install {}".format(sys.executable, " ".join(dependencies))
 	)
 	subprocess.call(install_command, stdout=open(os.devnull, "w"))
+	import click
 	import html2text
 	import requests
-	import click
+	from requests_toolbelt.multipart import encoder
 	from semantic_version import Version
 	from tenacity import (
-		retry,
 		RetryError,
-		stop_after_attempt,
-		wait_fixed,
+		retry,
 		retry_if_exception_type,
 		retry_unless_exception_type,
+		stop_after_attempt,
+		wait_fixed,
 	)
-	from requests_toolbelt.multipart import encoder
 
 if sys.version[0] == "2":
 	reload(sys)  # noqa
@@ -261,17 +262,21 @@ def render_plan_table(plans_list):
 
 def render_group_table(versions):
 	# title row
-	versions_table = [["#", "Version", "Apps"]]
+	versions_table = [["#", "Version", "Bench", "Apps"]]
 
 	# all rows
-	for idx, version in enumerate(versions):
-		apps_list = ", ".join(
-			["{}:{}".format(app["app"], app["branch"]) for app in version["groups"][0]["apps"]]
-		)
-		row = [idx + 1, version["name"], apps_list]
-		versions_table.append(row)
+	idx = 0
+	for version in versions:
+		for group in version["groups"]:
+			apps_list = ", ".join(
+				["{}:{}".format(app["app"], app["branch"]) for app in group["apps"]]
+			)
+			row = [idx + 1, version["name"], group["name"], apps_list]
+			versions_table.append(row)
+			idx += 1
 
 	render_table(versions_table)
+	return versions_table
 
 
 def handle_request_failure(request=None, message=None, traceback=True, exit_code=1):
@@ -481,12 +486,19 @@ def check_app_compat(available_group):
 
 @add_line_after
 def filter_apps(versions):
+	rendered_group_table = render_group_table(versions)
 	while True:
 		version_index = click.prompt("Select Version Number", type=int) - 1
 		try:
 			if version_index < 0:
 				raise IndexError
-			selected_group = versions[version_index]["groups"][0]
+			version, group = (
+				rendered_group_table[version_index][1],
+				rendered_group_table[version_index][2],
+			)
+			selected_group = find(
+				versions[version_index]["groups"], lambda g: g["name"] == group
+			)
 		except IndexError:
 			print("Invalid Selection ❌")
 			continue
@@ -555,7 +567,6 @@ def new_site(local_site):
 	plan = choose_plan(site_options["plans"])
 
 	versions = site_options["versions"]
-	render_group_table(versions)
 	selected_group, filtered_apps = filter_apps(versions)
 	files_uploaded = upload_backup(local_site)
 
