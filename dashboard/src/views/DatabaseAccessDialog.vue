@@ -1,5 +1,11 @@
 <template>
-	<Dialog v-if="site" :show="Boolean(site)" title="Access Site Database">
+	<Dialog
+		v-if="site"
+		:show="Boolean(site) && show"
+		title="Access Site Database"
+		:dismissable="true"
+		v-on:close="dialogClosed"
+	>
 		<Button
 			v-if="$resources.fetchDatabaseAccessInfo.loading"
 			:loading="$resources.fetchDatabaseAccessInfo.loading"
@@ -11,22 +17,26 @@
 					Copy and paste this command in your terminal:
 				</p>
 				<ClickToCopyField :textContent="dbAccessCommand" />
-				<p class="mt-2 text-sm">
+				<p class="mt-3 text-sm">
 					Note: You should have a <span class="font-mono">mysql</span> client
 					installed on your computer.
 				</p>
 			</div>
 			<div v-else>
-				<p class="mb-2 text-sm">Database access is disabled for this site.</p>
+				<p class="mb-2 text-sm">
+					Database console access is disabled for this site.
+				</p>
 			</div>
 		</div>
 
-		<div class="mt-3">
+		<ErrorMessage class="mt-3" :error="$resourceErrors || error" />
+
+		<div class="mt-2">
 			<Button
 				v-if="
 					databaseAccessInfo && !databaseAccessInfo.is_database_access_enabled
 				"
-				@click="enableDatabaseAccess"
+				@click="$resources.enableDatabaseAccess.submit()"
 				:loading="$resources.enableDatabaseAccess.loading || pollingAgentJob"
 				type="primary"
 				>Enable Access</Button
@@ -48,10 +58,11 @@
 import ClickToCopyField from '@/components/ClickToCopyField.vue';
 
 export default {
+	props: ['site', 'show'],
 	data() {
 		return {
-			site: 'jsdhfjdf.h.fc.frappe.dev', // TODO: Convert to prop later
-			pollingAgentJob: false
+			pollingAgentJob: false,
+			error: null
 		};
 	},
 	components: {
@@ -74,7 +85,7 @@ export default {
 					name: this.site
 				},
 				onSuccess(d) {
-					this.pollEnableDatabaseAccessJob(d);
+					this.pollDatabaseAccessJob(d);
 				}
 			};
 		},
@@ -85,7 +96,7 @@ export default {
 					name: this.site
 				},
 				onSuccess(d) {
-					this.pollEnableDatabaseAccessJob(d);
+					this.pollDatabaseAccessJob(d);
 				}
 			};
 		}
@@ -108,10 +119,10 @@ export default {
 	},
 	components: { ClickToCopyField },
 	methods: {
-		enableDatabaseAccess() {
-			this.$resources.enableDatabaseAccess.submit();
+		dialogClosed() {
+			this.$emit('update:show', null);
 		},
-		pollEnableDatabaseAccessJob(jobName) {
+		pollDatabaseAccessJob(jobName) {
 			this.pollingAgentJob = true;
 
 			this.$call('press.api.site.get_job_status', {
@@ -120,13 +131,15 @@ export default {
 				if (message.status === 'Success') {
 					this.pollingAgentJob = false;
 					this.$resources.fetchDatabaseAccessInfo.fetch();
-				} else if (message.status === 'Failure') {
+				} else if (
+					message.status === 'Failure' ||
+					message.status === 'Undelivered'
+				) {
 					this.pollingAgentJob = false;
-					// TODO: Show some error message
+					this.error = 'Something went wrong. Please try again.';
 				} else {
-					console.log('Polling again...', jobName);
 					setTimeout(() => {
-						this.pollEnableDatabaseAccessJob(jobName);
+						this.pollDatabaseAccessJob(jobName);
 					}, 300);
 				}
 			});
