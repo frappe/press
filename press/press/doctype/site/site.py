@@ -662,7 +662,7 @@ class Site(Document):
 				equivalent_site_time = convert_utc_to_user_timezone(
 					dateutil.parser.parse(usage["timestamp"])
 				)
-				site_usage.db_set("creation", equivalent_site_time)
+				site_usage.db_set("creation", equivalent_site_time.replace(tzinfo=None))
 
 		if isinstance(fetched_usage, list):
 			for usage in fetched_usage:
