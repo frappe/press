@@ -1,0 +1,64 @@
+#!./env/bin/python
+# Fallback Script to run the easy migrate script in place of `bench --site {site} migrate-to frappecloud.com`
+# This file was originally hosted on Frappe Cloud. For more information, contact us at frappecloud.com
+# Copyright (c) 2020, Frappe Technologies Pvt. Ltd.
+
+import os
+import sys
+import tempfile
+
+import click
+import requests
+from html2text import html2text
+
+import frappe
+
+
+def frappecloud_migrator(local_site):
+	print("Retreiving Site Migrator...")
+	remote_site = frappe.conf.frappecloud_url or "frappecloud.com"
+	request_url = "https://{}/api/method/press.api.script_2".format(remote_site)
+	request = requests.get(request_url)
+
+	if request.status_code / 100 != 2:
+		print(
+			"Request exitted with Status Code: {}\nPayload: {}".format(
+				request.status_code, html2text(request.text)
+			)
+		)
+		click.secho(
+			"Some errors occurred while recovering the migration script. Please contact"
+			" us @ Frappe Cloud if this issue persists",
+			fg="yellow",
+		)
+		return
+
+	script_contents = request.json()["message"]
+
+	py = sys.executable
+	script = tempfile.NamedTemporaryFile(mode="w")
+	script.write(script_contents)
+	print("Site Migrator stored at {}".format(script.name))
+	os.execv(py, [py, script.name, local_site])
+
+
+if __name__ == "__main__":
+	os.chdir("sites")
+
+	try:
+		local_site = sys.argv[1]
+	except Exception:
+		local_site = input("Name of the site you want to migrate: ").strip()
+
+	try:
+		frappe.init(site=local_site)
+		frappe.connect()
+		frappecloud_migrator(local_site)
+	except (KeyboardInterrupt, click.exceptions.Abort):
+		print("\nExitting...")
+	except Exception:
+		from frappe.utils import get_traceback
+
+		print(get_traceback())
+
+	frappe.destroy()
