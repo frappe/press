@@ -488,17 +488,16 @@ def check_app_compat(available_group):
 def filter_apps(versions):
 	rendered_group_table = render_group_table(versions)
 	while True:
-		version_index = click.prompt("Select Version Number", type=int) - 1
+		version_index = click.prompt("Select Version Number", type=int)
 		try:
-			if version_index < 0:
+			if version_index < 1:  # 0th row is title
 				raise IndexError
 			version, group = (
 				rendered_group_table[version_index][1],
 				rendered_group_table[version_index][2],
 			)
-			selected_group = find(
-				versions[version_index]["groups"], lambda g: g["name"] == group
-			)
+			selected_version = find(versions, lambda v: v["name"] == version)
+			selected_group = find(selected_version["groups"], lambda g: g["name"] == group)
 		except IndexError:
 			print("Invalid Selection ❌")
 			continue
