@@ -53,7 +53,11 @@ def new(site):
 	files = site.get("files", {})
 	share_details_consent = site.get("share_details_consent")
 
-	domain = frappe.db.get_single_value("Press Settings", "domain")
+	domain = site.get("domain")
+	if domain and frappe.db.exists("Root Domain", {"name": domain}):
+		pass
+	else:
+		domain = frappe.db.get_single_value("Press Settings", "domain")
 	cluster = site.get("cluster") or frappe.db.get_single_value(
 		"Press Settings", "cluster"
 	)
