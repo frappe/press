@@ -70,7 +70,7 @@ def new_central_site(site: Dict):
 		"Release Group App", {"parent": site["group"]}, pluck="app"
 	)
 
-	new(site)
+	return new(site)
 
 
 @frappe.whitelist()
