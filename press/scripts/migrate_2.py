@@ -461,7 +461,9 @@ def frappecloud_migrator(local_site):
 	scheme = "https"
 
 	login_url = "{}://{}/api/method/login".format(scheme, remote_site)
-	upload_url = "{}://{}/api/method/press.api.site.new_central_site".format(scheme, remote_site)
+	upload_url = "{}://{}/api/method/press.api.site.new_central_site".format(
+		scheme, remote_site
+	)
 	remote_link_url = "{}://{}/api/method/press.api.site.get_upload_link".format(
 		scheme, remote_site
 	)

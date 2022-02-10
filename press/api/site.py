@@ -70,11 +70,10 @@ def new_central_site(site: Dict):
 		"Release Group App", {"parent": site["group"]}, pluck="app"
 	)
 
-	return new(site)
+	return _new(site)
 
 
-@frappe.whitelist()
-def new(site):
+def _new(site):
 	team = get_current_team(get_doc=True)
 	if not team.enabled:
 		frappe.throw("You cannot create a new site because your account is disabled")
@@ -83,16 +82,18 @@ def new(site):
 	share_details_consent = site.get("share_details_consent")
 
 	domain = site.get("domain")
-	if domain and frappe.db.exists("Root Domain", {"name": domain}):
-		pass
-	else:
-		domain = frappe.db.get_single_value("Press Settings", "domain")
+	if not (domain and frappe.db.exists("Root Domain", {"name": domain})):
+		frappe.throw("No root domain for site")
+
 	cluster = site.get("cluster") or frappe.db.get_single_value(
 		"Press Settings", "cluster"
 	)
 	proxy_servers = frappe.get_all(
+		"Proxy Server Domain", {"domain": domain}, pluck="parent"
+	)
+	proxy_servers = frappe.get_all(
 		"Proxy Server",
-		[["status", "=", "Active"], ["Proxy Server Domain", "domain", "=", domain]],
+		{"status": "Active", "name": ("in", proxy_servers)},
 		pluck="name",
 	)
 
@@ -169,6 +170,13 @@ def new(site):
 			},
 		),
 	}
+
+
+@frappe.whitelist()
+def new(site):
+	site["domain"] = frappe.db.get_single_value("Press Settings", "domain")
+
+	return _new(site)
 
 
 def get_app_subscriptions(app_plans):
