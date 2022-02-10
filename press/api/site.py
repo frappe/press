@@ -45,6 +45,35 @@ def protected(doctype):
 
 
 @frappe.whitelist()
+def new_central_site(site: Dict):
+	"""
+	site keys:
+	version
+	files,
+	name,
+	"""
+	user = frappe.session.user
+	user_type = frappe.db.get_value("User", user, "user_type", cache=True)
+	if user_type != "System User":
+		return
+
+	site["plan"] = "Central Site"
+	site["domain"] = "erpnext.com"
+	site["name"] = site["name"].split(".")[0]  # getting subdomain
+
+	if site["version"] == 12:
+		site["group"] = "bench-0871"
+	elif site["version"] == 13:
+		site["group"] = "bench-0870"
+
+	site["apps"] = frappe.get_all(
+		"Release Group App", {"parent": site["group"]}, pluck="app"
+	)
+
+	new(site)
+
+
+@frappe.whitelist()
 def new(site):
 	team = get_current_team(get_doc=True)
 	if not team.enabled:

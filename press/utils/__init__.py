@@ -134,6 +134,13 @@ def get_minified_script():
 	return script_contents
 
 
+@cache(seconds=1800)
+def get_minified_script_2():
+	migration_script = "../apps/press/press/scripts/migrate_2.py"
+	script_contents = open(migration_script).read()
+	return script_contents
+
+
 def get_frappe_backups(url, email, password):
 	return RemoteFrappeSite(url, email, password).get_backups()
 
