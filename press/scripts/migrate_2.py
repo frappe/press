@@ -15,8 +15,7 @@ import frappe
 import frappe.utils.backups
 from frappe.utils import get_installed_apps_info, update_progress_bar
 from frappe.utils.backups import BackupGenerator
-from frappe.utils.change_log import get_versions
-from frappe.utils.commands import add_line_after, add_line_before, render_table
+from frappe.utils.commands import add_line_after, render_table
 
 # third party imports
 
@@ -53,7 +52,6 @@ except ImportError:
 	import html2text
 	import requests
 	from requests_toolbelt.multipart import encoder
-	from semantic_version import Version
 	from tenacity import (
 		RetryError,
 		retry,
@@ -446,6 +444,7 @@ def create_session():
 	login_sc = session.post(login_url, auth_credentials)
 
 	if login_sc.ok:
+		session.headers.update({"X-Press-Team": username, "Connection": "keep-alive"})
 		return session
 	else:
 		handle_request_failure(
@@ -462,7 +461,7 @@ def frappecloud_migrator(local_site):
 	scheme = "https"
 
 	login_url = "{}://{}/api/method/login".format(scheme, remote_site)
-	upload_url = "{}://{}/api/method/press.api.site.new".format(scheme, remote_site)
+	upload_url = "{}://{}/api/method/press.api.site.new_central_site".format(scheme, remote_site)
 	remote_link_url = "{}://{}/api/method/press.api.site.get_upload_link".format(
 		scheme, remote_site
 	)
