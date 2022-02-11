@@ -15,7 +15,12 @@ from press.utils import log_error
 def get_ongoing_migration(site: str):
 	"""Return ongoing Site Migration for site."""
 	return frappe.db.exists(
-		"Site Migration", {"site": site, "status": ("in", ["Pending", "Running"])}
+		"Site Migration",
+		{
+			"site": site,
+			"status": ("in", ["Pending", "Running"]),
+			"creation": (">", frappe.utils.add_to_date(None, hours=-24)),
+		},
 	)
 
 
