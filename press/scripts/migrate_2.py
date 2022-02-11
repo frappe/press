@@ -26,7 +26,6 @@ try:
 	import html2text
 	import requests
 	from requests_toolbelt.multipart import encoder
-	from semantic_version import Version
 	from tenacity import (
 		RetryError,
 		retry,
@@ -100,7 +99,7 @@ def upload_backup_file(file_type, file_name, file_path):
 	from math import ceil
 
 	K = 1024
-	M = K**2
+	M = K ** 2
 
 	max_size = (
 		100  # in M: Max Size for multipart uploads - break down big files in `n` MB parts
@@ -401,13 +400,7 @@ def new_site(local_site):
 
 	# push to frappe_cloud
 	payload = json.dumps(
-		{
-			"site": {
-				"files": files_uploaded,
-				"version": version,
-				"name": local_site,
-			}
-		}
+		{"site": {"files": files_uploaded, "version": version, "name": local_site,}}
 	)
 
 	session.headers.update({"Content-Type": "application/json; charset=utf-8"})
@@ -467,8 +460,8 @@ def frappecloud_migrator(local_site):
 	remote_link_url = "{}://{}/api/method/press.api.site.get_upload_link".format(
 		scheme, remote_site
 	)
-	register_remote_url = "{}://{}/api/method/press.api.site.uploaded_backup_info".format(
-		scheme, remote_site
+	register_remote_url = (
+		"{}://{}/api/method/press.api.site.uploaded_backup_info".format(scheme, remote_site)
 	)
 	options_url = "{}://{}/api/method/press.api.site.options_for_new".format(
 		scheme, remote_site
