@@ -366,14 +366,22 @@ class ReleaseGroup(Document):
 		)
 
 	def add_cluster(self, cluster: str):
+		"""
+		Add new server belonging to cluster.
+
+		Deploys bench if no update available
+		"""
 		server = Server.get_prod_for_new_bench({"cluster": cluster})
 		if not server:
 			log_error("No suitable server for new bench")
 			frappe.throw(f"No suitable server for new bench in {cluster}")
+		app_update_available = self.deploy_information().update_available
+		self.add_server(server, deploy=not app_update_available)
+
+	def add_server(self, server: str, deploy=False):
 		self.append("servers", {"server": server, "default": False})
 		self.save()
-		app_update_available = self.deploy_information().update_available
-		if not app_update_available:
+		if deploy:
 			last_successful_candidate = frappe.get_last_doc(
 				"Deploy Candidate", {"status": "Success", "group": self.name}
 			)
