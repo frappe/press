@@ -40,8 +40,10 @@
 				</div>
 				<div class="hidden md:block">
 					<div class="flex items-center">
-						<SiteAndBenchSearch class="mr-5" />
-						<Button icon-left="life-buoy" link="/support">Support</Button>
+						<Button icon-left="book-open" link="/docs">Docs</Button>
+						<Button class="ml-2" icon-left="life-buoy" link="/support"
+							>Support</Button
+						>
 						<div class="relative ml-3">
 							<div>
 								<Dropdown :items="dropdownItems" right>
@@ -125,6 +127,13 @@
 						Support
 					</a>
 					<a
+						href="/docs"
+						target="_blank"
+						class="block rounded-md px-3 text-base font-medium focus:outline-none"
+					>
+						Docs
+					</a>
+					<a
 						href="#"
 						class="block rounded-md px-3 text-base font-medium focus:outline-none"
 						@click.prevent="$auth.logout"
@@ -139,12 +148,10 @@
 
 <script>
 import FrappeCloudLogo from '@/components/FrappeCloudLogo.vue';
-import SiteAndBenchSearch from '@/components/SiteAndBenchSearch.vue';
 
 export default {
 	components: {
-		FrappeCloudLogo,
-		SiteAndBenchSearch
+		FrappeCloudLogo
 	},
 	data() {
 		return {
