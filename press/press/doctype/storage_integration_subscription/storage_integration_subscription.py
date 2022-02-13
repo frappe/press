@@ -58,7 +58,7 @@ class StorageIntegrationSubscription(Document):
 
 		return agent.create_agent_job(
 			"Create Minio User",
-			f"minio/create",
+			"minio/create",
 			data=data,
 		)
 
@@ -71,7 +71,7 @@ class StorageIntegrationSubscription(Document):
 
 		return agent.create_agent_job(
 			f"{op_type.capitalize()} Minio User",
-			f"minio/subscription",
+			"minio/subscription",
 			data=data,
 		)
 
@@ -83,6 +83,6 @@ class StorageIntegrationSubscription(Document):
 
 		return agent.create_agent_job(
 			"Remove Minio User",
-			f"minio/remove",
+			"minio/remove",
 			data=data,
 		)
