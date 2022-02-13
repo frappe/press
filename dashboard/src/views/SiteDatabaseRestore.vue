@@ -63,7 +63,11 @@
 				class="flex items-center justify-between py-3"
 				v-if="$account.team.database_access_enabled"
 			>
-				<Button type="primary" @click="showDatabaseAccessDialog = true">
+				<Button
+					type="secondary"
+					icon-left="database"
+					@click="showDatabaseAccessDialog = true"
+				>
 					Access Database</Button
 				>
 			</div>
