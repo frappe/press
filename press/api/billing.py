@@ -308,7 +308,14 @@ def create_razorpay_order(amount):
 	client = get_razorpay_client()
 	team = get_current_team(get_doc=True)
 
-	data = {"amount": amount * 100, "currency": team.currency}
+	data = {
+		"amount": amount * 100,
+		"currency": team.currency,
+		"notes": {
+			"Description": "Order for Frappe Cloud Prepaid Credits",
+			"Team (Frappe Cloud ID)": team.name,
+		},
+	}
 	order = client.order.create(data=data)
 
 	payment_record = frappe.get_doc(
