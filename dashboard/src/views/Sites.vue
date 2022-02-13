@@ -51,6 +51,24 @@
 					@success="handleAddPrepaidCreditsSuccess"
 				/>
 			</div>
+
+			<div class="mb-3 flex flex-row justify-between">
+				<SiteAndBenchSearch />
+
+				<Dropdown :items="newDropdownItems" right>
+					<template v-slot="{ toggleDropdown }">
+						<Button
+							type="primary"
+							iconLeft="plus"
+							class="hidden sm:inline-flex"
+							@click.stop="toggleDropdown()"
+						>
+							New
+						</Button>
+					</template>
+				</Dropdown>
+			</div>
+
 			<div v-if="benches == null">
 				<div class="flex flex-1 items-center py-4 focus:outline-none">
 					<h2 class="text-lg font-semibold">Sites</h2>
@@ -100,17 +118,7 @@
 									icon="tool"
 								>
 								</Button>
-								<Button
-									:route="
-										bench.owned_by_team ? `/${bench.name}/new` : '/sites/new'
-									"
-									type="primary"
-									iconLeft="plus"
-									v-if="showNewSiteButton(bench)"
-									class="hidden sm:inline-flex"
-								>
-									New Site
-								</Button>
+
 								<Button
 									:route="`/sites/new${
 										bench.owned_by_team
@@ -135,11 +143,14 @@
 </template>
 <script>
 import SiteList from './SiteList.vue';
+import SiteAndBenchSearch from '@/components/SiteAndBenchSearch.vue';
+
 export default {
 	name: 'Sites',
 	props: ['bench'],
 	components: {
 		SiteList,
+		SiteAndBenchSearch,
 		PrepaidCreditsDialog: () => import('@/components/PrepaidCreditsDialog.vue')
 	},
 	data() {
@@ -251,6 +262,22 @@ export default {
 		}
 	},
 	computed: {
+		newDropdownItems() {
+			return [
+				{
+					label: 'Site',
+					action: () => {
+						this.$router.push('/sites/new');
+					}
+				},
+				{
+					label: 'Bench',
+					action: () => {
+						this.$router.push('/benches/new');
+					}
+				}
+			];
+		},
 		benches() {
 			if (this.$resources.benches.data) {
 				return this.$resources.benches.data;
