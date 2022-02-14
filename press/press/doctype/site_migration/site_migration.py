@@ -22,12 +22,7 @@ def get_ongoing_migration(site: str, scheduled=False):
 	if scheduled:
 		ongoing_statuses.append("Scheduled")
 	return frappe.db.exists(
-		"Site Migration",
-		{
-			"site": site,
-			"status": ("in", ongoing_statuses),
-			"creation": (">", frappe.utils.add_to_date(None, hours=-24)),
-		},
+		"Site Migration", {"site": site, "status": ("in", ongoing_statuses)}
 	)
 
 
@@ -51,7 +46,12 @@ class SiteMigration(Document):
 
 	def check_for_existing_agent_jobs(self):
 		if frappe.db.exists(
-			"Agent Job", {"status": ("in", ["Pending", "Running"]), "site": self.site}
+			"Agent Job",
+			{
+				"status": ("in", ["Pending", "Running"]),
+				"site": self.site,
+				"creation": (">", frappe.utils.add_to_date(None, hours=-24)),
+			},
 		):
 			frappe.throw("Ongoing Agent Job for site exists")
 
