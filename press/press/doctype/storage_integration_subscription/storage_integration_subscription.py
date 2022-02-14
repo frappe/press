@@ -2,7 +2,9 @@
 # For license information, please see license.txt
 
 import json
+import boto3
 import frappe
+from frappe.utils.password import get_decrypted_password
 from hashlib import blake2b
 from press.agent import Agent
 from frappe.model.document import Document
@@ -95,3 +97,43 @@ def create_after_insert(doc, method):
 		).insert()
 
 		frappe.db.commit()
+
+
+def monitor_storage():
+	active_subs = frappe.get_all(
+		"Storage Integration Subscription", fields=["site", "name"], filters={"enabled": 1}
+	)
+	access_key = frappe.db.get_value("Custom App Settings", None, "aws_access_key")
+	secret_key = get_decrypted_password(
+		"Custom App Settings", "Custom App Settings", "aws_secret_key"
+	)
+
+	for sub in active_subs:
+		size = get_size("bucket_name", sub["site"], access_key, secret_key)
+		# not used yet
+		if size == 0:
+			break
+
+		doc = frappe.get_doc("Storage Integration Subscription", sub["name"])
+		if doc.usage > doc.limit:
+			# send emails maybe?
+			doc.update_user("disable")
+			doc.enabled = 0
+		else:
+			doc.usage = size
+
+		doc.save()
+		frappe.db.commit()
+
+
+def get_size(bucket, path, access_key, secret_key):
+	s3 = boto3.resource(
+		"s3", aws_access_key_id=access_key, aws_secret_access_key=secret_key
+	)
+	my_bucket = s3.Bucket(bucket)
+	total_size = 0
+
+	for obj in my_bucket.objects.filter(Prefix=path):
+		total_size = total_size + obj.size
+
+	return total_size
