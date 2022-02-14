@@ -86,3 +86,12 @@ class StorageIntegrationSubscription(Document):
 			"minio/remove",
 			data=data,
 		)
+
+
+def create_after_insert(doc, method):
+	if doc.app == "storage_integration":
+		frappe.get_doc(
+			{"doctype": "Storage Integration Subscription", "site": doc.site}
+		).insert()
+
+		frappe.db.commit()
