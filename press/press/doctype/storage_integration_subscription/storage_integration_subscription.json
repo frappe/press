@@ -10,7 +10,7 @@
   "site",
   "minio_server_on",
   "limit",
-  "plan",
+  "usage",
   "access_key",
   "secret_key",
   "policy_name",
@@ -27,12 +27,6 @@
    "fieldname": "limit",
    "fieldtype": "Int",
    "label": "Limit"
-  },
-  {
-   "fieldname": "plan",
-   "fieldtype": "Data",
-   "label": "Plan",
-   "read_only": 1
   },
   {
    "fieldname": "access_key",
@@ -70,11 +64,17 @@
    "fieldname": "minio_server_on",
    "fieldtype": "Data",
    "label": "Minio Server on"
+  },
+  {
+   "fieldname": "usage",
+   "fieldtype": "Int",
+   "label": "Usage",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-02-13 21:01:43.383924",
+ "modified": "2022-02-14 20:10:32.338963",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Storage Integration Subscription",
