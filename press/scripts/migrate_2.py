@@ -26,7 +26,6 @@ try:
 	import html2text
 	import requests
 	from requests_toolbelt.multipart import encoder
-	from semantic_version import Version
 	from tenacity import (
 		RetryError,
 		retry,

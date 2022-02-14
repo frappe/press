@@ -741,11 +741,15 @@ def process_stripe_webhook(doc, method):
 		process_prepaid_marketplace_payment(event)
 		return
 
-	team = frappe.get_doc("Team", {"stripe_customer_id": payment_intent["customer"]})
+	team: Team = frappe.get_doc("Team", {"stripe_customer_id": payment_intent["customer"]})
 	amount = payment_intent["amount"] / 100
 	balance_transaction = team.allocate_credit_amount(
 		amount, source="Prepaid Credits", remark=payment_intent["id"]
 	)
+
+	# Give them free credits too (only first time)
+	team.allocate_free_credits()
+
 	invoice = frappe.get_doc(
 		doctype="Invoice",
 		team=team.name,

@@ -12,17 +12,29 @@ from press.press.doctype.site_backup.site_backup import process_backup_site_job_
 from press.utils import log_error
 
 
-def get_ongoing_migration(site: str):
-	"""Return ongoing Site Migration for site."""
+def get_ongoing_migration(site: str, scheduled=False):
+	"""
+	Return ongoing Site Migration for site.
+
+	Used to redirect agent job callbacks
+	"""
+	ongoing_statuses = ["Pending", "Running"]
+	if scheduled:
+		ongoing_statuses.append("Scheduled")
 	return frappe.db.exists(
-		"Site Migration", {"site": site, "status": ("in", ["Pending", "Running"])}
+		"Site Migration",
+		{
+			"site": site,
+			"status": ("in", ongoing_statuses),
+			"creation": (">", frappe.utils.add_to_date(None, hours=-24)),
+		},
 	)
 
 
 class SiteMigration(Document):
 	def before_insert(self):
-		if get_ongoing_migration(self.site):
-			frappe.throw("Ongoing Site Migration for that site exists.")
+		if get_ongoing_migration(self.site, scheduled=True):
+			frappe.throw("Ongoing/Scheduled Site Migration for that site exists.")
 		self.check_for_existing_agent_jobs()
 
 	def after_insert(self):

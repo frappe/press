@@ -88,6 +88,7 @@ def _new(site):
 	cluster = site.get("cluster") or frappe.db.get_single_value(
 		"Press Settings", "cluster"
 	)
+
 	proxy_servers = frappe.get_all(
 		"Proxy Server Domain", {"domain": domain}, pluck="parent"
 	)
@@ -124,6 +125,7 @@ def _new(site):
 		{
 			"doctype": "Site",
 			"subdomain": site["name"],
+			"domain": domain,
 			"bench": bench,
 			"apps": [{"app": app} for app in site["apps"]],
 			"team": team.name,
