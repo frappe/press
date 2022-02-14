@@ -1,0 +1,54 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2022-02-14 19:25:06.365019",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "s3_credentials_section",
+  "aws_access_key",
+  "aws_secret_key"
+ ],
+ "fields": [
+  {
+   "collapsible": 1,
+   "fieldname": "s3_credentials_section",
+   "fieldtype": "Section Break",
+   "label": "S3 Credentials"
+  },
+  {
+   "fieldname": "aws_access_key",
+   "fieldtype": "Data",
+   "label": "aws access key"
+  },
+  {
+   "fieldname": "aws_secret_key",
+   "fieldtype": "Password",
+   "label": "aws secret key"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2022-02-14 19:25:23.215420",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Custom App Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
