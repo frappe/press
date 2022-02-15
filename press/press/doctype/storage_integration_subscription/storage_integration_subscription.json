@@ -6,11 +6,14 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "plan_section",
   "enabled",
   "site",
-  "minio_server_on",
+  "team",
   "limit",
   "usage",
+  "s3_and_minio_column",
+  "minio_server_on",
   "access_key",
   "secret_key",
   "policy_name",
@@ -70,11 +73,28 @@
    "fieldtype": "Int",
    "label": "Usage",
    "read_only": 1
+  },
+  {
+   "fieldname": "s3_and_minio_column",
+   "fieldtype": "Section Break",
+   "label": "S3 and Minio"
+  },
+  {
+   "fieldname": "plan_section",
+   "fieldtype": "Section Break",
+   "label": "Plan"
+  },
+  {
+   "fetch_from": "site.team",
+   "fieldname": "team",
+   "fieldtype": "Data",
+   "label": "Team",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-02-14 20:10:32.338963",
+ "modified": "2022-02-14 21:52:47.591462",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Storage Integration Subscription",
