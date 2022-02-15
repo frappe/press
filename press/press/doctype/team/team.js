@@ -64,7 +64,7 @@ frappe.ui.form.on('Team', {
 			window.open(`/dashboard/impersonate/${team}`);
 		});
 
-		if (frm.doc.erpnext_partner) {
+		if (frm.doc.payment_mode === 'Partner Credits') {
 			frm.add_custom_button('Get Partner Credits', () =>
 				frm.call('get_available_partner_credits').then((d) => {
 					frappe.msgprint({
