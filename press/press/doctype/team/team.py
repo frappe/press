@@ -492,9 +492,6 @@ class Team(Document):
 
 	@frappe.whitelist()
 	def get_available_partner_credits(self):
-		if not self.erpnext_partner:
-			frappe.throw(f"{self.name} is not a partner account.")
-
 		client = get_frappe_io_connection()
 		response = client.session.post(
 			f"{client.url}/api/method/partner_relationship_management.api.get_partner_credit_balance",
