@@ -5,5 +5,5 @@
 import unittest
 
 
-class TestCustomAppSettings(unittest.TestCase):
+class TestAddOnSettings(unittest.TestCase):
 	pass

@@ -5,5 +5,5 @@
 from frappe.model.document import Document
 
 
-class CustomAppSettings(Document):
+class AddOnSettings(Document):
 	pass

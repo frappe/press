@@ -103,9 +103,9 @@ def monitor_storage():
 	active_subs = frappe.get_all(
 		"Storage Integration Subscription", fields=["site", "name"], filters={"enabled": 1}
 	)
-	access_key = frappe.db.get_value("Custom App Settings", None, "aws_access_key")
+	access_key = frappe.db.get_value("Add On Settings", None, "aws_access_key")
 	secret_key = get_decrypted_password(
-		"Custom App Settings", "Custom App Settings", "aws_secret_key"
+		"Add On Settings", "Add On Settings", "aws_secret_key"
 	)
 
 	for sub in active_subs:
