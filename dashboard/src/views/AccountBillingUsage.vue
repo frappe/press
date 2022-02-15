@@ -108,12 +108,7 @@ export default {
 		upcomingInvoice: 'press.api.billing.upcoming_invoice',
 		availablePartnerCredits() {
 			return {
-				method: 'press.api.billing.get_partner_credits',
-				validate() {
-					if (!this.$account.team.erpnext_partner) {
-						return 'Not an ERPNext partner.';
-					}
-				}
+				method: 'press.api.billing.get_partner_credits'
 			};
 		}
 	},
