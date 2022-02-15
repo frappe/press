@@ -67,6 +67,12 @@
 						</div>
 					</div>
 				</div>
+
+				<ErrorMessage
+					v-if="$resourceErrors"
+					:error="$resourceErrors"
+					class="mt-3"
+				/>
 			</div>
 
 			<div class="py-20 text-center" v-if="loading">
