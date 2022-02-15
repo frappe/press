@@ -1,0 +1,63 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2022-02-14 21:03:35.091019",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "minio_server_on",
+  "minio_host_ip",
+  "bucket_name",
+  "region"
+ ],
+ "fields": [
+  {
+   "fieldname": "bucket_name",
+   "fieldtype": "Data",
+   "label": "Bucket name"
+  },
+  {
+   "fieldname": "region",
+   "fieldtype": "Data",
+   "label": "Region"
+  },
+  {
+   "fieldname": "minio_server_on",
+   "fieldtype": "Link",
+   "label": "Minio Server on",
+   "options": "Proxy Server"
+  },
+  {
+   "fetch_from": "minio_server_on.private_ip",
+   "fieldname": "minio_host_ip",
+   "fieldtype": "Data",
+   "label": "Minio Host IP",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2022-02-15 10:57:54.172156",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Storage Integration Bucket",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
