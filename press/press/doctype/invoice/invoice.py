@@ -370,11 +370,6 @@ class Invoice(Document):
 			doc.submit()
 
 	def apply_partner_credits(self):
-		team = frappe.get_cached_doc("Team", self.team)
-
-		if not team.erpnext_partner:
-			frappe.throw(f"{self.team} is not a partner account. Cannot apply partner credits.")
-
 		client = self.get_frappeio_connection()
 		response = client.session.post(
 			f"{client.url}/api/method/consume_credits_against_fc_invoice",
@@ -555,7 +550,8 @@ class Invoice(Document):
 		if self.frappe_invoice:
 			client = self.get_frappeio_connection()
 			url = (
-				client.url + "/api/method/frappe.utils.print_format.download_pdf?"
+				client.url
+				+ "/api/method/frappe.utils.print_format.download_pdf?"
 				f"doctype=Sales%20Invoice&name={self.frappe_invoice}&"
 				"format=Frappe%20Cloud&no_letterhead=0"
 			)
