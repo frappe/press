@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 # imports - standard imports
 import atexit
-import getpass
 import json
 import os
 import re
@@ -393,9 +392,8 @@ def upload_backup(local_site):
 	return files_uploaded
 
 
-def new_site(local_site):
+def new_site(local_site, frappe_version):
 
-	version = get_version()
 	files_uploaded = upload_backup(local_site)
 
 	# push to frappe_cloud
@@ -403,7 +401,7 @@ def new_site(local_site):
 		{
 			"site": {
 				"files": files_uploaded,
-				"version": version,
+				"version": int(frappe_version),
 				"name": local_site,
 			}
 		}
@@ -426,17 +424,7 @@ def new_site(local_site):
 
 
 @add_line_after
-@retry(
-	stop=stop_after_attempt(3)
-	| retry_if_exception_type(SystemExit) & retry_unless_exception_type(KeyboardInterrupt)
-)
-def create_session():
-	print("\nFrappe Cloud credentials @ {}".format(remote_site))
-
-	# take user input from STDIN
-	username = click.prompt("Username").strip()
-	password = getpass.unix_getpass()
-
+def create_session(username, password):
 	auth_credentials = {"usr": username, "pwd": password}
 
 	session = requests.Session()
@@ -452,7 +440,7 @@ def create_session():
 		)
 
 
-def frappecloud_migrator(local_site):
+def frappecloud_migrator(local_site, username, password, frappe_version):
 	global login_url, upload_url, remote_link_url, register_remote_url, options_url, site_exists_url, site_info_url, restore_site_url, account_details_url, all_site_url, finish_multipart_url
 	global session, migrator_actions, remote_site
 
@@ -499,11 +487,11 @@ def frappecloud_migrator(local_site):
 
 	# get credentials + auth user + start session
 	try:
-		session = create_session()
+		session = create_session(username, password)
 	except RetryError:
 		raise KeyboardInterrupt
 
-	new_site(local_site)
+	new_site(local_site, frappe_version)
 
 
 def cleanup(current_file):
@@ -518,20 +506,23 @@ def executed_from_temp_dir():
 	return cur_file.startswith(temp_dir)
 
 
-if __name__ in ("__main__", "frappe.integrations.frappe_providers.frappecloud"):
-	if executed_from_temp_dir():
-		current_file = os.path.abspath(__file__)
-		atexit.register(cleanup, current_file)
-
-	try:
-		local_site = sys.argv[1]
-	except Exception:
-		local_site = input("Name of the site you want to migrate: ").strip()
-
+@click.command()
+@click.option("-s", "--local_site", prompt="Site Name")
+@click.option("-u", "--username", prompt="Username")
+@click.option("-p", "--password", prompt="Password", hide_input=True)
+@click.option(
+	"-f",
+	"--frappe_version",
+	type=click.Choice(['12', '13']),
+	prompt="Version",
+	default='13',
+	show_default=True,
+)
+def main(local_site, username, password, frappe_version):
 	try:
 		frappe.init(site=local_site)
 		frappe.connect()
-		frappecloud_migrator(local_site)
+		frappecloud_migrator(local_site, username, password, frappe_version)
 	except (KeyboardInterrupt, click.exceptions.Abort):
 		print("\nExitting...")
 	except Exception:
@@ -540,3 +531,10 @@ if __name__ in ("__main__", "frappe.integrations.frappe_providers.frappecloud"):
 		print(get_traceback())
 
 	frappe.destroy()
+
+
+if __name__ in ("__main__", "frappe.integrations.frappe_providers.frappecloud"):
+	if executed_from_temp_dir():
+		current_file = os.path.abspath(__file__)
+		atexit.register(cleanup, current_file)
+	main()
