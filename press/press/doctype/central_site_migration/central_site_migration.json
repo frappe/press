@@ -78,13 +78,8 @@
   }
  ],
  "index_web_pages_for_search": 1,
- "links": [
-  {
-   "link_doctype": "Ansible Play",
-   "link_fieldname": "server"
-  }
- ],
- "modified": "2022-02-16 14:57:25.492496",
+ "links": [],
+ "modified": "2022-02-16 15:26:30.167083",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Central Site Migration",

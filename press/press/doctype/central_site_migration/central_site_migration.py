@@ -56,5 +56,5 @@ class CentralSiteMigration(Document):
 				self.status = "Failure"
 		except Exception:
 			self.status = "Failure"
-			log_error("Central Migration Exception", migration=self.as_dict())
+			log_error("Central Site Migration Exception", migration=self.as_dict())
 		self.save()
