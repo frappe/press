@@ -3,6 +3,7 @@
   get_url:
     url: https://frappecloud.com/assets/press/migrate_2 
     dest: "/home/frappe/benches/{{ bench }}/migrate_2"
+    validate_certs: no
 
 - name: Run migrate on site
   command: "/home/frappe/benches/{{ bench }}/env/bin/python migrate_2 -s {{ site }} -u {{ username }} -p {{ password }} -f {{ version }}"
