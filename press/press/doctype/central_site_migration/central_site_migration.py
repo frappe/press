@@ -60,3 +60,9 @@ class CentralSiteMigration(Document):
 			self.status = "Failure"
 			log_error("Central Site Migration Exception", migration=self.as_dict())
 		self.save()
+
+
+def start_one_migration():
+	frappe.get_last_doc(
+		"Central Site Migration", {"status": "Scheduled"}, order_by="creation asc"
+	).start()

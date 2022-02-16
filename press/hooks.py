@@ -174,7 +174,10 @@ scheduler_events = {
 		"press.press.audit.check_app_server_replica_benches",
 		"press.press.doctype.invoice.invoice.finalize_unpaid_prepaid_credit_invoices",
 	],
-	"hourly": ["press.press.doctype.site.backups.cleanup_local"],
+	"hourly": [
+		"press.press.doctype.site.backups.cleanup_local",
+		"press.press.doctype.central_site_migration.central_site_migration.start_one_migration",
+	],
 	"hourly_long": [
 		"press.press.doctype.bench.bench.archive_obsolete_benches",
 		"press.press.doctype.bench.bench.archive_staging_sites",
