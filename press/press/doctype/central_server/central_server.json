@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_rename": 1,
  "autoname": "Prompt",
  "creation": "2022-02-16 13:25:45.054957",
  "doctype": "DocType",
@@ -39,7 +40,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2022-02-16 15:26:54.063825",
+ "modified": "2022-02-16 17:59:56.561266",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Central Server",
