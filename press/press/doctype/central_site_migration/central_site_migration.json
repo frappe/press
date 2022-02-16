@@ -1,0 +1,108 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2022-02-16 09:32:46.654524",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "site",
+  "status",
+  "server",
+  "ip",
+  "bench",
+  "version",
+  "scheduled_time",
+  "root_public_key",
+  "frappe_public_key"
+ ],
+ "fields": [
+  {
+   "fieldname": "site",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Site",
+   "reqd": 1
+  },
+  {
+   "fieldname": "server",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Server",
+   "reqd": 1
+  },
+  {
+   "fieldname": "bench",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Bench",
+   "reqd": 1
+  },
+  {
+   "fieldname": "version",
+   "fieldtype": "Data",
+   "label": "Version",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Scheduled\nPending\nRunning\nSuccess\nFailure"
+  },
+  {
+   "fieldname": "scheduled_time",
+   "fieldtype": "Datetime",
+   "label": "Scheduled Time"
+  },
+  {
+   "fieldname": "ip",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "IP",
+   "reqd": 1
+  },
+  {
+   "fieldname": "root_public_key",
+   "fieldtype": "Data",
+   "label": "Root Public Key",
+   "read_only": 1
+  },
+  {
+   "fieldname": "frappe_public_key",
+   "fieldtype": "Data",
+   "label": "Frappe Public Key",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [
+  {
+   "link_doctype": "Ansible Play",
+   "link_fieldname": "server"
+  }
+ ],
+ "modified": "2022-02-16 13:06:43.852437",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Central Site Migration",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
