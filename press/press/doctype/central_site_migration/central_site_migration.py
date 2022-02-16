@@ -29,7 +29,13 @@ class CentralSiteMigration(Document):
 		if not self.scheduled_time:
 			self.start()
 
+	@frappe.whitelist()
 	def start(self):
+		self.status = "Running"
+		self.save()
+		frappe.enqueue_doc(self.doctype, self.name, "_start", queue="short")
+
+	def _start(self):
 		try:
 			ansible = Ansible(
 				playbook="central-site-migration.yml",
@@ -39,7 +45,7 @@ class CentralSiteMigration(Document):
 					"site": self.site,
 					"version": self.version,
 					"username": central_username,
-					"password": central_user_password
+					"password": central_user_password,
 				},
 			)
 			play = ansible.run()
@@ -52,8 +58,3 @@ class CentralSiteMigration(Document):
 			self.status = "Failure"
 			log_error("Central Migration Exception", migration=self.as_dict())
 		self.save()
-
-	def _start(self):
-		self.status = "Running"
-		self.save()
-		frappe.enqueue_doc(self.doctype, self.name, "_start", queue="short")
