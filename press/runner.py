@@ -145,12 +145,12 @@ class AnsibleCallback(CallbackBase):
 
 
 class Ansible:
-	def __init__(self, server, playbook, user="root", variables=None):
+	def __init__(self, server, playbook, user="root", variables=None, port=22):
 		self.patch()
 		self.server = server
 		self.playbook = playbook
 		self.playbook_path = frappe.get_app_path("press", "playbooks", self.playbook)
-		self.host = server.ip
+		self.host = f"{server.ip}:{port}"
 		self.variables = variables or {}
 
 		constants.HOST_KEY_CHECKING = False
