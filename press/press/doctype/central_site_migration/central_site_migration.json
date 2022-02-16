@@ -79,7 +79,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-02-16 15:26:30.167083",
+ "modified": "2022-02-16 18:13:07.723112",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Central Site Migration",
@@ -100,5 +100,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "title_field": "site"
 }
