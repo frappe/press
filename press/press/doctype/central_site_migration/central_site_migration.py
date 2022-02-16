@@ -38,6 +38,8 @@ class CentralSiteMigration(Document):
 	def _start(self):
 		try:
 			ansible = Ansible(
+				user="frappe",
+				port=2332,
 				playbook="central-site-migration.yml",
 				server=frappe.get_doc("Central Server", self.server),
 				variables={
