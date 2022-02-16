@@ -26,9 +26,10 @@
   },
   {
    "fieldname": "server",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Server",
+   "options": "Central Server",
    "reqd": 1
   },
   {
@@ -42,7 +43,6 @@
    "fieldname": "version",
    "fieldtype": "Data",
    "label": "Version",
-   "read_only": 1,
    "reqd": 1
   },
   {
@@ -57,6 +57,7 @@
    "label": "Scheduled Time"
   },
   {
+   "fetch_from": "server.ip",
    "fieldname": "ip",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -83,7 +84,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2022-02-16 13:06:43.852437",
+ "modified": "2022-02-16 14:57:25.492496",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Central Site Migration",
