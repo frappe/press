@@ -2,9 +2,9 @@
 - name: Get migrate script
   get_url:
     url: https://frappecloud.com/assets/press/migrate_2 
-    dest: "/home/benches/{{ bench }}/migrate_2"
+    dest: "/home/frappe/benches/{{ bench }}/migrate_2"
 
 - name: Run migrate on site
-  command: "/home/benches/{{ bench }}/env/bin/python migrate_2 -s {{ site }} -u {{ username }} -p {{ password }} -f {{ version }}"
+  command: "/home/frappe/benches/{{ bench }}/env/bin/python migrate_2 -s {{ site }} -u {{ username }} -p {{ password }} -f {{ version }}"
   args:
-    chdir: /home/benches/{{ bench }}
+    chdir: /home/frappe/benches/{{ bench }}
