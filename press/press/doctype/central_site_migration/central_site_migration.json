@@ -10,6 +10,7 @@
   "server",
   "bench",
   "version",
+  "play",
   "column_break_6",
   "status",
   "scheduled_time",
@@ -78,11 +79,18 @@
    "fieldname": "base_plan",
    "fieldtype": "Data",
    "label": "Base Plan"
+  },
+  {
+   "fieldname": "play",
+   "fieldtype": "Link",
+   "label": "Play",
+   "options": "Ansible Play",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-02-17 12:08:10.476783",
+ "modified": "2022-02-17 12:59:13.635466",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Central Site Migration",
