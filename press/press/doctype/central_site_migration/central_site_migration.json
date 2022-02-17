@@ -7,14 +7,15 @@
  "engine": "InnoDB",
  "field_order": [
   "site",
-  "status",
   "server",
-  "ip",
   "bench",
   "version",
+  "column_break_6",
+  "status",
   "scheduled_time",
-  "root_public_key",
-  "frappe_public_key"
+  "database_size",
+  "files_size",
+  "base_plan"
  ],
  "fields": [
   {
@@ -46,10 +47,13 @@
    "reqd": 1
   },
   {
+   "allow_in_quick_entry": 1,
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "Scheduled\nPending\nRunning\nSuccess\nFailure"
+   "options": "Scheduled\nPending\nRunning\nSuccess\nFailure",
+   "read_only": 1,
+   "reqd": 1
   },
   {
    "fieldname": "scheduled_time",
@@ -57,29 +61,28 @@
    "label": "Scheduled Time"
   },
   {
-   "fetch_from": "server.ip",
-   "fieldname": "ip",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "IP",
-   "reqd": 1
+   "fieldname": "column_break_6",
+   "fieldtype": "Column Break"
   },
   {
-   "fieldname": "root_public_key",
+   "fieldname": "database_size",
    "fieldtype": "Data",
-   "label": "Root Public Key",
-   "read_only": 1
+   "label": "Database Size"
   },
   {
-   "fieldname": "frappe_public_key",
+   "fieldname": "files_size",
    "fieldtype": "Data",
-   "label": "Frappe Public Key",
-   "read_only": 1
+   "label": "Files Size"
+  },
+  {
+   "fieldname": "base_plan",
+   "fieldtype": "Data",
+   "label": "Base Plan"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-02-16 18:13:07.723112",
+ "modified": "2022-02-17 12:08:10.476783",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Central Site Migration",
