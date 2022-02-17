@@ -176,7 +176,6 @@ scheduler_events = {
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
-		"press.press.doctype.central_site_migration.central_site_migration.start_one_migration",
 	],
 	"hourly_long": [
 		"press.press.doctype.bench.bench.archive_obsolete_benches",
@@ -203,6 +202,7 @@ scheduler_events = {
 			"press.press.doctype.drip_email.drip_email.send_welcome_email",
 			"press.press.doctype.site.backups.schedule",
 			"press.press.doctype.site_migration.site_migration.run_scheduled_migrations",
+			"press.press.doctype.central_site_migration.central_site_migration.start_one_migration",
 		],
 		"*/30 * * * *": ["press.press.doctype.site_update.scheduled_auto_updates.trigger"],
 		"15,45 * * * *": [

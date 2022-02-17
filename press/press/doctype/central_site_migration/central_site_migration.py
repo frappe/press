@@ -31,12 +31,16 @@ class CentralSiteMigration(Document):
 
 	@frappe.whitelist()
 	def start(self):
-		self.status = "Running"
+		self.status = "Pending"
 		self.save()
 		frappe.enqueue_doc(self.doctype, self.name, "_start", queue="short")
 
 	def _start(self):
 		try:
+			self.reload()
+			self.status = "Running"
+			self.save()
+			frappe.db.commit()
 			ansible = Ansible(
 				user="frappe",
 				port=2332,
@@ -51,7 +55,6 @@ class CentralSiteMigration(Document):
 				},
 			)
 			play = ansible.run()
-			self.reload()
 			if play.status == "Success":
 				self.status = "Success"
 			else:
@@ -64,5 +67,7 @@ class CentralSiteMigration(Document):
 
 def start_one_migration():
 	frappe.get_last_doc(
-		"Central Site Migration", {"status": "Scheduled"}, order_by="creation asc"
+		"Central Site Migration",
+		{"status": "Scheduled", "scheduled_time": ("is", "not set")},
+		order_by="creation asc",
 	).start()
