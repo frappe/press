@@ -29,7 +29,6 @@ try:
 		RetryError,
 		retry,
 		retry_if_exception_type,
-		retry_unless_exception_type,
 		stop_after_attempt,
 		wait_fixed,
 	)
@@ -54,7 +53,6 @@ except ImportError:
 		RetryError,
 		retry,
 		retry_if_exception_type,
-		retry_unless_exception_type,
 		stop_after_attempt,
 		wait_fixed,
 	)
@@ -513,9 +511,9 @@ def executed_from_temp_dir():
 @click.option(
 	"-f",
 	"--frappe_version",
-	type=click.Choice(['12', '13']),
+	type=click.Choice(["12", "13"]),
 	prompt="Version",
-	default='13',
+	default="13",
 	show_default=True,
 )
 def main(local_site, username, password, frappe_version):
