@@ -26,10 +26,6 @@ class CentralSiteMigration(Document):
 		if get_ongoing_migration(self.site, scheduled=True):
 			frappe.throw("Ongoing/Scheduled Site Migration for that site exists.")
 
-	def after_insert(self):
-		if not self.scheduled_time:
-			self.start()
-
 	@frappe.whitelist()
 	def start(self):
 		self.status = "Pending"
