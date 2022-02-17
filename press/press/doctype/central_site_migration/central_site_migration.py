@@ -4,6 +4,7 @@
 import frappe
 from frappe.model.document import Document
 
+from press.telegram_utils import Telegram
 from press.runner import Ansible
 from press.utils import log_error
 
@@ -37,10 +38,6 @@ class CentralSiteMigration(Document):
 
 	def _start(self):
 		try:
-			self.reload()
-			self.status = "Running"
-			self.save()
-			frappe.db.commit()
 			ansible = Ansible(
 				user="frappe",
 				port=2332,
@@ -54,15 +51,32 @@ class CentralSiteMigration(Document):
 					"password": central_user_password,
 				},
 			)
+			self.reload()
+			self.play = ansible.play
+			self.status = "Running"
+			self.save()
+			frappe.db.commit()
 			play = ansible.run()
 			if play.status == "Success":
 				self.status = "Success"
 			else:
-				self.status = "Failure"
+				self.fail()
 		except Exception:
-			self.status = "Failure"
+			self.fail()
 			log_error("Central Site Migration Exception", migration=self.as_dict())
 		self.save()
+
+	def fail(self):
+		self.status = "Failure"
+		domain = frappe.get_value("Press Settings", "Press Settings", "domain")
+		message = f"""
+Migration for *{self.site}* failed.
+Now look what you did!
+
+[Central Site Migration]({domain}{self.get_url()})
+"""
+		telegram = Telegram()
+		telegram.send(message)
 
 
 def start_one_migration():
