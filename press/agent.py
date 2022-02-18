@@ -145,6 +145,7 @@ class Agent:
 
 				site_config = frappe.get_doc("Remote File", site.remote_config_file)
 				new_config = site_config.get_content()
+				new_config["maintenance_mode"] = 0  # Don't allow deactivated sites to be created
 				sanitized_config = sanitize_config(new_config)
 				existing_config = json.loads(site.config)
 				existing_config.update(sanitized_config)
