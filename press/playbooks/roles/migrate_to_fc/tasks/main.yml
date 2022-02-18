@@ -1,11 +1,23 @@
 ---
+- name: Put site on maintenance_mode
+  command: 'bench --site {{ site }} set-maintenance-mode on'
+  args:
+    chdir: /home/frappe/benches/{{ bench }}
+
 - name: Get migrate script
   get_url:
-    url: https://frappecloud.com/assets/press/migrate_2 
-    dest: "/home/frappe/benches/{{ bench }}/migrate_2"
+    url: https://frappecloud.com/assets/press/migrate_2
+    dest: '/home/frappe/benches/{{ bench }}/migrate_2'
     validate_certs: no
 
 - name: Run migrate on site
-  command: "/home/frappe/benches/{{ bench }}/env/bin/python migrate_2 -s {{ site }} -u {{ username }} -p {{ password }} -f {{ version }}"
+  command: '/home/frappe/benches/{{ bench }}/env/bin/python migrate_2 -s {{ site }} -u {{ username }} -p {{ password }} -f {{ version }}'
   args:
     chdir: /home/frappe/benches/{{ bench }}
+  register: migrate_command
+
+- name: Activate site if migrate failed
+  command: 'bench --site {{ site }} set-maintenance-mode off'
+  args:
+    chdir: /home/frappe/benches/{{ bench }}
+  when: migrate_command.rc != 0
