@@ -66,9 +66,10 @@ def new_central_site(site: Dict):
 	elif site["version"] == 13:
 		site["group"] = "bench-0870"
 
-	site["apps"] = frappe.get_all(
-		"Release Group App", {"parent": site["group"]}, pluck="app"
-	)
+	# site["apps"] = frappe.get_all(
+	# 	"Release Group App", {"parent": site["group"]}, pluck="app"
+	# )
+	site["apps"] = ["frappe", "erpnext", "erpnext_support", "journeys"]
 
 	return _new(site)
 
