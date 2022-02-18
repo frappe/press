@@ -3,6 +3,7 @@
 # For license information, please see license.txt
 
 import json
+from frappe.utils.user import is_system_user
 import wrapt
 import frappe
 import dns.resolver
@@ -52,9 +53,7 @@ def new_central_site(site: Dict):
 	files,
 	name,
 	"""
-	user = frappe.session.user
-	user_type = frappe.db.get_value("User", user, "user_type", cache=True)
-	if user_type != "System User":
+	if not is_system_user(frappe.session.user):
 		return
 
 	site["plan"] = "Central Site"

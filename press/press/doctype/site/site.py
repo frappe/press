@@ -2,27 +2,27 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
-import re
 import json
+import re
+from collections import defaultdict
+from typing import Any, Dict, List
+
 import boto3
+import dateutil.parser
 import frappe
 import requests
-import dateutil.parser
-
-from typing import Any, Dict, List
-from collections import defaultdict
-
 from frappe.core.utils import find
-from frappe.model.document import Document
 from frappe.frappeclient import FrappeClient
-from frappe.utils.password import get_decrypted_password
+from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
 from frappe.utils import cint, convert_utc_to_user_timezone, cstr, get_datetime
+from frappe.utils.password import get_decrypted_password
+from frappe.utils.user import is_system_user
 
 from press.agent import Agent
 from press.api.site import check_dns
-from press.press.doctype.plan.plan import get_plan_config
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.plan.plan import get_plan_config
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.utils import convert, get_client_blacklisted_keys, guess_type, log_error
 
@@ -53,15 +53,18 @@ class Site(Document):
 
 	def validate_site_name(self):
 		site_regex = r"^[a-z0-9][a-z0-9-]*[a-z0-9]$"
-		if len(self.subdomain) < 5:
-			frappe.throw("Subdomain too short. Use 5 or more characters")
-		if len(self.subdomain) > 32:
-			frappe.throw("Subdomain too long. Use 32 or less characters")
 		if not re.match(site_regex, self.subdomain):
 			frappe.throw(
 				"Subdomain contains invalid characters. Use lowercase"
 				" characters, numbers and hyphens"
 			)
+		if len(self.subdomain) > 32:
+			frappe.throw("Subdomain too long. Use 32 or less characters")
+
+		if is_system_user(frappe.session.user):
+			return
+		if len(self.subdomain) < 5:
+			frappe.throw("Subdomain too short. Use 5 or more characters")
 
 	def set_site_admin_password(self):
 		# set site.admin_password if doesn't exist
@@ -807,9 +810,7 @@ class Site(Document):
 			subscription.disable()
 
 	def can_change_plan(self):
-		user = frappe.session.user
-		user_type = frappe.db.get_value("User", user, "user_type", cache=True)
-		if user_type == "System User":
+		if is_system_user(frappe.session.user):
 			return
 
 		team = frappe.get_doc("Team", self.team)
