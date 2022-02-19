@@ -49,7 +49,7 @@ class SiteBackup(Document):
 			"site": site,
 			"status": "Success",
 		}
-		return frappe.db.exists("Site Backup", {**base_filters, **filters})
+		return frappe.get_all("Site Backup", {**base_filters, **filters})
 
 	@classmethod
 	def file_backup_exists(cls, site: str, day: datetime.date) -> bool:
