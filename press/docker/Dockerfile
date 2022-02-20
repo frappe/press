@@ -129,6 +129,7 @@ ENV PATH "$PATH:/home/frappe/.local/bin"
 
 RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 pip3 install --upgrade frappe-bench==5.2.1 `#stage-bench-bench`
 
+RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 pip3 install Jinja2~=3.0.3
 RUN mkdir /home/frappe/frappe-bench
 WORKDIR /home/frappe/frappe-bench
 RUN mkdir -p apps logs sites config/pids redis
