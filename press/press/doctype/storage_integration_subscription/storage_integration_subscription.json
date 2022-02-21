@@ -89,12 +89,13 @@
    "fieldname": "team",
    "fieldtype": "Data",
    "label": "Team",
+   "options": "Email",
    "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-02-14 21:52:47.591462",
+ "modified": "2022-02-21 19:48:52.466274",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Storage Integration Subscription",
