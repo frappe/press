@@ -1396,5 +1396,93 @@
     "step_name": "Remove User from ProxySQL"
    }
   ]
+ },
+ {
+	"name": "Create Minio User",
+	"modified": "2022-02-13 14:26:09.458148",
+	"docstatus": 0,
+	"parent": null,
+	"parentfield": null,
+	"parenttype": null,
+	"request_path": "/minio/create",
+	"request_method": "POST",
+	"doctype": "Agent Job Type",
+	"steps": [
+  {
+    "step_name": "Create Minio User",
+    "parent": "Create Minio User",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type"
+  },
+  {
+    "step_name": "Create Minio Policy",
+    "parent": "Create Minio User",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type"
+  },
+  {
+    "step_name": "Add Minio Policy",
+    "parent": "Create Minio User",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type"
+  }
+	]
+ },
+ {
+	"name": "Remove Minio User",
+	"modified": "2022-02-13 14:26:41.239106",
+	"docstatus": 0,
+	"parent": null,
+	"parentfield": null,
+	"parenttype": null,
+	"request_path": "/minio/remove",
+	"request_method": "POST",
+	"doctype": "Agent Job Type",
+	"steps": [
+  {
+    "step_name": "Remove Minio User",
+    "parent": "Remove Minio User",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type"
+	}
+	]
+ },
+ {
+  "name": "Enable Minio User",
+  "modified": "2022-02-15 14:21:09.184479",
+  "docstatus": 0,
+	"parent": null,
+	"parentfield": null,
+	"parenttype": null,
+  "request_path": "/minio/update",
+  "request_method": "POST",
+  "doctype": "Agent Job Type",
+  "steps": [
+  {
+    "step_name": "Enable Minio User",
+    "parent": "Enable Minio User",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type"
+  }
+  ]
+ },
+ {
+  "name": "Disable Minio User",
+  "modified": "2022-02-15 14:21:14.416719",
+  "docstatus": 0,
+	"parent": null,
+	"parentfield": null,
+	"parenttype": null,
+  "request_path": "/minio/update",
+  "request_method": "POST",
+  "doctype": "Agent Job Type",
+  "steps": [
+  {
+    "step_name": "Disable Minio User",
+    "parent": "Disable Minio User",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type"
+  }
+  ]
  }
 ]
