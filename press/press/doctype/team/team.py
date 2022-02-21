@@ -250,6 +250,13 @@ class Team(Document):
 		self.payment_mode = "Partner Credits"
 		self.save(ignore_permissions=True)
 
+	@frappe.whitelist()
+	def disable_erpnext_partner_privileges(self):
+		self.erpnext_partner = 0
+		self.save(ignore_permissions=True)
+		# TODO: Maybe check if the partner had enough credits
+		# for settlement and if not, change payment mode
+
 	def allocate_free_credits(self):
 		if self.via_erpnext:
 			# dont allocate free credits for signups via erpnext
