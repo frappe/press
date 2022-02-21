@@ -753,6 +753,9 @@ def finalize_unpaid_prepaid_credit_invoices():
 
 
 def finalize_draft_invoice(invoice):
+	if isinstance(invoice, str):
+		invoice = frappe.get_doc("Invoice", invoice)
+
 	try:
 		invoice.finalize_invoice()
 	except Exception:

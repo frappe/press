@@ -775,6 +775,24 @@ def process_stripe_webhook(doc, method):
 	invoice.update_transaction_details(charge)
 	invoice.submit()
 
+	enqueue_finalize_unpaid_for_team(team.name)
+
+
+def enqueue_finalize_unpaid_for_team(team: str):
+	# get a list of unpaid invoices for the team
+	invoices = frappe.get_all(
+		"Invoice",
+		filters={"team": team, "status": "Unpaid", "type": "Subscription"},
+		pluck="name",
+	)
+
+	# Enqueue a background job to call finalize_draft_invoice
+	for invoice in invoices:
+		frappe.enqueue(
+			"press.press.doctype.invoice.invoice.finalize_draft_invoice",
+			invoice=invoice,
+		)
+
 
 def get_permission_query_conditions(user):
 	from press.utils import get_current_team
