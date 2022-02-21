@@ -73,7 +73,7 @@ class StorageIntegrationSubscription(Document):
 
 		return agent.create_agent_job(
 			f"{op_type.capitalize()} Minio User",
-			"minio/subscription",
+			"minio/update",
 			data=data,
 		)
 
