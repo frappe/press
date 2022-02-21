@@ -1,6 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "field:minio_server_on",
  "creation": "2022-02-14 21:03:35.091019",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -26,7 +27,8 @@
    "fieldname": "minio_server_on",
    "fieldtype": "Link",
    "label": "Minio Server on",
-   "options": "Proxy Server"
+   "options": "Proxy Server",
+   "unique": 1
   },
   {
    "fetch_from": "minio_server_on.private_ip",
@@ -38,10 +40,11 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-02-15 10:57:54.172156",
+ "modified": "2022-02-21 21:36:04.024443",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Storage Integration Bucket",
+ "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {
