@@ -51,11 +51,11 @@
 						</div>
 						<div class="ml-auto space-x-2">
 							<Button
-								v-if="$account.team.payment_mode === 'Partner Credits'"
+								v-if="$account.team.erpnext_partner"
 								link="https://frappe.io/partners/buy_credits"
 								type="white"
 							>
-								Add Balance
+								Buy Credits
 							</Button>
 							<Button
 								v-else
