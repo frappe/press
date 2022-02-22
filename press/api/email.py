@@ -12,7 +12,6 @@ import frappe
 from press.utils import log_error
 from press.api.developer.marketplace import (
 	get_subscription_info,
-	get_subscription_status,
 )
 
 
