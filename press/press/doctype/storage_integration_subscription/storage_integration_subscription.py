@@ -95,6 +95,10 @@ def create_after_insert(doc, method):
 		frappe.get_doc(
 			{"doctype": "Storage Integration Subscription", "site": doc.site}
 		).insert()
+	elif doc.app == "email_delivery_service":
+		from press.api.email import setup
+
+		setup(doc.site)
 
 		frappe.db.commit()
 
