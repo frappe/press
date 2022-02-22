@@ -137,3 +137,16 @@ def get_size(bucket, path, access_key, secret_key):
 		total_size = total_size + obj.size
 
 	return total_size
+
+
+@frappe.whitelist()
+def update_user_status(docname, status):
+	doc = frappe.get_doc("Storage Integration Subscription", docname)
+	status = int(status)
+
+	if status == 0:
+		doc.update_user("disable")
+	elif status == 1:
+		doc.update_user("enable")
+
+	frappe.db.commit()
