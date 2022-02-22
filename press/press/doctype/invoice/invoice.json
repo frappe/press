@@ -26,6 +26,7 @@
   "payment_attempt_count",
   "payment_attempt_date",
   "payment_mode",
+  "total_before_discount",
   "column_break_15",
   "total",
   "applied_credits",
@@ -361,6 +362,12 @@
    "fieldtype": "Table",
    "label": "Discounts",
    "options": "Invoice Discount"
+  },
+  {
+   "fieldname": "total_before_discount",
+   "fieldtype": "Currency",
+   "label": "Total Before Discount",
+   "options": "currency"
   }
  ],
  "is_submittable": 1,
@@ -381,7 +388,7 @@
    "link_fieldname": "invoice"
   }
  ],
- "modified": "2022-02-23 01:03:58.141068",
+ "modified": "2022-02-23 01:09:08.913460",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",
