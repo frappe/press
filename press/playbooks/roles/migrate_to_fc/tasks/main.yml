@@ -22,3 +22,8 @@
   args:
     chdir: /home/frappe/benches/{{ bench }}
   when: migrate_command.rc != 0
+
+- name: Mark play as failed if migrate fails
+  fail:
+    msg: Play failed as migrate failed
+  when: migrate_command.rc != 0
