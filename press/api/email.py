@@ -25,27 +25,21 @@ def email_ping():
 	return "pong"
 
 
-@frappe.whitelist(allow_guest=True)
-def setup(**data):
+def setup(site):
 	"""
 	set site config for overriding email account validations
 	"""
-	status = get_subscription_status(data["key"])
-	if status == "Active" or data["key"] == "fcmailsetupkey":
-		site = frappe.get_doc("Site", data["site"])
-		frappe.set_user(site.team)
+	site = frappe.get_doc("Site", site)
 
-		config = [
-			{"mail_login": "example@email.com"},
-			{"mail_password": "eDwuygx2j"},
-			{"mail_server": "smtp.gmail.com"},
-			{"mail_port": 587},
-		]
+	config = [
+		{"mail_login": "example@email.com"},
+		{"mail_password": "eDwuygx2j"},
+		{"mail_server": "smtp.gmail.com"},
+		{"mail_port": 587},
+	]
 
-		for row in config:
-			site.update_site_config(row)
-	else:
-		log_error("Mail App: Invalid request key", data=data)
+	for row in config:
+		site.update_site_config(row)
 
 	return
 
