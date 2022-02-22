@@ -5,6 +5,7 @@
 import frappe
 
 from frappe import _
+from enum import Enum
 from press.utils import log_error
 from frappe.utils import getdate, cint
 from frappe.utils.data import fmt_money
@@ -13,6 +14,13 @@ from frappe.model.document import Document
 
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils.billing import get_frappe_io_connection, convert_stripe_money
+
+
+class InvoiceDiscountType(Enum):
+	FLAT_ON_TOTAL = "Flat On Total"
+
+
+discount_type_string_to_enum = {"Flat On Total": InvoiceDiscountType.FLAT_ON_TOTAL}
 
 
 class Invoice(Document):
@@ -350,12 +358,35 @@ class Invoice(Document):
 		total = 0
 		for item in self.items:
 			total += item.amount
-		self.total = total
+
+		self.total_before_discount = total
+		self.total = self.get_total_after_discount()
 
 	def compute_free_credits(self):
 		self.free_credits = sum(
 			[d.amount for d in self.credit_allocations if d.source == "Free Credits"]
 		)
+
+	def get_total_after_discount(self):
+		# Check child table if "Flat On Total" discount is applied
+		for invoice_discount in self.discounts:
+			discount_type = discount_type_string_to_enum[invoice_discount.discount_type]
+			if discount_type == InvoiceDiscountType.FLAT_ON_TOTAL:
+				if invoice_discount.based_on == "Amount":
+					# Based on amount
+					if invoice_discount.amount > self.total_before_discount:
+						frappe.throw(
+							f"Discount amount {invoice_discount.amount} cannot be"
+							f" greater than total amount {self.total_before_discount}"
+						)
+					return self.total_before_discount - invoice_discount.amount
+				else:
+					# Based on percent
+					if invoice_discount.percent > 100:
+						frappe.throw(
+							f"Discount percentage {invoice_discount.percent} cannot be greater than 100%"
+						)
+					return self.total_before_discount * (1 - (invoice_discount.percent / 100))
 
 	def on_cancel(self):
 		# make reverse entries for credit allocations
