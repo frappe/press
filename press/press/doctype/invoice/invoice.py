@@ -101,6 +101,9 @@ class Invoice(Document):
 		if self.status == "Paid":
 			self.submit()
 
+			team = frappe.get_cached_doc("Team", self.team)
+			team.unsuspend_sites(f"Invoice {self.name} Payment Successful.")
+
 	def on_submit(self):
 		self.create_invoice_on_frappeio()
 
@@ -550,7 +553,8 @@ class Invoice(Document):
 		if self.frappe_invoice:
 			client = self.get_frappeio_connection()
 			url = (
-				client.url + "/api/method/frappe.utils.print_format.download_pdf?"
+				client.url
+				+ "/api/method/frappe.utils.print_format.download_pdf?"
 				f"doctype=Sales%20Invoice&name={self.frappe_invoice}&"
 				"format=Frappe%20Cloud&no_letterhead=0"
 			)
