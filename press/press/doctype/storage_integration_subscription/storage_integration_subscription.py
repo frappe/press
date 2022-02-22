@@ -100,7 +100,7 @@ def create_after_insert(doc, method):
 
 		setup(doc.site)
 
-		frappe.db.commit()
+	frappe.db.commit()
 
 
 def monitor_storage():
