@@ -51,7 +51,9 @@
   "razorpay_order_id",
   "razorpay_payment_record",
   "column_break_44",
-  "razorpay_payment_method"
+  "razorpay_payment_method",
+  "section_break_47",
+  "discounts"
  ],
  "fields": [
   {
@@ -347,6 +349,18 @@
    "fieldtype": "Data",
    "label": "Razorpay Payment Method",
    "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_break_47",
+   "fieldtype": "Section Break",
+   "label": "Discounts"
+  },
+  {
+   "fieldname": "discounts",
+   "fieldtype": "Table",
+   "label": "Discounts",
+   "options": "Invoice Discount"
   }
  ],
  "is_submittable": 1,
@@ -367,7 +381,7 @@
    "link_fieldname": "invoice"
   }
  ],
- "modified": "2022-01-19 20:30:29.527728",
+ "modified": "2022-02-23 01:03:58.141068",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",
