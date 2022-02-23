@@ -381,14 +381,14 @@ class Invoice(Document):
 			total += item.amount
 
 		self.total_before_discount = total
-		self.set_total_after_discount()
+		self.set_total_and_discount()
 
 	def compute_free_credits(self):
 		self.free_credits = sum(
 			[d.amount for d in self.credit_allocations if d.source == "Free Credits"]
 		)
 
-	def set_total_after_discount(self):
+	def set_total_and_discount(self):
 		total_discount_amount = 0
 
 		for invoice_discount in self.discounts:
@@ -396,6 +396,7 @@ class Invoice(Document):
 			if discount_type == InvoiceDiscountType.FLAT_ON_TOTAL:
 				total_discount_amount += self.get_flat_on_total_discount_amount(invoice_discount)
 
+		self.total_discount_amount = total_discount_amount
 		self.total = self.total_before_discount - total_discount_amount
 
 	def get_flat_on_total_discount_amount(self, invoice_discount):
