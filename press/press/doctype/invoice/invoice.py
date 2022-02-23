@@ -7,6 +7,7 @@ import frappe
 from frappe import _
 from enum import Enum
 from press.utils import log_error
+from frappe.core.utils import find_all
 from frappe.utils import getdate, cint
 from frappe.utils.data import fmt_money
 from press.api.billing import get_stripe
@@ -244,16 +245,15 @@ class Invoice(Document):
 				)
 
 	def validate_team(self):
-		self.customer_name = frappe.db.get_value(
-			"Team", self.team, "billing_name"
-		) or frappe.utils.get_fullname(self.team)
+		team = frappe.get_cached_doc("Team", self.team)
+
+		self.customer_name = team.billing_name or frappe.utils.get_fullname(self.team)
 		self.customer_email = (
 			frappe.db.get_value(
 				"Communication Email", {"parent": self.team, "type": "invoices"}, ["value"]
 			)
 			or self.team
 		)
-		team = frappe.db.get_value("Team", self.team, ["currency", "payment_mode"], as_dict=1)
 		self.currency = team.currency
 		if not self.payment_mode:
 			self.payment_mode = team.payment_mode
@@ -261,6 +261,27 @@ class Invoice(Document):
 			frappe.throw(
 				f"Cannot create Invoice because Currency is not set in Team {self.team}"
 			)
+
+		# To prevent copying of team level discounts again
+		self.remove_previous_team_discounts()
+
+		for invoice_discount in team.discounts:
+			self.append(
+				"discounts",
+				{
+					"discount_type": invoice_discount.discount_type,
+					"based_on": invoice_discount.based_on,
+					"percent": invoice_discount.percent,
+					"amount": invoice_discount.amount,
+					"via_team": True,
+				},
+			)
+
+	def remove_previous_team_discounts(self):
+		team_discounts = find_all(self.discounts, lambda x: x.via_team)
+
+		for discount in team_discounts:
+			self.remove(discount)
 
 	def validate_dates(self):
 		if not self.period_start:
