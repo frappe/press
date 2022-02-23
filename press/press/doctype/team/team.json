@@ -37,7 +37,9 @@
   "ssh_access_enabled",
   "database_access_enabled",
   "section_break_28",
-  "communication_emails"
+  "communication_emails",
+  "discounts_section",
+  "discounts"
  ],
  "fields": [
   {
@@ -224,6 +226,18 @@
    "fieldname": "database_access_enabled",
    "fieldtype": "Check",
    "label": "Database Access Enabled"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "discounts_section",
+   "fieldtype": "Section Break",
+   "label": "Discounts"
+  },
+  {
+   "fieldname": "discounts",
+   "fieldtype": "Table",
+   "label": "Discounts",
+   "options": "Invoice Discount"
   }
  ],
  "links": [
@@ -278,7 +292,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2022-02-08 16:45:36.269199",
+ "modified": "2022-02-23 12:18:25.766701",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
