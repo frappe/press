@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_guest_to_view": 1,
- "creation": "2020-09-02 22:57:04.696244",
+ "creation": "2022-02-04 19:53:27.058972",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -11,7 +11,8 @@
   "title",
   "route",
   "column_break_3",
-  "category",
+  "categories",
+  "subscription_type",
   "status",
   "team",
   "published",
@@ -51,12 +52,6 @@
   {
    "fieldname": "column_break_3",
    "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "category",
-   "fieldtype": "Link",
-   "label": "Category",
-   "options": "Marketplace App Category"
   },
   {
    "default": "Draft",
@@ -180,6 +175,21 @@
    "fieldtype": "Table",
    "label": "Available Plans",
    "options": "Marketplace App Plans"
+  },
+  {
+   "fieldname": "categories",
+   "fieldtype": "Table",
+   "label": "Categories",
+   "options": "Marketplace App Categories"
+  },
+  {
+   "default": "Free",
+   "fieldname": "subscription_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Subscription Type",
+   "options": "Free\nPaid\nFreemium"
   }
  ],
  "has_web_view": 1,
@@ -203,7 +213,7 @@
    "link_fieldname": "app"
   }
  ],
- "modified": "2021-12-28 13:18:12.953340",
+ "modified": "2022-02-23 13:28:52.512768",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Marketplace App",
