@@ -375,25 +375,28 @@ class Invoice(Document):
 			discount_type = discount_type_string_to_enum[invoice_discount.discount_type]
 			if discount_type == InvoiceDiscountType.FLAT_ON_TOTAL:
 				total = self.get_flat_on_total_discount_amount(invoice_discount)
-				if invoice_discount.based_on == "Amount":
-					# Based on amount
-					if invoice_discount.amount > self.total_before_discount:
-						frappe.throw(
-							f"Discount amount {invoice_discount.amount} cannot be"
-							f" greater than total amount {self.total_before_discount}"
-						)
-					total = self.total_before_discount - invoice_discount.amount
-				else:
-					# Based on percent
-					if invoice_discount.percent > 100:
-						frappe.throw(
-							f"Discount percentage {invoice_discount.percent} cannot be greater than 100%"
-						)
-					total = self.total_before_discount * (1 - (invoice_discount.percent / 100))
+
 		return total
 
 	def get_flat_on_total_discount_amount(self, invoice_discount):
-		pass
+		total = 0
+
+		if invoice_discount.based_on == "Amount":
+			if invoice_discount.amount > self.total_before_discount:
+				frappe.throw(
+					f"Discount amount {invoice_discount.amount} cannot be"
+					f" greater than total amount {self.total_before_discount}"
+				)
+
+			total = self.total_before_discount - invoice_discount.amount
+		elif invoice_discount.based_on == "Percent":
+			if invoice_discount.percent > 100:
+				frappe.throw(
+					f"Discount percentage {invoice_discount.percent} cannot be greater than 100%"
+				)
+			total = self.total_before_discount * (1 - (invoice_discount.percent / 100))
+
+		return total
 
 	def on_cancel(self):
 		# make reverse entries for credit allocations
