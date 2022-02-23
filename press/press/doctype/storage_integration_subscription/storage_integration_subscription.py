@@ -91,11 +91,22 @@ class StorageIntegrationSubscription(Document):
 
 
 def create_after_insert(doc, method):
+	if not doc.site:
+		return
+
 	if doc.app == "storage_integration":
+		sub_exists = frappe.db.exists(
+			{"doctype": "Storage Integration Subscription", "site": doc.site}
+		)
+		if sub_exists:
+			return
+
 		frappe.get_doc(
 			{"doctype": "Storage Integration Subscription", "site": doc.site}
 		).insert()
-	elif doc.app == "email_delivery_service":
+
+	if doc.app == "email_delivery_service":
+		# TODO: add a separate doctype to track email service setup completion
 		from press.api.email import setup
 
 		setup(doc.site)
