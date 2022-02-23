@@ -18,12 +18,17 @@
 	target="_blank" {% endif %}>{{ label }}</a>
 {% endmacro %}
 
-{% macro badge(title) %}
+{% macro badge_blue(title) %}
 <span class="inline-block px-3 py-1 text-sm text-blue-500 rounded-md cursor-default bg-blue-50">
 	{{ title }}
 </span>
 {% endmacro %}
 
+{% macro badge_green(title) %}
+<span class="inline-block px-3 py-1 text-sm text-green-500 rounded-md cursor-default bg-green-50">
+	{{ title }}
+</span>
+{% endmacro %}
 
 {% macro breadcrumbs(items) %}
 <nav class="flex items-center text-sm font-medium leading-5">
