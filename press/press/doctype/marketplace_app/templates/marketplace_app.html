@@ -1,5 +1,5 @@
 {% extends "templates/marketplace/base.html" %}
-{%- from "templates/marketplace/macros.html" import button, link, breadcrumbs, badge -%}
+{%- from "templates/marketplace/macros.html" import button, link, breadcrumbs, badge_blue, badge_green -%}
 
 {%- block body -%}
 <div>
@@ -34,11 +34,23 @@
 	{%- endif -%}
 
 	<div>
-		<h5 class="text-xl font-semibold text-gray-900">Category</h5>
+		<h5 class="text-xl font-semibold text-gray-900">Categories</h5>
 		<div class="mt-2">
 			<!-- Hard-coded for now -->
-			{{ badge('Free') }}
-			{{ badge(app.category) }}
+			{%- if app.subscription_type == 'Freemium'-%}
+				{{ badge_green('Freemium') }}
+			{%- elif app.subscription_type == 'Paid'-%}
+				{{ badge_green('Paid') }}
+			{%- else -%}
+				{{ badge_blue('Free') }}
+			{%- endif -%}
+
+			{%- for category in app.categories -%}
+			<div class="inline-flex flex-row mt-2 mr-2">
+					{{ badge_blue(category.category) }}
+			</div>
+			{%- endfor -%}
+			
 		</div>
 	</div>
 
