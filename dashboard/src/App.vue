@@ -7,7 +7,7 @@
 			>
 				<div class="flex-1">
 					<Navbar v-if="$auth.isLoggedIn" />
-					<div class="container mx-auto">
+					<div class="lg:container mx-auto">
 						<keep-alive
 							:include="[
 								'Sites',
