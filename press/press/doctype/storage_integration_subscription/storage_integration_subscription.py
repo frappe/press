@@ -28,7 +28,7 @@ class StorageIntegrationSubscription(Document):
 		self.policy_name = self.access_key + "_policy"
 
 	def set_secret_key(self):
-		h = blake2b(digest_size=12)
+		h = blake2b(digest_size=20)
 		h.update(self.name.encode())
 		self.secret_key = h.hexdigest()
 
