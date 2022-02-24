@@ -1,6 +1,6 @@
 <template>
 	<nav class="border-b bg-white">
-		<div class="container z-10 mx-auto">
+		<div class="z-10 mx-auto md:container">
 			<div class="flex h-16 items-center justify-between px-4 sm:px-8">
 				<div class="flex items-center">
 					<div class="shrink-0">
