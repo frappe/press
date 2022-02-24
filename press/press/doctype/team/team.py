@@ -802,7 +802,8 @@ def enqueue_finalize_unpaid_for_team(team: str):
 	# Enqueue a background job to call finalize_draft_invoice
 	for invoice in invoices:
 		frappe.enqueue(
-			"press.press.doctype.invoice.invoice.finalize_draft_invoice", invoice=invoice,
+			"press.press.doctype.invoice.invoice.finalize_draft_invoice",
+			invoice=invoice,
 		)
 
 
