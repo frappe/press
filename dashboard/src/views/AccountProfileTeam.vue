@@ -6,6 +6,7 @@
 		<AccountActions />
 		<AccountReferral />
 		<AccountEmails />
+		<AccountAPI />
 		<AccountSSHKey />
 	</div>
 </template>
@@ -17,6 +18,7 @@ import AccountMembers from './AccountMembers.vue';
 import AccountActions from './AccountActions.vue';
 import AccountReferral from './AccountReferral.vue';
 import AccountEmails from './AccountEmails.vue';
+import AccountAPI from './AccountAPI.vue';
 import AccountSSHKey from './AccountSSHKey.vue';
 
 export default {
@@ -29,6 +31,7 @@ export default {
 		AccountMembers,
 		AccountReferral,
 		AccountEmails,
+		AccountAPI,
 		AccountSSHKey
 	}
 };
