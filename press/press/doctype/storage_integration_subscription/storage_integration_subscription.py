@@ -17,10 +17,10 @@ class StorageIntegrationSubscription(Document):
 		self.create_user()
 
 	def validate(self):
+		self.set_minio_server_on()
 		self.set_access_key_and_policy_name()
 		self.set_secret_key()
 		self.set_policy_json()
-		self.set_minio_server_on()
 
 	def set_access_key_and_policy_name(self):
 		# site.frappe.cloud -> site_frappe_cloud
