@@ -33,13 +33,16 @@ class StorageIntegrationSubscription(Document):
 		self.secret_key = h.hexdigest()
 
 	def set_policy_json(self):
+		bucket_name = frappe.db.get_value(
+			"Storage Integration Bucket", self.minio_server_on, "bucket_name"
+		)
 		data = {
 			"Version": "2012-10-17",
 			"Statement": [
 				{
 					"Effect": "Allow",
 					"Action": ["s3:GetObject", "s3:PutObject"],
-					"Resource": f"arn:aws:s3:::dev.storage.frappe.cloud/{self.site}/*",
+					"Resource": f"arn:aws:s3:::{bucket_name}/{self.site}/*",
 				}
 			],
 		}
