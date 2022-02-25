@@ -21,13 +21,13 @@
 			</svg>
 			<div class="ml-2 w-full">
 				<div class="flex flex-col md:flex-row md:items-baseline">
-					<h3 class="text-lg font-medium text-gray-900" v-if="title">
+					<h3 class="shrink-0 text-lg font-medium text-gray-900" v-if="title">
 						{{ title }}
 					</h3>
 					<div class="mt-1 md:mt-0 md:ml-2">
 						<slot></slot>
 					</div>
-					<div class="mt-3 md:mt-0 md:ml-auto">
+					<div class="mt-3 shrink-0 md:mt-0 md:ml-auto">
 						<slot name="actions"></slot>
 					</div>
 				</div>

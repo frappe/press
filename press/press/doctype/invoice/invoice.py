@@ -5,7 +5,9 @@
 import frappe
 
 from frappe import _
+from enum import Enum
 from press.utils import log_error
+from frappe.core.utils import find_all
 from frappe.utils import getdate, cint
 from frappe.utils.data import fmt_money
 from press.api.billing import get_stripe
@@ -13,6 +15,13 @@ from frappe.model.document import Document
 
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils.billing import get_frappe_io_connection, convert_stripe_money
+
+
+class InvoiceDiscountType(Enum):
+	FLAT_ON_TOTAL = "Flat On Total"
+
+
+discount_type_string_to_enum = {"Flat On Total": InvoiceDiscountType.FLAT_ON_TOTAL}
 
 
 class Invoice(Document):
@@ -236,16 +245,15 @@ class Invoice(Document):
 				)
 
 	def validate_team(self):
-		self.customer_name = frappe.db.get_value(
-			"Team", self.team, "billing_name"
-		) or frappe.utils.get_fullname(self.team)
+		team = frappe.get_cached_doc("Team", self.team)
+
+		self.customer_name = team.billing_name or frappe.utils.get_fullname(self.team)
 		self.customer_email = (
 			frappe.db.get_value(
 				"Communication Email", {"parent": self.team, "type": "invoices"}, ["value"]
 			)
 			or self.team
 		)
-		team = frappe.db.get_value("Team", self.team, ["currency", "payment_mode"], as_dict=1)
 		self.currency = team.currency
 		if not self.payment_mode:
 			self.payment_mode = team.payment_mode
@@ -253,6 +261,27 @@ class Invoice(Document):
 			frappe.throw(
 				f"Cannot create Invoice because Currency is not set in Team {self.team}"
 			)
+
+		# To prevent copying of team level discounts again
+		self.remove_previous_team_discounts()
+
+		for invoice_discount in team.discounts:
+			self.append(
+				"discounts",
+				{
+					"discount_type": invoice_discount.discount_type,
+					"based_on": invoice_discount.based_on,
+					"percent": invoice_discount.percent,
+					"amount": invoice_discount.amount,
+					"via_team": True,
+				},
+			)
+
+	def remove_previous_team_discounts(self):
+		team_discounts = find_all(self.discounts, lambda x: x.via_team)
+
+		for discount in team_discounts:
+			self.remove(discount)
 
 	def validate_dates(self):
 		if not self.period_start:
@@ -350,12 +379,45 @@ class Invoice(Document):
 		total = 0
 		for item in self.items:
 			total += item.amount
-		self.total = total
+
+		self.total_before_discount = total
+		self.set_total_and_discount()
 
 	def compute_free_credits(self):
 		self.free_credits = sum(
 			[d.amount for d in self.credit_allocations if d.source == "Free Credits"]
 		)
+
+	def set_total_and_discount(self):
+		total_discount_amount = 0
+
+		for invoice_discount in self.discounts:
+			discount_type = discount_type_string_to_enum[invoice_discount.discount_type]
+			if discount_type == InvoiceDiscountType.FLAT_ON_TOTAL:
+				total_discount_amount += self.get_flat_on_total_discount_amount(invoice_discount)
+
+		self.total_discount_amount = total_discount_amount
+		self.total = self.total_before_discount - total_discount_amount
+
+	def get_flat_on_total_discount_amount(self, invoice_discount):
+		discount_amount = 0
+
+		if invoice_discount.based_on == "Amount":
+			if invoice_discount.amount > self.total_before_discount:
+				frappe.throw(
+					f"Discount amount {invoice_discount.amount} cannot be"
+					f" greater than total amount {self.total_before_discount}"
+				)
+
+			discount_amount = invoice_discount.amount
+		elif invoice_discount.based_on == "Percent":
+			if invoice_discount.percent > 100:
+				frappe.throw(
+					f"Discount percentage {invoice_discount.percent} cannot be greater than 100%"
+				)
+			discount_amount = self.total_before_discount * (invoice_discount.percent / 100)
+
+		return discount_amount
 
 	def on_cancel(self):
 		# make reverse entries for credit allocations

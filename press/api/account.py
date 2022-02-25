@@ -512,3 +512,25 @@ def add_key(key):
 	frappe.get_doc(
 		{"doctype": "User SSH Key", "user": frappe.session.user, "ssh_public_key": key}
 	).insert()
+
+
+@frappe.whitelist()
+def create_api_secret():
+	user = frappe.get_doc("User", frappe.session.user)
+
+	api_key = user.api_key
+	api_secret = frappe.generate_hash()
+
+	if not api_key:
+		api_key = frappe.generate_hash()
+		user.api_key = api_key
+
+	user.api_secret = api_secret
+	user.save(ignore_permissions=True)
+
+	return {"api_key": api_key, "api_secret": api_secret}
+
+
+@frappe.whitelist()
+def me():
+	return {"user": frappe.session.user, "team": get_current_team()}
