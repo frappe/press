@@ -1,0 +1,64 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2022-02-23 01:00:17.427618",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "discount_type",
+  "based_on",
+  "percent",
+  "amount",
+  "via_team"
+ ],
+ "fields": [
+  {
+   "default": "Flat On Total",
+   "fieldname": "discount_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Discount Type",
+   "options": "Flat On Total"
+  },
+  {
+   "fieldname": "percent",
+   "fieldtype": "Percent",
+   "in_list_view": 1,
+   "label": "Percent"
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Amount"
+  },
+  {
+   "default": "Percent",
+   "fieldname": "based_on",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Based On",
+   "options": "Percent\nAmount"
+  },
+  {
+   "allow_in_quick_entry": 1,
+   "default": "0",
+   "fieldname": "via_team",
+   "fieldtype": "Check",
+   "label": "Via Team"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2022-02-23 13:00:38.018304",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Invoice Discount",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

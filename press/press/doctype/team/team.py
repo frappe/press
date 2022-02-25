@@ -584,7 +584,13 @@ class Team(Document):
 				["name", "plan"],
 				as_dict=1,
 			)
-			erpnext_site_plan_set = erpnext_site and erpnext_site.plan != "ERPNext Trial"
+
+			if erpnext_site is None:
+				# Case: They have archived their ERPNext trial site
+				# and created a frappe.cloud site now
+				erpnext_site_plan_set = True
+			else:
+				erpnext_site_plan_set = erpnext_site.plan != "ERPNext Trial"
 		else:
 			erpnext_site = None
 			erpnext_site_plan_set = True
