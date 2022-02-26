@@ -20,7 +20,7 @@
 					<span>App</span>
 					<span class="hidden md:inline">Plan</span>
 					<span>Status</span>
-					<span>Price</span>
+					<span class="hidden md:inline">Price</span>
 					<span></span>
 				</div>
 
@@ -39,10 +39,12 @@
 						<Badge :status="subscription.status"></Badge>
 					</span>
 
-					<span v-if="subscription.is_free">Free</span>
-					<span v-else> {{ $planTitle(subscription.plan_info) }}</span>
+					<span class="hidden md:inline" v-if="subscription.is_free">Free</span>
+					<span class="hidden md:inline" v-else>
+						{{ $planTitle(subscription.plan_info) }}</span
+					>
 
-					<span class="text-right">
+					<span class="shrink-0 text-right">
 						<Button @click="changeAppPlan(subscription)">Change Plan</Button>
 					</span>
 				</div>
