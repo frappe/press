@@ -61,7 +61,10 @@
 			</div>
 			<div
 				class="flex items-center justify-between py-3"
-				v-if="$account.team.database_access_enabled"
+				v-if="
+					$account.team.database_access_enabled &&
+					$resources.current_plan.data.current_plan.database_access
+				"
 			>
 				<Button
 					type="secondary"
@@ -245,6 +248,14 @@ export default {
 						window.location.reload();
 					}, 1000);
 				}
+			};
+		},
+		current_plan() {
+			return {
+				method: 'press.api.site.current_plan',
+				params: { name: this.site.name },
+				keepData: true,
+				auto: true
 			};
 		}
 	},
