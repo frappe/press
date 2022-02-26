@@ -7,7 +7,7 @@
 		</div>
 		<div class="py-2" v-for="(site, index) in sites" :key="site.name">
 			<router-link
-				:to="`/sites/${site.name}`"
+				:to="`/sites/${site.name}/overview`"
 				class="block rounded-md pt-2 hover:bg-gray-50 sm:px-2"
 			>
 				<div class="flex items-center justify-between sm:justify-start">
