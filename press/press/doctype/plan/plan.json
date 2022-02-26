@@ -2,7 +2,7 @@
  "actions": [],
  "allow_rename": 1,
  "autoname": "Prompt",
- "creation": "2020-03-19 18:14:42.352448",
+ "creation": "2022-01-28 20:07:37.055861",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -19,7 +19,10 @@
   "cpu_time_per_day",
   "max_database_usage",
   "max_storage_usage",
+  "column_break_13",
   "offsite_backups",
+  "private_benches",
+  "database_access",
   "roles_section",
   "roles"
  ],
@@ -111,11 +114,27 @@
    "fieldtype": "Table",
    "label": "Roles",
    "options": "Has Role"
+  },
+  {
+   "fieldname": "column_break_13",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "private_benches",
+   "fieldtype": "Check",
+   "label": "Private Benches"
+  },
+  {
+   "default": "0",
+   "fieldname": "database_access",
+   "fieldtype": "Check",
+   "label": "Database Access"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-12-27 18:16:20.114570",
+ "modified": "2022-02-26 07:44:45.064468",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Plan",

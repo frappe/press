@@ -778,6 +778,7 @@ def current_plan(name):
 		"max_storage_usage": plan.max_storage_usage if plan else None,
 		"total_database_usage": total_database_usage,
 		"total_storage_usage": total_storage_usage,
+		"database_access": plan.database_access if plan else None,
 		"usage_in_percent": {
 			"cpu": site.current_cpu_usage,
 			"disk": site.current_disk_usage,

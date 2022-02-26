@@ -991,6 +991,8 @@ class Site(Document):
 
 	@frappe.whitelist()
 	def enable_database_access(self):
+		if not frappe.db.get_value("Plan", self.plan, "database_access"):
+			frappe.throw(f"Database Access is not available on {self.plan} plan")
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
 
