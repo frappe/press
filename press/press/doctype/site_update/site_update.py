@@ -24,6 +24,13 @@ class SiteUpdate(Document):
 		)
 		if not differences:
 			frappe.throw("Could not find suitable Destination Bench", frappe.ValidationError)
+
+		self.validate_destination_bench(differences)
+		self.validate_deploy_candidate_difference(differences)
+		self.validate_pending_updates()
+		self.validate_past_failed_updates()
+
+	def validate_destination_bench(self, differences):
 		if not self.destination_bench:
 			candidates = [d.destination for d in differences]
 			try:
@@ -43,6 +50,7 @@ class SiteUpdate(Document):
 			except Exception:
 				frappe.throw("Could not find suitable Destination Bench", frappe.ValidationError)
 
+	def validate_deploy_candidate_difference(self, differences):
 		try:
 			difference = find(differences, lambda x: x.destination == self.destination_candidate)
 			self.difference = difference.name
@@ -61,9 +69,11 @@ class SiteUpdate(Document):
 				frappe.ValidationError,
 			)
 
+	def validate_pending_updates(self):
 		if self.has_pending_updates():
 			frappe.throw("An update is already pending for this site", frappe.ValidationError)
 
+	def validate_past_failed_updates(self):
 		if not self.skipped_failing_patches and self.have_past_updates_failed():
 			frappe.throw(
 				f"Update from Source Candidate {self.source_candidate} to Destination"
