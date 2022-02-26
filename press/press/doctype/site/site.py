@@ -1176,7 +1176,7 @@ def process_install_app_site_job_update(job):
 		"Pending": "Active",
 		"Running": "Installing",
 		"Success": "Active",
-		"Failure": "Broken",
+		"Failure": "Active",
 	}[job.status]
 
 	site_status = frappe.get_value("Site", job.site, "status")
