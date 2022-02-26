@@ -190,11 +190,26 @@ export default {
 			onSuccess() {
 				this.$resources.domains.reload();
 			}
+		},
+		setupRedirect: {
+			method: 'press.api.site.set_redirect',
+			onSuccess() {
+				this.$resources.domains.reload();
+			}
+		},
+		removeRedirect: {
+			method: 'press.api.site.unset_redirect',
+			onSuccess() {
+				this.$resources.domains.reload();
+			}
 		}
 	},
 	computed: {
 		dnsVerified() {
 			return this.$resources.checkDNS.data;
+		},
+		primaryDomain() {
+			return this.$resources.domains.data.filter(d => d.primary)[0].domain;
 		}
 	},
 	methods: {
@@ -208,6 +223,22 @@ export default {
 					label: 'Set Primary',
 					condition: () => domain.status == 'Active' && !domain.primary,
 					action: () => this.confirmSetPrimary(domain.domain)
+				},
+				{
+					label: 'Redirect to Primary',
+					condition: () =>
+						domain.status == 'Active' &&
+						!domain.primary &&
+						!domain.redirect_to_primary,
+					action: () => this.confirmSetupRedirect(domain.domain)
+				},
+				{
+					label: 'Remove Redirect',
+					condition: () =>
+						domain.status == 'Active' &&
+						!domain.primary &&
+						domain.redirect_to_primary,
+					action: () => this.confirmRemoveRedirect(domain.domain)
 				}
 			].filter(d => (d.condition ? d.condition() : true));
 		},
@@ -228,13 +259,43 @@ export default {
 		},
 		confirmSetPrimary(domain) {
 			this.$confirm({
-				title: 'Set as primary',
+				title: 'Set as Primary Domain',
 				message: `Setting as primary will make <b>${domain}</b> the primary URL for your site. Do you want to continue?`,
 				actionLabel: 'Set Primary',
 				actionType: 'primary',
 				action: closeDialog => {
 					closeDialog();
 					this.$resources.setHostName.submit({
+						name: this.site.name,
+						domain: domain
+					});
+				}
+			});
+		},
+		confirmSetupRedirect(domain) {
+			this.$confirm({
+				title: 'Redirect to Primary Domain',
+				message: `Redirect to Primary will redirect <b>${domain}</b> to <b>${this.primaryDomain}</b>. Do you want to continue?`,
+				actionLabel: 'Redirect to Primary',
+				actionType: 'primary',
+				action: closeDialog => {
+					closeDialog();
+					this.$resources.setupRedirect.submit({
+						name: this.site.name,
+						domain: domain
+					});
+				}
+			});
+		},
+		confirmRemoveRedirect(domain) {
+			this.$confirm({
+				title: 'Remove Redirect',
+				message: `Remove Redirect will remove previously set up redirect from <b>${domain}</b> to <b>${this.primaryDomain}</b>. Do you want to continue?`,
+				actionLabel: 'Remove Redirect',
+				actionType: 'primary',
+				action: closeDialog => {
+					closeDialog();
+					this.$resources.removeRedirect.submit({
 						name: this.site.name,
 						domain: domain
 					});
