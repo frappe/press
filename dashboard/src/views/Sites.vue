@@ -53,14 +53,14 @@
 			</div>
 
 			<div class="mb-3 flex flex-row justify-between">
-				<SiteAndBenchSearch />
+				<SiteAndBenchSearch class="w-full sm:w-60 lg:w-96" />
 
 				<Dropdown :items="newDropdownItems" right>
 					<template v-slot="{ toggleDropdown }">
 						<Button
 							type="primary"
 							iconLeft="plus"
-							class="hidden sm:inline-flex"
+							class="ml-2 hidden sm:inline-flex"
 							@click.stop="toggleDropdown()"
 						>
 							New
