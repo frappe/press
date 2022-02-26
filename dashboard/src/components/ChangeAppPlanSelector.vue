@@ -23,7 +23,7 @@
 			</div>
 		</div>
 
-		<div v-if="plans" class="mx-auto flex flex-row gap-x-6">
+		<div v-if="plans" class="mx-auto grid grid-cols-1 gap-2 md:grid-cols-3">
 			<AppPlanCard
 				v-for="plan in plans"
 				:plan="plan"
