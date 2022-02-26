@@ -73,7 +73,7 @@ export default {
 				})
 				.map(d => {
 					d.label = d.name;
-					d.action = () => this.navigateSite(d.name);
+					d.action = () => this.navigateSite(d.site);
 					return d;
 				})
 				.slice(0, 5);
