@@ -300,6 +300,7 @@ def domains(name):
 	primary = find(domains, lambda x: x.domain == host_name)
 	if primary:
 		primary.primary = True
+	domains.sort(key=lambda domain: not domain.primary)
 	return domains
 
 
