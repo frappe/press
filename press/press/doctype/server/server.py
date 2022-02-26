@@ -91,7 +91,7 @@ class BaseServer(Document):
 	@frappe.whitelist()
 	def prepare_server(self):
 		frappe.enqueue_doc(
-			self.doctype, self.name, "_prepare_server", queue="long", timeout=1200
+			self.doctype, self.name, "_prepare_server", queue="long", timeout=2400
 		)
 
 	def _prepare_server(self):
