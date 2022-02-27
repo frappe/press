@@ -65,7 +65,9 @@
 					<Button
 						class="ml-auto"
 						@click="installApp(app)"
-						:loading="$resources.installApp.loading && appToInstall == app.name"
+						:loading="
+							$resources.installApp.loading && appToInstall.name == app.name
+						"
 					>
 						Install
 					</Button>
@@ -83,7 +85,8 @@
 			:dismissable="true"
 		>
 			<ChangeAppPlanSelector
-				:app="appToInstall"
+				v-if="appToInstall"
+				:app="{ name: appToInstall.app }"
 				:frappeVersion="site.frappe_version"
 				class="mb-9"
 				@change="plan => (selectedPlan = plan.name)"
@@ -127,7 +130,7 @@ export default {
 				method: 'press.api.site.install_app',
 				params: {
 					name: this.site.name,
-					app: this.appToInstall,
+					app: this.appToInstall?.app,
 					plan: this.selectedPlan
 				},
 				onSuccess() {
@@ -146,7 +149,7 @@ export default {
 	},
 	methods: {
 		installApp(app) {
-			this.appToInstall = app.app;
+			this.appToInstall = app;
 
 			// If paid app, show plan selection dialog
 			if (app.has_plans_available) {
