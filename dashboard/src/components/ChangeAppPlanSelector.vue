@@ -3,22 +3,25 @@
 		<ErrorMessage :error="$resources.getAppPlans.error" />
 
 		<Button
-			v-if="$resources.getAppPlans.loading"
+			v-if="
+				$resources.getAppPlans.loading ||
+				$resources.getMarketplaceAppInfo.loading
+			"
 			:loading="true"
 			loadingText="Loading Plans..."
 		></Button>
 
-		<div v-if="plans" class="mb-6 flex flex-row items-center">
+		<div v-if="plans && appInfo" class="mb-6 flex flex-row items-center">
 			<Avatar
 				class="mr-2"
 				size="lg"
 				shape="square"
-				:imageURL="app.image"
-				:label="app.title"
+				:imageURL="appInfo.image"
+				:label="appInfo.title"
 			/>
 
 			<div class="flex flex-col">
-				<h4 class="text-xl font-semibold text-gray-900">{{ app.title }}</h4>
+				<h4 class="text-xl font-semibold text-gray-900">{{ appInfo.title }}</h4>
 				<p class="text-base text-gray-600">Choose your plans</p>
 			</div>
 		</div>
@@ -74,6 +77,15 @@ export default {
 				},
 				auto: true
 			};
+		},
+		getMarketplaceAppInfo() {
+			return {
+				method: 'press.api.marketplace.get_app_info',
+				params: {
+					app: this.app.name
+				},
+				auto: true
+			};
 		}
 	},
 	methods: {
@@ -89,6 +101,14 @@ export default {
 				!this.$resources.getAppPlans.loading
 			) {
 				return this.$resources.getAppPlans.data;
+			}
+		},
+		appInfo() {
+			if (
+				!this.$resources.getMarketplaceAppInfo.loading &&
+				this.$resources.getMarketplaceAppInfo.data
+			) {
+				return this.$resources.getMarketplaceAppInfo.data;
 			}
 		}
 	}
