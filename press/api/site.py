@@ -734,7 +734,8 @@ def available_apps(name):
 	)
 
 	for source in sources:
-		app_plans = get_plans_for_app(source.app, bench.version)
+		frappe_version = frappe.db.get_value("Release Group", bench.group, "version")
+		app_plans = get_plans_for_app(source.app, frappe_version)
 
 		if len(app_plans) > 0:
 			source.has_plans_available = True
@@ -989,6 +990,7 @@ def create_marketplace_app_subscription(site_name, app_name, plan_name):
 @frappe.whitelist()
 @protected("Site")
 def uninstall_app(name, app):
+	# Disbale app subscription if any
 	frappe.get_doc("Site", name).uninstall_app(app)
 
 
