@@ -61,10 +61,7 @@
 			</div>
 			<div
 				class="flex items-center justify-between py-3"
-				v-if="
-					$account.team.database_access_enabled &&
-					$resources.current_plan.data.current_plan.database_access
-				"
+				v-if="showDatabaseAccessButton"
 			>
 				<Button
 					type="secondary"
@@ -298,6 +295,19 @@ export default {
 	computed: {
 		filesUploaded() {
 			return this.selectedFiles.database;
+		},
+		showDatabaseAccessButton() {
+			let db_access_enabled = $account.team.database_access_enabled;
+
+			if (
+				!this.$resources.current_plan.loading &&
+				this.$resources.current_plan.data
+			) {
+				return (
+					db_access_enabled &&
+					this.$resources.current_plan.data.current_plan.database_access
+				);
+			}
 		}
 	}
 };
