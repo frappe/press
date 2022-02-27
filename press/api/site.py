@@ -94,7 +94,9 @@ def _new(site):
 		"Proxy Server Domain", {"domain": domain}, pluck="parent"
 	)
 	proxy_servers = frappe.get_all(
-		"Proxy Server", {"status": "Active", "name": ("in", proxy_servers)}, pluck="name",
+		"Proxy Server",
+		{"status": "Active", "name": ("in", proxy_servers)},
+		pluck="name",
 	)
 
 	bench = frappe.db.sql(
@@ -756,7 +758,7 @@ def current_plan(name):
 	plan = frappe.get_doc("Plan", site.plan) if site.plan else None
 
 	result = get_current_cpu_usage(name)
-	total_cpu_usage_hours = flt(result / (3.6 * (10 ** 9)), 5)
+	total_cpu_usage_hours = flt(result / (3.6 * (10**9)), 5)
 
 	usage = frappe.get_all(
 		"Site Usage",
@@ -985,7 +987,9 @@ def create_marketplace_app_subscription(site_name, app_name, plan_name):
 	# If already exists, update the plan and activate
 	if app_subscription:
 		app_subscription = frappe.get_doc(
-			"Marketplace App Subscription", app_subscription, for_update=True,
+			"Marketplace App Subscription",
+			app_subscription,
+			for_update=True,
 		)
 
 		app_subscription.marketplace_app_plan = plan_name
@@ -1019,7 +1023,9 @@ def disable_marketplace_plan_if_exists(site_name, app_name):
 	)
 	if marketplace_app_name and app_subscription:
 		app_subscription = frappe.get_doc(
-			"Marketplace App Subscription", app_subscription, for_update=True,
+			"Marketplace App Subscription",
+			app_subscription,
+			for_update=True,
 		)
 		app_subscription.status = "Disabled"
 		app_subscription.save(ignore_permissions=True)
