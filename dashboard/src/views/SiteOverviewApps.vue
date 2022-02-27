@@ -64,7 +64,7 @@
 					</div>
 					<Button
 						class="ml-auto"
-						@click="installApp(app.app)"
+						@click="installApp(app)"
 						:loading="$resources.installApp.loading && appToInstall == app.name"
 					>
 						Install
@@ -75,18 +75,46 @@
 				No apps available to install
 			</div>
 		</Dialog>
+
+		<Dialog
+			v-model="showPlanSelectionDialog"
+			title="Select app plan"
+			width="half"
+			:dismissable="true"
+		>
+			<ChangeAppPlanSelector
+				:app="appToInstall"
+				:frappeVersion="site.frappe_version"
+				class="mb-9"
+				@change="plan => (selectedPlan = plan.name)"
+			/>
+
+			<template #actions>
+				<Button
+					type="primary"
+					:loading="$resources.installApp.loading"
+					@click="$resources.installApp.submit()"
+					>Proceed</Button
+				>
+			</template>
+		</Dialog>
 	</Card>
 </template>
 <script>
+import ChangeAppPlanSelector from '@/components/ChangeAppPlanSelector.vue';
+
 export default {
 	name: 'SiteOverviewApps',
 	props: ['site', 'installedApps'],
 	data() {
 		return {
 			showInstallAppsDialog: false,
-			appToInstall: null
+			showPlanSelectionDialog: false,
+			appToInstall: null,
+			selectedPlan: null
 		};
 	},
+	components: { ChangeAppPlanSelector },
 	resources: {
 		availableApps() {
 			return {
@@ -99,9 +127,11 @@ export default {
 				method: 'press.api.site.install_app',
 				params: {
 					name: this.site.name,
-					app: this.appToInstall
+					app: this.appToInstall,
+					plan: this.selectedPlan
 				},
 				onSuccess() {
+					this.showPlanSelectionDialog = false;
 					this.showInstallAppsDialog = false;
 					this.$emit('app-installed');
 				}
@@ -116,7 +146,15 @@ export default {
 	},
 	methods: {
 		installApp(app) {
-			this.appToInstall = app;
+			this.appToInstall = app.app;
+
+			// If paid app, show plan selection dialog
+			if (app.has_plans_available) {
+				this.showInstallAppsDialog = false;
+				this.showPlanSelectionDialog = true;
+				return;
+			}
+
 			this.$resources.installApp.submit();
 		},
 		dropdownItems(app) {
