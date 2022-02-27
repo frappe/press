@@ -4,6 +4,7 @@
 
 import json
 from frappe.utils.user import is_system_user
+from press.press.doctype.marketplace_app.marketplace_app import get_plans_for_app
 import wrapt
 import frappe
 import dns.resolver
@@ -93,9 +94,7 @@ def _new(site):
 		"Proxy Server Domain", {"domain": domain}, pluck="parent"
 	)
 	proxy_servers = frappe.get_all(
-		"Proxy Server",
-		{"status": "Active", "name": ("in", proxy_servers)},
-		pluck="name",
+		"Proxy Server", {"status": "Active", "name": ("in", proxy_servers)}, pluck="name",
 	)
 
 	bench = frappe.db.sql(
@@ -733,7 +732,14 @@ def available_apps(name):
 		],
 		filters={"name": ("in", bench_sources)},
 	)
+
 	for source in sources:
+		app_plans = get_plans_for_app(source.app, bench.version)
+
+		if len(app_plans) > 0:
+			source.has_plans_available = True
+			source.plans = app_plans
+
 		if source.app not in installed_apps:
 			available_sources.append(source)
 
@@ -749,7 +755,7 @@ def current_plan(name):
 	plan = frappe.get_doc("Plan", site.plan) if site.plan else None
 
 	result = get_current_cpu_usage(name)
-	total_cpu_usage_hours = flt(result / (3.6 * (10**9)), 5)
+	total_cpu_usage_hours = flt(result / (3.6 * (10 ** 9)), 5)
 
 	usage = frappe.get_all(
 		"Site Usage",
@@ -962,8 +968,22 @@ def unset_redirect(name, domain):
 
 @frappe.whitelist()
 @protected("Site")
-def install_app(name, app):
+def install_app(name, app, plan=None):
 	frappe.get_doc("Site", name).install_app(app)
+
+	if plan:
+		create_marketplace_app_subscription(name, app, plan)
+
+
+def create_marketplace_app_subscription(site_name, app_name, plan_name):
+	return frappe.get_doc(
+		{
+			"doctype": "Marketplace App Subscription",
+			"marketplace_app_plan": plan_name,
+			"app": app_name,
+			"site": site_name,
+		}
+	).insert(ignore_permissions=True)
 
 
 @frappe.whitelist()
