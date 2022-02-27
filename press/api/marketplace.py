@@ -429,6 +429,13 @@ def get_app_plans(app: str, release_group: str = None, frappe_version: str = Non
 
 
 @frappe.whitelist()
+def get_app_info(app: str):
+	return frappe.db.get_value(
+		"Marketplace App", app, ["name", "title", "image"], as_dict=True
+	)
+
+
+@frappe.whitelist()
 def get_apps_with_plans(apps, release_group: str = None):
 
 	if isinstance(apps, str):

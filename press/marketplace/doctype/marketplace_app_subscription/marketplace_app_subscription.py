@@ -68,7 +68,6 @@ class MarketplaceAppSubscription(Document):
 
 	def after_insert(self):
 		# TODO: Check if this key already exists
-		# TODO: Make the config value internal
 		if not self.while_site_creation:
 			self.set_secret_key_in_site_config()
 
