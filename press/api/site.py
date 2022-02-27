@@ -977,8 +977,9 @@ def install_app(name, app, plan=None):
 
 
 def create_marketplace_app_subscription(site_name, app_name, plan_name):
+	marketplace_app_name = frappe.db.get_value("Marketplace App", {"app": app_name})
 	app_subscription = frappe.db.exists(
-		"Marketplace App Subscription", {"site": site_name, "app": app_name}
+		"Marketplace App Subscription", {"site": site_name, "app": marketplace_app_name}
 	)
 
 	# If already exists, update the plan and activate
@@ -1007,8 +1008,21 @@ def create_marketplace_app_subscription(site_name, app_name, plan_name):
 @frappe.whitelist()
 @protected("Site")
 def uninstall_app(name, app):
-	# Disbale app subscription if any
 	frappe.get_doc("Site", name).uninstall_app(app)
+	disable_marketplace_plan_if_exists(name, app)
+
+
+def disable_marketplace_plan_if_exists(site_name, app_name):
+	marketplace_app_name = frappe.db.get_value("Marketplace App", {"app": app_name})
+	app_subscription = frappe.db.exists(
+		"Marketplace App Subscription", {"site": site_name, "app": marketplace_app_name}
+	)
+	if marketplace_app_name and app_subscription:
+		app_subscription = frappe.get_doc(
+			"Marketplace App Subscription", app_subscription, for_update=True,
+		)
+		app_subscription.status = "Disabled"
+		app_subscription.save(ignore_permissions=True)
 
 
 @frappe.whitelist()
