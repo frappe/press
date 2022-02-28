@@ -134,7 +134,9 @@
 				<div class="space-y-2">
 					<h4 class="text-base font-semibold text-gray-700">Step 2</h4>
 					<div class="space-y-1">
-						<p class="text-base">Shell command to SSH into your bench</p>
+						<p class="text-base">
+							Execute the following shell command to SSH into your bench
+						</p>
 						<ClickToCopyField :textContent="sshCommand" />
 					</div>
 				</div>
