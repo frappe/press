@@ -1,6 +1,6 @@
 {
  "actions": [],
- "creation": "2020-02-28 18:28:34.651116",
+ "creation": "2022-01-28 20:07:38.369240",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -27,7 +27,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Action",
-   "options": "Activate Site\nAdd Domain\nArchive\nBackup\nCreate\nClear Cache\nDeactivate Site\nInstall App\nLogin as Administrator\nMigrate\nReinstall\nRestore\nSuspend Site\nUninstall App\nUnsuspend Site\nUpdate\nUpdate Configuration\nDrop Offsite Backups",
+   "options": "Activate Site\nAdd Domain\nArchive\nBackup\nCreate\nClear Cache\nDeactivate Site\nInstall App\nLogin as Administrator\nMigrate\nReinstall\nRestore\nSuspend Site\nUninstall App\nUnsuspend Site\nUpdate\nUpdate Configuration\nDrop Offsite Backups\nEnable Database Access\nDisable Database Access",
    "read_only": 1,
    "reqd": 1,
    "search_index": 1
@@ -40,7 +40,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-04-04 12:19:34.617366",
+ "modified": "2022-02-28 18:55:41.364129",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Activity",
@@ -69,5 +69,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }
