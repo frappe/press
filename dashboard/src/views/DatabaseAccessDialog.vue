@@ -173,7 +173,7 @@ export default {
 				} else {
 					setTimeout(() => {
 						this.pollDatabaseAccessJob(jobName);
-					}, 300);
+					}, 1000);
 				}
 			});
 		}
