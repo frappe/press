@@ -30,6 +30,7 @@ export default new Vue({
 				this.team_members = result.team_members;
 				this.onboarding = result.onboarding;
 				this.balance = result.balance;
+				this.partner_credits = result.partner_credits;
 			} catch (e) {
 				localStorage.removeItem('current_team');
 			}
@@ -71,6 +72,9 @@ export default new Vue({
 			}
 			if (this.team.payment_mode == 'Prepaid Credits') {
 				return this.balance > 0;
+			}
+			if (this.team.payment_mode == 'Partner Credits') {
+				return this.partner_credits > 0
 			}
 			return false;
 		}
