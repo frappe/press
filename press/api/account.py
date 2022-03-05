@@ -281,6 +281,13 @@ def get():
 	teams = [
 		d.parent for d in frappe.db.get_all("Team Member", {"user": user}, ["parent"])
 	]
+
+	partner_credits = (
+		team_doc.get_available_partner_credits()
+		if team_doc.payment_method == "Partner Credits"
+		else 0
+	)
+
 	return {
 		"user": frappe.get_doc("User", user),
 		"ssh_key": get_ssh_key(user),
@@ -289,6 +296,7 @@ def get():
 		"teams": list(set(teams)),
 		"onboarding": team_doc.get_onboarding(),
 		"balance": team_doc.get_balance(),
+		"partner_credits": partner_credits,
 	}
 
 
