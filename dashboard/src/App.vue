@@ -28,7 +28,7 @@
 
 		<!-- For Teleports -->
 		<div id="modals"></div>
-		<div name="popovers"></div>
+		<div id="popovers"></div>
 
 		<NotificationToasts />
 		<UserPrompts />
