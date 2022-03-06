@@ -13,6 +13,7 @@ from press.utils import log_error
 from press.api.developer.marketplace import (
 	get_subscription_info,
 )
+from press.api.site import site_config, update_config
 
 
 class PlanExpiredError(Exception):
@@ -28,17 +29,33 @@ def setup(site):
 	"""
 	set site config for overriding email account validations
 	"""
-	site = frappe.get_doc("Site", site)
+	doc_exists = frappe.db.exists({"doctype": "Mail Setup", "site": site})
 
-	config = [
-		{"mail_login": "example@email.com"},
-		{"mail_password": "eDwuygx2j"},
-		{"mail_server": "smtp.gmail.com"},
-		{"mail_port": 587},
+	if doc_exists:
+		doc = frappe.get_doc("Mail Setup", doc_exists[0][0])
+
+		if not doc.is_complete:
+			doc.is_complete = 1
+			doc.save()
+			frappe.db.commit()
+
+		return
+
+	old_config = site_config(site)
+
+	new_config = [
+		{"key": "mail_login", "value": "example@gmail.com", "type": "String"},
+		{"key": "mail_password", "value": "edjxok4jh7", "type": "String"},
+		{"key": "mail_port", "value": 587, "type": "Number"},
+		{"key": "mail_server", "value": "smtp.gmail.com", "type": "String"},
 	]
+	for row in old_config:
+		new_config.append({"key": row.key, "value": row.value, "type": row.type})
 
-	for row in config:
-		site.update_site_config(row)
+	update_config(site, json.dumps(new_config))
+	frappe.get_doc({"doctype": "Mail Setup", "site": site, "is_complete": 1}).insert()
+
+	frappe.db.commit()
 
 	return
 

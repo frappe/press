@@ -26,7 +26,7 @@
 				<div>
 					<h3 class="text-lg">Migrate</h3>
 					<p class="mt-1 text-base text-gray-600">
-						Run bench migrate command on your database.
+						Run bench migrate command on your database
 					</p>
 				</div>
 				<Button
@@ -40,7 +40,7 @@
 				<div>
 					<h3 class="text-lg">Reset</h3>
 					<p class="mt-1 text-base text-gray-600">
-						Reset your database to a clean state.
+						Reset your database to a clean state
 					</p>
 				</div>
 				<Button :disabled="site.status === 'Suspended'" @click="confirmReset">
@@ -50,7 +50,7 @@
 			<div class="flex items-center justify-between py-3">
 				<div>
 					<h3 class="text-lg">Clear Cache</h3>
-					<p class="mt-1 text-base text-gray-600">Clear your site's cache.</p>
+					<p class="mt-1 text-base text-gray-600">Clear your site's cache</p>
 				</div>
 				<Button
 					:disabled="site.status === 'Suspended'"
@@ -63,6 +63,10 @@
 				class="flex items-center justify-between py-3"
 				v-if="showDatabaseAccessButton"
 			>
+				<div>
+					<h3 class="text-lg">Access</h3>
+					<p class="mt-1 text-base text-gray-600">Connect to your database</p>
+				</div>
 				<Button
 					type="secondary"
 					icon-left="database"
@@ -297,7 +301,7 @@ export default {
 			return this.selectedFiles.database;
 		},
 		showDatabaseAccessButton() {
-			let db_access_enabled = $account.team.database_access_enabled;
+			let db_access_enabled = this.$account.team.database_access_enabled;
 
 			if (
 				!this.$resources.current_plan.loading &&
@@ -308,6 +312,7 @@ export default {
 					this.$resources.current_plan.data.current_plan.database_access
 				);
 			}
+			return null;
 		}
 	}
 };
