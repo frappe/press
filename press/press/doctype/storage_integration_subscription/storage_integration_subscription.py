@@ -106,7 +106,7 @@ def create_after_insert(doc, method):
 
 		frappe.get_doc(
 			{"doctype": "Storage Integration Subscription", "site": doc.site}
-		).insert()
+		).insert(ignore_permissions=True)
 
 	if doc.app == "email_delivery_service":
 		# TODO: add a separate doctype to track email service setup completion
