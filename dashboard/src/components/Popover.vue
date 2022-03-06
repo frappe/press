@@ -3,7 +3,7 @@
 		<div class="h-full">
 			<slot name="target" :togglePopover="togglePopover"></slot>
 		</div>
-		<portal to="popovers">
+		<teleport to="#popovers">
 			<div
 				ref="popover"
 				:class="popoverClass"
@@ -13,7 +13,7 @@
 				<div v-if="!hideArrow" class="popover-arrow" ref="popover-arrow"></div>
 				<slot name="content" :togglePopover="togglePopover"></slot>
 			</div>
-		</portal>
+		</teleport>
 	</div>
 </template>
 

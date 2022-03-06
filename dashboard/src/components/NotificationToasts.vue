@@ -4,10 +4,10 @@
 	>
 		<div>
 			<Notification
+				v-bind="props"
 				class="mb-4"
 				:key="i"
 				v-for="(props, i) in notifications"
-				v-bind="props"
 				@dismiss="hideNotification"
 			/>
 		</div>

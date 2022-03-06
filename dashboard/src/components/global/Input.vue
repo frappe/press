@@ -7,6 +7,7 @@
 			{{ label }}
 		</span>
 		<input
+			v-bind="$attrs"
 			v-if="
 				['text', 'number', 'checkbox', 'email', 'password', 'date'].includes(
 					type
@@ -24,11 +25,11 @@
 			:type="type || 'text'"
 			:disabled="disabled"
 			:placeholder="placeholder"
-			v-bind="$attrs"
 			v-on="inputListeners"
 			:value="value"
 		/>
 		<textarea
+			v-bind="$attrs"
 			v-if="type === 'textarea'"
 			:class="[
 				'form-textarea block w-full resize-none placeholder-gray-500',
@@ -38,7 +39,6 @@
 			:value="value"
 			:disabled="disabled"
 			:placeholder="placeholder"
-			v-bind="$attrs"
 			v-on="inputListeners"
 			:rows="rows || 3"
 			@blur="$emit('blur', $event)"
