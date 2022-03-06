@@ -1,5 +1,5 @@
 <template>
-	<portal to="modals">
+	<teleport to="#modals">
 		<div
 			v-show="show"
 			class="fixed inset-0 flex items-center justify-center px-4 py-4"
@@ -21,7 +21,7 @@
 				<slot></slot>
 			</div>
 		</div>
-	</portal>
+	</teleport>
 </template>
 
 <script>

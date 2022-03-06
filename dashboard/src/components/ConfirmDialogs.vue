@@ -15,7 +15,7 @@
 				v-if="dialog.resource"
 				:error="dialog.resource.error"
 			/>
-			<template slot="actions">
+			<slot name="actions">
 				<Button type="secondary" @click="removeConfirmDialog(dialog)">
 					Cancel
 				</Button>
@@ -27,7 +27,7 @@
 				>
 					{{ dialog.actionLabel || 'Submit' }}
 				</Button>
-			</template>
+			</slot>
 		</Dialog>
 	</div>
 </template>

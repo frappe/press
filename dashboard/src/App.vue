@@ -25,8 +25,11 @@
 				</div>
 			</div>
 		</div>
-		<portal-target name="modals" multiple></portal-target>
-		<portal-target name="popovers" multiple></portal-target>
+
+		<!-- For Teleports -->
+		<div id="modals"></div>
+		<div name="popovers"></div>
+
 		<NotificationToasts />
 		<UserPrompts />
 		<ConfirmDialogs />

@@ -46,7 +46,7 @@
 
 				<PrepaidCreditsDialog
 					v-if="showPrepaidCreditsDialog"
-					:show.sync="showPrepaidCreditsDialog"
+					v-model:show="showPrepaidCreditsDialog"
 					:minimum-amount="latestUnpaidInvoice.amount_due"
 					@success="handleAddPrepaidCreditsSuccess"
 				/>
