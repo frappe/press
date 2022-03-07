@@ -1,5 +1,3 @@
-import Vue from 'vue';
-import VueRouter from 'vue-router';
 import account from '../controllers/account';
 import auth from '../controllers/auth';
 import Home from '../views/Home.vue';
@@ -10,7 +8,7 @@ import accountRoute from './account';
 import authRoutes from './auth';
 import marketplaceRoutes from './marketplace';
 
-Vue.use(VueRouter);
+import { createRouter, createWebHistory } from 'vue-router';
 
 const routes = [
 	{
@@ -30,9 +28,8 @@ const routes = [
 	accountRoute
 ];
 
-const router = new VueRouter({
-	base: '/dashboard/',
-	mode: 'history',
+const router = createRouter({
+	history: createWebHistory('/dashboard/'),
 	routes
 });
 

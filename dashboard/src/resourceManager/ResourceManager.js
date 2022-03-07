@@ -1,10 +1,14 @@
+// Authors: Faris Ansari <faris@frappe.io> & Hussain Nagaria <hussain@frappe.io>
+
 import call from '../controllers/call';
+import { ref, reactive } from 'vue';
 
 export default class ResourceManager {
 	constructor(vm, resourceDefs) {
 		this._vm = vm;
 		this._watchers = [];
-		let resources = {};
+		let resources = reactive({});
+
 		for (let key in resourceDefs) {
 			let resourceDef = resourceDefs[key];
 			if (typeof resourceDef === 'function') {
@@ -14,12 +18,12 @@ export default class ResourceManager {
 					{
 						immediate: true,
 						deep: true,
-						sync: true
-					}
+						flush: 'sync',
+					},
 				]);
 			} else {
 				let resource = new Resource(vm, resourceDef);
-				resources[key] = resource;
+				resources[key] = ref(resource);
 
 				if (resource.auto) {
 					resource.reload();
@@ -30,16 +34,11 @@ export default class ResourceManager {
 	}
 
 	init() {
-		this._watchers = this._watchers.map(w => this._vm.$watch(...w));
+		this._watchers = this._watchers.map((w) => this._vm.$watch(...w));
 	}
 
 	destroy() {
 		const vm = this._vm;
-
-		// this.cancelAll();
-		// Object.values(this.resources).forEach(r => {
-		// 	r.stopInterval();
-		// });
 		delete vm._rm;
 	}
 
@@ -48,8 +47,8 @@ export default class ResourceManager {
 		if (key in this.resources) {
 			resource = this.resources[key];
 		} else {
-			resource = new Resource(this._vm, newValue);
-			this._vm.$set(this.resources, key, resource);
+			resource = reactive(new Resource(this._vm, newValue));
+			this.resources[key] = resource;
 		}
 
 		let oldData = resource.data;
@@ -111,7 +110,9 @@ class Resource {
 		// events
 		this.listeners = Object.create(null);
 		this.onceListeners = Object.create(null);
-		let listenerKeys = Object.keys(options).filter(key => key.startsWith('on'));
+		let listenerKeys = Object.keys(options).filter((key) =>
+			key.startsWith('on')
+		);
 		if (listenerKeys.length > 0) {
 			for (const key of listenerKeys) {
 				this.on(key, options[key]);
@@ -140,7 +141,7 @@ class Resource {
 			let data = await call(this.method, this.currentParams);
 			if (this.delay) {
 				// artificial delay
-				await new Promise(resolve => setTimeout(resolve, this.delay * 1000));
+				await new Promise((resolve) => setTimeout(resolve, this.delay * 1000));
 			}
 			if (Array.isArray(data) && this.paged) {
 				this.lastPageEmpty = data.length === 0;
@@ -198,10 +199,10 @@ class Resource {
 		let key = 'on' + event;
 		let vm = this._vm;
 
-		(this.listeners[key] || []).forEach(handler => {
+		(this.listeners[key] || []).forEach((handler) => {
 			runHandler(handler);
 		});
-		(this.onceListeners[key] || []).forEach(handler => {
+		(this.onceListeners[key] || []).forEach((handler) => {
 			runHandler(handler);
 			// remove listener after calling handler
 			this.onceListeners[key].splice(

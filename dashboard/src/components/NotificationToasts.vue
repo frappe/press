@@ -14,7 +14,7 @@
 	</div>
 </template>
 <script>
-import Vue from 'vue';
+import { provide } from 'vue';
 import Notification from './Notification.vue';
 
 export default {
@@ -28,7 +28,8 @@ export default {
 		Notification
 	},
 	created() {
-		Vue.prototype.$notify = this.notify;
+		provide("$notify", this.notify);
+		// getCurrentInstance().config.globalProperties.$notify = this.notify;
 	},
 	methods: {
 		notify(props) {
