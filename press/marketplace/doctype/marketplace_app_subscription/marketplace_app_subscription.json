@@ -1,7 +1,7 @@
 {
  "actions": [],
  "autoname": "format:app-subscription-{app}-{#####}",
- "creation": "2021-10-21 01:01:26.805348",
+ "creation": "2022-03-06 20:52:51.924858",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -47,6 +47,7 @@
    "set_only_once": 1
   },
   {
+   "default": "Today",
    "fieldname": "start_date",
    "fieldtype": "Date",
    "label": "Start date"
@@ -92,7 +93,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-01-16 19:39:28.245464",
+ "modified": "2022-03-07 21:54:29.184096",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "Marketplace App Subscription",
