@@ -7,20 +7,22 @@
 			>
 				<div class="flex-1">
 					<Navbar v-if="$auth.isLoggedIn" />
-					<div class="lg:container mx-auto">
-						<keep-alive
-							:include="[
-								'Sites',
-								'Benches',
-								'Site',
-								'Bench',
-								'Marketplace',
-								'Account',
-								'MarketplaceApp'
-							]"
-						>
-							<router-view />
-						</keep-alive>
+					<div class="mx-auto lg:container">
+						<router-view v-slot="{ Component }">
+							<keep-alive
+								:include="[
+									'Sites',
+									'Benches',
+									'Site',
+									'Bench',
+									'Marketplace',
+									'Account',
+									'MarketplaceApp'
+								]"
+							>
+								<component :is="Component" />
+							</keep-alive>
+						</router-view>
 					</div>
 				</div>
 			</div>
