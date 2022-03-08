@@ -366,10 +366,13 @@ class Team(Document):
 		previous_billing_name = previous_version.billing_name
 
 		if previous_billing_name:
-			if frappeio_client.rename_doc("Customer", previous_billing_name, self.billing_name):
+			try:
+				frappeio_client.rename_doc("Customer", previous_billing_name, self.billing_name)
 				frappe.msgprint(
 					f"Renamed customer from {previous_billing_name} to {self.billing_name}"
 				)
+			except:
+				log_error("Failed to rename customer on frappe.io", frappe.get_traceback())
 
 	def update_billing_details_on_stripe(self, address=None):
 		stripe = get_stripe()
