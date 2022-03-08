@@ -30,10 +30,7 @@ class Invoice(Document):
 		self.validate_dates()
 		self.validate_duplicate()
 		self.validate_items()
-
-		if self.docstatus != 1:  # Not submitted
-			self.validate_amount()
-
+		self.validate_amount()
 		self.compute_free_credits()
 
 	def before_submit(self):
@@ -379,6 +376,10 @@ class Invoice(Document):
 				row.amount = row.quantity * row.rate
 
 	def validate_amount(self):
+		# Already Submitted
+		if self.docstatus == 1:
+			return
+
 		total = 0
 		for item in self.items:
 			total += item.amount
