@@ -30,7 +30,10 @@ class Invoice(Document):
 		self.validate_dates()
 		self.validate_duplicate()
 		self.validate_items()
-		self.validate_amount()
+
+		if self.docstatus != 1: # Not submitted
+			self.validate_amount()
+
 		self.compute_free_credits()
 
 	def before_submit(self):
