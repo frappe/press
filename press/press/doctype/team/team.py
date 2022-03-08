@@ -372,7 +372,9 @@ class Team(Document):
 					f"Renamed customer from {previous_billing_name} to {self.billing_name}"
 				)
 			except:
-				log_error("Failed to rename customer on frappe.io", frappe.get_traceback())
+				log_error(
+					"Failed to rename customer on frappe.io", traceback=frappe.get_traceback()
+				)
 
 	def update_billing_details_on_stripe(self, address=None):
 		stripe = get_stripe()
@@ -808,8 +810,7 @@ def enqueue_finalize_unpaid_for_team(team: str):
 	# Enqueue a background job to call finalize_draft_invoice
 	for invoice in invoices:
 		frappe.enqueue(
-			"press.press.doctype.invoice.invoice.finalize_draft_invoice",
-			invoice=invoice,
+			"press.press.doctype.invoice.invoice.finalize_draft_invoice", invoice=invoice,
 		)
 
 
