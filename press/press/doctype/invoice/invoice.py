@@ -31,7 +31,7 @@ class Invoice(Document):
 		self.validate_duplicate()
 		self.validate_items()
 
-		if self.docstatus != 1: # Not submitted
+		if self.docstatus != 1:  # Not submitted
 			self.validate_amount()
 
 		self.compute_free_credits()
