@@ -1,5 +1,4 @@
 import call from './call';
-import Vue from 'vue';
 
 export default class Auth {
 	constructor() {
@@ -25,8 +24,8 @@ export default class Auth {
 			pwd: password
 		});
 		if (res) {
-			await this.$account.fetchAccount();
-			localStorage.setItem('current_team', this.$account.team.name);
+			await window.$account.fetchAccount();
+			localStorage.setItem('current_team', window.$account.team.name);
 			this.isLoggedIn = true;
 			return res;
 		}
