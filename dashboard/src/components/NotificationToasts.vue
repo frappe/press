@@ -13,33 +13,23 @@
 		</div>
 	</div>
 </template>
-<script>
-import { provide } from 'vue';
+<script setup>
+import { getCurrentInstance, ref } from 'vue';
 import Notification from './Notification.vue';
 
-export default {
-	name: 'NotificationToasts',
-	data() {
-		return {
-			notifications: []
-		};
-	},
-	components: {
-		Notification
-	},
-	created() {
-		provide("$notify", this.notify);
-		// getCurrentInstance().config.globalProperties.$notify = this.notify;
-	},
-	methods: {
-		notify(props) {
-			props.id = Math.floor(Math.random() * 1000 + Date.now());
-			this.notifications.push(props);
-			setTimeout(() => this.hideNotification(props.id), props.timeout || 5000);
-		},
-		hideNotification(id) {
-			this.notifications = this.notifications.filter(props => props.id !== id);
-		}
-	}
+const app = getCurrentInstance();
+const notifications = ref([]);
+
+const hideNotification = id => {
+	notifications.value = notifications.value.filter(props => props.id !== id);
 };
+
+const notify = props => {
+	props.id = Math.floor(Math.random() * 1000 + Date.now());
+	notifications.value.push(props);
+	setTimeout(() => hideNotification(props.id), props.timeout || 5000);
+};
+
+// Attach to global instance
+app.appContext.config.globalProperties.$notify = notify;
 </script>
