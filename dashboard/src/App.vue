@@ -28,10 +28,6 @@
 			</div>
 		</div>
 
-		<!-- For Teleports -->
-		<div id="modals"></div>
-		<div id="popovers"></div>
-
 		<NotificationToasts />
 		<UserPrompts />
 		<ConfirmDialogs />
