@@ -114,8 +114,6 @@ def create_after_insert(doc, method):
 
 		setup(doc.site)
 
-	frappe.db.commit()
-
 
 def monitor_storage():
 	active_subs = frappe.get_all(
