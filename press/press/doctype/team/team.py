@@ -371,7 +371,7 @@ class Team(Document):
 				frappe.msgprint(
 					f"Renamed customer from {previous_billing_name} to {self.billing_name}"
 				)
-			except:
+			except Exception:
 				log_error(
 					"Failed to rename customer on frappe.io", traceback=frappe.get_traceback()
 				)
