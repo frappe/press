@@ -10,9 +10,7 @@ from datetime import datetime
 
 import frappe
 from press.utils import log_error
-from press.api.developer.marketplace import (
-	get_subscription_info,
-)
+from press.api.developer.marketplace import get_subscription_info
 from press.api.site import site_config, update_config
 
 
@@ -29,15 +27,14 @@ def setup(site):
 	"""
 	set site config for overriding email account validations
 	"""
-	doc_exists = frappe.db.exists({"doctype": "Mail Setup", "site": site})
+	doc_exists = frappe.db.exists("Mail Setup", {"site": site})
 
 	if doc_exists:
-		doc = frappe.get_doc("Mail Setup", doc_exists[0][0])
+		doc = frappe.get_doc("Mail Setup", doc_exists)
 
 		if not doc.is_complete:
 			doc.is_complete = 1
 			doc.save()
-			frappe.db.commit()
 
 		return
 
@@ -53,11 +50,10 @@ def setup(site):
 		new_config.append({"key": row.key, "value": row.value, "type": row.type})
 
 	update_config(site, json.dumps(new_config))
-	frappe.get_doc({"doctype": "Mail Setup", "site": site, "is_complete": 1}).insert()
 
-	frappe.db.commit()
-
-	return
+	frappe.get_doc({"doctype": "Mail Setup", "site": site, "is_complete": 1}).insert(
+		ignore_permissions=True
+	)
 
 
 @frappe.whitelist(allow_guest=True)
