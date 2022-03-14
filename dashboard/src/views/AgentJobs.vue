@@ -9,7 +9,7 @@
 				:to="jobRoute(job)"
 			>
 				<ListItem :title="job.job_type" :description="formatDate(job.creation)">
-					<template slot="actions">
+					<template v-slot:actions>
 						<Badge
 							v-if="
 								runningJob &&

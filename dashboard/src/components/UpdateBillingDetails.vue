@@ -8,7 +8,7 @@
 			{{ message }}
 		</p>
 		<Input
-			class="pt-4"
+			class="mt-4"
 			type="text"
 			v-model="billingInformation.billing_name"
 			label="Billing Name"
@@ -22,7 +22,7 @@
 			class="mt-2"
 			:error="$resources.updateBillingInformation.error"
 		/>
-		<template slot="actions">
+		<template v-slot:actions>
 			<Button
 				type="primary"
 				@click="$resources.updateBillingInformation.submit()"

@@ -21,7 +21,7 @@
 				title="Drop Bench"
 				description="Permanently delete the bench and related data"
 			>
-				<template slot="actions">
+				<template v-slot:actions>
 					<BenchDrop :bench="bench" v-slot="{ showDialog }">
 						<Button @click="showDialog">
 							<span class="text-red-600">Drop Bench</span>

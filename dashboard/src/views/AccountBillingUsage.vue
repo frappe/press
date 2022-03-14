@@ -81,7 +81,7 @@
 
 			<PrepaidCreditsDialog
 				v-if="showPrepaidCreditsDialog"
-				:show.sync="showPrepaidCreditsDialog"
+				v-model="showPrepaidCreditsDialog"
 				:minimum-amount="$account.team.currency == 'INR' ? 800 : 10"
 				@success="
 					() => {

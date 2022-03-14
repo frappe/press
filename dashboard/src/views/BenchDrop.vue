@@ -13,7 +13,8 @@
 			</p>
 			<Input type="text" class="mt-4 w-full" v-model="confirmBenchName" />
 			<ErrorMessage class="mt-2" :error="$resources.dropBench.error" />
-			<div slot="actions">
+
+			<template v-slot:actions>
 				<Button @click="dialogOpen = false"> Cancel </Button>
 				<Button
 					class="ml-3"
@@ -23,7 +24,7 @@
 				>
 					Drop Bench
 				</Button>
-			</div>
+			</template>
 		</Dialog>
 	</div>
 </template>

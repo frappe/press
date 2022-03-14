@@ -37,6 +37,7 @@ export default {
 		},
 		popoverClass: [String, Object, Array]
 	},
+	emits: ['init'],
 	watch: {
 		showPopup(value) {
 			if (value === true) {

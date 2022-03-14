@@ -106,7 +106,7 @@
 				<ErrorMessage :error="$resources.retryAddDomain.error" />
 			</div>
 
-			<div slot="actions">
+			<template v-slot:actions>
 				<Button @click="showDialog = false"> Cancel </Button>
 				<Button
 					v-if="!dnsVerified"
@@ -136,7 +136,7 @@
 				>
 					Add Domain
 				</Button>
-			</div>
+			</template>
 		</Dialog>
 	</Card>
 </template>
