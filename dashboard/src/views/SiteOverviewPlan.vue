@@ -66,7 +66,11 @@
 		</div>
 
 		<Dialog title="Change Plan" v-model="showChangePlanDialog">
-			<SitePlansTable class="mt-6" :plans="plans" v-model="selectedPlan" />
+			<SitePlansTable
+				class="mt-6"
+				:plans="plans"
+				v-model:selectedPlan="selectedPlan"
+			/>
 			<ErrorMessage class="mt-4" :error="$resources.changePlan.error" />
 			<template #actions>
 				<Button type="secondary" @click="showChangePlanDialog = false">

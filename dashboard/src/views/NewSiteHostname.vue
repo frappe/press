@@ -32,11 +32,8 @@
 <script>
 export default {
 	name: 'Hostname',
-	props: ['options', 'subdomain'],
-	model: {
-		prop: 'subdomain',
-		event: 'change'
-	},
+	props: ['options', 'modelValue'],
+	emits: ['update:modelValue', 'error'],
 	data() {
 		return {
 			subdomainAvailable: false,
@@ -46,7 +43,7 @@ export default {
 	methods: {
 		async subdomainChange(e) {
 			let subdomain = e.target.value;
-			this.$emit('change', subdomain);
+			this.$emit('update:modelValue', subdomain);
 			this.subdomainAvailable = false;
 
 			let error = this.validateSubdomain(subdomain);
