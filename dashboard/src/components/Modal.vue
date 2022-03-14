@@ -53,7 +53,7 @@ export default {
 		};
 		document.addEventListener('keydown', this.escapeListener);
 	},
-	destroyed() {
+	unmounted() {
 		document.removeEventListener('keydown', this.escapeListener);
 	},
 	methods: {

@@ -29,9 +29,6 @@ export default {
 			default: 1.5
 		}
 	},
-	compatConfig: {
-		MODE: 3
-	},
 	render() {
 		let icon = feather.icons[this.name];
 

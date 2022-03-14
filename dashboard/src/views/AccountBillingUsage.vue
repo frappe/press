@@ -133,7 +133,7 @@ export default {
 			this.$resources.availablePartnerCredits.submit();
 		}
 	},
-	destroyed() {
+	unmounted() {
 		this.$socket.off('balance_updated');
 	},
 	computed: {

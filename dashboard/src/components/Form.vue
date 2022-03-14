@@ -7,10 +7,10 @@
 		>
 			<div class="flex space-x-4" v-if="Array.isArray(field)">
 				<Input
+					v-bind="getBindProps(subfield)"
 					:key="subfield.fieldname"
 					class="w-full"
 					v-for="subfield in field"
-					v-bind="getBindProps(subfield)"
 					v-on="getBindListeners(subfield)"
 				/>
 			</div>

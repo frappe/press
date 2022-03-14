@@ -65,13 +65,11 @@ export default {
 		};
 		if (this.show == null) {
 			document.addEventListener('click', listener);
-			this.$once('hook:beforeDestroy', () => {
-				document.removeEventListener('click', listener);
-			});
 		}
 	},
-	beforeDestroy() {
+	beforeUnmount() {
 		this.popper && this.popper.destroy();
+		document.removeEventListener('click', listener);
 	},
 	methods: {
 		setupPopper() {
