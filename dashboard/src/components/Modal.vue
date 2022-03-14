@@ -27,10 +27,7 @@
 <script>
 export default {
 	name: 'Modal',
-	model: {
-		prop: 'show',
-		event: 'change'
-	},
+	emits: ['update:show'],
 	props: {
 		show: {
 			type: Boolean,
@@ -62,7 +59,7 @@ export default {
 			this.hide();
 		},
 		hide() {
-			this.$emit('change', false);
+			this.$emit('update:show', false);
 		}
 	},
 	computed: {
