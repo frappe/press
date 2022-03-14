@@ -18,12 +18,12 @@ export default class ResourceManager {
 					{
 						immediate: true,
 						deep: true,
-						flush: 'sync',
-					},
+						flush: 'sync'
+					}
 				]);
 			} else {
-				let resource = new Resource(vm, resourceDef);
-				resources[key] = ref(resource);
+				let resource = reactive(new Resource(vm, resourceDef));
+				resources[key] = resource;
 
 				if (resource.auto) {
 					resource.reload();
@@ -34,7 +34,7 @@ export default class ResourceManager {
 	}
 
 	init() {
-		this._watchers = this._watchers.map((w) => this._vm.$watch(...w));
+		this._watchers = this._watchers.map(w => this._vm.$watch(...w));
 	}
 
 	destroy() {
@@ -110,9 +110,7 @@ class Resource {
 		// events
 		this.listeners = Object.create(null);
 		this.onceListeners = Object.create(null);
-		let listenerKeys = Object.keys(options).filter((key) =>
-			key.startsWith('on')
-		);
+		let listenerKeys = Object.keys(options).filter(key => key.startsWith('on'));
 		if (listenerKeys.length > 0) {
 			for (const key of listenerKeys) {
 				this.on(key, options[key]);
@@ -141,7 +139,7 @@ class Resource {
 			let data = await call(this.method, this.currentParams);
 			if (this.delay) {
 				// artificial delay
-				await new Promise((resolve) => setTimeout(resolve, this.delay * 1000));
+				await new Promise(resolve => setTimeout(resolve, this.delay * 1000));
 			}
 			if (Array.isArray(data) && this.paged) {
 				this.lastPageEmpty = data.length === 0;
@@ -199,10 +197,10 @@ class Resource {
 		let key = 'on' + event;
 		let vm = this._vm;
 
-		(this.listeners[key] || []).forEach((handler) => {
+		(this.listeners[key] || []).forEach(handler => {
 			runHandler(handler);
 		});
-		(this.onceListeners[key] || []).forEach((handler) => {
+		(this.onceListeners[key] || []).forEach(handler => {
 			runHandler(handler);
 			// remove listener after calling handler
 			this.onceListeners[key].splice(
