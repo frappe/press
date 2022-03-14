@@ -1,5 +1,9 @@
 <template>
 	<div class="pt-8 pb-20">
+		<pre>
+			{{ $resources.benches.data }}
+		</pre
+		>
 		<div class="px-4 sm:px-8">
 			<h1 class="sr-only">Dashboard</h1>
 			<div v-if="!$account.team.enabled">
@@ -69,7 +73,7 @@
 				</Dropdown>
 			</div>
 
-			<div v-if="benches == null">
+			<div v-if="$resources.benches.data == null">
 				<div class="flex flex-1 items-center py-4 focus:outline-none">
 					<h2 class="text-lg font-semibold">Sites</h2>
 				</div>
@@ -79,7 +83,7 @@
 			</div>
 			<div v-else>
 				<div
-					v-for="(bench, i) in benches"
+					v-for="(bench, i) in $resources.benches.data"
 					:key="bench.name"
 					class="flex flex-col sm:flex-row sm:space-x-4"
 					:class="{
@@ -167,7 +171,7 @@ export default {
 				if (data && data.length) {
 					for (let bench of data) {
 						if (!(bench.name in this.sitesShown)) {
-							this.$set(this.sitesShown, bench.name, Boolean(bench.shared));
+							this.sitesShown[bench.name] = Boolean(bench.shared);
 						}
 					}
 				}
@@ -182,7 +186,7 @@ export default {
 		this.$socket.on('agent_job_update', this.onAgentJobUpdate);
 		this.$socket.on('list_update', this.onSiteUpdate);
 	},
-	destroyed() {
+	unmounted() {
 		this.$socket.off('agent_job_update', this.onAgentJobUpdate);
 		this.$socket.off('list_update', this.onSiteUpdate);
 	},
@@ -306,6 +310,16 @@ export default {
 			if (this.$resources.latestUnpaidInvoice.data) {
 				return this.$resources.latestUnpaidInvoice.data.stripe_invoice_url;
 			}
+		}
+	},
+	watch: {
+		'$resources.benches.data': {
+			handler(data) {
+				if (data) {
+					console.log('watch $resources.benches.data: ', data);
+				}
+			},
+			deep: true
 		}
 	}
 };

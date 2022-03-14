@@ -12,7 +12,6 @@ export default class Account {
 	}
 
 	async fetchAccount() {
-		console.log('fetchAccount mein hain');
 		if (document.cookie.includes('user_id=Guest;')) {
 			return;
 		}

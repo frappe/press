@@ -61,8 +61,10 @@
 </template>
 
 <script>
-import CardWithDetails from '@/components/CardWithDetails.vue';
+import { h } from 'vue';
 import StepsDetail from './StepsDetail.vue';
+import CardWithDetails from '@/components/CardWithDetails.vue';
+
 export default {
 	name: 'BenchDeploys',
 	props: ['bench', 'candidateName'],
@@ -113,7 +115,7 @@ export default {
 			);
 		}
 	},
-	destroyed() {
+	unmounted() {
 		this.$socket.off(`bench_deploy:${this.candidateName}:steps`, this.onSteps);
 		this.$socket.off(
 			`bench_deploy:${this.candidateName}:finished`,
@@ -164,7 +166,7 @@ export default {
 					completed: job.status == 'Success',
 					running: ['Pending', 'Running'].includes(job.status),
 					action: {
-						render(h) {
+						render() {
 							return h(
 								'Link',
 								{

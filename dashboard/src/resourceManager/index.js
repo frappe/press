@@ -26,7 +26,7 @@ let plugin = {
 			this.$resources = reactive(resourceManager.resources);
 		}
 
-		Object.keys(vmOptions.resources).forEach((key) => {
+		Object.keys(vmOptions.resources).forEach(key => {
 			if (
 				!(
 					hasKey(vmOptions.computed, key) ||
@@ -37,6 +37,7 @@ let plugin = {
 				if (!vmOptions.computed) {
 					vmOptions.computed = {};
 				}
+
 				vmOptions.computed[key] = vmOptions.resources[key];
 			}
 		});
@@ -48,13 +49,13 @@ let plugin = {
 		return {
 			$rm: this._rm,
 			$r: this._rm.resources,
-			$resources: this._rm.resources,
+			$resources: this._rm.resources
 		};
 	},
 	created() {
 		if (!this._rm) return;
 		this._rm.init();
-	},
+	}
 };
 
 export default function install(app) {

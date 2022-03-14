@@ -63,7 +63,7 @@ export default {
 	mounted() {
 		this.$socket.on('agent_job_update', this.onAgentJobUpdate);
 	},
-	destroyed() {
+	unmounted() {
 		this.$socket.off('agent_job_update', this.onAgentJobUpdate);
 	},
 	methods: {

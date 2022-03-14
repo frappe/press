@@ -9,6 +9,7 @@ import socket from './controllers/socket';
 import utils from './utils';
 import router from './router';
 
+
 const app = createApp(App);
 const auth = reactive(new Auth());
 const account = reactive(new Account());
