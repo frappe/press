@@ -49,7 +49,8 @@ export default {
 	},
 	data() {
 		return {
-			isOpen: false
+			isOpen: false,
+			listener: null
 		};
 	},
 	mounted() {
@@ -66,10 +67,15 @@ export default {
 		if (this.show == null) {
 			document.addEventListener('click', listener);
 		}
+
+		this.listener = listener;
 	},
 	beforeUnmount() {
 		this.popper && this.popper.destroy();
-		document.removeEventListener('click', listener);
+
+		if (this.listener) {
+			document.removeEventListener('click', this.listener);
+		}
 	},
 	methods: {
 		setupPopper() {

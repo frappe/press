@@ -92,6 +92,11 @@ export default {
 			}
 		});
 	},
+	computed: {
+		backups() {
+			return this.$resources.backups;
+		}
+	},
 	methods: {
 		dropdownItems(backup) {
 			return [

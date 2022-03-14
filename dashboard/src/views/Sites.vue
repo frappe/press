@@ -1,9 +1,5 @@
 <template>
 	<div class="pt-8 pb-20">
-		<pre>
-			{{ $resources.benches.data }}
-		</pre
-		>
 		<div class="px-4 sm:px-8">
 			<h1 class="sr-only">Dashboard</h1>
 			<div v-if="!$account.team.enabled">
@@ -310,16 +306,6 @@ export default {
 			if (this.$resources.latestUnpaidInvoice.data) {
 				return this.$resources.latestUnpaidInvoice.data.stripe_invoice_url;
 			}
-		}
-	},
-	watch: {
-		'$resources.benches.data': {
-			handler(data) {
-				if (data) {
-					console.log('watch $resources.benches.data: ', data);
-				}
-			},
-			deep: true
 		}
 	}
 };
