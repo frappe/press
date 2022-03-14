@@ -47,10 +47,7 @@ export default {
 		AppPlanCard
 	},
 	props: ['app', 'group', 'frappeVersion', 'currentPlan'],
-	model: {
-		prop: 'selectedPlan',
-		event: 'change'
-	},
+	emits: ['change'],
 	data() {
 		return {
 			selectedPlan: null
