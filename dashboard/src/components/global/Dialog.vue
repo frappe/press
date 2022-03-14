@@ -1,6 +1,6 @@
 <template>
 	<Modal
-		:show="show"
+		:show="modelValue"
 		@update:show="handleChange"
 		:dismissable="dismissable"
 		:width="width"
