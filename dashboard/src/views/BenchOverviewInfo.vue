@@ -34,7 +34,7 @@
 			<Input label="Title" type="text" v-model="benchTitle" />
 			<ErrorMessage class="mt-4" :error="$resources.editTitle.error" />
 
-			<template #actions>
+			<template v-slot:actions>
 				<div class="space-x-2">
 					<Button @click="showEditTitleDialog = false">Cancel</Button>
 					<Button

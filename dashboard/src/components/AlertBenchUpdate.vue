@@ -22,11 +22,11 @@
 		>
 			<BenchAppUpdates
 				:apps="deployInformation.apps"
-				:selectedApps.sync="selectedApps"
+				v-model:selectedApps="selectedApps"
 				:removedApps="deployInformation.removed_apps"
 			/>
 			<ErrorMessage class="mt-2" :error="$resources.deploy.error" />
-			<template #actions>
+			<template v-slot:actions>
 				<Button
 					type="primary"
 					@click="$resources.deploy.submit()"

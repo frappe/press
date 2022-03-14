@@ -82,7 +82,9 @@ export default {
 	},
 	computed: {
 		bench() {
-			return this.$resources.bench.data;
+			if (this.$resources.bench.data && !this.$resources.bench.loading) {
+				return this.$resources.bench.data;
+			}
 		},
 		tabs() {
 			let tabRoute = subRoute => `/benches/${this.benchName}/${subRoute}`;

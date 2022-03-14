@@ -172,6 +172,7 @@
 </template>
 <script>
 import ClickToCopyField from '@/components/ClickToCopyField.vue';
+import { setTransitionHooks } from 'vue';
 import CardWithDetails from '../components/CardWithDetails.vue';
 import SiteList from './SiteList.vue';
 export default {
@@ -226,6 +227,9 @@ export default {
 		}
 	},
 	computed: {
+		versions() {
+			return this.$resources.versions;
+		},
 		selectedVersion() {
 			if (this.version && this.versions.data) {
 				return this.versions.data.find(v => v.name === this.version);
