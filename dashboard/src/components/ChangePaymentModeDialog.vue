@@ -1,8 +1,8 @@
 <template>
 	<Dialog
 		title="Change Payment Mode"
-		:show="show"
-		@change="$emit('change', $event)"
+		:modelValue="modelValue"
+		@update:modelValue="$emit('update:modelValue', $event)"
 	>
 		<Input
 			label="Select Payment Mode"
@@ -29,11 +29,8 @@
 <script>
 export default {
 	name: 'ChangePaymentModeDialog',
-	props: ['show'],
-	model: {
-		prop: 'show',
-		event: 'change'
-	},
+	props: ['modelValue'],
+	emits: ['update:modelValue'],
 	data() {
 		return {
 			paymentMode: this.$account.team.payment_mode || 'Card'
@@ -54,7 +51,7 @@ export default {
 					mode: this.paymentMode
 				},
 				onSuccess() {
-					this.$emit('change', false);
+					this.$emit('update:modelValue', false);
 					this.$resources.changePaymentMode.reset();
 				},
 				validate() {

@@ -100,15 +100,19 @@
 <script>
 import PlanIcon from '@/components/PlanIcon.vue';
 import AccountBillingUpcomingInvoice from './AccountBillingUpcomingInvoice.vue';
+import { defineAsyncComponent } from 'vue';
 
 export default {
 	name: 'AccountBillingUsage',
 	components: {
 		PlanIcon,
 		AccountBillingUpcomingInvoice,
-		PrepaidCreditsDialog: () => import('@/components/PrepaidCreditsDialog.vue'),
-		ChangePaymentModeDialog: () =>
+		PrepaidCreditsDialog: defineAsyncComponent(() =>
+			import('@/components/PrepaidCreditsDialog.vue')
+		),
+		ChangePaymentModeDialog: defineAsyncComponent(() =>
 			import('@/components/ChangePaymentModeDialog.vue')
+		)
 	},
 	resources: {
 		upcomingInvoice: 'press.api.billing.upcoming_invoice',

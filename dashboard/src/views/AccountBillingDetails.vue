@@ -10,31 +10,38 @@
 			v-model="editBillingDetails"
 			@updated="
 				editBillingDetails = false;
-				billingDetails.reload();
+				$resources.billingDetails.reload();
 			"
 		/>
-		<div class="divide-y" v-if="billingDetails.data">
+		<div class="divide-y" v-if="$resources.billingDetails.data">
 			<ListItem
 				title="Billing Name"
-				:description="billingDetails.data.billing_name"
+				:description="$resources.billingDetails.data.billing_name"
 			/>
 			<ListItem
 				title="Billing Address"
-				:description="billingDetails.data.billing_address || 'Not set'"
+				:description="
+					$resources.billingDetails.data.billing_address || 'Not set'
+				"
 			/>
 			<ListItem
 				v-if="$account.team.country == 'India'"
 				title="Tax ID"
-				:description="billingDetails.data.gstin || 'Not set'"
+				:description="$resources.billingDetails.data.gstin || 'Not set'"
 			/>
 		</div>
 	</Card>
 </template>
 <script>
+import { defineAsyncComponent } from 'vue';
+
 export default {
 	name: 'AccountBillingDetails',
+	emits: ['updated'],
 	components: {
-		UpdateBillingDetails: () => import('@/components/UpdateBillingDetails.vue')
+		UpdateBillingDetails: defineAsyncComponent(() =>
+			import('@/components/UpdateBillingDetails.vue')
+		)
 	},
 	resources: {
 		billingDetails: 'press.api.billing.details'

@@ -3,10 +3,14 @@
 </template>
 
 <script>
+import { defineAsyncComponent } from 'vue';
+
 export default {
 	name: 'UserPrompts',
 	components: {
-		UpdateBillingDetails: () => import('@/components/UpdateBillingDetails.vue')
+		UpdateBillingDetails: defineAsyncComponent(() =>
+			import('@/components/UpdateBillingDetails.vue')
+		)
 	},
 	resources: {
 		prompts() {
