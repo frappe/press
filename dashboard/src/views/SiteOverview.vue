@@ -25,22 +25,22 @@
 			your plan now.
 		</Alert>
 
-		<div class="grid grid-cols-1 gap-5 sm:grid-cols-2" v-if="overview">
+		<div class="grid grid-cols-1 gap-5 sm:grid-cols-2" v-if="overview.data">
 			<SiteOverviewCPUUsage :site="site" />
 			<SiteOverviewRecentActivity
 				:site="site"
-				:recentActivity="overview.recent_activity"
+				:recentActivity="overview.data.recent_activity"
 			/>
 			<SiteOverviewPlan
 				:site="site"
-				:plan="overview.plan"
+				:plan="overview.data.plan"
 				@plan-change="$resources.overview.reload()"
 			/>
-			<SiteOverviewInfo :site="site" :info="overview.info" />
+			<SiteOverviewInfo :site="site" :info="overview.data.info" />
 			<SiteOverviewAppSubscriptions class="md:col-span-2" :site="site" />
 			<SiteOverviewApps
 				:site="site"
-				:installedApps="overview.installed_apps"
+				:installedApps="overview.data.installed_apps"
 				@app-installed="$resources.overview.reload()"
 				@app-uninstalled="$resources.overview.reload()"
 			/>
@@ -88,9 +88,7 @@ export default {
 	},
 	computed: {
 		overview() {
-			if (this.$resources.overview.data && !this.$resources.overview.loading) {
-				return this.$resources.overview.data;
-			}
+			return this.$resources.overview;
 		},
 		closeToLimits() {
 			if (!(this.site && this.$resources.overview.data)) return false;

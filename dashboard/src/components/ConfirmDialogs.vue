@@ -46,7 +46,7 @@ app.appContext.config.globalProperties.$confirm = confirm;
 				v-if="dialog.resource"
 				:error="dialog.resource.error"
 			/>
-			<slot name="actions">
+			<template v-slot:actions>
 				<Button type="secondary" @click="removeConfirmDialog(dialog)">
 					Cancel
 				</Button>
@@ -58,7 +58,7 @@ app.appContext.config.globalProperties.$confirm = confirm;
 				>
 					{{ dialog.actionLabel || 'Submit' }}
 				</Button>
-			</slot>
+			</template>
 		</Dialog>
 	</div>
 </template>
