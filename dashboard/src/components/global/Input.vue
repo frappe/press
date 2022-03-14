@@ -26,7 +26,7 @@
 			:disabled="disabled"
 			:placeholder="placeholder"
 			v-on="inputListeners"
-			:value="value"
+			:value="modelValue"
 		/>
 		<textarea
 			v-bind="$attrs"
@@ -36,7 +36,7 @@
 				inputClass
 			]"
 			ref="input"
-			:value="value"
+			:value="modelValue"
 			:disabled="disabled"
 			:placeholder="placeholder"
 			v-on="inputListeners"
@@ -54,7 +54,7 @@
 				v-for="option in selectOptions"
 				:key="option.value"
 				:value="option.value"
-				:selected="value === option.value"
+				:selected="modelValue === option.value"
 			>
 				{{ option.label }}
 			</option>
@@ -95,7 +95,7 @@ export default {
 				return isValid;
 			}
 		},
-		value: {
+		modelValue: {
 			type: [String, Number, Boolean, Object, Array]
 		},
 		inputClass: {
@@ -114,6 +114,7 @@ export default {
 			type: String
 		}
 	},
+	emits: ['blur', 'update:modelValue', 'change'],
 	methods: {
 		focus() {
 			this.$refs.input.focus();
@@ -133,7 +134,7 @@ export default {
 		inputListeners() {
 			return {
 				input: e => {
-					this.$emit('input', this.getInputValue(e));
+					this.$emit('update:modelValue', this.getInputValue(e));
 				},
 				change: e => {
 					this.$emit('change', this.getInputValue(e));
