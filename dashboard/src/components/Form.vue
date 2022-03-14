@@ -32,10 +32,7 @@
 export default {
 	name: 'Form',
 	props: ['fields', 'values'],
-	model: {
-		event: 'change',
-		prop: 'values'
-	},
+	emits: ['update:values'],
 	data() {
 		return {
 			requiredFieldNotSet: []
@@ -50,7 +47,7 @@ export default {
 			let values = Object.assign({}, this.values, {
 				[fieldname]: value
 			});
-			this.$emit('change', values);
+			this.$emit('update:values', values);
 		},
 		checkRequired(field, value) {
 			if (field.required) {

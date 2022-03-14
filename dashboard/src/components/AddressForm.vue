@@ -4,7 +4,7 @@
 			class="mt-4"
 			:fields="fields"
 			:values="address"
-			@change="$emit('change', $event)"
+			@update:values="$emit('update:address', $event)"
 		/>
 		<div class="mt-4" v-show="address.country == 'India'">
 			<Input
@@ -33,10 +33,7 @@ import Form from '@/components/Form.vue';
 export default {
 	name: 'AddressForm',
 	props: ['address'],
-	model: {
-		prop: 'address',
-		event: 'change'
-	},
+	emits: ['update:address'],
 	components: {
 		Form
 	},
@@ -75,7 +72,7 @@ export default {
 	},
 	methods: {
 		update(key, value) {
-			this.$emit('change', {
+			this.$emit('update:address', {
 				...this.address,
 				[key]: value
 			});

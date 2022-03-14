@@ -143,6 +143,7 @@
 </template>
 <script>
 import SiteList from './SiteList.vue';
+import { defineAsyncComponent } from 'vue';
 import SiteAndBenchSearch from '@/components/SiteAndBenchSearch.vue';
 
 export default {
@@ -151,7 +152,9 @@ export default {
 	components: {
 		SiteList,
 		SiteAndBenchSearch,
-		PrepaidCreditsDialog: () => import('@/components/PrepaidCreditsDialog.vue')
+		PrepaidCreditsDialog: defineAsyncComponent(() =>
+			import('@/components/PrepaidCreditsDialog.vue')
+		)
 	},
 	data() {
 		return {
