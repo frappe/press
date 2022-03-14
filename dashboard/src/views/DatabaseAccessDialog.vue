@@ -1,7 +1,7 @@
 <template>
 	<Dialog
 		v-if="site"
-		:show="Boolean(site) && show"
+		:modelValue="Boolean(site) && show"
 		title="Access Database"
 		:dismissable="true"
 		@close="dialogClosed"
