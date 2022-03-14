@@ -5,52 +5,56 @@
 		:placement="right ? 'bottom-end' : 'bottom-start'"
 		@init="updateTargetWidth"
 	>
-		<div
-			slot="target"
-			class="h-full"
-			ref="target"
-			v-on-outside-click="() => (isShown = false)"
-		>
-			<slot
-				:toggleDropdown="toggleDropdown"
-				:highlightItemUp="highlightItemUp"
-				:highlightItemDown="highlightItemDown"
-				:selectHighlightedItem="selectHighlightedItem"
-			></slot>
-		</div>
-		<div
-			slot="content"
-			class="w-fullbg-white z-10 min-w-40 rounded-md"
-			:style="{ width: dropdownWidthFull ? targetWidth + 'px' : undefined }"
-		>
-			<div class="max-h-64 overflow-auto p-1 text-sm">
-				<div v-if="isLoading" class="p-2 text-gray-600">
-					{{ _('Loading...') }}
-				</div>
-				<template v-else>
-					<div v-for="d in dropdownItems" :key="d.label">
-						<div
-							v-if="d.isGroup"
-							class="px-2 pt-2 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-500"
-						>
-							{{ d.label }}
-						</div>
-						<a
-							v-else
-							ref="items"
-							class="block cursor-pointer truncate rounded-md p-2 first:mt-0"
-							:class="d.index === highlightedIndex ? 'bg-gray-100' : ''"
-							@mouseenter="highlightedIndex = d.index"
-							@mouseleave="highlightedIndex = -1"
-							@click="selectItem(d)"
-						>
-							<component :is="d.component" v-if="d.component" />
-							<template v-else>{{ d.label }}</template>
-						</a>
-					</div>
-				</template>
+		<template v-slot:target>
+			<div
+				class="h-full"
+				ref="target"
+				v-on-outside-click="() => (isShown = false)"
+			>
+				<slot
+					:toggleDropdown="toggleDropdown"
+					:highlightItemUp="highlightItemUp"
+					:highlightItemDown="highlightItemDown"
+					:selectHighlightedItem="selectHighlightedItem"
+				></slot>
 			</div>
-		</div>
+		</template>
+
+		<template v-slot:content>
+			<div
+				slot="content"
+				class="w-fullbg-white z-10 min-w-40 rounded-md"
+				:style="{ width: dropdownWidthFull ? targetWidth + 'px' : undefined }"
+			>
+				<div class="max-h-64 overflow-auto p-1 text-sm">
+					<div v-if="isLoading" class="p-2 text-gray-600">
+						{{ _('Loading...') }}
+					</div>
+					<template v-else>
+						<div v-for="d in dropdownItems" :key="d.label">
+							<div
+								v-if="d.isGroup"
+								class="px-2 pt-2 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-500"
+							>
+								{{ d.label }}
+							</div>
+							<a
+								v-else
+								ref="items"
+								class="block cursor-pointer truncate rounded-md p-2 first:mt-0"
+								:class="d.index === highlightedIndex ? 'bg-gray-100' : ''"
+								@mouseenter="highlightedIndex = d.index"
+								@mouseleave="highlightedIndex = -1"
+								@click="selectItem(d)"
+							>
+								<component :is="d.component" v-if="d.component" />
+								<template v-else>{{ d.label }}</template>
+							</a>
+						</div>
+					</template>
+				</div>
+			</div>
+		</template>
 	</Popover>
 </template>
 
