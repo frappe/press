@@ -9,7 +9,7 @@
 			<input
 				class="form-input z-10 w-full rounded-r-none"
 				type="text"
-				:value="subdomain"
+				:value="modelValue"
 				placeholder="subdomain"
 				@change="subdomainChange"
 			/>
@@ -23,7 +23,7 @@
 				class="text-sm text-green-600"
 				role="alert"
 			>
-				{{ subdomain }}.{{ options.domain }} is available
+				{{ modelValue }}.{{ options.domain }} is available
 			</div>
 			<ErrorMessage :error="errorMessage" />
 		</div>
