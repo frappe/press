@@ -205,6 +205,9 @@ export default {
 		}
 	},
 	computed: {
+		domains() {
+			return this.$resources.domains;
+		},
 		dnsVerified() {
 			return this.$resources.checkDNS.data;
 		},

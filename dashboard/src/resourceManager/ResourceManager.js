@@ -1,7 +1,7 @@
 // Authors: Faris Ansari <faris@frappe.io> & Hussain Nagaria <hussain@frappe.io>
 
 import call from '../controllers/call';
-import { ref, reactive } from 'vue';
+import { reactive } from 'vue';
 
 export default class ResourceManager {
 	constructor(vm, resourceDefs) {

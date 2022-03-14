@@ -148,6 +148,9 @@ export default {
 		}
 	},
 	methods: {
+		availableApps() {
+			return this.$resources.availableApps;
+		},
 		installApp(app) {
 			this.appToInstall = app;
 

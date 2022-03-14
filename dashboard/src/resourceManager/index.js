@@ -1,7 +1,7 @@
 // Authors: Faris Ansari <faris@frappe.io> & Hussain Nagaria <hussain@frappe.io>
 
 import ResourceManager from './ResourceManager';
-import { reactive } from 'vue';
+import { reactive, computed } from 'vue';
 
 let plugin = {
 	beforeCreate() {
@@ -26,22 +26,6 @@ let plugin = {
 			this.$resources = reactive(resourceManager.resources);
 		}
 
-		Object.keys(vmOptions.resources).forEach(key => {
-			if (
-				!(
-					hasKey(vmOptions.computed, key) ||
-					hasKey(vmOptions.props, key) ||
-					hasKey(vmOptions.methods, key)
-				)
-			) {
-				if (!vmOptions.computed) {
-					vmOptions.computed = {};
-				}
-
-				vmOptions.computed[key] = vmOptions.resources[key];
-			}
-		});
-
 		this._rm = resourceManager;
 	},
 	data() {
@@ -52,6 +36,17 @@ let plugin = {
 			$resources: this._rm.resources
 		};
 	},
+
+	computed: {
+		$resourceErrors() {
+			if (!this._rm) return '';
+			return Object.keys(this.$resources)
+				.map(key => this.$resources[key].error)
+				.filter(Boolean)
+				.join('\n');
+		}
+	},
+
 	created() {
 		if (!this._rm) return;
 		this._rm.init();

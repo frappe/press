@@ -43,6 +43,11 @@ export default {
 			};
 		}
 	},
+	computed: {
+		activities() {
+			return this.$resources.activities;
+		}
+	},
 	data() {
 		return {
 			pageStart: 0
