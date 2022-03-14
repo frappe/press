@@ -131,14 +131,14 @@ export default {
 	},
 	computed: {
 		inputListeners() {
-			return Object.assign({}, this.$listeners, {
+			return {
 				input: e => {
 					this.$emit('input', this.getInputValue(e));
 				},
 				change: e => {
 					this.$emit('change', this.getInputValue(e));
 				}
-			});
+			};
 		},
 		selectOptions() {
 			return this.options.map(option => {
