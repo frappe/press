@@ -28,7 +28,7 @@
 					:shareDetailsConsent.sync="shareDetailsConsent"
 				/>
 
-				<div v-show="activeStep.name === 'Select App Plans'">
+				<div v-if="activeStep.name === 'Select App Plans'">
 					<ChangeAppPlanSelector
 						v-for="app in appsWithPlans"
 						:key="app.name"
