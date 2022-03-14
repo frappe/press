@@ -149,7 +149,7 @@
 		<DatabaseAccessDialog
 			v-if="showDatabaseAccessDialog"
 			:site="site.name"
-			:show.sync="showDatabaseAccessDialog"
+			v-model:show="showDatabaseAccessDialog"
 		/>
 	</Card>
 </template>

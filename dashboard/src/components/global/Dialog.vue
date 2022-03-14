@@ -1,7 +1,7 @@
 <template>
 	<Modal
 		:show="show"
-		@change="handleChange"
+		@update:show="handleChange"
 		:dismissable="dismissable"
 		:width="width"
 	>
@@ -42,17 +42,14 @@
 import Modal from '@/components/Modal.vue';
 export default {
 	name: 'Dialog',
-	model: {
-		prop: 'show',
-		event: 'change'
-	},
-	props: ['title', 'subtitle', 'show', 'dismissable', 'width'],
+	emits: ['update:modelValue', 'close'],
+	props: ['title', 'subtitle', 'show', 'dismissable', 'width', 'modelValue'],
 	components: {
 		Modal
 	},
 	methods: {
 		handleChange(value) {
-			this.$emit('change', value);
+			this.$emit('update:modelValue', value);
 			if (value === false) {
 				this.$emit('close');
 			}
