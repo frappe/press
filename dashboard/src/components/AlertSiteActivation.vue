@@ -10,8 +10,8 @@
 		<template #actions>
 			<Button
 				type="primary"
-				@click="loginAsAdmin.submit()"
-				:loading="loginAsAdmin.loading"
+				@click="$resources.loginAsAdmin.submit()"
+				:loading="$resources.loginAsAdmin.loading"
 			>
 				Login
 			</Button>
