@@ -182,3 +182,22 @@ def update_user_status(docname, status):
 		doc.update_user("enable")
 
 	frappe.db.commit()
+
+
+@frappe.whitelist(allow_guest=True)
+def get_analytics(**data):
+	from press.api.developer.marketplace import get_subscription_status
+
+	if get_subscription_status(data["secret_key"]) != "Active":
+		return
+
+	site, available = frappe.db.get_value(
+		"Storage Integration Subscription", data["access_key"], ["site", "limit"]
+	)
+	access_key = frappe.db.get_value("Add On Settings", None, "aws_access_key")
+	secret_key = get_decrypted_password(
+		"Add On Settings", "Add On Settings", "aws_secret_key"
+	)
+	used, unit_u = get_size(data["bucket"], site, access_key, secret_key)
+
+	return {"used": f"{used} {unit_u}", "available": available}
