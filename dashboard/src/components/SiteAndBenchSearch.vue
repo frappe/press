@@ -19,7 +19,7 @@
 					toggleDropdown(false);
 					$refs.search.blur();
 				"
-				:value="searchText"
+				:modelValue="searchText"
 				@input="val => (searchText = val)"
 				placeholder="Search (Ctrl + /)"
 			/>
