@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2022-02-12 22:08:16.256963",
+ "creation": "2022-03-06 20:52:37.142455",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -28,7 +28,7 @@
   },
   {
    "fieldname": "limit",
-   "fieldtype": "Int",
+   "fieldtype": "Data",
    "label": "Limit"
   },
   {
@@ -70,7 +70,7 @@
   },
   {
    "fieldname": "usage",
-   "fieldtype": "Int",
+   "fieldtype": "Data",
    "label": "Usage",
    "read_only": 1
   },
@@ -95,7 +95,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-02-21 19:48:52.466274",
+ "modified": "2022-03-15 09:41:07.473261",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Storage Integration Subscription",
