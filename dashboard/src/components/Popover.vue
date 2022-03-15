@@ -54,31 +54,54 @@ export default {
 			listener: null
 		};
 	},
-	mounted() {
-		let listener = e => {
-			let $els = [this.$refs.reference, this.$refs.popover];
-			let insideClick = $els.some(
-				$el => $el && (e.target === $el || $el.contains(e.target))
-			);
-			if (insideClick) {
-				return;
-			}
-			this.close();
-		};
-		if (this.show == null) {
-			document.addEventListener('click', listener);
-		}
-
-		this.listener = listener;
+	activated() {
+		this.setupListener();
 	},
-	beforeUnmount() {
-		this.popper && this.popper.destroy();
-
-		if (this.listener) {
-			document.removeEventListener('click', this.listener);
-		}
+	mounted() {
+		this.setupListener();
+	},
+	deactivated() {
+		this.close();
+	},
+	unmounted() {
+		this.destroyPopperAndRemoveListener();
 	},
 	methods: {
+		setupListener() {
+			if (this.listener) {
+				return;
+			}
+
+			let listener = e => {
+				let $els = [this.$refs.reference, this.$refs.popover];
+				let insideClick = $els.some(
+					$el => $el && (e.target === $el || $el.contains(e.target))
+				);
+				if (insideClick) {
+					return;
+				}
+				this.close();
+			};
+
+			if (this.show == null) {
+				document.addEventListener('click', listener);
+			}
+
+			this.listener = listener;
+		},
+		destroyPopperAndRemoveListener() {
+			if (this.isOpen) {
+				this.close();
+			}
+
+			this.popper && this.popper.destroy();
+
+			if (this.listener) {
+				document.removeEventListener('click', this.listener);
+				this.listener = null;
+			}
+
+		},
 		setupPopper() {
 			if (!this.popper) {
 				this.popper = createPopper(this.$refs.reference, this.$refs.popover, {
