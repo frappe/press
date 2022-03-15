@@ -114,7 +114,7 @@ export default {
 			type: String
 		}
 	},
-	emits: ['blur', 'update:modelValue', 'change'],
+	emits: ['blur', 'update:modelValue', 'change', 'input'],
 	methods: {
 		focus() {
 			this.$refs.input.focus();
@@ -135,6 +135,7 @@ export default {
 			return {
 				input: e => {
 					this.$emit('update:modelValue', this.getInputValue(e));
+					this.$emit('input', this.getInputValue(e));
 				},
 				change: e => {
 					this.$emit('change', this.getInputValue(e));
