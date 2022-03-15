@@ -4,6 +4,7 @@
 import json
 import boto3
 import frappe
+import math
 from frappe.utils.password import get_decrypted_password
 from hashlib import blake2b
 from press.agent import Agent
@@ -115,6 +116,9 @@ def create_after_insert(doc, method):
 		setup(doc.site)
 
 
+size_name = ("B", "KB", "MB", "GB", "TB", "PB")
+
+
 def monitor_storage():
 	active_subs = frappe.get_all(
 		"Storage Integration Subscription", fields=["site", "name"], filters={"enabled": 1}
@@ -125,18 +129,21 @@ def monitor_storage():
 	)
 
 	for sub in active_subs:
-		size = get_size("bucket_name", sub["site"], access_key, secret_key)
+		usage, unit_u = get_size("bucket_name", sub["site"], access_key, secret_key)
 		# not used yet
-		if size == 0:
+		if usage == 0:
 			break
 
 		doc = frappe.get_doc("Storage Integration Subscription", sub["name"])
-		if doc.usage > doc.limit:
+		limit, unit_l = doc.limit.split(" ")
+
+		# TODO: Add size_name index change when there are very higher plans
+		if unit_u == unit_l and usage >= int(limit):
 			# send emails maybe?
 			doc.update_user("disable")
 			doc.enabled = 0
 		else:
-			doc.usage = size
+			doc.usage = f"{usage} {unit_u}"
 
 		doc.save()
 		frappe.db.commit()
@@ -152,7 +159,16 @@ def get_size(bucket, path, access_key, secret_key):
 	for obj in my_bucket.objects.filter(Prefix=path):
 		total_size = total_size + obj.size
 
-	return total_size
+	return convert_size(total_size)
+
+
+def convert_size(size_bytes):
+	if size_bytes == 0:
+		return 0, "B"
+	i = int(math.floor(math.log(size_bytes, 1024)))
+	p = math.pow(1024, i)
+	s = round(size_bytes / p, 2)
+	return s, size_name[i]
 
 
 @frappe.whitelist()
