@@ -23,7 +23,7 @@
 		<template v-slot:content>
 			<div
 				slot="content"
-				class="w-fullbg-white z-10 min-w-40 rounded-md"
+				class="z-10 w-full min-w-40 rounded-md bg-white"
 				:style="{ width: dropdownWidthFull ? targetWidth + 'px' : undefined }"
 			>
 				<div class="max-h-64 overflow-auto p-1 text-sm">
