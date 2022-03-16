@@ -106,21 +106,28 @@ def repositories(installation, token):
 		"Authorization": f"token {token}",
 		"Accept": "application/vnd.github.machine-man-preview+json",
 	}
-	response = requests.get(
-		f"https://api.github.com/user/installations/{installation}/repositories",
-		params={"per_page": 100},
-		headers=headers,
-	)
 	repositories = []
-	for repository in response.json()["repositories"]:
-		repositories.append(
-			{
-				"id": repository["id"],
-				"name": repository["name"],
-				"private": repository["private"],
-				"url": repository["html_url"],
-			}
+	current_page, is_last_page = 1, False
+	while not is_last_page:
+		response = requests.get(
+			f"https://api.github.com/user/installations/{installation}/repositories",
+			params={"per_page": 100, "page": current_page},
+			headers=headers,
 		)
+		if len(response.json()["repositories"]) < 100:
+			is_last_page = True
+
+		for repository in response.json()["repositories"]:
+			repositories.append(
+				{
+					"id": repository["id"],
+					"name": repository["name"],
+					"private": repository["private"],
+					"url": repository["html_url"],
+				}
+			)
+		current_page += 1
+
 	return repositories
 
 
