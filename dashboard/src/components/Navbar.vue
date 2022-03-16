@@ -158,18 +158,6 @@ export default {
 			mobileMenuOpen: false,
 			dropdownItems: [
 				{
-					label: 'New Bench',
-					action: () => this.$router.push('/benches/new')
-				},
-				{
-					label: 'Settings',
-					action: () => this.$router.push('/account')
-				},
-				{
-					label: 'Support',
-					action: () => window.open('/support/tickets', '_blank')
-				},
-				{
 					label: 'Logout',
 					action: () => this.$auth.logout()
 				}
