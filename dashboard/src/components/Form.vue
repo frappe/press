@@ -68,7 +68,7 @@ export default {
 				type: this.getInputType(field),
 				options: field.options,
 				name: field.fieldname,
-				value: this.values[field.fieldname],
+				modelValue: this.values[field.fieldname],
 				disabled: field.disabled,
 				required: field.required || false,
 				rows: field.rows,
