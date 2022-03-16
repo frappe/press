@@ -1,0 +1,74 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2022-03-15 09:57:50.938387",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "app",
+  "title",
+  "frappe_sources",
+  "section_break_1",
+  "app_versions"
+ ],
+ "fields": [
+  {
+   "fieldname": "app",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "App",
+   "options": "App",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "app.title",
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Title",
+   "reqd": 1
+  },
+  {
+   "fieldname": "frappe_sources",
+   "fieldtype": "Table",
+   "label": "Frappe Sources",
+   "options": "Marketplace App Version"
+  },
+  {
+   "fieldname": "app_versions",
+   "fieldtype": "Table",
+   "label": "App Versions",
+   "options": "Saas App Version"
+  },
+  {
+   "fieldname": "section_break_1",
+   "fieldtype": "Section Break"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2022-03-15 12:35:00.206450",
+ "modified_by": "Administrator",
+ "module": "Saas",
+ "name": "Saas App",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "title"
+}
