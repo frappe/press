@@ -1,5 +1,5 @@
 <template>
-	<div>
+	<div v-if="app">
 		<MarketplaceAppReleaseList :app="app" />
 	</div>
 </template>

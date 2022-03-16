@@ -25,7 +25,10 @@
 			your plan now.
 		</Alert>
 
-		<div class="grid grid-cols-1 gap-5 sm:grid-cols-2" v-if="overview.data">
+		<div
+			class="grid grid-cols-1 gap-5 sm:grid-cols-2"
+			v-if="site && overview.data"
+		>
 			<SiteOverviewCPUUsage :site="site" />
 			<SiteOverviewRecentActivity
 				:site="site"
