@@ -1,0 +1,44 @@
+---
+- name: Download Plausible Self Hosting Archive
+  become: yes
+  become_user: frappe
+  unarchive:
+    src: https://github.com/plausible/hosting/archive/master.tar.gz
+    dest: /tmp
+    remote_src: yes
+
+- name: Create Plausible Directory
+  become: yes
+  become_user: frappe
+  copy:
+    src: /tmp/hosting-master/
+    dest: /home/frappe/plausible
+    remote_src: yes
+
+- name: Create Plausible Environment File
+  become: yes
+  become_user: frappe
+  template:
+    src: plausible-conf.env
+    dest: /home/frappe/plausible/plausible-conf.env
+
+- name: Install Docker Compose
+  get_url:
+    url: https://github.com/docker/compose/releases/download/v2.3.3/docker-compose-linux-x86_64
+    checksum: sha256:d31e90dda58e21a6463cb918868421b4b58c32504b01b1612d154fe6a9167a91
+    dest: /usr/local/bin/docker-compose
+    mode: 0777
+
+- name: Start Plausible
+  become: yes
+  become_user: frappe
+  command: docker-compose up -d
+  args:
+    chdir: /home/frappe/plausible
+
+- name: Setup NGINX Proxy for Plausible
+  become: yes
+  become_user: frappe
+  command: /home/frappe/agent/env/bin/agent setup analytics
+  args:
+    chdir: /home/frappe/agent
