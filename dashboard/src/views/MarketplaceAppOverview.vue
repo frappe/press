@@ -1,5 +1,5 @@
 <template>
-	<div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+	<div class="grid grid-cols-1 gap-5 md:grid-cols-2" v-if="app">
 		<MarketplaceAppProfile :app="app" />
 		<MarketplaceAppLinks :app="app" />
 		<MarketplaceAppDescriptions :app="app" />
