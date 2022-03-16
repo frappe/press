@@ -8,7 +8,9 @@
 						type="primary"
 						iconLeft="plus"
 						@click="
-							!appOptions.data ? appOptions.fetch() : null;
+							!$resources.appOptions.data
+								? $resources.appOptions.fetch()
+								: null;
 							showAddAppDialog = true;
 						"
 					>
@@ -23,12 +25,14 @@
 			:dismissable="true"
 			v-model="showAddAppDialog"
 		>
-			<Loading class="py-2" v-if="appOptions.loading" />
+			<Loading class="py-2" v-if="$resources.appOptions.loading" />
 			<AppSourceSelector
-				v-else-if="appOptions.data && appOptions.data.length > 0"
+				v-else-if="
+					$resources.appOptions.data && $resources.appOptions.data.length > 0
+				"
 				class="mt-1"
 				:apps="availableApps"
-				:value.sync="selectedApp"
+				v-model="selectedApp"
 				:multiple="false"
 			/>
 			<p v-else class="text-base">No app sources available.</p>
@@ -37,9 +41,9 @@
 					type="primary"
 					class="ml-2"
 					v-if="selectedApp"
-					:loading="addMarketplaceApp.loading"
+					:loading="$resources.addMarketplaceApp.loading"
 					@click="
-						addMarketplaceApp.submit({
+						$resources.addMarketplaceApp.submit({
 							source: selectedApp.source.name,
 							app: selectedApp.app
 						})
@@ -101,7 +105,7 @@ export default {
 	},
 	computed: {
 		availableApps() {
-			return this.appOptions.data;
+			return this.$resources.appOptions.data;
 		}
 	},
 	activated() {
