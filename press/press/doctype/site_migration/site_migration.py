@@ -304,6 +304,7 @@ class SiteMigration(Document):
 		site.remote_database_file = backup.remote_database_file
 		site.remote_public_file = backup.remote_public_file
 		site.remote_private_file = backup.remote_private_file
+		site.remote_config_file = "" # Use site config from press only
 		site.bench = self.destination_bench
 		site.cluster = self.destination_cluster
 		site.server = self.destination_server
