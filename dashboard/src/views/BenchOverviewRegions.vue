@@ -43,9 +43,9 @@
 				<Button
 					type="primary"
 					v-if="selectedRegion"
-					:loading="addRegion.loading"
+					:loading="$resources.addRegion.loading"
 					@click="
-						addRegion.submit({
+						$resources.addRegion.submit({
 							name: bench.name,
 							region: selectedRegion
 						})
