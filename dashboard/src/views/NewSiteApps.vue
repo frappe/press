@@ -115,7 +115,7 @@ export default {
 	name: 'Apps',
 	emits: [
 		'update:selectedApps',
-		'update:selectedVersion',
+		'update:selectedGroup',
 		'update:selectedRegion',
 		'update:shareDetailsConsent'
 	],
