@@ -262,18 +262,18 @@ export default {
 				};
 			});
 
-			let values = {};
+			let modelValue = {};
 			for (let d of this.$resources.siteConfig.data) {
 				let value = d.value;
 				if (['Boolean', 'Number'].includes(d.type)) {
 					value = Number(value);
 				}
-				values[d.key] = value;
+				modelValue[d.key] = value;
 			}
 
 			return {
 				fields,
-				values
+				modelValue
 			};
 		},
 		NotAllowed() {
