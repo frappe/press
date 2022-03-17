@@ -33,7 +33,11 @@
   "plausible_mail_port",
   "column_break_27",
   "plausible_mail_login",
-  "plausible_mail_password"
+  "plausible_mail_password",
+  "google_search_console_section",
+  "google_client_id",
+  "column_break_32",
+  "google_client_secret"
  ],
  "fields": [
   {
@@ -221,6 +225,27 @@
    "fieldtype": "Data",
    "label": "Plausible Mail Login",
    "set_only_once": 1
+  },
+  {
+   "fieldname": "google_search_console_section",
+   "fieldtype": "Section Break",
+   "label": "Google Search Console"
+  },
+  {
+   "fieldname": "google_client_id",
+   "fieldtype": "Data",
+   "label": "Google Client ID",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "column_break_32",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "google_client_secret",
+   "fieldtype": "Password",
+   "label": "Google Client Secret",
+   "set_only_once": 1
   }
  ],
  "links": [
@@ -229,7 +254,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2022-03-16 19:56:08.557297",
+ "modified": "2022-03-17 09:52:15.942657",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Analytics Server",

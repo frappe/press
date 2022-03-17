@@ -57,6 +57,8 @@ class AnalyticsServer(BaseServer):
 					"plausible_mail_port": self.plausible_mail_port,
 					"plausible_mail_login": self.plausible_mail_login,
 					"plausible_mail_password": self.get_password("plausible_mail_password"),
+					"google_client_id": self.google_client_id,
+					"google_client_secret": self.get_password("google_client_secret"),
 					"monitoring_password": self.get_password("monitoring_password"),
 					"private_ip": self.private_ip,
 					"certificate_private_key": certificate.private_key,
