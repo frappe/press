@@ -20,6 +20,7 @@ import AlertBillingInformation from '@/components/AlertBillingInformation.vue';
 
 export default {
 	name: 'Plans',
+	emits: ['update:selectedPlan'],
 	props: ['options', 'selectedPlan'],
 	components: {
 		SitePlansTable,

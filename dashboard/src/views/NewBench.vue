@@ -51,7 +51,7 @@
 					<div class="mt-4">
 						<AppSourceSelector
 							:apps="selectedVersion.apps"
-							:value.sync="selectedApps"
+							v-model="selectedApps"
 							:multiple="true"
 						/>
 					</div>

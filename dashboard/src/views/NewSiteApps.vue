@@ -113,6 +113,12 @@ export default {
 		RichSelect
 	},
 	name: 'Apps',
+	emits: [
+		'update:selectedApps',
+		'update:selectedVersion',
+		'update:selectedRegion',
+		'update:shareDetailsConsent'
+	],
 	props: [
 		'options',
 		'selectedApps',

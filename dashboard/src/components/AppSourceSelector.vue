@@ -39,6 +39,7 @@
 export default {
 	name: 'AppSourceSelector',
 	props: ['apps', 'modelValue', 'multiple'],
+	emits: ['update:modelValue'],
 	methods: {
 		toggleApp(appName) {
 			let mapApp = app => ({ app: app.name, source: app.source });
