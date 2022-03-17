@@ -54,6 +54,7 @@ class StorageIntegrationSubscription(Document):
 		self.minio_server_on = frappe.db.get_value("Server", server, "proxy_server")
 
 	def create_user(self):
+		print("Creating Userssssssss")
 		agent = Agent(server_type=self.SERVER_TYPE, server=self.minio_server_on)
 		data = {
 			"access_key": self.access_key,
@@ -64,33 +65,30 @@ class StorageIntegrationSubscription(Document):
 
 		return agent.create_agent_job(
 			"Create Minio User",
-			"minio/create",
+			"minio/users",
+			method="POST",
 			data=data,
 		)
 
-	def update_user(self, op_type):
+	def toggle_user(self, action):
 		"""
 		param op_type: type of operation 'enable' or 'disable'
 		"""
-		data = {"username": self.access_key, "type": op_type}
 		agent = Agent(server_type=self.SERVER_TYPE, server=self.minio_server_on)
 
 		return agent.create_agent_job(
-			f"{op_type.capitalize()} Minio User",
-			"minio/update",
-			data=data,
+			f"{action.capitalize()} Minio User",
+			path=f"/minio/users/{self.access_key}/toggle/{action}",
+			method="POST",
 		)
 
 	def remove_user(self):
-		data = {
-			"username": self.access_key,
-		}
 		agent = Agent(server_type=self.SERVER_TYPE, server=self.minio_server_on)
 
 		return agent.create_agent_job(
 			"Remove Minio User",
-			"minio/remove",
-			data=data,
+			method="DELETE",
+			path=f"minio/users/{self.access_key}",
 		)
 
 
@@ -140,7 +138,7 @@ def monitor_storage():
 		# TODO: Add size_name index change when there are very higher plans
 		if unit_u == unit_l and usage >= int(limit):
 			# send emails maybe?
-			doc.update_user("disable")
+			doc.toggle_user("disable")
 			doc.enabled = 0
 		else:
 			doc.usage = f"{usage} {unit_u}"
@@ -172,14 +170,14 @@ def convert_size(size_bytes):
 
 
 @frappe.whitelist()
-def update_user_status(docname, status):
+def toggle_user_status(docname, status):
 	doc = frappe.get_doc("Storage Integration Subscription", docname)
 	status = int(status)
 
 	if status == 0:
-		doc.update_user("disable")
+		doc.toggle_user("disable")
 	elif status == 1:
-		doc.update_user("enable")
+		doc.toggle_user("enable")
 
 	frappe.db.commit()
 
