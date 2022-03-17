@@ -54,7 +54,6 @@ class StorageIntegrationSubscription(Document):
 		self.minio_server_on = frappe.db.get_value("Server", server, "proxy_server")
 
 	def create_user(self):
-		print("Creating Userssssssss")
 		agent = Agent(server_type=self.SERVER_TYPE, server=self.minio_server_on)
 		data = {
 			"access_key": self.access_key,
