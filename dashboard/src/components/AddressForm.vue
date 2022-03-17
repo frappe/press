@@ -1,11 +1,6 @@
 <template>
 	<div>
-		<Form
-			class="mt-4"
-			:fields="fields"
-			:values="address"
-			@update:values="$emit('update:address', $event)"
-		/>
+		<Form class="mt-4" :fields="fields" v-model="address" />
 		<div class="mt-4" v-show="address.country == 'India'">
 			<Input
 				type="text"
