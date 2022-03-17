@@ -22,10 +22,10 @@
 					:options="options"
 					v-show="activeStep.name === 'Apps'"
 					:privateBench="privateBench"
-					:selectedApps.sync="selectedApps"
-					:selectedGroup.sync="selectedGroup"
-					:selectedRegion.sync="selectedRegion"
-					:shareDetailsConsent.sync="shareDetailsConsent"
+					v-model:selectedApps="selectedApps"
+					v-model:selectedGroup="selectedGroup"
+					v-model:selectedRegion="selectedRegion"
+					v-model:shareDetailsConsent="shareDetailsConsent"
 				/>
 
 				<div v-if="activeStep.name === 'Select App Plans'">
@@ -41,12 +41,12 @@
 
 				<Restore
 					:options="options"
-					:selectedFiles.sync="selectedFiles"
-					:skipFailingPatches.sync="skipFailingPatches"
+					v-model:selectedFiles="selectedFiles"
+					v-model:skipFailingPatches="skipFailingPatches"
 					v-show="activeStep.name == 'Restore'"
 				/>
 				<Plans
-					:selectedPlan.sync="selectedPlan"
+					v-model:selectedPlan="selectedPlan"
 					:options="options"
 					v-show="activeStep.name === 'Plan'"
 				/>

@@ -120,7 +120,7 @@
 		<Dialog title="Restore" v-model="showRestoreDialog">
 			<div class="space-y-4">
 				<p class="text-base">Restore your database using a previous backup.</p>
-				<BackupFilesUploader :backupFiles.sync="selectedFiles" />
+				<BackupFilesUploader v-model:backupFiles="selectedFiles" />
 			</div>
 			<div class="mt-3">
 				<!-- Skip Failing Checkbox -->

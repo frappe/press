@@ -88,7 +88,7 @@
 
 		<ChangeAppBranchDialog
 			:bench="bench.name"
-			:app.sync="appToChangeBranchOf"
+			v-model:app="appToChangeBranchOf"
 		/>
 	</Card>
 </template>
