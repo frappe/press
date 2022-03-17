@@ -1454,7 +1454,7 @@
 	"parent": null,
 	"parentfield": null,
 	"parenttype": null,
-  "request_path": "/minio/users/{self.access_key}/toggle/{action}",
+  "request_path": "/minio/users/{username}/toggle/{action}",
   "request_method": "POST",
   "doctype": "Agent Job Type",
   "steps": [
@@ -1473,7 +1473,7 @@
 	"parent": null,
 	"parentfield": null,
 	"parenttype": null,
-  "request_path": "/minio/users/{self.access_key}/toggle/{action}",
+  "request_path": "/minio/users/{username}/toggle/{action}",
   "request_method": "POST",
   "doctype": "Agent Job Type",
   "steps": [
