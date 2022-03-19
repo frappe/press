@@ -1,0 +1,68 @@
+<template>
+	<nav class="border-b bg-white">
+		<div class="z-10 mx-auto md:container">
+			<div class="flex h-16 items-center justify-between px-4 sm:px-8">
+				<div class="flex items-center">
+					<div class="shrink-0">
+						<router-link to="/"> App Switcher </router-link>
+					</div>
+				</div>
+
+				<div class="relative ml-3">
+					<Dropdown :items="dropdownItems" right>
+						<template v-slot="{ toggleDropdown }">
+							<button
+								class="focus:shadow-solid flex max-w-xs items-center rounded-full text-sm text-white focus:outline-none"
+								id="user-menu"
+								aria-label="User menu"
+								aria-haspopup="true"
+								@click="toggleDropdown()"
+							>
+								<Avatar
+									v-if="$account.user"
+									:label="$account.user.first_name"
+									:imageURL="$account.user.user_image"
+								/>
+							</button>
+						</template>
+					</Dropdown>
+				</div>
+			</div>
+		</div>
+	</nav>
+</template>
+
+<script>
+export default {
+	name: 'SaasNavbar',
+	data() {
+		return {
+			mobileMenuOpen: false,
+			dropdownItems: [
+				{
+					label: 'Settings',
+					action: () => this.$router.push('/saas/account')
+				},
+				{
+					label: 'Support',
+					action: () => window.open('/support/tickets', '_blank')
+				},
+				{
+					label: 'Logout',
+					action: () => this.$auth.logout()
+				}
+			]
+		};
+	},
+	resources: {
+		apps() {
+			return {
+				method: 'press.api.saas.get_apps',
+				onSuccess(r) {
+					console.log(r);
+				}
+			};
+		}
+	}
+};
+</script>
