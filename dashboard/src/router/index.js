@@ -5,6 +5,7 @@ import auth from '../controllers/auth';
 import Home from '../views/Home.vue';
 
 import siteRoutes from './site';
+import saasRoutes from './saas';
 import benchRoutes from './bench';
 import accountRoute from './account';
 import authRoutes from './auth';
@@ -26,6 +27,7 @@ const routes = [
 	...authRoutes,
 	...benchRoutes,
 	...siteRoutes,
+	...saasRoutes,
 	...marketplaceRoutes,
 	accountRoute
 ];
