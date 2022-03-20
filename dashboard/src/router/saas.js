@@ -20,8 +20,8 @@ export default [
 		component: () => import('../views/saas/SaasUpgrade.vue')
 	},
 	{
-		path: '/saas/settings',
-		name: 'SaasSettings',
-		component: () => import('../views/saas/SaasSettings.vue')
+		path: '/saas/setting',
+		name: 'SaasSetting',
+		component: () => import('../views/saas/SaasSetting.vue')
 	}
 ];
