@@ -1,7 +1,7 @@
 <template>
-	<div class="mt-8 flex gap-5 flex-1 flex-row">
-		<AccountProfile class="flex-1"/>
-		<AccountActions class="flex-1"/>
+	<div class="mt-8 flex flex-1 flex-row gap-5">
+		<AccountProfile class="flex-1" />
+		<AccountActions class="flex-1" />
 	</div>
 </template>
 
@@ -13,7 +13,7 @@ export default {
 	name: 'SaasSetting',
 	components: {
 		AccountProfile,
-		AccountActions,
+		AccountActions
 	}
-}
+};
 </script>
