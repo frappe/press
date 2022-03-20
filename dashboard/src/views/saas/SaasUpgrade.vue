@@ -7,11 +7,12 @@
 		<div class="mt-4 flex">
 			<div
 				v-for="plan in plansData"
-				v-bind:key="plan.plan"
+				:key="plan.plan"
 				class="relative relative mx-2 mt-2 flex-1 cursor-pointer rounded-2xl border border-gray-100 p-5 shadow hover:border-gray-300"
 			>
-			<h3>{{ plan.plan }}</h3></br>
-				<span v-if="plan.price_usd > 0" class="font-semibold text-2xl">
+				<h3>{{ plan.plan }}</h3>
+				<br />
+				<span v-if="plan.price_usd > 0" class="text-2xl font-semibold">
 					{{
 						$planTitle({
 							price_usd: plan.price_usd,
@@ -22,7 +23,11 @@
 				</span>
 
 				<ul class="mt-5 space-y-2 text-sm text-gray-700">
-					<li v-for="feature in plan.features" class="flex flex-row justify-items-center">
+					<li
+						v-for="feature in plan.features"
+						:key="feature"
+						class="flex flex-row justify-items-center"
+					>
 						<div
 							class="mr-2 grid h-4 w-4 shrink-0 place-items-center rounded-full border border-green-500 bg-green-50"
 						>
@@ -63,7 +68,7 @@ export default {
 			method: 'press.api.saas.get_plans',
 			auto: true,
 			onSuccess(r) {
-				this.plansData = r
+				this.plansData = r;
 			}
 		}
 	}
