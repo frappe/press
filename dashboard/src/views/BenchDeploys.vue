@@ -124,7 +124,9 @@ export default {
 	},
 	methods: {
 		onSteps(data) {
-			this.$resources.selectedCandidate.data.build_steps = data.steps;
+			if (this.$resources.selectedCandidate.data) {
+				this.$resources.selectedCandidate.data.build_steps = data.steps;
+			}
 		},
 		onStopped() {
 			this.$resources.candidates.reset();
