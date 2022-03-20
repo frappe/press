@@ -41,7 +41,7 @@ export default {
 			dropdownItems: [
 				{
 					label: 'Settings',
-					action: () => this.$router.push('/saas/account')
+					action: () => this.$router.push('/saas/setting')
 				},
 				{
 					label: 'Support',
