@@ -4,6 +4,7 @@
 import json
 import boto3
 import frappe
+import math
 from frappe.utils.password import get_decrypted_password
 from hashlib import blake2b
 from press.agent import Agent
@@ -63,33 +64,30 @@ class StorageIntegrationSubscription(Document):
 
 		return agent.create_agent_job(
 			"Create Minio User",
-			"minio/create",
+			"minio/users",
+			method="POST",
 			data=data,
 		)
 
-	def update_user(self, op_type):
+	def toggle_user(self, action):
 		"""
 		param op_type: type of operation 'enable' or 'disable'
 		"""
-		data = {"username": self.access_key, "type": op_type}
 		agent = Agent(server_type=self.SERVER_TYPE, server=self.minio_server_on)
 
 		return agent.create_agent_job(
-			f"{op_type.capitalize()} Minio User",
-			"minio/update",
-			data=data,
+			f"{action.capitalize()} Minio User",
+			path=f"/minio/users/{self.access_key}/toggle/{action}",
+			method="POST",
 		)
 
 	def remove_user(self):
-		data = {
-			"username": self.access_key,
-		}
 		agent = Agent(server_type=self.SERVER_TYPE, server=self.minio_server_on)
 
 		return agent.create_agent_job(
 			"Remove Minio User",
-			"minio/remove",
-			data=data,
+			method="DELETE",
+			path=f"minio/users/{self.access_key}",
 		)
 
 
@@ -114,7 +112,8 @@ def create_after_insert(doc, method):
 
 		setup(doc.site)
 
-	frappe.db.commit()
+
+size_name = ("B", "KB", "MB", "GB", "TB", "PB")
 
 
 def monitor_storage():
@@ -127,18 +126,21 @@ def monitor_storage():
 	)
 
 	for sub in active_subs:
-		size = get_size("bucket_name", sub["site"], access_key, secret_key)
+		usage, unit_u = get_size("bucket_name", sub["site"], access_key, secret_key)
 		# not used yet
-		if size == 0:
+		if usage == 0:
 			break
 
 		doc = frappe.get_doc("Storage Integration Subscription", sub["name"])
-		if doc.usage > doc.limit:
+		limit, unit_l = doc.limit.split(" ")
+
+		# TODO: Add size_name index change when there are very higher plans
+		if unit_u == unit_l and usage >= int(limit):
 			# send emails maybe?
-			doc.update_user("disable")
+			doc.toggle_user("disable")
 			doc.enabled = 0
 		else:
-			doc.usage = size
+			doc.usage = f"{usage} {unit_u}"
 
 		doc.save()
 		frappe.db.commit()
@@ -154,17 +156,45 @@ def get_size(bucket, path, access_key, secret_key):
 	for obj in my_bucket.objects.filter(Prefix=path):
 		total_size = total_size + obj.size
 
-	return total_size
+	return convert_size(total_size)
+
+
+def convert_size(size_bytes):
+	if size_bytes == 0:
+		return 0, "B"
+	i = int(math.floor(math.log(size_bytes, 1024)))
+	p = math.pow(1024, i)
+	s = round(size_bytes / p, 2)
+	return s, size_name[i]
 
 
 @frappe.whitelist()
-def update_user_status(docname, status):
+def toggle_user_status(docname, status):
 	doc = frappe.get_doc("Storage Integration Subscription", docname)
 	status = int(status)
 
 	if status == 0:
-		doc.update_user("disable")
+		doc.toggle_user("disable")
 	elif status == 1:
-		doc.update_user("enable")
+		doc.toggle_user("enable")
 
 	frappe.db.commit()
+
+
+@frappe.whitelist(allow_guest=True)
+def get_analytics(**data):
+	from press.api.developer.marketplace import get_subscription_status
+
+	if get_subscription_status(data["secret_key"]) != "Active":
+		return
+
+	site, available = frappe.db.get_value(
+		"Storage Integration Subscription", data["access_key"], ["site", "limit"]
+	)
+	access_key = frappe.db.get_value("Add On Settings", None, "aws_access_key")
+	secret_key = get_decrypted_password(
+		"Add On Settings", "Add On Settings", "aws_secret_key"
+	)
+	used, unit_u = get_size(data["bucket"], site, access_key, secret_key)
+
+	return {"used": f"{used} {unit_u}", "available": available}

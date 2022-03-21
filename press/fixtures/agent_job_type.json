@@ -1404,7 +1404,7 @@
 	"parent": null,
 	"parentfield": null,
 	"parenttype": null,
-	"request_path": "/minio/create",
+	"request_path": "/minio/users",
 	"request_method": "POST",
 	"doctype": "Agent Job Type",
 	"steps": [
@@ -1435,8 +1435,8 @@
 	"parent": null,
 	"parentfield": null,
 	"parenttype": null,
-	"request_path": "/minio/remove",
-	"request_method": "POST",
+	"request_path": "/minio/users/{username}",
+	"request_method": "DELETE",
 	"doctype": "Agent Job Type",
 	"steps": [
   {
@@ -1454,7 +1454,7 @@
 	"parent": null,
 	"parentfield": null,
 	"parenttype": null,
-  "request_path": "/minio/update",
+  "request_path": "/minio/users/{username}/toggle/{action}",
   "request_method": "POST",
   "doctype": "Agent Job Type",
   "steps": [
@@ -1473,7 +1473,7 @@
 	"parent": null,
 	"parentfield": null,
 	"parenttype": null,
-  "request_path": "/minio/update",
+  "request_path": "/minio/users/{username}/toggle/{action}",
   "request_method": "POST",
   "doctype": "Agent Job Type",
   "steps": [
