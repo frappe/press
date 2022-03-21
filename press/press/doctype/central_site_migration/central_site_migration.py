@@ -58,8 +58,8 @@ class CentralSiteMigration(Document):
 			else:
 				self.fail()
 		except Exception:
-			self.fail()
 			log_error("Central Site Migration Exception", migration=self.as_dict())
+			self.fail()
 		self.save()
 
 	def fail(self):
