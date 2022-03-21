@@ -360,6 +360,16 @@ def archive_obsolete_benches():
 		if active_archival_jobs:
 			continue
 
+		active_site_updates = frappe.db.exists(
+			"Site Update",
+			{
+				"destination_bench": bench.name,
+				"status": ("in", ["Pending", "Running"]),
+			},
+		)
+		if active_site_updates:
+			continue
+
 		# Don't try archiving benches with sites
 		if frappe.db.count("Site", {"bench": bench.name, "status": ("!=", "Archived")}):
 			continue
