@@ -71,7 +71,10 @@ Now look what you did!
 
 [Central Site Migration]({domain}{self.get_url()})
 """
-		telegram = Telegram()
+		chat_id = (
+			frappe.db.get_value("Press Settings", "Press Settings", "telegram_alert_chat_id"),
+		)
+		telegram = Telegram(chat_id)
 		telegram.send(message)
 
 
