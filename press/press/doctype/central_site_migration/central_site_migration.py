@@ -30,7 +30,7 @@ class CentralSiteMigration(Document):
 	def start(self):
 		self.status = "Pending"
 		self.save()
-		frappe.enqueue_doc(self.doctype, self.name, "_start", queue="short")
+		frappe.enqueue_doc(self.doctype, self.name, "_start", queue="long")
 
 	def _start(self):
 		try:
