@@ -14,3 +14,10 @@
     - role: mysqld_exporter
     - role: filebeat
     - role: clamav
+    - role: gpg_config
+    - role: aide
+    - role: additional_process_hardening
+    - role: warning_banners
+    - role: auditd
+    - role: sshd_hardening
+    - role: pam
