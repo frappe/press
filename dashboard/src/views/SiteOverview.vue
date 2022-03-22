@@ -1,5 +1,61 @@
+<script setup>
+import AlertSiteActivation from '@/components/AlertSiteActivation.vue';
+import AlertSiteUpdate from '@/components/AlertSiteUpdate.vue';
+import SiteOverviewCPUUsage from './SiteOverviewCPUUsage.vue';
+import SiteOverviewRecentActivity from './SiteOverviewRecentActivity.vue';
+import SiteOverviewPlan from './SiteOverviewPlan.vue';
+import SiteOverviewInfo from './SiteOverviewInfo.vue';
+import SiteOverviewApps from './SiteOverviewApps.vue';
+import SiteOverviewDomains from './SiteOverviewDomains.vue';
+import SiteOverviewAppSubscriptions from './SiteOverviewAppSubscriptions.vue';
+
+import { computed } from 'vue';
+import { DateTime } from 'luxon';
+import useResource from '@/composables/resource';
+
+const props = defineProps({ site: Object });
+
+const overview = useResource({
+	method: 'press.api.site.overview',
+	params: { name: props.site?.name },
+	keepData: true,
+	auto: true
+});
+
+const closeToLimits = computed(() => {
+	if (!(props.site && overview.data)) return false;
+	let usage = overview.data.plan.usage_in_percent;
+	return [usage.cpu, usage.database, usage.disk].some(x => 100 >= x && x > 80);
+});
+
+const limitExceeded = computed(() => {
+	if (!(props.site && overview.data)) return false;
+	let usage = overview.data.plan.usage_in_percent;
+	return [usage.cpu, usage.database, usage.disk].some(x => x > 100);
+});
+
+const isInTrial = computed(() => {
+	return props.site?.trial_end_date;
+});
+
+const trialEndsInDaysText = computed(() => {
+	if (!props.site?.trial_end_date) {
+		return 0;
+	}
+	let diff = this.$date(props.site.trial_end_date)
+		.diff(DateTime.local(), ['days'])
+		.toObject();
+
+	let days = diff.days;
+	if (days > 1) {
+		return `in ${Math.floor(days)} days`;
+	}
+	return 'in a day';
+});
+</script>
+
 <template>
-	<div class="space-y-5">
+	<div class="space-y-5" v-if="site">
 		<AlertSiteActivation :site="site" />
 		<AlertSiteUpdate :site="site" />
 		<Alert title="Trial" v-if="isInTrial && $account.needsCard">
@@ -37,91 +93,17 @@
 			<SiteOverviewPlan
 				:site="site"
 				:plan="overview.data.plan"
-				@plan-change="$resources.overview.reload()"
+				@plan-change="overview.reload()"
 			/>
 			<SiteOverviewInfo :site="site" :info="overview.data.info" />
 			<SiteOverviewAppSubscriptions class="md:col-span-2" :site="site" />
 			<SiteOverviewApps
 				:site="site"
 				:installedApps="overview.data.installed_apps"
-				@app-installed="$resources.overview.reload()"
-				@app-uninstalled="$resources.overview.reload()"
+				@app-installed="overview.reload()"
+				@app-uninstalled="overview.reload()"
 			/>
 			<SiteOverviewDomains :site="site" />
 		</div>
 	</div>
 </template>
-
-<script>
-import AlertSiteActivation from '@/components/AlertSiteActivation.vue';
-import AlertSiteUpdate from '@/components/AlertSiteUpdate.vue';
-import SiteOverviewCPUUsage from './SiteOverviewCPUUsage.vue';
-import SiteOverviewRecentActivity from './SiteOverviewRecentActivity.vue';
-import SiteOverviewPlan from './SiteOverviewPlan.vue';
-import SiteOverviewInfo from './SiteOverviewInfo.vue';
-import SiteOverviewApps from './SiteOverviewApps.vue';
-import SiteOverviewDomains from './SiteOverviewDomains.vue';
-import SiteOverviewAppSubscriptions from './SiteOverviewAppSubscriptions.vue';
-
-import { DateTime } from 'luxon';
-
-export default {
-	name: 'SiteOverview',
-	props: ['site'],
-	components: {
-		AlertSiteActivation,
-		AlertSiteUpdate,
-		SiteOverviewCPUUsage,
-		SiteOverviewRecentActivity,
-		SiteOverviewPlan,
-		SiteOverviewInfo,
-		SiteOverviewApps,
-		SiteOverviewDomains,
-		SiteOverviewAppSubscriptions
-	},
-	resources: {
-		overview() {
-			return {
-				method: 'press.api.site.overview',
-				params: { name: this.site.name },
-				keepData: true,
-				auto: true
-			};
-		}
-	},
-	computed: {
-		overview() {
-			return this.$resources.overview;
-		},
-		closeToLimits() {
-			if (!(this.site && this.$resources.overview.data)) return false;
-			let usage = this.$resources.overview.data.plan.usage_in_percent;
-			return [usage.cpu, usage.database, usage.disk].some(
-				x => 100 >= x && x > 80
-			);
-		},
-		limitExceeded() {
-			if (!(this.site && this.$resources.overview.data)) return false;
-			let usage = this.$resources.overview.data.plan.usage_in_percent;
-			return [usage.cpu, usage.database, usage.disk].some(x => x > 100);
-		},
-		isInTrial() {
-			return this.site?.trial_end_date;
-		},
-		trialEndsInDaysText() {
-			if (!this.site?.trial_end_date) {
-				return 0;
-			}
-			let diff = this.$date(this.site.trial_end_date)
-				.diff(DateTime.local(), ['days'])
-				.toObject();
-
-			let days = diff.days;
-			if (days > 1) {
-				return `in ${Math.floor(days)} days`;
-			}
-			return 'in a day';
-		}
-	}
-};
-</script>
