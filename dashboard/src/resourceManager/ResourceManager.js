@@ -13,7 +13,9 @@ export default class ResourceManager {
 			let resourceDef = resourceDefs[key];
 			if (typeof resourceDef === 'function') {
 				this._watchers.push([
-					() => resourceDef.call(vm),
+					() => {
+						return resourceDef.call(vm);
+					},
 					(n, o) => this.updateResource(key, n, o),
 					{
 						immediate: true,
@@ -70,7 +72,7 @@ export default class ResourceManager {
 	}
 }
 
-class Resource {
+export class Resource {
 	constructor(vm, options = {}) {
 		if (typeof options == 'string') {
 			options = { method: options, auto: true };

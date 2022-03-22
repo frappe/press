@@ -82,7 +82,7 @@ export default {
 			return {
 				method: 'press.api.analytics.get',
 				params: {
-					name: this.site.name,
+					name: this.site?.name,
 					timezone: localTimezone
 				},
 				auto: true

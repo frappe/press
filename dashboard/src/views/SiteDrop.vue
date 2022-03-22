@@ -46,14 +46,14 @@ export default {
 			return {
 				method: 'press.api.site.archive',
 				params: {
-					name: this.site.name
+					name: this.site?.name
 				},
 				onSuccess() {
 					this.dialogOpen = false;
 					this.$router.push('/sites');
 				},
 				validate() {
-					if (this.site.name !== this.confirmSiteName) {
+					if (this.site?.name !== this.confirmSiteName) {
 						return 'Please type the site name to confirm';
 					}
 				}

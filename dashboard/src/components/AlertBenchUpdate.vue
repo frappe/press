@@ -57,7 +57,7 @@ export default {
 			return {
 				method: 'press.api.bench.deploy_information',
 				params: {
-					name: this.bench.name
+					name: this.bench?.name
 				},
 				auto: true
 			};
@@ -75,7 +75,7 @@ export default {
 			return {
 				method: 'press.api.bench.deploy',
 				params: {
-					name: this.bench.name,
+					name: this.bench?.name,
 					apps_to_ignore: appsToIgnore
 				},
 				validate() {

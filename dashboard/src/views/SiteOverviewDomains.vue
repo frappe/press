@@ -155,7 +155,7 @@ export default {
 		domains() {
 			return {
 				method: 'press.api.site.domains',
-				params: { name: this.site.name },
+				params: { name: this.site?.name },
 				auto: true
 			};
 		},
