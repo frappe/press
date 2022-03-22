@@ -71,12 +71,12 @@ export default {
 				method: 'frappe.client.set_value',
 				params: {
 					doctype: 'Release Group',
-					name: this.bench.name,
+					name: this.bench?.name,
 					fieldname: 'title',
 					value: this.benchTitle
 				},
 				validate() {
-					if (this.benchTitle === this.bench.title) {
+					if (this.benchTitle === this.bench?.title) {
 						return 'No changes in bench title';
 					}
 				},

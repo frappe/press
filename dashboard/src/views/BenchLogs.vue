@@ -48,7 +48,7 @@ export default {
 		logs() {
 			return {
 				method: 'press.api.bench.logs',
-				params: { name: this.bench.name, bench: this.instanceName },
+				params: { name: this.bench?.name, bench: this.instanceName },
 				auto: true
 			};
 		}

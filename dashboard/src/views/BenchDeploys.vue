@@ -82,7 +82,7 @@ export default {
 			return {
 				method: 'press.api.bench.candidates',
 				params: {
-					name: this.bench.name,
+					name: this.bench?.name,
 					start: this.pageStart
 				},
 				auto: true,

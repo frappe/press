@@ -112,7 +112,7 @@ export default {
 			return {
 				method: 'press.api.site.get_plans',
 				params: {
-					name: this.site.name
+					name: this.site?.name
 				},
 				default: []
 			};
@@ -121,7 +121,7 @@ export default {
 			return {
 				method: 'press.api.site.change_plan',
 				params: {
-					name: this.site.name,
+					name: this.site?.name,
 					plan: this.selectedPlan?.name
 				},
 				onSuccess() {

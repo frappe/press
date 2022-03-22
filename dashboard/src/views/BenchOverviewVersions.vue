@@ -54,7 +54,7 @@ export default {
 		versions() {
 			return {
 				method: 'press.api.bench.versions',
-				params: { name: this.bench.name },
+				params: { name: this.bench?.name },
 				auto: true
 			};
 		}

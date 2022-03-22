@@ -202,7 +202,7 @@ export default {
 			return {
 				method: 'press.api.site.get_auto_update_info',
 				params: {
-					name: this.site.name
+					name: this.site?.name
 				},
 				auto: true,
 				onSuccess(data) {
@@ -220,7 +220,7 @@ export default {
 			return {
 				method: 'press.api.site.enable_auto_update',
 				params: {
-					name: this.site.name
+					name: this.site?.name
 				},
 				onSuccess() {
 					this.$resources.getSiteAutoUpdateInfo.fetch();
@@ -231,7 +231,7 @@ export default {
 			return {
 				method: 'press.api.site.disable_auto_update',
 				params: {
-					name: this.site.name
+					name: this.site?.name
 				},
 				onSuccess() {
 					this.showEditDialog = false;
@@ -243,7 +243,7 @@ export default {
 			return {
 				method: 'press.api.site.update_auto_update_info',
 				params: {
-					name: this.site.name,
+					name: this.site?.name,
 					info: {
 						auto_updates_scheduled: this.autoUpdateEnabled,
 						update_trigger_frequency: this.updateFrequency,

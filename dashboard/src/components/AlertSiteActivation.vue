@@ -25,7 +25,7 @@ export default {
 	props: ['site'],
 	resources: {
 		loginAsAdmin() {
-			return loginAsAdmin(this.site.name);
+			return loginAsAdmin(this.site?.name);
 		}
 	}
 };

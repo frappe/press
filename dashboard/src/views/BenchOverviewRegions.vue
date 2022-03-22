@@ -76,7 +76,7 @@ export default {
 			return {
 				method: 'press.api.bench.regions',
 				params: {
-					name: this.bench.name
+					name: this.bench?.name
 				},
 				auto: true
 			};
@@ -85,7 +85,7 @@ export default {
 			return {
 				method: 'press.api.bench.available_regions',
 				params: {
-					name: this.bench.name
+					name: this.bench?.name
 				},
 				auto: true,
 				onSuccess(availableRegions) {

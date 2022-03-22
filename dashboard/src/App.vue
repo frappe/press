@@ -20,7 +20,7 @@
 									'MarketplaceApp'
 								]"
 							>
-								<component :is="Component" />
+								<component :is="Component" :key="$route.fullPath" />
 							</keep-alive>
 						</router-view>
 					</div>

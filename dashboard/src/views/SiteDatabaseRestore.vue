@@ -1,5 +1,6 @@
 <template>
 	<Card
+		v-if="site"
 		title="Restore, Migrate & Reset"
 		:subtitle="
 			site.status === 'Suspended'
@@ -185,7 +186,7 @@ export default {
 			return {
 				method: 'press.api.site.restore',
 				params: {
-					name: this.site.name,
+					name: this.site?.name,
 					files: this.selectedFiles,
 					skip_failing_patches: this.wantToSkipFailingPatches
 				},
@@ -196,7 +197,7 @@ export default {
 				},
 				onSuccess() {
 					this.selectedFiles = {};
-					this.$router.push(`/sites/${this.site.name}/installing`);
+					this.$router.push(`/sites/${this.site?.name}/installing`);
 					setTimeout(() => {
 						window.location.reload();
 					}, 1000);
@@ -207,10 +208,10 @@ export default {
 			return {
 				method: 'press.api.site.reinstall',
 				params: {
-					name: this.site.name
+					name: this.site?.name
 				},
 				onSuccess() {
-					this.$router.push(`/sites/${this.site.name}/installing`);
+					this.$router.push(`/sites/${this.site?.name}/installing`);
 					setTimeout(() => {
 						window.location.reload();
 					}, 1000);
@@ -221,12 +222,12 @@ export default {
 			return {
 				method: 'press.api.site.migrate',
 				params: {
-					name: this.site.name
+					name: this.site?.name
 				},
 				onSuccess() {
 					this.$router.push({
 						name: 'SiteOverview',
-						params: { site: this.site.name }
+						params: { site: this.site?.name }
 					});
 					setTimeout(() => {
 						window.location.reload();
@@ -238,12 +239,12 @@ export default {
 			return {
 				method: 'press.api.site.clear_cache',
 				params: {
-					name: this.site.name
+					name: this.site?.name
 				},
 				onSuccess() {
 					this.$router.push({
 						name: 'SiteOverview',
-						params: { site: this.site.name }
+						params: { site: this.site?.name }
 					});
 					setTimeout(() => {
 						window.location.reload();
@@ -254,7 +255,7 @@ export default {
 		current_plan() {
 			return {
 				method: 'press.api.site.current_plan',
-				params: { name: this.site.name },
+				params: { name: this.site?.name },
 				keepData: true,
 				auto: true
 			};

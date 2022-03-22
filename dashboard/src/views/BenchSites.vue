@@ -1,5 +1,6 @@
 <template>
 	<CardWithDetails
+		v-if="bench"
 		title="Versions"
 		subtitle="Deployed versions of your bench"
 		:showDetails="selectedVersion"
@@ -191,7 +192,7 @@ export default {
 		versions() {
 			return {
 				method: 'press.api.bench.versions',
-				params: { name: this.bench.name },
+				params: { name: this.bench?.name },
 				auto: true,
 				onSuccess() {
 					if (
@@ -207,14 +208,14 @@ export default {
 		getCertificate() {
 			return {
 				method: 'press.api.bench.certificate',
-				params: { name: this.bench.name },
+				params: { name: this.bench?.name },
 				auto: true
 			};
 		},
 		generateCertificate() {
 			return {
 				method: 'press.api.bench.generate_certificate',
-				params: { name: this.bench.name },
+				params: { name: this.bench?.name },
 				onSuccess() {
 					this.$resources.getCertificate.reload();
 				}

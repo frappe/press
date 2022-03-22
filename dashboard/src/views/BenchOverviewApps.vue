@@ -114,7 +114,7 @@ export default {
 			return {
 				method: 'press.api.bench.apps',
 				params: {
-					name: this.bench.name
+					name: this.bench?.name
 				},
 				auto: true
 			};
@@ -123,7 +123,7 @@ export default {
 			return {
 				method: 'press.api.bench.installable_apps',
 				params: {
-					name: this.bench.name
+					name: this.bench?.name
 				}
 			};
 		},

@@ -31,7 +31,7 @@ export default {
 			return {
 				method: 'press.api.bench.recent_deploys',
 				params: {
-					name: this.bench.name
+					name: this.bench?.name
 				},
 				auto: true
 			};

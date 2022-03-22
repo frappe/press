@@ -44,14 +44,14 @@ export default {
 			return {
 				method: 'press.api.bench.archive',
 				params: {
-					name: this.bench.name
+					name: this.bench?.name
 				},
 				onSuccess() {
 					this.dialogOpen = false;
 					this.$router.push('/sites');
 				},
 				validate() {
-					if (this.bench.title !== this.confirmBenchName) {
+					if (this.bench?.title !== this.confirmBenchName) {
 						return 'Please type the bench name correctly to confirm';
 					}
 				}
