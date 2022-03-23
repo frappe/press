@@ -4,7 +4,7 @@
 			<div class="flex">
 				<FrappeCloudLogo
 					class="mx-auto h-4 w-auto"
-					v-on:dblclick="redirect"
+					@dblclick="redirectForFrappeioAuth"
 				/>
 			</div>
 			<div
@@ -28,9 +28,8 @@ export default {
 		FrappeCloudLogo
 	},
 	methods: {
-		redirect() {
-			this.$router.push('/f-login');
-			this.$router.go();
+		redirectForFrappeioAuth() {
+			window.location = '/f-login';
 		}
 	}
 };
