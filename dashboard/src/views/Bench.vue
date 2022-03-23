@@ -24,9 +24,11 @@
 				</div>
 			</div>
 		</div>
-		<div class="px-4 sm:px-8" v-if="bench">
+		<div class="px-4 sm:px-8">
 			<Tabs class="pb-32" :tabs="tabs">
-				<router-view v-bind="{ bench }"></router-view>
+				<router-view v-slot="{ Component }">
+					<component v-if="bench" :is="Component" :bench="bench"></component>
+				</router-view>
 			</Tabs>
 		</div>
 	</div>
@@ -82,7 +84,9 @@ export default {
 	},
 	computed: {
 		bench() {
-			return this.$resources.bench.data;
+			if (this.$resources.bench.data && !this.$resources.bench.loading) {
+				return this.$resources.bench.data;
+			}
 		},
 		tabs() {
 			let tabRoute = subRoute => `/benches/${this.benchName}/${subRoute}`;

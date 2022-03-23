@@ -51,7 +51,7 @@
 					<div class="mt-4">
 						<AppSourceSelector
 							:apps="selectedVersion.apps"
-							:value.sync="selectedApps"
+							v-model="selectedApps"
 							:multiple="true"
 						/>
 					</div>
@@ -168,12 +168,15 @@ export default {
 				this.selectedApps = [{ app: frappeApp.name, source: frappeApp.source }];
 			});
 		},
-		selectedApps(newVal, oldVal) {
-			// dont remove frappe app
-			let hasFrappe = newVal.find(app => app.app === 'frappe');
-			if (!hasFrappe && oldVal) {
-				this.selectedApps = oldVal;
-			}
+		selectedApps: {
+			handler(newVal, oldVal) {
+				// dont remove frappe app
+				let hasFrappe = newVal.find(app => app.app === 'frappe');
+				if (!hasFrappe && oldVal) {
+					this.selectedApps = oldVal;
+				}
+			},
+			deep: true
 		}
 	},
 	methods: {

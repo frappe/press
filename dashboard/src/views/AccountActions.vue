@@ -47,7 +47,7 @@
 			</p>
 			<ErrorMessage class="mt-2" :error="$resources.disableAccount.error" />
 
-			<template slot="actions">
+			<template v-slot:actions>
 				<Button @click="showDisableAccountDialog = false">
 					Cancel
 				</Button>
@@ -73,7 +73,7 @@
 			</p>
 			<ErrorMessage class="mt-2" :error="$resources.enableAccount.error" />
 
-			<template slot="actions">
+			<template v-slot:actions>
 				<Button @click="showEnableAccountDialog = false">
 					Cancel
 				</Button>

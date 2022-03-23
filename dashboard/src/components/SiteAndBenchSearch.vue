@@ -19,7 +19,7 @@
 					toggleDropdown(false);
 					$refs.search.blur();
 				"
-				:value="searchText"
+				:modelValue="searchText"
 				@input="val => (searchText = val)"
 				placeholder="Search (Ctrl + /)"
 			/>
@@ -47,15 +47,19 @@ export default {
 		});
 	},
 	resources: {
-		allSites: {
-			method: 'press.api.site.search_list',
-			auto: true,
-			default: []
+		allSites() {
+			return {
+				method: 'press.api.site.search_list',
+				auto: true,
+				default: []
+			};
 		},
-		allBenches: {
-			method: 'press.api.bench.search_list',
-			auto: true,
-			default: []
+		allBenches() {
+			return {
+				method: 'press.api.bench.search_list',
+				auto: true,
+				default: []
+			};
 		}
 	},
 	methods: {

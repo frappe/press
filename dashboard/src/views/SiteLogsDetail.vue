@@ -51,7 +51,7 @@ export default {
 			return {
 				method: 'press.api.site.log',
 				params: {
-					name: this.site.name,
+					name: this.site?.name,
 					log: this.logName
 				},
 				auto: Boolean(this.logName)

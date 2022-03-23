@@ -7,6 +7,7 @@
 			{{ label }}
 		</span>
 		<input
+			v-bind="$attrs"
 			v-if="
 				['text', 'number', 'checkbox', 'email', 'password', 'date'].includes(
 					type
@@ -24,21 +25,20 @@
 			:type="type || 'text'"
 			:disabled="disabled"
 			:placeholder="placeholder"
-			v-bind="$attrs"
 			v-on="inputListeners"
-			:value="value"
+			:value="modelValue"
 		/>
 		<textarea
+			v-bind="$attrs"
 			v-if="type === 'textarea'"
 			:class="[
 				'form-textarea block w-full resize-none placeholder-gray-500',
 				inputClass
 			]"
 			ref="input"
-			:value="value"
+			:value="modelValue"
 			:disabled="disabled"
 			:placeholder="placeholder"
-			v-bind="$attrs"
 			v-on="inputListeners"
 			:rows="rows || 3"
 			@blur="$emit('blur', $event)"
@@ -54,7 +54,7 @@
 				v-for="option in selectOptions"
 				:key="option.value"
 				:value="option.value"
-				:selected="value === option.value"
+				:selected="modelValue === option.value"
 			>
 				{{ option.label }}
 			</option>
@@ -95,7 +95,7 @@ export default {
 				return isValid;
 			}
 		},
-		value: {
+		modelValue: {
 			type: [String, Number, Boolean, Object, Array]
 		},
 		inputClass: {
@@ -114,6 +114,7 @@ export default {
 			type: String
 		}
 	},
+	emits: ['blur', 'update:modelValue', 'change', 'input'],
 	methods: {
 		focus() {
 			this.$refs.input.focus();
@@ -131,14 +132,15 @@ export default {
 	},
 	computed: {
 		inputListeners() {
-			return Object.assign({}, this.$listeners, {
+			return {
 				input: e => {
+					this.$emit('update:modelValue', this.getInputValue(e));
 					this.$emit('input', this.getInputValue(e));
 				},
 				change: e => {
 					this.$emit('change', this.getInputValue(e));
 				}
-			});
+			};
 		},
 		selectOptions() {
 			return this.options.map(option => {

@@ -1,5 +1,5 @@
 <template>
-	<div class="space-y-5">
+	<div class="space-y-5" v-if="bench">
 		<AlertBenchUpdate :bench="bench" />
 		<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
 			<BenchOverviewInfo :bench="bench" />

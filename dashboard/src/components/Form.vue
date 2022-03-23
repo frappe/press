@@ -7,10 +7,10 @@
 		>
 			<div class="flex space-x-4" v-if="Array.isArray(field)">
 				<Input
+					v-bind="getBindProps(subfield)"
 					:key="subfield.fieldname"
 					class="w-full"
 					v-for="subfield in field"
-					v-bind="getBindProps(subfield)"
 					v-on="getBindListeners(subfield)"
 				/>
 			</div>
@@ -31,11 +31,8 @@
 <script>
 export default {
 	name: 'Form',
-	props: ['fields', 'values'],
-	model: {
-		event: 'change',
-		prop: 'values'
-	},
+	props: ['fields', 'modelValue'],
+	emits: ['update:modelValue'],
 	data() {
 		return {
 			requiredFieldNotSet: []
@@ -47,10 +44,10 @@ export default {
 			this.updateValue(field.fieldname, value);
 		},
 		updateValue(fieldname, value) {
-			let values = Object.assign({}, this.values, {
+			let values = Object.assign({}, this.modelValue, {
 				[fieldname]: value
 			});
-			this.$emit('change', values);
+			this.$emit('update:modelValue', values);
 		},
 		checkRequired(field, value) {
 			if (field.required) {
@@ -71,7 +68,7 @@ export default {
 				type: this.getInputType(field),
 				options: field.options,
 				name: field.fieldname,
-				value: this.values[field.fieldname],
+				modelValue: this.modelValue[field.fieldname],
 				disabled: field.disabled,
 				required: field.required || false,
 				rows: field.rows,

@@ -21,7 +21,7 @@
 				<ErrorMessage class="mt-2" :error="$resources.feedback.error" />
 				<Button
 					type="primary"
-					slot="actions"
+					v-slot:actions
 					@click="$resources.feedback.submit()"
 					:loading="$resources.feedback.loading"
 				>

@@ -1,7 +1,7 @@
 <template>
 	<Dialog
-		:show="show"
-		@change="$emit('update:show', $event)"
+		:modelValue="modelValue"
+		@update:modelValue="$emit('update:modelValue', $event)"
 		title="Buy Credits"
 		:subtitle="paymentGateway ? '' : 'Choose your payment gateway'"
 	>
@@ -9,7 +9,7 @@
 			v-if="paymentGateway === 'stripe'"
 			:minimumAmount="minimumAmount"
 			@success="$emit('success')"
-			@cancel="$emit('update:show', false)"
+			@cancel="$emit('update:modelValue', false)"
 		/>
 
 		<div v-if="paymentGateway === 'razorpay'">
@@ -90,13 +90,15 @@ export default {
 		}
 	},
 	props: {
-		show: {
+		modelValue: {
 			default: true
 		},
 		minimumAmount: {
+			type: Number,
 			default: 0
 		}
 	},
+	emits: ['update:modelValue', 'success'],
 	resources: {
 		createRazorpayOrder() {
 			return {
@@ -163,6 +165,11 @@ export default {
 
 		handlePaymentFailed(response) {
 			this.$resources.handlePaymentFailed.submit({ response });
+		}
+	},
+	watch: {
+		minimumAmount(amt) {
+			console.log(amt);
 		}
 	}
 };

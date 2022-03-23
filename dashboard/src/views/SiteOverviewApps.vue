@@ -122,14 +122,14 @@ export default {
 		availableApps() {
 			return {
 				method: 'press.api.site.available_apps',
-				params: { name: this.site.name }
+				params: { name: this.site?.name }
 			};
 		},
 		installApp() {
 			return {
 				method: 'press.api.site.install_app',
 				params: {
-					name: this.site.name,
+					name: this.site?.name,
 					app: this.appToInstall?.app,
 					plan: this.selectedPlan
 				},
@@ -148,6 +148,9 @@ export default {
 		}
 	},
 	methods: {
+		availableApps() {
+			return this.$resources.availableApps;
+		},
 		installApp(app) {
 			this.appToInstall = app;
 

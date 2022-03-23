@@ -13,7 +13,7 @@
 			</option>
 		</select>
 
-		<template slot="actions">
+		<template v-slot:actions>
 			<Button
 				:disabled="state === 'RequestStarted'"
 				type="primary"

@@ -37,6 +37,7 @@
 	</Dropdown>
 </template>
 <script>
+import { h } from 'vue';
 export default {
 	name: 'RichSelect',
 	props: ['options', 'value', 'placeholder'],
@@ -58,7 +59,7 @@ export default {
 	methods: {
 		getDropdownItemComponent(option) {
 			return {
-				render: h => {
+				render: () => {
 					return h(
 						'div',
 						{

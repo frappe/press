@@ -30,9 +30,9 @@
 					<NewAppRepositories
 						:options="options"
 						:repositoryResource="$resources.repository"
-						:selectedRepo.sync="selectedRepo"
-						:selectedInstallation.sync="selectedInstallation"
-						:selectedBranch.sync="selectedBranch"
+						v-model:selectedRepo="selectedRepo"
+						v-model:selectedInstallation="selectedInstallation"
+						v-model:selectedBranch="selectedBranch"
 					/>
 					<div v-if="validateApp.data" class="text-medium mt-4 text-base">
 						<div v-if="validatedApp" class="flex">

@@ -27,7 +27,6 @@
 		:class="buttonClasses"
 		@click="handleClick"
 		v-bind="$attrs"
-		v-on="$listeners"
 		:disabled="isDisabled"
 	>
 		<LoadingIndicator

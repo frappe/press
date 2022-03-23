@@ -4,7 +4,7 @@
 			<div class="flex">
 				<FrappeCloudLogo
 					class="mx-auto h-4 w-auto"
-					v-on:dblclick.native="redirect"
+					v-on:dblclick="redirect"
 				/>
 			</div>
 			<div

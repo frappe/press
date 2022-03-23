@@ -44,7 +44,7 @@ export default {
 		logs() {
 			return {
 				method: 'press.api.site.logs',
-				params: { name: this.site.name },
+				params: { name: this.site?.name },
 				auto: true
 			};
 		}

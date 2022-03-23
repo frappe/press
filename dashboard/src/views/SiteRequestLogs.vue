@@ -87,7 +87,7 @@ export default {
 			return {
 				method: 'press.api.analytics.request_logs',
 				params: {
-					name: this.site.name,
+					name: this.site?.name,
 					timezone: DateTime.local().zoneName,
 					date: this.dateValue,
 					sort: this.sort,
