@@ -90,6 +90,8 @@ class TLSCertificate(Document):
 			"Database Server",
 			"Log Server",
 			"Monitor Server",
+			"Registry Server",
+			"Analytics Server",
 		]
 
 		for server_doctype in server_doctypes:
