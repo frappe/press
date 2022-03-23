@@ -2,7 +2,7 @@
 	<div class="pt-8 pb-20">
 		<div class="px-4 sm:px-8">
 			<h1 class="sr-only">Dashboard</h1>
-			<div v-if="!$account.team.enabled">
+			<div class="mb-2" v-if="!$account.team.enabled">
 				<Alert title="Your account is disabled">
 					Enable your account to start creating sites
 
