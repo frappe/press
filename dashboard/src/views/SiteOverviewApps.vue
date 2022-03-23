@@ -147,10 +147,12 @@ export default {
 			}
 		}
 	},
-	methods: {
+	computed: {
 		availableApps() {
 			return this.$resources.availableApps;
-		},
+		}
+	},
+	methods: {
 		installApp(app) {
 			this.appToInstall = app;
 
