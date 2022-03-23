@@ -2,12 +2,11 @@
 	<router-link
 		v-if="route"
 		v-slot="{ href, navigate }"
-		v-bind="$attrs"
 		:to="route"
-		:class="buttonClasses"
 		:disabled="isDisabled"
+		custom
 	>
-		<a :href="href" @click="navigate">
+		<a :href="href" @click="navigate" :class="buttonClasses" v-bind="$attrs">
 			<FeatherIcon v-if="iconLeft" :name="iconLeft" class="mr-1.5 h-4 w-4" />
 			<template v-if="loading && loadingText">
 				{{ loadingText }}
