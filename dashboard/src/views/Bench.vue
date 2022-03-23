@@ -24,7 +24,7 @@
 				</div>
 			</div>
 		</div>
-		<div class="px-4 sm:px-8" v-if="bench">
+		<div class="px-4 sm:px-8">
 			<Tabs class="pb-32" :tabs="tabs">
 				<router-view v-bind="{ bench }"></router-view>
 			</Tabs>
