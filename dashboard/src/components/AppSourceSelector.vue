@@ -38,14 +38,15 @@
 <script>
 export default {
 	name: 'AppSourceSelector',
-	props: ['apps', 'value', 'multiple'],
+	props: ['apps', 'modelValue', 'multiple'],
+	emits: ['update:modelValue'],
 	methods: {
 		toggleApp(appName) {
 			let mapApp = app => ({ app: app.name, source: app.source });
 
 			if (!this.multiple) {
 				let selectedApp = this.apps.find(app => app.name === appName);
-				this.$emit('update:value', mapApp(selectedApp));
+				this.$emit('update:modelValue', mapApp(selectedApp));
 				return;
 			}
 
@@ -62,13 +63,13 @@ export default {
 				.filter(app => selectedAppsMap[app.name])
 				.map(mapApp);
 
-			this.$emit('update:value', selectedApps);
+			this.$emit('update:modelValue', selectedApps);
 		},
 		isAppSelected(app) {
 			if (this.multiple) {
 				return this.selectedAppsMap[app.name];
 			}
-			return this.value && this.value.app === app.name;
+			return this.modelValue && this.modelValue.app === app.name;
 		},
 		dropdownItems(app) {
 			return app.sources.map(source => ({
@@ -79,7 +80,7 @@ export default {
 		selectSource(app, source) {
 			app.source = source;
 			if (this.multiple) {
-				let selectedApps = this.value.map(_app => {
+				let selectedApps = this.modelValue.map(_app => {
 					if (app.name === _app.app) {
 						return {
 							app: app.name,
@@ -88,9 +89,9 @@ export default {
 					}
 					return _app;
 				});
-				this.$emit('update:value', selectedApps);
+				this.$emit('update:modelValue', selectedApps);
 			} else {
-				this.$emit('update:value', {
+				this.$emit('update:modelValue', {
 					app: app.name,
 					source
 				});
@@ -102,7 +103,7 @@ export default {
 			if (!this.multiple) return {};
 
 			let out = {};
-			let selectedAppNames = this.value.map(app => app.app);
+			let selectedAppNames = this.modelValue.map(app => app.app);
 			for (let app of this.apps) {
 				out[app.name] = selectedAppNames.includes(app.name);
 			}

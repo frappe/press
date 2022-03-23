@@ -1,11 +1,10 @@
 import path from 'path';
 import { defineConfig } from 'vite';
-import { createVuePlugin } from 'vite-plugin-vue2';
-import legacy from '@vitejs/plugin-legacy';
 import proxyOptions from './proxyOptions';
+import vue from '@vitejs/plugin-vue';
 
 export default defineConfig({
-	plugins: [createVuePlugin(), legacy()],
+	plugins: [vue()],
 	server: {
 		port: 8080,
 		proxy: proxyOptions

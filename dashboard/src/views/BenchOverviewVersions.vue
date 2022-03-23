@@ -2,8 +2,8 @@
 	<Card
 		title="Versions"
 		subtitle="Deployed versions of your bench"
-		:loading="versions.loading"
-		v-if="versions.data && versions.data.length"
+		:loading="$resources.versions.loading"
+		v-if="$resources.versions.data && $resources.versions.data.length"
 	>
 		<template #actions>
 			<router-link
@@ -15,7 +15,7 @@
 		</template>
 		<div class="z-10 divide-y">
 			<ListItem
-				v-for="version in versions.data"
+				v-for="version in $resources.versions.data"
 				:key="version.name"
 				:title="version.name"
 				:subtitle="
@@ -54,7 +54,7 @@ export default {
 		versions() {
 			return {
 				method: 'press.api.bench.versions',
-				params: { name: this.bench.name },
+				params: { name: this.bench?.name },
 				auto: true
 			};
 		}

@@ -95,7 +95,7 @@ export default {
 			return {
 				method: 'press.api.marketplace.get_marketplace_subscriptions_for_site',
 				params: {
-					site: this.site.name
+					site: this.site?.name
 				},
 				auto: true
 			};

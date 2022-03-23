@@ -2,12 +2,14 @@
 	<Card
 		title="Apps"
 		subtitle="Apps available on your bench"
-		:loading="apps.loading"
+		:loading="$resources.apps.loading"
 	>
 		<template #actions>
 			<Button
 				@click="
-					!installableApps.data ? installableApps.fetch() : null;
+					!$resources.installableApps.data
+						? $resources.installableApps.fetch()
+						: null;
 					showAddAppDialog = true;
 				"
 			>
@@ -16,7 +18,7 @@
 		</template>
 		<div class="divide-y">
 			<ListItem
-				v-for="app in apps.data"
+				v-for="app in $resources.apps.data"
 				:key="app.name"
 				:title="app.title"
 				:subtitle="`${app.repository_owner}/${app.repository}:${app.branch}`"
@@ -54,21 +56,21 @@
 		<ErrorMessage :error="this.$resources.fetchLatestAppUpdate.error" />
 
 		<Dialog title="Add apps to your bench" v-model="showAddAppDialog">
-			<Loading class="py-2" v-if="installableApps.loading" />
+			<Loading class="py-2" v-if="$resources.installableApps.loading" />
 			<AppSourceSelector
 				v-else
 				class="pt-1"
-				:apps="installableApps.data"
-				:value.sync="selectedApp"
+				:apps="$resources.installableApps.data"
+				v-model="selectedApp"
 				:multiple="false"
 			/>
-			<template #actions>
+			<template v-slot:actions>
 				<Button
 					type="primary"
 					v-if="selectedApp"
-					:loading="addApp.loading"
+					:loading="$resources.addApp.loading"
 					@click="
-						addApp.submit({
+						$resources.addApp.submit({
 							name: bench.name,
 							source: selectedApp.source.name,
 							app: selectedApp.app
@@ -86,7 +88,7 @@
 
 		<ChangeAppBranchDialog
 			:bench="bench.name"
-			:app.sync="appToChangeBranchOf"
+			v-model:app="appToChangeBranchOf"
 		/>
 	</Card>
 </template>
@@ -112,7 +114,7 @@ export default {
 			return {
 				method: 'press.api.bench.apps',
 				params: {
-					name: this.bench.name
+					name: this.bench?.name
 				},
 				auto: true
 			};
@@ -121,7 +123,7 @@ export default {
 			return {
 				method: 'press.api.bench.installable_apps',
 				params: {
-					name: this.bench.name
+					name: this.bench?.name
 				}
 			};
 		},

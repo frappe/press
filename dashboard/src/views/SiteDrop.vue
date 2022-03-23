@@ -13,17 +13,20 @@
 			</p>
 			<Input type="text" class="mt-4 w-full" v-model="confirmSiteName" />
 			<ErrorMessage class="mt-2" :error="$resources.dropSite.error" />
-			<div slot="actions">
-				<Button @click="dialogOpen = false"> Cancel </Button>
-				<Button
-					class="ml-3"
-					type="danger"
-					@click="$resources.dropSite.submit()"
-					:loading="$resources.dropSite.loading"
-				>
-					Drop Site
-				</Button>
-			</div>
+
+			<template v-slot:actions>
+				<div>
+					<Button @click="dialogOpen = false"> Cancel </Button>
+					<Button
+						class="ml-3"
+						type="danger"
+						@click="$resources.dropSite.submit()"
+						:loading="$resources.dropSite.loading"
+					>
+						Drop Site
+					</Button>
+				</div>
+			</template>
 		</Dialog>
 	</div>
 </template>
@@ -43,14 +46,14 @@ export default {
 			return {
 				method: 'press.api.site.archive',
 				params: {
-					name: this.site.name
+					name: this.site?.name
 				},
 				onSuccess() {
 					this.dialogOpen = false;
 					this.$router.push('/sites');
 				},
 				validate() {
-					if (this.site.name !== this.confirmSiteName) {
+					if (this.site?.name !== this.confirmSiteName) {
 						return 'Please type the site name to confirm';
 					}
 				}

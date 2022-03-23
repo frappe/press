@@ -1,5 +1,6 @@
 <template>
 	<CardWithDetails
+		v-if="bench"
 		title="Versions"
 		subtitle="Deployed versions of your bench"
 		:showDetails="selectedVersion"
@@ -172,6 +173,7 @@
 </template>
 <script>
 import ClickToCopyField from '@/components/ClickToCopyField.vue';
+import { setTransitionHooks } from 'vue';
 import CardWithDetails from '../components/CardWithDetails.vue';
 import SiteList from './SiteList.vue';
 export default {
@@ -190,7 +192,7 @@ export default {
 		versions() {
 			return {
 				method: 'press.api.bench.versions',
-				params: { name: this.bench.name },
+				params: { name: this.bench?.name },
 				auto: true,
 				onSuccess() {
 					if (
@@ -206,14 +208,14 @@ export default {
 		getCertificate() {
 			return {
 				method: 'press.api.bench.certificate',
-				params: { name: this.bench.name },
+				params: { name: this.bench?.name },
 				auto: true
 			};
 		},
 		generateCertificate() {
 			return {
 				method: 'press.api.bench.generate_certificate',
-				params: { name: this.bench.name },
+				params: { name: this.bench?.name },
 				onSuccess() {
 					this.$resources.getCertificate.reload();
 				}
@@ -226,6 +228,9 @@ export default {
 		}
 	},
 	computed: {
+		versions() {
+			return this.$resources.versions;
+		},
 		selectedVersion() {
 			if (this.version && this.versions.data) {
 				return this.versions.data.find(v => v.name === this.version);

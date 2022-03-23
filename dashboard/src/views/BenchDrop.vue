@@ -13,7 +13,8 @@
 			</p>
 			<Input type="text" class="mt-4 w-full" v-model="confirmBenchName" />
 			<ErrorMessage class="mt-2" :error="$resources.dropBench.error" />
-			<div slot="actions">
+
+			<template v-slot:actions>
 				<Button @click="dialogOpen = false"> Cancel </Button>
 				<Button
 					class="ml-3"
@@ -23,7 +24,7 @@
 				>
 					Drop Bench
 				</Button>
-			</div>
+			</template>
 		</Dialog>
 	</div>
 </template>
@@ -43,14 +44,14 @@ export default {
 			return {
 				method: 'press.api.bench.archive',
 				params: {
-					name: this.bench.name
+					name: this.bench?.name
 				},
 				onSuccess() {
 					this.dialogOpen = false;
 					this.$router.push('/sites');
 				},
 				validate() {
-					if (this.bench.title !== this.confirmBenchName) {
+					if (this.bench?.title !== this.confirmBenchName) {
 						return 'Please type the bench name correctly to confirm';
 					}
 				}

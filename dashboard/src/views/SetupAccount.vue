@@ -16,7 +16,7 @@
 					label="Email"
 					input-class="pointer-events-none"
 					type="text"
-					:value="email"
+					:modelValue="email"
 					autocomplete="off"
 					disabled
 				/>

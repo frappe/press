@@ -66,7 +66,11 @@
 		</div>
 
 		<Dialog title="Change Plan" v-model="showChangePlanDialog">
-			<SitePlansTable class="mt-6" :plans="plans" v-model="selectedPlan" />
+			<SitePlansTable
+				class="mt-6"
+				:plans="plans"
+				v-model:selectedPlan="selectedPlan"
+			/>
 			<ErrorMessage class="mt-4" :error="$resources.changePlan.error" />
 			<template #actions>
 				<Button type="secondary" @click="showChangePlanDialog = false">
@@ -108,7 +112,7 @@ export default {
 			return {
 				method: 'press.api.site.get_plans',
 				params: {
-					name: this.site.name
+					name: this.site?.name
 				},
 				default: []
 			};
@@ -117,7 +121,7 @@ export default {
 			return {
 				method: 'press.api.site.change_plan',
 				params: {
-					name: this.site.name,
+					name: this.site?.name,
 					plan: this.selectedPlan?.name
 				},
 				onSuccess() {

@@ -2,11 +2,13 @@
 	<div class="pt-4">
 		<PageHeader>
 			<h1 slot="title">Benches</h1>
-			<div class="flex items-center" slot="actions">
-				<Button route="/benches/new" type="primary" iconLeft="plus">
-					New Bench
-				</Button>
-			</div>
+			<template v-slot:actions>
+				<div class="flex items-center">
+					<Button route="/benches/new" type="primary" iconLeft="plus">
+						New Bench
+					</Button>
+				</div>
+			</template>
 		</PageHeader>
 		<div class="px-4 sm:px-8">
 			<div

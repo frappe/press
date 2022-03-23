@@ -3,20 +3,26 @@
 </template>
 
 <script>
+import { defineAsyncComponent } from 'vue';
+
 export default {
 	name: 'UserPrompts',
 	components: {
-		UpdateBillingDetails: () => import('@/components/UpdateBillingDetails.vue')
+		UpdateBillingDetails: defineAsyncComponent(() =>
+			import('@/components/UpdateBillingDetails.vue')
+		)
 	},
 	resources: {
-		prompts: {
-			method: 'press.api.account.user_prompts',
-			auto: true,
-			validate() {
-				if (document.cookie.includes('user_id=Guest')) {
-					return 'Not logged in';
+		prompts() {
+			return {
+				method: 'press.api.account.user_prompts',
+				auto: true,
+				validate() {
+					if (document.cookie.includes('user_id=Guest')) {
+						return 'Not logged in';
+					}
 				}
-			}
+			};
 		}
 	},
 	data() {

@@ -16,7 +16,7 @@
 		<div class="max-h-52 space-y-3">
 			<div
 				class="flex items-center justify-between rounded-lg border p-5"
-				v-for="card in paymentMethods.data"
+				v-for="card in $resources.paymentMethods.data"
 				:key="card.name"
 			>
 				<div>
@@ -43,6 +43,8 @@
 	</Card>
 </template>
 <script>
+import { defineAsyncComponent } from 'vue';
+
 export default {
 	name: 'AccountBillingCards',
 	resources: {
@@ -55,7 +57,9 @@ export default {
 		}
 	},
 	components: {
-		StripeCard: () => import('@/components/StripeCard.vue')
+		StripeCard: defineAsyncComponent(() =>
+			import('@/components/StripeCard.vue')
+		)
 	},
 	data() {
 		return {
@@ -64,7 +68,10 @@ export default {
 	},
 	computed: {
 		subtitle() {
-			if (this.paymentMethods.loading || this.paymentMethods.data?.length > 0) {
+			if (
+				this.$resources.paymentMethods.loading ||
+				this.$resources.paymentMethods.data?.length > 0
+			) {
 				return 'Cards you have added for automatic billing';
 			}
 			return "You haven't added any cards yet";

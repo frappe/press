@@ -19,7 +19,7 @@ export default {
 		jobResource(start) {
 			return {
 				method: 'press.api.site.jobs',
-				params: { name: this.site.name, start },
+				params: { name: this.site?.name, start },
 				paged: true,
 				keepData: true,
 				auto: true

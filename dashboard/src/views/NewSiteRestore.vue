@@ -143,6 +143,7 @@ import { DateTime } from 'luxon';
 
 export default {
 	name: 'Restore',
+	emits: ['update:selectedFiles', 'update:skipFailingPatches'],
 	props: ['options', 'selectedFiles', 'manualMigration', 'skipFailingPatches'],
 	components: {
 		FileUploader,

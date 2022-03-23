@@ -41,7 +41,7 @@
 				title="Auto Update Site"
 				description="Automatically schedule site updates whenever available"
 			>
-				<template slot="actions">
+				<template v-slot:actions>
 					<LoadingIndicator v-if="loading" />
 					<input
 						v-show="!loading"
@@ -57,9 +57,11 @@
 				title="Deactivate Site"
 				description="The site will go inactive and won't be publicly accessible"
 			>
-				<Button slot="actions" @click="onDeactivateClick" class="shrink-0">
-					Deactivate Site
-				</Button>
+				<template v-slot:actions>
+					<Button @click="onDeactivateClick" class="shrink-0">
+						Deactivate Site
+					</Button>
+				</template>
 			</ListItem>
 
 			<ListItem
@@ -67,9 +69,11 @@
 				title="Activate Site"
 				description="The site will become active and will be accessible"
 			>
-				<Button slot="actions" @click="onActivateClick" class="shrink-0">
-					Activate Site
-				</Button>
+				<template v-slot:actions>
+					<Button @click="onActivateClick" class="shrink-0">
+						Activate Site
+					</Button>
+				</template>
 			</ListItem>
 
 			<ListItem
@@ -77,7 +81,7 @@
 				title="Drop Site"
 				description="Once you drop site your site, there is no going back"
 			>
-				<template slot="actions">
+				<template v-slot:actions>
 					<SiteDrop :site="site" v-slot="{ showDialog }">
 						<Button @click="showDialog">
 							<span class="text-red-600">Drop Site</span>

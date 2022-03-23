@@ -34,13 +34,18 @@ export default {
 			return {
 				method: 'press.api.site.activities',
 				params: {
-					name: this.site.name,
+					name: this.site?.name,
 					start: this.pageStart
 				},
 				auto: true,
 				paged: true,
 				keepData: true
 			};
+		}
+	},
+	computed: {
+		activities() {
+			return this.$resources.activities;
 		}
 	},
 	data() {

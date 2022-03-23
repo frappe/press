@@ -3,7 +3,7 @@
 		<div class="h-full">
 			<slot name="target" :togglePopover="togglePopover"></slot>
 		</div>
-		<portal to="popovers">
+		<teleport to="#popovers">
 			<div
 				ref="popover"
 				:class="popoverClass"
@@ -13,7 +13,7 @@
 				<div v-if="!hideArrow" class="popover-arrow" ref="popover-arrow"></div>
 				<slot name="content" :togglePopover="togglePopover"></slot>
 			</div>
-		</portal>
+		</teleport>
 	</div>
 </template>
 
@@ -37,6 +37,7 @@ export default {
 		},
 		popoverClass: [String, Object, Array]
 	},
+	emits: ['init', 'open', 'close'],
 	watch: {
 		showPopup(value) {
 			if (value === true) {
@@ -49,31 +50,58 @@ export default {
 	},
 	data() {
 		return {
-			isOpen: false
+			isOpen: false,
+			listener: null
 		};
+	},
+	activated() {
+		this.setupListener();
 	},
 	mounted() {
-		let listener = e => {
-			let $els = [this.$refs.reference, this.$refs.popover];
-			let insideClick = $els.some(
-				$el => $el && (e.target === $el || $el.contains(e.target))
-			);
-			if (insideClick) {
-				return;
-			}
-			this.close();
-		};
-		if (this.show == null) {
-			document.addEventListener('click', listener);
-			this.$once('hook:beforeDestroy', () => {
-				document.removeEventListener('click', listener);
-			});
-		}
+		this.setupListener();
 	},
-	beforeDestroy() {
-		this.popper && this.popper.destroy();
+	deactivated() {
+		this.close();
+	},
+	unmounted() {
+		this.destroyPopperAndRemoveListener();
 	},
 	methods: {
+		setupListener() {
+			if (this.listener) {
+				return;
+			}
+
+			let listener = e => {
+				let $els = [this.$refs.reference, this.$refs.popover];
+				let insideClick = $els.some(
+					$el => $el && (e.target === $el || $el.contains(e.target))
+				);
+				if (insideClick) {
+					return;
+				}
+				this.close();
+			};
+
+			if (this.show == null) {
+				document.addEventListener('click', listener);
+			}
+
+			this.listener = listener;
+		},
+		destroyPopperAndRemoveListener() {
+			if (this.isOpen) {
+				this.close();
+			}
+
+			this.popper && this.popper.destroy();
+
+			if (this.listener) {
+				document.removeEventListener('click', this.listener);
+				this.listener = null;
+			}
+
+		},
 		setupPopper() {
 			if (!this.popper) {
 				this.popper = createPopper(this.$refs.reference, this.$refs.popover, {
