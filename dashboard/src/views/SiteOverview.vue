@@ -8,7 +8,7 @@ import SiteOverviewInfo from './SiteOverviewInfo.vue';
 import SiteOverviewApps from './SiteOverviewApps.vue';
 import SiteOverviewDomains from './SiteOverviewDomains.vue';
 import SiteOverviewAppSubscriptions from './SiteOverviewAppSubscriptions.vue';
-
+import { utils } from '@/utils';
 import { computed } from 'vue';
 import { DateTime } from 'luxon';
 import useResource from '@/composables/resource';
@@ -42,7 +42,8 @@ const trialEndsInDaysText = computed(() => {
 	if (!props.site?.trial_end_date) {
 		return 0;
 	}
-	let diff = this.$date(props.site.trial_end_date)
+	let diff = utils.methods
+		.$date(props.site.trial_end_date)
 		.diff(DateTime.local(), ['days'])
 		.toObject();
 
