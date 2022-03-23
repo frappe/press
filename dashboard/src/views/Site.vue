@@ -80,7 +80,14 @@
 		</div>
 		<div class="px-4 sm:px-8">
 			<Tabs class="pb-8" :tabs="tabs">
-				<router-view v-bind="{ site }"></router-view>
+				<router-view v-slot="{ Component, route }">
+					<component
+						v-if="site"
+						:is="Component"
+						:key="route.fullPath"
+						:site="site"
+					></component>
+				</router-view>
 			</Tabs>
 		</div>
 
