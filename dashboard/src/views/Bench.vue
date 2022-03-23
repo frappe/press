@@ -26,13 +26,8 @@
 		</div>
 		<div class="px-4 sm:px-8">
 			<Tabs class="pb-32" :tabs="tabs">
-				<router-view v-slot="{ Component, route }">
-					<component
-						v-if="bench"
-						:is="Component"
-						:key="route.fullPath"
-						:bench="bench"
-					></component>
+				<router-view v-slot="{ Component }">
+					<component v-if="bench" :is="Component" :bench="bench"></component>
 				</router-view>
 			</Tabs>
 		</div>
