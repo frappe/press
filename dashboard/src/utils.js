@@ -106,3 +106,5 @@ export async function trypromise(promise) {
 		return [error, null];
 	}
 }
+
+export { utils };
