@@ -84,7 +84,6 @@
 					<component
 						v-if="site"
 						:is="Component"
-						:key="route.fullPath"
 						:site="site"
 					></component>
 				</router-view>
