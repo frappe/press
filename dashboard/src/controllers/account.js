@@ -38,7 +38,7 @@ export default class Account {
 		if (team === this.team.name) {
 			return;
 		}
-		let result = await this.$call('press.api.account.switch_team', { team });
+		let result = await call('press.api.account.switch_team', { team });
 		this.team = result.team;
 		this.team_members = result.team_members;
 		localStorage.setItem('current_team', team);
