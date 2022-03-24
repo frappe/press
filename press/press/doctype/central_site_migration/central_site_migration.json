@@ -67,12 +67,12 @@
   },
   {
    "fieldname": "database_size",
-   "fieldtype": "Data",
+   "fieldtype": "Float",
    "label": "Database Size"
   },
   {
    "fieldname": "files_size",
-   "fieldtype": "Data",
+   "fieldtype": "Float",
    "label": "Files Size"
   },
   {
