@@ -46,6 +46,7 @@
   {
    "fieldname": "plan",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Plan",
    "options": "Plan",
    "reqd": 1
@@ -78,7 +79,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-03-19 22:16:19.732482",
+ "modified": "2022-03-21 00:30:39.231399",
  "modified_by": "Administrator",
  "module": "Saas",
  "name": "Saas App Plan",
