@@ -3,23 +3,33 @@
 
 import frappe
 
-from press.press.doctype.marketplace_app.marketplace_app import (
-	get_total_installs_for_app,
-)
-
 
 def get_context(context):
 	# TODO: Caching, Pagination, Filtering, Sorting
 	context.no_cache = 1
-	context.apps = frappe.get_all(
-		"Marketplace App", filters={"status": "Published"}, fields=["*"]
+	context.apps = frappe.db.sql(
+		"""
+		SELECT
+			marketplace.title,
+			marketplace.image,
+			marketplace.route,
+			marketplace.description,
+			COUNT(*) AS total_installs
+		FROM
+			`tabMarketplace App` marketplace
+		LEFT JOIN
+			`tabSite App` site
+		ON
+			site.app = marketplace.name
+		WHERE
+			marketplace.status = "Published"
+		GROUP BY
+			marketplace.name
+		ORDER BY
+			total_installs DESC
+	""",
+		as_dict=True,
 	)
-
-	for app in context.apps:
-		app.total_installs = get_total_installs_for_app(app.name)
-
-	# For the time being, sort by number of installs
-	context.apps.sort(key=lambda x: x.total_installs, reverse=True)
 
 	context.metatags = {
 		"title": "Frappe Cloud Marketplace",
