@@ -48,6 +48,12 @@ frappe.query_reports["Binary Log Browser"] = {
 			reqd: 1,
 		},
 		{
+			fieldname: "max_lines",
+			label: __("Max Lines"),
+			fieldtype: "Int",
+			default: 4000,
+		},
+		{
 			fieldname: "format_queries",
 			label: __("Format Queries"),
 			fieldtype: "Check",
