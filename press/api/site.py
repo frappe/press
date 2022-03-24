@@ -103,7 +103,7 @@ def _new(site, server: str = None):
 
 	query_sub_str = ""
 	if server:
-		query_sub_str = f"AND server.name = {server}"
+		query_sub_str = f"AND server.name = '{server}'"
 
 	bench = frappe.db.sql(
 		"""
