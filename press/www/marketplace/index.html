@@ -1,6 +1,4 @@
-{% extends "templates/marketplace/base.html" %}
-
-{%- block body -%}
+{% extends "templates/marketplace/base.html" %} {%- block body -%}
 <div class="px-4 sm:px-8">
 	<div class="pt-20 pb-12 text-center">
 		<h1 class="text-6xl font-bold text-gray-900">
@@ -13,25 +11,51 @@
 	</div>
 
 	<div class="pb-36">
-		<h2 class="text-4xl font-bold sr-only">Apps</h2>
-		<div class="grid grid-cols-1 gap-8 mt-8 md:grid-cols-3 lg:grid-cols-4 sm:grid-cols-2">
-			{%- for app in apps -%}
-			<a href="/{{ app.route }}"
-				class="flex flex-col justify-between p-6 border border-gray-100 rounded-lg shadow cursor-pointer hover:shadow-lg focus:outline-none focus:border-blue-500 focus:shadow-outline">
-				<div>
-					<img src="{{ app.image }}" class="w-10 h-10 border border-gray-200 rounded-lg" />
-					<h3 class="mt-4 font-semibold">{{ app.title }}</h3>
-					<p class="mt-2 text-base text-gray-600 line-clamp">
-						{{ app.description }}
-					</p>
-				</div>
-				<span class="flex flex-row text-sm mt-2 text-gray-600">
-					<i class="w-4 h-4 mr-2" data-feather="download"></i>
-					<span>{{ app.total_installs | number_k_format }} {{ 'install' if app.total_installs == 1 else
-						'installs' }}</span>
-				</span>
-			</a>
-			{%- endfor -%}
+		<div class="pb-12">
+			<h2 class="text-3xl font-bold text-gray-800">Featured Apps</h2>
+
+			<div class="grid grid-cols-1 gap-8 mt-8 md:grid-cols-3 lg:grid-cols-4 sm:grid-cols-2">
+				{%- for app in featured_apps -%}
+				<a href="/{{ app.route }}"
+					class="flex flex-col justify-between p-6 border border-gray-100 rounded-lg shadow cursor-pointer hover:shadow-lg focus:outline-none focus:border-blue-500 focus:shadow-outline">
+					<div>
+						<img src="{{ app.image }}" class="w-10 h-10 border border-gray-200 rounded-lg" />
+						<h3 class="mt-4 font-semibold">{{ app.title }}</h3>
+						<p class="mt-2 text-base text-gray-600 line-clamp">
+							{{ app.description }}
+						</p>
+					</div>
+					<span class="flex flex-row text-sm mt-2 text-gray-600">
+						<i class="w-4 h-4 mr-2" data-feather="download"></i>
+						<span>{{ app.total_installs | number_k_format }} {{ 'install' if
+							app.total_installs == 1 else 'installs' }}</span>
+					</span>
+				</a>
+				{%- endfor -%}
+			</div>
+		</div>
+
+		<div>
+			<h2 class="text-3xl font-bold text-gray-800">All Apps</h2>
+			<div class="grid grid-cols-1 gap-8 mt-8 md:grid-cols-3 lg:grid-cols-4 sm:grid-cols-2">
+				{%- for app in apps -%}
+				<a href="/{{ app.route }}"
+					class="flex flex-col justify-between p-6 border border-gray-100 rounded-lg shadow cursor-pointer hover:shadow-lg focus:outline-none focus:border-blue-500 focus:shadow-outline">
+					<div>
+						<img src="{{ app.image }}" class="w-10 h-10 border border-gray-200 rounded-lg" />
+						<h3 class="mt-4 font-semibold">{{ app.title }}</h3>
+						<p class="mt-2 text-base text-gray-600 line-clamp">
+							{{ app.description }}
+						</p>
+					</div>
+					<span class="flex flex-row text-sm mt-2 text-gray-600">
+						<i class="w-4 h-4 mr-2" data-feather="download"></i>
+						<span>{{ app.total_installs | number_k_format }} {{ 'install' if
+							app.total_installs == 1 else 'installs' }}</span>
+					</span>
+				</a>
+				{%- endfor -%}
+			</div>
 		</div>
 	</div>
 </div>

@@ -7,9 +7,10 @@ import frappe
 def get_context(context):
 	# TODO: Caching, Pagination, Filtering, Sorting
 	context.no_cache = 1
-	context.apps = frappe.db.sql(
+	all_published_apps = frappe.db.sql(
 		"""
 		SELECT
+			marketplace.name,
 			marketplace.title,
 			marketplace.image,
 			marketplace.route,
@@ -29,6 +30,20 @@ def get_context(context):
 			total_installs DESC
 	""",
 		as_dict=True,
+	)
+
+	context.apps = all_published_apps
+
+	featured_apps = frappe.get_all(
+		"Featured App",
+		filters={"parent": "Marketplace Settings"},
+		pluck="app",
+		order_by="idx",
+	)
+
+	context.featured_apps = sorted(
+		filter(lambda x: x.name in featured_apps, all_published_apps),
+		key=lambda y: featured_apps.index(y.name),
 	)
 
 	context.metatags = {
