@@ -67,14 +67,16 @@ def new_central_site(site: Dict):
 		site["group"] = "bench-0870"
 
 	# site["apps"] = frappe.get_all(
-	# 	"Release Group App", {"parent": site["group"]}, pluck="app"
+	# "Release Group App", {"parent": site["group"]}, pluck="app"
 	# )
 	site["apps"] = ["frappe", "erpnext", "erpnext_support", "journeys"]
 
-	return _new(site)
+	server = frappe.get_value("Press Settings", "central_migration_server")
+
+	return _new(site, server)
 
 
-def _new(site):
+def _new(site, server: str = None):
 	team = get_current_team(get_doc=True)
 	if not team.enabled:
 		frappe.throw("You cannot create a new site because your account is disabled")
@@ -99,6 +101,10 @@ def _new(site):
 		pluck="name",
 	)
 
+	query_sub_str = ""
+	if server:
+		query_sub_str = f"AND server.name = {server}"
+
 	bench = frappe.db.sql(
 		"""
 	SELECT
@@ -110,12 +116,12 @@ def _new(site):
 	ON
 		bench.server = server.name
 	WHERE
-		server.proxy_server in %s AND bench.status = "Active" AND bench.group = %s
+		server.proxy_server in %s AND bench.status = "Active" AND bench.group = %s %s
 	ORDER BY
 		in_primary_cluster DESC, server.use_for_new_sites DESC, bench.creation DESC
 	LIMIT 1
 	""",
-		(cluster, proxy_servers, site["group"]),
+		(cluster, proxy_servers, site["group"], query_sub_str),
 		as_dict=True,
 	)[0].name
 	plan = site["plan"]
