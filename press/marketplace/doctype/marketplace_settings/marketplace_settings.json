@@ -1,0 +1,48 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2022-03-24 22:49:45.741578",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "featured_apps_section",
+  "featured_apps"
+ ],
+ "fields": [
+  {
+   "fieldname": "featured_apps_section",
+   "fieldtype": "Section Break",
+   "label": "Featured Apps"
+  },
+  {
+   "fieldname": "featured_apps",
+   "fieldtype": "Table",
+   "label": "Featured Apps",
+   "options": "Featured App"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2022-03-24 22:52:15.104746",
+ "modified_by": "Administrator",
+ "module": "Marketplace",
+ "name": "Marketplace Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
