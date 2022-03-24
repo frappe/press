@@ -106,9 +106,9 @@ def _new(site, server: str = None):
 		query_sub_str = f"AND server.name = '{server}'"
 
 	bench = frappe.db.sql(
-		"""
+		f"""
 	SELECT
-		bench.name, bench.cluster = %s as in_primary_cluster
+		bench.name, bench.cluster = '{cluster}' as in_primary_cluster
 	FROM
 		tabBench bench
 	LEFT JOIN
@@ -116,12 +116,14 @@ def _new(site, server: str = None):
 	ON
 		bench.server = server.name
 	WHERE
-		server.proxy_server in %s AND bench.status = "Active" AND bench.group = %s %s
+		server.proxy_server in {tuple(proxy_servers)} AND
+		bench.status = "Active" AND
+		bench.group = '{site["group"]}'
+		{query_sub_str}
 	ORDER BY
 		in_primary_cluster DESC, server.use_for_new_sites DESC, bench.creation DESC
 	LIMIT 1
 	""",
-		(cluster, proxy_servers, site["group"], query_sub_str),
 		as_dict=True,
 	)[0].name
 	plan = site["plan"]
