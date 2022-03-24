@@ -4,6 +4,7 @@
 import frappe
 from frappe.model.document import Document
 from press.saas.doctype.saas_app_plan.saas_app_plan import get_app_plan_features
+from press.utils import get_current_team
 
 
 class SaasApp(Document):
@@ -14,11 +15,11 @@ class SaasApp(Document):
 		v = [ver.version_name for ver in self.app_versions]
 		return v
 
-	def get_plans(self):
-		return get_plans_for_app(self.name)
+	def get_plans(self, site):
+		return get_plans_for_app(self.name, site)
 
 
-def get_plans_for_app(app):
+def get_plans_for_app(app, site):
 	plans = []
 	saas_app_plans = frappe.get_all(
 		"Saas App Plan",
@@ -34,6 +35,9 @@ def get_plans_for_app(app):
 		plan_data.update(plan_prices)
 
 		plan_data["features"] = get_app_plan_features(app_plan.name)
+		selected_plan = get_selected_plan(app, site)
+		print(selected_plan, app_plan.name)
+		plan_data["is_selected"] = True if selected_plan == app_plan.name else False
 
 		plans.append(plan_data)
 
@@ -48,3 +52,11 @@ def get_plan_prices(plan_name):
 	)
 
 	return plan_prices
+
+
+def get_selected_plan(app, site):
+	sub_name = frappe.get_all(
+		"Saas App Subscription", {"app": app, "site": site}, pluck="saas_app_plan"
+	)
+
+	return sub_name[0]
