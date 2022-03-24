@@ -71,7 +71,7 @@ def new_central_site(site: Dict):
 	# )
 	site["apps"] = ["frappe", "erpnext", "erpnext_support", "journeys"]
 
-	server = frappe.get_value("Press Settings", "central_migration_server")
+	server = frappe.get_value("Press Settings", "Press Settings", "central_migration_server")
 
 	return _new(site, server)
 
