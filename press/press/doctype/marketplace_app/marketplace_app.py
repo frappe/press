@@ -279,9 +279,3 @@ def get_plan_prices(plan_name: str, discount_percent: float = 0.0) -> dict:
 def get_price_after_discount(price: float, discount_percent: float) -> float:
 	discount_amount = price * discount_percent / 100
 	return round(price - discount_amount)
-
-
-def get_total_installs_for_app(app_name: str) -> int:
-	site_names = frappe.get_all("Site App", filters={"app": app_name})
-
-	return len(site_names)
