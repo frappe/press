@@ -127,8 +127,6 @@ def upload_backup_file(file_type, file_name, file_path):
 		handle_request_failure(upload_ticket)
 
 	payload = upload_ticket.json()["message"]
-	url = payload["url"]
-	fields = payload["fields"]
 
 	if parts > 1:
 
@@ -169,6 +167,8 @@ def upload_backup_file(file_type, file_name, file_path):
 			handle_request_failure(upload_remote)
 
 	else:
+		url = payload["url"]
+		fields = payload["fields"]
 		# upload remote file
 		fields["file"] = (file_name, open(file_path, "rb"))
 		multipart_payload = encoder.MultipartEncoder(fields=fields)
@@ -193,7 +193,7 @@ def upload_backup_file(file_type, file_name, file_path):
 		register_remote_url,
 		{
 			"file": file_name,
-			"path": fields["key"],
+			"path": payload["fields"]["key"],
 			"type": "application/x-gzip" if file_type == "database" else "application/x-tar",
 			"size": os.path.getsize(file_path),
 		},
