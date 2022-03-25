@@ -16,6 +16,8 @@
     chdir: /home/frappe/benches/{{ bench }}
   register: migrate_command
   ignore_errors: yes
+  async: 3600
+  poll: 5
 
 - name: Activate site if migrate failed
   command: 'bench --site {{ site }} set-maintenance-mode off'
