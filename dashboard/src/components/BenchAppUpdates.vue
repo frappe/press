@@ -12,7 +12,7 @@
 		<AppUpdateCard
 			v-for="app in removedApps"
 			:key="app.name"
-			@click.native="toggleApp(app)"
+			@click.native.self="toggleApp(app)"
 			:app="app"
 			:selected="selectedApps.includes(app.app)"
 			:uninstall="true"
@@ -73,7 +73,8 @@ export default {
 					apps.push('frappe');
 				}
 			},
-			deep: true
+			deep: true,
+			immediate: true
 		}
 	}
 };

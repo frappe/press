@@ -5,10 +5,19 @@
 			selected || uninstall ? 'ring-2 ring-inset ring-blue-500' : '',
 			selectable ? 'hover:border-gray-300' : 'cursor-default'
 		]"
+		ref="card"
 	>
-		<h3 class="text-lg font-medium text-gray-900">
-			{{ app.title }}
-		</h3>
+		<div class="flex flex-row items-center gap-2">
+			<input
+				@click.self="$refs['card'].click()"
+				:checked="selected"
+				type="checkbox"
+				class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-transparent"
+			/>
+			<h3 class="text-lg font-medium text-gray-900">
+				{{ app.title }}
+			</h3>
+		</div>
 		<Badge v-if="uninstall" color="red"> Will Be Uninstalled </Badge>
 		<div v-else class="flex flex-row space-x-2">
 			<a
