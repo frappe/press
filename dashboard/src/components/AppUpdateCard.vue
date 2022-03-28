@@ -9,6 +9,7 @@
 	>
 		<div class="flex flex-row items-center gap-2">
 			<input
+				v-if="selectable"
 				@click.self="$refs['card'].click()"
 				:checked="selected"
 				type="checkbox"
