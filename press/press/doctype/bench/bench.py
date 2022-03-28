@@ -191,7 +191,11 @@ class Bench(Document):
 	def update_all_sites(self):
 		sites = frappe.get_all(
 			"Site",
-			{"bench": self.name, "status": ("in", ("Active", "Inactive", "Suspended"))},
+			{
+				"bench": self.name,
+				"status": ("in", ("Active", "Inactive", "Suspended")),
+				"skip_auto_updates": False,
+			},
 			pluck="name",
 		)
 		for site in sites:
