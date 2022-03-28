@@ -4,72 +4,86 @@
 			class="flex-1"
 			title="Please upgrade plan or else your services with frappeteams will be discontinued from."
 		/>
-		<div class="mt-4 flex">
-			<div
+		<div
+			v-if="plansData"
+			class="mx-auto mt-4 grid flex-1 grid-cols-1 gap-2 md:grid-cols-3"
+		>
+			<SaasAppPlanCard
 				v-for="plan in plansData"
-				:key="plan.plan"
-				class="relative relative mx-2 mt-2 flex-1 cursor-pointer rounded-2xl border border-gray-100 p-5 shadow hover:border-gray-300"
-			>
-				<h3>{{ plan.plan }}</h3>
-				<br />
-				<span v-if="plan.price_usd > 0" class="text-2xl font-semibold">
-					{{
-						$planTitle({
-							price_usd: plan.price_usd,
-							price_inr: plan.price_inr
-						})
-					}}
-					<span class="text-base font-normal text-gray-600"> /mo</span>
-				</span>
-
-				<ul class="mt-5 space-y-2 text-sm text-gray-700">
-					<li
-						v-for="feature in plan.features"
-						:key="feature"
-						class="flex flex-row justify-items-center"
-					>
-						<div
-							class="mr-2 grid h-4 w-4 shrink-0 place-items-center rounded-full border border-green-500 bg-green-50"
-						>
-							<svg
-								width="10"
-								height="8"
-								viewBox="0 0 10 8"
-								fill="none"
-								xmlns="http://www.w3.org/2000/svg"
-							>
-								<path
-									d="M1.26562 3.86686L3.93229 6.53353L9.26562 1.2002"
-									stroke="#38A160"
-									stroke-miterlimit="10"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-								></path>
-							</svg>
-						</div>
-						{{ feature }}
-					</li>
-				</ul>
-			</div>
+				:plan="plan"
+				:key="plan.name"
+				:selected="selectedPlan == plan"
+				@click.native="handleCardClick(plan)"
+			/>
 		</div>
+		<Button
+			v-if="activePlan != selectedPlan"
+			class="mt-4"
+			type="primary"
+			@click="switchToNewPlan()"
+			>Change Plan</Button
+		>
 	</div>
 </template>
 
 <script>
+import SaasAppPlanCard from './SaasAppPlanCard.vue';
+
 export default {
 	name: 'SaasUpgrade',
+	components: {
+		SaasAppPlanCard
+	},
 	data() {
 		return {
-			plansData: null
+			plansData: null,
+			selectedPlan: null,
+			activePlan: null
 		};
+	},
+	methods: {
+		handleCardClick(plan) {
+			this.selectedPlan = plan;
+			this.$emit('change', plan);
+		},
+		switchToNewPlan() {
+			this.$resources.changePlan.submit();
+		}
 	},
 	resources: {
 		plans: {
 			method: 'press.api.saas.get_plans',
+			params: {
+				site: localStorage.getItem('current_saas_site')
+			},
 			auto: true,
-			onSuccess(r) {
-				this.plansData = r;
+			onSuccess(result) {
+				this.plansData = result;
+				this.selectedPlan = result.filter(plan => {
+					if (plan.is_selected) {
+						return plan;
+					}
+				})[0];
+				this.activePlan = this.selectedPlan;
 			}
+		},
+		changePlan() {
+			return {
+				method: 'press.api.saas.change_app_plan',
+				params: {
+					site: localStorage.getItem('current_saas_site'),
+					app: this.activePlan,
+					new_plan: this.selectedPlan
+				},
+				onSuccess() {
+					this.$resources.plans.reload();
+					this.$notify({
+						title: 'Plan Changed Successfully!',
+						icon: 'check',
+						color: 'green'
+					});
+				}
+			};
 		}
 	}
 };
