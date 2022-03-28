@@ -4,7 +4,6 @@
 import frappe
 from frappe.model.document import Document
 from press.saas.doctype.saas_app_plan.saas_app_plan import get_app_plan_features
-from press.utils import get_current_team
 
 
 class SaasApp(Document):
@@ -24,7 +23,7 @@ def get_plans_for_app(app, site):
 	saas_app_plans = frappe.get_all(
 		"Saas App Plan",
 		filters={"app": app, "enabled": 1},
-		fields=["name", "plan", "is_free"],
+		fields=["name", "plan", "is_free", "app"],
 	)
 
 	for app_plan in saas_app_plans:
@@ -36,7 +35,6 @@ def get_plans_for_app(app, site):
 
 		plan_data["features"] = get_app_plan_features(app_plan.name)
 		selected_plan = get_selected_plan(app, site)
-		print(selected_plan, app_plan.name)
 		plan_data["is_selected"] = True if selected_plan == app_plan.name else False
 
 		plans.append(plan_data)
