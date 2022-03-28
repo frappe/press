@@ -8,7 +8,7 @@
 		<template #actions>
 			<router-link
 				class="text-base text-blue-500 hover:text-blue-600"
-				:to="`/benches/${bench.name}/sites`"
+				:to="`/benches/${bench.name}/versions`"
 			>
 				View versions →
 			</router-link>
@@ -33,7 +33,7 @@
 						<router-link
 							v-else
 							class="block"
-							:to="`/benches/${bench.name}/sites/${version.name}`"
+							:to="`/benches/${bench.name}/versions/${version.name}`"
 						>
 							<Badge class="cursor-pointer hover:text-green-600" color="green">
 								{{ version.sites.length }}
