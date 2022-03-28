@@ -21,7 +21,7 @@ def get_context(context):
 		LEFT JOIN
 			`tabSite App` site
 		ON
-			site.app = marketplace.name
+			site.app = marketplace.app
 		WHERE
 			marketplace.status = "Published"
 		GROUP BY
