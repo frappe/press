@@ -4,7 +4,7 @@
 			<div class="flex h-16 items-center justify-between px-4 sm:px-8">
 				<div class="flex items-center">
 					<div class="shrink-0">
-						<router-link to="/"> App Switcher </router-link>
+						<SaasAppSwitcher />
 					</div>
 				</div>
 
@@ -33,8 +33,12 @@
 </template>
 
 <script>
+import SaasAppSwitcher from './SaasAppSwitcher.vue';
 export default {
 	name: 'SaasNavbar',
+	components: {
+		SaasAppSwitcher
+	},
 	data() {
 		return {
 			mobileMenuOpen: false,
