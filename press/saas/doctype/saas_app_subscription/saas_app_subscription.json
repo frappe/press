@@ -8,9 +8,11 @@
  "engine": "InnoDB",
  "field_order": [
   "site",
+  "team",
   "saas_app_plan",
   "status",
   "app",
+  "app_name",
   "start_date",
   "end_date",
   "interval",
@@ -71,11 +73,25 @@
    "label": "Plan",
    "options": "Plan",
    "read_only": 1
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "app.title",
+   "fieldname": "app_name",
+   "fieldtype": "Data",
+   "label": "App Name",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-03-21 11:02:03.815610",
+ "modified": "2022-03-26 13:04:27.190038",
  "modified_by": "Administrator",
  "module": "Saas",
  "name": "Saas App Subscription",
