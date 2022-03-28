@@ -224,7 +224,7 @@ export default {
 	},
 	methods: {
 		getRoute(version) {
-			return `/benches/${this.bench.name}/sites/${version.name}`;
+			return `/benches/${this.bench.name}/versions/${version.name}`;
 		}
 	},
 	computed: {
