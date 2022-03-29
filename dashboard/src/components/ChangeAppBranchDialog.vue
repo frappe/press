@@ -1,7 +1,7 @@
 <template>
 	<Dialog
 		v-if="app"
-		:show="bench && app"
+		:modelValue="bench && app"
 		:title="`Change branch for ${app.title}`"
 		@close="dialogClosed"
 	>
