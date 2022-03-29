@@ -446,6 +446,7 @@ def get_plans(name=None):
 			"cpu_time_per_day",
 			"max_storage_usage",
 			"max_database_usage",
+			"database_access",
 			"`tabHas Role`.role",
 		],
 		filters=filters,
@@ -1267,8 +1268,19 @@ def update_auto_update_info(name, info=dict()):
 @protected("Site")
 def get_database_access_info(name):
 	db_access_info = frappe._dict({})
+	site = frappe.db.get_value(
+		"Site",
+		name,
+		["plan", "is_database_access_enabled"],
+		as_dict=True,
+	)
 
-	is_db_access_enabled = frappe.db.get_value("Site", name, "is_database_access_enabled")
+	is_available_on_current_plan = (
+		frappe.db.get_value("Plan", site.plan, "database_access") if site.plan else None
+	)
+	is_db_access_enabled = site.is_database_access_enabled
+
+	db_access_info.is_available_on_current_plan = is_available_on_current_plan
 	db_access_info.is_database_access_enabled = is_db_access_enabled
 
 	if not is_db_access_enabled:
