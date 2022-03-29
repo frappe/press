@@ -151,6 +151,7 @@ class MarketplaceApp(WebsiteGenerator):
 			context.publisher_profile = publisher_profile[0]
 
 		context.no_of_installs = self.get_analytics().get("total_installs")
+		context.plans = self.get_plans()
 
 	def get_deploy_information(self):
 		"""Return the deploy information this marketplace app"""
