@@ -62,7 +62,7 @@
 			</div>
 			<div
 				class="flex items-center justify-between py-3"
-				v-if="showDatabaseAccessButton"
+				v-if="$account.team.database_access_enabled"
 			>
 				<div>
 					<h3 class="text-lg">Access</h3>
@@ -251,14 +251,6 @@ export default {
 					}, 1000);
 				}
 			};
-		},
-		current_plan() {
-			return {
-				method: 'press.api.site.current_plan',
-				params: { name: this.site?.name },
-				keepData: true,
-				auto: true
-			};
 		}
 	},
 	methods: {
@@ -300,20 +292,6 @@ export default {
 	computed: {
 		filesUploaded() {
 			return this.selectedFiles.database;
-		},
-		showDatabaseAccessButton() {
-			let db_access_enabled = this.$account.team.database_access_enabled;
-
-			if (
-				!this.$resources.current_plan.loading &&
-				this.$resources.current_plan.data
-			) {
-				return (
-					db_access_enabled &&
-					this.$resources.current_plan.data.current_plan.database_access
-				);
-			}
-			return null;
 		}
 	}
 };
