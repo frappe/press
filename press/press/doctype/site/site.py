@@ -559,23 +559,32 @@ class Site(Document):
 
 		log_site_activity(self.name, "Drop Offsite Backups")
 
-		sites_remote_files = [
-			remote_file
-			for backup_files in frappe.get_all(
-				"Site Backup",
-				filters={"site": self.name, "offsite": True, "files_availability": "Available"},
-				fields=["remote_database_file", "remote_public_file", "remote_private_file"],
-				as_list=True,
-			)
-			for remote_file in backup_files
-		]
+		sites_remote_files = []
+		for backup_files in frappe.get_all(
+			"Site Backup",
+			filters={"site": self.name, "offsite": True, "files_availability": "Available"},
+			fields=["remote_database_file", "remote_public_file", "remote_private_file"],
+			as_list=True,
+			order_by="creation_desc",
+		)[
+			1:
+		]:  # Keep latest backup
+			sites_remote_files += backup_files
 
 		if not sites_remote_files:
 			return
 
-		frappe.db.set_value(
+		latest_backup = frappe.get_all(
 			"Site Backup",
 			{"site": self.name, "offsite": True},
+			order_by="creation desc",
+			limit=1,
+			pluck="name",
+		)
+
+		frappe.db.set_value(
+			"Site Backup",
+			{"site": self.name, "offsite": True, "name": ("!=", latest_backup)},
 			"files_availability",
 			"Unavailable",
 		)
@@ -1076,7 +1085,11 @@ class Site(Document):
 		all_sites = set(
 			frappe.get_all(
 				"Site",
-				{"status": "Active", "creation": ("<=", interval_hrs_ago), "is_standby": False},
+				{
+					"status": ("not in", ["Archived", "Suspended", "Inactive"]),
+					"creation": ("<=", interval_hrs_ago),
+					"is_standby": False,
+				},
 				pluck="name",
 			)
 		)
