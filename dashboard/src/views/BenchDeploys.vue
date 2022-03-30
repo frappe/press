@@ -172,7 +172,7 @@ export default {
 							return h(
 								'Link',
 								{
-									props: { to: `/benches/${bench.name}/jobs/${job.name}` },
+									props: { to: `/benches/${bench?.name}/jobs/${job.name}` },
 									class: 'text-sm'
 								},
 								'Job Log →'
