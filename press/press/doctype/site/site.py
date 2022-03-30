@@ -574,17 +574,9 @@ class Site(Document):
 		if not sites_remote_files:
 			return
 
-		latest_backup = frappe.get_all(
-			"Site Backup",
-			{"site": self.name, "offsite": True},
-			order_by="creation desc",
-			limit=1,
-			pluck="name",
-		)
-
 		frappe.db.set_value(
 			"Site Backup",
-			{"site": self.name, "offsite": True, "name": ("!=", latest_backup)},
+			{"site": self.name, "offsite": True},
 			"files_availability",
 			"Unavailable",
 		)
