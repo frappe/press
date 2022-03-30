@@ -100,6 +100,13 @@ badge_blue, badge_green -%}
 				== 1 else 'installs' }}</span>
 		</div>
 	</div>
+
+	<!-- Pricing Plans (if any) -->
+	{%- if plans -%}
+	<h5 class="text-xl font-semibold text-gray-900 mb-2 mt-5">Pricing</h5>
+	{{ app_plans_list(plans) }}
+	{%- endif -%}
+
 	{%- if app.screenshots -%}
 	<div class="flex mt-6 space-x-4 overflow-y-auto">
 		{%- for image in app.screenshots -%}
@@ -114,12 +121,6 @@ badge_blue, badge_green -%}
 	<div class="w-full pb-8 mt-6 prose-sm prose text-gray-900">
 		{{ frappe.utils.md_to_html(app.long_description) }}
 	</div>
-
-	<!-- Pricing Plans (if any) -->
-	{%- if plans -%}
-	<h5 class="text-xl font-semibold text-gray-900 mb-2">Pricing</h5>
-	{{ app_plans_list(plans) }}
-	{%- endif -%}
 </div>
 {% endmacro %}
 
