@@ -565,7 +565,7 @@ class Site(Document):
 			filters={"site": self.name, "offsite": True, "files_availability": "Available"},
 			fields=["remote_database_file", "remote_public_file", "remote_private_file"],
 			as_list=True,
-			order_by="creation_desc",
+			order_by="creation desc",
 		)[
 			1:
 		]:  # Keep latest backup
