@@ -44,7 +44,7 @@ class AppSource(Document):
 			},
 		):
 			frappe.throw(
-				f"Alread added {(self.repository_url, self.branch)} for {self.app}",
+				f"Already added {(self.repository_url, self.branch)} for {self.app}",
 				frappe.ValidationError,
 			)
 
