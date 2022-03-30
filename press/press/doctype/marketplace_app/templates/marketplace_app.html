@@ -138,7 +138,7 @@ badge_blue, badge_green -%}
 
 
 {% macro app_plans_list(plans) %}
-<div class="mx-auto grid grid-cols-1 gap-2 md:grid-cols-3">
+<div class="mx-auto grid grid-cols-1 gap-2 md:grid-cols-3 sm:grid-cols-2">
 	{%- for plan in plans -%}
 	{{ app_plan_card(plan) }}
 	{%- endfor -%}
@@ -147,23 +147,24 @@ badge_blue, badge_green -%}
 
 
 {% macro app_plan_card(plan) %}
-<div class="rounded-2xl border border-gray-100 p-5 shadow hover:border-gray-300">
-	<h4 class="text-xl font-semibold text-gray-900">
-		{%- if plan.is_free -%}
-		<span> Free </span>
-		{%- else -%}
+<div class="flex flex-col justify-between rounded-2xl border border-gray-100 p-5 shadow hover:border-gray-300">
+	<div>
+		<h4 class="text-xl font-semibold text-gray-900">
+			{%- if plan.is_free -%}
+			<span> Free </span>
+			{%- else -%}
 
-		<span>
-			${{ frappe.utils.rounded(plan.price_usd) }}<span class="text-base font-normal text-gray-600">
-				/mo</span>
-		</span>
-		{%- endif -%}
-	</h4>
+			<span>
+				${{ frappe.utils.rounded(plan.price_usd) }}<span class="text-base font-normal text-gray-600">
+					/mo</span>
+			</span>
+			{%- endif -%}
+		</h4>
 
-	<div class="mt-5">
-		{{ feature_list(plan.features) }}
+		<div class="mt-5">
+			{{ feature_list(plan.features) }}
+		</div>
 	</div>
-
 
 	<div class="mt-4">
 		{{ button('Buy', '/dashboard/sites/new', 'primary') }}
