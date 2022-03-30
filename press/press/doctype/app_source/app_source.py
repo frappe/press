@@ -41,6 +41,7 @@ class AppSource(Document):
 				"app": self.app,
 				"repository_url": self.repository_url,
 				"branch": self.branch,
+				"team": self.team,
 			},
 		):
 			frappe.throw(
