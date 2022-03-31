@@ -15,7 +15,7 @@
 			</div>
 			<div
 				class="flex items-center py-2 text-base"
-				v-for="log in requestLogs.data"
+				v-for="log in $resources.requestLogs.data"
 				:key="log.uuid"
 			>
 				<div class="w-2/12">
