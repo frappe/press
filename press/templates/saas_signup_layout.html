@@ -1,0 +1,66 @@
+{%- extends "templates/base.html" -%}
+
+{%- block navbar -%}
+<nav class="bg-transparent navbar navbar-light justify-content-center border-bottom-0">
+	<div class="text-center">
+		<a class="navbar-brand" href="https://erpnext.com">
+			<img src="/assets/press/images/signup/{{ frappe.form_dict.app }}.png" alt="ERPNext Logo" style="height: 16px;">
+		</a>
+		<div class="font-size-sm">
+			Welcome to {{ frappe.form_dict.app.capitalize() }}
+		</div>
+	</div>
+</nav>
+{%- endblock -%}
+
+{%- block footer -%}
+{%- endblock -%}
+
+{%- block content -%}
+{%- endblock -%}
+
+{%- block script -%}
+{{ super() }}
+{%- endblock -%}
+
+{%- block style -%}
+<style>
+	body {
+		background-color: var(--gray-50);
+	}
+
+	h1 {
+		margin: 2rem 0;
+		font-size: var(--font-size-xl);
+		font-weight: 600;
+		text-align: center;
+	}
+
+	.form-step {
+		display: none;
+	}
+
+	.card {
+		box-shadow: 0px 2px 6px rgba(17, 43, 66, 0.08), 0px 1px 4px rgba(17, 43, 66, 0.1);
+		border-radius: 0.5rem;
+		border-color: transparent;
+		padding: 2rem;
+	}
+
+	@media (max-width: 576px) {
+		h1 {
+			margin-top: 0.5em;
+			margin-bottom: 1em;
+		}
+
+		.form-container {
+			padding: 0;
+		}
+
+		.card {
+			border-radius: 0;
+			padding: 0;
+		}
+	}
+</style>
+{%- endblock -%}
