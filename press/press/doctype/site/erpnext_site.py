@@ -30,6 +30,7 @@ class ERPNextSite(Site):
 					"trial_end_date": frappe.utils.add_days(None, 14),
 				}
 			)
+			self.create_subscription(get_erpnext_plan())
 
 	def rename_pooled_site(self, account_request):
 		self.subdomain = account_request.subdomain
