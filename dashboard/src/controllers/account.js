@@ -60,7 +60,10 @@ export default class Account {
 		if (this.team.free_account) {
 			return true;
 		}
-		if (this.team.erpnext_partner) {
+		if (
+			this.team.erpnext_partner ||
+			this.team.payment_mode === 'Partner Credits'
+		) {
 			return true;
 		}
 		if (this.team.payment_mode == 'Card') {
