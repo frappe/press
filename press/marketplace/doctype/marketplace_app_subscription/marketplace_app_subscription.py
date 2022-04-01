@@ -138,6 +138,12 @@ class MarketplaceAppSubscription(Document):
 		self.status = "Active"
 		self.save()
 
+	def disable(self):
+		if self.status == "Disabled":
+			return
+		self.status = "Disabled"
+		self.save(ignore_permissions=True)
+
 
 def create_usage_records():
 	subscriptions = frappe.db.get_all(
