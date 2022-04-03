@@ -1,5 +1,6 @@
 <script>
 import { DateTime } from 'luxon';
+import { h } from 'vue';
 
 export default {
 	name: 'FormatDate',
@@ -9,19 +10,18 @@ export default {
 			default: 'full'
 		}
 	},
-	render(h) {
-		let node = this.$slots.default[0];
-		let value = node.text;
+	render() {
+		let node = this.$slots.default()[0];
+		let value = node.children;
 		value = value.trim();
-		let format = this.formatDate(value, this.type);
+
+		let formattedDate = this.formatDate(value, this.type);
 		return h(
 			'span',
 			{
-				attrs: {
-					title: this.$date(value).toLocaleString(DateTime.DATETIME_FULL)
-				}
+				title: this.$date(value).toLocaleString(DateTime.DATETIME_FULL)
 			},
-			format
+			formattedDate
 		);
 	}
 };

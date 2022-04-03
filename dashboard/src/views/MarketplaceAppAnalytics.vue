@@ -30,7 +30,7 @@ export default {
 				method: 'press.api.marketplace.analytics',
 				auto: true,
 				params: {
-					name: this.app.app
+					name: this.app?.app
 				}
 			};
 		}

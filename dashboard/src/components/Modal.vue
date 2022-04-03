@@ -1,5 +1,5 @@
 <template>
-	<portal to="modals">
+	<teleport to="#modals">
 		<div
 			v-show="show"
 			class="fixed inset-0 flex items-center justify-center px-4 py-4"
@@ -21,16 +21,13 @@
 				<slot></slot>
 			</div>
 		</div>
-	</portal>
+	</teleport>
 </template>
 
 <script>
 export default {
 	name: 'Modal',
-	model: {
-		prop: 'show',
-		event: 'change'
-	},
+	emits: ['update:show'],
 	props: {
 		show: {
 			type: Boolean,
@@ -53,7 +50,7 @@ export default {
 		};
 		document.addEventListener('keydown', this.escapeListener);
 	},
-	destroyed() {
+	unmounted() {
 		document.removeEventListener('keydown', this.escapeListener);
 	},
 	methods: {
@@ -62,7 +59,7 @@ export default {
 			this.hide();
 		},
 		hide() {
-			this.$emit('change', false);
+			this.$emit('update:show', false);
 		}
 	},
 	computed: {

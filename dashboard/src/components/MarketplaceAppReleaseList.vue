@@ -330,7 +330,7 @@ export default {
 		selectedSource(value) {
 			if (value) {
 				this.resetReleaseListState();
-				this.$resources.appSource.submit();
+				this.$resources.appSource.submit({ name: value });
 			}
 		}
 	}

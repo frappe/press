@@ -1,9 +1,9 @@
 <template>
 	<Dialog
 		v-if="app"
-		:show="bench && app"
+		:modelValue="bench && app"
 		:title="`Change branch for ${app.title}`"
-		v-on:close="dialogClosed"
+		@close="dialogClosed"
 	>
 		<div>
 			<Button
@@ -36,6 +36,7 @@
 <script>
 export default {
 	name: 'ChangeAppBranchDialog',
+	emits: ['update:app'],
 	props: ['bench', 'app'],
 	data() {
 		return {

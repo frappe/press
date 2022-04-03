@@ -8,13 +8,11 @@
 		</Button>
 		<Dialog v-model="dialogOpen" title="Impersonate Team">
 			<Input label="Team" v-model="team" />
-			<Button
-				slot="actions"
-				type="primary"
-				@click="$account.switchToTeam(team)"
-			>
-				Impersonate
-			</Button>
+			<template v-slot:actions>
+				<Button type="primary" @click="$account.switchToTeam(team)">
+					Impersonate
+				</Button>
+			</template>
 		</Dialog>
 	</div>
 </template>

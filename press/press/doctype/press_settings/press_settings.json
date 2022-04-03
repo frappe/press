@@ -1,6 +1,6 @@
 {
  "actions": [],
- "creation": "2020-02-03 18:45:44.169074",
+ "creation": "2022-02-08 15:13:48.372783",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -103,6 +103,7 @@
   "erpnext_group",
   "column_break_89",
   "erpnext_apps",
+  "central_migration_server",
   "staging_sites_section",
   "staging_plan",
   "staging_expiry",
@@ -831,11 +832,17 @@
   {
    "fieldname": "column_break_39",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "central_migration_server",
+   "fieldtype": "Link",
+   "label": "Central Migration Server",
+   "options": "Server"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2022-02-01 20:35:10.638749",
+ "modified": "2022-03-24 13:30:23.685853",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

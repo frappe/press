@@ -42,7 +42,7 @@
 						v-if="getRoleBadgeProps(member).status == 'Member'"
 						class="ml-2 p-4"
 						@click="removeMember(member)"
-						:loading="removeMember.loading"
+						:loading="$resources.removeMember.loading"
 					>
 						Remove
 					</Button>
@@ -59,16 +59,15 @@
 					v-model="memberEmail"
 					required
 				/>
-				<ErrorMessage :error="addMember.error" />
-				<ErrorMessage :error="removeMember.error" />
+				<ErrorMessage :error="$resourceErrors" />
 
 				<div class="mt-5 flex flex-row justify-end">
 					<Button @click="showAddMemberForm = false"> Cancel </Button>
 					<Button
 						class="ml-2"
 						type="primary"
-						:loading="addMember.loading"
-						@click="addMember.submit({ email: memberEmail })"
+						:loading="$resources.addMember.loading"
+						@click="$resources.addMember.submit({ email: memberEmail })"
 					>
 						Send Invitation
 					</Button>

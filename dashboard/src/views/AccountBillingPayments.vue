@@ -2,9 +2,12 @@
 	<Card
 		title="Billing history"
 		:subtitle="subtitle"
-		v-if="!invoiceName && pastInvoices.data"
+		v-if="!invoiceName && $resources.pastInvoices.data"
 	>
-		<div class="divide-y" v-if="pastInvoices.data && pastInvoices.data.length">
+		<div
+			class="divide-y"
+			v-if="$resources.pastInvoices.data && $resources.pastInvoices.data.length"
+		>
 			<div
 				class="grid grid-cols-3 items-center gap-x-8 py-4 text-base text-gray-600 md:grid-cols-5"
 			>
@@ -16,7 +19,7 @@
 			</div>
 			<div
 				:key="invoice.name"
-				v-for="invoice in pastInvoices.data"
+				v-for="invoice in $resources.pastInvoices.data"
 				class="grid grid-cols-3 items-center gap-x-8 py-4 text-base text-gray-900 md:grid-cols-5"
 			>
 				<div>
@@ -95,7 +98,10 @@ export default {
 	},
 	computed: {
 		subtitle() {
-			if (this.pastInvoices.loading || this.pastInvoices.data.length > 0) {
+			if (
+				this.$resources.pastInvoices.loading ||
+				this.$resources.pastInvoices.data.length > 0
+			) {
 				return 'History of your invoice payments';
 			}
 			return 'No invoices have been generated yet';

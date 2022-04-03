@@ -15,7 +15,7 @@
 			</div>
 			<div
 				class="flex items-center py-2 text-base"
-				v-for="log in requestLogs.data"
+				v-for="log in $resources.requestLogs.data"
 				:key="log.uuid"
 			>
 				<div class="w-2/12">
@@ -87,7 +87,7 @@ export default {
 			return {
 				method: 'press.api.analytics.request_logs',
 				params: {
-					name: this.site.name,
+					name: this.site?.name,
 					timezone: DateTime.local().zoneName,
 					date: this.dateValue,
 					sort: this.sort,

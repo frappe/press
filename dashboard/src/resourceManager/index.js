@@ -1,4 +1,7 @@
+// Authors: Faris Ansari <faris@frappe.io> & Hussain Nagaria <hussain@frappe.io>
+
 import ResourceManager from './ResourceManager';
+import { reactive } from 'vue';
 
 let plugin = {
 	beforeCreate() {
@@ -6,13 +9,13 @@ let plugin = {
 		if (!vmOptions.resources || vmOptions._rm) return;
 
 		let resourceManager;
-		// function style
 		if (typeof vmOptions.resources === 'function') {
 			vmOptions.resources = vmOptions.resources.call(this);
 		}
+
 		if (isPlainObject(vmOptions.resources)) {
 			const { $options, ...resourceDefs } = vmOptions.resources;
-			resourceManager = new ResourceManager(this, resourceDefs, $options);
+			resourceManager = new ResourceManager(this, resourceDefs);
 		} else {
 			throw new Error(
 				'[ResourceManager]: resources options should be an object or a function that returns object'
@@ -20,30 +23,11 @@ let plugin = {
 		}
 
 		if (!Object.prototype.hasOwnProperty.call(this, '$resources')) {
-			Object.defineProperty(this, '$resources', {
-				get: () => resourceManager.resources
-			});
+			this.$resources = reactive(resourceManager.resources);
 		}
-
-		Object.keys(vmOptions.resources).forEach(key => {
-			if (
-				!(
-					hasKey(vmOptions.computed, key) ||
-					hasKey(vmOptions.props, key) ||
-					hasKey(vmOptions.methods, key)
-				)
-			) {
-				vmOptions.computed = Object.assign(vmOptions.computed || {}, {
-					[key]() {
-						return this.$resources[key];
-					}
-				});
-			}
-		});
 
 		this._rm = resourceManager;
 	},
-
 	data() {
 		if (!this._rm) return {};
 		return {
@@ -66,16 +50,11 @@ let plugin = {
 	created() {
 		if (!this._rm) return;
 		this._rm.init();
-	},
-
-	beforeDestroy() {
-		if (!this._rm) return;
-		this._rm.destroy();
 	}
 };
 
-export default function install(Vue) {
-	Vue.mixin(plugin);
+export default function install(app) {
+	app.mixin(plugin);
 }
 
 function isPlainObject(value) {

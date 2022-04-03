@@ -106,7 +106,7 @@
 				<ErrorMessage :error="$resources.retryAddDomain.error" />
 			</div>
 
-			<div slot="actions">
+			<template v-slot:actions>
 				<Button @click="showDialog = false"> Cancel </Button>
 				<Button
 					v-if="!dnsVerified"
@@ -136,7 +136,7 @@
 				>
 					Add Domain
 				</Button>
-			</div>
+			</template>
 		</Dialog>
 	</Card>
 </template>
@@ -155,7 +155,7 @@ export default {
 		domains() {
 			return {
 				method: 'press.api.site.domains',
-				params: { name: this.site.name },
+				params: { name: this.site?.name },
 				auto: true
 			};
 		},
@@ -205,6 +205,9 @@ export default {
 		}
 	},
 	computed: {
+		domains() {
+			return this.$resources.domains;
+		},
 		dnsVerified() {
 			return this.$resources.checkDNS.data;
 		},

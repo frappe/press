@@ -72,6 +72,11 @@
 <script>
 export default {
 	name: 'NewAppRepositories',
+	emits: [
+		'update:selectRepo',
+		'update:selectedBranch',
+		'update:selectedInstallation'
+	],
 	props: [
 		'options',
 		'repositoryResource',

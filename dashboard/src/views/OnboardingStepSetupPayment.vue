@@ -26,7 +26,7 @@
 		<Dialog title="Add billing information" v-model="showDialog">
 			<div v-if="!$account.team.billing_address">
 				<div class="text-base font-medium">Address Details</div>
-				<AddressForm ref="address-form" v-model="address" />
+				<AddressForm ref="address-form" v-model:address="address" />
 				<ErrorMessage
 					class="mt-2"
 					:error="$resources.updateBillingInformation.error"

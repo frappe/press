@@ -12,7 +12,7 @@
 		<AppUpdateCard
 			v-for="app in removedApps"
 			:key="app.name"
-			@click.native="toggleApp(app)"
+			@click.native.self="toggleApp(app)"
 			:app="app"
 			:selected="selectedApps.includes(app.app)"
 			:uninstall="true"
@@ -55,22 +55,26 @@ export default {
 		}
 	},
 	watch: {
-		selectedApps(apps) {
-			// Hardcoded for now, need a better way
-			// to manage such dependencies (#TODO)
-			// If updating ERPNext, must update Frappe with it
+		selectedApps: {
+			handler(apps) {
+				// Hardcoded for now, need a better way
+				// to manage such dependencies (#TODO)
+				// If updating ERPNext, must update Frappe with it
 
-			let frappeUpdateAvailable =
-				this.apps.filter(app => app.update_available && app.app == 'frappe')
-					.length !== 0;
+				let frappeUpdateAvailable =
+					this.apps.filter(app => app.update_available && app.app == 'frappe')
+						.length !== 0;
 
-			if (
-				apps.includes('erpnext') &&
-				!apps.includes('frappe') &&
-				frappeUpdateAvailable
-			) {
-				apps.push('frappe');
-			}
+				if (
+					apps.includes('erpnext') &&
+					!apps.includes('frappe') &&
+					frappeUpdateAvailable
+				) {
+					apps.push('frappe');
+				}
+			},
+			deep: true,
+			immediate: true
 		}
 	}
 };

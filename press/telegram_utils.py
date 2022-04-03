@@ -9,10 +9,12 @@ from press.utils import log_error
 
 
 class Telegram:
-	def __init__(self):
+	def __init__(self, chat_id: str = None):
 		self.token, self.chat_id = frappe.db.get_value(
 			"Press Settings", None, ["telegram_bot_token", "telegram_chat_id"]
 		)
+		if chat_id:
+			self.chat_id = chat_id
 
 	def send(self, message, html=False):
 		try:

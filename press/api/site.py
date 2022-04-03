@@ -67,14 +67,18 @@ def new_central_site(site: Dict):
 		site["group"] = "bench-0870"
 
 	# site["apps"] = frappe.get_all(
-	# 	"Release Group App", {"parent": site["group"]}, pluck="app"
+	# "Release Group App", {"parent": site["group"]}, pluck="app"
 	# )
 	site["apps"] = ["frappe", "erpnext", "erpnext_support", "journeys"]
 
-	return _new(site)
+	server = frappe.get_value(
+		"Press Settings", "Press Settings", "central_migration_server"
+	)
+
+	return _new(site, server)
 
 
-def _new(site):
+def _new(site, server: str = None):
 	team = get_current_team(get_doc=True)
 	if not team.enabled:
 		frappe.throw("You cannot create a new site because your account is disabled")
@@ -99,10 +103,14 @@ def _new(site):
 		pluck="name",
 	)
 
+	query_sub_str = ""
+	if server:
+		query_sub_str = f"AND server.name = '{server}'"
+
 	bench = frappe.db.sql(
-		"""
+		f"""
 	SELECT
-		bench.name, bench.cluster = %s as in_primary_cluster
+		bench.name, bench.cluster = '{cluster}' as in_primary_cluster
 	FROM
 		tabBench bench
 	LEFT JOIN
@@ -110,12 +118,14 @@ def _new(site):
 	ON
 		bench.server = server.name
 	WHERE
-		server.proxy_server in %s AND bench.status = "Active" AND bench.group = %s
+		server.proxy_server in {tuple(proxy_servers)} AND
+		bench.status = "Active" AND
+		bench.group = '{site["group"]}'
+		{query_sub_str}
 	ORDER BY
 		in_primary_cluster DESC, server.use_for_new_sites DESC, bench.creation DESC
 	LIMIT 1
 	""",
-		(cluster, proxy_servers, site["group"]),
 		as_dict=True,
 	)[0].name
 	plan = site["plan"]
@@ -436,6 +446,7 @@ def get_plans(name=None):
 			"cpu_time_per_day",
 			"max_storage_usage",
 			"max_database_usage",
+			"database_access",
 			"`tabHas Role`.role",
 		],
 		filters=filters,
@@ -1257,8 +1268,19 @@ def update_auto_update_info(name, info=dict()):
 @protected("Site")
 def get_database_access_info(name):
 	db_access_info = frappe._dict({})
+	site = frappe.db.get_value(
+		"Site",
+		name,
+		["plan", "is_database_access_enabled"],
+		as_dict=True,
+	)
 
-	is_db_access_enabled = frappe.db.get_value("Site", name, "is_database_access_enabled")
+	is_available_on_current_plan = (
+		frappe.db.get_value("Plan", site.plan, "database_access") if site.plan else None
+	)
+	is_db_access_enabled = site.is_database_access_enabled
+
+	db_access_info.is_available_on_current_plan = is_available_on_current_plan
 	db_access_info.is_database_access_enabled = is_db_access_enabled
 
 	if not is_db_access_enabled:

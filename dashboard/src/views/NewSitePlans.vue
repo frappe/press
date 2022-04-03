@@ -9,7 +9,7 @@
 			<SitePlansTable
 				:plans="options.plans"
 				:selectedPlan="selectedPlan"
-				@change="plan => $emit('update:selectedPlan', plan)"
+				@update:selectedPlan="plan => $emit('update:selectedPlan', plan)"
 			/>
 		</div>
 	</div>
@@ -20,6 +20,7 @@ import AlertBillingInformation from '@/components/AlertBillingInformation.vue';
 
 export default {
 	name: 'Plans',
+	emits: ['update:selectedPlan'],
 	props: ['options', 'selectedPlan'],
 	components: {
 		SitePlansTable,

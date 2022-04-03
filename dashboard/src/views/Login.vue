@@ -126,6 +126,7 @@ export default {
 					await this.resetPassword();
 				}
 			} catch (error) {
+				console.error(error);
 				this.errorMessage = error.messages.join('\n');
 			} finally {
 				this.state = null;

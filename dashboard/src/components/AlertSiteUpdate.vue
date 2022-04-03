@@ -56,7 +56,7 @@ export default {
 			return {
 				method: 'press.api.site.check_for_updates',
 				params: {
-					name: this.site.name
+					name: this.site?.name
 				},
 				auto: true
 			};
@@ -65,7 +65,7 @@ export default {
 			return {
 				method: 'press.api.site.last_migrate_failed',
 				params: {
-					name: this.site.name
+					name: this.site?.name
 				},
 				auto: true
 			};
@@ -74,7 +74,7 @@ export default {
 			return {
 				method: 'press.api.site.update',
 				params: {
-					name: this.site.name,
+					name: this.site?.name,
 					skip_failing_patches: this.wantToSkipFailingPatches
 				},
 				onSuccess() {

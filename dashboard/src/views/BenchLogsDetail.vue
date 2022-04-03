@@ -49,7 +49,7 @@ export default {
 			return {
 				method: 'press.api.bench.log',
 				params: {
-					name: this.bench.name,
+					name: this.bench?.name,
 					bench: this.instanceName,
 					log: this.logName
 				},

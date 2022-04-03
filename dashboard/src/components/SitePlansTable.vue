@@ -20,7 +20,7 @@
 			]"
 			v-for="(plan, i) in plans"
 			:key="plan.name"
-			@click="$emit('change', plan)"
+			@click="$emit('update:selectedPlan', plan)"
 		>
 			<div class="flex w-10 items-center">
 				<input
@@ -57,9 +57,6 @@
 export default {
 	name: 'SitePlansTable',
 	props: ['plans', 'selectedPlan'],
-	model: {
-		prop: 'selectedPlan',
-		event: 'change'
-	}
+	emits: ['update:selectedPlan']
 };
 </script>

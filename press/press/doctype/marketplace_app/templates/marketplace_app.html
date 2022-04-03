@@ -1,29 +1,26 @@
-{% extends "templates/marketplace/base.html" %}
-{%- from "templates/marketplace/macros.html" import button, link, breadcrumbs, badge_blue, badge_green -%}
+{% extends "templates/marketplace/base.html" %} {%- from
+"templates/marketplace/macros.html" import button, link, breadcrumbs,
+badge_blue, badge_green -%}
 
 {%- block body -%}
 <div>
 	<div class="px-4 sm:px-8">
 		<div class="mt-5">
-			{{ breadcrumbs([
-			{ 'label': 'Apps', 'url': '/marketplace' },
-			{ 'label': app.title, 'url': '' }
-			]) }}
+			{{ breadcrumbs([ { 'label': 'Apps', 'url': '/marketplace' }, { 'label':
+			app.title, 'url': '' } ]) }}
 		</div>
 
 		<div class="flex flex-col pt-4 pb-8 md:flex-row md:space-x-10">
-			{{ sidebar() }}
-			{{ main() }}
+			{{ sidebar() }} {{ main() }}
 		</div>
 	</div>
 </div>
 {%- endblock -%}
 
+
 {% macro sidebar() %}
 <div class="order-1 w-full md:order-none md:w-2/12 space-y-9">
-	{{ app_image(app, 'hidden md:block') }}
-
-	{%- if publisher_profile -%}
+	{{ app_image(app, 'hidden md:block') }} {%- if publisher_profile -%}
 	<div>
 		<h5 class="text-xl font-semibold text-gray-900">Publisher</h5>
 		<a class="text-base text-blue-500 hover:text-blue-700"
@@ -37,42 +34,32 @@
 		<h5 class="text-xl font-semibold text-gray-900">Categories</h5>
 		<div class="mt-2">
 			<!-- Hard-coded for now -->
-			{%- if app.subscription_type == 'Freemium'-%}
-				{{ badge_green('Freemium') }}
-			{%- elif app.subscription_type == 'Paid'-%}
-				{{ badge_green('Paid') }}
-			{%- else -%}
-				{{ badge_blue('Free') }}
-			{%- endif -%}
-
-			{%- for category in app.categories -%}
+			{%- if app.subscription_type == 'Freemium'-%} {{ badge_green('Freemium')
+			}} {%- elif app.subscription_type == 'Paid'-%} {{ badge_green('Paid') }}
+			{%- else -%} {{ badge_blue('Free') }} {%- endif -%} {%- for category in
+			app.categories -%}
 			<div class="inline-flex flex-row mt-2 mr-2">
-					{{ badge_blue(category.category) }}
+				{{ badge_blue(category.category) }}
 			</div>
 			{%- endfor -%}
-			
 		</div>
 	</div>
 
 	<div>
 		<h5 class="text-xl font-semibold text-gray-900">Learn more & Support</h5>
 		<ul class="flex flex-col mt-2 space-y-3">
-			{%- for label, icon, href in [
-			('Visit Website', 'external-link', app.website),
-			('Support', 'life-buoy', app.support),
-			('Documentaion', 'file-text', app.documentation),
-			('Privacy Policy', 'lock', app.privacy_policy),
-			('Terms of Service', 'shield', app.terms_of_service)
-			] -%}
-			{%- if href -%}
+			{%- for label, icon, href in [ ('Visit Website', 'external-link',
+			app.website), ('Support', 'life-buoy', app.support), ('Documentaion',
+			'file-text', app.documentation), ('Privacy Policy', 'lock',
+			app.privacy_policy), ('Terms of Service', 'shield', app.terms_of_service)
+			] -%} {%- if href -%}
 			<li>
 				<a class="flex flex-row space-x-1 text-gray-600 hover:text-gray-800" href="{{ href }}">
 					<i class="w-4 h-4" data-feather="{{ icon }}"></i>
 					<span class="text-base">{{ label }}</span>
 				</a>
 			</li>
-			{%- endif -%}
-			{%- endfor -%}
+			{%- endif -%} {%- endfor -%}
 		</ul>
 	</div>
 
@@ -81,13 +68,13 @@
 		<ul class="mt-2 space-y-1 text-base text-gray-600">
 			{%- for supported_version in supported_versions -%}
 			<li>
-				{%- if supported_version.app_source.public -%}
-				{{ link(supported_version.version, supported_version.app_source.repository_url + '/tree/' +
-				supported_version.app_source.branch, blank=True) }}
-				{%- else -%}
-				{{ link(supported_version.version, supported_version.frappe_source.repository_url + '/tree/' +
-				supported_version.frappe_source.branch, blank=True) }}
-				{%- endif -%}
+				{%- if supported_version.app_source.public -%} {{
+				link(supported_version.version,
+				supported_version.app_source.repository_url + '/tree/' +
+				supported_version.app_source.branch, blank=True) }} {%- else -%} {{
+				link(supported_version.version,
+				supported_version.frappe_source.repository_url + '/tree/' +
+				supported_version.frappe_source.branch, blank=True) }} {%- endif -%}
 			</li>
 			{%- endfor -%}
 		</ul>
@@ -99,21 +86,27 @@
 {% macro main() %}
 <div class="w-full border-b md:w-10/12 md:border-b-0">
 	<div class="flex flex-row items-center">
-		<div class="mr-2 md:hidden">
-			{{ app_image(app) }}
-		</div>
-		<h1 class="mb-2 text-4xl font-semibold text-gray-900 md:text-5xl"> {{ app.title }} </h1>
+		<div class="mr-2 md:hidden">{{ app_image(app) }}</div>
+		<h1 class="mb-2 text-4xl font-semibold text-gray-900 md:text-5xl">
+			{{ app.title }}
+		</h1>
 	</div>
-	<p class="mt-2 text-base text-gray-700 md:mt-0">
-		{{ app.description }}
-	</p>
+	<p class="mt-2 text-base text-gray-700 md:mt-0">{{ app.description }}</p>
 	<div class="mt-2 flex flex-row justify-items-center">
 		{{ button('Install Now', '/dashboard/sites/new', 'primary') }}
 		<div class="ml-2 mt-2 flex flex-row text-sm text-gray-600 justify-items-end">
 			<i class="w-4 h-4 mx-2" data-feather="download"></i>
-			<span>{{ no_of_installs | number_k_format }} {{ 'install' if no_of_installs == 1 else 'installs' }}</span>
+			<span>{{ no_of_installs | number_k_format }} {{ 'install' if no_of_installs
+				== 1 else 'installs' }}</span>
 		</div>
 	</div>
+
+	<!-- Pricing Plans (if any) -->
+	{%- if plans -%}
+	<h5 class="text-xl font-semibold text-gray-900 mb-2 mt-5">Pricing</h5>
+	{{ app_plans_list(plans) }}
+	{%- endif -%}
+
 	{%- if app.screenshots -%}
 	<div class="flex mt-6 space-x-4 overflow-y-auto">
 		{%- for image in app.screenshots -%}
@@ -135,11 +128,67 @@
 {% macro app_image(app, class='') %}
 <div class="w-12 h-12 md:w-24 md:h-24 lg:w-44 lg:h-44 {{ class }}">
 	{%- if app.image -%}
-	<img class="object-cover border border-gray-200 rounded-lg" src="{{ app.image }}" alt="{{ app.title }}">
+	<img class="object-cover border border-gray-200 rounded-lg" src="{{ app.image }}" alt="{{ app.title }}" />
 	{%- else -%}
 	<div class="flex items-center justify-center text-gray-500 bg-gray-100 border border-gray-200 rounded-lg">
 		{{ app.title[0].upper() }}
 	</div>
 	{%- endif -%}
 </div>
+{% endmacro %}
+
+
+{% macro app_plans_list(plans) %}
+<div class="mx-auto grid grid-cols-1 gap-2 md:grid-cols-3 sm:grid-cols-2">
+	{%- for plan in plans -%}
+	{{ app_plan_card(plan) }}
+	{%- endfor -%}
+</div>
+{% endmacro %}
+
+
+{% macro app_plan_card(plan) %}
+<div class="flex flex-col justify-between rounded-2xl border border-gray-100 p-5 shadow hover:border-gray-300">
+	<div>
+		<h4 class="text-xl font-semibold text-gray-900">
+			{%- if plan.is_free -%}
+			<span> Free </span>
+			{%- else -%}
+
+			<span>
+				${{ frappe.utils.rounded(plan.price_usd) }}<span class="text-base font-normal text-gray-600">
+					/mo</span>
+			</span>
+			{%- endif -%}
+		</h4>
+
+		<div class="mt-5">
+			{{ feature_list(plan.features) }}
+		</div>
+	</div>
+
+	<div class="mt-4">
+		{{ button('Buy', '/dashboard/sites/new', 'primary') }}
+	</div>
+</div>
+{% endmacro %}
+
+
+{% macro feature_list(features) %}
+<ul class="space-y-2 text-sm text-gray-700">
+	{%- for feature in features -%}
+	<li class="flex flex-row justify-items-center" v-for="feature in features" :key="feature">
+		<div class="mr-2">
+			<!-- Circular check icon -->
+			<div class="grid h-4 w-4 shrink-0 place-items-center rounded-full border border-green-500 bg-green-50">
+				<svg width="10" height="8" viewBox="0 0 10 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+					<path d="M1.26562 3.86686L3.93229 6.53353L9.26562 1.2002" stroke="#38A160" stroke-miterlimit="10"
+						stroke-linecap="round" stroke-linejoin="round" />
+				</svg>
+			</div>
+		</div>
+		{{ feature }}
+	</li>
+	{%- endfor -%}
+</ul>
 {% endmacro %}
