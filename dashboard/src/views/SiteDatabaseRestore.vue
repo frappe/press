@@ -1,5 +1,6 @@
 <template>
 	<Card
+		v-if="site"
 		title="Restore, Migrate & Reset"
 		:subtitle="
 			site.status === 'Suspended'
@@ -61,7 +62,7 @@
 			</div>
 			<div
 				class="flex items-center justify-between py-3"
-				v-if="showDatabaseAccessButton"
+				v-if="$account.team.database_access_enabled"
 			>
 				<div>
 					<h3 class="text-lg">Access</h3>
@@ -120,7 +121,7 @@
 		<Dialog title="Restore" v-model="showRestoreDialog">
 			<div class="space-y-4">
 				<p class="text-base">Restore your database using a previous backup.</p>
-				<BackupFilesUploader :backupFiles.sync="selectedFiles" />
+				<BackupFilesUploader v-model:backupFiles="selectedFiles" />
 			</div>
 			<div class="mt-3">
 				<!-- Skip Failing Checkbox -->
@@ -149,7 +150,7 @@
 		<DatabaseAccessDialog
 			v-if="showDatabaseAccessDialog"
 			:site="site.name"
-			:show.sync="showDatabaseAccessDialog"
+			v-model:show="showDatabaseAccessDialog"
 		/>
 	</Card>
 </template>
@@ -185,7 +186,7 @@ export default {
 			return {
 				method: 'press.api.site.restore',
 				params: {
-					name: this.site.name,
+					name: this.site?.name,
 					files: this.selectedFiles,
 					skip_failing_patches: this.wantToSkipFailingPatches
 				},
@@ -196,7 +197,7 @@ export default {
 				},
 				onSuccess() {
 					this.selectedFiles = {};
-					this.$router.push(`/sites/${this.site.name}/installing`);
+					this.$router.push(`/sites/${this.site?.name}/installing`);
 					setTimeout(() => {
 						window.location.reload();
 					}, 1000);
@@ -207,10 +208,10 @@ export default {
 			return {
 				method: 'press.api.site.reinstall',
 				params: {
-					name: this.site.name
+					name: this.site?.name
 				},
 				onSuccess() {
-					this.$router.push(`/sites/${this.site.name}/installing`);
+					this.$router.push(`/sites/${this.site?.name}/installing`);
 					setTimeout(() => {
 						window.location.reload();
 					}, 1000);
@@ -221,12 +222,12 @@ export default {
 			return {
 				method: 'press.api.site.migrate',
 				params: {
-					name: this.site.name
+					name: this.site?.name
 				},
 				onSuccess() {
 					this.$router.push({
 						name: 'SiteOverview',
-						params: { site: this.site.name }
+						params: { site: this.site?.name }
 					});
 					setTimeout(() => {
 						window.location.reload();
@@ -238,25 +239,17 @@ export default {
 			return {
 				method: 'press.api.site.clear_cache',
 				params: {
-					name: this.site.name
+					name: this.site?.name
 				},
 				onSuccess() {
 					this.$router.push({
 						name: 'SiteOverview',
-						params: { site: this.site.name }
+						params: { site: this.site?.name }
 					});
 					setTimeout(() => {
 						window.location.reload();
 					}, 1000);
 				}
-			};
-		},
-		current_plan() {
-			return {
-				method: 'press.api.site.current_plan',
-				params: { name: this.site.name },
-				keepData: true,
-				auto: true
 			};
 		}
 	},
@@ -299,20 +292,6 @@ export default {
 	computed: {
 		filesUploaded() {
 			return this.selectedFiles.database;
-		},
-		showDatabaseAccessButton() {
-			let db_access_enabled = this.$account.team.database_access_enabled;
-
-			if (
-				!this.$resources.current_plan.loading &&
-				this.$resources.current_plan.data
-			) {
-				return (
-					db_access_enabled &&
-					this.$resources.current_plan.data.current_plan.database_access
-				);
-			}
-			return null;
 		}
 	}
 };

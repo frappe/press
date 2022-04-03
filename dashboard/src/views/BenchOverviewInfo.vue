@@ -21,7 +21,7 @@
 				title="Drop Bench"
 				description="Permanently delete the bench and related data"
 			>
-				<template slot="actions">
+				<template v-slot:actions>
 					<BenchDrop :bench="bench" v-slot="{ showDialog }">
 						<Button @click="showDialog">
 							<span class="text-red-600">Drop Bench</span>
@@ -34,7 +34,7 @@
 			<Input label="Title" type="text" v-model="benchTitle" />
 			<ErrorMessage class="mt-4" :error="$resources.editTitle.error" />
 
-			<template #actions>
+			<template v-slot:actions>
 				<div class="space-x-2">
 					<Button @click="showEditTitleDialog = false">Cancel</Button>
 					<Button
@@ -71,12 +71,12 @@ export default {
 				method: 'frappe.client.set_value',
 				params: {
 					doctype: 'Release Group',
-					name: this.bench.name,
+					name: this.bench?.name,
 					fieldname: 'title',
 					value: this.benchTitle
 				},
 				validate() {
-					if (this.benchTitle === this.bench.title) {
+					if (this.benchTitle === this.bench?.title) {
 						return 'No changes in bench title';
 					}
 				},

@@ -41,10 +41,11 @@ class AppSource(Document):
 				"app": self.app,
 				"repository_url": self.repository_url,
 				"branch": self.branch,
+				"team": self.team,
 			},
 		):
 			frappe.throw(
-				f"Alread added {(self.repository_url, self.branch)} for {self.app}",
+				f"Already added {(self.repository_url, self.branch)} for {self.app}",
 				frappe.ValidationError,
 			)
 

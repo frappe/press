@@ -30,7 +30,7 @@ class CentralSiteMigration(Document):
 	def start(self):
 		self.status = "Pending"
 		self.save()
-		frappe.enqueue_doc(self.doctype, self.name, "_start", queue="short")
+		frappe.enqueue_doc(self.doctype, self.name, "_start", queue="long", timeout=2500)
 
 	def _start(self):
 		try:
@@ -58,8 +58,8 @@ class CentralSiteMigration(Document):
 			else:
 				self.fail()
 		except Exception:
-			self.fail()
 			log_error("Central Site Migration Exception", migration=self.as_dict())
+			self.fail()
 		self.save()
 
 	def fail(self):
@@ -71,7 +71,10 @@ Now look what you did!
 
 [Central Site Migration]({domain}{self.get_url()})
 """
-		telegram = Telegram()
+		chat_id = frappe.db.get_value(
+			"Press Settings", "Press Settings", "telegram_alert_chat_id"
+		)
+		telegram = Telegram(chat_id)
 		telegram.send(message)
 
 

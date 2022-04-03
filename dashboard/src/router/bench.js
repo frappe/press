@@ -20,8 +20,8 @@ export default [
 				component: () => import('../views/BenchApps.vue')
 			},
 			{
-				path: 'sites/:version?',
-				component: () => import('../views/BenchSites.vue'),
+				path: 'versions/:version?',
+				component: () => import('../views/BenchVersions.vue'),
 				props: true
 			},
 			{

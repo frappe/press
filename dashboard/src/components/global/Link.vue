@@ -2,7 +2,6 @@
 	<component
 		:is="isExternal ? 'a' : 'router-link'"
 		v-bind="attributes"
-		v-on="$listeners"
 		class="cursor-pointer text-blue-500 hover:text-blue-600"
 	>
 		<slot></slot>

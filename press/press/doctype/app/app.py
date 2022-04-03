@@ -19,7 +19,7 @@ class App(Document):
 	):
 		existing_source = frappe.get_all(
 			"App Source",
-			{"app": self.name, "repository_url": repository_url, "branch": branch},
+			{"app": self.name, "repository_url": repository_url, "branch": branch, "team": team},
 			limit=1,
 		)
 		if existing_source:

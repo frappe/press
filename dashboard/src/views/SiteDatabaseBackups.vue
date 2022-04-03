@@ -1,11 +1,12 @@
 <template>
 	<Card
+		v-if="site"
 		title="Backups"
 		subtitle="Backups are enabled and are scheduled to run every six hours."
 	>
 		<template #actions>
 			<Button
-				v-if="site.status === 'Active'"
+				v-if="site?.status === 'Active'"
 				@click="$resources.scheduleBackup.fetch()"
 				:loading="$resources.scheduleBackup.loading"
 			>
@@ -64,7 +65,7 @@ export default {
 			return {
 				method: 'press.api.site.backups',
 				params: {
-					name: this.site.name
+					name: this.site?.name
 				},
 				default: [],
 				auto: true
@@ -74,7 +75,7 @@ export default {
 			return {
 				method: 'press.api.site.backup',
 				params: {
-					name: this.site.name,
+					name: this.site?.name,
 					with_files: true
 				},
 				onSuccess: () => {
@@ -91,6 +92,11 @@ export default {
 				}
 			}
 		});
+	},
+	computed: {
+		backups() {
+			return this.$resources.backups;
+		}
 	},
 	methods: {
 		dropdownItems(backup) {

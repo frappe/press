@@ -8,18 +8,16 @@ function onDocumentClick(e, el, fn) {
 }
 
 export default {
-	bind(el, binding) {
+	created(el, binding) {
 		el.dataset.outsideClickIndex = instances.length;
-
 		const fn = binding.value;
 		const click = function (e) {
 			onDocumentClick(e, el, fn);
 		};
-
 		document.addEventListener('click', click);
 		instances.push(click);
 	},
-	unbind(el) {
+	unmounted(el) {
 		const index = el.dataset.outsideClickIndex;
 		const handler = instances[index];
 		document.addEventListener('click', handler);

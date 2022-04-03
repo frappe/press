@@ -1,28 +1,32 @@
 <template>
 	<Dialog
 		title="Update Billing Details"
-		:show="show"
-		@change="value => $emit('change', value)"
+		:modelValue="show"
+		@update:modelValue="$emit('update:show', $event)"
 	>
 		<p class="text-base" v-if="message">
 			{{ message }}
 		</p>
 		<Input
-			class="pt-4"
+			class="mt-4"
 			type="text"
 			v-model="billingInformation.billing_name"
 			label="Billing Name"
 		/>
-		<AddressForm ref="address-form" class="mt-4" v-model="billingInformation" />
+		<AddressForm
+			ref="address-form"
+			class="mt-4"
+			v-model:address="billingInformation"
+		/>
 		<ErrorMessage
 			class="mt-2"
 			:error="$resources.updateBillingInformation.error"
 		/>
-		<template slot="actions">
+		<template v-slot:actions>
 			<Button
 				type="primary"
-				@click="updateBillingInformation.submit()"
-				:loading="updateBillingInformation.loading"
+				@click="$resources.updateBillingInformation.submit()"
+				:loading="$resources.updateBillingInformation.loading"
 			>
 				Submit
 			</Button>
@@ -36,10 +40,7 @@ import AddressForm from '@/components/AddressForm.vue';
 export default {
 	name: 'UpdateBillingDetails',
 	props: ['message', 'show'],
-	model: {
-		prop: 'show',
-		event: 'change'
-	},
+	emits: ['update:show', 'updated'],
 	components: {
 		AddressForm
 	},
@@ -84,7 +85,7 @@ export default {
 					billing_details: this.billingInformation
 				},
 				onSuccess() {
-					this.$emit('change', false);
+					this.$emit('update:show', false);
 					this.$notify({
 						title: 'Address updated successfully!'
 					});

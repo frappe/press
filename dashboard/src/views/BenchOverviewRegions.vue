@@ -2,13 +2,15 @@
 	<Card
 		title="Regions"
 		subtitle="Regions available for your bench"
-		:loading="regions.loading"
+		:loading="$resources.regions.loading"
 	>
 		<template #actions>
 			<Button
 				v-if="showAddRegionButton"
 				@click="
-					!availableRegions.data ? availableRegions.fetch() : null;
+					!$resources.availableRegions.data
+						? $resources.availableRegions.fetch()
+						: null;
 					showAddRegionDialog = true;
 				"
 			>
@@ -18,7 +20,7 @@
 
 		<div class="divide-y">
 			<ListItem
-				v-for="region in regions.data"
+				v-for="region in $resources.regions.data"
 				:key="region.name"
 				:title="region.title"
 				:image="region.image"
@@ -30,7 +32,7 @@
 			title="Select secondary region for your bench"
 			v-model="showAddRegionDialog"
 		>
-			<Loading class="py-2" v-if="availableRegions.loading" />
+			<Loading class="py-2" v-if="$resources.availableRegions.loading" />
 
 			<RichSelect
 				:value="selectedRegion"
@@ -41,9 +43,9 @@
 				<Button
 					type="primary"
 					v-if="selectedRegion"
-					:loading="addRegion.loading"
+					:loading="$resources.addRegion.loading"
 					@click="
-						addRegion.submit({
+						$resources.addRegion.submit({
 							name: bench.name,
 							region: selectedRegion
 						})
@@ -74,7 +76,7 @@ export default {
 			return {
 				method: 'press.api.bench.regions',
 				params: {
-					name: this.bench.name
+					name: this.bench?.name
 				},
 				auto: true
 			};
@@ -83,7 +85,7 @@ export default {
 			return {
 				method: 'press.api.bench.available_regions',
 				params: {
-					name: this.bench.name
+					name: this.bench?.name
 				},
 				auto: true,
 				onSuccess(availableRegions) {

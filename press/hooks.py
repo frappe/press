@@ -79,6 +79,7 @@ email_css = ["/assets/press/css/email.css"]
 
 jinja = {
 	"filters": ["press.press.doctype.marketplace_app.utils.number_k_format"],
+	"methods": ["press.utils.get_country_info"],
 }
 
 # Installation
@@ -205,6 +206,8 @@ scheduler_events = {
 			"press.press.doctype.drip_email.drip_email.send_welcome_email",
 			"press.press.doctype.site.backups.schedule",
 			"press.press.doctype.site_migration.site_migration.run_scheduled_migrations",
+		],
+		"*/5 * * * *": [
 			"press.press.doctype.central_site_migration.central_site_migration.start_one_migration",
 		],
 		"*/30 * * * *": ["press.press.doctype.site_update.scheduled_auto_updates.trigger"],

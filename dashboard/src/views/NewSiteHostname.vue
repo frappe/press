@@ -9,7 +9,7 @@
 			<input
 				class="form-input z-10 w-full rounded-r-none"
 				type="text"
-				:value="subdomain"
+				:value="modelValue"
 				placeholder="subdomain"
 				@change="subdomainChange"
 			/>
@@ -23,7 +23,7 @@
 				class="text-sm text-green-600"
 				role="alert"
 			>
-				{{ subdomain }}.{{ options.domain }} is available
+				{{ modelValue }}.{{ options.domain }} is available
 			</div>
 			<ErrorMessage :error="errorMessage" />
 		</div>
@@ -32,11 +32,8 @@
 <script>
 export default {
 	name: 'Hostname',
-	props: ['options', 'subdomain'],
-	model: {
-		prop: 'subdomain',
-		event: 'change'
-	},
+	props: ['options', 'modelValue'],
+	emits: ['update:modelValue', 'error'],
 	data() {
 		return {
 			subdomainAvailable: false,
@@ -46,7 +43,7 @@ export default {
 	methods: {
 		async subdomainChange(e) {
 			let subdomain = e.target.value;
-			this.$emit('change', subdomain);
+			this.$emit('update:modelValue', subdomain);
 			this.subdomainAvailable = false;
 
 			let error = this.validateSubdomain(subdomain);

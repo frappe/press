@@ -98,7 +98,7 @@
 				type="checkbox"
 				label="I am okay if my details are shared with local certified Partner"
 				@change="val => $emit('update:shareDetailsConsent', val)"
-				:value="shareDetailsConsent"
+				:modelValue="shareDetailsConsent"
 			/>
 		</div>
 	</div>
@@ -113,6 +113,12 @@ export default {
 		RichSelect
 	},
 	name: 'Apps',
+	emits: [
+		'update:selectedApps',
+		'update:selectedGroup',
+		'update:selectedRegion',
+		'update:shareDetailsConsent'
+	],
 	props: [
 		'options',
 		'selectedApps',

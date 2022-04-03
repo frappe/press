@@ -63,6 +63,7 @@ import FileUploader from './FileUploader.vue';
 export default {
 	name: 'BackupFilesUploader',
 	components: { FileUploader },
+	emits: ['update:backupFiles'],
 	props: ['backupFiles'],
 	data() {
 		return {

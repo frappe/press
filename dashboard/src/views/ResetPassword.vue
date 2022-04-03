@@ -12,7 +12,7 @@
 					label="Email"
 					class="pointer-events-none"
 					type="text"
-					:value="email"
+					:modelValue="email"
 					name="email"
 					autocomplete="off"
 					disabled

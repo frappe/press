@@ -121,6 +121,8 @@ def upload_backup_file(file_type, file_name, file_path):
 
 	payload = upload_ticket.json()["message"]
 
+	key = ""
+
 	if parts > 1:
 
 		def get_file_data(path, part):
@@ -162,6 +164,7 @@ def upload_backup_file(file_type, file_name, file_path):
 	else:
 		url = payload["url"]
 		fields = payload["fields"]
+		key = fields["key"]
 
 		# upload remote file
 		fields["file"] = (file_name, open(file_path, "rb"))
@@ -187,7 +190,7 @@ def upload_backup_file(file_type, file_name, file_path):
 		register_remote_url,
 		{
 			"file": file_name,
-			"path": fields["key"],
+			"path": key,
 			"type": "application/x-gzip" if file_type == "database" else "application/x-tar",
 			"size": os.path.getsize(file_path),
 		},

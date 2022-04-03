@@ -1,24 +1,30 @@
+// Authors: Faris Ansari <faris@frappe.io> & Hussain Nagaria <hussain@frappe.io>
+
 import call from '../controllers/call';
+import { reactive } from 'vue';
 
 export default class ResourceManager {
 	constructor(vm, resourceDefs) {
 		this._vm = vm;
 		this._watchers = [];
-		let resources = {};
+		let resources = reactive({});
+
 		for (let key in resourceDefs) {
 			let resourceDef = resourceDefs[key];
 			if (typeof resourceDef === 'function') {
 				this._watchers.push([
-					() => resourceDef.call(vm),
+					() => {
+						return resourceDef.call(vm);
+					},
 					(n, o) => this.updateResource(key, n, o),
 					{
 						immediate: true,
 						deep: true,
-						sync: true
+						flush: 'sync'
 					}
 				]);
 			} else {
-				let resource = new Resource(vm, resourceDef);
+				let resource = reactive(new Resource(vm, resourceDef));
 				resources[key] = resource;
 
 				if (resource.auto) {
@@ -35,11 +41,6 @@ export default class ResourceManager {
 
 	destroy() {
 		const vm = this._vm;
-
-		// this.cancelAll();
-		// Object.values(this.resources).forEach(r => {
-		// 	r.stopInterval();
-		// });
 		delete vm._rm;
 	}
 
@@ -48,8 +49,8 @@ export default class ResourceManager {
 		if (key in this.resources) {
 			resource = this.resources[key];
 		} else {
-			resource = new Resource(this._vm, newValue);
-			this._vm.$set(this.resources, key, resource);
+			resource = reactive(new Resource(this._vm, newValue));
+			this.resources[key] = resource;
 		}
 
 		let oldData = resource.data;
@@ -71,7 +72,7 @@ export default class ResourceManager {
 	}
 }
 
-class Resource {
+export class Resource {
 	constructor(vm, options = {}) {
 		if (typeof options == 'string') {
 			options = { method: options, auto: true };

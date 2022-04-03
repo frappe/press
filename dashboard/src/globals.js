@@ -1,5 +1,4 @@
 import Vue from 'vue';
-import PortalVue from 'portal-vue';
 import '@/components/global';
 import outsideClickDirective from '@/components/global/outsideClickDirective';
 import call from './controllers/call';
@@ -10,7 +9,6 @@ import socket from './controllers/socket';
 import saas from './controllers/saas';
 import utils from './utils';
 
-Vue.use(PortalVue);
 Vue.use(resourceManager);
 Vue.use(utils);
 Vue.directive('on-outside-click', outsideClickDirective);

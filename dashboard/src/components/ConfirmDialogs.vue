@@ -1,3 +1,34 @@
+<script setup>
+import { getCurrentInstance, ref } from 'vue';
+
+const app = getCurrentInstance();
+const confirmDialogs = ref([]);
+
+function confirm(dialog) {
+	dialog.id = confirmDialogs.value.length;
+	dialog.show = true;
+	if (dialog.resource) {
+		dialog.resource.on('onSuccess', () => {
+			removeConfirmDialog(dialog);
+		});
+	}
+	confirmDialogs.value.push(dialog);
+}
+
+function removeConfirmDialog(dialog) {
+	confirmDialogs.value = confirmDialogs.value.filter(
+		_dialog => dialog !== _dialog
+	);
+}
+
+function onDialogAction(dialog) {
+	let closeDialog = () => removeConfirmDialog(dialog);
+	dialog.action(closeDialog);
+}
+
+app.appContext.config.globalProperties.$confirm = confirm;
+</script>
+
 <template>
 	<div>
 		<Dialog
@@ -15,7 +46,7 @@
 				v-if="dialog.resource"
 				:error="dialog.resource.error"
 			/>
-			<template slot="actions">
+			<template v-slot:actions>
 				<Button type="secondary" @click="removeConfirmDialog(dialog)">
 					Cancel
 				</Button>
@@ -31,39 +62,3 @@
 		</Dialog>
 	</div>
 </template>
-<script>
-import Vue from 'vue';
-
-export default {
-	name: 'ConfirmDialogs',
-	data() {
-		return {
-			confirmDialogs: []
-		};
-	},
-	created() {
-		Vue.prototype.$confirm = this.confirm;
-	},
-	methods: {
-		confirm(dialog) {
-			dialog.id = this.confirmDialogs.length;
-			dialog.show = true;
-			if (dialog.resource) {
-				dialog.resource.on('onSuccess', () => {
-					this.removeConfirmDialog(dialog);
-				});
-			}
-			this.confirmDialogs.push(dialog);
-		},
-		onDialogAction(dialog) {
-			let closeDialog = () => this.removeConfirmDialog(dialog);
-			dialog.action(closeDialog);
-		},
-		removeConfirmDialog(dialog) {
-			this.confirmDialogs = this.confirmDialogs.filter(
-				_dialog => dialog !== _dialog
-			);
-		}
-	}
-};
-</script>

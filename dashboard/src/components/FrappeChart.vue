@@ -6,7 +6,7 @@ import { Chart } from 'frappe-charts/dist/frappe-charts.esm.js';
 export default {
 	name: 'FrappeChart',
 	props: ['type', 'data', 'options', 'colors'],
-	destroyed() {
+	unmounted() {
 		this.chart?.destroy();
 	},
 	watch: {

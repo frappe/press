@@ -2,7 +2,7 @@
 	<Card
 		title="Credit Balance"
 		subtitle="History of your credit balance"
-		v-if="balances.data && balances.data.length"
+		v-if="$resources.balances.data && $resources.balances.data.length"
 	>
 		<div class="divide-y">
 			<div
@@ -16,7 +16,7 @@
 			</div>
 			<div
 				class="grid grid-cols-4 items-center gap-x-8 py-4 text-base text-gray-900 md:grid-cols-5"
-				v-for="d in balances.data"
+				v-for="d in $resources.balances.data"
 				:key="d.name"
 			>
 				<div class="hidden md:block">

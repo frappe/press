@@ -8,10 +8,10 @@
 		</span>
 		<input
 			v-if="type !== 'select'"
+			v-bind="$attrs"
 			class="form-input block w-full"
 			:class="inputClass"
 			:type="type || 'text'"
-			v-bind="$attrs"
 			v-model="inputVal"
 		/>
 		<select class="form-select block w-full" v-model="inputVal" v-else>

@@ -61,8 +61,10 @@
 </template>
 
 <script>
-import CardWithDetails from '@/components/CardWithDetails.vue';
+import { h } from 'vue';
 import StepsDetail from './StepsDetail.vue';
+import CardWithDetails from '@/components/CardWithDetails.vue';
+
 export default {
 	name: 'BenchDeploys',
 	props: ['bench', 'candidateName'],
@@ -80,7 +82,7 @@ export default {
 			return {
 				method: 'press.api.bench.candidates',
 				params: {
-					name: this.bench.name,
+					name: this.bench?.name,
 					start: this.pageStart
 				},
 				auto: true,
@@ -113,7 +115,7 @@ export default {
 			);
 		}
 	},
-	destroyed() {
+	unmounted() {
 		this.$socket.off(`bench_deploy:${this.candidateName}:steps`, this.onSteps);
 		this.$socket.off(
 			`bench_deploy:${this.candidateName}:finished`,
@@ -122,7 +124,9 @@ export default {
 	},
 	methods: {
 		onSteps(data) {
-			this.$resources.selectedCandidate.data.build_steps = data.steps;
+			if (this.$resources.selectedCandidate.data) {
+				this.$resources.selectedCandidate.data.build_steps = data.steps;
+			}
 		},
 		onStopped() {
 			this.$resources.candidates.reset();
@@ -164,11 +168,11 @@ export default {
 					completed: job.status == 'Success',
 					running: ['Pending', 'Running'].includes(job.status),
 					action: {
-						render(h) {
+						render() {
 							return h(
 								'Link',
 								{
-									props: { to: `/benches/${bench.name}/jobs/${job.name}` },
+									props: { to: `/benches/${bench?.name}/jobs/${job.name}` },
 									class: 'text-sm'
 								},
 								'Job Log →'

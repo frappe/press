@@ -73,6 +73,9 @@ export default {
 	},
 	computed: {
 		app() {
+			if (this.$resources.app.data && !this.$resources.app.loading) {
+				return this.$resources.app.data;
+			}
 			return this.$resources.app.data;
 		},
 		tabs() {

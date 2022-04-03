@@ -151,6 +151,7 @@ class MarketplaceApp(WebsiteGenerator):
 			context.publisher_profile = publisher_profile[0]
 
 		context.no_of_installs = self.get_analytics().get("total_installs")
+		context.plans = self.get_plans()
 
 	def get_deploy_information(self):
 		"""Return the deploy information this marketplace app"""
@@ -186,28 +187,48 @@ class MarketplaceApp(WebsiteGenerator):
 
 		return deploy_info
 
+	def total_installs(self):
+		return frappe.db.count("Site App", filters={"app": self.app})
+
+	def total_active_sites(self):
+		return frappe.db.sql(
+			"""
+			SELECT
+				count(*)
+			FROM
+				tabSite site
+			LEFT JOIN
+				`tabSite App` app
+			ON
+				app.parent = site.name
+			WHERE
+				site.status = "Active" AND app.app = %s
+		""",
+			(self.app,),
+		)[0][0]
+
+	def total_active_benches(self):
+		return frappe.db.sql(
+			"""
+			SELECT
+				count(*)
+			FROM
+				tabBench bench
+			LEFT JOIN
+				`tabBench App` app
+			ON
+				app.parent = bench.name
+			WHERE
+				bench.status = "Active" AND app.app = %s
+		""",
+			(self.app,),
+		)[0][0]
+
 	def get_analytics(self):
-		app_name = self.app
-		site_names = frappe.get_all("Site App", filters={"app": app_name}, pluck="parent")
-
-		total_installs = len(site_names)
-		num_installs_active_sites = (
-			frappe.db.count("Site", filters={"name": ("in", site_names), "status": "Active"})
-			if site_names
-			else 0
-		)
-
-		bench_names = frappe.get_all("Bench App", filters={"app": app_name}, pluck="parent")
-		num_installs_active_benches = (
-			frappe.db.count("Bench", filters={"name": ("in", bench_names), "status": "Active"})
-			if bench_names
-			else 0
-		)
-
 		return {
-			"total_installs": total_installs,
-			"num_installs_active_sites": num_installs_active_sites,
-			"num_installs_active_benches": num_installs_active_benches,
+			"total_installs": self.total_installs(),
+			"num_installs_active_sites": self.total_active_sites(),
+			"num_installs_active_benches": self.total_active_benches(),
 		}
 
 	def get_plans(self, frappe_version: str = None) -> List:
@@ -279,9 +300,3 @@ def get_plan_prices(plan_name: str, discount_percent: float = 0.0) -> dict:
 def get_price_after_discount(price: float, discount_percent: float) -> float:
 	discount_amount = price * discount_percent / 100
 	return round(price - discount_amount)
-
-
-def get_total_installs_for_app(app_name: str) -> int:
-	site_names = frappe.get_all("Site App", filters={"app": app_name})
-
-	return len(site_names)

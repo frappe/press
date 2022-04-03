@@ -26,7 +26,7 @@
 			<AddressForm
 				v-if="!withoutAddress"
 				class="mt-4"
-				v-model="billingInformation"
+				v-model:address="billingInformation"
 				ref="address-form"
 			/>
 			<ErrorMessage class="mt-2" :error="errorMessage" />
@@ -48,6 +48,7 @@ import { loadStripe } from '@stripe/stripe-js';
 export default {
 	name: 'StripeCard',
 	props: ['withoutAddress'],
+	emits: ['complete'],
 	components: {
 		AddressForm,
 		StripeLogo

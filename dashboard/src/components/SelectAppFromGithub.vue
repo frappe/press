@@ -30,11 +30,14 @@
 					<NewAppRepositories
 						:options="options"
 						:repositoryResource="$resources.repository"
-						:selectedRepo.sync="selectedRepo"
-						:selectedInstallation.sync="selectedInstallation"
-						:selectedBranch.sync="selectedBranch"
+						v-model:selectedRepo="selectedRepo"
+						v-model:selectedInstallation="selectedInstallation"
+						v-model:selectedBranch="selectedBranch"
 					/>
-					<div v-if="validateApp.data" class="text-medium mt-4 text-base">
+					<div
+						v-if="$resources.validateApp.data"
+						class="text-medium mt-4 text-base"
+					>
 						<div v-if="validatedApp" class="flex">
 							<GreenCheckIcon class="mr-2 w-4" />
 							Found {{ validatedApp.title }} ({{ validatedApp.name }})

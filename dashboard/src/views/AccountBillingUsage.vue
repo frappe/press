@@ -81,7 +81,7 @@
 
 			<PrepaidCreditsDialog
 				v-if="showPrepaidCreditsDialog"
-				:show.sync="showPrepaidCreditsDialog"
+				v-model="showPrepaidCreditsDialog"
 				:minimum-amount="$account.team.currency == 'INR' ? 800 : 10"
 				@success="
 					() => {
@@ -100,15 +100,19 @@
 <script>
 import PlanIcon from '@/components/PlanIcon.vue';
 import AccountBillingUpcomingInvoice from './AccountBillingUpcomingInvoice.vue';
+import { defineAsyncComponent } from 'vue';
 
 export default {
 	name: 'AccountBillingUsage',
 	components: {
 		PlanIcon,
 		AccountBillingUpcomingInvoice,
-		PrepaidCreditsDialog: () => import('@/components/PrepaidCreditsDialog.vue'),
-		ChangePaymentModeDialog: () =>
+		PrepaidCreditsDialog: defineAsyncComponent(() =>
+			import('@/components/PrepaidCreditsDialog.vue')
+		),
+		ChangePaymentModeDialog: defineAsyncComponent(() =>
 			import('@/components/ChangePaymentModeDialog.vue')
+		)
 	},
 	resources: {
 		upcomingInvoice: 'press.api.billing.upcoming_invoice',
@@ -133,7 +137,7 @@ export default {
 			this.$resources.availablePartnerCredits.submit();
 		}
 	},
-	destroyed() {
+	unmounted() {
 		this.$socket.off('balance_updated');
 	},
 	computed: {

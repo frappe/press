@@ -1,5 +1,5 @@
 <template>
-	<div class="space-y-10">
+	<div class="space-y-10" v-if="site">
 		<Card
 			title="Site Config"
 			subtitle="Add and update key value pairs to your site's site_config.json"
@@ -120,7 +120,7 @@ export default {
 		siteConfig() {
 			return {
 				method: 'press.api.site.site_config',
-				params: { name: this.site.name },
+				params: { name: this.site?.name },
 				auto: true,
 				default: []
 			};
@@ -146,7 +146,7 @@ export default {
 			return {
 				method: 'press.api.site.update_config',
 				params: {
-					name: this.site.name,
+					name: this.site?.name,
 					config: JSON.stringify(updatedConfig)
 				},
 				async validate() {
@@ -262,18 +262,18 @@ export default {
 				};
 			});
 
-			let values = {};
+			let modelValue = {};
 			for (let d of this.$resources.siteConfig.data) {
 				let value = d.value;
 				if (['Boolean', 'Number'].includes(d.type)) {
 					value = Number(value);
 				}
-				values[d.key] = value;
+				modelValue[d.key] = value;
 			}
 
 			return {
 				fields,
-				values
+				modelValue
 			};
 		},
 		NotAllowed() {

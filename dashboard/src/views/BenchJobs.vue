@@ -20,14 +20,14 @@ export default {
 		jobResource(start) {
 			return {
 				method: 'press.api.bench.jobs',
-				params: { name: this.bench.name, start },
+				params: { name: this.bench?.name, start },
 				auto: true,
 				paged: true,
 				keepData: true
 			};
 		},
 		jobRoute(job) {
-			return `/benches/${this.bench.name}/jobs/${job.name}`;
+			return `/benches/${this.bench?.name}/jobs/${job.name}`;
 		}
 	}
 };
