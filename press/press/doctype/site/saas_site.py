@@ -22,7 +22,6 @@ class SaasSite(Site):
 					"trial_end_date": frappe.utils.add_days(None, 7),
 				}
 			)
-			self.create_subscription(get_saas_plan(self.app))
 
 	def rename_pooled_site(self, account_request):
 		self.subdomain = account_request.subdomain
@@ -92,4 +91,4 @@ def get_saas_apps(app):
 
 
 def get_saas_group(app):
-	return frappe.db.get_single_value("Press Settings", f"{app}_group")
+	return frappe.db.get_single_value("Saas Settings", f"{app}_group")
