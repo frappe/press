@@ -1,10 +1,12 @@
 import json
 import frappe
 from frappe.core.utils import find
+from press.press.doctype.team.team import Team
+from press.api.account import get_account_request_from_key
 from press.utils import get_current_team
 
 # from press.utils.billing import get_erpnext_com_connection
-from press.press.doctype.site.saas_site import SaasSite, get_saas_domain
+from press.press.doctype.site.saas_site import SaasSite, get_saas_domain, get_saas_plan
 from press.press.doctype.site.saas_pool import get as get_pooled_saas_site
 
 
@@ -40,8 +42,7 @@ def change_app_plan(site, app, new_plan):
 		pluck="name",
 	)
 	subscription = frappe.get_doc("Saas App Subscription", subscription_name[0])
-	subscription.saas_app_plan = new_plan["name"]
-	subscription.save(ignore_permissions=True)
+	subscription.change_plan(new_plan)
 
 
 # ----------------------------- SIGNUP APIs ---------------------------------
@@ -49,7 +50,7 @@ def change_app_plan(site, app, new_plan):
 
 @frappe.whitelist(allow_guest=True)
 def account_request(
-	subdomain, email, first_name, last_name, phone_number, country, url_args=None
+	subdomain, email, first_name, last_name, phone_number, country, app, url_args=None
 ):
 	app = json.loads(url_args)["app"]
 	email = email.strip().lower()
@@ -66,7 +67,9 @@ def account_request(
 	account_request = frappe.get_doc(
 		{
 			"doctype": "Account Request",
-			"erpnext": True,
+			"saas": True,
+			"saas_app": app,
+			"erpnext": False,
 			"subdomain": subdomain,
 			"email": email,
 			"role": "Press Admin",
@@ -89,7 +92,10 @@ def account_request(
 			SaasSite(site=pooled_site, app=app).rename_pooled_site(account_request)
 		else:
 			# Create a new site if pooled sites aren't available
-			SaasSite(account_request=account_request, app=app).insert(ignore_permissions=True)
+			saas_site = SaasSite(account_request=account_request, app=app).insert(
+				ignore_permissions=True
+			)
+			saas_site.create_subscription(get_saas_plan(app))
 	finally:
 		frappe.set_user(current_user)
 		frappe.session.data = current_session_data
