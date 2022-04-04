@@ -162,6 +162,7 @@ def setup_account(key, business_data=None):
 			account_request.first_name,
 			account_request.last_name,
 			country=account_request.country,
+			via_erpnext=True,
 		)
 	else:
 		team_doc = frappe.get_doc("Team", email)
