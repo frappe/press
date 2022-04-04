@@ -6,7 +6,7 @@
 		<!-- App Selector -->
 		<div class="flex cursor-pointer items-center rounded-lg px-2 py-2">
 			<Avatar size="md" :label="'T'" />
-			<p class="ml-4 text-lg">Frappe Teams</p>
+			<p class="ml-4 text-lg">{{ selectedAppName }}</p>
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
 				viewBox="0 0 24 24"
@@ -23,7 +23,7 @@
 		<!-- -->
 
 		<div
-			class="top-200 z-20 absolute flex flex-col rounded-lg border bg-white px-1 py-1 shadow"
+			class="top-200 absolute z-20 flex flex-col rounded-lg border bg-white px-1 py-1 shadow"
 			:class="{ hidden: isHidden }"
 		>
 			<div
@@ -54,6 +54,7 @@ export default {
 		return {
 			isHidden: true,
 			subscriptions: null,
+			selectedAppName: '',
 			selectedSite: localStorage.getItem('current_saas_site')
 		};
 	},
@@ -69,9 +70,14 @@ export default {
 		subs: {
 			method: 'press.api.saas.get_saas_subscriptions_for_team',
 			auto: true,
-			onSuccess(r) {
-				this.subscriptions = r;
-				// set active subscription here
+			onSuccess(res) {
+				this.subscriptions = res;
+				res.forEach(r => {
+					if (r.site == this.selectedSite) {
+						this.selectedAppName = r.app_name;
+						return;
+					}
+				});
 			}
 		}
 	}
