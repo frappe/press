@@ -147,6 +147,7 @@
 		if (Object.keys(url_args)) {
 			values.url_args = url_args;
 		}
+		values.app = 'erpnext';
 		return call('press.api.saas.account_request', values, $form)
 			.then(() => {
 				$('h1').hide();
