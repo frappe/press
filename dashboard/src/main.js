@@ -4,14 +4,15 @@ import outsideClickDirective from '@/components/global/outsideClickDirective';
 import call from './controllers/call';
 import resourceManager from './resourceManager';
 import Auth from './controllers/auth';
+import Saas from './controllers/saas';
 import Account from './controllers/account';
 import socket from './controllers/socket';
 import utils from './utils';
 import router from './router';
 
-
 const app = createApp(App);
 const auth = reactive(new Auth());
+const saas = reactive(new Saas());
 const account = reactive(new Account());
 
 let components = import.meta.globEager('./components/global/*.vue'); // To get each component inside globals folder
@@ -32,8 +33,10 @@ app.provide('$call', call);
 
 // Hack to get $auth working, should be refactored later
 app.config.globalProperties.$auth = auth;
+app.config.globalProperties.$saas = saas;
 // Actually, provide-inject is recommended to be used
 app.provide('$auth', auth);
+app.provide('$saas', saas);
 
 app.config.globalProperties.$socket = socket;
 app.provide('$account', account);
@@ -42,6 +45,7 @@ app.provide('$socket', socket);
 
 // global accessor to expose switchToTeam method
 window.$account = account;
+window.$saas = saas;
 
 app.mount('#app');
 
