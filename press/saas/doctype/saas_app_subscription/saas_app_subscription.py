@@ -23,6 +23,13 @@ class SaasAppSubscription(Document):
 	def set_plan(self):
 		self.plan = frappe.db.get_value("Saas App Plan", self.saas_app_plan, "plan")
 
+	def change_plan(self, new_plan):
+		self.saas_app_plan = new_plan["name"]
+		self.save(ignore_permissions=True)
+
+		site_doc = frappe.get_doc("Site", self.site)
+		site_doc.change_plan(self.plan)
+
 	def validate_duplicate_subscription(self):
 		already_exists = frappe.db.exists(
 			"Saas App Subscription", {"app": self.app, "site": self.site}
