@@ -1,4 +1,3 @@
-import json
 import frappe
 from frappe.core.utils import find
 from press.press.doctype.team.team import Team
@@ -52,7 +51,6 @@ def change_app_plan(site, app, new_plan):
 def account_request(
 	subdomain, email, first_name, last_name, phone_number, country, app, url_args=None
 ):
-	app = json.loads(url_args)["app"]
 	email = email.strip().lower()
 	frappe.utils.validate_email_address(email, True)
 
@@ -126,3 +124,75 @@ def check_subdomain_availability(subdomain, app):
 		return False
 
 	return True
+
+
+@frappe.whitelist(allow_guest=True)
+def setup_account(key, business_data=None):
+	account_request = get_account_request_from_key(key)
+	if not account_request:
+		frappe.throw("Invalid or Expired Key")
+
+	frappe.set_user("Administrator")
+
+	if business_data:
+		business_data = frappe.parse_json(business_data)
+
+	if isinstance(business_data, dict):
+		business_data = {
+			key: business_data.get(key)
+			for key in [
+				"company",
+				"no_of_employees",
+				"industry",
+				"no_of_users",
+				"designation",
+				"referral_source",
+				"agreed_to_partner_consent",
+			]
+		}
+
+	account_request.update(business_data)
+	account_request.save(ignore_permissions=True)
+
+	email = account_request.email
+
+	if not frappe.db.exists("Team", email):
+		team_doc = Team.create_new(
+			account_request,
+			account_request.first_name,
+			account_request.last_name,
+			country=account_request.country,
+		)
+	else:
+		team_doc = frappe.get_doc("Team", email)
+
+	site_name = frappe.db.get_value("Site", {"account_request": account_request.name})
+	site = frappe.get_doc("Site", site_name)
+	site.team = team_doc.name
+	site.save()
+
+	subscription = site.subscription
+
+	# Hardcoded app as erpnext for now
+	plan = frappe.get_all(
+		"Saas App Plan", filters={"plan": get_saas_plan("erpnext")}, pluck="name"
+	)[0]
+
+	frappe.get_doc(
+		{
+			"doctype": "Saas App Subscription",
+			"team": team_doc.name,
+			"app": "erpnext",
+			"site": site_name,
+			"saas_app_plan": plan,
+		}
+	).insert(ignore_permissions=True)
+
+	if subscription:
+		subscription.team = team_doc.name
+		subscription.save()
+
+	frappe.set_user(team_doc.user)
+	frappe.local.login_manager.login_as(team_doc.user)
+
+	return site.name
