@@ -33,6 +33,10 @@ export default class Auth {
 	}
 	async logout() {
 		localStorage.removeItem('current_team');
+		localStorage.removeItem('current_saas_site');
+		if (window.$saas.isSaasLogin) {
+			localStorage.setItem('was_saas_logout', true);
+		}
 		await call('logout');
 		window.location.reload();
 	}
