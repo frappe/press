@@ -64,6 +64,8 @@ class AccountRequest(Document):
 	def get_verification_url(self):
 		if self.erpnext:
 			return get_url(f"/setup-account?key={self.request_key}")
+		elif self.saas:
+			return get_url(f"/{self.saas_app}/setup-account?key={self.request_key}")
 		return get_url(f"/dashboard/setup-account/{self.request_key}")
 
 	@property
