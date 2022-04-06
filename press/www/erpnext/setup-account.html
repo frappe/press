@@ -1,4 +1,4 @@
-{%- extends "templates/erpnext_signup_layout.html" -%}
+{%- extends "templates/saas_signup_layout.html" -%}
 
 {%- block content -%}
 
@@ -109,6 +109,7 @@
 	let controller;
 	let form_values = {};
 	let key = frappe.utils.get_url_arg('key');
+	const app = 'erpnext';
 
 	frappe.ready(() => {
 		controller = new FormController("user-signup-verify");
@@ -162,9 +163,9 @@
 
 	function business_settings($form, values) {
 		Object.assign(form_values, values);
-		return call('press.api.saas.setup_account', { key, business_data: form_values }, $form)
+		return call('press.api.saas.setup_account', { key, app, business_data: form_values }, $form)
 			.then(() => {
-				window.location.href = '/prepare-site?key=' + key;
+				window.location.href = '/prepare-site?key=' + key + '&app=erpnext';
 			});
 	}
 

@@ -8,6 +8,7 @@
   "request_key",
   "team",
   "email",
+  "password",
   "column_break_4",
   "role",
   "invited_by",
@@ -190,12 +191,18 @@
    "fieldtype": "Link",
    "label": "Saas App",
    "options": "Saas App"
+  },
+  {
+   "fieldname": "password",
+   "fieldtype": "Password",
+   "label": "Password",
+   "read_only": 1
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-03-31 21:49:35.434242",
+ "modified": "2022-04-06 11:23:45.186583",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",
