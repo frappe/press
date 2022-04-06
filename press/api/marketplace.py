@@ -21,6 +21,84 @@ from press.press.doctype.marketplace_app.marketplace_app import get_plans_for_ap
 
 
 @frappe.whitelist()
+def options_for_quick_install(marketplace_app: str):
+	app_name, title = frappe.db.get_value(
+		"Marketplace App", marketplace_app, ["app", "title"]
+	)
+	candidate_groups = get_candidate_release_groups(marketplace_app, app_name)
+	candidate_sites = get_candidate_sites(app_name)
+
+	return {
+		"release_groups": candidate_groups,
+		"sites": candidate_sites,
+		"app_name": app_name,
+		"title": title,
+	}
+
+
+def get_candidate_release_groups(marketplace_app: str, app_name: str) -> List[Dict]:
+	"""
+	List of release groups where the given marketplace app is NOT installed but CAN BE installed.
+
+	returns list of dicts of the form:
+	        {
+	                'name': 'bench-1096',
+	                'title': 'My Private Bench',
+	                'version': 'Version 13',
+	                'source': 'SRC-posawesome-001'
+	        }
+	"""
+	team = get_current_team()
+	group = frappe.qb.DocType("Release Group")
+	group_app = frappe.qb.DocType("Release Group App")
+	marketplace_app_version = frappe.qb.DocType("Marketplace App Version")
+
+	query = (
+		frappe.qb.from_(group)
+		.left_join(marketplace_app_version)
+		.on(marketplace_app_version.version == group.version)
+		.left_join(group_app)
+		.on((group.name == group_app.parent) & (group_app.app == app_name))
+		.select(group.name, group.title, group.version, marketplace_app_version.source)
+		.where(
+			(group.enabled == 1)
+			& (group.team == team)
+			& (marketplace_app_version.parent == marketplace_app)
+			& group_app.app.isnull()  # not present in group
+		)
+	)
+
+	return query.run(as_dict=True)
+
+
+def get_candidate_sites(app_name: str) -> List[str]:
+	"""
+	List of Active sites on which the given app is NOT installed but CAN BE installed.
+	"""
+	team = get_current_team()
+	site = frappe.qb.DocType("Site")
+	site_app = frappe.qb.DocType("Site App")
+	bench = frappe.qb.DocType("Bench")
+	bench_app = frappe.qb.DocType("Bench App")
+
+	sites = (
+		frappe.qb.from_(site)
+		.left_join(site_app)
+		.on((site_app.parent == site.name) & (site_app.app == app_name))
+		.left_join(bench)
+		.on(bench.name == site.bench)
+		.right_join(bench_app)  # must be installed on bench (corresponding bench app exists)
+		.on((bench.name == bench_app.parent) & (bench_app.app == app_name))
+		.select(site.name)
+		.where(
+			(site.status == "Active") & (site.team == team) & site_app.app.isnull()
+		)  # not installed on site
+	)
+
+	return sites.run(pluck="name")
+
+
+@frappe.whitelist()
 def become_publisher():
 	"""Turn on marketplace developer mode for current team"""
 	current_team = get_current_team(get_doc=True)
