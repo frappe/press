@@ -57,7 +57,7 @@
 			<ChangeAppPlanSelector
 				@change="plan => (newAppPlan = plan.name)"
 				v-if="appToChangePlan"
-				:app="appToChangePlan"
+				:app="appToChangePlan.name"
 				:currentPlan="appToChangePlan.plan"
 				:frappeVersion="site.frappe_version"
 			/>
