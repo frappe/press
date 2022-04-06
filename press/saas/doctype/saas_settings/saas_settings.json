@@ -22,7 +22,17 @@
   "teams_plan",
   "teams_group",
   "column_break_13",
-  "teams_apps"
+  "teams_apps",
+  "frappedesk_signups_section",
+  "frappedesk_domain",
+  "frappedesk_cluster",
+  "frappedesk_plan",
+  "frappedesk_group",
+  "frappedesk_standby_pool_size",
+  "frappedesk_standby_queue",
+  "enable_frappedesk_pooling",
+  "column_break_26",
+  "frappedesk_apps"
  ],
  "fields": [
   {
@@ -120,12 +130,68 @@
    "fieldname": "enable_erpnext_pooling",
    "fieldtype": "Check",
    "label": "Enable ERPNext Pooling"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "frappedesk_signups_section",
+   "fieldtype": "Section Break",
+   "label": "FrappeDesk Signups"
+  },
+  {
+   "fieldname": "frappedesk_domain",
+   "fieldtype": "Link",
+   "label": "FrappeDesk Domain",
+   "options": "Root Domain"
+  },
+  {
+   "fieldname": "frappedesk_cluster",
+   "fieldtype": "Link",
+   "label": "FrappeDesk Cluster",
+   "options": "Cluster"
+  },
+  {
+   "fieldname": "frappedesk_plan",
+   "fieldtype": "Link",
+   "label": "FrappeDesk Plan",
+   "options": "Plan"
+  },
+  {
+   "fieldname": "frappedesk_group",
+   "fieldtype": "Link",
+   "label": "FrappeDesk Group",
+   "options": "Release Group"
+  },
+  {
+   "fieldname": "frappedesk_standby_pool_size",
+   "fieldtype": "Int",
+   "label": "FrappeDesk Standby Pool"
+  },
+  {
+   "fieldname": "frappedesk_standby_queue",
+   "fieldtype": "Int",
+   "label": "FrappeDesk Standby Queue"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_frappedesk_pooling",
+   "fieldtype": "Check",
+   "label": "Enable FrappeDesk Pooling"
+  },
+  {
+   "fieldname": "column_break_26",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "frappedesk_apps",
+   "fieldtype": "Table",
+   "label": "FrappeDesk Apps",
+   "options": "ERPNext App"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2022-03-31 13:28:31.519457",
+ "modified": "2022-04-06 15:06:48.204300",
  "modified_by": "Administrator",
  "module": "Saas",
  "name": "Saas Settings",

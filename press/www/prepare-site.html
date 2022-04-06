@@ -1,4 +1,4 @@
-{%- extends "templates/erpnext_signup_layout.html" -%}
+{%- extends "templates/saas_signup_layout.html" -%}
 
 {%- block content -%}
 <section>
@@ -6,7 +6,7 @@
 		<div class="card">
 			<div class="text-center card-body">
 				{%- if frappe.form_dict.key -%}
-				<h1>Your ERPNext account is being prepared.</h1>
+				<h1>Your site is being prepared.</h1>
 				<p class="setup-message"></p>
 				<svg class="spinner animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
 					<circle style="color: var(--primary-light)" cx="12" cy="12" r="10" stroke="currentColor"
