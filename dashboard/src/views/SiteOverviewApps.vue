@@ -92,6 +92,8 @@
 				@change="plan => (selectedPlan = plan.name)"
 			/>
 
+			<ErrorMessage :error="$resourceErrors" />
+
 			<template #actions>
 				<Button
 					type="primary"
@@ -132,6 +134,11 @@ export default {
 					name: this.site?.name,
 					app: this.appToInstall?.app,
 					plan: this.selectedPlan
+				},
+				validate() {
+					if (this.showPlanSelectionDialog && !this.selectedPlan) {
+						return 'Please select a plan to continue';
+					}
 				},
 				onSuccess() {
 					this.showPlanSelectionDialog = false;
