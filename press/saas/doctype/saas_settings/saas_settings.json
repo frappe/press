@@ -29,7 +29,7 @@
   "frappedesk_plan",
   "frappedesk_group",
   "frappedesk_standby_pool_size",
-  "frappedesk_standby_queue",
+  "frappedesk_standby_queue_size",
   "enable_frappedesk_pooling",
   "column_break_26",
   "frappedesk_apps"
@@ -167,11 +167,6 @@
    "label": "FrappeDesk Standby Pool"
   },
   {
-   "fieldname": "frappedesk_standby_queue",
-   "fieldtype": "Int",
-   "label": "FrappeDesk Standby Queue"
-  },
-  {
    "default": "0",
    "fieldname": "enable_frappedesk_pooling",
    "fieldtype": "Check",
@@ -186,12 +181,17 @@
    "fieldtype": "Table",
    "label": "FrappeDesk Apps",
    "options": "ERPNext App"
+  },
+  {
+   "fieldname": "frappedesk_standby_queue_size",
+   "fieldtype": "Int",
+   "label": "FrappeDesk Standby Queue Size"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2022-04-06 15:06:48.204300",
+ "modified": "2022-04-06 16:24:38.626055",
  "modified_by": "Administrator",
  "module": "Saas",
  "name": "Saas Settings",
