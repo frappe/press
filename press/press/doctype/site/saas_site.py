@@ -86,7 +86,7 @@ def get_saas_cluster(app):
 
 def get_saas_apps(app):
 	return [
-		app["app"] for app in frappe.get_doc("Press Settings").as_dict()[f"{app}_apps"]
+		_app["app"] for _app in frappe.get_doc("Saas Settings").as_dict()[f"{app}_apps"]
 	]
 
 
