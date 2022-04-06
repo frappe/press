@@ -8,6 +8,8 @@
 				Install App: {{ options ? options.title : marketplaceApp }}
 			</h1>
 
+			<ErrorMessage :error="$resourceErrors" />
+
 			<div v-if="options" class="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2">
 				<Card title="Sites" subtitle="Select a site to install">
 					<div v-if="options.sites?.length">
@@ -15,6 +17,10 @@
 							v-for="site in options.sites"
 							class="block rounded-md py-2 px-1 text-base hover:bg-gray-50"
 							@click="installAppOnSite(site)"
+							:loading="
+								$resources.installAppOnSite.loading &&
+								$resources.installAppOnSite.currentParams.name === site
+							"
 						>
 							{{ site }}
 						</button>
@@ -24,13 +30,13 @@
 						<p class="text-sm text-gray-700">No site available for install</p>
 					</div>
 
-					<Button class="mt-3" type="primary" route="/sites/new"
-						>Create New Site</Button
-					>
+					<template v-slot:actions>
+						<Button type="primary" route="/sites/new">New Site</Button>
+					</template>
 				</Card>
 
 				<Card title="Private Benches" subtitle="Select a bench to install">
-					<div v-if="options.release_groups?.length" class="space-y-3">
+					<ul v-if="options.release_groups?.length" class="space-y-3">
 						<li
 							v-for="bench in options.release_groups"
 							class="flex w-full flex-row justify-between rounded-md py-2 px-1 text-left text-base hover:bg-gray-50"
@@ -40,31 +46,23 @@
 							</p>
 							<Button
 								@click="addAppToBench(bench)"
-								:loading="$resources.addAppToBench.loading"
+								:loading="
+									$resources.addAppToBench.loading &&
+									$resources.addAppToBench.currentParams.name === bench.name
+								"
 								>Add</Button
 							>
 						</li>
-
-						<li
-							v-for="bench in options.release_groups"
-							class="flex w-full flex-row justify-between rounded-md py-2 px-1 text-left text-base hover:bg-gray-50"
-						>
-							<p>
-								{{ bench.title }}
-							</p>
-							<Button @click="addAppToBench(bench)">Add</Button>
-						</li>
-					</div>
+					</ul>
 
 					<div v-else>
 						<p class="text-sm text-gray-700">
 							No benches available for install
 						</p>
 					</div>
-
-					<Button class="mt-3" type="primary" route="/benches/new"
-						>Create New Bench</Button
-					>
+					<template v-slot:actions>
+						<Button type="primary" route="/benches/new">New Bench</Button>
+					</template>
 				</Card>
 			</div>
 		</div>
@@ -89,19 +87,31 @@ export default {
 			return {
 				method: 'press.api.bench.add_app',
 				onSuccess() {
+					this.$notify({
+						title: 'App added successfully!',
+						icon: 'check',
+						color: 'green'
+					});
 					this.$resources.optionsForQuickInstall.fetch();
 				}
 			};
 		},
 		installAppOnSite() {
 			return {
-				method: 'press.api.site.install_app'
+				method: 'press.api.site.install_app',
+				onSuccess() {
+					this.$notify({
+						title: 'App installed successfully!',
+						icon: 'check',
+						color: 'green'
+					});
+					this.$resources.optionsForQuickInstall.fetch();
+				}
 			};
 		}
 	},
 	methods: {
 		addAppToBench(group) {
-			console.log('Installing app on bench: ', group);
 			this.$resources.addAppToBench.submit({
 				name: group.name,
 				source: group.source,
@@ -110,9 +120,6 @@ export default {
 		},
 
 		installAppOnSite(site) {
-			// name: site name
-			// press.api.site.install_app(name, app, plan=None)
-			console.log('Installing app on site: ', site);
 			this.$resources.installAppOnSite({
 				name: site,
 				app: options.app_name
