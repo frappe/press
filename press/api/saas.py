@@ -155,7 +155,7 @@ def check_subdomain_availability(subdomain, app):
 
 
 @frappe.whitelist(allow_guest=True)
-def setup_account(key, app, business_data=None):
+def setup_account(key, business_data=None):
 	account_request = get_account_request_from_key(key)
 	if not account_request:
 		frappe.throw("Invalid or Expired Key")
@@ -182,11 +182,11 @@ def setup_account(key, app, business_data=None):
 	account_request.update(business_data)
 	account_request.save(ignore_permissions=True)
 
-	create_team_from_account_request(account_request, app)
+	create_team_from_account_request(account_request)
 
 
 @frappe.whitelist(allow_guest=True)
-def headless_setup_account(key, app):
+def headless_setup_account(key):
 	"""Ignores the data collection step in setup-account.html"""
 	account_request = get_account_request_from_key(key)
 	if not account_request:
@@ -194,10 +194,10 @@ def headless_setup_account(key, app):
 
 	frappe.set_user("Administrator")
 
-	create_team_from_account_request(account_request, app)
+	create_team_from_account_request(account_request)
 
 
-def create_team_from_account_request(account_request, app=None):
+def create_team_from_account_request(account_request):
 	email = account_request.email
 
 	if not frappe.db.exists("Team", email):
@@ -219,16 +219,15 @@ def create_team_from_account_request(account_request, app=None):
 
 	subscription = site.subscription
 
-	# Hardcoded app as erpnext for now
 	plan = frappe.get_all(
-		"Saas App Plan", filters={"plan": get_saas_plan(app)}, pluck="name"
+		"Saas App Plan", filters={"plan": get_saas_plan(account_request.saas_app)}, pluck="name"
 	)[0]
 
 	frappe.get_doc(
 		{
 			"doctype": "Saas App Subscription",
 			"team": team_doc.name,
-			"app": app,
+			"app": account_request.saas_app,
 			"site": site_name,
 			"saas_app_plan": plan,
 		}
