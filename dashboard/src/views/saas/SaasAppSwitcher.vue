@@ -3,9 +3,9 @@
 		v-on-outside-click="() => (isHidden = true)"
 		v-on:click="() => (isHidden = !isHidden)"
 	>
-		<!-- App Selector -->
+		<!-- Selected App -->
 		<div class="flex cursor-pointer items-center rounded-lg px-2 py-2">
-			<Avatar size="md" :label="'T'" />
+			<Avatar size="md" :label="'T'" :shape="'square'" :imageURL="imageURL" />
 			<p class="ml-4 text-lg">{{ selectedAppName }}</p>
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
@@ -31,9 +31,14 @@
 				:class="'hover:bg-gray-100'"
 				v-for="sub in subscriptions"
 				:key="sub.site"
-				@click="switchSaasSite(sub.site)"
+				@click="switchSaasSite(sub.site, sub.app)"
 			>
-				<Avatar size="md" :label="'T'" />
+				<Avatar
+					size="md"
+					:label="'T'"
+					:shape="'square'"
+					:imageURL="sub.image_path"
+				/>
 				<div class="ml-4 mr-4">
 					<p class="text-base">{{ sub.app_name }}</p>
 					<p class="text-sm text-gray-500">{{ sub.site }}</p>
@@ -54,13 +59,15 @@ export default {
 		return {
 			isHidden: true,
 			subscriptions: null,
+			imageMap: null,
+			selectedApp: localStorage.getItem('current_saas_app'),
 			selectedAppName: '',
 			selectedSite: localStorage.getItem('current_saas_site')
 		};
 	},
 	methods: {
-		switchSaasSite(site) {
-			this.$saas.switchToSaas(site);
+		switchSaasSite(site, app) {
+			this.$saas.loginToSaas(false, site, app);
 		},
 		toggleAppSwitcher() {
 			this.isHidden = !this.isHidden;
@@ -79,6 +86,18 @@ export default {
 					}
 				});
 			}
+		},
+		imagePath: {
+			method: 'press.api.saas.get_app_image_path',
+			auto: true,
+			params: {
+				app: localStorage.getItem('current_saas_app')
+			}
+		}
+	},
+	computed: {
+		imageURL() {
+			return this.$resources.imagePath.data;
 		}
 	}
 };

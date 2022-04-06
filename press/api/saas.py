@@ -4,7 +4,6 @@ from press.press.doctype.team.team import Team
 from press.api.account import get_account_request_from_key
 from press.utils import get_current_team
 
-# from press.utils.billing import get_erpnext_com_connection
 from press.press.doctype.site.saas_site import SaasSite, get_saas_domain, get_saas_plan
 from press.press.doctype.site.saas_pool import get as get_pooled_saas_site
 
@@ -13,6 +12,9 @@ from press.press.doctype.site.saas_pool import get as get_pooled_saas_site
 def get_saas_subscriptions_for_team():
 	"""Used in App Switcher"""
 	team = get_current_team()
+	image_paths = {
+		app.app: app.image for app in frappe.get_all("Saas App", fields=["app", "image"])
+	}
 
 	subscriptions = frappe.get_all(
 		"Saas App Subscription",
@@ -20,13 +22,29 @@ def get_saas_subscriptions_for_team():
 		fields=["name", "plan", "site", "app", "app_name"],
 	)
 
+	for sub in subscriptions:
+		sub["image_path"] = image_paths[sub["app"]]
+
 	return subscriptions
 
 
 @frappe.whitelist()
-def get_plans(site):
-	# TODO: set this while login to dashboard or some other way
-	app = "storage_integration"
+def get_saas_site_and_app(team):
+	"""Returns a random saas subscription for team to set as default"""
+	data = frappe.get_all(
+		"Saas App Subscription", {"team": team}, ["app", "site"], limit=1
+	)[0]
+
+	return data
+
+
+@frappe.whitelist()
+def get_app_image_path(app):
+	return frappe.db.get_value("Saas App", app, "image")
+
+
+@frappe.whitelist()
+def get_plans(site, app):
 	saas_app = frappe.get_doc("Saas App", app)
 	plans = saas_app.get_plans(site)
 
