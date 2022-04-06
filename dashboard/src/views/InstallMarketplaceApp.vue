@@ -8,7 +8,7 @@
 				Install App: {{ options ? options.title : '' }}
 			</h1>
 
-			<ErrorMessage :error="$resourceErrors" />
+			<ErrorMessage :error="$resources.optionsForQuickInstall.error" />
 
 			<div v-if="options" class="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2">
 				<Card title="Sites" subtitle="Select a site to install">
@@ -79,13 +79,15 @@
 			:dismissable="true"
 		>
 			<ChangeAppPlanSelector
-				v-if="marketplaceApp && selectedSite"
+				v-if="marketplaceApp"
 				:app="marketplaceApp"
 				class="mb-9"
 				@change="plan => (selectedPlan = plan.name)"
 			/>
 
-			<template #actions>
+			<ErrorMessage :error="$resourceErrors" />
+
+			<template v-slot:actions>
 				<Button
 					type="primary"
 					:loading="$resources.installAppOnSite.loading"
@@ -98,6 +100,8 @@
 </template>
 
 <script>
+import ChangeAppPlanSelector from '@/components/ChangeAppPlanSelector.vue';
+
 export default {
 	name: 'InstallMarketplaceApp',
 	props: ['marketplaceApp'],
@@ -107,6 +111,9 @@ export default {
 			selectedSite: null,
 			selectedPlan: null
 		};
+	},
+	components: {
+		ChangeAppPlanSelector
 	},
 	resources: {
 		optionsForQuickInstall() {
@@ -134,12 +141,21 @@ export default {
 		installAppOnSite() {
 			return {
 				method: 'press.api.site.install_app',
+				validate() {
+					if (this.showPlanSelectionDialog && !this.selectedPlan) {
+						return 'Please select a plan to continue';
+					}
+				},
 				onSuccess() {
 					this.$notify({
 						title: 'App installed successfully!',
 						icon: 'check',
 						color: 'green'
 					});
+
+					this.selectedPlan = null;
+					this.selectedSite = null;
+					this.showPlanSelectionDialog = false;
 					this.$resources.optionsForQuickInstall.fetch();
 				}
 			};
@@ -155,16 +171,17 @@ export default {
 		},
 
 		installAppOnSite(site) {
+			this.selectedSite = site;
+
 			// If paid app, show plan selection dialog
-			if (app.has_plans_available && !this.showPlanSelectionDialog) {
-				this.selectedSite = site;
+			if (this.options.has_plans_available && !this.showPlanSelectionDialog) {
 				this.showPlanSelectionDialog = true;
 				return;
 			}
 
-			this.$resources.installAppOnSite({
+			this.$resources.installAppOnSite.submit({
 				name: site,
-				app: options.app_name,
+				app: this.options.app_name,
 				plan: this.selectedPlan
 			});
 		}
