@@ -5,7 +5,7 @@
 		>
 		<div v-else>
 			<h1 class="mb-4 text-xl font-semibold">
-				Install App: {{ options ? options.title : marketplaceApp }}
+				Install App: {{ options ? options.title : '' }}
 			</h1>
 
 			<ErrorMessage :error="$resourceErrors" />
