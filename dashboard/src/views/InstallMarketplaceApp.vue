@@ -12,19 +12,24 @@
 
 			<div v-if="options" class="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2">
 				<Card title="Sites" subtitle="Select a site to install">
-					<div v-if="options.sites?.length">
-						<button
+					<ul v-if="options.sites?.length">
+						<li
 							v-for="site in options.sites"
-							class="block rounded-md py-2 px-1 text-base hover:bg-gray-50"
-							@click="installAppOnSite(site)"
-							:loading="
-								$resources.installAppOnSite.loading &&
-								$resources.installAppOnSite.currentParams.name === site
-							"
+							class="flex w-full flex-row justify-between rounded-md py-2 px-1 text-left text-base hover:bg-gray-50"
 						>
-							{{ site }}
-						</button>
-					</div>
+							<p>
+								{{ site }}
+							</p>
+							<Button
+								@click="installAppOnSite(site)"
+								:loading="
+									$resources.installAppOnSite.loading &&
+									$resources.installAppOnSite.currentParams.name === site
+								"
+								>Install</Button
+							>
+						</li>
+					</ul>
 
 					<div v-else>
 						<p class="text-sm text-gray-700">No site available for install</p>
