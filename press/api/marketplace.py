@@ -27,12 +27,14 @@ def options_for_quick_install(marketplace_app: str):
 	)
 	candidate_groups = get_candidate_release_groups(marketplace_app, app_name)
 	candidate_sites = get_candidate_sites(app_name)
+	plans = get_plans_for_app(marketplace_app)
 
 	return {
 		"release_groups": candidate_groups,
 		"sites": candidate_sites,
 		"app_name": app_name,
 		"title": title,
+		"has_plans_available": len(plans) > 0,
 	}
 
 
