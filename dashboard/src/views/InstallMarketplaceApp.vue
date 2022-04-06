@@ -75,7 +75,7 @@
 		>
 			<ChangeAppPlanSelector
 				v-if="marketplaceApp && selectedSite"
-				:app="{ name: marketplaceApp }"
+				:app="marketplaceApp"
 				class="mb-9"
 				@change="plan => (selectedPlan = plan.name)"
 			/>

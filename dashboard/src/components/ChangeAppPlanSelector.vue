@@ -58,7 +58,7 @@ export default {
 			return {
 				method: 'press.api.marketplace.get_app_plans',
 				params: {
-					app: this.app.name,
+					app: this.app,
 					release_group: this.group,
 					frappe_version: this.frappeVersion
 				},
@@ -79,7 +79,7 @@ export default {
 			return {
 				method: 'press.api.marketplace.get_app_info',
 				params: {
-					app: this.app.name
+					app: this.app
 				},
 				auto: true
 			};
