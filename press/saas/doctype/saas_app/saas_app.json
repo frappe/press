@@ -6,6 +6,7 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "image",
   "app",
   "title",
   "frappe_sources",
@@ -44,11 +45,18 @@
   {
    "fieldname": "section_break_1",
    "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "image",
+   "fieldtype": "Attach Image",
+   "hidden": 1,
+   "label": "Image"
   }
  ],
+ "image_field": "image",
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-03-15 12:35:00.206450",
+ "modified": "2022-04-05 10:49:32.282606",
  "modified_by": "Administrator",
  "module": "Saas",
  "name": "Saas App",
