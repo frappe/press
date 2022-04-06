@@ -66,6 +66,29 @@
 				</Card>
 			</div>
 		</div>
+
+		<Dialog
+			v-model="showPlanSelectionDialog"
+			title="Select app plan"
+			width="half"
+			:dismissable="true"
+		>
+			<ChangeAppPlanSelector
+				v-if="marketplaceApp && selectedSite"
+				:app="{ name: marketplaceApp }"
+				class="mb-9"
+				@change="plan => (selectedPlan = plan.name)"
+			/>
+
+			<template #actions>
+				<Button
+					type="primary"
+					:loading="$resources.installAppOnSite.loading"
+					@click="installAppOnSite(selectedSite)"
+					>Proceed</Button
+				>
+			</template>
+		</Dialog>
 	</div>
 </template>
 
@@ -73,6 +96,13 @@
 export default {
 	name: 'InstallMarketplaceApp',
 	props: ['marketplaceApp'],
+	data() {
+		return {
+			showPlanSelectionDialog: false,
+			selectedSite: null,
+			selectedPlan: null
+		};
+	},
 	resources: {
 		optionsForQuickInstall() {
 			return {
@@ -120,9 +150,17 @@ export default {
 		},
 
 		installAppOnSite(site) {
+			// If paid app, show plan selection dialog
+			if (app.has_plans_available && !this.showPlanSelectionDialog) {
+				this.selectedSite = site;
+				this.showPlanSelectionDialog = true;
+				return;
+			}
+
 			this.$resources.installAppOnSite({
 				name: site,
-				app: options.app_name
+				app: options.app_name,
+				plan: this.selectedPlan
 			});
 		}
 	},
