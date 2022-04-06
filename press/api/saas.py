@@ -1,5 +1,6 @@
 import frappe
 from frappe.core.utils import find
+from frappe.utils.password import get_decrypted_password
 from press.press.doctype.team.team import Team
 from press.api.account import get_account_request_from_key
 from press.utils import get_current_team
@@ -67,7 +68,15 @@ def change_app_plan(site, app, new_plan):
 
 @frappe.whitelist(allow_guest=True)
 def account_request(
-	subdomain, email, first_name, last_name, phone_number, country, app, url_args=None
+	subdomain,
+	email,
+	password,
+	first_name,
+	last_name,
+	phone_number,
+	country,
+	app,
+	url_args=None,
 ):
 	email = email.strip().lower()
 	frappe.utils.validate_email_address(email, True)
@@ -88,6 +97,7 @@ def account_request(
 			"erpnext": False,
 			"subdomain": subdomain,
 			"email": email,
+			"password": password,
 			"role": "Press Admin",
 			"first_name": first_name,
 			"last_name": last_name,
@@ -145,7 +155,7 @@ def check_subdomain_availability(subdomain, app):
 
 
 @frappe.whitelist(allow_guest=True)
-def setup_account(key, business_data=None):
+def setup_account(key, app, business_data=None):
 	account_request = get_account_request_from_key(key)
 	if not account_request:
 		frappe.throw("Invalid or Expired Key")
@@ -172,6 +182,22 @@ def setup_account(key, business_data=None):
 	account_request.update(business_data)
 	account_request.save(ignore_permissions=True)
 
+	create_team_from_account_request(account_request, app)
+
+
+@frappe.whitelist(allow_guest=True)
+def headless_setup_account(key, app):
+	"""Ignores the data collection step in setup-account.html"""
+	account_request = get_account_request_from_key(key)
+	if not account_request:
+		frappe.throw("Invalid or Expired Key")
+
+	frappe.set_user("Administrator")
+
+	create_team_from_account_request(account_request, app)
+
+
+def create_team_from_account_request(account_request, app=None):
 	email = account_request.email
 
 	if not frappe.db.exists("Team", email):
@@ -179,6 +205,7 @@ def setup_account(key, business_data=None):
 			account_request,
 			account_request.first_name,
 			account_request.last_name,
+			password=get_decrypted_password("Account Request", account_request.name, "password"),
 			country=account_request.country,
 			via_erpnext=True,
 		)
@@ -194,14 +221,14 @@ def setup_account(key, business_data=None):
 
 	# Hardcoded app as erpnext for now
 	plan = frappe.get_all(
-		"Saas App Plan", filters={"plan": get_saas_plan("erpnext")}, pluck="name"
+		"Saas App Plan", filters={"plan": get_saas_plan(app)}, pluck="name"
 	)[0]
 
 	frappe.get_doc(
 		{
 			"doctype": "Saas App Subscription",
 			"team": team_doc.name,
-			"app": "erpnext",
+			"app": app,
 			"site": site_name,
 			"saas_app_plan": plan,
 		}
