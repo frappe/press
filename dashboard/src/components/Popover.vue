@@ -100,7 +100,6 @@ export default {
 				document.removeEventListener('click', this.listener);
 				this.listener = null;
 			}
-
 		},
 		setupPopper() {
 			if (!this.popper) {

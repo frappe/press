@@ -109,6 +109,7 @@ export default {
 		return {
 			showPlanSelectionDialog: false,
 			selectedSite: null,
+			selectedBench: null,
 			selectedPlan: null
 		};
 	},
@@ -134,7 +135,8 @@ export default {
 						icon: 'check',
 						color: 'green'
 					});
-					this.$resources.optionsForQuickInstall.fetch();
+
+					this.$router.push(`/benches/${this.selectedBench}/overview`);
 				}
 			};
 		},
@@ -163,6 +165,8 @@ export default {
 	},
 	methods: {
 		addAppToBench(group) {
+			this.selectedBench = group.name;
+
 			this.$resources.addAppToBench.submit({
 				name: group.name,
 				source: group.source,
