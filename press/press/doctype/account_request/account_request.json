@@ -1,6 +1,6 @@
 {
  "actions": [],
- "creation": "2019-11-22 15:05:22.773809",
+ "creation": "2022-03-06 20:52:32.662775",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -8,6 +8,7 @@
   "request_key",
   "team",
   "email",
+  "password",
   "column_break_4",
   "role",
   "invited_by",
@@ -27,6 +28,9 @@
   "industry",
   "country",
   "agreed_to_partner_consent",
+  "saas_sign_up_section",
+  "saas",
+  "saas_app",
   "referrer_data",
   "referral_source",
   "url_args",
@@ -116,6 +120,7 @@
    "label": "Number of employees"
   },
   {
+   "collapsible": 1,
    "fieldname": "section_break_8",
    "fieldtype": "Section Break",
    "label": "ERPNext Sign Up"
@@ -167,12 +172,37 @@
    "fieldname": "referrer_id",
    "fieldtype": "Data",
    "label": "Referrer ID"
+  },
+  {
+   "default": "0",
+   "fieldname": "saas",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Saas"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "saas_sign_up_section",
+   "fieldtype": "Section Break",
+   "label": "Saas Sign Up"
+  },
+  {
+   "fieldname": "saas_app",
+   "fieldtype": "Link",
+   "label": "Saas App",
+   "options": "Saas App"
+  },
+  {
+   "fieldname": "password",
+   "fieldtype": "Password",
+   "label": "Password",
+   "read_only": 1
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-11-10 07:15:01.451538",
+ "modified": "2022-04-06 11:23:45.186583",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",
@@ -197,6 +227,7 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "title_field": "email",
  "track_changes": 1
 }

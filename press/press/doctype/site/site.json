@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2022-01-28 20:07:35.878461",
+ "creation": "2022-03-06 20:52:45.544397",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -30,6 +30,7 @@
   "free",
   "column_break_15",
   "is_standby",
+  "standby_for",
   "staging",
   "account_request",
   "is_erpnext_setup",
@@ -65,7 +66,8 @@
   "update_on_day_of_month",
   "column_break_58",
   "database_section",
-  "is_database_access_enabled"
+  "is_database_access_enabled",
+  "column_break_52"
  ],
  "fields": [
   {
@@ -474,6 +476,16 @@
    "fieldtype": "Check",
    "label": "Is Database Access Enabled",
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_52",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "standby_for",
+   "fieldtype": "Link",
+   "label": "Standby For",
+   "options": "Saas App"
   }
  ],
  "links": [
@@ -523,7 +535,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2022-02-07 14:45:12.093982",
+ "modified": "2022-03-31 13:47:20.260587",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
