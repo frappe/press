@@ -136,7 +136,7 @@ export default {
 			if (this.email && this.password) {
 				let res = await this.$auth.login(this.email, this.password);
 				if (res) {
-					this.$saas.loginToSaas('myhostsite.r.fc.frappe.dev'); // fetch this randomly from active subs
+					this.$saas.loginToSaas(true, null, null); // fetch this randomly from active subs
 					this.$router.push(this.redirect_route || res.dashboard_route || '/');
 				}
 			}
