@@ -9,8 +9,8 @@ const app = createApp(App);
 
 registerPlugins(app);
 registerGlobalComponents(app);
-const { auth, account } = registerControllers(app);
-registerRouter(app, auth, account);
+const { auth, account, saas } = registerControllers(app);
+registerRouter(app, auth, account, saas);
 
 app.mount('#app');
 
