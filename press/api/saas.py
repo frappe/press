@@ -7,11 +7,14 @@ from press.utils import get_current_team
 
 from press.press.doctype.site.saas_site import SaasSite, get_saas_domain, get_saas_plan
 from press.press.doctype.site.saas_pool import get as get_pooled_saas_site
+from press.utils.billing import get_erpnext_com_connection
 
 
 @frappe.whitelist()
 def get_saas_subscriptions_for_team():
-	"""Used in App Switcher"""
+	"""
+	return: Active saas subscriptions for team
+	"""
 	team = get_current_team()
 	image_paths = {
 		app.app: app.image for app in frappe.get_all("Saas App", fields=["app", "image"])
@@ -31,7 +34,9 @@ def get_saas_subscriptions_for_team():
 
 @frappe.whitelist()
 def get_saas_site_and_app(team):
-	"""Returns a random saas subscription for team to set as default"""
+	"""
+	return: Any active saas subscription for team to set it as default for loading dashbaord
+	"""
 	data = frappe.get_all(
 		"Saas App Subscription", {"team": team}, ["app", "site"], limit=1
 	)[0]
@@ -46,6 +51,9 @@ def get_app_image_path(app):
 
 @frappe.whitelist()
 def get_plans(site, app):
+	"""
+	return: Available plans for saas app along with current selected plan
+	"""
 	saas_app = frappe.get_doc("Saas App", app)
 	plans = saas_app.get_plans(site)
 
@@ -131,12 +139,12 @@ def account_request(
 def check_subdomain_availability(subdomain, app):
 	# Only for ERPNext domains
 
-	# erpnext_com = get_erpnext_com_connection()
-	# result = erpnext_com.post_api(
-	# 	"central.www.signup.check_subdomain_availability", {"subdomain": subdomain}
-	# )
-	# if result:
-	# 	return False
+	erpnext_com = get_erpnext_com_connection()
+	result = erpnext_com.post_api(
+		"central.www.signup.check_subdomain_availability", {"subdomain": subdomain}
+	)
+	if result:
+		return False
 
 	exists = bool(
 		frappe.db.exists(
@@ -187,7 +195,9 @@ def setup_account(key, business_data=None):
 
 @frappe.whitelist(allow_guest=True)
 def headless_setup_account(key):
-	"""Ignores the data collection step in setup-account.html"""
+	"""
+	Ignores the data collection step in setup-account.html
+	"""
 	account_request = get_account_request_from_key(key)
 	if not account_request:
 		frappe.throw("Invalid or Expired Key")
@@ -220,7 +230,9 @@ def create_team_from_account_request(account_request):
 	subscription = site.subscription
 
 	plan = frappe.get_all(
-		"Saas App Plan", filters={"plan": get_saas_plan(account_request.saas_app)}, pluck="name"
+		"Saas App Plan",
+		filters={"plan": get_saas_plan(account_request.saas_app)},
+		pluck="name",
 	)[0]
 
 	frappe.get_doc(
