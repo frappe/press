@@ -1,0 +1,40 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2022-03-15 10:40:24.625848",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "plan",
+  "source"
+ ],
+ "fields": [
+  {
+   "fieldname": "source",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Source",
+   "options": "App Source"
+  },
+  {
+   "fieldname": "plan",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Plan",
+   "options": "Saas App Plan"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2022-03-19 22:17:34.019869",
+ "modified_by": "Administrator",
+ "module": "Saas",
+ "name": "Saas App Version",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -1,0 +1,224 @@
+{%- extends "templates/erpnext_signup_layout.html" -%}
+
+{%- block content -%}
+
+<h1>Create a new account</h1>
+
+<div class="mx-auto form-container col-xl-5 col-lg-6 col-md-7 col-sm-9" id="user-signup"
+	data-validators="field_validators">
+	<div class="card">
+		<div class="card-body">
+			<div class="alert alert-primary form-alert-info small" style="display: none;" role="alert"></div>
+			<div class="alert alert-danger form-alert-error small" style="display: none;" role="alert"></div>
+			<!-- 1. Personal Details -->
+			<form class="form-step" data-step="1" data-action="submit_account_request">
+				<div class="form-group">
+					<label for="subdomain">Site Name</label>
+					<div class="input-group">
+						<input type="text" id="subdomain" name="subdomain" class="form-control"
+							placeholder="yourcompany" autocomplete="off" onchange="validate_subdomain(this)">
+						<div class="input-group-append">
+							<span class="input-group-text rounded-right">.erpnext.com</span>
+						</div>
+					</div>
+					<small class="form-text"></small>
+				</div>
+
+				<div class="form-row">
+					<div class="form-group col-12 col-md-6">
+						<label for="first_name">First Name</label>
+						<input type="text" id="first_name" name="first_name" class="form-control"
+							autocomplete="given-name">
+					</div>
+					<div class="form-group col-12 col-md-6">
+						<label for="last_name">Last Name</label>
+						<input type="text" id="last_name" name="last_name" class="form-control"
+							autocomplete="family-name">
+					</div>
+				</div>
+				<div class="form-group">
+					<label for="email">Email address</label>
+					<input type="email" id="email" class="form-control" name="email" autocomplete="email">
+				</div>				
+				<div class="form-group">
+					<label for="password">Password</label>
+					<input type="password" id="password" class="form-control" name="password">
+				</div>
+				<div class="form-group">
+					<label for="phone">Phone Number</label>
+					<input type="tel" id="phone" class="form-control" name="phone_number" autocomplete="tel">
+				</div>
+				<div class="form-group">
+					<label for="country">Country</label>
+					<input type="text" id="country" class="form-control" name="country">
+				</div>
+				<div class="form-group">
+					<input type="checkbox" name="user_accept_terms" id="user_accept_terms">
+					<label class="d-inline" for="user_accept_terms">
+						By clicking on <b>Create Account</b>, you accept our
+						<a href="https://frappecloud.com/terms" class="text-blue-600">Terms of Service</a>,
+						<a href="https://frappecloud.com/privacy" class="text-blue-600">Privacy Policy</a>
+						&#38;
+						<a href="https://frappecloud.com/cookie-policy" class="text-blue-600">Cookie Policy.</a>
+					</label>
+				</div>
+				<div class="form-message text-danger"></div>
+				<div class="mt-8 d-flex justify-content-between">
+					<div></div>
+					<button type="submit" class="btn btn-primary btn-step-1">Create Account</button>
+				</div>
+			</form>
+			<!-- 2. Verification Email Sent -->
+			<form class="form-step" data-step="2">
+				<div class="text-center">
+					<h2 class="font-size-base">Verification Email Sent!</h2>
+					We have sent an email to <span class="verification-email"></span>.
+					Please click on the link received to verify your email and create your account.
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+{%- endblock -%}
+
+{%- block script -%}
+<script src="/assets/press/js/form_controller.js"></script>
+<script>
+	let controller;
+	const app = 'erpnext';
+
+	frappe.ready(() => {
+		controller = new FormController("user-signup");
+
+		// get subdomain is set in url and show first form
+		set_subdomain_from_url();
+	});
+
+	// this needs to be on global scope
+	var field_validators = {
+		subdomain: (value) => {
+			let MIN_LENGTH = 4;
+			let MAX_LENGTH = 20;
+			if (value.length < MIN_LENGTH) {
+				return `Site name cannot have less than ${MIN_LENGTH} characters`;
+			}
+			if (value.length > MAX_LENGTH) {
+				return `Site name cannot have more than ${MAX_LENGTH} characters`;
+			}
+			if (!/^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(value)) {
+				return "Site name should contain lowercase alphabets, numbers, and hyphens";
+			}
+		},
+		first_name: value => {
+			if (!value) {
+				return 'First Name is required'
+			}
+		},
+		last_name: value => {
+			if (!value) {
+				return 'Last Name is required'
+			}
+		},
+		phone_number: (value) => {
+			if (!value) {
+				return 'Phone Number is required'
+			}
+
+			let regExp = /[a-zA-Z]/g;
+			if (regExp.test(value)) {
+				return "Phone number cannot contain alphabets";
+			}
+		},
+		email: (value) => {
+			if (!valid_email(value)) {
+				return "Invalid email";
+			}
+		},
+		password: (value) => {
+			if (!value) {
+				return "Password is required"
+			}
+		},
+		country: (value) => {
+			if (!value) {
+				return "Please enter your country name";
+			}
+		},
+		user_accept_terms: (value) => {
+			if (!value) {
+				return "You need to accept our Terms of Service & Privary Policy"
+			}
+		}
+	};
+
+	function submit_account_request($form, values) {
+		let url_args = frappe.utils.get_query_params();
+		if (Object.keys(url_args)) {
+			values.url_args = url_args;
+		}
+		values.app = 'erpnext';
+		return call('press.api.saas.account_request', values, $form)
+			.then(() => {
+				$('h1').hide();
+				$('.verification-email').text(values.email);
+			});
+	}
+
+	function set_subdomain_from_url() {
+		let query_params = frappe.utils.get_query_params();
+		if (query_params.domain) {
+			let subdomain = query_params.domain.replace(".erpnext.com", "");
+			$('input[name="subdomain"]').val(subdomain).trigger("change");
+		}
+	}
+
+	function call(method, args, $form) {
+		return frappe
+			.call({
+				method,
+				args,
+				type: "POST",
+				btn: $form.find("button.btn-primary"),
+			})
+			.then((r) => {
+				if (r.exc) {
+					console.error("An error occurred", r.exc);
+					return;
+				}
+				return r;
+			});
+	}
+
+	function validate_subdomain(input) {
+		let $input = $(input);
+		let subdomain = $input.val();
+		let error = controller.validate_value("subdomain", subdomain);
+		if (error) {
+			controller.show_input_error("subdomain", error);
+		} else {
+			check_if_available(subdomain).then((available) => {
+				controller.show_input_feedback(
+					"subdomain",
+					!available ? `${subdomain}.erpnext.com is already taken` : `${subdomain}.erpnext.com is available`,
+					!available
+				);
+			});
+		}
+	}
+
+	function check_if_available(subdomain) {
+		return frappe
+			.call({
+				method: "press.api.saas.check_subdomain_availability",
+				args: { subdomain, app: app },
+				type: "POST",
+			})
+			.then((r) => {
+				if (r.message) {
+					return true;
+				}
+				return false;
+			});
+	}
+</script>
+{%- endblock -%}

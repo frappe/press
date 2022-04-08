@@ -1,0 +1,105 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:SAAS-PLAN-{app}-{###}",
+ "creation": "2022-03-15 11:39:32.450795",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "enabled",
+  "column_break_2",
+  "is_free",
+  "section_break_3",
+  "app",
+  "column_break_7",
+  "plan",
+  "site_plan",
+  "section_break_8",
+  "features"
+ ],
+ "fields": [
+  {
+   "default": "0",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_free",
+   "fieldtype": "Check",
+   "label": "Is Free"
+  },
+  {
+   "fieldname": "section_break_3",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "app",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "App",
+   "options": "Saas App",
+   "reqd": 1
+  },
+  {
+   "fieldname": "plan",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Plan",
+   "options": "Plan",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_7",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_8",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "features",
+   "fieldtype": "Table",
+   "label": "Features",
+   "options": "Plan Feature"
+  },
+  {
+   "fieldname": "site_plan",
+   "fieldtype": "Link",
+   "label": "Site Plan",
+   "options": "Plan",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2022-03-21 00:30:39.231399",
+ "modified_by": "Administrator",
+ "module": "Saas",
+ "name": "Saas App Plan",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
