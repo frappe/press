@@ -54,7 +54,8 @@ export default {
 		plans: {
 			method: 'press.api.saas.get_plans',
 			params: {
-				site: localStorage.getItem('current_saas_site')
+				site: localStorage.getItem('current_saas_site'),
+				app: localStorage.getItem('current_saas_app')
 			},
 			auto: true,
 			onSuccess(result) {
