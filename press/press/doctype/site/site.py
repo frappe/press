@@ -549,6 +549,7 @@ class Site(Document):
 			"Unavailable",
 		)
 		self.disable_subscription()
+		self.disable_marketplace_subscriptions()
 
 	@frappe.whitelist()
 	def cleanup_after_archive(self):
@@ -811,6 +812,17 @@ class Site(Document):
 		subscription = self.subscription
 		if subscription:
 			subscription.disable()
+
+	def disable_marketplace_subscriptions(self):
+		app_subscriptions = frappe.get_all(
+			"Marketplace App Subscription",
+			filters={"site": self.name, "status": "Active"},
+			pluck="name",
+		)
+
+		for subscription in app_subscriptions:
+			subscription_doc = frappe.get_doc("Marketplace App Subscription", subscription)
+			subscription_doc.disable()
 
 	def can_change_plan(self):
 		if is_system_user(frappe.session.user):

@@ -93,7 +93,7 @@ badge_blue, badge_green -%}
 	</div>
 	<p class="mt-2 text-base text-gray-700 md:mt-0">{{ app.description }}</p>
 	<div class="mt-2 flex flex-row justify-items-center">
-		{{ button('Install Now', '/dashboard/sites/new', 'primary') }}
+		{{ button('Install Now', '/dashboard/install-app/' + app.name, 'primary') }}
 		<div class="ml-2 mt-2 flex flex-row text-sm text-gray-600 justify-items-end">
 			<i class="w-4 h-4 mx-2" data-feather="download"></i>
 			<span>{{ no_of_installs | number_k_format }} {{ 'install' if no_of_installs
@@ -168,7 +168,7 @@ badge_blue, badge_green -%}
 	</div>
 
 	<div class="mt-4">
-		{{ button('Buy', '/dashboard/sites/new', 'primary') }}
+		{{ button('Buy', '/dashboard/install-app/' + app.name, 'primary') }}
 	</div>
 </div>
 {% endmacro %}

@@ -85,12 +85,14 @@
 			:dismissable="true"
 		>
 			<ChangeAppPlanSelector
-				v-if="appToInstall"
-				:app="{ name: appToInstall.app }"
+				v-if="appToInstall?.app"
+				:app="appToInstall.app"
 				:frappeVersion="site.frappe_version"
 				class="mb-9"
 				@change="plan => (selectedPlan = plan.name)"
 			/>
+
+			<ErrorMessage :error="$resourceErrors" />
 
 			<template #actions>
 				<Button
@@ -133,6 +135,11 @@ export default {
 					app: this.appToInstall?.app,
 					plan: this.selectedPlan
 				},
+				validate() {
+					if (this.showPlanSelectionDialog && !this.selectedPlan) {
+						return 'Please select a plan to continue';
+					}
+				},
 				onSuccess() {
 					this.showPlanSelectionDialog = false;
 					this.showInstallAppsDialog = false;
@@ -163,7 +170,11 @@ export default {
 				return;
 			}
 
-			this.$resources.installApp.submit();
+			this.$resources.installApp.submit({
+				name: this.site?.name,
+				app: this.appToInstall?.app,
+				plan: this.selectedPlan
+			});
 		},
 		dropdownItems(app) {
 			return [

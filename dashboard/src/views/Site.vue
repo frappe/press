@@ -81,11 +81,7 @@
 		<div class="px-4 sm:px-8">
 			<Tabs class="pb-8" :tabs="tabs">
 				<router-view v-slot="{ Component, route }">
-					<component
-						v-if="site"
-						:is="Component"
-						:site="site"
-					></component>
+					<component v-if="site" :is="Component" :site="site"></component>
 				</router-view>
 			</Tabs>
 		</div>

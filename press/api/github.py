@@ -141,15 +141,24 @@ def repository(installation, owner, name):
 		f"https://api.github.com/repos/{owner}/{name}", headers=headers
 	).json()
 
-	response = requests.get(
-		f"https://api.github.com/repos/{owner}/{name}/branches",
-		params={"per_page": 100},
-		headers=headers,
-	)
-	if response.ok:
-		branches = response.json()
-	else:
-		branches = []
+	current_page, is_last_page = 1, False
+	branches = []
+	while not is_last_page:
+		response = requests.get(
+			f"https://api.github.com/repos/{owner}/{name}/branches",
+			params={"per_page": 100, "page": current_page},
+			headers=headers,
+		)
+		if response.ok:
+			branches.extend(response.json())
+		else:
+			break
+
+		if len(response.json()) < 100:
+			is_last_page = True
+
+		current_page += 1
+
 	repo["branches"] = branches
 
 	return repo
