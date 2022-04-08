@@ -41,7 +41,9 @@
   "use_for_new_benches",
   "column_break_26",
   "use_for_new_sites",
-  "staging"
+  "staging",
+  "new_worker_allocation",
+  "ram"
  ],
  "fields": [
   {
@@ -279,10 +281,21 @@
    "label": "Virtual Machine",
    "mandatory_depends_on": "eval:doc.provider == \"AWS EC2\"",
    "options": "Virtual Machine"
+  },
+  {
+   "default": "0",
+   "fieldname": "new_worker_allocation",
+   "fieldtype": "Check",
+   "label": "New Worker Allocation"
+  },
+  {
+   "fieldname": "ram",
+   "fieldtype": "Float",
+   "label": "RAM"
   }
  ],
  "links": [],
- "modified": "2021-09-09 16:39:48.068288",
+ "modified": "2022-04-08 10:20:19.971688",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
@@ -303,5 +316,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }

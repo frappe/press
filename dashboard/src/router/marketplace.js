@@ -1,5 +1,11 @@
 export default [
 	{
+		path: '/install-app/:marketplaceApp',
+		name: 'InstallMarketplaceApp',
+		component: () => import('@/views/InstallMarketplaceApp.vue'),
+		props: true
+	},
+	{
 		path: '/marketplace',
 		name: 'Marketplace',
 		component: () =>

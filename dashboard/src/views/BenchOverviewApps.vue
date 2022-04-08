@@ -188,11 +188,12 @@ export default {
 				actionLabel: 'Remove App',
 				actionType: 'danger',
 				resource: this.$resources.removeApp,
-				action: _ => {
+				action: closeDialog => {
 					this.$resources.removeApp.submit({
 						name: this.bench.name,
 						app: app.name
 					});
+					closeDialog();
 				}
 			});
 		}

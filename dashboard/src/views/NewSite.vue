@@ -32,7 +32,7 @@
 					<ChangeAppPlanSelector
 						v-for="app in appsWithPlans"
 						:key="app.name"
-						:app="app"
+						:app="app.name"
 						:group="selectedGroup"
 						class="mb-9"
 						@change="plan => (selectedAppPlans[app.name] = plan.name)"
