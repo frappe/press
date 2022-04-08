@@ -1,30 +1,24 @@
 import App from './App.vue';
-import { createApp, reactive } from 'vue';
-import outsideClickDirective from '@/components/global/outsideClickDirective';
-import call from './controllers/call';
-import resourceManager from './resourceManager';
-import Auth from './controllers/auth';
-import Account from './controllers/account';
-import socket from './controllers/socket';
 import utils from './utils';
 import router from './router';
+import call from './controllers/call';
+import Auth from './controllers/auth';
+import socket from './controllers/socket';
+import Account from './controllers/account';
+import resourceManager from './resourceManager';
+import registerGlobalComponents from './components/global/register';
+
+import { createApp, reactive } from 'vue';
 
 const app = createApp(App);
 const auth = reactive(new Auth());
 const account = reactive(new Account());
 
-let components = import.meta.globEager('./components/global/*.vue'); // To get each component inside globals folder
-
-for (let path in components) {
-	let component = components[path];
-	let name = path.replace('./components/global/', '').replace('.vue', '');
-	app.component(name, component.default || component);
-}
+registerGlobalComponents(app);
 
 app.use(resourceManager);
 app.use(utils);
 app.use(router);
-app.directive('on-outside-click', outsideClickDirective);
 
 app.config.globalProperties.$call = call;
 app.provide('$call', call);
