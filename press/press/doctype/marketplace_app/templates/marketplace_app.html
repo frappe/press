@@ -68,13 +68,11 @@ badge_blue, badge_green -%}
 		<ul class="mt-2 space-y-1 text-base text-gray-600">
 			{%- for supported_version in supported_versions -%}
 			<li>
-				{%- if supported_version.app_source.public -%} {{
-				link(supported_version.version,
-				supported_version.app_source.repository_url + '/tree/' +
-				supported_version.app_source.branch, blank=True) }} {%- else -%} {{
+				{{
 				link(supported_version.version,
 				supported_version.frappe_source.repository_url + '/tree/' +
-				supported_version.frappe_source.branch, blank=True) }} {%- endif -%}
+				supported_version.frappe_source.branch, blank=True)
+				}}
 			</li>
 			{%- endfor -%}
 		</ul>
