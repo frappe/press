@@ -50,14 +50,17 @@ def get_app_image_path(app):
 
 
 @frappe.whitelist()
-def get_plans(site, app):
+def get_site_sub_info(site, app):
 	"""
-	return: Available plans for saas app along with current selected plan
+	return: Subscription information for site (plans, active plan, trial)
 	"""
 	saas_app = frappe.get_doc("Saas App", app)
 	plans = saas_app.get_plans(site)
+	trial_date = frappe.db.get_value("Site", site, "trial_end_date")
 
-	return plans
+	site_data = {"plans": plans, "trial_end_date": trial_date}
+
+	return site_data
 
 
 @frappe.whitelist()
