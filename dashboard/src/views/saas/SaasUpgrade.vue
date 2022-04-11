@@ -1,7 +1,7 @@
 <template>
 	<div class="mt-8 flex-1">
 		<!-- Alerts -->
-		<Alert class="flex-1" v-if="trial_end_date && $account.needsCard"
+		<Alert class="mb-4 flex-1" v-if="trial_end_date && $account.needsCard"
 			>Your trial ends {{ trialEndsText(trial_end_date) }} after which your site
 			will get suspended. Add your billing information to avoid suspension.
 			<template #actions>
@@ -10,14 +10,14 @@
 				</Button>
 			</template>
 		</Alert>
-		<Alert title="Trial" v-if="trial_end_date && $account.hasBillingInfo">
+		<Alert class="mb-4" title="Trial" v-if="trial_end_date && $account.hasBillingInfo">
 			Your trial ends {{ trialEndsInDaysText }} after which your site will get
 			suspended. Select a plan from the Plan section below to avoid suspension.
 		</Alert>
 		<!-- -->
 		<div
 			v-if="plansData"
-			class="mx-auto mt-4 grid flex-1 grid-cols-1 gap-2 md:grid-cols-3"
+			class="mx-auto grid flex-1 grid-cols-1 gap-2 md:grid-cols-3"
 		>
 			<SaasAppPlanCard
 				v-for="plan in plansData"
