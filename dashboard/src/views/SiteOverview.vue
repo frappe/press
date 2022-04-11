@@ -38,20 +38,11 @@ const isInTrial = computed(() => {
 	return props.site?.trial_end_date;
 });
 
-const trialEndsInDaysText = computed(() => {
+const trialEndsText = computed(() => {
 	if (!props.site?.trial_end_date) {
 		return 0;
 	}
-	let diff = utils.methods
-		.$date(props.site.trial_end_date)
-		.diff(DateTime.local(), ['days'])
-		.toObject();
-
-	let days = diff.days;
-	if (days > 1) {
-		return `in ${Math.floor(days)} days`;
-	}
-	return 'in a day';
+	return utils.methods.trialEndsInDaysText(props.site.trial_end_date);
 });
 </script>
 
@@ -60,7 +51,7 @@ const trialEndsInDaysText = computed(() => {
 		<AlertSiteActivation :site="site" />
 		<AlertSiteUpdate :site="site" />
 		<Alert title="Trial" v-if="isInTrial && $account.needsCard">
-			Your trial ends {{ trialEndsInDaysText }} after which your site will get
+			Your trial ends {{ trialEndsText }} after which your site will get
 			suspended. Add your billing information to avoid suspension.
 
 			<template #actions>
