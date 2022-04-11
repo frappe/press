@@ -60,6 +60,18 @@ def get_access_token(install):
 
 
 @frappe.whitelist()
+def clear_token_and_get_installation_url():
+	clear_current_team_access_token()
+	public_link = frappe.db.get_single_value("Press Settings", "github_app_public_link")
+	return f"{public_link}/installations/new"
+
+
+def clear_current_team_access_token():
+	team = get_current_team()
+	frappe.db.set_value("Team", team, "github_access_token", "")  # clear access token
+
+
+@frappe.whitelist()
 def options():
 	team = get_current_team()
 	token = frappe.db.get_value("Team", team, "github_access_token")
