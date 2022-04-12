@@ -60,7 +60,7 @@
   "auto_update_last_triggered_on",
   "update_trigger_frequency",
   "update_trigger_time",
-  "column_break_51",
+  "column_break_57",
   "update_on_weekday",
   "update_end_of_month",
   "update_on_day_of_month",
@@ -365,10 +365,6 @@
    "label": "Skip Auto Updates"
   },
   {
-   "fieldname": "column_break_51",
-   "fieldtype": "Column Break"
-  },
-  {
    "fieldname": "notify_email",
    "fieldtype": "Data",
    "label": "Notify Email"
@@ -435,10 +431,6 @@
    "label": "Update Trigger Time"
   },
   {
-   "fieldname": "column_break_51",
-   "fieldtype": "Column Break"
-  },
-  {
    "default": "0",
    "fieldname": "auto_updates_scheduled",
    "fieldtype": "Check",
@@ -481,6 +473,10 @@
    "fieldtype": "Link",
    "label": "Standby For",
    "options": "Saas App"
+  },
+  {
+   "fieldname": "column_break_57",
+   "fieldtype": "Column Break"
   }
  ],
  "links": [
@@ -530,7 +526,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2022-04-12 14:54:40.597494",
+ "modified": "2022-04-12 18:53:40.750824",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
