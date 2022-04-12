@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils';
-import { describe, expect, should, test } from 'vitest';
+import { describe, expect, test } from 'vitest';
 import FeatureList from '@/components/FeatureList.vue';
+
 
 describe('FeatureList Component', () => {
 	test('feature list renders with 2 features in correct order', async () => {
@@ -13,7 +14,7 @@ describe('FeatureList Component', () => {
 		});
 
 		expect(wrapper.findAll('li').length).toBe(2);
-        expect(wrapper.findAll('li')[0].text()).toBe('Feature 1');
-        expect(wrapper.findAll('li')[1].text()).toBe('Feature 2');
+		expect(wrapper.findAll('li')[0].text()).toBe('Feature 1');
+		expect(wrapper.findAll('li')[1].text()).toBe('Feature 2');
 	});
 });
