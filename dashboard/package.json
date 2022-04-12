@@ -42,6 +42,8 @@
     "eslint-plugin-vue": "^6.2.2",
     "jsdom": "^19.0.0",
     "lint-staged": "^9.5.0",
+    "msw": "^0.36.8",
+    "node-fetch": "^3.2.3",
     "postcss": "^8.4.6",
     "postcss-easy-import": "^3.0.0",
     "prettier": "^2.5.1",

@@ -21,6 +21,11 @@ export default defineConfig({
 	},
 	test: {
 		globals: true,
-		environment: 'jsdom'
+		environment: 'jsdom',
+		setupFiles: 'src/tests/setup/msw.js',
+		coverage: {
+			extension: ['.vue', '.js'],
+			all: true
+		}
 	}
 });
