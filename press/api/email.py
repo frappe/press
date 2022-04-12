@@ -170,7 +170,7 @@ def event_log(**data):
 	).insert(ignore_permissions=True)
 	frappe.db.commit()
 
-	data = {"status": status, "message_id": message_id}
+	data = {"status": status, "message_id": message_id, "secret_key": secret_key}
 
 	try:
 		requests.post(
