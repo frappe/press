@@ -66,8 +66,7 @@
   "update_on_day_of_month",
   "column_break_58",
   "database_section",
-  "is_database_access_enabled",
-  "column_break_52"
+  "is_database_access_enabled"
  ],
  "fields": [
   {
@@ -478,10 +477,6 @@
    "read_only": 1
   },
   {
-   "fieldname": "column_break_52",
-   "fieldtype": "Column Break"
-  },
-  {
    "fieldname": "standby_for",
    "fieldtype": "Link",
    "label": "Standby For",
@@ -535,7 +530,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2022-03-31 13:47:20.260587",
+ "modified": "2022-04-12 14:54:40.597494",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
