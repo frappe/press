@@ -18,5 +18,9 @@ export default defineConfig({
 		outDir: '../press/public/dashboard',
 		emptyOutDir: true,
 		target: 'es2015'
+	},
+	test: {
+		globals: true,
+		environment: 'jsdom'
 	}
 });
