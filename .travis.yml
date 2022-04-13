@@ -45,7 +45,7 @@ jobs:
         - nvm install 14
 
         - pip install frappe-bench flake8 git+https://github.com/adityahase/black
-        - pip install Click==7.1.2
+        - pip install Click==8.0.2
 
         - bench init frappe-bench --skip-assets --python $(which python)
 
@@ -74,5 +74,3 @@ jobs:
         - bench get-app press $TRAVIS_BUILD_DIR
         - bench start &
         - bench --site test_site reinstall --yes
-        - cd apps/press/dashboard && yarn install
-        - cd ../../../
