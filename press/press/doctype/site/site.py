@@ -38,7 +38,8 @@ class Site(Document):
 		self.name = self._get_site_name(self.subdomain)
 
 	def validate(self):
-		self.validate_site_name()
+		if self.has_value_changed("subdomain"):
+			self.validate_site_name()
 		self.set_site_admin_password()
 		self.validate_installed_apps()
 		self.validate_host_name()
