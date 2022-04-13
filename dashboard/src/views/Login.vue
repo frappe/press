@@ -110,7 +110,10 @@ export default {
 		}
 	},
 	async mounted() {
-		if (this.$route?.query?.route) {
+		if (localStorage.getItem('was_saas_logout')) {
+			this.$router.push('/saas/login');
+			localStorage.removeItem('was_saas_logout');
+		} else if (this.$route?.query?.route) {
 			this.redirect_route = this.$route.query.route;
 			this.$router.replace({ query: null });
 		}
