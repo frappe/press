@@ -1,6 +1,6 @@
 <template>
 	<div
-		v-if="plan"
+		v-if="plan && !plan.is_free"
 		class="cursor-pointer rounded-2xl border border-gray-100 p-5 shadow hover:border-gray-300 z-10"
 		:class="[
 			popular ? 'relative bg-blue-100' : '',
