@@ -61,10 +61,6 @@ class Site(Document):
 		if len(self.subdomain) > 32:
 			frappe.throw("Subdomain too long. Use 32 or less characters")
 
-		user = frappe.session.user
-		user_type = frappe.db.get_value("User", user, "user_type", cache=True)
-		if user_type == "System User":
-			return
 		if len(self.subdomain) < 5:
 			frappe.throw("Subdomain too short. Use 5 or more characters")
 
