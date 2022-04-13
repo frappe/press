@@ -4,9 +4,14 @@ import { describe, expect, test, vi } from 'vitest';
 import ClickToCopyField from '@/components/ClickToCopyField.vue';
 
 // Mocking clipboard API
+let clipboardData = '';
 Object.assign(window.navigator, {
 	clipboard: {
-		writeText: vi.fn(() => Promise.resolve())
+		writeText: vi.fn(data => {
+			clipboardData = data;
+			return Promise.resolve();
+		}),
+		readText: vi.fn(() => clipboardData)
 	}
 });
 
@@ -37,7 +42,6 @@ describe('ClickToCopyField Component', () => {
 
 		await nextTick();
 
-		expect(navigator.clipboard.writeText).toHaveBeenCalledWith('Test');
-		expect(navigator.clipboard.writeText).toHaveBeenCalledOnce();
+		expect(navigator.clipboard.readText()).toBe('Test');
 	});
 });
