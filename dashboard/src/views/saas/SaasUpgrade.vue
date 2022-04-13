@@ -1,12 +1,23 @@
 <template>
 	<div class="mt-8 flex-1">
-		<Alert
-			class="flex-1"
-			title="Please upgrade plan or else your services with frappeteams will be discontinued from."
-		/>
+		<!-- Alerts -->
+		<Alert class="mb-4 flex-1" v-if="trial_end_date && $account.needsCard"
+			>Your trial ends {{ trialEndsText(trial_end_date) }} after which your site
+			will get suspended. Add your billing information to avoid suspension.
+			<template #actions>
+				<Button class="whitespace-nowrap" route="/saas/billing" type="primary">
+					Add Billing Information
+				</Button>
+			</template>
+		</Alert>
+		<Alert class="mb-4" title="Trial" v-if="trial_end_date && $account.hasBillingInfo">
+			Your trial ends {{ trialEndsInDaysText }} after which your site will get
+			suspended. Select a plan from the Plan section below to avoid suspension.
+		</Alert>
+		<!-- -->
 		<div
 			v-if="plansData"
-			class="mx-auto mt-4 grid flex-1 grid-cols-1 gap-2 md:grid-cols-3"
+			class="mx-auto grid flex-1 grid-cols-1 gap-2 md:grid-cols-3"
 		>
 			<SaasAppPlanCard
 				v-for="plan in plansData"
@@ -28,6 +39,7 @@
 
 <script>
 import SaasAppPlanCard from './SaasAppPlanCard.vue';
+import { utils } from '@/utils';
 
 export default {
 	name: 'SaasUpgrade',
@@ -38,7 +50,8 @@ export default {
 		return {
 			plansData: null,
 			selectedPlan: null,
-			activePlan: null
+			activePlan: null,
+			trial_end_date: null
 		};
 	},
 	methods: {
@@ -48,19 +61,23 @@ export default {
 		},
 		switchToNewPlan() {
 			this.$resources.changePlan.submit();
+		},
+		trialEndsText(date) {
+			return utils.methods.trialEndsInDaysText(date);
 		}
 	},
 	resources: {
 		plans: {
-			method: 'press.api.saas.get_plans',
+			method: 'press.api.saas.get_site_sub_info',
 			params: {
 				site: localStorage.getItem('current_saas_site'),
 				app: localStorage.getItem('current_saas_app')
 			},
 			auto: true,
 			onSuccess(result) {
-				this.plansData = result;
-				this.selectedPlan = result.filter(plan => {
+				this.plansData = result.plans;
+				this.trial_end_date = result.trial_end_date;
+				this.selectedPlan = result.plans.filter(plan => {
 					if (plan.is_selected) {
 						return plan;
 					}

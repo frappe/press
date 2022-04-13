@@ -55,6 +55,15 @@ let utils = {
 			let price_field = india ? 'price_inr' : 'price_usd';
 			let price = plan[price_field];
 			return price > 0 ? `${currency}${price}` : plan.plan_title;
+		},
+		trialEndsInDaysText(date) {
+			let diff = this.$date(date).diff(DateTime.local(), ['days']).toObject();
+
+			let days = diff.days;
+			if (days > 1) {
+				return `in ${Math.floor(days)} days`;
+			}
+			return 'in a day';
 		}
 	},
 	computed: {
