@@ -34,7 +34,7 @@
 		</div>
 
 		<NotificationToasts />
-		<UserPrompts />
+		<UserPrompts v-if="$auth.isLoggedIn" />
 		<ConfirmDialogs />
 	</div>
 </template>
