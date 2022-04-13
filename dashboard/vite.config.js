@@ -18,5 +18,14 @@ export default defineConfig({
 		outDir: '../press/public/dashboard',
 		emptyOutDir: true,
 		target: 'es2015'
+	},
+	test: {
+		globals: true,
+		environment: 'jsdom',
+		setupFiles: 'src/tests/setup/msw.js',
+		coverage: {
+			extension: ['.vue', '.js'],
+			all: true
+		}
 	}
 });
