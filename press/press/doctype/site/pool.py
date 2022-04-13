@@ -62,7 +62,10 @@ class SitePool:
 
 	def get(self):
 		return frappe.db.get_value(
-			"Site", {"is_standby": True, "status": "Active"}, "name", order_by="creation"
+			"Site",
+			{"is_standby": True, "status": "Active", "standby_for": ("=", "")},
+			"name",
+			order_by="creation",
 		)
 
 
