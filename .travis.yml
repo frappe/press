@@ -37,6 +37,7 @@ jobs:
         - bench --site test_site run-tests --app press
         - flake8 --ignore W191,E501,W503 apps/press/press
         - black --check apps/press/press
+        - cd apps/press/dashboard && yarn run test
 
       install:
         - cd ~
@@ -73,3 +74,5 @@ jobs:
         - bench get-app press $TRAVIS_BUILD_DIR
         - bench start &
         - bench --site test_site reinstall --yes
+        - cd apps/press/dashboard && yarn install
+        - cd ../../../
