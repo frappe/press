@@ -1,15 +1,17 @@
 import { rest } from 'msw';
+import fetch from 'node-fetch';
 import { setupServer } from 'msw/node';
 import { config } from '@vue/test-utils';
 import resourceManager from '@/resourceManager';
+import router from '@/router';
 import { components } from '@/components/global/register';
 import { afterAll, afterEach, beforeAll, vi } from 'vitest';
 
-import fetch from 'node-fetch';
+const FAKE_BASE_URL = 'http://fc.tests';
 
 const restHandlers = [
 	rest.post(
-		'http://fc.tests/api/method/press.api.site.features',
+		FAKE_BASE_URL + '/api/method/press.api.site.features',
 		(req, res, ctx) => {
 			return res(ctx.status(200), ctx.json({ message: apps }));
 		}
@@ -22,9 +24,7 @@ beforeAll(() => {
 	setupGlobalConfig(config); // Plugins, global components etc.
 
 	// Have to mock fetch, since tests run in node environment
-	vi.stubGlobal('fetch', (url, options) =>
-		fetch('http://fc.tests' + url, options)
-	);
+	vi.stubGlobal('fetch', (url, options) => fetch(FAKE_BASE_URL + url, options));
 
 	// Starts the msw server
 	server.listen({ onUnhandledRequest: 'error' });
@@ -44,5 +44,5 @@ function setupGlobalConfig(config) {
 	}
 
 	config.global.components = globalComponents;
-	config.global.plugins = [resourceManager];
+	config.global.plugins = [resourceManager, router];
 }
