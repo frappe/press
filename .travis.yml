@@ -37,6 +37,7 @@ jobs:
         - bench --site test_site run-tests --app press
         - flake8 --ignore W191,E501,W503 apps/press/press
         - black --check apps/press/press
+        - cd apps/press/dashboard && yarn run test
 
       install:
         - cd ~
@@ -44,6 +45,7 @@ jobs:
         - nvm install 14
 
         - pip install frappe-bench flake8 git+https://github.com/adityahase/black
+        - pip install Click==8.0.2
 
         - bench init frappe-bench --skip-assets --python $(which python)
 

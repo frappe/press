@@ -409,7 +409,9 @@ def scale_workers():
 	for bench_name in benches:
 		bench = frappe.get_doc("Bench", bench_name)
 		try:
-			new_worker_allocation = frappe.get_cached_value("Server", bench.server, "new_worker_allocation")
+			new_worker_allocation = frappe.get_cached_value(
+				"Server", bench.server, "new_worker_allocation"
+			)
 			if new_worker_allocation:
 				continue
 		except Exception:
