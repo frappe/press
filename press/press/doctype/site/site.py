@@ -1090,7 +1090,7 @@ class Site(Document):
 			frappe.get_all(
 				"Site",
 				{
-					"status": ("not in", ["Archived", "Suspended", "Inactive"]),
+					"status": "Active",
 					"creation": ("<=", interval_hrs_ago),
 					"is_standby": False,
 				},

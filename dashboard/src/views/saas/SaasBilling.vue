@@ -1,8 +1,8 @@
 <template>
-	<div class="flex-1 mt-8">
+	<div class="mt-8 flex-1">
 		<div class="grid grid-cols-1 gap-5 md:grid-cols-2">
-			<AccountBillingDetails class="row-span-1"/>
-			<AccountBillingCards class="row-span-1"/>
+			<AccountBillingDetails class="row-span-1" />
+			<AccountBillingCards class="row-span-1" />
 			<AccountBillingPayments
 				class="col-span-1 md:col-span-2"
 				:invoice-name="invoiceName"
@@ -22,7 +22,7 @@ export default {
 	components: {
 		AccountBillingDetails,
 		AccountBillingCards,
-		AccountBillingPayments,
+		AccountBillingPayments
 	}
 };
 </script>

@@ -6,7 +6,11 @@ from frappe.geo.country_info import get_country_timezone_info
 from frappe.core.utils import find
 
 from press.api.account import get_account_request_from_key
-from press.press.doctype.site.erpnext_site import ERPNextSite, get_erpnext_domain
+from press.press.doctype.site.erpnext_site import (
+	ERPNextSite,
+	get_erpnext_domain,
+	get_erpnext_plan,
+)
 from press.press.doctype.site.pool import get as get_pooled_site
 from press.press.doctype.team.team import Team
 from press.utils.billing import get_erpnext_com_connection
@@ -53,7 +57,8 @@ def account_request(
 			ERPNextSite(site=pooled_site).rename_pooled_site(account_request)
 		else:
 			# Create a new site if pooled sites aren't available
-			ERPNextSite(account_request=account_request).insert(ignore_permissions=True)
+			site = ERPNextSite(account_request=account_request).insert(ignore_permissions=True)
+			site.create_subscription(get_erpnext_plan())
 	finally:
 		frappe.set_user(current_user)
 		frappe.session.data = current_session_data

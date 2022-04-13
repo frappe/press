@@ -2,6 +2,29 @@
 	<div>
 		<div class="flex justify-center">
 			<Loading v-if="$resources.options.loading" />
+
+			<div class="flex flex-col items-center gap-2">
+				<ErrorMessage
+					:error="
+						$resources.options.error === 'Bad credentials'
+							? 'Access token expired, reauthorization required'
+							: $resources.options.error
+					"
+				/>
+
+				<Button
+					v-if="requiresReAuth"
+					type="primary"
+					icon-left="github"
+					@click="$resources.clearAccessToken.submit()"
+					:loading="$resources.clearAccessToken.loading"
+				>
+					Reauthorize GitHub</Button
+				>
+
+				<ErrorMessage :error="$resources.clearAccessToken.error" />
+			</div>
+
 			<div v-if="needsAuthorization">
 				<Button
 					type="primary"
@@ -76,11 +99,22 @@ export default {
 		return {
 			selectedRepo: null,
 			selectedInstallation: null,
-			selectedBranch: null
+			selectedBranch: null,
+			requiresReAuth: false
 		};
 	},
 	resources: {
-		options: 'press.api.github.options',
+		options() {
+			return {
+				method: 'press.api.github.options',
+				auto: true,
+				onError(message) {
+					if (message === 'Bad credentials') {
+						this.requiresReAuth = true;
+					}
+				}
+			};
+		},
 		repository() {
 			let auto = this.selectedInstallation && this.selectedRepo;
 			let params = {
@@ -123,6 +157,14 @@ export default {
 				onError() {
 					// Invalid Frappe App
 					this.$emit('onSelect', null);
+				}
+			};
+		},
+		clearAccessToken() {
+			return {
+				method: 'press.api.github.clear_token_and_get_installation_url',
+				onSuccess(installation_url) {
+					window.location.href = installation_url + '?state=' + this.state;
 				}
 			};
 		}
