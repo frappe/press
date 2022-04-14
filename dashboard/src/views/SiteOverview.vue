@@ -61,7 +61,7 @@ const trialEndsText = computed(() => {
 			</template>
 		</Alert>
 		<Alert title="Trial" v-if="isInTrial && $account.hasBillingInfo">
-			Your trial ends {{ trialEndsInDaysText }} after which your site will get
+			Your trial ends {{ trialEndsText }} after which your site will get
 			suspended. Select a plan from the Plan section below to avoid suspension.
 		</Alert>
 		<Alert title="Attention Required" v-if="limitExceeded">
