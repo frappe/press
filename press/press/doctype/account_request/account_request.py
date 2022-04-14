@@ -21,6 +21,7 @@ class AccountRequest(Document):
 		self.ip_address = frappe.local.request_ip
 		geo_location = self.get_country_info()
 		self.geo_location = json.dumps(geo_location, indent=1, sort_keys=True)
+		self.state = geo_location.get("regionName")
 
 	def after_insert(self):
 		self.send_verification_email()
