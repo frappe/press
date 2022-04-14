@@ -1,208 +1,99 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2022-03-30 10:13:18.832545",
+ "autoname": "field:app",
+ "creation": "2022-04-14 16:30:53.293931",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "erpnext_settings_section",
-  "erpnext_domain",
-  "erpnext_cluster",
-  "erpnext_plan",
-  "erpnext_group",
-  "erpnext_standby_pool_size",
-  "erpnext_standby_queue_size",
-  "enable_erpnext_pooling",
-  "column_break_6",
-  "erpnext_apps",
-  "frappeteams_signups_section",
-  "teams_domain",
-  "teams_cluster",
-  "teams_plan",
-  "teams_group",
-  "column_break_13",
-  "teams_apps",
-  "frappedesk_signups_section",
-  "frappedesk_domain",
-  "frappedesk_cluster",
-  "frappedesk_plan",
-  "frappedesk_group",
-  "frappedesk_standby_pool_size",
-  "frappedesk_standby_queue_size",
-  "enable_frappedesk_pooling",
-  "column_break_26",
-  "frappedesk_apps"
+  "app",
+  "domain",
+  "cluster",
+  "plan",
+  "group",
+  "standby_pool_size",
+  "standby_queue_size",
+  "enable_pooling",
+  "column_break_9",
+  "apps"
  ],
  "fields": [
   {
-   "collapsible": 1,
-   "fieldname": "erpnext_settings_section",
-   "fieldtype": "Section Break",
-   "label": "ERPNext Signups"
-  },
-  {
-   "fieldname": "erpnext_cluster",
+   "fieldname": "domain",
    "fieldtype": "Link",
-   "label": "ERPNext Cluster",
-   "options": "Cluster"
-  },
-  {
-   "fieldname": "erpnext_plan",
-   "fieldtype": "Link",
-   "label": "ERPNext Plan",
-   "options": "Plan"
-  },
-  {
-   "fieldname": "erpnext_group",
-   "fieldtype": "Link",
-   "label": "ERPNext Group",
-   "options": "Release Group"
-  },
-  {
-   "fieldname": "column_break_6",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "erpnext_apps",
-   "fieldtype": "Table",
-   "label": "ERPNext Apps",
-   "options": "ERPNext App"
-  },
-  {
-   "fieldname": "erpnext_domain",
-   "fieldtype": "Link",
-   "label": "ERPNext Domain",
+   "label": "Domain",
    "options": "Root Domain"
   },
   {
-   "collapsible": 1,
-   "fieldname": "frappeteams_signups_section",
-   "fieldtype": "Section Break",
-   "label": "FrappeTeams Signups"
-  },
-  {
-   "fieldname": "teams_domain",
+   "fieldname": "cluster",
    "fieldtype": "Link",
-   "label": "Teams Domain",
-   "options": "Root Domain"
-  },
-  {
-   "fieldname": "teams_cluster",
-   "fieldtype": "Link",
-   "label": "Teams Cluster",
+   "label": "Cluster",
    "options": "Cluster"
   },
   {
-   "fieldname": "teams_plan",
+   "fieldname": "plan",
    "fieldtype": "Link",
-   "label": "Teams Plan",
+   "label": "Plan",
    "options": "Plan"
   },
   {
-   "fieldname": "teams_group",
+   "fieldname": "group",
    "fieldtype": "Link",
-   "label": "Teams Group",
+   "label": "Group",
    "options": "Release Group"
   },
   {
-   "fieldname": "column_break_13",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "teams_apps",
-   "fieldtype": "Table",
-   "label": "Teams Apps",
-   "options": "ERPNext App"
-  },
-  {
-   "fieldname": "erpnext_standby_pool_size",
+   "fieldname": "standby_pool_size",
    "fieldtype": "Int",
-   "label": "ERPNext Standby Pool Size"
+   "label": "Standby Pool Size"
   },
   {
-   "fieldname": "erpnext_standby_queue_size",
+   "fieldname": "standby_queue_size",
    "fieldtype": "Int",
-   "label": "ERPNext Standby Queue Size"
+   "label": "Standby Queue Size"
   },
   {
    "default": "0",
-   "fieldname": "enable_erpnext_pooling",
+   "fieldname": "enable_pooling",
    "fieldtype": "Check",
-   "label": "Enable ERPNext Pooling"
+   "label": "Enable Pooling"
   },
   {
-   "collapsible": 1,
-   "fieldname": "frappedesk_signups_section",
-   "fieldtype": "Section Break",
-   "label": "FrappeDesk Signups"
-  },
-  {
-   "fieldname": "frappedesk_domain",
+   "fieldname": "app",
    "fieldtype": "Link",
-   "label": "FrappeDesk Domain",
-   "options": "Root Domain"
+   "label": "App",
+   "options": "Saas App",
+   "unique": 1
   },
   {
-   "fieldname": "frappedesk_cluster",
-   "fieldtype": "Link",
-   "label": "FrappeDesk Cluster",
-   "options": "Cluster"
-  },
-  {
-   "fieldname": "frappedesk_plan",
-   "fieldtype": "Link",
-   "label": "FrappeDesk Plan",
-   "options": "Plan"
-  },
-  {
-   "fieldname": "frappedesk_group",
-   "fieldtype": "Link",
-   "label": "FrappeDesk Group",
-   "options": "Release Group"
-  },
-  {
-   "fieldname": "frappedesk_standby_pool_size",
-   "fieldtype": "Int",
-   "label": "FrappeDesk Standby Pool"
-  },
-  {
-   "default": "0",
-   "fieldname": "enable_frappedesk_pooling",
-   "fieldtype": "Check",
-   "label": "Enable FrappeDesk Pooling"
-  },
-  {
-   "fieldname": "column_break_26",
+   "fieldname": "column_break_9",
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "frappedesk_apps",
+   "fieldname": "apps",
    "fieldtype": "Table",
-   "label": "FrappeDesk Apps",
+   "label": "Apps",
    "options": "ERPNext App"
-  },
-  {
-   "fieldname": "frappedesk_standby_queue_size",
-   "fieldtype": "Int",
-   "label": "FrappeDesk Standby Queue Size"
   }
  ],
  "index_web_pages_for_search": 1,
- "issingle": 1,
  "links": [],
- "modified": "2022-04-06 16:24:38.626055",
+ "modified": "2022-04-14 16:39:50.627383",
  "modified_by": "Administrator",
  "module": "Saas",
  "name": "Saas Settings",
+ "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {
    "create": 1,
    "delete": 1,
    "email": 1,
+   "export": 1,
    "print": 1,
    "read": 1,
+   "report": 1,
    "role": "System Manager",
    "share": 1,
    "write": 1
