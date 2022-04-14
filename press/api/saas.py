@@ -33,10 +33,11 @@ def get_saas_subscriptions_for_team():
 
 
 @frappe.whitelist()
-def get_saas_site_and_app(team):
+def get_saas_site_and_app():
 	"""
 	return: Any active saas subscription for team to set it as default for loading dashbaord
 	"""
+	team = get_current_team()
 	data = frappe.get_all(
 		"Saas App Subscription",
 		{"team": team, "status": ("!=", "Disabled")},
