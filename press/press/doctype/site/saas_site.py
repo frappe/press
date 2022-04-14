@@ -73,22 +73,20 @@ def get_saas_bench(app):
 
 
 def get_saas_plan(app):
-	return frappe.db.get_single_value("Saas Settings", f"{app}_plan")
+	return frappe.db.get_value("Saas Settings", app, "plan")
 
 
 def get_saas_domain(app):
-	return frappe.db.get_single_value("Saas Settings", f"{app}_domain")
+	return frappe.db.get_value("Saas Settings", app, "domain")
 
 
 def get_saas_cluster(app):
-	return frappe.db.get_single_value("Saas Settings", f"{app}_cluster")
+	return frappe.db.get_value("Saas Settings", app, "cluster")
 
 
 def get_saas_apps(app):
-	return [
-		_app["app"] for _app in frappe.get_doc("Saas Settings").as_dict()[f"{app}_apps"]
-	]
+	return [_app["app"] for _app in frappe.get_doc("Saas Settings", app).as_dict()["apps"]]
 
 
 def get_saas_group(app):
-	return frappe.db.get_single_value("Saas Settings", f"{app}_group")
+	return frappe.db.get_value("Saas Settings", app, "group")
