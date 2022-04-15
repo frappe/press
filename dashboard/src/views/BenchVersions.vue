@@ -66,7 +66,7 @@
 								}}
 							</p>
 						</div>
-						<div>
+						<div class="flex flex-row items-center">
 							<Button
 								icon-left="hard-drive"
 								v-if="$account.ssh_key && selectedVersion.is_ssh_proxy_setup"
