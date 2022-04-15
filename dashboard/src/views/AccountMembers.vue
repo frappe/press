@@ -17,7 +17,7 @@
 				Manage
 			</Button>
 		</template>
-		<div class="divide-y">
+		<div class="max-h-96 divide-y">
 			<ListItem
 				v-for="member in $account.team_members"
 				:title="`${member.first_name} ${member.last_name}`"
