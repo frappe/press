@@ -53,6 +53,11 @@ export default [
 				name: 'MarketplaceAppDeployment',
 				path: 'releases',
 				component: () => import('../views/MarketplaceAppDeployment.vue')
+			},
+			{
+				name: 'MarketplaceAppPricing',
+				path: 'pricing',
+				component: () => import('../views/MarketplaceAppPricing.vue')
 			}
 		]
 	}

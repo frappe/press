@@ -84,7 +84,8 @@ export default {
 			let tabs = [
 				{ label: 'Overview', route: 'overview' },
 				{ label: 'Releases', route: 'releases' },
-				{ label: 'Analytics', route: 'analytics' }
+				{ label: 'Analytics', route: 'analytics' },
+				{ label: 'Pricing', route: 'pricing' }
 			];
 
 			return tabs.map(tab => {
