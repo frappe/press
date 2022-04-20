@@ -19,7 +19,7 @@ class SaasSite(Site):
 					"team": "Administrator",
 					"account_request": account_request.name,
 					"subscription_plan": get_saas_plan(self.app),
-					"trial_end_date": frappe.utils.add_days(None, 7),
+					"trial_end_date": frappe.utils.add_days(None, 14),
 				}
 			)
 
@@ -27,7 +27,7 @@ class SaasSite(Site):
 		self.subdomain = account_request.subdomain
 		self.is_standby = False
 		self.account_request = account_request.name
-		self.trial_end_date = frappe.utils.add_days(None, 7)
+		self.trial_end_date = frappe.utils.add_days(None, 14)
 		plan = get_saas_plan(self.app)
 		self._update_configuration(self.get_plan_config(plan), save=False)
 		self.save(ignore_permissions=True)
