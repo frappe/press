@@ -65,3 +65,19 @@ class LogServer(BaseServer):
 	@frappe.whitelist()
 	def show_kibana_password(self):
 		return self.get_password("kibana_password")
+
+	@frappe.whitelist()
+	def install_elasticsearch_exporter(self):
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_install_elasticsearch_exporter", queue="long", timeout=1200
+		)
+
+	def _install_elasticsearch_exporter(self):
+		try:
+			ansible = Ansible(
+				playbook="elasticsearch_exporter.yml",
+				server=self
+			)
+			ansible.run()
+		except Exception:
+			log_error("Elasticsearch Exporter Install Exception", server=self.as_dict())

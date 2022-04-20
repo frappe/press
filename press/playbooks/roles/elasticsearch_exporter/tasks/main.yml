@@ -1,0 +1,36 @@
+---
+- name: Create Elasticsearch Exporter Directory
+  file:
+    path: /opt/elasticsearch_exporter
+    state: directory
+    mode: 0755
+
+- name: Download Elasticsearch Exporter Archive
+  unarchive:
+    src: https://github.com/prometheus-community/elasticsearch_exporter/releases/download/v1.3.0/elasticsearch_exporter-1.3.0.linux-amd64.tar.gz
+    dest: /tmp
+    remote_src: yes
+
+- name: Copy Elasticsearch Exporter Binary
+  copy:
+    src: /tmp/elasticsearch_exporter-1.3.0.linux-amd64/elasticsearch_exporter
+    dest: /opt/elasticsearch_exporter/elasticsearch_exporter
+    remote_src: yes
+    mode: 0755
+    owner: root
+    group: root
+
+- name: Create Elasticsearch Exporter Systemd Service File
+  template:
+    src: elasticsearch_exporter.service
+    dest: /etc/systemd/system/elasticsearch_exporter.service
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Restart Elasticsearch Exporter Service
+  systemd:
+    daemon_reload: true
+    name: elasticsearch_exporter
+    enabled: yes
+    state: restarted
