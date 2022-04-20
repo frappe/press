@@ -10,3 +10,8 @@
     job: nginx
     __metrics_path__: /metrics/nginx
 
+- targets:
+    - "{{ item.name }}"
+  labels:
+    job: elasticsearch
+    __metrics_path__: /metrics/elasticsearch
