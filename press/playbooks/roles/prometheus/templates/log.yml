@@ -1,0 +1,12 @@
+- targets:
+    - "{{ item.name }}"
+  labels:
+    job: node
+    __metrics_path__: /metrics/node
+
+- targets:
+    - "{{ item.name }}"
+  labels:
+    job: nginx
+    __metrics_path__: /metrics/nginx
+

@@ -68,6 +68,21 @@ scrape_configs:
           - "/home/frappe/prometheus/file_sd/registry.{{ registry.name }}.yml"
   ## endfor ##
 
+  ## for log in log_servers ##
+  - job_name: "{{ log.name }}"
+    scrape_interval: 1m
+    scheme: https
+    basic_auth:
+      username: frappe
+      password: "{{ log.monitoring_password }}"
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+    file_sd_configs:
+      - files:
+          - "/home/frappe/prometheus/file_sd/log.{{ log.name }}.yml"
+  ## endfor ##
+
   ## for cluster in clusters ##
   - job_name: "cluster.{{ cluster.name }}"
     scrape_interval: 1m
