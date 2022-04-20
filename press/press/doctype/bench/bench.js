@@ -33,5 +33,33 @@ frappe.ui.form.on('Bench', {
 				);
 			}
 		});
+
+		frm.add_custom_button(
+			'Move sites',
+			() => {
+				let d = new frappe.ui.Dialog({
+					title: 'Move sites',
+					fields: [
+						{
+							fieldtype: 'Link',
+							fieldname: 'server',
+							label: 'Server',
+							options: 'Server',
+							reqd: 1,
+						},
+					],
+					primary_action({ server }) {
+						frm.call('move_sites', { server }).then((r) => {
+							if (!r.exc) {
+								frappe.show_alert(`Scheduled migrations for sites to ${server}`);
+							}
+						});
+					},
+				});
+				d.show();
+			},
+			__('Actions')
+		);
+
 	}
 });

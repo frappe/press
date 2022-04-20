@@ -378,15 +378,36 @@ class ReleaseGroup(Document):
 		app_update_available = self.deploy_information().update_available
 		self.add_server(server, deploy=not app_update_available)
 
+	def get_last_successful_candidate(self) -> Document:
+		return frappe.get_last_doc(
+			"Deploy Candidate", {"status": "Success", "group": self.name}
+		)
+
 	def add_server(self, server: str, deploy=False):
 		self.append("servers", {"server": server, "default": False})
 		self.save()
 		if deploy:
-			last_successful_candidate = frappe.get_last_doc(
-				"Deploy Candidate", {"status": "Success", "group": self.name}
-			)
-			last_successful_candidate._create_deploy([server], staging=False)
+			self.get_last_successful_candidate()._create_deploy([server], staging=False)
 
+	def remove_server(self, server: str):
+		child = frappe.get_last_doc(
+			"Release Group Server", {"server": server, "parent": self.name}
+		)
+		self.remove(child)
+		self.save()
+
+	@frappe.whitelist()
+	def change_server(self, server):
+		"""
+		Create latest candidate in given server and tries to move sites there.
+
+		If only 1 server in server list, removes it, else schedules site
+		migrations from first server in list to given.
+		"""
+		self.add_server(server, deploy=True)
+		source_server = self.servers[0].server
+		if len(self.servers) == 1:
+			self.remove_server(source_server)
 
 def new_release_group(title, version, apps, team=None, cluster=None):
 	if cluster:
