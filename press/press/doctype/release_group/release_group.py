@@ -404,10 +404,10 @@ class ReleaseGroup(Document):
 		If only 1 server in server list, removes it, else schedules site
 		migrations from first server in list to given.
 		"""
-		self.add_server(server, deploy=True)
-		source_server = self.servers[0].server
-		if len(self.servers) == 1:
+		if len(self.servers) == 2:
+			source_server = self.servers[0].server
 			self.remove_server(source_server)
+		self.add_server(server, deploy=True)
 
 def new_release_group(title, version, apps, team=None, cluster=None):
 	if cluster:
