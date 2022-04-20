@@ -409,6 +409,7 @@ class ReleaseGroup(Document):
 			self.remove_server(source_server)
 		self.add_server(server, deploy=True)
 
+
 def new_release_group(title, version, apps, team=None, cluster=None):
 	if cluster:
 		server = frappe.get_all(

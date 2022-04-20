@@ -2,7 +2,6 @@
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
 
-import enum
 import json
 from datetime import datetime, timedelta
 
