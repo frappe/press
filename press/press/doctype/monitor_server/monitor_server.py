@@ -45,6 +45,16 @@ class MonitorServer(BaseServer):
 				}
 			)
 
+		log_servers = []
+		for log in frappe.get_all("Log Server"):
+			log = frappe.get_doc("Log Server", log.name)
+			log_servers.append(
+				{
+					"name": log.name,
+					"monitoring_password": log.get_password("monitoring_password"),
+				}
+			)
+
 		clusters = []
 		for cluster in frappe.get_all("Cluster"):
 			cluster = frappe.get_doc("Cluster", cluster.name)
@@ -71,6 +81,7 @@ class MonitorServer(BaseServer):
 					"press_url": press_url,
 					"monitor_token": monitor_token,
 					"registries_json": json.dumps(registries),
+					"log_servers_json": json.dumps(log_servers),
 					"clusters_json": json.dumps(clusters),
 					"private_ip": self.private_ip,
 					"grafana_password": self.get_password("grafana_password"),
@@ -110,6 +121,16 @@ class MonitorServer(BaseServer):
 				}
 			)
 
+		log_servers = []
+		for log in frappe.get_all("Log Server"):
+			log = frappe.get_doc("Log Server", log.name)
+			log_servers.append(
+				{
+					"name": log.name,
+					"monitoring_password": log.get_password("monitoring_password"),
+				}
+			)
+
 		clusters = []
 		for cluster in frappe.get_all("Cluster"):
 			cluster = frappe.get_doc("Cluster", cluster.name)
@@ -128,6 +149,7 @@ class MonitorServer(BaseServer):
 					"server": self.name,
 					"monitoring_password": monitoring_password,
 					"registries_json": json.dumps(registries),
+					"log_servers_json": json.dumps(log_servers),
 					"clusters_json": json.dumps(clusters),
 					"grafana_password": self.get_password("grafana_password"),
 				},
