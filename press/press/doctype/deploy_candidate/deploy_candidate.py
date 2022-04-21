@@ -262,6 +262,15 @@ class DeployCandidate(Document):
 				os.path.join(self.build_directory, target),
 				symlinks=True,
 			)
+
+		redis_cache_conf = os.path.join(self.build_directory, "config", "redis-cache.conf")
+		with open(redis_cache_conf, "w") as f:
+			redis_cache_conf_template = "press/docker/config/redis-cache.conf"
+			content = frappe.render_template(
+				redis_cache_conf_template, {"doc": self}, is_path=True
+			)
+			f.write(content)
+
 		self.generate_ssh_keys()
 
 	def _run_docker_build(self):

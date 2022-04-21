@@ -43,12 +43,12 @@ def get_candidate_release_groups(marketplace_app: str, app_name: str) -> List[Di
 	List of release groups where the given marketplace app is NOT installed but CAN BE installed.
 
 	returns list of dicts of the form:
-	        {
-	                'name': 'bench-1096',
-	                'title': 'My Private Bench',
-	                'version': 'Version 13',
-	                'source': 'SRC-posawesome-001'
-	        }
+	{
+	'name': 'bench-1096',
+	'title': 'My Private Bench',
+	'version': 'Version 13',
+	'source': 'SRC-posawesome-001'
+	}
 	"""
 	team = get_current_team()
 	group = frappe.qb.DocType("Release Group")

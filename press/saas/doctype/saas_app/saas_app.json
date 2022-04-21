@@ -8,10 +8,7 @@
  "field_order": [
   "image",
   "app",
-  "title",
-  "frappe_sources",
-  "section_break_1",
-  "app_versions"
+  "title"
  ],
  "fields": [
   {
@@ -31,22 +28,6 @@
    "reqd": 1
   },
   {
-   "fieldname": "frappe_sources",
-   "fieldtype": "Table",
-   "label": "Frappe Sources",
-   "options": "Marketplace App Version"
-  },
-  {
-   "fieldname": "app_versions",
-   "fieldtype": "Table",
-   "label": "App Versions",
-   "options": "Saas App Version"
-  },
-  {
-   "fieldname": "section_break_1",
-   "fieldtype": "Section Break"
-  },
-  {
    "fieldname": "image",
    "fieldtype": "Attach Image",
    "hidden": 1,
@@ -55,8 +36,17 @@
  ],
  "image_field": "image",
  "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2022-04-05 10:49:32.282606",
+ "links": [
+  {
+   "link_doctype": "Saas App Plan",
+   "link_fieldname": "app"
+  },
+  {
+   "link_doctype": "Saas App Subscription",
+   "link_fieldname": "app"
+  }
+ ],
+ "modified": "2022-04-14 17:49:54.746845",
  "modified_by": "Administrator",
  "module": "Saas",
  "name": "Saas App",

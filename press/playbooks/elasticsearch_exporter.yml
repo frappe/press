@@ -1,0 +1,8 @@
+---
+- name: Setup Elasticsearch Exporter
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: yes
+  roles:
+    - role: elasticsearch_exporter

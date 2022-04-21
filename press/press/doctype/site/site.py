@@ -38,7 +38,8 @@ class Site(Document):
 		self.name = self._get_site_name(self.subdomain)
 
 	def validate(self):
-		self.validate_site_name()
+		if self.has_value_changed("subdomain"):
+			self.validate_site_name()
 		self.set_site_admin_password()
 		self.validate_installed_apps()
 		self.validate_host_name()
@@ -61,10 +62,6 @@ class Site(Document):
 		if len(self.subdomain) > 32:
 			frappe.throw("Subdomain too long. Use 32 or less characters")
 
-		user = frappe.session.user
-		user_type = frappe.db.get_value("User", user, "user_type", cache=True)
-		if user_type == "System User":
-			return
 		if len(self.subdomain) < 5:
 			frappe.throw("Subdomain too short. Use 5 or more characters")
 

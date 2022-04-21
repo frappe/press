@@ -72,11 +72,41 @@ def get_default_team_for_user(user):
 
 
 def get_country_info():
+	if frappe.flags.in_test:
+		return {}
+
 	ip = frappe.local.request_ip
 	ip_api_key = frappe.conf.get("ip-api-key")
 
 	def _get_country_info():
-		fields = ["countryCode", "country", "regionName", "city"]
+		fields = [
+			"status",
+			"message",
+			"continent",
+			"continentCode",
+			"country",
+			"countryCode",
+			"region",
+			"regionName",
+			"city",
+			"district",
+			"zip",
+			"lat",
+			"lon",
+			"timezone",
+			"offset",
+			"currency",
+			"isp",
+			"org",
+			"as",
+			"asname",
+			"reverse",
+			"mobile",
+			"proxy",
+			"hosting",
+			"query",
+		]
+
 		res = requests.get(
 			"https://pro.ip-api.com/json/{ip}?key={key}&fields={fields}".format(
 				ip=ip, key=ip_api_key, fields=",".join(fields)

@@ -10,7 +10,11 @@
 				</Button>
 			</template>
 		</Alert>
-		<Alert class="mb-4" title="Trial" v-if="trial_end_date && $account.hasBillingInfo">
+		<Alert
+			class="mb-4"
+			title="Trial"
+			v-if="trial_end_date && $account.hasBillingInfo"
+		>
 			Your trial ends {{ trialEndsInDaysText }} after which your site will get
 			suspended. Select a plan from the Plan section below to avoid suspension.
 		</Alert>
