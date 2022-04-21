@@ -17,16 +17,27 @@ class SiteUpdate(Document):
 	def validate(self):
 		if not self.is_new():
 			return
-		differences = frappe.get_all(
-			"Deploy Candidate Difference",
-			fields=["name", "destination", "deploy_type"],
-			filters={"group": self.group, "source": self.source_candidate},
-		)
-		if not differences:
-			frappe.throw("Could not find suitable Destination Bench", frappe.ValidationError)
 
-		self.validate_destination_bench(differences)
-		self.validate_deploy_candidate_difference(differences)
+		# Assume same-group migration if destination_group isn't set
+		if not self.destination_group:
+			self.destination_group = self.group
+
+		if self.group == self.destination_group:
+			differences = frappe.get_all(
+				"Deploy Candidate Difference",
+				fields=["name", "destination", "deploy_type"],
+				filters={"group": self.group, "source": self.source_candidate},
+			)
+			if not differences:
+				frappe.throw("Could not find suitable Destination Bench", frappe.ValidationError)
+
+			self.validate_destination_bench(differences)
+			self.validate_deploy_candidate_difference(differences)
+		else:
+			self.validate_destination_bench([])
+			# Forcefully migrate since we can't compute deploy_type reasonably
+			self.deploy_type = "Migrate"
+
 		self.validate_pending_updates()
 		self.validate_past_failed_updates()
 
@@ -34,16 +45,19 @@ class SiteUpdate(Document):
 		if not self.destination_bench:
 			candidates = [d.destination for d in differences]
 			try:
+				filters = {
+					"server": self.server,
+					"status": "Active",
+					"group": self.destination_group,
+				}
+				if differences:
+					filters["candidate"] = ("in", candidates)
+					filters["name"] = ("!=", self.source_bench)
+
 				destination_bench = frappe.get_all(
 					"Bench",
 					fields=["name", "candidate"],
-					filters={
-						"server": self.server,
-						"status": "Active",
-						"group": self.group,
-						"name": ("!=", self.source_bench),
-						"candidate": ("in", candidates),
-					},
+					filters=filters,
 				)[0]
 				self.destination_bench = destination_bench.name
 				self.destination_candidate = destination_bench.candidate

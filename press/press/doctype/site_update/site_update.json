@@ -1,6 +1,6 @@
 {
  "actions": [],
- "creation": "2020-04-06 15:49:03.259926",
+ "creation": "2022-01-28 20:07:33.955528",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -14,6 +14,7 @@
   "status",
   "destination_bench",
   "destination_candidate",
+  "destination_group",
   "section_break_8",
   "difference",
   "difference_deploy_type",
@@ -116,7 +117,7 @@
    "fieldtype": "Link",
    "hide_days": 1,
    "hide_seconds": 1,
-   "label": "Release Group",
+   "label": "Source Group",
    "options": "Release Group"
   },
   {
@@ -173,11 +174,18 @@
    "fieldtype": "Check",
    "label": "Skipped Failing Patches",
    "read_only": 1
+  },
+  {
+   "fetch_from": "destination_bench.group",
+   "fieldname": "destination_group",
+   "fieldtype": "Link",
+   "label": "Destination Group",
+   "options": "Release Group"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-10-25 16:45:27.062194",
+ "modified": "2022-02-26 19:47:20.358497",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Update",
@@ -206,6 +214,7 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "title_field": "site",
  "track_changes": 1
 }
