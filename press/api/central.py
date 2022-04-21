@@ -11,7 +11,6 @@ from press.press.doctype.site.erpnext_site import (
 	get_erpnext_domain,
 	get_erpnext_plan,
 )
-from press.press.doctype.site.saas_site import get_saas_domain
 from press.press.doctype.site.pool import get as get_pooled_site
 from press.press.doctype.team.team import Team
 from press.utils.billing import get_erpnext_com_connection
