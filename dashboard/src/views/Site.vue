@@ -235,6 +235,16 @@ export default {
 
 		siteActions() {
 			return [
+				this.$account.user.user_type == 'System User' && {
+					label: 'View in Desk',
+					icon: 'external-link',
+					action: () => {
+						window.open(
+							`${window.location.protocol}//${window.location.host}/app/site/${this.site.name}`,
+							'_blank'
+						);
+					}
+				},
 				this.site.status == 'Active' && {
 					label: 'Login As Administrator',
 					icon: 'external-link',

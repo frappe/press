@@ -6,6 +6,7 @@ import json
 from datetime import datetime, timedelta
 
 import frappe
+from frappe.exceptions import DoesNotExistError
 
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists, make_autoname
@@ -255,6 +256,31 @@ class Bench(Document):
 	def get_server_log(self, log):
 		return Agent(self.server).get(f"benches/{self.name}/logs/{log}")
 
+	@frappe.whitelist()
+	def move_sites(self, server: str):
+		try:
+			destination_bench = frappe.get_last_doc(
+				"Bench",
+				{
+					"status": "Active",
+					"candidate": self.candidate,
+					"server": server,
+				},
+			)
+		except DoesNotExistError:
+			frappe.throw("Bench of corresponding Deploy Candidate not found in server")
+			return
+		sites = frappe.get_all("Site", {"bench": self.name, "status": "Active"}, pluck="name")
+		for idx, site in enumerate(sites):
+			frappe.get_doc(
+				{
+					"doctype": "Site Migration",
+					"site": site,
+					"destination_bench": destination_bench.name,
+					"scheduled_time": frappe.utils.add_to_date(None, minutes=5 * idx),
+				}
+			).insert()
+
 
 class StagingSite(Site):
 	def __init__(self, bench: Bench):
@@ -409,7 +435,9 @@ def scale_workers():
 	for bench_name in benches:
 		bench = frappe.get_doc("Bench", bench_name)
 		try:
-			new_worker_allocation = frappe.get_cached_value("Server", bench.server, "new_worker_allocation")
+			new_worker_allocation = frappe.get_cached_value(
+				"Server", bench.server, "new_worker_allocation"
+			)
 			if new_worker_allocation:
 				continue
 		except Exception:

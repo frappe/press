@@ -2,7 +2,7 @@
  "actions": [],
  "allow_rename": 1,
  "autoname": "bench-.####",
- "creation": "2020-01-13 16:04:45.363835",
+ "creation": "2022-01-28 20:07:29.874387",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -23,7 +23,9 @@
   "column_break_14",
   "bench_config",
   "section_break_16",
-  "dependencies"
+  "dependencies",
+  "feature_flags_section",
+  "is_redisearch_enabled"
  ],
  "fields": [
   {
@@ -128,10 +130,21 @@
   {
    "fieldname": "column_break_4",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "feature_flags_section",
+   "fieldtype": "Section Break",
+   "label": "Feature Flags"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_redisearch_enabled",
+   "fieldtype": "Check",
+   "label": "Is RediSearch Enabled"
   }
  ],
  "links": [],
- "modified": "2022-01-13 16:31:24.027786",
+ "modified": "2022-04-01 17:11:20.619850",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",

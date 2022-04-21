@@ -137,14 +137,13 @@ export default {
 			selectedSource: null
 		};
 	},
-	created() {
-		if (this.sources.length > 0) {
-			this.selectedSource = this.sources[0].source;
-		}
-	},
 	mounted() {
 		this.$socket.on('new_app_release_created', this.releaseStateUpdate);
 		this.$socket.on('request_status_changed', this.releaseStateUpdate);
+
+		if (this.sources.length > 0) {
+			this.selectedSource = this.sources[0].source;
+		}
 	},
 	resources: {
 		releases() {
@@ -296,7 +295,6 @@ export default {
 
 			return this.$resources.releases.data;
 		},
-
 		latestApprovedOn() {
 			if (
 				this.$resources.latestApproved.data &&

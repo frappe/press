@@ -20,13 +20,14 @@
   "first_name",
   "last_name",
   "phone_number",
+  "designation",
   "column_break_14",
   "company",
   "no_of_users",
   "no_of_employees",
-  "designation",
   "industry",
   "country",
+  "state",
   "agreed_to_partner_consent",
   "saas_sign_up_section",
   "saas",
@@ -34,7 +35,9 @@
   "referrer_data",
   "referral_source",
   "url_args",
-  "referrer_id"
+  "referrer_id",
+  "section_break_31",
+  "geo_location"
  ],
  "fields": [
   {
@@ -134,6 +137,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "collapsible": 1,
    "fieldname": "referrer_data",
    "fieldtype": "Section Break",
    "label": "Referrer Data"
@@ -197,12 +201,28 @@
    "fieldtype": "Password",
    "label": "Password",
    "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_break_31",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "geo_location",
+   "fieldtype": "Code",
+   "label": "Geo Location",
+   "read_only": 1
+  },
+  {
+   "fieldname": "state",
+   "fieldtype": "Data",
+   "label": "State"
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-04-06 11:23:45.186583",
+ "modified": "2022-04-14 18:37:28.625041",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",

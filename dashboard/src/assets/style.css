@@ -19,4 +19,36 @@
 	.frappe-chart .line-vertical {
 		display: none;
 	}
+
+	/* Works on Firefox */
+	* {
+		scrollbar-width: thin;
+		scrollbar-color: #C0C6CC #EBEEF0;
+	}
+	
+	html {
+		scrollbar-width: auto;
+	}
+
+	/* Works on Chrome, Edge, and Safari */
+	*::-webkit-scrollbar-thumb {
+		background: #C0C6CC;
+		border-radius: 6px;
+	}
+
+	*::-webkit-scrollbar-track,
+	*::-webkit-scrollbar-corner {
+		background: #EBEEF0;
+	}
+
+	*::-webkit-scrollbar {
+		width: 6px;
+		height: 6px;
+	}
+
+	body::-webkit-scrollbar {
+		width: 12px;
+		height: 12px;
+	}
+
 }

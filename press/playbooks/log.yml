@@ -12,5 +12,6 @@
     - role: node_exporter
     - role: filebeat
     - role: elasticsearch
+    - role: elasticsearch_exporter
     - role: kibana
     - role: filebeat_elasticsearch
