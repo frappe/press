@@ -53,6 +53,7 @@ frappe.ui.form.on('Bench', {
 							if (!r.exc) {
 								frappe.show_alert(`Scheduled migrations for sites to ${server}`);
 							}
+							d.hide()
 						});
 					},
 				});
