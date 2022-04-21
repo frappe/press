@@ -310,6 +310,7 @@ def process_update_site_job_update(job):
 		)
 		if site_bench != site_update.destination_bench and move_site_step_status == "Success":
 			frappe.db.set_value("Site", job.site, "bench", site_update.destination_bench)
+			frappe.db.set_value("Site", job.site, "group", site_update.destination_group)
 
 		frappe.db.set_value("Site Update", site_update.name, "status", updated_status)
 		if updated_status == "Running":
@@ -340,6 +341,7 @@ def process_update_site_recover_job_update(job):
 		)
 		if site_bench != site_update.source_bench and move_site_step_status == "Success":
 			frappe.db.set_value("Site", job.site, "bench", site_update.source_bench)
+			frappe.db.set_value("Site", job.site, "group", site_update.group)
 
 		frappe.db.set_value("Site Update", site_update.name, "status", updated_status)
 		if updated_status == "Recovered":
