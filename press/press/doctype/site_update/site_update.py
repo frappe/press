@@ -35,6 +35,7 @@ class SiteUpdate(Document):
 			self.validate_deploy_candidate_difference(differences)
 		else:
 			self.validate_destination_bench([])
+			self.validate_apps()
 			# Forcefully migrate since we can't compute deploy_type reasonably
 			self.deploy_type = "Migrate"
 
@@ -92,6 +93,16 @@ class SiteUpdate(Document):
 			frappe.throw(
 				f"Update from Source Candidate {self.source_candidate} to Destination"
 				f" Candidate {self.destination_candidate} has failed in the past.",
+				frappe.ValidationError,
+			)
+
+	def validate_apps(self):
+		site_apps = [app.app for app in frappe.get_doc("Site", self.site).apps]
+		bench_apps = [app.app for app in frappe.get_doc("Bench", self.destination_bench).apps]
+
+		if set(site_apps) - set(bench_apps):
+			frappe.throw(
+				f"Destination Bench {self.destination_bench} doesn't have some of the apps installed on {self.site}",
 				frappe.ValidationError,
 			)
 
