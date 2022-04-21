@@ -389,13 +389,6 @@ class ReleaseGroup(Document):
 		if deploy:
 			self.get_last_successful_candidate()._create_deploy([server], staging=False)
 
-	def remove_server(self, server: str):
-		child = frappe.get_last_doc(
-			"Release Group Server", {"server": server, "parent": self.name}
-		)
-		self.remove(child)
-		self.save()
-
 	@frappe.whitelist()
 	def change_server(self, server):
 		"""
@@ -404,9 +397,8 @@ class ReleaseGroup(Document):
 		If only 1 server in server list, removes it, else schedules site
 		migrations from first server in list to given.
 		"""
-		if len(self.servers) == 2:
-			source_server = self.servers[0].server
-			self.remove_server(source_server)
+		if len(self.servers) == 1:
+			self.remove(self.servers[0])
 		self.add_server(server, deploy=True)
 
 
