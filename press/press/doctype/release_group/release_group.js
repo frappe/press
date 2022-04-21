@@ -52,6 +52,7 @@ frappe.ui.form.on('Release Group', {
 							if (!r.exc) {
 								frappe.show_alert(`Server changed to ${server}`);
 							}
+							d.hide();
 						});
 					},
 				});
