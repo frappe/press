@@ -162,6 +162,48 @@ Password: ${r.message.password}
 				__('Actions')
 			);
 		}
+		frm.add_custom_button(
+			__('Move to Group'),
+			() => {
+				const dialog = new frappe.ui.Dialog({
+					title: __('Move to Group'),
+					fields: [{
+						fieldtype: 'Link',
+						options: 'Release Group',
+						label: __('Destination Group'),
+						fieldname: 'group',
+						get_query: () => {
+ 							return {
+								filters: [
+									['server', "=", frm.doc.server],
+									['name', "!=", frm.doc.group],
+								]
+							}
+						}
+					},
+					{
+						fieldtype: 'Check',
+						label: __('Skip Failing Patches'),
+						fieldname: 'skip_failing_patches',
+					}]
+				});
+				
+				dialog.set_primary_action(__('Move Site'), args => {
+					frm.call('move_to_group',
+						{
+							group: args.group,
+							skip_failing_patches: args.skip_failing_patches
+						}
+					).then((r) => {
+						dialog.hide();
+						frm.refresh();
+					})
+				});
+				
+				dialog.show();
+			},
+			__('Actions')
+		);
 	}
 });
 

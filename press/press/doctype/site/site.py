@@ -379,6 +379,21 @@ class Site(Document):
 			}
 		).insert()
 
+	@frappe.whitelist()
+	def move_to_group(self, group, skip_failing_patches=False):
+		log_site_activity(self.name, "Update")
+		self.status_before_update = self.status
+		self.status = "Pending"
+		self.save()
+		frappe.get_doc(
+			{
+				"doctype": "Site Update",
+				"site": self.name,
+				"destination_group": group,
+				"skipped_failing_patches": skip_failing_patches,
+			}
+		).insert()
+
 	def reset_previous_status(self):
 		self.status = self.status_before_update
 		self.status_before_update = None
