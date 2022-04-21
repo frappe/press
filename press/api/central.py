@@ -11,6 +11,7 @@ from press.press.doctype.site.erpnext_site import (
 	get_erpnext_domain,
 	get_erpnext_plan,
 )
+from press.press.doctype.site.saas_site import get_saas_domain
 from press.press.doctype.site.pool import get as get_pooled_site
 from press.press.doctype.team.team import Team
 from press.utils.billing import get_erpnext_com_connection
@@ -119,40 +120,6 @@ def setup_account(key, business_data=None):
 	frappe.local.login_manager.login_as(team_doc.user)
 
 	return site.name
-
-
-@frappe.whitelist(allow_guest=True)
-def get_site_status(key):
-	account_request = get_account_request_from_key(key)
-	if not account_request:
-		frappe.throw("Invalid or Expired Key")
-
-	site = frappe.db.get_value(
-		"Site",
-		{"subdomain": account_request.subdomain, "domain": get_erpnext_domain()},
-		["status", "subdomain"],
-		as_dict=1,
-	)
-	if site:
-		return site
-	else:
-		return {"status": "Pending"}
-
-
-@frappe.whitelist()
-def get_site_url_and_sid(key):
-	account_request = get_account_request_from_key(key)
-	if not account_request:
-		frappe.throw("Invalid or Expired Key")
-
-	name = frappe.db.get_value(
-		"Site", {"subdomain": account_request.subdomain, "domain": get_erpnext_domain()}
-	)
-	site = frappe.get_doc("Site", name)
-	return {
-		"url": f"https://{site.name}",
-		"sid": site.login(),
-	}
 
 
 @frappe.whitelist(allow_guest=True)

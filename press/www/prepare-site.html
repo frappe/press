@@ -29,6 +29,7 @@
 {%- block script -%}
 <script>
 	let key = frappe.utils.get_url_arg('key');
+	let app = frappe.utils.get_url_arg('app');
 
 	frappe.ready(() => {
 		if (!key) {
@@ -52,15 +53,17 @@
 	}
 
 	function get_site_status() {
-		return frappe.call('press.api.central.get_site_status', {
-				key
+		return frappe.call('press.api.saas.get_site_status', {
+				key,
+				app
 			})
 			.then(r => r.message);
 	}
 
 	function get_site_url_and_sid() {
-		return frappe.call('press.api.central.get_site_url_and_sid', {
-				key
+		return frappe.call('press.api.saas.get_site_url_and_sid', {
+				key,
+				app
 			})
 			.then(r => r.message);
 	}
