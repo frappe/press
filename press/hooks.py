@@ -73,6 +73,7 @@ website_redirects = [
 	},
 	{"source": "/dashboard/f-login", "target": get_frappe_io_auth_url() or "/"},
 	{"source": "/f-login", "target": "/dashboard/f-login"},
+	{"source": "/signup", "target": "/erpnext/signup"}
 ]
 
 email_css = ["/assets/press/css/email.css"]
