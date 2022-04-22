@@ -7,6 +7,7 @@ from press.utils import get_current_team
 
 from press.press.doctype.site.saas_site import SaasSite, get_saas_domain, get_saas_plan
 from press.press.doctype.site.saas_pool import get as get_pooled_saas_site
+from press.press.doctype.site.erpnext_site import get_erpnext_domain
 from press.utils.billing import get_erpnext_com_connection
 
 
@@ -260,3 +261,41 @@ def create_team_from_account_request(account_request):
 	frappe.local.login_manager.login_as(team_doc.user)
 
 	return site.name
+
+
+@frappe.whitelist(allow_guest=True)
+def get_site_status(key, app=None):
+	account_request = get_account_request_from_key(key)
+	if not account_request:
+		frappe.throw("Invalid or Expired Key")
+
+	domain = get_saas_domain(app) if app else get_erpnext_domain()
+
+	site = frappe.db.get_value(
+		"Site",
+		{"subdomain": account_request.subdomain, "domain": domain},
+		["status", "subdomain"],
+		as_dict=1,
+	)
+	if site:
+		return site
+	else:
+		return {"status": "Pending"}
+
+
+@frappe.whitelist()
+def get_site_url_and_sid(key, app=None):
+	account_request = get_account_request_from_key(key)
+	if not account_request:
+		frappe.throw("Invalid or Expired Key")
+
+	domain = get_saas_domain(app) if app else get_erpnext_domain()
+
+	name = frappe.db.get_value(
+		"Site", {"subdomain": account_request.subdomain, "domain": domain}
+	)
+	site = frappe.get_doc("Site", name)
+	return {
+		"url": f"https://{site.name}",
+		"sid": site.login(),
+	}

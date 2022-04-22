@@ -122,40 +122,6 @@ def setup_account(key, business_data=None):
 
 
 @frappe.whitelist(allow_guest=True)
-def get_site_status(key):
-	account_request = get_account_request_from_key(key)
-	if not account_request:
-		frappe.throw("Invalid or Expired Key")
-
-	site = frappe.db.get_value(
-		"Site",
-		{"subdomain": account_request.subdomain, "domain": get_erpnext_domain()},
-		["status", "subdomain"],
-		as_dict=1,
-	)
-	if site:
-		return site
-	else:
-		return {"status": "Pending"}
-
-
-@frappe.whitelist()
-def get_site_url_and_sid(key):
-	account_request = get_account_request_from_key(key)
-	if not account_request:
-		frappe.throw("Invalid or Expired Key")
-
-	name = frappe.db.get_value(
-		"Site", {"subdomain": account_request.subdomain, "domain": get_erpnext_domain()}
-	)
-	site = frappe.get_doc("Site", name)
-	return {
-		"url": f"https://{site.name}",
-		"sid": site.login(),
-	}
-
-
-@frappe.whitelist(allow_guest=True)
 def check_subdomain_availability(subdomain):
 	erpnext_com = get_erpnext_com_connection()
 
