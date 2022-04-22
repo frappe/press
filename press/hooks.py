@@ -73,7 +73,7 @@ website_redirects = [
 	},
 	{"source": "/dashboard/f-login", "target": get_frappe_io_auth_url() or "/"},
 	{"source": "/f-login", "target": "/dashboard/f-login"},
-	{"source": "/signup", "target": "/erpnext/signup"}
+	{"source": "/signup", "target": "/erpnext/signup"},
 ]
 
 email_css = ["/assets/press/css/email.css"]
@@ -189,6 +189,7 @@ scheduler_events = {
 		"press.press.doctype.subscription.subscription.create_usage_records",
 		"press.press.doctype.bench.bench.sync_benches",
 		"press.press.doctype.site.pool.create",
+		"press.press.doctype.site.saas_pool.create"
 		"press.press.doctype.invoice.invoice.finalize_draft_invoices",
 		"press.marketplace.doctype.marketplace_app_subscription.marketplace_app_subscription.create_usage_records",
 		"press.press.doctype.app.app.poll_new_releases",
