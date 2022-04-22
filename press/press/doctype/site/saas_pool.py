@@ -75,10 +75,9 @@ class SaasSitePool:
 
 
 def create():
-	saas_apps = frappe.get_all("Saas App", pluck="app")
+	saas_apps = frappe.get_all("Saas Settings", {"enable_pooling": 1}, pluck="name")
 	for app in saas_apps:
-		if app == "erpnext":
-			SaasSitePool(app).create()
+		SaasSitePool(app).create()
 
 
 def get(app):
