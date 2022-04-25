@@ -11,6 +11,7 @@
   "domain",
   "cluster",
   "plan",
+  "site_plan",
   "group",
   "standby_pool_size",
   "standby_queue_size",
@@ -75,11 +76,17 @@
    "fieldtype": "Table",
    "label": "Apps",
    "options": "ERPNext App"
+  },
+  {
+   "fieldname": "site_plan",
+   "fieldtype": "Link",
+   "label": "Site Plan",
+   "options": "Plan"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-04-14 16:39:50.627383",
+ "modified": "2022-04-25 14:06:26.216260",
  "modified_by": "Administrator",
  "module": "Saas",
  "name": "Saas Settings",
