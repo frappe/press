@@ -59,6 +59,7 @@ def targets(token):
 		"Registry Server",
 		"Log Server",
 		"Monitor Server",
+		"Analytics Server",
 	]
 	for server_type in server_types:
 		tls += frappe.get_all(server_type, {"status": ("!=", "Archived")}, ["name"])
