@@ -51,6 +51,10 @@ def targets(token):
 					for job in job_map[server_type]:
 						cluster["jobs"].setdefault(job, []).append(server.name)
 
+	domains = frappe.get_all(
+		"Site Domain", ["name", "site"], {"dns_type": "CNAME"}, order_by="name"
+	)
+
 	tls = []
 	server_types = [
 		"Server",
@@ -64,7 +68,7 @@ def targets(token):
 	for server_type in server_types:
 		tls += frappe.get_all(server_type, {"status": ("!=", "Archived")}, ["name"])
 
-	return {"benches": benches, "clusters": clusters, "tls": tls}
+	return {"benches": benches, "clusters": clusters, "domains": domains, "tls": tls}
 
 
 @frappe.whitelist(allow_guest=True, xss_safe=True)
