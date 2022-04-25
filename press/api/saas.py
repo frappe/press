@@ -5,7 +5,12 @@ from press.press.doctype.team.team import Team
 from press.api.account import get_account_request_from_key
 from press.utils import get_current_team
 
-from press.press.doctype.site.saas_site import SaasSite, get_saas_domain, get_saas_plan
+from press.press.doctype.site.saas_site import (
+	SaasSite,
+	get_saas_domain,
+	get_saas_plan,
+	get_saas_site_plan,
+)
 from press.press.doctype.site.saas_pool import get as get_pooled_saas_site
 from press.press.doctype.site.erpnext_site import get_erpnext_domain
 from press.utils.billing import get_erpnext_com_connection
@@ -137,7 +142,7 @@ def account_request(
 			saas_site = SaasSite(account_request=account_request, app=app).insert(
 				ignore_permissions=True
 			)
-			saas_site.create_subscription(get_saas_plan(app))
+			saas_site.create_subscription(get_saas_site_plan(app))
 	finally:
 		frappe.set_user(current_user)
 		frappe.session.data = current_session_data

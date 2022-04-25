@@ -18,7 +18,7 @@ class SaasSite(Site):
 					"apps": [{"app": app} for app in get_saas_apps(self.app)],
 					"team": "Administrator",
 					"account_request": account_request.name,
-					"subscription_plan": get_saas_plan(self.app),
+					"subscription_plan": get_saas_site_plan(self.app),
 					"trial_end_date": frappe.utils.add_days(None, 14),
 				}
 			)
@@ -28,7 +28,7 @@ class SaasSite(Site):
 		self.is_standby = False
 		self.account_request = account_request.name
 		self.trial_end_date = frappe.utils.add_days(None, 14)
-		plan = get_saas_plan(self.app)
+		plan = get_saas_site_plan(self.app)
 		self._update_configuration(self.get_plan_config(plan), save=False)
 		self.save(ignore_permissions=True)
 		self.create_subscription(plan)
@@ -74,6 +74,10 @@ def get_saas_bench(app):
 
 def get_saas_plan(app):
 	return frappe.db.get_value("Saas Settings", app, "plan")
+
+
+def get_saas_site_plan(app):
+	return frappe.db.get_value("Saas Settings", app, "site_plan")
 
 
 def get_saas_domain(app):
