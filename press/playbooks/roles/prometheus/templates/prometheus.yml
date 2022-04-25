@@ -53,6 +53,27 @@ scrape_configs:
       - files:
           - /home/frappe/prometheus/file_sd/sites.yml
 
+  - job_name: tls
+    scrape_interval: 15m
+    metrics_path: /blackbox/probe
+    scheme: https
+    params:
+      module: [http_2xx]
+    basic_auth:
+      username: frappe
+      password: "{{ grafana_password }}"
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+        regex: "https://(.*)"
+      - target_label: __address__
+        replacement: "{{ server }}"
+    file_sd_configs:
+      - files:
+          - /home/frappe/prometheus/file_sd/tls.yml
+
   ## for registry in registries ##
   - job_name: "{{ registry.name }}"
     scrape_interval: 1m
