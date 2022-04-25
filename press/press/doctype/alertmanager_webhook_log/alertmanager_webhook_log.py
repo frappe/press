@@ -85,6 +85,7 @@ class AlertmanagerWebhookLog(Document):
 			"Log Server",
 			"Registry Server",
 			"Analytics Server",
+			"Site Domain",
 		]
 		for doctype in doctypes:
 			if frappe.db.exists(doctype, name):
