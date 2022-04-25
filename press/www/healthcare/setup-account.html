@@ -1,0 +1,231 @@
+{%- extends "templates/healthcare_signup_layout.html" -%}
+
+{%- block content -%}
+
+<h1>Set Up Your Account</h1>
+
+
+<div class="mx-auto form-container col-xl-5 col-lg-6 col-md-7 col-sm-9" id="user-signup-verify"
+	data-validators="field_validators">
+	<div class="card">
+		<div class="card-body">
+			{%- if frappe.form_dict.key -%}
+			<div class="alert alert-primary form-alert-info small" style="display: none;" role="alert"></div>
+			<div class="alert alert-danger form-alert-error small" style="display: none;" role="alert"></div>
+			<!-- Business Settings -->
+			<form class="form-step" data-step="1" data-action="business_settings">
+				<div class="form-group">
+					<label for="company_name">Company Name</label>
+					<input type="text" class="form-control" id="company_name" name="company">
+				</div>
+				<div class="form-row">
+					<div class="form-group col">
+						<label for="no_of_users">Number of Users</label>
+						<input type="number" id="no_of_users" name="no_of_users" class="form-control" min="1"
+							max="100000" required>
+					</div>
+					<div class="form-group col">
+						<label for="industry">Industry</label>
+						<select id="industry" name="industry" class="custom-select">
+							<option selected disabled></option>
+							<option>Distribution</option>
+							<option>Manufacturing</option>
+							<option>Retail</option>
+							<option>Education</option>
+							<option>Services</option>
+							<option>Agriculture</option>
+							<option>Non Profit</option>
+						</select>
+					</div>
+				</div>
+				<div class="form-row">
+					<div class="form-group col">
+						<label for="no_of_employees">Number of employees</label>
+						<select id="no_of_employees" name="no_of_employees" class="custom-select">
+							<option selected disabled></option>
+							<option value="1-10">1 - 10</option>
+							<option value="11-50">11 - 50</option>
+							<option value="51-200">51 - 200</option>
+							<option value="201-500">201 - 500</option>
+							<option value="501-1000">501 - 1000</option>
+							<option value="1000+">1000+</option>
+						</select>
+					</div>
+					<div class="form-group col">
+						<label for="designation">Your Designation</label>
+						<select id="designation" name="designation" class="custom-select">
+							<option value=''></option>
+							<option value='Sales Manager'>Sales Manager</option>
+							<option value='Marketing / PR Manager'>Marketing / PR Manager</option>
+							<option value='Customer Service Manager'>Customer Service Manager</option>
+							<option value='CEO / COO / CTO'>CEO / COO / CTO</option>
+							<option value='CxO / General Manager'>CxO / General Manager</option>
+							<option value='IT Manager'>IT Manager</option>
+							<option value='Operations Manager'>Operations Manager</option>
+							<option value='Developer / Software Engineer / Analyst'>Developer / Software Engineer /
+								Analyst</option>
+							<option value='Student / Personal Interest'>Student / Personal Interest</option>
+							<option value='Others'>Others</option>
+						</select>
+					</div>
+				</div>
+				<div class="form-group">
+					<label for="source">Where did you hear about Healthcare?</label>
+					<select id="source" class="custom-select" name="referral_source">
+						<option></option>
+						<option>Social media</option>
+						<option>Google Search</option>
+						<option>Recommended by a friend/colleague</option>
+						<option>ERPNext Blog</option>
+						<option>Online reviews (like Capterra/G2)</option>
+					</select>
+				</div>
+				<div class="form-group">
+					<input type="checkbox" name="agreed_to_partner_consent" id="agreed_to_partner_consent" checked>
+					<label class="d-inline" for="agreed_to_partner_consent">I am okay if my details are shared with
+						local certified Partner</label>
+				</div>
+				<div class="mt-8 d-flex justify-content-between">
+					<div></div>
+					<button type="submit" class="ml-4 btn btn-primary btn-step-4">Next</button>
+				</div>
+			</form>
+			{%- else -%}
+			<div class="m-0 alert alert-danger small" role="alert">
+				Invalid or expired key
+			</div>
+			{%- endif -%}
+		</div>
+	</div>
+</div>
+
+
+
+{%- endblock -%}
+
+{%- block script -%}
+<script src="/assets/press/js/form_controller.js"></script>
+<script>
+	let controller;
+	let form_values = {};
+	let key = frappe.utils.get_url_arg('key');
+
+	frappe.ready(() => {
+		controller = new FormController("user-signup-verify");
+
+		// load country, currency, language select options
+		load_dropdowns();
+	});
+
+	// this needs to be on global scope
+	var field_validators = {
+		domain: (value) => {
+			if (!value) {
+				return "This cannot be blank";
+			}
+		},
+		company: (value) => {
+			if (!value) {
+				return "Company Name cannot be blank";
+			}
+		},
+		industry: (value) => {
+			if (!value) {
+				return "Please select an industry";
+			}
+		},
+		designation: (value) => {
+			if (!value) {
+				return "Designation cannot be blank";
+			}
+		},
+		referral_source: (value) => {
+			if (!value) {
+				return "Please select a value";
+			}
+		},
+		no_of_employees: (value) => {
+			if (!value) {
+				return 'Please select a value';
+			}
+		},
+		no_of_users: (value) => {
+			if (isNaN(value)) {
+				return 'Please enter a valid number';
+			}
+		},
+	};
+
+	function regional_settings($form, values) {
+		Object.assign(form_values, values);
+	}
+
+	function business_settings($form, values) {
+		Object.assign(form_values, values);
+		return call('press.api.saas.setup_account', { key, business_data: form_values }, $form)
+			.then(() => {
+				window.location.href = '/prepare-site?key=' + key + '&app=healthcare';
+			});
+	}
+
+	function load_dropdowns() {
+		if (!key) return;
+
+		frappe.call({
+			method: "press.api.central.options_for_regional_data",
+			args: { key },
+			callback: function (r) {
+				let $country_input = $('input[name=country]');
+				$country_input.val(r.message.country);
+
+				let $language_select = $("select[name=language]");
+				r.message.languages.forEach((language) => {
+					//language[0] is for language code and language[1] is for language name
+					$language_select.append(
+						$("<option />").val(language.language_code).text(language.language_name)
+					);
+				});
+
+				let $timezone_select = $("select[name=timezone]");
+				r.message.all_timezones.forEach((timezone) => {
+					$timezone_select.append(
+						$("<option />").val(timezone).text(timezone)
+					);
+				});
+
+				let $currency_select = $("select[name=currency]");
+				r.message.currencies.forEach((currency) => {
+					$currency_select.append(
+						$("<option />").val(currency).text(currency)
+					);
+				});
+
+				let country_info = r.message.country_info;
+
+				let country = r.message.country;
+				$timezone_select.val(country_info[country].timezones[0]);
+				$currency_select.val(country_info[country].currency);
+				$language_select.val("en");
+			},
+		});
+	}
+
+	function call(method, args, $form) {
+		return frappe
+			.call({
+				method,
+				args,
+				type: "POST",
+				btn: $form.find("button.btn-primary"),
+			})
+			.then((r) => {
+				if (r.exc) {
+					console.error("An error occurred", r.exc);
+					return;
+				}
+				return r;
+			});
+	}
+
+</script>
+{%- endblock -%}
