@@ -15,8 +15,9 @@
 			title="Trial"
 			v-if="trial_end_date && $account.hasBillingInfo"
 		>
-			Your trial ends {{ trialEndsInDaysText }} after which your site will get
-			suspended. Select a plan from the Plan section below to avoid suspension.
+			Your trial ends {{ trialEndsInDaysText(trial_end_date) }} after which your
+			site will get suspended. Select a plan from the Plan section below to
+			avoid suspension.
 		</Alert>
 		<!-- -->
 		<div
