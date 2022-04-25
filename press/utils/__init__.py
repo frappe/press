@@ -26,6 +26,13 @@ def get_current_team(get_doc=False):
 	user_is_system_user = frappe.session.data.user_type == "System User"
 	# get team passed via request header
 	team = frappe.get_request_header("X-Press-Team")
+	user_is_press_admin = frappe.db.exists(
+		"Has Role", {"parent": frappe.session.user, "role": "Press Admin"}
+	)
+
+	if not team and user_is_press_admin:
+		# if user has_role of Press Admin then just return current user as default team
+		return frappe.get_doc("Team", frappe.session.user) if get_doc else frappe.session.user
 
 	if not team:
 		# if team is not passed via header, get the first team that this user is part of
