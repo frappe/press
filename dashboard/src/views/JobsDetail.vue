@@ -48,13 +48,13 @@ export default {
 		},
 		steps() {
 			if (!this.job) return;
-			return this.job.steps.map(step => {
+			return this.job.steps.map((step, index) => {
 				return {
 					name: step.step_name,
 					status: step.status,
 					output: step.output,
 					running: this.isStepRunning(step),
-					completed: this.isStepCompleted(step)
+					completed: this.isStepCompleted(step, index)
 				};
 			});
 		}
