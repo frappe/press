@@ -35,7 +35,7 @@
 					<span class="ml-1">
 						<div
 							v-if="step.running"
-							class="borde grid h-4 w-4 place-items-center rounded-full bg-gray-50"
+							class="grid h-4 w-4 place-items-center rounded-full bg-gray-50"
 						>
 							<Spinner class="h-3 w-3 text-gray-500" />
 						</div>
