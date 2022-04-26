@@ -222,7 +222,7 @@
    "label": "SSH Access Enabled"
   },
   {
-   "default": "0",
+   "default": "1",
    "fieldname": "database_access_enabled",
    "fieldtype": "Check",
    "label": "Database Access Enabled"
@@ -292,7 +292,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2022-04-26 21:06:55.936737",
+ "modified": "2022-04-26 21:15:23.760303",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
