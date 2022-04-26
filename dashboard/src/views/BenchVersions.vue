@@ -117,6 +117,28 @@
 						</ListItem>
 					</div>
 				</section>
+				<section>
+					<h5 class="mt-4 text-lg font-semibold">Actions</h5>
+					<div class="mt-2 divide-y rounded-lg py-2 sm:border sm:px-4">
+						<div>
+							<div class="flex items-center justify-between py-3">
+								<div>
+									<h3 class="text-lg">Restart</h3>
+									<p class="mt-1 text-base text-gray-600">
+										Restart all services on your bench
+									</p>
+								</div>
+								<Button
+									icon-left="refresh-cw"
+									@click="confirmRestart()"
+									class="mx-3 text-red-600"
+								>
+									<span class="text-red-600">Restart Bench</span>
+								</Button>
+							</div>
+						</div>
+					</div>
+				</section>
 			</div>
 		</template>
 		<Dialog title="SSH Access" v-model="showSSHDialog">
@@ -220,11 +242,32 @@ export default {
 					this.$resources.getCertificate.reload();
 				}
 			};
+		},
+		restartBench() {
+			return {
+				method: 'press.api.bench.restart',
+				params: { name: this.bench?.name, bench: this.selectedVersion?.name }
+			};
 		}
 	},
 	methods: {
 		getRoute(version) {
 			return `/benches/${this.bench.name}/versions/${version.name}`;
+		},
+		confirmRestart(version) {
+			this.$confirm({
+				title: 'Restart Bench',
+				message: `
+					<b>bench restart</b> command will be executed on your bench. This will temporarily stop all web and backgound workers. Are you sure
+					you want to run this command? ${JSON.stringify(version)}}
+				`,
+				actionLabel: 'Restart Bench',
+				actionType: 'danger',
+				action: closeDialog => {
+					this.$resources.restartBench.submit();
+					closeDialog();
+				}
+			});
 		}
 	},
 	computed: {

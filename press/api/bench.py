@@ -582,6 +582,12 @@ def archive(name):
 
 
 @frappe.whitelist()
+@protected("Release Group")
+def restart(name, bench):
+	frappe.get_doc("Bench", bench).restart()
+
+
+@frappe.whitelist()
 @protected("Bench")
 def logs(name, bench):
 	if frappe.db.get_value("Bench", bench, "group") == name:
