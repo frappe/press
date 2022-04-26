@@ -281,6 +281,11 @@ class Bench(Document):
 				}
 			).insert()
 
+	@frappe.whitelist()
+	def restart(self, web_only=False):
+		agent = Agent(self.server)
+		agent.restart_bench(self, web_only=web_only)
+
 
 class StagingSite(Site):
 	def __init__(self, bench: Bench):
