@@ -20,7 +20,7 @@
 					:disabled="site.status === 'Suspended'"
 					@click="showRestoreDialog = true"
 				>
-					Restore Database
+					<span class="text-red-600">Restore Database</span>
 				</Button>
 			</div>
 			<div class="flex items-center justify-between py-3">
