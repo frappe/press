@@ -4,9 +4,6 @@
   "doctype": "Agent Job Type",
   "modified": "2021-06-16 20:39:50.568363",
   "name": "Rename Upstream",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "request_method": "POST",
   "request_path": "/proxy/upstreams/{ip}/rename",
   "steps": [
@@ -35,9 +32,6 @@
   "doctype": "Agent Job Type",
   "modified": "2021-01-27 10:42:40.678534",
   "name": "Rename Site",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "request_method": "POST",
   "request_path": "benches/{site.bench}/sites/{site.name}/rename",
   "steps": [
@@ -96,9 +90,6 @@
   "doctype": "Agent Job Type",
   "modified": "2020-02-21 12:34:39.569810",
   "name": "Recover Failed Site Migration",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "request_method": null,
   "request_path": null,
   "steps": [
@@ -127,9 +118,6 @@
   "doctype": "Agent Job Type",
   "modified": "2020-08-11 12:17:23.658693",
   "name": "Add Domain",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "request_method": "POST",
   "request_path": "benches/{bench}/sites/{site}/domains",
   "steps": [
@@ -158,9 +146,6 @@
   "doctype": "Agent Job Type",
   "modified": "2020-08-11 12:17:43.993040",
   "name": "Remove Domain",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "request_method": "DELETE",
   "request_path": "benches/{bench}/sites/{site}/domains/{domain}",
   "steps": [
@@ -189,9 +174,6 @@
   "doctype": "Agent Job Type",
   "modified": "2020-04-07 16:10:22.420615",
   "name": "Update Site Configuration",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "request_method": "POST",
   "request_path": "/benches/{bench}/sites/{site}/config",
   "steps": [
@@ -208,9 +190,6 @@
   "doctype": "Agent Job Type",
   "modified": "2020-07-27 19:18:17.532920",
   "name": "Update Site Pull",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "request_method": "POST",
   "request_path": "/benches/{bench}/sites/{site}/update/pull",
   "steps": [
@@ -263,9 +242,6 @@
   "doctype": "Agent Job Type",
   "modified": "2020-07-27 19:19:05.246993",
   "name": "Update Site Migrate",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "request_method": "POST",
   "request_path": "/benches/{bench}/sites/{site}/update/migrate",
   "steps": [
@@ -336,9 +312,6 @@
   "doctype": "Agent Job Type",
   "modified": "2020-06-17 16:44:12.364275",
   "name": "Backup Site",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "request_method": null,
   "request_path": null,
   "steps": [
@@ -361,9 +334,6 @@
   "doctype": "Agent Job Type",
   "modified": "2020-04-15 14:59:02.613798",
   "name": "New Site",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "request_method": null,
   "request_path": null,
   "steps": [
@@ -404,9 +374,6 @@
   "doctype": "Agent Job Type",
   "modified": "2020-04-03 23:20:55.186989",
   "name": "Add Host to Proxy",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "request_method": "POST",
   "request_path": "/proxy/hosts",
   "steps": [
@@ -435,9 +402,6 @@
   "doctype": "Agent Job Type",
   "modified": "2020-04-03 23:20:14.208716",
   "name": "Add Site to Upstream",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "request_method": "POST",
   "request_path": "/proxy/upstreams/{upstream}/sites",
   "steps": [
@@ -466,9 +430,6 @@
   "doctype": "Agent Job Type",
   "modified": "2020-04-03 23:20:08.170631",
   "name": "Add Upstream to Proxy",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "request_method": "POST",
   "request_path": "/proxy/upstreams",
   "steps": [
@@ -497,9 +458,6 @@
   "doctype": "Agent Job Type",
   "modified": "2020-12-11 14:03:35.053168",
   "name": "New Bench",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "request_method": "POST",
   "request_path": "/benches",
   "steps": [
@@ -534,9 +492,6 @@
   "doctype": "Agent Job Type",
   "modified": "2020-04-03 23:19:43.720292",
   "name": "Remove Site from Upstream",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "request_method": "DELETE",
   "request_path": "/proxy/upstreams/{upstream}/sites/{site}",
   "steps": [
@@ -565,9 +520,6 @@
   "doctype": "Agent Job Type",
   "modified": "2020-02-20 10:19:17.561733",
   "name": "Archive Site",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "request_method": null,
   "request_path": null,
   "steps": [
@@ -596,9 +548,6 @@
   "doctype": "Agent Job Type",
   "modified": "2020-04-03 20:16:04.843363",
   "name": "Archive Bench",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "request_method": "POST",
   "request_path": "/benches/{bench}/archive",
   "steps": [
@@ -621,9 +570,6 @@
   "doctype": "Agent Job Type",
   "modified": "2020-04-08 15:02:15.559811",
   "name": "Install App on Site",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "request_method": "POST",
   "request_path": "/benches/{bench}/sites/{site}/apps",
   "steps": [
@@ -640,9 +586,6 @@
   "doctype": "Agent Job Type",
   "modified": "2020-07-30 10:46:32.814468",
   "name": "New Site from Backup",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "request_method": "POST",
   "request_path": "/benches/{bench}/sites/restore",
   "steps": [
@@ -719,9 +662,6 @@
   "doctype": "Agent Job Type",
   "modified": "2020-05-06 11:08:03.470650",
   "name": "Reinstall Site",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "request_method": "POST",
   "request_path": "benches/{bench}/sites/{site}/reinstall",
   "steps": [
@@ -738,9 +678,6 @@
   "doctype": "Agent Job Type",
   "modified": "2020-07-30 10:46:20.712793",
   "name": "Restore Site",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "request_method": "POST",
   "request_path": "/benches/{bench}/sites/{site}/restore",
   "steps": [
@@ -793,9 +730,6 @@
   "doctype": "Agent Job Type",
   "modified": "2020-05-21 14:43:42.827772",
   "name": "Update Site Status",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "request_method": "POST",
   "request_path": "/proxy/upstreams/{upstream}/sites/{site}/status",
   "steps": [
@@ -824,9 +758,6 @@
   "doctype": "Agent Job Type",
   "modified": "2021-02-01 16:31:25.999308",
   "name": "Update Bench Configuration",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "request_method": "POST",
   "request_path": "/benches/{bench}/config",
   "steps": [
@@ -861,9 +792,6 @@
   "doctype": "Agent Job Type",
   "modified": "2020-06-26 15:27:03.310761",
   "name": "Uninstall App from Site",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "request_method": "DELETE",
   "request_path": "/benches/{bench}/sites/{site}/apps",
   "steps": [
@@ -880,9 +808,6 @@
   "doctype": "Agent Job Type",
   "modified": "2020-07-27 20:49:03.616821",
   "name": "Recover Failed Site Pull",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "request_method": "POST",
   "request_path": "/benches/{bench}/sites/{site}/update/pull/recover",
   "steps": [
@@ -923,9 +848,6 @@
   "doctype": "Agent Job Type",
   "modified": "2020-07-27 20:48:53.225074",
   "name": "Recover Failed Site Update",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "request_method": "POST",
   "request_path": "/benches/{bench}/sites/{site}/update/recover",
   "steps": [
@@ -942,9 +864,6 @@
   "doctype": "Agent Job Type",
   "modified": "2020-07-27 20:48:35.869422",
   "name": "Recover Failed Site Migrate",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "request_method": "POST",
   "request_path": "/benches/{bench}/sites/{site}/update/migrate/recover",
   "steps": [
@@ -989,42 +908,8 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2021-10-14 09:27:02.587048",
-  "name": "Cleanup Unused Files",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
-  "request_method": "POST",
-  "request_path": "server/cleanup",
-  "steps": [
-   {
-    "parent": "Cleanup Unused Files",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Remove Archived Benches"
-   },
-   {
-    "parent": "Cleanup Unused Files",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Remove Temporary Files"
-   },
-   {
-    "parent": "Cleanup Unused Files",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Remove Unused Docker Artefacts"
-   }
-  ]
- },
- {
-  "docstatus": 0,
-  "doctype": "Agent Job Type",
   "modified": "2020-08-05 17:32:00.556643",
   "name": "Remove Host from Proxy",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "request_method": "DELETE",
   "request_path": "/proxy/hosts/{host}",
   "steps": [
@@ -1053,9 +938,6 @@
   "doctype": "Agent Job Type",
   "modified": "2020-08-06 10:47:06.751838",
   "name": "Migrate Site",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "request_method": "POST",
   "request_path": "/benches/{bench}/sites/{site}/migrate",
   "steps": [
@@ -1072,9 +954,6 @@
   "doctype": "Agent Job Type",
   "modified": "2020-10-02 15:34:23.594712",
   "name": "Fetch Sites Info",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "request_method": "POST",
   "request_path": "/benches/{bench}/info",
   "steps": [
@@ -1091,9 +970,6 @@
   "doctype": "Agent Job Type",
   "modified": "2020-11-30 12:12:41.282921",
   "name": "Setup Redirects on Hosts",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "request_method": "POST",
   "request_path": "/proxy/hosts/redirects",
   "steps": [
@@ -1128,9 +1004,6 @@
   "doctype": "Agent Job Type",
   "modified": "2020-11-30 12:12:21.595092",
   "name": "Remove Redirects on Hosts",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "request_method": "DELETE",
   "request_path": "/proxy/hosts/redirects",
   "steps": [
@@ -1159,9 +1032,6 @@
   "doctype": "Agent Job Type",
   "modified": "2021-01-29 11:14:16.705614",
   "name": "Rename Site on Upstream",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "request_method": "POST",
   "request_path": "/proxy/upstreams/{upstream}/sites/{site}/rename",
   "steps": [
@@ -1202,9 +1072,6 @@
   "doctype": "Agent Job Type",
   "modified": "2021-03-25 22:42:47.808999",
   "name": "Add Wildcard Hosts to Proxy",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "request_method": "POST",
   "request_path": "/proxy/wildcards",
   "steps": [
@@ -1233,9 +1100,6 @@
   "doctype": "Agent Job Type",
   "modified": "2021-04-05 16:24:05.014172",
   "name": "Setup ERPNext",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "request_method": "POST",
   "request_path": "/benches/{site.bench}/sites/{site.name}/erpnext",
   "steps": [
@@ -1258,9 +1122,6 @@
   "doctype": "Agent Job Type",
   "modified": "2021-04-04 12:27:30.772719",
   "name": "Clear Cache",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "request_method": "DELETE",
   "request_path": "/benches/{bench}/sites/{site}/cache",
   "steps": [
@@ -1283,9 +1144,6 @@
   "doctype": "Agent Job Type",
   "modified": "2021-04-12 22:01:07.809393",
   "name": "Restore Site Tables",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "request_method": "POST",
   "request_path": "/benches/{bench}/sites/{site}/update/migrate/restore",
   "steps": [
@@ -1308,9 +1166,6 @@
   "doctype": "Agent Job Type",
   "modified": "2022-01-16 13:37:05.759970",
   "name": "Add User to Proxy",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "request_method": "POST",
   "request_path": "/ssh/users",
   "steps": [
@@ -1339,9 +1194,6 @@
   "doctype": "Agent Job Type",
   "modified": "2022-01-16 13:38:57.132558",
   "name": "Remove User from Proxy",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "request_method": "DELETE",
   "request_path": "/ssh/users/{user}",
   "steps": [
@@ -1364,9 +1216,6 @@
   "doctype": "Agent Job Type",
   "modified": "2022-02-07 12:43:09.605095",
   "name": "Add User to ProxySQL",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "request_method": "POST",
   "request_path": "/proxysql/users",
   "steps": [
@@ -1383,9 +1232,6 @@
   "doctype": "Agent Job Type",
   "modified": "2022-02-07 12:43:46.446468",
   "name": "Remove User from ProxySQL",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "request_method": "DELETE",
   "request_path": "/proxysql/users/{username}",
   "steps": [
@@ -1398,91 +1244,123 @@
   ]
  },
  {
-	"name": "Create Minio User",
-	"modified": "2022-02-13 14:26:09.458148",
-	"docstatus": 0,
-	"parent": null,
-	"parentfield": null,
-	"parenttype": null,
-	"request_path": "/minio/users",
-	"request_method": "POST",
-	"doctype": "Agent Job Type",
-	"steps": [
-  {
-    "step_name": "Create Minio User",
-    "parent": "Create Minio User",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type"
-  },
-  {
-    "step_name": "Create Minio Policy",
-    "parent": "Create Minio User",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type"
-  },
-  {
-    "step_name": "Add Minio Policy",
-    "parent": "Create Minio User",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type"
-  }
-	]
- },
- {
-	"name": "Remove Minio User",
-	"modified": "2022-02-13 14:26:41.239106",
-	"docstatus": 0,
-	"parent": null,
-	"parentfield": null,
-	"parenttype": null,
-	"request_path": "/minio/users/{username}",
-	"request_method": "DELETE",
-	"doctype": "Agent Job Type",
-	"steps": [
-  {
-    "step_name": "Remove Minio User",
-    "parent": "Remove Minio User",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type"
-	}
-	]
- },
- {
-  "name": "Enable Minio User",
-  "modified": "2022-02-15 14:21:09.184479",
   "docstatus": 0,
-	"parent": null,
-	"parentfield": null,
-	"parenttype": null,
-  "request_path": "/minio/users/{username}/toggle/{action}",
-  "request_method": "POST",
   "doctype": "Agent Job Type",
+  "modified": "2022-02-13 14:26:09.458148",
+  "name": "Create Minio User",
+  "request_method": "POST",
+  "request_path": "/minio/create",
   "steps": [
-  {
-    "step_name": "Enable Minio User",
-    "parent": "Enable Minio User",
+   {
+    "parent": "Create Minio User",
     "parentfield": "steps",
-    "parenttype": "Agent Job Type"
-  }
+    "parenttype": "Agent Job Type",
+    "step_name": "Create Minio User"
+   },
+   {
+    "parent": "Create Minio User",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Create Minio Policy"
+   },
+   {
+    "parent": "Create Minio User",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Add Minio Policy"
+   }
   ]
  },
  {
-  "name": "Disable Minio User",
-  "modified": "2022-02-15 14:21:14.416719",
   "docstatus": 0,
-	"parent": null,
-	"parentfield": null,
-	"parenttype": null,
-  "request_path": "/minio/users/{username}/toggle/{action}",
-  "request_method": "POST",
   "doctype": "Agent Job Type",
+  "modified": "2022-02-13 14:26:41.239106",
+  "name": "Remove Minio User",
+  "request_method": "POST",
+  "request_path": "/minio/remove",
   "steps": [
-  {
-    "step_name": "Disable Minio User",
+   {
+    "parent": "Remove Minio User",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Remove Minio User"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2022-02-15 14:21:09.184479",
+  "name": "Enable Minio User",
+  "request_method": "POST",
+  "request_path": "/minio/update",
+  "steps": [
+   {
+    "parent": "Enable Minio User",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Enable Minio User"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2022-02-15 14:21:14.416719",
+  "name": "Disable Minio User",
+  "request_method": "POST",
+  "request_path": "/minio/update",
+  "steps": [
+   {
     "parent": "Disable Minio User",
     "parentfield": "steps",
-    "parenttype": "Agent Job Type"
-  }
+    "parenttype": "Agent Job Type",
+    "step_name": "Disable Minio User"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2022-04-26 12:43:33.641886",
+  "name": "Bench Restart",
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/restart",
+  "steps": [
+   {
+    "parent": "Bench Restart",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Restart"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2021-10-14 09:27:02.587048",
+  "name": "Cleanup Unused Files",
+  "request_method": "POST",
+  "request_path": "server/cleanup",
+  "steps": [
+   {
+    "parent": "Cleanup Unused Files",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Remove Archived Benches"
+   },
+   {
+    "parent": "Cleanup Unused Files",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Remove Temporary Files"
+   },
+   {
+    "parent": "Cleanup Unused Files",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Remove Unused Docker Artefacts"
+   }
   ]
  }
 ]

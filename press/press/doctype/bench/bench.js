@@ -19,6 +19,7 @@ frappe.ui.form.on('Bench', {
 			[__('Update All Sites'), 'update_all_sites'],
 			[__('Remove SSH User from Proxy'), 'remove_ssh_user', frm.doc.is_ssh_proxy_setup],
 			[__('Add SSH User to Proxy'), 'add_ssh_user', !frm.doc.is_ssh_proxy_setup],
+			[__('Restart'), 'restart', frm.doc.status === "Active"],
 		].forEach(([label, method, condition]) => {
 			if (typeof condition === "undefined" || condition){	
 				frm.add_custom_button(

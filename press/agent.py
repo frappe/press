@@ -44,6 +44,14 @@ class Agent:
 			"Archive Bench", f"benches/{bench.name}/archive", bench=bench.name
 		)
 
+	def restart_bench(self, bench, web_only=False):
+		return self.create_agent_job(
+			"Bench Restart",
+			f"benches/{bench.name}/restart",
+			data={"web_only": web_only},
+			bench=bench.name,
+		)
+
 	def update_bench_config(self, bench):
 		data = {
 			"bench_config": json.loads(bench.bench_config),
