@@ -216,7 +216,7 @@
    "fieldtype": "Section Break"
   },
   {
-   "default": "0",
+   "default": "1",
    "fieldname": "ssh_access_enabled",
    "fieldtype": "Check",
    "label": "SSH Access Enabled"
@@ -292,7 +292,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2022-02-23 12:18:25.766701",
+ "modified": "2022-04-26 21:06:55.936737",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
