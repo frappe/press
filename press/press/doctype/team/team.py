@@ -516,7 +516,7 @@ class Team(Document):
 		client = get_frappe_io_connection()
 		response = client.session.post(
 			f"{client.url}/api/method/partner_relationship_management.api.get_partner_credit_balance",
-			data={"email": self.name},
+			data={"email": self.partner_email},
 			headers=client.headers,
 		)
 
@@ -528,13 +528,13 @@ class Team(Document):
 				return message.get("credit_balance")
 			else:
 				error_message = message.get("error_message")
-				log_error("Partner Credit Fetch Error", team=self.name, error_message=error_message)
+				log_error("Partner Credit Fetch Error", team=self.name, email=self.partner_email, error_message=error_message)
 				frappe.throw(error_message)
 
 		else:
 			log_error(
 				"Problem fetching partner credit balance from frappe.io",
-				team=self.name,
+				team=self.name, email=self.partner_email,
 				response=response.text,
 			)
 			frappe.throw("Problem fetching partner credit balance.")
