@@ -5,6 +5,7 @@ import frappe
 
 import sqlparse
 from press.agent import Agent
+from frappe.utils import cint
 
 
 def execute(filters=None):
@@ -86,3 +87,17 @@ def get_data(filters):
 			row["Command"].strip(), keyword_case="upper", reindent=True
 		)
 	return rows
+
+
+@frappe.whitelist()
+def kill(database_server, kill_threshold):
+	frappe.only_for("System Manager")
+	server = frappe.get_doc("Database Server", database_server)
+	agent = Agent(server.name, "Database Server")
+
+	data = {
+		"private_ip": server.private_ip,
+		"mariadb_root_password": server.get_password("mariadb_root_password"),
+		"kill_threshold": cint(kill_threshold),
+	}
+	agent.post("database/processes/kill", data=data)
