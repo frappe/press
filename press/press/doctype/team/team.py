@@ -528,13 +528,19 @@ class Team(Document):
 				return message.get("credit_balance")
 			else:
 				error_message = message.get("error_message")
-				log_error("Partner Credit Fetch Error", team=self.name, email=self.partner_email, error_message=error_message)
+				log_error(
+					"Partner Credit Fetch Error",
+					team=self.name,
+					email=self.partner_email,
+					error_message=error_message,
+				)
 				frappe.throw(error_message)
 
 		else:
 			log_error(
 				"Problem fetching partner credit balance from frappe.io",
-				team=self.name, email=self.partner_email,
+				team=self.name,
+				email=self.partner_email,
 				response=response.text,
 			)
 			frappe.throw("Problem fetching partner credit balance.")
