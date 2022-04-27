@@ -10,9 +10,11 @@
   "enabled",
   "user",
   "is_developer",
-  "erpnext_partner",
   "free_account",
   "via_erpnext",
+  "column_break_6",
+  "erpnext_partner",
+  "partner_email",
   "section_break_6",
   "team_members",
   "section_break_9",
@@ -238,6 +240,16 @@
    "fieldtype": "Table",
    "label": "Discounts",
    "options": "Invoice Discount"
+  },
+  {
+   "fieldname": "column_break_6",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval: doc.erpnext_partner",
+   "fieldname": "partner_email",
+   "fieldtype": "Data",
+   "label": "Partner Email"
   }
  ],
  "links": [
@@ -292,7 +304,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2022-04-26 21:15:23.760303",
+ "modified": "2022-04-27 12:24:22.262202",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
