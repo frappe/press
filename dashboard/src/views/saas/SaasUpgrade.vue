@@ -29,7 +29,10 @@
 			the apps below and get a 14 days free trial.
 		</Alert>
 		<!-- -->
-		<div v-if="currentApp == 'FrappeCloud'" class="flex">
+		<div
+			v-if="currentApp == 'FrappeCloud'"
+			class="grid grid-cols-1 gap-1 md:grid-cols-3"
+		>
 			<SaasAppCard
 				v-for="app in $resources.saasApps.data"
 				:key="app.title"
