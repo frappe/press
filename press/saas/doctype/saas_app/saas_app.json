@@ -8,7 +8,9 @@
  "field_order": [
   "image",
   "app",
-  "title"
+  "title",
+  "description",
+  "signup_url"
  ],
  "fields": [
   {
@@ -32,6 +34,16 @@
    "fieldtype": "Attach Image",
    "hidden": 1,
    "label": "Image"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "signup_url",
+   "fieldtype": "Data",
+   "label": "Signup URL"
   }
  ],
  "image_field": "image",
@@ -46,7 +58,7 @@
    "link_fieldname": "app"
   }
  ],
- "modified": "2022-04-14 17:49:54.746845",
+ "modified": "2022-04-26 23:52:50.312457",
  "modified_by": "Administrator",
  "module": "Saas",
  "name": "Saas App",
