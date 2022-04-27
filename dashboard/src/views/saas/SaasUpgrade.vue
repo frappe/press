@@ -19,7 +19,23 @@
 			site will get suspended. Select a plan from the Plan section below to
 			avoid suspension.
 		</Alert>
+		<Alert
+			class="mb-4"
+			v-if="currentApp == 'FrappeCloud'"
+			title="Subscription"
+			type="warning"
+		>
+			No active subscriptions found for your account. Please signup with one of
+			the apps below and get a 14 days free trial.
+		</Alert>
 		<!-- -->
+		<div v-if="currentApp == 'FrappeCloud'" class="flex">
+			<SaasAppCard
+				v-for="app in $resources.saasApps.data"
+				:key="app.title"
+				:app="app"
+			/>
+		</div>
 		<div
 			v-if="plansData"
 			class="mx-auto grid flex-1 grid-cols-1 gap-2 md:grid-cols-3"
@@ -44,19 +60,22 @@
 
 <script>
 import SaasAppPlanCard from './SaasAppPlanCard.vue';
+import SaasAppCard from './SaasAppCard.vue';
 import { utils } from '@/utils';
 
 export default {
 	name: 'SaasUpgrade',
 	components: {
-		SaasAppPlanCard
+		SaasAppPlanCard,
+		SaasAppCard
 	},
 	data() {
 		return {
 			plansData: null,
 			selectedPlan: null,
 			activePlan: null,
-			trial_end_date: null
+			trial_end_date: null,
+			currentApp: localStorage.getItem('current_saas_app')
 		};
 	},
 	methods: {
@@ -72,6 +91,10 @@ export default {
 		}
 	},
 	resources: {
+		saasApps: {
+			method: 'press.api.saas.get_saas_apps',
+			auto: true
+		},
 		plans: {
 			method: 'press.api.saas.get_site_sub_info',
 			params: {

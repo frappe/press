@@ -43,15 +43,31 @@ def get_saas_site_and_app():
 	"""
 	return: Any active saas subscription for team to set it as default for loading dashbaord
 	"""
-	team = get_current_team()
-	data = frappe.get_all(
-		"Saas App Subscription",
-		{"team": team, "status": ("!=", "Disabled")},
-		["app", "site"],
-		limit=1,
-	)[0]
+	sub_exists = frappe.db.exists(
+		"Saas App Subscription", {"team": get_current_team(), "status": ("!=", "Disabled")}
+	)
 
-	return data
+	if sub_exists:
+		return frappe.get_all(
+			"Saas App Subscription",
+			{"team": get_current_team(), "status": ("!=", "Disabled")},
+			["app", "site"],
+			limit=1,
+		)[0]
+
+	else:
+		return {"app": "FrappeCloud", "site": "frappecloud.com"}
+
+
+@frappe.whitelist()
+def get_saas_apps():
+	"""
+	return: All available saas apps with description and info
+	"""
+	apps = frappe.get_all(
+		"Saas App", ["name", "title", "image", "description", "signup_url"]
+	)
+	return apps
 
 
 @frappe.whitelist()
