@@ -35,6 +35,7 @@ class Team(Document):
 		self.set_team_currency()
 		self.set_default_user()
 		self.set_billing_name()
+		self.set_partner_email()
 
 	def before_insert(self):
 		if not self.notify_email:
@@ -53,6 +54,10 @@ class Team(Document):
 	def set_partner_payment_mode(self):
 		if self.erpnext_partner:
 			self.payment_mode = "Partner Credits"
+
+	def set_partner_email(self):
+		if self.erpnext_partner and not self.partner_email:
+			self.partner_email = self.team
 
 	def delete(self, force=False, workflow=False):
 		if force:
@@ -250,6 +255,7 @@ class Team(Document):
 	@frappe.whitelist()
 	def enable_erpnext_partner_privileges(self):
 		self.erpnext_partner = 1
+		self.partner_email = self.team
 		self.payment_mode = "Partner Credits"
 		self.save(ignore_permissions=True)
 
