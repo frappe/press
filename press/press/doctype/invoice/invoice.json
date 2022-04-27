@@ -10,6 +10,7 @@
   "customer_name",
   "customer_email",
   "currency",
+  "partner_email",
   "column_break_4",
   "status",
   "type",
@@ -375,6 +376,13 @@
    "fieldtype": "Currency",
    "label": "Total Discount Amount",
    "read_only": 1
+  },
+  {
+   "fetch_from": "team.partner_email",
+   "fieldname": "partner_email",
+   "fieldtype": "Data",
+   "label": "Partner Email",
+   "read_only": 1
   }
  ],
  "is_submittable": 1,
@@ -395,7 +403,7 @@
    "link_fieldname": "invoice"
   }
  ],
- "modified": "2022-02-23 17:53:36.016371",
+ "modified": "2022-04-27 12:26:20.639665",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",
