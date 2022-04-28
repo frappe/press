@@ -84,7 +84,7 @@ def get_data(filters):
 
 	for row in rows:
 		row["Info"] = sqlparse.format(
-			row.get("Info", "").strip(), keyword_case="upper", reindent=True
+			(row.get["Info"] or "").strip(), keyword_case="upper", reindent=True
 		)
 	return rows
 
