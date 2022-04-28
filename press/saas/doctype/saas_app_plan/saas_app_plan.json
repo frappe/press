@@ -16,7 +16,9 @@
   "plan",
   "site_plan",
   "section_break_8",
-  "features"
+  "features",
+  "section_break_11",
+  "config"
  ],
  "fields": [
   {
@@ -75,11 +77,21 @@
    "label": "Site Plan",
    "options": "Plan",
    "reqd": 1
+  },
+  {
+   "fieldname": "section_break_11",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "config",
+   "fieldtype": "Code",
+   "label": "Config",
+   "options": "JSON"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-03-21 00:30:39.231399",
+ "modified": "2022-04-28 20:14:13.320479",
  "modified_by": "Administrator",
  "module": "Saas",
  "name": "Saas App Plan",
