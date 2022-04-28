@@ -40,7 +40,7 @@ def execute(filters=None):
 			"fieldname": "Command",
 			"label": frappe._("Command"),
 			"fieldtype": "Data",
-			"width": 400,
+			"width": 150,
 		},
 		{
 			"fieldname": "Time",
@@ -57,8 +57,8 @@ def execute(filters=None):
 		{
 			"fieldname": "Info",
 			"label": frappe._("Info"),
-			"fieldtype": "Int",
-			"width": 80,
+			"fieldtype": "Data",
+			"width": 400,
 		},
 		{
 			"fieldname": "Progress",
@@ -83,8 +83,8 @@ def get_data(filters):
 	rows = agent.post("database/processes", data=data)
 
 	for row in rows:
-		row["Command"] = sqlparse.format(
-			row["Command"].strip(), keyword_case="upper", reindent=True
+		row["Info"] = sqlparse.format(
+			row["Info"].strip(), keyword_case="upper", reindent=True
 		)
 	return rows
 
