@@ -30,7 +30,7 @@ def get_current_team(get_doc=False):
 		"Has Role", {"parent": frappe.session.user, "role": "Press Admin"}
 	)
 
-	if not team and user_is_press_admin:
+	if not team and user_is_press_admin and frappe.db.exists("Team", frappe.session.user):
 		# if user has_role of Press Admin then just return current user as default team
 		return frappe.get_doc("Team", frappe.session.user) if get_doc else frappe.session.user
 
