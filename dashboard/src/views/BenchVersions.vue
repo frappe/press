@@ -254,12 +254,12 @@ export default {
 		getRoute(version) {
 			return `/benches/${this.bench.name}/versions/${version.name}`;
 		},
-		confirmRestart(version) {
+		confirmRestart() {
 			this.$confirm({
 				title: 'Restart Bench',
 				message: `
 					<b>bench restart</b> command will be executed on your bench. This will temporarily stop all web and backgound workers. Are you sure
-					you want to run this command? ${JSON.stringify(version)}}
+					you want to run this command?
 				`,
 				actionLabel: 'Restart Bench',
 				actionType: 'danger',
