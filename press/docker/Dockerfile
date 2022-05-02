@@ -78,6 +78,7 @@ RUN --mount=type=cache,target=/var/cache/apt add-apt-repository ppa:deadsnakes/p
   python3-virtualenv \
   python3-pip \
   python${PYTHON_VERSION}-dev \
+  python${PYTHON_VERSION}-distutils \
   && rm -rf /var/lib/apt/lists/* \
   `#stage-pre-python`
 
