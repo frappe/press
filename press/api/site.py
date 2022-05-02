@@ -419,7 +419,7 @@ def options_for_new():
 
 	marketplace_apps = frappe.db.get_all(
 		"Marketplace App",
-		fields=["title", "category", "image", "description", "app", "route"],
+		fields=["title", "image", "description", "app", "route"],
 		filters={"app": ("in", list(apps))},
 	)
 
