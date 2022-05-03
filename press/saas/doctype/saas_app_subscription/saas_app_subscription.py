@@ -8,11 +8,40 @@ from press.utils import log_error
 
 class SaasAppSubscription(Document):
 	def validate(self):
+		self.set_secret_key()
 		self.validate_saas_app_plan()
 		self.set_plan()
 
+	def set_secret_key(self):
+		if not self.secret_key:
+			from hashlib import blake2b
+
+			h = blake2b(digest_size=20)
+			h.update(self.name.encode())
+			self.secret_key = h.hexdigest()
+
+			self.create_site_config_key()
+
+	def create_site_config_key(self):
+		if not frappe.db.exists("Site Config Key", {"key": f"sk_{self.app}"}):
+			frappe.get_doc(
+				doctype="Site Config Key", internal=True, key=f"sk_{self.app}"
+			).insert(ignore_permissions=True)
+
 	def before_insert(self):
 		self.validate_duplicate_subscription()
+
+	def after_insert(self):
+		self.set_secret_key_in_site_config()
+
+	def set_secret_key_in_site_config(self):
+		site_doc = frappe.get_doc("Site", self.site)
+
+		key = f"sk_{self.app}"
+		value = self.secret_key
+		config = {key: value}
+
+		site_doc.update_site_config(config)
 
 	def validate_saas_app_plan(self):
 		app = frappe.db.get_value("Saas App Plan", self.saas_app_plan, "app")
