@@ -65,7 +65,9 @@ def get_saas_apps():
 	return: All available saas apps with description and info
 	"""
 	apps = frappe.get_all(
-		"Saas App", ["name", "title", "image", "description", "signup_url"]
+		"Saas App",
+		{"status": "Published"},
+		["name", "title", "image", "description", "signup_url"],
 	)
 	return apps
 
