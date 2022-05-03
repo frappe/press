@@ -6,6 +6,7 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "status",
   "image",
   "app",
   "title",
@@ -44,6 +45,13 @@
    "fieldname": "signup_url",
    "fieldtype": "Data",
    "label": "Signup URL"
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nPublished"
   }
  ],
  "image_field": "image",
@@ -58,9 +66,9 @@
    "link_fieldname": "app"
   }
  ],
- "modified": "2022-04-26 23:52:50.312457",
+ "modified": "2022-05-03 13:27:53.217579",
  "modified_by": "Administrator",
- "module": "Saas",
+ "module": "SaaS",
  "name": "Saas App",
  "owner": "Administrator",
  "permissions": [
