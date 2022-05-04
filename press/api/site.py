@@ -102,7 +102,9 @@ def _new(site, server: str = None):
 		{"status": "Active", "name": ("in", proxy_servers)},
 		pluck="name",
 	)
-	proxy_servers = tuple(proxy_servers) if len(proxy_servers) > 1 else f"('{proxy_servers[0]}')"
+	proxy_servers = (
+		tuple(proxy_servers) if len(proxy_servers) > 1 else f"('{proxy_servers[0]}')"
+	)
 
 	query_sub_str = ""
 	if server:
