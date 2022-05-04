@@ -259,6 +259,9 @@ def create_team_from_account_request(account_request):
 	site.save()
 
 	subscription = site.subscription
+	if subscription:
+		subscription.team = team_doc.name
+		subscription.save()
 
 	plan = frappe.get_all(
 		"Saas App Plan",
@@ -275,10 +278,6 @@ def create_team_from_account_request(account_request):
 			"saas_app_plan": plan,
 		}
 	).insert(ignore_permissions=True)
-
-	if subscription:
-		subscription.team = team_doc.name
-		subscription.save()
 
 	frappe.set_user(team_doc.user)
 	frappe.local.login_manager.login_as(team_doc.user)
