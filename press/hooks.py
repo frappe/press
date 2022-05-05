@@ -178,6 +178,7 @@ scheduler_events = {
 		"press.press.audit.check_backup_records",
 		"press.press.audit.check_app_server_replica_benches",
 		"press.press.doctype.invoice.invoice.finalize_unpaid_prepaid_credit_invoices",
+		"press.press.doctype.bench.bench.sync_analytics",
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
@@ -201,10 +202,7 @@ scheduler_events = {
 			"press.press.cleanup.unlink_remote_files_from_site",
 		],
 		"* * * * * 0/5": ["press.press.doctype.agent_job.agent_job.poll_pending_jobs"],
-		"0 */6 * * *": [
-			"press.press.doctype.server.server.cleanup_unused_files",
-			"press.press.doctype.bench.bench.sync_analytics",
-		],
+		"0 */6 * * *": ["press.press.doctype.server.server.cleanup_unused_files"],
 		"30 * * * *": ["press.press.doctype.agent_job.agent_job.suspend_sites"],
 		"*/15 * * * *": [
 			"press.press.doctype.site_update.site_update.schedule_updates",
