@@ -189,6 +189,18 @@ class Bench(Document):
 				frappe.db.rollback()
 
 	@frappe.whitelist()
+	def sync_analytics(self):
+		agent = Agent(self.server)
+		data = agent.get_sites_analytics(self)
+		for site, analytics in data.items():
+			try:
+				frappe.get_doc("Site", site).sync_analytics(analytics)
+				frappe.db.commit()
+			except Exception:
+				log_error("Site Analytics Sync Error", site=site, analytics=analytics)
+				frappe.db.rollback()
+
+	@frappe.whitelist()
 	def update_all_sites(self):
 		sites = frappe.get_all(
 			"Site",
