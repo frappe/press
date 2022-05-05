@@ -512,4 +512,26 @@ def sync_bench(name):
 		frappe.db.rollback()
 
 
+def sync_analytics():
+	benches = frappe.get_all("Bench", {"status": "Active"}, pluck="name")
+	for bench in benches:
+		frappe.enqueue(
+			"press.press.doctype.bench.bench.sync_bench_analytics",
+			queue="long",
+			name=bench,
+			enqueue_after_commit=True,
+		)
+	frappe.db.commit()
+
+
+def sync_bench_analytics(name):
+	bench = frappe.get_doc("Bench", name)
+	try:
+		bench.sync_analytics()
+		frappe.db.commit()
+	except Exception:
+		log_error("Bench Analytics Sync Error", bench=bench.name)
+		frappe.db.rollback()
+
+
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Bench")
