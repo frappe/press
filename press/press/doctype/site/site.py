@@ -617,6 +617,10 @@ class Site(Document):
 		agent = Agent(self.server)
 		return agent.get_site_info(self)
 
+	def fetch_analytics(self):
+		agent = Agent(self.server)
+		return agent.get_site_analytics(self)
+
 	def get_disk_usages(self):
 		try:
 			last_usage = frappe.get_last_doc("Site Usage", {"site": self.name})
@@ -723,6 +727,11 @@ class Site(Document):
 
 		if to_save:
 			self.save()
+
+	def sync_analytics(self, analytics=None):
+		if not analytics:
+			analytics = self.fetch_analytics()
+		create_site_analytics(self.name, analytics)
 
 	def is_setup_wizard_complete(self):
 		if self.setup_wizard_complete:
