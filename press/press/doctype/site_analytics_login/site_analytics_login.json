@@ -1,0 +1,45 @@
+{
+ "actions": [],
+ "autoname": "autoincrement",
+ "creation": "2022-05-02 23:36:42.966427",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "user",
+  "full_name",
+  "timestamp"
+ ],
+ "fields": [
+  {
+   "fieldname": "user",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "User"
+  },
+  {
+   "fieldname": "full_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Full Name"
+  },
+  {
+   "fieldname": "timestamp",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Timestamp"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2022-05-05 09:27:37.972446",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Site Analytics Login",
+ "naming_rule": "Autoincrement",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
