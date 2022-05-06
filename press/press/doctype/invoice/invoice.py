@@ -627,8 +627,7 @@ class Invoice(Document):
 		if self.frappe_invoice:
 			client = self.get_frappeio_connection()
 			url = (
-				client.url
-				+ "/api/method/frappe.utils.print_format.download_pdf?"
+				client.url + "/api/method/frappe.utils.print_format.download_pdf?"
 				f"doctype=Sales%20Invoice&name={self.frappe_invoice}&"
 				"format=Frappe%20Cloud&no_letterhead=0"
 			)
