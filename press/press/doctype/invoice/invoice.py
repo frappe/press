@@ -369,11 +369,15 @@ class Invoice(Document):
 		return invoice_item
 
 	def validate_items(self):
+		items_to_remove = []
 		for row in self.items:
 			if row.quantity == 0:
-				self.remove(row)
+				items_to_remove.append(row)
 			else:
 				row.amount = row.quantity * row.rate
+
+		for item in items_to_remove:
+			self.remove(item)
 
 	def validate_amount(self):
 		# Already Submitted
@@ -528,9 +532,13 @@ class Invoice(Document):
 				),
 			).insert()
 			doc.submit()
-			self.remove(row)
 			self.applied_credits -= row.amount
+
+		self.clear_credit_allocation_table()
 		self.save()
+
+	def clear_credit_allocation_table(self):
+		self.set("credit_allocations", [])
 
 	def create_next(self):
 		# the next invoice's period starts after this invoice ends
@@ -619,7 +627,8 @@ class Invoice(Document):
 		if self.frappe_invoice:
 			client = self.get_frappeio_connection()
 			url = (
-				client.url + "/api/method/frappe.utils.print_format.download_pdf?"
+				client.url
+				+ "/api/method/frappe.utils.print_format.download_pdf?"
 				f"doctype=Sales%20Invoice&name={self.frappe_invoice}&"
 				"format=Frappe%20Cloud&no_letterhead=0"
 			)
