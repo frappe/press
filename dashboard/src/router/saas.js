@@ -23,5 +23,26 @@ export default [
 		path: '/saas/setting',
 		name: 'SaasSetting',
 		component: () => import('../views/saas/SaasSetting.vue')
+	},
+	{
+		path: '/saas/manage',
+		name: 'SaasManage',
+		component: () => import('../views/saas/SaasManage.vue')
+	},
+	{
+		path: '/saas/manage/:appName',
+		name: 'SaasApp',
+		component: () => import('../views/saas/SaasApp.vue'),
+		props: true,
+		children: [
+			{
+				path: 'overview',
+				component: () => import('../views/saas/SaasAppOverview.vue')
+			},
+			{
+				path: 'plan',
+				component: () => import('../views/saas/SaasAppPlan.vue')
+			},
+		]
 	}
 ];
