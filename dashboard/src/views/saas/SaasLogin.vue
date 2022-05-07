@@ -2,6 +2,7 @@
 	<LoginBox
 		v-if="!successMessage"
 		:title="!forgot ? 'Log in to your SaaS account' : 'Reset your password'"
+		:logo="'saas'"
 	>
 		<form class="flex flex-col" @submit.prevent="login">
 			<Input
