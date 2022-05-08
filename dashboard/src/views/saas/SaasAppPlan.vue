@@ -160,12 +160,12 @@ const getFeatureList = features => {
 			</div>
 
 			<h6 class="mt-4 mb-4 text-lg font-semibold">Plan Features</h6>
-			<ol>
+			<ol class="grid grid-cols-1 gap-2 md:grid-cols-2">
 				<li
-					class="mt-1"
+					class="mt-1 flex"
 					v-for="(feature, index) in plansData[currentPlanIndex].features"
 					:key="index"
-				>
+				><div class="mx-2 text-gray-700 rounded-full bg-gray-200 flex items-center justify-center text-sm w-7">{{ index + 1}}</div>
 					<Input type="text" v-model="feature.value" :key="feature" />
 				</li>
 			</ol>
@@ -225,8 +225,9 @@ const getFeatureList = features => {
 				<Input type="text" label="Price in INR" v-model="price_inr" required />
 			</div>
 			<h6 class="mt-4 mb-4 text-lg font-semibold">Plan Features</h6>
-			<ol>
-				<li class="mt-1" v-for="(feature, index) in features" :key="index">
+			<ol class="grid grid-cols-1 gap-2 md:grid-cols-2">
+				<li class="mt-1 flex" v-for="(feature, index) in features" :key="index">
+					<div class="mx-2 text-gray-700 rounded-full bg-gray-200 flex items-center justify-center text-sm w-7">{{ index + 1}}</div>
 					<Input type="text" v-model="feature.value" :key="feature" />
 				</li>
 			</ol>
