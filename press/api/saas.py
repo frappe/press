@@ -188,6 +188,26 @@ def create_plan(plan):
 
 
 @frappe.whitelist()
+def get_sites(app):
+	sites = frappe.db.sql(
+		f"""
+		SELECT
+			site.name, site.status, subscription.plan, subscription.team
+		FROM
+			tabSite site
+		LEFT JOIN
+			`tabSaas App Subscription` subscription
+		ON
+			site.name = subscription.site
+		WHERE
+			(subscription.app = '{app}')
+	""",
+		as_dict=True,
+	)
+	return sites
+
+
+@frappe.whitelist()
 def get_site_sub_info(site, app):
 	"""
 	return: Subscription information for site (plans, active plan, trial)
