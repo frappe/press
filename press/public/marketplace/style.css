@@ -9,3 +9,13 @@
 	overflow: hidden;
 }
 
+@layer components {
+	.footer-col-right,
+	.footer-col-left {
+		@apply pt-[0.8rem] pb-4 leading-8;
+	}
+
+	.footer-col-right {
+		@apply sm:text-right;
+	}
+}
