@@ -15,7 +15,7 @@ states_with_tin = {
 	"Assam": "18",
 	"Bihar": "10",
 	"Chandigarh": "04",
-	"Chattisgarh": "22",
+	"Chhattisgarh": "22",
 	"Dadra and Nagar Haveli": "26",
 	"Daman and Diu": "25",
 	"Delhi": "07",
