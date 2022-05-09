@@ -3,6 +3,9 @@ from frappe.core.utils import find
 from frappe.utils.password import get_decrypted_password
 from press.press.doctype.team.team import Team
 from press.api.account import get_account_request_from_key
+from press.saas.doctype.saas_app_plan.saas_app_plan import (
+	get_app_plan_features,
+)
 from press.utils import get_current_team
 
 from press.press.doctype.site.saas_site import (
@@ -75,6 +78,133 @@ def get_saas_apps():
 @frappe.whitelist()
 def get_app_image_path(app):
 	return frappe.db.get_value("Saas App", app, "image")
+
+
+@frappe.whitelist()
+def get_apps():
+	"""
+	return: All apps created by developer
+	"""
+	apps = frappe.get_all(
+		"Saas App", {"team": get_current_team()}, ["name", "title", "status"]
+	)
+
+	for app in apps:
+		app["count"] = frappe.db.count(
+			"Saas App Subscription", {"status": ("!=", "Disabled"), "app": app.name}
+		)
+
+	return apps
+
+
+@frappe.whitelist()
+def get_app(name):
+	"""
+	return: Fields from saas app
+	"""
+	app = frappe.get_doc("Saas App", name)
+
+	return app
+
+
+@frappe.whitelist()
+def get_plans(name):
+	"""
+	return: Saas plans for app
+	"""
+	plans = frappe.db.get_all(
+		"Saas App Plan",
+		{"app": name},
+		["name", "plan", "site_plan", "enabled"],
+		order_by="creation asc",
+	)
+
+	for plan in plans:
+		features = get_app_plan_features(plan.name)
+		plan.features = [{"id": idx, "value": value} for idx, value in enumerate(features)]
+		plan.price_usd = frappe.db.get_value("Plan", plan.plan, "price_usd")
+		plan.price_inr = frappe.db.get_value("Plan", plan.plan, "price_inr")
+
+	site_plans = frappe.get_all("Plan", {"document_type": "Site"}, pluck="name")
+
+	return {"saas_plans": plans, "site_plans": site_plans}
+
+
+@frappe.whitelist()
+def edit_plan(plan):
+	"""
+	Edit saas plan and initial plan details
+	"""
+	# change saas plan fields(site_plan and features)
+	plan_doc = frappe.get_doc("Saas App Plan", plan["name"])
+	plan_doc.site_plan = plan["site_plan"]
+	plan_doc.features = []
+	features = [feat["value"] for feat in plan["features"]]
+	for feature in features:
+		plan_doc.append("features", {"description": feature})
+	plan_doc.save(ignore_permissions=True)
+
+	# change initial plan fields(name, prices)
+	if plan["plan"] != plan_doc.plan:
+		frappe.rename_doc("Plan", plan_doc.plan, plan["plan"])
+
+	frappe.db.set_value("Plan", plan["plan"], "price_usd", plan["price_usd"])
+	frappe.db.set_value("Plan", plan["plan"], "price_inr", plan["price_inr"])
+
+
+@frappe.whitelist()
+def create_plan(plan):
+	"""
+	Create plan
+	"""
+	print(plan["usd"], plan["inr"], type(plan["usd"]))
+	# create plan
+	plan_doc = frappe.get_doc(
+		{
+			"doctype": "Plan",
+			"plan_name": plan["title"],
+			"name": plan["title"],
+			"document_type": "Saas App",
+			"price_usd": plan["usd"],
+			"price_inr": plan["inr"],
+		}
+	).insert()
+
+	# create saas app plan
+	saas_plan_doc = frappe.get_doc(
+		{
+			"doctype": "Saas App Plan",
+			"plan": plan_doc.name,
+			"site_plan": plan["site_plan"],
+			"app": plan["app"],
+			"enabled": 1,
+		}
+	)
+
+	for feat in plan["features"]:
+		saas_plan_doc.append("features", {"description": feat["value"]})
+
+	saas_plan_doc.insert()
+
+
+@frappe.whitelist()
+def get_sites(app):
+	sites = frappe.db.sql(
+		f"""
+		SELECT
+			site.name, site.status, subscription.plan, subscription.team
+		FROM
+			tabSite site
+		LEFT JOIN
+			`tabSaas App Subscription` subscription
+		ON
+			site.name = subscription.site
+		WHERE
+			(subscription.app = '{app}')
+	""",
+		as_dict=True,
+	)
+	return sites
 
 
 @frappe.whitelist()

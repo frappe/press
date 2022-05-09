@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "status",
+  "team",
   "image",
   "app",
   "title",
@@ -52,6 +53,12 @@
    "fieldtype": "Select",
    "label": "Status",
    "options": "Draft\nPublished"
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team"
   }
  ],
  "image_field": "image",
@@ -66,7 +73,7 @@
    "link_fieldname": "app"
   }
  ],
- "modified": "2022-05-03 13:27:53.217579",
+ "modified": "2022-05-04 12:28:17.478991",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Saas App",
