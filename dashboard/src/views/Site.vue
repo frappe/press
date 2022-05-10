@@ -60,16 +60,11 @@
 
 					<div class="hidden flex-row space-x-3 md:flex">
 						<Button
-							v-if="site.group"
-							:route="`/benches/${site.group}`"
-							icon-left="tool"
-							>Manage Bench
-						</Button>
-						<Button
 							v-for="action in siteActions"
 							:key="action.label"
 							:icon-left="action.icon"
 							:loading="action.loading"
+							:route="action.route"
 							@click="action.action"
 						>
 							{{ action.label }}
@@ -244,6 +239,11 @@ export default {
 							'_blank'
 						);
 					}
+				},
+				this.site.group && {
+					label: 'Manage Bench',
+					icon: 'tool',
+					route: `/benches/${this.site.group}`
 				},
 				this.site.status == 'Active' && {
 					label: 'Login As Administrator',
