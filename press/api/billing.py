@@ -71,17 +71,35 @@ def balances():
 	if not has_bought_credits:
 		return []
 
-	data = frappe.db.get_all(
-		"Balance Transaction",
-		filters={"team": team, "docstatus": 1},
-		fields=["*"],
-		order_by="creation desc",
+	bt = frappe.qb.DocType("Balance Transaction")
+	inv = frappe.qb.DocType("Invoice")
+	query = (
+		frappe.qb.from_(bt)
+		.left_join(inv)
+		.on(bt.invoice == inv.name)
+		.select(
+			bt.name,
+			bt.creation,
+			bt.amount,
+			bt.currency,
+			bt.source,
+			bt.type,
+			bt.ending_balance,
+			inv.period_start,
+		)
+		.where((bt.docstatus == 1) & (bt.team == team))
+		.orderby(bt.creation, order=frappe.qb.desc)
 	)
+
+	data = query.run(as_dict=True)
 	for d in data:
 		d.formatted = dict(
 			amount=fmt_money(d.amount, 2, d.currency),
 			ending_balance=fmt_money(d.ending_balance, 2, d.currency),
 		)
+
+		if d.period_start:
+			d.formatted["invoice_for"] = d.period_start.strftime("%B %Y")
 	return data
 
 
