@@ -142,10 +142,12 @@ def send_mime_mail(**data):
 
 
 @frappe.whitelist(allow_guest=True)
-def event_log(**data):
+def event_log():
 	"""
 	log the webhook and forward it to site
 	"""
+	data = json.loads(frappe.request.data)
+
 	event_data = data["event-data"]
 	headers = event_data["message"]["headers"]
 	message_id = headers["message-id"]
