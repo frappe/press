@@ -5,4 +5,5 @@
   become_user: root
   gather_facts: yes
   roles:
+    - role: docker
     - role: proxysql
