@@ -475,6 +475,12 @@ class Agent:
 			"Add User to ProxySQL", "proxysql/users", data, site=site.name
 		)
 
+	def add_proxysql_backend(self, database_server):
+		data = {
+			"backend": {"ip": database_server.private_ip, "id": database_server.server_id},
+		}
+		return self.create_agent_job("Add Backend to ProxySQL", "proxysql/backends", data)
+
 	def remove_proxysql_user(self, site, username):
 		return self.create_agent_job(
 			"Remove User from ProxySQL",
