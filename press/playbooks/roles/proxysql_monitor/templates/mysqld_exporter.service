@@ -1,0 +1,16 @@
+[Unit]
+Description=Prometheus MySQL Exporter
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/opt/mysqld_exporter/mysqld_exporter --config.my-cnf=/home/frappe/proxysql/monitor.cnf \
+    --web.listen-address=127.0.0.1:9104
+
+SyslogIdentifier=mysqld_exporter
+Restart=always
+RestartSec=1
+StartLimitInterval=0
+
+[Install]
+WantedBy=multi-user.target
