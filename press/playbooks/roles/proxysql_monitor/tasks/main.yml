@@ -28,6 +28,17 @@
     group: root
     mode: 0644
 
+- name: Remove ProxySQL Monitor User
+  mysql_query:
+    login_user: frappe
+    login_password: "{{ proxysql_admin_password }}"
+    login_host: 127.0.0.1
+    login_port: 6032
+    query:
+      - DELETE FROM mysql_users WHERE username = "monitor"
+      - LOAD MYSQL USERS TO RUNTIME
+      - SAVE MYSQL USERS FROM RUNTIME
+      - SAVE MYSQL USERS TO DISK
 
 
 - name: Create ProxySQL Monitoring User
