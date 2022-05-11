@@ -1,0 +1,36 @@
+---
+- name: Create MySQL Exporter Directory
+  file:
+    path: /opt/mysqld_exporter
+    state: directory
+    mode: 0755
+
+- name: Download MySQL Exporter Archive
+  unarchive:
+    src: https://github.com/prometheus/mysqld_exporter/releases/download/v0.12.1/mysqld_exporter-0.12.1.linux-amd64.tar.gz
+    dest: /tmp
+    remote_src: yes
+
+- name: Copy MySQL Exporter Binary
+  copy:
+    src: /tmp/mysqld_exporter-0.12.1.linux-amd64/mysqld_exporter
+    dest: /opt/mysqld_exporter/mysqld_exporter
+    remote_src: yes
+    mode: 0755
+    owner: root
+    group: root
+
+- name: Create MySQL Exporter Systemd Service File
+  template:
+    src: mysqld_exporter.service
+    dest: /etc/systemd/system/mysqld_exporter.service
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Restart MySQL Exporter Service
+  systemd:
+    daemon_reload: true
+    name: mysqld_exporter
+    enabled: yes
+    state: restarted
