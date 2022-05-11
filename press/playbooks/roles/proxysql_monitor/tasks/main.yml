@@ -20,6 +20,28 @@
     owner: root
     group: root
 
+- name: Create MySQL Client Config
+  template:
+    src: monitor.cnf
+    dest: /home/frappe/proxysql/monitor.cnf
+    owner: root
+    group: root
+    mode: 0644
+
+
+
+- name: Create ProxySQL Monitoring User
+  mysql_query:
+    login_user: frappe
+    login_password: "{{ proxysql_admin_password }}"
+    login_host: 127.0.0.1
+    login_port: 6032
+    query:
+      - INSERT INTO mysql_users (username, password, default_hostgroup, default_schema, use_ssl, max_connections) VALUES ("monitor", "monitor", 1, NULL, 1, 16)
+      - LOAD MYSQL USERS TO RUNTIME
+      - SAVE MYSQL USERS FROM RUNTIME
+      - SAVE MYSQL USERS TO DISK
+
 - name: Create MySQL Exporter Systemd Service File
   template:
     src: mysqld_exporter.service
