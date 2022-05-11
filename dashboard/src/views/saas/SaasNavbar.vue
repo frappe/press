@@ -2,11 +2,10 @@
 	<nav class="border-b bg-white">
 		<div class="z-10 mx-auto md:container">
 			<div class="flex h-16 items-center justify-between px-4 sm:px-8">
-				<div class="flex items-center">
-					<div class="shrink-0">
-						<SaasAppSwitcher />
-					</div>
-				</div>
+
+				<FrappeSaasLogo 
+					@dblclick="redirectToSaasHome"
+				/>
 
 				<div class="flex items-center">
 					<Button class="ml-2" icon-left="life-buoy" link="/support"
@@ -42,11 +41,11 @@
 </template>
 
 <script>
-import SaasAppSwitcher from './SaasAppSwitcher.vue';
+import FrappeSaasLogo from '@/components/FrappeSaasLogo.vue';
 export default {
 	name: 'SaasNavbar',
 	components: {
-		SaasAppSwitcher
+		FrappeSaasLogo
 	},
 	data() {
 		return {
@@ -71,6 +70,11 @@ export default {
 					console.log(r);
 				}
 			};
+		}
+	},
+	methods: {
+		redirectToSaasHome() {
+			window.location = '/saas/upgrade'
 		}
 	}
 };

@@ -23,7 +23,7 @@
 				class="text-start mx-2 my-1 flex rounded-md px-4 py-2 text-sm font-medium focus:outline-none"
 			>
 				<svg
-					v-if="item.label == 'Upgrade'"
+					v-if="item.label == 'Subscriptions'"
 					xmlns="http://www.w3.org/2000/svg"
 					viewBox="0 0 24 24"
 					fill="none"
@@ -106,10 +106,10 @@ export default {
 		items() {
 			return [
 				{
-					label: 'Upgrade',
-					route: '/saas/upgrade',
+					label: 'Subscriptions',
+					route: '/saas/subscription',
 					highlight: () => {
-						return this.$route.fullPath.endsWith('/saas/upgrade');
+						return this.$route.fullPath.endsWith('/saas/subscription');
 					}
 				},
 				{
@@ -129,7 +129,7 @@ export default {
 				},
 				{
 					label: 'Settings',
-					route: '/saas/setting',
+					route: '/saas/settings',
 					highlight: () => {
 						return this.$route.fullPath.endsWith('/saas/setting');
 					}

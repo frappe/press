@@ -12,7 +12,7 @@
 						class="mx-auto justify-center lg:container"
 						:class="{ flex: showSaas }"
 					>
-						<SaasSidebar v-if="showSaas" />
+						<Sidebar v-if="showSaas" />
 						<router-view v-slot="{ Component }">
 							<keep-alive
 								:include="[
@@ -41,7 +41,7 @@
 <script>
 import Navbar from '@/components/Navbar.vue';
 import SaasNavbar from '@/views/saas/SaasNavbar.vue';
-import SaasSidebar from '@/views/saas/SaasSidebar.vue';
+import Sidebar from '@/views/saas/Sidebar.vue';
 import UserPrompts from '@/views/UserPrompts.vue';
 import ConfirmDialogs from './components/ConfirmDialogs.vue';
 import NotificationToasts from './components/NotificationToasts.vue';
@@ -50,7 +50,7 @@ export default {
 	components: {
 		Navbar,
 		SaasNavbar,
-		SaasSidebar,
+		Sidebar,
 		UserPrompts,
 		ConfirmDialogs,
 		NotificationToasts

@@ -81,7 +81,7 @@ export default {
 			password: null,
 			errorMessage: null,
 			successMessage: null,
-			redirect_route: '/saas/upgrade'
+			redirect_route: '/saas/subscription'
 		};
 	},
 	watch: {
