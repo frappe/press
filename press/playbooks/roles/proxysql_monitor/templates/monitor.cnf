@@ -1,2 +1,4 @@
 [client]
+user=monitor
+password=monitor
 host={{ server }}
