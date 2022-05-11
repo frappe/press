@@ -48,7 +48,7 @@
     login_host: 127.0.0.1
     login_port: 6032
     query:
-      - INSERT INTO mysql_users (username, password, default_hostgroup, default_schema, use_ssl, max_connections) VALUES ("monitor", "monitor", 1, NULL, 1, 16)
+      - "INSERT INTO mysql_users (username, password, default_hostgroup, default_schema, use_ssl, max_connections) VALUES ('monitor', 'monitor', {{ default_hostgroup }}, NULL, 1, 16)"
       - LOAD MYSQL USERS TO RUNTIME
       - SAVE MYSQL USERS FROM RUNTIME
       - SAVE MYSQL USERS TO DISK
