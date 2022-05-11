@@ -144,6 +144,9 @@ def renew_tls_certificates():
 
 def update_server_tls_certifcate(server, certificate):
 	try:
+		proxysql_admin_password = None
+		if server.doctype == "Proxy Server":
+			proxysql_admin_password = server.get_password("proxysql_admin_password")
 		ansible = Ansible(
 			playbook="tls.yml",
 			server=server,
@@ -151,6 +154,8 @@ def update_server_tls_certifcate(server, certificate):
 				"certificate_private_key": certificate.private_key,
 				"certificate_full_chain": certificate.full_chain,
 				"certificate_intermediate_chain": certificate.intermediate_chain,
+				"is_proxy_server": bool(proxysql_admin_password),
+				"proxysql_admin_password": proxysql_admin_password,
 			},
 		)
 		ansible.run()
