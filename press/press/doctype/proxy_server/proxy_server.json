@@ -34,6 +34,7 @@
   "is_ssh_proxy_setup",
   "proxysql_section",
   "proxysql_admin_password",
+  "proxysql_monitor_password",
   "is_proxysql_setup"
  ],
  "fields": [
@@ -230,10 +231,16 @@
    "fieldtype": "Check",
    "label": "Is ProxySQL Setup",
    "read_only": 1
+  },
+  {
+   "fieldname": "proxysql_monitor_password",
+   "fieldtype": "Password",
+   "label": "ProxySQL Monitor Password",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2022-02-07 11:55:00.552696",
+ "modified": "2022-05-11 10:16:57.741623",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",
