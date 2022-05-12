@@ -15,7 +15,6 @@ import frappe
 import frappe.utils.backups
 from frappe.core.utils import find
 from frappe.utils import get_installed_apps_info, update_progress_bar
-from frappe.utils.backups import BackupGenerator
 from frappe.utils.change_log import get_versions
 from frappe.utils.commands import add_line_after, add_line_before, render_table
 
