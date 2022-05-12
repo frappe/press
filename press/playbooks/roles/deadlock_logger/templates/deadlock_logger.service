@@ -1,0 +1,16 @@
+[Unit]
+Description=Percona Deadlock Logger
+After=network-online.target
+
+[Service]
+Type=simple
+ExecReload=/bin/kill -HUP $MAINPID
+ExecStart=/usr/bin/pt-deadlock-logger --interval 30
+
+SyslogIdentifier=deadlock_logger
+Restart=always
+RestartSec=1
+StartLimitInterval=0
+
+[Install]
+WantedBy=multi-user.target
