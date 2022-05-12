@@ -5,7 +5,8 @@ After=network-online.target
 [Service]
 Type=simple
 ExecReload=/bin/kill -HUP $MAINPID
-ExecStart=/usr/bin/pt-deadlock-logger --interval 30
+ExecStart=/usr/bin/pt-deadlock-logger --interval 30 \
+    --dest D=percona,t=deadlock ,p={{ mariadb_root_password }}
 
 SyslogIdentifier=deadlock_logger
 Restart=always
