@@ -219,20 +219,18 @@ def render_actions_table():
 
 
 def render_site_table(sites_info, version_info):
-	sites_table = [["#", "Site Name", "Frappe", "Status"]]
+	sites_table = [["#", "Site Name", "Frappe"]]
 	available_sites = {}
 
 	for n, site_data in enumerate(sites_info):
-		name, status = site_data["name"], site_data["status"]
+		name = site_data["name"]
 		frappe = version_info[name]
-		if status in ("Active", "Broken"):
-			sites_table.append([n + 1, name, frappe, status])
-			available_sites[name] = {
-				"status": status,
-				"frappe": frappe,
-				"name": name,
-				"branch": version_info,
-			}
+		sites_table.append([n + 1, name, frappe])
+		available_sites[name] = {
+			"frappe": frappe,
+			"name": name,
+			"branch": version_info,
+		}
 
 	render_table(sites_table)
 	return available_sites
