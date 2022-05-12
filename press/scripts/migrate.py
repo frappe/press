@@ -332,20 +332,6 @@ def is_downgrade(cloud_data):
 	return current_version > cloud_version
 
 
-def raise_limits_warning():
-	raise_warn = False
-	files = BackupGenerator(
-		frappe.conf.db_name, frappe.conf.db_name, frappe.conf.db_password
-	).get_recent_backup(older_than=24 * 30)
-
-	for file in files:
-		if file:
-			file_size_in_mb = os.path.getsize(file) / (1024 * 1024)
-			if "database" in file and file_size_in_mb > 500:
-				raise_warn = True
-	return raise_warn
-
-
 @add_line_after
 def select_site():
 	get_all_sites_request = session.post(
@@ -695,16 +681,6 @@ def frappecloud_migrator(local_site):
 		{"title": "Create a new site", "fn": new_site},
 		{"title": "Restore to an existing site", "fn": restore_site},
 	]
-
-	if raise_limits_warning():
-		notice = (
-			"\n"
-			"Note:\n"
-			"* For migrating sites with compressed database backup larger than 500MiB, "
-			"please schedule a migration with us from {}"
-		).format("https://frappecloud.com/migration-request")
-		click.secho(notice, fg="yellow")
-		sys.exit(1)
 
 	# get credentials + auth user + start session
 	try:
