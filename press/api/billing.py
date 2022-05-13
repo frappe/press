@@ -122,7 +122,7 @@ def get_processed_balance_transactions(transactions: List[Dict]):
 		elif bt.type == "Applied To Invoice":
 			processed_balance_transactions.append(bt)
 
-	return reversed(processed_balance_transactions)
+	return list(reversed(processed_balance_transactions))
 
 
 def get_cleaned_up_transactions(transactions: List[Dict]):
