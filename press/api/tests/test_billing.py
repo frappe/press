@@ -187,3 +187,24 @@ class TestBalances(TestCase):
 		# Added credits, must be present
 		self.assertTrue(find(clean_transactions, lambda x: x.name == "BT-2022-00049"))
 		self.assertTrue(find(clean_transactions, lambda x: x.name == "BT-2022-00051"))
+	
+	def test_processed_balances(self):
+		processed_transactions = get_processed_balance_transactions([frappe._dict(d) for d in test_bts])
+
+		self.assertEqual(len(processed_transactions), 6)
+
+		# Testing the order of transactions
+		self.assertEqual(processed_transactions[0].name, "BT-2022-00065")
+		self.assertEqual(processed_transactions[-1].name, "BT-2022-00049")
+
+		# Testing first and last ending balances
+		self.assertEqual(processed_transactions[0].ending_balance, 200)
+		self.assertEqual(processed_transactions[-1].ending_balance, 200)
+
+		# Testing ending balance calculation
+		self.assertEqual(processed_transactions[-1].ending_balance, 200)
+		self.assertEqual(processed_transactions[-2].ending_balance, 700) # Added 500 in credits
+		self.assertEqual(processed_transactions[-3].ending_balance, 400) # Applied to invoice, -300
+		self.assertEqual(processed_transactions[-4].ending_balance, 900) # Added 500 in credits 
+		self.assertEqual(processed_transactions[-5].ending_balance, 400) # Applied to invoice, -500
+		self.assertEqual(processed_transactions[-6].ending_balance, 200) # Applied to invoice, -200
