@@ -1,7 +1,6 @@
 [
  {
   "bulk_actions": 0,
-  "chat": 0,
   "dashboard": 0,
   "desk_access": 0,
   "disabled": 0,
@@ -14,9 +13,6 @@
   "modified": "2020-04-06 22:48:03.538506",
   "name": "Press Admin",
   "notifications": 0,
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "restrict_to_domain": null,
   "role_name": "Press Admin",
   "search_bar": 0,
@@ -26,7 +22,6 @@
  },
  {
   "bulk_actions": 0,
-  "chat": 0,
   "dashboard": 0,
   "desk_access": 0,
   "disabled": 0,
@@ -39,9 +34,6 @@
   "modified": "2020-04-06 22:48:33.006868",
   "name": "Press Member",
   "notifications": 0,
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "restrict_to_domain": null,
   "role_name": "Press Member",
   "search_bar": 0,
