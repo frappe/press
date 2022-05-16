@@ -202,7 +202,9 @@ export default {
 					this.selectedCandidate.build_end,
 					'relative'
 				);
-				let duration = this.selectedCandidate.build_duration.split('.')[0];
+				let duration = this.$formatDuration(
+					this.selectedCandidate.build_duration
+				);
 				return `Completed ${when} in ${duration}`;
 			}
 		},
