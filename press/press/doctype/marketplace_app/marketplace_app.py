@@ -9,6 +9,7 @@ from typing import Dict, List
 from base64 import b64decode
 from press.utils import get_last_doc
 from press.api.github import get_access_token
+from frappe.query_builder.functions import Cast_
 from frappe.website.utils import cleanup_page_name
 from frappe.website.website_generator import WebsiteGenerator
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
@@ -161,18 +162,23 @@ class MarketplaceApp(WebsiteGenerator):
 		context.ratings_summary = ratings_summary
 
 	def get_user_reviews(self) -> List:
-		# TODO: Optimize using frappe.qb & join
-		reviews = frappe.db.get_all(
-			"App User Review",
-			filters={"app": self.name},
-			fields=["title", "rating", "reviewer", "review", "creation"],
+		app_user_review = frappe.qb.DocType("App User Review")
+		user = frappe.qb.DocType("User")
+
+		query = (
+			frappe.qb.from_(app_user_review)
+			.join(user)
+			.on(user.name == app_user_review.reviewer)
+			.select(
+				app_user_review.title,
+				Cast_(5 * app_user_review.rating, "INT").as_("rating"),
+				app_user_review.review,
+				app_user_review.creation,
+				app_user_review.reviewer,
+				user.full_name.as_("user_name"),
+			)
 		)
-
-		for review in reviews:
-			review.rating = int(review.rating * 5)
-			review.user_name = frappe.db.get_value("User", review.reviewer, "full_name")
-
-		return reviews
+		return query.run(as_dict=True)
 
 	def get_user_ratings_summary(self, reviews: List) -> Dict:
 		total_num_reviews = len(reviews)
