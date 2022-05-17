@@ -177,6 +177,7 @@ class MarketplaceApp(WebsiteGenerator):
 				app_user_review.reviewer,
 				user.full_name.as_("user_name"),
 			)
+			.where(app_user_review.app == self.name)
 		)
 		return query.run(as_dict=True)
 
