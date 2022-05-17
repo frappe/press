@@ -125,7 +125,10 @@ five_star_rating -%}
 		<div>
 			<div class="flex flex-row justify-between" style="margin-bottom: 2.25rem;">
 				<h2 class="text-2xl text-gray-900 font-bold">Customer Reviews</h2>
-				{{ button('Write a review') }}
+				<button id="write-review-button"
+					class="inline-flex items-center justify-center px-3 py-1 text-base leading-5 rounded-md focus:outline-none bg-gray-50 hover:bg-gray-100 text-gray-900 focus:shadow-outline-gray">
+					Write a review
+				</button>
 			</div>
 
 			{%- if (user_reviews | length) > 0 -%}
