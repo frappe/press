@@ -161,6 +161,7 @@ class MarketplaceApp(WebsiteGenerator):
 		context.ratings_summary = ratings_summary
 
 	def get_user_reviews(self) -> List:
+		# TODO: Optimize using frappe.qb & join
 		reviews = frappe.db.get_all(
 			"App User Review",
 			filters={"app": self.name},
