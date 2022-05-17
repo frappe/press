@@ -1,9 +1,9 @@
 export default [
 	{
 		path: '/saas/login/:forgot?',
-		name: 'Login',
+		name: 'SaasLogin',
 		component: () =>
-			import(/* webpackChunkName: "login" */ '../views/saas/Login.vue'),
+			import(/* webpackChunkName: "login" */ '../views/saas/SaasLogin.vue'),
 		meta: {
 			isLoginPage: true
 		},

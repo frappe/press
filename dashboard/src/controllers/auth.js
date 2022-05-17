@@ -33,8 +33,7 @@ export default class Auth {
 	}
 	async logout() {
 		localStorage.removeItem('current_team');
-		localStorage.removeItem('current_saas_site');
-		localStorage.removeItem('current_saas_app');
+		localStorage.removeItem('saas_login');
 		if (window.$saas.isSaasLogin) {
 			localStorage.setItem('was_saas_logout', true);
 		}
