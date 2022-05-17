@@ -1,9 +1,9 @@
 export default [
 	{
 		path: '/saas/login/:forgot?',
-		name: 'SaasLogin',
+		name: 'Login',
 		component: () =>
-			import(/* webpackChunkName: "login" */ '../views/saas/SaasLogin.vue'),
+			import(/* webpackChunkName: "login" */ '../views/saas/Login.vue'),
 		meta: {
 			isLoginPage: true
 		},
@@ -11,23 +11,48 @@ export default [
 	},
 	{
 		path: '/saas/billing',
-		name: 'SaasBilling',
-		component: () => import('../views/saas/SaasBilling.vue')
+		name: 'Billing',
+		component: () => import('../views/saas/Billing.vue')
 	},
 	{
-		path: '/saas/upgrade',
-		name: 'SaasUpgrade',
-		component: () => import('../views/saas/SaasUpgrade.vue')
+		path: '/saas/subscription',
+		name: 'SaasSubscription',
+		component: () => import('../views/saas/SubscriptionList.vue')
 	},
 	{
-		path: '/saas/setting',
-		name: 'SaasSetting',
-		component: () => import('../views/saas/SaasSetting.vue')
+		path: '/saas/subscription/:subName',
+		name: 'Subscription',
+		component: () => import('../views/saas/Subscription.vue'),
+		props: true,
+		children: [
+			{
+				path: 'overview',
+				component: () => import('../views/saas/SubscriptionOverview.vue')
+			},
+			{
+				path: 'plan',
+				component: () => import('../views/saas/SubscriptionPlan.vue')
+			},
+			{
+				path: 'database',
+				component: () => import('../views/saas/SubscriptionDatabase.vue')
+			}
+		]
+	},
+	{
+		path: '/saas/new-subscription',
+		name: 'NewSubscription',
+		component: () => import('../views/saas/NewSubscription.vue')
+	},
+	{
+		path: '/saas/settings',
+		name: 'Settings',
+		component: () => import('../views/saas/Settings.vue')
 	},
 	{
 		path: '/saas/manage',
-		name: 'SaasManage',
-		component: () => import('../views/saas/SaasManage.vue')
+		name: 'Manage',
+		component: () => import('../views/saas/Manage.vue')
 	},
 	{
 		path: '/saas/manage/:appName',
@@ -37,11 +62,11 @@ export default [
 		children: [
 			{
 				path: 'overview',
-				component: () => import('../views/saas/SaasAppOverview.vue')
+				component: () => import('../views/saas/AppOverview.vue')
 			},
 			{
 				path: 'plan',
-				component: () => import('../views/saas/SaasAppPlan.vue')
+				component: () => import('../views/saas/AppPlan.vue')
 			},
 		]
 	}
