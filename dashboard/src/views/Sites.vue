@@ -51,9 +51,6 @@
 					@success="handleAddPrepaidCreditsSuccess"
 				/>
 			</div>
-<<<<<<< HEAD
-<<<<<<< HEAD
-
 			<div class="mb-3 flex flex-row justify-between">
 				<SiteAndBenchSearch class="w-full sm:w-60 lg:w-96" />
 
@@ -74,16 +71,6 @@
 			<div v-if="$resources.benches.data == null">
 				<div class="flex flex-1 items-center py-4 focus:outline-none">
 					<h2 class="text-lg font-semibold">Sites</h2>
-=======
-			<!-- <div v-if="benches == null">
-=======
-			<div v-if="benches == null">
->>>>>>> def60e86 (fix: Revert changes in Sites.vue view)
-				<div class="flex items-center flex-1 py-4 focus:outline-none">
-					<h2 class="text-lg font-semibold">
-						Sites
-					</h2>
->>>>>>> 1ad99d49 (feat: Complete Main design)
 				</div>
 				<div class="rounded-md bg-gray-50 px-4 py-3">
 					<Loading />
