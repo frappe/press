@@ -1,6 +1,7 @@
 import frappe
 from frappe.core.utils import find
 from frappe.utils.password import get_decrypted_password
+from press.api.site import overview, protected, get
 from press.press.doctype.team.team import Team
 from press.api.account import get_account_request_from_key
 from press.saas.doctype.saas_app_plan.saas_app_plan import (
@@ -73,11 +74,6 @@ def get_saas_apps():
 		["name", "title", "image", "description", "signup_url"],
 	)
 	return apps
-
-
-@frappe.whitelist()
-def get_app_image_path(app):
-	return frappe.db.get_value("Saas App", app, "image")
 
 
 @frappe.whitelist()
@@ -157,7 +153,6 @@ def create_plan(plan):
 	"""
 	Create plan
 	"""
-	print(plan["usd"], plan["inr"], type(plan["usd"]))
 	# create plan
 	plan_doc = frappe.get_doc(
 		{
@@ -208,27 +203,52 @@ def get_sites(app):
 
 
 @frappe.whitelist()
-def get_site_sub_info(site, app):
+@protected("Saas App Subscription")
+def get_plans_info(name):
 	"""
 	return: Subscription information for site (plans, active plan, trial)
 	"""
+	app, site, app_name = frappe.db.get_value(
+		"Saas App Subscription", name, ["app", "site", "app_name"]
+	)
 	saas_app = frappe.get_doc("Saas App", app)
 	plans = saas_app.get_plans(site)
 	trial_date = frappe.db.get_value("Site", site, "trial_end_date")
 
-	site_data = {"plans": plans, "trial_end_date": trial_date}
+	site_data = {
+		"plans": plans,
+		"trial_end_date": trial_date,
+		"site": site,
+		"app_name": app_name,
+	}
 
 	return site_data
 
 
 @frappe.whitelist()
-def change_app_plan(site, app, new_plan):
-	subscription_name = frappe.get_all(
+def get_subscriptions():
+	subscriptions = frappe.get_all(
 		"Saas App Subscription",
-		filters={"site": site, "app": app["app"], "status": ("!=", "Disabled")},
-		pluck="name",
+		{"status": ("!=", "Disabled"), "team": get_current_team()},
+		["name", "status", "site", "app_name", "plan"],
 	)
-	subscription = frappe.get_doc("Saas App Subscription", subscription_name[0])
+
+	return subscriptions
+
+
+@frappe.whitelist()
+@protected("Saas App Subscription")
+def subscription_overview(name):
+	subscription = frappe.get_doc("Saas App Subscription", name)
+	site_overview = overview(subscription.site)
+	site = get(subscription.site)
+	return {"subscription": subscription, "site_overview": site_overview, "site": site}
+
+
+@frappe.whitelist()
+@protected("Saas App Subscription")
+def change_app_plan(name, new_plan):
+	subscription = frappe.get_doc("Saas App Subscription", name)
 	subscription.change_plan(new_plan)
 
 
