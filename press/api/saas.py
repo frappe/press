@@ -21,28 +21,6 @@ from press.utils.billing import get_erpnext_com_connection
 
 
 @frappe.whitelist()
-def get_saas_subscriptions_for_team():
-	"""
-	return: Active saas subscriptions for team
-	"""
-	team = get_current_team()
-	image_paths = {
-		app.app: app.image for app in frappe.get_all("Saas App", fields=["app", "image"])
-	}
-
-	subscriptions = frappe.get_all(
-		"Saas App Subscription",
-		filters={"team": team, "status": ("!=", "Disabled")},
-		fields=["name", "plan", "site", "app", "app_name"],
-	)
-
-	for sub in subscriptions:
-		sub["image_path"] = image_paths[sub["app"]]
-
-	return subscriptions
-
-
-@frappe.whitelist()
 def get_saas_site_and_app():
 	"""
 	return: Any active saas subscription for team to set it as default for loading dashbaord
@@ -94,13 +72,12 @@ def get_apps():
 
 
 @frappe.whitelist()
+@protected("Saas App")
 def get_app(name):
 	"""
 	return: Fields from saas app
 	"""
-	app = frappe.get_doc("Saas App", name)
-
-	return app
+	return frappe.get_doc("Saas App", name)
 
 
 @frappe.whitelist()
@@ -227,22 +204,22 @@ def get_plans_info(name):
 
 @frappe.whitelist()
 def get_subscriptions():
-	subscriptions = frappe.get_all(
+	return frappe.get_all(
 		"Saas App Subscription",
 		{"status": ("!=", "Disabled"), "team": get_current_team()},
 		["name", "status", "site", "app_name", "plan"],
 	)
-
-	return subscriptions
 
 
 @frappe.whitelist()
 @protected("Saas App Subscription")
 def subscription_overview(name):
 	subscription = frappe.get_doc("Saas App Subscription", name)
-	site_overview = overview(subscription.site)
-	site = get(subscription.site)
-	return {"subscription": subscription, "site_overview": site_overview, "site": site}
+	return {
+		"subscription": subscription,
+		"site_overview": overview(subscription.site),
+		"site": get(subscription.site),
+	}
 
 
 @frappe.whitelist()

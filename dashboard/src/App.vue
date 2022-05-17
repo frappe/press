@@ -65,10 +65,12 @@ export default {
 			if (
 				this.$auth.isLoggedIn &&
 				this.$saas.isSaasLogin &&
-				localStorage.getItem('current_saas_site')
+				localStorage.getItem('saas_login')
 			) {
+				console.log('now')
 				return true;
 			}
+			console.log('oh no')
 			return false;
 		}
 	},

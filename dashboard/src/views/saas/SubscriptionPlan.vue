@@ -4,7 +4,7 @@
 			<div class="flex items-center justify-between">
 				<div>
 					<h1 class="text-xl font-semibold">Change Plan</h1>
-					<p class="text-sm mt-1">{{ app }} plans available for site {{ site }}</p>
+					<p class="text-sm mt-1">{{ app }} plans available for {{ site }}</p>
 				</div>
 				<Button
 					:disabled="activePlan == selectedPlan"
