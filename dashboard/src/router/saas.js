@@ -35,7 +35,12 @@ export default [
 			},
 			{
 				path: 'database',
-				component: () => import('../views/saas/SubscriptionDatabase.vue')
+				component: () => import('../views/SiteDatabase.vue')
+			},
+			{
+				path: 'jobs/:jobName?',
+				component: () => import('../views/saas/SiteJobs.vue'),
+				props: true
 			}
 		]
 	},

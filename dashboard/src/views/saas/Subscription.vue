@@ -5,9 +5,11 @@
 				<Tabs class="pb-8" :tabs="tabs">
 					<router-view v-slot="{ Component, route }">
 						<component
+							v-if="subData"
 							:is="Component"
 							:subName="props.subName"
 							:subData="subData"
+							:site="subData.site"
 						></component>
 					</router-view>
 				</Tabs>
@@ -40,12 +42,13 @@ const tabs = computed(() => {
 	let tabs = [
 		{ label: 'Overview', route: 'overview' },
 		{ label: 'Plans', route: 'plan' },
-		{ label: 'Backups', route: 'database' }
+		{ label: 'Backups', route: 'database' },
+		{ label: 'Jobs', route: 'jobs' }
 	];
 
 	let tabsByStatus = {
-		Draft: ['Overview', 'Plans', 'Backups'],
-		Published: ['Overview', 'Plans', 'Backups']
+		Draft: ['Overview', 'Plans', 'Backups', 'Jobs'],
+		Published: ['Overview', 'Plans', 'Backups', 'Jobs']
 	};
 	if (props.subName) {
 		let tabsToShow = tabsByStatus['Draft'];
