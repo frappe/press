@@ -9,9 +9,7 @@ const props = defineProps({ subData: Object });
 </script>
 
 <template>
-	<div 
-		class="grid grid-cols-1 gap-5 sm:grid-cols-2"
-		v-if="subData">
+	<div class="grid grid-cols-1 gap-5 sm:grid-cols-2" v-if="subData">
 		<SiteOverviewInfo :site="subData.site" :info="subData.site_overview.info" />
 		<SiteOverviewRecentActivity
 			:site="subData.subscription.site"

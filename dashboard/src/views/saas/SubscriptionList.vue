@@ -19,28 +19,25 @@ const sites = computed(() => {
 	return subscriptions.data;
 });
 
-const badge = (status) => {
+const badge = status => {
 	let color = '';
 	if (status == 'Active') {
-		color = 'green'
+		color = 'green';
 	} else {
-		color = 'grey'
+		color = 'grey';
 	}
 	return {
 		color: color,
 		status: status
 	};
-}
-
+};
 </script>
 <template>
 	<div v-if="subscriptions" class="mt-8 flex-1">
-		<div  class="flex items-center justify-between pb-4">
+		<div class="flex items-center justify-between pb-4">
 			<h3 class="text-xl font-bold">Subscriptions</h3>
 			<router-link to="/saas/new-subscription">
-			<Button 
-				 type="primary" 
-				iconLeft="plus"> New Subscription </Button>
+				<Button type="primary" iconLeft="plus"> New Subscription </Button>
 			</router-link>
 		</div>
 		<div
@@ -80,7 +77,6 @@ const badge = (status) => {
 								<FeatherIcon name="external-link" class="ml-1 h-3 w-3" />
 							</Link>
 						</div>
-
 					</div>
 				</router-link>
 			</div>

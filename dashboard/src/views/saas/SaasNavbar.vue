@@ -2,10 +2,7 @@
 	<nav class="border-b bg-white">
 		<div class="z-10 mx-auto md:container">
 			<div class="flex h-16 items-center justify-between px-4 sm:px-8">
-
-				<FrappeSaasLogo 
-					@dblclick="redirectToSaasHome"
-				/>
+				<FrappeSaasLogo @dblclick="redirectToSaasHome" />
 
 				<div class="flex items-center">
 					<Button class="ml-2" icon-left="life-buoy" link="/support"
@@ -74,7 +71,7 @@ export default {
 	},
 	methods: {
 		redirectToSaasHome() {
-			window.location = '/saas/upgrade'
+			window.location = '/saas/upgrade';
 		}
 	}
 };

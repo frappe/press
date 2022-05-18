@@ -1,5 +1,8 @@
 <template>
-	<div class="flex-1 p-8" v-if="$account.onboarding && !$account.onboarding.complete">
+	<div
+		class="flex-1 p-8"
+		v-if="$account.onboarding && !$account.onboarding.complete"
+	>
 		<div class="mx-auto mb-10 lg:w-1/2">
 			<Card
 				title="Welcome to Frappe Cloud"

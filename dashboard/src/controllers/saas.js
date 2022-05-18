@@ -12,9 +12,9 @@ export default class Saas {
 				.map(d => [d[0], decodeURIComponent(d[1])])
 		);
 		this.sub = async () => {
-		// returns a random active saas subscription for team for loading default view of saas dashboard
+			// returns a random active saas subscription for team for loading default view of saas dashboard
 			let team = localStorage.getItem('current_team');
-			return await call('press.api.saas.get_saas_site_and_app', { team })
+			return await call('press.api.saas.get_saas_site_and_app', { team });
 		};
 
 		this.isSaasLogin = this.cookie.user_id && this.cookie.user_id !== 'Guest';

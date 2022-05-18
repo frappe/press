@@ -36,7 +36,7 @@ import AppPlanCard from './AppPlanCard.vue';
 
 export default {
 	name: 'SubscriptionPlan',
-	props: {'subName': String, 'subData': Object},
+	props: { subName: String, subData: Object },
 	components: {
 		AppPlanCard
 	},
@@ -82,7 +82,7 @@ export default {
 					this.site = result.site;
 					this.app = result.app_name;
 				}
-			}
+			};
 		},
 		changePlan() {
 			return {
@@ -104,7 +104,7 @@ export default {
 						title: e,
 						icon: 'x',
 						color: 'red'
-					})
+					});
 				}
 			};
 		}

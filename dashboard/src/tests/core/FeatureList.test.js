@@ -2,7 +2,6 @@ import { mount } from '@vue/test-utils';
 import { describe, expect, test } from 'vitest';
 import FeatureList from '@/components/FeatureList.vue';
 
-
 describe('FeatureList Component', () => {
 	test('feature list renders with 2 features in correct order', async () => {
 		expect(FeatureList).toBeTruthy();
