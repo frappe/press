@@ -39,7 +39,10 @@ class TestMarketplaceApp(unittest.TestCase):
 				"test_reviews": [{"rating": 5}, {"rating": 5}, {"rating": 5}],
 				"expected_result": {1: 0, 2: 0, 3: 0, 4: 0, 5: 100},
 			},
-			{"test_reviews": [], "expected_result": {1: 0, 2: 0, 3: 0, 4: 0, 5: 0},},
+			{
+				"test_reviews": [],
+				"expected_result": {1: 0, 2: 0, 3: 0, 4: 0, 5: 0},
+			},
 		]
 
 		for test_case in test_table:
