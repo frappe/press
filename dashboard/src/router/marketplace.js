@@ -6,6 +6,12 @@ export default [
 		props: true
 	},
 	{
+		path: '/user-review/:marketplaceApp',
+		name: 'ReviewMarketplaceApp',
+		component: () => import('@/views/ReviewMarketplaceApp.vue'),
+		props: true
+	},
+	{
 		path: '/marketplace',
 		name: 'Marketplace',
 		component: () =>
