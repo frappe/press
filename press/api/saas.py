@@ -18,6 +18,7 @@ from press.press.doctype.site.saas_site import (
 from press.press.doctype.site.saas_pool import get as get_pooled_saas_site
 from press.press.doctype.site.erpnext_site import get_erpnext_domain
 from press.utils.billing import get_erpnext_com_connection
+import wrapt
 
 
 @frappe.whitelist()
@@ -104,7 +105,8 @@ def get_plans(name):
 
 
 @frappe.whitelist()
-def edit_plan(plan):
+@protected("Saas App")
+def edit_plan(plan, name):
 	"""
 	Edit saas plan and initial plan details
 	"""
@@ -126,7 +128,8 @@ def edit_plan(plan):
 
 
 @frappe.whitelist()
-def create_plan(plan):
+@protected("Saas App")
+def create_plan(plan, name):
 	"""
 	Create plan
 	"""
