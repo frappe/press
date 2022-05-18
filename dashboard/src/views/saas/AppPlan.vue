@@ -42,7 +42,8 @@ let sitePlans = computed(() => {
 
 let editPlan = async plan => {
 	let result = await call('press.api.saas.edit_plan', {
-		plan: plan
+		plan: plan,
+		name: props.app.name
 	});
 };
 
@@ -56,7 +57,8 @@ let createPlan = async () => {
 		inr: price_inr._value
 	};
 	let result = await call('press.api.saas.create_plan', {
-		plan: plan
+		plan: plan,
+		name: props.app.name
 	});
 
 	if (result) {
