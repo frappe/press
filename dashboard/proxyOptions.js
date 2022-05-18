@@ -5,7 +5,7 @@ module.exports = {
 	'^/(app|api|assets|files|marketplace)': {
 		target: `http://localhost:${webserver_port}`,
 		ws: true,
-		router: function(req) {
+		router: function (req) {
 			const site_name = req.headers.host.split(':')[0];
 			return `http://${site_name}:${webserver_port}`;
 		}

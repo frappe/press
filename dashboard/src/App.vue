@@ -67,10 +67,10 @@ export default {
 				this.$saas.isSaasLogin &&
 				localStorage.getItem('saas_login')
 			) {
-				console.log('now')
+				console.log('now');
 				return true;
 			}
-			console.log('oh no')
+			console.log('oh no');
 			return false;
 		}
 	},

@@ -67,7 +67,7 @@ export default [
 			{
 				path: 'plan',
 				component: () => import('../views/saas/AppPlan.vue')
-			},
+			}
 		]
 	}
 ];
