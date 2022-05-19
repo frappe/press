@@ -73,7 +73,7 @@ const dropdownItems = (team_name, site_name) => {
 			<Card title="Card" />
 		</div> -->
 		<Card title="Customer Sites" v-if="sitesList">
-			<div v-for="site in sitesList" :key="site.name">
+			<div class="my-2" v-for="site in sitesList" :key="site.name">
 				<div class="flex items-center justify-between sm:justify-start">
 					<div class="text-base sm:w-4/12">
 						{{ site.name }}
@@ -93,7 +93,9 @@ const dropdownItems = (team_name, site_name) => {
 						right
 					>
 						<template v-slot="{ toggleDropdown }">
-							<Button icon="more-horizontal" @click="toggleDropdown()" />
+							<Button icon-right="chevron-down" @click="toggleDropdown()"
+								>Actions</Button
+							>
 						</template>
 					</Dropdown>
 				</div>
