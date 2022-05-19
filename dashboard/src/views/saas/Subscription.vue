@@ -1,23 +1,22 @@
 <template>
-	<div class="mt-8 flex-1">
+	<div class="mt-8 flex-1" v-if="subData">
 		<div class="text-base text-gray-700">
 			<div class="px-4 sm:px-8">
 				<div class="text-base text-gray-700">
-					<router-link to="/saas/manage" class="hover:text-gray-800">
-						← Back to Apps
+					<router-link to="/saas/subscription" class="hover:text-gray-800">
+						← Back to Subscriptions
 					</router-link>
 				</div>
 
 				<div
-					v-if="app.data"
 					class="my-4 flex flex-col space-y-3 md:flex-row md:items-baseline md:justify-between md:space-y-0"
 				>
 					<div class="mt-2 flex items-center">
-						<h1 class="text-2xl font-bold">{{ app.data.title }}</h1>
+						<h1 class="text-2xl font-bold">{{ subData.site.name }}</h1>
 						<Badge
 							class="ml-4 hidden md:inline-block"
-							:status="app.data.status"
-							>{{ app.data.status }}</Badge
+							:status="subData.site.status"
+							>{{ subData.site.status }}</Badge
 						>
 					</div>
 				</div>
@@ -25,9 +24,10 @@
 				<Tabs class="pb-8" :tabs="tabs">
 					<router-view v-slot="{ Component, route }">
 						<component
-							v-if="app.data"
 							:is="Component"
-							:app="app.data"
+							:subName="props.subName"
+							:subData="subData"
+							:site="subData.site"
 						></component>
 					</router-view>
 				</Tabs>
@@ -41,28 +41,37 @@ import Tabs from '@/components/Tabs.vue';
 import { computed } from 'vue';
 import useResource from '@/composables/resource';
 
-const props = defineProps({ appName: String });
+const props = defineProps({ subName: String });
 
-const app = useResource({
-	method: 'press.api.saas.get_app',
-	auto: true,
+const subscription = useResource({
+	method: 'press.api.saas.subscription_overview',
 	params: {
-		name: props.appName
+		name: props.subName
+	},
+	auto: true,
+	onSuccess(r) {
+		console.log(r);
 	}
 });
 
+const subData = computed(() => {
+	return subscription.data;
+});
+
 const tabs = computed(() => {
-	let tabRoute = subRoute => `/saas/manage/${props.appName}/${subRoute}`;
+	let tabRoute = subRoute => `/saas/subscription/${props.subName}/${subRoute}`;
 	let tabs = [
 		{ label: 'Overview', route: 'overview' },
-		{ label: 'Plans', route: 'plan' }
+		{ label: 'Plans', route: 'plan' },
+		{ label: 'Backups', route: 'database' },
+		{ label: 'Jobs', route: 'jobs' }
 	];
 
 	let tabsByStatus = {
-		Draft: ['Overview', 'Plans'],
-		Published: ['Overview', 'Plans']
+		Draft: ['Overview', 'Plans', 'Backups', 'Jobs'],
+		Published: ['Overview', 'Plans', 'Backups', 'Jobs']
 	};
-	if (props.appName) {
+	if (props.subName) {
 		let tabsToShow = tabsByStatus['Draft'];
 		if (tabsToShow?.length) {
 			tabs = tabs.filter(tab => tabsToShow.includes(tab.label));
