@@ -1,11 +1,12 @@
 import { rest } from 'msw';
+import router from '@/router';
 import fetch from 'node-fetch';
 import { setupServer } from 'msw/node';
 import { config } from '@vue/test-utils';
 import resourceManager from '@/resourceManager';
-import router from '@/router';
 import { components } from '@/components/global/register';
 import { afterAll, afterEach, beforeAll, vi } from 'vitest';
+import outsideClickDirective from '@/components/global/outsideClickDirective';
 
 const FAKE_BASE_URL = 'http://fc.tests';
 
@@ -35,7 +36,7 @@ afterAll(() => server.close());
 
 afterEach(() => server.resetHandlers());
 
-function setupGlobalConfig(config) {
+export function setupGlobalConfig(config) {
 	const globalComponents = {};
 	for (let path in components) {
 		let component = components[path];
@@ -45,4 +46,7 @@ function setupGlobalConfig(config) {
 
 	config.global.components = globalComponents;
 	config.global.plugins = [resourceManager, router];
+	config.global.directives = {
+		'on-outside-click': outsideClickDirective
+	};
 }
