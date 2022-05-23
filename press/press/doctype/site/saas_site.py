@@ -17,6 +17,7 @@ class SaasSite(Site):
 					"bench": get_saas_bench(self.app),
 					"apps": [{"app": app} for app in get_saas_apps(self.app)],
 					"team": "Administrator",
+					"standby_for": app,
 					"account_request": account_request.name,
 					"subscription_plan": get_saas_site_plan(self.app),
 					"trial_end_date": frappe.utils.add_days(None, 14),
