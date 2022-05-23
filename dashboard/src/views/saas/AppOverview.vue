@@ -65,13 +65,6 @@ const dropdownItems = (team_name, site_name) => {
 
 <template>
 	<div>
-		<!-- <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-			<Card title="Sites">
-				<Badge class="pointer-events-none" color="yellow" status="Active" />
-			</Card>
-			<Card title="Card" />
-			<Card title="Card" />
-		</div> -->
 		<Card title="Customer Sites" v-if="sitesList">
 			<div class="my-2" v-for="site in sitesList" :key="site.name">
 				<div class="flex items-center justify-between sm:justify-start">
