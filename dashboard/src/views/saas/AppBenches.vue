@@ -22,8 +22,8 @@ const benchData = computed(() => {
 	<div class="">
 		<div class="pb-4">
 			<div class="flex items-center justify-between">
-				<h1 class="text-xl font-bold">Manage benches for {{ app.title }}</h1>
-				<router-link type="primary" iconLeft="plus" to="/benches/new">
+				<div></div>
+				<router-link type="primary" iconLeft="plus" :to="`/benches/new/${app.name}`">
 					<Button icon-left="plus"> New Bench </Button>
 				</router-link>
 			</div>
@@ -41,17 +41,17 @@ const benchData = computed(() => {
 				<hr class="mb-2" />
 				<div class="flex items-center justify-between py-2">
 					<p class="w-fit">Active Sites</p>
-					<Badge class="w-fit" status="Updating">{{
+					<Badge class="w-fit" status="Updating">• {{
 						group.active_sites
 					}}</Badge>
 				</div>
 				<div class="flex items-center justify-between py-2">
 					<p class="w-fit">Broken Sites</p>
-					<Badge class="w-fit" status="Broken">{{ group.broken_sites }}</Badge>
+					<Badge class="w-fit" status="Broken">• {{ group.broken_sites }}</Badge>
 				</div>
 				<div class="flex items-center justify-between py-2">
 					<p class="w-fit">Suspended Sites</p>
-					<Badge class="w-fit" status="Pending">{{
+					<Badge class="w-fit" status="Pending">• {{
 						group.suspended_sites
 					}}</Badge>
 				</div>

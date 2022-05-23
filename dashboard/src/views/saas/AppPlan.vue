@@ -27,7 +27,6 @@ const plans = useResource({
 
 let plansData = computed(() => {
 	if (plans.data) {
-		console.log(plans.data.saas_plans);
 		return plans.data.saas_plans;
 	}
 	return [];

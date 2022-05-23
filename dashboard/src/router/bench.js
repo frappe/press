@@ -1,6 +1,6 @@
 export default [
 	{
-		path: '/benches/new',
+		path: '/benches/new/:saas_app',
 		name: 'NewBench',
 		component: () => import('../views/NewBench.vue'),
 		props: true
