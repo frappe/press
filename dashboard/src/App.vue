@@ -9,7 +9,7 @@
 					<SaasNavbar v-if="showSaas" />
 					<Navbar v-if="$auth.isLoggedIn && !showSaas" />
 					<div
-						class="mx-auto justify-center lg:container"
+						class="mx-auto justify-start lg:container"
 						:class="{ flex: showSaas }"
 					>
 						<Sidebar v-if="showSaas" />
@@ -67,10 +67,8 @@ export default {
 				this.$saas.isSaasLogin &&
 				localStorage.getItem('saas_login')
 			) {
-				console.log('now');
 				return true;
 			}
-			console.log('oh no');
 			return false;
 		}
 	},
