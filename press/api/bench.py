@@ -53,6 +53,7 @@ def get(name):
 		"status": "Active" if active_benches else "Awaiting Deploy",
 		"last_updated": group.modified,
 		"creation": group.creation,
+		"saas_app": group.saas_app or "",
 	}
 
 

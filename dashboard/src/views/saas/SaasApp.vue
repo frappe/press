@@ -55,12 +55,13 @@ const tabs = computed(() => {
 	let tabRoute = subRoute => `/saas/manage/${props.appName}/${subRoute}`;
 	let tabs = [
 		{ label: 'Overview', route: 'overview' },
+		{ label: 'Benches', route: 'benches' },
 		{ label: 'Plans', route: 'plan' }
 	];
 
 	let tabsByStatus = {
-		Draft: ['Overview', 'Plans'],
-		Published: ['Overview', 'Plans']
+		Draft: ['Overview', 'Plans', 'Benches'],
+		Published: ['Overview', 'Plans', 'Benches']
 	};
 	if (props.appName) {
 		let tabsToShow = tabsByStatus['Draft'];

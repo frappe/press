@@ -50,7 +50,7 @@ export default {
 			dropdownItems: [
 				{
 					label: 'Settings',
-					action: () => this.$router.push('/saas/setting')
+					action: () => this.$router.push('/saas/settings')
 				},
 				{
 					label: 'Logout',

@@ -2,6 +2,9 @@ import frappe
 from frappe.core.utils import find
 from frappe.utils.password import get_decrypted_password
 from press.api.site import overview, protected, get
+from press.api.bench import options
+from press.utils import unique
+from press.press.doctype.app.app import new_app as new_app_doc
 from press.press.doctype.team.team import Team
 from press.api.account import get_account_request_from_key
 from press.saas.doctype.saas_app_plan.saas_app_plan import (
@@ -209,6 +212,155 @@ def subscription_overview(name):
 def change_app_plan(name, new_plan):
 	subscription = frappe.get_doc("Saas App Subscription", name)
 	subscription.change_plan(new_plan)
+
+
+@frappe.whitelist()
+def get_benches(name):
+	groups = frappe.get_all(
+		"Release Group",
+		{"team": get_current_team(), "saas_app": name},
+		["name", "title"],
+	)
+
+	for group in groups:
+		group["active_sites"] = frappe.db.count(
+			"Site", {"group": group["name"], "status": "Active"}
+		)
+		group["broken_sites"] = frappe.db.count(
+			"Site", {"group": group["name"], "status": "Broken"}
+		)
+		group["suspended_sites"] = frappe.db.count(
+			"Site", {"group": group["name"], "status": "Suspended"}
+		)
+
+		active_benches = frappe.get_all(
+			"Bench",
+			{"group": group["name"], "status": "Active"},
+			limit=1,
+			order_by="creation desc",
+		)
+		group["status"] = "Active" if active_benches else "Awaiting Deploy"
+
+	data = {
+		"groups": groups,
+		"active_group": frappe.db.get_value("Saas Settings", name, "group"),
+	}
+
+	return data
+
+
+@frappe.whitelist()
+def options_for_saas_app():
+	versions = options(only_by_current_team=True)["versions"]
+	filtered_apps = []
+	for version in versions:
+		# Remove Frappe Framework
+		version["apps"] = [app for app in version["apps"] if app["name"] != "frappe"]
+
+		for app in version["apps"]:
+			if not saas_app_exists(app["name"]):
+				for source in app["sources"]:
+					source["version"] = version["name"]
+				filtered_apps.append(app)
+
+			else:
+				saas_app = frappe.get_doc("Saas App", app["name"])
+				saas_versions = [v.version for v in saas_app.sources]
+
+				if version["name"] not in saas_versions:
+					for source in app["sources"]:
+						source["version"] = version["name"]
+					filtered_apps.append(app)
+
+	aggregated_sources = {}
+
+	for app in filtered_apps:
+		aggregated_sources.setdefault(app["name"], []).extend(app["sources"])
+		# Remove duplicate sources
+		aggregated_sources[app["name"]] = unique(
+			aggregated_sources[app["name"]], lambda x: x["name"]
+		)
+
+	saas_options = []
+	for app_name, sources in aggregated_sources.items():
+		app = find(filtered_apps, lambda x: x["name"] == app_name)
+		saas_options.append(
+			{
+				"name": app_name,
+				"sources": sources,
+				"source": app["source"],
+				"title": app["title"],
+			}
+		)
+
+	return saas_options
+
+
+def saas_app_exists(app: str) -> bool:
+	"""Returns `True` if this `app` already exists as Saas App or else `False`"""
+	return frappe.db.exists("Saas App", app)
+
+
+@frappe.whitelist()
+def new_app(app):
+	name = app["name"]
+	team = get_current_team()
+
+	if frappe.db.exists("App", name):
+		app_doc = frappe.get_doc("App", name)
+	else:
+		app_doc = new_app_doc(name, app["title"])
+
+	source = app_doc.add_source(
+		app["version"],
+		app["repository_url"],
+		app["branch"],
+		team,
+		app["github_installation_id"],
+	)
+
+	return add_app(source.name, app_doc.name)
+
+
+@frappe.whitelist()
+def add_app(source, app):
+	if not saas_app_exists(app):
+		supported_versions = frappe.get_all(
+			"App Source Version", filters={"parent": source}, pluck="version"
+		)
+		saas_app = frappe.get_doc(
+			doctype="Saas App",
+			app=app,
+			team=get_current_team(),
+			description="Please add a short description about your app here...",
+			sources=[{"version": v, "source": source} for v in supported_versions],
+		).insert()
+
+	else:
+		saas_app = frappe.get_doc("Saas App", app)
+
+		if saas_app.team != get_current_team():
+			frappe.throw(
+				f"The app {saas_app.name} already exists and is owned by some other team."
+			)
+
+	# Versions on saas_app
+	versions = [v.version for v in saas_app.sources]
+
+	app_source = frappe.get_doc("App Source", source)
+	# Versions on this app `source`
+	app_source_versions = [v.version for v in app_source.versions]
+
+	version_difference = set(app_source_versions) - set(versions)
+	if version_difference:
+		# App source contains version not yet in saas_app
+		for version in version_difference:
+			saas_app.append("sources", {"source": source, "version": version})
+			saas_app.save()
+	else:
+		frappe.throw("A saas_app already exists with the given versions!")
+
+	return saas_app.name
 
 
 # ----------------------------- SIGNUP APIs ---------------------------------
