@@ -402,7 +402,7 @@ class ReleaseGroup(Document):
 		self.add_server(server, deploy=True)
 
 
-def new_release_group(title, version, apps, team=None, cluster=None):
+def new_release_group(title, version, apps, team=None, cluster=None, saas_app=""):
 	if cluster:
 		server = frappe.get_all(
 			"Server",
@@ -421,6 +421,7 @@ def new_release_group(title, version, apps, team=None, cluster=None):
 			"apps": apps,
 			"servers": servers,
 			"team": team,
+			"saas_app": saas_app,
 		}
 	).insert()
 	return group

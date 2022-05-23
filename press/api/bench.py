@@ -34,7 +34,7 @@ def new(bench):
 
 	apps = [{"app": app["name"], "source": app["source"]} for app in bench["apps"]]
 	group = new_release_group(
-		bench["title"], bench["version"], apps, team.name, bench["cluster"]
+		bench["title"], bench["version"], apps, team.name, bench["cluster"], bench["saas_app"]
 	)
 	return group.name
 
