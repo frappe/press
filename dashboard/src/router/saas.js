@@ -12,17 +12,26 @@ export default [
 	{
 		path: '/saas/billing',
 		name: 'Billing',
-		component: () => import('../views/saas/Billing.vue')
+		component: () => import('../views/saas/Billing.vue'),
+		meta: {
+			isSaasPage: true
+		}
 	},
 	{
 		path: '/saas/subscription',
 		name: 'SaasSubscription',
-		component: () => import('../views/saas/SubscriptionList.vue')
+		component: () => import('../views/saas/SubscriptionList.vue'),
+		meta: {
+			isSaasPage: true
+		}
 	},
 	{
 		path: '/saas/subscription/:subName',
 		name: 'Subscription',
 		component: () => import('../views/saas/Subscription.vue'),
+		meta: {
+			isSaasPage: true
+		},
 		props: true,
 		children: [
 			{
@@ -47,27 +56,51 @@ export default [
 	{
 		path: '/saas/new-subscription',
 		name: 'NewSubscription',
-		component: () => import('../views/saas/NewSubscription.vue')
+		component: () => import('../views/saas/NewSubscription.vue'),
+		meta: {
+			isSaasPage: true
+		}
 	},
 	{
 		path: '/saas/settings',
 		name: 'Settings',
-		component: () => import('../views/saas/Settings.vue')
+		component: () => import('../views/saas/Settings.vue'),
+		meta: {
+			isSaasPage: true
+		}
 	},
 	{
 		path: '/saas/manage',
 		name: 'Manage',
-		component: () => import('../views/saas/Manage.vue')
+		component: () => import('../views/saas/Manage.vue'),
+		meta: {
+			isSaasPage: true
+		}
+	},
+	{
+		path: '/saas/manage/new',
+		name: 'NewSaasApp',
+		component: () => import('../views/saas/NewSaasApp.vue'),
+		meta: {
+			isSaasPage: true
+		}
 	},
 	{
 		path: '/saas/manage/:appName',
 		name: 'SaasApp',
 		component: () => import('../views/saas/SaasApp.vue'),
+		meta: {
+			isSaasPage: true
+		},
 		props: true,
 		children: [
 			{
 				path: 'overview',
 				component: () => import('../views/saas/AppOverview.vue')
+			},
+			{
+				path: 'benches',
+				component: () => import('../views/saas/AppBenches.vue')
 			},
 			{
 				path: 'plan',

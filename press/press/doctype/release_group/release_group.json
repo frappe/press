@@ -14,6 +14,8 @@
   "enabled",
   "default",
   "public",
+  "saas_bench",
+  "saas_app",
   "section_break_7",
   "apps",
   "section_break_10",
@@ -141,10 +143,23 @@
    "fieldname": "is_redisearch_enabled",
    "fieldtype": "Check",
    "label": "Is RediSearch Enabled"
+  },
+  {
+   "default": "0",
+   "fieldname": "saas_bench",
+   "fieldtype": "Check",
+   "label": "SaaS Bench"
+  },
+  {
+   "description": "This bench is for the following SaaS App",
+   "fieldname": "saas_app",
+   "fieldtype": "Link",
+   "label": "SaaS App",
+   "options": "Saas App"
   }
  ],
  "links": [],
- "modified": "2022-04-01 17:11:20.619850",
+ "modified": "2022-05-20 21:23:06.309616",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",

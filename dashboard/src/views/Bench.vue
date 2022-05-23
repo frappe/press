@@ -1,9 +1,12 @@
 <template>
-	<div class="mt-10">
+	<div class="mt-10 flex-1">
 		<div class="px-4 sm:px-8" v-if="bench">
 			<div class="pb-3">
 				<div class="text-base text-gray-700">
-					<router-link to="/sites" class="hover:text-gray-800">
+					<router-link
+						:to="isSaasLogin(bench.saas_app)"
+						class="hover:text-gray-800"
+					>
 						← Back to Benches
 					</router-link>
 				</div>
@@ -80,6 +83,13 @@ export default {
 			if (new Date() - this.$resources.bench.lastLoaded > 1000 * seconds) {
 				this.$resources.bench.reload();
 			}
+		},
+		isSaasLogin(app) {
+			if (localStorage.getItem('saas_login')) {
+				return `/saas/manage/${app}/benches`;
+			}
+
+			return '/sites';
 		}
 	},
 	computed: {
