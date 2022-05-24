@@ -37,7 +37,9 @@
   "feature_flags_section",
   "referrer_id",
   "ssh_access_enabled",
+  "column_break_31",
   "database_access_enabled",
+  "razorpay_enabled",
   "section_break_28",
   "communication_emails",
   "discounts_section",
@@ -250,6 +252,16 @@
    "fieldname": "partner_email",
    "fieldtype": "Data",
    "label": "Partner Email"
+  },
+  {
+   "fieldname": "column_break_31",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "razorpay_enabled",
+   "fieldtype": "Check",
+   "label": "RazorPay Enabled"
   }
  ],
  "links": [
@@ -304,7 +316,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2022-04-27 12:24:22.262202",
+ "modified": "2022-05-24 21:12:40.708247",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
