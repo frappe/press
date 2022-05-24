@@ -5,13 +5,7 @@
 	>
 		<template #actions>
 			<Button
-				v-if="
-					$account.hasRole('Press Admin') &&
-					($account.team.default_payment_method ||
-						$account.team.payment_mode == 'Prepaid Credits' ||
-						$account.team.free_account ||
-						$account.team.erpnext_partner)
-				"
+				v-if="showManageTeamButton"
 				@click="showManageMemberDialog = true"
 			>
 				Manage
@@ -143,6 +137,19 @@ export default {
 					closeDialog();
 				}
 			});
+		}
+	},
+	computed: {
+		showManageTeamButton() {
+			const team = this.$account.team;
+			let show = this.$account.hasRole('Press Admin');
+			return (
+				show &&
+				(team.default_payment_method ||
+					team.payment_mode == 'Prepaid Credits' ||
+					team.free_account ||
+					team.erpnext_partner)
+			);
 		}
 	}
 };
