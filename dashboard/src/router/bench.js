@@ -10,6 +10,9 @@ export default [
 		name: 'Bench',
 		component: () => import('../views/Bench.vue'),
 		props: true,
+		meta: {
+			isSaasPage: true
+		},
 		children: [
 			{
 				path: 'overview',
