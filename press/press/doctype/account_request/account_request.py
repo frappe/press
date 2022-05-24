@@ -73,6 +73,9 @@ class AccountRequest(Document):
 		if self.erpnext:
 			return get_url(f"/setup-account?key={self.request_key}")
 		elif self.saas:
+			# Dumb hardcoded check for frappedesk, remove this later
+			if self.saas_app == "frappedesk":
+				return get_url(f"/fdesk/setup-account?key={self.request_key}&app={self.saas_app}")
 			return get_url(
 				f"/{self.saas_app.replace('_', '')}/setup-account?key={self.request_key}&app={self.saas_app}"
 			)
