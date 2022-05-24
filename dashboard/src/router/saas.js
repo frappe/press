@@ -71,8 +71,8 @@ export default [
 	},
 	{
 		path: '/saas/manage',
-		name: 'Manage',
-		component: () => import('../views/saas/Manage.vue'),
+		name: 'AppList',
+		component: () => import('../views/saas/AppList.vue'),
 		meta: {
 			isSaasPage: true
 		}
