@@ -347,18 +347,14 @@ def add_app(source, app):
 	# Versions on saas_app
 	versions = [v.version for v in saas_app.sources]
 
-	app_source = frappe.get_doc("App Source", source)
-	# Versions on this app `source`
-	app_source_versions = [v.version for v in app_source.versions]
-
-	version_difference = set(app_source_versions) - set(versions)
+	version_difference = set(versions)
 	if version_difference:
 		# App source contains version not yet in saas_app
 		for version in version_difference:
 			saas_app.append("sources", {"source": source, "version": version})
 			saas_app.save()
 	else:
-		frappe.throw("A saas_app already exists with the given versions!")
+		frappe.throw("Compatible Frappe version not selected.")
 
 	return saas_app.name
 
