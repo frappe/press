@@ -158,7 +158,6 @@ def _new(site, server: str = None):
 
 		# Set the secret keys for subscription in config
 		secret_keys = {f"sk_{s.app}": s.secret_key for s in subscription_docs}
-		site.configuration = {}
 		site._update_configuration(secret_keys, save=False)
 
 	site.insert(ignore_permissions=True)
