@@ -85,11 +85,7 @@ const getFeatureList = features => {
 					<h1 class="text-xl font-bold mb-2">Manage Plans</h1>
 					<p>Add, remove or edit plans for {{ app.title }} App.</p>
 				</div>
-				<Button
-					type="primary"
-					iconLeft="plus"
-					@click="showCreateDialog = true"
-				>
+				<Button type="primary" iconLeft="plus" @click="showCreateDialog = true">
 					Add Plan
 				</Button>
 			</div>

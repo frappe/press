@@ -18,7 +18,7 @@ export default [
 		}
 	},
 	{
-		path: '/saas/subscription',
+		path: '/saas/apps',
 		name: 'SaasSubscription',
 		component: () => import('../views/saas/SubscriptionList.vue'),
 		meta: {
@@ -26,7 +26,7 @@ export default [
 		}
 	},
 	{
-		path: '/saas/subscription/:subName',
+		path: '/saas/apps/:subName',
 		name: 'Subscription',
 		component: () => import('../views/saas/Subscription.vue'),
 		meta: {
@@ -35,21 +35,12 @@ export default [
 		props: true,
 		children: [
 			{
-				path: 'overview',
-				component: () => import('../views/saas/SubscriptionOverview.vue')
-			},
-			{
 				path: 'plan',
 				component: () => import('../views/saas/SubscriptionPlan.vue')
 			},
 			{
-				path: 'database',
-				component: () => import('../views/SiteDatabase.vue')
-			},
-			{
-				path: 'jobs/:jobName?',
-				component: () => import('../views/saas/SiteJobs.vue'),
-				props: true
+				path: 'settings',
+				component: () => import('../views/saas/SubscriptionSettings.vue')
 			}
 		]
 	},
@@ -95,8 +86,8 @@ export default [
 		props: true,
 		children: [
 			{
-				path: 'overview',
-				component: () => import('../views/saas/AppOverview.vue')
+				path: 'settings',
+				component: () => import('../views/saas/AppSettings.vue')
 			},
 			{
 				path: 'benches',
