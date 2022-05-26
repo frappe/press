@@ -8,7 +8,7 @@ const props = defineProps({ app: Object, appName: String });
 const benches = useResource({
 	method: 'press.api.saas.get_benches',
 	params: {
-		name: props.app.name
+		name: props.appName
 	},
 	auto: true
 });
@@ -19,12 +19,16 @@ const benchData = computed(() => {
 </script>
 
 <template>
-	<div class="">
+	<div v-if="props.appName">
 		<div class="pb-4">
 			<div class="flex items-center justify-between">
 				<div></div>
-				<router-link type="primary" iconLeft="plus" :to="`/benches/new/${app.name}`">
-					<Button icon-left="plus"> New Bench </Button>
+				<router-link
+					type="primary"
+					iconLeft="plus"
+					:to="`/benches/new/${app.name}`"
+				>
+					<Button type="primary" icon-left="plus"> New Bench </Button>
 				</router-link>
 			</div>
 		</div>
@@ -41,19 +45,21 @@ const benchData = computed(() => {
 				<hr class="mb-2" />
 				<div class="flex items-center justify-between py-2">
 					<p class="w-fit">Active Sites</p>
-					<Badge class="w-fit" status="Updating">• {{
-						group.active_sites
-					}}</Badge>
+					<Badge class="w-fit" status="Updating"
+						>• {{ group.active_sites }}</Badge
+					>
 				</div>
 				<div class="flex items-center justify-between py-2">
 					<p class="w-fit">Broken Sites</p>
-					<Badge class="w-fit" status="Broken">• {{ group.broken_sites }}</Badge>
+					<Badge class="w-fit" status="Broken"
+						>• {{ group.broken_sites }}</Badge
+					>
 				</div>
 				<div class="flex items-center justify-between py-2">
 					<p class="w-fit">Suspended Sites</p>
-					<Badge class="w-fit" status="Pending">• {{
-						group.suspended_sites
-					}}</Badge>
+					<Badge class="w-fit" status="Pending"
+						>• {{ group.suspended_sites }}</Badge
+					>
 				</div>
 				<hr class="my-2" />
 				Use for new signups

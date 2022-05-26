@@ -4,7 +4,7 @@ import { computed, ref } from 'vue';
 import useResource from '@/composables/resource';
 import call from '../../controllers/call';
 
-const props = defineProps({ app: Object });
+const props = defineProps({ app: Object, appName: String });
 let showEditDialog = ref(false);
 let showCreateDialog = ref(false);
 let currentPlanIndex = ref(0);
@@ -21,7 +21,7 @@ const plans = useResource({
 	method: 'press.api.saas.get_plans',
 	auto: true,
 	params: {
-		name: props.app.name
+		name: props.appName
 	}
 });
 
@@ -42,7 +42,7 @@ let sitePlans = computed(() => {
 let editPlan = async plan => {
 	let result = await call('press.api.saas.edit_plan', {
 		plan: plan,
-		name: props.app.name
+		name: props.appName
 	});
 };
 
@@ -78,15 +78,23 @@ const getFeatureList = features => {
 </script>
 
 <template>
-	<Card
-		title="Manage Plans"
-		:subtitle="`Add, remove or edit plans for ${app.title} App.`"
-	>
-		<template #actions>
-			<Button icon-left="plus" @click="showCreateDialog = true"
-				>Add Plan</Button
-			>
-		</template>
+	<div v-if="props.appName">
+		<div class="pb-3">
+			<div class="flex items-center justify-between">
+				<div>
+					<h1 class="text-xl font-bold mb-2">Manage Plans</h1>
+					<p>Add, remove or edit plans for {{ app.title }} App.</p>
+				</div>
+				<Button
+					type="primary"
+					iconLeft="plus"
+					@click="showCreateDialog = true"
+				>
+					Add Plan
+				</Button>
+			</div>
+		</div>
+
 		<div class="grid grid-cols-1 gap-4 md:grid-cols-3" v-if="plansData">
 			<Card
 				:title="plan.plan"
@@ -254,5 +262,5 @@ const getFeatureList = features => {
 				>Add</Button
 			>
 		</Dialog>
-	</Card>
+	</div>
 </template>
