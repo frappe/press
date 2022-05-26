@@ -5,15 +5,17 @@
 import frappe
 import requests
 
-from typing import List
+from typing import Dict, List
 from base64 import b64decode
 from press.utils import get_last_doc
 from press.api.github import get_access_token
+from frappe.query_builder.functions import Cast_
 from frappe.website.utils import cleanup_page_name
 from frappe.website.website_generator import WebsiteGenerator
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	get_app_plan_features,
 )
+from press.press.doctype.marketplace_app.utils import get_rating_percentage_distribution
 
 
 class MarketplaceApp(WebsiteGenerator):
@@ -152,6 +154,48 @@ class MarketplaceApp(WebsiteGenerator):
 
 		context.no_of_installs = self.get_analytics().get("total_installs")
 		context.plans = self.get_plans()
+
+		user_reviews = self.get_user_reviews()
+		ratings_summary = self.get_user_ratings_summary(user_reviews)
+
+		context.user_reviews = user_reviews
+		context.ratings_summary = ratings_summary
+
+	def get_user_reviews(self) -> List:
+		app_user_review = frappe.qb.DocType("App User Review")
+		user = frappe.qb.DocType("User")
+
+		query = (
+			frappe.qb.from_(app_user_review)
+			.join(user)
+			.on(user.name == app_user_review.reviewer)
+			.select(
+				app_user_review.title,
+				Cast_(5 * app_user_review.rating, "INT").as_("rating"),
+				app_user_review.review,
+				app_user_review.creation,
+				app_user_review.reviewer,
+				user.full_name.as_("user_name"),
+			)
+			.where(app_user_review.app == self.name)
+		)
+		return query.run(as_dict=True)
+
+	def get_user_ratings_summary(self, reviews: List) -> Dict:
+		total_num_reviews = len(reviews)
+		avg_rating = 0.0
+
+		if len(reviews) > 0:
+			avg_rating = sum([r.rating for r in reviews]) / len(reviews)
+			avg_rating = frappe.utils.rounded(avg_rating, 1)
+
+		rating_percentages = get_rating_percentage_distribution(reviews)
+
+		return {
+			"total_num_reviews": total_num_reviews,
+			"avg_rating": avg_rating,
+			"rating_percentages": rating_percentages,
+		}
 
 	def get_deploy_information(self):
 		"""Return the deploy information this marketplace app"""

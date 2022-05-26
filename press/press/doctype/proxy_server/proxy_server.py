@@ -172,7 +172,10 @@ class ProxyServer(BaseServer):
 			ansible = Ansible(
 				playbook="proxysql.yml",
 				server=self,
-				variables={"proxysql_admin_password": self.get_password("proxysql_admin_password")},
+				variables={
+					"server": self.name,
+					"proxysql_admin_password": self.get_password("proxysql_admin_password"),
+				},
 			)
 			play = ansible.run()
 			if play.status == "Success":
@@ -181,3 +184,30 @@ class ProxyServer(BaseServer):
 				self.save()
 		except Exception:
 			log_error("ProxySQL Setup Exception", server=self.as_dict())
+
+	@frappe.whitelist()
+	def setup_proxysql_monitor(self):
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_setup_proxysql_monitor", queue="long", timeout=1200
+		)
+
+	def _setup_proxysql_monitor(self):
+		try:
+			default_hostgroup = frappe.get_all(
+				"Database Server",
+				"MIN(server_id)",
+				{"status": "Active", "cluster": self.cluster},
+				as_list=True,
+			)[0][0]
+			ansible = Ansible(
+				playbook="proxysql_monitor.yml",
+				server=self,
+				variables={
+					"server": self.name,
+					"proxysql_admin_password": self.get_password("proxysql_admin_password"),
+					"default_hostgroup": default_hostgroup,
+				},
+			)
+			ansible.run()
+		except Exception:
+			log_error("ProxySQL Monitor Setup Exception", server=self.as_dict())

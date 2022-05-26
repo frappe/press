@@ -676,7 +676,7 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-07-30 10:46:20.712793",
+  "modified": "2022-05-14 09:39:59.938256",
   "name": "Restore Site",
   "request_method": "POST",
   "request_path": "/benches/{bench}/sites/{site}/restore",
@@ -722,6 +722,18 @@
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Enable Scheduler"
+   },
+   {
+    "parent": "Restore Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Setup NGINX"
+   },
+   {
+    "parent": "Restore Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
    }
   ]
  },
@@ -1360,6 +1372,22 @@
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Remove Unused Docker Artefacts"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2022-05-11 13:02:45.175768",
+  "name": "Add Backend to ProxySQL",
+  "request_method": "POST",
+  "request_path": "/proxysql/backends",
+  "steps": [
+   {
+    "parent": "Add Backend to ProxySQL",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Add Backend to ProxySQL"
    }
   ]
  }

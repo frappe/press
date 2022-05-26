@@ -1,0 +1,7 @@
+[client]
+user=monitor
+password=monitor
+host={{ server }}
+ssl-verify-server-cert
+ssl-verify-identity
+ssl-ca=/usr/share/ca-certificates/mozilla/ISRG_Root_X1.crt

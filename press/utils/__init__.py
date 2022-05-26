@@ -252,7 +252,6 @@ class RemoteFrappeSite:
 	def get_backups(self):
 		self._create_fetch_backups_request()
 		self._processed_backups_from_response()
-		self._validate_database_backups_size()
 		self._validate_missing_backups()
 
 		return self.backup_links
@@ -267,21 +266,6 @@ class RemoteFrappeSite:
 		if not res.ok:
 			self._handle_backups_retrieval_failure(res)
 		self._fetch_latest_backups_response = res.json().get("message", {})
-
-	def _validate_database_backups_size(self):
-		if not self.backup_links["database"]:
-			return
-
-		# check if database is > 500MiB and show alert
-		database_size_in_mb = float(
-			requests.head(self.backup_links["database"]).headers.get("Content-Length", 999)
-		) / (1024**2)
-
-		if database_size_in_mb > 500:
-			frappe.throw(
-				"Your site exceeds the limits for this operation. Only sites with"
-				" database backups less than 500MB are allowed."
-			)
 
 	def _validate_missing_backups(self):
 		missing_files = []

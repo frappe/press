@@ -3,7 +3,9 @@
 
 import frappe
 
+from typing import Dict, List
 from frappe.utils import fmt_money
+from frappe.core.utils import find
 from press.utils import get_current_team
 from press.utils.billing import (
 	clear_setup_intent,
@@ -71,18 +73,91 @@ def balances():
 	if not has_bought_credits:
 		return []
 
-	data = frappe.db.get_all(
-		"Balance Transaction",
-		filters={"team": team, "docstatus": 1},
-		fields=["*"],
-		order_by="creation desc",
+	bt = frappe.qb.DocType("Balance Transaction")
+	inv = frappe.qb.DocType("Invoice")
+	query = (
+		frappe.qb.from_(bt)
+		.left_join(inv)
+		.on(bt.invoice == inv.name)
+		.select(
+			bt.name,
+			bt.creation,
+			bt.amount,
+			bt.currency,
+			bt.source,
+			bt.type,
+			bt.ending_balance,
+			bt.description,
+			inv.period_start,
+		)
+		.where((bt.docstatus == 1) & (bt.team == team))
+		.orderby(bt.creation, order=frappe.qb.desc)
 	)
+
+	data = query.run(as_dict=True)
 	for d in data:
 		d.formatted = dict(
 			amount=fmt_money(d.amount, 2, d.currency),
 			ending_balance=fmt_money(d.ending_balance, 2, d.currency),
 		)
+
+		if d.period_start:
+			d.formatted["invoice_for"] = d.period_start.strftime("%B %Y")
 	return data
+
+
+def get_processed_balance_transactions(transactions: List[Dict]):
+	"""Cleans up transactions and adjusts ending balances accordingly"""
+
+	cleaned_up_transations = get_cleaned_up_transactions(transactions)
+	processed_balance_transactions = []
+	for bt in reversed(cleaned_up_transations):
+		if is_added_credits_bt(bt) and len(processed_balance_transactions) < 1:
+			processed_balance_transactions.append(bt)
+		elif is_added_credits_bt(bt):
+			bt.ending_balance += processed_balance_transactions[
+				-1
+			].ending_balance  # Adjust the ending balance
+			processed_balance_transactions.append(bt)
+		elif bt.type == "Applied To Invoice":
+			processed_balance_transactions.append(bt)
+
+	return list(reversed(processed_balance_transactions))
+
+
+def get_cleaned_up_transactions(transactions: List[Dict]):
+	"""Only picks Balance transactions that the users care about"""
+
+	cleaned_up_transations = []
+	for bt in transactions:
+		if is_added_credits_bt(bt):
+			cleaned_up_transations.append(bt)
+			continue
+
+		if bt.type == "Applied To Invoice" and not find(
+			cleaned_up_transations, lambda x: x.invoice == bt.invoice
+		):
+			cleaned_up_transations.append(bt)
+			continue
+	return cleaned_up_transations
+
+
+def is_added_credits_bt(bt):
+	"""Returns `true` if credits were added and not some reverse transaction"""
+	if not (
+		bt.type == "Adjustment"
+		and bt.source
+		in (
+			"Prepaid Credits",
+			"Free Credits",
+			"Transferred Credits",
+		)  # Might need to re-think this
+	):
+		return False
+
+	# Is not a reverse of a previous balance transaction
+	bt.description = bt.description or ""
+	return not bt.description.startswith("Reverse")
 
 
 @frappe.whitelist()

@@ -15,7 +15,6 @@ import frappe
 import frappe.utils.backups
 from frappe.core.utils import find
 from frappe.utils import get_installed_apps_info, update_progress_bar
-from frappe.utils.backups import BackupGenerator
 from frappe.utils.change_log import get_versions
 from frappe.utils.commands import add_line_after, add_line_before, render_table
 
@@ -220,20 +219,18 @@ def render_actions_table():
 
 
 def render_site_table(sites_info, version_info):
-	sites_table = [["#", "Site Name", "Frappe", "Status"]]
+	sites_table = [["#", "Site Name", "Frappe"]]
 	available_sites = {}
 
 	for n, site_data in enumerate(sites_info):
-		name, status = site_data["name"], site_data["status"]
+		name = site_data["name"]
 		frappe = version_info[name]
-		if status in ("Active", "Broken"):
-			sites_table.append([n + 1, name, frappe, status])
-			available_sites[name] = {
-				"status": status,
-				"frappe": frappe,
-				"name": name,
-				"branch": version_info,
-			}
+		sites_table.append([n + 1, name, frappe])
+		available_sites[name] = {
+			"frappe": frappe,
+			"name": name,
+			"branch": version_info,
+		}
 
 	render_table(sites_table)
 	return available_sites
@@ -330,20 +327,6 @@ def is_downgrade(cloud_data):
 	cloud_version = get_version_from_branch(cloud_branch) or 1000
 
 	return current_version > cloud_version
-
-
-def raise_limits_warning():
-	raise_warn = False
-	files = BackupGenerator(
-		frappe.conf.db_name, frappe.conf.db_name, frappe.conf.db_password
-	).get_recent_backup(older_than=24 * 30)
-
-	for file in files:
-		if file:
-			file_size_in_mb = os.path.getsize(file) / (1024 * 1024)
-			if "database" in file and file_size_in_mb > 500:
-				raise_warn = True
-	return raise_warn
 
 
 @add_line_after
@@ -695,16 +678,6 @@ def frappecloud_migrator(local_site):
 		{"title": "Create a new site", "fn": new_site},
 		{"title": "Restore to an existing site", "fn": restore_site},
 	]
-
-	if raise_limits_warning():
-		notice = (
-			"\n"
-			"Note:\n"
-			"* For migrating sites with compressed database backup larger than 500MiB, "
-			"please schedule a migration with us from {}"
-		).format("https://frappecloud.com/migration-request")
-		click.secho(notice, fg="yellow")
-		sys.exit(1)
 
 	# get credentials + auth user + start session
 	try:

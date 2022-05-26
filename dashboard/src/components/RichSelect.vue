@@ -67,7 +67,10 @@ export default {
 						},
 						[
 							option.image
-								? h('img', { class: 'h-4 mr-2', attrs: { src: option.image } })
+								? h('img', {
+										class: ['h-4 mr-2', this.$attrs.class],
+										src: option.image
+								  })
 								: null,
 							h('span', option.label)
 						]

@@ -51,7 +51,6 @@
 					@success="handleAddPrepaidCreditsSuccess"
 				/>
 			</div>
-
 			<div class="mb-3 flex flex-row justify-between">
 				<SiteAndBenchSearch class="w-full sm:w-60 lg:w-96" />
 

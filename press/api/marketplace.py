@@ -583,3 +583,17 @@ def update_publisher_profile(profile_data=dict()):
 		profile_doc.team = team
 		profile_doc.update(profile_data)
 		profile_doc.insert(ignore_permissions=True)
+
+
+@frappe.whitelist()
+def submit_user_review(title, rating, app, review):
+	return frappe.get_doc(
+		{
+			"doctype": "App User Review",
+			"title": title,
+			"rating": rating / 5,
+			"app": app,
+			"review": review,
+			"reviewer": frappe.session.user,
+		}
+	).insert(ignore_permissions=True)

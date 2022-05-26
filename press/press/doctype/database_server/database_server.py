@@ -280,3 +280,23 @@ class DatabaseServer(BaseServer):
 		except Exception:
 			log_error("Database Server Password Reset Exception", server=self.as_dict())
 			raise
+
+	@frappe.whitelist()
+	def setup_deadlock_logger(self):
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_setup_deadlock_logger", queue="long", timeout=1200
+		)
+
+	def _setup_deadlock_logger(self):
+		try:
+			ansible = Ansible(
+				playbook="deadlock_logger.yml",
+				server=self,
+				variables={
+					"server": self.name,
+					"mariadb_root_password": self.get_password("mariadb_root_password"),
+				},
+			)
+			ansible.run()
+		except Exception:
+			log_error("Deadlock Logger Setup Exception", server=self.as_dict())

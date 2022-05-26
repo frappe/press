@@ -24,3 +24,37 @@
   service:
     name: nginx
     state: restarted
+
+- name: Copy ProxySQL TLS (Private Key)
+  copy:
+    src: /home/frappe/agent/tls/privkey.pem
+    dest: /home/frappe/proxysql/proxysql-key.pem
+    mode: 0600
+    remote_src: yes
+  when: is_proxy_server | bool
+
+- name: Copy ProxySQL TLS (CA Certificate)
+  copy:
+    src: /home/frappe/agent/tls/chain.pem
+    dest: /home/frappe/proxysql/proxysql-ca.pem
+    mode: 0600
+    remote_src: yes
+  when: is_proxy_server | bool
+
+- name: Copy ProxySQL TLS (Server Certificate)
+  copy:
+    src: /home/frappe/agent/tls/fullchain.pem
+    dest: /home/frappe/proxysql/proxysql-cert.pem
+    mode: 0600
+    remote_src: yes
+  when: is_proxy_server | bool
+
+- name: Enable ProxySQL Auditing
+  mysql_query:
+    login_user: frappe
+    login_password: "{{ proxysql_admin_password }}"
+    login_host: 127.0.0.1
+    login_port: 6032
+    query:
+      - PROXYSQL RELOAD TLS
+  when: is_proxy_server | bool

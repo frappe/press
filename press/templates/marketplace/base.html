@@ -16,11 +16,12 @@
 		<div class="container mx-auto">
 			{%- block body -%} {%- endblock -%}
 		</div>
+		{% include "templates/marketplace/footer.html" %}
 	</body>
 
 	<script src="/assets/press/js/feather.min.js"></script>
 	<script>
 		feather.replace();
 	</script>
-
+	{{ include_script('marketplace.bundle.js') }}
 </html>

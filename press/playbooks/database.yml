@@ -12,6 +12,7 @@
     - role: agent
     - role: node_exporter
     - role: mysqld_exporter
+    - role: deadlock_logger
     - role: filebeat
     - role: clamav
     - role: gpg_config
