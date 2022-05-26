@@ -62,10 +62,7 @@ export default {
 	resources: {
 		apps() {
 			return {
-				method: 'press.api.saas.get_apps',
-				onSuccess(r) {
-					console.log(r);
-				}
+				method: 'press.api.saas.get_apps'
 			};
 		}
 	},

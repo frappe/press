@@ -127,7 +127,6 @@ export default {
 			};
 		},
 		createBench() {
-			console.log(this.saas_app);
 			return {
 				method: 'press.api.bench.new',
 				params: {
