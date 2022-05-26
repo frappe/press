@@ -25,7 +25,7 @@
 
 			<div class="py-2" v-for="app in apps" :key="app.name">
 				<router-link
-					:to="`/saas/manage/${app.name}/overview`"
+					:to="`/saas/manage/${app.name}/plan`"
 					class="block rounded-md py-2 hover:bg-gray-50 sm:px-2"
 				>
 					<div class="flex items-center justify-between sm:justify-start">

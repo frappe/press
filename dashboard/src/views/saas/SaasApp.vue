@@ -28,6 +28,7 @@
 							v-if="app.data"
 							:is="Component"
 							:app="app.data"
+							:appName="props.appName"
 						></component>
 					</router-view>
 				</Tabs>
@@ -54,14 +55,14 @@ const app = useResource({
 const tabs = computed(() => {
 	let tabRoute = subRoute => `/saas/manage/${props.appName}/${subRoute}`;
 	let tabs = [
-		{ label: 'Overview', route: 'overview' },
+		{ label: 'Plans', route: 'plan' },
 		{ label: 'Benches', route: 'benches' },
-		{ label: 'Plans', route: 'plan' }
+		{ label: 'Settings', route: 'settings' }
 	];
 
 	let tabsByStatus = {
-		Draft: ['Overview', 'Plans', 'Benches'],
-		Published: ['Overview', 'Plans', 'Benches']
+		Draft: ['Plans', 'Benches', 'Settings'],
+		Published: ['Plans', 'Benches', 'Settings']
 	};
 	if (props.appName) {
 		let tabsToShow = tabsByStatus['Draft'];
