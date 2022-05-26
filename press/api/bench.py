@@ -34,7 +34,7 @@ def new(bench):
 
 	apps = [{"app": app["name"], "source": app["source"]} for app in bench["apps"]]
 	group = new_release_group(
-		bench["title"], bench["version"], apps, team.name, bench["cluster"]
+		bench["title"], bench["version"], apps, team.name, bench["cluster"], bench["saas_app"]
 	)
 	return group.name
 
@@ -53,6 +53,7 @@ def get(name):
 		"status": "Active" if active_benches else "Awaiting Deploy",
 		"last_updated": group.modified,
 		"creation": group.creation,
+		"saas_app": group.saas_app or "",
 	}
 
 

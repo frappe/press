@@ -3,13 +3,13 @@ import { computed, ref } from 'vue';
 import useResource from '@/composables/resource';
 import call from '../../controllers/call';
 
-const props = defineProps({ app: Object });
+const props = defineProps({ app: Object, appName: String });
 
 const sites = useResource({
 	method: 'press.api.saas.get_sites',
 	auto: true,
 	params: {
-		app: props.app.name
+		app: props.appName
 	}
 });
 
@@ -40,7 +40,6 @@ const dropdownItems = (team_name, site_name) => {
 		{
 			label: 'Login As Administrator',
 			action: async () => {
-				console.log(site_name);
 				let sid = await call('press.api.site.login', { name: site_name });
 
 				if (sid) {
@@ -64,14 +63,7 @@ const dropdownItems = (team_name, site_name) => {
 </script>
 
 <template>
-	<div>
-		<!-- <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-			<Card title="Sites">
-				<Badge class="pointer-events-none" color="yellow" status="Active" />
-			</Card>
-			<Card title="Card" />
-			<Card title="Card" />
-		</div> -->
+	<div v-if="props.appName">
 		<Card title="Customer Sites" v-if="sitesList">
 			<div class="my-2" v-for="site in sitesList" :key="site.name">
 				<div class="flex items-center justify-between sm:justify-start">
