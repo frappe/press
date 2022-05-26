@@ -35,9 +35,9 @@ const badge = status => {
 <template>
 	<div v-if="subscriptions" class="mt-8 flex-1">
 		<div class="flex items-center justify-between pb-4">
-			<h3 class="text-xl font-bold">Subscriptions</h3>
+			<h3 class="text-xl font-bold">Apps</h3>
 			<router-link to="/saas/new-subscription">
-				<Button type="primary" iconLeft="plus"> New Subscription </Button>
+				<Button type="primary" iconLeft="plus">New App</Button>
 			</router-link>
 		</div>
 		<div
@@ -45,7 +45,7 @@ const badge = status => {
 		>
 			<div class="py-2" v-for="sub in sites" :key="sub.name">
 				<router-link
-					:to="`/saas/subscription/${sub.name}/overview`"
+					:to="`/saas/apps/${sub.name}/plan`"
 					:site="sub.site"
 					class="block rounded-md py-2 hover:bg-gray-50 sm:px-2"
 				>
@@ -53,19 +53,12 @@ const badge = status => {
 						<div class="text-base sm:w-4/12">
 							{{ sub.app_name }}
 						</div>
-
-						<div class="text-base sm:w-4/12">
-							{{ sub.site }}
-						</div>
-
 						<div class="text-base sm:w-4/12">
 							<Badge class="pointer-events-none" v-bind="badge(sub.status)" />
 						</div>
-
-						<div class="text-base sm:w-4/12">
-							{{ sub.plan }}
+						<div class="w-2/12 text-sm text-gray-600 sm:block">
+							{{ sub.site }}
 						</div>
-
 						<div class="text-right text-base sm:w-4/12">
 							<Link
 								:to="`https://${sub.site}`"

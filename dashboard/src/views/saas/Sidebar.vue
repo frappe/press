@@ -23,7 +23,7 @@
 				class="text-start mx-2 my-1 flex rounded-md px-4 py-2 text-sm font-medium focus:outline-none"
 			>
 				<svg
-					v-if="item.label == 'Subscriptions'"
+					v-if="item.label == 'Apps'"
 					xmlns="http://www.w3.org/2000/svg"
 					viewBox="0 0 24 24"
 					fill="none"
@@ -73,7 +73,7 @@
 					></path>
 				</svg>
 				<svg
-					v-if="item.label == 'Manage'"
+					v-if="item.label == 'Developer'"
 					xmlns="http://www.w3.org/2000/svg"
 					viewBox="0 0 24 24"
 					fill="none"
@@ -106,10 +106,10 @@ export default {
 		items() {
 			return [
 				{
-					label: 'Subscriptions',
-					route: '/saas/subscription',
+					label: 'Apps',
+					route: '/saas/apps',
 					highlight: () => {
-						return this.$route.fullPath.endsWith('/saas/subscription');
+						return this.$route.fullPath.endsWith('/saas/apps');
 					}
 				},
 				{
@@ -120,7 +120,7 @@ export default {
 					}
 				},
 				{
-					label: 'Manage',
+					label: 'Developer',
 					route: '/saas/manage',
 					highlight: () => {
 						return this.$route.fullPath.endsWith('/saas/manage');
