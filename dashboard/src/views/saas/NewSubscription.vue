@@ -9,7 +9,6 @@ const saasApps = useResource({
 });
 
 const apps = computed(() => {
-	console.log(saasApps.data);
 	return saasApps.data;
 });
 </script>
