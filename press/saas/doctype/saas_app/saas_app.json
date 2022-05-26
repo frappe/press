@@ -11,6 +11,7 @@
   "image",
   "app",
   "title",
+  "sources",
   "description",
   "signup_url"
  ],
@@ -59,6 +60,12 @@
    "fieldtype": "Link",
    "label": "Team",
    "options": "Team"
+  },
+  {
+   "fieldname": "sources",
+   "fieldtype": "Table",
+   "label": "Sources",
+   "options": "Marketplace App Version"
   }
  ],
  "image_field": "image",
@@ -73,7 +80,7 @@
    "link_fieldname": "app"
   }
  ],
- "modified": "2022-05-04 12:28:17.478991",
+ "modified": "2022-05-23 12:51:03.412569",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Saas App",

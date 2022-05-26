@@ -12,62 +12,86 @@ export default [
 	{
 		path: '/saas/billing',
 		name: 'Billing',
-		component: () => import('../views/saas/Billing.vue')
+		component: () => import('../views/saas/Billing.vue'),
+		meta: {
+			isSaasPage: true
+		}
 	},
 	{
-		path: '/saas/subscription',
+		path: '/saas/apps',
 		name: 'SaasSubscription',
-		component: () => import('../views/saas/SubscriptionList.vue')
+		component: () => import('../views/saas/SubscriptionList.vue'),
+		meta: {
+			isSaasPage: true
+		}
 	},
 	{
-		path: '/saas/subscription/:subName',
+		path: '/saas/apps/:subName',
 		name: 'Subscription',
 		component: () => import('../views/saas/Subscription.vue'),
+		meta: {
+			isSaasPage: true
+		},
 		props: true,
 		children: [
-			{
-				path: 'overview',
-				component: () => import('../views/saas/SubscriptionOverview.vue')
-			},
 			{
 				path: 'plan',
 				component: () => import('../views/saas/SubscriptionPlan.vue')
 			},
 			{
-				path: 'database',
-				component: () => import('../views/SiteDatabase.vue')
-			},
-			{
-				path: 'jobs/:jobName?',
-				component: () => import('../views/saas/SiteJobs.vue'),
-				props: true
+				path: 'settings',
+				component: () => import('../views/saas/SubscriptionSettings.vue')
 			}
 		]
 	},
 	{
 		path: '/saas/new-subscription',
 		name: 'NewSubscription',
-		component: () => import('../views/saas/NewSubscription.vue')
+		component: () => import('../views/saas/NewSubscription.vue'),
+		meta: {
+			isSaasPage: true
+		}
 	},
 	{
 		path: '/saas/settings',
 		name: 'Settings',
-		component: () => import('../views/saas/Settings.vue')
+		component: () => import('../views/saas/Settings.vue'),
+		meta: {
+			isSaasPage: true
+		}
 	},
 	{
 		path: '/saas/manage',
-		name: 'Manage',
-		component: () => import('../views/saas/Manage.vue')
+		name: 'AppList',
+		component: () => import('../views/saas/AppList.vue'),
+		meta: {
+			isSaasPage: true
+		}
+	},
+	{
+		path: '/saas/manage/new',
+		name: 'NewSaasApp',
+		component: () => import('../views/saas/NewSaasApp.vue'),
+		meta: {
+			isSaasPage: true
+		}
 	},
 	{
 		path: '/saas/manage/:appName',
 		name: 'SaasApp',
 		component: () => import('../views/saas/SaasApp.vue'),
+		meta: {
+			isSaasPage: true
+		},
 		props: true,
 		children: [
 			{
-				path: 'overview',
-				component: () => import('../views/saas/AppOverview.vue')
+				path: 'settings',
+				component: () => import('../views/saas/AppSettings.vue')
+			},
+			{
+				path: 'benches',
+				component: () => import('../views/saas/AppBenches.vue')
 			},
 			{
 				path: 'plan',

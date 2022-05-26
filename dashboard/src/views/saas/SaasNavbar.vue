@@ -50,7 +50,7 @@ export default {
 			dropdownItems: [
 				{
 					label: 'Settings',
-					action: () => this.$router.push('/saas/setting')
+					action: () => this.$router.push('/saas/settings')
 				},
 				{
 					label: 'Logout',
@@ -62,10 +62,7 @@ export default {
 	resources: {
 		apps() {
 			return {
-				method: 'press.api.saas.get_apps',
-				onSuccess(r) {
-					console.log(r);
-				}
+				method: 'press.api.saas.get_apps'
 			};
 		}
 	},

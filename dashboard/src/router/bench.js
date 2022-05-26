@@ -1,7 +1,10 @@
 export default [
 	{
-		path: '/benches/new',
+		path: '/benches/new/:saas_app',
 		name: 'NewBench',
+		meta: {
+			isSaasPage: true
+		},
 		component: () => import('../views/NewBench.vue'),
 		props: true
 	},
@@ -10,6 +13,9 @@ export default [
 		name: 'Bench',
 		component: () => import('../views/Bench.vue'),
 		props: true,
+		meta: {
+			isSaasPage: true
+		},
 		children: [
 			{
 				path: 'overview',

@@ -94,6 +94,7 @@ import AppSourceSelector from '@/components/AppSourceSelector.vue';
 import RichSelect from '@/components/RichSelect.vue';
 export default {
 	name: 'NewBench',
+	props: { saas_app: String },
 	components: {
 		WizardCard,
 		AppSourceSelector,
@@ -133,6 +134,7 @@ export default {
 						title: this.benchTitle,
 						version: this.selectedVersionName,
 						cluster: this.selectedRegion,
+						saas_app: this.saas_app,
 						apps: this.selectedApps.map(app => ({
 							name: app.app,
 							source: app.source.name

@@ -3,8 +3,8 @@
 		<div class="text-base text-gray-700">
 			<div class="px-4 sm:px-8">
 				<div class="text-base text-gray-700">
-					<router-link to="/saas/subscription" class="hover:text-gray-800">
-						← Back to Subscriptions
+					<router-link to="/saas/apps" class="hover:text-gray-800">
+						← Back to Apps
 					</router-link>
 				</div>
 
@@ -48,10 +48,7 @@ const subscription = useResource({
 	params: {
 		name: props.subName
 	},
-	auto: true,
-	onSuccess(r) {
-		console.log(r);
-	}
+	auto: true
 });
 
 const subData = computed(() => {
@@ -59,17 +56,15 @@ const subData = computed(() => {
 });
 
 const tabs = computed(() => {
-	let tabRoute = subRoute => `/saas/subscription/${props.subName}/${subRoute}`;
+	let tabRoute = subRoute => `/saas/apps/${props.subName}/${subRoute}`;
 	let tabs = [
-		{ label: 'Overview', route: 'overview' },
 		{ label: 'Plans', route: 'plan' },
-		{ label: 'Backups', route: 'database' },
-		{ label: 'Jobs', route: 'jobs' }
+		{ label: 'Settings', route: 'settings' }
 	];
 
 	let tabsByStatus = {
-		Draft: ['Overview', 'Plans', 'Backups', 'Jobs'],
-		Published: ['Overview', 'Plans', 'Backups', 'Jobs']
+		Draft: ['Plans', 'Settings'],
+		Published: ['Plans', 'Settings']
 	};
 	if (props.subName) {
 		let tabsToShow = tabsByStatus['Draft'];
