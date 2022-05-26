@@ -475,6 +475,12 @@ class Agent:
 			"Add User to ProxySQL", "proxysql/users", data, site=site.name
 		)
 
+	def add_proxysql_backend(self, database_server):
+		data = {
+			"backend": {"ip": database_server.private_ip, "id": database_server.server_id},
+		}
+		return self.create_agent_job("Add Backend to ProxySQL", "proxysql/backends", data)
+
 	def remove_proxysql_user(self, site, username):
 		return self.create_agent_job(
 			"Remove User from ProxySQL",
@@ -599,6 +605,12 @@ class Agent:
 
 	def get_sites_info(self, bench, since):
 		return self.post(f"benches/{bench.name}/info", data={"since": since})
+
+	def get_site_analytics(self, site):
+		return self.get(f"benches/{site.bench}/sites/{site.name}/analytics")["data"]
+
+	def get_sites_analytics(self, bench):
+		return self.get(f"benches/{bench.name}/analytics")
 
 	def get_jobs_status(self, ids):
 		status = self.get(f"jobs/{','.join(map(str, ids))}")

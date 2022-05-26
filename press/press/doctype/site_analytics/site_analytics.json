@@ -1,0 +1,212 @@
+{
+ "actions": [],
+ "creation": "2022-05-02 23:26:52.559658",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "site",
+  "column_break_2",
+  "timestamp",
+  "frappe_section",
+  "country",
+  "language",
+  "time_zone",
+  "setup_complete",
+  "scheduler_enabled",
+  "column_break_8",
+  "emails_sent",
+  "space_used",
+  "database_size",
+  "backup_size",
+  "files_size",
+  "section_break_17",
+  "users",
+  "last_logins",
+  "installed_apps",
+  "erpnext_section",
+  "activation_level",
+  "company",
+  "domain",
+  "column_break_26",
+  "sales_data"
+ ],
+ "fields": [
+  {
+   "fieldname": "site",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Site",
+   "options": "Site",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "timestamp",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Timestamp",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "frappe_section",
+   "fieldtype": "Section Break",
+   "label": "Frappe"
+  },
+  {
+   "fieldname": "erpnext_section",
+   "fieldtype": "Section Break",
+   "label": "ERPNext"
+  },
+  {
+   "fieldname": "country",
+   "fieldtype": "Data",
+   "label": "Country",
+   "read_only": 1
+  },
+  {
+   "fieldname": "language",
+   "fieldtype": "Data",
+   "label": "Language",
+   "read_only": 1
+  },
+  {
+   "fieldname": "time_zone",
+   "fieldtype": "Data",
+   "label": "Time Zone",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_8",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "scheduler_enabled",
+   "fieldtype": "Check",
+   "label": "Scheduler Enabled",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "setup_complete",
+   "fieldtype": "Check",
+   "label": "Setup Complete",
+   "read_only": 1
+  },
+  {
+   "fieldname": "emails_sent",
+   "fieldtype": "Int",
+   "label": "Emails Sent",
+   "read_only": 1
+  },
+  {
+   "fieldname": "space_used",
+   "fieldtype": "Int",
+   "label": "Space Used",
+   "read_only": 1
+  },
+  {
+   "fieldname": "database_size",
+   "fieldtype": "Int",
+   "label": "Database Size",
+   "read_only": 1
+  },
+  {
+   "fieldname": "backup_size",
+   "fieldtype": "Int",
+   "label": "Backup Size",
+   "read_only": 1
+  },
+  {
+   "fieldname": "files_size",
+   "fieldtype": "Int",
+   "label": "Files Size",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_17",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "users",
+   "fieldtype": "Table",
+   "label": "Users",
+   "options": "Site Analytics User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_logins",
+   "fieldtype": "Table",
+   "label": "Last Logins",
+   "options": "Site Analytics Login",
+   "read_only": 1
+  },
+  {
+   "fieldname": "installed_apps",
+   "fieldtype": "Table",
+   "label": "Installed Apps",
+   "options": "Site Analytics App",
+   "read_only": 1
+  },
+  {
+   "fieldname": "activation_level",
+   "fieldtype": "Int",
+   "label": "Activation Level",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sales_data",
+   "fieldtype": "Table",
+   "label": "Sales Data",
+   "options": "Site Analytics DocType",
+   "read_only": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Data",
+   "label": "Company",
+   "read_only": 1
+  },
+  {
+   "fieldname": "domain",
+   "fieldtype": "Data",
+   "label": "Domain",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_26",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2022-05-05 09:29:20.505913",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Site Analytics",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "site"
+}

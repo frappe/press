@@ -23,7 +23,9 @@
 					{{ formatDate(d) }}
 				</div>
 				<div class="col-span-2 whitespace-nowrap text-gray-700 md:col-span-1">
-					<div>{{ d.amount < 0 ? d.type : d.source }}</div>
+					<div>
+						{{ getDescription(d) }}
+					</div>
 					<div class="md:hidden">{{ formatDate(d) }}</div>
 				</div>
 				<div class="whitespace-nowrap text-gray-700">
@@ -47,6 +49,13 @@ export default {
 				day: 'numeric',
 				year: 'numeric'
 			});
+		},
+		getDescription(d) {
+			if (d.type === 'Applied To Invoice' && d.formatted.invoice_for) {
+				return `Invoice For ${d.formatted.invoice_for}`;
+			}
+
+			return d.amount < 0 ? d.type : d.source;
 		}
 	}
 };

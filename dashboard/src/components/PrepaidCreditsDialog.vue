@@ -49,7 +49,9 @@
 		<div>
 			<div v-if="!paymentGateway" class="grid grid-cols-1 gap-2 sm:grid-cols-2">
 				<Button
-					v-if="$account.team.currency === 'INR'"
+					v-if="
+						$account.team.currency === 'INR' || $account.team.razorpay_enabled
+					"
 					@click="paymentGateway = 'razorpay'"
 					class="py-2"
 				>
@@ -85,7 +87,10 @@ export default {
 		razorpayCheckoutJS.async = true;
 		document.head.appendChild(razorpayCheckoutJS);
 
-		if (this.$account.team.currency === 'USD') {
+		if (
+			this.$account.team.currency === 'USD' &&
+			!this.$account.team.razorpay_enabled
+		) {
 			this.paymentGateway = 'stripe';
 		}
 	},

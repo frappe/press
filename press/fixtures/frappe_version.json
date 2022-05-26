@@ -6,9 +6,6 @@
   "modified": "2020-11-12 17:31:04.114000",
   "name": "Version 12",
   "number": 12,
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "public": 1,
   "status": "Stable"
  },
@@ -19,9 +16,6 @@
   "modified": "2021-12-03 12:34:31.455781",
   "name": "Version 13",
   "number": 13,
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "public": 1,
   "status": "Stable"
  },
@@ -32,9 +26,6 @@
   "modified": "2020-11-12 17:30:35.182746",
   "name": "Nightly",
   "number": 14,
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "public": 1,
   "status": "Develop"
  },
@@ -45,9 +36,6 @@
   "modified": "2022-01-13 16:32:57.334902",
   "name": "Version 14",
   "number": 14,
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "public": 1,
   "status": "Beta"
  }

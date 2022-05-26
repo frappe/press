@@ -5,9 +5,6 @@
   "key": "ssl_certificate",
   "modified": "2020-10-01 21:10:07.925888",
   "name": "ssl_certificate",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "reason": null
  },
  {
@@ -16,9 +13,6 @@
   "key": "ssl_certificate_key",
   "modified": "2020-10-01 21:10:31.635305",
   "name": "ssl_certificate_key",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "reason": null
  },
  {
@@ -27,9 +21,6 @@
   "key": "frappecloud_url",
   "modified": "2020-09-15 13:02:11.917220",
   "name": "frappecloud_url",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "reason": null
  },
  {
@@ -38,9 +29,6 @@
   "key": "db_ssl_key",
   "modified": "2020-09-15 13:02:12.019502",
   "name": "db_ssl_key",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "reason": null
  },
  {
@@ -49,9 +37,6 @@
   "key": "db_password",
   "modified": "2020-09-15 13:02:12.032911",
   "name": "db_password",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "reason": null
  },
  {
@@ -60,9 +45,6 @@
   "key": "monitor",
   "modified": "2020-09-15 13:02:12.044695",
   "name": "monitor",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "reason": null
  },
  {
@@ -71,9 +53,6 @@
   "key": "root_login",
   "modified": "2020-09-15 14:47:30.453481",
   "name": "root_login",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "reason": "only used at postgres setup_db #L41...else used as flags"
  },
  {
@@ -82,9 +61,6 @@
   "key": "db_port",
   "modified": "2020-09-15 13:02:12.066262",
   "name": "db_port",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "reason": null
  },
  {
@@ -93,9 +69,6 @@
   "key": "webserver_port",
   "modified": "2020-09-15 13:02:12.078783",
   "name": "webserver_port",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "reason": null
  },
  {
@@ -104,9 +77,6 @@
   "key": "restart_systemd_on_update",
   "modified": "2020-09-15 13:02:12.088768",
   "name": "restart_systemd_on_update",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "reason": null
  },
  {
@@ -115,9 +85,6 @@
   "key": "db_name",
   "modified": "2020-09-15 13:02:12.098600",
   "name": "db_name",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "reason": null
  },
  {
@@ -126,9 +93,6 @@
   "key": "db_ssl_cert",
   "modified": "2020-09-15 13:02:12.111550",
   "name": "db_ssl_cert",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "reason": null
  },
  {
@@ -137,9 +101,6 @@
   "key": "db_ssl_ca",
   "modified": "2020-09-15 13:02:12.121237",
   "name": "db_ssl_ca",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "reason": null
  },
  {
@@ -148,9 +109,6 @@
   "key": "keep_backups_for_hours",
   "modified": "2020-09-15 14:48:35.698767",
   "name": "keep_backups_for_hours",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "reason": "retain backups while deleting old ones : BackupGenerator"
  },
  {
@@ -159,9 +117,6 @@
   "key": "socketio_port",
   "modified": "2020-09-15 13:02:12.142390",
   "name": "socketio_port",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "reason": null
  },
  {
@@ -170,9 +125,6 @@
   "key": "db_type",
   "modified": "2020-09-15 13:02:12.164240",
   "name": "db_type",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "reason": null
  },
  {
@@ -181,9 +133,6 @@
   "key": "db_host",
   "modified": "2020-09-15 13:02:12.173858",
   "name": "db_host",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "reason": null
  },
  {
@@ -192,9 +141,6 @@
   "key": "http_port",
   "modified": "2020-09-15 13:02:12.183172",
   "name": "http_port",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "reason": null
  },
  {
@@ -203,9 +149,6 @@
   "key": "developer_mode",
   "modified": "2020-09-15 13:02:12.202427",
   "name": "developer_mode",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "reason": null
  },
  {
@@ -214,9 +157,6 @@
   "key": "root_password",
   "modified": "2020-09-15 14:47:48.878756",
   "name": "root_password",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "reason": "Used under mysql and postgres setup_db methods"
  },
  {
@@ -225,9 +165,6 @@
   "key": "allow_tests",
   "modified": "2020-09-15 13:02:12.228708",
   "name": "allow_tests",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "reason": null
  },
  {
@@ -236,9 +173,6 @@
   "key": "install_apps",
   "modified": "2020-09-15 14:48:13.132821",
   "name": "install_apps",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "reason": "apps to install at site creation"
  },
  {
@@ -247,9 +181,6 @@
   "key": "admin_password",
   "modified": "2020-09-15 13:02:12.250826",
   "name": "admin_password",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "reason": null
  },
  {
@@ -258,9 +189,6 @@
   "key": "restart_supervisor_on_update",
   "modified": "2020-09-15 13:02:12.259476",
   "name": "restart_supervisor_on_update",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "reason": null
  },
  {
@@ -269,9 +197,6 @@
   "key": "rds_db",
   "modified": "2020-09-15 14:47:00.852841",
   "name": "rds_db",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "reason": "for only granting certain perms on databases. named because of AWS RDS?"
  },
  {
@@ -280,9 +205,6 @@
   "key": "rate_limit",
   "modified": "2020-09-18 11:54:37.058867",
   "name": "rate_limit",
-  "parent": null,
-  "parentfield": null,
-  "parenttype": null,
   "reason": null
  }
 ]

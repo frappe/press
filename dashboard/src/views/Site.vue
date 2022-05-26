@@ -60,20 +60,24 @@
 
 					<div class="hidden flex-row space-x-3 md:flex">
 						<Button
-							v-if="site.group"
-							:route="`/benches/${site.group}`"
-							icon-left="tool"
-							>Manage Bench
-						</Button>
-						<Button
 							v-for="action in siteActions"
+							v-if="siteActions.length <= 2"
 							:key="action.label"
 							:icon-left="action.icon"
 							:loading="action.loading"
+							:route="action.route"
 							@click="action.action"
 						>
 							{{ action.label }}
 						</Button>
+
+						<Dropdown v-if="siteActions.length > 2" :items="siteActions">
+							<template v-slot="{ toggleDropdown }">
+								<Button icon-right="chevron-down" @click="toggleDropdown()"
+									>Actions</Button
+								>
+							</template>
+						</Dropdown>
 					</div>
 				</div>
 			</div>
@@ -235,6 +239,13 @@ export default {
 
 		siteActions() {
 			return [
+				['Active', 'Updating'].includes(this.site.status) && {
+					label: 'Visit Site',
+					icon: 'external-link',
+					action: () => {
+						window.open(`https://${this.site.name}`, '_blank');
+					}
+				},
 				this.$account.user.user_type == 'System User' && {
 					label: 'View in Desk',
 					icon: 'external-link',
@@ -243,6 +254,14 @@ export default {
 							`${window.location.protocol}//${window.location.host}/app/site/${this.site.name}`,
 							'_blank'
 						);
+					}
+				},
+				this.site.group && {
+					label: 'Manage Bench',
+					icon: 'tool',
+					route: `/benches/${this.site.group}`,
+					action: () => {
+						this.$router.push(`/benches/${this.site.group}`);
 					}
 				},
 				this.site.status == 'Active' && {
@@ -257,13 +276,6 @@ export default {
 						}
 
 						this.showReasonForAdminLoginDialog = true;
-					}
-				},
-				['Active', 'Updating'].includes(this.site.status) && {
-					label: 'Visit Site',
-					icon: 'external-link',
-					action: () => {
-						window.open(`https://${this.site.name}`, '_blank');
 					}
 				}
 			].filter(Boolean);

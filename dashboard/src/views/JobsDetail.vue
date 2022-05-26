@@ -40,7 +40,10 @@ export default {
 			if (!this.job) return;
 			if (this.job.status == 'Success') {
 				let when = this.formatDate(this.job.creation, 'relative');
-				return `Completed ${when} in ${this.formatDuration(this.job.duration)}`;
+				return `Completed ${when} in ${this.$formatDuration(
+					this.job.duration,
+					'hh:mm:ss'
+				)}`;
 			}
 			if (this.job.status == 'Undelivered') {
 				return 'Job failed to start';
@@ -71,9 +74,6 @@ export default {
 			if (data.id === this.jobName) {
 				this.runningJob = data;
 			}
-		},
-		formatDuration(duration) {
-			return duration.split('.')[0];
 		},
 		isStepRunning(step) {
 			if (!this.runningJob) return false;

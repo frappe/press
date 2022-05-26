@@ -32,6 +32,18 @@ let utils = {
 			}
 			return format;
 		},
+		$formatDuration(value) {
+			// Remove decimal seconds
+			value = value.split('.')[0];
+
+			// Add leading zero
+			// 0:0:2 -> 00:00:02
+			const formattedDuration = value
+				.split(':')
+				.map(x => x.padStart(2, '0'))
+				.join(':');
+			return formattedDuration;
+		},
 		formatBytes(bytes, decimals = 2, current = 0) {
 			if (bytes === 0) return '0 Bytes';
 
