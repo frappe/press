@@ -34,7 +34,12 @@ def new(bench):
 
 	apps = [{"app": app["name"], "source": app["source"]} for app in bench["apps"]]
 	group = new_release_group(
-		bench["title"], bench["version"], apps, team.name, bench["cluster"], bench["saas_app"]
+		bench["title"],
+		bench["version"],
+		apps,
+		team.name,
+		bench["cluster"],
+		bench["saas_app"] if frappe.db.exists("Saas App", bench["saas_app"]) else "",
 	)
 	return group.name
 
