@@ -131,7 +131,7 @@ export default {
 					label: 'Settings',
 					route: '/saas/settings',
 					highlight: () => {
-						return this.$route.fullPath.endsWith('/saas/setting');
+						return this.$route.fullPath.endsWith('/saas/settings');
 					}
 				}
 			].filter(d => (d.condition ? d.condition() : true));
