@@ -1390,5 +1390,21 @@
     "step_name": "Add Backend to ProxySQL"
    }
   ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2022-02-15 14:21:14.416719",
+  "name": "Update Saas Plan",
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/sites/{site}/update/saas",
+  "steps": [
+   {
+    "parent": "Update Saas Plan",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Update Saas Plan"
+   }
+  ]
  }
 ]
