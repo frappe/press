@@ -180,6 +180,23 @@ export default {
 			return processedPlans;
 		},
 		usage() {
+			if (!this.plan.current_plan) {
+				return [
+					{
+						label: 'CPU',
+						value: this.plan.total_cpu_usage_hours
+					},
+					{
+						label: 'Database',
+						value: this.plan.total_database_usage
+					},
+					{
+						label: 'Storage',
+						value: this.plan.total_storage_usage
+					}
+				];
+			}
+
 			let f = value => {
 				return this.formatBytes(value, 0, 2);
 			};
