@@ -10,7 +10,6 @@ import SiteOverviewDomains from './SiteOverviewDomains.vue';
 import SiteOverviewAppSubscriptions from './SiteOverviewAppSubscriptions.vue';
 import { utils } from '@/utils';
 import { computed } from 'vue';
-import { DateTime } from 'luxon';
 import useResource from '@/composables/resource';
 
 const props = defineProps({ site: Object });
