@@ -11,6 +11,7 @@ from press.saas.doctype.saas_app_plan.saas_app_plan import (
 	get_app_plan_features,
 )
 from press.utils import get_current_team
+from press.agent import Agent
 
 from press.press.doctype.site.saas_site import (
 	SaasSite,
@@ -213,6 +214,24 @@ def change_app_plan(name, new_plan):
 	subscription = frappe.get_doc("Saas App Subscription", name)
 	subscription.change_plan(new_plan)
 
+	if subscription.app == "erpnext_smb":
+		site = frappe.get_doc("Site", subscription.site)
+		site.update_site_config({"plan": new_plan["plan"]})
+
+		server = frappe.db.get_value("Site", subscription.site, "server")
+		agent = Agent(server_type="Server", server=server)
+		data = {
+			"plan": new_plan["plan"],
+		}
+
+		return agent.create_agent_job(
+			"Update Saas Plan",
+			f"benches/{site.bench}/sites/{site.name}/update/saas",
+			data=data,
+			bench=site.bench,
+			site=site.name,
+		)
+
 
 @frappe.whitelist()
 def get_benches(name):
@@ -357,6 +376,27 @@ def add_app(source, app):
 		frappe.throw("Compatible Frappe version not selected.")
 
 	return saas_app.name
+
+
+@frappe.whitelist()
+@protected("Saas App")
+def update_settings(name, active_bench):
+	active_benches = frappe.get_all(
+		"Bench",
+		{"group": active_bench, "status": "Active"},
+		["cluster", "group"],
+		limit=1,
+		order_by="creation desc",
+	)
+	if active_benches:
+		frappe.db.set_value("Saas Settings", name, "group", active_benches[0].group)
+		frappe.db.set_value("Saas Settings", name, "cluster", active_benches[0].cluster)
+	else:
+		frappe.throw(
+			"This bench is not deployed, please deploy the bench before setting it as default."
+		)
+
+	return name
 
 
 # ----------------------------- SIGNUP APIs ---------------------------------

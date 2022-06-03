@@ -44,7 +44,7 @@
 		</div>
 
 		<Dialog
-			title="Add App to Marketplace"
+			title="Add a new SaaS App"
 			:dismissable="true"
 			v-model="showAddAppDialog"
 		>
