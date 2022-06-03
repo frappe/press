@@ -1115,6 +1115,7 @@ class Site(Document):
 					"status": "Active",
 					"creation": ("<=", interval_hrs_ago),
 					"is_standby": False,
+					"plan": ("!=", "ERPNext Trial"),
 				},
 				pluck="name",
 			)
