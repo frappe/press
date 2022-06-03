@@ -153,7 +153,12 @@ export default {
 				this.plan.total_database_usage > plan.max_database_usage
 			);
 		},
+
 		getCurrentFormattedUsage() {
+			let f = value => {
+				return this.formatBytes(value, 0, 2);
+			};
+
 			return [
 				{
 					label: 'CPU',
