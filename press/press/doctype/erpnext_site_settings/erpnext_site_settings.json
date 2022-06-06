@@ -1,6 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "field:site",
  "creation": "2022-06-03 14:33:04.239124",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -9,6 +10,9 @@
   "site",
   "expiry",
   "users",
+  "emails",
+  "space",
+  "column_break_6",
   "plan",
   "support_expiry"
  ],
@@ -16,10 +20,10 @@
   {
    "fieldname": "site",
    "fieldtype": "Link",
-   "in_list_view": 1,
    "label": "Site",
    "options": "Site",
-   "reqd": 1
+   "reqd": 1,
+   "unique": 1
   },
   {
    "fieldname": "expiry",
@@ -36,20 +40,38 @@
   {
    "fieldname": "plan",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Plan"
   },
   {
    "fieldname": "support_expiry",
    "fieldtype": "Date",
    "label": "Support Expiry"
+  },
+  {
+   "default": "25000",
+   "fieldname": "emails",
+   "fieldtype": "Int",
+   "label": "Emails"
+  },
+  {
+   "default": "25",
+   "fieldname": "space",
+   "fieldtype": "Int",
+   "label": "Space (in GB)"
+  },
+  {
+   "fieldname": "column_break_6",
+   "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-06-03 14:33:04.239124",
+ "modified": "2022-06-06 22:27:21.058497",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "ERPNext Site Settings",
+ "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {
