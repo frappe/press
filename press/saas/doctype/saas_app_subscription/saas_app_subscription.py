@@ -41,8 +41,8 @@ class SaasAppSubscription(Document):
 		response = generate_keys(site_doc.team)
 		api_key = frappe.db.get_value("User", site_doc.team, "api_key")
 		new_config = [
-			{"key": "api_key", "value": api_key, "type": "String"},
-			{"key": "api_secret", "value": response["api_secret"], "type": "String"},
+			{"key": "saas_api_key", "value": api_key, "type": "String"},
+			{"key": "saas_api_secret", "value": response["api_secret"], "type": "String"},
 			{"key": f"sk_{self.app}", "value": self.secret_key, "type": "String"},
 		]
 
