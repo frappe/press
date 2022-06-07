@@ -67,7 +67,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-06-06 22:27:21.058497",
+ "modified": "2022-06-07 08:38:38.340284",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "ERPNext Site Settings",
@@ -89,5 +89,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "track_changes": 1
 }
