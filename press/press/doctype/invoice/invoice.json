@@ -35,6 +35,7 @@
   "free_credits",
   "amount_due",
   "amount_paid",
+  "payout",
   "section_break_15",
   "credit_allocations",
   "stripe_billing_section",
@@ -383,6 +384,11 @@
    "fieldtype": "Data",
    "label": "Partner Email",
    "read_only": 1
+  },
+  {
+   "fieldname": "payout",
+   "fieldtype": "Currency",
+   "label": "Saas Developer Payout"
   }
  ],
  "is_submittable": 1,
@@ -403,7 +409,7 @@
    "link_fieldname": "invoice"
   }
  ],
- "modified": "2022-04-27 12:26:20.639665",
+ "modified": "2022-06-07 11:14:51.999691",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",
