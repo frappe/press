@@ -15,6 +15,7 @@
   "column_break_7",
   "plan",
   "site_plan",
+  "payout_percentage",
   "section_break_8",
   "features",
   "section_break_11",
@@ -88,13 +89,18 @@
    "fieldtype": "Code",
    "label": "Config (optional)",
    "options": "JSON"
+  },
+  {
+   "fieldname": "payout_percentage",
+   "fieldtype": "Data",
+   "label": "Payout Percentage"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-04-28 21:58:58.928986",
+ "modified": "2022-06-07 11:58:22.486218",
  "modified_by": "Administrator",
- "module": "Saas",
+ "module": "SaaS",
  "name": "Saas App Plan",
  "naming_rule": "Expression (old style)",
  "owner": "Administrator",

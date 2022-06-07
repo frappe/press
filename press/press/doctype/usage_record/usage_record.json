@@ -20,6 +20,7 @@
   "interval",
   "invoice",
   "column_break_13",
+  "payout",
   "remark",
   "amended_from"
  ],
@@ -117,15 +118,21 @@
    "fieldtype": "Link",
    "label": "Plan",
    "options": "Plan"
+  },
+  {
+   "fieldname": "payout",
+   "fieldtype": "Data",
+   "label": "Saas Developer Payout"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2020-11-11 11:51:46.970457",
+ "modified": "2022-06-07 11:11:53.405754",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Usage Record",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {
@@ -148,6 +155,7 @@
  "search_fields": "team, document_name",
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "title_field": "team",
  "track_changes": 1
 }
