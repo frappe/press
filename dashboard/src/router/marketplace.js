@@ -61,6 +61,11 @@ export default [
 				component: () => import('../views/MarketplaceAppDeployment.vue')
 			},
 			{
+				name: 'MarketplaceAppSubscriptions',
+				path: 'subscriptions',
+				component: () => import('../views/MarketplaceAppSubscriptions.vue')
+			},
+			{
 				name: 'MarketplaceAppPricing',
 				path: 'pricing',
 				component: () => import('../views/MarketplaceAppPricing.vue')
