@@ -331,6 +331,10 @@ class Invoice(Document):
 			)
 
 		invoice_item.quantity = (invoice_item.quantity or 0) + 1
+
+		if usage_record.payout:
+			self.payout += usage_record.payout
+
 		self.save()
 		usage_record.db_set("invoice", self.name)
 

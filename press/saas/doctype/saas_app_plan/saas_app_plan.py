@@ -16,6 +16,11 @@ class SaasAppPlan(Document):
 		if dt != "Saas App":
 			frappe.throw("The plan must be a Saas App plan.")
 
+		site_plan = frappe.db.get_value("Plan", self.site_plan, "price_usd")
+		saas_plan = frappe.db.get_value("Plan", self.plan, "price_usd")
+
+		self.payout_percentage = 100 - float("{:.2f}".format((site_plan / saas_plan) * 100))
+
 
 def get_app_plan_features(app_plan: str) -> List[str]:
 	features = frappe.get_all(
