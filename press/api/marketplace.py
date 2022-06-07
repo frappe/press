@@ -597,3 +597,43 @@ def submit_user_review(title, rating, app, review):
 			"reviewer": frappe.session.user,
 		}
 	).insert(ignore_permissions=True)
+
+
+@frappe.whitelist()
+def get_subscriptions_list(marketplace_app: str) -> List:
+	marketplace_app = "whatsapp_integration"
+	app_sub = frappe.qb.DocType("Marketplace App Subscription")
+	app_plan = frappe.qb.DocType("Marketplace App Plan")
+	plan = frappe.qb.DocType("Plan")
+	site = frappe.qb.DocType("Site")
+	usage_record = frappe.qb.DocType("Usage Record")
+
+	conditions = (app_plan.is_free == False) & app_sub.status == "Active"
+	conditions = conditions & (site.status == "Active")
+	conditions = conditions & (app_sub.app == marketplace_app)
+
+	query = (
+		frappe.qb.from_(app_sub)
+		.join(app_plan)
+		.on(app_sub.marketplace_app_plan == app_plan.name)
+		.join(plan)
+		.on(app_plan.plan == plan.name)
+		.join(site)
+		.on(site.name == app_sub.site)
+		.join(usage_record)
+		.on(usage_record.subscription == app_sub.name)
+		.where(conditions)
+		.groupby(usage_record.subscription)
+		.select(
+			frappe.query_builder.functions.Count("*").as_("active_days"),
+			app_sub.site,
+			site.team.as_("user_contact"),
+			app_sub.plan.as_("app_plan"),
+			plan.price_usd.as_("price_usd"),
+			plan.price_inr.as_("price_inr"),
+		)
+	)
+
+	result = query.run(as_dict=True)
+	
+	return result
