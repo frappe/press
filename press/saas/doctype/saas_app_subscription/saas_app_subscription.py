@@ -82,6 +82,9 @@ class SaasAppSubscription(Document):
 
 		plan = frappe.get_cached_doc("Plan", self.plan)
 		amount = plan.get_price_for_interval(self.interval, team.currency)
+		payout_percentage = frappe.db.get_value(
+			"Saas App Plan", self.saas_app_plan, "payout_percentage"
+		)
 
 		usage_record = frappe.get_doc(
 			doctype="Usage Record",
@@ -92,6 +95,7 @@ class SaasAppSubscription(Document):
 			amount=amount,
 			subscription=self.name,
 			interval=self.interval,
+			payout=(amount / 100) * float(payout_percentage),
 		)
 		usage_record.insert()
 		usage_record.submit()
