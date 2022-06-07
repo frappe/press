@@ -51,7 +51,8 @@ const activeSubscriptions = useResource({
 					<p class="hidden md:inline">{{ $planTitle(subscription) }} /mo</p>
 
 					<p class="hidden text-gray-700 md:inline">
-						{{ subscription.active_days }} days
+						{{ subscription.active_days }}
+						{{ subscription.active_days == 1 ? 'day' : 'days' }}
 					</p>
 
 					<a
