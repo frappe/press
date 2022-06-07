@@ -409,9 +409,9 @@ def account_request(
 	password,
 	first_name,
 	last_name,
-	phone_number,
 	country,
 	app,
+	phone_number=None,
 	url_args=None,
 ):
 	email = email.strip().lower()
