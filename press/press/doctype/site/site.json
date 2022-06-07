@@ -524,9 +524,14 @@
    "group": "Logs",
    "link_doctype": "Site Update",
    "link_fieldname": "site"
+  },
+  {
+   "group": "Related Documents",
+   "link_doctype": "ERPNext Site Settings",
+   "link_fieldname": "site"
   }
  ],
- "modified": "2022-04-12 18:53:40.750824",
+ "modified": "2022-06-03 18:47:16.813626",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

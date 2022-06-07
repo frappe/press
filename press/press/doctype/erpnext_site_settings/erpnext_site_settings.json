@@ -1,0 +1,93 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:site",
+ "creation": "2022-06-03 14:33:04.239124",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "site",
+  "expiry",
+  "users",
+  "emails",
+  "space",
+  "column_break_6",
+  "plan",
+  "support_expiry"
+ ],
+ "fields": [
+  {
+   "fieldname": "site",
+   "fieldtype": "Link",
+   "label": "Site",
+   "options": "Site",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "expiry",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Expiry",
+   "reqd": 1
+  },
+  {
+   "fieldname": "users",
+   "fieldtype": "Int",
+   "label": "Users"
+  },
+  {
+   "fieldname": "plan",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Plan"
+  },
+  {
+   "fieldname": "support_expiry",
+   "fieldtype": "Date",
+   "label": "Support Expiry"
+  },
+  {
+   "default": "25000",
+   "fieldname": "emails",
+   "fieldtype": "Int",
+   "label": "Emails"
+  },
+  {
+   "default": "25",
+   "fieldname": "space",
+   "fieldtype": "Int",
+   "label": "Space (in GB)"
+  },
+  {
+   "fieldname": "column_break_6",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2022-06-06 22:27:21.058497",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "ERPNext Site Settings",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
