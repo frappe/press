@@ -14,11 +14,11 @@ const props = defineProps({ site: Object });
 				description="Once you drop site your site, there is no going back"
 			>
 				<template v-slot:actions>
-				<SiteDrop :site="props.site" v-slot="{ showDialog }">
-					<Button @click="showDialog">
-						<span class="text-red-600">Drop Site</span>
-					</Button>
-				</SiteDrop>
+					<SiteDrop :site="props.site" v-slot="{ showDialog }">
+						<Button @click="showDialog">
+							<span class="text-red-600">Drop Site</span>
+						</Button>
+					</SiteDrop>
 				</template>
 			</ListItem>
 		</Card>
