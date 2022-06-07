@@ -193,6 +193,7 @@ scheduler_events = {
 		"press.press.doctype.site.saas_pool.create",
 		"press.press.doctype.invoice.invoice.finalize_draft_invoices",
 		"press.marketplace.doctype.marketplace_app_subscription.marketplace_app_subscription.create_usage_records",
+		"press.saas.doctype.saas_app_subscription.saas_app_subscription.create_usage_records",
 		"press.press.doctype.app.app.poll_new_releases",
 	],
 	"cron": {
