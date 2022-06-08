@@ -1,7 +1,17 @@
-{% extends "templates/web.html" %}
+{% extends "templates/marketplace/base.html" %}
+{%- from "templates/marketplace/macros.html" import button, link, breadcrumbs -%}
 
-{% block page_content %}
-<h1>{{ title }}</h1>
-{% endblock %}
+{%- block body -%}
+<div>
+    <div class="px-4 sm:px-8">
+        <div class="mt-5">
+            <img src="{{ doc.image }}" alt="Logo">
+            <h1>{{ doc.display_name }}</h1>
+        </div>
 
-<!-- this is a sample default web page template -->
+        <div class="flex flex-col pt-4 pb-8 md:flex-row md:space-x-10">
+
+        </div>
+    </div>
+</div>
+{%- endblock -%}
