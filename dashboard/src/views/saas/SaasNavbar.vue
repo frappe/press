@@ -5,6 +5,9 @@
 				<FrappeSaasLogo @dblclick="redirectToSaasHome" />
 
 				<div class="flex items-center">
+					<Button class="ml-2" icon-left="file-text" link="/saas-feedback"
+						>Give Feedback</Button
+					>
 					<Button class="ml-2" icon-left="life-buoy" link="/support"
 						>Support</Button
 					>

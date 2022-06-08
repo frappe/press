@@ -635,5 +635,5 @@ def get_subscriptions_list(marketplace_app: str) -> List:
 	)
 
 	result = query.run(as_dict=True)
-	
+
 	return result
