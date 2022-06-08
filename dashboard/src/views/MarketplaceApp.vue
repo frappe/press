@@ -85,6 +85,7 @@ export default {
 				{ label: 'Overview', route: 'overview' },
 				{ label: 'Releases', route: 'releases' },
 				{ label: 'Analytics', route: 'analytics' },
+				{ label: 'Subscriptions', route: 'subscriptions' },
 				{ label: 'Pricing', route: 'pricing' }
 			];
 

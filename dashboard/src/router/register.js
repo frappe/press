@@ -5,7 +5,7 @@ export default function registerRouter(app, auth, account) {
 
 	router.beforeEach(async (to, from, next) => {
 		if (localStorage.getItem('saas_login') && !to.meta.isSaasPage) {
-			next('/saas/subscription');
+			next('/saas/apps');
 			return;
 		}
 
