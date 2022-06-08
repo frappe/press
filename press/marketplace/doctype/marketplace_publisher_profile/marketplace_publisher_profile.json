@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_guest_to_view": 1,
  "allow_rename": 1,
  "creation": "2021-10-14 19:06:47.319840",
  "doctype": "DocType",
@@ -8,9 +9,13 @@
  "field_order": [
   "display_name",
   "team",
+  "column_break_3",
   "website",
   "contact_email",
-  "email_for_notifications"
+  "web_view_settings_section",
+  "route",
+  "column_break_8",
+  "published"
  ],
  "fields": [
   {
@@ -21,12 +26,6 @@
    "options": "Team",
    "reqd": 1,
    "unique": 1
-  },
-  {
-   "fieldname": "email_for_notifications",
-   "fieldtype": "Data",
-   "label": "Email For Notifications",
-   "options": "Email"
   },
   {
    "fieldname": "contact_email",
@@ -46,11 +45,38 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Display Name"
+  },
+  {
+   "fieldname": "route",
+   "fieldtype": "Data",
+   "label": "Route",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "published",
+   "fieldtype": "Check",
+   "label": "Published"
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "web_view_settings_section",
+   "fieldtype": "Section Break",
+   "label": "Web View Settings"
+  },
+  {
+   "fieldname": "column_break_8",
+   "fieldtype": "Column Break"
   }
  ],
+ "has_web_view": 1,
  "index_web_pages_for_search": 1,
+ "is_published_field": "published",
  "links": [],
- "modified": "2021-11-26 15:43:45.519862",
+ "modified": "2022-06-08 20:02:01.323394",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "Marketplace Publisher Profile",
@@ -71,6 +97,7 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "title_field": "team",
  "track_changes": 1
 }
