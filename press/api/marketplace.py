@@ -608,8 +608,7 @@ def get_subscriptions_list(marketplace_app: str) -> List:
 	site = frappe.qb.DocType("Site")
 	usage_record = frappe.qb.DocType("Usage Record")
 
-	conditions = (app_plan.is_free == False) & app_sub.status == "Active"
-	conditions = conditions & (site.status == "Active")
+	conditions = app_plan.is_free == False
 	conditions = conditions & (app_sub.app == marketplace_app)
 
 	query = (
@@ -631,6 +630,7 @@ def get_subscriptions_list(marketplace_app: str) -> List:
 			app_sub.plan.as_("app_plan"),
 			plan.price_usd.as_("price_usd"),
 			plan.price_inr.as_("price_inr"),
+			app_sub.status,
 		)
 	)
 

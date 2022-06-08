@@ -5,7 +5,7 @@ const props = defineProps({
 	app: Object
 });
 
-const activeSubscriptions = useResource({
+const appSubscriptions = useResource({
 	method: 'press.api.marketplace.get_subscriptions_list',
 	params: {
 		marketplace_app: props.app?.name
@@ -15,9 +15,9 @@ const activeSubscriptions = useResource({
 </script>
 
 <template>
-	<Card title="Active Subscriptions">
-		<div v-if="activeSubscriptions.data">
-			<div v-if="activeSubscriptions.data.length === 0">
+	<Card title="Subscriptions">
+		<div v-if="appSubscriptions.data">
+			<div v-if="appSubscriptions.data.length === 0">
 				<p class="my-3 text-center text-base text-gray-600">
 					Your app has no active subscribers.
 				</p>
@@ -27,14 +27,14 @@ const activeSubscriptions = useResource({
 					class="grid grid-cols-3 items-center gap-x-8 py-4 text-base text-gray-600 md:grid-cols-5"
 				>
 					<span class="col-span-2 md:col-span-1">Site</span>
-					<span>Plan</span>
+					<span>Status</span>
 					<span class="hidden md:inline">Price</span>
 					<span class="hidden md:inline">Active For</span>
 					<span class="hidden md:inline">Contact</span>
 				</div>
 
 				<div
-					v-for="subscription in activeSubscriptions.data"
+					v-for="subscription in appSubscriptions.data"
 					:key="subscription.site"
 					class="grid grid-cols-3 items-center gap-x-8 py-4 text-base text-gray-900 md:grid-cols-5"
 				>
@@ -44,8 +44,8 @@ const activeSubscriptions = useResource({
 						{{ subscription.site }}
 					</p>
 
-					<p class="text-gray-700">
-						{{ subscription.app_plan }}
+					<p>
+						<Badge :status="subscription.status"></Badge>
 					</p>
 
 					<p class="hidden md:inline">{{ $planTitle(subscription) }} /mo</p>
@@ -65,10 +65,10 @@ const activeSubscriptions = useResource({
 			</div>
 		</div>
 
-		<div v-else-if="activeSubscriptions.loading">
+		<div v-else-if="appSubscriptions.loading">
 			<Button :loading="true">Loading</Button>
 		</div>
 
-		<ErrorMessage :error="activeSubscriptions.error" />
+		<ErrorMessage :error="appSubscriptions.error" />
 	</Card>
 </template>
