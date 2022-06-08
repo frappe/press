@@ -45,10 +45,6 @@
 					<input type="password" id="password" class="form-control" name="password">
 				</div>
 				<div class="form-group">
-					<label for="phone">Phone Number</label>
-					<input type="tel" id="phone" class="form-control" name="phone_number" autocomplete="tel">
-				</div>
-				<div class="form-group">
 					<label for="country">Country</label>
 					<input type="text" id="country" class="form-control" name="country">
 				</div>
@@ -117,16 +113,6 @@
 		last_name: value => {
 			if (!value) {
 				return 'Last Name is required'
-			}
-		},
-		phone_number: (value) => {
-			if (!value) {
-				return 'Phone Number is required'
-			}
-
-			let regExp = /[a-zA-Z]/g;
-			if (regExp.test(value)) {
-				return "Phone number cannot contain alphabets";
 			}
 		},
 		email: (value) => {

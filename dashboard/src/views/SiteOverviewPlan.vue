@@ -152,6 +152,27 @@ export default {
 				this.plan.total_storage_usage > plan.max_storage_usage ||
 				this.plan.total_database_usage > plan.max_database_usage
 			);
+		},
+
+		getCurrentFormattedUsage() {
+			let f = value => {
+				return this.formatBytes(value, 0, 2);
+			};
+
+			return [
+				{
+					label: 'CPU',
+					value: `${this.plan.total_cpu_usage_hours} hours`
+				},
+				{
+					label: 'Database',
+					value: f(this.plan.total_database_usage)
+				},
+				{
+					label: 'Storage',
+					value: f(this.plan.total_storage_usage)
+				}
+			];
 		}
 	},
 	computed: {
@@ -184,21 +205,8 @@ export default {
 				return this.formatBytes(value, 0, 2);
 			};
 
-			if (this.site.status === 'Suspended') {
-				return [
-					{
-						label: 'CPU',
-						value: `${this.plan.total_cpu_usage_hours} hours`
-					},
-					{
-						label: 'Database',
-						value: f(this.plan.total_database_usage)
-					},
-					{
-						label: 'Storage',
-						value: f(this.plan.total_storage_usage)
-					}
-				];
+			if (!this.plan.current_plan || this.site.status === 'Suspended') {
+				return this.getCurrentFormattedUsage();
 			}
 			return [
 				{

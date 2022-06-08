@@ -32,6 +32,9 @@ class SaasApiHandler:
 	def get_subscription_status(self):
 		return self.app_subscription_doc.status
 
+	def get_subscription_info(self):
+		return frappe.get_doc("Saas App Subscription", self.app_subscription_name)
+
 	def get_plan_config(self):
 		plan_doc = frappe.get_doc(
 			"Saas App Plan", self.app_subscription_doc.saas_app_plan
@@ -58,3 +61,9 @@ def get_subscription_status(secret_key):
 def get_plan_config(secret_key):
 	api_handler = SaasApiHandler(secret_key)
 	return api_handler.get_plan_config()
+
+
+@frappe.whitelist(allow_guest=True)
+def get_subscription_info(secret_key):
+	api_handler = SaasApiHandler(secret_key)
+	return api_handler.get_subscription_info()

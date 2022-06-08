@@ -4,6 +4,7 @@
 import frappe
 from frappe.model.document import Document
 from press.utils import log_error
+from frappe.core.doctype.user.user import generate_keys
 
 
 class SaasAppSubscription(Document):
@@ -37,11 +38,18 @@ class SaasAppSubscription(Document):
 	def set_secret_key_in_site_config(self):
 		site_doc = frappe.get_doc("Site", self.site)
 
-		key = f"sk_{self.app}"
-		value = self.secret_key
-		config = {key: value}
+		response = generate_keys(site_doc.team)
+		api_key = frappe.db.get_value("User", site_doc.team, "api_key")
+		new_config = [
+			{"key": "saas_api_key", "value": api_key, "type": "String"},
+			{"key": "saas_api_secret", "value": response["api_secret"], "type": "String"},
+			{"key": f"sk_{self.app}", "value": self.secret_key, "type": "String"},
+		]
 
-		site_doc.update_site_config(config)
+		if self.app == "erpnext_smb":
+			new_config.append({"key": "plan", "value": "Free"})
+
+		site_doc.update_site_config(new_config)
 
 	def validate_saas_app_plan(self):
 		app = frappe.db.get_value("Saas App Plan", self.saas_app_plan, "app")

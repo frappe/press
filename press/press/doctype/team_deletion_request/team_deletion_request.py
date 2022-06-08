@@ -33,17 +33,6 @@ class TeamDeletionRequest(PersonalDataDeletionRequest):
 		self.add_deletion_steps()
 		self.set_users_anonymized()
 
-		url = self.generate_url_for_confirmation()
-
-		frappe.sendmail(
-			recipients=self.email,
-			subject="Account Deletion Request",
-			template="delete_team_confirmation",
-			args={"team": self.team, "link": url},
-			header=["Account Deletion Request", "green"],
-			now=True,
-		)
-
 	def validate(self):
 		self.validate_sites_states()
 		self.finalize_pending_invoices()
