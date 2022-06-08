@@ -15,7 +15,8 @@
   "web_view_settings_section",
   "route",
   "column_break_8",
-  "published"
+  "published",
+  "image"
  ],
  "fields": [
   {
@@ -44,7 +45,8 @@
    "fieldname": "display_name",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Display Name"
+   "label": "Display Name",
+   "reqd": 1
   },
   {
    "fieldname": "route",
@@ -70,13 +72,20 @@
   {
    "fieldname": "column_break_8",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "image",
+   "fieldtype": "Attach Image",
+   "hidden": 1,
+   "label": "Image"
   }
  ],
  "has_web_view": 1,
+ "image_field": "image",
  "index_web_pages_for_search": 1,
  "is_published_field": "published",
  "links": [],
- "modified": "2022-06-08 20:02:01.323394",
+ "modified": "2022-06-08 20:11:58.932526",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "Marketplace Publisher Profile",
