@@ -534,7 +534,9 @@ class Agent:
 					method, url, headers=headers, files=file_objects, verify=verify
 				)
 			else:
-				result = requests.request(method, url, headers=headers, json=data, verify=verify)
+				result = requests.request(
+					method, url, headers=headers, json=data, verify=verify, timeout=(10, 30)
+				)
 			try:
 				return result.json()
 			except Exception:
