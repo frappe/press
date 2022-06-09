@@ -11,7 +11,7 @@
 		</template>
 		<Dialog title="Updates available" v-model="showUpdatesDialog">
 			<SiteAppUpdates :apps="updateInformation.apps" />
-			<div class="mt-4" v-if="lastMigrateFailed">
+			<div class="mt-4">
 				<!-- Skip Failing Checkbox -->
 				<input
 					id="skip-failing"
