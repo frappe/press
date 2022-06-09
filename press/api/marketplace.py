@@ -631,6 +631,8 @@ def get_subscriptions_list(marketplace_app: str) -> List:
 			plan.price_inr.as_("price_inr"),
 			app_sub.status,
 		)
+		.orderby(app_sub.status)
+		.orderby(app_sub.creation, order=frappe.qb.desc)
 	)
 
 	result = query.run(as_dict=True)
