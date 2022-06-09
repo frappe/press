@@ -607,7 +607,7 @@ def get_subscriptions_list(marketplace_app: str) -> List:
 	site = frappe.qb.DocType("Site")
 	usage_record = frappe.qb.DocType("Usage Record")
 
-	conditions = app_plan.is_free == False
+	conditions = app_plan.is_free == False  # noqa: E712
 	conditions = conditions & (app_sub.app == marketplace_app)
 
 	query = (
