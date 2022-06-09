@@ -601,7 +601,6 @@ def submit_user_review(title, rating, app, review):
 
 @frappe.whitelist()
 def get_subscriptions_list(marketplace_app: str) -> List:
-	marketplace_app = "whatsapp_integration"
 	app_sub = frappe.qb.DocType("Marketplace App Subscription")
 	app_plan = frappe.qb.DocType("Marketplace App Plan")
 	plan = frappe.qb.DocType("Plan")
