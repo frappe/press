@@ -24,7 +24,8 @@ class AccountRequest(Document):
 		self.state = geo_location.get("regionName")
 
 	def after_insert(self):
-		self.send_verification_email()
+		if self.send_email:
+			self.send_verification_email()
 
 	def get_country_info(self):
 		return get_country_info()

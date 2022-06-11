@@ -30,6 +30,8 @@
   "state",
   "agreed_to_partner_consent",
   "saas_sign_up_section",
+  "send_email",
+  "initial_plan",
   "saas",
   "saas_app",
   "referrer_data",
@@ -217,12 +219,23 @@
    "fieldname": "state",
    "fieldtype": "Data",
    "label": "State"
+  },
+  {
+   "default": "0",
+   "fieldname": "send_email",
+   "fieldtype": "Check",
+   "label": "Send Email"
+  },
+  {
+   "fieldname": "initial_plan",
+   "fieldtype": "Data",
+   "label": "Initial Plan"
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-04-14 18:37:28.625041",
+ "modified": "2022-06-10 21:46:19.897616",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",
