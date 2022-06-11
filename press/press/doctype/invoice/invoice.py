@@ -795,6 +795,7 @@ def finalize_draft_invoices():
 		filters={"status": "Draft", "type": "Subscription", "period_end": ("<=", today)},
 		pluck="name",
 		limit=500,
+		order_by="total desc",
 	)
 
 	current_time = frappe.utils.get_datetime().time()
