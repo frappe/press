@@ -1,0 +1,84 @@
+{%- extends "templates/erpnextsmb_signup_layout.html" -%} {%- block content -%}
+
+
+<div class="card w-75 mx-auto ">
+	<div class="card-body text-center">
+
+		{# On Success #}
+		<div id="setup-card-succeeded" class="hidden">
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				width="50"
+				height="50"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				class="feather feather-mail"
+			>
+				<path
+					d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
+				></path>
+				<polyline points="22,6 12,13 2,6"></polyline>
+			</svg>
+			<h2 class="font-size-base mt-8">Verification Email Sent!</h2>
+			We have sent an email<span class="verification-email"></span>. Please
+			click on the link received to verify your email and create your account.
+		</div>
+
+		{# On Error #}
+		<div id="setup-card-error" class="hidden">
+			<h2 class="font-size-base mt-8">An Unexpected Error Occured!</h2>
+			Please try again. Redirecting back to signup page...
+		</div>
+
+	</div>
+</div>
+{%- endblock -%} {%- block script -%}
+<script src="/assets/press/js/form_controller.js"></script>
+<script>
+	const stripe = Stripe(
+		'pk_test_51KMqjDSEesMEEnZTNAxFAwiDQMqyOLQYCgtDbOF3vns3EsYrF18CkCmXVUenfSu9wH2kbW4q1lzT0JSYpzCTroso00WKMMdSji'
+	);
+
+	checkStatus();
+
+	async function checkStatus() {
+		const clientSecret = new URLSearchParams(window.location.search).get(
+			'setup_intent_client_secret'
+		);
+
+		if (!clientSecret) {
+			// client secret not received ? redirect to signup page
+			return;
+		}
+
+		const { setupIntent } = await stripe.retrieveSetupIntent(clientSecret);
+		showMessage(setupIntent.status);
+	}
+
+	function showMessage(status) {
+		let messageContainer;
+		if (status === 'succeeded') {
+			messageContainer = document.querySelector(`#setup-card-${status}`);
+		} else if (status === 'processing') {
+			messageContainer = document.querySelector(`#setup-card-${status}`);
+		} else {
+			messageContainer = document.querySelector(`#setup-card-error`);
+
+			setTimeout(() => {
+				window.location = "https://frappecloud.com/erpnextsmb/signup";
+			}, 4000);
+		}
+
+		messageContainer.classList.remove('hidden');
+	}
+
+	function showCard(type) {
+		const messageContainer = document.querySelector('#setup-card-success');
+		messageContainer.classList.remove('hidden');
+	}
+</script>
+{%- endblock -%}
