@@ -42,7 +42,11 @@
 				</div>				
 				<div class="form-group">
 					<label for="password">Password</label>
-					<input type="password" id="password" class="form-control" name="password">
+					<input type="password" id="password" class="form-control" name="password" onkeyup="validate_password(this)">
+					<div class="mt-4 flex">
+						<input id="showPassword" type="checkbox" onclick="togglePasswordVisibility()">
+						<p class="text-xs mb-0">Show Password</p>
+					</div>
 				</div>
 				<div class="form-group">
 					<label for="phone">Phone Number</label>
@@ -137,6 +141,10 @@
 		password: (value) => {
 			if (!value) {
 				return "Password is required"
+			} else {
+				if (validate_password(value, true)) {
+					return "Please use a strong password"
+				}
 			}
 		},
 		country: (value) => {
@@ -203,6 +211,44 @@
 					!available
 				);
 			});
+		}
+	}
+
+	function validate_password(input, isValue) {
+		let password;
+
+		if (isValue) {
+			password = input
+		} else {
+			let $input = $(input);
+			password = $input.val();
+		}
+
+		var pattern = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,20}$/;
+
+		if (password.match(pattern)) {
+			controller.show_input_feedback(
+				"password",
+				"Now that's a strong password. Good job!",
+				false
+			);
+			return false;
+		} else {
+			controller.show_input_feedback(
+				"password",
+				"Bad Password! The password length should be atleast 8 characters and it should contain a combination of capital letters, small letters, numbers and symbols. For e.g. Gene@31480, Merz313$oo",
+				true
+			);
+			return true;
+		}
+	}
+
+	function togglePasswordVisibility() {
+		var inp = document.getElementById("password");
+		if (inp.type === "password") {
+			inp.type = "text";
+		} else {
+			inp.type = "password";
 		}
 	}
 
