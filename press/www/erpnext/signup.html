@@ -226,7 +226,7 @@
 
 		var pattern = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,20}$/;
 
-		if (password.match(pattern)) {
+		if (password.match(pattern) && password.length >= 8) {
 			controller.show_input_feedback(
 				"password",
 				"Now that's a strong password. Good job!",
