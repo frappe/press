@@ -480,12 +480,14 @@ def create_or_rename_saas_site(app, account_request):
 		if pooled_site:
 			# Rename a standby site
 			SaasSite(site=pooled_site, app=app).rename_pooled_site(account_request)
+			pass
 		else:
 			# Create a new site if pooled sites aren't available
 			saas_site = SaasSite(account_request=account_request, app=app).insert(
 				ignore_permissions=True
 			)
 			saas_site.create_subscription(get_saas_site_plan(app))
+			pass
 	finally:
 		frappe.set_user(current_user)
 		frappe.session.data = current_session_data
@@ -654,6 +656,22 @@ def get_site_url_and_sid(key, app=None):
 		"url": f"https://{site.name}",
 		"sid": site.login(),
 	}
+
+
+@frappe.whitelist(allow_guest=True)
+def login_via_token(token):
+	try:
+		doc = frappe.get_doc(
+			"Saas Remote Login",
+			{"token": token, "status": "Attempted", "expires_on": (">", frappe.utils.now())},
+		)
+		doc.status = "Used"
+		frappe.local.login_manager.login_as(doc.team)
+		doc.save(ignore_permissions=True)
+	except Exception:
+		frappe.throw("Token Invalid or Expired!")
+
+	return "success"
 
 
 # ------------------ Stripe setup ------------------- #
