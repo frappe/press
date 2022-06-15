@@ -452,14 +452,12 @@ def account_request(
 		if pooled_site:
 			# Rename a standby site
 			SaasSite(site=pooled_site, app=app).rename_pooled_site(account_request)
-			pass
 		else:
 			# Create a new site if pooled sites aren't available
 			saas_site = SaasSite(account_request=account_request, app=app).insert(
 				ignore_permissions=True
 			)
 			saas_site.create_subscription(get_saas_site_plan(app))
-			pass
 	finally:
 		frappe.set_user(current_user)
 		frappe.session.data = current_session_data
