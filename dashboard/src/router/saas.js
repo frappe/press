@@ -10,6 +10,15 @@ export default [
 		props: true
 	},
 	{
+		path: '/saas/remote-login',
+		name: 'RemoteLogin',
+		component: () => import('../views/saas/RemoteLogin.vue'),
+		meta: {
+			isLoginPage: true,
+		},
+		props: true
+	},
+	{
 		path: '/saas/billing',
 		name: 'Billing',
 		component: () => import('../views/saas/Billing.vue'),
