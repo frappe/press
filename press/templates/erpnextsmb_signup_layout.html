@@ -1,14 +1,16 @@
 {%- extends "templates/base.html" -%}
 
 {%- block navbar -%}
-<script src="https://js.stripe.com/v3/"></script>
 <nav class="bg-transparent navbar navbar-light justify-content-center border-bottom-0">
 	<div class="text-center">
 		<a class="navbar-brand" href="https://erpnext.com" style="margin-right: 0;"> 
 			<img src="/assets/press/images/signup/erpnext.png" alt="ERPNext Logo" style="height: 16px;">
 		</a>
 		<div class="font-size-sm">
-			Welcome to ERPNext
+			Powered by
+			<a href="/">
+				Frappe Cloud
+			</a>
 		</div>
 	</div>
 </nav>
@@ -31,8 +33,7 @@
 	}
 
 	h1 {
-		margin-top: 0px;
-		margin-bottom: 2em;
+		margin: 2rem 0;
 		font-size: var(--font-size-xl);
 		font-weight: 600;
 		text-align: center;
@@ -64,125 +65,5 @@
 			padding: 0;
 		}
 	}
-
-
-	{# stripe themes #}
-	.hidden {
-		display: none;
-	}
-
-	#payment-message {
-		color: rgb(105, 115, 134);
-		font-size: 16px;
-		line-height: 20px;
-		padding-top: 12px;
-		text-align: center;
-	}
-
-	#payment-element {
-		margin-bottom: 24px;
-	}
-
-	/* Buttons and links */
-	button {
-		background: #5469d4;
-		font-family: Arial, sans-serif;
-		color: #ffffff;
-		border-radius: 4px;
-		border: 0;
-		padding: 12px 16px;
-		font-size: 16px;
-		font-weight: 600;
-		cursor: pointer;
-		display: block;
-		transition: all 0.2s ease;
-		box-shadow: 0px 4px 5.5px 0px rgba(0, 0, 0, 0.07);
-		width: 100%;
-	}
-	button:hover {
-		filter: contrast(115%);
-	}
-	button:disabled {
-		opacity: 0.5;
-		cursor: default;
-	}
-	/* spinner/processing state, errors */
-	.spinner,
-	.spinner:before,
-	.spinner:after {
-		border-radius: 50%;
-	}
-	.spinner {
-		color: #ffffff;
-		font-size: 22px;
-		text-indent: -99999px;
-		margin: 0px auto;
-		position: relative;
-		width: 20px;
-		height: 20px;
-		box-shadow: inset 0 0 0 2px;
-		-webkit-transform: translateZ(0);
-		-ms-transform: translateZ(0);
-		transform: translateZ(0);
-	}
-	.spinner:before,
-	.spinner:after {
-		position: absolute;
-		content: "";
-	}
-	.spinner:before {
-		width: 10.4px;
-		height: 20.4px;
-		background: #5469d4;
-		border-radius: 20.4px 0 0 20.4px;
-		top: -0.2px;
-		left: -0.2px;
-		-webkit-transform-origin: 10.4px 10.2px;
-		transform-origin: 10.4px 10.2px;
-		-webkit-animation: loading 2s infinite ease 1.5s;
-		animation: loading 2s infinite ease 1.5s;
-	}
-	.spinner:after {
-		width: 10.4px;
-		height: 10.2px;
-		background: #5469d4;
-		border-radius: 0 10.2px 10.2px 0;
-		top: -0.1px;
-		left: 10.2px;
-		-webkit-transform-origin: 0px 10.2px;
-		transform-origin: 0px 10.2px;
-		-webkit-animation: loading 2s infinite ease;
-		animation: loading 2s infinite ease;
-	}
-
-	@-webkit-keyframes loading {
-		0% {
-			-webkit-transform: rotate(0deg);
-			transform: rotate(0deg);
-		}
-		100% {
-			-webkit-transform: rotate(360deg);
-			transform: rotate(360deg);
-		}
-	}
-	@keyframes loading {
-		0% {
-			-webkit-transform: rotate(0deg);
-			transform: rotate(0deg);
-		}
-		100% {
-			-webkit-transform: rotate(360deg);
-			transform: rotate(360deg);
-		}
-	}
-
-	@media only screen and (max-width: 600px) {
-		form {
-			width: 80vw;
-			min-width: initial;
-		}
-	}
-
 </style>
 {%- endblock -%}
-

@@ -1,43 +1,22 @@
-{%- extends "templates/erpnextsmb_signup_layout.html" -%} 
+{%- extends "templates/erpnext_signup_layout.html" -%}
 
 {%- block content -%}
 
-<div
-	class="mx-auto form-container col-xl-5 col-lg-6 col-md-7 col-sm-9"
-	id="user-signup"
-	data-validators="field_validators"
->
+<h1>Create a new account</h1>
+
+<div class="mx-auto form-container col-xl-5 col-lg-6 col-md-7 col-sm-9" id="user-signup"
+	data-validators="field_validators">
 	<div class="card">
 		<div class="card-body">
-			<div
-				class="alert alert-primary form-alert-info small"
-				style="display: none"
-				role="alert"
-			></div>
-			<div
-				class="alert alert-danger form-alert-error small"
-				style="display: none"
-				role="alert"
-			></div>
+			<div class="alert alert-primary form-alert-info small" style="display: none;" role="alert"></div>
+			<div class="alert alert-danger form-alert-error small" style="display: none;" role="alert"></div>
 			<!-- 1. Personal Details -->
-			<form
-				class="form-step"
-				data-step="1"
-				data-action="submit_account_request"
-			>
-				<h1 class="step-1">Signup for ERPNext SMB</h1>
+			<form class="form-step" data-step="1" data-action="submit_account_request">
 				<div class="form-group">
 					<label for="subdomain">Site Name</label>
 					<div class="input-group">
-						<input
-							type="text"
-							id="subdomain"
-							name="subdomain"
-							class="form-control"
-							placeholder="yourcompany"
-							autocomplete="off"
-							onchange="validate_subdomain(this)"
-						/>
+						<input type="text" id="subdomain" name="subdomain" class="form-control"
+							placeholder="yourcompany" autocomplete="off" onchange="validate_subdomain(this)">
 						<div class="input-group-append">
 							<span class="input-group-text rounded-right">.erpnext.com</span>
 						</div>
@@ -48,93 +27,68 @@
 				<div class="form-row">
 					<div class="form-group col-12 col-md-6">
 						<label for="first_name">First Name</label>
-						<input
-							type="text"
-							id="first_name"
-							name="first_name"
-							class="form-control"
-							autocomplete="given-name"
-						/>
+						<input type="text" id="first_name" name="first_name" class="form-control"
+							autocomplete="given-name">
 					</div>
 					<div class="form-group col-12 col-md-6">
 						<label for="last_name">Last Name</label>
-						<input
-							type="text"
-							id="last_name"
-							name="last_name"
-							class="form-control"
-							autocomplete="family-name"
-						/>
+						<input type="text" id="last_name" name="last_name" class="form-control"
+							autocomplete="family-name">
 					</div>
 				</div>
 				<div class="form-group">
 					<label for="email">Email address</label>
-					<input
-						type="email"
-						id="email"
-						class="form-control"
-						name="email"
-						autocomplete="email"
-					/>
-				</div>
+					<input type="email" id="email" class="form-control" name="email" autocomplete="email">
+				</div>				
 				<div class="form-group">
 					<label for="password">Password</label>
-					<input
-						type="password"
-						id="password"
-						class="form-control"
-						name="password"
-					/>
+					<input type="password" id="password" class="form-control" name="password">
 				</div>
 				<div class="form-group">
 					<label for="phone">Phone Number</label>
-					<input
-						type="tel"
-						id="phone"
-						class="form-control"
-						name="phone_number"
-						autocomplete="tel"
-					/>
+					<input type="tel" id="phone" class="form-control" name="phone_number" autocomplete="tel">
 				</div>
 				<div class="form-group">
 					<label for="country">Country</label>
-					<input type="text" id="country" class="form-control" name="country" />
+					<input type="text" id="country" class="form-control" name="country">
+				</div>
+				<div class="form-group">
+					<input type="checkbox" name="user_accept_terms" id="user_accept_terms">
+					<label class="d-inline" for="user_accept_terms">
+						By clicking on <b>Create Account</b>, you accept our
+						<a href="https://frappecloud.com/terms" class="text-blue-600">Terms of Service</a>,
+						<a href="https://frappecloud.com/privacy" class="text-blue-600">Privacy Policy</a>
+						&#38;
+						<a href="https://frappecloud.com/cookie-policy" class="text-blue-600">Cookie Policy.</a>
+					</label>
 				</div>
 				<div class="form-message text-danger"></div>
 				<div class="mt-8 d-flex justify-content-between">
 					<div></div>
-					<button type="submit" class="btn btn-primary btn-step-1 btn-block">
-						Next
-					</button>
+					<button type="submit" class="btn btn-primary btn-step-1">Create Account</button>
 				</div>
 			</form>
-			<form class="form-step" data-step="2" id="payment-form">
-				<div id="payment-element">
-					<!-- Elements will create form elements here -->
+			<!-- 2. Verification Email Sent -->
+			<form class="form-step" data-step="2">
+				<div class="text-center">
+					<h2 class="font-size-base">Verification Email Sent!</h2>
+					We have sent an email to <span class="verification-email"></span>.
+					Please click on the link received to verify your email and create your account.
 				</div>
-
-				<div class="mt-8 d-flex justify-content-between">
-					<button id="submit" class="btn btn-primary btn-step-1 btn-block">
-						<div class="spinner hidden" id="spinner"></div>
-						<span id="button-text">Add Card</span>
-					</button>
-				</div>
-
 			</form>
 		</div>
 	</div>
 </div>
-{%- endblock -%} 
+{%- endblock -%}
 
 {%- block script -%}
 <script src="/assets/press/js/form_controller.js"></script>
 <script>
 	let controller;
-	const app = 'frappe';
-	let accountRequestKey;
+	const app = 'erpnext_smb';
 
 	frappe.ready(() => {
-		controller = new FormController('user-signup');
+		controller = new FormController("user-signup");
 
 		// get subdomain is set in url and show first form
 		set_subdomain_from_url();
@@ -152,56 +106,69 @@
 				return `Site name cannot have more than ${MAX_LENGTH} characters`;
 			}
 			if (!/^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(value)) {
-				return 'Site name should contain lowercase alphabets, numbers, and hyphens';
+				return "Site name should contain lowercase alphabets, numbers, and hyphens";
 			}
 		},
-		first_name: (value) => {
+		first_name: value => {
 			if (!value) {
-				return 'First Name is required';
+				return 'First Name is required'
 			}
 		},
-		last_name: (value) => {
+		last_name: value => {
 			if (!value) {
-				return 'Last Name is required';
+				return 'Last Name is required'
 			}
 		},
 		phone_number: (value) => {
 			if (!value) {
-				return 'Phone Number is required';
+				return 'Phone Number is required'
 			}
 
 			let regExp = /[a-zA-Z]/g;
 			if (regExp.test(value)) {
-				return 'Phone number cannot contain alphabets';
+				return "Phone number cannot contain alphabets";
 			}
 		},
 		email: (value) => {
 			if (!valid_email(value)) {
-				return 'Invalid email';
+				return "Invalid email";
 			}
 		},
 		password: (value) => {
 			if (!value) {
-				return 'Password is required';
+				return "Password is required"
 			}
 		},
 		country: (value) => {
 			if (!value) {
-				return 'Please enter your country name';
+				return "Please enter your country name";
 			}
 		},
 		user_accept_terms: (value) => {
 			if (!value) {
-				return 'You need to accept our Terms of Service & Privary Policy';
+				return "You need to accept our Terms of Service & Privary Policy"
 			}
-		},
+		}
 	};
+
+	function submit_account_request($form, values) {
+		let url_args = frappe.utils.get_query_params();
+		if (Object.keys(url_args)) {
+			values.url_args = url_args;
+		}
+		values.app = app;
+		return call('press.api.saas.account_request', values, $form)
+			.then(() => {
+				$('h1').hide();
+				$('.verification-email').text(values.email);
+			});
+	}
 
 	function set_subdomain_from_url() {
 		let query_params = frappe.utils.get_query_params();
 		if (query_params.domain) {
-			let subdomain = query_params.domain.replace('.erpnext.com', '');
-			$('input[name="subdomain"]').val(subdomain).trigger('change');
+			let subdomain = query_params.domain.replace(".erpnext.com", "");
+			$('input[name="subdomain"]').val(subdomain).trigger("change");
 		}
 	}
 
@@ -210,12 +177,12 @@
 			.call({
 				method,
 				args,
-				type: 'POST',
-				btn: $form.find('button.btn-primary'),
+				type: "POST",
+				btn: $form.find("button.btn-primary"),
 			})
 			.then((r) => {
 				if (r.exc) {
-					console.error('An error occurred', r.exc);
+					console.error("An error occurred", r.exc);
 					return;
 				}
 				return r;
@@ -225,16 +192,14 @@
 	function validate_subdomain(input) {
 		let $input = $(input);
 		let subdomain = $input.val();
-		let error = controller.validate_value('subdomain', subdomain);
+		let error = controller.validate_value("subdomain", subdomain);
 		if (error) {
-			controller.show_input_error('subdomain', error);
+			controller.show_input_error("subdomain", error);
 		} else {
 			check_if_available(subdomain).then((available) => {
 				controller.show_input_feedback(
-					'subdomain',
-					!available
-						? `${subdomain}.erpnext.com is already taken`
-						: `${subdomain}.erpnext.com is available`,
+					"subdomain",
+					!available ? `${subdomain}.erpnext.com is already taken` : `${subdomain}.erpnext.com is available`,
 					!available
 				);
 			});
@@ -244,9 +209,9 @@
 	function check_if_available(subdomain) {
 		return frappe
 			.call({
-				method: 'press.api.saas.check_subdomain_availability',
+				method: "press.api.saas.check_subdomain_availability",
 				args: { subdomain, app: app },
-				type: 'POST',
+				type: "POST",
 			})
 			.then((r) => {
 				if (r.message) {
@@ -254,100 +219,6 @@
 				}
 				return false;
 			});
-	}
-
-	function submit_account_request($form, values) {
-		let url_args = frappe.utils.get_query_params();
-		if (Object.keys(url_args)) {
-			values.url_args = url_args;
-		}
-		values.app = app;
-		values.stripe_setup = true;
-
-		return frappe.call({
-			method: 'press.api.saas.account_request',
-			args: values,
-			callback: (r) => {
-				accountRequestKey = r.message.account_request_key;
-				initialize(r.message.setup_intent.client_secret);
-			},
-		});
-	}
-
-	//--------------------- Stripe setup ---------------------------//
-	const stripe = Stripe(
-		'pk_test_51KMqjDSEesMEEnZTNAxFAwiDQMqyOLQYCgtDbOF3vns3EsYrF18CkCmXVUenfSu9wH2kbW4q1lzT0JSYpzCTroso00WKMMdSji'
-	);
-
-	let elements;
-	document
-		.querySelector('#payment-form')
-		.addEventListener('submit', handleSubmit);
-
-	// Fetches a payment intent and captures the client secret
-	async function initialize(clientSecret) {
-		const options = {
-			clientSecret: clientSecret,
-			appearance: {
-				theme: 'flat',
-			},
-		};
-		elements = stripe.elements(options);
-
-		const paymentElement = elements.create('payment');
-		paymentElement.mount('#payment-element');
-	}
-
-	async function handleSubmit(e) {
-		e.preventDefault();
-		setLoading(true);
-
-		await stripe
-			.confirmSetup({
-				elements,
-				confirmParams: {
-					return_url: 'https://frappecloud.com/erpnextsmb/card-status',
-				},
-			})
-			.then((r) => {
-				if (r.error) {
-					if (
-						r.error.type === 'card_error' ||
-						r.error.type === 'validation_error'
-					) {
-						showMessage(r.error.message);
-					} else {
-						showMessage('An unexpected error occurred.');
-					}
-				} else {
-					if (r.setupIntent.status === 'succeeded') {
-						frappe.call({
-							method: 'press.api.saas.setup_intent_success',
-							args: {
-								setup_intent: r.setupIntent,
-								account_request_key: accountRequestKey,
-							},
-						});
-					}
-				}
-			});
-
-		setLoading(false);
-	}
-
-	// ------- UI helpers -------
-	// Show a spinner on payment submission
-	function setLoading(isLoading) {
-		if (isLoading) {
-			// Disable the button and show a spinner
-			document.querySelector('#submit').disabled = true;
-			document.querySelector('#spinner').classList.remove('hidden');
-			document.querySelector('#button-text').classList.add('hidden');
-		} else {
-			document.querySelector('#submit').disabled = false;
-			document.querySelector('#spinner').classList.add('hidden');
-			document.querySelector('#button-text').classList.remove('hidden');
-		}
 	}
 </script>
 {%- endblock -%}
