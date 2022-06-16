@@ -1,0 +1,37 @@
+---
+- name: Copy Authorized Keys from frappe to root User
+  copy:
+    src: /home/frappe/.ssh/authorized_keys
+    dest: /root/.ssh/authorized_keys
+    mode: 0600
+    remote_src: yes
+
+- name: Create Netplan Configuration File
+  template:
+    src: netplan.yaml
+    dest: /etc/netplan/99-press.yaml
+
+- name: Generate Netplan Configuration
+  shell: netplan generate
+
+- name: Apply Netplan Configuration
+  shell: netplan apply
+
+- name: Disable Password Authentication
+  lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: "^PasswordAuthentication"
+    line: "PasswordAuthentication no"
+    state: present
+
+- name: Reload SSHD
+  service:
+    name: sshd
+    state: reloaded
+
+- name: Remove BIND
+  apt:
+    pkg:
+      - bind9
+    state: absent
+    autoremove: yes
