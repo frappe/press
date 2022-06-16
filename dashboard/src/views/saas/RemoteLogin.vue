@@ -9,7 +9,6 @@
 </template>
 
 <script>
-
 export default {
 	name: 'RemoteLogin',
 	resources: {
@@ -20,8 +19,8 @@ export default {
 					token: this.$route.query.token
 				},
 				onSuccess(r) {
-					this.$saas.saasLogin()
-					window.location.href = '/dashboard/saas/apps'
+					this.$saas.saasLogin();
+					window.location.href = '/dashboard/saas/apps';
 				},
 				onError(e) {
 					this.$notify({
@@ -31,11 +30,11 @@ export default {
 						color: 'red'
 					});
 				}
-			}
+			};
 		}
 	},
 	created() {
 		this.$resources.login.submit();
 	}
-}
+};
 </script>
