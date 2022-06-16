@@ -71,6 +71,9 @@ class SaasApiHandler:
 
 		return f"https://{domain}/dashboard/saas/remote-login?token={token}"
 
+	def get_trial_expiry(self):
+		return frappe.db.get_value("Site", self.app_subscription_doc.site, "trial_end_date")
+
 
 # ------------------------------------------------------------
 # API ENDPOINTS
@@ -102,3 +105,9 @@ def get_subscription_info(secret_key):
 def get_login_url(secret_key):
 	api_handler = SaasApiHandler(secret_key)
 	return api_handler.get_login_url()
+
+
+@frappe.whitelist(allow_guest=True)
+def get_trial_expiry(secret_key):
+	api_handler = SaasApiHandler(secret_key)
+	return api_handler.get_trial_expiry()
