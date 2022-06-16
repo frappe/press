@@ -1,4 +1,6 @@
 import frappe
+import stripe
+import json
 from frappe.core.utils import find
 from frappe.utils.password import get_decrypted_password
 from press.api.site import overview, protected, get
@@ -21,7 +23,10 @@ from press.press.doctype.site.saas_site import (
 )
 from press.press.doctype.site.saas_pool import get as get_pooled_saas_site
 from press.press.doctype.site.erpnext_site import get_erpnext_domain
-from press.utils.billing import get_erpnext_com_connection
+from press.utils.billing import (
+	clear_setup_intent,
+	get_erpnext_com_connection,
+)
 
 
 @frappe.whitelist()
@@ -413,6 +418,7 @@ def account_request(
 	app,
 	phone_number=None,
 	url_args=None,
+	stripe_setup=False,
 ):
 	email = email.strip().lower()
 	frappe.utils.validate_email_address(email, True)
@@ -440,9 +446,31 @@ def account_request(
 			"phone_number": phone_number,
 			"country": country,
 			"url_args": url_args,
+			"send_email": not stripe_setup,
 		}
 	).insert(ignore_permissions=True)
 
+	if stripe_setup:
+		frappe.set_user("Administrator")
+		stripe.api_key = get_decrypted_password(
+			"Stripe Settings",
+			frappe.db.get_single_value("Press Settings", "stripe_account"),
+			"secret_key",
+			raise_exception=False,
+		)
+		customer_id = create_team(account_request, get_stripe_id=True)
+
+		return {
+			"account_request_key": account_request.request_key,
+			"setup_intent": stripe.SetupIntent.create(
+				customer=customer_id, payment_method_types=["card"]
+			),
+		}
+	else:
+		create_or_rename_saas_site(app, account_request)
+
+
+def create_or_rename_saas_site(app, account_request):
 	current_user = frappe.session.user
 	current_session_data = frappe.session.data
 	frappe.set_user("Administrator")
@@ -518,7 +546,7 @@ def setup_account(key, business_data=None):
 	account_request.update(business_data)
 	account_request.save(ignore_permissions=True)
 
-	create_team_from_account_request(account_request)
+	create_saas_subscription(account_request)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -532,24 +560,11 @@ def headless_setup_account(key):
 
 	frappe.set_user("Administrator")
 
-	create_team_from_account_request(account_request)
+	create_saas_subscription(account_request)
 
 
-def create_team_from_account_request(account_request):
-	email = account_request.email
-
-	if not frappe.db.exists("Team", email):
-		team_doc = Team.create_new(
-			account_request,
-			account_request.first_name,
-			account_request.last_name,
-			password=get_decrypted_password("Account Request", account_request.name, "password"),
-			country=account_request.country,
-			via_erpnext=True,
-		)
-	else:
-		team_doc = frappe.get_doc("Team", email)
-
+def create_saas_subscription(account_request):
+	team_doc = create_team(account_request)
 	site_name = frappe.db.get_value("Site", {"account_request": account_request.name})
 	site = frappe.get_doc("Site", site_name)
 	site.team = team_doc.name
@@ -580,6 +595,27 @@ def create_team_from_account_request(account_request):
 	frappe.local.login_manager.login_as(team_doc.user)
 
 	return site.name
+
+
+def create_team(account_request, get_stripe_id=False):
+	email = account_request.email
+
+	if not frappe.db.exists("Team", email):
+		team_doc = Team.create_new(
+			account_request,
+			account_request.first_name,
+			account_request.last_name,
+			password=get_decrypted_password("Account Request", account_request.name, "password"),
+			country=account_request.country,
+			via_erpnext=True,
+		)
+	else:
+		team_doc = frappe.get_doc("Team", email)
+
+	if get_stripe_id:
+		return team_doc.stripe_customer_id
+	else:
+		return team_doc
 
 
 @frappe.whitelist(allow_guest=True)
@@ -634,3 +670,21 @@ def login_via_token(token):
 		frappe.throw("Token Invalid or Expired!")
 
 	return "success"
+
+
+# ------------------ Stripe setup ------------------- #
+@frappe.whitelist(allow_guest=True)
+def setup_intent_success(setup_intent, account_request_key):
+	account_request = get_account_request_from_key(account_request_key)
+	if not account_request:
+		frappe.throw("Invalid or Expired Key")
+
+	team = frappe.get_doc("Team", account_request.email)
+	frappe.set_user(account_request.email)
+	clear_setup_intent()
+
+	team.create_payment_method(
+		json.loads(setup_intent)["payment_method"], set_default=True
+	)
+	account_request.send_verification_email()
+	create_or_rename_saas_site(account_request.saas_app, account_request)
