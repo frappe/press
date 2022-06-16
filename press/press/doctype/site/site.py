@@ -563,6 +563,7 @@ class Site(Document):
 		)
 		self.disable_subscription()
 		self.disable_marketplace_subscriptions()
+		self.disable_saas_susbcription()
 
 	@frappe.whitelist()
 	def cleanup_after_archive(self):
@@ -844,6 +845,13 @@ class Site(Document):
 
 		for subscription in app_subscriptions:
 			subscription_doc = frappe.get_doc("Marketplace App Subscription", subscription)
+			subscription_doc.disable()
+
+	def disable_saas_susbcription(self):
+		if frappe.db.exists("Saas App Subscription", {"status": "Active", "site": self.name}):
+			subscription_doc = frappe.get_doc(
+				"Saas App Subscription", {"status": "Active", "site": self.name}
+			)
 			subscription_doc.disable()
 
 	def can_change_plan(self):

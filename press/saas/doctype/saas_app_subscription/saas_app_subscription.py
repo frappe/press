@@ -78,6 +78,12 @@ class SaasAppSubscription(Document):
 				f" site '{frappe.bold(self.site)}'!"
 			)
 
+	def disable(self):
+		if self.status == "Disabled":
+			return
+		self.status = "Disabled"
+		self.save(ignore_permissions=True)
+
 	def create_usage_record(self):
 		if self.is_usage_record_created():
 			return
