@@ -93,7 +93,7 @@ frappe.ui.form.on('Site', {
 			[__('Reinstall'), 'reinstall'],
 			[__('Restore'), 'restore_site'],
 			[__('Restore Tables'), 'restore_tables'],
-			[__('Clear Cache'), 'clear_cache'],
+			[__('Clear Cache'), 'clear_site_cache'],
 			[__('Update'), 'schedule_update'],
 			[__('Deactivate'), 'deactivate'],
 			[__('Activate'), 'activate'],
