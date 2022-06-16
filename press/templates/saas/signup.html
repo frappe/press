@@ -1,6 +1,10 @@
-{%- extends "templates/frappe_signup_layout.html" -%}
+{%- extends "templates/saas/layout.html" -%}
+{% set app_title = app_title %}
+{% set image_path = image_path %}
 
 {%- block content -%}
+<input id="app" type="text" value="{{ app }}" hidden/>
+<input id="domain" type="text" value="{{ domain }}" hidden/>
 
 <h1>Create a new account</h1>
 
@@ -18,7 +22,7 @@
 						<input type="text" id="subdomain" name="subdomain" class="form-control"
 							placeholder="yourcompany" autocomplete="off" onchange="validate_subdomain(this)">
 						<div class="input-group-append">
-							<span class="input-group-text rounded-right">.frappe.cloud</span>
+							<span class="input-group-text rounded-right">.{{ domain }}</span>
 						</div>
 					</div>
 					<small class="form-text"></small>
@@ -39,15 +43,16 @@
 				<div class="form-group">
 					<label for="email">Email address</label>
 					<input type="email" id="email" class="form-control" name="email" autocomplete="email">
-				</div>				
+				</div>
 				<div class="form-group">
 					<label for="password">Password</label>
-					<input type="password" id="password" class="form-control" name="password">
+					<input type="password" id="password" class="form-control" name="password" onkeyup="validate_password(this)">
+					<div class="mt-4 flex">
+						<input id="showPassword" type="checkbox" onclick="togglePasswordVisibility()">
+						<p class="text-xs mb-0">Show Password</p>
+					</div>
 				</div>
-				<div class="form-group">
-					<label for="phone">Phone Number</label>
-					<input type="tel" id="phone" class="form-control" name="phone_number" autocomplete="tel">
-				</div>
+
 				<div class="form-group">
 					<label for="country">Country</label>
 					<input type="text" id="country" class="form-control" name="country">
@@ -84,8 +89,9 @@
 {%- block script -%}
 <script src="/assets/press/js/form_controller.js"></script>
 <script>
+	const app = document.getElementById('app').value;
+	const domain = document.getElementById('domain').value;
 	let controller;
-	const app = 'frappe';
 
 	frappe.ready(() => {
 		controller = new FormController("user-signup");
@@ -119,16 +125,6 @@
 				return 'Last Name is required'
 			}
 		},
-		phone_number: (value) => {
-			if (!value) {
-				return 'Phone Number is required'
-			}
-
-			let regExp = /[a-zA-Z]/g;
-			if (regExp.test(value)) {
-				return "Phone number cannot contain alphabets";
-			}
-		},
 		email: (value) => {
 			if (!valid_email(value)) {
 				return "Invalid email";
@@ -137,6 +133,10 @@
 		password: (value) => {
 			if (!value) {
 				return "Password is required"
+			} else {
+				if (validate_password(value, true)) {
+					return "Please use a strong password"
+				}
 			}
 		},
 		country: (value) => {
@@ -167,7 +167,7 @@
 	function set_subdomain_from_url() {
 		let query_params = frappe.utils.get_query_params();
 		if (query_params.domain) {
-			let subdomain = query_params.domain.replace(".frappe.cloud", "");
+			let subdomain = query_params.domain.replace(`.${domain}`, "");
 			$('input[name="subdomain"]').val(subdomain).trigger("change");
 		}
 	}
@@ -199,7 +199,7 @@
 			check_if_available(subdomain).then((available) => {
 				controller.show_input_feedback(
 					"subdomain",
-					!available ? `${subdomain}.frappe.cloud is already taken` : `${subdomain}.frappe.cloud is available`,
+					!available ? `${subdomain}.${domain} is already taken` : `${subdomain}.${domain} is available`,
 					!available
 				);
 			});
@@ -219,6 +219,44 @@
 				}
 				return false;
 			});
+	}
+
+	function validate_password(input, isValue) {
+		let password;
+
+		if (isValue) {
+			password = input
+		} else {
+			let $input = $(input);
+			password = $input.val();
+		}
+
+		var pattern = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,20}$/;
+
+		if (password.match(pattern) && password.length >= 8) {
+			controller.show_input_feedback(
+				"password",
+				"Now that's a strong password. Good job!",
+				false
+			);
+			return false;
+		} else {
+			controller.show_input_feedback(
+				"password",
+				"Bad Password! The password length should be atleast 8 characters and it should contain a combination of capital letters, small letters, numbers and symbols. For e.g. Gene@31480, Merz313$oo",
+				true
+			);
+			return true;
+		}
+	}
+
+	function togglePasswordVisibility() {
+		var inp = document.getElementById("password");
+		if (inp.type === "password") {
+			inp.type = "text";
+		} else {
+			inp.type = "password";
+		}
 	}
 </script>
 {%- endblock -%}
