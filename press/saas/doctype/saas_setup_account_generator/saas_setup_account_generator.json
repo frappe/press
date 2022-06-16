@@ -1,0 +1,105 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:app",
+ "creation": "2022-06-09 10:00:09.583228",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "publish",
+  "column_break_2",
+  "headless",
+  "section_break_3",
+  "app",
+  "app_title",
+  "image_path",
+  "custom_route",
+  "route",
+  "domain"
+ ],
+ "fields": [
+  {
+   "default": "1",
+   "fieldname": "publish",
+   "fieldtype": "Check",
+   "label": "Published"
+  },
+  {
+   "fieldname": "app",
+   "fieldtype": "Link",
+   "label": "App",
+   "options": "Saas App",
+   "unique": 1
+  },
+  {
+   "fetch_from": "app.title",
+   "fieldname": "app_title",
+   "fieldtype": "Data",
+   "label": "App Title"
+  },
+  {
+   "fetch_from": "app.image",
+   "fieldname": "image_path",
+   "fieldtype": "Data",
+   "label": "Image Path"
+  },
+  {
+   "default": "0",
+   "fieldname": "custom_route",
+   "fieldtype": "Check",
+   "label": "Custom Route"
+  },
+  {
+   "fieldname": "route",
+   "fieldtype": "Data",
+   "label": "Route"
+  },
+  {
+   "default": "frappe.cloud",
+   "fieldname": "domain",
+   "fieldtype": "Data",
+   "label": "Domain"
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "headless",
+   "fieldtype": "Check",
+   "label": "Headless"
+  },
+  {
+   "fieldname": "section_break_3",
+   "fieldtype": "Section Break"
+  }
+ ],
+ "has_web_view": 1,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2022-06-09 10:03:34.560562",
+ "modified_by": "Administrator",
+ "module": "SaaS",
+ "name": "Saas Setup Account Generator",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
