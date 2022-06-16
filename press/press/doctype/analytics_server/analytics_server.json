@@ -152,11 +152,9 @@
    "label": "SSH"
   },
   {
-   "depends_on": "eval: doc.provider === \"Scaleway\"",
    "fieldname": "frappe_user_password",
    "fieldtype": "Password",
    "label": "Frappe User Password",
-   "mandatory_depends_on": "eval: doc.provider === \"Scaleway\"",
    "set_only_once": 1
   },
   {
@@ -254,7 +252,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2022-03-17 09:52:15.942657",
+ "modified": "2022-06-16 22:28:07.907561",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Analytics Server",

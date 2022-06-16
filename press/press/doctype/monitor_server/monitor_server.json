@@ -146,11 +146,9 @@
    "label": "SSH"
   },
   {
-   "depends_on": "eval: doc.provider === \"Scaleway\"",
    "fieldname": "frappe_user_password",
    "fieldtype": "Password",
    "label": "Frappe User Password",
-   "mandatory_depends_on": "eval: doc.provider === \"Scaleway\"",
    "set_only_once": 1
   },
   {
@@ -196,7 +194,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2021-09-14 17:11:10.067850",
+ "modified": "2022-06-16 22:28:16.543575",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Monitor Server",
@@ -217,5 +215,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }
