@@ -97,13 +97,11 @@ class BaseServer(Document):
 	def _prepare_server(self):
 		try:
 			if self.provider == "Scaleway":
-				frappe_user_password = self.get_password("frappe_user_password")
 				ansible = Ansible(
 					playbook="scaleway.yml",
 					server=self,
-					user="frappe",
+					user="ubuntu",
 					variables={
-						"ansible_become_password": frappe_user_password,
 						"private_ip": self.private_ip,
 						"private_mac_address": self.private_mac_address,
 						"private_vlan_id": self.private_vlan_id,

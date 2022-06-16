@@ -1,7 +1,7 @@
 ---
-- name: Copy Authorized Keys from frappe to root User
+- name: Copy Authorized Keys from Ubuntu to root User
   copy:
-    src: /home/frappe/.ssh/authorized_keys
+    src: /home/ubuntu/.ssh/authorized_keys
     dest: /root/.ssh/authorized_keys
     mode: 0600
     remote_src: yes
@@ -35,3 +35,11 @@
       - bind9
     state: absent
     autoremove: yes
+
+- name: Remove Ubuntu User
+  user:
+    name: ubuntu
+    state: absent
+    remove: yes
+    force: yes
+  ignore_errors: yes
