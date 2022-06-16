@@ -14,7 +14,7 @@ export default [
 		name: 'RemoteLogin',
 		component: () => import('../views/saas/RemoteLogin.vue'),
 		meta: {
-			isLoginPage: true,
+			isLoginPage: true
 		},
 		props: true
 	},
