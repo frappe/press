@@ -230,11 +230,9 @@
    "set_only_once": 1
   },
   {
-   "depends_on": "eval: doc.provider === \"Scaleway\"",
    "fieldname": "frappe_user_password",
    "fieldtype": "Password",
    "label": "Frappe User Password",
-   "mandatory_depends_on": "eval: doc.provider === \"Scaleway\"",
    "set_only_once": 1
   },
   {
@@ -295,7 +293,7 @@
   }
  ],
  "links": [],
- "modified": "2022-04-08 10:20:19.971688",
+ "modified": "2022-06-16 22:26:53.201116",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
