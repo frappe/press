@@ -28,7 +28,6 @@
    "label": "Published"
   },
   {
-   "fetch_from": "app.image",
    "fieldname": "image_path",
    "fieldtype": "Data",
    "label": "Image Path"
@@ -62,7 +61,7 @@
  "has_web_view": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-06-08 21:01:53.351327",
+ "modified": "2022-06-16 16:26:28.149841",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Saas Signup Generator",
