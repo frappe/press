@@ -56,9 +56,7 @@ class SiteUpdate(Document):
 					filters["name"] = ("!=", self.source_bench)
 
 				destination_bench = frappe.get_all(
-					"Bench",
-					fields=["name", "candidate"],
-					filters=filters,
+					"Bench", fields=["name", "candidate"], filters=filters, order_by="creation desc"
 				)[0]
 				self.destination_bench = destination_bench.name
 				self.destination_candidate = destination_bench.candidate
