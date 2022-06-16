@@ -214,8 +214,7 @@ class BaseServer(Document):
 				ansible = Ansible(
 					playbook="ping.yml",
 					server=self,
-					user="frappe",
-					variables={"ansible_become_password": self.get_password("frappe_user_password")},
+					user="ubuntu",
 				)
 			elif self.provider == "AWS EC2":
 				ansible = Ansible(playbook="ping.yml", server=self, user="ubuntu")
