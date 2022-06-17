@@ -28,3 +28,22 @@
     passno: 0
     dump: 0
     state: present
+
+- name: Set Swappiness
+  sysctl:
+    name: vm.swappiness
+    value: '1'
+    state: present
+
+- name: Set VFS cache pressure
+  sysctl:
+    name: vm.vfs_cache_pressure
+    value: '50'
+    state: present
+
+- name: Set SysRq key
+  sysctl:
+    name: kernel.sysrq
+    value: '1'
+    state: present
+    reload: yes
