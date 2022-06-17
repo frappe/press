@@ -21,7 +21,8 @@
   "end_date",
   "interval",
   "section_break_5",
-  "secret_key"
+  "secret_key",
+  "initial_plan"
  ],
  "fields": [
   {
@@ -116,13 +117,18 @@
   {
    "fieldname": "section_break_14",
    "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "initial_plan",
+   "fieldtype": "Data",
+   "label": "Initial Plan"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-04-28 21:49:09.886279",
+ "modified": "2022-06-17 12:46:59.837100",
  "modified_by": "Administrator",
- "module": "Saas",
+ "module": "SaaS",
  "name": "Saas App Subscription",
  "naming_rule": "Expression",
  "owner": "Administrator",

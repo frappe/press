@@ -47,7 +47,7 @@ class SaasAppSubscription(Document):
 		]
 
 		if self.app == "erpnext_smb":
-			new_config.append({"key": "plan", "value": "Free"})
+			new_config.append({"key": "plan", "value": self.initial_plan or "Free"})
 
 		site_doc.update_site_config(new_config)
 
