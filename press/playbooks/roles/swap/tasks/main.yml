@@ -1,28 +1,28 @@
 ---
 - name: Set swap file name
   set_fact:
-    swap_file: "/{{ swap_file | default('swap') }}"
+    swap_file: "{{ swap_file | default('swap') }}"
 
 - name: Create 4 GB Swap file
-  command: fallocate -l 4G {{ swap_file }}
+  command: fallocate -l 4G /{{ swap_file }}
 
 - name: Change Swap file permissions
   file:
-    path: '{{ swap_file }}'
+    path: '/{{ swap_file }}'
     owner: root
     group: root
     mode: 0600
 
 - name: Make Swap
-  command: mkswap {{ swap_file }}
+  command: mkswap /{{ swap_file }}
 
 - name: Enable Swap
-  command: swapon {{ swap_file }}
+  command: swapon /{{ swap_file }}
 
 - name: Add Swap to fstab
   mount:
     name: none
-    src: {{ swap_file }}
+    src: '/{{ swap_file }}'
     fstype: swap
     opts: sw
     passno: 0
