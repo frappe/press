@@ -17,4 +17,4 @@ class SaasSignupGenerator(WebsiteGenerator):
 
 	def validate(self):
 		if not self.custom_route:
-			self.route = f"{self.app}/signup"
+			self.route = f"{self.app.replace('_', '')}/signup"
