@@ -1,5 +1,5 @@
 ---
-- name: Set memory limits for m server
+- name: Set memory limits for database server
   hosts: all
   become: yes
   become_user: root
