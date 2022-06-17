@@ -169,12 +169,19 @@ class ProxyServer(BaseServer):
 
 	def _setup_proxysql(self):
 		try:
+			default_hostgroup = frappe.get_all(
+				"Database Server",
+				"MIN(server_id)",
+				{"status": "Active", "cluster": self.cluster},
+				as_list=True,
+			)[0][0]
 			ansible = Ansible(
 				playbook="proxysql.yml",
 				server=self,
 				variables={
 					"server": self.name,
 					"proxysql_admin_password": self.get_password("proxysql_admin_password"),
+					"default_hostgroup": default_hostgroup,
 				},
 			)
 			play = ansible.run()
