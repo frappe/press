@@ -1,0 +1,8 @@
+---
+- name: Set memory limits for app server
+  hosts: all
+  become: yes
+  become_user: root
+  roles:
+    - role: swap
+    - role: earlyoom_memory_limits

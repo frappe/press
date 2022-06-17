@@ -1,0 +1,8 @@
+---
+- name: Set memory limits for database server
+  hosts: all
+  become: yes
+  become_user: root
+  roles:
+    - role: swap
+    - role: mariadb_systemd_limits
