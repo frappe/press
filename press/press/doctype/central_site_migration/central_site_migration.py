@@ -9,7 +9,7 @@ from press.runner import Ansible
 from press.utils import log_error
 
 central_username = "central@frappecloud.com"
-central_user_password = "wbFzfU62DALuQPZ"
+central_user_password = "w3TUBZVbyHT29qS"
 
 
 def get_ongoing_migration(site: str, scheduled=False):
