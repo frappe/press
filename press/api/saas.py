@@ -588,6 +588,7 @@ def create_saas_subscription(account_request):
 			"app": account_request.saas_app,
 			"site": site_name,
 			"saas_app_plan": plan,
+			"initial_plan": json.loads(account_request.url_args)["plan"]
 		}
 	).insert(ignore_permissions=True)
 
