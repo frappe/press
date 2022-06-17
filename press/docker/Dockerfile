@@ -151,6 +151,7 @@ ENV PYTHONUNBUFFERED 1
 
 # Install Frappe app
 RUN echo '["build"]' > .bench.cmd
+RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 /home/frappe/frappe-bench/env/bin/pip install -U pip setuptools
 RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 --mount=type=bind,source=apps/frappe,target=/home/frappe/context/apps/frappe bench get-app /home/frappe/context/apps/frappe `#stage-apps-frappe`
 RUN rm .bench.cmd
 
