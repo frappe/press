@@ -76,7 +76,7 @@ def get_plans(name):
 	"""
 	plans = frappe.db.get_all(
 		"Saas App Plan",
-		{"app": name},
+		{"app": name, "is_free": False},
 		["name", "plan", "site_plan", "enabled"],
 		order_by="creation asc",
 	)
@@ -239,10 +239,10 @@ def change_app_plan(name, new_plan):
 
 
 @frappe.whitelist()
-def get_benches(name):
+def get_benches(saas_app):
 	groups = frappe.get_all(
 		"Release Group",
-		{"team": get_current_team(), "saas_app": name},
+		{"team": get_current_team(), "saas_app": saas_app},
 		["name", "title"],
 	)
 
@@ -267,7 +267,7 @@ def get_benches(name):
 
 	data = {
 		"groups": groups,
-		"active_group": frappe.db.get_value("Saas Settings", name, "group"),
+		"active_group": frappe.db.get_value("Saas Settings", saas_app, "group"),
 	}
 
 	return data
