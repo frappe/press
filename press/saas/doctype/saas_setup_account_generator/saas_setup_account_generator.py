@@ -9,7 +9,7 @@ class SaasSetupAccountGenerator(WebsiteGenerator):
 	website = frappe._dict(
 		template="templates/saas/setup-account.html",
 		condition_field="publish",
-		page_title_field="page_title",
+		page_title_field="app_title",
 	)
 
 	def get_context(self, context):
