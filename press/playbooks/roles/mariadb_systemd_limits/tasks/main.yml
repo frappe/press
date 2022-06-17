@@ -1,0 +1,12 @@
+---
+- name: Add Systemd memory limit file
+  template:
+    src: memory.conf
+    dest: /etc/systemd/system/mariadb.service.d/memory.conf
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Reload systemd config
+  systemd:
+    daemon_reload: yes

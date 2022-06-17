@@ -1,0 +1,7 @@
+---
+- name: Ensure max_allowed_packet value is set to 256 MB
+  ini_file:
+    path: /etc/mysql/conf.d/mysqldump.cnf
+    section: mysqldump
+    option: max_allowed_packet
+    value: 256M

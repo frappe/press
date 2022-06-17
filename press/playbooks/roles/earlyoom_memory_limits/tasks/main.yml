@@ -1,0 +1,13 @@
+---
+- name: Install earlyoom
+  apt:
+    pkg:
+      - earlyoom
+    state:
+      present
+
+- name: Enable earlyoom
+  systemd:
+    name: earlyoom
+    state: started
+    enabled: yes
