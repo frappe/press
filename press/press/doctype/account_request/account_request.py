@@ -66,7 +66,7 @@ class AccountRequest(Document):
 			recipients=self.email,
 			subject=subject,
 			template=template,
-			args={"link": url},
+			args={"link": url, "app": frappe.db.get_value("Saas App", self.saas_app, "title")},
 			now=True,
 		)
 
