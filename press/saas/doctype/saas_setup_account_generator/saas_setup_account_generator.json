@@ -12,6 +12,7 @@
   "headless",
   "section_break_3",
   "app",
+  "page_title",
   "app_title",
   "image_path",
   "custom_route",
@@ -74,12 +75,18 @@
   {
    "fieldname": "section_break_3",
    "fieldtype": "Section Break"
+  },
+  {
+   "default": "Setting up your account",
+   "fieldname": "page_title",
+   "fieldtype": "Data",
+   "label": "Page Title"
   }
  ],
  "has_web_view": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-06-09 10:03:34.560562",
+ "modified": "2022-06-17 12:04:31.183299",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Saas Setup Account Generator",
