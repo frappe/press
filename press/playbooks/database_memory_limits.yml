@@ -1,0 +1,8 @@
+---
+- name: Set memory limits for m server
+  hosts: all
+  become: yes
+  become_user: root
+  roles:
+    - role: swap
+    - role: mariadb_systemd_limits
