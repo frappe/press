@@ -1,5 +1,6 @@
 {% import "templates/emails/macros.html" as utils %}
-{% extends "templates/emails/base.html" %}
+{% extends "templates/emails/saas.html" %}
+{% set title = app %}
 
 {% block content %}
 
@@ -7,7 +8,7 @@
     <div class="p-8 bg-white from-markdown">
         <p>Hello,</p>
         <strong>
-            Thanks for signing up on Frappe Cloud!
+	    Thanks for signing up on {{ app }}!
         </strong>
         <p>
             Please confirm your email address by clicking the button below:
