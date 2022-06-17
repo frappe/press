@@ -9,7 +9,7 @@ class SaasSignupGenerator(WebsiteGenerator):
 	website = frappe._dict(
 		template="templates/saas/signup.html",
 		condition_field="publish",
-		page_title_field="app_name",
+		page_title_field="page_title",
 	)
 
 	def get_context(self, context):
@@ -17,4 +17,4 @@ class SaasSignupGenerator(WebsiteGenerator):
 
 	def validate(self):
 		if not self.custom_route:
-			self.route = f"{self.app}/signup"
+			self.route = f"{self.app.replace('_', '')}/signup"
