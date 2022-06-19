@@ -71,6 +71,7 @@ export default {
 				},
 				auto: true,
 				onSuccess(result) {
+					console.log(result);
 					this.plansData = result.plans;
 					this.trial_end_date = result.trial_end_date;
 					this.selectedPlan = result.plans.filter(plan => {
