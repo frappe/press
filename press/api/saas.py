@@ -1,4 +1,5 @@
 import frappe
+from frappe.model.naming import getseries
 import stripe
 import json
 from frappe.core.utils import find
@@ -77,15 +78,18 @@ def get_plans(name):
 	plans = frappe.db.get_all(
 		"Saas App Plan",
 		{"app": name, "is_free": False},
-		["name", "plan", "site_plan", "enabled"],
+		["name", "plan", "plan_title", "site_plan", "enabled"],
 		order_by="creation asc",
 	)
 
 	for plan in plans:
 		features = get_app_plan_features(plan.name)
 		plan.features = [{"id": idx, "value": value} for idx, value in enumerate(features)]
-		plan.price_usd = frappe.db.get_value("Plan", plan.plan, "price_usd")
-		plan.price_inr = frappe.db.get_value("Plan", plan.plan, "price_inr")
+		plan.update(
+			frappe.db.get_list(
+				"Plan", {"name": plan.plan}, ["plan_title", "price_usd", "price_inr"]
+			)[0]
+		)
 
 	site_plans = frappe.get_all("Plan", {"document_type": "Site"}, pluck="name")
 
@@ -99,20 +103,20 @@ def edit_plan(plan, name):
 	Edit saas plan and initial plan details
 	"""
 	# change saas plan fields(site_plan and features)
-	plan_doc = frappe.get_doc("Saas App Plan", plan["name"])
-	plan_doc.site_plan = plan["site_plan"]
-	plan_doc.features = []
+	saas_plan_doc = frappe.get_doc("Saas App Plan", plan["name"])
+	saas_plan_doc.site_plan = plan["site_plan"]
+	saas_plan_doc.features = []
 	features = [feat["value"] for feat in plan["features"]]
 	for feature in features:
-		plan_doc.append("features", {"description": feature})
-	plan_doc.save(ignore_permissions=True)
+		saas_plan_doc.append("features", {"description": feature})
+	saas_plan_doc.save(ignore_permissions=True)
 
 	# change initial plan fields(name, prices)
-	if plan["plan"] != plan_doc.plan:
-		frappe.rename_doc("Plan", plan_doc.plan, plan["plan"])
-
-	frappe.db.set_value("Plan", plan["plan"], "price_usd", plan["price_usd"])
-	frappe.db.set_value("Plan", plan["plan"], "price_inr", plan["price_inr"])
+	plan_doc = frappe.get_doc("Plan", saas_plan_doc.plan)
+	plan_doc.plan_title = plan["plan_title"]
+	plan_doc.price_usd = plan["price_usd"]
+	plan_doc.price_inr = plan["price_inr"]
+	plan_doc.save(ignore_permissions=True)
 
 
 @frappe.whitelist()
@@ -125,8 +129,8 @@ def create_plan(plan, name):
 	plan_doc = frappe.get_doc(
 		{
 			"doctype": "Plan",
-			"plan_name": plan["title"],
-			"name": plan["title"],
+			"plan_title": plan["title"],
+			"name": f"saas-plan-{plan['app']}-" + getseries(f"saas-plan-{plan['app']}", 3),
 			"document_type": "Saas App",
 			"price_usd": plan["usd"],
 			"price_inr": plan["inr"],
@@ -608,6 +612,7 @@ def create_team(account_request, get_stripe_id=False):
 			account_request.last_name,
 			password=get_decrypted_password("Account Request", account_request.name, "password"),
 			country=account_request.country,
+			is_us_eu=account_request.is_us_eu,
 			via_erpnext=True,
 		)
 	else:
@@ -662,7 +667,11 @@ def login_via_token(token):
 	try:
 		doc = frappe.get_doc(
 			"Saas Remote Login",
-			{"token": token, "status": "Attempted", "expires_on": (">", frappe.utils.now())},
+			{
+				"token": token,
+				"status": "Attempted",
+				"expires_on": (">", frappe.utils.now()),
+			},
 		)
 		doc.status = "Used"
 		frappe.local.login_manager.login_as(doc.team)

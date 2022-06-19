@@ -22,7 +22,7 @@
 			disabled
 		/>
 
-		<h2 class="text-lg font-semibold">{{ plan.plan }}</h2>
+		<h2 class="text-lg font-semibold">{{ plan.plan_title }}</h2>
 		<br />
 		<h4 class="text-xl font-semibold text-gray-900">
 			<span>
