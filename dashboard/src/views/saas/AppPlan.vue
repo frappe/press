@@ -93,7 +93,7 @@ const getFeatureList = features => {
 
 		<div class="grid grid-cols-1 gap-4 md:grid-cols-3" v-if="plansData">
 			<Card
-				:title="plan.plan"
+				:title="plan.plan_title"
 				v-for="(plan, index) in plansData"
 				:key="plan.name"
 			>
@@ -138,7 +138,7 @@ const getFeatureList = features => {
 				class="mb-3"
 				type="text"
 				label="Plan Title"
-				v-model="plansData[currentPlanIndex].plan"
+				v-model="plansData[currentPlanIndex].plan_title"
 			/>
 			<Input
 				class="mb-3"
