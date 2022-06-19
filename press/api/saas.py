@@ -608,6 +608,7 @@ def create_team(account_request, get_stripe_id=False):
 			account_request.last_name,
 			password=get_decrypted_password("Account Request", account_request.name, "password"),
 			country=account_request.country,
+			is_us_eu=account_request.is_us_eu,
 			via_erpnext=True,
 		)
 	else:
