@@ -24,6 +24,7 @@
   "subscription_details_section",
   "stripe_customer_id",
   "country",
+  "is_us_eu",
   "currency",
   "payment_mode",
   "default_payment_method",
@@ -262,6 +263,11 @@
    "fieldname": "razorpay_enabled",
    "fieldtype": "Check",
    "label": "RazorPay Enabled"
+  },
+  {
+   "fieldname": "is_us_eu",
+   "fieldtype": "Data",
+   "label": "Is United States or Europe citizen"
   }
  ],
  "links": [
@@ -316,7 +322,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2022-05-24 21:12:40.708247",
+ "modified": "2022-06-19 13:16:36.329849",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

@@ -28,6 +28,7 @@
   "industry",
   "country",
   "state",
+  "is_us_eu",
   "agreed_to_partner_consent",
   "saas_sign_up_section",
   "send_email",
@@ -224,12 +225,18 @@
    "fieldname": "send_email",
    "fieldtype": "Check",
    "label": "Send Email"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_us_eu",
+   "fieldtype": "Check",
+   "label": "Is State or Europe"
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-06-17 12:46:21.270421",
+ "modified": "2022-06-19 13:15:19.136943",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",
