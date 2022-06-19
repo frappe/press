@@ -1,4 +1,5 @@
 import frappe
+from frappe.model.naming import getseries
 import stripe
 import json
 from frappe.core.utils import find
@@ -128,8 +129,8 @@ def create_plan(plan, name):
 	plan_doc = frappe.get_doc(
 		{
 			"doctype": "Plan",
-			"plan_name": plan["title"],
-			"name": plan["title"],
+			"plan_title": plan["title"],
+			"name": f"saas-plan-{plan['app']}-" + getseries(f"saas-plan-{plan['app']}", 3),
 			"document_type": "Saas App",
 			"price_usd": plan["usd"],
 			"price_inr": plan["inr"],
