@@ -8,12 +8,17 @@
  "engine": "InnoDB",
  "field_order": [
   "enabled",
+  "is_us_eu",
   "column_break_2",
   "is_free",
   "section_break_3",
   "app",
-  "column_break_7",
+  "section_break_6",
   "plan",
+  "plan_title",
+  "price_usd",
+  "price_inr",
+  "column_break_7",
   "site_plan",
   "payout_percentage",
   "section_break_8",
@@ -94,11 +99,42 @@
    "fieldname": "payout_percentage",
    "fieldtype": "Data",
    "label": "Payout Percentage"
+  },
+  {
+   "fieldname": "section_break_6",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fetch_from": "plan.plan_title",
+   "fieldname": "plan_title",
+   "fieldtype": "Data",
+   "label": "Plan Title",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "plan.price_usd",
+   "fieldname": "price_usd",
+   "fieldtype": "Currency",
+   "label": "Price(USD)",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "plan.price_inr",
+   "fieldname": "price_inr",
+   "fieldtype": "Currency",
+   "label": "Price(INR)",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_us_eu",
+   "fieldtype": "Check",
+   "label": "US / EU"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-06-07 11:58:22.486218",
+ "modified": "2022-06-19 13:34:09.806918",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Saas App Plan",

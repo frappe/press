@@ -158,6 +158,10 @@ export default {
 			mobileMenuOpen: false,
 			dropdownItems: [
 				{
+					label: 'Settings',
+					action: () => this.$router.push('/account/profile')
+				},
+				{
 					label: 'Logout',
 					action: () => this.$auth.logout()
 				}

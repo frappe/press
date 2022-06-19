@@ -23,6 +23,17 @@ class AccountRequest(Document):
 		self.geo_location = json.dumps(geo_location, indent=1, sort_keys=True)
 		self.state = geo_location.get("regionName")
 
+		# check for US and EU
+		if (
+			geo_location.get("country") == "United States"
+			or geo_location.get("continent") == "Europe"
+		):
+			self.is_us_eu = True
+		elif self.country == "United States":
+			self.is_us_eu = True
+		else:
+			self.is_us_eu = False
+
 	def after_insert(self):
 		if self.send_email:
 			self.send_verification_email()
