@@ -4,6 +4,7 @@
 import frappe
 from frappe.model.document import Document
 from press.saas.doctype.saas_app_plan.saas_app_plan import get_app_plan_features
+from press.utils import get_current_team
 
 
 class SaasApp(Document):
@@ -20,10 +21,16 @@ class SaasApp(Document):
 
 def get_plans_for_app(app, site):
 	plans = []
+
+	filters = {"app": app, "enabled": 1}
+
+	if app == "erpnext_smb":
+		filters.update({"is_us_eu": get_current_team(get_doc=True).is_us_eu})
+
 	saas_app_plans = frappe.get_all(
 		"Saas App Plan",
-		filters={"app": app, "enabled": 1},
-		fields=["name", "plan", "is_free", "app"],
+		filters=filters,
+		fields=["name", "plan", "plan_title", "is_free", "app"],
 	)
 
 	for app_plan in saas_app_plans:
