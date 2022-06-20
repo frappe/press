@@ -42,8 +42,16 @@ class SaasAppSubscription(Document):
 		]
 
 		if self.app == "erpnext_smb":
-			new_config.append({"key": "plan", "value": self.initial_plan or "Free"})
-			new_config.append({"key": "sk_email_delivery_service", "value": self.secret_key})
+			new_config.append(
+				[
+					{"key": "sk_email_delivery_service", "value": self.secret_key},
+					{"key": "plan", "value": self.initial_plan or "Free"},
+					{"key": "mail_login", "value": "example@gmail.com", "type": "String"},
+					{"key": "mail_password", "value": "edjxok4jh7", "type": "String"},
+					{"key": "mail_port", "value": 587, "type": "Number"},
+					{"key": "mail_server", "value": "smtp.gmail.com", "type": "String"},
+				]
+			)
 
 		site_doc.update_site_config(new_config)
 
