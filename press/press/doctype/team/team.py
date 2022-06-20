@@ -94,6 +94,7 @@ class Team(Document):
 		last_name: str,
 		password: str = None,
 		country: str = None,
+		is_us_eu: bool = False,
 		via_erpnext: bool = False,
 	):
 		"""Create new team along with user (user created first)."""
@@ -105,6 +106,7 @@ class Team(Document):
 				"country": country,
 				"enabled": 1,
 				"via_erpnext": via_erpnext,
+				"is_us_eu": is_us_eu,
 			}
 		)
 		user = team.create_user(
