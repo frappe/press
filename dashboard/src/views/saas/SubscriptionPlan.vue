@@ -18,7 +18,7 @@
 
 		<div
 			v-if="plansData"
-			class="mx-auto grid flex-1 grid-cols-1 gap-6 md:grid-cols-4"
+			class="mx-auto grid flex-1 grid-cols-1 gap-6 md:grid-cols-3"
 		>
 			<AppPlanCard
 				v-for="plan in plansData"
