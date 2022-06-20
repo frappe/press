@@ -86,6 +86,9 @@ def validate_plan(secret_key):
 	check if subscription is active on marketplace and valid
 	#TODO: get activation date
 	"""
+	if frappe.db.exists("Saas App Subscription", {"secret_key": secret_key}):
+		return True
+
 	plan_label_map = {"Mail 25$": 10000, "Mail 5$": 2000, "Mail Free": 100}
 
 	try:
