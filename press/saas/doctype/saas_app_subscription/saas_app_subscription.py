@@ -38,16 +38,13 @@ class SaasAppSubscription(Document):
 	def set_secret_key_in_site_config(self):
 		site_doc = frappe.get_doc("Site", self.site)
 
-		response = generate_keys(site_doc.team)
-		api_key = frappe.db.get_value("User", site_doc.team, "api_key")
 		new_config = [
-			{"key": "saas_api_key", "value": api_key, "type": "String"},
-			{"key": "saas_api_secret", "value": response["api_secret"], "type": "String"},
 			{"key": f"sk_{self.app}", "value": self.secret_key, "type": "String"},
 		]
 
 		if self.app == "erpnext_smb":
 			new_config.append({"key": "plan", "value": self.initial_plan or "Free"})
+			new_config.append({"key": "sk_email_delivery_service", "value": self.secret_key})
 
 		site_doc.update_site_config(new_config)
 
