@@ -4,7 +4,6 @@
 import frappe
 from frappe.model.document import Document
 from press.utils import log_error
-from frappe.core.doctype.user.user import generate_keys
 
 
 class SaasAppSubscription(Document):
