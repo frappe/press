@@ -42,7 +42,7 @@ class SaasAppSubscription(Document):
 		]
 
 		if self.app == "erpnext_smb":
-			new_config.append(
+			new_config.extend(
 				[
 					{"key": "sk_email_delivery_service", "value": self.secret_key},
 					{"key": "plan", "value": self.initial_plan or "Free"},
