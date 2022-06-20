@@ -22,6 +22,7 @@
    "fieldtype": "Link",
    "label": "Site",
    "options": "Site",
+   "read_only": 1,
    "reqd": 1,
    "unique": 1
   },
@@ -30,35 +31,41 @@
    "fieldtype": "Date",
    "in_list_view": 1,
    "label": "Expiry",
+   "read_only": 1,
    "reqd": 1
   },
   {
    "fieldname": "users",
    "fieldtype": "Int",
-   "label": "Users"
+   "label": "Users",
+   "read_only": 1
   },
   {
    "fieldname": "plan",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Plan"
+   "label": "Plan",
+   "read_only": 1
   },
   {
    "fieldname": "support_expiry",
    "fieldtype": "Date",
-   "label": "Support Expiry"
+   "label": "Support Expiry",
+   "read_only": 1
   },
   {
    "default": "25000",
    "fieldname": "emails",
    "fieldtype": "Int",
-   "label": "Emails"
+   "label": "Emails",
+   "read_only": 1
   },
   {
    "default": "25",
    "fieldname": "space",
    "fieldtype": "Int",
-   "label": "Space (in GB)"
+   "label": "Space (in GB)",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_6",
@@ -67,7 +74,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-06-07 08:38:38.340284",
+ "modified": "2022-06-20 06:58:05.388164",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "ERPNext Site Settings",
