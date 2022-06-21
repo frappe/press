@@ -24,7 +24,7 @@ const badge = status => {
 	if (status == 'Active') {
 		color = 'green';
 	} else {
-		color = 'grey';
+		color = 'gray';
 	}
 	return {
 		color: color,
