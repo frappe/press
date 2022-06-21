@@ -50,7 +50,7 @@ class Site(Document):
 	def before_insert(self):
 		# initialize site.config based on plan
 		self._update_configuration(self.get_plan_config(), save=False)
-		if not self.notify_email:
+		if not self.notify_email and self.team != "Administrator":
 			self.notify_email = frappe.db.get_value("Team", self.team, "notify_email")
 
 	def validate_site_name(self):
