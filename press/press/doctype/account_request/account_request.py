@@ -74,7 +74,6 @@ class AccountRequest(Document):
 				template = "invite_team_member"
 
 		frappe.sendmail(
-			sender="ERPNext SMB" if self.saas_app == "erpnext_smb" else "Frappe Cloud",
 			recipients=self.email,
 			subject=subject,
 			template=template,
