@@ -8,16 +8,18 @@
 
 {% if headless %}
 
-	<div class="mx-auto text-center form-container col-xl-5 col-lg-6 col-md-7 col-sm-9" id="user-signup-verify">
-		{%- if frappe.form_dict.key -%}
-		<div class="mx-auto form-container col-xl-5 col-lg-6 col-md-7 col-sm-9" id="user-signup-verify">
-			<button id="redirect" class="btn btn-primary" onclick="setup_account()" hidden>Redirect</button>
-		</div>
-		{%- else -%}
-		<div class="m-0 alert alert-danger small" role="alert">
-			Invalid or expired key
-		</div>
-		{%- endif -%}
+	<div class="mx-auto text-center form-container col-xl-5 col-lg-6 col-md-7 col-sm-9" id="user-headless-verify">
+		<form name="verify" data-action="business_settings">
+			{%- if frappe.form_dict.key -%}
+			<div class="mx-auto form-container col-xl-5 col-lg-6 col-md-7 col-sm-9" id="user-signup-verify">
+				<button id="redirect" type="submit" class="btn btn-primary" hidden>Redirect</button>
+			</div>
+			{%- else -%}
+			<div class="m-0 alert alert-danger small" role="alert">
+				Invalid or expired key
+			</div>
+			{%- endif -%}
+		</form>
 	</div>
 
 {% else %}
@@ -128,28 +130,29 @@
 	const app = document.getElementById('app').value;
 	const headless = document.getElementById('headless').value;
 
-	let btn = document.getElementById('redirect');
 	if (headless) {
-		btn.click();
+		frappe.ready(() => {
+			controller = new FormController("user-headless-verify");
+
+			// call setup function after form loads
+			frappe.call({
+				method: 'press.api.saas.headless_setup_account',
+				args: { key },
+				type: "POST"
+			})
+			.then((r) => {
+				window.location.href = '/prepare-site?key=' + key + '&app=' + app;
+			})
+
+		});
+	}  else {
+		frappe.ready(() => {
+			controller = new FormController("user-signup-verify");
+
+			// load country, currency, language select options
+			load_dropdowns();
+		});
 	}
-
-	function setup_account($form) {
-		return frappe.call({
-			method: 'press.api.saas.headless_setup_account',
-			args: { key },
-			type: "POST"
-		})
-		.then((r) => {
-			window.location.href = '/prepare-site?key=' + key + '&app=' + app;
-		})
-	}
-
-	frappe.ready(() => {
-		controller = new FormController("user-signup-verify");
-
-		// load country, currency, language select options
-		load_dropdowns();
-	});
 
 	// this needs to be on global scope
 	var field_validators = {
@@ -196,7 +199,7 @@
 
 	function business_settings($form, values) {
 		Object.assign(form_values, values);
-		return call('press.api.central.setup_account', { key, business_data: form_values }, $form)
+		return call('press.api.saas.setup_account', { key, business_data: form_values }, $form)
 			.then(() => {
 				window.location.href = '/prepare-site?key=' + key;
 			});
