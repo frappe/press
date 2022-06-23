@@ -44,7 +44,7 @@ def razorpay_webhook_handler():
 			{"order_id": razorpay_order_id},
 		):
 			log_error(
-				"Razropay payment record for given order does not exist", order_id=razorpay_order_id
+				"Razorpay payment record for given order does not exist", order_id=razorpay_order_id
 			)
 			return
 
