@@ -39,6 +39,7 @@ def signup(email, referrer=None):
 				"email": email,
 				"role": "Press Admin",
 				"referrer_id": referrer,
+				"send_email": True,
 			}
 		).insert()
 
@@ -373,6 +374,7 @@ def add_team_member(email):
 			"email": email,
 			"role": "Press Member",
 			"invited_by": team.user,
+			"send_email": True,
 		}
 	).insert()
 
