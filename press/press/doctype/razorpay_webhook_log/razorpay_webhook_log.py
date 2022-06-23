@@ -38,13 +38,23 @@ def razorpay_webhook_handler():
 		# set user to Administrator, to not have to do ignore_permissions everywhere
 		frappe.set_user("Administrator")
 
+		razorpay_order_id = form_dict["payload"]["payment"]["entity"]["order_id"]
+		if not frappe.db.exists(
+			"Razorpay Payment Record",
+			{"order_id": razorpay_order_id},
+		):
+			log_error(
+				"Razropay payment record for given order does not exist", order_id=razorpay_order_id
+			)
+			return
+
 		frappe.get_doc(
 			{
 				"doctype": "Razorpay Webhook Log",
 				"payload": frappe.as_json(form_dict),
 				"event": form_dict.get("event"),
 				"payment_id": form_dict["payload"]["payment"]["entity"]["id"],
-				"name": form_dict["payload"]["payment"]["entity"]["order_id"],
+				"name": razorpay_order_id,
 			}
 		).insert(ignore_if_duplicate=True)
 
