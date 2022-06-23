@@ -449,7 +449,7 @@ def account_request(
 			"last_name": last_name,
 			"phone_number": phone_number,
 			"country": country,
-			"url_args": url_args,
+			"url_args": url_args or json.dumps({}),
 			"send_email": not stripe_setup,
 		}
 	).insert(ignore_permissions=True)
