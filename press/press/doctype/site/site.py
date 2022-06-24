@@ -854,8 +854,12 @@ class Site(Document):
 			)
 			subscription_doc.disable()
 
-	def can_change_plan(self):
+	def can_change_plan(self, ignore_card_setup):
 		if is_system_user(frappe.session.user):
+			return
+
+		if ignore_card_setup:
+			# ignore card setup for prepaid app payments
 			return
 
 		team = frappe.get_doc("Team", self.team)
@@ -875,8 +879,8 @@ class Site(Document):
 				"Cannot change plan because you haven't added a card and not have enough balance"
 			)
 
-	def change_plan(self, plan):
-		self.can_change_plan()
+	def change_plan(self, plan, ignore_card_setup=False):
+		self.can_change_plan(ignore_card_setup)
 		plan_config = self.get_plan_config(plan)
 		self._update_configuration(plan_config)
 		frappe.get_doc(
