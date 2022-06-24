@@ -70,6 +70,7 @@ class SaasAppSubscription(Document):
 
 	def change_plan(self, new_plan, override):
 		self.saas_app_plan = new_plan
+		self.status = "Active"
 		self.save(ignore_permissions=True)
 
 		site_doc = frappe.get_doc("Site", self.site)
@@ -93,20 +94,30 @@ class SaasAppSubscription(Document):
 	def deactivate(self):
 		self.status = "Inactive"
 		self.save(ignore_permissions=True)
-		site = frappe.get_doc("Site", self.site)
-		site.deactivate()
+		frappe.get_doc("Site", self.site).deactivate()
 
 	def activate(self):
 		self.status = "Active"
 		self.save(ignore_permissions=True)
-		site = frappe.get_doc("Site", self.site)
-		site.activate()
+		frappe.get_doc("Site", self.site).activate()
+
+	def suspend(self):
+		self.status = "Suspended"
+		self.save(ignore_permissions=True)
+		frappe.get_doc("Site", self.site).suspend()
 
 	def disable(self):
 		if self.status == "Disabled":
 			return
 		self.status = "Disabled"
 		self.save(ignore_permissions=True)
+
+	def calculate_payout(self, amount):
+		# Amount of money that is supposed to be paidout to the developers
+		payout_percentage = frappe.db.get_value(
+			"Saas App Plan", self.saas_app_plan, "payout_percentage"
+		)
+		return (amount / 100) * float(payout_percentage)
 
 	def create_usage_record(self):
 		if self.is_usage_record_created():
@@ -120,9 +131,7 @@ class SaasAppSubscription(Document):
 
 		plan = frappe.get_cached_doc("Plan", self.plan)
 		amount = plan.get_price_for_interval(self.interval, team.currency)
-		payout_percentage = frappe.db.get_value(
-			"Saas App Plan", self.saas_app_plan, "payout_percentage"
-		)
+		payout = self.calculate_payout(amount)
 
 		usage_record = frappe.get_doc(
 			doctype="Usage Record",
@@ -133,7 +142,7 @@ class SaasAppSubscription(Document):
 			amount=amount,
 			subscription=self.name,
 			interval=self.interval,
-			payout=(amount / 100) * float(payout_percentage),
+			payout=payout,
 		)
 		usage_record.insert()
 		usage_record.submit()
@@ -163,18 +172,17 @@ class SaasAppSubscription(Document):
 		return bool(result)
 
 
-def deactivate_postpaid_subscriptions():
-	subscriptions = frappe.db.get_all(
-		"Saas App Subscription",
-		filters={
-			"status": "Active",
-			"end_date": ["<", datetime.today().strftime("%d-%m-%Y")],
-		},
-		pluck="name",
+def suspend_postpaid_subscriptions():
+	subscriptions = frappe.db.sql(
+		f"""
+		SELECT name FROM `tabSaas App Subscription`
+		WHERE status = 'Active' and end_date > {datetime.today().strftime("%d-%m-%Y")}""",
+		as_dict=True,
 	)
 
 	for name in subscriptions:
 		subscription = frappe.get_doc("Saas App Subscription", name)
+		subscription.suspend()
 
 
 def create_usage_records():
@@ -183,8 +191,8 @@ def create_usage_records():
 		filters={"status": "Active", "end_date": ["is", "not set"]},
 		pluck="name",
 	)
-	for name in subscriptions:
-		subscription = frappe.get_doc("Saas App Subscription", name)
+	for sub in subscriptions:
+		subscription = frappe.get_doc("Saas App Subscription", sub.name)
 
 		if not should_create_usage_record(subscription):
 			continue
@@ -217,6 +225,13 @@ def process_prepaid_saas_payment(event):
 	saas_plan = metadata.get("plan")
 	plan = frappe.db.get_value("Saas App Plan", saas_plan, "plan")
 
+	# change subscription
+	sub = frappe.get_doc("Saas App Subscription", metadata.get("subscription"))
+	sub.update_end_date(metadata.get("payment_option"))
+	sub.change_plan(saas_plan, True)
+	sub.reload()
+
+	# create invoice
 	invoice = frappe.get_doc(
 		doctype="Invoice",
 		team=team.name,
@@ -226,6 +241,7 @@ def process_prepaid_saas_payment(event):
 		amount_paid=amount,
 		amount_due=amount,
 		stripe_payment_intent_id=payment_intent["id"],
+		payout=sub.calculate_payout(amount),
 	)
 	invoice.append(
 		"items",
@@ -238,7 +254,6 @@ def process_prepaid_saas_payment(event):
 			"rate": amount,
 		},
 	)
-	# set developer payout here too.
 	invoice.insert()
 	invoice.reload()
 	# there should only be one charge object
@@ -247,6 +262,3 @@ def process_prepaid_saas_payment(event):
 	invoice.update_transaction_details(charge)
 	invoice.submit()
 
-	sub = frappe.get_doc("Saas App Subscription", metadata.get("subscription"))
-	sub.update_end_date(metadata.get("payment_option"))
-	sub.change_plan(saas_plan, True)
