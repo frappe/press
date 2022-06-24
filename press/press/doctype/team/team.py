@@ -19,6 +19,9 @@ from press.press.doctype.account_request.account_request import AccountRequest
 from press.marketplace.doctype.marketplace_app_subscription.marketplace_app_subscription import (
 	process_prepaid_marketplace_payment,
 )
+from press.saas.doctype.saas_app_subscription.saas_app_subscription import (
+	process_prepaid_saas_payment,
+)
 from press.utils.billing import (
 	get_erpnext_com_connection,
 	get_frappe_io_connection,
@@ -771,6 +774,9 @@ def process_stripe_webhook(doc, method):
 
 	if payment_for and payment_for == "prepaid_marketplace":
 		process_prepaid_marketplace_payment(event)
+		return
+	elif payment_for == "prepaid_saas":
+		process_prepaid_saas_payment(event)
 		return
 
 	team: Team = frappe.get_doc("Team", {"stripe_customer_id": payment_intent["customer"]})
