@@ -4,6 +4,7 @@ import stripe
 import json
 from frappe.core.utils import find
 from frappe.utils.password import get_decrypted_password
+from press.api.billing import create_payment_intent_for_prepaid_app
 from press.api.site import overview, protected, get
 from press.api.bench import options
 from press.utils import unique
@@ -219,13 +220,37 @@ def subscription_overview(name):
 
 @frappe.whitelist()
 @protected("Saas App Subscription")
-def change_app_plan(name, new_plan):
+def change_plan(name, new_plan, option):
 	subscription = frappe.get_doc("Saas App Subscription", name)
-	subscription.change_plan(new_plan)
 
+	if "postpaid" == frappe.db.get_value(
+		"Saas Settings", subscription.app, "billing_type"
+	):
+		# create payment intent and return
+		amount = frappe.db.get_value(
+			"Plan", new_plan["plan"], f"price_{get_current_team(True).currency.lower()}"
+		)
+		amount = amount * 12 if option == "Yearly" else amount
+		intent = create_payment_intent_for_prepaid_app(
+			int(amount),
+			subscription.app,
+			"prepaid_saas",
+			option,
+			new_plan["name"],
+			subscription.name,
+		)
+		intent.update({"payment_type": "postpaid"})
+
+		return intent
+	else:
+		subscription.change_plan(new_plan["name"])
+
+
+# do this after payment succeeds
+def smb_plan_change(subscription, new_plan):
 	if subscription.app == "erpnext_smb":
 		site = frappe.get_doc("Site", subscription.site)
-		site.update_site_config({"plan": new_plan["plan"]})
+		site.update_site_config({"plan": new_plan["plan_title"]})
 
 		server = frappe.db.get_value("Site", subscription.site, "server")
 		agent = Agent(server_type="Server", server=server)
