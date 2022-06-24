@@ -23,7 +23,6 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   build-essential \
   git \
   mariadb-client \
-  libmariadb-dev \
   pv \
   ntp \
   wget \
