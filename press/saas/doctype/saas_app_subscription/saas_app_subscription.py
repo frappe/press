@@ -202,7 +202,7 @@ def create_usage_records():
 			frappe.db.commit()
 		except Exception:
 			frappe.db.rollback()
-			log_error(title="Saas App: Create Usage Record Error", name=name)
+			log_error(title="Saas App: Create Usage Record Error", name=sub.name)
 
 
 def should_create_usage_record(subscription):
