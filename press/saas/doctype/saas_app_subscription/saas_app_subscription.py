@@ -90,6 +90,18 @@ class SaasAppSubscription(Document):
 				f" site '{frappe.bold(self.site)}'!"
 			)
 
+	def deactivate(self):
+		self.status = "Inactive"
+		self.save(ignore_permissions=True)
+		site = frappe.get_doc("Site", self.site)
+		site.deactivate()
+
+	def activate(self):
+		self.status = "Active"
+		self.save(ignore_permissions=True)
+		site = frappe.get_doc("Site", self.site)
+		site.activate()
+
 	def disable(self):
 		if self.status == "Disabled":
 			return
@@ -151,9 +163,25 @@ class SaasAppSubscription(Document):
 		return bool(result)
 
 
+def deactivate_postpaid_subscriptions():
+	subscriptions = frappe.db.get_all(
+		"Saas App Subscription",
+		filters={
+			"status": "Active",
+			"end_date": ["<", datetime.today().strftime("%d-%m-%Y")],
+		},
+		pluck="name",
+	)
+
+	for name in subscriptions:
+		subscription = frappe.get_doc("Saas App Subscription", name)
+
+
 def create_usage_records():
 	subscriptions = frappe.db.get_all(
-		"Saas App Subscription", filters={"status": "Active"}, pluck="name"
+		"Saas App Subscription",
+		filters={"status": "Active", "end_date": ["is", "not set"]},
+		pluck="name",
 	)
 	for name in subscriptions:
 		subscription = frappe.get_doc("Saas App Subscription", name)
