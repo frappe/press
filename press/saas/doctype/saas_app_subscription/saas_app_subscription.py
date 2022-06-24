@@ -232,23 +232,47 @@ def process_prepaid_saas_payment(event):
 	sub.reload()
 
 	# create invoice
+	payout = sub.calculate_payout(amount)
+	due_date = datetime.fromtimestamp(payment_intent["created"])
+	payment_id = payment_intent["id"]
+	document_name = metadata.get("app")
+	invoice = create_saas_invoice(
+		team=team,
+		amount=amount,
+		payout=payout,
+		document_name=document_name,
+		due_date=due_date,
+		plan=plan,
+		payment_id=payment_id,
+	)
+
+	# there should only be one charge object
+	charge = payment_intent["charges"]["data"][0]["id"]
+	# update transaction amount, fee and exchange rate
+	invoice.update_transaction_details(charge)
+	invoice.submit()
+
+
+def create_saas_invoice(
+	team, due_date, amount, payout, document_name, plan, payment_id=None, status="Paid"
+):
 	invoice = frappe.get_doc(
 		doctype="Invoice",
 		team=team.name,
 		type="Service",
-		status="Paid",
-		due_date=datetime.fromtimestamp(payment_intent["created"]),
+		status=status,
+		due_date=due_date,
 		amount_paid=amount,
 		amount_due=amount,
-		stripe_payment_intent_id=payment_intent["id"],
-		payout=sub.calculate_payout(amount),
+		stripe_payment_intent_id=payment_id,
+		payout=payout,
 	)
 	invoice.append(
 		"items",
 		{
-			"description": "Prepaid Credits",
+			"description": "Saas Prepaid Purchase",
 			"document_type": "Saas App",
-			"document_name": metadata.get("app"),
+			"document_name": document_name,
 			"plan": frappe.db.get_value("Plan", plan, "plan_title"),
 			"quantity": 1,
 			"rate": amount,
@@ -256,9 +280,5 @@ def process_prepaid_saas_payment(event):
 	)
 	invoice.insert()
 	invoice.reload()
-	# there should only be one charge object
-	charge = payment_intent["charges"]["data"][0]["id"]
-	# update transaction amount, fee and exchange rate
-	invoice.update_transaction_details(charge)
-	invoice.submit()
 
+	return invoice

@@ -54,11 +54,27 @@
 						v-model="selectedPlan.plan_title"
 						readonly
 					/>
+			</div>
 
-				<div v-if="selectedPlan">
-					<div class="text-sm">Total price</div>
-					<p class="text-base font-bold ml-3 mb-4">{{ getTotalAmount() }}</p>
-				</div>
+			<div v-if="selectedPlan" class="mb-4">
+				<p class="text-base font-bold ml-3 mb-4">{{ getTotalAmount() }}</p>
+				<Input
+					type="text"
+					label="Total price"
+					v-model="totalAmount"
+					readonly
+				/>
+			</div>
+		<div
+				v-if="step == 'Confirm Checkout'"
+				>
+			<Input
+				class="mb-4"
+				v-if="$account.team.payment_mode === 'Partner Credits'"
+				type="checkbox"
+				label="Use Partner Credits"
+				v-model="usePartnerCredits"
+			/>
 			</div>
 			
 			<div
@@ -123,11 +139,12 @@ export default {
 			activePlan: null,
 			trial_end_date: null,
 			showCheckoutDialog: false,
+			usePartnerCredits: false,
 			step: 'Confirm Checkout',
 			clientSecret: null,
 			paymentOptions: ['Monthly', 'Yearly'],
 			selectedOption: 'Monthly',
-			totalAmount: 0,
+			totalAmount: "",
 		};
 	},
 	methods: {
@@ -147,8 +164,9 @@ export default {
 		getTotalAmount() {
 			let multiple = this.selectedOption === 'Yearly' ? 12 : 1;
 			if (this.$account.team.country === 'India') {
-				
-				return '₹' + this.selectedPlan.price_inr * multiple;
+				this.totalAmount = 'INR ' + this.selectedPlan.price_inr * multiple;
+			} else {
+				this.totalAmount = 'USD ' + this.selectedPlan.price_usd * multiple;
 			}
 		},
 		async onBuyClick() {
@@ -194,7 +212,6 @@ export default {
 					this.activePlan = this.selectedPlan;
 					this.site = result.site;
 					this.app = result.app_name;
-					console.log(this.selectedPlan, this.activePlan)
 				}
 			};
 		},
@@ -204,7 +221,8 @@ export default {
 				params: {
 					name: this.subName,
 					new_plan: this.selectedPlan,
-					option: this.selectedOption
+					option: this.selectedOption,
+					partner_credits: this.usePartnerCredits
 				},
 				async onSuccess(data) {
 					if (data.payment_type === "postpaid") {
