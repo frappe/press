@@ -7,17 +7,21 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "setup_section",
   "app",
   "domain",
   "cluster",
+  "group",
+  "column_break_9",
+  "apps",
+  "section_break_5",
   "plan",
   "site_plan",
-  "group",
+  "billing_type",
+  "section_break_9",
   "standby_pool_size",
   "standby_queue_size",
-  "enable_pooling",
-  "column_break_9",
-  "apps"
+  "enable_pooling"
  ],
  "fields": [
   {
@@ -35,7 +39,7 @@
   {
    "fieldname": "plan",
    "fieldtype": "Link",
-   "label": "Plan",
+   "label": "Trial Plan",
    "options": "Plan"
   },
   {
@@ -84,11 +88,32 @@
    "fieldtype": "Link",
    "label": "Site Plan",
    "options": "Plan"
+  },
+  {
+   "fieldname": "billing_type",
+   "fieldtype": "Select",
+   "label": "Billing Type",
+   "options": "prepaid\npostpaid"
+  },
+  {
+   "fieldname": "section_break_5",
+   "fieldtype": "Section Break",
+   "label": "Billing"
+  },
+  {
+   "fieldname": "section_break_9",
+   "fieldtype": "Section Break",
+   "label": "Pooling"
+  },
+  {
+   "fieldname": "setup_section",
+   "fieldtype": "Section Break",
+   "label": "Signup Setup"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-06-01 11:32:15.490170",
+ "modified": "2022-06-23 11:57:32.462123",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Saas Settings",
