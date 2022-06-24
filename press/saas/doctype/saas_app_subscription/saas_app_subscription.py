@@ -3,7 +3,9 @@
 
 import frappe
 from frappe.model.document import Document
+from frappe.utils import add_to_date
 from press.utils import log_error
+from datetime import datetime
 
 
 class SaasAppSubscription(Document):
@@ -62,14 +64,20 @@ class SaasAppSubscription(Document):
 			frappe.throw(f"Plan {self.saas_app_plan} is not for app {frappe.bold(self.app)}!")
 
 	def set_plan(self):
-		self.plan = frappe.db.get_value("Saas App Plan", self.saas_app_plan, "plan")
+		self.plan, self.site_plan = frappe.db.get_value(
+			"Saas App Plan", self.saas_app_plan, ["plan", "site_plan"]
+		)
 
-	def change_plan(self, new_plan):
-		self.saas_app_plan = new_plan["name"]
+	def change_plan(self, new_plan, override):
+		self.saas_app_plan = new_plan
 		self.save(ignore_permissions=True)
 
 		site_doc = frappe.get_doc("Site", self.site)
-		site_doc.change_plan(self.plan)
+		site_doc.change_plan(self.site_plan, override)
+
+	def update_end_date(self, payment_option):
+		days = 364 if payment_option == "Yearly" else 29
+		self.end_date = add_to_date(self.end_date or datetime.today().date(), days=days)
 
 	def validate_duplicate_subscription(self):
 		already_exists = frappe.db.exists(
@@ -169,3 +177,48 @@ def should_create_usage_record(subscription):
 		return False
 
 	return True
+
+
+def process_prepaid_saas_payment(event):
+	from datetime import datetime
+
+	payment_intent = event["data"]["object"]
+	team = frappe.get_doc("Team", {"stripe_customer_id": payment_intent["customer"]})
+	amount = payment_intent["amount"] / 100
+	metadata = payment_intent.get("metadata")
+	saas_plan = metadata.get("plan")
+	plan = frappe.db.get_value("Saas App Plan", saas_plan, "plan")
+
+	invoice = frappe.get_doc(
+		doctype="Invoice",
+		team=team.name,
+		type="Service",
+		status="Paid",
+		due_date=datetime.fromtimestamp(payment_intent["created"]),
+		amount_paid=amount,
+		amount_due=amount,
+		stripe_payment_intent_id=payment_intent["id"],
+	)
+	invoice.append(
+		"items",
+		{
+			"description": "Prepaid Credits",
+			"document_type": "Saas App",
+			"document_name": metadata.get("app"),
+			"plan": frappe.db.get_value("Plan", plan, "plan_title"),
+			"quantity": 1,
+			"rate": amount,
+		},
+	)
+	# set developer payout here too.
+	invoice.insert()
+	invoice.reload()
+	# there should only be one charge object
+	charge = payment_intent["charges"]["data"][0]["id"]
+	# update transaction amount, fee and exchange rate
+	invoice.update_transaction_details(charge)
+	invoice.submit()
+
+	sub = frappe.get_doc("Saas App Subscription", metadata.get("subscription"))
+	sub.update_end_date(metadata.get("payment_option"))
+	sub.change_plan(saas_plan, True)
