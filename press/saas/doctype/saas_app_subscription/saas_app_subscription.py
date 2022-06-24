@@ -172,17 +172,22 @@ class SaasAppSubscription(Document):
 		return bool(result)
 
 
-def suspend_postpaid_subscriptions():
-	subscriptions = frappe.db.sql(
-		f"""
-		SELECT name FROM `tabSaas App Subscription`
-		WHERE status = 'Active' and end_date > {datetime.today().strftime("%d-%m-%Y")}""",
-		as_dict=True,
-	)
-
-	for name in subscriptions:
-		subscription = frappe.get_doc("Saas App Subscription", name)
-		subscription.suspend()
+def suspend_prepaid_subscriptions():
+	filters = [
+		["end_date", "<", frappe.utils.today()],
+		["end_date", "is", "set"],
+		["status", "=", "Active"],
+	]
+	subscriptions = frappe.get_all("Saas App Subscription", filters=filters)
+	for sub in subscriptions:
+		subscription = frappe.get_doc("Saas App Subscription", sub.name)
+		try:
+			subscription.suspend()
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback(
+				"Saas Subscription: Cannot suspend prepaid subscription", subscription.name
+			)
 
 
 def create_usage_records():
@@ -192,7 +197,7 @@ def create_usage_records():
 		pluck="name",
 	)
 	for sub in subscriptions:
-		subscription = frappe.get_doc("Saas App Subscription", sub.name)
+		subscription = frappe.get_doc("Saas App Subscription", sub)
 
 		if not should_create_usage_record(subscription):
 			continue
@@ -202,7 +207,7 @@ def create_usage_records():
 			frappe.db.commit()
 		except Exception:
 			frappe.db.rollback()
-			log_error(title="Saas App: Create Usage Record Error", name=sub.name)
+			log_error(title="Saas App: Create Usage Record Error", name=sub)
 
 
 def should_create_usage_record(subscription):
