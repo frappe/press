@@ -433,6 +433,20 @@ def update_settings(name, active_bench):
 	return name
 
 
+@frappe.whitelist()
+@protected("Saas App Subscription")
+def activate(name):
+	subscription = frappe.get_doc("Saas App Subscription", name)
+	subscription.activate()
+
+
+@frappe.whitelist()
+@protected("Saas App Subscription")
+def deactivate(name):
+	subscription = frappe.get_doc("Saas App Subscription", name)
+	subscription.deactivate()
+
+
 # ----------------------------- SIGNUP APIs ---------------------------------
 
 
