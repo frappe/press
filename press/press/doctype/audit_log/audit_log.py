@@ -19,7 +19,7 @@ class AuditLog(Document):
 *FAILED AUDIT*
 [{self.audit_type}]({domain}{self.get_url()})
 ```
-{self.log}
+{self.log[:3000]}
 ```
 """
 		telegram = Telegram()
