@@ -12,8 +12,8 @@
 					type="primary"
 					@click="toggleCheckoutDialog()"
 					>{{
-					selectedPlan === activePlan ? 'Renew Plan' : 'Change Plan'
-				}}</Button
+						selectedPlan === activePlan ? 'Renew Plan' : 'Change Plan'
+					}}</Button
 				>
 			</div>
 		</div>
@@ -31,52 +31,40 @@
 			/>
 		</div>
 
-		<Dialog
-			class="z-100"
-			title="Checkout Details"
-			v-model="showCheckoutDialog"
-		>
+		<Dialog class="z-100" title="Checkout Details" v-model="showCheckoutDialog">
 			<div
 				v-if="step == 'Confirm Checkout'"
 				class="grid grid-cols-1 gap-2 md:grid-cols-2"
-				>
-
-					<Input
-						type="select"
-						:options="paymentOptions"
-						label="Payment Option"
-						v-model="selectedOption"
-					/>
-					<Input
-						v-if="selectedPlan"
-						type="text"
-						label="Selected Plan"
-						v-model="selectedPlan.plan_title"
-						readonly
-					/>
+			>
+				<Input
+					type="select"
+					:options="paymentOptions"
+					label="Payment Option"
+					v-model="selectedOption"
+				/>
+				<Input
+					v-if="selectedPlan"
+					type="text"
+					label="Selected Plan"
+					v-model="selectedPlan.plan_title"
+					readonly
+				/>
 			</div>
 
 			<div v-if="selectedPlan" class="mb-4">
 				<p class="text-base font-bold ml-3 mb-4">{{ getTotalAmount() }}</p>
+				<Input type="text" label="Total price" v-model="totalAmount" readonly />
+			</div>
+			<div v-if="step == 'Confirm Checkout'">
 				<Input
-					type="text"
-					label="Total price"
-					v-model="totalAmount"
-					readonly
+					class="mb-4"
+					v-if="$account.team.payment_mode === 'Partner Credits'"
+					type="checkbox"
+					label="Use Partner Credits"
+					v-model="usePartnerCredits"
 				/>
 			</div>
-		<div
-				v-if="step == 'Confirm Checkout'"
-				>
-			<Input
-				class="mb-4"
-				v-if="$account.team.payment_mode === 'Partner Credits'"
-				type="checkbox"
-				label="Use Partner Credits"
-				v-model="usePartnerCredits"
-			/>
-			</div>
-			
+
 			<div v-if="step == 'Add Card Details'" class="text-sm">Card Details</div>
 			<div
 				v-if="step == 'Add Card Details'"
@@ -85,32 +73,37 @@
 			></div>
 
 			<div class="mt-2 flex w-full justify-between">
-
-			<StripeLogo />
-			<div v-if="step == 'Add Card Details'">
-					<Button @click="() => {
-						showCheckoutDialog = false
-						step = 'Confirm Checkout'
-						selectedOption = 'Monthly'
-					}"> Cancel </Button>
-				<Button
-					class="ml-2"
-					type="primary"
-					@click="onBuyClick"
-					:loading="paymentInProgress"
-				>
-					Pay
-				</Button>
-			</div>
-			<div v-if="step == 'Confirm Checkout'">
-				<Button
-					type="primary"
-					@click="$resources.changePlan.submit()"
-					:loading="$resources.changePlan.loading"
-				>
-					Next
-				</Button>
-			</div>
+				<StripeLogo />
+				<div v-if="step == 'Add Card Details'">
+					<Button
+						@click="
+							() => {
+								showCheckoutDialog = false;
+								step = 'Confirm Checkout';
+								selectedOption = 'Monthly';
+							}
+						"
+					>
+						Cancel
+					</Button>
+					<Button
+						class="ml-2"
+						type="primary"
+						@click="onBuyClick"
+						:loading="paymentInProgress"
+					>
+						Pay
+					</Button>
+				</div>
+				<div v-if="step == 'Confirm Checkout'">
+					<Button
+						type="primary"
+						@click="$resources.changePlan.submit()"
+						:loading="$resources.changePlan.loading"
+					>
+						Next
+					</Button>
+				</div>
 			</div>
 
 			<div v-if="step == 'Setting up Stripe'" class="mt-8 flex justify-center">
@@ -146,7 +139,7 @@ export default {
 			clientSecret: null,
 			paymentOptions: ['Monthly', 'Yearly'],
 			selectedOption: 'Monthly',
-			totalAmount: "",
+			totalAmount: ''
 		};
 	},
 	methods: {
@@ -188,7 +181,8 @@ export default {
 				this.step = 'Confirm Checkout';
 				this.$notify({
 					title: 'Payment request received!',
-					message: 'Your plan will be change as soon as we get the payment confirmation',
+					message:
+						'Your plan will be change as soon as we get the payment confirmation',
 					icon: 'check',
 					color: 'green'
 				});
@@ -227,8 +221,8 @@ export default {
 					partner_credits: this.usePartnerCredits
 				},
 				async onSuccess(data) {
-					if (data.payment_type === "postpaid") {
-					let { payment_type, publishable_key, client_secret } = data;
+					if (data.payment_type === 'postpaid') {
+						let { payment_type, publishable_key, client_secret } = data;
 						this.showCheckoutDialog = true;
 						this.step = 'Setting up Stripe';
 						this.clientSecret = client_secret;
@@ -271,7 +265,6 @@ export default {
 						this.card.addEventListener('ready', () => {
 							this.ready = true;
 						});
-
 					} else {
 						this.$resources.plans.reload();
 						this.$notify({
@@ -280,7 +273,6 @@ export default {
 							color: 'green'
 						});
 					}
-
 				},
 				onError(e) {
 					this.$notify({
