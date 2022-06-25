@@ -256,7 +256,7 @@ def change_plan(name, new_plan, option, partner_credits):
 	# Partner Credits
 	if team.payment_mode == "Partner Credits" and partner_credits:
 		consume_partner_credits(team, amount, subscription, new_plan["name"])
-		return
+		return {"payment_type": "partner_credits"}
 
 	# Postpaid
 	if "postpaid" == frappe.db.get_value(
@@ -277,6 +277,7 @@ def change_plan(name, new_plan, option, partner_credits):
 	else:
 		# Prepaid
 		subscription.change_plan(new_plan["name"])
+		return {"payment_type": "prepaid"}
 
 
 # do this after payment succeeds
