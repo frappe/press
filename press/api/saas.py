@@ -236,7 +236,7 @@ def consume_partner_credits(team, amount, subscription, new_plan):
 		document_name=subscription.app,
 		plan=frappe.db.get_value("Saas App Plan", new_plan, "plan"),
 		payment_id=None,
-		status="Paid",
+		status="Draft",
 	)
 
 	invoice.submit()
