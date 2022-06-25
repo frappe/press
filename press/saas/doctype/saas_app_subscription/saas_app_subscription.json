@@ -15,7 +15,6 @@
   "app",
   "app_name",
   "saas_app_plan",
-  "plan",
   "section_break_14",
   "start_date",
   "end_date",
@@ -48,7 +47,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Active\nInactive\nDisabled"
+   "options": "Active\nInactive\nDisabled\nSuspended"
   },
   {
    "fieldname": "app",
@@ -74,13 +73,6 @@
    "fieldtype": "Select",
    "label": "Interval",
    "options": "Daily\nMonthly\nAnually"
-  },
-  {
-   "fieldname": "plan",
-   "fieldtype": "Link",
-   "label": "Plan",
-   "options": "Plan",
-   "read_only": 1
   },
   {
    "fieldname": "team",
@@ -126,7 +118,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-06-17 12:46:59.837100",
+ "modified": "2022-06-24 15:18:06.227389",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Saas App Subscription",

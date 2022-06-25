@@ -212,18 +212,23 @@ def create_payment_intent_for_buying_credits(amount):
 
 
 @frappe.whitelist()
-def create_payment_intent_for_prepaid_app(amount, marketplace_app):
+def create_payment_intent_for_prepaid_app(
+	amount, app, payment_for, option, plan=None, subscription=None
+):
 	team = get_current_team(True)
 	stripe = get_stripe()
 	intent = stripe.PaymentIntent.create(
 		amount=amount * 100,
 		currency=team.currency.lower(),
 		customer=team.stripe_customer_id,
-		description="Prepaid Marketplace Purchase",
+		description="Prepaid App Purchase",
 		metadata={
-			"payment_for": "prepaid_marketplace",
-			"app": marketplace_app,
-		},  # "prepaid_credits"
+			"payment_for": payment_for,
+			"payment_option": option,  # Monthly / Yearly
+			"app": app,
+			"plan": plan,
+			"subscription": subscription,
+		},
 	)
 	return {
 		"client_secret": intent["client_secret"],
