@@ -51,10 +51,10 @@ export default {
 	methods: {
 		onDeactivateClick() {
 			this.$confirm({
-				title: 'Deactivate Site',
+				title: 'Deactivate Subscription',
 				message: `
-					Are you sure you want to deactivate this site? The site will go in an inactive state.
-					It won't be accessible and background jobs won't run. You will <strong>still be charged</strong> for it.
+					Are you sure you want to deactivate this subscription? The site will go in an inactive state.
+					It won't be accessible.
 				`,
 				actionLabel: 'Deactivate',
 				actionType: 'danger',
@@ -63,8 +63,8 @@ export default {
 		},
 		onActivateClick() {
 			this.$confirm({
-				title: 'Activate Site',
-				message: 'Are you sure you want to activate this site?',
+				title: 'Activate Subscription',
+				message: 'Are you sure you want to activate this subscription?',
 				actionLabel: 'Activate',
 				actionType: 'primary',
 				action: () => this.activate()

@@ -179,6 +179,7 @@ scheduler_events = {
 		"press.press.audit.check_app_server_replica_benches",
 		"press.press.doctype.invoice.invoice.finalize_unpaid_prepaid_credit_invoices",
 		"press.press.doctype.bench.bench.sync_analytics",
+		"press.saas.doctype.saas_app_subscription.saas_app_subscription.suspend_prepaid_subscriptions",
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
