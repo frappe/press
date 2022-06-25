@@ -59,16 +59,15 @@
   {
    "columns": 1,
    "fieldname": "plan",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Plan",
-   "options": "Plan"
+   "label": "Plan"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2020-11-12 21:13:41.999924",
+ "modified": "2022-06-23 23:45:30.090517",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice Item",
@@ -77,5 +76,6 @@
  "quick_entry": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }
