@@ -68,13 +68,13 @@ class SaasAppSubscription(Document):
 			"Saas App Plan", self.saas_app_plan, ["plan", "site_plan"]
 		)
 
-	def change_plan(self, new_plan, override):
+	def change_plan(self, new_plan, ignore_card_setup=False):
 		self.saas_app_plan = new_plan
 		self.status = "Active"
 		self.save(ignore_permissions=True)
 
 		site_doc = frappe.get_doc("Site", self.site)
-		site_doc.change_plan(self.site_plan, override)
+		site_doc.change_plan(self.site_plan, ignore_card_setup)
 
 	def update_end_date(self, payment_option):
 		days = 364 if payment_option == "Yearly" else 29
@@ -112,10 +112,11 @@ class SaasAppSubscription(Document):
 		self.status = "Disabled"
 		self.save(ignore_permissions=True)
 
-	def calculate_payout(self, amount):
+	def calculate_payout(self, amount, saas_app_plan=None):
 		# Amount of money that is supposed to be paidout to the developers
+		saas_app_plan = saas_app_plan or self.saas_app_plan
 		payout_percentage = frappe.db.get_value(
-			"Saas App Plan", self.saas_app_plan, "payout_percentage"
+			"Saas App Plan", saas_app_plan, "payout_percentage"
 		)
 		return (amount / 100) * float(payout_percentage)
 

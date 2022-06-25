@@ -2,11 +2,15 @@ import frappe
 from frappe.model.naming import getseries
 import stripe
 import json
+from datetime import datetime
 from frappe.core.utils import find
 from frappe.utils.password import get_decrypted_password
 from press.api.billing import create_payment_intent_for_prepaid_app
 from press.api.site import overview, protected, get
 from press.api.bench import options
+from press.saas.doctype.saas_app_subscription.saas_app_subscription import (
+	create_saas_invoice,
+)
 from press.utils import unique
 from press.press.doctype.app.app import new_app as new_app_doc
 from press.press.doctype.team.team import Team
@@ -218,18 +222,46 @@ def subscription_overview(name):
 	}
 
 
+def consume_partner_credits(team, amount, subscription, new_plan):
+	if team.get_available_partner_credits() < amount:
+		frappe.throw("Cannot change plan not enought Partner Credits available")
+	due_date = datetime.today()
+	payout = subscription.calculate_payout(amount, new_plan)
+
+	invoice = create_saas_invoice(
+		team=team,
+		due_date=due_date,
+		amount=amount,
+		payout=payout,
+		document_name=subscription.app,
+		plan=frappe.db.get_value("Saas App Plan", new_plan, "plan"),
+		payment_id=None,
+		status="Paid",
+	)
+
+	invoice.submit()
+
+	subscription.change_plan(new_plan, ignore_card_setup=True)
+
+
 @frappe.whitelist()
 @protected("Saas App Subscription")
-def change_plan(name, new_plan, option):
+def change_plan(name, new_plan, option, partner_credits):
+	team = get_current_team(True)
 	subscription = frappe.get_doc("Saas App Subscription", name)
+	amount = frappe.db.get_value(
+		"Plan", new_plan["plan"], f"price_{team.currency.lower()}"
+	)
 
+	# Partner Credits
+	if team.payment_mode == "Partner Credits" and partner_credits:
+		consume_partner_credits(team, amount, subscription, new_plan["name"])
+		return
+
+	# Postpaid
 	if "postpaid" == frappe.db.get_value(
 		"Saas Settings", subscription.app, "billing_type"
 	):
-		# create payment intent and return
-		amount = frappe.db.get_value(
-			"Plan", new_plan["plan"], f"price_{get_current_team(True).currency.lower()}"
-		)
 		amount = amount * 12 if option == "Yearly" else amount
 		intent = create_payment_intent_for_prepaid_app(
 			int(amount),
@@ -243,6 +275,7 @@ def change_plan(name, new_plan, option):
 
 		return intent
 	else:
+		# Prepaid
 		subscription.change_plan(new_plan["name"])
 
 
