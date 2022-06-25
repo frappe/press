@@ -77,6 +77,7 @@
 			/>
 			</div>
 			
+			<div v-if="step == 'Add Card Details'" class="text-sm">Card Details</div>
 			<div
 				v-if="step == 'Add Card Details'"
 				class="form-input my-2 block w-full py-2 pl-3"
@@ -90,6 +91,7 @@
 					<Button @click="() => {
 						showCheckoutDialog = false
 						step = 'Confirm Checkout'
+						selectedOption = 'Monthly'
 					}"> Cancel </Button>
 				<Button
 					class="ml-2"
