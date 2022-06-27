@@ -523,7 +523,7 @@ def account_request(
 			"phone_number": phone_number,
 			"country": country,
 			"url_args": url_args or json.dumps({}),
-			"send_email": not stripe_setup,
+			"send_email": True,
 		}
 	).insert(ignore_permissions=True)
 
