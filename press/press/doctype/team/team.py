@@ -99,7 +99,7 @@ class Team(Document):
 		country: str = None,
 		is_us_eu: bool = False,
 		via_erpnext: bool = False,
-		user_exists: bool = False
+		user_exists: bool = False,
 	):
 		"""Create new team along with user (user created first)."""
 		team = frappe.get_doc(
