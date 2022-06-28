@@ -1,0 +1,35 @@
+###############
+# Mail Server #
+###############
+
+mail.host: '{{ sentry_mail_server }}'
+mail.port: {{ sentry_mail_port }}
+mail.username: '{{ sentry_mail_login }}'
+mail.password: '{{ sentry_mail_password }}'
+mail.use-tls: true
+
+
+###################
+# System Settings #
+###################
+
+# If this file ever becomes compromised, it's important to generate a new key.
+# Changing this value will result in all current sessions being invalidated.
+# A new key can be generated with `$ sentry config generate-secret-key`
+system.secret-key: '!!changeme!!'
+
+################
+# File storage #
+################
+
+filestore.backend: 'filesystem'
+filestore.options:
+  location: '/data/files'
+dsym.cache-path: '/data/dsym-cache'
+releasefile.cache-path: '/data/releasefile-cache'
+
+symbolicator.enabled: true
+symbolicator.options:
+  url: "http://symbolicator:3021"
+
+transaction-events.force-disable-internal-project: true
