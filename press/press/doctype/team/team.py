@@ -120,6 +120,8 @@ class Team(Document):
 			)
 		else:
 			user = frappe.get_doc("User", account_request.email)
+			user.append_roles(account_request.role)
+			user.save(ignore_permissions=True)
 
 		team.insert(ignore_permissions=True, ignore_links=True)
 		team.append("team_members", {"user": user.name})
