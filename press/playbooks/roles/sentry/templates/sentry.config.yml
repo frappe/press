@@ -31,6 +31,7 @@ filestore.options:
 dsym.cache-path: '/data/dsym-cache'
 releasefile.cache-path: '/data/releasefile-cache'
 
+system.internal-url-prefix: 'https://{{ server }}'
 symbolicator.enabled: true
 symbolicator.options:
   url: "http://symbolicator:3021"
