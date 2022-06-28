@@ -51,6 +51,13 @@
   args:
     chdir: /home/frappe/sentry
 
+- name: Create Sentry Python Config File
+  become: yes
+  become_user: frappe
+  lineinfile:
+    path: /home/frappe/sentry/sentry/sentry.conf.py
+    line: "{{ lookup('template', 'sentry.conf.py') }}"
+
 - name: Create Sentry User
   become: yes
   become_user: frappe

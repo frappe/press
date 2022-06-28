@@ -35,6 +35,11 @@
   "sentry_mail_port",
   "sentry_mail_login",
   "sentry_mail_password",
+  "sentry_oauth_client_section",
+  "sentry_oauth_server_url",
+  "column_break_33",
+  "sentry_oauth_client_id",
+  "sentry_oauth_client_secret"
  ],
  "fields": [
   {
@@ -227,6 +232,34 @@
    "label": "Sentry Mail Password",
    "set_only_once": 1
   },
+  {
+   "collapsible": 1,
+   "fieldname": "sentry_oauth_client_section",
+   "fieldtype": "Section Break",
+   "label": "Sentry OAuth Client"
+  },
+  {
+   "fieldname": "sentry_oauth_server_url",
+   "fieldtype": "Data",
+   "label": "Sentry OAuth Server URL",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "sentry_oauth_client_id",
+   "fieldtype": "Data",
+   "label": "Sentry OAuth Client ID",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "sentry_oauth_client_secret",
+   "fieldtype": "Data",
+   "label": "Sentry OAuth Client Secret",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "column_break_33",
+   "fieldtype": "Column Break"
+  }
  ],
  "links": [
   {
