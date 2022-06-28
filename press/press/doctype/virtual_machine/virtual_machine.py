@@ -109,12 +109,10 @@ class VirtualMachine(Document):
 			aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
 		)
 
-		response = client.describe_volumes(
-			Filters=[{"Name": "attachment.instance-id", "Values": [self.aws_instance_id]}]
-		)
-		volume = response["Volumes"][0]
-		self.disk_size = volume["Size"] + increment
-		client.modify_volume(VolumeId=volume["VolumeId"], Size=self.disk_size)
+		volume = self.volumes[0]
+		volume.size += increment
+		self.disk_size = volume.size
+		client.modify_volume(VolumeId=volume.aws_volume_id, Size=volume.size)
 		self.save()
 
 	def get_volumes(self):
