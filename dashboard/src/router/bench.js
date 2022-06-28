@@ -22,10 +22,6 @@ export default [
 				component: () => import('../views/BenchOverview.vue')
 			},
 			{
-				path: 'apps',
-				component: () => import('../views/BenchApps.vue')
-			},
-			{
 				path: 'versions/:version?',
 				component: () => import('../views/BenchVersions.vue'),
 				props: true
