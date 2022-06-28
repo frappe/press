@@ -1,0 +1,61 @@
+{
+ "actions": [],
+ "autoname": "autoincrement",
+ "creation": "2022-06-28 21:42:34.933564",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "volume_type",
+  "aws_volume_id",
+  "size",
+  "iops",
+  "throughput"
+ ],
+ "fields": [
+  {
+   "fieldname": "volume_type",
+   "fieldtype": "Select",
+   "label": "Volume Type",
+   "options": "gp3\ngp2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "aws_volume_id",
+   "fieldtype": "Data",
+   "label": "AWS Volume ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "size",
+   "fieldtype": "Int",
+   "label": "Size",
+   "read_only": 1
+  },
+  {
+   "fieldname": "iops",
+   "fieldtype": "Int",
+   "label": "IOPS",
+   "read_only": 1
+  },
+  {
+   "fieldname": "throughput",
+   "fieldtype": "Int",
+   "label": "Throughput",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2022-06-28 21:42:45.465126",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Virtual Machine Volume",
+ "naming_rule": "Autoincrement",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
