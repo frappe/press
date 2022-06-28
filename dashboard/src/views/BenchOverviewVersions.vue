@@ -13,7 +13,7 @@
 				View versions →
 			</router-link>
 		</template>
-		<div class="z-10 divide-y">
+		<div class="z-10 max-h-96 divide-y">
 			<ListItem
 				v-for="version in $resources.versions.data"
 				:key="version.name"
