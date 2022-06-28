@@ -22,6 +22,13 @@
     dest: /home/frappe/sentry
     remote_src: yes
 
+- name: Create Sentry Environment File
+  become: yes
+  become_user: frappe
+  template:
+    src: sentry.env
+    dest: /home/frappe/sentry/.env.custom
+
 - name: Install Sentry
   become: yes
   become_user: frappe
@@ -39,7 +46,7 @@
 - name: Start Sentry
   become: yes
   become_user: frappe
-  command: docker-compose up -d
+  command: docker-compose --env-file /home/frappe/sentry/.env.custom up -d
   args:
     chdir: /home/frappe/sentry
 
