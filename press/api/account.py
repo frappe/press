@@ -97,7 +97,14 @@ def setup_account(
 		doc.create_user_for_member(first_name, last_name, email, password, role)
 	else:
 		# Team doesn't exist, create it
-		Team.create_new(account_request, first_name, last_name, password, country=country, user_exists=bool(user_exists))
+		Team.create_new(
+			account_request,
+			first_name,
+			last_name,
+			password,
+			country=country,
+			user_exists=bool(user_exists),
+		)
 
 	frappe.local.login_manager.login_as(email)
 
