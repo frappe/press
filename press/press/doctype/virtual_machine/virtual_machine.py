@@ -31,7 +31,7 @@ class VirtualMachine(Document):
 					"Ebs": {
 						"DeleteOnTermination": True,
 						"VolumeSize": self.disk_size,  # This in GB. Fucking AWS!
-						"VolumeType": "gp2",
+						"VolumeType": "gp3",
 					},
 				},
 			],
