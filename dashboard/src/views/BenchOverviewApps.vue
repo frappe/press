@@ -16,7 +16,7 @@
 				Add App
 			</Button>
 		</template>
-		<div class="divide-y">
+		<div class="max-h-96 divide-y">
 			<ListItem
 				v-for="app in $resources.apps.data"
 				:key="app.name"
