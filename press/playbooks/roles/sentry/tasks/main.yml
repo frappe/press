@@ -29,6 +29,13 @@
     src: sentry.env
     dest: /home/frappe/sentry/.env.custom
 
+- name: Create Sentry Enhance Image File
+  become: yes
+  become_user: frappe
+  template:
+    src: enhance-image.sh
+    dest: /home/frappe/sentry/sentry/enhance-image.sh
+    mode: 0777
 
 - name: Create Sentry YAML Config File
   become: yes
