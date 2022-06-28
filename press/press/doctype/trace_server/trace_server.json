@@ -27,6 +27,9 @@
   "root_public_key",
   "monitoring_section",
   "monitoring_password",
+  "sentry_section",
+  "sentry_admin_email",
+  "sentry_admin_password",
  ],
  "fields": [
   {
@@ -171,6 +174,23 @@
    "fieldname": "monitoring_password",
    "fieldtype": "Password",
    "label": "Monitoring Password",
+   "set_only_once": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "sentry_section",
+   "fieldtype": "Section Break",
+   "label": "Sentry"
+  },
+  {
+   "fieldname": "sentry_admin_email",
+   "fieldtype": "Data",
+   "label": "Sentry Admin Email"
+  },
+  {
+   "fieldname": "sentry_admin_password",
+   "fieldtype": "Password",
+   "label": "Sentry Admin Password",
    "set_only_once": 1
   },
  ],

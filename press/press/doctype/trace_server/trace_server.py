@@ -9,6 +9,19 @@ from press.utils import log_error
 
 
 class TraceServer(BaseServer):
+	def validate(self):
+		self.validate_agent_password()
+		self.validate_monitoring_password()
+		self.validate_sentry_admin_password()
+
+	def validate_monitoring_password(self):
+		if not self.monitoring_password:
+			self.monitoring_password = frappe.generate_hash()
+
+	def validate_sentry_admin_password(self):
+		if not self.sentry_admin_password:
+			self.sentry_admin_password = frappe.generate_hash()
+
 	def _setup_server(self):
 		agent_repository_url = self.get_agent_repository_url()
 		certificate_name = frappe.db.get_value(
@@ -36,6 +49,8 @@ class TraceServer(BaseServer):
 					"agent_password": self.get_password("agent_password"),
 					"agent_repository_url": agent_repository_url,
 					"kibana_password": kibana_password,
+					"sentry_admin_email": self.sentry_admin_email,
+					"sentry_admin_password": self.get_password("sentry_admin_password"),
 					"monitoring_password": self.get_password("monitoring_password"),
 					"private_ip": self.private_ip,
 					"certificate_private_key": certificate.private_key,
@@ -54,3 +69,7 @@ class TraceServer(BaseServer):
 			self.status = "Broken"
 			log_error("Trace Server Setup Exception", server=self.as_dict())
 		self.save()
+
+	@frappe.whitelist()
+	def show_sentry_password(self):
+		return self.get_password("sentry_admin_password")
