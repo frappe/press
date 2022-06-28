@@ -1,0 +1,206 @@
+{
+ "actions": [],
+ "creation": "2022-06-28 13:24:27.669633",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "status",
+  "hostname",
+  "domain",
+  "column_break_4",
+  "provider",
+  "virtual_machine",
+  "is_server_setup",
+  "networking_section",
+  "ip",
+  "column_break_10",
+  "private_ip",
+  "private_mac_address",
+  "private_vlan_id",
+  "agent_section",
+  "agent_password",
+  "ssh_section",
+  "frappe_user_password",
+  "frappe_public_key",
+  "column_break_19",
+  "root_public_key",
+  "monitoring_section",
+  "monitoring_password",
+ ],
+ "fields": [
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Pending\nInstalling\nActive\nBroken\nArchived",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "hostname",
+   "fieldtype": "Data",
+   "label": "Hostname",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "domain",
+   "fieldtype": "Link",
+   "label": "Domain",
+   "options": "Root Domain",
+   "read_only": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Generic",
+   "fieldname": "provider",
+   "fieldtype": "Select",
+   "label": "Provider",
+   "options": "Generic\nScaleway\nAWS EC2",
+   "set_only_once": 1
+  },
+  {
+   "depends_on": "eval:doc.provider === \"AWS EC2\"",
+   "fieldname": "virtual_machine",
+   "fieldtype": "Link",
+   "label": "Virtual Machine",
+   "mandatory_depends_on": "eval:doc.provider === \"AWS EC2\"",
+   "options": "Virtual Machine"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_server_setup",
+   "fieldtype": "Check",
+   "label": "Server Setup",
+   "read_only": 1
+  },
+  {
+   "fieldname": "networking_section",
+   "fieldtype": "Section Break",
+   "label": "Networking"
+  },
+  {
+   "fetch_from": "virtual_machine.public_ip_address",
+   "fieldname": "ip",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "IP",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "column_break_10",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "virtual_machine.private_ip_address",
+   "fieldname": "private_ip",
+   "fieldtype": "Data",
+   "label": "Private IP",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "depends_on": "eval: doc.provider === \"Scaleway\"",
+   "fieldname": "private_mac_address",
+   "fieldtype": "Data",
+   "label": "Private Mac Address",
+   "mandatory_depends_on": "eval: doc.provider === \"Scaleway\"",
+   "set_only_once": 1
+  },
+  {
+   "depends_on": "eval: doc.provider === \"Scaleway\"",
+   "fieldname": "private_vlan_id",
+   "fieldtype": "Data",
+   "label": "Private VLAN ID",
+   "mandatory_depends_on": "eval: doc.provider === \"Scaleway\"",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "agent_section",
+   "fieldtype": "Section Break",
+   "label": "Agent"
+  },
+  {
+   "fieldname": "agent_password",
+   "fieldtype": "Password",
+   "label": "Agent Password",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "ssh_section",
+   "fieldtype": "Section Break",
+   "label": "SSH"
+  },
+  {
+   "fieldname": "frappe_user_password",
+   "fieldtype": "Password",
+   "label": "Frappe User Password",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "frappe_public_key",
+   "fieldtype": "Code",
+   "label": "Frappe Public Key",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_19",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "root_public_key",
+   "fieldtype": "Code",
+   "label": "Root Public Key",
+   "read_only": 1
+  },
+  {
+   "fieldname": "monitoring_section",
+   "fieldtype": "Section Break",
+   "label": "Monitoring"
+  },
+  {
+   "fieldname": "monitoring_password",
+   "fieldtype": "Password",
+   "label": "Monitoring Password",
+   "set_only_once": 1
+  },
+ ],
+ "links": [
+  {
+   "link_doctype": "Ansible Play",
+   "link_fieldname": "server"
+  }
+ ],
+ "modified": "2022-06-28 13:50:52.368111",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Trace Server",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
