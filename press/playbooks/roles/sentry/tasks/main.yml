@@ -29,6 +29,14 @@
     src: sentry.env
     dest: /home/frappe/sentry/.env.custom
 
+
+- name: Create Sentry YAML Config File
+  become: yes
+  become_user: frappe
+  template:
+    src: sentry.config.yml
+    dest: /home/frappe/sentry/sentry/config.yml
+
 - name: Install Sentry
   become: yes
   become_user: frappe

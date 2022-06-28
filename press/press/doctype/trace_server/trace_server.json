@@ -30,6 +30,11 @@
   "sentry_section",
   "sentry_admin_email",
   "sentry_admin_password",
+  "column_break_27",
+  "sentry_mail_server",
+  "sentry_mail_port",
+  "sentry_mail_login",
+  "sentry_mail_password",
  ],
  "fields": [
   {
@@ -191,6 +196,35 @@
    "fieldname": "sentry_admin_password",
    "fieldtype": "Password",
    "label": "Sentry Admin Password",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "column_break_27",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sentry_mail_server",
+   "fieldtype": "Data",
+   "label": "Sentry Mail Server",
+   "set_only_once": 1
+  },
+  {
+   "default": "587",
+   "fieldname": "sentry_mail_port",
+   "fieldtype": "Int",
+   "label": "Sentry Mail Port",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "sentry_mail_login",
+   "fieldtype": "Data",
+   "label": "Sentry Mail Login",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "sentry_mail_password",
+   "fieldtype": "Password",
+   "label": "Sentry Mail Password",
    "set_only_once": 1
   },
  ],
