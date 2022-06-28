@@ -1,0 +1,45 @@
+---
+- name: Install Docker Compose
+  get_url:
+    url: https://github.com/docker/compose/releases/download/v2.6.1/docker-compose-linux-x86_64
+    checksum: sha256:ed79398562f3a80a5d8c068fde14b0b12101e80b494aabb2b3533eaa10599e0f
+    dest: /usr/local/bin/docker-compose
+    mode: 0777
+
+- name: Download Sentry Self Hosting Archive
+  become: yes
+  become_user: frappe
+  unarchive:
+    src: https://github.com/getsentry/self-hosted/archive/refs/tags/22.6.0.tar.gz
+    dest: /tmp
+    remote_src: yes
+
+- name: Create Sentry Directory
+  become: yes
+  become_user: frappe
+  copy:
+    src: /tmp/self-hosted-22.6.0/
+    dest: /home/frappe/sentry
+    remote_src: yes
+
+- name: Install Sentry
+  become: yes
+  become_user: frappe
+  command: bash install.sh --skip-user-prompt
+  args:
+    chdir: /home/frappe/sentry
+
+- name: Start Sentry
+  become: yes
+  become_user: frappe
+  command: docker-compose up -d
+  args:
+    chdir: /home/frappe/sentry
+
+- name: Setup NGINX Proxy for Sentry
+  become: yes
+  become_user: frappe
+  command: /home/frappe/agent/env/bin/agent setup trace
+  args:
+    chdir: /home/frappe/agent
+  
