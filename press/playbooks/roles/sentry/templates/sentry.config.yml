@@ -8,6 +8,8 @@ mail.username: '{{ sentry_mail_login }}'
 mail.password: '{{ sentry_mail_password }}'
 mail.use-tls: true
 
+mail.from: 'notifications@frappecloud.com'
+mail.list-namespace: 'frappecloud.com'
 
 ###################
 # System Settings #
@@ -17,6 +19,7 @@ mail.use-tls: true
 # Changing this value will result in all current sessions being invalidated.
 # A new key can be generated with `$ sentry config generate-secret-key`
 system.secret-key: '!!changeme!!'
+system.admin-email: "{{ sentry_admin_email }}"
 
 ################
 # File storage #
