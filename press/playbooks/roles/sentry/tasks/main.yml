@@ -29,6 +29,13 @@
   args:
     chdir: /home/frappe/sentry
 
+- name: Create Sentry User
+  become: yes
+  become_user: frappe
+  command: docker-compose run --rm web createuser --no-input --superuser --email {{ sentry_admin_email }} --password {{ sentry_admin_password }} --force-update
+  args:
+    chdir: /home/frappe/sentry
+
 - name: Start Sentry
   become: yes
   become_user: frappe
