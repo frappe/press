@@ -78,10 +78,10 @@ def setup_account(
 			all_countries = frappe.db.get_all("Country", pluck="name")
 			country = find(all_countries, lambda x: x.lower() == country.lower())
 			if not country:
-				frappe.throw("Country filed should be a valid country name")
+				frappe.throw("Please provide a valid country name")
 
 	if not accepted_user_terms:
-		frappe.throw("You need to accept our Terms of Service & Privary Policy")
+		frappe.throw("Please accept our Terms of Service & Privary Policy to continue")
 
 	# if the request is authenticated, set the user to Administrator
 	frappe.set_user("Administrator")
@@ -97,7 +97,7 @@ def setup_account(
 		doc.create_user_for_member(first_name, last_name, email, password, role)
 	else:
 		# Team doesn't exist, create it
-		Team.create_new(account_request, first_name, last_name, password, country=country)
+		Team.create_new(account_request, first_name, last_name, password, country=country, user_exists=bool(user_exists))
 
 	frappe.local.login_manager.login_as(email)
 
