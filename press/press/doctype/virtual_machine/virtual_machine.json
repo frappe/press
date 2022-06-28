@@ -29,7 +29,9 @@
   "private_dns_name",
   "security_section",
   "column_break_18",
-  "aws_security_group_id"
+  "aws_security_group_id",
+  "volumes_section",
+  "volumes"
  ],
  "fields": [
   {
@@ -186,11 +188,23 @@
    "fieldtype": "Int",
    "label": "Disk Size",
    "reqd": 1
+  },
+  {
+   "fieldname": "volumes_section",
+   "fieldtype": "Section Break",
+   "label": "Volumes"
+  },
+  {
+   "fieldname": "volumes",
+   "fieldtype": "Table",
+   "label": "Volumes",
+   "options": "Virtual Machine Volume",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-09-15 17:23:57.522123",
+ "modified": "2022-06-28 21:43:19.300774",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",
@@ -211,5 +225,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }
