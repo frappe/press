@@ -12,6 +12,7 @@ frappe.ui.form.on('Trace Server', {
 			[__('Setup Server'), "setup_server", true, !frm.doc.is_server_setup],
 			[__('Reconfigure Monitor Server'), "reconfigure_monitor_server", true, frm.doc.is_server_setup],
 			[__('Fetch Keys'), "fetch_keys", false, frm.doc.is_server_setup && (!frm.doc.frappe_public_key || !frm.doc.root_public_key)],
+			[__('Show Sentry Password'), "show_sentry_password", false, frm.doc.is_server_setup],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === "undefined" || condition) {
 				frm.add_custom_button(
