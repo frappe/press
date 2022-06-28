@@ -117,6 +117,20 @@ class VirtualMachine(Document):
 		client.modify_volume(VolumeId=volume["VolumeId"], Size=self.disk_size)
 		self.save()
 
+	def get_volumes(self):
+		cluster = frappe.get_doc("Cluster", self.cluster)
+		client = boto3.client(
+			"ec2",
+			region_name=self.region,
+			aws_access_key_id=cluster.aws_access_key_id,
+			aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
+		)
+
+		response = client.describe_volumes(
+			Filters=[{"Name": "attachment.instance-id", "Values": [self.aws_instance_id]}]
+		)
+		return response["Volumes"]
+
 
 @frappe.whitelist()
 def poll_pending_machines():
