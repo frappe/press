@@ -99,6 +99,7 @@ class Team(Document):
 		country: str = None,
 		is_us_eu: bool = False,
 		via_erpnext: bool = False,
+		user_exists: bool = False
 	):
 		"""Create new team along with user (user created first)."""
 		team = frappe.get_doc(
@@ -112,9 +113,14 @@ class Team(Document):
 				"is_us_eu": is_us_eu,
 			}
 		)
-		user = team.create_user(
-			first_name, last_name, account_request.email, password, account_request.role
-		)
+
+		if not user_exists:
+			user = team.create_user(
+				first_name, last_name, account_request.email, password, account_request.role
+			)
+		else:
+			user = frappe.get_doc("User", account_request.email)
+
 		team.insert(ignore_permissions=True, ignore_links=True)
 		team.append("team_members", {"user": user.name})
 		team.append("communication_emails", {"type": "invoices", "value": user.name})
