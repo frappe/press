@@ -20,8 +20,7 @@
 					v-model="wantToSkipFailingPatches"
 				/>
 				<label for="skip-failing" class="ml-1 text-sm text-gray-900">
-					We noticed your <strong>last site migrate failed</strong>. Update by
-					skipping failing patches?
+					Skip failing patches?
 				</label>
 			</div>
 			<ErrorMessage class="mt-1" :error="$resources.scheduleUpdate.error" />
