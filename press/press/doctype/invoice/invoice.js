@@ -84,6 +84,31 @@ frappe.ui.form.on('Invoice', {
 			);
 		}
 
+		if (frm.doc.stripe_invoice_url) {
+			let btn = frm.add_custom_button(
+				'Refresh Payment Link',
+				() => {
+					frm
+						.call({
+							doc: frm.doc,
+							method: 'refresh_stripe_payment_link',
+							btn,
+						})
+						.then((r) => {
+							frm.refresh();
+							console.log(r.message);
+							frappe.utils.copy_to_clipboard(r.message);
+							frappe.msgprint({
+								title: 'Stripe Payment Link Updated',
+								indicator: 'green',
+								message: 'The Link has been copied to the clipboard.',
+							});
+						});
+				},
+				'Stripe Invoice'
+			);
+		}
+
 		if (frm.doc.docstatus == 1 && frm.doc.stripe_invoice_id) {
 			let btn = frm.add_custom_button(
 				'Change Status',
