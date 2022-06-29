@@ -63,12 +63,9 @@ class SaasApiHandler:
 			).insert(ignore_permissions=True)
 			frappe.db.commit()
 
-		domain = (
-			"admin.erpnext.com"
-			if self.app_subscription_doc.app == "erpnext_smb"
-			else "frappecloud.com"
+		domain = frappe.db.get_value(
+			"Saas App", self.app_subscription_doc.app, "custom_domain"
 		)
-
 		return f"https://{domain}/dashboard/saas/remote-login?token={token}"
 
 	def get_trial_expiry(self):
