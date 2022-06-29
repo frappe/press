@@ -4,6 +4,7 @@
 import frappe
 
 from typing import Dict, List
+from itertools import groupby
 from frappe.utils import fmt_money
 from frappe.core.utils import find
 from press.utils import get_current_team
@@ -294,6 +295,62 @@ def get_invoice_usage(invoice):
 	out.formatted = make_formatted_doc(doc)
 	out.invoice_pdf = doc.invoice_pdf or (doc.currency == "USD" and doc.get_pdf())
 	return out
+
+
+@frappe.whitelist()
+def get_billing_summary():
+	team = get_current_team()
+	invoices = frappe.get_all(
+		"Invoice",
+		filters={"team": team, "status": ("in", ["Paid", "Unpaid"])},
+		fields=[
+			"name",
+			"status",
+			"period_end",
+			"payment_mode",
+			"type",
+			"currency",
+			"amount_paid",
+		],
+		order_by="creation desc",
+	)
+
+	invoice_names = [x.name for x in invoices]
+	grouped_invoice_items = get_grouped_invoice_items(invoice_names)
+
+	for invoice in invoices:
+		invoice.items = grouped_invoice_items.get(invoice.name, [])
+
+	return invoices
+
+
+def get_grouped_invoice_items(invoices: List[str]) -> Dict:
+	"""Takes a list of invoices (invoice names) and returns a dict of the form:
+	{
+	        "<invoice_name1>": [<invoice_items>],
+	        "<invoice_name2>": [<invoice_items>],
+	}
+	"""
+	invoice_items = frappe.get_all(
+		"Invoice Item",
+		filters={"parent": ("in", invoices)},
+		fields=[
+			"amount",
+			"document_name AS name",
+			"document_type AS type",
+			"parent",
+			"quantity",
+			"rate",
+			"plan",
+		],
+	)
+
+	grouped_items = groupby(invoice_items, key=lambda x: x["parent"])
+	invoice_items_map = {}
+	for invoice_name, items in grouped_items:
+		invoice_items_map[invoice_name] = list(items)
+
+	return invoice_items_map
 
 
 @frappe.whitelist()
