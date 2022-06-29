@@ -100,6 +100,7 @@ class BackupRecordCheck(Audit):
 		log = {self.list_key: []}
 		interval_hrs_ago = datetime.now() - timedelta(hours=self.interval)
 		trial_plans = tuple(frappe.get_all("Plan", dict(disable_backups=1), pluck="name"))
+		cond_filters = " AND site.plan NOT IN {trial_plans}" if trial_plans else ''
 		tuples = frappe.db.sql(
 			f"""
 				SELECT
@@ -112,9 +113,9 @@ class BackupRecordCheck(Audit):
 					site_backup.site = site.name
 				WHERE
 					site.status = "Active" and
-					site.plan NOT IN {trial_plans} and
 					site_backup.owner = "Administrator" and
-					site_backup.creation >= "{interval_hrs_ago}"
+					site_backup.creation >= "{interval_hrs_ago}
+					{cond_filters}"
 			"""
 		)
 		sites_with_backup_in_interval = set([t[0] for t in tuples])
