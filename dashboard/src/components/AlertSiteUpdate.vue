@@ -20,7 +20,7 @@
 					v-model="wantToSkipFailingPatches"
 				/>
 				<label for="skip-failing" class="ml-1 text-sm text-gray-900">
-					Skip failing patches?
+					Skip failing patches if any?
 				</label>
 			</div>
 			<ErrorMessage class="mt-1" :error="$resources.scheduleUpdate.error" />
