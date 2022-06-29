@@ -298,7 +298,7 @@ def get_invoice_usage(invoice):
 
 
 @frappe.whitelist()
-def get_billing_summary():
+def get_summary():
 	team = get_current_team()
 	invoices = frappe.get_all(
 		"Invoice",
