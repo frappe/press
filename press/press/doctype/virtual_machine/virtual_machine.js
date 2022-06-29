@@ -12,5 +12,8 @@ frappe.ui.form.on('Virtual Machine', {
 				__('Actions')
 			);
 		}
+		if (frm.doc.aws_instance_id){
+			frm.add_web_link(`https://${frm.doc.region}.console.aws.amazon.com/ec2/v2/home?region=${frm.doc.region}#InstanceDetails:instanceId=${frm.doc.aws_instance_id}`, __('Visit AWS Dashboard'));
+		}
 	}
 });

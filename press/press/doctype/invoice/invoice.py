@@ -777,6 +777,16 @@ class Invoice(Document):
 		elif status == "Void":
 			stripe.Invoice.void_invoice(self.stripe_invoice_id)
 
+	@frappe.whitelist()
+	def refresh_stripe_payment_link(self):
+		stripe = get_stripe()
+		stripe_invoice = stripe.Invoice.retrieve(self.stripe_invoice_id)
+		self.stripe_invoice_url = stripe_invoice.hosted_invoice_url
+		self.save()
+
+		# Also send back the updated payment link
+		return self.stripe_invoice_url
+
 
 def finalize_draft_invoices():
 	"""

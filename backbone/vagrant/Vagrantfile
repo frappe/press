@@ -133,6 +133,17 @@ Vagrant.configure("2") do |config|
         end
     end
 
+    # Trace Server = Sentry
+    config.vm.define "trace.local.frappe.dev" do |trace|
+        trace.vm.hostname = "trace.local.frappe.dev"
+        trace.vm.network "private_network", ip: "10.0.4.105", netmask: "255.255.0.0"
+        trace.vm.network "private_network", ip: "10.1.4.105", netmask: "255.255.0.0"
+        trace.vm.provider :libvirt do |libvirt|
+            libvirt.cpus = 2
+            libvirt.memory = 4096
+        end
+    end
+
     config.vm.define "sn1.local.frappe.dev" do |sn1|
         sn1.vm.box = "scaleway"
         sn1.vm.hostname = "sn1.local.frappe.dev"

@@ -31,7 +31,7 @@ class VirtualMachine(Document):
 					"Ebs": {
 						"DeleteOnTermination": True,
 						"VolumeSize": self.disk_size,  # This in GB. Fucking AWS!
-						"VolumeType": "gp2",
+						"VolumeType": "gp3",
 					},
 				},
 			],
@@ -109,13 +109,47 @@ class VirtualMachine(Document):
 			aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
 		)
 
+		volume = self.volumes[0]
+		volume.size += increment
+		self.disk_size = volume.size
+		client.modify_volume(VolumeId=volume.aws_volume_id, Size=volume.size)
+		self.save()
+
+	def get_volumes(self):
+		cluster = frappe.get_doc("Cluster", self.cluster)
+		client = boto3.client(
+			"ec2",
+			region_name=self.region,
+			aws_access_key_id=cluster.aws_access_key_id,
+			aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
+		)
+
 		response = client.describe_volumes(
 			Filters=[{"Name": "attachment.instance-id", "Values": [self.aws_instance_id]}]
 		)
-		volume = response["Volumes"][0]
-		self.disk_size = volume["Size"] + increment
-		client.modify_volume(VolumeId=volume["VolumeId"], Size=self.disk_size)
-		self.save()
+		return response["Volumes"]
+
+	def convert_to_gp3(self):
+		cluster = frappe.get_doc("Cluster", self.cluster)
+		client = boto3.client(
+			"ec2",
+			region_name=self.region,
+			aws_access_key_id=cluster.aws_access_key_id,
+			aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
+		)
+
+		for volume in self.volumes:
+			if volume.volume_type != "gp3":
+				volume.volume_type = "gp3"
+				volume.iops = max(3000, volume.iops)
+				volume.throughput = 250 if volume.size > 340 else 125
+				client.modify_volume(
+					VolumeId=volume.aws_volume_id,
+					VolumeType=volume.volume_type,
+					Iops=volume.iops,
+					Throughput=volume.throughput,
+				)
+				self.save()
 
 
 @frappe.whitelist()
