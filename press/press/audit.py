@@ -52,6 +52,7 @@ class BenchFieldCheck(Audit):
 				)
 				if sites_in_press != sites_in_server:
 					status = "Failure"
+					log[bench_name] = {}
 					if sites_on_press_only := list(sites_in_press - sites_in_server):
 						log[bench_name].update({"Sites on press only": sites_on_press_only})
 					if sites_on_server_only := list(sites_in_server - sites_in_press):
@@ -98,6 +99,7 @@ class BackupRecordCheck(Audit):
 	def __init__(self):
 		log = {self.list_key: []}
 		interval_hrs_ago = datetime.now() - timedelta(hours=self.interval)
+		trial_plans = ("ERPNext Trial", "ERPNext SMB Trial", "ERPNext Test Trial", "Saas Trial")
 		tuples = frappe.db.sql(
 			f"""
 				SELECT
@@ -110,6 +112,7 @@ class BackupRecordCheck(Audit):
 					site_backup.site = site.name
 				WHERE
 					site.status = "Active" and
+					site.plan NOT IN {trial_plans} and
 					site_backup.owner = "Administrator" and
 					site_backup.creation >= "{interval_hrs_ago}"
 			"""
