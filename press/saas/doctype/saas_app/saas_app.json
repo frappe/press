@@ -6,6 +6,7 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "app_section",
   "status",
   "team",
   "image",
@@ -13,7 +14,14 @@
   "title",
   "sources",
   "description",
-  "signup_url"
+  "signup_section",
+  "custom_domain",
+  "signup_url",
+  "col",
+  "custom_verify_template",
+  "subject",
+  "message",
+  "signature"
  ],
  "fields": [
   {
@@ -66,6 +74,49 @@
    "fieldtype": "Table",
    "label": "Sources",
    "options": "Marketplace App Version"
+  },
+  {
+   "default": "frappecloud.com",
+   "description": "Redirects like signup urls will go to this custom domain",
+   "fieldname": "custom_domain",
+   "fieldtype": "Data",
+   "label": "Custom Domain"
+  },
+  {
+   "fieldname": "signup_section",
+   "fieldtype": "Section Break",
+   "label": "Signup"
+  },
+  {
+   "fieldname": "app_section",
+   "fieldtype": "Section Break",
+   "label": "App"
+  },
+  {
+   "fieldname": "col",
+   "fieldtype": "Section Break",
+   "label": "Signup Email Template"
+  },
+  {
+   "fieldname": "subject",
+   "fieldtype": "Data",
+   "label": "Subject"
+  },
+  {
+   "fieldname": "message",
+   "fieldtype": "Text Editor",
+   "label": "Message"
+  },
+  {
+   "fieldname": "signature",
+   "fieldtype": "Text Editor",
+   "label": "Signature"
+  },
+  {
+   "default": "0",
+   "fieldname": "custom_verify_template",
+   "fieldtype": "Check",
+   "label": "Use custom verify template"
   }
  ],
  "image_field": "image",
@@ -80,7 +131,7 @@
    "link_fieldname": "app"
   }
  ],
- "modified": "2022-05-23 12:51:03.412569",
+ "modified": "2022-06-29 12:54:23.456530",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Saas App",
