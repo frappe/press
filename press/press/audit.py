@@ -99,7 +99,7 @@ class BackupRecordCheck(Audit):
 	def __init__(self):
 		log = {self.list_key: []}
 		interval_hrs_ago = datetime.now() - timedelta(hours=self.interval)
-		trial_plans = ("ERPNext Trial", "ERPNext SMB Trial", "ERPNext Test Trial", "Saas Trial")
+		trial_plans = tuple(frappe.get_all("Plan", dict(disable_backups=1), pluck="name"))
 		tuples = frappe.db.sql(
 			f"""
 				SELECT
