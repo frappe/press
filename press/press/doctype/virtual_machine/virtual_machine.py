@@ -129,6 +129,28 @@ class VirtualMachine(Document):
 		)
 		return response["Volumes"]
 
+	def convert_to_gp3(self):
+		cluster = frappe.get_doc("Cluster", self.cluster)
+		client = boto3.client(
+			"ec2",
+			region_name=self.region,
+			aws_access_key_id=cluster.aws_access_key_id,
+			aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
+		)
+
+		for volume in self.volumes:
+			if volume.volume_type != "gp3":
+				volume.volume_type = "gp3"
+				volume.iops = max(3000, volume.iops)
+				volume.throughput = 250 if volume.size > 340 else 125
+				client.modify_volume(
+					VolumeId=volume.aws_volume_id,
+					VolumeType=volume.volume_type,
+					Iops=volume.iops,
+					Throughput=volume.throughput,
+				)
+				self.save()
+
 
 @frappe.whitelist()
 def poll_pending_machines():
