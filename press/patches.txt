@@ -81,3 +81,4 @@ press.patches.v0_0_1.add_team_name_as_default_notify_email
 press.press.doctype.team.patches.set_referrer_id
 press.press.doctype.team.patches.set_partner_email
 press.press.doctype.proxy_server.patches.generate_proxysql_monitor_password
+press.press.doctype.virtual_machine.patches.populate_volumes_table
