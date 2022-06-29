@@ -43,6 +43,7 @@ def account_request(
 			"phone_number": phone_number,
 			"country": country,
 			"url_args": url_args,
+			"send_email": True,
 		}
 	).insert(ignore_permissions=True)
 
