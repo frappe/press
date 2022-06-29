@@ -55,6 +55,8 @@ class AccountRequest(Document):
 	@frappe.whitelist()
 	def send_verification_email(self):
 		url = self.get_verification_url()
+		signature, message, image_path = "", "", ""
+		app_title = "ERPNext"
 
 		if frappe.conf.developer_mode:
 			print(f"\nSetup account URL for {self.email}:")
@@ -65,6 +67,14 @@ class AccountRequest(Document):
 		if self.erpnext:
 			subject = "Set Up Your ERPNext Account"
 			template = "erpnext_verify_account"
+		elif frappe.db.get_value("Saas App", self.saas_app, "custom_verify_template"):
+			app_title, subject, message, signature = frappe.db.get_value(
+				"Saas App", self.saas_app, ["title", "subject", "message", "signature"]
+			)
+			image_path = frappe.db.get_value(
+				"Saas Signup Generator", self.saas_app, "image_path"
+			)
+			template = "saas_verify_account"
 		else:
 			subject = "Verify your account"
 			template = "verify_account"
@@ -77,7 +87,13 @@ class AccountRequest(Document):
 			recipients=self.email,
 			subject=subject,
 			template=template,
-			args={"link": url, "app": frappe.db.get_value("Saas App", self.saas_app, "title")},
+			args={
+				"link": url,
+				"title": app_title,
+				"message": message,
+				"signature_text": signature,
+				"image_path": image_path,
+			},
 			now=True,
 		)
 
