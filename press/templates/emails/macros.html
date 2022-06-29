@@ -28,9 +28,13 @@
 </table>
 {% endmacro %}
 
-{% macro signature() %}
+{% macro signature(content) %}
 <p class="m-0">
-	Thanks,<br>
-	Team Frappe
+	{% if content %}
+		{{ content }}
+	{% else %}
+		Thanks,<br>
+		Team Frappe
+	{% endif %}
 </p>
 {% endmacro %}

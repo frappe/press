@@ -6,8 +6,11 @@
                     <tr>
                         <td class="px-8 py-10 text-center text-gray-900">
                             <div>
-                                <span class="font-bold text-xl">
-				    {{ title }}
+                                {% if image_path %}
+                                  <img src="{{ image_path }}" alt="Logo" style="height: 16px;">
+                                {% endif %}
+                                <span class="font-bold text-xl mt-4">
+                                    {{ title }}
                                 </span>
                             </div>
                         </td>

@@ -1,22 +1,18 @@
 {% import "templates/emails/macros.html" as utils %}
 {% extends "templates/emails/saas.html" %}
 {% set title = title %}
-{% set image_path = image_path %}
 
 {% block content %}
 
 <td class="text-base leading-6 text-gray-900">
     <div class="p-8 bg-white from-markdown">
-        <p>Hello,</p>
-        <strong>
-          Thanks for signing up on {{ title }}!
-        </strong>
-        <p>
-            Please confirm your email address by clicking the button below:
+        <p class="mb-4">
+            {{ message }}
         </p>
+        <br>
         {{ utils.button('Verify Account', link, true) }}
         {{ utils.separator() }}
-        {{ utils.signature() }}
+        {{ utils.signature(signature_text) }}
     </div>
 </td>
 
