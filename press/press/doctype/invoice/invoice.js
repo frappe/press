@@ -96,7 +96,6 @@ frappe.ui.form.on('Invoice', {
 						})
 						.then((r) => {
 							frm.refresh();
-							console.log(r.message);
 							frappe.utils.copy_to_clipboard(r.message);
 							frappe.msgprint({
 								title: 'Stripe Payment Link Updated',
