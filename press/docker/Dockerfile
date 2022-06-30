@@ -77,7 +77,6 @@ RUN --mount=type=cache,target=/var/cache/apt add-apt-repository ppa:deadsnakes/p
   && apt-get update \
   && apt-get install --yes --no-install-suggests --no-install-recommends \
   python${PYTHON_VERSION} \
-  python3-virtualenv \
   python${PYTHON_VERSION}-dev \
   python${PYTHON_VERSION}-distutils \
   && rm -rf /var/lib/apt/lists/* \
@@ -134,6 +133,7 @@ RUN wget https://bootstrap.pypa.io/get-pip.py && python${PYTHON_VERSION} get-pip
 RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 pip3 install --upgrade frappe-bench==5.2.1 `#stage-bench-bench`
 
 RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 pip3 install Jinja2~=3.0.3
+RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 pip3 install --upgrade virtualenv
 RUN mkdir /home/frappe/frappe-bench
 WORKDIR /home/frappe/frappe-bench
 RUN mkdir -p apps logs sites config/pids redis
