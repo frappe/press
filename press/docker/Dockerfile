@@ -70,7 +70,6 @@ RUN --mount=type=cache,target=/var/cache/apt add-apt-repository ppa:redislabs/re
   && apt-get update \
   && apt-get install --yes --no-install-suggests --no-install-recommends \
   redis-server \
-  unzip \
   && rm -rf /var/lib/apt/lists/*
 
 # Install Python from DeadSnakes PPA
