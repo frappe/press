@@ -7,7 +7,7 @@
 <td class="text-base leading-6 text-gray-900">
     <div class="p-8 bg-white from-markdown">
         <p class="mb-4">
-            {{ message }}
+            {{ message|safe }}
         </p>
         <br>
         {{ utils.button('Verify Account', link, true) }}

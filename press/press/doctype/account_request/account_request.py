@@ -8,6 +8,7 @@ import json
 from frappe.model.document import Document
 from frappe.utils import random_string, get_url
 from press.utils import get_country_info
+from markupsafe import Markup
 
 
 class AccountRequest(Document):
@@ -71,6 +72,8 @@ class AccountRequest(Document):
 			app_title, subject, message, signature = frappe.db.get_value(
 				"Saas App", self.saas_app, ["title", "subject", "message", "signature"]
 			)
+			message = frappe.render_template(message, {})
+			signature = frappe.render_template(signature, {})
 			image_path = frappe.db.get_value(
 				"Saas Signup Generator", self.saas_app, "image_path"
 			)
