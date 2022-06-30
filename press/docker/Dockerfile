@@ -69,7 +69,7 @@ RUN --mount=type=cache,target=/var/cache/apt add-apt-repository ppa:redislabs/re
   && apt-get update \
   && apt-get install --yes --no-install-suggests --no-install-recommends \
   redis-server \
-  && rm -rf /var/lib/apt/lists/*
+  && rm -rf /var/lib/apt/lists/* `#stage-pre-redis`
 
 # Install Python from DeadSnakes PPA
 RUN --mount=type=cache,target=/var/cache/apt add-apt-repository ppa:deadsnakes/ppa \
@@ -128,7 +128,7 @@ RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 npm install 
 # Install Bench
 ENV PATH "$PATH:/home/frappe/.local/bin"
 
-RUN wget https://bootstrap.pypa.io/get-pip.py && python${PYTHON_VERSION} get-pip.py
+RUN wget https://bootstrap.pypa.io/get-pip.py && python${PYTHON_VERSION} get-pip.py `#stage-pre-pip`
 RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 pip3 install --upgrade frappe-bench==5.2.1 `#stage-bench-bench`
 
 RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 pip3 install Jinja2~=3.0.3
