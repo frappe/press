@@ -225,7 +225,7 @@ def create_payment_intent_for_prepaid_app(
 		description="Prepaid App Purchase",
 		metadata={
 			"payment_for": payment_for,
-			"payment_option": option,  # Monthly / Yearly
+			"payment_option": option,  # Monthly / Annual
 			"app": app,
 			"plan": plan,
 			"subscription": subscription,

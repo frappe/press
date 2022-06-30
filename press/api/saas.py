@@ -262,7 +262,7 @@ def change_plan(name, new_plan, option, partner_credits):
 	if "postpaid" == frappe.db.get_value(
 		"Saas Settings", subscription.app, "billing_type"
 	):
-		amount = amount * 12 if option == "Yearly" else amount
+		amount = amount * 12 if option == "Annual" else amount
 		intent = create_payment_intent_for_prepaid_app(
 			int(amount),
 			subscription.app,
