@@ -4,7 +4,6 @@
 			v-if="activePlan && activePlan.is_free"
 			title="Trial"
 			class="mb-4"
-			type="alert"
 		>
 			Your trial ends {{ trialEndsText() }} after which your site will get
 			suspended. Select a plan below to avoid suspension.
