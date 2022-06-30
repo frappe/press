@@ -8,7 +8,6 @@ import json
 from frappe.model.document import Document
 from frappe.utils import random_string, get_url
 from press.utils import get_country_info
-from markupsafe import Markup
 
 
 class AccountRequest(Document):
