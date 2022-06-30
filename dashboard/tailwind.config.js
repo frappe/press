@@ -85,6 +85,9 @@ module.exports = {
 		container: {
 			padding: {
 				xl: '5rem'
+			},
+			margin: {
+				3.5: '14px'
 			}
 		},
 		screens: {
