@@ -1,10 +1,11 @@
 <template>
 	<div
 		v-if="plan"
-		class="cursor-pointer rounded-2xl border border-gray-100 p-5 shadow hover:border-gray-300"
+		class="rounded-2xl border border-gray-100 p-5 shadow"
 		:class="[
 			popular ? 'relative bg-blue-100' : '',
-			selected ? 'relative ring-2 ring-inset ring-blue-500' : ''
+			selected ? 'relative ring-2 ring-inset ring-blue-500' : '',
+			clickable ? 'cursor-pointer hover:border-gray-300' : ''
 		]"
 	>
 		<div
@@ -22,13 +23,20 @@
 			disabled
 		/>
 
-		<h4 class="text-xl font-semibold text-gray-900">
-			<span v-if="plan.is_free"> Free </span>
+		<h4 class="flex justify-between text-xl font-semibold text-gray-900">
+			<div>
+				<span v-if="plan.is_free"> Free </span>
 
-			<span v-else>
-				{{ $planTitle(plan)
-				}}<span class="text-base font-normal text-gray-600"> /mo</span>
-			</span>
+				<span v-else>
+					{{ $planTitle(plan)
+					}}<span class="text-base font-normal text-gray-600"> /mo</span>
+				</span>
+			</div>
+			<div v-if="editable">
+				<Button icon-left="edit" @click="e => $emit('beginEdit', e)"
+					>Edit</Button
+				>
+			</div>
 		</h4>
 		<h4
 			v-if="plan.discounted"
@@ -51,6 +59,7 @@ import FeatureList from '@/components/FeatureList.vue';
 
 export default {
 	name: 'AppPlanCard',
+	emits: ['beginEdit'],
 	props: {
 		plan: {
 			type: Object
@@ -60,6 +69,14 @@ export default {
 			default: false
 		},
 		selected: {
+			type: Boolean,
+			default: false
+		},
+		clickable: {
+			type: Boolean,
+			default: true
+		},
+		editable: {
 			type: Boolean,
 			default: false
 		}
