@@ -1,0 +1,12 @@
+---
+- name: Set memory limits for database server
+  hosts: all
+  become: yes
+  become_user: root
+  tasks:
+    - name: Print machine with no swap
+      debug:
+        msg: '{{ ansible_system_vendor }} swap: {{ ansible_swaptotal_mb }} {{ inventory_hostname }}'
+      when:
+        - ansible_system_vendor == "Amazon EC2"
+        - ansible_swaptotal_mb == 0
