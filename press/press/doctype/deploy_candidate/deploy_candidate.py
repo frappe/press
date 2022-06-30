@@ -300,9 +300,7 @@ class DeployCandidate(Document):
 		self.docker_image_tag = self.name
 		self.docker_image = f"{self.docker_image_repository}:{self.docker_image_tag}"
 
-		result = self.run(
-			f"docker buildx build --platform linux/amd64 -t {self.docker_image} .", environment
-		)
+		result = self.run(f"docker build -t {self.docker_image} .", environment)
 		self._parse_docker_build_result(result)
 
 	def _parse_docker_build_result(self, result):
