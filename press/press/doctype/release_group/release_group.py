@@ -80,7 +80,7 @@ class ReleaseGroup(Document):
 		dependencies = copy.deepcopy(DEFAULT_DEPENDENCIES)
 		if self.version in ("Version 14", "Nightly"):
 			python = find(dependencies, lambda x: x["dependency"] == "PYTHON_VERSION")
-			python["version"] = "3.8"
+			python["version"] = "3.10"
 
 		if self.version == "Version 12":
 			node = find(dependencies, lambda x: x["dependency"] == "NODE_VERSION")
