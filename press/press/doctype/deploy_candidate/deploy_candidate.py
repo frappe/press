@@ -152,11 +152,13 @@ class DeployCandidate(Document):
 
 		preparation_steps = [
 			("pre", "essentials", "Setup Prerequisites", "Install Essential Packages"),
+			("pre", "redis", "Setup Prerequisites", "Install Redis"),
 			("pre", "python", "Setup Prerequisites", "Install Python"),
 			("pre", "wkhtmltopdf", "Setup Prerequisites", "Install wkhtmltopdf"),
 			("pre", "fonts", "Setup Prerequisites", "Install Fonts"),
 			("pre", "node", "Setup Prerequisites", "Install Node.js"),
 			("pre", "yarn", "Setup Prerequisites", "Install Yarn"),
+			("pre", "pip", "Setup Prerequisites", "Install pip"),
 			("bench", "bench", "Setup Bench", "Install Bench"),
 			("bench", "env", "Setup Bench", "Setup Virtual Environment"),
 		]
