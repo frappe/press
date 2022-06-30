@@ -146,7 +146,7 @@ export default {
 			usePartnerCredits: false,
 			step: 'Confirm Checkout',
 			clientSecret: null,
-			paymentOptions: ['Monthly', 'Yearly'],
+			paymentOptions: ['Monthly', 'Annual'],
 			selectedOption: 'Monthly',
 			totalAmount: ''
 		};
@@ -168,7 +168,7 @@ export default {
 			);
 		},
 		getTotalAmount() {
-			let multiple = this.selectedOption === 'Yearly' ? 12 : 1;
+			let multiple = this.selectedOption === 'Annual' ? 12 : 1;
 			if (this.$account.team.country === 'India') {
 				this.totalAmount = 'INR ' + this.selectedPlan.price_inr * multiple;
 			} else {
