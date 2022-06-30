@@ -57,7 +57,6 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   # pycups dependencies
   gcc \
   libcups2-dev \
-  python3-dev \
   # s3-attachment dependencies
   libmagic1 \
   && rm -rf /var/lib/apt/lists/* \
