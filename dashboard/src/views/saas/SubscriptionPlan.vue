@@ -1,5 +1,14 @@
 <template>
 	<div>
+		<Alert
+			v-if="activePlan && activePlan.is_free"
+			title="Trial"
+			class="mb-4"
+			type="alert"
+		>
+			Your trial ends {{ trialEndsText() }} after which your site will get
+			suspended. Select a plan below to avoid suspension.
+		</Alert>
 		<div class="mb-4" v-if="activePlan">
 			<div class="flex items-center justify-between">
 				<div>
@@ -117,6 +126,7 @@
 import AppPlanCard from './AppPlanCard.vue';
 import StripeLogo from '@/components/StripeLogo.vue';
 import { loadStripe } from '@stripe/stripe-js';
+import { utils } from '@/utils';
 
 export default {
 	name: 'SubscriptionPlan',
@@ -153,8 +163,10 @@ export default {
 		toggleCheckoutDialog() {
 			this.showCheckoutDialog = true;
 		},
-		trialEndsText(date) {
-			return utils.methods.trialEndsInDaysText(date);
+		trialEndsText() {
+			return utils.methods.trialEndsInDaysText(
+				this.subData.site.trial_end_date
+			);
 		},
 		getTotalAmount() {
 			let multiple = this.selectedOption === 'Yearly' ? 12 : 1;
