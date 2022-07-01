@@ -2,6 +2,7 @@
 import { ref, reactive } from 'vue';
 import useResource from '@/composables/resource';
 import AppPlanCard from '@/components/AppPlanCard.vue';
+import PrinterIcon from '../components/PrinterIcon.vue';
 
 const showEditPlanDialog = ref(false);
 const currentEditingPlan = reactive({
@@ -37,8 +38,10 @@ const createAppPlan = useResource({
 });
 
 function editPlan(plan) {
-	Object.assign(currentEditingPlan, plan);
-	currentEditingPlan.features = Array.from(plan.features); // Non-reference copy
+	if (plan) {
+		Object.assign(currentEditingPlan, plan);
+		currentEditingPlan.features = Array.from(plan.features); // Non-reference copy
+	}
 	showEditPlanDialog.value = true;
 }
 
@@ -81,18 +84,33 @@ function resetCurrentEditingPlan() {
 				<div v-if="appPlans.loading">
 					<Button :loading="true">Loading</Button>
 				</div>
-				<div
-					v-else-if="appPlans.data"
-					class="mx-auto grid grid-cols-1 gap-2 md:grid-cols-3"
-				>
-					<AppPlanCard
-						v-for="plan in appPlans.data"
-						:plan="plan"
-						:key="plan.name"
-						:clickable="false"
-						:editable="true"
-						@beginEdit="editPlan(plan)"
-					/>
+
+				<div v-else-if="appPlans.data">
+					<div
+						v-if="appPlans.data.length > 0"
+						class="mx-auto grid grid-cols-1 gap-2 md:grid-cols-3"
+					>
+						<AppPlanCard
+							v-for="plan in appPlans.data"
+							:plan="plan"
+							:key="plan.name"
+							:clickable="false"
+							:editable="true"
+							@beginEdit="editPlan(plan)"
+						/>
+					</div>
+					<div v-else>
+						<div class="mt-7 flex flex-col items-center justify-center">
+							<PrinterIcon class="mb-5 h-20 w-20" />
+							<p class="mb-1 text-2xl font-semibold text-gray-900">
+								Create a plan
+							</p>
+							<p class="mb-3.5 text-base text-gray-700">
+								Looks like you haven't created any plans yet
+							</p>
+							<Button type="primary" @click="editPlan()">Create plan</Button>
+						</div>
+					</div>
 				</div>
 			</div>
 		</Card>
@@ -101,6 +119,7 @@ function resetCurrentEditingPlan() {
 			<div>
 				<div class="mb-4">
 					<Input
+						placeholder="Pro Plan"
 						type="text"
 						label="Plan Title"
 						v-model="currentEditingPlan.plan_title"
