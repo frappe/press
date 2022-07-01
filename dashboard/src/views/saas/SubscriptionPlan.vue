@@ -168,9 +168,21 @@ export default {
 			);
 		},
 		getTotalAmount() {
+			console.log(this.selectedPlan)
 			let multiple = this.selectedOption === 'Annual' ? 12 : 1;
+			let base_amount = 0
+
 			if (this.$account.team.country === 'India') {
-				this.totalAmount = 'INR ' + this.selectedPlan.price_inr * multiple;
+				base_amount = this.selectedPlan.price_inr * multiple;
+
+				if (this.selectedPlan.gst_inclusive) {
+					// gst check
+					const total_amount = base_amount + base_amount * .18;
+					this.totalAmount = base_amount + ' + ' + base_amount * .18 + ' (18% GST) ' +  ' = ' + 'INR ' + total_amount;
+				} else {
+					this.totalAmount = 'INR ' + base_amount;
+				}
+
 			} else {
 				this.totalAmount = 'USD ' + this.selectedPlan.price_usd * multiple;
 			}
