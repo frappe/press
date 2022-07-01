@@ -646,7 +646,14 @@ def get_subscriptions_list(marketplace_app: str) -> List:
 
 @frappe.whitelist()
 def create_app_plan(marketplace_app: str, plan_data: Dict):
-	pass
+	plan = create_new_plan(marketplace_app, plan_data)
+	app_plan_doc = frappe.get_doc(
+		{"doctype": "Marketplace App Plan", "app": marketplace_app, "plan": plan.name}
+	)
+
+	feature_list = plan_data.get("features")
+	reset_features_for_plan(app_plan_doc, feature_list)
+	app_plan_doc.insert(ignore_permissions=True)
 
 
 @frappe.whitelist()
@@ -707,6 +714,6 @@ def create_new_plan(app: str, data: Dict) -> Plan:
 			"price_usd": data.get("price_usd"),
 			"plan_title": data.get("plan_title"),
 			"document_type": "Marketplace App",
-			"name": app.app + f"-plan-{frappe.utils.random_string(6)}",
+			"name": app + f"-plan-{frappe.utils.random_string(6)}",
 		}
 	).insert(ignore_permissions=True)
