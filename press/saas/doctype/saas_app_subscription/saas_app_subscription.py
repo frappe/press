@@ -229,7 +229,8 @@ def process_prepaid_saas_payment(event):
 	amount = payment_intent["amount"] / 100
 	metadata = payment_intent.get("metadata")
 	saas_plan = metadata.get("plan")
-	plan = frappe.db.get_value("Saas App Plan", saas_plan, "plan")
+	print(saas_plan)
+	print(frappe.db.get_value("Saas App Plan", saas_plan, "gst_inclusive"))
 
 	# change subscription
 	sub = frappe.get_doc("Saas App Subscription", metadata.get("subscription"))
@@ -248,8 +249,9 @@ def process_prepaid_saas_payment(event):
 		payout=payout,
 		document_name=document_name,
 		due_date=due_date,
-		plan=plan,
+		plan=frappe.db.get_value("Saas App Plan", saas_plan, "plan"),
 		payment_id=payment_id,
+		gst_inclusive=frappe.db.get_value("Saas App Plan", saas_plan, "gst_inclusive"),
 	)
 
 	# there should only be one charge object
@@ -260,7 +262,15 @@ def process_prepaid_saas_payment(event):
 
 
 def create_saas_invoice(
-	team, due_date, amount, payout, document_name, plan, payment_id=None, status="Paid"
+	team,
+	due_date,
+	amount,
+	payout,
+	document_name,
+	plan,
+	payment_id=None,
+	status="Paid",
+	gst_inclusive=False,
 ):
 	invoice = frappe.get_doc(
 		doctype="Invoice",
@@ -272,6 +282,7 @@ def create_saas_invoice(
 		amount_due=amount,
 		stripe_payment_intent_id=payment_id,
 		payout=payout,
+		gst_inclusive=gst_inclusive,
 	)
 	invoice.append(
 		"items",

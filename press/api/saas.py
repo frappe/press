@@ -222,7 +222,7 @@ def subscription_overview(name):
 	}
 
 
-def consume_partner_credits(team, amount, subscription, new_plan):
+def consume_partner_credits(team, amount, subscription, new_plan, gst_inclusive):
 	if team.get_available_partner_credits() < amount:
 		frappe.throw("Cannot change plan not enought Partner Credits available")
 	due_date = datetime.today()
@@ -237,9 +237,11 @@ def consume_partner_credits(team, amount, subscription, new_plan):
 		plan=frappe.db.get_value("Saas App Plan", new_plan, "plan"),
 		payment_id=None,
 		status="Draft",
+		gst_inclusive=gst_inclusive,
 	)
 
-	invoice.submit()
+	invoice.save()
+	invoice.finalize()
 
 	subscription.change_plan(new_plan, ignore_card_setup=True)
 
@@ -249,20 +251,20 @@ def consume_partner_credits(team, amount, subscription, new_plan):
 def change_plan(name, new_plan, option, partner_credits):
 	team = get_current_team(True)
 	subscription = frappe.get_doc("Saas App Subscription", name)
-	amount = frappe.db.get_value(
-		"Plan", new_plan["plan"], f"price_{team.currency.lower()}"
-	)
+	saas_plan = frappe.get_doc("Saas App Plan", new_plan["name"])
+	amount = saas_plan.get_total_amount(option)
 
 	# Partner Credits
 	if team.payment_mode == "Partner Credits" and partner_credits:
-		consume_partner_credits(team, amount, subscription, new_plan["name"])
+		consume_partner_credits(
+			team, amount, subscription, new_plan["name"], saas_plan.gst_inclusive
+		)
 		return {"payment_type": "partner_credits"}
 
 	# Postpaid
 	if "postpaid" == frappe.db.get_value(
 		"Saas Settings", subscription.app, "billing_type"
 	):
-		amount = amount * 12 if option == "Annual" else amount
 		intent = create_payment_intent_for_prepaid_app(
 			int(amount),
 			subscription.app,
