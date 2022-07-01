@@ -42,7 +42,7 @@ def setup(site):
 
 	new_config = [
 		{"key": "mail_login", "value": "example@gmail.com", "type": "String"},
-		{"key": "mail_password", "value": "edjxok4jh7", "type": "String"},
+		{"key": "mail_password", "value": "password", "type": "String"},
 		{"key": "mail_port", "value": 587, "type": "Number"},
 		{"key": "mail_server", "value": "smtp.gmail.com", "type": "String"},
 	]
