@@ -27,14 +27,20 @@ const appPlans = useResource({
 const updateAppPlan = useResource({
 	method: 'press.api.marketplace.update_app_plan',
 	onSuccess() {
-		resetCurrentEditingPlan();
-		appPlans.fetch();
-		showEditPlanDialog.value = false;
+		refreshState();
 	}
 });
 
 const createAppPlan = useResource({
-	method: 'press.api.marketplace.create_app_plan'
+	method: 'press.api.marketplace.create_app_plan',
+	validate() {
+		if (!currentEditingPlan.plan_title) {
+			return 'Plan name is required';
+		}
+	},
+	onSuccess() {
+		refreshState();
+	}
 });
 
 function editPlan(plan) {
@@ -60,8 +66,17 @@ function savePlan() {
 			updated_plan_data: currentEditingPlan
 		});
 	} else {
-		// If no name ==> Creating a new plan
+		createAppPlan.submit({
+			plan_data: currentEditingPlan,
+			marketplace_app: props.app?.name
+		});
 	}
+}
+
+function refreshState() {
+	appPlans.fetch();
+	showEditPlanDialog.value = false;
+	resetCurrentEditingPlan();
 }
 
 function resetCurrentEditingPlan() {
@@ -119,9 +134,9 @@ function resetCurrentEditingPlan() {
 			<div>
 				<div class="mb-4">
 					<Input
-						placeholder="Pro Plan"
+						placeholder="My Pro Plan"
 						type="text"
-						label="Plan Title"
+						label="Name"
 						v-model="currentEditingPlan.plan_title"
 					></Input>
 				</div>
