@@ -9,6 +9,10 @@ from typing import Dict, List
 from frappe.core.utils import find
 from press.api.bench import options
 from press.api.site import protected
+from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
+	MarketplaceAppPlan,
+)
+from press.press.doctype.plan.plan import Plan
 from press.press.doctype.app.app import new_app as new_app_doc
 from press.press.doctype.app_source.app_source import AppSource
 from press.press.doctype.app_release.app_release import AppRelease
@@ -662,16 +666,7 @@ def update_app_plan(app_plan_name: str, updated_plan_data: Dict):
 		# Someone is on this plan, don't change price for the plan,
 		# instead create and link a new plan
 		# TODO: Later we have to figure out a way for plan changes
-		new_plan = frappe.get_doc(
-			{
-				"doctype": "Plan",
-				"price_inr": updated_plan_data.get("price_inr"),
-				"price_usd": updated_plan_data.get("price_usd"),
-				"plan_title": updated_plan_data.get("plan_title"),
-				"document_type": "Marketplace App",
-				"name": app_plan_doc.app + f"-plan-{frappe.utils.random_string(6)}",
-			}
-		).insert(ignore_permissions=True)
+		new_plan = create_new_plan(app_plan_doc.app, updated_plan_data)
 		app_plan_doc.plan = new_plan.name
 	else:
 		plan_doc = frappe.get_doc("Plan", plan_name, for_update=True)
@@ -685,10 +680,33 @@ def update_app_plan(app_plan_name: str, updated_plan_data: Dict):
 		)
 		plan_doc.save(ignore_permissions=True)
 
+	feature_list = updated_plan_data.get("features", [])
+	reset_features_for_plan(app_plan_doc, feature_list, save=False)
+	app_plan_doc.save(ignore_permissions=True)
+
+
+def reset_features_for_plan(
+	app_plan_doc: MarketplaceAppPlan, feature_list: List[str], save=False
+):
 	# Clear the already existing features
 	app_plan_doc.features = []
-	for feature in updated_plan_data.get("features", []):
+	for feature in feature_list:
 		if not feature:
 			frappe.throw("Feature cannot be empty string")
 		app_plan_doc.append("features", {"description": feature})
-	app_plan_doc.save(ignore_permissions=True)
+
+	if save:
+		app_plan_doc.save(ignore_permissions=True)
+
+
+def create_new_plan(app: str, data: Dict) -> Plan:
+	return frappe.get_doc(
+		{
+			"doctype": "Plan",
+			"price_inr": data.get("price_inr"),
+			"price_usd": data.get("price_usd"),
+			"plan_title": data.get("plan_title"),
+			"document_type": "Marketplace App",
+			"name": app.app + f"-plan-{frappe.utils.random_string(6)}",
+		}
+	).insert(ignore_permissions=True)
