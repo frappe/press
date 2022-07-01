@@ -64,7 +64,7 @@ jobs:
         - mysql -u root -e "FLUSH PRIVILEGES";
 
         - cd ./frappe-bench
-        - env/bin/pip install -r apps/frappe/dev-requirements.txt
+        - bench setup requirements --dev
 
         - sed -i 's/watch:/# watch:/g' Procfile
         - sed -i 's/schedule:/# schedule:/g' Procfile
