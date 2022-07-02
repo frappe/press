@@ -58,6 +58,7 @@ class DripEmail(Document):
 	def send_mail(self, context, recipient):
 		# build the message
 		message = frappe.render_template(self.message, context)
+		title = frappe.db.get_value("Saas App", self.saas_app, "title")
 
 		# add to queue
 		frappe.sendmail(
@@ -70,7 +71,7 @@ class DripEmail(Document):
 			unsubscribe_message="Don't send me help messages",
 			attachments=self.get_setup_guides(context.get("account_request", "")),
 			template="drip_email",
-			args={"message": message},
+			args={"message": message, "title": title},
 		)
 
 	def select_consultant(self, site) -> str:
@@ -118,8 +119,8 @@ class DripEmail(Document):
 				ON
 					site.account_request = account_request.name
 				WHERE
-					account_request.erpnext = True and
 					site.status = "Active" and
+					site.standby_for = "{self.saas_app}" and
 					DATE(account_request.creation) = "{signup_date}"
 			"""
 		)
@@ -144,26 +145,28 @@ def send_drip_emails():
 
 def send_welcome_email():
 	"""Send welcome email to sites created in last 15 minutes."""
-	welcome_email = frappe.get_last_doc(
-		"Drip Email", filters={"enabled": 1, "email_type": "Sign Up"}
+	welcome_drips = frappe.db.get_all(
+		"Drip Email", {"email_type": "Sign Up"}, pluck="name"
 	)
-	_15_mins_ago = frappe.utils.add_to_date(None, minutes=-15)
-	tuples = frappe.db.sql(
-		f"""
-			SELECT
-				site.name
-			FROM
-				tabSite site
-			JOIN
-				`tabAccount Request` account_request
-			ON
-				site.account_request = account_request.name
-			WHERE
-				account_request.erpnext = True and
-				site.status = "Active" and
-				account_request.creation > "{_15_mins_ago}"
-		"""
-	)
-	sites_in_last_15_mins = [t[0] for t in tuples]
-	for site in sites_in_last_15_mins:
-		welcome_email.send(site)
+	for drip in welcome_drips:
+		welcome_email = frappe.get_doc("Drip Email", drip)
+		_15_mins_ago = frappe.utils.add_to_date(None, minutes=-15)
+		tuples = frappe.db.sql(
+			f"""
+				SELECT
+					site.name
+				FROM
+					tabSite site
+				JOIN
+					`tabAccount Request` account_request
+				ON
+					site.account_request = account_request.name
+				WHERE
+					site.status = "Active" and
+					site.standby_for = "{welcome_email.saas_app}" and
+					account_request.creation > "{_15_mins_ago}"
+			"""
+		)
+		sites_in_last_15_mins = [t[0] for t in tuples]
+		for site in sites_in_last_15_mins:
+			welcome_email.send(site)
