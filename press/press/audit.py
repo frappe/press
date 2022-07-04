@@ -122,7 +122,12 @@ class BackupRecordCheck(Audit):
 		all_sites = set(
 			frappe.get_all(
 				"Site",
-				{"status": "Active", "creation": ("<=", interval_hrs_ago), "is_standby": False, "plan": ("not in", trial_plans)},
+				{
+					"status": "Active",
+					"creation": ("<=", interval_hrs_ago),
+					"is_standby": False,
+					"plan": ("not in", trial_plans),
+				},
 				pluck="name",
 			)
 		)
