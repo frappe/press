@@ -35,7 +35,9 @@ class TestBackupRecordCheck(TestAudit):
 		audit_log = frappe.get_last_doc(
 			"Audit Log", {"audit_type": BackupRecordCheck.audit_type}
 		)
-		failed_backup_audit_sites = json.loads(audit_log.log)["Sites with no backup in 24 hrs"]
+		failed_backup_audit_sites = json.loads(audit_log.log)[
+			"Sites with no backup in 24 hrs"
+		]
 		self.assertTrue(site.name not in failed_backup_audit_sites)
 
 	def test_audit_succeeds_when_backup_in_interval_exists(self):
