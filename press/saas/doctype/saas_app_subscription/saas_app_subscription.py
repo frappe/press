@@ -76,6 +76,14 @@ class SaasAppSubscription(Document):
 		site_doc = frappe.get_doc("Site", self.site)
 		site_doc.change_plan(self.site_plan, ignore_card_setup)
 
+		# TODO: Remove this from here
+		if self.app == "frappe":
+			site = frappe.get_doc("Site", self.site)
+			plan_title = frappe.db.get_value(
+				"Plan", frappe.db.get_value("Saas App Plan", new_plan, "plan"), "plan_title"
+			)
+			site.update_site_config({"plan": plan_title})
+
 	def update_end_date(self, payment_option):
 		days = 364 if payment_option == "Annual" else 29
 		self.end_date = add_to_date(self.end_date or datetime.today().date(), days=days)
@@ -229,7 +237,6 @@ def process_prepaid_saas_payment(event):
 	amount = payment_intent["amount"] / 100
 	metadata = payment_intent.get("metadata")
 	saas_plan = metadata.get("plan")
-	plan = frappe.db.get_value("Saas App Plan", saas_plan, "plan")
 
 	# change subscription
 	sub = frappe.get_doc("Saas App Subscription", metadata.get("subscription"))
@@ -248,7 +255,7 @@ def process_prepaid_saas_payment(event):
 		payout=payout,
 		document_name=document_name,
 		due_date=due_date,
-		plan=plan,
+		plan=frappe.db.get_value("Saas App Plan", saas_plan, "plan"),
 		payment_id=payment_id,
 	)
 
@@ -260,7 +267,14 @@ def process_prepaid_saas_payment(event):
 
 
 def create_saas_invoice(
-	team, due_date, amount, payout, document_name, plan, payment_id=None, status="Paid"
+	team,
+	due_date,
+	amount,
+	payout,
+	document_name,
+	plan,
+	payment_id=None,
+	status="Paid",
 ):
 	invoice = frappe.get_doc(
 		doctype="Invoice",

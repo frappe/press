@@ -4,6 +4,8 @@
 import frappe
 from typing import List
 from frappe.model.document import Document
+from press.press.doctype.invoice.invoice import calculate_gst
+from press.utils import get_current_team
 
 
 class SaasAppPlan(Document):
@@ -16,6 +18,20 @@ class SaasAppPlan(Document):
 
 		if dt != "Saas App":
 			frappe.throw("The plan must be a Saas App plan.")
+
+	def get_total_amount(self, option):
+		"""
+		validates if plan is gst_inclusive, checks applicable country
+		:option "Monthly" or "Annual"
+		"""
+		team = get_current_team(True)
+		amount = frappe.db.get_value("Plan", self.plan, f"price_{team.currency.lower()}")
+		amount = amount * 12 if option == "Annual" else amount
+
+		if team.country == "India" and self.gst_inclusive:
+			amount = amount + calculate_gst(amount)
+
+		return amount
 
 	def validate_payout_percentage(self):
 		if self.is_free:
