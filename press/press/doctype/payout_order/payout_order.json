@@ -13,7 +13,9 @@
   "column_break_4",
   "mode_of_payment",
   "frappe_purchase_order",
-  "amended_from"
+  "amended_from",
+  "section_break_8",
+  "items"
  ],
  "fields": [
   {
@@ -59,12 +61,22 @@
   {
    "fieldname": "column_break_4",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Items",
+   "options": "Payout Order Item"
+  },
+  {
+   "fieldname": "section_break_8",
+   "fieldtype": "Section Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2022-07-05 23:09:35.366904",
+ "modified": "2022-07-05 23:18:55.801624",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Payout Order",
