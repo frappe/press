@@ -19,7 +19,6 @@ from press.saas.doctype.saas_app_plan.saas_app_plan import (
 	get_app_plan_features,
 )
 from press.utils import get_current_team
-from press.agent import Agent
 
 from press.press.doctype.site.saas_site import (
 	SaasSite,
@@ -277,27 +276,6 @@ def change_plan(name, new_plan, option, partner_credits):
 		# Prepaid
 		subscription.change_plan(new_plan["name"])
 		return {"payment_type": "prepaid"}
-
-
-# do this after payment succeeds
-def smb_plan_change(subscription, new_plan):
-	if subscription.app == "erpnext_smb":
-		site = frappe.get_doc("Site", subscription.site)
-		site.update_site_config({"plan": new_plan["plan_title"]})
-
-		server = frappe.db.get_value("Site", subscription.site, "server")
-		agent = Agent(server_type="Server", server=server)
-		data = {
-			"plan": new_plan["plan"],
-		}
-
-		return agent.create_agent_job(
-			"Update Saas Plan",
-			f"benches/{site.bench}/sites/{site.name}/update/saas",
-			data=data,
-			bench=site.bench,
-			site=site.name,
-		)
 
 
 @frappe.whitelist()
