@@ -76,6 +76,14 @@ class SaasAppSubscription(Document):
 		site_doc = frappe.get_doc("Site", self.site)
 		site_doc.change_plan(self.site_plan, ignore_card_setup)
 
+		# TODO: Remove this from here
+		if self.app == "frappe":
+			site = frappe.get_doc("Site", self.site)
+			plan_title = frappe.db.get_value(
+				"Plan", frappe.db.get_value("Saas App Plan", new_plan, "plan"), "plan_title"
+			)
+			site.update_site_config({"plan": plan_title})
+
 	def update_end_date(self, payment_option):
 		days = 364 if payment_option == "Annual" else 29
 		self.end_date = add_to_date(self.end_date or datetime.today().date(), days=days)
