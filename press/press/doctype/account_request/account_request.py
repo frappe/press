@@ -56,7 +56,7 @@ class AccountRequest(Document):
 	def send_verification_email(self):
 		url = self.get_verification_url()
 		signature, message, image_path = "", "", ""
-		app_title = "ERPNext"
+		app_title = "ERPNext" if self.saas_app == "erpnext" else "Frappe Cloud"
 
 		if frappe.conf.developer_mode:
 			print(f"\nSetup account URL for {self.email}:")
