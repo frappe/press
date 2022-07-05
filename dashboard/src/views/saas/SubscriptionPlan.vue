@@ -168,7 +168,6 @@ export default {
 			);
 		},
 		getTotalAmount() {
-			console.log(this.selectedPlan)
 			let multiple = this.selectedOption === 'Annual' ? 12 : 1;
 			let base_amount = 0
 
