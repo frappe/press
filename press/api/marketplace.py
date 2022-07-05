@@ -470,6 +470,31 @@ def analytics(name: str):
 	return marketplace_app_doc.get_analytics()
 
 
+@frappe.whitelist()
+def get_promotional_banners() -> List:
+	promotionalBanner = frappe.qb.DocType("Marketplace Promotional Banner")
+	marketplaceApp = frappe.qb.DocType("Marketplace App")
+
+	promotions = (
+		frappe.qb.from_(promotionalBanner)
+		.left_join(marketplaceApp)
+		.on(promotionalBanner.marketplace_app == marketplaceApp.name)
+		.select(
+			promotionalBanner.alert_message,
+			promotionalBanner.alert_title,
+			promotionalBanner.marketplace_app.as_("app"),
+			promotionalBanner.name,
+			marketplaceApp.image,
+			marketplaceApp.title,
+			marketplaceApp.description,
+		)
+		.where(promotionalBanner.is_active == True)
+		.run(as_dict=True)
+	)
+
+	return promotions
+
+
 # PAID APPS APIs
 # (might refactor later to a separate file
 #  like 'api/marketplace/billing.py')

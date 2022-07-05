@@ -10,6 +10,7 @@
   "marketplace_app",
   "is_active",
   "column_break_3",
+  "alert_title",
   "alert_message"
  ],
  "fields": [
@@ -37,11 +38,17 @@
   {
    "fieldname": "column_break_3",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "alert_title",
+   "fieldtype": "Data",
+   "label": "Alert Title",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-07-05 13:31:45.604927",
+ "modified": "2022-07-05 13:45:04.722312",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "Marketplace Promotional Banner",
