@@ -55,6 +55,7 @@
   "razorpay_order_id",
   "razorpay_payment_record",
   "column_break_44",
+  "razorpay_payment_id",
   "razorpay_payment_method",
   "section_break_47",
   "discounts"
@@ -389,6 +390,12 @@
    "fieldname": "payout",
    "fieldtype": "Currency",
    "label": "Saas Developer Payout"
+  },
+  {
+   "fetch_from": "razorpay_payment_record.payment_id",
+   "fieldname": "razorpay_payment_id",
+   "fieldtype": "Data",
+   "label": "Razorpay Payment ID"
   }
  ],
  "is_submittable": 1,
