@@ -1,18 +1,20 @@
 <script setup>
-import AlertSiteActivation from '@/components/AlertSiteActivation.vue';
-import AlertSiteUpdate from '@/components/AlertSiteUpdate.vue';
-import SiteOverviewCPUUsage from './SiteOverviewCPUUsage.vue';
-import SiteOverviewRecentActivity from './SiteOverviewRecentActivity.vue';
+import { computed, ref } from 'vue';
+import { utils } from '@/utils';
+import useResource from '@/composables/resource';
 import SiteOverviewPlan from './SiteOverviewPlan.vue';
 import SiteOverviewInfo from './SiteOverviewInfo.vue';
 import SiteOverviewApps from './SiteOverviewApps.vue';
 import SiteOverviewDomains from './SiteOverviewDomains.vue';
+import SiteOverviewCPUUsage from './SiteOverviewCPUUsage.vue';
+import AlertSiteUpdate from '@/components/AlertSiteUpdate.vue';
+import AlertSiteActivation from '@/components/AlertSiteActivation.vue';
+import SiteOverviewRecentActivity from './SiteOverviewRecentActivity.vue';
 import SiteOverviewAppSubscriptions from './SiteOverviewAppSubscriptions.vue';
-import { utils } from '@/utils';
-import { computed } from 'vue';
-import useResource from '@/composables/resource';
 
 const props = defineProps({ site: Object });
+const showPromotionalDialog = ref(false);
+const clickedPromotion = ref(null);
 
 const overview = useResource({
 	method: 'press.api.site.overview',
@@ -43,12 +45,48 @@ const trialEndsText = computed(() => {
 	}
 	return utils.methods.trialEndsInDaysText(props.site.trial_end_date);
 });
+
+const marketplacePromotionalBanners = useResource({
+	method: 'press.api.marketplace.get_promotional_banners',
+	auto: true
+});
 </script>
 
 <template>
 	<div class="space-y-5" v-if="site">
 		<AlertSiteActivation :site="site" />
 		<AlertSiteUpdate :site="site" />
+
+		<div
+			v-if="
+				marketplacePromotionalBanners.data &&
+				marketplacePromotionalBanners.data.length > 0
+			"
+		>
+			<Alert
+				v-for="banner in marketplacePromotionalBanners.data"
+				:title="banner.alert_title"
+				:key="banner.name"
+			>
+				{{ banner.alert_message }}
+
+				<template #actions>
+					<Button
+						class="whitespace-nowrap"
+						type="primary"
+						@click="
+							() => {
+								showPromotionalDialog = true;
+								clickedPromotion = banner;
+							}
+						"
+					>
+						Learn More
+					</Button>
+				</template>
+			</Alert>
+		</div>
+
 		<Alert title="Trial" v-if="isInTrial && $account.needsCard">
 			Your trial ends {{ trialEndsText }} after which your site will get
 			suspended. Add your billing information to avoid suspension.
@@ -96,5 +134,36 @@ const trialEndsText = computed(() => {
 			/>
 			<SiteOverviewDomains :site="site" />
 		</div>
+
+		<Dialog
+			v-model="showPromotionalDialog"
+			title="Frappe Cloud Marketplace"
+			@close="e => (clickedPromotion = null)"
+		>
+			<div v-if="clickedPromotion" class="flex flex-row items-center">
+				<Avatar
+					class="mr-2"
+					size="lg"
+					shape="square"
+					:imageURL="clickedPromotion.image"
+					:label="clickedPromotion.title"
+				/>
+
+				<div class="flex flex-col">
+					<h4 class="text-xl font-semibold text-gray-900">
+						{{ clickedPromotion.title }}
+					</h4>
+					<p class="text-base text-gray-600">
+						{{ clickedPromotion.description }}
+					</p>
+				</div>
+			</div>
+
+			<template v-if="clickedPromotion" #actions>
+				<Button type="primary" :route="`/install-app/${clickedPromotion.app}`"
+					>Install App</Button
+				>
+			</template>
+		</Dialog>
 	</div>
 </template>

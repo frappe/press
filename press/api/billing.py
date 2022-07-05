@@ -326,10 +326,7 @@ def get_summary():
 
 def get_grouped_invoice_items(invoices: List[str]) -> Dict:
 	"""Takes a list of invoices (invoice names) and returns a dict of the form:
-	{
-	        "<invoice_name1>": [<invoice_items>],
-	        "<invoice_name2>": [<invoice_items>],
-	}
+	{ "<invoice_name1>": [<invoice_items>], "<invoice_name2>": [<invoice_items>], }
 	"""
 	invoice_items = frappe.get_all(
 		"Invoice Item",
