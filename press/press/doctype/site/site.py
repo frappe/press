@@ -964,22 +964,6 @@ class Site(Document):
 		agent = Agent(proxy_server, server_type="Proxy Server")
 		agent.update_site_status(self.server, self.name, status)
 
-	def create_usage_ledger_entry(self):
-		doc = frappe.new_doc("Payment Ledger Entry")
-		doc.site = self.name
-		doc.purpose = "Site Consumption"
-		doc.insert()
-		frappe.db.commit()
-		try:
-			doc.submit()
-		except Exception:
-			frappe.db.rollback()
-			log_error(title="Submit Payment Ledger Entry", doc=doc.name)
-			doc.reload()
-			doc.increment_failed_attempt()
-			doc.add_comment(text=f"<pre><code>{frappe.get_traceback()}</code></pre>")
-		return doc
-
 	def setup_erpnext(self):
 		account_request = frappe.get_doc("Account Request", self.account_request)
 		agent = Agent(self.server)

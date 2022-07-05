@@ -57,7 +57,6 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   # pycups dependencies
   gcc \
   libcups2-dev \
-  python3-dev \
   # s3-attachment dependencies
   libmagic1 \
   && rm -rf /var/lib/apt/lists/* \
@@ -70,16 +69,13 @@ RUN --mount=type=cache,target=/var/cache/apt add-apt-repository ppa:redislabs/re
   && apt-get update \
   && apt-get install --yes --no-install-suggests --no-install-recommends \
   redis-server \
-  unzip \
-  && rm -rf /var/lib/apt/lists/*
+  && rm -rf /var/lib/apt/lists/* `#stage-pre-redis`
 
 # Install Python from DeadSnakes PPA
 RUN --mount=type=cache,target=/var/cache/apt add-apt-repository ppa:deadsnakes/ppa \
   && apt-get update \
   && apt-get install --yes --no-install-suggests --no-install-recommends \
   python${PYTHON_VERSION} \
-  python3-virtualenv \
-  python3-pip \
   python${PYTHON_VERSION}-dev \
   python${PYTHON_VERSION}-distutils \
   && rm -rf /var/lib/apt/lists/* \
@@ -132,9 +128,11 @@ RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 npm install 
 # Install Bench
 ENV PATH "$PATH:/home/frappe/.local/bin"
 
+RUN wget https://bootstrap.pypa.io/get-pip.py && python${PYTHON_VERSION} get-pip.py `#stage-pre-pip`
 RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 pip3 install --upgrade frappe-bench==5.2.1 `#stage-bench-bench`
 
 RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 pip3 install Jinja2~=3.0.3
+RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 pip3 install --upgrade virtualenv setuptools
 RUN mkdir /home/frappe/frappe-bench
 WORKDIR /home/frappe/frappe-bench
 RUN mkdir -p apps logs sites config/pids redis
@@ -152,7 +150,6 @@ ENV PYTHONUNBUFFERED 1
 
 # Install Frappe app
 RUN echo '["build"]' > .bench.cmd
-RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 /home/frappe/frappe-bench/env/bin/pip install -U pip setuptools
 RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 --mount=type=bind,source=apps/frappe,target=/home/frappe/context/apps/frappe bench get-app /home/frappe/context/apps/frappe `#stage-apps-frappe`
 RUN rm .bench.cmd
 

@@ -10,6 +10,7 @@
  "field_order": [
   "enabled",
   "email_type",
+  "saas_app",
   "subject",
   "column_break_7",
   "send_by_consultant",
@@ -194,14 +195,21 @@
    "fieldtype": "Table",
    "label": "Module Setup Guide",
    "options": "Module Setup Guide"
+  },
+  {
+   "fieldname": "saas_app",
+   "fieldtype": "Link",
+   "label": "Saas App",
+   "options": "Saas App"
   }
  ],
  "icon": "icon-envelope",
  "links": [],
- "modified": "2021-04-21 18:07:57.066903",
+ "modified": "2022-07-01 22:55:35.817294",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Drip Email",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {
@@ -231,5 +239,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "ASC",
+ "states": [],
  "title_field": "subject"
 }
