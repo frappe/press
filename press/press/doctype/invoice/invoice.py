@@ -32,7 +32,6 @@ class Invoice(Document):
 		self.validate_items()
 		self.validate_amount()
 		self.compute_free_credits()
-		self.validate_gst()
 
 	def before_submit(self):
 		if self.total > 0 and self.status != "Paid":
@@ -277,10 +276,6 @@ class Invoice(Document):
 					"via_team": True,
 				},
 			)
-
-	def validate_gst(self):
-		if self.gst_inclusive:
-			self.gst = calculate_gst(self.total)
 
 	def remove_previous_team_discounts(self):
 		team_discounts = find_all(self.discounts, lambda x: x.via_team)
