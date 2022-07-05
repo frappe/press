@@ -72,13 +72,13 @@ class Subscription(Document):
 		if not doc:
 			return False
 
-		if hasattr(doc, "can_charge_for_subscription"):
-			return doc.can_charge_for_subscription()
-
 		# Don't create site Usage Record for saas sites
 		if hasattr(doc, "standby_for"):
 			if doc.standby_for and doc.standby_for != "erpnext":
 				return False
+
+		if hasattr(doc, "can_charge_for_subscription"):
+			return doc.can_charge_for_subscription()
 
 		return True
 

@@ -865,3 +865,7 @@ def finalize_draft_invoice(invoice):
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Invoice")
+
+
+def calculate_gst(amount):
+	return amount * 0.18

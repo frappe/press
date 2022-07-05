@@ -19,7 +19,6 @@ from press.saas.doctype.saas_app_plan.saas_app_plan import (
 	get_app_plan_features,
 )
 from press.utils import get_current_team
-from press.agent import Agent
 
 from press.press.doctype.site.saas_site import (
 	SaasSite,
@@ -239,7 +238,8 @@ def consume_partner_credits(team, amount, subscription, new_plan):
 		status="Draft",
 	)
 
-	invoice.submit()
+	invoice.save()
+	invoice.finalize()
 
 	subscription.change_plan(new_plan, ignore_card_setup=True)
 
@@ -249,9 +249,8 @@ def consume_partner_credits(team, amount, subscription, new_plan):
 def change_plan(name, new_plan, option, partner_credits):
 	team = get_current_team(True)
 	subscription = frappe.get_doc("Saas App Subscription", name)
-	amount = frappe.db.get_value(
-		"Plan", new_plan["plan"], f"price_{team.currency.lower()}"
-	)
+	saas_plan = frappe.get_doc("Saas App Plan", new_plan["name"])
+	amount = saas_plan.get_total_amount(option)
 
 	# Partner Credits
 	if team.payment_mode == "Partner Credits" and partner_credits:
@@ -262,7 +261,6 @@ def change_plan(name, new_plan, option, partner_credits):
 	if "postpaid" == frappe.db.get_value(
 		"Saas Settings", subscription.app, "billing_type"
 	):
-		amount = amount * 12 if option == "Annual" else amount
 		intent = create_payment_intent_for_prepaid_app(
 			int(amount),
 			subscription.app,
@@ -278,27 +276,6 @@ def change_plan(name, new_plan, option, partner_credits):
 		# Prepaid
 		subscription.change_plan(new_plan["name"])
 		return {"payment_type": "prepaid"}
-
-
-# do this after payment succeeds
-def smb_plan_change(subscription, new_plan):
-	if subscription.app == "erpnext_smb":
-		site = frappe.get_doc("Site", subscription.site)
-		site.update_site_config({"plan": new_plan["plan_title"]})
-
-		server = frappe.db.get_value("Site", subscription.site, "server")
-		agent = Agent(server_type="Server", server=server)
-		data = {
-			"plan": new_plan["plan"],
-		}
-
-		return agent.create_agent_job(
-			"Update Saas Plan",
-			f"benches/{site.bench}/sites/{site.name}/update/saas",
-			data=data,
-			bench=site.bench,
-			site=site.name,
-		)
 
 
 @frappe.whitelist()

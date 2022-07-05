@@ -30,7 +30,7 @@ def get_plans_for_app(app, site):
 	saas_app_plans = frappe.get_all(
 		"Saas App Plan",
 		filters=filters,
-		fields=["name", "plan", "plan_title", "is_free", "app"],
+		fields=["name", "plan", "plan_title", "is_free", "app", "gst_inclusive"],
 	)
 
 	for app_plan in saas_app_plans:
