@@ -222,7 +222,7 @@ def subscription_overview(name):
 	}
 
 
-def consume_partner_credits(team, amount, subscription, new_plan, gst_inclusive):
+def consume_partner_credits(team, amount, subscription, new_plan):
 	if team.get_available_partner_credits() < amount:
 		frappe.throw("Cannot change plan not enought Partner Credits available")
 	due_date = datetime.today()
@@ -237,7 +237,6 @@ def consume_partner_credits(team, amount, subscription, new_plan, gst_inclusive)
 		plan=frappe.db.get_value("Saas App Plan", new_plan, "plan"),
 		payment_id=None,
 		status="Draft",
-		gst_inclusive=gst_inclusive,
 	)
 
 	invoice.save()
@@ -256,9 +255,7 @@ def change_plan(name, new_plan, option, partner_credits):
 
 	# Partner Credits
 	if team.payment_mode == "Partner Credits" and partner_credits:
-		consume_partner_credits(
-			team, amount, subscription, new_plan["name"], saas_plan.gst_inclusive
-		)
+		consume_partner_credits(team, amount, subscription, new_plan["name"])
 		return {"payment_type": "partner_credits"}
 
 	# Postpaid
