@@ -82,3 +82,4 @@ press.press.doctype.team.patches.set_referrer_id
 press.press.doctype.team.patches.set_partner_email
 press.press.doctype.proxy_server.patches.generate_proxysql_monitor_password
 press.press.doctype.virtual_machine.patches.populate_volumes_table
+press.press.doctype.release_group.patches.set_bench_dependency_in_release_group
