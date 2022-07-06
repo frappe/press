@@ -511,6 +511,11 @@
    "link_fieldname": "document_name"
   },
   {
+   "group": "Related Documents",
+   "link_doctype": "Saas App Subscription",
+   "link_fieldname": "site"
+  },
+  {
    "group": "Logs",
    "link_doctype": "Agent Job",
    "link_fieldname": "site"
@@ -531,7 +536,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2022-06-03 18:47:16.813626",
+ "modified": "2022-07-06 22:56:56.461916",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
