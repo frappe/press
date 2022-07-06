@@ -163,7 +163,7 @@ export default {
 			if (this.$account.team.via_erpnext) {
 				return 'Setup your payment method for monthly billing. After that, select a plan for your ERPNext site and you are good to go.';
 			}
-			return 'Setup your payment method for your monthly billing. Get $25 free credits if you add your card.';
+			return 'Setup your payment method for your monthly billing. Get $25 free credits for creating sites if you add your card.';
 		},
 		paymentModeDescription() {
 			if (this.paymentMode == 'Card') {
