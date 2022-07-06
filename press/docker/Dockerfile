@@ -8,6 +8,7 @@ ENV NVM_VERSION 0.36.0
 ENV NODE_VERSION 14.4.0
 ENV PYTHON_VERSION 3.7
 ENV WKHTMLTOPDF_VERSION 0.12.5
+ENV BENCH_VERSION 5.2.1
 {% endfor %}
 
 ENV LANG C.UTF-8
@@ -129,7 +130,7 @@ RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 npm install 
 ENV PATH "$PATH:/home/frappe/.local/bin"
 
 RUN wget https://bootstrap.pypa.io/get-pip.py && python${PYTHON_VERSION} get-pip.py `#stage-pre-pip`
-RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 pip3 install --upgrade frappe-bench==5.2.1 `#stage-bench-bench`
+RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 pip3 install --upgrade frappe-bench==${BENCH_VERSION} `#stage-bench-bench`
 
 RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 pip3 install Jinja2~=3.0.3
 RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 pip3 install --upgrade virtualenv setuptools
