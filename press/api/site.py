@@ -198,6 +198,14 @@ def get_app_subscriptions(app_plans):
 	subscriptions = []
 
 	for app_name, plan_name in app_plans.items():
+		is_free = frappe.db.get_value("Marketplace App Plan", plan_name, "is_free")
+		if not is_free:
+			team = get_current_team(get_doc=True)
+			if not team.can_install_paid_apps():
+				frappe.throw(
+					"You cannot install a Paid app on Free Credits. Please buy credits before trying to install again."
+				)
+
 		new_subscription = frappe.get_doc(
 			{
 				"doctype": "Marketplace App Subscription",
@@ -998,6 +1006,15 @@ def unset_redirect(name, domain):
 @frappe.whitelist()
 @protected("Site")
 def install_app(name, app, plan=None):
+	if plan:
+		is_free = frappe.db.get_value("Marketplace App Plan", plan, "is_free")
+		if not is_free:
+			team = get_current_team(get_doc=True)
+			if not team.can_install_paid_apps():
+				frappe.throw(
+					"You cannot install a Paid app on Free Credits. Please buy credits before trying to install again."
+				)
+
 	frappe.get_doc("Site", name).install_app(app)
 
 	if plan:
