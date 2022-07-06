@@ -944,6 +944,7 @@ class Site(Document):
 		self.status = "Active"
 		self.update_site_config({"maintenance_mode": 0})
 		self.update_site_status_on_proxy("activated")
+		self.reactivate_app_subscriptions()
 
 	@frappe.whitelist()
 	def suspend(self, reason=None):
@@ -951,6 +952,21 @@ class Site(Document):
 		self.status = "Suspended"
 		self.update_site_config({"maintenance_mode": 1})
 		self.update_site_status_on_proxy("suspended")
+		self.deactivate_app_subscriptions()
+
+	def deactivate_app_subscriptions(self):
+		frappe.db.set_value(
+			"Marketplace App Subscription",
+			{"status": "Active", "site": self.name},
+			{"status": "Inactive"},
+		)
+
+	def reactivate_app_subscriptions(self):
+		frappe.db.set_value(
+			"Marketplace App Subscription",
+			{"status": "Inactive", "site": self.name},
+			{"status": "Active"},
+		)
 
 	@frappe.whitelist()
 	def unsuspend(self, reason=None):
@@ -958,6 +974,7 @@ class Site(Document):
 		self.status = "Active"
 		self.update_site_config({"maintenance_mode": 0})
 		self.update_site_status_on_proxy("activated")
+		self.reactivate_app_subscriptions()
 
 	def update_site_status_on_proxy(self, status):
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
