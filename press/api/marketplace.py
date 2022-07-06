@@ -568,6 +568,14 @@ def get_apps_with_plans(apps, release_group: str = None):
 
 @frappe.whitelist()
 def change_app_plan(subscription, new_plan):
+	is_free = frappe.db.get_value("Marketplace App Plan", new_plan, "is_free")
+	if not is_free:
+		team = get_current_team(get_doc=True)
+		if not team.can_install_paid_apps():
+			frappe.throw(
+				"You cannot upgrade to paid plan on Free Credits. Please buy credits before trying to upgrade plan."
+			)
+
 	subscription = frappe.get_doc("Marketplace App Subscription", subscription)
 	subscription.marketplace_app_plan = new_plan
 	subscription.save(ignore_permissions=True)
