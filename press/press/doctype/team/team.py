@@ -597,6 +597,16 @@ class Team(Document):
 
 		return (False, why)
 
+	def can_install_paid_apps(self):
+		if self.free_account or self.payment_mode == "Partner Credits":
+			return True
+
+		return bool(
+			frappe.db.exists(
+				"Invoice", {"team": self.name, "amount_paid": (">", 0), "status": "Paid"}
+			)
+		)
+
 	def get_onboarding(self):
 		if self.payment_mode == "Partner Credits":
 			billing_setup = True
