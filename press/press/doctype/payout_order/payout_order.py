@@ -15,15 +15,19 @@ class PayoutOrder(Document):
 			row.tax = 0
 			row.commission = 0
 			invoice_name = row.invoice
-			status = frappe.db.get_value("Invoice", invoice_name, "status")
+			invoice = frappe.db.get_value(
+				"Invoice",
+				invoice_name,
+				["status", "currency", "transaction_amount", "transaction_fee", "exchange_rate"],
+				as_dict=True,
+			)
 
-			if status != "Paid":
+			if invoice.status != "Paid":
 				frappe.throw(f"Invoice {invoice_name} is not paid yet.")
 
-			invoice_doc = frappe.get_doc("Invoice", invoice_name)
-			transaction_amount = invoice_doc.transaction_amount
-			total_transaction_fee = invoice_doc.transaction_fee
-			exchange_rate = invoice_doc.exchange_rate
+			transaction_amount = invoice.transaction_amount
+			total_transaction_fee = invoice.transaction_fee
+			exchange_rate = invoice.exchange_rate
 
 			invoice_item = frappe.get_doc(
 				"Invoice Item",
@@ -37,7 +41,7 @@ class PayoutOrder(Document):
 			)
 
 			row.total_amount = invoice_item.amount
-			row.currency = invoice_doc.currency
+			row.currency = invoice.currency
 
 			if transaction_amount > 0:
 				if row.currency == "INR":
