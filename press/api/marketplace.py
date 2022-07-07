@@ -488,7 +488,7 @@ def get_promotional_banners() -> List:
 			marketplaceApp.title,
 			marketplaceApp.description,
 		)
-		.where(promotionalBanner.is_active == True) # noqa
+		.where(promotionalBanner.is_active == True)  # noqa
 		.run(as_dict=True)
 	)
 
