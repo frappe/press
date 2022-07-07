@@ -1,6 +1,7 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
 
+import json
 import frappe
 from frappe.model.document import Document
 from frappe.utils import add_to_date
@@ -77,12 +78,12 @@ class SaasAppSubscription(Document):
 		site_doc.change_plan(self.site_plan, ignore_card_setup)
 
 		# TODO: Remove this from here
-		if self.app == "frappe":
+		if self.app == "erpnext_smb":
 			site = frappe.get_doc("Site", self.site)
-			plan_title = frappe.db.get_value(
-				"Plan", frappe.db.get_value("Saas App Plan", new_plan, "plan"), "plan_title"
+			config = json.loads(
+				frappe.db.get_value("Saas App Plan", self.saas_app_plan, "config")
 			)
-			site.update_site_config({"plan": plan_title})
+			site.update_site_config({"plan": config["plan"]})
 
 	def update_end_date(self, payment_option):
 		days = 364 if payment_option == "Annual" else 29
