@@ -2,7 +2,10 @@
 # For license information, please see license.txt
 
 import frappe
+
+from typing import List, Optional
 from frappe.model.document import Document
+from press.press.doctype.invoice_item.invoice_item import InvoiceItem
 
 
 class PayoutOrder(Document):
@@ -53,11 +56,10 @@ class PayoutOrder(Document):
 						row.gateway_fee = 0
 					else:
 						# Converting to USD using gateway exchange rates
-						total_transaction_fee = total_transaction_fee / exchange_rate
-						transaction_amount = transaction_amount / exchange_rate
 						row.gateway_fee = (
 							total_transaction_fee / transaction_amount
 						) * invoice_item.amount
+						row.gateway_fee = row.gateway_fee / exchange_rate
 
 			else:
 				row.gateway_fee = 0
@@ -80,3 +82,38 @@ class PayoutOrder(Document):
 				"Frappe Purchase Order is required before marking this cash payout as Paid"
 			)
 		self.status = "Paid"
+
+
+@frappe.whitelist()
+def create_payout_order_from_invoice_items(
+	invoice_items: List[InvoiceItem],
+	recipient: str,
+	due_date: Optional[str] = "",
+	mode_of_payment: str = "Cash",
+	notes: str = "",
+	type: str = "Marketplace",
+	save: bool = True,
+) -> PayoutOrder:
+	po = frappe.new_doc("Payout Order")
+	po.recipient = recipient
+	po.due_date = due_date
+	po.mode_of_payment = mode_of_payment
+	po.notes = notes
+	po.type = type
+
+	for invoice_item in invoice_items:
+		po.append(
+			"items",
+			{
+				"invoice": invoice_item.parent,
+				"document_type": invoice_item.document_type,
+				"document_name": invoice_item.document_name,
+				"rate": invoice_item.rate,
+				"plan": invoice_item.plan,
+			},
+		)
+
+	if save:
+		po.insert()
+
+	return po
