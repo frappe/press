@@ -237,10 +237,12 @@ def process_prepaid_saas_payment(event):
 	amount = payment_intent["amount"] / 100
 	metadata = payment_intent.get("metadata")
 	saas_plan = metadata.get("plan")
+	payment_option = metadata.get("payment_option")
 
 	# change subscription
 	sub = frappe.get_doc("Saas App Subscription", metadata.get("subscription"))
-	sub.update_end_date(metadata.get("payment_option"))
+	sub.interval = payment_option
+	sub.update_end_date(payment_option)
 	sub.change_plan(saas_plan, True)
 	sub.reload()
 
