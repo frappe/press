@@ -57,7 +57,7 @@
    "fieldname": "mode_of_payment",
    "fieldtype": "Select",
    "label": "Mode Of Payment",
-   "options": "Cash\nCredits"
+   "options": "Cash\nCredits\nInternal"
   },
   {
    "default": "Draft",
@@ -123,7 +123,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2022-07-07 07:05:49.030773",
+ "modified": "2022-07-07 07:13:08.811782",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Payout Order",

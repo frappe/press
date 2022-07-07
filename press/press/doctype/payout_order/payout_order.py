@@ -73,3 +73,10 @@ class PayoutOrder(Document):
 				self.net_total_inr += row.net_amount
 			else:
 				self.net_total_usd += row.net_amount
+
+	def before_submit(self):
+		if self.mode_of_payment == "Cash" and (not self.frappe_purchase_order):
+			frappe.throw(
+				"Frappe Purchase Order is required before marking this cash payout as Paid"
+			)
+		self.status = "Paid"
