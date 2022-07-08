@@ -4,6 +4,7 @@
 
 
 import unittest
+from typing import Optional
 from datetime import datetime
 from unittest.mock import Mock, patch
 
@@ -58,6 +59,7 @@ def create_test_site(
 	new: bool = False,
 	creation: datetime = datetime.now(),
 	bench: str = None,
+	standby_for: Optional[str] = None,
 ) -> Site:
 	"""Create test Site doc.
 
@@ -84,6 +86,7 @@ def create_test_site(
 			"team": "Administrator",
 			"apps": [{"app": app.app} for app in group.apps],
 			"admin_password": "admin",
+			"standby_for": standby_for,
 		}
 	).insert()
 	site.db_set("creation", creation)
