@@ -20,14 +20,19 @@ class PayoutOrder(Document):
 			invoice = frappe.db.get_value(
 				"Invoice",
 				invoice_name,
-				["status", "currency", "transaction_amount", "transaction_fee", "exchange_rate"],
+				[
+					"status",
+					"currency",
+					"transaction_fee",
+					"exchange_rate",
+					"amount_paid",
+				],
 				as_dict=True,
 			)
 
 			if invoice.status != "Paid":
 				frappe.throw(f"Invoice {invoice_name} is not paid yet.")
 
-			transaction_amount = invoice.transaction_amount
 			invoice_item = get_invoice_item_for_po_item(invoice_name, row)
 
 			row.tax = row.tax or 0.0
@@ -36,13 +41,12 @@ class PayoutOrder(Document):
 			row.currency = invoice.currency
 			row.gateway_fee = 0.0
 
-			if transaction_amount > 0:
-				row.gateway_fee = (
-					invoice.transaction_fee / transaction_amount
-				) * invoice_item.amount
-				exchange_rate = invoice.exchange_rate
-				if row.currency != "INR" and exchange_rate != 0:
-					row.gateway_fee /= exchange_rate
+			if invoice.transaction_fee > 0:
+				row.gateway_fee = (invoice.transaction_fee) * (
+					invoice_item.amount / invoice.amount_paid
+				)
+				if invoice.exchange_rate > 0:
+					row.gateway_fee = row.gateway_fee / invoice.exchange_rate
 
 			row.net_amount = row.total_amount - row.tax - row.gateway_fee - row.commission
 

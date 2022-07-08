@@ -37,9 +37,7 @@ class TestPayoutOrder(FrappeTestCase):
 		self.assertEqual(po.items[0].invoice, self.test_invoice.name)
 		self.assertEqual(po.items[0].total_amount, 20.0)
 
-		expected_gateway_fee = (
-			(1260 / self.test_invoice.transaction_amount) * 20
-		) / self.test_invoice.exchange_rate
+		expected_gateway_fee = 14.4
 		self.assertEqual(po.items[0].gateway_fee, expected_gateway_fee)
 		self.assertEqual(po.items[0].net_amount, 20.0 - expected_gateway_fee)
 		self.assertEqual(po.items[0].currency, "USD")
