@@ -4,10 +4,11 @@
 
 
 import unittest
+import frappe
+
+from typing import Optional
 from datetime import datetime
 from unittest.mock import patch
-
-import frappe
 
 from press.press.doctype.account_request.account_request import AccountRequest
 
@@ -17,6 +18,8 @@ def create_test_account_request(
 	email: str = frappe.mock("email"),
 	erpnext: bool = True,
 	creation=datetime.now(),
+	saas: bool = False,
+	saas_app: Optional[str] = None,
 ):
 	with patch.object(AccountRequest, "send_verification_email"):
 		account_request = frappe.get_doc(
@@ -25,6 +28,8 @@ def create_test_account_request(
 				"subdomain": subdomain,
 				"email": email,
 				"erpnext": erpnext,
+				"saas": saas,
+				"saas_app": saas_app,
 			}
 		).insert(ignore_if_duplicate=True)
 		account_request.db_set("creation", creation)
