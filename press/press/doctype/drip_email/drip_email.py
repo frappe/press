@@ -16,13 +16,6 @@ class DripEmail(Document):
 		if self.email_type in ["Drip", "Sign Up"] and site_name:
 			self.send_drip_email(site_name)
 
-		# TODO:  <19-04-21, Balamurali M> #
-		# elif self.email_type == "Whitepaper Feedback" and lead:
-		# 	self._consultant = frappe.get_doc("ERPNext Consultant", lead.consultant)
-		# 	self.sender = self._consultant.email
-		# 	self.sender_name = self._consultant.full_name
-		# 	self.send_mail(context=lead, recipient=lead.email)
-
 	def send_drip_email(self, site_name):
 		site = frappe.get_doc("Site", site_name)
 		if self.email_type == "Drip" and site.status in ["Pending", "Broken"]:
@@ -30,11 +23,6 @@ class DripEmail(Document):
 
 		if not self.send_after_payment and site.has_paid:
 			return
-
-		# TODO:  <15-04-21, Balamurali M> #
-		# if self.maximum_activation_level and site.activation > self.maximum_activation_level:
-		# 	# user is already activated, quit
-		# 	return
 
 		account_request = frappe.get_doc("Account Request", site.account_request)
 
@@ -108,6 +96,12 @@ class DripEmail(Document):
 	@property
 	def sites_to_send_drip(self):
 		signup_date = date.today() - timedelta(days=self.send_after)
+
+		conditions = ""
+
+		if self.saas_app:
+			conditions += f'AND site.standby_for = "{self.saas_app}"'
+
 		sites = frappe.db.sql(
 			f"""
 				SELECT
@@ -119,9 +113,9 @@ class DripEmail(Document):
 				ON
 					site.account_request = account_request.name
 				WHERE
-					site.status = "Active" and
-					site.standby_for = "{self.saas_app}" and
+					site.status = "Active" AND
 					DATE(account_request.creation) = "{signup_date}"
+					{conditions}
 			"""
 		)
 		sites = [t[0] for t in sites]
