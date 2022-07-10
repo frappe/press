@@ -14,22 +14,12 @@ class SaasSitePool:
 		self.site_count = frappe.db.count(
 			"Site", filters={"is_standby": True, "status": "Active", "standby_for": self.app}
 		)
-		self.pool_size = frappe.db.get_value(
-			"Saas Settings",
-			app,
-			"standby_pool_size",
-		)
-		self.queue_size = frappe.db.get_value(
-			"Saas Settings",
-			app,
-			"standby_queue_size",
-		)
+		self.saas_settings = frappe.get_doc("Saas Settings", app)
 
 	def create(self):
-		pooling_enabled = frappe.db.get_value("Saas Settings", self.app, "enable_pooling")
-		if pooling_enabled and self.site_count < self.pool_size:
+		if self.saas_settings.enable_pooling and self.site_count < self.saas_settings.standby_pool_size:
 			sites_created = 0
-			while sites_created < self.queue_size:
+			while sites_created < self.saas_settings.standby_queue_size:
 				self.create_one()
 				frappe.db.commit()
 				sites_created += 1
