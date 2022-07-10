@@ -511,11 +511,6 @@
    "link_fieldname": "document_name"
   },
   {
-   "group": "Related Documents",
-   "link_doctype": "Saas App Subscription",
-   "link_fieldname": "site"
-  },
-  {
    "group": "Logs",
    "link_doctype": "Agent Job",
    "link_fieldname": "site"
@@ -534,9 +529,19 @@
    "group": "Related Documents",
    "link_doctype": "ERPNext Site Settings",
    "link_fieldname": "site"
+  },
+  {
+   "group": "Related Documents",
+   "link_doctype": "Site Migration",
+   "link_fieldname": "site"
+  },
+  {
+   "group": "Related Documents",
+   "link_doctype": "Central Site Migration",
+   "link_fieldname": "site"
   }
  ],
- "modified": "2022-07-06 22:56:56.461916",
+ "modified": "2022-07-11 02:59:29.039508",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
