@@ -17,7 +17,10 @@ class SaasSitePool:
 		self.saas_settings = frappe.get_doc("Saas Settings", app)
 
 	def create(self):
-		if self.saas_settings.enable_pooling and self.site_count < self.saas_settings.standby_pool_size:
+		if (
+			self.saas_settings.enable_pooling
+			and self.site_count < self.saas_settings.standby_pool_size
+		):
 			sites_created = 0
 			while sites_created < self.saas_settings.standby_queue_size:
 				self.create_one()
