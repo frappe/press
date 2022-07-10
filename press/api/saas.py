@@ -39,12 +39,11 @@ def get_saas_apps():
 	"""
 	return: All available saas apps with description and info
 	"""
-	apps = frappe.get_all(
+	return frappe.get_all(
 		"Saas App",
 		{"status": "Published"},
 		["name", "title", "image", "description", "signup_url"],
 	)
-	return apps
 
 
 @frappe.whitelist()
@@ -160,7 +159,7 @@ def create_plan(plan, name):
 
 @frappe.whitelist()
 def get_sites(app):
-	sites = frappe.db.sql(
+	return frappe.db.sql(
 		f"""
 		SELECT
 			site.name, site.status, subscription.plan, subscription.team
@@ -175,7 +174,6 @@ def get_sites(app):
 	""",
 		as_dict=True,
 	)
-	return sites
 
 
 @frappe.whitelist()
@@ -191,14 +189,12 @@ def get_plans_info(name):
 	plans = saas_app.get_plans(site)
 	trial_date = frappe.db.get_value("Site", site, "trial_end_date")
 
-	site_data = {
+	return {
 		"plans": plans,
 		"trial_end_date": trial_date,
 		"site": site,
 		"app_name": app_name,
 	}
-
-	return site_data
 
 
 @frappe.whitelist()
@@ -270,7 +266,6 @@ def change_plan(name, new_plan, option, partner_credits):
 			subscription.name,
 		)
 		intent.update({"payment_type": "postpaid"})
-
 		return intent
 	else:
 		# Prepaid
@@ -305,12 +300,13 @@ def get_benches(saas_app):
 		)
 		group["status"] = "Active" if active_benches else "Awaiting Deploy"
 
-	data = {
+	return {
 		"groups": groups,
 		"active_group": frappe.db.get_value("Saas Settings", saas_app, "group"),
 	}
 
-	return data
+
+# ------------------------------- Onboarding API -------------------------------#
 
 
 @frappe.whitelist()
