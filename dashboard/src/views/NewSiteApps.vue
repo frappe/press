@@ -192,6 +192,10 @@ export default {
 		} else {
 			this.selectedVersion = this.options.versions[0].name;
 		}
+
+		if (this.regionOptions.length == 1) {
+			this.$emit('update:selectedRegion', this.regionOptions[0].value);
+		}
 	},
 	methods: {
 		toggleApp(app) {
