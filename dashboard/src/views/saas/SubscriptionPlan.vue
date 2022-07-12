@@ -1,10 +1,6 @@
 <template>
 	<div>
-		<Alert
-			v-if="activePlan && activePlan.is_free"
-			title="Trial"
-			class="mb-4"
-		>
+		<Alert v-if="activePlan && activePlan.is_free" title="Trial" class="mb-4">
 			Your trial ends {{ trialEndsText() }} after which your site will get
 			suspended. Select a plan below to avoid suspension.
 		</Alert>
@@ -169,19 +165,25 @@ export default {
 		},
 		getTotalAmount() {
 			let multiple = this.selectedOption === 'Annual' ? 12 : 1;
-			let base_amount = 0
+			let base_amount = 0;
 
 			if (this.$account.team.country === 'India') {
 				base_amount = this.selectedPlan.price_inr * multiple;
 
 				if (this.selectedPlan.gst_inclusive) {
 					// gst check
-					const total_amount = base_amount + base_amount * .18;
-					this.totalAmount = base_amount + ' + ' + base_amount * .18 + ' (18% GST) ' +  ' = ' + 'INR ' + total_amount;
+					const total_amount = base_amount + base_amount * 0.18;
+					this.totalAmount =
+						base_amount +
+						' + ' +
+						base_amount * 0.18 +
+						' (18% GST) ' +
+						' = ' +
+						'INR ' +
+						total_amount;
 				} else {
 					this.totalAmount = 'INR ' + base_amount;
 				}
-
 			} else {
 				this.totalAmount = 'USD ' + this.selectedPlan.price_usd * multiple;
 			}
