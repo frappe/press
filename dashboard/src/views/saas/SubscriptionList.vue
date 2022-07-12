@@ -43,7 +43,12 @@ const badge = status => {
 		<div
 			class="py-2 px-2 sm:rounded-md sm:border sm:border-gray-100 sm:py-1 sm:px-2 sm:shadow"
 		>
-			<div class="py-2" v-for="sub in sites" :key="sub.name">
+			<div
+				v-if="sites && sites.length > 0"
+				class="py-2"
+				v-for="sub in sites"
+				:key="sub.name"
+			>
 				<router-link
 					:to="`/saas/apps/${sub.name}/plan`"
 					:site="sub.site"
@@ -73,6 +78,7 @@ const badge = status => {
 					</div>
 				</router-link>
 			</div>
+			<div class="text-center py-4 text-base">No App Subscriptions Found</div>
 		</div>
 	</div>
 	<NewSubscription v-else />

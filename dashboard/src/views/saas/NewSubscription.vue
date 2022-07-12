@@ -4,7 +4,7 @@ import { computed } from 'vue';
 import AppCard from './AppCard.vue';
 
 const saasApps = useResource({
-	method: 'press.api.saas.get_saas_apps',
+	method: 'press.api.saas.get_published_apps',
 	auto: true
 });
 
