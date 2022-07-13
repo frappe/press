@@ -667,27 +667,25 @@ def create_saas_subscription(account_request):
 	site.team = team_doc.name
 	site.save()
 
-	subscription = site.subscription
-	if subscription:
-		subscription.team = team_doc.name
-		subscription.save()
+	if not frappe.db.exists("Subscription", {"document_name": site_name}):
+		subscription = site.subscription
+		if subscription:
+			subscription.team = team_doc.name
+			subscription.save()
 
-	plan = frappe.get_all(
-		"Saas App Plan",
-		filters={"plan": get_saas_plan(account_request.saas_app)},
-		pluck="name",
-	)[0]
-
-	frappe.get_doc(
-		{
-			"doctype": "Saas App Subscription",
-			"team": team_doc.name,
-			"app": account_request.saas_app,
-			"site": site_name,
-			"saas_app_plan": plan,
-			"initial_plan": json.loads(account_request.url_args).get("plan"),
-		}
-	).insert(ignore_permissions=True)
+	if not frappe.db.exists(
+		"Saas App Subscription", {"app": account_request.saas_app, "site": site_name}
+	):
+		frappe.get_doc(
+			{
+				"doctype": "Saas App Subscription",
+				"team": team_doc.name,
+				"app": account_request.saas_app,
+				"site": site_name,
+				"saas_app_plan": get_saas_plan(account_request.saas_app),
+				"initial_plan": json.loads(account_request.url_args).get("plan"),
+			}
+		).insert(ignore_permissions=True)
 
 	frappe.set_user(team_doc.user)
 	frappe.local.login_manager.login_as(team_doc.user)
@@ -716,8 +714,8 @@ def create_team(account_request, get_stripe_id=False):
 
 	if get_stripe_id:
 		return team_doc.stripe_customer_id
-	else:
-		return team_doc
+
+	return team_doc
 
 
 @frappe.whitelist(allow_guest=True)
