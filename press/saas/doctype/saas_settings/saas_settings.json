@@ -40,7 +40,7 @@
    "fieldname": "plan",
    "fieldtype": "Link",
    "label": "Trial Plan",
-   "options": "Plan"
+   "options": "Saas App Plan"
   },
   {
    "fieldname": "group",
@@ -113,7 +113,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-06-23 11:57:32.462123",
+ "modified": "2022-07-13 20:30:09.083223",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Saas Settings",
