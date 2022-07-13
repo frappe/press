@@ -245,7 +245,7 @@ export default {
 					partner_credits: this.usePartnerCredits
 				},
 				async onSuccess(data) {
-					if (data.payment_type === 'postpaid') {
+					if (data.payment_type === 'prepaid') {
 						let { payment_type, publishable_key, client_secret } = data;
 						this.showCheckoutDialog = true;
 						this.step = 'Setting up Stripe';

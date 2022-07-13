@@ -35,9 +35,9 @@ from press.utils.billing import (
 
 
 @frappe.whitelist()
-def get_saas_apps():
+def get_published_apps():
 	"""
-	return: All available saas apps with description and info
+	return: All published apps
 	"""
 	return frappe.get_all(
 		"Saas App",
@@ -49,25 +49,27 @@ def get_saas_apps():
 @frappe.whitelist()
 def get_apps():
 	"""
-	return: All apps created by developer
+	return: All apps submitted by developer
 	"""
-	apps = frappe.get_all(
-		"Saas App", {"team": get_current_team()}, ["name", "title", "status"]
-	)
-
-	for app in apps:
-		app["count"] = frappe.db.count(
-			"Saas App Subscription", {"status": ("!=", "Disabled"), "app": app.name}
+	return [
+		app.update(
+			{
+				"count": frappe.db.count(
+					"Saas App Subscription", {"status": ("!=", "Disabled"), "app": app.name}
+				)
+			}
 		)
-
-	return apps
+		for app in frappe.get_all(
+			"Saas App", {"team": get_current_team()}, ["name", "title", "status"]
+		)
+	]
 
 
 @frappe.whitelist()
 @protected("Saas App")
 def get_app(name):
 	"""
-	return: Fields from saas app
+	return: Saas App doc
 	"""
 	return frappe.get_doc("Saas App", name)
 
@@ -76,34 +78,37 @@ def get_app(name):
 @protected("Saas App")
 def get_plans(name):
 	"""
-	return: Saas plans for app
+	return(developer): Plans for Saas App
 	"""
-	plans = frappe.db.get_all(
-		"Saas App Plan",
-		{"app": name, "is_free": False},
-		["name", "plan", "plan_title", "site_plan", "enabled"],
-		order_by="creation asc",
-	)
-
-	for plan in plans:
-		features = get_app_plan_features(plan.name)
-		plan.features = [{"id": idx, "value": value} for idx, value in enumerate(features)]
-		plan.update(
-			frappe.db.get_list(
-				"Plan", {"name": plan.plan}, ["plan_title", "price_usd", "price_inr"]
-			)[0]
-		)
-
-	site_plans = frappe.get_all("Plan", {"document_type": "Site"}, pluck="name")
-
-	return {"saas_plans": plans, "site_plans": site_plans}
+	return {
+		"saas_plans": [
+			plan.update(
+				{
+					"features": [
+						{"id": idx, "value": value}
+						for idx, value in enumerate(get_app_plan_features(plan.name))
+					],
+					**frappe.db.get_list(
+						"Plan", {"name": plan.plan}, ["plan_title", "price_usd", "price_inr"]
+					)[0],
+				}
+			)
+			for plan in frappe.db.get_all(
+				"Saas App Plan",
+				{"app": name, "is_free": False},
+				["name", "plan", "plan_title", "site_plan", "enabled"],
+				order_by="creation asc",
+			)
+		],
+		"site_plans": frappe.get_all("Plan", {"document_type": "Site"}, pluck="name"),
+	}
 
 
 @frappe.whitelist()
 @protected("Saas App")
 def edit_plan(plan, name):
 	"""
-	Edit saas plan and initial plan details
+	Edit Saas App Plan and linked Plan doc
 	"""
 	# change saas plan fields(site_plan and features)
 	saas_plan_doc = frappe.get_doc("Saas App Plan", plan["name"])
@@ -126,9 +131,8 @@ def edit_plan(plan, name):
 @protected("Saas App")
 def create_plan(plan, name):
 	"""
-	Create plan
+	Create Plan(linked) and Saas App Plan
 	"""
-	# create plan
 	plan_doc = frappe.get_doc(
 		{
 			"doctype": "Plan",
@@ -140,7 +144,6 @@ def create_plan(plan, name):
 		}
 	).insert()
 
-	# create saas app plan
 	saas_plan_doc = frappe.get_doc(
 		{
 			"doctype": "Saas App Plan",
@@ -157,8 +160,13 @@ def create_plan(plan, name):
 	saas_plan_doc.insert()
 
 
+'''
 @frappe.whitelist()
-def get_sites(app):
+@protected("Saas App")
+def get_sites(name):
+	"""
+	return(developer): All sites
+	"""
 	return frappe.db.sql(
 		f"""
 		SELECT
@@ -170,28 +178,25 @@ def get_sites(app):
 		ON
 			site.name = subscription.site
 		WHERE
-			(subscription.app = '{app}')
+			(subscription.app = '{name}')
 	""",
 		as_dict=True,
 	)
+'''
 
 
 @frappe.whitelist()
 @protected("Saas App Subscription")
 def get_plans_info(name):
 	"""
-	return: Subscription information for site (plans, active plan, trial)
+	return: Available Plans and info for Subscription
 	"""
 	app, site, app_name = frappe.db.get_value(
 		"Saas App Subscription", name, ["app", "site", "app_name"]
 	)
-	saas_app = frappe.get_doc("Saas App", app)
-	plans = saas_app.get_plans(site)
-	trial_date = frappe.db.get_value("Site", site, "trial_end_date")
-
 	return {
-		"plans": plans,
-		"trial_end_date": trial_date,
+		"plans": frappe.get_doc("Saas App", app).get_plans(site),
+		"trial_end_date": frappe.db.get_value("Site", site, "trial_end_date"),
 		"site": site,
 		"app_name": app_name,
 	}
@@ -199,6 +204,9 @@ def get_plans_info(name):
 
 @frappe.whitelist()
 def get_subscriptions():
+	"""
+	return: All Subscriptions
+	"""
 	return frappe.get_all(
 		"Saas App Subscription",
 		{"status": ("!=", "Disabled"), "team": get_current_team()},
@@ -209,6 +217,9 @@ def get_subscriptions():
 @frappe.whitelist()
 @protected("Saas App Subscription")
 def subscription_overview(name):
+	"""
+	return: Subscription and Site details
+	"""
 	subscription = frappe.get_doc("Saas App Subscription", name)
 	return {
 		"subscription": subscription,
@@ -218,6 +229,9 @@ def subscription_overview(name):
 
 
 def consume_partner_credits(team, amount, subscription, new_plan):
+	"""
+	Use partner credits for prepaid payments
+	"""
 	if team.get_available_partner_credits() < amount:
 		frappe.throw("Cannot change plan not enought Partner Credits available")
 	due_date = datetime.today()
@@ -243,6 +257,9 @@ def consume_partner_credits(team, amount, subscription, new_plan):
 @frappe.whitelist()
 @protected("Saas App Subscription")
 def change_plan(name, new_plan, option, partner_credits):
+	"""
+	return: Payment intent if prepaid else Payment type
+	"""
 	team = get_current_team(True)
 	subscription = frappe.get_doc("Saas App Subscription", name)
 	saas_plan = frappe.get_doc("Saas App Plan", new_plan["name"])
@@ -253,10 +270,8 @@ def change_plan(name, new_plan, option, partner_credits):
 		consume_partner_credits(team, amount, subscription, new_plan["name"])
 		return {"payment_type": "partner_credits"}
 
-	# Postpaid
-	if "postpaid" == frappe.db.get_value(
-		"Saas Settings", subscription.app, "billing_type"
-	):
+	# Prepaid
+	if "prepaid" == frappe.db.get_value("Saas Settings", subscription.app, "billing_type"):
 		intent = create_payment_intent_for_prepaid_app(
 			int(amount),
 			subscription.app,
@@ -265,12 +280,12 @@ def change_plan(name, new_plan, option, partner_credits):
 			new_plan["name"],
 			subscription.name,
 		)
-		intent.update({"payment_type": "postpaid"})
+		intent.update({"payment_type": "prepaid"})
 		return intent
 	else:
-		# Prepaid
+		# Postpaid
 		subscription.change_plan(new_plan["name"])
-		return {"payment_type": "prepaid"}
+		return {"payment_type": "postpaid"}
 
 
 @frappe.whitelist()
@@ -299,6 +314,14 @@ def get_benches(saas_app):
 			order_by="creation desc",
 		)
 		group["status"] = "Active" if active_benches else "Awaiting Deploy"
+	print(
+		frappe.get_all(
+			"Site",
+			filters={"group": ("in", ["bench-0001"])},
+			fields=["count(name) as count", "status", "group"],
+			group_by="status",
+		)
+	)
 
 	return {
 		"groups": groups,
@@ -306,7 +329,44 @@ def get_benches(saas_app):
 	}
 
 
-# ------------------------------- Onboarding API -------------------------------#
+@frappe.whitelist(allow_guest=True)
+def login_via_token(token):
+	"""
+	return: success if login succeeds
+	"""
+	try:
+		doc = frappe.get_doc(
+			"Saas Remote Login",
+			{
+				"token": token,
+				"status": "Attempted",
+				"expires_on": (">", frappe.utils.now()),
+			},
+		)
+		doc.status = "Used"
+		frappe.local.login_manager.login_as(doc.team)
+		doc.save(ignore_permissions=True)
+	except Exception:
+		frappe.throw("Token Invalid or Expired!")
+
+	return "success"
+
+
+@frappe.whitelist()
+@protected("Saas App Subscription")
+def activate(name):
+	subscription = frappe.get_doc("Saas App Subscription", name)
+	subscription.activate()
+
+
+@frappe.whitelist()
+@protected("Saas App Subscription")
+def deactivate(name):
+	subscription = frappe.get_doc("Saas App Subscription", name)
+	subscription.deactivate()
+
+
+# ------------------------------- ONBOARDING API -------------------------------#
 
 
 @frappe.whitelist()
@@ -357,7 +417,6 @@ def options_for_saas_app():
 
 
 def saas_app_exists(app: str) -> bool:
-	"""Returns `True` if this `app` already exists as Saas App or else `False`"""
 	return frappe.db.exists("Saas App", app)
 
 
@@ -440,20 +499,6 @@ def update_settings(name, active_bench):
 	return name
 
 
-@frappe.whitelist()
-@protected("Saas App Subscription")
-def activate(name):
-	subscription = frappe.get_doc("Saas App Subscription", name)
-	subscription.activate()
-
-
-@frappe.whitelist()
-@protected("Saas App Subscription")
-def deactivate(name):
-	subscription = frappe.get_doc("Saas App Subscription", name)
-	subscription.deactivate()
-
-
 # ----------------------------- SIGNUP APIs ---------------------------------
 
 
@@ -470,6 +515,9 @@ def account_request(
 	url_args=None,
 	stripe_setup=False,
 ):
+	"""
+	return: Stripe setup intent and AR key if stripe flow, else None
+	"""
 	email = email.strip().lower()
 	frappe.utils.validate_email_address(email, True)
 
@@ -521,6 +569,9 @@ def account_request(
 
 
 def create_or_rename_saas_site(app, account_request):
+	"""
+	Creates site for Saas App. These are differentiated by `standby_for` field in site doc
+	"""
 	current_user = frappe.session.user
 	current_session_data = frappe.session.data
 	frappe.set_user("Administrator")
@@ -543,6 +594,9 @@ def create_or_rename_saas_site(app, account_request):
 
 @frappe.whitelist(allow_guest=True)
 def check_subdomain_availability(subdomain, app):
+	"""
+	Checks if subdomain is available to create a new site
+	"""
 	# Only for ERPNext domains
 
 	erpnext_com = get_erpnext_com_connection()
@@ -570,6 +624,9 @@ def check_subdomain_availability(subdomain, app):
 
 @frappe.whitelist(allow_guest=True)
 def setup_account(key, business_data=None):
+	"""
+	Includes the data collection step in setup-account.html
+	"""
 	account_request = get_account_request_from_key(key)
 	if not account_request:
 		frappe.throw("Invalid or Expired Key")
@@ -614,6 +671,9 @@ def headless_setup_account(key):
 
 
 def create_saas_subscription(account_request):
+	"""
+	Create team, subscription for site and Saas Subscription
+	"""
 	team_doc = create_team(account_request)
 	site_name = frappe.db.get_value("Site", {"account_request": account_request.name})
 	site = frappe.get_doc("Site", site_name)
@@ -649,6 +709,9 @@ def create_saas_subscription(account_request):
 
 
 def create_team(account_request, get_stripe_id=False):
+	"""
+	Create team and return doc
+	"""
 	email = account_request.email
 
 	if not frappe.db.exists("Team", email):
@@ -672,6 +735,9 @@ def create_team(account_request, get_stripe_id=False):
 
 @frappe.whitelist(allow_guest=True)
 def get_site_status(key, app=None):
+	"""
+	return: Site status
+	"""
 	account_request = get_account_request_from_key(key)
 	if not account_request:
 		frappe.throw("Invalid or Expired Key")
@@ -692,6 +758,9 @@ def get_site_status(key, app=None):
 
 @frappe.whitelist()
 def get_site_url_and_sid(key, app=None):
+	"""
+	return: Site url and session id for login-redirect
+	"""
 	account_request = get_account_request_from_key(key)
 	if not account_request:
 		frappe.throw("Invalid or Expired Key")
@@ -708,29 +777,14 @@ def get_site_url_and_sid(key, app=None):
 	}
 
 
-@frappe.whitelist(allow_guest=True)
-def login_via_token(token):
-	try:
-		doc = frappe.get_doc(
-			"Saas Remote Login",
-			{
-				"token": token,
-				"status": "Attempted",
-				"expires_on": (">", frappe.utils.now()),
-			},
-		)
-		doc.status = "Used"
-		frappe.local.login_manager.login_as(doc.team)
-		doc.save(ignore_permissions=True)
-	except Exception:
-		frappe.throw("Token Invalid or Expired!")
-
-	return "success"
-
-
 # ------------------ Stripe setup ------------------- #
+
+
 @frappe.whitelist(allow_guest=True)
 def setup_intent_success(setup_intent, account_request_key):
+	"""
+	Create a team with card and create site
+	"""
 	account_request = get_account_request_from_key(account_request_key)
 	if not account_request:
 		frappe.throw("Invalid or Expired Key")
