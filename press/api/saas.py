@@ -8,6 +8,7 @@ from frappe.utils.password import get_decrypted_password
 from press.api.billing import create_payment_intent_for_prepaid_app
 from press.api.site import overview, protected, get
 from press.api.bench import options
+from press.press.doctype.release_group.release_group import get_status
 from press.saas.doctype.saas_app_subscription.saas_app_subscription import (
 	create_saas_invoice,
 )
@@ -307,21 +308,7 @@ def get_benches(saas_app):
 			"Site", {"group": group["name"], "status": "Suspended"}
 		)
 
-		active_benches = frappe.get_all(
-			"Bench",
-			{"group": group["name"], "status": "Active"},
-			limit=1,
-			order_by="creation desc",
-		)
-		group["status"] = "Active" if active_benches else "Awaiting Deploy"
-	print(
-		frappe.get_all(
-			"Site",
-			filters={"group": ("in", ["bench-0001"])},
-			fields=["count(name) as count", "status", "group"],
-			group_by="status",
-		)
-	)
+		group["status"] = get_status(group["name"])
 
 	return {
 		"groups": groups,

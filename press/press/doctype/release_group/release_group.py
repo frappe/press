@@ -428,6 +428,16 @@ def new_release_group(title, version, apps, team=None, cluster=None, saas_app=""
 	return group
 
 
+def get_status(name):
+	return (
+		"Active"
+		if frappe.get_all(
+			"Bench", {"group": name, "status": "Active"}, limit=1, order_by="creation desc"
+		)
+		else "Awaiting Deploy"
+	)
+
+
 get_permission_query_conditions = get_permission_query_conditions_for_doctype(
 	"Release Group"
 )
