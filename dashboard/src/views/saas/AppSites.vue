@@ -9,7 +9,7 @@ const sites = useResource({
 	method: 'press.api.saas.get_sites',
 	auto: true,
 	params: {
-		app: props.appName
+		name: props.appName
 	}
 });
 

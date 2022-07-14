@@ -11,7 +11,7 @@
 	<div class="mx-auto text-center form-container col-xl-5 col-lg-6 col-md-7 col-sm-9" id="user-headless-verify">
 		<form name="verify" data-action="business_settings">
 			{%- if frappe.form_dict.key -%}
-			<div class="mx-auto form-container col-xl-5 col-lg-6 col-md-7 col-sm-9" id="user-signup-verify">
+			<div class="mx-auto form-container col-xl-5 col-lg-6 col-md-7 col-sm-9">
 				<button id="redirect" type="submit" class="btn btn-primary" hidden>Redirect</button>
 			</div>
 			{%- else -%}
@@ -130,7 +130,7 @@
 	const app = document.getElementById('app').value;
 	const headless = document.getElementById('headless').value;
 
-	if (headless) {
+	if (headless == 1) {
 		frappe.ready(() => {
 			controller = new FormController("user-headless-verify");
 
