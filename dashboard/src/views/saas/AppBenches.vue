@@ -8,7 +8,7 @@ const props = defineProps({ app: Object, appName: String });
 const benches = useResource({
 	method: 'press.api.saas.get_benches',
 	params: {
-		name: props.appName
+		saas_app: props.appName
 	},
 	auto: true
 });

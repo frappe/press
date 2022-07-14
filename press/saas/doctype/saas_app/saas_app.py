@@ -42,7 +42,7 @@ def get_plans_for_app(app, site):
 
 		plan_data["features"] = get_app_plan_features(app_plan.name)
 		selected_plan = get_selected_plan(app, site)
-		plan_data["is_selected"] = True if selected_plan == app_plan.name else False
+		plan_data["is_selected"] = selected_plan == app_plan.name
 
 		plans.append(plan_data)
 
