@@ -46,6 +46,9 @@ class MarketplaceAppSubscription(Document):
 			)
 
 	def validate_duplicate_subscription(self):
+		if not self.site:
+			return
+
 		already_exists = frappe.db.exists(
 			"Marketplace App Subscription", {"app": self.app, "site": self.site}
 		)
