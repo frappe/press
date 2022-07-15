@@ -319,7 +319,7 @@ class StagingSite(Site):
 
 	@classmethod
 	def archive_expired(cls):
-		expiry = int(frappe.db.get_value("Press Settings", None, "staging_expiry")) or 24
+		expiry = frappe.db.get_single_value("Press Settings", "staging_expiry") or 24
 		sites = frappe.get_all(
 			"Site",
 			{"staging": True, "creation": ("<", datetime.now() - timedelta(hours=expiry))},
