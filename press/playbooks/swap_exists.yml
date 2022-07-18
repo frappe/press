@@ -1,8 +1,9 @@
 ---
-- name: Set memory limits for database server
+- name: Check if swap and earlyoom exist on server
   hosts: all
   become: yes
   become_user: root
+  gather_facts: yes
   tasks:
     - name: Print machine with no swap
       debug:
@@ -10,3 +11,12 @@
       when:
         - ansible_system_vendor == "Amazon EC2"
         - ansible_swaptotal_mb == 0
+
+    - name: Gather the package facts
+      package_facts:
+        manager: auto
+
+    - name: Print machine with no earlyoom
+      debug:
+        msg: '{{ inventory_hostname }} DOES NOT have earlyoom installed'
+      when: "'earlyoom' not in ansible_facts.packages"
