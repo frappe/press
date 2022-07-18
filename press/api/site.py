@@ -415,7 +415,9 @@ def options_for_new():
 			group["apps"] = sorted(app_sources, key=lambda x: bench_apps.index(x.name))
 
 			cluster_names = unique(
-				frappe.db.get_all("Bench", filters={"candidate": bench.candidate}, pluck="cluster")
+				frappe.db.get_all(
+					"Bench", filters={"candidate": bench.candidate}, pluck="cluster"
+				)
 			)
 			group["clusters"] = frappe.db.get_all(
 				"Cluster",
@@ -522,7 +524,10 @@ def all():
 	groups_with_sites = frappe.db.get_all(
 		"Release Group",
 		fields=["name", "title", "creation", "version", "team", "public"],
-		filters={"enabled": True, "name": ("in", set([bench.group for bench in benches]))},
+		filters={
+			"enabled": True,
+			"name": ("in", set([bench.group for bench in benches])),
+		},
 		order_by="creation desc",
 	)
 
@@ -661,7 +666,9 @@ def get_updates_between_current_and_next_apps(current_apps, next_apps):
 				"current_hash": current_hash,
 				"current_tag": current_tag,
 				"next_hash": next_hash,
-				"next_tag": get_app_tag(source.repository, source.repository_owner, next_hash),
+				"next_tag": get_app_tag(
+					source.repository, source.repository_owner, next_hash
+				),
 				"will_branch_change": will_branch_change,
 				"current_branch": current_branch,
 				"update_available": not current_hash or current_hash != next_hash,
@@ -680,7 +687,10 @@ def overview(name):
 		"plan": current_plan(name),
 		"info": {
 			"owner": frappe.db.get_value(
-				"User", site.team, ["first_name", "last_name", "user_image"], as_dict=True
+				"User",
+				site.team,
+				["first_name", "last_name", "user_image"],
+				as_dict=True,
 			),
 			"created_on": site.creation,
 			"last_deployed": (
@@ -741,7 +751,9 @@ def get_installed_apps(site):
 
 def get_server_region_info(site) -> Dict:
 	"""Return a Dict with `title` and `image`"""
-	return frappe.db.get_value("Cluster", site.cluster, ["title", "image"], as_dict=True)
+	return frappe.db.get_value(
+		"Cluster", site.cluster, ["title", "image"], as_dict=True
+	)
 
 
 @frappe.whitelist()
@@ -842,7 +854,9 @@ def change_plan(name, plan):
 def change_auto_update(name, auto_update_enabled):
 	# Not so good, it should have been "enable_auto_updates"
 	# TODO: Make just one checkbox to track auto updates
-	return frappe.db.set_value("Site", name, "skip_auto_updates", not auto_update_enabled)
+	return frappe.db.set_value(
+		"Site", name, "skip_auto_updates", not auto_update_enabled
+	)
 
 
 @frappe.whitelist()
@@ -882,11 +896,21 @@ def last_migrate_failed(name):
 def backup(name, with_files=False):
 	site_doc = frappe.get_doc("Site", name)
 	if site_doc.status == "Suspended":
-		activity = frappe.db.get_all('Site Activity', filters={"site": name, "action": "Suspend Site"}, order_by='creation desc', limit=1)
+		activity = frappe.db.get_all(
+			"Site Activity",
+			filters={"site": name, "action": "Suspend Site"},
+			order_by="creation desc",
+			limit=1,
+		)
 		suspension_time = frappe.get_doc("Site Activity", activity[0]).creation
-		
-		if frappe.db.count('Site Backup', filters=dict(site = name, creation = (">=", suspension_time))) > 3:
-			frappe.throw('You cannot take more than 3 backups after site suspension')
+
+		if (
+			frappe.db.count(
+				"Site Backup", filters=dict(site=name, creation=(">=", suspension_time))
+			)
+			> 3
+		):
+			frappe.throw("You cannot take more than 3 backups after site suspension")
 
 	frappe.get_doc("Site", name).backup(with_files)
 
@@ -1126,7 +1150,9 @@ def update_config(name, config):
 @frappe.whitelist()
 def get_upload_link(file, parts=1):
 	bucket_name = frappe.db.get_single_value("Press Settings", "remote_uploads_bucket")
-	expiration = frappe.db.get_single_value("Press Settings", "remote_link_expiry") or 3600
+	expiration = (
+		frappe.db.get_single_value("Press Settings", "remote_link_expiry") or 3600
+	)
 	object_name = get_remote_key(file)
 	parts = int(parts)
 
@@ -1144,7 +1170,9 @@ def get_upload_link(file, parts=1):
 		# The response contains the presigned URL and required fields
 		if parts > 1:
 			signed_urls = []
-			response = s3_client.create_multipart_upload(Bucket=bucket_name, Key=object_name)
+			response = s3_client.create_multipart_upload(
+				Bucket=bucket_name, Key=object_name
+			)
 
 			for count in range(parts):
 				signed_url = s3_client.generate_presigned_url(
@@ -1178,7 +1206,10 @@ def multipart_exit(file, id, action, parts=None):
 			"Press Settings", "remote_access_key_id"
 		),
 		aws_secret_access_key=get_decrypted_password(
-			"Press Settings", "Press Settings", "remote_secret_access_key", raise_exception=False
+			"Press Settings",
+			"Press Settings",
+			"remote_secret_access_key",
+			raise_exception=False,
 		),
 		region_name="ap-south-1",
 	)
@@ -1208,7 +1239,9 @@ def uploaded_backup_info(file=None, path=None, type=None, size=None, url=None):
 			"file_size": size,
 			"file_path": path,
 			"url": url,
-			"bucket": frappe.db.get_single_value("Press Settings", "remote_uploads_bucket"),
+			"bucket": frappe.db.get_single_value(
+				"Press Settings", "remote_uploads_bucket"
+			),
 		}
 	).insert()
 	add_tag("Site Upload", doc.doctype, doc.name)
@@ -1224,7 +1257,9 @@ def get_backup_links(url, email, password):
 		remote_files.append(
 			{
 				"type": file_type,
-				"remote_file": uploaded_backup_info(file=file_name, url=file_url, type=file_type),
+				"remote_file": uploaded_backup_info(
+					file=file_name, url=file_url, type=file_type
+				),
 				"file_name": file_name,
 				"url": file_url,
 			}
@@ -1237,7 +1272,9 @@ def get_backup_links(url, email, password):
 def search_list():
 	team = get_current_team()
 	sites = frappe.get_list(
-		"Site", ["name", "name as site"], filters={"status": ("!=", "Archived"), "team": team}
+		"Site",
+		["name", "name as site"],
+		filters={"status": ("!=", "Archived"), "team": team},
 	)
 	domains = frappe.get_all(
 		"Site Domain",
