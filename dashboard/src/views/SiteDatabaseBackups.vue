@@ -12,16 +12,15 @@
 			>
 				Schedule a backup now
 			</Button>
-			<slot v-bind="{ showDialog }"></slot>
-			<Dialog v-model="dialogOpen" title="Cannot Backup Site">
+			<Dialog v-model="showBackupDialog" title="Cannot Backup Site">
 				<p class="text-base">
 					You cannot take more than 3 backups after site suspension 
 				</p>
 				<template v-slot:actions>
-				<div>
-					<Button @click="dialogOpen = false"> Cancel </Button>
-				</div>
-			</template>
+					<div>
+						<Button @click="showBackupDialog = false"> Cancel </Button>
+					</div>
+				</template>
 			</Dialog>
 		</template>
 		<div class="divide-y" v-if="backups.data.length">
@@ -69,7 +68,7 @@ export default {
 		return {
 			isRestorePending: false,
 			backupToRestore: null,
-			dialogOpen: false
+			showBackupDialog: false
 		};
 	},
 	resources: {
@@ -90,13 +89,11 @@ export default {
 					name: this.site?.name,
 					with_files: true
 				},
-				onSuccess: (response) => {
-					// console.log(JSON.stringify(response));
-					if (JSON.stringify(response) !== undefined) {
-						let data = JSON.parse(JSON.stringify(response));
-						this.showDialog();
-					}
+				onSuccess: () => {
 					this.$resources.backups.reload();
+				}, 
+				onError: () => {
+					this.showDialog();
 				}
 			};
 		}
@@ -211,7 +208,7 @@ export default {
 			});
 		},
 		showDialog() {
-			this.dialogOpen = true;
+			this.showBackupDialog = true;
 		}
 	}
 };
