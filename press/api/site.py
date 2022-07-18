@@ -880,6 +880,18 @@ def last_migrate_failed(name):
 @frappe.whitelist()
 @protected("Site")
 def backup(name, with_files=False):
+	# check if site is suspended
+	site_doc = frappe.get_doc("Site", name)
+	if site_doc.status == "Suspended":
+		# get time of suspension
+		activity = frappe.db.get_all('Site Activity', filters={"site": name, "action": "Suspend Site"}, order_by='creation desc')
+		suspension_time = frappe.get_doc("Site Activity", activity[0]).creation
+		
+		# get number of backups after suspension time
+		if len(frappe.db.get_all('Site Backup', filters=dict(site = name, creation = (">=", suspension_time)))) > 3:
+			print("You cannot take more than 3 backups after suspension")
+			return {'error': 'You cannot take more than 3 backups after site suspension'}
+
 	frappe.get_doc("Site", name).backup(with_files)
 
 

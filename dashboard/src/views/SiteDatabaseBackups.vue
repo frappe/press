@@ -6,12 +6,23 @@
 	>
 		<template #actions>
 			<Button
-				v-if="site?.status === 'Active'"
+				v-if="site?.status === 'Active' || site?.status === 'Suspended'"
 				@click="$resources.scheduleBackup.fetch()"
 				:loading="$resources.scheduleBackup.loading"
 			>
 				Schedule a backup now
 			</Button>
+			<slot v-bind="{ showDialog }"></slot>
+			<Dialog v-model="dialogOpen" title="Cannot Backup Site">
+				<p class="text-base">
+					You cannot take more than 3 backups after site suspension 
+				</p>
+				<template v-slot:actions>
+				<div>
+					<Button @click="dialogOpen = false"> Cancel </Button>
+				</div>
+			</template>
+			</Dialog>
 		</template>
 		<div class="divide-y" v-if="backups.data.length">
 			<div
@@ -57,7 +68,8 @@ export default {
 	data() {
 		return {
 			isRestorePending: false,
-			backupToRestore: null
+			backupToRestore: null,
+			dialogOpen: false
 		};
 	},
 	resources: {
@@ -78,7 +90,12 @@ export default {
 					name: this.site?.name,
 					with_files: true
 				},
-				onSuccess: () => {
+				onSuccess: (response) => {
+					// console.log(JSON.stringify(response));
+					if (JSON.stringify(response) !== undefined) {
+						let data = JSON.parse(JSON.stringify(response));
+						this.showDialog();
+					}
 					this.$resources.backups.reload();
 				}
 			};
@@ -192,6 +209,9 @@ export default {
 					window.location.reload();
 				}, 1000);
 			});
+		},
+		showDialog() {
+			this.dialogOpen = true;
 		}
 	}
 };
