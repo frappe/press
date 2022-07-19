@@ -72,7 +72,7 @@
    "fieldname": "interval",
    "fieldtype": "Select",
    "label": "Interval",
-   "options": "Daily\nMonthly\nAnually"
+   "options": "Daily\nMonthly\nAnnual"
   },
   {
    "fieldname": "team",
@@ -118,7 +118,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-06-24 15:18:06.227389",
+ "modified": "2022-07-19 11:10:37.694326",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Saas App Subscription",
