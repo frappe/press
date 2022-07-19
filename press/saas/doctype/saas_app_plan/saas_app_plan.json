@@ -17,11 +17,12 @@
   "section_break_6",
   "plan",
   "plan_title",
-  "price_usd",
-  "price_inr",
   "column_break_7",
   "site_plan",
   "payout_percentage",
+  "annual_discount",
+  "annual_discount_inr",
+  "annual_discount_usd",
   "section_break_8",
   "features",
   "section_break_11",
@@ -113,20 +114,6 @@
    "read_only": 1
   },
   {
-   "fetch_from": "plan.price_usd",
-   "fieldname": "price_usd",
-   "fieldtype": "Currency",
-   "label": "Price(USD)",
-   "read_only": 1
-  },
-  {
-   "fetch_from": "plan.price_inr",
-   "fieldname": "price_inr",
-   "fieldtype": "Currency",
-   "label": "Price(INR)",
-   "read_only": 1
-  },
-  {
    "default": "0",
    "fieldname": "is_us_eu",
    "fieldtype": "Check",
@@ -138,11 +125,27 @@
    "fieldname": "gst_inclusive",
    "fieldtype": "Check",
    "label": "GST Inclusive"
+  },
+  {
+   "fieldname": "annual_discount_inr",
+   "fieldtype": "Currency",
+   "label": "Annual Discount INR"
+  },
+  {
+   "fieldname": "annual_discount_usd",
+   "fieldtype": "Currency",
+   "label": "Annual Discount USD"
+  },
+  {
+   "default": "0",
+   "fieldname": "annual_discount",
+   "fieldtype": "Check",
+   "label": "Annual Discount"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-07-01 17:42:52.029379",
+ "modified": "2022-07-19 09:26:01.277657",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Saas App Plan",
