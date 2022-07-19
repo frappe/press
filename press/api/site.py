@@ -522,7 +522,10 @@ def all():
 	groups_with_sites = frappe.db.get_all(
 		"Release Group",
 		fields=["name", "title", "creation", "version", "team", "public"],
-		filters={"enabled": True, "name": ("in", set([bench.group for bench in benches]))},
+		filters={
+			"enabled": True,
+			"name": ("in", set([bench.group for bench in benches])),
+		},
 		order_by="creation desc",
 	)
 
@@ -680,7 +683,10 @@ def overview(name):
 		"plan": current_plan(name),
 		"info": {
 			"owner": frappe.db.get_value(
-				"User", site.team, ["first_name", "last_name", "user_image"], as_dict=True
+				"User",
+				site.team,
+				["first_name", "last_name", "user_image"],
+				as_dict=True,
 			),
 			"created_on": site.creation,
 			"last_deployed": (
@@ -880,6 +886,24 @@ def last_migrate_failed(name):
 @frappe.whitelist()
 @protected("Site")
 def backup(name, with_files=False):
+	site_doc = frappe.get_doc("Site", name)
+	if site_doc.status == "Suspended":
+		activity = frappe.db.get_all(
+			"Site Activity",
+			filters={"site": name, "action": "Suspend Site"},
+			order_by="creation desc",
+			limit=1,
+		)
+		suspension_time = frappe.get_doc("Site Activity", activity[0]).creation
+
+		if (
+			frappe.db.count(
+				"Site Backup", filters=dict(site=name, creation=(">=", suspension_time))
+			)
+			> 3
+		):
+			frappe.throw("You cannot take more than 3 backups after site suspension")
+
 	frappe.get_doc("Site", name).backup(with_files)
 
 
@@ -1170,7 +1194,10 @@ def multipart_exit(file, id, action, parts=None):
 			"Press Settings", "remote_access_key_id"
 		),
 		aws_secret_access_key=get_decrypted_password(
-			"Press Settings", "Press Settings", "remote_secret_access_key", raise_exception=False
+			"Press Settings",
+			"Press Settings",
+			"remote_secret_access_key",
+			raise_exception=False,
 		),
 		region_name="ap-south-1",
 	)
@@ -1229,7 +1256,9 @@ def get_backup_links(url, email, password):
 def search_list():
 	team = get_current_team()
 	sites = frappe.get_list(
-		"Site", ["name", "name as site"], filters={"status": ("!=", "Archived"), "team": team}
+		"Site",
+		["name", "name as site"],
+		filters={"status": ("!=", "Archived"), "team": team},
 	)
 	domains = frappe.get_all(
 		"Site Domain",
