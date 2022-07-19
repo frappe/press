@@ -14,6 +14,8 @@
   "group",
   "column_break_9",
   "apps",
+  "whitelist_apps",
+  "whitelisted_apps",
   "section_break_5",
   "plan",
   "site_plan",
@@ -109,11 +111,23 @@
    "fieldname": "setup_section",
    "fieldtype": "Section Break",
    "label": "Signup Setup"
+  },
+  {
+   "fieldname": "whitelisted_apps",
+   "fieldtype": "Table",
+   "label": "Whitelisted Apps",
+   "options": "ERPNext App"
+  },
+  {
+   "default": "0",
+   "fieldname": "whitelist_apps",
+   "fieldtype": "Check",
+   "label": "Whitelist Apps"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-07-13 20:30:09.083223",
+ "modified": "2022-07-19 12:17:26.739140",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Saas Settings",
