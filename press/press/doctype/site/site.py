@@ -602,6 +602,12 @@ class Site(Document):
 		log_site_activity(self.name, "Login as Administrator", reason=reason)
 		return self.get_login_sid()
 
+	def get_connection_as_admin(self):
+		password = get_decrypted_password("Site", self.name, "admin_password")
+		conn = FrappeClient(f"https://{self.name}", "Administrator", password)
+
+		return conn
+
 	def get_login_sid(self):
 		password = get_decrypted_password("Site", self.name, "admin_password")
 		response = requests.post(
