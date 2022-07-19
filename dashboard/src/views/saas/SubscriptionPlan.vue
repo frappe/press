@@ -166,18 +166,30 @@ export default {
 		getTotalAmount() {
 			let multiple = this.selectedOption === 'Annual' ? 12 : 1;
 			let base_amount = 0;
+			let discount = '';
 
 			if (this.$account.team.country === 'India') {
 				base_amount = this.selectedPlan.price_inr * multiple;
+
+				// discount
+				if (
+					this.selectedPlan.annual_discount &&
+					this.selectedOption === 'Annual'
+				) {
+					discount =
+						' (' + this.selectedPlan.annual_discount_inr + ' Discount Applied)';
+					base_amount = base_amount - this.selectedPlan.annual_discount_inr;
+				}
 
 				if (this.selectedPlan.gst_inclusive) {
 					// gst check
 					const total_amount = base_amount + base_amount * 0.18;
 					this.totalAmount =
 						base_amount +
+						discount +
 						' + ' +
 						base_amount * 0.18 +
-						' (18% GST) ' +
+						' (18% GST)' +
 						' = ' +
 						'INR ' +
 						total_amount;
@@ -185,7 +197,16 @@ export default {
 					this.totalAmount = 'INR ' + base_amount;
 				}
 			} else {
-				this.totalAmount = 'USD ' + this.selectedPlan.price_usd * multiple;
+				base_amount = this.selectedPlan.price_usd * multiple;
+				if (
+					this.selectedPlan.annual_discount &&
+					this.selectedOption === 'Annual'
+				) {
+					discount =
+						' (' + this.selectedPlan.annual_discount_usd + ' Discount Applied)';
+					base_amount = base_amount - this.selectedPlan.annual_discount_usd;
+				}
+				this.totalAmount = 'USD ' + base_amount + discount;
 			}
 		},
 		async onBuyClick() {
@@ -241,7 +262,7 @@ export default {
 				params: {
 					name: this.subName,
 					new_plan: this.selectedPlan,
-					option: this.selectedOption,
+					payment_option: this.selectedOption,
 					partner_credits: this.usePartnerCredits
 				},
 				async onSuccess(data) {
