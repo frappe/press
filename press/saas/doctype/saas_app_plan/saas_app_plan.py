@@ -19,17 +19,22 @@ class SaasAppPlan(Document):
 		if dt != "Saas App":
 			frappe.throw("The plan must be a Saas App plan.")
 
-	def get_total_amount(self, option):
+	def get_total_amount(self, payment_option):
 		"""
 		validates if plan is gst_inclusive, checks applicable country
 		:option "Monthly" or "Annual"
 		"""
 		team = get_current_team(True)
 		amount = frappe.db.get_value("Plan", self.plan, f"price_{team.currency.lower()}")
-		amount = amount * 12 if option == "Annual" else amount
+		amount = amount * 12 if payment_option == "Annual" else amount
 
 		if team.country == "India" and self.gst_inclusive:
 			amount = amount + calculate_gst(amount)
+
+		if payment_option == "Annual" and self.annual_discount:
+			amount -= (
+				self.annual_discount_inr if team.country == "India" else self.annual_discount_usd
+			)
 
 		return amount
 
