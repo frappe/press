@@ -1,5 +1,5 @@
 <template>
-	<div class="sm:grid sm:grid-cols-2">
+	<div class="sm:grid sm:grid-cols-2 gap-4">
 		<Card title="Settings">
 			<!--<ListItem
 				v-if="props.site.status !== 'Pending'"
@@ -36,6 +36,14 @@
 				</template>
 			</ListItem>
 		</Card>
+		<Card title="Apps" v-if="hasWhitelistedApps">
+			<ListItem v-for="app in whitelistedApps" :title="app.title" :subtitle="app.name">
+				<template v-slot:actions v-if="this.site.status == 'Active'">
+					<Button v-if="!app.installed" @click="() => installApp(app.name)" class="shrink-0">Install</Button>
+					<Button v-else @click="() => uninstallApp(app.name)" class="shrink-0">Uninstall</Button>
+				</template>
+			</ListItem>
+		</Card>
 	</div>
 </template>
 
@@ -45,8 +53,25 @@ export default {
 	props: ['site', 'subName'],
 	data() {
 		return {
-			dialogOpen: true
+			dialogOpen: true,
+			hasWhitelistedApps: false,
+			whitelistedApps: []
 		};
+	},
+	resources: {
+		whitelisted_apps() {
+			return {
+				method: 'press.api.saas.whitelisted_apps',
+				params: {
+					name: this.subName,
+				},
+				auto: true,
+				onSuccess(result) {
+					this.hasWhitelistedApps = result.length > 0;
+					this.whitelistedApps = result;
+				}
+			}
+		}
 	},
 	methods: {
 		onDeactivateClick() {
@@ -69,6 +94,22 @@ export default {
 				actionType: 'primary',
 				action: () => this.activate()
 			});
+		},
+		installApp(app) {
+			return this.$call('press.api.saas.install_whitelisted_app', {
+				name: this.site.name,
+				app: app
+			}).then(() => {
+				setTimeout(() => window.location.reload(), 1000);
+			})
+		},
+		uninstallApp(app) {
+			return this.$call('press.api.saas.uninstall_whitelisted_app', {
+				name: this.site.name,
+				app: app
+			}).then(() => {
+				setTimeout(() => window.location.reload(), 1000);
+			})
 		},
 		deactivate() {
 			return this.$call('press.api.saas.deactivate', {

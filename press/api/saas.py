@@ -353,6 +353,39 @@ def deactivate(name):
 	subscription.deactivate()
 
 
+@frappe.whitelist()
+@protected("Saas App Subscription")
+def whitelisted_apps(name):
+	app, site = frappe.db.get_value("Saas App Subscription", name, ["app", "site"])
+	apps = [
+		_app["app"]
+		for _app in frappe.get_doc("Saas Settings", app).as_dict()["whitelisted_apps"]
+	]
+
+	if apps:
+		installed_apps = [
+			_app["app"] for _app in frappe.get_doc("Site", site).as_dict()["apps"]
+		]
+		apps = [
+			_app.update({"installed": _app.name in installed_apps})
+			for _app in frappe.get_all("App", ["name", "title"], {"name": ("in", apps)})
+		]
+
+	return apps
+
+
+@frappe.whitelist()
+@protected("Site")
+def install_whitelisted_app(name, app):
+	frappe.get_doc("Site", name).install_app(app)
+
+
+@frappe.whitelist()
+@protected("Site")
+def uninstall_whitelisted_app(name, app):
+	frappe.get_doc("Site", name).uninstall_app(app)
+
+
 # ------------------------------- ONBOARDING API -------------------------------#
 
 
