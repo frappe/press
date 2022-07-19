@@ -257,14 +257,14 @@ def consume_partner_credits(team, amount, subscription, new_plan):
 
 @frappe.whitelist()
 @protected("Saas App Subscription")
-def change_plan(name, new_plan, option, partner_credits):
+def change_plan(name, new_plan, payment_option, partner_credits):
 	"""
 	return: Payment intent if prepaid else Payment type
 	"""
 	team = get_current_team(True)
 	subscription = frappe.get_doc("Saas App Subscription", name)
 	saas_plan = frappe.get_doc("Saas App Plan", new_plan["name"])
-	amount = saas_plan.get_total_amount(option)
+	amount = saas_plan.get_total_amount(payment_option)
 
 	# Partner Credits
 	if team.payment_mode == "Partner Credits" and partner_credits:
@@ -277,7 +277,7 @@ def change_plan(name, new_plan, option, partner_credits):
 			int(amount),
 			subscription.app,
 			"prepaid_saas",
-			option,
+			payment_option,
 			new_plan["name"],
 			subscription.name,
 		)
