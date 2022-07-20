@@ -1,5 +1,5 @@
 # Copyright (c) 2020, Frappe Technologies Pvt. Ltd. and Contributors
-# Proprietary License. See license.txt
+# For license information, please see license.txt
 
 
 from math import ceil

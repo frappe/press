@@ -1,6 +1,6 @@
 """Add domains key in press's site configuration (No agent job)."""
 # Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and Contributors
-# Proprietary License. See license.txt
+# For license information, please see license.txt
 
 
 from itertools import groupby

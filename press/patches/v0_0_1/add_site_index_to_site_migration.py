@@ -1,5 +1,5 @@
 # Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and Contributors
-# Proprietary License. See license.txt
+# For license information, please see license.txt
 
 
 import frappe
