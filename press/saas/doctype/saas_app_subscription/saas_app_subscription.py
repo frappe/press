@@ -44,17 +44,21 @@ class SaasAppSubscription(Document):
 			{"key": f"sk_{self.app}", "value": self.secret_key, "type": "String"},
 		]
 
-		if self.app == "erpnext_smb":
+		if "email_delivery_service" in [
+			_app["app"] for _app in frappe.get_doc("Saas Settings", self.app).as_dict()["apps"]
+		]:
 			new_config.extend(
 				[
 					{"key": "sk_email_delivery_service", "value": self.secret_key},
-					{"key": "plan", "value": self.initial_plan or "Free"},
 					{"key": "mail_login", "value": "example@gmail.com", "type": "String"},
 					{"key": "mail_password", "value": "password", "type": "String"},
 					{"key": "mail_port", "value": 587, "type": "Number"},
 					{"key": "mail_server", "value": "smtp.gmail.com", "type": "String"},
 				]
 			)
+
+		if self.app == "erpnext_smb":
+			new_config.append({"key": "plan", "value": self.initial_plan or "Free"})
 
 		site_doc.update_site_config(new_config)
 
