@@ -9,7 +9,7 @@ app_description = "Managed Frappe Hosting"
 app_icon = "octicon octicon-rocket"
 app_color = "grey"
 app_email = "aditya@frappe.io"
-app_license = "Proprietary"
+app_license = "GNU Affero General Public License v3.0"
 version = app_version
 
 # Includes in <head>
