@@ -3,6 +3,7 @@
 	"private": true,
 	"scripts": {
 		"dev": "cd dashboard && yarn dev",
+		"test": "cd dashboard && yarn test",
 		"watch": "yarn dev",
 		"build": "NODE_ENV=production yarn run build-all",
 		"build-all": "yarn run build-app && yarn run build-email-css && yarn run build-marketplace-css",
