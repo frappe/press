@@ -215,7 +215,7 @@ def app(installation, owner, repository, branch):
 	title = None
 	reason_for_invalidation = ""
 
-	if "setup.py" in tree and "requirements.txt" in tree:
+	if "setup.py" in tree and (("requirements.txt" in tree) or ("pyproject.toml" in tree)):
 		for directory, files in tree.items():
 			if files and ("hooks.py" in files) and ("patches.txt" in files):
 				app_name = directory
@@ -236,7 +236,7 @@ def app(installation, owner, repository, branch):
 				)
 	else:
 		reason_for_invalidation = (
-			f"Files {frappe.bold('setup.py or requirements.txt')} does not exist in app"
+			f"Files {frappe.bold('setup.py or requirements.txt/pyproject.toml')} does not exist in app"
 			" directory."
 		)
 
