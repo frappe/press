@@ -41,7 +41,7 @@ SSL
 ### Updates
 
 
-### Arbitrary Bebcnh COmmands
+### Arbitrary Bench Commands
 <!-- ## Bench Management
 
 
