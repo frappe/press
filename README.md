@@ -1,36 +1,60 @@
 ## Press
 
-Managed Frappe Hosting
-
-## m2c
-
-> Journey of a thousand PRs begins with a single typo fix!
+This is `press`, a Frappe custom app that runs Frappe Cloud. This app manages infrastructure, subscription, marketplace, SaaS and much more.
 
 > press: "I have a brother, without which I cannot live, agent"
 
-## Some other points that we should cover here
+The other half of the Frappe Cloud infrastructure is [agent](https://github.com/frappe/agent). Which is a flask application that runs on every server in a typical cluster and carries out tasks on HTTP requests. Creating a new site, installing an app, updating a site, creating a bench and everything in between is just a request (`Agent Job`) away.
 
-* Prerequisites: Docker, cert-bot, amazon route 53, Digital Ocean Registry for uploading docker images etc.
+> Note that, this README is in a very early WIP state and only covers a tiny bit of FC. More to come!
 
-* Core doctypes: Servers, SSL Certs, Site, RG, DC, Bench
+## Typical FC Cluster
 
-* Setting up core servers
+![FC Cluster Diagram](.github/images/fc-cluster.png)
 
-* *** The Nginx Setup: How the `hello.frappe.cloud` in browser reaches that particular server and bench and how the request is served from the docker container.
+## Prerequisites
 
-* Link to dashboard README
+- Frappe Bench (https://github.com/frappe/bench)
+- Docker
+- Certbot with route53 plugin
+- AWS account (for route53 & S3)
+- Digital Ocean account (for [container registry](https://www.digitalocean.com/products/container-registry))
 
-* Cloning the app and link to "internal" docs
+## Local Setup
 
-* Running tests
+You can find a detailed walkthough for setting up a local FC cluster [here](https://frappecloud.com/docs/local-fc-setup).
 
-* The main components: Marketplace, SaaS etc. (Created a README for them separately)
+## Some Core DocTypes
 
-* Billing: How subscriptions are handled, The Prepaid credits functionality
+- Server
+- Database Server
+- Proxy Server
+- Site
+- Release Group
+- Deploy Candidate
+- Bench
+- App
+- App Source
+- App Release
+- TLS Certificate
 
-* Our Razorpay setup for prepaid credits
+## The Front-end
 
-* Bonus: Log, Monitor, Analytics Server
+You can read more about the VueJS frontend for Frappe Cloud [here](./dashboard/README.md).
+
+## Contributing
+
+> Journey of a thousand PRs begins with a single typo fix!
+
+You can contribute in many ways, some of which are:
+
+1. Reporting Issues: If you find a bug, typo etc. Feel free to raise an issue and we will take it from there.
+
+2. Feature PRs: You can start by creating an issue with a feature proposal, we can discuss wether we should go ahead with it or not.
+
+3. Give us a star!
+
+4. Documentation
 
 #### License
 
