@@ -954,10 +954,16 @@ class Site(Document):
 
 	@frappe.whitelist()
 	def suspend(self, reason=None):
+		site_status = (
+			"suspended_saas"
+			if self.standby_for and self.standby_for != "erpnext"
+			else "suspended"
+		)
+		print(site_status)
 		log_site_activity(self.name, "Suspend Site", reason)
 		self.status = "Suspended"
 		self.update_site_config({"maintenance_mode": 1})
-		self.update_site_status_on_proxy("suspended")
+		self.update_site_status_on_proxy(site_status)
 		self.deactivate_app_subscriptions()
 
 	def deactivate_app_subscriptions(self):
