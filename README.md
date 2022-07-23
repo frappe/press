@@ -58,4 +58,4 @@ You can contribute in many ways, some of which are:
 
 #### License
 
-GNU Affero General Public License v3.0
+[GNU Affero General Public License v3.0](https://github.com/frappe/press/blob/master/license.txt)
