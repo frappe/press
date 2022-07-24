@@ -1,0 +1,18 @@
+exclude: 'node_modules|.git'
+default_stages: [commit]
+fail_fast: false
+
+repos:
+  - repo: https://github.com/adityahase/black
+    rev: 9cb0a69f4d0030cdf687eddf314468b39ed54119
+    hooks:
+      - id: black
+        additional_dependencies: ['click==8.0.4']
+
+  - repo: https://github.com/pycqa/flake8
+    rev: 3.9.2
+    hooks:
+      - id: flake8
+        args: [--ignore, 'W191,E501,W503']
+        additional_dependencies: ['flake8==3.9.2']
+
