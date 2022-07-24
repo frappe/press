@@ -46,6 +46,12 @@ const trialEndsText = computed(() => {
 	return utils.methods.trialEndsInDaysText(props.site.trial_end_date);
 });
 
+const isTrialEnded = computed(() => {
+	let curr = new Date();
+	let trial_end_date = new Date(Date.parse(props.site.trial_end_date));
+	return curr > trial_end_date;
+});
+
 const marketplacePromotionalBanners = useResource({
 	method: 'press.api.marketplace.get_promotional_banners',
 	auto: true
@@ -86,8 +92,10 @@ const marketplacePromotionalBanners = useResource({
 				</template>
 			</Alert>
 		</div>
-
-		<Alert title="Trial" v-if="isInTrial && $account.needsCard">
+		<Alert title="Trial" v-if="isTrialEnded">
+			Your trial has ended. Select a plan from the Plan section below to continue using your site.
+		</Alert>
+		<Alert title="Trial" v-if="isInTrial && $account.needsCard && !isTrialEnded">
 			Your trial ends {{ trialEndsText }} after which your site will get
 			suspended. Add your billing information to avoid suspension.
 
@@ -97,7 +105,7 @@ const marketplacePromotionalBanners = useResource({
 				</Button>
 			</template>
 		</Alert>
-		<Alert title="Trial" v-if="isInTrial && $account.hasBillingInfo">
+		<Alert title="Trial" v-if="isInTrial && $account.hasBillingInfo && !isTrialEnded">
 			Your trial ends {{ trialEndsText }} after which your site will get
 			suspended. Select a plan from the Plan section below to avoid suspension.
 		</Alert>
