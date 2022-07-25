@@ -36,7 +36,11 @@ const limitExceeded = computed(() => {
 });
 
 const isInTrial = computed(() => {
-	return props.site?.trial_end_date;
+	let curr = new Date();
+	let trial_end_date = new Date(Date.parse(props.site.trial_end_date));
+	if (trial_end_date > curr) 
+		return props.site?.trial_end_date;
+	return false;
 });
 
 const trialEndsText = computed(() => {
@@ -86,7 +90,9 @@ const marketplacePromotionalBanners = useResource({
 				</template>
 			</Alert>
 		</div>
-
+		<Alert title="Trial" v-if="!isInTrial">
+			Your trial has ended. Select a plan from the Plan section below to continue using your site.
+		</Alert>
 		<Alert title="Trial" v-if="isInTrial && $account.needsCard">
 			Your trial ends {{ trialEndsText }} after which your site will get
 			suspended. Add your billing information to avoid suspension.

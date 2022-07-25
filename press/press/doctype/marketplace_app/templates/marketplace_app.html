@@ -2,6 +2,10 @@
 {%- from "templates/marketplace/macros.html" import button, link, breadcrumbs, badge_blue, badge_green,
 five_star_rating -%}
 
+{%- block title -%}
+<title>{{ app.title }} - Frappe Cloud Marketplace</title>
+{%- endblock -%}
+
 {%- block body -%}
 <div>
 	<div class="px-4 sm:px-8">
