@@ -5,7 +5,12 @@
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		{% include "templates/includes/meta_block.html" %}
-		<title>Frappe Cloud Marketplace</title>
+
+		{%- block title -%} {%- endblock -%}
+		{% if not self.title() %}
+			<title>Frappe Cloud Marketplace</title>
+		{% endif %}
+
 		<link rel="stylesheet" href="/assets/press/css/marketplace.css" />
 		<link rel="shortcut icon" href="/assets/press/dashboard/favicon.png" type="image/x-icon">
 		{{ head_html or "" }}
