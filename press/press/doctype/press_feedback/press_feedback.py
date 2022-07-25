@@ -7,5 +7,5 @@
 from frappe.model.document import Document
 
 
-class Feedback(Document):
+class PressFeedback(Document):
 	pass

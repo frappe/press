@@ -7,5 +7,5 @@
 import unittest
 
 
-class TestFeedback(unittest.TestCase):
+class TestPressFeedback(unittest.TestCase):
 	pass
