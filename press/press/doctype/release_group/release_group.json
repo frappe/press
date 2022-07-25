@@ -14,6 +14,7 @@
   "enabled",
   "default",
   "public",
+  "central_bench",
   "saas_bench",
   "saas_app",
   "section_break_7",
@@ -156,10 +157,16 @@
    "fieldtype": "Link",
    "label": "SaaS App",
    "options": "Saas App"
+  },
+  {
+   "default": "0",
+   "fieldname": "central_bench",
+   "fieldtype": "Check",
+   "label": "Central Bench"
   }
  ],
  "links": [],
- "modified": "2022-05-20 21:23:06.309616",
+ "modified": "2022-07-25 12:09:11.054459",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",
