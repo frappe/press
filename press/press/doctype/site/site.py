@@ -1222,11 +1222,9 @@ def process_new_site_job_update(job):
 	if updated_status != site_status:
 		if backup_tests:
 			frappe.db.set_value("Backup Restoration Test", backup_tests[0], "status", status_map[updated_status])
+			frappe.db.commit()
 
 		frappe.db.set_value("Site", job.site, "status", updated_status)
-	elif updated_status == site_status and backup_tests:
-		frappe.db.set_value("Backup Restoration Test", backup_tests[0], "status", status_map[updated_status])
-
 
 def process_archive_site_job_update(job):
 	other_job_type = {
@@ -1250,12 +1248,6 @@ def process_archive_site_job_update(job):
 	else:
 		updated_status = "Pending"
 
-	status_map = {
-		"Archived": "Success",
-		"Broken": "Failure",
-		"Pending": "Running"
-	}
-
 	site_status = frappe.get_value("Site", job.site, "status")
 	if updated_status != site_status:
 		frappe.db.set_value("Site", job.site, "status", updated_status)
@@ -1265,6 +1257,7 @@ def process_archive_site_job_update(job):
 			site_cleanup_after_archive(job.site)
 		elif updated_status == "Broken" and backup_tests:
 			frappe.db.set_value("Backup Restoration Test", backup_tests[0], "status", "Archive Failed")
+		frappe.db.commit()
 
 
 

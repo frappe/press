@@ -1,12 +1,9 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
 
-from press.press.audit import get_benches_in_server
-from press.press.doctype.server.server import Server
 from frappe.model.document import Document
-from press.agent import Agent
 from press.api.site import _new
-from typing import List, Dict
+from typing import Dict
 from random import choice
 import frappe
 
@@ -23,7 +20,7 @@ class BackupRestorationTest(Document):
 
 	def check_duplicate_test(self):
 		# check if another backup restoration is already running
-		backups = frappe.get_all("Backup Restoration Test", dict(status=("in",["Running", "Started"]), site=self.site, name=self.name), pluck="name")
+		backups = frappe.get_all("Backup Restoration Test", dict(status=("in",["Running", "Started"]), site=self.site, name=("!=", self.name)), pluck="name")
 		if backups:
 			frappe.throw(f"Backup Restoration Test for {self.site} is already running.")
 
@@ -39,11 +36,10 @@ class BackupRestorationTest(Document):
 		server = frappe.get_value("Site", self.site, "server")
 		try:
 			site_job = _new(site_dict, server)
-			# print(site_job)
 			self.test_site = site_job.get("site")
+			self.save()
 		except:
 			frappe.log_error("Site Creation Error")
-			# self.status = "Failed"
 
 def prepare_site(site: str) -> Dict:
 	doc = frappe.get_doc("Site", site)
@@ -52,7 +48,7 @@ def prepare_site(site: str) -> Dict:
 	backups = frappe.get_all("Site Backup", dict(status="Success", with_files=1, site=site, files_availability="Available", offsite=1), pluck="name")
 	backup = frappe.get_doc("Site Backup", backups[0])
 	files = {
-		"config": '', #json.dumps(doc.config), # frappe.get_site_config()
+		"config": '', # not necessary for test sites
 		"database": backup.remote_database_file,
 		"public": backup.remote_public_file,
 		"private": backup.remote_private_file

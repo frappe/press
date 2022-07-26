@@ -19,9 +19,7 @@ class BackupTest:
         servers = Server.get_all_primary_prod()
         for server in servers:
             benches = self.get_benches(server)
-            # print(benches)
             for bench in benches:
-                # print(frappe.get_all("Site", dict(status="Active", plan=("not in", self.trial_plans), bench=bench), pluck="name"))
                 site = choice(frappe.get_all("Site", dict(status="Active", plan=("not in", self.trial_plans), bench=bench), pluck="name"))
                 sites.append(site)
 
@@ -29,13 +27,12 @@ class BackupTest:
 
     def start(self):
         for site in self.sites:
-            # site_dict = perpare_site(site)
             try:
                 frappe.get_doc({
                     "doctype": "Backup Restoration Test",
                     "date": frappe.utils.now_datetime(),
                     "site": site,
-                    "status": "Running",
+                    "status": "Running"
                 }).insert()
             except:
                 frappe.log_error("Backup Restore Test insertion failed")
