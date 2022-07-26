@@ -1253,7 +1253,10 @@ def process_archive_site_job_update(job):
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 		if updated_status == "Archived":
 			if backup_tests:
-				frappe.db.set_value("Backup Restoration Test", backup_tests[0], "status", "Archive Successful")
+				frappe.db.set_value("Backup Restoration Test", backup_tests[0], {
+					"status": "Archive Successful",
+					"site_archived": 1
+				})
 			site_cleanup_after_archive(job.site)
 		elif updated_status == "Broken" and backup_tests:
 			frappe.db.set_value("Backup Restoration Test", backup_tests[0], "status", "Archive Failed")

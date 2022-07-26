@@ -26,9 +26,9 @@ class BackupRestorationTest(Document):
 
 	def check_duplicate_active_site(self):
 		# check if any active backup restoration test site is active
-		sites = frappe.get_all("Site", dict(status="Active", name=self.new_sitename), pluck="name")
+		sites = frappe.get_all("Site", dict(status="Active", name=self.test_site), pluck="name")
 		if sites:
-			frappe.throw(f"Site {self.new_sitename} is already active. Please archive the site first.")
+			frappe.throw(f"Site {self.test_site} is already active. Please archive the site first.")
 
 	def create_test_site(self) -> None:
 		self.status = "Running"
