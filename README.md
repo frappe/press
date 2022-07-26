@@ -50,7 +50,7 @@ You can contribute in many ways, some of which are:
 
 1. Reporting Issues: If you find a bug, typo etc. Feel free to raise an issue and we will take it from there.
 
-2. Feature PRs: You can start by creating an issue with a feature proposal, we can discuss wether we should go ahead with it or not.
+2. Feature PRs: You can start by creating an issue with a feature proposal, we can discuss whether we should go ahead with it or not.
 
 3. Give us a star!
 
