@@ -9,13 +9,13 @@
  "field_order": [
   "date",
   "status",
-  "site_archived",
   "column_break_3",
   "site",
   "test_site"
  ],
  "fields": [
   {
+   "default": "Today",
    "fieldname": "date",
    "fieldtype": "Date",
    "in_list_view": 1,
@@ -29,13 +29,8 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Pending\nRunning\nSuccess\nFailure\nUndelivered\nArchive Successful\nArchive Failed"
-  },
-  {
-   "default": "0",
-   "fieldname": "site_archived",
-   "fieldtype": "Check",
-   "label": "Test Site Archived"
+   "options": "Pending\nRunning\nSuccess\nFailure\nUndelivered\nArchive Successful\nArchive Failed",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_3",
@@ -53,12 +48,13 @@
    "fieldname": "test_site",
    "fieldtype": "Link",
    "label": "Test Site",
-   "options": "Site"
+   "options": "Site",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-07-25 12:02:28.181011",
+ "modified": "2022-07-27 10:51:47.263608",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Backup Restoration Test",

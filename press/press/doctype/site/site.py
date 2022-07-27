@@ -1246,7 +1246,9 @@ def process_archive_site_job_update(job):
 
 	# backup restoration test
 	backup_tests = frappe.get_all(
-		"Backup Restoration Test", dict(test_site=job.site, site_archived=0), pluck="name"
+		"Backup Restoration Test",
+		dict(test_site=job.site, status=("in", ("Success", "Archive Failed"))),
+		pluck="name",
 	)
 
 	if "Success" == first == second:
@@ -1264,7 +1266,7 @@ def process_archive_site_job_update(job):
 				frappe.db.set_value(
 					"Backup Restoration Test",
 					backup_tests[0],
-					{"status": "Archive Successful", "site_archived": 1},
+					{"status": "Archive Successful"},
 				)
 			site_cleanup_after_archive(job.site)
 		elif updated_status == "Broken" and backup_tests:

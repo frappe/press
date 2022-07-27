@@ -74,7 +74,9 @@ class BackupTest:
 
 def archive_backup_test_sites():
 	backup_tests = frappe.get_all(
-		"Backup Restoration Test", dict(site_archived=0), pluck="test_site"
+		"Backup Restoration Test",
+		dict(status=("in", ("Archive Failed", "Success"))),
+		pluck="test_site",
 	)
 	if backup_tests:
 		for test_site in backup_tests:
