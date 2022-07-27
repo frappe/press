@@ -38,6 +38,7 @@ class PayoutOrder(Document):
 			row.tax = row.tax or 0.0
 			row.commission = row.commission or 0.0
 			row.total_amount = invoice_item.amount
+			row.site = invoice_item.site
 			row.currency = invoice.currency
 			row.gateway_fee = 0.0
 
