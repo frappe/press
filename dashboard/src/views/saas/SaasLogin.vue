@@ -50,7 +50,7 @@
 						</span>
 					</div>
 				</div>
-				<router-link class="text-center text-base" to="/signup">
+				<router-link class="text-center text-base" to="/saas/signup">
 					Sign up for a new account
 				</router-link>
 			</template>

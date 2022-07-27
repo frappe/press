@@ -10,6 +10,16 @@ export default [
 		props: true
 	},
 	{
+		path: '/saas/signup',
+		name: 'SaasSignup',
+		component: () =>
+			import(/* webpackChunkName: "signup" */ '../views/saas/SaasSignup.vue'),
+		meta: {
+			isLoginPage: true
+		},
+		props: true
+	},
+	{
 		path: '/saas/remote-login',
 		name: 'RemoteLogin',
 		component: () => import('../views/saas/RemoteLogin.vue'),
