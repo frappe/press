@@ -1200,6 +1200,10 @@ def process_new_site_job_update(job):
 		filters={"job_type": ("in", other_job_types), "site": job.site},
 	)[0].status
 
+	backup_tests = frappe.get_all(
+		"Backup Restoration Test", dict(test_site=job.site, status="Running"), pluck="name"
+	)
+
 	if "Success" == first == second:
 		updated_status = "Active"
 	elif "Failure" in (first, second):
@@ -1209,8 +1213,21 @@ def process_new_site_job_update(job):
 	else:
 		updated_status = "Pending"
 
+	status_map = {
+		"Active": "Success",
+		"Broken": "Failure",
+		"Installing": "Running",
+		"Pending": "Running",
+	}
+
 	site_status = frappe.get_value("Site", job.site, "status")
 	if updated_status != site_status:
+		if backup_tests:
+			frappe.db.set_value(
+				"Backup Restoration Test", backup_tests[0], "status", status_map[updated_status]
+			)
+			frappe.db.commit()
+
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 
 
@@ -1227,6 +1244,13 @@ def process_archive_site_job_update(job):
 		filters={"job_type": other_job_type, "site": job.site},
 	)[0].status
 
+	# backup restoration test
+	backup_tests = frappe.get_all(
+		"Backup Restoration Test",
+		dict(test_site=job.site, status=("in", ("Success", "Archive Failed"))),
+		pluck="name",
+	)
+
 	if "Success" == first == second:
 		updated_status = "Archived"
 	elif "Failure" in (first, second):
@@ -1238,7 +1262,18 @@ def process_archive_site_job_update(job):
 	if updated_status != site_status:
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 		if updated_status == "Archived":
+			if backup_tests:
+				frappe.db.set_value(
+					"Backup Restoration Test",
+					backup_tests[0],
+					{"status": "Archive Successful"},
+				)
 			site_cleanup_after_archive(job.site)
+		elif updated_status == "Broken" and backup_tests:
+			frappe.db.set_value(
+				"Backup Restoration Test", backup_tests[0], "status", "Archive Failed"
+			)
+		frappe.db.commit()
 
 
 def process_install_app_site_job_update(job):
