@@ -105,6 +105,7 @@ class MarketplaceAppSubscription(Document):
 			amount=amount,
 			subscription=self.name,
 			interval=self.interval,
+			site=self.site,
 		)
 		usage_record.insert()
 		usage_record.submit()
