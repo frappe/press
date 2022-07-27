@@ -14,7 +14,7 @@
 			</Button>
 			<Dialog v-model="showBackupDialog" title="Cannot Backup Site">
 				<p class="text-base">
-					You cannot take more than 3 backups after site suspension 
+					You cannot take more than 3 backups after site suspension
 				</p>
 				<template v-slot:actions>
 					<div>
@@ -91,7 +91,7 @@ export default {
 				},
 				onSuccess: () => {
 					this.$resources.backups.reload();
-				}, 
+				},
 				onError: () => {
 					this.showDialog();
 				}
