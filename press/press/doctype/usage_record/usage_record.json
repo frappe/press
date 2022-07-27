@@ -22,7 +22,8 @@
   "column_break_13",
   "payout",
   "remark",
-  "amended_from"
+  "amended_from",
+  "site"
  ],
  "fields": [
   {
@@ -123,12 +124,19 @@
    "fieldname": "payout",
    "fieldtype": "Data",
    "label": "Saas Developer Payout"
+  },
+  {
+   "fieldname": "site",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Site",
+   "options": "Site"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2022-06-07 11:11:53.405754",
+ "modified": "2022-07-27 16:12:59.909930",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Usage Record",

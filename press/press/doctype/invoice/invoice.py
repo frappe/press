@@ -327,6 +327,7 @@ class Invoice(Document):
 					"plan": usage_record.plan,
 					"quantity": 0,
 					"rate": usage_record.amount,
+					"site": usage_record.site,
 				},
 			)
 
