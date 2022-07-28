@@ -8,7 +8,7 @@
       - clamav
       - clamav-base
     state:
-      present
+      latest
 
 - name: Configure freshclam
   replace:
