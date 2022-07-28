@@ -766,6 +766,7 @@ def get_payouts_list() -> List[Dict]:
 			"net_total_inr",
 			"net_total_usd",
 		],
+		order_by="due_date desc",
 	)
 
 	return payouts
