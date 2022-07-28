@@ -10,6 +10,7 @@
   "document_type",
   "document_name",
   "plan",
+  "quantity",
   "rate",
   "column_break_5",
   "total_amount",
@@ -107,12 +108,17 @@
    "in_list_view": 1,
    "label": "Site",
    "options": "Site"
+  },
+  {
+   "fieldname": "quantity",
+   "fieldtype": "Float",
+   "label": "quantity"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2022-07-28 05:51:34.288661",
+ "modified": "2022-07-28 06:46:22.107482",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Payout Order Item",
