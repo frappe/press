@@ -8,7 +8,7 @@ const payouts = useResource({
 </script>
 
 <template>
-	<Card title="Payouts">
+	<Card title="Payouts" subtitle="Look what you have earned">
 		<Button v-if="payouts.loading" :loading="true">Loading</Button>
 
 		<div v-else-if="payouts.data && payouts.data.length > 0">
