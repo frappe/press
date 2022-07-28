@@ -22,7 +22,8 @@
   "section_break_9",
   "standby_pool_size",
   "standby_queue_size",
-  "enable_pooling"
+  "enable_pooling",
+  "enable_hybrid_pools"
  ],
  "fields": [
   {
@@ -116,11 +117,17 @@
    "fieldtype": "Table",
    "label": "Whitelisted Apps",
    "options": "ERPNext App"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_hybrid_pools",
+   "fieldtype": "Check",
+   "label": "Enable Hybrid Pools"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-07-27 19:08:42.016493",
+ "modified": "2022-07-28 12:56:03.863679",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Saas Settings",
