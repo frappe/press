@@ -82,7 +82,8 @@ export default {
 	data: () => ({
 		tabs: [
 			{ label: 'My Apps', route: '/marketplace/apps' },
-			{ label: 'Publisher Profile', route: '/marketplace/publisher-profile' }
+			{ label: 'Publisher Profile', route: '/marketplace/publisher-profile' },
+			{ label: 'Payouts', route: '/marketplace/payouts' }
 		],
 		showAddAppDialog: false,
 		selectedApp: null

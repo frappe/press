@@ -21,14 +21,21 @@ export default [
 				path: 'publisher-profile',
 				component: () =>
 					import(
-						/* webpackChunkName: "marketplace" */ '../views/MarketplacePublisherProfile.vue'
+						/* webpackChunkName: "marketplace" */ '../views/marketplace/MarketplacePublisherProfile.vue'
 					)
 			},
 			{
 				path: 'apps',
 				component: () =>
 					import(
-						/* webpackChunkName: "marketplace" */ '../views/MarketplaceApps.vue'
+						/* webpackChunkName: "marketplace" */ '../views/marketplace/MarketplaceApps.vue'
+					)
+			},
+			{
+				path: 'payouts',
+				component: () =>
+					import(
+						/* webpackChunkName: "marketplace" */ '../views/marketplace/MarketplacePayouts.vue'
 					)
 			}
 		]
