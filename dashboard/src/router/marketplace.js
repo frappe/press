@@ -32,11 +32,12 @@ export default [
 					)
 			},
 			{
-				path: 'payouts',
+				path: 'payouts/:payoutOrderName?',
 				component: () =>
 					import(
 						/* webpackChunkName: "marketplace" */ '../views/marketplace/MarketplacePayouts.vue'
-					)
+					),
+				props: true
 			}
 		]
 	},
