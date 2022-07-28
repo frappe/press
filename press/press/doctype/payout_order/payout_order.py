@@ -110,6 +110,8 @@ def create_payout_order_from_invoice_items(
 				"document_name": invoice_item.document_name,
 				"rate": invoice_item.rate,
 				"plan": invoice_item.plan,
+				"quantity": invoice_item.quantity,
+				"site": invoice_item.site,
 			},
 		)
 

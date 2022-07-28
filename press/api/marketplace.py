@@ -769,3 +769,23 @@ def get_payouts_list() -> List[Dict]:
 	)
 
 	return payouts
+
+
+@frappe.whitelist()
+def get_payout_details(name: str) -> Dict:
+	frappe.get_all(
+		"Payout Order Item",
+		filters={"parent": name},
+		fields=[
+			"name",
+			"document_name",
+			"site",
+			"rate",
+			"plan",
+			"total_amount",
+			"currency",
+			"net_amount",
+			"gateway_fee",
+			"quantity",
+		],
+	)
