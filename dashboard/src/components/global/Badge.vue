@@ -30,7 +30,8 @@ export default {
 					Published: 'green',
 					Approved: 'green',
 					Deployed: 'green',
-					Expired: 'red'
+					Expired: 'red',
+					Paid: 'green'
 				}[this.status];
 			}
 			let cssClasses = {

@@ -750,3 +750,22 @@ def create_new_plan(app: str, data: Dict) -> Plan:
 			"name": app + f"-plan-{frappe.utils.random_string(6)}",
 		}
 	).insert(ignore_permissions=True)
+
+
+@frappe.whitelist()
+def get_payouts_list() -> List[Dict]:
+	team = get_current_team()
+	payouts = frappe.get_all(
+		"Payout Order",
+		filters={"recipient": team},
+		fields=[
+			"name",
+			"status",
+			"due_date",
+			"mode_of_payment",
+			"net_total_inr",
+			"net_total_usd",
+		],
+	)
+
+	return payouts
