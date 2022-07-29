@@ -13,9 +13,6 @@ const payout = useResource({
 	auto: true,
 	params: {
 		name: props.payoutOrderName
-	},
-	onSuccess(d) {
-		console.log(d);
 	}
 });
 </script>
