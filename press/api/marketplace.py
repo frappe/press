@@ -774,7 +774,7 @@ def get_payouts_list() -> List[Dict]:
 
 @frappe.whitelist()
 def get_payout_details(name: str) -> Dict:
-	return frappe.get_all(
+	order_items = frappe.get_all(
 		"Payout Order Item",
 		filters={"parent": name},
 		fields=[
@@ -789,4 +789,21 @@ def get_payout_details(name: str) -> Dict:
 			"gateway_fee",
 			"quantity",
 		],
+		order_by="idx",
 	)
+
+	payout_order = frappe.db.get_value(
+		"Payout Order",
+		name,
+		["status", "due_date", "mode_of_payment", "net_total_inr", "net_total_usd"],
+		as_dict=True,
+	)
+
+	grouped_items = {"usd_items": [], "inr_items": [], **payout_order}
+	for item in order_items:
+		if item.currency == "INR":
+			grouped_items["inr_items"].append(item)
+		else:
+			grouped_items["usd_items"].append(item)
+
+	return grouped_items
