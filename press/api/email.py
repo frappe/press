@@ -65,12 +65,18 @@ def get_analytics(**data):
 	year = datetime.now().year
 	last_day = calendar.monthrange(year, int(month))[1]
 	status = data["status"]
+	site = data["site"]
+	subscription_key = data["key"]
+
+	for value in (site, subscription_key):
+		if not value or not isinstance(value, str):
+			frappe.throw("Invalid Request")
 
 	result = frappe.get_all(
 		"Mail Log",
 		filters={
-			"site": data["site"],
-			"subscription_key": data["key"],
+			"site": site,
+			"subscription_key": subscription_key,
 			"status": ["like", f"%{status}%"],
 			"date": ["between", [f"{month}-01-{year}", f"{month}-{last_day}-{year}"]],
 		},
@@ -86,6 +92,10 @@ def validate_plan(secret_key):
 	check if subscription is active on marketplace and valid
 	#TODO: get activation date
 	"""
+
+	if not secret_key or not isinstance(secret_key, str):
+		frappe.throw("Invalid Secret Key")
+
 	if frappe.db.exists("Saas App Subscription", {"secret_key": secret_key}):
 		return True
 

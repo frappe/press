@@ -370,6 +370,9 @@ def reset_password(key, password):
 
 @frappe.whitelist(allow_guest=True)
 def get_user_for_reset_password_key(key):
+	if not key or not isinstance(key, str):
+		frappe.throw(_("Invalid Key"))
+
 	return frappe.db.get_value("User", {"reset_password_key": key}, "name")
 
 

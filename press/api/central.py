@@ -166,12 +166,15 @@ def options_for_regional_data(key):
 
 @frappe.whitelist(allow_guest=True)
 def get_trial_end_date(site):
+	if not site or not isinstance(site, str):
+		frappe.throw("Invalid Site")
+
 	return frappe.db.get_value("Site", site, "trial_end_date")
 
 
 @frappe.whitelist(allow_guest=True)
 def send_login_link(site):
-	if not frappe.db.exists("Site", site):
+	if not site or not isinstance(site, str) or not frappe.db.exists("Site", site):
 		frappe.throw("Invalid site")
 
 	from press.api.account import send_login_link as send_link
