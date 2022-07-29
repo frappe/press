@@ -22,13 +22,14 @@ class BackupTest:
 		for server in servers:
 			benches = self.get_benches(server)
 			for bench in benches:
-				site = choice(
-					frappe.get_all(
-						"Site",
-						dict(status="Active", plan=("not in", self.trial_plans), bench=bench),
-						pluck="name",
-					)
+				site_list = frappe.get_all(
+					"Site",
+					dict(status="Active", plan=("not in", self.trial_plans), bench=bench),
+					pluck="name",
 				)
+				if not site_list:
+					continue
+				site = choice(site_list)
 				sites.append(site)
 
 		return sites
