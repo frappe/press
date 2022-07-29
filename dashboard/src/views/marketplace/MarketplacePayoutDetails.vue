@@ -88,7 +88,8 @@ const payout = useResource({
 				<tbody>
 					<tr v-for="(row, i) in payout.data.inr_items" :key="row.idx">
 						<td class="border-b py-3 pr-2">
-							{{ row.description || row.document_name }} {{ row.site }}
+							{{ row.description || row.document_name }} -
+							<strong class="font-semibold">{{ row.site }}</strong>
 						</td>
 						<td class="border-b py-3 pr-2 text-right">
 							₹{{ row.rate }} x {{ row.quantity }}
