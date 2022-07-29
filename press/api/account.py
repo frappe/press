@@ -262,6 +262,10 @@ def set_country(country):
 
 def get_account_request_from_key(key):
 	"""Find Account Request using `key` in the past 4 hours"""
+
+	if not key or not isinstance(key, str):
+		frappe.throw(_("Invalid Key"))
+
 	hours = 4
 	result = frappe.db.get_all(
 		"Account Request",
