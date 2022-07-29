@@ -29,6 +29,8 @@ class SaasSitePool:
 
 	def create_one(self):
 		try:
+			if frappe.db.get_value("Saas Settings", self.app, "enable_hybrid_pools"):
+				self.create_hybrid_pool_site()
 			domain = get_saas_domain(self.app)
 			bench = get_saas_bench(self.app)
 			subdomain = self.get_subdomain()
@@ -54,6 +56,36 @@ class SaasSitePool:
 				apps=apps,
 			)
 			raise
+
+	def create_hybrid_pool_site(self):
+		# create a Site according to Site Rules child table in each Hybrid Saas Pool
+		for pool_name in frappe.get_all("Hybrid Saas Pool", {"app": self.app}, pluck="name"):
+			pool_apps = []
+			# parse rules
+			for rule in frappe.get_doc("Hybrid Saas Pool", pool_name).as_dict()["site_rules"]:
+				# only has app rules for now, will add site config and other rules later
+				if rule.rule_type == "App":
+					pool_apps.append(rule.app)
+
+			# apply rules and create site
+			domain = get_saas_domain(self.app)
+			bench = get_saas_bench(self.app)
+			subdomain = self.get_subdomain()
+			apps = get_saas_apps(self.app)
+			apps.extend(pool_apps)
+			frappe.get_doc(
+				{
+					"doctype": "Site",
+					"subdomain": subdomain,
+					"domain": domain,
+					"is_standby": True,
+					"hybrid_saas_pool": pool_name,
+					"standby_for": self.app,
+					"team": "Administrator",
+					"bench": bench,
+					"apps": [{"app": app} for app in apps],
+				}
+			).insert()
 
 	def get_subdomain(self):
 		return make_autoname("standby-.########")
