@@ -1,9 +1,7 @@
 import json
 import frappe
 
-
-class InvalidSecretKeyError(Exception):
-	http_status_code = 401
+from press.api.developer import raise_invalid_key_error
 
 
 class SaasApiHandler:
@@ -13,12 +11,16 @@ class SaasApiHandler:
 
 	def validate_secret_key(self):
 		"""Validate secret_key and set app subscription name and doc"""
+
+		if not self.secret_key or not isinstance(self.secret_key, str):
+			raise_invalid_key_error()
+
 		app_subscription_name = frappe.db.exists(
 			"Saas App Subscription", {"secret_key": self.secret_key}
 		)
 
 		if not app_subscription_name:
-			frappe.throw("Please provide a valid secret key.", InvalidSecretKeyError)
+			raise_invalid_key_error()
 
 		self.app_subscription_name = app_subscription_name
 		self.set_subscription_doc()

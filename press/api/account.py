@@ -262,6 +262,10 @@ def set_country(country):
 
 def get_account_request_from_key(key):
 	"""Find Account Request using `key` in the past 4 hours"""
+
+	if not key or not isinstance(key, str):
+		frappe.throw(_("Invalid Key"))
+
 	hours = 4
 	result = frappe.db.get_all(
 		"Account Request",
@@ -366,6 +370,9 @@ def reset_password(key, password):
 
 @frappe.whitelist(allow_guest=True)
 def get_user_for_reset_password_key(key):
+	if not key or not isinstance(key, str):
+		frappe.throw(_("Invalid Key"))
+
 	return frappe.db.get_value("User", {"reset_password_key": key}, "name")
 
 

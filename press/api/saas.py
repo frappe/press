@@ -321,6 +321,10 @@ def login_via_token(token):
 	"""
 	return: success if login succeeds
 	"""
+
+	if not token or not isinstance(token, str):
+		frappe.throw("Invalid Token")
+
 	try:
 		doc = frappe.get_doc(
 			"Saas Remote Login",
