@@ -597,19 +597,49 @@ def create_or_rename_saas_site(app, account_request):
 	frappe.set_user("Administrator")
 
 	try:
-		pooled_site = get_pooled_saas_site(app)
+		enable_hybrid_pools = frappe.db.get_value("Saas Settings", app, "enable_hybrid_pools")
+		hybrid_saas_pool = (
+			get_hybrid_saas_pool(account_request) if enable_hybrid_pools else ""
+		)
+
+		pooled_site = get_pooled_saas_site(app, hybrid_saas_pool)
 		if pooled_site:
-			# Rename a standby site
 			SaasSite(site=pooled_site, app=app).rename_pooled_site(account_request)
 		else:
-			# Create a new site if pooled sites aren't available
-			saas_site = SaasSite(account_request=account_request, app=app).insert(
-				ignore_permissions=True
-			)
+			saas_site = SaasSite(
+				account_request=account_request, app=app, hybrid_saas_pool=hybrid_saas_pool
+			).insert(ignore_permissions=True)
 			saas_site.create_subscription(get_saas_site_plan(app))
 	finally:
 		frappe.set_user(current_user)
 		frappe.session.data = current_session_data
+
+
+def get_hybrid_saas_pool(account_request):
+	"""
+	1. Get all hybrid pools and their rules
+	2. Filter based on rules and return Hybrid pool
+	3. Returns the first rule match
+	return: The hybrid pool name that site belongs to based on the Account Request
+	conditions
+	"""
+	hybrid_pool = ""
+	all_pools = frappe.get_all(
+		"Hybrid Saas Pool", {"app": account_request.saas_app}, pluck="name"
+	)
+	ar_rules = frappe.get_all(
+		"Account Request Rules",
+		{"parent": ("in", all_pools)},
+		["parent", "field", "condition", "value"],
+		group_by="parent",
+	)
+
+	for rule in ar_rules:
+		if eval(f"account_request.{rule.field} {rule.condition} '{rule.value}'"):
+			hybrid_pool = rule.parent
+			return hybrid_pool
+
+	return hybrid_pool
 
 
 @frappe.whitelist(allow_guest=True)
