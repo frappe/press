@@ -5,6 +5,7 @@ from press.press.doctype.site.saas_site import (
 	get_saas_bench,
 	get_saas_apps,
 	get_saas_domain,
+	get_pool_apps,
 )
 
 
@@ -29,6 +30,8 @@ class SaasSitePool:
 
 	def create_one(self):
 		try:
+			if frappe.db.get_value("Saas Settings", self.app, "enable_hybrid_pools"):
+				self.create_hybrid_pool_sites()
 			domain = get_saas_domain(self.app)
 			bench = get_saas_bench(self.app)
 			subdomain = self.get_subdomain()
@@ -55,13 +58,48 @@ class SaasSitePool:
 			)
 			raise
 
+	def create_hybrid_pool_sites(self):
+		# create a Site according to Site Rules child table in each Hybrid Saas Pool
+		for pool_name in frappe.get_all("Hybrid Saas Pool", {"app": self.app}, pluck="name"):
+			# only has app rules for now, will add site config and other rules later
+			pool_apps = get_pool_apps(pool_name)
+			domain = get_saas_domain(self.app)
+			bench = get_saas_bench(self.app)
+			subdomain = self.get_subdomain()
+			apps = get_saas_apps(self.app)
+			apps.extend(pool_apps)
+			frappe.get_doc(
+				{
+					"doctype": "Site",
+					"subdomain": subdomain,
+					"domain": domain,
+					"is_standby": True,
+					"hybrid_saas_pool": pool_name,
+					"standby_for": self.app,
+					"team": "Administrator",
+					"bench": bench,
+					"apps": [{"app": app} for app in apps],
+				}
+			).insert()
+
 	def get_subdomain(self):
 		return make_autoname("standby-.########")
 
-	def get(self):
+	def get(self, hybrid_saas_pool):
+		filters = {
+			"is_standby": True,
+			"standby_for": self.app,
+			"status": "Active",
+		}
+
+		if hybrid_saas_pool:
+			filters.update({"hybrid_saas_pool": hybrid_saas_pool})
+		else:
+			filters.update({"hybrid_saas_pool": ("is", "not set")})
+
 		return frappe.db.get_value(
 			"Site",
-			{"is_standby": True, "standby_for": self.app, "status": "Active"},
+			filters,
 			"name",
 			order_by="creation",
 		)
@@ -73,5 +111,5 @@ def create():
 		SaasSitePool(app).create()
 
 
-def get(app):
-	return SaasSitePool(app).get()
+def get(app, hybrid_saas_pool=""):
+	return SaasSitePool(app).get(hybrid_saas_pool)

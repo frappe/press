@@ -29,8 +29,6 @@
   "plan",
   "free",
   "column_break_15",
-  "is_standby",
-  "standby_for",
   "staging",
   "account_request",
   "is_erpnext_setup",
@@ -66,7 +64,12 @@
   "update_on_day_of_month",
   "column_break_58",
   "database_section",
-  "is_database_access_enabled"
+  "is_database_access_enabled",
+  "saas_section",
+  "is_standby",
+  "standby_for",
+  "column_break_63",
+  "hybrid_saas_pool"
  ],
  "fields": [
   {
@@ -477,6 +480,21 @@
   {
    "fieldname": "column_break_57",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "saas_section",
+   "fieldtype": "Section Break",
+   "label": "SaaS"
+  },
+  {
+   "fieldname": "column_break_63",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "hybrid_saas_pool",
+   "fieldtype": "Link",
+   "label": "Hybrid Saas Pool",
+   "options": "Hybrid Saas Pool"
   }
  ],
  "links": [
@@ -541,7 +559,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2022-07-11 02:59:29.039508",
+ "modified": "2022-07-28 15:06:09.602663",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

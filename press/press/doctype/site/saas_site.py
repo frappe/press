@@ -4,20 +4,29 @@ from press.press.doctype.account_request.account_request import AccountRequest
 
 
 class SaasSite(Site):
-	def __init__(self, site=None, app=None, account_request: AccountRequest = None):
+	def __init__(
+		self, site=None, app=None, account_request: AccountRequest = None, hybrid_saas_pool=""
+	):
 		self.app = app
 		if site:
 			super().__init__("Site", site)
 		elif account_request:
+			apps = get_saas_apps(self.app)
+			if hybrid_saas_pool:
+				# set pool apps
+				pool_apps = get_pool_apps(hybrid_saas_pool)
+				apps.extend(pool_apps)
+
 			super().__init__(
 				{
 					"doctype": "Site",
 					"subdomain": account_request.subdomain,
 					"domain": get_saas_domain(self.app),
 					"bench": get_saas_bench(self.app),
-					"apps": [{"app": app} for app in get_saas_apps(self.app)],
+					"apps": [{"app": app} for app in apps],
 					"team": "Administrator",
-					"standby_for": app,
+					"standby_for": self.app,
+					"hybrid_saas_pool": hybrid_saas_pool,
 					"account_request": account_request.name,
 					"subscription_plan": get_saas_site_plan(self.app),
 					"trial_end_date": frappe.utils.add_days(None, 14),
@@ -95,3 +104,12 @@ def get_saas_apps(app):
 
 def get_saas_group(app):
 	return frappe.db.get_value("Saas Settings", app, "group")
+
+
+def get_pool_apps(pool_name):
+	pool_apps = []
+	for rule in frappe.get_doc("Hybrid Saas Pool", pool_name).as_dict()["site_rules"]:
+		if rule.rule_type == "App":
+			pool_apps.append(rule.app)
+
+	return pool_apps
