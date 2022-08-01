@@ -491,6 +491,9 @@ def get_plans(name=None):
 @frappe.whitelist()
 def all():
 	team = get_current_team()
+	saas_apps = frappe.get_all("Saas App", pluck="name")
+	if "erpnext" in saas_apps:
+		saas_apps.remove("erpnext")
 	sites = frappe.get_list(
 		"Site",
 		fields=[
@@ -503,9 +506,15 @@ def all():
 			"current_disk_usage",
 			"trial_end_date",
 		],
-		filters={"team": team, "status": ("!=", "Archived")},
+		filters={
+			"team": team,
+			"status": ("!=", "Archived"),
+			"standby_for": (
+				"not in",
+				saas_apps,
+			),
+		},
 		order_by="creation desc",
-		ignore_ifnull=True,
 	)
 	benches_with_updates = set(benches_with_available_update())
 	for site in sites:
