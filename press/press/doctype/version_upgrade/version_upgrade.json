@@ -1,0 +1,110 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2022-07-28 09:13:49.010492",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "site",
+  "scheduled_time",
+  "column_break_3",
+  "status",
+  "site_update",
+  "group",
+  "skip_failing_patches",
+  "section_break_8",
+  "last_output",
+  "last_traceback"
+ ],
+ "fields": [
+  {
+   "fieldname": "site",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Site",
+   "options": "Site",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "scheduled_time",
+   "fieldtype": "Datetime",
+   "label": "Scheduled Time"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "status",
+   "options": "Scheduled\nPending\nRunning\nSuccess\nFailure",
+   "read_only": 1
+  },
+  {
+   "fieldname": "site_update",
+   "fieldtype": "Link",
+   "label": "Site Update",
+   "options": "Site Update",
+   "read_only": 1
+  },
+  {
+   "fieldname": "group",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Group",
+   "options": "Release Group",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "skip_failing_patches",
+   "fieldtype": "Check",
+   "label": "Skip Failing Patches"
+  },
+  {
+   "fieldname": "last_traceback",
+   "fieldtype": "Code",
+   "label": "Last Traceback",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_8",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "last_output",
+   "fieldtype": "Code",
+   "label": "Last Output",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2022-08-02 07:47:10.286051",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Version Upgrade",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "site"
+}

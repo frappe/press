@@ -386,7 +386,7 @@ class Site(Document):
 		self.status_before_update = self.status
 		self.status = "Pending"
 		self.save()
-		frappe.get_doc(
+		return frappe.get_doc(
 			{
 				"doctype": "Site Update",
 				"site": self.name,
