@@ -211,9 +211,11 @@ scheduler_events = {
 			"press.press.doctype.drip_email.drip_email.send_welcome_email",
 			"press.press.doctype.site.backups.schedule",
 			"press.press.doctype.site_migration.site_migration.run_scheduled_migrations",
+			"press.press.doctype.version_upgrade.version_upgrade.run_scheduled_upgrades",
 		],
 		"*/5 * * * *": [
 			"press.press.doctype.central_site_migration.central_site_migration.start_one_migration",
+			"press.press.doctype.version_upgrade.version_upgrade.update_from_site_update",
 		],
 		"*/10 * * * *": ["press.press.doctype.site.saas_pool.create"],
 		"*/30 * * * *": ["press.press.doctype.site_update.scheduled_auto_updates.trigger"],
