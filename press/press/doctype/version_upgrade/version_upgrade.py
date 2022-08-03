@@ -11,7 +11,8 @@ class VersionUpgrade(Document):
 	doctype = "Version Upgrade"
 
 	def after_insert(self):
-		self.start()
+		if not self.scheduled_time:
+			self.start()
 
 	@frappe.whitelist()
 	def start(self):
