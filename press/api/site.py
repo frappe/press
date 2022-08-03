@@ -581,7 +581,9 @@ def get(name):
 	)
 	group_team = rg_info.team
 	frappe_version = rg_info.version
-	group_name = site.group if group_team == team else None
+	group_name = (
+		site.group if group_team == team or is_system_user(frappe.session.user) else None
+	)
 
 	return {
 		"name": site.name,
