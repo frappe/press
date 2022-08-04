@@ -48,7 +48,9 @@ const appSubscriptions = useResource({
 						<Badge :status="subscription.status"></Badge>
 					</p>
 
-					<p class="hidden md:inline">{{ $planTitle(subscription) }} /mo</p>
+					<p class="hidden md:inline">
+						{{ $planTitle(subscription) || 'Free' }} /mo
+					</p>
 
 					<p class="hidden text-gray-700 md:inline">
 						{{ subscription.active_days }}
