@@ -652,7 +652,7 @@ def get_subscriptions_list(marketplace_app: str) -> List:
 		.join(app_plan)
 		.on(app_sub.marketplace_app_plan == app_plan.name)
 		.join(plan)
-		.on(app_plan.plan == plan.name)
+		.on(app_sub.plan == plan.name)
 		.join(site)
 		.on(site.name == app_sub.site)
 		.join(usage_record)
