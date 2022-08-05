@@ -7,11 +7,12 @@
  "engine": "InnoDB",
  "field_order": [
   "site",
+  "source_group",
   "scheduled_time",
   "column_break_3",
   "status",
   "site_update",
-  "group",
+  "destination_group",
   "skip_failing_patches",
   "section_break_8",
   "last_output",
@@ -49,14 +50,6 @@
    "read_only": 1
   },
   {
-   "fieldname": "group",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Group",
-   "options": "Release Group",
-   "reqd": 1
-  },
-  {
    "default": "0",
    "fieldname": "skip_failing_patches",
    "fieldtype": "Check",
@@ -81,11 +74,28 @@
    "fieldtype": "Code",
    "label": "Last Output",
    "read_only": 1
+  },
+  {
+   "allow_in_quick_entry": 1,
+   "fetch_from": "site.group",
+   "fieldname": "source_group",
+   "fieldtype": "Link",
+   "label": "Source Group",
+   "options": "Release Group",
+   "read_only": 1
+  },
+  {
+   "fieldname": "destination_group",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Destination Group",
+   "options": "Release Group",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-08-03 09:01:43.988392",
+ "modified": "2022-08-05 07:12:48.990907",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Version Upgrade",
