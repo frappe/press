@@ -557,9 +557,14 @@
    "group": "Related Documents",
    "link_doctype": "Central Site Migration",
    "link_fieldname": "site"
+  },
+  {
+   "group": "Related Documents",
+   "link_doctype": "Saas App Subscription",
+   "link_fieldname": "site"
   }
  ],
- "modified": "2022-07-28 15:06:09.602663",
+ "modified": "2022-08-08 21:20:49.499242",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
