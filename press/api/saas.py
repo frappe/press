@@ -317,30 +317,31 @@ def get_benches(saas_app):
 
 
 @frappe.whitelist(allow_guest=True)
-def login_via_token(token):
+def login_via_token(token, team):
 	"""
 	return: success if login succeeds
 	"""
 
 	if not token or not isinstance(token, str):
 		frappe.throw("Invalid Token")
+	token_exists = frappe.db.exists(
+		"Saas Remote Login",
+		{
+			"team": team,
+			"token": token,
+			"status": "Attempted",
+			"expires_on": (">", frappe.utils.now()),
+		},
+	)
 
-	try:
-		doc = frappe.get_doc(
-			"Saas Remote Login",
-			{
-				"token": token,
-				"status": "Attempted",
-				"expires_on": (">", frappe.utils.now()),
-			},
-		)
+	if token_exists:
+		doc = frappe.get_doc("Saas Remote Login", token_exists)
 		doc.status = "Used"
 		frappe.local.login_manager.login_as(doc.team)
 		doc.save(ignore_permissions=True)
-	except Exception:
+		return "success"
+	else:
 		frappe.throw("Token Invalid or Expired!")
-
-	return "success"
 
 
 @frappe.whitelist()

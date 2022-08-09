@@ -16,7 +16,8 @@ export default {
 			return {
 				method: 'press.api.saas.login_via_token',
 				params: {
-					token: this.$route.query.token
+					token: this.$route.query.token,
+					team: this.$route.query.team
 				},
 				onSuccess(r) {
 					this.$saas.saasLogin();

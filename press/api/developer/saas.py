@@ -63,12 +63,14 @@ class SaasApiHandler:
 					"token": token,
 				}
 			).insert(ignore_permissions=True)
-			frappe.db.commit()
+
+		frappe.local.login_manager.logout()
+		frappe.db.commit()
 
 		domain = frappe.db.get_value(
 			"Saas App", self.app_subscription_doc.app, "custom_domain"
 		)
-		return f"https://{domain}/dashboard/saas/remote-login?token={token}"
+		return f"https://{domain}/dashboard/saas/remote-login?token={token}&team={self.app_subscription_doc.team}"
 
 	def get_trial_expiry(self):
 		return frappe.db.get_value("Site", self.app_subscription_doc.site, "trial_end_date")
