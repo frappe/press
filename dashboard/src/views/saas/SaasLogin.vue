@@ -138,7 +138,7 @@ export default {
 				let res = await this.$auth.login(this.email, this.password);
 				if (res) {
 					this.$saas.saasLogin();
-					this.$router.push(this.redirect_route || res.dashboard_route || '/');
+					this.$router.push(this.redirect_route);
 				}
 			}
 		},

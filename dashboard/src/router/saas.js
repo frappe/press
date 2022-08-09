@@ -5,7 +5,8 @@ export default [
 		component: () =>
 			import(/* webpackChunkName: "login" */ '../views/saas/SaasLogin.vue'),
 		meta: {
-			isLoginPage: true
+			isLoginPage: true,
+			isSaasPage: true
 		},
 		props: true
 	},
@@ -15,7 +16,8 @@ export default [
 		component: () =>
 			import(/* webpackChunkName: "signup" */ '../views/saas/SaasSignup.vue'),
 		meta: {
-			isLoginPage: true
+			isLoginPage: true,
+			isSaasPage: true
 		},
 		props: true
 	},

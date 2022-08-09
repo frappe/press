@@ -4,10 +4,10 @@ export default function registerRouter(app, auth, account) {
 	app.use(router);
 
 	router.beforeEach(async (to, from, next) => {
-		if (localStorage.getItem('saas_login') && !to.meta.isSaasPage) {
-			next('/saas/apps');
-			return;
-		}
+		//if (localStorage.getItem('saas_login') && !to.meta.isSaasPage) {
+			//next('/saas/apps');
+			//return;
+		//}
 
 		if (to.name == 'Home') {
 			next({ name: 'Welcome' });
@@ -30,6 +30,9 @@ export default function registerRouter(app, auth, account) {
 			if (auth.isLoggedIn) {
 				if (!account.user) {
 					await account.fetchAccount();
+				}
+				if (to.meta.isSaasPage) {
+					next({ name: 'SaasSubscription' })
 				}
 				next({ name: 'Welcome' });
 			} else {
