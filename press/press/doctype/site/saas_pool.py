@@ -97,12 +97,9 @@ class SaasSitePool:
 		else:
 			filters.update({"hybrid_saas_pool": ("is", "not set")})
 
-		return frappe.db.get_value(
-			"Site",
-			filters,
-			"name",
-			order_by="creation",
-		)
+		sites = frappe.get_all("Site", filters, pluck="name", order_by="creation", limit=1)
+
+		return sites[0] if sites else sites
 
 
 def create():
