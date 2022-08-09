@@ -788,7 +788,11 @@ def available_apps(name):
 
 	for source in sources:
 		frappe_version = frappe.db.get_value("Release Group", bench.group, "version")
-		app_plans = get_plans_for_app(source.app, frappe_version)
+
+		if is_marketplace_app_source(source.name):
+			app_plans = get_plans_for_app(source.app, frappe_version)
+		else:
+			app_plans = []
 
 		if len(app_plans) > 0:
 			source.has_plans_available = True
@@ -798,6 +802,10 @@ def available_apps(name):
 			available_sources.append(source)
 
 	return sorted(available_sources, key=lambda x: bench_sources.index(x.name))
+
+
+def is_marketplace_app_source(app_source_name):
+	return frappe.db.exists("Marketplace App Version", {"source": app_source_name})
 
 
 @frappe.whitelist()
