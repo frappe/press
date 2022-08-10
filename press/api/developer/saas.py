@@ -70,7 +70,7 @@ class SaasApiHandler:
 		domain = frappe.db.get_value(
 			"Saas App", self.app_subscription_doc.app, "custom_domain"
 		)
-		return f"https://{domain}/dashboard/saas/remote-login?token={token}&team={self.app_subscription_doc.team}"
+		return f"https://{domain}/api/method/press.api.saas.login_via_token?token={token}&team={self.app_subscription_doc.team}"
 
 	def get_trial_expiry(self):
 		return frappe.db.get_value("Site", self.app_subscription_doc.site, "trial_end_date")

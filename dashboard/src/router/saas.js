@@ -22,11 +22,21 @@ export default [
 		props: true
 	},
 	{
-		path: '/saas/remote-login',
-		name: 'RemoteLogin',
-		component: () => import('../views/saas/RemoteLogin.vue'),
+		path: '/saas/remote/success',
+		name: 'RemoteLoginSuccess',
+		component: () => import('../views/saas/RemoteLoginSuccess.vue'),
 		meta: {
-			isLoginPage: true
+			isSaasPage: true
+		},
+		props: true
+	},
+	{
+		path: '/saas/remote/failure',
+		name: 'RemoteLoginFailure',
+		component: () => import('../views/saas/RemoteLoginFailure.vue'),
+		meta: {
+			isLoginPage: true,
+			isSaasPage: true
 		},
 		props: true
 	},
