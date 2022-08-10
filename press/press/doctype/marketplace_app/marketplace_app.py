@@ -279,7 +279,7 @@ class MarketplaceApp(WebsiteGenerator):
 		return get_plans_for_app(self.name, frappe_version)
 
 
-def get_plans_for_app(app_name, frappe_version=None):
+def get_plans_for_app(app_name, frappe_version=None):  # Unused for now, might use later
 	plans = []
 
 	marketplace_app_plans = frappe.get_all(
@@ -289,11 +289,6 @@ def get_plans_for_app(app_name, frappe_version=None):
 	)
 
 	for app_plan in marketplace_app_plans:
-		if frappe_version and (
-			not plan_available_on_frappe_version(app_plan.name, frappe_version)
-		):
-			continue
-
 		plan_data = {}
 		plan_data.update(app_plan)
 
@@ -309,16 +304,6 @@ def get_plans_for_app(app_name, frappe_version=None):
 	plans.sort(key=lambda x: x["price_usd"])
 
 	return plans
-
-
-def plan_available_on_frappe_version(
-	marketplace_app_plan: str, frappe_version: str
-) -> bool:
-	return bool(
-		frappe.db.exists(
-			"App Plan Version", {"parent": marketplace_app_plan, "version": frappe_version}
-		)
-	)
 
 
 def get_plan_prices(plan_name: str, discount_percent: float = 0.0) -> dict:
