@@ -261,6 +261,12 @@
     "parent": "Update Site Migrate",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
+    "step_name": "Backup Site"
+   },
+   {
+    "parent": "Update Site Migrate",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
     "step_name": "Clear Backup Directory"
    },
    {

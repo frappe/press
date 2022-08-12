@@ -115,6 +115,7 @@ class SiteUpdate(Document):
 			self.destination_bench,
 			self.deploy_type,
 			skip_failing_patches=self.skipped_failing_patches,
+			whole_backup = self.whole_backup or False,
 		)
 		frappe.db.set_value("Site Update", self.name, "update_job", job.name)
 
