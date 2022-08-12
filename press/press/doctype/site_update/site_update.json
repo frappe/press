@@ -23,8 +23,7 @@
   "update_job",
   "recover_job",
   "cause_of_failure_is_resolved",
-  "skipped_failing_patches",
-  "whole_backup"
+  "skipped_failing_patches"
  ],
  "fields": [
   {
@@ -182,14 +181,7 @@
    "fieldtype": "Link",
    "label": "Destination Group",
    "options": "Release Group"
-  },
-  {
-    "default": "0",
-    "fieldname": "whole_backup",
-    "fieldtype": "Check",
-    "label": "Backup Site Before Update?",
-    "read_only": 1
-   }
+  }
  ],
  "index_web_pages_for_search": 1,
  "links": [],

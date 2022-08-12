@@ -240,6 +240,76 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
+  "modified": "2020-07-27 19:19:05.246993",
+  "name": "Update Site Migrate",
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/sites/{site}/update/migrate",
+  "steps": [
+   {
+    "parent": "Update Site Migrate",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Enable Maintenance Mode"
+   },
+   {
+    "parent": "Update Site Migrate",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Wait for Enqueued Jobs"
+   },
+   {
+    "parent": "Update Site Migrate",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Clear Backup Directory"
+   },
+   {
+    "parent": "Update Site Migrate",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Backup Site Tables"
+   },
+   {
+    "parent": "Update Site Migrate",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Move Site"
+   },
+   {
+    "parent": "Update Site Migrate",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Setup NGINX"
+   },
+   {
+    "parent": "Update Site Migrate",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Setup NGINX Target"
+   },
+   {
+    "parent": "Update Site Migrate",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
+   },
+   {
+    "parent": "Update Site Migrate",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Migrate Site"
+   },
+   {
+    "parent": "Update Site Migrate",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Disable Maintenance Mode"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
   "modified": "2020-06-17 16:44:12.364275",
   "name": "Backup Site",
   "request_method": null,
@@ -1334,82 +1404,6 @@
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Update Saas Plan"
-   }
-  ]
- },
- {
-  "docstatus": 0,
-  "doctype": "Agent Job Type",
-  "modified": "2022-08-08 03:42:09.465490",
-  "name": "Update Site Migrate",
-  "request_method": "POST",
-  "request_path": "/benches/{bench}/sites/{site}/update/migrate",
-  "steps": [
-   {
-    "parent": "Update Site Migrate",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Enable Maintenance Mode"
-   },
-   {
-    "parent": "Update Site Migrate",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Wait for Enqueued Jobs"
-   },
-   {
-    "parent": "Update Site Migrate",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Backup Site"
-   },
-   {
-    "parent": "Update Site Migrate",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Clear Backup Directory"
-   },
-   {
-    "parent": "Update Site Migrate",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Backup Site Tables"
-   },
-   {
-    "parent": "Update Site Migrate",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Move Site"
-   },
-   {
-    "parent": "Update Site Migrate",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Bench Setup NGINX"
-   },
-   {
-    "parent": "Update Site Migrate",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Bench Setup NGINX Target"
-   },
-   {
-    "parent": "Update Site Migrate",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Reload NGINX"
-   },
-   {
-    "parent": "Update Site Migrate",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Migrate Site"
-   },
-   {
-    "parent": "Update Site Migrate",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Disable Maintenance Mode"
    }
   ]
  }

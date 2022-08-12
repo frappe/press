@@ -115,9 +115,7 @@ class SiteUpdate(Document):
 			self.destination_bench,
 			self.deploy_type,
 			skip_failing_patches=self.skipped_failing_patches,
-			whole_backup = self.whole_backup or False
 		)
-		print(f"update site job: {job}")
 		frappe.db.set_value("Site Update", self.name, "update_job", job.name)
 
 	def have_past_updates_failed(self):
