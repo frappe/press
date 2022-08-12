@@ -46,12 +46,22 @@ class SaasApiHandler:
 
 	def get_login_url(self):
 		# check for active tokens
+		team = self.app_subscription_doc.team
 		if frappe.db.exists(
-			"Saas Remote Login", {"status": "Attempted", "expires_on": (">", frappe.utils.now())}
+			"Saas Remote Login",
+			{
+				"team": team,
+				"status": "Attempted",
+				"expires_on": (">", frappe.utils.now()),
+			},
 		):
 			doc = frappe.get_doc(
 				"Saas Remote Login",
-				{"status": "Attempted", "expires_on": (">", frappe.utils.now())},
+				{
+					"team": team,
+					"status": "Attempted",
+					"expires_on": (">", frappe.utils.now()),
+				},
 			)
 			token = doc.token
 		else:
@@ -59,13 +69,10 @@ class SaasApiHandler:
 			frappe.get_doc(
 				{
 					"doctype": "Saas Remote Login",
-					"team": self.app_subscription_doc.team,
+					"team": team,
 					"token": token,
 				}
 			).insert(ignore_permissions=True)
-
-		frappe.local.login_manager.logout()
-		frappe.db.commit()
 
 		domain = frappe.db.get_value(
 			"Saas App", self.app_subscription_doc.app, "custom_domain"

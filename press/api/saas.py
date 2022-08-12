@@ -335,10 +335,10 @@ def login_via_token(token, team):
 	if token_exists:
 		doc = frappe.get_doc("Saas Remote Login", token_exists)
 		doc.status = "Used"
-		frappe.local.login_manager.login_as(doc.team)
 		doc.save(ignore_permissions=True)
+		frappe.local.login_manager.login_as(team)
 		frappe.local.response["type"] = "redirect"
-		frappe.local.response["location"] = "/dashboard/saas/remote/success"
+		frappe.local.response["location"] = f"/dashboard/saas/remote/success?team={team}"
 	else:
 		frappe.local.response["type"] = "redirect"
 		frappe.local.response["location"] = "/dashboard/saas/remote/failure"
