@@ -1,0 +1,19 @@
+# Root editor config file
+root = true
+
+# Common settings
+[*]
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+charset = utf-8
+
+# python, js indentation settings
+[{*.py}]
+indent_style = tab
+indent_size = 4
+
+
+[{*.js,*.vue}]
+indent_style = tab
+indent_size = 2
