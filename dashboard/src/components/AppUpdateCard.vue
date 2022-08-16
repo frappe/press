@@ -37,7 +37,7 @@
 			</a>
 			<a
 				v-if="deployFrom(app)"
-				class="block cursor-pointer"
+				class="flex cursor-pointer flex-col justify-center"
 				:href="`${app.repository_url}/compare/${app.current_hash}..${app.next_hash}`"
 				target="_blank"
 			>
