@@ -70,7 +70,7 @@ export default {
 	computed: {
 		fieldLabelMap() {
 			return {
-				invoices: 'Email To Recieve Invoices',
+				invoices: 'Email To Receive Invoices',
 				marketplace_notifications: 'Marketplace Notifications'
 			};
 		}
