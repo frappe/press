@@ -654,6 +654,9 @@ def check_subdomain_availability(subdomain, app):
 	"""
 	# Only for ERPNext domains
 
+	if len(subdomain) <= 4:
+		return False
+
 	erpnext_com = get_erpnext_com_connection()
 	result = erpnext_com.post_api(
 		"central.www.signup.check_subdomain_availability", {"subdomain": subdomain}
