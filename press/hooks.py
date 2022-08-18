@@ -187,7 +187,6 @@ scheduler_events = {
 	],
 	"hourly_long": [
 		"press.press.doctype.bench.bench.archive_obsolete_benches",
-		"press.press.doctype.bench.bench.archive_staging_sites",
 		"press.press.doctype.bench.bench.scale_workers",
 		"press.press.doctype.subscription.subscription.create_usage_records",
 		"press.press.doctype.bench.bench.sync_benches",
