@@ -150,6 +150,7 @@ backbone/packer/cloud-init-scaleway.img
 
 # marketplace
 press/public/css/marketplace.css
+press/public/css/marketplace-next.css
 
 # Vim
 .vim
