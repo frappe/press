@@ -25,7 +25,7 @@ class VersionUpgrade(Document):
 			).name
 		except Exception as e:
 			self.status = "Failure"
-			self.add_comment(text=e)
+			self.add_comment(text=str(e))
 		else:
 			self.status = frappe.db.get_value("Site Update", self.site_update, "status")
 		self.save()
