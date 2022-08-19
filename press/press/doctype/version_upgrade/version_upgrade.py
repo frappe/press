@@ -16,6 +16,7 @@ class VersionUpgrade(Document):
 
 	@frappe.whitelist()
 	def start(self):
+		frappe.db.commit()
 		site = frappe.get_doc("Site", self.site)
 		if site.status.endswith("ing"):
 			frappe.throw("Site is under maintenance. Cannot Update")
@@ -24,6 +25,7 @@ class VersionUpgrade(Document):
 				self.destination_group, self.skip_failing_patches
 			).name
 		except Exception as e:
+			frappe.db.rollback()
 			self.status = "Failure"
 			self.add_comment(text=str(e))
 		else:
