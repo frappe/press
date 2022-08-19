@@ -25,8 +25,7 @@
    "in_list_view": 1,
    "label": "Site",
    "options": "Site",
-   "reqd": 1,
-   "unique": 1
+   "reqd": 1
   },
   {
    "description": "Upgrade will be tried now if time is not set",
@@ -95,7 +94,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-08-05 07:12:48.990907",
+ "modified": "2022-08-19 09:58:32.108143",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Version Upgrade",
