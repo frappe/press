@@ -2,21 +2,22 @@
 # For license information, please see license.txt
 
 import frappe
+import json
 from frappe.model.document import Document
 
 
 class ERPNextSiteSettings(Document):
 	def on_update(self):
-		limits = {
-			"users": self.users,
-			"expiry": self.expiry,
-			"emails": self.emails,
-			"space": self.space,
-			"current_plan": self.plan,
-		}
+		config_keys = ("users", "expiry", "emails", "space", "current_plan")
+		values = (self.users, self.expiry, self.emails, self.space, self.plan)
+
+		site = frappe.get_doc("Site", self.site)
+		config = json.loads(site.config)
+		limits = config["limits"]
+
+		limits.update(dict(zip(config_keys, values)))
 
 		# remove null/empty values
 		limits = {k: v for k, v in limits.items() if v}
 
-		site = frappe.get_doc("Site", self.site)
 		site.update_site_config({"limits": limits})
