@@ -266,3 +266,5 @@ on_session_creation = "press.overrides.on_session_creation"
 user_data_fields = [
 	{"doctype": "Team", "strict": True},
 ]
+
+auth_hooks = ["press.auth.hook"]
