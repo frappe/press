@@ -2,6 +2,9 @@
 # For license information, please see license.txt
 
 import frappe
+import json
+
+PRESS_AUTH_KEY = "press-auth-logs"
 
 
 def hook():
@@ -16,3 +19,6 @@ def hook():
 		"path": path,
 		"user": frappe.session.data.user,
 	}
+
+	serialized = json.dumps(data, sort_keys=True, default=str)
+	frappe.cache().rpush(PRESS_AUTH_KEY, serialized)
