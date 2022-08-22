@@ -21,6 +21,7 @@ def hook():
 		"user_type": frappe.session.data.user_type,
 		"path": path,
 		"user": frappe.session.data.user,
+		"referer": frappe.request.headers.get("Referer", ""),
 	}
 
 	if frappe.cache().llen(PRESS_AUTH_KEY) > PRESS_AUTH_MAX_ENTRIES:
