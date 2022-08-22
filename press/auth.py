@@ -5,6 +5,7 @@ import frappe
 import json
 
 PRESS_AUTH_KEY = "press-auth-logs"
+PRESS_AUTH_MAX_ENTRIES = 1000000
 
 
 def hook():
@@ -20,5 +21,7 @@ def hook():
 		"user": frappe.session.data.user,
 	}
 
+	if frappe.cache().llen(PRESS_AUTH_KEY) > PRESS_AUTH_MAX_ENTRIES:
+		frappe.cache().ltrim(PRESS_AUTH_KEY, 1, -1)
 	serialized = json.dumps(data, sort_keys=True, default=str)
 	frappe.cache().rpush(PRESS_AUTH_KEY, serialized)
