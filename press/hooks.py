@@ -196,6 +196,9 @@ scheduler_events = {
 		"press.saas.doctype.saas_app_subscription.saas_app_subscription.create_usage_records",
 		"press.press.doctype.app.app.poll_new_releases",
 	],
+	"all": [
+		"press.auth.flush",
+	],
 	"cron": {
 		"0 3 * * *": ["press.press.doctype.remote_file.remote_file.poll_file_statuses"],
 		"0 4 * * *": [
