@@ -528,13 +528,8 @@ def get_marketplace_subscriptions_for_site(site: str):
 
 
 @frappe.whitelist()
-def get_app_plans(app: str, release_group: str = None, frappe_version: str = None):
-	marketplace_app: MarketplaceApp = frappe.get_doc("Marketplace App", app)
-
-	if (not frappe_version) and release_group:
-		frappe_version = frappe.db.get_value("Release Group", release_group, "version")
-
-	return marketplace_app.get_plans(frappe_version)
+def get_app_plans(app: str):
+	return get_plans_for_app(app, include_disabled=True)
 
 
 @frappe.whitelist()
@@ -691,6 +686,8 @@ def create_app_plan(marketplace_app: str, plan_data: Dict):
 
 @frappe.whitelist()
 def update_app_plan(app_plan_name: str, updated_plan_data: Dict):
+
+	print(updated_plan_data)
 	if not updated_plan_data.get("plan_title"):
 		frappe.throw("Plan title is required")
 
@@ -722,6 +719,7 @@ def update_app_plan(app_plan_name: str, updated_plan_data: Dict):
 
 	feature_list = updated_plan_data.get("features", [])
 	reset_features_for_plan(app_plan_doc, feature_list, save=False)
+	app_plan_doc.enabled = updated_plan_data.get("enabled", True)
 	app_plan_doc.save(ignore_permissions=True)
 
 

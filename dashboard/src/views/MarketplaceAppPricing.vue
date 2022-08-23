@@ -9,7 +9,8 @@ const currentEditingPlan = reactive({
 	price_inr: 0,
 	price_usd: 0,
 	features: [''],
-	plan_title: ''
+	plan_title: '',
+	enabled: true
 });
 
 const props = defineProps({
@@ -46,6 +47,7 @@ const createAppPlan = useResource({
 function editPlan(plan) {
 	if (plan) {
 		Object.assign(currentEditingPlan, plan);
+		currentEditingPlan.enabled = Boolean(plan.enabled);
 		currentEditingPlan.features = Array.from(plan.features); // Non-reference copy
 	}
 	showEditPlanDialog.value = true;
@@ -84,7 +86,8 @@ function resetCurrentEditingPlan() {
 		price_inr: 0,
 		price_usd: 0,
 		features: [''],
-		plan_title: ''
+		plan_title: '',
+		enabled: true
 	});
 
 	updateAppPlan.error = null;
@@ -141,6 +144,17 @@ function resetCurrentEditingPlan() {
 
 		<Dialog v-model="showEditPlanDialog" title="Edit Plan">
 			<div>
+				<div class="mb-4">
+					<input
+						type="checkbox"
+						id="enabled-checkbox"
+						class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+						v-model="currentEditingPlan.enabled"
+					/>
+					<label for="enabled-checkbox" class="ml-1 text-sm text-gray-900">
+						Enabled
+					</label>
+				</div>
 				<div class="mb-4">
 					<Input
 						placeholder="My Pro Plan"
