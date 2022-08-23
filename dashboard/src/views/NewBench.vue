@@ -76,7 +76,7 @@
 				<div>
 					<ErrorMessage class="mb-2" :error="$resources.createBench.error" />
 					<Button
-						type="primary"
+						appearance="primary"
 						:loading="$resources.createBench.loading"
 						@click="$resources.createBench.submit()"
 					>

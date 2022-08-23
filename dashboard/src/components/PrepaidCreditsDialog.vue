@@ -36,7 +36,7 @@
 				<Button @click="paymentGateway = null">Go Back</Button>
 				<div>
 					<Button
-						type="primary"
+						appearance="primary"
 						:loading="$resources.createRazorpayOrder.loading"
 						@click="buyCreditsWithRazorpay"
 					>

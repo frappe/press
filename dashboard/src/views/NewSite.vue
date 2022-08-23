@@ -82,7 +82,7 @@
 						</Button>
 						<Button
 							v-show="activeStep.name !== 'Restore' || wantsToRestore"
-							type="primary"
+							appearance="primary"
 							@click="nextStep(activeStep, next)"
 							:class="{
 								'pointer-events-none opacity-0': !hasNext
@@ -94,14 +94,14 @@
 						</Button>
 						<Button
 							v-show="!wantsToRestore && activeStep.name === 'Restore'"
-							type="primary"
+							appearance="primary"
 							@click="nextStep(activeStep, next)"
 						>
 							Skip
 						</Button>
 						<Button
 							v-show="!hasNext"
-							type="primary"
+							appearance="primary"
 							@click="$resources.newSite.submit()"
 							:loading="$resources.newSite.loading"
 						>

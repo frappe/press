@@ -24,11 +24,11 @@ const benchData = computed(() => {
 			<div class="flex items-center justify-between">
 				<div></div>
 				<router-link
-					type="primary"
+					appearance="primary"
 					iconLeft="plus"
 					:to="`/benches/new/${app.name}`"
 				>
-					<Button type="primary" icon-left="plus"> New Bench </Button>
+					<Button appearance="primary" icon-left="plus"> New Bench </Button>
 				</router-link>
 			</div>
 		</div>

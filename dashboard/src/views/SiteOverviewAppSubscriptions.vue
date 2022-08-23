@@ -64,7 +64,7 @@
 
 			<template #actions>
 				<Button
-					type="primary"
+					appearance="primary"
 					:loading="$resources.changePlan.loading"
 					@click="switchToNewPlan"
 					>Change Plan</Button

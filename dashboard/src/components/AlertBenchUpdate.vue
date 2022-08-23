@@ -12,7 +12,7 @@
 			deploying. If you want to deploy now, click on Deploy.
 		</span>
 		<template #actions>
-			<Button type="primary" @click="showDeployDialog = true">
+			<Button appearance="primary" @click="showDeployDialog = true">
 				Show updates
 			</Button>
 		</template>
@@ -28,7 +28,7 @@
 			<ErrorMessage class="mt-2" :error="$resources.deploy.error" />
 			<template v-slot:actions>
 				<Button
-					type="primary"
+					appearance="primary"
 					@click="$resources.deploy.submit()"
 					:loading="$resources.deploy.loading"
 				>

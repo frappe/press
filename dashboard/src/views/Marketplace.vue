@@ -5,7 +5,7 @@
 				<div class="flex items-center justify-between">
 					<h1 class="text-3xl font-bold">Manage Apps</h1>
 					<Button
-						type="primary"
+						appearance="primary"
 						iconLeft="plus"
 						@click="
 							!$resources.appOptions.data
@@ -38,7 +38,7 @@
 			<p v-else class="text-base">No app sources available.</p>
 			<template #actions>
 				<Button
-					type="primary"
+					appearance="primary"
 					class="ml-2"
 					v-if="selectedApp"
 					:loading="$resources.addMarketplaceApp.loading"

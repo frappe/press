@@ -20,7 +20,10 @@
 					your plan to access your site database.
 				</p>
 
-				<Button class="mt-4" type="primary" @click="showChangePlanDialog = true"
+				<Button
+					class="mt-4"
+					appearance="primary"
+					@click="showChangePlanDialog = true"
 					>Upgrade Site Plan</Button
 				>
 			</div>
@@ -38,7 +41,7 @@
 					</Button>
 					<Button
 						class="ml-2"
-						type="primary"
+						appearance="primary"
 						:loading="$resources.changePlan.loading"
 						@click="$resources.changePlan.submit()"
 					>
@@ -110,7 +113,7 @@
 					"
 					@click="$resources.enableDatabaseAccess.submit()"
 					:loading="$resources.enableDatabaseAccess.loading || pollingAgentJob"
-					type="primary"
+					appearance="primary"
 					>Enable Access</Button
 				>
 

@@ -138,7 +138,7 @@
 			<ErrorMessage class="mt-2" :error="$resources.restoreBackup.error" />
 			<template #actions>
 				<Button
-					type="primary"
+					appearance="primary"
 					:loading="$resources.restoreBackup.loading"
 					@click="$resources.restoreBackup.submit()"
 				>

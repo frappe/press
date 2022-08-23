@@ -73,7 +73,7 @@ const marketplacePromotionalBanners = useResource({
 				<template #actions>
 					<Button
 						class="whitespace-nowrap"
-						type="primary"
+						appearance="primary"
 						@click="
 							() => {
 								showPromotionalDialog = true;
@@ -91,7 +91,7 @@ const marketplacePromotionalBanners = useResource({
 			suspended. Add your billing information to avoid suspension.
 
 			<template #actions>
-				<Button class="whitespace-nowrap" route="/welcome" type="primary">
+				<Button class="whitespace-nowrap" route="/welcome" appearance="primary">
 					Add Billing Information
 				</Button>
 			</template>
@@ -159,7 +159,9 @@ const marketplacePromotionalBanners = useResource({
 			</div>
 
 			<template v-if="clickedPromotion" #actions>
-				<Button type="primary" :route="`/install-app/${clickedPromotion.app}`"
+				<Button
+					appearance="primary"
+					:route="`/install-app/${clickedPromotion.app}`"
 					>Install App</Button
 				>
 			</template>

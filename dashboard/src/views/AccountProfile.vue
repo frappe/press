@@ -61,7 +61,7 @@
 				<div class="space-x-2">
 					<Button @click="showProfileEditDialog = false">Cancel</Button>
 					<Button
-						type="primary"
+						appearance="primary"
 						:loading="$resources.updateProfile.loading"
 						loadingText="Saving..."
 						@click="$resources.updateProfile.submit()"

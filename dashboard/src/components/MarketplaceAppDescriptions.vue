@@ -24,7 +24,7 @@
 					<div class="space-x-2">
 						<Button @click="showEditSummaryDialog = false">Cancel</Button>
 						<Button
-							type="primary"
+							appearance="primary"
 							:loading="$resources.updateAppSummary.loading"
 							loadingText="Saving..."
 							@click="$resources.updateAppSummary.submit()"
@@ -69,7 +69,7 @@
 
 					<template #actions>
 						<Button
-							type="primary"
+							appearance="primary"
 							:loading="$resources.updateAppDescription.loading"
 							loadingText="Saving..."
 							@click="$resources.updateAppDescription.submit()"

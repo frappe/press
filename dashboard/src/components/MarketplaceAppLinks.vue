@@ -26,7 +26,7 @@
 				<div class="space-x-2">
 					<Button @click="showEditLinksDialog = false">Cancel</Button>
 					<Button
-						type="primary"
+						appearance="primary"
 						:loading="$resources.updateAppLinks.loading"
 						loadingText="Saving..."
 						@click="$resources.updateAppLinks.submit()"

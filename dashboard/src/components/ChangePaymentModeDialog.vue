@@ -16,7 +16,7 @@
 		<ErrorMessage class="mt-2" :error="$resources.changePaymentMode.error" />
 		<template #actions>
 			<Button
-				type="primary"
+				appearance="primary"
 				class="mt-2"
 				@click="$resources.changePaymentMode.submit()"
 				:loading="$resources.changePaymentMode.loading"

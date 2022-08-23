@@ -8,12 +8,12 @@
 			<div class="flex items-center justify-between">
 				<div>
 					<h1 class="text-xl font-semibold">Change Plan</h1>
-					<p class="text-sm mt-1">{{ app }} plans available for {{ site }}</p>
+					<p class="mt-1 text-sm">{{ app }} plans available for {{ site }}</p>
 				</div>
 				<Button
 					:disabled="selectedPlan.is_free"
 					class="relative top-0 right-0 mb-4"
-					type="primary"
+					appearance="primary"
 					@click="toggleCheckoutDialog()"
 					>{{
 						selectedPlan === activePlan ? 'Renew Plan' : 'Change Plan'
@@ -56,7 +56,7 @@
 			</div>
 
 			<div v-if="selectedPlan" class="mb-4">
-				<p class="text-base font-bold ml-3 mb-4">{{ getTotalAmount() }}</p>
+				<p class="ml-3 mb-4 text-base font-bold">{{ getTotalAmount() }}</p>
 				<Input type="text" label="Total price" v-model="totalAmount" readonly />
 			</div>
 			<div v-if="step == 'Confirm Checkout'">
@@ -92,7 +92,7 @@
 					</Button>
 					<Button
 						class="ml-2"
-						type="primary"
+						appearance="primary"
 						@click="onBuyClick"
 						:loading="paymentInProgress"
 					>
@@ -101,7 +101,7 @@
 				</div>
 				<div v-if="step == 'Confirm Checkout'">
 					<Button
-						type="primary"
+						appearance="primary"
 						@click="$resources.changePlan.submit()"
 						:loading="$resources.changePlan.loading"
 					>

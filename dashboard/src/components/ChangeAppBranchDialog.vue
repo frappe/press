@@ -20,7 +20,7 @@
 				</select>
 				<Button
 					class="mt-3"
-					type="primary"
+					appearance="primary"
 					:loading="this.$resources.changeBranch.loading"
 					@click="changeBranch()"
 				>

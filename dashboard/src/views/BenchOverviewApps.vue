@@ -66,7 +66,7 @@
 			/>
 			<template v-slot:actions>
 				<Button
-					type="primary"
+					appearance="primary"
 					v-if="selectedApp"
 					:loading="$resources.addApp.loading"
 					@click="

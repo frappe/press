@@ -24,7 +24,7 @@
 		/>
 		<template v-slot:actions>
 			<Button
-				type="primary"
+				appearance="primary"
 				@click="$resources.updateBillingInformation.submit()"
 				:loading="$resources.updateBillingInformation.loading"
 			>

@@ -36,7 +36,7 @@
 					</div>
 
 					<template v-slot:actions>
-						<Button type="primary" route="/sites/new">New Site</Button>
+						<Button appearance="primary" route="/sites/new">New Site</Button>
 					</template>
 				</Card>
 
@@ -66,7 +66,7 @@
 						</p>
 					</div>
 					<template v-slot:actions>
-						<Button type="primary" route="/benches/new">New Bench</Button>
+						<Button appearance="primary" route="/benches/new">New Bench</Button>
 					</template>
 				</Card>
 			</div>
@@ -89,7 +89,7 @@
 
 			<template v-slot:actions>
 				<Button
-					type="primary"
+					appearance="primary"
 					:loading="$resources.installAppOnSite.loading"
 					@click="installAppOnSite(selectedSite)"
 					>Proceed</Button

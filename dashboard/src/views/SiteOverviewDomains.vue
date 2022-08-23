@@ -111,7 +111,7 @@
 				<Button
 					v-if="!dnsVerified"
 					class="ml-3"
-					type="primary"
+					appearance="primary"
 					:loading="$resources.checkDNS.loading"
 					@click="
 						$resources.checkDNS.submit({
@@ -125,7 +125,7 @@
 				<Button
 					v-if="dnsVerified"
 					class="ml-3"
-					type="primary"
+					appearance="primary"
 					:loading="$resources.addDomain.loading"
 					@click="
 						$resources.addDomain.submit({

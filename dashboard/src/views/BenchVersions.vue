@@ -182,7 +182,7 @@
 				<Button
 					:loading="$resources.generateCertificate.loading"
 					@click="$resources.generateCertificate.fetch()"
-					type="primary"
+					appearance="primary"
 					>Generate SSH Certificate</Button
 				>
 			</template>

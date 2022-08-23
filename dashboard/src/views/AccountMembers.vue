@@ -59,7 +59,7 @@
 					<Button @click="showAddMemberForm = false"> Cancel </Button>
 					<Button
 						class="ml-2"
-						type="primary"
+						appearance="primary"
 						:loading="$resources.addMember.loading"
 						@click="$resources.addMember.submit({ email: memberEmail })"
 					>
@@ -68,7 +68,7 @@
 				</div>
 			</div>
 			<div v-else class="mt-5 flex flex-row justify-end">
-				<Button type="primary" @click="showAddMemberForm = true">
+				<Button appearance="primary" @click="showAddMemberForm = true">
 					Add Member
 				</Button>
 			</div>

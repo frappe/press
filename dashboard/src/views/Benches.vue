@@ -4,7 +4,7 @@
 			<h1 slot="title">Benches</h1>
 			<template v-slot:actions>
 				<div class="flex items-center">
-					<Button route="/benches/new" type="primary" iconLeft="plus">
+					<Button route="/benches/new" appearance="primary" iconLeft="plus">
 						New Bench
 					</Button>
 				</div>
@@ -18,7 +18,7 @@
 				<div class="text-xl text-gray-800">
 					You haven't created any benches yet.
 				</div>
-				<Button route="/benches/new" class="mt-10" type="primary">
+				<Button route="/benches/new" class="mt-10" appearance="primary">
 					Create your first Bench
 				</Button>
 			</div>

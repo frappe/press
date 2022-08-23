@@ -5,7 +5,7 @@
 			site now?
 		</span>
 		<template #actions>
-			<Button type="primary" @click="showUpdatesDialog = true">
+			<Button appearance="primary" @click="showUpdatesDialog = true">
 				Show updates
 			</Button>
 		</template>
@@ -26,7 +26,7 @@
 			<ErrorMessage class="mt-1" :error="$resources.scheduleUpdate.error" />
 			<template #actions>
 				<Button
-					type="primary"
+					appearance="primary"
 					@click="$resources.scheduleUpdate.fetch()"
 					:loading="$resources.scheduleUpdate.loading"
 				>

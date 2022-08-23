@@ -54,14 +54,14 @@
 			<ErrorMessage class="mt-2" :error="$resources.createSecret.error" />
 			<template #actions>
 				<Button
-					type="primary"
+					appearance="primary"
 					@click="$resources.createSecret.submit()"
 					v-if="!$account.user.api_key && !$resources.createSecret.data"
 				>
 					Create New API Key
 				</Button>
 				<Button
-					type="primary"
+					appearance="primary"
 					@click="$resources.createSecret.submit()"
 					v-if="$account.user.api_key && !$resources.createSecret.data"
 				>

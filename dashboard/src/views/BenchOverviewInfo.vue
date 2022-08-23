@@ -38,7 +38,7 @@
 				<div class="space-x-2">
 					<Button @click="showEditTitleDialog = false">Cancel</Button>
 					<Button
-						type="primary"
+						appearance="primary"
 						:loading="$resources.editTitle.loading"
 						loadingText="Saving..."
 						@click="$resources.editTitle.submit()"

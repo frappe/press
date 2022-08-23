@@ -41,7 +41,7 @@
 			/>
 			<template #actions>
 				<Button
-					type="primary"
+					appearance="primary"
 					v-if="selectedRegion"
 					:loading="$resources.addRegion.loading"
 					@click="

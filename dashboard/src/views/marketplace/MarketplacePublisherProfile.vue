@@ -3,7 +3,7 @@
 		<div v-if="publisherProfileInfo && !publisherProfileInfo.profile_created">
 			<Alert title="You have not created your profile yet.">
 				<template #actions>
-					<Button type="primary" @click="showEditProfileDialog = true"
+					<Button appearance="primary" @click="showEditProfileDialog = true"
 						>Create</Button
 					>
 				</template>
@@ -58,7 +58,7 @@
 				<div class="space-x-2">
 					<Button @click="showEditProfileDialog = false">Cancel</Button>
 					<Button
-						type="primary"
+						appearance="primary"
 						:loading="$resources.updatePublisherProfile.loading"
 						loadingText="Saving..."
 						@click="$resources.updatePublisherProfile.submit()"

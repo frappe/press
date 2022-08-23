@@ -33,7 +33,7 @@
 				/>
 				<Button
 					class="mt-4"
-					type="primary"
+					appearance="primary"
 					@click="updateAddress"
 					:loading="$resources.updateBillingInformation.loading"
 				>
@@ -69,7 +69,7 @@
 					@complete="onSuccess"
 				/>
 				<Button
-					type="primary"
+					appearance="primary"
 					v-if="paymentMode == 'Partner Credits'"
 					@click="onSuccess"
 					>Save</Button

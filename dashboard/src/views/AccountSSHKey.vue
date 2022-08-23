@@ -36,7 +36,7 @@
 			</div>
 			<ErrorMessage class="mt-2" :error="$resources.saveKey.error" />
 			<template #actions>
-				<Button type="primary" @click="$resources.saveKey.submit()">
+				<Button appearance="primary" @click="$resources.saveKey.submit()">
 					Add Key
 				</Button>
 			</template>

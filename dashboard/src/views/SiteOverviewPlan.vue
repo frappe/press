@@ -78,7 +78,7 @@
 				</Button>
 				<Button
 					class="ml-2"
-					type="primary"
+					appearance="primary"
 					:loading="$resources.changePlan.loading"
 					@click="$resources.changePlan.submit()"
 				>

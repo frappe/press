@@ -7,7 +7,7 @@
 					Enable your account to start creating sites
 
 					<template #actions>
-						<Button type="primary" route="/account/profile">
+						<Button appearance="primary" route="/account/profile">
 							Enable Account
 						</Button>
 					</template>
@@ -25,7 +25,10 @@
 					</strong>
 					more in credits.
 					<template #actions>
-						<Button @click="showPrepaidCreditsDialog = true" type="primary">
+						<Button
+							@click="showPrepaidCreditsDialog = true"
+							appearance="primary"
+						>
 							Add Credits
 						</Button>
 					</template>
@@ -36,7 +39,7 @@
 					<template v-if="latestUnpaidInvoiceStripeUrl" #actions>
 						<Button
 							icon-left="external-link"
-							type="primary"
+							appearance="primary"
 							:link="latestUnpaidInvoiceStripeUrl"
 						>
 							Pay now
@@ -57,7 +60,7 @@
 				<Dropdown :items="newDropdownItems" right>
 					<template v-slot="{ toggleDropdown }">
 						<Button
-							type="primary"
+							appearance="primary"
 							iconLeft="plus"
 							class="ml-2 hidden sm:inline-flex"
 							@click.stop="toggleDropdown()"
@@ -124,7 +127,7 @@
 											? `?bench=${bench.name}&benchTitle=${bench.title}`
 											: ''
 									}`"
-									type="primary"
+									appearance="primary"
 									icon="plus"
 									v-if="showNewSiteButton(bench)"
 									class="sm:hidden"

@@ -67,7 +67,7 @@ const submitReview = useResource({
 				<Button
 					class="mt-4"
 					:loading="submitReview.loading"
-					type="primary"
+					appearance="primary"
 					@click="submitReview.submit({ ...review })"
 					>Submit</Button
 				>

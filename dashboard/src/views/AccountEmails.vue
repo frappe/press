@@ -29,7 +29,7 @@
 				<Button class="mr-3" @click="showEmailsEditDialog = false"
 					>Cancel</Button
 				>
-				<Button type="primary" @click="$resources.changeEmail.submit()">
+				<Button appearance="primary" @click="$resources.changeEmail.submit()">
 					Save Changes
 				</Button>
 			</template>

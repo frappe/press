@@ -79,7 +79,7 @@
 				</Button>
 				<Button
 					class="ml-3"
-					type="primary"
+					appearance="primary"
 					@click="$resources.enableAccount.submit()"
 					:loading="$resources.enableAccount.loading"
 				>

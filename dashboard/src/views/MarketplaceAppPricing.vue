@@ -126,7 +126,9 @@ function resetCurrentEditingPlan() {
 							<p class="mb-3.5 text-base text-gray-700">
 								Looks like you haven't created any plans yet
 							</p>
-							<Button type="primary" @click="editPlan()">Create plan</Button>
+							<Button appearance="primary" @click="editPlan()"
+								>Create plan</Button
+							>
 						</div>
 					</div>
 				</div>
@@ -219,7 +221,7 @@ function resetCurrentEditingPlan() {
 			</div>
 			<template #actions>
 				<Button
-					type="primary"
+					appearance="primary"
 					:loading="updateAppPlan.loading || createAppPlan.loading"
 					@click="savePlan"
 					@close="resetCurrentEditingPlan"

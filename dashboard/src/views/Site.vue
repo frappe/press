@@ -107,7 +107,7 @@
 				<Button
 					:loading="$resources.loginAsAdmin.loading"
 					@click="proceedWithLoginAsAdmin"
-					type="primary"
+					appearance="primary"
 					>Proceed</Button
 				>
 			</template>

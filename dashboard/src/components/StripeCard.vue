@@ -31,7 +31,7 @@
 			/>
 			<ErrorMessage class="mt-2" :error="errorMessage" />
 			<div class="mt-6 flex items-center justify-between">
-				<Button type="primary" @click="submit" :loading="addingCard">
+				<Button appearance="primary" @click="submit" :loading="addingCard">
 					Save Card
 				</Button>
 				<StripeLogo />

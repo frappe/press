@@ -85,7 +85,11 @@ const getFeatureList = features => {
 					<h1 class="mb-2 text-xl font-bold">Manage Plans</h1>
 					<p>Add, remove or edit plans for {{ app.title }} App.</p>
 				</div>
-				<Button type="primary" iconLeft="plus" @click="showCreateDialog = true">
+				<Button
+					appearance="primary"
+					iconLeft="plus"
+					@click="showCreateDialog = true"
+				>
 					Add Plan
 				</Button>
 			</div>
@@ -122,7 +126,7 @@ const getFeatureList = features => {
 				<Button class="mr-2" @click="showEditDialog = false"> Cancel </Button>
 
 				<Button
-					type="primary"
+					appearance="primary"
 					@click="
 						() => {
 							editPlan(plansData[currentPlanIndex]);
@@ -228,7 +232,7 @@ const getFeatureList = features => {
 				</Button>
 
 				<Button
-					type="primary"
+					appearance="primary"
 					@click="
 						() => {
 							createPlan();

@@ -96,7 +96,7 @@
 
 			<template #actions>
 				<Button
-					type="primary"
+					appearance="primary"
 					:loading="$resources.installApp.loading"
 					@click="$resources.installApp.submit()"
 					>Proceed</Button

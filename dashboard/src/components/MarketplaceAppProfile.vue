@@ -86,7 +86,7 @@
 				<div class="space-x-2">
 					<Button @click="showAppProfileEditDialog = false">Cancel</Button>
 					<Button
-						type="primary"
+						appearance="primary"
 						:loading="$resources.updateAppProfile.loading"
 						loadingText="Saving..."
 						@click="$resources.updateAppProfile.submit()"
