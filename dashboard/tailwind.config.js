@@ -2,6 +2,7 @@ const plugin = require('tailwindcss/plugin');
 const colors = require('tailwindcss/colors');
 
 module.exports = {
+	presets: [require('frappe-ui/src/utils/tailwind.config')],
 	content: [
 		'./public/index.html',
 		'./src/**/*.html',
