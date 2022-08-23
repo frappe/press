@@ -279,13 +279,26 @@ class MarketplaceApp(WebsiteGenerator):
 		return get_plans_for_app(self.name, frappe_version)
 
 
-def get_plans_for_app(app_name, frappe_version=None):  # Unused for now, might use later
+def get_plans_for_app(
+	app_name, frappe_version=None, include_disabled=False
+):  # Unused for now, might use later
 	plans = []
+	filters = {"app": app_name}
+
+	if not include_disabled:
+		filters["enabled"] = True
 
 	marketplace_app_plans = frappe.get_all(
 		"Marketplace App Plan",
-		filters={"app": app_name, "enabled": True},
-		fields=["name", "plan", "discount_percent", "marked_most_popular", "is_free"],
+		filters=filters,
+		fields=[
+			"name",
+			"plan",
+			"discount_percent",
+			"marked_most_popular",
+			"is_free",
+			"enabled",
+		],
 	)
 
 	for app_plan in marketplace_app_plans:
@@ -302,6 +315,7 @@ def get_plans_for_app(app_name, frappe_version=None):  # Unused for now, might u
 		plans.append(plan_data)
 
 	plans.sort(key=lambda x: x["price_usd"])
+	plans.sort(key=lambda x: x["enabled"], reverse=True)  # Enabled Plans First
 
 	return plans
 

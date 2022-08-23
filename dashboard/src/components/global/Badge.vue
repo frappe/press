@@ -25,6 +25,7 @@ export default {
 					Installing: 'yellow',
 					Rejected: 'red',
 					'Update Available': 'blue',
+					Enabled: 'blue',
 					'Awaiting Approval': 'yellow',
 					'Awaiting Deploy': 'yellow',
 					Published: 'green',
