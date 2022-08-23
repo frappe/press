@@ -315,6 +315,7 @@ def get_plans_for_app(
 		plans.append(plan_data)
 
 	plans.sort(key=lambda x: x["price_usd"])
+	plans.sort(key=lambda x: x["enabled"], reverse=True)  # Enabled Plans First
 
 	return plans
 
