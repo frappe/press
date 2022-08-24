@@ -67,9 +67,9 @@ class AccountRequest(Document):
 		if self.erpnext:
 			subject = "Set Up Your ERPNext Account"
 			template = "erpnext_verify_account"
-		elif frappe.db.get_value("Saas App", self.saas_app, "custom_verify_template"):
+		elif frappe.db.get_value("Marketplace App", self.saas_app, "custom_verify_template"):
 			app_title, subject, message, signature = frappe.db.get_value(
-				"Saas App", self.saas_app, ["title", "subject", "message", "signature"]
+				"Marketplace App", self.saas_app, ["title", "subject", "message", "signature"]
 			)
 			message = frappe.render_template(message, {})
 			signature = frappe.render_template(signature, {})
