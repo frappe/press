@@ -12,7 +12,7 @@ PRESS_AUTH_MAX_ENTRIES = 1000000
 
 def hook():
 	if frappe.form_dict.cmd:
-		path = f"/api/request/{frappe.form_dict.cmd}"
+		path = f"/api/method/{frappe.form_dict.cmd}"
 	else:
 		path = frappe.request.path
 
