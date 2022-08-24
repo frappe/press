@@ -62,6 +62,7 @@ def hook():
 
 def log(path):
 	data = {
+		"ip": frappe.local.request_ip,
 		"timestamp": frappe.utils.now(),
 		"user_type": frappe.session.data.user_type,
 		"path": path,
