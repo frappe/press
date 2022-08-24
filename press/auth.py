@@ -10,12 +10,57 @@ PRESS_AUTH_KEY = "press-auth-logs"
 PRESS_AUTH_MAX_ENTRIES = 1000000
 
 
+ALLOWED_PATHS = [
+	"/api/method/create-site-migration",
+	"/api/method/find-my-sites",
+	"/api/method/frappe.core.doctype.communication.email.mark_email_as_seen",
+	"/api/method/frappe.realtime.get_user_info",
+	"/api/method/frappe.www.login.login_via_frappe",
+	"/api/method/get-user-sites-list-for-new-ticket",
+	"/api/method/login",
+	"/api/method/logout",
+	"/api/method/press.press.doctype.razorpay_webhook_log.razorpay_webhook_log.razorpay_webhook_handler",
+	"/api/method/press.press.doctype.stripe_webhook_log.stripe_webhook_log.stripe_webhook_handler",
+	"/api/method/upload_file",
+]
+
+ALLOWED_WILDCARD_PATHS = [
+	"/api/method/frappedesk.",
+	"/api/method/press.api.",
+]
+
+DENIED_WILDCARD_PATHS = [
+	"/api/",
+]
+
+
 def hook():
 	if frappe.form_dict.cmd:
 		path = f"/api/method/{frappe.form_dict.cmd}"
 	else:
 		path = frappe.request.path
 
+	user_type = frappe.session.data.user_type
+
+	# Allow unchecked access to System Users
+	if user_type == "System User":
+		return
+
+	for denied in DENIED_WILDCARD_PATHS:
+		if path.startswith(denied):
+			for allowed in ALLOWED_WILDCARD_PATHS:
+				if path.startswith(allowed):
+					return
+			if path in ALLOWED_PATHS:
+				return
+
+			log(path)
+			frappe.throw("Access not allowed for this URL", frappe.AuthenticationError)
+
+	return
+
+
+def log(path):
 	data = {
 		"timestamp": frappe.utils.now(),
 		"user_type": frappe.session.data.user_type,
