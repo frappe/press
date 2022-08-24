@@ -20,7 +20,9 @@
   "available_on_versions",
   "features",
   "section_break_7",
-  "marked_most_popular"
+  "marked_most_popular",
+  "saas_section",
+  "standard_hosting_plan"
  ],
  "fields": [
   {
@@ -102,11 +104,22 @@
   {
    "fieldname": "column_break_2",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "saas_section",
+   "fieldtype": "Section Break",
+   "label": "SAAS"
+  },
+  {
+   "fieldname": "standard_hosting_plan",
+   "fieldtype": "Link",
+   "label": "Standard Hosting Plan",
+   "options": "Plan"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-01-27 02:36:08.557228",
+ "modified": "2022-08-24 17:33:56.748500",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "Marketplace App Plan",
