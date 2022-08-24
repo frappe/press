@@ -29,7 +29,12 @@
   "documentation",
   "column_break_16",
   "privacy_policy",
-  "terms_of_service"
+  "terms_of_service",
+  "signup_email_template_section",
+  "custom_verify_template",
+  "subject",
+  "message",
+  "signature"
  ],
  "fields": [
   {
@@ -177,6 +182,32 @@
    "in_standard_filter": 1,
    "label": "Subscription Type",
    "options": "Free\nPaid\nFreemium"
+  },
+  {
+   "fieldname": "signup_email_template_section",
+   "fieldtype": "Section Break",
+   "label": "Signup Email Template"
+  },
+  {
+   "default": "0",
+   "fieldname": "custom_verify_template",
+   "fieldtype": "Check",
+   "label": "Use custom verify template"
+  },
+  {
+   "fieldname": "subject",
+   "fieldtype": "Data",
+   "label": "Subject"
+  },
+  {
+   "fieldname": "message",
+   "fieldtype": "Text Editor",
+   "label": "Message"
+  },
+  {
+   "fieldname": "signature",
+   "fieldtype": "Text Editor",
+   "label": "Signature"
   }
  ],
  "has_web_view": 1,
@@ -200,7 +231,7 @@
    "link_fieldname": "app"
   }
  ],
- "modified": "2022-06-30 12:58:25.048546",
+ "modified": "2022-08-24 15:44:01.694304",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Marketplace App",

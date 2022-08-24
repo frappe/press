@@ -42,7 +42,7 @@
    "fieldname": "app",
    "fieldtype": "Link",
    "label": "App",
-   "options": "Saas App",
+   "options": "Marketplace App",
    "unique": 1
   },
   {
@@ -61,7 +61,7 @@
  "has_web_view": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-06-17 20:11:23.499454",
+ "modified": "2022-08-24 15:44:59.671817",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Saas Signup Generator",

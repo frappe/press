@@ -475,7 +475,7 @@
    "fieldname": "standby_for",
    "fieldtype": "Link",
    "label": "Standby For",
-   "options": "Saas App"
+   "options": "Marketplace App"
   },
   {
    "fieldname": "column_break_57",
@@ -564,7 +564,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2022-08-08 21:20:49.499242",
+ "modified": "2022-08-24 16:25:48.281414",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

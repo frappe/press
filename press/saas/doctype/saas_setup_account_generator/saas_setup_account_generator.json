@@ -29,7 +29,7 @@
    "fieldname": "app",
    "fieldtype": "Link",
    "label": "App",
-   "options": "Saas App",
+   "options": "Marketplace App",
    "unique": 1
   },
   {
@@ -78,7 +78,7 @@
  "has_web_view": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-06-17 20:12:26.623039",
+ "modified": "2022-08-24 16:29:55.293281",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Saas Setup Account Generator",
