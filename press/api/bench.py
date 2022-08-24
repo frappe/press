@@ -640,3 +640,9 @@ def generate_certificate(name):
 			"validity": "6h",
 		}
 	).insert()
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def get_title_and_creation(name):
+	return frappe.db.get_value("Release Group", name, ["title", "creation"], as_dict=True)

@@ -204,11 +204,12 @@ export default {
 			this.privateBench = true;
 			this.selectedGroup = this.bench;
 			this.benchTitle = this.bench;
-			let { title, creation } = await this.$call('frappe.client.get_value', {
-				doctype: 'Release Group',
-				filters: { name: this.bench },
-				fieldname: JSON.stringify(['title', 'creation'])
-			});
+			let { title, creation } = await this.$call(
+				'press.api.bench.get_title_and_creation',
+				{
+					name: this.bench
+				}
+			);
 			this.benchTitle = title;
 
 			// poor man's bench paywall
