@@ -23,7 +23,9 @@ class MarketplaceApp(WebsiteGenerator):
 		self.name = self.app
 
 	def before_insert(self):
-		self.long_description = self.fetch_readme()
+		if not frappe.flags.in_test:
+			self.long_description = self.fetch_readme()
+
 		self.set_route()
 
 	def set_route(self):
