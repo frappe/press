@@ -8,7 +8,7 @@ import frappe
 from typing import Dict, List
 from frappe.core.utils import find
 from press.api.bench import options
-from press.api.site import protected
+from press.api.site import is_marketplace_app_source, protected
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	MarketplaceAppPlan,
 )
@@ -540,7 +540,7 @@ def get_app_info(app: str):
 
 
 @frappe.whitelist()
-def get_apps_with_plans(apps, release_group: str = None):
+def get_apps_with_plans(apps, release_group: str):
 
 	if isinstance(apps, str):
 		apps = json.loads(apps)
@@ -554,7 +554,14 @@ def get_apps_with_plans(apps, release_group: str = None):
 
 	frappe_version = frappe.db.get_value("Release Group", release_group, "version")
 	for app in m_apps:
-		plans = get_plans_for_app(app.name, frappe_version)
+		app_source = frappe.db.get_value(
+			"Release Group App", {"parent": release_group, "app": app.name}, "source"
+		)
+		if is_marketplace_app_source(app_source):
+			plans = get_plans_for_app(app.name, frappe_version)
+		else:
+			plans = []
+
 		if len(plans) > 0:
 			apps_with_plans.append(app)
 
