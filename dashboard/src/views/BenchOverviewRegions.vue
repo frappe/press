@@ -32,7 +32,7 @@
 			title="Select secondary region for your bench"
 			v-model="showAddRegionDialog"
 		>
-			<Loading class="py-2" v-if="$resources.availableRegions.loading" />
+			<LoadingText class="py-2" v-if="$resources.availableRegions.loading" />
 
 			<RichSelect
 				:value="selectedRegion"

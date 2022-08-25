@@ -56,7 +56,7 @@
 		<ErrorMessage :error="this.$resources.fetchLatestAppUpdate.error" />
 
 		<Dialog title="Add apps to your bench" v-model="showAddAppDialog">
-			<Loading class="py-2" v-if="$resources.installableApps.loading" />
+			<LoadingText class="py-2" v-if="$resources.installableApps.loading" />
 			<AppSourceSelector
 				v-else
 				class="pt-1"

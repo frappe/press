@@ -74,11 +74,11 @@
 					@click="onSuccess"
 					>Save</Button
 				>
-				<Loading
+				<LoadingText
 					text="Updating account balance..."
 					v-if="$resources.prepaidCredits.loading"
 				/>
-				<Loading
+				<LoadingText
 					text="Updating payment information..."
 					v-if="$resources.changePaymentMode.loading"
 				/>

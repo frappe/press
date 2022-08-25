@@ -76,7 +76,7 @@
 					<h2 class="text-lg font-semibold">Sites</h2>
 				</div>
 				<div class="rounded-md bg-gray-50 px-4 py-3">
-					<Loading />
+					<LoadingText />
 				</div>
 			</div>
 			<div v-else>

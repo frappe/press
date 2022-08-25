@@ -1,7 +1,7 @@
 <template>
 	<div>
 		<div class="flex justify-center">
-			<Loading v-if="$resources.options.loading" />
+			<LoadingText v-if="$resources.options.loading" />
 
 			<div class="flex flex-col items-center gap-2">
 				<ErrorMessage
