@@ -40,7 +40,7 @@ def hook():
 	else:
 		path = frappe.request.path
 
-	user_type = frappe.session.data.user_type
+	user_type = frappe.get_cached_value("User", frappe.session.user, "user_type")
 
 	# Allow unchecked access to System Users
 	if user_type == "System User":
@@ -54,19 +54,19 @@ def hook():
 			if path in ALLOWED_PATHS:
 				return
 
-			log(path)
+			log(path, user_type)
 			frappe.throw("Access not allowed for this URL", frappe.AuthenticationError)
 
 	return
 
 
-def log(path):
+def log(path, user_type):
 	data = {
 		"ip": frappe.local.request_ip,
 		"timestamp": frappe.utils.now(),
-		"user_type": frappe.session.data.user_type,
+		"user_type": user_type,
 		"path": path,
-		"user": frappe.session.data.user,
+		"user": frappe.session.user,
 		"referer": frappe.request.headers.get("Referer", ""),
 	}
 
