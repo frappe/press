@@ -14,6 +14,9 @@ export default defineConfig({
 			'@': path.resolve(__dirname, 'src')
 		}
 	},
+	optimizeDeps: {
+		include: ['feather-icons']
+	},
 	build: {
 		outDir: '../press/public/dashboard',
 		emptyOutDir: true,
