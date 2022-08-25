@@ -17,7 +17,7 @@
 		"core-js": "^3.6.4",
 		"feather-icons": "^4.26.0",
 		"frappe-charts": "^1.3.0",
-		"frappe-ui": "^0.0.52",
+		"frappe-ui": "^0.0.55",
 		"libarchive.js": "^1.3.0",
 		"lodash": "^4.17.19",
 		"luxon": "^1.22.0",
