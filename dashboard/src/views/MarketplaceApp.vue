@@ -12,7 +12,12 @@
 				>
 					<div class="mt-2 flex items-center">
 						<h1 class="text-2xl font-bold">{{ app.title }}</h1>
-						<Badge class="ml-4" :status="app.status">{{ app.status }}</Badge>
+						<Badge
+							class="ml-4"
+							:status="app.status"
+							:colorMap="$badgeStatusColorMap"
+							>{{ app.status }}</Badge
+						>
 					</div>
 					<div class="space-x-3">
 						<Button

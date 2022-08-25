@@ -40,24 +40,27 @@ const benchData = computed(() => {
 		>
 			<Card :title="group.title">
 				<template #actions>
-					<Badge :status="group.status" />
+					<Badge :status="group.status" :colorMap="$badgeStatusColorMap" />
 				</template>
 				<hr class="mb-2" />
 				<div class="flex items-center justify-between py-2">
 					<p class="w-fit">Active Sites</p>
-					<Badge class="w-fit" status="Updating"
+					<Badge
+						class="w-fit"
+						status="Updating"
+						:colorMap="$badgeStatusColorMap"
 						>• {{ group.active_sites }}</Badge
 					>
 				</div>
 				<div class="flex items-center justify-between py-2">
 					<p class="w-fit">Broken Sites</p>
-					<Badge class="w-fit" status="Broken"
+					<Badge class="w-fit" status="Broken" :colorMap="$badgeStatusColorMap"
 						>• {{ group.broken_sites }}</Badge
 					>
 				</div>
 				<div class="flex items-center justify-between py-2">
 					<p class="w-fit">Suspended Sites</p>
-					<Badge class="w-fit" status="Pending"
+					<Badge class="w-fit" status="Pending" :colorMap="$badgeStatusColorMap"
 						>• {{ group.suspended_sites }}</Badge
 					>
 				</div>

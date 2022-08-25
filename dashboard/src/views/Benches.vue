@@ -39,7 +39,7 @@
 				>
 					<span class="">{{ bench.title }}</span>
 					<span class="text-right md:text-center">
-						<Badge :status="bench.status" />
+						<Badge :status="bench.status" :colorMap="$badgeStatusColorMap" />
 					</span>
 					<FormatDate class="hidden text-right md:block" type="relative">
 						{{ bench.creation }}
@@ -53,6 +53,7 @@
 								bench.update_available
 							"
 							:status="'Update Available'"
+							:colorMap="$badgeStatusColorMap"
 							class="mr-4"
 						/>
 					</span>

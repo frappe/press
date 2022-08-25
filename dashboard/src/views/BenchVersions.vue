@@ -26,7 +26,11 @@
 					"
 				>
 					<template #actions>
-						<Badge v-if="v.status != 'Active'" :status="v.status" />
+						<Badge
+							v-if="v.status != 'Active'"
+							:status="v.status"
+							:colorMap="$badgeStatusColorMap"
+						/>
 						<Badge v-else color="green">
 							{{ v.sites.length }}
 							{{ $plural(v.sites.length, 'site', 'sites') }}

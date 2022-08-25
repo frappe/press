@@ -1,4 +1,4 @@
-import { Button, Alert } from 'frappe-ui';
+import { Button, Alert, Badge } from 'frappe-ui';
 import outsideClickDirective from './outsideClickDirective';
 
 let components = import.meta.globEager('./*.vue'); // To get each component inside this folder
@@ -14,6 +14,7 @@ export default function registerGlobalComponents(app) {
 
 	app.component('Button', Button);
 	app.component('Alert', Alert);
+	app.component('Badge', Badge);
 }
 
 export { components };

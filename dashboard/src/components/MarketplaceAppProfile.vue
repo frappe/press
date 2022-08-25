@@ -60,7 +60,10 @@
 				:description="branchUri(source.source_information)"
 			>
 				<template #actions>
-					<Badge :status="source.source_information.status" />
+					<Badge
+						:status="source.source_information.status"
+						:colorMap="$badgeStatusColorMap"
+					/>
 				</template>
 			</ListItem>
 		</div>

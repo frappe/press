@@ -15,7 +15,11 @@
 				>
 					<div class="mt-2 flex items-center">
 						<h1 class="text-2xl font-bold">{{ bench.title }}</h1>
-						<Badge class="ml-4" :status="bench.status">
+						<Badge
+							class="ml-4"
+							:status="bench.status"
+							:colorMap="$badgeStatusColorMap"
+						>
 							{{ bench.status }}
 						</Badge>
 					</div>

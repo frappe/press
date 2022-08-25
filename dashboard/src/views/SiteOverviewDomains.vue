@@ -34,6 +34,7 @@
 							<Badge
 								v-if="d.status != 'Active' || d.primary"
 								:status="d.status"
+								:colorMap="$badgeStatusColorMap"
 							>
 								{{ d.primary ? 'Primary' : d.status }}
 							</Badge>

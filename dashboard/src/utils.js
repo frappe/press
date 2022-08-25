@@ -81,6 +81,18 @@ let utils = {
 	computed: {
 		$theme() {
 			return theme;
+		},
+		$badgeStatusColorMap() {
+			return {
+				Installing: 'yellow',
+				'Update Available': 'blue',
+				Enabled: 'blue',
+				'Awaiting Approval': 'yellow',
+				'Awaiting Deploy': 'yellow',
+				Deployed: 'green',
+				Expired: 'red',
+				Paid: 'green'
+			};
 		}
 	}
 };

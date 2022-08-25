@@ -30,7 +30,6 @@
 				<Badge
 					class="cursor-pointer hover:text-blue-500"
 					color="blue"
-					clickable="true"
 				>
 					{{ deployFrom(app) }}
 				</Badge>
@@ -52,7 +51,6 @@
 				<Badge
 					class="cursor-pointer hover:text-blue-500"
 					color="blue"
-					clickable="true"
 				>
 					{{ deployTo(app) }}
 				</Badge>
