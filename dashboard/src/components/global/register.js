@@ -29,7 +29,7 @@ let globalFrappeUIComponents = {
 	SuccessMessage,
 	Spinner,
 	Link,
-	Dialog,
+	FrappeUIDialog: Dialog,
 	Input
 };
 
