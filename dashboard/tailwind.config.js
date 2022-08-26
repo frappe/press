@@ -7,7 +7,8 @@ module.exports = {
 		'./public/index.html',
 		'./src/**/*.html',
 		'./src/**/*.vue',
-		'./src/assets/*.css'
+		'./src/assets/*.css',
+		'./node_modules/frappe-ui/src/components/**/*.{vue,js,ts}'
 	],
 	theme: {
 		extend: {
