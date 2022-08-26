@@ -17,6 +17,22 @@ import outsideClickDirective from './outsideClickDirective';
 
 let components = import.meta.globEager('./*.vue'); // To get each component inside this folder
 
+let globalFrappeUIComponents = {
+	Button,
+	Alert,
+	Avatar,
+	Badge,
+	FeatherIcon,
+	Card,
+	LoadingIndicator,
+	LoadingText,
+	SuccessMessage,
+	Spinner,
+	Link,
+	Dialog,
+	Input
+};
+
 export default function registerGlobalComponents(app) {
 	app.directive('on-outside-click', outsideClickDirective);
 
@@ -26,19 +42,9 @@ export default function registerGlobalComponents(app) {
 		app.component(name, component.default || component);
 	}
 
-	app.component('Button', Button);
-	app.component('Alert', Alert);
-	app.component('Avatar', Avatar);
-	app.component('Badge', Badge);
-	app.component('FeatherIcon', FeatherIcon);
-	app.component('Card', Card);
-	app.component('LoadingIndicator', LoadingIndicator);
-	app.component('LoadingText', LoadingText);
-	app.component('SuccessMessage', SuccessMessage);
-	app.component('Spinner', Spinner);
-	app.component('Link', Link);
-	app.component('FrappeUIDialog', Dialog);
-	app.component('Input', Input);
+	for (let key in globalFrappeUIComponents) {
+		app.component(key, globalFrappeUIComponents[key]);
+	}
 }
 
 export { components };
