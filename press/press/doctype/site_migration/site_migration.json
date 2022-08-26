@@ -6,13 +6,14 @@
  "engine": "InnoDB",
  "field_order": [
   "site",
+  "source_bench",
   "scheduled_time",
-  "status",
   "migration_type",
   "column_break_3",
-  "source_bench",
+  "status",
   "destination_bench",
   "backup",
+  "skip_failing_patches",
   "section_break_5",
   "source_server",
   "source_cluster",
@@ -143,11 +144,17 @@
    "fieldname": "scheduled_time",
    "fieldtype": "Datetime",
    "label": "Scheduled Time"
+  },
+  {
+   "default": "0",
+   "fieldname": "skip_failing_patches",
+   "fieldtype": "Check",
+   "label": "Skip Failing Patches"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-10-20 10:20:54.510186",
+ "modified": "2022-08-27 02:16:43.102541",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Migration",
@@ -168,6 +175,7 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "title_field": "site",
  "track_changes": 1
 }
