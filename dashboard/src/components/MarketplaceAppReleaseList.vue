@@ -53,13 +53,11 @@
 					>
 						{{ release.message }}
 					</p>
-					<a
-						:href="getCommitUrl(release.hash)"
-						target="_blank"
-						class="hidden font-mono text-blue-700 hover:text-blue-500 md:inline"
-					>
-						{{ release.tag || release.hash.slice(0, 6) }}
-					</a>
+					<CommitTag
+						class="hidden md:inline"
+						:tag="release.tag || release.hash.slice(0, 6)"
+						:link="getCommitUrl(release.hash)"
+					/>
 					<span class="hidden text-gray-600 md:inline">
 						{{ release.author }}
 					</span>
@@ -125,6 +123,7 @@
 </template>
 
 <script>
+import CommitTag from './utils/CommitTag.vue';
 export default {
 	props: {
 		app: {
@@ -142,7 +141,6 @@ export default {
 	mounted() {
 		this.$socket.on('new_app_release_created', this.releaseStateUpdate);
 		this.$socket.on('request_status_changed', this.releaseStateUpdate);
-
 		if (this.sources.length > 0) {
 			this.selectedSource = this.sources[0].source;
 		}
@@ -224,7 +222,6 @@ export default {
 			this.pageStart = 0;
 			this.$resources.releases.reset();
 			this.$resources.releases.submit();
-
 			// Re-fetch latest approved
 			this.$resources.latestApproved.fetch();
 		},
@@ -236,7 +233,6 @@ export default {
 			const requestAlreadyExists = this.$resources.createApprovalRequest.error
 				.toLowerCase()
 				.includes('already awaiting');
-
 			if (requestAlreadyExists) {
 				// A request already exists
 				this.$confirm({
@@ -294,7 +290,6 @@ export default {
 			if (!this.$resources.releases.data) {
 				return [];
 			}
-
 			return this.$resources.releases.data;
 		},
 		latestApprovedOn() {
@@ -322,7 +317,6 @@ export default {
 			) {
 				return '';
 			}
-
 			return this.$resources.appSource.data.repository_url;
 		}
 	},
@@ -333,6 +327,7 @@ export default {
 				this.$resources.appSource.submit({ name: value });
 			}
 		}
-	}
+	},
+	components: { CommitTag }
 };
 </script>
