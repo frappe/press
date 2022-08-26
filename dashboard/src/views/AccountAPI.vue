@@ -19,44 +19,48 @@
 				Regenerate API Secret
 			</Button>
 		</template>
-		<Dialog
-			title="API Access"
+		<FrappeUIDialog
+			:options="{ title: 'API Access' }"
 			v-model="showCreateSecretDialog"
 			v-on:close="createSecretdialogClosed"
 		>
-			<div v-if="!$resources.createSecret.data">
-				<p class="text-base">
-					API key and API secret pairs can be used to access the
-					<a href="/docs/api" class="underline">Frappe Cloud API</a>.
-				</p>
-			</div>
-			<div v-if="$resources.createSecret.data">
-				<p class="text-base">
-					Please copy the API secret now. You won’t be able to see it again!
-				</p>
-				<label class="block pt-2">
-					<span class="mb-2 block text-sm leading-4 text-gray-700"
-						>API Key</span
-					>
-					<ClickToCopyField
-						:textContent="$resources.createSecret.data.api_key"
-					/>
-				</label>
-				<label class="block pt-2">
-					<span class="mb-2 block text-sm leading-4 text-gray-700"
-						>API Secret</span
-					>
-					<ClickToCopyField
-						:textContent="$resources.createSecret.data.api_secret"
-					/>
-				</label>
-			</div>
-			<ErrorMessage class="mt-2" :error="$resources.createSecret.error" />
+			<template v-slot:body-content>
+				<div v-if="!$resources.createSecret.data">
+					<p class="text-base">
+						API key and API secret pairs can be used to access the
+						<a href="/docs/api" class="underline">Frappe Cloud API</a>.
+					</p>
+				</div>
+				<div v-if="$resources.createSecret.data">
+					<p class="text-base">
+						Please copy the API secret now. You won’t be able to see it again!
+					</p>
+					<label class="block pt-2">
+						<span class="mb-2 block text-sm leading-4 text-gray-700"
+							>API Key</span
+						>
+						<ClickToCopyField
+							:textContent="$resources.createSecret.data.api_key"
+						/>
+					</label>
+					<label class="block pt-2">
+						<span class="mb-2 block text-sm leading-4 text-gray-700"
+							>API Secret</span
+						>
+						<ClickToCopyField
+							:textContent="$resources.createSecret.data.api_secret"
+						/>
+					</label>
+				</div>
+				<ErrorMessage class="mt-2" :error="$resources.createSecret.error" />
+			</template>
+
 			<template #actions>
 				<Button
 					appearance="primary"
 					@click="$resources.createSecret.submit()"
 					v-if="!$account.user.api_key && !$resources.createSecret.data"
+					:loading="$resources.createSecret.loading"
 				>
 					Create New API Key
 				</Button>
@@ -64,11 +68,12 @@
 					appearance="primary"
 					@click="$resources.createSecret.submit()"
 					v-if="$account.user.api_key && !$resources.createSecret.data"
+					:loading="$resources.createSecret.loading"
 				>
 					Regenerate API Secret
 				</Button>
 			</template>
-		</Dialog>
+		</FrappeUIDialog>
 	</Card>
 </template>
 <script>

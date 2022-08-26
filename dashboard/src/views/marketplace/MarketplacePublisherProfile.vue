@@ -42,17 +42,22 @@
 			</Card>
 		</div>
 
-		<Dialog title="Edit Publisher Profile" v-model="showEditProfileDialog">
-			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-				<Input label="Display Name" type="text" v-model="displayName" />
-				<Input label="Contact Email" type="email" v-model="contactEmail" />
-				<Input label="Website" type="text" v-model="website" />
-			</div>
+		<FrappeUIDialog
+			:options="{ title: 'Edit Publisher Profile' }"
+			v-model="showEditProfileDialog"
+		>
+			<template v-slot:body-content>
+				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+					<Input label="Display Name" type="text" v-model="displayName" />
+					<Input label="Contact Email" type="email" v-model="contactEmail" />
+					<Input label="Website" type="text" v-model="website" />
+				</div>
 
-			<ErrorMessage
-				class="mt-4"
-				:error="$resources.updatePublisherProfile.error"
-			/>
+				<ErrorMessage
+					class="mt-4"
+					:error="$resources.updatePublisherProfile.error"
+				/>
+			</template>
 
 			<template #actions>
 				<div class="space-x-2">
@@ -67,7 +72,7 @@
 					</Button>
 				</div>
 			</template>
-		</Dialog>
+		</FrappeUIDialog>
 	</div>
 </template>
 

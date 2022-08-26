@@ -78,10 +78,9 @@
 			</div>
 		</div>
 
-		<Dialog
-			title="Migrate Database"
+		<FrappeUIDialog
+			:options="{ title: 'Migrate Database' }"
 			v-model="showMigrateDialog"
-			:dismissable="true"
 			@close="
 				() => {
 					$resources.migrateDatabase.reset();
@@ -89,24 +88,26 @@
 				}
 			"
 		>
-			<p class="text-base">
-				<b>bench migrate</b> command will be executed on your database. Are you
-				sure you want to run this command? We recommend that you download a
-				database backup before continuing.
-			</p>
-			<ErrorMessage class="mt-2" :error="$resources.migrateDatabase.error" />
-			<div class="mt-2">
-				<!-- Skip Failing Checkbox -->
-				<input
-					id="skip-failing"
-					type="checkbox"
-					class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-					v-model="wantToSkipFailingPatches"
-				/>
-				<label for="skip-failing" class="ml-2 text-sm text-gray-900">
-					Skip failing patches (if any patch fails)
-				</label>
-			</div>
+			<template v-slot:body-content>
+				<p class="text-base">
+					<b>bench migrate</b> command will be executed on your database. Are
+					you sure you want to run this command? We recommend that you download
+					a database backup before continuing.
+				</p>
+				<ErrorMessage class="mt-2" :error="$resources.migrateDatabase.error" />
+				<div class="mt-2">
+					<!-- Skip Failing Checkbox -->
+					<input
+						id="skip-failing"
+						type="checkbox"
+						class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+						v-model="wantToSkipFailingPatches"
+					/>
+					<label for="skip-failing" class="ml-2 text-sm text-gray-900">
+						Skip failing patches (if any patch fails)
+					</label>
+				</div>
+			</template>
 			<template #actions>
 				<Button
 					type="danger"
@@ -116,7 +117,7 @@
 					Migrate
 				</Button>
 			</template>
-		</Dialog>
+		</FrappeUIDialog>
 
 		<Dialog title="Restore" v-model="showRestoreDialog">
 			<div class="space-y-4">

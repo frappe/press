@@ -1,133 +1,141 @@
 <template>
-	<Dialog
+	<FrappeUIDialog
+		:options="{ title: 'Access Database' }"
 		v-if="site"
 		:modelValue="Boolean(site) && show"
-		title="Access Database"
-		:dismissable="true"
 		@close="dialogClosed"
 	>
-		<Button
-			v-if="$resources.fetchDatabaseAccessInfo.loading"
-			:loading="$resources.fetchDatabaseAccessInfo.loading"
-			>Loading</Button
-		>
+		<template v-slot:body-content>
+			<LoadingIndicator v-if="$resources.fetchDatabaseAccessInfo.loading" />
 
-		<!-- Not available on current plan, upsell higher plans -->
-		<div v-else-if="!databaseAccessInfo?.is_available_on_current_plan">
-			<div>
-				<p class="text-base">
-					Database access is not available on your current plan. Please upgrade
-					your plan to access your site database.
-				</p>
-
-				<Button
-					class="mt-4"
-					appearance="primary"
-					@click="showChangePlanDialog = true"
-					>Upgrade Site Plan</Button
-				>
-			</div>
-
-			<Dialog title="Upgrade Plan" v-model="showChangePlanDialog">
-				<SitePlansTable
-					class="mt-3"
-					:plans="plans"
-					v-model:selectedPlan="selectedPlan"
-				/>
-				<ErrorMessage class="mt-4" :error="$resources.changePlan.error" />
-				<template #actions>
-					<Button type="secondary" @click="showChangePlanDialog = false">
-						Cancel
-					</Button>
-					<Button
-						class="ml-2"
-						appearance="primary"
-						:loading="$resources.changePlan.loading"
-						@click="$resources.changePlan.submit()"
-					>
-						Submit
-					</Button>
-				</template>
-			</Dialog>
-		</div>
-
-		<!-- Available on the current plan -->
-		<div v-else>
-			<div v-if="databaseAccessInfo">
-				<div v-if="databaseAccessInfo.is_database_access_enabled">
-					<div>
-						<p class="mb-2 text-base font-semibold text-gray-700">
-							Using an Analytics or Business Intelligence Tool
-						</p>
-						<p class="mb-2 text-base">
-							Use following credentials with your analytics or business
-							intelligence tool
-						</p>
-						<p class="ml-1 font-mono text-sm">
-							Host: {{ databaseAccessInfo.credentials.host }}
-						</p>
-						<p class="ml-1 font-mono text-sm">
-							Port: {{ databaseAccessInfo.credentials.port }}
-						</p>
-						<p class="ml-1 font-mono text-sm">
-							Database Name: {{ databaseAccessInfo.credentials.database }}
-						</p>
-						<p class="ml-1 font-mono text-sm">
-							Username: {{ databaseAccessInfo.credentials.username }}
-						</p>
-						<p class="ml-1 font-mono text-sm">
-							Password: {{ databaseAccessInfo.credentials.password }}
-						</p>
-					</div>
-					<div class="pt-5 pb-2">
-						<p class="mb-2 text-base font-semibold text-gray-700">
-							Using MariaDB Client
-						</p>
-						<p class="mb-2 text-base">
-							<span
-								>Run this command in your terminal to access MariaDB
-								console</span
-							>
-						</p>
-						<ClickToCopyField class="ml-1" :textContent="dbAccessCommand" />
-						<p class="mt-3 text-sm">
-							Note: You should have a
-							<span class="font-mono">mariadb</span> client installed on your
-							computer.
-						</p>
-					</div>
-				</div>
-				<div v-else>
-					<p class="mb-2 text-sm">
-						Database console access is disabled for this site.
+			<!-- Not available on current plan, upsell higher plans -->
+			<div v-else-if="!databaseAccessInfo?.is_available_on_current_plan">
+				<div>
+					<p class="text-base">
+						Database access is not available on your current plan. Please
+						upgrade your plan to access your site database.
 					</p>
+
+					<Button
+						class="mt-4"
+						appearance="primary"
+						@click="showChangePlanDialog = true"
+						>Upgrade Site Plan</Button
+					>
+				</div>
+
+				<FrappeUIDialog
+					:options="{ title: 'Upgrade Plan' }"
+					v-model="showChangePlanDialog"
+				>
+					<template v-slot:body-content>
+						<SitePlansTable
+							class="mt-3"
+							:plans="plans"
+							v-model:selectedPlan="selectedPlan"
+						/>
+						<ErrorMessage class="mt-4" :error="$resources.changePlan.error" />
+					</template>
+					<template #actions>
+						<Button type="secondary" @click="showChangePlanDialog = false">
+							Cancel
+						</Button>
+						<Button
+							class="ml-2"
+							appearance="primary"
+							:loading="$resources.changePlan.loading"
+							@click="$resources.changePlan.submit()"
+						>
+							Submit
+						</Button>
+					</template>
+				</FrappeUIDialog>
+			</div>
+
+			<!-- Available on the current plan -->
+			<div v-else>
+				<div v-if="databaseAccessInfo">
+					<div v-if="databaseAccessInfo.is_database_access_enabled">
+						<div>
+							<p class="mb-2 text-base font-semibold text-gray-700">
+								Using an Analytics or Business Intelligence Tool
+							</p>
+							<p class="mb-2 text-base">
+								Use following credentials with your analytics or business
+								intelligence tool
+							</p>
+							<p class="ml-1 font-mono text-sm">
+								Host: {{ databaseAccessInfo.credentials.host }}
+							</p>
+							<p class="ml-1 font-mono text-sm">
+								Port: {{ databaseAccessInfo.credentials.port }}
+							</p>
+							<p class="ml-1 font-mono text-sm">
+								Database Name: {{ databaseAccessInfo.credentials.database }}
+							</p>
+							<p class="ml-1 font-mono text-sm">
+								Username: {{ databaseAccessInfo.credentials.username }}
+							</p>
+							<p class="ml-1 font-mono text-sm">
+								Password: {{ databaseAccessInfo.credentials.password }}
+							</p>
+						</div>
+						<div class="pt-5 pb-2">
+							<p class="mb-2 text-base font-semibold text-gray-700">
+								Using MariaDB Client
+							</p>
+							<p class="mb-2 text-base">
+								<span
+									>Run this command in your terminal to access MariaDB
+									console</span
+								>
+							</p>
+							<ClickToCopyField class="ml-1" :textContent="dbAccessCommand" />
+							<p class="mt-3 text-sm">
+								Note: You should have a
+								<span class="font-mono">mariadb</span> client installed on your
+								computer.
+							</p>
+						</div>
+					</div>
+					<div v-else>
+						<p class="mb-2 text-sm">
+							Database console access is disabled for this site.
+						</p>
+					</div>
+				</div>
+
+				<ErrorMessage class="mt-3" :error="$resourceErrors || error" />
+
+				<div class="mt-2">
+					<Button
+						v-if="
+							databaseAccessInfo &&
+							!databaseAccessInfo.is_database_access_enabled
+						"
+						@click="$resources.enableDatabaseAccess.submit()"
+						:loading="
+							$resources.enableDatabaseAccess.loading || pollingAgentJob
+						"
+						appearance="primary"
+						>Enable Access</Button
+					>
+
+					<Button
+						v-if="
+							databaseAccessInfo &&
+							databaseAccessInfo.is_database_access_enabled
+						"
+						@click="$resources.disableDatabaseAccess.submit()"
+						:loading="
+							$resources.disableDatabaseAccess.loading || pollingAgentJob
+						"
+						>Disable Access</Button
+					>
 				</div>
 			</div>
-
-			<ErrorMessage class="mt-3" :error="$resourceErrors || error" />
-
-			<div class="mt-2">
-				<Button
-					v-if="
-						databaseAccessInfo && !databaseAccessInfo.is_database_access_enabled
-					"
-					@click="$resources.enableDatabaseAccess.submit()"
-					:loading="$resources.enableDatabaseAccess.loading || pollingAgentJob"
-					appearance="primary"
-					>Enable Access</Button
-				>
-
-				<Button
-					v-if="
-						databaseAccessInfo && databaseAccessInfo.is_database_access_enabled
-					"
-					@click="$resources.disableDatabaseAccess.submit()"
-					:loading="$resources.disableDatabaseAccess.loading || pollingAgentJob"
-					>Disable Access</Button
-				>
-			</div>
-		</div>
-	</Dialog>
+		</template>
+	</FrappeUIDialog>
 </template>
 
 <script>

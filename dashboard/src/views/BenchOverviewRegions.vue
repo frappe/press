@@ -28,17 +28,20 @@
 			</ListItem>
 		</div>
 
-		<Dialog
-			title="Select secondary region for your bench"
+		<FrappeUIDialog
+			:options="{ title: 'Select secondary region for your bench' }"
 			v-model="showAddRegionDialog"
 		>
-			<LoadingText class="py-2" v-if="$resources.availableRegions.loading" />
+			<template v-slot:body-content>
+				<LoadingText class="py-2" v-if="$resources.availableRegions.loading" />
 
-			<RichSelect
-				:value="selectedRegion"
-				@change="selectedRegion = $event"
-				:options="regionOptions"
-			/>
+				<RichSelect
+					:value="selectedRegion"
+					@change="selectedRegion = $event"
+					:options="regionOptions"
+				/>
+			</template>
+
 			<template #actions>
 				<Button
 					appearance="primary"
@@ -54,7 +57,7 @@
 					Add
 				</Button>
 			</template>
-		</Dialog>
+		</FrappeUIDialog>
 	</Card>
 </template>
 

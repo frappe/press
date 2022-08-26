@@ -1,68 +1,83 @@
 <template>
-	<Dialog
+	<FrappeUIDialog
 		:modelValue="modelValue"
 		@update:modelValue="$emit('update:modelValue', $event)"
-		title="Buy Credits"
-		:subtitle="paymentGateway ? '' : 'Choose your payment gateway'"
+		:options="{
+			title: 'Buy Credits',
+			subtitle: paymentGateway ? '' : 'Choose your payment gateway'
+		}"
 	>
-		<BuyPrepaidCredits
-			v-if="paymentGateway === 'stripe'"
-			:minimumAmount="minimumAmount"
-			@success="$emit('success')"
-			@cancel="$emit('update:modelValue', false)"
-		/>
-
-		<div v-if="paymentGateway === 'razorpay'">
-			<Input
-				:label="`Amount (Minimum Amount: ${minimumAmount})`"
-				v-model.number="creditsToBuy"
-				name="amount"
-				autocomplete="off"
-				type="number"
-				min="1"
+		<template v-slot:body-content>
+			<BuyPrepaidCredits
+				v-if="paymentGateway === 'stripe'"
+				:minimumAmount="minimumAmount"
+				@success="$emit('success')"
+				@cancel="$emit('update:modelValue', false)"
 			/>
 
-			<p class="mt-3 text-xs">
-				<span class="font-semibold">Note</span>: If you are using Net Banking,
-				it may take upto 5 days for balance to reflect.
-			</p>
+			<div v-if="paymentGateway === 'razorpay'">
+				<Input
+					:label="`Amount (Minimum Amount: ${minimumAmount})`"
+					v-model.number="creditsToBuy"
+					name="amount"
+					autocomplete="off"
+					type="number"
+					min="1"
+				/>
 
-			<ErrorMessage
-				class="mt-3"
-				:error="$resources.createRazorpayOrder.error"
-			/>
+				<p class="mt-3 text-xs">
+					<span class="font-semibold">Note</span>: If you are using Net Banking,
+					it may take upto 5 days for balance to reflect.
+				</p>
 
-			<div class="mt-4 flex w-full justify-between">
-				<Button @click="paymentGateway = null">Go Back</Button>
-				<div>
+				<ErrorMessage
+					class="mt-3"
+					:error="$resources.createRazorpayOrder.error"
+				/>
+
+				<div class="mt-4 flex w-full justify-between">
+					<Button @click="paymentGateway = null">Go Back</Button>
+					<div>
+						<Button
+							appearance="primary"
+							:loading="$resources.createRazorpayOrder.loading"
+							@click="buyCreditsWithRazorpay"
+						>
+							Buy
+						</Button>
+					</div>
+				</div>
+			</div>
+
+			<div>
+				<div
+					v-if="!paymentGateway"
+					class="grid grid-cols-1 gap-2 sm:grid-cols-2"
+				>
 					<Button
-						appearance="primary"
-						:loading="$resources.createRazorpayOrder.loading"
-						@click="buyCreditsWithRazorpay"
+						v-if="
+							$account.team.currency === 'INR' || $account.team.razorpay_enabled
+						"
+						@click="paymentGateway = 'razorpay'"
+						class="py-2"
 					>
-						Buy
+						<img
+							class="w-24"
+							src="../assets/razorpay.svg"
+							alt="Razorpay Logo"
+						/>
+					</Button>
+					<Button @click="paymentGateway = 'stripe'">
+						<img
+							class="h-7 w-24"
+							src="../assets/stripe.svg"
+							alt="Stripe Logo"
+						/>
 					</Button>
 				</div>
 			</div>
-		</div>
-
-		<div>
-			<div v-if="!paymentGateway" class="grid grid-cols-1 gap-2 sm:grid-cols-2">
-				<Button
-					v-if="
-						$account.team.currency === 'INR' || $account.team.razorpay_enabled
-					"
-					@click="paymentGateway = 'razorpay'"
-					class="py-2"
-				>
-					<img class="w-24" src="../assets/razorpay.svg" alt="Razorpay Logo" />
-				</Button>
-				<Button @click="paymentGateway = 'stripe'">
-					<img class="h-7 w-24" src="../assets/stripe.svg" alt="Stripe Logo" />
-				</Button>
-			</div>
-		</div>
-	</Dialog>
+		</template>
+	</FrappeUIDialog>
 </template>
 <script>
 import BuyPrepaidCredits from './BuyPrepaidCredits.vue';

@@ -20,22 +20,25 @@
 			</div>
 		</div>
 
-		<Dialog
-			title="Add App to Marketplace"
-			:dismissable="true"
+		<FrappeUIDialog
+			:options="{
+				title: 'Add App to Marketplace'
+			}"
 			v-model="showAddAppDialog"
 		>
-			<LoadingText class="py-2" v-if="$resources.appOptions.loading" />
-			<AppSourceSelector
-				v-else-if="
-					$resources.appOptions.data && $resources.appOptions.data.length > 0
-				"
-				class="mt-1"
-				:apps="availableApps"
-				v-model="selectedApp"
-				:multiple="false"
-			/>
-			<p v-else class="text-base">No app sources available.</p>
+			<template v-slot:body-content>
+				<LoadingIndicator class="py-2" v-if="$resources.appOptions.loading" />
+				<AppSourceSelector
+					v-else-if="
+						$resources.appOptions.data && $resources.appOptions.data.length > 0
+					"
+					class="mt-1"
+					:apps="availableApps"
+					v-model="selectedApp"
+					:multiple="false"
+				/>
+				<p v-else class="text-base">No app sources available.</p>
+			</template>
 			<template #actions>
 				<Button
 					appearance="primary"
@@ -59,7 +62,7 @@
 				Don't find your app here?
 				<Link :to="`/marketplace/apps/new`"> Add from GitHub </Link>
 			</p>
-		</Dialog>
+		</FrappeUIDialog>
 
 		<div class="px-4 sm:px-8">
 			<Tabs class="pb-32" :tabs="tabs">

@@ -9,21 +9,26 @@
 				Show updates
 			</Button>
 		</template>
-		<Dialog title="Updates available" v-model="showUpdatesDialog">
-			<SiteAppUpdates :apps="updateInformation.apps" />
-			<div class="mt-4">
-				<!-- Skip Failing Checkbox -->
-				<input
-					id="skip-failing"
-					type="checkbox"
-					class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-					v-model="wantToSkipFailingPatches"
-				/>
-				<label for="skip-failing" class="ml-1 text-sm text-gray-900">
-					Skip failing patches if any?
-				</label>
-			</div>
-			<ErrorMessage class="mt-1" :error="$resources.scheduleUpdate.error" />
+		<FrappeUIDialog
+			:options="{ title: 'Updates available' }"
+			v-model="showUpdatesDialog"
+		>
+			<template v-slot:body-content>
+				<SiteAppUpdates :apps="updateInformation.apps" />
+				<div class="mt-4">
+					<!-- Skip Failing Checkbox -->
+					<input
+						id="skip-failing"
+						type="checkbox"
+						class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+						v-model="wantToSkipFailingPatches"
+					/>
+					<label for="skip-failing" class="ml-1 text-sm text-gray-900">
+						Skip failing patches if any?
+					</label>
+				</div>
+				<ErrorMessage class="mt-1" :error="$resources.scheduleUpdate.error" />
+			</template>
 			<template #actions>
 				<Button
 					appearance="primary"
@@ -33,7 +38,7 @@
 					Update now
 				</Button>
 			</template>
-		</Dialog>
+		</FrappeUIDialog>
 	</Alert>
 </template>
 <script>

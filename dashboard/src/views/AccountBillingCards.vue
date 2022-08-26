@@ -2,16 +2,21 @@
 	<Card title="Payment methods" :subtitle="subtitle">
 		<template #actions>
 			<Button @click="showAddCardDialog = true"> Add Card </Button>
-			<Dialog title="Add new card" v-model="showAddCardDialog">
-				<StripeCard
-					class="mb-1"
-					v-if="showAddCardDialog"
-					@complete="
-						showAddCardDialog = false;
-						$resources.paymentMethods.reload();
-					"
-				/>
-			</Dialog>
+			<FrappeUIDialog
+				:options="{ title: 'Add new card' }"
+				v-model="showAddCardDialog"
+			>
+				<template v-slot:body-content>
+					<StripeCard
+						class="mb-1"
+						v-if="showAddCardDialog"
+						@complete="
+							showAddCardDialog = false;
+							$resources.paymentMethods.reload();
+						"
+					/>
+				</template>
+			</FrappeUIDialog>
 		</template>
 		<div class="max-h-52 space-y-3">
 			<div

@@ -23,67 +23,72 @@
 			></div>
 		</div>
 
-		<Dialog title="Add billing information" v-model="showDialog">
-			<div v-if="!$account.team.billing_address">
-				<div class="text-base font-medium">Address Details</div>
-				<AddressForm ref="address-form" v-model:address="address" />
-				<ErrorMessage
-					class="mt-2"
-					:error="$resources.updateBillingInformation.error"
-				/>
-				<Button
-					class="mt-4"
-					appearance="primary"
-					@click="updateAddress"
-					:loading="$resources.updateBillingInformation.loading"
-				>
-					Submit
-				</Button>
-			</div>
-
-			<div class="space-y-4" v-if="$account.team.billing_address">
-				<div>
-					<Input
-						label="Select payment mode"
-						type="select"
-						:options="paymentModeOptions"
-						v-model="paymentMode"
+		<FrappeUIDialog
+			:options="{ title: 'Add billing information' }"
+			v-model="showDialog"
+		>
+			<template v-slot:body-content>
+				<div v-if="!$account.team.billing_address">
+					<div class="text-base font-medium">Address Details</div>
+					<AddressForm ref="address-form" v-model:address="address" />
+					<ErrorMessage
+						class="mt-2"
+						:error="$resources.updateBillingInformation.error"
 					/>
-					<p class="mt-2 text-base text-gray-600">
-						{{ paymentModeDescription }}
-					</p>
+					<Button
+						class="mt-4"
+						appearance="primary"
+						@click="updateAddress"
+						:loading="$resources.updateBillingInformation.loading"
+					>
+						Submit
+					</Button>
 				</div>
-				<BuyPrepaidCredits
-					v-if="
-						paymentMode == 'Prepaid Credits' &&
-						buyCreditsFrom == 'Card Payment' &&
-						!$resources.prepaidCredits.loading
-					"
-					:minimumAmount="minCreditsToBuy"
-					@success="onPrepaidCredits"
-					@cancel="paymentMode = null"
-				/>
-				<StripeCard
-					:withoutAddress="true"
-					v-if="paymentMode === 'Card'"
-					@complete="onSuccess"
-				/>
-				<Button
-					appearance="primary"
-					v-if="paymentMode == 'Partner Credits'"
-					@click="onSuccess"
-					>Save</Button
-				>
-				<LoadingText
-					text="Updating account balance..."
-					v-if="$resources.prepaidCredits.loading"
-				/>
-				<LoadingText
-					text="Updating payment information..."
-					v-if="$resources.changePaymentMode.loading"
-				/>
-			</div>
-		</Dialog>
+
+				<div class="space-y-4" v-if="$account.team.billing_address">
+					<div>
+						<Input
+							label="Select payment mode"
+							type="select"
+							:options="paymentModeOptions"
+							v-model="paymentMode"
+						/>
+						<p class="mt-2 text-base text-gray-600">
+							{{ paymentModeDescription }}
+						</p>
+					</div>
+					<BuyPrepaidCredits
+						v-if="
+							paymentMode == 'Prepaid Credits' &&
+							buyCreditsFrom == 'Card Payment' &&
+							!$resources.prepaidCredits.loading
+						"
+						:minimumAmount="minCreditsToBuy"
+						@success="onPrepaidCredits"
+						@cancel="paymentMode = null"
+					/>
+					<StripeCard
+						:withoutAddress="true"
+						v-if="paymentMode === 'Card'"
+						@complete="onSuccess"
+					/>
+					<Button
+						appearance="primary"
+						v-if="paymentMode == 'Partner Credits'"
+						@click="onSuccess"
+						>Save</Button
+					>
+					<LoadingText
+						text="Updating account balance..."
+						v-if="$resources.prepaidCredits.loading"
+					/>
+					<LoadingText
+						text="Updating payment information..."
+						v-if="$resources.changePaymentMode.loading"
+					/>
+				</div>
+			</template>
+		</FrappeUIDialog>
 	</div>
 </template>
 <script>

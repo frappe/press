@@ -98,13 +98,14 @@
 						>
 					</span>
 				</div>
-				<Dialog
-					title="Reason for Rejection"
-					:dismissable="true"
+				<FrappeUIDialog
+					:options="{ title: 'Reason for Rejection' }"
 					v-model="showRejectionFeedbackDialog"
 				>
-					<div class="prose text-lg" v-html="rejectionFeedback"></div>
-				</Dialog>
+					<template v-slot:body-content>
+						<div class="prose text-lg" v-html="rejectionFeedback"></div>
+					</template>
+				</FrappeUIDialog>
 
 				<div class="py-3">
 					<Button

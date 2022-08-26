@@ -42,20 +42,25 @@
 				</Button>
 			</div>
 		</div>
-		<Dialog title="Update Profile Information" v-model="showProfileEditDialog">
-			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-				<Input
-					label="First Name"
-					type="text"
-					v-model="$account.user.first_name"
-				/>
-				<Input
-					label="Last Name"
-					type="text"
-					v-model="$account.user.last_name"
-				/>
-			</div>
-			<ErrorMessage class="mt-4" :error="$resources.updateProfile.error" />
+		<FrappeUIDialog
+			:options="{ title: 'Update Profile Information' }"
+			v-model="showProfileEditDialog"
+		>
+			<template v-slot:body-content>
+				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+					<Input
+						label="First Name"
+						type="text"
+						v-model="$account.user.first_name"
+					/>
+					<Input
+						label="Last Name"
+						type="text"
+						v-model="$account.user.last_name"
+					/>
+				</div>
+				<ErrorMessage class="mt-4" :error="$resources.updateProfile.error" />
+			</template>
 
 			<template #actions>
 				<div class="space-x-2">
@@ -70,7 +75,7 @@
 					</Button>
 				</div>
 			</template>
-		</Dialog>
+		</FrappeUIDialog>
 	</Card>
 </template>
 <script>

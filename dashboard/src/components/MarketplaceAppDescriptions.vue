@@ -12,13 +12,21 @@
 					</Button>
 				</template>
 			</ListItem>
-			<Dialog title="Update App Summary" v-model="showEditSummaryDialog">
-				<Input
-					label="Summary of the app"
-					type="textarea"
-					v-model="app.description"
-				/>
-				<ErrorMessage class="mt-4" :error="$resources.updateAppSummary.error" />
+			<FrappeUIDialog
+				:options="{ title: 'Update App Summary' }"
+				v-model="showEditSummaryDialog"
+			>
+				<template v-slot:body-content>
+					<Input
+						label="Summary of the app"
+						type="textarea"
+						v-model="app.description"
+					/>
+					<ErrorMessage
+						class="mt-4"
+						:error="$resources.updateAppSummary.error"
+					/>
+				</template>
 
 				<template #actions>
 					<div class="space-x-2">
@@ -33,7 +41,7 @@
 						</Button>
 					</div>
 				</template>
-			</Dialog>
+			</FrappeUIDialog>
 			<div class="py-3">
 				<ListItem title="Long Description">
 					<template #actions>

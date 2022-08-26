@@ -145,43 +145,45 @@
 				</section>
 			</div>
 		</template>
-		<Dialog title="SSH Access" v-model="showSSHDialog">
-			<div v-if="certificate" class="space-y-4">
-				<div class="space-y-2">
-					<h4 class="text-base font-semibold text-gray-700">Step 1</h4>
-					<div class="space-y-1">
-						<p class="text-base">
-							Execute the following shell command to store the SSH certificate
-							locally.
-						</p>
-						<ClickToCopyField :textContent="certificateCommand" />
+		<FrappeUIDialog :options="{ title: 'SSH Access' }" v-model="showSSHDialog">
+			<template v-slot:body-content>
+				<div v-if="certificate" class="space-y-4">
+					<div class="space-y-2">
+						<h4 class="text-base font-semibold text-gray-700">Step 1</h4>
+						<div class="space-y-1">
+							<p class="text-base">
+								Execute the following shell command to store the SSH certificate
+								locally.
+							</p>
+							<ClickToCopyField :textContent="certificateCommand" />
+						</div>
 					</div>
-				</div>
 
-				<div class="space-y-2">
-					<h4 class="text-base font-semibold text-gray-700">Step 2</h4>
-					<div class="space-y-1">
-						<p class="text-base">
-							Execute the following shell command to SSH into your bench
-						</p>
-						<ClickToCopyField :textContent="sshCommand" />
+					<div class="space-y-2">
+						<h4 class="text-base font-semibold text-gray-700">Step 2</h4>
+						<div class="space-y-1">
+							<p class="text-base">
+								Execute the following shell command to SSH into your bench
+							</p>
+							<ClickToCopyField :textContent="sshCommand" />
+						</div>
 					</div>
 				</div>
-			</div>
-			<div v-if="!certificate">
-				<p class="mb-4 text-base">
-					You will need an SSH certificate to get SSH access to your bench. This
-					certificate will work only with your public-private key pair and will
-					be valid for 6 hours.
-				</p>
-				<p class="text-base">
-					Please refer to the
-					<a href="/docs/benches/ssh" class="underline"
-						>SSH Access documentation</a
-					>
-					for more details.
-				</p>
-			</div>
+				<div v-if="!certificate">
+					<p class="mb-4 text-base">
+						You will need an SSH certificate to get SSH access to your bench.
+						This certificate will work only with your public-private key pair
+						and will be valid for 6 hours.
+					</p>
+					<p class="text-base">
+						Please refer to the
+						<a href="/docs/benches/ssh" class="underline"
+							>SSH Access documentation</a
+						>
+						for more details.
+					</p>
+				</div>
+			</template>
 			<template #actions v-if="!certificate">
 				<Button
 					:loading="$resources.generateCertificate.loading"
@@ -194,7 +196,7 @@
 				class="mt-3"
 				:error="$resources.generateCertificate.error"
 			/>
-		</Dialog>
+		</FrappeUIDialog>
 	</CardWithDetails>
 </template>
 <script>

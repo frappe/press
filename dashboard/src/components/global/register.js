@@ -5,7 +5,11 @@ import {
 	FeatherIcon,
 	Card,
 	LoadingIndicator,
-	LoadingText
+	LoadingText,
+	Dialog,
+	SuccessMessage,
+	Spinner,
+	Link
 } from 'frappe-ui';
 import outsideClickDirective from './outsideClickDirective';
 
@@ -27,6 +31,10 @@ export default function registerGlobalComponents(app) {
 	app.component('Card', Card);
 	app.component('LoadingIndicator', LoadingIndicator);
 	app.component('LoadingText', LoadingText);
+	app.component('SuccessMessage', SuccessMessage);
+	app.component('Spinner', Spinner);
+	app.component('Link', Link);
+	app.component('FrappeUIDialog', Dialog);
 }
 
 export { components };

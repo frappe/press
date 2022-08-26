@@ -1,27 +1,30 @@
 <template>
-	<Dialog
-		title="Update Billing Details"
+	<FrappeUIDialog
+		:options="{ title: 'Update Billing Details' }"
 		:modelValue="show"
 		@update:modelValue="$emit('update:show', $event)"
 	>
-		<p class="text-base" v-if="message">
-			{{ message }}
-		</p>
-		<Input
-			class="mt-4"
-			type="text"
-			v-model="billingInformation.billing_name"
-			label="Billing Name"
-		/>
-		<AddressForm
-			ref="address-form"
-			class="mt-4"
-			v-model:address="billingInformation"
-		/>
-		<ErrorMessage
-			class="mt-2"
-			:error="$resources.updateBillingInformation.error"
-		/>
+		<template v-slot:body-content>
+			<p class="text-base" v-if="message">
+				{{ message }}
+			</p>
+			<Input
+				class="mt-4"
+				type="text"
+				v-model="billingInformation.billing_name"
+				label="Billing Name"
+			/>
+			<AddressForm
+				ref="address-form"
+				class="mt-4"
+				v-model:address="billingInformation"
+			/>
+			<ErrorMessage
+				class="mt-2"
+				:error="$resources.updateBillingInformation.error"
+			/>
+		</template>
+
 		<template v-slot:actions>
 			<Button
 				appearance="primary"
@@ -31,7 +34,7 @@
 				Submit
 			</Button>
 		</template>
-	</Dialog>
+	</FrappeUIDialog>
 </template>
 
 <script>

@@ -95,18 +95,20 @@
 			</Tabs>
 		</div>
 
-		<Dialog
-			title="Login As Administrator"
+		<FrappeUIDialog
+			:options="{ title: 'Login As Administrator' }"
 			v-model="showReasonForAdminLoginDialog"
 		>
-			<Input
-				label="Reason for logging in as Administrator"
-				type="textarea"
-				v-model="reasonForAdminLogin"
-				required
-			/>
+			<template v-slot:body-content>
+				<Input
+					label="Reason for logging in as Administrator"
+					type="textarea"
+					v-model="reasonForAdminLogin"
+					required
+				/>
 
-			<ErrorMessage class="mt-3" :error="errorMessage" />
+				<ErrorMessage class="mt-3" :error="errorMessage" />
+			</template>
 
 			<template #actions>
 				<Button
@@ -116,7 +118,7 @@
 					>Proceed</Button
 				>
 			</template>
-		</Dialog>
+		</FrappeUIDialog>
 	</div>
 </template>
 
