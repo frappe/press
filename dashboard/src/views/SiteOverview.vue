@@ -4,7 +4,6 @@ import { utils } from '@/utils';
 import useResource from '@/composables/resource';
 import SiteOverviewPlan from './SiteOverviewPlan.vue';
 import SiteOverviewInfo from './SiteOverviewInfo.vue';
-import SiteOverviewApps from './SiteOverviewApps.vue';
 import SiteOverviewDomains from './SiteOverviewDomains.vue';
 import SiteOverviewCPUUsage from './SiteOverviewCPUUsage.vue';
 import AlertSiteUpdate from '@/components/AlertSiteUpdate.vue';
