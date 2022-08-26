@@ -22,23 +22,23 @@
 				:key="app.name"
 			>
 				<div class="w-2/3">
-					<div class="text-base font-medium">
-						{{ app.title }}
+					<div class="flex flex-row items-center">
+						<div class="text-lg font-medium text-gray-900">
+							{{ app.title }}
+						</div>
+
+						<CommitTag
+							class="ml-2"
+							:tag="app.tag || app.hash.substr(0, 7)"
+							:link="`${app.repository_url}/commit/${app.hash}`"
+						/>
 					</div>
-					<div class="mt-1 text-base text-gray-700">
+
+					<div class="mt-[2px] text-base text-gray-600">
 						{{ app.repository_owner }}/{{ app.repository }}:{{ app.branch }}
 					</div>
 				</div>
 				<div class="ml-auto flex items-center space-x-2">
-					<a
-						class="block cursor-pointer"
-						:href="`${app.repository_url}/commit/${app.hash}`"
-						target="_blank"
-					>
-						<Badge class="cursor-pointer hover:text-blue-500" color="blue">
-							{{ app.tag || app.hash.substr(0, 7) }}
-						</Badge>
-					</a>
 					<Dropdown :items="dropdownItems(app)" right>
 						<template v-slot="{ toggleDropdown }">
 							<Button icon="more-horizontal" @click="toggleDropdown()" />
@@ -113,6 +113,7 @@
 	</Card>
 </template>
 <script>
+import CommitTag from '@/components/utils/CommitTag.vue';
 import ChangeAppPlanSelector from '@/components/ChangeAppPlanSelector.vue';
 
 export default {
@@ -126,7 +127,7 @@ export default {
 			selectedPlan: null
 		};
 	},
-	components: { ChangeAppPlanSelector },
+	components: { ChangeAppPlanSelector, CommitTag },
 	resources: {
 		installedApps() {
 			return {
