@@ -36,8 +36,6 @@ class SiteMigration(Document):
 		self.set_migration_type()
 		self.add_steps()
 		self.save()
-		if not self.scheduled_time:
-			self.start()
 
 	def start(self):
 		self.db_set("status", "Pending")
