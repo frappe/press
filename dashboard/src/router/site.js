@@ -34,6 +34,11 @@ export default [
 				component: () => import('../views/SiteOverview.vue')
 			},
 			{
+				name: 'SiteApps',
+				path: 'apps',
+				component: () => import('../views/SiteApps.vue')
+			},
+			{
 				path: 'installing',
 				component: () => import('../views/SiteInstalling.vue')
 			},

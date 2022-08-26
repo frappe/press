@@ -125,12 +125,6 @@ const marketplacePromotionalBanners = useResource({
 			/>
 			<SiteOverviewInfo :site="site" :info="overview.data.info" />
 			<SiteOverviewAppSubscriptions class="md:col-span-2" :site="site" />
-			<SiteOverviewApps
-				:site="site"
-				:installedApps="overview.data.installed_apps"
-				@app-installed="overview.reload()"
-				@app-uninstalled="overview.reload()"
-			/>
 			<SiteOverviewDomains :site="site" />
 		</div>
 

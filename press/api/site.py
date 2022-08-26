@@ -712,9 +712,15 @@ def overview(name):
 			)[0],
 			"auto_updates_enabled": not site.skip_auto_updates,
 		},
-		"installed_apps": get_installed_apps(site),
 		"domains": domains(name),
 	}
+
+
+@frappe.whitelist()
+@protected("Site")
+def installed_apps(name):
+	site = frappe.get_cached_doc("Site", name)
+	return get_installed_apps(site)
 
 
 def get_installed_apps(site):
