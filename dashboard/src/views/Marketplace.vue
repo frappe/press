@@ -27,7 +27,7 @@
 			v-model="showAddAppDialog"
 		>
 			<template v-slot:body-content>
-				<LoadingIndicator class="py-2" v-if="$resources.appOptions.loading" />
+				<LoadingText class="py-2" v-if="$resources.appOptions.loading" />
 				<AppSourceSelector
 					v-else-if="
 						$resources.appOptions.data && $resources.appOptions.data.length > 0

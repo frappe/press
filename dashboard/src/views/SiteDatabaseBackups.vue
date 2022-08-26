@@ -20,10 +20,9 @@
 					<p class="text-base">
 						You cannot take more than 3 backups after site suspension
 					</p>
-					<template v-slot:actions> </template>
-					<div>
-						<Button @click="showBackupDialog = false"> Cancel </Button>
-					</div>
+				</template>
+				<template v-slot:actions>
+					<Button @click="showBackupDialog = false"> Cancel </Button>
 				</template>
 			</FrappeUIDialog>
 		</template>

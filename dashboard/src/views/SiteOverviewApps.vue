@@ -46,37 +46,42 @@
 			</div>
 		</div>
 
-		<Dialog title="Install an app on your site" v-model="showInstallAppsDialog">
-			<div
-				v-if="availableApps.data && availableApps.data.length"
-				class="divide-y"
-			>
+		<FrappeUIDialog
+			:options="{ title: 'Install an app on your site' }"
+			v-model="showInstallAppsDialog"
+		>
+			<template v-slot:body-content>
 				<div
-					class="flex items-center py-3"
-					v-for="app in availableApps.data"
-					:key="app.name"
+					v-if="availableApps.data && availableApps.data.length"
+					class="divide-y"
 				>
-					<div class="w-1/3 text-base font-medium">
-						{{ app.title }}
-					</div>
-					<div class="text-base text-gray-700">
-						{{ app.repository_owner }}:{{ app.branch }}
-					</div>
-					<Button
-						class="ml-auto"
-						@click="installApp(app)"
-						:loading="
-							$resources.installApp.loading && appToInstall.name == app.name
-						"
+					<div
+						class="flex items-center py-3"
+						v-for="app in availableApps.data"
+						:key="app.name"
 					>
-						Install
-					</Button>
+						<div class="w-1/3 text-base font-medium">
+							{{ app.title }}
+						</div>
+						<div class="text-base text-gray-700">
+							{{ app.repository_owner }}:{{ app.branch }}
+						</div>
+						<Button
+							class="ml-auto"
+							@click="installApp(app)"
+							:loading="
+								$resources.installApp.loading && appToInstall.name == app.name
+							"
+						>
+							Install
+						</Button>
+					</div>
 				</div>
-			</div>
-			<div class="text-base text-gray-600" v-else>
-				No apps available to install
-			</div>
-		</Dialog>
+				<div class="text-base text-gray-600" v-else>
+					No apps available to install
+				</div>
+			</template>
+		</FrappeUIDialog>
 
 		<Dialog
 			v-model="showPlanSelectionDialog"

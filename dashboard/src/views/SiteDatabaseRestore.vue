@@ -110,7 +110,7 @@
 			</template>
 			<template #actions>
 				<Button
-					type="danger"
+					appearance="danger"
 					:loading="$resources.migrateDatabase.loading"
 					@click="migrateDatabase"
 				>
@@ -119,24 +119,29 @@
 			</template>
 		</FrappeUIDialog>
 
-		<Dialog title="Restore" v-model="showRestoreDialog">
-			<div class="space-y-4">
-				<p class="text-base">Restore your database using a previous backup.</p>
-				<BackupFilesUploader v-model:backupFiles="selectedFiles" />
-			</div>
-			<div class="mt-3">
-				<!-- Skip Failing Checkbox -->
-				<input
-					id="skip-failing"
-					type="checkbox"
-					class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-					v-model="wantToSkipFailingPatches"
-				/>
-				<label for="skip-failing" class="ml-2 text-sm text-gray-900">
-					Skip failing patches (if any patch fails)
-				</label>
-			</div>
-			<ErrorMessage class="mt-2" :error="$resources.restoreBackup.error" />
+		<FrappeUIDialog :options="{ title: 'Restore' }" v-model="showRestoreDialog">
+			<template v-slot:body-content>
+				<div class="space-y-4">
+					<p class="text-base">
+						Restore your database using a previous backup.
+					</p>
+					<BackupFilesUploader v-model:backupFiles="selectedFiles" />
+				</div>
+				<div class="mt-3">
+					<!-- Skip Failing Checkbox -->
+					<input
+						id="skip-failing"
+						type="checkbox"
+						class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+						v-model="wantToSkipFailingPatches"
+					/>
+					<label for="skip-failing" class="ml-2 text-sm text-gray-900">
+						Skip failing patches (if any patch fails)
+					</label>
+				</div>
+				<ErrorMessage class="mt-2" :error="$resources.restoreBackup.error" />
+			</template>
+
 			<template #actions>
 				<Button
 					appearance="primary"
@@ -146,7 +151,7 @@
 					Restore Database
 				</Button>
 			</template>
-		</Dialog>
+		</FrappeUIDialog>
 
 		<DatabaseAccessDialog
 			v-if="showDatabaseAccessDialog"

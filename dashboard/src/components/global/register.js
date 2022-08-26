@@ -9,7 +9,8 @@ import {
 	Dialog,
 	SuccessMessage,
 	Spinner,
-	Link
+	Link,
+	Input
 } from 'frappe-ui';
 import outsideClickDirective from './outsideClickDirective';
 
@@ -35,6 +36,7 @@ export default function registerGlobalComponents(app) {
 	app.component('Spinner', Spinner);
 	app.component('Link', Link);
 	app.component('FrappeUIDialog', Dialog);
+	app.component('Input', Input);
 }
 
 export { components };
