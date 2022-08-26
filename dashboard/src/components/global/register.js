@@ -10,7 +10,8 @@ import {
 	SuccessMessage,
 	Spinner,
 	Link,
-	Input
+	Input,
+	Avatar
 } from 'frappe-ui';
 import outsideClickDirective from './outsideClickDirective';
 
@@ -27,6 +28,7 @@ export default function registerGlobalComponents(app) {
 
 	app.component('Button', Button);
 	app.component('Alert', Alert);
+	app.component('Avatar', Avatar);
 	app.component('Badge', Badge);
 	app.component('FeatherIcon', FeatherIcon);
 	app.component('Card', Card);
