@@ -8,6 +8,7 @@ import frappe
 from typing import Dict, List
 from frappe.core.utils import find
 from press.api.bench import options
+from press.api.billing import create_payment_intent_for_prepaid_app
 from press.api.site import protected
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	MarketplaceAppPlan,
@@ -805,3 +806,22 @@ def get_payout_details(name: str) -> Dict:
 			grouped_items["usd_items"].append(item)
 
 	return grouped_items
+
+
+@frappe.whitelist(allow_guest=True)
+@protected("Marketplace App Subscription")
+def prepaid_saas_payment(name, plan, credits_to_buy):
+	metadata = {
+		"payement_for": "prepaid_marketplace",
+		"data": json.dumps(
+			[
+				{
+					"app": frappe.db.get_value("Marketplace App Subscription", name, "app"),
+					"plan": plan,
+					"subscription": name,
+					"amount": credits_to_buy,
+				}
+			]
+		),
+	}
+	return create_payment_intent_for_prepaid_app(int(credits_to_buy), metadata)

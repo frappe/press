@@ -213,28 +213,50 @@ def create_payment_intent_for_buying_credits(amount):
 
 
 @frappe.whitelist()
-def create_payment_intent_for_prepaid_app(
-	amount, app, payment_for, option, plan=None, subscription=None
-):
-	team = get_current_team(True)
+def create_payment_intent_for_prepaid_app(amount, metadata):
 	stripe = get_stripe()
-	intent = stripe.PaymentIntent.create(
-		amount=amount * 100,
-		currency=team.currency.lower(),
-		customer=team.stripe_customer_id,
-		description="Prepaid App Purchase",
-		metadata={
-			"payment_for": payment_for,
-			"payment_option": option,  # Monthly / Annual
-			"app": app,
-			"plan": plan,
-			"subscription": subscription,
-		},
+	team = get_current_team(True)
+	payment_method = frappe.get_value(
+		"Stripe Payment Method", team.default_payment_method, "stripe_payment_method_id"
 	)
-	return {
-		"client_secret": intent["client_secret"],
-		"publishable_key": get_publishable_key(),
-	}
+	try:
+		intent = stripe.PaymentIntent.create(
+			amount=amount * 100,
+			currency=team.currency.lower(),
+			customer=team.stripe_customer_id,
+			description="Prepaid App Purchase",
+			off_session=True,
+			confirm=True,
+			metadata=metadata,
+			payment_method=payment_method,
+			payment_method_options={"card": {"request_three_d_secure": "any"}},
+		)
+		return {
+			"payment_method": payment_method,
+			"client_secret": intent["client_secret"],
+			"publishable_key": get_publishable_key(),
+		}
+	except stripe.error.CardError as e:
+		err = e.error
+		if err.code == "authentication_required":
+			# Bring the customer back on-session to authenticate the purchase
+			return {
+				"error": "authentication_required",
+				"payment_method": err.payment_method.id,
+				"amount": amount,
+				"card": err.payment_method.card,
+				"publishable_key": get_publishable_key(),
+				"client_secret": err.payment_intent.client_secret,
+			}
+		elif err.code:
+			# The card was declined for other reasons (e.g. insufficient funds)
+			# Bring the customer back on-session to ask them for a new payment method
+			return {
+				"error": err.code,
+				"payment_method": err.payment_method.id,
+				"publishable_key": get_publishable_key(),
+				"client_secret": err.payment_intent.client_secret,
+			}
 
 
 @frappe.whitelist()
