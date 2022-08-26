@@ -2,7 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
-
+import json
 
 from press.utils import log_error
 from frappe.model.document import Document
@@ -209,16 +209,54 @@ def process_prepaid_marketplace_payment(event):
 		amount_due=amount,
 		stripe_payment_intent_id=payment_intent["id"],
 	)
-	invoice.append(
-		"items",
+	# All amount should be allocated as credits excluding GST
+	# Amount/Credits breakdown for invoices line items -
+	# Prepaid Credits for {app} (one or many)
+	# Hosting
+	invoice_line_items = []
+	total_hosting_cost = 0.0
+	hosting_plan = ""
+	for line_item in json.loads(metadata.get("line_items")):
+		title = frappe.db.get_value("Marketplace App", line_item["app"], "title")
+		plan = line_item["plan"]
+		subscription = frappe.get_doc(
+			"Marketplace App Subscription", line_item["subscription"]
+		)
+		hosting_plan = frappe.db.get_value(
+			"Marketplace App Plan", subscription.marketplace_app_plan, "standard_hosting_plan"
+		)
+		hosting_amount = frappe.db.get_value(
+			"Plan", hosting_plan, f"price_{team.currency.lower()}"
+		)
+
+		line_item_rate = float(line_item["amount"]) - hosting_amount
+		invoice_line_items.append(
+			{
+				"description": f"Prepaid Credits for {title}",
+				"document_type": "Marketplace App",
+				"document_name": line_item["app"],
+				"plan": plan,
+				"rate": line_item_rate,
+				"quantity": 1,
+			}
+		)
+		total_hosting_cost += hosting_amount
+		subscription.marketplace_app_plan = plan
+		subscription.save(ignore_permissions=True)
+
+	# Add hosting as separate line item
+	invoice_line_items.append(
 		{
-			"description": "Prepaid Credits",
-			"document_type": "Marketplace App",
-			"document_name": metadata.get("app"),
+			"description": "Frappe Cloud Hosting",
+			"document_type": "Site",
+			"document_name": metadata.get("site"),
+			"plan": hosting_plan,
+			"rate": float(total_hosting_cost),
 			"quantity": 1,
-			"rate": amount,
-		},
+		}
 	)
+	for line_item in invoice_line_items:
+		invoice.append("items", line_item)
 
 	invoice.insert()
 	invoice.reload()

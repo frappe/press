@@ -811,17 +811,19 @@ def get_payout_details(name: str) -> Dict:
 @frappe.whitelist(allow_guest=True)
 @protected("Marketplace App Subscription")
 def prepaid_saas_payment(name, plan, credits_to_buy):
+	app, site = frappe.db.get_value("Marketplace App Subscription", name, ["app", "site"])
 	metadata = {
-		"payement_for": "prepaid_marketplace",
-		"data": json.dumps(
+		"payment_for": "prepaid_marketplace",
+		"line_items": json.dumps(
 			[
 				{
-					"app": frappe.db.get_value("Marketplace App Subscription", name, "app"),
+					"app": app,
 					"plan": plan,
 					"subscription": name,
 					"amount": credits_to_buy,
 				}
 			]
 		),
+		"site": site,
 	}
 	return create_payment_intent_for_prepaid_app(int(credits_to_buy), metadata)
