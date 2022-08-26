@@ -10,13 +10,8 @@ from frappe.model.document import Document
 class VersionUpgrade(Document):
 	doctype = "Version Upgrade"
 
-	def after_insert(self):
-		if not self.scheduled_time:
-			self.start()
-
 	@frappe.whitelist()
 	def start(self):
-		frappe.db.commit()
 		site = frappe.get_doc("Site", self.site)
 		if site.status.endswith("ing"):
 			frappe.throw("Site is under maintenance. Cannot Update")

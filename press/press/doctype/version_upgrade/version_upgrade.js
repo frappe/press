@@ -3,7 +3,7 @@
 
 frappe.ui.form.on('Version Upgrade', {
 	refresh: function (frm) {
-		if (['Scheduled', 'Failure', 'Success'].includes(frm.doc.status)) {
+		if (['Scheduled', 'Failure'].includes(frm.doc.status)) {
 			frm.add_custom_button(__('Start'), () => {
 				frappe.confirm('Are you sure you want to try an update?', () =>
 					frm.call('start')
