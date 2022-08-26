@@ -2,6 +2,10 @@
 	<Card
 		title="Marketplace Subscriptions"
 		subtitle="Your marketplace app subscriptions."
+		v-if="
+			!$resources.marketplaceSubscriptions.loading &&
+			marketplaceSubscriptions.length > 0
+		"
 	>
 		<Button v-if="$resources.marketplaceSubscriptions.loading" :loading="true"
 			>Loading</Button
