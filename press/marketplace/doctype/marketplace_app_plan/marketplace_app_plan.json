@@ -10,6 +10,7 @@
   "enabled",
   "column_break_2",
   "is_free",
+  "gst",
   "section_break_2",
   "app",
   "column_break_3",
@@ -115,11 +116,17 @@
    "fieldtype": "Link",
    "label": "Standard Hosting Plan",
    "options": "Plan"
+  },
+  {
+   "default": "0",
+   "fieldname": "gst",
+   "fieldtype": "Check",
+   "label": "GST"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-08-24 17:33:56.748500",
+ "modified": "2022-08-27 12:26:25.396391",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "Marketplace App Plan",
