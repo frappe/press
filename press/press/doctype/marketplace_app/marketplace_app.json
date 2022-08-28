@@ -34,7 +34,8 @@
   "custom_verify_template",
   "subject",
   "message",
-  "signature"
+  "signature",
+  "poll_method"
  ],
  "fields": [
   {
@@ -208,6 +209,11 @@
    "fieldname": "signature",
    "fieldtype": "Text Editor",
    "label": "Signature"
+  },
+  {
+   "fieldname": "poll_method",
+   "fieldtype": "Data",
+   "label": "Poll Method"
   }
  ],
  "has_web_view": 1,
@@ -231,7 +237,7 @@
    "link_fieldname": "app"
   }
  ],
- "modified": "2022-08-24 15:44:01.694304",
+ "modified": "2022-08-28 11:43:54.202036",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Marketplace App",
