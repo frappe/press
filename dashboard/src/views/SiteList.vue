@@ -41,12 +41,53 @@
 				:class="{ 'border-b': index < sites.length - 1 }"
 			/>
 		</div>
+
+		<FrappeUIDialog
+			:options="{ title: 'Login As Administrator' }"
+			v-model="showReasonForAdminLoginDialog"
+		>
+			<template v-slot:body-content>
+				<Input
+					label="Reason for logging in as Administrator"
+					type="textarea"
+					v-model="reasonForAdminLogin"
+					required
+				/>
+
+				<ErrorMessage class="mt-3" :error="errorMessage" />
+			</template>
+
+			<template #actions>
+				<Button
+					:loading="adminLoginInProcess"
+					@click="proceedWithLoginAsAdmin"
+					appearance="primary"
+					>Proceed</Button
+				>
+			</template>
+		</FrappeUIDialog>
 	</div>
 </template>
 <script>
+import { loginAsAdmin } from '@/controllers/loginAsAdmin';
+
 export default {
 	name: 'SiteList',
 	props: ['sites'],
+	data() {
+		return {
+			adminLoginInProcess: false,
+			reasonForAdminLogin: '',
+			errorMessage: null,
+			showReasonForAdminLoginDialog: false,
+			siteForLogin: null
+		};
+	},
+	resources: {
+		loginAsAdmin() {
+			return loginAsAdmin('placeholderSite'); // So that RM does not yell at first load
+		}
+	},
 	methods: {
 		siteBadge(site) {
 			let status = site.status;
@@ -84,9 +125,33 @@ export default {
 				},
 				{
 					label: 'Login As Admin',
-					action: () => {}
+					action: () => {
+						if (this.$account.team.name == site.team) {
+							return this.$resources.loginAsAdmin.submit({
+								name: site.name
+							});
+						}
+
+						this.siteForLogin = site.name;
+						this.showReasonForAdminLoginDialog = true;
+					}
 				}
 			];
+		},
+		proceedWithLoginAsAdmin() {
+			this.errorMessage = '';
+
+			if (!this.reasonForAdminLogin.trim()) {
+				this.errorMessage = 'Reason is required';
+				return;
+			}
+
+			this.$resources.loginAsAdmin.submit({
+				name: this.siteForLogin,
+				reason: this.reasonForAdminLogin
+			});
+
+			this.showReasonForAdminLoginDialog = false;
 		}
 	}
 };
