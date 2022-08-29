@@ -5,6 +5,7 @@ import frappe
 
 import boto3
 from frappe.model.document import Document
+from frappe.core.utils import find
 
 
 class VirtualMachine(Document):
@@ -151,28 +152,49 @@ class VirtualMachine(Document):
 				)
 				self.save()
 
-
-@frappe.whitelist()
-def poll_pending_machines():
-	machines = frappe.get_all("Virtual Machine", {"status": "Pending"})
-	for machine in machines:
-		machine = frappe.get_doc("Virtual Machine", machine.name)
-		cluster = frappe.get_doc("Cluster", machine.cluster)
+	@frappe.whitelist()
+	def sync(self):
+		cluster = frappe.get_doc("Cluster", self.cluster)
 		client = boto3.client(
 			"ec2",
-			region_name=machine.region,
+			region_name=self.region,
 			aws_access_key_id=cluster.aws_access_key_id,
 			aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
 		)
-		response = client.describe_instances(InstanceIds=[machine.aws_instance_id])
-
+		response = client.describe_instances(InstanceIds=[self.aws_instance_id])
 		instance = response["Reservations"][0]["Instances"][0]
-		if instance["State"]["Name"] != "pending":
-			machine.status = machine.get_status_map()[instance["State"]["Name"]]
 
-			machine.public_ip_address = instance.get("PublicIpAddress")
-			machine.private_ip_address = instance.get("PrivateIpAddress")
+		self.status = self.get_status_map()[instance["State"]["Name"]]
+		self.machine_type = instance.get("InstanceType")
 
-			machine.public_dns_name = instance.get("PublicDnsName")
-			machine.private_dns_name = instance.get("PrivateDnsName")
-			machine.save()
+		self.public_ip_address = instance.get("PublicIpAddress")
+		self.private_ip_address = instance.get("PrivateIpAddress")
+
+		self.public_dns_name = instance.get("PublicDnsName")
+		self.private_dns_name = instance.get("PrivateDnsName")
+
+		for volume in self.get_volumes():
+			existing_volume = find(self.volumes, lambda v: v.aws_volume_id == volume["VolumeId"])
+			if existing_volume:
+				row = existing_volume
+				print(row.as_dict())
+			else:
+				row = frappe._dict()
+			row.aws_volume_id = volume["VolumeId"]
+			row.volume_type = volume["VolumeType"]
+			row.size = volume["Size"]
+			row.iops = volume["Iops"]
+			if "Throughput" in volume:
+				row.throughput = volume["Throughput"]
+
+			if not existing_volume:
+				self.append("volumes", row)
+
+		self.disk_size = self.volumes[0].size
+		self.save()
+
+
+def sync_virtual_machines():
+	machines = frappe.get_all("Virtual Machine", {"status": "Pending"})
+	for machine in machines:
+		frappe.get_doc("Virtual Machine", machine.name).sync()
