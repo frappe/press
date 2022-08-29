@@ -193,6 +193,21 @@ class VirtualMachine(Document):
 		self.disk_size = self.volumes[0].size
 		self.save()
 
+	def update_name_tag(self, name):
+		cluster = frappe.get_doc("Cluster", self.cluster)
+		client = boto3.client(
+			"ec2",
+			region_name=self.region,
+			aws_access_key_id=cluster.aws_access_key_id,
+			aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
+		)
+		client.create_tags(
+			Resources=[self.aws_instance_id],
+			Tags=[
+				{"Key": "Name", "Value": name},
+			],
+		)
+
 
 def sync_virtual_machines():
 	machines = frappe.get_all("Virtual Machine", {"status": "Pending"})
