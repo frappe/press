@@ -1,7 +1,7 @@
 <template>
 	<div class="pb-20">
 		<div>
-			<PageHeader title="Sites" subtitle="Your Frappe Site instances">
+			<PageHeader title="Sites" subtitle="Your Frappe instances">
 				<template v-slot:actions>
 					<Button
 						appearance="primary"
@@ -301,8 +301,8 @@ export default {
 
 		recentlyCreatedSites() {
 			const compareDateAsc = (dateA, dateB) => {
-				if (dateA > dateB) return 1;
-				else if (dateA < dateB) return -1;
+				if (dateA < dateB) return 1;
+				else if (dateA > dateB) return -1;
 				return 0;
 			};
 			return this.allSites

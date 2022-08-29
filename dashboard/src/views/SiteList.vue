@@ -26,7 +26,7 @@
 
 				<div class="text-right text-base">
 					<Dropdown
-						v-if="site.status !== 'Active' || site.status === 'Updating'"
+						v-if="site.status === 'Active' || site.status === 'Updating'"
 						:items="dropdownItems(site)"
 						right
 					>
