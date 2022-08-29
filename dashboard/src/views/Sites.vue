@@ -70,7 +70,8 @@
 			<div>
 				<h2 class="text-lg font-semibold text-gray-800">Recently Created</h2>
 
-				<SiteList class="mt-3" :sites="recentlyCreatedSites" />
+				<LoadingText v-if="$resources.recentSites.loading" class="mt-3" />
+				<SiteList v-else class="mt-3" :sites="recentlyCreatedSites" />
 			</div>
 
 			<div v-if="false">
@@ -193,6 +194,10 @@ export default {
 		latestUnpaidInvoice: {
 			method: 'press.api.billing.get_latest_unpaid_invoice',
 			auto: true
+		},
+		recentSites: {
+			method: 'press.api.site.recently_created',
+			auto: true
 		}
 	},
 	mounted() {
@@ -300,19 +305,11 @@ export default {
 		},
 
 		recentlyCreatedSites() {
-			const compareDateAsc = (dateA, dateB) => {
-				if (dateA < dateB) return 1;
-				else if (dateA > dateB) return -1;
-				return 0;
-			};
-			return this.allSites
-				.sort((siteA, siteB) => {
-					const siteACreation = this.$date(siteA.creation);
-					const siteBCreation = this.$date(siteB.creation);
+			if (!this.$resources.recentSites.data) {
+				return [];
+			}
 
-					return compareDateAsc(siteACreation, siteBCreation);
-				})
-				.slice(0, 4); // Recent 4 sites
+			return this.$resources.recentSites.data;
 		},
 		multipleBenches() {
 			if (this.$resources.benches.data) {

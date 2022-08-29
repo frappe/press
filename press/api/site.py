@@ -489,6 +489,29 @@ def get_plans(name=None):
 
 
 @frappe.whitelist()
+def recently_created(limit=3):
+	team = get_current_team()
+	sites = frappe.get_list(
+		"Site",
+		fields=[
+			"name",
+			"status",
+			"creation",
+			"bench",
+			"current_cpu_usage",
+			"current_database_usage",
+			"current_disk_usage",
+			"trial_end_date",
+		],
+		filters={"status": ("!=", "Archived"), "team": team},
+		order_by="creation desc",
+		limit=limit,
+	)
+
+	return sites
+
+
+@frappe.whitelist()
 def all():
 	team = get_current_team()
 	saas_apps = frappe.get_all("Saas App", pluck="name")
