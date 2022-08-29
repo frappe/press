@@ -150,6 +150,7 @@ class MarketplaceAppSubscription(Document):
 
 
 def create_usage_records():
+	# Don't pick subscriptions for prepaid apps
 	subscriptions = frappe.db.get_all(
 		"Marketplace App Subscription", filters={"status": "Active"}, pluck="name"
 	)
@@ -202,8 +203,9 @@ def process_prepaid_marketplace_payment(event):
 	invoice = frappe.get_doc(
 		doctype="Invoice",
 		team=team.name,
-		type="Service",
+		type="Prepaid Credits",
 		status="Paid",
+		marketplace=1,
 		due_date=datetime.fromtimestamp(payment_intent["created"]),
 		amount_paid=amount,
 		amount_due=amount,
