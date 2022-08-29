@@ -1,13 +1,14 @@
 <template>
-	<div class="pt-8 pb-20">
-		<div class="px-4 sm:px-8">
-			<h1 class="sr-only">Dashboard</h1>
+	<div class="pb-20">
+		<div>
+			<h1 class="sr-only">Site Dashboard</h1>
+			<PageHeader title="Sites" subtitle="Your Frappe Site instances" />
 			<div class="mb-2" v-if="!$account.team.enabled">
 				<Alert title="Your account is disabled">
 					Enable your account to start creating sites
 
 					<template #actions>
-						<Button appearance="primary" route="/account/profile">
+						<Button appearance="primary" route="/settings">
 							Enable Account
 						</Button>
 					</template>
@@ -147,6 +148,7 @@
 import SiteList from './SiteList.vue';
 import { defineAsyncComponent } from 'vue';
 import SiteAndBenchSearch from '@/components/SiteAndBenchSearch.vue';
+import PageHeader from '@/components/global/PageHeader.vue';
 
 export default {
 	name: 'Sites',
@@ -156,7 +158,8 @@ export default {
 		SiteAndBenchSearch,
 		PrepaidCreditsDialog: defineAsyncComponent(() =>
 			import('@/components/PrepaidCreditsDialog.vue')
-		)
+		),
+		PageHeader
 	},
 	data() {
 		return {

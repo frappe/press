@@ -1,5 +1,5 @@
 <template>
-	<div class="mt-10">
+	<div class="mt-6">
 		<div class="px-4 sm:px-8" v-if="site">
 			<div class="pb-3">
 				<div class="text-base text-gray-700">

@@ -8,35 +8,6 @@
 							<FrappeCloudLogo class="h-4 w-auto" />
 						</router-link>
 					</div>
-					<div class="hidden md:block">
-						<div class="ml-10 flex items-baseline space-x-4">
-							<router-link
-								v-for="item in items"
-								:key="item.label"
-								:to="item.route"
-								v-slot="{ href, route, navigate, isActive, isExactActive }"
-							>
-								<a
-									:class="[
-										(
-											item.highlight
-												? item.highlight(route)
-												: item.route == '/'
-												? isExactActive
-												: isActive
-										)
-											? 'bg-blue-50 text-blue-500'
-											: 'text-gray-900 hover:bg-gray-50'
-									]"
-									:href="href"
-									@click="navigate"
-									class="rounded-md px-3 py-2 text-sm font-medium focus:outline-none"
-								>
-									{{ item.label }}
-								</a>
-							</router-link>
-						</div>
-					</div>
 				</div>
 				<div class="hidden md:block">
 					<div class="flex items-center">
@@ -159,7 +130,7 @@ export default {
 			dropdownItems: [
 				{
 					label: 'Settings',
-					action: () => this.$router.push('/account/profile')
+					action: () => this.$router.push('/settings')
 				},
 				{
 					label: 'Logout',
@@ -188,7 +159,7 @@ export default {
 				},
 				{
 					label: 'Settings',
-					route: '/account'
+					route: '/settings'
 				}
 			].filter(d => (d.condition ? d.condition() : true));
 		}

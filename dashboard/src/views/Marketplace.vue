@@ -1,24 +1,19 @@
 <template>
-	<div class="mt-8">
-		<div class="px-4 sm:px-8">
-			<div class="pb-3">
-				<div class="flex items-center justify-between">
-					<h1 class="text-3xl font-bold">Manage Apps</h1>
-					<Button
-						appearance="primary"
-						iconLeft="plus"
-						@click="
-							!$resources.appOptions.data
-								? $resources.appOptions.fetch()
-								: null;
-							showAddAppDialog = true;
-						"
-					>
-						Add App
-					</Button>
-				</div>
-			</div>
-		</div>
+	<div>
+		<PageHeader title="Apps" subtitle="Manage your apps">
+			<template v-slot:actions>
+				<Button
+					appearance="primary"
+					iconLeft="plus"
+					@click="
+						!$resources.appOptions.data ? $resources.appOptions.fetch() : null;
+						showAddAppDialog = true;
+					"
+				>
+					Add App
+				</Button>
+			</template>
+		</PageHeader>
 
 		<FrappeUIDialog
 			:options="{
@@ -64,23 +59,23 @@
 			</p>
 		</FrappeUIDialog>
 
-		<div class="px-4 sm:px-8">
-			<Tabs class="pb-32" :tabs="tabs">
-				<router-view v-if="$account.team"></router-view>
-			</Tabs>
-		</div>
+		<Tabs class="pb-32" :tabs="tabs">
+			<router-view v-if="$account.team"></router-view>
+		</Tabs>
 	</div>
 </template>
 
 <script>
 import Tabs from '@/components/Tabs.vue';
 import AppSourceSelector from '@/components/AppSourceSelector.vue';
+import PageHeader from '@/components/global/PageHeader.vue';
 
 export default {
 	name: 'Marketplace',
 	components: {
 		Tabs,
-		AppSourceSelector
+		AppSourceSelector,
+		PageHeader
 	},
 	data: () => ({
 		tabs: [

@@ -39,7 +39,7 @@
 				<span class="hidden md:inline">
 					<Link
 						v-if="invoice.type == 'Subscription'"
-						:to="'/account/billing/' + invoice.name"
+						:to="'/billing/' + invoice.name"
 					>
 						Invoice for
 						{{
