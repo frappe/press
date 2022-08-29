@@ -74,81 +74,14 @@
 				<SiteList v-else class="mt-3" :sites="recentlyCreatedSites" />
 			</div>
 
-			<div v-if="false">
-				<div v-if="$resources.benches.data == null">
-					<div class="flex flex-1 items-center py-4 focus:outline-none">
-						<h2 class="text-lg font-semibold">Sites</h2>
-					</div>
-					<div class="rounded-md bg-gray-50 px-4 py-3">
-						<LoadingText />
-					</div>
+			<div class="mt-6">
+				<div class="flex flex-row items-center justify-between">
+					<h2 class="text-lg font-semibold text-gray-800">All Sites</h2>
+					<SiteAndBenchSearch />
 				</div>
-				<div v-else>
-					<div
-						v-for="(bench, i) in $resources.benches.data"
-						:key="bench.name"
-						class="flex flex-col sm:flex-row sm:space-x-4"
-						:class="{
-							'border-b': i < benches.length - 1 && !isSitesShown(bench),
-							'mb-4': isSitesShown(bench)
-						}"
-					>
-						<div class="flex-1">
-							<div class="flex items-center justify-between">
-								<button
-									class="flex flex-1 items-center py-4 text-left focus:outline-none"
-									@click="multipleBenches ? toggleSitesShown(bench) : null"
-								>
-									<h2 class="text-lg font-semibold">
-										{{ bench.shared ? 'Sites' : bench.title }}
-									</h2>
-									<FeatherIcon
-										v-if="multipleBenches"
-										:name="
-											isSitesShown(bench) ? 'chevron-down' : 'chevron-right'
-										"
-										class="ml-1 mt-0.5 h-4 w-4"
-									/>
-								</button>
-								<div class="flex items-center space-x-2">
-									<p
-										v-if="benches"
-										class="hidden text-sm text-gray-700 sm:block"
-									>
-										{{ sitesSubtitle(bench) }}
-									</p>
-									<Badge
-										class="hidden text-sm sm:block"
-										v-if="!bench.shared && bench.owned_by_team"
-									>
-										Private
-									</Badge>
-									<Button
-										v-if="bench.owned_by_team"
-										:route="`/benches/${bench.name}`"
-										icon="tool"
-									>
-									</Button>
 
-									<Button
-										:route="`/sites/new${
-											bench.owned_by_team
-												? `?bench=${bench.name}&benchTitle=${bench.title}`
-												: ''
-										}`"
-										appearance="primary"
-										icon="plus"
-										v-if="showNewSiteButton(bench)"
-										class="sm:hidden"
-									>
-										New Site
-									</Button>
-								</div>
-							</div>
-							<SiteList :sites="bench.sites" v-show="isSitesShown(bench)" />
-						</div>
-					</div>
-				</div>
+				<LoadingText v-if="$resources.allSites.loading" class="mt-3" />
+				<SiteList v-else class="mt-3" :sites="sites" />
 			</div>
 		</div>
 	</div>
@@ -172,24 +105,13 @@ export default {
 	},
 	data() {
 		return {
-			sitesShown: {},
 			showPrepaidCreditsDialog: false
 		};
 	},
 	resources: {
-		benches: {
+		allSites: {
 			method: 'press.api.site.all',
-			auto: true,
-			onSuccess(data) {
-				if (data && data.length) {
-					console.log(data);
-					for (let bench of data) {
-						if (!(bench.name in this.sitesShown)) {
-							this.sitesShown[bench.name] = Boolean(bench.shared);
-						}
-					}
-				}
-			}
+			auto: true
 		},
 		latestUnpaidInvoice: {
 			method: 'press.api.billing.get_latest_unpaid_invoice',
@@ -226,9 +148,7 @@ export default {
 			// Refresh if the event affects any of the sites in the list view
 			// TODO: Listen to a more granular event than list_update
 			if (event.doctype === 'Site') {
-				let sites = this.benches
-					.map(bench => bench.sites.map(site => site.name))
-					.flat();
+				let sites = this.sites;
 				if (
 					event.user === this.$account.user.name ||
 					sites.includes(event.name)
@@ -240,36 +160,11 @@ export default {
 		reload() {
 			// refresh if currently not loading and have not reloaded in the last 5 seconds
 			if (
-				!this.$resources.benches.loading &&
-				new Date() - this.$resources.benches.lastLoaded > 5000
+				!this.$resources.allSites.loading &&
+				new Date() - this.$resources.allSites.lastLoaded > 5000
 			) {
-				this.$resources.benches.reload();
+				this.$resources.allSites.reload();
 			}
-		},
-		sitesSubtitle(bench) {
-			let parts = [];
-
-			if (bench.sites.length > 0) {
-				parts.push(
-					`${bench.sites.length} ${this.$plural(
-						bench.sites.length,
-						'site',
-						'sites'
-					)}`
-				);
-			}
-
-			if (bench.version) {
-				parts.push(bench.version);
-			}
-
-			return parts.join(' · ');
-		},
-		isSitesShown(bench) {
-			return this.sitesShown[bench.name];
-		},
-		toggleSitesShown(bench) {
-			this.sitesShown[bench.name] = !this.sitesShown[bench.name];
 		},
 		showNewSiteButton(bench) {
 			if (!this.$account.team.enabled) return false;
@@ -284,24 +179,12 @@ export default {
 		}
 	},
 	computed: {
-		benches() {
-			if (this.$resources.benches.data) {
-				return this.$resources.benches.data;
-			}
-			return null;
-		},
-		allSites() {
-			if (!this.benches) {
+		sites() {
+			if (!this.$resources.allSites.data) {
 				return [];
 			}
 
-			const sites = [];
-			const benches = this.benches;
-			for (let bench of benches) {
-				sites.push(...bench.sites);
-			}
-
-			return sites;
+			return this.$resources.allSites.data;
 		},
 
 		recentlyCreatedSites() {
@@ -310,11 +193,6 @@ export default {
 			}
 
 			return this.$resources.recentSites.data;
-		},
-		multipleBenches() {
-			if (this.$resources.benches.data) {
-				return this.$resources.benches.data.length > 1;
-			}
 		},
 		showUnpaidInvoiceAlert() {
 			if (!this.latestUnpaidInvoice) {

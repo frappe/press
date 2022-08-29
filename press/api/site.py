@@ -20,7 +20,6 @@ from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.remote_file.remote_file import get_remote_key
 from press.press.doctype.site_update.site_update import (
 	benches_with_available_update,
-	should_try_update,
 )
 from press.utils import (
 	get_current_team,
@@ -514,9 +513,6 @@ def recently_created(limit=3):
 @frappe.whitelist()
 def all():
 	team = get_current_team()
-	saas_apps = frappe.get_all("Saas App", pluck="name")
-	if "erpnext" in saas_apps:
-		saas_apps.remove("erpnext")
 	sites = frappe.get_list(
 		"Site",
 		fields=[
@@ -529,68 +525,11 @@ def all():
 			"current_disk_usage",
 			"trial_end_date",
 		],
-		filters={
-			"team": team,
-			"status": ("!=", "Archived"),
-			"standby_for": (
-				"not in",
-				saas_apps,
-			),
-		},
-		order_by="creation desc",
-	)
-	benches_with_updates = set(benches_with_available_update())
-	for site in sites:
-		if site.bench in benches_with_updates and should_try_update(site):
-			site.update_available = True
-
-	benches = frappe.db.get_all(
-		"Bench",
-		fields=["name", "status", "group"],
-		filters={"name": ("in", set([site.bench for site in sites]))},
-	)
-
-	# includes public groups
-	groups_with_sites = frappe.db.get_all(
-		"Release Group",
-		fields=["name", "title", "creation", "version", "team", "public"],
-		filters={
-			"enabled": True,
-			"name": ("in", set([bench.group for bench in benches])),
-		},
+		filters={"status": ("!=", "Archived"), "team": team},
 		order_by="creation desc",
 	)
 
-	empty_private_groups = frappe.db.get_all(
-		"Release Group",
-		fields=["name", "title", "creation", "version", "team", "public"],
-		filters={
-			"enabled": True,
-			"team": team,
-			"public": False,
-			"name": ("not in", set([bench.group for bench in benches])),
-		},
-		order_by="creation desc",
-	)
-
-	groups = groups_with_sites + empty_private_groups
-	shared_bench = frappe._dict(name="shared", shared=True, status="Active", sites=[])
-	private_benches = []
-	for group in groups:
-		group.benches = [bench for bench in benches if bench.group == group.name]
-		group.owned_by_team = team == group.team
-
-		group.sites = []
-		for bench in group.benches:
-			group.sites += [site for site in sites if site.bench == bench.name]
-
-		if group.public and not group.owned_by_team:
-			shared_bench.sites += group.sites
-		else:
-			private_benches.append(group)
-
-	private_benches = sorted(private_benches, key=lambda x: x.title)
-	return [shared_bench] + private_benches
+	return sites
 
 
 @frappe.whitelist()

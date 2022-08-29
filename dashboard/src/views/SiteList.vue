@@ -3,7 +3,7 @@
 		class="sm:rounded-md sm:border sm:border-gray-100 sm:py-1 sm:px-2 sm:shadow"
 	>
 		<div class="py-2 text-base text-gray-600 sm:px-2" v-if="sites.length === 0">
-			No sites in this bench
+			No sites
 		</div>
 		<div class="py-2" v-for="(site, index) in sites" :key="site.name">
 			<div class="flex items-center justify-between">
