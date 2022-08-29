@@ -105,18 +105,11 @@
 							:subtitle="`${app.repository_owner}/${app.repository}:${app.branch}`"
 						>
 							<template #actions>
-								<a
-									class="ml-2 block cursor-pointer"
-									:href="`${app.repository_url}/commit/${app.hash}`"
-									target="_blank"
-								>
-									<Badge
-										class="cursor-pointer hover:text-blue-500"
-										color="blue"
-									>
-										{{ app.tag || app.hash.substr(0, 7) }}
-									</Badge>
-								</a>
+								<CommitTag
+									:tag="app.tag || app.hash.substr(0, 7)"
+									class="ml-2"
+									:link="`${app.repository_url}/commit/${app.hash}`"
+								/>
 							</template>
 						</ListItem>
 					</div>
@@ -203,13 +196,15 @@
 import ClickToCopyField from '@/components/ClickToCopyField.vue';
 import CardWithDetails from '../components/CardWithDetails.vue';
 import SiteList from './SiteList.vue';
+import CommitTag from '@/components/utils/CommitTag.vue';
 export default {
 	name: 'BenchApps',
 	props: ['bench', 'version'],
 	components: {
 		SiteList,
 		CardWithDetails,
-		ClickToCopyField
+		ClickToCopyField,
+		CommitTag
 	},
 	inject: ['viewportWidth'],
 	data() {

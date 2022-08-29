@@ -37,9 +37,7 @@
 						<ErrorMessage class="mt-4" :error="$resources.changePlan.error" />
 					</template>
 					<template #actions>
-						<Button type="secondary" @click="showChangePlanDialog = false">
-							Cancel
-						</Button>
+						<Button @click="showChangePlanDialog = false"> Cancel </Button>
 						<Button
 							class="ml-2"
 							appearance="primary"

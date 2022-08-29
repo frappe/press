@@ -75,7 +75,6 @@
 								$resources.createApprovalRequest.loading ||
 								$resources.latestApproved.loading
 							"
-							type="secondary"
 							@click="confirmApprovalRequest(release.name)"
 						>
 							Publish
@@ -83,14 +82,12 @@
 
 						<Button
 							v-else-if="release.status == 'Awaiting Approval'"
-							type="secondary"
 							@click="confirmCancelRequest(release.name)"
 							>Cancel</Button
 						>
 
 						<Button
 							v-else-if="release.status == 'Rejected'"
-							type="secondary"
 							@click="showFeedback(release)"
 							>View Feedback</Button
 						>

@@ -68,11 +68,7 @@
 					<h3 class="text-lg">Access</h3>
 					<p class="mt-1 text-base text-gray-600">Connect to your database</p>
 				</div>
-				<Button
-					type="secondary"
-					icon-left="database"
-					@click="showDatabaseAccessDialog = true"
-				>
+				<Button icon-left="database" @click="showDatabaseAccessDialog = true">
 					Access Database</Button
 				>
 			</div>

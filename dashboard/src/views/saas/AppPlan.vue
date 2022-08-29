@@ -221,7 +221,6 @@ const getFeatureList = features => {
 						modelText = '';
 					}
 				"
-				type="secondary"
 				>Add</Button
 			>
 		</Dialog>
@@ -310,7 +309,6 @@ const getFeatureList = features => {
 						modelText = '';
 					}
 				"
-				type="secondary"
 				>Add</Button
 			>
 		</Dialog>
