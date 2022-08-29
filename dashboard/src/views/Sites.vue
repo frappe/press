@@ -2,7 +2,7 @@
 	<div class="pb-20">
 		<div>
 			<PageHeader title="Sites" subtitle="Your Frappe instances">
-				<template v-slot:actions>
+				<template v-if="this.$account.team.enabled" v-slot:actions>
 					<Button
 						appearance="primary"
 						iconLeft="plus"
@@ -165,13 +165,6 @@ export default {
 			) {
 				this.$resources.allSites.reload();
 			}
-		},
-		showNewSiteButton(bench) {
-			if (!this.$account.team.enabled) return false;
-			if (bench.status != 'Active') return false;
-			return (
-				(bench.shared || bench.owned_by_team) && this.sitesShown[bench.name]
-			);
 		},
 		handleAddPrepaidCreditsSuccess() {
 			this.$resources.latestUnpaidInvoice.reload();
