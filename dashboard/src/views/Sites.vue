@@ -1,8 +1,19 @@
 <template>
 	<div class="pb-20">
 		<div>
-			<h1 class="sr-only">Site Dashboard</h1>
-			<PageHeader title="Sites" subtitle="Your Frappe Site instances" />
+			<PageHeader title="Sites" subtitle="Your Frappe Site instances">
+				<template v-slot:actions>
+					<Button
+						appearance="primary"
+						iconLeft="plus"
+						class="ml-2 hidden sm:inline-flex"
+						route="/sites/new"
+					>
+						New
+					</Button>
+				</template>
+			</PageHeader>
+
 			<div class="mb-2" v-if="!$account.team.enabled">
 				<Alert title="Your account is disabled">
 					Enable your account to start creating sites
@@ -55,89 +66,86 @@
 					@success="handleAddPrepaidCreditsSuccess"
 				/>
 			</div>
-			<div class="mb-3 flex flex-row justify-between">
-				<SiteAndBenchSearch class="w-full sm:w-60 lg:w-96" />
 
-				<Dropdown :items="newDropdownItems" right>
-					<template v-slot="{ toggleDropdown }">
-						<Button
-							appearance="primary"
-							iconLeft="plus"
-							class="ml-2 hidden sm:inline-flex"
-							@click.stop="toggleDropdown()"
-						>
-							New
-						</Button>
-					</template>
-				</Dropdown>
+			<div>
+				<h2 class="text-lg font-semibold text-gray-800">Recently Created</h2>
+
+				<SiteList class="mt-3" :sites="recentlyCreatedSites" />
 			</div>
 
-			<div v-if="$resources.benches.data == null">
-				<div class="flex flex-1 items-center py-4 focus:outline-none">
-					<h2 class="text-lg font-semibold">Sites</h2>
+			<div v-if="false">
+				<div v-if="$resources.benches.data == null">
+					<div class="flex flex-1 items-center py-4 focus:outline-none">
+						<h2 class="text-lg font-semibold">Sites</h2>
+					</div>
+					<div class="rounded-md bg-gray-50 px-4 py-3">
+						<LoadingText />
+					</div>
 				</div>
-				<div class="rounded-md bg-gray-50 px-4 py-3">
-					<LoadingText />
-				</div>
-			</div>
-			<div v-else>
-				<div
-					v-for="(bench, i) in $resources.benches.data"
-					:key="bench.name"
-					class="flex flex-col sm:flex-row sm:space-x-4"
-					:class="{
-						'border-b': i < benches.length - 1 && !isSitesShown(bench),
-						'mb-4': isSitesShown(bench)
-					}"
-				>
-					<div class="flex-1">
-						<div class="flex items-center justify-between">
-							<button
-								class="flex flex-1 items-center py-4 text-left focus:outline-none"
-								@click="multipleBenches ? toggleSitesShown(bench) : null"
-							>
-								<h2 class="text-lg font-semibold">
-									{{ bench.shared ? 'Sites' : bench.title }}
-								</h2>
-								<FeatherIcon
-									v-if="multipleBenches"
-									:name="isSitesShown(bench) ? 'chevron-down' : 'chevron-right'"
-									class="ml-1 mt-0.5 h-4 w-4"
-								/>
-							</button>
-							<div class="flex items-center space-x-2">
-								<p v-if="benches" class="hidden text-sm text-gray-700 sm:block">
-									{{ sitesSubtitle(bench) }}
-								</p>
-								<Badge
-									class="hidden text-sm sm:block"
-									v-if="!bench.shared && bench.owned_by_team"
+				<div v-else>
+					<div
+						v-for="(bench, i) in $resources.benches.data"
+						:key="bench.name"
+						class="flex flex-col sm:flex-row sm:space-x-4"
+						:class="{
+							'border-b': i < benches.length - 1 && !isSitesShown(bench),
+							'mb-4': isSitesShown(bench)
+						}"
+					>
+						<div class="flex-1">
+							<div class="flex items-center justify-between">
+								<button
+									class="flex flex-1 items-center py-4 text-left focus:outline-none"
+									@click="multipleBenches ? toggleSitesShown(bench) : null"
 								>
-									Private
-								</Badge>
-								<Button
-									v-if="bench.owned_by_team"
-									:route="`/benches/${bench.name}`"
-									icon="tool"
-								>
-								</Button>
+									<h2 class="text-lg font-semibold">
+										{{ bench.shared ? 'Sites' : bench.title }}
+									</h2>
+									<FeatherIcon
+										v-if="multipleBenches"
+										:name="
+											isSitesShown(bench) ? 'chevron-down' : 'chevron-right'
+										"
+										class="ml-1 mt-0.5 h-4 w-4"
+									/>
+								</button>
+								<div class="flex items-center space-x-2">
+									<p
+										v-if="benches"
+										class="hidden text-sm text-gray-700 sm:block"
+									>
+										{{ sitesSubtitle(bench) }}
+									</p>
+									<Badge
+										class="hidden text-sm sm:block"
+										v-if="!bench.shared && bench.owned_by_team"
+									>
+										Private
+									</Badge>
+									<Button
+										v-if="bench.owned_by_team"
+										:route="`/benches/${bench.name}`"
+										icon="tool"
+									>
+									</Button>
 
-								<Button
-									:route="`/sites/new${
-										bench.owned_by_team
-											? `?bench=${bench.name}&benchTitle=${bench.title}`
-											: ''
-									}`"
-									appearance="primary"
-									icon="plus"
-									v-if="showNewSiteButton(bench)"
-									class="sm:hidden"
-								>
-									New Site
-								</Button>
+									<Button
+										:route="`/sites/new${
+											bench.owned_by_team
+												? `?bench=${bench.name}&benchTitle=${bench.title}`
+												: ''
+										}`"
+										appearance="primary"
+										icon="plus"
+										v-if="showNewSiteButton(bench)"
+										class="sm:hidden"
+									>
+										New Site
+									</Button>
+								</div>
 							</div>
+							<SiteList :sites="bench.sites" v-show="isSitesShown(bench)" />
 						</div>
-						<SiteList :sites="bench.sites" v-show="isSitesShown(bench)" />
 					</div>
 				</div>
 			</div>
@@ -173,6 +181,7 @@ export default {
 			auto: true,
 			onSuccess(data) {
 				if (data && data.length) {
+					console.log(data);
 					for (let bench of data) {
 						if (!(bench.name in this.sitesShown)) {
 							this.sitesShown[bench.name] = Boolean(bench.shared);
@@ -270,27 +279,40 @@ export default {
 		}
 	},
 	computed: {
-		newDropdownItems() {
-			return [
-				{
-					label: 'Site',
-					action: () => {
-						this.$router.push('/sites/new');
-					}
-				},
-				{
-					label: 'Bench',
-					action: () => {
-						this.$router.push('/benches/new');
-					}
-				}
-			];
-		},
 		benches() {
 			if (this.$resources.benches.data) {
 				return this.$resources.benches.data;
 			}
 			return null;
+		},
+		allSites() {
+			if (!this.benches) {
+				return [];
+			}
+
+			const sites = [];
+			const benches = this.benches;
+			for (let bench of benches) {
+				sites.push(...bench.sites);
+			}
+
+			return sites;
+		},
+
+		recentlyCreatedSites() {
+			const compareDateAsc = (dateA, dateB) => {
+				if (dateA > dateB) return 1;
+				else if (dateA < dateB) return -1;
+				return 0;
+			};
+			return this.allSites
+				.sort((siteA, siteB) => {
+					const siteACreation = this.$date(siteA.creation);
+					const siteBCreation = this.$date(siteB.creation);
+
+					return compareDateAsc(siteACreation, siteBCreation);
+				})
+				.slice(0, 4); // Recent 4 sites
 		},
 		multipleBenches() {
 			if (this.$resources.benches.data) {
