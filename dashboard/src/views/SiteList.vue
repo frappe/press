@@ -6,38 +6,40 @@
 			No sites in this bench
 		</div>
 		<div class="py-2" v-for="(site, index) in sites" :key="site.name">
-			<router-link
-				:to="`/sites/${site.name}/overview`"
-				class="block rounded-md pt-2 hover:bg-gray-50 sm:px-2"
-			>
-				<div class="flex items-center justify-between sm:justify-start">
-					<div class="text-base sm:w-4/12">
-						{{ site.name }}
+			<div class="flex items-center justify-between">
+				<router-link
+					:to="`/sites/${site.name}/overview`"
+					class="block w-full rounded-md py-2 hover:bg-gray-50 sm:px-2"
+				>
+					<div class="flex items-center justify-between">
+						<div class="text-base sm:w-4/12">
+							{{ site.name }}
+						</div>
+						<div class="text-base sm:w-4/12">
+							<Badge class="pointer-events-none" v-bind="siteBadge(site)" />
+						</div>
+						<div class="hidden w-2/12 text-sm text-gray-600 sm:block">
+							Created {{ formatDate(site.creation, 'relative') }}
+						</div>
 					</div>
-					<div class="text-base sm:w-4/12">
-						<Badge class="pointer-events-none" v-bind="siteBadge(site)" />
-					</div>
-					<div class="hidden w-2/12 text-sm text-gray-600 sm:block">
-						Created {{ formatDate(site.creation, 'relative') }}
-					</div>
-					<div class="hidden w-2/12 text-right text-base sm:block">
-						<Link
-							v-if="site.status === 'Active' || site.status === 'Updating'"
-							:to="`https://${site.name}`"
-							target="_blank"
-							class="inline-flex items-center text-sm"
-							@click.stop
-						>
-							Visit Site
-							<FeatherIcon name="external-link" class="ml-1 h-3 w-3" />
-						</Link>
-					</div>
+				</router-link>
+
+				<div class="text-right text-base">
+					<Dropdown
+						v-if="site.status !== 'Active' || site.status === 'Updating'"
+						:items="dropdownItems(site)"
+						right
+					>
+						<template v-slot="{ toggleDropdown }">
+							<Button icon="more-horizontal" @click.stop="toggleDropdown()" />
+						</template>
+					</Dropdown>
 				</div>
-				<div
-					class="translate-y-2 transform pt-2"
-					:class="{ 'border-b': index < sites.length - 1 }"
-				/>
-			</router-link>
+			</div>
+			<div
+				class="translate-y-2 transform"
+				:class="{ 'border-b': index < sites.length - 1 }"
+			/>
 		</div>
 	</div>
 </template>
@@ -71,6 +73,20 @@ export default {
 				color,
 				status
 			};
+		},
+		dropdownItems(site) {
+			return [
+				{
+					label: 'Visit Site',
+					action: () => {
+						window.open(`https://${site.name}`, '_blank');
+					}
+				},
+				{
+					label: 'Login As Admin',
+					action: () => {}
+				}
+			];
 		}
 	}
 };
