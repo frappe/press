@@ -55,7 +55,7 @@
 				</Button>
 				<Button
 					class="ml-3"
-					type="danger"
+					appearance="danger"
 					@click="$resources.disableAccount.submit()"
 					:loading="$resources.disableAccount.loading"
 				>

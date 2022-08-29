@@ -15,12 +15,12 @@
 				<Input type="text" class="mt-4 w-full" v-model="confirmBenchName" />
 				<ErrorMessage class="mt-2" :error="$resources.dropBench.error" />
 			</template>
-			
+
 			<template v-slot:actions>
 				<Button @click="dialogOpen = false"> Cancel </Button>
 				<Button
 					class="ml-3"
-					type="danger"
+					appearance="danger"
 					@click="$resources.dropBench.submit()"
 					:loading="$resources.dropBench.loading"
 				>
