@@ -12,7 +12,7 @@
 						class="mx-auto mt-4 justify-start lg:container"
 						:class="{ flex: true }"
 					>
-						<Sidebar />
+						<Sidebar v-if="!$route.meta.isLoginPage" />
 						<router-view v-slot="{ Component }" class="ml-3 w-full">
 							<keep-alive
 								:include="[
