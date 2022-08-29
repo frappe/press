@@ -34,6 +34,7 @@
 							<Button icon="more-horizontal" @click.stop="toggleDropdown()" />
 						</template>
 					</Dropdown>
+					<div v-else class="h-[30px] w-[30px]"></div>
 				</div>
 			</div>
 			<div
