@@ -201,7 +201,6 @@
 </template>
 <script>
 import ClickToCopyField from '@/components/ClickToCopyField.vue';
-import { setTransitionHooks } from 'vue';
 import CardWithDetails from '../components/CardWithDetails.vue';
 import SiteList from './SiteList.vue';
 export default {
