@@ -19,16 +19,23 @@
 				<Input
 					type="text"
 					label="Selected Plan"
-					v-model="planTitle"
+					v-model="this.plan.title"
 					readonly
 				/>
 				<Input
-					:label="`Amount (Minimum Amount: ${minimumAmount})`"
+					:label="`Credits (Minimum Credits: ${minimumAmount})`"
 					v-model.number="creditsToBuy"
 					name="amount"
 					autocomplete="off"
 					type="number"
 					:min="minimumAmount"
+		 			v-on:change="updateTotalAmount"
+				/>
+				<Input
+					type="text"
+					:label="gstApplicable() ? 'Total Amount (18% GST)' : 'Total Amount'"
+					v-model="totalAmount"
+					readonly
 				/>
 			</div>
 			<div hidden v-if="step == 'Confirm Checkout'">
@@ -128,11 +135,12 @@ export default {
 		subscription: {
 			default: "app-subscription-frappe-00002"
 		}, 
-		planTitle: {
-			default: "Essential"
-		}, 
-		planName: {
-			default: "MARKETPLACE-PLAN-frappe-001"
+		plan: {
+			default: {
+				title: "Essential",
+				name: "MARKETPLACE-PLAN-frappe-017",
+				gst: 1
+			}
 		},
 		minimumAmount: {
 			default: 800
@@ -143,7 +151,8 @@ export default {
 	},
 	data() {
 		return {
-			creditsToBuy: 800,
+			creditsToBuy: this.minimumAmount,
+			totalAmount: 0,
 			showCheckoutDialog: true,
 			usePartnerCredits: false,
 			step: 'Confirm Checkout',
@@ -154,7 +163,21 @@ export default {
 			selectedOption: 'Monthly',
 		};
 	},
+	created() {
+		this.updateTotalAmount();
+	},
 	methods: {
+		updateTotalAmount() {
+			// If plan is gst inclusive add gst
+			if (this.gstApplicable()) {
+				this.totalAmount = parseFloat(this.creditsToBuy + this.creditsToBuy * 0.18).toFixed(2);
+			} else {
+				this.totalAmount = this.creditsToBuy;
+			}
+		},
+		gstApplicable() {
+			return this.$account.team.country === 'India' && this.plan.gst
+		},
 		toggleCheckoutDialog() {
 			this.showCheckoutDialog = true;
 		},
@@ -267,8 +290,8 @@ export default {
 				method: 'press.api.marketplace.prepaid_saas_payment',
 				params: {
 					name: this.subscription,
-					plan: this.planName,
-					credits_to_buy: this.creditsToBuy,
+					plan: this.plan.name,
+					amount: this.totalAmount,
 				},
 				async onSuccess(data) {
 					let { card, payment_method, publishable_key, client_secret } = data;
