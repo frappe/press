@@ -51,7 +51,7 @@ class BaseServer(Document):
 							"ResourceRecordSet": {
 								"Name": self.name,
 								"Type": "A",
-								"TTL": 3600,
+								"TTL": 3600 if self.doctype == "Proxy Server" else 300,
 								"ResourceRecords": [{"Value": self.ip}],
 							},
 						}
