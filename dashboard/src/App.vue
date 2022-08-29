@@ -8,12 +8,9 @@
 				<div class="flex-1">
 					<Navbar v-if="$auth.isLoggedIn" />
 
-					<div
-						class="mx-auto mt-4 justify-start lg:container"
-						:class="{ flex: true }"
-					>
+					<div class="mx-auto mt-5 flex flex-row justify-start md:container">
 						<Sidebar v-if="!$route.meta.isLoginPage" />
-						<router-view v-slot="{ Component }" class="ml-3 w-full">
+						<router-view v-slot="{ Component }" class="ml-8 w-full">
 							<keep-alive
 								:include="[
 									'Sites',

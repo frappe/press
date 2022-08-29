@@ -14,7 +14,7 @@
 				]"
 				:href="href"
 				@click="navigate"
-				class="text-start mb-2 flex rounded-md py-2 pl-2 pr-8 text-sm font-medium focus:outline-none"
+				class="text-start mb-2 flex rounded-md py-2 pl-2 pr-10 text-sm font-medium focus:outline-none"
 			>
 				<Component class="mr-1.5" :is="item.icon" />
 				{{ item.label }}

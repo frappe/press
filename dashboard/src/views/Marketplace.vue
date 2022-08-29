@@ -1,6 +1,6 @@
 <template>
 	<div>
-		<PageHeader title="Apps" subtitle="Manage your apps">
+		<PageHeader title="Apps" subtitle="Manage your marketplace apps">
 			<template v-slot:actions>
 				<Button
 					appearance="primary"

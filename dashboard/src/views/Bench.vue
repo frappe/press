@@ -1,5 +1,5 @@
 <template>
-	<div class="mt-10 flex-1">
+	<div class="flex-1">
 		<div class="px-4 sm:px-8" v-if="bench">
 			<div class="pb-3">
 				<div class="text-base text-gray-700">
