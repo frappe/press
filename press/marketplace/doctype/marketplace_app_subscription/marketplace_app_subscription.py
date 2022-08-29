@@ -199,6 +199,7 @@ def process_prepaid_marketplace_payment(event):
 	team = frappe.get_doc("Team", {"stripe_customer_id": payment_intent["customer"]})
 	amount = payment_intent["amount"] / 100
 	metadata = payment_intent.get("metadata")
+	site = metadata.get("site")
 
 	invoice = frappe.get_doc(
 		doctype="Invoice",
@@ -212,10 +213,8 @@ def process_prepaid_marketplace_payment(event):
 		stripe_payment_intent_id=payment_intent["id"],
 	)
 
-	# All amount should be allocated as credits excluding GST
 	invoice_line_items = []
 	total_hosting_cost = 0.0
-	charge_gst = 0
 	for line_item in json.loads(metadata.get("line_items")):
 		title = frappe.db.get_value("Marketplace App", line_item["app"], "title")
 		plan = line_item["plan"]
@@ -229,14 +228,11 @@ def process_prepaid_marketplace_payment(event):
 		)
 
 		# Compare site hosting plan with new hosting plan and set max hosting_plan for site
-		standard_hosting_plan, gst = frappe.db.get_value(
-			"Marketplace App Plan", plan, ["standard_hosting_plan", "gst"]
+		standard_hosting_plan = frappe.db.get_value(
+			"Marketplace App Plan", plan, "standard_hosting_plan"
 		)
 		hosting_amount = frappe.db.get_value(
 			"Plan", standard_hosting_plan, f"price_{team.currency.lower()}"
-		)
-		site = frappe.db.get_value(
-			"Marketplace App Subscription", line_item["subscription"], "site"
 		)
 		site_plan = frappe.db.get_value("Site", site, "plan")
 		site_plan_value = frappe.db.get_value(
@@ -246,8 +242,6 @@ def process_prepaid_marketplace_payment(event):
 			# set new site plan as new standard_hosting_plan, since it is higher
 			frappe.db.set_value("Site", site, "plan", standard_hosting_plan)
 
-		# if gst applicable on any one app plan (charge_gst > 0), the entire amount will be gst inclusive
-		charge_gst += gst
 		invoice_line_items.append(
 			{
 				"description": f"Prepaid Credits for {title}",
@@ -265,7 +259,7 @@ def process_prepaid_marketplace_payment(event):
 		{
 			"description": "Frappe Cloud Hosting",
 			"document_type": "Site",
-			"document_name": metadata.get("site"),
+			"document_name": site,
 			"rate": float(total_hosting_cost),
 			"quantity": 1,
 		}
@@ -281,10 +275,7 @@ def process_prepaid_marketplace_payment(event):
 	invoice.update_transaction_details(charge)
 	invoice.submit()
 
-	# adjust gst if applicable
-	if charge_gst > 0:
-		amount = amount - (amount * 0.18)
-
+	print(metadata.get('credits'))
 	team.allocate_credit_amount(
-		amount, source="Prepaid Credits", remark=payment_intent["id"]
+		float(metadata.get('credits')), source="Prepaid Credits", remark=payment_intent["id"]
 	)

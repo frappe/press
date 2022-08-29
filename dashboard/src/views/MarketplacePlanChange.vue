@@ -29,7 +29,6 @@
 					autocomplete="off"
 					type="number"
 					:min="minimumAmount"
-		 			v-on:change="updateTotalAmount"
 				/>
 				<Input
 					type="text"
@@ -94,10 +93,6 @@
 				</div>
 			</div>
 
-			<!-- Stripe Setup Spinner -->
-			<div v-if="step == 'Setting up Stripe'" class="mt-8 flex justify-center">
-				<Spinner class="h-4 w-4 text-gray-600" />
-			</div>
 
 			<!-- Confirm Card Authentication -->
 			<div
@@ -119,6 +114,11 @@
 					<div class="spinner hidden"></div>
 					<span class="button-text">Authenticate purchase</span>
 				</Button>
+			</div>
+
+			<!-- Stripe Setup Spinner -->
+			<div v-if="step == 'Setting up Stripe'" class="mt-8 flex justify-center">
+				<Spinner class="h-4 w-4 text-gray-600" />
 			</div>
 
 		</Dialog>
@@ -166,11 +166,20 @@ export default {
 	created() {
 		this.updateTotalAmount();
 	},
+	watch: {
+    // whenever question changes, this function will run
+    selectedOption(newOption, oldOption) {
+			this.creditsToBuy = this.minimumAmount * (newOption == 'Annual' ? 12 : 1);
+    },
+		creditsToBuy(newAmount, oldAmount) {
+			this.updateTotalAmount();
+		}
+  },	
 	methods: {
 		updateTotalAmount() {
 			// If plan is gst inclusive add gst
 			if (this.gstApplicable()) {
-				this.totalAmount = parseFloat(this.creditsToBuy + this.creditsToBuy * 0.18).toFixed(2);
+				this.totalAmount = Math.floor(this.creditsToBuy + this.creditsToBuy * 0.18);
 			} else {
 				this.totalAmount = this.creditsToBuy;
 			}
@@ -183,6 +192,7 @@ export default {
 		},
 		async authenticateCard() {
 			// Event handler to prompt a customer to authenticate a previously provided card
+			this.step = 'Setting up Stripe'
 			this.stripe = await loadStripe(this.publishableKey);
 			this.stripe
 				.confirmCardPayment(this.clientSecret, {
@@ -205,7 +215,8 @@ export default {
 						stripeJsResult.paymentIntent &&
 						stripeJsResult.paymentIntent.status === 'succeeded'
 					) {
-						this.showCheckoutDialog = false;
+						//this.showCheckoutDialog = false;
+						window.location.reload()
 						this.step = 'Confirm Checkout';
 						this.$notify({
 							title: 'Payment request received!',
@@ -292,6 +303,7 @@ export default {
 					name: this.subscription,
 					plan: this.plan.name,
 					amount: this.totalAmount,
+					credits: this.creditsToBuy
 				},
 				async onSuccess(data) {
 					let { card, payment_method, publishable_key, client_secret } = data;
