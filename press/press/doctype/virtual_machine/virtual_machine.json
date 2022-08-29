@@ -90,8 +90,7 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Machine Type",
-   "reqd": 1,
-   "set_only_once": 1
+   "reqd": 1
   },
   {
    "fieldname": "aws_instance_id",
@@ -204,7 +203,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-06-28 21:43:19.300774",
+ "modified": "2022-08-29 17:52:06.635948",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",
