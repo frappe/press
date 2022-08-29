@@ -126,7 +126,9 @@ def repositories(installation, token):
 			params={"per_page": 100, "page": current_page},
 			headers=headers,
 		)
-		if len(response.json()["repositories"]) < 100:
+		if response.json()["repositories"] and len(response.json()["repositories"]) < 100:
+			is_last_page = True
+		elif isinstance(response, dict) and len(response["repositories"]) < 100:
 			is_last_page = True
 
 		for repository in response.json()["repositories"]:
