@@ -8,7 +8,7 @@
 						$resources.availableApps.fetch();
 					}
 				"
-				:disabled="site.status === 'Suspended'"
+				:disabled="site?.status === 'Suspended'"
 			>
 				Add App
 			</Button>
