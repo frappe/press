@@ -69,7 +69,7 @@ class VirtualMachine(Document):
 			"terminated": "Terminated",
 		}
 
-	def get_latest_ubuntu_image(self):	
+	def get_latest_ubuntu_image(self):
 		return self.client("ssm").get_parameter(
 			Name="/aws/service/canonical/ubuntu/server/20.04/stable/current/amd64/hvm/ebs-gp2/ami-id"
 		)["Parameter"]["Value"]
@@ -155,7 +155,9 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def disable_termination_protection(self):
-		self.client().modify_instance_attribute(InstanceId=self.aws_instance_id, DisableApiTermination={'Value': False})
+		self.client().modify_instance_attribute(
+			InstanceId=self.aws_instance_id, DisableApiTermination={"Value": False}
+		)
 
 	@frappe.whitelist()
 	def terminate(self):

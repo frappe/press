@@ -488,32 +488,27 @@ def get_plans(name=None):
 	return out
 
 
-@frappe.whitelist()
-def recently_created(limit=3):
-	team = get_current_team()
-	sites = frappe.get_list(
-		"Site",
-		fields=[
-			"name",
-			"status",
-			"creation",
-			"bench",
-			"current_cpu_usage",
-			"current_database_usage",
-			"current_disk_usage",
-			"trial_end_date",
-		],
-		filters={"status": ("!=", "Archived"), "team": team},
-		order_by="creation desc",
-		limit=limit,
+def sites_with_recent_activity(sites, limit=3):
+	site_activity = frappe.qb.DocType("Site Activity")
+
+	query = (
+		frappe.qb.from_(site_activity)
+		.select(site_activity.site)
+		.where(site_activity.site.isin(sites))
+		.where(site_activity.action != "Backup")
+		.orderby(site_activity.creation, order=frappe.qb.desc)
+		.limit(limit)
+		.distinct()
 	)
 
-	return sites
+	return query.run(pluck="site")
 
 
 @frappe.whitelist()
 def all():
 	team = get_current_team()
+	sites_data = frappe._dict()
+
 	sites = frappe.get_list(
 		"Site",
 		fields=[
@@ -535,7 +530,13 @@ def all():
 		if site.bench in benches_with_updates and should_try_update(site):
 			site.update_available = True
 
-	return sites
+	site_names = [site.name for site in sites]
+	recents = sites_with_recent_activity(site_names)
+
+	sites_data.site_list = sites
+	sites_data.recents = recents
+
+	return sites_data
 
 
 @frappe.whitelist()

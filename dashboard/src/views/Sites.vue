@@ -68,10 +68,10 @@
 			</div>
 
 			<div>
-				<SectionHeader heading="Recently Created" />
+				<SectionHeader heading="Recents" />
 
 				<div class="mt-3">
-					<LoadingText v-if="$resources.recentSites.loading" />
+					<LoadingText v-if="$resources.allSites.loading" />
 					<SiteList v-else :sites="recentlyCreatedSites" />
 				</div>
 			</div>
@@ -182,15 +182,18 @@ export default {
 				return [];
 			}
 
-			return this.$resources.allSites.data;
+			return this.$resources.allSites.data.site_list;
 		},
 
 		recentlyCreatedSites() {
-			if (!this.$resources.recentSites.data) {
+			if (!this.$resources.allSites.data) {
 				return [];
 			}
 
-			return this.$resources.recentSites.data;
+			const sitesWithRecentActivity = this.$resources.allSites.data.recents;
+			return this.sites.filter(site =>
+				sitesWithRecentActivity.includes(site.name)
+			);
 		},
 		showUnpaidInvoiceAlert() {
 			if (!this.latestUnpaidInvoice) {
