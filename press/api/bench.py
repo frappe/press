@@ -11,11 +11,11 @@ from frappe.core.utils import find, find_all
 from frappe.model.naming import append_number_if_name_exists
 from frappe.utils import comma_and
 
-from press.api.github import branches
 from press.api.site import protected
+from press.api.github import branches
+from press.press.doctype.cluster.cluster import Cluster
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.app_source.app_source import AppSource
-from press.press.doctype.cluster.cluster import Cluster
 from press.press.doctype.release_group.release_group import (
 	ReleaseGroup,
 	new_release_group,
@@ -64,27 +64,19 @@ def get(name):
 
 @frappe.whitelist()
 def all():
-	groups = frappe.get_list(
+	private_groups = frappe.get_list(
 		"Release Group",
 		fields=["name", "title", "creation", "version"],
-		filters={"enabled": True, "team": get_current_team()},
-		order_by="creation desc",
+		filters={"enabled": True, "team": get_current_team(), "public": False},
+		order_by="title desc",
 	)
 
-	for group in groups:
-		most_recent_candidate = frappe.get_all(
-			"Deploy Candidate",
-			["status"],
-			{"group": group.name},
-			limit=1,
-			order_by="creation desc",
-		)[0]
-		active_benches = frappe.get_all(
-			"Bench", {"group": group.name, "status": "Active"}, limit=1, order_by="creation desc"
-		)
-		group.update_available = most_recent_candidate.status == "Draft"
-		group.status = "Active" if active_benches else "Awaiting Deploy"
-	return groups
+	for group in private_groups:
+		group.deploy_information = frappe.get_doc(
+			"Release Group", group.name
+		).deploy_information()
+
+	return private_groups
 
 
 @frappe.whitelist()
