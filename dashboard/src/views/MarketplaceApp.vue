@@ -1,6 +1,6 @@
 <template>
-	<div class="mt-10">
-		<div class="px-4 sm:px-8" v-if="app">
+	<div>
+		<div v-if="app">
 			<div class="pb-3">
 				<div class="text-base text-gray-700">
 					<router-link to="/marketplace/apps" class="hover:text-gray-800">
@@ -31,8 +31,8 @@
 				</div>
 			</div>
 		</div>
-		<div class="px-4 sm:px-8" v-if="app">
-			<Tabs class="pb-8" :tabs="tabs">
+		<div v-if="app">
+			<Tabs :tabs="tabs">
 				<router-view v-bind="{ app }"></router-view>
 			</Tabs>
 		</div>

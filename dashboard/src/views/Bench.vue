@@ -1,6 +1,6 @@
 <template>
 	<div class="flex-1">
-		<div class="px-4 sm:px-8" v-if="bench">
+		<div v-if="bench">
 			<div class="pb-3">
 				<div class="text-base text-gray-700">
 					<router-link
@@ -31,8 +31,8 @@
 				</div>
 			</div>
 		</div>
-		<div class="px-4 sm:px-8">
-			<Tabs class="pb-32" :tabs="tabs">
+		<div>
+			<Tabs :tabs="tabs">
 				<router-view v-slot="{ Component }">
 					<component v-if="bench" :is="Component" :bench="bench"></component>
 				</router-view>

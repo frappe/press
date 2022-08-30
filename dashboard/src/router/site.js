@@ -36,7 +36,8 @@ export default [
 			{
 				name: 'SiteApps',
 				path: 'apps',
-				component: () => import('../views/SiteApps.vue')
+				component: () => import('../views/SiteApps.vue'),
+				props: true
 			},
 			{
 				path: 'installing',
