@@ -5,6 +5,8 @@ frappe.ui.form.on('Virtual Machine', {
 	refresh: function (frm) {
 		[
 			[__('Sync'), 'sync'],
+			[__('Terminate'), 'terminate'],
+			[__('Disable Termination Protection'), 'disable_termination_protection'],
 			[__('Create Image'), 'create_image'],
 		].forEach(([label, method]) => {
 			frm.add_custom_button(

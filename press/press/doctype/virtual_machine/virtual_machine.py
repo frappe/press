@@ -153,6 +153,14 @@ class VirtualMachine(Document):
 		).insert()
 		return image.name
 
+	@frappe.whitelist()
+	def disable_termination_protection(self):
+		self.client().modify_instance_attribute(InstanceId=self.aws_instance_id, DisableApiTermination={'Value': False})
+
+	@frappe.whitelist()
+	def terminate(self):
+		self.client().terminate_instances(InstanceIds=[self.aws_instance_id])
+
 	def client(self, client_type="ec2"):
 		cluster = frappe.get_doc("Cluster", self.cluster)
 		return boto3.client(

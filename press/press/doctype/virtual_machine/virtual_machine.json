@@ -124,8 +124,7 @@
    "fieldname": "private_ip_address",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Private IP Address",
-   "set_only_once": 1
+   "label": "Private IP Address"
   },
   {
    "fieldname": "security_section",
@@ -213,7 +212,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-08-30 16:02:32.695135",
+ "modified": "2022-08-30 16:46:45.766816",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",
