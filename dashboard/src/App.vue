@@ -10,7 +10,7 @@
 
 					<div class="mx-auto mt-5 flex flex-row justify-start md:container">
 						<Sidebar v-if="!$route.meta.isLoginPage" />
-						<router-view v-slot="{ Component }" class="ml-8 w-full">
+						<router-view v-slot="{ Component }" class="ml-8 w-full pb-20">
 							<keep-alive
 								:include="[
 									'Sites',

@@ -1,5 +1,5 @@
 <template>
-	<div class="pb-20">
+	<div>
 		<div>
 			<PageHeader title="Sites" subtitle="Your Frappe instances">
 				<template v-if="this.$account.team.enabled" v-slot:actions>

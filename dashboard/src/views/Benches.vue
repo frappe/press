@@ -12,13 +12,40 @@
 				</Button>
 			</template>
 		</PageHeader>
+
+		<div>
+			<SectionHeader heading="All Benches">
+				<template v-slot:actions>
+					<SiteAndBenchSearch />
+				</template>
+			</SectionHeader>
+
+			<div class="mt-3">
+				<LoadingText v-if="$resources.allBenches.loading" />
+				<BenchList v-else :benches="benches" />
+			</div>
+		</div>
 	</div>
 </template>
 
 <script>
-import PageHeader from '@/components/global/PageHeader.vue';
+import SiteAndBenchSearch from '@/components/SiteAndBenchSearch.vue';
+import BenchList from './BenchList.vue';
+
 export default {
 	name: 'BenchesScreen',
-	components: { PageHeader }
+	components: { SiteAndBenchSearch, BenchList },
+	resources: {
+		allBenches: 'press.api.bench.all'
+	},
+	computed: {
+		benches() {
+			if (!this.$resources.allBenches.data) {
+				return [];
+			}
+
+			return this.$resources.allBenches.data;
+		}
+	}
 };
 </script>
