@@ -74,6 +74,7 @@ class VirtualMachine(Document):
 			Name="/aws/service/canonical/ubuntu/server/20.04/stable/current/amd64/hvm/ebs-gp2/ami-id"
 		)["Parameter"]["Value"]
 
+	@frappe.whitelist()
 	def reboot(self):
 		self.client().reboot_instances(InstanceIds=[self.aws_instance_id])
 
