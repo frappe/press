@@ -1,25 +1,27 @@
 <template>
 	<div class="shrink-0">
 		<slot v-bind="{ showDialog }"></slot>
-		<Dialog v-model="dialogOpen" title="Drop Site">
-			<p class="text-base">
-				Are you sure you want to drop your site? The site will be archived and
-				all of its files and Offsite Backups will be deleted. This action cannot
-				be undone.
-			</p>
-			<p class="mt-4 text-base">
-				Please type
-				<span class="font-semibold">{{ site.name }}</span> to confirm.
-			</p>
-			<Input type="text" class="mt-4 w-full" v-model="confirmSiteName" />
-			<ErrorMessage class="mt-2" :error="$resources.dropSite.error" />
+		<FrappeUIDialog :options="{ title: 'Drop Site' }" v-model="dialogOpen">
+			<template v-slot:body-content>
+				<p class="text-base">
+					Are you sure you want to drop your site? The site will be archived and
+					all of its files and Offsite Backups will be deleted. This action
+					cannot be undone.
+				</p>
+				<p class="mt-4 text-base">
+					Please type
+					<span class="font-semibold">{{ site.name }}</span> to confirm.
+				</p>
+				<Input type="text" class="mt-4 w-full" v-model="confirmSiteName" />
+				<ErrorMessage class="mt-2" :error="$resources.dropSite.error" />
+			</template>
 
 			<template v-slot:actions>
 				<div>
 					<Button @click="dialogOpen = false"> Cancel </Button>
 					<Button
 						class="ml-3"
-						type="danger"
+						appearance="danger"
 						@click="$resources.dropSite.submit()"
 						:loading="$resources.dropSite.loading"
 					>
@@ -27,7 +29,7 @@
 					</Button>
 				</div>
 			</template>
-		</Dialog>
+		</FrappeUIDialog>
 	</div>
 </template>
 

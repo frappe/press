@@ -81,7 +81,7 @@
 			<ErrorMessage class="mt-4" :error="$resourceErrors" />
 			<Button
 				class="mt-4"
-				type="primary"
+				appearance="primary"
 				:loading="$resources.setupAccount.loading"
 			>
 				<span v-if="!isInvitation"> Submit </span>

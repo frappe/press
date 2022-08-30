@@ -4,7 +4,6 @@ import { utils } from '@/utils';
 import useResource from '@/composables/resource';
 import SiteOverviewPlan from './SiteOverviewPlan.vue';
 import SiteOverviewInfo from './SiteOverviewInfo.vue';
-import SiteOverviewApps from './SiteOverviewApps.vue';
 import SiteOverviewDomains from './SiteOverviewDomains.vue';
 import SiteOverviewCPUUsage from './SiteOverviewCPUUsage.vue';
 import AlertSiteUpdate from '@/components/AlertSiteUpdate.vue';
@@ -73,7 +72,7 @@ const marketplacePromotionalBanners = useResource({
 				<template #actions>
 					<Button
 						class="whitespace-nowrap"
-						type="primary"
+						appearance="primary"
 						@click="
 							() => {
 								showPromotionalDialog = true;
@@ -91,7 +90,7 @@ const marketplacePromotionalBanners = useResource({
 			suspended. Add your billing information to avoid suspension.
 
 			<template #actions>
-				<Button class="whitespace-nowrap" route="/welcome" type="primary">
+				<Button class="whitespace-nowrap" route="/welcome" appearance="primary">
 					Add Billing Information
 				</Button>
 			</template>
@@ -125,12 +124,6 @@ const marketplacePromotionalBanners = useResource({
 			/>
 			<SiteOverviewInfo :site="site" :info="overview.data.info" />
 			<SiteOverviewAppSubscriptions class="md:col-span-2" :site="site" />
-			<SiteOverviewApps
-				:site="site"
-				:installedApps="overview.data.installed_apps"
-				@app-installed="overview.reload()"
-				@app-uninstalled="overview.reload()"
-			/>
 			<SiteOverviewDomains :site="site" />
 		</div>
 
@@ -159,7 +152,9 @@ const marketplacePromotionalBanners = useResource({
 			</div>
 
 			<template v-if="clickedPromotion" #actions>
-				<Button type="primary" :route="`/install-app/${clickedPromotion.app}`"
+				<Button
+					appearance="primary"
+					:route="`/install-app/${clickedPromotion.app}`"
 					>Install App</Button
 				>
 			</template>

@@ -26,7 +26,11 @@
 					"
 				>
 					<template #actions>
-						<Badge v-if="v.status != 'Active'" :status="v.status" />
+						<Badge
+							v-if="v.status != 'Active'"
+							:status="v.status"
+							:colorMap="$badgeStatusColorMap"
+						/>
 						<Badge v-else color="green">
 							{{ v.sites.length }}
 							{{ $plural(v.sites.length, 'site', 'sites') }}
@@ -101,18 +105,11 @@
 							:subtitle="`${app.repository_owner}/${app.repository}:${app.branch}`"
 						>
 							<template #actions>
-								<a
-									class="ml-2 block cursor-pointer"
-									:href="`${app.repository_url}/commit/${app.hash}`"
-									target="_blank"
-								>
-									<Badge
-										class="cursor-pointer hover:text-blue-500"
-										color="blue"
-									>
-										{{ app.tag || app.hash.substr(0, 7) }}
-									</Badge>
-								</a>
+								<CommitTag
+									:tag="app.tag || app.hash.substr(0, 7)"
+									class="ml-2"
+									:link="`${app.repository_url}/commit/${app.hash}`"
+								/>
 							</template>
 						</ListItem>
 					</div>
@@ -141,48 +138,50 @@
 				</section>
 			</div>
 		</template>
-		<Dialog title="SSH Access" v-model="showSSHDialog">
-			<div v-if="certificate" class="space-y-4">
-				<div class="space-y-2">
-					<h4 class="text-base font-semibold text-gray-700">Step 1</h4>
-					<div class="space-y-1">
-						<p class="text-base">
-							Execute the following shell command to store the SSH certificate
-							locally.
-						</p>
-						<ClickToCopyField :textContent="certificateCommand" />
+		<FrappeUIDialog :options="{ title: 'SSH Access' }" v-model="showSSHDialog">
+			<template v-slot:body-content>
+				<div v-if="certificate" class="space-y-4">
+					<div class="space-y-2">
+						<h4 class="text-base font-semibold text-gray-700">Step 1</h4>
+						<div class="space-y-1">
+							<p class="text-base">
+								Execute the following shell command to store the SSH certificate
+								locally.
+							</p>
+							<ClickToCopyField :textContent="certificateCommand" />
+						</div>
 					</div>
-				</div>
 
-				<div class="space-y-2">
-					<h4 class="text-base font-semibold text-gray-700">Step 2</h4>
-					<div class="space-y-1">
-						<p class="text-base">
-							Execute the following shell command to SSH into your bench
-						</p>
-						<ClickToCopyField :textContent="sshCommand" />
+					<div class="space-y-2">
+						<h4 class="text-base font-semibold text-gray-700">Step 2</h4>
+						<div class="space-y-1">
+							<p class="text-base">
+								Execute the following shell command to SSH into your bench
+							</p>
+							<ClickToCopyField :textContent="sshCommand" />
+						</div>
 					</div>
 				</div>
-			</div>
-			<div v-if="!certificate">
-				<p class="mb-4 text-base">
-					You will need an SSH certificate to get SSH access to your bench. This
-					certificate will work only with your public-private key pair and will
-					be valid for 6 hours.
-				</p>
-				<p class="text-base">
-					Please refer to the
-					<a href="/docs/benches/ssh" class="underline"
-						>SSH Access documentation</a
-					>
-					for more details.
-				</p>
-			</div>
+				<div v-if="!certificate">
+					<p class="mb-4 text-base">
+						You will need an SSH certificate to get SSH access to your bench.
+						This certificate will work only with your public-private key pair
+						and will be valid for 6 hours.
+					</p>
+					<p class="text-base">
+						Please refer to the
+						<a href="/docs/benches/ssh" class="underline"
+							>SSH Access documentation</a
+						>
+						for more details.
+					</p>
+				</div>
+			</template>
 			<template #actions v-if="!certificate">
 				<Button
 					:loading="$resources.generateCertificate.loading"
 					@click="$resources.generateCertificate.fetch()"
-					type="primary"
+					appearance="primary"
 					>Generate SSH Certificate</Button
 				>
 			</template>
@@ -190,21 +189,22 @@
 				class="mt-3"
 				:error="$resources.generateCertificate.error"
 			/>
-		</Dialog>
+		</FrappeUIDialog>
 	</CardWithDetails>
 </template>
 <script>
 import ClickToCopyField from '@/components/ClickToCopyField.vue';
-import { setTransitionHooks } from 'vue';
 import CardWithDetails from '../components/CardWithDetails.vue';
 import SiteList from './SiteList.vue';
+import CommitTag from '@/components/utils/CommitTag.vue';
 export default {
 	name: 'BenchApps',
 	props: ['bench', 'version'],
 	components: {
 		SiteList,
 		CardWithDetails,
-		ClickToCopyField
+		ClickToCopyField,
+		CommitTag
 	},
 	inject: ['viewportWidth'],
 	data() {

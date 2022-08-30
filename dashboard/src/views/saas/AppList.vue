@@ -3,7 +3,7 @@
 		<div class="flex items-center justify-between pb-4">
 			<h3 class="text-xl font-bold">Apps</h3>
 			<Button
-				type="primary"
+				appearance="primary"
 				iconLeft="plus"
 				@click="
 					!$resources.appOptions.data ? $resources.appOptions.fetch() : null;
@@ -48,7 +48,7 @@
 			:dismissable="true"
 			v-model="showAddAppDialog"
 		>
-			<Loading class="py-2" v-if="$resources.appOptions.loading" />
+			<LoadingText class="py-2" v-if="$resources.appOptions.loading" />
 			<AppSourceSelector
 				v-else-if="
 					$resources.appOptions.data && $resources.appOptions.data.length > 0
@@ -61,7 +61,7 @@
 			<p v-else class="text-base">No app sources available.</p>
 			<template #actions>
 				<Button
-					type="primary"
+					appearance="primary"
 					class="ml-2"
 					v-if="selectedApp"
 					:loading="$resources.addSaasApp.loading"

@@ -1,5 +1,10 @@
 export default [
 	{
+		path: '/benches',
+		name: 'BenchesScreen',
+		component: () => import('../views/Benches.vue')
+	},
+	{
 		path: '/benches/new/:saas_app',
 		name: 'NewBench',
 		meta: {

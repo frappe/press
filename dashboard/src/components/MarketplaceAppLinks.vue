@@ -3,30 +3,39 @@
 		<template #actions>
 			<Button icon-left="edit" @click="showEditLinksDialog = true">Edit</Button>
 		</template>
-		<Dialog title="Update Links for App" v-model="showEditLinksDialog">
-			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-				<Input label="Website" type="text" v-model="app.website" />
-				<Input label="Support" type="text" v-model="app.support" />
-				<Input label="Documentation" type="text" v-model="app.documentation" />
-				<Input
-					label="Privacy Policy"
-					type="text"
-					v-model="app.privacy_policy"
-				/>
-				<Input
-					label="Terms of Service"
-					type="text"
-					v-model="app.terms_of_service"
-				/>
-			</div>
+		<FrappeUIDialog
+			:options="{ title: 'Update Links' }"
+			v-model="showEditLinksDialog"
+		>
+			<template v-slot:body-content>
+				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+					<Input label="Website" type="text" v-model="app.website" />
+					<Input label="Support" type="text" v-model="app.support" />
+					<Input
+						label="Documentation"
+						type="text"
+						v-model="app.documentation"
+					/>
+					<Input
+						label="Privacy Policy"
+						type="text"
+						v-model="app.privacy_policy"
+					/>
+					<Input
+						label="Terms of Service"
+						type="text"
+						v-model="app.terms_of_service"
+					/>
+				</div>
 
-			<ErrorMessage class="mt-4" :error="$resources.updateAppLinks.error" />
-
+				<ErrorMessage class="mt-4" :error="$resources.updateAppLinks.error" />
+			</template>
+			
 			<template #actions>
 				<div class="space-x-2">
 					<Button @click="showEditLinksDialog = false">Cancel</Button>
 					<Button
-						type="primary"
+						appearance="primary"
 						:loading="$resources.updateAppLinks.loading"
 						loadingText="Saving..."
 						@click="$resources.updateAppLinks.submit()"
@@ -35,7 +44,7 @@
 					</Button>
 				</div>
 			</template>
-		</Dialog>
+		</FrappeUIDialog>
 		<div class="divide-y" v-if="app">
 			<ListItem title="Website" :description="app.website || 'N/A'" />
 			<ListItem title="Support" :description="app.support || 'N/A'" />

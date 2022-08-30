@@ -1,12 +1,9 @@
 <template>
-	<div class="mt-10 flex-1">
-		<div class="px-4 sm:px-8" v-if="bench">
+	<div class="flex-1">
+		<div v-if="bench">
 			<div class="pb-3">
 				<div class="text-base text-gray-700">
-					<router-link
-						:to="isSaasLogin(bench.saas_app)"
-						class="hover:text-gray-800"
-					>
+					<router-link to="/benches" class="hover:text-gray-800">
 						← Back to Benches
 					</router-link>
 				</div>
@@ -15,7 +12,11 @@
 				>
 					<div class="mt-2 flex items-center">
 						<h1 class="text-2xl font-bold">{{ bench.title }}</h1>
-						<Badge class="ml-4" :status="bench.status">
+						<Badge
+							class="ml-4"
+							:status="bench.status"
+							:colorMap="$badgeStatusColorMap"
+						>
 							{{ bench.status }}
 						</Badge>
 					</div>
@@ -36,8 +37,8 @@
 				</div>
 			</div>
 		</div>
-		<div class="px-4 sm:px-8">
-			<Tabs class="pb-32" :tabs="tabs">
+		<div>
+			<Tabs :tabs="tabs">
 				<router-view v-slot="{ Component }">
 					<component v-if="bench" :is="Component" :bench="bench"></component>
 				</router-view>

@@ -1,0 +1,43 @@
+<template>
+	<svg
+		xmlns="http://www.w3.org/2000/svg"
+		width="20"
+		height="20"
+		viewBox="0 0 20 20"
+		fill="none"
+	>
+		<path d="M2.5 7.5H17.5" stroke="currentColor" stroke-miterlimit="10" />
+		<rect
+			x="2.5"
+			y="2.91602"
+			width="15"
+			height="14.1667"
+			rx="2"
+			stroke="currentColor"
+		/>
+		<circle
+			cx="4.79199"
+			cy="5.20703"
+			r="0.5"
+			fill="currentColor"
+			stroke="currentColor"
+			stroke-width="0.25"
+		/>
+		<circle
+			cx="6.875"
+			cy="5.20703"
+			r="0.5"
+			fill="currentColor"
+			stroke="currentColor"
+			stroke-width="0.25"
+		/>
+		<circle
+			cx="8.95801"
+			cy="5.20703"
+			r="0.5"
+			fill="currentColor"
+			stroke="currentColor"
+			stroke-width="0.25"
+		/>
+	</svg>
+</template>

@@ -57,6 +57,7 @@
 		<Badge
 			:status="plan.enabled ? 'Enabled' : 'Disabled'"
 			class="mt-4 self-start"
+			:colorMap="$badgeStatusColorMap"
 		></Badge>
 	</div>
 </template>

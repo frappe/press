@@ -126,7 +126,9 @@ function resetCurrentEditingPlan() {
 							<p class="mb-3.5 text-base text-gray-700">
 								Looks like you haven't created any plans yet
 							</p>
-							<Button type="primary" @click="editPlan()">Create plan</Button>
+							<Button appearance="primary" @click="editPlan()"
+								>Create plan</Button
+							>
 						</div>
 					</div>
 				</div>
@@ -142,90 +144,96 @@ function resetCurrentEditingPlan() {
 			</template>
 		</Card>
 
-		<Dialog v-model="showEditPlanDialog" title="Edit Plan">
-			<div>
-				<div class="mb-4">
-					<input
-						type="checkbox"
-						id="enabled-checkbox"
-						class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-						v-model="currentEditingPlan.enabled"
-					/>
-					<label for="enabled-checkbox" class="ml-1 text-sm text-gray-900">
-						Enabled
-					</label>
-				</div>
-				<div class="mb-4">
-					<Input
-						placeholder="My Pro Plan"
-						type="text"
-						label="Name"
-						v-model="currentEditingPlan.plan_title"
-					></Input>
-				</div>
-				<div class="mb-8">
-					<h3 class="mb-4 text-lg font-semibold">Subscription Price</h3>
-					<div class="grid grid-cols-2 gap-2">
+		<FrappeUIDialog
+			:options="{ title: 'Edit Plan' }"
+			v-model="showEditPlanDialog"
+		>
+			<template v-slot:body-content>
+				<div>
+					<div class="mb-4">
+						<input
+							type="checkbox"
+							id="enabled-checkbox"
+							class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+							v-model="currentEditingPlan.enabled"
+						/>
+						<label for="enabled-checkbox" class="ml-1 text-sm text-gray-900">
+							Enabled
+						</label>
+					</div>
+					<div class="mb-4">
 						<Input
-							label="Price INR"
+							placeholder="My Pro Plan"
 							type="text"
-							v-model="currentEditingPlan.price_inr"
-						></Input>
-						<Input
-							label="Price USD"
-							type="text"
-							v-model="currentEditingPlan.price_usd"
+							label="Name"
+							v-model="currentEditingPlan.plan_title"
 						></Input>
 					</div>
-				</div>
-				<div>
-					<h3 class="mb-4 text-lg font-semibold">Features</h3>
-					<div>
-						<div
-							v-for="(feature, idx) in currentEditingPlan.features"
-							class="mb-3.5 flex w-full items-stretch"
-						>
-							<div
-								class="mr-3 flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-xs"
-							>
-								{{ idx + 1 }}
-							</div>
-
-							<div class="w-full">
-								<Input
-									class="w-full"
-									type="text"
-									v-model="currentEditingPlan.features[idx]"
-								></Input>
-							</div>
-
-							<Button
-								v-if="idx > 0"
-								class="ml-3 rounded-full"
-								icon="x"
-								@click="deleteFeatureInput(idx)"
-							></Button>
+					<div class="mb-8">
+						<h3 class="mb-4 text-lg font-semibold">Subscription Price</h3>
+						<div class="grid grid-cols-2 gap-2">
+							<Input
+								label="Price INR"
+								type="text"
+								v-model="currentEditingPlan.price_inr"
+							></Input>
+							<Input
+								label="Price USD"
+								type="text"
+								v-model="currentEditingPlan.price_usd"
+							></Input>
 						</div>
 					</div>
 					<div>
-						<Button icon-left="plus" @click="addFeatureInput">Add</Button>
-					</div>
+						<h3 class="mb-4 text-lg font-semibold">Features</h3>
+						<div>
+							<div
+								v-for="(feature, idx) in currentEditingPlan.features"
+								class="mb-3.5 flex w-full items-stretch"
+							>
+								<div
+									class="mr-3 flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-xs"
+								>
+									{{ idx + 1 }}
+								</div>
 
-					<div>
-						<ErrorMessage class="mt-3" :error="updateAppPlan.error" />
-						<ErrorMessage class="mt-3" :error="createAppPlan.error" />
+								<div class="w-full">
+									<Input
+										class="w-full"
+										type="text"
+										v-model="currentEditingPlan.features[idx]"
+									></Input>
+								</div>
+
+								<Button
+									v-if="idx > 0"
+									class="ml-3 rounded-full"
+									icon="x"
+									@click="deleteFeatureInput(idx)"
+								></Button>
+							</div>
+						</div>
+						<div>
+							<Button icon-left="plus" @click="addFeatureInput">Add</Button>
+						</div>
+
+						<div>
+							<ErrorMessage class="mt-3" :error="updateAppPlan.error" />
+							<ErrorMessage class="mt-3" :error="createAppPlan.error" />
+						</div>
 					</div>
 				</div>
-			</div>
+			</template>
+
 			<template #actions>
 				<Button
-					type="primary"
+					appearance="primary"
 					:loading="updateAppPlan.loading || createAppPlan.loading"
 					@click="savePlan"
 					@close="resetCurrentEditingPlan"
 					>Save</Button
 				>
 			</template>
-		</Dialog>
+		</FrappeUIDialog>
 	</div>
 </template>

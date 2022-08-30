@@ -17,6 +17,7 @@
 						<Badge
 							class="ml-4 hidden md:inline-block"
 							:status="app.data.status"
+							:colorMap="$badgeStatusColorMap"
 							>{{ app.data.status }}</Badge
 						>
 					</div>

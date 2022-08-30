@@ -183,6 +183,7 @@ class ReleaseGroup(Document):
 		out.update_available = any([app["update_available"] for app in out.apps]) or (
 			len(out.removed_apps) > 0
 		)
+		out.number_of_apps = len(self.apps)
 
 		return out
 

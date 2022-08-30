@@ -30,15 +30,20 @@
 				</template>
 			</ListItem>
 		</div>
-		<Dialog title="Edit Title" v-model="showEditTitleDialog">
-			<Input label="Title" type="text" v-model="benchTitle" />
-			<ErrorMessage class="mt-4" :error="$resources.editTitle.error" />
+		<FrappeUIDialog
+			:options="{ title: 'Edit Title' }"
+			v-model="showEditTitleDialog"
+		>
+			<template v-slot:body-content>
+				<Input label="Title" type="text" v-model="benchTitle" />
+				<ErrorMessage class="mt-4" :error="$resources.editTitle.error" />
+			</template>
 
 			<template v-slot:actions>
 				<div class="space-x-2">
 					<Button @click="showEditTitleDialog = false">Cancel</Button>
 					<Button
-						type="primary"
+						appearance="primary"
 						:loading="$resources.editTitle.loading"
 						loadingText="Saving..."
 						@click="$resources.editTitle.submit()"
@@ -47,7 +52,7 @@
 					</Button>
 				</div>
 			</template>
-		</Dialog>
+		</FrappeUIDialog>
 	</Card>
 </template>
 <script>

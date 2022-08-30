@@ -60,33 +60,41 @@
 				:description="branchUri(source.source_information)"
 			>
 				<template #actions>
-					<Badge :status="source.source_information.status" />
+					<Badge
+						:status="source.source_information.status"
+						:colorMap="$badgeStatusColorMap"
+					/>
 				</template>
 			</ListItem>
 		</div>
 
-		<Dialog title="Update App Profile" v-model="showAppProfileEditDialog">
-			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-				<Input label="App Title" type="text" v-model="app.title" />
-				<div>
-					<span class="mb-2 block text-sm leading-4 text-gray-700">
-						Category
-					</span>
-					<select class="form-select block w-full" v-model="app.category">
-						<option v-for="category in categories" :key="category">
-							{{ category }}
-						</option>
-					</select>
+		<FrappeUIDialog
+			:options="{ title: 'Update App Profile' }"
+			v-model="showAppProfileEditDialog"
+		>
+			<template v-slot:body-content>
+				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+					<Input label="App Title" type="text" v-model="app.title" />
+					<div>
+						<span class="mb-2 block text-sm leading-4 text-gray-700">
+							Category
+						</span>
+						<select class="form-select block w-full" v-model="app.category">
+							<option v-for="category in categories" :key="category">
+								{{ category }}
+							</option>
+						</select>
+					</div>
 				</div>
-			</div>
 
-			<ErrorMessage class="mt-4" :error="$resources.updateAppProfile.error" />
+				<ErrorMessage class="mt-4" :error="$resources.updateAppProfile.error" />
+			</template>
 
 			<template #actions>
 				<div class="space-x-2">
 					<Button @click="showAppProfileEditDialog = false">Cancel</Button>
 					<Button
-						type="primary"
+						appearance="primary"
 						:loading="$resources.updateAppProfile.loading"
 						loadingText="Saving..."
 						@click="$resources.updateAppProfile.submit()"
@@ -95,7 +103,7 @@
 					</Button>
 				</div>
 			</template>
-		</Dialog>
+		</FrappeUIDialog>
 	</Card>
 </template>
 

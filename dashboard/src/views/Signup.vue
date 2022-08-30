@@ -14,7 +14,11 @@
 				required
 			/>
 			<ErrorMessage class="mt-4" :error="$resources.signup.error" />
-			<Button class="mt-6" :loading="$resources.signup.loading" type="primary">
+			<Button
+				class="mt-6"
+				:loading="$resources.signup.loading"
+				appearance="primary"
+			>
 				Submit
 			</Button>
 			<div class="mt-10 border-t text-center">

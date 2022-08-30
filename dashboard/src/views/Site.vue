@@ -1,6 +1,6 @@
 <template>
-	<div class="mt-10">
-		<div class="px-4 sm:px-8" v-if="site">
+	<div>
+		<div v-if="site">
 			<div class="pb-3">
 				<div class="text-base text-gray-700">
 					<router-link to="/sites" class="hover:text-gray-800">
@@ -12,9 +12,12 @@
 				>
 					<div class="mt-2 flex items-center">
 						<h1 class="text-2xl font-bold">{{ site.name }}</h1>
-						<Badge class="ml-4 hidden md:inline-block" :status="site.status">{{
-							site.status
-						}}</Badge>
+						<Badge
+							class="ml-4 hidden md:inline-block"
+							:status="site.status"
+							:colorMap="$badgeStatusColorMap"
+							>{{ site.status }}</Badge
+						>
 
 						<div
 							v-if="regionInfo"
@@ -32,7 +35,9 @@
 					</div>
 					<div class="mb-10 flex flex-row justify-between md:hidden">
 						<div class="flex flex-row">
-							<Badge :status="site.status">{{ site.status }}</Badge>
+							<Badge :status="site.status" :colorMap="$badgeStatusColorMap">{{
+								site.status
+							}}</Badge>
 							<div
 								v-if="regionInfo"
 								class="ml-2 flex cursor-default flex-row items-center rounded-md bg-yellow-50 px-3 py-1 text-xs font-medium text-yellow-700"
@@ -82,7 +87,7 @@
 				</div>
 			</div>
 		</div>
-		<div class="px-4 sm:px-8">
+		<div>
 			<Tabs class="pb-8" :tabs="tabs">
 				<router-view v-slot="{ Component, route }">
 					<component v-if="site" :is="Component" :site="site"></component>
@@ -90,28 +95,30 @@
 			</Tabs>
 		</div>
 
-		<Dialog
-			title="Login As Administrator"
+		<FrappeUIDialog
+			:options="{ title: 'Login As Administrator' }"
 			v-model="showReasonForAdminLoginDialog"
 		>
-			<Input
-				label="Reason for logging in as Administrator"
-				type="textarea"
-				v-model="reasonForAdminLogin"
-				required
-			/>
+			<template v-slot:body-content>
+				<Input
+					label="Reason for logging in as Administrator"
+					type="textarea"
+					v-model="reasonForAdminLogin"
+					required
+				/>
 
-			<ErrorMessage class="mt-3" :error="errorMessage" />
+				<ErrorMessage class="mt-3" :error="errorMessage" />
+			</template>
 
 			<template #actions>
 				<Button
 					:loading="$resources.loginAsAdmin.loading"
 					@click="proceedWithLoginAsAdmin"
-					type="primary"
+					appearance="primary"
 					>Proceed</Button
 				>
 			</template>
-		</Dialog>
+		</FrappeUIDialog>
 	</div>
 </template>
 
@@ -285,6 +292,7 @@ export default {
 			let tabRoute = subRoute => `/sites/${this.siteName}/${subRoute}`;
 			let tabs = [
 				{ label: 'Overview', route: 'overview' },
+				{ label: 'Apps', route: 'apps' },
 				{ label: 'Analytics', route: 'analytics' },
 				{ label: 'Backup & Restore', route: 'database' },
 				{ label: 'Site Config', route: 'site-config' },
@@ -296,6 +304,7 @@ export default {
 			let tabsByStatus = {
 				Active: [
 					'Overview',
+					'Apps',
 					'Analytics',
 					'Backup & Restore',
 					'Site Config',
@@ -306,6 +315,7 @@ export default {
 				],
 				Inactive: [
 					'Overview',
+					'Apps',
 					'Backup & Restore',
 					'Site Config',
 					'Activity',
@@ -316,13 +326,21 @@ export default {
 				Pending: ['Jobs'],
 				Broken: [
 					'Overview',
+					'Apps',
 					'Site Config',
 					'Backup & Restore',
 					'Activity',
 					'Jobs',
 					'Logs'
 				],
-				Suspended: ['Overview', 'Activity', 'Backup & Restore', 'Jobs', 'Plan']
+				Suspended: [
+					'Overview',
+					'Apps',
+					'Activity',
+					'Backup & Restore',
+					'Jobs',
+					'Plan'
+				]
 			};
 			if (this.site) {
 				let tabsToShow = tabsByStatus[this.site.status];

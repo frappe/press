@@ -1,10 +1,17 @@
+<script setup>
+const props = defineProps(['title', 'subtitle']);
+</script>
+
 <template>
-	<div class="flex items-center justify-between bg-white px-4 sm:px-8">
-		<div class="text-3xl font-bold">
-			<slot name="title" />
-		</div>
-		<div class="flex items-center">
-			<slot name="actions" />
+	<div>
+		<div class="flex flex-row items-start justify-between pb-5">
+			<div>
+				<h1 class="text-3xl font-bold">{{ props.title }}</h1>
+				<div class="mt-1 text-base text-gray-600" v-html="props.subtitle"></div>
+			</div>
+			<div>
+				<slot name="actions"> </slot>
+			</div>
 		</div>
 	</div>
 </template>

@@ -3,7 +3,7 @@
 		<div>
 			<h1 class="mb-6 text-2xl font-bold sm:text-center">New Bench</h1>
 			<div v-if="$resources.options.loading" class="flex justify-center">
-				<Loading />
+				<LoadingText />
 			</div>
 			<div class="space-y-8 sm:space-y-6" v-else>
 				<div>
@@ -76,7 +76,7 @@
 				<div>
 					<ErrorMessage class="mb-2" :error="$resources.createBench.error" />
 					<Button
-						type="primary"
+						appearance="primary"
 						:loading="$resources.createBench.loading"
 						@click="$resources.createBench.submit()"
 					>

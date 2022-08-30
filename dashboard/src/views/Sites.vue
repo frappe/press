@@ -1,13 +1,25 @@
 <template>
-	<div class="pt-8 pb-20">
-		<div class="px-4 sm:px-8">
-			<h1 class="sr-only">Dashboard</h1>
+	<div>
+		<div>
+			<PageHeader title="Sites" subtitle="Your Frappe instances">
+				<template v-if="this.$account.team.enabled" v-slot:actions>
+					<Button
+						appearance="primary"
+						iconLeft="plus"
+						class="ml-2 hidden sm:inline-flex"
+						route="/sites/new"
+					>
+						New
+					</Button>
+				</template>
+			</PageHeader>
+
 			<div class="mb-2" v-if="!$account.team.enabled">
 				<Alert title="Your account is disabled">
 					Enable your account to start creating sites
 
 					<template #actions>
-						<Button type="primary" route="/account/profile">
+						<Button appearance="primary" route="/settings">
 							Enable Account
 						</Button>
 					</template>
@@ -25,7 +37,10 @@
 					</strong>
 					more in credits.
 					<template #actions>
-						<Button @click="showPrepaidCreditsDialog = true" type="primary">
+						<Button
+							@click="showPrepaidCreditsDialog = true"
+							appearance="primary"
+						>
 							Add Credits
 						</Button>
 					</template>
@@ -36,7 +51,7 @@
 					<template v-if="latestUnpaidInvoiceStripeUrl" #actions>
 						<Button
 							icon-left="external-link"
-							type="primary"
+							appearance="primary"
 							:link="latestUnpaidInvoiceStripeUrl"
 						>
 							Pay now
@@ -51,90 +66,26 @@
 					@success="handleAddPrepaidCreditsSuccess"
 				/>
 			</div>
-			<div class="mb-3 flex flex-row justify-between">
-				<SiteAndBenchSearch class="w-full sm:w-60 lg:w-96" />
 
-				<Dropdown :items="newDropdownItems" right>
-					<template v-slot="{ toggleDropdown }">
-						<Button
-							type="primary"
-							iconLeft="plus"
-							class="ml-2 hidden sm:inline-flex"
-							@click.stop="toggleDropdown()"
-						>
-							New
-						</Button>
+			<div>
+				<SectionHeader heading="Recently Created" />
+
+				<div class="mt-3">
+					<LoadingText v-if="$resources.recentSites.loading" />
+					<SiteList v-else :sites="recentlyCreatedSites" />
+				</div>
+			</div>
+
+			<div class="mt-6">
+				<SectionHeader heading="All Sites">
+					<template v-slot:actions>
+						<SiteAndBenchSearch />
 					</template>
-				</Dropdown>
-			</div>
+				</SectionHeader>
 
-			<div v-if="$resources.benches.data == null">
-				<div class="flex flex-1 items-center py-4 focus:outline-none">
-					<h2 class="text-lg font-semibold">Sites</h2>
-				</div>
-				<div class="rounded-md bg-gray-50 px-4 py-3">
-					<Loading />
-				</div>
-			</div>
-			<div v-else>
-				<div
-					v-for="(bench, i) in $resources.benches.data"
-					:key="bench.name"
-					class="flex flex-col sm:flex-row sm:space-x-4"
-					:class="{
-						'border-b': i < benches.length - 1 && !isSitesShown(bench),
-						'mb-4': isSitesShown(bench)
-					}"
-				>
-					<div class="flex-1">
-						<div class="flex items-center justify-between">
-							<button
-								class="flex flex-1 items-center py-4 text-left focus:outline-none"
-								@click="multipleBenches ? toggleSitesShown(bench) : null"
-							>
-								<h2 class="text-lg font-semibold">
-									{{ bench.shared ? 'Sites' : bench.title }}
-								</h2>
-								<FeatherIcon
-									v-if="multipleBenches"
-									:name="isSitesShown(bench) ? 'chevron-down' : 'chevron-right'"
-									class="ml-1 mt-0.5 h-4 w-4"
-								/>
-							</button>
-							<div class="flex items-center space-x-2">
-								<p v-if="benches" class="hidden text-sm text-gray-700 sm:block">
-									{{ sitesSubtitle(bench) }}
-								</p>
-								<Badge
-									class="hidden text-sm sm:block"
-									v-if="!bench.shared && bench.owned_by_team"
-								>
-									Private
-								</Badge>
-								<Button
-									v-if="bench.owned_by_team"
-									:route="`/benches/${bench.name}`"
-									icon="tool"
-								>
-								</Button>
-
-								<Button
-									:route="`/sites/new${
-										bench.owned_by_team
-											? `?bench=${bench.name}&benchTitle=${bench.title}`
-											: ''
-									}`"
-									type="primary"
-									icon="plus"
-									v-if="showNewSiteButton(bench)"
-									class="sm:hidden"
-								>
-									New Site
-								</Button>
-							</div>
-						</div>
-						<SiteList :sites="bench.sites" v-show="isSitesShown(bench)" />
-					</div>
+				<div class="mt-3">
+					<LoadingText v-if="$resources.allSites.loading" />
+					<SiteList v-else :sites="sites" />
 				</div>
 			</div>
 		</div>
@@ -144,6 +95,7 @@
 import SiteList from './SiteList.vue';
 import { defineAsyncComponent } from 'vue';
 import SiteAndBenchSearch from '@/components/SiteAndBenchSearch.vue';
+import PageHeader from '@/components/global/PageHeader.vue';
 
 export default {
 	name: 'Sites',
@@ -153,30 +105,25 @@ export default {
 		SiteAndBenchSearch,
 		PrepaidCreditsDialog: defineAsyncComponent(() =>
 			import('@/components/PrepaidCreditsDialog.vue')
-		)
+		),
+		PageHeader
 	},
 	data() {
 		return {
-			sitesShown: {},
 			showPrepaidCreditsDialog: false
 		};
 	},
 	resources: {
-		benches: {
+		allSites: {
 			method: 'press.api.site.all',
-			auto: true,
-			onSuccess(data) {
-				if (data && data.length) {
-					for (let bench of data) {
-						if (!(bench.name in this.sitesShown)) {
-							this.sitesShown[bench.name] = Boolean(bench.shared);
-						}
-					}
-				}
-			}
+			auto: true
 		},
 		latestUnpaidInvoice: {
 			method: 'press.api.billing.get_latest_unpaid_invoice',
+			auto: true
+		},
+		recentSites: {
+			method: 'press.api.site.recently_created',
 			auto: true
 		}
 	},
@@ -206,9 +153,7 @@ export default {
 			// Refresh if the event affects any of the sites in the list view
 			// TODO: Listen to a more granular event than list_update
 			if (event.doctype === 'Site') {
-				let sites = this.benches
-					.map(bench => bench.sites.map(site => site.name))
-					.flat();
+				let sites = this.sites;
 				if (
 					event.user === this.$account.user.name ||
 					sites.includes(event.name)
@@ -220,43 +165,11 @@ export default {
 		reload() {
 			// refresh if currently not loading and have not reloaded in the last 5 seconds
 			if (
-				!this.$resources.benches.loading &&
-				new Date() - this.$resources.benches.lastLoaded > 5000
+				!this.$resources.allSites.loading &&
+				new Date() - this.$resources.allSites.lastLoaded > 5000
 			) {
-				this.$resources.benches.reload();
+				this.$resources.allSites.reload();
 			}
-		},
-		sitesSubtitle(bench) {
-			let parts = [];
-
-			if (bench.sites.length > 0) {
-				parts.push(
-					`${bench.sites.length} ${this.$plural(
-						bench.sites.length,
-						'site',
-						'sites'
-					)}`
-				);
-			}
-
-			if (bench.version) {
-				parts.push(bench.version);
-			}
-
-			return parts.join(' · ');
-		},
-		isSitesShown(bench) {
-			return this.sitesShown[bench.name];
-		},
-		toggleSitesShown(bench) {
-			this.sitesShown[bench.name] = !this.sitesShown[bench.name];
-		},
-		showNewSiteButton(bench) {
-			if (!this.$account.team.enabled) return false;
-			if (bench.status != 'Active') return false;
-			return (
-				(bench.shared || bench.owned_by_team) && this.sitesShown[bench.name]
-			);
 		},
 		handleAddPrepaidCreditsSuccess() {
 			this.$resources.latestUnpaidInvoice.reload();
@@ -264,32 +177,20 @@ export default {
 		}
 	},
 	computed: {
-		newDropdownItems() {
-			return [
-				{
-					label: 'Site',
-					action: () => {
-						this.$router.push('/sites/new');
-					}
-				},
-				{
-					label: 'Bench',
-					action: () => {
-						this.$router.push('/benches/new');
-					}
-				}
-			];
-		},
-		benches() {
-			if (this.$resources.benches.data) {
-				return this.$resources.benches.data;
+		sites() {
+			if (!this.$resources.allSites.data) {
+				return [];
 			}
-			return null;
+
+			return this.$resources.allSites.data;
 		},
-		multipleBenches() {
-			if (this.$resources.benches.data) {
-				return this.$resources.benches.data.length > 1;
+
+		recentlyCreatedSites() {
+			if (!this.$resources.recentSites.data) {
+				return [];
 			}
+
+			return this.$resources.recentSites.data;
 		},
 		showUnpaidInvoiceAlert() {
 			if (!this.latestUnpaidInvoice) {

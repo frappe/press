@@ -1,22 +1,25 @@
 <template>
-	<Dialog
-		title="Change Payment Mode"
+	<FrappeUIDialog
+		:options="{ title: 'Change Payment Mode' }"
 		:modelValue="modelValue"
 		@update:modelValue="$emit('update:modelValue', $event)"
 	>
-		<Input
-			label="Select Payment Mode"
-			type="select"
-			:options="paymentModeOptions"
-			v-model="paymentMode"
-		/>
-		<p class="mt-2 text-base text-gray-600">
-			{{ paymentModeDescription }}
-		</p>
-		<ErrorMessage class="mt-2" :error="$resources.changePaymentMode.error" />
+		<template v-slot:body-content>
+			<Input
+				label="Select Payment Mode"
+				type="select"
+				:options="paymentModeOptions"
+				v-model="paymentMode"
+			/>
+			<p class="mt-2 text-base text-gray-600">
+				{{ paymentModeDescription }}
+			</p>
+			<ErrorMessage class="mt-2" :error="$resources.changePaymentMode.error" />
+		</template>
+
 		<template #actions>
 			<Button
-				type="primary"
+				appearance="primary"
 				class="mt-2"
 				@click="$resources.changePaymentMode.submit()"
 				:loading="$resources.changePaymentMode.loading"
@@ -24,7 +27,7 @@
 				Change
 			</Button>
 		</template>
-	</Dialog>
+	</FrappeUIDialog>
 </template>
 <script>
 export default {

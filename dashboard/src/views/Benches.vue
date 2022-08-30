@@ -1,72 +1,51 @@
 <template>
-	<div class="pt-4">
-		<PageHeader>
-			<h1 slot="title">Benches</h1>
+	<div>
+		<PageHeader title="Benches" subtitle="Private benches you own">
 			<template v-slot:actions>
-				<div class="flex items-center">
-					<Button route="/benches/new" type="primary" iconLeft="plus">
-						New Bench
-					</Button>
-				</div>
+				<Button
+					appearance="primary"
+					iconLeft="plus"
+					class="ml-2 hidden sm:inline-flex"
+					route="/benches/new"
+				>
+					New
+				</Button>
 			</template>
 		</PageHeader>
-		<div class="px-4 sm:px-8">
-			<div
-				class="p-24 text-center"
-				v-if="$resources.benches.data && $resources.benches.data.length === 0"
-			>
-				<div class="text-xl text-gray-800">
-					You haven't created any benches yet.
-				</div>
-				<Button route="/benches/new" class="mt-10" type="primary">
-					Create your first Bench
-				</Button>
-			</div>
-			<div v-else>
-				<div
-					class="grid grid-cols-2 items-center gap-12 border-b py-4 text-sm text-gray-600 md:grid-cols-4"
-				>
-					<span>Bench Name</span>
-					<span class="text-right md:text-center">Status</span>
-					<span class="hidden text-right md:inline">Active Since</span>
-					<span class="hidden md:inline"></span>
-				</div>
-				<router-link
-					class="focus:shadow-outline grid grid-cols-2 items-center gap-12 border-b py-4 text-base hover:bg-gray-50 focus:outline-none md:grid-cols-4"
-					v-for="bench in $resources.benches.data"
-					:key="bench.name"
-					:to="'/benches/' + bench.name"
-				>
-					<span class="">{{ bench.title }}</span>
-					<span class="text-right md:text-center">
-						<Badge :status="bench.status" />
-					</span>
-					<FormatDate class="hidden text-right md:block" type="relative">
-						{{ bench.creation }}
-					</FormatDate>
-					<span class="hidden text-right md:inline">
-						<Badge
-							v-if="
-								(bench.status === 'Active' ||
-									bench.status === 'Inactive' ||
-									bench.status === 'Suspended') &&
-								bench.update_available
-							"
-							:status="'Update Available'"
-							class="mr-4"
-						/>
-					</span>
-				</router-link>
+
+		<div>
+			<SectionHeader heading="All Benches">
+				<template v-slot:actions>
+					<SiteAndBenchSearch />
+				</template>
+			</SectionHeader>
+
+			<div class="mt-3">
+				<LoadingText v-if="$resources.allBenches.loading" />
+				<BenchList v-else :benches="benches" />
 			</div>
 		</div>
 	</div>
 </template>
 
 <script>
+import SiteAndBenchSearch from '@/components/SiteAndBenchSearch.vue';
+import BenchList from './BenchList.vue';
+
 export default {
-	name: 'Benches',
+	name: 'BenchesScreen',
+	components: { SiteAndBenchSearch, BenchList },
 	resources: {
-		benches: 'press.api.bench.all'
+		allBenches: 'press.api.bench.all'
+	},
+	computed: {
+		benches() {
+			if (!this.$resources.allBenches.data) {
+				return [];
+			}
+
+			return this.$resources.allBenches.data;
+		}
 	}
 };
 </script>
