@@ -3,10 +3,7 @@
 		<div v-if="bench">
 			<div class="pb-3">
 				<div class="text-base text-gray-700">
-					<router-link
-						:to="isSaasLogin(bench.saas_app)"
-						class="hover:text-gray-800"
-					>
+					<router-link to="/benches" class="hover:text-gray-800">
 						← Back to Benches
 					</router-link>
 				</div>
