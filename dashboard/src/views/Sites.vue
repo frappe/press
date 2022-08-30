@@ -68,7 +68,7 @@
 			</div>
 
 			<div>
-				<SectionHeading heading="Recently Created" />
+				<SectionHeader heading="Recently Created" />
 
 				<div class="mt-3">
 					<LoadingText v-if="$resources.recentSites.loading" />
