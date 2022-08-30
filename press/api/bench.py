@@ -64,12 +64,28 @@ def get(name):
 
 @frappe.whitelist()
 def all():
-	private_groups = frappe.get_list(
-		"Release Group",
-		fields=["name", "title", "creation", "version"],
-		filters={"enabled": True, "team": get_current_team(), "public": False},
-		order_by="title desc",
+	team = get_current_team()
+
+	group = frappe.qb.DocType("Release Group")
+	site = frappe.qb.DocType("Site")
+	query = (
+		frappe.qb.from_(group)
+		.left_join(site)
+		.on(site.group == group.name)
+		.where((group.enabled == 1) & (group.public == 0))
+		.where(group.team == team)
+		.where(site.status != "Archived")
+		.groupby(group.name)
+		.select(
+			frappe.query_builder.functions.Count("*").as_("number_of_sites"),
+			group.name,
+			group.title,
+			group.version,
+			group.creation,
+		)
+		.orderby(group.title, order=frappe.qb.desc)
 	)
+	private_groups = query.run(as_dict=True)
 
 	for group in private_groups:
 		group.deploy_information = frappe.get_doc(

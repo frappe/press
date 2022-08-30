@@ -23,8 +23,10 @@
 								:status="`${bench.deploy_information.number_of_apps} Apps`"
 							/>
 						</div>
-						<div class="hidden w-2/12 text-sm text-gray-600 sm:block">
-							{{ bench.version }}
+						<div
+							class="hidden w-2/12 text-right text-sm text-gray-600 sm:block"
+						>
+							{{ bench.version }} &middot; {{ bench.number_of_sites }} Sites
 						</div>
 					</div>
 				</router-link>
@@ -66,14 +68,16 @@ export default {
 		dropdownItems(bench) {
 			return [
 				{
+					label: 'New Site',
+					action: () => {
+						this.$router.push(`/${bench.name}/new`);
+					}
+				},
+				{
 					label: 'View Versions',
 					action: () => {
 						this.$router.push(`/benches/${bench.name}/versions`);
 					}
-				},
-				{
-					label: '',
-					action: () => {}
 				}
 			];
 		}
