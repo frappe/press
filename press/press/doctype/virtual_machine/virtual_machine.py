@@ -208,6 +208,14 @@ class VirtualMachine(Document):
 			],
 		)
 
+	@frappe.whitelist()
+	def create_image(self):
+		image = frappe.get_doc({
+			"dotype": "Virtual Machine Image",
+			"virtual_machine": self.name
+		}).insert()
+		return image.name
+
 
 def sync_virtual_machines():
 	machines = frappe.get_all("Virtual Machine", {"status": "Pending"})
