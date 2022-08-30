@@ -68,20 +68,25 @@
 			</div>
 
 			<div>
-				<h2 class="text-lg font-semibold text-gray-800">Recently Created</h2>
+				<SectionHeading heading="Recently Created" />
 
-				<LoadingText v-if="$resources.recentSites.loading" class="mt-3" />
-				<SiteList v-else class="mt-3" :sites="recentlyCreatedSites" />
+				<div class="mt-3">
+					<LoadingText v-if="$resources.recentSites.loading" />
+					<SiteList v-else :sites="recentlyCreatedSites" />
+				</div>
 			</div>
 
 			<div class="mt-6">
-				<div class="flex flex-row items-center justify-between">
-					<h2 class="text-lg font-semibold text-gray-800">All Sites</h2>
-					<SiteAndBenchSearch />
-				</div>
+				<SectionHeader heading="All Sites">
+					<template v-slot:actions>
+						<SiteAndBenchSearch />
+					</template>
+				</SectionHeader>
 
-				<LoadingText v-if="$resources.allSites.loading" class="mt-3" />
-				<SiteList v-else class="mt-3" :sites="sites" />
+				<div class="mt-3">
+					<LoadingText v-if="$resources.allSites.loading" />
+					<SiteList v-else :sites="sites" />
+				</div>
 			</div>
 		</div>
 	</div>
