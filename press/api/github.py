@@ -126,10 +126,10 @@ def repositories(installation, token):
 			params={"per_page": 100, "page": current_page},
 			headers=headers,
 		)
-		if len(response.json()["repositories"]) < 100:
+		if len(response.json().get("repositories", [])) < 100:
 			is_last_page = True
 
-		for repository in response.json()["repositories"]:
+		for repository in response.json().get("repositories", []):
 			repositories.append(
 				{
 					"id": repository["id"],
