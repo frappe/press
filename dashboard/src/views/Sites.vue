@@ -67,7 +67,7 @@
 				/>
 			</div>
 
-			<div>
+			<div v-if="sites.length > 3" class="mb-6">
 				<SectionHeader heading="Recents" />
 
 				<div class="mt-3">
@@ -76,7 +76,7 @@
 				</div>
 			</div>
 
-			<div class="mt-6">
+			<div>
 				<SectionHeader heading="All Sites">
 					<template v-slot:actions>
 						<SiteAndBenchSearch />
