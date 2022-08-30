@@ -17,6 +17,7 @@
   "disk_size",
   "aws_instance_id",
   "column_break_8",
+  "virtual_machine_image",
   "machine_image",
   "ssh_key",
   "networking_section",
@@ -80,6 +81,8 @@
    "fieldtype": "Column Break"
   },
   {
+   "fetch_from": "virtual_machine_image.aws_ami_id",
+   "fetch_if_empty": 1,
    "fieldname": "machine_image",
    "fieldtype": "Data",
    "label": "Machine Image",
@@ -199,11 +202,18 @@
    "label": "Volumes",
    "options": "Virtual Machine Volume",
    "read_only": 1
+  },
+  {
+   "fieldname": "virtual_machine_image",
+   "fieldtype": "Link",
+   "label": "Virtual Machine Image",
+   "options": "Virtual Machine Image",
+   "set_only_once": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-08-29 17:52:06.635948",
+ "modified": "2022-08-30 16:02:32.695135",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",
