@@ -1,0 +1,102 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2022-08-30 12:16:32.761458",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "virtual_machine",
+  "aws_instance_id",
+  "aws_ami_id",
+  "status",
+  "column_break_5",
+  "cluster",
+  "region",
+  "platform"
+ ],
+ "fields": [
+  {
+   "fieldname": "virtual_machine",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Virtual Machine",
+   "options": "Virtual Machine",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fetch_from": "virtual_machine.aws_instance_id",
+   "fieldname": "aws_instance_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "AWS Instance ID",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "aws_ami_id",
+   "fieldtype": "Data",
+   "label": "AWS AMI ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "platform",
+   "fieldtype": "Data",
+   "label": "Platform",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "virtual_machine.cluster",
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "label": "Cluster",
+   "options": "Cluster",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fetch_from": "virtual_machine.region",
+   "fieldname": "region",
+   "fieldtype": "Data",
+   "label": "Region",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Pending\nAvailable\nUnavailable",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_5",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2022-08-30 12:40:02.577234",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Virtual Machine Image",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
