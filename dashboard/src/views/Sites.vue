@@ -121,10 +121,6 @@ export default {
 		latestUnpaidInvoice: {
 			method: 'press.api.billing.get_latest_unpaid_invoice',
 			auto: true
-		},
-		recentSites: {
-			method: 'press.api.site.recently_created',
-			auto: true
 		}
 	},
 	mounted() {
