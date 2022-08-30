@@ -19,11 +19,20 @@
 							{{ bench.status }}
 						</Badge>
 					</div>
-					<div v-if="bench.status == 'Active'">
-						<Button icon-left="plus" :route="`/${bench.name}/new`">
-							New Site
+					<span class="flex space-x-1">
+						<div v-if="bench.status == 'Active'">
+							<Button icon-left="plus" :route="`/${bench.name}/new`">
+								New Site
+							</Button>
+						</div>
+						<Button
+							v-if="$account.user.user_type == 'System User'"
+							icon-right="external-link"
+							:link="deskUrl"
+						>
+							View in Desk
 						</Button>
-					</div>
+					</span>
 				</div>
 			</div>
 		</div>
@@ -115,6 +124,9 @@ export default {
 				});
 			}
 			return [];
+		},
+		deskUrl() {
+			return `${window.location.protocol}//${window.location.host}/app/release-group/${this.bench.name}`;
 		}
 	}
 };
