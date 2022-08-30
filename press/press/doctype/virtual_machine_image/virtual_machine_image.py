@@ -21,7 +21,7 @@ class VirtualMachineImage(Document):
 		)
 		response = client.create_image(
 			InstanceId=self.aws_instance_id,
-			Name=f'Frappe Cloud {self.name} - {self.virtual_machine}',
+			Name=f"Frappe Cloud {self.name} - {self.virtual_machine}",
 		)
 		self.aws_ami_id = response["ImageId"]
 		self.sync()
@@ -46,6 +46,6 @@ class VirtualMachineImage(Document):
 
 	def get_status_map(self, status):
 		return {
-			'pending': "Pending",
-			'available': "Available",
+			"pending": "Pending",
+			"available": "Available",
 		}.get(status, "Unavailable")
