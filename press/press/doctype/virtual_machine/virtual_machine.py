@@ -17,15 +17,7 @@ class VirtualMachine(Document):
 		self.provision()
 
 	def provision(self):
-		cluster = frappe.get_doc("Cluster", self.cluster)
-		client = boto3.client(
-			"ec2",
-			region_name=self.region,
-			aws_access_key_id=cluster.aws_access_key_id,
-			aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
-		)
-
-		response = client.run_instances(
+		response = self.client().run_instances(
 			BlockDeviceMappings=[
 				{
 					"DeviceName": "/dev/sda1",
@@ -77,74 +69,34 @@ class VirtualMachine(Document):
 			"terminated": "Terminated",
 		}
 
-	def get_latest_ubuntu_image(self):
-		cluster = frappe.get_doc("Cluster", self.cluster)
-		client = boto3.client(
-			"ssm",
-			region_name=self.region,
-			aws_access_key_id=cluster.aws_access_key_id,
-			aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
-		)
-
-		return client.get_parameter(
+	def get_latest_ubuntu_image(self):	
+		return self.client("ssm").get_parameter(
 			Name="/aws/service/canonical/ubuntu/server/20.04/stable/current/amd64/hvm/ebs-gp2/ami-id"
 		)["Parameter"]["Value"]
 
 	def reboot(self):
-		cluster = frappe.get_doc("Cluster", self.cluster)
-		client = boto3.client(
-			"ec2",
-			region_name=self.region,
-			aws_access_key_id=cluster.aws_access_key_id,
-			aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
-		)
-
-		client.reboot_instances(InstanceIds=[self.aws_instance_id])
+		self.client().reboot_instances(InstanceIds=[self.aws_instance_id])
 
 	def increase_disk_size(self, increment=50):
-		cluster = frappe.get_doc("Cluster", self.cluster)
-		client = boto3.client(
-			"ec2",
-			region_name=self.region,
-			aws_access_key_id=cluster.aws_access_key_id,
-			aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
-		)
-
 		volume = self.volumes[0]
 		volume.size += increment
 		self.disk_size = volume.size
-		client.modify_volume(VolumeId=volume.aws_volume_id, Size=volume.size)
+		self.client().modify_volume(VolumeId=volume.aws_volume_id, Size=volume.size)
 		self.save()
 
 	def get_volumes(self):
-		cluster = frappe.get_doc("Cluster", self.cluster)
-		client = boto3.client(
-			"ec2",
-			region_name=self.region,
-			aws_access_key_id=cluster.aws_access_key_id,
-			aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
-		)
-
-		response = client.describe_volumes(
+		response = self.client().describe_volumes(
 			Filters=[{"Name": "attachment.instance-id", "Values": [self.aws_instance_id]}]
 		)
 		return response["Volumes"]
 
 	def convert_to_gp3(self):
-		cluster = frappe.get_doc("Cluster", self.cluster)
-		client = boto3.client(
-			"ec2",
-			region_name=self.region,
-			aws_access_key_id=cluster.aws_access_key_id,
-			aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
-		)
-
 		for volume in self.volumes:
 			if volume.volume_type != "gp3":
 				volume.volume_type = "gp3"
 				volume.iops = max(3000, volume.iops)
 				volume.throughput = 250 if volume.size > 340 else 125
-				client.modify_volume(
+				self.client().modify_volume(
 					VolumeId=volume.aws_volume_id,
 					VolumeType=volume.volume_type,
 					Iops=volume.iops,
@@ -154,14 +106,7 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def sync(self):
-		cluster = frappe.get_doc("Cluster", self.cluster)
-		client = boto3.client(
-			"ec2",
-			region_name=self.region,
-			aws_access_key_id=cluster.aws_access_key_id,
-			aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
-		)
-		response = client.describe_instances(InstanceIds=[self.aws_instance_id])
+		response = self.client().describe_instances(InstanceIds=[self.aws_instance_id])
 		instance = response["Reservations"][0]["Instances"][0]
 
 		self.status = self.get_status_map()[instance["State"]["Name"]]
@@ -194,14 +139,7 @@ class VirtualMachine(Document):
 		self.save()
 
 	def update_name_tag(self, name):
-		cluster = frappe.get_doc("Cluster", self.cluster)
-		client = boto3.client(
-			"ec2",
-			region_name=self.region,
-			aws_access_key_id=cluster.aws_access_key_id,
-			aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
-		)
-		client.create_tags(
+		self.client().create_tags(
 			Resources=[self.aws_instance_id],
 			Tags=[
 				{"Key": "Name", "Value": name},
@@ -214,6 +152,15 @@ class VirtualMachine(Document):
 			{"doctype": "Virtual Machine Image", "virtual_machine": self.name}
 		).insert()
 		return image.name
+
+	def client(self, client_type="ec2"):
+		cluster = frappe.get_doc("Cluster", self.cluster)
+		return boto3.client(
+			client_type,
+			region_name=self.region,
+			aws_access_key_id=cluster.aws_access_key_id,
+			aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
+		)
 
 
 def sync_virtual_machines():

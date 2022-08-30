@@ -12,14 +12,7 @@ class VirtualMachineImage(Document):
 		self.create_image()
 
 	def create_image(self):
-		cluster = frappe.get_doc("Cluster", self.cluster)
-		client = boto3.client(
-			"ec2",
-			region_name=self.region,
-			aws_access_key_id=cluster.aws_access_key_id,
-			aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
-		)
-		response = client.create_image(
+		response = self.client.create_image(
 			InstanceId=self.aws_instance_id,
 			Name=f"Frappe Cloud {self.name} - {self.virtual_machine}",
 		)
@@ -28,14 +21,7 @@ class VirtualMachineImage(Document):
 
 	@frappe.whitelist()
 	def sync(self):
-		cluster = frappe.get_doc("Cluster", self.cluster)
-		client = boto3.client(
-			"ec2",
-			region_name=self.region,
-			aws_access_key_id=cluster.aws_access_key_id,
-			aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
-		)
-		images = client.describe_images(ImageIds=[self.aws_ami_id])["Images"]
+		images = self.client.describe_images(ImageIds=[self.aws_ami_id])["Images"]
 		if images:
 			image = images[0]
 			self.status = self.get_status_map(image["State"])
@@ -49,3 +35,13 @@ class VirtualMachineImage(Document):
 			"pending": "Pending",
 			"available": "Available",
 		}.get(status, "Unavailable")
+
+	@property
+	def client(self):
+		cluster = frappe.get_doc("Cluster", self.cluster)
+		return boto3.client(
+			"ec2",
+			region_name=self.region,
+			aws_access_key_id=cluster.aws_access_key_id,
+			aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
+		)
