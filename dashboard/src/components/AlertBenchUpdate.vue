@@ -12,30 +12,33 @@
 			deploying. If you want to deploy now, click on Deploy.
 		</span>
 		<template #actions>
-			<Button type="primary" @click="showDeployDialog = true">
+			<Button appearance="primary" @click="showDeployDialog = true">
 				Show updates
 			</Button>
 		</template>
-		<Dialog
-			title="Select the apps you want to update"
+		
+		<FrappeUIDialog
+			:options="{ title: 'Select the apps you want to update' }"
 			v-model="showDeployDialog"
 		>
-			<BenchAppUpdates
-				:apps="deployInformation.apps"
-				v-model:selectedApps="selectedApps"
-				:removedApps="deployInformation.removed_apps"
-			/>
-			<ErrorMessage class="mt-2" :error="$resources.deploy.error" />
+			<template v-slot:body-content>
+				<BenchAppUpdates
+					:apps="deployInformation.apps"
+					v-model:selectedApps="selectedApps"
+					:removedApps="deployInformation.removed_apps"
+				/>
+				<ErrorMessage class="mt-2" :error="$resources.deploy.error" />
+			</template>
 			<template v-slot:actions>
 				<Button
-					type="primary"
+					appearance="primary"
 					@click="$resources.deploy.submit()"
 					:loading="$resources.deploy.loading"
 				>
 					Deploy
 				</Button>
 			</template>
-		</Dialog>
+		</FrappeUIDialog>
 	</Alert>
 </template>
 <script>

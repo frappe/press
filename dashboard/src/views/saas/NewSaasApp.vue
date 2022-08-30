@@ -26,7 +26,7 @@
 			<Button
 				:loading="$resources.addApp.loading"
 				@click="$resources.addApp.submit()"
-				type="primary"
+				appearance="primary"
 				>Add Saas App</Button
 			>
 		</div>

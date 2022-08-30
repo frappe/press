@@ -55,18 +55,27 @@
 
 		<ErrorMessage :error="this.$resources.fetchLatestAppUpdate.error" />
 
-		<Dialog title="Add apps to your bench" v-model="showAddAppDialog">
-			<Loading class="py-2" v-if="$resources.installableApps.loading" />
-			<AppSourceSelector
-				v-else
-				class="pt-1"
-				:apps="$resources.installableApps.data"
-				v-model="selectedApp"
-				:multiple="false"
-			/>
+		<FrappeUIDialog
+			:options="{ title: 'Add apps to your bench' }"
+			v-model="showAddAppDialog"
+		>
+			<template v-slot:body-content>
+				<LoadingText class="py-2" v-if="$resources.installableApps.loading" />
+				<AppSourceSelector
+					v-else
+					class="pt-1"
+					:apps="$resources.installableApps.data"
+					v-model="selectedApp"
+					:multiple="false"
+				/>
+				<p class="mt-4 text-base" @click="showAddAppDialog = false">
+					Don't find your app here?
+					<Link :to="`/benches/${bench.name}/apps/new`"> Add from GitHub </Link>
+				</p>
+			</template>
 			<template v-slot:actions>
 				<Button
-					type="primary"
+					appearance="primary"
 					v-if="selectedApp"
 					:loading="$resources.addApp.loading"
 					@click="
@@ -80,11 +89,7 @@
 					Add {{ selectedApp.app }}
 				</Button>
 			</template>
-			<p class="mt-4 text-base" @click="showAddAppDialog = false">
-				Don't find your app here?
-				<Link :to="`/benches/${bench.name}/apps/new`"> Add from GitHub </Link>
-			</p>
-		</Dialog>
+		</FrappeUIDialog>
 
 		<ChangeAppBranchDialog
 			:bench="bench.name"

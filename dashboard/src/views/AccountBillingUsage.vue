@@ -53,14 +53,14 @@
 							<Button
 								v-if="$account.team.erpnext_partner"
 								link="https://frappe.io/partners/buy_credits"
-								type="white"
+								appearance="white"
 							>
 								Buy Credits
 							</Button>
 							<Button
 								v-else
 								@click="showPrepaidCreditsDialog = true"
-								type="white"
+								appearance="white"
 							>
 								Add Balance
 							</Button>

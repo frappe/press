@@ -1,36 +1,41 @@
 <template>
-	<Dialog
+	<FrappeUIDialog
 		v-if="app"
-		:modelValue="bench && app"
-		:title="`Change branch for ${app.title}`"
+		:modelValue="Boolean(bench && app)"
+		:options="{ title: `Change branch for ${app.title}` }"
 		@close="dialogClosed"
 	>
-		<div>
-			<Button
-				v-if="$resources.branches.loading"
-				:loading="true"
-				loadingText="Loading..."
-			></Button>
-
-			<div v-else>
-				<select class="form-select block w-full" v-model="selectedBranch">
-					<option v-for="branch in branchList()" :key="branch">
-						{{ branch }}
-					</option>
-				</select>
+		<template v-slot:body-content>
+			<div>
 				<Button
-					class="mt-3"
-					type="primary"
-					:loading="this.$resources.changeBranch.loading"
-					@click="changeBranch()"
-				>
-					Change Branch
-				</Button>
-			</div>
+					v-if="$resources.branches.loading"
+					:loading="true"
+					loadingText="Loading..."
+				></Button>
 
-			<ErrorMessage class="mt-2" :error="$resourceErrors" />
-		</div>
-	</Dialog>
+				<div v-else>
+					<select class="form-select block w-full" v-model="selectedBranch">
+						<option v-for="branch in branchList()" :key="branch">
+							{{ branch }}
+						</option>
+					</select>
+				</div>
+
+				<ErrorMessage class="mt-2" :error="$resourceErrors" />
+			</div>
+		</template>
+		<template v-slot:actions>
+			<Button
+				v-if="!$resources.branches.loading"
+				class="mt-3"
+				appearance="primary"
+				:loading="$resources.changeBranch.loading"
+				@click="changeBranch()"
+			>
+				Change Branch
+			</Button>
+		</template>
+	</FrappeUIDialog>
 </template>
 
 <script>

@@ -2,6 +2,10 @@
 	<Card
 		title="Marketplace Subscriptions"
 		subtitle="Your marketplace app subscriptions."
+		v-if="
+			!$resources.marketplaceSubscriptions.loading &&
+			marketplaceSubscriptions.length > 0
+		"
 	>
 		<Button v-if="$resources.marketplaceSubscriptions.loading" :loading="true"
 			>Loading</Button
@@ -36,7 +40,10 @@
 						{{ subscription.plan }}
 					</p>
 					<span>
-						<Badge :status="subscription.status"></Badge>
+						<Badge
+							:status="subscription.status"
+							:colorMap="$badgeStatusColorMap"
+						></Badge>
 					</span>
 
 					<span class="hidden md:inline" v-if="subscription.is_free">Free</span>
@@ -64,7 +71,7 @@
 
 			<template #actions>
 				<Button
-					type="primary"
+					appearance="primary"
 					:loading="$resources.changePlan.loading"
 					@click="switchToNewPlan"
 					>Change Plan</Button

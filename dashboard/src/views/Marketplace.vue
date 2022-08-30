@@ -1,44 +1,42 @@
 <template>
-	<div class="mt-8">
-		<div class="px-4 sm:px-8">
-			<div class="pb-3">
-				<div class="flex items-center justify-between">
-					<h1 class="text-3xl font-bold">Manage Apps</h1>
-					<Button
-						type="primary"
-						iconLeft="plus"
-						@click="
-							!$resources.appOptions.data
-								? $resources.appOptions.fetch()
-								: null;
-							showAddAppDialog = true;
-						"
-					>
-						Add App
-					</Button>
-				</div>
-			</div>
-		</div>
+	<div>
+		<PageHeader title="Apps" subtitle="Manage your marketplace apps">
+			<template v-slot:actions>
+				<Button
+					appearance="primary"
+					iconLeft="plus"
+					@click="
+						!$resources.appOptions.data ? $resources.appOptions.fetch() : null;
+						showAddAppDialog = true;
+					"
+				>
+					New
+				</Button>
+			</template>
+		</PageHeader>
 
-		<Dialog
-			title="Add App to Marketplace"
-			:dismissable="true"
+		<FrappeUIDialog
+			:options="{
+				title: 'Add App to Marketplace'
+			}"
 			v-model="showAddAppDialog"
 		>
-			<Loading class="py-2" v-if="$resources.appOptions.loading" />
-			<AppSourceSelector
-				v-else-if="
-					$resources.appOptions.data && $resources.appOptions.data.length > 0
-				"
-				class="mt-1"
-				:apps="availableApps"
-				v-model="selectedApp"
-				:multiple="false"
-			/>
-			<p v-else class="text-base">No app sources available.</p>
+			<template v-slot:body-content>
+				<LoadingText class="py-2" v-if="$resources.appOptions.loading" />
+				<AppSourceSelector
+					v-else-if="
+						$resources.appOptions.data && $resources.appOptions.data.length > 0
+					"
+					class="mt-1"
+					:apps="availableApps"
+					v-model="selectedApp"
+					:multiple="false"
+				/>
+				<p v-else class="text-base">No app sources available.</p>
+			</template>
 			<template #actions>
 				<Button
-					type="primary"
+					appearance="primary"
 					class="ml-2"
 					v-if="selectedApp"
 					:loading="$resources.addMarketplaceApp.loading"
@@ -59,25 +57,25 @@
 				Don't find your app here?
 				<Link :to="`/marketplace/apps/new`"> Add from GitHub </Link>
 			</p>
-		</Dialog>
+		</FrappeUIDialog>
 
-		<div class="px-4 sm:px-8">
-			<Tabs class="pb-32" :tabs="tabs">
-				<router-view v-if="$account.team"></router-view>
-			</Tabs>
-		</div>
+		<Tabs class="pb-32" :tabs="tabs">
+			<router-view v-if="$account.team"></router-view>
+		</Tabs>
 	</div>
 </template>
 
 <script>
 import Tabs from '@/components/Tabs.vue';
 import AppSourceSelector from '@/components/AppSourceSelector.vue';
+import PageHeader from '@/components/global/PageHeader.vue';
 
 export default {
 	name: 'Marketplace',
 	components: {
 		Tabs,
-		AppSourceSelector
+		AppSourceSelector,
+		PageHeader
 	},
 	data: () => ({
 		tabs: [

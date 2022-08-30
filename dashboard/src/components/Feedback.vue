@@ -20,7 +20,7 @@
 				</textarea>
 				<ErrorMessage class="mt-2" :error="$resources.feedback.error" />
 				<Button
-					type="primary"
+					appearance="primary"
 					v-slot:actions
 					@click="$resources.feedback.submit()"
 					:loading="$resources.feedback.loading"

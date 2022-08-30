@@ -123,8 +123,7 @@ def clear_setup_intent():
 
 
 def get_publishable_key():
-	strip_account = frappe.db.get_single_value("Press Settings", "stripe_account")
-	return frappe.db.get_value("Stripe Settings", strip_account, "publishable_key")
+	return frappe.db.get_single_value("Press Settings", "stripe_publishable_key")
 
 
 def get_setup_intent(team):
@@ -143,12 +142,14 @@ def get_stripe():
 	from frappe.utils.password import get_decrypted_password
 
 	if not hasattr(frappe.local, "press_stripe_object"):
-		stripe_account = frappe.db.get_single_value("Press Settings", "stripe_account")
 		secret_key = get_decrypted_password(
-			"Stripe Settings", stripe_account, "secret_key", raise_exception=False
+			"Press Settings",
+			"Press Settings",
+			"stripe_secret_key",
+			raise_exception=False,
 		)
 
-		if not (stripe_account and secret_key):
+		if not secret_key:
 			frappe.throw(
 				"Setup stripe via Press Settings before using press.api.billing.get_stripe"
 			)

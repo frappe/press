@@ -27,7 +27,7 @@
         dest: /etc/ssh/auth_principals/frappe
         content: |
           all-servers
-          {{ inventory_hostname }}
+          {{ server | default(inventory_hostname) }}
 
 
     - name: Add certificate authority key location to sshd_config

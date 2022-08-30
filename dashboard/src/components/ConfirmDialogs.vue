@@ -31,34 +31,37 @@ app.appContext.config.globalProperties.$confirm = confirm;
 
 <template>
 	<div>
-		<Dialog
-			:title="dialog.title"
+		<FrappeUIDialog
 			v-for="dialog in confirmDialogs"
 			v-model="dialog.show"
 			@close="removeConfirmDialog(dialog)"
 			:key="dialog.id"
+			:options="{ title: dialog.title }"
 		>
-			<div class="prose">
-				<p class="text-base" v-html="dialog.message"></p>
-			</div>
-			<ErrorMessage
-				class="mt-2"
-				v-if="dialog.resource"
-				:error="dialog.resource.error"
-			/>
+			<template v-slot:body-content>
+				<div class="prose">
+					<p class="text-base" v-html="dialog.message"></p>
+				</div>
+				<ErrorMessage
+					class="mt-2"
+					v-if="dialog.resource"
+					:error="dialog.resource.error"
+				/>
+			</template>
+
 			<template v-slot:actions>
-				<Button type="secondary" @click="removeConfirmDialog(dialog)">
+				<Button appearance="secondary" @click="removeConfirmDialog(dialog)">
 					Cancel
 				</Button>
 				<Button
 					class="ml-2"
-					:type="dialog.actionType || 'primary'"
+					:appearance="dialog.actionType || 'primary'"
 					@click="onDialogAction(dialog)"
 					:loading="dialog.resource && dialog.resource.loading"
 				>
 					{{ dialog.actionLabel || 'Submit' }}
 				</Button>
 			</template>
-		</Dialog>
+		</FrappeUIDialog>
 	</div>
 </template>

@@ -17,10 +17,15 @@
 								runningJob.status !== 'Success'
 							"
 							:status="runningJob.status"
+							:colorMap="$badgeStatusColorMap"
 						>
 							{{ runningJob.status }}
 						</Badge>
-						<Badge v-else-if="job.status != 'Success'" :status="job.status">
+						<Badge
+							v-else-if="job.status != 'Success'"
+							:status="job.status"
+							:colorMap="$badgeStatusColorMap"
+						>
 							{{ job.status }}
 						</Badge>
 					</template>

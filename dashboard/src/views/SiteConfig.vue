@@ -27,7 +27,7 @@
 					Discard changes
 				</Button>
 				<Button
-					type="primary"
+					appearance="primary"
 					v-if="editMode"
 					@click="updateSiteConfig"
 					:loading="$resources.updateSiteConfig.loading"

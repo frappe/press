@@ -6,14 +6,11 @@
 				:class="{ 'sm:bg-gray-50': $route.meta.isLoginPage }"
 			>
 				<div class="flex-1">
-					<SaasNavbar v-if="showSaas" />
-					<Navbar v-if="$auth.isLoggedIn && !showSaas" />
-					<div
-						class="mx-auto justify-start lg:container"
-						:class="{ flex: showSaas }"
-					>
-						<Sidebar v-if="showSaas" />
-						<router-view v-slot="{ Component }">
+					<Navbar v-if="$auth.isLoggedIn" />
+
+					<div class="mx-auto mt-5 flex flex-row justify-start md:container">
+						<Sidebar v-if="!$route.meta.isLoginPage" />
+						<router-view v-slot="{ Component }" class="ml-8 w-full pb-20">
 							<keep-alive
 								:include="[
 									'Sites',
@@ -40,7 +37,6 @@
 </template>
 <script>
 import Navbar from '@/components/Navbar.vue';
-import SaasNavbar from '@/views/saas/SaasNavbar.vue';
 import Sidebar from '@/views/saas/Sidebar.vue';
 import UserPrompts from '@/views/UserPrompts.vue';
 import ConfirmDialogs from './components/ConfirmDialogs.vue';
@@ -49,7 +45,6 @@ export default {
 	name: 'App',
 	components: {
 		Navbar,
-		SaasNavbar,
 		Sidebar,
 		UserPrompts,
 		ConfirmDialogs,
@@ -59,18 +54,6 @@ export default {
 		return {
 			viewportWidth: 0
 		};
-	},
-	computed: {
-		showSaas() {
-			if (
-				this.$auth.isLoggedIn &&
-				this.$saas.isSaasLogin &&
-				localStorage.getItem('saas_login')
-			) {
-				return true;
-			}
-			return false;
-		}
 	},
 	provide: {
 		viewportWidth: Math.max(

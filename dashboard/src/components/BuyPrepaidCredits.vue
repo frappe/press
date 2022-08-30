@@ -36,7 +36,7 @@
 			<StripeLogo />
 			<div v-if="step == 'Get Amount'">
 				<Button
-					type="primary"
+					appearance="primary"
 					@click="$resources.createPaymentIntent.submit()"
 					:loading="$resources.createPaymentIntent.loading"
 				>
@@ -47,7 +47,7 @@
 				<Button @click="$emit('cancel')"> Cancel </Button>
 				<Button
 					class="ml-2"
-					type="primary"
+					appearance="primary"
 					@click="onBuyClick"
 					:loading="paymentInProgress"
 				>

@@ -75,7 +75,7 @@ const badge = status => {
 					</div>
 				</router-link>
 			</div>
-			<div v-else class="text-center py-4 text-base">
+			<div v-else class="py-4 text-center text-base">
 				No App Subscriptions Found
 			</div>
 		</div>

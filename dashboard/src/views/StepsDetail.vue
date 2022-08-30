@@ -19,7 +19,7 @@
 				</div>
 			</template>
 			<div v-else>
-				<Loading v-if="loading" />
+				<LoadingText v-if="loading" />
 				<span v-else class="text-base text-gray-600"> No item selected </span>
 			</div>
 		</div>

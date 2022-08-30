@@ -34,6 +34,7 @@
 							<Badge
 								v-if="d.status != 'Active' || d.primary"
 								:status="d.status"
+								:colorMap="$badgeStatusColorMap"
 							>
 								{{ d.primary ? 'Primary' : d.status }}
 							</Badge>
@@ -74,44 +75,51 @@
 				</div>
 			</div>
 		</div>
-		<Dialog v-model="showDialog" title="Add Domain">
-			<div class="space-y-4">
-				<p class="text-base">
-					To add a custom domain, you must already own it. If you don't have
-					one, buy it and come back here.
-				</p>
-				<Input type="text" placeholder="www.example.com" v-model="newDomain" />
-
-				<p class="text-base" v-if="newDomain && !dnsVerified">
-					Make a <span class="font-semibold">CNAME</span> record from
-					<span class="font-semibold">{{ newDomain }}</span> to
-					<span class="font-semibold">{{ site.name }}</span>
-				</p>
-				<p class="flex text-base" v-if="dnsVerified === false">
-					<FeatherIcon
-						name="x"
-						class="mr-2 h-5 w-5 rounded-full bg-red-100 p-1 text-red-500"
+		<FrappeUIDialog v-model="showDialog" :options="{ title: 'Add Domain' }">
+			<template v-slot:body-content>
+				<div class="space-y-4">
+					<p class="text-base">
+						To add a custom domain, you must already own it. If you don't have
+						one, buy it and come back here.
+					</p>
+					<Input
+						type="text"
+						placeholder="www.example.com"
+						v-model="newDomain"
 					/>
-					DNS Verification Failed
-				</p>
-				<p class="flex text-base" v-if="dnsVerified === true">
-					<FeatherIcon
-						name="check"
-						class="mr-2 h-5 w-5 rounded-full bg-green-100 p-1 text-green-500"
-					/>
-					DNS records successfully verified. Click on Add Domain.
-				</p>
-				<ErrorMessage :error="$resources.checkDNS.error" />
-				<ErrorMessage :error="$resources.addDomain.error" />
-				<ErrorMessage :error="$resources.retryAddDomain.error" />
-			</div>
 
+					<p class="text-base" v-if="newDomain && !dnsVerified">
+						Make a <span class="font-semibold">CNAME</span> record from
+						<span class="font-semibold">{{ newDomain }}</span> to
+						<span class="font-semibold">{{ site.name }}</span>
+					</p>
+					<p class="flex text-base" v-if="dnsVerified === false">
+						<FeatherIcon
+							name="x"
+							class="mr-2 h-5 w-5 rounded-full bg-red-100 p-1 text-red-500"
+						/>
+						DNS Verification Failed
+					</p>
+					<p class="flex text-base" v-if="dnsVerified === true">
+						<FeatherIcon
+							name="check"
+							class="mr-2 h-5 w-5 rounded-full bg-green-100 p-1 text-green-500"
+						/>
+						DNS records successfully verified. Click on Add Domain.
+					</p>
+					<ErrorMessage :error="$resources.checkDNS.error" />
+					<ErrorMessage :error="$resources.addDomain.error" />
+					<ErrorMessage :error="$resources.retryAddDomain.error" />
+				</div>
+			</template>
+
+			
 			<template v-slot:actions>
 				<Button @click="showDialog = false"> Cancel </Button>
 				<Button
 					v-if="!dnsVerified"
 					class="ml-3"
-					type="primary"
+					appearance="primary"
 					:loading="$resources.checkDNS.loading"
 					@click="
 						$resources.checkDNS.submit({
@@ -125,7 +133,7 @@
 				<Button
 					v-if="dnsVerified"
 					class="ml-3"
-					type="primary"
+					appearance="primary"
 					:loading="$resources.addDomain.loading"
 					@click="
 						$resources.addDomain.submit({
@@ -137,7 +145,7 @@
 					Add Domain
 				</Button>
 			</template>
-		</Dialog>
+		</FrappeUIDialog>
 	</Card>
 </template>
 

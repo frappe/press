@@ -16,7 +16,7 @@
 		<template v-slot:actions>
 			<Button
 				:disabled="state === 'RequestStarted'"
-				type="primary"
+				appearance="primary"
 				@click="submit"
 			>
 				Submit

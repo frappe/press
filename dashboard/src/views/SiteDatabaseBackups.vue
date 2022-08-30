@@ -12,16 +12,19 @@
 			>
 				Schedule a backup now
 			</Button>
-			<Dialog v-model="showBackupDialog" title="Cannot Backup Site">
-				<p class="text-base">
-					You cannot take more than 3 backups after site suspension
-				</p>
-				<template v-slot:actions>
-					<div>
-						<Button @click="showBackupDialog = false"> Cancel </Button>
-					</div>
+			<FrappeUIDialog
+				:options="{ title: 'Cannot Backup Site' }"
+				v-model="showBackupDialog"
+			>
+				<template v-slot:body-content>
+					<p class="text-base">
+						You cannot take more than 3 backups after site suspension
+					</p>
 				</template>
-			</Dialog>
+				<template v-slot:actions>
+					<Button @click="showBackupDialog = false"> Cancel </Button>
+				</template>
+			</FrappeUIDialog>
 		</template>
 		<div class="divide-y" v-if="backups.data.length">
 			<div

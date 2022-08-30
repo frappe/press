@@ -26,6 +26,7 @@ class BaseServer(Document):
 
 	def after_insert(self):
 		self.create_dns_record()
+		self.update_virtual_machine_name()
 
 	def create_dns_record(self):
 		try:
@@ -50,7 +51,7 @@ class BaseServer(Document):
 							"ResourceRecordSet": {
 								"Name": self.name,
 								"Type": "A",
-								"TTL": 3600,
+								"TTL": 3600 if self.doctype == "Proxy Server" else 300,
 								"ResourceRecords": [{"Value": self.ip}],
 							},
 						}
@@ -248,6 +249,12 @@ class BaseServer(Document):
 		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		virtual_machine.increase_disk_size(increment)
 		self.extend_ec2_volume()
+
+	def update_virtual_machine_name(self):
+		if self.provider != "AWS EC2":
+			return
+		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
+		return virtual_machine.update_name_tag(self.name)
 
 
 class Server(BaseServer):

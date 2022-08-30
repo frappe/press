@@ -36,8 +36,6 @@ class SiteMigration(Document):
 		self.set_migration_type()
 		self.add_steps()
 		self.save()
-		if not self.scheduled_time:
-			self.start()
 
 	def start(self):
 		self.db_set("status", "Pending")
@@ -314,7 +312,9 @@ class SiteMigration(Document):
 			if self.destination_cluster == domain.default_cluster:
 				source_proxy = frappe.db.get_value("Server", self.source_server, "proxy_server")
 				site.remove_dns_record(domain, source_proxy)
-		return agent.new_site_from_backup(site)
+		return agent.new_site_from_backup(
+			site, skip_failing_patches=self.skip_failing_patches
+		)
 
 	def restore_site_on_destination_proxy(self):
 		"""Restore site on destination proxy"""

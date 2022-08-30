@@ -5,6 +5,7 @@ import frappe
 
 import boto3
 from frappe.model.document import Document
+from frappe.core.utils import find
 
 
 class VirtualMachine(Document):
@@ -16,15 +17,7 @@ class VirtualMachine(Document):
 		self.provision()
 
 	def provision(self):
-		cluster = frappe.get_doc("Cluster", self.cluster)
-		client = boto3.client(
-			"ec2",
-			region_name=self.region,
-			aws_access_key_id=cluster.aws_access_key_id,
-			aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
-		)
-
-		response = client.run_instances(
+		response = self.client().run_instances(
 			BlockDeviceMappings=[
 				{
 					"DeviceName": "/dev/sda1",
@@ -76,74 +69,34 @@ class VirtualMachine(Document):
 			"terminated": "Terminated",
 		}
 
-	def get_latest_ubuntu_image(self):
-		cluster = frappe.get_doc("Cluster", self.cluster)
-		client = boto3.client(
-			"ssm",
-			region_name=self.region,
-			aws_access_key_id=cluster.aws_access_key_id,
-			aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
-		)
-
-		return client.get_parameter(
+	def get_latest_ubuntu_image(self):	
+		return self.client("ssm").get_parameter(
 			Name="/aws/service/canonical/ubuntu/server/20.04/stable/current/amd64/hvm/ebs-gp2/ami-id"
 		)["Parameter"]["Value"]
 
 	def reboot(self):
-		cluster = frappe.get_doc("Cluster", self.cluster)
-		client = boto3.client(
-			"ec2",
-			region_name=self.region,
-			aws_access_key_id=cluster.aws_access_key_id,
-			aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
-		)
-
-		client.reboot_instances(InstanceIds=[self.aws_instance_id])
+		self.client().reboot_instances(InstanceIds=[self.aws_instance_id])
 
 	def increase_disk_size(self, increment=50):
-		cluster = frappe.get_doc("Cluster", self.cluster)
-		client = boto3.client(
-			"ec2",
-			region_name=self.region,
-			aws_access_key_id=cluster.aws_access_key_id,
-			aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
-		)
-
 		volume = self.volumes[0]
 		volume.size += increment
 		self.disk_size = volume.size
-		client.modify_volume(VolumeId=volume.aws_volume_id, Size=volume.size)
+		self.client().modify_volume(VolumeId=volume.aws_volume_id, Size=volume.size)
 		self.save()
 
 	def get_volumes(self):
-		cluster = frappe.get_doc("Cluster", self.cluster)
-		client = boto3.client(
-			"ec2",
-			region_name=self.region,
-			aws_access_key_id=cluster.aws_access_key_id,
-			aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
-		)
-
-		response = client.describe_volumes(
+		response = self.client().describe_volumes(
 			Filters=[{"Name": "attachment.instance-id", "Values": [self.aws_instance_id]}]
 		)
 		return response["Volumes"]
 
 	def convert_to_gp3(self):
-		cluster = frappe.get_doc("Cluster", self.cluster)
-		client = boto3.client(
-			"ec2",
-			region_name=self.region,
-			aws_access_key_id=cluster.aws_access_key_id,
-			aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
-		)
-
 		for volume in self.volumes:
 			if volume.volume_type != "gp3":
 				volume.volume_type = "gp3"
 				volume.iops = max(3000, volume.iops)
 				volume.throughput = 250 if volume.size > 340 else 125
-				client.modify_volume(
+				self.client().modify_volume(
 					VolumeId=volume.aws_volume_id,
 					VolumeType=volume.volume_type,
 					Iops=volume.iops,
@@ -151,28 +104,74 @@ class VirtualMachine(Document):
 				)
 				self.save()
 
+	@frappe.whitelist()
+	def sync(self):
+		response = self.client().describe_instances(InstanceIds=[self.aws_instance_id])
+		instance = response["Reservations"][0]["Instances"][0]
 
-@frappe.whitelist()
-def poll_pending_machines():
-	machines = frappe.get_all("Virtual Machine", {"status": "Pending"})
-	for machine in machines:
-		machine = frappe.get_doc("Virtual Machine", machine.name)
-		cluster = frappe.get_doc("Cluster", machine.cluster)
-		client = boto3.client(
-			"ec2",
-			region_name=machine.region,
+		self.status = self.get_status_map()[instance["State"]["Name"]]
+		self.machine_type = instance.get("InstanceType")
+
+		self.public_ip_address = instance.get("PublicIpAddress")
+		self.private_ip_address = instance.get("PrivateIpAddress")
+
+		self.public_dns_name = instance.get("PublicDnsName")
+		self.private_dns_name = instance.get("PrivateDnsName")
+
+		for volume in self.get_volumes():
+			existing_volume = find(self.volumes, lambda v: v.aws_volume_id == volume["VolumeId"])
+			if existing_volume:
+				row = existing_volume
+				print(row.as_dict())
+			else:
+				row = frappe._dict()
+			row.aws_volume_id = volume["VolumeId"]
+			row.volume_type = volume["VolumeType"]
+			row.size = volume["Size"]
+			row.iops = volume["Iops"]
+			if "Throughput" in volume:
+				row.throughput = volume["Throughput"]
+
+			if not existing_volume:
+				self.append("volumes", row)
+
+		self.disk_size = self.volumes[0].size
+		self.save()
+
+	def update_name_tag(self, name):
+		self.client().create_tags(
+			Resources=[self.aws_instance_id],
+			Tags=[
+				{"Key": "Name", "Value": name},
+			],
+		)
+
+	@frappe.whitelist()
+	def create_image(self):
+		image = frappe.get_doc(
+			{"doctype": "Virtual Machine Image", "virtual_machine": self.name}
+		).insert()
+		return image.name
+
+	@frappe.whitelist()
+	def disable_termination_protection(self):
+		self.client().modify_instance_attribute(InstanceId=self.aws_instance_id, DisableApiTermination={'Value': False})
+
+	@frappe.whitelist()
+	def terminate(self):
+		self.client().terminate_instances(InstanceIds=[self.aws_instance_id])
+
+	def client(self, client_type="ec2"):
+		cluster = frappe.get_doc("Cluster", self.cluster)
+		return boto3.client(
+			client_type,
+			region_name=self.region,
 			aws_access_key_id=cluster.aws_access_key_id,
 			aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
 		)
-		response = client.describe_instances(InstanceIds=[machine.aws_instance_id])
 
-		instance = response["Reservations"][0]["Instances"][0]
-		if instance["State"]["Name"] != "pending":
-			machine.status = machine.get_status_map()[instance["State"]["Name"]]
 
-			machine.public_ip_address = instance.get("PublicIpAddress")
-			machine.private_ip_address = instance.get("PrivateIpAddress")
-
-			machine.public_dns_name = instance.get("PublicDnsName")
-			machine.private_dns_name = instance.get("PrivateDnsName")
-			machine.save()
+def sync_virtual_machines():
+	machines = frappe.get_all("Virtual Machine", {"status": "Pending"})
+	for machine in machines:
+		frappe.get_doc("Virtual Machine", machine.name).sync()

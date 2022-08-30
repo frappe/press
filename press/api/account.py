@@ -266,7 +266,7 @@ def get_account_request_from_key(key):
 	if not key or not isinstance(key, str):
 		frappe.throw(_("Invalid Key"))
 
-	hours = 4
+	hours = 8
 	result = frappe.db.get_all(
 		"Account Request",
 		filters={
