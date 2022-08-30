@@ -20,6 +20,7 @@ from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.remote_file.remote_file import get_remote_key
 from press.press.doctype.site_update.site_update import (
 	benches_with_available_update,
+	should_try_update,
 )
 from press.utils import (
 	get_current_team,
@@ -528,6 +529,11 @@ def all():
 		filters={"status": ("!=", "Archived"), "team": team},
 		order_by="creation desc",
 	)
+
+	benches_with_updates = set(benches_with_available_update())
+	for site in sites:
+		if site.bench in benches_with_updates and should_try_update(site):
+			site.update_available = True
 
 	return sites
 
