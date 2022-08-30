@@ -10,7 +10,7 @@
 						showAddAppDialog = true;
 					"
 				>
-					Add App
+					New
 				</Button>
 			</template>
 		</PageHeader>
