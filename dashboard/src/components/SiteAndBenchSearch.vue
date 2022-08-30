@@ -17,11 +17,10 @@
 				@keydown.enter="
 					selectHighlightedItem();
 					toggleDropdown(false);
-					$refs.search.blur();
 				"
 				:modelValue="searchText"
 				@input="val => (searchText = val)"
-				placeholder="Search (Ctrl + /)"
+				placeholder="Search"
 			/>
 		</template>
 	</Dropdown>
@@ -36,6 +35,9 @@ export default {
 	},
 	mounted() {
 		document.addEventListener('keydown', e => {
+			// TODO: Fit it in next iteration of the migration
+			return; // TEMP, broken after frappe-ui migration
+
 			if (e.key === '/' && e.ctrlKey) {
 				e.preventDefault();
 				this.searchText = '';
