@@ -520,6 +520,7 @@ def all():
 			"current_database_usage",
 			"current_disk_usage",
 			"trial_end_date",
+			"team",
 		],
 		filters={"status": ("!=", "Archived"), "team": team},
 		order_by="creation desc",
