@@ -2,9 +2,9 @@ export function loginAsAdmin(siteName) {
 	return {
 		method: 'press.api.site.login',
 		params: { name: siteName },
-		onSuccess(sid) {
-			if (sid) {
-				window.open(`https://${siteName}/desk?sid=${sid}`, '_blank');
+		onSuccess(data) {
+			if (data?.sid && data?.site) {
+				window.open(`https://${data.site}/desk?sid=${data.sid}`, '_blank');
 			}
 		},
 		onError() {
