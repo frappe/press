@@ -26,7 +26,6 @@
     pkg:
       - mariadb-server
       - mariadb-client
-      - libmariadbclient18
     state: present
 
 - name: Install MySQLdb Python Package
