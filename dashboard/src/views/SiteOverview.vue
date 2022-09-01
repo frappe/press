@@ -9,7 +9,6 @@ import SiteOverviewCPUUsage from './SiteOverviewCPUUsage.vue';
 import AlertSiteUpdate from '@/components/AlertSiteUpdate.vue';
 import AlertSiteActivation from '@/components/AlertSiteActivation.vue';
 import SiteOverviewRecentActivity from './SiteOverviewRecentActivity.vue';
-import SiteOverviewAppSubscriptions from './SiteOverviewAppSubscriptions.vue';
 
 const props = defineProps({ site: Object });
 const showPromotionalDialog = ref(false);
@@ -123,7 +122,6 @@ const marketplacePromotionalBanners = useResource({
 				@plan-change="overview.reload()"
 			/>
 			<SiteOverviewInfo :site="site" :info="overview.data.info" />
-			<SiteOverviewAppSubscriptions class="md:col-span-2" :site="site" />
 			<SiteOverviewDomains :site="site" />
 		</div>
 

@@ -111,10 +111,12 @@
 			</template>
 		</Dialog>
 	</Card>
+	<SiteOverviewAppSubscriptions class="md:col-span-2 mt-4" :site="site" />
 </template>
 <script>
 import CommitTag from '@/components/utils/CommitTag.vue';
 import ChangeAppPlanSelector from '@/components/ChangeAppPlanSelector.vue';
+import SiteOverviewAppSubscriptions from './SiteOverviewAppSubscriptions.vue';
 
 export default {
 	name: 'SiteOverviewApps',
@@ -127,7 +129,7 @@ export default {
 			selectedPlan: null
 		};
 	},
-	components: { ChangeAppPlanSelector, CommitTag },
+	components: { ChangeAppPlanSelector, CommitTag, SiteOverviewAppSubscriptions },
 	resources: {
 		installedApps() {
 			return {
