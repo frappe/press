@@ -86,6 +86,19 @@
 		</FrappeUIDialog>
 
 		<Dialog
+			v-model="showCheckoutDialog"
+			title="Checkout Details"
+			:dismissable="true"
+		>
+			<MarketplacePlanChange
+				v-if="selectedPlan"
+				:app="appToInstall"
+				:site="site.name"
+				:plan="selectedPlan"
+			/>
+		</Dialog>
+
+		<Dialog
 			v-model="showPlanSelectionDialog"
 			title="Select app plan"
 			width="half"
@@ -105,18 +118,28 @@
 				<Button
 					appearance="primary"
 					:loading="$resources.installApp.loading"
-					@click="$resources.installApp.submit()"
+					@click="
+						() => {
+							if (appToInstall.billing_type == 'prepaid') {
+								showPlanSelectionDialog = false;
+								showCheckoutDialog = true;
+							} else {
+								$resources.installApp.submit();
+							}
+						}
+					"
 					>Proceed</Button
 				>
 			</template>
 		</Dialog>
 	</Card>
-	<SiteOverviewAppSubscriptions class="md:col-span-2 mt-4" :site="site" />
+	<SiteOverviewAppSubscriptions class="mt-4 md:col-span-2" :site="site" />
 </template>
 <script>
 import CommitTag from '@/components/utils/CommitTag.vue';
 import ChangeAppPlanSelector from '@/components/ChangeAppPlanSelector.vue';
 import SiteOverviewAppSubscriptions from './SiteOverviewAppSubscriptions.vue';
+import MarketplacePlanChange from './MarketplacePlanChange.vue';
 
 export default {
 	name: 'SiteOverviewApps',
@@ -125,11 +148,17 @@ export default {
 		return {
 			showInstallAppsDialog: false,
 			showPlanSelectionDialog: false,
+			showCheckoutDialog: false,
 			appToInstall: null,
 			selectedPlan: null
 		};
 	},
-	components: { ChangeAppPlanSelector, CommitTag, SiteOverviewAppSubscriptions },
+	components: {
+		ChangeAppPlanSelector,
+		CommitTag,
+		SiteOverviewAppSubscriptions,
+		MarketplacePlanChange
+	},
 	resources: {
 		installedApps() {
 			return {
