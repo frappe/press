@@ -696,7 +696,6 @@ def create_app_plan(marketplace_app: str, plan_data: Dict):
 @frappe.whitelist()
 def update_app_plan(app_plan_name: str, updated_plan_data: Dict):
 
-	print(updated_plan_data)
 	if not updated_plan_data.get("plan_title"):
 		frappe.throw("Plan title is required")
 
@@ -817,9 +816,7 @@ def get_payout_details(name: str) -> Dict:
 
 
 @frappe.whitelist(allow_guest=True)
-@protected("Marketplace App Subscription")
-def prepaid_saas_payment(name, plan, amount, credits):
-	app, site = frappe.db.get_value("Marketplace App Subscription", name, ["app", "site"])
+def prepaid_saas_payment(name, app, site, plan, amount, credits):
 	metadata = {
 		"payment_for": "prepaid_marketplace",
 		"line_items": json.dumps(
@@ -833,17 +830,15 @@ def prepaid_saas_payment(name, plan, amount, credits):
 			]
 		),
 		"site": site,
-		"credits": credits
+		"credits": credits,
 	}
 	return create_payment_intent_for_prepaid_app(int(amount), metadata)
 
 
 @frappe.whitelist(allow_guest=True)
 def get_plan(name):
-	print("Name", name)
 	plan, gst = frappe.db.get_value("Marketplace App Plan", name, ["plan", "gst"])
 	currency = get_current_team(True).currency.lower()
 	title, amount = frappe.db.get_value("Plan", plan, ["plan_title", f"price_{currency}"])
 
-	print(title, amount, gst)
 	return {"title": title, "amount": amount, "gst": gst}
