@@ -17,20 +17,27 @@
 		/>
 		<Input
 			v-if="plan"
-			:label="`Credits (Minimum Credits: ${planData.amount})`"
+			:label="`Credits (Minimum Credits: ${
+				selectedOption == 'Annual' ? planData.amount * 12 : planData.amount
+			})`"
 			v-model.number="creditsToBuy"
 			name="amount"
 			autocomplete="off"
 			type="number"
-			:min="creditsToBuy"
+			:min="selectedOption == 'Annual' ? planData.amount * 12 : planData.amount"
 		/>
-		<Input
-		v-if="planData"
-			type="text"
-			:label="gstApplicable() ? 'Total Amount (18% GST)' : 'Total Amount'"
-			v-model="totalAmount"
-			readonly
-		/>
+		<div></div>
+		<div class="text-sm">
+			<p class="mb-1">
+				Total Amount <span v-if="gstApplicable()">(+18% GST)</span>
+			</p>
+			<div class="flex rounded bg-gray-100 p-1 pl-3 font-medium">
+				<strike class="mr-2" v-if="totalAmountWithoutDiscount > 0">{{
+					totalAmountWithoutDiscount
+				}}</strike>
+				<p>{{ totalAmount }}</p>
+			</div>
+		</div>
 	</div>
 	<div hidden v-if="step == 'Confirm Checkout'">
 		<Input
@@ -51,7 +58,7 @@
 			Use Existing Credits
 		</Button>
 		<Button
-			type="primary"
+			appearance="primary"
 			@click="$resources.changePlan.submit()"
 			:loading="$resources.changePlan.loading"
 		>
@@ -77,7 +84,7 @@
 				Back
 			</Button>
 			<Button
-				type="primary"
+				appearance="primary"
 				@click="$resources.changePlan.submit()"
 				:loading="$resources.changePlan.loading"
 			>
@@ -172,6 +179,7 @@ export default {
 		return {
 			creditsToBuy: 0,
 			totalAmount: 0,
+			totalAmountWithoutDiscount: 0,
 			usePartnerCredits: false,
 			step: 'Confirm Checkout',
 			clientSecret: null,
@@ -185,7 +193,9 @@ export default {
 	watch: {
 		// whenever question changes, this function will run
 		selectedOption(newOption, oldOption) {
-			this.creditsToBuy = this.planData.amount * (newOption == 'Annual' ? 12 : 1);
+			this.totalAmountWithoutDiscount = 0;
+			this.creditsToBuy =
+				this.planData.amount * (newOption == 'Annual' ? 12 : 1);
 		},
 		creditsToBuy(newAmount, oldAmount) {
 			this.updateTotalAmount();
@@ -196,10 +206,25 @@ export default {
 			this.step = 'Use Existing Credits';
 		},
 		updateTotalAmount() {
-			// If plan is gst inclusive add gst
+			// Discount
+			let amount = this.creditsToBuy;
+			if (
+				this.selectedOption == 'Annual' &&
+				this.planData.discount_percent > 0
+			) {
+				this.totalAmountWithoutDiscount = this.gstApplicable()
+					? Math.floor(amount + amount * 0.18)
+					: this.creditsToBuy;
+				this.totalAmount =
+					amount - (this.planData.discount_percent / 100) * amount;
+			} else {
+				this.totalAmount = amount;
+			}
+
+			// GST
 			if (this.gstApplicable()) {
 				this.totalAmount = Math.floor(
-					this.creditsToBuy + this.creditsToBuy * 0.18
+					this.totalAmount + this.totalAmount * 0.18
 				);
 			} else {
 				this.totalAmount = this.creditsToBuy;
@@ -336,7 +361,7 @@ export default {
 					site: this.site,
 					plan: this.plan,
 					amount: this.totalAmount,
-					credits: this.creditsToBuy,
+					credits: this.creditsToBuy
 				},
 				async onSuccess(data) {
 					let { card, payment_method, publishable_key, client_secret } = data;

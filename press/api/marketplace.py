@@ -836,8 +836,15 @@ def prepaid_saas_payment(name, app, site, plan, amount, credits):
 
 @frappe.whitelist(allow_guest=True)
 def get_plan(name):
-	plan, gst = frappe.db.get_value("Marketplace App Plan", name, ["plan", "gst"])
+	plan, gst, discount_percent = frappe.db.get_value(
+		"Marketplace App Plan", name, ["plan", "gst", "discount_percent"]
+	)
 	currency = get_current_team(True).currency.lower()
 	title, amount = frappe.db.get_value("Plan", plan, ["plan_title", f"price_{currency}"])
 
-	return {"title": title, "amount": amount, "gst": gst}
+	return {
+		"title": title,
+		"amount": amount,
+		"gst": gst,
+		"discount_percent": discount_percent,
+	}
