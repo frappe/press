@@ -589,19 +589,6 @@ def check_for_updates(name):
 		return out
 
 	destination = destinations[0]
-	site_update_log = frappe.db.exists(
-		"Site Update",
-		{
-			"site": site.name,
-			"source_candidate": source,
-			"destination_candidate": destination,
-			"cause_of_failure_is_resolved": False,
-		},
-	)
-	if site_update_log:
-		# update already attempted but it failed for some reason
-		out.update_available = False
-		return out
 
 	destination_candidate = frappe.get_doc("Deploy Candidate", destination)
 
