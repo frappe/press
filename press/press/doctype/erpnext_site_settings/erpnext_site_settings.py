@@ -13,7 +13,7 @@ class ERPNextSiteSettings(Document):
 
 		site = frappe.get_doc("Site", self.site)
 		config = json.loads(site.config)
-		limits = config["limits"]
+		limits = config.get("limits", {})
 
 		limits.update(dict(zip(config_keys, values)))
 
