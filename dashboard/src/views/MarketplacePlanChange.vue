@@ -1,127 +1,153 @@
 <template>
-		<Dialog
-			class="z-100"
-			title="Checkout Details"
-			v-model="showCheckoutDialog"
-			@close="step = 'Confirm Checkout'"
+	<div
+		v-if="step == 'Confirm Checkout' && planData"
+		class="grid grid-cols-1 gap-2 md:grid-cols-2"
+	>
+		<Input
+			type="select"
+			:options="paymentOptions"
+			label="Payment Option"
+			v-model="selectedOption"
+		/>
+		<Input
+			type="text"
+			label="Selected Plan"
+			v-model="planData.title"
+			readonly
+		/>
+		<Input
+			v-if="plan"
+			:label="`Credits (Minimum Credits: ${planData.amount})`"
+			v-model.number="creditsToBuy"
+			name="amount"
+			autocomplete="off"
+			type="number"
+			:min="creditsToBuy"
+		/>
+		<Input
+		v-if="planData"
+			type="text"
+			:label="gstApplicable() ? 'Total Amount (18% GST)' : 'Total Amount'"
+			v-model="totalAmount"
+			readonly
+		/>
+	</div>
+	<div hidden v-if="step == 'Confirm Checkout'">
+		<Input
+			class="mb-4"
+			v-if="$account.team.payment_mode === 'Partner Credits'"
+			type="checkbox"
+			label="Use Partner Credits"
+			v-model="usePartnerCredits"
+		/>
+	</div>
+	<div class="float-right mt-2" v-if="step == 'Confirm Checkout' && planData">
+		<Button
+			class="mr-2"
+			v-if="this.$account.balance >= creditsToBuy"
+			appearance="secondary"
+			@click="useExistingCredits"
 		>
-			<!--Confirm Checkout-->
-			<div
-				v-if="step == 'Confirm Checkout'"
-				class="grid grid-cols-1 gap-2 md:grid-cols-2"
+			Use Existing Credits
+		</Button>
+		<Button
+			type="primary"
+			@click="$resources.changePlan.submit()"
+			:loading="$resources.changePlan.loading"
+		>
+			Buy Credits
+		</Button>
+	</div>
+
+	<!-- Use existing credits dialog -->
+	<div v-if="step == 'Use Existing Credits'">
+		<p class="text-base">
+			You current credit balance is
+			<span class="font-bold">{{ this.$account.balance }}</span
+			>. Choosing this option will apply the existing credits to the new
+			subscription. This might affect expiry of other active subscriptions. Are
+			you sure you want to proceed?
+		</p>
+		<div class="float-right mt-2">
+			<Button
+				class="mr-2"
+				type="secondary"
+				@click="() => (this.step = 'Confirm Checkout')"
 			>
-				<Input
-					type="select"
-					:options="paymentOptions"
-					label="Payment Option"
-					v-model="selectedOption"
-				/>
-				<Input
-					type="text"
-					label="Selected Plan"
-					v-model="this.plan.title"
-					readonly
-				/>
-				<Input
-					:label="`Credits (Minimum Credits: ${minimumAmount})`"
-					v-model.number="creditsToBuy"
-					name="amount"
-					autocomplete="off"
-					type="number"
-					:min="minimumAmount"
-				/>
-				<Input
-					type="text"
-					:label="gstApplicable() ? 'Total Amount (18% GST)' : 'Total Amount'"
-					v-model="totalAmount"
-					readonly
-				/>
-			</div>
-			<div hidden v-if="step == 'Confirm Checkout'">
-				<Input
-					class="mb-4"
-					v-if="$account.team.payment_mode === 'Partner Credits'"
-					type="checkbox"
-					label="Use Partner Credits"
-					v-model="usePartnerCredits"
-				/>
-			</div>
-			<div class="mt-2 float-right" v-if="step == 'Confirm Checkout'">
-				<Button
-					type="primary"
-					@click="$resources.changePlan.submit()"
-					:loading="$resources.changePlan.loading"
-				>
-					Next
-				</Button>
-			</div>
-			
-
-			<!--Add Card Details, Stripe Step-->
-			<div v-if="step == 'Add Card Details'" class="text-sm">Card Details</div>
-			<div
-				v-if="step == 'Add Card Details'"
-				class="form-input my-2 block w-full py-2 pl-3"
-				ref="card-element"
-			></div>
-
-			<div
-				v-if="step == 'Add Card Details'"
-				class="mt-2 flex w-full justify-between"
+				Back
+			</Button>
+			<Button
+				type="primary"
+				@click="$resources.changePlan.submit()"
+				:loading="$resources.changePlan.loading"
 			>
-				<StripeLogo />
-				<div v-if="step == 'Add Card Details'">
-					<Button
-						@click="
-							() => {
-								showCheckoutDialog = false;
-								step = 'Confirm Checkout';
-								selectedOption = 'Monthly';
-							}
-						"
-					>
-						Cancel
-					</Button>
-					<Button
-						class="ml-2"
-						type="primary"
-						@click="onBuyClick"
-						:loading="paymentInProgress"
-					>
-						Pay
-					</Button>
-				</div>
-			</div>
+				Confirm
+			</Button>
+		</div>
+	</div>
 
+	<!--Add Card Details, Stripe Step-->
+	<div v-if="step == 'Add Card Details'" class="text-sm">Card Details</div>
+	<div
+		v-if="step == 'Add Card Details'"
+		class="form-input my-2 block w-full py-2 pl-3"
+		ref="card-element"
+	></div>
 
-			<!-- Confirm Card Authentication -->
-			<div
-				v-if="step == 'Stripe Intermediate Step'"
-				class="form-input sr-result requires-auth my-2 block w-full py-2 pl-3"
+	<div
+		v-if="step == 'Add Card Details'"
+		class="mt-2 flex w-full justify-between"
+	>
+		<StripeLogo />
+		<div v-if="step == 'Add Card Details'">
+			<Button
+				@click="
+					() => {
+						showCheckoutDialog = false;
+						step = 'Confirm Checkout';
+						selectedOption = 'Monthly';
+					}
+				"
 			>
-				<p>
-					Please authenticate your
-					<span id="card-brand">{{ this.card.brand }}</span> card ending in
-					<span class="font-semibold">** {{ this.card.last4 }}</span> to
-					authorize your purchase of {{ creditsToBuy }} credits.
-				</p>
-				<Button
-					type="primary"
-					class="my-2"
-					@click="authenticateCard"
-					id="authenticate"
-				>
-					<div class="spinner hidden"></div>
-					<span class="button-text">Authenticate purchase</span>
-				</Button>
-			</div>
+				Cancel
+			</Button>
+			<Button
+				class="ml-2"
+				appearance="primary"
+				@click="onBuyClick"
+				:loading="paymentInProgress"
+			>
+				Pay
+			</Button>
+		</div>
+	</div>
 
-			<!-- Stripe Setup Spinner -->
-			<div v-if="step == 'Setting up Stripe'" class="mt-8 flex justify-center">
-				<Spinner class="h-4 w-4 text-gray-600" />
-			</div>
+	<!-- Confirm Card Authentication -->
+	<div
+		v-if="step == 'Stripe Intermediate Step'"
+		class="form-input sr-result requires-auth my-2 block w-full py-2 pl-3"
+	>
+		<p>
+			Please authenticate your
+			<span id="card-brand">{{ this.card.brand }}</span> card ending in
+			<span class="font-semibold">** {{ this.card.last4 }}</span> to authorize
+			your purchase of {{ creditsToBuy }} credits.
+		</p>
+		<Button
+			appearance="primary"
+			class="my-2"
+			@click="authenticateCard"
+			id="authenticate"
+		>
+			<div class="spinner hidden"></div>
+			<span class="button-text">Authenticate purchase</span>
+		</Button>
+	</div>
 
-		</Dialog>
+	<!-- Stripe Setup Spinner -->
+	<div v-if="step == 'Setting up Stripe'" class="mt-8 flex justify-center">
+		<Spinner class="h-4 w-4 text-gray-600" />
+	</div>
 </template>
 
 <script>
@@ -131,19 +157,12 @@ import { utils } from '@/utils';
 
 export default {
 	name: 'SubscriptionPlan',
-	props: { 
+	props: {
+		app: null,
+		site: null,
+		plan: '',
 		subscription: {
-			default: "app-subscription-frappe-00002"
-		}, 
-		plan: {
-			default: {
-				title: "Essential",
-				name: "MARKETPLACE-PLAN-frappe-017",
-				gst: 1
-			}
-		},
-		minimumAmount: {
-			default: 800
+			default: 'new'
 		}
 	},
 	components: {
@@ -151,9 +170,8 @@ export default {
 	},
 	data() {
 		return {
-			creditsToBuy: this.minimumAmount,
+			creditsToBuy: 0,
 			totalAmount: 0,
-			showCheckoutDialog: true,
 			usePartnerCredits: false,
 			step: 'Confirm Checkout',
 			clientSecret: null,
@@ -161,38 +179,38 @@ export default {
 			publishableKey: null,
 			paymentOptions: ['Monthly', 'Annual'],
 			selectedOption: 'Monthly',
+			planData: null
 		};
 	},
-	created() {
-		this.updateTotalAmount();
-	},
 	watch: {
-    // whenever question changes, this function will run
-    selectedOption(newOption, oldOption) {
-			this.creditsToBuy = this.minimumAmount * (newOption == 'Annual' ? 12 : 1);
-    },
+		// whenever question changes, this function will run
+		selectedOption(newOption, oldOption) {
+			this.creditsToBuy = this.planData.amount * (newOption == 'Annual' ? 12 : 1);
+		},
 		creditsToBuy(newAmount, oldAmount) {
 			this.updateTotalAmount();
 		}
-  },	
+	},
 	methods: {
+		useExistingCredits() {
+			this.step = 'Use Existing Credits';
+		},
 		updateTotalAmount() {
 			// If plan is gst inclusive add gst
 			if (this.gstApplicable()) {
-				this.totalAmount = Math.floor(this.creditsToBuy + this.creditsToBuy * 0.18);
+				this.totalAmount = Math.floor(
+					this.creditsToBuy + this.creditsToBuy * 0.18
+				);
 			} else {
 				this.totalAmount = this.creditsToBuy;
 			}
 		},
 		gstApplicable() {
-			return this.$account.team.country === 'India' && this.plan.gst
-		},
-		toggleCheckoutDialog() {
-			this.showCheckoutDialog = true;
+			return this.$account.team.country === 'India' && this.planData.gst == 1;
 		},
 		async authenticateCard() {
 			// Event handler to prompt a customer to authenticate a previously provided card
-			this.step = 'Setting up Stripe'
+			this.step = 'Setting up Stripe';
 			this.stripe = await loadStripe(this.publishableKey);
 			this.stripe
 				.confirmCardPayment(this.clientSecret, {
@@ -216,7 +234,7 @@ export default {
 						stripeJsResult.paymentIntent.status === 'succeeded'
 					) {
 						//this.showCheckoutDialog = false;
-						window.location.reload()
+						window.location.reload();
 						this.step = 'Confirm Checkout';
 						this.$notify({
 							title: 'Payment request received!',
@@ -296,14 +314,29 @@ export default {
 		}
 	},
 	resources: {
+		plan() {
+			return {
+				method: 'press.api.marketplace.get_plan',
+				params: {
+					name: this.plan
+				},
+				auto: true,
+				onSuccess(r) {
+					this.planData = r;
+					this.creditsToBuy = r.amount;
+				}
+			};
+		},
 		changePlan() {
 			return {
 				method: 'press.api.marketplace.prepaid_saas_payment',
 				params: {
 					name: this.subscription,
-					plan: this.plan.name,
+					app: this.app,
+					site: this.site,
+					plan: this.plan,
 					amount: this.totalAmount,
-					credits: this.creditsToBuy
+					credits: this.creditsToBuy,
 				},
 				async onSuccess(data) {
 					let { card, payment_method, publishable_key, client_secret } = data;
@@ -326,7 +359,7 @@ export default {
 					});
 				}
 			};
-		},
+		}
 	}
 };
 </script>

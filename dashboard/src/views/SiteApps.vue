@@ -92,7 +92,7 @@
 		>
 			<MarketplacePlanChange
 				v-if="selectedPlan"
-				:app="appToInstall"
+				:app="appToInstall.app"
 				:site="site.name"
 				:plan="selectedPlan"
 			/>
