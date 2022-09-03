@@ -9,7 +9,6 @@ from typing import Dict, List
 from frappe.core.utils import find
 from press.api.bench import options
 from press.api.billing import create_payment_intent_for_prepaid_app
-from press.api.site import protected
 from press.api.site import is_marketplace_app_source, protected
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	MarketplaceAppPlan,

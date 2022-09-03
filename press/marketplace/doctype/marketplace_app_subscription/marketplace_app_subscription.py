@@ -216,16 +216,36 @@ def process_prepaid_marketplace_payment(event):
 	invoice_line_items = []
 	total_hosting_cost = 0.0
 	for line_item in json.loads(metadata.get("line_items")):
-		title = frappe.db.get_value("Marketplace App", line_item["app"], "title")
+		app = line_item["app"]
+		title = frappe.db.get_value("Marketplace App", app, "title")
 		plan = line_item["plan"]
+		subscription = line_item["subscription"]
 
-		# Update subscription
-		frappe.db.set_value(
-			"Marketplace App Subscription",
-			line_item["subscription"],
-			"marketplace_app_plan",
-			plan,
-		)
+		if subscription == "new":
+			# create new subscription and install apps
+			frappe.get_doc(
+				{
+					"doctype": "Marketplace App Subscription",
+					"app": app,
+					"team": team.name,
+					"site": site,
+					"marketplace_app_plan": plan,
+				}
+			).insert(ignore_permissions=True)
+			site_doc = frappe.get_doc("Site", site)
+
+			for app in set(
+				frappe.get_all("ERPNext App", {"parent": app}, pluck="app")
+			).difference({sa.app for sa in site_doc.apps}):
+				site_doc.install_app(app)
+		else:
+			# Update plan on subscription
+			frappe.db.set_value(
+				"Marketplace App Subscription",
+				subscription,
+				"marketplace_app_plan",
+				plan,
+			)
 
 		# Compare site hosting plan with new hosting plan and set max hosting_plan for site
 		standard_hosting_plan = frappe.db.get_value(
@@ -246,7 +266,7 @@ def process_prepaid_marketplace_payment(event):
 			{
 				"description": f"Prepaid Credits for {title}",
 				"document_type": "Marketplace App",
-				"document_name": line_item["app"],
+				"document_name": app,
 				"plan": plan,
 				"rate": float(line_item["amount"]) - hosting_amount,
 				"quantity": 1,
@@ -275,7 +295,6 @@ def process_prepaid_marketplace_payment(event):
 	invoice.update_transaction_details(charge)
 	invoice.submit()
 
-	print(metadata.get('credits'))
 	team.allocate_credit_amount(
-		float(metadata.get('credits')), source="Prepaid Credits", remark=payment_intent["id"]
+		float(metadata.get("credits")), source="Prepaid Credits", remark=payment_intent["id"]
 	)
