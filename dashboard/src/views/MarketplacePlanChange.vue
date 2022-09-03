@@ -349,6 +349,10 @@ export default {
 				onSuccess(r) {
 					this.planData = r;
 					this.creditsToBuy = r.amount;
+					if (r.block_monthly === 1) {
+						this.selectedOption = 'Annual'
+						this.paymentOptions = ['Annual']
+					}
 				}
 			};
 		},

@@ -8,9 +8,10 @@
  "engine": "InnoDB",
  "field_order": [
   "enabled",
-  "column_break_2",
   "is_free",
+  "column_break_2",
   "gst",
+  "block_monthly",
   "section_break_2",
   "app",
   "column_break_3",
@@ -21,9 +22,7 @@
   "available_on_versions",
   "features",
   "section_break_7",
-  "marked_most_popular",
-  "saas_section",
-  "standard_hosting_plan"
+  "marked_most_popular"
  ],
  "fields": [
   {
@@ -107,18 +106,15 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "saas_section",
-   "fieldtype": "Section Break",
-   "label": "SAAS"
-  },
-  {
-   "fieldname": "standard_hosting_plan",
-   "fieldtype": "Link",
-   "label": "Standard Hosting Plan",
-   "options": "Plan"
+   "default": "0",
+   "description": "Monthly plan won't be shown on dashboard on checkout",
+   "fieldname": "block_monthly",
+   "fieldtype": "Check",
+   "label": "Block Monthly"
   },
   {
    "default": "0",
+   "description": "Include GST on checkout",
    "fieldname": "gst",
    "fieldtype": "Check",
    "label": "GST"
@@ -126,7 +122,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-08-27 12:26:25.396391",
+ "modified": "2022-09-03 17:23:45.984478",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "Marketplace App Plan",
