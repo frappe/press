@@ -82,7 +82,7 @@
 						</Button>
 						<Button
 							v-show="activeStep.name !== 'Restore' || wantsToRestore"
-							type="primary"
+							appearance="primary"
 							@click="nextStep(activeStep, next)"
 							:class="{
 								'pointer-events-none opacity-0': !hasNext
@@ -94,14 +94,14 @@
 						</Button>
 						<Button
 							v-show="!wantsToRestore && activeStep.name === 'Restore'"
-							type="primary"
+							appearance="primary"
 							@click="nextStep(activeStep, next)"
 						>
 							Skip
 						</Button>
 						<Button
 							v-show="!hasNext"
-							type="primary"
+							appearance="primary"
 							@click="$resources.newSite.submit()"
 							:loading="$resources.newSite.loading"
 						>
@@ -204,11 +204,12 @@ export default {
 			this.privateBench = true;
 			this.selectedGroup = this.bench;
 			this.benchTitle = this.bench;
-			let { title, creation } = await this.$call('frappe.client.get_value', {
-				doctype: 'Release Group',
-				filters: { name: this.bench },
-				fieldname: JSON.stringify(['title', 'creation'])
-			});
+			let { title, creation } = await this.$call(
+				'press.api.bench.get_title_and_creation',
+				{
+					name: this.bench
+				}
+			);
 			this.benchTitle = title;
 
 			// poor man's bench paywall

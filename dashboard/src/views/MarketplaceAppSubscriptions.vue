@@ -45,7 +45,10 @@ const appSubscriptions = useResource({
 					</p>
 
 					<p>
-						<Badge :status="subscription.status"></Badge>
+						<Badge
+							:status="subscription.status"
+							:colorMap="$badgeStatusColorMap"
+						></Badge>
 					</p>
 
 					<p class="hidden md:inline">

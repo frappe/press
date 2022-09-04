@@ -35,7 +35,7 @@
 					$resources.requestLogs.data.length == 0
 				"
 			>
-				<Loading />
+				<LoadingText />
 			</div>
 			<div
 				class="py-2 text-base text-gray-600"

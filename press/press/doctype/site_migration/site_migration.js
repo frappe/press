@@ -17,7 +17,7 @@ frappe.ui.form.on('Site Migration', {
 				},
 			};
 		});
-		if (frm.doc.status == 'Failure') {
+		if (['Scheduled', 'Failure'].includes(frm.doc.status)) {
 			frm.add_custom_button(__('Continue'), () => {
 				frappe.confirm(
 					'Are you sure you want to continue from next Pending step?',

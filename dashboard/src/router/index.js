@@ -2,7 +2,7 @@ import Home from '../views/Home.vue';
 import siteRoutes from './site';
 import saasRoutes from './saas';
 import benchRoutes from './bench';
-import accountRoute from './account';
+import settingsRoute from './settings';
 import authRoutes from './auth';
 import marketplaceRoutes from './marketplace';
 
@@ -24,7 +24,13 @@ const routes = [
 	...siteRoutes,
 	...saasRoutes,
 	...marketplaceRoutes,
-	accountRoute
+	{
+		path: '/billing/:invoiceName?',
+		name: 'BillingScreen',
+		component: () => import('../views/AccountBilling.vue'),
+		props: true
+	},
+	settingsRoute
 ];
 
 const router = createRouter({

@@ -10,19 +10,21 @@ from frappe.model.document import Document
 class VersionUpgrade(Document):
 	doctype = "Version Upgrade"
 
-	def after_insert(self):
-		if not self.scheduled_time:
-			self.start()
-
 	@frappe.whitelist()
 	def start(self):
 		site = frappe.get_doc("Site", self.site)
 		if site.status.endswith("ing"):
 			frappe.throw("Site is under maintenance. Cannot Update")
-		self.site_update = site.move_to_group(
-			self.destination_group, self.skip_failing_patches
-		).name
-		self.status = frappe.db.get_value("Site Update", self.site_update, "status")
+		try:
+			self.site_update = site.move_to_group(
+				self.destination_group, self.skip_failing_patches
+			).name
+		except Exception as e:
+			frappe.db.rollback()
+			self.status = "Failure"
+			self.add_comment(text=str(e))
+		else:
+			self.status = frappe.db.get_value("Site Update", self.site_update, "status")
 		self.save()
 
 	@classmethod

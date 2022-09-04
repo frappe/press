@@ -68,20 +68,15 @@
 					<h3 class="text-lg">Access</h3>
 					<p class="mt-1 text-base text-gray-600">Connect to your database</p>
 				</div>
-				<Button
-					type="secondary"
-					icon-left="database"
-					@click="showDatabaseAccessDialog = true"
-				>
+				<Button icon-left="database" @click="showDatabaseAccessDialog = true">
 					Access Database</Button
 				>
 			</div>
 		</div>
 
-		<Dialog
-			title="Migrate Database"
+		<FrappeUIDialog
+			:options="{ title: 'Migrate Database' }"
 			v-model="showMigrateDialog"
-			:dismissable="true"
 			@close="
 				() => {
 					$resources.migrateDatabase.reset();
@@ -89,63 +84,70 @@
 				}
 			"
 		>
-			<p class="text-base">
-				<b>bench migrate</b> command will be executed on your database. Are you
-				sure you want to run this command? We recommend that you download a
-				database backup before continuing.
-			</p>
-			<ErrorMessage class="mt-2" :error="$resources.migrateDatabase.error" />
-			<div class="mt-2">
-				<!-- Skip Failing Checkbox -->
-				<input
-					id="skip-failing"
-					type="checkbox"
-					class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-					v-model="wantToSkipFailingPatches"
-				/>
-				<label for="skip-failing" class="ml-2 text-sm text-gray-900">
-					Skip failing patches (if any patch fails)
-				</label>
-			</div>
+			<template v-slot:body-content>
+				<p class="text-base">
+					<b>bench migrate</b> command will be executed on your database. Are
+					you sure you want to run this command? We recommend that you download
+					a database backup before continuing.
+				</p>
+				<ErrorMessage class="mt-2" :error="$resources.migrateDatabase.error" />
+				<div class="mt-2">
+					<!-- Skip Failing Checkbox -->
+					<input
+						id="skip-failing"
+						type="checkbox"
+						class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+						v-model="wantToSkipFailingPatches"
+					/>
+					<label for="skip-failing" class="ml-2 text-sm text-gray-900">
+						Skip failing patches (if any patch fails)
+					</label>
+				</div>
+			</template>
 			<template #actions>
 				<Button
-					type="danger"
+					appearance="danger"
 					:loading="$resources.migrateDatabase.loading"
 					@click="migrateDatabase"
 				>
 					Migrate
 				</Button>
 			</template>
-		</Dialog>
+		</FrappeUIDialog>
 
-		<Dialog title="Restore" v-model="showRestoreDialog">
-			<div class="space-y-4">
-				<p class="text-base">Restore your database using a previous backup.</p>
-				<BackupFilesUploader v-model:backupFiles="selectedFiles" />
-			</div>
-			<div class="mt-3">
-				<!-- Skip Failing Checkbox -->
-				<input
-					id="skip-failing"
-					type="checkbox"
-					class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-					v-model="wantToSkipFailingPatches"
-				/>
-				<label for="skip-failing" class="ml-2 text-sm text-gray-900">
-					Skip failing patches (if any patch fails)
-				</label>
-			</div>
-			<ErrorMessage class="mt-2" :error="$resources.restoreBackup.error" />
+		<FrappeUIDialog :options="{ title: 'Restore' }" v-model="showRestoreDialog">
+			<template v-slot:body-content>
+				<div class="space-y-4">
+					<p class="text-base">
+						Restore your database using a previous backup.
+					</p>
+					<BackupFilesUploader v-model:backupFiles="selectedFiles" />
+				</div>
+				<div class="mt-3">
+					<!-- Skip Failing Checkbox -->
+					<input
+						id="skip-failing"
+						type="checkbox"
+						class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+						v-model="wantToSkipFailingPatches"
+					/>
+					<label for="skip-failing" class="ml-2 text-sm text-gray-900">
+						Skip failing patches (if any patch fails)
+					</label>
+				</div>
+				<ErrorMessage class="mt-2" :error="$resources.restoreBackup.error" />
+			</template>
+
 			<template #actions>
 				<Button
-					type="primary"
+					appearance="primary"
 					:loading="$resources.restoreBackup.loading"
 					@click="$resources.restoreBackup.submit()"
 				>
 					Restore Database
 				</Button>
 			</template>
-		</Dialog>
+		</FrappeUIDialog>
 
 		<DatabaseAccessDialog
 			v-if="showDatabaseAccessDialog"

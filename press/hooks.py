@@ -187,7 +187,6 @@ scheduler_events = {
 	],
 	"hourly_long": [
 		"press.press.doctype.bench.bench.archive_obsolete_benches",
-		"press.press.doctype.bench.bench.archive_staging_sites",
 		"press.press.doctype.bench.bench.scale_workers",
 		"press.press.doctype.subscription.subscription.create_usage_records",
 		"press.press.doctype.bench.bench.sync_benches",
@@ -196,6 +195,9 @@ scheduler_events = {
 		"press.marketplace.doctype.marketplace_app_subscription.marketplace_app_subscription.create_usage_records",
 		"press.saas.doctype.saas_app_subscription.saas_app_subscription.create_usage_records",
 		"press.press.doctype.app.app.poll_new_releases",
+	],
+	"all": [
+		"press.auth.flush",
 	],
 	"cron": {
 		"0 3 * * *": ["press.press.doctype.remote_file.remote_file.poll_file_statuses"],
@@ -267,3 +269,5 @@ on_session_creation = "press.overrides.on_session_creation"
 user_data_fields = [
 	{"doctype": "Team", "strict": True},
 ]
+
+auth_hooks = ["press.auth.hook"]

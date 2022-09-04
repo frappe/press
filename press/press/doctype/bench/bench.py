@@ -325,7 +325,7 @@ class StagingSite(Site):
 			{"staging": True, "creation": ("<", datetime.now() - timedelta(hours=expiry))},
 		)
 		for site_name in sites:
-			site = frappe.doc("Site", site_name)
+			site = frappe.get_doc("Site", site_name)
 			site.archive()
 
 	@classmethod
@@ -411,7 +411,7 @@ def archive_obsolete_benches():
 			"Site Update",
 			{
 				"destination_bench": bench.name,
-				"status": ("in", ["Pending", "Running"]),
+				"status": ("in", ["Pending", "Running", "Failure"]),
 			},
 		)
 		if active_site_updates:

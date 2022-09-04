@@ -1,15 +1,19 @@
 <template>
-	<div class="space-y-5">
-		<AlertBillingInformation />
-		<div class="grid grid-cols-1 gap-5 md:grid-cols-2">
-			<AccountBillingUsage class="col-span-1 md:col-span-2" />
-			<AccountBillingDetails />
-			<AccountBillingCards />
-			<AccountBillingPayments
-				class="col-span-1 md:col-span-2"
-				:invoice-name="invoiceName"
-			/>
-			<AccountBillingCreditBalance class="col-span-1 md:col-span-2" />
+	<div>
+		<PageHeader title="Billing" subtitle="Manage your invoices and payments" />
+
+		<div class="space-y-5">
+			<AlertBillingInformation />
+			<div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+				<AccountBillingUsage class="col-span-1 md:col-span-2" />
+				<AccountBillingDetails />
+				<AccountBillingCards />
+				<AccountBillingPayments
+					class="col-span-1 md:col-span-2"
+					:invoice-name="invoiceName"
+				/>
+				<AccountBillingCreditBalance class="col-span-1 md:col-span-2" />
+			</div>
 		</div>
 	</div>
 </template>
@@ -21,6 +25,7 @@ import AccountBillingCards from './AccountBillingCards.vue';
 import AccountBillingPayments from './AccountBillingPayments.vue';
 import AccountBillingCreditBalance from './AccountBillingCreditBalance.vue';
 import AlertBillingInformation from '@/components/AlertBillingInformation.vue';
+import PageHeader from '@/components/global/PageHeader.vue';
 
 export default {
 	name: 'AccountBilling',
@@ -31,7 +36,8 @@ export default {
 		AccountBillingCards,
 		AccountBillingPayments,
 		AccountBillingCreditBalance,
-		AlertBillingInformation
+		AlertBillingInformation,
+		PageHeader
 	}
 };
 </script>

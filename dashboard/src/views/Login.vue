@@ -35,7 +35,7 @@
 				class="mt-4"
 				:disabled="state === 'RequestStarted'"
 				@click="loginOrResetPassword"
-				type="primary"
+				appearance="primary"
 			>
 				Submit
 			</Button>

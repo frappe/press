@@ -53,13 +53,11 @@
 					>
 						{{ release.message }}
 					</p>
-					<a
-						:href="getCommitUrl(release.hash)"
-						target="_blank"
-						class="hidden font-mono text-blue-700 hover:text-blue-500 md:inline"
-					>
-						{{ release.tag || release.hash.slice(0, 6) }}
-					</a>
+					<CommitTag
+						class="hidden md:inline"
+						:tag="release.tag || release.hash.slice(0, 6)"
+						:link="getCommitUrl(release.hash)"
+					/>
 					<span class="hidden text-gray-600 md:inline">
 						{{ release.author }}
 					</span>
@@ -67,6 +65,7 @@
 						<Badge
 							v-if="release.status != 'Draft'"
 							:status="release.status"
+							:colorMap="$badgeStatusColorMap"
 						></Badge>
 					</span>
 					<span class="text-right">
@@ -76,7 +75,6 @@
 								$resources.createApprovalRequest.loading ||
 								$resources.latestApproved.loading
 							"
-							type="secondary"
 							@click="confirmApprovalRequest(release.name)"
 						>
 							Publish
@@ -84,26 +82,25 @@
 
 						<Button
 							v-else-if="release.status == 'Awaiting Approval'"
-							type="secondary"
 							@click="confirmCancelRequest(release.name)"
 							>Cancel</Button
 						>
 
 						<Button
 							v-else-if="release.status == 'Rejected'"
-							type="secondary"
 							@click="showFeedback(release)"
 							>View Feedback</Button
 						>
 					</span>
 				</div>
-				<Dialog
-					title="Reason for Rejection"
-					:dismissable="true"
+				<FrappeUIDialog
+					:options="{ title: 'Reason for Rejection' }"
 					v-model="showRejectionFeedbackDialog"
 				>
-					<div class="prose text-lg" v-html="rejectionFeedback"></div>
-				</Dialog>
+					<template v-slot:body-content>
+						<div class="prose text-lg" v-html="rejectionFeedback"></div>
+					</template>
+				</FrappeUIDialog>
 
 				<div class="py-3">
 					<Button
@@ -123,6 +120,7 @@
 </template>
 
 <script>
+import CommitTag from './utils/CommitTag.vue';
 export default {
 	props: {
 		app: {
@@ -140,7 +138,6 @@ export default {
 	mounted() {
 		this.$socket.on('new_app_release_created', this.releaseStateUpdate);
 		this.$socket.on('request_status_changed', this.releaseStateUpdate);
-
 		if (this.sources.length > 0) {
 			this.selectedSource = this.sources[0].source;
 		}
@@ -222,7 +219,6 @@ export default {
 			this.pageStart = 0;
 			this.$resources.releases.reset();
 			this.$resources.releases.submit();
-
 			// Re-fetch latest approved
 			this.$resources.latestApproved.fetch();
 		},
@@ -234,7 +230,6 @@ export default {
 			const requestAlreadyExists = this.$resources.createApprovalRequest.error
 				.toLowerCase()
 				.includes('already awaiting');
-
 			if (requestAlreadyExists) {
 				// A request already exists
 				this.$confirm({
@@ -292,7 +287,6 @@ export default {
 			if (!this.$resources.releases.data) {
 				return [];
 			}
-
 			return this.$resources.releases.data;
 		},
 		latestApprovedOn() {
@@ -320,7 +314,6 @@ export default {
 			) {
 				return '';
 			}
-
 			return this.$resources.appSource.data.repository_url;
 		}
 	},
@@ -331,6 +324,7 @@ export default {
 				this.$resources.appSource.submit({ name: value });
 			}
 		}
-	}
+	},
+	components: { CommitTag }
 };
 </script>

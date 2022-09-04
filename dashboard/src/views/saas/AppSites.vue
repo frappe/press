@@ -40,7 +40,7 @@ const dropdownItems = (team_name, site_name) => {
 		{
 			label: 'Login As Administrator',
 			action: async () => {
-				let sid = await call('press.api.site.login', { name: site_name });
+				let { sid } = await call('press.api.site.login', { name: site_name });
 
 				if (sid) {
 					window.open(`https://${site_name}/desk?sid=${sid}`, '_blank');

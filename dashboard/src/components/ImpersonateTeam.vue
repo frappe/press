@@ -9,7 +9,7 @@
 		<Dialog v-model="dialogOpen" title="Impersonate Team">
 			<Input label="Team" v-model="team" />
 			<template v-slot:actions>
-				<Button type="primary" @click="$account.switchToTeam(team)">
+				<Button appearance="primary" @click="$account.switchToTeam(team)">
 					Impersonate
 				</Button>
 			</template>

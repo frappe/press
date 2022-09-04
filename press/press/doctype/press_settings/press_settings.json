@@ -18,6 +18,7 @@
   "eff_registration_email",
   "use_staging_ca",
   "stripe_settings_section",
+  "stripe_publishable_key",
   "stripe_account",
   "create_stripe_plans",
   "stripe_product_id",
@@ -27,6 +28,7 @@
   "stripe_webhook_endpoint_id",
   "stripe_webhook_secret",
   "column_break_26",
+  "stripe_secret_key",
   "free_credits_inr",
   "free_credits_usd",
   "ngrok_auth_token",
@@ -173,12 +175,6 @@
    "fieldtype": "Data",
    "label": "Certbot Directory",
    "reqd": 1
-  },
-  {
-   "fieldname": "stripe_account",
-   "fieldtype": "Link",
-   "label": "Stripe Account",
-   "options": "Stripe Settings"
   },
   {
    "fieldname": "stripe_product_id",
@@ -838,11 +834,21 @@
    "fieldtype": "Link",
    "label": "Central Migration Server",
    "options": "Server"
+  },
+  {
+   "fieldname": "stripe_publishable_key",
+   "fieldtype": "Data",
+   "label": "Stripe Publishable Key"
+  },
+  {
+   "fieldname": "stripe_secret_key",
+   "fieldtype": "Password",
+   "label": "Stripe Secret Key"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2022-03-24 13:30:23.685853",
+ "modified": "2022-08-24 14:22:59.222237",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

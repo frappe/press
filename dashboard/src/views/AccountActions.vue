@@ -34,44 +34,49 @@
 				</Button>
 			</template>
 		</ListItem>
-		<Dialog title="Disable Account" v-model="showDisableAccountDialog">
-			<p class="text-base prose">
-				By confirming this action:
-				<ul>
-					<li>Your account will be disabled</li>
-					<li>Your active sites will be suspended immediately and will be deleted after a week.</li>
-					<li>Your account billing will be stopped</li>
-				</ul>
-				You can enable your account later anytime. Do you want to
-				continue?
-			</p>
+		<FrappeUIDialog :options="{title: 'Disable Account'}" v-model="showDisableAccountDialog">
+			<template v-slot:body-content>
+				<p class="text-base prose">
+					By confirming this action:
+					<ul>
+						<li>Your account will be disabled</li>
+						<li>Your active sites will be suspended immediately and will be deleted after a week.</li>
+						<li>Your account billing will be stopped</li>
+					</ul>
+					You can enable your account later anytime. Do you want to
+					continue?
+				</p>
 			<ErrorMessage class="mt-2" :error="$resources.disableAccount.error" />
-
+			</template>
+			
 			<template v-slot:actions>
 				<Button @click="showDisableAccountDialog = false">
 					Cancel
 				</Button>
 				<Button
 					class="ml-3"
-					type="danger"
+					appearance="danger"
 					@click="$resources.disableAccount.submit()"
 					:loading="$resources.disableAccount.loading"
 				>
 					Disable Account
 				</Button>
 			</template>
-		</Dialog>
-		<Dialog title="Enable Account" v-model="showEnableAccountDialog">
-			<p class="text-base prose">
-				By confirming this action:
-				<ul>
-					<li>Your account will be enabled</li>
-					<li>Your suspended sites will become active</li>
-					<li>Your account billing will be resumed</li>
-				</ul>
-				Do you want to continue?
-			</p>
-			<ErrorMessage class="mt-2" :error="$resources.enableAccount.error" />
+		</FrappeUIDialog>
+
+		<FrappeUIDialog :options="{title: 'Enable Account'}" v-model="showEnableAccountDialog">
+			<template v-slot:body-content>
+				<p class="text-base prose">
+					By confirming this action:
+					<ul>
+						<li>Your account will be enabled</li>
+						<li>Your suspended sites will become active</li>
+						<li>Your account billing will be resumed</li>
+					</ul>
+					Do you want to continue?
+				</p>
+				<ErrorMessage class="mt-2" :error="$resources.enableAccount.error" />
+			</template>
 
 			<template v-slot:actions>
 				<Button @click="showEnableAccountDialog = false">
@@ -79,14 +84,14 @@
 				</Button>
 				<Button
 					class="ml-3"
-					type="primary"
+					appearance="primary"
 					@click="$resources.enableAccount.submit()"
 					:loading="$resources.enableAccount.loading"
 				>
 					Enable Account
 				</Button>
 			</template>
-		</Dialog>
+		</FrappeUIDialog>
 	</Card>
 </template>
 <script>

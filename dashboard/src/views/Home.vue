@@ -1,8 +1,5 @@
 <template>
 	<div class="home">
-		<PageHeader>
-			<h1 slot="title">Dashboard</h1>
-		</PageHeader>
 		<div class="px-4 sm:px-8">
 			<div class="flex">
 				<div class="w-1/2 p-8" v-if="sites">

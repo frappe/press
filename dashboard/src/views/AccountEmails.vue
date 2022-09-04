@@ -16,24 +16,30 @@
 			:key="email.type"
 		>
 		</ListItem>
-		<Dialog title="Edit Emails" v-model="showEmailsEditDialog">
-			<div class="mt-3" v-for="email in emailData" :key="email.type">
-				<Input
-					:label="fieldLabelMap[email.type] || email.type"
-					type="text"
-					v-model="email.value"
-				/>
-			</div>
-			<ErrorMessage class="mt-2" :error="$resources.changeEmail.error" />
+		<FrappeUIDialog
+			:options="{ title: 'Edit Emails' }"
+			v-model="showEmailsEditDialog"
+		>
+			<template v-slot:body-content>
+				<div class="mt-3" v-for="email in emailData" :key="email.type">
+					<Input
+						:label="fieldLabelMap[email.type] || email.type"
+						type="text"
+						v-model="email.value"
+					/>
+				</div>
+				<ErrorMessage class="mt-2" :error="$resources.changeEmail.error" />
+			</template>
+			
 			<template #actions>
 				<Button class="mr-3" @click="showEmailsEditDialog = false"
 					>Cancel</Button
 				>
-				<Button type="primary" @click="$resources.changeEmail.submit()">
+				<Button appearance="primary" @click="$resources.changeEmail.submit()">
 					Save Changes
 				</Button>
 			</template>
-		</Dialog>
+		</FrappeUIDialog>
 	</Card>
 </template>
 <script>
@@ -70,7 +76,7 @@ export default {
 	computed: {
 		fieldLabelMap() {
 			return {
-				invoices: 'Email To Recieve Invoices',
+				invoices: 'Email To Receive Invoices',
 				marketplace_notifications: 'Marketplace Notifications'
 			};
 		}

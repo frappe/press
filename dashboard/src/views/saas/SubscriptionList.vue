@@ -36,9 +36,6 @@ const badge = status => {
 	<div v-if="subscriptions" class="mt-8 flex-1">
 		<div class="flex items-center justify-between pb-4">
 			<h3 class="text-xl font-bold">Apps</h3>
-			<router-link to="/saas/new-subscription">
-				<Button type="primary" iconLeft="plus">New App</Button>
-			</router-link>
 		</div>
 		<div
 			class="py-2 px-2 sm:rounded-md sm:border sm:border-gray-100 sm:py-1 sm:px-2 sm:shadow"
@@ -78,7 +75,7 @@ const badge = status => {
 					</div>
 				</router-link>
 			</div>
-			<div v-else class="text-center py-4 text-base">
+			<div v-else class="py-4 text-center text-base">
 				No App Subscriptions Found
 			</div>
 		</div>

@@ -11,11 +11,11 @@ from frappe.core.utils import find, find_all
 from frappe.model.naming import append_number_if_name_exists
 from frappe.utils import comma_and
 
-from press.api.github import branches
 from press.api.site import protected
+from press.api.github import branches
+from press.press.doctype.cluster.cluster import Cluster
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.app_source.app_source import AppSource
-from press.press.doctype.cluster.cluster import Cluster
 from press.press.doctype.release_group.release_group import (
 	ReleaseGroup,
 	new_release_group,
@@ -64,27 +64,55 @@ def get(name):
 
 @frappe.whitelist()
 def all():
-	groups = frappe.get_list(
-		"Release Group",
-		fields=["name", "title", "creation", "version"],
-		filters={"enabled": True, "team": get_current_team()},
-		order_by="creation desc",
+	team = get_current_team()
+
+	group = frappe.qb.DocType("Release Group")
+	site = frappe.qb.DocType("Site")
+	query = (
+		frappe.qb.from_(group)
+		.left_join(site)
+		.on(site.group == group.name)
+		.where((group.enabled == 1) & (group.public == 0))
+		.where(group.team == team)
+		.where(site.status != "Archived")
+		.groupby(group.name)
+		.select(
+			frappe.query_builder.functions.Count("*").as_("number_of_sites"),
+			group.name,
+			group.title,
+			group.version,
+			group.creation,
+		)
+		.orderby(group.title, order=frappe.qb.desc)
+	)
+	private_groups = query.run(as_dict=True)
+
+	app_counts = get_app_counts_for_groups([rg.name for rg in private_groups])
+	for group in private_groups:
+		group.number_of_apps = app_counts[group.name]
+
+	return private_groups
+
+
+def get_app_counts_for_groups(rg_names):
+	rg_app = frappe.qb.DocType("Release Group App")
+
+	app_counts = (
+		frappe.qb.from_(rg_app)
+		.where(rg_app.parent.isin(rg_names))
+		.groupby(rg_app.parent)
+		.select(
+			rg_app.parent,
+			frappe.query_builder.functions.Count("*"),
+		)
+		.run()
 	)
 
-	for group in groups:
-		most_recent_candidate = frappe.get_all(
-			"Deploy Candidate",
-			["status"],
-			{"group": group.name},
-			limit=1,
-			order_by="creation desc",
-		)[0]
-		active_benches = frappe.get_all(
-			"Bench", {"group": group.name, "status": "Active"}, limit=1, order_by="creation desc"
-		)
-		group.update_available = most_recent_candidate.status == "Draft"
-		group.status = "Active" if active_benches else "Awaiting Deploy"
-	return groups
+	app_counts_map = {}
+	for rg_name, app_count in app_counts:
+		app_counts_map[rg_name] = app_count
+
+	return app_counts_map
 
 
 @frappe.whitelist()
@@ -640,3 +668,9 @@ def generate_certificate(name):
 			"validity": "6h",
 		}
 	).insert()
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def get_title_and_creation(name):
+	return frappe.db.get_value("Release Group", name, ["title", "creation"], as_dict=True)

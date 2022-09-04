@@ -4,7 +4,7 @@
 			<Alert title="Auto updates are disabled for this site.">
 				<template #actions>
 					<Button
-						type="primary"
+						appearance="primary"
 						@click="enableAutoUpdate"
 						:loading="$resources.enableAutoUpdate.loading"
 						loadingText="Enabling"
@@ -94,7 +94,7 @@
 					</h3>
 					<Button
 						class="mt-3"
-						type="primary"
+						appearance="primary"
 						@click="enableAutoUpdate"
 						:loading="this.$resources.enableAutoUpdate.loading"
 						loadingText="Enabling"
@@ -161,7 +161,7 @@
 					/>
 					<template #actions>
 						<Button
-							type="primary"
+							appearance="primary"
 							:loading="$resources.updateAutoUpdateInfo.loading"
 							loadingText="Saving..."
 							@click="$resources.updateAutoUpdateInfo.submit()"

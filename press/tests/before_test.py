@@ -8,21 +8,16 @@ import os
 
 def execute():
 	settings = frappe.get_single("Press Settings")
-	if not settings.stripe_account:
-		stripe_account = create_test_stripe_account()
-		if stripe_account:
-			settings.stripe_account = stripe_account.name
-			settings.flags.ignore_mandatory = True
-			settings.save()
+	if not (settings.stripe_secret_key and settings.stripe_publishable_key):
+		create_test_stripe_credentials()
 
 
-def create_test_stripe_account():
+def create_test_stripe_credentials():
 	publishable_key = os.environ.get("STRIPE_PUBLISHABLE_KEY")
 	secret_key = os.environ.get("STRIPE_SECRET_KEY")
+
 	if publishable_key and secret_key:
-		return frappe.get_doc(
-			doctype="Stripe Settings",
-			gateway_name="Test",
-			publishable_key=publishable_key,
-			secret_key=secret_key,
-		).insert()
+		frappe.db.set_single_value(
+			"Press Settings", "stripe_publishable_key", publishable_key
+		)
+		frappe.db.set_single_value("Press Settings", "stripe_secret_key", secret_key)

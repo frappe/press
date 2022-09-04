@@ -24,23 +24,29 @@
 				New SSH Key
 			</Button>
 		</template>
-		<Dialog title="New SSH Key" v-model="showAddNewKeyDialog">
-			<div class="mt-3">
-				<Input
-					:label="'SSH Key'"
-					type="textarea"
-					placeholder="Begins with 'ssh-rsa', 'ecdsa-sha2-nistp256', 'ecdsa-sha2-nistp384', 'ecdsa-sha2-nistp521', 'ssh-ed25519', 'sk-ecdsa-sha2-nistp256@openssh.com', or 'sk-ssh-ed25519@openssh.com'"
-					required
-					v-model="newKey"
-				/>
-			</div>
-			<ErrorMessage class="mt-2" :error="$resources.saveKey.error" />
+		<FrappeUIDialog
+			:options="{ title: 'New SSH Key' }"
+			v-model="showAddNewKeyDialog"
+		>
+			<template v-slot:body-content>
+				<div class="mt-3">
+					<Input
+						:label="'SSH Key'"
+						type="textarea"
+						placeholder="Begins with 'ssh-rsa', 'ecdsa-sha2-nistp256', 'ecdsa-sha2-nistp384', 'ecdsa-sha2-nistp521', 'ssh-ed25519', 'sk-ecdsa-sha2-nistp256@openssh.com', or 'sk-ssh-ed25519@openssh.com'"
+						required
+						v-model="newKey"
+					/>
+				</div>
+				<ErrorMessage class="mt-2" :error="$resources.saveKey.error" />
+			</template>
+
 			<template #actions>
-				<Button type="primary" @click="$resources.saveKey.submit()">
+				<Button appearance="primary" @click="$resources.saveKey.submit()">
 					Add Key
 				</Button>
 			</template>
-		</Dialog>
+		</FrappeUIDialog>
 	</Card>
 </template>
 <script>

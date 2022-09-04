@@ -21,40 +21,30 @@
 		</div>
 		<Badge v-if="uninstall" color="red"> Will Be Uninstalled </Badge>
 		<div v-else class="flex flex-row space-x-2">
+			<CommitTag
+				v-if="deployFrom(app)"
+				:tag="deployFrom(app)"
+				:link="`${app.repository_url}/commit/${app.current_hash}`"
+			/>
 			<a
 				v-if="deployFrom(app)"
-				class="block cursor-pointer"
-				:href="`${app.repository_url}/commit/${app.current_hash}`"
+				class="flex cursor-pointer flex-col justify-center"
+				:href="`${app.repository_url}/compare/${app.current_hash}..${app.next_hash}`"
 				target="_blank"
 			>
-				<Badge
-					class="cursor-pointer hover:text-blue-500"
-					color="blue"
-					clickable="true"
-				>
-					{{ deployFrom(app) }}
-				</Badge>
+				<FeatherIcon name="arrow-right" class="w-4" />
 			</a>
-			<FeatherIcon v-if="deployFrom(app)" name="arrow-right" class="w-4" />
 			<Badge color="green" v-else>First Deploy</Badge>
-			<a
-				class="block cursor-pointer"
-				:href="`${app.repository_url}/commit/${app.next_hash}`"
-				target="_blank"
-			>
-				<Badge
-					class="cursor-pointer hover:text-blue-500"
-					color="blue"
-					clickable="true"
-				>
-					{{ deployTo(app) }}
-				</Badge>
-			</a>
+			<CommitTag
+				:tag="deployTo(app)"
+				:link="`${app.repository_url}/commit/${app.next_hash}`"
+			/>
 		</div>
 	</button>
 </template>
 
 <script>
+import CommitTag from './utils/CommitTag.vue';
 export default {
 	name: 'AppUpdateCard',
 	props: ['app', 'selectable', 'selected', 'uninstall'],
@@ -63,7 +53,6 @@ export default {
 			if (app.will_branch_change) {
 				return app.current_branch;
 			}
-
 			return app.current_hash
 				? app.current_tag || app.current_hash.slice(0, 7)
 				: null;
@@ -72,9 +61,9 @@ export default {
 			if (app.will_branch_change) {
 				return app.branch;
 			}
-
 			return app.next_tag || app.next_hash.slice(0, 7);
 		}
-	}
+	},
+	components: { CommitTag }
 };
 </script>

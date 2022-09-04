@@ -488,12 +488,27 @@ def get_plans(name=None):
 	return out
 
 
+def sites_with_recent_activity(sites, limit=3):
+	site_activity = frappe.qb.DocType("Site Activity")
+
+	query = (
+		frappe.qb.from_(site_activity)
+		.select(site_activity.site)
+		.where(site_activity.site.isin(sites))
+		.where(site_activity.action != "Backup")
+		.orderby(site_activity.creation, order=frappe.qb.desc)
+		.limit(limit)
+		.distinct()
+	)
+
+	return query.run(pluck="site")
+
+
 @frappe.whitelist()
 def all():
 	team = get_current_team()
-	saas_apps = frappe.get_all("Saas App", pluck="name")
-	if "erpnext" in saas_apps:
-		saas_apps.remove("erpnext")
+	sites_data = frappe._dict()
+
 	sites = frappe.get_list(
 		"Site",
 		fields=[
@@ -505,69 +520,24 @@ def all():
 			"current_database_usage",
 			"current_disk_usage",
 			"trial_end_date",
+			"team",
 		],
-		filters={
-			"team": team,
-			"status": ("!=", "Archived"),
-			"standby_for": (
-				"not in",
-				saas_apps,
-			),
-		},
+		filters={"status": ("!=", "Archived"), "team": team},
 		order_by="creation desc",
 	)
+
 	benches_with_updates = set(benches_with_available_update())
 	for site in sites:
 		if site.bench in benches_with_updates and should_try_update(site):
 			site.update_available = True
 
-	benches = frappe.db.get_all(
-		"Bench",
-		fields=["name", "status", "group"],
-		filters={"name": ("in", set([site.bench for site in sites]))},
-	)
+	site_names = [site.name for site in sites]
+	recents = sites_with_recent_activity(site_names)
 
-	# includes public groups
-	groups_with_sites = frappe.db.get_all(
-		"Release Group",
-		fields=["name", "title", "creation", "version", "team", "public"],
-		filters={
-			"enabled": True,
-			"name": ("in", set([bench.group for bench in benches])),
-		},
-		order_by="creation desc",
-	)
+	sites_data.site_list = sites
+	sites_data.recents = recents
 
-	empty_private_groups = frappe.db.get_all(
-		"Release Group",
-		fields=["name", "title", "creation", "version", "team", "public"],
-		filters={
-			"enabled": True,
-			"team": team,
-			"public": False,
-			"name": ("not in", set([bench.group for bench in benches])),
-		},
-		order_by="creation desc",
-	)
-
-	groups = groups_with_sites + empty_private_groups
-	shared_bench = frappe._dict(name="shared", shared=True, status="Active", sites=[])
-	private_benches = []
-	for group in groups:
-		group.benches = [bench for bench in benches if bench.group == group.name]
-		group.owned_by_team = team == group.team
-
-		group.sites = []
-		for bench in group.benches:
-			group.sites += [site for site in sites if site.bench == bench.name]
-
-		if group.public and not group.owned_by_team:
-			shared_bench.sites += group.sites
-		else:
-			private_benches.append(group)
-
-	private_benches = sorted(private_benches, key=lambda x: x.title)
-	return [shared_bench] + private_benches
+	return sites_data
 
 
 @frappe.whitelist()
@@ -619,19 +589,6 @@ def check_for_updates(name):
 		return out
 
 	destination = destinations[0]
-	site_update_log = frappe.db.exists(
-		"Site Update",
-		{
-			"site": site.name,
-			"source_candidate": source,
-			"destination_candidate": destination,
-			"cause_of_failure_is_resolved": False,
-		},
-	)
-	if site_update_log:
-		# update already attempted but it failed for some reason
-		out.update_available = False
-		return out
 
 	destination_candidate = frappe.get_doc("Deploy Candidate", destination)
 
@@ -712,9 +669,15 @@ def overview(name):
 			)[0],
 			"auto_updates_enabled": not site.skip_auto_updates,
 		},
-		"installed_apps": get_installed_apps(site),
 		"domains": domains(name),
 	}
+
+
+@frappe.whitelist()
+@protected("Site")
+def installed_apps(name):
+	site = frappe.get_cached_doc("Site", name)
+	return get_installed_apps(site)
 
 
 def get_installed_apps(site):
@@ -885,7 +848,7 @@ def activate(name):
 @frappe.whitelist()
 @protected("Site")
 def login(name, reason=None):
-	return frappe.get_doc("Site", name).login(reason)
+	return {"sid": frappe.get_doc("Site", name).login(reason), "site": name}
 
 
 @frappe.whitelist()
