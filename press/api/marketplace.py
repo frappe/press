@@ -9,7 +9,11 @@ from typing import Dict, List
 from frappe.core.utils import find
 from press.api.bench import options
 from press.api.billing import create_payment_intent_for_prepaid_app
-from press.api.site import is_marketplace_app_source, protected
+from press.api.site import (
+	is_marketplace_app_source,
+	is_prepaid_marketplace_app,
+	protected,
+)
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	MarketplaceAppPlan,
 )
@@ -524,6 +528,7 @@ def get_marketplace_subscriptions_for_site(site: str):
 		subscription.is_free = frappe.db.get_value(
 			"Marketplace App Plan", subscription.marketplace_app_plan, "is_free"
 		)
+		subscription.billing_type = is_prepaid_marketplace_app(subscription.app)
 
 	return subscriptions
 
@@ -847,5 +852,5 @@ def get_plan(name):
 		"amount": amount,
 		"gst": gst,
 		"discount_percent": discount_percent,
-		"block_monthly": block_monthly
+		"block_monthly": block_monthly,
 	}

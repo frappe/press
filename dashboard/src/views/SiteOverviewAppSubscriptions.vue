@@ -73,24 +73,47 @@
 				<Button
 					appearance="primary"
 					:loading="$resources.changePlan.loading"
-					@click="switchToNewPlan"
+					@click="
+						() => {
+							if (appToChangePlan.billing_type == 'prepaid') {
+								showAppPlanChangeDialog = false;
+								showCheckoutDialog = true;
+							} else {
+								switchToNewPlan();
+							}
+						}
+					"
 					>Change Plan</Button
 				>
 			</template>
+		</Dialog>
+		<Dialog
+			v-model="showCheckoutDialog"
+			title="Checkout Details"
+			:dismissable="true"
+		>
+			<MarketplacePlanChange
+				v-if="newAppPlan"
+				:app="appToChangePlan.name"
+				:site="site.name"
+				:plan="newAppPlan"
+			/>
 		</Dialog>
 	</Card>
 </template>
 
 <script>
 import ChangeAppPlanSelector from '@/components/ChangeAppPlanSelector.vue';
+import MarketplacePlanChange from './MarketplacePlanChange.vue';
 
 export default {
-	components: { ChangeAppPlanSelector },
+	components: { ChangeAppPlanSelector, MarketplacePlanChange },
 	props: ['site'],
 
 	data() {
 		return {
 			showAppPlanChangeDialog: false,
+			showCheckoutDialog: false,
 			appToChangePlan: null,
 			newAppPlan: '',
 			currentAppPlan: ''
@@ -129,7 +152,8 @@ export default {
 				title: subscription.app_title,
 				image: subscription.app_image,
 				plan: subscription.marketplace_app_plan,
-				subscription: subscription.name
+				subscription: subscription.name,
+				billing_type: subscription.billing_type
 			};
 			this.showAppPlanChangeDialog = true;
 		},
