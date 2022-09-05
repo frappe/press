@@ -94,6 +94,7 @@
 		>
 			<MarketplacePlanChange
 				v-if="newAppPlan"
+				:subscription="currentSubscription"
 				:app="appToChangePlan.name"
 				:site="site.name"
 				:plan="newAppPlan"
@@ -116,7 +117,8 @@ export default {
 			showCheckoutDialog: false,
 			appToChangePlan: null,
 			newAppPlan: '',
-			currentAppPlan: ''
+			currentAppPlan: '',
+			currentSubscription: ''
 		};
 	},
 
@@ -144,6 +146,7 @@ export default {
 
 	methods: {
 		changeAppPlan(subscription) {
+			this.currentSubscription = subscription.name;
 			this.currentAppPlan = subscription.marketplace_app_plan;
 			this.newAppPlan = this.currentAppPlan;
 

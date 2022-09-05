@@ -232,12 +232,7 @@ def process_prepaid_marketplace_payment(event):
 					"marketplace_app_plan": plan,
 				}
 			).insert(ignore_permissions=True)
-			site_doc = frappe.get_doc("Site", site)
-
-			for app in set(
-				frappe.get_all("ERPNext App", {"parent": app}, pluck="app")
-			).difference({sa.app for sa in site_doc.apps}):
-				site_doc.install_app(app)
+			install_subscription_apps(site, app)
 		else:
 			# Update plan on subscription
 			frappe.db.set_value(
@@ -247,21 +242,7 @@ def process_prepaid_marketplace_payment(event):
 				plan,
 			)
 
-		# Compare site hosting plan with new hosting plan and set max hosting_plan for site
-		standard_hosting_plan = frappe.db.get_value(
-			"Marketplace App Plan", plan, "standard_hosting_plan"
-		)
-		hosting_amount = frappe.db.get_value(
-			"Plan", standard_hosting_plan, f"price_{team.currency.lower()}"
-		)
-		site_plan = frappe.db.get_value("Site", site, "plan")
-		site_plan_value = frappe.db.get_value(
-			"Plan", site_plan, f"price_{team.currency.lower()}"
-		)
-		if hosting_amount > site_plan_value:
-			# set new site plan as new standard_hosting_plan, since it is higher
-			frappe.db.set_value("Site", site, "plan", standard_hosting_plan)
-
+		hosting_amount = change_site_hosting_plan(site, plan, team)
 		invoice_line_items.append(
 			{
 				"description": f"Prepaid Credits for {title}",
@@ -298,3 +279,31 @@ def process_prepaid_marketplace_payment(event):
 	team.allocate_credit_amount(
 		float(metadata.get("credits")), source="Prepaid Credits", remark=payment_intent["id"]
 	)
+
+
+def change_site_hosting_plan(site, plan, team):
+	# Compare site hosting plan with new hosting plan and set max hosting_plan for site
+	standard_hosting_plan = frappe.db.get_value(
+		"Marketplace App Plan", plan, "standard_hosting_plan"
+	)
+	hosting_amount = frappe.db.get_value(
+		"Plan", standard_hosting_plan, f"price_{team.currency.lower()}"
+	)
+	site_plan = frappe.db.get_value("Site", site, "plan")
+	site_plan_value = frappe.db.get_value(
+		"Plan", site_plan, f"price_{team.currency.lower()}"
+	)
+	if hosting_amount > site_plan_value:
+		# set new site plan as new standard_hosting_plan, since it is higher
+		frappe.db.set_value("Site", site, "plan", standard_hosting_plan)
+
+	return hosting_amount
+
+
+def install_subscription_apps(site, app):
+	site_doc = frappe.get_doc("Site", site)
+
+	for app in set(frappe.get_all("ERPNext App", {"parent": app}, pluck="app")).difference(
+		{sa.app for sa in site_doc.apps}
+	):
+		site_doc.install_app(app)

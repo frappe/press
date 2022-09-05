@@ -53,7 +53,7 @@
 			class="mr-2"
 			v-if="this.$account.balance >= creditsToBuy"
 			appearance="secondary"
-			@click="useExistingCredits"
+			@click="step = 'Use Existing Credits'"
 		>
 			Use Existing Credits
 		</Button>
@@ -85,8 +85,8 @@
 			</Button>
 			<Button
 				appearance="primary"
-				@click="$resources.changePlan.submit()"
-				:loading="$resources.changePlan.loading"
+				@click="$resources.useExistingPlan.submit()"
+				:loading="$resources.useExistingPlan.loading"
 			>
 				Confirm
 			</Button>
@@ -202,9 +202,6 @@ export default {
 		}
 	},
 	methods: {
-		useExistingCredits() {
-			this.step = 'Use Existing Credits';
-		},
 		updateTotalAmount() {
 			// Discount
 			let amount = this.creditsToBuy;
@@ -355,6 +352,21 @@ export default {
 					}
 				}
 			};
+		},
+		useExistingPlan() {
+			return {
+				method: 'press.api.marketplace.use_existing_credits',
+				params: {
+					site: this.site,
+					app: this.app,
+					subscription: this.subscription,
+					plan: this.plan
+				},
+				onSuccess(r) {
+					this.step = 'Confirm Checkout';
+					window.location.reload();
+				}
+			}
 		},
 		changePlan() {
 			return {

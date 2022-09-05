@@ -17,6 +17,10 @@ from press.api.site import (
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	MarketplaceAppPlan,
 )
+from press.marketplace.doctype.marketplace_app_subscription.marketplace_app_subscription import (
+	change_site_hosting_plan,
+	install_subscription_apps,
+)
 from press.press.doctype.plan.plan import Plan
 from press.press.doctype.app.app import new_app as new_app_doc
 from press.press.doctype.app_source.app_source import AppSource
@@ -585,6 +589,9 @@ def change_app_plan(subscription, new_plan):
 			)
 
 	subscription = frappe.get_doc("Marketplace App Subscription", subscription)
+	subscription.status = (
+		"Active" if subscription.status != "Active" else subscription.status
+	)
 	subscription.marketplace_app_plan = new_plan
 	subscription.save(ignore_permissions=True)
 
@@ -854,3 +861,30 @@ def get_plan(name):
 		"discount_percent": discount_percent,
 		"block_monthly": block_monthly,
 	}
+
+
+@frappe.whitelist(allow_guest=True)
+def use_existing_credits(site, app, subscription, plan):
+	team = get_current_team(True)
+	if subscription == "new":
+		if frappe.db.exists("Marketplace App Subscription", {"app": app, "site": site}):
+			change_app_plan(
+				frappe.db.get_value(
+					"Marketplace App Subscription", {"app": app, "site": site}, "name"
+				),
+				plan,
+			)
+		else:
+			frappe.get_doc(
+				{
+					"doctype": "Marketplace App Subscription",
+					"app": app,
+					"site": site,
+					"marketplace_app_plan": plan,
+				}
+			).insert(ignore_permissions=True)
+		install_subscription_apps(site, app)
+	else:
+		change_app_plan(subscription, plan)
+
+	return change_site_hosting_plan(site, plan, team)
