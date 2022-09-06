@@ -100,8 +100,9 @@
 <script>
 import AppSourceSelector from '@/components/AppSourceSelector.vue';
 import ChangeAppBranchDialog from '@/components/ChangeAppBranchDialog.vue';
+
 export default {
-	name: 'BenchOverviewApps',
+	name: 'BenchApps',
 	components: {
 		AppSourceSelector,
 		ChangeAppBranchDialog
