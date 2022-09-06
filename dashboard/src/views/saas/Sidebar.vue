@@ -48,7 +48,7 @@ export default {
 					icon: FCIcons.BenchIcon
 				},
 				{
-					label: 'Apps',
+					label: 'Developer',
 					route: '/marketplace/apps',
 					highlight: route => {
 						return this.$route.fullPath.indexOf('/marketplace') >= 0;
