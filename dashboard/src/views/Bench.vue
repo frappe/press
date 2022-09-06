@@ -28,7 +28,7 @@
 						</div>
 						<Button
 							v-if="$account.user.user_type == 'System User'"
-							icon-right="external-link"
+							icon-left="external-link"
 							:link="deskUrl"
 						>
 							View in Desk
@@ -112,6 +112,7 @@ export default {
 			let tabRoute = subRoute => `/benches/${this.benchName}/${subRoute}`;
 			let tabs = [
 				{ label: 'Overview', route: 'overview' },
+				{ label: 'Apps', route: 'apps' },
 				{ label: 'Versions', route: 'versions' },
 				{ label: 'Deploys', route: 'deploys' },
 				{ label: 'Jobs', route: 'jobs' }

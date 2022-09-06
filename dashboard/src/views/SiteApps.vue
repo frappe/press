@@ -82,6 +82,14 @@
 				<div class="text-base text-gray-600" v-else>
 					No apps available to install
 				</div>
+
+				<div v-if="site?.group">
+					<p class="mt-4 text-sm text-gray-700">
+						<Link :to="`/benches/${site.group}/apps`" class="font-medium">
+							Add more apps to your bench
+						</Link>
+					</p>
+				</div>
 			</template>
 		</FrappeUIDialog>
 

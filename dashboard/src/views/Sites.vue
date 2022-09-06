@@ -67,8 +67,12 @@
 				/>
 			</div>
 
-			<div v-if="sites.length > 3" class="mb-6">
-				<SectionHeader heading="Recents" />
+			<div v-if="recentSitesVisible" class="mb-6">
+				<SectionHeader heading="Recents">
+					<template v-slot:actions>
+						<SiteAndBenchSearch />
+					</template>
+				</SectionHeader>
 
 				<div class="mt-3">
 					<LoadingText v-if="$resources.allSites.loading" />
@@ -78,7 +82,7 @@
 
 			<div>
 				<SectionHeader heading="All Sites">
-					<template v-slot:actions>
+					<template v-if="!recentSitesVisible" v-slot:actions>
 						<SiteAndBenchSearch />
 					</template>
 				</SectionHeader>
@@ -179,6 +183,10 @@ export default {
 			}
 
 			return this.$resources.allSites.data.site_list;
+		},
+
+		recentSitesVisible() {
+			return this.sites.length > 3;
 		},
 
 		recentlyCreatedSites() {
