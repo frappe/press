@@ -44,7 +44,8 @@
   "communication_emails",
   "discounts_section",
   "discounts",
-  "is_us_eu"
+  "is_us_eu",
+  "last_used_team"
  ],
  "fields": [
   {
@@ -269,6 +270,12 @@
    "fieldname": "is_us_eu",
    "fieldtype": "Check",
    "label": "Is US / EU"
+  },
+  {
+   "fieldname": "last_used_team",
+   "fieldtype": "Link",
+   "label": "Last Used Team",
+   "options": "Team"
   }
  ],
  "links": [
@@ -323,7 +330,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2022-06-20 10:09:38.804199",
+ "modified": "2022-09-06 14:41:23.690611",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

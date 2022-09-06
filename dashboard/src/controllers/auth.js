@@ -25,8 +25,15 @@ export default class Auth {
 		});
 		if (res) {
 			await window.$account.fetchAccount();
-			localStorage.setItem('current_team', window.$account.team.name);
+			let last_used_team = window.$account.team.last_used_team
+			let team = window.$account.team.name;
+
+			if (last_used_team && last_used_team != team) {
+				team = last_used_team;
+			}
+			localStorage.setItem('current_team', team);
 			this.isLoggedIn = true;
+			window.location.reload()
 			return res;
 		}
 		return false;
