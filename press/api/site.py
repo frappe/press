@@ -508,22 +508,24 @@ def sites_with_recent_activity(sites, limit=3):
 def all():
 	team = get_current_team()
 	sites_data = frappe._dict()
-
-	sites = frappe.get_list(
-		"Site",
-		fields=[
-			"name",
-			"status",
-			"creation",
-			"bench",
-			"current_cpu_usage",
-			"current_database_usage",
-			"current_disk_usage",
-			"trial_end_date",
-			"team",
-		],
-		filters={"status": ("!=", "Archived"), "team": team},
-		order_by="creation desc",
+	sites = frappe.db.sql(
+		f"""
+			SELECT s.name, s.status, s.creation, s.bench, 
+				s.current_cpu_usage, s.current_database_usage, s.current_disk_usage, 
+				s.trial_end_date, s.team, rg.title
+			FROM 
+				`tabSite` s
+			LEFT JOIN 
+				`tabRelease Group` rg
+			ON
+				s.group = rg.name
+			WHERE
+				s.status != 'Archived'
+			AND
+				s.team = '{team}'
+			ORDER BY creation DESC
+	   """,
+		as_dict=True,
 	)
 
 	benches_with_updates = set(benches_with_available_update())
