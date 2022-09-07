@@ -1,0 +1,60 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2022-08-30 12:15:23.873531",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "aws_snapshot_id",
+  "aws_volume_id",
+  "size"
+ ],
+ "fields": [
+  {
+   "fieldname": "aws_snapshot_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "AWS Snapshot ID",
+   "reqd": 1
+  },
+  {
+   "fieldname": "aws_volume_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "AWS Volume ID",
+   "reqd": 1
+  },
+  {
+   "fieldname": "size",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Size",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2022-08-30 12:15:23.873531",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Virtual Disk Snapshot",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
