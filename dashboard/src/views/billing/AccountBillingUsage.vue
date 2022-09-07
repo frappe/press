@@ -82,7 +82,7 @@
 			<PrepaidCreditsDialog
 				v-if="showPrepaidCreditsDialog"
 				v-model="showPrepaidCreditsDialog"
-				:minimum-amount="Math.ceil($account.team.currency == 'INR' ? 801.07 : 10)"
+				:minimum-amount="$account.team.currency == 'INR' ? 800 : 10"
 				@success="
 					() => {
 						$resources.upcomingInvoice.reload();
