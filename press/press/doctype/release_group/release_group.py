@@ -185,7 +185,32 @@ class ReleaseGroup(Document):
 		)
 		out.number_of_apps = len(self.apps)
 
+		last_dc_info = self.get_last_deploy_candidate_info()
+		out.last_deploy = last_dc_info
+		out.deploy_in_progress = last_dc_info and last_dc_info.status == "Running"
+
 		return out
+
+	@property
+	def deploy_in_progress(self):
+		last_dc_info = self.get_last_deploy_candidate_info()
+		return last_dc_info and last_dc_info.status == "Running"
+
+	def get_last_deploy_candidate_info(self):
+		dc = frappe.qb.DocType("Deploy Candidate")
+
+		query = (
+			frappe.qb.from_(dc)
+			.where(dc.group == self.name)
+			.select(dc.name, dc.status)
+			.orderby(dc.creation, order=frappe.qb.desc)
+			.limit(1)
+		)
+
+		results = query.run(as_dict=True)
+
+		if len(results) > 0:
+			return results[0]
 
 	def get_app_updates(self, current_apps):
 		next_apps = self.get_next_apps(current_apps)

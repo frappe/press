@@ -92,9 +92,9 @@
 	</div>
 </template>
 <script>
-import AddressForm from '../components/AddressForm.vue';
-import StripeCard from '../components/StripeCard.vue';
-import BuyPrepaidCredits from '../components/BuyPrepaidCredits.vue';
+import AddressForm from '@/components/AddressForm.vue';
+import StripeCard from '@/components/StripeCard.vue';
+import BuyPrepaidCredits from '@/components/BuyPrepaidCredits.vue';
 
 export default {
 	name: 'OnboardingStepSetupPayment',

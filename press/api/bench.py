@@ -20,7 +20,7 @@ from press.press.doctype.release_group.release_group import (
 	ReleaseGroup,
 	new_release_group,
 )
-from press.utils import get_app_tag, get_current_team, get_last_doc, unique
+from press.utils import get_app_tag, get_current_team, unique
 
 
 @frappe.whitelist()
@@ -398,10 +398,7 @@ def deploy(name, apps_to_ignore=[]):
 			"Bench can only be deployed by the bench owner", exc=frappe.PermissionError
 		)
 
-	# Throw if a deploy is already in progress
-	last_deploy_candidate = get_last_doc("Deploy Candidate", {"group": name})
-
-	if last_deploy_candidate and last_deploy_candidate.status == "Running":
+	if rg.deploy_in_progress:
 		frappe.throw("A deploy for this bench is already in progress")
 
 	candidate = rg.create_deploy_candidate(apps_to_ignore)
