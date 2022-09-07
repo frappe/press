@@ -61,7 +61,7 @@
 	</SuccessCard>
 </template>
 <script>
-import LoginBox from './partials/LoginBox.vue';
+import LoginBox from '@/views/partials/LoginBox.vue';
 
 export default {
 	name: 'Login',
