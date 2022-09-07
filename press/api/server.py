@@ -9,7 +9,9 @@ from press.utils import get_current_team
 def all():
 	team = get_current_team()
 	servers = frappe.get_all("Server", {"team": team}, ["name", "creation", "status"])
-	database_servers = frappe.get_all("Database Server", {"team": team}, ["name", "creation", "status"])
+	database_servers = frappe.get_all(
+		"Database Server", {"team": team}, ["name", "creation", "status"]
+	)
 	return servers + database_servers
 
 
@@ -19,12 +21,12 @@ def search_list():
 		"Server",
 		fields=["name"],
 		filters={"status": ("!=", "Archived"), "team": get_current_team()},
-		order_by="creation desc"
+		order_by="creation desc",
 	)
 	database_servers = frappe.get_list(
 		"Database Server",
 		fields=["name"],
 		filters={"status": ("!=", "Archived"), "team": get_current_team()},
-		order_by="creation desc"
+		order_by="creation desc",
 	)
 	return servers + database_servers
