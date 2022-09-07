@@ -48,6 +48,14 @@ export default {
 					icon: FCIcons.BenchIcon
 				},
 				{
+					label: 'Servers',
+					route: '/servers',
+					highlight: route => {
+						return this.$route.fullPath.indexOf('/servers') >= 0;
+					},
+					condition: () => this.$account.team?.servers_enabled
+				},
+				{
 					label: 'Developer',
 					route: '/marketplace/apps',
 					highlight: route => {
