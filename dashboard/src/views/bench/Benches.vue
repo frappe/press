@@ -34,6 +34,11 @@ import BenchList from './BenchList.vue';
 
 export default {
 	name: 'BenchesScreen',
+	pageMeta() {
+		return {
+			title: 'Benches - Frappe Cloud'
+		};
+	},
 	components: { SiteAndBenchSearch, BenchList },
 	resources: {
 		allBenches: 'press.api.bench.all'

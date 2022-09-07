@@ -11,7 +11,8 @@ import {
 	Spinner,
 	Link,
 	Input,
-	Avatar
+	Avatar,
+	pageMeta
 } from 'frappe-ui';
 import outsideClickDirective from './outsideClickDirective';
 
@@ -45,6 +46,9 @@ export default function registerGlobalComponents(app) {
 	for (let key in globalFrappeUIComponents) {
 		app.component(key, globalFrappeUIComponents[key]);
 	}
+
+	// Plugin
+	app.use(pageMeta);
 }
 
 export { components };

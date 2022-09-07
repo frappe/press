@@ -52,6 +52,11 @@ import Tabs from '@/components/Tabs.vue';
 
 export default {
 	name: 'Bench',
+	pageMeta() {
+		return {
+			title: `Bench - ${this.bench?.title || 'Private'} - Frappe Cloud`
+		};
+	},
 	props: ['benchName'],
 	components: {
 		Tabs

@@ -72,6 +72,11 @@ import PageHeader from '@/components/global/PageHeader.vue';
 
 export default {
 	name: 'Marketplace',
+	pageMeta() {
+		return {
+			title: 'Developer - Frappe Cloud'
+		};
+	},
 	components: {
 		Tabs,
 		AppSourceSelector,

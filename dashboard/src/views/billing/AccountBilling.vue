@@ -29,6 +29,11 @@ import PageHeader from '@/components/global/PageHeader.vue';
 
 export default {
 	name: 'AccountBilling',
+	pageMeta() {
+		return {
+			title: 'Billing - Frappe Cloud'
+		}
+	},	
 	props: ['invoiceName'],
 	components: {
 		AccountBillingUsage,
