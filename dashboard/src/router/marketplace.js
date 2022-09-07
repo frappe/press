@@ -2,20 +2,22 @@ export default [
 	{
 		path: '/install-app/:marketplaceApp',
 		name: 'InstallMarketplaceApp',
-		component: () => import('@/views/InstallMarketplaceApp.vue'),
+		component: () => import('@/views/marketplace/InstallMarketplaceApp.vue'),
 		props: true
 	},
 	{
 		path: '/user-review/:marketplaceApp',
 		name: 'ReviewMarketplaceApp',
-		component: () => import('@/views/ReviewMarketplaceApp.vue'),
+		component: () => import('@/views/marketplace/ReviewMarketplaceApp.vue'),
 		props: true
 	},
 	{
 		path: '/marketplace',
 		name: 'Marketplace',
 		component: () =>
-			import(/* webpackChunkName: "marketplace" */ '../views/Marketplace.vue'),
+			import(
+				/* webpackChunkName: "marketplace" */ '../views/marketplace/Marketplace.vue'
+			),
 		children: [
 			{
 				path: 'publisher-profile',
@@ -44,39 +46,44 @@ export default [
 	{
 		path: '/marketplace/apps/new',
 		name: 'NewMarketplaceApp',
-		component: () => import('../views/NewMarketplaceApp.vue'),
+		component: () => import('../views/marketplace/NewMarketplaceApp.vue'),
 		props: true
 	},
 	{
 		path: '/marketplace/apps/:appName',
 		name: 'MarketplaceApp',
-		component: () => import('../views/MarketplaceApp.vue'),
+		component: () => import('../views/marketplace/MarketplaceApp.vue'),
 		props: true,
 		children: [
 			{
 				name: 'MarketplaceAppOverview',
 				path: 'overview',
-				component: () => import('../views/MarketplaceAppOverview.vue')
+				component: () =>
+					import('../views/marketplace/MarketplaceAppOverview.vue')
 			},
 			{
 				name: 'MarketplaceAppAnalytics',
 				path: 'analytics',
-				component: () => import('../views/MarketplaceAppAnalytics.vue')
+				component: () =>
+					import('../views/marketplace/MarketplaceAppAnalytics.vue')
 			},
 			{
 				name: 'MarketplaceAppDeployment',
 				path: 'releases',
-				component: () => import('../views/MarketplaceAppDeployment.vue')
+				component: () =>
+					import('../views/marketplace/MarketplaceAppDeployment.vue')
 			},
 			{
 				name: 'MarketplaceAppSubscriptions',
 				path: 'subscriptions',
-				component: () => import('../views/MarketplaceAppSubscriptions.vue')
+				component: () =>
+					import('../views/marketplace/MarketplaceAppSubscriptions.vue')
 			},
 			{
 				name: 'MarketplaceAppPricing',
 				path: 'pricing',
-				component: () => import('../views/MarketplaceAppPricing.vue')
+				component: () =>
+					import('../views/marketplace/MarketplaceAppPricing.vue')
 			}
 		]
 	}

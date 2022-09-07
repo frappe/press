@@ -194,8 +194,8 @@
 </template>
 <script>
 import ClickToCopyField from '@/components/ClickToCopyField.vue';
-import CardWithDetails from '../components/CardWithDetails.vue';
-import SiteList from './SiteList.vue';
+import CardWithDetails from '@/components/CardWithDetails.vue';
+import SiteList from '@/views/site/SiteList.vue';
 import CommitTag from '@/components/utils/CommitTag.vue';
 export default {
 	name: 'BenchApps',
