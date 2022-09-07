@@ -53,6 +53,7 @@ export default {
 					highlight: route => {
 						return this.$route.fullPath.indexOf('/servers') >= 0;
 					},
+					icon: FCIcons.ServerIcon,
 					condition: () => this.$account.team?.servers_enabled
 				},
 				{
