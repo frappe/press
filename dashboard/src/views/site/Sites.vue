@@ -62,7 +62,7 @@
 				<PrepaidCreditsDialog
 					v-if="showPrepaidCreditsDialog"
 					v-model:show="showPrepaidCreditsDialog"
-					:minimum-amount="latestUnpaidInvoice.amount_due"
+					:minimum-amount="Math.ceil(latestUnpaidInvoice.amount_due)"
 					@success="handleAddPrepaidCreditsSuccess"
 				/>
 			</div>
