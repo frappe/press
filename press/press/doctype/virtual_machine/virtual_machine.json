@@ -8,6 +8,7 @@
  "field_order": [
   "cluster",
   "status",
+  "team",
   "column_break_3",
   "cloud_provider",
   "region",
@@ -29,8 +30,9 @@
   "public_dns_name",
   "private_dns_name",
   "security_section",
-  "column_break_18",
   "aws_security_group_id",
+  "column_break_18",
+  "termination_protection",
   "volumes_section",
   "volumes"
  ],
@@ -208,11 +210,24 @@
    "label": "Virtual Machine Image",
    "options": "Virtual Machine Image",
    "set_only_once": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "termination_protection",
+   "fieldtype": "Check",
+   "label": "Termination Protection",
+   "read_only": 1
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-08-30 16:46:45.766816",
+ "modified": "2022-09-07 14:54:06.135839",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",

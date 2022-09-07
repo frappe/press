@@ -12,9 +12,9 @@
 </template>
 
 <script>
-import AccountBillingDetails from '../AccountBillingDetails.vue';
-import AccountBillingCards from '../AccountBillingCards.vue';
-import AccountBillingPayments from '../AccountBillingPayments.vue';
+import AccountBillingDetails from '../billing/AccountBillingDetails.vue';
+import AccountBillingCards from '../billing/AccountBillingCards.vue';
+import AccountBillingPayments from '../billing/AccountBillingPayments.vue';
 
 export default {
 	name: 'SaasBilling',

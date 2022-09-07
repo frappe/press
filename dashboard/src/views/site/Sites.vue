@@ -62,23 +62,27 @@
 				<PrepaidCreditsDialog
 					v-if="showPrepaidCreditsDialog"
 					v-model:show="showPrepaidCreditsDialog"
-					:minimum-amount="latestUnpaidInvoice.amount_due"
+					:minimum-amount="Math.ceil(latestUnpaidInvoice.amount_due)"
 					@success="handleAddPrepaidCreditsSuccess"
 				/>
 			</div>
 
-			<div>
-				<SectionHeader heading="Recently Created" />
+			<div v-if="recentSitesVisible" class="mb-6">
+				<SectionHeader heading="Recents">
+					<template v-slot:actions>
+						<SiteAndBenchSearch />
+					</template>
+				</SectionHeader>
 
 				<div class="mt-3">
-					<LoadingText v-if="$resources.recentSites.loading" />
+					<LoadingText v-if="$resources.allSites.loading" />
 					<SiteList v-else :sites="recentlyCreatedSites" />
 				</div>
 			</div>
 
-			<div class="mt-6">
+			<div>
 				<SectionHeader heading="All Sites">
-					<template v-slot:actions>
+					<template v-if="!recentSitesVisible" v-slot:actions>
 						<SiteAndBenchSearch />
 					</template>
 				</SectionHeader>
@@ -99,6 +103,11 @@ import PageHeader from '@/components/global/PageHeader.vue';
 
 export default {
 	name: 'Sites',
+	pageMeta() {
+		return {
+			title: 'Sites - Frappe Cloud'
+		};
+	},
 	props: ['bench'],
 	components: {
 		SiteList,
@@ -120,10 +129,6 @@ export default {
 		},
 		latestUnpaidInvoice: {
 			method: 'press.api.billing.get_latest_unpaid_invoice',
-			auto: true
-		},
-		recentSites: {
-			method: 'press.api.site.recently_created',
 			auto: true
 		}
 	},
@@ -182,15 +187,22 @@ export default {
 				return [];
 			}
 
-			return this.$resources.allSites.data;
+			return this.$resources.allSites.data.site_list;
+		},
+
+		recentSitesVisible() {
+			return this.sites.length > 3;
 		},
 
 		recentlyCreatedSites() {
-			if (!this.$resources.recentSites.data) {
+			if (!this.$resources.allSites.data) {
 				return [];
 			}
 
-			return this.$resources.recentSites.data;
+			const sitesWithRecentActivity = this.$resources.allSites.data.recents;
+			return this.sites.filter(site =>
+				sitesWithRecentActivity.includes(site.name)
+			);
 		},
 		showUnpaidInvoiceAlert() {
 			if (!this.latestUnpaidInvoice) {

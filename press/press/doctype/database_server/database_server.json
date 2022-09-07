@@ -13,6 +13,7 @@
   "provider",
   "virtual_machine",
   "is_server_setup",
+  "team",
   "networking_section",
   "ip",
   "column_break_10",
@@ -221,11 +222,17 @@
    "label": "Virtual Machine",
    "mandatory_depends_on": "eval:doc.provider === \"AWS EC2\"",
    "options": "Virtual Machine"
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-06-16 22:27:05.030535",
+ "modified": "2022-09-07 14:51:45.197630",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

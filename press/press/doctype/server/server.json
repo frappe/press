@@ -13,6 +13,7 @@
   "provider",
   "virtual_machine",
   "is_server_setup",
+  "team",
   "networking_section",
   "ip",
   "column_break_3",
@@ -290,10 +291,16 @@
    "fieldname": "ram",
    "fieldtype": "Float",
    "label": "RAM"
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team"
   }
  ],
  "links": [],
- "modified": "2022-06-16 22:26:53.201116",
+ "modified": "2022-09-07 14:50:35.139171",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

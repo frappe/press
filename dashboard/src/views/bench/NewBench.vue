@@ -134,7 +134,7 @@ export default {
 						title: this.benchTitle,
 						version: this.selectedVersionName,
 						cluster: this.selectedRegion,
-						saas_app: this.saas_app,
+						saas_app: this.saas_app || null,
 						apps: this.selectedApps.map(app => ({
 							name: app.app,
 							source: app.source.name

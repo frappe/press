@@ -19,9 +19,7 @@
 							{{ bench.title }}
 						</div>
 						<div class="text-base sm:w-4/12">
-							<Badge
-								:status="`${bench.deploy_information.number_of_apps} Apps`"
-							/>
+							<Badge :status="`${bench.number_of_apps} Apps`" />
 						</div>
 						<div
 							class="hidden w-2/12 text-right text-sm text-gray-600 sm:block"
@@ -54,11 +52,6 @@ export default {
 		benchBadge(bench) {
 			let status = bench.status;
 			let color = null;
-
-			if (bench.deploy_information.update_available) {
-				status = 'Update Available';
-				color = 'blue';
-			}
 
 			return {
 				color,

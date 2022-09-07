@@ -2,21 +2,21 @@ export default [
 	{
 		path: '/benches',
 		name: 'BenchesScreen',
-		component: () => import('../views/Benches.vue')
+		component: () => import('../views/bench/Benches.vue')
 	},
 	{
-		path: '/benches/new/:saas_app',
+		path: '/benches/new/:saas_app?',
 		name: 'NewBench',
 		meta: {
 			isSaasPage: true
 		},
-		component: () => import('../views/NewBench.vue'),
+		component: () => import('../views/bench/NewBench.vue'),
 		props: true
 	},
 	{
 		path: '/benches/:benchName',
 		name: 'Bench',
-		component: () => import('../views/Bench.vue'),
+		component: () => import('../views/bench/Bench.vue'),
 		props: true,
 		meta: {
 			isSaasPage: true
@@ -24,26 +24,31 @@ export default [
 		children: [
 			{
 				path: 'overview',
-				component: () => import('../views/BenchOverview.vue')
+				component: () => import('../views/bench/BenchOverview.vue')
+			},
+			{
+				path: 'apps',
+				component: () => import('../views/bench/BenchApps.vue'),
+				props: true
 			},
 			{
 				path: 'versions/:version?',
-				component: () => import('../views/BenchVersions.vue'),
+				component: () => import('../views/bench/BenchVersions.vue'),
 				props: true
 			},
 			{
 				path: 'deploys/:candidateName?',
-				component: () => import('../views/BenchDeploys.vue'),
+				component: () => import('../views/bench/BenchDeploys.vue'),
 				props: true
 			},
 			{
 				path: 'logs/:instanceName/:logName?',
-				component: () => import('../views/BenchLogs.vue'),
+				component: () => import('../views/bench/BenchLogs.vue'),
 				props: true
 			},
 			{
 				path: 'jobs/:jobName?',
-				component: () => import('../views/BenchJobs.vue'),
+				component: () => import('../views/bench/BenchJobs.vue'),
 				props: true
 			}
 		]
@@ -51,7 +56,7 @@ export default [
 	{
 		path: '/benches/:benchName/apps/new',
 		name: 'NewBenchApp',
-		component: () => import('../views/NewBenchApp.vue'),
+		component: () => import('../views/bench/NewBenchApp.vue'),
 		props: true
 	}
 ];

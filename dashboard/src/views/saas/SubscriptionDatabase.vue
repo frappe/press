@@ -1,8 +1,6 @@
 <script setup>
-import { computed } from 'vue';
 import SiteDatabaseBackups from '../SiteDatabaseBackups.vue';
 import SiteDatabaseRestore from '../SiteDatabaseRestore.vue';
-import useResource from '@/composables/resource.js';
 
 const props = defineProps({ subData: Object });
 </script>

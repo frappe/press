@@ -6,8 +6,8 @@
 </template>
 
 <script>
-import AccountProfile from '../AccountProfile.vue';
-import AccountActions from '../AccountActions.vue';
+import AccountProfile from '../settings/AccountProfile.vue';
+import AccountActions from '../settings/AccountActions.vue';
 
 export default {
 	name: 'SaasSetting',

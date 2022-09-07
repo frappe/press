@@ -38,8 +38,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "status",
-   "options": "Scheduled\nPending\nRunning\nSuccess\nFailure",
-   "read_only": 1
+   "options": "Scheduled\nPending\nRunning\nSuccess\nFailure"
   },
   {
    "fieldname": "site_update",
@@ -94,7 +93,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-08-19 09:58:32.108143",
+ "modified": "2022-09-02 16:06:25.070050",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Version Upgrade",

@@ -20,7 +20,7 @@ from press.press.doctype.release_group.release_group import (
 	ReleaseGroup,
 	new_release_group,
 )
-from press.utils import get_app_tag, get_current_team, get_last_doc, unique
+from press.utils import get_app_tag, get_current_team, unique
 
 
 @frappe.whitelist()
@@ -87,12 +87,32 @@ def all():
 	)
 	private_groups = query.run(as_dict=True)
 
+	app_counts = get_app_counts_for_groups([rg.name for rg in private_groups])
 	for group in private_groups:
-		group.deploy_information = frappe.get_doc(
-			"Release Group", group.name
-		).deploy_information()
+		group.number_of_apps = app_counts[group.name]
 
 	return private_groups
+
+
+def get_app_counts_for_groups(rg_names):
+	rg_app = frappe.qb.DocType("Release Group App")
+
+	app_counts = (
+		frappe.qb.from_(rg_app)
+		.where(rg_app.parent.isin(rg_names))
+		.groupby(rg_app.parent)
+		.select(
+			rg_app.parent,
+			frappe.query_builder.functions.Count("*"),
+		)
+		.run()
+	)
+
+	app_counts_map = {}
+	for rg_name, app_count in app_counts:
+		app_counts_map[rg_name] = app_count
+
+	return app_counts_map
 
 
 @frappe.whitelist()
@@ -378,10 +398,7 @@ def deploy(name, apps_to_ignore=[]):
 			"Bench can only be deployed by the bench owner", exc=frappe.PermissionError
 		)
 
-	# Throw if a deploy is already in progress
-	last_deploy_candidate = get_last_doc("Deploy Candidate", {"group": name})
-
-	if last_deploy_candidate and last_deploy_candidate.status == "Running":
+	if rg.deploy_in_progress:
 		frappe.throw("A deploy for this bench is already in progress")
 
 	candidate = rg.create_deploy_candidate(apps_to_ignore)

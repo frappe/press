@@ -53,7 +53,7 @@
 			</ListItem>
 		</div>
 
-		<ErrorMessage :error="this.$resources.fetchLatestAppUpdate.error" />
+		<ErrorMessage :error="$resources.fetchLatestAppUpdate.error" />
 
 		<FrappeUIDialog
 			:options="{ title: 'Add apps to your bench' }"
@@ -70,7 +70,7 @@
 				/>
 				<p class="mt-4 text-base" @click="showAddAppDialog = false">
 					Don't find your app here?
-					<Link :to="`/benches/${bench.name}/apps/new`"> Add from GitHub </Link>
+					<Link :to="`/benches/${benchName}/apps/new`"> Add from GitHub </Link>
 				</p>
 			</template>
 			<template v-slot:actions>
@@ -80,7 +80,7 @@
 					:loading="$resources.addApp.loading"
 					@click="
 						$resources.addApp.submit({
-							name: bench.name,
+							name: benchName,
 							source: selectedApp.source.name,
 							app: selectedApp.app
 						})
@@ -92,7 +92,7 @@
 		</FrappeUIDialog>
 
 		<ChangeAppBranchDialog
-			:bench="bench.name"
+			:bench="benchName"
 			v-model:app="appToChangeBranchOf"
 		/>
 	</Card>
@@ -100,13 +100,14 @@
 <script>
 import AppSourceSelector from '@/components/AppSourceSelector.vue';
 import ChangeAppBranchDialog from '@/components/ChangeAppBranchDialog.vue';
+
 export default {
-	name: 'BenchOverviewApps',
+	name: 'BenchApps',
 	components: {
 		AppSourceSelector,
 		ChangeAppBranchDialog
 	},
-	props: ['bench'],
+	props: ['benchName'],
 	data() {
 		return {
 			selectedApp: null,
@@ -119,7 +120,7 @@ export default {
 			return {
 				method: 'press.api.bench.apps',
 				params: {
-					name: this.bench?.name
+					name: this.benchName
 				},
 				auto: true
 			};
@@ -128,7 +129,7 @@ export default {
 			return {
 				method: 'press.api.bench.installable_apps',
 				params: {
-					name: this.bench?.name
+					name: this.benchName
 				}
 			};
 		},
@@ -182,7 +183,7 @@ export default {
 		},
 		fetchLatestUpdate(app) {
 			this.$resources.fetchLatestAppUpdate.submit({
-				name: this.bench.name,
+				name: this.benchName,
 				app: app.name
 			});
 		},
@@ -195,7 +196,7 @@ export default {
 				resource: this.$resources.removeApp,
 				action: closeDialog => {
 					this.$resources.removeApp.submit({
-						name: this.bench.name,
+						name: this.benchName,
 						app: app.name
 					});
 					closeDialog();

@@ -488,46 +488,36 @@ def get_plans(name=None):
 	return out
 
 
-@frappe.whitelist()
-def recently_created(limit=3):
-	team = get_current_team()
-	sites = frappe.get_list(
-		"Site",
-		fields=[
-			"name",
-			"status",
-			"creation",
-			"bench",
-			"current_cpu_usage",
-			"current_database_usage",
-			"current_disk_usage",
-			"trial_end_date",
-		],
-		filters={"status": ("!=", "Archived"), "team": team},
-		order_by="creation desc",
-		limit=limit,
+def sites_with_recent_activity(sites, limit=3):
+	site_activity = frappe.qb.DocType("Site Activity")
+
+	query = (
+		frappe.qb.from_(site_activity)
+		.select(site_activity.site)
+		.where(site_activity.site.isin(sites))
+		.where(site_activity.action != "Backup")
+		.orderby(site_activity.creation, order=frappe.qb.desc)
+		.limit(limit)
+		.distinct()
 	)
 
-	return sites
+	return query.run(pluck="site")
 
 
 @frappe.whitelist()
 def all():
 	team = get_current_team()
-	sites = frappe.get_list(
-		"Site",
-		fields=[
-			"name",
-			"status",
-			"creation",
-			"bench",
-			"current_cpu_usage",
-			"current_database_usage",
-			"current_disk_usage",
-			"trial_end_date",
-		],
-		filters={"status": ("!=", "Archived"), "team": team},
-		order_by="creation desc",
+	sites_data = frappe._dict()
+	sites = frappe.db.sql(
+		f"""
+			SELECT s.name, s.status, s.creation, s.bench, s.current_cpu_usage, s.current_database_usage, s.current_disk_usage, s.trial_end_date, s.team, rg.title
+			FROM `tabSite` s
+			LEFT JOIN `tabRelease Group` rg
+			ON s.group = rg.name
+			WHERE s.status != 'Archived'
+			AND s.team = '{team}'
+			ORDER BY creation DESC""",
+		as_dict=True,
 	)
 
 	benches_with_updates = set(benches_with_available_update())
@@ -535,7 +525,13 @@ def all():
 		if site.bench in benches_with_updates and should_try_update(site):
 			site.update_available = True
 
-	return sites
+	site_names = [site.name for site in sites]
+	recents = sites_with_recent_activity(site_names)
+
+	sites_data.site_list = sites
+	sites_data.recents = recents
+
+	return sites_data
 
 
 @frappe.whitelist()
@@ -587,19 +583,6 @@ def check_for_updates(name):
 		return out
 
 	destination = destinations[0]
-	site_update_log = frappe.db.exists(
-		"Site Update",
-		{
-			"site": site.name,
-			"source_candidate": source,
-			"destination_candidate": destination,
-			"cause_of_failure_is_resolved": False,
-		},
-	)
-	if site_update_log:
-		# update already attempted but it failed for some reason
-		out.update_available = False
-		return out
 
 	destination_candidate = frappe.get_doc("Deploy Candidate", destination)
 
@@ -864,7 +847,7 @@ def activate(name):
 @frappe.whitelist()
 @protected("Site")
 def login(name, reason=None):
-	return frappe.get_doc("Site", name).login(reason)
+	return {"sid": frappe.get_doc("Site", name).login(reason), "site": name}
 
 
 @frappe.whitelist()

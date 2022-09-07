@@ -74,6 +74,7 @@ class VirtualMachine(Document):
 			Name="/aws/service/canonical/ubuntu/server/20.04/stable/current/amd64/hvm/ebs-gp2/ami-id"
 		)["Parameter"]["Value"]
 
+	@frappe.whitelist()
 	def reboot(self):
 		self.client().reboot_instances(InstanceIds=[self.aws_instance_id])
 
@@ -122,7 +123,6 @@ class VirtualMachine(Document):
 			existing_volume = find(self.volumes, lambda v: v.aws_volume_id == volume["VolumeId"])
 			if existing_volume:
 				row = existing_volume
-				print(row.as_dict())
 			else:
 				row = frappe._dict()
 			row.aws_volume_id = volume["VolumeId"]
@@ -136,6 +136,10 @@ class VirtualMachine(Document):
 				self.append("volumes", row)
 
 		self.disk_size = self.volumes[0].size
+
+		self.termination_protection = self.client().describe_instance_attribute(
+			InstanceId=self.aws_instance_id, Attribute="disableApiTermination"
+		)["DisableApiTermination"]["Value"]
 		self.save()
 
 	def update_name_tag(self, name):
@@ -158,6 +162,14 @@ class VirtualMachine(Document):
 		self.client().modify_instance_attribute(
 			InstanceId=self.aws_instance_id, DisableApiTermination={"Value": False}
 		)
+		self.sync()
+
+	@frappe.whitelist()
+	def enable_termination_protection(self):
+		self.client().modify_instance_attribute(
+			InstanceId=self.aws_instance_id, DisableApiTermination={"Value": True}
+		)
+		self.sync()
 
 	@frappe.whitelist()
 	def terminate(self):

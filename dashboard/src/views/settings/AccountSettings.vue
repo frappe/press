@@ -27,6 +27,11 @@ import PageHeader from '@/components/global/PageHeader.vue';
 
 export default {
 	name: 'AccountSettings',
+	pageMeta() {
+		return {
+			title: 'Settings - Frappe Cloud'
+		}
+	},
 	components: {
 		AccountActions,
 		AccountProfile,

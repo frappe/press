@@ -40,6 +40,7 @@
   "column_break_31",
   "database_access_enabled",
   "razorpay_enabled",
+  "servers_enabled",
   "section_break_28",
   "communication_emails",
   "discounts_section",
@@ -269,6 +270,12 @@
    "fieldname": "is_us_eu",
    "fieldtype": "Check",
    "label": "Is US / EU"
+  },
+  {
+   "default": "0",
+   "fieldname": "servers_enabled",
+   "fieldtype": "Check",
+   "label": "Servers Enabled"
   }
  ],
  "links": [
@@ -323,7 +330,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2022-06-20 10:09:38.804199",
+ "modified": "2022-09-07 18:19:45.668492",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

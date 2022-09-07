@@ -9,8 +9,11 @@
 					<Navbar v-if="$auth.isLoggedIn" />
 
 					<div class="mx-auto mt-5 flex flex-row justify-start md:container">
-						<Sidebar v-if="!$route.meta.isLoginPage" />
-						<router-view v-slot="{ Component }" class="ml-8 w-full pb-20">
+						<Sidebar class="hidden sm:block" v-if="!$route.meta.isLoginPage" />
+						<router-view
+							v-slot="{ Component }"
+							class="mx-4 w-full pb-20 sm:ml-8 sm:mr-0"
+						>
 							<keep-alive
 								:include="[
 									'Sites',
@@ -38,9 +41,9 @@
 <script>
 import Navbar from '@/components/Navbar.vue';
 import Sidebar from '@/views/saas/Sidebar.vue';
-import UserPrompts from '@/views/UserPrompts.vue';
-import ConfirmDialogs from './components/ConfirmDialogs.vue';
-import NotificationToasts from './components/NotificationToasts.vue';
+import UserPrompts from '@/views/onboarding/UserPrompts.vue';
+import ConfirmDialogs from '@/components/ConfirmDialogs.vue';
+import NotificationToasts from '@/components/NotificationToasts.vue';
 export default {
 	name: 'App',
 	components: {

@@ -4,6 +4,7 @@ import stripe
 import json
 from datetime import datetime
 from frappe.core.utils import find
+from frappe.core.doctype.user.user import test_password_strength
 from frappe.utils.password import get_decrypted_password
 from press.api.billing import create_payment_intent_for_prepaid_app
 from press.api.site import overview, protected, get
@@ -645,6 +646,21 @@ def get_hybrid_saas_pool(account_request):
 			return hybrid_pool
 
 	return hybrid_pool
+
+
+@frappe.whitelist(allow_guest=True)
+def validate_password(password, first_name, last_name, email):
+	available = True
+
+	user_data = (first_name, last_name, email)
+	result = test_password_strength(password, "", None, user_data)
+	feedback = result.get("feedback", None)
+	print(result, feedback)
+
+	if feedback and not feedback.get("password_policy_validation_passed", False):
+		available = False
+
+	return available
 
 
 @frappe.whitelist(allow_guest=True)

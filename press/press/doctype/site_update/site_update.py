@@ -119,6 +119,10 @@ class SiteUpdate(Document):
 		frappe.db.set_value("Site Update", self.name, "update_job", job.name)
 
 	def have_past_updates_failed(self):
+		if (
+			not frappe.session.user == "Administrator"
+		):  # Allow user to trigger update for same source and destination
+			return False
 		return frappe.db.exists(
 			"Site Update",
 			{
