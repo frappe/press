@@ -62,6 +62,13 @@ export default {
 				auto: true,
 				default: []
 			};
+		},
+		allServers() {
+			return {
+				method: 'press.api.server.search_list',
+				auto: true,
+				default: []
+			};
 		}
 	},
 	methods: {
@@ -100,10 +107,31 @@ export default {
 				})
 				.slice(0, 5);
 
-			if (siteList.length === 0 && benchList.length === 0) {
+			let serverList = this.$resources.allServers.data
+				.filter(d => {
+					if (!this.searchText) {
+						return true;
+					}
+					if (d.name.toLowerCase().includes(this.searchText.toLowerCase())) {
+						return true;
+					}
+					return false;
+				})
+				.map(d => {
+					d.label = d.name;
+					d.action = () => this.navigateServer(d.server);
+					return d;
+				})
+				.slice(0, 5);
+
+			if (
+				siteList.length === 0 &&
+				benchList.length === 0 &&
+				serverList.length === 0
+			) {
 				return [{ label: 'No results found' }];
 			} else {
-				return siteList.concat(benchList);
+				return siteList.concat(benchList).concat(serverList);
 			}
 		},
 		navigateSite(siteName) {
@@ -111,6 +139,9 @@ export default {
 		},
 		navigateBench(benchName) {
 			this.$router.push(`/benches/${benchName}/overview`);
+		},
+		navigateServer(serverName) {
+			this.$router.push(`/servers/${serverName}/overview`);
 		}
 	}
 };
