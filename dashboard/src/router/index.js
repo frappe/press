@@ -2,6 +2,7 @@ import Home from '../views/general/Home.vue';
 import siteRoutes from './site';
 import saasRoutes from './saas';
 import benchRoutes from './bench';
+import serverRoutes from './server';
 import settingsRoute from './settings';
 import authRoutes from './auth';
 import marketplaceRoutes from './marketplace';
@@ -22,6 +23,7 @@ const routes = [
 	...authRoutes,
 	...benchRoutes,
 	...siteRoutes,
+	...serverRoutes,
 	...saasRoutes,
 	...marketplaceRoutes,
 	{
