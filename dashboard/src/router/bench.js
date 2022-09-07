@@ -5,7 +5,7 @@ export default [
 		component: () => import('../views/bench/Benches.vue')
 	},
 	{
-		path: '/benches/new/:saas_app',
+		path: '/benches/new/:saas_app?',
 		name: 'NewBench',
 		meta: {
 			isSaasPage: true
