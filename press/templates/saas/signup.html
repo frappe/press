@@ -147,8 +147,13 @@
 			if (!value) {
 				return "Password is required"
 			} else {
-				if (validate_password(value, true)) {
-					return "Please use a strong password"
+				let password = value;
+				var pattern = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,20}$/;
+
+				if (password.match(pattern) && password.length >= 8) {
+					return false
+				} else {
+					return "Bad Password! The password length should be atleast 8 characters and it should contain a combination of capital letters, small letters, numbers and symbols";
 				}
 			}
 		},
@@ -202,6 +207,29 @@
 			});
 	}
 
+	function validate_password(input) {
+		let $input = $(input);
+		let password = $input.val();
+		let error = controller.validate_value("password", password);
+
+		if (error) {
+			controller.show_input_error("password", error);
+		} else {
+			frappe.call({
+				method: "press.api.saas.validate_password",
+				args: { 
+					password: password,
+					first_name: document.querySelector("#first_name").value,
+					last_name: document.querySelector("#last_name").value,
+					email: document.querySelector("#email").value,
+				},
+				type: "POST",
+			}).then((r) => {
+				controller.show_input_feedback("password", r.message ? "Strong Password!" : "The password is very to guess please use a strong password!", !r.message)
+			})
+		}
+	}
+
 	function validate_subdomain(input) {
 		let $input = $(input);
 		let subdomain = $input.val();
@@ -232,35 +260,6 @@
 				}
 				return false;
 			});
-	}
-
-	function validate_password(input, isValue) {
-		let password;
-
-		if (isValue) {
-			password = input
-		} else {
-			let $input = $(input);
-			password = $input.val();
-		}
-
-		var pattern = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,20}$/;
-
-		if (password.match(pattern) && password.length >= 8) {
-			controller.show_input_feedback(
-				"password",
-				"Now that's a strong password. Good job!",
-				false
-			);
-			return false;
-		} else {
-			controller.show_input_feedback(
-				"password",
-				"Bad Password! The password length should be atleast 8 characters and it should contain a combination of capital letters, small letters, numbers and symbols. For e.g. Gene@31480, Merz313$oo",
-				true
-			);
-			return true;
-		}
 	}
 
 	function togglePasswordVisibility() {
