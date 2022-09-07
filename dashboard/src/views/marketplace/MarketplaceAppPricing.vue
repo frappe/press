@@ -2,7 +2,7 @@
 import { ref, reactive } from 'vue';
 import useResource from '@/composables/resource';
 import AppPlanCard from '@/components/AppPlanCard.vue';
-import PrinterIcon from '../components/PrinterIcon.vue';
+import PrinterIcon from '@/components/PrinterIcon.vue';
 
 const showEditPlanDialog = ref(false);
 const currentEditingPlan = reactive({

@@ -128,6 +128,11 @@ import { loginAsAdmin } from '@/controllers/loginAsAdmin';
 
 export default {
 	name: 'Site',
+	pageMeta() {
+		return {
+			title: `Site - ${this.siteName} - Frappe Cloud`
+		};
+	},
 	props: ['siteName'],
 	components: {
 		Tabs

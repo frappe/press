@@ -3,7 +3,7 @@ export default [
 		path: '/login/:forgot?',
 		name: 'Login',
 		component: () =>
-			import(/* webpackChunkName: "login" */ '../views/Login.vue'),
+			import(/* webpackChunkName: "login" */ '../views/auth/Login.vue'),
 		meta: {
 			isLoginPage: true
 		},
@@ -13,7 +13,7 @@ export default [
 		path: '/signup',
 		name: 'Signup',
 		component: () =>
-			import(/* webpackChunkName: "signup" */ '../views/Signup.vue'),
+			import(/* webpackChunkName: "signup" */ '../views/auth/Signup.vue'),
 		meta: {
 			isLoginPage: true
 		}
@@ -23,7 +23,7 @@ export default [
 		name: 'Setup Account',
 		component: () =>
 			import(
-				/* webpackChunkName: "setup-account" */ '../views/SetupAccount.vue'
+				/* webpackChunkName: "setup-account" */ '../views/auth/SetupAccount.vue'
 			),
 		props: true,
 		meta: {
@@ -35,7 +35,7 @@ export default [
 		name: 'Reset Password',
 		component: () =>
 			import(
-				/* webpackChunkName: "reset-password" */ '../views/ResetPassword.vue'
+				/* webpackChunkName: "reset-password" */ '../views/auth/ResetPassword.vue'
 			),
 		props: true,
 		meta: {
@@ -45,7 +45,7 @@ export default [
 	{
 		path: '/impersonate/:team',
 		name: 'Impersonate Team',
-		component: () => import('../views/ImpersonateTeam.vue'),
+		component: () => import('../views/auth/ImpersonateTeam.vue'),
 		props: true
 	}
 ];

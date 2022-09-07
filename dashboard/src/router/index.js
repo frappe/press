@@ -1,4 +1,4 @@
-import Home from '../views/Home.vue';
+import Home from '../views/general/Home.vue';
 import siteRoutes from './site';
 import saasRoutes from './saas';
 import benchRoutes from './bench';
@@ -17,7 +17,7 @@ const routes = [
 	{
 		path: '/welcome',
 		name: 'Welcome',
-		component: () => import('../views/Welcome.vue')
+		component: () => import('../views/onboarding/Welcome.vue')
 	},
 	...authRoutes,
 	...benchRoutes,
@@ -27,7 +27,7 @@ const routes = [
 	{
 		path: '/billing/:invoiceName?',
 		name: 'BillingScreen',
-		component: () => import('../views/AccountBilling.vue'),
+		component: () => import('../views/billing/AccountBilling.vue'),
 		props: true
 	},
 	settingsRoute

@@ -103,6 +103,11 @@ import PageHeader from '@/components/global/PageHeader.vue';
 
 export default {
 	name: 'Sites',
+	pageMeta() {
+		return {
+			title: 'Sites - Frappe Cloud'
+		};
+	},
 	props: ['bench'],
 	components: {
 		SiteList,

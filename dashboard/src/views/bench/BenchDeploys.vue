@@ -63,7 +63,7 @@
 
 <script>
 import { h } from 'vue';
-import StepsDetail from './StepsDetail.vue';
+import StepsDetail from '@/views/general/StepsDetail.vue';
 import CardWithDetails from '@/components/CardWithDetails.vue';
 
 export default {

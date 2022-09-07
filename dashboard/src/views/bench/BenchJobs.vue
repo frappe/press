@@ -9,7 +9,8 @@
 </template>
 
 <script>
-import AgentJobs from './AgentJobs.vue';
+import AgentJobs from '@/views/general/AgentJobs.vue';
+
 export default {
 	name: 'BenchJobs',
 	props: ['bench', 'jobName'],

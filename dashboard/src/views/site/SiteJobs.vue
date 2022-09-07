@@ -8,7 +8,7 @@
 	/>
 </template>
 <script>
-import AgentJobs from './AgentJobs.vue';
+import AgentJobs from '@/views/general/AgentJobs.vue';
 export default {
 	name: 'SiteJobs',
 	props: ['site', 'jobName'],

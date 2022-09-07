@@ -1,9 +1,9 @@
 <template>
-	<Alert
-		:title="bench.status == 'Active' ? 'Update Available' : 'Deploy'"
-		v-if="show"
-	>
-		<span v-if="bench.status == 'Active'">
+	<Alert :title="alertTitle" v-if="show">
+		<span v-if="deployInformation.deploy_in_progress"
+			>A deploy for this bench is in progress</span
+		>
+		<span v-else-if="bench.status == 'Active'">
 			A new update is available for your bench. Would you like to deploy the
 			update now?
 		</span>
@@ -12,11 +12,17 @@
 			deploying. If you want to deploy now, click on Deploy.
 		</span>
 		<template #actions>
-			<Button appearance="primary" @click="showDeployDialog = true">
+			<Button
+				v-if="deployInformation.deploy_in_progress"
+				appearance="primary"
+				:route="`/benches/${bench.name}/deploys/${deployInformation.last_deploy.name}`"
+				>View Progress</Button
+			>
+			<Button v-else appearance="primary" @click="showDeployDialog = true">
 				Show updates
 			</Button>
 		</template>
-		
+
 		<FrappeUIDialog
 			:options="{ title: 'Select the apps you want to update' }"
 			v-model="showDeployDialog"
@@ -106,6 +112,12 @@ export default {
 		},
 		deployInformation() {
 			return this.$resources.deployInformation.data;
+		},
+		alertTitle() {
+			if (this.deployInformation && this.deployInformation.deploy_in_progress) {
+				return 'Deploy in Progress';
+			}
+			return this.bench.status == 'Active' ? 'Update Available' : 'Deploy';
 		}
 	}
 };

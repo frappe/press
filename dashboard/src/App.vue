@@ -41,9 +41,9 @@
 <script>
 import Navbar from '@/components/Navbar.vue';
 import Sidebar from '@/views/saas/Sidebar.vue';
-import UserPrompts from '@/views/UserPrompts.vue';
-import ConfirmDialogs from './components/ConfirmDialogs.vue';
-import NotificationToasts from './components/NotificationToasts.vue';
+import UserPrompts from '@/views/onboarding/UserPrompts.vue';
+import ConfirmDialogs from '@/components/ConfirmDialogs.vue';
+import NotificationToasts from '@/components/NotificationToasts.vue';
 export default {
 	name: 'App',
 	components: {
