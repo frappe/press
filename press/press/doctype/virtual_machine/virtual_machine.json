@@ -8,6 +8,7 @@
  "field_order": [
   "cluster",
   "status",
+  "team",
   "column_break_3",
   "cloud_provider",
   "region",
@@ -216,11 +217,17 @@
    "fieldtype": "Check",
    "label": "Termination Protection",
    "read_only": 1
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-08-30 16:59:50.888360",
+ "modified": "2022-09-07 14:54:06.135839",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",
