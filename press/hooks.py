@@ -124,6 +124,8 @@ permission_query_conditions = {
 	"Deploy Candidate Difference": "press.press.doctype.deploy_candidate_difference.deploy_candidate_difference.get_permission_query_conditions",
 	"Deploy": "press.press.doctype.deploy.deploy.get_permission_query_conditions",
 	"Bench": "press.press.doctype.bench.bench.get_permission_query_conditions",
+	"Server": "press.press.doctype.server.server.get_permission_query_conditions",
+	"Database": "press.press.doctype.database_server.database_server.get_permission_query_conditions",
 }
 has_permission = {
 	"Site": "press.overrides.has_permission",
@@ -141,6 +143,8 @@ has_permission = {
 	"Deploy Candidate Difference": "press.overrides.has_permission",
 	"Deploy": "press.overrides.has_permission",
 	"Bench": "press.overrides.has_permission",
+	"Server": "press.overrides.has_permission",
+	"Database Server": "press.overrides.has_permission",
 }
 
 # Document Events

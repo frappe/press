@@ -9,6 +9,7 @@ from press.agent import Agent
 from press.runner import Ansible
 from press.utils import log_error
 from frappe.core.utils import find
+from press.overrides import get_permission_query_conditions_for_doctype
 
 from typing import List, Union
 import boto3
@@ -446,3 +447,6 @@ def cleanup_unused_files():
 			frappe.get_doc("Server", server.name).cleanup_unused_files()
 		except Exception:
 			log_error("Server File Cleanup Error", server=server)
+
+
+get_permission_query_conditions = get_permission_query_conditions_for_doctype("Server")

@@ -7,6 +7,7 @@ import frappe
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
 from press.utils import log_error
+from press.overrides import get_permission_query_conditions_for_doctype
 
 
 class DatabaseServer(BaseServer):
@@ -300,3 +301,8 @@ class DatabaseServer(BaseServer):
 			ansible.run()
 		except Exception:
 			log_error("Deadlock Logger Setup Exception", server=self.as_dict())
+
+
+get_permission_query_conditions = get_permission_query_conditions_for_doctype(
+	"Database Server"
+)
