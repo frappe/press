@@ -33,6 +33,13 @@
 					:multiple="false"
 				/>
 				<p v-else class="text-base">No app sources available.</p>
+
+				<ErrorMessage class="mt-2" :error="$resourceErrors" />
+
+				<p class="mt-4 text-base" @click="showAddAppDialog = false">
+					Don't find your app here?
+					<Link :to="`/marketplace/apps/new`"> Add from GitHub </Link>
+				</p>
 			</template>
 			<template #actions>
 				<Button
@@ -50,13 +57,6 @@
 					Add {{ selectedApp.app }}
 				</Button>
 			</template>
-
-			<ErrorMessage class="mt-2" :error="$resourceErrors" />
-
-			<p class="mt-4 text-base" @click="showAddAppDialog = false">
-				Don't find your app here?
-				<Link :to="`/marketplace/apps/new`"> Add from GitHub </Link>
-			</p>
 		</FrappeUIDialog>
 
 		<Tabs class="pb-32" :tabs="tabs">
