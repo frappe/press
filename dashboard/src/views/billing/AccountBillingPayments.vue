@@ -5,7 +5,7 @@
 		v-if="!invoiceName && $resources.pastInvoices.data"
 	>
 		<div
-			class="divide-y"
+			class="max-h-96 divide-y"
 			v-if="$resources.pastInvoices.data && $resources.pastInvoices.data.length"
 		>
 			<div
