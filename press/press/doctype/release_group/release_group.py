@@ -410,6 +410,7 @@ class ReleaseGroup(Document):
 			"Deploy Candidate", {"status": "Success", "group": self.name}
 		)
 
+	@frappe.whitelist()
 	def add_server(self, server: str, deploy=False):
 		self.append("servers", {"server": server, "default": False})
 		self.save()
@@ -417,7 +418,7 @@ class ReleaseGroup(Document):
 			self.get_last_successful_candidate()._create_deploy([server], staging=False)
 
 	@frappe.whitelist()
-	def change_server(self, server):
+	def change_server(self, server: str):
 		"""
 		Create latest candidate in given server and tries to move sites there.
 
