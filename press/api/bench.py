@@ -71,13 +71,12 @@ def all():
 	query = (
 		frappe.qb.from_(group)
 		.left_join(site)
-		.on(site.group == group.name)
+		.on((site.group == group.name) & (site.status != "Archived"))
 		.where((group.enabled == 1) & (group.public == 0))
 		.where(group.team == team)
-		.where(site.status != "Archived")
 		.groupby(group.name)
 		.select(
-			frappe.query_builder.functions.Count("*").as_("number_of_sites"),
+			frappe.query_builder.functions.Count(site.name).as_("number_of_sites"),
 			group.name,
 			group.title,
 			group.version,

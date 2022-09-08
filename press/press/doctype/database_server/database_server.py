@@ -303,4 +303,6 @@ class DatabaseServer(BaseServer):
 			log_error("Deadlock Logger Setup Exception", server=self.as_dict())
 
 
-get_permission_query_conditions = get_permission_query_conditions_for_doctype("Database Server")
+get_permission_query_conditions = get_permission_query_conditions_for_doctype(
+	"Database Server"
+)
