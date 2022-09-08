@@ -29,7 +29,7 @@
 			<a
 				v-if="deployFrom(app)"
 				class="flex cursor-pointer flex-col justify-center"
-				:href="`${app.repository_url}/compare/${app.current_hash}..${app.next_hash}`"
+				:href="`${app.repository_url}/compare/${app.current_hash}...${app.next_hash}`"
 				target="_blank"
 			>
 				<FeatherIcon name="arrow-right" class="w-4" />
