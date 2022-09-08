@@ -117,7 +117,10 @@
 				:app="appToInstall.app"
 				:frappeVersion="site?.frappe_version"
 				class="mb-9"
-				@change="plan => (selectedPlan = plan.name)"
+				@change="plan => {
+					selectedPlan = plan.name;
+					selectedPlanIsFree = plan.is_free;
+				}"
 			/>
 
 			<ErrorMessage :error="$resourceErrors" />
@@ -128,7 +131,7 @@
 					:loading="$resources.installApp.loading"
 					@click="
 						() => {
-							if (appToInstall.billing_type == 'prepaid') {
+							if (appToInstall.billing_type == 'prepaid' && !selectedPlanIsFree) {
 								showPlanSelectionDialog = false;
 								showCheckoutDialog = true;
 							} else {
@@ -158,7 +161,8 @@ export default {
 			showPlanSelectionDialog: false,
 			showCheckoutDialog: false,
 			appToInstall: null,
-			selectedPlan: null
+			selectedPlan: null,
+			selectedPlanIsFree: null
 		};
 	},
 	components: {
