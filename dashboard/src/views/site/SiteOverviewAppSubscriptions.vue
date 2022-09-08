@@ -95,7 +95,7 @@
 			title="Checkout Details"
 			:dismissable="true"
 		>
-			<MarketplacePlanChange
+			<MarketplacePrepaidCredits
 				v-if="newAppPlan"
 				:subscription="currentSubscription"
 				:app="appToChangePlan.name"
@@ -108,10 +108,10 @@
 
 <script>
 import ChangeAppPlanSelector from '@/components/ChangeAppPlanSelector.vue';
-import MarketplacePlanChange from '../MarketplacePlanChange.vue';
+import MarketplacePrepaidCredits from '../marketplace/MarketplacePrepaidCredits.vue';
 
 export default {
-	components: { ChangeAppPlanSelector, MarketplacePlanChange },
+	components: { ChangeAppPlanSelector, MarketplacePrepaidCredits },
 	props: ['site'],
 
 	data() {

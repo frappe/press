@@ -98,7 +98,7 @@
 			title="Checkout Details"
 			:dismissable="true"
 		>
-			<MarketplacePlanChange
+			<MarketplacePrepaidCredits
 				v-if="selectedPlan"
 				:app="appToInstall.app"
 				:site="site.name"
@@ -150,7 +150,7 @@
 import CommitTag from '@/components/utils/CommitTag.vue';
 import ChangeAppPlanSelector from '@/components/ChangeAppPlanSelector.vue';
 import SiteOverviewAppSubscriptions from './SiteOverviewAppSubscriptions.vue';
-import MarketplacePlanChange from '../MarketplacePlanChange.vue';
+import MarketplacePrepaidCredits from '../marketplace/MarketplacePrepaidCredits.vue';
 
 export default {
 	name: 'SiteOverviewApps',
@@ -169,7 +169,7 @@ export default {
 		ChangeAppPlanSelector,
 		CommitTag,
 		SiteOverviewAppSubscriptions,
-		MarketplacePlanChange
+		MarketplacePrepaidCredits
 	},
 	resources: {
 		installedApps() {
