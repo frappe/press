@@ -295,7 +295,7 @@ def change_site_hosting_plan(site, plan, team):
 	)
 	if hosting_amount > site_plan_value:
 		# set new site plan as new standard_hosting_plan, since it is higher
-		frappe.db.set_value("Site", site, "plan", standard_hosting_plan)
+		frappe.get_doc("Site", site).change_plan(standard_hosting_plan)
 
 	return hosting_amount
 
