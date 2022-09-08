@@ -60,6 +60,34 @@ frappe.ui.form.on('Release Group', {
 			},
 			__('Actions')
 		);
+		frm.add_custom_button(
+			'Add Server',
+			() => {
+				let d = new frappe.ui.Dialog({
+					title: 'Add Server',
+					fields: [
+						{
+							fieldtype: 'Link',
+							fieldname: 'server',
+							label: 'Server',
+							options: 'Server',
+							reqd: 1,
+						},
+					],
+					primary_action({ server }) {
+						frm.call('add_server', { server, deploy: true }).then((r) => {
+							if (!r.exc) {
+								frappe.show_alert(`Added ${server} and deployed last successful candidate`);
+							}
+							d.hide();
+						});
+					},
+				});
+				d.show();
+			},
+			__('Actions')
+		);
+
 
 		frm.set_df_property('dependencies', 'cannot_add_rows', 1);
 	},
