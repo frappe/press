@@ -105,7 +105,7 @@
 
 <script>
 import ChangeAppPlanSelector from '@/components/ChangeAppPlanSelector.vue';
-import MarketplacePlanChange from './MarketplacePlanChange.vue';
+import MarketplacePlanChange from '../MarketplacePlanChange.vue';
 
 export default {
 	components: { ChangeAppPlanSelector, MarketplacePlanChange },

@@ -147,7 +147,7 @@
 import CommitTag from '@/components/utils/CommitTag.vue';
 import ChangeAppPlanSelector from '@/components/ChangeAppPlanSelector.vue';
 import SiteOverviewAppSubscriptions from './SiteOverviewAppSubscriptions.vue';
-import MarketplacePlanChange from './MarketplacePlanChange.vue';
+import MarketplacePlanChange from '../MarketplacePlanChange.vue';
 
 export default {
 	name: 'SiteOverviewApps',
