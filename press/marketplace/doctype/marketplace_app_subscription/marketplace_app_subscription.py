@@ -177,6 +177,12 @@ def should_create_usage_record(subscription: MarketplaceAppSubscription):
 	if is_free:
 		return False
 
+	# Don't create for prepaid apps
+	billing_type = frappe.db.get_value("Saas Settings", subscription.app, "billing_type")
+
+	if billing_type == "prepaid":
+		return False
+
 	# For annual prepaid plans
 	plan_interval = frappe.db.get_value("Plan", subscription.plan, "interval")
 
