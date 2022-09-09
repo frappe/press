@@ -76,16 +76,7 @@
 				<Button
 					appearance="primary"
 					:loading="$resources.changePlan.loading"
-					@click="
-						() => {
-							if (appToChangePlan.billing_type == 'prepaid' && !newAppPlanIsFree) {
-								showAppPlanChangeDialog = false;
-								showCheckoutDialog = true;
-							} else {
-								switchToNewPlan();
-							}
-						}
-					"
+					@click="handlePlanChange"
 					>Change Plan</Button
 				>
 			</template>
@@ -163,6 +154,19 @@ export default {
 				billing_type: subscription.billing_type
 			};
 			this.showAppPlanChangeDialog = true;
+		},
+
+		handlePlanChange() {
+			if (this.appToChangePlan.billing_type == 'prepaid' && !this.newAppPlanIsFree) {
+				if (this.$account.hasBillingInfo) {
+					this.showAppPlanChangeDialog = false;
+					this.showCheckoutDialog = true;
+				} else {
+					window.location = '/billing'
+				}
+			} else {
+				this.switchToNewPlan();
+			}
 		},
 
 		switchToNewPlan() {

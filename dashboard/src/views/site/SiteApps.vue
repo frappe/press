@@ -129,16 +129,7 @@
 				<Button
 					appearance="primary"
 					:loading="$resources.installApp.loading"
-					@click="
-						() => {
-							if (appToInstall.billing_type == 'prepaid' && !selectedPlanIsFree) {
-								showPlanSelectionDialog = false;
-								showCheckoutDialog = true;
-							} else {
-								$resources.installApp.submit();
-							}
-						}
-					"
+					@click="handlePlanSelection"
 					>Proceed</Button
 				>
 			</template>
@@ -233,6 +224,18 @@ export default {
 				app: this.appToInstall?.app,
 				plan: this.selectedPlan
 			});
+		},
+		handlePlanSelection() {
+			if (this.appToInstall.billing_type == 'prepaid' && !this.selectedPlanIsFree) {
+				if (this.$account.hasBillingInfo) {
+					this.showPlanSelectionDialog = false;
+					this.showCheckoutDialog = true;
+				} else {
+					window.location = '/billing'
+				}
+			} else {
+				this.$resources.installApp.submit()
+			}
 		},
 		dropdownItems(app) {
 			return [
