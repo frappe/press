@@ -14,7 +14,9 @@ from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.account_request.test_account_request import (
 	create_test_account_request,
 )
-from press.saas.doctype.saas_app.test_saas_app import create_test_saas_app
+from press.press.doctype.marketplace_app.test_marketplace_app import (
+	create_test_marketplace_app,
+)
 
 
 def create_test_drip_email(send_after: int, saas_app: Optional[str] = None):
@@ -37,13 +39,13 @@ class TestDripEmail(unittest.TestCase):
 
 	def test_correct_sites_are_selected_for_drip_email(self):
 		test_app = create_test_app()
-		test_saas_app = create_test_saas_app(test_app.name)
+		test_marketplace_app = create_test_marketplace_app(test_app.name)
 
-		drip_email = create_test_drip_email(0, saas_app=test_saas_app.name)
+		drip_email = create_test_drip_email(0, saas_app=test_marketplace_app.name)
 
-		site1 = create_test_site("site1", standby_for=test_saas_app.name)
+		site1 = create_test_site("site1", standby_for=test_marketplace_app.name)
 		site1.account_request = create_test_account_request(
-			"site1", saas=True, saas_app=test_saas_app.name
+			"site1", saas=True, saas_app=test_marketplace_app.name
 		).name
 		site1.save()
 

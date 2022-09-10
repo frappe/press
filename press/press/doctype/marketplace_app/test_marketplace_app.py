@@ -11,6 +11,12 @@ from press.press.doctype.marketplace_app.utils import (
 )
 
 
+def create_test_marketplace_app(app: str):
+	return frappe.get_doc(
+		{"doctype": "Marketplace App", "app": app, "description": "Test App"}
+	).insert(ignore_if_duplicate=True)
+
+
 class TestMarketplaceApp(unittest.TestCase):
 	def test_number_format_util(self):
 		test_cases_map = {

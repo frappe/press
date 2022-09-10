@@ -39,7 +39,7 @@
 					>
 				</div>
 			</h4>
-			<h4
+			<!--<h4
 				v-if="plan.discounted"
 				class="mt-1 text-base text-gray-600 line-through"
 			>
@@ -49,7 +49,7 @@
 						price_inr: plan.price_inr_before_discount
 					})
 				}}
-			</h4>
+			</h4>-->
 
 			<FeatureList class="mt-5" :features="plan.features" />
 		</div>

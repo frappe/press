@@ -46,7 +46,7 @@ class DripEmail(Document):
 	def send_mail(self, context, recipient):
 		# build the message
 		message = frappe.render_template(self.message, context)
-		title = frappe.db.get_value("Saas App", self.saas_app, "title")
+		title = frappe.db.get_value("Marketplace App", self.saas_app, "title")
 
 		# add to queue
 		frappe.sendmail(

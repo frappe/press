@@ -23,7 +23,9 @@ class MarketplaceApp(WebsiteGenerator):
 		self.name = self.app
 
 	def before_insert(self):
-		self.long_description = self.fetch_readme()
+		if not frappe.flags.in_test:
+			self.long_description = self.fetch_readme()
+
 		self.set_route()
 
 	def set_route(self):
@@ -282,11 +284,17 @@ class MarketplaceApp(WebsiteGenerator):
 def get_plans_for_app(
 	app_name, frappe_version=None, include_disabled=False
 ):  # Unused for now, might use later
+	from press.press.doctype.team.team import is_us_eu
+
 	plans = []
 	filters = {"app": app_name}
 
 	if not include_disabled:
 		filters["enabled"] = True
+
+	filters["us_eu"] = (
+		frappe.db.get_value("Saas Settings", app_name, "multiplier_pricing") and is_us_eu()
+	)
 
 	marketplace_app_plans = frappe.get_all(
 		"Marketplace App Plan",

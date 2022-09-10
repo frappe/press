@@ -200,12 +200,12 @@
    "fieldname": "saas_app",
    "fieldtype": "Link",
    "label": "Saas App",
-   "options": "Saas App"
+   "options": "Marketplace App"
   }
  ],
  "icon": "icon-envelope",
  "links": [],
- "modified": "2022-07-01 22:55:35.817294",
+ "modified": "2022-08-24 17:58:28.497406",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Drip Email",

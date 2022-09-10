@@ -2,7 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
-
+import json
 
 from press.utils import log_error
 from frappe.model.document import Document
@@ -176,6 +176,12 @@ def should_create_usage_record(subscription: MarketplaceAppSubscription):
 	if is_free:
 		return False
 
+	# Don't create for prepaid apps
+	billing_type = frappe.db.get_value("Saas Settings", subscription.app, "billing_type")
+
+	if billing_type == "prepaid":
+		return False
+
 	# For annual prepaid plans
 	plan_interval = frappe.db.get_value("Plan", subscription.plan, "interval")
 
@@ -198,27 +204,74 @@ def process_prepaid_marketplace_payment(event):
 	team = frappe.get_doc("Team", {"stripe_customer_id": payment_intent["customer"]})
 	amount = payment_intent["amount"] / 100
 	metadata = payment_intent.get("metadata")
+	site = metadata.get("site")
 
 	invoice = frappe.get_doc(
 		doctype="Invoice",
 		team=team.name,
-		type="Service",
+		type="Prepaid Credits",
 		status="Paid",
+		marketplace=1,
 		due_date=datetime.fromtimestamp(payment_intent["created"]),
 		amount_paid=amount,
 		amount_due=amount,
 		stripe_payment_intent_id=payment_intent["id"],
 	)
-	invoice.append(
-		"items",
+
+	invoice_line_items = []
+	total_hosting_cost = 0.0
+	for line_item in json.loads(metadata.get("line_items")):
+		app = line_item["app"]
+		title = frappe.db.get_value("Marketplace App", app, "title")
+		plan = line_item["plan"]
+		subscription = line_item["subscription"]
+
+		if subscription == "new":
+			# create new subscription and install apps
+			frappe.get_doc(
+				{
+					"doctype": "Marketplace App Subscription",
+					"app": app,
+					"team": team.name,
+					"site": site,
+					"marketplace_app_plan": plan,
+				}
+			).insert(ignore_permissions=True)
+			install_subscription_apps(site, app)
+		else:
+			# Update plan on subscription
+			frappe.db.set_value(
+				"Marketplace App Subscription",
+				subscription,
+				"marketplace_app_plan",
+				plan,
+			)
+
+		hosting_amount = change_site_hosting_plan(site, plan, team)
+		invoice_line_items.append(
+			{
+				"description": f"Prepaid Credits for {title}",
+				"document_type": "Marketplace App",
+				"document_name": app,
+				"plan": plan,
+				"rate": float(line_item["amount"]) - hosting_amount,
+				"quantity": 1,
+			}
+		)
+		total_hosting_cost += hosting_amount
+
+	# Add hosting as separate line item
+	invoice_line_items.append(
 		{
-			"description": "Prepaid Credits",
-			"document_type": "Marketplace App",
-			"document_name": metadata.get("app"),
+			"description": "Frappe Cloud Hosting",
+			"document_type": "Site",
+			"document_name": site,
+			"rate": float(total_hosting_cost),
 			"quantity": 1,
-			"rate": amount,
-		},
+		}
 	)
+	for line_item in invoice_line_items:
+		invoice.append("items", line_item)
 
 	invoice.insert()
 	invoice.reload()
@@ -227,3 +280,35 @@ def process_prepaid_marketplace_payment(event):
 	# update transaction amount, fee and exchange rate
 	invoice.update_transaction_details(charge)
 	invoice.submit()
+
+	team.allocate_credit_amount(
+		float(metadata.get("credits")), source="Prepaid Credits", remark=payment_intent["id"]
+	)
+
+
+def change_site_hosting_plan(site, plan, team):
+	# Compare site hosting plan with new hosting plan and set max hosting_plan for site
+	standard_hosting_plan = frappe.db.get_value(
+		"Marketplace App Plan", plan, "standard_hosting_plan"
+	)
+	hosting_amount = frappe.db.get_value(
+		"Plan", standard_hosting_plan, f"price_{team.currency.lower()}"
+	)
+	site_plan = frappe.db.get_value("Site", site, "plan")
+	site_plan_value = frappe.db.get_value(
+		"Plan", site_plan, f"price_{team.currency.lower()}"
+	)
+	if hosting_amount > site_plan_value:
+		# set new site plan as new standard_hosting_plan, since it is higher
+		frappe.get_doc("Site", site).change_plan(standard_hosting_plan)
+
+	return hosting_amount
+
+
+def install_subscription_apps(site, app):
+	site_doc = frappe.get_doc("Site", site)
+
+	for app in set(frappe.get_all("ERPNext App", {"parent": app}, pluck="app")).difference(
+		{sa.app for sa in site_doc.apps}
+	):
+		site_doc.install_app(app)

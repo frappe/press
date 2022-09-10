@@ -19,9 +19,6 @@ from press.press.doctype.account_request.account_request import AccountRequest
 from press.marketplace.doctype.marketplace_app_subscription.marketplace_app_subscription import (
 	process_prepaid_marketplace_payment,
 )
-from press.saas.doctype.saas_app_subscription.saas_app_subscription import (
-	process_prepaid_saas_payment,
-)
 from press.utils.billing import (
 	get_erpnext_com_connection,
 	get_frappe_io_connection,
@@ -793,9 +790,6 @@ def process_stripe_webhook(doc, method):
 	if payment_for and payment_for == "prepaid_marketplace":
 		process_prepaid_marketplace_payment(event)
 		return
-	elif payment_for == "prepaid_saas":
-		process_prepaid_saas_payment(event)
-		return
 
 	team: Team = frappe.get_doc("Team", {"stripe_customer_id": payment_intent["customer"]})
 	amount = payment_intent["amount"] / 100
@@ -896,3 +890,40 @@ def validate_site_creation(doc, method):
 	[allow_creation, why] = team.can_create_site()
 	if not allow_creation:
 		frappe.throw(why)
+
+
+def is_us_eu():
+	"""Is the customer from U.S. or European Union"""
+	from press.utils import get_current_team
+
+	countrygroup = [
+		"United States",
+		"Austria",
+		"Belgium",
+		"Bulgaria",
+		"Croatia",
+		"Republic of Cyprus",
+		"Czech Republic",
+		"Denmark",
+		"Estonia",
+		"Finland",
+		"France",
+		"Germany",
+		"Greece",
+		"Hungary",
+		"Ireland",
+		"Italy",
+		"Latvia",
+		"Lithuania",
+		"Luxembourg",
+		"Malta",
+		"Netherlands",
+		"Poland",
+		"Portugal",
+		"Romania",
+		"Slovakia",
+		"Slovenia",
+		"Spain",
+		"Sweden",
+	]
+	return frappe.db.get_value("Team", get_current_team(), "country") in countrygroup

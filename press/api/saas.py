@@ -727,7 +727,7 @@ def setup_account(key, business_data=None):
 	account_request.update(business_data)
 	account_request.save(ignore_permissions=True)
 
-	create_saas_subscription(account_request)
+	create_marketplace_subscription(account_request)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -741,10 +741,10 @@ def headless_setup_account(key):
 
 	frappe.set_user("Administrator")
 
-	create_saas_subscription(account_request)
+	create_marketplace_subscription(account_request)
 
 
-def create_saas_subscription(account_request):
+def create_marketplace_subscription(account_request):
 	"""
 	Create team, subscription for site and Saas Subscription
 	"""
@@ -761,15 +761,15 @@ def create_saas_subscription(account_request):
 			subscription.save()
 
 	if not frappe.db.exists(
-		"Saas App Subscription", {"app": account_request.saas_app, "site": site_name}
+		"Marketplace App Subscription", {"app": account_request.saas_app, "site": site_name}
 	):
 		frappe.get_doc(
 			{
-				"doctype": "Saas App Subscription",
+				"doctype": "Marketplace App Subscription",
 				"team": team_doc.name,
 				"app": account_request.saas_app,
 				"site": site_name,
-				"saas_app_plan": get_saas_plan(account_request.saas_app),
+				"marketplace_app_plan": get_saas_plan(account_request.saas_app),
 				"initial_plan": json.loads(account_request.url_args).get("plan"),
 			}
 		).insert(ignore_permissions=True)

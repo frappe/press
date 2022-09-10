@@ -94,6 +94,19 @@
 		</FrappeUIDialog>
 
 		<Dialog
+			v-model="showCheckoutDialog"
+			title="Checkout Details"
+			:dismissable="true"
+		>
+			<MarketplacePrepaidCredits
+				v-if="selectedPlan"
+				:app="appToInstall.app"
+				:site="site.name"
+				:plan="selectedPlan"
+			/>
+		</Dialog>
+
+		<Dialog
 			v-model="showPlanSelectionDialog"
 			title="Select app plan"
 			width="half"
@@ -104,7 +117,10 @@
 				:app="appToInstall.app"
 				:frappeVersion="site?.frappe_version"
 				class="mb-9"
-				@change="plan => (selectedPlan = plan.name)"
+				@change="plan => {
+					selectedPlan = plan.name;
+					selectedPlanIsFree = plan.is_free;
+				}"
 			/>
 
 			<ErrorMessage :error="$resourceErrors" />
@@ -113,16 +129,19 @@
 				<Button
 					appearance="primary"
 					:loading="$resources.installApp.loading"
-					@click="$resources.installApp.submit()"
+					@click="handlePlanSelection"
 					>Proceed</Button
 				>
 			</template>
 		</Dialog>
 	</Card>
+	<SiteOverviewAppSubscriptions class="mt-4 md:col-span-2" :site="site" />
 </template>
 <script>
 import CommitTag from '@/components/utils/CommitTag.vue';
 import ChangeAppPlanSelector from '@/components/ChangeAppPlanSelector.vue';
+import SiteOverviewAppSubscriptions from './SiteOverviewAppSubscriptions.vue';
+import MarketplacePrepaidCredits from '../marketplace/MarketplacePrepaidCredits.vue';
 
 export default {
 	name: 'SiteOverviewApps',
@@ -131,11 +150,18 @@ export default {
 		return {
 			showInstallAppsDialog: false,
 			showPlanSelectionDialog: false,
+			showCheckoutDialog: false,
 			appToInstall: null,
-			selectedPlan: null
+			selectedPlan: null,
+			selectedPlanIsFree: null
 		};
 	},
-	components: { ChangeAppPlanSelector, CommitTag },
+	components: {
+		ChangeAppPlanSelector,
+		CommitTag,
+		SiteOverviewAppSubscriptions,
+		MarketplacePrepaidCredits
+	},
 	resources: {
 		installedApps() {
 			return {
@@ -198,6 +224,18 @@ export default {
 				app: this.appToInstall?.app,
 				plan: this.selectedPlan
 			});
+		},
+		handlePlanSelection() {
+			if (this.appToInstall.billing_type == 'prepaid' && !this.selectedPlanIsFree) {
+				if (this.$account.hasBillingInfo) {
+					this.showPlanSelectionDialog = false;
+					this.showCheckoutDialog = true;
+				} else {
+					window.location = '/billing'
+				}
+			} else {
+				this.$resources.installApp.submit()
+			}
 		},
 		dropdownItems(app) {
 			return [

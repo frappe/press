@@ -748,6 +748,7 @@ def available_apps(name):
 
 		if is_marketplace_app_source(source.name):
 			app_plans = get_plans_for_app(source.app, frappe_version)
+			source.billing_type = is_prepaid_marketplace_app(source.app)
 		else:
 			app_plans = []
 
@@ -763,6 +764,10 @@ def available_apps(name):
 
 def is_marketplace_app_source(app_source_name):
 	return frappe.db.exists("Marketplace App Version", {"source": app_source_name})
+
+
+def is_prepaid_marketplace_app(app):
+	return frappe.db.get_value("Saas Settings", app, "billing_type")
 
 
 @frappe.whitelist()

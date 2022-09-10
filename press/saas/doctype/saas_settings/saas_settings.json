@@ -19,6 +19,8 @@
   "plan",
   "site_plan",
   "billing_type",
+  "column_break_13",
+  "multiplier_pricing",
   "section_break_9",
   "standby_pool_size",
   "standby_queue_size",
@@ -42,7 +44,7 @@
    "fieldname": "plan",
    "fieldtype": "Link",
    "label": "Trial Plan",
-   "options": "Saas App Plan"
+   "options": "Marketplace App Plan"
   },
   {
    "fieldname": "group",
@@ -72,7 +74,7 @@
    "fieldname": "app",
    "fieldtype": "Link",
    "label": "App",
-   "options": "Saas App",
+   "options": "Marketplace App",
    "unique": 1
   },
   {
@@ -123,11 +125,21 @@
    "fieldname": "enable_hybrid_pools",
    "fieldtype": "Check",
    "label": "Enable Hybrid Pools"
+  },
+  {
+   "fieldname": "column_break_13",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "multiplier_pricing",
+   "fieldtype": "Check",
+   "label": "Multiplier Pricing"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-07-28 12:56:03.863679",
+ "modified": "2022-09-10 12:09:00.216227",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Saas Settings",

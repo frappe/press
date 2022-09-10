@@ -62,7 +62,10 @@
 
 		<Dialog v-model="showAppPlanChangeDialog" width="half" :dismissable="true">
 			<ChangeAppPlanSelector
-				@change="plan => (newAppPlan = plan.name)"
+			 @change="plan => {
+					newAppPlan = plan.name;
+					newAppPlanIsFree = plan.is_free;
+				 }"
 				v-if="appToChangePlan"
 				:app="appToChangePlan.name"
 				:currentPlan="appToChangePlan.plan"
@@ -73,27 +76,44 @@
 				<Button
 					appearance="primary"
 					:loading="$resources.changePlan.loading"
-					@click="switchToNewPlan"
+					@click="handlePlanChange"
 					>Change Plan</Button
 				>
 			</template>
+		</Dialog>
+		<Dialog
+			v-model="showCheckoutDialog"
+			title="Checkout Details"
+			:dismissable="true"
+		>
+			<MarketplacePrepaidCredits
+				v-if="newAppPlan"
+				:subscription="currentSubscription"
+				:app="appToChangePlan.name"
+				:site="site.name"
+				:plan="newAppPlan"
+			/>
 		</Dialog>
 	</Card>
 </template>
 
 <script>
 import ChangeAppPlanSelector from '@/components/ChangeAppPlanSelector.vue';
+import MarketplacePrepaidCredits from '../marketplace/MarketplacePrepaidCredits.vue';
 
 export default {
-	components: { ChangeAppPlanSelector },
+	components: { ChangeAppPlanSelector, MarketplacePrepaidCredits },
 	props: ['site'],
 
 	data() {
 		return {
 			showAppPlanChangeDialog: false,
+			showCheckoutDialog: false,
 			appToChangePlan: null,
 			newAppPlan: '',
-			currentAppPlan: ''
+			newAppPlanIsFree: null,
+			currentAppPlan: '',
+			currentSubscription: ''
 		};
 	},
 
@@ -121,6 +141,7 @@ export default {
 
 	methods: {
 		changeAppPlan(subscription) {
+			this.currentSubscription = subscription.name;
 			this.currentAppPlan = subscription.marketplace_app_plan;
 			this.newAppPlan = this.currentAppPlan;
 
@@ -129,9 +150,23 @@ export default {
 				title: subscription.app_title,
 				image: subscription.app_image,
 				plan: subscription.marketplace_app_plan,
-				subscription: subscription.name
+				subscription: subscription.name,
+				billing_type: subscription.billing_type
 			};
 			this.showAppPlanChangeDialog = true;
+		},
+
+		handlePlanChange() {
+			if (this.appToChangePlan.billing_type == 'prepaid' && !this.newAppPlanIsFree) {
+				if (this.$account.hasBillingInfo) {
+					this.showAppPlanChangeDialog = false;
+					this.showCheckoutDialog = true;
+				} else {
+					window.location = '/billing'
+				}
+			} else {
+				this.switchToNewPlan();
+			}
 		},
 
 		switchToNewPlan() {

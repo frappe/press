@@ -13,6 +13,7 @@
   "partner_email",
   "column_break_4",
   "status",
+  "marketplace",
   "type",
   "period_start",
   "period_end",
@@ -396,6 +397,12 @@
    "fieldname": "razorpay_payment_id",
    "fieldtype": "Data",
    "label": "Razorpay Payment ID"
+  },
+  {
+   "default": "0",
+   "fieldname": "marketplace",
+   "fieldtype": "Check",
+   "label": "Marketplace"
   }
  ],
  "is_submittable": 1,
@@ -416,7 +423,7 @@
    "link_fieldname": "invoice"
   }
  ],
- "modified": "2022-07-05 14:57:50.250680",
+ "modified": "2022-08-29 13:15:20.204861",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",

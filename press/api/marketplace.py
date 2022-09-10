@@ -8,9 +8,18 @@ import frappe
 from typing import Dict, List
 from frappe.core.utils import find
 from press.api.bench import options
-from press.api.site import is_marketplace_app_source, protected
+from press.api.billing import create_payment_intent_for_prepaid_app
+from press.api.site import (
+	is_marketplace_app_source,
+	is_prepaid_marketplace_app,
+	protected,
+)
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	MarketplaceAppPlan,
+)
+from press.marketplace.doctype.marketplace_app_subscription.marketplace_app_subscription import (
+	change_site_hosting_plan,
+	install_subscription_apps,
 )
 from press.press.doctype.plan.plan import Plan
 from press.press.doctype.app.app import new_app as new_app_doc
@@ -523,6 +532,7 @@ def get_marketplace_subscriptions_for_site(site: str):
 		subscription.is_free = frappe.db.get_value(
 			"Marketplace App Plan", subscription.marketplace_app_plan, "is_free"
 		)
+		subscription.billing_type = is_prepaid_marketplace_app(subscription.app)
 
 	return subscriptions
 
@@ -579,6 +589,9 @@ def change_app_plan(subscription, new_plan):
 			)
 
 	subscription = frappe.get_doc("Marketplace App Subscription", subscription)
+	subscription.status = (
+		"Active" if subscription.status != "Active" else subscription.status
+	)
 	subscription.marketplace_app_plan = new_plan
 	subscription.save(ignore_permissions=True)
 
@@ -694,7 +707,6 @@ def create_app_plan(marketplace_app: str, plan_data: Dict):
 @frappe.whitelist()
 def update_app_plan(app_plan_name: str, updated_plan_data: Dict):
 
-	print(updated_plan_data)
 	if not updated_plan_data.get("plan_title"):
 		frappe.throw("Plan title is required")
 
@@ -812,3 +824,67 @@ def get_payout_details(name: str) -> Dict:
 			grouped_items["usd_items"].append(item)
 
 	return grouped_items
+
+
+@frappe.whitelist(allow_guest=True)
+def prepaid_saas_payment(name, app, site, plan, amount, credits):
+	metadata = {
+		"payment_for": "prepaid_marketplace",
+		"line_items": json.dumps(
+			[
+				{
+					"app": app,
+					"plan": plan,
+					"subscription": name,
+					"amount": amount,
+				}
+			]
+		),
+		"site": site,
+		"credits": credits,
+	}
+	return create_payment_intent_for_prepaid_app(int(amount), metadata)
+
+
+@frappe.whitelist(allow_guest=True)
+def get_plan(name):
+	plan, gst, discount_percent, block_monthly = frappe.db.get_value(
+		"Marketplace App Plan", name, ["plan", "gst", "discount_percent", "block_monthly"]
+	)
+	currency = get_current_team(True).currency.lower()
+	title, amount = frappe.db.get_value("Plan", plan, ["plan_title", f"price_{currency}"])
+
+	return {
+		"title": title,
+		"amount": amount,
+		"gst": gst,
+		"discount_percent": discount_percent,
+		"block_monthly": block_monthly,
+	}
+
+
+@frappe.whitelist(allow_guest=True)
+def use_existing_credits(site, app, subscription, plan):
+	team = get_current_team(True)
+	if subscription == "new":
+		if frappe.db.exists("Marketplace App Subscription", {"app": app, "site": site}):
+			change_app_plan(
+				frappe.db.get_value(
+					"Marketplace App Subscription", {"app": app, "site": site}, "name"
+				),
+				plan,
+			)
+		else:
+			frappe.get_doc(
+				{
+					"doctype": "Marketplace App Subscription",
+					"app": app,
+					"site": site,
+					"marketplace_app_plan": plan,
+				}
+			).insert(ignore_permissions=True)
+		install_subscription_apps(site, app)
+	else:
+		change_app_plan(subscription, plan)
+
+	return change_site_hosting_plan(site, plan, team)

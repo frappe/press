@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "site",
+  "team",
   "marketplace_app_plan",
   "status",
   "app",
@@ -89,11 +90,17 @@
    "fieldtype": "Check",
    "label": "While Site Creation",
    "read_only": 1
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-03-07 21:54:29.184096",
+ "modified": "2022-08-25 21:03:14.868590",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "Marketplace App Subscription",
