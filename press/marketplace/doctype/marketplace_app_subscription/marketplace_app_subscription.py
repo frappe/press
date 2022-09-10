@@ -150,7 +150,6 @@ class MarketplaceAppSubscription(Document):
 
 
 def create_usage_records():
-	# Don't pick subscriptions for prepaid apps
 	subscriptions = frappe.db.get_all(
 		"Marketplace App Subscription", filters={"status": "Active"}, pluck="name"
 	)
