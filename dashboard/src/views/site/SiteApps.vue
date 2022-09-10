@@ -231,7 +231,7 @@ export default {
 					this.showPlanSelectionDialog = false;
 					this.showCheckoutDialog = true;
 				} else {
-					window.location = '/billing'
+					window.location = '/dashboard/billing'
 				}
 			} else {
 				this.$resources.installApp.submit()

@@ -162,7 +162,7 @@ export default {
 					this.showAppPlanChangeDialog = false;
 					this.showCheckoutDialog = true;
 				} else {
-					window.location = '/billing'
+					window.location = '/dashboard/billing'
 				}
 			} else {
 				this.switchToNewPlan();
