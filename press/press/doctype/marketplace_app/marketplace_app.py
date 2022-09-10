@@ -292,8 +292,9 @@ def get_plans_for_app(
 	if not include_disabled:
 		filters["enabled"] = True
 
-	if frappe.db.get_value("Saas Settings", app_name, "multiplier_pricing") and is_us_eu():
-		filters["us_eu"] = 1
+	filters["us_eu"] = (
+		frappe.db.get_value("Saas Settings", app_name, "multiplier_pricing") and is_us_eu()
+	)
 
 	marketplace_app_plans = frappe.get_all(
 		"Marketplace App Plan",
