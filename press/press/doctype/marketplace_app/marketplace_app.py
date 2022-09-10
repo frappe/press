@@ -284,11 +284,16 @@ class MarketplaceApp(WebsiteGenerator):
 def get_plans_for_app(
 	app_name, frappe_version=None, include_disabled=False
 ):  # Unused for now, might use later
+	from press.press.doctype.team.team import is_us_eu
+
 	plans = []
 	filters = {"app": app_name}
 
 	if not include_disabled:
 		filters["enabled"] = True
+
+	if frappe.db.get_value("Saas Settings", app_name, "multiplier_pricing") and is_us_eu():
+		filters["us_eu"] = 1
 
 	marketplace_app_plans = frappe.get_all(
 		"Marketplace App Plan",

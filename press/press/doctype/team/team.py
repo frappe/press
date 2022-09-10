@@ -890,3 +890,40 @@ def validate_site_creation(doc, method):
 	[allow_creation, why] = team.can_create_site()
 	if not allow_creation:
 		frappe.throw(why)
+
+
+def is_us_eu():
+	"""Is the customer from U.S. or European Union"""
+	from press.utils import get_current_team
+
+	countrygroup = [
+		"United States",
+		"Austria",
+		"Belgium",
+		"Bulgaria",
+		"Croatia",
+		"Republic of Cyprus",
+		"Czech Republic",
+		"Denmark",
+		"Estonia",
+		"Finland",
+		"France",
+		"Germany",
+		"Greece",
+		"Hungary",
+		"Ireland",
+		"Italy",
+		"Latvia",
+		"Lithuania",
+		"Luxembourg",
+		"Malta",
+		"Netherlands",
+		"Poland",
+		"Portugal",
+		"Romania",
+		"Slovakia",
+		"Slovenia",
+		"Spain",
+		"Sweden",
+	]
+	return frappe.db.get_value("Team", get_current_team(), "country") in countrygroup

@@ -19,6 +19,8 @@
   "plan",
   "site_plan",
   "billing_type",
+  "column_break_13",
+  "multiplier_pricing",
   "section_break_9",
   "standby_pool_size",
   "standby_queue_size",
@@ -123,11 +125,21 @@
    "fieldname": "enable_hybrid_pools",
    "fieldtype": "Check",
    "label": "Enable Hybrid Pools"
+  },
+  {
+   "fieldname": "column_break_13",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "multiplier_pricing",
+   "fieldtype": "Check",
+   "label": "Multiplier Pricing"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-08-24 15:29:55.762118",
+ "modified": "2022-09-10 12:09:00.216227",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Saas Settings",

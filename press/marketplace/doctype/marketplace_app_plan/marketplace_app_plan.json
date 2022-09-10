@@ -12,17 +12,21 @@
   "column_break_2",
   "gst",
   "block_monthly",
+  "us_eu",
   "section_break_2",
   "app",
   "column_break_3",
   "plan",
+  "standard_hosting_plan",
   "column_break_5",
   "discount_percent",
   "plan_features_section",
   "available_on_versions",
   "features",
   "section_break_7",
-  "marked_most_popular"
+  "marked_most_popular",
+  "add_ons_section",
+  "add_ons"
  ],
  "fields": [
   {
@@ -107,7 +111,7 @@
   },
   {
    "default": "0",
-   "description": "Monthly plan won't be shown on dashboard on checkout",
+   "description": "Monthly plan won't be shown on checkout",
    "fieldname": "block_monthly",
    "fieldtype": "Check",
    "label": "Block Monthly"
@@ -118,11 +122,36 @@
    "fieldname": "gst",
    "fieldtype": "Check",
    "label": "GST"
+  },
+  {
+   "fieldname": "add_ons_section",
+   "fieldtype": "Section Break",
+   "label": "Add Ons"
+  },
+  {
+   "fieldname": "add_ons",
+   "fieldtype": "Table",
+   "in_standard_filter": 1,
+   "label": "Marketplace Add On",
+   "options": "Marketplace Add On"
+  },
+  {
+   "default": "0",
+   "description": "Only for US/EU customers",
+   "fieldname": "us_eu",
+   "fieldtype": "Check",
+   "label": "US/EU"
+  },
+  {
+   "fieldname": "standard_hosting_plan",
+   "fieldtype": "Link",
+   "label": "Standard Hosting Plan",
+   "options": "Plan"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-09-03 17:23:45.984478",
+ "modified": "2022-09-10 12:05:31.790536",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "Marketplace App Plan",
