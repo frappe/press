@@ -697,6 +697,23 @@ def check_subdomain_availability(subdomain, app):
 
 
 @frappe.whitelist(allow_guest=True)
+def validate_account_request(key):
+	if not key:
+		frappe.throw("Request Key not provided")
+
+	app = frappe.db.get_value("Account Request", {"request_key": key}, "saas_app")
+	headless, route = frappe.db.get_value(
+		"Saas Setup Account Generator", app, ["headless", "route"]
+	)
+
+	if headless:
+		headless_setup_account(key)
+	else:
+		frappe.local.response["type"] = "redirect"
+		frappe.local.response["location"] = f"/{route}?key={key}"
+
+
+@frappe.whitelist(allow_guest=True)
 def setup_account(key, business_data=None):
 	"""
 	Includes the data collection step in setup-account.html
@@ -742,6 +759,11 @@ def headless_setup_account(key):
 	frappe.set_user("Administrator")
 
 	create_marketplace_subscription(account_request)
+
+	frappe.local.response["type"] = "redirect"
+	frappe.local.response[
+		"location"
+	] = f"/prepare-site?key={key}&app={account_request.saas_app}"
 
 
 def create_marketplace_subscription(account_request):
