@@ -32,6 +32,11 @@ const routes = [
 		component: () => import('../views/billing/AccountBilling.vue'),
 		props: true
 	},
+	{
+		path: '/404NotFound',
+		name: '404NotFound',
+		component: () => import('../views/general/404.vue')
+	},
 	settingsRoute
 ];
 
