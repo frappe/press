@@ -68,7 +68,12 @@ export default {
 				params: {
 					name: this.benchName
 				},
-				auto: true
+				auto: true,
+				onError(e) {
+					if (e.indexOf('not found') >= 0) {
+						this.$router.replace('/404NotFound');
+					}
+				}
 			};
 		}
 	},

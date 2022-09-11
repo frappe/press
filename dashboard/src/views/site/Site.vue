@@ -167,7 +167,6 @@ export default {
 				},
 				onError(e) {
 					if (e.indexOf('not found') >= 0) {
-						console.log('site not found.');
 						this.$router.replace('/404NotFound');
 					}
 				}
