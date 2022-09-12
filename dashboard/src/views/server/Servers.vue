@@ -28,7 +28,7 @@
 	</div>
 </template>
 <script>
-import ServerList from './ServerList.vue';
+import ServerList from '@/views/server/ServerList.vue';
 import SiteAndBenchSearch from '@/components/SiteAndBenchSearch.vue';
 import PageHeader from '@/components/global/PageHeader.vue';
 
