@@ -11,6 +11,7 @@ from datetime import datetime
 from press.utils import log_error
 from frappe.core.utils import find
 from frappe.model.document import Document
+from frappe.utils.caching import site_cache
 
 
 class SiteUpdate(Document):
@@ -170,6 +171,7 @@ def trigger_recovery_job(site_update_name):
 		frappe.db.set_value("Site Update", site_update_name, "recover_job", job.name)
 
 
+@site_cache(ttl=60)
 def benches_with_available_update():
 	source_benches_info = frappe.db.sql(
 		"""
