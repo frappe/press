@@ -15,9 +15,7 @@
 
 		<div>
 			<SectionHeader heading="All Servers">
-				<template v-if="!recentServersVisible" v-slot:actions>
-					<SiteAndBenchSearch />
-				</template>
+				<SiteAndBenchSearch />
 			</SectionHeader>
 
 			<div class="mt-3">
