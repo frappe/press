@@ -188,6 +188,7 @@ def benches_with_available_update():
 		"Bench",
 		filters={"status": "Active", "candidate": ("in", destination_candidates)},
 		fields=["candidate AS destination_candidate", "name AS destination_bench", "server"],
+		ignore_ifnull=True,
 	)
 
 	updates_available_for_benches = []
