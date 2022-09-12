@@ -191,17 +191,13 @@ def benches_with_available_update():
 		ignore_ifnull=True,
 	)
 
+	destinations = set()
+	for bench in destination_benches_info:
+		destinations.add((bench.destination_candidate, bench.server))
+
 	updates_available_for_benches = []
 	for bench in source_benches_info:
-		destination_bench_exists = find(
-			destination_benches_info,
-			lambda x: (
-				x["destination_candidate"] == bench.destination_candidate
-				and x["server"] == bench.server
-			),
-		)
-
-		if destination_bench_exists:
+		if (bench.destination_candidate, bench.server) in destinations:
 			updates_available_for_benches.append(bench)
 
 	return list(set([bench.source_bench for bench in updates_available_for_benches]))
