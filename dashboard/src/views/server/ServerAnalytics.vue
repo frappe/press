@@ -9,6 +9,14 @@
 					:colors="[$theme.colors.yellow[500]]"
 				/>
 			</Card>
+			<Card title="Network">
+				<FrappeChart
+					type="line"
+					:data="networkData"
+					:options="getChartOptions(d => d + ' s')"
+					:colors="[$theme.colors.blue[500]]"
+				/>
+			</Card>
 		</div>
 	</div>
 </template>
@@ -36,6 +44,18 @@ export default {
 				auto: true
 			};
 		},
+		network() {
+			let localTimezone = DateTime.local().zoneName;
+			return {
+				method: 'press.api.server.analytics',
+				params: {
+					name: this.server?.name,
+					timezone: localTimezone,
+					query: 'network'
+				},
+				auto: true
+			};
+		},
 	},
 	computed: {
 		cpuData() {
@@ -47,6 +67,15 @@ export default {
 				datasets: cpu.datasets
 			};
 		},
+		networkData() {
+			let network = this.$resources.network.data;
+			if (!network) return;
+
+			return {
+				labels: this.formatDate(network.labels),
+				datasets: network.datasets
+			};
+		}
 	},
 	methods: {
 		getChartOptions(yFormatter) {
