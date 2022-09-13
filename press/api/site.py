@@ -708,6 +708,39 @@ def get_installed_apps(site):
 			},
 			"tag",
 		)
+		app_source.subscription_available = bool(
+			frappe.db.exists(
+				"Marketplace App Plan", {"is_free": 0, "app": app.app, "enabled": 1}
+			)
+		)
+		if frappe.db.exists(
+			"Marketplace App Subscription",
+			{"site": site.name, "app": app.app, "status": "Active"},
+		):
+			subscription = frappe.get_doc(
+				"Marketplace App Subscription",
+				{"site": site.name, "app": app.app, "status": "Active"},
+			)
+			app_source.subscription = subscription
+			marketplace_app_info = frappe.db.get_value(
+				"Marketplace App", subscription.app, ["title", "image"], as_dict=True
+			)
+
+			app_source.app_title = marketplace_app_info.title
+			app_source.app_image = marketplace_app_info.image
+
+			app_source.plan_info = frappe.db.get_value(
+				"Plan", subscription.plan, ["price_usd", "price_inr"], as_dict=True
+			)
+
+			app_source.is_free = frappe.db.get_value(
+				"Marketplace App Plan", subscription.marketplace_app_plan, "is_free"
+			)
+			app_source.billing_type = is_prepaid_marketplace_app(subscription.app)
+			print(app_source.subscription_available)
+		else:
+			app_source.subscription = {}
+
 		installed_apps.append(app_source)
 
 	return installed_apps
