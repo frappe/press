@@ -18,6 +18,14 @@
 					:colors="[$theme.colors.green[500]]"
 				/>
 			</Card>
+			<Card title="Disk Space">
+				<FrappeChart
+					type="line"
+					:data="spaceData"
+					:options="getChartOptions(d => d + ' jobs')"
+					:colors="[$theme.colors.red[500]]"
+				/>
+			</Card>
 			<Card title="Network">
 				<FrappeChart
 					type="line"
@@ -77,6 +85,18 @@ export default {
 				auto: true
 			};
 		},
+		space() {
+			let localTimezone = DateTime.local().zoneName;
+			return {
+				method: 'press.api.server.analytics',
+				params: {
+					name: this.server?.name,
+					timezone: localTimezone,
+					query: 'space'
+				},
+				auto: true
+			};
+		}
 	},
 	computed: {
 		loadAverageData() {
@@ -95,6 +115,15 @@ export default {
 			return {
 				labels: this.formatDate(cpu.labels),
 				datasets: cpu.datasets
+			};
+		},
+		spaceData() {
+			let space = this.$resources.space.data;
+			if (!space) return;
+
+			return {
+				labels: this.formatDate(space.labels),
+				datasets: space.datasets
 			};
 		},
 		networkData() {
