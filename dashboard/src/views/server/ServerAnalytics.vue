@@ -9,6 +9,15 @@
 					:colors="[$theme.colors.yellow[500]]"
 				/>
 			</Card>
+
+			<Card title="Load Average">
+				<FrappeChart
+					type="line"
+					:data="loadAverageData"
+					:options="getChartOptions(d => d + ' requests')"
+					:colors="[$theme.colors.green[500]]"
+				/>
+			</Card>
 			<Card title="Network">
 				<FrappeChart
 					type="line"
@@ -32,6 +41,18 @@ export default {
 		FrappeChart
 	},
 	resources: {
+		loadavg() {
+			let localTimezone = DateTime.local().zoneName;
+			return {
+				method: 'press.api.server.analytics',
+				params: {
+					name: this.server?.name,
+					timezone: localTimezone,
+					query: 'loadavg'
+				},
+				auto: true
+			};
+		},
 		cpu() {
 			let localTimezone = DateTime.local().zoneName;
 			return {
@@ -58,6 +79,15 @@ export default {
 		},
 	},
 	computed: {
+		loadAverageData() {
+			let loadavg = this.$resources.loadavg.data;
+			if (!loadavg) return;
+
+			return {
+				labels: this.formatDate(loadavg.labels),
+				datasets: loadavg.datasets
+			};
+		},
 		cpuData() {
 			let cpu = this.$resources.cpu.data;
 			if (!cpu) return;

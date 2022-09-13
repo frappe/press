@@ -66,6 +66,7 @@ def analytics(name, query, timezone, duration="7d"):
 	query_map = {
 		"cpu": f"""sum by (mode)(rate(node_cpu_seconds_total{{instance="{name}", job="node"}}[{timegrain}s])) * 100""",
 		"network": f"""rate(node_network_receive_bytes_total{{instance="{name}", job="node"}}[{timegrain}s]) * 8""",
+		"loadavg": f"""{{__name__=~"node_load1|node_load5|node_load15", instance="{name}", job="node"}}""",
 	}
 
 	return prometheus_query(query_map[query], timezone, timespan, timegrain)
