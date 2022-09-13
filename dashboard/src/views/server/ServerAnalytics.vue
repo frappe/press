@@ -18,6 +18,16 @@
 					:colors="[$theme.colors.green[500]]"
 				/>
 			</Card>
+
+			<Card title="Memory">
+				<FrappeChart
+					type="line"
+					:data="memoryData"
+					:options="getChartOptions(d => d + ' s')"
+					:colors="[$theme.colors.yellow[500]]"
+				/>
+			</Card>
+
 			<Card title="Disk Space">
 				<FrappeChart
 					type="line"
@@ -81,6 +91,18 @@ export default {
 				auto: true
 			};
 		},
+		memory() {
+			let localTimezone = DateTime.local().zoneName;
+			return {
+				method: 'press.api.server.analytics',
+				params: {
+					name: this.server?.name,
+					timezone: localTimezone,
+					query: 'network'
+				},
+				auto: true
+			};
+		},
 		network() {
 			let localTimezone = DateTime.local().zoneName;
 			return {
@@ -135,6 +157,15 @@ export default {
 			return {
 				labels: this.formatDate(cpu.labels),
 				datasets: cpu.datasets
+			};
+		},
+		memoryData() {
+			let memory = this.$resources.memory.data;
+			if (!memory) return;
+
+			return {
+				labels: this.formatDate(memory.labels),
+				datasets: memory.datasets
 			};
 		},
 		iopsData() {
