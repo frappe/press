@@ -14,6 +14,11 @@ export default [
 				name: 'ServerOverview',
 				path: 'overview',
 				component: () => import('../views/server/ServerOverview.vue')
+			},
+			{
+				name: 'ServerAnalytics',
+				path: 'analytics',
+				component: () => import('../views/server/ServerAnalytics.vue')
 			}
 		]
 	}

@@ -190,10 +190,13 @@ export default {
 
 		tabs() {
 			let tabRoute = subRoute => `/servers/${this.serverName}/${subRoute}`;
-			let tabs = [{ label: 'Overview', route: 'overview' }];
+			let tabs = [
+				{ label: 'Overview', route: 'overview' },
+				{ label: 'Analytics', route: 'analytics' }
+			];
 
 			let tabsByStatus = {
-				Active: ['Overview']
+				Active: ['Overview', 'Analytics']
 			};
 			if (this.server) {
 				let tabsToShow = tabsByStatus[this.server.status];
