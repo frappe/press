@@ -30,12 +30,18 @@ class Subscription(Document):
 			doc.save()
 
 	def enable(self):
-		self.enabled = True
-		self.save()
+		try:
+			self.enabled = True
+			self.save()
+		except Exception:
+			frappe.log_error(title="Enable Subscription Error")
 
 	def disable(self):
-		self.enabled = False
-		self.save()
+		try:
+			self.enabled = False
+			self.save()
+		except Exception:
+			frappe.log_error(title="Disable Subscription Error")
 
 	@frappe.whitelist()
 	def create_usage_record(self):
@@ -144,7 +150,7 @@ def create_usage_records():
 		"Subscription", filters={"enabled": True}, pluck="name"
 	)
 	for name in subscriptions:
-		subscription = frappe.get_doc("Subscription", name)
+		subscription = frappe.get_cached_doc("Subscription", name)
 		try:
 			subscription.create_usage_record()
 			frappe.db.commit()
