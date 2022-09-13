@@ -34,6 +34,14 @@
 					:colors="[$theme.colors.blue[500]]"
 				/>
 			</Card>
+			<Card title="Disk I/O">
+				<FrappeChart
+					type="line"
+					:data="iopsData"
+					:options="getChartOptions(d => d + ' s')"
+					:colors="[$theme.colors.blue[500]]"
+				/>
+			</Card>
 		</div>
 	</div>
 </template>
@@ -85,6 +93,18 @@ export default {
 				auto: true
 			};
 		},
+		iops() {
+			let localTimezone = DateTime.local().zoneName;
+			return {
+				method: 'press.api.server.analytics',
+				params: {
+					name: this.server?.name,
+					timezone: localTimezone,
+					query: 'iops'
+				},
+				auto: true
+			};
+		},
 		space() {
 			let localTimezone = DateTime.local().zoneName;
 			return {
@@ -115,6 +135,15 @@ export default {
 			return {
 				labels: this.formatDate(cpu.labels),
 				datasets: cpu.datasets
+			};
+		},
+		iopsData() {
+			let iops = this.$resources.iops.data;
+			if (!iops) return;
+
+			return {
+				labels: this.formatDate(iops.labels),
+				datasets: iops.datasets
 			};
 		},
 		spaceData() {
