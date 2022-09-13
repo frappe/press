@@ -17,7 +17,7 @@ const overview = useResource({
 	<div class="space-y-5" v-if="server">
 		<div
 			class="grid grid-cols-1 gap-5 sm:grid-cols-2"
-			v-if="site && overview.data"
+			v-if="server && overview.data"
 		></div>
 	</div>
 </template>
