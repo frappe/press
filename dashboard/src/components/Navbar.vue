@@ -5,7 +5,7 @@
 				<div class="flex items-center">
 					<div class="shrink-0">
 						<router-link to="/">
-							<FrappeCloudLogo class="h-4 w-auto ml-2" />
+							<FrappeCloudLogo class="ml-2 h-4 w-auto" />
 						</router-link>
 					</div>
 				</div>
@@ -17,23 +17,20 @@
 						>
 						<div class="relative ml-3">
 							<div>
-								<Dropdown :items="dropdownItems" right>
-									<template v-slot="{ toggleDropdown }">
-										<button
-											class="focus:shadow-solid flex max-w-xs items-center rounded-full text-sm text-white focus:outline-none"
-											id="user-menu"
-											aria-label="User menu"
-											aria-haspopup="true"
-											@click="toggleDropdown()"
-										>
-											<Avatar
-												v-if="$account.user"
-												:label="$account.user.first_name"
-												:imageURL="$account.user.user_image"
-											/>
-										</button>
-									</template>
-								</Dropdown>
+								<FrappeUIDropdown :options="dropdownItems" placement="right">
+									<button
+										class="focus:shadow-solid flex max-w-xs items-center rounded-full text-sm text-white focus:outline-none"
+										id="user-menu"
+										aria-label="User menu"
+										aria-haspopup="true"
+									>
+										<Avatar
+											v-if="$account.user"
+											:label="$account.user.first_name"
+											:imageURL="$account.user.user_image"
+										/>
+									</button>
+								</FrappeUIDropdown>
 							</div>
 						</div>
 					</div>

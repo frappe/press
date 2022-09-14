@@ -45,11 +45,17 @@
 				</div>
 				<div class="flex items-center space-x-2">
 					<Badge v-if="backup.offsite" color="green"> Offsite </Badge>
-					<Dropdown :items="dropdownItems(backup)" right>
+					<!-- <Dropdown :items="dropdownItems(backup)" right>
 						<template v-slot="{ toggleDropdown }">
 							<Button icon="more-horizontal" @click="toggleDropdown()" />
 						</template>
-					</Dropdown>
+					</Dropdown> -->
+
+					<FrappeUIDropdown
+						:options="dropdownItems(backup)"
+						:button="{ icon: 'more-horizontal' }"
+						placement="right"
+					/>
 				</div>
 			</div>
 		</div>
@@ -119,69 +125,75 @@ export default {
 		dropdownItems(backup) {
 			return [
 				{
-					label: 'Download',
-					isGroup: true
-				},
-				{
-					label: `Database (${this.formatBytes(backup.database_size || 0)})`,
-					action: () => {
-						this.downloadBackup(
-							backup.name,
-							'database',
-							backup.database_url,
-							backup.offsite
-						);
-					}
-				},
-				{
-					label: `Public Files (${this.formatBytes(backup.public_size || 0)})`,
-					condition: () => backup.public_file,
-					action: () => {
-						this.downloadBackup(
-							backup.name,
-							'public',
-							backup.public_url,
-							backup.offsite
-						);
-					}
-				},
-				{
-					label: `Private Files (${this.formatBytes(
-						backup.private_size || 0
-					)})`,
-					condition: () => backup.private_file,
-					action: () => {
-						this.downloadBackup(
-							backup.name,
-							'private',
-							backup.private_url,
-							backup.offsite
-						);
-					}
-				},
-				{
-					label: 'Actions',
-					isGroup: true,
-					condition: () => backup.offsite
-				},
-				{
-					label: 'Restore',
-					condition: () => backup.offsite,
-					action: () => {
-						this.$confirm({
-							title: 'Restore Backup',
-							// prettier-ignore
-							message: `Are you sure you want to restore your site to <b>${this.formatDate(backup.creation)}</b>?`,
-							actionLabel: 'Restore',
-							actionType: 'primary',
-							action: closeDialog => {
-								closeDialog();
-								this.restoreOffsiteBackup(backup);
+					group: 'Download',
+					items: [
+						{
+							label: `Database (${this.formatBytes(
+								backup.database_size || 0
+							)})`,
+							handler: () => {
+								this.downloadBackup(
+									backup.name,
+									'database',
+									backup.database_url,
+									backup.offsite
+								);
 							}
-						});
-					}
+						},
+						{
+							label: `Public Files (${this.formatBytes(
+								backup.public_size || 0
+							)})`,
+							condition: () => backup.public_file,
+							handler: () => {
+								this.downloadBackup(
+									backup.name,
+									'public',
+									backup.public_url,
+									backup.offsite
+								);
+							}
+						},
+						{
+							label: `Private Files (${this.formatBytes(
+								backup.private_size || 0
+							)})`,
+							condition: () => backup.private_file,
+							handler: () => {
+								this.downloadBackup(
+									backup.name,
+									'private',
+									backup.private_url,
+									backup.offsite
+								);
+							}
+						}
+					]
+				},
+				{
+					group: 'Actions',
+					hideLabel: !backup.offsite,
+					items: [
+						{
+							label: 'Restore',
+							condition: () => backup.offsite,
+							handler: () => {
+								this.$confirm({
+									title: 'Restore Backup',
+									// prettier-ignore
+									message: `Are you sure you want to restore your site to <b>${this.formatDate(backup.creation)}</b>?`,
+									actionLabel: 'Restore',
+									actionType: 'primary',
+									action: closeDialog => {
+										closeDialog();
+										this.restoreOffsiteBackup(backup);
+									}
+								});
+							}
+						}
+					]
 				}
-			].filter(d => (d.condition ? d.condition() : true));
+			];
 		},
 		async downloadBackup(name, file, database_url, offsite) {
 			let link = offsite

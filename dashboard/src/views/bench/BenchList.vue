@@ -30,11 +30,11 @@
 				</router-link>
 
 				<div class="text-right text-base">
-					<Dropdown :items="dropdownItems(bench)" right>
-						<template v-slot="{ toggleDropdown }">
-							<Button icon="more-horizontal" @click.stop="toggleDropdown()" />
-						</template>
-					</Dropdown>
+					<FrappeUIDropdown
+						:options="dropdownItems(bench)"
+						:button="{ icon: 'more-horizontal' }"
+						placement="right"
+					/>
 				</div>
 			</div>
 			<div
@@ -62,15 +62,11 @@ export default {
 			return [
 				{
 					label: 'New Site',
-					action: () => {
-						this.$router.push(`/${bench.name}/new`);
-					}
+					route: `/${bench.name}/new`
 				},
 				{
 					label: 'View Versions',
-					action: () => {
-						this.$router.push(`/benches/${bench.name}/versions`);
-					}
+					route: `/benches/${bench.name}/versions`
 				}
 			];
 		}

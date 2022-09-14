@@ -13,7 +13,8 @@ import {
 	Input,
 	Avatar,
 	pageMeta,
-	onOutsideClickDirective
+	onOutsideClickDirective,
+	Dropdown
 } from 'frappe-ui';
 
 let components = import.meta.globEager('./*.vue'); // To get each component inside this folder
@@ -30,8 +31,9 @@ let globalFrappeUIComponents = {
 	SuccessMessage,
 	Spinner,
 	Link,
+	Input,
 	FrappeUIDialog: Dialog,
-	Input
+	FrappeUIDropdown: Dropdown
 };
 
 export default function registerGlobalComponents(app) {

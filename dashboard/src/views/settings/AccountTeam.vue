@@ -15,6 +15,13 @@
 								<Button icon="more-horizontal" @click="toggleDropdown()" />
 							</template>
 						</Dropdown>
+
+						<!-- Switch to this once the teleport issue is resolved -->
+						<!-- <FrappeUIDropdown
+							:options="dropdownItems(team)"
+							:button="{ icon: 'more-horizontal' }"
+							placement="right"
+						/> -->
 					</div>
 				</template>
 			</ListItem>

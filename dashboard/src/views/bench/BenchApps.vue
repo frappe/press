@@ -16,6 +16,7 @@
 				Add App
 			</Button>
 		</template>
+
 		<div class="max-h-96 divide-y">
 			<ListItem
 				v-for="app in $resources.apps.data"
@@ -43,11 +44,12 @@
 						>
 							Update Available
 						</Badge>
-						<Dropdown :items="dropdownItems(app)" right>
-							<template v-slot="{ toggleDropdown }">
-								<Button icon="more-horizontal" @click="toggleDropdown()" />
-							</template>
-						</Dropdown>
+
+						<FrappeUIDropdown
+							:options="dropdownItems(app)"
+							placement="right"
+							:button="{ icon: 'more-horizontal' }"
+						/>
 					</div>
 				</template>
 			</ListItem>
@@ -160,26 +162,26 @@ export default {
 			return [
 				{
 					label: 'Fetch Latest Update',
-					action: () => this.fetchLatestUpdate(app)
+					handler: () => this.fetchLatestUpdate(app)
 				},
 				{
 					label: 'Remove App',
-					action: () => this.confirmRemoveApp(app),
+					handler: () => this.confirmRemoveApp(app),
 					condition: () => app.name != 'frappe'
 				},
 				{
 					label: 'Change Branch',
-					action: () => {
+					handler: () => {
 						this.appToChangeBranchOf = app;
 					},
 					condition: () => app.name != 'frappe'
 				},
 				{
 					label: 'Visit Repo',
-					action: () =>
+					handler: () =>
 						window.open(`${app.repository_url}/tree/${app.branch}`, '_blank')
 				}
-			].filter(Boolean);
+			];
 		},
 		fetchLatestUpdate(app) {
 			this.$resources.fetchLatestAppUpdate.submit({

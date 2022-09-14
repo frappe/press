@@ -19,8 +19,10 @@
 							<Badge class="pointer-events-none" v-bind="siteBadge(site)" />
 						</div>
 						<div class="text-base sm:w-4/12">
-							<div class="sm:w-6/12 break-all truncate hover:text-ellipses hover:w-full">
-							{{ site.title }}
+							<div
+								class="hover:text-ellipses truncate break-all hover:w-full sm:w-6/12"
+							>
+								{{ site.title }}
 							</div>
 						</div>
 						<div class="hidden w-2/12 text-sm text-gray-600 sm:block">
@@ -30,15 +32,13 @@
 				</router-link>
 
 				<div class="text-right text-base">
-					<Dropdown
+					<FrappeUIDropdown
 						v-if="site.status === 'Active' || site.status === 'Updating'"
-						:items="dropdownItems(site)"
-						right
-					>
-						<template v-slot="{ toggleDropdown }">
-							<Button icon="more-horizontal" @click.stop="toggleDropdown()" />
-						</template>
-					</Dropdown>
+						:options="dropdownItems(site)"
+						:button="{ icon: 'more-horizontal' }"
+						placement="right"
+					/>
+
 					<div v-else class="h-[30px] w-[30px]"></div>
 				</div>
 			</div>
@@ -125,13 +125,13 @@ export default {
 			return [
 				{
 					label: 'Visit Site',
-					action: () => {
+					handler: () => {
 						window.open(`https://${site.name}`, '_blank');
 					}
 				},
 				{
 					label: 'Login As Admin',
-					action: () => {
+					handler: () => {
 						if (this.$account.team.name == site.team) {
 							return this.$resources.loginAsAdmin.submit({
 								name: site.name
