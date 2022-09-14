@@ -6,7 +6,7 @@ import { config } from '@vue/test-utils';
 import resourceManager from '@/resourceManager';
 import { components } from '@/components/global/register';
 import { afterAll, afterEach, beforeAll, vi } from 'vitest';
-import outsideClickDirective from '@/components/global/outsideClickDirective';
+import { onOutsideClickDirective } from 'frappe-ui';
 
 const FAKE_BASE_URL = 'http://fc.tests';
 
@@ -47,6 +47,6 @@ export function setupGlobalConfig(config) {
 	config.global.components = globalComponents;
 	config.global.plugins = [resourceManager, router];
 	config.global.directives = {
-		'on-outside-click': outsideClickDirective
+		'on-outside-click': onOutsideClickDirective
 	};
 }
