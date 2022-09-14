@@ -12,9 +12,9 @@ import {
 	Link,
 	Input,
 	Avatar,
-	pageMeta
+	pageMeta,
+	onOutsideClickDirective
 } from 'frappe-ui';
-import outsideClickDirective from './outsideClickDirective';
 
 let components = import.meta.globEager('./*.vue'); // To get each component inside this folder
 
@@ -35,7 +35,7 @@ let globalFrappeUIComponents = {
 };
 
 export default function registerGlobalComponents(app) {
-	app.directive('on-outside-click', outsideClickDirective);
+	app.directive('on-outside-click', onOutsideClickDirective);
 
 	for (let path in components) {
 		let component = components[path];
