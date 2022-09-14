@@ -55,7 +55,19 @@ export default {
 				params: {
 					name: this.appName
 				},
-				auto: true
+				auto: true,
+				onError(e) {
+					if (e.indexOf('not found') >= 0) {
+						this.$router.replace({
+							name: 'NotFound',
+							// preserve current path and remove the first char to avoid the target URL starting with `//`
+							params: { pathMatch: this.$route.path.substring(1).split('/') },
+							// preserve existing query and hash if any
+							query: this.$route.query,
+							hash: this.$route.hash
+						});
+					}
+				}
 			};
 		}
 	},

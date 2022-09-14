@@ -1,10 +1,11 @@
-import Home from '../views/general/Home.vue';
+import authRoutes from './auth';
 import siteRoutes from './site';
 import saasRoutes from './saas';
 import benchRoutes from './bench';
 import serverRoutes from './server';
 import settingsRoute from './settings';
-import authRoutes from './auth';
+import billingRoute from './billing';
+import Home from '../views/general/Home.vue';
 import marketplaceRoutes from './marketplace';
 
 import { createRouter, createWebHistory } from 'vue-router';
@@ -26,21 +27,11 @@ const routes = [
 	...serverRoutes,
 	...saasRoutes,
 	...marketplaceRoutes,
-	{
-		path: '/billing/:invoiceName?',
-		name: 'BillingScreen',
-		component: () => import('../views/billing/AccountBilling.vue'),
-		props: true
-	},
-	{
-		path: '/404NotFound',
-		name: '404NotFound',
-		component: () => import('../views/general/404.vue')
-	},
+	billingRoute,
 	settingsRoute,
 	{
-		path: '/:pathMatch(.*)*',
 		name: 'NotFound',
+		path: '/:pathMatch(.*)*',
 		component: () => import('../views/general/404.vue')
 	}
 ];
