@@ -100,7 +100,7 @@ class AccountRequest(Document):
 		)
 
 	def get_verification_url(self):
-		if self.erpnext:
+		if self.erpnext or self.saas_app == "erpnext":
 			return get_url(f"/setup-account?key={self.request_key}")
 		elif self.saas:
 			return get_url(
