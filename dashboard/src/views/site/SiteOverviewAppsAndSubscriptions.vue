@@ -18,7 +18,6 @@
 			<span class="w-2/6">App</span>
 			<span class="w-1/6 hidden md:inline">Plan</span>
 			<span class="w-1/6">Status</span>
-			<!--<span>Status</span>-->
 			<span class="w-1/6 hidden md:inline">Price</span>
 			<span></span>
 		</div>
@@ -26,7 +25,6 @@
 		<LoadingText v-if="$resources.installedApps.loading" />
 
 		<div v-else class="divide-y">
-			<!--class="grid grid-cols-3 items-center gap-x-8 py-4 text-base text-gray-600 md:grid-cols-5" -->
 			<div
 				class="flex py-4 items-center text-base text-gray-600"
 				v-for="app in $resources.installedApps.data"
@@ -88,10 +86,12 @@
 					<Button
 						appearance="primary"
 						v-if="!app.plan_info && app.subscription_available"
-						@click="() => {
-							showPlanSelectionDialog = true
-							appToInstall = app
-						}"
+						@click="
+							() => {
+								showPlanSelectionDialog = true;
+								appToInstall = app;
+							}
+						"
 						>Subscribe</Button
 					>
 					<Dropdown :items="dropdownItems(app)" right>
@@ -280,10 +280,7 @@ export default {
 			return {
 				method: 'press.api.site.installed_apps',
 				params: { name: this.site?.name },
-				auto: true,
-				onSuccess(r) {
-					console.log(r);
-				}
+				auto: true
 			};
 		},
 		availableApps() {
@@ -356,8 +353,6 @@ export default {
 		},
 
 		handlePlanChange() {
-			console.log('Handling subscription planchange');
-			console.log(this.appToChangePlan);
 			if (
 				this.appToChangePlan.billing_type == 'prepaid' &&
 				!this.newAppPlanIsFree
@@ -400,8 +395,6 @@ export default {
 			});
 		},
 		handlePlanSelection() {
-			console.log('Here hooo')
-			console.log(this.appToInstall, this.selectedPlanIsFree)
 			if (
 				this.appToInstall.billing_type == 'prepaid' &&
 				!this.selectedPlanIsFree
