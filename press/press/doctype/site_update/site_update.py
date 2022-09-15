@@ -295,7 +295,7 @@ def process_update_site_job_update(job):
 	updated_status = job.status
 	site_update = frappe.get_all(
 		"Site Update",
-		fields=["name", "status", "destination_bench"],
+		fields=["name", "status", "destination_bench", "destination_group"],
 		filters={"update_job": job.name},
 	)
 
@@ -332,7 +332,7 @@ def process_update_site_recover_job_update(job):
 	}[job.status]
 	site_update = frappe.get_all(
 		"Site Update",
-		fields=["name", "status", "source_bench"],
+		fields=["name", "status", "source_bench", "group"],
 		filters={"recover_job": job.name},
 	)[0]
 	if updated_status != site_update.status:
