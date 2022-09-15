@@ -11,6 +11,7 @@ from datetime import datetime
 from press.utils import log_error
 from frappe.core.utils import find
 from frappe.model.document import Document
+from frappe.utils.caching import site_cache
 
 
 class SiteUpdate(Document):
@@ -170,6 +171,7 @@ def trigger_recovery_job(site_update_name):
 		frappe.db.set_value("Site Update", site_update_name, "recover_job", job.name)
 
 
+@site_cache(ttl=60)
 def benches_with_available_update():
 	source_benches_info = frappe.db.sql(
 		"""
@@ -188,19 +190,16 @@ def benches_with_available_update():
 		"Bench",
 		filters={"status": "Active", "candidate": ("in", destination_candidates)},
 		fields=["candidate AS destination_candidate", "name AS destination_bench", "server"],
+		ignore_ifnull=True,
 	)
+
+	destinations = set()
+	for bench in destination_benches_info:
+		destinations.add((bench.destination_candidate, bench.server))
 
 	updates_available_for_benches = []
 	for bench in source_benches_info:
-		destination_bench_exists = find(
-			destination_benches_info,
-			lambda x: (
-				x["destination_candidate"] == bench.destination_candidate
-				and x["server"] == bench.server
-			),
-		)
-
-		if destination_bench_exists:
+		if (bench.destination_candidate, bench.server) in destinations:
 			updates_available_for_benches.append(bench)
 
 	return list(set([bench.source_bench for bench in updates_available_for_benches]))
@@ -296,7 +295,7 @@ def process_update_site_job_update(job):
 	updated_status = job.status
 	site_update = frappe.get_all(
 		"Site Update",
-		fields=["name", "status", "destination_bench"],
+		fields=["name", "status", "destination_bench", "destination_group"],
 		filters={"update_job": job.name},
 	)
 
@@ -333,7 +332,7 @@ def process_update_site_recover_job_update(job):
 	}[job.status]
 	site_update = frappe.get_all(
 		"Site Update",
-		fields=["name", "status", "source_bench"],
+		fields=["name", "status", "source_bench", "group"],
 		filters={"recover_job": job.name},
 	)[0]
 	if updated_status != site_update.status:

@@ -68,7 +68,8 @@ export default {
 				params: {
 					name: this.benchName
 				},
-				auto: true
+				auto: true,
+				onError: this.$routeTo404PageIfNotFound
 			};
 		}
 	},

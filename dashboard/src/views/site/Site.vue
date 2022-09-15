@@ -164,7 +164,8 @@ export default {
 							this.site.setup_wizard_complete = Boolean(complete);
 						})
 						.catch(() => (this.site.setup_wizard_complete = false));
-				}
+				},
+				onError: this.$routeTo404PageIfNotFound
 			};
 		},
 		loginAsAdmin() {

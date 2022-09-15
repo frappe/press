@@ -18,10 +18,7 @@ from frappe.utils import flt, time_diff_in_hours
 from frappe.utils.password import get_decrypted_password
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.remote_file.remote_file import get_remote_key
-from press.press.doctype.site_update.site_update import (
-	benches_with_available_update,
-	should_try_update,
-)
+from press.press.doctype.site_update.site_update import benches_with_available_update
 from press.utils import (
 	get_current_team,
 	log_error,
@@ -522,7 +519,7 @@ def all():
 
 	benches_with_updates = set(benches_with_available_update())
 	for site in sites:
-		if site.bench in benches_with_updates and should_try_update(site):
+		if site.bench in benches_with_updates:
 			site.update_available = True
 
 	site_names = [site.name for site in sites]

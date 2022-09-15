@@ -11,7 +11,7 @@
 						Choose a name for your bench
 					</label>
 					<p class="text-base text-gray-700">
-						Name your bench based on it's purpose. For e.g., Personal Websites,
+						Name your bench based on its purpose. For e.g., Personal Websites,
 						Staging Bench, etc.
 					</p>
 					<Input class="mt-4" type="text" v-model="benchTitle" />

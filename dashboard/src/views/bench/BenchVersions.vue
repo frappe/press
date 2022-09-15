@@ -5,7 +5,7 @@
 		subtitle="Deployed versions of your bench"
 		:showDetails="selectedVersion"
 	>
-		<div>
+		<div class="h-full">
 			<router-link
 				v-for="v in $resources.versions.data"
 				class="block cursor-pointer rounded-md px-2.5"

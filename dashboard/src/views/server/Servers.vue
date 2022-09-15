@@ -15,9 +15,7 @@
 
 		<div>
 			<SectionHeader heading="All Servers">
-				<template v-if="!recentServersVisible" v-slot:actions>
-					<SiteAndBenchSearch />
-				</template>
+				<SiteAndBenchSearch />
 			</SectionHeader>
 
 			<div class="mt-3">
@@ -28,7 +26,7 @@
 	</div>
 </template>
 <script>
-import ServerList from './ServerList.vue';
+import ServerList from '@/views/server/ServerList.vue';
 import SiteAndBenchSearch from '@/components/SiteAndBenchSearch.vue';
 import PageHeader from '@/components/global/PageHeader.vue';
 

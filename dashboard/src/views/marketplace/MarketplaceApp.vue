@@ -55,7 +55,8 @@ export default {
 				params: {
 					name: this.appName
 				},
-				auto: true
+				auto: true,
+				onError: this.$routeTo404PageIfNotFound
 			};
 		}
 	},

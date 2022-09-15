@@ -782,19 +782,20 @@ def create_marketplace_subscription(account_request):
 			subscription.team = team_doc.name
 			subscription.save()
 
-	if not frappe.db.exists(
-		"Marketplace App Subscription", {"app": account_request.saas_app, "site": site_name}
-	):
-		frappe.get_doc(
-			{
-				"doctype": "Marketplace App Subscription",
-				"team": team_doc.name,
-				"app": account_request.saas_app,
-				"site": site_name,
-				"marketplace_app_plan": get_saas_plan(account_request.saas_app),
-				"initial_plan": json.loads(account_request.url_args).get("plan"),
-			}
-		).insert(ignore_permissions=True)
+	if len(frappe.get_all("Marketplace App Plan", {"app": account_request.saas_app})) > 0:
+		if not frappe.db.exists(
+			"Marketplace App Subscription", {"app": account_request.saas_app, "site": site_name}
+		):
+			frappe.get_doc(
+				{
+					"doctype": "Marketplace App Subscription",
+					"team": team_doc.name,
+					"app": account_request.saas_app,
+					"site": site_name,
+					"marketplace_app_plan": get_saas_plan(account_request.saas_app),
+					"initial_plan": json.loads(account_request.url_args).get("plan"),
+				}
+			).insert(ignore_permissions=True)
 
 	frappe.set_user(team_doc.user)
 	frappe.local.login_manager.login_as(team_doc.user)

@@ -21,6 +21,7 @@
   "send_notifications",
   "column_break_9",
   "notify_email",
+  "last_used_team",
   "subscription_details_section",
   "stripe_customer_id",
   "country",
@@ -276,6 +277,12 @@
    "fieldname": "servers_enabled",
    "fieldtype": "Check",
    "label": "Servers Enabled"
+  },
+  {
+   "fieldname": "last_used_team",
+   "fieldtype": "Link",
+   "label": "Last Used Team",
+   "options": "Team"
   }
  ],
  "links": [
@@ -330,7 +337,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2022-09-07 18:19:45.668492",
+ "modified": "2022-09-15 13:33:03.650725",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
