@@ -59,10 +59,12 @@
 					<span v-else>-</span>
 				</div>
 
-
 				<div class="w-1/6">
 					<span v-if="app.subscription.status"
-						><Badge :status="app.subscription.status" :colorMap="$badgeStatusColorMap">
+						><Badge
+							:status="app.subscription.status"
+							:colorMap="$badgeStatusColorMap"
+						>
 							{{ app.subscription.status }}
 						</Badge>
 					</span>
@@ -77,8 +79,21 @@
 				</div>
 
 				<div class="ml-auto flex items-center space-x-2">
-					<Button appearance="secondary" v-if="app.plan_info" @click="changeAppPlan(app)">Change Plan</Button>
-					<Button appearance="primary" v-if="!app.plan_info && app.subscription_available">Subscribe</Button>
+					<Button
+						appearance="secondary"
+						v-if="app.plan_info"
+						@click="changeAppPlan(app)"
+						>Change Plan</Button
+					>
+					<Button
+						appearance="primary"
+						v-if="!app.plan_info && app.subscription_available"
+						@click="() => {
+							showPlanSelectionDialog = true
+							appToInstall = app
+						}"
+						>Subscribe</Button
+					>
 					<Dropdown :items="dropdownItems(app)" right>
 						<template v-slot="{ toggleDropdown }">
 							<Button icon="more-horizontal" @click="toggleDropdown()" />
@@ -320,6 +335,10 @@ export default {
 		}
 	},
 	methods: {
+		subscribe(app) {
+			this.showPlanSelectionDialog = true;
+		},
+
 		changeAppPlan(app) {
 			this.currentSubscription = app.subscription.name;
 			this.currentAppPlan = app.subscription.marketplace_app_plan;
@@ -381,8 +400,8 @@ export default {
 			});
 		},
 		handlePlanSelection() {
-			console.log('Handling plan selection');
-			console.log(this.appToInstall);
+			console.log('Here hooo')
+			console.log(this.appToInstall, this.selectedPlanIsFree)
 			if (
 				this.appToInstall.billing_type == 'prepaid' &&
 				!this.selectedPlanIsFree

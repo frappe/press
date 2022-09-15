@@ -713,6 +713,7 @@ def get_installed_apps(site):
 				"Marketplace App Plan", {"is_free": 0, "app": app.app, "enabled": 1}
 			)
 		)
+		app_source.billing_type = is_prepaid_marketplace_app(app.app)
 		if frappe.db.exists(
 			"Marketplace App Subscription",
 			{"site": site.name, "app": app.app, "status": "Active"},
@@ -736,7 +737,6 @@ def get_installed_apps(site):
 			app_source.is_free = frappe.db.get_value(
 				"Marketplace App Plan", subscription.marketplace_app_plan, "is_free"
 			)
-			app_source.billing_type = is_prepaid_marketplace_app(subscription.app)
 			print(app_source.subscription_available)
 		else:
 			app_source.subscription = {}
@@ -800,7 +800,11 @@ def is_marketplace_app_source(app_source_name):
 
 
 def is_prepaid_marketplace_app(app):
-	return frappe.db.get_value("Saas Settings", app, "billing_type")
+	return (
+		frappe.db.get_value("Saas Settings", app, "billing_type")
+		if frappe.db.exists("Saas Settings", app)
+		else "postpaid"
+	)
 
 
 @frappe.whitelist()
