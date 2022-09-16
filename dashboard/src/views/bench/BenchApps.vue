@@ -25,9 +25,28 @@
 			>
 				<template #actions>
 					<div class="ml-auto flex items-center space-x-2">
-						<Badge v-if="app.last_github_poll_failed" color="red">
-							Attention Required
-						</Badge>
+						<span
+							class="flex flex-row items-center"
+							v-if="app.last_github_poll_failed"
+						>
+							<Tooltip
+								class="mr-2 flex cursor-pointer items-center rounded-full bg-gray-100 p-1"
+								text="What's this?"
+								placement="top"
+							>
+								<a
+									href="https://frappecloud.com/docs/faq/custom_apps#why-does-it-show-attention-required-next-to-my-custom-app"
+									target="_blank"
+								>
+									<FeatherIcon
+										class="h-[18px] w-[18px] text-gray-800"
+										name="help-circle"
+									/>
+								</a>
+							</Tooltip>
+
+							<Badge color="red"> Attention Required </Badge>
+						</span>
 						<Badge
 							v-if="!app.last_github_poll_failed && !app.deployed"
 							color="yellow"
