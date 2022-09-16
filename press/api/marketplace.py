@@ -144,7 +144,7 @@ def get_apps() -> List[Dict]:
 	team = get_current_team()
 	apps = frappe.get_all(
 		"Marketplace App",
-		fields=["name", "title", "image", "app", "status", "description"],
+		fields=["name", "title", "image", "app", "status", "description", "team"],
 		filters={"team": team},
 		order_by="title",
 	)
@@ -545,7 +545,7 @@ def get_app_plans(app: str):
 @frappe.whitelist()
 def get_app_info(app: str):
 	return frappe.db.get_value(
-		"Marketplace App", app, ["name", "title", "image"], as_dict=True
+		"Marketplace App", app, ["name", "title", "image", "team"], as_dict=True
 	)
 
 
