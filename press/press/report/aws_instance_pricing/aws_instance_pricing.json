@@ -80,6 +80,20 @@
    "options": "Intel\nAMD\nGraviton\n",
    "wildcard_filter": 0
   },
+  {
+   "fieldname": "enhanced_networking",
+   "fieldtype": "Check",
+   "label": "Enhanced Networking",
+   "mandatory": 0,
+   "wildcard_filter": 0
+  },
+  {
+   "fieldname": "instance_store",
+   "fieldtype": "Check",
+   "label": "Instance Store",
+   "mandatory": 0,
+   "wildcard_filter": 0
+  }
  ],
  "idx": 0,
  "is_standard": "Yes",
