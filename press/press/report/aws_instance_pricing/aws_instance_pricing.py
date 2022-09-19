@@ -70,4 +70,5 @@ def get_data(filters):
 			}
 			rows.append(row)
 
+	rows.sort(key=lambda x: (x["instance_type"], x["vcpu"]))
 	return rows
