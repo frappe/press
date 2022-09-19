@@ -17,6 +17,11 @@ def execute(filters=None):
 			"label": "Instance",
 		},
 		{
+			"fieldname": "instance_type",
+			"fieldtype": "Data",
+			"label": "Instance Type",
+		},
+		{
 			"fieldname": "vcpu",
 			"fieldtype": "Int",
 			"label": "vCPU",
@@ -58,6 +63,7 @@ def get_data(filters):
 		for item in response["PriceList"]:
 			product = json.loads(item)
 			row = {
+				"instance_type": product["product"]["attributes"]["instanceType"].split(".")[0],
 				"instance": product["product"]["attributes"]["instanceType"],
 				"vcpu": cint(product["product"]["attributes"]["vcpu"], 0),
 				"memory": flt(product["product"]["attributes"]["memory"][:-4]),

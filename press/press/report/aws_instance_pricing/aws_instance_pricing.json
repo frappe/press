@@ -1,5 +1,12 @@
 {
  "add_total_row": 0,
+ "columns": [
+  {
+   "fieldname": "instance_type",
+   "fieldtype": "Data",
+   "label": "Instance Type",
+   "width": 0
+  },
   {
    "fieldname": "vcpu",
    "fieldtype": "Data",
