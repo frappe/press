@@ -13,7 +13,10 @@
   "provider",
   "virtual_machine",
   "is_server_setup",
+  "billing_section",
   "team",
+  "column_break_11",
+  "plan",
   "networking_section",
   "ip",
   "column_break_10",
@@ -228,11 +231,26 @@
    "fieldtype": "Link",
    "label": "Team",
    "options": "Team"
+  },
+  {
+   "fieldname": "billing_section",
+   "fieldtype": "Section Break",
+   "label": "Billing"
+  },
+  {
+   "fieldname": "column_break_11",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "plan",
+   "fieldtype": "Link",
+   "label": "Plan",
+   "options": "Plan"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-09-08 11:30:03.125698",
+ "modified": "2022-09-19 15:59:03.492206",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
