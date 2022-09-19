@@ -32,12 +32,6 @@
    "width": 0
   },
   {
-   "fieldname": "1yr_reserved",
-   "fieldtype": "Float",
-   "label": "1 Year Reserved",
-   "width": 0
-  },
-  {
    "fieldname": "1yr_instance",
    "fieldtype": "Float",
    "label": "1 Year Instance",
@@ -47,12 +41,6 @@
    "fieldname": "1yr_compute",
    "fieldtype": "Float",
    "label": "1 Year Compute",
-   "width": 0
-  },
-  {
-   "fieldname": "3yr_reserved",
-   "fieldtype": "Float",
-   "label": "3 Year Reserved",
    "width": 0
   },
   {
@@ -116,7 +104,7 @@
  "idx": 0,
  "is_standard": "Yes",
  "json": "{}",
- "modified": "2022-09-20 01:21:09.471108",
+ "modified": "2022-09-20 01:34:57.237617",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "AWS Instance Pricing",

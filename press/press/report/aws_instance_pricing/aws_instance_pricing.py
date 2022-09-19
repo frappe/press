@@ -81,19 +81,6 @@ def get_data(filters):
 				row["on_demand"] = (
 					flt(list(term["priceDimensions"].values())[0]["pricePerUnit"]["USD"]) * 750
 				)
-			for term in product["terms"].get("Reserved", {}).values():
-				if (
-					term["termAttributes"]["OfferingClass"] == "standard"
-					and term["termAttributes"]["PurchaseOption"] == "No Upfront"
-				):
-					if term["termAttributes"]["LeaseContractLength"] == "1yr":
-						row["1yr_reserved"] = (
-							flt(list(term["priceDimensions"].values())[0]["pricePerUnit"]["USD"]) * 750
-						)
-					if term["termAttributes"]["LeaseContractLength"] == "3yr":
-						row["3yr_reserved"] = (
-							flt(list(term["priceDimensions"].values())[0]["pricePerUnit"]["USD"]) * 750
-						)
 			rows.append(row)
 
 	client = boto3.client(
