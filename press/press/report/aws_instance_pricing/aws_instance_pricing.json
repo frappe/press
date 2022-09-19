@@ -26,27 +26,45 @@
    "width": 0
   },
   {
-   "fieldname": "on_demand_hourly",
+   "fieldname": "on_demand",
    "fieldtype": "Float",
-   "label": "On-Demand Hourly",
+   "label": "On-Demand",
    "width": 0
   },
   {
-   "fieldname": "on_demand_monthly",
+   "fieldname": "1yr_reserved",
    "fieldtype": "Float",
-   "label": "On-Demand Monthly",
+   "label": "1 Year Reserved",
    "width": 0
   },
   {
-   "fieldname": "1yr_monthly",
+   "fieldname": "1yr_instance",
    "fieldtype": "Float",
-   "label": "1 Year Monthly",
+   "label": "1 Year Instance",
    "width": 0
   },
   {
-   "fieldname": "3yr_monthly",
+   "fieldname": "1yr_compute",
    "fieldtype": "Float",
-   "label": "3 Year Monthly",
+   "label": "1 Year Compute",
+   "width": 0
+  },
+  {
+   "fieldname": "3yr_reserved",
+   "fieldtype": "Float",
+   "label": "3 Year Reserved",
+   "width": 0
+  },
+  {
+   "fieldname": "3yr_instance",
+   "fieldtype": "Float",
+   "label": "3 Year Instance",
+   "width": 0
+  },
+  {
+   "fieldname": "3yr_compute",
+   "fieldtype": "Float",
+   "label": "3 Year Compute",
    "width": 0
   }
  ],
@@ -98,7 +116,7 @@
  "idx": 0,
  "is_standard": "Yes",
  "json": "{}",
- "modified": "2022-09-19 23:45:00.467431",
+ "modified": "2022-09-20 01:21:09.471108",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "AWS Instance Pricing",

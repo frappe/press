@@ -3,6 +3,7 @@
 
 import frappe
 from frappe.utils import flt, cint
+from frappe.core.utils import find
 import json
 import boto3
 
@@ -94,6 +95,35 @@ def get_data(filters):
 							flt(list(term["priceDimensions"].values())[0]["pricePerUnit"]["USD"]) * 750
 						)
 			rows.append(row)
+
+	client = boto3.client(
+		"savingsplans",
+		aws_access_key_id=cluster.aws_access_key_id,
+		aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
+	)
+
+	response = client.describe_savings_plans_offering_rates(
+		savingsPlanPaymentOptions=["No Upfront"],
+		savingsPlanTypes=["Compute", "EC2Instance"],
+		products=["EC2"],
+		serviceCodes=["AmazonEC2"],
+		filters=[
+			{"name": "tenancy", "values": ["shared"]},
+			{"name": "region", "values": [cluster.region]},
+			{"name": "instanceType", "values": [row["instance"] for row in rows]},
+			{"name": "productDescription", "values": ["Linux/UNIX"]},
+		],
+	)
+
+	for rate in response["searchResults"]:
+		if "BoxUsage" in rate["usageType"]:
+			instance = find(rate["properties"], lambda x: x["name"] == "instanceType")["value"]
+			row = find(rows, lambda x: x["instance"] == instance)
+			years = rate["savingsPlanOffering"]["durationSeconds"] // 31536000
+			plan = (
+				"compute" if rate["savingsPlanOffering"]["planType"] == "Compute" else "instance"
+			)
+			row[f"{years}yr_{plan}"] = flt(rate["rate"]) * 750
 
 	rows.sort(key=lambda x: (x["instance_type"], x["vcpu"]))
 	return rows
