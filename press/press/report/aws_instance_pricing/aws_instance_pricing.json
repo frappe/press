@@ -2,6 +2,12 @@
  "add_total_row": 0,
  "columns": [
   {
+    "fieldname": "instance",
+    "fieldtype": "Data",
+    "label": "Instance",
+    "width": 0
+  },
+  {
    "fieldname": "instance_type",
    "fieldtype": "Data",
    "label": "Instance Type",
@@ -9,43 +15,37 @@
   },
   {
    "fieldname": "vcpu",
-   "fieldtype": "Data",
+   "fieldtype": "Int",
    "label": "vCPU",
    "width": 0
   },
   {
-   "fieldname": "ecu",
-   "fieldtype": "Data",
-   "label": "ECU",
-   "width": 0
-  },
-  {
    "fieldname": "memory",
-   "fieldtype": "Data",
+   "fieldtype": "Float",
    "label": "Memory",
    "width": 0
   },
   {
    "fieldname": "on_demand_hourly",
-   "fieldtype": "Currency",
+   "fieldtype": "Float",
    "label": "On-Demand Hourly",
    "width": 0
   },
   {
    "fieldname": "on_demand_monthly",
-   "fieldtype": "Currency",
+   "fieldtype": "Float",
    "label": "On-Demand Monthly",
    "width": 0
   },
   {
    "fieldname": "1yr_monthly",
-   "fieldtype": "Currency",
+   "fieldtype": "Float",
    "label": "1 Year Monthly",
    "width": 0
   },
   {
    "fieldname": "3yr_monthly",
-   "fieldtype": "Currency",
+   "fieldtype": "Float",
    "label": "3 Year Monthly",
    "width": 0
   }
@@ -98,7 +98,7 @@
  "idx": 0,
  "is_standard": "Yes",
  "json": "{}",
- "modified": "2022-09-19 18:58:33.398340",
+ "modified": "2022-09-19 23:42:33.398340",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "AWS Instance Pricing",
