@@ -72,6 +72,14 @@
    "options": "General Purpose\nCompute Optimized\nMemory Optimized\n",
    "wildcard_filter": 0
   },
+  {
+   "fieldname": "processor",
+   "fieldtype": "Select",
+   "label": "Processor",
+   "mandatory": 0,
+   "options": "Intel\nAMD\nGraviton\n",
+   "wildcard_filter": 0
+  },
  ],
  "idx": 0,
  "is_standard": "Yes",
