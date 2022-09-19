@@ -55,6 +55,14 @@ def get_data(filters):
 		{"Type": "TERM_MATCH", "Field": "operatingSystem", "Value": "Linux"},
 	]
 
+	if filters.instance_family:
+		product_filters.append(
+			{
+				"Type": "TERM_MATCH",
+				"Field": "instanceFamily",
+				"Value": filters.instance_family,
+			}
+		)
 	response_iterator = paginator.paginate(
 		ServiceCode="AmazonEC2", Filters=product_filters, PaginationConfig={"PageSize": 100}
 	)
@@ -62,6 +70,10 @@ def get_data(filters):
 	for response in response_iterator:
 		for item in response["PriceList"]:
 			product = json.loads(item)
+			if filters.processor:
+				if filters.processor not in product["product"]["attributes"]["physicalProcessor"]:
+					continue
+
 			row = {
 				"instance_type": product["product"]["attributes"]["instanceType"].split(".")[0],
 				"instance": product["product"]["attributes"]["instanceType"],

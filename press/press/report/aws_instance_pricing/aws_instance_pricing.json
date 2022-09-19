@@ -40,6 +40,14 @@
    "options": "Cluster",
    "wildcard_filter": 0
   },
+  {
+   "fieldname": "instance_family",
+   "fieldtype": "Select",
+   "label": "Instance Family",
+   "mandatory": 0,
+   "options": "General Purpose\nCompute Optimized\nMemory Optimized\n",
+   "wildcard_filter": 0
+  },
  ],
  "idx": 0,
  "is_standard": "Yes",
