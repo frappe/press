@@ -31,6 +31,26 @@ def execute(filters=None):
 			"fieldtype": "Float",
 			"label": "Memory",
 		},
+		{
+			"fieldname": "on_demand_hourly",
+			"fieldtype": "Float",
+			"label": "On-Demand Hourly",
+		},
+		{
+			"fieldname": "on_demand_monthly",
+			"fieldtype": "Float",
+			"label": "On-Demand Monthly",
+		},
+		{
+			"fieldname": "1yr_monthly",
+			"fieldtype": "Float",
+			"label": "1 Year Monthly",
+		},
+		{
+			"fieldname": "3yr_monthly",
+			"fieldtype": "Float",
+			"label": "3 Year Monthly",
+		},
 	]
 	return columns, data
 
@@ -80,6 +100,24 @@ def get_data(filters):
 				"vcpu": cint(product["product"]["attributes"]["vcpu"], 0),
 				"memory": flt(product["product"]["attributes"]["memory"][:-4]),
 			}
+			for term in product["terms"].get("OnDemand", {}).values():
+				row["on_demand_hourly"] = list(term["priceDimensions"].values())[0]["pricePerUnit"][
+					"USD"
+				]
+				row["on_demand_monthly"] = flt(row["on_demand_hourly"]) * 750
+			for term in product["terms"].get("Reserved", {}).values():
+				if (
+					term["termAttributes"]["OfferingClass"] == "standard"
+					and term["termAttributes"]["PurchaseOption"] == "No Upfront"
+				):
+					if term["termAttributes"]["LeaseContractLength"] == "1yr":
+						row["1yr_monthly"] = (
+							flt(list(term["priceDimensions"].values())[0]["pricePerUnit"]["USD"]) * 750
+						)
+					if term["termAttributes"]["LeaseContractLength"] == "3yr":
+						row["3yr_monthly"] = (
+							flt(list(term["priceDimensions"].values())[0]["pricePerUnit"]["USD"]) * 750
+						)
 			rows.append(row)
 
 	rows.sort(key=lambda x: (x["instance_type"], x["vcpu"]))

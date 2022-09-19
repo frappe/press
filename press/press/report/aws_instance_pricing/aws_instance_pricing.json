@@ -25,6 +25,30 @@
    "label": "Memory",
    "width": 0
   },
+  {
+   "fieldname": "on_demand_hourly",
+   "fieldtype": "Currency",
+   "label": "On-Demand Hourly",
+   "width": 0
+  },
+  {
+   "fieldname": "on_demand_monthly",
+   "fieldtype": "Currency",
+   "label": "On-Demand Monthly",
+   "width": 0
+  },
+  {
+   "fieldname": "1yr_monthly",
+   "fieldtype": "Currency",
+   "label": "1 Year Monthly",
+   "width": 0
+  },
+  {
+   "fieldname": "3yr_monthly",
+   "fieldtype": "Currency",
+   "label": "3 Year Monthly",
+   "width": 0
+  }
  ],
  "creation": "2022-09-19 17:12:10.701432",
  "disable_prepared_report": 0,
