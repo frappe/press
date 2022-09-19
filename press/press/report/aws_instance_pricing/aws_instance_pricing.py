@@ -10,48 +10,7 @@ import boto3
 def execute(filters=None):
 	frappe.only_for("System Manager")
 	data = get_data(filters)
-	columns = [
-		{
-			"fieldname": "instance",
-			"fieldtype": "Data",
-			"label": "Instance",
-		},
-		{
-			"fieldname": "instance_type",
-			"fieldtype": "Data",
-			"label": "Instance Type",
-		},
-		{
-			"fieldname": "vcpu",
-			"fieldtype": "Int",
-			"label": "vCPU",
-		},
-		{
-			"fieldname": "memory",
-			"fieldtype": "Float",
-			"label": "Memory",
-		},
-		{
-			"fieldname": "on_demand_hourly",
-			"fieldtype": "Float",
-			"label": "On-Demand Hourly",
-		},
-		{
-			"fieldname": "on_demand_monthly",
-			"fieldtype": "Float",
-			"label": "On-Demand Monthly",
-		},
-		{
-			"fieldname": "1yr_monthly",
-			"fieldtype": "Float",
-			"label": "1 Year Monthly",
-		},
-		{
-			"fieldname": "3yr_monthly",
-			"fieldtype": "Float",
-			"label": "3 Year Monthly",
-		},
-	]
+	columns = frappe.get_doc("Report", "AWS Instance Pricing").get_columns()
 	return columns, data
 
 
