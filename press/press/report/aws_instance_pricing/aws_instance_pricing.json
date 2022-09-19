@@ -2,10 +2,10 @@
  "add_total_row": 0,
  "columns": [
   {
-    "fieldname": "instance",
-    "fieldtype": "Data",
-    "label": "Instance",
-    "width": 0
+   "fieldname": "instance",
+   "fieldtype": "Data",
+   "label": "Instance",
+   "width": 200
   },
   {
    "fieldname": "instance_type",
@@ -98,7 +98,7 @@
  "idx": 0,
  "is_standard": "Yes",
  "json": "{}",
- "modified": "2022-09-19 23:42:33.398340",
+ "modified": "2022-09-19 23:45:00.467431",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "AWS Instance Pricing",
