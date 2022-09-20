@@ -15,7 +15,7 @@ from press.press.doctype.app_source.app_source import AppSource, create_app_sour
 
 DEFAULT_DEPENDENCIES = [
 	{"dependency": "NVM_VERSION", "version": "0.36.0"},
-	{"dependency": "NODE_VERSION", "version": "14.4.0"},
+	{"dependency": "NODE_VERSION", "version": "14.19.0"},
 	{"dependency": "PYTHON_VERSION", "version": "3.7"},
 	{"dependency": "WKHTMLTOPDF_VERSION", "version": "0.12.5"},
 	{"dependency": "BENCH_VERSION", "version": "5.2.1"},
