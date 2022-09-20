@@ -24,6 +24,12 @@
   "offsite_backups",
   "private_benches",
   "database_access",
+  "servers",
+  "cluster",
+  "instance_type",
+  "column_break_21",
+  "vcpu",
+  "memory",
   "roles_section",
   "roles"
  ],
@@ -137,11 +143,41 @@
    "fieldname": "is_trial_plan",
    "fieldtype": "Check",
    "label": "Is Trial Plan"
+  },
+  {
+   "fieldname": "servers",
+   "fieldtype": "Section Break",
+   "label": "Servers"
+  },
+  {
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "label": "Cluster",
+   "options": "Cluster"
+  },
+  {
+   "fieldname": "instance_type",
+   "fieldtype": "Data",
+   "label": "Instance Type"
+  },
+  {
+   "fieldname": "column_break_21",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "vcpu",
+   "fieldtype": "Int",
+   "label": "vCPU"
+  },
+  {
+   "fieldname": "memory",
+   "fieldtype": "Int",
+   "label": "Memory"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-06-29 18:27:35.201726",
+ "modified": "2022-09-20 14:49:27.380613",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Plan",
