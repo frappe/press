@@ -29,7 +29,7 @@
 		<div v-if="plans" class="mx-auto grid grid-cols-1 gap-2 md:grid-cols-3">
 			<AppPlanCard
 				v-for="plan in plans"
-				:publisher="appInfo.team"
+				:editable="editable"
 				:plan="plan"
 				:key="plan.name"
 				:selected="selectedPlan == plan"
@@ -47,7 +47,7 @@ export default {
 	components: {
 		AppPlanCard
 	},
-	props: ['app', 'group', 'frappeVersion', 'currentPlan'],
+	props: ['app', 'group', 'frappeVersion', 'currentPlan', 'editable'],
 	emits: ['change'],
 	data() {
 		return {

@@ -55,7 +55,7 @@
 		</div>
 
 		<Badge
-			v-if="publisher == $account.team.name && $account.team?.is_developer"
+			v-if="editable"
 			:status="plan.enabled ? 'Enabled' : 'Disabled'"
 			class="mt-4 self-start"
 			:colorMap="$badgeStatusColorMap"
@@ -88,11 +88,7 @@ export default {
 		editable: {
 			type: Boolean,
 			default: false
-		},
-		publisher: {
-			type: String,
-			default: $account.team.name
-		}
+		}	
 	},
 	components: {
 		FeatureList

@@ -19,7 +19,6 @@
 				<MarketplaceAppCard
 					@click.native="routeToAppPage(app.name)"
 					v-for="app in $resources.apps.data"
-					:publisher="app.team"
 					:key="app.name"
 					:app="app"
 				/>

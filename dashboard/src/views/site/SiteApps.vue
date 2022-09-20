@@ -116,6 +116,7 @@
 				v-if="appToInstall?.app"
 				:app="appToInstall.app"
 				:frappeVersion="site?.frappe_version"
+				:editable="false"
 				class="mb-9"
 				@change="plan => {
 					selectedPlan = plan.name;

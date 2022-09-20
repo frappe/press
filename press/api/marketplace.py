@@ -144,7 +144,7 @@ def get_apps() -> List[Dict]:
 	team = get_current_team()
 	apps = frappe.get_all(
 		"Marketplace App",
-		fields=["name", "title", "image", "app", "status", "description", "team"],
+		fields=["name", "title", "image", "app", "status", "description"],
 		filters={"team": team},
 		order_by="title",
 	)

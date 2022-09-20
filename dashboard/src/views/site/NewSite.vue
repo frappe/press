@@ -34,6 +34,7 @@
 						:key="app.name"
 						:app="app.name"
 						:group="selectedGroup"
+						:editable="false"
 						class="mb-9"
 						@change="plan => (selectedAppPlans[app.name] = plan.name)"
 					/>
