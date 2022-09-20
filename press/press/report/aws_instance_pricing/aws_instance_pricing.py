@@ -112,5 +112,5 @@ def get_data(filters):
 			)
 			row[f"{years}yr_{plan}"] = flt(rate["rate"]) * 750
 
-	rows.sort(key=lambda x: (x["instance_type"], x["vcpu"]))
+	rows.sort(key=lambda x: (x["instance_type"], x["vcpu"], x["memory"]))
 	return rows
