@@ -71,11 +71,14 @@
 import WizardCard from '@/components/WizardCard.vue';
 import Steps from '@/components/Steps.vue';
 import Hostname from './NewServerHostname.vue';
+import AppServerPlans from './NewAppServerPlans.vue';
 export default {
 	name: 'NewServer',
 	components: {
 		WizardCard,
 		Steps,
+		Hostname,
+		AppServerPlans,
 		Hostname,
 	},
 	data() {
@@ -90,13 +93,28 @@ export default {
 						return this.title && this.selectedRegion;
 					}
 				},
+				{
+					name: 'AppServerPlan',
+					validate: () => {
+						return this.selectedAppPlan;
+					}
+				},
 			],
 			agreedToRegionConsent: false
 		};
 	},
 	async mounted() {
 		this.options = await this.$call('press.api.server.options');
+		this.options.app_plans = this.options.app_plans.map(plan => {
+			plan.disabled = !this.$account.hasBillingInfo;
+			return plan;
+		});
 	},
 	computed: {},
+	methods: {
+		async nextStep(activeStep, next) {
+			next();
+		}
+	}
 };
 </script>

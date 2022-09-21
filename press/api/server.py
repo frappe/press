@@ -4,7 +4,7 @@
 import frappe
 import requests
 
-from press.utils import get_current_team
+from press.utils import get_current_team, group_children_in_result
 from press.api.site import protected
 from frappe.utils import convert_utc_to_timezone
 from frappe.utils.password import get_decrypted_password
@@ -118,3 +118,29 @@ def options():
 		"Cluster", {"cloud_provider": "AWS EC2", "public": True}, ["name", "title", "image"]
 	)
 	return {"regions": regions * 2}
+
+
+def plans(name):
+	plans = frappe.db.get_all(
+		"Plan",
+		fields=[
+			"name",
+			"plan_title",
+			"price_usd",
+			"price_inr",
+			"vcpu",
+			"memory",
+			"cluster",
+			"`tabHas Role`.role",
+		],
+		filters={"enabled": True, "document_type": name},
+		order_by="price_usd asc",
+	)
+	plans = group_children_in_result(plans, {"role": "roles"})
+
+	out = []
+	for plan in plans:
+		if frappe.utils.has_common(plan["roles"], frappe.get_roles()):
+			plan.pop("roles", "")
+			out.append(plan)
+	return out
