@@ -24,8 +24,8 @@ class VirtualMachine(Document):
 			multiplier = ["n", "f", "m"].index(self.series) + 1
 			self.private_ip_address = str(ip + (multiplier * 256) + (self.index + 100))
 
-	# def after_insert(self):
-	# 	self.provision()
+	def after_insert(self):
+		self.provision()
 
 	def provision(self):
 		response = self.client().run_instances(
