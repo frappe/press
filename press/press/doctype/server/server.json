@@ -56,7 +56,6 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "IP",
-   "reqd": 1,
    "set_only_once": 1
   },
   {
@@ -71,7 +70,6 @@
    "fieldname": "private_ip",
    "fieldtype": "Data",
    "label": "Private IP",
-   "reqd": 1,
    "set_only_once": 1
   },
   {
@@ -318,7 +316,7 @@
   }
  ],
  "links": [],
- "modified": "2022-09-19 15:58:37.567616",
+ "modified": "2022-09-22 04:55:22.220431",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

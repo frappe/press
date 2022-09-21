@@ -26,7 +26,8 @@ class BaseServer(Document):
 		self.validate_agent_password()
 
 	def after_insert(self):
-		self.create_dns_record()
+		if self.ip:
+			self.create_dns_record()
 		self.update_virtual_machine_name()
 
 	def create_dns_record(self):

@@ -45,7 +45,6 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "IP",
-   "reqd": 1,
    "set_only_once": 1
   },
   {
@@ -53,7 +52,6 @@
    "fieldname": "private_ip",
    "fieldtype": "Data",
    "label": "Private IP",
-   "reqd": 1,
    "set_only_once": 1
   },
   {
@@ -245,7 +243,7 @@
   }
  ],
  "links": [],
- "modified": "2022-09-07 14:51:29.436002",
+ "modified": "2022-09-22 04:57:56.086153",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",
