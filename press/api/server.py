@@ -36,6 +36,69 @@ def get(name):
 
 
 @frappe.whitelist()
+def new(server):
+	team = get_current_team(get_doc=True)
+	if not team.enabled:
+		frappe.throw("You cannot create a new server because your account is disabled")
+
+	server["domain"] = frappe.db.get_single_value("Press Settings", "domain")
+	cluster = server["cluster"]
+
+	app_plan = frappe.get_doc("Plan", server["app_plan"])
+	machine = frappe.get_doc(
+		{
+			"doctype": "Virtual Machine",
+			"cluster": cluster,
+			"disk_size": app_plan.disk,
+			"instance_type": app_plan.instance_type,
+			"team": team.name,
+		}
+	).insert()
+
+	server = machine.create_server()
+	server.create_subscription(app_plan)
+
+	return {
+		"server": server.name,
+		"job": frappe.db.get_value(
+			"Agent Job",
+			filters={
+				"server": server.name,
+			},
+		),
+	}
+
+
+# @frappe.whitelist()
+# @protected("server")
+# def overview(name):
+# 	server = frappe.get_cached_doc("Server", name)
+
+# 	return {
+# 		"plan": current_plan(name),
+# 		"info": {
+# 			"owner": frappe.db.get_value(
+# 				"User",
+# 				server.team,
+# 				["first_name", "last_name", "user_image"],
+# 				as_dict=True,
+# 			),
+# 			"created_on": server.creation,
+# 			"last_deployed": (
+# 				frappe.db.get_all(
+# 					"server Activity",
+# 					filters={"server": name, "action": "Update"},
+# 					order_by="creation desc",
+# 					limit=1,
+# 					pluck="creation",
+# 				)
+# 				or [None]
+# 			)[0],
+# 		},
+# 	}
+
+
+@frappe.whitelist()
 def search_list():
 	servers = frappe.get_list(
 		"Server",
@@ -136,6 +199,7 @@ def plans(name):
 			"memory",
 			"disk",
 			"cluster",
+			"instance_type",
 			"`tabHas Role`.role",
 		],
 		filters={"enabled": True, "document_type": name},
