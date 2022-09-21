@@ -205,6 +205,21 @@ class VirtualMachine(Document):
 		)
 
 	@frappe.whitelist()
+	def create_database_server(self):
+		frappe.get_doc(
+			{
+				"doctype": "Database Server",
+				"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
+				"domain": self.domain,
+				"cluster": self.cluster,
+				"provider": "AWS EC2",
+				"virtual_machine": self.name,
+				"server_id": self.index,
+				"is_primary": True,
+			}
+		).insert()
+
+	@frappe.whitelist()
 	def create_proxy_server(self):
 		frappe.get_doc(
 			{
