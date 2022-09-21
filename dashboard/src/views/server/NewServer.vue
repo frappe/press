@@ -49,6 +49,7 @@
 						</label>
 					</div>
 
+					<ErrorMessage class="mb-4" :error="$resources.newServer.error" />
 
 					<div class="flex justify-between">
 						<Button
@@ -143,6 +144,50 @@ export default {
 			plan.disabled = !this.$account.hasBillingInfo;
 			return plan;
 		});
+	},
+	resources: {
+		newServer() {
+			return {
+				method: 'press.api.server.new',
+				params: {
+					server: {
+						title: this.title,
+						cluster: this.selectedRegion,
+						app_plan: this.selectedAppPlan?.name,
+						db_plan: this.selectedDBPlan?.name
+					}
+				},
+				validate() {
+					let canCreate =
+						this.title &&
+						this.selectedAppPlan &&
+						this.selectedDBPlan &&
+						this.selectedRegion;
+
+					if (!this.selectedAppPlan) {
+						return 'Please select a plan for application server';
+					}
+
+					if (!this.selectedDBPlan) {
+						return 'Please select a plan for database server';
+					}
+
+					if (!this.selectedRegion) {
+						return 'Please select the region';
+					}
+
+					if (!this.agreedToRegionConsent) {
+						document.getElementById('region-consent').focus();
+
+						return 'Please agree to the above consent to create server';
+					}
+
+					if (!canCreate) {
+						return 'Cannot create server';
+					}
+				}
+			};
+		}
 	},
 	computed: {},
 	methods: {
