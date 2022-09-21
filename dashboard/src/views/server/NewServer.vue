@@ -19,6 +19,11 @@
 					:options="options"
 					v-show="activeStep.name === 'AppServerPlan'"
 				/>
+				<DBServerPlans
+					v-model:selectedDBPlan="selectedDBPlan"
+					:options="options"
+					v-show="activeStep.name === 'DBServerPlan'"
+				/>
 				<ErrorMessage :error="validationMessage" />
 				<div class="mt-4">
 					<!-- Region consent checkbox -->
@@ -77,6 +82,7 @@ import WizardCard from '@/components/WizardCard.vue';
 import Steps from '@/components/Steps.vue';
 import Hostname from './NewServerHostname.vue';
 import AppServerPlans from './NewAppServerPlans.vue';
+import DBServerPlans from './NewDBServerPlans.vue';
 export default {
 	name: 'NewServer',
 	components: {
@@ -84,7 +90,7 @@ export default {
 		Steps,
 		Hostname,
 		AppServerPlans,
-		Hostname,
+		DBServerPlans,
 	},
 	data() {
 		return {
@@ -104,6 +110,12 @@ export default {
 						return this.selectedAppPlan;
 					}
 				},
+				{
+					name: 'DBServerPlan',
+					validate: () => {
+						return this.selectedDBPlan;
+					}
+				},
 			],
 			agreedToRegionConsent: false
 		};
@@ -111,6 +123,10 @@ export default {
 	async mounted() {
 		this.options = await this.$call('press.api.server.options');
 		this.options.app_plans = this.options.app_plans.map(plan => {
+			plan.disabled = !this.$account.hasBillingInfo;
+			return plan;
+		});
+		this.options.db_plans = this.options.db_plans.map(plan => {
 			plan.disabled = !this.$account.hasBillingInfo;
 			return plan;
 		});

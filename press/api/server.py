@@ -117,7 +117,11 @@ def options():
 	regions = frappe.get_all(
 		"Cluster", {"cloud_provider": "AWS EC2", "public": True}, ["name", "title", "image"]
 	)
-	return {"regions": regions * 2}
+	return {
+		"regions": regions * 2,
+		"app_plans": plans("Server"),
+		"db_plans": plans("Database Server"),
+	}
 
 
 def plans(name):
