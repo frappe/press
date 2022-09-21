@@ -24,6 +24,12 @@
 					:options="options"
 					v-show="activeStep.name === 'DBServerPlan'"
 				/>
+				<VerifyServer
+					:options="options"
+					:selectedAppPlan="selectedAppPlan"
+					:selectedDBPlan="selectedDBPlan"
+					v-show="activeStep.name === 'VerifyServer'"
+				/>
 				<ErrorMessage :error="validationMessage" />
 				<div class="mt-4">
 					<!-- Region consent checkbox -->
