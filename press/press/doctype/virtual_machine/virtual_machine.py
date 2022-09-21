@@ -152,6 +152,15 @@ class VirtualMachine(Document):
 			InstanceId=self.aws_instance_id, Attribute="disableApiTermination"
 		)["DisableApiTermination"]["Value"]
 		self.save()
+		self.update_servers()
+
+	def update_servers(self):
+		for doctype in ["Server", "Database Server", "Proxy Server"]:
+			server = frappe.get_all(doctype, {"virtual_machine": self.name}, pluck="name")
+			if server:
+				server = server[0]
+				frappe.db.set_value(doctype, server, "ip", self.public_ip_address)
+				frappe.get_doc(doctype, server).create_dns_record()
 
 	def update_name_tag(self, name):
 		self.client().create_tags(
