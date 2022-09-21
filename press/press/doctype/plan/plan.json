@@ -30,6 +30,7 @@
   "column_break_21",
   "vcpu",
   "memory",
+  "disk",
   "roles_section",
   "roles"
  ],
@@ -173,11 +174,16 @@
    "fieldname": "memory",
    "fieldtype": "Int",
    "label": "Memory"
+  },
+  {
+   "fieldname": "disk",
+   "fieldtype": "Int",
+   "label": "Disk"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-09-20 14:49:27.380613",
+ "modified": "2022-09-21 11:07:49.585270",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Plan",

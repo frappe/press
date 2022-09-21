@@ -134,6 +134,7 @@ def plans(name):
 			"price_inr",
 			"vcpu",
 			"memory",
+			"disk",
 			"cluster",
 			"`tabHas Role`.role",
 		],
