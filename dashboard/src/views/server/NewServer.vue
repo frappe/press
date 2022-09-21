@@ -100,6 +100,7 @@ export default {
 			title: null,
 			options: null,
 			selectedRegion: null,
+			validationMessage: null,
 			steps: [
 				{
 					name: 'Hostname',
