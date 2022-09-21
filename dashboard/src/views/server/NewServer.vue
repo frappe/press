@@ -95,6 +95,7 @@ export default {
 		};
 	},
 	async mounted() {
+		this.options = await this.$call('press.api.server.options');
 	},
 	computed: {},
 };

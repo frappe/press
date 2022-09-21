@@ -14,19 +14,53 @@
 				placeholder="Server"
 			/>
 		</div>
+		<div class="mt-6 space-y-1">
+			<h2 class="text-lg font-semibold">Select Region</h2>
+			<p class="text-base text-gray-700">
+				Select the datacenter region where your site should be created
+			</p>
+			<div class="mt-1">
+				<RichSelect
+					:value="selectedRegion"
+					@change="$emit('update:selectedRegion', $event)"
+					:options="regionOptions"
+				/>
+			</div>
+		</div>
 		<div class="mt-4">
 			<ErrorMessage :error="errorMessage" />
 		</div>
 	</div>
 </template>
 <script>
+import RichSelect from '@/components/RichSelect.vue';
 
 export default {
 	name: 'Hostname',
+	props: ['options', 'title', 'selectedRegion'],
+	emits: ['update:title', 'error', 'update:selectedRegion'],
 	data() {
 		return {
 			errorMessage: null
 		};
+	},
+	components: {
+		RichSelect
+	},
+	computed: {
+		regionOptions() {
+			return this.options.regions.map(d => ({
+				label: d.title,
+				value: d.name,
+				image: d.image
+			}));
+		}
+	},
+
+	async mounted() {
+		if (this.regionOptions.length == 1) {
+			this.$emit('update:selectedRegion', this.regionOptions[0].value);
+		}
 	},
 	methods: {
 		async titleChange(e) {

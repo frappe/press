@@ -110,3 +110,11 @@ def prometheus_query(query, timezone, timespan, timegrain):
 		datasets.append(dataset)
 
 	return {"datasets": datasets, "labels": labels}
+
+
+@frappe.whitelist()
+def options():
+	regions = frappe.get_all(
+		"Cluster", {"cloud_provider": "AWS EC2", "public": True}, ["name", "title", "image"]
+	)
+	return {"regions": regions * 2}
