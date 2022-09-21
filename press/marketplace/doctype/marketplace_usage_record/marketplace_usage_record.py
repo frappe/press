@@ -17,6 +17,8 @@ class MarketplaceUsageRecord(Document):
 			self.time = frappe.utils.nowtime()
 
 	def after_insert(self):
+		pass
+		"""
 		team = frappe.get_doc("Team", self.team)
 
 		available_credits = team.get_balance()
@@ -35,6 +37,7 @@ class MarketplaceUsageRecord(Document):
 			source="",
 			remark=f"{remark}, Ref: Marketplace App Subscription {self.marketplace_app_subscription}",
 		)
+		"""
 
 
 def create_marketplace_usage_record():
