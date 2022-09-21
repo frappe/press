@@ -83,6 +83,8 @@ import Steps from '@/components/Steps.vue';
 import Hostname from './NewServerHostname.vue';
 import AppServerPlans from './NewAppServerPlans.vue';
 import DBServerPlans from './NewDBServerPlans.vue';
+import VerifyServer from './NewVerifyServer.vue';
+
 export default {
 	name: 'NewServer',
 	components: {
@@ -91,6 +93,7 @@ export default {
 		Hostname,
 		AppServerPlans,
 		DBServerPlans,
+		VerifyServer
 	},
 	data() {
 		return {
@@ -116,6 +119,9 @@ export default {
 						return this.selectedDBPlan;
 					}
 				},
+				{
+					name: 'VerifyServer'
+				}
 			],
 			agreedToRegionConsent: false
 		};
