@@ -50,12 +50,18 @@ def create_marketplace_usage_record():
 				"in",
 				frappe.get_all("Saas Settings", {"billing_type": "prepaid"}, pluck="name"),
 			),
+			"plan": (
+				"not in",
+				frappe.get_all(
+					"Plan", {"document_type": "Marketplace App", "price_usd": 0}, pluck="name"
+				),
+			),
 			"status": "Active",
 		},
 		["name", "app", "site", "plan", "marketplace_app_plan", "team"],
 	):
-
-		currency = frappe.db.get_value("Team", subscription["team"], "currency")
+		team = frappe.db.get_value("Site", subscription["site"], "team")
+		currency = frappe.db.get_value("Team", team, "currency")
 		plan, price = frappe.db.get_value(
 			"Plan", subscription["plan"], ["plan_title", f"price_{currency.lower()}"]
 		)
