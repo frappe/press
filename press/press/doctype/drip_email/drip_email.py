@@ -140,7 +140,7 @@ def send_drip_emails():
 def send_welcome_email():
 	"""Send welcome email to sites created in last 15 minutes."""
 	welcome_drips = frappe.db.get_all(
-		"Drip Email", {"email_type": "Sign Up"}, pluck="name"
+		"Drip Email", {"email_type": "Sign Up", "enabled": 1}, pluck="name"
 	)
 	for drip in welcome_drips:
 		welcome_email = frappe.get_doc("Drip Email", drip)
