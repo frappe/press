@@ -2,7 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
-
+import ipaddress
 import boto3
 from frappe.model.document import Document
 from frappe.core.utils import find
@@ -19,9 +19,13 @@ class VirtualMachine(Document):
 	def validate(self):
 		if not self.machine_image:
 			self.machine_image = self.get_latest_ubuntu_image()
+		if not self.private_ip_address:
+			ip = ipaddress.IPv4Interface(self.subnet_cidr_block).ip
+			multiplier = ["n", "f", "m"].index(self.series) + 1
+			self.private_ip_address = str(ip + (multiplier * 256) + (self.index + 100))
 
-	def after_insert(self):
-		self.provision()
+	# def after_insert(self):
+	# 	self.provision()
 
 	def provision(self):
 		response = self.client().run_instances(
