@@ -10,6 +10,7 @@ frappe.ui.form.on('Virtual Machine', {
 			[__('Disable Termination Protection'), 'disable_termination_protection', frm.doc.termination_protection],
 			[__('Enable Termination Protection'), 'enable_termination_protection', !frm.doc.termination_protection],
 			[__('Create Image'), 'create_image'],
+			[__('Create Server'), 'create_server', frm.doc.series === "f"],
 			[__('Create Database Server'), 'create_database_server', frm.doc.series === "m"],
 			[__('Create Proxy Server'), 'create_proxy_server', frm.doc.series === "n"],
 		].forEach(([label, method, condition]) => {
