@@ -107,6 +107,8 @@ export default {
 			title: null,
 			options: null,
 			selectedRegion: null,
+			selectedAppPlan: null,
+			selectedDBPlan: null,
 			validationMessage: null,
 			steps: [
 				{

@@ -5,7 +5,7 @@
 				You have selected following server plans
 			</p>
 		</div>
-		<div clas="mt-4">
+		<div clas="mt-4" v-if="selectedAppPlan">
 			<label class="text-base font-semibold">Application Server</label>
 			<div
 				class="focus-within:shadow-outline mt-2 flex rounded-md border px-4 py-3 text-left text-base"
@@ -31,7 +31,7 @@
 				</div>
 			</div>
 		</div>
-		<div class="mt-4">
+		<div class="mt-4" v-if="selectedDBPlan">
 			<label class="text-base font-semibold">Database Server</label>
 			<div
 				class="focus-within:shadow-outline mt-2 flex rounded-md border px-4 py-3 text-left text-base"
@@ -57,7 +57,7 @@
 				</div>
 			</div>
 		</div>
-		<div class="mt-4">
+		<div class="mt-4" v-if="this.selectedAppPlan && this.selectedDBPlan">
 			<p class="text-base text-gray-700">
 				Your monthly bill will be
 				<span class="font-semibold">{{ $planTitle(totalPlan) }}</span>
