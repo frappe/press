@@ -159,6 +159,10 @@ export default {
 						db_plan: this.selectedDBPlan?.name
 					}
 				},
+				onSuccess(data) {
+					let { server } = data;
+					this.$router.push(`/servers/${server}/overview/`);
+				},
 				validate() {
 					let canCreate =
 						this.title &&
