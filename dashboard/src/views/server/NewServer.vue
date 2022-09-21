@@ -14,6 +14,11 @@
 					v-model:title="title"
 					v-model:selectedRegion="selectedRegion"
 				/>
+				<AppServerPlans
+					v-model:selectedAppPlan="selectedAppPlan"
+					:options="options"
+					v-show="activeStep.name === 'AppServerPlan'"
+				/>
 				<ErrorMessage :error="validationMessage" />
 				<div class="mt-4">
 					<!-- Region consent checkbox -->
