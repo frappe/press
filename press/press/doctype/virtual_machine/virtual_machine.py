@@ -204,6 +204,19 @@ class VirtualMachine(Document):
 			aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
 		)
 
+	@frappe.whitelist()
+	def create_proxy_server(self):
+		frappe.get_doc(
+			{
+				"doctype": "Proxy Server",
+				"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
+				"domain": self.domain,
+				"cluster": self.cluster,
+				"provider": "AWS EC2",
+				"virtual_machine": self.name,
+			}
+		).insert()
+
 
 def sync_virtual_machines():
 	machines = frappe.get_all("Virtual Machine", {"status": "Pending"})

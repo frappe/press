@@ -10,6 +10,7 @@ frappe.ui.form.on('Virtual Machine', {
 			[__('Disable Termination Protection'), 'disable_termination_protection', frm.doc.termination_protection],
 			[__('Enable Termination Protection'), 'enable_termination_protection', !frm.doc.termination_protection],
 			[__('Create Image'), 'create_image'],
+			[__('Create Proxy Server'), 'create_proxy_server', frm.doc.series === "n"],
 		].forEach(([label, method, condition]) => {
 			if (typeof condition === "undefined" || condition) {
 				frm.add_custom_button(
