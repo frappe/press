@@ -9,7 +9,7 @@
 		</p>
 		<AlertBillingInformation class="mt-4" />
 		<div class="mt-4">
-			<SitePlansTable
+			<ServerPlansTable
 				:plans="options.app_plans"
 				:selectedPlan="selectedAppPlan"
 				@update:selectedPlan="plan => $emit('update:selectedAppPlan', plan)"
@@ -18,7 +18,7 @@
 	</div>
 </template>
 <script>
-import SitePlansTable from '@/components/SitePlansTable.vue';
+import ServerPlansTable from '@/components/ServerPlansTable.vue';
 import AlertBillingInformation from '@/components/AlertBillingInformation.vue';
 
 export default {
@@ -26,7 +26,7 @@ export default {
 	emits: ['update:selectedAppPlan'],
 	props: ['options', 'selectedAppPlan'],
 	components: {
-		SitePlansTable,
+		ServerPlansTable,
 		AlertBillingInformation
 	}
 };
