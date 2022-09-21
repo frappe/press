@@ -5,6 +5,12 @@ export default [
 		component: () => import('../views/server/Servers.vue')
 	},
 	{
+		path: '/servers/new',
+		name: 'NewServer',
+		component: () => import('../views/server/NewServer.vue'),
+		props: true
+	},
+	{
 		path: '/servers/:serverName',
 		name: 'Server',
 		component: () => import('../views/server/Server.vue'),
