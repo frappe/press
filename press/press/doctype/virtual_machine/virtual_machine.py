@@ -6,9 +6,16 @@ import frappe
 import boto3
 from frappe.model.document import Document
 from frappe.core.utils import find
+from frappe.model.naming import make_autoname
+from frappe.desk.utils import slug
 
 
 class VirtualMachine(Document):
+	def autoname(self):
+		series = f"{self.series}-{slug(self.cluster)}.###"
+		self.index = int(make_autoname(series)[-3:])
+		self.name = f"{self.series}{self.index}-{slug(self.cluster)}.{self.domain}"
+
 	def validate(self):
 		if not self.machine_image:
 			self.machine_image = self.get_latest_ubuntu_image()

@@ -13,6 +13,11 @@
   "cloud_provider",
   "region",
   "availability_zone",
+  "naming_section",
+  "domain",
+  "series",
+  "column_break_32",
+  "index",
   "section_break_5",
   "machine_type",
   "disk_size",
@@ -223,11 +228,41 @@
    "fieldtype": "Link",
    "label": "Team",
    "options": "Team"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "naming_section",
+   "fieldtype": "Section Break",
+   "label": "Naming"
+  },
+  {
+   "fieldname": "index",
+   "fieldtype": "Int",
+   "label": "Index",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_32",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "n\nf\nm",
+   "reqd": 1
+  },
+  {
+   "fieldname": "domain",
+   "fieldtype": "Link",
+   "label": "Domain",
+   "options": "Root Domain",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-09-07 14:54:06.135839",
+ "modified": "2022-09-22 04:25:03.201058",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",
