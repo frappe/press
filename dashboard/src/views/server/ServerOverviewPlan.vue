@@ -15,6 +15,42 @@
 				Change Plan
 			</Button>
 		</template>
+
+		<div v-if="plan" class="flex rounded-lg bg-gray-50 p-5">
+			<PlanIcon />
+			<div class="ml-4">
+				<h4 class="text-4xl font-semibold text-gray-900">
+					{{ $planTitle(plan) }}
+					<span v-if="plan.price_usd > 0" class="text-lg"> /mo </span>
+				</h4>
+				<p class="text-base text-gray-700">
+					{{ plan.vcpu }} {{ $plural(plan.vcpu, 'vCPU', 'vCPUs') }} +
+					{{ formatBytes(plan.memory, 0, 2) }} Memory +
+					{{ formatBytes(plan.disk, 0, 3) }} Storage
+				</p>
+			</div>
+		</div>
+		<div v-if="plan" class="mt-4 grid grid-cols-3 gap-12">
+			<div v-for="d in usage" :key="d.label">
+				<ProgressArc :percentage="d.percentage" />
+				<div class="mt-2 text-base font-medium text-gray-900">
+					{{ d.label }}
+					{{
+						isNaN(d.percentage) ? '' : `(${Number(d.percentage).toFixed(1)}%)`
+					}}
+				</div>
+				<div class="mt-1 text-xs text-gray-600">{{ d.value }}</div>
+			</div>
+		</div>
+		<div v-else class="mt-4 ml-2 grid grid-cols-3 gap-12">
+			<div v-for="d in usage" :key="d.label">
+				<div class="text-base font-medium text-gray-900">
+					{{ d.label }}
+				</div>
+				<div class="mt-1 text-xs text-gray-600">{{ d.value }}</div>
+			</div>
+		</div>
+
 		<Dialog title="Change Plan" v-model="showChangePlanDialog">
 			<ServerPlansTable
 				class="mt-6"
@@ -38,11 +74,16 @@
 </template>
 <script>
 import ServerPlansTable from '@/components/ServerPlansTable.vue';
+import ProgressArc from '@/components/ProgressArc.vue';
+import PlanIcon from '@/components/PlanIcon.vue';
+
 export default {
 	name: 'ServerOverviewPlan',
 	props: ['server', 'plan'],
 	components: {
 		ServerPlansTable,
+		ProgressArc,
+		PlanIcon
 	},
 	data() {
 		return {
@@ -51,6 +92,16 @@ export default {
 		};
 	},
 	resources: {
+		usageResource() {
+			return {
+				method: 'press.api.server.usage',
+				params: {
+					name: this.server?.name
+				},
+				default: {},
+				auto: true
+			};
+		},
 		plans() {
 			return {
 				method: 'press.api.server.plans',
@@ -111,7 +162,40 @@ export default {
 
 			return processedPlans;
 		},
-	},
+		used() {
+			return this.$resources.usageResource.data;
+		},
+		usage() {
+			return [
+				{
+					label: 'CPU',
+					value: `${this.used.vcpu} / ${this.plan.vcpu} ${this.$plural(
+						this.plan.vcpu,
+						'vCPU',
+						'vCPUs'
+					)}`,
+					percentage: (this.used.vcpu / this.plan.vcpu) * 100
+				},
+				{
+					label: 'Memory',
+					value: `${this.formatBytes(
+						this.used.memory,
+						0,
+						2
+					)} / ${this.formatBytes(this.plan.memory, 0, 2)}`,
+					percentage: (this.used.memory / this.plan.memory) * 100
+				},
+				{
+					label: 'Storage',
+					value: `${this.formatBytes(
+						this.used.disk,
+						0,
+						3
+					)} / ${this.formatBytes(this.plan.disk, 0, 3)}`,
+					percentage: (this.used.disk / this.plan.disk) * 100
+				}
+			];
+		}
 	}
 };
 </script>

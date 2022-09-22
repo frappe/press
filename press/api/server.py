@@ -142,6 +142,32 @@ def search_list():
 
 @frappe.whitelist()
 @protected("Server")
+def usage(name):
+	query_map = {
+		"vcpu": (
+			f"""((count(count(node_cpu_seconds_total{{instance="{name}",job="node"}}) by (cpu))) - avg(sum by (mode)(rate(node_cpu_seconds_total{{mode='idle',instance="{name}",job="node"}}[120s])))) / count(count(node_cpu_seconds_total{{instance="{name}",job="node"}}) by (cpu))""",
+			lambda x: x,
+		),
+		"disk": (
+			f"""node_filesystem_avail_bytes{{instance="{name}", job="node", mountpoint="/"}} / (1024 * 1024 * 1024)""",
+			lambda x: x,
+		),
+		"memory": (
+			f"""(node_memory_MemTotal_bytes{{instance="{name}",job="node"}} - node_memory_MemFree_bytes{{instance="{name}",job="node"}}) / (1024 * 1024)""",
+			lambda x: x,
+		),
+	}
+
+	return {
+		usage_type: prometheus_query(query[0], query[1], "Asia/Kolkata", 120, 120)[
+			"datasets"
+		][0]["values"][-1]
+		for usage_type, query in query_map.items()
+	}
+
+
+@frappe.whitelist()
+@protected("Server")
 def analytics(name, query, timezone, duration):
 	timespan, timegrain = {
 		"1 Hour": (60 * 60, 2 * 60),
