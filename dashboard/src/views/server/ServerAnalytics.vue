@@ -5,7 +5,7 @@
 				<FrappeChart
 					type="line"
 					:data="cpuData"
-					:options="getChartOptions(d => d + ' s')"
+					:options="getChartOptions(d => d + ' %')"
 					:colors="[$theme.colors.yellow[500]]"
 				/>
 			</Card>
@@ -14,7 +14,7 @@
 				<FrappeChart
 					type="line"
 					:data="loadAverageData"
-					:options="getChartOptions(d => d + ' requests')"
+					:options="getChartOptions(d => d)"
 					:colors="[$theme.colors.green[500]]"
 				/>
 			</Card>
@@ -23,7 +23,7 @@
 				<FrappeChart
 					type="line"
 					:data="memoryData"
-					:options="getChartOptions(d => d + ' s')"
+					:options="getChartOptions(d => formatBytes(d))"
 					:colors="[$theme.colors.yellow[500]]"
 				/>
 			</Card>
@@ -32,7 +32,7 @@
 				<FrappeChart
 					type="line"
 					:data="spaceData"
-					:options="getChartOptions(d => d + ' jobs')"
+					:options="getChartOptions(d => d + ' %')"
 					:colors="[$theme.colors.red[500]]"
 				/>
 			</Card>
@@ -40,7 +40,7 @@
 				<FrappeChart
 					type="line"
 					:data="networkData"
-					:options="getChartOptions(d => d + ' s')"
+					:options="getChartOptions(d => formatBytes(d))"
 					:colors="[$theme.colors.blue[500]]"
 				/>
 			</Card>
@@ -48,7 +48,7 @@
 				<FrappeChart
 					type="line"
 					:data="iopsData"
-					:options="getChartOptions(d => d + ' s')"
+					:options="getChartOptions(d => d + ' I0ps')"
 					:colors="[$theme.colors.blue[500]]"
 				/>
 			</Card>

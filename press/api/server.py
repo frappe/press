@@ -9,6 +9,7 @@ from press.api.site import protected
 from frappe.utils import convert_utc_to_timezone
 from frappe.utils.password import get_decrypted_password
 from datetime import datetime
+from frappe.utils import flt
 
 
 @frappe.whitelist()
@@ -217,7 +218,7 @@ def prometheus_query(query, function, timezone, timespan, timegrain):
 			"values": [],
 		}
 		for _, value in response["data"]["result"][index]["values"]:
-			dataset["values"].append(float(value))
+			dataset["values"].append(flt(value, 2))
 		datasets.append(dataset)
 
 	return {"datasets": datasets, "labels": labels}
