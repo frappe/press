@@ -9,7 +9,7 @@ frappe.ui.form.on('Database Server', {
 			[__('Ping Ansible Unprepared'), "ping_ansible_unprepared", true],
 			[__('Update Agent'), "update_agent", true, frm.doc.is_server_setup],
 			[__('Fetch Keys'), "fetch_keys", true, frm.doc.is_server_setup && (!frm.doc.frappe_public_key || !frm.doc.root_public_key)],
-			[__('Prepare Server'), "prepare_server", true, !frm.doc.is_server_setup],
+			[__('Prepare Server'), "prepare_server", !frm.doc.is_server_prepared],
 			[__('Setup Server'), "setup_server", true, !frm.doc.is_server_setup],
 			[__('Convert From Frappe Server'), "convert_from_frappe_server", true, !frm.doc.is_server_setup],
 			[__('Setup Replication'), "setup_replication", true, frm.doc.is_server_setup && !frm.doc.is_primary && !frm.doc.is_replication_setup],

@@ -8,7 +8,7 @@ frappe.ui.form.on('Server', {
 			[__('Ping Ansible'), "ping_ansible", true],
 			[__('Ping Ansible Unprepared'), "ping_ansible_unprepared", true],
 			[__('Update Agent'), "update_agent", true, frm.doc.is_server_setup],
-			[__('Prepare Server'), "prepare_server", true, !frm.doc.is_server_setup],
+			[__('Prepare Server'), "prepare_server", !frm.doc.is_server_prepared],
 			[__('Setup Server'), "setup_server", true, !frm.doc.is_server_setup],
 			[__('Add to Proxy'), "add_upstream_to_proxy", true, frm.doc.is_server_setup && !frm.doc.is_upstream_setup],
 			[__('Setup Replication'), "setup_replication", true, frm.doc.is_server_setup && !frm.doc.is_primary && !frm.doc.is_replication_setup],

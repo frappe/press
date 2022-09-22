@@ -13,6 +13,7 @@
   "provider",
   "virtual_machine",
   "is_server_setup",
+  "is_server_prepared",
   "billing_section",
   "team",
   "column_break_11",
@@ -244,11 +245,18 @@
    "fieldtype": "Link",
    "label": "Plan",
    "options": "Plan"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_server_prepared",
+   "fieldtype": "Check",
+   "label": "Is Server Prepared",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-09-22 04:55:29.772854",
+ "modified": "2022-09-22 15:35:08.825584",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
