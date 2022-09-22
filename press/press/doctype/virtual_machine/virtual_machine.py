@@ -225,49 +225,57 @@ class VirtualMachine(Document):
 		proxy_server = frappe.get_all(
 			"Proxy Server", {"status": "Active", "cluster": self.cluster}, pluck="name", limit=1
 		)[0]
-		return frappe.get_doc(
-			{
-				"doctype": "Server",
-				"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
-				"domain": self.domain,
-				"cluster": self.cluster,
-				"proxy_server": proxy_server,
-				"database_server": database_server,
-				"provider": "AWS EC2",
-				"virtual_machine": self.name,
-				"team": self.team,
-			}
-		).insert()
+		document = {
+			"doctype": "Server",
+			"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
+			"domain": self.domain,
+			"cluster": self.cluster,
+			"proxy_server": proxy_server,
+			"database_server": database_server,
+			"provider": "AWS EC2",
+			"virtual_machine": self.name,
+			"team": self.team,
+		}
+
+		if self.virtual_machine_image:
+			document["is_server_setup"] = True
+
+		return frappe.get_doc(document).insert()
 
 	@frappe.whitelist()
 	def create_database_server(self):
-		return frappe.get_doc(
-			{
-				"doctype": "Database Server",
-				"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
-				"domain": self.domain,
-				"cluster": self.cluster,
-				"provider": "AWS EC2",
-				"virtual_machine": self.name,
-				"server_id": self.index,
-				"is_primary": True,
-				"team": self.team,
-			}
-		).insert()
+		document = {
+			"doctype": "Database Server",
+			"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
+			"domain": self.domain,
+			"cluster": self.cluster,
+			"provider": "AWS EC2",
+			"virtual_machine": self.name,
+			"server_id": self.index,
+			"is_primary": True,
+			"team": self.team,
+		}
+
+		if self.virtual_machine_image:
+			document["is_server_setup"] = True
+
+		return frappe.get_doc(document).insert()
 
 	@frappe.whitelist()
 	def create_proxy_server(self):
-		return frappe.get_doc(
-			{
-				"doctype": "Proxy Server",
-				"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
-				"domain": self.domain,
-				"cluster": self.cluster,
-				"provider": "AWS EC2",
-				"virtual_machine": self.name,
-				"team": self.team,
-			}
-		).insert()
+		document = {
+			"doctype": "Proxy Server",
+			"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
+			"domain": self.domain,
+			"cluster": self.cluster,
+			"provider": "AWS EC2",
+			"virtual_machine": self.name,
+			"team": self.team,
+		}
+		if self.virtual_machine_image:
+			document["is_server_setup"] = True
+
+		return frappe.get_doc(document).insert()
 
 
 def sync_virtual_machines():
