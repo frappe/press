@@ -3,6 +3,7 @@
 
 import frappe
 from frappe.model.document import Document
+from frappe.core.utils import find
 
 import boto3
 
@@ -26,6 +27,9 @@ class VirtualMachineImage(Document):
 			image = images[0]
 			self.status = self.get_status_map(image["State"])
 			self.platform = image["Architecture"]
+			volume = find(image["BlockDeviceMappings"], lambda x: "Ebs" in x.keys())
+			if volume:
+				self.size = volume["Ebs"]["VolumeSize"]
 		else:
 			self.status = "Unavailable"
 		self.save()

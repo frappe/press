@@ -10,6 +10,7 @@
   "aws_instance_id",
   "aws_ami_id",
   "status",
+  "size",
   "column_break_5",
   "cluster",
   "region",
@@ -83,12 +84,19 @@
    "fieldtype": "Select",
    "label": "Series",
    "options": "n\nf\nm",
+   "read_only": 1,
    "reqd": 1
+  },
+  {
+   "fieldname": "size",
+   "fieldtype": "Int",
+   "label": "Size",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-09-22 14:37:32.041346",
+ "modified": "2022-09-22 15:20:39.644173",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine Image",
