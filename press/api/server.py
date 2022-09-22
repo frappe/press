@@ -14,9 +14,13 @@ from datetime import datetime
 @frappe.whitelist()
 def all():
 	team = get_current_team()
-	servers = frappe.get_all("Server", {"team": team}, ["name", "creation", "status"])
+	servers = frappe.get_all(
+		"Server", {"team": team, "status": ("!=", "Archived")}, ["name", "creation", "status"]
+	)
 	database_servers = frappe.get_all(
-		"Database Server", {"team": team}, ["name", "creation", "status"]
+		"Database Server",
+		{"team": team, "status": ("!=", "Archived")},
+		["name", "creation", "status"],
 	)
 	return servers + database_servers
 
