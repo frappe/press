@@ -13,7 +13,8 @@
   "column_break_5",
   "cluster",
   "region",
-  "platform"
+  "platform",
+  "series"
  ],
  "fields": [
   {
@@ -73,11 +74,19 @@
   {
    "fieldname": "column_break_5",
    "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "virtual_machine.series",
+   "fieldname": "series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "n\nf\nm",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-08-30 12:40:02.577234",
+ "modified": "2022-09-22 14:21:32.873410",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine Image",
