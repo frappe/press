@@ -236,6 +236,7 @@ def options():
 	}
 
 
+@frappe.whitelist()
 def plans(name):
 	plans = frappe.db.get_all(
 		"Plan",
