@@ -118,6 +118,7 @@ export default {
 	data() {
 		return {
 			runningJob: false,
+			runningPlay: false,
 			errorMessage: ''
 		};
 	},
@@ -194,11 +195,14 @@ export default {
 			let tabs = [
 				{ label: 'Overview', route: 'overview' },
 				{ label: 'Analytics', route: 'analytics' },
-				{ label: 'Jobs', route: 'jobs', showRedDot: this.runningJob }
+				{ label: 'Jobs', route: 'jobs', showRedDot: this.runningJob },
+				{ label: 'Plays', route: 'plays', showRedDot: this.runningPlay }
 			];
 
 			let tabsByStatus = {
-				Active: ['Overview', 'Analytics', 'Jobs']
+				Active: ['Overview', 'Analytics', 'Jobs', 'Plays'],
+				Pending: ['Jobs', 'Plays'],
+				Installing: ['Jobs', 'Plays']
 			};
 			if (this.server) {
 				let tabsToShow = tabsByStatus[this.server.status];

@@ -258,3 +258,42 @@ def job(job):
 		order_by="creation",
 	)
 	return job
+
+
+@frappe.whitelist()
+@protected("Server")
+def plays(name, start=0):
+	plays = frappe.get_all(
+		"Ansible Play",
+		fields=["name", "play", "creation", "status", "start", "end", "duration"],
+		filters={"server": name},
+		start=start,
+		limit=10,
+	)
+	return plays
+
+
+@frappe.whitelist()
+def play(play):
+	play = frappe.get_doc("Ansible Play", play)
+	play = play.as_dict()
+	whitelisted_fields = [
+		"name",
+		"play",
+		"creation",
+		"status",
+		"start",
+		"end",
+		"duration",
+	]
+	for key in list(play.keys()):
+		if key not in whitelisted_fields:
+			play.pop(key, None)
+
+	play.steps = frappe.get_all(
+		"Ansible Task",
+		filters={"play": play.name},
+		fields=["task", "status", "start", "end", "duration", "output"],
+		order_by="creation",
+	)
+	return play

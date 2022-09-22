@@ -31,6 +31,12 @@ export default [
 				path: 'jobs/:jobName?',
 				component: () => import('../views/server/ServerJobs.vue'),
 				props: true
+			},
+			{
+				name: 'ServerPlays',
+				path: 'plays/:playName?',
+				component: () => import('../views/server/ServerPlays.vue'),
+				props: true
 			}
 		]
 	}
