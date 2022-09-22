@@ -25,6 +25,12 @@ export default [
 				name: 'ServerAnalytics',
 				path: 'analytics',
 				component: () => import('../views/server/ServerAnalytics.vue')
+			},
+			{
+				name: 'ServerJobs',
+				path: 'jobs/:jobName?',
+				component: () => import('../views/server/ServerJobs.vue'),
+				props: true
 			}
 		]
 	}

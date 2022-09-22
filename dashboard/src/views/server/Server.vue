@@ -117,6 +117,7 @@ export default {
 	},
 	data() {
 		return {
+			runningJob: false,
 			errorMessage: ''
 		};
 	},
@@ -192,11 +193,12 @@ export default {
 			let tabRoute = subRoute => `/servers/${this.serverName}/${subRoute}`;
 			let tabs = [
 				{ label: 'Overview', route: 'overview' },
-				{ label: 'Analytics', route: 'analytics' }
+				{ label: 'Analytics', route: 'analytics' },
+				{ label: 'Jobs', route: 'jobs', showRedDot: this.runningJob }
 			];
 
 			let tabsByStatus = {
-				Active: ['Overview', 'Analytics']
+				Active: ['Overview', 'Analytics', 'Jobs']
 			};
 			if (this.server) {
 				let tabsToShow = tabsByStatus[this.server.status];
