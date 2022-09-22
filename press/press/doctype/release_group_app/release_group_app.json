@@ -8,7 +8,8 @@
   "app",
   "title",
   "column_break_2",
-  "source"
+  "source",
+  "enable_auto_deploy"
  ],
  "fields": [
   {
@@ -17,7 +18,8 @@
    "in_list_view": 1,
    "label": "Source",
    "options": "App Source",
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "column_break_2",
@@ -38,11 +40,16 @@
    "fieldtype": "Data",
    "label": "Title",
    "reqd": 1
+  },
+  {
+   "fieldname": "enable_auto_deploy",
+   "fieldtype": "Data",
+   "label": "Enable Auto Deploy"
   }
  ],
  "istable": 1,
  "links": [],
- "modified": "2021-01-14 17:14:42.249051",
+ "modified": "2022-09-22 14:57:08.618984",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group App",
@@ -51,5 +58,6 @@
  "quick_entry": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }
