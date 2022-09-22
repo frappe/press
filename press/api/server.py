@@ -56,7 +56,10 @@ def new(server):
 			"team": team.name,
 		}
 	).insert()
-	machine.create_database_server()
+	db_server = machine.create_database_server()
+	db_server.plan = db_plan.name
+	db_server.save()
+	db_server.create_subscription(db_plan.name)
 
 	app_plan = frappe.get_doc("Plan", server["app_plan"])
 	machine = frappe.get_doc(
@@ -71,6 +74,9 @@ def new(server):
 		}
 	).insert()
 	app_server = machine.create_server()
+	app_server.plan = app_plan.name
+	app_server.save()
+	app_server.create_subscription(app_plan.name)
 
 	return {"server": app_server.name}
 

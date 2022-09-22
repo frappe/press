@@ -258,6 +258,9 @@ class BaseServer(Document):
 		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		return virtual_machine.update_name_tag(self.name)
 
+	def create_subscription(self, plan):
+		pass
+
 
 class Server(BaseServer):
 	def on_update(self):
