@@ -23,6 +23,11 @@ class VirtualMachine(Document):
 			ip = ipaddress.IPv4Interface(self.subnet_cidr_block).ip
 			multiplier = ["n", "f", "m"].index(self.series) + 1
 			self.private_ip_address = str(ip + (multiplier * 256) + (self.index + 100))
+		if self.virtual_machine_image:
+			self.disk_size = max(
+				self.disk_size,
+				frappe.db.get_value("Virtual Machine Image", self.virtual_machine_image, "size"),
+			)
 
 	def after_insert(self):
 		self.provision()
