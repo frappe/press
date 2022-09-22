@@ -177,6 +177,13 @@ export default {
 						window.open(`https://${this.server.name}`, '_blank');
 					}
 				},
+				this.server.status === 'Active' && {
+					label: 'New Bench',
+					icon: 'plus',
+					action: () => {
+						this.$router.replace(`/servers/${this.server.name}/bench/new`);
+					}
+				},
 				this.$account.user.user_type == 'System User' && {
 					label: 'View in Desk',
 					icon: 'external-link',
