@@ -5,15 +5,16 @@ frappe.ui.form.on('Virtual Machine', {
 	refresh: function (frm) {
 		[
 			[__('Sync'), 'sync'],
+			[__('Reboot'), 'reboot', frm.doc.status == "Running"],
 			[__('Stop'), 'stop', frm.doc.status == "Running"],
 			[__('Start'), 'start', frm.doc.status == "Stopped"],
 			[__('Terminate'), 'terminate', !frm.doc.termination_protection],
 			[__('Disable Termination Protection'), 'disable_termination_protection', frm.doc.termination_protection],
 			[__('Enable Termination Protection'), 'enable_termination_protection', !frm.doc.termination_protection],
-			[__('Create Image'), 'create_image'],
-			[__('Create Server'), 'create_server', frm.doc.series === "f"],
-			[__('Create Database Server'), 'create_database_server', frm.doc.series === "m"],
-			[__('Create Proxy Server'), 'create_proxy_server', frm.doc.series === "n"],
+			[__('Create Image'), 'create_image', frm.doc.status == "Stopped"],
+			[__('Create Server'), 'create_server', frm.doc.series === "f" && frm.doc.status == "Running"],
+			[__('Create Database Server'), 'create_database_server', frm.doc.series === "m" && frm.doc.status == "Running"],
+			[__('Create Proxy Server'), 'create_proxy_server', frm.doc.series === "n" && frm.doc.status == "Running"],
 		].forEach(([label, method, condition]) => {
 			if (typeof condition === "undefined" || condition) {
 				frm.add_custom_button(
