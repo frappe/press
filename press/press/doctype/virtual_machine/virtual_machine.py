@@ -155,12 +155,19 @@ class VirtualMachine(Document):
 		self.update_servers()
 
 	def update_servers(self):
+		status_map = {
+			"Pending": "Pending",
+			"Running": "Active",
+			"Terminated": "Archived",
+			"Stopped": "Archived",
+		}
 		for doctype in ["Server", "Database Server", "Proxy Server"]:
 			server = frappe.get_all(doctype, {"virtual_machine": self.name}, pluck="name")
 			if server:
 				server = server[0]
 				frappe.db.set_value(doctype, server, "ip", self.public_ip_address)
 				frappe.get_doc(doctype, server).create_dns_record()
+				frappe.db.set_value(doctype, server, "status", status_map[self.status])
 
 	def update_name_tag(self, name):
 		self.client().create_tags(
