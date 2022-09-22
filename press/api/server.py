@@ -235,32 +235,6 @@ def jobs(name, start=0):
 
 
 @frappe.whitelist()
-def job(job):
-	job = frappe.get_doc("Agent Job", job)
-	job = job.as_dict()
-	whitelisted_fields = [
-		"name",
-		"job_type",
-		"creation",
-		"status",
-		"start",
-		"end",
-		"duration",
-	]
-	for key in list(job.keys()):
-		if key not in whitelisted_fields:
-			job.pop(key, None)
-
-	job.steps = frappe.get_all(
-		"Agent Job Step",
-		filters={"agent_job": job.name},
-		fields=["step_name", "status", "start", "end", "duration", "output"],
-		order_by="creation",
-	)
-	return job
-
-
-@frappe.whitelist()
 @protected("Server")
 def plays(name, start=0):
 	plays = frappe.get_all(
