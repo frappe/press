@@ -218,7 +218,7 @@ class VirtualMachine(Document):
 		proxy_server = frappe.get_all(
 			"Proxy Server", {"status": "Active", "cluster": self.cluster}, pluck="name", limit=1
 		)[0]
-		frappe.get_doc(
+		return frappe.get_doc(
 			{
 				"doctype": "Server",
 				"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
@@ -234,7 +234,7 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def create_database_server(self):
-		frappe.get_doc(
+		return frappe.get_doc(
 			{
 				"doctype": "Database Server",
 				"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
@@ -250,7 +250,7 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def create_proxy_server(self):
-		frappe.get_doc(
+		return frappe.get_doc(
 			{
 				"doctype": "Proxy Server",
 				"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",

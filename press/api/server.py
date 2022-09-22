@@ -36,6 +36,46 @@ def get(name):
 
 
 @frappe.whitelist()
+def new(server):
+	team = get_current_team(get_doc=True)
+	if not team.enabled:
+		frappe.throw("You cannot create a new server because your account is disabled")
+
+	domain = frappe.db.get_single_value("Press Settings", "domain")
+	cluster = server["cluster"]
+
+	db_plan = frappe.get_doc("Plan", server["db_plan"])
+	machine = frappe.get_doc(
+		{
+			"doctype": "Virtual Machine",
+			"cluster": cluster,
+			"domain": domain,
+			"series": "m",
+			"disk_size": db_plan.disk,
+			"machine_type": db_plan.instance_type,
+			"team": team.name,
+		}
+	).insert()
+	machine.create_database_server()
+
+	app_plan = frappe.get_doc("Plan", server["app_plan"])
+	machine = frappe.get_doc(
+		{
+			"doctype": "Virtual Machine",
+			"cluster": cluster,
+			"domain": domain,
+			"series": "f",
+			"disk_size": app_plan.disk,
+			"machine_type": app_plan.instance_type,
+			"team": team.name,
+		}
+	).insert()
+	app_server = machine.create_server()
+
+	return {"server": app_server.name}
+
+
+@frappe.whitelist()
 def search_list():
 	servers = frappe.get_list(
 		"Server",
