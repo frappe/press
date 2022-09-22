@@ -142,13 +142,13 @@ def search_list():
 
 @frappe.whitelist()
 @protected("Server")
-def analytics(name, query, timezone, duration="7d"):
+def analytics(name, query, timezone, duration):
 	timespan, timegrain = {
-		"1h": (60 * 60, 2 * 60),
-		"6h": (6 * 60 * 60, 5 * 60),
-		"24h": (24 * 60 * 60, 30 * 60),
-		"7d": (7 * 24 * 60 * 60, 3 * 60 * 60),
-		"15d": (15 * 24 * 60 * 60, 6 * 60 * 60),
+		"1 Hour": (60 * 60, 2 * 60),
+		"6 Hour": (6 * 60 * 60, 5 * 60),
+		"24 Hour": (24 * 60 * 60, 30 * 60),
+		"7 Days": (7 * 24 * 60 * 60, 3 * 60 * 60),
+		"15 Days": (15 * 24 * 60 * 60, 6 * 60 * 60),
 	}[duration]
 
 	query_map = {

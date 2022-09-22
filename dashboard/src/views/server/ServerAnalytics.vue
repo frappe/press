@@ -1,5 +1,17 @@
 <template>
 	<div class="space-y-4">
+		<div class="grid justify-items-stretch">
+			<label class="justify-self-end">
+				<span class="mb-2 inline-block text-sm leading-4 text-gray-700">
+					Duration
+				</span>
+				<select class="form-select ml-2" v-model="duration">
+					<option v-for="option in durationOptions" :key="option">
+						{{ option }}
+					</option>
+				</select>
+			</label>
+		</div>
 		<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
 			<Card title="CPU">
 				<FrappeChart
@@ -66,6 +78,12 @@ export default {
 	components: {
 		FrappeChart
 	},
+	data() {
+		return {
+			duration: '1 Hour',
+			durationOptions: ['1 Hour', '6 Hour', '24 Hour', '7 Days', '15 Days']
+		};
+	},
 	resources: {
 		loadavg() {
 			let localTimezone = DateTime.local().zoneName;
@@ -74,7 +92,8 @@ export default {
 				params: {
 					name: this.server?.name,
 					timezone: localTimezone,
-					query: 'loadavg'
+					query: 'loadavg',
+					duration: this.duration
 				},
 				auto: true
 			};
@@ -86,7 +105,8 @@ export default {
 				params: {
 					name: this.server?.name,
 					timezone: localTimezone,
-					query: 'cpu'
+					query: 'cpu',
+					duration: this.duration
 				},
 				auto: true
 			};
@@ -98,7 +118,8 @@ export default {
 				params: {
 					name: this.server?.name,
 					timezone: localTimezone,
-					query: 'memory'
+					query: 'memory',
+					duration: this.duration
 				},
 				auto: true
 			};
@@ -110,7 +131,8 @@ export default {
 				params: {
 					name: this.server?.name,
 					timezone: localTimezone,
-					query: 'network'
+					query: 'network',
+					duration: this.duration
 				},
 				auto: true
 			};
@@ -122,7 +144,8 @@ export default {
 				params: {
 					name: this.server?.name,
 					timezone: localTimezone,
-					query: 'iops'
+					query: 'iops',
+					duration: this.duration
 				},
 				auto: true
 			};
@@ -134,7 +157,8 @@ export default {
 				params: {
 					name: this.server?.name,
 					timezone: localTimezone,
-					query: 'space'
+					query: 'space',
+					duration: this.duration
 				},
 				auto: true
 			};
