@@ -228,6 +228,7 @@ class VirtualMachine(Document):
 				"database_server": database_server,
 				"provider": "AWS EC2",
 				"virtual_machine": self.name,
+				"team": self.team,
 			}
 		).insert()
 
@@ -243,6 +244,7 @@ class VirtualMachine(Document):
 				"virtual_machine": self.name,
 				"server_id": self.index,
 				"is_primary": True,
+				"team": self.team,
 			}
 		).insert()
 
@@ -256,6 +258,7 @@ class VirtualMachine(Document):
 				"cluster": self.cluster,
 				"provider": "AWS EC2",
 				"virtual_machine": self.name,
+				"team": self.team,
 			}
 		).insert()
 
