@@ -40,6 +40,24 @@ def get(name):
 
 
 @frappe.whitelist()
+@protected("Server")
+def overview(name):
+	server = frappe.get_cached_doc("Server", name)
+	return {
+		"plan": frappe.get_doc("Plan", server.plan).as_dict(),
+		"info": {
+			"owner": frappe.db.get_value(
+				"User",
+				server.team,
+				["first_name", "last_name", "user_image"],
+				as_dict=True,
+			),
+			"created_on": server.creation,
+		},
+	}
+
+
+@frappe.whitelist()
 def new(server):
 	team = get_current_team(get_doc=True)
 	if not team.enabled:
@@ -133,17 +151,34 @@ def analytics(name, query, timezone, duration="7d"):
 	}[duration]
 
 	query_map = {
-		"cpu": f"""sum by (mode)(rate(node_cpu_seconds_total{{instance="{name}", job="node"}}[{timegrain}s])) * 100""",
-		"network": f"""rate(node_network_receive_bytes_total{{instance="{name}", job="node"}}[{timegrain}s]) * 8""",
-		"iops": f"""rate(node_disk_reads_completed_total{{instance="{name}", job="node"}}[{timegrain}s])""",
-		"space": f"""100 - ((node_filesystem_avail_bytes{{instance="{name}", job="node"}} * 100) / node_filesystem_size_bytes{{instance="{name}", job="node"}})""",
-		"loadavg": f"""{{__name__=~"node_load1|node_load5|node_load15", instance="{name}", job="node"}}""",
+		"cpu": (
+			f"""sum by (mode)(rate(node_cpu_seconds_total{{instance="{name}", job="node"}}[{timegrain}s])) * 100""",
+			lambda x: x["mode"],
+		),
+		"network": (
+			f"""rate(node_network_receive_bytes_total{{instance="{name}", job="node"}}[{timegrain}s]) * 8""",
+			lambda x: x["device"],
+		),
+		"iops": (
+			f"""rate(node_disk_reads_completed_total{{instance="{name}", job="node"}}[{timegrain}s])""",
+			lambda x: x["device"],
+		),
+		"space": (
+			f"""100 - ((node_filesystem_avail_bytes{{instance="{name}", job="node"}} * 100) / node_filesystem_size_bytes{{instance="{name}", job="node"}})""",
+			lambda x: x["device"],
+		),
+		"loadavg": (
+			f"""{{__name__=~"node_load1|node_load5|node_load15", instance="{name}", job="node"}}""",
+			lambda x: f"Load Average {x['__name__'][9:]}",
+		),
 	}
 
-	return prometheus_query(query_map[query], timezone, timespan, timegrain)
+	return prometheus_query(
+		query_map[query][0], query_map[query][1], timezone, timespan, timegrain
+	)
 
 
-def prometheus_query(query, timezone, timespan, timegrain):
+def prometheus_query(query, function, timezone, timespan, timegrain):
 	monitor_server = frappe.db.get_single_value("Press Settings", "monitor_server")
 	if not monitor_server:
 		return []
@@ -173,7 +208,10 @@ def prometheus_query(query, timezone, timespan, timegrain):
 		)
 
 	for index in range(len(response["data"]["result"])):
-		dataset = {"name": str(response["data"]["result"][index]["metric"]), "values": []}
+		dataset = {
+			"name": function(response["data"]["result"][index]["metric"]),
+			"values": [],
+		}
 		for _, value in response["data"]["result"][index]["values"]:
 			dataset["values"].append(float(value))
 		datasets.append(dataset)
