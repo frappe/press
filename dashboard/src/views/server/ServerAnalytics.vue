@@ -98,7 +98,7 @@ export default {
 				params: {
 					name: this.server?.name,
 					timezone: localTimezone,
-					query: 'network'
+					query: 'memory'
 				},
 				auto: true
 			};

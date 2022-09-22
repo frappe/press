@@ -171,6 +171,10 @@ def analytics(name, query, timezone, duration="7d"):
 			f"""{{__name__=~"node_load1|node_load5|node_load15", instance="{name}", job="node"}}""",
 			lambda x: f"Load Average {x['__name__'][9:]}",
 		),
+		"memory": (
+			f"""node_memory_MemTotal_bytes{{instance="{name}",job="node"}} - node_memory_MemFree_bytes{{instance="{name}",job="node"}} - (node_memory_Cached_bytes{{instance="{name}",job="node"}} + node_memory_Buffers_bytes{{instance="{name}",job="node"}})""",
+			lambda x: "Used",
+		),
 	}
 
 	return prometheus_query(
