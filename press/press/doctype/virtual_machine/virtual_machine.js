@@ -26,6 +26,33 @@ frappe.ui.form.on('Virtual Machine', {
 				);
 			}
 		});
+		[
+			[__('Resize'), 'resize', frm.doc.status == "Stopped"],
+		].forEach(([label, method]) => {
+			if (typeof condition === "undefined" || condition){	
+				frm.add_custom_button(
+					label,
+					() => {
+						frappe.prompt({
+							fieldtype: 'Data',
+							label: 'Machine Type',
+							fieldname: 'machine_type',
+							reqd: 1
+						},
+							({
+								machine_type
+							}) => {
+								frm.call(method, {
+									machine_type
+								}).then((r) => frm.refresh());
+							},
+							__('Resize Virtual Machine')
+						);
+					},
+					__('Actions')
+				);
+			}
+		});
 		if (frm.doc.aws_instance_id){
 			frm.add_web_link(`https://${frm.doc.region}.console.aws.amazon.com/ec2/v2/home?region=${frm.doc.region}#InstanceDetails:instanceId=${frm.doc.aws_instance_id}`, __('Visit AWS Dashboard'));
 		}

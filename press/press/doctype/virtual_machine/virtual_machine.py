@@ -215,6 +215,15 @@ class VirtualMachine(Document):
 	def terminate(self):
 		self.client().terminate_instances(InstanceIds=[self.aws_instance_id])
 
+	@frappe.whitelist()
+	def resize(self, machine_type):
+		self.client().modify_instance_attribute(
+			InstanceId=self.aws_instance_id,
+			InstanceType={"Value": machine_type},
+		)
+		self.machine_type = machine_type
+		self.save()
+
 	def client(self, client_type="ec2"):
 		cluster = frappe.get_doc("Cluster", self.cluster)
 		return boto3.client(
