@@ -48,6 +48,23 @@ def new(server):
 	domain = frappe.db.get_single_value("Press Settings", "domain")
 	cluster = server["cluster"]
 
+	app_image = db_image = None
+	db_images = frappe.get_all(
+		"Virtual Machine Image",
+		{"status": "Available", "series": "m", "cluster": cluster},
+		pluck="name",
+	)
+	if db_images:
+		db_image = db_images[0]
+
+	app_images = frappe.get_all(
+		"Virtual Machine Image",
+		{"status": "Available", "series": "f", "cluster": cluster},
+		pluck="name",
+	)
+	if app_images:
+		app_image = app_images[0]
+
 	db_plan = frappe.get_doc("Plan", server["db_plan"])
 	machine = frappe.get_doc(
 		{
@@ -57,6 +74,7 @@ def new(server):
 			"series": "m",
 			"disk_size": db_plan.disk,
 			"machine_type": db_plan.instance_type,
+			"virtual_machine_image": db_image,
 			"team": team.name,
 		}
 	).insert()
@@ -74,6 +92,7 @@ def new(server):
 			"series": "f",
 			"disk_size": app_plan.disk,
 			"machine_type": app_plan.instance_type,
+			"virtual_machine_image": app_image,
 			"team": team.name,
 		}
 	).insert()
