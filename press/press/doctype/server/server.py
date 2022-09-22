@@ -259,7 +259,27 @@ class BaseServer(Document):
 		return virtual_machine.update_name_tag(self.name)
 
 	def create_subscription(self, plan):
-		pass
+		self._create_initial_plan_change(plan)
+
+	def _create_initial_plan_change(self, plan):
+		frappe.get_doc(
+			{
+				"doctype": "Plan Change",
+				"document_type": self.doctype,
+				"document_name": self.name,
+				"from_plan": "",
+				"to_plan": plan,
+				"type": "Initial Plan",
+				"timestamp": self.creation,
+			}
+		).insert(ignore_permissions=True)
+
+	@property
+	def subscription(self):
+		name = frappe.db.get_value(
+			"Subscription", {"document_type": self.doctype, "document_name": self.name}
+		)
+		return frappe.get_doc("Subscription", name) if name else None
 
 
 class Server(BaseServer):
