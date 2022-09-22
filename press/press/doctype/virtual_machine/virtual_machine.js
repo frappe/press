@@ -5,7 +5,8 @@ frappe.ui.form.on('Virtual Machine', {
 	refresh: function (frm) {
 		[
 			[__('Sync'), 'sync'],
-			[__('Reboot'), 'reboot'],
+			[__('Stop'), 'stop', frm.doc.status == "Running"],
+			[__('Start'), 'start', frm.doc.status == "Stopped"],
 			[__('Terminate'), 'terminate', !frm.doc.termination_protection],
 			[__('Disable Termination Protection'), 'disable_termination_protection', frm.doc.termination_protection],
 			[__('Enable Termination Protection'), 'enable_termination_protection', !frm.doc.termination_protection],

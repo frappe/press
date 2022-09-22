@@ -199,6 +199,14 @@ class VirtualMachine(Document):
 		self.sync()
 
 	@frappe.whitelist()
+	def start(self):
+		self.client().start_instances(InstanceIds=[self.aws_instance_id])
+
+	@frappe.whitelist()
+	def stop(self):
+		self.client().stop_instances(InstanceIds=[self.aws_instance_id])
+
+	@frappe.whitelist()
 	def terminate(self):
 		self.client().terminate_instances(InstanceIds=[self.aws_instance_id])
 
