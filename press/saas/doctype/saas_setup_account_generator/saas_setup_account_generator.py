@@ -13,7 +13,7 @@ class SaasSetupAccountGenerator(WebsiteGenerator):
 	)
 
 	def get_context(self, context):
-		context.parents = [{"name": "Saas App"}]
+		context.parents = [{"name": "Marketplace App"}]
 
 	def validate(self):
 		if not self.custom_route:
