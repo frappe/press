@@ -10,3 +10,4 @@ selenium
 beautifulsoup4
 razorpay~=1.2.0
 stripe~=2.56.0
+pyOpenSSL==22.1.0
