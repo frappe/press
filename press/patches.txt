@@ -87,3 +87,4 @@ press.press.doctype.press_settings.patches.move_stripe_credentials_to_press_sett
 press.patches.v0_0_4.disable_subscriptions_for_inactive_sites
 press.press.doctype.virtual_machine.patches.set_naming_fields
 press.press.doctype.virtual_machine.patches.set_virtual_machine_naming_series
+press.press.doctype.virtual_machine.patches.rename_virtual_machines
