@@ -16,6 +16,6 @@ def execute():
 		frappe.db.sql(
 			f"""
 			INSERT INTO `tabSeries` (`name`, `current`)
-			VALUES ({row.series}-{slug(row.cluster)}, {row.index})
+			VALUES ("{row.series}-{slug(row.cluster)}", {row.index})
 		"""
 		)
