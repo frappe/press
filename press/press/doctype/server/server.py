@@ -114,6 +114,9 @@ class BaseServer(Document):
 				ansible = Ansible(playbook="aws.yml", server=self, user="ubuntu")
 
 			ansible.run()
+			self.reload()
+			self.is_server_prepared = True
+			self.save()
 		except Exception:
 			log_error("Server Preparation Exception", server=self.as_dict())
 

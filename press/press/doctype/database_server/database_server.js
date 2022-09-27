@@ -5,12 +5,13 @@ frappe.ui.form.on('Database Server', {
 	refresh: function (frm) {
 		[
 			[__('Ping Agent'), "ping_agent", false, frm.doc.is_server_setup],
-			[__('Ping Ansible'), "ping_ansible", true],
-			[__('Ping Ansible Unprepared'), "ping_ansible_unprepared", true],
+			[__('Ping Ansible'), "ping_ansible", true, frm.doc.is_server_prepared],
+			[__('Ping Ansible Unprepared'), "ping_ansible_unprepared", true, !frm.doc.is_server_prepared],
 			[__('Update Agent'), "update_agent", true, frm.doc.is_server_setup],
 			[__('Fetch Keys'), "fetch_keys", true, frm.doc.is_server_setup && (!frm.doc.frappe_public_key || !frm.doc.root_public_key)],
 			[__('Prepare Server'), "prepare_server", !frm.doc.is_server_prepared],
 			[__('Setup Server'), "setup_server", true, !frm.doc.is_server_setup],
+			[__('Setup Rename'), "rename_server", true, frm.doc.is_server_setup && frm.doc.is_server_prepared && !frm.doc.is_server_renamed],
 			[__('Convert From Frappe Server'), "convert_from_frappe_server", true, !frm.doc.is_server_setup],
 			[__('Setup Replication'), "setup_replication", true, frm.doc.is_server_setup && !frm.doc.is_primary && !frm.doc.is_replication_setup],
 			[__('Trigger Failover'), "trigger_failover", true, frm.doc.is_server_setup && !frm.doc.is_primary && frm.doc.is_replication_setup],
