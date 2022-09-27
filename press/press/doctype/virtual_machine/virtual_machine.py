@@ -171,7 +171,8 @@ class VirtualMachine(Document):
 			if server:
 				server = server[0]
 				frappe.db.set_value(doctype, server, "ip", self.public_ip_address)
-				frappe.get_doc(doctype, server).create_dns_record()
+				if self.public_ip_address:
+					frappe.get_doc(doctype, server).create_dns_record()
 				frappe.db.set_value(doctype, server, "status", status_map[self.status])
 
 	def update_name_tag(self, name):
