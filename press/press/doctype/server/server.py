@@ -281,6 +281,14 @@ class BaseServer(Document):
 		)
 		return frappe.get_doc("Subscription", name) if name else None
 
+	@frappe.whitelist()
+	def rename_server(self):
+		self.status = "Installing"
+		self.save()
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_rename_server", queue="long", timeout=2400
+		)
+
 
 class Server(BaseServer):
 	def on_update(self):
@@ -457,6 +465,54 @@ class Server(BaseServer):
 		if self.provider == "AWS EC2":
 			virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 			virtual_machine.reboot()
+
+	def _rename_server(self):
+		agent_password = self.get_password("agent_password")
+		agent_repository_url = self.get_agent_repository_url()
+		certificate_name = frappe.db.get_value(
+			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
+		)
+		certificate = frappe.get_doc("TLS Certificate", certificate_name)
+		monitoring_password = frappe.get_doc("Cluster", self.cluster).get_password(
+			"monitoring_password"
+		)
+		log_server = frappe.db.get_single_value("Press Settings", "log_server")
+		if log_server:
+			kibana_password = frappe.get_doc("Log Server", log_server).get_password(
+				"kibana_password"
+			)
+		else:
+			kibana_password = None
+
+		try:
+			ansible = Ansible(
+				playbook="rename.yml",
+				server=self,
+				variables={
+					"server": self.name,
+					"private_ip": self.private_ip,
+					"workers": "2",
+					"agent_password": agent_password,
+					"agent_repository_url": agent_repository_url,
+					"monitoring_password": monitoring_password,
+					"log_server": log_server,
+					"kibana_password": kibana_password,
+					"certificate_private_key": certificate.private_key,
+					"certificate_full_chain": certificate.full_chain,
+					"certificate_intermediate_chain": certificate.intermediate_chain,
+				},
+			)
+			play = ansible.run()
+			self.reload()
+			if play.status == "Success":
+				self.status = "Active"
+				self.is_server_setup = True
+			else:
+				self.status = "Broken"
+		except Exception:
+			self.status = "Broken"
+			log_error("Server Rename Exception", server=self.as_dict())
+		self.save()
 
 
 def process_new_server_job_update(job):
