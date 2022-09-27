@@ -302,6 +302,6 @@ class VirtualMachine(Document):
 
 
 def sync_virtual_machines():
-	machines = frappe.get_all("Virtual Machine", {"status": "Pending"})
+	machines = frappe.get_all("Virtual Machine", {"status": ("!=", "Terminated")})
 	for machine in machines:
 		frappe.get_doc("Virtual Machine", machine.name).sync()
