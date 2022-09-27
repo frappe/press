@@ -1,0 +1,12 @@
+---
+- name: Setup Filebeat
+  template:
+    src: ../../filebeat/templates/filebeat.yml
+    dest: /etc/filebeat/filebeat.yml
+
+- name: Restart Filebeat Daemon
+  systemd:
+    name: filebeat
+    daemon_reload: true
+    enabled: yes
+    state: restarted

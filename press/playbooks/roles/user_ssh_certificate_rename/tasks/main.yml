@@ -1,0 +1,12 @@
+---
+- name: Set authorized principals for frappe
+  copy:
+    dest: /etc/ssh/auth_principals/frappe
+    content: |
+      all-servers
+      {{ server | default(inventory_hostname) }}
+
+- name: Restart sshd service
+  service:
+    name: sshd
+    state: reloaded

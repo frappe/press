@@ -1,0 +1,15 @@
+---
+- name: Create StatsD Exporter Systemd Service File
+  template:
+    src: ../../statsd_exporter/templates/statsd_exporter.service
+    dest: /etc/systemd/system/statsd_exporter.service
+    owner: root
+    group: root
+    mode: 0644
+  
+- name: Restart StatsD Exporter Service
+  systemd:
+    daemon_reload: true
+    name: statsd_exporter
+    enabled: yes
+    state: restarted

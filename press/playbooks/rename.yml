@@ -5,7 +5,7 @@
   become_user: root
   gather_facts: yes
   roles:
-    - role: agent
-    - role: statsd_exporter
-    - role: filebeat
-    - role: user_ssh_certificate
+    - role: agent_rename
+    - role: statsd_exporter_rename
+    - role: filebeat_rename
+    - role: user_ssh_certificate_rename
