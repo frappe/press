@@ -1,0 +1,15 @@
+---
+- name: Create Deadlock Logger Systemd Service File
+  template:
+    src: ../../deadlock_logger/templates/deadlock_logger.service
+    dest: /etc/systemd/system/deadlock_logger.service
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Restart Deadlock Logger Service
+  systemd:
+    daemon_reload: true
+    name: deadlock_logger
+    enabled: yes
+    state: restarted

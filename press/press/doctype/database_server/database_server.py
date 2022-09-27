@@ -302,6 +302,57 @@ class DatabaseServer(BaseServer):
 		except Exception:
 			log_error("Deadlock Logger Setup Exception", server=self.as_dict())
 
+	def _rename_server(self):
+		agent_password = self.get_password("agent_password")
+		agent_repository_url = self.get_agent_repository_url()
+		mariadb_root_password = self.get_password("mariadb_root_password")
+		certificate_name = frappe.db.get_value(
+			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
+		)
+		certificate = frappe.get_doc("TLS Certificate", certificate_name)
+		monitoring_password = frappe.get_doc("Cluster", self.cluster).get_password(
+			"monitoring_password"
+		)
+		log_server = frappe.db.get_single_value("Press Settings", "log_server")
+		if log_server:
+			kibana_password = frappe.get_doc("Log Server", log_server).get_password(
+				"kibana_password"
+			)
+		else:
+			kibana_password = None
+
+		try:
+			ansible = Ansible(
+				playbook="database_rename.yml",
+				server=self,
+				variables={
+					"server": self.name,
+					"workers": "2",
+					"agent_password": agent_password,
+					"agent_repository_url": agent_repository_url,
+					"monitoring_password": monitoring_password,
+					"log_server": log_server,
+					"kibana_password": kibana_password,
+					"private_ip": self.private_ip,
+					"server_id": self.server_id,
+					"mariadb_root_password": mariadb_root_password,
+					"certificate_private_key": certificate.private_key,
+					"certificate_full_chain": certificate.full_chain,
+					"certificate_intermediate_chain": certificate.intermediate_chain,
+				},
+			)
+			play = ansible.run()
+			self.reload()
+			if play.status == "Success":
+				self.status = "Active"
+				self.is_server_setup = True
+			else:
+				self.status = "Broken"
+		except Exception:
+			self.status = "Broken"
+			log_error("Database Server Rename Exception", server=self.as_dict())
+		self.save()
+
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype(
 	"Database Server"
