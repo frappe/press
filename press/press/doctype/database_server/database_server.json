@@ -14,6 +14,7 @@
   "virtual_machine",
   "is_server_setup",
   "is_server_prepared",
+  "is_server_renamed",
   "billing_section",
   "team",
   "column_break_11",
@@ -252,11 +253,18 @@
    "fieldtype": "Check",
    "label": "Is Server Prepared",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_server_renamed",
+   "fieldtype": "Check",
+   "label": "Is Server Renamed",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-09-22 15:35:08.825584",
+ "modified": "2022-09-27 17:21:37.427836",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

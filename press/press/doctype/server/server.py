@@ -506,7 +506,7 @@ class Server(BaseServer):
 			self.reload()
 			if play.status == "Success":
 				self.status = "Active"
-				self.is_server_setup = True
+				self.is_server_renamed = True
 			else:
 				self.status = "Broken"
 		except Exception:
