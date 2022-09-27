@@ -59,6 +59,12 @@ def overview(name):
 
 
 @frappe.whitelist()
+@protected("Server")
+def archive(name):
+	return frappe.get_doc("Server", name).archive()
+
+
+@frappe.whitelist()
 def new(server):
 	team = get_current_team(get_doc=True)
 	if not team.enabled:

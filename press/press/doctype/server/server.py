@@ -292,6 +292,24 @@ class BaseServer(Document):
 			self.doctype, self.name, "_rename_server", queue="long", timeout=2400
 		)
 
+	@frappe.whitelist()
+	def archive(self):
+		self.status = "Pending"
+		self.save()
+		frappe.enqueue_doc(self.doctype, self.name, "_archive", queue="long")
+		self.disable_subscription()
+
+	def _archive(self):
+		machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
+		machine.disable_termination_protection()
+		machine.terminate()
+		machine.sync()
+
+	def disable_subscription(self):
+		subscription = self.subscription
+		if subscription:
+			subscription.disable()
+
 
 class Server(BaseServer):
 	def on_update(self):
