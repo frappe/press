@@ -27,20 +27,23 @@
   {
    "fieldname": "request_path",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Request Path"
   },
   {
    "fieldname": "request_method",
    "fieldtype": "Select",
+   "in_list_view": 1,
    "label": "Request Method",
    "options": "POST\nDELETE"
   }
  ],
  "links": [],
- "modified": "2020-04-03 18:43:57.735469",
+ "modified": "2022-09-28 17:39:45.144111",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Job Type",
+ "naming_rule": "Set by user",
  "owner": "Administrator",
  "permissions": [
   {
@@ -58,5 +61,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }
