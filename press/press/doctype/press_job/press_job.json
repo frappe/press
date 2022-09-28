@@ -17,7 +17,6 @@
    "in_standard_filter": 1,
    "label": "Job Type",
    "options": "Press Job Type",
-   "read_only": 1,
    "reqd": 1
   },
   {
@@ -34,7 +33,7 @@
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-09-28 17:49:55.992320",
+ "modified": "2022-09-28 18:54:17.137300",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Job",
