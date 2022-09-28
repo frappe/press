@@ -352,3 +352,9 @@ def play(play):
 		order_by="creation",
 	)
 	return play
+
+
+@frappe.whitelist()
+@protected("Server")
+def change_plan(name, plan):
+	frappe.get_doc("Server", name).change_plan(plan)

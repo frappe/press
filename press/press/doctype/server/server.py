@@ -10,6 +10,7 @@ from press.runner import Ansible
 from press.utils import log_error
 from frappe.core.utils import find
 from press.overrides import get_permission_query_conditions_for_doctype
+from frappe.utils.user import is_system_user
 
 from typing import List, Union
 import boto3
@@ -309,6 +310,47 @@ class BaseServer(Document):
 		subscription = self.subscription
 		if subscription:
 			subscription.disable()
+
+	def can_change_plan(self, ignore_card_setup):
+		if is_system_user(frappe.session.user):
+			return
+
+		if ignore_card_setup:
+			return
+
+		team = frappe.get_doc("Team", self.team)
+
+		if team.is_defaulter():
+			frappe.throw("Cannot change plan because you have unpaid invoices")
+
+		if team.payment_mode == "Partner Credits" and (
+			not team.get_available_partner_credits() > 0
+		):
+			frappe.throw("Cannot change plan because you don't have sufficient partner credits")
+
+		if team.payment_mode != "Partner Credits" and not (
+			team.default_payment_method or team.get_balance()
+		):
+			frappe.throw(
+				"Cannot change plan because you haven't added a card and not have enough balance"
+			)
+
+	def change_plan(self, plan, ignore_card_setup=False):
+		self.can_change_plan(ignore_card_setup)
+		frappe.get_doc(
+			{
+				"doctype": "Plan Change",
+				"document_type": self.doctype,
+				"document_name": self.name,
+				"from_plan": self.plan,
+				"to_plan": plan,
+			}
+		).insert()
+		machine_type = frappe.db.get_value("Plan", plan, "instance_type")
+		machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
+		machine.stop()
+		machine.resize(machine_type)
+		machine.start()
 
 
 class Server(BaseServer):
