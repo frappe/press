@@ -84,7 +84,7 @@
 			<!-- 2. Verification Email Sent -->
 			<form class="form-step" data-step="3">
 				<div class="text-center">
-					<h2 class="font-size-base">Verification Email Sent!</h2>
+					<h2 class="font-size-base mt-0">Verification Email Sent!</h2>
 					We have sent an email to <span class="verification-email"></span>.
 					Please click on the link received to verify your email and create your account.
 				</div>
@@ -184,7 +184,11 @@
 			values.url_args = url_args;
 		}
 		values.app = app;
-		return call('press.api.saas.account_request', values, $form)
+    if (values) {
+	    form_data = {...form_data, ...values, app}
+    }
+
+		return call('press.api.saas.account_request', form_data)
 			.then(() => {
 				$('h1').hide();
 				$('.verification-email').text(values.email);
@@ -199,13 +203,12 @@
 		}
 	}
 
-	function call(method, args, $form) {
+	function call(method, args) {
 		return frappe
 			.call({
 				method,
 				args,
 				type: "POST",
-				btn: $form.find("button.btn-primary"),
 			})
 			.then((r) => {
 				if (r.exc) {
