@@ -42,7 +42,7 @@ class StorageIntegrationSubscription(Document):
 			"Statement": [
 				{
 					"Effect": "Allow",
-					"Action": ["s3:GetObject", "s3:PutObject"],
+					"Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
 					"Resource": f"arn:aws:s3:::{bucket_name}/{self.site}/*",
 				}
 			],
