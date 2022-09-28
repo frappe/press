@@ -35,7 +35,8 @@
   "subject",
   "message",
   "signature",
-  "poll_method"
+  "poll_method",
+  "subscription_update_hook"
  ],
  "fields": [
   {
@@ -214,6 +215,11 @@
    "fieldname": "poll_method",
    "fieldtype": "Data",
    "label": "Poll Method"
+  },
+  {
+   "fieldname": "subscription_update_hook",
+   "fieldtype": "Data",
+   "label": "Subscription Update Hook"
   }
  ],
  "has_web_view": 1,
@@ -237,7 +243,7 @@
    "link_fieldname": "app"
   }
  ],
- "modified": "2022-08-28 11:43:54.202036",
+ "modified": "2022-09-28 18:53:07.850543",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Marketplace App",

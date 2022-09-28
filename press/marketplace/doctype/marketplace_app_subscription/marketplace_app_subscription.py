@@ -3,6 +3,7 @@
 
 import frappe
 import json
+import requests
 
 from press.utils import log_error
 from frappe.model.document import Document
@@ -74,6 +75,8 @@ class MarketplaceAppSubscription(Document):
 		# TODO: Check if this key already exists
 		if not self.while_site_creation:
 			self.set_keys_in_site_config()
+
+		self.update_subscription_hook()
 
 	def set_keys_in_site_config(self):
 		site_doc: Site = frappe.get_doc("Site", self.site)
@@ -156,6 +159,25 @@ class MarketplaceAppSubscription(Document):
 			return
 		self.status = "Disabled"
 		self.save(ignore_permissions=True)
+
+	def update_subscription_hook(self):
+		# sends app name and plan whenever a subscription is created for other apps
+		# this can be used for activating and deactivating workspaces
+		if self.app == "erpnext":
+			apps = frappe.get_list(
+				"Marketplace App Subscriptions", {"site": self.site}, pluck="app"
+			)
+			paths = frappe.get_list(
+				"Marketplace App",
+				{"subscription_update_hook": ("is", "set"), "app": ("in", apps)},
+				pluck="subscription_update_hook",
+			)
+			for path in paths:
+				requests.post(
+					f"https://{self.site}/api/method/{path}", data={"app": self.app, "plan": self.plan}
+				)
+		else:
+			return
 
 
 def create_usage_records():
