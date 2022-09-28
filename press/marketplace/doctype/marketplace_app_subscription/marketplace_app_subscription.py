@@ -165,7 +165,7 @@ class MarketplaceAppSubscription(Document):
 		# this can be used for activating and deactivating workspaces
 		if self.app == "erpnext":
 			apps = frappe.get_list(
-				"Marketplace App Subscriptions", {"site": self.site}, pluck="app"
+				"Marketplace App Subscription", {"site": self.site}, pluck="app"
 			)
 			paths = frappe.get_list(
 				"Marketplace App",
