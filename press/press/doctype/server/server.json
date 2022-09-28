@@ -8,6 +8,7 @@
   "status",
   "hostname",
   "domain",
+  "title",
   "column_break_4",
   "cluster",
   "provider",
@@ -329,10 +330,15 @@
    "fieldtype": "Check",
    "label": "Is Server Renamed",
    "read_only": 1
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title"
   }
  ],
  "links": [],
- "modified": "2022-09-27 17:21:08.180646",
+ "modified": "2022-09-28 14:02:17.452539",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

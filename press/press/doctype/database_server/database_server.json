@@ -8,6 +8,7 @@
   "status",
   "hostname",
   "domain",
+  "title",
   "column_break_4",
   "cluster",
   "provider",
@@ -260,11 +261,16 @@
    "fieldtype": "Check",
    "label": "Is Server Renamed",
    "read_only": 1
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-09-27 17:21:37.427836",
+ "modified": "2022-09-28 14:02:04.295342",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

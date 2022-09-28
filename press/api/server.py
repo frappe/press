@@ -16,12 +16,14 @@ from frappe.utils import flt
 def all():
 	team = get_current_team()
 	servers = frappe.get_all(
-		"Server", {"team": team, "status": ("!=", "Archived")}, ["name", "creation", "status"]
+		"Server",
+		{"team": team, "status": ("!=", "Archived")},
+		["name", "creation", "status", "title"],
 	)
 	database_servers = frappe.get_all(
 		"Database Server",
 		{"team": team, "status": ("!=", "Archived")},
-		["name", "creation", "status"],
+		["name", "creation", "status", "title"],
 	)
 	return servers + database_servers
 
@@ -32,6 +34,7 @@ def get(name):
 	server = frappe.get_doc("Server", name)
 	return {
 		"name": server.name,
+		"title": server.title,
 		"status": server.status,
 		"team": server.team,
 		"region_info": frappe.db.get_value(
@@ -105,6 +108,7 @@ def new(server):
 	).insert()
 	db_server = machine.create_database_server()
 	db_server.plan = db_plan.name
+	db_server.title = f"{server['title']} - Database"
 	db_server.save()
 	db_server.create_subscription(db_plan.name)
 
@@ -123,6 +127,7 @@ def new(server):
 	).insert()
 	app_server = machine.create_server()
 	app_server.plan = app_plan.name
+	app_server.title = f"{server['title']} - Application"
 	app_server.save()
 	app_server.create_subscription(app_plan.name)
 

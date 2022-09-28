@@ -16,17 +16,10 @@
 				>
 					<div class="flex items-center justify-between">
 						<div class="text-base sm:w-4/12">
-							{{ server.name }}
+							{{ server.title }}
 						</div>
 						<div class="text-base sm:w-3/12">
 							<Badge class="pointer-events-none" v-bind="serverBadge(server)" />
-						</div>
-						<div class="text-base sm:w-4/12">
-							<div
-								class="hover:text-ellipses truncate break-all hover:w-full sm:w-6/12"
-							>
-								{{ server.title }}
-							</div>
 						</div>
 						<div class="hidden w-2/12 text-sm text-gray-600 sm:block">
 							Created {{ formatDate(server.creation, 'relative') }}
