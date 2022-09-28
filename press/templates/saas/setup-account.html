@@ -23,7 +23,6 @@
 	</div>
 
 {% else %}
-	<h1>Set Up Your Account</h1>
 	<div class="mx-auto form-container col-xl-5 col-lg-6 col-md-7 col-sm-9" id="user-signup-verify"
 	data-validators="field_validators">
 	<div class="card">
@@ -33,17 +32,17 @@
 			<div class="alert alert-danger form-alert-error small" style="display: none;" role="alert"></div>
 			<form class="form-step" data-step="1" data-action="business_settings">
 				<div class="form-group">
-					<label for="company_name">Company Name</label>
+					<p>Company Name</p>
 					<input type="text" class="form-control" id="company_name" name="company">
 				</div>
 				<div class="form-row">
 					<div class="form-group col">
-						<label for="no_of_users">Number of Users</label>
+						<p>Number of Users</p>
 						<input type="number" id="no_of_users" name="no_of_users" class="form-control" min="1"
 							max="100000" required>
 					</div>
 					<div class="form-group col">
-						<label for="industry">Industry</label>
+						<p for="industry">Industry</p>
 						<select id="industry" name="industry" class="custom-select">
 							<option selected disabled></option>
 							<option value="Distribution">Distribution</option>
@@ -58,8 +57,8 @@
 				</div>
 				<div class="form-row">
 					<div class="form-group col">
-						<label for="no_of_employees">Number of employees</label>
-						<select id="no_of_employees" name="no_of_employees" class="custom-select">
+						<p for="no_of_employees">Number of employees</p>
+						<select id="no_of_employees" name="no_of_employees" class="custom-select text-xs">
 							<option selected disabled></option>
 							<option value="1-10">1 - 10</option>
 							<option value="11-50">11 - 50</option>
@@ -70,7 +69,7 @@
 						</select>
 					</div>
 					<div class="form-group col">
-						<label for="designation">Your Designation</label>
+						<p for="designation">Your Designation</p>
 						<select id="designation" name="designation" class="custom-select">
 							<option value=''></option>
 							<option value='Sales Manager'>Sales Manager</option>
@@ -88,7 +87,7 @@
 					</div>
 				</div>
 				<div class="form-group">
-					<label for="source">Where did you hear about {{ app_title }}?</label>
+					<p for="source">Where did you hear about {{ app_title }}?</p>
 						<select id="source" class="custom-select" name="referral_source">
 							<option></option>
 							<option value="Social media">Social media</option>
@@ -100,8 +99,8 @@
 				</div>
 				<div class="form-group">
 					<input type="checkbox" name="agreed_to_partner_consent" id="agreed_to_partner_consent" checked>
-					<label class="d-inline" for="agreed_to_partner_consent">I am okay if my details are shared with
-						local certified Partner</label>
+					<p class="d-inline" for="agreed_to_partner_consent">I am okay if my details are shared with
+						local certified Partner</p>
 				</div>
 				<div class="mt-8 d-flex justify-content-between">
 					<div></div>

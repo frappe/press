@@ -6,17 +6,47 @@
 <input id="app" type="text" value="{{ app }}" hidden/>
 <input id="domain" type="text" value="{{ domain }}" hidden/>
 
-<h1>Create a new account</h1>
-
 <div class="mx-auto form-container col-xl-5 col-lg-6 col-md-7 col-sm-9" id="user-signup"
 	data-validators="field_validators">
-	<div class="card">
+	<div class="card bg-gray-200">
 		<div class="card-body">
 			<div class="alert alert-primary form-alert-info small" style="display: none;" role="alert"></div>
 			<div class="alert alert-danger form-alert-error small" style="display: none;" role="alert"></div>
 			<!-- 1. Personal Details -->
-			<form class="form-step" data-step="1" data-action="submit_account_request">
+			<form class="form-step" data-step="1" data-action="save_partial_form_data">
+				<div class="form-row">
+					<div class="form-group col-12 col-md-6">
+						<p>First Name</p>
+						<input type="text" id="first_name" name="first_name" class="form-control"
+							autocomplete="given-name">
+					</div>
+					<div class="form-group col-12 col-md-6">
+						<p>Last Name</p>
+						<input type="text" id="last_name" name="last_name" class="form-control"
+							autocomplete="family-name">
+					</div>
+				</div>
 				<div class="form-group">
+					<p>Email Address</p>
+					<input type="email" id="email" class="form-control" name="email" autocomplete="email">
+				</div>
+				<div class="form-group">
+					<p>Password</p>
+					<input type="password" id="password" class="form-control" name="password" onkeyup="validate_password(this)">
+					<div class="mt-4 flex">
+						<input id="showPassword" type="checkbox" onclick="togglePasswordVisibility()">
+						<p>Show Password</p>
+					</div>
+				</div>
+
+				<div class="mt-4 d-flex justify-content-between">
+					<div></div>
+					<button type="submit" class="btn btn-primary btn-step-1">Next</button>
+				</div>
+			</form>
+
+			<form class="form-step" data-step="2" data-action="submit_account_request">
+		<div class="form-group">
 					<label for="subdomain">Site Name</label>
 					<div class="input-group">
 						<input type="text" id="subdomain" name="subdomain" class="form-control"
@@ -26,31 +56,6 @@
 						</div>
 					</div>
 					<small class="form-text"></small>
-				</div>
-
-				<div class="form-row">
-					<div class="form-group col-12 col-md-6">
-						<label for="first_name">First Name</label>
-						<input type="text" id="first_name" name="first_name" class="form-control"
-							autocomplete="given-name">
-					</div>
-					<div class="form-group col-12 col-md-6">
-						<label for="last_name">Last Name</label>
-						<input type="text" id="last_name" name="last_name" class="form-control"
-							autocomplete="family-name">
-					</div>
-				</div>
-				<div class="form-group">
-					<label for="email">Email address</label>
-					<input type="email" id="email" class="form-control" name="email" autocomplete="email">
-				</div>
-				<div class="form-group">
-					<label for="password">Password</label>
-					<input type="password" id="password" class="form-control" name="password" onkeyup="validate_password(this)">
-					<div class="mt-4 flex">
-						<input id="showPassword" type="checkbox" onclick="togglePasswordVisibility()">
-						<p class="text-xs mb-0">Show Password</p>
-					</div>
 				</div>
 				<div class="form-group">
 					<label for="phone">Phone Number</label>
@@ -77,7 +82,7 @@
 				</div>
 			</form>
 			<!-- 2. Verification Email Sent -->
-			<form class="form-step" data-step="2">
+			<form class="form-step" data-step="3">
 				<div class="text-center">
 					<h2 class="font-size-base">Verification Email Sent!</h2>
 					We have sent an email to <span class="verification-email"></span>.
@@ -103,6 +108,10 @@
 		set_subdomain_from_url();
 	});
 
+	function save_partial_form_data($form, values) {
+    form_data = values
+    return values
+	}
 	// this needs to be on global scope
 	var field_validators = {
 		subdomain: (value) => {
