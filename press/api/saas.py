@@ -655,7 +655,6 @@ def validate_password(password, first_name, last_name, email):
 	user_data = (first_name, last_name, email)
 	result = test_password_strength(password, "", None, user_data)
 	feedback = result.get("feedback", None)
-	print(result, feedback)
 
 	if feedback and not feedback.get("password_policy_validation_passed", False):
 		available = False
@@ -786,7 +785,7 @@ def create_marketplace_subscription(account_request):
 		if not frappe.db.exists(
 			"Marketplace App Subscription", {"app": account_request.saas_app, "site": site_name}
 		):
-			frappe.get_doc(
+			doc = frappe.get_doc(
 				{
 					"doctype": "Marketplace App Subscription",
 					"team": team_doc.name,
@@ -795,7 +794,9 @@ def create_marketplace_subscription(account_request):
 					"marketplace_app_plan": get_saas_plan(account_request.saas_app),
 					"initial_plan": json.loads(account_request.url_args).get("plan"),
 				}
-			).insert(ignore_permissions=True)
+			)
+			doc.expiry = site.trial_end_date
+			doc.insert(ignore_permissions=True)
 
 	frappe.set_user(team_doc.user)
 	frappe.local.login_manager.login_as(team_doc.user)

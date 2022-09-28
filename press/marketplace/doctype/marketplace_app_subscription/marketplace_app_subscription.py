@@ -3,9 +3,11 @@
 
 import frappe
 import json
+import requests
 
 from press.utils import log_error
 from frappe.model.document import Document
+from frappe.utils import get_url
 from press.press.doctype.site.site import Site
 
 
@@ -72,14 +74,24 @@ class MarketplaceAppSubscription(Document):
 	def after_insert(self):
 		# TODO: Check if this key already exists
 		if not self.while_site_creation:
-			self.set_secret_key_in_site_config()
+			self.set_keys_in_site_config()
 
-	def set_secret_key_in_site_config(self):
+		self.update_subscription_hook()
+
+	def set_keys_in_site_config(self):
 		site_doc: Site = frappe.get_doc("Site", self.site)
 
-		key = f"sk_{self.app}"
-		value = self.secret_key
-		config = {key: value}
+		key_id = f"sk_{self.app}"
+		secret_key = self.secret_key
+
+		config = {
+			key_id: secret_key,
+			"login_url": get_url(
+				f"/api/method/press.api.developer.marketplace.get_login_url?secret_key={secret_key}"
+			),
+		}
+		if self.expiry:
+			config.update({"expiry": str(self.expiry)})
 
 		site_doc.update_site_config(config)
 
@@ -147,6 +159,25 @@ class MarketplaceAppSubscription(Document):
 			return
 		self.status = "Disabled"
 		self.save(ignore_permissions=True)
+
+	def update_subscription_hook(self):
+		# sends app name and plan whenever a subscription is created for other apps
+		# this can be used for activating and deactivating workspaces
+		if self.app == "erpnext":
+			apps = frappe.get_list(
+				"Marketplace App Subscriptions", {"site": self.site}, pluck="app"
+			)
+			paths = frappe.get_list(
+				"Marketplace App",
+				{"subscription_update_hook": ("is", "set"), "app": ("in", apps)},
+				pluck="subscription_update_hook",
+			)
+			for path in paths:
+				requests.post(
+					f"https://{self.site}/api/method/{path}", data={"app": self.app, "plan": self.plan}
+				)
+		else:
+			return
 
 
 def create_usage_records():

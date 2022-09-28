@@ -888,3 +888,33 @@ def use_existing_credits(site, app, subscription, plan):
 		change_app_plan(subscription, plan)
 
 	return change_site_hosting_plan(site, plan, team)
+
+
+@frappe.whitelist(allow_guest=True)
+def login_via_token(token, team, site):
+
+	if not token or not isinstance(token, str):
+		frappe.throw("Invalid Token")
+
+	token_exists = frappe.db.exists(
+		"Saas Remote Login",
+		{
+			"team": team,
+			"token": token,
+			"status": "Attempted",
+			"expires_on": (">", frappe.utils.now()),
+		},
+	)
+
+	if token_exists:
+		doc = frappe.get_doc("Saas Remote Login", token_exists)
+		doc.status = "Used"
+		doc.save(ignore_permissions=True)
+		frappe.local.login_manager.login_as(team)
+		frappe.local.response["type"] = "redirect"
+		frappe.local.response[
+			"location"
+		] = f"/dashboard/saas/remote/success?team={team}&site={site}"
+	else:
+		frappe.local.response["type"] = "redirect"
+		frappe.local.response["location"] = "/dashboard/saas/remote/failure"
