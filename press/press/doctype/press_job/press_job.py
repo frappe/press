@@ -30,6 +30,10 @@ class PressJob(Document):
 		self.status = "Running"
 		self.next()
 
+	def fail(self):
+		self.status = "Failure"
+		self.save()
+
 	def succeed(self):
 		self.status = "Success"
 		self.save()
