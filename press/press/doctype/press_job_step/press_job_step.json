@@ -6,8 +6,9 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "job",
   "step_name",
+  "job",
+  "job_type",
   "status",
   "column_break_4",
   "start",
@@ -66,6 +67,13 @@
    "in_list_view": 1,
    "label": "Duration",
    "read_only": 1
+  },
+  {
+   "fieldname": "job_type",
+   "fieldtype": "Link",
+   "label": "Job Type",
+   "options": "Press Job Type",
+   "reqd": 1
   }
  ],
  "in_create": 1,

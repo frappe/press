@@ -18,6 +18,7 @@ class PressJob(Document):
 					"doctype": "Press Job Step",
 					"job": self.name,
 					"status": "Pending",
+					"job_type": self.job_type,
 					"step_name": step.step_name,
 					"duration": "00:00:00",
 				}
