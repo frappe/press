@@ -21,8 +21,13 @@
   "backup_size",
   "files_size",
   "section_break_17",
+  "logged_in_users",
+  "column_break_18",
+  "active_users",
+  "section_break_20",
   "users",
   "last_logins",
+  "last_active",
   "installed_apps",
   "erpnext_section",
   "activation_level",
@@ -182,11 +187,36 @@
   {
    "fieldname": "column_break_26",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "logged_in_users",
+   "fieldtype": "Int",
+   "label": "Users Logged In Today"
+  },
+  {
+   "fieldname": "column_break_18",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "active_users",
+   "fieldtype": "Int",
+   "label": "Active Users"
+  },
+  {
+   "fieldname": "section_break_20",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "last_active",
+   "fieldtype": "Table",
+   "label": "Last Active",
+   "options": "Site Analytics Active",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-05-05 09:29:20.505913",
+ "modified": "2022-09-29 17:11:33.611117",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Analytics",
