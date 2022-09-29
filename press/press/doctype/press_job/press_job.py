@@ -8,6 +8,7 @@ from frappe.model.document import Document
 class PressJob(Document):
 	def after_insert(self):
 		self.create_press_job_steps()
+		self.start()
 
 	def create_press_job_steps(self):
 		job_type = frappe.get_doc("Press Job Type", self.job_type)
@@ -22,3 +23,23 @@ class PressJob(Document):
 				}
 			)
 			doc.insert()
+
+	def start(self):
+		self.status = "Running"
+		self.next()
+
+	@frappe.whitelist()
+	def next(self):
+		next_step = self.next_step
+
+		frappe.get_doc("Press Job Step", next_step).execute()
+
+	@property
+	def next_step(self):
+		return frappe.db.get_value(
+			"Press Job Step",
+			{"job": self.name, "status": "Pending"},
+			"name",
+			order_by="name asc",
+			as_dict=True,
+		)
