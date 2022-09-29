@@ -85,7 +85,7 @@
 			<form class="form-step" data-step="3">
 				<div class="text-center">
 					<h2 class="font-size-base mt-0">Verification Email Sent!</h2>
-					We have sent an email with verification link to complete signup.<span class="verification-email"></span>.
+					We have sent an email to <span class="verification-email"></span>.
 					Please click on the link received to verify your email and create your account.
 				</div>
 			</form>
@@ -193,7 +193,7 @@
 		return call('press.api.saas.account_request', form_data)
 			.then(() => {
 				$('h1').hide();
-				$('.verification-email').text(values.email);
+				$('.verification-email').text(form_data.email);
 			});
 	}
 
