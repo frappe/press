@@ -11,19 +11,19 @@
   "status",
   "status_before_update",
   "server",
-  "bench",
-  "cluster",
+  "skip_auto_updates",
   "column_break_3",
   "admin_password",
+  "bench",
   "group",
-  "skip_auto_updates",
-  "site_config_section",
+  "cluster",
+  "config_tab",
   "host_name",
   "configuration",
   "column_break_12",
   "database_name",
   "config",
-  "billing",
+  "billing_tab",
   "team",
   "setup_wizard_complete",
   "plan",
@@ -35,6 +35,7 @@
   "trial_end_date",
   "erpnext_consultant",
   "section_break_6",
+  "apps_tab",
   "apps",
   "_keys_removed_in_last_update",
   "_site_usages",
@@ -44,25 +45,26 @@
   "deploy_section",
   "timezone",
   "column_break_29",
-  "remote_files",
+  "remote_files_tab",
   "skip_failing_patches",
   "remote_config_file",
   "remote_database_file",
   "column_break_34",
   "remote_private_file",
   "remote_public_file",
+  "tab_break_46",
   "notifications_section",
   "notify_email",
   "auto_updates_section",
   "auto_updates_scheduled",
   "auto_update_last_triggered_on",
+  "column_break_53",
   "update_trigger_frequency",
   "update_trigger_time",
   "column_break_57",
   "update_on_weekday",
   "update_end_of_month",
   "update_on_day_of_month",
-  "column_break_58",
   "database_section",
   "is_database_access_enabled",
   "saas_section",
@@ -184,13 +186,6 @@
    "read_only": 1
   },
   {
-   "fieldname": "billing",
-   "fieldtype": "Section Break",
-   "hide_days": 1,
-   "hide_seconds": 1,
-   "label": "Billing"
-  },
-  {
    "default": "0",
    "description": "If checked, this site's usage data won't be sent to Stripe",
    "fieldname": "free",
@@ -209,12 +204,6 @@
    "fieldtype": "Data",
    "hidden": 1,
    "label": "Status Before Update"
-  },
-  {
-   "collapsible": 1,
-   "fieldname": "remote_files",
-   "fieldtype": "Section Break",
-   "label": "Remote Files"
   },
   {
    "fieldname": "remote_database_file",
@@ -383,6 +372,7 @@
    "description": "Only used while first restore",
    "fieldname": "skip_failing_patches",
    "fieldtype": "Check",
+   "hidden": 1,
    "label": "Skip Failing Patches",
    "read_only": 1
   },
@@ -440,11 +430,6 @@
    "label": "Auto Updates Scheduled"
   },
   {
-   "fieldname": "site_config_section",
-   "fieldtype": "Section Break",
-   "label": "Site Config"
-  },
-  {
    "fieldname": "column_break_12",
    "fieldtype": "Column Break"
   },
@@ -453,10 +438,6 @@
    "fieldtype": "Data",
    "label": "Database Name",
    "read_only": 1
-  },
-  {
-   "fieldname": "column_break_58",
-   "fieldtype": "Column Break"
   },
   {
    "collapsible": 1,
@@ -495,6 +476,35 @@
    "fieldtype": "Link",
    "label": "Hybrid Saas Pool",
    "options": "Hybrid Saas Pool"
+  },
+  {
+   "fieldname": "billing_tab",
+   "fieldtype": "Tab Break",
+   "label": "Billing"
+  },
+  {
+   "fieldname": "config_tab",
+   "fieldtype": "Tab Break",
+   "label": "Config"
+  },
+  {
+   "fieldname": "remote_files_tab",
+   "fieldtype": "Tab Break",
+   "label": "Remote Files"
+  },
+  {
+   "fieldname": "tab_break_46",
+   "fieldtype": "Tab Break",
+   "label": "Miscellaneous"
+  },
+  {
+   "fieldname": "apps_tab",
+   "fieldtype": "Tab Break",
+   "label": "Apps"
+  },
+  {
+   "fieldname": "column_break_53",
+   "fieldtype": "Column Break"
   }
  ],
  "links": [
@@ -564,7 +574,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2022-09-03 13:19:44.255090",
+ "modified": "2022-09-29 23:53:14.635371",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
