@@ -20,6 +20,7 @@ class PressJob(Document):
 					"status": "Pending",
 					"job_type": self.job_type,
 					"step_name": step.step_name,
+					"wait_until_true": step.wait_until_true,
 					"duration": "00:00:00",
 				}
 			)

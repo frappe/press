@@ -22,7 +22,17 @@ class PressJobStep(Document):
 			safe_exec(script, _locals=local)
 			result = local["result"]
 
-			self.status = "Success"
+			if self.wait_until_true:
+				self.attempts = self.attempts + 1
+				if result:
+					self.status = "Success"
+				else:
+					self.status = "Pending"
+					import time
+
+					time.sleep(3)
+			else:
+				self.status = "Success"
 			self.result = str(result)
 		except Exception:
 			self.status = "Failure"
