@@ -1,0 +1,8 @@
+- name: Update APT Cache
+  apt:
+    update_cache: yes
+
+- name: Ensure no security updates are pending
+  shell: apt list --upgradable 2>/dev/null
+  register: command_result
+  failed_when: "'-security' in command_result.stdout"

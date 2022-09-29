@@ -32,20 +32,22 @@
    "fieldname": "play",
    "fieldtype": "Link",
    "label": "play",
-   "options": "Ansible Play"
+   "options": "Ansible Play",
+   "read_only": 1
   },
   {
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "status",
-   "options": "Running\nOpen\nClosed\nFailure",
+   "options": "Pending\nRunning\nSuccess\nFailure",
+   "read_only": 1,
    "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-09-29 18:45:56.968645",
+ "modified": "2022-09-29 20:57:47.002882",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Security Update Check",
