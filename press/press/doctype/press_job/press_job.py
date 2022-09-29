@@ -29,9 +29,17 @@ class PressJob(Document):
 		self.status = "Running"
 		self.next()
 
+	def succeed(self):
+		self.status = "Success"
+		self.save()
+
 	@frappe.whitelist()
 	def next(self):
 		next_step = self.next_step
+
+		if not next_step:
+			self.succeed()
+			return
 
 		frappe.get_doc("Press Job Step", next_step).execute()
 
