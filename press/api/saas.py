@@ -555,6 +555,7 @@ def account_request(
 	if not country:
 		frappe.throw("Country filed should be a valid country name")
 
+	return
 	account_request = frappe.get_doc(
 		{
 			"doctype": "Account Request",
@@ -672,12 +673,12 @@ def check_subdomain_availability(subdomain, app):
 	if len(subdomain) <= 4:
 		return False
 
-	# erpnext_com = get_erpnext_com_connection()
-	# result = erpnext_com.post_api(
-	# "central.www.signup.check_subdomain_availability", {"subdomain": subdomain}
-	# )
-	# if result:
-	# return False
+	erpnext_com = get_erpnext_com_connection()
+	result = erpnext_com.post_api(
+		"central.www.signup.check_subdomain_availability", {"subdomain": subdomain}
+	)
+	if result:
+		return False
 
 	exists = bool(
 		frappe.db.exists(
