@@ -672,12 +672,12 @@ def check_subdomain_availability(subdomain, app):
 	if len(subdomain) <= 4:
 		return False
 
-	erpnext_com = get_erpnext_com_connection()
-	result = erpnext_com.post_api(
-		"central.www.signup.check_subdomain_availability", {"subdomain": subdomain}
-	)
-	if result:
-		return False
+	# erpnext_com = get_erpnext_com_connection()
+	# result = erpnext_com.post_api(
+	# "central.www.signup.check_subdomain_availability", {"subdomain": subdomain}
+	# )
+	# if result:
+	# return False
 
 	exists = bool(
 		frappe.db.exists(
@@ -785,7 +785,7 @@ def create_marketplace_subscription(account_request):
 		if not frappe.db.exists(
 			"Marketplace App Subscription", {"app": account_request.saas_app, "site": site_name}
 		):
-			doc = frappe.get_doc(
+			frappe.get_doc(
 				{
 					"doctype": "Marketplace App Subscription",
 					"team": team_doc.name,
@@ -794,9 +794,7 @@ def create_marketplace_subscription(account_request):
 					"marketplace_app_plan": get_saas_plan(account_request.saas_app),
 					"initial_plan": json.loads(account_request.url_args).get("plan"),
 				}
-			)
-			doc.expiry = site.trial_end_date
-			doc.insert(ignore_permissions=True)
+			).insert(ignore_permissions=True)
 
 	frappe.set_user(team_doc.user)
 	frappe.local.login_manager.login_as(team_doc.user)

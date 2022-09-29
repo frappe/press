@@ -90,8 +90,9 @@ class MarketplaceAppSubscription(Document):
 				f"/api/method/press.api.developer.marketplace.get_login_url?secret_key={secret_key}"
 			),
 		}
-		if self.expiry:
-			config.update({"expiry": str(self.expiry)})
+		expiry = frappe.db.get_value("Site", self.site, "trial_end_date")
+		if expiry:
+			config.update({"expiry": str(expiry)})
 
 		site_doc.update_site_config(config)
 
