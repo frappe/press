@@ -46,7 +46,6 @@ class PressJob(Document):
 			self.succeed()
 			return
 
-		frappe.get_doc("Press Job Step", next_step).execute()
 		frappe.enqueue_doc("Press Job Step", next_step, "execute")
 
 	@property
