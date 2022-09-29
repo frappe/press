@@ -243,7 +243,7 @@
    "link_fieldname": "app"
   }
  ],
- "modified": "2022-09-28 18:53:07.850543",
+ "modified": "2022-09-30 00:00:56.086134",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Marketplace App",
@@ -264,7 +264,16 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": [],
+ "states": [
+  {
+   "color": "Gray",
+   "title": "Draft"
+  },
+  {
+   "color": "Green",
+   "title": "Published"
+  }
+ ],
  "title_field": "title",
  "track_changes": 1
 }
