@@ -7,7 +7,8 @@
  "engine": "InnoDB",
  "field_order": [
   "job_type",
-  "status"
+  "status",
+  "arguments"
  ],
  "fields": [
   {
@@ -28,12 +29,23 @@
    "options": "Pending\nRunning\nSkipped\nSuccess\nFailure",
    "read_only": 1,
    "reqd": 1
+  },
+  {
+   "default": "{}",
+   "fieldname": "arguments",
+   "fieldtype": "Code",
+   "label": "Arguments",
+   "reqd": 1
   }
  ],
- "in_create": 1,
  "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2022-09-28 18:54:17.137300",
+ "links": [
+  {
+   "link_doctype": "Press Job Step",
+   "link_fieldname": "job"
+  }
+ ],
+ "modified": "2022-09-29 18:22:56.163904",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Job",

@@ -6,7 +6,9 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "step_name"
+  "step_name",
+  "column_break_2",
+  "section_break_4",
  ],
  "fields": [
   {
@@ -15,6 +17,20 @@
    "in_list_view": 1,
    "label": "Step Name",
    "reqd": 1
+  },
+  {
+   "fieldname": "script",
+   "fieldtype": "Code",
+   "label": "Script",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_4",
+   "fieldtype": "Section Break"
   }
  ],
  "index_web_pages_for_search": 1,

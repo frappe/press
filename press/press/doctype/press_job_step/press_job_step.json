@@ -13,7 +13,10 @@
   "column_break_4",
   "start",
   "end",
-  "duration"
+  "duration",
+  "section_break_8",
+  "result",
+  "traceback"
  ],
  "fields": [
   {
@@ -66,6 +69,22 @@
    "fieldtype": "Time",
    "in_list_view": 1,
    "label": "Duration",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_8",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "result",
+   "fieldtype": "Code",
+   "label": "Result",
+   "read_only": 1
+  },
+  {
+   "fieldname": "traceback",
+   "fieldtype": "Code",
+   "label": "Traceback",
    "read_only": 1
   },
   {
