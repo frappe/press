@@ -78,14 +78,14 @@
 				<div class="form-message text-danger"></div>
 				<div class="mt-8 d-flex justify-content-between">
 					<div></div>
-					<button type="submit" class="btn btn-primary btn-step-1">Create Account</button>
+					<button id="accountRequestButton" type="submit" class="btn btn-primary btn-step-1">Create Account</button>
 				</div>
 			</form>
 			<!-- 2. Verification Email Sent -->
 			<form class="form-step" data-step="3">
 				<div class="text-center">
 					<h2 class="font-size-base mt-0">Verification Email Sent!</h2>
-					We have sent an email to <span class="verification-email"></span>.
+					We have sent an email with verification link to complete signup.<span class="verification-email"></span>.
 					Please click on the link received to verify your email and create your account.
 				</div>
 			</form>
@@ -179,6 +179,8 @@
 	};
 
 	function submit_account_request($form, values) {
+		document.getElementById("accountRequestButton").disabled = true;
+    document.getElementById("accountRequestButton").innerHTML = '<span class="mr-2">Signing up</span><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
 		let url_args = frappe.utils.get_query_params();
 		if (Object.keys(url_args)) {
 			values.url_args = url_args;
