@@ -28,10 +28,16 @@ class PressJob(Document):
 
 	def start(self):
 		self.status = "Running"
+		self.save()
 		self.next()
 
 	def fail(self):
 		self.status = "Failure"
+		pending_steps = frappe.get_all(
+			"Press Job Step", {"job": self.name, "status": "Pending"}
+		)
+		for step in pending_steps:
+			frappe.db.set_value("Press Job Step", step.name, "status", "Skipped")
 		self.save()
 
 	def succeed(self):
@@ -40,6 +46,8 @@ class PressJob(Document):
 
 	@frappe.whitelist()
 	def next(self):
+		self.status = "Running"
+		self.save()
 		next_step = self.next_step
 
 		if not next_step:
