@@ -1,0 +1,70 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2022-05-13 09:24:36.476122",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "server_type",
+  "server",
+  "play",
+  "status"
+ ],
+ "fields": [
+  {
+   "fieldname": "server_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Server Type",
+   "options": "DocType",
+   "reqd": 1
+  },
+  {
+   "fieldname": "server",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "label": "server",
+   "options": "server_type",
+   "reqd": 1
+  },
+  {
+   "fieldname": "play",
+   "fieldtype": "Link",
+   "label": "play",
+   "options": "Ansible Play"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "status",
+   "options": "Running\nOpen\nClosed\nFailure",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2022-09-29 18:45:56.968645",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Security Update Check",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
