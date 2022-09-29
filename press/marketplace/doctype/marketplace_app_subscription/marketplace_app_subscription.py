@@ -163,19 +163,20 @@ class MarketplaceAppSubscription(Document):
 	def update_subscription_hook(self):
 		# sends app name and plan whenever a subscription is created for other apps
 		# this can be used for activating and deactivating workspaces
-		if self.app == "erpnext":
-			apps = frappe.get_list(
-				"Marketplace App Subscription", {"site": self.site}, pluck="app"
-			)
+		if self.app in ["erpnext", "hrms"]:
 			paths = frappe.get_list(
 				"Marketplace App",
-				{"subscription_update_hook": ("is", "set"), "app": ("in", apps)},
+				{"subscription_update_hook": ("is", "set")},
 				pluck="subscription_update_hook",
 			)
-			for path in paths:
-				requests.post(
-					f"https://{self.site}/api/method/{path}", data={"app": self.app, "plan": self.plan}
-				)
+			try:
+				for path in paths:
+					requests.post(
+						f"https://{self.site}/api/method/{path}",
+						data={"app": self.app, "plan": self.plan},
+					)
+			except Exception:
+				pass
 		else:
 			return
 
