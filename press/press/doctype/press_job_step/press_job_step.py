@@ -46,6 +46,6 @@ class PressJobStep(Document):
 
 		job = frappe.get_doc("Press Job", self.job)
 		if self.status == "Failure":
-			job.fail()
+			job.fail(local["arguments"])
 		else:
-			job.next()
+			job.next(local["arguments"])

@@ -3,6 +3,7 @@
 
 import frappe
 from frappe.model.document import Document
+import json
 
 
 class PressJob(Document):
@@ -32,7 +33,7 @@ class PressJob(Document):
 		self.save()
 		self.next()
 
-	def fail(self):
+	def fail(self, arguments=None):
 		self.status = "Failure"
 		pending_steps = frappe.get_all(
 			"Press Job Step", {"job": self.name, "status": "Pending"}
@@ -50,7 +51,11 @@ class PressJob(Document):
 		self.save()
 
 	@frappe.whitelist()
-	def next(self):
+	def next(self, arguments=None):
+		if arguments:
+			old_arguments = json.loads(self.arguments)
+			old_arguments.update(arguments)
+			self.arguments = json.dumps(old_arguments, indent=2)
 		self.status = "Running"
 		self.save()
 		next_step = self.next_step
