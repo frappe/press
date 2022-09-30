@@ -3,6 +3,7 @@
 
 import frappe
 import requests
+import json
 
 from press.utils import get_current_team, group_children_in_result
 from press.api.site import protected
@@ -94,44 +95,52 @@ def new(server):
 		app_image = app_images[0]
 
 	db_plan = frappe.get_doc("Plan", server["db_plan"])
-	machine = frappe.get_doc(
+	frappe.get_doc(
 		{
-			"doctype": "Virtual Machine",
-			"cluster": cluster,
-			"domain": domain,
-			"series": "m",
-			"disk_size": db_plan.disk,
-			"machine_type": db_plan.instance_type,
-			"virtual_machine_image": db_image,
-			"team": team.name,
+			"doctype": "Press Job",
+			"job_type": "Create Server",
+			"arguments": json.dumps(
+				{
+					"server_type": "Database Server",
+					"cluster": cluster,
+					"domain": domain,
+					"series": "m",
+					"disk_size": db_plan.disk,
+					"machine_type": db_plan.instance_type,
+					"image": db_image,
+					"team": team.name,
+					"title": f"{server['title']} - Database",
+					"plan": db_plan.name,
+				},
+				indent=2,
+			),
 		}
 	).insert()
-	db_server = machine.create_database_server()
-	db_server.plan = db_plan.name
-	db_server.title = f"{server['title']} - Database"
-	db_server.save()
-	db_server.create_subscription(db_plan.name)
 
 	app_plan = frappe.get_doc("Plan", server["app_plan"])
-	machine = frappe.get_doc(
+	app_job = frappe.get_doc(
 		{
-			"doctype": "Virtual Machine",
-			"cluster": cluster,
-			"domain": domain,
-			"series": "f",
-			"disk_size": app_plan.disk,
-			"machine_type": app_plan.instance_type,
-			"virtual_machine_image": app_image,
-			"team": team.name,
+			"doctype": "Press Job",
+			"job_type": "Create Server",
+			"arguments": json.dumps(
+				{
+					"server_type": "Server",
+					"cluster": cluster,
+					"domain": domain,
+					"series": "f",
+					"disk_size": app_plan.disk,
+					"machine_type": app_plan.instance_type,
+					"image": app_image,
+					"team": team.name,
+					"title": f"{server['title']} - Application",
+					"plan": app_plan.name,
+				},
+				indent=2,
+			),
 		}
 	).insert()
-	app_server = machine.create_server()
-	app_server.plan = app_plan.name
-	app_server.title = f"{server['title']} - Application"
-	app_server.save()
-	app_server.create_subscription(app_plan.name)
 
-	return {"server": app_server.name}
+	return {"job": app_job.name}
 
 
 @frappe.whitelist()
