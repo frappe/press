@@ -10,3 +10,5 @@
     - role: mysqld_exporter_rename
     - role: deadlock_logger_rename
     - role: filebeat_rename
+    - role: sshd_hardening
+    - role: user_ssh_certificate
