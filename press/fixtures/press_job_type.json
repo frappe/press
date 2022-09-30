@@ -71,4 +71,52 @@
    }
   ]
  },
+ {
+  "docstatus": 0,
+  "doctype": "Press Job Type",
+  "modified": "2022-09-30 15:46:58.651283",
+  "name": "Resize Server",
+  "steps": [
+   {
+    "parent": "Resize Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", arguments.machine)\nmachine.stop()",
+    "step_name": "Stop Virtual Machine",
+    "wait_until_true": 0
+   },
+   {
+    "parent": "Resize Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", arguments.machine)\nmachine.sync()\nresult = machine.status == \"Stopped\"",
+    "step_name": "Wait for Virtual Machine to Stop",
+    "wait_until_true": 1
+   },
+   {
+    "parent": "Resize Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", arguments.machine)\nmachine.resize(arguments.machine_type)",
+    "step_name": "Resize Virtual Machine",
+    "wait_until_true": 0
+   },
+   {
+    "parent": "Resize Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", arguments.machine)\nmachine.start()",
+    "step_name": "Start Virtual Machine",
+    "wait_until_true": 0
+   },
+   {
+    "parent": "Resize Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", arguments.machine)\nmachine.sync()\nresult = machine.status == \"Running\"",
+    "step_name": "Wait for Virtual Machine to Start",
+    "wait_until_true": 1
+   }
+  ]
+ },
 ]
