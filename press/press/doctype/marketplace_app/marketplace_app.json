@@ -9,15 +9,18 @@
   "image",
   "app",
   "title",
-  "route",
   "column_break_3",
-  "categories",
+  "team",
+  "route",
+  "section_break_7",
   "subscription_type",
   "status",
-  "team",
+  "column_break_10",
+  "categories",
   "published",
   "section_break_5",
   "sources",
+  "descriptions_tab",
   "description",
   "app_screenshots_section",
   "screenshots",
@@ -30,12 +33,16 @@
   "column_break_16",
   "privacy_policy",
   "terms_of_service",
+  "saas_tab",
   "signup_email_template_section",
-  "custom_verify_template",
-  "subject",
   "message",
+  "column_break_32",
   "signature",
+  "column_break_30",
+  "subject",
   "poll_method",
+  "column_break_33",
+  "custom_verify_template",
   "subscription_update_hook"
  ],
  "fields": [
@@ -85,8 +92,8 @@
   },
   {
    "fieldname": "links_section",
-   "fieldtype": "Section Break",
-   "label": "Links"
+   "fieldtype": "Tab Break",
+   "label": "Support Links"
   },
   {
    "fieldname": "website",
@@ -127,6 +134,7 @@
    "default": "0",
    "fieldname": "published",
    "fieldtype": "Check",
+   "hidden": 1,
    "label": "Published",
    "read_only": 1
   },
@@ -220,6 +228,36 @@
    "fieldname": "subscription_update_hook",
    "fieldtype": "Data",
    "label": "Subscription Update Hook"
+  },
+  {
+   "fieldname": "saas_tab",
+   "fieldtype": "Tab Break",
+   "label": "SaaS"
+  },
+  {
+   "fieldname": "column_break_32",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_30",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_33",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "descriptions_tab",
+   "fieldtype": "Tab Break",
+   "label": "Descriptions"
+  },
+  {
+   "fieldname": "section_break_7",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_10",
+   "fieldtype": "Column Break"
   }
  ],
  "has_web_view": 1,
@@ -243,7 +281,7 @@
    "link_fieldname": "app"
   }
  ],
- "modified": "2022-09-28 18:53:07.850543",
+ "modified": "2022-09-30 14:34:43.927245",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Marketplace App",
@@ -264,7 +302,16 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": [],
+ "states": [
+  {
+   "color": "Gray",
+   "title": "Draft"
+  },
+  {
+   "color": "Green",
+   "title": "Published"
+  }
+ ],
  "title_field": "title",
  "track_changes": 1
 }

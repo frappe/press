@@ -52,6 +52,16 @@ class TestSubscription(unittest.TestCase):
 		tomorrow = frappe.utils.add_days(today, 1)
 		desired_value = plan.get_price_per_day("INR") * 2
 
+		is_last_day_of_month = frappe.utils.data.get_last_day(today) == today
+		yesterday = frappe.utils.add_days(today, -1)
+
+		# Consider yesterday's and today's record instead of today and tomorrow
+		# Became flaky if it was last day of month because
+		# tomorrow went outside of this month's invoice's period
+		if is_last_day_of_month:
+			tomorrow = today
+			today = yesterday
+
 		with patch.object(frappe.utils, "today", return_value=today):
 			subscription.create_usage_record()
 			# this should not create duplicate record
