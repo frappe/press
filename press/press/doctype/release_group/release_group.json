@@ -15,20 +15,25 @@
   "default",
   "public",
   "central_bench",
-  "saas_bench",
-  "saas_app",
   "section_break_7",
-  "apps",
-  "section_break_10",
   "servers",
+  "apps_tab",
+  "apps",
+  "config_tab",
   "bench_configuration_section",
   "common_site_config",
   "column_break_14",
   "bench_config",
-  "section_break_16",
+  "dependencies_tab",
   "dependencies",
-  "feature_flags_section",
-  "is_redisearch_enabled"
+  "feature_flags_tab",
+  "is_redisearch_enabled",
+  "column_break_23",
+  "is_push_to_deploy_enabled",
+  "saas_tab",
+  "saas_bench",
+  "column_break_26",
+  "saas_app"
  ],
  "fields": [
   {
@@ -82,10 +87,6 @@
    "reqd": 1
   },
   {
-   "fieldname": "section_break_10",
-   "fieldtype": "Section Break"
-  },
-  {
    "fieldname": "servers",
    "fieldtype": "Table",
    "label": "Servers",
@@ -126,18 +127,8 @@
    "options": "Release Group Dependency"
   },
   {
-   "fieldname": "section_break_16",
-   "fieldtype": "Section Break",
-   "label": "Dependencies"
-  },
-  {
    "fieldname": "column_break_4",
    "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "feature_flags_section",
-   "fieldtype": "Section Break",
-   "label": "Feature Flags"
   },
   {
    "default": "0",
@@ -163,10 +154,49 @@
    "fieldname": "central_bench",
    "fieldtype": "Check",
    "label": "Central Bench"
+  },
+  {
+   "fieldname": "feature_flags_tab",
+   "fieldtype": "Tab Break",
+   "label": "Feature Flags"
+  },
+  {
+   "fieldname": "column_break_23",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_push_to_deploy_enabled",
+   "fieldtype": "Check",
+   "label": "Push To Deploy"
+  },
+  {
+   "fieldname": "config_tab",
+   "fieldtype": "Tab Break",
+   "label": "Config"
+  },
+  {
+   "fieldname": "dependencies_tab",
+   "fieldtype": "Tab Break",
+   "label": "Dependencies"
+  },
+  {
+   "fieldname": "saas_tab",
+   "fieldtype": "Tab Break",
+   "label": "SaaS"
+  },
+  {
+   "fieldname": "column_break_26",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "apps_tab",
+   "fieldtype": "Tab Break",
+   "label": "Apps"
   }
  ],
  "links": [],
- "modified": "2022-07-25 12:09:11.054459",
+ "modified": "2022-09-30 14:48:01.414156",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",
