@@ -10,6 +10,8 @@ import json
 class PressJobStep(Document):
 	@frappe.whitelist()
 	def execute(self):
+		if not self.start:
+			self.start = frappe.utils.now_datetime()
 		self.status = "Running"
 		script = frappe.db.get_value(
 			"Press Job Type Step",
@@ -38,6 +40,8 @@ class PressJobStep(Document):
 			self.status = "Failure"
 			self.traceback = frappe.get_traceback(with_context=True)
 
+		self.end = frappe.utils.now_datetime()
+		self.duration = self.end - self.start
 		self.save()
 
 		job = frappe.get_doc("Press Job", self.job)

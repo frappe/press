@@ -8,6 +8,11 @@
  "field_order": [
   "job_type",
   "status",
+  "column_break_3",
+  "start",
+  "end",
+  "duration",
+  "section_break_7",
   "arguments"
  ],
  "fields": [
@@ -18,6 +23,7 @@
    "in_standard_filter": 1,
    "label": "Job Type",
    "options": "Press Job Type",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -35,7 +41,35 @@
    "fieldname": "arguments",
    "fieldtype": "Code",
    "label": "Arguments",
+   "read_only": 1,
    "reqd": 1
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "start",
+   "fieldtype": "Datetime",
+   "label": "Start",
+   "read_only": 1
+  },
+  {
+   "fieldname": "end",
+   "fieldtype": "Datetime",
+   "label": "End",
+   "read_only": 1
+  },
+  {
+   "fieldname": "duration",
+   "fieldtype": "Time",
+   "in_list_view": 1,
+   "label": "Duration",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_7",
+   "fieldtype": "Section Break"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -45,7 +79,7 @@
    "link_fieldname": "job"
   }
  ],
- "modified": "2022-09-29 18:22:56.163904",
+ "modified": "2022-09-30 18:53:55.020130",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Job",

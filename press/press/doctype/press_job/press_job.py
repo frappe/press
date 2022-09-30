@@ -8,7 +8,7 @@ from frappe.model.document import Document
 class PressJob(Document):
 	def after_insert(self):
 		self.create_press_job_steps()
-		self.start()
+		self.execute()
 
 	def create_press_job_steps(self):
 		job_type = frappe.get_doc("Press Job Type", self.job_type)
@@ -26,8 +26,9 @@ class PressJob(Document):
 			)
 			doc.insert()
 
-	def start(self):
+	def execute(self):
 		self.status = "Running"
+		self.start = frappe.utils.now_datetime()
 		self.save()
 		self.next()
 
@@ -38,10 +39,14 @@ class PressJob(Document):
 		)
 		for step in pending_steps:
 			frappe.db.set_value("Press Job Step", step.name, "status", "Skipped")
+		self.end = frappe.utils.now_datetime()
+		self.duration = self.end - self.start
 		self.save()
 
 	def succeed(self):
 		self.status = "Success"
+		self.end = frappe.utils.now_datetime()
+		self.duration = self.end - self.start
 		self.save()
 
 	@frappe.whitelist()
