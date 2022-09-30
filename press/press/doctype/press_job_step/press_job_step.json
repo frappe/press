@@ -1,0 +1,141 @@
+{
+ "actions": [],
+ "autoname": "autoincrement",
+ "creation": "2022-09-28 17:46:17.371345",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "step_name",
+  "job",
+  "job_type",
+  "status",
+  "column_break_4",
+  "start",
+  "end",
+  "duration",
+  "wait_until_true",
+  "attempts",
+  "section_break_8",
+  "result",
+  "traceback"
+ ],
+ "fields": [
+  {
+   "fieldname": "step_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Step Name",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Pending\nRunning\nSkipped\nSuccess\nFailure",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "job",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Job ",
+   "options": "Press Job",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "start",
+   "fieldtype": "Datetime",
+   "label": "Start",
+   "read_only": 1
+  },
+  {
+   "fieldname": "end",
+   "fieldtype": "Datetime",
+   "label": "End",
+   "read_only": 1
+  },
+  {
+   "fieldname": "duration",
+   "fieldtype": "Time",
+   "in_list_view": 1,
+   "label": "Duration",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_8",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "result",
+   "fieldtype": "Code",
+   "label": "Result",
+   "read_only": 1
+  },
+  {
+   "fieldname": "traceback",
+   "fieldtype": "Code",
+   "label": "Traceback",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "wait_until_true",
+   "fieldtype": "Check",
+   "label": "Wait Until True",
+   "read_only": 1
+  },
+  {
+   "fieldname": "attempts",
+   "fieldtype": "Int",
+   "label": "Attempts",
+   "read_only": 1
+  },
+  {
+   "fieldname": "job_type",
+   "fieldtype": "Link",
+   "label": "Job Type",
+   "options": "Press Job Type",
+   "reqd": 1
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2022-09-29 18:26:20.177892",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Press Job Step",
+ "naming_rule": "Autoincrement",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "step_name",
+ "track_changes": 1
+}

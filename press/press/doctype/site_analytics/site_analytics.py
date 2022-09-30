@@ -35,6 +35,14 @@ def create_site_analytics(site, data):
 				)
 		return sales_data
 
+	def get_last_active(analytics):
+		last_active = []
+		for user in analytics.get("users", []):
+			if user and user.get("enabled") == 1:
+				last_active.append(user)
+
+		return last_active
+
 	timestamp = data["timestamp"]
 	analytics = data["analytics"]
 	if not frappe.db.exists("Site Analytics", {"site": site, "timestamp": timestamp}):
@@ -56,6 +64,7 @@ def create_site_analytics(site, data):
 				"installed_apps": analytics.get("installed_apps", []),
 				"users": analytics.get("users", []),
 				"last_logins": get_last_logins(analytics),
+				"last_active": get_last_active(analytics),
 				"company": analytics.get("company"),
 				"domain": analytics.get("domain"),
 				"activation_level": analytics.get("activation", {}).get("activation_level"),

@@ -139,19 +139,12 @@ export default {
 			let price_field = india ? 'price_inr' : 'price_usd';
 			let price = plan[price_field];
 			return price > 0 ? `${currency}${price}` : plan.plan_title;
-		},
-
-		belowCurrentUsage(plan) {
-			return this.plan.disk > plan.disk;
 		}
 	},
 	computed: {
 		plans() {
 			let processedPlans = this.$resources.plans.data.map(plan => {
 				console.log(plan.name, plan.disk, this.plan.disk);
-				if (this.belowCurrentUsage(plan)) {
-					plan.disabled = true;
-				}
 
 				if (this.plan.name === plan.name) {
 					plan.disabled = true;

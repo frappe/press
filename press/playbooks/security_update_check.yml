@@ -1,0 +1,5 @@
+---
+- name: Check for security updates
+  hosts: all
+  roles:
+    - security_update_check

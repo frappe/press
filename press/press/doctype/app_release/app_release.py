@@ -24,6 +24,7 @@ class AppRelease(Document):
 	def after_insert(self):
 		self.publish_created()
 		self.create_release_differences()
+		self.auto_deploy()
 
 	def publish_created(self):
 		frappe.publish_realtime(
@@ -138,6 +139,23 @@ class AppRelease(Document):
 				}
 			)
 			difference.insert()
+
+	def auto_deploy(self):
+		groups = frappe.get_all(
+			"Release Group App",
+			["parent"],
+			{"source": self.source, "enable_auto_deploy": True},
+		)
+		for group in groups:
+			if frappe.get_all(
+				"Deploy Candidate",
+				{"status": ("in", ("Pending", "Running")), "group": group.parent},
+			):
+				continue
+			group = frappe.get_doc("Release Group", group.parent)
+			apps_to_ignore = [app.as_dict() for app in group.apps if not app.enable_auto_deploy]
+			candidate = group.create_deploy_candidate(apps_to_ignore)
+			candidate.build_and_deploy()
 
 
 def get_permission_query_conditions(user):

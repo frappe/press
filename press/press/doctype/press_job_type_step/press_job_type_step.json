@@ -1,0 +1,57 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2022-09-28 17:41:09.642406",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "step_name",
+  "column_break_2",
+  "wait_until_true",
+  "section_break_4",
+  "script"
+ ],
+ "fields": [
+  {
+   "fieldname": "step_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Step Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "script",
+   "fieldtype": "Code",
+   "label": "Script",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "wait_until_true",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Wait Until True"
+  },
+  {
+   "fieldname": "section_break_4",
+   "fieldtype": "Section Break"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2022-09-29 18:11:19.115793",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Press Job Type Step",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

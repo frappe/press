@@ -555,7 +555,6 @@ def account_request(
 	if not country:
 		frappe.throw("Country filed should be a valid country name")
 
-	return
 	account_request = frappe.get_doc(
 		{
 			"doctype": "Account Request",
