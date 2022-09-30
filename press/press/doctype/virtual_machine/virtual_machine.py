@@ -9,6 +9,11 @@ from frappe.core.utils import find
 from frappe.model.naming import make_autoname
 from frappe.desk.utils import slug
 
+USER_DATA = """#!/bin/bash
+rm -rf /etc/ssh/ssh_host_*
+ssh-keygen -A
+"""
+
 
 class VirtualMachine(Document):
 	def autoname(self):
@@ -69,6 +74,7 @@ class VirtualMachine(Document):
 					"Tags": [{"Key": "Name", "Value": f"Frappe Cloud - {self.name}"}],
 				},
 			],
+			UserData=USER_DATA,
 		)
 
 		self.aws_instance_id = response["Instances"][0]["InstanceId"]
