@@ -23,6 +23,7 @@
   "section_break_17",
   "users",
   "last_logins",
+  "last_active",
   "installed_apps",
   "erpnext_section",
   "activation_level",
@@ -182,11 +183,18 @@
   {
    "fieldname": "column_break_26",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "last_active",
+   "fieldtype": "Table",
+   "label": "Last Active",
+   "options": "Site Analytics Active",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-05-05 09:29:20.505913",
+ "modified": "2022-09-29 18:13:51.797874",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Analytics",
