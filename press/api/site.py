@@ -734,7 +734,6 @@ def get_installed_apps(site):
 			app_source.is_free = frappe.db.get_value(
 				"Marketplace App Plan", subscription.marketplace_app_plan, "is_free"
 			)
-			print(app_source.subscription_available)
 		else:
 			app_source.subscription = {}
 

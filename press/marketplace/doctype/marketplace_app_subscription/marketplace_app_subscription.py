@@ -99,7 +99,6 @@ class MarketplaceAppSubscription(Document):
 
 		expiry = frappe.db.get_value("Site", self.site, "trial_end_date")
 		if expiry:
-			print(config[0]["value"])
 			config[1]["value"].update({"expiry": str(expiry)})
 
 		site_doc.update_site_config(config)
