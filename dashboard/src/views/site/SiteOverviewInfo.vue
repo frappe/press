@@ -39,16 +39,17 @@
 			<ListItem
 				v-if="site.group && site.status !== 'Pending'"
 				title="Auto Update Site"
+				class="overflow-x-hidden"
 				description="Automatically schedule site updates whenever available"
 			>
 				<template v-slot:actions>
-					<LoadingIndicator v-if="loading" />
+					<LoadingIndicator class="h-4 w-4" v-if="loading" />
 					<input
 						v-show="!loading"
 						id="auto-update-checkbox"
 						@input="changeAutoUpdateSettings"
 						type="checkbox"
-						class="mr-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+						class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
 					/>
 				</template>
 			</ListItem>
