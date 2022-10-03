@@ -84,15 +84,23 @@ class MarketplaceAppSubscription(Document):
 		key_id = f"sk_{self.app}"
 		secret_key = self.secret_key
 
-		config = {
-			key_id: secret_key,
-			"login_url": get_url(
-				f"/api/method/press.api.developer.marketplace.get_login_url?secret_key={secret_key}"
-			),
-		}
+		config = [
+			{"key": key_id, "value": secret_key, "type": "String"},
+			{
+				"key": "subscription",
+				"value": {
+					"login_url": get_url(
+						f"/api/method/press.api.developer.marketplace.get_login_url?secret_key={secret_key}"
+					)
+				},
+				"type": "JSON",
+			},
+		]
+
 		expiry = frappe.db.get_value("Site", self.site, "trial_end_date")
 		if expiry:
-			config.update({"expiry": str(expiry)})
+			print(config[0]["value"])
+			config[1]["value"].update({"expiry": str(expiry)})
 
 		site_doc.update_site_config(config)
 
