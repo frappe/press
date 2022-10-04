@@ -96,11 +96,6 @@
   "standby_pool_size",
   "column_break_95",
   "standby_queue_size",
-  "agent_section",
-  "agent_repository_owner",
-  "column_break_105",
-  "agent_github_access_token",
-  "allow_developer_account",
   "integrations_tab",
   "telegram_section",
   "telegram_chat_id",
@@ -126,7 +121,12 @@
   "marketplace_tab",
   "marketplace_settings_section",
   "max_allowed_screenshots",
+  "allow_developer_account",
   "infrastructure_tab",
+  "agent_section",
+  "agent_repository_owner",
+  "column_break_105",
+  "agent_github_access_token",
   "lets_encrypt_section",
   "certbot_directory",
   "webroot_directory",
@@ -139,8 +139,8 @@
   "monitoring_section",
   "telegram_alert_chat_id",
   "monitor_server",
-  "monitor_token",
   "column_break_100",
+  "monitor_token",
   "log_server"
  ],
  "fields": [
@@ -678,7 +678,6 @@
    "label": "Telegram Alert Chat ID"
   },
   {
-   "collapsible": 1,
    "fieldname": "agent_section",
    "fieldtype": "Section Break",
    "label": "Agent"
@@ -890,7 +889,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2022-10-04 11:46:20.546065",
+ "modified": "2022-10-04 12:46:23.086698",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
