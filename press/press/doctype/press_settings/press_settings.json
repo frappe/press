@@ -45,13 +45,14 @@
   "offsite_backups_provider",
   "aws_s3_bucket",
   "backup_rotation_scheme",
-  "offsite_backups_count",
   "column_break_35",
   "offsite_backups_access_key_id",
   "offsite_backups_secret_access_key",
+  "offsite_backups_count",
   "backups_section",
   "backup_interval",
   "backup_offset",
+  "column_break_48",
   "backup_limit",
   "docker_tab",
   "section_break_59",
@@ -202,7 +203,6 @@
    "read_only": 1
   },
   {
-   "collapsible": 1,
    "fieldname": "stripe_settings_section",
    "fieldtype": "Section Break",
    "label": "Stripe Settings"
@@ -268,7 +268,6 @@
    "label": "ERPNext URL"
   },
   {
-   "collapsible": 1,
    "fieldname": "offsite_backups_section",
    "fieldtype": "Section Break",
    "label": "Offsite Backups"
@@ -380,7 +379,6 @@
    "label": "Code Server Password"
   },
   {
-   "collapsible": 1,
    "fieldname": "backups_section",
    "fieldtype": "Section Break",
    "label": "Backups"
@@ -428,7 +426,6 @@
    "label": "Total Backups Count"
   },
   {
-   "collapsible": 1,
    "fieldname": "telegram_section",
    "fieldtype": "Section Break",
    "label": "Telegram"
@@ -460,7 +457,6 @@
    "label": "Product Documentation"
   },
   {
-   "collapsible": 1,
    "fieldname": "lets_encrypt_section",
    "fieldtype": "Section Break",
    "label": "Let's Encrypt"
@@ -485,7 +481,6 @@
    "label": "URL"
   },
   {
-   "collapsible": 1,
    "fieldname": "section_break_59",
    "fieldtype": "Section Break",
    "label": "Docker Registry"
@@ -576,7 +571,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "collapsible": 1,
    "fieldname": "erpnext_signups_section",
    "fieldtype": "Section Break",
    "label": "ERPNext Signups"
@@ -735,7 +729,6 @@
    "label": "Backup Limit"
   },
   {
-   "collapsible": 1,
    "fieldname": "marketplace_settings_section",
    "fieldtype": "Section Break",
    "label": "Marketplace Settings"
@@ -754,7 +747,6 @@
    "non_negative": 1
   },
   {
-   "collapsible": 1,
    "fieldname": "mailgun_settings_section",
    "fieldtype": "Section Break",
    "label": "Mailgun"
@@ -890,11 +882,15 @@
    "fieldname": "infrastructure_tab",
    "fieldtype": "Tab Break",
    "label": "Infrastructure"
+  },
+  {
+   "fieldname": "column_break_48",
+   "fieldtype": "Column Break"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2022-10-04 11:34:38.105857",
+ "modified": "2022-10-04 11:46:20.546065",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
