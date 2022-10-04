@@ -817,6 +817,7 @@ def create_team(account_request, get_stripe_id=False):
 			country=account_request.country,
 			is_us_eu=account_request.is_us_eu,
 			via_erpnext=True,
+			user_exists=frappe.db.exists("User", email),
 		)
 	else:
 		team_doc = frappe.get_doc("Team", email)
