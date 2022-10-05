@@ -958,10 +958,10 @@ def restore(name, files, skip_failing_patches=False):
 
 
 @frappe.whitelist()
-def exists(subdomain):
+def exists(subdomain, domain):
 	from press.press.doctype.site.site import Site
 
-	return Site.exists(subdomain)
+	return Site.exists(subdomain, domain)
 
 
 @frappe.whitelist()

@@ -49,7 +49,8 @@ export default {
 			let error = this.validateSubdomain(subdomain);
 			if (!error) {
 				let subdomainTaken = await this.$call('press.api.site.exists', {
-					subdomain
+					subdomain,
+					domain: this.options.domain
 				});
 				if (subdomainTaken) {
 					error = `${subdomain}.${this.options.domain} already exists.`;
