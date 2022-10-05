@@ -1161,11 +1161,13 @@ class Site(Document):
 		)
 
 	@classmethod
-	def exists(cls, subdomain) -> bool:
+	def exists(cls, subdomain, domain) -> bool:
 		"""Check if subdomain is available"""
 		return bool(
 			frappe.db.exists("Blocked Domain", {"name": subdomain})
-			or frappe.db.exists("Site", {"subdomain": subdomain, "status": ("!=", "Archived")})
+			or frappe.db.exists(
+				"Site", {"subdomain": subdomain, "domain": domain, "status": ("!=", "Archived")}
+			)
 		)
 
 
