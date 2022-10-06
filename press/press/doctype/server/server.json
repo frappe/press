@@ -65,8 +65,7 @@
    "fieldname": "proxy_server",
    "fieldtype": "Link",
    "label": "Proxy Server",
-   "options": "Proxy Server",
-   "reqd": 1
+   "options": "Proxy Server"
   },
   {
    "fetch_from": "virtual_machine.private_ip_address",
@@ -133,8 +132,7 @@
    "fieldname": "database_server",
    "fieldtype": "Link",
    "label": "Database Server",
-   "options": "Database Server",
-   "reqd": 1
+   "options": "Database Server"
   },
   {
    "fieldname": "ssh_section",
@@ -338,7 +336,7 @@
   }
  ],
  "links": [],
- "modified": "2022-09-28 14:02:17.452539",
+ "modified": "2022-10-06 23:13:22.515888",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
