@@ -92,6 +92,7 @@ class TLSCertificate(Document):
 			"Monitor Server",
 			"Registry Server",
 			"Analytics Server",
+			"Trace Server",
 		]
 
 		for server_doctype in server_doctypes:
