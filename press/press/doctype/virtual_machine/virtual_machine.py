@@ -34,9 +34,7 @@ class VirtualMachine(Document):
 				frappe.db.get_value("Virtual Machine Image", self.virtual_machine_image, "size"),
 			)
 
-	def after_insert(self):
-		self.provision()
-
+	@frappe.whitelist()
 	def provision(self):
 		response = self.client().run_instances(
 			BlockDeviceMappings=[

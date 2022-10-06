@@ -181,12 +181,12 @@
    "read_only": 1
   },
   {
-   "default": "Pending",
+   "default": "Draft",
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Pending\nRunning\nStopped\nTerminated",
+   "options": "Draft\nPending\nRunning\nStopped\nTerminated",
    "read_only": 1,
    "search_index": 1
   },
@@ -275,7 +275,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2022-09-22 05:17:10.044127",
+ "modified": "2022-10-06 23:02:40.960608",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",
