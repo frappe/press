@@ -240,25 +240,11 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def create_server(self):
-		database_machine = frappe.get_all(
-			"Virtual Machine",
-			{"index": self.index, "series": "m", "cluster": self.cluster, "team": self.team},
-			pluck="name",
-			limit=1,
-		)[0]
-		database_server = frappe.get_all(
-			"Database Server", {"virtual_machine": database_machine}, pluck="name", limit=1
-		)[0]
-		proxy_server = frappe.get_all(
-			"Proxy Server", {"status": "Active", "cluster": self.cluster}, pluck="name", limit=1
-		)[0]
 		document = {
 			"doctype": "Server",
 			"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
 			"domain": self.domain,
 			"cluster": self.cluster,
-			"proxy_server": proxy_server,
-			"database_server": database_server,
 			"provider": "AWS EC2",
 			"virtual_machine": self.name,
 			"team": self.team,
