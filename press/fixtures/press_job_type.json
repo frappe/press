@@ -118,5 +118,36 @@
     "wait_until_true": 1
    }
   ]
+ {
+  "docstatus": 0,
+  "doctype": "Press Job Type",
+  "modified": "2022-10-06 16:36:29.863665",
+  "name": "Archive Server",
+  "steps": [
+   {
+    "parent": "Archive Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", arguments.machine)\nmachine.disable_termination_protection()",
+    "step_name": "Disable Termination Protection",
+    "wait_until_true": 0
+   },
+   {
+    "parent": "Archive Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", arguments.machine)\nmachine.terminate()",
+    "step_name": "Terminate Virtual Machine",
+    "wait_until_true": 0
+   },
+   {
+    "parent": "Archive Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", arguments.machine)\nmachine.sync()\nresult = machine.status == \"Terminated\"",
+    "step_name": "Wait for Virtual Machine to Terminate",
+    "wait_until_true": 1
+   }
+  ]
  }
 ]
