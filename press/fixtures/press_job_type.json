@@ -118,6 +118,63 @@
     "wait_until_true": 1
    }
   ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Press Job Type",
+  "modified": "2022-10-06 16:38:46.354846",
+  "name": "Create Server Snapshot",
+  "steps": [
+   {
+    "parent": "Create Server Snapshot",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", arguments.machine)\nmachine.stop()\n",
+    "step_name": "Stop Virtual Machine",
+    "wait_until_true": 0
+   },
+   {
+    "parent": "Create Server Snapshot",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", arguments.machine)\nmachine.sync()\nresult = machine.status == \"Stopped\"",
+    "step_name": "Wait for Virtual Machine to Stop",
+    "wait_until_true": 1
+   },
+   {
+    "parent": "Create Server Snapshot",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", arguments.machine)\narguments.image = machine.create_image()",
+    "step_name": "Create Snapshot",
+    "wait_until_true": 0
+   },
+   {
+    "parent": "Create Server Snapshot",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", arguments.machine)\nmachine.start()",
+    "step_name": "Start Virtual Machine",
+    "wait_until_true": 0
+   },
+   {
+    "parent": "Create Server Snapshot",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", arguments.machine)\nmachine.sync()\nresult = machine.status == \"Running\"",
+    "step_name": "Wait for Virtual Machine to Start",
+    "wait_until_true": 1
+   },
+   {
+    "parent": "Create Server Snapshot",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "image = frappe.get_doc(\"Virtual Machine Image\", arguments.image)\nimage.sync()\nresult = image.status == \"Available\"",
+    "step_name": "Wait for Snapshot to Complete",
+    "wait_until_true": 0
+   }
+  ]
+ },
  {
   "docstatus": 0,
   "doctype": "Press Job Type",
