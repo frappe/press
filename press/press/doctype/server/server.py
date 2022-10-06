@@ -29,7 +29,7 @@ class BaseServer(Document):
 	def after_insert(self):
 		if self.ip:
 			self.create_dns_record()
-		self.update_virtual_machine_name()
+			self.update_virtual_machine_name()
 
 	def create_dns_record(self):
 		try:
