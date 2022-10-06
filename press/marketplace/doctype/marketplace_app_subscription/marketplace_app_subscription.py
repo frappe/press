@@ -7,7 +7,6 @@ import requests
 
 from press.utils import log_error
 from frappe.model.document import Document
-from frappe.utils import get_url
 from press.press.doctype.site.site import Site
 
 
@@ -88,11 +87,7 @@ class MarketplaceAppSubscription(Document):
 			{"key": key_id, "value": secret_key, "type": "String"},
 			{
 				"key": "subscription",
-				"value": {
-					"login_url": get_url(
-						f"/api/method/press.api.developer.marketplace.get_login_url?secret_key={secret_key}"
-					)
-				},
+				"value": {"login_url": get_login_url(secret_key)},
 				"type": "JSON",
 			},
 		]
@@ -352,3 +347,11 @@ def install_subscription_apps(site, app):
 		{sa.app for sa in site_doc.apps}
 	):
 		site_doc.install_app(app)
+
+
+def get_login_url(secret_key):
+	from frappe.utils import get_url
+
+	return get_url(
+		f"/api/method/press.api.developer.marketplace.get_login_url?secret_key={secret_key}"
+	)
