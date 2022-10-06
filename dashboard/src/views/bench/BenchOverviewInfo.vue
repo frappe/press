@@ -73,12 +73,10 @@ export default {
 	resources: {
 		editTitle() {
 			return {
-				method: 'frappe.client.set_value',
+				method: 'press.api.bench.rename',
 				params: {
-					doctype: 'Release Group',
 					name: this.bench?.name,
-					fieldname: 'title',
-					value: this.benchTitle
+					title: this.benchTitle
 				},
 				validate() {
 					if (this.benchTitle === this.bench?.title) {
@@ -87,6 +85,7 @@ export default {
 				},
 				onSuccess() {
 					this.showEditTitleDialog = false;
+					this.bench.title = this.benchTitle;
 				}
 			};
 		}
