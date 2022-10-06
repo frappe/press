@@ -13,6 +13,10 @@
   "end",
   "duration",
   "section_break_7",
+  "server_type",
+  "server",
+  "virtual_machine",
+  "column_break_11",
   "arguments"
  ],
  "fields": [
@@ -70,8 +74,39 @@
   {
    "fieldname": "section_break_7",
    "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "server_type",
+   "fieldtype": "Link",
+   "label": "Server Type",
+   "options": "DocType",
+   "read_only": 1
+  },
+  {
+   "fieldname": "server",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Server",
+   "options": "server_type",
+   "read_only": 1
+  },
+  {
+   "fetch_if_empty": 1,
+   "fieldname": "virtual_machine",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Virtual Machine",
+   "options": "Virtual Machine",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_11",
+   "fieldtype": "Column Break"
   }
  ],
+ "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [
   {
@@ -79,7 +114,7 @@
    "link_fieldname": "job"
   }
  ],
- "modified": "2022-09-30 18:53:55.020130",
+ "modified": "2022-10-07 00:13:01.216613",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Job",

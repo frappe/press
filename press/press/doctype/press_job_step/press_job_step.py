@@ -18,9 +18,10 @@ class PressJobStep(Document):
 			{"parent": self.job_type, "step_name": self.step_name},
 			"script",
 		)
-		arguments = json.loads(frappe.db.get_value("Press Job", self.job, "arguments"))
+		job = frappe.get_doc("Press Job", self.job)
+		arguments = json.loads(job.arguments)
 		try:
-			local = {"arguments": frappe._dict(arguments), "result": None}
+			local = {"arguments": frappe._dict(arguments), "result": None, "doc": job}
 			safe_exec(script, _locals=local)
 			result = local["result"]
 
@@ -44,7 +45,6 @@ class PressJobStep(Document):
 		self.duration = self.end - self.start
 		self.save()
 
-		job = frappe.get_doc("Press Job", self.job)
 		if self.status == "Failure":
 			job.fail(local["arguments"])
 		else:
