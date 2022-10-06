@@ -156,6 +156,7 @@ def setup_database_server():
 	frappe.get_doc(
 		{
 			"doctype": "Database Server",
+			"title": "First - Database",
 			"hostname": "m1",
 			"ip": "10.0.3.101",
 			"private_ip": "10.1.3.101",
@@ -167,6 +168,7 @@ def setup_server():
 	frappe.get_doc(
 		{
 			"doctype": "Server",
+			"title": "First - Application",
 			"hostname": "f1",
 			"ip": "10.0.2.101",
 			"private_ip": "10.1.2.101",
