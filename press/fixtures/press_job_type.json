@@ -2,14 +2,14 @@
  {
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2022-09-30 20:36:18.627055",
+  "modified": "2022-10-06 23:38:08.623717",
   "name": "Create Server",
   "steps": [
    {
     "parent": "Create Server",
     "parentfield": "steps",
     "parenttype": "Press Job Type",
-    "script": "machine = frappe.get_doc(\n\t{\n\t\t\"doctype\": \"Virtual Machine\",\n\t\t\"cluster\": arguments.cluster,\n\t\t\"domain\": arguments.domain,\n\t\t\"series\": arguments.series,\n\t\t\"disk_size\": arguments.disk_size,\n\t\t\"machine_type\": arguments.machine_type,\n\t\t\"virtual_machine_image\": arguments.image,\n\t\t\"team\": arguments.team,\n\t}\n).insert()\nif arguments.series == \"f\":\n    server = machine.create_server()\nelse:\n    server = machine.create_database_server()\nserver.plan = arguments.plan\nserver.title = arguments.title\nserver.save()\nserver.create_subscription(arguments.plan)\n\narguments[\"machine\"] = machine.name\narguments[\"server\"] = server.name\n",
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.provision()\n",
     "step_name": "Create Virtual Machine",
     "wait_until_true": 0
    },
@@ -17,7 +17,7 @@
     "parent": "Create Server",
     "parentfield": "steps",
     "parenttype": "Press Job Type",
-    "script": "machine = frappe.get_doc(\"Virtual Machine\", arguments.machine)\nmachine.sync()\nresult = machine.status == \"Running\"",
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.sync()\nresult = machine.status == \"Running\"\n",
     "step_name": "Wait for Virtual Machine to Start",
     "wait_until_true": 1
    },
@@ -25,7 +25,7 @@
     "parent": "Create Server",
     "parentfield": "steps",
     "parenttype": "Press Job Type",
-    "script": "server = frappe.get_doc(arguments.server_type, arguments.server)\nserver.ping_ansible()",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.ping_ansible()\n",
     "step_name": "Ping Server Unprepared",
     "wait_until_true": 0
    },
@@ -33,7 +33,7 @@
     "parent": "Create Server",
     "parentfield": "steps",
     "parenttype": "Press Job Type",
-    "script": "server = frappe.get_doc(arguments.server_type, arguments.server)\nserver.prepare_server()",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.prepare_server()\n",
     "step_name": "Prepare Server",
     "wait_until_true": 0
    },
@@ -41,7 +41,7 @@
     "parent": "Create Server",
     "parentfield": "steps",
     "parenttype": "Press Job Type",
-    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": arguments.server, \"play\": \"Prepare AWS EC2 Server\", \"status\": \"Success\"})\nresult = plays",
+    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Prepare AWS EC2 Server\", \"status\": \"Success\"})\nresult = plays\n",
     "step_name": "Wait for Server to be Prepared",
     "wait_until_true": 1
    },
@@ -49,7 +49,7 @@
     "parent": "Create Server",
     "parentfield": "steps",
     "parenttype": "Press Job Type",
-    "script": "server = frappe.get_doc(arguments.server_type, arguments.server)\nserver.ping_ansible()",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.ping_ansible()\n",
     "step_name": "Ping Server",
     "wait_until_true": 0
    },
@@ -57,7 +57,7 @@
     "parent": "Create Server",
     "parentfield": "steps",
     "parenttype": "Press Job Type",
-    "script": "server = frappe.get_doc(arguments.server_type, arguments.server)\nserver.rename_server()",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.rename_server()\n",
     "step_name": "Rename Server",
     "wait_until_true": 0
    },
@@ -65,7 +65,7 @@
     "parent": "Create Server",
     "parentfield": "steps",
     "parenttype": "Press Job Type",
-    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": arguments.server, \"play\": f\"Rename {arguments.server_type}\", \"status\": \"Success\"})\nresult = plays",
+    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": f\"Rename {doc.server_type}\", \"status\": \"Success\"})\nresult = plays\n",
     "step_name": "Wait for Server to be Renamed",
     "wait_until_true": 1
    }

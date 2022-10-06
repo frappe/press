@@ -352,6 +352,17 @@ class BaseServer(Document):
 		machine.resize(machine_type)
 		machine.start()
 
+	def run_press_job(self, job_name):
+		return frappe.get_doc(
+			{
+				"doctype": "Press Job",
+				"job_type": job_name,
+				"server_type": self.doctype,
+				"server": self.name,
+				"virtual_machine": self.virtual_machine,
+			}
+		).insert()
+
 
 class Server(BaseServer):
 	def on_update(self):
