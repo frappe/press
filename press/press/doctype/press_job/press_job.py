@@ -11,6 +11,9 @@ class PressJob(Document):
 		self.create_press_job_steps()
 		self.execute()
 
+	def on_update(self):
+		self.publish_update()
+
 	def create_press_job_steps(self):
 		job_type = frappe.get_doc("Press Job Type", self.job_type)
 		for step in job_type.steps:
@@ -75,3 +78,28 @@ class PressJob(Document):
 			order_by="name asc",
 			as_dict=True,
 		)
+
+	def detail(self):
+		steps = frappe.get_all(
+			"Press Job Step",
+			filters={"job": self.name},
+			fields=["name", "step_name", "status", "start", "end", "duration"],
+			order_by="name asc",
+		)
+
+		for index, step in enumerate(steps):
+			if step.status == "Pending" and index and steps[index - 1].status == "Success":
+				step.status == "Running"
+
+		return {
+			"name": self.name,
+			"job_type": self.job_type,
+			"server": self.server,
+			"server_type": self.server_type,
+			"virtual_machine": self.virtual_machine,
+			"status": self.status,
+			"steps": steps,
+		}
+
+	def publish_update(self):
+		frappe.publish_realtime("press_job_update", self.detail())
