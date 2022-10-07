@@ -161,7 +161,7 @@ export default {
 				},
 				onSuccess(data) {
 					let { server } = data;
-					this.$router.push(`/servers/${server}/overview/`);
+					this.$router.push(`/servers/${server}/install`);
 				},
 				validate() {
 					let canCreate =

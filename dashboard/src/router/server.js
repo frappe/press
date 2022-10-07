@@ -37,6 +37,12 @@ export default [
 				path: 'plays/:playName?',
 				component: () => import('../views/server/ServerPlays.vue'),
 				props: true
+			},
+			{
+				name: 'ServerInstall',
+				path: 'install',
+				component: () => import('../views/server/ServerInstall.vue'),
+				props: true
 			}
 		]
 	}

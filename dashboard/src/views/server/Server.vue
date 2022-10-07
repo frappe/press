@@ -200,6 +200,7 @@ export default {
 		tabs() {
 			let tabRoute = subRoute => `/servers/${this.serverName}/${subRoute}`;
 			let tabs = [
+				{ label: 'Installing', route: 'install' },
 				{ label: 'Overview', route: 'overview' },
 				{ label: 'Analytics', route: 'analytics' },
 				{ label: 'Jobs', route: 'jobs', showRedDot: this.runningJob },
@@ -208,8 +209,8 @@ export default {
 
 			let tabsByStatus = {
 				Active: ['Overview', 'Analytics', 'Jobs', 'Plays'],
-				Pending: ['Jobs', 'Plays'],
-				Installing: ['Jobs', 'Plays']
+				Pending: ['Installing'],
+				Installing: ['Installing']
 			};
 			if (this.server) {
 				let tabsToShow = tabsByStatus[this.server.status];

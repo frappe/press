@@ -367,3 +367,12 @@ def play(play):
 @protected("Server")
 def change_plan(name, plan):
 	frappe.get_doc("Server", name).change_plan(plan)
+
+
+@frappe.whitelist()
+@protected("Server")
+def press_jobs(name):
+	jobs = []
+	for job in frappe.get_all("Press Job", {"server": name}, pluck="name"):
+		jobs.append(frappe.get_doc("Press Job", job).detail())
+	return jobs
