@@ -17,12 +17,7 @@ class SaasAppSubscription(Document):
 
 	def set_secret_key(self):
 		if not self.secret_key:
-			from hashlib import blake2b
-
-			h = blake2b(digest_size=20)
-			h.update(self.name.encode())
-			self.secret_key = h.hexdigest()
-
+			self.secret_key = frappe.generate_hash(length=40)
 			self.create_site_config_key()
 
 	def create_site_config_key(self):

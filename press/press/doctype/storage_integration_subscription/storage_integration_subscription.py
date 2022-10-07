@@ -29,9 +29,7 @@ class StorageIntegrationSubscription(Document):
 		self.policy_name = self.access_key + "_policy"
 
 	def set_secret_key(self):
-		h = blake2b(digest_size=20)
-		h.update(self.name.encode())
-		self.secret_key = h.hexdigest()
+		self.secret_key = frappe.generate_hash(length=40)
 
 	def set_policy_json(self):
 		bucket_name = frappe.db.get_value(

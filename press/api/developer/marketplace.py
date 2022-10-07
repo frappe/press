@@ -17,7 +17,7 @@ class DeveloperApiHandler:
 			raise_invalid_key_error()
 
 		app_subscription_name = frappe.db.exists(
-			"Marketplace App Subscription", {"secret_key": self.secret_key}
+			"Marketplace App Subscription", {"secret_key": self.secret_key, "status": "Active"}
 		)
 
 		if not app_subscription_name:
