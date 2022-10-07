@@ -2,7 +2,7 @@
  {
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2022-10-06 23:38:08.623717",
+  "modified": "2022-10-07 18:48:23.504084",
   "name": "Create Server",
   "steps": [
    {
@@ -17,7 +17,7 @@
     "parent": "Create Server",
     "parentfield": "steps",
     "parenttype": "Press Job Type",
-    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.sync()\nresult = machine.status == \"Running\"\n",
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.sync()\nresult = (machine.status == \"Running\", False)\n",
     "step_name": "Wait for Virtual Machine to Start",
     "wait_until_true": 1
    },
@@ -41,7 +41,7 @@
     "parent": "Create Server",
     "parentfield": "steps",
     "parenttype": "Press Job Type",
-    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Prepare AWS EC2 Server\", \"status\": \"Success\"})\nresult = plays\n",
+    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Prepare AWS EC2 Server\"}, [\"status\"])\nlog(doc.server)\nresult = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")\n",
     "step_name": "Wait for Server to be Prepared",
     "wait_until_true": 1
    },
@@ -65,7 +65,7 @@
     "parent": "Create Server",
     "parentfield": "steps",
     "parenttype": "Press Job Type",
-    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": f\"Rename {doc.server_type}\", \"status\": \"Success\"})\nresult = plays\n",
+    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": f\"Rename {doc.server_type}\"}, [\"status\"])\nresult = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")\n",
     "step_name": "Wait for Server to be Renamed",
     "wait_until_true": 1
    }
@@ -74,7 +74,7 @@
  {
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2022-09-30 15:46:58.651283",
+  "modified": "2022-10-07 18:28:51.401367",
   "name": "Resize Server",
   "steps": [
    {
@@ -89,7 +89,7 @@
     "parent": "Resize Server",
     "parentfield": "steps",
     "parenttype": "Press Job Type",
-    "script": "machine = frappe.get_doc(\"Virtual Machine\", arguments.machine)\nmachine.sync()\nresult = machine.status == \"Stopped\"",
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", arguments.machine)\nmachine.sync()\nresult = (machine.status == \"Stopped\", False)",
     "step_name": "Wait for Virtual Machine to Stop",
     "wait_until_true": 1
    },
@@ -113,7 +113,7 @@
     "parent": "Resize Server",
     "parentfield": "steps",
     "parenttype": "Press Job Type",
-    "script": "machine = frappe.get_doc(\"Virtual Machine\", arguments.machine)\nmachine.sync()\nresult = machine.status == \"Running\"",
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", arguments.machine)\nmachine.sync()\nresult = (machine.status == \"Running\", False)",
     "step_name": "Wait for Virtual Machine to Start",
     "wait_until_true": 1
    }
@@ -122,7 +122,7 @@
  {
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2022-10-06 16:38:46.354846",
+  "modified": "2022-10-07 18:29:22.265613",
   "name": "Create Server Snapshot",
   "steps": [
    {
@@ -137,7 +137,7 @@
     "parent": "Create Server Snapshot",
     "parentfield": "steps",
     "parenttype": "Press Job Type",
-    "script": "machine = frappe.get_doc(\"Virtual Machine\", arguments.machine)\nmachine.sync()\nresult = machine.status == \"Stopped\"",
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", arguments.machine)\nmachine.sync()\nresult = (machine.status == \"Stopped\", False)",
     "step_name": "Wait for Virtual Machine to Stop",
     "wait_until_true": 1
    },
@@ -161,7 +161,7 @@
     "parent": "Create Server Snapshot",
     "parentfield": "steps",
     "parenttype": "Press Job Type",
-    "script": "machine = frappe.get_doc(\"Virtual Machine\", arguments.machine)\nmachine.sync()\nresult = machine.status == \"Running\"",
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", arguments.machine)\nmachine.sync()\nresult = (machine.status == \"Running\", False)",
     "step_name": "Wait for Virtual Machine to Start",
     "wait_until_true": 1
    },
@@ -169,16 +169,16 @@
     "parent": "Create Server Snapshot",
     "parentfield": "steps",
     "parenttype": "Press Job Type",
-    "script": "image = frappe.get_doc(\"Virtual Machine Image\", arguments.image)\nimage.sync()\nresult = image.status == \"Available\"",
+    "script": "image = frappe.get_doc(\"Virtual Machine Image\", arguments.image)\nimage.sync()\nresult = (image.status == \"Available\", False)",
     "step_name": "Wait for Snapshot to Complete",
-    "wait_until_true": 0
+    "wait_until_true": 1
    }
   ]
  },
  {
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2022-10-06 16:36:29.863665",
+  "modified": "2022-10-07 18:29:31.068179",
   "name": "Archive Server",
   "steps": [
    {
@@ -201,7 +201,7 @@
     "parent": "Archive Server",
     "parentfield": "steps",
     "parenttype": "Press Job Type",
-    "script": "machine = frappe.get_doc(\"Virtual Machine\", arguments.machine)\nmachine.sync()\nresult = machine.status == \"Terminated\"",
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", arguments.machine)\nmachine.sync()\nresult = (machine.status == \"Terminated\", False)",
     "step_name": "Wait for Virtual Machine to Terminate",
     "wait_until_true": 1
    }

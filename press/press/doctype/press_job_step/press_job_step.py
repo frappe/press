@@ -27,13 +27,15 @@ class PressJobStep(Document):
 
 			if self.wait_until_true:
 				self.attempts = self.attempts + 1
-				if result:
+				if result[0]:
 					self.status = "Success"
+				elif result[1]:
+					self.status = "Failure"
 				else:
 					self.status = "Pending"
 					import time
 
-					time.sleep(3)
+					time.sleep(1)
 			else:
 				self.status = "Success"
 			self.result = str(result)
