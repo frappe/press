@@ -315,7 +315,10 @@ def get_plans_for_app(
 
 		plan_discount_percent = app_plan.discount_percent
 		plan_data["discounted"] = plan_discount_percent > 0
-		plan_prices = get_plan_prices(app_plan.plan, plan_discount_percent)
+		plan_prices = frappe.db.get_value(
+			"Plan", app_plan.plan, ["plan_title", "price_usd", "price_inr"], as_dict=True
+		)
+
 		plan_data.update(plan_prices)
 
 		plan_data["features"] = get_app_plan_features(app_plan.name)
@@ -326,28 +329,3 @@ def get_plans_for_app(
 	plans.sort(key=lambda x: x["enabled"], reverse=True)  # Enabled Plans First
 
 	return plans
-
-
-def get_plan_prices(plan_name: str, discount_percent: float = 0.0) -> dict:
-	"""Returns plan prices after applying the discount (if applicable)"""
-	plan_prices = frappe.db.get_value(
-		"Plan", plan_name, ["plan_title", "price_usd", "price_inr"], as_dict=True
-	)
-
-	if discount_percent > 0:
-		plan_prices.price_usd_before_discount = plan_prices.price_usd
-		plan_prices.price_usd = get_price_after_discount(
-			plan_prices.price_usd, discount_percent
-		)
-
-		plan_prices.price_inr_before_discount = plan_prices.price_inr
-		plan_prices.price_inr = get_price_after_discount(
-			plan_prices.price_inr, discount_percent
-		)
-
-	return plan_prices
-
-
-def get_price_after_discount(price: float, discount_percent: float) -> float:
-	discount_amount = price * discount_percent / 100
-	return round(price - discount_amount)
