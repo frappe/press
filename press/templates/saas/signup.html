@@ -52,7 +52,7 @@
 						<input type="text" id="subdomain" name="subdomain" class="form-control"
 							placeholder="yourcompany" autocomplete="off" onchange="validate_subdomain(this)">
 						<div class="input-group-append">
-							<p class="px-2 py-0 text-sm input-group-text rounded-right">.{{ domain }}</p>
+							<p class="px-2 py-0 text-xs input-group-text rounded-right">.{{ domain }}</p>
 						</div>
 					</div>
 					<small class="form-text"></small>
@@ -85,8 +85,10 @@
 			<form class="form-step" data-step="3">
 				<div class="text-center">
 					<h2 class="font-size-base mt-0">Verification Email Sent!</h2>
+					<p>
 					We have sent an email to <span class="verification-email"></span>.
 					Please click on the link received to verify your email and create your account.
+					</p>
 				</div>
 			</form>
 		</div>
