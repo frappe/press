@@ -14,7 +14,7 @@
 		</div>
 
 		<div class="flex justify-between mb-2">
-			<p class="my-auto">Billed</p>
+			<p class="my-auto">Billing</p>
 			<Input
 				class="w-2/4 float-right"
 				type="select"
