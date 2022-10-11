@@ -12,3 +12,4 @@ def get_context(context):
 	csrf_token = frappe.sessions.get_csrf_token()
 	frappe.db.commit()
 	context.csrf_token = csrf_token
+	context.press_frontend_sentry_dsn = frappe.get_conf().press_frontend_sentry_dsn
