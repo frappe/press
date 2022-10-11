@@ -960,7 +960,9 @@ def use_partner_credits(name, app, site, plan, amount, credits):
 		except Exception as e:
 			frappe.throw(e)
 	else:
-		frappe.throw("Not enough credits available for this purchase. Please use different method for payment.")
+		frappe.throw(
+			"Not enough credits available for this purchase. Please use different method for payment."
+		)
 
 
 @frappe.whitelist(allow_guest=True)
