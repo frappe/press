@@ -12,6 +12,22 @@ class UserSSHKey(Document):
 	def validate(self):
 		self.generate_ssh_fingerprint()
 
+	def after_insert(self):
+		if self.is_default:
+			self.make_other_keys_non_default()
+
+	def on_update(self):
+		if self.has_value_changed("is_default") and self.is_default:
+			self.make_other_keys_non_default()
+
+	def make_other_keys_non_default(self):
+		frappe.db.set_value(
+			"User SSH Key",
+			{"user": self.user, "is_default": True, "name": ("!=", self.name)},
+			"is_default",
+			False,
+		)
+
 	def generate_ssh_fingerprint(self):
 		try:
 			ssh_key_b64 = base64.b64decode(self.ssh_public_key.strip().split()[1])

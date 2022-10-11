@@ -23,6 +23,7 @@
 			<Button v-if="!$account.ssh_key" @click="showAddNewKeyDialog = true">
 				New SSH Key
 			</Button>
+			<Button v-else @click="showAddNewKeyDialog = true"> Change SSH Key </Button>
 		</template>
 		<FrappeUIDialog
 			:options="{ title: 'New SSH Key' }"

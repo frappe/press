@@ -7,6 +7,9 @@
  "engine": "InnoDB",
  "field_order": [
   "user",
+  "column_break_2",
+  "is_default",
+  "section_break_4",
   "ssh_public_key",
   "ssh_fingerprint"
  ],
@@ -31,11 +34,25 @@
    "in_list_view": 1,
    "label": "SSH Fingerprint",
    "read_only": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "is_default",
+   "fieldtype": "Check",
+   "label": "Is Default"
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_4",
+   "fieldtype": "Section Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-01-31 10:41:42.423892",
+ "modified": "2022-10-11 15:57:00.071186",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "User SSH Key",

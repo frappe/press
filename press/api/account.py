@@ -305,9 +305,12 @@ def get():
 
 
 def get_ssh_key(user):
-	ssh_keys = frappe.get_all("User SSH Key", {"user": user})
+	ssh_keys = frappe.get_all(
+		"User SSH Key", {"user": user, "is_default": True}, order_by="creation desc", limit=1
+	)
 	if ssh_keys:
 		return frappe.get_doc("User SSH Key", ssh_keys[0])
+
 	return None
 
 
