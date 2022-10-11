@@ -31,6 +31,7 @@ from press.press.doctype.app_release_approval_request.app_release_approval_reque
 	AppReleaseApprovalRequest,
 )
 from press.press.doctype.marketplace_app.marketplace_app import get_plans_for_app
+from press.utils.billing import get_frappe_io_connection
 
 
 @frappe.whitelist()
@@ -858,9 +859,34 @@ def get_plan(name):
 		"title": title,
 		"amount": amount,
 		"gst": gst,
-		"discount_percent": discount_percent,
+		"discount_percent": get_discount_percent(discount_percent),
 		"block_monthly": block_monthly,
 	}
+
+
+def get_discount_percent(discount=0.0):
+	team = get_current_team(True)
+	partner_discount_percent = {
+		"Gold": 50.0,
+		"Silver": 40.0,
+		"Bronze": 30.0,
+	}
+
+	if team.erpnext_partner:
+		client = get_frappe_io_connection()
+		response = client.session.post(
+			f"{client.url}/api/method/partner_relationship_management.api.get_partner_type",
+			data={"email": team.partner_email},
+			headers=client.headers,
+		)
+		if response.ok:
+			res = response.json()
+			partner_type = res.get("message")
+			print(partner_type)
+			if partner_type is not None:
+				discount = partner_discount_percent.get(partner_type) or discount
+
+	return discount
 
 
 @frappe.whitelist(allow_guest=True)
