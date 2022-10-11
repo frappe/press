@@ -4,6 +4,7 @@
 
 import json
 import frappe
+import datetime
 
 from typing import Dict, List
 from frappe.core.utils import find
@@ -913,6 +914,53 @@ def use_existing_credits(site, app, subscription, plan):
 		change_app_plan(subscription, plan)
 
 	return change_site_hosting_plan(site, plan, team)
+
+
+@frappe.whitelist()
+def use_partner_credits(name, app, site, plan, amount, credits):
+	"""
+	Consume partner credits on PRM and add Frappe Cloud credits
+	"""
+	team = get_current_team(True)
+	if amount < team.get_available_partner_credits():
+		try:
+			invoice = frappe.get_doc(
+				doctype="Invoice",
+				team=team.name,
+				type="Subscription",
+				status="Draft",
+				marketplace=1,
+				due_date=datetime.datetime.today(),
+				amount_paid=amount,
+				amount_due=amount,
+			)
+
+			invoice.append(
+				"items",
+				{
+					"description": f"Credits for {app}",
+					"document_type": "Marketplace App",
+					"document_name": app,
+					"plan": plan,
+					"rate": amount,
+					"quantity": 1,
+				},
+			)
+
+			invoice.save()
+			invoice.finalize_invoice()
+			invoice.reload()
+
+			if invoice.status == "Paid":
+				team.allocate_credit_amount(
+					credits, source="Prepaid Credits", remark="Convert from Partner Credits"
+				)
+				change_app_plan(name, plan)
+				change_site_hosting_plan(site, plan, team)
+		except Exception as e:
+			frappe.throw(e)
+	else:
+		frappe.throw("Not enough credits available for this purchase. Please use different method for payment.")
 
 
 @frappe.whitelist(allow_guest=True)

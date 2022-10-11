@@ -80,15 +80,12 @@
 			</div>
 		</div>
 	</div>
-	<div hidden v-if="step == 'Confirm Checkout'">
-		<Input
-			class="mb-4"
-			v-if="$account.team.payment_mode === 'Partner Credits'"
-			type="checkbox"
-			label="Use Partner Credits"
-			v-model="usePartnerCredits"
-		/>
-	</div>
+
+	<ErrorMessage
+		class="mt-2"
+		v-if="$resources.usePartnerCredits.error"
+		:error="$resources.usePartnerCredits.error"
+	/>
 	<div
 		class="float-right w-fit mt-4"
 		v-if="step == 'Confirm Checkout' && planData"
@@ -97,7 +94,7 @@
 			class="mr-2"
 			v-if="this.$account.team.erpnext_partner"
 			appearance="secondary"
-			@click="step = 'Use Existing Credits'"
+			@click="$resources.usePartnerCredits.submit()"
 		>
 			Use Partner Credits
 		</Button>
@@ -233,7 +230,6 @@ export default {
 			creditsToBuy: 0,
 			totalAmount: 0,
 			totalAmountWithoutDiscount: 0,
-			usePartnerCredits: false,
 			step: 'Confirm Checkout',
 			clientSecret: null,
 			paymentMethod: null,
@@ -423,6 +419,22 @@ export default {
 					window.location.reload();
 				}
 			};
+		},
+		usePartnerCredits() {
+			return {
+				method: 'press.api.marketplace.use_partner_credits',
+				params: {
+					name: this.subscription,
+					app: this.app,
+					site: this.site,
+					plan: this.plan,
+					amount: this.totalAmount,
+					credits: this.creditsToBuy
+				},
+				onSuccess(r) {
+					window.location.reload();
+				},
+			}
 		},
 		changePlan() {
 			return {
