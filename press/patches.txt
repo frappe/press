@@ -88,3 +88,4 @@ press.patches.v0_0_4.disable_subscriptions_for_inactive_sites
 press.press.doctype.virtual_machine.patches.set_naming_fields
 press.press.doctype.virtual_machine.patches.set_virtual_machine_naming_series
 press.press.doctype.virtual_machine.patches.rename_virtual_machines
+press.press.doctype.user_ssh_key.patches.set_existing_keys_as_default
