@@ -1,41 +1,82 @@
 <template>
 	<div
 		v-if="step == 'Confirm Checkout' && planData"
-		class="grid grid-cols-1 gap-2 md:grid-cols-2"
+		class="flex-row text-center text-base"
 	>
-		<Input
-			type="select"
-			:options="paymentOptions"
-			label="Payment Option"
-			v-model="selectedOption"
-		/>
-		<Input
-			type="text"
-			label="Selected Plan"
-			v-model="planData.title"
-			readonly
-		/>
-		<Input
-			v-if="plan"
-			:label="`Credits (Minimum Credits: ${
-				selectedOption == 'Annual' ? planData.amount * 12 : planData.amount
-			})`"
-			v-model.number="creditsToBuy"
-			name="amount"
-			autocomplete="off"
-			type="number"
-			:min="selectedOption == 'Annual' ? planData.amount * 12 : planData.amount"
-		/>
-		<div></div>
-		<div class="text-sm">
-			<p class="mb-1">
-				Total Amount <span v-if="gstApplicable()">(+18% GST)</span>
+		<div class="flex justify-between mb-3">
+			<p>App</p>
+			<h4 class="font-medium">{{ appTitle }}</h4>
+		</div>
+
+		<div class="flex justify-between mb-3">
+			<p>Selected Plan</p>
+			<p>{{ planData.title }}</p>
+		</div>
+
+		<div class="flex justify-between mb-2">
+			<p class="my-auto">Billed</p>
+			<Input
+				class="w-2/4 float-right"
+				type="select"
+				:options="paymentOptions"
+				v-model="selectedOption"
+			/>
+		</div>
+
+		<div class="flex justify-between mb-2">
+			<p class="my-auto">
+				Minimum Credits ({{
+					selectedOption == 'Annual' ? planData.amount * 12 : planData.amount
+				}})
 			</p>
-			<div class="flex rounded bg-gray-100 p-1 pl-3 font-medium">
-				<strike class="mr-2" v-if="totalAmountWithoutDiscount > 0">{{
-					totalAmountWithoutDiscount
-				}}</strike>
-				<p>{{ totalAmount }}</p>
+			<Input
+				class="w-2/4 float-right"
+				v-if="plan"
+				v-model.number="creditsToBuy"
+				name="amount"
+				autocomplete="off"
+				type="number"
+				:min="
+					selectedOption == 'Annual' ? planData.amount * 12 : planData.amount
+				"
+			/>
+		</div>
+
+		<hr class="my-4" />
+
+		<div class="flex-row">
+			<div class="flex justify-between mb-3">
+				<p>Subtotal</p>
+				<p>
+					{{ getCurrencyString(totalAmountWithoutDiscount) }}
+				</p>
+			</div>
+
+			<div class="flex justify-between mb-3">
+				GST (if applicable)
+				<p class="text-red-500">
+					{{
+						this.gstApplicable()
+							? getCurrencyString(Math.floor(totalAmountWithoutDiscount * 0.18))
+							: '-'
+					}}
+				</p>
+			</div>
+
+			<div class="flex justify-between">
+				<p>Discount</p>
+				<p class="text-green-500">
+					{{
+						selectedOption === 'Monthly' ? '-' : planData.discount_percent + '%'
+					}}
+				</p>
+			</div>
+			<hr class="my-4" />
+			<div class="flex justify-between">
+				<p class="mb-1 font-medium">Total</p>
+				<p class="text-xl font-semibold">
+					{{ country == 'India' ? '₹' + totalAmount : '$' + totalAmount }}
+				</p>
 			</div>
 		</div>
 	</div>
@@ -48,7 +89,18 @@
 			v-model="usePartnerCredits"
 		/>
 	</div>
-	<div class="float-right mt-2" v-if="step == 'Confirm Checkout' && planData">
+	<div
+		class="float-right w-fit mt-4"
+		v-if="step == 'Confirm Checkout' && planData"
+	>
+		<Button
+			class="mr-2"
+			v-if="this.$account.team.erpnext_partner"
+			appearance="secondary"
+			@click="step = 'Use Existing Credits'"
+		>
+			Use Partner Credits
+		</Button>
 		<Button
 			class="mr-2"
 			v-if="this.$account.balance >= creditsToBuy"
@@ -166,6 +218,7 @@ export default {
 	name: 'SubscriptionPlan',
 	props: {
 		app: null,
+		appTitle: null,
 		site: null,
 		plan: '',
 		subscription: {
@@ -187,7 +240,8 @@ export default {
 			publishableKey: null,
 			paymentOptions: ['Monthly', 'Annual'],
 			selectedOption: 'Monthly',
-			planData: null
+			planData: null,
+			country: this.$account.team.country
 		};
 	},
 	watch: {
@@ -202,6 +256,9 @@ export default {
 		}
 	},
 	methods: {
+		getCurrencyString(amount) {
+			return this.country == 'India' ? '₹' + amount : '$' + amount;
+		},
 		updateTotalAmount() {
 			// Discount
 			let amount = this.creditsToBuy;
@@ -212,10 +269,11 @@ export default {
 				this.totalAmountWithoutDiscount = this.gstApplicable()
 					? Math.floor(amount + amount * 0.18)
 					: this.creditsToBuy;
-				this.totalAmount =
-					amount - (this.planData.discount_percent / 100) * amount;
+				this.totalAmount = Math.floor(
+					amount - (this.planData.discount_percent / 100) * amount
+				);
 			} else {
-				this.totalAmount = amount;
+				this.totalAmountWithoutDiscount = this.totalAmount = amount;
 			}
 
 			// GST
@@ -223,8 +281,6 @@ export default {
 				this.totalAmount = Math.floor(
 					this.totalAmount + this.totalAmount * 0.18
 				);
-			} else {
-				this.totalAmount = this.creditsToBuy;
 			}
 		},
 		gstApplicable() {
@@ -347,8 +403,8 @@ export default {
 					this.planData = r;
 					this.creditsToBuy = r.amount;
 					if (r.block_monthly === 1) {
-						this.selectedOption = 'Annual'
-						this.paymentOptions = ['Annual']
+						this.selectedOption = 'Annual';
+						this.paymentOptions = ['Annual'];
 					}
 				}
 			};
@@ -366,7 +422,7 @@ export default {
 					this.step = 'Confirm Checkout';
 					window.location.reload();
 				}
-			}
+			};
 		},
 		changePlan() {
 			return {

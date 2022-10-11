@@ -207,6 +207,7 @@
 
 		<Dialog
 			v-model="showCheckoutDialog"
+			width="w-2/6"
 			title="Checkout Details"
 			:dismissable="true"
 		>
@@ -214,6 +215,7 @@
 				v-if="newAppPlan"
 				:subscription="currentSubscription"
 				:app="appToChangePlan.name"
+				:appTitle="appToChangePlan.title"
 				:site="site.name"
 				:plan="newAppPlan"
 			/>
@@ -221,6 +223,7 @@
 			<MarketplacePrepaidCredits
 				v-if="selectedPlan"
 				:app="appToInstall.app"
+				:appTitle="appToChangePlan.title"
 				:site="site.name"
 				:plan="selectedPlan"
 			/>
