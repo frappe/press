@@ -624,7 +624,7 @@ def certificate(name):
 @protected("Release Group")
 def generate_certificate(name):
 	user_ssh_key = frappe.get_all(
-		"User SSH Key", {"user": frappe.session.user}, pluck="name"
+		"User SSH Key", {"user": frappe.session.user, "is_default": True}, pluck="name"
 	)[0]
 	return frappe.get_doc(
 		{
