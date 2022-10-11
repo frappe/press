@@ -882,7 +882,6 @@ def get_discount_percent(discount=0.0):
 		if response.ok:
 			res = response.json()
 			partner_type = res.get("message")
-			print(partner_type)
 			if partner_type is not None:
 				discount = partner_discount_percent.get(partner_type) or discount
 
