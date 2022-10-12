@@ -860,12 +860,12 @@ def get_plan(name):
 		"title": title,
 		"amount": amount,
 		"gst": gst,
-		"discount_percent": get_discount_percent(discount_percent),
+		"discount_percent": get_discount_percent(name, discount_percent),
 		"block_monthly": block_monthly,
 	}
 
 
-def get_discount_percent(discount=0.0):
+def get_discount_percent(plan, discount=0.0):
 	team = get_current_team(True)
 	partner_discount_percent = {
 		"Gold": 50.0,
@@ -873,7 +873,9 @@ def get_discount_percent(discount=0.0):
 		"Bronze": 30.0,
 	}
 
-	if team.erpnext_partner:
+	if team.erpnext_partner and frappe.get_value(
+		"Marketplace App Plan", plan, "partner_discount"
+	):
 		client = get_frappe_io_connection()
 		response = client.session.post(
 			f"{client.url}/api/method/partner_relationship_management.api.get_partner_type",
