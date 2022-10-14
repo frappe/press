@@ -23,6 +23,7 @@ from press.utils.billing import (
 	get_erpnext_com_connection,
 	get_frappe_io_connection,
 	get_stripe,
+	process_micro_debit_test_charge,
 )
 
 
@@ -435,6 +436,8 @@ class Team(Document):
 		# allocate credits if not already allocated
 		self.allocate_free_credits()
 
+		return doc
+
 	def get_payment_methods(self):
 		return frappe.db.get_all(
 			"Stripe Payment Method",
@@ -789,6 +792,10 @@ def process_stripe_webhook(doc, method):
 
 	if payment_for and payment_for == "prepaid_marketplace":
 		process_prepaid_marketplace_payment(event)
+		return
+
+	if payment_for and payment_for == "micro_debit_test_charge":
+		process_micro_debit_test_charge(event)
 		return
 
 	team: Team = frappe.get_doc("Team", {"stripe_customer_id": payment_intent["customer"]})

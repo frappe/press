@@ -202,3 +202,18 @@ def get_razorpay_client():
 		frappe.local.press_razorpay_client_object = razorpay.Client(auth=(key_id, key_secret))
 
 	return frappe.local.press_razorpay_client_object
+
+
+def process_micro_debit_test_charge(stripe_event):
+	print("Micro Charge event received.")
+	payment_intent = stripe_event["data"]["object"]
+	metadata = payment_intent.get("metadata")
+	payment_method_name = metadata.get("payment_method_name")
+
+	frappe.db.set_value(
+		"Stripe Payment Method", payment_method_name, "is_verified_with_micro_charge", True
+	)
+
+	frappe.get_doc(
+		doctype="Stripe Micro Charge Record", stripe_payment_method=payment_method_name
+	).insert(ignore_permissions=True)
