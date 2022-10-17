@@ -199,10 +199,10 @@ def get_customer_details(team):
 def create_payment_intent_for_micro_debit(payment_method_name):
 	team = get_current_team(True)
 	stripe = get_stripe()
-	amount = 0.50 if team.currency == "USD" else 50
+	amount = 50 if team.currency == "USD" else 5000
 
 	intent = stripe.PaymentIntent.create(
-		amount=amount * 100,
+		amount=amount,
 		currency=team.currency.lower(),
 		customer=team.stripe_customer_id,
 		description="Micro-Debit Card Test Charge",
