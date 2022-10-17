@@ -141,7 +141,9 @@
   "monitor_server",
   "column_break_100",
   "monitor_token",
-  "log_server"
+  "log_server",
+  "feature_flags_tab",
+  "verify_cards_with_micro_charge"
  ],
  "fields": [
   {
@@ -885,11 +887,23 @@
   {
    "fieldname": "column_break_48",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "feature_flags_tab",
+   "fieldtype": "Tab Break",
+   "label": "Feature Flags"
+  },
+  {
+   "default": "No",
+   "fieldname": "verify_cards_with_micro_charge",
+   "fieldtype": "Select",
+   "label": "Verify Cards with Micro Charge",
+   "options": "No\nOnly INR\nOnly USD\nBoth INR and USD"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2022-10-04 12:46:23.086698",
+ "modified": "2022-10-17 15:57:24.551328",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
