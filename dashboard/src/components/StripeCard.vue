@@ -30,6 +30,11 @@
 				ref="address-form"
 			/>
 			<ErrorMessage class="mt-2" :error="errorMessage" />
+
+			<div v-show="tryingMicroCharge">
+				<Button :loading="true">Trying Test Charge</Button>
+			</div>
+
 			<div class="mt-6 flex items-center justify-between">
 				<Button appearance="primary" @click="submit" :loading="addingCard">
 					Save Card
@@ -65,7 +70,8 @@ export default {
 				gstin: ''
 			},
 			gstNotApplicable: false,
-			addingCard: false
+			addingCard: false,
+			tryingMicroCharge: false
 		};
 	},
 	async mounted() {
@@ -177,18 +183,64 @@ export default {
 			} else {
 				if (setupIntent.status === 'succeeded') {
 					try {
-						await this.$call('press.api.billing.setup_intent_success', {
-							setup_intent: setupIntent,
-							address: this.withoutAddress ? null : this.billingInformation
-						});
+						const { payment_method_name } = await this.$call(
+							'press.api.billing.setup_intent_success',
+							{
+								setup_intent: setupIntent,
+								address: this.withoutAddress ? null : this.billingInformation
+							}
+						);
+
+						await this.verifyWithMicroChargeIfApplicable(payment_method_name);
+
 						this.addingCard = false;
-						this.$emit('complete');
 					} catch (error) {
 						this.addingCard = false;
 						this.errorMessage = error.messages.join('\n');
 					}
 				}
 			}
+		},
+		async verifyWithMicroChargeIfApplicable(paymentMethodName) {
+			const teamCurrency = this.$account.team.currency;
+			const verifyCardsWithMicroCharge =
+				this.$account.feature_flags.verify_cards_with_micro_charge;
+
+			const isMicroChargeApplicable =
+				verifyCardsWithMicroCharge === 'Both INR and USD' ||
+				(verifyCardsWithMicroCharge == 'Only INR' && teamCurrency === 'INR') ||
+				(verifyCardsWithMicroCharge === 'Only USD' && teamCurrency === 'USD');
+
+			if (isMicroChargeApplicable) {
+				await this._verifyWithMicroCharge(paymentMethodName);
+			} else {
+				this.$emit('complete');
+			}
+		},
+
+		async _verifyWithMicroCharge() {
+			this.tryingMicroCharge = true;
+
+			const paymentIntent = await this.$call(
+				'press.api.billing.create_payment_intent_for_micro_debit',
+				{
+					payment_method_name: paymentMethodName
+				}
+			);
+
+			let { client_secret: clientSecret } = paymentIntent;
+
+			let payload = await this.stripe.confirmCardPayment(clientSecret, {
+				payment_method: {
+					card: this.card
+				}
+			});
+
+			if (payload.paymentIntent.status === 'succeeded') {
+				this.$emit('complete');
+			}
+
+			this.tryingMicroCharge = false;
 		},
 		getCountryCode(country) {
 			let code = this.$resources.countryList.data.find(
