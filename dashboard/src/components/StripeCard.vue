@@ -195,6 +195,7 @@ export default {
 
 						this.addingCard = false;
 					} catch (error) {
+						console.error(error);
 						this.addingCard = false;
 						this.errorMessage = error.messages.join('\n');
 					}
@@ -218,7 +219,7 @@ export default {
 			}
 		},
 
-		async _verifyWithMicroCharge() {
+		async _verifyWithMicroCharge(paymentMethodName) {
 			this.tryingMicroCharge = true;
 
 			const paymentIntent = await this.$call(
