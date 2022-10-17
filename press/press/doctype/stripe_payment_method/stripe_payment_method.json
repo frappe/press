@@ -81,13 +81,14 @@
    "default": "0",
    "fieldname": "is_verified_with_micro_charge",
    "fieldtype": "Check",
+   "in_list_view": 1,
    "label": "Verified with Micro Charge",
    "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-10-14 19:15:36.163837",
+ "modified": "2022-10-17 17:20:24.776635",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Stripe Payment Method",
