@@ -8,6 +8,10 @@ from press.utils.billing import get_stripe
 
 
 class StripeMicroChargeRecord(Document):
+	def after_insert(self):
+		# Auto-refund
+		self.refund()
+
 	@frappe.whitelist()
 	def refund(self):
 		stripe = get_stripe()
