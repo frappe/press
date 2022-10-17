@@ -205,7 +205,6 @@ def get_razorpay_client():
 
 
 def process_micro_debit_test_charge(stripe_event):
-	print("Micro Charge event received.")
 	payment_intent = stripe_event["data"]["object"]
 	metadata = payment_intent.get("metadata")
 	payment_method_name = metadata.get("payment_method_name")
@@ -215,5 +214,7 @@ def process_micro_debit_test_charge(stripe_event):
 	)
 
 	frappe.get_doc(
-		doctype="Stripe Micro Charge Record", stripe_payment_method=payment_method_name
+		doctype="Stripe Micro Charge Record",
+		stripe_payment_method=payment_method_name,
+		stripe_payment_intent_id=payment_intent.get("id"),
 	).insert(ignore_permissions=True)
