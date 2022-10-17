@@ -9,7 +9,8 @@
   "team",
   "stripe_payment_method",
   "column_break_3",
-  "has_been_refunded"
+  "has_been_refunded",
+  "stripe_payment_intent_id"
  ],
  "fields": [
   {
@@ -40,11 +41,18 @@
   {
    "fieldname": "column_break_3",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "stripe_payment_intent_id",
+   "fieldtype": "Data",
+   "label": "Stripe Payment Intent ID",
+   "read_only": 1,
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-10-17 16:29:44.366456",
+ "modified": "2022-10-17 18:32:32.528763",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Stripe Micro Charge Record",
