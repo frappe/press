@@ -7,29 +7,43 @@
 			<Spinner class="h-5 w-5 text-gray-600" />
 		</div>
 		<div :class="{ 'opacity-0': !ready }">
-			<label class="block">
-				<span class="text-sm leading-4 text-gray-700">
-					Credit or Debit Card
-				</span>
-				<div
-					class="form-input mt-2 block w-full py-2 pl-3"
-					ref="card-element"
-				></div>
-				<ErrorMessage class="mt-1" :error="cardErrorMessage" />
-			</label>
-			<Input
-				class="mt-4"
-				label="Name on Card"
-				type="text"
-				v-model="billingInformation.cardHolderName"
-			/>
-			<AddressForm
-				v-if="!withoutAddress"
-				class="mt-4"
-				v-model:address="billingInformation"
-				ref="address-form"
-			/>
+			<div v-show="!tryingMicroCharge">
+				<label class="block">
+					<span class="text-sm leading-4 text-gray-700">
+						Credit or Debit Card
+					</span>
+					<div
+						class="form-input mt-2 block w-full py-2 pl-3"
+						ref="card-element"
+					></div>
+					<ErrorMessage class="mt-1" :error="cardErrorMessage" />
+				</label>
+				<Input
+					class="mt-4"
+					label="Name on Card"
+					type="text"
+					v-model="billingInformation.cardHolderName"
+				/>
+				<AddressForm
+					v-if="!withoutAddress"
+					class="mt-4"
+					v-model:address="billingInformation"
+					ref="address-form"
+				/>
+			</div>
+
+			<div class="mt-3" v-show="tryingMicroCharge">
+				<p class="text-lg text-gray-800">
+					We are attempting to charge your card with
+					<strong>{{ formattedMicroChargeAmount }}</strong> to make sure the card works. This
+					amount will be <strong>refunded</strong> back to your account.
+				</p>
+
+				<Button class="mt-2" :loading="true">Attempting Test Charge</Button>
+			</div>
+
 			<ErrorMessage class="mt-2" :error="errorMessage" />
+
 			<div class="mt-6 flex items-center justify-between">
 				<Button appearance="primary" @click="submit" :loading="addingCard">
 					Save Card
@@ -65,7 +79,8 @@ export default {
 				gstin: ''
 			},
 			gstNotApplicable: false,
-			addingCard: false
+			addingCard: false,
+			tryingMicroCharge: false
 		};
 	},
 	async mounted() {
@@ -177,24 +192,77 @@ export default {
 			} else {
 				if (setupIntent.status === 'succeeded') {
 					try {
-						await this.$call('press.api.billing.setup_intent_success', {
-							setup_intent: setupIntent,
-							address: this.withoutAddress ? null : this.billingInformation
-						});
+						const { payment_method_name } = await this.$call(
+							'press.api.billing.setup_intent_success',
+							{
+								setup_intent: setupIntent,
+								address: this.withoutAddress ? null : this.billingInformation
+							}
+						);
+
+						await this.verifyWithMicroChargeIfApplicable(payment_method_name);
+
 						this.addingCard = false;
-						this.$emit('complete');
 					} catch (error) {
+						console.error(error);
 						this.addingCard = false;
 						this.errorMessage = error.messages.join('\n');
 					}
 				}
 			}
 		},
+		async verifyWithMicroChargeIfApplicable(paymentMethodName) {
+			const teamCurrency = this.$account.team.currency;
+			const verifyCardsWithMicroCharge =
+				this.$account.feature_flags.verify_cards_with_micro_charge;
+
+			const isMicroChargeApplicable =
+				verifyCardsWithMicroCharge === 'Both INR and USD' ||
+				(verifyCardsWithMicroCharge == 'Only INR' && teamCurrency === 'INR') ||
+				(verifyCardsWithMicroCharge === 'Only USD' && teamCurrency === 'USD');
+
+			if (isMicroChargeApplicable) {
+				await this._verifyWithMicroCharge(paymentMethodName);
+			} else {
+				this.$emit('complete');
+			}
+		},
+
+		async _verifyWithMicroCharge(paymentMethodName) {
+			this.tryingMicroCharge = true;
+
+			const paymentIntent = await this.$call(
+				'press.api.billing.create_payment_intent_for_micro_debit',
+				{
+					payment_method_name: paymentMethodName
+				}
+			);
+
+			let { client_secret: clientSecret } = paymentIntent;
+
+			let payload = await this.stripe.confirmCardPayment(clientSecret, {
+				payment_method: {
+					card: this.card
+				}
+			});
+
+			if (payload.paymentIntent.status === 'succeeded') {
+				this.$emit('complete');
+			}
+
+			this.tryingMicroCharge = false;
+		},
 		getCountryCode(country) {
 			let code = this.$resources.countryList.data.find(
 				d => d.name === country
 			).code;
 			return code.toUpperCase();
+		}
+	},
+	computed: {
+		formattedMicroChargeAmount() {
+			const isINR = this.$account.team.currency === 'INR';
+			return isINR ? '₹50' : '$0.5';
 		}
 	}
 };

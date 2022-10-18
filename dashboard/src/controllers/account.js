@@ -9,6 +9,7 @@ export default class Account {
 		this.team_members = [];
 		this.onboarding = null;
 		this.balance = 0;
+		this.feature_flags = {};
 	}
 
 	async fetchAccount() {
@@ -24,6 +25,7 @@ export default class Account {
 			this.team_members = result.team_members;
 			this.onboarding = result.onboarding;
 			this.balance = result.balance;
+			this.feature_flags = result.feature_flags;
 		} catch (e) {
 			localStorage.removeItem('current_team');
 		}

@@ -301,6 +301,11 @@ def get():
 		"teams": list(set(teams)),
 		"onboarding": team_doc.get_onboarding(),
 		"balance": team_doc.get_balance(),
+		"feature_flags": {
+			"verify_cards_with_micro_charge": frappe.db.get_single_value(
+				"Press Settings", "verify_cards_with_micro_charge"
+			)
+		},
 	}
 
 

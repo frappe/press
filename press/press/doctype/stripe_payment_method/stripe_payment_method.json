@@ -15,7 +15,8 @@
   "stripe_payment_method_id",
   "is_default",
   "column_break_9",
-  "address_html"
+  "address_html",
+  "is_verified_with_micro_charge"
  ],
  "fields": [
   {
@@ -75,14 +76,23 @@
    "fieldname": "address_html",
    "fieldtype": "HTML",
    "label": "Address HTML"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_verified_with_micro_charge",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Verified with Micro Charge",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-08-20 16:16:40.273163",
+ "modified": "2022-10-17 17:20:24.776635",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Stripe Payment Method",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {
@@ -109,5 +119,6 @@
  "search_fields": "team, name_on_card, last_4, expiry_month, expiry_year",
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }

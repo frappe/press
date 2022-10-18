@@ -196,6 +196,25 @@ def get_customer_details(team):
 
 
 @frappe.whitelist()
+def create_payment_intent_for_micro_debit(payment_method_name):
+	team = get_current_team(True)
+	stripe = get_stripe()
+	amount = 50 if team.currency == "USD" else 5000
+
+	intent = stripe.PaymentIntent.create(
+		amount=amount,
+		currency=team.currency.lower(),
+		customer=team.stripe_customer_id,
+		description="Micro-Debit Card Test Charge",
+		metadata={
+			"payment_for": "micro_debit_test_charge",
+			"payment_method_name": payment_method_name,
+		},
+	)
+	return {"client_secret": intent["client_secret"]}
+
+
+@frappe.whitelist()
 def create_payment_intent_for_buying_credits(amount):
 	team = get_current_team(True)
 	stripe = get_stripe()
@@ -382,10 +401,14 @@ def setup_intent_success(setup_intent, address=None):
 	setup_intent = frappe._dict(setup_intent)
 	team = get_current_team(True)
 	clear_setup_intent()
-	team.create_payment_method(setup_intent.payment_method, set_default=True)
+	payment_method = team.create_payment_method(
+		setup_intent.payment_method, set_default=True
+	)
 	if address:
 		address = frappe._dict(address)
 		team.update_billing_details(address)
+
+	return {"payment_method_name": payment_method.name}
 
 
 @frappe.whitelist()

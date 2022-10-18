@@ -101,10 +101,11 @@ export default {
 				message: 'Set this card as the default payment method?',
 				actionLabel: 'Set as default',
 				resource: this.$resources.setAsDefault,
-				action: () => {
-					this.$resources.setAsDefault
-						.submit({ name: card.name })
-						.then(() => this.$resources.paymentMethods.reload());
+				action: closeDialog => {
+					this.$resources.setAsDefault.submit({ name: card.name }).then(() => {
+						this.$resources.paymentMethods.reload();
+						closeDialog();
+					});
 				}
 			});
 		},

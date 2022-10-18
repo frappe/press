@@ -1,0 +1,79 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2022-10-14 19:22:39.833212",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "team",
+  "stripe_payment_method",
+  "column_break_3",
+  "has_been_refunded",
+  "stripe_payment_intent_id"
+ ],
+ "fields": [
+  {
+   "fieldname": "stripe_payment_method",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Stripe Payment Method",
+   "options": "Stripe Payment Method",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "has_been_refunded",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Refunded?"
+  },
+  {
+   "fetch_from": "stripe_payment_method.team",
+   "fetch_if_empty": 1,
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "stripe_payment_intent_id",
+   "fieldtype": "Data",
+   "label": "Stripe Payment Intent ID",
+   "read_only": 1,
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2022-10-17 18:32:32.528763",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Stripe Micro Charge Record",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "team"
+}
