@@ -7,33 +7,42 @@
 			<Spinner class="h-5 w-5 text-gray-600" />
 		</div>
 		<div :class="{ 'opacity-0': !ready }">
-			<label class="block">
-				<span class="text-sm leading-4 text-gray-700">
-					Credit or Debit Card
-				</span>
-				<div
-					class="form-input mt-2 block w-full py-2 pl-3"
-					ref="card-element"
-				></div>
-				<ErrorMessage class="mt-1" :error="cardErrorMessage" />
-			</label>
-			<Input
-				class="mt-4"
-				label="Name on Card"
-				type="text"
-				v-model="billingInformation.cardHolderName"
-			/>
-			<AddressForm
-				v-if="!withoutAddress"
-				class="mt-4"
-				v-model:address="billingInformation"
-				ref="address-form"
-			/>
-			<ErrorMessage class="mt-2" :error="errorMessage" />
-
-			<div v-show="tryingMicroCharge">
-				<Button :loading="true">Trying Test Charge</Button>
+			<div v-show="!tryingMicroCharge">
+				<label class="block">
+					<span class="text-sm leading-4 text-gray-700">
+						Credit or Debit Card
+					</span>
+					<div
+						class="form-input mt-2 block w-full py-2 pl-3"
+						ref="card-element"
+					></div>
+					<ErrorMessage class="mt-1" :error="cardErrorMessage" />
+				</label>
+				<Input
+					class="mt-4"
+					label="Name on Card"
+					type="text"
+					v-model="billingInformation.cardHolderName"
+				/>
+				<AddressForm
+					v-if="!withoutAddress"
+					class="mt-4"
+					v-model:address="billingInformation"
+					ref="address-form"
+				/>
 			</div>
+
+			<div class="mt-3" v-show="tryingMicroCharge">
+				<p class="text-lg text-gray-800">
+					We are attempting to charge your card with
+					<strong>{{ formattedMicroChargeAmount }}</strong> to make sure the card works. This
+					amount will be <strong>refunded</strong> back to your account.
+				</p>
+
+				<Button class="mt-2" :loading="true">Attempting Test Charge</Button>
+			</div>
+
+			<ErrorMessage class="mt-2" :error="errorMessage" />
 
 			<div class="mt-6 flex items-center justify-between">
 				<Button appearance="primary" @click="submit" :loading="addingCard">
@@ -248,6 +257,12 @@ export default {
 				d => d.name === country
 			).code;
 			return code.toUpperCase();
+		}
+	},
+	computed: {
+		formattedMicroChargeAmount() {
+			const isINR = this.$account.team.currency === 'INR';
+			return isINR ? '₹50' : '$0.5';
 		}
 	}
 };
