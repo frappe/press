@@ -1,0 +1,8 @@
+---
+- name: Add Primary Proxy Server Public Key to Authorized Keys
+  become: yes
+  become_user: frappe
+  authorized_key:
+    user: frappe
+    key: "{{ primary_public_key }}"
+    state: present

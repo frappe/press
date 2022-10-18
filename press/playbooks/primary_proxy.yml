@@ -1,0 +1,8 @@
+---
+- name: Setup Primary Proxy Server
+  hosts: all
+  become: yes
+  become_user: root
+
+  roles:
+    - role: primary_proxy

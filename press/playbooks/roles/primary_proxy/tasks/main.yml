@@ -1,0 +1,57 @@
+---
+- name: Remove Primary Proxy Server from Known Hosts
+  become: yes
+  become_user: frappe
+  known_hosts:
+    name: "{{ secondary_private_ip }}"
+    state: absent
+
+- name: Add Primary Proxy Server to Known Hosts
+  become: yes
+  become_user: frappe
+  shell: ssh-keyscan {{ secondary_private_ip }} >> /home/frappe/.ssh/known_hosts
+
+- name: Install Lsyncd
+  apt:
+    state: present
+    pkg:
+      - lsyncd
+
+- name: Create Lsyncd Directory
+  become: yes
+  become_user: frappe
+  file:
+    dest: /home/frappe/lsyncd
+    state: directory
+
+- name: Create Lsyncd Log and Status File
+  become: yes
+  become_user: frappe
+  file:
+    dest: /home/frappe/lsyncd/{{ item }}
+    state: touch
+  with_items:
+    - lsyncd.logs
+    - lsyncd.status
+
+- name: Create Lsynd Config File
+  become: yes
+  become_user: frappe
+  template:
+    src: lsyncd.conf
+    dest: /home/frappe/lsyncd/lsyncd.conf.lua
+
+- name: Setup lsyncd service for frappe user
+  template:
+    src: lsyncd.service
+    dest: /etc/systemd/system/lsyncd.service
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Restart Lsyncd service
+  systemd:
+    daemon_reload: true
+    name: lsyncd
+    state: restarted
+    enabled: True
