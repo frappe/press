@@ -116,10 +116,11 @@ export default {
 				actionLabel: 'Remove',
 				actionType: 'danger',
 				resource: this.$resources.remove,
-				action: () => {
-					this.$resources.remove
-						.submit({ name: card.name })
-						.then(() => this.$resources.paymentMethods.reload());
+				action: closeDialog => {
+					this.$resources.remove.submit({ name: card.name }).then(() => {
+						this.$resources.paymentMethods.reload();
+						closeDialog();
+					});
 				}
 			});
 		}
