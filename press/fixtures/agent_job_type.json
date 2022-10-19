@@ -2,6 +2,22 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
+  "modified": "2022-10-19 14:45:01.606264",
+  "name": "Reload NGINX",
+  "request_method": "POST",
+  "request_path": "/server/reload",
+  "steps": [
+   {
+    "parent": "Reload NGINX",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
   "modified": "2021-06-16 20:39:50.568363",
   "name": "Rename Upstream",
   "request_method": "POST",
