@@ -19,5 +19,10 @@ frappe.ui.form.on('Stripe Micro Charge Record', {
 					});
 			});
 		}
+
+		frm.add_web_link(
+			`https://dashboard.stripe.com/payments/${frm.doc.stripe_payment_intent_id}`,
+			'View in Stripe Dashboard'
+		);
 	},
 });
