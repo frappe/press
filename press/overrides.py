@@ -85,12 +85,6 @@ def update_website_context(context):
 	):
 		raise frappe.DoesNotExistError
 
-	if (
-		frappe.request.path.startswith("/internal")
-		and not frappe.session.data.user_type == "System User"
-	):
-		raise frappe.DoesNotExistError
-
 
 def has_permission(doc, ptype, user):
 	from press.utils import get_current_team
