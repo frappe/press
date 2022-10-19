@@ -9,6 +9,9 @@ from press.runner import Ansible
 from press.agent import Agent
 from press.utils import log_error
 from frappe.utils import unique
+from frappe.core.utils import find
+
+import boto3
 
 
 class ProxyServer(BaseServer):
@@ -251,6 +254,77 @@ class ProxyServer(BaseServer):
 		self.save()
 
 	@frappe.whitelist()
+	def trigger_failover(self):
+		if self.is_primary:
+			return
+		self.status = "Installing"
+		self.save()
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_trigger_failover", queue="long", timeout=1200
+		)
+
+	def _trigger_failover(self):
+		try:
+			self.update_dns_record()
+			self.reload_nginx()
+			self.update_app_servers()
+			self.switch_primary()
+		except Exception:
+			self.status = "Broken"
+			log_error("Proxy Server Failover Exception", server=self.as_dict())
+		self.save()
+
+	def update_dns_record(self):
+		try:
+			domain = frappe.get_doc("Root Domain", self.domain)
+			client = boto3.client(
+				"route53",
+				aws_access_key_id=domain.aws_access_key_id,
+				aws_secret_access_key=domain.get_password("aws_secret_access_key"),
+			)
+			zones = client.list_hosted_zones_by_name()["HostedZones"]
+			# list_hosted_zones_by_name returns a lexicographically ordered list of zones
+			# i.e. x.example.com comes after example.com
+			# Name field has a trailing dot
+			hosted_zone = find(reversed(zones), lambda x: domain.name.endswith(x["Name"][:-1]))[
+				"Id"
+			]
+			client.change_resource_record_sets(
+				ChangeBatch={
+					"Changes": [
+						{
+							"Action": "UPSERT",
+							"ResourceRecordSet": {
+								"Name": self.primary,
+								"Type": "CNAME",
+								"TTL": 3600,
+								"ResourceRecords": [{"Value": self.name}],
+							},
+						}
+					]
+				},
+				HostedZoneId=hosted_zone,
+			)
+		except Exception:
+			self.status = "Broken"
+			log_error("Route 53 Record Update Error", domain=domain.name, server=self.name)
+
+	def reload_nginx(self):
+		agent = Agent(self.name, server_type="Proxy Server")
+		agent.restart_nginx()
+
+	def update_app_servers(self):
+		frappe.db.set_value(
+			"Server", {"proxy_server": self.primary}, "proxy_server", self.name
+		)
+
+	def switch_primary(self):
+		primary = frappe.get_doc("Proxy Server", self.primary)
+		self.is_primary = True
+		primary.is_primary = False
+		primary.save()
+
+	@frappe.whitelist()
 	def setup_proxysql_monitor(self):
 		frappe.enqueue_doc(
 			self.doctype, self.name, "_setup_proxysql_monitor", queue="long", timeout=1200
@@ -276,3 +350,14 @@ class ProxyServer(BaseServer):
 			ansible.run()
 		except Exception:
 			log_error("ProxySQL Monitor Setup Exception", server=self.as_dict())
+
+
+def process_update_nginx_job_update(job):
+	proxy_server = frappe.get_doc("Proxy Server", job.server)
+	if job.status == "Success":
+		proxy_server.status = "Active"
+	elif job.status in ["Failure", "Undelivered"]:
+		proxy_server.status = "Broken"
+	elif job.status in ["Pending", "Running"]:
+		proxy_server.status = "Installing"
+	proxy_server.save()

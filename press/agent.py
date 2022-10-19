@@ -44,6 +44,12 @@ class Agent:
 			"Archive Bench", f"benches/{bench.name}/archive", bench=bench.name
 		)
 
+	def restart_nginx(self):
+		return self.create_agent_job(
+			"Reload NGINX",
+			"server/reload",
+		)
+
 	def restart_bench(self, bench, web_only=False):
 		return self.create_agent_job(
 			"Bench Restart",
