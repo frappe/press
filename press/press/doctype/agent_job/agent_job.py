@@ -271,6 +271,9 @@ def process_job_updates(job_name):
 			process_remove_ssh_user_job_update,
 		)
 		from press.press.doctype.server.server import process_new_server_job_update
+		from press.press.doctype.proxy_server.proxy_server import (
+			process_update_nginx_job_update,
+		)
 		from press.press.doctype.site.erpnext_site import (
 			process_setup_erpnext_site_job_update,
 		)
@@ -351,6 +354,8 @@ def process_job_updates(job_name):
 			process_add_proxysql_user_job_update(job)
 		elif job.job_type == "Remove User from ProxySQL":
 			process_remove_proxysql_user_job_update(job)
+		elif job.job_type == "Reload NGINX":
+			process_update_nginx_job_update(job)
 
 	except Exception as e:
 		log_error("Agent Job Callback Exception", job=job.as_dict())

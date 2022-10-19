@@ -22,6 +22,10 @@
   "private_vlan_id",
   "agent_section",
   "agent_password",
+  "replica_section",
+  "is_primary",
+  "primary",
+  "is_replication_setup",
   "ssh_section",
   "frappe_user_password",
   "frappe_public_key",
@@ -240,10 +244,36 @@
    "fieldtype": "Link",
    "label": "Team",
    "options": "Team"
+  },
+  {
+   "fieldname": "replica_section",
+   "fieldtype": "Section Break",
+   "label": "Replica"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_primary",
+   "fieldtype": "Check",
+   "label": "Is Primary"
+  },
+  {
+   "depends_on": "eval: doc.is_primary != 1",
+   "fieldname": "primary",
+   "fieldtype": "Link",
+   "label": "Primary",
+   "mandatory_depends_on": "eval: doc.is_primary != 1",
+   "options": "Proxy Server"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval: doc.is_primary != 1",
+   "fieldname": "is_replication_setup",
+   "fieldtype": "Check",
+   "label": "Is Replication Setup"
   }
  ],
  "links": [],
- "modified": "2022-09-22 04:57:56.086153",
+ "modified": "2022-10-19 15:42:47.402179",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",

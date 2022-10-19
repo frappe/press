@@ -1,0 +1,8 @@
+---
+- name: Setup Secondary Proxy Server
+  hosts: all
+  become: yes
+  become_user: root
+
+  roles:
+    - role: secondary_proxy
