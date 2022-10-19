@@ -27,7 +27,8 @@
    "fieldname": "has_been_refunded",
    "fieldtype": "Check",
    "in_list_view": 1,
-   "label": "Refunded?"
+   "label": "Refunded?",
+   "read_only": 1
   },
   {
    "fetch_from": "stripe_payment_method.team",
@@ -52,7 +53,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-10-17 18:32:32.528763",
+ "modified": "2022-10-19 12:35:31.412222",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Stripe Micro Charge Record",
