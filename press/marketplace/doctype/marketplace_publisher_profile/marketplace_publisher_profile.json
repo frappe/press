@@ -6,11 +6,20 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "display_name",
   "team",
+  "display_name",
+  "email_for_notifications",
+  "column_break_4",
   "website",
   "contact_email",
-  "email_for_notifications"
+  "payouts_tab",
+  "preferred_payout_method",
+  "gstin",
+  "column_break_10",
+  "bank_account_holder_name",
+  "bank_account_number",
+  "other_bank_details",
+  "paypal_id"
  ],
  "fields": [
   {
@@ -46,11 +55,66 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Display Name"
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "payouts_tab",
+   "fieldtype": "Tab Break",
+   "label": "Payouts"
+  },
+  {
+   "default": "Frappe Cloud Credits",
+   "fieldname": "preferred_payout_method",
+   "fieldtype": "Select",
+   "label": "Preferred Payout Method",
+   "options": "Frappe Cloud Credits\nBank Transfer\nPayPal"
+  },
+  {
+   "depends_on": "eval:doc.preferred_payout_method==\"PayPal\"",
+   "fieldname": "paypal_id",
+   "fieldtype": "Data",
+   "label": "PayPal ID",
+   "mandatory_depends_on": "eval:doc.preferred_payout_method==\"PayPal\""
+  },
+  {
+   "depends_on": "eval:doc.preferred_payout_method!=\"Frappe Cloud Credits\"",
+   "fieldname": "gstin",
+   "fieldtype": "Data",
+   "label": "GSTIN (If Applicable)"
+  },
+  {
+   "fieldname": "column_break_10",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.preferred_payout_method==\"Bank Transfer\"",
+   "fieldname": "bank_account_holder_name",
+   "fieldtype": "Data",
+   "label": "Bank Account Holder Name",
+   "mandatory_depends_on": "eval:doc.preferred_payout_method==\"Bank Transfer\""
+  },
+  {
+   "depends_on": "eval:doc.preferred_payout_method==\"Bank Transfer\"",
+   "fieldname": "bank_account_number",
+   "fieldtype": "Data",
+   "label": "Bank Account Number",
+   "mandatory_depends_on": "eval:doc.preferred_payout_method==\"Bank Transfer\""
+  },
+  {
+   "depends_on": "eval:doc.preferred_payout_method==\"Bank Transfer\"",
+   "description": "IFSC Code, Bank Name, Branch etc.",
+   "fieldname": "other_bank_details",
+   "fieldtype": "Small Text",
+   "label": "Other Bank Details",
+   "mandatory_depends_on": "eval:doc.preferred_payout_method==\"Bank Transfer\""
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-11-26 15:43:45.519862",
+ "modified": "2022-10-21 16:20:49.110120",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "Marketplace Publisher Profile",
@@ -71,6 +135,7 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "title_field": "team",
  "track_changes": 1
 }
