@@ -88,7 +88,7 @@ export default {
 				},
 				onSuccess() {
 					this.showEditProfileDialog = false;
-					this.$emit('profile_updated');
+					this.$emit('profileUpdated');
 				}
 			};
 		}
