@@ -7,16 +7,16 @@
 		></Button>
 
 		<div class="grid grid-cols-1 gap-5 md:grid-cols-2">
-			<PublisherProfileCard
-				:profileData="publisherProfileInfo"
-				@profileUpdated="$resources.getPublisherProfileInfo.fetch()"
-			/>
+			<PublisherProfileCard :profileData="publisherProfileInfo" />
+			<PublisherPayoutInfoCard :profileData="publisherProfileInfo" />
 		</div>
 	</div>
 </template>
 
 <script>
 import PublisherProfileCard from '@/components/marketplace/PublisherProfileCard.vue';
+import PublisherPayoutInfoCard from '@/components/marketplace/PublisherPayoutInfoCard.vue';
+
 export default {
 	data() {
 		return {};
@@ -40,6 +40,6 @@ export default {
 			return this.$resources.getPublisherProfileInfo.data;
 		}
 	},
-	components: { PublisherProfileCard }
+	components: { PublisherProfileCard, PublisherPayoutInfoCard }
 };
 </script>
