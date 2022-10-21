@@ -70,7 +70,6 @@ export default {
 			website: ''
 		};
 	},
-	mounted() {},
 	resources: {
 		updatePublisherProfile() {
 			return {
