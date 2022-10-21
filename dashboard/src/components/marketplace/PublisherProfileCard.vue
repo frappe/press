@@ -60,7 +60,7 @@
 
 <script>
 export default {
-	props: ['profileData'],
+	props: ['profileData', 'showEditDialog'],
 	emits: ['profileUpdated'],
 	data() {
 		return {
@@ -99,6 +99,11 @@ export default {
 				this.displayName = data.profile_info.display_name;
 				this.contactEmail = data.profile_info.contact_email;
 				this.website = data.profile_info.website;
+			}
+		},
+		showEditDialog(value) {
+			if (value) {
+				this.showEditProfileDialog = true;
 			}
 		}
 	}
