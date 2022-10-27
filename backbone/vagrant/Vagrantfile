@@ -54,15 +54,15 @@ Vagrant.configure("2") do |config|
     end
 
     # Replica of f1
-    config.vm.define "f2.local.frappe.dev" do |f2|
-        f2.vm.hostname = "f2.local.frappe.dev"
-        f2.vm.network "private_network", ip: "10.0.2.102", netmask: "255.255.0.0"
-        f2.vm.network "private_network", ip: "10.1.2.102", netmask: "255.255.0.0"
-        f2.vm.provider :libvirt do |libvirt|
-            libvirt.cpus = 2
-            libvirt.memory = 4096
-        end
-    end
+    # config.vm.define "f2.local.frappe.dev" do |f2|
+    #     f2.vm.hostname = "f2.local.frappe.dev"
+    #     f2.vm.network "private_network", ip: "10.0.2.102", netmask: "255.255.0.0"
+    #     f2.vm.network "private_network", ip: "10.1.2.102", netmask: "255.255.0.0"
+    #     f2.vm.provider :libvirt do |libvirt|
+    #         libvirt.cpus = 2
+    #         libvirt.memory = 4096
+    #     end
+    # end
 
     # Primary DB Server
     config.vm.define "m1.local.frappe.dev" do |m1|
@@ -76,15 +76,15 @@ Vagrant.configure("2") do |config|
     end
 
     # Replica of m1
-    config.vm.define "m2.local.frappe.dev" do |m2|
-        m2.vm.hostname = "m2.local.frappe.dev"
-        m2.vm.network "private_network", ip: "10.0.3.102", netmask: "255.255.0.0"
-        m2.vm.network "private_network", ip: "10.1.3.102", netmask: "255.255.0.0"
-        m2.vm.provider :libvirt do |libvirt|
-            libvirt.cpus = 1
-            libvirt.memory = 2048
-        end
-    end
+    # config.vm.define "m2.local.frappe.dev" do |m2|
+    #     m2.vm.hostname = "m2.local.frappe.dev"
+    #     m2.vm.network "private_network", ip: "10.0.3.102", netmask: "255.255.0.0"
+    #     m2.vm.network "private_network", ip: "10.1.3.102", netmask: "255.255.0.0"
+    #     m2.vm.provider :libvirt do |libvirt|
+    #         libvirt.cpus = 1
+    #         libvirt.memory = 2048
+    #     end
+    # end
 
     # # Secondary Cluster
     # config.vm.define "n2.frappe.dev" do |n2|
@@ -124,42 +124,42 @@ Vagrant.configure("2") do |config|
     end
 
     # Analytics Server = Plausible
-    config.vm.define "analytics.local.frappe.dev" do |analytics|
-        analytics.vm.hostname = "analytics.local.frappe.dev"
-        analytics.vm.network "private_network", ip: "10.0.4.104", netmask: "255.255.0.0"
-        analytics.vm.network "private_network", ip: "10.1.4.104", netmask: "255.255.0.0"
-        analytics.vm.provider :libvirt do |libvirt|
-            libvirt.memory = 1024
-        end
-    end
+    # config.vm.define "analytics.local.frappe.dev" do |analytics|
+    #     analytics.vm.hostname = "analytics.local.frappe.dev"
+    #     analytics.vm.network "private_network", ip: "10.0.4.104", netmask: "255.255.0.0"
+    #     analytics.vm.network "private_network", ip: "10.1.4.104", netmask: "255.255.0.0"
+    #     analytics.vm.provider :libvirt do |libvirt|
+    #         libvirt.memory = 1024
+    #     end
+    # end
 
     # Trace Server = Sentry
-    config.vm.define "trace.local.frappe.dev" do |trace|
-        trace.vm.hostname = "trace.local.frappe.dev"
-        trace.vm.network "private_network", ip: "10.0.4.105", netmask: "255.255.0.0"
-        trace.vm.network "private_network", ip: "10.1.4.105", netmask: "255.255.0.0"
-        trace.vm.provider :libvirt do |libvirt|
-            libvirt.cpus = 2
-            libvirt.memory = 4096
-        end
-    end
+    # config.vm.define "trace.local.frappe.dev" do |trace|
+    #     trace.vm.hostname = "trace.local.frappe.dev"
+    #     trace.vm.network "private_network", ip: "10.0.4.105", netmask: "255.255.0.0"
+    #     trace.vm.network "private_network", ip: "10.1.4.105", netmask: "255.255.0.0"
+    #     trace.vm.provider :libvirt do |libvirt|
+    #         libvirt.cpus = 2
+    #         libvirt.memory = 4096
+    #     end
+    # end
 
-    config.vm.define "sn1.local.frappe.dev" do |sn1|
-        sn1.vm.box = "scaleway"
-        sn1.vm.hostname = "sn1.local.frappe.dev"
-        sn1.vm.network "private_network", ip: "10.2.0.101", netmask: "255.255.0.0"
-        sn1.vm.network "private_network", ip: "10.3.0.101", netmask: "255.255.0.0", auto_config: false
-    end
+    # config.vm.define "sn1.local.frappe.dev" do |sn1|
+    #     sn1.vm.box = "scaleway"
+    #     sn1.vm.hostname = "sn1.local.frappe.dev"
+    #     sn1.vm.network "private_network", ip: "10.2.0.101", netmask: "255.255.0.0"
+    #     sn1.vm.network "private_network", ip: "10.3.0.101", netmask: "255.255.0.0", auto_config: false
+    # end
 
-    config.vm.define "sf1.local.frappe.dev" do |sf1|
-        sf1.vm.box = "scaleway"
-        sf1.vm.hostname = "sf1.local.frappe.dev"
-        sf1.vm.network "private_network", ip: "10.2.1.101", netmask: "255.255.0.0"
-        sf1.vm.network "private_network", ip: "10.3.1.101", netmask: "255.255.0.0", auto_config: false
-        sf1.vm.provider :libvirt do |libvirt|
-            libvirt.cpus = 2
-            libvirt.memory = 4096
-        end
-    end
+    # config.vm.define "sf1.local.frappe.dev" do |sf1|
+    #     sf1.vm.box = "scaleway"
+    #     sf1.vm.hostname = "sf1.local.frappe.dev"
+    #     sf1.vm.network "private_network", ip: "10.2.1.101", netmask: "255.255.0.0"
+    #     sf1.vm.network "private_network", ip: "10.3.1.101", netmask: "255.255.0.0", auto_config: false
+    #     sf1.vm.provider :libvirt do |libvirt|
+    #         libvirt.cpus = 2
+    #         libvirt.memory = 4096
+    #     end
+    # end
 
 end
