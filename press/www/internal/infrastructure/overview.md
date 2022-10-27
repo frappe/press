@@ -23,6 +23,7 @@ Local infrastructure subsystem is a faster, cheaper and more flexible alternativ
 Dependencies can be installed with 
 
 ```bash
+source env/bin/activate
 python3 apps/press/backbone/setup.py
 ```
 > Note: After this logout completely and login again to start with local infrastructure. Start a new shell session. if you're on a Non-GUI server.
