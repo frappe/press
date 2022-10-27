@@ -11,7 +11,9 @@ HOME_DIRECTORY = ""
 CERTBOT_DIRECTORY = os.path.join(HOME_DIRECTORY, ".certbot")
 WEBROOT_DIRECTORY = os.path.join(HOME_DIRECTORY, ".webroot")
 
-ROOT_DOMAIN = ""
+# We've already configured Route 53 zone for this
+# Don't change this unless you know what you're doing
+ROOT_DOMAIN = "local.frappe.dev"
 AWS_ACCESS_KEY_ID = ""
 AWS_SECRET_ACCESS_KEY = ""
 
