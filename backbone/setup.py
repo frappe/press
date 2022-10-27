@@ -50,6 +50,7 @@ def setup_libvirt():
 	apt_install("libvirt-dev libvirt-daemon-system qemu-utils dnsmasq-base")
 	shell.execute("sudo usermod -aG libvirt $USER")
 	shell.execute("vagrant plugin install vagrant-libvirt")
+	shell.execute("vagrant plugin install vagrant-hostmanager")
 
 
 if __name__ == "__main__":
