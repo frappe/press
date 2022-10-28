@@ -216,6 +216,7 @@ class Site(Document):
 		self.create_dns_record()
 		self.create_agent_request()
 
+	@frappe.whitelist()
 	def create_dns_record(self):
 		"""Check if site needs dns records and creates one."""
 		domain = frappe.get_doc("Root Domain", self.domain)

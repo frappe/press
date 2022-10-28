@@ -99,8 +99,9 @@ frappe.ui.form.on('Site', {
 			[__('Activate'), 'activate'],
 			[__('Enable Database Access'), 'enable_database_access', !frm.doc.is_database_access_enabled],
 			[__('Disable Database Access'), 'disable_database_access', frm.doc.is_database_access_enabled],
+			[__('Create DNS Record'), 'create_dns_record'],
 		].forEach(([label, method, condition]) => {
-			if (typeof condition === "undefined" || condition){	
+			if (typeof condition === "undefined" || condition){
 				frm.add_custom_button(
 					label,
 					() => {
@@ -187,7 +188,7 @@ Password: ${r.message.password}
 						fieldname: 'skip_failing_patches',
 					}]
 				});
-				
+
 				dialog.set_primary_action(__('Move Site'), args => {
 					frm.call('move_to_group',
 						{
@@ -199,7 +200,7 @@ Password: ${r.message.password}
 						frm.refresh();
 					})
 				});
-				
+
 				dialog.show();
 			},
 			__('Actions')
