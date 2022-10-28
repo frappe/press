@@ -30,6 +30,13 @@
     body: "{{ lookup('file', 'monitor.json') }}"
     body_format: json
 
+- name: Setup NGINX Ingest Pipeline
+  uri:
+    url: http://localhost:9200/_ingest/pipeline/nginx
+    method: PUT
+    body: "{{ lookup('file', 'nginx.json') }}"
+    body_format: json
+
 - name: Disable Filebeat Service
   systemd:
     name: filebeat
