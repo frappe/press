@@ -285,7 +285,7 @@ def process_prepaid_marketplace_payment(event):
 				"document_name": app,
 				"plan": plan,
 				"rate": float(line_item["amount"]) - hosting_amount,
-				"quantity": 1,
+				"quantity": float(line_item["quantity"]),
 			}
 		)
 		total_hosting_cost += hosting_amount

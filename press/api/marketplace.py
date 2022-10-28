@@ -829,19 +829,33 @@ def get_payout_details(name: str) -> Dict:
 
 
 @frappe.whitelist(allow_guest=True)
-def prepaid_saas_payment(name, app, site, plan, amount, credits):
+def prepaid_saas_payment(
+	name, app, site, plan, amount, credits, payment_option, renewal, subscriptions=None
+):
+	if renewal:
+		line_items = [
+			{
+				"app": sub["app"],
+				"plan": sub["marketplace_app_plan"],
+				"subscription": sub["name"],
+				"amount": sub["selected_plan"]["amount"],
+				"quantity": payment_option,
+			}
+			for sub in subscriptions
+		]
+	else:
+		line_items = [
+			{
+				"app": app,
+				"plan": plan,
+				"subscription": name,
+				"amount": amount,
+				"quantity": payment_option,
+			}
+		]
 	metadata = {
 		"payment_for": "prepaid_marketplace",
-		"line_items": json.dumps(
-			[
-				{
-					"app": app,
-					"plan": plan,
-					"subscription": name,
-					"amount": amount,
-				}
-			]
-		),
+		"line_items": json.dumps(line_items),
 		"site": site,
 		"credits": credits,
 	}
@@ -995,3 +1009,28 @@ def login_via_token(token, team, site):
 	else:
 		frappe.local.response["type"] = "redirect"
 		frappe.local.response["location"] = "/dashboard/saas/remote/failure"
+
+
+@frappe.whitelist()
+def subscriptions():
+	team = get_current_team()
+	free_plans = frappe.get_all("Marketplace App Plan", {"is_free": 1}, pluck="name")
+	subscriptions = frappe.get_all(
+		"Marketplace App Subscription",
+		{
+			"team": team,
+			"status": ("in", ("Active", "Suspended")),
+			"plan": ("not in", free_plans),
+		},
+		["name", "app", "site", "plan", "marketplace_app_plan"],
+	)
+
+	for sub in subscriptions:
+		sub["available_plans"] = get_plans_for_app(sub["app"])
+		sub["plan_options"] = []
+		for ele in sub["available_plans"]:
+			sub["plan_options"].append(ele["plan"])
+			if ele["name"] == sub["marketplace_app_plan"]:
+				sub["selected_plan"] = ele
+
+	return subscriptions
