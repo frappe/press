@@ -12,6 +12,7 @@
   "column_break_4",
   "date",
   "time",
+  "prepaid",
   "section_break_7",
   "plan",
   "currency",
@@ -131,12 +132,18 @@
    "hidden": 1,
    "label": "Site",
    "options": "Site"
+  },
+  {
+   "default": "0",
+   "fieldname": "prepaid",
+   "fieldtype": "Check",
+   "label": "Prepaid"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2022-07-27 16:12:59.909930",
+ "modified": "2022-10-28 18:58:47.267728",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Usage Record",
