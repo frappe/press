@@ -1,6 +1,6 @@
 {
  "actions": [],
- "creation": "2022-01-05 15:04:45.744400",
+ "creation": "2022-02-08 15:13:45.929287",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -38,8 +38,8 @@
    "in_standard_filter": 1,
    "label": "Server",
    "options": "Server",
-   "reqd": 1,
-   "set_only_once": 1
+   "read_only": 1,
+   "reqd": 1
   },
   {
    "fetch_from": "candidate.group",
@@ -208,7 +208,7 @@
   }
  ],
  "links": [],
- "modified": "2022-01-20 18:22:22.117926",
+ "modified": "2022-10-29 00:57:45.295828",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",
