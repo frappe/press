@@ -4,6 +4,11 @@
     name: elasticsearch
     state: present
 
+- name: Setup Elasticsearch
+  template:
+    src: elasticsearch.yml
+    dest: /etc/elasticsearch/elasticsearch.yml
+
 - name: Restart Elasticsearch Daemon
   systemd:
     name: elasticsearch
