@@ -79,7 +79,7 @@
    "fieldname": "source",
    "fieldtype": "Select",
    "label": "Source",
-   "options": "\nPrepaid Credits\nFree Credits\nTransferred Credits\nDiscount\nReferral Bonus"
+   "options": "\nPrepaid Credits\nFree Credits\nTransferred Credits\nDiscount\nReferral Bonus\nMarketplace Consumption"
   },
   {
    "allow_on_submit": 1,
@@ -101,7 +101,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2021-11-11 00:00:06.676897",
+ "modified": "2022-10-29 14:58:09.158731",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Balance Transaction",
@@ -137,6 +137,7 @@
  "quick_entry": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "title_field": "team",
  "track_changes": 1
 }
