@@ -4,7 +4,12 @@
 import frappe
 
 from frappe.tests.utils import FrappeTestCase
+from press.press.doctype.app.test_app import create_test_app
+from press.press.doctype.marketplace_app.test_marketplace_app import (
+	create_test_marketplace_app,
+)
 from press.press.doctype.payout_order.payout_order import (
+	create_marketplace_payout_orders_monthly,
 	create_payout_order_from_invoice_items,
 )
 
@@ -109,6 +114,58 @@ class TestPayoutOrder(FrappeTestCase):
 
 		self.test_invoice.save()
 		self.test_invoice.submit()
+
+	def test_create_marketplace_monthly_payout_order(self):
+		# create test invoice with marketplace app
+		self.test_team = frappe.get_doc(
+			doctype="Team", name="testuserusd@example.com", country="United States", enabled=1
+		).insert()
+
+		# create test marketplace app
+		test_app = create_test_app("test_app")
+		test_mp_app = create_test_marketplace_app(test_app.name, self.test_team.name)
+
+		self.test_invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.test_team.name,
+			transaction_amount=1800,
+			transaction_fee=1260,
+			amount_paid=25,
+			status="Paid",
+			exchange_rate=70,
+		).insert()
+
+		self.test_invoice.append(
+			"items",
+			{
+				"document_type": "Marketplace App",
+				"document_name": test_mp_app.name,
+				"rate": 10,
+				"plan": "USD 25",
+				"quantity": 2,
+			},
+		)
+
+		self.test_invoice.save()
+		self.test_invoice.submit()
+
+		# No payout order before running the job
+		self.assertFalse(frappe.db.exists("Payout Order", {"recipient": self.test_team.name}))
+
+		# Run the monthly job
+		create_marketplace_payout_orders_monthly()
+
+		# The Payout Order should have been created
+		self.assertTrue(frappe.db.exists("Payout Order", {"recipient": self.test_team.name}))
+
+		po = frappe.get_doc("Payout Order", {"recipient": self.test_team.name})
+		self.assertEqual(len(po.items), 1)
+
+		# The invoice item must be marked as paid out
+		marked_completed = frappe.db.get_value(
+			"Invoice Item", po.items[0].invoice_item, "has_marketplace_payout_completed"
+		)
+		self.assertTrue(marked_completed)
 
 	def tearDown(self):
 		frappe.db.rollback()

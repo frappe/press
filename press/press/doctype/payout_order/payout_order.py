@@ -3,6 +3,7 @@
 
 import frappe
 
+from itertools import groupby
 from typing import List, Optional
 from frappe.model.document import Document
 from press.press.doctype.invoice_item.invoice_item import InvoiceItem
@@ -82,6 +83,40 @@ def get_invoice_item_for_po_item(
 			"rate": payout_order_item.rate,
 		},
 	)
+
+
+def create_marketplace_payout_orders_monthly():
+	# Get all marketplace app invoice items
+	invoice = frappe.qb.DocType("Invoice")
+	invoice_item = frappe.qb.DocType("Invoice Item")
+	marketplace_app = frappe.qb.DocType("Marketplace App")
+
+	items = (
+		frappe.qb.from_(invoice_item)
+		.left_join(invoice)
+		.on(invoice_item.parent == invoice.name)
+		.left_join(marketplace_app)
+		.on(marketplace_app.name == invoice_item.document_name)
+		.where(invoice.status == "Paid")
+		.where(invoice_item.document_type == "Marketplace App")
+		.where(invoice_item.has_marketplace_payout_completed == 0)
+		.select(
+			invoice_item.name, invoice_item.document_name, marketplace_app.team.as_("app_team")
+		)
+		.run(as_dict=True)
+	)
+
+	# Group by teams
+	for app_team, items in groupby(items, key=lambda x: x["app_team"]):
+		item_names = [i.name for i in items]
+		create_payout_order_from_invoice_item_names(item_names, recipient=app_team)
+
+		frappe.db.set_value(
+			"Invoice Item",
+			{"name": ("in", item_names)},
+			"has_marketplace_payout_completed",
+			True,
+		)
 
 
 @frappe.whitelist()
