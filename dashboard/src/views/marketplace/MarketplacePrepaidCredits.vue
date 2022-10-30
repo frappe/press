@@ -34,7 +34,7 @@
 					</td>
 					<td class="border-b text-right font-semibold">
 						<p class="text-base self-center">
-							{{ row.selected_plan.amount }}
+							{{ getCurrencySymbol() + row.selected_plan.amount }}
 						</p>
 					</td>
 				</tr>
@@ -49,7 +49,7 @@
 					</td>
 					<td class="border-b text-right font-semibold">
 						<p class="text-base self-center">
-							{{ planData.amount }}
+							{{ getCurrencySymbol() + planData.amount }}
 						</p>
 					</td>
 				</tr>
@@ -60,7 +60,7 @@
 			<div class="flex justify-between mb-3">
 				<p>Subtotal</p>
 				<p class="text-lg">
-					{{ subtotal }}
+					{{ getCurrencySymbol() + subtotal }}
 				</p>
 			</div>
 
@@ -89,7 +89,7 @@
 			>
 				<p class="mb-3 font-medium">Total</p>
 				<p class="text-xl font-semibold">
-					{{ getTotal() }}
+					{{ getCurrencySymbol() + getTotal() }}
 				</p>
 			</div>
 		</div>
@@ -274,6 +274,9 @@ export default {
 		}
 	},
 	methods: {
+		getCurrencySymbol() {
+			return this.$account.team.country == 'India' ? '₹' : '$';
+		},
 		getSubtotal() {
 			let amount = 0;
 			let discount = 10; // default discount on combined renewals
