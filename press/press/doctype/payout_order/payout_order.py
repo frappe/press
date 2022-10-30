@@ -105,6 +105,7 @@ def create_payout_order_from_invoice_items(
 		po.append(
 			"items",
 			{
+				"invoice_item": invoice_item.name,
 				"invoice": invoice_item.parent,
 				"document_type": invoice_item.document_type,
 				"document_name": invoice_item.document_name,
