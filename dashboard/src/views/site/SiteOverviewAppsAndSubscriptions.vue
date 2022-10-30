@@ -207,7 +207,6 @@
 
 		<Dialog
 			v-model="showCheckoutDialog"
-			width="w-2/6"
 			title="Checkout Details"
 			:dismissable="true"
 		>

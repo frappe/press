@@ -45,7 +45,7 @@ def consume_credits_for_prepaid_records():
 				"team": rec["team"],
 				"amount": rec["amount"],
 				"start_date": start_date,
-				"end_date": end_date
+				"end_date": end_date,
 			}
 		).insert(ignore_permissions=True)
 

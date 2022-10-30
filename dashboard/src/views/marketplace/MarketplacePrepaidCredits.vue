@@ -109,6 +109,7 @@
 			v-if="$account.team.erpnext_partner"
 			appearance="secondary"
 			@click="$resources.usePartnerCredits.submit()"
+	 		:loading="$resources.usePartnerCredits.loading"
 		>
 			Use Partner Credits
 		</Button>
