@@ -1,57 +1,121 @@
 <template>
-	<div
-		v-if="step == 'Confirm Checkout' && planData"
-		class="grid grid-cols-1 gap-2 md:grid-cols-2"
-	>
-		<Input
-			type="select"
-			:options="paymentOptions"
-			label="Payment Option"
-			v-model="selectedOption"
-		/>
-		<Input
-			type="text"
-			label="Selected Plan"
-			v-model="planData.title"
-			readonly
-		/>
-		<Input
-			v-if="plan"
-			:label="`Credits (Minimum Credits: ${
-				selectedOption == 'Annual' ? planData.amount * 12 : planData.amount
-			})`"
-			v-model.number="creditsToBuy"
-			name="amount"
-			autocomplete="off"
-			type="number"
-			:min="selectedOption == 'Annual' ? planData.amount * 12 : planData.amount"
-		/>
-		<div></div>
-		<div class="text-sm">
-			<p class="mb-1">
-				Total Amount <span v-if="gstApplicable()">(+18% GST)</span>
-			</p>
-			<div class="flex rounded bg-gray-100 p-1 pl-3 font-medium">
-				<strike class="mr-2" v-if="totalAmountWithoutDiscount > 0">{{
-					totalAmountWithoutDiscount
-				}}</strike>
-				<p>{{ totalAmount }}</p>
+	<div v-if="step == 'Confirm Checkout'" class="flex-row text-sm">
+		<div class="flex justify-between mb-4">
+			<p class="my-auto">Billing</p>
+			<Input type="select" :options="paymentOptions" v-model="selectedOption" />
+		</div>
+
+		<table v-if="$account.team" class="text w-full text-sm">
+			<thead>
+				<tr class="text-gray-600">
+					<th class="border-b text-left font-normal">App</th>
+					<th
+						class="whitespace-nowrap border-b py-2 pr-2 text-center font-normal"
+					>
+						Plan
+					</th>
+					<th class="border-b py-3 pr-2 text-right font-normal">
+						Amount /month
+					</th>
+				</tr>
+			</thead>
+			<tbody>
+				<!--Change Plan-->
+				<tr
+					v-if="renewal && $resources.subscriptions.data"
+					v-for="(row, i) in $resources.subscriptions.data"
+					:key="row.idx"
+				>
+					<td class="border-b border-r">
+						<ListItem :title="row.app" :subtitle="row.site" />
+					</td>
+					<td class="border-b border-r text-center">
+						<p class="text-base self-center">{{ row.selected_plan.plan }}</p>
+					</td>
+					<td class="border-b text-right font-semibold">
+						<p class="text-base self-center">
+							{{ getCurrencySymbol() + row.selected_plan.amount }}
+						</p>
+					</td>
+				</tr>
+
+				<!--Renew Subscriptions-->
+				<tr v-if="!renewal && planData">
+					<td class="border-b border-r">
+						<ListItem :title="app" :subtitle="site" />
+					</td>
+					<td class="border-b border-r text-center">
+						<p class="text-base self-center">{{ planData.title }}</p>
+					</td>
+					<td class="border-b text-right font-semibold">
+						<p class="text-base self-center">
+							{{ getCurrencySymbol() + planData.amount }}
+						</p>
+					</td>
+				</tr>
+			</tbody>
+		</table>
+
+		<div class="flex-row mt-4" v-if="$account.team">
+			<div class="flex justify-between mb-3">
+				<p>Subtotal</p>
+				<p class="text-lg">
+					{{ getCurrencySymbol() + subtotal }}
+				</p>
+			</div>
+
+			<div class="flex justify-between mb-3">
+				<p>Discount</p>
+				<p class="text-green-500 text-lg">
+					{{ discount_percent == 0 ? '-' : discount_percent + '%' }}
+				</p>
+			</div>
+
+			<div class="flex justify-between">
+				GST (if applicable)
+				<p class="text-red-500 text-lg">18%</p>
+			</div>
+
+			<hr class="my-4" />
+			<div class="flex justify-between">
+				<p class="mb-3">Allocated Credits</p>
+				<p class="text-lg">
+					{{ creditsToBuy }}
+				</p>
+			</div>
+			<div
+				class="flex justify-between"
+				v-if="$resources.subscriptions.data || planData"
+			>
+				<p class="mb-3 font-medium">Total</p>
+				<p class="text-xl font-semibold">
+					{{ getCurrencySymbol() + getTotal() }}
+				</p>
 			</div>
 		</div>
 	</div>
-	<div hidden v-if="step == 'Confirm Checkout'">
-		<Input
-			class="mb-4"
-			v-if="$account.team.payment_mode === 'Partner Credits'"
-			type="checkbox"
-			label="Use Partner Credits"
-			v-model="usePartnerCredits"
-		/>
-	</div>
-	<div class="float-right mt-2" v-if="step == 'Confirm Checkout' && planData">
+
+	<ErrorMessage
+		class="mt-2"
+		v-if="$resources.usePartnerCredits.error"
+		:error="$resources.usePartnerCredits.error"
+	/>
+	<div
+		class="float-right w-fit mt-4"
+		v-if="step == 'Confirm Checkout' && $account.team"
+	>
 		<Button
 			class="mr-2"
-			v-if="this.$account.balance >= creditsToBuy"
+			v-if="$account.team.erpnext_partner"
+			appearance="secondary"
+			@click="$resources.usePartnerCredits.submit()"
+	 		:loading="$resources.usePartnerCredits.loading"
+		>
+			Use Partner Credits
+		</Button>
+		<Button
+			class="mr-2"
+			v-if="!$account.team.erpnext_partner && $account.balance >= creditsToBuy"
 			appearance="secondary"
 			@click="step = 'Use Existing Credits'"
 		>
@@ -62,7 +126,7 @@
 			@click="$resources.changePlan.submit()"
 			:loading="$resources.changePlan.loading"
 		>
-			Buy Credits
+			Pay Amount
 		</Button>
 	</div>
 
@@ -85,8 +149,8 @@
 			</Button>
 			<Button
 				appearance="primary"
-				@click="$resources.useExistingPlan.submit()"
-				:loading="$resources.useExistingPlan.loading"
+				@click="$resources.useCredits.submit()"
+				:loading="$resources.useCredits.loading"
 			>
 				Confirm
 			</Button>
@@ -163,10 +227,14 @@ import { loadStripe } from '@stripe/stripe-js';
 import { utils } from '@/utils';
 
 export default {
-	name: 'SubscriptionPlan',
+	name: 'MarketplacePrepaidCredits',
 	props: {
-		app: null,
-		site: null,
+		renewal: {
+			default: false
+		},
+		app: '',
+		appTitle: '',
+		site: '',
 		plan: '',
 		subscription: {
 			default: 'new'
@@ -180,56 +248,88 @@ export default {
 			creditsToBuy: 0,
 			totalAmount: 0,
 			totalAmountWithoutDiscount: 0,
-			usePartnerCredits: false,
 			step: 'Confirm Checkout',
 			clientSecret: null,
 			paymentMethod: null,
 			publishableKey: null,
 			paymentOptions: ['Monthly', 'Annual'],
 			selectedOption: 'Monthly',
-			planData: null
+			planData: null,
+			discount_percent: 0,
+			subtotal: 0
 		};
 	},
+	mounted() {
+		if (!this.renewal) {
+			this.$resources.plan.submit();
+		} else if (this.renewal) {
+			this.$resources.subscriptions.submit();
+		}
+	},
 	watch: {
-		// whenever question changes, this function will run
 		selectedOption(newOption, oldOption) {
-			this.totalAmountWithoutDiscount = 0;
-			this.creditsToBuy =
-				this.planData.amount * (newOption == 'Annual' ? 12 : 1);
-		},
-		creditsToBuy(newAmount, oldAmount) {
-			this.updateTotalAmount();
+			if (newOption == 'Monthly') {
+				this.discount_percent = 0;
+			}
 		}
 	},
 	methods: {
-		updateTotalAmount() {
-			// Discount
-			let amount = this.creditsToBuy;
-			if (
-				this.selectedOption == 'Annual' &&
-				this.planData.discount_percent > 0
-			) {
-				this.totalAmountWithoutDiscount = this.gstApplicable()
-					? Math.floor(amount + amount * 0.18)
-					: this.creditsToBuy;
-				this.totalAmount =
-					amount - (this.planData.discount_percent / 100) * amount;
+		getCurrencySymbol() {
+			return this.$account.team.country == 'India' ? '₹' : '$';
+		},
+		getSubtotal() {
+			let amount = 0;
+			let discount = 10; // default discount on combined renewals
+			let billed = this.selectedOption === 'Annual' ? 12 : 1;
+
+			if (this.renewal && this.$resources.subscriptions.data) {
+				this.$resources.subscriptions.data.forEach(item => {
+					amount += item.selected_plan.amount * billed;
+				});
 			} else {
-				this.totalAmount = amount;
+				amount = this.planData.amount * billed;
+				discount = this.planData ? this.planData.discount_percent : 10;
 			}
 
-			// GST
-			if (this.gstApplicable()) {
-				this.totalAmount = Math.floor(
-					this.totalAmount + this.totalAmount * 0.18
+			return {
+				amount: amount,
+				discount: discount
+			};
+		},
+
+		getTotal() {
+			let subtotal = this.getSubtotal();
+			this.subtotal = subtotal.amount;
+			this.creditsToBuy = subtotal.amount;
+
+			if (this.selectedOption === 'Annual') {
+				subtotal.amount = Math.floor(
+					subtotal.amount - (subtotal.discount / 100) * subtotal.amount
 				);
-			} else {
-				this.totalAmount = this.creditsToBuy;
+				this.discount_percent = subtotal.discount;
 			}
+
+			if (this.gstApplicable()) {
+				subtotal.amount += subtotal.amount * 0.18;
+			}
+			this.totalAmount = subtotal.amount;
+			return this.totalAmount;
 		},
+
 		gstApplicable() {
-			return this.$account.team.country === 'India' && this.planData.gst == 1;
+			if (this.renewal && this.$account.team) {
+				if (this.$account.team.country == 'India') {
+					return true;
+				}
+			} else if (
+				this.$account.team.country === 'India' &&
+				this.planData.gst == 1
+			) {
+				return true;
+			}
+			return false;
 		},
+
 		async authenticateCard() {
 			// Event handler to prompt a customer to authenticate a previously provided card
 			this.step = 'Setting up Stripe';
@@ -336,24 +436,30 @@ export default {
 		}
 	},
 	resources: {
+		subscriptions() {
+			return {
+				method: 'press.api.marketplace.subscriptions',
+				auto: false
+			};
+		},
 		plan() {
 			return {
 				method: 'press.api.marketplace.get_plan',
 				params: {
 					name: this.plan
 				},
-				auto: true,
+				auto: false,
 				onSuccess(r) {
 					this.planData = r;
 					this.creditsToBuy = r.amount;
 					if (r.block_monthly === 1) {
-						this.selectedOption = 'Annual'
-						this.paymentOptions = ['Annual']
+						this.selectedOption = 'Annual';
+						this.paymentOptions = ['Annual'];
 					}
 				}
 			};
 		},
-		useExistingPlan() {
+		useCredits() {
 			return {
 				method: 'press.api.marketplace.use_existing_credits',
 				params: {
@@ -366,11 +472,11 @@ export default {
 					this.step = 'Confirm Checkout';
 					window.location.reload();
 				}
-			}
+			};
 		},
-		changePlan() {
+		usePartnerCredits() {
 			return {
-				method: 'press.api.marketplace.prepaid_saas_payment',
+				method: 'press.api.marketplace.use_partner_credits',
 				params: {
 					name: this.subscription,
 					app: this.app,
@@ -378,6 +484,25 @@ export default {
 					plan: this.plan,
 					amount: this.totalAmount,
 					credits: this.creditsToBuy
+				},
+				onSuccess(r) {
+					window.location.reload();
+				}
+			};
+		},
+		changePlan() {
+			return {
+				method: 'press.api.marketplace.prepaid_saas_payment',
+				params: {
+					name: this.subscription,
+					app: this.app || 'test',
+					site: this.site || 'test',
+					plan: this.plan || 'test',
+					amount: this.totalAmount,
+					credits: this.creditsToBuy,
+					payment_option: this.selectedOption === 'Annual' ? 12 : 1,
+					renewal: this.renewal,
+					subscriptions: this.$resources.subscriptions.data
 				},
 				async onSuccess(data) {
 					let { card, payment_method, publishable_key, client_secret } = data;

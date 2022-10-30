@@ -214,6 +214,7 @@
 				v-if="newAppPlan"
 				:subscription="currentSubscription"
 				:app="appToChangePlan.name"
+				:appTitle="appToChangePlan.title"
 				:site="site.name"
 				:plan="newAppPlan"
 			/>
@@ -221,6 +222,7 @@
 			<MarketplacePrepaidCredits
 				v-if="selectedPlan"
 				:app="appToInstall.app"
+				:appTitle="appToChangePlan.title"
 				:site="site.name"
 				:plan="selectedPlan"
 			/>

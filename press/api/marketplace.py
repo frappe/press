@@ -4,6 +4,7 @@
 
 import json
 import frappe
+import datetime
 
 from typing import Dict, List
 from frappe.core.utils import find
@@ -31,6 +32,7 @@ from press.press.doctype.app_release_approval_request.app_release_approval_reque
 	AppReleaseApprovalRequest,
 )
 from press.press.doctype.marketplace_app.marketplace_app import get_plans_for_app
+from press.utils.billing import get_frappe_io_connection
 
 
 @frappe.whitelist()
@@ -827,19 +829,33 @@ def get_payout_details(name: str) -> Dict:
 
 
 @frappe.whitelist(allow_guest=True)
-def prepaid_saas_payment(name, app, site, plan, amount, credits):
+def prepaid_saas_payment(
+	name, app, site, plan, amount, credits, payment_option, renewal, subscriptions=None
+):
+	if renewal:
+		line_items = [
+			{
+				"app": sub["app"],
+				"plan": sub["marketplace_app_plan"],
+				"subscription": sub["name"],
+				"amount": sub["selected_plan"]["amount"],
+				"quantity": payment_option,
+			}
+			for sub in subscriptions
+		]
+	else:
+		line_items = [
+			{
+				"app": app,
+				"plan": plan,
+				"subscription": name,
+				"amount": amount,
+				"quantity": payment_option,
+			}
+		]
 	metadata = {
 		"payment_for": "prepaid_marketplace",
-		"line_items": json.dumps(
-			[
-				{
-					"app": app,
-					"plan": plan,
-					"subscription": name,
-					"amount": amount,
-				}
-			]
-		),
+		"line_items": json.dumps(line_items),
 		"site": site,
 		"credits": credits,
 	}
@@ -858,9 +874,35 @@ def get_plan(name):
 		"title": title,
 		"amount": amount,
 		"gst": gst,
-		"discount_percent": discount_percent,
+		"discount_percent": get_discount_percent(name, discount_percent),
 		"block_monthly": block_monthly,
 	}
+
+
+def get_discount_percent(plan, discount=0.0):
+	team = get_current_team(True)
+	partner_discount_percent = {
+		"Gold": 50.0,
+		"Silver": 40.0,
+		"Bronze": 30.0,
+	}
+
+	if team.erpnext_partner and frappe.get_value(
+		"Marketplace App Plan", plan, "partner_discount"
+	):
+		client = get_frappe_io_connection()
+		response = client.session.post(
+			f"{client.url}/api/method/partner_relationship_management.api.get_partner_type",
+			data={"email": team.partner_email},
+			headers=client.headers,
+		)
+		if response.ok:
+			res = response.json()
+			partner_type = res.get("message")
+			if partner_type is not None:
+				discount = partner_discount_percent.get(partner_type) or discount
+
+	return discount
 
 
 @frappe.whitelist(allow_guest=True)
@@ -888,6 +930,55 @@ def use_existing_credits(site, app, subscription, plan):
 		change_app_plan(subscription, plan)
 
 	return change_site_hosting_plan(site, plan, team)
+
+
+@frappe.whitelist()
+def use_partner_credits(name, app, site, plan, amount, credits):
+	"""
+	Consume partner credits on PRM and add Frappe Cloud credits
+	"""
+	team = get_current_team(True)
+	if amount < team.get_available_partner_credits():
+		try:
+			invoice = frappe.get_doc(
+				doctype="Invoice",
+				team=team.name,
+				type="Subscription",
+				status="Draft",
+				marketplace=1,
+				due_date=datetime.datetime.today(),
+				amount_paid=amount,
+				amount_due=amount,
+			)
+
+			invoice.append(
+				"items",
+				{
+					"description": f"Credits for {app}",
+					"document_type": "Marketplace App",
+					"document_name": app,
+					"plan": plan,
+					"rate": amount,
+					"quantity": 1,
+				},
+			)
+
+			invoice.save()
+			invoice.finalize_invoice()
+			invoice.reload()
+
+			if invoice.status == "Paid":
+				team.allocate_credit_amount(
+					credits, source="Prepaid Credits", remark="Convert from Partner Credits"
+				)
+				change_app_plan(name, plan)
+				change_site_hosting_plan(site, plan, team)
+		except Exception as e:
+			frappe.throw(e)
+	else:
+		frappe.throw(
+			"Not enough credits available for this purchase. Please use different method for payment."
+		)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -918,3 +1009,28 @@ def login_via_token(token, team, site):
 	else:
 		frappe.local.response["type"] = "redirect"
 		frappe.local.response["location"] = "/dashboard/saas/remote/failure"
+
+
+@frappe.whitelist()
+def subscriptions():
+	team = get_current_team()
+	free_plans = frappe.get_all("Marketplace App Plan", {"is_free": 1}, pluck="name")
+	subscriptions = frappe.get_all(
+		"Marketplace App Subscription",
+		{
+			"team": team,
+			"status": ("in", ("Active", "Suspended")),
+			"plan": ("not in", free_plans),
+		},
+		["name", "app", "site", "plan", "marketplace_app_plan"],
+	)
+
+	for sub in subscriptions:
+		sub["available_plans"] = get_plans_for_app(sub["app"])
+		sub["plan_options"] = []
+		for ele in sub["available_plans"]:
+			sub["plan_options"].append(ele["plan"])
+			if ele["name"] == sub["marketplace_app_plan"]:
+				sub["selected_plan"] = ele
+
+	return subscriptions

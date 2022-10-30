@@ -13,6 +13,7 @@
   "gst",
   "block_monthly",
   "us_eu",
+  "partner_discount",
   "section_break_2",
   "app",
   "column_break_3",
@@ -147,11 +148,17 @@
    "fieldtype": "Link",
    "label": "Standard Hosting Plan",
    "options": "Plan"
+  },
+  {
+   "default": "0",
+   "fieldname": "partner_discount",
+   "fieldtype": "Check",
+   "label": "Partner Discount"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-09-10 12:05:31.790536",
+ "modified": "2022-10-12 11:14:25.942122",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "Marketplace App Plan",
