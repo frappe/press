@@ -167,5 +167,11 @@ class TestPayoutOrder(FrappeTestCase):
 		)
 		self.assertTrue(marked_completed)
 
+		# Re-run should not create a new PO
+		# Since all items are already accounted for
+		create_marketplace_payout_orders_monthly()
+		po_count = frappe.db.count("Payout Order", {"recipient": self.test_team.name})
+		self.assertEqual(po_count, 1)
+
 	def tearDown(self):
 		frappe.db.rollback()
