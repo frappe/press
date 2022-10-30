@@ -448,7 +448,7 @@ export default {
 				params: {
 					name: this.plan
 				},
-				auto: false,
+				auto: this.plan ? true : false,
 				onSuccess(r) {
 					this.planData = r;
 					this.creditsToBuy = r.amount;
