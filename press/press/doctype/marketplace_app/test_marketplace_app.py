@@ -5,15 +5,16 @@
 import frappe
 import unittest
 
+from typing import Optional
 from press.press.doctype.marketplace_app.utils import (
 	number_k_format,
 	get_rating_percentage_distribution,
 )
 
 
-def create_test_marketplace_app(app: str):
+def create_test_marketplace_app(app: str, team: Optional[str] = None):
 	return frappe.get_doc(
-		{"doctype": "Marketplace App", "app": app, "description": "Test App"}
+		{"doctype": "Marketplace App", "app": app, "description": "Test App", "team": team}
 	).insert(ignore_if_duplicate=True)
 
 
