@@ -120,3 +120,8 @@ def create_payout_order_from_invoice_items(
 		po.insert()
 
 	return po
+
+
+def create_payout_order_from_invoice_item_names(item_names, *args, **kwargs):
+	invoice_items = (frappe.get_doc("Invoice Item", i) for i in item_names)
+	return create_payout_order_from_invoice_items(invoice_items, *args, **kwargs)
