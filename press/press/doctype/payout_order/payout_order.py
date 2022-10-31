@@ -4,7 +4,7 @@
 import frappe
 
 from itertools import groupby
-from typing import List, Optional
+from typing import List
 from frappe.model.document import Document
 from press.press.doctype.invoice_item.invoice_item import InvoiceItem
 from press.press.doctype.payout_order_item.payout_order_item import PayoutOrderItem
@@ -109,7 +109,39 @@ def create_marketplace_payout_orders_monthly():
 	# Group by teams
 	for app_team, items in groupby(items, key=lambda x: x["app_team"]):
 		item_names = [i.name for i in items]
-		create_payout_order_from_invoice_item_names(item_names, recipient=app_team)
+
+		today = frappe.utils.today()
+		period_start = frappe.utils.data.get_first_day(today)
+		period_end = frappe.utils.data.get_last_day(today)
+
+		po_exists = frappe.db.exists(
+			"Payout Order", {"recipient": app_team, "period_end": period_end}
+		)
+
+		if not po_exists:
+			create_payout_order_from_invoice_item_names(
+				item_names, recipient=app_team, period_start=period_start, period_end=period_end
+			)
+		else:
+			po = frappe.get_doc(
+				"Payout Order", {"recipient": app_team, "period_end": period_end}
+			)
+			for item_name in item_names:
+				invoice_item = frappe.get_doc("Invoice Item", item_name)
+				po.append(
+					"items",
+					{
+						"invoice_item": invoice_item.name,
+						"invoice": invoice_item.parent,
+						"document_type": invoice_item.document_type,
+						"document_name": invoice_item.document_name,
+						"rate": invoice_item.rate,
+						"plan": invoice_item.plan,
+						"quantity": invoice_item.quantity,
+						"site": invoice_item.site,
+					},
+				)
+			po.save()
 
 		frappe.db.set_value(
 			"Invoice Item",
@@ -123,18 +155,24 @@ def create_marketplace_payout_orders_monthly():
 def create_payout_order_from_invoice_items(
 	invoice_items: List[InvoiceItem],
 	recipient: str,
-	due_date: Optional[str] = "",
+	period_start: str,
+	period_end: str,
 	mode_of_payment: str = "Cash",
 	notes: str = "",
 	type: str = "Marketplace",
 	save: bool = True,
 ) -> PayoutOrder:
-	po = frappe.new_doc("Payout Order")
-	po.recipient = recipient
-	po.due_date = due_date
-	po.mode_of_payment = mode_of_payment
-	po.notes = notes
-	po.type = type
+	po = frappe.get_doc(
+		{
+			"doctype": "Payout Order",
+			"recipient": recipient,
+			"mode_of_payment": mode_of_payment,
+			"notes": notes,
+			"type": type,
+			"period_start": period_start,
+			"period_end": period_end,
+		}
+	)
 
 	for invoice_item in invoice_items:
 		po.append(

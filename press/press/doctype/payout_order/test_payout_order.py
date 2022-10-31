@@ -142,5 +142,41 @@ class TestPayoutOrder(FrappeTestCase):
 		po_count = frappe.db.count("Payout Order", {"recipient": self.test_team.name})
 		self.assertEqual(po_count, 1)
 
+	def test_does_not_create_duplicate_monthly_payout_order(self):
+		self.create_test_usd_invoice()
+
+		# Create a PO for this period
+		today = frappe.utils.today()
+		period_start = frappe.utils.data.get_first_day(today)
+		period_end = frappe.utils.data.get_last_day(today)
+
+		# No POs initially
+		num_payout_orders = frappe.db.count(
+			"Payout Order", {"recipient": self.test_team.name}
+		)
+		self.assertEqual(num_payout_orders, 0)
+
+		po = create_payout_order_from_invoice_items(
+			[], self.test_team.name, period_start=period_start, period_end=period_end
+		)
+
+		create_marketplace_payout_orders_monthly()
+
+		num_payout_orders = frappe.db.count(
+			"Payout Order", {"recipient": self.test_team.name}
+		)
+		self.assertEqual(num_payout_orders, 1)
+
+		# The original PO must now contain the invoice item
+		po.reload()
+		self.assertEqual(len(po.items), 1)
+
+		# The item should be the one in the invoice
+		# The invoice item must be marked as paid out
+		marked_completed = frappe.db.get_value(
+			"Invoice Item", po.items[0].invoice_item, "has_marketplace_payout_completed"
+		)
+		self.assertTrue(marked_completed)
+
 	def tearDown(self):
 		frappe.db.rollback()
