@@ -86,6 +86,10 @@ def get_invoice_item_for_po_item(
 
 
 def create_marketplace_payout_orders_monthly():
+	today = frappe.utils.today()
+	period_start = frappe.utils.data.get_first_day(today)
+	period_end = frappe.utils.data.get_last_day(today)
+
 	# Get all marketplace app invoice items
 	invoice = frappe.qb.DocType("Invoice")
 	invoice_item = frappe.qb.DocType("Invoice Item")
@@ -109,10 +113,6 @@ def create_marketplace_payout_orders_monthly():
 	# Group by teams
 	for app_team, items in groupby(items, key=lambda x: x["app_team"]):
 		item_names = [i.name for i in items]
-
-		today = frappe.utils.today()
-		period_start = frappe.utils.data.get_first_day(today)
-		period_end = frappe.utils.data.get_last_day(today)
 
 		po_exists = frappe.db.exists(
 			"Payout Order", {"recipient": app_team, "period_end": period_end}
