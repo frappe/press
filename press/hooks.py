@@ -185,6 +185,7 @@ scheduler_events = {
 		"press.press.doctype.bench.bench.sync_analytics",
 		"press.saas.doctype.saas_app_subscription.saas_app_subscription.suspend_prepaid_subscriptions",
 		"press.press.doctype.backup_restoration_test.backup_test.archive_backup_test_sites",
+		"press.press.doctype.payout_order.payout_order.create_marketplace_payout_orders",
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",

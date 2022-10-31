@@ -8,10 +8,12 @@
  "engine": "InnoDB",
  "field_order": [
   "recipient",
+  "period_start",
   "due_date",
   "status",
   "column_break_4",
   "mode_of_payment",
+  "period_end",
   "frappe_purchase_order",
   "amended_from",
   "section_break_8",
@@ -37,6 +39,7 @@
   {
    "fieldname": "due_date",
    "fieldtype": "Date",
+   "hidden": 1,
    "label": "Due Date"
   },
   {
@@ -118,12 +121,22 @@
   {
    "fieldname": "section_break_14",
    "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "period_start",
+   "fieldtype": "Date",
+   "label": "Period Start"
+  },
+  {
+   "fieldname": "period_end",
+   "fieldtype": "Date",
+   "label": "Period End"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2022-07-07 07:13:08.811782",
+ "modified": "2022-10-31 00:37:58.102707",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Payout Order",
