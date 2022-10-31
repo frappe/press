@@ -198,3 +198,14 @@ def create_payout_order_from_invoice_items(
 def create_payout_order_from_invoice_item_names(item_names, *args, **kwargs):
 	invoice_items = (frappe.get_doc("Invoice Item", i) for i in item_names)
 	return create_payout_order_from_invoice_items(invoice_items, *args, **kwargs)
+
+
+def create_marketplace_payout_orders():
+	# ONLY RUN ON LAST DAY OF THE MONTH
+	today = frappe.utils.today()
+	period_end = frappe.utils.data.get_last_day(today)
+
+	if today != period_end:
+		return
+
+	create_marketplace_payout_orders_monthly()
