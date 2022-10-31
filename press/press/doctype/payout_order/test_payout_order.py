@@ -64,15 +64,15 @@ class TestPayoutOrder(FrappeTestCase):
 			status="Paid",
 		).insert()
 
-		self.test_usage_record = frappe.get_doc(
-			doctype="Usage Record", team=self.test_team.name, amount=500
-		).insert()
+		# create test marketplace app
+		test_app = create_test_app("test_app")
+		test_mp_app = create_test_marketplace_app(test_app.name, self.test_team.name)
 
 		self.test_invoice.append(
 			"items",
 			{
-				"document_type": "Usage Record",
-				"document_name": self.test_usage_record.name,
+				"document_type": "Marketplace App",
+				"document_name": test_mp_app.name,
 				"rate": 20,
 				"plan": "INR 100",
 				"quantity": 2,
@@ -97,43 +97,9 @@ class TestPayoutOrder(FrappeTestCase):
 			exchange_rate=70,
 		).insert()
 
-		self.test_usage_record = frappe.get_doc(
-			doctype="Usage Record", team=self.test_team.name, amount=15
-		).insert()
-
-		self.test_invoice.append(
-			"items",
-			{
-				"document_type": "Usage Record",
-				"document_name": self.test_usage_record.name,
-				"rate": 10,
-				"plan": "USD 25",
-				"quantity": 2,
-			},
-		)
-
-		self.test_invoice.save()
-		self.test_invoice.submit()
-
-	def test_create_marketplace_monthly_payout_order(self):
-		# create test invoice with marketplace app
-		self.test_team = frappe.get_doc(
-			doctype="Team", name="testuserusd@example.com", country="United States", enabled=1
-		).insert()
-
 		# create test marketplace app
 		test_app = create_test_app("test_app")
 		test_mp_app = create_test_marketplace_app(test_app.name, self.test_team.name)
-
-		self.test_invoice = frappe.get_doc(
-			doctype="Invoice",
-			team=self.test_team.name,
-			transaction_amount=1800,
-			transaction_fee=1260,
-			amount_paid=25,
-			status="Paid",
-			exchange_rate=70,
-		).insert()
 
 		self.test_invoice.append(
 			"items",
@@ -148,6 +114,9 @@ class TestPayoutOrder(FrappeTestCase):
 
 		self.test_invoice.save()
 		self.test_invoice.submit()
+
+	def test_create_marketplace_monthly_payout_order(self):
+		self.create_test_usd_invoice()
 
 		# No payout order before running the job
 		self.assertFalse(frappe.db.exists("Payout Order", {"recipient": self.test_team.name}))
