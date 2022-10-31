@@ -320,10 +320,6 @@ def get_plans_for_app(
 		)
 
 		plan_data.update(plan_prices)
-		plan_data["amount"] = plan_prices[
-			f"price_{frappe.db.get_value('Team', frappe.session.user, 'currency').lower()}"
-		]
-
 		plan_data["features"] = get_app_plan_features(app_plan.name)
 
 		plans.append(plan_data)

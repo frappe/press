@@ -1013,12 +1013,12 @@ def login_via_token(token, team, site):
 
 @frappe.whitelist()
 def subscriptions():
-	team = get_current_team()
+	team = get_current_team(True)
 	free_plans = frappe.get_all("Marketplace App Plan", {"is_free": 1}, pluck="name")
 	subscriptions = frappe.get_all(
 		"Marketplace App Subscription",
 		{
-			"team": team,
+			"team": team.name,
 			"status": ("in", ("Active", "Suspended")),
 			"plan": ("not in", free_plans),
 		},
@@ -1027,9 +1027,8 @@ def subscriptions():
 
 	for sub in subscriptions:
 		sub["available_plans"] = get_plans_for_app(sub["app"])
-		sub["plan_options"] = []
 		for ele in sub["available_plans"]:
-			sub["plan_options"].append(ele["plan"])
+			ele["amount"] = ele[f"price_{team.currency.lower()}"]
 			if ele["name"] == sub["marketplace_app_plan"]:
 				sub["selected_plan"] = ele
 
