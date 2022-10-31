@@ -17,8 +17,18 @@ from press.press.doctype.payout_order.payout_order import (
 class TestPayoutOrder(FrappeTestCase):
 	def test_net_amount_calculations_inr(self):
 		self.create_test_inr_invoice()
+		# Create a PO for this period
+		today = frappe.utils.today()
+		period_start = frappe.utils.data.get_first_day(today)
+		period_end = frappe.utils.data.get_last_day(today)
+
 		po = create_payout_order_from_invoice_items(
-			self.test_invoice.items, self.test_team.name, mode_of_payment="Internal", save=True
+			self.test_invoice.items,
+			self.test_team.name,
+			period_start=period_start,
+			period_end=period_end,
+			mode_of_payment="Internal",
+			save=True,
 		)
 
 		self.assertEqual(len(po.items), 1)
@@ -34,8 +44,18 @@ class TestPayoutOrder(FrappeTestCase):
 	def test_net_amount_calculations_usd(self):
 		self.create_test_usd_invoice()
 
+		# Create a PO for this period
+		today = frappe.utils.today()
+		period_start = frappe.utils.data.get_first_day(today)
+		period_end = frappe.utils.data.get_last_day(today)
+
 		po = create_payout_order_from_invoice_items(
-			self.test_invoice.items, self.test_team.name, mode_of_payment="Internal", save=True
+			self.test_invoice.items,
+			self.test_team.name,
+			period_start=period_start,
+			period_end=period_end,
+			mode_of_payment="Internal",
+			save=True,
 		)
 
 		self.assertEqual(len(po.items), 1)
