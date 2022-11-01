@@ -89,7 +89,7 @@ class PressJob(Document):
 
 		for index, step in enumerate(steps):
 			if step.status == "Pending" and index and steps[index - 1].status == "Success":
-				step.status == "Running"
+				step.status = "Running"
 
 		return {
 			"name": self.name,

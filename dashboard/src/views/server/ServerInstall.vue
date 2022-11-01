@@ -11,7 +11,12 @@
 				:key="step.name"
 			>
 				<div class="h-4 w-4 text-gray-800">
+					<Spinner
+						class="h-3 w-3 text-gray-500"
+						v-if="step.status === 'Running'"
+					/>
 					<FeatherIcon
+						v-else
 						class="h-4 w-4"
 						:class="{ spin: step.status === 'Running' }"
 						:name="iconMap[step.status]"
