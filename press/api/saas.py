@@ -9,6 +9,7 @@ from press.api.account import get_account_request_from_key
 
 from press.press.doctype.site.saas_site import (
 	SaasSite,
+	get_default_team_for_app,
 	get_saas_domain,
 	get_saas_plan,
 	get_saas_site_plan,
@@ -117,6 +118,26 @@ def create_or_rename_saas_site(app, account_request):
 	finally:
 		frappe.set_user(current_user)
 		frappe.session.data = current_session_data
+
+
+@frappe.whitelist()
+def new_saas_site(subdomain, app):
+	frappe.only_for("System Manager")
+
+	pooled_site = get_pooled_saas_site(app)
+	if pooled_site:
+		site = SaasSite(site=pooled_site, app=app).rename_pooled_site(subdomain=subdomain)
+	else:
+		site = SaasSite(app=app, subdomain=subdomain).insert(ignore_permissions=True)
+		site.create_subscription(get_saas_site_plan(app))
+
+	site.reload()
+	site.team = get_default_team_for_app(app)
+	site.save(ignore_permissions=True)
+
+	frappe.db.commit()
+
+	return site
 
 
 def get_hybrid_saas_pool(account_request):
