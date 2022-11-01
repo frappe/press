@@ -12,6 +12,12 @@ from datetime import datetime
 from frappe.utils import flt
 
 
+def poly_get_doc(doctypes, name):
+	for doctype in doctypes:
+		if frappe.db.exists(doctype, name):
+			return frappe.get_doc(doctype, name)
+
+
 @frappe.whitelist()
 def all():
 	team = get_current_team()
@@ -31,7 +37,7 @@ def all():
 @frappe.whitelist()
 @protected(["Server", "Database Server"])
 def get(name):
-	server = frappe.get_doc("Server", name)
+	server = poly_get_doc(["Server", "Database Server"], name)
 	return {
 		"name": server.name,
 		"title": server.title,
@@ -46,7 +52,7 @@ def get(name):
 @frappe.whitelist()
 @protected(["Server", "Database Server"])
 def overview(name):
-	server = frappe.get_cached_doc("Server", name)
+	server = poly_get_doc(["Server", "Database Server"], name)
 	return {
 		"plan": frappe.get_doc("Plan", server.plan).as_dict(),
 		"info": {
@@ -64,7 +70,7 @@ def overview(name):
 @frappe.whitelist()
 @protected(["Server", "Database Server"])
 def archive(name):
-	return frappe.get_doc("Server", name).archive()
+	return poly_get_doc(["Server", "Database Server"], name).archive()
 
 
 @frappe.whitelist()
@@ -369,7 +375,7 @@ def play(play):
 @frappe.whitelist()
 @protected(["Server", "Database Server"])
 def change_plan(name, plan):
-	frappe.get_doc("Server", name).change_plan(plan)
+	poly_get_doc(["Server", "Database Server"], name).change_plan(plan)
 
 
 @frappe.whitelist()
