@@ -8,6 +8,7 @@ from frappe.model.document import Document
 from frappe.core.utils import find
 from frappe.model.naming import make_autoname
 from frappe.desk.utils import slug
+from press.overrides import get_permission_query_conditions_for_doctype
 
 USER_DATA = """#!/bin/bash
 rm -rf /etc/ssh/ssh_host_*
@@ -291,7 +292,39 @@ class VirtualMachine(Document):
 		return frappe.get_doc(document).insert()
 
 
+get_permission_query_conditions = get_permission_query_conditions_for_doctype(
+	"Virtual Machine"
+)
+
+
 def sync_virtual_machines():
-	machines = frappe.get_all("Virtual Machine", {"status": ("!=", "Terminated")})
+	machines = frappe.get_all(
+		"Virtual Machine", {"status": ("not in", ("Terminated", "Draft"))}
+	)
 	for machine in machines:
-		frappe.get_doc("Virtual Machine", machine.name).sync()
+		try:
+			frappe.get_doc("Virtual Machine", machine.name).sync()
+			frappe.db.commit()
+		except Exception:
+			import traceback
+
+			traceback.print_exc()
+
+
+def terminate_virtual_machines():
+	machines = frappe.get_all(
+		"Virtual Machine",
+		{"status": ("not in", ("Terminated", "Draft")), "series": ("in", ["m", "f"])},
+	)
+	for machine in machines:
+		try:
+			print(machine)
+			machine = frappe.get_doc("Virtual Machine", machine.name)
+			machine.sync()
+			machine.disable_termination_protection()
+			machine.terminate()
+			frappe.db.commit()
+		except Exception:
+			import traceback
+
+			traceback.print_exc()
