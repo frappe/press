@@ -10,7 +10,7 @@
 	>
 		<template #actions>
 			<Button
-				v-if="['Active', 'Suspended'].includes(site.status)"
+				v-if="['Active', 'Suspended'].includes(site.status) && canChangePlan"
 				@click="
 					() => {
 						showChangePlanDialog = true;
@@ -174,6 +174,9 @@ export default {
 		}
 	},
 	computed: {
+		canChangePlan() {
+			return this.site.can_change_plan;
+		},
 		plans() {
 			let processedPlans = this.$resources.plans.data.map(plan => {
 				if (this.belowCurrentUsage(plan)) {

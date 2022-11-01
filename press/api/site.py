@@ -564,6 +564,7 @@ def get(name):
 		"team": site.team,
 		"frappe_version": frappe_version,
 		"server_region_info": get_server_region_info(site),
+		"can_change_plan": frappe.db.get_value("Server", site.server, "team") != team,
 	}
 
 
