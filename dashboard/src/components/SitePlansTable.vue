@@ -10,10 +10,11 @@
 			<div class="w-1/4">Disk</div>
 		</div>
 		<div
-			class="focus-within:shadow-outline flex cursor-pointer border border-b-0 px-4 py-3 text-left text-base"
+			class="focus-within:shadow-outline flex cursor-pointer border px-4 py-3 text-left text-base"
 			:class="[
 				selectedPlan === plan ? 'bg-blue-50' : 'hover:bg-blue-50',
 				{
+					'border-b-0': i !== plans.length - 1,
 					'rounded-b-md border-b': i === plans.length - 1,
 					'pointer-events-none': plan.disabled
 				}
