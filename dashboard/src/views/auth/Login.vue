@@ -80,7 +80,6 @@ export default {
 			password: null,
 			errorMessage: null,
 			successMessage: null,
-			redirect_route: null
 		};
 	},
 	watch: {
@@ -109,15 +108,6 @@ export default {
 			};
 		}
 	},
-	async mounted() {
-		//if (localStorage.getItem('was_saas_logout')) {
-		//	this.$router.push('/saas/login');
-		//	localStorage.removeItem('was_saas_logout');
-		if (this.$route?.query?.route) {
-			this.redirect_route = this.$route.query.route;
-			this.$router.replace({ query: null });
-		}
-	},
 	methods: {
 		async loginOrResetPassword() {
 			try {
@@ -137,10 +127,7 @@ export default {
 		},
 		async login() {
 			if (this.email && this.password) {
-				let res = await this.$auth.login(this.email, this.password);
-				if (res) {
-					this.$router.push(this.redirect_route || res.dashboard_route || '/');
-				}
+				await this.$auth.login(this.email, this.password);
 			}
 		},
 		async resetPassword() {

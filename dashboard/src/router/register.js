@@ -31,6 +31,9 @@ export default function registerRouter(app, auth, account) {
 				if (!account.user) {
 					await account.fetchAccount();
 				}
+				if (to?.query?.route) {
+					next({ path: to.query.route });
+				}
 				if (to.meta.isSaasPage) {
 					next({ name: 'SaasSubscription' });
 				} else {
