@@ -18,8 +18,8 @@ ssh-keygen -A
 
 class VirtualMachine(Document):
 	def autoname(self):
-		series = f"{self.series}-{slug(self.cluster)}.###"
-		self.index = int(make_autoname(series)[-3:])
+		series = f"{self.series}-{slug(self.cluster)}.#####"
+		self.index = int(make_autoname(series)[-5:])
 		self.name = f"{self.series}{self.index}-{slug(self.cluster)}.{self.domain}"
 
 	def validate(self):
@@ -27,8 +27,14 @@ class VirtualMachine(Document):
 			self.machine_image = self.get_latest_ubuntu_image()
 		if not self.private_ip_address:
 			ip = ipaddress.IPv4Interface(self.subnet_cidr_block).ip
-			multiplier = ["n", "f", "m"].index(self.series) + 1
-			self.private_ip_address = str(ip + (multiplier * 256) + (self.index + 100))
+			index = self.index + 356
+			if self.series == "n":
+				self.private_ip_address = str(ip + index)
+			else:
+				offset = ["f", "m"].index(self.series)
+				self.private_ip_address = str(
+					ip + 256 * (2 * (index // 256) + offset) + (index % 256)
+				)
 		if self.virtual_machine_image:
 			self.disk_size = max(
 				self.disk_size,
