@@ -172,7 +172,7 @@
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-01-25 15:34:56.029011",
+ "modified": "2022-11-01 18:41:41.302964",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Ansible Play",
@@ -189,10 +189,21 @@
    "role": "System Manager",
    "share": 1,
    "write": 1
+  },
+  {
+   "create": 1,
+   "role": "Press Admin",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "role": "Press Member",
+   "write": 1
   }
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "title_field": "play",
  "track_changes": 1
 }

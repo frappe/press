@@ -114,7 +114,7 @@
    "link_fieldname": "job"
   }
  ],
- "modified": "2022-10-07 00:13:01.216613",
+ "modified": "2022-11-01 18:37:24.481326",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Job",
@@ -131,6 +131,16 @@
    "report": 1,
    "role": "System Manager",
    "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "role": "Press Admin",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "role": "Press Member",
    "write": 1
   }
  ],

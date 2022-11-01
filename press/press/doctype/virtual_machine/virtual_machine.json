@@ -275,7 +275,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2022-10-06 23:02:40.960608",
+ "modified": "2022-11-01 18:35:05.604960",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",
@@ -291,6 +291,18 @@
    "report": 1,
    "role": "System Manager",
    "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "Press Admin",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "Press Member",
    "write": 1
   }
  ],
