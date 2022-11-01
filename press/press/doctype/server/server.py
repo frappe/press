@@ -347,6 +347,10 @@ class BaseServer(Document):
 		machine_type = frappe.db.get_value("Plan", plan, "instance_type")
 		self.run_press_job("Resize Server", {"machine_type": machine_type})
 
+	@frappe.whitelist()
+	def create_image(self):
+		self.run_press_job("Create Server Snapshot")
+
 	def run_press_job(self, job_name, arguments=None):
 		if arguments is None:
 			arguments = {}
