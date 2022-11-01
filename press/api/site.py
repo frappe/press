@@ -119,7 +119,7 @@ def _new(site, server: str = None):
 	bench = frappe.db.sql(
 		f"""
 	SELECT
-		bench.name, bench.cluster = '{cluster}' as in_primary_cluster
+		bench.name, bench.server, bench.cluster = '{cluster}' as in_primary_cluster
 	FROM
 		tabBench bench
 	LEFT JOIN
@@ -141,6 +141,7 @@ def _new(site, server: str = None):
 
 	app_plans = site.get("selected_app_plans")
 
+	validate_plan(bench.server, plan)
 	site = frappe.get_doc(
 		{
 			"doctype": "Site",
@@ -191,6 +192,17 @@ def _new(site, server: str = None):
 			},
 		),
 	}
+
+
+def validate_plan(server, plan):
+	if frappe.db.get_value("Plan", plan, "price_usd") > 0:
+		return
+	if (
+		frappe.session.data.user_type == "System User"
+		or frappe.db.get_value("Server", server, "team") == get_current_team()
+	):
+		return
+	frappe.throw("You are not allowed to use this plan")
 
 
 @frappe.whitelist()
@@ -864,7 +876,9 @@ def current_plan(name):
 @frappe.whitelist()
 @protected("Site")
 def change_plan(name, plan):
-	frappe.get_doc("Site", name).change_plan(plan)
+	site = frappe.get_doc("Site", name)
+	validate_plan(site.server, plan)
+	site.change_plan(plan)
 
 
 @frappe.whitelist()
