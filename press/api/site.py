@@ -29,16 +29,25 @@ from press.utils import (
 )
 
 
-def protected(doctype):
+def protected(doctypes):
 	@wrapt.decorator
 	def wrapper(wrapped, instance, args, kwargs):
+		if frappe.session.data.user_type == "System User":
+			return wrapped(*args, **kwargs)
+
 		name = kwargs.get("name") or args[0]
 		team = get_current_team()
-		owner = frappe.db.get_value(doctype, name, "team")
-		if frappe.session.data.user_type == "System User" or owner == team:
-			return wrapped(*args, **kwargs)
-		else:
-			raise frappe.PermissionError
+
+		nonlocal doctypes
+		if not isinstance(doctypes, list):
+			doctypes = [doctypes]
+
+		for doctype in doctypes:
+			owner = frappe.db.get_value(doctype, name, "team")
+			if owner == team:
+				return wrapped(*args, **kwargs)
+
+		raise frappe.PermissionError
 
 	return wrapper
 
