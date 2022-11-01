@@ -34,7 +34,7 @@ def new(bench):
 
 	if bench["server"] and not (
 		frappe.session.data.user_type == "System User"
-		or frappe.db.get_value("Server", bench["server"], "team") != team.name
+		or frappe.db.get_value("Server", bench["server"], "team") == team.name
 	):
 		frappe.throw("You can only create benches on your servers")
 
