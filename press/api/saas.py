@@ -140,6 +140,14 @@ def new_saas_site(subdomain, app):
 	return site
 
 
+@frappe.whitelist()
+def get_saas_site_status(site):
+	if frappe.db.exists("Site", site):
+		return {"site": site, "status": frappe.db.get_value("Site", site, "status")}
+
+	return {"site": site, "status": "Pending"}
+
+
 def get_hybrid_saas_pool(account_request):
 	"""
 	1. Get all hybrid pools and their rules
