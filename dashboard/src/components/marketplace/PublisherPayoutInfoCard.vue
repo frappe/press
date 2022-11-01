@@ -153,7 +153,7 @@ export default {
 				this.payPalId = data.profile_info.paypal_id;
 				this.acNumber = data.profile_info.bank_account_number;
 				this.acName = data.profile_info.bank_account_holder_name;
-				this.gstin = data.profile_info.bank_account_holder_name;
+				this.gstin = data.profile_info.gstin;
 				this.otherDetails = data.profile_info.other_bank_details;
 			}
 		}
