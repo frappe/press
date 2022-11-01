@@ -32,6 +32,12 @@ def new(bench):
 	if exists(bench["title"]):
 		frappe.throw("A bench exists with the same name")
 
+	if bench["server"] and not (
+		frappe.session.data.user_type == "System User"
+		or frappe.db.get_value("Server", bench["server"], "team") != team.name
+	):
+		frappe.throw("You can only create benches on your servers")
+
 	apps = [{"app": app["name"], "source": app["source"]} for app in bench["apps"]]
 	group = new_release_group(
 		bench["title"],
@@ -40,6 +46,7 @@ def new(bench):
 		team.name,
 		bench["cluster"],
 		bench["saas_app"] if frappe.db.exists("Saas App", bench["saas_app"]) else "",
+		bench["server"],
 	)
 	return group.name
 

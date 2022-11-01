@@ -430,14 +430,17 @@ class ReleaseGroup(Document):
 		self.add_server(server, deploy=True)
 
 
-def new_release_group(title, version, apps, team=None, cluster=None, saas_app=""):
+def new_release_group(
+	title, version, apps, team=None, cluster=None, saas_app="", server=None
+):
 	if cluster:
-		server = frappe.get_all(
-			"Server",
-			{"status": "Active", "cluster": cluster, "use_for_new_benches": True},
-			pluck="name",
-			limit=1,
-		)[0]
+		if not server:
+			server = frappe.get_all(
+				"Server",
+				{"status": "Active", "cluster": cluster, "use_for_new_benches": True},
+				pluck="name",
+				limit=1,
+			)[0]
 		servers = [{"server": server}]
 	else:
 		servers = []

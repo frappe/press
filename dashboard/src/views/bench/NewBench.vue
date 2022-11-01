@@ -1,7 +1,13 @@
 <template>
 	<WizardCard>
 		<div>
-			<h1 class="mb-6 text-2xl font-bold sm:text-center">New Bench</h1>
+			<div class="mb-6 text-center">
+				<h1 class="text-2xl font-bold sm:text-center">New Bench</h1>
+				<p v-if="serverTitle" class="text-base text-gray-700">
+					Bench will be created on server
+					<span class="font-medium">{{ serverTitle.slice(0, -14) }}</span>
+				</p>
+			</div>
 			<div v-if="$resources.options.loading" class="flex justify-center">
 				<LoadingText />
 			</div>
@@ -94,7 +100,7 @@ import AppSourceSelector from '@/components/AppSourceSelector.vue';
 import RichSelect from '@/components/RichSelect.vue';
 export default {
 	name: 'NewBench',
-	props: { saas_app: String },
+	props: ['saas_app', 'server'],
 	components: {
 		WizardCard,
 		AppSourceSelector,
@@ -106,6 +112,7 @@ export default {
 			selectedVersionName: null,
 			selectedApps: [],
 			selectedRegion: null,
+			serverTitle: null,
 			agreedToRegionConsent: false
 		};
 	},
@@ -122,7 +129,9 @@ export default {
 					if (!this.selectedVersionName) {
 						this.selectedVersionName = options.versions[0].name;
 					}
-					this.selectedRegion = this.options.clusters[0].name;
+					if (!this.selectedRegion) {
+						this.selectedRegion = this.options.clusters[0].name;
+					}
 				}
 			};
 		},
@@ -138,7 +147,8 @@ export default {
 						apps: this.selectedApps.map(app => ({
 							name: app.app,
 							source: app.source.name
-						}))
+						})),
+						server: this.server || null
 					}
 				},
 				validate() {
@@ -161,6 +171,18 @@ export default {
 					this.$router.push(`/benches/${benchName}`);
 				}
 			};
+		}
+	},
+	async mounted() {
+		if (this.server) {
+			let { title, cluster } = await this.$call(
+				'press.api.server.get_title_and_cluster',
+				{
+					name: this.server
+				}
+			);
+			this.serverTitle = title;
+			this.selectedRegion = cluster;
 		}
 	},
 	watch: {
@@ -202,7 +224,13 @@ export default {
 			}));
 		},
 		regionOptions() {
-			return this.options.clusters.map(d => ({
+			let clusters = this.options.clusters;
+			if (this.server && this.selectedRegion) {
+				clusters = clusters.filter(
+					cluster => cluster.name === this.selectedRegion
+				);
+			}
+			return clusters.map(d => ({
 				label: d.title,
 				value: d.name,
 				image: d.image

@@ -385,3 +385,9 @@ def press_jobs(name):
 	for job in frappe.get_all("Press Job", {"server": name}, pluck="name"):
 		jobs.append(frappe.get_doc("Press Job", job).detail())
 	return jobs
+
+
+@frappe.whitelist()
+@protected("Server")
+def get_title_and_cluster(name):
+	return frappe.db.get_value("Server", name, ["title", "cluster"], as_dict=True)
