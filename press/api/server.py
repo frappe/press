@@ -276,7 +276,7 @@ def options():
 		"Cluster", {"cloud_provider": "AWS EC2", "public": True}, ["name", "title", "image"]
 	)
 	return {
-		"regions": regions * 2,
+		"regions": regions,
 		"app_plans": plans("Server"),
 		"db_plans": plans("Database Server"),
 	}

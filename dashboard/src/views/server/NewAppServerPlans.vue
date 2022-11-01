@@ -10,7 +10,7 @@
 		<AlertBillingInformation class="mt-4" />
 		<div class="mt-4">
 			<ServerPlansTable
-				:plans="options.app_plans"
+				:plans="appPlanOptions"
 				:selectedPlan="selectedAppPlan"
 				@update:selectedPlan="plan => $emit('update:selectedAppPlan', plan)"
 			/>
@@ -24,10 +24,17 @@ import AlertBillingInformation from '@/components/AlertBillingInformation.vue';
 export default {
 	name: 'AppServerPlans',
 	emits: ['update:selectedAppPlan'],
-	props: ['options', 'selectedAppPlan'],
+	props: ['options', 'selectedAppPlan', 'selectedRegion'],
 	components: {
 		ServerPlansTable,
 		AlertBillingInformation
+	},
+	computed: {
+		appPlanOptions() {
+			return this.options.app_plans.filter(
+				plan => plan.cluster == this.selectedRegion
+			);
+		}
 	}
 };
 </script>

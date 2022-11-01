@@ -10,7 +10,7 @@
 		<AlertBillingInformation class="mt-4" />
 		<div class="mt-4">
 			<ServerPlansTable
-				:plans="options.db_plans"
+				:plans="dbPlanOptions"
 				:selectedPlan="selectedDBPlan"
 				@update:selectedPlan="plan => $emit('update:selectedDBPlan', plan)"
 			/>
@@ -24,10 +24,17 @@ import AlertBillingInformation from '@/components/AlertBillingInformation.vue';
 export default {
 	name: 'DBServerPlans',
 	emits: ['update:selectedDBPlan'],
-	props: ['options', 'selectedDBPlan'],
+	props: ['options', 'selectedDBPlan', 'selectedRegion'],
 	components: {
 		ServerPlansTable,
 		AlertBillingInformation
+	},
+	computed: {
+		dbPlanOptions() {
+			return this.options.db_plans.filter(
+				plan => plan.cluster == this.selectedRegion
+			);
+		}
 	}
 };
 </script>

@@ -17,11 +17,13 @@
 				<AppServerPlans
 					v-model:selectedAppPlan="selectedAppPlan"
 					:options="options"
+					:selectedRegion="selectedRegion"
 					v-show="activeStep.name === 'AppServerPlan'"
 				/>
 				<DBServerPlans
 					v-model:selectedDBPlan="selectedDBPlan"
 					:options="options"
+					:selectedRegion="selectedRegion"
 					v-show="activeStep.name === 'DBServerPlan'"
 				/>
 				<VerifyServer
