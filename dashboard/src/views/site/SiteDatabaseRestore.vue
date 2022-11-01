@@ -20,7 +20,7 @@
 					:disabled="site.status === 'Suspended'"
 					@click="showRestoreDialog = true"
 				>
-					<span class="text-red-600">Restore Database</span>
+					<span class="text-red-600">Restore</span>
 				</Button>
 			</div>
 			<div class="flex items-center justify-between py-3">
@@ -34,7 +34,7 @@
 					:disabled="site.status === 'Suspended'"
 					@click="showMigrateDialog = true"
 				>
-					Migrate Database
+					Migrate
 				</Button>
 			</div>
 			<div class="flex items-center justify-between py-3">
@@ -45,7 +45,7 @@
 					</p>
 				</div>
 				<Button :disabled="site.status === 'Suspended'" @click="confirmReset">
-					<span class="text-red-600"> Reset Database </span>
+					<span class="text-red-600"> Reset </span>
 				</Button>
 			</div>
 			<div class="flex items-center justify-between py-3">
@@ -69,7 +69,7 @@
 					<p class="mt-1 text-base text-gray-600">Connect to your database</p>
 				</div>
 				<Button icon-left="database" @click="showDatabaseAccessDialog = true">
-					Access Database</Button
+					Access</Button
 				>
 			</div>
 		</div>
