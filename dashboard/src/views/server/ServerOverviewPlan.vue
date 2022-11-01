@@ -106,7 +106,8 @@ export default {
 			return {
 				method: 'press.api.server.plans',
 				params: {
-					name: 'Server'
+					name: 'Server',
+					cluster: this.server.region_info.name
 				},
 				default: []
 			};
@@ -144,8 +145,6 @@ export default {
 	computed: {
 		plans() {
 			let processedPlans = this.$resources.plans.data.map(plan => {
-				console.log(plan.name, plan.disk, this.plan.disk);
-
 				if (this.plan.name === plan.name) {
 					plan.disabled = true;
 				}

@@ -38,7 +38,7 @@ def get(name):
 		"status": server.status,
 		"team": server.team,
 		"region_info": frappe.db.get_value(
-			"Cluster", server.cluster, ["title", "image"], as_dict=True
+			"Cluster", server.cluster, ["name", "title", "image"], as_dict=True
 		),
 	}
 
@@ -283,7 +283,10 @@ def options():
 
 
 @frappe.whitelist()
-def plans(name):
+def plans(name, cluster=None):
+	filters = {"enabled": True, "document_type": name}
+	if cluster:
+		filters["cluster"] = cluster
 	plans = frappe.db.get_all(
 		"Plan",
 		fields=[
@@ -298,7 +301,7 @@ def plans(name):
 			"instance_type",
 			"`tabHas Role`.role",
 		],
-		filters={"enabled": True, "document_type": name},
+		filters=filters,
 		order_by="price_usd asc",
 	)
 	plans = group_children_in_result(plans, {"role": "roles"})
