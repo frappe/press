@@ -205,7 +205,7 @@ export default {
 			this.privateBench = true;
 			this.selectedGroup = this.bench;
 			this.benchTitle = this.bench;
-			let { title, creation } = await this.$call(
+			let { title, creation, team } = await this.$call(
 				'press.api.bench.get_title_and_creation',
 				{
 					name: this.bench
@@ -213,16 +213,21 @@ export default {
 			);
 			this.benchTitle = title;
 
-			// poor man's bench paywall
-			// this will disable creation of $10 sites on private benches
-			// wanted to avoid adding a new field, so doing this with a date check :)
-			let benchCreation = DateTime.fromSQL(creation);
-			let paywalledBenchDate = DateTime.fromSQL('2021-09-21 00:00:00');
-			let isPaywalledBench = benchCreation > paywalledBenchDate;
-			if (isPaywalledBench && $account.user.user_type != 'System User') {
-				this.options.plans = this.options.plans.filter(
-					plan => plan.price_usd >= 25
-				);
+			if (team == this.$account.team) {
+				// Select a zero cost plan and remove the plan selection step
+				this.selectedPlan = 'Unlimited';
+			} else {
+				// poor man's bench paywall
+				// this will disable creation of $10 sites on private benches
+				// wanted to avoid adding a new field, so doing this with a date check :)
+				let benchCreation = DateTime.fromSQL(creation);
+				let paywalledBenchDate = DateTime.fromSQL('2021-09-21 00:00:00');
+				let isPaywalledBench = benchCreation > paywalledBenchDate;
+				if (isPaywalledBench && this.$account.user.user_type != 'System User') {
+					this.options.plans = this.options.plans.filter(
+						plan => plan.price_usd >= 25
+					);
+				}
 			}
 		}
 	},

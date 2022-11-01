@@ -648,7 +648,14 @@ def generate_certificate(name):
 @frappe.whitelist()
 @protected("Release Group")
 def get_title_and_creation(name):
-	return frappe.db.get_value("Release Group", name, ["title", "creation"], as_dict=True)
+	result = frappe.db.get_value(
+		"Release Group", name, ["title", "creation"], as_dict=True
+	)
+	server = frappe.get_all(
+		"Release Group Server", {"parent": name}, pluck="server", order_by="idx asc", limit=1
+	)[0]
+	result["team"] = frappe.db.get_value("Server", server, "team")
+	return result
 
 
 @frappe.whitelist()
