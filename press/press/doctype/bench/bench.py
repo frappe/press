@@ -127,7 +127,7 @@ class Bench(Document):
 			fields=["port_offset"],
 			filters={"server": self.server, "status": ("!=", "Archived")},
 		)
-		all_offsets = range(0, 100)
+		all_offsets = range(0, 1000)
 		used_offsets = map(lambda x: x.port_offset, benches)
 		available_offsets = set(all_offsets) - set(used_offsets)
 		return min(available_offsets)
