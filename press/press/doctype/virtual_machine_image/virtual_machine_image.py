@@ -28,7 +28,7 @@ class VirtualMachineImage(Document):
 			self.status = self.get_status_map(image["State"])
 			self.platform = image["Architecture"]
 			volume = find(image["BlockDeviceMappings"], lambda x: "Ebs" in x.keys())
-			if volume:
+			if volume and "VolumeSize" in volume["Ebs"]:
 				self.size = volume["Ebs"]["VolumeSize"]
 		else:
 			self.status = "Unavailable"
