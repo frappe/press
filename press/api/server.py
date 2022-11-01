@@ -29,7 +29,7 @@ def all():
 
 
 @frappe.whitelist()
-@protected("Server")
+@protected(["Server", "Database Server"])
 def get(name):
 	server = frappe.get_doc("Server", name)
 	return {
@@ -44,7 +44,7 @@ def get(name):
 
 
 @frappe.whitelist()
-@protected("Server")
+@protected(["Server", "Database Server"])
 def overview(name):
 	server = frappe.get_cached_doc("Server", name)
 	return {
@@ -62,7 +62,7 @@ def overview(name):
 
 
 @frappe.whitelist()
-@protected("Server")
+@protected(["Server", "Database Server"])
 def archive(name):
 	return frappe.get_doc("Server", name).archive()
 
@@ -161,7 +161,7 @@ def search_list():
 
 
 @frappe.whitelist()
-@protected("Server")
+@protected(["Server", "Database Server"])
 def usage(name):
 	query_map = {
 		"vcpu": (
@@ -187,7 +187,7 @@ def usage(name):
 
 
 @frappe.whitelist()
-@protected("Server")
+@protected(["Server", "Database Server"])
 def analytics(name, query, timezone, duration):
 	timespan, timegrain = {
 		"1 Hour": (60 * 60, 2 * 60),
@@ -315,7 +315,7 @@ def plans(name, cluster=None):
 
 
 @frappe.whitelist()
-@protected("Server")
+@protected(["Server", "Database Server"])
 def jobs(name, start=0):
 	jobs = frappe.get_all(
 		"Agent Job",
@@ -328,7 +328,7 @@ def jobs(name, start=0):
 
 
 @frappe.whitelist()
-@protected("Server")
+@protected(["Server", "Database Server"])
 def plays(name, start=0):
 	plays = frappe.get_all(
 		"Ansible Play",
@@ -367,13 +367,13 @@ def play(play):
 
 
 @frappe.whitelist()
-@protected("Server")
+@protected(["Server", "Database Server"])
 def change_plan(name, plan):
 	frappe.get_doc("Server", name).change_plan(plan)
 
 
 @frappe.whitelist()
-@protected("Server")
+@protected(["Server", "Database Server"])
 def press_jobs(name):
 	jobs = []
 	for job in frappe.get_all("Press Job", {"server": name}, pluck="name"):
