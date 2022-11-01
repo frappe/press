@@ -82,7 +82,9 @@
 							Back
 						</Button>
 						<Button
-							v-show="activeStep.name !== 'Restore' || wantsToRestore"
+							v-show="
+								(activeStep.name !== 'Restore' || wantsToRestore) && hasNext
+							"
 							appearance="primary"
 							@click="nextStep(activeStep, next)"
 							:class="{
@@ -94,7 +96,9 @@
 							Next
 						</Button>
 						<Button
-							v-show="!wantsToRestore && activeStep.name === 'Restore'"
+							v-show="
+								!wantsToRestore && activeStep.name === 'Restore' && hasNext
+							"
 							appearance="primary"
 							@click="nextStep(activeStep, next)"
 						>
@@ -216,6 +220,8 @@ export default {
 			if (team == this.$account.team) {
 				// Select a zero cost plan and remove the plan selection step
 				this.selectedPlan = 'Unlimited';
+				let plan_step_index = this.steps.findIndex(step => step.name == 'Plan');
+				this.steps.splice(plan_step_index, 1);
 			} else {
 				// poor man's bench paywall
 				// this will disable creation of $10 sites on private benches
