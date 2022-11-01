@@ -136,7 +136,7 @@ def _new(site, server: str = None):
 	LIMIT 1
 	""",
 		as_dict=True,
-	)[0].name
+	)[0]
 	plan = site["plan"]
 
 	app_plans = site.get("selected_app_plans")
@@ -147,7 +147,7 @@ def _new(site, server: str = None):
 			"doctype": "Site",
 			"subdomain": site["name"],
 			"domain": domain,
-			"bench": bench,
+			"bench": bench.name,
 			"apps": [{"app": app} for app in site["apps"]],
 			"team": team.name,
 			"free": team.free_account,
