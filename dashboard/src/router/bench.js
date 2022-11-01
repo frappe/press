@@ -14,6 +14,12 @@ export default [
 		props: true
 	},
 	{
+		path: '/servers/:server/bench/new',
+		name: 'NewServerBench',
+		component: () => import('../views/bench/NewBench.vue'),
+		props: true
+	},
+	{
 		path: '/benches/:benchName',
 		name: 'Bench',
 		component: () => import('../views/bench/Bench.vue'),

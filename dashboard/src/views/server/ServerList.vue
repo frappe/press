@@ -75,15 +75,9 @@ export default {
 					}
 				},
 				{
-					label: 'New Site',
-					action: () => {
-						this.$router.push(`/${server.name}/site/new`);
-					}
-				},
-				{
 					label: 'New Bench',
 					action: () => {
-						this.$router.push(`/${server.name}/site/new`);
+						this.$router.push(`/servers/${server.name}/bench/new`);
 					}
 				}
 			];
