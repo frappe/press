@@ -181,7 +181,9 @@ export default {
 					label: 'New Bench',
 					icon: 'plus',
 					action: () => {
-						this.$router.replace(`/servers/${this.serverName}/bench/new`);
+						this.$router.replace(
+							`/servers/${this.server.app_server}/bench/new`
+						);
 					}
 				},
 				this.$account.user.user_type == 'System User' && {

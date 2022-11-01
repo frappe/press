@@ -77,7 +77,7 @@ export default {
 				{
 					label: 'New Bench',
 					action: () => {
-						this.$router.push(`/servers/${server.name}/bench/new`);
+						this.$router.push(`/servers/${server.app_server}/bench/new`);
 					}
 				}
 			];

@@ -21,7 +21,7 @@ def poly_get_doc(doctypes, name):
 @frappe.whitelist()
 def all():
 	team = get_current_team()
-	servers = frappe.get_all(
+	app_servers = frappe.get_all(
 		"Server",
 		{"team": team, "status": ("!=", "Archived")},
 		["name", "creation", "status", "title"],
@@ -31,7 +31,10 @@ def all():
 		{"team": team, "status": ("!=", "Archived")},
 		["name", "creation", "status", "title"],
 	)
-	return servers + database_servers
+	all_servers = app_servers + database_servers
+	for server in all_servers:
+		server["app_server"] = f"f{server.name[1:]}"
+	return all_servers
 
 
 @frappe.whitelist()
@@ -43,6 +46,7 @@ def get(name):
 		"title": server.title,
 		"status": server.status,
 		"team": server.team,
+		"app_server": f"f{server.name[1:]}",
 		"region_info": frappe.db.get_value(
 			"Cluster", server.cluster, ["name", "title", "image"], as_dict=True
 		),
