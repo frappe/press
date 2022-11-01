@@ -315,22 +315,3 @@ def sync_virtual_machines():
 			import traceback
 
 			traceback.print_exc()
-
-
-def terminate_virtual_machines():
-	machines = frappe.get_all(
-		"Virtual Machine",
-		{"status": ("not in", ("Terminated", "Draft")), "series": ("in", ["m", "f"])},
-	)
-	for machine in machines:
-		try:
-			print(machine)
-			machine = frappe.get_doc("Virtual Machine", machine.name)
-			machine.sync()
-			machine.disable_termination_protection()
-			machine.terminate()
-			frappe.db.commit()
-		except Exception:
-			import traceback
-
-			traceback.print_exc()
