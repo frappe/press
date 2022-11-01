@@ -14,6 +14,7 @@ from frappe.utils.user import is_system_user
 
 from typing import List, Union
 import boto3
+import json
 
 
 class BaseServer(Document):
@@ -301,10 +302,7 @@ class BaseServer(Document):
 		self.disable_subscription()
 
 	def _archive(self):
-		machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
-		machine.disable_termination_protection()
-		machine.terminate()
-		machine.sync()
+		self.run_press_job("Archive Server")
 
 	def disable_subscription(self):
 		subscription = self.subscription
@@ -347,12 +345,11 @@ class BaseServer(Document):
 			}
 		).insert()
 		machine_type = frappe.db.get_value("Plan", plan, "instance_type")
-		machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
-		machine.stop()
-		machine.resize(machine_type)
-		machine.start()
+		self.run_press_job("Resize Server", {"machine_type": machine_type})
 
-	def run_press_job(self, job_name):
+	def run_press_job(self, job_name, arguments=None):
+		if arguments is None:
+			arguments = {}
 		return frappe.get_doc(
 			{
 				"doctype": "Press Job",
@@ -360,6 +357,7 @@ class BaseServer(Document):
 				"server_type": self.doctype,
 				"server": self.name,
 				"virtual_machine": self.virtual_machine,
+				"arguments": json.dumps(arguments, indent=2, sort_keys=True),
 			}
 		).insert()
 
