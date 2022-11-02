@@ -15,6 +15,9 @@ from press.press.doctype.payout_order.payout_order import (
 
 
 class TestPayoutOrder(FrappeTestCase):
+	def setUp(self):
+		frappe.db.savepoint("test_transaction")
+
 	def test_net_amount_calculations_inr(self):
 		self.create_test_inr_invoice()
 		# Create a PO for this period
@@ -199,4 +202,4 @@ class TestPayoutOrder(FrappeTestCase):
 		self.assertTrue(marked_completed)
 
 	def tearDown(self):
-		frappe.db.rollback()
+		frappe.db.rollback(save_point="test_transaction")
