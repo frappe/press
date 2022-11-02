@@ -3,8 +3,9 @@
 
 import frappe
 
-from itertools import groupby
 from typing import List
+from itertools import groupby
+from press.utils import log_error
 from frappe.model.document import Document
 from press.press.doctype.invoice_item.invoice_item import InvoiceItem
 from press.press.doctype.payout_order_item.payout_order_item import PayoutOrderItem
@@ -91,28 +92,37 @@ def create_marketplace_payout_orders_monthly():
 
 	# Group by teams
 	for app_team, items in groupby(items, key=lambda x: x["app_team"]):
-		item_names = [i.name for i in items]
+		try:
 
-		po_exists = frappe.db.exists(
-			"Payout Order", {"recipient": app_team, "period_end": period_end}
-		)
+			item_names = [i.name for i in items]
 
-		if not po_exists:
-			create_payout_order_from_invoice_item_names(
-				item_names, recipient=app_team, period_start=period_start, period_end=period_end
-			)
-		else:
-			po = frappe.get_doc(
+			po_exists = frappe.db.exists(
 				"Payout Order", {"recipient": app_team, "period_end": period_end}
 			)
-			add_invoice_items_to_po(po, item_names)
 
-		frappe.db.set_value(
-			"Invoice Item",
-			{"name": ("in", item_names)},
-			"has_marketplace_payout_completed",
-			True,
-		)
+			if not po_exists:
+				create_payout_order_from_invoice_item_names(
+					item_names, recipient=app_team, period_start=period_start, period_end=period_end
+				)
+			else:
+				po = frappe.get_doc(
+					"Payout Order", {"recipient": app_team, "period_end": period_end}
+				)
+				add_invoice_items_to_po(po, item_names)
+
+			frappe.db.set_value(
+				"Invoice Item",
+				{"name": ("in", item_names)},
+				"has_marketplace_payout_completed",
+				True,
+			)
+
+			if not frappe.flags.in_test:
+				# Save this particular PO transaction
+				frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()
+			log_error("Payout Order Creation Error", team=app_team, invoice_items=items)
 
 
 def get_current_period_boundaries():
