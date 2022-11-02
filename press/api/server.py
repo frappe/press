@@ -247,7 +247,7 @@ def prometheus_query(query, function, timezone, timespan, timegrain):
 	url = f"https://{monitor_server}/prometheus/api/v1/query_range"
 	password = get_decrypted_password("Monitor Server", monitor_server, "grafana_password")
 
-	end = frappe.utils.now_datetime()
+	end = datetime.utcnow()
 	start = frappe.utils.add_to_date(end, seconds=-timespan)
 	query = {
 		"query": query,
