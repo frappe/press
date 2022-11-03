@@ -70,21 +70,21 @@
 								}}
 							</p>
 						</div>
-						<div class="flex flex-row items-center">
+						<div class="hidden flex-row space-x-3 md:flex">
 							<Button
-								icon-left="hard-drive"
-								v-if="$account.ssh_key && selectedVersion.is_ssh_proxy_setup"
-								@click="showSSHDialog = true"
-								class="mx-3"
+								v-for="action in siteActions"
+								:key="action.label"
+								@click="action.action"
 							>
-								SSH Access
+								{{ action.label }}
 							</Button>
-							<router-link
-								class="text-base text-blue-500 hover:text-blue-600"
-								:to="`/benches/${bench.name}/logs/${selectedVersion.name}/`"
-							>
-								View Logs →
-							</router-link>
+							<Dropdown :items="versionActions">
+								<template v-slot="{ toggleDropdown }">
+									<Button icon-right="chevron-down" @click="toggleDropdown()"
+										>Actions</Button
+									>
+								</template>
+							</Dropdown>
 						</div>
 					</div>
 					<h5 class="mt-4 text-lg font-semibold">Sites</h5>
@@ -114,7 +114,7 @@
 						</ListItem>
 					</div>
 				</section>
-				<section>
+				<!-- <section>
 					<h5 class="mt-4 text-lg font-semibold">Actions</h5>
 					<div class="mt-2 divide-y rounded-lg py-2 sm:border sm:px-4">
 						<div>
@@ -135,7 +135,7 @@
 							</div>
 						</div>
 					</div>
-				</section>
+				</section> -->
 			</div>
 		</template>
 		<FrappeUIDialog :options="{ title: 'SSH Access' }" v-model="showSSHDialog">
@@ -248,6 +248,12 @@ export default {
 				method: 'press.api.bench.restart',
 				params: { name: this.bench?.name, bench: this.selectedVersion?.name }
 			};
+		},
+		updateAllSites() {
+			return {
+				method: 'press.api.bench.update',
+				params: { name: this.bench?.name, bench: this.selectedVersion?.name }
+			};
 		}
 	},
 	methods: {
@@ -297,6 +303,41 @@ export default {
 				}-cert.pub`;
 			}
 			return null;
+		},
+		versionActions() {
+			return [
+				this.$account.user.user_type == 'System User' && {
+					label: 'View in Desk',
+					action: () => {
+						window.open(
+							`${window.location.protocol}//${window.location.host}/app/bench/${this.selectedVersion.name}`,
+							'_blank'
+						);
+					}
+				},
+				this.selectedVersion.status == 'Active' &&
+					this.$account.ssh_key &&
+					this.selectedVersion.is_ssh_proxy_setup && {
+						label: 'SSH Access',
+						action: () => {
+							this.$router.push(`/benches/${this.site.group}`);
+						}
+					},
+				this.selectedVersion.status == 'Active' && {
+					label: 'View Logs',
+					action: () => {
+						this.$router.push(
+							`/benches/${this.bench.name}/logs/${this.selectedVersion.name}/`
+						);
+					}
+				},
+				this.selectedVersion.status == 'Active' && {
+					label: 'Restart Bench',
+					action: () => {
+						this.confirmRestart();
+					}
+				}
+			].filter(Boolean);
 		}
 	}
 };
