@@ -320,7 +320,7 @@ export default {
 					this.selectedVersion.is_ssh_proxy_setup && {
 						label: 'SSH Access',
 						action: () => {
-							this.$router.push(`/benches/${this.site.group}`);
+							this.showSSHDialog = true;
 						}
 					},
 				this.selectedVersion.status == 'Active' && {
