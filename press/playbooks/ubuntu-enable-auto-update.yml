@@ -1,0 +1,11 @@
+- name: Enable auto update of security packages
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: no
+  tasks:
+    - name: Start and enable systemd timer
+      systemd:
+        name: apt-daily-upgrade.timer
+        state: started
+        enabled: yes

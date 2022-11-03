@@ -1,0 +1,11 @@
+- name: Disable auto update of security packages
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: no
+  tasks:
+    - name: Stop and disable systemd timer
+      systemd:
+        name: apt-daily-upgrade.timer
+        state: stopped
+        enabled: no
