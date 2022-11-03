@@ -331,6 +331,13 @@ export default {
 						);
 					}
 				},
+				this.selectedVersion.status == 'Active' &&
+					this.selectedVersion.sites.length > 0 && {
+						label: 'Update All Sites',
+						action: () => {
+							this.updateAllSites();
+						}
+					},
 				this.selectedVersion.status == 'Active' && {
 					label: 'Restart Bench',
 					action: () => {
