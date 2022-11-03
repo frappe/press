@@ -147,7 +147,7 @@ def create_usage_records():
 	Creates usage records for enabled Subscriptions
 	"""
 	subscriptions = frappe.db.get_all(
-		"Subscription", filters={"enabled": True}, pluck="name"
+		"Subscription", filters={"enabled": True}, pluck="name", limit=2000
 	)
 	for name in subscriptions:
 		subscription = frappe.get_cached_doc("Subscription", name)
