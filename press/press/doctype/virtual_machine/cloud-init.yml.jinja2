@@ -1,2 +1,10 @@
 #cloud-config
 
+users:
+  - name: root
+    ssh_authorized_keys:
+      - {{ ssh_key }}
+
+  - name: frappe
+    ssh_authorized_keys:
+      - {{ ssh_key }}
