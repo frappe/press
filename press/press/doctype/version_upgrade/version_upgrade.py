@@ -11,7 +11,21 @@ class VersionUpgrade(Document):
 	doctype = "Version Upgrade"
 
 	def validate(self):
+		self.validate_same_server()
 		self.validate_apps()
+
+	def validate_same_server(self):
+		site_server = frappe.get_doc("Site", self.site).server
+		destination_servers = [
+			server.server
+			for server in frappe.get_doc("Release Group", self.destination_group).servers
+		]
+
+		if site_server not in destination_servers:
+			frappe.throw(
+				f"Destination Group {self.destination_group} is not deployed on the site server {site_server}.",
+				frappe.ValidationError,
+			)
 
 	def validate_apps(self):
 		site_apps = [app.app for app in frappe.get_doc("Site", self.site).apps]
