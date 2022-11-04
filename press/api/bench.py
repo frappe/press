@@ -597,6 +597,12 @@ def restart(name, bench):
 
 
 @frappe.whitelist()
+@protected("Release Group")
+def update(name, bench):
+	frappe.get_doc("Bench", bench).update_all_sites()
+
+
+@frappe.whitelist()
 @protected("Bench")
 def logs(name, bench):
 	if frappe.db.get_value("Bench", bench, "group") == name:
