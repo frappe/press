@@ -10,6 +10,21 @@ from frappe.model.document import Document
 class VersionUpgrade(Document):
 	doctype = "Version Upgrade"
 
+	def validate(self):
+		self.validate_apps()
+
+	def validate_apps(self):
+		site_apps = [app.app for app in frappe.get_doc("Site", self.site).apps]
+		bench_apps = [
+			app.app for app in frappe.get_doc("Release Group", self.destination_group).apps
+		]
+
+		if set(site_apps) - set(bench_apps):
+			frappe.throw(
+				f"Destination Release Group {self.destination_group} doesn't have some of the apps installed on {self.site}",
+				frappe.ValidationError,
+			)
+
 	@frappe.whitelist()
 	def start(self):
 		site = frappe.get_doc("Site", self.site)
