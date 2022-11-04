@@ -322,6 +322,7 @@ export default {
 					return true;
 				}
 			} else if (
+				this.planData &&
 				this.$account.team.country === 'India' &&
 				this.planData.gst == 1
 			) {
