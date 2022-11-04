@@ -79,12 +79,24 @@ class VirtualMachine(Document):
 					"Tags": [{"Key": "Name", "Value": f"Frappe Cloud - {self.name}"}],
 				},
 			],
-			UserData=USER_DATA,
+			UserData=self.get_cloud_init(),
 		)
 
 		self.aws_instance_id = response["Instances"][0]["InstanceId"]
 		self.status = self.get_status_map()[response["Instances"][0]["State"]["Name"]]
 		self.save()
+
+	def get_cloud_init(self):
+		cloud_init_template = "press/press/doctype/virtual_machine/cloud-init.yml.jinja2"
+		init = frappe.render_template(
+			cloud_init_template,
+			{
+				"machine": self,
+				"ssh_key": frappe.db.get_value("SSH Key", self.ssh_key, "public_key"),
+			},
+			is_path=True,
+		)
+		return init
 
 	def get_status_map(self):
 		return {
