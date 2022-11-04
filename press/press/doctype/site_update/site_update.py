@@ -36,7 +36,7 @@ class SiteUpdate(Document):
 			self.validate_deploy_candidate_difference(differences)
 		else:
 			self.validate_destination_bench([])
-			self.validate_apps()
+			validate_apps(self.site, self.destination_group)
 			# Forcefully migrate since we can't compute deploy_type reasonably
 			self.deploy_type = "Migrate"
 
@@ -92,16 +92,6 @@ class SiteUpdate(Document):
 			frappe.throw(
 				f"Update from Source Candidate {self.source_candidate} to Destination"
 				f" Candidate {self.destination_candidate} has failed in the past.",
-				frappe.ValidationError,
-			)
-
-	def validate_apps(self):
-		site_apps = [app.app for app in frappe.get_doc("Site", self.site).apps]
-		bench_apps = [app.app for app in frappe.get_doc("Bench", self.destination_bench).apps]
-
-		if set(site_apps) - set(bench_apps):
-			frappe.throw(
-				f"Destination Bench {self.destination_bench} doesn't have some of the apps installed on {self.site}",
 				frappe.ValidationError,
 			)
 
@@ -169,6 +159,19 @@ def trigger_recovery_job(site_update_name):
 			site.reset_previous_status()
 	if job:
 		frappe.db.set_value("Site Update", site_update_name, "recover_job", job.name)
+
+
+def validate_apps(site: str, destination_group: str):
+	site_apps = [app.app for app in frappe.get_doc("Site", site).apps]
+	bench_apps = [
+		app.app for app in frappe.get_doc("Release Group", destination_group).apps
+	]
+
+	if set(site_apps) - set(bench_apps):
+		frappe.throw(
+			f"Destination Release Group {destination_group} doesn't have some of the apps installed on {site}",
+			frappe.ValidationError,
+		)
 
 
 @site_cache(ttl=60)

@@ -5,6 +5,7 @@ from typing import List
 
 import frappe
 from frappe.model.document import Document
+from press.press.doctype.site_update.site_update import validate_apps
 
 
 class VersionUpgrade(Document):
@@ -12,7 +13,7 @@ class VersionUpgrade(Document):
 
 	def validate(self):
 		self.validate_same_server()
-		self.validate_apps()
+		validate_apps(self.site, self.destination_group)
 
 	def validate_same_server(self):
 		site_server = frappe.get_doc("Site", self.site).server
@@ -24,18 +25,6 @@ class VersionUpgrade(Document):
 		if site_server not in destination_servers:
 			frappe.throw(
 				f"Destination Group {self.destination_group} is not deployed on the site server {site_server}.",
-				frappe.ValidationError,
-			)
-
-	def validate_apps(self):
-		site_apps = [app.app for app in frappe.get_doc("Site", self.site).apps]
-		bench_apps = [
-			app.app for app in frappe.get_doc("Release Group", self.destination_group).apps
-		]
-
-		if set(site_apps) - set(bench_apps):
-			frappe.throw(
-				f"Destination Release Group {self.destination_group} doesn't have some of the apps installed on {self.site}",
 				frappe.ValidationError,
 			)
 
