@@ -313,7 +313,7 @@ export default {
 					this.selectedVersion.sites.length > 0 && {
 						label: 'Update All Sites',
 						action: () => {
-							this.updateAllSites();
+							this.$resources.updateAllSites.submit();
 						}
 					},
 				this.selectedVersion.status == 'Active' && {
