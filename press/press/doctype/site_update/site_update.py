@@ -36,7 +36,7 @@ class SiteUpdate(Document):
 			self.validate_deploy_candidate_difference(differences)
 		else:
 			self.validate_destination_bench([])
-			validate_apps(self.site, self.destination_group)
+			compare_apps(self.site, self.destination_group)
 			# Forcefully migrate since we can't compute deploy_type reasonably
 			self.deploy_type = "Migrate"
 
@@ -161,7 +161,7 @@ def trigger_recovery_job(site_update_name):
 		frappe.db.set_value("Site Update", site_update_name, "recover_job", job.name)
 
 
-def validate_apps(site: str, destination_group: str):
+def compare_apps(site: str, destination_group: str):
 	site_apps = [app.app for app in frappe.get_doc("Site", site).apps]
 	bench_apps = [
 		app.app for app in frappe.get_doc("Release Group", destination_group).apps

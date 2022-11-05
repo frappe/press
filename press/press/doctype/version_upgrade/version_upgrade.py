@@ -5,7 +5,7 @@ from typing import List
 
 import frappe
 from frappe.model.document import Document
-from press.press.doctype.site_update.site_update import validate_apps
+from press.press.doctype.site_update.site_update import compare_apps
 
 
 class VersionUpgrade(Document):
@@ -13,7 +13,7 @@ class VersionUpgrade(Document):
 
 	def validate(self):
 		self.validate_same_server()
-		validate_apps(self.site, self.destination_group)
+		compare_apps(self.site, self.destination_group)
 
 	def validate_same_server(self):
 		site_server = frappe.get_doc("Site", self.site).server
