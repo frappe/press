@@ -61,9 +61,10 @@ class StripePaymentMethod(Document):
 
 	def remove_micro_charge_links(self):
 		frappe.db.set_value(
-			"Stripe Micro Charge Record", 
-			{"stripe_payment_method": self.name}, 
-			"stripe_payment_method", None
+			"Stripe Micro Charge Record",
+			{"stripe_payment_method": self.name},
+			"stripe_payment_method",
+			None,
 		)
 
 	def after_delete(self):

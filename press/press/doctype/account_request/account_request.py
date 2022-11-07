@@ -63,7 +63,7 @@ class AccountRequest(Document):
 			print(f"\nSetup account URL for {self.email}:")
 			print(url)
 			print()
-			# return
+			return
 
 		if self.erpnext:
 			subject = "Set Up Your ERPNext Account"
