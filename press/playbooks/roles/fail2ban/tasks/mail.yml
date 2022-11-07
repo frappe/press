@@ -1,0 +1,28 @@
+---
+- name: Install fail2ban package
+  apt: pkg=fail2ban state=present
+
+- name: Enable fail2ban
+  service: name=fail2ban enabled=yes
+
+- name: Copy jail.conf to jail.local
+  copy:
+    src: /etc/fail2ban/jail.conf
+    dest: /etc/fail2ban/jail.local
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Setup filters
+  template: src="{{item}}-filter.conf.j2" dest="/etc/fail2ban/filter.d/{{item}}.conf"
+  with_items:
+    - nginx-proxy
+  notify:
+  - restart fail2ban
+
+- name: setup jails
+  template: src="{{item}}-jail.conf.j2" dest="/etc/fail2ban/jail.d/{{item}}.conf"
+  with_items:
+    - nginx-proxy
+  notify:
+  - restart fail2ban
