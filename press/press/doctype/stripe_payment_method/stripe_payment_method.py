@@ -33,6 +33,8 @@ class StripePaymentMethod(Document):
 
 	def on_trash(self):
 		self.remove_address_links()
+		self.remove_micro_charge_links()
+
 		if self.is_default:
 			team = frappe.get_doc("Team", self.team)
 			team.default_payment_method = None
@@ -56,6 +58,13 @@ class StripePaymentMethod(Document):
 			if found:
 				print(doc)
 				doc.save()
+
+	def remove_micro_charge_links(self):
+		frappe.db.set_value(
+			"Stripe Micro Charge Record", 
+			{"stripe_payment_method": self.name}, 
+			"stripe_payment_method", None
+		)
 
 	def after_delete(self):
 		stripe = get_stripe()
