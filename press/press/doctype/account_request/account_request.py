@@ -8,7 +8,6 @@ import json
 from frappe.model.document import Document
 from frappe.utils import formataddr, random_string, get_url
 from press.utils import get_country_info
-from email.utils import formataddr
 
 
 class AccountRequest(Document):
