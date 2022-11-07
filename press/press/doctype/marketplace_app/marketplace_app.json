@@ -34,6 +34,8 @@
   "privacy_policy",
   "terms_of_service",
   "saas_tab",
+  "outgoing_email",
+  "outgoing_sender_name",
   "signup_email_template_section",
   "message",
   "column_break_32",
@@ -258,6 +260,16 @@
   {
    "fieldname": "column_break_10",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "outgoing_email",
+   "fieldtype": "Data",
+   "label": "Outgoing Email"
+  },
+  {
+   "fieldname": "outgoing_sender_name",
+   "fieldtype": "Data",
+   "label": "Outgoing Sender Name"
   }
  ],
  "has_web_view": 1,
@@ -281,7 +293,7 @@
    "link_fieldname": "app"
   }
  ],
- "modified": "2022-09-30 14:34:43.927245",
+ "modified": "2022-11-07 15:27:24.660579",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Marketplace App",
