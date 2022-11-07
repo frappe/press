@@ -6,8 +6,9 @@
 import frappe
 import json
 from frappe.model.document import Document
-from frappe.utils import random_string, get_url
+from frappe.utils import formataddr, random_string, get_url
 from press.utils import get_country_info
+from email.utils import formataddr
 
 
 class AccountRequest(Document):
@@ -62,7 +63,7 @@ class AccountRequest(Document):
 			print(f"\nSetup account URL for {self.email}:")
 			print(url)
 			print()
-			return
+			# return
 
 		if self.erpnext:
 			subject = "Set Up Your ERPNext Account"
@@ -85,7 +86,16 @@ class AccountRequest(Document):
 				subject = f"You are invited by {self.invited_by} to join Frappe Cloud"
 				template = "invite_team_member"
 
+		outgoing_email, outgoing_sender_name = frappe.db.get_value(
+			"Marketplace App", self.saas_app, ["outgoing_email", "outgoing_sender_name"]
+		)
+		if outgoing_email:
+			sender = formataddr((outgoing_sender_name, outgoing_email))
+		else:
+			sender = ""
+
 		frappe.sendmail(
+			sender=sender,
 			recipients=self.email,
 			subject=subject,
 			template=template,

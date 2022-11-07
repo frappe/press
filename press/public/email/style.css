@@ -77,19 +77,19 @@
 }
 
 .button {
-	@apply bg-gray-200 rounded;
+	@apply bg-gray-200 rounded-lg;
 }
 
 .button-primary {
-	@apply bg-blue-500;
+	@apply bg-blue-500 rounded-lg;
 }
 
 .button a {
-	@apply block px-4 py-2 text-base font-semibold leading-normal text-gray-900 no-underline bg-gray-200;
+	@apply block px-4 py-2 text-base font-semibold leading-normal text-gray-900 no-underline bg-gray-200 rounded-lg;
 }
 
 .button-primary a {
-	@apply text-white bg-blue-500;
+	@apply text-white bg-blue-500 rounded-lg;
 }
 
 /* purgecss end ignore */

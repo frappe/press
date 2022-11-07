@@ -6,7 +6,7 @@
 					appearance="primary"
 					iconLeft="plus"
 					class="ml-2 hidden sm:inline-flex"
-					route="/benches/new"
+					@click="showBillingDialog"
 				>
 					New
 				</Button>
@@ -25,22 +25,51 @@
 				<BenchList v-else :benches="benches" />
 			</div>
 		</div>
+
+		<FrappeUIDialog
+			:options="{ title: 'Add card to create new benches' }"
+			v-model="showAddCardDialog"
+		>
+			<template v-slot:body-content>
+				<StripeCard
+					class="mb-1"
+					v-if="showAddCardDialog"
+					@complete="
+						showAddCardDialog = false;
+						$resources.paymentMethods.reload();
+					"
+				/>
+			</template>
+		</FrappeUIDialog>
 	</div>
 </template>
 
 <script>
 import SiteAndBenchSearch from '@/components/SiteAndBenchSearch.vue';
 import BenchList from './BenchList.vue';
+import { defineAsyncComponent } from 'vue';
 
 export default {
 	name: 'BenchesScreen',
+	data() {
+		return {
+			showAddCardDialog: false
+		}
+	},
 	pageMeta() {
 		return {
 			title: 'Benches - Frappe Cloud'
 		};
 	},
-	components: { SiteAndBenchSearch, BenchList },
+	components: { 
+		SiteAndBenchSearch, 
+		BenchList,
+		StripeCard: defineAsyncComponent(() =>
+			import('@/components/StripeCard.vue')
+		)
+	},
 	resources: {
+		paymentMethods: 'press.api.billing.get_payment_methods',
 		allBenches: 'press.api.bench.all'
 	},
 	computed: {
@@ -50,6 +79,15 @@ export default {
 			}
 
 			return this.$resources.allBenches.data;
+		}
+	},
+	methods: {
+		showBillingDialog() {
+			if (!this.$account.hasBillingInfo) {
+				this.showAddCardDialog = true;
+			} else {
+				window.location.href = `/dashboard/benches/new`;
+			}
 		}
 	}
 };
