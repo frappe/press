@@ -7,21 +7,34 @@
 			@update:modelValue="$emit('update:address', $event)"
 		/>
 		<div class="mt-4" v-show="address.country == 'India'">
+			<span class="mb-2 block text-sm leading-4 text-gray-700">
+				GSTIN
+			</span>
 			<Input
+		 		v-if="gstApplicable"
 				type="text"
 				v-model="address.gstin"
-				label="GSTIN"
-				:disabled="gstNotApplicable"
+				:disabled="!gstApplicable"
 			/>
 			<Button
-				v-show="!gstNotApplicable"
+				v-if="gstApplicable"
 				class="mt-2"
 				@click="
 					update('gstin', 'Not Applicable');
-					gstNotApplicable = true;
+					gstApplicable = false;
 				"
 			>
 				I don't have a GSTIN
+			</Button>
+			<Button
+				v-else
+				class="mt-2"
+				@click="
+					update('gstin', '');
+					gstApplicable = true;
+				"
+			>
+				Add a GSTIN
 			</Button>
 		</div>
 	</div>
@@ -39,7 +52,7 @@ export default {
 	},
 	data() {
 		return {
-			gstNotApplicable: false
+			gstApplicable: true
 		};
 	},
 	resources: {
