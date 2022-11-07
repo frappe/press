@@ -7,7 +7,7 @@
 						appearance="primary"
 						iconLeft="plus"
 						class="ml-2 hidden sm:inline-flex"
-						route="/sites/new"
+						@click="showBillingDialog"
 					>
 						New
 					</Button>
@@ -92,6 +92,21 @@
 					<SiteList v-else :sites="sites" />
 				</div>
 			</div>
+			<FrappeUIDialog
+				:options="{ title: 'Add card to create new sites' }"
+				v-model="showAddCardDialog"
+			>
+				<template v-slot:body-content>
+					<StripeCard
+						class="mb-1"
+						v-if="showAddCardDialog"
+						@complete="
+							showAddCardDialog = false;
+							$resources.paymentMethods.reload();
+						"
+					/>
+				</template>
+			</FrappeUIDialog>
 		</div>
 	</div>
 </template>
@@ -115,14 +130,19 @@ export default {
 		PrepaidCreditsDialog: defineAsyncComponent(() =>
 			import('@/components/PrepaidCreditsDialog.vue')
 		),
+		StripeCard: defineAsyncComponent(() =>
+			import('@/components/StripeCard.vue')
+		),
 		PageHeader
 	},
 	data() {
 		return {
-			showPrepaidCreditsDialog: false
+			showPrepaidCreditsDialog: false,
+			showAddCardDialog: false
 		};
 	},
 	resources: {
+		paymentMethods: 'press.api.billing.get_payment_methods',
 		allSites: {
 			method: 'press.api.site.all',
 			auto: true
@@ -141,6 +161,13 @@ export default {
 		this.$socket.off('list_update', this.onSiteUpdate);
 	},
 	methods: {
+		showBillingDialog() {
+			if (!this.$account.hasBillingInfo) {
+				this.showAddCardDialog = true;
+			} else {
+				window.location.href = `/dashboard/sites/new`;
+			}
+		},
 		onAgentJobUpdate(data) {
 			if (!(data.name === 'New Site' || data.name === 'New Site from Backup'))
 				return;
