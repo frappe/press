@@ -278,7 +278,7 @@ def process_prepaid_marketplace_payment(event):
 				"description": f"Prepaid Credits for {title}",
 				"document_type": "Marketplace App",
 				"document_name": app,
-				"plan": plan,
+				"plan": frappe.db.get_value("Marketplace App Plan", plan, "plan"),
 				"rate": float(line_item["amount"]) - hosting_amount,
 				"quantity": float(line_item["quantity"]),
 			}
