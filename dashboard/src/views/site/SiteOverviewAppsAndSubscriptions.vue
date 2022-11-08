@@ -222,7 +222,7 @@
 			<MarketplacePrepaidCredits
 				v-if="selectedPlan"
 				:app="appToInstall.app"
-				:appTitle="appToChangePlan.title"
+				:appTitle="appToInstall.title"
 				:site="site.name"
 				:plan="selectedPlan"
 			/>
@@ -285,12 +285,14 @@ export default {
 				auto: true
 			};
 		},
+
 		availableApps() {
 			return {
 				method: 'press.api.site.available_apps',
 				params: { name: this.site?.name }
 			};
 		},
+
 		installApp() {
 			return {
 				method: 'press.api.site.install_app',
@@ -311,6 +313,7 @@ export default {
 				}
 			};
 		},
+
 		uninstallApp: {
 			method: 'press.api.site.uninstall_app',
 			onSuccess() {
