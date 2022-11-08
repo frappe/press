@@ -21,33 +21,33 @@
     rule: allow
     to_port: http
     proto: tcp
-  when: is_proxy_server|bool
+  when: is_proxy_server | default(false) | bool
 
 - name: Allow http from proxy
   ufw:
     rule: allow
-    from_ip: "{{ proxy_private_ip }}"
+    from_ip: '{{ proxy_private_ip }}'
     to_port: http
     proto: tcp
-  when: is_server|bool and proxy_private_ip is defined
+  when: is_server | default(false) | bool and proxy_private_ip is defined
 
 - name: Allow connections from docker bridge
   ufw:
     rule: allow
     interface: docker0
     direction: in
-  when: is_server|bool
+  when: is_server | default(false) | bool
 
 - name: Allow mysql port 3306 connections
   ufw:
     rule: allow
     to_port: mysql
     proto: tcp
-  when: is_database_server|bool
+  when: is_database_server | default(false) | bool
 
 - name: Enable logging
   ufw:
-    logging: "on"
+    logging: low
 
 - name: Deny incoming by default
   ufw:
