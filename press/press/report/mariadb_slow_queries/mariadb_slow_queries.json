@@ -9,7 +9,7 @@
  "filters": [],
  "idx": 0,
  "is_standard": "Yes",
- "modified": "2021-12-27 17:37:47.348361",
+ "modified": "2022-11-08 17:10:41.382656",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "MariaDB Slow Queries",
@@ -21,6 +21,9 @@
  "roles": [
   {
    "role": "System Manager"
+  },
+  {
+   "role": "Site Manager"
   }
  ]
 }

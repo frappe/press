@@ -18,7 +18,7 @@
  ],
  "idx": 0,
  "is_standard": "Yes",
- "modified": "2022-04-27 23:08:05.301759",
+ "modified": "2022-11-08 17:10:07.815004",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "MariaDB Process List",
@@ -30,6 +30,9 @@
  "roles": [
   {
    "role": "System Manager"
+  },
+  {
+   "role": "Site Manager"
   }
  ]
 }
