@@ -188,12 +188,12 @@ def usage(name):
 		),
 	}
 
-	return {
-		usage_type: prometheus_query(query[0], query[1], "Asia/Kolkata", 120, 120)[
-			"datasets"
-		][0]["values"][-1]
-		for usage_type, query in query_map.items()
-	}
+	result = {}
+	for usage_type, query in query_map.items():
+		response = prometheus_query(query[0], query[1], "Asia/Kolkata", 120, 120)["datasets"]
+		if response:
+			result[usage_type] = response[0]["values"][-1]
+	return result
 
 
 @frappe.whitelist()
@@ -260,6 +260,9 @@ def prometheus_query(query, function, timezone, timespan, timegrain):
 
 	datasets = []
 	labels = []
+
+	if not response["data"]["result"]:
+		return {"datasets": datasets, "labels": labels}
 
 	for timestamp, _ in response["data"]["result"][0]["values"]:
 		labels.append(
