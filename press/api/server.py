@@ -74,7 +74,14 @@ def overview(name):
 @frappe.whitelist()
 @protected(["Server", "Database Server"])
 def archive(name):
-	return poly_get_doc(["Server", "Database Server"], name).archive()
+	server = poly_get_doc(["Server", "Database Server"], name)
+	if server.doctype == "Database Server":
+		app_server = frappe.db.get_value("Server", {"database_server": server.name}, "name")
+		other = frappe.get_doc("Server", app_server)
+	else:
+		other = frappe.get_doc("Database Server", server.database_server)
+	server.archive()
+	other.archive()
 
 
 @frappe.whitelist()
