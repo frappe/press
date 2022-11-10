@@ -83,6 +83,7 @@ class VirtualMachine(Document):
 
 	def get_cloud_init(self):
 		server = self.get_server()
+		log_server, kibana_password = server.get_log_server()
 		cloud_init_template = "press/press/doctype/virtual_machine/cloud-init.yml.jinja2"
 		context = {
 			"server": server,
@@ -95,10 +96,25 @@ class VirtualMachine(Document):
 				{"private_ip": self.private_ip_address},
 				is_path=True,
 			),
+			"filebeat_config": frappe.render_template(
+				"press/playbooks/roles/filebeat/templates/filebeat.yml",
+				{
+					"server": self.name,
+					"log_server": log_server,
+					"kibana_password": kibana_password,
+				},
+				is_path=True,
+			),
 		}
 
 		init = frappe.render_template(cloud_init_template, context, is_path=True)
 		return init
+
+	def get_server(self):
+		for doctype in ["Server", "Database Server"]:
+			server = frappe.db.get_value(doctype, {"virtual_machine": self.name}, "name")
+			if server:
+				return frappe.get_doc(doctype, server)
 
 	def get_status_map(self):
 		return {

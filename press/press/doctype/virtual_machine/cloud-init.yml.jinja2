@@ -36,6 +36,10 @@ write_files:
   content: |
     {{ statsd_exporter_service | indent(4) }}
 
+- path: /etc/filebeat/filebeat.yml
+  content: |
+    {{ filebeat_config | indent(4) }}
+
 - path: /etc/ssh/auth_principals/frappe
   defer: true
   content: |
