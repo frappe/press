@@ -83,14 +83,11 @@ class VirtualMachine(Document):
 
 	def get_cloud_init(self):
 		cloud_init_template = "press/press/doctype/virtual_machine/cloud-init.yml.jinja2"
-		init = frappe.render_template(
-			cloud_init_template,
-			{
-				"machine": self,
-				"ssh_key": frappe.db.get_value("SSH Key", self.ssh_key, "public_key"),
-			},
-			is_path=True,
-		)
+		context = {
+			"ssh_key": frappe.db.get_value("SSH Key", self.ssh_key, "public_key"),
+		}
+
+		init = frappe.render_template(cloud_init_template, context, is_path=True)
 		return init
 
 	def get_status_map(self):
