@@ -5,10 +5,10 @@ ssh_deletekeys: true
 disable_root: false
 
 users:
-  - name: root
-    ssh_authorized_keys:
-      - {{ ssh_key }}
+- name: root
+  ssh_authorized_keys:
+  - {{ ssh_key }}
 
-  - name: frappe
-    ssh_authorized_keys:
-      - {{ ssh_key }}
+- name: frappe
+  ssh_authorized_keys:
+  - {{ ssh_key }}
