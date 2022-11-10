@@ -365,6 +365,25 @@ class BaseServer(Document):
 			}
 		).insert()
 
+	def get_certificate(self):
+		certificate_name = frappe.db.get_value(
+			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
+		)
+		return frappe.get_doc("TLS Certificate", certificate_name)
+
+	def get_log_server(self):
+		log_server = frappe.db.get_single_value("Press Settings", "log_server")
+		if log_server:
+			kibana_password = frappe.get_doc("Log Server", log_server).get_password(
+				"kibana_password"
+			)
+		else:
+			kibana_password = None
+		return log_server, kibana_password
+
+	def get_monitoring_password(self):
+		return frappe.get_doc("Cluster", self.cluster).get_password("monitoring_password")
+
 
 class Server(BaseServer):
 	def on_update(self):
@@ -386,20 +405,8 @@ class Server(BaseServer):
 	def _setup_server(self):
 		agent_password = self.get_password("agent_password")
 		agent_repository_url = self.get_agent_repository_url()
-		certificate_name = frappe.db.get_value(
-			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
-		)
-		certificate = frappe.get_doc("TLS Certificate", certificate_name)
-		monitoring_password = frappe.get_doc("Cluster", self.cluster).get_password(
-			"monitoring_password"
-		)
-		log_server = frappe.db.get_single_value("Press Settings", "log_server")
-		if log_server:
-			kibana_password = frappe.get_doc("Log Server", log_server).get_password(
-				"kibana_password"
-			)
-		else:
-			kibana_password = None
+		certificate = self.get_certificate()
+		log_server, kibana_password = self.get_log_server()
 
 		try:
 			ansible = Ansible(
@@ -411,7 +418,7 @@ class Server(BaseServer):
 					"workers": "2",
 					"agent_password": agent_password,
 					"agent_repository_url": agent_repository_url,
-					"monitoring_password": monitoring_password,
+					"monitoring_password": self.get_monitoring_password(),
 					"log_server": log_server,
 					"kibana_password": kibana_password,
 					"certificate_private_key": certificate.private_key,
