@@ -90,6 +90,11 @@ class VirtualMachine(Document):
 			"ssh_key": frappe.db.get_value("SSH Key", self.ssh_key, "public_key"),
 			"agent_password": server.get_password("agent_password"),
 			"monitoring_password": server.get_monitoring_password(),
+			"statsd_exporter_service": frappe.render_template(
+				"press/playbooks/roles/statsd_exporter/templates/statsd_exporter.service",
+				{"private_ip": self.private_ip_address},
+				is_path=True,
+			),
 		}
 
 		init = frappe.render_template(cloud_init_template, context, is_path=True)

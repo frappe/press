@@ -30,6 +30,12 @@ runcmd:
 - su - frappe -c "cd /home/frappe/agent && env/bin/agent setup authentication --password {{ agent_password }}"
 - su - frappe -c "htpasswd -Bbc /home/frappe/agent/nginx/monitoring.htpasswd frappe {{ monitoring_password }}"
 - supervisorctl restart all
+write_files:
+- path: /etc/systemd/system/statsd_exporter.service
+  permissions: "0644"
+  content: |
+    {{ statsd_exporter_service | indent(4) }}
+
 - path: /etc/ssh/auth_principals/frappe
   defer: true
   content: |
