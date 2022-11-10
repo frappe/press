@@ -270,7 +270,10 @@ class VirtualMachine(Document):
 		}
 
 		if self.virtual_machine_image:
+			document["is_server_prepared"] = True
 			document["is_server_setup"] = True
+			document["is_server_renamed"] = True
+			document["is_upstream_setup"] = True
 
 		return frappe.get_doc(document).insert()
 
@@ -289,7 +292,9 @@ class VirtualMachine(Document):
 		}
 
 		if self.virtual_machine_image:
+			document["is_server_prepared"] = True
 			document["is_server_setup"] = True
+			document["is_server_renamed"] = True
 			document["mariadb_root_password"] = frappe.get_doc(
 				"Virtual Machine Image", self.virtual_machine_image
 			).get_password("mariadb_root_password")
