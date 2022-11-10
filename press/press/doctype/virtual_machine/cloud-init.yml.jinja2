@@ -13,6 +13,18 @@ users:
   ssh_authorized_keys:
   - {{ ssh_key }}
 
+runcmd:
+- mkdir /etc/ssh/auth_principals
+- sed -i 's/^(#)?X11Forwarding.*/X11Forwarding no/g' /etc/ssh/sshd_config
+- sed -i 's/^(#)?MaxAuthTries.*/MaxAuthTries 6/g' /etc/ssh/sshd_config
+- sed -i 's/^(#)?PermitEmptyPasswords.*/PermitEmptyPasswords no/g' /etc/ssh/sshd_config
+- sed -i 's/^(#)?PermitUserEnvironment.*/PermitUserEnvironment no/g' /etc/ssh/sshd_config
+- sed -i 's/^(#)?ClientAliveInterval.*/ClientAliveInterval 300/g' /etc/ssh/sshd_config
+- sed -i 's/^(#)?ClientAliveCountMax.*/ClientAliveCountMax 3/g' /etc/ssh/sshd_config
+- sed -i 's/^(#)?Banner.*/Banner \/etc\/login.warn/g' /etc/ssh/sshd_config
+- sed -i 's/^(#)?MaxStartups.*/MaxStartups 10:30:60/g' /etc/ssh/sshd_config
+- sed -i 's/^(#)?MaxSessions.*/MaxSessions 10/g' /etc/ssh/sshd_config
+- systemctl restart sshd
 swap:
   filename: /swap.default
   size: 1073741824
