@@ -10,6 +10,7 @@ import boto3
 
 class VirtualMachineImage(Document):
 	def after_insert(self):
+		self.set_credentials()
 		self.create_image()
 
 	def create_image(self):
@@ -19,6 +20,12 @@ class VirtualMachineImage(Document):
 		)
 		self.aws_ami_id = response["ImageId"]
 		self.sync()
+
+	def set_credentials(self):
+		if self.series == "m" and frappe.db.exists("Database Server", self.virtual_machine):
+			self.mariadb_root_password = frappe.get_doc(
+				"Database Server", self.virtual_machine
+			).get_password("mariadb_root_password")
 
 	@frappe.whitelist()
 	def sync(self):

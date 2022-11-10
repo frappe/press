@@ -16,7 +16,9 @@
   "cluster",
   "region",
   "platform",
-  "series"
+  "series",
+  "credentials_section",
+  "mariadb_root_password"
  ],
  "fields": [
   {
@@ -95,6 +97,17 @@
    "read_only": 1
   },
   {
+   "fieldname": "credentials_section",
+   "fieldtype": "Section Break",
+   "label": "Credentials"
+  },
+  {
+   "fieldname": "mariadb_root_password",
+   "fieldtype": "Password",
+   "label": "MariaDB Root Password",
+   "read_only": 1
+  },
+  {
    "fieldname": "aws_snapshot_id",
    "fieldtype": "Data",
    "label": "AWS Snapshot ID",
@@ -103,7 +116,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-09-22 15:20:39.644173",
+ "modified": "2022-11-10 18:48:05.274891",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine Image",
