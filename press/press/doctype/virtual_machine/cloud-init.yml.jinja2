@@ -30,6 +30,10 @@ runcmd:
 - su - frappe -c "cd /home/frappe/agent && env/bin/agent setup authentication --password {{ agent_password }}"
 - su - frappe -c "htpasswd -Bbc /home/frappe/agent/nginx/monitoring.htpasswd frappe {{ monitoring_password }}"
 - supervisorctl restart all
+{% if server.doctype == 'Database Server' %}
+- systemctl restart mariadb
+{% endif %}
+
 write_files:
 - path: /etc/systemd/system/statsd_exporter.service
   permissions: "0644"
@@ -51,6 +55,12 @@ write_files:
   content: |
     TrustedUserCAKeys /etc/ssh/ca.pub
     AuthorizedPrincipalsFile /etc/ssh/auth_principals/%u
+
+{% if server.doctype == 'Database Server' %}
+- path: /etc/mysql/conf.d/frappe.cnf
+  content: |
+    {{ mariadb_config | indent(4) }}
+{% endif %}
 
 swap:
   filename: /swap.default

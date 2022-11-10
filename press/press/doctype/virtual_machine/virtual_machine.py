@@ -106,6 +106,16 @@ class VirtualMachine(Document):
 				is_path=True,
 			),
 		}
+		if server.doctype == "Database Server":
+			context["mariadb_config"] = frappe.render_template(
+				"press/playbooks/roles/mariadb/templates/mariadb.cnf",
+				{
+					"server_id": server.server_id,
+					"private_ip": self.private_ip_address,
+					"ansible_memtotal_mb": frappe.db.get_value("Plan", server.plan, "memory") or 1024,
+				},
+				is_path=True,
+			)
 
 		init = frappe.render_template(cloud_init_template, context, is_path=True)
 		return init
