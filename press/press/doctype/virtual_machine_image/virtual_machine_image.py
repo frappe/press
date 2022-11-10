@@ -36,6 +36,13 @@ class VirtualMachineImage(Document):
 			self.status = "Unavailable"
 		self.save()
 
+	@frappe.whitelist()
+	def delete_image(self):
+		self.client.deregister_image(ImageId=self.aws_ami_id)
+		if self.aws_snapshot_id:
+			self.client.delete_snapshot(SnapshotId=self.aws_snapshot_id)
+		self.sync()
+
 	def get_status_map(self, status):
 		return {
 			"pending": "Pending",

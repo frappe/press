@@ -5,6 +5,7 @@ frappe.ui.form.on('Virtual Machine Image', {
 	refresh: function (frm) {
 		[
 			[__('Sync'), 'sync'],
+			[__('Delete'), 'delete_image'],
 		].forEach(([label, method]) => {
 			frm.add_custom_button(
 				label,
