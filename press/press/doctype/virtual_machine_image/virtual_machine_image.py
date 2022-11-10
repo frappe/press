@@ -30,6 +30,8 @@ class VirtualMachineImage(Document):
 			volume = find(image["BlockDeviceMappings"], lambda x: "Ebs" in x.keys())
 			if volume and "VolumeSize" in volume["Ebs"]:
 				self.size = volume["Ebs"]["VolumeSize"]
+			if volume and "SnapshotId" in volume["Ebs"]:
+				self.aws_snapshot_id = volume["Ebs"]["SnapshotId"]
 		else:
 			self.status = "Unavailable"
 		self.save()
