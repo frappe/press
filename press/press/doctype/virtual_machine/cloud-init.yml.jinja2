@@ -24,7 +24,20 @@ runcmd:
 - sed -i 's/^(#)?Banner.*/Banner \/etc\/login.warn/g' /etc/ssh/sshd_config
 - sed -i 's/^(#)?MaxStartups.*/MaxStartups 10:30:60/g' /etc/ssh/sshd_config
 - sed -i 's/^(#)?MaxSessions.*/MaxSessions 10/g' /etc/ssh/sshd_config
+- curl https://frappecloud.com/files/ca.pub > /etc/ssh/ca.pub && chmod 644 /etc/ssh/ca.pub
 - systemctl restart sshd
+- path: /etc/ssh/auth_principals/frappe
+  defer: true
+  content: |
+    all-servers
+    {{ server.name }}
+
+- path: /etc/ssh/sshd_config
+  append: true
+  content: |
+    TrustedUserCAKeys /etc/ssh/ca.pub
+    AuthorizedPrincipalsFile /etc/ssh/auth_principals/%u
+
 swap:
   filename: /swap.default
   size: 1073741824
