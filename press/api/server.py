@@ -8,7 +8,7 @@ from press.utils import get_current_team, group_children_in_result
 from press.api.site import protected
 from frappe.utils import convert_utc_to_timezone
 from frappe.utils.password import get_decrypted_password
-from datetime import datetime
+from datetime import datetime, timezone as tz
 from frappe.utils import flt
 
 
@@ -247,7 +247,7 @@ def prometheus_query(query, function, timezone, timespan, timegrain):
 	url = f"https://{monitor_server}/prometheus/api/v1/query_range"
 	password = get_decrypted_password("Monitor Server", monitor_server, "grafana_password")
 
-	end = datetime.utcnow()
+	end = datetime.utcnow().replace(tzinfo=tz.utc)
 	start = frappe.utils.add_to_date(end, seconds=-timespan)
 	query = {
 		"query": query,
