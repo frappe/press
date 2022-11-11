@@ -17,6 +17,7 @@
   "region",
   "platform",
   "series",
+  "copied_from",
   "credentials_section",
   "mariadb_root_password"
  ],
@@ -53,6 +54,7 @@
   },
   {
    "fetch_from": "virtual_machine.cluster",
+   "fetch_if_empty": 1,
    "fieldname": "cluster",
    "fieldtype": "Link",
    "label": "Cluster",
@@ -61,7 +63,7 @@
    "reqd": 1
   },
   {
-   "fetch_from": "virtual_machine.region",
+   "fetch_from": "cluster.region",
    "fieldname": "region",
    "fieldtype": "Data",
    "label": "Region",
@@ -112,11 +114,18 @@
    "fieldtype": "Data",
    "label": "AWS Snapshot ID",
    "read_only": 1
+  },
+  {
+   "fieldname": "copied_from",
+   "fieldtype": "Link",
+   "label": "Copied From",
+   "options": "Virtual Machine Image",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-11-10 18:48:05.274891",
+ "modified": "2022-11-11 10:33:39.581634",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine Image",

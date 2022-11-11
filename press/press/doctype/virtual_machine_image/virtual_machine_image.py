@@ -11,12 +11,25 @@ import boto3
 class VirtualMachineImage(Document):
 	def after_insert(self):
 		self.set_credentials()
-		self.create_image()
+		if self.copied_from:
+			self.create_image_from_copy()
+		else:
+			self.create_image()
 
 	def create_image(self):
 		response = self.client.create_image(
 			InstanceId=self.aws_instance_id,
 			Name=f"Frappe Cloud {self.name} - {self.virtual_machine}",
+		)
+		self.aws_ami_id = response["ImageId"]
+		self.sync()
+
+	def create_image_from_copy(self):
+		source = frappe.get_doc("Virtual Machine Image", self.copied_from)
+		response = self.client.copy_image(
+			Name=f"Frappe Cloud {self.name} - {self.virtual_machine}",
+			SourceImageId=source.aws_ami_id,
+			SourceRegion=source.region,
 		)
 		self.aws_ami_id = response["ImageId"]
 		self.sync()
@@ -42,6 +55,14 @@ class VirtualMachineImage(Document):
 		else:
 			self.status = "Unavailable"
 		self.save()
+
+	@frappe.whitelist()
+	def copy_image(self, cluster):
+		image = frappe.copy_doc(self)
+		image.copied_from = self.name
+		image.cluster = cluster
+		image.insert()
+		return image.name
 
 	@frappe.whitelist()
 	def delete_image(self):
