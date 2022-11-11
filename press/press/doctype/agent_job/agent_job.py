@@ -211,7 +211,11 @@ def poll_pending_jobs():
 		ignore_ifnull=True,
 	)
 	for server in servers:
-		frappe.enqueue("poll_pending_jobs_server", queue="short", kwargs={"server": server})
+		frappe.enqueue(
+			"press.press.doctype.agent_job.agent_job.poll_pending_jobs_server",
+			queue="short",
+			kwargs={"server": server},
+		)
 
 
 def update_job(job_name, job):
