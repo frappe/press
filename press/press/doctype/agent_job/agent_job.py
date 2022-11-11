@@ -7,7 +7,6 @@ import frappe
 import random
 
 from press.agent import Agent
-from itertools import groupby
 from press.utils import log_error
 from frappe.core.utils import find
 from frappe.model.document import Document
@@ -163,41 +162,56 @@ def suspend_sites():
 			frappe.get_doc("Site", site.name).suspend(reason="Site Usage Exceeds Plan limits")
 
 
-def poll_pending_jobs():
+def poll_pending_jobs_server(server):
 	pending_jobs = frappe.get_all(
 		"Agent Job",
-		fields=["name", "server", "server_type", "job_id", "status"],
-		filters={"status": ("in", ["Pending", "Running"]), "job_id": ("!=", 0)},
-		order_by="server, job_id",
+		fields=["name", "job_id", "status"],
+		filters={
+			"status": ("in", ["Pending", "Running"]),
+			"job_id": ("!=", 0),
+			"server": server.server,
+		},
+		order_by="job_id",
 		ignore_ifnull=True,
 	)
-	for server, server_jobs in groupby(pending_jobs, lambda x: x.server):
-		server_jobs = list(server_jobs)
-		agent = Agent(server_jobs[0].server, server_type=server_jobs[0].server_type)
+	agent = Agent(server.server, server_type=server.server_type)
 
-		pending_ids = [j.job_id for j in server_jobs]
-		random_pending_ids = random.choices(pending_ids, k=100)
-		polled_jobs = agent.get_jobs_status(random_pending_ids)
+	pending_ids = [j.job_id for j in pending_jobs]
+	random_pending_ids = random.choices(pending_ids, k=100)
+	polled_jobs = agent.get_jobs_status(random_pending_ids)
 
-		for polled_job in polled_jobs:
-			job = find(server_jobs, lambda x: x.job_id == polled_job["id"])
-			try:
-				# Update Job Status
-				# If it is worthy of an update
-				if job.status != polled_job["status"]:
-					update_job(job.name, polled_job)
+	for polled_job in polled_jobs:
+		job = find(pending_jobs, lambda x: x.job_id == polled_job["id"])
+		try:
+			# Update Job Status
+			# If it is worthy of an update
+			if job.status != polled_job["status"]:
+				update_job(job.name, polled_job)
 
-				# Update Steps' Status
-				update_steps(job.name, polled_job)
-				publish_update(job.name)
-				if polled_job["status"] in ("Success", "Failure", "Undelivered"):
-					skip_pending_steps(job.name)
+			# Update Steps' Status
+			update_steps(job.name, polled_job)
+			publish_update(job.name)
+			if polled_job["status"] in ("Success", "Failure", "Undelivered"):
+				skip_pending_steps(job.name)
 
-				process_job_updates(job.name)
-				frappe.db.commit()
-			except Exception:
-				log_error("Agent Job Poll Exception", job=job, polled=polled_job)
-				frappe.db.rollback()
+			process_job_updates(job.name)
+			frappe.db.commit()
+		except Exception:
+			log_error("Agent Job Poll Exception", job=job, polled=polled_job)
+			frappe.db.rollback()
+
+
+def poll_pending_jobs():
+	servers = frappe.get_all(
+		"Agent Job",
+		fields=["server", "server_type", "count(*) as count"],
+		filters={"status": ("in", ["Pending", "Running"]), "job_id": ("!=", 0)},
+		group_by="server",
+		order_by="count desc",
+		ignore_ifnull=True,
+	)
+	for server in servers:
+		frappe.enqueue("poll_pending_jobs_server", queue="short", kwargs={"server": server})
 
 
 def update_job(job_name, job):
