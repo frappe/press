@@ -3,6 +3,7 @@
   hosts: all
   become: yes
   become_user: root
+  gather_facts: no
 
   tasks:
     - name: Whitelist IP address in jailconf file
