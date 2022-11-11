@@ -186,38 +186,43 @@ class VirtualMachine(Document):
 	@frappe.whitelist()
 	def sync(self):
 		response = self.client().describe_instances(InstanceIds=[self.aws_instance_id])
-		instance = response["Reservations"][0]["Instances"][0]
+		if response["Reservations"]:
+			instance = response["Reservations"][0]["Instances"][0]
 
-		self.status = self.get_status_map()[instance["State"]["Name"]]
-		self.machine_type = instance.get("InstanceType")
+			self.status = self.get_status_map()[instance["State"]["Name"]]
+			self.machine_type = instance.get("InstanceType")
 
-		self.public_ip_address = instance.get("PublicIpAddress")
-		self.private_ip_address = instance.get("PrivateIpAddress")
+			self.public_ip_address = instance.get("PublicIpAddress")
+			self.private_ip_address = instance.get("PrivateIpAddress")
 
-		self.public_dns_name = instance.get("PublicDnsName")
-		self.private_dns_name = instance.get("PrivateDnsName")
+			self.public_dns_name = instance.get("PublicDnsName")
+			self.private_dns_name = instance.get("PrivateDnsName")
 
-		for volume in self.get_volumes():
-			existing_volume = find(self.volumes, lambda v: v.aws_volume_id == volume["VolumeId"])
-			if existing_volume:
-				row = existing_volume
-			else:
-				row = frappe._dict()
-			row.aws_volume_id = volume["VolumeId"]
-			row.volume_type = volume["VolumeType"]
-			row.size = volume["Size"]
-			row.iops = volume["Iops"]
-			if "Throughput" in volume:
-				row.throughput = volume["Throughput"]
+			for volume in self.get_volumes():
+				existing_volume = find(
+					self.volumes, lambda v: v.aws_volume_id == volume["VolumeId"]
+				)
+				if existing_volume:
+					row = existing_volume
+				else:
+					row = frappe._dict()
+				row.aws_volume_id = volume["VolumeId"]
+				row.volume_type = volume["VolumeType"]
+				row.size = volume["Size"]
+				row.iops = volume["Iops"]
+				if "Throughput" in volume:
+					row.throughput = volume["Throughput"]
 
-			if not existing_volume:
-				self.append("volumes", row)
+				if not existing_volume:
+					self.append("volumes", row)
 
-		self.disk_size = self.volumes[0].size
+			self.disk_size = self.volumes[0].size
 
-		self.termination_protection = self.client().describe_instance_attribute(
-			InstanceId=self.aws_instance_id, Attribute="disableApiTermination"
-		)["DisableApiTermination"]["Value"]
+			self.termination_protection = self.client().describe_instance_attribute(
+				InstanceId=self.aws_instance_id, Attribute="disableApiTermination"
+			)["DisableApiTermination"]["Value"]
+		else:
+			self.status = "Terminated"
 		self.save()
 		self.update_servers()
 
