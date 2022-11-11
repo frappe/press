@@ -274,7 +274,7 @@ def prometheus_query(query, function, timezone, timespan, timegrain):
 	for timestamp, _ in response["data"]["result"][0]["values"]:
 		labels.append(
 			convert_utc_to_timezone(
-				datetime.fromtimestamp(timestamp).replace(tzinfo=None), timezone
+				datetime.fromtimestamp(timestamp, tz=tz.utc).replace(tzinfo=None), timezone
 			)
 		)
 
