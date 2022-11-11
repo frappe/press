@@ -211,6 +211,7 @@ def poll_pending_jobs():
 		ignore_ifnull=True,
 	)
 	for server in servers:
+		server.pop("count")
 		frappe.enqueue(
 			"press.press.doctype.agent_job.agent_job.poll_pending_jobs_server",
 			queue="short",
