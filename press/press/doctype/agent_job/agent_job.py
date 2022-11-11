@@ -177,7 +177,7 @@ def poll_pending_jobs_server(server):
 	agent = Agent(server.server, server_type=server.server_type)
 
 	pending_ids = [j.job_id for j in pending_jobs]
-	random_pending_ids = random.choices(pending_ids, k=100)
+	random_pending_ids = random.sample(pending_ids, k=min(100, len(pending_ids)))
 	polled_jobs = agent.get_jobs_status(random_pending_ids)
 
 	for polled_job in polled_jobs:
