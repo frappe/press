@@ -1,7 +1,7 @@
 <template>
 	<div class="space-y-4">
 		<div class="grid justify-items-stretch">
-			<label class="justify-self-end">
+			<label>
 				<span class="mb-2 inline-block text-sm leading-4 text-gray-700">
 					Duration
 				</span>
