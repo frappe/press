@@ -164,13 +164,13 @@ def new(server):
 def search_list():
 	servers = frappe.get_list(
 		"Server",
-		fields=["name"],
+		fields=["name as server", "title"],
 		filters={"status": ("!=", "Archived"), "team": get_current_team()},
 		order_by="creation desc",
 	)
 	database_servers = frappe.get_list(
 		"Database Server",
-		fields=["name"],
+		fields=["name as server", "title"],
 		filters={"status": ("!=", "Archived"), "team": get_current_team()},
 		order_by="creation desc",
 	)

@@ -15,7 +15,9 @@
 
 		<div>
 			<SectionHeader heading="All Servers">
-				<SiteAndBenchSearch />
+				<template v-slot:actions>
+					<SiteAndBenchSearch />
+				</template>
 			</SectionHeader>
 
 			<div class="mt-3">
