@@ -12,7 +12,10 @@
 				</select>
 			</label>
 		</div>
-		<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+		<div
+			v-if="cpuData?.datasets?.length"
+			class="grid grid-cols-1 gap-5 sm:grid-cols-2"
+		>
 			<Card title="CPU">
 				<FrappeChart
 					type="line"
@@ -65,6 +68,7 @@
 				/>
 			</Card>
 		</div>
+		<div class="text-base text-gray-600">No data yet</div>
 	</div>
 </template>
 
