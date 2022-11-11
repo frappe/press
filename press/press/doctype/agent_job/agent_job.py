@@ -225,6 +225,19 @@ def poll_pending_jobs():
 		)
 
 
+def fail_old_jobs():
+	frappe.db.set_value(
+		"Agent Job",
+		{
+			"status": ("in", ["Pending", "Running"]),
+			"job_id": ("!=", 0),
+			"modified": ("<", frappe.utils.add_days(None, -2)),
+		},
+		"status",
+		"Failure",
+	)
+
+
 def update_job(job_name, job):
 	job_data = json.dumps(job["data"], indent=4, sort_keys=True)
 	frappe.db.set_value(
