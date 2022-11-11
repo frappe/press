@@ -163,6 +163,9 @@ def suspend_sites():
 
 
 def poll_pending_jobs_server(server):
+	if frappe.db.get_value(server.server_type, server.server, "status") != "Active":
+		return
+
 	pending_jobs = frappe.get_all(
 		"Agent Job",
 		fields=["name", "job_id", "status"],
@@ -174,6 +177,9 @@ def poll_pending_jobs_server(server):
 		order_by="job_id",
 		ignore_ifnull=True,
 	)
+	if not pending_jobs:
+		return
+
 	agent = Agent(server.server, server_type=server.server_type)
 
 	pending_ids = [j.job_id for j in pending_jobs]
