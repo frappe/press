@@ -186,11 +186,11 @@ def usage(name):
 			lambda x: x,
 		),
 		"disk": (
-			f"""node_filesystem_avail_bytes{{instance="{name}", job="node", mountpoint="/"}} / (1024 * 1024 * 1024)""",
+			f"""(node_filesystem_size_bytes{{instance="{name}", job="node", mountpoint="/"}} - node_filesystem_avail_bytes{{instance="{name}", job="node", mountpoint="/"}}) / (1024 * 1024 * 1024)""",
 			lambda x: x,
 		),
 		"memory": (
-			f"""(node_memory_MemTotal_bytes{{instance="{name}",job="node"}} - node_memory_MemFree_bytes{{instance="{name}",job="node"}}) / (1024 * 1024)""",
+			f"""(node_memory_MemTotal_bytes{{instance="{name}",job="node"}} - node_memory_MemFree_bytes{{instance="{name}",job="node"}} - (node_memory_Cached_bytes{{instance="{name}",job="node"}} + node_memory_Buffers_bytes{{instance="{name}",job="node"}})) / (1024 * 1024)""",
 			lambda x: x,
 		),
 	}
