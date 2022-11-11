@@ -214,7 +214,7 @@ def poll_pending_jobs():
 		frappe.enqueue(
 			"press.press.doctype.agent_job.agent_job.poll_pending_jobs_server",
 			queue="short",
-			kwargs={"server": server},
+			server=server,
 		)
 
 
