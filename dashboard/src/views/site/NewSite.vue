@@ -216,8 +216,7 @@ export default {
 				}
 			);
 			this.benchTitle = title;
-
-			if (team == this.$account.team) {
+			if (team == this.$account.team.name) {
 				// Select a zero cost plan and remove the plan selection step
 				this.selectedPlan = 'Unlimited';
 				let plan_step_index = this.steps.findIndex(step => step.name == 'Plan');
