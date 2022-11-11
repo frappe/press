@@ -165,7 +165,7 @@ export default {
 			if (!this.$account.hasBillingInfo) {
 				this.showAddCardDialog = true;
 			} else {
-				window.location.href = `/dashboard/sites/new`;
+				this.$router.replace('/sites/new');
 			}
 		},
 		onAgentJobUpdate(data) {

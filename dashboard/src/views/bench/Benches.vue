@@ -54,15 +54,15 @@ export default {
 	data() {
 		return {
 			showAddCardDialog: false
-		}
+		};
 	},
 	pageMeta() {
 		return {
 			title: 'Benches - Frappe Cloud'
 		};
 	},
-	components: { 
-		SiteAndBenchSearch, 
+	components: {
+		SiteAndBenchSearch,
 		BenchList,
 		StripeCard: defineAsyncComponent(() =>
 			import('@/components/StripeCard.vue')
@@ -86,7 +86,7 @@ export default {
 			if (!this.$account.hasBillingInfo) {
 				this.showAddCardDialog = true;
 			} else {
-				window.location.href = `/dashboard/benches/new`;
+				this.$router.replace('/benches/new');
 			}
 		}
 	}
