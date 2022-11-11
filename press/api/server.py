@@ -220,7 +220,7 @@ def analytics(name, query, timezone, duration):
 			lambda x: x["mode"],
 		),
 		"network": (
-			f"""rate(node_network_receive_bytes_total{{instance="{name}", job="node"}}[{timegrain}s]) * 8""",
+			f"""rate(node_network_receive_bytes_total{{instance="{name}", job="node", device=~"ens.*"}}[{timegrain}s]) * 8""",
 			lambda x: x["device"],
 		),
 		"iops": (
@@ -228,7 +228,7 @@ def analytics(name, query, timezone, duration):
 			lambda x: x["device"],
 		),
 		"space": (
-			f"""100 - ((node_filesystem_avail_bytes{{instance="{name}", job="node"}} * 100) / node_filesystem_size_bytes{{instance="{name}", job="node"}})""",
+			f"""100 - ((node_filesystem_avail_bytes{{instance="{name}", job="node", device="/dev/root"}} * 100) / node_filesystem_size_bytes{{instance="{name}", job="node", device="/dev/root"}})""",
 			lambda x: x["device"],
 		),
 		"loadavg": (
