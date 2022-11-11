@@ -68,7 +68,12 @@
 				/>
 			</Card>
 		</div>
-		<div class="text-base text-gray-600">No data yet</div>
+		<div
+			v-if="!$resources.cpu.loading && !cpuData?.datasets?.length"
+			class="text-base text-gray-600"
+		>
+			No data yet
+		</div>
 	</div>
 </template>
 
