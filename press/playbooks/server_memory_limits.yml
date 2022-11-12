@@ -3,6 +3,7 @@
   hosts: all
   become: yes
   become_user: root
+  gather_facts: no
   roles:
     - role: swap
     - role: earlyoom_memory_limits
