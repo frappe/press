@@ -1,0 +1,42 @@
+version: "3.7"
+name: press
+services:
+  mariadb:
+    image: mariadb:10.6
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --skip-character-set-client-handshake
+      - --skip-innodb-read-only-compressed
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    restart: always
+    volumes:
+      - mariadb-data:/var/lib/mysql:rw
+
+  redis:
+    image: redis:alpine
+    command: redis-server --save 20 1
+    restart: always
+    volumes:
+      - redis-data:/data:rw
+
+  frappe:
+    image: frappe/bench:latest
+    command: bash /tmp/init/init.sh
+    env_file:
+      - .env
+    restart: always
+    depends_on:
+      - mariadb
+      - redis
+    ports:
+      - 8000:8000
+      - 9000:9000
+    volumes:
+      - ./init/:/tmp/init/:ro
+      - ./frappe-bench-data:/home/frappe/benches:rw
+
+volumes:
+  mariadb-data: {}
+  redis-data: {}
