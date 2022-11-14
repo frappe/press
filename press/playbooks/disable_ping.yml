@@ -1,0 +1,22 @@
+---
+- name: Disable Ping using ufw before.rules
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: no
+  tasks:
+    - name: Install ufw
+      package:
+        name: ufw
+        state: present
+
+    - name: Drop icmp echo-request packets
+      lineinfile:
+        state: present
+        path: /etc/ufw/before.rules
+        regexp: -A ufw-before-input -p icmp --icmp-type echo-request -j ACCEPT
+        line: -A ufw-before-input -p icmp --icmp-type echo-request -j DROP
+
+    - name: Restart ufw
+      ufw:
+        state: reloaded
