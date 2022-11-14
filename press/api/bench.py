@@ -291,7 +291,8 @@ def versions(name):
 		LEFT JOIN tabServer server
 		ON server.name = bench.server
 		WHERE bench.group = %s AND bench.status != "Archived"
-		ORDER BY bench.creation DESC""",
+		ORDER BY bench.creation DESC
+		LIMIT 100""",
 		(name),
 		as_dict=True,
 	)
