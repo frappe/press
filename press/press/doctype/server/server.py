@@ -4,6 +4,7 @@
 
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 from press.agent import Agent
 from press.runner import Ansible
@@ -296,6 +297,18 @@ class BaseServer(Document):
 
 	@frappe.whitelist()
 	def archive(self):
+		if frappe.get_all(
+			"Site",
+			filters={"server": self.name, "status": ("!=", "Archived")},
+			ignore_ifnull=True,
+		):
+			frappe.throw(_("Cannot archive server with sites"))
+		if frappe.get_all(
+			"Bench",
+			filters={"server": self.name, "status": ("!=", "Archived")},
+			ignore_ifnull=True,
+		):
+			frappe.throw(_("Cannot archive server with benches"))
 		self.status = "Pending"
 		self.save()
 		frappe.enqueue_doc(self.doctype, self.name, "_archive", queue="long")
