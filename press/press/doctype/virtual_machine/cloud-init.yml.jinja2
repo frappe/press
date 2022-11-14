@@ -70,3 +70,8 @@ write_files:
 swap:
   filename: /swap.default
   size: 1073741824
+
+{% if server.doctype == 'Server' %}
+packages:
+ - earlyoom
+{% endif %}
