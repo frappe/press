@@ -348,20 +348,20 @@ class BaseServer(Document):
 
 	def change_plan(self, plan, ignore_card_setup=False):
 		self.can_change_plan(ignore_card_setup)
+		plan = frappe.get_doc("Plan", plan)
+		self.ram = plan.memory
+		self.save()
+		self.reload()
 		frappe.get_doc(
 			{
 				"doctype": "Plan Change",
 				"document_type": self.doctype,
 				"document_name": self.name,
 				"from_plan": self.plan,
-				"to_plan": plan,
+				"to_plan": plan.name,
 			}
 		).insert()
-		plan_doc = frappe.get_doc("Plan", plan)
-		self.ram = plan_doc.memory
-		self.save()
-		self.reload()
-		self.run_press_job("Resize Server", {"machine_type": plan_doc.instance_type})
+		self.run_press_job("Resize Server", {"machine_type": plan.instance_type})
 
 	@frappe.whitelist()
 	def create_image(self):
