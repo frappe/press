@@ -344,8 +344,11 @@ class BaseServer(Document):
 				"to_plan": plan,
 			}
 		).insert()
-		machine_type = frappe.db.get_value("Plan", plan, "instance_type")
-		self.run_press_job("Resize Server", {"machine_type": machine_type})
+		plan_doc = frappe.get_doc("Plan", plan)
+		self.ram = plan_doc.memory
+		self.save()
+		self.reload()
+		self.run_press_job("Resize Server", {"machine_type": plan_doc.instance_type})
 
 	@frappe.whitelist()
 	def create_image(self):

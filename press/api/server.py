@@ -149,6 +149,8 @@ def new(server):
 	).insert()
 	app_server = app_machine.create_server()
 	app_server.plan = app_plan.name
+	app_server.ram = app_plan.memory
+	app_server.new_worker_allocation = True
 	app_server.database_server = db_server.name
 	app_server.proxy_server = proxy_server.name
 	app_server.title = f"{server['title']} - Application"
