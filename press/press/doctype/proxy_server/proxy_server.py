@@ -165,6 +165,31 @@ class ProxyServer(BaseServer):
 			log_error("SSH Proxy Setup Exception", server=self.as_dict())
 
 	@frappe.whitelist()
+	def setup_fail2ban(self):
+		self.status = "Installing"
+		self.save()
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_setup_fail2ban", queue="long", timeout=1200
+		)
+
+	def _setup_fail2ban(self):
+		try:
+			ansible = Ansible(
+				playbook="fail2ban.yml",
+				server=self,
+			)
+			play = ansible.run()
+			self.reload()
+			if play.status == "Success":
+				self.status = "Active"
+			else:
+				self.status = "Broken"
+		except Exception:
+			self.status = "Broken"
+			log_error("Fail2ban Setup Exception", server=self.as_dict())
+		self.save()
+
+	@frappe.whitelist()
 	def setup_proxysql(self):
 		frappe.enqueue_doc(
 			self.doctype, self.name, "_setup_proxysql", queue="long", timeout=1200

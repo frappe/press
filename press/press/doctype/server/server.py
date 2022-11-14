@@ -455,6 +455,59 @@ class Server(BaseServer):
 		self.save()
 
 	@frappe.whitelist()
+	def whitelist_ipaddress(self):
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_whitelist_ip", queue="short", timeout=1200
+		)
+
+	def _whitelist_ip(self):
+		proxy_server = frappe.get_value("Server", self.name, "proxy_server")
+		proxy_server_ip = frappe.get_doc("Proxy Server", proxy_server).ip
+
+		try:
+			ansible = Ansible(
+				playbook="whitelist_ipaddress.yml",
+				server=self,
+				variables={"ip_address": proxy_server_ip},
+			)
+			play = ansible.run()
+			self.reload()
+			self.reload()
+			if play.status == "Success":
+				self.status = "Active"
+			else:
+				self.status = "Broken"
+		except Exception:
+			self.status = "Broken"
+			log_error("Proxy IP Whitelist Exception", server=self.as_dict())
+		self.save()
+
+	@frappe.whitelist()
+	def setup_fail2ban(self):
+		self.status = "Installing"
+		self.save()
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_setup_fail2ban", queue="long", timeout=1200
+		)
+
+	def _setup_fail2ban(self):
+		try:
+			ansible = Ansible(
+				playbook="fail2ban.yml",
+				server=self,
+			)
+			play = ansible.run()
+			self.reload()
+			if play.status == "Success":
+				self.status = "Active"
+			else:
+				self.status = "Broken"
+		except Exception:
+			self.status = "Broken"
+			log_error("Fail2ban Setup Exception", server=self.as_dict())
+		self.save()
+
+	@frappe.whitelist()
 	def setup_replication(self):
 		self.status = "Installing"
 		self.save()
