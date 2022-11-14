@@ -605,7 +605,9 @@ class Server(BaseServer):
 			self._auto_scale_workers_old()
 
 	def _auto_scale_workers_new(self):
-		usable_ram = self.ram - 3000  # in MB (leaving some for disk cache + others)
+		usable_ram = max(
+			self.ram - 3000, self.ram * 0.75
+		)  # in MB (leaving some for disk cache + others)
 		max_background_workers = (
 			usable_ram / 620
 		)  # avg ram usage of 1 set of background_workers
