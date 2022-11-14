@@ -597,6 +597,62 @@ class Server(BaseServer):
 			log_error("Server Rename Exception", server=self.as_dict())
 		self.save()
 
+	@frappe.whitelist()
+	def auto_scale_workers(self):
+		if self.new_worker_allocation:
+			pass
+		else:
+			self._auto_scale_workers_old()
+
+	def _auto_scale_workers_old(self):
+		benches = frappe.get_all(
+			"Bench",
+			filters={"server": self.name, "status": "Active", "auto_scale_workers": True},
+			pluck="name",
+		)
+		for bench_name in benches:
+			bench = frappe.get_doc("Bench", bench_name)
+			work_load = bench.work_load
+
+			if work_load <= 10:
+				background_workers, gunicorn_workers = 1, 2
+			elif work_load <= 20:
+				background_workers, gunicorn_workers = 2, 4
+			elif work_load <= 30:
+				background_workers, gunicorn_workers = 3, 6
+			elif work_load <= 50:
+				background_workers, gunicorn_workers = 4, 8
+			elif work_load <= 100:
+				background_workers, gunicorn_workers = 6, 12
+			elif work_load <= 250:
+				background_workers, gunicorn_workers = 8, 16
+			elif work_load <= 500:
+				background_workers, gunicorn_workers = 16, 32
+			else:
+				background_workers, gunicorn_workers = 24, 48
+
+			if (bench.background_workers, bench.gunicorn_workers) != (
+				background_workers,
+				gunicorn_workers,
+			):
+				bench = frappe.get_doc("Bench", bench.name)
+				bench.background_workers, bench.gunicorn_workers = (
+					background_workers,
+					gunicorn_workers,
+				)
+				bench.save()
+
+
+def scale_workers():
+	servers = frappe.get_all("Server", {"status": "Active", "is_primary": True})
+	for server in servers:
+		try:
+			frappe.get_doc("Server", server.name).auto_scale_workers()
+			frappe.db.commit()
+		except Exception:
+			log_error("Auto Scale Worker Error", server=server)
+			frappe.db.rollback()
+
 
 def process_new_server_job_update(job):
 	if job.status == "Success":

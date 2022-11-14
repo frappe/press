@@ -445,51 +445,6 @@ def archive_obsolete_benches():
 					log_error("Bench Archival Error", bench=bench.name)
 
 
-def scale_workers():
-	benches = frappe.get_all(
-		"Bench", filters={"status": "Active", "auto_scale_workers": True}, pluck="name"
-	)
-	for bench_name in benches:
-		bench = frappe.get_doc("Bench", bench_name)
-		try:
-			new_worker_allocation = frappe.get_cached_value(
-				"Server", bench.server, "new_worker_allocation"
-			)
-			if new_worker_allocation:
-				continue
-		except Exception:
-			log_error("Auto Scale Worker Exception")
-		work_load = bench.work_load
-
-		if work_load <= 10:
-			background_workers, gunicorn_workers = 1, 2
-		elif work_load <= 20:
-			background_workers, gunicorn_workers = 2, 4
-		elif work_load <= 30:
-			background_workers, gunicorn_workers = 3, 6
-		elif work_load <= 50:
-			background_workers, gunicorn_workers = 4, 8
-		elif work_load <= 100:
-			background_workers, gunicorn_workers = 6, 12
-		elif work_load <= 250:
-			background_workers, gunicorn_workers = 8, 16
-		elif work_load <= 500:
-			background_workers, gunicorn_workers = 16, 32
-		else:
-			background_workers, gunicorn_workers = 24, 48
-
-		if (bench.background_workers, bench.gunicorn_workers) != (
-			background_workers,
-			gunicorn_workers,
-		):
-			bench = frappe.get_doc("Bench", bench.name)
-			bench.background_workers, bench.gunicorn_workers = (
-				background_workers,
-				gunicorn_workers,
-			)
-			bench.save()
-
-
 def sync_benches():
 	benches = frappe.get_all("Bench", {"status": "Active"}, pluck="name")
 	for bench in benches:

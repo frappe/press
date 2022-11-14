@@ -14,6 +14,7 @@ frappe.ui.form.on('Server', {
 			[__('Setup Replication'), "setup_replication", true, frm.doc.is_server_setup && !frm.doc.is_primary && !frm.doc.is_replication_setup],
 			[__('Setup Rename'), "rename_server", true, frm.doc.is_server_setup && frm.doc.is_server_prepared && !frm.doc.is_server_renamed],
 			[__('Fetch Keys'), "fetch_keys", false, frm.doc.is_server_setup && (!frm.doc.frappe_public_key || !frm.doc.root_public_key)],
+			[__('Auto Scale Workers'), "auto_scale_workers", true, frm.doc.status == "Active" && frm.doc.is_primary && frm.doc.is_server_setup],
 			[__('Create Image'), 'create_image', true, frm.doc.status == "Active"],
 			[__('Archive'), "archive", true, frm.doc.status !== "Archived"],
 		].forEach(([label, method, confirm, condition]) => {
