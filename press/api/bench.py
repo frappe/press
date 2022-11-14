@@ -362,6 +362,8 @@ def candidate(name):
 	if deploys:
 		deploy = frappe.get_doc("Deploy", deploys[0].name)
 		for bench in deploy.benches:
+			if not bench.bench:
+				continue
 			job = frappe.get_all(
 				"Agent Job",
 				["name", "status", "end", "duration", "bench"],
