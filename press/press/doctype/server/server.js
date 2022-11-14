@@ -3,6 +3,10 @@
 
 frappe.ui.form.on('Server', {
 	refresh: function (frm) {
+		frm.add_web_link(
+			`/dashboard/servers/${frm.doc.name}`,
+			__('Visit Dashboard')
+		);
 		[
 			[__('Ping Agent'), "ping_agent", false, frm.doc.is_server_setup],
 			[__('Ping Ansible'), "ping_ansible", true, frm.doc.is_server_prepared],
