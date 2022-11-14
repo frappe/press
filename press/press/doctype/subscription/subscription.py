@@ -78,11 +78,6 @@ class Subscription(Document):
 		if not doc:
 			return False
 
-		# Don't create site Usage Record for saas sites
-		if hasattr(doc, "standby_for"):
-			if doc.standby_for and doc.standby_for != "erpnext":
-				return False
-
 		if hasattr(doc, "can_charge_for_subscription"):
 			return doc.can_charge_for_subscription()
 
@@ -144,10 +139,27 @@ class Subscription(Document):
 
 def create_usage_records():
 	"""
-	Creates usage records for enabled Subscriptions
+	Creates daily usage records for paid Subscriptions
 	"""
+	paid_plans = frappe.db.get_all(
+		"Plan",
+		{"document_type": "Site", "is_trial_plan": 0, "price_inr": (">", 0)},
+		pluck="name",
+	)
+	already_created = frappe.get_all(
+		"Usage Record",
+		filters={"document_type": "Site", "date": frappe.utils.today()},
+		pluck="subscription",
+	)
 	subscriptions = frappe.db.get_all(
-		"Subscription", filters={"enabled": True}, pluck="name", limit=2000
+		"Subscription",
+		filters={
+			"enabled": True,
+			"plan": ("in", paid_plans),
+			"name": ("not in", already_created),
+		},
+		pluck="name",
+		limit=2000,
 	)
 	for name in subscriptions:
 		subscription = frappe.get_cached_doc("Subscription", name)

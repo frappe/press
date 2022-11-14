@@ -9,7 +9,8 @@ from unittest.mock import Mock, patch
 import frappe
 
 from press.press.doctype.agent_job.agent_job import AgentJob
-from press.press.doctype.bench.bench import Bench, StagingSite, scale_workers
+from press.press.doctype.bench.bench import Bench, StagingSite
+from press.press.doctype.server.server import scale_workers
 from press.press.doctype.plan.test_plan import create_test_plan
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.subscription.test_subscription import create_test_subscription

@@ -11,7 +11,7 @@
 					class="flex flex-col space-y-3 md:flex-row md:items-baseline md:justify-between md:space-y-0"
 				>
 					<div class="mt-2 flex items-center">
-						<h1 class="text-2xl font-bold">{{ site.name }}</h1>
+						<h1 class="text-2xl font-bold">{{ site.host_name || site.name }}</h1>
 						<Badge
 							class="ml-4 hidden md:inline-block"
 							:status="site.status"
@@ -299,7 +299,7 @@ export default {
 			let tabs = [
 				{ label: 'Overview', route: 'overview' },
 				{ label: 'Analytics', route: 'analytics' },
-				{ label: 'Backup & Restore', route: 'database' },
+				{ label: 'Database', route: 'database' },
 				{ label: 'Site Config', route: 'site-config' },
 				{ label: 'Jobs', route: 'jobs', showRedDot: this.runningJob },
 				{ label: 'Logs', route: 'logs' },
@@ -310,7 +310,7 @@ export default {
 				Active: [
 					'Overview',
 					'Analytics',
-					'Backup & Restore',
+					'Database',
 					'Site Config',
 					'Activity',
 					'Jobs',
@@ -319,7 +319,7 @@ export default {
 				],
 				Inactive: [
 					'Overview',
-					'Backup & Restore',
+					'Database',
 					'Site Config',
 					'Activity',
 					'Jobs',
@@ -330,7 +330,7 @@ export default {
 				Broken: [
 					'Overview',
 					'Site Config',
-					'Backup & Restore',
+					'Database',
 					'Activity',
 					'Jobs',
 					'Logs'
@@ -338,7 +338,7 @@ export default {
 				Suspended: [
 					'Overview',
 					'Activity',
-					'Backup & Restore',
+					'Database',
 					'Jobs',
 					'Plan'
 				]

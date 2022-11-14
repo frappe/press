@@ -2,7 +2,7 @@
 
 {%- block navbar -%}
 <nav class="bg-transparent navbar navbar-light justify-content-center border-bottom-0">
-	<div class="text-center my-8">
+	<div class="text-center mt-8">
 		<img class="mb-2" src="{{ image_path }}" alt="Logo" style="height: 22px;">
 		<p class="text-sm">Welcome to {{ app_title }}</p>
 	</div>
@@ -51,6 +51,27 @@
 
 	.card-body {
 			padding: 0px;
+	}
+
+	.step {
+		height: 15px;
+		width: 15px;
+		margin: 0 2px;
+		background-color: #bbbbbb;
+		border-radius: 50%;
+		display: inline-block;
+		opacity: 0.5;
+	}
+
+	/* Mark the active step: */
+	.step-active {
+		opacity: 1;
+		border: 2px solid rgb(147 197 253);
+	}
+
+	/* Mark the steps that are finished and valid: */
+	.step-finish {
+		background-color: #0289FF;
 	}
 
 	@media (max-width: 576px) {

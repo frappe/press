@@ -6,7 +6,7 @@
 import frappe
 import json
 from frappe.model.document import Document
-from frappe.utils import random_string, get_url
+from frappe.utils import formataddr, random_string, get_url
 from press.utils import get_country_info
 
 
@@ -57,6 +57,7 @@ class AccountRequest(Document):
 		url = self.get_verification_url()
 		signature, message, image_path = "", "", ""
 		app_title = "ERPNext" if self.saas_app == "erpnext" else "Frappe Cloud"
+		sender = ""
 
 		if frappe.conf.developer_mode:
 			print(f"\nSetup account URL for {self.email}:")
@@ -64,10 +65,9 @@ class AccountRequest(Document):
 			print()
 			return
 
-		if self.erpnext:
-			subject = "Set Up Your ERPNext Account"
-			template = "erpnext_verify_account"
-		elif frappe.db.get_value("Marketplace App", self.saas_app, "custom_verify_template"):
+		if self.saas_app and frappe.db.get_value(
+			"Marketplace App", self.saas_app, "custom_verify_template"
+		):
 			app_title, subject, message, signature = frappe.db.get_value(
 				"Marketplace App", self.saas_app, ["title", "subject", "message", "signature"]
 			)
@@ -77,6 +77,12 @@ class AccountRequest(Document):
 				"Saas Signup Generator", self.saas_app, "image_path"
 			)
 			template = "saas_verify_account"
+
+			outgoing_email, outgoing_sender_name = frappe.db.get_value(
+				"Marketplace App", self.saas_app, ["outgoing_email", "outgoing_sender_name"]
+			)
+			if outgoing_email:
+				sender = formataddr((outgoing_sender_name, outgoing_email))
 		else:
 			subject = "Verify your account"
 			template = "verify_account"
@@ -86,6 +92,7 @@ class AccountRequest(Document):
 				template = "invite_team_member"
 
 		frappe.sendmail(
+			sender=sender,
 			recipients=self.email,
 			subject=subject,
 			template=template,

@@ -10,7 +10,11 @@ import boto3
 
 class VirtualMachineImage(Document):
 	def after_insert(self):
-		self.create_image()
+		self.set_credentials()
+		if self.copied_from:
+			self.create_image_from_copy()
+		else:
+			self.create_image()
 
 	def create_image(self):
 		response = self.client.create_image(
@@ -19,6 +23,22 @@ class VirtualMachineImage(Document):
 		)
 		self.aws_ami_id = response["ImageId"]
 		self.sync()
+
+	def create_image_from_copy(self):
+		source = frappe.get_doc("Virtual Machine Image", self.copied_from)
+		response = self.client.copy_image(
+			Name=f"Frappe Cloud {self.name} - {self.virtual_machine}",
+			SourceImageId=source.aws_ami_id,
+			SourceRegion=source.region,
+		)
+		self.aws_ami_id = response["ImageId"]
+		self.sync()
+
+	def set_credentials(self):
+		if self.series == "m" and frappe.db.exists("Database Server", self.virtual_machine):
+			self.mariadb_root_password = frappe.get_doc(
+				"Database Server", self.virtual_machine
+			).get_password("mariadb_root_password")
 
 	@frappe.whitelist()
 	def sync(self):
@@ -30,9 +50,26 @@ class VirtualMachineImage(Document):
 			volume = find(image["BlockDeviceMappings"], lambda x: "Ebs" in x.keys())
 			if volume and "VolumeSize" in volume["Ebs"]:
 				self.size = volume["Ebs"]["VolumeSize"]
+			if volume and "SnapshotId" in volume["Ebs"]:
+				self.aws_snapshot_id = volume["Ebs"]["SnapshotId"]
 		else:
 			self.status = "Unavailable"
 		self.save()
+
+	@frappe.whitelist()
+	def copy_image(self, cluster):
+		image = frappe.copy_doc(self)
+		image.copied_from = self.name
+		image.cluster = cluster
+		image.insert()
+		return image.name
+
+	@frappe.whitelist()
+	def delete_image(self):
+		self.client.deregister_image(ImageId=self.aws_ami_id)
+		if self.aws_snapshot_id:
+			self.client.delete_snapshot(SnapshotId=self.aws_snapshot_id)
+		self.sync()
 
 	def get_status_map(self, status):
 		return {

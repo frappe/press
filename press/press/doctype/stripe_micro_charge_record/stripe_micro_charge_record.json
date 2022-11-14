@@ -19,8 +19,7 @@
    "in_list_view": 1,
    "label": "Stripe Payment Method",
    "options": "Stripe Payment Method",
-   "read_only": 1,
-   "reqd": 1
+   "read_only": 1
   },
   {
    "default": "0",
@@ -53,7 +52,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-10-19 12:35:31.412222",
+ "modified": "2022-11-07 11:39:59.912308",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Stripe Micro Charge Record",

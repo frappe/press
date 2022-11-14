@@ -112,13 +112,13 @@ export default {
 					if (!this.searchText) {
 						return true;
 					}
-					if (d.name.toLowerCase().includes(this.searchText.toLowerCase())) {
+					if (d.title.toLowerCase().includes(this.searchText.toLowerCase())) {
 						return true;
 					}
 					return false;
 				})
 				.map(d => {
-					d.label = d.name;
+					d.label = d.title;
 					d.action = () => this.navigateServer(d.server);
 					return d;
 				})

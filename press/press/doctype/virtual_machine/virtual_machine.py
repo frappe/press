@@ -10,11 +10,6 @@ from frappe.model.naming import make_autoname
 from frappe.desk.utils import slug
 from press.overrides import get_permission_query_conditions_for_doctype
 
-USER_DATA = """#!/bin/bash
-rm -rf /etc/ssh/ssh_host_*
-ssh-keygen -A
-"""
-
 
 class VirtualMachine(Document):
 	def autoname(self):
@@ -43,8 +38,8 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def provision(self):
-		response = self.client().run_instances(
-			BlockDeviceMappings=[
+		options = {
+			"BlockDeviceMappings": [
 				{
 					"DeviceName": "/dev/sda1",
 					"Ebs": {
@@ -54,14 +49,14 @@ class VirtualMachine(Document):
 					},
 				},
 			],
-			ImageId=self.machine_image,
-			InstanceType=self.machine_type,
-			KeyName=self.ssh_key,
-			MaxCount=1,
-			MinCount=1,
-			Monitoring={"Enabled": False},
-			Placement={"AvailabilityZone": self.availability_zone, "Tenancy": "default"},
-			NetworkInterfaces=[
+			"ImageId": self.machine_image,
+			"InstanceType": self.machine_type,
+			"KeyName": self.ssh_key,
+			"MaxCount": 1,
+			"MinCount": 1,
+			"Monitoring": {"Enabled": False},
+			"Placement": {"AvailabilityZone": self.availability_zone, "Tenancy": "default"},
+			"NetworkInterfaces": [
 				{
 					"AssociatePublicIpAddress": True,
 					"DeleteOnTermination": True,
@@ -71,20 +66,81 @@ class VirtualMachine(Document):
 					"SubnetId": self.aws_subnet_id,
 				},
 			],
-			DisableApiTermination=True,
-			InstanceInitiatedShutdownBehavior="stop",
-			TagSpecifications=[
+			"DisableApiTermination": True,
+			"InstanceInitiatedShutdownBehavior": "stop",
+			"TagSpecifications": [
 				{
 					"ResourceType": "instance",
 					"Tags": [{"Key": "Name", "Value": f"Frappe Cloud - {self.name}"}],
 				},
 			],
-			UserData=USER_DATA,
-		)
+			"UserData": self.get_cloud_init() if self.virtual_machine_image else "",
+		}
+		if self.machine_type.startswith("t"):
+			options["CreditSpecification"] = {
+				"CpuCredits": "unlimited" if self.series == "n" else "standard"
+			}
+		response = self.client().run_instances(**options)
 
 		self.aws_instance_id = response["Instances"][0]["InstanceId"]
 		self.status = self.get_status_map()[response["Instances"][0]["State"]["Name"]]
 		self.save()
+
+	def get_cloud_init(self):
+		server = self.get_server()
+		log_server, kibana_password = server.get_log_server()
+		cloud_init_template = "press/press/doctype/virtual_machine/cloud-init.yml.jinja2"
+		context = {
+			"server": server,
+			"machine": self.name,
+			"ssh_key": frappe.db.get_value("SSH Key", self.ssh_key, "public_key"),
+			"agent_password": server.get_password("agent_password"),
+			"monitoring_password": server.get_monitoring_password(),
+			"statsd_exporter_service": frappe.render_template(
+				"press/playbooks/roles/statsd_exporter/templates/statsd_exporter.service",
+				{"private_ip": self.private_ip_address},
+				is_path=True,
+			),
+			"filebeat_config": frappe.render_template(
+				"press/playbooks/roles/filebeat/templates/filebeat.yml",
+				{
+					"server": self.name,
+					"log_server": log_server,
+					"kibana_password": kibana_password,
+				},
+				is_path=True,
+			),
+		}
+		if server.doctype == "Database Server":
+			mariadb_context = {
+				"server_id": server.server_id,
+				"private_ip": self.private_ip_address,
+				"ansible_memtotal_mb": frappe.db.get_value("Plan", server.plan, "memory") or 1024,
+			}
+
+			context.update(
+				{
+					"mariadb_config": frappe.render_template(
+						"press/playbooks/roles/mariadb/templates/mariadb.cnf",
+						mariadb_context,
+						is_path=True,
+					),
+					"mariadb_systemd_config": frappe.render_template(
+						"press/playbooks/roles/mariadb_systemd_limits/templates/memory.conf",
+						mariadb_context,
+						is_path=True,
+					),
+				}
+			)
+
+		init = frappe.render_template(cloud_init_template, context, is_path=True)
+		return init
+
+	def get_server(self):
+		for doctype in ["Server", "Database Server"]:
+			server = frappe.db.get_value(doctype, {"virtual_machine": self.name}, "name")
+			if server:
+				return frappe.get_doc(doctype, server)
 
 	def get_status_map(self):
 		return {
@@ -135,38 +191,43 @@ class VirtualMachine(Document):
 	@frappe.whitelist()
 	def sync(self):
 		response = self.client().describe_instances(InstanceIds=[self.aws_instance_id])
-		instance = response["Reservations"][0]["Instances"][0]
+		if response["Reservations"]:
+			instance = response["Reservations"][0]["Instances"][0]
 
-		self.status = self.get_status_map()[instance["State"]["Name"]]
-		self.machine_type = instance.get("InstanceType")
+			self.status = self.get_status_map()[instance["State"]["Name"]]
+			self.machine_type = instance.get("InstanceType")
 
-		self.public_ip_address = instance.get("PublicIpAddress")
-		self.private_ip_address = instance.get("PrivateIpAddress")
+			self.public_ip_address = instance.get("PublicIpAddress")
+			self.private_ip_address = instance.get("PrivateIpAddress")
 
-		self.public_dns_name = instance.get("PublicDnsName")
-		self.private_dns_name = instance.get("PrivateDnsName")
+			self.public_dns_name = instance.get("PublicDnsName")
+			self.private_dns_name = instance.get("PrivateDnsName")
 
-		for volume in self.get_volumes():
-			existing_volume = find(self.volumes, lambda v: v.aws_volume_id == volume["VolumeId"])
-			if existing_volume:
-				row = existing_volume
-			else:
-				row = frappe._dict()
-			row.aws_volume_id = volume["VolumeId"]
-			row.volume_type = volume["VolumeType"]
-			row.size = volume["Size"]
-			row.iops = volume["Iops"]
-			if "Throughput" in volume:
-				row.throughput = volume["Throughput"]
+			for volume in self.get_volumes():
+				existing_volume = find(
+					self.volumes, lambda v: v.aws_volume_id == volume["VolumeId"]
+				)
+				if existing_volume:
+					row = existing_volume
+				else:
+					row = frappe._dict()
+				row.aws_volume_id = volume["VolumeId"]
+				row.volume_type = volume["VolumeType"]
+				row.size = volume["Size"]
+				row.iops = volume["Iops"]
+				if "Throughput" in volume:
+					row.throughput = volume["Throughput"]
 
-			if not existing_volume:
-				self.append("volumes", row)
+				if not existing_volume:
+					self.append("volumes", row)
 
-		self.disk_size = self.volumes[0].size
+			self.disk_size = self.volumes[0].size
 
-		self.termination_protection = self.client().describe_instance_attribute(
-			InstanceId=self.aws_instance_id, Attribute="disableApiTermination"
-		)["DisableApiTermination"]["Value"]
+			self.termination_protection = self.client().describe_instance_attribute(
+				InstanceId=self.aws_instance_id, Attribute="disableApiTermination"
+			)["DisableApiTermination"]["Value"]
+		else:
+			self.status = "Terminated"
 		self.save()
 		self.update_servers()
 
@@ -258,7 +319,10 @@ class VirtualMachine(Document):
 		}
 
 		if self.virtual_machine_image:
+			document["is_server_prepared"] = True
 			document["is_server_setup"] = True
+			document["is_server_renamed"] = True
+			document["is_upstream_setup"] = True
 
 		return frappe.get_doc(document).insert()
 
@@ -277,7 +341,12 @@ class VirtualMachine(Document):
 		}
 
 		if self.virtual_machine_image:
+			document["is_server_prepared"] = True
 			document["is_server_setup"] = True
+			document["is_server_renamed"] = True
+			document["mariadb_root_password"] = frappe.get_doc(
+				"Virtual Machine Image", self.virtual_machine_image
+			).get_password("mariadb_root_password")
 
 		return frappe.get_doc(document).insert()
 

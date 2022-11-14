@@ -31,7 +31,10 @@
 						/mo
 					</span>
 				</h4>
-				<p class="text-base text-gray-700">
+				<p
+					class="text-base text-gray-700"
+					v-if="plan.current_plan.name != 'Unlimited'"
+				>
 					{{ plan.current_plan.cpu_time_per_day }}
 					{{ $plural(plan.current_plan.cpu_time_per_day, 'hour', 'hours') }} of
 					CPU / day
@@ -45,7 +48,11 @@
 		</div>
 
 		<div v-if="plan.current_plan" class="mt-4 grid grid-cols-3 gap-12">
-			<div v-for="d in usage" :key="d.label">
+			<div
+				v-if="plan.current_plan.name != 'Unlimited'"
+				v-for="d in usage"
+				:key="d.label"
+			>
 				<ProgressArc :percentage="d.percentage" />
 				<div class="mt-2 text-base font-medium text-gray-900">
 					{{ d.label }}

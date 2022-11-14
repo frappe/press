@@ -4,6 +4,7 @@
 
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 from press.agent import Agent
 from press.runner import Ansible
@@ -296,6 +297,18 @@ class BaseServer(Document):
 
 	@frappe.whitelist()
 	def archive(self):
+		if frappe.get_all(
+			"Site",
+			filters={"server": self.name, "status": ("!=", "Archived")},
+			ignore_ifnull=True,
+		):
+			frappe.throw(_("Cannot archive server with sites"))
+		if frappe.get_all(
+			"Bench",
+			filters={"server": self.name, "status": ("!=", "Archived")},
+			ignore_ifnull=True,
+		):
+			frappe.throw(_("Cannot archive server with benches"))
 		self.status = "Pending"
 		self.save()
 		frappe.enqueue_doc(self.doctype, self.name, "_archive", queue="long")
@@ -335,17 +348,20 @@ class BaseServer(Document):
 
 	def change_plan(self, plan, ignore_card_setup=False):
 		self.can_change_plan(ignore_card_setup)
+		plan = frappe.get_doc("Plan", plan)
+		self.ram = plan.memory
+		self.save()
+		self.reload()
 		frappe.get_doc(
 			{
 				"doctype": "Plan Change",
 				"document_type": self.doctype,
 				"document_name": self.name,
 				"from_plan": self.plan,
-				"to_plan": plan,
+				"to_plan": plan.name,
 			}
 		).insert()
-		machine_type = frappe.db.get_value("Plan", plan, "instance_type")
-		self.run_press_job("Resize Server", {"machine_type": machine_type})
+		self.run_press_job("Resize Server", {"machine_type": plan.instance_type})
 
 	@frappe.whitelist()
 	def create_image(self):
@@ -364,6 +380,25 @@ class BaseServer(Document):
 				"arguments": json.dumps(arguments, indent=2, sort_keys=True),
 			}
 		).insert()
+
+	def get_certificate(self):
+		certificate_name = frappe.db.get_value(
+			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
+		)
+		return frappe.get_doc("TLS Certificate", certificate_name)
+
+	def get_log_server(self):
+		log_server = frappe.db.get_single_value("Press Settings", "log_server")
+		if log_server:
+			kibana_password = frappe.get_doc("Log Server", log_server).get_password(
+				"kibana_password"
+			)
+		else:
+			kibana_password = None
+		return log_server, kibana_password
+
+	def get_monitoring_password(self):
+		return frappe.get_doc("Cluster", self.cluster).get_password("monitoring_password")
 
 
 class Server(BaseServer):
@@ -386,20 +421,8 @@ class Server(BaseServer):
 	def _setup_server(self):
 		agent_password = self.get_password("agent_password")
 		agent_repository_url = self.get_agent_repository_url()
-		certificate_name = frappe.db.get_value(
-			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
-		)
-		certificate = frappe.get_doc("TLS Certificate", certificate_name)
-		monitoring_password = frappe.get_doc("Cluster", self.cluster).get_password(
-			"monitoring_password"
-		)
-		log_server = frappe.db.get_single_value("Press Settings", "log_server")
-		if log_server:
-			kibana_password = frappe.get_doc("Log Server", log_server).get_password(
-				"kibana_password"
-			)
-		else:
-			kibana_password = None
+		certificate = self.get_certificate()
+		log_server, kibana_password = self.get_log_server()
 
 		try:
 			ansible = Ansible(
@@ -411,7 +434,7 @@ class Server(BaseServer):
 					"workers": "2",
 					"agent_password": agent_password,
 					"agent_repository_url": agent_repository_url,
-					"monitoring_password": monitoring_password,
+					"monitoring_password": self.get_monitoring_password(),
 					"log_server": log_server,
 					"kibana_password": kibana_password,
 					"certificate_private_key": certificate.private_key,
@@ -589,6 +612,95 @@ class Server(BaseServer):
 			self.status = "Broken"
 			log_error("Server Rename Exception", server=self.as_dict())
 		self.save()
+
+	@frappe.whitelist()
+	def auto_scale_workers(self):
+		if self.new_worker_allocation:
+			self._auto_scale_workers_new()
+		else:
+			self._auto_scale_workers_old()
+
+	def _auto_scale_workers_new(self):
+		usable_ram = max(
+			self.ram - 3000, self.ram * 0.75
+		)  # in MB (leaving some for disk cache + others)
+		max_background_workers = (
+			usable_ram / 620
+		)  # avg ram usage of 1 set of background_workers
+		max_gunicorn_workers = (
+			2 * max_background_workers
+		)  # avg gunicorn worker ram usage seems is roughly close to this number
+
+		bench_workloads = {}
+		benches = frappe.get_all(
+			"Bench",
+			filters={"server": self.name, "status": "Active", "auto_scale_workers": True},
+			pluck="name",
+		)
+		for bench_name in benches:
+			bench = frappe.get_doc("Bench", bench_name)
+			bench_workloads[bench_name] = bench.work_load
+
+		total_workload = sum(bench_workloads.values())
+
+		for bench_name, workload in bench_workloads.items():
+			bench = frappe.get_cached_doc("Bench", bench_name)
+			gunicorn_workers = min(
+				64, max(2, frappe.utils.ceil(workload / total_workload * max_gunicorn_workers))
+			)
+			background_workers = min(24, max(1, frappe.utils.floor(gunicorn_workers / 2)))
+			bench.gunicorn_workers = gunicorn_workers
+			bench.background_workers = background_workers
+			bench.save()
+
+	def _auto_scale_workers_old(self):
+		benches = frappe.get_all(
+			"Bench",
+			filters={"server": self.name, "status": "Active", "auto_scale_workers": True},
+			pluck="name",
+		)
+		for bench_name in benches:
+			bench = frappe.get_doc("Bench", bench_name)
+			work_load = bench.work_load
+
+			if work_load <= 10:
+				background_workers, gunicorn_workers = 1, 2
+			elif work_load <= 20:
+				background_workers, gunicorn_workers = 2, 4
+			elif work_load <= 30:
+				background_workers, gunicorn_workers = 3, 6
+			elif work_load <= 50:
+				background_workers, gunicorn_workers = 4, 8
+			elif work_load <= 100:
+				background_workers, gunicorn_workers = 6, 12
+			elif work_load <= 250:
+				background_workers, gunicorn_workers = 8, 16
+			elif work_load <= 500:
+				background_workers, gunicorn_workers = 16, 32
+			else:
+				background_workers, gunicorn_workers = 24, 48
+
+			if (bench.background_workers, bench.gunicorn_workers) != (
+				background_workers,
+				gunicorn_workers,
+			):
+				bench = frappe.get_doc("Bench", bench.name)
+				bench.background_workers, bench.gunicorn_workers = (
+					background_workers,
+					gunicorn_workers,
+				)
+				bench.save()
+
+
+def scale_workers():
+	servers = frappe.get_all("Server", {"status": "Active", "is_primary": True})
+	for server in servers:
+		try:
+			frappe.get_doc("Server", server.name).auto_scale_workers()
+			frappe.db.commit()
+		except Exception:
+			log_error("Auto Scale Worker Error", server=server)
+			frappe.db.rollback()
 
 
 def process_new_server_job_update(job):

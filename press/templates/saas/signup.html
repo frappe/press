@@ -6,6 +6,11 @@
 <input id="app" type="text" value="{{ app }}" hidden/>
 <input id="domain" type="text" value="{{ domain }}" hidden/>
 
+<div style="text-align: center;" class="mb-4">
+		<span id="step-1" class="step step-active"></span>
+  <span id="step-2" class="step"></span>
+</div>
+
 <div class="flex justify-center mx-auto form-container col-xl-5 col-lg-6 col-md-7 col-sm-9" id="user-signup"
 	data-validators="field_validators">
 	<div class="card bg-gray-200">
@@ -63,7 +68,14 @@
 				</div>
 				<div class="form-group">
 					<p for="country">Country</p>
-					<input type="text" id="country" class="form-control" name="country">
+					<select id="country" class="custom-select" name="country">
+						<option disabled selected>Select Country</option>
+						{%- for country in frappe.db.get_all('Country') -%}
+						<option>
+							{{ country.name }}
+						</option>
+						{%- endfor -%}
+					</select>
 				</div>
 				<div class="form-group">
 					<input type="checkbox" name="user_accept_terms" id="user_accept_terms">
@@ -112,6 +124,7 @@
 
 	function save_partial_form_data($form, values) {
     form_data = values
+		nextStep(1)
     return values
 	}
 	// this needs to be on global scope
@@ -191,6 +204,8 @@
     if (values) {
 	    form_data = {...form_data, ...values, app}
     }
+
+		nextStep(2)
 
 		return call('press.api.saas.account_request', form_data)
 			.then(() => {
@@ -285,6 +300,16 @@
 		} else {
 			inp.type = "password";
 		}
+	}
+
+	function nextStep(step) {
+		let prevElement = document.getElementById(`step-${step}`)
+		prevElement.classList.add("step-finish")
+
+		if (step < document.getElementsByClassName("step").length) {
+			let nextElement = document.getElementById(`step-${step + 1}`)
+			nextElement.classList.add("step-active")
+		}	
 	}
 </script>
 {%- endblock -%}

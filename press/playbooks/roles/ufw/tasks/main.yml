@@ -1,0 +1,74 @@
+---
+- name: Install ufw
+  package:
+    name: ufw
+    state: present
+
+- name: Reset all firewall rules
+  ufw:
+    state: reset
+
+- name: Allow ssh port 22 from everywhere
+  ufw:
+    rule: allow
+    to_port: ssh
+    proto: tcp
+
+- name: Allow https from everywhere
+  ufw:
+    rule: allow
+    to_port: https
+    proto: tcp
+
+- name: Allow http from everywhere
+  ufw:
+    rule: allow
+    to_port: http
+    proto: tcp
+  when: is_proxy_server | default(false) | bool
+
+- name: Allow http from proxy
+  ufw:
+    rule: allow
+    from_ip: '{{ proxy_private_ip | default("any") }}'
+    to_port: http
+    proto: tcp
+  when: is_server | default(false) | bool
+
+- name: Allow connections from docker bridge
+  ufw:
+    rule: allow
+    interface: docker0
+    direction: in
+  when: is_server | default(false) | bool
+
+- name: Allow mysql port 3306 connections
+  ufw:
+    rule: allow
+    to_port: mysql
+    proto: tcp
+  when: is_database_server | default(false) | bool
+
+- name: Enable logging
+  ufw:
+    logging: low
+
+- name: Deny incoming by default
+  ufw:
+    default: deny
+    direction: incoming
+
+- name: Allow outgoing by default
+  ufw:
+    default: allow
+    direction: outgoing
+
+- name: Enable ufw
+  ufw:
+    state: enabled
+
+- name: Ensure ufw systemd service is enabled and running
+  service:
+    name: ufw
+    enabled: yes
+    state: started

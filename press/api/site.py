@@ -528,7 +528,7 @@ def all():
 	sites_data = frappe._dict()
 	sites = frappe.db.sql(
 		f"""
-			SELECT s.name, s.status, s.creation, s.bench, s.current_cpu_usage, s.current_database_usage, s.current_disk_usage, s.trial_end_date, s.team, rg.title
+			SELECT s.name, s.host_name, s.status, s.creation, s.bench, s.current_cpu_usage, s.current_database_usage, s.current_disk_usage, s.trial_end_date, s.team, rg.title
 			FROM `tabSite` s
 			LEFT JOIN `tabRelease Group` rg
 			ON s.group = rg.name
@@ -569,6 +569,7 @@ def get(name):
 
 	return {
 		"name": site.name,
+		"host_name": site.host_name,
 		"status": site.status,
 		"trial_end_date": site.trial_end_date,
 		"setup_wizard_complete": site.setup_wizard_complete,

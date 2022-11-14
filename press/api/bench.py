@@ -291,7 +291,8 @@ def versions(name):
 		LEFT JOIN tabServer server
 		ON server.name = bench.server
 		WHERE bench.group = %s AND bench.status != "Archived"
-		ORDER BY bench.creation DESC""",
+		ORDER BY bench.creation DESC
+		LIMIT 100""",
 		(name),
 		as_dict=True,
 	)
@@ -361,6 +362,8 @@ def candidate(name):
 	if deploys:
 		deploy = frappe.get_doc("Deploy", deploys[0].name)
 		for bench in deploy.benches:
+			if not bench.bench:
+				continue
 			job = frappe.get_all(
 				"Agent Job",
 				["name", "status", "end", "duration", "bench"],

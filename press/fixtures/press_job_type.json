@@ -2,7 +2,7 @@
  {
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2022-11-01 14:13:06.998878",
+  "modified": "2022-11-10 16:43:54.861788",
   "name": "Create Server",
   "steps": [
    {
@@ -10,7 +10,7 @@
     "parentfield": "steps",
     "parenttype": "Press Job Type",
     "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.provision()\n",
-    "step_name": "Create Virtual Machine",
+    "step_name": "Create Server",
     "wait_until_true": 0
    },
    {
@@ -18,31 +18,7 @@
     "parentfield": "steps",
     "parenttype": "Press Job Type",
     "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.sync()\nresult = (machine.status == \"Running\", False)\n",
-    "step_name": "Wait for Virtual Machine to Start",
-    "wait_until_true": 1
-   },
-   {
-    "parent": "Create Server",
-    "parentfield": "steps",
-    "parenttype": "Press Job Type",
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.ping_ansible_unprepared()\n\n\nplays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Ping Server\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", False)\n",
-    "step_name": "Ping Server Unprepared",
-    "wait_until_true": 1
-   },
-   {
-    "parent": "Create Server",
-    "parentfield": "steps",
-    "parenttype": "Press Job Type",
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.prepare_server()\n",
-    "step_name": "Prepare Server",
-    "wait_until_true": 0
-   },
-   {
-    "parent": "Create Server",
-    "parentfield": "steps",
-    "parenttype": "Press Job Type",
-    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Prepare AWS EC2 Server\"}, [\"status\"])\nlog(doc.server)\nresult = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")\n",
-    "step_name": "Wait for Server to be Prepared",
+    "step_name": "Wait for Server to start",
     "wait_until_true": 1
    },
    {
@@ -50,23 +26,7 @@
     "parentfield": "steps",
     "parenttype": "Press Job Type",
     "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.ping_ansible()\n\nplays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Ping Server\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", False)\n",
-    "step_name": "Ping Server",
-    "wait_until_true": 1
-   },
-   {
-    "parent": "Create Server",
-    "parentfield": "steps",
-    "parenttype": "Press Job Type",
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.rename_server()\n",
-    "step_name": "Rename Server",
-    "wait_until_true": 0
-   },
-   {
-    "parent": "Create Server",
-    "parentfield": "steps",
-    "parenttype": "Press Job Type",
-    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": f\"Rename {doc.server_type}\"}, [\"status\"])\nresult = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")\n",
-    "step_name": "Wait for Server to be Renamed",
+    "step_name": "Wait for Server to be accessible",
     "wait_until_true": 1
    }
   ]

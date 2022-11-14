@@ -1,7 +1,7 @@
 <template>
 	<div class="space-y-4">
 		<div class="grid justify-items-stretch">
-			<label class="justify-self-end">
+			<label>
 				<span class="mb-2 inline-block text-sm leading-4 text-gray-700">
 					Duration
 				</span>
@@ -12,7 +12,10 @@
 				</select>
 			</label>
 		</div>
-		<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+		<div
+			v-if="cpuData?.datasets?.length"
+			class="grid grid-cols-1 gap-5 sm:grid-cols-2"
+		>
 			<Card title="CPU">
 				<FrappeChart
 					type="line"
@@ -64,6 +67,12 @@
 					:colors="[$theme.colors.blue[500]]"
 				/>
 			</Card>
+		</div>
+		<div
+			v-if="!$resources.cpu.loading && !cpuData?.datasets?.length"
+			class="text-base text-gray-600"
+		>
+			No data yet
 		</div>
 	</div>
 </template>

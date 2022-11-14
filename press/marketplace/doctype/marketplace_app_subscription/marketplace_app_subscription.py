@@ -78,6 +78,10 @@ class MarketplaceAppSubscription(Document):
 		key_id = f"sk_{self.app}"
 		secret_key = self.secret_key
 
+		old_config = [
+			{"key": x.key, "value": x.value, "type": x.type}
+			for x in list(filter(lambda x: not x.internal, site_doc.configuration))
+		]
 		config = [
 			{"key": key_id, "value": secret_key, "type": "String"},
 			{
@@ -86,6 +90,8 @@ class MarketplaceAppSubscription(Document):
 				"type": "JSON",
 			},
 		]
+
+		config = config + old_config
 
 		expiry = frappe.db.get_value("Site", self.site, "trial_end_date")
 		if expiry:
@@ -278,7 +284,7 @@ def process_prepaid_marketplace_payment(event):
 				"description": f"Prepaid Credits for {title}",
 				"document_type": "Marketplace App",
 				"document_name": app,
-				"plan": plan,
+				"plan": frappe.db.get_value("Marketplace App Plan", plan, "plan"),
 				"rate": float(line_item["amount"]) - hosting_amount,
 				"quantity": float(line_item["quantity"]),
 			}

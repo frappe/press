@@ -13,7 +13,7 @@
 				>
 					<div class="flex items-center justify-between">
 						<div class="text-base sm:w-4/12">
-							{{ site.name }}
+							{{ site.host_name || site.name }}
 						</div>
 						<div class="text-base sm:w-3/12">
 							<Badge class="pointer-events-none" v-bind="siteBadge(site)" />

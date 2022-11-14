@@ -8,7 +8,7 @@ from press.utils import get_current_team, group_children_in_result
 from press.api.site import protected
 from frappe.utils import convert_utc_to_timezone
 from frappe.utils.password import get_decrypted_password
-from datetime import datetime
+from datetime import datetime, timezone as tz
 from frappe.utils import flt
 
 
@@ -74,7 +74,18 @@ def overview(name):
 @frappe.whitelist()
 @protected(["Server", "Database Server"])
 def archive(name):
-	return poly_get_doc(["Server", "Database Server"], name).archive()
+	server = poly_get_doc(["Server", "Database Server"], name)
+	if server.doctype == "Database Server":
+		app_server_name = frappe.db.get_value(
+			"Server", {"database_server": server.name}, "name"
+		)
+		app_server = frappe.get_doc("Server", app_server_name)
+		db_server = server
+	else:
+		app_server = server
+		db_server = frappe.get_doc("Database Server", server.database_server)
+	app_server.archive()
+	db_server.archive()
 
 
 @frappe.whitelist()
@@ -142,6 +153,8 @@ def new(server):
 	).insert()
 	app_server = app_machine.create_server()
 	app_server.plan = app_plan.name
+	app_server.ram = app_plan.memory
+	app_server.new_worker_allocation = True
 	app_server.database_server = db_server.name
 	app_server.proxy_server = proxy_server.name
 	app_server.title = f"{server['title']} - Application"
@@ -157,13 +170,13 @@ def new(server):
 def search_list():
 	servers = frappe.get_list(
 		"Server",
-		fields=["name"],
+		fields=["name as server", "title"],
 		filters={"status": ("!=", "Archived"), "team": get_current_team()},
 		order_by="creation desc",
 	)
 	database_servers = frappe.get_list(
 		"Database Server",
-		fields=["name"],
+		fields=["name as server", "title"],
 		filters={"status": ("!=", "Archived"), "team": get_current_team()},
 		order_by="creation desc",
 	)
@@ -179,21 +192,21 @@ def usage(name):
 			lambda x: x,
 		),
 		"disk": (
-			f"""node_filesystem_avail_bytes{{instance="{name}", job="node", mountpoint="/"}} / (1024 * 1024 * 1024)""",
+			f"""(node_filesystem_size_bytes{{instance="{name}", job="node", mountpoint="/"}} - node_filesystem_avail_bytes{{instance="{name}", job="node", mountpoint="/"}}) / (1024 * 1024 * 1024)""",
 			lambda x: x,
 		),
 		"memory": (
-			f"""(node_memory_MemTotal_bytes{{instance="{name}",job="node"}} - node_memory_MemFree_bytes{{instance="{name}",job="node"}}) / (1024 * 1024)""",
+			f"""(node_memory_MemTotal_bytes{{instance="{name}",job="node"}} - node_memory_MemFree_bytes{{instance="{name}",job="node"}} - (node_memory_Cached_bytes{{instance="{name}",job="node"}} + node_memory_Buffers_bytes{{instance="{name}",job="node"}})) / (1024 * 1024)""",
 			lambda x: x,
 		),
 	}
 
-	return {
-		usage_type: prometheus_query(query[0], query[1], "Asia/Kolkata", 120, 120)[
-			"datasets"
-		][0]["values"][-1]
-		for usage_type, query in query_map.items()
-	}
+	result = {}
+	for usage_type, query in query_map.items():
+		response = prometheus_query(query[0], query[1], "Asia/Kolkata", 120, 120)["datasets"]
+		if response:
+			result[usage_type] = response[0]["values"][-1]
+	return result
 
 
 @frappe.whitelist()
@@ -213,7 +226,7 @@ def analytics(name, query, timezone, duration):
 			lambda x: x["mode"],
 		),
 		"network": (
-			f"""rate(node_network_receive_bytes_total{{instance="{name}", job="node"}}[{timegrain}s]) * 8""",
+			f"""rate(node_network_receive_bytes_total{{instance="{name}", job="node", device=~"ens.*"}}[{timegrain}s]) * 8""",
 			lambda x: x["device"],
 		),
 		"iops": (
@@ -221,7 +234,7 @@ def analytics(name, query, timezone, duration):
 			lambda x: x["device"],
 		),
 		"space": (
-			f"""100 - ((node_filesystem_avail_bytes{{instance="{name}", job="node"}} * 100) / node_filesystem_size_bytes{{instance="{name}", job="node"}})""",
+			f"""100 - ((node_filesystem_avail_bytes{{instance="{name}", job="node", device="/dev/root"}} * 100) / node_filesystem_size_bytes{{instance="{name}", job="node", device="/dev/root"}})""",
 			lambda x: x["device"],
 		),
 		"loadavg": (
@@ -247,7 +260,7 @@ def prometheus_query(query, function, timezone, timespan, timegrain):
 	url = f"https://{monitor_server}/prometheus/api/v1/query_range"
 	password = get_decrypted_password("Monitor Server", monitor_server, "grafana_password")
 
-	end = datetime.utcnow()
+	end = datetime.utcnow().replace(tzinfo=tz.utc)
 	start = frappe.utils.add_to_date(end, seconds=-timespan)
 	query = {
 		"query": query,
@@ -261,10 +274,13 @@ def prometheus_query(query, function, timezone, timespan, timegrain):
 	datasets = []
 	labels = []
 
+	if not response["data"]["result"]:
+		return {"datasets": datasets, "labels": labels}
+
 	for timestamp, _ in response["data"]["result"][0]["values"]:
 		labels.append(
 			convert_utc_to_timezone(
-				datetime.fromtimestamp(timestamp).replace(tzinfo=None), timezone
+				datetime.fromtimestamp(timestamp, tz=tz.utc).replace(tzinfo=None), timezone
 			)
 		)
 
@@ -282,6 +298,9 @@ def prometheus_query(query, function, timezone, timespan, timegrain):
 
 @frappe.whitelist()
 def options():
+	if not get_current_team(get_doc=True).servers_enabled:
+		frappe.throw("Servers feature is not yet enabled on your account")
+
 	regions = frappe.get_all(
 		"Cluster", {"cloud_provider": "AWS EC2", "public": True}, ["name", "title", "image"]
 	)

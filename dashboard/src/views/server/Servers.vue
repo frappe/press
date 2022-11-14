@@ -6,7 +6,7 @@
 					appearance="primary"
 					iconLeft="plus"
 					class="ml-2 hidden sm:inline-flex"
-					route="/servers/new"
+					@click="showBillingDialog"
 				>
 					New
 				</Button>
@@ -15,7 +15,9 @@
 
 		<div>
 			<SectionHeader heading="All Servers">
-				<SiteAndBenchSearch />
+				<template v-slot:actions>
+					<SiteAndBenchSearch />
+				</template>
 			</SectionHeader>
 
 			<div class="mt-3">
@@ -23,22 +25,43 @@
 				<ServerList v-else :servers="servers" />
 			</div>
 		</div>
+		<FrappeUIDialog
+			:options="{ title: 'Add card to create new servers' }"
+			v-model="showAddCardDialog"
+		>
+			<template v-slot:body-content>
+				<StripeCard
+					class="mb-1"
+					v-if="showAddCardDialog"
+					@complete="
+						showAddCardDialog = false;
+						$resources.paymentMethods.reload();
+					"
+				/>
+			</template>
+		</FrappeUIDialog>
 	</div>
 </template>
 <script>
 import ServerList from '@/views/server/ServerList.vue';
 import SiteAndBenchSearch from '@/components/SiteAndBenchSearch.vue';
 import PageHeader from '@/components/global/PageHeader.vue';
+import { defineAsyncComponent } from 'vue';
 
 export default {
 	name: 'Servers',
 	components: {
 		ServerList,
 		SiteAndBenchSearch,
-		PageHeader
+		PageHeader,
+		StripeCard: defineAsyncComponent(() =>
+			import('@/components/StripeCard.vue')
+		)
 	},
 	data() {
-		return {};
+		return {
+			showAddCardDialog: false
+		};
 	},
 	resources: {
 		allServers: {
@@ -54,6 +77,13 @@ export default {
 				new Date() - this.$resources.allServers.lastLoaded > 5000
 			) {
 				this.$resources.allServers.reload();
+			}
+		},
+		showBillingDialog() {
+			if (!this.$account.hasBillingInfo) {
+				this.showAddCardDialog = true;
+			} else {
+				this.$router.replace('/servers/new');
 			}
 		}
 	},

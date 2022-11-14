@@ -36,7 +36,7 @@
 		</form>
 	</LoginBox>
 	<SuccessCard
-		class="mx-auto mt-20 w-96 shadow-md"
+		class="mx-auto mt-20 w-96 shadow-md sm:ml-auto sm:mr-auto"
 		title="Verification Email Sent!"
 		v-else
 	>
