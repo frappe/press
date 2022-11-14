@@ -600,9 +600,40 @@ class Server(BaseServer):
 	@frappe.whitelist()
 	def auto_scale_workers(self):
 		if self.new_worker_allocation:
-			pass
+			self._auto_scale_workers_new()
 		else:
 			self._auto_scale_workers_old()
+
+	def _auto_scale_workers_new(self):
+		usable_ram = self.ram - 3000  # in MB (leaving some for disk cache + others)
+		max_background_workers = (
+			usable_ram / 620
+		)  # avg ram usage of 1 set of background_workers
+		max_gunicorn_workers = (
+			2 * max_background_workers
+		)  # avg gunicorn worker ram usage seems is roughly close to this number
+
+		bench_workloads = {}
+		benches = frappe.get_all(
+			"Bench",
+			filters={"server": self.name, "status": "Active", "auto_scale_workers": True},
+			pluck="name",
+		)
+		for bench_name in benches:
+			bench = frappe.get_doc("Bench", bench_name)
+			bench_workloads[bench_name] = bench.work_load
+
+		total_workload = sum(bench_workloads.values())
+
+		for bench_name, workload in bench_workloads.items():
+			bench = frappe.get_cached_doc("Bench", bench_name)
+			gunicorn_workers = min(
+				64, max(2, frappe.utils.ceil(workload / total_workload * max_gunicorn_workers))
+			)
+			background_workers = min(24, max(1, frappe.utils.floor(gunicorn_workers / 2)))
+			bench.gunicorn_workers = gunicorn_workers
+			bench.background_workers = background_workers
+			bench.save()
 
 	def _auto_scale_workers_old(self):
 		benches = frappe.get_all(
