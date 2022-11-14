@@ -38,8 +38,8 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def provision(self):
-		response = self.client().run_instances(
-			BlockDeviceMappings=[
+		options = {
+			"BlockDeviceMappings": [
 				{
 					"DeviceName": "/dev/sda1",
 					"Ebs": {
@@ -49,14 +49,14 @@ class VirtualMachine(Document):
 					},
 				},
 			],
-			ImageId=self.machine_image,
-			InstanceType=self.machine_type,
-			KeyName=self.ssh_key,
-			MaxCount=1,
-			MinCount=1,
-			Monitoring={"Enabled": False},
-			Placement={"AvailabilityZone": self.availability_zone, "Tenancy": "default"},
-			NetworkInterfaces=[
+			"ImageId": self.machine_image,
+			"InstanceType": self.machine_type,
+			"KeyName": self.ssh_key,
+			"MaxCount": 1,
+			"MinCount": 1,
+			"Monitoring": {"Enabled": False},
+			"Placement": {"AvailabilityZone": self.availability_zone, "Tenancy": "default"},
+			"NetworkInterfaces": [
 				{
 					"AssociatePublicIpAddress": True,
 					"DeleteOnTermination": True,
@@ -66,16 +66,21 @@ class VirtualMachine(Document):
 					"SubnetId": self.aws_subnet_id,
 				},
 			],
-			DisableApiTermination=True,
-			InstanceInitiatedShutdownBehavior="stop",
-			TagSpecifications=[
+			"DisableApiTermination": True,
+			"InstanceInitiatedShutdownBehavior": "stop",
+			"TagSpecifications": [
 				{
 					"ResourceType": "instance",
 					"Tags": [{"Key": "Name", "Value": f"Frappe Cloud - {self.name}"}],
 				},
 			],
-			UserData=self.get_cloud_init() if self.virtual_machine_image else "",
-		)
+			"UserData": self.get_cloud_init() if self.virtual_machine_image else "",
+		}
+		if self.machine_type.startswith("t"):
+			options["CreditSpecification"] = {
+				"CpuCredits": "unlimited" if self.series == "n" else "standard"
+			}
+		response = self.client().run_instances(**options)
 
 		self.aws_instance_id = response["Instances"][0]["InstanceId"]
 		self.status = self.get_status_map()[response["Instances"][0]["State"]["Name"]]
