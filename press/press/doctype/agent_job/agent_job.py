@@ -186,6 +186,9 @@ def poll_pending_jobs_server(server):
 	random_pending_ids = random.sample(pending_ids, k=min(100, len(pending_ids)))
 	polled_jobs = agent.get_jobs_status(random_pending_ids)
 
+	if not polled_jobs:
+		return
+
 	for polled_job in polled_jobs:
 		job = find(pending_jobs, lambda x: x.job_id == polled_job["id"])
 		try:
@@ -217,12 +220,12 @@ def poll_pending_jobs():
 		ignore_ifnull=True,
 	)
 	for server in servers:
-		server.pop("count")
-		frappe.enqueue(
-			"press.press.doctype.agent_job.agent_job.poll_pending_jobs_server",
-			queue="short",
-			server=server,
-		)
+		try:
+			poll_pending_jobs_server(server)
+			frappe.db.commit()
+		except Exception:
+			log_error("Server Agent Job Poll Exception", server=server)
+			frappe.db.rollback()
 
 
 def fail_old_jobs():
