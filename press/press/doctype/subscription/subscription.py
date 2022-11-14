@@ -143,13 +143,22 @@ def create_usage_records():
 	"""
 	paid_plans = frappe.db.get_all(
 		"Plan",
-		{"document_type": "Site", "is_trial_plan": 0, "price_inr": (">", 0)},
+		{
+			"document_type": ("in", ("Site", "Server", "Database Server")),
+			"is_trial_plan": 0,
+			"price_inr": (">", 0),
+		},
 		pluck="name",
+		ignore_ifnull=True,
 	)
 	already_created = frappe.get_all(
 		"Usage Record",
-		filters={"document_type": "Site", "date": frappe.utils.today()},
+		filters={
+			"document_type": ("in", ("Site", "Server", "Database Server")),
+			"date": frappe.utils.today(),
+		},
 		pluck="subscription",
+		ignore_ifnull=True,
 	)
 	subscriptions = frappe.db.get_all(
 		"Subscription",
