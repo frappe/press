@@ -539,12 +539,12 @@ class Site(Document):
 		site_domain.remove_redirect()
 
 	@frappe.whitelist()
-	def archive(self, reason=None):
+	def archive(self, reason=None, force=False):
 		log_site_activity(self.name, "Archive", reason)
 		agent = Agent(self.server)
 		self.status = "Pending"
 		self.save()
-		agent.archive_site(self)
+		agent.archive_site(self, force)
 
 		server = frappe.get_all(
 			"Server", filters={"name": self.server}, fields=["proxy_server"], limit=1

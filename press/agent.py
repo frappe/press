@@ -304,12 +304,13 @@ class Agent:
 			site=site.name,
 		)
 
-	def archive_site(self, site):
+	def archive_site(self, site, force):
 		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
 		data = {
 			"mariadb_root_password": get_decrypted_password(
 				"Database Server", database_server, "mariadb_root_password"
 			),
+			"force": force,
 		}
 
 		return self.create_agent_job(
