@@ -222,7 +222,11 @@ def schedule_updates():
 	# Prevent flooding the queue
 	queue_size = frappe.db.get_single_value("Press Settings", "auto_update_queue_size")
 	pending_update_count = frappe.db.count(
-		"Site Update", {"status": ("in", ("Pending", "Running"))}
+		"Site Update",
+		{
+			"status": ("in", ("Pending", "Running")),
+			"creation": (">", frappe.utils.add_to_date(None, hours=-4)),
+		},
 	)
 	if pending_update_count > queue_size:
 		return
