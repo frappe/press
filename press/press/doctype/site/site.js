@@ -118,7 +118,6 @@ frappe.ui.form.on('Site', {
 		frm.add_custom_button(
 			__("Force Archive"),
 			() => {
-				console.log('Hyoooo')
 				frappe.confirm(
 					`Are you sure you want to force drop this site?`,
 					() => frm.call('archive', {force: true}).then((r) => frm.refresh())
