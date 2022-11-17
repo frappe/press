@@ -1272,7 +1272,11 @@ def process_archive_site_job_update(job):
 
 	site_status = frappe.get_value("Site", job.site, "status")
 	if updated_status != site_status:
-		frappe.db.set_value("Site", job.site, "status", updated_status)
+		frappe.db.set_value(
+			"Site",
+			job.site,
+			{"status": updated_status, "archive_failed": updated_status != "Archived"},
+		)
 		if updated_status == "Archived":
 			if backup_tests:
 				frappe.db.set_value(
