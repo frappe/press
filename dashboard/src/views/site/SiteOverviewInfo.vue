@@ -66,12 +66,16 @@
 			</ListItem>
 
 			<ListItem
-				v-if="site.status == 'Inactive'"
+				v-if="('Inactive', 'Broken').includes(site.status)"
 				title="Activate Site"
 				description="The site will become active and will be accessible"
 			>
 				<template v-slot:actions>
-					<Button @click="onActivateClick" class="shrink-0">
+					<Button
+						@click="onActivateClick"
+						class="shrink-0"
+						:appearance="site.status == 'Broken' ? 'primary' : 'secondary'"
+					>
 						Activate Site
 					</Button>
 				</template>
@@ -138,7 +142,8 @@ export default {
 		onActivateClick() {
 			this.$confirm({
 				title: 'Activate Site',
-				message: 'Are you sure you want to activate this site?',
+				message: `Are you sure you want to activate this site?
+				<br><br><strong>Note: Use this as last resort if site is broken and inaccessible</strong>`,
 				actionLabel: 'Activate',
 				actionType: 'primary',
 				action: () => this.activate()
