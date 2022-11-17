@@ -41,7 +41,7 @@ frappe.ui.form.on('Site', {
 			method: 'press.api.account.get'
 		}).then(resp => resp.message);
 
-		if (!site.status) {
+		if (site.status == "Active") {
 			frm.add_custom_button(__('Login as Adminstrator'),
 				() => {
 					if (account) {
@@ -227,9 +227,10 @@ function login_as_admin(site_name, reason = null) {
 			name: site_name,
 			reason: reason
 		}
-	}).then((sid) => {
-		if (sid) {
-			window.open(`https://${site_name}/desk?sid=${sid}`, '_blank');
+	}).then((res) => {
+		console.log(site_name, res.message.sid)
+		if (res) {
+			window.open(`https://${site_name}/desk?sid=${res.message.sid}`, '_blank');
 		}
 	}, (error) => {
 		console.log(error);
