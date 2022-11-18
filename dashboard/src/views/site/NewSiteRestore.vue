@@ -174,7 +174,14 @@ export default {
 					ext: 'application/x-tar',
 					title: 'Private Files',
 					file: null
-				}
+				},
+				{
+					icon: 'file-minus',
+					type: 'config',
+					ext: 'application/json',
+					title: 'Config Files',
+					file: null
+				},
 			],
 			uploadedFiles: {
 				database: null,
