@@ -23,7 +23,6 @@ class SiteUpdate(Document):
 		if not self.destination_group:
 			self.destination_group = self.group
 
-		self.validate_apps()
 		if self.group == self.destination_group:
 			differences = frappe.get_all(
 				"Deploy Candidate Difference",
@@ -37,6 +36,7 @@ class SiteUpdate(Document):
 			self.validate_deploy_candidate_difference(differences)
 		else:
 			self.validate_destination_bench([])
+			self.validate_apps()
 			# Forcefully migrate since we can't compute deploy_type reasonably
 			self.deploy_type = "Migrate"
 
