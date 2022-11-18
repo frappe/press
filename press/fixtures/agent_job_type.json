@@ -2,22 +2,6 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2022-10-19 14:45:01.606264",
-  "name": "Reload NGINX",
-  "request_method": "POST",
-  "request_path": "/server/reload",
-  "steps": [
-   {
-    "parent": "Reload NGINX",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Reload NGINX"
-   }
-  ]
- },
- {
-  "docstatus": 0,
-  "doctype": "Agent Job Type",
   "modified": "2021-06-16 20:39:50.568363",
   "name": "Rename Upstream",
   "request_method": "POST",
@@ -1420,6 +1404,46 @@
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Update Saas Plan"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2022-11-17 10:12:13.952175",
+  "name": "Run After Migrate Steps",
+  "request_method": "POST",
+  "request_path": "benches/{bench}/sites/{site}/run_after_migrate_steps",
+  "steps": [
+   {
+    "parent": "Run After Migrate Steps",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Set Administrator Password"
+   },
+   {
+    "parent": "Run After Migrate Steps",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Setup NGINX"
+   },
+   {
+    "parent": "Run After Migrate Steps",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
+   },
+   {
+    "parent": "Run After Migrate Steps",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Disable Maintenance Mode"
+   },
+   {
+    "parent": "Run After Migrate Steps",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Enable Scheduler"
    }
   ]
  }

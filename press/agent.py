@@ -645,3 +645,11 @@ class Agent:
 	def fetch_bench_status(self, bench):
 		data = self.get(f"benches/{bench}/status")
 		return data
+
+	def run_after_migrate_steps(self, site):
+		return self.create_agent_job(
+			"Run After Migrate Steps",
+			f"benches/{site.bench}/sites/{site.name}/run_after_migrate_steps",
+			bench=site.bench,
+			site=site.name,
+		)

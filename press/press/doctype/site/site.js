@@ -69,7 +69,7 @@ frappe.ui.form.on('Site', {
 							}).show();
 						}
 					} else {
-						frappe.throw(__("Could'nt retrieve account. Check Error Log for more information"));
+						frappe.throw(__("Couldn't retrieve account. Check Error Log for more information"));
 					}
 				},
 				__('Actions'));
@@ -93,13 +93,14 @@ frappe.ui.form.on('Site', {
 			[__('Reinstall'), 'reinstall'],
 			[__('Restore'), 'restore_site'],
 			[__('Restore Tables'), 'restore_tables'],
-			[__('Clear Cache'), 'clear_site_cache'],
 			[__('Update'), 'schedule_update'],
 			[__('Deactivate'), 'deactivate'],
 			[__('Activate'), 'activate'],
+			[__('Clear Cache'), 'clear_site_cache'],
 			[__('Enable Database Access'), 'enable_database_access', !frm.doc.is_database_access_enabled],
 			[__('Disable Database Access'), 'disable_database_access', frm.doc.is_database_access_enabled],
 			[__('Create DNS Record'), 'create_dns_record'],
+			[__('Run After Migrate Steps'), 'run_after_migrate_steps'],
 		].forEach(([label, method, condition]) => {
 			if (typeof condition === "undefined" || condition){
 				frm.add_custom_button(

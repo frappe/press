@@ -1180,6 +1180,11 @@ class Site(Document):
 			)
 		)
 
+	@frappe.whitelist()
+	def run_after_migrate_steps(self):
+		agent = Agent(self.server)
+		agent.run_after_migrate_steps(self)
+
 
 def site_cleanup_after_archive(site):
 	delete_site_domains(site)
