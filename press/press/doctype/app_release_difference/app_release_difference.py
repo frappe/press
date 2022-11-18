@@ -21,6 +21,7 @@ class AppReleaseDifference(Document):
 	def set_deploy_type(self):
 		if self.deploy_type != 'Pending':
 			return
+		self.deploy_type = "Pull"
 
 		source = frappe.get_doc("App Source", self.source)
 		if source.github_installation_id:
