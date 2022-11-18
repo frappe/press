@@ -36,10 +36,10 @@ class SiteUpdate(Document):
 			self.validate_deploy_candidate_difference(differences)
 		else:
 			self.validate_destination_bench([])
-			self.validate_apps()
 			# Forcefully migrate since we can't compute deploy_type reasonably
 			self.deploy_type = "Migrate"
 
+		self.validate_apps()
 		self.validate_pending_updates()
 		self.validate_past_failed_updates()
 
