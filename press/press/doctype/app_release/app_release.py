@@ -16,11 +16,6 @@ from press.press.doctype.app_source.app_source import AppSource
 
 
 class AppRelease(Document):
-	def autoname(self):
-		source = self.source[4:]
-		series = f"REL-{source}-.######"
-		self.name = make_autoname(series)
-
 	def after_insert(self):
 		self.publish_created()
 		self.create_release_differences()
@@ -107,9 +102,6 @@ class AppRelease(Document):
 			shutil.rmtree(self.clone_directory)
 
 	def create_release_differences(self):
-		releases = frappe.get_all(
-			"App Release", {"app": self.app, "source": self.source, "name": ("!=", self.name)}
-		)
 		releases = frappe.db.sql(
 			"""
 			SELECT

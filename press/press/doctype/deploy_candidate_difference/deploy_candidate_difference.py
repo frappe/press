@@ -55,7 +55,7 @@ class DeployCandidateDifference(Document):
 				continue
 			differences = frappe.get_all(
 				"App Release Difference",
-				["name", "deploy_type"],
+				["name"],
 				{"source_release": source.release, "destination_release": destination.release},
 				limit=1,
 			)
@@ -71,7 +71,8 @@ class DeployCandidateDifference(Document):
 				)
 				difference.insert()
 			else:
-				difference = differences[0]
+				difference = frappe.get_doc('App Release Difference', differences[0].name)
+				difference.set_deploy_type()
 			self.append(
 				"apps",
 				{
