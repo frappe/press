@@ -131,10 +131,6 @@ class Site(Document):
 		):
 			self.rename(self._get_site_name(self.subdomain))
 
-		if self.status == "Active" and self.has_value_changed("config"):
-			config = json.loads(self.config)
-			self.update_site_config(config)
-
 	def rename_upstream(self, new_name: str):
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
