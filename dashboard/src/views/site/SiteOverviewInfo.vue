@@ -66,7 +66,7 @@
 			</ListItem>
 
 			<ListItem
-				v-if="('Inactive', 'Broken').includes(site.status)"
+				v-if="['Inactive', 'Broken'].includes(site.status)"
 				title="Activate Site"
 				description="The site will become active and will be accessible"
 			>
