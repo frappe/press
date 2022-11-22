@@ -327,14 +327,14 @@ class Agent:
 		if offsite:
 			settings = frappe.get_single("Press Settings")
 			backups_path = os.path.join(site.name, str(date.today()))
-
-			if settings.aws_s3_bucket:
+			backup_bucket = site.get_backup_bucket()
+			if settings.aws_s3_bucket or backup_bucket:
 				auth = {
 					"ACCESS_KEY": settings.offsite_backups_access_key_id,
 					"SECRET_KEY": settings.get_password("offsite_backups_secret_access_key"),
 				}
 				data.update(
-					{"offsite": {"bucket": settings.aws_s3_bucket, "auth": auth, "path": backups_path}}
+					{"offsite": {"bucket": backup_bucket, "auth": auth, "path": backups_path}}
 				)
 
 			else:

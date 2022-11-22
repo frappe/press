@@ -367,6 +367,16 @@ class Site(Document):
 			}
 		).insert()
 
+	def get_backup_bucket(self):
+		bucket_for_cluster = frappe.get_all(
+			"Backup Bucket", {"cluster": self.cluster}, pluck="bucket_name", limit=1
+		)
+		return (
+			bucket_for_cluster[0]
+			if bucket_for_cluster[0]
+			else frappe.db.get_value("Backup Bucket", {"default": 1}, "bucket_name")
+		)
+
 	@frappe.whitelist()
 	def schedule_update(self, skip_failing_patches=False):
 		log_site_activity(self.name, "Update")
