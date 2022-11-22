@@ -7,17 +7,10 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "default",
   "cluster",
   "bucket_name"
  ],
  "fields": [
-  {
-   "default": "0",
-   "fieldname": "default",
-   "fieldtype": "Check",
-   "label": "Default"
-  },
   {
    "fieldname": "cluster",
    "fieldtype": "Link",
@@ -34,7 +27,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-11-21 22:30:09.431027",
+ "modified": "2022-11-22 11:24:31.488074",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Backup Bucket",

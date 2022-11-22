@@ -373,8 +373,8 @@ class Site(Document):
 		)
 		return (
 			bucket_for_cluster[0]
-			if bucket_for_cluster[0]
-			else frappe.db.get_value("Backup Bucket", {"default": 1}, "bucket_name")
+			if bucket_for_cluster
+			else frappe.db.get_value("Press Settings", None, "bucket_name")
 		)
 
 	@frappe.whitelist()
