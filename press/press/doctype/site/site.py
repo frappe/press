@@ -579,9 +579,6 @@ class Site(Document):
 	@frappe.whitelist()
 	def cleanup_after_archive(self):
 		site_cleanup_after_archive(self.name)
-		domain = frappe.get_doc("Root Domain", self.domain)
-		proxy_server = frappe.get_value("Server", self.server, "proxy_server")
-		self.remove_dns_record(domain, proxy_server)
 
 	def delete_offsite_backups(self):
 		from press.press.doctype.remote_file.remote_file import delete_remote_backup_objects
@@ -1202,6 +1199,14 @@ class Site(Document):
 def site_cleanup_after_archive(site):
 	delete_site_domains(site)
 	release_name(site)
+	delete_site_subdomain(site)
+
+
+def delete_site_subdomain(site):
+	site_doc = frappe.get_doc("Site", site)
+	domain = frappe.get_doc("Root Domain", site_doc.domain)
+	proxy_server = frappe.get_value("Server", site_doc.server, "proxy_server")
+	site_doc.remove_dns_record(domain, proxy_server)
 
 
 def delete_site_domains(site):
