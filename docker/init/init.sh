@@ -22,6 +22,8 @@ function init_bench() {
     bench init --skip-redis-config-generation frappe-bench
 
     cd frappe-bench
+    mkdir .clones
+    mkdir .docker-builds
 
     bench set-mariadb-host mariadb
     bench set-redis-cache-host redis:6379
@@ -51,9 +53,17 @@ function init_bench() {
     bench use press.localhost
 }
 
-if [[ ! -x "$(command -v go)" ]]; then
-    install_go
-fi
+mkdir -p /home/frappe/.certbot
+mkdir -p /home/frappe/.certbot/webroot
+
+sudo apt update
+sudo apt install -y certbot
+python3 -m pip install certbot-dns-route53
+
+install_go
+# if [[ ! -x "$(command -v go)" ]]; then
+#     install_go
+# fi
 
 if [[ ! -e /home/frappe/.local/wait-for-it.sh ]]; then
     wget -q https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh -O /home/frappe/.local/wait-for-it.sh
@@ -70,8 +80,6 @@ else
     echo "Creating new bench..."
     mkdir -p /home/frappe/benches
     cd /home/frappe/benches
-    mkdir -p /home/frappe/.certbot
-    mkdir -p /home/frappe/.certbot/webroot
 
     init_bench
 fi
