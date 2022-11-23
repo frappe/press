@@ -9,7 +9,6 @@ import subprocess
 import frappe
 
 from frappe.model.document import Document
-from frappe.model.naming import make_autoname
 from press.api.github import get_access_token
 from press.utils import log_error
 from press.press.doctype.app_source.app_source import AppSource
