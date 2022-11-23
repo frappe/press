@@ -29,15 +29,17 @@ def get_remote_key(file):
 def poll_file_statuses():
 	available_files = {}
 	doctype = "Remote File"
+	aws_access_key = frappe.db.get_single_value(
+		"Press Settings", "offsite_backups_access_key_id"
+	)
+	aws_secret_key = get_decrypted_password(
+		"Press Settings", "Press Settings", "offsite_backups_secret_access_key"
+	)
 	buckets = {
 		"backups": {
 			"bucket": frappe.db.get_single_value("Press Settings", "aws_s3_bucket"),
-			"access_key_id": frappe.db.get_single_value(
-				"Press Settings", "offsite_backups_access_key_id"
-			),
-			"secret_access_key": get_decrypted_password(
-				"Press Settings", "Press Settings", "offsite_backups_secret_access_key"
-			),
+			"access_key_id": aws_access_key,
+			"secret_access_key": aws_secret_key,
 			"tag": "Offsite Backup",
 		},
 		"uploads": {
@@ -51,6 +53,20 @@ def poll_file_statuses():
 			"tag": "Site Upload",
 		},
 	}
+
+	[
+		buckets.update(
+			{
+				f"backups_{b['cluster'].lower()}": {
+					"bucket": b["bucket_name"],
+					"access_key_id": aws_access_key,
+					"secret_access_key": aws_secret_key,
+					"tag": "Offsite Backup",
+				},
+			}
+		)
+		for b in frappe.get_all("Backup Bucket", ["bucket_name", "cluster"])
+	]
 
 	for bucket in buckets:
 		current_bucket = buckets[bucket]
@@ -140,20 +156,20 @@ class RemoteFile(Document):
 		if not self.bucket:
 			return None
 
-		elif self.bucket == frappe.db.get_single_value("Press Settings", "aws_s3_bucket"):
-			access_key_id = frappe.db.get_single_value(
-				"Press Settings", "offsite_backups_access_key_id"
-			)
-			secret_access_key = get_decrypted_password(
-				"Press Settings", "Press Settings", "offsite_backups_secret_access_key"
-			)
-
 		elif self.bucket == frappe.db.get_single_value(
 			"Press Settings", "remote_uploads_bucket"
 		):
 			access_key_id = frappe.db.get_single_value("Press Settings", "remote_access_key_id")
 			secret_access_key = get_decrypted_password(
 				"Press Settings", "Press Settings", "remote_secret_access_key"
+			)
+
+		elif self.bucket:
+			access_key_id = frappe.db.get_single_value(
+				"Press Settings", "offsite_backups_access_key_id"
+			)
+			secret_access_key = get_decrypted_password(
+				"Press Settings", "Press Settings", "offsite_backups_secret_access_key"
 			)
 
 		else:
