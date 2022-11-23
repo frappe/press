@@ -19,7 +19,7 @@ class AppReleaseDifference(Document):
 			)
 
 	def set_deploy_type(self):
-		if self.deploy_type != 'Pending':
+		if self.deploy_type != "Pending":
 			return
 		self.deploy_type = "Pull"
 
@@ -44,6 +44,7 @@ class AppReleaseDifference(Document):
 
 		self.files = json.dumps(files, indent=4)
 		self.save()
+
 
 def is_migrate_needed(files):
 	patches_file_regex = re.compile(r"\w+/patches\.txt")
