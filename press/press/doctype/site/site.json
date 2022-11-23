@@ -18,6 +18,7 @@
   "bench",
   "group",
   "cluster",
+  "cname_record_deleted",
   "config_tab",
   "host_name",
   "configuration",
@@ -513,6 +514,14 @@
    "fieldtype": "Check",
    "label": "Archive Failed",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "depends_on": "eval: doc.status==\"Archived\"",
+   "fieldname": "cname_record_deleted",
+   "fieldtype": "Check",
+   "label": "CNAME Record Deleted",
+   "read_only": 1
   }
  ],
  "links": [
@@ -582,7 +591,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2022-11-17 18:42:50.729808",
+ "modified": "2022-11-23 17:00:45.706190",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
