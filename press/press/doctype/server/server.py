@@ -677,12 +677,12 @@ class Server(BaseServer):
 		usable_ram = max(
 			self.ram - 3000, self.ram * 0.75
 		)  # in MB (leaving some for disk cache + others)
-		max_background_workers = (
-			usable_ram / 620
-		)  # avg ram usage of 1 set of background_workers
+		usable_ram_for_gunicorn = 0.6 * usable_ram  # 60% of usable ram
+		usable_ram_for_bg = 0.4 * usable_ram  # 40% of usable ram
 		max_gunicorn_workers = (
-			2 * max_background_workers
-		)  # avg gunicorn worker ram usage seems is roughly close to this number
+			usable_ram_for_gunicorn / 150
+		)  # avg ram usage of 1 gunicorn worker
+		max_bg_workers = usable_ram_for_bg / (3 * 80)  # avg ram usage of 3 sets of bg workers
 
 		bench_workloads = {}
 		benches = frappe.get_all(
@@ -699,9 +699,11 @@ class Server(BaseServer):
 		for bench_name, workload in bench_workloads.items():
 			bench = frappe.get_cached_doc("Bench", bench_name)
 			gunicorn_workers = min(
-				64, max(2, frappe.utils.ceil(workload / total_workload * max_gunicorn_workers))
+				24, max(2, round(workload / total_workload * max_gunicorn_workers))  # min 2 max 24
 			)
-			background_workers = min(24, max(1, frappe.utils.floor(gunicorn_workers / 2)))
+			background_workers = min(
+				8, max(1, round(workload / total_workload * max_bg_workers))  # min 1 max 8
+			)
 			bench.gunicorn_workers = gunicorn_workers
 			bench.background_workers = background_workers
 			bench.save()
