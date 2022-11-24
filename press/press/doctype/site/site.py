@@ -1198,8 +1198,8 @@ class Site(Document):
 
 def site_cleanup_after_archive(site):
 	delete_site_domains(site)
-	release_name(site)
 	delete_site_subdomain(site)
+	release_name(site)
 
 
 def delete_site_subdomain(site):
