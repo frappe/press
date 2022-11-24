@@ -140,5 +140,5 @@ def get_backup_bucket(cluster):
 	return (
 		bucket_for_cluster[0]
 		if bucket_for_cluster
-		else frappe.db.get_value("Press Settings", None, "aws_s3_bucket")
+		else frappe.db.get_single_value("Press Settings", "aws_s3_bucket")
 	)
