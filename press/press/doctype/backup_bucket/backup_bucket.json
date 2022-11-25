@@ -8,7 +8,8 @@
  "engine": "InnoDB",
  "field_order": [
   "cluster",
-  "bucket_name"
+  "bucket_name",
+  "region"
  ],
  "fields": [
   {
@@ -23,11 +24,16 @@
    "fieldtype": "Data",
    "label": "Bucket Name",
    "unique": 1
+  },
+  {
+   "fieldname": "region",
+   "fieldtype": "Data",
+   "label": "Region"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-11-22 11:24:31.488074",
+ "modified": "2022-11-25 19:25:05.955859",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Backup Bucket",
