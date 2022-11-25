@@ -29,15 +29,17 @@ def get_remote_key(file):
 def poll_file_statuses():
 	available_files = {}
 	doctype = "Remote File"
+	aws_access_key = frappe.db.get_single_value(
+		"Press Settings", "offsite_backups_access_key_id"
+	)
+	aws_secret_key = get_decrypted_password(
+		"Press Settings", "Press Settings", "offsite_backups_secret_access_key"
+	)
 	buckets = {
 		"backups": {
 			"bucket": frappe.db.get_single_value("Press Settings", "aws_s3_bucket"),
-			"access_key_id": frappe.db.get_single_value(
-				"Press Settings", "offsite_backups_access_key_id"
-			),
-			"secret_access_key": get_decrypted_password(
-				"Press Settings", "Press Settings", "offsite_backups_secret_access_key"
-			),
+			"access_key_id": aws_access_key,
+			"secret_access_key": aws_secret_key,
 			"tag": "Offsite Backup",
 		},
 		"uploads": {
@@ -51,6 +53,20 @@ def poll_file_statuses():
 			"tag": "Site Upload",
 		},
 	}
+
+	[
+		buckets.update(
+			{
+				f"backups_{b['cluster'].lower()}": {
+					"bucket": b["bucket_name"],
+					"access_key_id": aws_access_key,
+					"secret_access_key": aws_secret_key,
+					"tag": "Offsite Backup",
+				},
+			}
+		)
+		for b in frappe.get_all("Backup Bucket", ["bucket_name", "cluster"])
+	]
 
 	for bucket in buckets:
 		current_bucket = buckets[bucket]
@@ -103,29 +119,31 @@ def delete_remote_backup_objects(remote_files):
 		aws_secret_access_key=press_settings.get_password(
 			"offsite_backups_secret_access_key", raise_exception=False
 		),
-		region_name="ap-south-1",
-	).Bucket(press_settings.aws_s3_bucket)
+	)
 
 	remote_files = list(set([x for x in remote_files if x]))
 
 	if not remote_files:
 		return
 
-	remote_files_keys = set(
-		[
-			x[0]
-			for x in frappe.db.get_values(
-				"Remote File", {"name": ("in", remote_files)}, "file_path"
-			)
-		]
-	)
+	buckets = {bucket: [] for bucket in frappe.get_all("Backup Bucket", pluck="name")}
+	buckets.update({frappe.db.get_single_value("Press Settings", "aws_s3_bucket"): []})
 
-	for objects in chunk([{"Key": x} for x in remote_files_keys], 1000):
-		response = s3.delete_objects(Delete={"Objects": objects})
-		response = pprint.pformat(response)
-		frappe.get_doc(
-			doctype="Remote Operation Log", operation_type="Delete Files", response=response
-		).insert()
+	[
+		buckets[bucket].append(file)
+		for file, bucket in frappe.db.get_values(
+			"Remote File", {"name": ("in", remote_files)}, ["file_path", "bucket"]
+		)
+	]
+
+	for bucket_name in buckets.keys():
+		bucket = s3.Bucket(bucket_name)
+		for objects in chunk([{"Key": x} for x in buckets[bucket_name]], 1000):
+			response = bucket.delete_objects(Delete={"Objects": objects})
+			response = pprint.pformat(response)
+			frappe.get_doc(
+				doctype="Remote Operation Log", operation_type="Delete Files", response=response
+			).insert()
 
 	frappe.db.set_value(
 		"Remote File", {"name": ("in", remote_files)}, "status", "Unavailable"
@@ -140,20 +158,20 @@ class RemoteFile(Document):
 		if not self.bucket:
 			return None
 
-		elif self.bucket == frappe.db.get_single_value("Press Settings", "aws_s3_bucket"):
-			access_key_id = frappe.db.get_single_value(
-				"Press Settings", "offsite_backups_access_key_id"
-			)
-			secret_access_key = get_decrypted_password(
-				"Press Settings", "Press Settings", "offsite_backups_secret_access_key"
-			)
-
 		elif self.bucket == frappe.db.get_single_value(
 			"Press Settings", "remote_uploads_bucket"
 		):
 			access_key_id = frappe.db.get_single_value("Press Settings", "remote_access_key_id")
 			secret_access_key = get_decrypted_password(
 				"Press Settings", "Press Settings", "remote_secret_access_key"
+			)
+
+		elif self.bucket:
+			access_key_id = frappe.db.get_single_value(
+				"Press Settings", "offsite_backups_access_key_id"
+			)
+			secret_access_key = get_decrypted_password(
+				"Press Settings", "Press Settings", "offsite_backups_secret_access_key"
 			)
 
 		else:

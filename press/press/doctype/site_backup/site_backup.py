@@ -64,7 +64,7 @@ def track_offsite_backups(
 	remote_files = {"database": None, "public": None, "private": None}
 
 	if offsite_backup_data:
-		bucket = frappe.db.get_single_value("Press Settings", "aws_s3_bucket")
+		bucket = get_backup_bucket(frappe.db.get_value("Site", site, "cluster"))
 		for type, backup in backup_data.items():
 			file_name, file_size = backup["file"], backup["size"]
 			file_path = offsite_backup_data.get(file_name)
@@ -131,3 +131,14 @@ def process_backup_site_job_update(job):
 					},
 					for_update=False,
 				)
+
+
+def get_backup_bucket(cluster):
+	bucket_for_cluster = frappe.get_all(
+		"Backup Bucket", {"cluster": cluster}, pluck="bucket_name", limit=1
+	)
+	return (
+		bucket_for_cluster[0]
+		if bucket_for_cluster
+		else frappe.db.get_single_value("Press Settings", "aws_s3_bucket")
+	)

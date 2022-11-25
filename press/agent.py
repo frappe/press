@@ -322,12 +322,14 @@ class Agent:
 		)
 
 	def backup_site(self, site, with_files=False, offsite=False):
+		from press.press.doctype.site_backup.site_backup import get_backup_bucket
+
 		data = {"with_files": with_files}
 
 		if offsite:
 			settings = frappe.get_single("Press Settings")
 			backups_path = os.path.join(site.name, str(date.today()))
-			backup_bucket = site.get_backup_bucket()
+			backup_bucket = get_backup_bucket(site.cluster)
 			if settings.aws_s3_bucket or backup_bucket:
 				auth = {
 					"ACCESS_KEY": settings.offsite_backups_access_key_id,
