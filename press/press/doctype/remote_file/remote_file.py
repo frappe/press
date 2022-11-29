@@ -136,7 +136,9 @@ def delete_remote_backup_objects(remote_files):
 	[
 		buckets[bucket].append(file)
 		for file, bucket in frappe.db.get_values(
-			"Remote File", {"name": ("in", remote_files)}, ["file_path", "bucket"]
+			"Remote File",
+			{"name": ("in", remote_files), "status": "Available"},
+			["file_path", "bucket"],
 		)
 	]
 
