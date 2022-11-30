@@ -7,6 +7,11 @@ const props = defineProps({
 	marketplaceApp: String
 });
 
+const params = new Proxy(new URLSearchParams(window.location.search), {
+  get: (searchParams, prop) => searchParams.get(prop),
+});
+let appTitle = params.title;
+
 const review = reactive({
 	app: props.marketplaceApp,
 	title: '',
@@ -35,7 +40,7 @@ const submitReview = useResource({
 	<div class="px-4 py-4 text-base sm:px-8">
 		<div>
 			<h1 class="mb-4 text-xl font-semibold">
-				Review App: {{ props.marketplaceApp }}
+				Review App: {{ appTitle }}
 			</h1>
 		</div>
 
