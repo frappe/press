@@ -691,7 +691,9 @@ class Team(Document):
 
 	def create_upcoming_invoice(self, type="Subscription"):
 		today = frappe.utils.today()
-		return frappe.get_doc(doctype="Invoice", team=self.name, period_start=today, type=type).insert()
+		return frappe.get_doc(
+			doctype="Invoice", team=self.name, period_start=today, type=type
+		).insert()
 
 	def notify_with_email(self, recipients: List[str], **kwargs):
 		if not self.send_notifications:
