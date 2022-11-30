@@ -670,7 +670,7 @@ class Team(Document):
 			frappe.get_doc("Site", site).unsuspend(reason)
 		return suspended_sites
 
-	def get_upcoming_invoice(self):
+	def get_upcoming_invoice(self, type="Subscription"):
 		# get the current period's invoice
 		today = frappe.utils.datetime.datetime.today()
 		result = frappe.db.get_all(
@@ -678,7 +678,7 @@ class Team(Document):
 			filters={
 				"status": "Draft",
 				"team": self.name,
-				"type": "Subscription",
+				"type": type,
 				"period_start": ("<=", today),
 				"period_end": (">=", today),
 			},
@@ -689,9 +689,9 @@ class Team(Document):
 		if result:
 			return frappe.get_doc("Invoice", result[0])
 
-	def create_upcoming_invoice(self):
+	def create_upcoming_invoice(self, type="Subscription"):
 		today = frappe.utils.today()
-		return frappe.get_doc(doctype="Invoice", team=self.name, period_start=today).insert()
+		return frappe.get_doc(doctype="Invoice", team=self.name, period_start=today, type=type).insert()
 
 	def notify_with_email(self, recipients: List[str], **kwargs):
 		if not self.send_notifications:
