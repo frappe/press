@@ -17,9 +17,8 @@ class UsageRecord(Document):
 			self.time = frappe.utils.nowtime()
 
 	def on_submit(self):
-		invoice_type = "Summary" if self.prepaid else "Subscription"
 		try:
-			self.update_usage_in_invoice(invoice_type)
+			self.update_usage_in_invoice()
 		except Exception:
 			log_error(title="Usage Record Invoice Update Error", name=self.name)
 
@@ -27,7 +26,8 @@ class UsageRecord(Document):
 		if not self.prepaid:
 			self.remove_usage_from_invoice()
 
-	def update_usage_in_invoice(self, invoice_type):
+	def update_usage_in_invoice(self):
+		invoice_type = "Summary" if self.prepaid else "Subscription"
 		team = frappe.get_doc("Team", self.team)
 		if team.free_account:
 			return
