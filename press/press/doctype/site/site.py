@@ -396,6 +396,12 @@ class Site(Document):
 			}
 		).insert()
 
+	@frappe.whitelist()
+	def move_to_bench(self, bench, deactivate=True, skip_failing_patches=False):
+		log_site_activity(self.name, "Update")
+		agent = Agent(self.server)
+		agent.move_site_to_bench(self, bench, deactivate, skip_failing_patches)
+
 	def reset_previous_status(self):
 		self.status = self.status_before_update
 		self.status_before_update = None
