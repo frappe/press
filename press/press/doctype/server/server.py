@@ -80,8 +80,7 @@ class BaseServer(Document):
 	def get_agent_repository_url(self):
 		settings = frappe.get_single("Press Settings")
 		repository_owner = settings.agent_repository_owner or "frappe"
-		token = settings.agent_github_access_token
-		url = f"https://x-access-token:{token}@github.com/{repository_owner}/agent"
+		url = f"https://github.com/{repository_owner}/agent"
 		return url
 
 	@frappe.whitelist()
