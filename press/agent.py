@@ -655,3 +655,28 @@ class Agent:
 			bench=site.bench,
 			site=site.name,
 		)
+
+	def move_site_to_bench(
+		self,
+		site,
+		target,
+		deactivate=True,
+		skip_failing_patches=False,
+	):
+		"""
+		Move site to bench without backup
+		"""
+		activate = site.status_before_update in ("Active", "Broken")
+		data = {
+			"target": target,
+			"deactivate": deactivate,
+			"activate": activate,
+			"skip_failing_patches": skip_failing_patches,
+		}
+		return self.create_agent_job(
+			f"Move Site to Bench",
+			f"benches/{site.bench}/sites/{site.name}/move_site_to_bench",
+			data,
+			bench=site.bench,
+			site=site.name,
+		)
