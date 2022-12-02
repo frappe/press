@@ -666,7 +666,7 @@ class Agent:
 		"""
 		Move site to bench without backup
 		"""
-		activate = site.status_before_update in ("Active", "Broken")
+		activate = site.status not in ("Inactive", "Suspended")
 		data = {
 			"target": target,
 			"deactivate": deactivate,
