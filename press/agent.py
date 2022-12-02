@@ -248,7 +248,7 @@ class Agent:
 		)
 
 	def update_site(self, site, target, deploy_type, skip_failing_patches=False):
-		activate = site.status_before_update == "Active"
+		activate = site.status_before_update in ("Active", "Broken")
 		data = {
 			"target": target,
 			"activate": activate,
