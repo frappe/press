@@ -675,7 +675,7 @@ class Agent:
 		}
 		return self.create_agent_job(
 			f"Move Site to Bench",
-			f"benches/{site.bench}/sites/{site.name}/move_site_to_bench",
+			f"benches/{site.bench}/sites/{site.name}/move_to_bench",
 			data,
 			bench=site.bench,
 			site=site.name,
