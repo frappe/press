@@ -1394,6 +1394,27 @@ def process_remove_proxysql_user_job_update(job):
 		frappe.db.set_value("Site", job.site, "is_database_access_enabled", False)
 
 
+def process_move_site_to_bench_job_update(job):
+	updated_status = {
+		"Pending": "Pending",
+		"Running": "Updating",
+		"Success": "Active",
+		"Failure": "Broken",
+	}[job.status]
+
+	if job.status in ("Success", "Failure"):
+		site_bench = frappe.db.get_value("Site", job.site, "bench")
+		dest_bench = json.loads(job.request_data).get("target")
+		dest_group = frappe.db.get_value("Bench", dest_bench, "group")
+
+		move_site_step_status = frappe.db.get_value(
+			"Agent Job Step", {"step_name": "Move Site", "agent_job": job.name}, "status"
+		)
+		frappe.db.set_value("Site", job.site, "bench", dest_bench)
+		frappe.db.set_value("Site", job.site, "group", dest_group)
+	frappe.db.set_value("Site", job.site, "status", updated_status)
+
+
 def update_records_for_rename(job):
 	"""Update press records for successful site rename."""
 	data = json.loads(job.request_data)

@@ -338,6 +338,7 @@ def process_job_updates(job_name):
 			process_restore_tables_job_update,
 			process_add_proxysql_user_job_update,
 			process_remove_proxysql_user_job_update,
+			process_move_site_to_bench_job_update,
 		)
 		from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
 		from press.press.doctype.site_domain.site_domain import process_new_host_job_update
@@ -407,6 +408,8 @@ def process_job_updates(job_name):
 			process_remove_proxysql_user_job_update(job)
 		elif job.job_type == "Reload NGINX":
 			process_update_nginx_job_update(job)
+		elif job.job_type == "Move Site to Bench":
+			process_move_site_to_bench_job_update(job)
 
 	except Exception as e:
 		log_error("Agent Job Callback Exception", job=job.as_dict())
