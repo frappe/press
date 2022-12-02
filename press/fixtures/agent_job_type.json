@@ -1446,5 +1446,63 @@
     "step_name": "Enable Scheduler"
    }
   ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2022-12-02 07:54:16.581300",
+  "name": "Move Site to Bench",
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/sites/{site}/move_to_bench",
+  "steps": [
+   {
+    "parent": "Move Site to Bench",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Enable Maintenance Mode"
+   },
+   {
+    "parent": "Move Site to Bench",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Wait for Enqueued Jobs"
+   },
+   {
+    "parent": "Move Site to Bench",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Move Site"
+   },
+   {
+    "parent": "Move Site to Bench",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Setup NGINX"
+   },
+   {
+    "parent": "Move Site to Bench",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Setup NGINX Target"
+   },
+   {
+    "parent": "Move Site to Bench",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
+   },
+   {
+    "parent": "Move Site to Bench",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Migrate Site"
+   },
+   {
+    "parent": "Move Site to Bench",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Disable Maintenance Mode"
+   }
+  ]
  }
 ]
