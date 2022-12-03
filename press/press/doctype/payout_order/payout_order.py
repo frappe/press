@@ -15,6 +15,7 @@ class PayoutOrder(Document):
 	def validate(self):
 		self.validate_items()
 		self.validate_net_totals()
+		self.validate_commission()
 
 	def validate_items(self):
 		for row in self.items:
@@ -62,6 +63,45 @@ class PayoutOrder(Document):
 				self.net_total_inr += row.net_amount
 			else:
 				self.net_total_usd += row.net_amount
+
+		usd_rate = frappe.db.get_single_value("Press Settings", "usd_rate")
+
+		# in recipient's currency
+		self.overall_net_total = (
+			self.net_total_usd + self.net_total_inr / usd_rate
+			if self.recipient_currency == "USD"
+			else self.net_total_usd * usd_rate + self.net_total_inr
+		)
+
+	def validate_commission(self):
+		payout_data = frappe.db.get_value(
+			"Press Settings", None, ["threshold", "commission", "usd_rate"], as_dict=1
+		)
+		commission = float(payout_data["commission"])
+		po = frappe.get_all(
+			"Payout Order",
+			{"recipient": self.recipient},
+			["sum(overall_net_total) as total"],
+		)
+		if po and po[0]["total"] != None:
+			total = (
+				po[0]["total"]
+				if self.recipient_currency == "USD"
+				else po[0]["total"] / float(payout_data["usd_rate"])
+			)
+		else:
+			total = 0
+
+		if total <= float(payout_data["threshold"]) and not frappe.db.exists(
+			"Payout Order", {"recipient": self.recipient, "status": "Paid"}
+		):
+			commission = 1.0
+
+		self.set_commission_and_final_payout(commission)
+
+	def set_commission_and_final_payout(self, commission):
+		self.commission = commission
+		self.final_payout = self.overall_net_total - self.overall_net_total * commission
 
 	def before_submit(self):
 		if self.mode_of_payment == "Cash" and (not self.frappe_purchase_order):

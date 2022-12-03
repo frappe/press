@@ -124,6 +124,9 @@
   "marketplace_settings_section",
   "max_allowed_screenshots",
   "allow_developer_account",
+  "threshold",
+  "commission",
+  "usd_rate",
   "infrastructure_tab",
   "agent_section",
   "agent_repository_owner",
@@ -910,11 +913,26 @@
    "fieldtype": "Select",
    "label": "Verify Cards with Micro Charge",
    "options": "No\nOnly INR\nOnly USD\nBoth INR and USD"
+  },
+  {
+   "fieldname": "threshold",
+   "fieldtype": "Float",
+   "label": "Marketplace Payout Threshold"
+  },
+  {
+   "fieldname": "commission",
+   "fieldtype": "Float",
+   "label": "Marketplace Commission"
+  },
+  {
+   "fieldname": "usd_rate",
+   "fieldtype": "Float",
+   "label": "Commission USD Rate"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2022-11-25 20:23:06.584973",
+ "modified": "2022-12-02 18:56:47.099335",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

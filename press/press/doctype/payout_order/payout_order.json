@@ -8,6 +8,7 @@
  "engine": "InnoDB",
  "field_order": [
   "recipient",
+  "recipient_currency",
   "period_start",
   "due_date",
   "status",
@@ -25,7 +26,11 @@
   "section_break_14",
   "net_total_inr",
   "column_break_15",
-  "net_total_usd"
+  "net_total_usd",
+  "section_break_21",
+  "overall_net_total",
+  "commission",
+  "final_payout"
  ],
  "fields": [
   {
@@ -110,7 +115,7 @@
   },
   {
    "fieldname": "net_total_usd",
-   "fieldtype": "Data",
+   "fieldtype": "Currency",
    "label": "Net Total USD",
    "read_only": 1
   },
@@ -131,12 +136,38 @@
    "fieldname": "period_end",
    "fieldtype": "Date",
    "label": "Period End"
+  },
+  {
+   "fetch_from": "recipient.currency",
+   "fieldname": "recipient_currency",
+   "fieldtype": "Data",
+   "label": "Recipient Currency"
+  },
+  {
+   "fieldname": "section_break_21",
+   "fieldtype": "Section Break"
+  },
+  {
+   "description": "In recipient's currency",
+   "fieldname": "overall_net_total",
+   "fieldtype": "Currency",
+   "label": "Overall Net Total"
+  },
+  {
+   "fieldname": "commission",
+   "fieldtype": "Currency",
+   "label": "Commission"
+  },
+  {
+   "fieldname": "final_payout",
+   "fieldtype": "Currency",
+   "label": "Final Payout"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2022-10-31 00:37:58.102707",
+ "modified": "2022-12-02 16:54:51.235547",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Payout Order",
