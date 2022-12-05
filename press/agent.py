@@ -674,7 +674,7 @@ class Agent:
 			"skip_failing_patches": skip_failing_patches,
 		}
 		return self.create_agent_job(
-			f"Move Site to Bench",
+			"Move Site to Bench",
 			f"benches/{site.bench}/sites/{site.name}/move_to_bench",
 			data,
 			bench=site.bench,

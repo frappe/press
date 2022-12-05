@@ -83,7 +83,7 @@ class PayoutOrder(Document):
 			{"recipient": self.recipient},
 			["sum(overall_net_total) as total"],
 		)
-		if po and po[0]["total"] != None:
+		if po and po[0]["total"] is not None:
 			total = (
 				po[0]["total"]
 				if self.recipient_currency == "USD"
