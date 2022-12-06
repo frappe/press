@@ -9,7 +9,7 @@
 			<LoadingIndicator v-if="$resources.fetchDatabaseAccessInfo.loading" />
 
 			<!-- Not available on current plan, upsell higher plans -->
-			<div v-else-if="!databaseAccessInfo?.is_available_on_current_plan">
+			<div v-else-if="!databaseAccessInfo?.is_available_on_current_plan">dbAccessCommand
 				<div>
 					<p class="text-base">
 						Database access is not available on your current plan. Please
@@ -230,7 +230,7 @@ export default {
 		dbAccessCommand() {
 			if (this.databaseAccessInfo) {
 				const { credentials } = this.databaseAccessInfo;
-				return `mysql -u ${credentials.username} -p${credentials.password} -h ${credentials.host} -P ${credentials.port} --ssl --ssl-verify-server-cert`;
+				return `mysql -u ${credentials.username} -p -h ${credentials.host} -P ${credentials.port} --ssl --ssl-verify-server-cert`;
 			}
 			return null;
 		},
