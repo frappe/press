@@ -315,6 +315,7 @@ def versions(name):
 					app.source,
 					["branch", "repository", "repository_owner", "repository_url"],
 					as_dict=1,
+					cache=True,
 				)
 			)
 			app.tag = get_app_tag(app.repository, app.repository_owner, app.hash)

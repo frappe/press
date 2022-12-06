@@ -58,6 +58,7 @@ def get_current_team(get_doc=False):
 	return team
 
 
+@functools.lru_cache(maxsize=1024)
 def get_app_tag(repository, repository_owner, hash):
 	return frappe.db.get_value(
 		"App Tag",
