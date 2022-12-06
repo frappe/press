@@ -1041,7 +1041,7 @@ class Site(Document):
 	def can_charge_for_subscription(self):
 		today = frappe.utils.getdate()
 		return (
-			self.status not in ["Archived", "Broken", "Suspended"]
+			self.status not in ["Archived", "Suspended"]
 			and self.team
 			and self.team != "Administrator"
 			and not self.free
