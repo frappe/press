@@ -799,11 +799,19 @@ def finalize_draft_invoices():
 	"""
 
 	today = frappe.utils.today()
+	# only finalize for enabled teams
+	# since 'limit' returns the same set of invoices for disabled teams which are ignored
+	enabled_teams = frappe.get_all("Team", {"enabled": 1}, pluck="name")
 
 	# get draft invoices whose period has ended or ends today
 	invoices = frappe.db.get_all(
 		"Invoice",
-		filters={"status": "Draft", "type": "Subscription", "period_end": ("<=", today)},
+		filters={
+			"status": "Draft",
+			"type": "Subscription",
+			"period_end": ("<=", today),
+			"team": ("in", enabled_teams),
+		},
 		pluck="name",
 		limit=500,
 		order_by="total desc",
