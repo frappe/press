@@ -162,6 +162,11 @@ def create_usage_records():
 		{"marketplace_app_plan": ("in", marketplace_paid_plans), "status": "Active"},
 		pluck="site",
 	)
+	free_sites = frappe.get_all(
+		"Site", filters={"free": True, "status": "Active"}, pluck="name"
+	)
+	documents_to_ignore = sites_with_standard_hosting + free_sites
+
 	already_created = frappe.get_all(
 		"Usage Record",
 		filters={
@@ -178,7 +183,7 @@ def create_usage_records():
 			"enabled": True,
 			"plan": ("in", paid_plans),
 			"name": ("not in", already_created),
-			"document_name": ("not in", sites_with_standard_hosting),
+			"document_name": ("not in", documents_to_ignore),
 		},
 		pluck="name",
 		limit=2000,
