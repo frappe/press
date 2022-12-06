@@ -299,6 +299,7 @@ export default {
 			let tabRoute = subRoute => `/sites/${this.siteName}/${subRoute}`;
 			let tabs = [
 				{ label: 'Overview', route: 'overview' },
+				{ label: 'Apps', route: 'apps' },
 				{ label: 'Analytics', route: 'analytics' },
 				{ label: 'Database', route: 'database' },
 				{ label: 'Site Config', route: 'site-config' },
@@ -314,6 +315,7 @@ export default {
 			let tabsByStatus = {
 				Active: [
 					'Overview',
+					'Apps',
 					'Analytics',
 					'Database',
 					siteConfig,
@@ -324,6 +326,7 @@ export default {
 				],
 				Inactive: [
 					'Overview',
+					'Apps',
 					'Database',
 					siteConfig,
 					'Activity',
@@ -334,6 +337,7 @@ export default {
 				Pending: ['Jobs'],
 				Broken: [
 					'Overview',
+					'Apps',
 					siteConfig,
 					'Database',
 					'Activity',
@@ -342,6 +346,7 @@ export default {
 				],
 				Suspended: [
 					'Overview',
+					'Apps',
 					'Activity',
 					'Database',
 					'Jobs',
