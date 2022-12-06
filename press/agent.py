@@ -649,11 +649,15 @@ class Agent:
 		return data
 
 	def run_after_migrate_steps(self, site):
+		data = {
+			"admin_password": site.get_password("admin_password"),
+		}
 		return self.create_agent_job(
 			"Run After Migrate Steps",
 			f"benches/{site.bench}/sites/{site.name}/run_after_migrate_steps",
 			bench=site.bench,
 			site=site.name,
+			data=data,
 		)
 
 	def move_site_to_bench(
