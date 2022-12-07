@@ -7,6 +7,7 @@ import registerGlobalComponents from './components/global/register';
 import * as Sentry from '@sentry/vue';
 import { BrowserTracing } from '@sentry/tracing';
 import router from './router/index';
+import dayjs from 'dayjs';
 
 const app = createApp(App);
 
@@ -32,6 +33,7 @@ if (window.press_frontend_sentry_dsn.includes('https://')) {
 
 app.mount('#app');
 
+app.config.globalProperties.$dayjs = dayjs
 app.config.errorHandler = (error, instance) => {
 	if (instance) {
 		instance.$notify({

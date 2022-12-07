@@ -153,3 +153,4 @@ export async function trypromise(promise) {
 }
 
 export { utils };
+export { default as dayjs } from './utils/dayjs';
