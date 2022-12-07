@@ -80,17 +80,9 @@
 				</div>
 			</div>
 
-			<div>
-				<SectionHeader heading="All Sites">
-					<template v-if="!recentSitesVisible" v-slot:actions>
-						<SiteAndBenchSearch />
-					</template>
-				</SectionHeader>
-
-				<div class="mt-3">
-					<LoadingText v-if="$resources.allSites.loading" />
-					<SiteList v-else :sites="sites" />
-				</div>
+			<div class="mt-3">
+				<LoadingText v-if="$resources.allSites.loading" />
+				<SiteList v-else :sites="sites" />
 			</div>
 			<FrappeUIDialog
 				:options="{ title: 'Add card to create new sites' }"
