@@ -84,7 +84,7 @@
 						>Change Plan</Button
 					>
 					<Button
-						appearance="primary"
+						appearance="secondary"
 						v-if="!app.plan_info && app.subscription_available"
 						@click="
 							() => {
