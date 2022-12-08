@@ -93,6 +93,7 @@ class GitHubWebhookLog(Document):
 					"doctype": "App Tag",
 					"tag": self.tag,
 					"hash": commit["id"],
+					"timestamp": commit["timestamp"],
 					"repository": self.repository,
 					"repository_owner": self.repository_owner,
 					"github_installation_id": self.github_installation_id,

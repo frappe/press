@@ -721,14 +721,17 @@ def get_installed_apps(site):
 	for app in installed_bench_apps:
 		app_source = find(sources, lambda x: x.name == app.source)
 		app_source.hash = app.hash
-		app_source.tag = frappe.db.get_value(
-			"App Tag",
-			{
-				"repository": app_source.repository,
-				"repository_owner": app_source.repository_owner,
-				"hash": app_source.hash,
-			},
-			"tag",
+		app_source.update(
+			frappe.db.get_value(
+				"App Tag",
+				{
+					"repository": app_source.repository,
+					"repository_owner": app_source.repository_owner,
+					"hash": app_source.hash,
+				},
+				["tag", "timestamp"],
+				as_dict=True,
+			)
 		)
 		app_source.subscription_available = bool(
 			frappe.db.exists(
