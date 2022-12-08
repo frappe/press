@@ -55,18 +55,23 @@ def new(bench):
 @protected("Release Group")
 def get(name):
 	group = frappe.get_doc("Release Group", name)
-	active_benches = frappe.get_all(
-		"Bench", {"group": name, "status": "Active"}, limit=1, order_by="creation desc"
-	)
 	return {
 		"name": group.name,
 		"title": group.title,
 		"version": group.version,
-		"status": "Active" if active_benches else "Awaiting Deploy",
+		"status": get_group_status(name),
 		"last_updated": group.modified,
 		"creation": group.creation,
 		"saas_app": group.saas_app or "",
 	}
+
+
+def get_group_status(name):
+	active_benches = frappe.get_all(
+		"Bench", {"group": name, "status": "Active"}, limit=1, order_by="creation desc"
+	)
+
+	return "Active" if active_benches else "Awaiting Deploy"
 
 
 @frappe.whitelist()
@@ -96,6 +101,7 @@ def all():
 	app_counts = get_app_counts_for_groups([rg.name for rg in private_groups])
 	for group in private_groups:
 		group.number_of_apps = app_counts[group.name]
+		group.status = get_group_status(group.name)
 
 	return private_groups
 

@@ -19,6 +19,9 @@
 							{{ bench.title }}
 						</div>
 						<div class="text-base sm:w-4/12">
+							<Badge :status="bench.status" />
+						</div>
+						<div class="text-base sm:w-4/12">
 							<Badge :status="`${bench.number_of_apps} Apps`" />
 						</div>
 						<div
