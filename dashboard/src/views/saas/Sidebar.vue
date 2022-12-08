@@ -1,33 +1,87 @@
 <template>
-	<div class="flex flex-col">
-		<router-link
-			v-for="item in items"
-			:key="item.label"
-			:to="item.route"
-			v-slot="{ href, route, navigate }"
-		>
-			<a
-				:class="[
-					(Boolean(item.highlight) ? item.highlight(route) : item.route == '/')
-						? 'bg-blue-50 text-blue-500'
-						: 'text-gray-900 hover:bg-gray-50'
-				]"
-				:href="href"
-				@click="navigate"
-				class="text-start mb-2 flex rounded-md py-2 pl-2 pr-10 text-sm font-medium focus:outline-none"
+	<div class="flex h-screen flex-col justify-between bg-zinc-100 p-2">
+		<div>
+			<FrappeCloudLogo class="my-6 ml-2 h-4 w-auto" />
+			<router-link
+				v-for="item in items"
+				:key="item.label"
+				:to="item.route"
+				v-slot="{ href, route, navigate }"
 			>
-				<Component class="mr-1.5" :is="item.icon" />
-				{{ item.label }}
-			</a>
-		</router-link>
+				<a
+					:class="[
+						(
+							Boolean(item.highlight)
+								? item.highlight(route)
+								: item.route == '/'
+						)
+							? 'bg-white text-blue-500'
+							: 'text-gray-900 hover:bg-gray-50'
+					]"
+					:href="href"
+					@click="navigate"
+					class="text-start mb-2 flex rounded-md py-2 pl-2 pr-10 text-sm font-medium focus:outline-none"
+				>
+					<Component class="mr-1.5" :is="item.icon" />
+					{{ item.label }}
+				</a>
+			</router-link>
+		</div>
+		<Dropdown
+			:items="[
+				{
+					label: 'Docs',
+					action: () => window.location.replace('/docs')
+				},
+				{
+					label: 'Support',
+					action: () => window.location.replace('/support')
+				},
+				{
+					label: 'Settings',
+					action: () => this.$router.push('/settings')
+				},
+				{
+					label: 'Logout',
+					action: () => this.$auth.logout()
+				}
+			]"
+			:dropdown-width-full="true"
+			right
+		>
+			<template v-slot="{ toggleDropdown }">
+				<div
+					class="m-2 flex cursor-pointer items-center gap-2 rounded-md p-2 hover:bg-zinc-200"
+					:class="shoDropdown ? 'bg-gray-200' : ''"
+					@click="toggleDropdown()"
+				>
+					<Avatar
+						v-if="$account.user"
+						:label="$account.user.first_name"
+						:imageURL="$account.user.user_image"
+					/>
+
+					<div v-if="$account.user">
+						<h3 class="text-base font-semibold">
+							{{ $account.user.full_name }}
+						</h3>
+						<p class="text-xs text-gray-600">{{ $account.user.email }}</p>
+					</div>
+				</div>
+			</template>
+		</Dropdown>
 	</div>
 </template>
 
 <script>
 import { FCIcons } from '@/components/icons';
+import FrappeCloudLogo from '@/components/FrappeCloudLogo.vue';
 
 export default {
 	name: 'Sidebar',
+	components: {
+		FrappeCloudLogo
+	},
 	computed: {
 		items() {
 			return [
