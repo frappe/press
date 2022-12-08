@@ -38,7 +38,7 @@
 
 						<CommitTag
 							class="hidden ml-2 group-hover:block"
-							:tag="$dayjs.shortFormating($dayjs(app.timestamp).fromNow()) + ' ago'"
+							:tag="getCommitTag(app)"
 							:link="`${app.repository_url}/commit/${app.hash}`"
 						/>
 					</div>
@@ -337,6 +337,11 @@ export default {
 		}
 	},
 	methods: {
+		getCommitTag(app) {
+			return app.timestamp
+				? $dayjs.shortFormating($dayjs(app.timestamp).fromNow()) + ' ago'
+				: app.hash.substr(0, 7);
+		},
 		subscribe(app) {
 			this.showPlanSelectionDialog = true;
 		},
