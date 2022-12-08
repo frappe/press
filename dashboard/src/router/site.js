@@ -36,7 +36,8 @@ export default [
 			{
 				name: 'SiteOverviewAppsAndSubscriptions',
 				path: 'apps',
-				component: () => import('../views/site/SiteOverviewAppsAndSubscriptions.vue'),
+				component: () =>
+					import('../views/site/SiteOverviewAppsAndSubscriptions.vue'),
 				props: true
 			},
 			{

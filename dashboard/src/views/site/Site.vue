@@ -11,7 +11,9 @@
 					class="flex flex-col space-y-3 md:flex-row md:items-baseline md:justify-between md:space-y-0"
 				>
 					<div class="mt-2 flex items-center">
-						<h1 class="text-2xl font-bold">{{ site.host_name || site.name }}</h1>
+						<h1 class="text-2xl font-bold">
+							{{ site.host_name || site.name }}
+						</h1>
 						<Badge
 							class="ml-4 hidden md:inline-block"
 							:status="site.status"
@@ -344,14 +346,7 @@ export default {
 					'Jobs',
 					'Logs'
 				],
-				Suspended: [
-					'Overview',
-					'Apps',
-					'Activity',
-					'Database',
-					'Jobs',
-					'Plan'
-				]
+				Suspended: ['Overview', 'Apps', 'Activity', 'Database', 'Jobs', 'Plan']
 			};
 			if (this.site) {
 				let tabsToShow = tabsByStatus[this.site.status];

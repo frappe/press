@@ -62,10 +62,12 @@
 
 		<Dialog v-model="showAppPlanChangeDialog" width="half" :dismissable="true">
 			<ChangeAppPlanSelector
-			 @change="plan => {
-					newAppPlan = plan.name;
-					newAppPlanIsFree = plan.is_free;
-				 }"
+				@change="
+					plan => {
+						newAppPlan = plan.name;
+						newAppPlanIsFree = plan.is_free;
+					}
+				"
 				v-if="appToChangePlan"
 				:app="appToChangePlan.name"
 				:currentPlan="appToChangePlan.plan"
@@ -157,12 +159,15 @@ export default {
 		},
 
 		handlePlanChange() {
-			if (this.appToChangePlan.billing_type == 'prepaid' && !this.newAppPlanIsFree) {
+			if (
+				this.appToChangePlan.billing_type == 'prepaid' &&
+				!this.newAppPlanIsFree
+			) {
 				if (this.$account.hasBillingInfo) {
 					this.showAppPlanChangeDialog = false;
 					this.showCheckoutDialog = true;
 				} else {
-					window.location = '/dashboard/billing'
+					window.location = '/dashboard/billing';
 				}
 			} else {
 				this.switchToNewPlan();

@@ -33,7 +33,7 @@ if (window.press_frontend_sentry_dsn.includes('https://')) {
 
 app.mount('#app');
 
-app.config.globalProperties.$dayjs = dayjs
+app.config.globalProperties.$dayjs = dayjs;
 app.config.errorHandler = (error, instance) => {
 	if (instance) {
 		instance.$notify({

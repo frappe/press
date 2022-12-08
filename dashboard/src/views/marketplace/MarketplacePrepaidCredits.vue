@@ -73,7 +73,7 @@
 
 			<div class="flex justify-between">
 				GST (if applicable)
-				<p class="text-red-500 text-lg"> {{ gstApplicable() ? '18%' : '-' }}</p>
+				<p class="text-red-500 text-lg">{{ gstApplicable() ? '18%' : '-' }}</p>
 			</div>
 
 			<hr class="my-4" />
@@ -109,7 +109,7 @@
 			v-if="$account.team.erpnext_partner"
 			appearance="secondary"
 			@click="$resources.usePartnerCredits.submit()"
-	 		:loading="$resources.usePartnerCredits.loading"
+			:loading="$resources.usePartnerCredits.loading"
 		>
 			Use Partner Credits
 		</Button>

@@ -7,7 +7,10 @@
 			>
 				<div class="flex-1">
 					<div class="mx-auto flex flex-row justify-start">
-						<Sidebar class="hidden sticky top-0 sm:flex sm:w-1/5" v-if="!$route.meta.isLoginPage" />
+						<Sidebar
+							class="hidden sticky top-0 sm:flex sm:w-1/5"
+							v-if="!$route.meta.isLoginPage"
+						/>
 						<router-view
 							v-slot="{ Component }"
 							class="w-full pb-20 sm:mr-0 p-8"

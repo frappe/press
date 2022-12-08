@@ -118,10 +118,12 @@
 				:frappeVersion="site?.frappe_version"
 				:editable="false"
 				class="mb-9"
-				@change="plan => {
-					selectedPlan = plan.name;
-					selectedPlanIsFree = plan.is_free;
-				}"
+				@change="
+					plan => {
+						selectedPlan = plan.name;
+						selectedPlanIsFree = plan.is_free;
+					}
+				"
 			/>
 
 			<ErrorMessage :error="$resourceErrors" />
@@ -227,15 +229,18 @@ export default {
 			});
 		},
 		handlePlanSelection() {
-			if (this.appToInstall.billing_type == 'prepaid' && !this.selectedPlanIsFree) {
+			if (
+				this.appToInstall.billing_type == 'prepaid' &&
+				!this.selectedPlanIsFree
+			) {
 				if (this.$account.hasBillingInfo) {
 					this.showPlanSelectionDialog = false;
 					this.showCheckoutDialog = true;
 				} else {
-					window.location = '/dashboard/billing'
+					window.location = '/dashboard/billing';
 				}
 			} else {
-				this.$resources.installApp.submit()
+				this.$resources.installApp.submit();
 			}
 		},
 		dropdownItems(app) {

@@ -15,7 +15,7 @@
 				<Input type="text" class="mt-4 w-full" v-model="confirmSiteName" />
 				<div class="mt-4">
 					<Input
-			 			v-show="!site.archive_failed"
+						v-show="!site.archive_failed"
 						id="auto-update-checkbox"
 						v-model="forceDrop"
 						type="checkbox"

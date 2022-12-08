@@ -30,7 +30,7 @@
 
 				<ErrorMessage class="mt-4" :error="$resources.updateAppLinks.error" />
 			</template>
-			
+
 			<template #actions>
 				<div class="space-x-2">
 					<Button @click="showEditLinksDialog = false">Cancel</Button>

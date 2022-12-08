@@ -7,11 +7,9 @@
 			@update:modelValue="$emit('update:address', $event)"
 		/>
 		<div class="mt-4" v-show="address.country == 'India'">
-			<span class="mb-2 block text-sm leading-4 text-gray-700">
-				GSTIN
-			</span>
+			<span class="mb-2 block text-sm leading-4 text-gray-700"> GSTIN </span>
 			<Input
-		 		v-if="gstApplicable"
+				v-if="gstApplicable"
 				type="text"
 				v-model="address.gstin"
 				:disabled="!gstApplicable"

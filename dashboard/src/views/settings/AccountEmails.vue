@@ -30,7 +30,7 @@
 				</div>
 				<ErrorMessage class="mt-2" :error="$resources.changeEmail.error" />
 			</template>
-			
+
 			<template #actions>
 				<Button class="mr-3" @click="showEmailsEditDialog = false"
 					>Cancel</Button

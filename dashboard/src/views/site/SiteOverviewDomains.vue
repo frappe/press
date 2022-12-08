@@ -113,7 +113,6 @@
 				</div>
 			</template>
 
-			
 			<template v-slot:actions>
 				<Button @click="showDialog = false"> Cancel </Button>
 				<Button

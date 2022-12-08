@@ -30,8 +30,8 @@
 
 					<span v-else>
 						{{ $planTitle(plan) }}
-						<span class="text-base font-normal text-gray-600"> 
-						{{ plan.block_monthly === 1 ? '/year' : '/mo' }}
+						<span class="text-base font-normal text-gray-600">
+							{{ plan.block_monthly === 1 ? '/year' : '/mo' }}
 						</span>
 					</span>
 				</div>
@@ -90,7 +90,7 @@ export default {
 		editable: {
 			type: Boolean,
 			default: false
-		}	
+		}
 	},
 	components: {
 		FeatureList

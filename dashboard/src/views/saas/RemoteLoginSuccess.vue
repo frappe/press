@@ -7,9 +7,9 @@ export default {
 	name: 'RemoteLogin',
 	methods: {
 		login: () => {
-			const params = new URLSearchParams(window.location.search)
-			localStorage.setItem('current_team', params.get("team"))
-			window.location.href = `/dashboard/sites/${params.get("site")}/overview`;
+			const params = new URLSearchParams(window.location.search);
+			localStorage.setItem('current_team', params.get('team'));
+			window.location.href = `/dashboard/sites/${params.get('site')}/overview`;
 		}
 	},
 	created() {
