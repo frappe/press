@@ -307,7 +307,6 @@ export default {
 				{ label: 'Site Config', route: 'site-config' },
 				{ label: 'Jobs', route: 'jobs', showRedDot: this.runningJob },
 				{ label: 'Logs', route: 'logs' },
-				{ label: 'Activity', route: 'activity' }
 			];
 
 			if (this.site && this.site.hide_config !== 1) {
@@ -321,7 +320,6 @@ export default {
 					'Analytics',
 					'Database',
 					siteConfig,
-					'Activity',
 					'Jobs',
 					'Logs',
 					'Request Logs'
@@ -331,7 +329,6 @@ export default {
 					'Apps',
 					'Database',
 					siteConfig,
-					'Activity',
 					'Jobs',
 					'Logs'
 				],
@@ -342,11 +339,10 @@ export default {
 					'Apps',
 					siteConfig,
 					'Database',
-					'Activity',
 					'Jobs',
 					'Logs'
 				],
-				Suspended: ['Overview', 'Apps', 'Activity', 'Database', 'Jobs', 'Plan']
+				Suspended: ['Overview', 'Apps', 'Database', 'Jobs', 'Plan']
 			};
 			if (this.site) {
 				let tabsToShow = tabsByStatus[this.site.status];

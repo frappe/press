@@ -663,7 +663,6 @@ def overview(name):
 	site = frappe.get_cached_doc("Site", name)
 
 	return {
-		"recent_activity": activities(name, limit=3),
 		"plan": current_plan(name),
 		"info": {
 			"owner": frappe.db.get_value(

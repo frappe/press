@@ -61,11 +61,6 @@ export default [
 				component: () => import('../views/site/SiteConsole.vue')
 			},
 			{
-				path: 'activity',
-				component: () => import('../views/site/SiteActivity.vue'),
-				props: true
-			},
-			{
 				path: 'jobs/:jobName?',
 				component: () => import('../views/site/SiteJobs.vue'),
 				props: true
