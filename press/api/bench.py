@@ -313,7 +313,7 @@ def versions(name):
 				frappe.db.get_value(
 					"App Source",
 					app.source,
-					["branch", "repository", "repository_owner", "repository_url"],
+					("branch", "repository", "repository_owner", "repository_url"),
 					as_dict=1,
 					cache=True,
 				)
