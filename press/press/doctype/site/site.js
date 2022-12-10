@@ -41,7 +41,7 @@ frappe.ui.form.on('Site', {
 			method: 'press.api.account.get'
 		}).then(resp => resp.message);
 
-		if (!site.status) {
+		if (site.status == "Active") {
 			frm.add_custom_button(__('Login as Adminstrator'),
 				() => {
 					if (account) {
@@ -69,7 +69,7 @@ frappe.ui.form.on('Site', {
 							}).show();
 						}
 					} else {
-						frappe.throw(__("Could'nt retrieve account. Check Error Log for more information"));
+						frappe.throw(__("Couldn't retrieve account. Check Error Log for more information"));
 					}
 				},
 				__('Actions'));
@@ -93,13 +93,14 @@ frappe.ui.form.on('Site', {
 			[__('Reinstall'), 'reinstall'],
 			[__('Restore'), 'restore_site'],
 			[__('Restore Tables'), 'restore_tables'],
-			[__('Clear Cache'), 'clear_site_cache'],
 			[__('Update'), 'schedule_update'],
 			[__('Deactivate'), 'deactivate'],
 			[__('Activate'), 'activate'],
+			[__('Clear Cache'), 'clear_site_cache'],
 			[__('Enable Database Access'), 'enable_database_access', !frm.doc.is_database_access_enabled],
 			[__('Disable Database Access'), 'disable_database_access', frm.doc.is_database_access_enabled],
 			[__('Create DNS Record'), 'create_dns_record'],
+			[__('Run After Migrate Steps'), 'run_after_migrate_steps'],
 		].forEach(([label, method, condition]) => {
 			if (typeof condition === "undefined" || condition){
 				frm.add_custom_button(
@@ -114,6 +115,18 @@ frappe.ui.form.on('Site', {
 				);
 			}
 		});
+
+		frm.add_custom_button(
+			__("Force Archive"),
+			() => {
+				frappe.confirm(
+					`Are you sure you want to force drop this site?`,
+					() => frm.call('archive', {force: true}).then((r) => frm.refresh())
+				);
+			},
+			__('Actions')
+		);
+
 		[
 			[__('Suspend'), 'suspend'],
 			[__('Unsuspend'), 'unsuspend'],
@@ -215,9 +228,10 @@ function login_as_admin(site_name, reason = null) {
 			name: site_name,
 			reason: reason
 		}
-	}).then((sid) => {
-		if (sid) {
-			window.open(`https://${site_name}/desk?sid=${sid}`, '_blank');
+	}).then((res) => {
+		console.log(site_name, res.message.sid)
+		if (res) {
+			window.open(`https://${site_name}/desk?sid=${res.message.sid}`, '_blank');
 		}
 	}, (error) => {
 		console.log(error);

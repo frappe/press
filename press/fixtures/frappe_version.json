@@ -10,7 +10,7 @@
   "status": "Stable"
  },
  {
-  "default": 1,
+  "default": 0,
   "docstatus": 0,
   "doctype": "Frappe Version",
   "modified": "2021-12-03 12:34:31.455781",
@@ -30,7 +30,7 @@
   "status": "Develop"
  },
  {
-  "default": 0,
+  "default": 1,
   "docstatus": 0,
   "doctype": "Frappe Version",
   "modified": "2022-01-13 16:32:57.334902",

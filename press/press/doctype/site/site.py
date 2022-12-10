@@ -396,6 +396,15 @@ class Site(Document):
 			}
 		).insert()
 
+	@frappe.whitelist()
+	def move_to_bench(self, bench, deactivate=True, skip_failing_patches=False):
+		log_site_activity(self.name, "Update")
+		self.status_before_update = self.status
+		self.status = "Pending"
+		self.save()
+		agent = Agent(self.server)
+		agent.move_site_to_bench(self, bench, deactivate, skip_failing_patches)
+
 	def reset_previous_status(self):
 		self.status = self.status_before_update
 		self.status_before_update = None
@@ -539,12 +548,12 @@ class Site(Document):
 		site_domain.remove_redirect()
 
 	@frappe.whitelist()
-	def archive(self, reason=None):
+	def archive(self, reason=None, force=False):
 		log_site_activity(self.name, "Archive", reason)
 		agent = Agent(self.server)
 		self.status = "Pending"
 		self.save()
-		agent.archive_site(self)
+		agent.archive_site(self, force)
 
 		server = frappe.get_all(
 			"Server", filters={"name": self.server}, fields=["proxy_server"], limit=1
@@ -1032,7 +1041,7 @@ class Site(Document):
 	def can_charge_for_subscription(self):
 		today = frappe.utils.getdate()
 		return (
-			self.status not in ["Archived", "Broken", "Suspended"]
+			self.status not in ["Archived", "Suspended"]
 			and self.team
 			and self.team != "Administrator"
 			and not self.free
@@ -1180,10 +1189,23 @@ class Site(Document):
 			)
 		)
 
+	@frappe.whitelist()
+	def run_after_migrate_steps(self):
+		agent = Agent(self.server)
+		agent.run_after_migrate_steps(self)
+
 
 def site_cleanup_after_archive(site):
 	delete_site_domains(site)
+	delete_site_subdomain(site)
 	release_name(site)
+
+
+def delete_site_subdomain(site):
+	site_doc = frappe.get_doc("Site", site)
+	domain = frappe.get_doc("Root Domain", site_doc.domain)
+	proxy_server = frappe.get_value("Server", site_doc.server, "proxy_server")
+	site_doc.remove_dns_record(domain, proxy_server)
 
 
 def delete_site_domains(site):
@@ -1272,7 +1294,11 @@ def process_archive_site_job_update(job):
 
 	site_status = frappe.get_value("Site", job.site, "status")
 	if updated_status != site_status:
-		frappe.db.set_value("Site", job.site, "status", updated_status)
+		frappe.db.set_value(
+			"Site",
+			job.site,
+			{"status": updated_status, "archive_failed": updated_status != "Archived"},
+		)
 		if updated_status == "Archived":
 			if backup_tests:
 				frappe.db.set_value(
@@ -1369,6 +1395,30 @@ def process_add_proxysql_user_job_update(job):
 def process_remove_proxysql_user_job_update(job):
 	if job.status == "Success":
 		frappe.db.set_value("Site", job.site, "is_database_access_enabled", False)
+
+
+def process_move_site_to_bench_job_update(job):
+	updated_status = {
+		"Pending": "Pending",
+		"Running": "Updating",
+		"Failure": "Broken",
+	}.get(job.status)
+	if job.status in ("Success", "Failure"):
+		dest_bench = json.loads(job.request_data).get("target")
+		dest_group = frappe.db.get_value("Bench", dest_bench, "group")
+
+		move_site_step_status = frappe.db.get_value(
+			"Agent Job Step", {"step_name": "Move Site", "agent_job": job.name}, "status"
+		)
+		if move_site_step_status == "Success":
+			frappe.db.set_value("Site", job.site, "bench", dest_bench)
+			frappe.db.set_value("Site", job.site, "group", dest_group)
+	if updated_status:
+		frappe.db.set_value("Site", job.site, "status", updated_status)
+		return
+	if job.status == "Success":
+		site = frappe.get_doc("Site", job.site)
+		site.reset_previous_status()
 
 
 def update_records_for_rename(job):

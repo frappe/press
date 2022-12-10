@@ -1,0 +1,19 @@
+---
+- name: Whitelist IP address
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: no
+
+  tasks:
+    - name: Whitelist IP address in jailconf file
+      lineinfile:
+        path: /etc/fail2ban/jail.local
+        regexp: 'ignoreip(\s*)=(\s)\d.*'
+        line: 'ignoreip = 127.0.0.1/8 {{ ip_address }}'
+        state: present
+
+    - name: Restart fail2ban
+      service:
+        name: fail2ban
+        state: restarted

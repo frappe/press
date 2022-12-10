@@ -39,7 +39,7 @@ class Invoice(Document):
 
 	@frappe.whitelist()
 	def finalize_invoice(self):
-		if self.type == "Prepaid Credits":
+		if self.type in ("Prepaid Credits", "Summary"):
 			return
 
 		if self.total == 0:
@@ -303,7 +303,7 @@ class Invoice(Document):
 				item.description = f"{site_name} active for {how_many_days} on {plan} plan"
 
 	def add_usage_record(self, usage_record):
-		if self.type != "Subscription":
+		if self.type not in ("Subscription", "Summary"):
 			return
 		# return if this usage_record is already accounted for in an invoice
 		if usage_record.invoice:
@@ -799,11 +799,19 @@ def finalize_draft_invoices():
 	"""
 
 	today = frappe.utils.today()
+	# only finalize for enabled teams
+	# since 'limit' returns the same set of invoices for disabled teams which are ignored
+	enabled_teams = frappe.get_all("Team", {"enabled": 1}, pluck="name")
 
 	# get draft invoices whose period has ended or ends today
 	invoices = frappe.db.get_all(
 		"Invoice",
-		filters={"status": "Draft", "type": "Subscription", "period_end": ("<=", today)},
+		filters={
+			"status": "Draft",
+			"type": "Subscription",
+			"period_end": ("<=", today),
+			"team": ("in", enabled_teams),
+		},
 		pluck="name",
 		limit=500,
 		order_by="total desc",

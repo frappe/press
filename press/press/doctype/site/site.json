@@ -12,12 +12,14 @@
   "status_before_update",
   "server",
   "skip_auto_updates",
+  "archive_failed",
   "column_break_3",
   "admin_password",
   "bench",
   "group",
   "cluster",
   "config_tab",
+  "hide_config",
   "host_name",
   "configuration",
   "column_break_12",
@@ -505,6 +507,20 @@
   {
    "fieldname": "column_break_53",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "archive_failed",
+   "fieldtype": "Check",
+   "label": "Archive Failed",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "Hide site config tab from dashboard",
+   "fieldname": "hide_config",
+   "fieldtype": "Check",
+   "label": "Hide Config"
   }
  ],
  "links": [
@@ -574,7 +590,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2022-09-29 23:53:14.635371",
+ "modified": "2022-12-05 12:57:49.288690",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

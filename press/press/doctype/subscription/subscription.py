@@ -143,13 +143,39 @@ def create_usage_records():
 	"""
 	paid_plans = frappe.db.get_all(
 		"Plan",
-		{"document_type": "Site", "is_trial_plan": 0, "price_inr": (">", 0)},
+		{
+			"document_type": ("in", ("Site", "Server", "Database Server")),
+			"is_trial_plan": 0,
+			"price_inr": (">", 0),
+		},
+		pluck="name",
+		ignore_ifnull=True,
+	)
+	# ignore subscriptions that have standard hosting plan from prepaid marketplace plan
+	marketplace_paid_plans = frappe.get_all(
+		"Marketplace App Plan",
+		{"is_free": 0, "standard_hosting_plan": ("is", "set")},
 		pluck="name",
 	)
+	sites_with_standard_hosting = frappe.get_all(
+		"Marketplace App Subscription",
+		{"marketplace_app_plan": ("in", marketplace_paid_plans), "status": "Active"},
+		pluck="site",
+	)
+	free_sites = frappe.get_all(
+		"Site", filters={"free": True, "status": "Active"}, pluck="name"
+	)
+	documents_to_ignore = sites_with_standard_hosting + free_sites
+
 	already_created = frappe.get_all(
 		"Usage Record",
-		filters={"document_type": "Site", "date": frappe.utils.today()},
+		filters={
+			"document_type": ("in", ("Site", "Server", "Database Server")),
+			"date": frappe.utils.today(),
+			"document_name": ("not in", sites_with_standard_hosting),
+		},
 		pluck="subscription",
+		ignore_ifnull=True,
 	)
 	subscriptions = frappe.db.get_all(
 		"Subscription",
@@ -157,6 +183,7 @@ def create_usage_records():
 			"enabled": True,
 			"plan": ("in", paid_plans),
 			"name": ("not in", already_created),
+			"document_name": ("not in", documents_to_ignore),
 		},
 		pluck="name",
 		limit=2000,

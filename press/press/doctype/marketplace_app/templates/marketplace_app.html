@@ -129,7 +129,7 @@ five_star_rating -%}
 		<div>
 			<div class="flex flex-row justify-between" style="margin-bottom: 2.25rem;">
 				<h2 class="text-2xl text-gray-900 font-bold">User Reviews</h2>
-				{{ button('Write a review', link='/dashboard/user-review/' + app.name) }}
+				{{ button('Write a review', link='/dashboard/user-review/' + app.name + '?title=' + app.title) }}
 			</div>
 
 			{%- if (user_reviews | length) > 0 -%}

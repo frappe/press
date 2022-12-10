@@ -306,6 +306,7 @@ def get_plans_for_app(
 			"marked_most_popular",
 			"is_free",
 			"enabled",
+			"block_monthly",
 		],
 	)
 

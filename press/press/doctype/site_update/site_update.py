@@ -36,10 +36,10 @@ class SiteUpdate(Document):
 			self.validate_deploy_candidate_difference(differences)
 		else:
 			self.validate_destination_bench([])
-			compare_apps(self.site, self.destination_group)
 			# Forcefully migrate since we can't compute deploy_type reasonably
 			self.deploy_type = "Migrate"
 
+		compare_apps(self.site, self.destination_group)
 		self.validate_pending_updates()
 		self.validate_past_failed_updates()
 
@@ -225,7 +225,11 @@ def schedule_updates():
 	# Prevent flooding the queue
 	queue_size = frappe.db.get_single_value("Press Settings", "auto_update_queue_size")
 	pending_update_count = frappe.db.count(
-		"Site Update", {"status": ("in", ("Pending", "Running"))}
+		"Site Update",
+		{
+			"status": ("in", ("Pending", "Running")),
+			"creation": (">", frappe.utils.add_to_date(None, hours=-4)),
+		},
 	)
 	if pending_update_count > queue_size:
 		return

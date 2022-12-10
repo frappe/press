@@ -1,0 +1,22 @@
+---
+- name: Enable Ping using ufw before.rules
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: no
+  tasks:
+    - name: Install ufw
+      package:
+        name: ufw
+        state: present
+
+    - name: Accept icmp echo-request packets
+      lineinfile:
+        state: present
+        path: /etc/ufw/before.rules
+        regexp: -A ufw-before-input -p icmp --icmp-type echo-request -j DROP
+        line: -A ufw-before-input -p icmp --icmp-type echo-request -j ACCEPT
+
+    - name: Restart ufw
+      ufw:
+        state: reloaded

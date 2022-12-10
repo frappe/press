@@ -571,6 +571,7 @@ def get(name):
 		"name": site.name,
 		"host_name": site.host_name,
 		"status": site.status,
+		"archive_failed": bool(site.archive_failed),
 		"trial_end_date": site.trial_end_date,
 		"setup_wizard_complete": site.setup_wizard_complete,
 		"group": group_name,
@@ -578,6 +579,7 @@ def get(name):
 		"frappe_version": frappe_version,
 		"server_region_info": get_server_region_info(site),
 		"can_change_plan": frappe.db.get_value("Server", site.server, "team") != team,
+		"hide_config": site.hide_config,
 	}
 
 
@@ -948,8 +950,8 @@ def backup(name, with_files=False):
 
 @frappe.whitelist()
 @protected("Site")
-def archive(name):
-	frappe.get_doc("Site", name).archive()
+def archive(name, force):
+	frappe.get_doc("Site", name).archive(force=force)
 
 
 @frappe.whitelist()

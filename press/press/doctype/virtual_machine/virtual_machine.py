@@ -62,7 +62,7 @@ class VirtualMachine(Document):
 					"DeleteOnTermination": True,
 					"DeviceIndex": 0,
 					"PrivateIpAddress": self.private_ip_address,
-					"Groups": [self.aws_security_group_id],
+					"Groups": self.get_security_groups(),
 					"SubnetId": self.aws_subnet_id,
 				},
 			],
@@ -365,6 +365,14 @@ class VirtualMachine(Document):
 			document["is_server_setup"] = True
 
 		return frappe.get_doc(document).insert()
+
+	def get_security_groups(self):
+		groups = [self.aws_security_group_id]
+		if self.series == "n":
+			groups.append(
+				frappe.db.get_value("Cluster", self.cluster, "aws_proxy_security_group_id")
+			)
+		return groups
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype(

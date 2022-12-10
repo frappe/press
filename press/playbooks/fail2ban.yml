@@ -1,0 +1,8 @@
+---
+- name: Install Fail2ban
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: no
+  roles:
+    - role: fail2ban

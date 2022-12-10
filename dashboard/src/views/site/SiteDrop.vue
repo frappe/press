@@ -13,6 +13,15 @@
 					<span class="font-semibold">{{ site.name }}</span> to confirm.
 				</p>
 				<Input type="text" class="mt-4 w-full" v-model="confirmSiteName" />
+				<div class="mt-4">
+					<Input
+			 			v-show="!site.archive_failed"
+						id="auto-update-checkbox"
+						v-model="forceDrop"
+						type="checkbox"
+						label="Force"
+					/>
+				</div>
 				<ErrorMessage class="mt-2" :error="$resources.dropSite.error" />
 			</template>
 
@@ -25,7 +34,7 @@
 						@click="$resources.dropSite.submit()"
 						:loading="$resources.dropSite.loading"
 					>
-						Drop Site
+						{{ site.archive_failed ? 'Force Drop Site' : 'Drop Site' }}
 					</Button>
 				</div>
 			</template>
@@ -40,7 +49,8 @@ export default {
 	data() {
 		return {
 			dialogOpen: false,
-			confirmSiteName: null
+			confirmSiteName: null,
+			forceDrop: false
 		};
 	},
 	resources: {
@@ -48,7 +58,8 @@ export default {
 			return {
 				method: 'press.api.site.archive',
 				params: {
-					name: this.site?.name
+					name: this.site?.name,
+					force: this.site.archive_failed == true ? true : this.forceDrop
 				},
 				onSuccess() {
 					this.dialogOpen = false;

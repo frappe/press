@@ -248,7 +248,7 @@ class Agent:
 		)
 
 	def update_site(self, site, target, deploy_type, skip_failing_patches=False):
-		activate = site.status_before_update == "Active"
+		activate = site.status_before_update in ("Active", "Broken")
 		data = {
 			"target": target,
 			"activate": activate,
@@ -304,12 +304,13 @@ class Agent:
 			site=site.name,
 		)
 
-	def archive_site(self, site):
+	def archive_site(self, site, force=False):
 		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
 		data = {
 			"mariadb_root_password": get_decrypted_password(
 				"Database Server", database_server, "mariadb_root_password"
 			),
+			"force": force,
 		}
 
 		return self.create_agent_job(
@@ -321,19 +322,21 @@ class Agent:
 		)
 
 	def backup_site(self, site, with_files=False, offsite=False):
+		from press.press.doctype.site_backup.site_backup import get_backup_bucket
+
 		data = {"with_files": with_files}
 
 		if offsite:
 			settings = frappe.get_single("Press Settings")
 			backups_path = os.path.join(site.name, str(date.today()))
-
-			if settings.aws_s3_bucket:
+			backup_bucket = get_backup_bucket(site.cluster)
+			if settings.aws_s3_bucket or backup_bucket:
 				auth = {
 					"ACCESS_KEY": settings.offsite_backups_access_key_id,
 					"SECRET_KEY": settings.get_password("offsite_backups_secret_access_key"),
 				}
 				data.update(
-					{"offsite": {"bucket": settings.aws_s3_bucket, "auth": auth, "path": backups_path}}
+					{"offsite": {"bucket": backup_bucket, "auth": auth, "path": backups_path}}
 				)
 
 			else:
@@ -644,3 +647,40 @@ class Agent:
 	def fetch_bench_status(self, bench):
 		data = self.get(f"benches/{bench}/status")
 		return data
+
+	def run_after_migrate_steps(self, site):
+		data = {
+			"admin_password": site.get_password("admin_password"),
+		}
+		return self.create_agent_job(
+			"Run After Migrate Steps",
+			f"benches/{site.bench}/sites/{site.name}/run_after_migrate_steps",
+			bench=site.bench,
+			site=site.name,
+			data=data,
+		)
+
+	def move_site_to_bench(
+		self,
+		site,
+		target,
+		deactivate=True,
+		skip_failing_patches=False,
+	):
+		"""
+		Move site to bench without backup
+		"""
+		activate = site.status not in ("Inactive", "Suspended")
+		data = {
+			"target": target,
+			"deactivate": deactivate,
+			"activate": activate,
+			"skip_failing_patches": skip_failing_patches,
+		}
+		return self.create_agent_job(
+			"Move Site to Bench",
+			f"benches/{site.bench}/sites/{site.name}/move_to_bench",
+			data,
+			bench=site.bench,
+			site=site.name,
+		)

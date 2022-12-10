@@ -18,6 +18,11 @@ class AppReleaseDifference(Document):
 				"Destination Release must be different from Source Release", frappe.ValidationError
 			)
 
+	def set_deploy_type(self):
+		if self.deploy_type != "Pending":
+			return
+		self.deploy_type = "Pull"
+
 		source = frappe.get_doc("App Source", self.source)
 		if source.github_installation_id:
 			github_access_token = get_access_token(source.github_installation_id)
@@ -38,6 +43,7 @@ class AppReleaseDifference(Document):
 			self.deploy_type = "Migrate"
 
 		self.files = json.dumps(files, indent=4)
+		self.save()
 
 
 def is_migrate_needed(files):

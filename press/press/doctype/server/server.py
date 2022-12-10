@@ -80,8 +80,7 @@ class BaseServer(Document):
 	def get_agent_repository_url(self):
 		settings = frappe.get_single("Press Settings")
 		repository_owner = settings.agent_repository_owner or "frappe"
-		token = settings.agent_github_access_token
-		url = f"https://x-access-token:{token}@github.com/{repository_owner}/agent"
+		url = f"https://github.com/{repository_owner}/agent"
 		return url
 
 	@frappe.whitelist()
@@ -455,6 +454,59 @@ class Server(BaseServer):
 		self.save()
 
 	@frappe.whitelist()
+	def whitelist_ipaddress(self):
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_whitelist_ip", queue="short", timeout=1200
+		)
+
+	def _whitelist_ip(self):
+		proxy_server = frappe.get_value("Server", self.name, "proxy_server")
+		proxy_server_ip = frappe.get_doc("Proxy Server", proxy_server).ip
+
+		try:
+			ansible = Ansible(
+				playbook="whitelist_ipaddress.yml",
+				server=self,
+				variables={"ip_address": proxy_server_ip},
+			)
+			play = ansible.run()
+			self.reload()
+			self.reload()
+			if play.status == "Success":
+				self.status = "Active"
+			else:
+				self.status = "Broken"
+		except Exception:
+			self.status = "Broken"
+			log_error("Proxy IP Whitelist Exception", server=self.as_dict())
+		self.save()
+
+	@frappe.whitelist()
+	def setup_fail2ban(self):
+		self.status = "Installing"
+		self.save()
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_setup_fail2ban", queue="long", timeout=1200
+		)
+
+	def _setup_fail2ban(self):
+		try:
+			ansible = Ansible(
+				playbook="fail2ban.yml",
+				server=self,
+			)
+			play = ansible.run()
+			self.reload()
+			if play.status == "Success":
+				self.status = "Active"
+			else:
+				self.status = "Broken"
+		except Exception:
+			self.status = "Broken"
+			log_error("Fail2ban Setup Exception", server=self.as_dict())
+		self.save()
+
+	@frappe.whitelist()
 	def setup_replication(self):
 		self.status = "Installing"
 		self.save()
@@ -624,12 +676,12 @@ class Server(BaseServer):
 		usable_ram = max(
 			self.ram - 3000, self.ram * 0.75
 		)  # in MB (leaving some for disk cache + others)
-		max_background_workers = (
-			usable_ram / 620
-		)  # avg ram usage of 1 set of background_workers
+		usable_ram_for_gunicorn = 0.6 * usable_ram  # 60% of usable ram
+		usable_ram_for_bg = 0.4 * usable_ram  # 40% of usable ram
 		max_gunicorn_workers = (
-			2 * max_background_workers
-		)  # avg gunicorn worker ram usage seems is roughly close to this number
+			usable_ram_for_gunicorn / 150
+		)  # avg ram usage of 1 gunicorn worker
+		max_bg_workers = usable_ram_for_bg / (3 * 80)  # avg ram usage of 3 sets of bg workers
 
 		bench_workloads = {}
 		benches = frappe.get_all(
@@ -646,9 +698,11 @@ class Server(BaseServer):
 		for bench_name, workload in bench_workloads.items():
 			bench = frappe.get_cached_doc("Bench", bench_name)
 			gunicorn_workers = min(
-				64, max(2, frappe.utils.ceil(workload / total_workload * max_gunicorn_workers))
+				24, max(2, round(workload / total_workload * max_gunicorn_workers))  # min 2 max 24
 			)
-			background_workers = min(24, max(1, frappe.utils.floor(gunicorn_workers / 2)))
+			background_workers = min(
+				8, max(1, round(workload / total_workload * max_bg_workers))  # min 1 max 8
+			)
 			bench.gunicorn_workers = gunicorn_workers
 			bench.background_workers = background_workers
 			bench.save()

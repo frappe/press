@@ -9,7 +9,7 @@ class MarketplaceConsumptionRecord(Document):
 	def after_insert(self):
 		team = frappe.get_cached_doc("Team", self.team)
 		if team.get_balance() >= self.amount and self.status in ["Draft", "Unpaid"]:
-			self.charge(team)
+			self.allocate_credits(team)
 		else:
 			self.status = "Unpaid"
 			self.remark = "Not enough credits"
@@ -30,32 +30,19 @@ class MarketplaceConsumptionRecord(Document):
 
 
 def consume_credits_for_prepaid_records():
-	start_date, end_date = date_range()
-	usage_records = frappe.get_all(
-		"Usage Record",
-		{"date": ("between", (start_date, end_date)), "prepaid": 1},
-		["sum(amount) as amount", "team"],
-		group_by="team",
-	)
+	invs = frappe.get_all("Invoice", {"status": "Draft", "type": "Summary"}, pluck="name")
 
-	for rec in usage_records:
+	for inv in invs:
+		invoice_doc = frappe.get_cached_doc("Invoice", inv)
 		frappe.get_doc(
 			{
 				"doctype": "Marketplace Consumption Record",
-				"team": rec["team"],
-				"amount": rec["amount"],
-				"start_date": start_date,
-				"end_date": end_date,
+				"team": invoice_doc.team,
+				"amount": invoice_doc.total,
+				"start_date": invoice_doc.period_start,
+				"end_date": invoice_doc.period_end,
 			}
 		).insert(ignore_permissions=True)
 
-
-def date_range():
-	import datetime
-
-	today = datetime.datetime.today().date()
-	next_month = today.replace(day=28) + datetime.timedelta(days=4)
-	first_day = str(today.replace(day=1))
-	last_day = str(next_month - datetime.timedelta(days=next_month.day))
-
-	return (first_day, last_day)
+		invoice_doc.status = "Uncollectible"
+		invoice_doc.save()

@@ -29,8 +29,10 @@
 					<span v-if="plan.is_free"> Free </span>
 
 					<span v-else>
-						{{ $planTitle(plan)
-						}}<span class="text-base font-normal text-gray-600"> /mo</span>
+						{{ $planTitle(plan) }}
+						<span class="text-base font-normal text-gray-600"> 
+						{{ plan.block_monthly === 1 ? '/year' : '/mo' }}
+						</span>
 					</span>
 				</div>
 				<div v-if="editable">

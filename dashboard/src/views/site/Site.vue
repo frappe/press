@@ -295,6 +295,7 @@ export default {
 		},
 
 		tabs() {
+			let siteConfig = '';
 			let tabRoute = subRoute => `/sites/${this.siteName}/${subRoute}`;
 			let tabs = [
 				{ label: 'Overview', route: 'overview' },
@@ -306,12 +307,16 @@ export default {
 				{ label: 'Activity', route: 'activity' }
 			];
 
+			if (this.site && this.site.hide_config !== 1) {
+				siteConfig = 'Site Config';
+			}
+
 			let tabsByStatus = {
 				Active: [
 					'Overview',
 					'Analytics',
 					'Database',
-					'Site Config',
+					siteConfig,
 					'Activity',
 					'Jobs',
 					'Logs',
@@ -320,7 +325,7 @@ export default {
 				Inactive: [
 					'Overview',
 					'Database',
-					'Site Config',
+					siteConfig,
 					'Activity',
 					'Jobs',
 					'Logs'
@@ -329,7 +334,7 @@ export default {
 				Pending: ['Jobs'],
 				Broken: [
 					'Overview',
-					'Site Config',
+					siteConfig,
 					'Database',
 					'Activity',
 					'Jobs',
