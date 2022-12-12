@@ -25,7 +25,11 @@ class AppReleaseDifference(Document):
 
 		source = frappe.get_doc("App Source", self.source)
 		if source.github_installation_id:
-			github_access_token = get_access_token(source.github_installation_id)
+			try:
+				github_access_token = get_access_token(source.github_installation_id)
+			except KeyError:
+				frappe.throw("Could not get access token for app source {0}".format(source.name))
+				raise
 		else:
 			github_access_token = frappe.get_value("Press Settings", None, "github_access_token")
 
