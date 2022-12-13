@@ -68,8 +68,7 @@
 			</div>
 
 			<div v-if="recentSitesVisible" class="mb-6">
-				<SectionHeader heading="Recents">
-				</SectionHeader>
+				<SectionHeader heading="Recents"> </SectionHeader>
 
 				<div class="mt-3">
 					<LoadingText v-if="$resources.allSites.loading" />

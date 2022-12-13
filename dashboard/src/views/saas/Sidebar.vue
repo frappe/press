@@ -8,7 +8,7 @@
 			>
 				Search (Ctrl + k)
 			</div>
-			<CommandPalette :show="show" @close="show = false"/>
+			<CommandPalette :show="show" @close="show = false" />
 			<router-link
 				v-for="item in items"
 				:key="item.label"

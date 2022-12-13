@@ -14,8 +14,7 @@
 		</PageHeader>
 
 		<div>
-			<SectionHeader heading="All Servers">
-			</SectionHeader>
+			<SectionHeader heading="All Servers"> </SectionHeader>
 
 			<div class="mt-3">
 				<LoadingText v-if="$resources.allServers.loading" />
