@@ -1295,22 +1295,6 @@ def get_backup_links(url, email, password):
 
 
 @frappe.whitelist()
-def search_list():
-	team = get_current_team()
-	sites = frappe.get_list(
-		"Site",
-		["name", "name as site"],
-		filters={"status": ("!=", "Archived"), "team": team},
-	)
-	domains = frappe.get_all(
-		"Site Domain",
-		["name", "site"],
-		filters={"status": "Active", "dns_type": "CNAME", "team": team},
-	)
-	return sites + domains
-
-
-@frappe.whitelist()
 @protected("Site")
 def enable_auto_update(name):
 	site_doc = frappe.get_doc("Site", name)

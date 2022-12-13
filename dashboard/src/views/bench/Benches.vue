@@ -37,7 +37,6 @@
 </template>
 
 <script>
-import SiteAndBenchSearch from '@/components/SiteAndBenchSearch.vue';
 import BenchList from './BenchList.vue';
 import { defineAsyncComponent } from 'vue';
 
@@ -54,7 +53,6 @@ export default {
 		};
 	},
 	components: {
-		SiteAndBenchSearch,
 		BenchList,
 		StripeCard: defineAsyncComponent(() =>
 			import('@/components/StripeCard.vue')

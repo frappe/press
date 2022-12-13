@@ -541,18 +541,6 @@ def belongs_to_current_team(app: str) -> bool:
 
 
 @frappe.whitelist()
-def search_list():
-	groups = frappe.get_list(
-		"Release Group",
-		fields=["name", "title"],
-		filters={"enabled": True, "team": get_current_team()},
-		order_by="creation desc",
-	)
-
-	return groups
-
-
-@frappe.whitelist()
 @protected("Release Group")
 def regions(name):
 	rg = frappe.get_doc("Release Group", name)

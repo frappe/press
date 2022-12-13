@@ -1,7 +1,14 @@
 <template>
-	<div class="flex h-screen flex-col justify-between bg-zinc-100 p-2">
+	<div class="flex h-screen flex-col justify-between bg-gray-50 p-2">
 		<div>
 			<FrappeCloudLogo class="my-6 ml-2 h-4 w-auto" />
+			<div
+				class="mb-4 cursor-pointer rounded border bg-gray-200 px-3 py-2 text-xs hover:border-gray-300"
+				@click="show = true"
+			>
+				Search (Ctrl + k)
+			</div>
+			<CommandPalette :show="show" @close="show = false"/>
 			<router-link
 				v-for="item in items"
 				:key="item.label"
@@ -52,7 +59,6 @@
 			<template v-slot="{ toggleDropdown }">
 				<div
 					class="m-2 flex cursor-pointer items-center gap-2 rounded-md p-2 hover:bg-zinc-200"
-					:class="shoDropdown ? 'bg-gray-200' : ''"
 					@click="toggleDropdown()"
 				>
 					<Avatar
@@ -76,11 +82,26 @@
 <script>
 import { FCIcons } from '@/components/icons';
 import FrappeCloudLogo from '@/components/FrappeCloudLogo.vue';
+import CommandPalette from '@/components/CommandPalette.vue';
 
 export default {
 	name: 'Sidebar',
 	components: {
-		FrappeCloudLogo
+		FrappeCloudLogo,
+		CommandPalette
+	},
+	data() {
+		return {
+			show: false
+		};
+	},
+	mounted() {
+		window.addEventListener('keydown', e => {
+			if (e.key === 'k' && (e.ctrlKey || e.metaKey)) {
+				this.show = !this.show;
+				e.preventDefault();
+			}
+		});
 	},
 	computed: {
 		items() {
