@@ -250,6 +250,12 @@ class DeployCandidate(Document):
 		dockerfile = os.path.join(self.build_directory, "Dockerfile")
 		with open(dockerfile, "w") as f:
 			dockerfile_template = "press/docker/Dockerfile"
+
+			for d in self.dependencies:
+				if d.dependency == "BENCH_VERSION":
+					if d.version != "5.2.1":
+						dockerfile_template = "press/docker/Dockerfile_Bench_5_15_2"
+
 			content = frappe.render_template(dockerfile_template, {"doc": self}, is_path=True)
 			f.write(content)
 
