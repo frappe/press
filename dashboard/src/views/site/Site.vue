@@ -306,7 +306,7 @@ export default {
 				{ label: 'Database', route: 'database' },
 				{ label: 'Site Config', route: 'site-config' },
 				{ label: 'Jobs', route: 'jobs', showRedDot: this.runningJob },
-				{ label: 'Logs', route: 'logs' },
+				{ label: 'Logs', route: 'logs' }
 			];
 
 			if (this.site && this.site.hide_config !== 1) {
@@ -324,24 +324,10 @@ export default {
 					'Logs',
 					'Request Logs'
 				],
-				Inactive: [
-					'Overview',
-					'Apps',
-					'Database',
-					siteConfig,
-					'Jobs',
-					'Logs'
-				],
+				Inactive: ['Overview', 'Apps', 'Database', siteConfig, 'Jobs', 'Logs'],
 				Installing: ['Jobs'],
 				Pending: ['Jobs'],
-				Broken: [
-					'Overview',
-					'Apps',
-					siteConfig,
-					'Database',
-					'Jobs',
-					'Logs'
-				],
+				Broken: ['Overview', 'Apps', siteConfig, 'Database', 'Jobs', 'Logs'],
 				Suspended: ['Overview', 'Apps', 'Database', 'Jobs', 'Plan']
 			};
 			if (this.site) {
