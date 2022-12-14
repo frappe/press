@@ -1453,3 +1453,38 @@ def process_restore_tables_job_update(job):
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Site")
+
+
+def prepare_site(site: str, subdomain: str = None) -> Dict:
+	# prepare site details
+	doc = frappe.get_doc("Site", site)
+	sitename = subdomain if subdomain else "brt-" + doc.subdomain
+	app_plans = [app.app for app in doc.apps]
+	backups = frappe.get_all(
+		"Site Backup",
+		dict(
+			status="Success", with_files=1, site=site, files_availability="Available", offsite=1
+		),
+		pluck="name",
+	)
+	if not backups:
+		frappe.throw("Backup Files not found.")
+	backup = frappe.get_doc("Site Backup", backups[0])
+
+	files = {
+		"config": "",  # not necessary for test sites
+		"database": backup.remote_database_file,
+		"public": backup.remote_public_file,
+		"private": backup.remote_private_file,
+	}
+	site_dict = {
+		"domain": frappe.db.get_single_value("Press Settings", "domain"),
+		"plan": doc.plan,
+		"name": sitename,
+		"group": doc.group,
+		"selected_app_plans": {},
+		"apps": app_plans,
+		"files": files,
+	}
+
+	return site_dict
