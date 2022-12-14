@@ -35,24 +35,7 @@
 			</router-link>
 		</div>
 		<Dropdown
-			:items="[
-				{
-					label: 'Docs',
-					action: () => window.location.href = '/docs'
-				},
-				{
-					label: 'Support',
-					action: () => window.location.href = '/support'
-				},
-				{
-					label: 'Settings',
-					action: () => this.$router.push('/settings')
-				},
-				{
-					label: 'Logout',
-					action: () => this.$auth.logout()
-				}
-			]"
+			:items="dropdownItems"
 			:dropdown-width-full="true"
 			right
 			v-on-outside-click="() => (dropDownActive = false)"
@@ -100,7 +83,25 @@ export default {
 	data() {
 		return {
 			show: false,
-			dropDownActive: false
+			dropDownActive: false,
+			dropdownItems: [
+				{
+					label: 'Docs',
+					action: () => (window.location.href = '/docs')
+				},
+				{
+					label: 'Support',
+					action: () => (window.location.href = '/support')
+				},
+				{
+					label: 'Settings',
+					action: () => this.$router.push('/settings')
+				},
+				{
+					label: 'Logout',
+					action: () => this.$auth.logout()
+				}
+			]
 		};
 	},
 	mounted() {
@@ -110,7 +111,7 @@ export default {
 				e.preventDefault();
 			}
 			if (e.key === 'Escape') {
-				this.show = false
+				this.show = false;
 			}
 		});
 	},
