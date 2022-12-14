@@ -55,11 +55,18 @@
 			]"
 			:dropdown-width-full="true"
 			right
+			v-on-outside-click="() => (dropDownActive = false)"
 		>
 			<template v-slot="{ toggleDropdown }">
 				<div
-					class="m-2 flex cursor-pointer items-center gap-2 rounded-md p-2 hover:bg-zinc-200"
-					@click="toggleDropdown()"
+					class="m-2 flex cursor-pointer items-center gap-2 rounded-md p-2"
+					@click="
+						() => {
+							toggleDropdown();
+							dropDownActive = true;
+						}
+					"
+					:class="dropDownActive ? 'bg-gray-300' : 'hover:bg-gray-200'"
 				>
 					<Avatar
 						v-if="$account.user"
@@ -92,7 +99,8 @@ export default {
 	},
 	data() {
 		return {
-			show: false
+			show: false,
+			dropDownActive: false
 		};
 	},
 	mounted() {
