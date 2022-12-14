@@ -1467,9 +1467,9 @@ def prepare_site(site: str, subdomain: str = None) -> Dict:
 		),
 		pluck="name",
 	)
-	backup = frappe.get_doc("Site Backup", backups[0])
-	if not backup:
+	if not backups:
 		frappe.throw("Backup Files not found.")
+	backup = frappe.get_doc("Site Backup", backups[0])
 
 	files = {
 		"config": json.loads(doc.config),  # not necessary for test sites
