@@ -1,0 +1,102 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format: SR-{#####}",
+ "creation": "2022-12-13 15:28:46.433511",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "site",
+  "new_subdomain",
+  "bench",
+  "column_break_4",
+  "status",
+  "server",
+  "release_group",
+  "replicated_site"
+ ],
+ "fields": [
+  {
+   "fieldname": "site",
+   "fieldtype": "Link",
+   "label": "Site",
+   "options": "Site"
+  },
+  {
+   "fieldname": "new_subdomain",
+   "fieldtype": "Data",
+   "label": "New Subdomain"
+  },
+  {
+   "fetch_from": "site.bench",
+   "fieldname": "bench",
+   "fieldtype": "Link",
+   "label": "Bench",
+   "options": "Bench",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Not Started",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Not Started\nRunning\nSuccess\nFailure"
+  },
+  {
+   "fetch_from": "site.server",
+   "fieldname": "server",
+   "fieldtype": "Link",
+   "label": "Server",
+   "options": "Server",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "site.group",
+   "fieldname": "release_group",
+   "fieldtype": "Link",
+   "label": "Release Group",
+   "options": "Release Group",
+   "read_only": 1
+  },
+  {
+   "fieldname": "replicated_site",
+   "fieldtype": "Link",
+   "label": "Replicated Site",
+   "options": "Site",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2022-12-13 15:37:42.617867",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Site Replication",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "replicated_site"
+}

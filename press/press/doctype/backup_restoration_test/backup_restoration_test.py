@@ -3,7 +3,7 @@
 
 from frappe.model.document import Document
 from press.api.site import _new
-from typing import Dict
+from press.press.doctype.site.site import prepare_site
 import frappe
 
 
@@ -48,35 +48,3 @@ class BackupRestorationTest(Document):
 			self.save()
 		except Exception:
 			frappe.log_error("Site Creation Error")
-
-
-def prepare_site(site: str) -> Dict:
-	# prepare site details
-	doc = frappe.get_doc("Site", site)
-	sitename = "brt-" + doc.subdomain
-	app_plans = [app.app for app in doc.apps]
-	backups = frappe.get_all(
-		"Site Backup",
-		dict(
-			status="Success", with_files=1, site=site, files_availability="Available", offsite=1
-		),
-		pluck="name",
-	)
-	backup = frappe.get_doc("Site Backup", backups[0])
-	files = {
-		"config": "",  # not necessary for test sites
-		"database": backup.remote_database_file,
-		"public": backup.remote_public_file,
-		"private": backup.remote_private_file,
-	}
-	site_dict = {
-		"domain": frappe.db.get_single_value("Press Settings", "domain"),
-		"plan": doc.plan,
-		"name": sitename,
-		"group": doc.group,
-		"selected_app_plans": {},
-		"apps": app_plans,
-		"files": files,
-	}
-
-	return site_dict
