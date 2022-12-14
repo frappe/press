@@ -1,6 +1,6 @@
 <template>
 	<Card
-		class="min-h-full h-full"
+		class="min-h-full h-full max-h-96"
 		title="Site Activity"
 		subtitle="Log of activities performed on your site"
 	>

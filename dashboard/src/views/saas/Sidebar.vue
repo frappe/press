@@ -38,11 +38,11 @@
 			:items="[
 				{
 					label: 'Docs',
-					action: () => window.location.replace('/docs')
+					action: () => window.location.href = '/docs'
 				},
 				{
 					label: 'Support',
-					action: () => window.location.replace('/support')
+					action: () => window.location.href = '/support'
 				},
 				{
 					label: 'Settings',
