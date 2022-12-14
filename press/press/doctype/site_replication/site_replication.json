@@ -10,9 +10,9 @@
   "site",
   "subdomain",
   "bench",
+  "server",
   "column_break_4",
   "status",
-  "server",
   "release_group",
   "new_site"
  ],
@@ -62,8 +62,9 @@
   },
   {
    "fieldname": "new_site",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "label": "New Site",
+   "options": "Site",
    "read_only": 1
   },
   {
@@ -74,7 +75,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-12-14 13:43:24.182326",
+ "modified": "2022-12-14 17:23:02.252242",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Replication",

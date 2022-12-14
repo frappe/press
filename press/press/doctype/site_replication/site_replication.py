@@ -11,10 +11,6 @@ from typing import List
 class SiteReplication(Document):
 	doctype = "Site Replication"
 
-	def before_insert(self):
-		domain = frappe.db.get_single_value("Press Settings", "domain")
-		self.new_site = self.subdomain + "." + domain
-
 	def validate(self):
 		self.validate_duplicate()
 		self.validate_site_name()
@@ -23,7 +19,9 @@ class SiteReplication(Document):
 		# check for already running site replication
 		site_reps = frappe.get_all(
 			"Site Replication",
-			dict(site=self.site, subdomain=self.subdomain, status="Running"),
+			dict(
+				site=self.site, subdomain=self.subdomain, status="Running", name=("!=", self.name)
+			),
 			pluck="name",
 		)
 		if site_reps:
@@ -31,8 +29,10 @@ class SiteReplication(Document):
 
 	def validate_site_name(self):
 		# check if there is an non-archived site with same name
+		domain = frappe.db.get_single_value("Press Settings", "domain")
+		new_sitename = self.subdomain + "." + domain
 		sites = frappe.get_all(
-			"Site", dict(status=["!=", "Archived"], name=self.new_site), pluck="name"
+			"Site", dict(status=["!=", "Archived"], name=new_sitename), pluck="name"
 		)
 
 		if sites:
