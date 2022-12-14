@@ -76,9 +76,13 @@
 				</div>
 			</div>
 
-			<div class="mt-3">
-				<LoadingText v-if="$resources.allSites.loading" />
-				<SiteList v-else :sites="sites" />
+			<div class="mb-6">
+				<SectionHeader heading="All Sites"> </SectionHeader>
+
+				<div class="mt-3">
+					<LoadingText v-if="$resources.allSites.loading" />
+					<SiteList v-else :sites="sites" />
+				</div>
 			</div>
 			<FrappeUIDialog
 				:options="{ title: 'Add card to create new sites' }"
