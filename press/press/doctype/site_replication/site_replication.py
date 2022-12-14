@@ -29,7 +29,7 @@ class SiteReplication(Document):
 
 	def validate_site_name(self):
 		# check if there is an non-archived site with same name
-		domain = frappe.db.get_single_value("Press Settings", "domain")
+		domain = frappe.get_doc("Site", self.site).domain
 		new_sitename = self.subdomain + "." + domain
 		sites = frappe.get_all(
 			"Site", dict(status=["!=", "Archived"], name=new_sitename), pluck="name"

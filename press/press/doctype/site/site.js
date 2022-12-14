@@ -176,6 +176,24 @@ Password: ${r.message.password}
 				__('Actions')
 			);
 		}
+
+		frm.add_custom_button(__('Replicate Site'), () => {
+			const dialog = new frappe.ui.Dialog({
+				title: __('New Subdomain for Test Site'),
+				fields: [{
+					fieldtype: 'Data',
+					fieldname: 'subdomain',
+					label: 'New Subdomain',
+					reqd: 1
+				}],
+				primary_action({ subdomain }) {
+					frappe.set_route('List', 'Site Replication', {'site': frm.doc.name})
+					frappe.new_doc('Site Replication', {site: frm.doc.name, subdomain: subdomain})
+				}
+			});
+			dialog.show();
+		}, __('Actions'));
+
 		frm.add_custom_button(
 			__('Move to Group'),
 			() => {
