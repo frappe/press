@@ -11,7 +11,9 @@
 					class="flex flex-col space-y-3 md:flex-row md:items-baseline md:justify-between md:space-y-0"
 				>
 					<div class="mt-2 flex items-center">
-						<h1 class="text-2xl font-bold">{{ site.host_name || site.name }}</h1>
+						<h1 class="text-2xl font-bold">
+							{{ site.host_name || site.name }}
+						</h1>
 						<Badge
 							class="ml-4 hidden md:inline-block"
 							:status="site.status"
@@ -299,12 +301,12 @@ export default {
 			let tabRoute = subRoute => `/sites/${this.siteName}/${subRoute}`;
 			let tabs = [
 				{ label: 'Overview', route: 'overview' },
+				{ label: 'Apps', route: 'apps' },
 				{ label: 'Analytics', route: 'analytics' },
 				{ label: 'Database', route: 'database' },
 				{ label: 'Site Config', route: 'site-config' },
 				{ label: 'Jobs', route: 'jobs', showRedDot: this.runningJob },
-				{ label: 'Logs', route: 'logs' },
-				{ label: 'Activity', route: 'activity' }
+				{ label: 'Logs', route: 'logs' }
 			];
 
 			if (this.site && this.site.hide_config !== 1) {
@@ -314,39 +316,19 @@ export default {
 			let tabsByStatus = {
 				Active: [
 					'Overview',
+					'Apps',
 					'Analytics',
 					'Database',
 					siteConfig,
-					'Activity',
 					'Jobs',
 					'Logs',
 					'Request Logs'
 				],
-				Inactive: [
-					'Overview',
-					'Database',
-					siteConfig,
-					'Activity',
-					'Jobs',
-					'Logs'
-				],
+				Inactive: ['Overview', 'Apps', 'Database', siteConfig, 'Jobs', 'Logs'],
 				Installing: ['Jobs'],
 				Pending: ['Jobs'],
-				Broken: [
-					'Overview',
-					siteConfig,
-					'Database',
-					'Activity',
-					'Jobs',
-					'Logs'
-				],
-				Suspended: [
-					'Overview',
-					'Activity',
-					'Database',
-					'Jobs',
-					'Plan'
-				]
+				Broken: ['Overview', 'Apps', siteConfig, 'Database', 'Jobs', 'Logs'],
+				Suspended: ['Overview', 'Apps', 'Database', 'Jobs', 'Plan']
 			};
 			if (this.site) {
 				let tabsToShow = tabsByStatus[this.site.status];

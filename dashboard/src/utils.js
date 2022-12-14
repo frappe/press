@@ -65,7 +65,8 @@ let utils = {
 			let india = this.$account.team.country == 'India';
 			let currency = india ? '₹' : '$';
 			let price_field = india ? 'price_inr' : 'price_usd';
-			let price = plan.block_monthly == 1 ? plan[price_field] * 12 : plan[price_field];
+			let price =
+				plan.block_monthly == 1 ? plan[price_field] * 12 : plan[price_field];
 			return price > 0 ? `${currency}${price}` : plan.plan_title;
 		},
 		trialEndsInDaysText(date) {
@@ -153,3 +154,4 @@ export async function trypromise(promise) {
 }
 
 export { utils };
+export { default as dayjs } from './utils/dayjs';

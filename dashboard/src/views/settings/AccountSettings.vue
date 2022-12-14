@@ -30,7 +30,7 @@ export default {
 	pageMeta() {
 		return {
 			title: 'Settings - Frappe Cloud'
-		}
+		};
 	},
 	components: {
 		AccountActions,

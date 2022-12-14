@@ -1,33 +1,116 @@
 <template>
-	<div class="flex flex-col">
-		<router-link
-			v-for="item in items"
-			:key="item.label"
-			:to="item.route"
-			v-slot="{ href, route, navigate }"
-		>
-			<a
-				:class="[
-					(Boolean(item.highlight) ? item.highlight(route) : item.route == '/')
-						? 'bg-blue-50 text-blue-500'
-						: 'text-gray-900 hover:bg-gray-50'
-				]"
-				:href="href"
-				@click="navigate"
-				class="text-start mb-2 flex rounded-md py-2 pl-2 pr-10 text-sm font-medium focus:outline-none"
+	<div class="flex h-screen flex-col justify-between bg-gray-50 p-2">
+		<div>
+			<FrappeCloudLogo class="my-6 ml-2 h-4 w-auto" />
+			<div
+				class="mb-4 cursor-pointer rounded border bg-gray-200 px-3 py-2 text-xs hover:border-gray-300"
+				@click="show = true"
 			>
-				<Component class="mr-1.5" :is="item.icon" />
-				{{ item.label }}
-			</a>
-		</router-link>
+				Search (Ctrl + k)
+			</div>
+			<CommandPalette :show="show" @close="show = false" />
+			<router-link
+				v-for="item in items"
+				:key="item.label"
+				:to="item.route"
+				v-slot="{ href, route, navigate }"
+			>
+				<a
+					:class="[
+						(
+							Boolean(item.highlight)
+								? item.highlight(route)
+								: item.route == '/'
+						)
+							? 'bg-white text-blue-500'
+							: 'text-gray-900 hover:bg-gray-50'
+					]"
+					:href="href"
+					@click="navigate"
+					class="text-start mb-2 flex rounded-md py-2 pl-2 pr-10 text-sm font-medium focus:outline-none"
+				>
+					<Component class="mr-1.5" :is="item.icon" />
+					{{ item.label }}
+				</a>
+			</router-link>
+		</div>
+		<Dropdown
+			:items="[
+				{
+					label: 'Docs',
+					action: () => window.location.href = '/docs'
+				},
+				{
+					label: 'Support',
+					action: () => window.location.href = '/support'
+				},
+				{
+					label: 'Settings',
+					action: () => this.$router.push('/settings')
+				},
+				{
+					label: 'Logout',
+					action: () => this.$auth.logout()
+				}
+			]"
+			:dropdown-width-full="true"
+			right
+			v-on-outside-click="() => (dropDownActive = false)"
+		>
+			<template v-slot="{ toggleDropdown }">
+				<div
+					class="m-2 flex cursor-pointer items-center gap-2 rounded-md p-2"
+					@click="
+						() => {
+							toggleDropdown();
+							dropDownActive = true;
+						}
+					"
+					:class="dropDownActive ? 'bg-gray-300' : 'hover:bg-gray-200'"
+				>
+					<Avatar
+						v-if="$account.user"
+						:label="$account.user.first_name"
+						:imageURL="$account.user.user_image"
+					/>
+
+					<div v-if="$account.user">
+						<h3 class="text-base font-semibold">
+							{{ $account.user.full_name }}
+						</h3>
+						<p class="text-xs text-gray-600">{{ $account.user.email }}</p>
+					</div>
+				</div>
+			</template>
+		</Dropdown>
 	</div>
 </template>
 
 <script>
 import { FCIcons } from '@/components/icons';
+import FrappeCloudLogo from '@/components/FrappeCloudLogo.vue';
+import CommandPalette from '@/components/CommandPalette.vue';
 
 export default {
 	name: 'Sidebar',
+	components: {
+		FrappeCloudLogo,
+		CommandPalette
+	},
+	data() {
+		return {
+			show: false,
+			dropDownActive: false
+		};
+	},
+	mounted() {
+		window.addEventListener('keydown', e => {
+			if (e.key === 'k' && (e.ctrlKey || e.metaKey)) {
+				this.show = !this.show;
+				e.preventDefault();
+			}
+		});
+	},
 	computed: {
 		items() {
 			return [

@@ -167,23 +167,6 @@ def new(server):
 
 
 @frappe.whitelist()
-def search_list():
-	servers = frappe.get_list(
-		"Server",
-		fields=["name as server", "title"],
-		filters={"status": ("!=", "Archived"), "team": get_current_team()},
-		order_by="creation desc",
-	)
-	database_servers = frappe.get_list(
-		"Database Server",
-		fields=["name as server", "title"],
-		filters={"status": ("!=", "Archived"), "team": get_current_team()},
-		order_by="creation desc",
-	)
-	return servers + database_servers
-
-
-@frappe.whitelist()
 @protected(["Server", "Database Server"])
 def usage(name):
 	query_map = {

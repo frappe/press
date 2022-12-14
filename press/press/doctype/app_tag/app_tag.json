@@ -10,7 +10,8 @@
   "github_installation_id",
   "column_break_4",
   "tag",
-  "hash"
+  "hash",
+  "timestamp"
  ],
  "fields": [
   {
@@ -55,11 +56,16 @@
    "in_standard_filter": 1,
    "label": "GitHub Installation ID",
    "read_only": 1
+  },
+  {
+   "fieldname": "timestamp",
+   "fieldtype": "Data",
+   "label": "Timestamp"
   }
  ],
  "in_create": 1,
  "links": [],
- "modified": "2021-01-18 10:13:06.048024",
+ "modified": "2022-12-08 14:04:14.096037",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Tag",
@@ -80,6 +86,7 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "title_field": "tag",
  "track_changes": 1
 }

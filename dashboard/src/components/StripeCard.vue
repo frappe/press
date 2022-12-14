@@ -35,8 +35,9 @@
 			<div class="mt-3" v-show="tryingMicroCharge">
 				<p class="text-lg text-gray-800">
 					We are attempting to charge your card with
-					<strong>{{ formattedMicroChargeAmount }}</strong> to make sure the card works. This
-					amount will be <strong>refunded</strong> back to your account.
+					<strong>{{ formattedMicroChargeAmount }}</strong> to make sure the
+					card works. This amount will be <strong>refunded</strong> back to your
+					account.
 				</p>
 
 				<Button class="mt-2" :loading="true">Attempting Test Charge</Button>

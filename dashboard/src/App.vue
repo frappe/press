@@ -6,13 +6,14 @@
 				:class="{ 'sm:bg-gray-50': $route.meta.isLoginPage }"
 			>
 				<div class="flex-1">
-					<Navbar v-if="$auth.isLoggedIn" />
-
-					<div class="mx-auto mt-5 flex flex-row justify-start md:container">
-						<Sidebar class="hidden sm:block" v-if="!$route.meta.isLoginPage" />
+					<div class="mx-auto flex flex-row justify-start">
+						<Sidebar
+							class="hidden sticky top-0 sm:flex sm:w-1/5"
+							v-if="!$route.meta.isLoginPage"
+						/>
 						<router-view
 							v-slot="{ Component }"
-							class="mx-4 w-full pb-20 sm:ml-8 sm:mr-0"
+							class="w-full pb-20 sm:mr-0 p-8"
 						>
 							<keep-alive
 								:include="[

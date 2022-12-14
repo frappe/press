@@ -14,12 +14,6 @@
 		</PageHeader>
 
 		<div>
-			<SectionHeader heading="All Servers">
-				<template v-slot:actions>
-					<SiteAndBenchSearch />
-				</template>
-			</SectionHeader>
-
 			<div class="mt-3">
 				<LoadingText v-if="$resources.allServers.loading" />
 				<ServerList v-else :servers="servers" />
@@ -44,7 +38,6 @@
 </template>
 <script>
 import ServerList from '@/views/server/ServerList.vue';
-import SiteAndBenchSearch from '@/components/SiteAndBenchSearch.vue';
 import PageHeader from '@/components/global/PageHeader.vue';
 import { defineAsyncComponent } from 'vue';
 
@@ -52,7 +45,6 @@ export default {
 	name: 'Servers',
 	components: {
 		ServerList,
-		SiteAndBenchSearch,
 		PageHeader,
 		StripeCard: defineAsyncComponent(() =>
 			import('@/components/StripeCard.vue')

@@ -55,7 +55,11 @@
 			</template>
 		</form>
 	</LoginBox>
-	<SuccessCard v-else class="mx-auto mt-20 w-96 shadow-md sm:ml-auto sm:mr-auto" title="Password Reset Link Sent.">
+	<SuccessCard
+		v-else
+		class="mx-auto mt-20 w-96 shadow-md sm:ml-auto sm:mr-auto"
+		title="Password Reset Link Sent."
+	>
 		We have sent an email to <span class="font-semibold">{{ email }}</span
 		>. Please click on the link received to reset your password.
 	</SuccessCard>
@@ -79,7 +83,7 @@ export default {
 			email: null,
 			password: null,
 			errorMessage: null,
-			successMessage: null,
+			successMessage: null
 		};
 	},
 	watch: {

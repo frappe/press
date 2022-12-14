@@ -6,7 +6,7 @@
 			class="py-2 text-base text-gray-600 sm:px-2"
 			v-if="benches.length === 0"
 		>
-			No benches to show. Go ahead, add a new one 🚀!
+			No benches to show. Go ahead, add a new one 🚀
 		</div>
 		<div class="py-2" v-for="(bench, index) in benches" :key="bench.name">
 			<div class="flex items-center justify-between">
@@ -17,6 +17,9 @@
 					<div class="flex items-center justify-between">
 						<div class="text-base sm:w-4/12">
 							{{ bench.title }}
+						</div>
+						<div class="text-base sm:w-4/12">
+							<Badge :status="bench.status" />
 						</div>
 						<div class="text-base sm:w-4/12">
 							<Badge :status="`${bench.number_of_apps} Apps`" />

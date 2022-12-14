@@ -528,7 +528,7 @@ def all():
 	sites_data = frappe._dict()
 	sites = frappe.db.sql(
 		f"""
-			SELECT s.name, s.host_name, s.status, s.creation, s.bench, s.current_cpu_usage, s.current_database_usage, s.current_disk_usage, s.trial_end_date, s.team, rg.title
+			SELECT s.name, s.host_name, s.status, s.creation, s.bench, s.current_cpu_usage, s.current_database_usage, s.current_disk_usage, s.trial_end_date, s.team, rg.title, rg.version
 			FROM `tabSite` s
 			LEFT JOIN `tabRelease Group` rg
 			ON s.group = rg.name
@@ -663,7 +663,6 @@ def overview(name):
 	site = frappe.get_cached_doc("Site", name)
 
 	return {
-		"recent_activity": activities(name, limit=3),
 		"plan": current_plan(name),
 		"info": {
 			"owner": frappe.db.get_value(
@@ -721,15 +720,17 @@ def get_installed_apps(site):
 	for app in installed_bench_apps:
 		app_source = find(sources, lambda x: x.name == app.source)
 		app_source.hash = app.hash
-		app_source.tag = frappe.db.get_value(
+		app_tags = frappe.db.get_value(
 			"App Tag",
 			{
 				"repository": app_source.repository,
 				"repository_owner": app_source.repository_owner,
 				"hash": app_source.hash,
 			},
-			"tag",
+			["tag", "timestamp"],
+			as_dict=True,
 		)
+		app_source.update(app_tags if app_tags else {})
 		app_source.subscription_available = bool(
 			frappe.db.exists(
 				"Marketplace App Plan", {"is_free": 0, "app": app.app, "enabled": 1}
@@ -1291,22 +1292,6 @@ def get_backup_links(url, email, password):
 		)
 
 	return remote_files
-
-
-@frappe.whitelist()
-def search_list():
-	team = get_current_team()
-	sites = frappe.get_list(
-		"Site",
-		["name", "name as site"],
-		filters={"status": ("!=", "Archived"), "team": team},
-	)
-	domains = frappe.get_all(
-		"Site Domain",
-		["name", "site"],
-		filters={"status": "Active", "dns_type": "CNAME", "team": team},
-	)
-	return sites + domains
 
 
 @frappe.whitelist()

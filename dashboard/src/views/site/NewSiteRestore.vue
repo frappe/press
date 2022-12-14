@@ -181,7 +181,7 @@ export default {
 					ext: 'application/json',
 					title: 'Config Files',
 					file: null
-				},
+				}
 			],
 			uploadedFiles: {
 				database: null,

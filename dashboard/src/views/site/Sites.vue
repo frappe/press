@@ -68,11 +68,7 @@
 			</div>
 
 			<div v-if="recentSitesVisible" class="mb-6">
-				<SectionHeader heading="Recents">
-					<template v-slot:actions>
-						<SiteAndBenchSearch />
-					</template>
-				</SectionHeader>
+				<SectionHeader heading="Recents"> </SectionHeader>
 
 				<div class="mt-3">
 					<LoadingText v-if="$resources.allSites.loading" />
@@ -80,12 +76,8 @@
 				</div>
 			</div>
 
-			<div>
-				<SectionHeader heading="All Sites">
-					<template v-if="!recentSitesVisible" v-slot:actions>
-						<SiteAndBenchSearch />
-					</template>
-				</SectionHeader>
+			<div class="mb-6">
+				<SectionHeader heading="All Sites"> </SectionHeader>
 
 				<div class="mt-3">
 					<LoadingText v-if="$resources.allSites.loading" />
@@ -113,7 +105,6 @@
 <script>
 import SiteList from './SiteList.vue';
 import { defineAsyncComponent } from 'vue';
-import SiteAndBenchSearch from '@/components/SiteAndBenchSearch.vue';
 import PageHeader from '@/components/global/PageHeader.vue';
 
 export default {
@@ -126,7 +117,6 @@ export default {
 	props: ['bench'],
 	components: {
 		SiteList,
-		SiteAndBenchSearch,
 		PrepaidCreditsDialog: defineAsyncComponent(() =>
 			import('@/components/PrepaidCreditsDialog.vue')
 		),

@@ -19,12 +19,19 @@
 							<Badge class="pointer-events-none" v-bind="siteBadge(site)" />
 						</div>
 						<div class="text-base sm:w-4/12">
-							<div class="sm:w-6/12 break-all truncate hover:text-ellipses hover:w-full">
-							{{ site.title }}
+							<div
+								class="hover:text-ellipses truncate break-all hover:w-full sm:w-6/12"
+							>
+								{{ site.title }}
 							</div>
 						</div>
-						<div class="hidden w-2/12 text-sm text-gray-600 sm:block">
-							Created {{ formatDate(site.creation, 'relative') }}
+						<div class="text-base sm:w-3/12">
+							<Badge>
+								{{ site.version }}
+							</Badge>
+						</div>
+						<div class="hidden w-1/12 text-sm text-gray-600 sm:block">
+							{{ $dayjs.shortFormating($dayjs(site.creation).fromNow()) }}
 						</div>
 					</div>
 				</router-link>

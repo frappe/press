@@ -30,15 +30,15 @@
 				v-for="app in $resources.installedApps.data"
 				:key="app.name"
 			>
-				<div class="w-2/6">
+				<div class="group w-2/6">
 					<div class="flex flex-row items-center">
 						<div class="text-lg font-medium text-gray-900">
 							{{ app.title }}
 						</div>
 
 						<CommitTag
-							class="ml-2"
-							:tag="app.tag || app.hash.substr(0, 7)"
+							class="hidden ml-2 group-hover:block"
+							:tag="getCommitTag(app)"
 							:link="`${app.repository_url}/commit/${app.hash}`"
 						/>
 					</div>
@@ -84,7 +84,7 @@
 						>Change Plan</Button
 					>
 					<Button
-						appearance="primary"
+						appearance="secondary"
 						v-if="!app.plan_info && app.subscription_available"
 						@click="
 							() => {
@@ -337,6 +337,11 @@ export default {
 		}
 	},
 	methods: {
+		getCommitTag(app) {
+			return app.timestamp
+				? $dayjs.shortFormating($dayjs(app.timestamp).fromNow()) + ' ago'
+				: app.hash.substr(0, 7);
+		},
 		subscribe(app) {
 			this.showPlanSelectionDialog = true;
 		},
