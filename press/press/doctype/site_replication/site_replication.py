@@ -5,11 +5,14 @@ import frappe
 from frappe.model.document import Document
 from press.press.doctype.site.site import prepare_site
 from press.api.site import _new
+from typing import List
 
 
 class SiteReplication(Document):
+	doctype = "Site Replication"
+
 	def before_insert(self):
-		domain = frappe.get_single_value("Press Settings", "domain")
+		domain = frappe.db.get_single_value("Press Settings", "domain")
 		self.new_site = self.subdomain + domain
 
 	def validate(self):
@@ -44,6 +47,25 @@ class SiteReplication(Document):
 		except Exception:
 			frappe.log_error("Site Replication Error")
 
+	@classmethod
+	def get_all_running_site_replications(cls) -> List[Document]:
+		replications = frappe.get_all(cls.doctype, dict(status="Running"), pluck="name")
+		return cls.get_docs(replications)
 
-def update_site_replication_status():
-	pass
+	@classmethod
+	def get_docs(cls, names: List[str]) -> List[Document]:
+		return [frappe.get_doc(cls.doctype, name) for name in names]
+
+
+def update_from_site():
+	ongoing_replications = SiteReplication.get_all_running_site_replications()
+	for replication in ongoing_replications:
+		site_doc = frappe.get_doc("Site", replication.new_site)
+		site_status = {
+			"Broken": "Failure",
+			"Active": "Success",
+			"Pending": "Running",
+			"Installing": "Running",
+		}
+		replication.status = site_status[site_doc.status]
+		replication.save()

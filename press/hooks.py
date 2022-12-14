@@ -224,6 +224,7 @@ scheduler_events = {
 		"*/5 * * * *": [
 			"press.press.doctype.central_site_migration.central_site_migration.start_one_migration",
 			"press.press.doctype.version_upgrade.version_upgrade.update_from_site_update",
+			"press.press.doctype.site_replication.site_replication.update_from_site",
 		],
 		"*/10 * * * *": ["press.press.doctype.site.saas_pool.create"],
 		"*/30 * * * *": ["press.press.doctype.site_update.scheduled_auto_updates.trigger"],
