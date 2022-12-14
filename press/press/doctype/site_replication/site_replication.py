@@ -13,13 +13,14 @@ class SiteReplication(Document):
 
 	def before_insert(self):
 		domain = frappe.db.get_single_value("Press Settings", "domain")
-		self.new_site = self.subdomain + domain
+		self.new_site = self.subdomain + "." + domain
 
 	def validate(self):
-		self.validate_duplicate()  # check for already running site replication
-		self.validate_site_name()  # check if there is an non-archived site with same name
+		self.validate_duplicate()
+		self.validate_site_name()
 
 	def validate_duplicate(self):
+		# check for already running site replication
 		site_reps = frappe.get_all(
 			"Site Replication",
 			dict(site=self.site, subdomain=self.subdomain, status="Running"),
@@ -29,6 +30,7 @@ class SiteReplication(Document):
 			frappe.throw(f"Site Replication for {self.site} is already running.")
 
 	def validate_site_name(self):
+		# check if there is an non-archived site with same name
 		sites = frappe.get_all(
 			"Site", dict(status=["!=", "Archived"], name=self.new_site), pluck="name"
 		)
@@ -44,6 +46,7 @@ class SiteReplication(Document):
 		try:
 			site_job = _new(site_dict, self.server)
 			self.new_site = site_job.get("site")
+			self.save()
 		except Exception:
 			frappe.log_error("Site Replication Error")
 
