@@ -109,6 +109,9 @@ export default {
 				this.show = !this.show;
 				e.preventDefault();
 			}
+			if (e.key === 'Escape') {
+				this.show = false
+			}
 		});
 	},
 	computed: {
