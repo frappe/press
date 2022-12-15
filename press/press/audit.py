@@ -181,6 +181,44 @@ class OffsiteBackupCheck(Audit):
 		self.log(log, status)
 
 
+class UnbilledSubscriptionsCheck(Audit):
+	"""Checks daily for enabled/valid subscriptions that don't have any usage records created"""
+
+	audit_type = "Unbilled Subscription Check"
+	list_key = f"Subscriptions with no usage records created"
+
+	def __init__(self):
+		log = {self.list_key: []}
+		status = "Success"
+		subscriptions = self.subscriptions_without_usage_record()
+
+		log[self.list_key] += subscriptions
+
+		status = "Failure" if len(subscriptions) > 0 else "Success"
+
+		self.log(log, status)
+
+	def subscriptions_without_usage_record(self):
+		from press.press.doctype.subscription.subscription import (
+			paid_plans,
+			sites_with_free_hosting,
+			already_created_usage_records,
+		)
+
+		free_sites = sites_with_free_hosting()
+		# valid susbcriptions without UR for today
+		return frappe.db.get_all(
+			"Subscription",
+			filters={
+				"enabled": True,
+				"plan": ("in", paid_plans()),
+				"name": ("not in", already_created_usage_records(free_sites)),
+				"document_name": ("not in", free_sites),
+			},
+			pluck="name",
+		)
+
+
 def check_bench_fields():
 	BenchFieldCheck()
 
@@ -195,3 +233,7 @@ def check_offsite_backups():
 
 def check_app_server_replica_benches():
 	AppServerReplicaDirsCheck()
+
+
+def check_unbilled_subscriptions():
+	UnbilledSubscriptionsCheck()
