@@ -1,0 +1,8 @@
+---
+- name: Update Docker's daemon.json
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: no
+  roles:
+    - role: docker_eof_update
