@@ -89,3 +89,4 @@ press.press.doctype.virtual_machine.patches.set_naming_fields
 press.press.doctype.virtual_machine.patches.set_virtual_machine_naming_series
 press.press.doctype.virtual_machine.patches.rename_virtual_machines
 press.press.doctype.user_ssh_key.patches.set_existing_keys_as_default
+press.press.doctype.press_settings.patches.set_press_monitoring_password

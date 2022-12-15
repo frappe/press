@@ -142,11 +142,12 @@
   "ssh_section",
   "ssh_certificate_authority",
   "monitoring_section",
-  "telegram_alert_chat_id",
   "monitor_server",
-  "column_break_100",
   "monitor_token",
+  "press_monitoring_password",
+  "column_break_100",
   "log_server",
+  "telegram_alert_chat_id",
   "feature_flags_tab",
   "verify_cards_with_micro_charge"
  ],
@@ -928,11 +929,16 @@
    "fieldname": "usd_rate",
    "fieldtype": "Float",
    "label": "Commission USD Rate"
+  },
+  {
+   "fieldname": "press_monitoring_password",
+   "fieldtype": "Password",
+   "label": "Press Monitoring Password"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2022-12-02 18:56:47.099335",
+ "modified": "2022-12-15 13:43:06.190233",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

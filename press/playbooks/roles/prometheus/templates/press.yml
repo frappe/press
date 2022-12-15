@@ -1,0 +1,35 @@
+- targets:
+    - "{{ press_server }}"
+  labels:
+    job: node
+    __metrics_path__: /metrics/node
+
+- targets:
+    - "{{ press_server }}"
+  labels:
+    job: nginx
+    __metrics_path__: /metrics/nginx
+
+- targets:
+    - "{{ press_server }}"
+  labels:
+    job: cadvisor
+    __metrics_path__: /metrics/cadvisor
+
+- targets:
+    - "{{ press_server }}"
+  labels:
+    job: mariadb
+    __metrics_path__: /metrics/mariadb
+
+- targets:
+    - "{{ press_server }}"
+  labels:
+    job: docker
+    __metrics_path__: /metrics/docker
+
+- targets:
+    - "{{ press_server }}"
+  labels:
+    job: gunicorn
+    __metrics_path__: /metrics/gunicorn

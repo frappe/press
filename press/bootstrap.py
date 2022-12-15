@@ -126,6 +126,7 @@ def setup_monitoring(settings):
 
 	settings.monitor_server = monitor.name
 	settings.monitor_token = frappe.generate_hash()
+	settings.press_monitoring_password = frappe.generate_hash()
 
 	settings.telegram_alert_chat_id = TELEGRAM_CHAT_ID
 	settings.telegram_chat_id = TELEGRAM_CHAT_ID
