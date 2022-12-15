@@ -561,7 +561,7 @@ def me():
 	return {"user": frappe.session.user, "team": get_current_team()}
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def fuse_list():
 	team = get_current_team()
 	sites = frappe.get_all(

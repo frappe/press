@@ -9,7 +9,7 @@
 					<div class="mx-auto flex flex-row justify-start">
 						<Sidebar
 							class="hidden sticky top-0 sm:flex sm:w-1/5"
-							v-if="!$route.meta.isLoginPage"
+							v-if="$auth.isLoggedIn"
 						/>
 						<router-view
 							v-slot="{ Component }"
