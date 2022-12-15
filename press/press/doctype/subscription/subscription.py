@@ -195,12 +195,12 @@ def sites_with_free_hosting():
 	return sites_with_standard_hosting + free_sites
 
 
-def already_created_usage_records(free_sites):
+def already_created_usage_records(free_sites, date=frappe.utils.today()):
 	return frappe.get_all(
 		"Usage Record",
 		filters={
 			"document_type": ("in", ("Site", "Server", "Database Server")),
-			"date": frappe.utils.today(),
+			"date": date,
 			"document_name": ("not in", free_sites),
 		},
 		pluck="subscription",
