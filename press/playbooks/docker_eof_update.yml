@@ -1,5 +1,5 @@
 ---
-- name: Install Docker
+- name: Update Docker's daemon.json
   hosts: all
   become: yes
   become_user: root
