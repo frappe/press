@@ -849,7 +849,7 @@ class Site(Document):
 	def disable_subscription(self):
 		subscription = self.subscription
 		if subscription:
-			subscription.disable()
+			frappe.db.set_value("Subscription", subscription.name, "enabled", False)
 
 	def disable_marketplace_subscriptions(self):
 		app_subscriptions = frappe.get_all(
