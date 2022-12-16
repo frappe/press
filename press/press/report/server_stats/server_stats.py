@@ -3,6 +3,7 @@
 
 import frappe
 from press.api.server import usage, total_resource
+from frappe.utils import rounded
 
 
 def execute(filters=None):
@@ -11,8 +12,8 @@ def execute(filters=None):
 		{
 			"fieldname": "server",
 			"label": frappe._("Server"),
-			"fieldtype": "Float",
-			"width": 70,
+			"fieldtype": "Data",
+			"width": 150,
 		},
 		{
 			"fieldname": "cpu",
@@ -48,9 +49,10 @@ def get_data():
 
 		rows.append(
 			{
-				"cpu": (used_data["vcpu"] / available_data["datasets"][0]["values"][-1]) * 100,
-				"disk": (used_data["disk"] / available_data["datasets"][0]["values"][-1]) * 100,
-				"memory": (used_data["memory"] / available_data["datasets"][0]["values"][-1]) * 100,
+				"server": server,
+				"cpu": rounded((used_data["vcpu"] / available_data["vcpu"]) * 100),
+				"disk": rounded((used_data["disk"] / available_data["disk"]) * 100),
+				"memory": rounded((used_data["memory"] / available_data["memory"]) * 100),
 			}
 		)
 
