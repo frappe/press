@@ -48,9 +48,9 @@ def get_data():
 
 		rows.append(
 			{
-				"cpu": (used_data["vcpu"] / available_data["datasets"][0]["values"][-1]) * 100,
-				"disk": (used_data["disk"] / available_data["datasets"][0]["values"][-1]) * 100,
-				"memory": (used_data["memory"] / available_data["datasets"][0]["values"][-1]) * 100,
+				"cpu": (used_data["vcpu"] / available_data["vcpu"]) * 100,
+				"disk": (used_data["disk"] / available_data["disk"]) * 100,
+				"memory": (used_data["memory"] / available_data["memory"]) * 100,
 			}
 		)
 
