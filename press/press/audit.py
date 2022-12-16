@@ -185,7 +185,7 @@ class UnbilledSubscriptionsCheck(Audit):
 	"""Checks daily for enabled/valid subscriptions that don't have any usage records created"""
 
 	audit_type = "Unbilled Subscription Check"
-	list_key = f"Subscriptions with no usage records created"
+	list_key = "Subscriptions with no usage records created"
 
 	def __init__(self):
 		log = {self.list_key: []}
