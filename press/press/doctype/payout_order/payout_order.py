@@ -272,7 +272,7 @@ def create_payout_order_from_invoice_item_names(item_names, *args, **kwargs):
 def create_marketplace_payout_orders():
 	# ONLY RUN ON LAST DAY OF THE MONTH
 	today = frappe.utils.today()
-	period_end = frappe.utils.data.get_last_day(today)
+	period_end = frappe.utils.data.get_last_day(today).strftime("%Y-%m-%d")
 
 	if today != period_end:
 		return
