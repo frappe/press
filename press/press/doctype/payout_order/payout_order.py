@@ -126,8 +126,12 @@ def get_invoice_item_for_po_item(
 	)
 
 
-def create_marketplace_payout_orders_monthly():
-	period_start, period_end = get_current_period_boundaries()
+def create_marketplace_payout_orders_monthly(period_start=None, period_end=None):
+	period_start, period_end = (
+		(period_start, period_end)
+		if period_start and period_end
+		else get_current_period_boundaries()
+	)
 	items = get_unaccounted_marketplace_invoice_items()
 
 	# Group by teams
