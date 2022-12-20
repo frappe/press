@@ -133,12 +133,13 @@ def process_backup_site_job_update(job):
 				)
 
 
-def get_backup_bucket(cluster):
+def get_backup_bucket(cluster, region=False):
 	bucket_for_cluster = frappe.get_all(
-		"Backup Bucket", {"cluster": cluster}, pluck="bucket_name", limit=1
+		"Backup Bucket", {"cluster": cluster}, ["name", "region"], limit=1
 	)
-	return (
-		bucket_for_cluster[0]
-		if bucket_for_cluster
-		else frappe.db.get_single_value("Press Settings", "aws_s3_bucket")
-	)
+	default_bucket = frappe.db.get_single_value("Press Settings", "aws_s3_bucket")
+
+	if region:
+		return bucket_for_cluster[0] if bucket_for_cluster else default_bucket
+	else:
+		return bucket_for_cluster[0]["name"] if bucket_for_cluster else default_bucket
