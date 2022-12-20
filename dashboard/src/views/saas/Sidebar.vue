@@ -42,7 +42,7 @@
 		>
 			<template v-slot="{ toggleDropdown }">
 				<div
-					class="m-2 flex cursor-pointer items-center gap-2 rounded-md p-2"
+					class="m-2 flex cursor-pointer items-center gap-2 rounded-md p-2 truncate break-all"
 					@click="
 						() => {
 							toggleDropdown();
