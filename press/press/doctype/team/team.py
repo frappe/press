@@ -495,6 +495,11 @@ class Team(Document):
 		)
 		doc.insert(ignore_permissions=True)
 		doc.submit()
+		# change payment mode to prepaid credits if default is card or not set
+		self.payment_mode = (
+			"Prepaid Credits" if self.payment_mode != "Partner Credits" else self.payment_mode
+		)
+		self.save()
 		return doc
 
 	def get_available_credits(self):
