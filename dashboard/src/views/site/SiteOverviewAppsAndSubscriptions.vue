@@ -339,7 +339,7 @@ export default {
 	methods: {
 		getCommitTag(app) {
 			return app.timestamp
-				? $dayjs.shortFormating($dayjs(app.timestamp).fromNow()) + ' ago'
+				? this.$dayjs.shortFormating($dayjs(app.timestamp).fromNow()) + ' ago'
 				: app.hash.substr(0, 7);
 		},
 		subscribe(app) {
