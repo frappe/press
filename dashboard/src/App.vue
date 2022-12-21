@@ -13,7 +13,7 @@
 						/>
 						<router-view
 							v-slot="{ Component }"
-							class="w-full pb-20 sm:mr-0 p-8"
+							class="w-full pb-20 sm:mr-0 p-6"
 						>
 							<keep-alive
 								:include="[
