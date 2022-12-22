@@ -228,8 +228,8 @@ class Agent:
 			site=site.name,
 		)
 
-	def migrate_site(self, site, skip_failing_patches=False):
-		data = {"skip_failing_patches": skip_failing_patches}
+	def migrate_site(self, site, skip_failing_patches=False, activate=True):
+		data = {"skip_failing_patches": skip_failing_patches, "activate": activate}
 		return self.create_agent_job(
 			"Migrate Site",
 			f"benches/{site.bench}/sites/{site.name}/migrate",

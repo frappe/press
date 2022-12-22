@@ -296,7 +296,15 @@ class Site(Document):
 	def migrate(self, skip_failing_patches=False):
 		log_site_activity(self.name, "Migrate")
 		agent = Agent(self.server)
-		agent.migrate_site(self, skip_failing_patches=skip_failing_patches)
+		activate = True
+		if self.status in ("Inactive", "Suspended"):
+			activate = False
+		elif self.status == "Broken" and self.status_before_update in (
+			"Inactive",
+			"Suspended",
+		):
+			activate = False
+		agent.migrate_site(self, skip_failing_patches=skip_failing_patches, activate=activate)
 		self.status = "Pending"
 		self.save()
 
