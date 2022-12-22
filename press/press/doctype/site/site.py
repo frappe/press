@@ -299,6 +299,7 @@ class Site(Document):
 		activate = True
 		if self.status in ("Inactive", "Suspended"):
 			activate = False
+			self.status_before_update = self.status
 		elif self.status == "Broken" and self.status_before_update in (
 			"Inactive",
 			"Suspended",
@@ -1348,6 +1349,11 @@ def process_migrate_site_job_update(job):
 		"Failure": "Broken",
 	}[job.status]
 
+	if updated_status == "Active":
+		site = frappe.get_doc("Site", job.site)
+		if site.status_before_update:
+			site.reset_previous_status()
+			return
 	site_status = frappe.get_value("Site", job.site, "status")
 	if updated_status != site_status:
 		frappe.db.set_value("Site", job.site, "status", updated_status)
