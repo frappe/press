@@ -2,7 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
-from press.api.server import usage, total_resource
+from press.api.server import usage, total_resource, prometheus_query
 from frappe.utils import rounded
 
 
@@ -51,10 +51,32 @@ def execute(filters=None):
 			"fieldtype": "Int",
 			"width": 120,
 		},
+		{
+			"fieldname": "swap",
+			"label": frappe._("Swap (%)"),
+			"fieldtype": "Float",
+			"width": 120,
+		},
 	]
 
 	data = get_data()
 	return columns, data
+
+
+def calculate_swap(server):
+	query_map = {
+		"swap": (
+			f"""((node_memory_SwapTotal_bytes{{instance="{server}",job="node"}} - node_memory_SwapFree_bytes{{instance="{server}",job="node"}}) / (node_memory_SwapTotal_bytes{{instance="{server}",job="node"}} )) * 100""",
+			lambda x: x,
+		),
+	}
+
+	result = {}
+	for usage_type, query in query_map.items():
+		response = prometheus_query(query[0], query[1], "Asia/Kolkata", 120, 120)["datasets"]
+		if response:
+			result[usage_type] = response[0]["values"][-1]
+	return result
 
 
 def get_data():
@@ -64,6 +86,7 @@ def get_data():
 	for server in servers:
 		used_data = usage(server)
 		available_data = total_resource(server)
+		swap_memory = calculate_swap(server)
 
 		rows.append(
 			{
@@ -74,6 +97,7 @@ def get_data():
 				"disk_space": rounded(available_data["disk"], 2),
 				"memory": rounded((used_data["memory"] / available_data["memory"]) * 100, 1),
 				"total_memory": rounded(available_data["memory"] / 1024, 2),
+				"swap": rounded(swap_memory["swap"], 1),
 			}
 		)
 
