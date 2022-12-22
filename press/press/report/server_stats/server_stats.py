@@ -22,8 +22,20 @@ def execute(filters=None):
 			"width": 120,
 		},
 		{
+			"fieldname": "core",
+			"label": frappe._("Total Core"),
+			"fieldtype": "Int",
+			"width": 120,
+		},
+		{
 			"fieldname": "disk",
 			"label": frappe._("Space (%)"),
+			"fieldtype": "Float",
+			"width": 120,
+		},
+		{
+			"fieldname": "disk_space",
+			"label": frappe._("Space (GB)"),
 			"fieldtype": "Float",
 			"width": 120,
 		},
@@ -31,6 +43,12 @@ def execute(filters=None):
 			"fieldname": "memory",
 			"label": frappe._("Memory (%)"),
 			"fieldtype": "Float",
+			"width": 120,
+		},
+		{
+			"fieldname": "total_memory",
+			"label": frappe._("Memory (GB)"),
+			"fieldtype": "Int",
 			"width": 120,
 		},
 	]
@@ -51,8 +69,11 @@ def get_data():
 			{
 				"server": server,
 				"cpu": rounded(used_data["vcpu"] * 100, 1),
+				"core": available_data["vcpu"],
 				"disk": rounded((used_data["disk"] / available_data["disk"]) * 100, 1),
+				"disk_space": rounded(available_data["disk"], 2),
 				"memory": rounded((used_data["memory"] / available_data["memory"]) * 100, 1),
+				"total_memory": rounded(available_data["memory"] / 1024, 2),
 			}
 		)
 
