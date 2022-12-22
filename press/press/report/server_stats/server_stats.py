@@ -13,25 +13,25 @@ def execute(filters=None):
 			"fieldname": "server",
 			"label": frappe._("Server"),
 			"fieldtype": "Data",
-			"width": 150,
+			"width": 250,
 		},
 		{
 			"fieldname": "cpu",
-			"label": frappe._("CPU"),
+			"label": frappe._("CPU (%)"),
 			"fieldtype": "Float",
-			"width": 70,
+			"width": 120,
 		},
 		{
 			"fieldname": "disk",
-			"label": frappe._("Space"),
+			"label": frappe._("Space (%)"),
 			"fieldtype": "Float",
-			"width": 70,
+			"width": 120,
 		},
 		{
 			"fieldname": "memory",
-			"label": frappe._("Memory"),
+			"label": frappe._("Memory (%)"),
 			"fieldtype": "Float",
-			"width": 70,
+			"width": 120,
 		},
 	]
 
@@ -50,9 +50,9 @@ def get_data():
 		rows.append(
 			{
 				"server": server,
-				"cpu": rounded((used_data["vcpu"] / available_data["vcpu"]) * 100),
-				"disk": rounded((used_data["disk"] / available_data["disk"]) * 100),
-				"memory": rounded((used_data["memory"] / available_data["memory"]) * 100),
+				"cpu": rounded(used_data["vcpu"] * 100, 1),
+				"disk": rounded((used_data["disk"] / available_data["disk"]) * 100, 1),
+				"memory": rounded((used_data["memory"] / available_data["memory"]) * 100, 1),
 			}
 		)
 
