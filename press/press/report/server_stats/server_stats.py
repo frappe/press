@@ -12,7 +12,8 @@ def execute(filters=None):
 		{
 			"fieldname": "server",
 			"label": frappe._("Server"),
-			"fieldtype": "Data",
+			"fieldtype": "Link",
+			"options": "Server",
 			"width": 200,
 		},
 		{
@@ -57,6 +58,18 @@ def execute(filters=None):
 			"fieldtype": "Float",
 			"width": 100,
 		},
+		{
+			"fieldname": "ram_assigned",
+			"label": frappe._("Ram Assigned for Worker (MB)"),
+			"fieldtype": "Int",
+			"width": 100,
+		},
+		{
+			"fieldname": "new_worker_allocation",
+			"label": frappe._("New Worker Allocation"),
+			"fieldtype": "Check",
+			"width": 100,
+		},
 	]
 
 	data = get_data()
@@ -98,6 +111,10 @@ def get_data():
 				"memory": rounded((used_data["memory"] / available_data["memory"]) * 100, 1),
 				"total_memory": rounded(available_data["memory"] / 1024, 2),
 				"swap": rounded(swap_memory["swap"], 1),
+				"new_worker_allocation": frappe.db.get_value(
+					"Server", server, "new_worker_allocation"
+				),
+				"ram_assigned": frappe.db.get_value("Server", server, "ram"),
 			}
 		)
 
