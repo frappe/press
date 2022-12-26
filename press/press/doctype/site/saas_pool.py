@@ -29,6 +29,7 @@ class SaasSitePool:
 				sites_created += 1
 
 	def create_one(self):
+		bench, apps, subdomain, domain = None, None, None, None
 		try:
 			if frappe.db.get_value("Saas Settings", self.app, "enable_hybrid_pools"):
 				self.create_hybrid_pool_sites()
