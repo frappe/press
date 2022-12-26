@@ -987,6 +987,7 @@ def login_via_token(token, team, site):
 	if not token or not isinstance(token, str):
 		frappe.throw("Invalid Token")
 
+	team = team.replace(" ", "+")
 	token_exists = frappe.db.exists(
 		"Saas Remote Login",
 		{
