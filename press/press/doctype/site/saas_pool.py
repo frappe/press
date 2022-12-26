@@ -106,7 +106,12 @@ class SaasSitePool:
 def create():
 	saas_apps = frappe.get_all("Saas Settings", {"enable_pooling": 1}, pluck="name")
 	for app in saas_apps:
-		SaasSitePool(app).create()
+		try:
+			SaasSitePool(app).create()
+			frappe.db.commit()
+		except Exception:
+			log_error("Pool Error", app=app)
+			frappe.db.rollback()
 
 
 def get(app, hybrid_saas_pool=""):
