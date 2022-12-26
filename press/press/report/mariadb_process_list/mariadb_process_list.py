@@ -9,7 +9,7 @@ from frappe.utils import cint
 
 
 def execute(filters=None):
-	frappe.only_for("System Manager")
+	frappe.only_for("System Manager", "Site Manager")
 
 	columns = [
 		{
