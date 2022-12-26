@@ -15,7 +15,7 @@ from frappe.core.doctype.access_log.access_log import make_access_log
 
 
 def execute(filters=None):
-	frappe.only_for("System Manager", "Site Manager")
+	frappe.only_for(["System Manager", "Site Manager"])
 	filters.database = frappe.get_doc("Site", filters.site).fetch_info()["config"][
 		"db_name"
 	]
@@ -55,7 +55,7 @@ def get_files(*args, **kwargs):
 		else:
 			return "{0:.1f} KB".format(float(size) / 1024)
 
-	frappe.only_for("System Manager", "Site Manager")
+	frappe.only_for(["System Manager", "Site Manager"])
 
 	site = args[-1]["site"]
 
