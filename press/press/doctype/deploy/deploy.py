@@ -68,7 +68,7 @@ def create_deploy_candidate_differences(bench):
 				).insert()
 		except Exception:
 			log_error(
-				"Deploy Candidate Differnce Creation Error",
+				"Deploy Candidate Difference Creation Error",
 				bench=bench.as_dict(),
 				candidates=candidates,
 				source=source,
