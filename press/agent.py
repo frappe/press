@@ -331,7 +331,7 @@ class Agent:
 			backups_path = os.path.join(site.name, str(date.today()))
 			backup_bucket = get_backup_bucket(site.cluster, region=True)
 			bucket_name = (
-				backup_bucket.get("name") if backup_bucket.get("name") else backup_bucket
+				backup_bucket.get("name") if isinstance(backup_bucket, dict) else backup_bucket
 			)
 			if settings.aws_s3_bucket or bucket_name:
 				auth = {
