@@ -134,12 +134,7 @@ function resetCurrentEditingPlan() {
 				</div>
 			</div>
 
-			<template
-				v-if="
-					appPlans.data && 0 < appPlans.data.length && appPlans.data.length < 3
-				"
-				#actions
-			>
+			<template v-if="appPlans.data && 0 < appPlans.data.length" #actions>
 				<Button @click="editPlan()">New Plan</Button>
 			</template>
 		</Card>
