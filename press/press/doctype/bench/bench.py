@@ -297,6 +297,9 @@ class Bench(Document):
 	def retry_bench(self):
 		from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 
+		if frappe.get_value("Deploy Candidate", self.candidate, "status") != "Success":
+			frappe.throw(f"Deploy Candidate {self.candidate} doesn't exists")
+
 		candidate = DeployCandidate(self.candidate)
 		candidate._create_deploy([self.server])
 
