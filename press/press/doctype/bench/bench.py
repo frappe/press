@@ -294,6 +294,13 @@ class Bench(Document):
 			).insert()
 
 	@frappe.whitelist()
+	def retry_bench(self):
+		from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
+
+		candidate = DeployCandidate(self.candidate)
+		candidate._create_deploy([self.server])
+
+	@frappe.whitelist()
 	def restart(self, web_only=False):
 		agent = Agent(self.server)
 		agent.restart_bench(self, web_only=web_only)
