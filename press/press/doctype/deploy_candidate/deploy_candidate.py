@@ -145,6 +145,7 @@ class DeployCandidate(Document):
 			self.build_end = now()
 			self.build_duration = self.build_end - self.build_start
 			self.save()
+			frappe.db.commit()
 
 	def add_build_steps(self):
 		if self.build_steps:
