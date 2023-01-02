@@ -1159,7 +1159,7 @@ class Site(Document):
 					"status": "Active",
 					"creation": ("<=", interval_hrs_ago),
 					"is_standby": False,
-					"plan": ("like", "%Trial"),
+					"plan": ("not like", "%Trial"),
 				},
 				pluck="name",
 			)
