@@ -1235,10 +1235,6 @@ def process_new_site_job_update(job):
 		filters={"job_type": ("in", other_job_types), "site": job.site},
 	)[0].status
 
-	backup_tests = frappe.get_all(
-		"Backup Restoration Test", dict(test_site=job.site, status="Running"), pluck="name"
-	)
-
 	if "Success" == first == second:
 		updated_status = "Active"
 	elif "Failure" in (first, second):
@@ -1248,21 +1244,8 @@ def process_new_site_job_update(job):
 	else:
 		updated_status = "Pending"
 
-	status_map = {
-		"Active": "Success",
-		"Broken": "Failure",
-		"Installing": "Running",
-		"Pending": "Running",
-	}
-
 	site_status = frappe.get_value("Site", job.site, "status")
 	if updated_status != site_status:
-		if backup_tests:
-			frappe.db.set_value(
-				"Backup Restoration Test", backup_tests[0], "status", status_map[updated_status]
-			)
-			frappe.db.commit()
-
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 
 
@@ -1461,7 +1444,7 @@ def process_restore_tables_job_update(job):
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Site")
 
 
-def prepare_site(site: str, subdomain: str = None) -> Dict:
+def prepare_site(site: str, subdomain: str = None, with_files: bool = False) -> Dict:
 	# prepare site details
 	doc = frappe.get_doc("Site", site)
 	sitename = subdomain if subdomain else "brt-" + doc.subdomain
@@ -1469,7 +1452,10 @@ def prepare_site(site: str, subdomain: str = None) -> Dict:
 	backups = frappe.get_all(
 		"Site Backup",
 		dict(
-			status="Success", with_files=1, site=site, files_availability="Available", offsite=1
+			status="Success",
+			with_files=with_files,
+			site=site,
+			files_availability="Available",
 		),
 		pluck="name",
 	)
@@ -1480,8 +1466,8 @@ def prepare_site(site: str, subdomain: str = None) -> Dict:
 	files = {
 		"config": "",  # not necessary for test sites
 		"database": backup.remote_database_file,
-		"public": backup.remote_public_file,
-		"private": backup.remote_private_file,
+		"public": backup.remote_public_file if backup.remote_public_file else "",
+		"private": backup.remote_private_file if backup.remote_private_file else "",
 	}
 	site_dict = {
 		"domain": frappe.db.get_single_value("Press Settings", "domain"),

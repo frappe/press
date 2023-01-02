@@ -154,8 +154,8 @@ def _new(site, server: str = None):
 			"subscription_plan": plan,
 			"remote_config_file": files.get("config"),
 			"remote_database_file": files.get("database"),
-			"remote_public_file": files.get("public"),
-			"remote_private_file": files.get("private"),
+			"remote_public_file": files.get("public") or "",
+			"remote_private_file": files.get("private") or "",
 			"skip_failing_patches": site.get("skip_failing_patches", False),
 		},
 	)

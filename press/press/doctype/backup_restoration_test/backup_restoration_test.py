@@ -5,9 +5,12 @@ from frappe.model.document import Document
 from press.api.site import _new
 from press.press.doctype.site.site import prepare_site
 import frappe
+from typing import List
 
 
 class BackupRestorationTest(Document):
+	doctype = "Backup Restoration Test"
+
 	def before_insert(self):
 		self.new_sitename = "brt-" + str(self.site)
 
@@ -40,7 +43,7 @@ class BackupRestorationTest(Document):
 
 	def create_test_site(self) -> None:
 		self.status = "Running"
-		site_dict = prepare_site(self.site)
+		site_dict = prepare_site(self.site, with_files=False)
 		server = frappe.get_value("Site", self.site, "server")
 		try:
 			site_job = _new(site_dict, server)
@@ -48,3 +51,26 @@ class BackupRestorationTest(Document):
 			self.save()
 		except Exception:
 			frappe.log_error("Site Creation Error")
+
+	@classmethod
+	def get_all_running_backup_restoration_tests(cls) -> List[Document]:
+		restoration_tests = frappe.get_all(cls.doctype, dict(status="Running"), pluck="name")
+		return cls.get_docs(restoration_tests)
+
+	@classmethod
+	def get_docs(cls, names: List[str]) -> List[Document]:
+		return [frappe.get_doc(cls.doctype, name) for name in names]
+
+
+def update_from_site():
+	running_restorations = BackupRestorationTest.get_all_running_backup_restoration_tests()
+	for restoration in running_restorations:
+		site_doc = frappe.get_doc("Site", restoration.test_site)
+		status_map = {
+			"Active": "Success",
+			"Broken": "Failure",
+			"Installing": "Running",
+			"Pending": "Running",
+		}
+		restoration.status = status_map[site_doc.status]
+		restoration.save()

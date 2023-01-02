@@ -42,7 +42,7 @@ class SiteReplication(Document):
 
 	def after_insert(self):
 		self.status = "Running"
-		site_dict = prepare_site(self.site, self.subdomain)
+		site_dict = prepare_site(self.site, self.subdomain, False)
 		try:
 			site_job = _new(site_dict, self.server)
 			self.new_site = site_job.get("site")
