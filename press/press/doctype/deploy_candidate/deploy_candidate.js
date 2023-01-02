@@ -17,6 +17,7 @@ frappe.ui.form.on('Deploy Candidate', {
 
 		[
 			[__('Build'), 'build', true],
+			[__('Build without cache'), 'build_without_cache', true],
 			[__('Deploy to Staging'), 'deploy_to_staging', true],
 			[__('Promote to Production'), 'promote_to_production', frm.doc.staged],
 			[__('Deploy to Production (build and deploy)'), 'deploy_to_production', true],
