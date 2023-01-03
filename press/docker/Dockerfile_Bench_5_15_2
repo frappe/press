@@ -148,14 +148,11 @@ RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 --mount=type
 WORKDIR /home/frappe/frappe-bench
 
 RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 /home/frappe/frappe-bench/env/bin/pip install pycups==2.0.1
-RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 /home/frappe/frappe-bench/env/bin/pip install "MarkupSafe<2.1.0"
 
 # Install Redisearch 2.0 from precompiled binaries
 COPY --chown=frappe:frappe redis /home/frappe/frappe-bench/redis
 
 COPY --chown=frappe:frappe common_site_config.json /home/frappe/frappe-bench/sites/common_site_config.json
-
-
 
 # Install other apps
 {% for app in doc.apps %}
