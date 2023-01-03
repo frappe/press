@@ -56,8 +56,7 @@ class DeployCandidate(Document):
 
 		return unpublished_releases
 
-	@frappe.whitelist()
-	def build(self):
+	def pre_build(self, method, **kwargs):
 		self.status = "Pending"
 		self.add_build_steps()
 		self.save()
@@ -68,11 +67,19 @@ class DeployCandidate(Document):
 		)
 		frappe.set_user(team)
 		frappe.enqueue_doc(
-			self.doctype, self.name, "_build", timeout=2400, enqueue_after_commit=True
+			self.doctype, self.name, method, timeout=2400, enqueue_after_commit=True, **kwargs
 		)
 		frappe.set_user(user)
 		frappe.session.data = session_data
 		frappe.db.commit()
+
+	@frappe.whitelist()
+	def build(self):
+		self.pre_build(method="_build")
+	
+	@frappe.whitelist()
+	def build_without_cache(self):
+		self.pre_build(method="_build", no_cache=True)
 
 	@frappe.whitelist()
 	def deploy_to_staging(self):
@@ -90,26 +97,7 @@ class DeployCandidate(Document):
 		self.build_and_deploy()
 
 	def build_and_deploy(self, staging: bool = False):
-		self.status = "Pending"
-		self.add_build_steps()
-		self.save()
-		user, session_data, team, = (
-			frappe.session.user,
-			frappe.session.data,
-			get_current_team(),
-		)
-		frappe.set_user(team)
-		frappe.enqueue_doc(
-			self.doctype,
-			self.name,
-			"_build_and_deploy",
-			timeout=2400,
-			enqueue_after_commit=True,
-			staging=staging,
-		)
-		frappe.set_user(user)
-		frappe.session.data = session_data
-		frappe.db.commit()
+		self.pre_build(method="_build_and_deploy", staging=staging)
 
 	def _build_and_deploy(self, staging: bool):
 		self._build()
@@ -122,7 +110,7 @@ class DeployCandidate(Document):
 		except Exception:
 			log_error("Deploy Creation Error", candidate=self.name)
 
-	def _build(self):
+	def _build(self, no_cache=False):
 		self.status = "Running"
 		self.build_start = now()
 		self.is_single_container = True
@@ -133,7 +121,7 @@ class DeployCandidate(Document):
 		try:
 			self._prepare_build_directory()
 			self._prepare_build_context()
-			self._run_docker_build()
+			self._run_docker_build(no_cache)
 			self._push_docker_image()
 		except Exception:
 			log_error("Deploy Candidate Build Exception", name=self.name)
@@ -281,7 +269,7 @@ class DeployCandidate(Document):
 
 		self.generate_ssh_keys()
 
-	def _run_docker_build(self):
+	def _run_docker_build(self, no_cache=False):
 		environment = os.environ
 		environment.update(
 			{"DOCKER_BUILDKIT": "1", "BUILDKIT_PROGRESS": "plain", "PROGRESS_NO_TRUNC": "1"}
@@ -306,7 +294,7 @@ class DeployCandidate(Document):
 		self.docker_image_tag = self.name
 		self.docker_image = f"{self.docker_image_repository}:{self.docker_image_tag}"
 
-		result = self.run(f"docker build -t {self.docker_image} .", environment)
+		result = self.run(f"docker build {'--no-cache' if no_cache else ''} -t {self.docker_image} .", environment)
 		self._parse_docker_build_result(result)
 
 	def _parse_docker_build_result(self, result):
