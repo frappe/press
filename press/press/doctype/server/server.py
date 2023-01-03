@@ -697,12 +697,16 @@ class Server(BaseServer):
 
 		for bench_name, workload in bench_workloads.items():
 			bench = frappe.get_cached_doc("Bench", bench_name)
-			gunicorn_workers = min(
-				24, max(2, round(workload / total_workload * max_gunicorn_workers))  # min 2 max 24
-			)
-			background_workers = min(
-				8, max(1, round(workload / total_workload * max_bg_workers))  # min 1 max 8
-			)
+			try:
+				gunicorn_workers = min(
+					24, max(2, round(workload / total_workload * max_gunicorn_workers))  # min 2 max 24
+				)
+				background_workers = min(
+					8, max(1, round(workload / total_workload * max_bg_workers))  # min 1 max 8
+				)
+			except ZeroDivisionError:  # when total_workload is 0
+				gunicorn_workers = 2
+				background_workers = 1
 			bench.gunicorn_workers = gunicorn_workers
 			bench.background_workers = background_workers
 			bench.save()
