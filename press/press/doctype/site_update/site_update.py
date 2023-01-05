@@ -148,18 +148,20 @@ class SiteUpdate(Document):
 		"""
 		group = frappe.get_doc("Release Group", self.destination_group)
 
-		if not (group.public or group.central_bench):
-			server = frappe.get_doc("Server", self.server)
-			source_bench = frappe.get_doc("Bench", self.source_bench)
-			dest_bench = frappe.get_doc("Bench", self.destination_bench)
+		if group.public or group.central_bench:
+			return
 
-			work_load_diff = dest_bench.work_load - source_bench.work_load
-			if (
-				server.new_worker_allocation
-				and work_load_diff
-				>= 8  # USD 100 site equivalent. (Since workload is based off of CPU)
-			):
-				server.auto_scale_workers()
+		server = frappe.get_doc("Server", self.server)
+		source_bench = frappe.get_doc("Bench", self.source_bench)
+		dest_bench = frappe.get_doc("Bench", self.destination_bench)
+
+		work_load_diff = dest_bench.work_load - source_bench.work_load
+		if (
+			server.new_worker_allocation
+			and work_load_diff
+			>= 8  # USD 100 site equivalent. (Since workload is based off of CPU)
+		):
+			server.auto_scale_workers()
 
 
 def trigger_recovery_job(site_update_name):
