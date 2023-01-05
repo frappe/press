@@ -140,6 +140,27 @@ class SiteUpdate(Document):
 			{"site": self.site, "status": ("in", ("Pending", "Running", "Failure"))},
 		)
 
+	def reallocate_workers(self):
+		"""
+		Reallocate workers on source and destination benches
+
+		Do it for private benches only now as there'll be too many worker updates for public benches
+		"""
+		group = frappe.get_doc("Release Group", self.destination_group)
+
+		if not (group.public or group.central_bench):
+			server = frappe.get_doc("Server", self.server)
+			source_bench = frappe.get_doc("Bench", self.source_bench)
+			dest_bench = frappe.get_doc("Bench", self.destination_bench)
+
+			work_load_diff = dest_bench.work_load - source_bench.work_load
+			if (
+				server.new_worker_allocation
+				and work_load_diff
+				>= 8  # USD 100 site equivalent. (Since workload is based off of CPU)
+			):
+				server.auto_scale_workers()
+
 
 def trigger_recovery_job(site_update_name):
 	site_update = frappe.get_doc("Site Update", site_update_name)
@@ -322,6 +343,7 @@ def process_update_site_job_update(job):
 			frappe.db.set_value("Site", job.site, "status", "Updating")
 		elif updated_status == "Success":
 			frappe.get_doc("Site", job.site).reset_previous_status()
+			frappe.get_doc("Site Update", site_update.name).reallocate_workers()
 		elif updated_status == "Failure":
 			frappe.db.set_value("Site", job.site, "status", "Broken")
 			trigger_recovery_job(site_update.name)
