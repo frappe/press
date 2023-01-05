@@ -76,13 +76,13 @@ class BackupTest:
 def archive_backup_test_sites():
 	backup_tests = frappe.get_all(
 		"Backup Restoration Test",
-		dict(status=("in", ("Archive Failed", "Success"))),
+		dict(archived=0),
 		pluck="test_site",
 	)
 	if backup_tests:
 		for test_site in backup_tests:
 			site = frappe.get_doc("Site", test_site)
-			if site.status == "Active":
+			if site.status in ["Active", "Broken", "Pending"]:
 				site.archive(reason="Backup Restoration Test")
 
 

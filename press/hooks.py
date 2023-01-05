@@ -221,6 +221,7 @@ scheduler_events = {
 			"press.press.doctype.site.backups.schedule",
 			"press.press.doctype.site_migration.site_migration.run_scheduled_migrations",
 			"press.press.doctype.version_upgrade.version_upgrade.run_scheduled_upgrades",
+			"press.press.doctype.backup_restoration_test.backup_restoration_test.update_from_site_archive",
 		],
 		"*/5 * * * *": [
 			"press.press.doctype.central_site_migration.central_site_migration.start_one_migration",

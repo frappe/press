@@ -5,7 +5,7 @@ from frappe.model.document import Document
 from press.api.site import _new
 from press.press.doctype.site.site import prepare_site
 import frappe
-from typing import List
+from typing import List, Dict
 
 
 class BackupRestorationTest(Document):
@@ -53,8 +53,8 @@ class BackupRestorationTest(Document):
 			frappe.log_error("Site Creation Error")
 
 	@classmethod
-	def get_all_running_backup_restoration_tests(cls) -> List[Document]:
-		restoration_tests = frappe.get_all(cls.doctype, dict(status="Running"), pluck="name")
+	def get_all_backup_restoration_tests(cls, filters: Dict) -> List[Document]:
+		restoration_tests = frappe.get_all(cls.doctype, filters, pluck="name")
 		return cls.get_docs(restoration_tests)
 
 	@classmethod
@@ -63,14 +63,24 @@ class BackupRestorationTest(Document):
 
 
 def update_from_site():
-	running_restorations = BackupRestorationTest.get_all_running_backup_restoration_tests()
+	filters = {"status": "Running"}
+	running_restorations = BackupRestorationTest.get_all_backup_restoration_tests(filters)
 	for restoration in running_restorations:
-		site_doc = frappe.get_doc("Site", restoration.test_site)
+		site_status = frappe.db.get_value("Site", restoration.test_site, "status")
 		status_map = {
 			"Active": "Success",
 			"Broken": "Failure",
 			"Installing": "Running",
 			"Pending": "Running",
 		}
-		restoration.status = status_map[site_doc.status]
+		restoration.status = status_map[site_status]
 		restoration.save()
+
+
+def update_from_site_archive():
+	filters = {"archived": 0}
+	unarchived_sites = BackupRestorationTest.get_all_backup_restoration_tests(filters)
+	for unarchived_site in unarchived_sites:
+		site_status = frappe.db.get_value("Site", unarchived_site.test_site, "status")
+		unarchived_site.archived = 1 if site_status == "Archived" else 0
+		unarchived_site.save()
