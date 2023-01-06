@@ -172,7 +172,7 @@
 				return "Password is required"
 			} else {
 				let password = value;
-				var pattern = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,35}$/;
+				var pattern = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,}$/;
 
 				if (password.match(pattern) && password.length >= 8) {
 					return false
