@@ -1,8 +1,11 @@
-{%- extends "templates/saas_signup_layout.html" -%}
+{%- extends "templates/base.html" -%}
+
+{%- block navbar -%}
+{%- endblock -%}
 
 {%- block content -%}
 <section>
-	<div class="mx-auto mt-8 mb-24 col-xl-4 col-lg-6 col-md-7 col-sm-9">
+	<div class="mx-auto mt-20 mb-24 col-xl-4 col-lg-6 col-md-7 col-sm-9">
 		<div class="card">
 			<div class="text-center card-body">
 				{%- if frappe.form_dict.key -%}
@@ -24,6 +27,9 @@
 		</div>
 	</div>
 </section>
+{%- endblock -%}
+
+{%- block footer -%}
 {%- endblock -%}
 
 {%- block script -%}
