@@ -912,9 +912,6 @@ class Site(Document):
 		self.reload()
 		if self.status == "Suspended":
 			self.unsuspend_if_applicable()
-		else:
-			# trigger agent job only once
-			self.update_site_config(plan_config)
 
 		if self.trial_end_date:
 			self.reload()
