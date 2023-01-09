@@ -37,11 +37,6 @@
 				</div>
 				<div class="form-row">
 					<div class="form-group col">
-						<p>Number of Users</p>
-						<input type="number" id="no_of_users" name="no_of_users" class="form-control" min="1"
-							max="100000" required>
-					</div>
-					<div class="form-group col">
 						<p for="industry">Industry</p>
 						<select id="industry" name="industry" class="custom-select">
 							<option selected disabled></option>
@@ -52,11 +47,11 @@
 							<option value="Services">Services</option>
 							<option value="Agriculture">Agriculture</option>
 							<option value="Non Profit">Non Profit</option>
+							<option value="Non Profit">Others</option>
 						</select>
 					</div>
 				</div>
 				<div class="form-row">
-					<div class="form-group col">
 						<p for="no_of_employees">Number of employees</p>
 						<select id="no_of_employees" name="no_of_employees" class="custom-select text-xs">
 							<option selected disabled></option>
@@ -68,7 +63,7 @@
 							<option value="1000+">1000+</option>
 						</select>
 					</div>
-					<div class="form-group col">
+				<div class="form-row my-4">
 						<p for="designation">Your Designation</p>
 						<select id="designation" name="designation" class="custom-select">
 							<option value=''></option>
@@ -83,18 +78,6 @@
 								Analyst</option>
 							<option value='Student / Personal Interest'>Student / Personal Interest</option>
 							<option value='Others'>Others</option>
-						</select>
-					</div>
-				</div>
-				<div class="form-group">
-					<p for="source">Where did you hear about {{ app_title }}?</p>
-						<select id="source" class="custom-select" name="referral_source">
-							<option></option>
-							<option value="Social media">Social media</option>
-							<option value="Google Search">Google Search</option>
-							<option value="Recommended by a friend/colleague">Recommended by a friend/colleague</option>
-							<option value="ERPNext Blog">ERPNext Blog</option>
-							<option value="Online reviews (like Capterra/G2)">Online reviews (like Capterra/G2)</option>
 						</select>
 				</div>
 				<div class="form-group">
