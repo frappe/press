@@ -1,4 +1,4 @@
-import io from 'socket.io-client/dist/socket.io.slim';
+import { io } from "socket.io-client";
 
 let host = window.location.hostname;
 let port = window.location.port ? ':9000' : '';

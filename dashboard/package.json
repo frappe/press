@@ -28,7 +28,7 @@
 		"luxon": "^1.22.0",
 		"markdown-it": "^12.3.2",
 		"register-service-worker": "^1.6.2",
-		"socket.io-client": "^2.4.0",
+		"socket.io-client": "^4.5.1",
 		"vue": "^3.2.16",
 		"vue-router": "^4.0.5"
 	},
