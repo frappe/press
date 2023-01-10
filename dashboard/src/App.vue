@@ -19,8 +19,10 @@
 								:include="[
 									'Sites',
 									'Benches',
+									'Servers',
 									'Site',
 									'Bench',
+									'Server',
 									'Marketplace',
 									'Account',
 									'MarketplaceApp'
