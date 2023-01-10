@@ -201,12 +201,13 @@ export default {
 				{ label: 'Installing', route: 'install' },
 				{ label: 'Overview', route: 'overview' },
 				{ label: 'Analytics', route: 'analytics' },
+				{ label: 'Benches', route: 'benches' },
 				{ label: 'Jobs', route: 'jobs', showRedDot: this.runningJob },
 				{ label: 'Plays', route: 'plays', showRedDot: this.runningPlay }
 			];
 
 			let tabsByStatus = {
-				Active: ['Overview', 'Analytics', 'Jobs', 'Plays'],
+				Active: ['Overview', 'Analytics', 'Benches', 'Jobs', 'Plays'],
 				Pending: ['Installing'],
 				Installing: ['Installing']
 			};
