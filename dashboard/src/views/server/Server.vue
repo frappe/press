@@ -131,11 +131,7 @@ export default {
 				},
 				auto: true,
 				onSuccess() {},
-				onError(e) {
-					if (e.indexOf('not found') >= 0) {
-						this.$router.replace('/404NotFound');
-					}
-				}
+				onError: this.$routeTo404PageIfNotFound
 			};
 		}
 	},
