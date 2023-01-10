@@ -16,6 +16,7 @@ def poly_get_doc(doctypes, name):
 	for doctype in doctypes:
 		if frappe.db.exists(doctype, name):
 			return frappe.get_doc(doctype, name)
+	return frappe.get_doc(doctypes[-1], name)
 
 
 @frappe.whitelist()
