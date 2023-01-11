@@ -76,7 +76,7 @@ class DeployCandidate(Document):
 	@frappe.whitelist()
 	def build(self):
 		self.pre_build(method="_build")
-	
+
 	@frappe.whitelist()
 	def build_without_cache(self):
 		self.pre_build(method="_build", no_cache=True)
@@ -294,7 +294,10 @@ class DeployCandidate(Document):
 		self.docker_image_tag = self.name
 		self.docker_image = f"{self.docker_image_repository}:{self.docker_image_tag}"
 
-		result = self.run(f"docker build {'--no-cache' if no_cache else ''} -t {self.docker_image} .", environment)
+		result = self.run(
+			f"docker build {'--no-cache' if no_cache else ''} -t {self.docker_image} .",
+			environment,
+		)
 		self._parse_docker_build_result(result)
 
 	def _parse_docker_build_result(self, result):
