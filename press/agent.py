@@ -10,6 +10,8 @@ from typing import List
 
 import frappe
 import requests
+import gzip
+import re
 from frappe.utils.password import get_decrypted_password
 from press.utils import log_error, sanitize_config
 
@@ -101,6 +103,21 @@ class Agent:
 			site=site.name,
 		)
 
+	def check_database_file(self, site):
+		remote_database_file = site.remote_database_file
+		mem_database_file = requests.get(url = frappe.get_doc("Remote File", site.remote_database_file).download_link)
+		# get frappe version from the first line
+		frappe_version = re.search("Frappe (\d{1,2})\.\d{1,2}\.\d{1,2}", gzip.decompress(mem_database_file.content).decode("utf-8"))
+
+		if not frappe_version:
+			raise Exception("The backup file is corrupted!")
+
+		source = frappe.get_doc("Bench", site.bench).apps[0].source
+		target_frappe_version = frappe.get_doc("App Source", source).versions[0].version
+
+		if frappe_version != target_frappe_version:
+			raise Exception("You're trying to restore site in the wrong version!")
+
 	def restore_site(self, site, skip_failing_patches=False):
 		apps = [app.app for app in site.apps]
 		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
@@ -109,6 +126,9 @@ class Agent:
 			public_link = frappe.get_doc("Remote File", site.remote_public_file).download_link
 		if site.remote_private_file:
 			private_link = frappe.get_doc("Remote File", site.remote_private_file).download_link
+		
+		self.check_database_file(site)
+		
 		data = {
 			"apps": apps,
 			"mariadb_root_password": get_decrypted_password(
