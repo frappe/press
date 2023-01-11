@@ -93,7 +93,9 @@ def calculate_swap(server):
 
 
 def get_data():
-	servers = frappe.get_all("Server", dict(status="Active"), pluck="name")
+	servers = frappe.get_all(
+		"Server", dict(status="Active"), pluck="name"
+	) + frappe.get_all("Database Server", dict(status="Active"), pluck="name")
 
 	rows = []
 	for server in servers:
@@ -118,7 +120,7 @@ def get_data():
 				"new_worker_allocation": frappe.db.get_value(
 					"Server", server, "new_worker_allocation"
 				),
-				"ram_assigned": frappe.db.get_value("Server", server, "ram"),
+				"ram_assigned": (frappe.db.get_value("Server", server, "ram") or 0) / 1024,
 			}
 		)
 
