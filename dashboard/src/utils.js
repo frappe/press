@@ -104,7 +104,10 @@ let utils = {
 				'Awaiting Deploy': 'yellow',
 				Deployed: 'green',
 				Expired: 'red',
-				Paid: 'green'
+				Paid: 'green',
+				Rejected: 'red',
+				'In Review': 'yellow',
+				'Attention Required': 'red'
 			};
 		}
 	}
