@@ -59,9 +59,27 @@ def execute(filters=None):
 			"width": 100,
 		},
 		{
+			"fieldname": "swap_used",
+			"label": frappe._("Swap Used(%)"),
+			"fieldtype": "Float",
+			"width": 100,
+		},
+		{
+			"fieldname": "memory_required",
+			"label": frappe._("Memory Required (GB)"),
+			"fieldtype": "Float",
+			"width": 100,
+		},
+		{
+			"fieldname": "memory_shortage",
+			"label": frappe._("Memory Shortage (GB)"),
+			"fieldtype": "Float",
+			"width": 100,
+		},
+		{
 			"fieldname": "ram_assigned",
-			"label": frappe._("Ram Assigned for Worker (MB)"),
-			"fieldtype": "Int",
+			"label": frappe._("Ram Assigned for Workers (GB)"),
+			"fieldtype": "Float",
 			"width": 100,
 		},
 		{
@@ -78,8 +96,16 @@ def execute(filters=None):
 
 def calculate_swap(server):
 	query_map = {
+		"swap_used": (
+			f"""((node_memory_SwapTotal_bytes{{instance="{server}",job="node"}} - node_memory_SwapFree_bytes{{instance="{server}",job="node"}}) / node_memory_SwapTotal_bytes{{instance="{server}",job="node"}}) * 100""",
+			lambda x: x,
+		),
 		"swap": (
-			f"""((node_memory_SwapTotal_bytes{{instance="{server}",job="node"}} - node_memory_SwapFree_bytes{{instance="{server}",job="node"}}) / (node_memory_SwapTotal_bytes{{instance="{server}",job="node"}} )) * 100""",
+			f"""node_memory_SwapTotal_bytes{{instance="{server}",job="node"}} / (1024 * 1024 * 1024)""",
+			lambda x: x,
+		),
+		"required": (
+			f"""((node_memory_MemTotal_bytes{{instance="{server}",job="node"}} + node_memory_SwapTotal_bytes{{instance="{server}",job="node"}}) - (node_memory_MemFree_bytes{{instance="{server}",job="node"}} + node_memory_SwapFree_bytes{{instance="{server}",job="node"}} + node_memory_Cached_bytes{{instance="{server}",job="node"}} + node_memory_Buffers_bytes{{instance="{server}",job="node"}} + node_memory_SwapCached_bytes{{instance="{server}",job="node"}})) / (1024 * 1024 * 1024)""",
 			lambda x: x,
 		),
 	}
@@ -117,6 +143,13 @@ def get_data():
 					(used_data.get("memory", 0) / available_data.get("memory", 1)) * 100, 1
 				),
 				"swap": rounded(swap_memory.get("swap", 0), 1),
+				"swap_used": rounded(swap_memory.get("swap_used", 0), 1),
+				"memory_required": rounded(swap_memory.get("required", 0), 1),
+				"memory_shortage": max(
+					rounded(swap_memory.get("required", 0), 1)
+					- rounded(available_data.get("memory", 0) / 1024, 2),
+					0,
+				),
 				"new_worker_allocation": frappe.db.get_value(
 					"Server", server, "new_worker_allocation"
 				),
