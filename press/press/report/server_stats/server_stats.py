@@ -18,43 +18,43 @@ def execute(filters=None):
 		},
 		{
 			"fieldname": "cpu",
-			"label": frappe._("CPU (%)"),
-			"fieldtype": "Float",
-			"width": 100,
-		},
-		{
-			"fieldname": "core",
-			"label": frappe._("Total Core"),
+			"label": frappe._("vCPUs"),
 			"fieldtype": "Int",
 			"width": 100,
 		},
 		{
-			"fieldname": "disk",
-			"label": frappe._("Space (%)"),
+			"fieldname": "cpu_used",
+			"label": frappe._("CPU Utilization(%)"),
 			"fieldtype": "Float",
 			"width": 100,
 		},
 		{
-			"fieldname": "disk_space",
+			"fieldname": "disk",
 			"label": frappe._("Space (GB)"),
 			"fieldtype": "Float",
 			"width": 100,
 		},
 		{
-			"fieldname": "memory",
-			"label": frappe._("Memory (%)"),
+			"fieldname": "disk_used",
+			"label": frappe._("Space Used(%)"),
 			"fieldtype": "Float",
 			"width": 100,
 		},
 		{
-			"fieldname": "total_memory",
+			"fieldname": "memory",
 			"label": frappe._("Memory (GB)"),
-			"fieldtype": "Int",
+			"fieldtype": "Float",
+			"width": 100,
+		},
+		{
+			"fieldname": "memory_used",
+			"label": frappe._("Memory Used(%)"),
+			"fieldtype": "Float",
 			"width": 100,
 		},
 		{
 			"fieldname": "swap",
-			"label": frappe._("Swap (%)"),
+			"label": frappe._("Swap (GB)"),
 			"fieldtype": "Float",
 			"width": 100,
 		},
@@ -104,13 +104,17 @@ def get_data():
 		rows.append(
 			{
 				"server": server,
-				"cpu": rounded(used_data["vcpu"] * 100, 1),
-				"core": available_data["vcpu"],
-				"disk": rounded((used_data["disk"] / available_data["disk"]) * 100, 1),
-				"disk_space": rounded(available_data["disk"], 2),
-				"memory": rounded((used_data["memory"] / available_data["memory"]) * 100, 1),
-				"total_memory": rounded(available_data["memory"] / 1024, 2),
-				"swap": rounded(swap_memory["swap"], 1),
+				"cpu": available_data.get("vcpu", 0),
+				"cpu_used": rounded(used_data.get("vcpu", 0) * 100, 1),
+				"disk": rounded(available_data.get("disk", 0), 2),
+				"disk_used": rounded(
+					(used_data.get("disk", 0) / available_data.get("disk", 1)) * 100, 1
+				),
+				"memory": rounded(available_data.get("memory", 0) / 1024, 2),
+				"memory_used": rounded(
+					(used_data.get("memory", 0) / available_data.get("memory", 1)) * 100, 1
+				),
+				"swap": rounded(swap_memory.get("swap", 0), 1),
 				"new_worker_allocation": frappe.db.get_value(
 					"Server", server, "new_worker_allocation"
 				),
