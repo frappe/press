@@ -449,9 +449,11 @@ def archive_obsolete_benches():
 			):
 				try:
 					frappe.get_doc("Bench", bench.name).archive()
-					return
+					frappe.db.commit()
+					break
 				except Exception:
 					log_error("Bench Archival Error", bench=bench.name)
+					frappe.db.rollback()
 
 
 def sync_benches():
