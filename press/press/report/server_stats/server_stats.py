@@ -88,6 +88,24 @@ def execute(filters=None):
 			"fieldtype": "Check",
 			"width": 100,
 		},
+		{
+			"fieldname": "load_1",
+			"label": frappe._("Load Average 1 (%)"),
+			"fieldtype": "Float",
+			"width": 100,
+		},
+		{
+			"fieldname": "load_5",
+			"label": frappe._("Load Average 5 (%)"),
+			"fieldtype": "Float",
+			"width": 100,
+		},
+		{
+			"fieldname": "load_15",
+			"label": frappe._("Load Average 15 (%)"),
+			"fieldtype": "Float",
+			"width": 100,
+		},
 	]
 
 	data = get_data()
@@ -118,6 +136,30 @@ def calculate_swap(server):
 	return result
 
 
+def calculate_load(server):
+	query_map = {
+		"load_1": (
+			f"""avg(node_load1{{instance="{server}", job="node"}}) / count(count(node_cpu_seconds_total{{instance="{server}", job="node"}}) by (cpu)) * 100""",
+			lambda x: x,
+		),
+		"load_5": (
+			f"""avg(node_load5{{instance="{server}", job="node"}}) / count(count(node_cpu_seconds_total{{instance="{server}", job="node"}}) by (cpu)) * 100""",
+			lambda x: x,
+		),
+		"load_15": (
+			f"""avg(node_load15{{instance="{server}", job="node"}}) / count(count(node_cpu_seconds_total{{instance="{server}", job="node"}}) by (cpu)) * 100""",
+			lambda x: x,
+		),
+	}
+
+	result = {}
+	for usage_type, query in query_map.items():
+		response = prometheus_query(query[0], query[1], "Asia/Kolkata", 120, 120)["datasets"]
+		if response:
+			result[usage_type] = response[0]["values"][-1]
+	return result
+
+
 def get_data():
 	servers = frappe.get_all(
 		"Server", dict(status="Active"), pluck="name"
@@ -128,6 +170,7 @@ def get_data():
 		used_data = usage(server)
 		available_data = total_resource(server)
 		swap_memory = calculate_swap(server)
+		load = calculate_load(server)
 
 		rows.append(
 			{
@@ -154,6 +197,9 @@ def get_data():
 					"Server", server, "new_worker_allocation"
 				),
 				"ram_assigned": (frappe.db.get_value("Server", server, "ram") or 0) / 1024,
+				"load_1": rounded(load.get("load_1", 0), 1),
+				"load_5": rounded(load.get("load_5", 0), 1),
+				"load_15": rounded(load.get("load_15", 0), 1),
 			}
 		)
 
