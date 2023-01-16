@@ -359,11 +359,6 @@ def guess_type(value):
 
 
 def convert(string):
-	if isinstance(string, str):
-		if is_json(string):
-			return json.loads(string)
-		else:
-			return string
 	if isinstance(string, (dict, list)):
 		return json.dumps(string)
 	return string
