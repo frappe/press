@@ -705,13 +705,20 @@ class Site(Document):
 			if same_as_last_usage:
 				return
 
-			site_usage = frappe.get_doc({"doctype": "Site Usage", **site_usage_data}).insert()
-
+			equivalent_site_time = None
 			if usage.get("timestamp"):
 				equivalent_site_time = convert_utc_to_user_timezone(
 					dateutil.parser.parse(usage["timestamp"])
-				)
-				site_usage.db_set("creation", equivalent_site_time.replace(tzinfo=None))
+				).replace(tzinfo=None)
+				if frappe.db.exists(
+					"Site Usage", {"site": self.name, "creation": equivalent_site_time}
+				):
+					return
+
+			site_usage = frappe.get_doc({"doctype": "Site Usage", **site_usage_data}).insert()
+
+			if equivalent_site_time:
+				site_usage.db_set("creation", equivalent_site_time)
 
 		if isinstance(fetched_usage, list):
 			for usage in fetched_usage:
