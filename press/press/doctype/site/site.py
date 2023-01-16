@@ -737,6 +737,7 @@ class Site(Document):
 			return True
 		return False
 
+	@frappe.whitelist()
 	def sync_info(self, data=None):
 		"""Updates Site Usage, site.config and timezone details for site."""
 		if not data:
