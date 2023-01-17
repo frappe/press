@@ -24,7 +24,8 @@
   "versions",
   "github_section",
   "last_github_poll_failed",
-  "last_github_response"
+  "last_github_response",
+  "last_synced"
  ],
  "fields": [
   {
@@ -144,11 +145,17 @@
    "fieldtype": "Code",
    "label": "Last GitHub Response",
    "read_only": 1
+  },
+  {
+   "fieldname": "last_synced",
+   "fieldtype": "Datetime",
+   "label": "Last Synced",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-02-01 18:17:14.438624",
+ "modified": "2023-01-17 14:29:19.684075",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Source",

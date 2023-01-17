@@ -56,6 +56,7 @@ def poll_new_releases():
 	for source in frappe.get_all(
 		"App Source",
 		{"enabled": True, "last_github_poll_failed": False},
+		order_by="last_synced",
 	):
 		try:
 			source = frappe.get_doc("App Source", source.name)
