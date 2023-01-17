@@ -65,7 +65,10 @@ class AppSource(Document):
 		# self.create_release()
 
 	@frappe.whitelist()
-	def create_release(self):
+	def create_release(self, force=False):
+		if self.last_github_poll_failed and not force:
+			return
+
 		github_response = None
 		try:
 			token = None
