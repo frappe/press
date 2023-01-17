@@ -255,7 +255,7 @@ def installable_apps(name):
 def fetch_latest_app_update(name, app):
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
 	app_source = rg.get_app_source(app)
-	app_source.create_release()
+	app_source.create_release(force=True)
 
 
 @frappe.whitelist()
