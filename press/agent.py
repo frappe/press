@@ -593,7 +593,7 @@ class Agent:
 				"host": host,
 				"site": site,
 				"upstream": upstream,
-				"status": "Pending",
+				"status": "Undelivered",
 				"request_method": method,
 				"request_path": path,
 				"request_data": json.dumps(data or {}, indent=4, sort_keys=True),
