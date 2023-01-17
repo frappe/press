@@ -256,7 +256,7 @@
 				},
 				type: "POST",
 			}).then((r) => {
-				controller.show_input_feedback("password", r.message ? "Strong Password!" : "The password is very to guess please use a strong password!", !r.message)
+				controller.show_input_feedback("password", r.message ? "Strong Password!" : "The password is very easy to guess please use a strong password!", !r.message)
 			})
 		}
 	}
