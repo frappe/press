@@ -1291,6 +1291,14 @@ def process_archive_site_job_update(job):
 		pluck="name",
 	)
 
+	# Consider Archive Job successful if archive step succeeded
+	if job.status == "Failure" and job.job_type == "Archive Site":
+		archive_step_status = frappe.db.get_value(
+			"Agent Job Step", {"step_name": "Archive Site", "agent_job": job.name}, "status"
+		)
+		if archive_step_status == "Success":
+			first = archive_step_status
+
 	if "Success" == first == second:
 		updated_status = "Archived"
 	elif "Failure" in (first, second):
