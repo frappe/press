@@ -270,6 +270,11 @@ def schedule_updates():
 			continue
 		if update_triggered_count > queue_size:
 			break
+		if frappe.db.exists(
+			"Site Update",
+			{"site": site.name, "status": ("in", ("Pending", "Running", "Failure"))},
+		):
+			break
 		try:
 			site = frappe.get_doc("Site", site.name)
 			site.schedule_update()
