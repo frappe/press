@@ -133,6 +133,29 @@ export default {
 				onSuccess() {},
 				onError: this.$routeTo404PageIfNotFound
 			};
+		},
+		reboot() {
+			return {
+				method: 'press.api.server.reboot',
+				params: {
+					name: this.serverName
+				},
+				onSuccess(data) {
+					this.$notify({
+						title: 'Server Reboot Scheduled Successfully',
+						color: 'green',
+						icon: 'check'
+					});
+					this.$resources.server.reload();
+				},
+				onError() {
+					this.$notify({
+						title: 'An error occurred',
+						color: 'red',
+						icon: 'x'
+					});
+				}
+			};
 		}
 	},
 	activated() {
@@ -190,6 +213,14 @@ export default {
 							`${window.location.protocol}//${window.location.host}/app/server/${this.server.name}`,
 							'_blank'
 						);
+					}
+				},
+				this.server.status === 'Active' && {
+					label: 'Reboot',
+					icon: 'tool',
+					loading: this.$resources.reboot.loading,
+					action: () => {
+						return this.$resources.reboot.submit();
 					}
 				}
 			].filter(Boolean);

@@ -160,6 +160,7 @@ class VirtualMachine(Document):
 	@frappe.whitelist()
 	def reboot(self):
 		self.client().reboot_instances(InstanceIds=[self.aws_instance_id])
+		self.sync()
 
 	def increase_disk_size(self, increment=50):
 		volume = self.volumes[0]

@@ -435,3 +435,9 @@ def groups(name):
 		server = frappe.get_doc("Server", app_server)
 
 	return all_benches(server=server.name)
+
+
+@frappe.whitelist()
+@protected(["Server", "Database Server"])
+def reboot(name):
+	return poly_get_doc(["Server", "Database Server"], name).reboot()
