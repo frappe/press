@@ -232,10 +232,18 @@ class DeployCandidate(Document):
 
 			target = os.path.join(self.build_directory, "apps", app.app)
 			shutil.copytree(source, target, symlinks=True)
+			app.app_name = self._get_app_name(app.app)
 
 			self.save(ignore_version=True)
 			frappe.db.commit()
 
+		self._generate_dockerfile()
+		self._copy_config_files()
+		self._generate_redis_cache_config()
+		self._generate_apps_txt()
+		self.generate_ssh_keys()
+
+	def _generate_dockerfile(self):
 		dockerfile = os.path.join(self.build_directory, "Dockerfile")
 		with open(dockerfile, "w") as f:
 			dockerfile_template = "press/docker/Dockerfile"
@@ -247,6 +255,7 @@ class DeployCandidate(Document):
 			content = frappe.render_template(dockerfile_template, {"doc": self}, is_path=True)
 			f.write(content)
 
+	def _copy_config_files(self):
 		for target in ["common_site_config.json", "supervisord.conf"]:
 			shutil.copy(
 				os.path.join(frappe.get_app_path("press", "docker"), target), self.build_directory
@@ -259,6 +268,7 @@ class DeployCandidate(Document):
 				symlinks=True,
 			)
 
+	def _generate_redis_cache_config(self):
 		redis_cache_conf = os.path.join(self.build_directory, "config", "redis-cache.conf")
 		with open(redis_cache_conf, "w") as f:
 			redis_cache_conf_template = "press/docker/config/redis-cache.conf"
@@ -267,12 +277,48 @@ class DeployCandidate(Document):
 			)
 			f.write(content)
 
+	def _generate_apps_txt(self):
 		apps_txt = os.path.join(self.build_directory, "apps.txt")
 		with open(apps_txt, "w") as f:
-			content = "\n".join([app.app for app in self.apps])
+			content = "\n".join([app.app_name for app in self.apps])
 			f.write(content)
 
-		self.generate_ssh_keys()
+	def _get_app_name(self, app):
+		"""Retrieves `name` attribute of app - equivalent to distribution name
+		of python package. Fetches from pyproject.toml, setup.cfg or setup.py
+		whichever defines it in that order.
+		"""
+		app_name = None
+		apps_path = os.path.join(self.build_directory, "apps")
+
+		pyproject_path = os.path.join(apps_path, app, "pyproject.toml")
+		config_py_path = os.path.join(apps_path, app, "setup.cfg")
+		setup_py_path = os.path.join(apps_path, app, "setup.py")
+
+		if os.path.exists(pyproject_path):
+			try:
+				from tomli import load
+			except ImportError:
+				from tomllib import load
+
+			with open(pyproject_path, "rb") as f:
+				app_name = load(f).get("project", {}).get("name")
+
+		if not app_name and os.path.exists(config_py_path):
+			from setuptools.config import read_configuration
+
+			config = read_configuration(config_py_path)
+			app_name = config.get("metadata", {}).get("name")
+
+		if not app_name:
+			# retrieve app name from setup.py as fallback
+			with open(setup_py_path, "rb") as f:
+				app_name = re.search(r'name\s*=\s*[\'"](.*)[\'"]', f.read().decode("utf-8"))[1]
+
+		if app_name and app != app_name:
+			return app_name
+
+		return app
 
 	def _run_docker_build(self, no_cache=False):
 		environment = os.environ
