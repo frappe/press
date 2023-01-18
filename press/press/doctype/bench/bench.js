@@ -23,6 +23,7 @@ frappe.ui.form.on('Bench', {
 			[__('Sync Sites Info'), 'sync_info'],
 			[__('Sync Sites Analytics'), 'sync_analytics'],
 			[__('Update All Sites'), 'update_all_sites'],
+			[__('Generate NGINX Config'), 'generate_nginx_config', frm.doc.status === "Active"],
 			[__('Remove SSH User from Proxy'), 'remove_ssh_user', frm.doc.is_ssh_proxy_setup],
 			[__('Add SSH User to Proxy'), 'add_ssh_user', !frm.doc.is_ssh_proxy_setup],
 			[__('Restart'), 'restart', frm.doc.status === "Active"],

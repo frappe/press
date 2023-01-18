@@ -236,6 +236,11 @@ class Bench(Document):
 		agent = Agent(proxy_server, server_type="Proxy Server")
 		agent.remove_ssh_user(self)
 
+	@frappe.whitelist()
+	def generate_nginx_config(self):
+		agent = Agent(self.server)
+		agent.update_bench_config(self)
+
 	@property
 	def work_load(self) -> float:
 		"""
