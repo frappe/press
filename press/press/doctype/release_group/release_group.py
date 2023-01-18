@@ -91,9 +91,16 @@ class ReleaseGroup(Document):
 			self.extend("dependencies", dependencies)
 
 	@frappe.whitelist()
-	def create_deploy_candidate(self, apps_to_ignore=[]):
+	def create_duplicate_deploy_candidate(self):
+		return self.create_deploy_candidate([app.as_dict() for app in self.apps])
+
+	@frappe.whitelist()
+	def create_deploy_candidate(self, apps_to_ignore=None):
 		if not self.enabled:
 			return
+
+		if apps_to_ignore is None:
+			apps_to_ignore = []
 
 		# Get the deploy information for apps
 		# that have updates available
