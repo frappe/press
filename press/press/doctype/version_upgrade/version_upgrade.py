@@ -81,13 +81,26 @@ def update_from_site_update():
 		site_update = frappe.get_doc("Site Update", version_upgrade.site_update)
 		version_upgrade.status = site_update.status
 		if site_update.status in ["Failure", "Recovered", "Fatal"]:
-			version_upgrade.last_traceback = frappe.get_value(
-				"Agent Job", site_update.update_job, "traceback"
-			)
-			version_upgrade.last_output = frappe.get_value(
-				"Agent Job", site_update.update_job, "output"
-			)
+			last_traceback = frappe.get_value("Agent Job", site_update.update_job, "traceback")
+			last_output = frappe.get_value("Agent Job", site_update.update_job, "output")
+			version_upgrade.last_traceback = last_traceback
+			version_upgrade.last_output = last_output
 			version_upgrade.status = "Failure"
+			recipient = frappe.db.get_value("Site", version_upgrade.site, "notify_email")
+			msg = f"""
+			Automated Version Upgrade has failed. Please resolve the issue and retry for upgrade.
+			Site: {version_upgrade.site}
+			Traceback: ```{last_traceback}```
+			Output: ```{last_output}```
+			"""
+			frappe.sendmail(
+				recipient=[recipient],
+				subject="Automated Version Upgrade Failed",
+				message=msg,
+				as_markdown=True,
+				reference_doctype="Version Upgrade",
+				reference_name=version_upgrade.name,
+			)
 		version_upgrade.save()
 
 
