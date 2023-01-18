@@ -550,8 +550,11 @@ class Agent:
 				result = requests.request(
 					method, url, headers=headers, json=data, verify=verify, timeout=(10, 30)
 				)
+			json_response = None
 			try:
-				return result.json()
+				json_response = result.json()
+				result.raise_for_status()
+				return json_response
 			except Exception:
 				log_error(
 					title="Agent Request Result Exception",
@@ -560,7 +563,7 @@ class Agent:
 					data=data,
 					files=files,
 					headers=headers,
-					result=result.text,
+					result=json_response or result.text,
 				)
 		except Exception:
 			log_error(
