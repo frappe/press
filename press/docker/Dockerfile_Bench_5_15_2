@@ -164,6 +164,7 @@ RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 --mount=type
 {% endfor %}
 
 COPY --chown=frappe:frappe config /home/frappe/frappe-bench/config
+COPY --chown=frappe:frappe apps.txt /home/frappe/frappe-bench/sites/apps.txt
 
 
 EXPOSE 8000 9000 2200

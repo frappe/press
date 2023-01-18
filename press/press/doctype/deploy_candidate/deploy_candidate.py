@@ -267,6 +267,11 @@ class DeployCandidate(Document):
 			)
 			f.write(content)
 
+		apps_txt = os.path.join(self.build_directory, "apps.txt")
+		with open(apps_txt, "w") as f:
+			content = "\n".join([app.app for app in self.apps])
+			f.write(content)
+
 		self.generate_ssh_keys()
 
 	def _run_docker_build(self, no_cache=False):
