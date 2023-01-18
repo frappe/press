@@ -824,7 +824,8 @@ class Site(Document):
 		if save:
 			self.save()
 
-	def update_site_config(self, config):
+	@frappe.whitelist()
+	def update_site_config(self, config=None):
 		"""Updates site.configuration, site.config and runs site.save which initiates an Agent Request
 		This checks for the blacklisted config keys via Frappe Validations, but not for internal usages.
 		Don't expose this directly to an external API. Pass through `press.utils.sanitize_config` or use
@@ -833,6 +834,8 @@ class Site(Document):
 		Args:
 		config (dict): Python dict for any suitable frappe.conf
 		"""
+		if config is None:
+			config = {}
 		if isinstance(config, list):
 			self._set_configuration(config)
 		else:

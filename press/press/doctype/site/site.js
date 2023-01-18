@@ -98,6 +98,7 @@ frappe.ui.form.on('Site', {
 			[__('Deactivate'), 'deactivate'],
 			[__('Activate'), 'activate'],
 			[__('Clear Cache'), 'clear_site_cache'],
+			[__('Update Site Config'), 'update_site_config'],
 			[__('Enable Database Access'), 'enable_database_access', !frm.doc.is_database_access_enabled],
 			[__('Disable Database Access'), 'disable_database_access', frm.doc.is_database_access_enabled],
 			[__('Create DNS Record'), 'create_dns_record'],
