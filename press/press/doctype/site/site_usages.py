@@ -93,8 +93,8 @@ def update_disk_usages():
 		FROM
 			joined j
 		WHERE
-			j.latest_database_usage != j.current_database_usage OR
-			j.latest_disk_usage != j.current_disk_usage
+		ABS(j.latest_database_usage - j.current_database_usage ) > 1 OR
+		ABS(j.latest_disk_usage - j.current_disk_usage) > 1
 	""",
 		as_dict=True,
 	)
