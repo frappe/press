@@ -200,7 +200,7 @@ def benches_with_available_update():
 		"""
 		SELECT sb.name AS source_bench, sb.candidate AS source_candidate, sb.server AS server, dcd.destination AS destination_candidate
 		FROM `tabBench` sb, `tabDeploy Candidate Difference` dcd
-		WHERE sb.status = 'Active' AND sb.candidate = dcd.source
+		WHERE sb.status IN ('Active', 'Broken') AND sb.candidate = dcd.source
 		""",
 		as_dict=True,
 	)
