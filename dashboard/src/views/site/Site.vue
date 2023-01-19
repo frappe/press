@@ -220,11 +220,10 @@ export default {
 		},
 		routeToGeneral() {
 			if (this.$route.matched.length === 1) {
-				let path = this.$route.fullPath;
 				let tab = ['Pending', 'Installing'].includes(this.site.status)
 					? 'jobs'
-					: 'overview';
-				this.$router.replace(`${path}/${tab}`);
+					: 'overview';				
+				this.$router.replace(`/sites/${this.site.name}/${tab}`);
 			}
 		},
 		proceedWithLoginAsAdmin() {
