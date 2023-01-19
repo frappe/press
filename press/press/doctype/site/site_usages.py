@@ -88,8 +88,8 @@ def update_disk_usages():
 		)
 		SELECT
 			j.site,
-			j.latest_database_usage
-			j.latest_disk_usage,
+			j.latest_database_usage,
+			j.latest_disk_usage
 		FROM
 			joined j
 		WHERE
