@@ -389,6 +389,10 @@ def process_archive_bench_job_update(job):
 		"Failure": "Broken",
 	}[job.status]
 
+	if job.status == "Failure":
+		if "Bench has sites" in job.traceback:  # custom exception hardcoded in agent
+			updated_status = "Active"
+
 	if updated_status != bench_status:
 		frappe.db.set_value("Bench", job.bench, "status", updated_status)
 		is_ssh_proxy_setup = frappe.db.get_value("Bench", job.bench, "is_ssh_proxy_setup")
