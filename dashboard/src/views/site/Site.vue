@@ -157,7 +157,7 @@ export default {
 				auto: true,
 				onSuccess() {
 					if (this.siteName !== this.site.name) {
-						this.$router.push(`/sites/${this.site.name}/overview`);
+						this.$router.replace({params: {siteName: this.site.name}});
 					}
 					if (this.site.status !== 'Active' || this.site.setup_wizard_complete)
 						return;
