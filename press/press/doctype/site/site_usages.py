@@ -2,6 +2,7 @@ import frappe
 import functools
 from press.press.doctype.plan.plan import get_plan_config
 from press.api.analytics import get_current_cpu_usage
+from press.utils import log_error
 
 
 @functools.lru_cache(maxsize=128)
@@ -62,19 +63,24 @@ def update_disk_usages():
 	)
 
 	for usage in latest_disk_usages:
-		plan = usage.plan
-		site = frappe.get_cached_doc("Site", usage.site)
+		try:
+			plan = usage.plan
+			site = frappe.get_cached_doc("Site", usage.site)
 
-		database_usage = usage.database
-		disk_usage = usage.public + usage.private
-		database_limit, disk_limit = get_disk_limits(plan)
-		latest_database_usage = int((database_usage / database_limit) * 100)
-		latest_disk_usage = int((disk_usage / disk_limit) * 100)
+			database_usage = usage.database
+			disk_usage = usage.public + usage.private
+			database_limit, disk_limit = get_disk_limits(plan)
+			latest_database_usage = int((database_usage / database_limit) * 100)
+			latest_disk_usage = int((disk_usage / disk_limit) * 100)
 
-		if (
-			site.current_database_usage != latest_database_usage
-			or site.current_disk_usage != latest_disk_usage
-		):
-			site.current_database_usage = latest_database_usage
-			site.current_disk_usage = latest_disk_usage
-			site.save()
+			if (
+				site.current_database_usage != latest_database_usage
+				or site.current_disk_usage != latest_disk_usage
+			):
+				site.current_database_usage = latest_database_usage
+				site.current_disk_usage = latest_disk_usage
+				site.save()
+				frappe.db.commit()
+		except Exception():
+			log_error("Site Disk Usage Update Error", usage=usage)
+			frappe.db.rollback()
