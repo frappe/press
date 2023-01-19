@@ -556,8 +556,19 @@ def all():
 @protected("Site")
 def get(name):
 	team = get_current_team()
-	site = frappe.get_doc("Site", name)
-
+	try:
+		site = frappe.get_doc("Site", name)
+	except frappe.DoesNotExistError:
+		# If name is a custom domain then redirect to the site name
+		site_name = frappe.db.get_value("Site Domain", name, "site")
+		if site_name:
+			frappe.local.response["type"] = "redirect"
+			frappe.local.response[
+				"location"
+			] = f"/api/method/press.api.site.get?name={site_name}"
+			return
+		else:
+			raise
 	rg_info = frappe.db.get_value(
 		"Release Group", site.group, ["team", "version"], as_dict=True
 	)
