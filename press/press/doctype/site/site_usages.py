@@ -12,7 +12,7 @@ def get_cpu_limit(plan):
 
 @functools.lru_cache(maxsize=128)
 def get_cpu_limits(plan):
-	return get_config(plan)["rate_limit"]["limit"] * 1000_000
+	return get_config(plan).get("rate_limit", {}).get("limit", 1) * 1000_000
 
 
 @functools.lru_cache(maxsize=128)
