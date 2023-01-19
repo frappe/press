@@ -50,37 +50,62 @@ def update_disk_usages():
 
 	latest_disk_usages = frappe.db.sql(
 		r"""WITH disk_usage AS (
-			SELECT `site`, `backups`, `database`, `public`, `private`,
-			ROW_NUMBER() OVER (PARTITION BY `site` ORDER BY `creation` DESC) AS 'rank'
-			FROM `tabSite Usage`
-			WHERE `site` NOT LIKE '%cloud.archived%'
-		) SELECT d.*, s.plan
-			FROM disk_usage d INNER JOIN `tabSubscription` s
-			ON d.site = s.document_name
-			WHERE `rank` = 1 AND s.`document_type` = 'Site' AND s.`enabled`
-		""",
+			SELECT
+				`site`,
+				`database`,
+				`public` + `private` as disk,
+				ROW_NUMBER() OVER (PARTITION BY `site` ORDER BY `creation` DESC) AS 'rank'
+			FROM
+				`tabSite Usage`
+			WHERE
+				`site` NOT LIKE '%%cloud.archived%%'
+		),
+		joined AS (
+			SELECT
+				u.site,
+				site.current_database_usage,
+				site.current_disk_usage,
+				CAST(u.database / plan.max_database_usage * 100 AS INTEGER) AS latest_database_usage,
+				CAST(u.disk / plan.max_storage_usage * 100 AS INTEGER) AS latest_disk_usage
+			FROM
+				disk_usage u
+			INNER JOIN
+				`tabSubscription` s
+			ON
+				u.site = s.document_name
+			LEFT JOIN
+				`tabSite` site
+			ON
+				u.site = site.name
+			LEFT JOIN
+				`tabPlan` plan
+			ON
+				s.plan = plan.name
+			WHERE
+				`rank` = 1 AND
+				s.`document_type` = 'Site' AND
+				s.`enabled`
+		)
+		SELECT
+			j.site,
+			j.latest_database_usage
+			j.latest_disk_usage,
+		FROM
+			joined j
+		WHERE
+			j.latest_database_usage != j.current_database_usage OR
+			j.latest_disk_usage != j.current_disk_usage
+	""",
 		as_dict=True,
 	)
 
 	for usage in latest_disk_usages:
 		try:
-			plan = usage.plan
-			site = frappe.get_cached_doc("Site", usage.site)
-
-			database_usage = usage.database
-			disk_usage = usage.public + usage.private
-			database_limit, disk_limit = get_disk_limits(plan)
-			latest_database_usage = int((database_usage / database_limit) * 100)
-			latest_disk_usage = int((disk_usage / disk_limit) * 100)
-
-			if (
-				site.current_database_usage != latest_database_usage
-				or site.current_disk_usage != latest_disk_usage
-			):
-				site.current_database_usage = latest_database_usage
-				site.current_disk_usage = latest_disk_usage
-				site.save()
-				frappe.db.commit()
+			site = frappe.get_doc("Site", usage.site)
+			site.current_database_usage = usage.latest_database_usage
+			site.current_disk_usage = usage.latest_disk_usage
+			site.save()
+			frappe.db.commit()
 		except Exception():
 			log_error("Site Disk Usage Update Error", usage=usage)
 			frappe.db.rollback()
