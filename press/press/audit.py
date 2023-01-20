@@ -36,28 +36,51 @@ class BenchFieldCheck(Audit):
 	"""Audit to check fields of site in press are correct."""
 
 	audit_type = "Bench Field Check"
+	server_map = {}
+	press_map = {}
 
 	def __init__(self):
-		servers = Server.get_all_primary_prod()
 		log = {}
 		status = "Success"
+
+		self.generate_server_map()
+		self.generate_press_map()
+
+		log = {
+			"Sites only on press": self.get_sites_only_on_press(),
+			"Sites only on server": self.get_sites_only_on_server(),
+		}
+		if any(log.values()):
+			status = "Failure"
+
+		self.log(log, status)
+
+	def generate_server_map(self):
+		servers = Server.get_all_primary_prod()
 		for server in servers:
 			benches = get_benches_in_server(server)
 			for bench_name, bench_desc in benches.items():
-				sites_in_server = set(bench_desc["sites"])
-				sites_in_press = set(
-					frappe.get_all(
-						"Site", {"bench": bench_name, "status": ("!=", "Archived")}, pluck="name"
-					)
-				)
-				if sites_in_press != sites_in_server:
-					status = "Failure"
-					log[bench_name] = {}
-					if sites_on_press_only := list(sites_in_press - sites_in_server):
-						log[bench_name].update({"Sites on press only": sites_on_press_only})
-					if sites_on_server_only := list(sites_in_server - sites_in_press):
-						log[bench_name].update({"Sites on server only": sites_on_server_only})
-		self.log(log, status)
+				for site in bench_desc["sites"]:
+					self.server_map.setdefault(site, []).append(bench_name)
+
+	def generate_press_map(self):
+		frappe.db.commit()
+		sites = frappe.get_all("Site", ["name", "bench"], {"status": ("!=", "Archived")})
+		self.press_map = {site.name: site.bench for site in sites}
+
+	def get_sites_only_on_press(self):
+		sites = {}
+		for site, bench in self.press_map.items():
+			if site not in self.server_map:
+				sites[site] = bench
+		return sites
+
+	def get_sites_only_on_server(self):
+		sites = {}
+		for site, benches in self.server_map.items():
+			if site not in self.press_map:
+				sites[site] = benches
+		return sites
 
 
 class AppServerReplicaDirsCheck(Audit):
