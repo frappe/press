@@ -50,6 +50,7 @@ class BenchFieldCheck(Audit):
 			"Sites only on press": self.get_sites_only_on_press(),
 			"Sites only on server": self.get_sites_only_on_server(),
 			"Sites on multiple benches": self.get_sites_on_multiple_benches(),
+			"Potential fixes": self.get_potential_fixes(),
 		}
 		if any(log.values()):
 			status = "Failure"
@@ -89,6 +90,14 @@ class BenchFieldCheck(Audit):
 			if len(benches) > 1:
 				sites[site] = benches
 		return sites
+
+	def get_potential_fixes(self):
+		fixes = {}
+		for site, bench in self.press_map.items():
+			server_benches = self.server_map.get(site, [])
+			if len(server_benches) == 1 and server_benches[0] != bench:
+				fixes[site] = (bench, server_benches[0])
+		return fixes
 
 
 class AppServerReplicaDirsCheck(Audit):
