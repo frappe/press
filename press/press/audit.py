@@ -47,13 +47,21 @@ class BenchFieldCheck(Audit):
 		self.generate_press_map()
 
 		log = {
-			"Sites only on press": self.get_sites_only_on_press(),
-			"Sites only on server": self.get_sites_only_on_server(),
-			"Sites on multiple benches": self.get_sites_on_multiple_benches(),
-			"Potential fixes": self.get_potential_fixes(),
+			"Summary": None,
+			"potential_fixes": self.get_potential_fixes(),
+			"sites_only_on_press": self.get_sites_only_on_press(),
+			"sites_only_on_server": self.get_sites_only_on_server(),
+			"sites_on_multiple_benches": self.get_sites_on_multiple_benches(),
 		}
 		if any(log.values()):
 			status = "Failure"
+
+		log["Summary"] = {
+			"Potential fixes": len(log["potential_fixes"]),
+			"Sites only on press": len(log["sites_only_on_press"]),
+			"Sites only on server": len(log["sites_only_on_server"]),
+			"Sites on multiple benches": len(log["sites_on_multiple_benches"]),
+		}
 
 		self.log(log, status)
 
@@ -71,17 +79,17 @@ class BenchFieldCheck(Audit):
 		self.press_map = {site.name: site.bench for site in sites}
 
 	def get_sites_only_on_press(self):
-		sites = {}
+		sites = []
 		for site, bench in self.press_map.items():
 			if site not in self.server_map:
-				sites[site] = bench
+				sites.append(site)
 		return sites
 
 	def get_sites_only_on_server(self):
 		sites = {}
 		for site, benches in self.server_map.items():
 			if site not in self.press_map:
-				sites[site] = benches
+				sites[site] = benches[0] if len(benches) == 1 else benches
 		return sites
 
 	def get_sites_on_multiple_benches(self):
