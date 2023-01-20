@@ -140,12 +140,12 @@
 	var field_validators = {
 		domain: (value) => {
 			if (!value) {
-				return "This cannot be blank";
+				return "Please enter a domain";
 			}
 		},
 		company: (value) => {
 			if (!value) {
-				return "Company Name cannot be blank";
+				return "Please enter company name";
 			}
 		},
 		industry: (value) => {
@@ -155,7 +155,7 @@
 		},
 		designation: (value) => {
 			if (!value) {
-				return "Designation cannot be blank";
+				return "Please enter your designation";
 			}
 		},
 		referral_source: (value) => {
