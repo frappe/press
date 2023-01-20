@@ -49,6 +49,7 @@ class BenchFieldCheck(Audit):
 		log = {
 			"Sites only on press": self.get_sites_only_on_press(),
 			"Sites only on server": self.get_sites_only_on_server(),
+			"Sites on multiple benches": self.get_sites_on_multiple_benches(),
 		}
 		if any(log.values()):
 			status = "Failure"
@@ -79,6 +80,13 @@ class BenchFieldCheck(Audit):
 		sites = {}
 		for site, benches in self.server_map.items():
 			if site not in self.press_map:
+				sites[site] = benches
+		return sites
+
+	def get_sites_on_multiple_benches(self):
+		sites = {}
+		for site, benches in self.server_map.items():
+			if len(benches) > 1:
 				sites[site] = benches
 		return sites
 
