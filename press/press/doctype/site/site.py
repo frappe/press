@@ -1450,6 +1450,8 @@ def update_records_for_rename(job):
 	"""Update press records for successful site rename."""
 	data = json.loads(job.request_data)
 	new_name = data["new_name"]
+	if new_name == job.site:  # idempotency
+		return
 
 	site = frappe.get_doc("Site", job.site)
 	if site.host_name == job.site:
