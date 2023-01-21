@@ -86,20 +86,20 @@ def update_from_site_update():
 			version_upgrade.last_traceback = last_traceback
 			version_upgrade.last_output = last_output
 			version_upgrade.status = "Failure"
-			recipient = frappe.db.get_value("Site", version_upgrade.site, "notify_email")
-			msg = f"""
-			Automated Version Upgrade has failed. Please resolve the issue and retry for upgrade.
-			Site: {version_upgrade.site}
-			Traceback: ```{last_traceback}```
-			Output: ```{last_output}```
-			"""
+			site = frappe.get_doc("Site", version_upgrade.site)
+			recipient = site.notify_email or site.team
+
 			frappe.sendmail(
 				recipient=[recipient],
-				subject="Automated Version Upgrade Failed",
-				message=msg,
-				as_markdown=True,
+				subject=f"Automated Version Upgrade Failed for {version_upgrade.site}",
 				reference_doctype="Version Upgrade",
 				reference_name=version_upgrade.name,
+				template="version_upgrade_failed",
+				args={
+					"site": version_upgrade.site,
+					"traceback": last_traceback,
+					"output": last_output,
+				},
 			)
 		version_upgrade.save()
 
