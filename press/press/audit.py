@@ -48,7 +48,7 @@ class BenchFieldCheck(Audit):
 
 		log = {
 			"Summary": None,
-			"potential_fixes": self.get_potential_fixes(),
+			"potential_fixes": {},
 			"sites_only_on_press": self.get_sites_only_on_press(),
 			"sites_only_on_server": self.get_sites_only_on_server(),
 			"sites_on_multiple_benches": self.get_sites_on_multiple_benches(),
@@ -56,8 +56,9 @@ class BenchFieldCheck(Audit):
 		if any(log.values()):
 			status = "Failure"
 
+		log["potential_fixes"] = self.get_potential_fixes()
 		log["Summary"] = {
-			"Potential fixes": len(log["potential_fixes"]),
+			"Potential fixes": sum(len(sites) for sites in log["potential_fixes"].values()),
 			"Sites only on press": len(log["sites_only_on_press"]),
 			"Sites only on server": len(log["sites_only_on_server"]),
 			"Sites on multiple benches": len(log["sites_on_multiple_benches"]),
@@ -100,12 +101,15 @@ class BenchFieldCheck(Audit):
 		return sites
 
 	def get_potential_fixes(self):
-		fixes = {}
-		for site, bench in self.press_map.items():
-			server_benches = self.server_map.get(site, [])
-			if len(server_benches) == 1 and server_benches[0] != bench:
-				fixes[site] = (bench, server_benches[0])
-		return fixes
+		def bench_field_updates():
+			fixes = {}
+			for site, bench in self.press_map.items():
+				server_benches = self.server_map.get(site, [])
+				if len(server_benches) == 1 and server_benches[0] != bench:
+					fixes[site] = (bench, server_benches[0])
+			return fixes
+
+		return {"bench_field_updates": bench_field_updates()}
 
 
 class AppServerReplicaDirsCheck(Audit):
