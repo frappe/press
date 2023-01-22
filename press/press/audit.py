@@ -63,6 +63,7 @@ class BenchFieldCheck(Audit):
 			"Sites only on server": len(log["sites_only_on_server"]),
 			"Sites on multiple benches": len(log["sites_on_multiple_benches"]),
 		}
+		self.apply_potential_fixes()
 
 		self.log(log, status)
 
@@ -110,6 +111,12 @@ class BenchFieldCheck(Audit):
 			return fixes
 
 		return {"bench_field_updates": bench_field_updates()}
+
+	def apply_potential_fixes(self):
+		fixes = self.get_potential_fixes()
+		for site, benches in fixes["bench_field_updates"].items():
+			frappe.db.set_value("Site", site, "bench", benches[1])
+		frappe.db.commit()
 
 
 class AppServerReplicaDirsCheck(Audit):
