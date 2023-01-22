@@ -1,0 +1,16 @@
+{% extends "templates/emails/base.html" %} 
+
+{% block content %}
+<td class="text-base leading-6 text-gray-900">
+	<div class="p-8 bg-white">
+        <p class="mb-4 font-bold">
+			Automated Version Upgrade Failed. Please resolve the issue and try again.
+		</p>
+        <p class="mb-6">
+            Site: {{ site }}
+            Traceback: <pre> {{ traceback }} </pre>
+            Output: <pre> {{ output }} </pre>
+        </p>
+    </div>
+</td>
+{% endblock %}
