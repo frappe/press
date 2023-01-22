@@ -16,10 +16,7 @@ from press.press.doctype.site.saas_site import (
 )
 from press.press.doctype.site.saas_pool import get as get_pooled_saas_site
 from press.press.doctype.site.erpnext_site import get_erpnext_domain
-from press.utils.billing import (
-	clear_setup_intent,
-	get_erpnext_com_connection,
-)
+from press.utils.billing import clear_setup_intent
 
 
 # ----------------------------- SIGNUP APIs ---------------------------------
@@ -197,13 +194,6 @@ def check_subdomain_availability(subdomain, app):
 	# Only for ERPNext domains
 
 	if len(subdomain) <= 4:
-		return False
-
-	erpnext_com = get_erpnext_com_connection()
-	result = erpnext_com.post_api(
-		"central.www.signup.check_subdomain_availability", {"subdomain": subdomain}
-	)
-	if result:
 		return False
 
 	exists = bool(
