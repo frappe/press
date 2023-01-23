@@ -41,6 +41,12 @@ def execute(filters=None):
 			"width": 100,
 		},
 		{
+			"fieldname": "disk_free",
+			"label": frappe._("Space Free (GB)"),
+			"fieldtype": "Float",
+			"width": 100,
+		},
+		{
 			"fieldname": "memory",
 			"label": frappe._("Memory (GB)"),
 			"fieldtype": "Float",
@@ -181,6 +187,7 @@ def get_data():
 				"disk_used": rounded(
 					(used_data.get("disk", 0) / available_data.get("disk", 1)) * 100, 1
 				),
+				"disk_free": available_data.get("disk", 0) - used_data.get("disk", 0),
 				"memory": rounded(available_data.get("memory", 0) / 1024, 2),
 				"memory_used": rounded(
 					(used_data.get("memory", 0) / available_data.get("memory", 1)) * 100, 1
