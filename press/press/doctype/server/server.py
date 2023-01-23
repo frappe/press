@@ -399,6 +399,26 @@ class BaseServer(Document):
 	def get_monitoring_password(self):
 		return frappe.get_doc("Cluster", self.cluster).get_password("monitoring_password")
 
+	@frappe.whitelist()
+	def increase_swap(self, size):
+		"""Increase swap by size"""
+		from press.api.server import calculate_swap
+
+		swap_size = calculate_swap(self.name).get("swap", 0)
+		# We used to do 4 GB minimum swap files, to avoid conflict, name files accordingly
+		swap_file_name = "swap" + str(int((swap_size // 4) + 1))
+		try:
+			ansible = Ansible(
+				playbook="increase_swap.yml",
+				server=self,
+				variables={
+					"swap_file": swap_file_name,
+				},
+			)
+			play = ansible.run()
+		except Exception:
+			log_error("Increase swap exception", server=self.as_dict())
+
 
 class Server(BaseServer):
 	def on_update(self):
