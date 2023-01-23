@@ -2,7 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
-from press.api.server import usage, total_resource, prometheus_query
+from press.api.server import usage, total_resource, prometheus_query, calculate_swap
 from frappe.utils import rounded
 
 
@@ -116,30 +116,6 @@ def execute(filters=None):
 
 	data = get_data()
 	return columns, data
-
-
-def calculate_swap(server):
-	query_map = {
-		"swap_used": (
-			f"""((node_memory_SwapTotal_bytes{{instance="{server}",job="node"}} - node_memory_SwapFree_bytes{{instance="{server}",job="node"}}) / node_memory_SwapTotal_bytes{{instance="{server}",job="node"}}) * 100""",
-			lambda x: x,
-		),
-		"swap": (
-			f"""node_memory_SwapTotal_bytes{{instance="{server}",job="node"}} / (1024 * 1024 * 1024)""",
-			lambda x: x,
-		),
-		"required": (
-			f"""((node_memory_MemTotal_bytes{{instance="{server}",job="node"}} + node_memory_SwapTotal_bytes{{instance="{server}",job="node"}}) - (node_memory_MemFree_bytes{{instance="{server}",job="node"}} + node_memory_SwapFree_bytes{{instance="{server}",job="node"}} + node_memory_Cached_bytes{{instance="{server}",job="node"}} + node_memory_Buffers_bytes{{instance="{server}",job="node"}} + node_memory_SwapCached_bytes{{instance="{server}",job="node"}})) / (1024 * 1024 * 1024)""",
-			lambda x: x,
-		),
-	}
-
-	result = {}
-	for usage_type, query in query_map.items():
-		response = prometheus_query(query[0], query[1], "Asia/Kolkata", 120, 120)["datasets"]
-		if response:
-			result[usage_type] = response[0]["values"][-1]
-	return result
 
 
 def calculate_load(server):
