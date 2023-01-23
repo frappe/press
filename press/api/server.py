@@ -219,6 +219,41 @@ def total_resource(name):
 	return result
 
 
+def calculate_swap(name):
+	query_map = {
+		"swap_used": (
+			f"""((node_memory_SwapTotal_bytes{{instance="{name}",job="node"}} - node_memory_SwapFree_bytes{{instance="{name}",job="node"}}) / node_memory_SwapTotal_bytes{{instance="{name}",job="node"}}) * 100""",
+			lambda x: x,
+		),
+		"swap": (
+			f"""node_memory_SwapTotal_bytes{{instance="{name}",job="node"}} / (1024 * 1024 * 1024)""",
+			lambda x: x,
+		),
+		"required": (
+			f"""(
+					(node_memory_MemTotal_bytes{{instance="{name}",job="node"}} +
+						node_memory_SwapTotal_bytes{{instance="{name}",job="node"}}
+	  				) -
+					(node_memory_MemFree_bytes{{instance="{name}",job="node"}} +
+						node_memory_SwapFree_bytes{{instance="{name}",job="node"}} +
+						node_memory_Cached_bytes{{instance="{name}",job="node"}} +
+						node_memory_Buffers_bytes{{instance="{name}",job="node"}} +
+						node_memory_SwapCached_bytes{{instance="{name}",job="node"}}
+					)
+				) /
+				(1024 * 1024 * 1024)""",
+			lambda x: x,
+		),
+	}
+
+	result = {}
+	for usage_type, query in query_map.items():
+		response = prometheus_query(query[0], query[1], "Asia/Kolkata", 120, 120)["datasets"]
+		if response:
+			result[usage_type] = response[0]["values"][-1]
+	return result
+
+
 @frappe.whitelist()
 @protected(["Server", "Database Server"])
 def analytics(name, query, timezone, duration):
