@@ -179,6 +179,7 @@ def get_data():
 			or server.team = ""
 		  )
 		  and server.provider = "AWS EC2"
+		  and status = "Active"
 		"""
 	)
 
