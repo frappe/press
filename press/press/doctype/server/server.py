@@ -400,8 +400,8 @@ class BaseServer(Document):
 		return frappe.get_doc("Cluster", self.cluster).get_password("monitoring_password")
 
 	@frappe.whitelist()
-	def increase_swap(self, size):
-		"""Increase swap by size"""
+	def increase_swap(self):
+		"""Increase swap by size defined in playbook"""
 		from press.api.server import calculate_swap
 
 		swap_size = calculate_swap(self.name).get("swap", 0)
