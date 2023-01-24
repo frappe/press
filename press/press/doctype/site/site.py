@@ -140,6 +140,10 @@ class Site(Document):
 		agent.rename_upstream_site(self.server, self, new_name, site_domains)
 
 	@frappe.whitelist()
+	def retry_rename(self):
+		"""Retry rename with current subdomain"""
+		self.rename(self._get_site_name(self.subdomain))
+
 	def rename(self, new_name: str):
 		self.create_dns_record()
 		agent = Agent(self.server)

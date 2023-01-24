@@ -103,7 +103,7 @@ frappe.ui.form.on('Site', {
 			[__('Disable Database Access'), 'disable_database_access', frm.doc.is_database_access_enabled],
 			[__('Create DNS Record'), 'create_dns_record'],
 			[__('Run After Migrate Steps'), 'run_after_migrate_steps'],
-			[__('Retry Rename'), 'rename'],
+			[__('Retry Rename'), 'retry_rename'],
 		].forEach(([label, method, condition]) => {
 			if (typeof condition === "undefined" || condition){
 				frm.add_custom_button(
