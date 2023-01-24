@@ -139,6 +139,7 @@ class Site(Document):
 		)
 		agent.rename_upstream_site(self.server, self, new_name, site_domains)
 
+	@frappe.whitelist()
 	def rename(self, new_name: str):
 		self.create_dns_record()
 		agent = Agent(self.server)
