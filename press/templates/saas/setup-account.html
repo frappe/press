@@ -3,27 +3,27 @@
 {% set image_path = image_path %}
 
 {%- block content -%}
-<input id="app" type="text" value="{{ app }}" hidden/>
-<input id="headless" type="check" value="{{ headless }}" hidden/>
+<input id="app" type="text" value="{{ app }}" hidden />
+<input id="headless" type="check" value="{{ headless }}" hidden />
 
 {% if headless %}
 
-	<div class="mx-auto text-center form-container col-xl-5 col-lg-6 col-md-7 col-sm-9" id="user-headless-verify">
-		<form name="verify">
-			{%- if frappe.form_dict.key -%}
-			<div class="mx-auto form-container col-xl-5 col-lg-6 col-md-7 col-sm-9">
-				<button id="redirect" type="submit" class="btn btn-primary" hidden>Redirect</button>
-			</div>
-			{%- else -%}
-			<div class="m-0 alert alert-danger small" role="alert">
-				Invalid or expired key
-			</div>
-			{%- endif -%}
-		</form>
-	</div>
+<div class="mx-auto text-center form-container col-xl-5 col-lg-6 col-md-7 col-sm-9" id="user-headless-verify">
+	<form name="verify">
+		{%- if frappe.form_dict.key -%}
+		<div class="mx-auto form-container col-xl-5 col-lg-6 col-md-7 col-sm-9">
+			<button id="redirect" type="submit" class="btn btn-primary" hidden>Redirect</button>
+		</div>
+		{%- else -%}
+		<div class="m-0 alert alert-danger small" role="alert">
+			Invalid or expired key
+		</div>
+		{%- endif -%}
+	</form>
+</div>
 
 {% else %}
-	<div class="flex justify-center mx-auto form-container col-xl-5 col-lg-6 col-md-7 col-sm-9" id="user-signup-verify"
+<div class="flex justify-center mx-auto form-container col-xl-5 col-lg-6 col-md-7 col-sm-9" id="user-signup-verify"
 	data-validators="field_validators">
 	<div class="card">
 		<div class="card-body">
@@ -52,8 +52,9 @@
 					</div>
 				</div>
 				<div class="form-row">
+					<div class="form-group col">
 						<p for="no_of_employees">Number of employees</p>
-						<select id="no_of_employees" name="no_of_employees" class="custom-select text-xs">
+						<select id="no_of_employees" name="no_of_employees" class="custom-select">
 							<option selected disabled></option>
 							<option value="1-10">1 - 10</option>
 							<option value="11-50">11 - 50</option>
@@ -63,9 +64,12 @@
 							<option value="1000+">1000+</option>
 						</select>
 					</div>
-				<div class="form-row my-4">
+				</div>
+				<div class="form-row">
+					<div class="form-group col">
 						<p for="designation">Your Designation</p>
 						<select id="designation" name="designation" class="custom-select">
+							<!-- <option disabled selected>Select Country</option> -->
 							<option value=''></option>
 							<option value='Sales Manager'>Sales Manager</option>
 							<option value='Marketing / PR Manager'>Marketing / PR Manager</option>
@@ -79,6 +83,7 @@
 							<option value='Student / Personal Interest'>Student / Personal Interest</option>
 							<option value='Others'>Others</option>
 						</select>
+					</div>
 				</div>
 				<div class="form-group">
 					<input type="checkbox" name="agreed_to_partner_consent" id="agreed_to_partner_consent" checked>
@@ -122,12 +127,12 @@
 				args: { key },
 				type: "POST"
 			})
-			.then((r) => {
-				window.location.href = '/prepare-site?key=' + key + '&app=' + app;
-			})
+				.then((r) => {
+					window.location.href = '/prepare-site?key=' + key + '&app=' + app;
+				})
 
 		});
-	}  else {
+	} else {
 		frappe.ready(() => {
 			controller = new FormController("user-signup-verify");
 
@@ -248,4 +253,3 @@
 
 </script>
 {%- endblock -%}
-

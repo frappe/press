@@ -46,11 +46,64 @@
 		border-radius: 10px;
 		border-color: transparent;
 		padding: 30px 50px 30px 50px;
-			height: fit-content;
+		height: fit-content;
 	}
 
 	.card-body {
-			padding: 0px;
+		padding: 0px;
+	}
+
+	.password-popup {
+		align-self: center;
+		right: 30%;
+		position: absolute;
+		display: flex;
+		flex-direction: column;
+		text-decoration: none;
+		font-size: smaller;
+		padding: 8px 8px;
+		background-color: white;
+		border: 1px solid #ddd;
+		border-radius: 5px;
+	}
+
+	.password-popup-list {
+		list-style-type: none;
+		padding: 0;
+		font-size: small;
+	}
+
+	form i {
+		margin-left: -30px;
+		cursor: pointer;
+	}
+
+	select {
+		margin: 0px;
+	}
+
+	#password {
+		width: 100%;
+		background-color: #F4F5F6;
+		border-radius: 5px;
+		border: none;
+		padding: 7px 12px;
+		font-size: small;
+	}
+
+	#password:focus {
+		outline: none;
+	}
+
+	.password-popup-list-item-text {
+		color: rgb(220 38 38);
+	}
+
+	#country,
+	#no_of_employees,
+	#industry,
+	#designation {
+		font-size: small;
 	}
 
 	.step {
@@ -91,4 +144,3 @@
 	}
 </style>
 {%- endblock -%}
-

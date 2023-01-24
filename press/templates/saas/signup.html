@@ -3,13 +3,9 @@
 {% set image_path = image_path %}
 
 {%- block content -%}
-<input id="app" type="text" value="{{ app }}" hidden/>
-<input id="domain" type="text" value="{{ domain }}" hidden/>
-
-<div style="text-align: center;" class="mb-4">
-		<span id="step-1" class="step step-active"></span>
-  <span id="step-2" class="step"></span>
-</div>
+<input id="app" type="text" value="{{ app }}" hidden />
+<input id="domain" type="text" value="{{ domain }}" hidden />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css" />
 
 <div class="flex justify-center mx-auto form-container col-xl-5 col-lg-6 col-md-7 col-sm-9" id="user-signup"
 	data-validators="field_validators">
@@ -18,7 +14,18 @@
 			<div class="alert alert-primary form-alert-info small" style="display: none;" role="alert"></div>
 			<div class="alert alert-danger form-alert-error small" style="display: none;" role="alert"></div>
 			<!-- 1. Personal Details -->
-			<form class="form-step" data-step="1" data-action="save_partial_form_data">
+			<form class="form-step" data-step="1" data-action="submit_account_request">
+				<div class="form-group">
+					<p>Site Name</p>
+					<div class="input-group">
+						<input type="text" id="subdomain" name="subdomain" class="form-control"
+							placeholder="yourcompany" autocomplete="off" onchange="validate_subdomain(this)">
+						<div class="input-group-append">
+							<p class="px-2 py-0 text-xs input-group-text rounded-right">.{{ domain }}</p>
+						</div>
+					</div>
+					<small class="form-text"></small>
+				</div>
 				<div class="form-row">
 					<div class="form-group col-12 col-md-6">
 						<p>First Name</p>
@@ -31,52 +38,45 @@
 							autocomplete="family-name">
 					</div>
 				</div>
+				<div class="form-row flex">
+					<div class="form-group col-12 col-md-6">
+						<p for="phone">Phone Number</p>
+						<input type="tel" id="phone" class="form-control" name="phone_number" autocomplete="tel">
+					</div>
+					<div class="form-group col-12 col-md-6">
+						<p for="country" class="">Country</p>
+						<select id="country" class="custom-select" name="country">
+							<option disabled selected>Select Country</option>
+							{%- for country in frappe.db.get_all('Country') -%}
+							<option>
+								{{ country.name }}
+							</option>
+							{%- endfor -%}
+						</select>
+					</div>
+				</div>
+
 				<div class="form-group">
 					<p>Email Address</p>
 					<input type="email" id="email" class="form-control" name="email" autocomplete="email">
 				</div>
 				<div class="form-group">
 					<p>Password</p>
-					<input type="password" id="password" class="form-control" name="password" onkeyup="validate_password(this)">
-					<div class="mt-4 flex">
-						<input id="showPassword" type="checkbox" onclick="togglePasswordVisibility()">
-						<p>Show Password</p>
+					<div>
+						<input type="password" id="password" class="border-sm" name="password"
+							onkeyup="validate_password(this)" onfocusout="togglePasswordPopup()"
+							onfocusin="togglePasswordPopup()">
+						<i class="bi bi-eye-slash" id="togglePassword"></i>
+					</div>
+					<div class="password-popup hidden">
+						<span class="password-popup-list-item-text p8char">At least 8 characters</span>
+						<span class="password-popup-list-item-text pucase">At least 1 uppercase letter</span>
+						<span class="password-popup-list-item-text plcase">At least 1 lowercase letter</span>
+						<span class="password-popup-list-item-text pnum">At least 1 number</span>
+						<span class="password-popup-list-item-text pschar">At least 1 special character</span>
 					</div>
 				</div>
 
-				<div class="mt-2 d-flex justify-content-between">
-					<div></div>
-					<button type="submit" class="btn btn-primary btn-step-1">Next</button>
-				</div>
-			</form>
-
-			<form class="form-step" data-step="2" data-action="submit_account_request">
-		<div class="form-group">
-					<p>Site Name</p>
-					<div class="input-group">
-						<input type="text" id="subdomain" name="subdomain" class="form-control"
-							placeholder="yourcompany" autocomplete="off" onchange="validate_subdomain(this)">
-						<div class="input-group-append">
-							<p class="px-2 py-0 text-xs input-group-text rounded-right">.{{ domain }}</p>
-						</div>
-					</div>
-					<small class="form-text"></small>
-				</div>
-				<div class="form-group">
-					<p for="phone">Phone Number</p>
-					<input type="tel" id="phone" class="form-control" name="phone_number" autocomplete="tel">
-				</div>
-				<div class="form-group">
-					<p for="country">Country</p>
-					<select id="country" class="custom-select" name="country">
-						<option disabled selected>Select Country</option>
-						{%- for country in frappe.db.get_all('Country') -%}
-						<option>
-							{{ country.name }}
-						</option>
-						{%- endfor -%}
-					</select>
-				</div>
 				<div class="form-group">
 					<input type="checkbox" name="user_accept_terms" id="user_accept_terms">
 					<p class="d-inline" for="user_accept_terms">
@@ -87,19 +87,20 @@
 						<a href="https://frappecloud.com/cookie-policy" class="text-blue-600">Cookie Policy.</a>
 					</p>
 				</div>
-				<div class="form-message text-danger"></div>
+
 				<div class="mt-8 d-flex justify-content-between">
 					<div></div>
-					<button id="accountRequestButton" type="submit" class="btn btn-primary btn-step-1">Create Account</button>
+					<button id="accountRequestButton" type="submit" class="btn btn-primary btn-step-1">Create
+						Account</button>
 				</div>
 			</form>
 			<!-- 2. Verification Email Sent -->
-			<form class="form-step" data-step="3">
+			<form class="form-step" data-step="2">
 				<div class="text-center">
 					<h2 class="font-size-base mt-0">Verification Email Sent!</h2>
 					<p>
-					We have sent an email to <span class="verification-email"></span>.
-					Please click on the link received to verify your email and create your account.
+						We have sent an email to <span class="verification-email"></span>.
+						Please click on the link received to verify your email and create your account.
 					</p>
 				</div>
 			</form>
@@ -117,17 +118,9 @@
 
 	frappe.ready(() => {
 		controller = new FormController("user-signup");
-
-		// get subdomain is set in url and show first form
 		set_subdomain_from_url();
 	});
 
-	function save_partial_form_data($form, values) {
-    form_data = values
-		nextStep(1)
-    return values
-	}
-	// this needs to be on global scope
 	var field_validators = {
 		subdomain: (value) => {
 			let MIN_LENGTH = 4;
@@ -168,16 +161,36 @@
 			}
 		},
 		password: (value) => {
+			let password = value;
+			// length
+			(password.length >= 8) ? $('.p8char').css("color", "green") : $('.p8char').css("color", "rgb(220 38 38)")
+			// numbers
+			let regex = /[0-9]+/;
+			updateCSS(regex, '.pnum');
+			// capital letters
+			regex = /[A-Z]+/;
+			updateCSS(regex, '.pucase');
+			// small letters
+			regex = /[a-z]+/;
+			updateCSS(regex, '.plcase');
+			// special characters
+			regex = /[$@$!%*#?&]+/;
+			updateCSS(regex, '.pschar');
+
+			function updateCSS(regex, classname) {
+				(regex.test(password)) ? $(classname).css("color", "green") : $(classname).css("color", "rgb(220 38 38)");
+			}
+
 			if (!value) {
 				return "Password is required"
 			} else {
 				let password = value;
-				var pattern = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,}$/;
+				var pattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])[a-zA-Z0-9!@#\$%\^&\*]+$/;
 
 				if (password.match(pattern) && password.length >= 8) {
 					return false
 				} else {
-					return "Bad Password! The password length should be atleast 8 characters and it should contain a combination of capital letters, small letters, numbers and symbols";
+					return "Please use a strong password!";
 				}
 			}
 		},
@@ -193,19 +206,22 @@
 		}
 	};
 
+	function togglePasswordPopup() {
+		$('.password-popup').toggleClass('hidden');
+	}
+
 	function submit_account_request($form, values) {
 		document.getElementById("accountRequestButton").disabled = true;
-    document.getElementById("accountRequestButton").innerHTML = '<span class="mr-2">Signing up</span><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+		document.getElementById("accountRequestButton").innerHTML = '<span class="mr-2">Signing up</span><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
 		let url_args = frappe.utils.get_query_params();
+		let form_data = {};
 		if (Object.keys(url_args)) {
 			values.url_args = url_args;
 		}
 		values.app = app;
-    if (values) {
-	    form_data = {...form_data, ...values, app}
-    }
-
-		nextStep(2)
+		if (values) {
+			form_data = { ...values, app }
+		}
 
 		return call('press.api.saas.account_request', form_data)
 			.then(() => {
@@ -248,7 +264,7 @@
 		} else {
 			frappe.call({
 				method: "press.api.saas.validate_password",
-				args: { 
+				args: {
 					password: password,
 					first_name: document.querySelector("#first_name").value,
 					last_name: document.querySelector("#last_name").value,
@@ -293,23 +309,22 @@
 			});
 	}
 
-	function togglePasswordVisibility() {
-		var inp = document.getElementById("password");
-		if (inp.type === "password") {
-			inp.type = "text";
+	const togglePassword = document.querySelector('#togglePassword');
+	const password = document.querySelector('#password');
+	togglePassword.addEventListener('click', () => {
+		const type = password
+			.getAttribute('type') === 'password' ?
+			'text' : 'password';
+
+		password.setAttribute('type', type);
+		if (type === 'text') {
+			togglePassword.classList.remove('bi-eye-slash');
+			togglePassword.classList.add('bi-eye');
 		} else {
-			inp.type = "password";
+			togglePassword.classList.remove('bi-eye');
+			togglePassword.classList.add('bi-eye-slash');
 		}
-	}
+	});
 
-	function nextStep(step) {
-		let prevElement = document.getElementById(`step-${step}`)
-		prevElement.classList.add("step-finish")
-
-		if (step < document.getElementsByClassName("step").length) {
-			let nextElement = document.getElementById(`step-${step + 1}`)
-			nextElement.classList.add("step-active")
-		}	
-	}
 </script>
 {%- endblock -%}
