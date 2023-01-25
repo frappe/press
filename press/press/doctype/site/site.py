@@ -1199,12 +1199,16 @@ class Site(Document):
 	@classmethod
 	def exists(cls, subdomain, domain) -> bool:
 		"""Check if subdomain is available"""
-		return bool(
-			frappe.db.exists("Blocked Domain", {"name": subdomain, "root_domain": domain})
-			or frappe.db.exists(
-				"Site", {"subdomain": subdomain, "domain": domain, "status": ("!=", "Archived")}
+		banned_domains = frappe.get_all("Blocked Domain", {"block_for_all": 1}, pluck="name")
+		if banned_domains and subdomain in banned_domains:
+			return True
+		else:
+			return bool(
+				frappe.db.exists("Blocked Domain", {"name": subdomain, "root_domain": domain})
+				or frappe.db.exists(
+					"Site", {"subdomain": subdomain, "domain": domain, "status": ("!=", "Archived")}
+				)
 			)
-		)
 
 	@frappe.whitelist()
 	def run_after_migrate_steps(self):
