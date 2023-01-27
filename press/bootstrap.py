@@ -32,6 +32,11 @@ STRIPE_PUBLISHABLE_KEY = ""
 STRIPE_SECRET_KEY = ""
 NGROK_AUTH_TOKEN = ""
 
+MAIL_SERVER = ""
+MAIL_PORT = ""
+MAIL_LOGIN = ""
+MAIL_PASSWORD = ""
+
 
 def prepare():
 	complete_setup_wizard()
@@ -50,6 +55,7 @@ def prepare():
 
 	setup_logging(settings)
 	setup_monitoring(settings)
+	setup_tracing(settings)
 
 
 def complete_setup_wizard():
@@ -162,6 +168,38 @@ def setup_monitoring(settings):
 	settings.reload()
 
 
+def setup_tracing(settings):
+	redirect_uri = f"https://trace.{ROOT_DOMAIN}/auth/sso/"
+	oauth_client = frappe.get_doc(
+		{
+			"doctype": "OAuth Client",
+			"app_name": "Sentry",
+			"scopes": "all openid email",
+			"default_redirect_uri": redirect_uri,
+			"redirect_uris": redirect_uri,
+			"skip_authorization": True,
+		}
+	).insert()
+
+	frappe.get_doc(
+		{
+			"doctype": "Trace Server",
+			"hostname": "trace",
+			"ip": "10.0.4.105",
+			"private_ip": "10.1.4.105",
+			"sentry_admin_email": ADMIN_EMAIL,
+			"sentry_admin_password": frappe.generate_hash(),
+			"sentry_mail_server": MAIL_SERVER,
+			"sentry_mail_port": MAIL_PORT,
+			"sentry_mail_login": MAIL_LOGIN,
+			"sentry_mail_password": MAIL_PASSWORD,
+			"sentry_oauth_server_url": frappe.utils.get_url(),
+			"sentry_oauth_client_id": oauth_client.client_id,
+			"sentry_oauth_client_secret": oauth_client.client_secret,
+		}
+	).insert()
+
+
 def setup_agent(settings):
 	settings.agent_repository_owner = AGENT_REPOSITORY_OWNER
 	settings.agent_github_access_token = GITHUB_ACCESS_TOKEN
@@ -215,6 +253,7 @@ def setup():
 		("Registry Server", f"registry.{ROOT_DOMAIN}"),
 		("Log Server", f"log.{ROOT_DOMAIN}"),
 		("Monitor Server", f"monitor.{ROOT_DOMAIN}"),
+		("Trace Server", f"trace.{ROOT_DOMAIN}"),
 	]
 	for server_type, server in servers:
 		frappe.get_doc(server_type, server).setup_server()
