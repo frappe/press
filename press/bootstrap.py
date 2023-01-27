@@ -7,7 +7,7 @@ import time
 from frappe.desk.page.setup_wizard.setup_wizard import setup_complete
 
 
-EFF_REGISTRATION_EMAIL = ""
+ADMIN_EMAIL = ""
 HOME_DIRECTORY = ""
 CERTBOT_DIRECTORY = os.path.join(HOME_DIRECTORY, ".certbot")
 WEBROOT_DIRECTORY = os.path.join(HOME_DIRECTORY, ".webroot")
@@ -59,7 +59,7 @@ def complete_setup_wizard():
 
 
 def setup_certbot(settings):
-	settings.eff_registration_email = EFF_REGISTRATION_EMAIL
+	settings.eff_registration_email = ADMIN_EMAIL
 	settings.webroot_directory = WEBROOT_DIRECTORY
 	settings.certbot_directory = CERTBOT_DIRECTORY
 	settings.save()
