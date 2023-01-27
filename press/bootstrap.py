@@ -28,12 +28,17 @@ TELEGRAM_BOT_TOKEN = ""
 AGENT_REPOSITORY_OWNER = ""
 GITHUB_ACCESS_TOKEN = ""
 
+STRIPE_PUBLISHABLE_KEY = ""
+STRIPE_SECRET_KEY = ""
+NGROK_AUTH_TOKEN = ""
+
 
 def prepare():
 	complete_setup_wizard()
 	settings = frappe.get_single("Press Settings")
 	setup_certbot(settings)
 	setup_root_domain(settings)
+	setup_stripe(settings)
 
 	setup_agent(settings)
 
@@ -86,6 +91,14 @@ def setup_root_domain(settings):
 
 	settings.domain = domain.name
 	settings.cluster = domain.default_cluster
+	settings.save()
+	settings.reload()
+
+
+def setup_stripe(settings):
+	settings.stripe_secret_key = STRIPE_SECRET_KEY
+	settings.stripe_secret_key = STRIPE_SECRET_KEY
+	settings.ngrok_auth_token = NGROK_AUTH_TOKEN
 	settings.save()
 	settings.reload()
 
