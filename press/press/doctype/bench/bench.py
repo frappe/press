@@ -79,7 +79,7 @@ class Bench(Document):
 				{
 					"redis_cache": "redis://localhost:13000",
 					"redis_queue": "redis://localhost:11000",
-					"redis_socketio": "redis://localhost:12000",
+					"redis_socketio": "redis://localhost:13000",
 				}
 			)
 
