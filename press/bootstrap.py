@@ -4,6 +4,7 @@
 import frappe
 import os
 import time
+from frappe.desk.page.setup_wizard.setup_wizard import setup_complete
 
 
 EFF_REGISTRATION_EMAIL = ""
@@ -29,6 +30,7 @@ GITHUB_ACCESS_TOKEN = ""
 
 
 def prepare():
+	complete_setup_wizard()
 	settings = frappe.get_single("Press Settings")
 	setup_certbot(settings)
 	setup_root_domain(settings)
@@ -43,6 +45,17 @@ def prepare():
 
 	setup_logging(settings)
 	setup_monitoring(settings)
+
+
+def complete_setup_wizard():
+	setup_complete(
+		{
+			"language": "English",
+			"country": "India",
+			"timezone": "Asia/Kolkata",
+			"currency": "INR",
+		}
+	)
 
 
 def setup_certbot(settings):
