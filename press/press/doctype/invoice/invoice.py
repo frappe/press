@@ -52,6 +52,9 @@ class Invoice(Document):
 			self.add_comment("Info", "Skipping finalize invoice because team is disabled")
 			return
 
+		if self.partner_email:
+			self.apply_partner_discount()
+
 		# set as unpaid by default
 		self.status = "Unpaid"
 
@@ -400,6 +403,25 @@ class Invoice(Document):
 		self.free_credits = sum(
 			[d.amount for d in self.credit_allocations if d.source == "Free Credits"]
 		)
+
+	def apply_partner_discount(self):
+		# give 10% discount for partners
+		total_partner_discount = 0
+		for item in self.items:
+			if item.document_type in ("Site", "Server", "Database Server"):
+				total_partner_discount += item.amount * 0.1
+
+		if total_partner_discount > 0:
+			self.append(
+				"discounts",
+				{
+					"discount_type": "Flat On Total",
+					"based_on": "Amount",
+					"percent": 0,
+					"amount": total_partner_discount,
+					"via_team": False,
+				},
+			)
 
 	def set_total_and_discount(self):
 		total_discount_amount = 0
