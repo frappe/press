@@ -247,6 +247,7 @@ def jobs(name, start=0):
 		filters={"site": name},
 		start=start,
 		limit=10,
+		order_by="creation desc",
 	)
 	return jobs
 
