@@ -1400,6 +1400,15 @@ def process_rename_site_job_update(job):
 		filters={"job_type": other_job_type, "site": job.site},
 	)[0].status
 
+	if job.status == "Failure" and job.job_type == "Rename Site on Upstream":
+		rename_step_status = frappe.db.get_value(
+			"Agent Job Step",
+			{"step_name": "Rename Site File in Upstream Directory", "agent_job": job.name},
+			"status",
+		)
+		if rename_step_status == "Success":
+			first = rename_step_status
+
 	if "Success" == first == second:
 		update_records_for_rename(job)
 		# update job obj with new name
