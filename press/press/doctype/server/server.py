@@ -197,6 +197,9 @@ class BaseServer(Document):
 
 	@frappe.whitelist()
 	def update_agent_ansible(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_update_agent_ansible")
+
+	def _update_agent_ansible(self):
 		try:
 			ansible = Ansible(
 				playbook="update_agent.yml",
