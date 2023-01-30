@@ -70,6 +70,7 @@ class DeployCandidateDifference(Document):
 					}
 				)
 				difference.insert()
+				difference.set_deploy_type()
 			else:
 				difference = frappe.get_doc("App Release Difference", differences[0].name)
 				difference.set_deploy_type()
