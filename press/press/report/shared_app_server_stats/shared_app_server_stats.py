@@ -146,16 +146,16 @@ def get_data():
 	servers = frappe.db.sql_list(
 		"""
 		select
-		  server.name
+			server.name
 		from
-		  tabServer server
+			tabServer server
 		where
-		  (
-			server.team like "%%erpnext.com"
-			or server.team = ""
-		  )
-		  and server.provider = "AWS EC2"
-		  and status = "Active"
+			(
+				server.team like "%%erpnext.com"
+				or server.team = ""
+			)
+			and server.provider = "AWS EC2"
+			and status = "Active"
 		"""
 	)
 

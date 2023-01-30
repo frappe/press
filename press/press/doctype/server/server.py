@@ -415,7 +415,7 @@ class BaseServer(Document):
 					"swap_file": swap_file_name,
 				},
 			)
-			play = ansible.run()
+			ansible.run()
 		except Exception:
 			log_error("Increase swap exception", server=self.as_dict())
 

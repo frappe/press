@@ -233,7 +233,7 @@ def calculate_swap(name):
 			f"""(
 					(node_memory_MemTotal_bytes{{instance="{name}",job="node"}} +
 						node_memory_SwapTotal_bytes{{instance="{name}",job="node"}}
-	  				) -
+					) -
 					(node_memory_MemFree_bytes{{instance="{name}",job="node"}} +
 						node_memory_SwapFree_bytes{{instance="{name}",job="node"}} +
 						node_memory_Cached_bytes{{instance="{name}",job="node"}} +
