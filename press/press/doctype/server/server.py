@@ -233,7 +233,13 @@ class BaseServer(Document):
 		except Exception:
 			log_error("Unprepared Server Ping Exception", server=self.as_dict())
 
+	@frappe.whitelist()
 	def cleanup_unused_files(self):
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_cleanup_unused_files", queue="long", timeout=2400
+		)
+
+	def _cleanup_unused_files(self):
 		agent = Agent(self.name, self.doctype)
 		agent.cleanup_unused_files()
 
