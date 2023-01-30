@@ -150,6 +150,55 @@ def calculate_load(server):
 
 
 def get_data(filters):
+	rows = []
+	for server in get_servers(filters):
+		used_data = usage(server.name)
+		available_data = total_resource(server.name)
+		swap_memory = calculate_swap(server.name)
+		load = calculate_load(server.name)
+
+		row = {
+			"server": server.name,
+			"server_type": server.server_type,
+			"cpu": available_data.get("vcpu", 0),
+			"cpu_used": rounded(used_data.get("vcpu", 0) * 100, 1),
+			"disk": rounded(available_data.get("disk", 0), 2),
+			"disk_used": rounded(
+				(used_data.get("disk", 0) / available_data.get("disk", 1)) * 100, 1
+			),
+			"disk_free": available_data.get("disk", 0) - used_data.get("disk", 0),
+			"memory": rounded(available_data.get("memory", 0) / 1024, 2),
+			"memory_used": rounded(
+				(used_data.get("memory", 0) / available_data.get("memory", 1)) * 100, 1
+			),
+			"swap": rounded(swap_memory.get("swap", 0), 1),
+			"swap_used": rounded(swap_memory.get("swap_used", 0), 1),
+			"memory_required": rounded(swap_memory.get("required", 0), 1),
+			"memory_shortage": max(
+				rounded(swap_memory.get("required", 0), 1)
+				- rounded(available_data.get("memory", 0) / 1024, 2),
+				0,
+			),
+			"load_1": rounded(load.get("load_1", 0), 1),
+			"load_5": rounded(load.get("load_5", 0), 1),
+			"load_15": rounded(load.get("load_15", 0), 1),
+		}
+		if server.server_type == "Server":
+			row.update(
+				{
+					"new_worker_allocation": frappe.db.get_value(
+						server.server_type, server.name, "new_worker_allocation"
+					),
+					"ram_assigned": (frappe.db.get_value(server.server_type, server.name, "ram") or 0)
+					/ 1024,
+				}
+			)
+		rows.append(row)
+
+	return rows
+
+
+def get_servers(filters):
 	server_filters = {"status": "Active"}
 	if filters.team:
 		server_filters["team"] = filters.team
@@ -167,45 +216,9 @@ def get_data(filters):
 			"Analytics Server",
 		]
 	)
-	rows = []
+	servers = []
 	for server_type in server_types:
-		for server in frappe.get_all(server_type, server_filters, pluck="name"):
-			used_data = usage(server)
-			available_data = total_resource(server)
-			swap_memory = calculate_swap(server)
-			load = calculate_load(server)
-
-			rows.append(
-				{
-					"server": server,
-					"server_type": server_type,
-					"cpu": available_data.get("vcpu", 0),
-					"cpu_used": rounded(used_data.get("vcpu", 0) * 100, 1),
-					"disk": rounded(available_data.get("disk", 0), 2),
-					"disk_used": rounded(
-						(used_data.get("disk", 0) / available_data.get("disk", 1)) * 100, 1
-					),
-					"disk_free": available_data.get("disk", 0) - used_data.get("disk", 0),
-					"memory": rounded(available_data.get("memory", 0) / 1024, 2),
-					"memory_used": rounded(
-						(used_data.get("memory", 0) / available_data.get("memory", 1)) * 100, 1
-					),
-					"swap": rounded(swap_memory.get("swap", 0), 1),
-					"swap_used": rounded(swap_memory.get("swap_used", 0), 1),
-					"memory_required": rounded(swap_memory.get("required", 0), 1),
-					"memory_shortage": max(
-						rounded(swap_memory.get("required", 0), 1)
-						- rounded(available_data.get("memory", 0) / 1024, 2),
-						0,
-					),
-					"new_worker_allocation": frappe.db.get_value(
-						"Server", server, "new_worker_allocation"
-					),
-					"ram_assigned": (frappe.db.get_value("Server", server, "ram") or 0) / 1024,
-					"load_1": rounded(load.get("load_1", 0), 1),
-					"load_5": rounded(load.get("load_5", 0), 1),
-					"load_15": rounded(load.get("load_15", 0), 1),
-				}
-			)
-
-	return rows
+		for server in frappe.get_all(server_type, server_filters):
+			server.update({"server_type": server_type})
+			servers.append(server)
+	return servers
