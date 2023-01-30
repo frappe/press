@@ -89,7 +89,8 @@ export default {
 		},
 		async makeFuse() {
 			let list = await this.$call('press.api.account.fuse_list');
-			for (let item of list) {
+			let fuse_list = list;
+			for (let item of fuse_list) {
 				item.route =
 					`/${
 						item.doctype.toLowerCase() + (item.doctype === 'Bench' ? 'es' : 's')
@@ -99,10 +100,12 @@ export default {
 			}
 
 			const options = {
-				minMatchCharLength: 2,
-				keys: ['title', 'doctype']
+				limit: 10,
+				minMatchCharLength: 3,
+				keys: ['title'],
+				threshold: 0.3
 			};
-			this.fuse = new Fuse(list, options);
+			this.fuse = new Fuse(fuse_list, options);
 		}
 	}
 };
