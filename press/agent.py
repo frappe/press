@@ -636,6 +636,9 @@ class Agent:
 			return [status]
 		return status
 
+	def get_version(self):
+		return self.get("version")
+
 	def update(self):
 		url = frappe.get_doc(self.server_type, self.server).get_agent_repository_url()
 		return self.post("update", data={"url": url})
