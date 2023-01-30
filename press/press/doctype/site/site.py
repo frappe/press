@@ -638,11 +638,12 @@ class Site(Document):
 			data={"usr": "Administrator", "pwd": password},
 		)
 		sid = response.cookies.get("sid")
-		if sid:
-			return sid
-		else:
+		if not sid:
 			agent = Agent(self.server)
-			return agent.get_site_sid(self)
+			sid = agent.get_site_sid(self)
+		if not sid or sid == "Guest":
+			frappe.throw("Could not login as Administrator", frappe.ValidationError)
+		return sid
 
 	def fetch_info(self):
 		agent = Agent(self.server)
