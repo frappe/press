@@ -58,6 +58,7 @@ def get(name):
 	return {
 		"name": group.name,
 		"title": group.title,
+		"team": group.team,
 		"version": group.version,
 		"status": get_group_status(name),
 		"last_updated": group.modified,

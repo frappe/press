@@ -147,6 +147,19 @@ export default {
 						);
 					}
 				},
+				this.$account.user.user_type == 'System User' && {
+					label: 'Impersonate Team',
+					icon: 'tool',
+					action: async () => {
+						await this.$account.switchTeam(this.bench.team);
+						this.$notify({
+							title: 'Switched Team',
+							message: `Switched to ${this.bench.team}`,
+							icon: 'check',
+							color: 'green'
+						});
+					}
+				},
 			].filter(Boolean);
 		},
 	}

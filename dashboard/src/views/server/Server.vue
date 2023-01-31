@@ -222,7 +222,20 @@ export default {
 					action: () => {
 						return this.$resources.reboot.submit();
 					}
-				}
+				},
+				this.$account.user.user_type == 'System User' && {
+					label: 'Impersonate Team',
+					icon: 'tool',
+					action: async () => {
+						await this.$account.switchTeam(this.server.team);
+						this.$notify({
+							title: 'Switched Team',
+							message: `Switched to ${this.server.team}`,
+							icon: 'check',
+							color: 'green'
+						});
+					}
+				},
 			].filter(Boolean);
 		},
 

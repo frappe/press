@@ -294,7 +294,20 @@ export default {
 
 						this.showReasonForAdminLoginDialog = true;
 					}
-				}
+				},
+				this.$account.user.user_type == 'System User' && {
+					label: 'Impersonate Team',
+					icon: 'tool',
+					action: async () => {
+						await this.$account.switchTeam(this.site.team);
+						this.$notify({
+							title: 'Switched Team',
+							message: `Switched to ${this.site.team}`,
+							icon: 'check',
+							color: 'green'
+						});
+					}
+				},
 			].filter(Boolean);
 		},
 
