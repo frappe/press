@@ -1,8 +1,10 @@
+import json
 import frappe
 from frappe.utils import get_url
 from typing import Dict
 
 from press.api.developer import raise_invalid_key_error
+from press.api.marketplace import prepaid_saas_payment
 
 
 class DeveloperApiHandler:
@@ -86,6 +88,47 @@ class DeveloperApiHandler:
 			f"/api/method/press.api.marketplace.login_via_token?token={token}&team={team}&site={self.app_subscription_doc.site}"
 		)
 
+	def get_subscriptions(self):
+		from press.api.marketplace import get_plans_for_app
+
+		team = self.app_subscription_doc.team
+		currency, address = frappe.db.get_value("Team", team, ["currency", "billing_address"])
+		response = {
+			"currency": currency,
+			"address": True if address else False
+		}
+		response["subscriptions"] = [
+			s.update(
+				{
+					"available_plans": get_plans_for_app(s["app"]),
+					**frappe.db.get_value(
+						"Marketplace App", s["app"], ["title", "image"], as_dict=True
+					),
+				}
+			)
+			for s in frappe.get_all(
+				"Marketplace App Subscription",
+				filters={"team": self.app_subscription_doc.team, "status": "Active"},
+				fields=["name", "app", "site", "plan"],
+			)
+		]
+
+		return response
+
+	def update_billing_info(self, data: Dict) -> str:
+		self.login_as_team()
+		team_doc = frappe.get_doc("Team", self.app_subscription_doc.team)
+		team_doc.update_billing_details(data)
+
+		return "success"
+
+	def make_payment(self, data):
+		self.login_as_team()
+		prepaid_saas_payment(data)
+
+	def login_as_team(self):
+		frappe.local.login_manager.login_as(self.app_subscription_doc.team)
+
 
 # ------------------------------------------------------------
 # API ENDPOINTS
@@ -106,3 +149,23 @@ def get_subscription_info(secret_key: str) -> Dict:
 def get_login_url(secret_key: str) -> str:
 	api_handler = DeveloperApiHandler(secret_key)
 	return api_handler.get_login_url()
+
+
+@frappe.whitelist(allow_guest=True)
+def get_subscriptions(secret_key: str) -> str:
+	api_handler = DeveloperApiHandler(secret_key)
+	return api_handler.get_subscriptions()
+
+
+@frappe.whitelist(allow_guest=True)
+def update_billing_info(secret_key: str, data: Dict) -> str:
+	data = frappe.parse_json(data)
+	api_handler = DeveloperApiHandler(secret_key)
+	return api_handler.update_billing_info(data)
+
+
+@frappe.whitelist(allow_guest=True)
+def make_payment(secret_key: str, data: Dict) -> str:
+	data = frappe.parse_json(data)
+	api_handler = DeveloperApiHandler(secret_key)
+	return api_handler.update_billing_info(data)

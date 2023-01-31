@@ -1,0 +1,226 @@
+{% extends 'templates/saas/billing_layout.html' %} {% block content %}
+<div class="flex justify-content-center mx-auto my-auto h-100 w-100">
+	<div id="subs-wrapper" class="flex flex-row hidden mx-auto my-auto h-fit"></div>
+	<div id="plans-wrapper" class="flex flex-wrap hidden justify-content-center"></div>
+	<div id="address-card-wrapper" class="flex container hidden mx-auto my-auto justify-content-center">
+		<form>
+			<div class="form-group">
+				<p>Billing Name</p>
+				<input type="text" name="billing-name" class="form-control" />
+			</div>
+			<div class="form-group">
+				<p>Address</p>
+				<input type="text" name="address" placeholder="Address" class="form-control" />
+			</div>
+			<div class="form-group">
+				<p>Country</p>
+				<select id="country" class="custom-select" name="country" class="form-control">
+					<option disabled selected>Select Country</option>
+					{%- for country in frappe.db.get_all('Country') -%}
+					<option>{{ country.name }}</option>
+					{%- endfor -%}
+				</select>
+			</div>
+			<div class="form-group">
+				<p>City</p>
+				<input type="text" name="city" class="form-control" />
+			</div>
+			<div class="form-group">
+				<p>State/Province/Region</p>
+				<input type="text" name="state" class="form-control" />
+			</div>
+			<div class="form-group">
+				<p>Postal Code</p>
+				<input type="text" name="postal-code" class="form-control" />
+			</div>
+			<div>
+				<button type="button" class="btn btn-primary" onclick="updateBillingInfo()">
+					Save
+				</button>
+			</div>
+		</form>
+	</div>
+
+	<div id="checkout-wrapper" class="flex flex-col w-100 hidden mx-20">
+		<div class="flex justify-content-between my-2">
+			<label for="cars">Billing: </label>
+			<select class="rounded" onchange="setTotal(this.value)">
+				<option value="monthly">Monthly</option>
+				<option value="annual">Annual</option>
+			</select>
+		</div>
+		<div class="flex justify-content-between my-2">
+			<span>GST (if applicable)</span>
+			<span class="gst text-red-600">-</span>
+		</div>
+		<div class="flex justify-content-between my-2">
+			<span>Discount</span>
+			<span class="discount text-green-500">-</span>
+		</div>
+		<div class="flex justify-content-between my-2">
+			<span>Total</span>
+			<span class="total font-semibold"></span>
+		</div>
+		<form class="flex justify-content-between my-2">
+			<span></span>
+			<button type="button" class="btn btn-primary" onclick="setupStripe()">Pay Amount</span>
+		</form>
+	</div>
+
+	<div class="stripe-wrapper">
+	</div>
+
+	<div id="loading" class="mx-auto my-auto">
+		<span class="spinner-border spinner-border-sm mr-3" role="status"></span><span>Loading Susbcriptions </span>
+	</div>
+	<div>
+		{%- endblock -%} {%- block script -%}
+		<!--<script src="https://js.stripe.com/v3/"></script>-->
+		<script>
+
+			const url_args = frappe.utils.get_query_params();
+			let secret_key = url_args.secret_key
+			let address = null;
+			let response = {}
+
+			if (secret_key.length >= 0 && secret_key != null) {
+				setup();
+			}
+
+			function setup() {
+				return call('press.api.developer.marketplace.get_subscriptions', {
+					secret_key: secret_key,
+				}).then((r) => {
+					let data = r.message;
+					address = data.address;
+					let subscriptions = data.subscriptions;
+					response.currency = data.currency
+
+					if (subscriptions.length >= 0) {
+						$('#loading').toggleClass('hidden');
+						$('#subs-wrapper').toggleClass('hidden');
+
+						for (let i in subscriptions) {
+							$('#subs-wrapper').append(`
+						<div class="transition ease-in-out delay-150 flex flex-row m-2 p-6 border border-gray-100 rounded-lg cursor-pointer hover:shadow-lg" onclick='showPlans(${JSON.stringify(
+								subscriptions[i]
+							)})'>
+							<img src="${subscriptions[i].image
+								}" alt="Logo" style="height: 34px;" class="rounded mr-2">
+							${subscriptions[i].title}
+						</div>
+						`);
+						}
+					}
+				});
+			}
+
+			function showPlans(sub) {
+				$('#subs-wrapper').toggleClass('hidden');
+				$('#plans-wrapper').toggleClass('hidden');
+
+				let plans = sub.available_plans;
+				let classes =
+					'flex-row justify-content-between mx-4 my-auto border rounded col-md-auto';
+
+				for (let i in plans) {
+					let style = classes;
+					let features = plans[i].features;
+					$('#plans-wrapper').append(`
+					<div class="${style} ${sub.marketplace_app_plan === plans[i].name ? 'border-primary' : ''
+						}" style="width: 200px; height: fit-content" >
+						<div>
+							<p class="mt-4">${plans[i].plan}</p>
+							<h3 class="my-4">${plans[i].price_inr}</h3>
+						<div>
+							${features}
+						</div>
+						</div>
+						<button class='rounded my-4 w-full bg-gray-300 btn ${sub.marketplace_app_plan === plans[i].name
+							? 'btn-primary disabled'
+							: 'active-btn'
+						}' onclick='selectPlan(${JSON.stringify(plans[i])}, "${sub.name}")'>
+						${sub.marketplace_app_plan === plans[i].name ? 'Current Plan' : 'Buy this plan'}
+					</button>
+				</div>
+				`);
+				}
+			}
+
+			function setTotal(billing) {
+				let total = 0;
+
+				const plan_price = response.new_plan[`price_${response.currency.toLowerCase()}`]
+				total = billing === 'annual' ? plan_price * 12 : plan_price
+				if (response.new_plan.discounted && billing === 'annual') {
+					let discount_percent = response.new_plan.discount_percent
+					$('.discount').text(`${discount_percent}%`)
+					total -= total * (discount_percent / 100)
+				} else {
+					$('.discount').text("-")
+				}
+				if (response.currency === "INR" && response.new_plan.gst === 1) {
+					$('.gst').text('18%')
+					total += total * .18
+				} else {
+					$('gst').text("-")
+				}
+				
+				$('.total').text(`${response.currency === 'INR' ? '₹' : '$'} ${total}`)
+			}
+
+			function setupStripe() {
+				console.log("Setting up stripe")
+			}
+
+			function selectPlan(new_plan, sub) {
+				response.new_plan = new_plan
+				response.sub = sub
+				$('#plans-wrapper').toggleClass('hidden');
+				// if address is already added then skip to stripe payment screen
+				if (address) {
+					$('#checkout-wrapper').toggleClass('hidden');
+					setTotal()
+				}
+				else {
+					$('#address-card-wrapper').toggleClass('hidden');
+				}
+			}
+
+			function updateBillingInfo() {
+				let billing_info = {
+					billing_name: $('input[name="billing-name"]').val(),
+					address: $('input[name="address"]').val(),
+					country: $('select[name="country"]').val(),
+					city: $('input[name="city"]').val(),
+					state: $('input[name="state"]').val(),
+					postal_code: $('input[name="postal-code"]').val(),
+				};
+
+				call('press.api.developer.marketplace.update_billing_info', {
+					secret_key: secret_key,
+					data: billing_info,
+				}).then((r) => {
+					console.log(r);
+				});
+			}
+
+			function call(method, args) {
+				return frappe
+					.call({
+						method: method,
+						args: args,
+						type: 'POST',
+					})
+					.then((r) => {
+						if (r.exc) {
+							console.error('An error occurred', r.exc);
+							return;
+						}
+						return r;
+					});
+			}
+		</script>
+		{% endblock %}
+	</div>
+</div>
