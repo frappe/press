@@ -20,20 +20,15 @@
 							{{ bench.status }}
 						</Badge>
 					</div>
-					<span class="flex space-x-1">
-						<div v-if="bench.status == 'Active'">
-							<Button icon-left="plus" :route="`/${bench.name}/new`">
-								New Site
-							</Button>
-						</div>
-						<Button
-							v-if="$account.user.user_type == 'System User'"
-							icon-left="external-link"
-							:link="deskUrl"
-						>
-							View in Desk
-						</Button>
-					</span>
+					<div class="flex-row space-x-3 md:flex">
+						<Dropdown :items="benchActions">
+							<template v-slot="{ toggleDropdown }">
+								<Button icon-right="chevron-down" @click="toggleDropdown()"
+									>Actions</Button
+								>
+							</template>
+						</Dropdown>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -133,9 +128,27 @@ export default {
 			}
 			return [];
 		},
-		deskUrl() {
-			return `${window.location.protocol}//${window.location.host}/app/release-group/${this.bench.name}`;
-		}
+		benchActions() {
+			return [
+				this.bench.status == 'Active' && {
+					label: 'New Site',
+					icon: 'plus',
+					action: () => { 
+						this.$router.push(`/${this.bench.name}/new`);
+					}
+				},
+				this.$account.user.user_type == 'System User' && {
+					label: 'View in Desk',
+					icon: 'external-link',
+					action: () => {
+						window.open(
+							`${window.location.protocol}//${window.location.host}/app/release-group/${this.bench.name}`,
+							'_blank'
+						);
+					}
+				},
+			].filter(Boolean);
+		},
 	}
 };
 </script>
