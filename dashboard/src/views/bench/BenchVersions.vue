@@ -118,7 +118,7 @@
 		</template>
 		<FrappeUIDialog :options="{ title: 'SSH Access' }" v-model="showSSHDialog">
 			<template v-slot:body-content>
-				<div v-if="certificate" class="space-y-4">
+				<div v-if="certificate" class="space-y-4" style="max-width: 29rem;">
 					<div class="space-y-2">
 						<h4 class="text-base font-semibold text-gray-700">Step 1</h4>
 						<div class="space-y-1">
