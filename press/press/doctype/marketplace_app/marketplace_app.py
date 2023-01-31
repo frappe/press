@@ -303,6 +303,7 @@ def get_plans_for_app(
 			"name",
 			"plan",
 			"discount_percent",
+			"gst",
 			"marked_most_popular",
 			"is_free",
 			"enabled",
