@@ -504,7 +504,11 @@ def branch_list(name: str, app: str) -> List[Dict]:
 		"Marketplace App", filters={"app": app}, pluck="name", limit=1
 	)
 
-	if marketplace_app and (not belongs_to_current_team(marketplace_app[0])):
+	if (
+		marketplace_app
+		and app_source.public
+		and (not belongs_to_current_team(marketplace_app[0]))
+	):
 		return get_branches_for_marketplace_app(app, marketplace_app[0], app_source)
 
 	return branches(installation_id, repo_owner, repo_name)
