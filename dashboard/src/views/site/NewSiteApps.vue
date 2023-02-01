@@ -96,7 +96,7 @@
 		<div v-if="selectedApps.includes('erpnext')">
 			<Input
 				type="checkbox"
-				label="I am okay if my details are shared with local Partner"
+				label="I am okay if my details are shared with local partner"
 				@change="val => $emit('update:shareDetailsConsent', val)"
 				:modelValue="shareDetailsConsent"
 			/>
