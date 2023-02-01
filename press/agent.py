@@ -304,7 +304,8 @@ class Agent:
 			site=site.name,
 		)
 
-	def archive_site(self, site, force=False):
+	def archive_site(self, site, site_name=None, force=False):
+		site_name = site_name or site.name
 		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
 		data = {
 			"mariadb_root_password": get_decrypted_password(
@@ -315,7 +316,7 @@ class Agent:
 
 		return self.create_agent_job(
 			"Archive Site",
-			f"benches/{site.bench}/sites/{site.name}/archive",
+			f"benches/{site.bench}/sites/{site_name}/archive",
 			data,
 			bench=site.bench,
 			site=site.name,
@@ -445,11 +446,12 @@ class Agent:
 			upstream=server,
 		)
 
-	def remove_upstream_site(self, server, site):
+	def remove_upstream_site(self, server, site: str, site_name=None):
+		site_name = site_name or site
 		private_ip = frappe.db.get_value("Server", server, "private_ip")
 		return self.create_agent_job(
 			"Remove Site from Upstream",
-			f"proxy/upstreams/{private_ip}/sites/{site}",
+			f"proxy/upstreams/{private_ip}/sites/{site_name}",
 			method="DELETE",
 			site=site,
 			upstream=server,

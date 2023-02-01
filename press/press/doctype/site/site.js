@@ -88,7 +88,7 @@ frappe.ui.form.on('Site', {
 			);
 		});
 		[
-			[__('Archive'), 'archive'],
+			[__('Archive'), 'archive', frm.doc.status !== 'Archived'],
 			[__('Cleanup after Archive'), 'cleanup_after_archive'],
 			[__('Migrate'), 'migrate'],
 			[__('Reinstall'), 'reinstall'],
@@ -104,6 +104,7 @@ frappe.ui.form.on('Site', {
 			[__('Create DNS Record'), 'create_dns_record'],
 			[__('Run After Migrate Steps'), 'run_after_migrate_steps'],
 			[__('Retry Rename'), 'retry_rename'],
+			[__('Retry Archive'), 'retry_archive', frm.doc.name.includes('.archived')],
 		].forEach(([label, method, condition]) => {
 			if (typeof condition === "undefined" || condition){
 				frm.add_custom_button(
