@@ -1,7 +1,7 @@
 {% extends 'templates/saas/billing_layout.html' %} {% block content %}
 <div class="flex justify-content-center mx-auto my-auto h-100 w-100">
 	<div id="subs-wrapper" class="flex flex-row hidden mx-auto my-auto h-fit"></div>
-	<div id="plans-wrapper" class="flex flex-wrap hidden justify-content-center"></div>
+	<div id="plans-wrapper" class="flex justify-content-start flex-wrap hidden" style="margin: auto;"></div>
 	<div id="address-card-wrapper" class="flex container hidden mx-auto my-auto justify-content-center">
 		<form>
 			<div class="form-group">
@@ -68,11 +68,7 @@
 	</div>
 
 	<div id="stripe-wrapper" class="hidden">
-		<div
-			id="card"
-			class="hidden"
-			ref="card-element"
-		>Card</div>
+		<div id="card" class="hidden" ref="card-element">Card</div>
 	</div>
 
 	<div id="loading" class="mx-auto my-auto">
@@ -82,7 +78,6 @@
 		{%- endblock -%} {%- block script -%}
 		<script src="https://js.stripe.com/v3/"></script>
 		<script>
-
 			const url_args = frappe.utils.get_query_params();
 			let secret_key = url_args.secret_key
 			let address = null;
@@ -126,18 +121,29 @@
 
 				let plans = sub.available_plans;
 				let classes =
-					'flex-row justify-content-between mx-4 my-auto border rounded col-md-auto';
+					'flex flex-col flex-1 justify-content-between m-2 border rounded col-md-auto shadow-sm';
 
 				for (let i in plans) {
 					let style = classes;
-					let features = plans[i].features;
+					let features = "";
+					plans[i].features.map((f) => {
+						features += `<div class="flex my-1">
+								<div class="mr-2 grid h-4 w-4 shrink-0 place-items-center rounded-full border border-green-500 bg-green-50">
+									<svg width="10" height="8" viewBox="0 0 10 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+										<path d="M1.26562 3.86686L3.93229 6.53353L9.26562 1.2002" stroke="#38A160" stroke-miterlimit="10"
+											stroke-linecap="round" stroke-linejoin="round" />
+									</svg>
+								</div>
+								<p>${f}</p>
+							</div>`;
+					});
 					$('#plans-wrapper').append(`
 					<div class="${style} ${sub.marketplace_app_plan === plans[i].name ? 'border-primary' : ''
-						}" style="width: 200px; height: fit-content" >
+						}" style="width: 220px;" >
 						<div>
 							<p class="mt-4">${plans[i].plan}</p>
-							<h3 class="my-4">${plans[i].price_inr}</h3>
-						<div>
+							<h3 class="my-4">${response.currency === 'INR' ? '₹' : '$'}${plans[i][`price_${response.currency.toLowerCase()}`]}</h3>
+						<div class="flex flex-col">
 							${features}
 						</div>
 						</div>
@@ -154,7 +160,6 @@
 
 			function setTotal(billing) {
 				let total = 0;
-
 				const plan_price = response.new_plan[`price_${response.currency.toLowerCase()}`]
 				total = billing === 'annual' ? plan_price * 12 : plan_price
 				if (response.new_plan.discounted && billing === 'annual') {
@@ -170,7 +175,7 @@
 				} else {
 					$('gst').text("-")
 				}
-				
+
 				response.total = total
 				response.billing = billing
 				$('.total').text(`${response.currency === 'INR' ? '₹' : '$'} ${total}`)
@@ -186,9 +191,7 @@
 					if (r.message) {
 
 						r = r.message;
-						stripeVars = r.message
 						$("#stripe-wrapper").toggleClass("hidden");
-
 						const stripe = Stripe(r.publishable_key)
 						const options = {
 							clientSecret: r.client_secret,
@@ -197,7 +200,6 @@
 							},
 						};
 						let elements = stripe.elements(options);
-
 						const paymentElement = elements.create('payment');
 						paymentElement.mount('#card');
 
