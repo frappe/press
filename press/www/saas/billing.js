@@ -1,20 +1,14 @@
-let subscription_string = __('Your subscription will end in x days');
+let subscription_string = __('Your subscription will end soon and the site will be suspended. Please subscribe before that for uninterrupted services');
 let $floatingBar = $(`
-    <div 
-			class="shadow sm:rounded-lg py-2" 
+    <div class="flex justify-content-center" style="width: 100%;">
+    <div class="flex justify-content-center flex-col shadow rounded p-2"
 			style="
-				position:fixed; 
-				left: 245px; 
-				bottom:20px; 
-				width:70%; 
-				margin: auto; 
-				border-radius: 10px; 
-				background-color: #F7FAFC; 
-				z-index: 1">
-    <div 
-			style="display: flex; align-items: center; justify-content: space-between"
-			class="text-muted">
-    <p style="margin-left: 20px; margin-top:5px; font-size: 17px">
+				width: 80%;
+				background-color: #e0f2fe;
+				position: fixed; 
+				bottom: 20px; 
+				z-index: 1;">
+    <p style="margin: auto 0; margin-right: 20px; padding-left: 10px; font-size: 15px;">
 			${subscription_string}
 		</p>
     <button id="show-dialog" type="button" 
@@ -25,15 +19,12 @@ let $floatingBar = $(`
 				border 
 				border-transparent
 				text-white
-				hover:bg-indigo-700 
-				focus:outline-none 
-				focus:ring-offset-2 
-				focus:ring-indigo-500
 			" 
 			style="
+				margin: auto;
+				height: fit-content;
 				background-color: #007bff; 
 				border-radius: 5px; 
-				margin-left:650px; 
 				margin-right: 10px
 			"
 		>
