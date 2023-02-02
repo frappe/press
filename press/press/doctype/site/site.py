@@ -1402,7 +1402,7 @@ def process_rename_site_job_update(job):
 	)[0].status
 
 	if job.status == "Failure":
-		rename_step_name = "Rename Site" # for Rename Site job
+		rename_step_name = "Rename Site"  # for Rename Site job
 		if job.job_type == "Rename Site on Upstream":
 			rename_step_name = "Rename Site File in Upstream Directory"
 		rename_step_status = frappe.db.get_value(
