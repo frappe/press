@@ -67,7 +67,12 @@
 		</form>
 	</div>
 
-	<div class="stripe-wrapper">
+	<div id="stripe-wrapper" class="hidden">
+		<div
+			id="card"
+			class="hidden"
+			ref="card-element"
+		>Card</div>
 	</div>
 
 	<div id="loading" class="mx-auto my-auto">
@@ -75,7 +80,7 @@
 	</div>
 	<div>
 		{%- endblock -%} {%- block script -%}
-		<!--<script src="https://js.stripe.com/v3/"></script>-->
+		<script src="https://js.stripe.com/v3/"></script>
 		<script>
 
 			const url_args = frappe.utils.get_query_params();
@@ -166,11 +171,40 @@
 					$('gst').text("-")
 				}
 				
+				response.total = total
+				response.billing = billing
 				$('.total').text(`${response.currency === 'INR' ? '₹' : '$'} ${total}`)
 			}
 
 			function setupStripe() {
-				console.log("Setting up stripe")
+				$("#checkout-wrapper").toggleClass("hidden");
+
+				call('press.api.developer.marketplace.saas_payment', {
+					secret_key: secret_key,
+					data: response,
+				}).then((r) => {
+					if (r.message) {
+
+						r = r.message;
+						stripeVars = r.message
+						$("#stripe-wrapper").toggleClass("hidden");
+
+						const stripe = Stripe(r.publishable_key)
+						const options = {
+							clientSecret: r.client_secret,
+							appearance: {
+								theme: 'flat',
+							},
+						};
+						let elements = stripe.elements(options);
+
+						const paymentElement = elements.create('payment');
+						paymentElement.mount('#card');
+
+						$('#card').toggleClass('hidden')
+						card.mount('#card')
+					}
+				});
 			}
 
 			function selectPlan(new_plan, sub) {

@@ -93,10 +93,7 @@ class DeveloperApiHandler:
 
 		team = self.app_subscription_doc.team
 		currency, address = frappe.db.get_value("Team", team, ["currency", "billing_address"])
-		response = {
-			"currency": currency,
-			"address": True if address else False
-		}
+		response = {"currency": currency, "address": True if address else False}
 		response["subscriptions"] = [
 			s.update(
 				{
@@ -122,9 +119,18 @@ class DeveloperApiHandler:
 
 		return "success"
 
-	def make_payment(self, data):
+	def saas_payment(self, data):
 		self.login_as_team()
-		prepaid_saas_payment(data)
+		return prepaid_saas_payment(
+			self.app_subscription_name,
+			self.app_subscription_doc.app,
+			self.app_subscription_doc.site,
+			data["new_plan"]["name"],
+			data["total"],
+			data["total"],
+			data["billing"],
+			False,
+		)
 
 	def login_as_team(self):
 		frappe.local.login_manager.login_as(self.app_subscription_doc.team)
@@ -168,4 +174,4 @@ def update_billing_info(secret_key: str, data: Dict) -> str:
 def make_payment(secret_key: str, data: Dict) -> str:
 	data = frappe.parse_json(data)
 	api_handler = DeveloperApiHandler(secret_key)
-	return api_handler.update_billing_info(data)
+	return api_handler.saas_payment(data)
