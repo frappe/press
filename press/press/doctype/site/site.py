@@ -144,6 +144,14 @@ class Site(Document):
 		"""Retry rename with current subdomain"""
 		self.rename(self._get_site_name(self.subdomain))
 
+	@frappe.whitelist()
+	def retry_archive(self):
+		"""Retry archive with subdomain+domain name of site"""
+		site_name = self.subdomain + "." + self.domain
+		if frappe.db.exists("Site", {"name": site_name, "bench": self.bench}):
+			frappe.throw(f"Another site already exists in {self.bench} with name: {site_name}")
+		self.archive(site_name=site_name, reason="Retry Archive")
+
 	def rename(self, new_name: str):
 		self.create_dns_record()
 		agent = Agent(self.server)
@@ -562,19 +570,19 @@ class Site(Document):
 		site_domain.remove_redirect()
 
 	@frappe.whitelist()
-	def archive(self, reason=None, force=False):
+	def archive(self, site_name=None, reason=None, force=False):
 		log_site_activity(self.name, "Archive", reason)
 		agent = Agent(self.server)
 		self.status = "Pending"
 		self.save()
-		agent.archive_site(self, force)
+		agent.archive_site(self, site_name, force)
 
 		server = frappe.get_all(
 			"Server", filters={"name": self.server}, fields=["proxy_server"], limit=1
 		)[0]
 
 		agent = Agent(server.proxy_server, server_type="Proxy Server")
-		agent.remove_upstream_site(self.server, self.name)
+		agent.remove_upstream_site(self.server, self.name, site_name)
 
 		self.db_set("host_name", None)
 
@@ -1237,6 +1245,8 @@ def delete_site_domains(site):
 
 
 def release_name(name):
+	if ".archived" in name:
+		return
 	new_name = f"{name}.archived"
 	new_name = append_number_if_name_exists("Site", new_name, separator=".")
 	frappe.rename_doc("Site", name, new_name)
@@ -1402,7 +1412,7 @@ def process_rename_site_job_update(job):
 	)[0].status
 
 	if job.status == "Failure":
-		rename_step_name = "Rename Site" # for Rename Site job
+		rename_step_name = "Rename Site"  # for Rename Site job
 		if job.job_type == "Rename Site on Upstream":
 			rename_step_name = "Rename Site File in Upstream Directory"
 		rename_step_status = frappe.db.get_value(
