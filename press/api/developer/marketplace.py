@@ -171,7 +171,7 @@ def update_billing_info(secret_key: str, data: Dict) -> str:
 
 
 @frappe.whitelist(allow_guest=True)
-def make_payment(secret_key: str, data: Dict) -> str:
+def saas_payment(secret_key: str, data: Dict) -> str:
 	data = frappe.parse_json(data)
 	api_handler = DeveloperApiHandler(secret_key)
 	return api_handler.saas_payment(data)
