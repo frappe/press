@@ -54,6 +54,7 @@ class Invoice(Document):
 
 		if self.partner_email:
 			self.apply_partner_discount()
+			self.reload()
 
 		# set as unpaid by default
 		self.status = "Unpaid"
