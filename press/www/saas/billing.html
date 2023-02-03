@@ -43,8 +43,16 @@
 
 	<div id="checkout-wrapper" class="flex flex-col w-100 hidden mx-20">
 		<div class="flex justify-content-between my-2">
-			<label for="cars">Billing: </label>
-			<select class="rounded" onchange="setTotal(this.value)">
+			<span>Plan</span>
+			<span class="new-plan"></span>
+		</div>
+		<div class="flex justify-content-between my-2">
+			<span>Amount / mo.</span>
+			<span class="new-plan-price"></span>
+		</div>
+		<div class="flex justify-content-between my-2">
+			<span>Billing: </span>
+			<select class="rounded py-0" onchange="setTotal(this.value)">
 				<option value="monthly">Monthly</option>
 				<option value="annual">Annual</option>
 			</select>
@@ -71,6 +79,9 @@
 		<div id="card" class="hidden" ref="card-element">Card</div>
 	</div>
 
+	<div id="loading-stripe" class="mx-auto my-auto hidden">
+		<span class="spinner-border spinner-border-sm mr-3" role="status"></span><span>Processing payment request</span>
+	</div>
 	<div id="loading" class="mx-auto my-auto">
 		<span class="spinner-border spinner-border-sm mr-3" role="status"></span><span>Loading Susbcriptions </span>
 	</div>
@@ -141,7 +152,7 @@
 					<div class="${style} ${sub.marketplace_app_plan === plans[i].name ? 'border-primary' : ''
 						}" style="width: 220px;" >
 						<div>
-							<p class="mt-4">${plans[i].plan}</p>
+							<p class="mt-4 font-semibold" style="font-size: 14px;">${plans[i].plan}</p>
 							<h3 class="my-4">${response.currency === 'INR' ? '₹' : '$'}${plans[i][`price_${response.currency.toLowerCase()}`]}</h3>
 						<div class="flex flex-col">
 							${features}
@@ -162,6 +173,9 @@
 				let total = 0;
 				const plan_price = response.new_plan[`price_${response.currency.toLowerCase()}`]
 				total = billing === 'annual' ? plan_price * 12 : plan_price
+				$('.new-plan').text(response.new_plan.plan)
+				$('.new-plan-price').text(`${response.currency === 'INR' ? '₹' : '$'} ${plan_price}`)
+
 				if (response.new_plan.discounted && billing === 'annual') {
 					let discount_percent = response.new_plan.discount_percent
 					$('.discount').text(`${discount_percent}%`)
@@ -184,10 +198,12 @@
 			function setupStripe() {
 				$("#checkout-wrapper").toggleClass("hidden");
 
+				$("#loading-stripe").toggleClass("hidden");
 				call('press.api.developer.marketplace.saas_payment', {
 					secret_key: secret_key,
 					data: response,
 				}).then((r) => {
+					$("#loading-stripe").toggleClass("hidden");
 					if (r.message) {
 
 						r = r.message;
