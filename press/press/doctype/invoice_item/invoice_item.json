@@ -81,13 +81,14 @@
   {
    "fieldname": "discount",
    "fieldtype": "Currency",
-   "label": "Discount"
+   "label": "Discount",
+   "options": "currency"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2023-02-03 13:36:27.758257",
+ "modified": "2023-02-03 18:02:30.371635",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice Item",
