@@ -198,6 +198,9 @@ def check_subdomain_availability(subdomain, app):
 
 	exists = bool(
 		frappe.db.exists(
+			"Blocked Domain", {"name": subdomain, "root_domain": get_erpnext_domain()}
+		)
+		or frappe.db.exists(
 			"Site",
 			{
 				"subdomain": subdomain,
