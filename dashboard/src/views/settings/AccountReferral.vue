@@ -32,7 +32,7 @@ export default {
 			return '';
 		},
 		creditAmountInTeamCurrency() {
-			return this.$account.team.country == 'India' ? '₹1800' : '$25';
+			return this.$account.team.country == 'India' ? '₹750' : '$10';
 		}
 	}
 };
