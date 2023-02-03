@@ -409,7 +409,8 @@ class Invoice(Document):
 		total_partner_discount = 0
 		for item in self.items:
 			if item.document_type in ("Site", "Server", "Database Server"):
-				total_partner_discount += item.amount * 0.1
+				item.discount = item.amount * 0.1
+				total_partner_discount += item.discount
 
 		if total_partner_discount > 0:
 			self.append(
