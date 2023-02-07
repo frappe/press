@@ -428,6 +428,19 @@ class BaseServer(Document):
 		except Exception:
 			log_error("Increase swap exception", server=self.as_dict())
 
+	@frappe.whitelist()
+	def update_tls_certificate(self):
+		from press.press.doctype.tls_certificate.tls_certificate import (
+			update_server_tls_certifcate,
+		)
+
+		update_server_tls_certifcate(
+			self,
+			frappe.get_last_doc(
+				"TLS Certificate", {"wildcard": True, "domain": self.domain, "status": "Active"}
+			),
+		)
+
 
 class Server(BaseServer):
 	def on_update(self):
