@@ -13,7 +13,7 @@ frappe.ui.form.on('Server', {
 			[__('Ping Ansible Unprepared'), "ping_ansible_unprepared", true, !frm.doc.is_server_prepared],
 			[__('Update Agent'), "update_agent", true, frm.doc.is_server_setup],
 			[__('Update Agent Ansible'), "update_agent_ansible", true, frm.doc.is_server_setup],
-			[__('Prepare Server'), "prepare_server", !frm.doc.is_server_prepared],
+			[__('Prepare Server'), "prepare_server", true, !frm.doc.is_server_prepared],
 			[__('Setup Server'), "setup_server", true, !frm.doc.is_server_setup],
 			[__('Add 8GB Swap'), "increase_swap", true, frm.doc.is_server_setup],
 			[__('Add to Proxy'), "add_upstream_to_proxy", true, frm.doc.is_server_setup && !frm.doc.is_upstream_setup],
