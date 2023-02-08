@@ -428,13 +428,17 @@ def archive_obsolete_benches():
 		if active_archival_jobs:
 			continue
 
-		active_site_updates = frappe.db.exists(
+		active_site_updates = frappe.db.get_all(
 			"Site Update",
 			{
-				"destination_bench": bench.name,
 				"status": ("in", ["Pending", "Running", "Failure"]),
 			},
+			or_filters={
+				"source_bench": bench.name,
+				"destination_bench": bench.name,
+			},
 		)
+
 		if active_site_updates:
 			continue
 
