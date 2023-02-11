@@ -1,0 +1,28 @@
+name: Formatting
+
+on: push
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3.3.0
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.8
+
+    - name: Install dependencies
+      run: |
+        pip install frappe-bench flake8 git+https://github.com/adityahase/black
+
+    - name: Black Test
+      run: |
+        black --check apps/press/press
+        
+    - name: Flake8 Test
+      run: |
+        flake8 --ignore W191,E501,W503 apps/press/press
