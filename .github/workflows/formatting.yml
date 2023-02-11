@@ -21,8 +21,8 @@ jobs:
 
     - name: Black Test
       run: |
-        black --check apps/press/press
+        black --check ${GITHUB_WORKSPACE}/apps/press/press
         
     - name: Flake8 Test
       run: |
-        flake8 --ignore W191,E501,W503 apps/press/press
+        flake8 --ignore W191,E501,W503 ${GITHUB_WORKSPACE}/apps/press/press
