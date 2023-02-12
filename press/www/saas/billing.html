@@ -1,7 +1,7 @@
 {% extends 'templates/saas/billing_layout.html' %} {% block content %}
 <div class="flex justify-content-center mx-auto my-auto h-100 w-100">
-	<div id="subs-wrapper" class="flex flex-row hidden mx-auto my-auto h-fit"></div>
-	<div id="plans-wrapper" class="flex justify-content-start flex-wrap hidden" style="margin: auto;"></div>
+	<div id="subs-wrapper" class="flex flex-row justify-center flex-wrap hidden mx-auto my-auto h-fit"></div>
+	<div id="plans-wrapper" class="grid gap-2 grid-cols-3 justify-content-start flex-wrap hidden m-auto"></div>
 	<div id="address-card-wrapper" class="flex container hidden mx-auto my-auto justify-content-center">
 		<form>
 			<div class="form-group">
@@ -41,7 +41,7 @@
 		</form>
 	</div>
 
-	<div id="checkout-wrapper" class="flex flex-col w-100 hidden mx-20">
+	<div id="checkout-wrapper" class="flex flex-col w-2/3 hidden mx-20 text-sm">
 		<div class="flex justify-content-between my-2">
 			<span>Plan</span>
 			<span class="new-plan"></span>
@@ -51,12 +51,13 @@
 			<span class="new-plan-price"></span>
 		</div>
 		<div class="flex justify-content-between my-2">
-			<span>Billing: </span>
-			<select class="rounded py-0" onchange="setTotal(this.value)">
-				<option value="monthly">Monthly</option>
-				<option value="annual">Annual</option>
+			<span>Billing:</span>
+			<select class="rounded px-2 pr-8" onchange="setTotal(this.value)">
+				<option class="pr-4" value="monthly">Monthly</option>
+				<option class="pr-4" value="annual">Annual</option>
 			</select>
 		</div>
+		<hr class="my-4">
 		<div class="flex justify-content-between my-2">
 			<span>GST (if applicable)</span>
 			<span class="gst text-red-600">-</span>
@@ -69,9 +70,10 @@
 			<span>Total</span>
 			<span class="total font-semibold"></span>
 		</div>
+		<hr class="my-4">
 		<form class="flex justify-content-between my-2">
 			<span></span>
-			<button type="button" class="btn btn-primary" onclick="setupStripe()">Pay Amount</span>
+			<button type="button" class="btn btn-primary w-32" onclick="setupStripe()">PAY</span>
 		</form>
 	</div>
 
@@ -113,12 +115,11 @@
 
 						for (let i in subscriptions) {
 							$('#subs-wrapper').append(`
-						<div class="transition ease-in-out delay-150 flex flex-row m-2 p-6 border border-gray-100 rounded-lg cursor-pointer hover:shadow-lg" onclick='showPlans(${JSON.stringify(
+						<div class="flex flex-row items-center m-2 p-4 w-2/7 border border-gray-100 rounded cursor-pointer transition-all hover:shadow-lg" onclick='showPlans(${JSON.stringify(
 								subscriptions[i]
 							)})'>
-							<img src="${subscriptions[i].image
-								}" alt="Logo" style="height: 34px;" class="rounded mr-2">
-							${subscriptions[i].title}
+							<img src="${subscriptions[i].image}" alt="Logo" style="height: 38px;" class="rounded mr-2">
+							<span class="text-base">${subscriptions[i].title}</span>
 						</div>
 						`);
 						}
@@ -131,11 +132,10 @@
 				$('#plans-wrapper').toggleClass('hidden');
 
 				let plans = sub.available_plans;
-				let classes =
+				let style =
 					'flex flex-col flex-1 justify-content-between m-2 border rounded col-md-auto shadow-sm';
 
 				for (let i in plans) {
-					let style = classes;
 					let features = "";
 					plans[i].features.map((f) => {
 						features += `<div class="flex my-1">
@@ -152,17 +152,17 @@
 					<div class="${style} ${sub.marketplace_app_plan === plans[i].name ? 'border-primary' : ''
 						}" style="width: 220px;" >
 						<div>
-							<p class="mt-4 font-semibold" style="font-size: 14px;">${plans[i].plan}</p>
-							<h3 class="my-4">${response.currency === 'INR' ? '₹' : '$'}${plans[i][`price_${response.currency.toLowerCase()}`]}</h3>
+							<p class="mt-4 font-semibold text-sm">${plans[i].plan}</p>
+							<h3 class="my-4 font-bold text-xl">${response.currency === 'INR' ? '₹' : '$'}${plans[i][`price_${response.currency.toLowerCase()}`]}</h3>
 						<div class="flex flex-col">
 							${features}
 						</div>
 						</div>
-						<button class='rounded my-4 w-full bg-gray-300 btn ${sub.marketplace_app_plan === plans[i].name
+						<button class='rounded my-4 w-full bg-gray-100 btn ${sub.marketplace_app_plan === plans[i].name
 							? 'btn-primary disabled'
 							: 'active-btn'
 						}' onclick='selectPlan(${JSON.stringify(plans[i])}, "${sub.name}")'>
-						${sub.marketplace_app_plan === plans[i].name ? 'Current Plan' : 'Buy this plan'}
+						${sub.marketplace_app_plan === plans[i].name ? 'Current Plan' : 'BUY NOW'}
 					</button>
 				</div>
 				`);
@@ -229,7 +229,6 @@
 				response.new_plan = new_plan
 				response.sub = sub
 				$('#plans-wrapper').toggleClass('hidden');
-				// if address is already added then skip to stripe payment screen
 				if (address) {
 					$('#checkout-wrapper').toggleClass('hidden');
 					setTotal()
