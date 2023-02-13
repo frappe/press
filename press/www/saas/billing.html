@@ -207,7 +207,11 @@ address_wrapper -%} {% block content %}
 			secret_key: secret_key,
 			data: billing_info,
 		}).then((r) => {
-			console.log(r);
+			if (r.message == 'success') {
+				$('#checkout-wrapper').toggleClass('hidden');
+				$('#address-card-wrapper').toggleClass('hidden');
+				setTotal('monthly');
+			}
 		});
 	}
 
