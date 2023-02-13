@@ -128,7 +128,7 @@ class DeveloperApiHandler:
 			data["new_plan"]["name"],
 			data["total"],
 			data["total"],
-			data["billing"],
+			12 if data["billing"] == "annual" else 1,
 			False,
 		)
 
