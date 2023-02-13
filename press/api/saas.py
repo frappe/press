@@ -196,6 +196,10 @@ def check_subdomain_availability(subdomain, app):
 	if len(subdomain) <= 4:
 		return False
 
+	banned_domains = frappe.get_all("Blocked Domain", {"block_for_all": 1}, pluck="name")
+	if banned_domains and subdomain in banned_domains:
+		return False
+
 	exists = bool(
 		frappe.db.exists(
 			"Blocked Domain", {"name": subdomain, "root_domain": get_erpnext_domain()}
