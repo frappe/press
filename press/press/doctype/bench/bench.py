@@ -155,8 +155,16 @@ class Bench(Document):
 		)
 		if unarchived_sites:
 			frappe.throw("Cannot archive bench with active sites.")
+		self.check_ongoing_job()
 		agent = Agent(self.server)
 		agent.archive_bench(self)
+
+	def check_ongoing_job(self):
+		ongoing_jobs = frappe.db.exists(
+			"Agent Job", {"bench": self.name, "status": "Running"}
+		)
+		if ongoing_jobs:
+			frappe.throw("Cannot archive bench with ongoing jobs.")
 
 	@frappe.whitelist()
 	def sync_info(self):
