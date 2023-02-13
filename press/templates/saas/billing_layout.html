@@ -1,0 +1,38 @@
+{%- extends "templates/base.html" -%}
+
+{%- block favicon -%}
+<link rel="stylesheet" href="/assets/press/css/saas-next.css" />
+{%- endblock -%}
+
+{%- block navbar -%}
+{%- endblock -%}
+
+{%- block footer -%}
+{%- endblock -%}
+
+{%- block content -%}
+{%- endblock -%}
+
+{%- block script -%}
+{{ super() }}
+{%- endblock -%}
+
+{%- block style -%}
+<style>
+	body {
+		<!--background-color: var(--gray-50);-->
+	}
+	p {
+		font-size: var(--text-sm);
+		margin-bottom: 2px;
+	}
+	.active-btn:hover {
+		color: white;
+		background-color: var(--blue-500);
+	}
+
+	input {
+		border-radius: 15px;
+	}
+</style>
+{%- endblock -%}

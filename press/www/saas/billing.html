@@ -1,0 +1,234 @@
+{%- extends "templates/saas/billing_layout.html" -%} {%- from
+"templates/saas/macros.html" import subs_wrapper, plans_wrapper, success_card,
+error_card, load_stripe, load_subs, checkout_wrapper, stripe_wrapper,
+address_wrapper -%} {% block content %}
+<div class="flex justify-content-center mx-auto my-auto h-100 w-100">
+	{{ subs_wrapper() }} {{ plans_wrapper() }} {{ address_wrapper() }} {{
+	checkout_wrapper() }} {{ stripe_wrapper() }} {{ success_card() }} {{
+	success_card() }} {{ load_stripe() }} {{ load_subs() }}
+</div>
+{%- endblock -%} {%- block script -%}
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+	const url_args = frappe.utils.get_query_params();
+	let secret_key = url_args.secret_key;
+	let address = null;
+	let elements = null;
+	let stripe = null;
+	let response = {};
+
+	if (secret_key.length >= 0 && secret_key != null) {
+		setup();
+	}
+
+	function setup() {
+		return call('press.api.developer.marketplace.get_subscriptions', {
+			secret_key: secret_key,
+		}).then((r) => {
+			let data = r.message;
+			address = data.address;
+			let subscriptions = data.subscriptions;
+			response.currency = data.currency;
+
+			if (subscriptions.length >= 0) {
+				$('#loading').toggleClass('hidden');
+				$('#subs-wrapper').toggleClass('hidden');
+
+				for (let i in subscriptions) {
+					$('#subs-wrapper').append(`
+						<div class="flex flex-row items-center m-2 p-4 w-2/7 border border-gray-100 rounded cursor-pointer transition-all hover:shadow-lg" onclick='showPlans(${JSON.stringify(
+							subscriptions[i]
+						)})'>
+							<img src="${
+								subscriptions[i].image
+							}" alt="Logo" style="height: 38px;" class="rounded mr-2">
+							<span class="text-base">${subscriptions[i].title}</span>
+						</div>
+						`);
+				}
+			}
+		});
+	}
+
+	function showPlans(sub) {
+		$('#subs-wrapper').toggleClass('hidden');
+		$('#plans-wrapper').toggleClass('hidden');
+
+		let plans = sub.available_plans;
+		let style =
+			'flex flex-col flex-1 justify-content-between m-2 border rounded col-md-auto shadow-sm';
+
+		for (let i in plans) {
+			let features = '';
+			plans[i].features.map((f) => {
+				features += `<div class="flex my-1">
+								<div class="mr-2 grid h-4 w-4 shrink-0 place-items-center rounded-full border border-green-500 bg-green-50">
+									<svg width="10" height="8" viewBox="0 0 10 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+										<path d="M1.26562 3.86686L3.93229 6.53353L9.26562 1.2002" stroke="#38A160" stroke-miterlimit="10"
+											stroke-linecap="round" stroke-linejoin="round" />
+									</svg>
+								</div>
+								<p>${f}</p>
+							</div>`;
+			});
+			$('#plans-wrapper').append(`
+					<div class="${style} ${
+				sub.marketplace_app_plan === plans[i].name ? 'border-primary' : ''
+			}" style="width: 220px;" >
+						<div>
+							<p class="mt-4 font-semibold text-sm">${plans[i].plan}</p>
+							<h3 class="my-4 font-bold text-xl">${response.currency === 'INR' ? '₹' : '$'}${
+				plans[i][`price_${response.currency.toLowerCase()}`]
+			}</h3>
+						<div class="flex flex-col">
+							${features}
+						</div>
+						</div>
+						<button class='rounded my-4 w-full bg-gray-100 btn ${
+							sub.marketplace_app_plan === plans[i].name
+								? 'btn-primary disabled'
+								: 'active-btn'
+						}' onclick='selectPlan(${JSON.stringify(plans[i])}, "${sub.name}")'>
+						${sub.marketplace_app_plan === plans[i].name ? 'Current Plan' : 'BUY NOW'}
+					</button>
+				</div>
+				`);
+		}
+	}
+
+	function setTotal(billing) {
+		let total = 0;
+		const plan_price =
+			response.new_plan[`price_${response.currency.toLowerCase()}`];
+		total = billing === 'annual' ? plan_price * 12 : plan_price;
+		$('.new-plan').text(response.new_plan.plan);
+		$('.new-plan-price').text(
+			`${response.currency === 'INR' ? '₹' : '$'} ${plan_price}`
+		);
+
+		if (response.new_plan.discounted && billing === 'annual') {
+			let discount_percent = response.new_plan.discount_percent;
+			$('.discount').text(`${discount_percent}%`);
+			total -= total * (discount_percent / 100);
+		} else {
+			$('.discount').text('-');
+		}
+		if (response.currency === 'INR' && response.new_plan.gst === 1) {
+			$('.gst').text('18%');
+			total += total * 0.18;
+		} else {
+			$('gst').text('-');
+		}
+
+		response.total = total;
+		response.billing = billing;
+		$('.total').text(`${response.currency === 'INR' ? '₹' : '$'} ${total}`);
+	}
+
+	function setupStripe() {
+		$('#checkout-wrapper').toggleClass('hidden');
+
+		$('#loading-stripe').toggleClass('hidden');
+		call('press.api.developer.marketplace.saas_payment', {
+			secret_key: secret_key,
+			data: response,
+		}).then((r) => {
+			$('#loading-stripe').toggleClass('hidden');
+			if (r.message) {
+				r = r.message;
+				$('#stripe-wrapper').toggleClass('hidden');
+				stripe = Stripe(r.publishable_key);
+				const options = {
+					clientSecret: r.client_secret,
+					appearance: {
+						theme: 'flat',
+					},
+				};
+				elements = stripe.elements(options);
+				const paymentElement = elements.create('payment');
+				paymentElement.mount('#card');
+
+				$('#card').toggleClass('hidden');
+			}
+		});
+	}
+
+	async function handlePayment(e) {
+		try {
+			$('#pay-btn').attr('disabled', 'disabled');
+			$('#pay-btn-spinner').toggleClass('hidden');
+			$('#pay-btn-text').text('Processing...');
+
+			const payload = await stripe.confirmPayment({
+				elements,
+				redirect: 'if_required',
+			});
+
+			if (payload.error && payload.error === 'card_error') {
+				$('#stripe-wrapper').toggleClass('hidden');
+				$('#success-wrapper').toggleClass('hidden');
+			} else {
+				if (payload.paymentIntent.status === 'succeeded') {
+					$('#stripe-wrapper').toggleClass('hidden');
+					$('#success-wrapper').toggleClass('hidden');
+				}
+			}
+		} catch (err) {
+			console.log(err);
+			$('#pay-btn').removeAttr('disabled');
+			$('#pay-btn-spinner').toggleClass('hidden');
+			$('#pay-btn-text').text('Pay Now');
+		}
+	}
+
+	function selectPlan(new_plan, sub) {
+		response.new_plan = new_plan;
+		response.sub = sub;
+		$('#plans-wrapper').toggleClass('hidden');
+		if (address) {
+			$('#checkout-wrapper').toggleClass('hidden');
+			setTotal('monthly');
+		} else {
+			$('#address-card-wrapper').toggleClass('hidden');
+		}
+	}
+
+	function updateBillingInfo() {
+		let billing_info = {
+			billing_name: $('input[name="billing-name"]').val(),
+			address: $('input[name="address"]').val(),
+			country: $('select[name="country"]').val(),
+			city: $('input[name="city"]').val(),
+			state: $('input[name="state"]').val(),
+			postal_code: $('input[name="postal-code"]').val(),
+		};
+
+		call('press.api.developer.marketplace.update_billing_info', {
+			secret_key: secret_key,
+			data: billing_info,
+		}).then((r) => {
+			if (r.message == 'success') {
+				$('#checkout-wrapper').toggleClass('hidden');
+				$('#address-card-wrapper').toggleClass('hidden');
+				setTotal('monthly');
+			}
+		});
+	}
+
+	function call(method, args) {
+		return frappe
+			.call({
+				method: method,
+				args: args,
+				type: 'POST',
+			})
+			.then((r) => {
+				if (r.exc) {
+					console.error('An error occurred', r.exc);
+					return;
+				}
+				return r;
+			});
+	}
+</script>
+{% endblock %}
