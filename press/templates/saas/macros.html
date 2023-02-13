@@ -1,0 +1,118 @@
+<!-- Wrapper Macros -->
+{% macro subs_wrapper() %}
+<div id="subs-wrapper" class="flex flex-row justify-center flex-wrap hidden mx-auto my-auto h-fit"></div>
+{% endmacro %}
+
+{% macro plans_wrapper() %}
+<div id="plans-wrapper" class="grid gap-2 grid-cols-3 justify-content-start flex-wrap hidden m-auto"></div>
+{% endmacro %}
+
+{% macro address_wrapper() %}
+	<div id="address-card-wrapper" class="flex container hidden mx-auto my-auto justify-content-center">
+		<form>
+			<div class="form-group">
+				<p>Billing Name</p>
+				<input type="text" name="billing-name" class="form-control" />
+			</div>
+			<div class="form-group">
+				<p>Address</p>
+				<input type="text" name="address" placeholder="Address" class="form-control" />
+			</div>
+			<div class="form-group">
+				<p>Country</p>
+				<select id="country" class="custom-select" name="country" class="form-control">
+					<option disabled selected>Select Country</option>
+					{%- for country in frappe.db.get_all('Country') -%}
+					<option>{{ country.name }}</option>
+					{%- endfor -%}
+				</select>
+			</div>
+			<div class="form-group">
+				<p>City</p>
+				<input type="text" name="city" class="form-control" />
+			</div>
+			<div class="form-group">
+				<p>State/Province/Region</p>
+				<input type="text" name="state" class="form-control" />
+			</div>
+			<div class="form-group">
+				<p>Postal Code</p>
+				<input type="text" name="postal-code" class="form-control" />
+			</div>
+			<div>
+				<button type="button" class="btn btn-primary" onclick="updateBillingInfo()">
+					Save
+				</button>
+			</div>
+		</form>
+	</div>
+{% endmacro %}
+
+{% macro checkout_wrapper() %}
+	<div id="checkout-wrapper" class="flex flex-col w-2/3 hidden mx-20 text-sm">
+		<div class="flex justify-content-between my-2">
+			<span>Plan</span>
+			<span class="new-plan"></span>
+		</div>
+		<div class="flex justify-content-between my-2">
+			<span>Amount / mo.</span>
+			<span class="new-plan-price"></span>
+		</div>
+		<div class="flex justify-content-between my-2">
+			<span>Billing:</span>
+			<select class="rounded px-2 pr-8" onchange="setTotal(this.value)">
+				<option class="pr-4" value="monthly">Monthly</option>
+				<option class="pr-4" value="annual">Annual</option>
+			</select>
+		</div>
+		<hr class="my-4">
+		<div class="flex justify-content-between my-2">
+			<span>GST (if applicable)</span>
+			<span class="gst text-red-600">-</span>
+		</div>
+		<div class="flex justify-content-between my-2">
+			<span>Discount</span>
+			<span class="discount text-green-500">-</span>
+		</div>
+		<div class="flex justify-content-between my-2">
+			<span>Total</span>
+			<span class="total font-semibold"></span>
+		</div>
+		<hr class="my-4">
+		<form class="flex justify-content-between my-2">
+			<span></span>
+			<button type="button" class="btn btn-primary w-36" onclick="setupStripe()">PROCEED TO PAY</span>
+		</form>
+	</div>
+{% endmacro %}
+
+<!-- Cards -->
+{% macro success_card() %}
+<div id="success-wrapper" class="mx-auto my-auto hidden">
+	<h2 class="font-size-base">Payment Request Received</h2>
+	<span>Thank you for your payment request. We will send you a confirmation email shortly. In the meantime if you have any queries please reach us at 
+		our <a href="https://frappecloud.com/support">support page</a>.</span>
+</div>
+{% endmacro %}
+
+{% macro success_card() %}
+	<div id="stripe-wrapper" class="hidden">
+		<div id="card" class="hidden" ref="card-element"></div>
+		<button id="pay-btn" type="button" class="btn btn-primary w-full mt-6 py-3 rounded-lg" onclick="handlePayment()">
+			<span id="pay-btn-spinner" class="spinner-border spinner-border-sm mr-3 hidden"></span>
+			<span id="pay-btn-text">PAY</span>
+		</button>
+	</div>
+{% endmacro %}
+
+{% macro load_stripe() %}
+<div id="loading-stripe" class="mx-auto my-auto hidden">
+	<span class="spinner-border spinner-border-sm mr-3" role="status"></span><span>Processing payment request</span>
+</div>
+{% endmacro %}
+
+{% macro load_subs() %}
+<div id="loading" class="mx-auto my-auto">
+	<span class="spinner-border spinner-border-sm mr-3" role="status"></span><span>Loading Susbcriptions </span>
+</div>
+{% endmacro %}

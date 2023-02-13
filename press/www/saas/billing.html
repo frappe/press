@@ -1,99 +1,30 @@
-{% extends 'templates/saas/billing_layout.html' %} {% block content %}
+{%- extends "templates/saas/billing_layout.html" -%} 
+{%- from "templates/saas/macros.html" import subs_wrapper, plans_wrapper, success_card, load_stripe, load_subs, checkout_wrapper, address_wrapper -%}
+
+{% block content %}
 <div class="flex justify-content-center mx-auto my-auto h-100 w-100">
-	<div id="subs-wrapper" class="flex flex-row justify-center flex-wrap hidden mx-auto my-auto h-fit"></div>
-	<div id="plans-wrapper" class="grid gap-2 grid-cols-3 justify-content-start flex-wrap hidden m-auto"></div>
-	<div id="address-card-wrapper" class="flex container hidden mx-auto my-auto justify-content-center">
-		<form>
-			<div class="form-group">
-				<p>Billing Name</p>
-				<input type="text" name="billing-name" class="form-control" />
-			</div>
-			<div class="form-group">
-				<p>Address</p>
-				<input type="text" name="address" placeholder="Address" class="form-control" />
-			</div>
-			<div class="form-group">
-				<p>Country</p>
-				<select id="country" class="custom-select" name="country" class="form-control">
-					<option disabled selected>Select Country</option>
-					{%- for country in frappe.db.get_all('Country') -%}
-					<option>{{ country.name }}</option>
-					{%- endfor -%}
-				</select>
-			</div>
-			<div class="form-group">
-				<p>City</p>
-				<input type="text" name="city" class="form-control" />
-			</div>
-			<div class="form-group">
-				<p>State/Province/Region</p>
-				<input type="text" name="state" class="form-control" />
-			</div>
-			<div class="form-group">
-				<p>Postal Code</p>
-				<input type="text" name="postal-code" class="form-control" />
-			</div>
-			<div>
-				<button type="button" class="btn btn-primary" onclick="updateBillingInfo()">
-					Save
-				</button>
-			</div>
-		</form>
-	</div>
+	{{ subs_wrapper() }}
+	{{ plans_wrapper() }}
+	{{ address_wrapper() }}
+	{{ checkout_wrapper() }}
+	{{ stripe_wrapper() }}
 
-	<div id="checkout-wrapper" class="flex flex-col w-2/3 hidden mx-20 text-sm">
-		<div class="flex justify-content-between my-2">
-			<span>Plan</span>
-			<span class="new-plan"></span>
-		</div>
-		<div class="flex justify-content-between my-2">
-			<span>Amount / mo.</span>
-			<span class="new-plan-price"></span>
-		</div>
-		<div class="flex justify-content-between my-2">
-			<span>Billing:</span>
-			<select class="rounded px-2 pr-8" onchange="setTotal(this.value)">
-				<option class="pr-4" value="monthly">Monthly</option>
-				<option class="pr-4" value="annual">Annual</option>
-			</select>
-		</div>
-		<hr class="my-4">
-		<div class="flex justify-content-between my-2">
-			<span>GST (if applicable)</span>
-			<span class="gst text-red-600">-</span>
-		</div>
-		<div class="flex justify-content-between my-2">
-			<span>Discount</span>
-			<span class="discount text-green-500">-</span>
-		</div>
-		<div class="flex justify-content-between my-2">
-			<span>Total</span>
-			<span class="total font-semibold"></span>
-		</div>
-		<hr class="my-4">
-		<form class="flex justify-content-between my-2">
-			<span></span>
-			<button type="button" class="btn btn-primary w-32" onclick="setupStripe()">PAY</span>
-		</form>
-	</div>
+	{{ success_card() }}
+	{{ success_card() }}
+	{{ load_stripe() }}
+	{{ load_subs() }}
+</div>
+{%- endblock -%} 
 
-	<div id="stripe-wrapper" class="hidden">
-		<div id="card" class="hidden" ref="card-element">Card</div>
-	</div>
 
-	<div id="loading-stripe" class="mx-auto my-auto hidden">
-		<span class="spinner-border spinner-border-sm mr-3" role="status"></span><span>Processing payment request</span>
-	</div>
-	<div id="loading" class="mx-auto my-auto">
-		<span class="spinner-border spinner-border-sm mr-3" role="status"></span><span>Loading Susbcriptions </span>
-	</div>
-	<div>
-		{%- endblock -%} {%- block script -%}
+{%- block script -%}
 		<script src="https://js.stripe.com/v3/"></script>
 		<script>
 			const url_args = frappe.utils.get_query_params();
 			let secret_key = url_args.secret_key
 			let address = null;
+			let elements = null;
+			let stripe = null;
 			let response = {}
 
 			if (secret_key.length >= 0 && secret_key != null) {
@@ -208,21 +139,50 @@
 
 						r = r.message;
 						$("#stripe-wrapper").toggleClass("hidden");
-						const stripe = Stripe(r.publishable_key)
+						stripe = Stripe(r.publishable_key)
 						const options = {
 							clientSecret: r.client_secret,
 							appearance: {
 								theme: 'flat',
 							},
 						};
-						let elements = stripe.elements(options);
+						elements = stripe.elements(options);
 						const paymentElement = elements.create('payment');
 						paymentElement.mount('#card');
 
 						$('#card').toggleClass('hidden')
-						card.mount('#card')
 					}
 				});
+			}
+
+			async function handlePayment(e) {
+
+				try {
+					$('#pay-btn').attr('disabled','disabled');
+					$("#pay-btn-spinner").toggleClass("hidden");
+					$("#pay-btn-text").text("Processing...");
+
+					const payload = await stripe.confirmPayment({
+						elements,
+							redirect: 'if_required',
+					});
+
+					if (payload.error && payload.error === "card_error") {
+							$("#stripe-wrapper").toggleClass("hidden");
+							$("#success-wrapper").toggleClass("hidden");
+					} else {
+						if (payload.paymentIntent.status === "succeeded") {
+							$("#stripe-wrapper").toggleClass("hidden");
+							$("#success-wrapper").toggleClass("hidden");
+						}
+					}
+				} catch (err) {
+					console.log(err)
+					$('#pay-btn').removeAttr('disabled');
+					$("#pay-btn-spinner").toggleClass("hidden");
+					$("#pay-btn-text").text("Pay Now");
+				}
+
 			}
 
 			function selectPlan(new_plan, sub) {
@@ -231,7 +191,7 @@
 				$('#plans-wrapper').toggleClass('hidden');
 				if (address) {
 					$('#checkout-wrapper').toggleClass('hidden');
-					setTotal()
+					setTotal('monthly')
 				}
 				else {
 					$('#address-card-wrapper').toggleClass('hidden');
@@ -272,6 +232,4 @@
 					});
 			}
 		</script>
-		{% endblock %}
-	</div>
-</div>
+{% endblock %}
