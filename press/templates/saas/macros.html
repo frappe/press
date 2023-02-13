@@ -89,20 +89,30 @@
 
 <!-- Cards -->
 {% macro success_card() %}
-<div id="success-wrapper" class="mx-auto my-auto hidden">
-	<h2 class="font-size-base">Payment Request Received</h2>
+<div id="success-wrapper" class="mx-auto my-auto hidden w-1/2">
+	<div class="flex">
+		<div class="mr-2 grid h-4 w-4 shrink-0 place-items-center rounded-full border border-green-500 bg-green-50">
+			<svg width="10" height="8" viewBox="0 0 10 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+				<path d="M1.26562 3.86686L3.93229 6.53353L9.26562 1.2002" stroke="#38A160" stroke-miterlimit="10"
+					stroke-linecap="round" stroke-linejoin="round" />
+			</svg>
+		</div>
+		<h2 class="font-size-base mb-2">Payment Request Received</h2>
+	</div>
 	<span>Thank you for your payment request. We will send you a confirmation email shortly. In the meantime if you have any queries please reach us at 
-		our <a href="https://frappecloud.com/support">support page</a>.</span>
+		our <a href="https://frappecloud.com/support" class="text-blue-500 hover:text-blue-500">support page</a>.</span>
 </div>
 {% endmacro %}
 
 {% macro error_card() %}
-<div id="error-wrapper" class="mx-auto my-auto hidden">
-	<h2 class="font-size-base">Payment Request Received</h2>
-	<span>Thank you for your payment request. We will send you a confirmation email shortly. In the meantime if you have any queries please reach us at 
-		our <a href="https://frappecloud.com/support">support page</a>.</span>
+<div id="error-wrapper" class="mx-auto my-auto hidden w-1/2">
+	<div>
+		<h2 class="font-size-base mb-2">Something Went Wrong</h2>
+	</div>
+	<span>For some reason the payment request was could not complete. Please contact <a href="https://frappecloud.com/support" class="text-blue-500">support</a> in order to get a resolution at the earliest.</span>
 </div>
 {% endmacro %}
+
 
 {% macro stripe_wrapper() %}
 	<div id="stripe-wrapper" class="hidden">
