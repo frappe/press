@@ -74,11 +74,11 @@
 			<span>Discount</span>
 			<span class="discount text-green-500">-</span>
 		</div>
+		<hr class="my-4">
 		<div class="flex justify-content-between my-2">
 			<span>Total</span>
 			<span class="total font-semibold"></span>
 		</div>
-		<hr class="my-4">
 		<form class="flex justify-content-between my-2">
 			<span></span>
 			<button type="button" class="btn btn-primary w-36" onclick="setupStripe()">PROCEED TO PAY</span>
@@ -95,7 +95,15 @@
 </div>
 {% endmacro %}
 
-{% macro success_card() %}
+{% macro error_card() %}
+<div id="error-wrapper" class="mx-auto my-auto hidden">
+	<h2 class="font-size-base">Payment Request Received</h2>
+	<span>Thank you for your payment request. We will send you a confirmation email shortly. In the meantime if you have any queries please reach us at 
+		our <a href="https://frappecloud.com/support">support page</a>.</span>
+</div>
+{% endmacro %}
+
+{% macro stripe_wrapper() %}
 	<div id="stripe-wrapper" class="hidden">
 		<div id="card" class="hidden" ref="card-element"></div>
 		<button id="pay-btn" type="button" class="btn btn-primary w-full mt-6 py-3 rounded-lg" onclick="handlePayment()">
