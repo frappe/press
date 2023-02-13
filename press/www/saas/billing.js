@@ -47,7 +47,7 @@ $('#show-dialog').on('click', function () {
 $(d.body).html(`
 	<div id="wrapper" style="position:relative">
 		<iframe 
-			src="https://frappecloud.com/saas/billing.html?secret_key=${frappe.boot.subscription_key}" 
+			src="https://frappecloud.com/saas/billing.html?secret_key=${frappe.boot.subscription_conf.secret_key}"
 			style="position: relative; top: 0px; width: 100%; height: 60vh;" 
 			frameborder="0"
 		>
