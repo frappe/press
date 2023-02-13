@@ -96,7 +96,7 @@ frappe.ui.form.on('Site', {
 			[__('Restore Tables'), 'restore_tables'],
 			[__('Update'), 'schedule_update'],
 			[__('Deactivate'), 'deactivate'],
-			[__('Activate'), 'activate'],
+			[__('Activate'), 'activate', frm.doc.status !== 'Archived'],
 			[__('Clear Cache'), 'clear_site_cache'],
 			[__('Update Site Config'), 'update_site_config'],
 			[__('Enable Database Access'), 'enable_database_access', !frm.doc.is_database_access_enabled],
