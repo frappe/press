@@ -1,4 +1,3 @@
-import json
 import frappe
 from frappe.utils import get_url
 from typing import Dict
