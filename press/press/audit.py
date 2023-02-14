@@ -3,6 +3,7 @@ import json
 from datetime import datetime, timedelta
 from press.press.doctype.server.server import Server
 from typing import Dict, List
+from frappe.utils import rounded
 
 import frappe
 
@@ -154,9 +155,10 @@ class BackupRecordCheck(Audit):
 	audit_type = "Backup Record Check"
 	interval = 24  # At least 1 automated backup a day
 	list_key = f"Sites with no backup in {interval} hrs"
+	backup_summary = "Backup Summary"
 
 	def __init__(self):
-		log = {self.list_key: []}
+		log = {self.list_key: [], self.backup_summary: {}}
 		interval_hrs_ago = datetime.now() - timedelta(hours=self.interval)
 		trial_plans = tuple(frappe.get_all("Plan", dict(is_trial_plan=1), pluck="name"))
 		cond_filters = " AND site.plan NOT IN {trial_plans}" if trial_plans else ""
@@ -191,6 +193,17 @@ class BackupRecordCheck(Audit):
 			)
 		)
 		sites_without_backups = all_sites.difference(sites_with_backup_in_interval)
+
+		summary = {
+			"Successful Backups": len(sites_with_backup_in_interval),
+			"Failed Backups": len(sites_without_backups),
+			"Total Active Sites": len(all_sites),
+			"Success Rate": rounded(
+				(len(sites_with_backup_in_interval) / len(all_sites)) * 100, 1
+			),
+		}
+		log[self.backup_summary] = summary
+
 		if sites_without_backups:
 			log[self.list_key] = list(sites_without_backups)
 			self.log(log, "Failure")
