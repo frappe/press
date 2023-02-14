@@ -1,0 +1,22 @@
+---
+- name: Set global variable dynamically
+  mysql_variables:
+    variable: '{{ variable }}'
+    value: '{{ value }}'
+    mode: global
+  when: dynamic | default(true) | bool
+
+- name: Update mysqld section in frappe.cnf
+  ini_file:
+    path: /etc/mysql/conf.d/frappe.cnf
+    section: mysqld
+    option: '{{ variable }}'
+    value: '{{ value }}'
+    backup: true
+  when: persist | default(false) | bool
+
+- name: Restart MariaDB Service
+  systemd:
+    name: mysql
+    state: restarted
+  when: restart | default(false) | bool
