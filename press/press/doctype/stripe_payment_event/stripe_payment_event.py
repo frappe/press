@@ -54,10 +54,11 @@ class StripePaymentEvent(Document):
 
 		invoice.submit()
 
-		# unsuspend sites
-		team.unsuspend_sites(
-			reason=f"Unsuspending sites because of successful payment of {self.invoice}"
-		)
+		if frappe.db.count("Invoice", {"team": team.name, "status": "Unpaid"}) == 0:
+			# unsuspend sites only if all invoices are paid
+			team.unsuspend_sites(
+				reason=f"Unsuspending sites because of successful payment of {self.invoice}"
+			)
 
 	def handle_payment_failed(self):
 		invoice = frappe.get_doc("Invoice", self.invoice, for_update=True)
