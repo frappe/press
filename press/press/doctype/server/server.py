@@ -354,6 +354,7 @@ class BaseServer(Document):
 				"Cannot change plan because you haven't added a card and not have enough balance"
 			)
 
+	@frappe.whitelist()
 	def change_plan(self, plan, ignore_card_setup=False):
 		self.can_change_plan(ignore_card_setup)
 		plan = frappe.get_doc("Plan", plan)
