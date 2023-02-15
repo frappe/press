@@ -54,8 +54,6 @@ class Invoice(Document):
 
 		if self.partner_email:
 			self.apply_partner_discount()
-			self.save()
-			self.reload()
 
 		# set as unpaid by default
 		self.status = "Unpaid"
@@ -409,6 +407,11 @@ class Invoice(Document):
 		)
 
 	def apply_partner_discount(self):
+		# check if discount is already added
+		for discount in self.discounts:
+			if discount.note == "Flat Partner Discount":
+				return
+
 		# give 10% discount for partners
 		total_partner_discount = 0
 		for item in self.items:
@@ -424,9 +427,13 @@ class Invoice(Document):
 					"based_on": "Amount",
 					"percent": 0,
 					"amount": total_partner_discount,
+					"note": "Flat Partner Discount",
 					"via_team": False,
 				},
 			)
+
+		self.save()
+		self.reload()
 
 	def set_total_and_discount(self):
 		total_discount_amount = 0
