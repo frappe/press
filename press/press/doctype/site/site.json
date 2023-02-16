@@ -586,11 +586,11 @@
   },
   {
    "group": "Related Documents",
-   "link_doctype": "Saas App Subscription",
+   "link_doctype": "Marketplace App Subscription",
    "link_fieldname": "site"
   }
  ],
- "modified": "2022-12-05 12:57:49.288690",
+ "modified": "2023-02-16 20:44:12.499873",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
