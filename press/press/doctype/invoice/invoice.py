@@ -113,7 +113,7 @@ class Invoice(Document):
 		if self.status == "Paid":
 			self.submit()
 
-			if frappe.db.count("Invoice", {"status": "Unpaid", "team": self.team}) == 0:
+			if frappe.db.count("Invoice", {"status": "Unpaid", "team": self.team}) < 2:
 				# unsuspend sites only if all invoices are paid
 				team = frappe.get_cached_doc("Team", self.team)
 				team.unsuspend_sites(f"Invoice {self.name} Payment Successful.")
