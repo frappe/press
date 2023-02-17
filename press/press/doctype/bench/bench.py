@@ -425,18 +425,21 @@ def archive_obsolete_benches():
 	)
 	for bench in benches:
 		# If this bench is already being archived then don't do anything.
-		active_archival_jobs = frappe.db.exists(
+		active_archival_jobs = frappe.get_all(
 			"Agent Job",
 			{
 				"job_type": "Archive Bench",
 				"bench": bench.name,
 				"status": ("in", ("Pending", "Running", "Success")),
 			},
+			limit=1,
+			ignore_ifnull=True,
+			order_by="job_type",
 		)
 		if active_archival_jobs:
 			continue
 
-		active_site_updates = frappe.db.get_all(
+		active_site_updates = frappe.get_all(
 			"Site Update",
 			{
 				"status": ("in", ["Pending", "Running", "Failure"]),
@@ -445,6 +448,9 @@ def archive_obsolete_benches():
 				"source_bench": bench.name,
 				"destination_bench": bench.name,
 			},
+			limit=1,
+			ignore_ifnull=True,
+			order_by="destination_bench",
 		)
 
 		if active_site_updates:
