@@ -27,6 +27,22 @@
 						Skip failing patches if any?
 					</label>
 				</div>
+				<div class="mt-4">
+					<!-- Skip Site Backup -->
+					<input
+						id="skip-backup"
+						type="checkbox"
+						class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+						v-model="wantToSkipBackups"
+					/>
+					<label for="skip-backup" class="ml-1 text-sm text-gray-900">
+						Update without site backup?
+					</label>
+					<Alert title="Skip Backup" v-if="wantToSkipBackups">
+						Updating without site backup can be risky. In the event of Update Failure, the site
+						cannot be restored to its previous state.
+					</Alert>
+				</div>
 				<ErrorMessage class="mt-1" :error="$resources.scheduleUpdate.error" />
 			</template>
 			<template #actions>
@@ -52,7 +68,8 @@ export default {
 	data() {
 		return {
 			showUpdatesDialog: false,
-			wantToSkipFailingPatches: false
+			wantToSkipFailingPatches: false,
+			wantToSkipBackups: false
 		};
 	},
 	resources: {
@@ -79,7 +96,8 @@ export default {
 				method: 'press.api.site.update',
 				params: {
 					name: this.site?.name,
-					skip_failing_patches: this.wantToSkipFailingPatches
+					skip_failing_patches: this.wantToSkipFailingPatches,
+					skip_backups: this.wantToSkipBackups
 				},
 				onSuccess() {
 					this.showUpdatesDialog = false;

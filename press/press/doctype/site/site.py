@@ -390,7 +390,7 @@ class Site(Document):
 		).insert()
 
 	@frappe.whitelist()
-	def schedule_update(self, skip_failing_patches=False):
+	def schedule_update(self, skip_failing_patches=False, skip_backups=False):
 		log_site_activity(self.name, "Update")
 		self.status_before_update = self.status
 		self.status = "Pending"
@@ -400,6 +400,7 @@ class Site(Document):
 				"doctype": "Site Update",
 				"site": self.name,
 				"skipped_failing_patches": skip_failing_patches,
+				"skipped_backups": skip_backups,
 			}
 		).insert()
 
