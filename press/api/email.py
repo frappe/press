@@ -170,33 +170,32 @@ def event_log():
 	status = event_data["event"]
 	secret_key = event_data["user-variables"]["sk_mail"]
 
-	if not frappe.db.exists("Mail Log", {"message_id": message_id}):
-		frappe.get_doc(
-			{
-				"doctype": "Mail Log",
-				"unique_token": secrets.token_hex(25),
-				"message_id": message_id,
-				"sender": headers["from"],
-				"recipient": headers["to"],
-				"site": site,
-				"status": event_data["event"],
-				"subscription_key": secret_key,
-				"message": event_data["delivery-status"]["message"]
-				or event_data["delivery-status"]["description"],
-				"log": json.dumps(data),
-			}
-		).insert(ignore_permissions=True)
-		frappe.db.commit()
+	frappe.get_doc(
+		{
+			"doctype": "Mail Log",
+			"unique_token": secrets.token_hex(25),
+			"message_id": message_id,
+			"sender": headers["from"],
+			"recipient": headers["to"],
+			"site": site,
+			"status": event_data["event"],
+			"subscription_key": secret_key,
+			"message": event_data["delivery-status"]["message"]
+			or event_data["delivery-status"]["description"],
+			"log": json.dumps(data),
+		}
+	).insert(ignore_permissions=True)
+	frappe.db.commit()
 
-		data = {"status": status, "message_id": message_id, "secret_key": secret_key}
+	data = {"status": status, "message_id": message_id, "secret_key": secret_key}
 
-		try:
-			requests.post(
-				f"https://{site}/api/method/email_delivery_service.controller.update_status",
-				data=data,
-			)
-		except Exception as e:
-			log_error("Mail App: Email status update error", data=e)
-			return "Successful", 200
+	try:
+		requests.post(
+			f"https://{site}/api/method/email_delivery_service.controller.update_status",
+			data=data,
+		)
+	except Exception as e:
+		log_error("Mail App: Email status update error", data=e)
+		return "Successful", 200
 
 	return "Successful", 200
