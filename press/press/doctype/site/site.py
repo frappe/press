@@ -26,6 +26,7 @@ from press.press.doctype.plan.plan import get_plan_config
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.utils import convert, get_client_blacklisted_keys, guess_type, log_error
 from press.press.doctype.site_analytics.site_analytics import create_site_analytics
+from press.press.doctype.marketplace_app.marketplace_app import marketplace_app_hook
 
 
 class Site(Document):
@@ -200,6 +201,8 @@ class Site(Document):
 			self.status = "Pending"
 			self.save()
 
+			marketplace_app_hook(app=app, site=self.name, op="install")
+
 	def uninstall_app(self, app):
 		app_doc = find(self.apps, lambda x: x.app == app)
 		log_site_activity(self.name, "Uninstall App")
@@ -208,6 +211,8 @@ class Site(Document):
 		agent.uninstall_app_site(self, app_doc.app)
 		self.status = "Pending"
 		self.save()
+
+		marketplace_app_hook(app=app, site=self.name, op="uninstall")
 
 	def _create_default_site_domain(self):
 		"""Create Site Domain with Site name."""
@@ -1272,6 +1277,7 @@ def process_new_site_job_update(job):
 
 	if "Success" == first == second:
 		updated_status = "Active"
+		marketplace_app_hook(site=job.site, op="install")
 	elif "Failure" in (first, second):
 		updated_status = "Broken"
 	elif "Running" in (first, second):

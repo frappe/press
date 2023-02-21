@@ -45,7 +45,12 @@
   "poll_method",
   "column_break_33",
   "custom_verify_template",
-  "subscription_update_hook"
+  "subscription_update_hook",
+  "scripts_tab",
+  "run_after_install_script",
+  "after_install_script",
+  "run_after_uninstall_script",
+  "after_uninstall_script"
  ],
  "fields": [
   {
@@ -270,6 +275,35 @@
    "fieldname": "outgoing_sender_name",
    "fieldtype": "Data",
    "label": "Outgoing Sender Name"
+  },
+  {
+   "fieldname": "scripts_tab",
+   "fieldtype": "Tab Break",
+   "label": "Scripts"
+  },
+  {
+   "fieldname": "after_install_script",
+   "fieldtype": "Code",
+   "label": "After Install Script",
+   "options": "Python"
+  },
+  {
+   "fieldname": "after_uninstall_script",
+   "fieldtype": "Code",
+   "label": "After Uninstall Script",
+   "options": "Python"
+  },
+  {
+   "default": "0",
+   "fieldname": "run_after_install_script",
+   "fieldtype": "Check",
+   "label": "Rut After Install Script"
+  },
+  {
+   "default": "0",
+   "fieldname": "run_after_uninstall_script",
+   "fieldtype": "Check",
+   "label": "Run After Uninstall Script"
   }
  ],
  "has_web_view": 1,
@@ -293,7 +327,7 @@
    "link_fieldname": "app"
   }
  ],
- "modified": "2022-11-07 15:27:24.660579",
+ "modified": "2023-02-21 13:16:42.239201",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Marketplace App",

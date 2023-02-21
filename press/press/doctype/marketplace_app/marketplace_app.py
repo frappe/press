@@ -16,6 +16,7 @@ from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import 
 	get_app_plan_features,
 )
 from press.press.doctype.marketplace_app.utils import get_rating_percentage_distribution
+from frappe.utils.safe_exec import safe_exec
 
 
 class MarketplaceApp(WebsiteGenerator):
@@ -330,3 +331,34 @@ def get_plans_for_app(
 	plans.sort(key=lambda x: x["enabled"], reverse=True)  # Enabled Plans First
 
 	return plans
+
+
+def marketplace_app_hook(app=None, site="", op="install"):
+	if app == None:
+		site_apps = frappe.get_all("Site App", filters={"parent": site}, pluck="app")
+		for app in site_apps:
+			run_script(app, site, op)
+	else:
+		run_script(app, site, op)
+
+
+def get_script_name(app, op):
+	if op == "install" and frappe.db.get_value(
+		"Marketplace App", app, "run_after_install_script"
+	):
+		return "after_install_script"
+
+	elif op == "uninstall" and frappe.db.get_value(
+		"Marketplace App", app, "run_after_install_script"
+	):
+		return "after_uninstall_script"
+	else:
+		return ""
+
+
+def run_script(app, site, op):
+	script = get_script_name(app, op)
+	if script:
+		script = frappe.db.get_value("Marketplace App", app, script)
+		local = {"doc": frappe.get_doc("Site", site)}
+		safe_exec(script, _locals=local)
