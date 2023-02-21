@@ -104,7 +104,11 @@ class DeveloperApiHandler:
 			)
 			for s in frappe.get_all(
 				"Marketplace App Subscription",
-				filters={"team": self.app_subscription_doc.team, "status": "Active"},
+				filters={
+					"team": self.app_subscription_doc.team,
+					"status": "Active",
+					"site": self.app_subscription_doc.site,
+				},
 				fields=["name", "app", "site", "plan"],
 			)
 		]
