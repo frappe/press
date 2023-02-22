@@ -86,10 +86,18 @@ class MarketplaceAppSubscription(Document):
 			{"key": key_id, "value": secret_key, "type": "String"},
 			{
 				"key": "subscription",
-				"value": {"login_url": get_login_url(secret_key)},
+				"value": {"secret_key": secret_key},
 				"type": "JSON",
 			},
 		]
+		if "prepaid" == frappe.db.get_value("Saas Settings", self.app, "billin_type"):
+			config.append(
+				{
+					"key": "app_include_js",
+					"value": [frappe.db.get_single_value("Press Settings", "app_include_script")],
+					"type": "JSON",
+				}
+			)
 
 		config = config + old_config
 

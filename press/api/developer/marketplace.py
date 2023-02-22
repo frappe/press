@@ -52,41 +52,6 @@ class DeveloperApiHandler:
 
 		return filtered_dict
 
-	def get_login_url(self):
-		# check for active tokens
-		team = frappe.db.get_value("Site", self.app_subscription_doc.site, "team")
-		if frappe.db.exists(
-			"Saas Remote Login",
-			{
-				"team": team,
-				"status": "Attempted",
-				"expires_on": (">", frappe.utils.now()),
-			},
-		):
-			doc = frappe.get_doc(
-				"Saas Remote Login",
-				{
-					"team": team,
-					"status": "Attempted",
-					"expires_on": (">", frappe.utils.now()),
-				},
-			)
-			token = doc.token
-		else:
-			token = frappe.generate_hash("Saas Remote Login", 50)
-			frappe.get_doc(
-				{
-					"doctype": "Saas Remote Login",
-					"team": team,
-					"token": token,
-				}
-			).insert(ignore_permissions=True)
-			frappe.db.commit()
-
-		return get_url(
-			f"/api/method/press.api.marketplace.login_via_token?token={token}&team={team}&site={self.app_subscription_doc.site}"
-		)
-
 	def get_subscriptions(self) -> Dict:
 		team = self.app_subscription_doc.team
 		with SessionManager(team) as manager:
@@ -129,9 +94,9 @@ class DeveloperApiHandler:
 	def saas_payment(self, data: Dict) -> Dict:
 		with SessionManager(self.app_subscription_doc.team) as manager:
 			return prepaid_saas_payment(
-				self.app_subscription_name,
-				self.app_subscription_doc.app,
-				self.app_subscription_doc.site,
+				data["sub_name"],
+				data["app"],
+				data["site"],
 				data["new_plan"]["name"],
 				data["total"],
 				data["total"],

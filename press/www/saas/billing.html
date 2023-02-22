@@ -54,6 +54,10 @@ address_wrapper -%} {% block content %}
 		$('#subs-wrapper').toggleClass('hidden');
 		$('#plans-wrapper').toggleClass('hidden');
 
+		response.sub_name = sub.name;
+		response.app = sub.app;
+		response.site = sub.site;
+
 		let plans = sub.available_plans;
 		let style =
 			'flex flex-col flex-1 justify-content-between m-2 border rounded col-md-auto shadow-sm';
