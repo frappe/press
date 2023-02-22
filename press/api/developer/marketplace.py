@@ -87,56 +87,69 @@ class DeveloperApiHandler:
 			f"/api/method/press.api.marketplace.login_via_token?token={token}&team={team}&site={self.app_subscription_doc.site}"
 		)
 
-	def get_subscriptions(self):
-		from press.api.marketplace import get_plans_for_app
-
+	def get_subscriptions(self) -> Dict:
 		team = self.app_subscription_doc.team
-		currency, address = frappe.db.get_value("Team", team, ["currency", "billing_address"])
-		response = {"currency": currency, "address": True if address else False}
-		response["subscriptions"] = [
-			s.update(
-				{
-					"available_plans": get_plans_for_app(s["app"]),
-					**frappe.db.get_value(
-						"Marketplace App", s["app"], ["title", "image"], as_dict=True
-					),
-				}
-			)
-			for s in frappe.get_all(
-				"Marketplace App Subscription",
-				filters={
-					"team": self.app_subscription_doc.team,
-					"status": "Active",
-					"site": self.app_subscription_doc.site,
-				},
-				fields=["name", "app", "site", "plan"],
-			)
-		]
+		with SessionManager(team) as manager:
+			from press.api.marketplace import get_plans_for_app
 
-		return response
+			currency, address = frappe.db.get_value(
+				"Team", team, ["currency", "billing_address"]
+			)
+			response = {"currency": currency, "address": True if address else False}
+			response["subscriptions"] = [
+				s.update(
+					{
+						"available_plans": get_plans_for_app(s["app"]),
+						**frappe.db.get_value(
+							"Marketplace App", s["app"], ["title", "image"], as_dict=True
+						),
+					}
+				)
+				for s in frappe.get_all(
+					"Marketplace App Subscription",
+					filters={
+						"team": self.app_subscription_doc.team,
+						"status": "Active",
+						"site": self.app_subscription_doc.site,
+					},
+					fields=["name", "app", "site", "plan"],
+				)
+			]
+
+			return response
 
 	def update_billing_info(self, data: Dict) -> str:
-		self.login_as_team()
-		team_doc = frappe.get_doc("Team", self.app_subscription_doc.team)
-		team_doc.update_billing_details(data)
+		team = self.app_subscription_doc.team
+		with SessionManager(team) as manager:
+			team_doc = frappe.get_doc("Team", team)
+			team_doc.update_billing_details(data)
 
-		return "success"
+			return "success"
 
-	def saas_payment(self, data):
-		self.login_as_team()
-		return prepaid_saas_payment(
-			self.app_subscription_name,
-			self.app_subscription_doc.app,
-			self.app_subscription_doc.site,
-			data["new_plan"]["name"],
-			data["total"],
-			data["total"],
-			12 if data["billing"] == "annual" else 1,
-			False,
-		)
+	def saas_payment(self, data: Dict) -> Dict:
+		with SessionManager(self.app_subscription_doc.team) as manager:
+			return prepaid_saas_payment(
+				self.app_subscription_name,
+				self.app_subscription_doc.app,
+				self.app_subscription_doc.site,
+				data["new_plan"]["name"],
+				data["total"],
+				data["total"],
+				12 if data["billing"] == "annual" else 1,
+				False,
+			)
 
-	def login_as_team(self):
-		frappe.local.login_manager.login_as(self.app_subscription_doc.team)
+
+class SessionManager:
+	# set user for authenticated requests and then switch to guest once completed
+	def __init__(self, team):
+		frappe.set_user(team)
+
+	def __enter__(self):
+		return self
+
+	def __exit__(self, exc_type, exc_value, exc_traceback):
+		frappe.set_user("Guest")
 
 
 # ------------------------------------------------------------
