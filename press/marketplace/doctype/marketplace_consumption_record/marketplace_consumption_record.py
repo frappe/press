@@ -45,7 +45,7 @@ class MarketplaceConsumptionRecord(Document):
 			"Saas Settings", {"billing_type": "prepaid"}, pluck="name"
 		)
 		subs = frappe.db.get_all(
-			"Marketplace App Subscriptions",
+			"Marketplace App Subscription",
 			{"app": ("in", prepaid_apps), "team": self.team},
 			pluck="name",
 		)
