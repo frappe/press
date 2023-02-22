@@ -127,6 +127,7 @@
   "threshold",
   "commission",
   "usd_rate",
+  "app_include_script",
   "infrastructure_tab",
   "agent_section",
   "agent_repository_owner",
@@ -934,11 +935,17 @@
    "fieldname": "press_monitoring_password",
    "fieldtype": "Password",
    "label": "Press Monitoring Password"
+  },
+  {
+   "description": "Adds this script to app_include_js via site config. Used for in-site billing",
+   "fieldname": "app_include_script",
+   "fieldtype": "Data",
+   "label": "App Include Script"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2022-12-15 13:43:06.190233",
+ "modified": "2023-02-22 12:18:22.115183",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
