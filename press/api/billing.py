@@ -65,7 +65,7 @@ def balances():
 	has_bought_credits = frappe.db.get_all(
 		"Balance Transaction",
 		filters={
-			"source": ("in", ("Prepaid Credits", "Transferred Credits")),
+			"source": ("in", ("Prepaid Credits", "Transferred Credits", "Free Credits")),
 			"team": team,
 			"docstatus": 1,
 		},
