@@ -960,6 +960,7 @@ def use_partner_credits(name, app, site, plan, amount, credits):
 					"plan": frappe.db.get_value("Marketplace App Plan", plan, "plan"),
 					"rate": amount,
 					"quantity": 1,
+					"site": site,
 				},
 			)
 
