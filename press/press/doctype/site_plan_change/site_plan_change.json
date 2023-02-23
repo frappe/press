@@ -63,7 +63,7 @@
   }
  ],
  "links": [],
- "modified": "2023-02-23 09:07:02.948653",
+ "modified": "2023-02-23 09:25:03.915667",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Plan Change",
@@ -94,9 +94,11 @@
    "email": 1,
    "export": 1,
    "print": 1,
+   "read": 1,
    "report": 1,
    "role": "Site Manager",
-   "share": 1
+   "share": 1,
+   "write": 1
   }
  ],
  "quick_entry": 1,
