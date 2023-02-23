@@ -82,7 +82,7 @@
 			<PrepaidCreditsDialog
 				v-if="showPrepaidCreditsDialog"
 				v-model="showPrepaidCreditsDialog"
-				:minimum-amount="$account.team.currency == 'INR' ? 800 : 10"
+				:minimum-amount="minimumAmount"
 				@success="
 					() => {
 						$resources.upcomingInvoice.reload();
@@ -120,6 +120,12 @@ export default {
 			return {
 				method: 'press.api.billing.get_partner_credits'
 			};
+		},
+		unpaidAmountDue() {
+			return {
+				method: 'press.api.billing.total_unpaid_amount',
+				auto: true
+			}
 		}
 	},
 	data() {
@@ -141,6 +147,12 @@ export default {
 		this.$socket.off('balance_updated');
 	},
 	computed: {
+		minimumAmount() {
+			const unpaidAmount = this.$resources.unpaidAmountDue.data;
+			const minimumDefault = $account.team.currency == 'INR' ? 800 : 10
+
+			return (unpaidAmount && unpaidAmount > minimumDefault) ? unpaidAmount : minimumDefault;
+		},
 		upcomingInvoice() {
 			return this.$resources.upcomingInvoice.data?.upcoming_invoice;
 		},

@@ -7,7 +7,7 @@
 			name="amount"
 			autocomplete="off"
 			type="number"
-			min="1"
+			:min="minimumAmount"
 		/>
 		<label
 			class="block"

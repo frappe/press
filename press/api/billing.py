@@ -539,3 +539,13 @@ def handle_razorpay_payment_failed(response):
 	payment_record.status = "Failed"
 	payment_record.failure_reason = response["error"]["description"]
 	payment_record.save(ignore_permissions=True)
+
+
+@frappe.whitelist()
+def total_unpaid_amount():
+	return frappe.get_all(
+		"Invoice",
+		{"status": "Unpaid", "team": get_current_team(), "type": "Subscription"},
+		["sum(total) as total"],
+		pluck="total"
+	)[0]
