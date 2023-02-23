@@ -63,7 +63,7 @@
   }
  ],
  "links": [],
- "modified": "2021-02-15 20:07:58.297656",
+ "modified": "2023-02-23 09:07:02.948653",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Plan Change",
@@ -88,11 +88,21 @@
   {
    "create": 1,
    "role": "Press Member"
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "role": "Site Manager",
+   "share": 1
   }
  ],
  "quick_entry": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "title_field": "site",
  "track_changes": 1
 }
