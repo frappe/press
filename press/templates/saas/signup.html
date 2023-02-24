@@ -14,7 +14,7 @@
 			<div class="alert alert-primary form-alert-info small" style="display: none;" role="alert"></div>
 			<div class="alert alert-danger form-alert-error small" style="display: none;" role="alert"></div>
 			<!-- 1. Personal Details -->
-			<form class="form-step" data-step="1" data-action="submit_account_request">
+			<form class="form-step create-account-form" data-step="1" data-action="submit_account_request">
 				<div class="form-group">
 					<p>Site Name</p>
 					<div class="input-group">
@@ -255,13 +255,16 @@
 	}
 
 	function validate_password(input) {
-		let $input = $(input);
-		let password = $input.val();
-		let error = controller.validate_value("password", password);
+		const $input = $(input);
+		const password = $input.val();
+		const error = controller.validate_value("password", password);
+		const error_text = "The password is very easy to guess please use a strong password!"
 
-		if (error) {
-			controller.show_input_error("password", error);
-		} else {
+		if (error === false) {
+			// first authenticate ui validation
+			// if it passes only then call api validation
+			// if both pass, only then allow next data-step
+			// show_input_error should raise
 			frappe.call({
 				method: "press.api.saas.validate_password",
 				args: {
@@ -272,8 +275,14 @@
 				},
 				type: "POST",
 			}).then((r) => {
-				controller.show_input_feedback("password", r.message ? "Strong Password!" : "The password is very easy to guess please use a strong password!", !r.message)
+				if (r.message && error === false) {
+					controller.show_input_feedback("password", "Strong Password")
+				} else {
+					controller.show_input_error("password", error_text);
+				}
 			})
+		} else {
+				controller.show_input_error("password", error_text);
 		}
 	}
 
