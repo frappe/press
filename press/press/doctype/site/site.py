@@ -1404,30 +1404,31 @@ def process_migrate_site_job_update(job):
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 
 
+def get_status_of_rename_step(job):
+	rename_step_name = {
+		"Rename Site": "Rename Site",
+		"Rename Site on Upstream": "Rename Site File in Upstream Directory",
+	}[job.job_type]
+
+	return frappe.db.get_value(
+		"Agent Job Step",
+		{"step_name": rename_step_name, "agent_job": job.name},
+		"status",
+	)
+
+
 def process_rename_site_job_update(job):
 	other_job_type = {
 		"Rename Site": "Rename Site on Upstream",
 		"Rename Site on Upstream": "Rename Site",
 	}[job.job_type]
 
-	first = job.status
-	second = frappe.get_all(
+	other_job = frappe.get_last_doc(
 		"Agent Job",
-		fields=["status"],
 		filters={"job_type": other_job_type, "site": job.site},
-	)[0].status
-
-	if job.status == "Failure":
-		rename_step_name = "Rename Site"  # for Rename Site job
-		if job.job_type == "Rename Site on Upstream":
-			rename_step_name = "Rename Site File in Upstream Directory"
-		rename_step_status = frappe.db.get_value(
-			"Agent Job Step",
-			{"step_name": rename_step_name, "agent_job": job.name},
-			"status",
-		)
-		if rename_step_status == "Success":
-			first = rename_step_status
+	)
+	first = get_status_of_rename_step(job)
+	second = get_status_of_rename_step(other_job)
 
 	if "Success" == first == second:
 		update_records_for_rename(job)
