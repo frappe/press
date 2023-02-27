@@ -8,7 +8,7 @@
 				<div class="flex-1">
 					<div class="mx-auto flex flex-row justify-start">
 						<Sidebar
-							class="hidden top-0 sm:flex flex-shrink-0 w-64"
+							class="hidden sticky top-0 sm:flex flex-shrink-0 w-64"
 							v-if="$auth.isLoggedIn"
 						/>
 						<router-view
