@@ -29,6 +29,24 @@
 					</tr>
 				</tbody>
 				<tfoot>
+					<tr v-if="doc.total_discount_amount > 0">
+						<td></td>
+						<td class="pt-4 pb-2 pr-2 text-right font-semibold">Total Without Discount</td>
+						<td
+							class="whitespace-nowrap pt-4 pb-2 pr-2 text-right font-semibold"
+						>
+							{{ doc.formatted.total_before_discount }}
+						</td>
+					</tr>
+					<tr v-if="doc.total_discount_amount > 0">
+						<td></td>
+						<td class="pt-4 pb-2 pr-2 text-right font-semibold">Total Discount Amount</td>
+						<td
+							class="whitespace-nowrap pt-4 pb-2 pr-2 text-right font-semibold"
+						>
+							{{ doc.formatted.total_discount_amount }}
+						</td>
+					</tr>
 					<tr>
 						<td></td>
 						<td class="pt-4 pb-2 pr-2 text-right font-semibold">Grand Total</td>
