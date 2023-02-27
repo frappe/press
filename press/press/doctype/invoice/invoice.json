@@ -379,6 +379,7 @@
    "fieldname": "total_discount_amount",
    "fieldtype": "Currency",
    "label": "Total Discount Amount",
+   "options": "currency",
    "read_only": 1
   },
   {
@@ -424,7 +425,7 @@
    "link_fieldname": "invoice"
   }
  ],
- "modified": "2023-02-22 12:25:27.096200",
+ "modified": "2023-02-27 23:46:40.091022",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",
