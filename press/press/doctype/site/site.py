@@ -1303,28 +1303,32 @@ def process_new_site_job_update(job):
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 
 
+def get_remove_step_status(job):
+	remove_step_name = {
+		"Archive Site": "Archive Site",
+		"Remove Site from Upstream": "Remove Site File from Upstream Directory",
+	}[job.job_type]
+
+	return frappe.db.get_value(
+		"Agent Job Step",
+		{"step_name": remove_step_name, "agent_job": job.name},
+		"status",
+	)
+
+
 def process_archive_site_job_update(job):
 	other_job_type = {
 		"Remove Site from Upstream": "Archive Site",
 		"Archive Site": "Remove Site from Upstream",
 	}[job.job_type]
 
-	first = job.status
-	second = frappe.get_all(
+	other_job = frappe.get_last_doc(
 		"Agent Job",
-		fields=["status"],
 		filters={"job_type": other_job_type, "site": job.site},
-	)[0].status
-
 	)
 
-	# Consider Archive Job successful if archive step succeeded
-	if job.status == "Failure" and job.job_type == "Archive Site":
-		archive_step_status = frappe.db.get_value(
-			"Agent Job Step", {"step_name": "Archive Site", "agent_job": job.name}, "status"
-		)
-		if archive_step_status == "Success":
-			first = archive_step_status
+	first = get_remove_step_status(job)
+	second = get_remove_step_status(other_job)
 
 	if "Success" == first == second:
 		updated_status = "Archived"
@@ -1342,7 +1346,6 @@ def process_archive_site_job_update(job):
 		)
 		if updated_status == "Archived":
 			site_cleanup_after_archive(job.site)
-		frappe.db.commit()
 
 
 def process_install_app_site_job_update(job):
@@ -1389,7 +1392,7 @@ def process_migrate_site_job_update(job):
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 
 
-def get_status_of_rename_step(job):
+def get_rename_step_status(job):
 	rename_step_name = {
 		"Rename Site": "Rename Site",
 		"Rename Site on Upstream": "Rename Site File in Upstream Directory",
@@ -1412,8 +1415,8 @@ def process_rename_site_job_update(job):
 		"Agent Job",
 		filters={"job_type": other_job_type, "site": job.site},
 	)
-	first = get_status_of_rename_step(job)
-	second = get_status_of_rename_step(other_job)
+	first = get_rename_step_status(job)
+	second = get_rename_step_status(other_job)
 
 	if "Success" == first == second:
 		update_records_for_rename(job)
