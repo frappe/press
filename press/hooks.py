@@ -186,7 +186,6 @@ scheduler_events = {
 		"press.press.doctype.invoice.invoice.finalize_unpaid_prepaid_credit_invoices",
 		"press.press.doctype.bench.bench.sync_analytics",
 		"press.saas.doctype.saas_app_subscription.saas_app_subscription.suspend_prepaid_subscriptions",
-		"press.press.doctype.backup_restoration_test.backup_test.archive_backup_test_sites",
 		"press.press.doctype.payout_order.payout_order.create_marketplace_payout_orders",
 	],
 	"hourly": [
@@ -236,9 +235,6 @@ scheduler_events = {
 		],
 		"15 2,4 * * *": [
 			"press.press.doctype.team_deletion_request.team_deletion_request.process_team_deletion_requests",
-		],
-		"0 0 1 */3 *": [
-			"press.press.doctype.backup_restoration_test.backup_test.run_backup_restore_test"
 		],
 	},
 }
