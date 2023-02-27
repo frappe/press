@@ -101,8 +101,6 @@ class MarketplaceApp(WebsiteGenerator):
 	def get_context(self, context):
 		context.no_cache = True
 		context.app = self
-		if self.category:
-			context.category = frappe.get_doc("Marketplace App Category", self.category)
 
 		supported_versions = []
 		public_rgs = frappe.get_all(

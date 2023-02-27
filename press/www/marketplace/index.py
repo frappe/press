@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
+import json
 
 
 def get_context(context):
@@ -33,6 +34,14 @@ def get_context(context):
 	)
 
 	context.apps = all_published_apps
+	for app in all_published_apps:
+		app["categories"] = frappe.db.get_all(
+			"Marketplace App Categories", {"parent": app["name"]}, pluck="category"
+		)
+
+	context.categories = frappe.db.get_all(
+		"Marketplace App Categories", pluck="category", distinct=True
+	)
 
 	featured_apps = frappe.get_all(
 		"Featured App",

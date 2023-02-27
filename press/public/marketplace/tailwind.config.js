@@ -5,6 +5,7 @@ module.exports = {
 	plugins: config.plugins,
 	content: [
 		'./press/**/marketplace/**/*.html',
+		'./press/**/marketplace/*.html',
 		'./press/**/marketplace_*.html',
 	],
 };
