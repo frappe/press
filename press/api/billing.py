@@ -239,17 +239,29 @@ def create_payment_intent_for_prepaid_app(amount, metadata):
 		"Stripe Payment Method", team.default_payment_method, "stripe_payment_method_id"
 	)
 	try:
-		intent = stripe.PaymentIntent.create(
-			amount=amount * 100,
-			currency=team.currency.lower(),
-			customer=team.stripe_customer_id,
-			description="Prepaid App Purchase",
-			off_session=True,
-			confirm=True,
-			metadata=metadata,
-			payment_method=payment_method,
-			payment_method_options={"card": {"request_three_d_secure": "any"}},
-		)
+		if payment_method:
+			intent = stripe.PaymentIntent.create(
+				amount=amount * 100,
+				currency=team.currency.lower(),
+				customer=team.stripe_customer_id,
+				description="Prepaid App Purchase",
+				off_session=True,
+				confirm=True,
+				metadata=metadata,
+			)
+		else:
+			intent = stripe.PaymentIntent.create(
+				amount=amount * 100,
+				currency=team.currency.lower(),
+				customer=team.stripe_customer_id,
+				description="Prepaid App Purchase",
+				off_session=True,
+				confirm=True,
+				metadata=metadata,
+				payment_method=payment_method,
+				payment_method_options={"card": {"request_three_d_secure": "any"}},
+			)
+
 		return {
 			"payment_method": payment_method,
 			"client_secret": intent["client_secret"],
@@ -547,5 +559,5 @@ def total_unpaid_amount():
 		"Invoice",
 		{"status": "Unpaid", "team": get_current_team(), "type": "Subscription"},
 		["sum(total) as total"],
-		pluck="total"
+		pluck="total",
 	)[0]
