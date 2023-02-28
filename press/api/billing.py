@@ -239,14 +239,12 @@ def create_payment_intent_for_prepaid_app(amount, metadata):
 		"Stripe Payment Method", team.default_payment_method, "stripe_payment_method_id"
 	)
 	try:
-		if payment_method:
+		if not payment_method:
 			intent = stripe.PaymentIntent.create(
 				amount=amount * 100,
 				currency=team.currency.lower(),
 				customer=team.stripe_customer_id,
 				description="Prepaid App Purchase",
-				off_session=True,
-				confirm=True,
 				metadata=metadata,
 			)
 		else:
