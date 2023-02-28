@@ -2,7 +2,6 @@
 # For license information, please see license.txt
 
 import frappe
-import json
 
 
 def get_context(context):
