@@ -40,6 +40,24 @@ def execute(filters=None):
 			"fieldtype": "Data",
 			"width": 1200,
 		},
+		{
+			"fieldname": "duration",
+			"label": frappe._("Duration"),
+			"fieldtype": "Float",
+			"width": 140,
+		},
+		{
+			"fieldname": "rows_examined",
+			"label": frappe._("Rows Examined"),
+			"fieldtype": "Int",
+			"width": 140,
+		},
+		{
+			"fieldname": "rows_sent",
+			"label": frappe._("Rows Sent"),
+			"fieldtype": "Int",
+			"width": 140,
+		},
 	]
 
 	data = get_data(filters)
@@ -102,5 +120,6 @@ def get_slow_query_logs(database, start_datetime, end_datetime, search_pattern, 
 	for d in response["hits"]["hits"]:
 		data = d["_source"]["mysql"]["slowlog"]
 		data["timestamp"] = d["_source"]["@timestamp"]
+		data["duration"] = d["_source"].get("event", {}).get("duration", 0) / 1e9
 		out.append(data)
 	return out
