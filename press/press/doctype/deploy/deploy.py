@@ -58,6 +58,16 @@ def create_deploy_candidate_differences(bench):
 		try:
 			source_creation = frappe.db.get_value("Deploy Candidate", source, "creation")
 			if source_creation < destination_creation:
+				if frappe.get_all(
+					"Deploy Candidate Difference",
+					filters={
+						"group": group,
+						"source": source,
+						"destination": destination,
+					},
+					limit=1,
+				):
+					continue
 				frappe.get_doc(
 					{
 						"doctype": "Deploy Candidate Difference",
