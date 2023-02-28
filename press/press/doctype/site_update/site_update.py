@@ -274,7 +274,7 @@ def schedule_updates():
 			"Site Update",
 			{"site": site.name, "status": ("in", ("Pending", "Running", "Failure"))},
 		):
-			break
+			continue
 		try:
 			site = frappe.get_doc("Site", site.name)
 			site.schedule_update()
