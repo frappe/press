@@ -92,6 +92,7 @@
 						<SiteList
 							class="sm:border-gray-200 sm:shadow-none"
 							:sites="selectedVersion.sites || []"
+							:showBenchInfo="false"
 						/>
 					</div>
 				</section>

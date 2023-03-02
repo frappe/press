@@ -60,11 +60,9 @@
 				<div class="w-1/6">
 					<span v-if="app.subscription.status"
 						><Badge
-							:status="app.subscription.status"
+							:label="app.subscription.status"
 							:colorMap="$badgeStatusColorMap"
-						>
-							{{ app.subscription.status }}
-						</Badge>
+						/>
 					</span>
 					<span v-else>-</span>
 				</div>
@@ -181,12 +179,14 @@
 		</Dialog>
 
 		<!-- Plan Change Dialog -->
-		<Dialog 
-			:options="{ 
+		<Dialog
+			:options="{
 				title: 'Select Plan',
 				size: '2xl'
 			}"
-			v-model="showAppPlanChangeDialog"  :dismissable="true">
+			v-model="showAppPlanChangeDialog"
+			:dismissable="true"
+		>
 			<template v-slot:body-content>
 				<ChangeAppPlanSelector
 					@change="
@@ -368,7 +368,7 @@ export default {
 				subscription: app.subscription.name,
 				billing_type: app.billing_type
 			};
-			console.log(this.appToChangePlan)
+			console.log(this.appToChangePlan);
 			this.showAppPlanChangeDialog = true;
 		},
 

@@ -15,7 +15,6 @@
 				<h2 class="text-left text-xl font-bold">
 					{{ app.title }}
 				</h2>
-				<!-- <Badge :status="app.status">{{ app.status }}</Badge> -->
 			</div>
 			<p class="pt-1 text-left text-base text-gray-600">
 				{{ app.description }}

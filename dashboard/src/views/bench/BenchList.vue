@@ -19,10 +19,14 @@
 							{{ bench.title }}
 						</div>
 						<div class="text-base sm:w-4/12">
-							<Badge :status="bench.status" />
+							<Badge :label="bench.status" :colorMap="$badgeStatusColorMap" />
 						</div>
 						<div class="text-base sm:w-4/12">
-							<Badge :status="`${bench.number_of_apps} Apps`" />
+							<Badge
+								:label="`${bench.number_of_apps} ${
+									bench.number_of_apps == 1 ? 'App' : 'Apps'
+								}`"
+							/>
 						</div>
 						<div
 							class="hidden w-2/12 text-right text-sm text-gray-600 sm:block"

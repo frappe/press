@@ -14,11 +14,9 @@
 						<h1 class="text-2xl font-bold">{{ bench.title }}</h1>
 						<Badge
 							class="ml-4"
-							:status="bench.status"
+							:label="bench.status"
 							:colorMap="$badgeStatusColorMap"
-						>
-							{{ bench.status }}
-						</Badge>
+						/>
 					</div>
 					<div class="flex-row space-x-3 md:flex">
 						<Dropdown :items="benchActions">

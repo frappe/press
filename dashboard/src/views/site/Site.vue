@@ -16,10 +16,9 @@
 						</h1>
 						<Badge
 							class="ml-4 hidden md:inline-block"
-							:status="site.status"
+							:label="site.status"
 							:colorMap="$badgeStatusColorMap"
-							>{{ site.status }}</Badge
-						>
+						/>
 
 						<div
 							v-if="regionInfo"
@@ -37,9 +36,7 @@
 					</div>
 					<div class="mb-10 flex flex-row justify-between md:hidden">
 						<div class="flex flex-row">
-							<Badge :status="site.status" :colorMap="$badgeStatusColorMap">{{
-								site.status
-							}}</Badge>
+							<Badge :label="site.status" :colorMap="$badgeStatusColorMap" />
 							<div
 								v-if="regionInfo"
 								class="ml-2 flex cursor-default flex-row items-center rounded-md bg-yellow-50 px-3 py-1 text-xs font-medium text-yellow-700"
