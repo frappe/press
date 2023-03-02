@@ -1,7 +1,7 @@
 <template>
 	<FrappeUIDialog
 		v-model="show"
-		:options="{ size: 'lg', position: 'top' }"
+		:options="{ size: 'xl', position: 'top' }"
 		@after-leave="
 			() => {
 				$emit('close', true);
