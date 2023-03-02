@@ -25,7 +25,7 @@
 				>
 					<ComboboxOption
 						v-for="option in filteredOptions"
-						:key="`${option.doctype}:${option.name}`"
+						:key="`${option.name}`"
 						v-slot="{ active }"
 						:value="option"
 					>
@@ -53,6 +53,7 @@ import {
 	ComboboxOption
 } from '@headlessui/vue';
 import Fuse from 'fuse.js/dist/fuse.basic.esm';
+import { debounce } from 'lodash';
 
 export default {
 	name: 'CommandPalette',
@@ -74,14 +75,14 @@ export default {
 		this.makeFuse();
 	},
 	methods: {
-		onInput(e) {
-			let query = e.target.value;
-			if (query) {
-				this.filteredOptions = this.fuse
-					.search(query)
-					.map(result => result.item);
-			}
-		},
+		onInput: debounce(function(e) {
+			let query = e.target.value
+      if (query) {
+        this.filteredOptions = this.fuse
+          .search(query)
+					.map((result) => result.item)
+      }
+		}, 300),
 		onSelection(value) {
 			if (value) {
 				this.$router.push(value.route);
@@ -100,10 +101,11 @@ export default {
 			}
 
 			const options = {
-				limit: 10,
+				limit: 20,
+				includeScore: true,
+				shouldSort: true,
 				minMatchCharLength: 3,
 				keys: ['title'],
-				threshold: 0.3
 			};
 			this.fuse = new Fuse(fuse_list, options);
 		}
