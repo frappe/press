@@ -2,10 +2,7 @@
 	<Card title="Payment methods" :subtitle="subtitle">
 		<template #actions>
 			<Button @click="showAddCardDialog = true"> Add Card </Button>
-			<Dialog
-				:options="{ title: 'Add new card' }"
-				v-model="showAddCardDialog"
-			>
+			<Dialog :options="{ title: 'Add new card' }" v-model="showAddCardDialog">
 				<template v-slot:body-content>
 					<StripeCard
 						class="mb-1"

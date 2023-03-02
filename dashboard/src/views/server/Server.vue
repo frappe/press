@@ -235,7 +235,7 @@ export default {
 							color: 'green'
 						});
 					}
-				},
+				}
 			].filter(Boolean);
 		},
 

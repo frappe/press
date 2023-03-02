@@ -110,7 +110,10 @@
 					<Button :loading="true">Loading</Button>
 				</div>
 
-				<Dialog :options="{ title: 'Schedule Auto Updates' }" v-model="showEditDialog">
+				<Dialog
+					:options="{ title: 'Schedule Auto Updates' }"
+					v-model="showEditDialog"
+				>
 					<!-- Edit From -->
 					<template v-slot:body-content>
 						<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">

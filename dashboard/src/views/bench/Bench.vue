@@ -133,7 +133,7 @@ export default {
 				this.bench.status == 'Active' && {
 					label: 'New Site',
 					icon: 'plus',
-					action: () => { 
+					action: () => {
 						this.$router.push(`/${this.bench.name}/new`);
 					}
 				},
@@ -159,9 +159,9 @@ export default {
 							color: 'green'
 						});
 					}
-				},
+				}
 			].filter(Boolean);
-		},
+		}
 	}
 };
 </script>

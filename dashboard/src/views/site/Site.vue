@@ -157,7 +157,7 @@ export default {
 				auto: true,
 				onSuccess() {
 					if (this.siteName !== this.site.name) {
-						this.$router.replace({params: {siteName: this.site.name}});
+						this.$router.replace({ params: { siteName: this.site.name } });
 					}
 					if (this.site.status !== 'Active' || this.site.setup_wizard_complete)
 						return;
@@ -222,7 +222,7 @@ export default {
 			if (this.$route.matched.length === 1) {
 				let tab = ['Pending', 'Installing'].includes(this.site.status)
 					? 'jobs'
-					: 'overview';				
+					: 'overview';
 				this.$router.replace(`/sites/${this.site.name}/${tab}`);
 			}
 		},
@@ -307,7 +307,7 @@ export default {
 							color: 'green'
 						});
 					}
-				},
+				}
 			].filter(Boolean);
 		},
 

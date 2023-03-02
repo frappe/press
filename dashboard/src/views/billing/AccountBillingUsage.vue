@@ -125,7 +125,7 @@ export default {
 			return {
 				method: 'press.api.billing.total_unpaid_amount',
 				auto: true
-			}
+			};
 		}
 	},
 	data() {
@@ -149,9 +149,11 @@ export default {
 	computed: {
 		minimumAmount() {
 			const unpaidAmount = this.$resources.unpaidAmountDue.data;
-			const minimumDefault = $account.team.currency == 'INR' ? 800 : 10
+			const minimumDefault = $account.team.currency == 'INR' ? 800 : 10;
 
-			return (unpaidAmount && unpaidAmount > minimumDefault) ? unpaidAmount : minimumDefault;
+			return unpaidAmount && unpaidAmount > minimumDefault
+				? unpaidAmount
+				: minimumDefault;
 		},
 		upcomingInvoice() {
 			return this.$resources.upcomingInvoice.data?.upcoming_invoice;

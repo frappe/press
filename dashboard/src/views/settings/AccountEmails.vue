@@ -16,10 +16,7 @@
 			:key="email.type"
 		>
 		</ListItem>
-		<Dialog
-			:options="{ title: 'Edit Emails' }"
-			v-model="showEmailsEditDialog"
-		>
+		<Dialog :options="{ title: 'Edit Emails' }" v-model="showEmailsEditDialog">
 			<template v-slot:body-content>
 				<div class="mt-3" v-for="email in emailData" :key="email.type">
 					<Input

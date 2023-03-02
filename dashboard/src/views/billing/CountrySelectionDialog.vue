@@ -1,6 +1,10 @@
 <template>
-	<Dialog v-if="showDialog" v-model="showDialog" :options="{ title: 'Update Country' }">
-		<template v-slot:body-content >
+	<Dialog
+		v-if="showDialog"
+		v-model="showDialog"
+		:options="{ title: 'Update Country' }"
+	>
+		<template v-slot:body-content>
 			Please select your country
 
 			<select

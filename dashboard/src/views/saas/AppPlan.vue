@@ -224,7 +224,11 @@ const getFeatureList = features => {
 				>Add</Button
 			>
 		</Dialog>
-		<Dialog :options="{ title: 'Create New Plan' }" v-model="showCreateDialog" v-if="plansData">
+		<Dialog
+			:options="{ title: 'Create New Plan' }"
+			v-model="showCreateDialog"
+			v-if="plansData"
+		>
 			<template #actions>
 				<Button class="mr-2" @click="() => (showCreateDialog = false)">
 					Cancel

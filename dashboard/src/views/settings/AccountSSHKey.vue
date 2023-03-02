@@ -27,10 +27,7 @@
 				Change SSH Key
 			</Button>
 		</template>
-		<Dialog
-			:options="{ title: 'New SSH Key' }"
-			v-model="showAddNewKeyDialog"
-		>
+		<Dialog :options="{ title: 'New SSH Key' }" v-model="showAddNewKeyDialog">
 			<template v-slot:body-content>
 				<div class="mt-3">
 					<Input

@@ -50,7 +50,9 @@ dayjs.shortFormating = (s, ago = false) => {
 			newPostfix = 'Y';
 			break;
 	}
-	return `${prefix === 'a' ? '1' : prefix} ${newPostfix}${isPast ? (ago ? ' ago' : '') : ''}`;
+	return `${prefix === 'a' ? '1' : prefix} ${newPostfix}${
+		isPast ? (ago ? ' ago' : '') : ''
+	}`;
 };
 
 export default dayjs;

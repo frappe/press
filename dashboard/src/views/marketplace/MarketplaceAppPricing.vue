@@ -139,10 +139,7 @@ function resetCurrentEditingPlan() {
 			</template>
 		</Card>
 
-		<Dialog
-			:options="{ title: 'Edit Plan' }"
-			v-model="showEditPlanDialog"
-		>
+		<Dialog :options="{ title: 'Edit Plan' }" v-model="showEditPlanDialog">
 			<template v-slot:body-content>
 				<div>
 					<div class="mb-4">

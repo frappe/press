@@ -181,19 +181,26 @@
 		</Dialog>
 
 		<!-- Plan Change Dialog -->
-		<Dialog v-model="showAppPlanChangeDialog" width="half" :dismissable="true">
-			<ChangeAppPlanSelector
-				@change="
-					plan => {
-						newAppPlan = plan.name;
-						newAppPlanIsFree = plan.is_free;
-					}
-				"
-				v-if="appToChangePlan"
-				:app="appToChangePlan.name"
-				:currentPlan="appToChangePlan.plan"
-				:frappeVersion="site.frappe_version"
-			/>
+		<Dialog 
+			:options="{ 
+				title: 'Select Plan',
+				size: '2xl'
+			}"
+			v-model="showAppPlanChangeDialog"  :dismissable="true">
+			<template v-slot:body-content>
+				<ChangeAppPlanSelector
+					@change="
+						plan => {
+							newAppPlan = plan.name;
+							newAppPlanIsFree = plan.is_free;
+						}
+					"
+					v-if="appToChangePlan"
+					:app="appToChangePlan.name"
+					:currentPlan="appToChangePlan.plan"
+					:frappeVersion="site.frappe_version"
+				/>
+			</template>
 
 			<template #actions>
 				<Button
@@ -339,7 +346,9 @@ export default {
 	methods: {
 		getCommitTag(app) {
 			return app.timestamp
-				? this.$dayjs.shortFormating(this.$dayjs("2022-12-21T17:20:42+07:00").fromNow()) + ' ago'
+				? this.$dayjs.shortFormating(
+						this.$dayjs('2022-12-21T17:20:42+07:00').fromNow()
+				  ) + ' ago'
 				: app.hash.substr(0, 7);
 		},
 		subscribe(app) {
@@ -359,6 +368,7 @@ export default {
 				subscription: app.subscription.name,
 				billing_type: app.billing_type
 			};
+			console.log(this.appToChangePlan)
 			this.showAppPlanChangeDialog = true;
 		},
 

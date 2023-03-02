@@ -6,7 +6,7 @@
 		>
 			Impersonate Team
 		</Button>
-		<Dialog v-model="dialogOpen" :options="{ title: 'Impersonate Team'}">
+		<Dialog v-model="dialogOpen" :options="{ title: 'Impersonate Team' }">
 			<template v-slot:body-content>
 				<Input label="Team" v-model="team" />
 			</template>

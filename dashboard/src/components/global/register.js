@@ -10,7 +10,7 @@ import {
 	Dialog,
 	Link,
 	Input,
-	Avatar,
+	Avatar
 } from 'frappe-ui';
 import outsideClickDirective from './outsideClickDirective';
 
@@ -43,7 +43,6 @@ export default function registerGlobalComponents(app) {
 	for (let key in globalFrappeUIComponents) {
 		app.component(key, globalFrappeUIComponents[key]);
 	}
-
 }
 
 export { components };
