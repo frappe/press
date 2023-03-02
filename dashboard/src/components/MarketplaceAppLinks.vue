@@ -3,7 +3,7 @@
 		<template #actions>
 			<Button icon-left="edit" @click="showEditLinksDialog = true">Edit</Button>
 		</template>
-		<FrappeUIDialog
+		<Dialog
 			:options="{ title: 'Update Links' }"
 			v-model="showEditLinksDialog"
 		>
@@ -44,7 +44,7 @@
 					</Button>
 				</div>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 		<div class="divide-y" v-if="app">
 			<ListItem title="Website" :description="app.website || 'N/A'" />
 			<ListItem title="Support" :description="app.support || 'N/A'" />

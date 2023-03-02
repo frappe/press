@@ -24,7 +24,7 @@
 			</ListItem>
 		</div>
 
-		<FrappeUIDialog
+		<Dialog
 			:options="{ title: 'Manage Members' }"
 			v-model="showManageMemberDialog"
 		>
@@ -77,7 +77,7 @@
 					</Button>
 				</div>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 	</Card>
 </template>
 <script>

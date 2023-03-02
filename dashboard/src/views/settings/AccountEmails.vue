@@ -16,7 +16,7 @@
 			:key="email.type"
 		>
 		</ListItem>
-		<FrappeUIDialog
+		<Dialog
 			:options="{ title: 'Edit Emails' }"
 			v-model="showEmailsEditDialog"
 		>
@@ -39,7 +39,7 @@
 					Save Changes
 				</Button>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 	</Card>
 </template>
 <script>

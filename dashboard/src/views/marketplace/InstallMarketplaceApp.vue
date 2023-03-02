@@ -74,19 +74,20 @@
 
 		<Dialog
 			v-model="showPlanSelectionDialog"
-			title="Select app plan"
-			width="half"
-			:dismissable="true"
+			:options="{
+				title: 'Select app plan',
+				size: 'xl'
+			}"
 		>
-			<ChangeAppPlanSelector
-				v-if="marketplaceApp"
-				:app="marketplaceApp"
-				class="mb-9"
-				@change="plan => (selectedPlan = plan.name)"
-			/>
-
-			<ErrorMessage :error="$resourceErrors" />
-
+			<template v-slot:body-content>
+				<ChangeAppPlanSelector
+					v-if="marketplaceApp"
+					:app="marketplaceApp"
+					class="mb-9"
+					@change="plan => (selectedPlan = plan.name)"
+				/>
+				<ErrorMessage :error="$resourceErrors" />
+			</template>
 			<template v-slot:actions>
 				<Button
 					appearance="primary"

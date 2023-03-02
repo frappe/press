@@ -12,7 +12,7 @@
 			>
 				Schedule a backup now
 			</Button>
-			<FrappeUIDialog
+			<Dialog
 				:options="{ title: 'Cannot Backup Site' }"
 				v-model="showBackupDialog"
 			>
@@ -24,7 +24,7 @@
 				<template v-slot:actions>
 					<Button @click="showBackupDialog = false"> Cancel </Button>
 				</template>
-			</FrappeUIDialog>
+			</Dialog>
 		</template>
 		<div class="divide-y" v-if="backups.data.length">
 			<div

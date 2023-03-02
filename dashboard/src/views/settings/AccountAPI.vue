@@ -19,7 +19,7 @@
 				Regenerate API Secret
 			</Button>
 		</template>
-		<FrappeUIDialog
+		<Dialog
 			:options="{ title: 'API Access' }"
 			v-model="showCreateSecretDialog"
 			v-on:close="createSecretdialogClosed"
@@ -73,7 +73,7 @@
 					Regenerate API Secret
 				</Button>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 	</Card>
 </template>
 <script>

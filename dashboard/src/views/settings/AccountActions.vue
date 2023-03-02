@@ -34,7 +34,7 @@
 				</Button>
 			</template>
 		</ListItem>
-		<FrappeUIDialog :options="{title: 'Disable Account'}" v-model="showDisableAccountDialog">
+		<Dialog :options="{title: 'Disable Account'}" v-model="showDisableAccountDialog">
 			<template v-slot:body-content>
 				<p class="text-base prose">
 					By confirming this action:
@@ -62,9 +62,9 @@
 					Disable Account
 				</Button>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 
-		<FrappeUIDialog :options="{title: 'Enable Account'}" v-model="showEnableAccountDialog">
+		<Dialog :options="{title: 'Enable Account'}" v-model="showEnableAccountDialog">
 			<template v-slot:body-content>
 				<p class="text-base prose">
 					By confirming this action:
@@ -91,7 +91,7 @@
 					Enable Account
 				</Button>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 	</Card>
 </template>
 <script>

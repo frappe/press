@@ -19,7 +19,7 @@
 				<ServerList v-else :servers="servers" />
 			</div>
 		</div>
-		<FrappeUIDialog
+		<Dialog
 			:options="{ title: 'Add card to create new servers' }"
 			v-model="showAddCardDialog"
 		>
@@ -33,7 +33,7 @@
 					"
 				/>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 	</div>
 </template>
 <script>

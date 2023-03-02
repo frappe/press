@@ -2,7 +2,7 @@
 	<Card title="Payment methods" :subtitle="subtitle">
 		<template #actions>
 			<Button @click="showAddCardDialog = true"> Add Card </Button>
-			<FrappeUIDialog
+			<Dialog
 				:options="{ title: 'Add new card' }"
 				v-model="showAddCardDialog"
 			>
@@ -16,7 +16,7 @@
 						"
 					/>
 				</template>
-			</FrappeUIDialog>
+			</Dialog>
 		</template>
 		<div class="max-h-52 space-y-3">
 			<div

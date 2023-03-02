@@ -30,7 +30,7 @@
 				</template>
 			</ListItem>
 		</div>
-		<FrappeUIDialog
+		<Dialog
 			:options="{ title: 'Edit Title' }"
 			v-model="showEditTitleDialog"
 		>
@@ -52,7 +52,7 @@
 					</Button>
 				</div>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 	</Card>
 </template>
 <script>

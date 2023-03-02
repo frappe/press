@@ -18,7 +18,7 @@
 			<BenchList v-else :benches="benches" />
 		</div>
 
-		<FrappeUIDialog
+		<Dialog
 			:options="{ title: 'Add card to create new benches' }"
 			v-model="showAddCardDialog"
 		>
@@ -32,7 +32,7 @@
 					"
 				/>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 	</div>
 </template>
 

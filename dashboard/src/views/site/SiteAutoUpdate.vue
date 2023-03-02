@@ -110,55 +110,57 @@
 					<Button :loading="true">Loading</Button>
 				</div>
 
-				<Dialog title="Schedule Auto Updates" v-model="showEditDialog">
+				<Dialog :options="{ title: 'Schedule Auto Updates' }" v-model="showEditDialog">
 					<!-- Edit From -->
-					<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-						<Input
-							type="select"
-							label="Update Frequency"
-							:options="frequencyOptions"
-							v-model="updateFrequency"
+					<template v-slot:body-content>
+						<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+							<Input
+								type="select"
+								label="Update Frequency"
+								:options="frequencyOptions"
+								v-model="updateFrequency"
+							/>
+
+							<Input
+								type="select"
+								:options="timeOptions"
+								label="Update time"
+								v-model="updateTime"
+							/>
+
+							<Input
+								v-if="updateFrequency === 'Weekly'"
+								type="select"
+								label="Day of the week"
+								:options="weekDayOptions"
+								v-model="weekDay"
+							/>
+
+							<Input
+								v-if="updateFrequency === 'Monthly'"
+								type="select"
+								:options="monthDayOptions"
+								label="Day of the month"
+								v-model.number="monthDay"
+							/>
+							<Input
+								v-if="updateFrequency === 'Monthly'"
+								type="checkbox"
+								label="Update end of month"
+								:checked="endOfMonth"
+								v-model="endOfMonth"
+							/>
+						</div>
+						<ErrorMessage
+							class="mt-4"
+							:error="$resources.disableAutoUpdate.error"
 						/>
 
-						<Input
-							type="select"
-							:options="timeOptions"
-							label="Update time"
-							v-model="updateTime"
+						<ErrorMessage
+							class="mt-4"
+							:error="$resources.updateAutoUpdateInfo.error"
 						/>
-
-						<Input
-							v-if="updateFrequency === 'Weekly'"
-							type="select"
-							label="Day of the week"
-							:options="weekDayOptions"
-							v-model="weekDay"
-						/>
-
-						<Input
-							v-if="updateFrequency === 'Monthly'"
-							type="select"
-							:options="monthDayOptions"
-							label="Day of the month"
-							v-model.number="monthDay"
-						/>
-						<Input
-							v-if="updateFrequency === 'Monthly'"
-							type="checkbox"
-							label="Update end of month"
-							:checked="endOfMonth"
-							v-model="endOfMonth"
-						/>
-					</div>
-					<ErrorMessage
-						class="mt-4"
-						:error="$resources.disableAutoUpdate.error"
-					/>
-
-					<ErrorMessage
-						class="mt-4"
-						:error="$resources.updateAutoUpdateInfo.error"
-					/>
+					</template>
 					<template #actions>
 						<Button
 							appearance="primary"

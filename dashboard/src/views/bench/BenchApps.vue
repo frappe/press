@@ -74,7 +74,7 @@
 
 		<ErrorMessage :error="$resources.fetchLatestAppUpdate.error" />
 
-		<FrappeUIDialog
+		<Dialog
 			:options="{ title: 'Add apps to your bench' }"
 			v-model="showAddAppDialog"
 		>
@@ -108,7 +108,7 @@
 					Add {{ selectedApp.app }}
 				</Button>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 
 		<ChangeAppBranchDialog
 			:bench="benchName"

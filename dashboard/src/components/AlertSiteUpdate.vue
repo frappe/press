@@ -9,7 +9,7 @@
 				Show updates
 			</Button>
 		</template>
-		<FrappeUIDialog
+		<Dialog
 			:options="{ title: 'Updates available' }"
 			v-model="showUpdatesDialog"
 		>
@@ -38,7 +38,7 @@
 					Update now
 				</Button>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 	</Alert>
 </template>
 <script>

@@ -75,7 +75,7 @@
 				</div>
 			</div>
 		</div>
-		<FrappeUIDialog v-model="showDialog" :options="{ title: 'Add Domain' }">
+		<Dialog v-model="showDialog" :options="{ title: 'Add Domain' }">
 			<template v-slot:body-content>
 				<div class="space-y-4">
 					<p class="text-base">
@@ -144,7 +144,7 @@
 					Add Domain
 				</Button>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 	</Card>
 </template>
 

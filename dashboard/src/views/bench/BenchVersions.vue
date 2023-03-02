@@ -116,7 +116,7 @@
 				</section>
 			</div>
 		</template>
-		<FrappeUIDialog :options="{ title: 'SSH Access' }" v-model="showSSHDialog">
+		<Dialog :options="{ title: 'SSH Access' }" v-model="showSSHDialog">
 			<template v-slot:body-content>
 				<div v-if="certificate" class="space-y-4" style="max-width: 29rem;">
 					<div class="space-y-2">
@@ -167,7 +167,7 @@
 				class="mt-3"
 				:error="$resources.generateCertificate.error"
 			/>
-		</FrappeUIDialog>
+		</Dialog>
 	</CardWithDetails>
 </template>
 <script>

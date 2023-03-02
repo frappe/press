@@ -23,7 +23,7 @@
 			</Button>
 		</template>
 
-		<FrappeUIDialog
+		<Dialog
 			:options="{ title: 'Select the apps you want to update' }"
 			v-model="showDeployDialog"
 		>
@@ -44,7 +44,7 @@
 					Deploy
 				</Button>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 	</Alert>
 </template>
 <script>

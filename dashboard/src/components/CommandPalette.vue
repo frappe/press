@@ -1,5 +1,5 @@
 <template>
-	<FrappeUIDialog
+	<Dialog
 		v-model="show"
 		:options="{ size: 'xl', position: 'top' }"
 		@after-leave="
@@ -42,7 +42,7 @@
 				</ComboboxOptions>
 			</Combobox>
 		</template>
-	</FrappeUIDialog>
+	</Dialog>
 </template>
 
 <script>

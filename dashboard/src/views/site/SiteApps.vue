@@ -48,7 +48,7 @@
 			</div>
 		</div>
 
-		<FrappeUIDialog
+		<Dialog
 			:options="{ title: 'Install an app on your site' }"
 			v-model="showInstallAppsDialog"
 		>
@@ -91,7 +91,7 @@
 					</p>
 				</div>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 
 		<Dialog
 			v-model="showCheckoutDialog"

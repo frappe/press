@@ -27,7 +27,7 @@
 				Change SSH Key
 			</Button>
 		</template>
-		<FrappeUIDialog
+		<Dialog
 			:options="{ title: 'New SSH Key' }"
 			v-model="showAddNewKeyDialog"
 		>
@@ -49,7 +49,7 @@
 					Add Key
 				</Button>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 	</Card>
 </template>
 <script>

@@ -1,17 +1,19 @@
 <template>
-	<Dialog v-if="showDialog" v-model="showDialog" title="Update Country">
-		Please select your country
+	<Dialog v-if="showDialog" v-model="showDialog" :options="{ title: 'Update Country' }">
+		<template v-slot:body-content >
+			Please select your country
 
-		<select
-			class="form-select mt-2 block w-full shadow"
-			v-model="country"
-			name="country"
-			autocomplete="country"
-		>
-			<option v-for="country in countries" :key="country.name">
-				{{ country.name }}
-			</option>
-		</select>
+			<select
+				class="form-select mt-2 block w-full shadow"
+				v-model="country"
+				name="country"
+				autocomplete="country"
+			>
+				<option v-for="country in countries" :key="country.name">
+					{{ country.name }}
+				</option>
+			</select>
+		</template>
 
 		<template v-slot:actions>
 			<Button

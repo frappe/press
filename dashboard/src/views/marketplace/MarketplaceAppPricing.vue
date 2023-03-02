@@ -139,7 +139,7 @@ function resetCurrentEditingPlan() {
 			</template>
 		</Card>
 
-		<FrappeUIDialog
+		<Dialog
 			:options="{ title: 'Edit Plan' }"
 			v-model="showEditPlanDialog"
 		>
@@ -229,6 +229,6 @@ function resetCurrentEditingPlan() {
 					>Save</Button
 				>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 	</div>
 </template>

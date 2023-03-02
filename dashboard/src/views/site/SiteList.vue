@@ -55,7 +55,7 @@
 			/>
 		</div>
 
-		<FrappeUIDialog
+		<Dialog
 			:options="{ title: 'Login As Administrator' }"
 			v-model="showReasonForAdminLoginDialog"
 		>
@@ -78,7 +78,7 @@
 					>Proceed</Button
 				>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 	</div>
 </template>
 <script>

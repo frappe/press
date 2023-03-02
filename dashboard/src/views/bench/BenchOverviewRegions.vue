@@ -28,7 +28,7 @@
 			</ListItem>
 		</div>
 
-		<FrappeUIDialog
+		<Dialog
 			:options="{ title: 'Select secondary region for your bench' }"
 			v-model="showAddRegionDialog"
 		>
@@ -57,7 +57,7 @@
 					Add
 				</Button>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 	</Card>
 </template>
 

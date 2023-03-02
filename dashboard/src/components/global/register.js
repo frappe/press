@@ -27,7 +27,7 @@ let globalFrappeUIComponents = {
 	LoadingIndicator,
 	LoadingText,
 	Link,
-	FrappeUIDialog: Dialog,
+	Dialog,
 	Input
 };
 
