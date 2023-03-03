@@ -952,18 +952,11 @@ class Site(Document):
 			self.save()
 			self.update_subscription_config()
 
-	def update_subscription_config(self, expiry: str = ""):
-		from press.marketplace.doctype.marketplace_app_subscription.marketplace_app_subscription import (
-			get_login_url,
-		)
-
-		doc = "Marketplace App Subscription"
-		filters = {"status": "Active", "site": self.name}
-		if frappe.db.exists(doc, filters):
-			secret_key = frappe.db.get_value(doc, filters, "secret_key")
-			self.update_site_config(
-				{"subscription": {"expiry": expiry, "login_url": get_login_url(secret_key)}}
-			)
+	def update_subscription_config(self):
+		if frappe.db.exists(
+			"Marketplace App Subscription", {"status": "Active", "site": self.name}
+		):
+			self.update_site_config({"app_include_js": []})
 
 	def unsuspend_if_applicable(self):
 		try:

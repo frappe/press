@@ -974,6 +974,7 @@ def use_partner_credits(name, app, site, plan, amount, credits):
 				)
 				change_app_plan(name, plan)
 				change_site_hosting_plan(site, plan, team)
+				frappe.get_cached_doc("Site", site).update_site_config({"app_include_js": []})
 		except Exception as e:
 			frappe.throw(e)
 	else:

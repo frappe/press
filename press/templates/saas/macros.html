@@ -7,6 +7,19 @@
 <div id="plans-wrapper" class="grid gap-2 grid-cols-3 justify-content-start flex-wrap hidden m-auto"></div>
 {% endmacro %}
 
+{% macro email_verify_wrapper() %}
+<div id="email-verify-wrapper" class="flex flex-row justify-center flex-wrap hidden mx-auto my-auto h-fit w-1/2">
+	<div class="text-center">
+		<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-mail mx-auto mb-6"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+		<h2 class="font-size-base mt-0">Verification Email Sent!</h2>
+		<p>
+			We have sent an email to <span id="verification-email" class="font-semibold"></span>.
+			Please click on the link received to verify your email and create your account.
+		</p>
+	</div>
+</div>
+{% endmacro %}
+
 {% macro address_wrapper() %}
 	<div id="address-card-wrapper" class="flex container hidden mx-auto my-auto justify-content-center">
 		<form>

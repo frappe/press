@@ -1,0 +1,27 @@
+{% extends "templates/emails/base.html" %}
+{% import "templates/emails/macros.html" as utils %}
+
+{% block content %}
+
+<td class="text-base leading-6 text-gray-900">
+    <div class="p-8 bg-white from-markdown">
+        <p>Hello,</p>
+        <strong>
+            Attempted login to your Frappe Cloud account from site: {{ site }}
+        </strong>
+        <p>
+            Please confirm your email address by clicking the button below:
+        </p>
+        {{ utils.button('Verify Account', login_url, true) }}
+        <p class="text-xs italic">
+            Note: This link can be used only once before expiry. If it's expired please generate a new link
+        </p>
+        {{ utils.separator() }}
+        <p class="m-0">
+            Thanks,<br>
+            Team Frappe
+        </p>
+    </div>
+</td>
+
+{% endblock %}

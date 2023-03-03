@@ -1,11 +1,11 @@
 {%- extends "templates/saas/billing_layout.html" -%} {%- from
 "templates/saas/macros.html" import subs_wrapper, plans_wrapper, success_card,
 error_card, load_stripe, load_subs, checkout_wrapper, stripe_wrapper,
-address_wrapper -%} {% block content %}
+address_wrapper, email_verify_wrapper -%} {% block content %}
 <div class="flex justify-content-center mx-auto my-auto h-100 w-100">
 	{{ subs_wrapper() }} {{ plans_wrapper() }} {{ address_wrapper() }} {{
 	checkout_wrapper() }} {{ stripe_wrapper() }} {{ success_card() }} {{
-	success_card() }} {{ load_stripe() }} {{ load_subs() }}
+	success_card() }} {{ load_stripe() }} {{ load_subs() }} {{ email_verify_wrapper() }}
 </div>
 {%- endblock -%} {%- block script -%}
 <script src="https://js.stripe.com/v3/"></script>
@@ -29,6 +29,7 @@ address_wrapper -%} {% block content %}
 			address = data.address;
 			let subscriptions = data.subscriptions;
 			response.currency = data.currency;
+			response.team = data.team
 
 			if (subscriptions.length >= 0) {
 				$('#loading').toggleClass('hidden');
@@ -75,6 +76,31 @@ address_wrapper -%} {% block content %}
 								<p>${f}</p>
 							</div>`;
 			});
+
+			// FC Plans Redirect
+			$('#plans-wrapper').append(`
+					<div class="flex flex-col flex-1 justify-content-between m-2 border rounded col-md-auto shadow-sm" style="width: 220px;" >
+						<div>
+							<p class="mt-4 font-semibold text-sm">Frappe Cloud Plans</p>
+							<h3 class="my-4 font-bold text-xl">${response.currency === 'INR' ? '₹ 750' : '$ 10'} Onwards</h3>
+						<div class="flex flex-col">
+
+							<div class="flex my-1">
+								<div class="mr-2 grid h-4 w-4 shrink-0 place-items-center rounded-full border border-green-500 bg-green-50">
+									<svg width="10" height="8" viewBox="0 0 10 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+										<path d="M1.26562 3.86686L3.93229 6.53353L9.26562 1.2002" stroke="#38A160" stroke-miterlimit="10"
+											stroke-linecap="round" stroke-linejoin="round" />
+									</svg>
+								</div>
+								<p>Site Hosting Support</p>
+							</div>
+
+						</div>
+						</div>
+						<button id="email-verify-btn" class='rounded my-4 w-full bg-gray-100 btn btn-primary' onclick='sendLoginLink()'>Send Login Link</button>
+				</div>
+			`)
+
 			$('#plans-wrapper').append(`
 					<div class="${style} ${
 				sub.marketplace_app_plan === plans[i].name ? 'border-primary' : ''
@@ -217,6 +243,22 @@ address_wrapper -%} {% block content %}
 				setTotal('monthly');
 			}
 		});
+	}
+
+	function sendLoginLink() {
+
+		$('#email-verify-btn').prop('disabled', true)
+		$("#email-verify-btn").html('<span class="mr-2">Sending</span><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');
+
+		call('press.api.developer.marketplace.send_login_link', {
+			secret_key: secret_key,
+		}).then((r) => {
+			if (r.message && r.message === "success") {
+				$('#plans-wrapper').toggleClass('hidden')
+				$('#email-verify-wrapper').toggleClass('hidden')
+				$('#verification-email').text(response.team)
+			}
+		})
 	}
 
 	function call(method, args) {

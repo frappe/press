@@ -281,12 +281,15 @@ class MarketplaceApp(WebsiteGenerator):
 
 
 def get_plans_for_app(
-	app_name, frappe_version=None, include_disabled=False
+	app_name, frappe_version=None, include_free=True, include_disabled=False
 ):  # Unused for now, might use later
 	from press.press.doctype.team.team import is_us_eu
 
 	plans = []
 	filters = {"app": app_name}
+
+	if not include_free:
+		filters["is_free"] = False
 
 	if not include_disabled:
 		filters["enabled"] = True

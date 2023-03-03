@@ -1,4 +1,5 @@
 import frappe
+from frappe.utils import get_url
 from typing import Dict
 
 from press.api.developer import raise_invalid_key_error
@@ -59,11 +60,15 @@ class DeveloperApiHandler:
 			currency, address = frappe.db.get_value(
 				"Team", team, ["currency", "billing_address"]
 			)
-			response = {"currency": currency, "address": True if address else False}
+			response = {
+				"currency": currency,
+				"address": True if address else False,
+				"team": self.app_subscription_doc.team,
+			}
 			response["subscriptions"] = [
 				s.update(
 					{
-						"available_plans": get_plans_for_app(s["app"]),
+						"available_plans": get_plans_for_app(app_name=s["app"], include_free=False),
 						**frappe.db.get_value(
 							"Marketplace App", s["app"], ["title", "image"], as_dict=True
 						),
@@ -102,6 +107,54 @@ class DeveloperApiHandler:
 				12 if data["billing"] == "annual" else 1,
 				False,
 			)
+
+	def send_login_link(self):
+		try:
+			login_url = self.get_login_url()
+			frappe.sendmail(
+				subject="Login Verification Email",
+				recipients=[self.app_subscription_doc.team],
+				template="remote_login",
+				args={"login_url": login_url, "site": self.app_subscription_doc.site},
+			)
+			return "success"
+		except Exception as e:
+			return e
+
+	def get_login_url(self):
+		# check for active tokens
+		team = frappe.db.get_value("Site", self.app_subscription_doc.site, "team")
+		if frappe.db.exists(
+			"Saas Remote Login",
+			{
+				"team": team,
+				"status": "Attempted",
+				"expires_on": (">", frappe.utils.now()),
+			},
+		):
+			doc = frappe.get_doc(
+				"Saas Remote Login",
+				{
+					"team": team,
+					"status": "Attempted",
+					"expires_on": (">", frappe.utils.now()),
+				},
+			)
+			token = doc.token
+		else:
+			token = frappe.generate_hash("Saas Remote Login", 50)
+			frappe.get_doc(
+				{
+					"doctype": "Saas Remote Login",
+					"team": team,
+					"token": token,
+				}
+			).insert(ignore_permissions=True)
+			frappe.db.commit()
+
+		return get_url(
+			f"/api/method/press.api.marketplace.login_via_token?token={token}&team={team}&site={self.app_subscription_doc.site}"
+		)
 
 
 class SessionManager:
@@ -155,3 +208,9 @@ def saas_payment(secret_key: str, data) -> str:
 	data = frappe.parse_json(data)
 	api_handler = DeveloperApiHandler(secret_key)
 	return api_handler.saas_payment(data)
+
+
+@frappe.whitelist(allow_guest=True)
+def send_login_link(secret_key: str) -> str:
+	api_handler = DeveloperApiHandler(secret_key)
+	return api_handler.send_login_link()
