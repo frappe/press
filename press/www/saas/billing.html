@@ -63,20 +63,6 @@ address_wrapper, email_verify_wrapper -%} {% block content %}
 		let style =
 			'flex flex-col flex-1 justify-content-between m-2 border rounded col-md-auto shadow-sm';
 
-		for (let i in plans) {
-			let features = '';
-			plans[i].features.map((f) => {
-				features += `<div class="flex my-1">
-								<div class="mr-2 grid h-4 w-4 shrink-0 place-items-center rounded-full border border-green-500 bg-green-50">
-									<svg width="10" height="8" viewBox="0 0 10 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-										<path d="M1.26562 3.86686L3.93229 6.53353L9.26562 1.2002" stroke="#38A160" stroke-miterlimit="10"
-											stroke-linecap="round" stroke-linejoin="round" />
-									</svg>
-								</div>
-								<p>${f}</p>
-							</div>`;
-			});
-
 			// FC Plans Redirect
 			$('#plans-wrapper').append(`
 					<div class="flex flex-col flex-1 justify-content-between m-2 border rounded col-md-auto shadow-sm" style="width: 220px;" >
@@ -100,6 +86,19 @@ address_wrapper, email_verify_wrapper -%} {% block content %}
 						<button id="email-verify-btn" class='rounded my-4 w-full bg-gray-100 btn btn-primary' onclick='sendLoginLink()'>Send Login Link</button>
 				</div>
 			`)
+		for (let i in plans) {
+			let features = '';
+			plans[i].features.map((f) => {
+				features += `<div class="flex my-1">
+								<div class="mr-2 grid h-4 w-4 shrink-0 place-items-center rounded-full border border-green-500 bg-green-50">
+									<svg width="10" height="8" viewBox="0 0 10 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+										<path d="M1.26562 3.86686L3.93229 6.53353L9.26562 1.2002" stroke="#38A160" stroke-miterlimit="10"
+											stroke-linecap="round" stroke-linejoin="round" />
+									</svg>
+								</div>
+								<p>${f}</p>
+							</div>`;
+			});
 
 			$('#plans-wrapper').append(`
 					<div class="${style} ${

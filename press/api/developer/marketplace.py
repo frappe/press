@@ -116,6 +116,7 @@ class DeveloperApiHandler:
 				recipients=[self.app_subscription_doc.team],
 				template="remote_login",
 				args={"login_url": login_url, "site": self.app_subscription_doc.site},
+				now=True,
 			)
 			return "success"
 		except Exception as e:
