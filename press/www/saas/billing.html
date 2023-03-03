@@ -68,7 +68,7 @@ address_wrapper, email_verify_wrapper -%} {% block content %}
 					<div class="flex flex-col flex-1 justify-content-between m-2 border rounded col-md-auto shadow-sm" style="width: 220px;" >
 						<div>
 							<p class="mt-4 font-semibold text-sm">Frappe Cloud Plans</p>
-							<h3 class="my-4 font-bold text-xl">${response.currency === 'INR' ? '₹ 750' : '$ 10'} Onwards</h3>
+							<span class="my-4 font-bold text-xl">${response.currency === 'INR' ? '₹ 750' : '$ 10'} Onwards</span>
 						<div class="flex flex-col">
 
 							<div class="flex my-1">
@@ -106,9 +106,9 @@ address_wrapper, email_verify_wrapper -%} {% block content %}
 			}" style="width: 220px;" >
 						<div>
 							<p class="mt-4 font-semibold text-sm">${plans[i].plan}</p>
-							<h3 class="my-4 font-bold text-xl">${response.currency === 'INR' ? '₹' : '$'}${
+							<span class="my-4 font-bold text-xl">${response.currency === 'INR' ? '₹' : '$'}${
 				plans[i][`price_${response.currency.toLowerCase()}`]
-			}</h3>
+			}<span class="text-xs text-gray-500"> / mo</span></span>
 						<div class="flex flex-col">
 							${features}
 						</div>

@@ -929,6 +929,15 @@ class Site(Document):
 	def change_plan(self, plan, ignore_card_setup=False):
 		self.can_change_plan(ignore_card_setup)
 		plan_config = self.get_plan_config(plan)
+
+		if (
+			frappe.db.exists(
+				"Marketplace App Subscription", {"status": "Active", "site": self.name}
+			)
+			and self.trial_end_date
+		):
+			plan_config["app_include_js"] = []
+
 		self._update_configuration(plan_config)
 		frappe.get_doc(
 			{
@@ -950,13 +959,6 @@ class Site(Document):
 			self.reload()
 			self.trial_end_date = ""
 			self.save()
-			self.update_subscription_config()
-
-	def update_subscription_config(self):
-		if frappe.db.exists(
-			"Marketplace App Subscription", {"status": "Active", "site": self.name}
-		):
-			self.update_site_config({"app_include_js": []})
 
 	def unsuspend_if_applicable(self):
 		try:
