@@ -234,7 +234,6 @@ class Team(Document):
 		self.update_draft_invoice_payment_mode()
 
 		if not self.is_new() and self.billing_name:
-			self.load_doc_before_save()
 			if self.has_value_changed("billing_name"):
 				self.update_billing_details_on_frappeio()
 
