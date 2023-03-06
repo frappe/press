@@ -235,8 +235,9 @@ class Team(Document):
 
 		if not self.is_new() and self.billing_name:
 			self.load_doc_before_save()
+			prev_billing_name = self.get_doc_before_save().billing_name
 			if self.has_value_changed("billing_name"):
-				self.update_billing_details_on_frappeio()
+				self.update_billing_details_on_frappeio(prev_billing_name)
 
 	def update_draft_invoice_payment_mode(self):
 		if self.has_value_changed("payment_mode"):
@@ -350,11 +351,13 @@ class Team(Document):
 
 		self.billing_name = billing_details.billing_name or self.billing_name
 		self.billing_address = address_doc.name
+		self.load_doc_before_save()
+		prev_billing_name= self.get_doc_before_save().billing_name
 		self.save()
 		self.reload()
 
 		self.update_billing_details_on_stripe(address_doc)
-		self.update_billing_details_on_frappeio()
+		self.update_billing_details_on_frappeio(prev_billing_name)
 		self.update_billing_details_on_draft_invoices()
 
 	def update_billing_details_on_draft_invoices(self):
@@ -365,7 +368,7 @@ class Team(Document):
 			# Invoice.customer_name set by Invoice.validate()
 			frappe.get_doc("Invoice", draft_invoice).save()
 
-	def update_billing_details_on_frappeio(self):
+	def update_billing_details_on_frappeio(self, previous_billing_name):
 		try:
 			frappeio_client = get_frappe_io_connection()
 		except FrappeioServerNotSet as e:
@@ -373,14 +376,6 @@ class Team(Document):
 				return
 			else:
 				raise e
-
-		previous_version = self.get_doc_before_save()
-
-		if not previous_version:
-			self.load_doc_before_save()
-			previous_version = self.get_doc_before_save()
-
-		previous_billing_name = previous_version.billing_name
 
 		if previous_billing_name:
 			try:
