@@ -1,7 +1,7 @@
 <template>
 	<div class="shrink-0">
 		<slot v-bind="{ showDialog }"></slot>
-		<FrappeUIDialog :options="{ title: 'Drop Site' }" v-model="dialogOpen">
+		<Dialog :options="{ title: 'Drop Site' }" v-model="dialogOpen">
 			<template v-slot:body-content>
 				<p class="text-base">
 					Are you sure you want to drop your site? The site will be archived and
@@ -38,7 +38,7 @@
 					</Button>
 				</div>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 	</div>
 </template>
 

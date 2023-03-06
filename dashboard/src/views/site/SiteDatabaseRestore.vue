@@ -74,7 +74,7 @@
 			</div>
 		</div>
 
-		<FrappeUIDialog
+		<Dialog
 			:options="{ title: 'Migrate Database' }"
 			v-model="showMigrateDialog"
 			@close="
@@ -113,9 +113,9 @@
 					Migrate
 				</Button>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 
-		<FrappeUIDialog :options="{ title: 'Restore' }" v-model="showRestoreDialog">
+		<Dialog :options="{ title: 'Restore' }" v-model="showRestoreDialog">
 			<template v-slot:body-content>
 				<div class="space-y-4">
 					<p class="text-base">
@@ -147,7 +147,7 @@
 					Restore Database
 				</Button>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 
 		<DatabaseAccessDialog
 			v-if="showDatabaseAccessDialog"

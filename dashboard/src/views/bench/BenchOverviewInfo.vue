@@ -30,10 +30,7 @@
 				</template>
 			</ListItem>
 		</div>
-		<FrappeUIDialog
-			:options="{ title: 'Edit Title' }"
-			v-model="showEditTitleDialog"
-		>
+		<Dialog :options="{ title: 'Edit Title' }" v-model="showEditTitleDialog">
 			<template v-slot:body-content>
 				<Input label="Title" type="text" v-model="benchTitle" />
 				<ErrorMessage class="mt-4" :error="$resources.editTitle.error" />
@@ -52,7 +49,7 @@
 					</Button>
 				</div>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 	</Card>
 </template>
 <script>

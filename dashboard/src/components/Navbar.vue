@@ -17,14 +17,13 @@
 						>
 						<div class="relative ml-3">
 							<div>
-								<Dropdown :items="dropdownItems" right>
-									<template v-slot="{ toggleDropdown }">
+								<Dropdown :options="dropdownItems" right>
+									<template v-slot="{ open }">
 										<button
 											class="focus:shadow-solid flex max-w-xs items-center rounded-full text-sm text-white focus:outline-none"
 											id="user-menu"
 											aria-label="User menu"
 											aria-haspopup="true"
-											@click="toggleDropdown()"
 										>
 											<Avatar
 												v-if="$account.user"
@@ -130,11 +129,11 @@ export default {
 			dropdownItems: [
 				{
 					label: 'Settings',
-					action: () => this.$router.push('/settings')
+					handler: () => this.$router.push('/settings')
 				},
 				{
 					label: 'Logout',
-					action: () => this.$auth.logout()
+					handler: () => this.$auth.logout()
 				}
 			]
 		};

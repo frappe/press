@@ -40,7 +40,7 @@ const benchData = computed(() => {
 		>
 			<Card :title="group.title">
 				<template #actions>
-					<Badge :status="group.status" :colorMap="$badgeStatusColorMap" />
+					<Badge :label="group.status" :colorMap="$badgeStatusColorMap" />
 				</template>
 				<hr class="mb-2" />
 				<div class="flex items-center justify-between py-2">

@@ -1,7 +1,7 @@
 <template>
 	<div class="shrink-0">
 		<slot v-bind="{ showDialog }"></slot>
-		<FrappeUIDialog :options="{ title: 'Drop Bench' }" v-model="dialogOpen">
+		<Dialog :options="{ title: 'Drop Bench' }" v-model="dialogOpen">
 			<template v-slot:body-content>
 				<p class="text-base">
 					Are you sure you want to drop this bench? All the sites on this bench
@@ -27,7 +27,7 @@
 					Drop Bench
 				</Button>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 	</div>
 </template>
 

@@ -14,10 +14,9 @@
 						<h1 class="text-2xl font-bold">{{ app.title }}</h1>
 						<Badge
 							class="ml-4"
-							:status="app.status"
+							:label="app.status"
 							:colorMap="$badgeStatusColorMap"
-							>{{ app.status }}</Badge
-						>
+						/>
 					</div>
 					<div class="space-x-3">
 						<Button

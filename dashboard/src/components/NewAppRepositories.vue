@@ -43,13 +43,12 @@
 							</button>
 						</div>
 						<div v-show="selectedRepo === repo">
-							<Dropdown class="mt-2 ml-6 text-left" :items="branchOptions">
-								<template v-slot="{ toggleDropdown }">
+							<Dropdown class="mt-2 ml-6 text-left" :options="branchOptions">
+								<template v-slot="{ open }">
 									<Button
 										type="white"
 										:loading="repositoryResource.loading"
 										loadingText="Loading branches..."
-										@click="toggleDropdown()"
 										icon-right="chevron-down"
 									>
 										{{ selectedBranch || 'Select branch' }}
@@ -100,7 +99,7 @@ export default {
 			return (this.repositoryResource.data.branches || []).map(d => {
 				return {
 					label: d.name,
-					action: () => this.$emit('update:selectedBranch', d.name)
+					handler: () => this.$emit('update:selectedBranch', d.name)
 				};
 			});
 		}

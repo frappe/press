@@ -27,10 +27,7 @@
 				Change SSH Key
 			</Button>
 		</template>
-		<FrappeUIDialog
-			:options="{ title: 'New SSH Key' }"
-			v-model="showAddNewKeyDialog"
-		>
+		<Dialog :options="{ title: 'New SSH Key' }" v-model="showAddNewKeyDialog">
 			<template v-slot:body-content>
 				<div class="mt-3">
 					<Input
@@ -49,7 +46,7 @@
 					Add Key
 				</Button>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 	</Card>
 </template>
 <script>

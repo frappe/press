@@ -1,5 +1,5 @@
 <template>
-	<FrappeUIDialog
+	<Dialog
 		v-if="app"
 		:modelValue="Boolean(bench && app)"
 		:options="{ title: `Change branch for ${app.title}` }"
@@ -35,7 +35,7 @@
 				Change Branch
 			</Button>
 		</template>
-	</FrappeUIDialog>
+	</Dialog>
 </template>
 
 <script>

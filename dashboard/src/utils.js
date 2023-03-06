@@ -107,7 +107,11 @@ let utils = {
 				Paid: 'green',
 				Rejected: 'red',
 				'In Review': 'yellow',
-				'Attention Required': 'red'
+				'Attention Required': 'red',
+				Active: 'green',
+				Trial: 'yellow',
+				Published: 'green',
+				Owner: 'blue'
 			};
 		}
 	}

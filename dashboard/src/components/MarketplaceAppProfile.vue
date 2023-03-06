@@ -61,14 +61,14 @@
 			>
 				<template #actions>
 					<Badge
-						:status="source.source_information.status"
+						:label="source.source_information.status"
 						:colorMap="$badgeStatusColorMap"
 					/>
 				</template>
 			</ListItem>
 		</div>
 
-		<FrappeUIDialog
+		<Dialog
 			:options="{ title: 'Update App Profile' }"
 			v-model="showAppProfileEditDialog"
 		>
@@ -103,7 +103,7 @@
 					</Button>
 				</div>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 	</Card>
 </template>
 

@@ -1,5 +1,5 @@
 <template>
-	<FrappeUIDialog
+	<Dialog
 		:options="{ title: 'Change Payment Mode' }"
 		:modelValue="modelValue"
 		@update:modelValue="$emit('update:modelValue', $event)"
@@ -27,7 +27,7 @@
 				Change
 			</Button>
 		</template>
-	</FrappeUIDialog>
+	</Dialog>
 </template>
 <script>
 export default {

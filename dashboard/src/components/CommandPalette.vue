@@ -1,7 +1,7 @@
 <template>
-	<FrappeUIDialog
+	<Dialog
 		v-model="show"
-		:options="{ size: 'lg', position: 'top' }"
+		:options="{ size: 'xl', position: 'top' }"
 		@after-leave="
 			() => {
 				$emit('close', true);
@@ -42,7 +42,7 @@
 				</ComboboxOptions>
 			</Combobox>
 		</template>
-	</FrappeUIDialog>
+	</Dialog>
 </template>
 
 <script>
@@ -75,13 +75,13 @@ export default {
 		this.makeFuse();
 	},
 	methods: {
-		onInput: debounce(function(e) {
-			let query = e.target.value
-      if (query) {
-        this.filteredOptions = this.fuse
-          .search(query)
-					.map((result) => result.item)
-      }
+		onInput: debounce(function (e) {
+			let query = e.target.value;
+			if (query) {
+				this.filteredOptions = this.fuse
+					.search(query)
+					.map(result => result.item);
+			}
 		}, 300),
 		onSelection(value) {
 			if (value) {
@@ -105,7 +105,7 @@ export default {
 				includeScore: true,
 				shouldSort: true,
 				minMatchCharLength: 3,
-				keys: ['title'],
+				keys: ['title']
 			};
 			this.fuse = new Fuse(fuse_list, options);
 		}

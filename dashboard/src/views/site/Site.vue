@@ -16,10 +16,9 @@
 						</h1>
 						<Badge
 							class="ml-4 hidden md:inline-block"
-							:status="site.status"
+							:label="site.status"
 							:colorMap="$badgeStatusColorMap"
-							>{{ site.status }}</Badge
-						>
+						/>
 
 						<div
 							v-if="regionInfo"
@@ -37,9 +36,7 @@
 					</div>
 					<div class="mb-10 flex flex-row justify-between md:hidden">
 						<div class="flex flex-row">
-							<Badge :status="site.status" :colorMap="$badgeStatusColorMap">{{
-								site.status
-							}}</Badge>
+							<Badge :label="site.status" :colorMap="$badgeStatusColorMap" />
 							<div
 								v-if="regionInfo"
 								class="ml-2 flex cursor-default flex-row items-center rounded-md bg-yellow-50 px-3 py-1 text-xs font-medium text-yellow-700"
@@ -56,9 +53,9 @@
 						</div>
 
 						<!-- Only for mobile view -->
-						<Dropdown v-if="siteActions.length > 0" :items="siteActions" right>
-							<template v-slot="{ toggleDropdown }">
-								<Button icon-right="chevron-down" @click="toggleDropdown()"
+						<Dropdown v-if="siteActions.length > 0" :options="siteActions" right>
+							<template v-slot="{ open }">
+								<Button icon-right="chevron-down"
 									>Actions</Button
 								>
 							</template>
@@ -78,9 +75,9 @@
 							{{ action.label }}
 						</Button>
 
-						<Dropdown v-if="siteActions.length > 2" :items="siteActions">
-							<template v-slot="{ toggleDropdown }">
-								<Button icon-right="chevron-down" @click="toggleDropdown()"
+						<Dropdown v-if="siteActions.length > 2" :options="siteActions">
+							<template v-slot="{ open }">
+								<Button icon-right="chevron-down"
 									>Actions</Button
 								>
 							</template>
@@ -97,7 +94,7 @@
 			</Tabs>
 		</div>
 
-		<FrappeUIDialog
+		<Dialog
 			:options="{ title: 'Login As Administrator' }"
 			v-model="showReasonForAdminLoginDialog"
 		>
@@ -120,7 +117,7 @@
 					>Proceed</Button
 				>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 	</div>
 </template>
 
@@ -157,7 +154,7 @@ export default {
 				auto: true,
 				onSuccess() {
 					if (this.siteName !== this.site.name) {
-						this.$router.replace({params: {siteName: this.site.name}});
+						this.$router.replace({ params: { siteName: this.site.name } });
 					}
 					if (this.site.status !== 'Active' || this.site.setup_wizard_complete)
 						return;
@@ -222,7 +219,7 @@ export default {
 			if (this.$route.matched.length === 1) {
 				let tab = ['Pending', 'Installing'].includes(this.site.status)
 					? 'jobs'
-					: 'overview';				
+					: 'overview';
 				this.$router.replace(`/sites/${this.site.name}/${tab}`);
 			}
 		},
@@ -259,14 +256,14 @@ export default {
 				['Active', 'Updating'].includes(this.site.status) && {
 					label: 'Visit Site',
 					icon: 'external-link',
-					action: () => {
+					handler: () => {
 						window.open(`https://${this.site.name}`, '_blank');
 					}
 				},
 				this.$account.user.user_type == 'System User' && {
 					label: 'View in Desk',
 					icon: 'external-link',
-					action: () => {
+					handler: () => {
 						window.open(
 							`${window.location.protocol}//${window.location.host}/app/site/${this.site.name}`,
 							'_blank'
@@ -277,7 +274,7 @@ export default {
 					label: 'Manage Bench',
 					icon: 'tool',
 					route: `/benches/${this.site.group}`,
-					action: () => {
+					handler: () => {
 						this.$router.push(`/benches/${this.site.group}`);
 					}
 				},
@@ -285,7 +282,7 @@ export default {
 					label: 'Login As Administrator',
 					icon: 'external-link',
 					loading: this.$resources.loginAsAdmin.loading,
-					action: () => {
+					handler: () => {
 						if (this.$account.team.name == this.site.team) {
 							return this.$resources.loginAsAdmin.submit({
 								name: this.siteName
@@ -298,7 +295,7 @@ export default {
 				this.$account.user.user_type == 'System User' && {
 					label: 'Impersonate Team',
 					icon: 'tool',
-					action: async () => {
+					handler: async () => {
 						await this.$account.switchTeam(this.site.team);
 						this.$notify({
 							title: 'Switched Team',
@@ -307,7 +304,7 @@ export default {
 							color: 'green'
 						});
 					}
-				},
+				}
 			].filter(Boolean);
 		},
 

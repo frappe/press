@@ -84,9 +84,7 @@
 </template>
 
 <script>
-import GreenCheckIcon from '@/components/global/GreenCheckIcon.vue';
 import NewAppRepositories from './NewAppRepositories.vue';
-import ErrorMessage from '@/components/global/ErrorMessage.vue';
 
 export default {
 	name: 'SelectAppFromGithub',

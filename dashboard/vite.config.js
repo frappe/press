@@ -16,7 +16,7 @@ export default defineConfig({
 		}
 	},
 	optimizeDeps: {
-		include: ['feather-icons']
+		include: ['feather-icons', 'showdown']
 	},
 	build: {
 		outDir: '../press/public/dashboard',

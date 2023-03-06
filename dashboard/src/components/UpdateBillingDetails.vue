@@ -1,5 +1,5 @@
 <template>
-	<FrappeUIDialog
+	<Dialog
 		:options="{ title: 'Update Billing Details' }"
 		:modelValue="show"
 		@update:modelValue="$emit('update:show', $event)"
@@ -34,7 +34,7 @@
 				Submit
 			</Button>
 		</template>
-	</FrappeUIDialog>
+	</Dialog>
 </template>
 
 <script>

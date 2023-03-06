@@ -42,7 +42,7 @@
 				</Button>
 			</div>
 		</div>
-		<FrappeUIDialog
+		<Dialog
 			:options="{ title: 'Update Profile Information' }"
 			v-model="showProfileEditDialog"
 		>
@@ -75,7 +75,7 @@
 					</Button>
 				</div>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 	</Card>
 </template>
 <script>

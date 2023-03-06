@@ -1,5 +1,5 @@
 <template>
-	<FrappeUIDialog
+	<Dialog
 		:modelValue="modelValue"
 		@update:modelValue="$emit('update:modelValue', $event)"
 		:options="{
@@ -77,7 +77,7 @@
 				</div>
 			</div>
 		</template>
-	</FrappeUIDialog>
+	</Dialog>
 </template>
 <script>
 import BuyPrepaidCredits from './BuyPrepaidCredits.vue';

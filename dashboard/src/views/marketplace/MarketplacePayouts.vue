@@ -56,7 +56,7 @@ const payouts = useResource({
 					</div>
 
 					<div class="hidden md:inline">
-						<Badge :status="payout.status" :colorMap="$badgeStatusColorMap" />
+						<Badge :label="payout.status" :colorMap="$badgeStatusColorMap" />
 					</div>
 
 					<div>₹{{ round(payout.net_total_inr, 2) }}</div>

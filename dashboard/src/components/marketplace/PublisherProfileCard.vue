@@ -24,7 +24,7 @@
 			</template>
 		</Card>
 
-		<FrappeUIDialog
+		<Dialog
 			:options="{ title: 'Edit Publisher Profile' }"
 			v-model="showEditProfileDialog"
 		>
@@ -54,7 +54,7 @@
 					</Button>
 				</div>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 	</div>
 </template>
 

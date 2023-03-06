@@ -19,10 +19,14 @@
 							{{ bench.title }}
 						</div>
 						<div class="text-base sm:w-4/12">
-							<Badge :status="bench.status" />
+							<Badge :label="bench.status" :colorMap="$badgeStatusColorMap" />
 						</div>
 						<div class="text-base sm:w-4/12">
-							<Badge :status="`${bench.number_of_apps} Apps`" />
+							<Badge
+								:label="`${bench.number_of_apps} ${
+									bench.number_of_apps == 1 ? 'App' : 'Apps'
+								}`"
+							/>
 						</div>
 						<div
 							class="hidden w-2/12 text-right text-sm text-gray-600 sm:block"
@@ -33,9 +37,9 @@
 				</router-link>
 
 				<div class="text-right text-base">
-					<Dropdown :items="dropdownItems(bench)" right>
-						<template v-slot="{ toggleDropdown }">
-							<Button icon="more-horizontal" @click.stop="toggleDropdown()" />
+					<Dropdown :options="dropdownItems(bench)" right>
+						<template v-slot="{ open }">
+							<Button icon="more-horizontal" />
 						</template>
 					</Dropdown>
 				</div>
@@ -65,13 +69,13 @@ export default {
 			return [
 				{
 					label: 'New Site',
-					action: () => {
+					handler: () => {
 						this.$router.push(`/${bench.name}/new`);
 					}
 				},
 				{
 					label: 'View Versions',
-					action: () => {
+					handler: () => {
 						this.$router.push(`/benches/${bench.name}/versions`);
 					}
 				}

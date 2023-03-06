@@ -8,12 +8,12 @@ import {
 	LoadingIndicator,
 	LoadingText,
 	Dialog,
-	SuccessMessage,
-	Spinner,
 	Link,
 	Input,
 	Avatar,
-	pageMeta
+	GreenCheckIcon,
+	Dropdown,
+	ErrorMessage
 } from 'frappe-ui';
 import outsideClickDirective from './outsideClickDirective';
 
@@ -29,11 +29,12 @@ let globalFrappeUIComponents = {
 	Tooltip,
 	LoadingIndicator,
 	LoadingText,
-	SuccessMessage,
-	Spinner,
 	Link,
-	FrappeUIDialog: Dialog,
-	Input
+	Dialog,
+	Input,
+	GreenCheckIcon,
+	Dropdown,
+	ErrorMessage
 };
 
 export default function registerGlobalComponents(app) {
@@ -48,9 +49,6 @@ export default function registerGlobalComponents(app) {
 	for (let key in globalFrappeUIComponents) {
 		app.component(key, globalFrappeUIComponents[key]);
 	}
-
-	// Plugin
-	app.use(pageMeta);
 }
 
 export { components };

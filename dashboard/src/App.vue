@@ -11,10 +11,7 @@
 							class="hidden sticky top-0 sm:flex flex-shrink-0 w-64"
 							v-if="$auth.isLoggedIn"
 						/>
-						<router-view
-							v-slot="{ Component }"
-							class="w-full pb-8 sm:mr-0 p-6"
-						>
+						<router-view v-slot="{ Component }" class="w-full pb-8 sm:mr-0 p-6">
 							<keep-alive
 								:include="[
 									'Sites',

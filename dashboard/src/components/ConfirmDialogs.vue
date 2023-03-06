@@ -31,7 +31,7 @@ app.appContext.config.globalProperties.$confirm = confirm;
 
 <template>
 	<div>
-		<FrappeUIDialog
+		<Dialog
 			v-for="dialog in confirmDialogs"
 			v-model="dialog.show"
 			@close="removeConfirmDialog(dialog)"
@@ -62,6 +62,6 @@ app.appContext.config.globalProperties.$confirm = confirm;
 					{{ dialog.actionLabel || 'Submit' }}
 				</Button>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 	</div>
 </template>

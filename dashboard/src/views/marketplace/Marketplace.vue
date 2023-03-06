@@ -15,7 +15,7 @@
 			</template>
 		</PageHeader>
 
-		<FrappeUIDialog
+		<Dialog
 			:options="{
 				title: 'Add App to Marketplace'
 			}"
@@ -57,7 +57,7 @@
 					Add {{ selectedApp.app }}
 				</Button>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 
 		<Tabs class="pb-32" :tabs="tabs">
 			<router-view v-if="$account.team"></router-view>

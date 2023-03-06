@@ -12,7 +12,7 @@
 					</Button>
 				</template>
 			</ListItem>
-			<FrappeUIDialog
+			<Dialog
 				:options="{ title: 'Update App Summary' }"
 				v-model="showEditSummaryDialog"
 			>
@@ -41,7 +41,7 @@
 						</Button>
 					</div>
 				</template>
-			</FrappeUIDialog>
+			</Dialog>
 			<div class="py-3">
 				<ListItem title="Long Description">
 					<template #actions>
@@ -56,26 +56,27 @@
 					v-html="descriptionHTML"
 				></div>
 				<Dialog
-					title="Update App Description"
-					v-model="showEditDescriptionDialog"
+					:options="{ title: 'Update App Description', size: '5xl' }"
 					:dismissable="true"
+					v-model="showEditDescriptionDialog"
 					width="full"
 				>
-					<div class="grid grid-cols-1 gap-5 md:grid-cols-2">
-						<Input
-							:rows="30"
-							type="textarea"
-							v-model="app.long_description"
-						></Input>
-						<div class="prose" v-html="descriptionHTML"></div>
-					</div>
+					<template v-slot:body-content>
+						<div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+							<Input
+								:rows="30"
+								type="textarea"
+								v-model="app.long_description"
+							></Input>
+							<div class="prose" v-html="descriptionHTML"></div>
+						</div>
 
-					<ErrorMessage
-						class="mt-4"
-						:error="$resources.updateAppDescription.error"
-					/>
-
-					<template #actions>
+						<ErrorMessage
+							class="mt-4"
+							:error="$resources.updateAppDescription.error"
+						/>
+					</template>
+					<template v-slot:actions>
 						<Button
 							appearance="primary"
 							:loading="$resources.updateAppDescription.loading"

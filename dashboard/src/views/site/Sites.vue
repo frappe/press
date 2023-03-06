@@ -84,7 +84,7 @@
 					<SiteList v-else :sites="sites" />
 				</div>
 			</div>
-			<FrappeUIDialog
+			<Dialog
 				:options="{ title: 'Add card to create new sites' }"
 				v-model="showAddCardDialog"
 			>
@@ -98,7 +98,7 @@
 						"
 					/>
 				</template>
-			</FrappeUIDialog>
+			</Dialog>
 		</div>
 	</div>
 </template>

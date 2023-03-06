@@ -1,5 +1,5 @@
 <template>
-	<FrappeUIDialog
+	<Dialog
 		:options="{ title: 'Access Database' }"
 		v-if="site"
 		:modelValue="Boolean(site) && show"
@@ -24,7 +24,7 @@
 					>
 				</div>
 
-				<FrappeUIDialog
+				<Dialog
 					:options="{ title: 'Upgrade Plan' }"
 					v-model="showChangePlanDialog"
 				>
@@ -47,7 +47,7 @@
 							Submit
 						</Button>
 					</template>
-				</FrappeUIDialog>
+				</Dialog>
 			</div>
 
 			<!-- Available on the current plan -->
@@ -133,7 +133,7 @@
 				</div>
 			</div>
 		</template>
-	</FrappeUIDialog>
+	</Dialog>
 </template>
 
 <script>

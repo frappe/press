@@ -62,9 +62,9 @@
 						>
 							Update Available
 						</Badge>
-						<Dropdown :items="dropdownItems(app)" right>
-							<template v-slot="{ toggleDropdown }">
-								<Button icon="more-horizontal" @click="toggleDropdown()" />
+						<Dropdown :options="dropdownItems(app)" right>
+							<template v-slot="{ open }">
+								<Button icon="more-horizontal" />
 							</template>
 						</Dropdown>
 					</div>
@@ -74,7 +74,7 @@
 
 		<ErrorMessage :error="$resources.fetchLatestAppUpdate.error" />
 
-		<FrappeUIDialog
+		<Dialog
 			:options="{ title: 'Add apps to your bench' }"
 			v-model="showAddAppDialog"
 		>
@@ -108,7 +108,7 @@
 					Add {{ selectedApp.app }}
 				</Button>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 
 		<ChangeAppBranchDialog
 			:bench="benchName"
@@ -179,23 +179,23 @@ export default {
 			return [
 				{
 					label: 'Fetch Latest Update',
-					action: () => this.fetchLatestUpdate(app)
+					handler: () => this.fetchLatestUpdate(app)
 				},
 				{
 					label: 'Remove App',
-					action: () => this.confirmRemoveApp(app),
+					handler: () => this.confirmRemoveApp(app),
 					condition: () => app.name != 'frappe'
 				},
 				{
 					label: 'Change Branch',
-					action: () => {
+					handler: () => {
 						this.appToChangeBranchOf = app;
 					},
 					condition: () => app.name != 'frappe'
 				},
 				{
 					label: 'Visit Repo',
-					action: () =>
+					handler: () =>
 						window.open(`${app.repository_url}/tree/${app.branch}`, '_blank')
 				}
 			].filter(Boolean);

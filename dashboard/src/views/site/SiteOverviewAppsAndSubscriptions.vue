@@ -60,11 +60,9 @@
 				<div class="w-1/6">
 					<span v-if="app.subscription.status"
 						><Badge
-							:status="app.subscription.status"
+							:label="app.subscription.status"
 							:colorMap="$badgeStatusColorMap"
-						>
-							{{ app.subscription.status }}
-						</Badge>
+						/>
 					</span>
 					<span v-else>-</span>
 				</div>
@@ -94,16 +92,16 @@
 						"
 						>Subscribe</Button
 					>
-					<Dropdown :items="dropdownItems(app)" right>
-						<template v-slot="{ toggleDropdown }">
-							<Button icon="more-horizontal" @click="toggleDropdown()" />
+					<Dropdown :options="dropdownItems(app)" right>
+						<template v-slot="{ open }">
+							<Button icon="more-horizontal" />
 						</template>
 					</Dropdown>
 				</div>
 			</div>
 		</div>
 
-		<FrappeUIDialog
+		<Dialog
 			:options="{ title: 'Install an app on your site' }"
 			v-model="showInstallAppsDialog"
 		>
@@ -146,7 +144,7 @@
 					</p>
 				</div>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 
 		<!-- New App Install -->
 		<Dialog
@@ -181,19 +179,28 @@
 		</Dialog>
 
 		<!-- Plan Change Dialog -->
-		<Dialog v-model="showAppPlanChangeDialog" width="half" :dismissable="true">
-			<ChangeAppPlanSelector
-				@change="
-					plan => {
-						newAppPlan = plan.name;
-						newAppPlanIsFree = plan.is_free;
-					}
-				"
-				v-if="appToChangePlan"
-				:app="appToChangePlan.name"
-				:currentPlan="appToChangePlan.plan"
-				:frappeVersion="site.frappe_version"
-			/>
+		<Dialog
+			:options="{
+				title: 'Select Plan',
+				size: '2xl'
+			}"
+			v-model="showAppPlanChangeDialog"
+			:dismissable="true"
+		>
+			<template v-slot:body-content>
+				<ChangeAppPlanSelector
+					@change="
+						plan => {
+							newAppPlan = plan.name;
+							newAppPlanIsFree = plan.is_free;
+						}
+					"
+					v-if="appToChangePlan"
+					:app="appToChangePlan.name"
+					:currentPlan="appToChangePlan.plan"
+					:frappeVersion="site.frappe_version"
+				/>
+			</template>
 
 			<template #actions>
 				<Button
@@ -338,9 +345,7 @@ export default {
 	},
 	methods: {
 		getCommitTag(app) {
-			return app.timestamp
-				? this.$dayjs.shortFormating(this.$dayjs("2022-12-21T17:20:42+07:00").fromNow()) + ' ago'
-				: app.hash.substr(0, 7);
+			return app.hash.substr(0, 7);
 		},
 		subscribe(app) {
 			this.showPlanSelectionDialog = true;
@@ -359,6 +364,7 @@ export default {
 				subscription: app.subscription.name,
 				billing_type: app.billing_type
 			};
+			console.log(this.appToChangePlan);
 			this.showAppPlanChangeDialog = true;
 		},
 
@@ -423,11 +429,11 @@ export default {
 			return [
 				app.app != 'frappe' && {
 					label: 'Remove App',
-					action: () => this.confirmRemoveApp(app)
+					handler: () => this.confirmRemoveApp(app)
 				},
 				{
 					label: 'Visit Repo',
-					action: () =>
+					handler: () =>
 						window.open(`${app.repository_url}/tree/${app.branch}`, '_blank')
 				}
 			].filter(Boolean);

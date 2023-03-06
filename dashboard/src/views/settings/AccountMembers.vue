@@ -19,12 +19,12 @@
 				:key="member.name"
 			>
 				<template #actions>
-					<Badge v-bind="getRoleBadgeProps(member)" />
+					<Badge :label="getRoleBadgeProps(member).status" :colorMap="$badgeStatusColorMap"/>
 				</template>
 			</ListItem>
 		</div>
 
-		<FrappeUIDialog
+		<Dialog
 			:options="{ title: 'Manage Members' }"
 			v-model="showManageMemberDialog"
 		>
@@ -77,7 +77,7 @@
 					</Button>
 				</div>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 	</Card>
 </template>
 <script>
