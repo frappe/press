@@ -3,7 +3,7 @@
 		<div>
 			<FrappeCloudLogo class="my-6 ml-2 h-4 w-auto" />
 			<div
-				class="mb-4 cursor-pointer rounded border bg-gray-200 px-3 py-2 text-xs hover:border-gray-300"
+				class="mb-4 cursor-pointer rounded-xl border bg-gray-200 px-3 py-3 text-xs hover:border-gray-300"
 				@click="show = true"
 			>
 				Search (Ctrl + k)
@@ -22,7 +22,7 @@
 								? item.highlight(route)
 								: item.route == '/'
 						)
-							? 'bg-white text-blue-500'
+							? 'bg-gray-200'
 							: 'text-gray-900 hover:bg-gray-50'
 					]"
 					:href="href"
@@ -35,21 +35,13 @@
 			</router-link>
 		</div>
 		<Dropdown
-			:items="dropdownItems"
-			:dropdown-width-full="true"
-			right
-			v-on-outside-click="() => (dropDownActive = false)"
+			placement="center"
+			:options="dropdownItems"
 		>
-			<template v-slot="{ toggleDropdown }">
+			<template v-slot="{ open }">
 				<div
 					class="m-2 flex cursor-pointer items-center gap-2 rounded-md p-2 truncate break-all"
-					@click="
-						() => {
-							toggleDropdown();
-							dropDownActive = true;
-						}
-					"
-					:class="dropDownActive ? 'bg-gray-300' : 'hover:bg-gray-200'"
+					:class="open ? 'bg-gray-300' : 'hover:bg-gray-200'"
 				>
 					<Avatar
 						v-if="$account.user"
@@ -83,23 +75,26 @@ export default {
 	data() {
 		return {
 			show: false,
-			dropDownActive: false,
 			dropdownItems: [
 				{
 					label: 'Docs',
-					action: () => (window.location.href = '/docs')
+					icon: 'book-open',
+					handler: () => (window.location.href = '/docs')
 				},
 				{
 					label: 'Support',
-					action: () => (window.location.href = '/support')
+					icon: 'help-circle',
+					handler: () => (window.location.href = '/support')
 				},
 				{
 					label: 'Settings',
-					action: () => this.$router.push('/settings')
+					icon: 'settings',
+					handler: () => this.$router.push('/settings')
 				},
 				{
 					label: 'Logout',
-					action: () => this.$auth.logout()
+					icon: 'log-out',
+					handler: () => this.$auth.logout()
 				}
 			]
 		};

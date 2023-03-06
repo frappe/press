@@ -110,7 +110,8 @@ let utils = {
 				'Attention Required': 'red',
 				Active: 'green',
 				Trial: 'yellow',
-				Published: 'green'
+				Published: 'green',
+				Owner: 'blue'
 			};
 		}
 	}

@@ -45,9 +45,9 @@
 				</div>
 				<div class="flex items-center space-x-2">
 					<Badge v-if="backup.offsite" color="green"> Offsite </Badge>
-					<Dropdown :items="dropdownItems(backup)" right>
-						<template v-slot="{ toggleDropdown }">
-							<Button icon="more-horizontal" @click="toggleDropdown()" />
+					<Dropdown :options="dropdownItems(backup)">
+						<template v-slot="{ open }">
+							<Button icon="more-horizontal" />
 						</template>
 					</Dropdown>
 				</div>
@@ -124,7 +124,7 @@ export default {
 				},
 				{
 					label: `Database (${this.formatBytes(backup.database_size || 0)})`,
-					action: () => {
+					handler: () => {
 						this.downloadBackup(
 							backup.name,
 							'database',
@@ -136,7 +136,7 @@ export default {
 				{
 					label: `Public Files (${this.formatBytes(backup.public_size || 0)})`,
 					condition: () => backup.public_file,
-					action: () => {
+					handler: () => {
 						this.downloadBackup(
 							backup.name,
 							'public',
@@ -150,7 +150,7 @@ export default {
 						backup.private_size || 0
 					)})`,
 					condition: () => backup.private_file,
-					action: () => {
+					handler: () => {
 						this.downloadBackup(
 							backup.name,
 							'private',
@@ -167,7 +167,7 @@ export default {
 				{
 					label: 'Restore',
 					condition: () => backup.offsite,
-					action: () => {
+					handler: () => {
 						this.$confirm({
 							title: 'Restore Backup',
 							// prettier-ignore

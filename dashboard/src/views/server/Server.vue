@@ -54,11 +54,11 @@
 						<!-- Only for mobile view -->
 						<Dropdown
 							v-if="serverActions.length > 0"
-							:items="serverActions"
+							:options="serverActions"
 							right
 						>
-							<template v-slot="{ toggleDropdown }">
-								<Button icon-right="chevron-down" @click="toggleDropdown()"
+							<template v-slot="{ open }">
+								<Button icon-right="chevron-down"
 									>Actions</Button
 								>
 							</template>
@@ -78,9 +78,9 @@
 							{{ action.label }}
 						</Button>
 
-						<Dropdown v-if="serverActions.length > 2" :items="serverActions">
-							<template v-slot="{ toggleDropdown }">
-								<Button icon-right="chevron-down" @click="toggleDropdown()"
+						<Dropdown v-if="serverActions.length > 2" :options="serverActions">
+							<template v-slot="{ open }">
+								<Button icon-right="chevron-down"
 									>Actions</Button
 								>
 							</template>
@@ -190,14 +190,14 @@ export default {
 				['Active', 'Updating'].includes(this.server.status) && {
 					label: 'Visit Server',
 					icon: 'external-link',
-					action: () => {
+					handler: () => {
 						window.open(`https://${this.server.name}`, '_blank');
 					}
 				},
 				this.server.status === 'Active' && {
 					label: 'New Bench',
 					icon: 'plus',
-					action: () => {
+					handler: () => {
 						this.$router.replace(
 							`/servers/${this.server.app_server}/bench/new`
 						);
@@ -206,7 +206,7 @@ export default {
 				this.$account.user.user_type == 'System User' && {
 					label: 'View in Desk',
 					icon: 'external-link',
-					action: () => {
+					handler: () => {
 						window.open(
 							`${window.location.protocol}//${window.location.host}/app/server/${this.server.name}`,
 							'_blank'
@@ -217,14 +217,14 @@ export default {
 					label: 'Reboot',
 					icon: 'tool',
 					loading: this.$resources.reboot.loading,
-					action: () => {
+					handler: () => {
 						return this.$resources.reboot.submit();
 					}
 				},
 				this.$account.user.user_type == 'System User' && {
 					label: 'Impersonate Team',
 					icon: 'tool',
-					action: async () => {
+					handler: async () => {
 						await this.$account.switchTeam(this.server.team);
 						this.$notify({
 							title: 'Switched Team',

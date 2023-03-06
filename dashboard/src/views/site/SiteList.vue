@@ -46,11 +46,10 @@
 				<div class="text-right text-base">
 					<Dropdown
 						v-if="site.status === 'Active' || site.status === 'Updating'"
-						:items="dropdownItems(site)"
-						right
+						:options="dropdownItems(site)"
 					>
-						<template v-slot="{ toggleDropdown }">
-							<Button icon="more-horizontal" @click.stop="toggleDropdown()" />
+						<template v-slot="{ open }">
+							<Button icon="more-horizontal" />
 						</template>
 					</Dropdown>
 					<div v-else class="h-[30px] w-[30px]"></div>
@@ -139,13 +138,13 @@ export default {
 			return [
 				{
 					label: 'Visit Site',
-					action: () => {
+					handler: () => {
 						window.open(`https://${site.name}`, '_blank');
 					}
 				},
 				{
 					label: 'Login As Admin',
-					action: () => {
+					handler: () => {
 						if (this.$account.team.name == site.team) {
 							return this.$resources.loginAsAdmin.submit({
 								name: site.name

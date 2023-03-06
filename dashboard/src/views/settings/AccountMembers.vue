@@ -19,7 +19,7 @@
 				:key="member.name"
 			>
 				<template #actions>
-					<Badge v-bind="getRoleBadgeProps(member)" />
+					<Badge :label="getRoleBadgeProps(member).status" :colorMap="$badgeStatusColorMap"/>
 				</template>
 			</ListItem>
 		</div>

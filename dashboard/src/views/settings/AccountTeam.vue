@@ -10,9 +10,9 @@
 						<Badge color="blue">Active</Badge>
 					</div>
 					<div v-else class="flex flex-row justify-end">
-						<Dropdown class="ml-2" :items="dropdownItems(team)" right>
-							<template v-slot="{ toggleDropdown }">
-								<Button icon="more-horizontal" @click="toggleDropdown()" />
+						<Dropdown class="ml-2" :options="dropdownItems(team)" right>
+							<template v-slot="{ open }">
+								<Button icon="more-horizontal" />
 							</template>
 						</Dropdown>
 					</div>
@@ -61,11 +61,11 @@ export default {
 			return [
 				{
 					label: 'Switch to Team',
-					action: () => this.$account.switchToTeam(team_name)
+					handler: () => this.$account.switchToTeam(team_name)
 				},
 				{
 					label: 'Leave Team',
-					action: () => this.confirmLeaveTeam(team_name)
+					handler: () => this.confirmLeaveTeam(team_name)
 				}
 			];
 		},

@@ -92,9 +92,9 @@
 						"
 						>Subscribe</Button
 					>
-					<Dropdown :items="dropdownItems(app)" right>
-						<template v-slot="{ toggleDropdown }">
-							<Button icon="more-horizontal" @click="toggleDropdown()" />
+					<Dropdown :options="dropdownItems(app)" right>
+						<template v-slot="{ open }">
+							<Button icon="more-horizontal" />
 						</template>
 					</Dropdown>
 				</div>
@@ -345,11 +345,7 @@ export default {
 	},
 	methods: {
 		getCommitTag(app) {
-			return app.timestamp
-				? this.$dayjs.shortFormating(
-						this.$dayjs('2022-12-21T17:20:42+07:00').fromNow()
-				  ) + ' ago'
-				: app.hash.substr(0, 7);
+			return app.hash.substr(0, 7);
 		},
 		subscribe(app) {
 			this.showPlanSelectionDialog = true;
@@ -433,11 +429,11 @@ export default {
 			return [
 				app.app != 'frappe' && {
 					label: 'Remove App',
-					action: () => this.confirmRemoveApp(app)
+					handler: () => this.confirmRemoveApp(app)
 				},
 				{
 					label: 'Visit Repo',
-					action: () =>
+					handler: () =>
 						window.open(`${app.repository_url}/tree/${app.branch}`, '_blank')
 				}
 			].filter(Boolean);

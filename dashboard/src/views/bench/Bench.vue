@@ -19,9 +19,9 @@
 						/>
 					</div>
 					<div class="flex-row space-x-3 md:flex">
-						<Dropdown :items="benchActions">
-							<template v-slot="{ toggleDropdown }">
-								<Button icon-right="chevron-down" @click="toggleDropdown()"
+						<Dropdown :options="benchActions">
+							<template v-slot="{ open }">
+								<Button icon-right="chevron-down"
 									>Actions</Button
 								>
 							</template>
@@ -131,14 +131,14 @@ export default {
 				this.bench.status == 'Active' && {
 					label: 'New Site',
 					icon: 'plus',
-					action: () => {
+					handler: () => {
 						this.$router.push(`/${this.bench.name}/new`);
 					}
 				},
 				this.$account.user.user_type == 'System User' && {
 					label: 'View in Desk',
 					icon: 'external-link',
-					action: () => {
+					handler: () => {
 						window.open(
 							`${window.location.protocol}//${window.location.host}/app/release-group/${this.bench.name}`,
 							'_blank'
@@ -148,7 +148,7 @@ export default {
 				this.$account.user.user_type == 'System User' && {
 					label: 'Impersonate Team',
 					icon: 'tool',
-					action: async () => {
+					handler: async () => {
 						await this.$account.switchTeam(this.bench.team);
 						this.$notify({
 							title: 'Switched Team',

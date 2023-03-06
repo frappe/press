@@ -53,9 +53,9 @@
 						</div>
 
 						<!-- Only for mobile view -->
-						<Dropdown v-if="siteActions.length > 0" :items="siteActions" right>
-							<template v-slot="{ toggleDropdown }">
-								<Button icon-right="chevron-down" @click="toggleDropdown()"
+						<Dropdown v-if="siteActions.length > 0" :options="siteActions" right>
+							<template v-slot="{ open }">
+								<Button icon-right="chevron-down"
 									>Actions</Button
 								>
 							</template>
@@ -75,9 +75,9 @@
 							{{ action.label }}
 						</Button>
 
-						<Dropdown v-if="siteActions.length > 2" :items="siteActions">
-							<template v-slot="{ toggleDropdown }">
-								<Button icon-right="chevron-down" @click="toggleDropdown()"
+						<Dropdown v-if="siteActions.length > 2" :options="siteActions">
+							<template v-slot="{ open }">
+								<Button icon-right="chevron-down"
 									>Actions</Button
 								>
 							</template>
@@ -256,14 +256,14 @@ export default {
 				['Active', 'Updating'].includes(this.site.status) && {
 					label: 'Visit Site',
 					icon: 'external-link',
-					action: () => {
+					handler: () => {
 						window.open(`https://${this.site.name}`, '_blank');
 					}
 				},
 				this.$account.user.user_type == 'System User' && {
 					label: 'View in Desk',
 					icon: 'external-link',
-					action: () => {
+					handler: () => {
 						window.open(
 							`${window.location.protocol}//${window.location.host}/app/site/${this.site.name}`,
 							'_blank'
@@ -274,7 +274,7 @@ export default {
 					label: 'Manage Bench',
 					icon: 'tool',
 					route: `/benches/${this.site.group}`,
-					action: () => {
+					handler: () => {
 						this.$router.push(`/benches/${this.site.group}`);
 					}
 				},
@@ -282,7 +282,7 @@ export default {
 					label: 'Login As Administrator',
 					icon: 'external-link',
 					loading: this.$resources.loginAsAdmin.loading,
-					action: () => {
+					handler: () => {
 						if (this.$account.team.name == this.site.team) {
 							return this.$resources.loginAsAdmin.submit({
 								name: this.siteName
@@ -295,7 +295,7 @@ export default {
 				this.$account.user.user_type == 'System User' && {
 					label: 'Impersonate Team',
 					icon: 'tool',
-					action: async () => {
+					handler: async () => {
 						await this.$account.switchTeam(this.site.team);
 						this.$notify({
 							title: 'Switched Team',

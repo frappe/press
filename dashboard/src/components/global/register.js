@@ -10,7 +10,10 @@ import {
 	Dialog,
 	Link,
 	Input,
-	Avatar
+	Avatar,
+	GreenCheckIcon,
+	Dropdown,
+	ErrorMessage
 } from 'frappe-ui';
 import outsideClickDirective from './outsideClickDirective';
 
@@ -28,7 +31,10 @@ let globalFrappeUIComponents = {
 	LoadingText,
 	Link,
 	Dialog,
-	Input
+	Input,
+	GreenCheckIcon,
+	Dropdown,
+	ErrorMessage
 };
 
 export default function registerGlobalComponents(app) {

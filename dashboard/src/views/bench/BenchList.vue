@@ -37,9 +37,9 @@
 				</router-link>
 
 				<div class="text-right text-base">
-					<Dropdown :items="dropdownItems(bench)" right>
-						<template v-slot="{ toggleDropdown }">
-							<Button icon="more-horizontal" @click.stop="toggleDropdown()" />
+					<Dropdown :options="dropdownItems(bench)" right>
+						<template v-slot="{ open }">
+							<Button icon="more-horizontal" />
 						</template>
 					</Dropdown>
 				</div>
@@ -69,13 +69,13 @@ export default {
 			return [
 				{
 					label: 'New Site',
-					action: () => {
+					handler: () => {
 						this.$router.push(`/${bench.name}/new`);
 					}
 				},
 				{
 					label: 'View Versions',
-					action: () => {
+					handler: () => {
 						this.$router.push(`/benches/${bench.name}/versions`);
 					}
 				}

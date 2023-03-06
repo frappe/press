@@ -35,9 +35,9 @@
 						<span>Added on {{ $date(card.creation).toLocaleString() }}</span>
 					</div>
 				</div>
-				<Dropdown :items="dropdownItems(card)" right>
-					<template v-slot="{ toggleDropdown }">
-						<Button icon="more-horizontal" @click="toggleDropdown()" />
+				<Dropdown :options="dropdownItems(card)" right>
+					<template v-slot="{ open }">
+						<Button icon="more-horizontal" />
 					</template>
 				</Dropdown>
 			</div>
@@ -84,11 +84,11 @@ export default {
 			return [
 				!card.is_default && {
 					label: 'Set as default',
-					action: () => this.confirmSetAsDefault(card)
+					handler: () => this.confirmSetAsDefault(card)
 				},
 				{
 					label: 'Remove',
-					action: () => this.confirmRemove(card)
+					handler: () => this.confirmRemove(card)
 				}
 			];
 		},

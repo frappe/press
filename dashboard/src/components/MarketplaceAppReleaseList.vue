@@ -64,9 +64,9 @@
 					<span>
 						<Badge
 							v-if="release.status != 'Draft'"
-							:status="release.status"
+							:label="release.status"
 							:colorMap="$badgeStatusColorMap"
-						></Badge>
+						/>
 					</span>
 					<span class="text-right">
 						<Button

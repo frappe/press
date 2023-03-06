@@ -61,7 +61,7 @@
 			>
 				<template #actions>
 					<Badge
-						:status="source.source_information.status"
+						:label="source.source_information.status"
 						:colorMap="$badgeStatusColorMap"
 					/>
 				</template>

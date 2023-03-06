@@ -59,9 +59,9 @@
 							>
 								Removing domain
 							</Button>
-							<Dropdown v-else :items="actionItems(d)" right>
-								<template v-slot="{ toggleDropdown }">
-									<Button icon="more-horizontal" @click="toggleDropdown()" />
+							<Dropdown v-else :options="actionItems(d)">
+								<template v-slot="{ open }">
+									<Button icon="more-horizontal"/>
 								</template>
 							</Dropdown>
 						</div>
@@ -227,12 +227,12 @@ export default {
 			return [
 				{
 					label: 'Remove',
-					action: () => this.confirmRemoveDomain(domain.domain)
+					handler: () => this.confirmRemoveDomain(domain.domain)
 				},
 				{
 					label: 'Set Primary',
 					condition: () => domain.status == 'Active' && !domain.primary,
-					action: () => this.confirmSetPrimary(domain.domain)
+					handler: () => this.confirmSetPrimary(domain.domain)
 				},
 				{
 					label: 'Redirect to Primary',
@@ -240,7 +240,7 @@ export default {
 						domain.status == 'Active' &&
 						!domain.primary &&
 						!domain.redirect_to_primary,
-					action: () => this.confirmSetupRedirect(domain.domain)
+					handler: () => this.confirmSetupRedirect(domain.domain)
 				},
 				{
 					label: 'Remove Redirect',
@@ -248,7 +248,7 @@ export default {
 						domain.status == 'Active' &&
 						!domain.primary &&
 						domain.redirect_to_primary,
-					action: () => this.confirmRemoveRedirect(domain.domain)
+					handler: () => this.confirmRemoveRedirect(domain.domain)
 				}
 			].filter(d => (d.condition ? d.condition() : true));
 		},

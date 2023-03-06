@@ -39,9 +39,9 @@
 					</div>
 				</div>
 				<div class="ml-auto flex items-center space-x-2">
-					<Dropdown :items="dropdownItems(app)" right>
-						<template v-slot="{ toggleDropdown }">
-							<Button icon="more-horizontal" @click="toggleDropdown()" />
+					<Dropdown :options="dropdownItems(app)" right>
+						<template v-slot="{ open }">
+							<Button icon="more-horizontal" />
 						</template>
 					</Dropdown>
 				</div>
@@ -247,11 +247,11 @@ export default {
 			return [
 				app.app != 'frappe' && {
 					label: 'Remove App',
-					action: () => this.confirmRemoveApp(app)
+					handler: () => this.confirmRemoveApp(app)
 				},
 				{
 					label: 'Visit Repo',
-					action: () =>
+					handler: () =>
 						window.open(`${app.repository_url}/tree/${app.branch}`, '_blank')
 				}
 			].filter(Boolean);
