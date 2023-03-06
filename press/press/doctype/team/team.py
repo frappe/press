@@ -352,7 +352,7 @@ class Team(Document):
 		self.billing_name = billing_details.billing_name or self.billing_name
 		self.billing_address = address_doc.name
 		self.load_doc_before_save()
-		prev_billing_name= self.get_doc_before_save().billing_name
+		prev_billing_name = self.get_doc_before_save().billing_name
 		self.save()
 		self.reload()
 
