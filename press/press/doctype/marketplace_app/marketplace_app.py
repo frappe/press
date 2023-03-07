@@ -350,7 +350,7 @@ def get_script_name(app, op):
 		return "after_install_script"
 
 	elif op == "uninstall" and frappe.db.get_value(
-		"Marketplace App", app, "run_after_install_script"
+		"Marketplace App", app, "run_after_uninstall_script"
 	):
 		return "after_uninstall_script"
 	else:
