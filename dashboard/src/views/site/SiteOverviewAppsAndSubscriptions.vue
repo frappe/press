@@ -149,24 +149,24 @@
 		<!-- New App Install -->
 		<Dialog
 			v-model="showPlanSelectionDialog"
-			title="Select app plan"
-			width="half"
-			:dismissable="true"
+			:options="{ title: 'Select app plan'}"
 		>
-			<ChangeAppPlanSelector
-				v-if="appToInstall?.app"
-				:app="appToInstall.app"
-				:frappeVersion="site?.frappe_version"
-				class="mb-9"
-				@change="
-					plan => {
-						selectedPlan = plan.name;
-						selectedPlanIsFree = plan.is_free;
-					}
-				"
-			/>
+			<template v-slot:body-content>
+				<ChangeAppPlanSelector
+					v-if="appToInstall?.app"
+					:app="appToInstall.app"
+					:frappeVersion="site?.frappe_version"
+					class="mb-9"
+					@change="
+						plan => {
+							selectedPlan = plan.name;
+							selectedPlanIsFree = plan.is_free;
+						}
+					"
+				/>
 
-			<ErrorMessage :error="$resourceErrors" />
+				<ErrorMessage :error="$resourceErrors" />
+			</template>
 
 			<template #actions>
 				<Button
