@@ -90,8 +90,6 @@ export default {
 	name: 'SelectAppFromGithub',
 	components: {
 		NewAppRepositories,
-		GreenCheckIcon,
-		ErrorMessage
 	},
 	data() {
 		return {
