@@ -113,6 +113,6 @@ def update_disk_usages():
 			site.current_disk_usage = usage.latest_disk_usage
 			site.save()
 			frappe.db.commit()
-		except Exception():
+		except Exception:
 			log_error("Site Disk Usage Update Error", usage=usage)
 			frappe.db.rollback()
