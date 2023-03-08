@@ -70,7 +70,7 @@
 							:icon-left="action.icon"
 							:loading="action.loading"
 							:route="action.route"
-							@click="action.action"
+							@click="action.handler"
 						>
 							{{ action.label }}
 						</Button>
