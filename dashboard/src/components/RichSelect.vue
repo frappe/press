@@ -1,8 +1,9 @@
 <template>
-	<Dropdown :options="dropdownOptions" :dropdown-width-full="true">
-		<template v-slot="{ open }">
+	<OldDropdown :items="dropdownOptions" :dropdown-width-full="true">
+		<template v-slot="{ toggleDropdown }">
 			<button
 				class="select relative flex w-full items-center justify-between rounded-md bg-gray-100 py-1 pl-3 pr-2 text-left text-base leading-5 focus:bg-gray-200 focus:outline-none"
+				@click="toggleDropdown()"
 			>
 				<div class="flex items-center">
 					<img
@@ -33,7 +34,7 @@
 				</svg>
 			</button>
 		</template>
-	</Dropdown>
+	</OldDropdown>
 </template>
 <script>
 import { h } from 'vue';
@@ -49,7 +50,7 @@ export default {
 			return this.options.map(d => {
 				return {
 					...d,
-					handler: () => this.$emit('change', d.value),
+					action: () => this.$emit('change', d.value),
 					component: this.getDropdownItemComponent(d)
 				};
 			});
