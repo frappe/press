@@ -28,7 +28,7 @@
 					<template #actions>
 						<Badge
 							v-if="v.status != 'Active'"
-							:status="v.status"
+							:label="v.status"
 							:colorMap="$badgeStatusColorMap"
 						/>
 						<Badge v-else color="green">

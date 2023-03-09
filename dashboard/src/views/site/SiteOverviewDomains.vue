@@ -33,10 +33,9 @@
 						<div class="ml-auto flex items-center space-x-2">
 							<Badge
 								v-if="d.status != 'Active' || d.primary"
-								:status="d.status"
+								:label="d.status"
 								:colorMap="$badgeStatusColorMap"
 							>
-								{{ d.primary ? 'Primary' : d.status }}
 							</Badge>
 							<Button
 								v-if="d.status == 'Broken' && d.retry_count <= 5"

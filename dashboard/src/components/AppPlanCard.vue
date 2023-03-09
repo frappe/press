@@ -58,7 +58,7 @@
 
 		<Badge
 			v-if="editable"
-			:status="plan.enabled ? 'Enabled' : 'Disabled'"
+			:label="plan.enabled ? 'Enabled' : 'Disabled'"
 			class="mt-4 self-start"
 			:colorMap="$badgeStatusColorMap"
 		></Badge>

@@ -14,9 +14,9 @@
 						<h1 class="text-2xl font-bold">{{ server.title }}</h1>
 						<Badge
 							class="ml-4 hidden md:inline-block"
-							:status="server.status"
+							:label="server.status"
 							:colorMap="$badgeStatusColorMap"
-							>{{ server.status }}</Badge
+							></Badge
 						>
 
 						<div

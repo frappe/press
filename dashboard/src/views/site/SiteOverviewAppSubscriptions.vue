@@ -41,7 +41,7 @@
 					</p>
 					<span>
 						<Badge
-							:status="subscription.status"
+							:label="subscription.status"
 							:colorMap="$badgeStatusColorMap"
 						></Badge>
 					</span>

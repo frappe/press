@@ -16,17 +16,15 @@
 								runningPlay.id == play.name &&
 								runningPlay.status !== 'Success'
 							"
-							:status="runningPlay.status"
+							:label="runningPlay.status"
 							:colorMap="$badgeStatusColorMap"
 						>
-							{{ runningPlay.status }}
 						</Badge>
 						<Badge
 							v-else-if="play.status != 'Success'"
-							:status="play.status"
+							:label="play.status"
 							:colorMap="$badgeStatusColorMap"
 						>
-							{{ play.status }}
 						</Badge>
 					</template>
 				</ListItem>

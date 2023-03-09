@@ -16,17 +16,15 @@
 								runningJob.id == job.name &&
 								runningJob.status !== 'Success'
 							"
-							:status="runningJob.status"
+							:label="runningJob.status"
 							:colorMap="$badgeStatusColorMap"
 						>
-							{{ runningJob.status }}
 						</Badge>
 						<Badge
 							v-else-if="job.status != 'Success'"
-							:status="job.status"
+							:label="job.status"
 							:colorMap="$badgeStatusColorMap"
 						>
-							{{ job.status }}
 						</Badge>
 					</template>
 				</ListItem>

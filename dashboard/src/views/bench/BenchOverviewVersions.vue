@@ -31,7 +31,7 @@
 					<div class="flex items-center space-x-2">
 						<Badge
 							v-if="version.status != 'Active'"
-							:status="version.status"
+							:label="version.status"
 							:colorMap="$badgeStatusColorMap"
 						/>
 						<router-link
