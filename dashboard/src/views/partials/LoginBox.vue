@@ -2,9 +2,7 @@
 	<div class="h-full pt-4 sm:pt-16">
 		<div>
 			<div class="flex">
-				<FrappeSaasLogo class="mx-auto h-4 w-auto" v-if="logo == 'saas'" />
 				<FrappeCloudLogo
-					v-else
 					class="mx-auto h-4 w-auto"
 					@dblclick="redirectForFrappeioAuth"
 				/>
@@ -23,13 +21,11 @@
 
 <script>
 import FrappeCloudLogo from '@/components/FrappeCloudLogo.vue';
-import FrappeSaasLogo from '@/components/FrappeSaasLogo.vue';
 export default {
 	name: 'LoginBox',
 	props: ['title', 'logo'],
 	components: {
 		FrappeCloudLogo,
-		FrappeSaasLogo
 	},
 	methods: {
 		redirectForFrappeioAuth() {
