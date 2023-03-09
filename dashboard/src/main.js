@@ -13,8 +13,8 @@ const app = createApp(App);
 
 registerPlugins(app);
 registerGlobalComponents(app);
-const { auth, account, saas } = registerControllers(app);
-registerRouter(app, auth, account, saas);
+const { auth, account } = registerControllers(app);
+registerRouter(app, auth, account);
 
 if (window.press_frontend_sentry_dsn.includes('https://')) {
 	Sentry.init({

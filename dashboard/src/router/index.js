@@ -1,6 +1,5 @@
 import authRoutes from './auth';
 import siteRoutes from './site';
-import saasRoutes from './saas';
 import benchRoutes from './bench';
 import serverRoutes from './server';
 import settingsRoute from './settings';
@@ -25,7 +24,6 @@ const routes = [
 	...benchRoutes,
 	...siteRoutes,
 	...serverRoutes,
-	...saasRoutes,
 	...marketplaceRoutes,
 	billingRoute,
 	settingsRoute,
