@@ -4,7 +4,7 @@
 		<ListItem
 			title="Become Marketplace Developer"
 			subtitle="Become a marketplace app publisher"
-			v-if="showBecomePublisherButton && !isSaasLogin"
+			v-if="showBecomePublisherButton"
 		>
 			<template #actions>
 				<Button @click="confirmPublisherAccount()">
@@ -142,11 +142,6 @@ export default {
 					this.$router.push('/marketplace');
 				}
 			};
-		}
-	},
-	computed: {
-		isSaasLogin() {
-			return localStorage.getItem("saas_login");
 		}
 	},
 	data() {

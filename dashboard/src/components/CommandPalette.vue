@@ -82,7 +82,7 @@ export default {
 					.search(query)
 					.map(result => result.item);
 			}
-		}, 300),
+		}, 200),
 		onSelection(value) {
 			if (value) {
 				this.$router.push(value.route);
