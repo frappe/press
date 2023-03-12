@@ -113,13 +113,10 @@ def poll_file_statuses():
 def delete_remote_backup_objects(remote_files):
 	"""Delete specified objects identified by keys in the backups bucket."""
 	from boto3 import resource
-
 	from press.utils import chunk
 
 	press_settings = frappe.get_single("Press Settings")
-
 	remote_files = list(set([x for x in remote_files if x]))
-
 	if not remote_files:
 		return
 
