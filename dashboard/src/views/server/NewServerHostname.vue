@@ -9,7 +9,7 @@
 			<input
 				class="form-input z-10 w-full rounded-r-none"
 				type="text"
-				v-bind="title"
+				:value="title"
 				@change="titleChange"
 				placeholder="Server"
 			/>
@@ -17,7 +17,7 @@
 		<div class="mt-6 space-y-1">
 			<h2 class="text-lg font-semibold">Select Region</h2>
 			<p class="text-base text-gray-700">
-				Select the datacenter region where your site should be created
+				Select the datacenter region where your server should be created
 			</p>
 			<div class="mt-1">
 				<RichSelect
@@ -56,7 +56,6 @@ export default {
 			}));
 		}
 	},
-
 	async mounted() {
 		if (this.regionOptions.length == 1) {
 			this.$emit('update:selectedRegion', this.regionOptions[0].value);
