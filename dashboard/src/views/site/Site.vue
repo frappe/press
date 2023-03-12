@@ -1,7 +1,7 @@
 <template>
 	<div>
 		<div v-if="site">
-			<div class="pb-3">
+			<div class="pb-2">
 				<div class="text-base text-gray-700">
 					<router-link to="/sites" class="hover:text-gray-800">
 						← Back to Sites
@@ -87,7 +87,7 @@
 			</div>
 		</div>
 		<div>
-			<Tabs class="pb-8" :tabs="tabs">
+			<Tabs :tabs="tabs">
 				<router-view v-slot="{ Component, route }">
 					<component v-if="site" :is="Component" :site="site"></component>
 				</router-view>
