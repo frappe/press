@@ -182,7 +182,6 @@ scheduler_events = {
 		"press.press.audit.check_offsite_backups",
 		"press.press.audit.check_backup_records",
 		"press.press.audit.check_app_server_replica_benches",
-		"press.press.audit.check_unbilled_subscriptions",
 		"press.press.doctype.invoice.invoice.finalize_unpaid_prepaid_credit_invoices",
 		"press.press.doctype.bench.bench.sync_analytics",
 		"press.saas.doctype.saas_app_subscription.saas_app_subscription.suspend_prepaid_subscriptions",
@@ -209,6 +208,7 @@ scheduler_events = {
 		"0 4 * * *": [
 			"press.press.doctype.site.backups.cleanup_offsite",
 			"press.press.cleanup.unlink_remote_files_from_site",
+			"press.press.audit.check_unbilled_subscriptions",
 		],
 		"* * * * * 0/5": ["press.press.doctype.agent_job.agent_job.poll_pending_jobs"],
 		"0 */6 * * *": ["press.press.doctype.server.server.cleanup_unused_files"],

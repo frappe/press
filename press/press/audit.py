@@ -271,19 +271,17 @@ class UnbilledSubscriptionsCheck(Audit):
 		from press.press.doctype.subscription.subscription import (
 			paid_plans,
 			sites_with_free_hosting,
-			already_created_usage_records,
+			created_usage_records,
 		)
 
 		free_sites = sites_with_free_hosting()
 		# valid susbcriptions without UR for today
-		date = datetime.today() - timedelta(days=1)
-		date = date.strftime("%d-%m-%Y")
 		return frappe.db.get_all(
 			"Subscription",
 			filters={
 				"enabled": True,
 				"plan": ("in", paid_plans()),
-				"name": ("not in", already_created_usage_records(free_sites, date)),
+				"name": ("not in", created_usage_records(free_sites, frappe.utils.today())),
 				"document_name": ("not in", free_sites),
 			},
 			pluck="name",

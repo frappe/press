@@ -147,7 +147,7 @@ def create_usage_records():
 		filters={
 			"enabled": True,
 			"plan": ("in", paid_plans()),
-			"name": ("not in", already_created_usage_records(free_sites)),
+			"name": ("not in", created_usage_records(free_sites)),
 			"document_name": ("not in", free_sites),
 		},
 		pluck="name",
@@ -195,7 +195,8 @@ def sites_with_free_hosting():
 	return sites_with_standard_hosting + free_sites
 
 
-def already_created_usage_records(free_sites, date=frappe.utils.today()):
+def created_usage_records(free_sites, date=frappe.utils.today()):
+	"""Returns created usage records for a particular date"""
 	return frappe.get_all(
 		"Usage Record",
 		filters={
