@@ -9,7 +9,7 @@
 			<input
 				class="form-input z-10 w-full rounded-r-none"
 				type="text"
-				v-model="title"
+				v-bind="title"
 				@change="titleChange"
 				placeholder="Server"
 			/>
