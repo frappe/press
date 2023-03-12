@@ -564,21 +564,25 @@ def me():
 @frappe.whitelist()
 def fuse_list():
 	team = get_current_team()
-	sites = frappe.get_all(
-		"Site",
-		{"team": team, "status": ("not in", ("Archived"))},
-		["'Site' as doctype", "name as title", "name as route"],
-	)
-	rgs = frappe.get_all(
-		"Release Group",
-		{"team": team, "enabled": 1},
-		["'Bench' as doctype", "title as title", "name as route"],
-	)
-	servers = frappe.get_all(
-		"Server",
-		{"team": team, "status": "Active"},
-		["'Server' as doctype", "name as title", "name as route"],
-	)
+	query = f"""
+		SELECT
+			'Site' as doctype, name as title, name as route
+		FROM
+			`tabSite`
+		WHERE
+			team = '{team}' AND status NOT IN ('Archived')
+		UNION ALL
+		SELECT 'Bench' as doctype, title as title, name as route
+		FROM
+			`tabRelease Group`
+		WHERE
+			team = '{team}' AND enabled = 1
+		UNION ALL
+		SELECT 'Server' as doctype, name as title, name as route
+		FROM
+			`tabServer`
+		WHERE
+			team = '{team}' AND status = 'Active'
+	"""
 
-	result = sites + rgs + servers
-	return result
+	return frappe.db.sql(query, as_dict=True)
