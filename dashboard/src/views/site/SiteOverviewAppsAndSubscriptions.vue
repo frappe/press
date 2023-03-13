@@ -185,7 +185,6 @@
 				size: '2xl'
 			}"
 			v-model="showAppPlanChangeDialog"
-			:dismissable="true"
 		>
 			<template v-slot:body-content>
 				<ChangeAppPlanSelector
@@ -214,25 +213,27 @@
 
 		<Dialog
 			v-model="showCheckoutDialog"
-			title="Checkout Details"
+			:options="{ title: 'Checkout Details'}"
 			:dismissable="true"
 		>
-			<MarketplacePrepaidCredits
-				v-if="newAppPlan"
-				:subscription="currentSubscription"
-				:app="appToChangePlan.name"
-				:appTitle="appToChangePlan.title"
-				:site="site.name"
-				:plan="newAppPlan"
-			/>
+			<template v-slot:body-content>
+				<MarketplacePrepaidCredits
+					v-if="newAppPlan"
+					:subscription="currentSubscription"
+					:app="appToChangePlan.name"
+					:appTitle="appToChangePlan.title"
+					:site="site.name"
+					:plan="newAppPlan"
+				/>
 
-			<MarketplacePrepaidCredits
-				v-if="selectedPlan"
-				:app="appToInstall.app"
-				:appTitle="appToInstall.title"
-				:site="site.name"
-				:plan="selectedPlan"
-			/>
+				<MarketplacePrepaidCredits
+					v-if="selectedPlan"
+					:app="appToInstall.app"
+					:appTitle="appToInstall.title"
+					:site="site.name"
+					:plan="selectedPlan"
+				/>
+			</template>
 		</Dialog>
 	</Card>
 </template>
@@ -373,10 +374,13 @@ export default {
 				this.appToChangePlan.billing_type == 'prepaid' &&
 				!this.newAppPlanIsFree
 			) {
+				console.log('heya')
 				if (this.$account.hasBillingInfo) {
+					console.log('theya')
 					this.showAppPlanChangeDialog = false;
 					this.showCheckoutDialog = true;
 				} else {
+					console.log('neya')
 					window.location = '/dashboard/billing';
 				}
 			} else {
