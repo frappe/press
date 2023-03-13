@@ -365,7 +365,6 @@ export default {
 				subscription: app.subscription.name,
 				billing_type: app.billing_type
 			};
-			console.log(this.appToChangePlan);
 			this.showAppPlanChangeDialog = true;
 		},
 
@@ -374,13 +373,10 @@ export default {
 				this.appToChangePlan.billing_type == 'prepaid' &&
 				!this.newAppPlanIsFree
 			) {
-				console.log('heya')
 				if (this.$account.hasBillingInfo) {
-					console.log('theya')
 					this.showAppPlanChangeDialog = false;
 					this.showCheckoutDialog = true;
 				} else {
-					console.log('neya')
 					window.location = '/dashboard/billing';
 				}
 			} else {
