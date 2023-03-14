@@ -37,6 +37,13 @@
   args:
     chdir: /home/frappe/agent
 
+- name: Setup Agent Site Analytics Tracker
+  become: yes
+  become_user: frappe
+  command: /home/frappe/agent/env/bin/agent setup site_analytics
+  args:
+    chdir: /home/frappe/agent
+
 - name: Create Agent NGINX Configuration Directory
   become: yes
   become_user: frappe
