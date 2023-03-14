@@ -83,8 +83,7 @@ function updateCategories(category) {
 	}
 
 	var button = document.querySelector(`button[value="${category}"]`);
-	button.classList.add('bg-blue-500')
-	button.classList.add('text-white')
+	button.classList.add('bg-gray-200')
 
 	removeCategoryBtn.classList.remove('hidden');
 	document.getElementById('remove-category-name').innerText = category;
