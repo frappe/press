@@ -40,7 +40,7 @@
 - name: Setup Agent Site Analytics Tracker
   become: yes
   become_user: frappe
-  command: /home/frappe/agent/env/bin/agent setup site_analytics
+  command: /home/frappe/agent/env/bin/agent setup site-analytics
   args:
     chdir: /home/frappe/agent
 
