@@ -26,7 +26,8 @@ frappe.ui.form.on('Server', {
 			[__('Create Image'), 'create_image', true, frm.doc.status == "Active"],
 			[__('Archive'), "archive", true, frm.doc.status !== "Archived"],
 			[__('Setup Fail2ban'), "setup_fail2ban", true, frm.doc.is_server_setup],
-			[__('Whitelist Server'), "whitelist_ipaddress", false, frm.doc.is_server_setup]
+			[__('Whitelist Server'), "whitelist_ipaddress", false, frm.doc.is_server_setup],
+			[__('Show Agent Password'), "show_agent_password", false, frm.doc.is_server_setup],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === "undefined" || condition) {
 				frm.add_custom_button(

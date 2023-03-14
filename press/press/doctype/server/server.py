@@ -442,6 +442,10 @@ class BaseServer(Document):
 			),
 		)
 
+	@frappe.whitelist()
+	def show_agent_password(self):
+		return self.get_password("agent_password")
+
 
 class Server(BaseServer):
 	def on_update(self):
