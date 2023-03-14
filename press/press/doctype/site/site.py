@@ -143,7 +143,10 @@ class Site(Document):
 	@frappe.whitelist()
 	def retry_rename(self):
 		"""Retry rename with current subdomain"""
-		self.rename(self._get_site_name(self.subdomain))
+		if not self.name == self._get_site_name(self.subdomain):
+			self.rename(self._get_site_name(self.subdomain))
+		else:
+			frappe.throw("Please choose a different subdomain")
 
 	@frappe.whitelist()
 	def retry_archive(self):
@@ -160,6 +163,14 @@ class Site(Document):
 		self.rename_upstream(new_name)
 		self.status = "Pending"
 		self.save()
+
+		try:
+			# remove old dns record from route53 after rename
+			domain = frappe.get_doc("Root Domain", self.domain)
+			proxy_server = frappe.get_value("Server", self.server, "proxy_server")
+			self.remove_dns_record(domain, proxy_server, self.name)
+		except Exception:
+			log_error("Removing Old Site from Route53 Failed")
 
 	def update_config_preview(self):
 		"""Regenrates site.config on each site.validate from the site.configuration child table data"""
@@ -243,18 +254,18 @@ class Site(Document):
 		proxy_server = frappe.get_value("Server", self.server, "proxy_server")
 		self._change_dns_record("UPSERT", domain, proxy_server)
 
-	def remove_dns_record(self, domain: Document, proxy_server: str):
+	def remove_dns_record(self, domain: Document, proxy_server: str, site: str):
 		"""Remove dns record of site pointing to proxy."""
-		self._change_dns_record("DELETE", domain, proxy_server)
+		self._change_dns_record("DELETE", domain, proxy_server, site)
 
-	def _change_dns_record(self, method: str, domain: Document, proxy_server: str):
+	def _change_dns_record(self, method: str, domain: Document, proxy_server: str, site: str = None):
 		"""
 		Change dns record of site
 
 		method: CREATE | DELETE | UPSERT
 		"""
 		try:
-			site_name = self._get_site_name(self.subdomain)
+			site_name = self._get_site_name(self.subdomain) if not site else site
 			client = boto3.client(
 				"route53",
 				aws_access_key_id=domain.aws_access_key_id,
@@ -1235,7 +1246,7 @@ def delete_site_subdomain(site):
 	site_doc = frappe.get_doc("Site", site)
 	domain = frappe.get_doc("Root Domain", site_doc.domain)
 	proxy_server = frappe.get_value("Server", site_doc.server, "proxy_server")
-	site_doc.remove_dns_record(domain, proxy_server)
+	site_doc.remove_dns_record(domain, proxy_server, site)
 
 
 def delete_site_domains(site):

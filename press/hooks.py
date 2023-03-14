@@ -174,7 +174,6 @@ scheduler_events = {
 		"press.press.doctype.team.suspend_sites.execute",
 		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
 		"press.press.doctype.drip_email.drip_email.send_drip_emails",
-		"press.press.doctype.root_domain.root_domain.cleanup_cname_records",
 		"press.experimental.doctype.referral_bonus.referral_bonus.credit_referral_bonuses",
 	],
 	"daily_long": [
@@ -186,6 +185,7 @@ scheduler_events = {
 		"press.press.doctype.bench.bench.sync_analytics",
 		"press.saas.doctype.saas_app_subscription.saas_app_subscription.suspend_prepaid_subscriptions",
 		"press.press.doctype.payout_order.payout_order.create_marketplace_payout_orders",
+		"press.press.doctype.root_domain.root_domain.cleanup_cname_records",
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",

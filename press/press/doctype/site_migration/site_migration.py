@@ -311,7 +311,7 @@ class SiteMigration(Document):
 			domain = frappe.get_doc("Root Domain", site.domain)
 			if self.destination_cluster == domain.default_cluster:
 				source_proxy = frappe.db.get_value("Server", self.source_server, "proxy_server")
-				site.remove_dns_record(domain, source_proxy)
+				site.remove_dns_record(domain, source_proxy, site.name)
 		return agent.new_site_from_backup(
 			site, skip_failing_patches=self.skip_failing_patches
 		)
