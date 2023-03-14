@@ -48,7 +48,7 @@
 						<td
 							class="whitespace-nowrap pt-4 pb-2 pr-2 text-right font-semibold"
 						>
-							{{ doc.formatted.total_discount_amount }}
+							{{ doc.partner_email && doc.partner_email != doc.team ? 0 : doc.formatted.total_discount_amount }}
 						</td>
 					</tr>
 					<tr>
@@ -57,7 +57,7 @@
 						<td
 							class="whitespace-nowrap pt-4 pb-2 pr-2 text-right font-semibold"
 						>
-							{{ doc.formatted.total }}
+							{{ doc.partner_email && doc.partner_email != doc.team ? doc.formatted.total_before_discount : doc.formatted.total }}
 						</td>
 					</tr>
 					<template v-if="doc.total !== doc.amount_due && doc.docstatus == 1">
