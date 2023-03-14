@@ -258,7 +258,9 @@ class Site(Document):
 		"""Remove dns record of site pointing to proxy."""
 		self._change_dns_record("DELETE", domain, proxy_server, site)
 
-	def _change_dns_record(self, method: str, domain: Document, proxy_server: str, site: str = None):
+	def _change_dns_record(
+		self, method: str, domain: Document, proxy_server: str, site: str = None
+	):
 		"""
 		Change dns record of site
 
@@ -1042,6 +1044,11 @@ class Site(Document):
 		self.update_site_config({"maintenance_mode": 0})
 		self.update_site_status_on_proxy("activated")
 		self.reactivate_app_subscriptions()
+
+	@frappe.whitelist()
+	def reset_site_usage(self):
+		agent = Agent(self.server)
+		agent.reset_site_usage(self)
 
 	def update_site_status_on_proxy(self, status):
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")

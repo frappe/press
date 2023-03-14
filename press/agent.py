@@ -304,6 +304,15 @@ class Agent:
 			site=site.name,
 		)
 
+	def reset_site_usage(self, site):
+		return self.create_agent_job(
+			"Reset Site Usage",
+			f"benches/{site.bench}/sites/{site.name}/usage",
+			method="DELETE",
+			bench=site.bench,
+			site=site.name,
+		)
+
 	def archive_site(self, site, site_name=None, force=False):
 		site_name = site_name or site.name
 		database_server = frappe.db.get_value("Bench", site.bench, "database_server")

@@ -1504,5 +1504,21 @@
     "step_name": "Disable Maintenance Mode"
    }
   ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2023-03-14 12:29:53.005324",
+  "name": "Reset Site Usage",
+  "request_method": "DELETE",
+  "request_path": "benches/{bench}/sites/{site}/usage",
+  "steps": [
+   {
+    "parent": "Reset Site Usage",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reset Site Usage"
+   }
+  ]
  }
 ]
