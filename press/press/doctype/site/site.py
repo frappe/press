@@ -258,7 +258,7 @@ class Site(Document):
 		"""Remove dns record of site pointing to proxy."""
 		self._change_dns_record("DELETE", domain, proxy_server, site)
 
-	def _change_dns_record(self, method: str, domain: Document, proxy_server: str, site: None):
+	def _change_dns_record(self, method: str, domain: Document, proxy_server: str, site: str = None):
 		"""
 		Change dns record of site
 
