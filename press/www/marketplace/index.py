@@ -41,6 +41,9 @@ def get_context(context):
 	context.categories = sorted(
 		frappe.db.get_all("Marketplace App Categories", pluck="category", distinct=True)
 	)
+	if 'Featured' in context.categories:
+		context.categories.remove('Featured')
+		context.categories.insert(0, 'Featured')
 
 	featured_apps = frappe.get_all(
 		"Featured App",

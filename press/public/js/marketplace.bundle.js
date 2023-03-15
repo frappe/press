@@ -72,6 +72,7 @@ removeCategoryBtn.addEventListener('click', (e) => {
 })
 
 function updateCategories(category) {
+	let set = 0
 	for (let node of allAppCardNodes) {
 		node.style.display = 'none';
 	}
@@ -79,6 +80,13 @@ function updateCategories(category) {
 	for (let app of allAppCardNodes) {
 		if (app.dataset.categories.includes(category)) {
 			app.style.display = '';
+			set = 1
+		}
+	}
+
+	if (set == 0) {
+		for (let node of allAppCardNodes) {
+			node.style.display = '';
 		}
 	}
 
@@ -92,4 +100,8 @@ function updateCategories(category) {
 var category = new URLSearchParams(window.location.search).get('category');
 if (category != null && category.length > 0) {
 	updateCategories(category)
+} else if (category == null) {
+	try{
+		updateCategories('Featured')
+	} catch(e) {}
 }

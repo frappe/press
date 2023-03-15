@@ -58,7 +58,7 @@ five_star_rating -%}
 			app.privacy_policy), ('Terms of Service', 'shield', app.terms_of_service)
 			] -%} {%- if href -%}
 			<li>
-				<a class="flex flex-row space-x-1 text-gray-600 hover:text-gray-800" href="{{ href }}">
+				<a class="flex flex-row space-x-1 text-gray-600 hover:text-gray-800" target="_blank" href="{{ href }}">
 					<i class="w-4 h-4" data-feather="{{ icon }}"></i>
 					<span class="text-base">{{ label }}</span>
 				</a>
