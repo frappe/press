@@ -15,7 +15,7 @@ from frappe.core.utils import find
 from frappe.frappeclient import FrappeClient
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
-from frappe.utils import cint, convert_utc_to_user_timezone, cstr, get_datetime
+from frappe.utils import cint, convert_utc_to_system_timezone, cstr, get_datetime
 from frappe.utils.password import get_decrypted_password
 from frappe.utils.user import is_system_user
 
@@ -754,7 +754,7 @@ class Site(Document):
 
 			equivalent_site_time = None
 			if usage.get("timestamp"):
-				equivalent_site_time = convert_utc_to_user_timezone(
+				equivalent_site_time = convert_utc_to_system_timezone(
 					dateutil.parser.parse(usage["timestamp"])
 				).replace(tzinfo=None)
 				if frappe.db.exists(

@@ -7,7 +7,7 @@ import sqlparse
 from press.agent import Agent
 from frappe.utils import (
 	get_datetime,
-	convert_utc_to_user_timezone,
+	convert_utc_to_system_timezone,
 	get_datetime_str,
 	get_time_zone,
 )
@@ -66,7 +66,7 @@ def get_files(*args, **kwargs):
 	files = []
 	for file in agent.get("database/binary/logs"):
 		size = file["size"]
-		modified = convert_utc_to_user_timezone(get_datetime(file["modified"]))
+		modified = convert_utc_to_system_timezone(get_datetime(file["modified"]))
 		files.append([file["name"], modified, get_size(size)])
 	return sorted(files)
 
@@ -95,6 +95,6 @@ def get_data(filters):
 				row["query"].strip(), keyword_case="upper", reindent=True
 			)
 		row["timestamp"] = get_datetime_str(
-			convert_utc_to_user_timezone(get_datetime(row["timestamp"]))
+			convert_utc_to_system_timezone(get_datetime(row["timestamp"]))
 		)
 	return rows
