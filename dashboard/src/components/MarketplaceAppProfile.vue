@@ -1,6 +1,6 @@
 <template>
 	<Card title="App Profile" subtitle="Your app's primary profile">
-		<div class="flex items-center">
+		<div class="flex items-center border-b pb-6">
 			<div class="group relative">
 				<Avatar
 					size="lg"
@@ -49,8 +49,18 @@
 				</Button>
 			</div>
 		</div>
-		<div class="mt-5">
+		<div class="mt-8 flex justify-between">
 			<p class="text-lg font-semibold">Published Versions</p>
+			<Button
+				icon-left="plus"
+				@click="
+					() => {
+						showCreateNewVersionDialog = true;
+					}
+				"
+			>
+				Add
+			</Button>
 		</div>
 		<div class="divide-y" v-if="app">
 			<ListItem
@@ -60,10 +70,18 @@
 				:description="branchUri(source.source_information)"
 			>
 				<template #actions>
-					<Badge
-						:label="source.source_information.status"
-						:colorMap="$badgeStatusColorMap"
-					/>
+					<div class="flex items-center">
+						<Badge
+							class="mr-2"
+							:label="source.source_information.status"
+							:colorMap="$badgeStatusColorMap"
+						/>
+						<Dropdown :options="dropdownItems(source)">
+							<template v-slot="{ open }">
+								<Button icon="more-horizontal" />
+							</template>
+						</Dropdown>
+					</div>
 				</template>
 			</ListItem>
 		</div>
@@ -104,10 +122,28 @@
 				</div>
 			</template>
 		</Dialog>
+
+		<ChangeAppBranchDialog
+			v-if="showBranchChangeDialog"
+			:show="showBranchChangeDialog"
+			:app="app.name"
+			:source="selectedSource"
+			:version="selectedVersion"
+			:activeBranch="activeBranch"
+			@close="showBranchChangeDialog = false"
+		/>
+
+		<CreateAppVersionDialog
+			:show="showCreateNewVersionDialog"
+			:app="app"
+			@close="showCreateNewVersionDialog = false"
+		/>
 	</Card>
 </template>
 
 <script>
+import CreateAppVersionDialog from '@/components/marketplace/CreateAppVersionDialog.vue';
+import ChangeAppBranchDialog from '@/components/marketplace/ChangeAppBranchDialog.vue';
 import FileUploader from '@/components/FileUploader.vue';
 
 export default {
@@ -116,7 +152,20 @@ export default {
 		app: Object
 	},
 	components: {
-		FileUploader
+		FileUploader,
+		CreateAppVersionDialog,
+		ChangeAppBranchDialog
+	},
+	data() {
+		return {
+			showAppProfileEditDialog: false,
+			showAppVersionEditDialog: false,
+			showBranchChangeDialog: false,
+			showCreateNewVersionDialog: false,
+			selectedSource: null,
+			selectedVersion: null,
+			activeBranch: null
+		};
 	},
 	resources: {
 		categories() {
@@ -149,6 +198,21 @@ export default {
 					app: this.app.name
 				}
 			};
+		},
+		removeVersion() {
+			return {
+				method: 'press.api.marketplace.remove_version',
+				onSuccess() {
+					window.location.reload();
+				},
+				onError(e) {
+					this.$notify({
+						title: e,
+						color: 'red',
+						icon: 'x'
+					});
+				}
+			};
 		}
 	},
 	methods: {
@@ -159,6 +223,28 @@ export default {
 		branchUri(source) {
 			return `${source.repository_owner}/${source.repository}:${source.branch}`;
 		},
+		dropdownItems(source) {
+			return [
+				{
+					label: 'Change Branch',
+					handler: () => {
+						this.selectedSource = source.source;
+						this.selectedVersion = source.version;
+						this.activeBranch = source.source_information.branch;
+						this.showBranchChangeDialog = true;
+					}
+				},
+				{
+					label: 'Remove',
+					handler: () => {
+						this.$resources.removeVersion.submit({
+							name: this.app.name,
+							version: source.version
+						});
+					}
+				}
+			];
+		},
 		notifySuccess() {
 			this.$notify({
 				title: 'App Profile Updated!',
@@ -166,11 +252,6 @@ export default {
 				color: 'green'
 			});
 		}
-	},
-	data() {
-		return {
-			showAppProfileEditDialog: false
-		};
 	},
 	computed: {
 		categories() {

@@ -89,7 +89,7 @@ import NewAppRepositories from './NewAppRepositories.vue';
 export default {
 	name: 'SelectAppFromGithub',
 	components: {
-		NewAppRepositories,
+		NewAppRepositories
 	},
 	data() {
 		return {

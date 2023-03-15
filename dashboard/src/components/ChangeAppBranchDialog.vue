@@ -3,7 +3,6 @@
 		v-if="app"
 		:modelValue="Boolean(bench && app)"
 		:options="{ title: `Change branch for ${app.title}` }"
-		@close="dialogClosed"
 	>
 		<template v-slot:body-content>
 			<div>

@@ -21,9 +21,7 @@
 					<div class="flex-row space-x-3 md:flex">
 						<Dropdown :options="benchActions">
 							<template v-slot="{ open }">
-								<Button icon-right="chevron-down"
-									>Actions</Button
-								>
+								<Button icon-right="chevron-down">Actions</Button>
 							</template>
 						</Dropdown>
 					</div>

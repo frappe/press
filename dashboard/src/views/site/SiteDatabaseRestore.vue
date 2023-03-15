@@ -57,7 +57,7 @@
 					:disabled="site.status === 'Suspended'"
 					@click="confirmClearCache"
 				>
-					<span class="text-red-600"> Clear Cache </span>
+					<span class="text-red-600"> Clear </span>
 				</Button>
 			</div>
 			<div

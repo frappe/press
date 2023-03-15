@@ -19,7 +19,10 @@
 				:key="member.name"
 			>
 				<template #actions>
-					<Badge :label="getRoleBadgeProps(member).status" :colorMap="$badgeStatusColorMap"/>
+					<Badge
+						:label="getRoleBadgeProps(member).status"
+						:colorMap="$badgeStatusColorMap"
+					/>
 				</template>
 			</ListItem>
 		</div>

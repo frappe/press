@@ -16,8 +16,7 @@
 							class="ml-4 hidden md:inline-block"
 							:label="server.status"
 							:colorMap="$badgeStatusColorMap"
-							></Badge
-						>
+						></Badge>
 
 						<div
 							v-if="regionInfo"
@@ -58,9 +57,7 @@
 							right
 						>
 							<template v-slot="{ open }">
-								<Button icon-right="chevron-down"
-									>Actions</Button
-								>
+								<Button icon-right="chevron-down">Actions</Button>
 							</template>
 						</Dropdown>
 					</div>
@@ -80,9 +77,7 @@
 
 						<Dropdown v-if="serverActions.length > 2" :options="serverActions">
 							<template v-slot="{ open }">
-								<Button icon-right="chevron-down"
-									>Actions</Button
-								>
+								<Button icon-right="chevron-down">Actions</Button>
 							</template>
 						</Dropdown>
 					</div>

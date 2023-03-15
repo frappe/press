@@ -60,7 +60,7 @@
 							</Button>
 							<Dropdown v-else :options="actionItems(d)">
 								<template v-slot="{ open }">
-									<Button icon="more-horizontal"/>
+									<Button icon="more-horizontal" />
 								</template>
 							</Dropdown>
 						</div>

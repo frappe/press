@@ -28,6 +28,6 @@ export default function registerControllers(app) {
 		auth,
 		account,
 		call,
-		socket,
+		socket
 	};
 }

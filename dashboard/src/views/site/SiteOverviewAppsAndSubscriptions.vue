@@ -149,7 +149,7 @@
 		<!-- New App Install -->
 		<Dialog
 			v-model="showPlanSelectionDialog"
-			:options="{ title: 'Select app plan'}"
+			:options="{ title: 'Select app plan' }"
 		>
 			<template v-slot:body-content>
 				<ChangeAppPlanSelector
@@ -213,7 +213,7 @@
 
 		<Dialog
 			v-model="showCheckoutDialog"
-			:options="{ title: 'Checkout Details'}"
+			:options="{ title: 'Checkout Details' }"
 			:dismissable="true"
 		>
 			<template v-slot:body-content>
