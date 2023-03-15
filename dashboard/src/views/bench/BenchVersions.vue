@@ -80,9 +80,7 @@
 							</Button>
 							<Dropdown :options="versionActions">
 								<template v-slot="{ open }">
-									<Button icon-right="chevron-down"
-										>Actions</Button
-									>
+									<Button icon-right="chevron-down">Actions</Button>
 								</template>
 							</Dropdown>
 						</div>

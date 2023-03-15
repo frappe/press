@@ -25,7 +25,7 @@ export default {
 	name: 'LoginBox',
 	props: ['title', 'logo'],
 	components: {
-		FrappeCloudLogo,
+		FrappeCloudLogo
 	},
 	methods: {
 		redirectForFrappeioAuth() {

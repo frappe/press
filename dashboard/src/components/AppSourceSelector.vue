@@ -22,10 +22,7 @@
 				</div>
 				<Dropdown :options="dropdownItems(app)" right>
 					<template v-slot="{ open }">
-						<Button
-							type="white"
-							icon-right="chevron-down"
-						>
+						<Button type="white" icon-right="chevron-down">
 							<span>{{ app.source.branch }}</span>
 						</Button>
 					</template>

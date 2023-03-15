@@ -53,11 +53,13 @@
 						</div>
 
 						<!-- Only for mobile view -->
-						<Dropdown v-if="siteActions.length > 0" :options="siteActions" right>
+						<Dropdown
+							v-if="siteActions.length > 0"
+							:options="siteActions"
+							right
+						>
 							<template v-slot="{ open }">
-								<Button icon-right="chevron-down"
-									>Actions</Button
-								>
+								<Button icon-right="chevron-down">Actions</Button>
 							</template>
 						</Dropdown>
 					</div>
@@ -77,9 +79,7 @@
 
 						<Dropdown v-if="siteActions.length > 2" :options="siteActions">
 							<template v-slot="{ open }">
-								<Button icon-right="chevron-down"
-									>Actions</Button
-								>
+								<Button icon-right="chevron-down">Actions</Button>
 							</template>
 						</Dropdown>
 					</div>

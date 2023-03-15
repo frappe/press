@@ -1,6 +1,6 @@
 <template>
 	<Dialog
-		v-model="showP"
+		:modelValue="show"
 		:options="{ size: 'xl', position: 'top' }"
 		@after-leave="
 			() => {
@@ -73,11 +73,6 @@ export default {
 	},
 	mounted() {
 		this.makeFuse();
-	},
-	computed: {
-		showP() {
-			return this.show
-		}
 	},
 	methods: {
 		onInput: debounce(function (e) {

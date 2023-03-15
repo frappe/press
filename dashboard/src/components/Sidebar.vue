@@ -34,10 +34,7 @@
 				</a>
 			</router-link>
 		</div>
-		<Dropdown
-			placement="center"
-			:options="dropdownItems"
-		>
+		<Dropdown placement="center" :options="dropdownItems">
 			<template v-slot="{ open }">
 				<div
 					class="m-2 flex cursor-pointer items-center gap-2 rounded-md p-2 truncate break-all"
