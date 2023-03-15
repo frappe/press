@@ -1036,3 +1036,50 @@ def subscriptions():
 				sub["selected_plan"] = ele
 
 	return subscriptions
+
+
+@protected("App Source")
+@frappe.whitelist()
+def branches(name):
+	from press.api.bench import branches
+
+	app_source = frappe.get_doc("App Source", name)
+	installation_id = app_source.github_installation_id
+	repo_owner = app_source.repository_owner
+	repo_name = app_source.repository
+
+	return branches(installation_id, repo_owner, repo_name)
+
+
+@protected("Marketplace App")
+@frappe.whitelist()
+def change_branch(name, source, version, to_branch):
+	app = frappe.get_doc("Marketplace App", name)
+	app.change_branch(source, version, to_branch)
+
+
+@protected("Marketplace App")
+@frappe.whitelist()
+def options_for_version(name, source):
+	frappe_version = frappe.get_all("Frappe Version", {"public": True}, pluck="name")
+	added_versions = frappe.get_all(
+		"Marketplace App Version", {"parent": name}, pluck="version"
+	)
+	return {
+		"versions": list(set(frappe_version).difference(set(added_versions))),
+		"branches": branches(source),
+	}
+
+
+@protected("Marketplace App")
+@frappe.whitelist()
+def add_version(name, branch, version):
+	app = frappe.get_doc("Marketplace App", name)
+	app.add_version(version, branch)
+
+
+@protected("Marketplace App")
+@frappe.whitelist()
+def remove_version(name, version):
+	app = frappe.get_doc("Marketplace App", name)
+	app.remove_version(version)

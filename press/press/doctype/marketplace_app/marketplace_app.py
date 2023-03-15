@@ -62,6 +62,94 @@ class MarketplaceApp(WebsiteGenerator):
 				f"You cannot add more than {max_allowed_screenshots} screenshots for an app."
 			)
 
+	def change_branch(self, source, version, to_branch):
+		existing_source = frappe.db.exists(
+			"App Source",
+			{
+				"name": ("!=", self.name),
+				"app": self.app,
+				"repository_url": frappe.db.get_value(
+					"App Source", {"name": source}, "repository_url"
+				),
+				"branch": to_branch,
+				"team": self.team,
+			},
+		)
+		if existing_source:
+			# If source with branch to switch already exists, just add version to child table of source and use the same
+			try:
+				source_doc = frappe.get_doc("App Source", existing_source)
+				source_doc.append("versions", {"version": version})
+				source_doc.save()
+			except Exception:
+				pass
+
+			for source in self.sources:
+				if source.source == source:
+					source.source = existing_source
+					self.save()
+		else:
+			# if a different source with the branch to switch doesn't exists update the existing source
+			source_doc = frappe.get_doc("App Source", source)
+			source_doc.branch = to_branch
+			source_doc.save()
+
+	def add_version(self, version, branch):
+		existing_source = frappe.db.exists(
+			"App Source",
+			[
+				["App Source", "app", "=", self.app],
+				["App Source", "team", "=", self.team],
+				["App Source", "branch", "=", branch],
+			],
+		)
+		if existing_source:
+			# If source with branch to switch already exists, just add version to child table of source and use the same
+			source_doc = frappe.get_doc("App Source", existing_source)
+			try:
+				source_doc.append("versions", {"version": version})
+				source_doc.save()
+			except Exception:
+				pass
+		else:
+			# create new app source for version and branch to switch
+			source_doc = frappe.get_doc(
+				{
+					"doctype": "App Source",
+					"app": self.app,
+					"team": self.team,
+					"branch": branch,
+					"repository_url": frappe.db.get_value(
+						"App Source", {"name": self.sources[0].source}, "repository_url"
+					),
+					"public": 1,
+				}
+			)
+			source_doc.append("versions", {"version": version})
+			source_doc.insert(ignore_permissions=True)
+
+		self.append("sources", {"version": version, "source": source_doc.name})
+		self.save()
+
+	def remove_version(self, version):
+		if self.status == "Published" and len(self.sources) == 1:
+			frappe.throw("Failed to remove. Need at least 1 version for a published app")
+
+		for i, source in enumerate(self.sources):
+			if source.version == version:
+				# remove from marketplace app source child table
+				self.sources.pop(i)
+				self.save()
+
+				app_source = frappe.get_cached_doc("App Source", source.source)
+				for j, source_version in enumerate(app_source.versions):
+					if source_version.version == version and len(app_source.versions) > 1:
+						# remove from app source versions child table
+						app_source.versions.pop(j)
+						app_source.save()
+						break
+				break
+
 	def get_app_source(self):
 		return frappe.get_doc("App Source", {"app": self.app})
 
