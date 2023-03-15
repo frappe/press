@@ -38,8 +38,8 @@ def get_context(context):
 			"Marketplace App Categories", {"parent": app["name"]}, pluck="category"
 		)
 
-	context.categories = frappe.db.get_all(
-		"Marketplace App Categories", pluck="category", distinct=True
+	context.categories = sorted(
+		frappe.db.get_all("Marketplace App Categories", pluck="category", distinct=True)
 	)
 
 	featured_apps = frappe.get_all(
