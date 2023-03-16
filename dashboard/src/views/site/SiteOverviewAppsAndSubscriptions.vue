@@ -149,7 +149,10 @@
 		<!-- New App Install -->
 		<Dialog
 			v-model="showPlanSelectionDialog"
-			:options="{ title: 'Select app plan' }"
+			:options="{ 
+				title: 'Select app plan',
+				size: '2xl'
+			}"
 		>
 			<template v-slot:body-content>
 				<ChangeAppPlanSelector
