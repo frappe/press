@@ -13,8 +13,8 @@
   "team",
   "route",
   "section_break_7",
+  "frappe_approved",
   "subscription_type",
-  "status",
   "column_break_10",
   "categories",
   "published",
@@ -50,7 +50,10 @@
   "run_after_install_script",
   "after_install_script",
   "run_after_uninstall_script",
-  "after_uninstall_script"
+  "after_uninstall_script",
+  "review_tab",
+  "review_stage",
+  "status"
  ],
  "fields": [
   {
@@ -304,6 +307,25 @@
    "fieldname": "run_after_uninstall_script",
    "fieldtype": "Check",
    "label": "Run After Uninstall Script"
+  },
+  {
+   "fieldname": "review_tab",
+   "fieldtype": "Tab Break",
+   "label": "Review"
+  },
+  {
+   "default": "Not Started",
+   "fieldname": "review_stage",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Review Stage",
+   "options": "Not Started\nDescription Missing\nLogo Missing\nApp Release Not Reviewed\nReady for Review\nReady to Publish\nRejected"
+  },
+  {
+   "default": "0",
+   "fieldname": "frappe_approved",
+   "fieldtype": "Check",
+   "label": "Frappe Approved"
   }
  ],
  "has_web_view": 1,
@@ -327,7 +349,7 @@
    "link_fieldname": "app"
   }
  ],
- "modified": "2023-02-21 13:16:42.239201",
+ "modified": "2023-03-16 11:34:27.483460",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Marketplace App",
