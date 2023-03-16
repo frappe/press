@@ -938,5 +938,10 @@ def is_us_eu():
 		"Slovenia",
 		"Spain",
 		"Sweden",
+		"Switzerland",
+		"Australia",
+		"New Zealand",
+		"Canada",
+		"Mexico",
 	]
 	return frappe.db.get_value("Team", get_current_team(), "country") in countrygroup
