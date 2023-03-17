@@ -13,7 +13,18 @@
   "app",
   "reviewed_by",
   "section_break_8",
-  "reason_for_rejection"
+  "reason_for_rejection",
+  "code_screening_tab",
+  "screening_status",
+  "baseline_result_section",
+  "baseline_request",
+  "baseline_result",
+  "baseline_requirements",
+  "result_section",
+  "result",
+  "result_html",
+  "result_html_rendered",
+  "requirements"
  ],
  "fields": [
   {
@@ -80,11 +91,72 @@
    "fieldtype": "Link",
    "label": "Reviewed By",
    "options": "User"
+  },
+  {
+   "fieldname": "result",
+   "fieldtype": "Code",
+   "label": "Result",
+   "read_only": 1
+  },
+  {
+   "fieldname": "result_html",
+   "fieldtype": "Code",
+   "label": "Result Html",
+   "read_only": 1
+  },
+  {
+   "fieldname": "code_screening_tab",
+   "fieldtype": "Tab Break",
+   "label": "Code Screening"
+  },
+  {
+   "fieldname": "baseline_result_section",
+   "fieldtype": "Section Break",
+   "label": "Baseline Result"
+  },
+  {
+   "fieldname": "baseline_result",
+   "fieldtype": "Code",
+   "label": "Baseline Result",
+   "read_only": 1
+  },
+  {
+   "fieldname": "baseline_requirements",
+   "fieldtype": "Code",
+   "label": "Baseline Requirements",
+   "read_only": 1
+  },
+  {
+   "fieldname": "result_section",
+   "fieldtype": "Section Break",
+   "label": "Result"
+  },
+  {
+   "fieldname": "result_html_rendered",
+   "fieldtype": "HTML",
+   "label": "Result HTML Rendered"
+  },
+  {
+   "fieldname": "requirements",
+   "fieldtype": "Code",
+   "label": "Requirements"
+  },
+  {
+   "fieldname": "baseline_request",
+   "fieldtype": "Data",
+   "label": "Baseline Request"
+  },
+  {
+   "default": "Not Started",
+   "fieldname": "screening_status",
+   "fieldtype": "Select",
+   "label": "Screening Status",
+   "options": "Not Started\nScreening\nComplete"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-08-17 19:29:14.583247",
+ "modified": "2023-03-17 14:41:48.554937",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Release Approval Request",
@@ -105,6 +177,7 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1,
  "track_seen": 1
 }

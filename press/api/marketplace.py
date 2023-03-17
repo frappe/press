@@ -1098,6 +1098,7 @@ def review_stages(name):
 		"links": True if app.website and app.support and app.documentation else False,
 	}
 
+
 @protected("Marketplace App")
 @frappe.whitelist()
 def start_review(name):
