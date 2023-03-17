@@ -382,3 +382,15 @@ def process_update_site_recover_job_update(job):
 			frappe.get_doc("Site", job.site).reset_previous_status()
 		elif updated_status == "Fatal":
 			frappe.db.set_value("Site", job.site, "status", "Broken")
+
+
+def mark_stuck_updates_as_fatal():
+	frappe.db.set_value(
+		"Site Update",
+		{
+			"status": ("in", ["Pending", "Running", "Failure"]),
+			"modified": ("<", frappe.utils.add_days(None, -2)),
+		},
+		"status",
+		"Fatal",
+	)
