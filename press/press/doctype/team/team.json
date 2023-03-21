@@ -38,6 +38,7 @@
   "feature_flags_section",
   "referrer_id",
   "ssh_access_enabled",
+  "skip_backups",
   "column_break_31",
   "database_access_enabled",
   "razorpay_enabled",
@@ -283,6 +284,13 @@
    "fieldtype": "Link",
    "label": "Last Used Team",
    "options": "Team"
+  },
+  {
+   "default": "0",
+   "description": "If checked, team can skip backups for site update",
+   "fieldname": "skip_backups",
+   "fieldtype": "Check",
+   "label": "Allow to skip Backups"
   }
  ],
  "links": [
@@ -337,7 +345,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2022-09-15 13:33:03.650725",
+ "modified": "2023-03-21 16:51:49.538848",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

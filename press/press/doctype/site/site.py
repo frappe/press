@@ -408,7 +408,7 @@ class Site(Document):
 		).insert()
 
 	@frappe.whitelist()
-	def schedule_update(self, skip_failing_patches=False):
+	def schedule_update(self, skip_failing_patches=False, skip_backups=False):
 		log_site_activity(self.name, "Update")
 		self.status_before_update = self.status
 		self.status = "Pending"
@@ -418,6 +418,7 @@ class Site(Document):
 				"doctype": "Site Update",
 				"site": self.name,
 				"skipped_failing_patches": skip_failing_patches,
+				"skipped_backups": skip_backups,
 			}
 		).insert()
 
@@ -456,6 +457,20 @@ class Site(Document):
 			except Exception:
 				log_error("Site Status Fetch Error", site=self.name)
 		self.save()
+
+	@frappe.whitelist()
+	def update_without_backup(self):
+		log_site_activity(self.name, "Update without Backup")
+		self.status_before_update = self.status
+		self.status = "Pending"
+		self.save()
+		frappe.get_doc(
+			{
+				"doctype": "Site Update",
+				"site": self.name,
+				"skipped_backups": 1,
+			}
+		).insert()
 
 	@frappe.whitelist()
 	def add_domain(self, domain):
