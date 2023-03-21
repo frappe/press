@@ -116,6 +116,7 @@ class SiteUpdate(Document):
 			self.destination_bench,
 			self.deploy_type,
 			skip_failing_patches=self.skipped_failing_patches,
+			skip_backups=self.skipped_backups,
 		)
 		frappe.db.set_value("Site Update", self.name, "update_job", job.name)
 
@@ -353,7 +354,8 @@ def process_update_site_job_update(job):
 			frappe.get_doc("Site Update", site_update.name).reallocate_workers()
 		elif updated_status == "Failure":
 			frappe.db.set_value("Site", job.site, "status", "Broken")
-			trigger_recovery_job(site_update.name)
+			if not frappe.db.get_value("Site Update", site_update.name, "skipped_backups"):
+				trigger_recovery_job(site_update.name)
 
 
 def process_update_site_recover_job_update(job):

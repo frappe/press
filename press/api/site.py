@@ -925,9 +925,9 @@ def login(name, reason=None):
 
 @frappe.whitelist()
 @protected("Site")
-def update(name, skip_failing_patches=False):
+def update(name, skip_failing_patches=False, skip_backups=False):
 	return frappe.get_doc("Site", name).schedule_update(
-		skip_failing_patches=skip_failing_patches
+		skip_failing_patches=skip_failing_patches, skip_backups=skip_backups
 	)
 
 

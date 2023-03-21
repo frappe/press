@@ -106,6 +106,7 @@ frappe.ui.form.on('Site', {
 			[__('Run After Migrate Steps'), 'run_after_migrate_steps'],
 			[__('Retry Rename'), 'retry_rename'],
 			[__('Retry Archive'), 'retry_archive', frm.doc.name.includes('.archived')],
+			[__('Update without Backup'), 'update_without_backup'],
 		].forEach(([label, method, condition]) => {
 			if (typeof condition === "undefined" || condition){
 				frm.add_custom_button(
