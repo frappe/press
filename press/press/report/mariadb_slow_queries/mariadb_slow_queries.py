@@ -75,7 +75,7 @@ def get_data(filters):
 		convert_user_timezone_to_utc(filters.start_datetime),
 		convert_user_timezone_to_utc(filters.end_datetime),
 		filters.search_pattern,
-		filters.max_lines or 100,
+		int(filters.max_lines) or 100,
 	)
 	for row in rows:
 		if filters.format_queries:

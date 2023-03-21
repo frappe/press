@@ -35,5 +35,11 @@ frappe.query_reports["MariaDB Slow Queries"] = {
 			label: __("Format Queries"),
 			fieldtype: "Check",
 		},
+		{
+			fieldname: "max_lines",
+			label: __("Max Lines"),
+			default: 100,
+			fieldtype: "Int",
+		},
 	]
 };
