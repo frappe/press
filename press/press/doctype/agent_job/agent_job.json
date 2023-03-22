@@ -188,7 +188,7 @@
  ],
  "in_create": 1,
  "links": [],
- "modified": "2021-10-22 07:18:14.603795",
+ "modified": "2023-03-22 10:57:36.578615",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Job",
@@ -217,11 +217,16 @@
    "if_owner": 1,
    "role": "Press Member",
    "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Site Manager"
   }
  ],
  "quick_entry": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "title_field": "job_type",
  "track_changes": 1
 }
