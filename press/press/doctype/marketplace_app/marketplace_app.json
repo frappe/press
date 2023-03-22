@@ -1,6 +1,7 @@
 {
  "actions": [],
  "allow_guest_to_view": 1,
+ "allow_rename": 1,
  "creation": "2022-02-04 19:53:27.058972",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -349,7 +350,7 @@
    "link_fieldname": "app"
   }
  ],
- "modified": "2023-03-16 11:34:27.483460",
+ "modified": "2023-03-22 15:28:48.488976",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Marketplace App",
