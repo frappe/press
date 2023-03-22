@@ -1,4 +1,3 @@
-
 # Copyright (c) 2020, Frappe Technologies Pvt. Ltd. and Contributors
 # For license information, please see license.txt
 

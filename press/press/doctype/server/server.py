@@ -25,7 +25,6 @@ class BaseServer(Document):
 			self.name = f"{self.hostname}.{self.domain}"
 		if self.is_self_hosted:
 			self.name = f"{self.hostname}.{self.self_hosted_server_domain}"
-		
 
 	def validate(self):
 		self.validate_cluster()
@@ -195,7 +194,7 @@ class BaseServer(Document):
 	@frappe.whitelist()
 	def ping_ansible(self):
 		try:
-			ansible = Ansible(playbook="ping.yml", server=self,user=self.ssh_user or "root")
+			ansible = Ansible(playbook="ping.yml", server=self, user=self.ssh_user or "root")
 			ansible.run()
 		except Exception:
 			log_error("Server Ping Exception", server=self.as_dict())
@@ -399,11 +398,13 @@ class BaseServer(Document):
 	def get_certificate(self):
 		if self.is_self_hosted:
 			certificate_name = frappe.db.get_value(
-				"TLS Certificate",{"domain":f"{self.hostname}.{self.self_hosted_server_domain}"},"name"
+				"TLS Certificate",
+				{"domain": f"{self.hostname}.{self.self_hosted_server_domain}"},
+				"name",
 			)
 		else:
 			certificate_name = frappe.db.get_value(
-				"TLS Certificate",{"wildcard":True,"domain":self.domain},"name"
+				"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
 			)
 		return frappe.get_doc("TLS Certificate", certificate_name)
 
