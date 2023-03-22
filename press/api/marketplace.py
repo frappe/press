@@ -1083,3 +1083,26 @@ def add_version(name, branch, version):
 def remove_version(name, version):
 	app = frappe.get_doc("Marketplace App", name)
 	app.remove_version(version)
+
+
+@protected("Marketplace App")
+@frappe.whitelist()
+def review_stages(name):
+	app = frappe.get_doc("Marketplace App", name)
+	return {
+		"logo": True if app.image else False,
+		"description": True if app.description and app.long_description else False,
+		"publish": True
+		if frappe.db.exists("App Release Approval Request", {"marketplace_app": name})
+		else False,
+		"links": True if app.website and app.support and app.documentation else False,
+	}
+
+
+@protected("Marketplace App")
+@frappe.whitelist()
+def start_review(name):
+	# TODO: Start security check and auto deploy process here
+	app = frappe.get_doc("Marketplace App", name)
+	app.status = "In Review"
+	app.save()

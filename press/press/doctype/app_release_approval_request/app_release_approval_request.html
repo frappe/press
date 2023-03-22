@@ -1,0 +1,44 @@
+
+{{ styles }}
+<style>
+    td .linenodiv {
+        background-color: #f0f0f0;
+        padding-right: 10px;
+    }
+
+    .highlight {
+        margin-left: 2rem;
+        background: #f8f8f8;
+    }
+
+    .issues {
+        padding-bottom: 1rem;
+        padding-top: 1rem;
+        padding-left: 2rem;
+    }
+</style>
+<div class="accordian" id="result_accordian">
+    {% for file in result %}
+    <div class="card">
+        <div class="card-header" id="heading_{{ file.id }}">
+            <button class="btn btn-link collapsed" data-toggle="collapse" data-parent="#result_accordian"
+                data-target="#collapse_{{ file.id }}">{{ file.name }} - {{ file.score }} issues</button>
+        </div>
+        <div id="collapse_{{ file.id }}" class="collapse" data-parent="#result_accordian">
+            <div class="card-body">
+                {% for line in file.lines %}
+                <div class="issues">
+                    {%for issue in line.issues %}
+                    <div>
+                        <strong>{{ issue.severity }}</strong> - <span>{{ issue.violation }}</span> -
+                        <code>{{ issue.match }}</code>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="highlight">{{ line.highlighted_context }}</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
