@@ -1,8 +1,8 @@
 ---
-- name: Convert Frappe Server to Database Server
+- name: Sites from Current Bench
   hosts: all
   become: yes
   become_user: root
   gather_facts: true
   roles:
-    - role: convert
+    - role: get_sites

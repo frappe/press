@@ -22,16 +22,21 @@ class BaseServer(Document):
 	def autoname(self):
 		if not self.domain:
 			self.domain = frappe.db.get_single_value("Press Settings", "domain")
-		self.name = f"{self.hostname}.{self.domain}"
+			self.name = f"{self.hostname}.{self.domain}"
+		if self.is_self_hosted:
+			self.name = f"{self.hostname}.{self.self_hosted_server_domain}"
+		
 
 	def validate(self):
 		self.validate_cluster()
 		self.validate_agent_password()
 
 	def after_insert(self):
-		if self.ip:
+		if self.ip and not self.is_self_hosted:
 			self.create_dns_record()
 			self.update_virtual_machine_name()
+		if not self.self_hosted_mariadb_server:
+			self.self_hosted_mariadb_server = self.private_ip
 
 	def create_dns_record(self):
 		try:
@@ -190,7 +195,7 @@ class BaseServer(Document):
 	@frappe.whitelist()
 	def ping_ansible(self):
 		try:
-			ansible = Ansible(playbook="ping.yml", server=self)
+			ansible = Ansible(playbook="ping.yml", server=self,user=self.ssh_user or "root")
 			ansible.run()
 		except Exception:
 			log_error("Server Ping Exception", server=self.as_dict())
@@ -203,6 +208,7 @@ class BaseServer(Document):
 		try:
 			ansible = Ansible(
 				playbook="update_agent.yml",
+				user=self.ssh_user,
 				variables={"agent_repository_url": self.get_agent_repository_url()},
 				server=self,
 			)
@@ -391,9 +397,14 @@ class BaseServer(Document):
 		).insert()
 
 	def get_certificate(self):
-		certificate_name = frappe.db.get_value(
-			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
-		)
+		if self.is_self_hosted:
+			certificate_name = frappe.db.get_value(
+				"TLS Certificate",{"domain":f"{self.hostname}.{self.self_hosted_server_domain}"},"name"
+			)
+		else:
+			certificate_name = frappe.db.get_value(
+				"TLS Certificate",{"wildcard":True,"domain":self.domain},"name"
+			)
 		return frappe.get_doc("TLS Certificate", certificate_name)
 
 	def get_log_server(self):
@@ -468,8 +479,9 @@ class Server(BaseServer):
 
 		try:
 			ansible = Ansible(
-				playbook="server.yml",
+				playbook="self_hosted.yml",
 				server=self,
+				user=self.ssh_user,
 				variables={
 					"server": self.name,
 					"private_ip": self.private_ip,

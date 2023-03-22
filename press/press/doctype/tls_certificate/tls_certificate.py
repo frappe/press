@@ -247,6 +247,8 @@ class LetsEncrypt(BaseCA):
 			plugin = "--dns-route53"
 		else:
 			plugin = f"--webroot --webroot-path {self.webroot_directory}"
+			# plugin = "-a dns-multi --dns-multi-credentials=/etc/letsencrypt/dns-multi.ini" # Used for Getting TLS certs. pip install  dns-multi and need to add creds #TODO
+			# plugin = f"--webroot --webroot-path {self.webroot_directory}"
 
 		staging = "--staging" if self.staging else ""
 		force_renewal = "--keep" if frappe.conf.developer_mode else "--force-renewal"

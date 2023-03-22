@@ -1,0 +1,8 @@
+---
+- name: Get Bench data from Self Hosted Server
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: yes
+  roles:
+    - role: self-hosted

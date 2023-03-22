@@ -1,0 +1,246 @@
+{
+ "actions": [],
+ "creation": "2023-03-07 11:56:33.641999",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "team",
+  "different_database_server",
+  "database_setup",
+  "server_created",
+  "column_break_3eap",
+  "hostname",
+  "domain",
+  "release_group",
+  "existing_bench_present",
+  "server_section",
+  "server",
+  "ssh_user",
+  "column_break_smwr",
+  "ip",
+  "private_ip",
+  "database_section",
+  "database_server",
+  "mariadb_ip",
+  "column_break_qvmo",
+  "mariadb_root_user",
+  "mariadb_root_password",
+  "existing_bench_tab",
+  "bench_directory",
+  "column_break_yb8y",
+  "frappe_version",
+  "section_break_33uh",
+  "apps",
+  "sites"
+ ],
+ "fields": [
+  {
+   "depends_on": "eval:doc.server_created",
+   "fieldname": "server",
+   "fieldtype": "Link",
+   "label": "Server",
+   "options": "Server"
+  },
+  {
+   "fieldname": "bench_directory",
+   "fieldtype": "Data",
+   "label": "Bench Directory",
+   "mandatory_depends_on": "eval:doc.existing_bench_present"
+  },
+  {
+   "fetch_from": "server.ip",
+   "fieldname": "ip",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "IP",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fetch_from": "server.ssh_user",
+   "fieldname": "ssh_user",
+   "fieldtype": "Data",
+   "label": "SSH User"
+  },
+  {
+   "fieldname": "column_break_3eap",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "database_section",
+   "fieldtype": "Section Break",
+   "label": "Database"
+  },
+  {
+   "fieldname": "mariadb_root_user",
+   "fieldtype": "Data",
+   "label": "MariaDB Root User"
+  },
+  {
+   "fieldname": "mariadb_ip",
+   "fieldtype": "Data",
+   "label": "MariaDB IP"
+  },
+  {
+   "fieldname": "column_break_qvmo",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "mariadb_root_password",
+   "fieldtype": "Password",
+   "label": "MariaDB Root Password",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "server.private_ip",
+   "fieldname": "private_ip",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Private IP",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "server.team",
+   "fetch_if_empty": 1,
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "release_group.version",
+   "fieldname": "frappe_version",
+   "fieldtype": "Data",
+   "label": "Frappe Version",
+   "read_only": 1
+  },
+  {
+   "fieldname": "apps",
+   "fieldtype": "Table",
+   "label": "Apps",
+   "options": "Site Analytics App"
+  },
+  {
+   "fieldname": "section_break_33uh",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "sites",
+   "fieldtype": "Table",
+   "label": "Sites and Apps",
+   "options": "Self Hosted Site Apps"
+  },
+  {
+   "depends_on": "eval: doc.existing_bench_present",
+   "fieldname": "existing_bench_tab",
+   "fieldtype": "Tab Break",
+   "label": "Existing Bench"
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title"
+  },
+  {
+   "default": "0",
+   "fieldname": "different_database_server",
+   "fieldtype": "Check",
+   "label": "Different Database Server"
+  },
+  {
+   "default": "0",
+   "fieldname": "existing_bench_present",
+   "fieldtype": "Check",
+   "label": "Existing Bench Present"
+  },
+  {
+   "fieldname": "server_section",
+   "fieldtype": "Section Break",
+   "label": "Server"
+  },
+  {
+   "fieldname": "column_break_yb8y",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "hostname",
+   "fieldtype": "Data",
+   "label": "Hostname"
+  },
+  {
+   "fieldname": "domain",
+   "fieldtype": "Data",
+   "label": "Domain"
+  },
+  {
+   "fieldname": "column_break_smwr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "server_created",
+   "fieldtype": "Check",
+   "label": "Server Created"
+  },
+  {
+   "default": "0",
+   "fieldname": "database_setup",
+   "fieldtype": "Check",
+   "label": "Database Setup"
+  },
+  {
+   "depends_on": "eval:doc.database_setup",
+   "fieldname": "database_server",
+   "fieldtype": "Link",
+   "label": "Database Server",
+   "options": "Database Server"
+  },
+  {
+   "fieldname": "release_group",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Release Group",
+   "options": "Release Group"
+  }
+ ],
+ "links": [],
+ "modified": "2023-03-22 22:36:14.721033",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Self Hosted Server",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "Press Admin",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "Press Member",
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

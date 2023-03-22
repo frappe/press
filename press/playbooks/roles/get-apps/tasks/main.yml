@@ -1,0 +1,45 @@
+---
+- name: Get Bench App Version
+  become: yes
+  become_user: frappe
+  command: bench version --format json
+  ignore_errors: True
+  register: versions
+  args:
+    chdir: "{{ bench_path }}"
+
+- name: Get Apps from Current Bench
+  command: python3 -c 'import json;data=json.loads({{ versions.stdout | to_json }});print([x["app"] for x in data])'
+  register: apps
+  ignore_errors: True
+
+- name: Get Versions from Current Bench
+  command: python3 -c 'import json;data=json.loads({{ versions.stdout | to_json }});print(data)'
+  ignore_errors: False
+
+- name: Get Remotes of Current Apps
+  command: git ls-remote --get-url
+  register: remote
+  args:
+    chdir: "{{ bench_path }}/apps/{{ item }}"
+  with_items:
+    - "{{ apps.stdout }}"
+
+- name: Generate App Branches
+  shell: git branch --show-current
+  register: branches
+  args:
+    chdir: "{{ bench_path }}/apps/{{ item }}"
+  with_items: 
+    - "{{ apps.stdout }}"
+
+- name: Generate Apps List
+  set_fact:
+    rg_apps: "{{ rg_apps | default([])+ [{ 'app' : item.0, 'remote' : item.1, 'branch': item.2 }] }}"
+  with_together: 
+    - "{{ apps.stdout }}"
+    - "{{ remote.results | map(attribute='stdout_lines') | list }}"
+    - "{{ branches.results | map(attribute='stdout_lines') | list }}"
+
+- name: Get Apps for Release Group
+  command: python3 -c 'import json;data=json.loads(r"""{{ rg_apps | to_json }}""");print(data)'

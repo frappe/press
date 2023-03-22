@@ -2,8 +2,16 @@
 - name: Install MySQLdb Python Package
   apt:
     pkg:
-      - python-mysqldb
+      - python3-mysqldb
     state: present
+
+- name: Add MariaDB Configuration File
+  template:
+    src: mariadb.cnf
+    dest: /etc/mysql/conf.d/settings.cnf
+    owner: root
+    group: root
+    mode: 0644
 
 - name: Allow Users to Access from any Host
   mysql_query:
@@ -21,10 +29,16 @@
     login_password: "{{ mariadb_root_password }}"
     check_implicit_admin: yes
     name: root
-    host: "%"
+    host: "{{ item }}"
     priv: "*.*:ALL,GRANT"
     password: "{{ mariadb_root_password }}"
     state: present
+  with_items:
+    - localhost
+    - 127.0.0.1
+    - ::1
+    - "{{ private_ip }}"
+    - "%"
 
 - name: Bind MariaDB to Private IP Address
   lineinfile:

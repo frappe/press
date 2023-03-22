@@ -191,6 +191,7 @@ class DatabaseServer(BaseServer):
 			ansible = Ansible(
 				playbook="convert.yml",
 				server=self,
+				user=self.ssh_user,
 				variables={
 					"private_ip": self.private_ip,
 					"mariadb_root_password": mariadb_root_password,
