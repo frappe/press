@@ -24,4 +24,4 @@
 - name: Start Agent processes
   become: yes
   become_user: frappe
-  command: 'sudo supervisorctl start agent:'
+  command: 'sudo supervisorctl restart agent:'
