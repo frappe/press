@@ -70,11 +70,6 @@
 			>
 				<template #actions>
 					<div class="flex items-center">
-						<Badge
-							class="mr-2"
-							:label="source.source_information.status"
-							:colorMap="$badgeStatusColorMap"
-						/>
 						<Dropdown :options="dropdownItems(source)">
 							<template v-slot="{ open }">
 								<Button icon="more-horizontal" />

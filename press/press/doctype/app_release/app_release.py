@@ -15,6 +15,14 @@ from press.press.doctype.app_source.app_source import AppSource
 
 
 class AppRelease(Document):
+	def before_save(self):
+		apps = frappe.get_all("Featured App", {"parent": "Marketplace Settings"}, pluck="app")
+		teams = frappe.get_all(
+			"Auto Release Team", {"parent": "Marketplace Settings"}, pluck="team"
+		)
+		if self.team in teams or self.app in apps:
+			self.status = "Approved"
+
 	def after_insert(self):
 		self.publish_created()
 		self.create_release_differences()

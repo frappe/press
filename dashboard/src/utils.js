@@ -97,6 +97,7 @@ let utils = {
 		},
 		$badgeStatusColorMap() {
 			return {
+				Approved: 'green',
 				Installing: 'yellow',
 				'Update Available': 'blue',
 				Enabled: 'blue',

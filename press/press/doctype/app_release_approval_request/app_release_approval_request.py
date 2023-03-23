@@ -16,6 +16,14 @@ from press.press.doctype.marketplace_app.marketplace_app import MarketplaceApp
 
 
 class AppReleaseApprovalRequest(Document):
+	def before_save(self):
+		apps = frappe.get_all("Featured App", {"parent": "Marketplace Settings"}, pluck="app")
+		teams = frappe.get_all(
+			"Auto Release Team", {"parent": "Marketplace Settings"}, pluck="team"
+		)
+		if self.team in teams or self.marketplace_app in apps:
+			self.status = "Approved"
+
 	@staticmethod
 	def create(marketplace_app: str, app_release: str):
 		"""Create a new `App Release Approval Request`"""
