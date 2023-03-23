@@ -15,7 +15,7 @@
 							? 'bg-red-500'
 							: 'bg-yellow-500'
 					]"
-					:title="`${d.date} ${d.value}`"
+					:title="`${d.date} Uptime: ${(d.value * 100).toFixed(2)}%`"
 				></div>
 			</div>
 		</div>
