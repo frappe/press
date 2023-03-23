@@ -229,11 +229,10 @@ def update_app_image() -> str:
 
 
 @frappe.whitelist()
-def update_app_profile(name: str, title: str, category: str) -> MarketplaceApp:
+def update_app_title(name: str, title: str) -> MarketplaceApp:
 	"""Update `title` and `category`"""
 	app: MarketplaceApp = frappe.get_doc("Marketplace App", name)
 	app.title = title
-	app.category = category
 	app.save(ignore_permissions=True)
 
 	return app

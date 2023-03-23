@@ -41,7 +41,6 @@
 				<h3 class="text-lg font-semibold">
 					{{ app.title }}
 				</h3>
-				<p class="text-sm text-gray-600">{{ app.category }}</p>
 			</div>
 			<div class="ml-auto">
 				<Button icon-left="edit" @click="showAppProfileEditDialog = true">
@@ -87,25 +86,13 @@
 		</div>
 
 		<Dialog
-			:options="{ title: 'Update App Profile' }"
+			:options="{ title: 'Update App Title' }"
 			v-model="showAppProfileEditDialog"
 		>
 			<template v-slot:body-content>
-				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-					<Input label="App Title" type="text" v-model="app.title" />
-					<div>
-						<span class="mb-2 block text-sm leading-4 text-gray-700">
-							Category
-						</span>
-						<select class="form-select block w-full" v-model="app.category">
-							<option v-for="category in categories" :key="category">
-								{{ category }}
-							</option>
-						</select>
-					</div>
-				</div>
+				<Input label="App Title" type="text" v-model="app.title" />
 
-				<ErrorMessage class="mt-4" :error="$resources.updateAppProfile.error" />
+				<ErrorMessage class="mt-4" :error="$resources.updateAppTitle.error" />
 			</template>
 
 			<template #actions>
@@ -113,9 +100,9 @@
 					<Button @click="showAppProfileEditDialog = false">Cancel</Button>
 					<Button
 						appearance="primary"
-						:loading="$resources.updateAppProfile.loading"
+						:loading="$resources.updateAppTitle.loading"
 						loadingText="Saving..."
-						@click="$resources.updateAppProfile.submit()"
+						@click="$resources.updateAppTitle.submit()"
 					>
 						Save changes
 					</Button>
@@ -168,25 +155,18 @@ export default {
 		};
 	},
 	resources: {
-		categories() {
-			return {
-				method: 'press.api.marketplace.categories',
-				auto: true
-			};
-		},
-		updateAppProfile() {
-			let { name, title, category } = this.app;
+		updateAppTitle() {
+			let { name, title } = this.app;
 
 			return {
-				method: 'press.api.marketplace.update_app_profile',
+				method: 'press.api.marketplace.update_app_title',
 				params: {
 					name,
 					title,
-					category
 				},
 				onSuccess() {
 					this.showAppProfileEditDialog = false;
-					this.$resources.updateAppProfile.reset();
+					this.$resources.updateAppTitle.reset();
 					this.notifySuccess();
 				}
 			};
@@ -254,16 +234,6 @@ export default {
 		}
 	},
 	computed: {
-		categories() {
-			if (
-				this.$resources.categories.loading ||
-				!this.$resources.categories.data
-			) {
-				return [];
-			}
-
-			return this.$resources.categories.data;
-		},
 		profileImageUrl() {
 			if (!this.$resources.profileImageUrl.data) {
 				return this.app.image;
