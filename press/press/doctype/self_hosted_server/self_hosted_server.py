@@ -12,12 +12,7 @@ from press.utils import log_error
 
 class SelfHostedServer(Document):
 	def autoname(self):
-		self.name = f"{self.hostname}.{self.domain}"  # ?
-
-	@frappe.whitelist()
-	def fetch_apps_and_sites(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_get_apps", queue="long", timeout=1200)
-		frappe.enqueue_doc(self.doctype, self.name, "_get_sites", queue="long", timeout=1200)
+		self.name = f"{self.hostname}.{self.domain}"
 
 	def after_insert(self):
 		if not self.mariadb_ip:
@@ -25,7 +20,12 @@ class SelfHostedServer(Document):
 		if not self.mariadb_root_user:
 			self.mariadb_root_user = "root"
 
-	def _get_old_sites(self):
+	@frappe.whitelist()
+	def fetch_apps_and_sites(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_get_apps", queue="long", timeout=1200)
+		frappe.enqueue_doc(self.doctype, self.name, "_get_sites", queue="long", timeout=1200)
+
+	def _get_sites(self):
 		"""
 		Get Sites from Existing Bench in the server
 		"""
@@ -42,7 +42,7 @@ class SelfHostedServer(Document):
 		except Exception:
 			log_error("Self Hosted Sites Issue", server=self.as_dict())
 
-	def _get_old_apps(self):
+	def _get_apps(self):
 		"""
 		Get Apps from Existing Bench in the server
 		"""
@@ -81,10 +81,14 @@ class SelfHostedServer(Document):
 		try:
 			for k, v in sites.items():
 				self.append("sites", {"site_name": k, "apps": ",".join(map(str, v))})
+			self.save()
 			self.append_site_configs(ansible_play.name)
+			self.status = "Active"
+			self.save()
 		except Exception:
+			self.status = "Broken"
+			self.save()
 			log_error("Append to Sites Failed", server=self.as_dict())
-		self.save()
 
 	def append_to_apps(self):
 		"""
@@ -106,22 +110,29 @@ class SelfHostedServer(Document):
 				)
 				if app["app"] == "frappe":
 					self.frappe_version = self.map_branch_to_version(app["branch"])
+			self.status = "Active"
+			self.save()
 		except Exception:
+			self.status = "Broken"
+			self.save()
 			log_error("Appending Apps Error", server=self.as_dict())
-		self.save()
+		
 
 	@frappe.whitelist()
 	def create_new_rg(self):
 		"""
 		Create **a** Release Group for the apps in the Existing bench
 		"""
-		ansible_play = frappe.get_last_doc("Ansible Play", {"server": self.server})
+		ansible_play = frappe.get_last_doc("Ansible Play", {"server": self.server,"play":"Get Bench data from Self Hosted Server"})
 		ansible_task_op = frappe.get_value(
 			"Ansible Task",
 			{"play": ansible_play.name, "task": "Get Apps for Release Group"},
 			"output",
 		).replace("'", '"')
 		task_result = json.loads(ansible_task_op)
+		for i,app in enumerate(task_result): # Rearrange JSON if frappe isn't first app
+			if app['app'] == "frappe" and i>0:
+				task_result[i],task_result[0] = task_result[0],task_result[i]
 		release_group = frappe.new_doc("Release Group")
 		release_group.title = f"{self.server}-bench"
 		branches = []
@@ -169,11 +180,14 @@ class SelfHostedServer(Document):
 					},
 				)
 		except Exception:
+			self.status = "Broken"
+			self.save()
 			log_error("Creating RG failed", server=self.as_dict())
 		release_group.team = self.team
 		release_group.version = self.map_branch_to_version(max(branches))
 		rg = release_group.insert()
 		self.release_group = rg.name
+		self.status = "Active"
 		self.save()
 
 	@frappe.whitelist()
@@ -188,35 +202,65 @@ class SelfHostedServer(Document):
 			db_server.private_ip = self.private_ip
 			db_server.team = self.team
 			db_server.ssh_user = self.ssh_user
-			db_server.mariadb_root_password = self.mariadb_root_password
+			db_server.mariadb_root_password = self.get_password("mariadb_root_password")
 			db_server.cluster = server.cluster
 			db_server.agent_password = server.agent_password
 			db_server.is_server_setup = True
 			db = db_server.insert()
+			self.database_setup = True
 			self.database_server = db.name
+			self.status = "Active"
 			self.save()
-			frappe.msgprint("New DB Server Up and Running")
 		except Exception:
 			frappe.throw("Adding Server to Database Server Doctype failed")
+			self.status = "Broken"
+			self.save()
 			log_error("Inserting a new DB server failed")
 
 	def append_site_configs(self, play_name):
 		"""
 		Append site_config.json to `sites` Child Table
 		"""
-		ansible_task_op = frappe.get_value(
-			"Ansible Task",
-			{"play": play_name, "task": "Get Site Configs from Existing Sites"},
-			"output",
-		).replace("'", '"')
-		task_result = json.loads(
-			ansible_task_op.replace('"{', "{").replace('}"', "}").replace("\\n", "")
-		)
-		for site in task_result:
-			for _site in self.sites:
-				if _site.site_name == site["site"]:
-					_site.site_config = site["config"]
+		try:
+			ansible_task_op = frappe.get_value(
+				"Ansible Task",
+				{"play": play_name, "task": "Get Site Configs from Existing Sites"},
+				"output",
+			).replace("'", '"')
+			task_result = json.loads(
+				ansible_task_op.replace('"{', "{").replace('}"', "}").replace("\\n", "")
+			)
+			self.status = "Pending"
+			for site in task_result:
+				for _site in self.sites:
+					if _site.site_name == site["site"]:
+						_site.site_config = str(site["config"])
+					self.save()
+		except Exception as e:
+			self.status = "Broken"
+			self.save()
+			frappe.throw("Fetching sites from Existing Bench failed",exc=e)
+	
+	@frappe.whitelist()
+	def create_server(self):
+			try:
+				server = frappe.new_doc("Server")
+				server.hostname =self.hostname
+				server.is_self_hosted = True
+				server.self_hosted_server_domain = self.domain
+				server.team = self.team
+				server.ip = self.ip
+				server.private_ip = self.private_ip
+				server.ssh_user = self.ssh_user
+				server.self_hosted_mariadb_root_password = self.get_password("mariadb_root_password")
+				new_server = server.insert()
+				self.server = new_server.name
+				self.status ="Active"
 				self.save()
+			except Exception as e:
+				self.status = "Broken"
+				self.save()
+				frappe.throw("Server Creation Error",exc=e)
 
 	@frappe.whitelist()
 	def create_new_sites(self):
@@ -233,11 +277,11 @@ class SelfHostedServer(Document):
 				new_site.subdomain = sdomain
 				new_site.domain = frappe.db.get_list("Root Domain", pluck="name")[0]
 				try:
-					new_site.bench = frappe.get_last_doc("Bench", {"group": site.release_group})
+					new_site.bench = frappe.get_last_doc("Bench", {"group": self.release_group})
 				except Exception as e:
 					frappe.throw("Site Creation Failed", exc=e)
 				new_site.team = self.team
-				new_site.server = self.server
+				new_site.server = self.name
 				for app in site.apps.split(","):
 					new_site.append("apps", {"app": app})
 				config = json.loads(site.site_config)

@@ -70,6 +70,10 @@ class Agent:
 	def new_site(self, site):
 		apps = [app.app for app in site.apps]
 		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
+		# TODO: Add optnon to check for self hosted, then change the IP for the DB Server
+		# Change the DB password to fetch from self_hosted_mariadb_root_password
+		
+
 		data = {
 			"config": json.loads(site.config),
 			"apps": apps,

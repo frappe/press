@@ -7,14 +7,15 @@
  "engine": "InnoDB",
  "field_order": [
   "title",
-  "team",
-  "different_database_server",
+  "hostname",
+  "domain",
   "database_setup",
   "server_created",
   "column_break_3eap",
-  "hostname",
-  "domain",
+  "status",
+  "team",
   "release_group",
+  "different_database_server",
   "existing_bench_present",
   "server_section",
   "server",
@@ -51,12 +52,11 @@
    "mandatory_depends_on": "eval:doc.existing_bench_present"
   },
   {
-   "fetch_from": "server.ip",
+   "fetch_from": ".ip",
    "fieldname": "ip",
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "IP",
-   "read_only": 1,
    "reqd": 1
   },
   {
@@ -95,7 +95,7 @@
    "reqd": 1
   },
   {
-   "fetch_from": "server.private_ip",
+   "fetch_from": ".private_ip",
    "fieldname": "private_ip",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -205,10 +205,19 @@
    "in_standard_filter": 1,
    "label": "Release Group",
    "options": "Release Group"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Active\nPending\nBroken",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2023-03-22 22:36:14.721033",
+ "modified": "2023-03-24 01:07:32.297493",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Self Hosted Server",

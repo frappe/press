@@ -5,4 +5,4 @@
   become_user: root
   gather_facts: yes
   roles:
-    - role: self-hosted
+    - role: get_apps

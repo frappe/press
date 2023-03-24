@@ -480,7 +480,7 @@ class Server(BaseServer):
 
 		try:
 			ansible = Ansible(
-				playbook="self_hosted.yml",
+				playbook= "self_hosted.yml" if self.is_self_hosted  else "server.yml",
 				server=self,
 				user=self.ssh_user,
 				variables={

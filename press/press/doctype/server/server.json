@@ -359,7 +359,7 @@
   {
    "depends_on": "eval:doc.is_self_hosted==true",
    "fieldname": "self_hosted_mariadb_root_password",
-   "fieldtype": "Data",
+   "fieldtype": "Password",
    "label": "Self Hosted MariaDB Root Password"
   },
   {
@@ -370,7 +370,7 @@
   }
  ],
  "links": [],
- "modified": "2023-03-10 12:03:14.242861",
+ "modified": "2023-03-24 01:09:09.837168",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
