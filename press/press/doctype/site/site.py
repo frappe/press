@@ -639,15 +639,21 @@ class Site(Document):
 		log_site_activity(self.name, "Drop Offsite Backups")
 
 		sites_remote_files = []
-		for backup_files in frappe.get_all(
+		site_backups = frappe.get_all(
 			"Site Backup",
 			filters={"site": self.name, "offsite": True, "files_availability": "Available"},
-			fields=["remote_database_file", "remote_public_file", "remote_private_file"],
-			as_list=True,
+			pluck="name",
 			order_by="creation desc",
 		)[
 			1:
-		]:  # Keep latest backup
+		]  # Keep latest backup
+		for backup_files in frappe.get_all(
+			"Site Backup",
+			filters={"name": ("in", site_backups)},
+			fields=["remote_database_file", "remote_public_file", "remote_private_file"],
+			as_list=True,
+			order_by="creation desc",
+		):
 			sites_remote_files += backup_files
 
 		if not sites_remote_files:
@@ -655,7 +661,7 @@ class Site(Document):
 
 		frappe.db.set_value(
 			"Site Backup",
-			{"site": self.name, "offsite": True},
+			{"name": ("in", site_backups), "offsite": True},
 			"files_availability",
 			"Unavailable",
 		)
