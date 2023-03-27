@@ -1102,3 +1102,36 @@ def start_review(name):
 	app = frappe.get_doc("Marketplace App", name)
 	app.status = "In Review"
 	app.save()
+
+
+@protected("Marketplace App")
+@frappe.whitelist()
+def communication(name):
+	comm = frappe.qb.DocType("Communication")
+	user = frappe.qb.DocType("User")
+	query = (
+		frappe.qb.from_(comm)
+		.left_join(user)
+		.on(comm.sender == user.email)
+		.select(comm.sender, comm.content, comm.communication_date, user.user_image)
+		.where((comm.reference_doctype == "Marketplace App") & (comm.reference_name == name))
+		.orderby(comm.creation, order=frappe.qb.desc)
+	)
+	res = query.run(as_dict=True)
+	return res
+
+
+@frappe.whitelist()
+def add_reply(name, message):
+	team = get_current_team()
+	frappe.get_doc(
+		{
+			"doctype": "Communication",
+			"reference_doctype": "Marketplace App",
+			"reference_name": name,
+			"communication_medium": "Email",
+			"subject": "Marketplace App Review: New message!",
+			"sender": team,
+			"content": message,
+		}
+	).insert(ignore_permissions=True)

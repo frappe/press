@@ -17,7 +17,7 @@
 		<div v-else>
 			<div class="grid grid-cols-1 gap-4 lg:grid-cols-3 md:grid-cols-2">
 				<MarketplaceAppCard
-					@click.native="routeToAppPage(app.name)"
+					@click.native="routeToAppPage(app.name, app.status)"
 					v-for="app in $resources.apps.data"
 					:key="app.name"
 					:app="app"
@@ -47,8 +47,12 @@ export default {
 		}
 	},
 	methods: {
-		routeToAppPage(appName) {
-			this.$router.push(`/marketplace/apps/${appName}`);
+		routeToAppPage(appName, status) {
+			if (status === "Draft") {
+				this.$router.push(`/marketplace/apps/${appName}/review`);
+			} else {
+				this.$router.push(`/marketplace/apps/${appName}`);
+			}
 		}
 	}
 };

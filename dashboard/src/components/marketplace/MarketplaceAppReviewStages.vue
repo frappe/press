@@ -1,5 +1,5 @@
 <template>
-	<Card v-if="reviewStages" title="Review Steps" subtitle="Complete all the steps before submitting for a review">
+	<CardWithDetails v-if="reviewStages" title="Review Steps" subtitle="Complete all the steps before submitting for a review">
 			<ListItem
 				v-for="step in steps"
 				:key="step.key"
@@ -19,16 +19,79 @@
 				Ready for Review
 			</Button>
 		</template>
-	</Card>
+		<template #details>
+			<CardDetails>
+			<div class="px-6 py-5 h-full">
+				<div class="flex justify-between">
+					<div>
+						<h2 class="text-xl font-semibold">Review Communication</h2>
+						<p class="mt-1.5 text-base text-gray-600">Chat with the developer assigned for review</p>
+					</div>
+					
+					<div>
+						<Button @click="showReplyDialog = true">
+							Reply
+						</Button>
+					</div>
+				</div>
+					<div class="overflow-auto h-full py-5 mt-4">
+						<div v-for="message in communication" class="overflow-auto p-4 mb-4 rounded-lg bg-gray-50">
+							<div class="flex justify-between">
+								<div class="flex pb-4">
+									<Avatar
+										class="mr-2"
+										:label="message.sender"
+										:imageURL="message.user_image"
+									/>
+									<span class="text-lg font-semibold self-center">{{ message.sender }}</span>
+								</div>
+								<span class="text-base text-gray-600">{{ getFormattedDateTime(message.communication_date) }}</span>
+							</div>
+							<div class="text-base" v-html="message.content"></div>
+						</div>
+					</div>
+				</div>
+			</CardDetails>
+		</template>
+	</CardWithDetails>
+	<Dialog v-model="showReplyDialog" :options="{ title: 'Reply'}">
+		<template v-slot:body-content>
+			<Input
+				label="Message"
+				v-model="message"
+				type="textarea"
+				required
+			/>
+		</template>
+		<template #actions>
+			<Button appearance="primary" @click="$resources.addReply.submit()">
+				Send
+			</Button>
+		</template>
+	</Dialog>
 </template>
 
 <script>
+import CardWithDetails from '@/components/CardWithDetails.vue';
+import CardDetails from '@/components/CardDetails.vue';
+
 export default {
 	name: 'MarketplaceAppReviewStages',
+	components: { CardWithDetails, CardDetails },
 	props: ['appName', 'app', 'reviewStages'],
+	data() {
+		return {
+			showReplyDialog: false,
+			message: null,
+		}
+	},
 	methods: {
 		showButton() {
 			return !Object.values(this.reviewStages).some(val => val === false) && this.app.status === 'Draft'
+		},
+		getFormattedDateTime(time) {
+			const date = new Date(time);
+			return date.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 		}
 	},
 	resources: {
@@ -42,7 +105,36 @@ export default {
 					window.location.reload()
 				}
 			}
+		},
+		communication() {
+			return {
+				method: 'press.api.marketplace.communication',
+				params: {
+					name: this.appName
+				}
+			}
+		},
+		addReply() {
+			return {
+				method: 'press.api.marketplace.add_reply',
+				params: {
+					name: this.appName,
+					message: this.message
+				},
+				onSuccess() {
+					this.showReplyDialog = false;
+					this.$notify({
+						title: 'Reply Queued',
+						message: 'Message reply is queued for sending',
+						icon: 'check',
+						color: 'green'
+					});
+				}
+			}
 		}
+	},
+	mounted() {
+		this.$resources.communication.submit()
 	},
 	computed: {
 		steps() {
@@ -68,6 +160,9 @@ export default {
 					'description': "Publish your first release from the Releases tab"
 				}
 			]
+		},
+		communication() {
+			return this.$resources.communication.data;
 		}
 	}
 }
