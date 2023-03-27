@@ -8,7 +8,6 @@
  "field_order": [
   "site_name",
   "apps",
-  "release_group",
   "site_config"
  ],
  "fields": [
@@ -23,12 +22,6 @@
    "label": "Apps"
   },
   {
-   "fieldname": "release_group",
-   "fieldtype": "Link",
-   "label": "Release Group",
-   "options": "Release Group"
-  },
-  {
    "fieldname": "site_config",
    "fieldtype": "Code",
    "label": "Site Config",
@@ -38,7 +31,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2023-03-21 01:51:43.166251",
+ "modified": "2023-03-27 10:34:12.917559",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Self Hosted Site Apps",

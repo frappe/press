@@ -194,7 +194,9 @@ class BaseServer(Document):
 	@frappe.whitelist()
 	def ping_ansible(self):
 		try:
-			ansible = Ansible(playbook="ping.yml", server=self, user=self.ssh_user or "root")
+			ansible = Ansible(
+				playbook="ping.yml", server=self, user=self.ssh_user or "root", port=self.ssh_port
+			)
 			ansible.run()
 		except Exception:
 			log_error("Server Ping Exception", server=self.as_dict())
@@ -208,6 +210,7 @@ class BaseServer(Document):
 			ansible = Ansible(
 				playbook="update_agent.yml",
 				user=self.ssh_user,
+				port=self.ssh_port,
 				variables={"agent_repository_url": self.get_agent_repository_url()},
 				server=self,
 			)
@@ -480,9 +483,10 @@ class Server(BaseServer):
 
 		try:
 			ansible = Ansible(
-				playbook= "self_hosted.yml" if self.is_self_hosted  else "server.yml",
+				playbook="self_hosted.yml" if self.is_self_hosted else "server.yml",
 				server=self,
 				user=self.ssh_user,
+				port=self.ssh_port,
 				variables={
 					"server": self.name,
 					"private_ip": self.private_ip,
@@ -695,6 +699,8 @@ class Server(BaseServer):
 			ansible = Ansible(
 				playbook="rename.yml",
 				server=self,
+				user=self.ssh_user,
+				port=self.ssh_port,
 				variables={
 					"server": self.name,
 					"private_ip": self.private_ip,

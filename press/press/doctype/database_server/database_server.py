@@ -192,6 +192,7 @@ class DatabaseServer(BaseServer):
 				playbook="convert.yml",
 				server=self,
 				user=self.ssh_user,
+				port=self.ssh_port,
 				variables={
 					"private_ip": self.private_ip,
 					"mariadb_root_password": mariadb_root_password,

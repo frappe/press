@@ -43,6 +43,7 @@
   "frappe_public_key",
   "column_break_18",
   "ssh_user",
+  "ssh_port",
   "root_public_key"
  ],
  "fields": [
@@ -291,11 +292,17 @@
    "fieldname": "self_hosted_mariadb_server",
    "fieldtype": "Data",
    "label": "Self Hosted MariaDB Server IP"
+  },
+  {
+   "default": "22",
+   "fieldname": "ssh_port",
+   "fieldtype": "Int",
+   "label": "SSH Port"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-03-10 16:24:27.021952",
+ "modified": "2023-03-27 14:20:02.490184",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

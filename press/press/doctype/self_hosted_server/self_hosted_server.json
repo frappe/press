@@ -20,6 +20,7 @@
   "server_section",
   "server",
   "ssh_user",
+  "ssh_port",
   "column_break_smwr",
   "ip",
   "private_ip",
@@ -214,10 +215,16 @@
    "label": "Status",
    "options": "Active\nPending\nBroken",
    "read_only": 1
+  },
+  {
+   "default": "22",
+   "fieldname": "ssh_port",
+   "fieldtype": "Int",
+   "label": "SSH Port"
   }
  ],
  "links": [],
- "modified": "2023-03-24 01:07:32.297493",
+ "modified": "2023-03-27 11:51:28.257102",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Self Hosted Server",

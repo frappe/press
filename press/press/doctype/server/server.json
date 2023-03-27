@@ -46,6 +46,7 @@
   "primary",
   "ssh_section",
   "ssh_user",
+  "ssh_port",
   "frappe_user_password",
   "frappe_public_key",
   "column_break_20",
@@ -367,10 +368,16 @@
    "fieldname": "self_hosted_server_domain",
    "fieldtype": "Data",
    "label": "Self Hosted Server Domain"
+  },
+  {
+   "default": "22",
+   "fieldname": "ssh_port",
+   "fieldtype": "Int",
+   "label": "SSH Port"
   }
  ],
  "links": [],
- "modified": "2023-03-24 01:09:09.837168",
+ "modified": "2023-03-27 12:35:48.699367",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

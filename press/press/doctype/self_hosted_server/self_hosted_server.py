@@ -25,6 +25,17 @@ class SelfHostedServer(Document):
 		frappe.enqueue_doc(self.doctype, self.name, "_get_apps", queue="long", timeout=1200)
 		frappe.enqueue_doc(self.doctype, self.name, "_get_sites", queue="long", timeout=1200)
 
+	@frappe.whitelist()
+	def ping_ansible(self):
+		try:
+			ansible = Ansible(
+				playbook="ping.yml", server=self, user=self.ssh_user or "root", port=self.ssh_port
+			)
+			ansible.run()
+			self.reload()
+		except Exception:
+			log_error("Server Ping Exception", server=self.as_dict())
+
 	def _get_sites(self):
 		"""
 		Get Sites from Existing Bench in the server
@@ -34,6 +45,7 @@ class SelfHostedServer(Document):
 				playbook="get_sites.yml",
 				server=self,
 				user=self.ssh_user,
+				port=self.ssh_port,
 				variables={"bench_path": self.bench_directory},
 			)
 			play = ansible.run()
@@ -51,6 +63,7 @@ class SelfHostedServer(Document):
 				playbook="get_apps.yml",
 				server=self,
 				user=self.ssh_user,
+				port=self.ssh_port,
 				variables={"bench_path": self.bench_directory},
 			)
 			play = ansible.run()
@@ -84,15 +97,14 @@ class SelfHostedServer(Document):
 			self.save()
 			self.append_site_configs(ansible_play.name)
 			self.status = "Active"
-			self.save()
 		except Exception:
 			self.status = "Broken"
-			self.save()
 			log_error("Append to Sites Failed", server=self.as_dict())
+		self.save()
 
 	def append_to_apps(self):
 		"""
-		Append apps from existing bench to Apps Child table
+		Append apps from existing bench to `apps` child table
 		Appends app name, app version and app branch
 		"""
 		ansible_play = frappe.get_last_doc("Ansible Play", {"server": self.name})
@@ -102,6 +114,10 @@ class SelfHostedServer(Document):
 			"output",
 		).replace("'", '"')
 		task_output = json.loads(ansible_task_op)
+		temp_task_result = task_output  # Removing risk of mutating the same loop variable
+		for i, app in enumerate(temp_task_result):  # Rearrange JSON if frappe isn't first app
+			if app["app"] == "frappe" and i > 0:
+				task_output[i], task_output[0] = task_output[0], task_output[i]
 		try:
 			for app in task_output:
 				self.append(
@@ -111,28 +127,27 @@ class SelfHostedServer(Document):
 				if app["app"] == "frappe":
 					self.frappe_version = self.map_branch_to_version(app["branch"])
 			self.status = "Active"
-			self.save()
+
 		except Exception:
 			self.status = "Broken"
-			self.save()
 			log_error("Appending Apps Error", server=self.as_dict())
-		
+		self.save()
 
 	@frappe.whitelist()
 	def create_new_rg(self):
 		"""
 		Create **a** Release Group for the apps in the Existing bench
 		"""
-		ansible_play = frappe.get_last_doc("Ansible Play", {"server": self.server,"play":"Get Bench data from Self Hosted Server"})
+		ansible_play = frappe.get_last_doc(
+			"Ansible Play",
+			{"server": self.server, "play": "Get Bench data from Self Hosted Server"},
+		)
 		ansible_task_op = frappe.get_value(
 			"Ansible Task",
 			{"play": ansible_play.name, "task": "Get Apps for Release Group"},
 			"output",
 		).replace("'", '"')
 		task_result = json.loads(ansible_task_op)
-		for i,app in enumerate(task_result): # Rearrange JSON if frappe isn't first app
-			if app['app'] == "frappe" and i>0:
-				task_result[i],task_result[0] = task_result[0],task_result[i]
 		release_group = frappe.new_doc("Release Group")
 		release_group.title = f"{self.server}-bench"
 		branches = []
@@ -159,9 +174,7 @@ class SelfHostedServer(Document):
 								"branch": app["branch"],
 							}
 						)
-						app_source_doc.append(
-							"versions", {"version": self.map_branch_to_version(max(branches))}
-						)
+						app_source_doc.append("versions", {"version": self.frappe_version})
 						app_source_doc.insert()
 						frappe.db.commit()
 						release_group.append("apps", {"app": app["app"], "source": app_source_doc.name})
@@ -196,8 +209,9 @@ class SelfHostedServer(Document):
 			server = frappe.get_doc("Server", self.name)
 			db_server = frappe.new_doc("Database Server")
 			db_server.hostname = server.hostname
-			db_server.self_hosted_server_domain = server.self_hosted_server_domain
+			db_server.title = self.title
 			db_server.is_self_hosted = True
+			db_server.self_hosted_server_domain = server.self_hosted_server_domain
 			db_server.ip = self.ip
 			db_server.private_ip = self.private_ip
 			db_server.team = self.team
@@ -206,9 +220,9 @@ class SelfHostedServer(Document):
 			db_server.cluster = server.cluster
 			db_server.agent_password = server.agent_password
 			db_server.is_server_setup = True
-			db = db_server.insert()
+			_db = db_server.insert()
 			self.database_setup = True
-			self.database_server = db.name
+			self.database_server = _db.name
 			self.status = "Active"
 			self.save()
 		except Exception:
@@ -216,6 +230,11 @@ class SelfHostedServer(Document):
 			self.status = "Broken"
 			self.save()
 			log_error("Inserting a new DB server failed")
+
+	@frappe.whitelist()
+	def setup_db(self):
+		db = frappe.get_doc("Database Server", self.database_server)
+		db.convert_from_frappe_server()
 
 	def append_site_configs(self, play_name):
 		"""
@@ -226,41 +245,49 @@ class SelfHostedServer(Document):
 				"Ansible Task",
 				{"play": play_name, "task": "Get Site Configs from Existing Sites"},
 				"output",
-			).replace("'", '"')
+			)
 			task_result = json.loads(
-				ansible_task_op.replace('"{', "{").replace('}"', "}").replace("\\n", "")
+				ansible_task_op.replace("'", '"')
+				.replace('"{', "{")
+				.replace('}"', "}")
+				.replace("\\n", "")
 			)
 			self.status = "Pending"
 			for site in task_result:
 				for _site in self.sites:
 					if _site.site_name == site["site"]:
-						_site.site_config = str(site["config"])
+						_site.site_config = str(site["config"]).replace("'", '"')
 					self.save()
+			self.status = "Active"
 		except Exception as e:
 			self.status = "Broken"
-			self.save()
-			frappe.throw("Fetching sites from Existing Bench failed",exc=e)
-	
+			frappe.throw("Fetching sites configs from Existing Bench failed", exc=e)
+		self.save()
+
 	@frappe.whitelist()
 	def create_server(self):
-			try:
-				server = frappe.new_doc("Server")
-				server.hostname =self.hostname
-				server.is_self_hosted = True
-				server.self_hosted_server_domain = self.domain
-				server.team = self.team
-				server.ip = self.ip
-				server.private_ip = self.private_ip
-				server.ssh_user = self.ssh_user
-				server.self_hosted_mariadb_root_password = self.get_password("mariadb_root_password")
-				new_server = server.insert()
-				self.server = new_server.name
-				self.status ="Active"
-				self.save()
-			except Exception as e:
-				self.status = "Broken"
-				self.save()
-				frappe.throw("Server Creation Error",exc=e)
+		"""
+		Add a new record to the Server doctype
+		"""
+		try:
+			server = frappe.new_doc("Server")
+			server.hostname = self.hostname
+			server.title = self.title
+			server.is_self_hosted = True
+			server.self_hosted_server_domain = self.domain
+			server.team = self.team
+			server.ip = self.ip
+			server.private_ip = self.private_ip
+			server.ssh_user = self.ssh_user
+			server.self_hosted_mariadb_root_password = self.get_password("mariadb_root_password")
+			new_server = server.insert()
+			self.server = new_server.name
+			self.status = "Active"
+			self.server_created = True
+		except Exception as e:
+			self.status = "Broken"
+			frappe.throw("Server Creation Error", exc=e)
+		self.save()
 
 	@frappe.whitelist()
 	def create_new_sites(self):
@@ -289,5 +316,6 @@ class SelfHostedServer(Document):
 					new_site.append("configuration", {"key": key, "value": value})
 				new_site.database_name = config["db_name"]
 				new_site.insert()
+				self.reload()
 		except Exception:
 			log_error("New Site Creation Error", server=self.as_dict())
