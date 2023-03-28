@@ -256,7 +256,9 @@ class SelfHostedServer(Document):
 			for site in task_result:
 				for _site in self.sites:
 					if _site.site_name == site["site"]:
-						_site.site_config = str(site["config"]).replace("'", '"')
+						_site.site_config = str(site["config"]).replace(
+							"'", '"'
+						)  # JSON Breaks since dict uses only single quotes
 					self.save()
 			self.status = "Active"
 		except Exception as e:
@@ -295,12 +297,12 @@ class SelfHostedServer(Document):
 		Create new FC sites from sites in Current Bench
 		"""
 		try:
-			for site in self.sites:
+			for _site in self.sites:
 				new_site = frappe.new_doc("Site")
-				if len(site.site_name) < 5:
-					sdomain = site.site_name + "-new"
+				if len(_site.site_name) < 5:
+					sdomain = _site.site_name + "-new"
 				else:
-					sdomain = site.site_name
+					sdomain = _site.site_name
 				new_site.subdomain = sdomain
 				new_site.domain = frappe.db.get_list("Root Domain", pluck="name")[0]
 				try:
@@ -309,13 +311,56 @@ class SelfHostedServer(Document):
 					frappe.throw("Site Creation Failed", exc=e)
 				new_site.team = self.team
 				new_site.server = self.name
-				for app in site.apps.split(","):
+				for app in _site.apps.split(","):
 					new_site.append("apps", {"app": app})
-				config = json.loads(site.site_config)
+				config = json.loads(_site.site_config)
 				for key, value in config.items():
 					new_site.append("configuration", {"key": key, "value": value})
 				new_site.database_name = config["db_name"]
-				new_site.insert()
+				_new_site = new_site.insert()
+				_site.site = _new_site.name
+				self.save()
 				self.reload()
 		except Exception:
 			log_error("New Site Creation Error", server=self.as_dict())
+
+	@frappe.whitelist()
+	def restore_files(self):
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_restore_files", queue="long", timeout=1200
+		)
+
+	def _restore_files(self):
+		"""
+		Copy required folder of Existing Bench to new sites
+		"""
+		self.status = "Pending"
+		self.save()
+		ex_sites = []
+		nw_sites = []
+		benches = []
+		for _site in self.sites:
+			ex_sites.append(_site.site_name)
+			nw_sites.append(_site.site)
+			bench = frappe.db.get_value("Site", _site.site, "bench")
+			benches.append(bench)
+		try:
+			ansible = Ansible(
+				playbook="self_hosted_restore.yml",
+				server=self,
+				user=self.ssh_user,
+				port=self.ssh_port,
+				variables={
+					"bench_path": self.bench_directory,
+					"ex_sites": ex_sites,
+					"new_benches": benches,
+					"new_sites": nw_sites,
+				},
+			)
+			play = ansible.run()
+			if play.status == "Success":
+				self.status = "Active"
+		except Exception:
+			self.status = "Broken"
+			log_error("Self Hosted Restore error", server=self.name)
+		self.save()

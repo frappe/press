@@ -8,7 +8,8 @@
  "field_order": [
   "site_name",
   "apps",
-  "site_config"
+  "site_config",
+  "site"
  ],
  "fields": [
   {
@@ -26,12 +27,18 @@
    "fieldtype": "Code",
    "label": "Site Config",
    "options": "JSON"
+  },
+  {
+   "fieldname": "site",
+   "fieldtype": "Link",
+   "label": "Site",
+   "options": "Site"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2023-03-27 10:34:12.917559",
+ "modified": "2023-03-28 12:24:09.561279",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Self Hosted Site Apps",
