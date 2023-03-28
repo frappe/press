@@ -38,7 +38,7 @@
 
 						<CommitTag
 							class="hidden ml-2 group-hover:block"
-							:tag="getCommitTag(app)"
+							:tag="app.tag || app.hash.substr(0, 7)"
 							:link="`${app.repository_url}/commit/${app.hash}`"
 						/>
 					</div>
@@ -348,9 +348,6 @@ export default {
 		}
 	},
 	methods: {
-		getCommitTag(app) {
-			return app.hash.substr(0, 7);
-		},
 		subscribe(app) {
 			this.showPlanSelectionDialog = true;
 		},
