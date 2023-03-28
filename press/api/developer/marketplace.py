@@ -44,6 +44,7 @@ class DeveloperApiHandler:
 			"status",
 			"plan",
 			"site",
+			"end_date",
 		]
 
 		filtered_dict = {
