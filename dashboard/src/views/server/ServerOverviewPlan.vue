@@ -123,6 +123,14 @@ export default {
 					this.selectedPlan = null;
 					this.$emit('plan-change');
 					this.$resources.plans.reset();
+				},
+				onError(error) {	
+					this.showChangePlanDialog = false;
+					this.$notify({
+						title: error,
+						icon: 'x',
+						color: 'red'
+					});
 				}
 			};
 		}

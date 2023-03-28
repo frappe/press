@@ -213,6 +213,14 @@ export default {
 					this.selectedPlan = null;
 					this.$resources.plans.reset();
 					this.$resources.fetchDatabaseAccessInfo.fetch();
+				},
+				onError(error) {	
+					this.showChangePlanDialog = false;
+					this.$notify({
+						title: error,
+						icon: 'x',
+						color: 'red'
+					});
 				}
 			};
 		}
