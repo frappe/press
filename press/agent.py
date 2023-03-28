@@ -70,10 +70,6 @@ class Agent:
 	def new_site(self, site):
 		apps = [app.app for app in site.apps]
 		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
-		# TODO: Add optnon to check for self hosted, then change the IP for the DB Server
-		# Change the DB password to fetch from self_hosted_mariadb_root_password
-		
-
 		data = {
 			"config": json.loads(site.config),
 			"apps": apps,
@@ -144,7 +140,7 @@ class Agent:
 		)
 
 	def rename_upstream_site(self, server: str, site, new_name: str, domains: List[str]):
-		_server = frappe.get_doc("Server",server)
+		_server = frappe.get_doc("Server", server)
 		ip = _server.ip if _server.is_self_hosted else _server.private_ip
 		data = {"new_name": new_name, "domains": domains}
 		return self.create_agent_job(
@@ -426,7 +422,7 @@ class Agent:
 		)
 
 	def new_server(self, server):
-		_server = frappe.get_doc("Server",server)
+		_server = frappe.get_doc("Server", server)
 		ip = _server.ip if _server.is_self_hosted else _server.private_ip
 		data = {"name": ip}
 		return self.create_agent_job(
@@ -434,14 +430,14 @@ class Agent:
 		)
 
 	def update_upstream_private_ip(self, server):
-		ip,private_ip = frappe.db.get_value("Server", server, ["ip","private_ip"])
+		ip, private_ip = frappe.db.get_value("Server", server, ["ip", "private_ip"])
 		data = {"name": private_ip}
 		return self.create_agent_job(
 			"Rename Upstream", f"proxy/upstreams/{ip}/rename", data, upstream=server
 		)
 
 	def new_upstream_site(self, server, site):
-		_server = frappe.get_doc("Server",server)
+		_server = frappe.get_doc("Server", server)
 		ip = _server.ip if _server.is_self_hosted else _server.private_ip
 		data = {"name": site}
 		return self.create_agent_job(
@@ -454,7 +450,7 @@ class Agent:
 
 	def remove_upstream_site(self, server, site: str, site_name=None):
 		site_name = site_name or site
-		_server = frappe.get_doc("Server",server)
+		_server = frappe.get_doc("Server", server)
 		ip = _server.ip if _server.is_self_hosted else _server.private_ip
 		return self.create_agent_job(
 			"Remove Site from Upstream",
@@ -513,7 +509,7 @@ class Agent:
 
 	def update_site_status(self, server, site, status):
 		data = {"status": status}
-		_server = frappe.get_doc("Server",server)
+		_server = frappe.get_doc("Server", server)
 		ip = _server.ip if _server.is_self_hosted else _server.private_ip
 		return self.create_agent_job(
 			"Update Site Status",
