@@ -1124,14 +1124,22 @@ def communication(name):
 @frappe.whitelist()
 def add_reply(name, message):
 	team = get_current_team()
-	frappe.get_doc(
+	doctype = "Marketplace App"
+	app = frappe.get_doc(doctype, name)
+	recipients = ", ".join(list(app.get_assigned_users()) or [])
+	doc = frappe.get_doc(
 		{
 			"doctype": "Communication",
-			"reference_doctype": "Marketplace App",
-			"reference_name": name,
+			"communication_type": "Communication",
 			"communication_medium": "Email",
+			"reference_doctype": doctype,
+			"reference_name": name,
 			"subject": "Marketplace App Review: New message!",
 			"sender": team,
 			"content": message,
+			"is_notification": True,
+			"recipients": recipients,
 		}
-	).insert(ignore_permissions=True)
+	)
+	doc.insert(ignore_permissions=True)
+	doc.send_email()
