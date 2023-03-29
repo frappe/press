@@ -168,7 +168,7 @@
 					"
 				/>
 
-				<ErrorMessage :error="$resourceErrors" />
+				<ErrorMessage :message="$resourceErrors" />
 			</template>
 
 			<template #actions>

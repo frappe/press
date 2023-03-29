@@ -32,7 +32,7 @@
 
 				<ErrorMessage
 					class="mt-3"
-					:error="$resources.createRazorpayOrder.error"
+					:message="$resources.createRazorpayOrder.error"
 				/>
 
 				<div class="mt-4 flex w-full justify-between">

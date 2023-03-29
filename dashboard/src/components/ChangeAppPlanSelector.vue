@@ -1,6 +1,6 @@
 <template>
 	<div>
-		<ErrorMessage :error="$resources.getAppPlans.error" />
+		<ErrorMessage :message="$resources.getAppPlans.error" />
 
 		<Button
 			v-if="

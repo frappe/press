@@ -72,7 +72,7 @@
 			</ListItem>
 		</div>
 
-		<ErrorMessage :error="$resources.fetchLatestAppUpdate.error" />
+		<ErrorMessage :message="$resources.fetchLatestAppUpdate.error" />
 
 		<Dialog
 			:options="{ title: 'Add apps to your bench' }"

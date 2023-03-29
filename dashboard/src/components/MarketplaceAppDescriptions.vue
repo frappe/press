@@ -24,7 +24,7 @@
 					/>
 					<ErrorMessage
 						class="mt-4"
-						:error="$resources.updateAppSummary.error"
+						:message="$resources.updateAppSummary.error"
 					/>
 				</template>
 
@@ -73,7 +73,7 @@
 
 						<ErrorMessage
 							class="mt-4"
-							:error="$resources.updateAppDescription.error"
+							:message="$resources.updateAppDescription.error"
 						/>
 					</template>
 					<template v-slot:actions>

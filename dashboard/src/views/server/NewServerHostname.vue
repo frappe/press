@@ -28,7 +28,7 @@
 			</div>
 		</div>
 		<div class="mt-4">
-			<ErrorMessage :error="errorMessage" />
+			<ErrorMessage :message="errorMessage" />
 		</div>
 	</div>
 </template>

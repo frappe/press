@@ -32,7 +32,7 @@
 					:selectedDBPlan="selectedDBPlan"
 					v-show="activeStep.name === 'VerifyServer'"
 				/>
-				<ErrorMessage :error="validationMessage" />
+				<ErrorMessage :message="validationMessage" />
 				<div class="mt-4">
 					<!-- Region consent checkbox -->
 					<div class="my-6" v-if="!hasNext">
@@ -51,7 +51,7 @@
 						</label>
 					</div>
 
-					<ErrorMessage class="mb-4" :error="$resources.newServer.error" />
+					<ErrorMessage class="mb-4" :message="$resources.newServer.error" />
 
 					<div class="flex justify-between">
 						<Button

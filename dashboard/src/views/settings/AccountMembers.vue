@@ -60,7 +60,7 @@
 						v-model="memberEmail"
 						required
 					/>
-					<ErrorMessage :error="$resourceErrors" />
+					<ErrorMessage :message="$resourceErrors" />
 
 					<div class="mt-5 flex flex-row justify-end">
 						<Button @click="showAddMemberForm = false"> Cancel </Button>

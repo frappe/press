@@ -66,7 +66,7 @@ const submitReview = useResource({
 					placeholder="Write Review"
 				/>
 
-				<ErrorMessage class="mt-2" :error="submitReview.error" />
+				<ErrorMessage class="mt-2" :message="submitReview.error" />
 				<Button
 					class="mt-4"
 					:loading="submitReview.loading"

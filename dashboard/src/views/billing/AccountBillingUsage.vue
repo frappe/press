@@ -70,7 +70,7 @@
 
 				<ErrorMessage
 					v-if="$resourceErrors"
-					:error="$resourceErrors"
+					:message="$resourceErrors"
 					class="mt-3"
 				/>
 			</div>

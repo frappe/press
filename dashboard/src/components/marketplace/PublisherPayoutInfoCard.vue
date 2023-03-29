@@ -88,7 +88,7 @@
 
 				<ErrorMessage
 					class="mt-4"
-					:error="$resources.updatePublisherProfile.error"
+					:message="$resources.updatePublisherProfile.error"
 				/>
 			</template>
 

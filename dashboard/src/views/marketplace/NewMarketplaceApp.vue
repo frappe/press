@@ -21,7 +21,7 @@
 				</option>
 			</select>
 
-			<ErrorMessage class="mb-3" :error="$resourceErrors" />
+			<ErrorMessage class="mb-3" :message="$resourceErrors" />
 
 			<Button
 				:loading="$resources.addApp.loading"

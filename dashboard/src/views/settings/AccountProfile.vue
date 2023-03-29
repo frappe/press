@@ -59,7 +59,7 @@
 						v-model="$account.user.last_name"
 					/>
 				</div>
-				<ErrorMessage class="mt-4" :error="$resources.updateProfile.error" />
+				<ErrorMessage class="mt-4" :message="$resources.updateProfile.error" />
 			</template>
 
 			<template #actions>

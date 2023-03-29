@@ -26,7 +26,7 @@
 					required
 				/>
 			</div>
-			<ErrorMessage class="mt-6" :error="$resourceErrors" />
+			<ErrorMessage class="mt-6" :message="$resourceErrors" />
 			<Button
 				class="mt-6"
 				appearance="primary"

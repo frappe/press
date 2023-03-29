@@ -210,8 +210,8 @@ function resetCurrentEditingPlan() {
 						</div>
 
 						<div>
-							<ErrorMessage class="mt-3" :error="updateAppPlan.error" />
-							<ErrorMessage class="mt-3" :error="createAppPlan.error" />
+							<ErrorMessage class="mt-3" :message="updateAppPlan.error" />
+							<ErrorMessage class="mt-3" :message="createAppPlan.error" />
 						</div>
 					</div>
 				</div>

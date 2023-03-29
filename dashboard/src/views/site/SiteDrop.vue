@@ -22,7 +22,7 @@
 						label="Force"
 					/>
 				</div>
-				<ErrorMessage class="mt-2" :error="$resources.dropSite.error" />
+				<ErrorMessage class="mt-2" :message="$resources.dropSite.error" />
 			</template>
 
 			<template v-slot:actions>

@@ -78,7 +78,7 @@
 					</label>
 				</div>
 			</div>
-			<ErrorMessage class="mt-4" :error="$resourceErrors" />
+			<ErrorMessage class="mt-4" :message="$resourceErrors" />
 			<Button
 				class="mt-4"
 				appearance="primary"

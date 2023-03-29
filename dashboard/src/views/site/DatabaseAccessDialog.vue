@@ -34,7 +34,7 @@
 							:plans="plans"
 							v-model:selectedPlan="selectedPlan"
 						/>
-						<ErrorMessage class="mt-4" :error="$resources.changePlan.error" />
+						<ErrorMessage class="mt-4" :message="$resources.changePlan.error" />
 					</template>
 					<template #actions>
 						<Button @click="showChangePlanDialog = false"> Cancel </Button>
@@ -103,7 +103,7 @@
 					</div>
 				</div>
 
-				<ErrorMessage class="mt-3" :error="$resourceErrors || error" />
+				<ErrorMessage class="mt-3" :message="$resourceErrors || error" />
 
 				<div class="mt-2">
 					<Button

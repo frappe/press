@@ -93,7 +93,7 @@
 				/>
 				<div class="mt-2">
 					<ErrorMessage
-						:error="$resources.getBackupLinks.error"
+						:message="$resources.getBackupLinks.error"
 						v-if="!$resources.getBackupLinks.data"
 					/>
 					<div

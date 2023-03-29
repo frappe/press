@@ -164,7 +164,7 @@
 			</template>
 			<ErrorMessage
 				class="mt-3"
-				:error="$resources.generateCertificate.error"
+				:message="$resources.generateCertificate.error"
 			/>
 		</Dialog>
 	</CardWithDetails>

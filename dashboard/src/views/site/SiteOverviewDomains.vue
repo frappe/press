@@ -69,8 +69,8 @@
 						v-if="d.status == 'Broken'"
 						error="We encountered an error while adding the domain."
 					/>
-					<ErrorMessage :error="$resources.removeDomain.error" />
-					<ErrorMessage :error="$resources.setHostName.error" />
+					<ErrorMessage :message="$resources.removeDomain.error" />
+					<ErrorMessage :message="$resources.setHostName.error" />
 				</div>
 			</div>
 		</div>
@@ -106,9 +106,9 @@
 						/>
 						DNS records successfully verified. Click on Add Domain.
 					</p>
-					<ErrorMessage :error="$resources.checkDNS.error" />
-					<ErrorMessage :error="$resources.addDomain.error" />
-					<ErrorMessage :error="$resources.retryAddDomain.error" />
+					<ErrorMessage :message="$resources.checkDNS.error" />
+					<ErrorMessage :message="$resources.addDomain.error" />
+					<ErrorMessage :message="$resources.retryAddDomain.error" />
 				</div>
 			</template>
 

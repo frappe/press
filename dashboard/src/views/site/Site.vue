@@ -106,7 +106,7 @@
 					required
 				/>
 
-				<ErrorMessage class="mt-3" :error="errorMessage" />
+				<ErrorMessage class="mt-3" :message="errorMessage" />
 			</template>
 
 			<template #actions>

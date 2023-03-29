@@ -7,7 +7,7 @@
 		></Button>
 		<ErrorMessage
 			v-else-if="!$resources.apps.data"
-			:error="$resources.apps.error"
+			:message="$resources.apps.error"
 		/>
 		<div v-else-if="$resources.apps.data.length < 1">
 			<p class="text-lg text-gray-600">

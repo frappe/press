@@ -52,7 +52,7 @@
 						/>
 					</label>
 				</div>
-				<ErrorMessage class="mt-2" :error="$resources.createSecret.error" />
+				<ErrorMessage class="mt-2" :message="$resources.createSecret.error" />
 			</template>
 
 			<template #actions>

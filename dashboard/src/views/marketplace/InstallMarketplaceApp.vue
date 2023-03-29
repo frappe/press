@@ -8,7 +8,7 @@
 				Install App: {{ options ? options.title : '' }}
 			</h1>
 
-			<ErrorMessage :error="$resources.optionsForQuickInstall.error" />
+			<ErrorMessage :message="$resources.optionsForQuickInstall.error" />
 
 			<div v-if="options" class="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2">
 				<Card title="Sites" subtitle="Select a site to install">
@@ -86,7 +86,7 @@
 					class="mb-9"
 					@change="plan => (selectedPlan = plan.name)"
 				/>
-				<ErrorMessage :error="$resourceErrors" />
+				<ErrorMessage :message="$resourceErrors" />
 			</template>
 			<template v-slot:actions>
 				<Button

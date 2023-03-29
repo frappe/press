@@ -25,7 +25,7 @@
 					/>
 				</div>
 
-				<ErrorMessage class="mt-4" :error="$resources.updateAppLinks.error" />
+				<ErrorMessage class="mt-4" :message="$resources.updateAppLinks.error" />
 			</template>
 
 			<template #actions>

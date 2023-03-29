@@ -156,12 +156,12 @@
 						</div>
 						<ErrorMessage
 							class="mt-4"
-							:error="$resources.disableAutoUpdate.error"
+							:message="$resources.disableAutoUpdate.error"
 						/>
 
 						<ErrorMessage
 							class="mt-4"
-							:error="$resources.updateAutoUpdateInfo.error"
+							:message="$resources.updateAutoUpdateInfo.error"
 						/>
 					</template>
 					<template #actions>
@@ -180,7 +180,7 @@
 					<strong>Note:</strong> All times are in IST (UTC + 5:30 hours).
 				</h4>
 
-				<ErrorMessage class="mt-4" :error="$resources.enableAutoUpdate.error" />
+				<ErrorMessage class="mt-4" :message="$resources.enableAutoUpdate.error" />
 			</Card>
 		</div>
 	</div>

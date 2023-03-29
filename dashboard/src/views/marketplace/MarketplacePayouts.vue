@@ -77,7 +77,7 @@ const payouts = useResource({
 				You have no payouts yet.
 			</p>
 		</div>
-		<ErrorMessage :error="payouts.error" />
+		<ErrorMessage :message="payouts.error" />
 	</Card>
 	<Card v-else title="Payout Details">
 		<template #actions-left>

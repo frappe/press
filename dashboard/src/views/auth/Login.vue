@@ -30,7 +30,7 @@
 				</router-link>
 				<router-link v-else to="/login/forgot"> Forgot Password </router-link>
 			</div>
-			<ErrorMessage :error="errorMessage" class="mt-4" />
+			<ErrorMessage :message="errorMessage" class="mt-4" />
 			<Button
 				class="mt-4"
 				:disabled="state === 'RequestStarted'"

@@ -23,14 +23,14 @@
 				class="form-input mt-2 block w-full py-2 pl-3"
 				ref="card-element"
 			></div>
-			<ErrorMessage class="mt-1" :error="cardErrorMessage" />
+			<ErrorMessage class="mt-1" :message="cardErrorMessage" />
 		</label>
 		<div v-if="step == 'Setting up Stripe'" class="mt-8 flex justify-center">
 			<Spinner class="h-4 w-4 text-gray-600" />
 		</div>
 		<ErrorMessage
 			class="mt-2"
-			:error="$resources.createPaymentIntent.error || errorMessage"
+			:message="$resources.createPaymentIntent.error || errorMessage"
 		/>
 		<div class="mt-2 flex w-full justify-between">
 			<StripeLogo />

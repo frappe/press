@@ -33,7 +33,7 @@
 					v-model:selectedApps="selectedApps"
 					:removedApps="deployInformation.removed_apps"
 				/>
-				<ErrorMessage class="mt-2" :error="$resources.deploy.error" />
+				<ErrorMessage class="mt-2" :message="$resources.deploy.error" />
 			</template>
 			<template v-slot:actions>
 				<Button

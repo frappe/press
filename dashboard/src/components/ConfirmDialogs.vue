@@ -45,7 +45,7 @@ app.appContext.config.globalProperties.$confirm = confirm;
 				<ErrorMessage
 					class="mt-2"
 					v-if="dialog.resource"
-					:error="dialog.resource.error"
+					:message="dialog.resource.error"
 				/>
 			</template>
 

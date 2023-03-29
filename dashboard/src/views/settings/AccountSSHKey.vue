@@ -38,7 +38,7 @@
 						v-model="newKey"
 					/>
 				</div>
-				<ErrorMessage class="mt-2" :error="$resources.saveKey.error" />
+				<ErrorMessage class="mt-2" :message="$resources.saveKey.error" />
 			</template>
 
 			<template #actions>

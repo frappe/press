@@ -33,7 +33,7 @@
 					<AddressForm ref="address-form" v-model:address="address" />
 					<ErrorMessage
 						class="mt-2"
-						:error="$resources.updateBillingInformation.error"
+						:message="$resources.updateBillingInformation.error"
 					/>
 				</div>
 

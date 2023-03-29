@@ -87,7 +87,7 @@
 			<template v-slot:body-content>
 				<Input label="App Title" type="text" v-model="app.title" />
 
-				<ErrorMessage class="mt-4" :error="$resources.updateAppTitle.error" />
+				<ErrorMessage class="mt-4" :message="$resources.updateAppTitle.error" />
 			</template>
 
 			<template #actions>

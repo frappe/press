@@ -13,7 +13,7 @@
 					<span class="font-semibold">{{ bench.title }}</span> to confirm.
 				</p>
 				<Input type="text" class="mt-4 w-full" v-model="confirmBenchName" />
-				<ErrorMessage class="mt-2" :error="$resources.dropBench.error" />
+				<ErrorMessage class="mt-2" :message="$resources.dropBench.error" />
 			</template>
 
 			<template v-slot:actions>

@@ -14,7 +14,7 @@
 			<p class="mt-2 text-base text-gray-600">
 				{{ paymentModeDescription }}
 			</p>
-			<ErrorMessage class="mt-2" :error="$resources.changePaymentMode.error" />
+			<ErrorMessage class="mt-2" :message="$resources.changePaymentMode.error" />
 		</template>
 
 		<template #actions>

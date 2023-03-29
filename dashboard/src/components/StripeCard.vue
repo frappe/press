@@ -16,7 +16,7 @@
 						class="form-input mt-2 block w-full py-2 pl-3"
 						ref="card-element"
 					></div>
-					<ErrorMessage class="mt-1" :error="cardErrorMessage" />
+					<ErrorMessage class="mt-1" :message="cardErrorMessage" />
 				</label>
 				<Input
 					class="mt-4"
@@ -43,7 +43,7 @@
 				<Button class="mt-2" :loading="true">Attempting Test Charge</Button>
 			</div>
 
-			<ErrorMessage class="mt-2" :error="errorMessage" />
+			<ErrorMessage class="mt-2" :message="errorMessage" />
 
 			<div class="mt-6 flex items-center justify-between">
 				<Button appearance="primary" @click="submit" :loading="addingCard">

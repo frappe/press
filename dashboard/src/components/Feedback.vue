@@ -18,7 +18,7 @@
 					v-model="message"
 				>
 				</textarea>
-				<ErrorMessage class="mt-2" :error="$resources.feedback.error" />
+				<ErrorMessage class="mt-2" :message="$resources.feedback.error" />
 				<Button
 					appearance="primary"
 					v-slot:actions

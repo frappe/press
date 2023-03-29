@@ -51,7 +51,7 @@
 					:options="options"
 					v-show="activeStep.name === 'Plan'"
 				/>
-				<ErrorMessage :error="validationMessage" />
+				<ErrorMessage :message="validationMessage" />
 				<div class="mt-4">
 					<!-- Region consent checkbox -->
 					<div class="my-6" v-if="!hasNext">
@@ -70,7 +70,7 @@
 						</label>
 					</div>
 
-					<ErrorMessage class="mb-4" :error="$resources.newSite.error" />
+					<ErrorMessage class="mb-4" :message="$resources.newSite.error" />
 
 					<div class="flex justify-between">
 						<Button

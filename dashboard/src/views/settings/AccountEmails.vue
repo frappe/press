@@ -25,7 +25,7 @@
 						v-model="email.value"
 					/>
 				</div>
-				<ErrorMessage class="mt-2" :error="$resources.changeEmail.error" />
+				<ErrorMessage class="mt-2" :message="$resources.changeEmail.error" />
 			</template>
 
 			<template #actions>

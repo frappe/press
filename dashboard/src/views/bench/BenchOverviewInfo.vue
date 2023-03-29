@@ -33,7 +33,7 @@
 		<Dialog :options="{ title: 'Edit Title' }" v-model="showEditTitleDialog">
 			<template v-slot:body-content>
 				<Input label="Title" type="text" v-model="benchTitle" />
-				<ErrorMessage class="mt-4" :error="$resources.editTitle.error" />
+				<ErrorMessage class="mt-4" :message="$resources.editTitle.error" />
 			</template>
 
 			<template v-slot:actions>

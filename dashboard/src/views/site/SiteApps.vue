@@ -126,7 +126,7 @@
 				"
 			/>
 
-			<ErrorMessage :error="$resourceErrors" />
+			<ErrorMessage :message="$resourceErrors" />
 
 			<template #actions>
 				<Button

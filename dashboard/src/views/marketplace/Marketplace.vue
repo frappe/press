@@ -34,7 +34,7 @@
 				/>
 				<p v-else class="text-base">No app sources available.</p>
 
-				<ErrorMessage class="mt-2" :error="$resourceErrors" />
+				<ErrorMessage class="mt-2" :message="$resourceErrors" />
 
 				<p class="mt-4 text-base" @click="showAddAppDialog = false">
 					Don't find your app here?

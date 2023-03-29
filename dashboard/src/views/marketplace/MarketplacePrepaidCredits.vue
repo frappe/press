@@ -98,7 +98,7 @@
 	<ErrorMessage
 		class="mt-2"
 		v-if="$resources.usePartnerCredits.error"
-		:error="$resources.usePartnerCredits.error"
+		:message="$resources.usePartnerCredits.error"
 	/>
 	<div
 		class="float-right w-fit mt-4"

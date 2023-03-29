@@ -74,6 +74,6 @@ const appSubscriptions = useResource({
 			<Button :loading="true">Loading</Button>
 		</div>
 
-		<ErrorMessage :error="appSubscriptions.error" />
+		<ErrorMessage :message="appSubscriptions.error" />
 	</Card>
 </template>

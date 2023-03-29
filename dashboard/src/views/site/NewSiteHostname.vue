@@ -25,7 +25,7 @@
 			>
 				{{ modelValue }}.{{ options.domain }} is available
 			</div>
-			<ErrorMessage :error="errorMessage" />
+			<ErrorMessage :message="errorMessage" />
 		</div>
 	</div>
 </template>

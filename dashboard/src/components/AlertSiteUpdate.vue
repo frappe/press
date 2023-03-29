@@ -43,7 +43,7 @@
 						In case of failure, you won't be able to restore the site.
 					</div>
 				</div>
-				<ErrorMessage class="mt-1" :error="$resources.scheduleUpdate.error" />
+				<ErrorMessage class="mt-1" :message="$resources.scheduleUpdate.error" />
 			</template>
 			<template #actions>
 				<Button

@@ -58,7 +58,7 @@
 			</div>
 		</div>
 
-		<ErrorMessage :error="$resources.marketplaceSubscriptions.error" />
+		<ErrorMessage :message="$resources.marketplaceSubscriptions.error" />
 
 		<Dialog v-model="showAppPlanChangeDialog" width="half" :dismissable="true">
 			<ChangeAppPlanSelector

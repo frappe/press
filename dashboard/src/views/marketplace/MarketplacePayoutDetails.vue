@@ -108,6 +108,6 @@ const payout = useResource({
 			</table>
 		</div>
 
-		<ErrorMessage :error="payout.error" />
+		<ErrorMessage :message="payout.error" />
 	</div>
 </template>

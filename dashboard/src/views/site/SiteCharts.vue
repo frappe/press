@@ -1,6 +1,6 @@
 <template>
 	<div class="space-y-4">
-		<ErrorMessage :error="$resources.analytics.error" />
+		<ErrorMessage :message="$resources.analytics.error" />
 		<div
 			class="grid grid-cols-1 gap-5 sm:grid-cols-2"
 			v-if="$resources.analytics.data"

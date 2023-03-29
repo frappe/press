@@ -46,7 +46,7 @@
 					You can enable your account later anytime. Do you want to
 					continue?
 				</p>
-			<ErrorMessage class="mt-2" :error="$resources.disableAccount.error" />
+			<ErrorMessage class="mt-2" :message="$resources.disableAccount.error" />
 			</template>
 			
 			<template v-slot:actions>
@@ -75,7 +75,7 @@
 					</ul>
 					Do you want to continue?
 				</p>
-				<ErrorMessage class="mt-2" :error="$resources.enableAccount.error" />
+				<ErrorMessage class="mt-2" :message="$resources.enableAccount.error" />
 			</template>
 
 			<template v-slot:actions>

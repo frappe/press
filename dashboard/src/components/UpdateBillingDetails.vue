@@ -21,7 +21,7 @@
 			/>
 			<ErrorMessage
 				class="mt-2"
-				:error="$resources.updateBillingInformation.error"
+				:message="$resources.updateBillingInformation.error"
 			/>
 		</template>
 
