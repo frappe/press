@@ -1143,3 +1143,11 @@ def add_reply(name, message):
 	)
 	doc.insert(ignore_permissions=True)
 	doc.send_email()
+
+
+@protected("Marketplace App")
+@frappe.whitelist()
+def fetch_readme(name):
+	app: MarketplaceApp = frappe.get_doc("Marketplace App", name)
+	app.long_description = app.fetch_readme()
+	app.save()

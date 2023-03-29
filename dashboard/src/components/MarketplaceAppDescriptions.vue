@@ -89,6 +89,15 @@
 				</Dialog>
 			</div>
 		</div>
+		<template #actions>
+			<Button 
+				v-if="app.status == 'Draft'"
+				:loading="$resources.fetchReadme.loading"
+				@click="$resources.fetchReadme.submit()"
+			>
+				Fetch Readme
+			</Button>
+		</template>
 	</Card>
 </template>
 
@@ -134,6 +143,27 @@ export default {
 					this.showEditDescriptionDialog = false;
 				}
 			};
+		},
+		fetchReadme() {
+			return {
+				method: 'press.api.marketplace.fetch_readme',
+				params: { name: this.app.name },
+				onSuccess() {
+					this.$notify({
+						title: 'Successfully fetched latest readme',
+						message: 'Long description updated!',
+						icon: 'check',
+						color: 'green'
+					});
+				},
+				onError(e) {
+					this.$notify({
+						title: e,
+						color: 'red',
+						icon: 'x'
+					});
+				}
+			}
 		}
 	},
 	computed: {
