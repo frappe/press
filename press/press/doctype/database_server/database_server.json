@@ -87,7 +87,8 @@
   {
    "fieldname": "mariadb_root_password",
    "fieldtype": "Password",
-   "label": "MariaDB Root Password"
+   "label": "MariaDB Root Password",
+   "read_only": 1
   },
   {
    "fieldname": "agent_section",
@@ -97,7 +98,8 @@
   {
    "fieldname": "agent_password",
    "fieldtype": "Password",
-   "label": "Agent Password"
+   "label": "Agent Password",
+   "set_only_once": 1
   },
   {
    "fieldname": "server_id",
@@ -302,7 +304,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-03-27 14:20:02.490184",
+ "modified": "2023-03-28 16:51:30.381450",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

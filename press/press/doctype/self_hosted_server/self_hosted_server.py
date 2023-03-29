@@ -14,7 +14,7 @@ class SelfHostedServer(Document):
 	def autoname(self):
 		self.name = f"{self.hostname}.{self.domain}"
 
-	def after_insert(self):
+	def validate(self):
 		if not self.mariadb_ip:
 			self.mariadb_ip = self.private_ip
 		if not self.mariadb_root_user:
@@ -192,6 +192,7 @@ class SelfHostedServer(Document):
 						),
 					},
 				)
+				release_group.append("servers", {"server": self.server})
 		except Exception:
 			self.status = "Broken"
 			self.save()
@@ -216,6 +217,7 @@ class SelfHostedServer(Document):
 			db_server.private_ip = self.private_ip
 			db_server.team = self.team
 			db_server.ssh_user = self.ssh_user
+			db_server.ssh_port = self.ssh_port
 			db_server.mariadb_root_password = self.get_password("mariadb_root_password")
 			db_server.cluster = server.cluster
 			db_server.agent_password = server.agent_password
@@ -230,11 +232,6 @@ class SelfHostedServer(Document):
 			self.status = "Broken"
 			self.save()
 			log_error("Inserting a new DB server failed")
-
-	@frappe.whitelist()
-	def setup_db(self):
-		db = frappe.get_doc("Database Server", self.database_server)
-		db.convert_from_frappe_server()
 
 	def append_site_configs(self, play_name):
 		"""
@@ -281,6 +278,7 @@ class SelfHostedServer(Document):
 			server.ip = self.ip
 			server.private_ip = self.private_ip
 			server.ssh_user = self.ssh_user
+			server.ssh_port = self.ssh_port
 			server.self_hosted_mariadb_root_password = self.get_password("mariadb_root_password")
 			new_server = server.insert()
 			self.server = new_server.name
@@ -303,7 +301,7 @@ class SelfHostedServer(Document):
 					sdomain = _site.site_name + "-new"
 				else:
 					sdomain = _site.site_name
-				new_site.subdomain = sdomain
+				new_site.subdomain = sdomain.replace(".", "-")
 				new_site.domain = frappe.db.get_list("Root Domain", pluck="name")[0]
 				try:
 					new_site.bench = frappe.get_last_doc("Bench", {"group": self.release_group})

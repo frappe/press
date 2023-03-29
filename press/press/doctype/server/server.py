@@ -29,13 +29,13 @@ class BaseServer(Document):
 	def validate(self):
 		self.validate_cluster()
 		self.validate_agent_password()
+		if not self.self_hosted_mariadb_server:
+			self.self_hosted_mariadb_server = self.private_ip
 
 	def after_insert(self):
 		if self.ip and not self.is_self_hosted:
 			self.create_dns_record()
 			self.update_virtual_machine_name()
-		if not self.self_hosted_mariadb_server:
-			self.self_hosted_mariadb_server = self.private_ip
 
 	def create_dns_record(self):
 		try:
