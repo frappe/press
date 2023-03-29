@@ -77,3 +77,4 @@ def consume_credits_for_prepaid_records():
 				"invoice": inv["name"],
 			}
 		).insert(ignore_permissions=True)
+		frappe.db.commit()
