@@ -7,11 +7,15 @@ import sqlparse
 from press.agent import Agent
 from frappe.utils import (
 	get_datetime,
-	convert_utc_to_user_timezone,
 	get_datetime_str,
 	get_time_zone,
 )
 from frappe.core.doctype.access_log.access_log import make_access_log
+
+try:
+	from frappe.utils import convert_utc_to_user_timezone
+except ImportError:
+	from frappe.utils import convert_utc_to_system_timezone as convert_utc_to_user_timezone
 
 
 def execute(filters=None):

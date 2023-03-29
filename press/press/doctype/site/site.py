@@ -15,7 +15,13 @@ from frappe.core.utils import find
 from frappe.frappeclient import FrappeClient
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
-from frappe.utils import cint, convert_utc_to_user_timezone, cstr, get_datetime
+from frappe.utils import cint, cstr, get_datetime
+
+try:
+	from frappe.utils import convert_utc_to_user_timezone
+except ImportError:
+	from frappe.utils import convert_utc_to_system_timezone as convert_utc_to_user_timezone
+
 from frappe.utils.password import get_decrypted_password
 from frappe.utils.user import is_system_user
 
