@@ -6,6 +6,9 @@
 				:class="{ 'sm:bg-gray-50': $route.meta.isLoginPage }"
 			>
 				<div class="flex-1">
+					<Navbar
+						class="sm:hidden"
+					/>
 					<div class="mx-auto flex flex-row justify-start">
 						<Sidebar
 							class="hidden sticky top-0 sm:flex flex-shrink-0 w-64"
@@ -40,6 +43,7 @@
 </template>
 <script>
 import Sidebar from '@/components/Sidebar.vue';
+import Navbar from '@/components/Navbar.vue';
 import UserPrompts from '@/views/onboarding/UserPrompts.vue';
 import ConfirmDialogs from '@/components/ConfirmDialogs.vue';
 import NotificationToasts from '@/components/NotificationToasts.vue';
@@ -48,6 +52,7 @@ export default {
 	name: 'App',
 	components: {
 		Sidebar,
+		Navbar,
 		UserPrompts,
 		ConfirmDialogs,
 		NotificationToasts

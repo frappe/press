@@ -1,12 +1,10 @@
 <template>
-	<div class="grid grid-cols-1 gap-5 md:grid-cols-2">
 		<MarketplaceAppReviewStages 
 			v-if="$resources.reviewStages"
 			:appName="appName"
 			:app="app"
 			:reviewStages="$resources.reviewStages.data"
 		/>
-	</div>
 </template>
 
 <script>

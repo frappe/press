@@ -1,5 +1,5 @@
 <template>
-	<nav class="border-b bg-gray-50">
+	<nav class="px-4 border-b bg-gray-50">
 		<div class="z-10 mx-auto md:container">
 			<div class="flex h-16 items-center justify-between">
 				<div class="flex items-center">
@@ -59,7 +59,7 @@
 					<a
 						:class="[
 							(item.route == '/' ? isExactActive : isActive)
-								? 'bg-blue-50 bg-white text-blue-500'
+								? 'bg-blue-50 bg-gray-200'
 								: 'text-gray-900 hover:bg-gray-50'
 						]"
 						:href="href"
@@ -142,19 +142,33 @@ export default {
 		items() {
 			return [
 				{
-					label: 'Dashboard',
+					label: 'Sites',
 					route: '/sites',
 					highlight: () => {
 						return this.$route.fullPath.endsWith('/sites');
 					}
 				},
 				{
-					label: 'My Apps',
+					label: 'Benches',
+					route: '/benches',
+					highlight: () => {
+						return this.$route.fullPath.endsWith('/sites');
+					}
+				},
+				{
+					label: 'Developer',
 					route: '/marketplace',
 					highlight: () => {
 						return this.$route.fullPath.includes('/marketplace');
 					},
 					condition: () => this.$account.team?.is_developer
+				},
+				{
+					label: 'Billing',
+					route: '/billing',
+					highlight: () => {
+						return this.$route.fullPath.endsWith('/sites');
+					}
 				},
 				{
 					label: 'Settings',
