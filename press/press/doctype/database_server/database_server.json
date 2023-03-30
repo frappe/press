@@ -8,11 +8,13 @@
   "status",
   "hostname",
   "domain",
+  "self_hosted_server_domain",
   "title",
   "column_break_4",
   "cluster",
   "provider",
   "virtual_machine",
+  "is_self_hosted",
   "is_server_setup",
   "is_server_prepared",
   "is_server_renamed",
@@ -29,6 +31,7 @@
   "agent_section",
   "agent_password",
   "mariadb_section",
+  "self_hosted_mariadb_server",
   "mariadb_root_password",
   "server_id",
   "is_primary",
@@ -39,6 +42,8 @@
   "frappe_user_password",
   "frappe_public_key",
   "column_break_18",
+  "ssh_user",
+  "ssh_port",
   "root_public_key"
  ],
  "fields": [
@@ -266,11 +271,40 @@
    "fieldname": "title",
    "fieldtype": "Data",
    "label": "Title"
+  },
+  {
+   "fieldname": "ssh_user",
+   "fieldtype": "Data",
+   "label": "SSH User"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_self_hosted",
+   "fieldtype": "Check",
+   "label": "Is Self Hosted"
+  },
+  {
+   "depends_on": "eval:doc.is_self_hosted",
+   "fieldname": "self_hosted_server_domain",
+   "fieldtype": "Data",
+   "label": "Self Hosted Server Domain"
+  },
+  {
+   "depends_on": "eval:doc.is_self_hosted",
+   "fieldname": "self_hosted_mariadb_server",
+   "fieldtype": "Data",
+   "label": "Self Hosted MariaDB Server IP"
+  },
+  {
+   "default": "22",
+   "fieldname": "ssh_port",
+   "fieldtype": "Int",
+   "label": "SSH Port"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-09-28 14:02:04.295342",
+ "modified": "2023-03-28 16:51:30.381450",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

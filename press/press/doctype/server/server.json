@@ -8,12 +8,14 @@
   "status",
   "hostname",
   "domain",
+  "self_hosted_server_domain",
   "title",
   "column_break_4",
   "cluster",
   "provider",
   "virtual_machine",
   "is_server_setup",
+  "is_self_hosted",
   "is_server_prepared",
   "is_server_renamed",
   "billing_section",
@@ -34,19 +36,23 @@
   "is_upstream_setup",
   "database_section",
   "database_server",
+  "self_hosted_mariadb_server",
+  "column_break_jdiy",
+  "self_hosted_mariadb_root_password",
   "replication",
   "is_primary",
   "is_replication_setup",
   "column_break_24",
   "primary",
   "ssh_section",
+  "ssh_user",
+  "ssh_port",
   "frappe_user_password",
   "frappe_public_key",
   "column_break_20",
   "root_public_key",
   "section_break_22",
   "use_for_new_benches",
-  "column_break_26",
   "use_for_new_sites",
   "staging",
   "new_worker_allocation",
@@ -71,8 +77,7 @@
    "fetch_from": "virtual_machine.private_ip_address",
    "fieldname": "private_ip",
    "fieldtype": "Data",
-   "label": "Private IP",
-   "set_only_once": 1
+   "label": "Private IP"
   },
   {
    "fieldname": "agent_password",
@@ -175,9 +180,9 @@
   {
    "fieldname": "domain",
    "fieldtype": "Link",
+   "hidden": 1,
    "label": "Domain",
    "options": "Root Domain",
-   "read_only": 1,
    "set_only_once": 1
   },
   {
@@ -185,10 +190,6 @@
    "fieldname": "use_for_new_sites",
    "fieldtype": "Check",
    "label": "Use For New Sites"
-  },
-  {
-   "fieldname": "column_break_26",
-   "fieldtype": "Column Break"
   },
   {
    "fieldname": "cluster",
@@ -333,10 +334,50 @@
    "fieldname": "title",
    "fieldtype": "Data",
    "label": "Title"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_self_hosted",
+   "fieldtype": "Check",
+   "label": "Is Self Hosted"
+  },
+  {
+   "fieldname": "ssh_user",
+   "fieldtype": "Data",
+   "label": "SSH User"
+  },
+  {
+   "depends_on": "eval:doc.is_self_hosted==true",
+   "fieldname": "self_hosted_mariadb_server",
+   "fieldtype": "Data",
+   "label": "Self Hosted MariaDB Server IP"
+  },
+  {
+   "depends_on": "eval:doc.is_self_hosted==true",
+   "fieldname": "column_break_jdiy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.is_self_hosted==true",
+   "fieldname": "self_hosted_mariadb_root_password",
+   "fieldtype": "Password",
+   "label": "Self Hosted MariaDB Root Password"
+  },
+  {
+   "depends_on": "eval:doc.is_self_hosted",
+   "fieldname": "self_hosted_server_domain",
+   "fieldtype": "Data",
+   "label": "Self Hosted Server Domain"
+  },
+  {
+   "default": "22",
+   "fieldname": "ssh_port",
+   "fieldtype": "Int",
+   "label": "SSH Port"
   }
  ],
  "links": [],
- "modified": "2022-10-06 23:13:22.515888",
+ "modified": "2023-03-27 12:35:48.699367",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

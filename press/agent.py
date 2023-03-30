@@ -140,11 +140,12 @@ class Agent:
 		)
 
 	def rename_upstream_site(self, server: str, site, new_name: str, domains: List[str]):
-		private_ip = frappe.db.get_value("Server", server, "private_ip")
+		_server = frappe.get_doc("Server", server)
+		ip = _server.ip if _server.is_self_hosted else _server.private_ip
 		data = {"new_name": new_name, "domains": domains}
 		return self.create_agent_job(
 			"Rename Site on Upstream",
-			f"proxy/upstreams/{private_ip}/sites/{site.name}/rename",
+			f"proxy/upstreams/{ip}/sites/{site.name}/rename",
 			data,
 			site=site.name,
 		)
@@ -433,26 +434,27 @@ class Agent:
 		)
 
 	def new_server(self, server):
-		private_ip = frappe.db.get_value("Server", server, "private_ip")
-		data = {"name": private_ip}
+		_server = frappe.get_doc("Server", server)
+		ip = _server.ip if _server.is_self_hosted else _server.private_ip
+		data = {"name": ip}
 		return self.create_agent_job(
 			"Add Upstream to Proxy", "proxy/upstreams", data, upstream=server
 		)
 
 	def update_upstream_private_ip(self, server):
-		ip = frappe.db.get_value("Server", server, "ip")
-		private_ip = frappe.db.get_value("Server", server, "private_ip")
+		ip, private_ip = frappe.db.get_value("Server", server, ["ip", "private_ip"])
 		data = {"name": private_ip}
 		return self.create_agent_job(
 			"Rename Upstream", f"proxy/upstreams/{ip}/rename", data, upstream=server
 		)
 
 	def new_upstream_site(self, server, site):
-		private_ip = frappe.db.get_value("Server", server, "private_ip")
+		_server = frappe.get_doc("Server", server)
+		ip = _server.ip if _server.is_self_hosted else _server.private_ip
 		data = {"name": site}
 		return self.create_agent_job(
 			"Add Site to Upstream",
-			f"proxy/upstreams/{private_ip}/sites",
+			f"proxy/upstreams/{ip}/sites",
 			data,
 			site=site,
 			upstream=server,
@@ -460,10 +462,11 @@ class Agent:
 
 	def remove_upstream_site(self, server, site: str, site_name=None):
 		site_name = site_name or site
-		private_ip = frappe.db.get_value("Server", server, "private_ip")
+		_server = frappe.get_doc("Server", server)
+		ip = _server.ip if _server.is_self_hosted else _server.private_ip
 		return self.create_agent_job(
 			"Remove Site from Upstream",
-			f"proxy/upstreams/{private_ip}/sites/{site_name}",
+			f"proxy/upstreams/{ip}/sites/{site_name}",
 			method="DELETE",
 			site=site,
 			upstream=server,
@@ -518,10 +521,11 @@ class Agent:
 
 	def update_site_status(self, server, site, status):
 		data = {"status": status}
-		private_ip = frappe.db.get_value("Server", server, "private_ip")
+		_server = frappe.get_doc("Server", server)
+		ip = _server.ip if _server.is_self_hosted else _server.private_ip
 		return self.create_agent_job(
 			"Update Site Status",
-			f"proxy/upstreams/{private_ip}/sites/{site}/status",
+			f"proxy/upstreams/{ip}/sites/{site}/status",
 			data=data,
 			site=site,
 			upstream=server,

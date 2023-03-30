@@ -2,18 +2,40 @@
 - name: Install MySQLdb Python Package
   apt:
     pkg:
-      - python-mysqldb
+      - python3-mysqldb
     state: present
+
+- name: Add MariaDB Configuration File
+  template:
+    src: mariadb.cnf
+    dest: /etc/mysql/conf.d/settings.cnf
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Get All Users 
+  mysql_query:
+    login_user: root
+    login_password: 1123
+    login_db: mysql
+    query:
+      - "select user from mysql.user where user != 'root' or user!= 'debian-sys-maint' and host = 'localhost';"
+  register: user
+
+- name: Create List of Users
+  set_fact:
+      users: "{{ users|default([]) + [item] | reject('search','root') | reject('search','mariadb.sys') | reject('search','mysql') | reject('search','debian-sys-maint') }}"
+  with_items:
+    - "{{ user.query_result[0]|map(attribute='User') }}"
 
 - name: Allow Users to Access from any Host
   mysql_query:
     login_user: root
     login_password: "{{ mariadb_root_password }}"
-    login_db: mysql
     query:
-      - UPDATE mysql.user SET host = '%' WHERE host = 'localhost' AND user NOT IN ('root', 'debian-sys-maint');
-      - UPDATE mysql.db SET host = '%' WHERE host = 'localhost' AND user NOT IN ('root', 'debian-sys-maint');
-      - FLUSH PRIVILEGES;
+      - RENAME USER `{{ item }}`@'localhost' TO `{{ item }}`@'%';
+  ignore_errors: true
+  with_items: '{{users}}'
 
 - name: Allow Remote root Login
   mysql_user:
@@ -21,10 +43,16 @@
     login_password: "{{ mariadb_root_password }}"
     check_implicit_admin: yes
     name: root
-    host: "%"
+    host: "{{ item }}"
     priv: "*.*:ALL,GRANT"
     password: "{{ mariadb_root_password }}"
     state: present
+  with_items:
+    - localhost
+    - 127.0.0.1
+    - ::1
+    - "{{ private_ip }}"
+    - "%"
 
 - name: Bind MariaDB to Private IP Address
   lineinfile:
@@ -38,3 +66,21 @@
   service:
     name: mysql
     state: restarted
+
+- name: Add Frappe User to MySQL Group
+  user:
+    name: frappe
+    groups:
+      - mysql
+    append: true
+
+- name: Create Monitor User
+  mysql_user:
+    login_user: root
+    login_password: "{{ mariadb_root_password }}"
+    check_implicit_admin: yes
+    name: monitor
+    host: "%"
+    priv: "sys.*:SELECT"
+    password: "monitor"
+    state: present

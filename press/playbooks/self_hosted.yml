@@ -1,0 +1,25 @@
+---
+- name: Setup Self Hosted Server
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: yes
+  roles:
+    - role: essentials
+    - role: user
+    - role: nginx
+    - role: agent
+    - role: bench
+    - role: docker
+    - role: node_exporter
+    - role: cadvisor
+    - role: statsd_exporter
+    - role: filebeat
+    - role: clamav
+    - role: gpg_config
+    - role: aide
+    - role: additional_process_hardening
+    - role: auditd
+    - role: sshd_hardening
+    - role: pam
+    - role: user_ssh_certificate
