@@ -299,6 +299,15 @@ def should_try_update(site):
 		filters={"source": source},
 		limit=1,
 	)[0].destination
+
+	source_apps = [app.app for app in frappe.get_doc("Site", site.name).apps]
+	dest_apps = [
+		app.app for app in frappe.get_doc("Bench", dict(candidate=destination)).apps
+	]
+
+	if set(source_apps) - set(dest_apps):
+		return False
+
 	return not frappe.db.exists(
 		"Site Update",
 		{
