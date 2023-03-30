@@ -62,6 +62,7 @@ class AppRelease(Document):
 				shlex.split(command), stderr=subprocess.STDOUT, cwd=self.clone_directory
 			).decode()
 		except Exception as e:
+			self.cleanup_clone_directory()
 			log_error("App Release Clone Exception", command=command, output=e.output.decode())
 			raise e
 
@@ -103,6 +104,10 @@ class AppRelease(Document):
 		self.output += self.run(f"git fetch --depth 1 origin {self.hash}")
 		self.output += self.run(f"git checkout {self.hash}")
 		self.output += self.run(f"git reset --hard {self.hash}")
+
+	def cleanup_clone_directory(self):
+		if os.path.exists(self.clone_directory):
+			os.rmdir(self.clone_directory)
 
 	def on_trash(self):
 		if self.clone_directory and os.path.exists(self.clone_directory):
