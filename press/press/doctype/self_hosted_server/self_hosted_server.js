@@ -12,10 +12,10 @@ frappe.ui.form.on('Self Hosted Server', {
 			[__('Ping Server'), "ping_ansible", false],
 			[__('Create App Server'), "create_server", false],
 			[__('Create Database Server'), "create_db_server", false, frm.doc.server_created],
-			[__('Restore Files from Existing Sites'), "restore_files", true],
-			[__('Get Apps from Existing Bench'), "fetch_apps_and_sites", false],
-			[__('Create a Release Group for Existing Bench'), "create_new_rg", false],
-			[__('Create Sites from Existing Bench'), "create_new_sites", true, frm.doc.release_group],
+			[__('Restore Files from Existing Sites'), "restore_files", true, frm.doc.existing_bench_present ],
+			[__('Get Apps from Existing Bench'), "fetch_apps_and_sites", false, frm.doc.existing_bench_present],
+			[__('Create a Release Group for Existing Bench'), "create_new_rg", false, frm.doc.existing_bench_present ],
+			[__('Create Sites from Existing Bench'), "create_new_sites", true, frm.doc.existing_bench_present && frm.doc.release_group],
 			,
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === "undefined" || condition) {

@@ -220,8 +220,8 @@ class SelfHostedServer(Document):
 			db_server.ssh_port = self.ssh_port
 			db_server.mariadb_root_password = self.get_password("mariadb_root_password")
 			db_server.cluster = server.cluster
-			db_server.agent_password = server.agent_password
-			db_server.is_server_setup = True
+			db_server.agent_password = server.get_password("agent_password")
+			db_server.is_server_setup = False if self.new_server else True
 			_db = db_server.insert()
 			self.database_setup = True
 			self.database_server = _db.name

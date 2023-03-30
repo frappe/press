@@ -34,9 +34,16 @@ class DatabaseServer(BaseServer):
 		agent_password = self.get_password("agent_password")
 		agent_repository_url = self.get_agent_repository_url()
 		mariadb_root_password = self.get_password("mariadb_root_password")
-		certificate_name = frappe.db.get_value(
-			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
-		)
+		if self.is_self_hosted:
+			certificate_name = frappe.db.get_value(
+				"TLS Certificate",
+				{"domain": f"{self.hostname}.{self.self_hosted_server_domain}"},
+				"name",
+			)
+		else:
+			certificate_name = frappe.db.get_value(
+				"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
+			)
 		certificate = frappe.get_doc("TLS Certificate", certificate_name)
 		monitoring_password = frappe.get_doc("Cluster", self.cluster).get_password(
 			"monitoring_password"

@@ -24,6 +24,7 @@
   "column_break_smwr",
   "ip",
   "private_ip",
+  "new_server",
   "database_section",
   "database_server",
   "mariadb_ip",
@@ -90,6 +91,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "description": "This will be the MariaDB Root password if you're setting up a new server. If you're server already has a MariaDB root password, please put in the same password",
    "fieldname": "mariadb_root_password",
    "fieldtype": "Password",
    "label": "MariaDB Root Password",
@@ -221,10 +223,16 @@
    "fieldname": "ssh_port",
    "fieldtype": "Int",
    "label": "SSH Port"
+  },
+  {
+   "default": "0",
+   "fieldname": "new_server",
+   "fieldtype": "Check",
+   "label": "New Server"
   }
  ],
  "links": [],
- "modified": "2023-03-27 11:51:28.257102",
+ "modified": "2023-03-30 14:54:24.170050",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Self Hosted Server",

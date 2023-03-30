@@ -450,12 +450,17 @@ class BaseServer(Document):
 			update_server_tls_certifcate,
 		)
 
-		update_server_tls_certifcate(
-			self,
-			frappe.get_last_doc(
-				"TLS Certificate", {"wildcard": True, "domain": self.domain, "status": "Active"}
-			),
-		)
+		if self.is_self_hosted:
+			certificate = frappe.get_last_doc(
+				"TLS Certificate",
+				{"domain": f"{self.hostname}.{self.self_hosted_server_domain}", "status": "Active"},
+			)
+		else:
+			certificate = frappe.get_last_doc(
+				"TLS Certificate",
+				{"wildcard": True, "domain": self.domain, "status": "Active"},
+			)
+		update_server_tls_certifcate(self, certificate)
 
 
 class Server(BaseServer):

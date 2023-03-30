@@ -30,7 +30,7 @@ def all():
 	)
 	database_servers = frappe.get_all(
 		"Database Server",
-		{"team": team, "status": ("!=", "Archived")},
+		{"team": team, "status": ("!=", "Archived"), "is_self_hosted": ("!=", True)},
 		["name", "creation", "status", "title"],
 	)
 	all_servers = app_servers + database_servers
