@@ -56,9 +56,13 @@ class MarketplaceConsumptionRecord(Document):
 
 
 def consume_credits_for_prepaid_records():
+	created = frappe.get_all(
+		"Marketplace Consumption Record", {"status": "Unpaid"}, pluck="invoice", distinct=True
+	)
 	invs = frappe.get_all(
 		"Invoice",
 		{
+			"name": ("not in", created),
 			"status": ("in", ("Draft", "Unpaid")),
 			"type": "Summary",
 			"period_end": ("<=", frappe.utils.today()),
