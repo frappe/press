@@ -62,6 +62,7 @@ class AppRelease(Document):
 				shlex.split(command), stderr=subprocess.STDOUT, cwd=self.clone_directory
 			).decode()
 		except Exception as e:
+			self.on_trash()
 			log_error("App Release Clone Exception", command=command, output=e.output.decode())
 			raise e
 
