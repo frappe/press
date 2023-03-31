@@ -66,19 +66,29 @@ def consume_credits_for_prepaid_records():
 			"status": ("in", ("Draft", "Unpaid")),
 			"type": "Summary",
 			"period_end": ("<=", frappe.utils.today()),
+			"amount": (">", 0.0),
 		},
 		["name", "team", "total", "period_start", "period_end"],
 	)
 
+	current_time = frappe.utils.get_datetime().time()
+	today = frappe.utils.getdate()
+
 	for inv in invs:
-		frappe.get_doc(
-			{
-				"doctype": "Marketplace Consumption Record",
-				"team": inv["team"],
-				"amount": inv["total"],
-				"start_date": inv["period_start"],
-				"end_date": inv["period_end"],
-				"invoice": inv["name"],
-			}
-		).insert(ignore_permissions=True)
-		frappe.db.commit()
+		if inv.period_end == today and current_time.hour < 18:
+			continue
+		create_consumption_record(inv)
+
+
+def create_consumption_record(inv):
+	frappe.get_doc(
+		{
+			"doctype": "Marketplace Consumption Record",
+			"team": inv["team"],
+			"amount": inv["total"],
+			"start_date": inv["period_start"],
+			"end_date": inv["period_end"],
+			"invoice": inv["name"],
+		}
+	).insert(ignore_permissions=True)
+	frappe.db.commit()
