@@ -100,16 +100,16 @@ def get_files_in_timespan(
 	files_in_timespan = []
 
 	for file in files:
-		if start > file["modified"]:
-			# Modified timestamp is *usually* last time when log file was touched,
-			# i.e. last query logged on file
-			continue
-
 		if file["modified"] > stop:
 			# This is last file that captures timespan
 			# Include it and dont process any further.
 			files_in_timespan.append(file["name"])
 			break
+
+		if start > file["modified"]:
+			# Modified timestamp is *usually* last time when log file was touched,
+			# i.e. last query logged on file
+			continue
 
 		files_in_timespan.append(file["name"])
 
