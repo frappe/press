@@ -66,7 +66,9 @@ def get_data(filters):
 
 	files = agent.get("database/binary/logs")
 
-	files_in_timespan = get_files_in_timespan(files, data["start_datetime"], data["stop_datetime"])
+	files_in_timespan = get_files_in_timespan(
+		files, data["start_datetime"], data["stop_datetime"]
+	)
 
 	results = []
 	for file in files_in_timespan:
@@ -86,7 +88,10 @@ def get_data(filters):
 
 	return results
 
-def get_files_in_timespan(files: list[dict[str, str]], start: str, stop: str) -> list[str]:
+
+def get_files_in_timespan(
+	files: list[dict[str, str]], start: str, stop: str
+) -> list[str]:
 	files.sort(key=lambda f: f["modified"])
 
 	start = convert_user_timezone_to_utc(start)
@@ -109,6 +114,7 @@ def get_files_in_timespan(files: list[dict[str, str]], start: str, stop: str) ->
 		files_in_timespan.append(file["name"])
 
 	return files_in_timespan
+
 
 def convert_user_timezone_to_utc(datetime):
 	timezone = pytz.timezone(get_time_zone())
