@@ -14,7 +14,8 @@ from frappe.utils.oauth import get_oauth2_authorize_url, get_oauth_keys
 from frappe.website.utils import build_response
 from frappe.core.utils import find
 
-from press.press.doctype.team.team import Team, get_team_members
+from press.press.doctype.team.team import get_team_members
+from press.press.doctype.org.org import Org
 from press.utils import get_country_info, get_current_team
 
 
@@ -96,8 +97,8 @@ def setup_account(
 		doc = frappe.get_doc("Team", team)
 		doc.create_user_for_member(first_name, last_name, email, password, role)
 	else:
-		# Team doesn't exist, create it
-		Team.create_new(
+		# Org doesn't exist, create it
+		Org.create_new(
 			account_request,
 			first_name,
 			last_name,

@@ -91,13 +91,6 @@ class Team(Document):
 	def create_new(
 		cls,
 		account_request: AccountRequest,
-		first_name: str,
-		last_name: str,
-		password: str = None,
-		country: str = None,
-		is_us_eu: bool = False,
-		via_erpnext: bool = False,
-		user_exists: bool = False,
 	):
 		"""Create new team along with user (user created first)."""
 		team = frappe.get_doc(
@@ -105,41 +98,20 @@ class Team(Document):
 				"doctype": "Team",
 				"name": account_request.team,
 				"user": account_request.email,
-				"country": country,
 				"enabled": 1,
-				"via_erpnext": via_erpnext,
-				"is_us_eu": is_us_eu,
 			}
 		)
 
-		if not user_exists:
-			user = team.create_user(
-				first_name, last_name, account_request.email, password, account_request.role
-			)
-		else:
-			user = frappe.get_doc("User", account_request.email)
-			user.append_roles(account_request.role)
-			user.save(ignore_permissions=True)
-
-		team.insert(ignore_permissions=True, ignore_links=True)
-		team.append("team_members", {"user": user.name})
-		team.append("communication_emails", {"type": "invoices", "value": user.name})
+		team.insert()
+		team.append("team_members", {"user": account_request.email})
 		team.append(
-			"communication_emails", {"type": "marketplace_notifications", "value": user.name}
+			"communication_emails", {"type": "invoices", "value": account_request.email}
 		)
-		team.save(ignore_permissions=True)
-
-		team.create_stripe_customer()
-
-		if account_request.referrer_id:
-			team.create_referral_bonus(account_request.referrer_id)
-
-		if not team.via_erpnext:
-			team.create_upcoming_invoice()
-			# TODO: Partner account moved to PRM
-			if team.has_partner_account_on_erpnext_com():
-				team.enable_erpnext_partner_privileges()
-
+		team.append(
+			"communication_emails",
+			{"type": "marketplace_notifications", "value": account_request.email},
+		)
+		team.save()
 		return team
 
 	@staticmethod

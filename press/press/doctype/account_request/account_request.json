@@ -6,6 +6,7 @@
  "engine": "InnoDB",
  "field_order": [
   "request_key",
+  "org",
   "team",
   "email",
   "password",
@@ -231,12 +232,17 @@
    "fieldname": "is_us_eu",
    "fieldtype": "Check",
    "label": "Is State or Europe"
+  },
+  {
+   "fieldname": "org",
+   "fieldtype": "Data",
+   "label": "Org"
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-08-24 16:24:52.009703",
+ "modified": "2023-04-01 20:18:52.834403",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",

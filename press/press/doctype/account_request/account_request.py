@@ -15,6 +15,9 @@ class AccountRequest(Document):
 		if not self.team:
 			self.team = self.email
 
+		if not self.org:
+			self.org = self.email
+
 		if not self.request_key:
 			self.request_key = random_string(32)
 
