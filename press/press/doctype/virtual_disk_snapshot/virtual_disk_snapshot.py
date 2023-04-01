@@ -43,6 +43,11 @@ class VirtualDiskSnapshot(Document):
 			self.status = "Unavailable"
 		self.save()
 
+	@frappe.whitelist()
+	def delete_snapshot(self):
+		self.client.delete_snapshot(SnapshotId=self.aws_snapshot_id)
+		self.sync()
+
 	def get_status_map(self, status):
 		return {
 			"pending": "Pending",
