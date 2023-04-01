@@ -263,19 +263,32 @@
  "index_web_pages_for_search": 1,
  "links": [
   {
+   "group": "Servers",
    "link_doctype": "Server",
    "link_fieldname": "virtual_machine"
   },
   {
+   "group": "Servers",
    "link_doctype": "Database Server",
    "link_fieldname": "virtual_machine"
   },
   {
+   "group": "Servers",
    "link_doctype": "Proxy Server",
+   "link_fieldname": "virtual_machine"
+  },
+  {
+   "group": "Snapshots",
+   "link_doctype": "Virtual Disk Snapshot",
+   "link_fieldname": "virtual_machine"
+  },
+  {
+   "group": "Snapshots",
+   "link_doctype": "Virtual Machine Image",
    "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2022-11-01 18:35:05.604960",
+ "modified": "2023-04-01 14:37:17.417288",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",
