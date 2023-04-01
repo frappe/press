@@ -56,7 +56,9 @@ class AlertmanagerWebhookLog(Document):
 		]
 		self.payload = json.dumps(self.parsed, indent=2, sort_keys=True)
 
-		self.send_telegram_notification()
+		frappe.enqueue_doc(
+			self.doctype, self.name, "send_telegram_notification", enqueue_after_commit=True
+		)
 
 	def generate_telegram_message(self):
 		context = self.as_dict()
