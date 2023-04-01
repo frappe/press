@@ -1,0 +1,40 @@
+{
+ "actions": [],
+ "creation": "2023-04-01 16:05:42.358729",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "user",
+  "impersonate"
+ ],
+ "fields": [
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "User",
+   "options": "User",
+   "reqd": 1
+  },
+  {
+   "fieldname": "impersonate",
+   "fieldtype": "Button",
+   "label": "Impersonate"
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2023-04-01 16:05:42.358729",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Organization Member",
+ "owner": "Administrator",
+ "permissions": [],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

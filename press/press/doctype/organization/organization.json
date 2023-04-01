@@ -1,0 +1,323 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "Prompt",
+ "creation": "2023-04-01 18:06:51.192686",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "enabled",
+  "user",
+  "is_developer",
+  "free_account",
+  "via_erpnext",
+  "column_break_6",
+  "erpnext_partner",
+  "partner_email",
+  "section_break_6",
+  "members",
+  "section_break_9",
+  "send_notifications",
+  "column_break_9",
+  "notify_email",
+  "last_used_team",
+  "subscription_details_section",
+  "stripe_customer_id",
+  "country",
+  "currency",
+  "payment_mode",
+  "default_payment_method",
+  "billing_name",
+  "billing_address",
+  "free_credits_allocated",
+  "column_break_12",
+  "address_html",
+  "custom_apps_section",
+  "github_access_token",
+  "feature_flags_section",
+  "referrer_id",
+  "ssh_access_enabled",
+  "skip_backups",
+  "column_break_31",
+  "database_access_enabled",
+  "razorpay_enabled",
+  "servers_enabled",
+  "section_break_28",
+  "communication_emails",
+  "discounts_section",
+  "discounts",
+  "is_us_eu"
+ ],
+ "fields": [
+  {
+   "default": "0",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "User",
+   "options": "User",
+   "unique": 1
+  },
+  {
+   "default": "0",
+   "description": "A developer creates app(s) for the marketplace",
+   "fieldname": "is_developer",
+   "fieldtype": "Check",
+   "in_standard_filter": 1,
+   "label": "Is Developer"
+  },
+  {
+   "default": "0",
+   "description": "If checked, usage data will not be sent to Stripe and they won't be charged",
+   "fieldname": "free_account",
+   "fieldtype": "Check",
+   "in_standard_filter": 1,
+   "label": "Free Account"
+  },
+  {
+   "default": "0",
+   "description": "Enabled if this account was created via the ERPNext signup form",
+   "fieldname": "via_erpnext",
+   "fieldtype": "Check",
+   "label": "Via ERPNext",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_6",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "If checked, this user can Transfer credits from ERPNext.com",
+   "fieldname": "erpnext_partner",
+   "fieldtype": "Check",
+   "in_standard_filter": 1,
+   "label": "ERPNext Partner",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval: doc.erpnext_partner",
+   "fieldname": "partner_email",
+   "fieldtype": "Data",
+   "label": "Partner Email"
+  },
+  {
+   "fieldname": "section_break_6",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "members",
+   "fieldtype": "Table",
+   "label": "Members",
+   "options": "Organization Member"
+  },
+  {
+   "fieldname": "section_break_9",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "send_notifications",
+   "fieldtype": "Check",
+   "label": "Send Notifications"
+  },
+  {
+   "fieldname": "column_break_9",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.send_notifications;",
+   "fetch_from": "user.email",
+   "fetch_if_empty": 1,
+   "fieldname": "notify_email",
+   "fieldtype": "Data",
+   "label": "Notify Email",
+   "mandatory_depends_on": "eval:doc.send_notifications;"
+  },
+  {
+   "fieldname": "last_used_team",
+   "fieldtype": "Link",
+   "label": "Last Used Team",
+   "options": "Team"
+  },
+  {
+   "fieldname": "subscription_details_section",
+   "fieldtype": "Section Break",
+   "label": "Subscription Details"
+  },
+  {
+   "fieldname": "stripe_customer_id",
+   "fieldtype": "Data",
+   "label": "Stripe Customer ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "country",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Country",
+   "options": "Country"
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "payment_mode",
+   "fieldtype": "Select",
+   "label": "Payment Mode",
+   "options": "\nCard\nPrepaid Credits\nPartner Credits"
+  },
+  {
+   "fieldname": "default_payment_method",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Default Payment Method",
+   "options": "Stripe Payment Method"
+  },
+  {
+   "fieldname": "billing_name",
+   "fieldtype": "Data",
+   "label": "Billing Name"
+  },
+  {
+   "fieldname": "billing_address",
+   "fieldtype": "Link",
+   "label": "Billing Address",
+   "options": "Address"
+  },
+  {
+   "default": "0",
+   "fieldname": "free_credits_allocated",
+   "fieldtype": "Check",
+   "label": "Free Credits Allocated"
+  },
+  {
+   "fieldname": "column_break_12",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "address_html",
+   "fieldtype": "HTML",
+   "label": "Address HTML"
+  },
+  {
+   "fieldname": "custom_apps_section",
+   "fieldtype": "Section Break",
+   "label": "Custom Apps"
+  },
+  {
+   "fieldname": "github_access_token",
+   "fieldtype": "Data",
+   "label": "GitHub Access Token"
+  },
+  {
+   "fieldname": "feature_flags_section",
+   "fieldtype": "Section Break",
+   "label": "Feature Flags"
+  },
+  {
+   "fieldname": "referrer_id",
+   "fieldtype": "Data",
+   "label": "Referrer ID",
+   "read_only": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "ssh_access_enabled",
+   "fieldtype": "Check",
+   "label": "SSH Access Enabled"
+  },
+  {
+   "default": "0",
+   "description": "If checked, team can skip backups for site update",
+   "fieldname": "skip_backups",
+   "fieldtype": "Check",
+   "label": "Allow to skip Backups"
+  },
+  {
+   "fieldname": "column_break_31",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "database_access_enabled",
+   "fieldtype": "Check",
+   "label": "Database Access Enabled"
+  },
+  {
+   "default": "0",
+   "fieldname": "razorpay_enabled",
+   "fieldtype": "Check",
+   "label": "RazorPay Enabled"
+  },
+  {
+   "default": "0",
+   "fieldname": "servers_enabled",
+   "fieldtype": "Check",
+   "label": "Servers Enabled"
+  },
+  {
+   "fieldname": "section_break_28",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "communication_emails",
+   "fieldtype": "Table",
+   "label": "Communication Emails",
+   "options": "Communication Email"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "discounts_section",
+   "fieldtype": "Section Break",
+   "label": "Discounts"
+  },
+  {
+   "fieldname": "discounts",
+   "fieldtype": "Table",
+   "label": "Discounts",
+   "options": "Invoice Discount"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_us_eu",
+   "fieldtype": "Check",
+   "label": "Is US / EU"
+  }
+ ],
+ "links": [],
+ "modified": "2023-04-01 18:07:09.147064",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Organization",
+ "naming_rule": "Set by user",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
