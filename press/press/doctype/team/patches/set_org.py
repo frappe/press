@@ -9,6 +9,6 @@ def execute():
 	frappe.db.sql(
 		"""
 		UPDATE tabTeam
-		SET organization = name
+		SET org = name
 		"""
 	)

@@ -13,7 +13,7 @@
   "free_account",
   "via_erpnext",
   "column_break_6",
-  "organization",
+  "org",
   "erpnext_partner",
   "partner_email",
   "section_break_6",
@@ -294,10 +294,10 @@
    "label": "Allow to skip Backups"
   },
   {
-   "fieldname": "organization",
+   "fieldname": "org",
    "fieldtype": "Link",
-   "label": "Organization",
-   "options": "Organization"
+   "label": "Org",
+   "options": "Org"
   }
  ],
  "links": [
@@ -347,7 +347,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2023-04-01 19:25:29.219931",
+ "modified": "2023-04-01 19:36:32.426443",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

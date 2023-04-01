@@ -5,5 +5,5 @@
 from frappe.model.document import Document
 
 
-class OrganizationMember(Document):
+class Org(Document):
 	pass

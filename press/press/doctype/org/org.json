@@ -84,7 +84,7 @@
    "fieldname": "members",
    "fieldtype": "Table",
    "label": "Members",
-   "options": "Organization Member"
+   "options": "Org Member"
   },
   {
    "fieldname": "subscription_details_section",
@@ -190,10 +190,10 @@
   }
  ],
  "links": [],
- "modified": "2023-04-01 18:23:16.044841",
+ "modified": "2023-04-01 19:35:44.309698",
  "modified_by": "Administrator",
  "module": "Press",
- "name": "Organization",
+ "name": "Org",
  "naming_rule": "Set by user",
  "owner": "Administrator",
  "permissions": [
