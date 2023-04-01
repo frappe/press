@@ -1,9 +1,62 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
 
-# import frappe
+import frappe
 from frappe.model.document import Document
+import boto3
 
 
 class VirtualDiskSnapshot(Document):
-	pass
+	def before_insert(self):
+		self.set_credentials()
+
+	def after_insert(self):
+		self.sync()
+
+	def set_credentials(self):
+		series = frappe.db.get_value("Virtual Machine", self.virtual_machine, "series")
+		if series == "m" and frappe.db.exists("Database Server", self.virtual_machine):
+			self.mariadb_root_password = frappe.get_doc(
+				"Database Server", self.virtual_machine
+			).get_password("mariadb_root_password")
+
+	@frappe.whitelist()
+	def sync(self):
+		try:
+			snapshots = self.client.describe_snapshots(SnapshotIds=[self.aws_snapshot_id])[
+				"Snapshots"
+			]
+			if snapshots:
+				snapshot = snapshots[0]
+				self.aws_volume_id = snapshot["VolumeId"]
+				self.aws_snapshot_id = snapshot["SnapshotId"]
+
+				self.status = self.get_status_map(snapshot["State"])
+				self.description = snapshot["Description"]
+				self.size = snapshot["VolumeSize"]
+				self.start_time = frappe.utils.format_datetime(
+					snapshot["StartTime"], "yyyy-MM-dd HH:mm:ss"
+				)
+				self.progress = snapshot["Progress"]
+		except Exception:
+			self.status = "Unavailable"
+		self.save()
+
+	def get_status_map(self, status):
+		return {
+			"pending": "Pending",
+			"completed": "Completed",
+			"error": "Error",
+			"recovering": "Recovering",
+			"recoverable": "Recoverable",
+		}.get(status, "Unavailable")
+
+	@property
+	def client(self):
+		cluster = frappe.get_doc("Cluster", self.cluster)
+		return boto3.client(
+			"ec2",
+			region_name=self.region,
+			aws_access_key_id=cluster.aws_access_key_id,
+			aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
+		)

@@ -6,36 +6,117 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "virtual_machine",
   "aws_snapshot_id",
+  "status",
+  "column_break_4",
+  "cluster",
+  "region",
   "aws_volume_id",
-  "size"
+  "section_break_41e4",
+  "size",
+  "start_time",
+  "column_break_7lcz",
+  "progress",
+  "section_break_12",
+  "mariadb_root_password"
  ],
  "fields": [
   {
    "fieldname": "aws_snapshot_id",
    "fieldtype": "Data",
-   "in_list_view": 1,
    "label": "AWS Snapshot ID",
+   "read_only": 1,
    "reqd": 1
   },
   {
    "fieldname": "aws_volume_id",
    "fieldtype": "Data",
-   "in_list_view": 1,
    "label": "AWS Volume ID",
-   "reqd": 1
+   "read_only": 1
   },
   {
    "fieldname": "size",
    "fieldtype": "Int",
    "in_list_view": 1,
    "label": "Size",
+   "read_only": 1
+  },
+  {
+   "fieldname": "virtual_machine",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Virtual Machine",
+   "options": "Virtual Machine",
+   "read_only": 1,
    "reqd": 1
+  },
+  {
+   "fetch_from": "virtual_machine.cluster",
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Cluster",
+   "options": "Cluster",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "virtual_machine.region",
+   "fieldname": "region",
+   "fieldtype": "Data",
+   "label": "Region",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break",
+   "read_only": 1
+  },
+  {
+   "fieldname": "progress",
+   "fieldtype": "Data",
+   "label": "Progress",
+   "read_only": 1
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Pending\nCompleted\nError\nRecovering\nRecoverable\nUnavailable",
+   "read_only": 1
+  },
+  {
+   "fieldname": "start_time",
+   "fieldtype": "Datetime",
+   "label": "Start Time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_12",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "mariadb_root_password",
+   "fieldtype": "Password",
+   "label": "MariaDB Root Password",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_41e4",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_7lcz",
+   "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-08-30 12:15:23.873531",
+ "modified": "2023-04-01 15:09:46.993236",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Disk Snapshot",
@@ -56,5 +137,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "title_field": "virtual_machine"
 }

@@ -265,6 +265,34 @@ class VirtualMachine(Document):
 		return image.name
 
 	@frappe.whitelist()
+	def create_snapshots(self):
+		response = self.client().create_snapshots(
+			InstanceSpecification={"InstanceId": self.aws_instance_id},
+			Description=f"Frappe Cloud - {self.name} - {frappe.utils.now()}",
+			TagSpecifications=[
+				{
+					"ResourceType": "snapshot",
+					"Tags": [
+						{"Key": "Name", "Value": f"Frappe Cloud - {self.name} - {frappe.utils.now()}"}
+					],
+				},
+			],
+		)
+		for snapshot in response.get("Snapshots", []):
+			try:
+				frappe.get_doc(
+					{
+						"doctype": "Virtual Disk Snapshot",
+						"virtual_machine": self.name,
+						"aws_snapshot_id": snapshot["SnapshotId"],
+					}
+				).insert()
+			except Exception:
+				log_error(
+					title="Virtual Disk Snapshot Error", virtual_machine=self.name, snapshot=snapshot
+				)
+
+	@frappe.whitelist()
 	def disable_termination_protection(self):
 		self.client().modify_instance_attribute(
 			InstanceId=self.aws_instance_id, DisableApiTermination={"Value": False}
