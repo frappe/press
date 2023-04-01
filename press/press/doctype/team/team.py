@@ -340,7 +340,7 @@ class Team(Document):
 		try:
 			frappeio_client = get_frappe_io_connection()
 		except FrappeioServerNotSet as e:
-			if frappe.conf.developer_mode or frappe.local.in_test:
+			if frappe.conf.developer_mode or frappe.flags.in_install:
 				return
 			else:
 				raise e
