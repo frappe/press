@@ -14,6 +14,7 @@
   "column_break_6",
   "erpnext_partner",
   "partner_email",
+  "via_erpnext",
   "section_break_6",
   "members",
   "subscription_details_section",
@@ -187,10 +188,16 @@
    "fieldname": "is_us_eu",
    "fieldtype": "Check",
    "label": "Is US / EU"
+  },
+  {
+   "default": "0",
+   "fieldname": "via_erpnext",
+   "fieldtype": "Check",
+   "label": "Via ERPNext"
   }
  ],
  "links": [],
- "modified": "2023-04-01 19:35:44.309698",
+ "modified": "2023-04-01 22:31:05.711132",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Org",
