@@ -76,6 +76,7 @@
   {
    "fieldname": "progress",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Progress",
    "read_only": 1
   },
@@ -116,7 +117,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-04-01 15:09:46.993236",
+ "modified": "2023-04-01 15:58:51.156501",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Disk Snapshot",
