@@ -10,19 +10,12 @@
  "field_order": [
   "enabled",
   "user",
-  "is_developer",
   "free_account",
-  "via_erpnext",
   "column_break_6",
   "erpnext_partner",
   "partner_email",
   "section_break_6",
   "members",
-  "section_break_9",
-  "send_notifications",
-  "column_break_9",
-  "notify_email",
-  "last_used_team",
   "subscription_details_section",
   "stripe_customer_id",
   "country",
@@ -34,18 +27,10 @@
   "free_credits_allocated",
   "column_break_12",
   "address_html",
-  "custom_apps_section",
-  "github_access_token",
   "feature_flags_section",
   "referrer_id",
-  "ssh_access_enabled",
-  "skip_backups",
   "column_break_31",
-  "database_access_enabled",
   "razorpay_enabled",
-  "servers_enabled",
-  "section_break_28",
-  "communication_emails",
   "discounts_section",
   "discounts",
   "is_us_eu"
@@ -66,27 +51,11 @@
   },
   {
    "default": "0",
-   "description": "A developer creates app(s) for the marketplace",
-   "fieldname": "is_developer",
-   "fieldtype": "Check",
-   "in_standard_filter": 1,
-   "label": "Is Developer"
-  },
-  {
-   "default": "0",
    "description": "If checked, usage data will not be sent to Stripe and they won't be charged",
    "fieldname": "free_account",
    "fieldtype": "Check",
    "in_standard_filter": 1,
    "label": "Free Account"
-  },
-  {
-   "default": "0",
-   "description": "Enabled if this account was created via the ERPNext signup form",
-   "fieldname": "via_erpnext",
-   "fieldtype": "Check",
-   "label": "Via ERPNext",
-   "read_only": 1
   },
   {
    "fieldname": "column_break_6",
@@ -116,35 +85,6 @@
    "fieldtype": "Table",
    "label": "Members",
    "options": "Organization Member"
-  },
-  {
-   "fieldname": "section_break_9",
-   "fieldtype": "Section Break"
-  },
-  {
-   "default": "1",
-   "fieldname": "send_notifications",
-   "fieldtype": "Check",
-   "label": "Send Notifications"
-  },
-  {
-   "fieldname": "column_break_9",
-   "fieldtype": "Column Break"
-  },
-  {
-   "depends_on": "eval:doc.send_notifications;",
-   "fetch_from": "user.email",
-   "fetch_if_empty": 1,
-   "fieldname": "notify_email",
-   "fieldtype": "Data",
-   "label": "Notify Email",
-   "mandatory_depends_on": "eval:doc.send_notifications;"
-  },
-  {
-   "fieldname": "last_used_team",
-   "fieldtype": "Link",
-   "label": "Last Used Team",
-   "options": "Team"
   },
   {
    "fieldname": "subscription_details_section",
@@ -210,16 +150,6 @@
    "label": "Address HTML"
   },
   {
-   "fieldname": "custom_apps_section",
-   "fieldtype": "Section Break",
-   "label": "Custom Apps"
-  },
-  {
-   "fieldname": "github_access_token",
-   "fieldtype": "Data",
-   "label": "GitHub Access Token"
-  },
-  {
    "fieldname": "feature_flags_section",
    "fieldtype": "Section Break",
    "label": "Feature Flags"
@@ -231,49 +161,14 @@
    "read_only": 1
   },
   {
-   "default": "1",
-   "fieldname": "ssh_access_enabled",
-   "fieldtype": "Check",
-   "label": "SSH Access Enabled"
-  },
-  {
-   "default": "0",
-   "description": "If checked, team can skip backups for site update",
-   "fieldname": "skip_backups",
-   "fieldtype": "Check",
-   "label": "Allow to skip Backups"
-  },
-  {
    "fieldname": "column_break_31",
    "fieldtype": "Column Break"
-  },
-  {
-   "default": "1",
-   "fieldname": "database_access_enabled",
-   "fieldtype": "Check",
-   "label": "Database Access Enabled"
   },
   {
    "default": "0",
    "fieldname": "razorpay_enabled",
    "fieldtype": "Check",
    "label": "RazorPay Enabled"
-  },
-  {
-   "default": "0",
-   "fieldname": "servers_enabled",
-   "fieldtype": "Check",
-   "label": "Servers Enabled"
-  },
-  {
-   "fieldname": "section_break_28",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "communication_emails",
-   "fieldtype": "Table",
-   "label": "Communication Emails",
-   "options": "Communication Email"
   },
   {
    "collapsible": 1,
@@ -295,7 +190,7 @@
   }
  ],
  "links": [],
- "modified": "2023-04-01 18:07:09.147064",
+ "modified": "2023-04-01 18:23:16.044841",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Organization",
