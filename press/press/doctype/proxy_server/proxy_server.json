@@ -13,6 +13,7 @@
   "provider",
   "virtual_machine",
   "is_server_setup",
+  "is_self_hosted",
   "team",
   "section_break_8",
   "ip",
@@ -270,10 +271,16 @@
    "fieldname": "is_replication_setup",
    "fieldtype": "Check",
    "label": "Is Replication Setup"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_self_hosted",
+   "fieldtype": "Check",
+   "label": "Is Self Hosted"
   }
  ],
  "links": [],
- "modified": "2022-10-19 15:42:47.402179",
+ "modified": "2023-04-02 02:27:50.375593",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",
