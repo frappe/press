@@ -6,16 +6,21 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "org",
+  "column_break_8tdj",
   "team",
+  "is_default",
+  "section_break_d966",
+  "stripe_customer_id",
+  "stripe_payment_method_id",
+  "column_break_9",
   "name_on_card",
   "last_4",
   "expiry_month",
   "expiry_year",
-  "stripe_customer_id",
-  "stripe_payment_method_id",
-  "is_default",
-  "column_break_9",
+  "section_break_gmuu",
   "address_html",
+  "column_break_r96t",
   "is_verified_with_micro_charge"
  ],
  "fields": [
@@ -84,11 +89,35 @@
    "in_list_view": 1,
    "label": "Verified with Micro Charge",
    "read_only": 1
+  },
+  {
+   "fieldname": "org",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Org",
+   "options": "Org"
+  },
+  {
+   "fieldname": "section_break_d966",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_8tdj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_gmuu",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_r96t",
+   "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-10-17 17:20:24.776635",
+ "modified": "2023-04-01 20:01:36.694290",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Stripe Payment Method",

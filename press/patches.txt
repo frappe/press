@@ -93,3 +93,4 @@ press.press.doctype.press_settings.patches.set_press_monitoring_password
 press.press.doctype.deploy_candidate_app.patches.set_app_name_to_app
 press.press.doctype.org.patches.create_org_from_team
 press.press.doctype.team.patches.set_org
+press.press.doctype.stripe_payment_method.patches.set_org

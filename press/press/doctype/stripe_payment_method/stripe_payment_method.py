@@ -23,22 +23,22 @@ class StripePaymentMethod(Document):
 		)
 		frappe.db.update(
 			"Stripe Payment Method",
-			{"team": self.team, "name": ("!=", self.name)},
+			{"org": self.org, "name": ("!=", self.name)},
 			"is_default",
 			0,
 		)
 		self.is_default = 1
 		self.save()
-		frappe.db.set_value("Team", self.team, "default_payment_method", self.name)
+		frappe.db.set_value("org", self.org, "default_payment_method", self.name)
 
 	def on_trash(self):
 		self.remove_address_links()
 		self.remove_micro_charge_links()
 
 		if self.is_default:
-			team = frappe.get_doc("Team", self.team)
-			team.default_payment_method = None
-			team.save()
+			org = frappe.get_doc("Org", self.org)
+			org.default_payment_method = None
+			org.save()
 
 	def remove_address_links(self):
 		address_links = frappe.db.get_all(
