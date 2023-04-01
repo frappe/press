@@ -9,6 +9,7 @@ from frappe.core.utils import find
 from frappe.model.naming import make_autoname
 from frappe.desk.utils import slug
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.utils import log_error
 
 
 class VirtualMachine(Document):
@@ -390,6 +391,5 @@ def sync_virtual_machines():
 			frappe.get_doc("Virtual Machine", machine.name).sync()
 			frappe.db.commit()
 		except Exception:
-			import traceback
-
-			traceback.print_exc()
+			frappe.db.rollback()
+			log_error(title="Virtual Machine Sync Error", virtual_machine=machine.name)

@@ -223,6 +223,7 @@ scheduler_events = {
 			"press.press.doctype.version_upgrade.version_upgrade.run_scheduled_upgrades",
 			"press.press.doctype.bench.bench.archive_obsolete_benches",
 			"press.press.doctype.subscription.subscription.create_usage_records",
+			"press.press.doctype.virtual_machine.virtual_machine.sync_virtual_machines",
 		],
 		"*/5 * * * *": [
 			"press.press.doctype.central_site_migration.central_site_migration.start_one_migration",
