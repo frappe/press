@@ -4,6 +4,7 @@
 import frappe
 from frappe.model.document import Document
 import boto3
+from press.utils import log_error
 
 
 class VirtualDiskSnapshot(Document):
@@ -60,3 +61,14 @@ class VirtualDiskSnapshot(Document):
 			aws_access_key_id=cluster.aws_access_key_id,
 			aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
 		)
+
+
+def sync_snapshots():
+	snapshots = frappe.get_all("Virtual Disk Snapshot", {"status": "Pending"})
+	for snapshot in snapshots:
+		try:
+			frappe.get_doc("Virtual Disk Snapshot", snapshot.name).sync()
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()
+			log_error(title="Virtual Disk Snapshot Sync Error", virtual_snapshot=snapshot.name)

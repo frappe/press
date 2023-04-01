@@ -421,3 +421,14 @@ def sync_virtual_machines():
 		except Exception:
 			frappe.db.rollback()
 			log_error(title="Virtual Machine Sync Error", virtual_machine=machine.name)
+
+
+def snapshot_virtual_machines():
+	machines = frappe.get_all("Virtual Machine", {"status": "Running"})
+	for machine in machines:
+		try:
+			frappe.get_doc("Virtual Machine", machine.name).create_snapshots()
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()
+			log_error(title="Virtual Machine Snapshot Error", virtual_machine=machine.name)

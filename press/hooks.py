@@ -186,6 +186,7 @@ scheduler_events = {
 		"press.saas.doctype.saas_app_subscription.saas_app_subscription.suspend_prepaid_subscriptions",
 		"press.press.doctype.payout_order.payout_order.create_marketplace_payout_orders",
 		"press.press.doctype.root_domain.root_domain.cleanup_cname_records",
+		"press.press.doctype.virtual_machine.virtual_machine.snapshot_virtual_machines",
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
@@ -224,6 +225,7 @@ scheduler_events = {
 			"press.press.doctype.bench.bench.archive_obsolete_benches",
 			"press.press.doctype.subscription.subscription.create_usage_records",
 			"press.press.doctype.virtual_machine.virtual_machine.sync_virtual_machines",
+			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_snapshots",
 		],
 		"*/5 * * * *": [
 			"press.press.doctype.central_site_migration.central_site_migration.start_one_migration",
