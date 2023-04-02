@@ -9,11 +9,9 @@ from frappe.core.utils import find
 from typing import List
 from hashlib import blake2b
 from press.utils import log_error
-from frappe.utils import get_fullname
 from frappe.utils import get_url_to_form
 from press.telegram_utils import Telegram
 from frappe.model.document import Document
-from press.exceptions import FrappeioServerNotSet
 from press.press.doctype.account_request.account_request import AccountRequest
 from press.marketplace.doctype.marketplace_app_subscription.marketplace_app_subscription import (
 	process_prepaid_marketplace_payment,
@@ -94,6 +92,7 @@ class Team(Document):
 				"doctype": "Team",
 				"name": account_request.team,
 				"user": account_request.email,
+				"org": account_request.org,
 				"enabled": 1,
 			}
 		)
@@ -201,10 +200,6 @@ class Team(Document):
 		self.validate_payment_mode()
 		self.update_draft_invoice_payment_mode()
 
-		if not self.is_new() and self.billing_name:
-			if self.has_value_changed("billing_name"):
-				self.update_billing_details_on_frappeio()
-
 	def update_draft_invoice_payment_mode(self):
 		if self.has_value_changed("payment_mode"):
 			draft_invoices = frappe.get_all(
@@ -283,99 +278,6 @@ class Team(Document):
 			return False
 
 		return last_invoice.status == "Unpaid"
-
-	def create_stripe_customer(self):
-		if not self.stripe_customer_id:
-			stripe = get_stripe()
-			customer = stripe.Customer.create(email=self.user, name=get_fullname(self.user))
-			self.stripe_customer_id = customer.id
-			self.save()
-
-	def update_billing_details(self, billing_details):
-		if self.billing_address:
-			address_doc = frappe.get_doc("Address", self.billing_address)
-		else:
-			address_doc = frappe.new_doc("Address")
-			address_doc.address_title = billing_details.billing_name or self.billing_name
-			address_doc.append(
-				"links",
-				{"link_doctype": self.doctype, "link_name": self.name, "link_title": self.name},
-			)
-
-		address_doc.update(
-			{
-				"address_line1": billing_details.address,
-				"city": billing_details.city,
-				"state": billing_details.state,
-				"pincode": billing_details.postal_code,
-				"country": billing_details.country,
-				"gstin": billing_details.gstin,
-			}
-		)
-		address_doc.save()
-		address_doc.reload()
-
-		self.billing_name = billing_details.billing_name or self.billing_name
-		self.billing_address = address_doc.name
-		self.save()
-		self.reload()
-
-		self.update_billing_details_on_stripe(address_doc)
-		self.update_billing_details_on_frappeio()
-		self.update_billing_details_on_draft_invoices()
-
-	def update_billing_details_on_draft_invoices(self):
-		draft_invoices = frappe.get_all(
-			"Invoice", {"team": self.name, "docstatus": 0}, pluck="name"
-		)
-		for draft_invoice in draft_invoices:
-			# Invoice.customer_name set by Invoice.validate()
-			frappe.get_doc("Invoice", draft_invoice).save()
-
-	def update_billing_details_on_frappeio(self):
-		try:
-			frappeio_client = get_frappe_io_connection()
-		except FrappeioServerNotSet as e:
-			if frappe.conf.developer_mode or frappe.flags.in_install or frappe.flags.in_test:
-				return
-			else:
-				raise e
-
-		previous_version = self.get_doc_before_save()
-
-		if not previous_version:
-			self.load_doc_before_save()
-			previous_version = self.get_doc_before_save()
-
-		previous_billing_name = previous_version.billing_name
-
-		if previous_billing_name:
-			try:
-				frappeio_client.rename_doc("Customer", previous_billing_name, self.billing_name)
-				frappe.msgprint(
-					f"Renamed customer from {previous_billing_name} to {self.billing_name}"
-				)
-			except Exception:
-				log_error(
-					"Failed to rename customer on frappe.io", traceback=frappe.get_traceback()
-				)
-
-	def update_billing_details_on_stripe(self, address=None):
-		stripe = get_stripe()
-		if not address:
-			address = frappe.get_doc("Address", self.billing_address)
-
-		country_code = frappe.db.get_value("Country", address.country, "code")
-		stripe.Customer.modify(
-			self.stripe_customer_id,
-			address={
-				"line1": address.address_line1,
-				"postal_code": address.pincode,
-				"city": address.city,
-				"state": address.state,
-				"country": country_code.upper(),
-			},
-		)
 
 	def create_payment_method(self, payment_method_id, set_default=False):
 		stripe = get_stripe()

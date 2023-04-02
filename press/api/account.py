@@ -16,7 +16,7 @@ from frappe.core.utils import find
 
 from press.press.doctype.team.team import get_team_members
 from press.press.doctype.org.org import Org
-from press.utils import get_country_info, get_current_team
+from press.utils import get_country_info, get_current_team, get_current_org
 
 
 @frappe.whitelist(allow_guest=True)
@@ -435,18 +435,18 @@ def leave_team(team):
 
 @frappe.whitelist()
 def get_billing_information():
-	team = get_current_team(True)
-	if team.billing_address:
-		billing_details = frappe.get_doc("Address", team.billing_address).as_dict()
-		billing_details.billing_name = team.billing_name
+	org = get_current_org(True)
+	if org.billing_address:
+		billing_details = frappe.get_doc("Address", org.billing_address).as_dict()
+		billing_details.billing_name = org.billing_name
 		return billing_details
 
 
 @frappe.whitelist()
 def update_billing_information(billing_details):
 	billing_details = frappe._dict(billing_details)
-	team = get_current_team(get_doc=True)
-	team.update_billing_details(billing_details)
+	org = get_current_org(get_doc=True)
+	org.update_billing_details(billing_details)
 
 
 @frappe.whitelist()

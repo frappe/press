@@ -58,6 +58,15 @@ def get_current_team(get_doc=False):
 	return team
 
 
+def get_current_org(get_doc=False):
+	team = get_current_team()
+	org = frappe.db.get_value("Team", team, "org")
+	if get_doc:
+		return frappe.get_doc("Org", org)
+
+	return org
+
+
 @functools.lru_cache(maxsize=1024)
 def get_app_tag(repository, repository_owner, hash):
 	return frappe.db.get_value(
