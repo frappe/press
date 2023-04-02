@@ -45,15 +45,6 @@ class AlertmanagerWebhookLog(Document):
 		self.group_labels = json.dumps(self.parsed["groupLabels"], indent=2, sort_keys=True)
 		self.common_labels = json.dumps(self.parsed["commonLabels"], indent=2, sort_keys=True)
 
-		self.instances = [
-			{
-				"name": alert["labels"]["instance"],
-				"doctype": alert["labels"].get(
-					"doctype", self.guess_doctype(alert["labels"]["instance"])
-				),
-			}
-			for alert in self.parsed["alerts"][:20]
-		]
 		self.payload = json.dumps(self.parsed, indent=2, sort_keys=True)
 
 		frappe.enqueue_doc(
@@ -65,6 +56,16 @@ class AlertmanagerWebhookLog(Document):
 		rule = frappe.get_doc("Prometheus Alert Rule", self.alert)
 
 		self.parsed = json.loads(self.payload)
+		self.instances = [
+			{
+				"name": alert["labels"]["instance"],
+				"doctype": alert["labels"].get(
+					"doctype", self.guess_doctype(alert["labels"]["instance"])
+				),
+			}
+			for alert in self.parsed["alerts"][:20]
+		]
+
 		labels = self.parsed["groupLabels"]
 		labels.pop("alertname", None)
 
