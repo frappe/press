@@ -468,14 +468,16 @@ def user_prompts():
 	if not onboarding["complete"]:
 		return
 
-	if not doc.billing_address:
+	org = get_current_org(True)
+
+	if not org.billing_address:
 		return [
 			"UpdateBillingDetails",
 			"Update your billing details so that we can show it in your monthly invoice.",
 		]
 
 	gstin, country = frappe.db.get_value(
-		"Address", doc.billing_address, ["gstin", "country"]
+		"Address", org.billing_address, ["gstin", "country"]
 	)
 	if country == "India" and not gstin:
 		return [

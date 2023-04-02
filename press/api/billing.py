@@ -7,7 +7,7 @@ from typing import Dict, List
 from itertools import groupby
 from frappe.utils import fmt_money
 from frappe.core.utils import find
-from press.utils import get_current_team
+from press.utils import get_current_team, get_current_org
 from press.utils.billing import (
 	clear_setup_intent,
 	get_publishable_key,
@@ -163,10 +163,10 @@ def is_added_credits_bt(bt):
 
 @frappe.whitelist()
 def details():
-	team = get_current_team(True)
+	org = get_current_org(True)
 	address = None
-	if team.billing_address:
-		address = frappe.get_doc("Address", team.billing_address)
+	if org.billing_address:
+		address = frappe.get_doc("Address", org.billing_address)
 		address_parts = [
 			address.address_line1,
 			address.city,
@@ -179,7 +179,7 @@ def details():
 		billing_address = ""
 
 	return {
-		"billing_name": team.billing_name,
+		"billing_name": org.billing_name,
 		"billing_address": billing_address,
 		"gstin": address.gstin if address else None,
 	}
@@ -189,9 +189,10 @@ def details():
 def get_customer_details(team):
 	"""This method is called by frappe.io for creating Customer and Address"""
 	team_doc = frappe.db.get_value("Team", team, "*")
+	org = frappe.get_doc("Org", team_doc.org)
 	return {
 		"team": team_doc,
-		"address": frappe.get_doc("Address", team_doc.billing_address),
+		"address": frappe.get_doc("Address", org.billing_address),
 	}
 
 
