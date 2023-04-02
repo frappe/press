@@ -14,7 +14,6 @@ from frappe.utils import get_url_to_form
 from press.telegram_utils import Telegram
 from frappe.model.document import Document
 from press.exceptions import FrappeioServerNotSet
-from frappe.contacts.address_and_contact import load_address_and_contact
 from press.press.doctype.account_request.account_request import AccountRequest
 from press.marketplace.doctype.marketplace_app_subscription.marketplace_app_subscription import (
 	process_prepaid_marketplace_payment,
@@ -28,9 +27,6 @@ from press.utils.billing import (
 
 
 class Team(Document):
-	def onload(self):
-		load_address_and_contact(self)
-
 	def validate(self):
 		self.validate_duplicate_members()
 		self.set_team_currency()

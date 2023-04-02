@@ -5,9 +5,13 @@ import frappe
 from frappe.model.document import Document
 from press.press.doctype.account_request.account_request import AccountRequest
 from press.press.doctype.team.team import Team
+from frappe.contacts.address_and_contact import load_address_and_contact
 
 
 class Org(Document):
+	def onload(self):
+		load_address_and_contact(self)
+
 	@classmethod
 	def create_new(
 		cls,
