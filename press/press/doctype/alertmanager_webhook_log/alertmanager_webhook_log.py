@@ -64,6 +64,7 @@ class AlertmanagerWebhookLog(Document):
 		context = self.as_dict()
 		rule = frappe.get_doc("Prometheus Alert Rule", self.alert)
 
+		self.parsed = json.loads(self.payload)
 		labels = self.parsed["groupLabels"]
 		labels.pop("alertname", None)
 
