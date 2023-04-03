@@ -110,7 +110,7 @@ export default {
 							.slice(-2, -1)[0];
 					}
 					this.error = errorMessage;
-					this.$emit('failure', error);
+					this.$emit('failure', errorMessage);
 				});
 		}
 	}

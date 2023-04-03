@@ -2,6 +2,7 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
+import os
 import frappe
 
 from frappe import _
@@ -368,7 +369,7 @@ class Team(Document):
 		try:
 			frappeio_client = get_frappe_io_connection()
 		except FrappeioServerNotSet as e:
-			if frappe.conf.developer_mode:
+			if frappe.conf.developer_mode or os.environ.get("CI"):
 				return
 			else:
 				raise e

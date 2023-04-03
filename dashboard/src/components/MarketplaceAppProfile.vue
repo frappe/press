@@ -10,6 +10,7 @@
 				/>
 				<FileUploader
 					@success="onAppImageChange"
+					@failure="onAppImageUploadError"
 					fileTypes="image/*"
 					:upload-args="{
 						doctype: 'Marketplace App',
@@ -157,7 +158,7 @@ export default {
 				method: 'press.api.marketplace.update_app_title',
 				params: {
 					name,
-					title,
+					title
 				},
 				onSuccess() {
 					this.showAppProfileEditDialog = false;
@@ -194,6 +195,13 @@ export default {
 		onAppImageChange() {
 			this.$resources.profileImageUrl.submit();
 			this.notifySuccess();
+		},
+		onAppImageUploadError(errorMessage) {
+			this.$notify({
+				title: errorMessage,
+				color: 'red',
+				icon: 'x'
+			});
 		},
 		branchUri(source) {
 			return `${source.repository_owner}/${source.repository}:${source.branch}`;
