@@ -87,7 +87,8 @@
 				<LoadingText class="py-2" v-if="$resources.installableApps.loading" />
 				<AppSourceSelector
 					v-else
-					class="pt-1"
+					class="pt-1 max-h-96 overflow-auto"
+					:class="filteredOptions.length > 5 ? 'pr-2' : ''"
 					:apps="filteredOptions"
 					v-model="selectedApp"
 					:multiple="false"

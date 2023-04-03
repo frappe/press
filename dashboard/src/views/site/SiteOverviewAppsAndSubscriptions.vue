@@ -106,14 +106,16 @@
 			v-model="showInstallAppsDialog"
 		>
 			<template v-slot:body-content>
+				<Input
+					class="mb-2"
+					placeholder="Search for Apps"
+					v-on:input="e => updateSearchTerm(e)"
+				/>
 				<div
 					v-if="availableApps.data && availableApps.data.length"
-					class="divide-y"
+					class="divide-y max-h-96 overflow-auto"
+					:class="filteredOptions.length > 7 ? 'pr-2': ''"
 				>
-					<Input
-						placeholder="Search for Apps"
-						v-on:input="e => updateSearchTerm(e)"
-					/>
 					<div
 						class="flex items-center py-3"
 						v-for="app in filteredOptions"
