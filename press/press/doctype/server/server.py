@@ -399,16 +399,9 @@ class BaseServer(Document):
 		).insert()
 
 	def get_certificate(self):
-		if self.is_self_hosted:
-			certificate_name = frappe.db.get_value(
-				"TLS Certificate",
-				{"domain": f"{self.hostname}.{self.self_hosted_server_domain}"},
-				"name",
-			)
-		else:
-			certificate_name = frappe.db.get_value(
-				"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
-			)
+		certificate_name = frappe.db.get_value(
+			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
+		)
 		return frappe.get_doc("TLS Certificate", certificate_name)
 
 	def get_log_server(self):
@@ -450,16 +443,10 @@ class BaseServer(Document):
 			update_server_tls_certifcate,
 		)
 
-		if self.is_self_hosted:
-			certificate = frappe.get_last_doc(
-				"TLS Certificate",
-				{"domain": f"{self.hostname}.{self.self_hosted_server_domain}", "status": "Active"},
-			)
-		else:
-			certificate = frappe.get_last_doc(
-				"TLS Certificate",
-				{"wildcard": True, "domain": self.domain, "status": "Active"},
-			)
+		certificate = frappe.get_last_doc(
+			"TLS Certificate",
+			{"wildcard": True, "domain": self.domain, "status": "Active"},
+		)
 		update_server_tls_certifcate(self, certificate)
 
 	@frappe.whitelist()
