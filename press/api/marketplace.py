@@ -228,6 +228,7 @@ def update_app_image() -> str:
 
 	return file_url
 
+
 def validate_app_image_dimensions(file_content):
 	"""Throws if image is not a square image, atleast 300x300px in size"""
 	from PIL import Image
@@ -237,6 +238,7 @@ def validate_app_image_dimensions(file_content):
 	im_width, im_height = im.size
 	if im_width != im_height or im_height < 300:
 		frappe.throw("Logo must be a square image atleast 300x300px in size")
+
 
 @frappe.whitelist()
 def update_app_title(name: str, title: str) -> MarketplaceApp:
