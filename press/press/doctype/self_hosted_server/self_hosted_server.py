@@ -212,6 +212,7 @@ class SelfHostedServer(Document):
 			db_server.hostname = server.hostname
 			db_server.title = self.title
 			db_server.is_self_hosted = True
+			db_server.domain = server.domain
 			db_server.self_hosted_server_domain = server.self_hosted_server_domain
 			db_server.ip = self.ip
 			db_server.private_ip = self.private_ip
@@ -273,6 +274,7 @@ class SelfHostedServer(Document):
 			server.hostname = self.hostname
 			server.title = self.title
 			server.is_self_hosted = True
+			server.domain = "self.frappe.dev"
 			server.self_hosted_server_domain = self.domain
 			server.team = self.team
 			server.ip = self.ip
