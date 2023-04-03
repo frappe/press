@@ -205,6 +205,10 @@ def profile_image_url(app: str) -> str:
 @frappe.whitelist()
 def update_app_image() -> str:
 	"""Handles App Image Upload"""
+	file_content = frappe.local.uploaded_file
+
+	validate_app_image_dimensions(file_content)
+
 	app_name = frappe.form_dict.docname
 	_file = frappe.get_doc(
 		{
@@ -215,7 +219,7 @@ def update_app_image() -> str:
 			"folder": "Home/Attachments",
 			"file_name": frappe.local.uploaded_filename,
 			"is_private": 0,
-			"content": frappe.local.uploaded_file,
+			"content": file_content,
 		}
 	)
 	_file.save(ignore_permissions=True)
@@ -224,6 +228,15 @@ def update_app_image() -> str:
 
 	return file_url
 
+def validate_app_image_dimensions(file_content):
+	"""Throws if image is not a square image, atleast 300x300px in size"""
+	from PIL import Image
+	from io import BytesIO
+
+	im = Image.open(BytesIO(file_content))
+	im_width, im_height = im.size
+	if im_width != im_height or im_height < 300:
+		frappe.throw("Logo must be a square image atleast 300x300px in size")
 
 @frappe.whitelist()
 def update_app_title(name: str, title: str) -> MarketplaceApp:
