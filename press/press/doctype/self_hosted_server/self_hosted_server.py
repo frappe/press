@@ -148,6 +148,10 @@ class SelfHostedServer(Document):
 			"output",
 		).replace("'", '"')
 		task_result = json.loads(ansible_task_op)
+		temp_task_result = task_result  # Removing risk of mutating the same loop variable
+		for i, app in enumerate(temp_task_result):  # Rearrange JSON if frappe isn't first app
+			if app["app"] == "frappe" and i > 0:
+				task_result[i], task_result[0] = task_result[0], task_result[i]
 		release_group = frappe.new_doc("Release Group")
 		release_group.title = f"{self.server}-bench"
 		branches = []
@@ -306,7 +310,9 @@ class SelfHostedServer(Document):
 				new_site.subdomain = sdomain.replace(".", "-")
 				new_site.domain = frappe.db.get_list("Root Domain", pluck="name")[0]
 				try:
-					new_site.bench = frappe.get_last_doc("Bench", {"group": self.release_group})
+					new_site.bench = frappe.get_last_doc(
+						"Bench", {"group": self.release_group, "server": self.name}
+					).name
 				except Exception as e:
 					frappe.throw("Site Creation Failed", exc=e)
 				new_site.team = self.team

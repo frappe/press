@@ -29,7 +29,7 @@ class BaseServer(Document):
 	def validate(self):
 		self.validate_cluster()
 		self.validate_agent_password()
-		if not self.self_hosted_mariadb_server:
+		if self.__class__.__name__ != "ProxyServer" and not self.self_hosted_mariadb_server:
 			self.self_hosted_mariadb_server = self.private_ip
 
 	def after_insert(self):
