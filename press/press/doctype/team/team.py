@@ -7,7 +7,6 @@ import frappe
 from frappe import _
 from frappe.core.utils import find
 from typing import List
-from hashlib import blake2b
 from press.utils import log_error
 from frappe.utils import get_url_to_form
 from press.telegram_utils import Telegram
@@ -27,32 +26,11 @@ from press.utils.billing import (
 class Team(Document):
 	def validate(self):
 		self.validate_duplicate_members()
-		self.set_team_currency()
 		self.set_default_user()
-		self.set_billing_name()
-		self.set_partner_email()
 
 	def before_insert(self):
 		if not self.notify_email:
 			self.notify_email = self.name
-
-		if not self.referrer_id:
-			self.set_referrer_id()
-
-		self.set_partner_payment_mode()
-
-	def set_referrer_id(self):
-		h = blake2b(digest_size=4)
-		h.update(self.name.encode())
-		self.referrer_id = h.hexdigest()
-
-	def set_partner_payment_mode(self):
-		if self.erpnext_partner:
-			self.payment_mode = "Partner Credits"
-
-	def set_partner_email(self):
-		if self.erpnext_partner and not self.partner_email:
-			self.partner_email = self.name
 
 	def delete(self, force=False, workflow=False):
 		if force:
@@ -141,17 +119,9 @@ class Team(Document):
 
 		self.save(ignore_permissions=True)
 
-	def set_billing_name(self):
-		if not self.billing_name:
-			self.billing_name = frappe.utils.get_fullname(self.name)
-
 	def set_default_user(self):
 		if not self.user and self.team_members:
 			self.user = self.team_members[0].user
-
-	def set_team_currency(self):
-		if not self.currency and self.country:
-			self.currency = "INR" if self.country == "India" else "USD"
 
 	def get_user_list(self):
 		return [row.user for row in self.team_members]
@@ -172,42 +142,6 @@ class Team(Document):
 				_("Duplicate Team Members: {0}").format(", ".join(duplicate_members)),
 				frappe.DuplicateEntryError,
 			)
-
-	def validate_payment_mode(self):
-		if not self.payment_mode and self.get_balance() > 0:
-			self.payment_mode = "Prepaid Credits"
-
-		if self.has_value_changed("payment_mode"):
-			if self.payment_mode == "Card":
-				if frappe.db.count("Stripe Payment Method", {"team": self.name}) == 0:
-					frappe.throw("No card added")
-			if self.payment_mode == "Prepaid Credits":
-				if self.get_balance() <= 0:
-					frappe.throw("Account does not have sufficient balance")
-
-		if not self.is_new() and not self.default_payment_method:
-			# if default payment method is unset
-			# then set the is_default field for Stripe Payment Method to 0
-			payment_methods = frappe.db.get_list(
-				"Stripe Payment Method", {"team": self.name, "is_default": 1}
-			)
-			for pm in payment_methods:
-				doc = frappe.get_doc("Stripe Payment Method", pm.name)
-				doc.is_default = 0
-				doc.save()
-
-	def on_update(self):
-		self.validate_payment_mode()
-		self.update_draft_invoice_payment_mode()
-
-	def update_draft_invoice_payment_mode(self):
-		if self.has_value_changed("payment_mode"):
-			draft_invoices = frappe.get_all(
-				"Invoice", filters={"docstatus": 0, "team": self.name}, pluck="name"
-			)
-
-			for invoice in draft_invoices:
-				frappe.db.set_value("Invoice", invoice, "payment_mode", self.payment_mode)
 
 	@frappe.whitelist()
 	def impersonate(self, member, reason):

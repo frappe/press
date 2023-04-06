@@ -3,6 +3,7 @@
 
 import frappe
 from frappe.utils import get_fullname
+from hashlib import blake2b
 from press.utils import log_error
 from frappe.model.document import Document
 from press.exceptions import FrappeioServerNotSet
@@ -19,10 +20,33 @@ class Org(Document):
 	def onload(self):
 		load_address_and_contact(self)
 
+	def validate(self):
+		self.set_team_currency()
+		self.set_billing_name()
+		self.set_partner_email()
+
 	def on_update(self):
+		self.validate_payment_mode()
+		self.update_draft_invoice_payment_mode()
+
 		if not self.is_new() and self.billing_name:
 			if self.has_value_changed("billing_name"):
 				self.update_billing_details_on_frappeio()
+
+	def before_insert(self):
+		if not self.referrer_id:
+			self.set_referrer_id()
+
+		self.set_partner_payment_mode()
+
+	def set_partner_payment_mode(self):
+		if self.erpnext_partner:
+			self.payment_mode = "Partner Credits"
+
+	def set_referrer_id(self):
+		h = blake2b(digest_size=4)
+		h.update(self.name.encode())
+		self.referrer_id = h.hexdigest()
 
 	@classmethod
 	def create_new(
@@ -84,6 +108,38 @@ class Org(Document):
 			customer = stripe.Customer.create(email=self.user, name=get_fullname(self.user))
 			self.stripe_customer_id = customer.id
 			self.save()
+
+	def update_draft_invoice_payment_mode(self):
+		if self.has_value_changed("payment_mode"):
+			draft_invoices = frappe.get_all(
+				"Invoice", filters={"docstatus": 0, "team": self.name}, pluck="name"
+			)
+
+			for invoice in draft_invoices:
+				frappe.db.set_value("Invoice", invoice, "payment_mode", self.payment_mode)
+
+	def validate_payment_mode(self):
+		if not self.payment_mode and self.get_balance() > 0:
+			self.payment_mode = "Prepaid Credits"
+
+		if self.has_value_changed("payment_mode"):
+			if self.payment_mode == "Card":
+				if frappe.db.count("Stripe Payment Method", {"team": self.name}) == 0:
+					frappe.throw("No card added")
+			if self.payment_mode == "Prepaid Credits":
+				if self.get_balance() <= 0:
+					frappe.throw("Account does not have sufficient balance")
+
+		if not self.is_new() and not self.default_payment_method:
+			# if default payment method is unset
+			# then set the is_default field for Stripe Payment Method to 0
+			payment_methods = frappe.db.get_list(
+				"Stripe Payment Method", {"team": self.name, "is_default": 1}
+			)
+			for pm in payment_methods:
+				doc = frappe.get_doc("Stripe Payment Method", pm.name)
+				doc.is_default = 0
+				doc.save()
 
 	def update_billing_details(self, billing_details):
 		if self.billing_address:
@@ -170,3 +226,15 @@ class Org(Document):
 				"country": country_code.upper(),
 			},
 		)
+
+	def set_team_currency(self):
+		if not self.currency and self.country:
+			self.currency = "INR" if self.country == "India" else "USD"
+
+	def set_billing_name(self):
+		if not self.billing_name:
+			self.billing_name = frappe.utils.get_fullname(self.name)
+
+	def set_partner_email(self):
+		if self.erpnext_partner and not self.partner_email:
+			self.partner_email = self.name
