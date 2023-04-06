@@ -95,4 +95,5 @@ press.press.doctype.org.patches.create_org_from_team
 press.press.doctype.team.patches.set_org
 press.press.doctype.team.patches.drop_billing_fields
 press.press.doctype.stripe_payment_method.patches.set_org
+press.press.doctype.stripe_payment_method.drop_team_field
 press.press.doctype.org.patches.move_addresses_from_team_to_org

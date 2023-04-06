@@ -8,7 +8,6 @@
  "field_order": [
   "org",
   "column_break_8tdj",
-  "team",
   "is_default",
   "section_break_d966",
   "stripe_customer_id",
@@ -24,14 +23,6 @@
   "is_verified_with_micro_charge"
  ],
  "fields": [
-  {
-   "fieldname": "team",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Team",
-   "options": "Team",
-   "reqd": 1
-  },
   {
    "fieldname": "name_on_card",
    "fieldtype": "Data",
@@ -96,7 +87,8 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Org",
-   "options": "Org"
+   "options": "Org",
+   "reqd": 1
   },
   {
    "fieldname": "section_break_d966",
@@ -117,7 +109,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-04-01 20:01:36.694290",
+ "modified": "2023-04-06 12:08:30.544702",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Stripe Payment Method",
@@ -145,7 +137,7 @@
   }
  ],
  "quick_entry": 1,
- "search_fields": "team, name_on_card, last_4, expiry_month, expiry_year",
+ "search_fields": "org, name_on_card, last_4, expiry_month, expiry_year",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
