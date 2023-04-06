@@ -10,12 +10,8 @@
   "enabled",
   "user",
   "is_developer",
-  "free_account",
-  "via_erpnext",
   "column_break_6",
   "org",
-  "erpnext_partner",
-  "partner_email",
   "section_break_6",
   "team_members",
   "section_break_9",
@@ -23,21 +19,9 @@
   "column_break_9",
   "notify_email",
   "last_used_team",
-  "subscription_details_section",
-  "stripe_customer_id",
-  "country",
-  "currency",
-  "payment_mode",
-  "default_payment_method",
-  "billing_name",
-  "billing_address",
-  "free_credits_allocated",
-  "column_break_12",
-  "address_html",
   "custom_apps_section",
   "github_access_token",
   "feature_flags_section",
-  "referrer_id",
   "ssh_access_enabled",
   "skip_backups",
   "column_break_31",
@@ -45,10 +29,7 @@
   "razorpay_enabled",
   "servers_enabled",
   "section_break_28",
-  "communication_emails",
-  "discounts_section",
-  "discounts",
-  "is_us_eu"
+  "communication_emails"
  ],
  "fields": [
   {
@@ -75,75 +56,6 @@
    "fieldtype": "Section Break"
   },
   {
-   "fieldname": "subscription_details_section",
-   "fieldtype": "Section Break",
-   "label": "Subscription Details"
-  },
-  {
-   "fieldname": "stripe_customer_id",
-   "fieldtype": "Data",
-   "label": "Stripe Customer ID",
-   "read_only": 1
-  },
-  {
-   "fieldname": "country",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Country",
-   "options": "Country"
-  },
-  {
-   "fieldname": "currency",
-   "fieldtype": "Link",
-   "label": "Currency",
-   "options": "Currency"
-  },
-  {
-   "fieldname": "default_payment_method",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Default Payment Method",
-   "options": "Stripe Payment Method"
-  },
-  {
-   "default": "0",
-   "description": "If checked, this user can Transfer credits from ERPNext.com",
-   "fieldname": "erpnext_partner",
-   "fieldtype": "Check",
-   "in_standard_filter": 1,
-   "label": "ERPNext Partner",
-   "read_only": 1
-  },
-  {
-   "default": "0",
-   "description": "If checked, usage data will not be sent to Stripe and they won't be charged",
-   "fieldname": "free_account",
-   "fieldtype": "Check",
-   "in_standard_filter": 1,
-   "label": "Free Account"
-  },
-  {
-   "fieldname": "address_html",
-   "fieldtype": "HTML",
-   "label": "Address HTML"
-  },
-  {
-   "fieldname": "column_break_12",
-   "fieldtype": "Column Break"
-  },
-  {
-   "default": "0",
-   "fieldname": "free_credits_allocated",
-   "fieldtype": "Check",
-   "label": "Free Credits Allocated"
-  },
-  {
-   "fieldname": "billing_address",
-   "fieldtype": "Link",
-   "label": "Billing Address",
-   "options": "Address"
-  },
-  {
    "fieldname": "github_access_token",
    "fieldtype": "Data",
    "label": "GitHub Access Token"
@@ -159,31 +71,12 @@
    "label": "Custom Apps"
   },
   {
-   "fieldname": "billing_name",
-   "fieldtype": "Data",
-   "label": "Billing Name"
-  },
-  {
-   "default": "0",
-   "description": "Enabled if this account was created via the ERPNext signup form",
-   "fieldname": "via_erpnext",
-   "fieldtype": "Check",
-   "label": "Via ERPNext",
-   "read_only": 1
-  },
-  {
    "default": "0",
    "description": "A developer creates app(s) for the marketplace",
    "fieldname": "is_developer",
    "fieldtype": "Check",
    "in_standard_filter": 1,
    "label": "Is Developer"
-  },
-  {
-   "fieldname": "payment_mode",
-   "fieldtype": "Select",
-   "label": "Payment Mode",
-   "options": "\nCard\nPrepaid Credits\nPartner Credits"
   },
   {
    "depends_on": "eval:doc.send_notifications;",
@@ -209,12 +102,6 @@
    "label": "Send Notifications"
   },
   {
-   "fieldname": "referrer_id",
-   "fieldtype": "Data",
-   "label": "Referrer ID",
-   "read_only": 1
-  },
-  {
    "fieldname": "communication_emails",
    "fieldtype": "Table",
    "label": "Communication Emails",
@@ -237,26 +124,8 @@
    "label": "Database Access Enabled"
   },
   {
-   "collapsible": 1,
-   "fieldname": "discounts_section",
-   "fieldtype": "Section Break",
-   "label": "Discounts"
-  },
-  {
-   "fieldname": "discounts",
-   "fieldtype": "Table",
-   "label": "Discounts",
-   "options": "Invoice Discount"
-  },
-  {
    "fieldname": "column_break_6",
    "fieldtype": "Column Break"
-  },
-  {
-   "depends_on": "eval: doc.erpnext_partner",
-   "fieldname": "partner_email",
-   "fieldtype": "Data",
-   "label": "Partner Email"
   },
   {
    "fieldname": "column_break_31",
@@ -267,12 +136,6 @@
    "fieldname": "razorpay_enabled",
    "fieldtype": "Check",
    "label": "RazorPay Enabled"
-  },
-  {
-   "default": "0",
-   "fieldname": "is_us_eu",
-   "fieldtype": "Check",
-   "label": "Is US / EU"
   },
   {
    "default": "0",
@@ -347,7 +210,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2023-04-01 19:36:32.426443",
+ "modified": "2023-04-06 11:50:23.539606",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
