@@ -19,7 +19,7 @@
 			<div v-for="d in domains.data" :key="d.name">
 				<div class="py-2">
 					<div class="flex items-center">
-						<div class="w-1/2 text-base font-medium">
+						<div class="flex w-2/3 text-base font-medium">
 							<a
 								class="text-blue-500"
 								:href="'https://' + d.domain"
@@ -29,14 +29,29 @@
 								{{ d.domain }}
 							</a>
 							<span v-else>{{ d.domain }}</span>
+							<div class="flex" v-if="d.redirect_to_primary == 1 && d.status == 'Active'">
+								<FeatherIcon name="arrow-right" class="w-4 mx-1" />
+								<a
+									class="text-blue-500"
+									:href="'https://' + d.domain"
+									target="_blank"
+									v-if="d.status === 'Active'"
+								>
+									{{ site.host_name }}
+								</a>
+							</div>
 						</div>
 						<div class="ml-auto flex items-center space-x-2">
 							<Badge
-								v-if="d.status != 'Active' || d.primary"
+								v-if="d.status == 'Active' && d.primary"
+								:label="'Primary'"
+								:colorMap="$badgeStatusColorMap"
+							/>
+							<Badge
+								v-else-if="d.status != 'Active'"
 								:label="d.status"
 								:colorMap="$badgeStatusColorMap"
-							>
-							</Badge>
+							/>
 							<Button
 								v-if="d.status == 'Broken' && d.retry_count <= 5"
 								:loading="$resources.retryAddDomain.loading"
@@ -267,19 +282,35 @@ export default {
 			});
 		},
 		confirmSetPrimary(domain) {
-			this.$confirm({
-				title: 'Set as Primary Domain',
-				message: `Setting as primary will make <b>${domain}</b> the primary URL for your site. Do you want to continue?`,
-				actionLabel: 'Set Primary',
-				actionType: 'primary',
-				action: closeDialog => {
-					closeDialog();
-					this.$resources.setHostName.submit({
-						name: this.site.name,
-						domain: domain
-					});
+			let workingRedirects = false
+			this.$resources.domains.data.forEach((d) => {
+				if (d.redirect_to_primary) {
+					workingRedirects = true
 				}
-			});
+			})
+
+			if (workingRedirects) {
+					this.$notify({
+						title: 'Please Remove all Active Redirects',
+						color: 'red',
+						icon: 'x'
+					});
+			}
+			else {
+				this.$confirm({
+					title: 'Set as Primary Domain',
+					message: `Setting as primary will make <b>${domain}</b> the primary URL for your site. Do you want to continue?`,
+					actionLabel: 'Set Primary',
+					actionType: 'primary',
+					action: closeDialog => {
+						closeDialog();
+						this.$resources.setHostName.submit({
+							name: this.site.name,
+							domain: domain
+						});
+					}
+				});
+			}
 		},
 		confirmSetupRedirect(domain) {
 			this.$confirm({

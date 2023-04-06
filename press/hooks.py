@@ -187,6 +187,7 @@ scheduler_events = {
 		"press.press.doctype.payout_order.payout_order.create_marketplace_payout_orders",
 		"press.press.doctype.root_domain.root_domain.cleanup_cname_records",
 		"press.press.doctype.virtual_machine.virtual_machine.snapshot_virtual_machines",
+		"press.press.doctype.remote_file.remote_file.poll_file_statuses",
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
@@ -207,7 +208,6 @@ scheduler_events = {
 		"press.auth.flush",
 	],
 	"cron": {
-		"0 3 * * *": ["press.press.doctype.remote_file.remote_file.poll_file_statuses"],
 		"0 4 * * *": [
 			"press.press.doctype.site.backups.cleanup_offsite",
 			"press.press.cleanup.unlink_remote_files_from_site",

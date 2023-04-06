@@ -6,7 +6,7 @@
 		@close="dialogClosed"
 	>
 		<template v-slot:body-content>
-			<LoadingIndicator v-if="$resources.fetchDatabaseAccessInfo.loading" />
+			<LoadingText v-if="$resources.fetchDatabaseAccessInfo.loading" />
 
 			<!-- Not available on current plan, upsell higher plans -->
 			<div v-else-if="!databaseAccessInfo?.is_available_on_current_plan">

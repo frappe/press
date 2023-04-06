@@ -148,6 +148,10 @@ class SelfHostedServer(Document):
 			"output",
 		).replace("'", '"')
 		task_result = json.loads(ansible_task_op)
+		temp_task_result = task_result  # Removing risk of mutating the same loop variable
+		for i, app in enumerate(temp_task_result):  # Rearrange JSON if frappe isn't first app
+			if app["app"] == "frappe" and i > 0:
+				task_result[i], task_result[0] = task_result[0], task_result[i]
 		release_group = frappe.new_doc("Release Group")
 		release_group.title = f"{self.server}-bench"
 		branches = []
@@ -212,6 +216,7 @@ class SelfHostedServer(Document):
 			db_server.hostname = server.hostname
 			db_server.title = self.title
 			db_server.is_self_hosted = True
+			db_server.domain = server.domain
 			db_server.self_hosted_server_domain = server.self_hosted_server_domain
 			db_server.ip = self.ip
 			db_server.private_ip = self.private_ip
@@ -273,6 +278,7 @@ class SelfHostedServer(Document):
 			server.hostname = self.hostname
 			server.title = self.title
 			server.is_self_hosted = True
+			server.domain = "self.frappe.dev"
 			server.self_hosted_server_domain = self.domain
 			server.team = self.team
 			server.ip = self.ip
@@ -304,7 +310,9 @@ class SelfHostedServer(Document):
 				new_site.subdomain = sdomain.replace(".", "-")
 				new_site.domain = frappe.db.get_list("Root Domain", pluck="name")[0]
 				try:
-					new_site.bench = frappe.get_last_doc("Bench", {"group": self.release_group})
+					new_site.bench = frappe.get_last_doc(
+						"Bench", {"group": self.release_group, "server": self.name}
+					).name
 				except Exception as e:
 					frappe.throw("Site Creation Failed", exc=e)
 				new_site.team = self.team

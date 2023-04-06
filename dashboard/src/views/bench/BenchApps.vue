@@ -75,15 +75,21 @@
 		<ErrorMessage :message="$resources.fetchLatestAppUpdate.error" />
 
 		<Dialog
-			:options="{ title: 'Add apps to your bench' }"
+			:options="{ title: 'Add apps to your bench', position: 'top' }"
 			v-model="showAddAppDialog"
 		>
 			<template v-slot:body-content>
+				<Input
+					class="mb-2"
+					placeholder="Search for Apps"
+					v-on:input="e => updateSearchTerm(e)"
+				/>
 				<LoadingText class="py-2" v-if="$resources.installableApps.loading" />
 				<AppSourceSelector
 					v-else
-					class="pt-1"
-					:apps="$resources.installableApps.data"
+					class="pt-1 max-h-96 overflow-auto"
+					:class="filteredOptions.length > 5 ? 'pr-2' : ''"
+					:apps="filteredOptions"
 					v-model="selectedApp"
 					:multiple="false"
 				/>
@@ -119,6 +125,7 @@
 <script>
 import AppSourceSelector from '@/components/AppSourceSelector.vue';
 import ChangeAppBranchDialog from '@/components/ChangeAppBranchDialog.vue';
+import Fuse from 'fuse.js/dist/fuse.basic.esm';
 
 export default {
 	name: 'BenchApps',
@@ -131,7 +138,9 @@ export default {
 		return {
 			selectedApp: null,
 			showAddAppDialog: false,
-			appToChangeBranchOf: null
+			appToChangeBranchOf: null,
+			searchTerm: "",
+			filteredOptions: []
 		};
 	},
 	resources: {
@@ -149,6 +158,13 @@ export default {
 				method: 'press.api.bench.installable_apps',
 				params: {
 					name: this.benchName
+				},
+				onSuccess(data) {
+					this.fuse = new Fuse(data, {
+						limit: 20,
+						keys: ['title']
+					});
+					this.filteredOptions = data;
 				}
 			};
 		},
@@ -175,6 +191,15 @@ export default {
 		}
 	},
 	methods: {
+		updateSearchTerm(value) {
+			if (value) {
+				this.filteredOptions = this.fuse
+					.search(value)
+					.map(result => result.item);
+			} else {
+				this.filteredOptions = this.$resources.installableApps.data
+			}
+		},
 		dropdownItems(app) {
 			return [
 				{

@@ -76,6 +76,7 @@ def create_deploy_candidate_differences(bench):
 						"destination": destination,
 					}
 				).insert()
+				frappe.db.commit()
 		except Exception:
 			log_error(
 				"Deploy Candidate Difference Creation Error",

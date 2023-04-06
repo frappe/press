@@ -102,23 +102,29 @@
 		</div>
 
 		<Dialog
-			:options="{ title: 'Install an app on your site' }"
+			:options="{ title: 'Install an app on your site', position: 'top', size: 'lg' }"
 			v-model="showInstallAppsDialog"
 		>
 			<template v-slot:body-content>
+				<Input
+					class="mb-2"
+					placeholder="Search for Apps"
+					v-on:input="e => updateSearchTerm(e)"
+				/>
 				<div
 					v-if="availableApps.data && availableApps.data.length"
-					class="divide-y"
+					class="divide-y max-h-96 overflow-auto"
+					:class="filteredOptions.length > 7 ? 'pr-2': ''"
 				>
 					<div
 						class="flex items-center py-3"
-						v-for="app in availableApps.data"
+						v-for="app in filteredOptions"
 						:key="app.name"
 					>
-						<div class="w-1/3 text-base font-medium">
+						<div class="w-2/4 text-base font-medium">
 							{{ app.title }}
 						</div>
-						<div class="text-base text-gray-700">
+						<div class="w-1/4 text-base text-gray-700">
 							{{ app.repository_owner }}:{{ app.branch }}
 						</div>
 						<Button
@@ -245,6 +251,7 @@ import CommitTag from '@/components/utils/CommitTag.vue';
 import ChangeAppPlanSelector from '@/components/ChangeAppPlanSelector.vue';
 import SiteOverviewAppSubscriptions from './SiteOverviewAppSubscriptions.vue';
 import MarketplacePrepaidCredits from '../marketplace/MarketplacePrepaidCredits.vue';
+import Fuse from 'fuse.js/dist/fuse.basic.esm';
 
 export default {
 	name: 'SiteOverviewApps',
@@ -259,7 +266,9 @@ export default {
 			newAppPlan: '',
 			appToInstall: null,
 			selectedPlan: null,
-			selectedPlanIsFree: null
+			selectedPlanIsFree: null,
+			searchTerm: "",
+			filteredOptions: []
 		};
 	},
 	components: {
@@ -334,6 +343,13 @@ export default {
 	},
 	computed: {
 		availableApps() {
+			if (this.$resources.availableApps.data) {
+				this.fuse = new Fuse(this.$resources.availableApps.data, {
+					limit: 20,
+					keys: ['title']
+				})
+				this.filteredOptions = this.$resources.availableApps.data;
+			}
 			return this.$resources.availableApps;
 		},
 		marketplaceSubscriptions() {
@@ -348,6 +364,15 @@ export default {
 		}
 	},
 	methods: {
+		updateSearchTerm(value) {
+			if (value) {
+				this.filteredOptions = this.fuse
+					.search(value)
+					.map(result => result.item);
+			} else {
+				this.filteredOptions = this.$resources.availableApps.data
+			}
+		},
 		subscribe(app) {
 			this.showPlanSelectionDialog = true;
 		},

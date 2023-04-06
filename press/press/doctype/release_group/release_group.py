@@ -231,9 +231,11 @@ class ReleaseGroup(Document):
 			will_branch_change = False
 			current_branch = source.branch
 			if bench_app:
-				current_source = frappe.get_doc("App Source", bench_app.source)
-				will_branch_change = current_source.branch != source.branch
-				current_branch = current_source.branch
+				current_source_branch = frappe.db.get_value(
+					"App Source", bench_app.source, "branch"
+				)
+				will_branch_change = current_source_branch != source.branch
+				current_branch = current_source_branch
 
 			current_tag = (
 				get_app_tag(source.repository, source.repository_owner, current_hash)
