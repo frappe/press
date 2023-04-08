@@ -22,7 +22,7 @@ class BaseServer(Document):
 	def autoname(self):
 		if not self.domain:
 			self.domain = frappe.db.get_single_value("Press Settings", "domain")
-			self.name = f"{self.hostname}.{self.domain}"
+		self.name = f"{self.hostname}.{self.domain}"
 		if self.is_self_hosted:
 			self.name = f"{self.hostname}.{self.self_hosted_server_domain}"
 
