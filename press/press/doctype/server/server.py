@@ -195,7 +195,7 @@ class BaseServer(Document):
 	def ping_ansible(self):
 		try:
 			ansible = Ansible(
-				playbook="ping.yml", server=self, user=self.ssh_user or "root", port=self.ssh_port
+				playbook="ping.yml", server=self
 			)
 			ansible.run()
 		except Exception:
@@ -209,8 +209,6 @@ class BaseServer(Document):
 		try:
 			ansible = Ansible(
 				playbook="update_agent.yml",
-				user=self.ssh_user,
-				port=self.ssh_port,
 				variables={"agent_repository_url": self.get_agent_repository_url()},
 				server=self,
 			)
