@@ -21,6 +21,26 @@
 				Load more
 			</Button>
 		</div>
+
+		<template v-slot:actions>
+			<Button @click="showChangeNotifyEmailDialog = true">
+				Change Notify Email
+			</Button>
+		</template>
+		<Dialog
+			:options="{ title: 'Change Notify Email' }"
+			v-model="showChangeNotifyEmailDialog">
+			<template v-slot:body-content>
+				<Input
+					v-model="site.notify_email"
+				/>
+			</template>
+			<template v-slot:actions>
+				<Button appearance="primary" @click="$resources.changeNotifyEmail.submit()">
+					Save
+				</Button>
+			</template>
+		</Dialog>
 	</Card>
 </template>
 
@@ -40,6 +60,23 @@ export default {
 				paged: true,
 				keepData: true
 			};
+		},
+		changeNotifyEmail() {
+			return {
+				method: 'press.api.site.change_notify_email',
+				params: {
+					name: this.site?.name,
+					email: this.site?.notify_email
+				},
+				onSuccess() {
+					this.showChangeNotifyEmailDialog = false
+					this.$notify({
+						title: 'Notify Email Changed!',
+						icon: 'check',
+						color: 'green'
+					});
+				}
+			}
 		}
 	},
 	computed: {
@@ -49,7 +86,8 @@ export default {
 	},
 	data() {
 		return {
-			pageStart: 0
+			pageStart: 0,
+			showChangeNotifyEmailDialog: false,
 		};
 	},
 	methods: {

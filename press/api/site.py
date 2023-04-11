@@ -592,6 +592,7 @@ def get(name):
 		"server_region_info": get_server_region_info(site),
 		"can_change_plan": frappe.db.get_value("Server", site.server, "team") != team,
 		"hide_config": site.hide_config,
+		"notify_email": site.notify_email,
 	}
 
 
@@ -1398,3 +1399,11 @@ def disable_database_access(name):
 @frappe.whitelist()
 def get_job_status(job_name):
 	return {"status": frappe.db.get_value("Agent Job", job_name, "status")}
+
+
+@frappe.whitelist()
+@protected("Site")
+def change_notify_email(name, email):
+	site_doc = frappe.get_doc("Site", name)
+	site_doc.notify_email = email
+	site_doc.save(ignore_permissions=True)

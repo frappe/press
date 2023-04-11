@@ -194,9 +194,7 @@ class BaseServer(Document):
 	@frappe.whitelist()
 	def ping_ansible(self):
 		try:
-			ansible = Ansible(
-				playbook="ping.yml", server=self
-			)
+			ansible = Ansible(playbook="ping.yml", server=self)
 			ansible.run()
 		except Exception:
 			log_error("Server Ping Exception", server=self.as_dict())
