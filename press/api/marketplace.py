@@ -229,6 +229,49 @@ def update_app_image() -> str:
 	return file_url
 
 
+@frappe.whitelist()
+def add_app_screenshot() -> str:
+	"""Handles App Image Upload"""
+	file_content = frappe.local.uploaded_file
+	app_name = frappe.form_dict.docname
+	app_doc = frappe.get_doc("Marketplace App", app_name)
+
+	_file = frappe.get_doc(
+		{
+			"doctype": "File",
+			"attached_to_field": "image",
+			"folder": "Home/Attachments",
+			"file_name": frappe.local.uploaded_filename,
+			"is_private": 0,
+			"content": file_content,
+		}
+	)
+	_file.save(ignore_permissions=True)
+	file_url = _file.file_url
+
+	app_doc.append(
+		"screenshots",
+		{
+			"image": file_url,
+		},
+	)
+	app_doc.save(ignore_permissions=True)
+
+	return file_url
+
+
+@protected("Marketplace App")
+@frappe.whitelist()
+def remove_app_screenshot(name, file):
+	app_doc = frappe.get_doc("Marketplace App", name)
+
+	for i, sc in enumerate(app_doc.screenshots):
+		if sc.image == file:
+			frappe.delete_doc("File", file)
+			app_doc.screenshots.pop(i)
+	app_doc.save(ignore_permissions=True)
+
+
 def validate_app_image_dimensions(file_content):
 	"""Throws if image is not a square image, atleast 300x300px in size"""
 	from PIL import Image
