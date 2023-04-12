@@ -283,6 +283,12 @@ export default {
 					icon: 'external-link',
 					loading: this.$resources.loginAsAdmin.loading,
 					handler: () => {
+						if (this.$account.team.name == this.site.notify_email) {
+							return this.$resources.loginAsAdmin.submit({
+								name: this.siteName
+							});
+						}
+
 						this.showReasonForAdminLoginDialog = true;
 					}
 				},
