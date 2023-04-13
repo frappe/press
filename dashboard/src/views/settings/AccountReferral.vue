@@ -8,9 +8,9 @@
 			<ClickToCopyField :textContent="referralLink" />
 			<h3 class="text-base text-gray-700">
 				When someone sign's up using the above link and spends at least
-				{{ minimumSpentAmount }} on Frappe Cloud, you
+				{{ minimumSpentAmount }} on NexTash Cloud, you
 				<strong
-					>get {{ creditAmountInTeamCurrency }} in Frappe Cloud Credits</strong
+					>get {{ creditAmountInTeamCurrency }} in NexTash Cloud Credits</strong
 				>!
 			</h3>
 		</div>

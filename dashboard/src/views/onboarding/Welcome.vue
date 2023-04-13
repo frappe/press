@@ -5,8 +5,8 @@
 	>
 		<div class="mx-auto mb-10 lg:w-1/2">
 			<Card
-				title="Welcome to Frappe Cloud"
-				subtitle="To start using Frappe Cloud, complete the following steps to get your account up and running."
+				title="Welcome to NexTash Cloud"
+				subtitle="To start using NexTash Cloud, complete the following steps to get your account up and running."
 			>
 				<div class="relative mt-2">
 					<OnboardingStepCreateAccount />
