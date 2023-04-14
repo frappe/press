@@ -59,6 +59,7 @@ def prepare():
 
 	setup_apps()
 	setup_teams()
+	setup_plans()
 
 
 def complete_setup_wizard():
@@ -286,12 +287,28 @@ def setup_teams():
 
 
 def setup_plans():
-	frappe.get_doc(
-		{
-			"doctype": "Plan",
-			"name": "Free",
-		}
-	).insert()
+	plans = [("Free", 0), ("USD 10", 10), ("USD 25", 25)]
+	for index, plan in enumerate(plans, 1):
+		if frappe.db.exists("Plan", plan[0]):
+			continue
+		frappe.get_doc(
+			{
+				"doctype": "Plan",
+				"name": plan[0],
+				"document_type": "Site",
+				"plan_title": plan[0],
+				"price_usd": plan[1],
+				"price_inr": plan[1] * 80,
+				"cpu_time_per_day": index,
+				"max_database_usage": 1024 * index,
+				"max_storage_usage": 10240 * index,
+				"roles": [
+					{"role": "System Manager"},
+					{"role": "Press Admin"},
+					{"role": "Press Member"},
+				],
+			}
+		).insert()
 
 
 def setup_apps():
