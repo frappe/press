@@ -23,7 +23,7 @@ class BaseServer(Document):
 		if not self.domain:
 			self.domain = frappe.db.get_single_value("Press Settings", "domain")
 		self.name = f"{self.hostname}.{self.domain}"
-		if self.is_self_hosted:
+		if getattr(self, "is_self_hosted", False):
 			self.name = f"{self.hostname}.{self.self_hosted_server_domain}"
 
 	def validate(self):
@@ -33,7 +33,7 @@ class BaseServer(Document):
 			self.self_hosted_mariadb_server = self.private_ip
 
 	def after_insert(self):
-		if self.ip and not self.is_self_hosted:
+		if self.ip and not getattr(self, "is_self_hosted", False):
 			self.create_dns_record()
 			self.update_virtual_machine_name()
 
@@ -475,7 +475,9 @@ class Server(BaseServer):
 
 		try:
 			ansible = Ansible(
-				playbook="self_hosted.yml" if self.is_self_hosted else "server.yml",
+				playbook="self_hosted.yml"
+				if getattr(self, "is_self_hosted", False)
+				else "server.yml",
 				server=self,
 				user=self.ssh_user,
 				port=self.ssh_port,
