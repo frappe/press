@@ -30,7 +30,7 @@
 - name: Setup Registry Authentication
   become: yes
   become_user: frappe
-  command: "htpasswd -Bbc registry.htpasswd {{ registry_username }} {{ registry_password }}"
+  command: 'htpasswd -Bbc registry.htpasswd {{ registry_username }} {{ registry_password }}'
   args:
     chdir: /home/frappe/registry
 
