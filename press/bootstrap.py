@@ -105,7 +105,7 @@ def setup_root_domain(settings):
 
 
 def setup_stripe(settings):
-	settings.stripe_secret_key = STRIPE_SECRET_KEY
+	settings.stripe_publishable_key = STRIPE_PUBLISHABLE_KEY
 	settings.stripe_secret_key = STRIPE_SECRET_KEY
 	settings.ngrok_auth_token = NGROK_AUTH_TOKEN
 	settings.save()
