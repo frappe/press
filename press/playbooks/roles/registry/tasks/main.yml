@@ -13,6 +13,14 @@
     dest: /home/frappe/registry/data
     state: directory
 
+- name: Stop and Remove old Docker Registry UI Container
+  shell: docker stop registry-ui; docker rm registry-ui
+  ignore_errors: true
+
+- name: Stop and Remove old Docker Registry Container
+  shell: docker stop registry; docker rm registry
+  ignore_errors: true
+
 - name: Start Docker Registry
   script: files/registry.sh
 
