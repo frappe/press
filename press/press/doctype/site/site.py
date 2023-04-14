@@ -1194,8 +1194,9 @@ class Site(Document):
 			"host": proxy_server,
 			"port": 3306,
 			"database": config["db_name"],
-			"username": config["db_name"],
-			"password": config["db_password"],
+			"username": self.database_access_user,
+			"password": self.get_password("database_access_password"),
+			"mode": self.database_access_mode,
 		}
 
 	@property
