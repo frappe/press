@@ -494,11 +494,11 @@ class Agent:
 			upstream=bench.server,
 		)
 
-	def add_proxysql_user(self, site, username, password, database_server):
+	def add_proxysql_user(self, site, database, username, password, database_server):
 		data = {
 			"username": username,
 			"password": password,
-			"database": username,
+			"database": database,
 			"backend": {"ip": database_server.private_ip, "id": database_server.server_id},
 		}
 		return self.create_agent_job(
@@ -517,6 +517,31 @@ class Agent:
 			f"proxysql/users/{username}",
 			method="DELETE",
 			site=site.name,
+		)
+
+	def create_database_access_credentials(self, site, mode):
+		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
+		data = {
+			"mode": mode,
+			"mariadb_root_password": get_decrypted_password(
+				"Database Server", database_server, "mariadb_root_password"
+			),
+		}
+		credentials = self.post(
+			f"benches/{site.bench}/sites/{site.name}/credentials", data=data
+		)
+		return credentials
+
+	def revoke_database_access_credentials(self, site):
+		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
+		data = {
+			"user": site.database_access_user,
+			"mariadb_root_password": get_decrypted_password(
+				"Database Server", database_server, "mariadb_root_password"
+			),
+		}
+		return self.post(
+			f"benches/{site.bench}/sites/{site.name}/credentials/revoke", data=data
 		)
 
 	def update_site_status(self, server, site, status):

@@ -1141,30 +1141,49 @@ class Site(Document):
 		).insert(ignore_permissions=True)
 
 	@frappe.whitelist()
-	def enable_database_access(self):
+	def enable_database_access(self, mode="read_only"):
 		if not frappe.db.get_value("Plan", self.plan, "database_access"):
 			frappe.throw(f"Database Access is not available on {self.plan} plan")
 		log_site_activity(self.name, "Enable Database Access")
+
+		server_agent = Agent(self.server)
+		credentials = server_agent.create_database_access_credentials(self, mode)
+		self.database_access_mode = mode
+		self.database_access_user = credentials["user"]
+		self.database_access_password = credentials["password"]
+		self.save()
+
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
-
-		config = self.fetch_info()["config"]
 
 		database_server_name = frappe.db.get_value("Server", self.server, "database_server")
 		database_server = frappe.get_doc("Database Server", database_server_name)
 
 		return agent.add_proxysql_user(
-			self, config["db_name"], config["db_password"], database_server
+			self,
+			credentials["database"],
+			credentials["user"],
+			credentials["password"],
+			database_server,
 		)
 
 	@frappe.whitelist()
 	def disable_database_access(self):
 		log_site_activity(self.name, "Disable Database Access")
+
+		server_agent = Agent(self.server)
+		server_agent.revoke_database_access_credentials(self)
+
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
 
-		config = self.fetch_info()["config"]
-		return agent.remove_proxysql_user(self, config["db_name"])
+		user = self.database_access_user
+
+		self.database_access_mode = None
+		self.database_access_user = None
+		self.database_access_password = None
+		self.save()
+		return agent.remove_proxysql_user(self, user)
 
 	@frappe.whitelist()
 	def get_database_credentials(self):
