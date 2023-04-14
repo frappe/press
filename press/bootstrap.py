@@ -57,6 +57,9 @@ def prepare():
 	setup_monitoring(settings)
 	setup_tracing(settings)
 
+	setup_apps()
+	setup_teams()
+
 
 def complete_setup_wizard():
 	setup_complete(
@@ -260,3 +263,58 @@ def setup():
 	]
 	for server_type, server in servers:
 		frappe.get_doc(server_type, server).setup_server()
+
+
+def setup_teams():
+	from press.api.account import signup
+	from press.press.doctype.team.team import Team
+
+	signup("cloud@erpnext.com")
+	request = frappe.get_all(
+		"Account Request", ["*"], {"email": "cloud@erpnext.com"}, limit=1
+	)[0]
+	cloud = Team.create_new(request, "Frappe", "Cloud", "FrappeCloud@1", "India", False)
+
+	signup("aditya@erpnext.com")
+	request = frappe.get_all(
+		"Account Request", ["*"], {"email": "aditya@erpnext.com"}, limit=1
+	)[0]
+	aditya = Team.create_new(request, "Aditya", "Hase", "AdityaHase@1", "India", False)
+
+	cloud.append("team_members", {"user": aditya.name})
+	cloud.save()
+
+
+def setup_plans():
+	frappe.get_doc(
+		{
+			"doctype": "Plan",
+			"name": "Free",
+		}
+	).insert()
+
+
+def setup_apps():
+	app = frappe.get_doc(
+		{"doctype": "App", "name": "frappe", "title": "Frappe Framework", "frappe": True}
+	).insert()
+	source = frappe.get_doc(
+		{
+			"doctype": "App Source",
+			"app": app.name,
+			"branch": "develop",
+			"repository_url": "https://github.com/frappe/frappe",
+			"public": True,
+			"team": "Administrator",
+			"versions": [{"version": "Nightly"}],
+		}
+	).insert()
+	frappe.get_doc(
+		{
+			"doctype": "Release Group",
+			"title": "Frappe",
+			"version": "Nightly",
+			"team": "Administrator",
+			"apps": [{"app": app.name, "source": source.name}],
+		}
+	).insert()
