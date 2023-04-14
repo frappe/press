@@ -78,15 +78,18 @@ def setup_certbot(settings):
 
 
 def setup_root_domain(settings):
-	domain = frappe.get_doc(
-		{
-			"doctype": "Root Domain",
-			"name": ROOT_DOMAIN,
-			"default_cluster": "Default",
-			"aws_access_key_id": AWS_ACCESS_KEY_ID,
-			"aws_secret_access_key": AWS_SECRET_ACCESS_KEY,
-		}
-	).insert()
+	if frappe.db.get_value("Root Domain", ROOT_DOMAIN):
+		domain = frappe.get_doc("Root Domain", ROOT_DOMAIN)
+	else:
+		domain = frappe.get_doc(
+			{
+				"doctype": "Root Domain",
+				"name": ROOT_DOMAIN,
+				"default_cluster": "Default",
+				"aws_access_key_id": AWS_ACCESS_KEY_ID,
+				"aws_secret_access_key": AWS_SECRET_ACCESS_KEY,
+			}
+		).insert()
 	frappe.db.commit()
 	while not frappe.db.exists(
 		"TLS Certificate", {"wildcard": True, "domain": ROOT_DOMAIN, "status": "Active"}
