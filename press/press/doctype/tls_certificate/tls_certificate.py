@@ -44,25 +44,30 @@ class TLSCertificate(Document):
 
 	@frappe.whitelist()
 	def _obtain_certificate(self):
-		try:
-			frappe.msgprint("Obtaining")
+		# try:
+		frappe.msgprint("Obtaining")
 
-			settings = frappe.get_doc("Press Settings", "Press Settings")
-			ca = LetsEncrypt(settings)
-			(
-				self.certificate,
-				self.full_chain,
-				self.intermediate_chain,
-				self.private_key,
-			) = ca.obtain(
-				domain=self.domain, rsa_key_size=self.rsa_key_size, wildcard=self.wildcard
-			)
-			self._extract_certificate_details()
-			self.status = "Active"
-			log_error("TLS Certificate Exception", certificate=self.name)
-		except Exception:
-			self.status = "Failure"
-			log_error("TLS Certificate Exception", certificate=self.name)
+		settings = frappe.get_doc("Press Settings", "Press Settings")
+		frappe.msgprint(f"{settings}")
+
+		ca = LetsEncrypt(settings)
+		frappe.msgprint(f"{ca}")
+		
+		(
+			self.certificate,
+			self.full_chain,
+			self.intermediate_chain,
+			self.private_key,
+		) = ca.obtain(
+			domain=self.domain, rsa_key_size=self.rsa_key_size, wildcard=self.wildcard
+		)
+		
+		self._extract_certificate_details()
+		self.status = "Active"
+		log_error("TLS Certificate Exception", certificate=self.name)
+		# except Exception:
+		# 	self.status = "Failure"
+		# 	log_error("TLS Certificate Exception", certificate=self.name)
 		self.save()
 		self.trigger_site_domain_callback()
 		if self.wildcard:
