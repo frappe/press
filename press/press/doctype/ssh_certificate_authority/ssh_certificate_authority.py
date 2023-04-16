@@ -78,7 +78,8 @@ class SSHCertificateAuthority(Document):
 
 	@frappe.whitelist()
 	def build_image(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_build_image", timeout=2400)
+		self._build_image()
+		# frappe.enqueue_doc(self.doctype, self.name, "_build_image", timeout=2400)
 
 	def _build_image(self):
 		self._prepare_build_directory()
