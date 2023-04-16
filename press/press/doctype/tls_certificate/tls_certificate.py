@@ -36,6 +36,7 @@ class TLSCertificate(Document):
 			get_current_team(),
 		)
 		frappe.set_user(team)
+		frappe.msgprint("Obtaining")
 		frappe.enqueue_doc(
 			self.doctype, self.name, "_obtain_certificate", enqueue_after_commit=True
 		)
@@ -57,6 +58,7 @@ class TLSCertificate(Document):
 			)
 			self._extract_certificate_details()
 			self.status = "Active"
+			log_error("TLS Certificate Exception", certificate=self.name)
 		except Exception:
 			self.status = "Failure"
 			log_error("TLS Certificate Exception", certificate=self.name)
