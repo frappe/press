@@ -36,7 +36,6 @@ class TLSCertificate(Document):
 			get_current_team(),
 		)
 		frappe.set_user(team)
-		frappe.msgprint("Obtaining")
 		frappe.enqueue_doc(
 			self.doctype, self.name, "_obtain_certificate", enqueue_after_commit=True
 		)
@@ -46,6 +45,8 @@ class TLSCertificate(Document):
 	@frappe.whitelist()
 	def _obtain_certificate(self):
 		try:
+			frappe.msgprint("Obtaining")
+
 			settings = frappe.get_doc("Press Settings", "Press Settings")
 			ca = LetsEncrypt(settings)
 			(
