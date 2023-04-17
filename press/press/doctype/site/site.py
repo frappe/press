@@ -391,7 +391,7 @@ class Site(Document):
 
 	@frappe.whitelist()
 	def restore_site(self, skip_failing_patches=False):
-		if not frappe.get_doc("Remote File", self.remote_database_file).exists():
+		if not frappe.db.exists("Remote File", self.remote_database_file):
 			raise Exception(
 				"Remote File {0} is unavailable on S3".format(self.remote_database_file)
 			)
