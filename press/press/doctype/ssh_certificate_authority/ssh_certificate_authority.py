@@ -143,6 +143,7 @@ class SSHCertificateAuthority(Document):
 		self.save()
 		frappe.db.commit()
 
+		frappe.msgprint(f"docker build -t {self.docker_image} . {self.build_directory} {environment}")
 		self.run(f"docker build -t {self.docker_image} .", self.build_directory, environment)
 
 	def _push_docker_image(self):
