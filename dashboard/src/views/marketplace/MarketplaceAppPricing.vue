@@ -20,7 +20,8 @@ const props = defineProps({
 const appPlans = useResource({
 	method: 'press.api.marketplace.get_app_plans',
 	params: {
-		app: props.app?.name
+		app: props.app?.name,
+		include_disabled: true
 	},
 	auto: true
 });

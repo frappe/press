@@ -594,8 +594,8 @@ def get_marketplace_subscriptions_for_site(site: str):
 
 
 @frappe.whitelist()
-def get_app_plans(app: str):
-	return get_plans_for_app(app, include_disabled=True)
+def get_app_plans(app: str, include_disabled=True):
+	return get_plans_for_app(app, include_disabled=include_disabled)
 
 
 @frappe.whitelist()
