@@ -36,30 +36,33 @@ class TLSCertificate(Document):
 			get_current_team(),
 		)
 		frappe.set_user(team)
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_obtain_certificate", enqueue_after_commit=True
-		)
+		# frappe.enqueue_doc(
+		# 	self.doctype, self.name, "_obtain_certificate", enqueue_after_commit=True
+		# )
+		self._obtain_certificate()
 		frappe.set_user(user)
 		frappe.session.data = session_data
 
 	@frappe.whitelist()
 	def _obtain_certificate(self):
-		try:
-			settings = frappe.get_doc("Press Settings", "Press Settings")
-			ca = LetsEncrypt(settings)
-			(
-				self.certificate,
-				self.full_chain,
-				self.intermediate_chain,
-				self.private_key,
-			) = ca.obtain(
-				domain=self.domain, rsa_key_size=self.rsa_key_size, wildcard=self.wildcard
-			)
-			self._extract_certificate_details()
-			self.status = "Active"
-		except Exception:
-			self.status = "Failure"
-			log_error("TLS Certificate Exception", certificate=self.name)
+		# try:
+		settings = frappe.get_doc("Press Settings", "Press Settings")
+		ca = LetsEncrypt(settings)
+		
+		(
+			self.certificate,
+			self.full_chain,
+			self.intermediate_chain,
+			self.private_key,
+		) = ca.obtain(
+			domain=self.domain, rsa_key_size=self.rsa_key_size, wildcard=self.wildcard
+		)
+		self._extract_certificate_details()
+		self.status = "Active"
+		# except Exception:
+		# 	self.status = "Failure"
+		# 	log_error("TLS Certificate Exception", certificate=self.name)
+		
 		self.save()
 		self.trigger_site_domain_callback()
 		if self.wildcard:
