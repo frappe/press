@@ -78,8 +78,7 @@ class SSHCertificateAuthority(Document):
 
 	@frappe.whitelist()
 	def build_image(self):
-		self._build_image()
-		# frappe.enqueue_doc(self.doctype, self.name, "_build_image", timeout=2400)
+		frappe.enqueue_doc(self.doctype, self.name, "_build_image", timeout=2400)
 
 	def _build_image(self):
 		self._prepare_build_directory()
@@ -143,7 +142,6 @@ class SSHCertificateAuthority(Document):
 		self.save()
 		frappe.db.commit()
 
-		frappe.msgprint(f"docker build -t {self.docker_image} . {self.build_directory} {environment}")
 		self.run(f"docker build -t {self.docker_image} .", self.build_directory, environment)
 
 	def _push_docker_image(self):
