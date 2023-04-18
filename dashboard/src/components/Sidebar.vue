@@ -1,12 +1,13 @@
 <template>
 	<div class="flex h-screen flex-col justify-between bg-gray-50 p-2">
 		<div>
-			<FrappeCloudLogo class="my-6 ml-2 h-4 w-auto" />
-			<div
-				class="mb-4 cursor-pointer rounded-xl border bg-gray-200 px-3 py-3 text-xs hover:border-gray-300"
-				@click="show = true"
-			>
-				Search (Ctrl + k)
+			<div class="flex justify-between">
+				<FrappeCloudLogo class="my-8 ml-2 h-4 w-auto" />
+				<div class="self-center">
+					<Button class="text-xs" iconLeft="search" @click="show = true">
+						(Ctrl + k)
+					</Button>
+				</div>
 			</div>
 			<CommandPalette :show="show" @close="show = false" />
 			<router-link
