@@ -14,7 +14,7 @@ def hook(*args, **kwargs):
 		frappe.set_user("Administrator")
 
 		client = Telegram()
-		client.respond(kwargs["message"])
+		client.respond(kwargs.get("message", kwargs.get("edited_message")))
 
 	except Exception:
 		log_error("Telegram Webhook Error", args=args, kwargs=kwargs)
