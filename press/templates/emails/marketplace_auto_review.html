@@ -1,0 +1,40 @@
+{% extends "templates/emails/base.html" %}
+
+{% block content %}
+  <td class="text-base leading-6 text-gray-900">
+    <div class="p-8 bg-white">
+        Hello, 
+        <br/>
+      Please complete the following <a href="{{ review_page_link }}">review steps</a> for your app,
+        <br/>
+        <br/>
+        <div class="from-markdown">
+          {% if not logo %}
+            * Add a logo
+            <br/>
+          {% endif %}
+          {% if not desc %}
+            * Update the description for your app
+            <br/>
+          {% endif %}
+          {% if not links %}
+            * Add relevant links for your app
+            <br/>
+          {% endif %}
+          {% if not release %}
+            * Publish a release from releases tab
+            <br/>
+          {% endif %}
+        </div>
+
+        <br/>
+        <p class="m-0">
+            Thanks,<br>
+            Team Frappe Cloud
+        </p>
+    </div>
+  </td>
+
+
+{% endblock %}
+

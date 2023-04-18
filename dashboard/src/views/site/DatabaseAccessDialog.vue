@@ -268,8 +268,7 @@ export default {
 					this.pollingAgentJob = false;
 					this.$resources.fetchDatabaseAccessInfo.fetch();
 				} else if (
-					message.status === 'Failure' ||
-					message.status === 'Undelivered'
+					message.status === 'Failure'
 				) {
 					this.pollingAgentJob = false;
 					this.error = 'Something went wrong. Please try again.';

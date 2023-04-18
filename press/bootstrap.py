@@ -57,6 +57,10 @@ def prepare():
 	setup_monitoring(settings)
 	setup_tracing(settings)
 
+	setup_apps()
+	setup_teams()
+	setup_plans()
+
 
 def complete_setup_wizard():
 	setup_complete(
@@ -78,15 +82,18 @@ def setup_certbot(settings):
 
 
 def setup_root_domain(settings):
-	domain = frappe.get_doc(
-		{
-			"doctype": "Root Domain",
-			"name": ROOT_DOMAIN,
-			"default_cluster": "Default",
-			"aws_access_key_id": AWS_ACCESS_KEY_ID,
-			"aws_secret_access_key": AWS_SECRET_ACCESS_KEY,
-		}
-	).insert()
+	if frappe.db.get_value("Root Domain", ROOT_DOMAIN):
+		domain = frappe.get_doc("Root Domain", ROOT_DOMAIN)
+	else:
+		domain = frappe.get_doc(
+			{
+				"doctype": "Root Domain",
+				"name": ROOT_DOMAIN,
+				"default_cluster": "Default",
+				"aws_access_key_id": AWS_ACCESS_KEY_ID,
+				"aws_secret_access_key": AWS_SECRET_ACCESS_KEY,
+			}
+		).insert()
 	frappe.db.commit()
 	while not frappe.db.exists(
 		"TLS Certificate", {"wildcard": True, "domain": ROOT_DOMAIN, "status": "Active"}
@@ -102,7 +109,7 @@ def setup_root_domain(settings):
 
 
 def setup_stripe(settings):
-	settings.stripe_secret_key = STRIPE_SECRET_KEY
+	settings.stripe_publishable_key = STRIPE_PUBLISHABLE_KEY
 	settings.stripe_secret_key = STRIPE_SECRET_KEY
 	settings.ngrok_auth_token = NGROK_AUTH_TOKEN
 	settings.save()
@@ -257,3 +264,74 @@ def setup():
 	]
 	for server_type, server in servers:
 		frappe.get_doc(server_type, server).setup_server()
+
+
+def setup_teams():
+	from press.api.account import signup
+	from press.press.doctype.team.team import Team
+
+	signup("cloud@erpnext.com")
+	request = frappe.get_all(
+		"Account Request", ["*"], {"email": "cloud@erpnext.com"}, limit=1
+	)[0]
+	cloud = Team.create_new(request, "Frappe", "Cloud", "FrappeCloud@1", "India", False)
+
+	signup("aditya@erpnext.com")
+	request = frappe.get_all(
+		"Account Request", ["*"], {"email": "aditya@erpnext.com"}, limit=1
+	)[0]
+	aditya = Team.create_new(request, "Aditya", "Hase", "AdityaHase@1", "India", False)
+
+	cloud.append("team_members", {"user": aditya.name})
+	cloud.save()
+
+
+def setup_plans():
+	plans = [("Free", 0), ("USD 10", 10), ("USD 25", 25)]
+	for index, plan in enumerate(plans, 1):
+		if frappe.db.exists("Plan", plan[0]):
+			continue
+		frappe.get_doc(
+			{
+				"doctype": "Plan",
+				"name": plan[0],
+				"document_type": "Site",
+				"plan_title": plan[0],
+				"price_usd": plan[1],
+				"price_inr": plan[1] * 80,
+				"cpu_time_per_day": index,
+				"max_database_usage": 1024 * index,
+				"max_storage_usage": 10240 * index,
+				"roles": [
+					{"role": "System Manager"},
+					{"role": "Press Admin"},
+					{"role": "Press Member"},
+				],
+			}
+		).insert()
+
+
+def setup_apps():
+	app = frappe.get_doc(
+		{"doctype": "App", "name": "frappe", "title": "Frappe Framework", "frappe": True}
+	).insert()
+	source = frappe.get_doc(
+		{
+			"doctype": "App Source",
+			"app": app.name,
+			"branch": "develop",
+			"repository_url": "https://github.com/frappe/frappe",
+			"public": True,
+			"team": "Administrator",
+			"versions": [{"version": "Nightly"}],
+		}
+	).insert()
+	frappe.get_doc(
+		{
+			"doctype": "Release Group",
+			"title": "Frappe",
+			"version": "Nightly",
+			"team": "Administrator",
+			"apps": [{"app": app.name, "source": source.name}],
+		}
+	).insert()

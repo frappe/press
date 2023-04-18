@@ -912,6 +912,7 @@ def is_us_eu():
 
 	countrygroup = [
 		"United States",
+		"United Kingdom",
 		"Austria",
 		"Belgium",
 		"Bulgaria",
