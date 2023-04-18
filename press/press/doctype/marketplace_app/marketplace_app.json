@@ -53,6 +53,7 @@
   "run_after_uninstall_script",
   "after_uninstall_script",
   "review_tab",
+  "stop_auto_review",
   "review_stage",
   "status"
  ],
@@ -327,6 +328,12 @@
    "fieldname": "frappe_approved",
    "fieldtype": "Check",
    "label": "Frappe Approved"
+  },
+  {
+   "default": "0",
+   "fieldname": "stop_auto_review",
+   "fieldtype": "Check",
+   "label": "Stop Auto Review"
   }
  ],
  "has_web_view": 1,
@@ -350,7 +357,7 @@
    "link_fieldname": "app"
   }
  ],
- "modified": "2023-03-22 15:28:48.488976",
+ "modified": "2023-04-14 20:16:56.817101",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Marketplace App",

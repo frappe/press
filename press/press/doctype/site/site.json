@@ -69,6 +69,10 @@
   "update_on_day_of_month",
   "database_section",
   "is_database_access_enabled",
+  "database_access_mode",
+  "column_break_lfuz",
+  "database_access_user",
+  "database_access_password",
   "saas_section",
   "is_standby",
   "standby_for",
@@ -445,7 +449,7 @@
    "collapsible": 1,
    "fieldname": "database_section",
    "fieldtype": "Section Break",
-   "label": "Database"
+   "label": "Database Access"
   },
   {
    "default": "0",
@@ -521,6 +525,29 @@
    "fieldname": "hide_config",
    "fieldtype": "Check",
    "label": "Hide Config"
+  },
+  {
+   "fieldname": "database_access_password",
+   "fieldtype": "Password",
+   "label": "Database Access Password",
+   "read_only": 1
+  },
+  {
+   "fieldname": "database_access_mode",
+   "fieldtype": "Select",
+   "label": "Database Access Mode",
+   "options": "\nread_only\nread_write",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_lfuz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "database_access_user",
+   "fieldtype": "Data",
+   "label": "Database Access User",
+   "read_only": 1
   }
  ],
  "links": [
@@ -590,7 +617,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2023-02-16 20:44:12.499873",
+ "modified": "2023-04-14 23:05:28.545699",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

@@ -19,7 +19,7 @@ class AccountRequest(Document):
 			self.request_key = random_string(32)
 
 		self.ip_address = frappe.local.request_ip
-		geo_location = self.get_country_info()
+		geo_location = self.get_country_info() or {}
 		self.geo_location = json.dumps(geo_location, indent=1, sort_keys=True)
 		self.state = geo_location.get("regionName")
 

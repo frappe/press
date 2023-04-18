@@ -8,6 +8,8 @@ import hmac
 import hashlib
 import json
 from frappe.model.document import Document
+from frappe.query_builder import Interval
+from frappe.query_builder.functions import Now
 from press.utils import log_error
 
 
@@ -102,3 +104,8 @@ class GitHubWebhookLog(Document):
 			tag.insert()
 		except Exception:
 			log_error("App Tag Creation Error", payload=payload)
+
+	@staticmethod
+	def clear_old_logs(days=30):
+		table = frappe.qb.DocType("GitHub Webhook Log")
+		frappe.db.delete(table, filters=(table.creation < (Now() - Interval(days=days))))
