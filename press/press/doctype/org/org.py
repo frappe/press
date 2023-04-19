@@ -21,7 +21,7 @@ class Org(Document):
 		load_address_and_contact(self)
 
 	def validate(self):
-		self.set_team_currency()
+		self.set_org_currency()
 		self.set_billing_name()
 		self.set_partner_email()
 
@@ -124,7 +124,7 @@ class Org(Document):
 
 		if self.has_value_changed("payment_mode"):
 			if self.payment_mode == "Card":
-				if frappe.db.count("Stripe Payment Method", {"team": self.name}) == 0:
+				if frappe.db.count("Stripe Payment Method", {"org": self.name}) == 0:
 					frappe.throw("No card added")
 			if self.payment_mode == "Prepaid Credits":
 				if self.get_balance() <= 0:
@@ -134,7 +134,7 @@ class Org(Document):
 			# if default payment method is unset
 			# then set the is_default field for Stripe Payment Method to 0
 			payment_methods = frappe.db.get_list(
-				"Stripe Payment Method", {"team": self.name, "is_default": 1}
+				"Stripe Payment Method", {"org": self.name, "is_default": 1}
 			)
 			for pm in payment_methods:
 				doc = frappe.get_doc("Stripe Payment Method", pm.name)
@@ -227,7 +227,7 @@ class Org(Document):
 			},
 		)
 
-	def set_team_currency(self):
+	def set_org_currency(self):
 		if not self.currency and self.country:
 			self.currency = "INR" if self.country == "India" else "USD"
 
@@ -238,3 +238,16 @@ class Org(Document):
 	def set_partner_email(self):
 		if self.erpnext_partner and not self.partner_email:
 			self.partner_email = self.name
+
+	@frappe.whitelist()
+	def get_balance(self):
+		res = frappe.db.get_all(
+			"Balance Transaction",
+			filters={"org": self.name, "docstatus": 1},
+			order_by="creation desc",
+			limit=1,
+			pluck="ending_balance",
+		)
+		if not res:
+			return 0
+		return res[0]

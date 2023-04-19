@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "team",
+  "org",
   "type",
   "source",
   "currency",
@@ -24,8 +25,7 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Team",
-   "options": "Team",
-   "reqd": 1
+   "options": "Team"
   },
   {
    "default": "Adjustment",
@@ -96,12 +96,19 @@
    "fieldtype": "Table",
    "label": "Allocated To",
    "options": "Balance Transaction Allocation"
+  },
+  {
+   "fieldname": "org",
+   "fieldtype": "Link",
+   "label": "Org",
+   "options": "Org",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2022-10-29 14:58:09.158731",
+ "modified": "2023-04-19 11:21:05.082332",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Balance Transaction",
