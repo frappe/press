@@ -415,46 +415,6 @@ class Team(Document):
 			)
 		)
 
-	def get_onboarding(self):
-		if self.payment_mode == "Partner Credits":
-			billing_setup = True
-		else:
-			billing_setup = bool(
-				self.payment_mode in ["Card", "Prepaid Credits"]
-				and (self.default_payment_method or self.get_balance() > 0)
-				and self.billing_address
-			)
-
-		site_created = frappe.db.count("Site", {"team": self.name}) > 0
-
-		if self.via_erpnext:
-			erpnext_domain = frappe.db.get_single_value("Press Settings", "erpnext_domain")
-			erpnext_site = frappe.db.get_value(
-				"Site",
-				{"domain": erpnext_domain, "team": self.name, "status": ("!=", "Archived")},
-				["name", "plan"],
-				as_dict=1,
-			)
-
-			if erpnext_site is None:
-				# Case: They have archived their ERPNext trial site
-				# and created a frappe.cloud site now
-				erpnext_site_plan_set = True
-			else:
-				erpnext_site_plan_set = erpnext_site.plan != "ERPNext Trial"
-		else:
-			erpnext_site = None
-			erpnext_site_plan_set = True
-
-		return {
-			"account_created": True,
-			"billing_setup": billing_setup,
-			"erpnext_site": erpnext_site,
-			"erpnext_site_plan_set": erpnext_site_plan_set,
-			"site_created": site_created,
-			"complete": billing_setup and site_created and erpnext_site_plan_set,
-		}
-
 	@frappe.whitelist()
 	def suspend_sites(self, reason=None):
 		sites_to_suspend = self.get_sites_to_suspend()

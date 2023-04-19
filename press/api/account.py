@@ -15,7 +15,7 @@ from frappe.website.utils import build_response
 from frappe.core.utils import find
 
 from press.press.doctype.team.team import get_team_members
-from press.press.doctype.org.org import Org
+from press.press.doctype.org.org import Org, get_org_members
 from press.utils import get_country_info, get_current_team, get_current_org
 
 
@@ -87,14 +87,14 @@ def setup_account(
 	# if the request is authenticated, set the user to Administrator
 	frappe.set_user("Administrator")
 
-	team = account_request.team
+	org = account_request.org
 	email = account_request.email
 	role = account_request.role
 
 	if is_invitation:
 		# if this is a request from an invitation
-		# then Team already exists and will be added to that team
-		doc = frappe.get_doc("Team", team)
+		# then Org already exists and will be added to that org
+		doc = frappe.get_doc("Org", org)
 		doc.create_user_for_member(first_name, last_name, email, password, role)
 	else:
 		# Org doesn't exist, create it
@@ -288,20 +288,18 @@ def get():
 	if not frappe.db.exists("User", user):
 		frappe.throw(_("Account does not exist"))
 
-	team = get_current_team()
-	team_doc = frappe.get_doc("Team", team)
+	org = get_current_org()
+	org_doc = frappe.get_doc("Org", org)
 
-	teams = [
-		d.parent for d in frappe.db.get_all("Team Member", {"user": user}, ["parent"])
-	]
+	orgs = [d.parent for d in frappe.db.get_all("Org Member", {"user": user}, ["parent"])]
 	return {
 		"user": frappe.get_doc("User", user),
 		"ssh_key": get_ssh_key(user),
-		"team": team_doc,
-		"team_members": get_team_members(team),
-		"teams": list(set(teams)),
-		"onboarding": team_doc.get_onboarding(),
-		"balance": team_doc.get_balance(),
+		"org": org_doc,
+		"team_members": get_org_members(org),
+		"teams": list(set(orgs)),
+		"onboarding": org_doc.get_onboarding(),
+		"balance": org_doc.get_balance(),
 		"feature_flags": {
 			"verify_cards_with_micro_charge": frappe.db.get_single_value(
 				"Press Settings", "verify_cards_with_micro_charge"
@@ -461,8 +459,8 @@ def feedback(message, route=None):
 
 @frappe.whitelist()
 def user_prompts():
-	team = get_current_team()
-	doc = frappe.get_doc("Team", team)
+	org = get_current_org()
+	doc = frappe.get_doc("Org", org)
 
 	onboarding = doc.get_onboarding()
 	if not onboarding["complete"]:

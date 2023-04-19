@@ -76,6 +76,18 @@ def get_app_tag(repository, repository_owner, hash):
 	)
 
 
+def get_default_org_for_user(user):
+	"""Returns the Org if user has one or returns the Org to which they belong"""
+	if frappe.db.exists("Org", user):
+		return user
+
+	org = frappe.db.get_value(
+		"Org Member", filters={"parenttype": "Org", "user": user}, fieldname="parent"
+	)
+	if org:
+		return org
+
+
 def get_default_team_for_user(user):
 	"""Returns the Team if user has one, or returns the Team to which they belong"""
 	if frappe.db.exists("Team", user):

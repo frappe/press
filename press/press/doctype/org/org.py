@@ -251,3 +251,70 @@ class Org(Document):
 		if not res:
 			return 0
 		return res[0]
+
+	def get_onboarding(self):
+		if self.payment_mode == "Partner Credits":
+			billing_setup = True
+		else:
+			billing_setup = bool(
+				self.payment_mode in ["Card", "Prepaid Credits"]
+				and (self.default_payment_method or self.get_balance() > 0)
+				and self.billing_address
+			)
+
+		site_created = frappe.db.count("Site", {"team": self.name}) > 0
+
+		if self.via_erpnext:
+			erpnext_domain = frappe.db.get_single_value("Press Settings", "erpnext_domain")
+			erpnext_site = frappe.db.get_value(
+				"Site",
+				{"domain": erpnext_domain, "team": self.name, "status": ("!=", "Archived")},
+				["name", "plan"],
+				as_dict=1,
+			)
+
+			if erpnext_site is None:
+				# Case: They have archived their ERPNext trial site
+				# and created a frappe.cloud site now
+				erpnext_site_plan_set = True
+			else:
+				erpnext_site_plan_set = erpnext_site.plan != "ERPNext Trial"
+		else:
+			erpnext_site = None
+			erpnext_site_plan_set = True
+
+		return {
+			"account_created": True,
+			"billing_setup": billing_setup,
+			"erpnext_site": erpnext_site,
+			"erpnext_site_plan_set": erpnext_site_plan_set,
+			"site_created": site_created,
+			"complete": billing_setup and site_created and erpnext_site_plan_set,
+		}
+
+
+def get_org_members(org):
+	if not frappe.db.exists("Org", org):
+		return []
+
+	r = frappe.db.get_all("Org Member", filters={"parent": org}, fields=["user"])
+	member_emails = [d.user for d in r]
+
+	users = []
+	if member_emails:
+		users = frappe.db.sql(
+			"""
+				select u.name, u.first_name, u.last_name, GROUP_CONCAT(r.`role`) as roles
+				from `tabUser` u
+				left join `tabHas Role` r
+				on (r.parent = u.name)
+				where ifnull(u.name, '') in %s
+				group by u.name
+			""",
+			[member_emails],
+			as_dict=True,
+		)
+		for user in users:
+			user.roles = (user.roles or "").split(",")
+
+	return users
