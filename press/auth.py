@@ -25,7 +25,7 @@ ALLOWED_PATHS = [
 	"/api/method/upload_file",
 	"/api/method/frappe.search.web_search",
 	"/api/method/frappe.email.queue.unsubscribe",
-	"/api/method/frappe.client.get"
+	"/api/method/frappe.client.get",
 	"/api/method/frappe.client.get_count"
 ]
 
