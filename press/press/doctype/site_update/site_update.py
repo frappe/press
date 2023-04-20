@@ -99,11 +99,31 @@ class SiteUpdate(Document):
 		site_apps = [app.app for app in frappe.get_doc("Site", self.site).apps]
 		bench_apps = [app.app for app in frappe.get_doc("Bench", self.destination_bench).apps]
 
+		fields = ["old_name", "new_name"]
+		filters = { "old_name": ["in", site_apps] }
+		app_renames = frappe.get_list("App Rename Map", fields=fields, filters=filters)
+
+		for i in app_renames:
+			if i.old_name in site_apps:
+				site_apps.remove(i.old_name)
+				site_apps.append(i.new_name)
+
 		if set(site_apps) - set(bench_apps):
 			frappe.throw(
 				f"Destination Bench {self.destination_bench} doesn't have some of the apps installed on {self.site}",
 				frappe.ValidationError,
 			)
+
+	def before_migrate_scripts(self):
+		site_apps = [app.app for app in frappe.get_doc("Site", self.site).apps]
+		fields = ["old_name", "script"]
+		filters = { "old_name": ["in", site_apps] }
+		scripts = {}
+
+		for i in frappe.get_list("App Rename Map", fields=fields, filters=filters):
+			scripts[i.old_name] = i.script
+
+		return scripts
 
 	def after_insert(self):
 		self.create_agent_request()
@@ -117,6 +137,7 @@ class SiteUpdate(Document):
 			self.deploy_type,
 			skip_failing_patches=self.skipped_failing_patches,
 			skip_backups=self.skipped_backups,
+			before_migrate_scripts=self.before_migrate_scripts()
 		)
 		frappe.db.set_value("Site Update", self.name, "update_job", job.name)
 
