@@ -5,5 +5,5 @@
 from frappe.model.document import Document
 
 
-class AppRenameMap(Document):
+class AppRename(Document):
 	pass

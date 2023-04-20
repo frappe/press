@@ -98,20 +98,17 @@ class SiteUpdate(Document):
 	def get_app_renames(self):
 		site_apps = [app.app for app in frappe.get_doc("Site", self.site).apps]
 		fields = ["*"]
-		filters = { "old_name": ["in", site_apps] }
-		app_renames = frappe.get_list("App Rename Map", fields=fields, filters=filters)
-
-		return app_renames
+		filters = {"old_name": ["in", site_apps]}
+		return frappe.get_list("App Rename", fields=fields, filters=filters)
 
 	def validate_apps(self):
 		site_apps = [app.app for app in frappe.get_doc("Site", self.site).apps]
 		bench_apps = [app.app for app in frappe.get_doc("Bench", self.destination_bench).apps]
-		app_renames = self.get_app_renames()
 
-		for i in app_renames:
-			if i.old_name in site_apps:
-				site_apps.remove(i.old_name)
-				site_apps.append(i.new_name)
+		for app_rename in self.get_app_renames():
+			if app_rename.old_name in site_apps and app_rename.new_name in bench_apps:
+				site_apps.remove(app_rename.old_name)
+				site_apps.append(app_rename.new_name)
 
 		if set(site_apps) - set(bench_apps):
 			frappe.throw(
@@ -120,11 +117,10 @@ class SiteUpdate(Document):
 			)
 
 	def before_migrate_scripts(self):
-		app_renames = self.get_app_renames()
 		scripts = {}
 
-		for i in app_renames:
-			scripts[i.old_name] = i.script
+		for app_rename in self.get_app_renames():
+			scripts[app_rename.old_name] = app_rename.script
 
 		return scripts
 
@@ -140,7 +136,7 @@ class SiteUpdate(Document):
 			self.deploy_type,
 			skip_failing_patches=self.skipped_failing_patches,
 			skip_backups=self.skipped_backups,
-			before_migrate_scripts=self.before_migrate_scripts()
+			before_migrate_scripts=self.before_migrate_scripts(),
 		)
 		frappe.db.set_value("Site Update", self.name, "update_job", job.name)
 

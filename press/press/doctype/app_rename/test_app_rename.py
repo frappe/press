@@ -5,5 +5,5 @@
 from frappe.tests.utils import FrappeTestCase
 
 
-class TestAppRenameMap(FrappeTestCase):
+class TestAppRename(FrappeTestCase):
 	pass
