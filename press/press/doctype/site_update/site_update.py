@@ -95,13 +95,18 @@ class SiteUpdate(Document):
 				frappe.ValidationError,
 			)
 
+	def get_app_renames(self):
+		site_apps = [app.app for app in frappe.get_doc("Site", self.site).apps]
+		fields = ["*"]
+		filters = { "old_name": ["in", site_apps] }
+		app_renames = frappe.get_list("App Rename Map", fields=fields, filters=filters)
+
+		return app_renames
+
 	def validate_apps(self):
 		site_apps = [app.app for app in frappe.get_doc("Site", self.site).apps]
 		bench_apps = [app.app for app in frappe.get_doc("Bench", self.destination_bench).apps]
-
-		fields = ["old_name", "new_name"]
-		filters = { "old_name": ["in", site_apps] }
-		app_renames = frappe.get_list("App Rename Map", fields=fields, filters=filters)
+		app_renames = self.get_app_renames()
 
 		for i in app_renames:
 			if i.old_name in site_apps:
@@ -115,12 +120,10 @@ class SiteUpdate(Document):
 			)
 
 	def before_migrate_scripts(self):
-		site_apps = [app.app for app in frappe.get_doc("Site", self.site).apps]
-		fields = ["old_name", "script"]
-		filters = { "old_name": ["in", site_apps] }
+		app_renames = self.get_app_renames()
 		scripts = {}
 
-		for i in frappe.get_list("App Rename Map", fields=fields, filters=filters):
+		for i in app_renames:
 			scripts[i.old_name] = i.script
 
 		return scripts
