@@ -9,6 +9,7 @@
   "title",
   "hostname",
   "domain",
+  "proxy_created",
   "database_setup",
   "server_created",
   "column_break_3eap",
@@ -31,6 +32,10 @@
   "column_break_qvmo",
   "mariadb_root_user",
   "mariadb_root_password",
+  "section_break_0fky",
+  "proxy_server",
+  "column_break_bcsw",
+  "proxy_server_ip",
   "existing_bench_tab",
   "bench_directory",
   "column_break_yb8y",
@@ -95,6 +100,7 @@
    "fieldname": "mariadb_root_password",
    "fieldtype": "Password",
    "label": "MariaDB Root Password",
+   "mandatory_depends_on": "eval:doc.existing_bench_present",
    "reqd": 1
   },
   {
@@ -176,8 +182,9 @@
   },
   {
    "fieldname": "domain",
-   "fieldtype": "Data",
-   "label": "Domain"
+   "fieldtype": "Link",
+   "label": "Domain",
+   "options": "Root Domain"
   },
   {
    "fieldname": "column_break_smwr",
@@ -229,10 +236,36 @@
    "fieldname": "new_server",
    "fieldtype": "Check",
    "label": "New Server"
+  },
+  {
+   "fieldname": "section_break_0fky",
+   "fieldtype": "Section Break",
+   "label": "Proxy"
+  },
+  {
+   "fieldname": "proxy_server",
+   "fieldtype": "Link",
+   "label": "Proxy Server",
+   "options": "Proxy Server"
+  },
+  {
+   "fieldname": "column_break_bcsw",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "proxy_server_ip",
+   "fieldtype": "Data",
+   "label": "Proxy Server IP"
+  },
+  {
+   "default": "0",
+   "fieldname": "proxy_created",
+   "fieldtype": "Check",
+   "label": "Proxy Created"
   }
  ],
  "links": [],
- "modified": "2023-03-30 14:54:24.170050",
+ "modified": "2023-04-20 16:19:24.836151",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Self Hosted Server",

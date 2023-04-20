@@ -29,11 +29,11 @@ class BaseServer(Document):
 	def validate(self):
 		self.validate_cluster()
 		self.validate_agent_password()
-		if self.__class__.__name__ != "ProxyServer" and not self.self_hosted_mariadb_server:
+		if self.doctype == "Data Server" and not self.self_hosted_mariadb_server:
 			self.self_hosted_mariadb_server = self.private_ip
 
 	def after_insert(self):
-		if self.ip and not getattr(self, "is_self_hosted", False):
+		if self.ip:
 			self.create_dns_record()
 			self.update_virtual_machine_name()
 
@@ -144,7 +144,10 @@ class BaseServer(Document):
 
 	def _install_nginx(self):
 		try:
-			ansible = Ansible(playbook="nginx.yml", server=self)
+			ansible = Ansible(
+				playbook="nginx.yml",
+				server=self,
+			)
 			play = ansible.run()
 			self.reload()
 			if play.status == "Success":
@@ -175,6 +178,8 @@ class BaseServer(Document):
 			ansible = Ansible(
 				playbook="filebeat.yml",
 				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
 				variables={
 					"server": self.name,
 					"log_server": log_server,
@@ -194,7 +199,12 @@ class BaseServer(Document):
 	@frappe.whitelist()
 	def ping_ansible(self):
 		try:
-			ansible = Ansible(playbook="ping.yml", server=self)
+			ansible = Ansible(
+				playbook="ping.yml",
+				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
+			)
 			ansible.run()
 		except Exception:
 			log_error("Server Ping Exception", server=self.as_dict())
@@ -209,6 +219,8 @@ class BaseServer(Document):
 				playbook="update_agent.yml",
 				variables={"agent_repository_url": self.get_agent_repository_url()},
 				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
 			)
 			ansible.run()
 		except Exception:
@@ -479,8 +491,8 @@ class Server(BaseServer):
 				if getattr(self, "is_self_hosted", False)
 				else "server.yml",
 				server=self,
-				user=self.ssh_user,
-				port=self.ssh_port,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
 				variables={
 					"server": self.name,
 					"private_ip": self.private_ip,
@@ -693,8 +705,8 @@ class Server(BaseServer):
 			ansible = Ansible(
 				playbook="rename.yml",
 				server=self,
-				user=self.ssh_user,
-				port=self.ssh_port,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
 				variables={
 					"server": self.name,
 					"private_ip": self.private_ip,

@@ -34,16 +34,9 @@ class DatabaseServer(BaseServer):
 		agent_password = self.get_password("agent_password")
 		agent_repository_url = self.get_agent_repository_url()
 		mariadb_root_password = self.get_password("mariadb_root_password")
-		if self.is_self_hosted:
-			certificate_name = frappe.db.get_value(
-				"TLS Certificate",
-				{"domain": f"{self.hostname}.{self.self_hosted_server_domain}"},
-				"name",
-			)
-		else:
-			certificate_name = frappe.db.get_value(
-				"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
-			)
+		certificate_name = frappe.db.get_value(
+			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
+		)
 		certificate = frappe.get_doc("TLS Certificate", certificate_name)
 		monitoring_password = frappe.get_doc("Cluster", self.cluster).get_password(
 			"monitoring_password"
@@ -59,8 +52,12 @@ class DatabaseServer(BaseServer):
 
 		try:
 			ansible = Ansible(
-				playbook="database.yml",
+				playbook="self_hosted_db.yml"
+				if getattr(self, "is_self_hosted", False)
+				else "database.yml",
 				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
 				variables={
 					"server": self.name,
 					"workers": "2",
