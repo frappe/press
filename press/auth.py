@@ -13,6 +13,7 @@ PRESS_AUTH_MAX_ENTRIES = 1000000
 ALLOWED_PATHS = [
 	"/api/method/create-site-migration",
 	"/api/method/create-version-upgrade",
+	"/api/method/migrate-to-private-bench",
 	"/api/method/find-my-sites",
 	"/api/method/frappe.core.doctype.communication.email.mark_email_as_seen",
 	"/api/method/frappe.realtime.get_user_info",
